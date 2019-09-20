@@ -52,6 +52,31 @@ bool gcparser_parse_float(char *str, float *value)
         result = true;
     }
 
+    *value = intval;
+
+    do
+    {
+        if(fpcount>=3)
+        {
+            *value *= 0.001f;
+            fpcount -= 3;
+        }
+
+        if(fpcount>=2)
+        {
+            *value *= 0.01f;
+            fpcount -= 2;
+        }
+
+        if(fpcount>=1)
+        {
+            *value *= 0.1f;
+            fpcount -= 1;
+        }
+
+    } while (fpcount !=0 );
+    
+
     return result;
 
 }
@@ -60,6 +85,7 @@ void gcparser_parse_line(char* str)
 {
     GCODE_PARSER_STATE new_state;
     float word_val = 0.0;
+    char word = '\0';
     uint8_t code = 0;
     uint8_t subcode = 0;
 
@@ -73,23 +99,30 @@ void gcparser_parse_line(char* str)
     memcpy(&new_state, &g_gcparser_state, sizeof(GCODE_PARSER_STATE));
     new_state.groups.nonmodal = 0;
 
+    //Step 1
+    //Parse the hole string.
+    //In this step the parser will check if:
+    //  1. There is a valid word character followed by a number (no white spaces in between)
+    //  2. If there is no modal groups or word repeating violations
+
     for(;;)
     {
-        switch(*str)
+        word = *str;
+        if(word == '\0')
         {
-            case '\0':
-            case '\r':
-            case '\n':
-                //end line exit parse
-                return;
-            case 'G':
-                str++;
-                if(!gcparser_parse_float(str, &word_val))
-                {
-                    report_error(GCODE_BAD_NUMBER_FORMAT);
-                    return ;
-                }
+            break;
+        }
 
+        str++;
+        if(!gcparser_parse_float(str, &word_val))
+        {
+            report_error(GCODE_BAD_NUMBER_FORMAT);
+            return ;
+        }
+
+        switch(word)
+        {
+            case 'G':
                 code = (uint8_t)(word_val);
                 switch(code)
                 {
@@ -103,6 +136,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_MOTION);
                         g_gcparser_state.groups.motion = code;
                         break;
@@ -113,6 +147,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_MOTION);
                         subcode = (uint8_t)round((word_val - code) * 100.0f);
                         if(subcode == 20)
@@ -139,6 +174,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_MOTION);
                         code -= 75;
                         g_gcparser_state.groups.motion = code;
@@ -151,6 +187,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_PLANE);
                         code -= 17;
                         g_gcparser_state.groups.plane = code;
@@ -162,6 +199,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_DISTANCE);
                         code -= 90;
                         g_gcparser_state.groups.distance_mode = code;
@@ -173,6 +211,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_FEEDRATE);
                         code -= 93;
                         g_gcparser_state.groups.feedrate_mode = code;
@@ -184,6 +223,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_UNITS);  
                         code -= 20;
                         g_gcparser_state.groups.units = code;
@@ -196,6 +236,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_CUTTERRAD);
                         code -= 40;
                         g_gcparser_state.groups.cutter_radius_compensation = code;
@@ -206,6 +247,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
                         g_gcparser_state.groups.tool_length_offset = 0;
                         break;
@@ -215,6 +257,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
                         g_gcparser_state.groups.tool_length_offset = 1;
                         break;
@@ -225,6 +268,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group0,GCODE_GROUP_RETURNMODE);
                         code -= 98;
                         g_gcparser_state.groups.return_mode = code;
@@ -240,6 +284,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_COORDSYS);
                         //59.X unsupported
                         if(code == 59)
@@ -266,6 +311,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_PATH);
                         g_gcparser_state.groups.path_mode = 0;
                         break;
@@ -275,6 +321,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_PATH);
                         g_gcparser_state.groups.path_mode = 1;
                         break;
@@ -301,6 +348,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_NONMODAL);
                         g_gcparser_state.groups.nonmodal = code;
                         break;
@@ -312,12 +360,6 @@ void gcparser_parse_line(char* str)
                 break;
 
             case 'M':
-                if(!gcparser_parse_float(str, &word_val))
-                {
-                    report_error(GCODE_BAD_NUMBER_FORMAT);
-                    return ;
-                }
-
                 code = (uint8_t)(word_val);
                 switch(code)
                 {
@@ -331,6 +373,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_STOPPING);
                         if(code >= 10)
                         {
@@ -346,6 +389,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_SPINDLE);
                         code -= 3;
                         g_gcparser_state.groups.spindle_turning = code;
@@ -366,6 +410,7 @@ void gcparser_parse_line(char* str)
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
+
                         SETBIT(group1,GCODE_GROUP_ENABLEOVER);
                         code -= 48;
                         g_gcparser_state.groups.feed_speed_override = code;
@@ -380,13 +425,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_X);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_X);
             g_gcparser_state.words.xyzabc[0] = word_val;
             break;
         case 'Y':
@@ -395,13 +435,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_Y);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_Y);
             g_gcparser_state.words.xyzabc[1] = word_val;
             break;
         case 'Z':
@@ -410,13 +445,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_Z);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_Z);
             g_gcparser_state.words.xyzabc[2] = word_val;
             break;
         case 'A':
@@ -425,13 +455,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_A);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_A);
             g_gcparser_state.words.xyzabc[3] = word_val;
             break;
         case 'B':
@@ -440,13 +465,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_B);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_B);
             g_gcparser_state.words.xyzabc[4] = word_val;
             break;
         case 'C':
@@ -455,13 +475,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_C);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_C);
             g_gcparser_state.words.xyzabc[5] = word_val;
             break;
         case 'D':
@@ -470,13 +485,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_D);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_D);
             g_gcparser_state.words.d = word_val;
             break;
         case 'F':
@@ -485,13 +495,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word0, GCODE_WORD_F);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word0, GCODE_WORD_F);
             g_gcparser_state.words.f = word_val;
             break;
         case 'H':
@@ -500,13 +505,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_H);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_H);
             g_gcparser_state.words.h = word_val;
             break;
         case 'I':
@@ -515,13 +515,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_I);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_I);
             g_gcparser_state.words.ijk[0] = word_val;
             break;
         case 'J':
@@ -530,13 +525,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_J);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_J);
             g_gcparser_state.words.ijk[1] = word_val;
             break;
         case 'K':
@@ -545,13 +535,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_K);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_K);
             g_gcparser_state.words.ijk[2] = word_val;
             break;
         case 'L':
@@ -560,13 +545,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_L);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_L);
             g_gcparser_state.words.l= word_val;
             break;
         case 'P':
@@ -575,13 +555,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_P);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_P);
             g_gcparser_state.words.p = word_val;
             break;
         case 'Q':
@@ -590,13 +565,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_Q);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_Q);
             g_gcparser_state.words.q = word_val;
             break;
         case 'R':
@@ -605,13 +575,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word1, GCODE_WORD_R);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word1, GCODE_WORD_R);
             g_gcparser_state.words.r = word_val;
             break;
         case 'S':
@@ -620,13 +585,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word2, GCODE_WORD_S);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word2, GCODE_WORD_S);
             g_gcparser_state.words.s = word_val;
             break;
         case 'T':
@@ -635,13 +595,8 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
-            SETBIT(word2, GCODE_WORD_T);
-            if(!gcparser_parse_float(str, &word_val))
-            {
-                report_error(GCODE_BAD_NUMBER_FORMAT);
-                return ;
-            }
 
+            SETBIT(word2, GCODE_WORD_T);
             g_gcparser_state.words.t = word_val;
             break;
         default:
@@ -649,5 +604,17 @@ void gcparser_parse_line(char* str)
 
         }
 
+        //Step 2
+        //In this step the parser will check for invalid values according to the RS274NGC v3
+        //  1. At least a G or M command must exist in a line
+        //  2. Words F, H, N, P, Q, R, S and T must be positive
+        //  3. Word N must be an integer
+        //  4. Motion codes must have at least one axis declared
+
+        if(group0==0 || group1 == 0)
+        {
+            report_error(GCODE_WORD_REPEATED);
+            return;
+        }
     }
 }
