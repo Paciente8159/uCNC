@@ -1,5 +1,5 @@
-#ifndef GCPARSER_H
-#define GCPARSER_H
+#ifndef GCODE_H
+#define GCODE_H
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -40,6 +40,9 @@
 #define GCODE_WORD_R    128
 #define GCODE_WORD_S    1
 #define GCODE_WORD_T    2
+#define GCODE_WORD_N    4
+
+#define GCODE_PARSER_BUFFER_SIZE 255
 
 typedef struct
 {
@@ -83,9 +86,12 @@ typedef struct
 
 typedef struct
 {
+    uint32_t linenum;
     GCODE_GROUPS groups;
     GCODE_WORDS words;
 } GCODE_PARSER_STATE;
 
+void gcode_init();
+void gcode_parse_nextline();
 
 #endif

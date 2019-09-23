@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <pthread.h> 
 
 #include "pins.h"
 #include "structures.h"
@@ -89,7 +90,16 @@
 } IO_REGISTER;*/
 
 //UART communication
-uint8_t g_board_perfCounterOffset = 0;
+uint8_t g_board_combuffer[COM_BUFFER_SIZE];
+uint8_t g_board_bufferhead;
+uint8_t g_board_buffertail;
+
+#ifdef DEBUGMODE
+#define MAX(A,B) if(B>A) A=B
+volatile uint8_t g_board_perfCounterOffset = 0;
+volatile PERFORMANCE_METER board_performacecounters;
+#endif
+
 //IO Registers
 uint32_t g_board_dirRegister;
 volatile INPUT_REGISTER g_board_inputs;
@@ -99,11 +109,35 @@ uint32_t _previnputs = 0;
 
 volatile bool tick_enabled = false;
 volatile uint16_t pulse_interval = 0;
-ISRTIMER pulseCallback = NULL;
-ISRTIMER pulseResetCallback = NULL;
-ISRPINCHANGE pinChangeCallback = NULL;
+
+ISRTIMER g_board_pulseCallback = NULL;
+ISRTIMER g_board_pulseResetCallback = NULL;
+ISRPINCHANGE g_board_pinChangeCallback = NULL;
+ISRCOMRX g_board_charReceived = NULL;
 
 CMD_PACKET dummy_packet;
+pthread_t thread_id;
+
+
+void* inputsimul()
+{
+	for(;;)
+	{
+		char c = getch();
+		putchar(c);
+		g_board_combuffer[g_board_bufferhead] = c;
+		
+		if(++g_board_bufferhead == COM_BUFFER_SIZE)
+		{
+			g_board_bufferhead = 0;
+		}
+		
+		if(g_board_charReceived != NULL)
+		{
+			g_board_charReceived(c);
+		}
+	}
+}
 
 void ticksimul()
 {
@@ -124,29 +158,29 @@ void ticksimul()
 		
 		if(pulse_interval != 0)
 		{
-			if(pulseCallback!=NULL)
+			if(g_board_pulseCallback!=NULL)
 			{
 				if(tick_counter%pulse_interval==0)
 				{
-					pulseCallback();
+					g_board_pulseCallback();
 				}
 			}
 		    		
-		    if(pulseResetCallback!=NULL)
+		    if(g_board_pulseResetCallback!=NULL)
 		    {
 		    	if(tick_counter%(pulse_interval + MIN_PULSE_WIDTH_US)==0)
 				{
-					pulseResetCallback();
+					g_board_pulseResetCallback();
 				}
 			}
 		}
 				
-	    if(pinChangeCallback!=NULL)
+	    if(g_board_pinChangeCallback!=NULL)
 	    {
 	    	if(_previnputs != g_board_inputs.reg32in)
 	    	{
 	    		_previnputs = g_board_inputs.reg32in;
-	    		pinChangeCallback(&(g_board_inputs.reg32in));
+	    		g_board_pinChangeCallback(&(g_board_inputs.reg32in));
 			}	
 		}
 	}
@@ -169,6 +203,7 @@ void board_setup()
 	memset(&dummy_packet, 0, sizeof(CMD_PACKET));
 	
 	start_timer(1, &ticksimul);
+	pthread_create(&thread_id, NULL, &inputsimul, NULL); 
 }
 
 //IO functions    
@@ -186,12 +221,12 @@ uint8_t board_getCriticalInputs()
 //attaches a function handle to the input pin changed ISR
 void board_attachOnInputChange(ISRPINCHANGE handler)
 {
-	pinChangeCallback = handler;
+	g_board_pinChangeCallback = handler;
 }
 //detaches the input pin changed ISR
 void board_detachOnInputChange()
 {
-	pinChangeCallback = NULL;
+	g_board_pinChangeCallback = NULL;
 }
 
 //outputs
@@ -209,47 +244,38 @@ void board_setOutputs(uint16_t value)
 
 //Communication functions
 //sends a packet
-void board_comSendPacket(uint8_t *ptr, uint8_t length)
+void board_putc(char c)
 {
-	while(length--)
-		putchar(*ptr++);
+	putchar(c);
 }
-//receives a packet
-uint8_t board_comGetPacket(uint8_t *ptr, uint8_t length)
+
+char board_getc()
 {
-	char arr[250];
-	char* sptr;
-	
-	memset(arr,0,255);
-	gets(arr);
-	memcpy(ptr, &arr, length);
-	
-	/*switch(arr[0])
+	char c = 0;
+	if(g_board_buffertail!=g_board_bufferhead)
 	{
-		case 'i':
-			sptr = &arr[1];
-			g_board_inputs.inputs = (uint16_t)strtol(sptr, &sptr, 10);
-			return 0;
-		case 'c':
-			sptr = &arr[1];
-			g_board_inputs.critical_inputs = (uint8_t)strtol(sptr, &sptr, 10);
-			return 0;
-	}*/
+		c = g_board_combuffer[g_board_buffertail];
+		if(++g_board_buffertail==COM_BUFFER_SIZE)
+		{
+			g_board_buffertail = 0;
+		}
+	}
 	
-	return length;
+	return c;
 }
 
-int16_t board_comPeek()
+char board_peek()
 {
-	if(kbhit())
-    	return getchar();
-    	
-	return -1;
+	if(g_board_buffertail==g_board_bufferhead)
+		return '\0';
+	return g_board_combuffer[g_board_buffertail];
 }
 
-void board_comClear()
+void board_bufferClear()
 {
-	
+	memset(&g_board_combuffer, 0, sizeof(char)*COM_BUFFER_SIZE);
+	g_board_buffertail = 0;
+	g_board_bufferhead = 0;
 }
 
 //RealTime
@@ -277,18 +303,22 @@ void board_stopPulse()
 //attaches a function handle to the pulse ISR
 void board_attachOnPulse(ISRTIMER handler)
 {
-	pulseCallback = handler;
+	g_board_pulseCallback = handler;
 }
 void board_detachOnPulse()
 {
-	pulseCallback = NULL;
+	g_board_pulseCallback = NULL;
 }
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
 void board_attachOnPulseReset(ISRTIMER handler)
 {
-	pulseResetCallback = handler;
+	g_board_pulseResetCallback = handler;
 }
-void board_detachOnPulseReset();
+
+void board_detachOnPulseReset()
+{
+	g_board_pulseCallback = NULL;
+}
 
 uint8_t board_readProMemByte(uint8_t* src)
 {

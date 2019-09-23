@@ -1,34 +1,42 @@
-#include "gcparser.h"
+#include "gcode.h"
 #include "report.h"
 #include "error.h"
 #include "utils.h"
+#include "board.h"
 #include <math.h>
+#include <string.h>
 
 #define MUL10(X) (((X<<2) + X)<<1)
 
 static GCODE_PARSER_STATE g_gcparser_state;
 
-bool gcparser_parse_float(char *str, float *value)
+/*
+	Parses a string to number (real)
+	If the number is an integer the isinteger flag is set
+	The string pointer is also advanced to the next position
+*/
+
+bool gcode_parse_float(char **str, float *value, bool *isinteger)
 {
-    bool isnegative = true;
-    bool isfloat = true;
+    bool isnegative = false;
+    bool isfloat = false;
     uint32_t intval = 0;
     uint8_t fpcount = 0;
     bool result = false;
 
-    if (*str == '-')
+    if (**str == '-')
     {
         isnegative = true;
-        str++;
+        (*str)++;
     }
-    else if (*str == '+')
+    else if (**str == '+')
     {
-        str++;
+        (*str)++;
     }
 
     for(;;)
     {
-        uint8_t digit = (uint8_t)(*str - '0');
+        uint8_t digit = (uint8_t)(**str - '0');
         if (digit <= 9)
         {
             intval = MUL10(intval) + digit;
@@ -39,7 +47,7 @@ bool gcparser_parse_float(char *str, float *value)
 
             result = true;
         }
-        else if (*str == '.' && !isfloat)
+        else if (**str == '.' && !isfloat)
         {
             isfloat = true;
         }
@@ -48,12 +56,12 @@ bool gcparser_parse_float(char *str, float *value)
             break;
         }
 
-        str++;
+        (*str)++;
         result = true;
     }
-
+    
     *value = intval;
-
+ 
     do
     {
         if(fpcount>=3)
@@ -77,17 +85,122 @@ bool gcparser_parse_float(char *str, float *value)
     } while (fpcount !=0 );
     
 
+    *isinteger = !isfloat;
+    
+    if(isnegative)
+    {
+    	*value = -*value;
+	}
+	
     return result;
 
 }
 
-void gcparser_parse_line(char* str)
+/*
+	parses comments as defined in the RS274NGC
+	Suports nested comments
+	If comment is not closed returns an error
+*/
+
+void gcode_parse_comment()
 {
-    GCODE_PARSER_STATE new_state;
+	uint8_t comment_nest = 1;
+	for(;;)
+	{
+		while(board_peek()=='\0');
+		
+		char c = board_peek();
+		switch(c)
+		{
+			case '(':
+				comment_nest++;
+				break;
+			case ')':
+				comment_nest--;
+				if(comment_nest == 0)
+				{
+					board_getc();
+					return;
+				}
+				break;
+			case '\n':
+			case '\r':
+				report_error(GCODE_INVALID_COMMENT);
+                return;
+		}
+		
+		board_getc();
+	}	
+}
+
+/*
+	STEP 1
+	Fetches the next line from the board communication buffer and preprocesses the string
+	In the preprocess these steps are executed
+		1. Whitespaces are removed
+		2. Comments are parsed (nothing is done besides parsing for now)
+		3. All letters are changed to upper-case	
+*/
+
+void gcode_fetch_frombuffer(char *str)
+{
+	uint8_t count = 0;
+	if(board_peek() != 0)
+	{
+		for(;;)
+		{
+			while(board_peek()==0);
+			
+			char c = board_getc();	
+			switch(c)
+			{
+				case ' ':
+				case '\t':
+					//ignore whitechars
+					break;
+				case '(':
+					gcode_parse_comment();
+					puts("comment");
+					break;
+				case '\n':
+				case '\r':
+					*str = '\0';
+					return;
+				default:
+					if(c>='a' && c<='z')
+					{
+						c -= 32;
+					}
+					*str = c;
+					str++;
+					break;
+			}
+		}
+	}
+}
+
+/*
+	STEP 2
+	Parse the hole string and updates the values of the parser new state
+    In this step the parser will check if:
+    	1. There is a valid word character followed by a number
+    	2. If there is no modal groups or word repeating violations
+    	3. For words N, M, T and L check if the value is an integer
+    	4. If N is in the beginning of the line
+    	
+    After that the parser has to perform the following checks:
+    	1. At least a G or M command must exist in a line
+    	2. Words F, H, N, P, Q, R, S and T must be positive
+    	3. Motion codes must have at least one axis declared
+*/
+
+void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
+{
     float word_val = 0.0;
     char word = '\0';
     uint8_t code = 0;
     uint8_t subcode = 0;
+    uint8_t wordcount = 0;
 
     //flags optimized for 8 bits CPU
     uint8_t group0 = 0;
@@ -96,15 +209,6 @@ void gcparser_parse_line(char* str)
     uint8_t word1 = 0;
     uint8_t word2 = 0;
     
-    memcpy(&new_state, &g_gcparser_state, sizeof(GCODE_PARSER_STATE));
-    new_state.groups.nonmodal = 0;
-
-    //Step 1
-    //Parse the hole string.
-    //In this step the parser will check if:
-    //  1. There is a valid word character followed by a number (no white spaces in between)
-    //  2. If there is no modal groups or word repeating violations
-
     for(;;)
     {
         word = *str;
@@ -114,7 +218,8 @@ void gcparser_parse_line(char* str)
         }
 
         str++;
-        if(!gcparser_parse_float(str, &word_val))
+        bool isinteger = false;
+        if(!gcode_parse_float(&str, &word_val, &isinteger))
         {
             report_error(GCODE_BAD_NUMBER_FORMAT);
             return ;
@@ -138,7 +243,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group0,GCODE_GROUP_MOTION);
-                        g_gcparser_state.groups.motion = code;
+                        new_state->groups.motion = code;
                         break;
                     //unsuported
                     case 38://check if 38.2
@@ -177,7 +282,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_MOTION);
                         code -= 75;
-                        g_gcparser_state.groups.motion = code;
+                        new_state->groups.motion = code;
                         break;
                     case 17:
                     case 18:
@@ -190,7 +295,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_PLANE);
                         code -= 17;
-                        g_gcparser_state.groups.plane = code;
+                        new_state->groups.plane = code;
                         break;
                     case 90:
                     case 91:
@@ -202,7 +307,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_DISTANCE);
                         code -= 90;
-                        g_gcparser_state.groups.distance_mode = code;
+                        new_state->groups.distance_mode = code;
                         break;
                     case 93:
                     case 94:
@@ -214,7 +319,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_FEEDRATE);
                         code -= 93;
-                        g_gcparser_state.groups.feedrate_mode = code;
+                        new_state->groups.feedrate_mode = code;
                         break;
                     case 20:
                     case 21:
@@ -226,7 +331,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_UNITS);  
                         code -= 20;
-                        g_gcparser_state.groups.units = code;
+                        new_state->groups.units = code;
                         break;
                     case 40:
                     case 41:
@@ -239,7 +344,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_CUTTERRAD);
                         code -= 40;
-                        g_gcparser_state.groups.cutter_radius_compensation = code;
+                        new_state->groups.cutter_radius_compensation = code;
                         break;
                     case 43:
                         if(CHECKBIT(group0,GCODE_GROUP_TOOLLENGTH))
@@ -249,7 +354,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
-                        g_gcparser_state.groups.tool_length_offset = 0;
+                        new_state->groups.tool_length_offset = 0;
                         break;
                     case 49:
                         if(CHECKBIT(group0,GCODE_GROUP_TOOLLENGTH))
@@ -259,7 +364,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
-                        g_gcparser_state.groups.tool_length_offset = 1;
+                        new_state->groups.tool_length_offset = 1;
                         break;
                     case 98:
                     case 99:
@@ -271,7 +376,7 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group0,GCODE_GROUP_RETURNMODE);
                         code -= 98;
-                        g_gcparser_state.groups.return_mode = code;
+                        new_state->groups.return_mode = code;
                         break;
                     case 54:
                     case 55:
@@ -303,7 +408,7 @@ void gcparser_parse_line(char* str)
                             }
                         }
                         code -= 54;
-                        g_gcparser_state.groups.coord_system = code;
+                        new_state->groups.coord_system = code;
                         break;
                     case 61:
                         if(CHECKBIT(group1,GCODE_GROUP_PATH))
@@ -313,7 +418,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group1,GCODE_GROUP_PATH);
-                        g_gcparser_state.groups.path_mode = 0;
+                        new_state->groups.path_mode = 0;
                         break;
                     case 64:
                         if(CHECKBIT(group1,GCODE_GROUP_PATH))
@@ -323,7 +428,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group1,GCODE_GROUP_PATH);
-                        g_gcparser_state.groups.path_mode = 1;
+                        new_state->groups.path_mode = 1;
                         break;
                     case 4:
                     case 10:
@@ -350,7 +455,7 @@ void gcparser_parse_line(char* str)
                         }
 
                         SETBIT(group1,GCODE_GROUP_NONMODAL);
-                        g_gcparser_state.groups.nonmodal = code;
+                        new_state->groups.nonmodal = code;
                         break;
                     
                     default:
@@ -360,6 +465,12 @@ void gcparser_parse_line(char* str)
                 break;
 
             case 'M':
+            	if(!isinteger)
+	            {
+	                report_error(GCODE_UNKNOWN_MCOMMAND);
+	                return;
+	            }
+	            
                 code = (uint8_t)(word_val);
                 switch(code)
                 {
@@ -379,7 +490,7 @@ void gcparser_parse_line(char* str)
                         {
                             code /= 10;
                         }
-                        g_gcparser_state.groups.stopping = code;
+                        new_state->groups.stopping = code;
                         break;
                     case 3:
                     case 4:
@@ -392,16 +503,16 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group1,GCODE_GROUP_SPINDLE);
                         code -= 3;
-                        g_gcparser_state.groups.spindle_turning = code;
+                        new_state->groups.spindle_turning = code;
                         break;
                     case 7:
-                        g_gcparser_state.groups.coolant |= 1;
+                        new_state->groups.coolant |= 1;
                         break;
                     case 8:
-                        g_gcparser_state.groups.coolant |= 2;
+                        new_state->groups.coolant |= 2;
                         break;
                     case 9:
-                        g_gcparser_state.groups.coolant = 0;
+                        new_state->groups.coolant = 0;
                         break;
                     case 48:
                     case 49:
@@ -413,12 +524,27 @@ void gcparser_parse_line(char* str)
 
                         SETBIT(group1,GCODE_GROUP_ENABLEOVER);
                         code -= 48;
-                        g_gcparser_state.groups.feed_speed_override = code;
+                        new_state->groups.feed_speed_override = code;
                         break;
                     default:
-                        break;
+                    	report_error(GCODE_UNKNOWN_MCOMMAND);
+	                	return;
                 }
             break;
+        case 'N':
+            if(CHECKBIT(word2, GCODE_WORD_N))
+            {
+                report_error(GCODE_WORD_REPEATED);
+                return;
+            }
+
+            if(!isinteger || wordcount!=0)
+            {
+                report_error(GCODE_INVALID_LINE_NUMBER);
+                return;
+            }
+
+            new_state->linenum = trunc(word_val);
         case 'X':
             if(CHECKBIT(word0, GCODE_WORD_X))
             {
@@ -427,7 +553,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_X);
-            g_gcparser_state.words.xyzabc[0] = word_val;
+            new_state->words.xyzabc[0] = word_val;
             break;
         case 'Y':
             if(CHECKBIT(word0, GCODE_WORD_Y))
@@ -437,7 +563,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_Y);
-            g_gcparser_state.words.xyzabc[1] = word_val;
+            new_state->words.xyzabc[1] = word_val;
             break;
         case 'Z':
             if(CHECKBIT(word0, GCODE_WORD_Z))
@@ -447,7 +573,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_Z);
-            g_gcparser_state.words.xyzabc[2] = word_val;
+            new_state->words.xyzabc[2] = word_val;
             break;
         case 'A':
             if(CHECKBIT(word0, GCODE_WORD_A))
@@ -457,7 +583,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_A);
-            g_gcparser_state.words.xyzabc[3] = word_val;
+            new_state->words.xyzabc[3] = word_val;
             break;
         case 'B':
             if(CHECKBIT(word0, GCODE_WORD_B))
@@ -467,7 +593,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_B);
-            g_gcparser_state.words.xyzabc[4] = word_val;
+            new_state->words.xyzabc[4] = word_val;
             break;
         case 'C':
             if(CHECKBIT(word0, GCODE_WORD_C))
@@ -477,7 +603,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_C);
-            g_gcparser_state.words.xyzabc[5] = word_val;
+            new_state->words.xyzabc[5] = word_val;
             break;
         case 'D':
             if(CHECKBIT(word0, GCODE_WORD_D))
@@ -487,7 +613,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_D);
-            g_gcparser_state.words.d = word_val;
+            new_state->words.d = word_val;
             break;
         case 'F':
             if(CHECKBIT(word0, GCODE_WORD_F))
@@ -497,7 +623,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word0, GCODE_WORD_F);
-            g_gcparser_state.words.f = word_val;
+            new_state->words.f = word_val;
             break;
         case 'H':
             if(CHECKBIT(word1, GCODE_WORD_H))
@@ -507,7 +633,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_H);
-            g_gcparser_state.words.h = word_val;
+            new_state->words.h = word_val;
             break;
         case 'I':
             if(CHECKBIT(word1, GCODE_WORD_I))
@@ -517,7 +643,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_I);
-            g_gcparser_state.words.ijk[0] = word_val;
+            new_state->words.ijk[0] = word_val;
             break;
         case 'J':
             if(CHECKBIT(word1, GCODE_WORD_J))
@@ -527,7 +653,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_J);
-            g_gcparser_state.words.ijk[1] = word_val;
+            new_state->words.ijk[1] = word_val;
             break;
         case 'K':
             if(CHECKBIT(word1, GCODE_WORD_K))
@@ -537,7 +663,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_K);
-            g_gcparser_state.words.ijk[2] = word_val;
+            new_state->words.ijk[2] = word_val;
             break;
         case 'L':
             if(CHECKBIT(word1, GCODE_WORD_L))
@@ -545,9 +671,15 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
+            
+            if(!isinteger)
+            {
+                report_error(GCODE_VALUE_NOT_INTEGER);
+                return;
+            }
 
             SETBIT(word1, GCODE_WORD_L);
-            g_gcparser_state.words.l= word_val;
+            new_state->words.l= word_val;
             break;
         case 'P':
             if(CHECKBIT(word1, GCODE_WORD_P))
@@ -557,7 +689,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_P);
-            g_gcparser_state.words.p = word_val;
+            new_state->words.p = word_val;
             break;
         case 'Q':
             if(CHECKBIT(word1, GCODE_WORD_Q))
@@ -567,7 +699,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_Q);
-            g_gcparser_state.words.q = word_val;
+            new_state->words.q = word_val;
             break;
         case 'R':
             if(CHECKBIT(word1, GCODE_WORD_R))
@@ -577,7 +709,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word1, GCODE_WORD_R);
-            g_gcparser_state.words.r = word_val;
+            new_state->words.r = word_val;
             break;
         case 'S':
             if(CHECKBIT(word2, GCODE_WORD_S))
@@ -587,7 +719,7 @@ void gcparser_parse_line(char* str)
             }
 
             SETBIT(word2, GCODE_WORD_S);
-            g_gcparser_state.words.s = word_val;
+            new_state->words.s = word_val;
             break;
         case 'T':
             if(CHECKBIT(word2, GCODE_WORD_T))
@@ -595,26 +727,74 @@ void gcparser_parse_line(char* str)
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
+            
+            if(!isinteger)
+            {
+                report_error(GCODE_VALUE_NOT_INTEGER);
+                return;
+            }
 
             SETBIT(word2, GCODE_WORD_T);
-            g_gcparser_state.words.t = word_val;
+            new_state->words.t = word_val;
             break;
         default:
             break;
 
         }
-
-        //Step 2
-        //In this step the parser will check for invalid values according to the RS274NGC v3
-        //  1. At least a G or M command must exist in a line
-        //  2. Words F, H, N, P, Q, R, S and T must be positive
-        //  3. Word N must be an integer
-        //  4. Motion codes must have at least one axis declared
-
-        if(group0==0 || group1 == 0)
-        {
-            report_error(GCODE_WORD_REPEATED);
-            return;
-        }
+        wordcount++;
     }
+    
+    //The string is parsed
+    //Starts to validate the string parameters
+    //1. At least a G or M command must exist in a line
+	if(group0==0 && group1 == 0)
+    {
+        report_error(GCODE_MISSING_COMMAND);
+        return;
+    }
+    
+    if(new_state->linenum<0)
+    {
+    	report_error(GCODE_INVALID_LINE_NUMBER);
+        return;
+	}
+    
+    
+}
+
+/*
+	STEP 3
+	In this step the parser will check for invalid values according to the RS274NGC v3
+    	1. At least a G or M command must exist in a line
+    	2. Words F, H, N, P, Q, R, S and T must be positive
+    	3. Word N must be an integer
+    	4. Motion codes must have at least one axis declared
+*/
+
+void gcode_verify_newstate(GCODE_PARSER_STATE * new_state)
+{
+	//Step 2
+    //In this step the parser will check for invalid values according to the RS274NGC v3
+    //  1. At least a G or M command must exist in a line
+    //  2. Words F, H, N, P, Q, R, S and T must be positive
+    //  3. Word N must be an integer
+    //  4. Motion codes must have at least one axis declared
+
+    
+}
+
+void gcode_parse_nextline()
+{
+	char gcode_line[GCODE_PARSER_BUFFER_SIZE];
+	GCODE_PARSER_STATE next_state = {};
+
+	//next state will be the same as previous except for nonmodal group (is set with 0)
+	memcpy(&next_state, &g_gcparser_state, sizeof(GCODE_PARSER_STATE));
+    next_state.groups.nonmodal = 0;
+	
+	gcode_fetch_frombuffer(&gcode_line[0]);
+	puts("read: ");
+	puts(gcode_line);
+	gcode_parse_line(&gcode_line[0], &next_state);
+	gcode_verify_newstate(&next_state);
 }

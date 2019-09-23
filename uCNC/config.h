@@ -4,8 +4,8 @@
 #include "boards.h"
 
 // choose board
-//#define BOARD BOARD_VIRTUAL
-#define BOARD BOARD_UNO
+#define BOARD BOARD_VIRTUAL
+//#define BOARD BOARD_UNO
 //#define DEBUGMODE
 //setup IO masks
 #define STEPDIR_INVERT_MASK 0x0000

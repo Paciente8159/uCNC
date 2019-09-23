@@ -27,10 +27,11 @@
 #define BOARD_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef void (*ISRTIMER)();
 typedef void (*ISRPINCHANGE)(volatile uint32_t*);
-typedef void (*ISRCOMRX)(volatile char*);
+typedef void (*ISRCOMRX)(volatile char);
 
 void board_setup();
 
@@ -52,12 +53,12 @@ void board_setStepDirs(uint16_t value);
 void board_setOutputs(uint16_t value);
 
 //Communication functions
-//sends a packet
-void board_comSendPacket(uint8_t *ptr, uint8_t length);
-//receives a packet
-uint8_t board_comGetPacket(uint8_t *ptr, uint8_t length);
-int16_t board_comPeek();
-void board_comClear();
+void board_putc(char c);
+char board_getc();
+char board_peek();
+void board_bufferClear();
+void board_attachOnReadChar(ISRCOMRX handler);
+void board_detachOnReadChar();
 
 //RealTime
 //enables all interrupts on the board. Must be called to enable all IRS functions

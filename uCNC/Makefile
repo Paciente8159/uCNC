@@ -10,8 +10,8 @@ WINDRES  =
 OBJ      = main.o board_uno.o structures.o cnc.o motion.o protocol.o
 LINKOBJ  = main.o board_uno.o structures.o cnc.o motion.o protocol.o
 LIBS     = -w $(OPTFLAG) -g -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=$(CPU)
-INCS     = -I"K:/Dev-Cpp/WinAVR/avr/include"
-CXXINCS  = -I"K:/Dev-Cpp/WinAVR/avr/include"
+INCS     = -I"c:/WinAVR/avr/include"
+CXXINCS  = -I"c:/WinAVR/avr/include"
 BIN      = ucnc.elf
 CXXFLAGS = $(CXXINCS) -c -g $(OPTFLAG) -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(CPU) -DF_CPU=$(FREQ)
 CFLAGS   = $(INCS) -c -g $(OPTFLAG) -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(CPU) -DF_CPU=$(FREQ)

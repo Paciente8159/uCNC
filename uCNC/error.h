@@ -3,13 +3,18 @@
 
 #define OK 0
 
-#define GCODE_BAD_NUMBER_FORMAT 1
-#define GCODE_UNKNOWN_GCOMMAND 2
-#define GCODE_UNSUPORTED_COMMAND 3
-#define GCODE_MODAL_GROUP_VIOLATION 4
-#define GCODE_INVALID_WORD 5
-#define GCODE_WORD_REPEATED 6
-#define GCODE_WORD_VALUE_ERROR 7
-#define GCODE_NOCOMMAND_IN_LINE 8
+#define GCODE_BAD_NUMBER_FORMAT 1 		//an invalid number was found
+#define GCODE_UNKNOWN_GCOMMAND 2		//an unknowned G command was found
+#define GCODE_UNKNOWN_MCOMMAND 3		//an unknowned G command was found
+#define GCODE_UNSUPORTED_COMMAND 4		//a valid (but unsuported command was found)
+#define GCODE_MODAL_GROUP_VIOLATION 5	//two commands of the same modal group in the same line
+#define GCODE_INVALID_WORD 6			//an invalid word char was in the command line
+#define GCODE_WORD_REPEATED 7			//a word letter was repeated in the same line
+#define GCODE_WORD_VALUE_ERROR 8		//the value is not valid for a given word
+#define GCODE_MISSING_COMMAND 9			//no G or M command in the line
+#define GCODE_INVALID_LINE_NUMBER 10	//the line number is invalid
+#define GCODE_INVALID_COMMENT 11		//the comment is invalid (not closed)
+#define GCODE_VALUE_NOT_INTEGER 12		//an integer value was expected but the value was float
+
 
 #endif

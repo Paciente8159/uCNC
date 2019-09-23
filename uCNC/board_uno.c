@@ -173,7 +173,7 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
 #endif
 
 #if(IN10 >= 0)
-	ISR(USART_RXC_vect)
+	ISR(USART_RX_vect)
 	{
 		g_board_combuffer[g_board_buffertail] = UDR0;
 		if(++g_board_buffertail==COM_BUFFER_SIZE)

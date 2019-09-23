@@ -1,3 +1,7 @@
+#devcpp
+*.devcpp
+*.layout
+
 # Prerequisites
 *.d
 
