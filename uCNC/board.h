@@ -77,7 +77,7 @@ void board_detachOnPulse();
 void board_attachOnPulseReset(ISRTIMER handler);
 void board_detachOnPulseReset();
 
-uint8_t board_readProMemByte(uint8_t* src);
+uint8_t board_readProgMemByte(uint8_t* src);
 
 //measure performance
 #ifdef DEBUGMODE

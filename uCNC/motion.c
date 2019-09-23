@@ -13,16 +13,16 @@ uint8_t g_motion_buffer_tail;
 
 uint16_t g_motion_exitspeed;
 
-//formula de acelera��o
+//formula de aceleracao
 //a cada step a velocidade vai ser
 //sqrt(2*accel+vel_inicial*vel_inicial)
 //o tempo de pulso vai ser (vel-vel_inicial)/accel
 
-//m�todo direto
-//em acelera��o constante o tempo de acele 0 t_acel = (vel_final-vel_ini)/accel
-//o n�mero de passos para atingir a aceler � accel_steps = 0.5*accel*t_accel^2
+//metodo direto
+//em aceleracao constante o tempo de acele 0 t_acel = (vel_final-vel_ini)/accel
+//o numero de passos para atingir a aceler e accel_steps = 0.5*accel*t_accel^2
 
-//cada pulso � dado em sqrt(2*step_count/accel), sendo que o step_count � increm at� accel_steps
+//cada pulso e dado em sqrt(2*step_count/accel), sendo que o step_count e increm ate accel_steps
 
 void motion_rt_linear(uint16_t *steps, uint16_t *totalsteps, uint16_t initial_speed, int16_t accel)
 {

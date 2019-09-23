@@ -11,6 +11,7 @@ int main()
 	int count = 0;
 	
 	board_setup();
+	gcode_init();
 		
 	for(;;)
 	{

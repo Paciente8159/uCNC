@@ -1,4 +1,5 @@
 #include "gcode.h"
+#include "config.h"
 #include "report.h"
 #include "error.h"
 #include "utils.h"
@@ -190,7 +191,7 @@ void gcode_fetch_frombuffer(char *str)
     	
     After that the parser has to perform the following checks:
     	1. At least a G or M command must exist in a line
-    	2. Words F, H, N, P, Q, R, S and T must be positive
+    	2. Words F, N, R and S must be positive (H, P, Q and T not implemented)
     	3. Motion codes must have at least one axis declared
 */
 
@@ -201,6 +202,8 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
     uint8_t code = 0;
     uint8_t subcode = 0;
     uint8_t wordcount = 0;
+    uint8_t mwords = 0;
+    uint8_t axis_mask = 0x3F;
 
     //flags optimized for 8 bits CPU
     uint8_t group0 = 0;
@@ -471,6 +474,8 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
 	                return;
 	            }
 	            
+	            //counts number of M commands
+	            mwords++;
                 code = (uint8_t)(word_val);
                 switch(code)
                 {
@@ -746,42 +751,92 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
     
     //The string is parsed
     //Starts to validate the string parameters
-    //1. At least a G or M command must exist in a line
+    
+    //At least a G or M command must exist in a line
 	if(group0==0 && group1 == 0)
     {
         report_error(GCODE_MISSING_COMMAND);
         return;
     }
     
+    //Line number must be positive
     if(new_state->linenum<0)
     {
     	report_error(GCODE_INVALID_LINE_NUMBER);
         return;
 	}
-    
-    
+	
+	//Words F, R and S must be positive
+	//Words H, P, Q, and T are not implemented
+	if(new_state->words.f<0.0f || new_state->words.r<0.0f|| new_state->words.s<0.0f)
+    {
+    	report_error(GCODE_VALUE_IS_NEGATIVE);
+        return;
+	}
+	
+	//check if axis are definined in motion commands
+	if(new_state->groups.motion == 2 || new_state->groups.motion == 3)
+	{
+		switch(new_state->groups.plane)
+		{
+			case 0: //XY
+				axis_mask = 0x02;
+				break;
+			case 1: //XZ
+				axis_mask = 0x05;
+				break;
+			case 2: //YZ
+				axis_mask = 0x06;
+				break;
+			default:
+				axis_mask = 0x3F;
+				break;
+		}
+	}
+	
+	//G0, G1, G2 and G3
+	if(new_state->groups.motion <= 3)
+	{
+		if((word0 & axis_mask) == 0)
+		{
+			report_error(GCODE_UNDEFINED_AXIS);
+        	return;
+		}
+	}
+	
+	//future
+	//check if T is negative and smaller than max tool slots 
 }
 
 /*
 	STEP 3
-	In this step the parser will check for invalid values according to the RS274NGC v3
-    	1. At least a G or M command must exist in a line
-    	2. Words F, H, N, P, Q, R, S and T must be positive
-    	3. Word N must be an integer
-    	4. Motion codes must have at least one axis declared
+	In this step the parser do all remaining checks and send motion for the controller
 */
 
-void gcode_verify_newstate(GCODE_PARSER_STATE * new_state)
+void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 {
-	//Step 2
-    //In this step the parser will check for invalid values according to the RS274NGC v3
-    //  1. At least a G or M command must exist in a line
-    //  2. Words F, H, N, P, Q, R, S and T must be positive
-    //  3. Word N must be an integer
-    //  4. Motion codes must have at least one axis declared
-
-    
+	switch(new_state->groups.motion)
+	{
+		case 0:
+		case 1:
+			
+			break;
+	}
 }
+
+/*
+	Initializes the gcode parser 
+*/
+
+
+void gcode_init()
+{
+	memset(&g_gcparser_state, 0, sizeof(GCODE_PARSER_STATE));
+}
+
+/*
+	Parse the next gcode line available in the buffer and send it to the motion controller
+*/
 
 void gcode_parse_nextline()
 {
@@ -793,8 +848,10 @@ void gcode_parse_nextline()
     next_state.groups.nonmodal = 0;
 	
 	gcode_fetch_frombuffer(&gcode_line[0]);
-	puts("read: ");
-	puts(gcode_line);
+	#ifdef DEBUGMODE
+		board_putc("fetched: ");
+		board_putc(gcode_line);
+	#endif
 	gcode_parse_line(&gcode_line[0], &next_state);
-	gcode_verify_newstate(&next_state);
+	gcode_execute_line(&next_state);
 }

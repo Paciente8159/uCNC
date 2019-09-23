@@ -15,6 +15,7 @@
 #define GCODE_INVALID_LINE_NUMBER 10	//the line number is invalid
 #define GCODE_INVALID_COMMENT 11		//the comment is invalid (not closed)
 #define GCODE_VALUE_NOT_INTEGER 12		//an integer value was expected but the value was float
-
+#define GCODE_VALUE_IS_NEGATIVE 13		//a negative (invalid) word value was entered
+#define GCODE_UNDEFINED_AXIS 14			//a motion command without a valid axis was issued
 
 #endif
