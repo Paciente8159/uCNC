@@ -4,11 +4,11 @@
 CPP      = g++.exe -D__DEBUG__
 CC       = gcc.exe -D__DEBUG__
 WINDRES  = windres.exe
-OBJ      = main.o board_virtual.o util/timer.o gcode.o report.o motion.o
-LINKOBJ  = main.o board_virtual.o util/timer.o gcode.o report.o motion.o
-LIBS     = -L"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/lib" -L"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
-INCS     = -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/include" -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
-CXXINCS  = -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/include" -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/Users/jcmartins/Desktop/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
+OBJ      = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o
+LINKOBJ  = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o
+LIBS     = -L"D:/Program Files/Dev-Cpp/MinGW64/lib" -L"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
+INCS     = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
+CXXINCS  = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
 BIN      = uCNCVirtual.exe
 CXXFLAGS = $(CXXINCS) -std=gnu99 -g3
 CFLAGS   = $(INCS) -std=gnu99 -g3
@@ -41,3 +41,12 @@ report.o: report.c
 
 motion.o: motion.c
 	$(CC) -c motion.c -o motion.o $(CFLAGS)
+
+planner.o: planner.c
+	$(CC) -c planner.c -o planner.o $(CFLAGS)
+
+settings.o: settings.c
+	$(CC) -c settings.c -o settings.o $(CFLAGS)
+
+kinematics_cartesian_xyz.o: kinematics_cartesian_xyz.c
+	$(CC) -c kinematics_cartesian_xyz.c -o kinematics_cartesian_xyz.o $(CFLAGS)

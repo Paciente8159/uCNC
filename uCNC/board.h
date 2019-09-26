@@ -78,6 +78,8 @@ void board_attachOnPulseReset(ISRTIMER handler);
 void board_detachOnPulseReset();
 
 uint8_t board_readProgMemByte(uint8_t* src);
+uint8_t board_eeprom_getc(uint16_t address);
+uint8_t board_eeprom_putc(uint16_t address, uint8_t value);
 
 //measure performance
 #ifdef DEBUGMODE

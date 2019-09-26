@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "config.h"
+#include "machinedefs.h"
 
 #define GCODE_GROUP_MOTION      1
 #define GCODE_GROUP_PLANE       2

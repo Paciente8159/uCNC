@@ -2,11 +2,27 @@
 #define CONFIG_H
 
 #include "boards.h"
+#include "machines.h"
 
-// choose board
+/*
+	Choose the board type
+	Board virtual: simulates a board on a PC
+	Board uno: Arduino uno board 
+*/
 #define BOARD BOARD_VIRTUAL
 //#define BOARD BOARD_UNO
-#define DEBUGMODE
+
+/*
+	Machine kynematics
+	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
+*/
+#define MACHINE_KINEMATICS MACHINE_CARTESIAN_XYZ
+
+#define STEPPER_COUNT 3
+#define COORD_SYS_COUNT 6
+
+
+//#define DEBUGMODE
 //setup IO masks
 #define STEPDIR_INVERT_MASK 0x0000
 #define OUTPUT_INVERT_MASK 0x0000

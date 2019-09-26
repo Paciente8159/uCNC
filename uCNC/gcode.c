@@ -1,22 +1,28 @@
-#include "gcode.h"
 #include "config.h"
+
+#include "boarddefs.h"
+#include "machinedefs.h"
+#include "gcode.h"
 #include "report.h"
 #include "error.h"
 #include "utils.h"
-#include "board.h"
+#include "planner.h"
+#include "settings.h"
 #include <math.h>
 #include <string.h>
 
 #define MUL10(X) (((X<<2) + X)<<1)
 
-static GCODE_PARSER_STATE g_gcparser_state;
+GCODE_PARSER_STATE g_gcparser_state;
+float g_gcode_coord_sys[COORD_SYS_COUNT][AXIS_COUNT];
+float g_gcode_offset[AXIS_COUNT];
+float gcode_max_feed;
 
 /*
 	Parses a string to number (real)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
-
 bool gcode_parse_float(char **str, float *value, bool *isinteger)
 {
     bool isnegative = false;
@@ -98,11 +104,10 @@ bool gcode_parse_float(char **str, float *value, bool *isinteger)
 }
 
 /*
-	parses comments as defined in the RS274NGC
+	parses comments as defined in the RS274
 	Suports nested comments
 	If comment is not closed returns an error
 */
-
 void gcode_parse_comment()
 {
 	uint8_t comment_nest = 1;
@@ -142,7 +147,6 @@ void gcode_parse_comment()
 		2. Comments are parsed (nothing is done besides parsing for now)
 		3. All letters are changed to upper-case	
 */
-
 void gcode_fetch_frombuffer(char *str)
 {
 	uint8_t count = 0;
@@ -194,7 +198,6 @@ void gcode_fetch_frombuffer(char *str)
     	2. Words F, N, R and S must be positive (H, P, Q and T not implemented)
     	3. Motion codes must have at least one axis declared
 */
-
 void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
 {
     float word_val = 0.0;
@@ -444,11 +447,16 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                         //10 = 1
                         //28 = 2
                         //30 = 3
-                        //53 = 4
+                        //53 = 5
                         //92 = 9
+                        //92.1 = 10
+                        //92.2 = 11
+                        //92.3 = 12
+                        subcode = (uint8_t)round((word_val - code) * 10.0f);
                         if(code >= 10)
                         {
                             code /= 10;
+                            code += subcode;
                         }
 
                         if(CHECKBIT(group1,GCODE_GROUP_NONMODAL))
@@ -810,34 +818,228 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
 
 /*
 	STEP 3
-	In this step the parser do all remaining checks and send motion for the controller
+	In this step the interpreter does all remaining checks.
+	The command is then executed has defined by the RS274 instruction
+	All coordinates are converted to machine absolute coordinates before sent to the motion controller
 */
-
 void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 {
+	float axis[AXIS_COUNT];
+	float feed = 0;
+	float spindle = 0;
+	uint8_t coord_sys = COORD_SYS_COUNT;
+	
+	//resets axis
+	memset(&axis, 0, sizeof(float)*AXIS_COUNT);
+	
+	//has close has possible to the RS274 document (part 3.8)
+	
+	//set feed (given the feedmode selected)
+	
+	if(new_state->groups.feedrate_mode!=0)
+	{
+		feed = new_state->words.f;
+	}
+	else
+	{
+		feed = (1.0f / new_state->words.f);
+	}
+	//internally uCNC works in mm/s and not mm/min
+	feed /= 60.0;
+	
+	//set spindle speed
+	spindle = new_state->words.s;
+	
+	//select tool (not implemented)
+	//coolant mode already defined in new_state->groups
+	//overrides (not implemented)
+	//dwell (not implemented)
+	//set active plane (G17, G18, G19).
+	//set length units (G20, G21).
+	if(new_state->groups.units==0) //convert inches to mm
+	{
+		#ifdef AXIS_X
+			new_state->words.xyzabc[AXIS_X] *= 25.4f;
+		#endif
+		#ifdef AXIS_Y
+			new_state->words.xyzabc[AXIS_Y] *= 25.4f;
+		#endif
+		#ifdef AXIS_Z
+			new_state->words.xyzabc[AXIS_Z] *= 25.4f;
+		#endif
+		#ifdef AXIS_A
+			new_state->words.xyzabc[AXIS_A] *= 25.4f;
+		#endif
+		#ifdef AXIS_B
+			new_state->words.xyzabc[AXIS_B] *= 25.4f;
+		#endif
+		#ifdef AXIS_C
+			new_state->words.xyzabc[AXIS_C] *= 25.4f;
+		#endif
+	}
+	
+	//cutter radius compensation on or off (G40, G41, G42)
+	//cutter length compensation on or off (G43, G49)
+	//coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3).
+	if(new_state->groups.nonmodal != 5) //if no G53 (absolute coordinate system) was issued load coordinate system
+	{
+		#ifdef AXIS_X
+			axis[AXIS_X] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_X];
+		#endif
+		#ifdef AXIS_Y
+			axis[AXIS_Y] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_Y];
+		#endif
+		#ifdef AXIS_Z
+			axis[AXIS_Z] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_Z];
+		#endif
+		#ifdef AXIS_A
+			axis[AXIS_A] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_A];
+		#endif
+		#ifdef AXIS_B
+			axis[AXIS_B] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_B];
+		#endif
+		#ifdef AXIS_C
+			axis[AXIS_C] = g_gcode_coord_sys[new_state->groups.coord_system][AXIS_C];
+		#endif
+	}
+	//set path control mode (G61, G61.1, G64)
+	//set distance mode (G90, G91).
+		
+	if(new_state->groups.distance_mode == 1) //if relative initialize with current absolute position
+	{
+		#ifdef AXIS_X
+			axis[AXIS_X] += g_gcparser_state.words.xyzabc[AXIS_X];
+		#endif
+		#ifdef AXIS_Y
+			axis[AXIS_Y] += g_gcparser_state.words.xyzabc[AXIS_Y];
+		#endif
+		#ifdef AXIS_Z
+			axis[AXIS_Z] += g_gcparser_state.words.xyzabc[AXIS_Z];
+		#endif
+		#ifdef AXIS_A
+			axis[AXIS_A] += g_gcparser_state.words.xyzabc[AXIS_A];
+		#endif
+		#ifdef AXIS_B
+			axis[AXIS_B] += g_gcparser_state.words.xyzabc[AXIS_B];
+		#endif
+		#ifdef AXIS_C
+			axis[AXIS_C] += g_gcparser_state.words.xyzabc[AXIS_C];
+		#endif
+	}
+	//set retract mode (G98, G99).
+	//home (G28, G30) or
+	//change coordinate system data (G10) or
+	//set new coordinate system offset
+	#ifdef AXIS_X
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_X] = new_state->words.xyzabc[AXIS_X];
+	#endif
+	#ifdef AXIS_Y
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_Y] = new_state->words.xyzabc[AXIS_Y];
+	#endif
+	#ifdef AXIS_Z
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_Z] = new_state->words.xyzabc[AXIS_Z];
+	#endif
+	#ifdef AXIS_A
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_A] = new_state->words.xyzabc[AXIS_A];
+	#endif
+	#ifdef AXIS_B
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_B] = new_state->words.xyzabc[AXIS_B];
+	#endif
+	#ifdef AXIS_C
+		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_C] = new_state->words.xyzabc[AXIS_C];
+	#endif
+	
+	//set axis offsets (G92, G92.1, G92.2, G94).
+	//set new coordinate system offset
+	switch(new_state->groups.nonmodal)
+	{
+		case 9:
+			#ifdef AXIS_X
+				g_gcode_offset[AXIS_X] = new_state->words.xyzabc[AXIS_X];
+			#endif
+			#ifdef AXIS_Y
+				g_gcode_offset[AXIS_Y] = new_state->words.xyzabc[AXIS_Y];
+			#endif
+			#ifdef AXIS_Z
+				g_gcode_offset[AXIS_Z] = new_state->words.xyzabc[AXIS_Z];
+			#endif
+			#ifdef AXIS_A
+				g_gcode_offset[AXIS_A] = new_state->words.xyzabc[AXIS_A];
+			#endif
+			#ifdef AXIS_B
+				g_gcode_offset[AXIS_B] = new_state->words.xyzabc[AXIS_B];
+			#endif
+			#ifdef AXIS_C
+				g_gcode_offset[AXIS_C] = new_state->words.xyzabc[AXIS_C];
+			#endif
+			break;
+		case 10:
+			memset(&g_gcode_offset,0, sizeof(float)*AXIS_COUNT);
+			break;
+	}
+	
+	
+	//perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
+	#ifdef AXIS_X
+		axis[AXIS_X] += new_state->words.xyzabc[AXIS_X] + g_gcode_offset[AXIS_X];
+	#endif
+	#ifdef AXIS_Y
+		axis[AXIS_Y] += new_state->words.xyzabc[AXIS_Y] + g_gcode_offset[AXIS_Y];
+	#endif
+	#ifdef AXIS_Z
+		axis[AXIS_Z] += new_state->words.xyzabc[AXIS_Z] + g_gcode_offset[AXIS_Z];
+	#endif
+	#ifdef AXIS_A
+		axis[AXIS_A] += new_state->words.xyzabc[AXIS_A] + g_gcode_offset[AXIS_A];
+	#endif
+	#ifdef AXIS_B
+		axis[AXIS_B] += new_state->words.xyzabc[AXIS_A] + g_gcode_offset[AXIS_B];
+	#endif
+	#ifdef AXIS_C
+		axis[AXIS_C] += new_state->words.xyzabc[AXIS_C] + g_gcode_offset[AXIS_C];
+	#endif	
+	
 	switch(new_state->groups.motion)
 	{
 		case 0:
+			feed = gcode_max_feed;
+			planner_add_line(axis, feed);
+			break;
 		case 1:
-			
+			planner_add_line(axis, feed);
 			break;
 	}
+	
+	//stop (M0, M1, M2, M30, M60).
+	
+	//if everything went ok updates the interpreter state
+	memcpy(&g_gcparser_state, new_state, sizeof(GCODE_PARSER_STATE));
 }
-
 /*
 	Initializes the gcode parser 
 */
-
-
 void gcode_init()
 {
 	memset(&g_gcparser_state, 0, sizeof(GCODE_PARSER_STATE));
+	for(uint8_t i = 0; i < COORD_SYS_COUNT; i++)
+	{
+		for(uint8_t j = 0; j < AXIS_COUNT; j++)
+		{
+			g_gcode_coord_sys[i][j] = 0;
+		}
+	}
+	
+	g_gcparser_state.groups.units = 1; //default units mm
+	g_gcparser_state.groups.feedrate_mode = 1; //default units/m
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		gcode_max_feed = (gcode_max_feed <= g_settings.max_speed[i]) ? g_settings.max_speed[i] : gcode_max_feed;
+	}
 }
 
 /*
 	Parse the next gcode line available in the buffer and send it to the motion controller
 */
-
 void gcode_parse_nextline()
 {
 	char gcode_line[GCODE_PARSER_BUFFER_SIZE];

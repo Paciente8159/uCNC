@@ -48,9 +48,11 @@ const uint8_t PROGMEM crc7_table[256] = {
 
 uint8_t crc7 (uint8_t  crc, uint8_t *pc, int len)
 {
-    while (len--)
-		crc = board_readProMemByte((uint8_t*)&crc7_table[crc ^ *pc++]);
-
+    do
+    {
+    	crc = board_readProMemByte((uint8_t*)&crc7_table[crc ^ *pc++]);
+	} while (--len);
+	
     return crc;
 }
 
