@@ -1,7 +1,7 @@
 /*
 	Name: kinematics_cartesian_xyz.c
 	Copyright: 
-	Author: João Martins
+	Author: Joï¿½o Martins
 	Date: 24/09/19 11:27
 	Description: Implements the kinematics interface module for a XYZ cartesian machine
 */

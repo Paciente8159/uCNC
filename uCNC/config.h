@@ -9,7 +9,7 @@
 	Board virtual: simulates a board on a PC
 	Board uno: Arduino uno board 
 */
-#define BOARD BOARD_VIRTUAL
+//#define BOARD BOARD_VIRTUAL
 //#define BOARD BOARD_UNO
 
 /*
@@ -22,7 +22,7 @@
 #define COORD_SYS_COUNT 6
 
 
-//#define DEBUGMODE
+#define DEBUGMODE
 //setup IO masks
 #define STEPDIR_INVERT_MASK 0x0000
 #define OUTPUT_INVERT_MASK 0x0000

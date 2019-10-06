@@ -93,6 +93,7 @@
 uint8_t g_board_combuffer[COM_BUFFER_SIZE];
 uint8_t g_board_bufferhead;
 uint8_t g_board_buffertail;
+uint8_t g_board_buffercount;
 
 #ifdef DEBUGMODE
 #define MAX(A,B) if(B>A) A=B
@@ -124,8 +125,17 @@ void* inputsimul()
 	for(;;)
 	{
 		char c = getch();
+		if(c=='\r')
+		{
+			c='\n';
+		}
 		putchar(c);
 		g_board_combuffer[g_board_bufferhead] = c;
+		
+		if(c=='\n')
+		{
+			g_board_buffercount++;
+		}
 		
 		if(++g_board_bufferhead == COM_BUFFER_SIZE)
 		{
@@ -204,6 +214,7 @@ void board_setup()
 	
 	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &inputsimul, NULL); 
+	g_board_buffercount = 0;
 }
 
 //IO functions    
@@ -259,6 +270,11 @@ char board_getc()
 		{
 			g_board_buffertail = 0;
 		}
+		
+		if(c=='\n')
+		{
+			g_board_buffercount--;
+		}
 	}
 	
 	return c;
@@ -266,8 +282,8 @@ char board_getc()
 
 char board_peek()
 {
-	if(g_board_buffertail==g_board_bufferhead)
-		return '\0';
+	if(g_board_buffercount==0)
+		return 0;
 	return g_board_combuffer[g_board_buffertail];
 }
 

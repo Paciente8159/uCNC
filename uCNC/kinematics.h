@@ -1,7 +1,7 @@
 /*
 	Name: kinematics.h
 	Copyright: 
-	Author: João Martins
+	Author: Joï¿½o Martins
 	Date: 23/09/19 23:25
 	Description: uCNC kinematic module
 	Defines the kinematics module interface

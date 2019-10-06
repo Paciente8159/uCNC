@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include "planner.h"
 
 void motion_home();
 void motion_rt_linear(uint16_t *steps, uint16_t *totalsteps, uint16_t initial_speed, int16_t accel);
@@ -14,5 +15,7 @@ uint8_t motion_rt_buffer_empty();
 
 
 uint8_t motion_rt_buffer_full();
+
+void motion_add_new_motion(PLANNER_MOTION motion);
 
 #endif

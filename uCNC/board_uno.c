@@ -3,6 +3,7 @@
 #if(BOARD == BOARD_UNO)
 #include <math.h>
 #include <inttypes.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -58,24 +59,28 @@ typedef union{
 
 #ifdef DEBUGMODE
 #define MAX(A,B) if(B>A) A=B
-volatile uint8_t g_board_perfCounterOffset = 0;
+volatile uint8_t g_board_perfCounterOffset;
 volatile PERFORMANCE_METER board_performacecounters;
 #endif
 
 //UART communication
 //MACHINE_COMMAND g_board_rxbuffer;
-uint8_t g_board_combuffer[COM_BUFFER_SIZE];
-uint8_t g_board_bufferhead;
-uint8_t g_board_buffertail;
+uint8_t g_board_rxbuffer[COM_BUFFER_SIZE];
+uint8_t g_board_rxhead;
+uint8_t g_board_rxtail;
+volatile uint8_t g_board_rxcount;
+void board_putchar(char c, FILE* stream);
+FILE g_board_streamout = FDEV_SETUP_STREAM(board_putchar, NULL, _FDEV_SETUP_WRITE);;
 
 //IO Registers
 IO_REGISTER g_board_dirRegister;
 volatile INPUT_REGISTER g_board_inputs;
 volatile OUTPUT_REGISTER g_board_outputs;
 
-ISRTIMER g_board_pulseCallback = NULL;
-ISRTIMER g_board_pulseResetCallback = NULL;
-ISRPINCHANGE g_board_pinChangeCallback = NULL;
+ISRTIMER g_board_pulseCallback;
+ISRTIMER g_board_pulseResetCallback;
+ISRPINCHANGE g_board_pinChangeCallback;
+ISRCOMRX g_board_rs232RxCallback;
 
 ISR(TIMER0_COMPA_vect) // timer compare uint8_terrupt service routine
 {
@@ -148,7 +153,7 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
 		#endif
 	    g_board_inputs.critical_inputs = (PORTRD2 >> 2);
 	    if(g_board_pinChangeCallback!=NULL)
-	    	g_board_pinChangeCallback(&g_board_inputs);
+	    	g_board_pinChangeCallback(&g_board_inputs.reg32in);
 	    #ifdef DEBUGMODE
 		uint16_t counter = board_stopPerfCounter();
 		MAX(board_performacecounters.pinChangeCounter, counter);
@@ -172,18 +177,36 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
 	}
 #endif
 
-#if(IN10 >= 0)
+#if(RX >= 0)
 	ISR(USART_RX_vect)
 	{
-		g_board_combuffer[g_board_buffertail] = UDR0;
-		if(++g_board_buffertail==COM_BUFFER_SIZE)
-			g_board_buffertail = 0;
+        volatile char c = UDR0;
+        g_board_rxbuffer[g_board_rxhead] = c;
+        if(++g_board_rxhead==COM_BUFFER_SIZE)
+        {
+        	g_board_rxhead = 0;
+		}
+            
+    	if(c == '\n')
+    	{
+    		g_board_rxcount++;
+		}
+
+        if(g_board_rs232RxCallback!=NULL)
+        {
+            g_board_rs232RxCallback(c);
+        }
 	}
 #endif
 
 void board_setup()
 {
     IO_REGISTER reg = {};
+    
+    g_board_pulseCallback = NULL;
+	g_board_pulseResetCallback = NULL;
+	g_board_pinChangeCallback = NULL;
+	g_board_rs232RxCallback = NULL;
     
     g_board_dirRegister.r = OUTPUT_PINS;
     
@@ -260,6 +283,12 @@ void board_setup()
     #endif
 
     //set serial port
+    g_board_rxhead = 0;
+    g_board_rxtail = 0;
+    g_board_rxcount = 0;
+    
+    stdout = &g_board_streamout;
+
     // Set baud rate
     #if BAUD < 57600
       uint16_t UBRR0_value = ((F_CPU / (8L * BAUD)) - 1)/2 ;
@@ -275,11 +304,14 @@ void board_setup()
     UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
     
     #ifdef DEBUGMODE
+	g_board_perfCounterOffset = 0;
     //calculate performance offset
     board_startPerfCounter();
     g_board_perfCounterOffset = board_stopPerfCounter();
     #endif
-
+	
+	//enable interrupts
+	sei();
 }
 
 uint16_t board_getAnalog(uint8_t pin)
@@ -326,77 +358,66 @@ void board_attachOnInputChange(ISRPINCHANGE handler)
 	g_board_pinChangeCallback = handler;
 }
 
-void board_uart_putchar(char c)
+//internal redirect of stdout
+void board_putchar(char c, FILE* stream)
+{
+	board_putc(c);
+}
+
+void board_putc(char c)
 {
     loop_until_bit_is_set(UCSR0A, UDRE0);
     UDR0 = c;
 }
 
-char board_uart_getchar()
+char board_getc()
 {
-    loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
+	char c = 0;
+
+    if(g_board_rxtail!=g_board_rxhead)
+    {
+    	c = g_board_rxbuffer[g_board_rxtail++];
+		if(g_board_rxtail>=COM_BUFFER_SIZE)
+		{
+			g_board_rxtail = 0;
+		}
+		
+		if(c=='\n')
+		{
+			g_board_rxcount--;
+		}
+		
+        return c;
+    }
+
+    return 0;
 }
 
-uint8_t board_comPacketReady()
-{//
-	//if(g_board_tail != sizeof(g_board_rxbuffer))
+char board_peek()
+{
+	if(g_board_rxcount==0)
 	{
 		return 0;
 	}
-}
-
-//UART communications
-void board_comSendPacket(uint8_t *ptr, uint8_t length)
-{
-    do
-    {
-        board_uart_putchar(*ptr);
-        ptr++;
-    } while(--length);
-}
-
-uint8_t board_comGetPacket(uint8_t *ptr, uint8_t length)
-{
-    uint8_t avail = g_board_buffertail - g_board_bufferhead;
     
-    if(g_board_bufferhead > g_board_buffertail)
-    {
-    	avail += COM_BUFFER_SIZE;
-	}
-	
-	if(avail < length | length==0) //can't read packet (not complete)
-	{
-		return 0;
-	}
-	
-	do
-	{
-		*ptr = g_board_combuffer[g_board_bufferhead];
-		if(++g_board_bufferhead==COM_BUFFER_SIZE)
-			g_board_bufferhead = 0;
-	} while(--length);
-	
-
-    return 1;
+	return g_board_rxbuffer[g_board_rxtail];
 }
 
-int16_t board_comPeek()
+void board_bufferClear()
 {
-	if(g_board_buffertail==g_board_bufferhead)
-	{
-		return -1;
-	}
-	else
-	{
-		return g_board_combuffer[g_board_bufferhead];
-	}	
+    g_board_rxtail = 0;
+    g_board_rxhead = 0;
+    g_board_rxbuffer[0] = 0;
 }
 
-void board_comClear()
+void board_attachOnReadChar(ISRCOMRX handler)
 {
-	g_board_bufferhead = 0;
-	g_board_buffertail = 0;
+    g_board_rs232RxCallback = handler;
+}
+
+void board_detachOnReadChar()
+{
+    g_board_rs232RxCallback = NULL;
 }
 
 #ifdef DEBUGMODE
@@ -408,7 +429,7 @@ void board_startPerfCounter()
     TCNT1 = 0;  //initialize counter value to 0
     TIFR1 = 0;
     //TIMSK1 |= (1 << TOIE1);
-    cli();
+    //cli();
     TCCR1B = 1;
 }
 
@@ -417,10 +438,11 @@ uint16_t board_stopPerfCounter()
     uint16_t ticks = TCNT1;
     if(TIFR1 & 0x01)//checks for overflow
     {
-    	ticks = 0xFFFF;
+    	TCCR1B = 0;
+    	return 0xFFFF;
 	}
     TCCR1B = 0;
-    sei();
+    //sei();
     return (ticks - g_board_perfCounterOffset);
 }
 #endif

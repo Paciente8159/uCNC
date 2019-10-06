@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=00000000e0000000001000000
-UnitCount=25
+UnitCount=26
 
 [VersionInfo]
 Major=1
@@ -292,6 +292,16 @@ BuildCmd=
 
 [Unit25]
 FileName=machinedefs.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit26]
+FileName=utils.h
 CompileCpp=0
 Folder=
 Compile=1

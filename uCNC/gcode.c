@@ -3,6 +3,7 @@
 #include "boarddefs.h"
 #include "machinedefs.h"
 #include "gcode.h"
+#include "board.h"
 #include "report.h"
 #include "error.h"
 #include "utils.h"
@@ -154,8 +155,6 @@ void gcode_fetch_frombuffer(char *str)
 	{
 		for(;;)
 		{
-			while(board_peek()==0);
-			
 			char c = board_getc();	
 			switch(c)
 			{
@@ -242,24 +241,24 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                     case 1:
                     case 2:
                     case 3:
-                        if(CHECKBIT(group0,GCODE_GROUP_MOTION))
+                        if(CHECKFLAG(group0,GCODE_GROUP_MOTION))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_MOTION);
+                        SETFLAG(group0,GCODE_GROUP_MOTION);
                         new_state->groups.motion = code;
                         break;
                     //unsuported
                     case 38://check if 38.2
-                        if(CHECKBIT(group0,GCODE_GROUP_MOTION))
+                        if(CHECKFLAG(group0,GCODE_GROUP_MOTION))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_MOTION);
+                        SETFLAG(group0,GCODE_GROUP_MOTION);
                         subcode = (uint8_t)round((word_val - code) * 100.0f);
                         if(subcode == 20)
                         {
@@ -280,107 +279,107 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                     case 87:
                     case 88:
                     case 89:
-                        if(CHECKBIT(group0,GCODE_GROUP_MOTION))
+                        if(CHECKFLAG(group0,GCODE_GROUP_MOTION))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_MOTION);
+                        SETFLAG(group0,GCODE_GROUP_MOTION);
                         code -= 75;
                         new_state->groups.motion = code;
                         break;
                     case 17:
                     case 18:
                     case 19:
-                        if(CHECKBIT(group0,GCODE_GROUP_PLANE))
+                        if(CHECKFLAG(group0,GCODE_GROUP_PLANE))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_PLANE);
+                        SETFLAG(group0,GCODE_GROUP_PLANE);
                         code -= 17;
                         new_state->groups.plane = code;
                         break;
                     case 90:
                     case 91:
-                        if(CHECKBIT(group0,GCODE_GROUP_DISTANCE))
+                        if(CHECKFLAG(group0,GCODE_GROUP_DISTANCE))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_DISTANCE);
+                        SETFLAG(group0,GCODE_GROUP_DISTANCE);
                         code -= 90;
                         new_state->groups.distance_mode = code;
                         break;
                     case 93:
                     case 94:
-                        if(CHECKBIT(group0,GCODE_GROUP_FEEDRATE))
+                        if(CHECKFLAG(group0,GCODE_GROUP_FEEDRATE))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_FEEDRATE);
+                        SETFLAG(group0,GCODE_GROUP_FEEDRATE);
                         code -= 93;
                         new_state->groups.feedrate_mode = code;
                         break;
                     case 20:
                     case 21:
-                        if(CHECKBIT(group0,GCODE_GROUP_UNITS))
+                        if(CHECKFLAG(group0,GCODE_GROUP_UNITS))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_UNITS);  
+                        SETFLAG(group0,GCODE_GROUP_UNITS);  
                         code -= 20;
                         new_state->groups.units = code;
                         break;
                     case 40:
                     case 41:
                     case 42:
-                        if(CHECKBIT(group0,GCODE_GROUP_CUTTERRAD))
+                        if(CHECKFLAG(group0,GCODE_GROUP_CUTTERRAD))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_CUTTERRAD);
+                        SETFLAG(group0,GCODE_GROUP_CUTTERRAD);
                         code -= 40;
                         new_state->groups.cutter_radius_compensation = code;
                         break;
                     case 43:
-                        if(CHECKBIT(group0,GCODE_GROUP_TOOLLENGTH))
+                        if(CHECKFLAG(group0,GCODE_GROUP_TOOLLENGTH))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
+                        SETFLAG(group0,GCODE_GROUP_TOOLLENGTH);
                         new_state->groups.tool_length_offset = 0;
                         break;
                     case 49:
-                        if(CHECKBIT(group0,GCODE_GROUP_TOOLLENGTH))
+                        if(CHECKFLAG(group0,GCODE_GROUP_TOOLLENGTH))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_TOOLLENGTH);
+                        SETFLAG(group0,GCODE_GROUP_TOOLLENGTH);
                         new_state->groups.tool_length_offset = 1;
                         break;
                     case 98:
                     case 99:
-                        if(CHECKBIT(group0,GCODE_GROUP_RETURNMODE))
+                        if(CHECKFLAG(group0,GCODE_GROUP_RETURNMODE))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group0,GCODE_GROUP_RETURNMODE);
+                        SETFLAG(group0,GCODE_GROUP_RETURNMODE);
                         code -= 98;
                         new_state->groups.return_mode = code;
                         break;
@@ -390,13 +389,13 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                     case 57:
                     case 58:
                     case 59:
-                        if(CHECKBIT(group1,GCODE_GROUP_COORDSYS))
+                        if(CHECKFLAG(group1,GCODE_GROUP_COORDSYS))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_COORDSYS);
+                        SETFLAG(group1,GCODE_GROUP_COORDSYS);
                         //59.X unsupported
                         if(code == 59)
                         {
@@ -417,23 +416,23 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                         new_state->groups.coord_system = code;
                         break;
                     case 61:
-                        if(CHECKBIT(group1,GCODE_GROUP_PATH))
+                        if(CHECKFLAG(group1,GCODE_GROUP_PATH))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_PATH);
+                        SETFLAG(group1,GCODE_GROUP_PATH);
                         new_state->groups.path_mode = 0;
                         break;
                     case 64:
-                        if(CHECKBIT(group1,GCODE_GROUP_PATH))
+                        if(CHECKFLAG(group1,GCODE_GROUP_PATH))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_PATH);
+                        SETFLAG(group1,GCODE_GROUP_PATH);
                         new_state->groups.path_mode = 1;
                         break;
                     case 4:
@@ -459,13 +458,13 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                             code += subcode;
                         }
 
-                        if(CHECKBIT(group1,GCODE_GROUP_NONMODAL))
+                        if(CHECKFLAG(group1,GCODE_GROUP_NONMODAL))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_NONMODAL);
+                        SETFLAG(group1,GCODE_GROUP_NONMODAL);
                         new_state->groups.nonmodal = code;
                         break;
                     
@@ -492,13 +491,13 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                     case 2:
                     case 30:
                     case 60:
-                        if(CHECKBIT(group1,GCODE_GROUP_STOPPING))
+                        if(CHECKFLAG(group1,GCODE_GROUP_STOPPING))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_STOPPING);
+                        SETFLAG(group1,GCODE_GROUP_STOPPING);
                         if(code >= 10)
                         {
                             code /= 10;
@@ -508,13 +507,13 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                     case 3:
                     case 4:
                     case 5:
-                        if(CHECKBIT(group1,GCODE_GROUP_SPINDLE))
+                        if(CHECKFLAG(group1,GCODE_GROUP_SPINDLE))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_SPINDLE);
+                        SETFLAG(group1,GCODE_GROUP_SPINDLE);
                         code -= 3;
                         new_state->groups.spindle_turning = code;
                         break;
@@ -529,13 +528,13 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                         break;
                     case 48:
                     case 49:
-                        if(CHECKBIT(group1,GCODE_GROUP_ENABLEOVER))
+                        if(CHECKFLAG(group1,GCODE_GROUP_ENABLEOVER))
                         {
                             report_error(GCODE_MODAL_GROUP_VIOLATION);
                             return;
                         }
 
-                        SETBIT(group1,GCODE_GROUP_ENABLEOVER);
+                        SETFLAG(group1,GCODE_GROUP_ENABLEOVER);
                         code -= 48;
                         new_state->groups.feed_speed_override = code;
                         break;
@@ -545,7 +544,7 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                 }
             break;
         case 'N':
-            if(CHECKBIT(word2, GCODE_WORD_N))
+            if(CHECKFLAG(word2, GCODE_WORD_N))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
@@ -559,127 +558,127 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
 
             new_state->linenum = trunc(word_val);
         case 'X':
-            if(CHECKBIT(word0, GCODE_WORD_X))
+            if(CHECKFLAG(word0, GCODE_WORD_X))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_X);
+            SETFLAG(word0, GCODE_WORD_X);
             new_state->words.xyzabc[0] = word_val;
             break;
         case 'Y':
-            if(CHECKBIT(word0, GCODE_WORD_Y))
+            if(CHECKFLAG(word0, GCODE_WORD_Y))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_Y);
+            SETFLAG(word0, GCODE_WORD_Y);
             new_state->words.xyzabc[1] = word_val;
             break;
         case 'Z':
-            if(CHECKBIT(word0, GCODE_WORD_Z))
+            if(CHECKFLAG(word0, GCODE_WORD_Z))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_Z);
+            SETFLAG(word0, GCODE_WORD_Z);
             new_state->words.xyzabc[2] = word_val;
             break;
         case 'A':
-            if(CHECKBIT(word0, GCODE_WORD_A))
+            if(CHECKFLAG(word0, GCODE_WORD_A))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_A);
+            SETFLAG(word0, GCODE_WORD_A);
             new_state->words.xyzabc[3] = word_val;
             break;
         case 'B':
-            if(CHECKBIT(word0, GCODE_WORD_B))
+            if(CHECKFLAG(word0, GCODE_WORD_B))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_B);
+            SETFLAG(word0, GCODE_WORD_B);
             new_state->words.xyzabc[4] = word_val;
             break;
         case 'C':
-            if(CHECKBIT(word0, GCODE_WORD_C))
+            if(CHECKFLAG(word0, GCODE_WORD_C))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_C);
+            SETFLAG(word0, GCODE_WORD_C);
             new_state->words.xyzabc[5] = word_val;
             break;
         case 'D':
-            if(CHECKBIT(word0, GCODE_WORD_D))
+            if(CHECKFLAG(word0, GCODE_WORD_D))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_D);
+            SETFLAG(word0, GCODE_WORD_D);
             new_state->words.d = word_val;
             break;
         case 'F':
-            if(CHECKBIT(word0, GCODE_WORD_F))
+            if(CHECKFLAG(word0, GCODE_WORD_F))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word0, GCODE_WORD_F);
+            SETFLAG(word0, GCODE_WORD_F);
             new_state->words.f = word_val;
             break;
         case 'H':
-            if(CHECKBIT(word1, GCODE_WORD_H))
+            if(CHECKFLAG(word1, GCODE_WORD_H))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_H);
+            SETFLAG(word1, GCODE_WORD_H);
             new_state->words.h = word_val;
             break;
         case 'I':
-            if(CHECKBIT(word1, GCODE_WORD_I))
+            if(CHECKFLAG(word1, GCODE_WORD_I))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_I);
+            SETFLAG(word1, GCODE_WORD_I);
             new_state->words.ijk[0] = word_val;
             break;
         case 'J':
-            if(CHECKBIT(word1, GCODE_WORD_J))
+            if(CHECKFLAG(word1, GCODE_WORD_J))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_J);
+            SETFLAG(word1, GCODE_WORD_J);
             new_state->words.ijk[1] = word_val;
             break;
         case 'K':
-            if(CHECKBIT(word1, GCODE_WORD_K))
+            if(CHECKFLAG(word1, GCODE_WORD_K))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_K);
+            SETFLAG(word1, GCODE_WORD_K);
             new_state->words.ijk[2] = word_val;
             break;
         case 'L':
-            if(CHECKBIT(word1, GCODE_WORD_L))
+            if(CHECKFLAG(word1, GCODE_WORD_L))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
@@ -691,51 +690,51 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_L);
+            SETFLAG(word1, GCODE_WORD_L);
             new_state->words.l= word_val;
             break;
         case 'P':
-            if(CHECKBIT(word1, GCODE_WORD_P))
+            if(CHECKFLAG(word1, GCODE_WORD_P))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_P);
+            SETFLAG(word1, GCODE_WORD_P);
             new_state->words.p = word_val;
             break;
         case 'Q':
-            if(CHECKBIT(word1, GCODE_WORD_Q))
+            if(CHECKFLAG(word1, GCODE_WORD_Q))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_Q);
+            SETFLAG(word1, GCODE_WORD_Q);
             new_state->words.q = word_val;
             break;
         case 'R':
-            if(CHECKBIT(word1, GCODE_WORD_R))
+            if(CHECKFLAG(word1, GCODE_WORD_R))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word1, GCODE_WORD_R);
+            SETFLAG(word1, GCODE_WORD_R);
             new_state->words.r = word_val;
             break;
         case 'S':
-            if(CHECKBIT(word2, GCODE_WORD_S))
+            if(CHECKFLAG(word2, GCODE_WORD_S))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
             }
 
-            SETBIT(word2, GCODE_WORD_S);
+            SETFLAG(word2, GCODE_WORD_S);
             new_state->words.s = word_val;
             break;
         case 'T':
-            if(CHECKBIT(word2, GCODE_WORD_T))
+            if(CHECKFLAG(word2, GCODE_WORD_T))
             {
                 report_error(GCODE_WORD_REPEATED);
                 return;
@@ -747,7 +746,7 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
                 return;
             }
 
-            SETBIT(word2, GCODE_WORD_T);
+            SETFLAG(word2, GCODE_WORD_T);
             new_state->words.t = word_val;
             break;
         default:
@@ -930,6 +929,8 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	//home (G28, G30) or
 	//change coordinate system data (G10) or
 	//set new coordinate system offset
+	//implement later
+	/*
 	#ifdef AXIS_X
 		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_X] = new_state->words.xyzabc[AXIS_X];
 	#endif
@@ -948,6 +949,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	#ifdef AXIS_C
 		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_C] = new_state->words.xyzabc[AXIS_C];
 	#endif
+	*/
 	
 	//set axis offsets (G92, G92.1, G92.2, G94).
 	//set new coordinate system offset
@@ -1042,18 +1044,24 @@ void gcode_init()
 */
 void gcode_parse_nextline()
 {
+
+	#ifdef DEBUGMODE
+		printf("parsing line\n");
+		board_startPerfCounter();
+	#endif
+	
 	char gcode_line[GCODE_PARSER_BUFFER_SIZE];
 	GCODE_PARSER_STATE next_state = {};
-
 	//next state will be the same as previous except for nonmodal group (is set with 0)
 	memcpy(&next_state, &g_gcparser_state, sizeof(GCODE_PARSER_STATE));
     next_state.groups.nonmodal = 0;
-	
 	gcode_fetch_frombuffer(&gcode_line[0]);
-	#ifdef DEBUGMODE
-		board_putc("fetched: ");
-		board_putc(gcode_line);
-	#endif
 	gcode_parse_line(&gcode_line[0], &next_state);
+	#ifdef DEBUGMODE
+		uint16_t count = board_stopPerfCounter();
+		printf("parsed: ");
+		printf(gcode_line);
+		printf(" in %u cycles\n", count);
+	#endif
 	gcode_execute_line(&next_state);
 }

@@ -1,0 +1,19 @@
+*******adds subs*********
+int32 add (177975) in 0 cycles
+int32 sub (69333) in 0 cycles
+float add (177777.000000) in 124 cycles
+float sub (69135.000000) in 106 cycles
+*******divs*********
+int32 div (2) in 586 cycles
+int32 cast float round explicit cast int32 div (2) in 829 cycles
+int32 cast float round implicit cast int32 div (2) in 829 cycles
+float div round implicit cast int32 (2) in 717 cycles
+float div (2.272712) in 491 cycles
+int32 div implicit cast float div (2.000000) in 654 cycles
+int32 explicit cast float div (2.276357) in 611 cycles
+*******muls*********
+int32 explicit cast float mul (6717008900.000000) in 146 cycles
+int32 implicit cast float mul (2422041600.000000) in 176 cycles
+float mul (6706253300.000000) in 140 cycles
+int64 mul (6717008900.000000) in 363 cycles
+int32 mul (2950771041) in 83 cycles
