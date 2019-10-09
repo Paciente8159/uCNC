@@ -9,8 +9,8 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=
-CppCompiler=
+Compiler=-DBOARD=BOARD_VIRTUAL_@@_
+CppCompiler=-DBOARD=BOARD_VIRTUAL_@@_
 Linker=
 IsCpp=0
 Icon=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=00000000e0000000001000000
-UnitCount=26
+UnitCount=28
 
 [VersionInfo]
 Major=1
@@ -302,6 +302,26 @@ BuildCmd=
 
 [Unit26]
 FileName=utils.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit27]
+FileName=interpolator.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit28]
+FileName=interpolator.c
 CompileCpp=0
 Folder=
 Compile=1

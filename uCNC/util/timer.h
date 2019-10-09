@@ -65,6 +65,8 @@ void stop_timer(void);
 
 void startCycleCounter(void);
 unsigned long stopCycleCounter(void);
+unsigned long getCPUFreq(void);
+unsigned long getTickCounter(void);
 
 #ifdef __cplusplus
 } /* extern "C" */

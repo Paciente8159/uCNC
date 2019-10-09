@@ -9,4 +9,8 @@
 #define CLEARFLAG(x,y) (x &= (~y)) /* Clear bit y in byte x*/
 #define CHECKFLAG(x,y) (x & (y)) /* Check bit y in byte x*/
 
+#define MAX(a,b) (a>b) ? a : b
+#define MIN(a,b) (a<b) ? a : b
+#define ABS(a) (a>0) ? a : -a
+
 #endif

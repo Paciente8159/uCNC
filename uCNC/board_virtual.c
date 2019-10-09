@@ -2,6 +2,7 @@
 
 #if(BOARD == BOARD_VIRTUAL)
 #include <stdio.h>
+#include <conio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -109,34 +110,87 @@ volatile OUTPUT_REGISTER g_board_outputs;
 uint32_t _previnputs = 0;
 
 volatile bool tick_enabled = false;
-volatile uint16_t pulse_interval = 0;
+volatile unsigned long pulse_interval = 0;
+volatile unsigned long integrator_interval = 0;
 
 ISRTIMER g_board_pulseCallback = NULL;
 ISRTIMER g_board_pulseResetCallback = NULL;
+ISRTIMER g_board_integratorCallback = NULL;
 ISRPINCHANGE g_board_pinChangeCallback = NULL;
 ISRCOMRX g_board_charReceived = NULL;
 
 CMD_PACKET dummy_packet;
 pthread_t thread_id;
+pthread_t thread_timer_id;
 
+void* timersimul()
+{
+	unsigned long freq = getCPUFreq();
+	unsigned long counter = 0;
+	unsigned long ticks = getTickCounter();
+	unsigned long pulse;
+	unsigned long integrator;
+	for(;;)
+	{
+		unsigned long newticks = getTickCounter();
+		unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
+		counter += diff;
+		pulse += diff;
+		integrator += diff;
+		
+		if(counter>=pulse_interval * integrator_interval)
+		{
+			counter = 0;
+		}
+		
+		if(pulse>=pulse_interval && pulse_interval!=0)
+		{
+			pulse = 0;
+			if(g_board_integratorCallback!=NULL)
+			{
+				g_board_integratorCallback();
+			}
+		}
+		
+		if(integrator>=integrator_interval && integrator_interval!=0)
+		{
+			integrator = 0;
+			if(g_board_integratorCallback!=NULL)
+			{
+				g_board_integratorCallback();
+			}
+		}
+		
+		ticks = newticks;
+	}
+}
 
 void* inputsimul()
 {
 	for(;;)
 	{
 		char c = getch();
-		if(c=='\r')
+		
+		switch(c)
 		{
-			c='\n';
+			case '\b':
+				putchar(c);
+				putchar(' ');
+				if(g_board_bufferhead!=g_board_buffertail)
+					g_board_bufferhead--;
+				g_board_combuffer[g_board_bufferhead] = '\0';
+				g_board_bufferhead--;
+				break;
+			case '\r':
+			case '\n':
+				c = '\n';
+				g_board_combuffer[g_board_bufferhead] = c;
+				g_board_buffercount++;
+			default:
+				g_board_combuffer[g_board_bufferhead] = c;
 		}
+		
 		putchar(c);
-		g_board_combuffer[g_board_bufferhead] = c;
-		
-		if(c=='\n')
-		{
-			g_board_buffercount++;
-		}
-		
 		if(++g_board_bufferhead == COM_BUFFER_SIZE)
 		{
 			g_board_bufferhead = 0;
@@ -196,7 +250,7 @@ void ticksimul()
 	}
 }
 
-void board_setup()
+void board_init()
 {
 	FILE *infile = fopen("inputs.txt", "w+");
 	if(infile!=NULL)
@@ -212,8 +266,9 @@ void board_setup()
 	
 	memset(&dummy_packet, 0, sizeof(CMD_PACKET));
 	
-	start_timer(1, &ticksimul);
+	//start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &inputsimul, NULL); 
+	pthread_create(&thread_timer_id, NULL, &timersimul, NULL); 
 	g_board_buffercount = 0;
 }
 
@@ -334,6 +389,26 @@ void board_attachOnPulseReset(ISRTIMER handler)
 void board_detachOnPulseReset()
 {
 	g_board_pulseCallback = NULL;
+}
+
+//starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
+void board_startIntegrator(uint32_t frequency)
+{
+	integrator_interval = frequency;
+}
+//stops the pulse 
+void board_stopIntegrator()
+{
+	integrator_interval = 0;
+}
+//attaches a function handle to the pulse ISR
+void board_attachOnIntegrator(ISRTIMER handler)
+{
+	g_board_integratorCallback = handler;
+}
+void board_detachOnIntegrator()
+{
+	g_board_integratorCallback = NULL;
 }
 
 uint8_t board_readProMemByte(uint8_t* src)

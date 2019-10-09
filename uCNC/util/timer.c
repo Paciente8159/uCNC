@@ -125,22 +125,37 @@ void stop_timer(void)
 
 void startCycleCounter(void)
 {
-	LARGE_INTEGER perf_counter;
-	
-	if(!QueryPerformanceFrequency(&perf_counter))
-    	puts("QueryPerformanceFrequency failed!\n");
+	if(getCPUFreq() == 0)
+	{
+		return;
+	}
 
-    //cpu_freq = double(perf_counter.QuadPart)/1000.0;
-
-    QueryPerformanceCounter(&perf_counter);
-    perf_start = perf_counter.QuadPart;
+    perf_start = getTickCounter();
 }
 
 unsigned long stopCycleCounter(void)
 {
+    return (getTickCounter()-perf_start);
+}
+
+unsigned long getCPUFreq(void)
+{
+	LARGE_INTEGER perf_counter;
+	
+	if(!QueryPerformanceFrequency(&perf_counter))
+	{
+		printf("QueryPerformanceFrequency failed!\n");
+		return 0;
+	}
+    	
+    return perf_counter.QuadPart;
+}
+
+unsigned long getTickCounter(void)
+{
 	LARGE_INTEGER perf_counter;
     QueryPerformanceCounter(&perf_counter);
-    return (unsigned long)(perf_counter.QuadPart-perf_start);///cpu_freq;
+    return perf_counter.QuadPart;
 }
 
 #endif

@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "planner.h"
 #include "settings.h"
+#include <stdio.h>
 #include <math.h>
 #include <string.h>
 
@@ -164,7 +165,7 @@ void gcode_fetch_frombuffer(char *str)
 					break;
 				case '(':
 					gcode_parse_comment();
-					puts("comment");
+					printf("comment");
 					break;
 				case '\n':
 				case '\r':
@@ -1017,6 +1018,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	//if everything went ok updates the interpreter state
 	memcpy(&g_gcparser_state, new_state, sizeof(GCODE_PARSER_STATE));
 }
+
 /*
 	Initializes the gcode parser 
 */
@@ -1044,7 +1046,12 @@ void gcode_init()
 */
 void gcode_parse_nextline()
 {
-
+	//nothing to be done
+	if(board_peek() == 0)
+	{
+		return;
+	}
+	
 	#ifdef DEBUGMODE
 		printf("parsing line\n");
 		board_startPerfCounter();

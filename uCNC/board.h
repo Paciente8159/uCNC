@@ -33,7 +33,7 @@ typedef void (*ISRTIMER)();
 typedef void (*ISRPINCHANGE)(volatile uint32_t*);
 typedef void (*ISRCOMRX)(volatile char);
 
-void board_setup();
+void board_init();
 
 //IO functions    
 //Inputs  
@@ -76,6 +76,14 @@ void board_detachOnPulse();
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
 void board_attachOnPulseReset(ISRTIMER handler);
 void board_detachOnPulseReset();
+
+//starts a constant rate integrator at a given frequency.
+void board_startIntegrator(uint32_t frequency);
+//stops the pulse 
+void board_stopIntegrator();
+//attaches a function handle to the integrator ISR
+void board_attachOnIntegrator(ISRTIMER handler);
+void board_detachOnIntegrator();
 
 uint8_t board_readProgMemByte(uint8_t* src);
 uint8_t board_eeprom_getc(uint16_t address);

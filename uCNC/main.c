@@ -9,29 +9,28 @@
 #include "gcode.h"
 #include "planner.h"
 #include "kinematics.h"
+#include "interpolator.h"
 
 
 int main()
 {
 	char line[255];
 	
+	//initializes all systems
 	settings_load();
-	board_setup();
+	board_init();
 	gcode_init();
 	planner_init();
 	kinematics_init();
+	interpolator_init();
 			
 	for(;;)
 	{
 		for(;;)
 		{
-			if(board_peek() != 0)
-			{
-				gcode_parse_nextline();
-			}
+			gcode_parse_nextline();
+			interpolator_exec_planner_block();
 		}
-		
-		
 	}
 	
 	return 0;
