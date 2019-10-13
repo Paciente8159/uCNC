@@ -321,7 +321,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit28]
-FileName=interpolator.c
+FileName=interpolator_linear.c
 CompileCpp=0
 Folder=
 Compile=1

@@ -109,9 +109,14 @@ volatile OUTPUT_REGISTER g_board_outputs;
 
 uint32_t _previnputs = 0;
 
-volatile bool tick_enabled = false;
+volatile bool global_irq_enabled = false;
+
+volatile bool pulse_enabled = false;
+volatile bool integrator_enabled = false;
 volatile unsigned long pulse_interval = 0;
 volatile unsigned long integrator_interval = 0;
+volatile unsigned long pulse_counter = 0;
+volatile unsigned long integrator_counter = 0;
 
 ISRTIMER g_board_pulseCallback = NULL;
 ISRTIMER g_board_pulseResetCallback = NULL;
@@ -126,7 +131,8 @@ pthread_t thread_timer_id;
 void* timersimul()
 {
 	unsigned long freq = getCPUFreq();
-	unsigned long counter = 0;
+	unsigned long pulse_counter = 0;
+	unsigned long integrator_counter = 0;
 	unsigned long ticks = getTickCounter();
 	unsigned long pulse;
 	unsigned long integrator;
@@ -134,30 +140,31 @@ void* timersimul()
 	{
 		unsigned long newticks = getTickCounter();
 		unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
-		counter += diff;
-		pulse += diff;
-		integrator += diff;
 		
-		if(counter>=pulse_interval * integrator_interval)
+		if(global_irq_enabled)
 		{
-			counter = 0;
-		}
+			if(pulse_enabled)
+			pulse_counter += diff;
 		
-		if(pulse>=pulse_interval && pulse_interval!=0)
-		{
-			pulse = 0;
-			if(g_board_integratorCallback!=NULL)
+			if(integrator_enabled)
+				integrator_counter += diff;
+	
+			if(pulse_counter>=pulse_interval && pulse_enabled )
 			{
-				g_board_integratorCallback();
+				pulse_counter = 0;
+				if(g_board_integratorCallback!=NULL)
+				{
+					g_board_integratorCallback();
+				}
 			}
-		}
-		
-		if(integrator>=integrator_interval && integrator_interval!=0)
-		{
-			integrator = 0;
-			if(g_board_integratorCallback!=NULL)
+			
+			if(integrator_counter>=integrator_interval && integrator_enabled)
 			{
-				g_board_integratorCallback();
+				integrator_counter = 0;
+				if(g_board_integratorCallback!=NULL)
+				{
+					g_board_integratorCallback();
+				}
 			}
 		}
 		
@@ -216,7 +223,7 @@ void ticksimul()
 		fclose(infile);
 	}
 	
-	if(tick_enabled)
+	/*if(tick_enabled)
 	{
 		tick_counter++;
 		
@@ -247,7 +254,7 @@ void ticksimul()
 	    		g_board_pinChangeCallback(&(g_board_inputs.reg32in));
 			}	
 		}
-	}
+	}*/
 }
 
 void board_init()
@@ -353,23 +360,31 @@ void board_bufferClear()
 //enables all interrupts on the board. Must be called to enable all IRS functions
 void board_enableInterrupts()
 {
-	tick_enabled = true;
+	global_irq_enabled = true;
 }
 //disables all ISR functions
 void board_disableInterrupts()
 {
-	tick_enabled = false;
+	global_irq_enabled = false;
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void board_startPulse(uint32_t frequency)
 {
 	pulse_interval = frequency;
+	pulse_counter = 0;
+	pulse_enabled = true;
+}
+
+void board_changePulse(uint32_t frequency)
+{
+	pulse_interval = frequency;
+	pulse_counter = 0;
 }
 //stops the pulse 
 void board_stopPulse()
 {
-	pulse_interval = 0;
+	pulse_enabled = false;
 }
 //attaches a function handle to the pulse ISR
 void board_attachOnPulse(ISRTIMER handler)
@@ -395,11 +410,13 @@ void board_detachOnPulseReset()
 void board_startIntegrator(uint32_t frequency)
 {
 	integrator_interval = frequency;
+	integrator_counter = 0;
+	integrator_enabled = true;
 }
 //stops the pulse 
 void board_stopIntegrator()
 {
-	integrator_interval = 0;
+	integrator_enabled = false;
 }
 //attaches a function handle to the pulse ISR
 void board_attachOnIntegrator(ISRTIMER handler)

@@ -4,8 +4,8 @@
 CPP      = g++.exe -D__DEBUG__
 CC       = gcc.exe -D__DEBUG__
 WINDRES  = windres.exe
-OBJ      = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator.o
-LINKOBJ  = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator.o
+OBJ      = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o
+LINKOBJ  = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o
 LIBS     = -L"D:/Program Files/Dev-Cpp/MinGW64/lib" -L"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
 INCS     = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
 CXXINCS  = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
@@ -51,5 +51,5 @@ settings.o: settings.c
 kinematics_cartesian_xyz.o: kinematics_cartesian_xyz.c
 	$(CC) -c kinematics_cartesian_xyz.c -o kinematics_cartesian_xyz.o $(CFLAGS)
 
-interpolator.o: interpolator.c
-	$(CC) -c interpolator.c -o interpolator.o $(CFLAGS)
+interpolator_linear.o: interpolator_linear.c
+	$(CC) -c interpolator_linear.c -o interpolator_linear.o $(CFLAGS)

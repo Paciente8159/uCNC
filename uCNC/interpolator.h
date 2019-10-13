@@ -16,6 +16,7 @@
 void interpolator_init();
 void interpolator_exec_planner_block();
 void interpolator_update_profile();
+void interpolator_rt_pulse();
 void interpolator_rt_integrator();
 
 #endif

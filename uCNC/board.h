@@ -68,6 +68,8 @@ void board_disableInterrupts();
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void board_startPulse(uint32_t frequency);
+//modifies the pulse frequency
+void board_changePulse(uint32_t frequency);
 //stops the pulse 
 void board_stopPulse();
 //attaches a function handle to the pulse ISR

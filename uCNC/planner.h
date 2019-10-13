@@ -49,8 +49,8 @@ typedef struct pl_motion_blk_
 
 	bool optimal;
 
-	struct pl_motion_blk_ * next;
-	struct pl_motion_blk_ * prev;
+	struct pl_motion_blk_ *next;
+	struct pl_motion_blk_ *prev;
 } PLANNER_MOTION_BLOCK;
 
 void planner_init();
