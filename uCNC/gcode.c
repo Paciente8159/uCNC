@@ -3,7 +3,6 @@
 #include "boarddefs.h"
 #include "machinedefs.h"
 #include "gcode.h"
-#include "board.h"
 #include "report.h"
 #include "error.h"
 #include "utils.h"
@@ -165,7 +164,7 @@ void gcode_fetch_frombuffer(char *str)
 					break;
 				case '(':
 					gcode_parse_comment();
-					printf("comment");
+					board_printfp(PSTR("comment"));
 					break;
 				case '\n':
 				case '\r':
@@ -845,7 +844,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 		feed = (1.0f / new_state->words.f);
 	}
 	//internally uCNC works in mm/s and not mm/min
-	feed /= 60.0;
+	feed /= 60.0f;
 	
 	//set spindle speed
 	spindle = new_state->words.s;
@@ -856,7 +855,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	//dwell (not implemented)
 	//set active plane (G17, G18, G19).
 	//set length units (G20, G21).
-	if(new_state->groups.units==0) //convert inches to mm
+	if(new_state->groups.units == 0) //convert inches to mm
 	{
 		#ifdef AXIS_X
 			new_state->words.xyzabc[AXIS_X] *= 25.4f;
@@ -904,7 +903,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	}
 	//set path control mode (G61, G61.1, G64)
 	//set distance mode (G90, G91).
-		
+
 	if(new_state->groups.distance_mode == 1) //if relative initialize with current absolute position
 	{
 		#ifdef AXIS_X
@@ -951,7 +950,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 		g_gcode_coord_sys[new_state->groups.coord_system][AXIS_C] = new_state->words.xyzabc[AXIS_C];
 	#endif
 	*/
-	
+		
 	//set axis offsets (G92, G92.1, G92.2, G94).
 	//set new coordinate system offset
 	switch(new_state->groups.nonmodal)
@@ -1046,6 +1045,27 @@ void gcode_init()
 */
 void gcode_parse_nextline()
 {
+	/*#ifdef DEBUGMODE
+		static uint8_t dotcount = 0;
+		if(++dotcount==4)
+			dotcount = 0;
+		switch(dotcount)
+		{
+			case 0:
+				printf("wait   \r");
+				break;
+			case 1:
+				printf("wait.  \r");
+				break;
+			case 2:
+				printf("wait.. \r");
+				break;
+			case 3:
+				printf("wait...\r");
+				break;
+		}
+		
+	#endif*/
 	//nothing to be done
 	if(board_peek() == 0)
 	{
@@ -1053,7 +1073,8 @@ void gcode_parse_nextline()
 	}
 	
 	#ifdef DEBUGMODE
-		printf("parsing line\n");
+		board_printfp(PSTR("parsing line\n"));
+		fflush(stdout);
 		board_startPerfCounter();
 	#endif
 	
@@ -1066,9 +1087,20 @@ void gcode_parse_nextline()
 	gcode_parse_line(&gcode_line[0], &next_state);
 	#ifdef DEBUGMODE
 		uint16_t count = board_stopPerfCounter();
-		printf("parsed: ");
+		board_printfp(PSTR("parsed: "));
 		printf(gcode_line);
-		printf(" in %u cycles\n", count);
+		board_printfp(PSTR(" in %u cycles\n"), count);
+		fflush(stdout);
+	#endif
+	#ifdef DEBUGMODE
+		board_printfp(PSTR("processing command\n"));
+		fflush(stdout);
+		board_startPerfCounter();
 	#endif
 	gcode_execute_line(&next_state);
+	#ifdef DEBUGMODE
+		count = board_stopPerfCounter();
+		board_printfp(PSTR("precessed: in %u cycles\n"), count);
+		fflush(stdout);
+	#endif
 }

@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
-CompilerSettings=000000e000000000001000000
-UnitCount=25
+CompilerSettings=000000e000000000101000000
+UnitCount=29
 
 [VersionInfo]
 Major=1
@@ -211,7 +211,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit26]
-FileName=planner.h
+FileName=interpolator.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -221,7 +221,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit27]
-FileName=settings.h
+FileName=interpolator_linear.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -231,7 +231,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit28]
-FileName=gcode.c
+FileName=ringbuffer.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -241,7 +241,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit29]
-FileName=kinematics_cartesian_xyz.c
+FileName=ringbuffer.h
 CompileCpp=0
 Folder=
 Compile=1

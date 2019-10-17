@@ -13,6 +13,7 @@
 	#define AXIS_X 0
 	#define AXIS_Y 1
 	#define AXIS_Z 2
+	#define STEPPER_COUNT 3
 #else
 #error Kinematics not implemented
 #endif

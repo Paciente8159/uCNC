@@ -18,11 +18,11 @@
 */
 #define MACHINE_KINEMATICS MACHINE_CARTESIAN_XYZ
 
-#define STEPPER_COUNT 3
+//
 #define COORD_SYS_COUNT 6
 
-
 #define DEBUGMODE
+
 //setup IO masks
 #define STEPDIR_INVERT_MASK 0x0000
 #define OUTPUT_INVERT_MASK 0x0000
@@ -38,7 +38,7 @@
 
 #define COM_BUFFER_SIZE 10
 
-#define TOTAL_STEPPERS 5
+//#define TOTAL_STEPPERS 5
 #define MIN_PULSE_WIDTH_US 5
 
 #endif

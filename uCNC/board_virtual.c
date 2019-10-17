@@ -111,6 +111,7 @@ uint32_t _previnputs = 0;
 
 volatile bool global_irq_enabled = false;
 
+unsigned long g_cpu_freq = 0;
 volatile bool pulse_enabled = false;
 volatile bool integrator_enabled = false;
 volatile unsigned long pulse_interval = 0;
@@ -130,31 +131,31 @@ pthread_t thread_timer_id;
 
 void* timersimul()
 {
-	unsigned long freq = getCPUFreq();
+	//unsigned long freq = getCPUFreq();
 	unsigned long pulse_counter = 0;
 	unsigned long integrator_counter = 0;
-	unsigned long ticks = getTickCounter();
-	unsigned long pulse;
-	unsigned long integrator;
+	unsigned long ticks = 0;//getTickCounter();
+	//unsigned long pulse;
+	//unsigned long integrator;
 	for(;;)
 	{
-		unsigned long newticks = getTickCounter();
-		unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
+		//unsigned long newticks = getTickCounter();
+		//unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
 		
 		if(global_irq_enabled)
 		{
 			if(pulse_enabled)
-			pulse_counter += diff;
+				pulse_counter++;// += diff;
 		
 			if(integrator_enabled)
-				integrator_counter += diff;
+				integrator_counter++;// += diff;
 	
 			if(pulse_counter>=pulse_interval && pulse_enabled )
 			{
 				pulse_counter = 0;
-				if(g_board_integratorCallback!=NULL)
+				if(g_board_pulseCallback!=NULL)
 				{
-					g_board_integratorCallback();
+					g_board_pulseCallback();
 				}
 			}
 			
@@ -168,7 +169,7 @@ void* timersimul()
 			}
 		}
 		
-		ticks = newticks;
+		//ticks = newticks;
 	}
 }
 
@@ -271,6 +272,8 @@ void board_init()
 		printf("Failed to open input file");
 	}
 	
+	g_cpu_freq = getCPUFreq();
+	
 	memset(&dummy_packet, 0, sizeof(CMD_PACKET));
 	
 	//start_timer(1, &ticksimul);
@@ -369,16 +372,16 @@ void board_disableInterrupts()
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void board_startPulse(uint32_t frequency)
+void board_startPulse(float frequency)
 {
-	pulse_interval = frequency;
+	pulse_interval = g_cpu_freq/frequency;
 	pulse_counter = 0;
 	pulse_enabled = true;
 }
 
-void board_changePulse(uint32_t frequency)
+void board_changePulse(float frequency)
 {
-	pulse_interval = frequency;
+	pulse_interval = g_cpu_freq/frequency;
 	pulse_counter = 0;
 }
 //stops the pulse 
@@ -407,9 +410,9 @@ void board_detachOnPulseReset()
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void board_startIntegrator(uint32_t frequency)
+void board_startIntegrator(float frequency)
 {
-	integrator_interval = frequency;
+	integrator_interval = g_cpu_freq/frequency;
 	integrator_counter = 0;
 	integrator_enabled = true;
 }
@@ -427,6 +430,33 @@ void board_detachOnIntegrator()
 {
 	g_board_integratorCallback = NULL;
 }
+
+void board_printfp(const char* __fmt, ...)
+{
+	char buffer[50];
+	char* newfmt = strcpy((char*)&buffer, __fmt);
+	va_list __ap;
+ 	va_start(__ap,__fmt);
+ 	vprintf(newfmt,__ap);
+ 	va_end(__ap);
+}
+
+void board_loadDummyPayload(const char* __fmt, ...)
+{
+	char buffer[30];
+	char payload[50];
+	char* newfmt = strcpy((char*)&buffer, __fmt);
+	va_list __ap;
+ 	va_start(__ap,__fmt);
+ 	vsprintf((char*)&payload, newfmt,__ap);
+ 	va_end(__ap);
+	g_board_bufferhead = strlen(payload);
+	memset(&g_board_combuffer, 0, g_board_bufferhead);
+	strcpy((char*)&g_board_combuffer, payload);
+	g_board_buffertail = 0;
+	g_board_buffercount++;
+}
+
 
 uint8_t board_readProMemByte(uint8_t* src)
 {

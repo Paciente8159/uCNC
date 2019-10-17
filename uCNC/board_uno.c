@@ -8,9 +8,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
+#include "pins_uno.h"
 #include "pins.h"
-#include "board.h"
+#include "boarddefs.h"
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -18,12 +20,15 @@
 #endif
 
 #ifndef BAUD
-#define BAUD 115200
+#define BAUD 9600
 #endif
 
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
+
+#define PULSE_RESET_DELAY MIN_PULSE_WIDTH_US * F_CPU / 1000000
+#define INTEGRATOR_BASE_FREQ F_CPU>>8
 
 typedef union{
     uint32_t r; // occupies 4 bytes
@@ -59,6 +64,7 @@ typedef union{
 
 #ifdef DEBUGMODE
 #define MAX(A,B) if(B>A) A=B
+volatile uint8_t g_board_perfOvfCounter;
 volatile uint8_t g_board_perfCounterOffset;
 volatile PERFORMANCE_METER board_performacecounters;
 #endif
@@ -70,7 +76,7 @@ uint8_t g_board_rxhead;
 uint8_t g_board_rxtail;
 volatile uint8_t g_board_rxcount;
 void board_putchar(char c, FILE* stream);
-FILE g_board_streamout = FDEV_SETUP_STREAM(board_putchar, NULL, _FDEV_SETUP_WRITE);;
+FILE g_board_streamout = FDEV_SETUP_STREAM(board_putchar, NULL, _FDEV_SETUP_WRITE);
 
 //IO Registers
 IO_REGISTER g_board_dirRegister;
@@ -79,10 +85,32 @@ volatile OUTPUT_REGISTER g_board_outputs;
 
 ISRTIMER g_board_pulseCallback;
 ISRTIMER g_board_pulseResetCallback;
+ISRTIMER g_board_integratorCallback;
+uint16_t g_board_tmr0_counter;
+volatile uint16_t g_board_tmr0_value;
+
 ISRPINCHANGE g_board_pinChangeCallback;
 ISRCOMRX g_board_rs232RxCallback;
 
-ISR(TIMER0_COMPA_vect) // timer compare uint8_terrupt service routine
+/*#ifdef DEBUGMODE
+char sim_getc()
+{
+    loop_until_bit_is_set(UCSR0A, RXC0); // Wait until data exists.
+    return UDR0;
+}
+
+//internal redirect of stdout
+char sim_getchar(FILE* stream)
+{
+	sim_getc();
+}
+
+FILE g_board_streamin = FDEV_SETUP_STREAM(sim_getchar, NULL, _FDEV_SETUP_READ);
+#endif
+*/
+
+
+ISR(TIMER1_COMPA_vect)
 {
 	#ifdef DEBUGMODE
 	board_startPerfCounter();
@@ -95,7 +123,7 @@ ISR(TIMER0_COMPA_vect) // timer compare uint8_terrupt service routine
 	#endif	
 }
 
-ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
+ISR(TIMER1_COMPB_vect)
 {
 	#ifdef DEBUGMODE
 	board_startPerfCounter();
@@ -108,6 +136,29 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
 	#endif
 }
 
+ISR(TIMER0_OVF_vect)
+{
+	#ifdef DEBUGMODE
+	board_startPerfCounter();
+	#endif
+	if(!--g_board_tmr0_counter)
+	{
+		g_board_tmr0_counter = g_board_tmr0_value;
+		if(g_board_integratorCallback!=NULL)
+    		g_board_integratorCallback();
+	}
+    #ifdef DEBUGMODE
+	uint16_t counter = board_stopPerfCounter();
+	MAX(board_performacecounters.integratorCounter, counter);
+	#endif
+}
+
+#ifdef DEBUGMODE
+ISR(TIMER2_OVF_vect)
+{
+	g_board_perfOvfCounter++;
+}
+#endif
 /*ISR(TIMER1_OVF_vect)
 {
 	g_board_perfcountoverflows++;
@@ -187,7 +238,7 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
         	g_board_rxhead = 0;
 		}
             
-    	if(c == '\n')
+    	if(c == '\n' | c == '\rta')
     	{
     		g_board_rxcount++;
 		}
@@ -199,7 +250,7 @@ ISR(TIMER0_COMPB_vect) // timer compare uint8_terrupt service routine
 	}
 #endif
 
-void board_setup()
+void board_init()
 {
     IO_REGISTER reg = {};
     
@@ -288,6 +339,10 @@ void board_setup()
     g_board_rxcount = 0;
     
     stdout = &g_board_streamout;
+    /*#ifdef DEBUGMODE
+    stdin = &g_board_streamin;
+    #endif
+	*/
 
     // Set baud rate
     #if BAUD < 57600
@@ -424,31 +479,29 @@ void board_detachOnReadChar()
 //measures performance up to 65536 clock cycles
 void board_startPerfCounter()
 {
-    TCCR1A = 0; // set entire TCCR1A register to 0
-    TCCR1B = 0; // same for TCCR1B
-    TCNT1 = 0;  //initialize counter value to 0
-    TIFR1 = 0;
-    //TIMSK1 |= (1 << TOIE1);
+    TCCR2A = 0; // set entire TCCR1A register to 0
+    TCCR2B = 0; // same for TCCR1B
+    TCNT2 = 0;  //initialize counter value to 0
+    TIFR2 = 0;
+    TIMSK2 |= (1 << TOIE2);
     //cli();
-    TCCR1B = 1;
+    TCCR2B = 1;
 }
 
 uint16_t board_stopPerfCounter()
 {
-    uint16_t ticks = TCNT1;
-    if(TIFR1 & 0x01)//checks for overflow
-    {
-    	TCCR1B = 0;
-    	return 0xFFFF;
-	}
-    TCCR1B = 0;
-    //sei();
-    return (ticks - g_board_perfCounterOffset);
+    uint8_t ticks = TCNT2;
+    TCCR2B = 0;
+    TIMSK2 &= ~(1 << TOIE2);
+    uint16_t res = g_board_perfOvfCounter;
+    res *= 256;
+    res += ticks;
+    return res;
 }
 #endif
 
 //RealTime
-void board_startPulse(uint32_t frequency)
+/*void board_startPulse(uint32_t frequency)
 {
     uint16_t prescaler = 1;
     if (frequency < 62993)
@@ -497,12 +550,72 @@ void board_startPulse(uint32_t frequency)
 
     // enable timer compare uint8_terrupt
     TIMSK0 |= (1 << OCIE0B) | (1 << OCIE0A);
+}*/
+
+/*
+	initializes the pulse ISR
+	In Arduino this is done in TIMER1
+	The frequency range is from 4Hz to F_PULSE
+*/
+void board_startPulse(float frequency)
+{
+	//stops timer
+	TCCR1B = 0;
+	
+	//for freq below 245 set prescaler to 64
+	bool setprescaler = (frequency<245);
+
+	//CTC mode
+    TCCR1A = 0;
+    //resets counter
+    TCNT1 = 0;
+    
+    float pulse_dur = (!setprescaler) ? 1.0f/frequency : 0.015625f/frequency;
+    // set compare match register
+    //on match of OCR1A will auto reset
+    OCR1A = (F_CPU*pulse_dur) - 1; // = F_CPU/(prescaler*frequency) - 1;
+	//sets OCR0B to half
+	//this will allways fire the reset_pulse between pulses
+    OCR1B = OCR1A>>1;
+
+	TIFR1 = 0;
+	// enable timer interrupts on both match registers
+    TIMSK1 |= (1 << OCIE1B) | (1 << OCIE1A);
+    
+	//start timer in CTC mode with the correct prescaler (none or 64)
+	TCCR1B = (!setprescaler) ? 9 : 11;
+}
+
+// se implementar amass deixo de necessitar de prescaler
+void board_changePulse(float frequency)
+{
+	//stops timer
+	TCCR1B = 0;
+	
+	//for freq below 245 set prescaler to 64
+	bool setprescaler = (frequency<245);
+
+    float pulse_dur = (!setprescaler) ? 1.0f/frequency : 0.015625f/frequency;
+    // set compare match register
+    //on match of OCR1A will auto reset
+    OCR1A = (uint16_t)(F_CPU*pulse_dur) - 1; // = F_CPU/(prescaler*frequency) - 1;
+	//sets OCR0B to half
+	//this will allways fire the reset_pulse between pulses
+    OCR1B = OCR1A>>1;
+    
+    //forces a pulse
+    if(TCNT1>OCR1A)
+    {
+    	TCNT1 = OCR1A - 2;
+	}
+	//start timer in CTC mode with the correct prescaler (none or 64)
+	TCCR1B = (!setprescaler) ? 9 : 11;
 }
 
 void board_stopPulse()
 {
-	TCCR0B &=~((1 << CS12) | (1 << CS11) | (1 << CS10));
-    TIMSK0 &= ~((1 << OCIE0B) | (1 << OCIE0A));
+	TCCR1B = 0;
+    TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
 }
 
 void board_attachOnPulse(ISRTIMER handler)
@@ -515,10 +628,80 @@ void board_attachOnPulseReset(ISRTIMER handler)
 	g_board_pulseResetCallback = handler;
 }
 
+//starts a constant rate integrator at a given frequency.
+//uses timer0 in overflow + reminder 
+void board_startIntegrator(float frequency)
+{
+	//stops timer
+	TCCR0B = 0;
+	//Normal mode
+    TCCR0A = 0;
+    //resets counter
+    TCNT0 = 0;
+    
+    float pulse_dur = 1.0f/frequency;
+    g_board_tmr0_value = (uint16_t)((float)(INTEGRATOR_BASE_FREQ)*pulse_dur) - 1;
+    g_board_tmr0_counter = 0;
+    
+    TIFR0 = 0;
+    TIMSK0 |= (1 << TOIE0);
+	//start timer in Normal mode without prescaler
+	TCCR0B = 1;
+}
+
+//stops the pulse 
+void board_stopIntegrator()
+{
+	TIMSK0 &= ~(1 << TOIE0);
+	//start timer in Normal mode without prescaler
+	TCCR0B = 0;
+}
+//attaches a function handle to the integrator ISR
+void board_attachOnIntegrator(ISRTIMER handler)
+{
+	g_board_integratorCallback = handler;
+}
+
+void board_detachOnIntegrator()
+{
+	g_board_integratorCallback = NULL;
+}
+
+void board_printfp(const char *__fmt, ...)
+{
+	char buffer[50];
+	char* newfmt = strcpy_P(&buffer, __fmt);
+	va_list __ap;
+ 	va_start(__ap,__fmt);
+ 	vprintf(newfmt,__ap);
+ 	va_end(__ap);
+}
+
 uint8_t board_readProMemByte(uint8_t* src)
 {
 	return pgm_read_byte(src);
 }
+
+void board_loadDummyPayload(const char *__fmt, ...)
+{
+	char buffer[50];
+	//erase old string
+	memset(&g_board_rxbuffer, 0, COM_BUFFER_SIZE);
+	
+	//print formated string to buffer;
+	char* newfmt = strcpy_P(&buffer, __fmt);
+	va_list __ap;
+ 	va_start(__ap,__fmt);
+ 	vsprintf(&g_board_rxbuffer, newfmt,__ap);
+ 	va_end(__ap);
+	
+	g_board_rxhead = strlen(g_board_rxbuffer);
+	g_board_rxtail = 0;
+	
+	//signal read
+	g_board_rxcount++;
+}
+
 /*
 void board_startTimer1ISR(uint32_t frequency)
 {

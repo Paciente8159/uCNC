@@ -1,17 +1,17 @@
-# Project: uCNCVirt
+# Project: uCNC
 # Makefile created by Dev-C++ 5.11
 
-CPP      = g++.exe -D__DEBUG__
-CC       = gcc.exe -D__DEBUG__
-WINDRES  = windres.exe
-OBJ      = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o
-LINKOBJ  = main.o board_virtual.o util/timer.o gcode.o report.o motion.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o
-LIBS     = -L"D:/Program Files/Dev-Cpp/MinGW64/lib" -L"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
-INCS     = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
-CXXINCS  = -I"D:/Program Files/Dev-Cpp/MinGW64/include" -I"D:/Program Files/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"D:/Program Files/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
-BIN      = uCNCVirtual.exe
-CXXFLAGS = $(CXXINCS) -std=gnu99 -g3 -DBOARD=BOARD_VIRTUAL
-CFLAGS   = $(INCS) -std=gnu99 -g3 -DBOARD=BOARD_VIRTUAL
+CPP      = avr-g++.exe -D__DEBUG__
+CC       = avr-gcc.exe -D__DEBUG__
+WINDRES  = 
+OBJ      = main.o settings.o board_uno.o gcode.o kinematics_cartesian_xyz.o planner.o report.o structures.o interpolator_linear.o ringbuffer.o
+LINKOBJ  = main.o settings.o board_uno.o gcode.o kinematics_cartesian_xyz.o planner.o report.o structures.o interpolator_linear.o ringbuffer.o
+LIBS     = -w -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328 -pg -g3
+INCS     = -I"C:/WinAVR/avr/include"
+CXXINCS  = -I"C:/WinAVR/avr/include"
+BIN      = uCNC.elf
+CXXFLAGS = $(CXXINCS) -Og -pg -g3 -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DBOARD=BOARD_UNO
+CFLAGS   = $(INCS) -Og -pg -g3 -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DBOARD=BOARD_UNO
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
@@ -27,29 +27,29 @@ $(BIN): $(OBJ)
 main.o: main.c
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
-board_virtual.o: board_virtual.c
-	$(CC) -c board_virtual.c -o board_virtual.o $(CFLAGS)
+settings.o: settings.c
+	$(CC) -c settings.c -o settings.o $(CFLAGS)
 
-util/timer.o: util/timer.c
-	$(CC) -c util/timer.c -o util/timer.o $(CFLAGS)
+board_uno.o: board_uno.c
+	$(CC) -c board_uno.c -o board_uno.o $(CFLAGS)
 
 gcode.o: gcode.c
 	$(CC) -c gcode.c -o gcode.o $(CFLAGS)
 
-report.o: report.c
-	$(CC) -c report.c -o report.o $(CFLAGS)
-
-motion.o: motion.c
-	$(CC) -c motion.c -o motion.o $(CFLAGS)
+kinematics_cartesian_xyz.o: kinematics_cartesian_xyz.c
+	$(CC) -c kinematics_cartesian_xyz.c -o kinematics_cartesian_xyz.o $(CFLAGS)
 
 planner.o: planner.c
 	$(CC) -c planner.c -o planner.o $(CFLAGS)
 
-settings.o: settings.c
-	$(CC) -c settings.c -o settings.o $(CFLAGS)
+report.o: report.c
+	$(CC) -c report.c -o report.o $(CFLAGS)
 
-kinematics_cartesian_xyz.o: kinematics_cartesian_xyz.c
-	$(CC) -c kinematics_cartesian_xyz.c -o kinematics_cartesian_xyz.o $(CFLAGS)
+structures.o: structures.c
+	$(CC) -c structures.c -o structures.o $(CFLAGS)
 
 interpolator_linear.o: interpolator_linear.c
 	$(CC) -c interpolator_linear.c -o interpolator_linear.o $(CFLAGS)
+
+ringbuffer.o: ringbuffer.c
+	$(CC) -c ringbuffer.c -o ringbuffer.o $(CFLAGS)

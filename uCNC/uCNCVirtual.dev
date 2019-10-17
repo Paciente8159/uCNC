@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=00000000e0000000001000000
-UnitCount=28
+UnitCount=30
 
 [VersionInfo]
 Major=1
@@ -322,6 +322,26 @@ BuildCmd=
 
 [Unit28]
 FileName=interpolator_linear.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit29]
+FileName=ringbuffer.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit30]
+FileName=ringbuffer.c
 CompileCpp=0
 Folder=
 Compile=1

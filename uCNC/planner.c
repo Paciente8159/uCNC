@@ -16,6 +16,7 @@
 #include "kinematics.h"
 #include "utils.h"
 #include "motion.h"
+#include "ringbuffer.h"
 
 uint32_t g_planner_steppos[STEPPER_COUNT];
 float g_planner_coord[AXIS_COUNT];
@@ -29,10 +30,14 @@ float g_planner_accel;
 uint8_t g_planner_dir_bits;
 float planner_top_accel = 0;
 
-PLANNER_MOTION planner_prev_motion;*/
+PLANNER_MOTION planner_prev_motion;
 PLANNER_MOTION_BLOCK g_planner_buffer[PLANNER_BUFFER_SIZE];
 PLANNER_MOTION_BLOCK* g_planner_buffer_rd;
-PLANNER_MOTION_BLOCK* g_planner_buffer_wt;
+PLANNER_MOTION_BLOCK* g_planner_buffer_wt;*/
+static PLANNER_MOTION g_planner_data[PLANNER_BUFFER_SIZE];
+static buffer_t g_planner_buffer;
+//TYPEDEF_BUFFER(PLANNER_MOTION, PLANNER_BUFFER_SIZE);
+//PLANNER_MOTION_BUFFER g_planner_buffer;
 
 
 void planner_init()
@@ -41,8 +46,10 @@ void planner_init()
 	memset(&g_planner_coord, 0, AXIS_COUNT*sizeof(float));
 	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
 	//resets buffer
-	memset(&g_planner_buffer, 0, PLANNER_BUFFER_SIZE * sizeof(PLANNER_MOTION_BLOCK));
+	//memset(&g_planner_buffer, 0, sizeof(g_planner_buffer));
+	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_MOTION), PLANNER_BUFFER_SIZE);
 	
+	/*
 	//creates the circular buffer (uses double linked list)
 	for(uint8_t i = 1; i < PLANNER_BUFFER_SIZE; i++)
 	{
@@ -55,52 +62,75 @@ void planner_init()
 
 	//initializes read and write buffer
 	g_planner_buffer_rd = (PLANNER_MOTION_BLOCK*)&g_planner_buffer;
-	g_planner_buffer_wt = g_planner_buffer_rd;
+	g_planner_buffer_wt = g_planner_buffer_rd;*/
 }
 
 bool planner_buffer_full()
 {
-	return (g_planner_buffer_wt->next==g_planner_buffer_rd);
+	return is_buffer_full(g_planner_buffer);
 }
 
 bool planner_buffer_empty()
 {
-	return (g_planner_buffer_rd==g_planner_buffer_wt);
+	return is_buffer_empty(g_planner_buffer);
 }
 
-PLANNER_MOTION_BLOCK* planner_get_block()
+PLANNER_MOTION* planner_get_block()
 {
-	return 	g_planner_buffer_rd;	
+	/*g_planner_buffer_rd = g_planner_buffer_rd->next;
+	return 	g_planner_buffer_rd->prev;	*/
+	//PLANNER_MOTION *ptr = buffer_read(g_planner_buffer);
+	return buffer_get_first(g_planner_buffer);
 }
 
 float planner_get_block_exit_speed_sqr()
 {
-	if(g_planner_buffer_rd==g_planner_buffer_wt)
+	/*uint8_t next_motion = BUFFER_NEXT_INDEX(g_planner_buffer,BUFFER_READ_INDEX(g_planner_buffer));
+	//only one existing block. Exit speed always 0
+	if(next_motion == BUFFER_WRITE_INDEX(g_planner_buffer))
 	{
 		return 0;
-	}
+	}*/
 	
-	return (g_planner_buffer_rd->next)->entry_speed_sqr;
+	PLANNER_MOTION *m = buffer_get_first(g_planner_buffer);//BUFFER_PTR(g_planner_buffer, next_motion);
+	
+	if(m==NULL)
+		return 0;
+	
+	return m->entry_speed_sqr;
+}
+
+void planner_discard_block()
+{
+	buffer_read(g_planner_buffer, NULL);
 }
 
 void planner_recalculate()
 {
-	PLANNER_MOTION_BLOCK *block = g_planner_buffer_wt;
-
+	//uint8_t block_index = BUFFER_WRITE_INDEX(g_planner_buffer);
 	//buffer only has one block or is fully optimized so no calculations to be done
-	if(planner_buffer_empty() || g_planner_buffer_wt->optimal)
+	if(buffer_get_last(g_planner_buffer) == buffer_get_first(g_planner_buffer)) 
 	{
 		return;
 	}
+	
+	PLANNER_MOTION *block = buffer_get_last(g_planner_buffer);//BUFFER_WRITE_PTR(g_planner_buffer);
+	
+	if(block->optimal)
+	{
+		return;
+	} 
 
 	//optimizes entry speeds given the current exit speed
 	float entry_speed_sqr = 2 * block->distance * block->acceleration;
 	block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
-	PLANNER_MOTION_BLOCK *next;
-	while(!block->optimal && block!=g_planner_buffer_rd)
+	PLANNER_MOTION *next;
+	while(!block->optimal && next!=buffer_get_first(g_planner_buffer))
 	{
+		//block_index = BUFFER_PREV_INDEX(g_planner_buffer, block_index);
 		next = block;
-		block = next->prev;
+		block = buffer_get_prev(g_planner_buffer, next);
+		//block = BUFFER_PTR(g_planner_buffer, block_index);
 		if(block->entry_speed_sqr != block->entry_max_speed_sqr)
 		{
 			entry_speed_sqr = next->entry_speed_sqr + 2 * block->distance * block->acceleration;
@@ -108,7 +138,7 @@ void planner_recalculate()
 		}
 	}
 	
-	while(block != g_planner_buffer_wt)
+	while(block != buffer_get_last(g_planner_buffer)/*block_index != BUFFER_WRITE_INDEX(g_planner_buffer)*/)
 	{
 		//next block is moving at a faster speed
 		if(block->entry_speed_sqr < next->entry_speed_sqr)
@@ -124,8 +154,9 @@ void planner_recalculate()
 			}
 		}
 		
+		//block_index = BUFFER_NEXT_INDEX(g_planner_buffer, block_index);
 		block = next;
-		next = block->next;
+		next = buffer_get_next(g_planner_buffer, block);//BUFFER_PTR(g_planner_buffer, block_index);
 	}
 }
 
@@ -138,46 +169,47 @@ void planner_recalculate()
 */
 void planner_add_line(float* axis, float feed)
 {
-	g_planner_buffer_wt->dirbits = 0;
-	g_planner_buffer_wt->target_speed = feed;
-	g_planner_buffer_wt->optimal = false;
-	g_planner_buffer_wt->acceleration = FLT_MAX;
-	g_planner_buffer_wt->max_speed = FLT_MAX;
-	g_planner_buffer_wt->entry_speed_sqr = 0;
-	g_planner_buffer_wt->entry_max_speed_sqr = 0;
+	PLANNER_MOTION *m = buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
+	m->dirbits = 0;
+	m->target_speed = feed;
+	m->optimal = false;
+	m->acceleration = FLT_MAX;
+	m->max_speed = FLT_MAX;
+	m->entry_speed_sqr = 0;
+	m->entry_max_speed_sqr = 0;
 
-	g_planner_buffer_wt->distance = 0;
+	m->distance = 0;
 	for(uint8_t i = AXIS_COUNT; i != 0; )
 	{
 		i--;
-		g_planner_buffer_wt->dir_vect[i] = axis[i] - g_planner_coord[i];
-		g_planner_buffer_wt->dirbits<<=1;
-		if(g_planner_buffer_wt->dir_vect[i] != 0)
+		m->dir_vect[i] = axis[i] - g_planner_coord[i];
+		m->dirbits<<=1;
+		if(m->dir_vect[i] != 0)
 		{
-			g_planner_buffer_wt->distance += g_planner_buffer_wt->dir_vect[i] * g_planner_buffer_wt->dir_vect[i];
-			if(g_planner_buffer_wt->dir_vect[i]<0) //sets direction bits
+			m->distance += m->dir_vect[i] * m->dir_vect[i];
+			if(m->dir_vect[i]<0) //sets direction bits
 			{
-				g_planner_buffer_wt->dirbits |= 0x01;
+				m->dirbits |= 0x01;
 			}
 		}
 	}
 
 	//if no motion ignores planner block instruction
-	if(g_planner_buffer_wt->distance == 0)
+	if(m->distance == 0)
 	{
 		return;
 	}
 	
 	uint32_t steps_pos[STEPPER_COUNT];
 	kinematics_apply_inverse(axis, (uint32_t*)&steps_pos);
-	uint8_t dirs = g_planner_buffer_wt->dirbits;
+	uint8_t dirs = m->dirbits;
 	for(uint8_t i = 0; i < STEPPER_COUNT; i++)
 	{
-		g_planner_buffer_wt->steps[i] = (dirs & 0x01) ? (g_planner_steppos[i]-steps_pos[i]) : (steps_pos[i]-g_planner_steppos[i]);
+		m->steps[i] = (dirs & 0x01) ? (g_planner_steppos[i]-steps_pos[i]) : (steps_pos[i]-g_planner_steppos[i]);
 		dirs>>=1;
-		if(g_planner_buffer_wt->totalsteps < g_planner_buffer_wt->steps[i])
+		if(m->totalsteps < m->steps[i])
 		{
-			g_planner_buffer_wt->totalsteps = g_planner_buffer_wt->steps[i];			
+			m->totalsteps = m->steps[i];			
 		}
 	}
 
@@ -186,46 +218,50 @@ void planner_add_line(float* axis, float feed)
 	//this is given by the equation cos(theta) = dotprod(u,v)/(magnitude(u)*magnitude(v))
 	//since normalized vector are being used (magnitude=1) this simplifies to cos(theta) = dotprod(u,v)
 	//in the same loop the maximum linear speed and accel is calculated
-	g_planner_buffer_wt->distance = sqrtf(g_planner_buffer_wt->distance);
-	float inv_magn = 1.0f/g_planner_buffer_wt->distance;
+	m->distance = sqrtf(m->distance);
+	float inv_magn = 1.0f/m->distance;
 	float cos_theta = 0;
-	dirs = g_planner_buffer_wt->dirbits;
+	dirs = m->dirbits;
+	//uint8_t prev_index = BUFFER_WRITE_INDEX(g_planner_buffer);
+	//prev_index = BUFFER_PREV_INDEX(g_planner_buffer,prev_index);
+	PLANNER_MOTION *prev = buffer_get_prev(g_planner_buffer, m);//BUFFER_PTR(g_planner_buffer, prev_index);
+	
 	for(uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		//if axis doesn't move skip computations
-		if(g_planner_buffer_wt->dir_vect[i] != 0)
+		if(m->dir_vect[i] != 0)
 		{
-			g_planner_buffer_wt->dir_vect[i] *= inv_magn;
-			if(g_planner_buffer_wt != g_planner_buffer_rd)
+			m->dir_vect[i] *= inv_magn;
+			if(prev != NULL)
 			{
-				cos_theta += g_planner_buffer_wt->dir_vect[i] * (g_planner_buffer_wt->prev)->dir_vect[i];
+				cos_theta += m->dir_vect[i] * prev->dir_vect[i];
 			}
 			
-			float dir_axis_abs = (dirs & 0x01) ? -g_planner_buffer_wt->dir_vect[i] : g_planner_buffer_wt->dir_vect[i];
+			float dir_axis_abs = (dirs & 0x01) ? -m->dir_vect[i] : m->dir_vect[i];
 			
 			//calcs maximum allowable speed for this diretion
 			float axis_speed = g_settings.max_speed[i] / dir_axis_abs;
-			g_planner_buffer_wt->max_speed = MIN(g_planner_buffer_wt->max_speed, axis_speed);
+			m->max_speed = MIN(m->max_speed, axis_speed);
 			//calcs maximum allowable acceleration for this direction
 			float axis_accel = g_settings.max_accel[i] / dir_axis_abs;
-			g_planner_buffer_wt->acceleration = MIN(g_planner_buffer_wt->acceleration, axis_accel);
+			m->acceleration = MIN(m->acceleration, axis_accel);
 		}
 		
 		dirs>>=1;
 	}
 
 	//reduces target speed if exceeds the maximum allowed speed in the current direction
-	if(g_planner_buffer_wt->target_speed > g_planner_buffer_wt->max_speed)
+	if(m->target_speed > m->max_speed)
 	{
-		g_planner_buffer_wt->target_speed = g_planner_buffer_wt->max_speed;
+		m->target_speed = m->max_speed;
 	}
 	
 	//sets entry and max junction speeds as if it would start and finish from a stoped state
-	g_planner_buffer_wt->entry_speed_sqr = 0;
-	g_planner_buffer_wt->entry_max_speed_sqr = 0;
+	m->entry_speed_sqr = 0;
+	m->entry_max_speed_sqr = 0;
 	
 	//if more than one move stored cals juntion speeds and recalculates speed profiles
-	if(g_planner_buffer_wt != g_planner_buffer_rd)
+	if(prev != NULL)
 	{
 		//calculates the junction angle with previous
 		if(cos_theta > 0)
@@ -237,17 +273,17 @@ void planner_add_line(float* axis, float feed)
 			//this way the output will be between 0<tan(theta/2)<inf
 			//but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
 			//all angles greater than 1 that can be excluded
-			g_planner_buffer_wt->angle_factor = 1.0f / (1.0f + cos_theta);
-			g_planner_buffer_wt->angle_factor *= sqrt((1.0f-cos_theta*cos_theta));
+			m->angle_factor = 1.0f / (1.0f + cos_theta);
+			m->angle_factor *= sqrt((1.0f-cos_theta*cos_theta));
 		}
 	
 		//sets the maximum allowed speed at junction (if angle doesn't force a full stop)
-		if(g_planner_buffer_wt->angle_factor < 1.0f)
+		if(m->angle_factor < 1.0f)
 		{
-			g_planner_buffer_wt->entry_max_speed_sqr = g_planner_buffer_wt->target_speed*g_planner_buffer_wt->target_speed;
-			float junc_speed_sqr = (g_planner_buffer_wt->prev)->target_speed*(1-g_planner_buffer_wt->angle_factor);
+			m->entry_max_speed_sqr = m->target_speed*m->target_speed;
+			float junc_speed_sqr = prev->target_speed*(1-m->angle_factor);
 			junc_speed_sqr *= junc_speed_sqr; //sqr speed
-			g_planner_buffer_wt->entry_max_speed_sqr = MIN(g_planner_buffer_wt->entry_max_speed_sqr, junc_speed_sqr);
+			m->entry_max_speed_sqr = MIN(m->entry_max_speed_sqr, junc_speed_sqr);
 		}
 		
 		
@@ -256,11 +292,11 @@ void planner_add_line(float* axis, float feed)
 	else
 	{
 		//first motion in buffer. Not optimizable
-		g_planner_buffer_wt->optimal = true;
+		m->optimal = true;
 	}
 
 	//advances the buffer
-	g_planner_buffer_wt = g_planner_buffer_wt->next;
+	//BUFFER_WRITE_PTR_INC(g_planner_buffer);
 	//updates the current planner coordinates
 	memcpy(&g_planner_coord, axis, AXIS_COUNT*sizeof(float));
 }

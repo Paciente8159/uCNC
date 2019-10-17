@@ -29,6 +29,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef PSTR
+	#define PSTR(str) str
+#endif
+
 typedef void (*ISRTIMER)();
 typedef void (*ISRPINCHANGE)(volatile uint32_t*);
 typedef void (*ISRCOMRX)(volatile char);
@@ -67,9 +71,9 @@ void board_enableInterrupts();
 void board_disableInterrupts();
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void board_startPulse(uint32_t frequency);
+void board_startPulse(float frequency);
 //modifies the pulse frequency
-void board_changePulse(uint32_t frequency);
+void board_changePulse(float frequency);
 //stops the pulse 
 void board_stopPulse();
 //attaches a function handle to the pulse ISR
@@ -80,13 +84,14 @@ void board_attachOnPulseReset(ISRTIMER handler);
 void board_detachOnPulseReset();
 
 //starts a constant rate integrator at a given frequency.
-void board_startIntegrator(uint32_t frequency);
+void board_startIntegrator(float frequency);
 //stops the pulse 
 void board_stopIntegrator();
 //attaches a function handle to the integrator ISR
 void board_attachOnIntegrator(ISRTIMER handler);
 void board_detachOnIntegrator();
 
+void board_printfp(const char* __fmt, ...);
 uint8_t board_readProgMemByte(uint8_t* src);
 uint8_t board_eeprom_getc(uint16_t address);
 uint8_t board_eeprom_putc(uint16_t address, uint8_t value);
@@ -96,12 +101,15 @@ uint8_t board_eeprom_putc(uint16_t address, uint8_t value);
 typedef struct {
 	uint16_t pulseCounter;
 	uint16_t resetPulseCounter;
+	uint16_t integratorCounter;
 	uint16_t pinChangeCounter;
 } PERFORMANCE_METER;
 
 extern volatile PERFORMANCE_METER board_performacecounters;
 void board_startPerfCounter();
 uint16_t board_stopPerfCounter();
+
+void board_loadDummyPayload(const char* __fmt, ...);
 #endif
 
 
