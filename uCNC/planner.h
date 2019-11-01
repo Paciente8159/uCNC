@@ -27,9 +27,9 @@ typedef struct
 	uint16_t accel_rate;
 	uint16_t speed_rate;*/
 	uint8_t dirbits;
-	uint32_t steps[STEPPER_COUNT];
-	uint32_t totalsteps;
-
+	/*uint32_t steps[STEPPER_COUNT];
+	uint32_t totalsteps;*/
+	float pos[AXIS_COUNT];
 	float dir_vect[AXIS_COUNT];
 
 	float distance;

@@ -9,6 +9,8 @@
 #include "config.h"
 
 #if(MACHINE_KINEMATICS==MACHINE_CARTESIAN_XYZ)
+#include <stdio.h>
+#include "mcu.h"
 #include "settings.h"
 #include "kinematics.h"
 #include "machinedefs.h"

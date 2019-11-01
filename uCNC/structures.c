@@ -3,9 +3,8 @@
 #include <stdint.h>
 
 #include "config.h"
-#include "cpudefs.h"
 #include "structures.h"
-#include "board.h"
+#include "mcu.h"
 
 #ifndef PROGMEM
 #define PROGMEM
@@ -50,7 +49,7 @@ uint8_t crc7 (uint8_t  crc, uint8_t *pc, int len)
 {
     do
     {
-    	crc = board_readProMemByte((uint8_t*)&crc7_table[crc ^ *pc++]);
+    	crc = mcu_readProMemByte((uint8_t*)&crc7_table[crc ^ *pc++]);
 	} while (--len);
 	
     return crc;

@@ -1,6 +1,6 @@
 #include "config.h"
 #include "protocol.h"
-#include "board.h"
+#include "mcu.h"
 
 /*
 	Synchronizes the packet protocol
@@ -19,29 +19,29 @@ void protocol_sync()
 	do
 	{
 		syncchar= 0x55;
-		while(board_comPeek()!=0xAA)
+		while(mcu_comPeek()!=0xAA)
 		{
 			counter++;
-			board_comSendPacket(&syncchar, 1);
+			mcu_comSendPacket(&syncchar, 1);
 		}
 		
 		//empties the buffer
-		while(board_comPeek()>=0)
+		while(mcu_comPeek()>=0)
 		{
-			board_comGetPacket(&syncchar,1);
+			mcu_comGetPacket(&syncchar,1);
 		}
 		
 		//sends counter
-		board_comSendPacket(&counter, 1);
+		mcu_comSendPacket(&counter, 1);
 		
 		//waits for reply
-		while(board_comPeek()<0);
-		board_comGetPacket(&syncchar, 1);
+		while(mcu_comPeek()<0);
+		mcu_comGetPacket(&syncchar, 1);
 		
 	} while(crc7(0,&counter, 1) != syncchar);
 	
 	//clears com buffer
-	board_comClear();
+	mcu_comClear();
 }
 
 /*
@@ -60,18 +60,18 @@ uint8_t protocol_get_packet(CMD_PACKET* packet)
 {
 	uint8_t result = 0;
 	//if nothing available in the coms buffer exit and continue
-	if(board_comPeek() < 0)
+	if(mcu_comPeek() < 0)
 		return result;
 		
 	//if the packet was incomplete exit and continue
-	if(board_comGetPacket((uint8_t*)packet, sizeof(CMD_PACKET))==0)
+	if(mcu_comGetPacket((uint8_t*)packet, sizeof(CMD_PACKET))==0)
 		return result;
 		
 	//check packet crc
 	if(crc7(0, (uint8_t*)packet, sizeof(CMD_PACKET) - 1) == packet->crc)
 	{
 		result = crc7(0, &(packet->crc), 1);
-		board_comSendPacket(&result, 1);
+		mcu_comSendPacket(&result, 1);
 	}
 	
 	return result;

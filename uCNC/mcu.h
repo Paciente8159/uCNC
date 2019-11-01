@@ -2,7 +2,7 @@
 * FILENAME :        fmcompres.c             DESIGN REF: FMCM00
 *
 * DESCRIPTION :
-*       Board basic functions for the board controller.
+*       Board basic functions for the mcu controller.
 *
 * PUBLIC FUNCTIONS :
 *       int     FM_CompressFile( FileHandle )
@@ -23,81 +23,90 @@
 *
 *H*/
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef MCU_H
+#define MCU_H
 
-#include <stdint.h>
-#include <stdbool.h>
+#include "mcudefs.h"
 
 #ifndef PSTR
 	#define PSTR(str) str
 #endif
 
+#include <stdint.h>
+
 typedef void (*ISRTIMER)();
 typedef void (*ISRPINCHANGE)(volatile uint32_t*);
 typedef void (*ISRCOMRX)(volatile char);
 
-void board_init();
+void mcu_init();
 
 //IO functions    
 //Inputs  
 //returns the value of the input pins
-uint16_t board_getInputs();
+uint16_t mcu_getInputs();
 //returns the value of the critical input pins
-uint8_t board_getCriticalInputs();
+uint8_t mcu_getControls();
+uint8_t mcu_getLimits();
+uint8_t mcu_getProbe();
 //attaches a function handle to the input pin changed ISR
-void board_attachOnInputChange(ISRPINCHANGE handler);
+void mcu_attachOnInputChange(ISRPINCHANGE handler);
 //detaches the input pin changed ISR
-void board_detachOnInputChange();
+void mcu_detachOnInputChange();
 
 //outputs
-//sets all step and dir pins
-void board_setStepDirs(uint16_t value);
+//sets all step pins
+void mcu_setSteps(uint8_t value);
+//sets all dir pins
+void mcu_setDirs(uint8_t value);
 //sets all digital outputs pins
-void board_setOutputs(uint16_t value);
+void mcu_setOutputs(uint16_t value);
 
 //Communication functions
-void board_putc(char c);
-char board_getc();
-char board_peek();
-void board_bufferClear();
-void board_attachOnReadChar(ISRCOMRX handler);
-void board_detachOnReadChar();
+void mcu_putc(char c);
+char mcu_getc();
+char mcu_peek();
+void mcu_bufferClear();
+void mcu_attachOnReadChar(ISRCOMRX handler);
+void mcu_detachOnReadChar();
 
 //RealTime
-//enables all interrupts on the board. Must be called to enable all IRS functions
-void board_enableInterrupts();
+//enables all interrupts on the mcu. Must be called to enable all IRS functions
+void mcu_enableInterrupts();
 //disables all ISR functions
-void board_disableInterrupts();
+void mcu_disableInterrupts();
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void board_startPulse(float frequency);
+void mcu_startPulse(float frequency);
 //modifies the pulse frequency
-void board_changePulse(float frequency);
+void mcu_changePulse(float frequency);
 //stops the pulse 
-void board_stopPulse();
+void mcu_stopPulse();
 //attaches a function handle to the pulse ISR
-void board_attachOnPulse(ISRTIMER handler);
-void board_detachOnPulse();
+void mcu_attachOnPulse(ISRTIMER handler);
+void mcu_detachOnPulse();
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void board_attachOnPulseReset(ISRTIMER handler);
-void board_detachOnPulseReset();
+void mcu_attachOnPulseReset(ISRTIMER handler);
+void mcu_detachOnPulseReset();
 
 //starts a constant rate integrator at a given frequency.
-void board_startIntegrator(float frequency);
+void mcu_startIntegrator();
 //stops the pulse 
-void board_stopIntegrator();
+void mcu_stopIntegrator();
+//suspends the integrator
+void mcu_pauseIntegrator();
+//resumes the integrator
+void mcu_resumeIntegrator();
 //attaches a function handle to the integrator ISR
-void board_attachOnIntegrator(ISRTIMER handler);
-void board_detachOnIntegrator();
+void mcu_attachOnIntegrator(ISRTIMER handler);
+void mcu_detachOnIntegrator();
 
-void board_printfp(const char* __fmt, ...);
-uint8_t board_readProgMemByte(uint8_t* src);
-uint8_t board_eeprom_getc(uint16_t address);
-uint8_t board_eeprom_putc(uint16_t address, uint8_t value);
+void mcu_printfp(const char* __fmt, ...);
+uint8_t mcu_readProgMemByte(uint8_t* src);
+uint8_t mcu_eeprom_getc(uint16_t address);
+uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
 
 //measure performance
-#ifdef DEBUGMODE
+#ifdef __DEBUG__
 typedef struct {
 	uint16_t pulseCounter;
 	uint16_t resetPulseCounter;
@@ -105,11 +114,14 @@ typedef struct {
 	uint16_t pinChangeCounter;
 } PERFORMANCE_METER;
 
-extern volatile PERFORMANCE_METER board_performacecounters;
-void board_startPerfCounter();
-uint16_t board_stopPerfCounter();
+extern volatile PERFORMANCE_METER mcu_performacecounters;
+void mcu_startTickCounter();
+uint32_t mcu_getCycles();
+uint32_t mcu_getElapsedCycles(uint32_t cycle_ref);
+//void uint32_t tickcount = mcu_getCycles();
+//uint16_t mcu_stopPerfCounter();
 
-void board_loadDummyPayload(const char* __fmt, ...);
+void mcu_loadDummyPayload(const char* __fmt, ...);
 #endif
 
 

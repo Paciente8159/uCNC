@@ -96,7 +96,7 @@ uint8_t g_board_bufferhead;
 uint8_t g_board_buffertail;
 uint8_t g_board_buffercount;
 
-#ifdef DEBUGMODE
+#ifdef __DEBUG__
 #define MAX(A,B) if(B>A) A=B
 volatile uint8_t g_board_perfCounterOffset = 0;
 volatile PERFORMANCE_METER board_performacecounters;

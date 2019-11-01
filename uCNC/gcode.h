@@ -95,5 +95,6 @@ typedef struct
 
 void gcode_init();
 void gcode_parse_nextline();
+void gcode_print_states();
 
 #endif
