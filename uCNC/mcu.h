@@ -75,19 +75,21 @@ void mcu_enableInterrupts();
 //disables all ISR functions
 void mcu_disableInterrupts();
 
+//
+void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps);
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startPulse(float frequency);
+void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller);
 //modifies the pulse frequency
-void mcu_changePulse(float frequency);
+void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller);
 //stops the pulse 
-void mcu_stopPulse();
+void mcu_stopStepISR();
 //attaches a function handle to the pulse ISR
-void mcu_attachOnPulse(ISRTIMER handler);
-void mcu_detachOnPulse();
+void mcu_attachOnStep(ISRTIMER handler);
+void mcu_detachOnStep();
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void mcu_attachOnPulseReset(ISRTIMER handler);
-void mcu_detachOnPulseReset();
-
+void mcu_attachOnStepReset(ISRTIMER handler);
+void mcu_detachOnStepReset();
+/*
 //starts a constant rate integrator at a given frequency.
 void mcu_startIntegrator();
 //stops the pulse 
@@ -99,7 +101,7 @@ void mcu_resumeIntegrator();
 //attaches a function handle to the integrator ISR
 void mcu_attachOnIntegrator(ISRTIMER handler);
 void mcu_detachOnIntegrator();
-
+*/
 void mcu_printfp(const char* __fmt, ...);
 uint8_t mcu_readProgMemByte(uint8_t* src);
 uint8_t mcu_eeprom_getc(uint16_t address);

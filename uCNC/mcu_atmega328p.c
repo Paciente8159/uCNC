@@ -84,9 +84,9 @@ volatile IO_REGISTER g_mcu_inputs;
 //volatile OUTPUT_REGISTER g_mcu_outputs;
 volatile IO_REGISTER g_mcu_pouts;
 
-ISRTIMER g_mcu_pulseCallback;
-ISRTIMER g_mcu_pulseResetCallback;
-ISRTIMER g_mcu_integratorCallback;
+ISRTIMER g_mcu_stepCallback;
+ISRTIMER g_mcu_stepResetCallback;
+//ISRTIMER g_mcu_integratorCallback;
 volatile uint16_t g_mcu_tmr0_counter;
 volatile uint16_t g_mcu_tmr0_value;
 
@@ -95,37 +95,30 @@ ISRCOMRX g_mcu_rs232RxCallback;
 
 ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
-    /*if(g_mcu_pulseCallback!=NULL)
+    /*if(g_mcu_stepCallback!=NULL)
 	{
-    	g_mcu_pulseCallback();
-	}*/
-	interpolator_rt_pulse();
+    	g_mcu_stepCallback();
+	}
+	*/interpolator_step();
 }
 
 ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
-    /*if(g_mcu_pulseResetCallback!=NULL)
+    /*if(g_mcu_stepResetCallback!=NULL)
 	{
-    	g_mcu_pulseResetCallback();
-	}*/
-	interpolator_rt_pulsereset();
+    	g_mcu_stepResetCallback();
+	}
+	*/interpolator_stepReset();
 }
 
-ISR(TIMER0_OVF_vect, ISR_BLOCK)
+/*ISR(TIMER0_OVF_vect, ISR_BLOCK)
 {
-	/*if(!--g_mcu_tmr0_counter)
-	{
-		g_mcu_tmr0_counter = g_mcu_tmr0_value;
-		if(g_mcu_integratorCallback!=NULL)
-    		g_mcu_integratorCallback();
-	}*/
-	
-	/*if(g_mcu_integratorCallback!=NULL)
+	if(g_mcu_integratorCallback!=NULL)
 	{
 		g_mcu_integratorCallback();
-	}*/
+	}
 	interpolator_rt_integrator();
-}
+}*/
 
 #ifdef PORTISR0
 	ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
@@ -219,8 +212,8 @@ void mcu_init()
 {
     IO_REGISTER reg = {};
     
-    g_mcu_pulseCallback = NULL;
-	g_mcu_pulseResetCallback = NULL;
+    g_mcu_stepCallback = NULL;
+	g_mcu_stepResetCallback = NULL;
 	g_mcu_pinChangeCallback = NULL;
 	g_mcu_rs232RxCallback = NULL;
 	
@@ -588,72 +581,60 @@ uint16_t mcu_stopPerfCounter()
 #endif
 
 //RealTime
+void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
+{
+	if(frequency < F_PULSE_MIN)
+		frequency = F_PULSE_MIN;
+	if(frequency > F_PULSE_MAX)
+		frequency = F_PULSE_MAX;
+		
+	bool setprescaler = (frequency<245);
+	
+	*tick_reps = (!setprescaler) ? 1 : 64;
+
+	*ticks = (!setprescaler) ? floorf((F_CPU/frequency)) - 1 : floorf((F_CPU*0.015625f/frequency)) - 1;
+}
 /*
 	initializes the pulse ISR
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-void mcu_startPulse(float frequency)
+void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
 {
-	if(frequency < F_PULSE_MIN)
-		frequency = F_PULSE_MIN;
-	if(frequency > F_PULSE_MAX)
-		frequency = F_PULSE_MAX;
-	
 	//stops timer
 	TCCR1B = 0;
-	
-	//for freq below 245 set prescaler to 64
-	bool setprescaler = (frequency<245);
-
 	//CTC mode
     TCCR1A = 0;
     //resets counter
     TCNT1 = 0;
-    
-    float pulse_dur = (!setprescaler) ? 1.0f/frequency : 0.015625f/frequency;
-    // set compare match register
-    //on match of OCR1A will auto reset
-    OCR1A = (F_CPU*pulse_dur) - 1; // = F_CPU/(prescaler*frequency) - 1;
+    //set step clock
+    OCR1A = clocks_speed;
 	//sets OCR0B to half
-	//this will allways fire the reset_pulse between pulses
+	//this will allways fire step_reset between pulses
     OCR1B = OCR1A>>1;
-
 	TIFR1 = 0;
 	// enable timer interrupts on both match registers
     TIMSK1 |= (1 << OCIE1B) | (1 << OCIE1A);
     
 	//start timer in CTC mode with the correct prescaler (none or 64)
-	TCCR1B = (!setprescaler) ? 9 : 11;
+	TCCR1B = (prescaller == 1) ? 9 : 11;
 }
 
 // se implementar amass deixo de necessitar de prescaler
-void mcu_changePulse(float frequency)
+void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller)
 {
-	if(frequency < F_PULSE_MIN)
-		frequency = F_PULSE_MIN;
-	if(frequency > F_PULSE_MAX)
-		frequency = F_PULSE_MAX;
 	//stops timer
 	TCCR1B = 0;
-	//for freq below 245 set prescaler to 64
-	bool setprescaler = (frequency<245);
-
-    float pulse_dur = (!setprescaler) ? 1.0f/frequency : 0.015625f/frequency;
-    // set compare match register
-    //on match of OCR1A will auto reset
-    OCR1A = (uint16_t)(F_CPU*pulse_dur) - 1;
+	OCR1A = clocks_speed;
 	//sets OCR0B to half
-	//this will allways fire the reset_pulse between pulses
+	//this will allways fire step_reset between pulses
     OCR1B = OCR1A>>1;
-    
-    //forces a pulse
-    if(TCNT1>OCR1A)
-    {
-    	TCNT1 = OCR1A - 2;
-	}
+	
+	//ensures the step event occurs next and stepReset has time to finnish
+    TCNT1 = OCR1B + 1;
+	
 	//start timer in CTC mode with the correct prescaler (none or 64)
-	TCCR1B = (!setprescaler) ? 9 : 11;
+	TCCR1B = (prescaller == 1) ? 9 : 11;
 }
 
 void mcu_stopPulse()
@@ -662,16 +643,16 @@ void mcu_stopPulse()
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
 }
 
-void mcu_attachOnPulse(ISRTIMER handler)
+void mcu_attachOnStep(ISRTIMER handler)
 {
-	g_mcu_pulseCallback = handler;
+	g_mcu_stepCallback = handler;
 }
 
-void mcu_attachOnPulseReset(ISRTIMER handler)
+void mcu_attachOnStepReset(ISRTIMER handler)
 {
-	g_mcu_pulseResetCallback = handler;
+	g_mcu_stepResetCallback = handler;
 }
-
+/*
 //starts a constant rate integrator
 //timer0 overflow with prescaller at 256
 //frequency of integrator = F_CPU/256
@@ -721,7 +702,7 @@ void mcu_detachOnIntegrator()
 {
 	g_mcu_integratorCallback = NULL;
 }
-
+*/
 void mcu_printp(const char *__fmt)
 {
 	char buffer[50];

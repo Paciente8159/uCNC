@@ -14,13 +14,14 @@
 #include "mcu.h"
 #include "settings.h"
 #include "planner.h"
+#include "interpolator.h"
 #include "ringbuffer.h"
 #include "utils.h"
 
 uint32_t g_planner_steppos[STEPPER_COUNT];
 float g_planner_coord[AXIS_COUNT];
 float g_planner_dir_vect[AXIS_COUNT];
-static PLANNER_MOTION g_planner_data[PLANNER_BUFFER_SIZE];
+static PLANNER_BLOCK g_planner_data[PLANNER_BUFFER_SIZE];
 //ringbuffer_t g_planner_buffer_ring;
 buffer_t g_planner_buffer;
 
@@ -30,8 +31,8 @@ void planner_init()
 	memset(&g_planner_coord, 0, AXIS_COUNT*sizeof(float));
 	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
 	//resets buffer
-	memset(&g_planner_data, 0, sizeof(PLANNER_MOTION)*PLANNER_BUFFER_SIZE);
-	g_planner_buffer = buffer_init(/*&g_planner_buffer_ring,*/ &g_planner_data, sizeof(PLANNER_MOTION), PLANNER_BUFFER_SIZE);
+	memset(&g_planner_data, 0, sizeof(PLANNER_BLOCK)*PLANNER_BUFFER_SIZE);
+	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_BLOCK), PLANNER_BUFFER_SIZE);
 	
 	#ifdef __DEBUG__
 	mcu_printfp(PSTR("Planner initialized\n"));
@@ -48,19 +49,57 @@ bool planner_buffer_empty()
 	return is_buffer_empty(g_planner_buffer);
 }
 
-PLANNER_MOTION* planner_get_block()
+PLANNER_BLOCK* planner_get_block()
 {
 	return buffer_get_first(g_planner_buffer);
 }
 
 float planner_get_block_exit_speed_sqr()
 {
-	PLANNER_MOTION *m = buffer_get_first(g_planner_buffer);//BUFFER_PTR(g_planner_buffer, next_motion);
+	//pointer to first buffer
+	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
 	
-	if(m==NULL)
+	//only one block in the buffer (exit speed is 0)
+	if(m==buffer_get_last(g_planner_buffer))
 		return 0;
+
+	//exit speed = next block entry speed
+	m = buffer_get_next(g_planner_buffer, m);
 	
 	return m->entry_speed_sqr;
+}
+
+float planner_get_block_top_speed(float exit_speed_sqr)
+{
+	//pointer to first buffer
+	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
+	
+	/*
+	Computed the junction speed
+	
+	At full acceleration and deacceleration we have the following equations
+		v_max^2 = v_entry^2 + 2 * distance * acceleration
+		v_max^2 = v_exit^2 + 2 * distance * acceleration
+		
+	In this case v_max^2 for acceleration and deacceleration will be the same at
+	
+	d_deaccel = d_total - d_start;
+	
+	this translates to the equation
+	
+	v_max = v_entry + (2 * acceleration * distance + v_exit - v_entry)/acceleration
+	*/
+
+	float speed_delta = exit_speed_sqr - m->entry_speed_sqr;
+	float speed_change = 2 * m->acceleration * m->distance;
+	speed_change += speed_delta;
+	speed_change /= m->acceleration;
+	float junction_speed_sqr = m->entry_speed_sqr + speed_change;
+
+	//the average speed can't ever exceed the target speed
+	float target_speed_sqr = m->target_speed*m->target_speed;
+
+	return MIN(junction_speed_sqr, target_speed_sqr);
 }
 
 void planner_discard_block()
@@ -70,11 +109,11 @@ void planner_discard_block()
 
 void planner_recalculate()
 {
-	PLANNER_MOTION *last = buffer_get_next_free(g_planner_buffer);
-	PLANNER_MOTION *first = buffer_get_first(g_planner_buffer);
+	PLANNER_BLOCK *last = buffer_get_next_free(g_planner_buffer);
+	PLANNER_BLOCK *first = buffer_get_first(g_planner_buffer);
 	
 	//starts from the last block
-	PLANNER_MOTION *block = last;
+	PLANNER_BLOCK *block = last;
 	
 	
 	//starts in the last added block
@@ -82,25 +121,19 @@ void planner_recalculate()
 	float entry_speed_sqr = 2 * block->distance * block->acceleration;
 	block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
 	//optimizes entry speeds given the current exit speed (backward pass)
-	PLANNER_MOTION *next = NULL;
+	PLANNER_BLOCK *next = block;
+	block = buffer_get_prev(g_planner_buffer, next);
+	
 	while(!block->optimal && block != first)
 	{
-		next = block;
-		block = buffer_get_prev(g_planner_buffer, next);
 		if(block->entry_speed_sqr != block->entry_max_speed_sqr)
 		{
 			entry_speed_sqr = next->entry_speed_sqr + 2 * block->distance * block->acceleration;
-			//block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
-			if(entry_speed_sqr > block->entry_max_speed_sqr)
-			{
-				block->entry_speed_sqr = block->entry_max_speed_sqr;
-				block->optimal = true;
-			}
-			else
-			{
-				block->entry_speed_sqr = entry_speed_sqr;
-			}
+			block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
 		}
+		
+		next = block;
+		block = buffer_get_prev(g_planner_buffer, next);
 	}
 
 	//optimizes exit speeds (forward pass)
@@ -116,13 +149,18 @@ void planner_recalculate()
 				//lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
 				//optimization achieved for this movement
 				next->entry_speed_sqr = exit_speed_sqr;
-				block->optimal = true;
+				next->optimal = true;
 			}
 		}
 		
-		//block_index = BUFFER_NEXT_INDEX(g_planner_buffer, block_index);
+		//if the executing block was updated then update the interpolator limits
+		if(block == first)
+		{
+			interpolator_update();
+		}
+
 		block = next;
-		next = buffer_get_next(g_planner_buffer, block);//BUFFER_PTR(g_planner_buffer, block_index);
+		next = buffer_get_next(g_planner_buffer, block);
 	}
 }
 
@@ -135,7 +173,7 @@ void planner_recalculate()
 */
 void planner_add_line(float *axis, float feed)
 {
-	PLANNER_MOTION *m = buffer_get_next_free(g_planner_buffer);//buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
+	PLANNER_BLOCK *m = buffer_get_next_free(g_planner_buffer);//buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
 	m->dirbits = 0;
 	m->target_speed = feed;
 	m->optimal = false;
@@ -167,6 +205,8 @@ void planner_add_line(float *axis, float feed)
 		return;
 	}
 	
+	//MOVED TO THE INTERPOLATOR
+	
 	/*uint32_t steps_pos[STEPPER_COUNT];
 	kinematics_apply_inverse(axis, (uint32_t*)&steps_pos);
 	uint8_t dirs = m->dirbits;
@@ -191,7 +231,7 @@ void planner_add_line(float *axis, float feed)
 	uint8_t dirs = m->dirbits;
 	//uint8_t prev_index = BUFFER_WRITE_INDEX(g_planner_buffer);
 	//prev_index = BUFFER_PREV_INDEX(g_planner_buffer,prev_index);
-	PLANNER_MOTION *prev = NULL;
+	PLANNER_BLOCK *prev = NULL;
 	if(!is_buffer_empty(g_planner_buffer))
 	{
 		prev = buffer_get_prev(g_planner_buffer, m);//BUFFER_PTR(g_planner_buffer, prev_index);

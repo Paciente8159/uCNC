@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h> 
+#include <math.h>
 
 typedef struct virtual_map_t
 {
@@ -90,7 +91,7 @@ volatile bool pulse_enabled = false;
 volatile bool integrator_enabled = false;
 volatile unsigned long pulse_interval = 0;
 volatile unsigned long resetpulse_interval = 0;
-volatile unsigned long integrator_interval = 0;
+volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
 volatile unsigned long pulse_counter = 0;
 unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
@@ -114,16 +115,17 @@ void* timersimul()
 	//unsigned long integrator;
 	for(;;)
 	{
-		//unsigned long newticks = getTickCounter();
-		//unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
+		unsigned long newticks = ticks+1;//getTickCounter();
+		unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
+		//diff = F_CPU * diff / freq; 
 		
 		if(global_irq_enabled)
 		{
 			if(pulse_enabled)
-				(*pulse_counter_ptr)++;// += diff;
+				(*pulse_counter_ptr) += diff;
 		
 			if(integrator_enabled)
-				integrator_counter++;// += diff;
+				integrator_counter += diff;
 	
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
@@ -152,7 +154,7 @@ void* timersimul()
 			}
 		}
 		
-		//ticks = newticks;
+		ticks = newticks;
 	}
 }
 
@@ -360,6 +362,17 @@ void mcu_bufferClear()
 }
 
 //RealTime
+void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
+{
+	if(frequency < F_PULSE_MIN)
+		frequency = F_PULSE_MIN;
+	if(frequency > F_PULSE_MAX)
+		frequency = F_PULSE_MAX;
+
+	*ticks = (uint16_t)floorf((F_CPU/frequency)) - 1;
+	*tick_reps = 1;
+}
+
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
 void mcu_enableInterrupts()
 {
@@ -372,22 +385,24 @@ void mcu_disableInterrupts()
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startPulse(float frequency)
+void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
 {
-	pulse_interval = F_CPU/frequency;
-	resetpulse_interval = pulse_interval>>1;
+	pulse_interval = clocks_speed;
+	resetpulse_interval = clocks_speed>>1;
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
 
-void mcu_changePulse(float frequency)
+void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller)
 {
-	pulse_interval = F_CPU/frequency;
-	resetpulse_interval = pulse_interval>>1;
+	pulse_enabled = false;
+	pulse_interval = clocks_speed;
+	resetpulse_interval = clocks_speed>>1;
 	if((*pulse_counter_ptr)>=pulse_interval)
 	{
-		(*pulse_counter_ptr) = pulse_interval - 1;
+		(*pulse_counter_ptr) = resetpulse_interval - 2;
 	}
+	pulse_enabled = true;
 }
 //stops the pulse 
 void mcu_stopPulse()

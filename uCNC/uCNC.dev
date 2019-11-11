@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
 CompilerSettings=000000e000100000101000000
-UnitCount=29
+UnitCount=32
 
 [VersionInfo]
 Major=1
@@ -241,7 +241,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit30]
-FileName=planner.c
+FileName=cnc.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -251,7 +251,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit31]
-FileName=settings.c
+FileName=cnc.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -352,6 +352,16 @@ BuildCmd=
 
 [Unit25]
 FileName=mcu_atmega328p.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit32]
+FileName=kinematics_corexy.c
 CompileCpp=0
 Folder=
 Compile=1

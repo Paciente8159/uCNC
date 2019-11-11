@@ -11,13 +11,12 @@
 
 #include <stdint.h>
 
-#define INTERPOLATOR_BUFFER_SIZE 2
+#define INTERPOLATOR_BUFFER_SIZE 16
 
 void interpolator_init();
-void interpolator_exec_planner_block();
-void interpolator_update_block();
-void interpolator_rt_pulse();
-void interpolator_rt_pulsereset();
-void interpolator_rt_integrator();
+void interpolator_execute();
+void interpolator_update();
+void interpolator_step();
+void interpolator_stepReset();
 
 #endif
