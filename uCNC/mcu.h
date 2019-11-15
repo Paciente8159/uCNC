@@ -76,11 +76,11 @@ void mcu_enableInterrupts();
 void mcu_disableInterrupts();
 
 //
-void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps);
+void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller);
+void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
 //modifies the pulse frequency
-void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller);
+void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
 void mcu_stopStepISR();
 //attaches a function handle to the pulse ISR

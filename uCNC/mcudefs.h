@@ -8,7 +8,7 @@
 #include <avr/pgmspace.h>
 #include "mcumap_atmega328p.h"
 #define F_PULSE_MAX 30000
-#define F_PULSE_MIN 4
+#define F_PULSE_MIN 1
 #define F_INTEGRATOR 100 //integrator calculates 10ms slices
 #endif
 

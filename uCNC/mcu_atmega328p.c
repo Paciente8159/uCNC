@@ -581,25 +581,50 @@ uint16_t mcu_stopPerfCounter()
 #endif
 
 //RealTime
-void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
+void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 {
 	if(frequency < F_PULSE_MIN)
 		frequency = F_PULSE_MIN;
 	if(frequency > F_PULSE_MAX)
 		frequency = F_PULSE_MAX;
 		
-	bool setprescaler = (frequency<245);
-	
-	*tick_reps = (!setprescaler) ? 1 : 64;
+	float clockcounter = F_CPU;
+		
+	if(frequency >= 245)
+	{
+		*prescaller = 9;
+		
+	}
+	else if(frequency >= 31)
+	{
+		*prescaller = 10;
+		clockcounter *= 0.125f;
+	}
+	else if(frequency >= 4)
+	{
+		*prescaller = 11;
+		clockcounter *= 0.015625f;
+		
+	}
+	else if(frequency >= 1)
+	{
+		*prescaller = 12;
+		clockcounter *= 0.00390625f;
+	}
+	else
+	{
+		*prescaller = 13;
+		clockcounter *= 0.0009765625f;
+	}
 
-	*ticks = (!setprescaler) ? floorf((F_CPU/frequency)) - 1 : floorf((F_CPU*0.015625f/frequency)) - 1;
+	*ticks = floorf((clockcounter/frequency)) - 1;
 }
 /*
 	initializes the pulse ISR
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
+void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
 	TCCR1B = 0;
@@ -616,12 +641,12 @@ void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
 	// enable timer interrupts on both match registers
     TIMSK1 |= (1 << OCIE1B) | (1 << OCIE1A);
     
-	//start timer in CTC mode with the correct prescaler (none or 64)
-	TCCR1B = (prescaller == 1) ? 9 : 11;
+    //start timer in CTC mode with the correct prescaler
+    TCCR1B = prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
-void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller)
+void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
 	TCCR1B = 0;
@@ -629,12 +654,10 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller)
 	//sets OCR0B to half
 	//this will allways fire step_reset between pulses
     OCR1B = OCR1A>>1;
-	
-	//ensures the step event occurs next and stepReset has time to finnish
-    TCNT1 = OCR1B + 1;
-	
-	//start timer in CTC mode with the correct prescaler (none or 64)
-	TCCR1B = (prescaller == 1) ? 9 : 11;
+	//reset timer
+    TCNT1 = 0;
+	//start timer in CTC mode with the correct prescaler
+    TCCR1B = prescaller;
 }
 
 void mcu_stopPulse()

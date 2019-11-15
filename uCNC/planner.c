@@ -93,7 +93,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	float speed_delta = exit_speed_sqr - m->entry_speed_sqr;
 	float speed_change = 2 * m->acceleration * m->distance;
 	speed_change += speed_delta;
-	speed_change /= m->acceleration;
+	speed_change *= m->accel_inv;
 	float junction_speed_sqr = m->entry_speed_sqr + speed_change;
 
 	//the average speed can't ever exceed the target speed
@@ -101,6 +101,36 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
 	return MIN(junction_speed_sqr, target_speed_sqr);
 }
+//
+///*float planner_get_intersection_distance(float exit_speed_sqr)
+//{
+//	//pointer to first buffer
+//	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
+//	
+//	/*
+//	Computed the junction speed
+//	
+//	At full acceleration and deacceleration we have the following equations
+//		v_max^2 = v_entry^2 + 2 * distance * acceleration
+//		v_max^2 = v_exit^2 + 2 * distance * acceleration
+//		
+//	In this case v_max^2 for acceleration and deacceleration will be the same at
+//	
+//	v_max^2 = v_entry^2 + 2 * distance_entry * acceleration
+//	v_max^2 = v_exit^2 + 2 * distance_exit * acceleration
+//	
+//	this translates to the equation
+//	
+//	distance_offset = distance_entry - distance_exit = (v_exit^2 - v_entry^2)/(2 * acceleration)
+//	
+//	the junction distance will be
+//	distance_total / 2 + distance_offset
+//	*/
+//
+//	float speed_delta = exit_speed_sqr - m->entry_speed_sqr;
+//	float distance_offset = 0.5f * speed_delta * m->accel_inv;
+//	return 0.5f * (m->distance + distance_offset);
+//}
 
 void planner_discard_block()
 {
@@ -261,6 +291,7 @@ void planner_add_line(float *axis, float feed)
 		dirs>>=1;
 	}
 
+	m->accel_inv = 1.0f / m->acceleration;
 	//reduces target speed if exceeds the maximum allowed speed in the current direction
 	if(m->target_speed > m->max_speed)
 	{

@@ -31,6 +31,7 @@ typedef struct
 	float max_speed;
 	float target_speed;
 	float acceleration;
+	float accel_inv;
 
 	bool optimal;
 } PLANNER_BLOCK;

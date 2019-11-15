@@ -11,7 +11,7 @@
 
 #include <stdint.h>
 
-#define INTERPOLATOR_BUFFER_SIZE 16
+#define INTERPOLATOR_BUFFER_SIZE 10
 
 void interpolator_init();
 void interpolator_execute();

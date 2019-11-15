@@ -22,6 +22,7 @@ typedef struct virtual_map_t
 #include "mcumap.h"
 #include "mcu.h"
 #include "util/timer.h"
+#include "interpolator.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -115,46 +116,50 @@ void* timersimul()
 	//unsigned long integrator;
 	for(;;)
 	{
-		unsigned long newticks = ticks+1;//getTickCounter();
-		unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
+		//unsigned long newticks = ticks+1;//getTickCounter();
+		//unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
 		//diff = F_CPU * diff / freq; 
 		
 		if(global_irq_enabled)
 		{
 			if(pulse_enabled)
-				(*pulse_counter_ptr) += diff;
+				(*pulse_counter_ptr)++;
 		
-			if(integrator_enabled)
-				integrator_counter += diff;
+			/*if(integrator_enabled)
+				integrator_counter++;*/
 	
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
 				(*pulse_counter_ptr) = 0;
-				if(g_mcu_pulseCallback!=NULL)
+				/*if(g_mcu_pulseCallback!=NULL)
 				{
 					g_mcu_pulseCallback();
-				}
+				}*/
+				
+				interpolator_step();
 			}
 			
 			if((*pulse_counter_ptr)==resetpulse_interval && pulse_enabled )
 			{
-				if(g_mcu_pulseResetCallback!=NULL)
+				/*if(g_mcu_pulseResetCallback!=NULL)
 				{
 					g_mcu_pulseResetCallback();
-				}
+				}*/
+				
+				interpolator_stepReset();
 			}
 			
-			if(integrator_counter==integrator_interval && integrator_enabled)
+			/*if(integrator_counter==integrator_interval && integrator_enabled)
 			{
 				integrator_counter = 0;
 				if(g_mcu_integratorCallback!=NULL)
 				{
 					g_mcu_integratorCallback();
 				}
-			}
+			}*/
 		}
 		
-		ticks = newticks;
+		//ticks = newticks;
 	}
 }
 
@@ -385,7 +390,7 @@ void mcu_disableInterrupts()
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
+void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	pulse_interval = clocks_speed;
 	resetpulse_interval = clocks_speed>>1;
@@ -393,7 +398,7 @@ void mcu_startStepISR(uint16_t clocks_speed, uint16_t prescaller)
 	pulse_enabled = true;
 }
 
-void mcu_changeStepISR(uint16_t clocks_speed, uint16_t prescaller)
+void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	pulse_enabled = false;
 	pulse_interval = clocks_speed;

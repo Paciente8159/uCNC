@@ -30,7 +30,7 @@ void cnc_run()
 	
 	if(!planner_buffer_full())
 	{
-		a+=4;
+		a=4;
 		#ifdef __SIMUL__
 		mcu_printfp(PSTR("Load dummy G0 X%u\n"), a);
 		mcu_loadDummyPayload(PSTR("G0X%u\n"), a);
