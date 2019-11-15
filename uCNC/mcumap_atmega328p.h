@@ -1,32 +1,35 @@
-#ifndef PINS_UNO_H
-#define PINS_UNO_H
+#ifndef MCUMAP_ATMEGA328P_H
+#define MCUMAP_ATMEGA328P_H
 
-#include <avr/io.h>
-//Regiter Mapping
-
-//Maps the UNO internal 8-bit registers to the 32-bit machine register
-//<PORT3>-<PORT2>-<PORT1>-<PORT0>
+/*
+	Regiter Mapping 
+	Maps the UNO internal 8-bit registers to the 32-bit machine register
+	<PORT3>-<PORT2>-<PORT1>-<PORT0> 
+*/
 
 //PORT0
+
 //#define PORTWR0 PORTB
 //#define PORTRD0 PINB
 //#define PORTDIR0 DDRB
 //#define PORTISR0 PCMSK0
 
-//port c as only outputs
 //PORT1
+
 #define PORTWR1 PORTC
 //#define PORTRD1 PINC
 #define PORTDIR1 DDRC
 //#define PORTISR1 PCMSK1
 
 //PORT2
+
 #define PORTWR2 PORTD
 #define PORTDIR2 DDRD
 #define PORTRD2 PIND
 #define PORTISR2 PCMSK2
 
 //PORT3
+
 //doesn't have
 
 /*
@@ -78,9 +81,5 @@
 #define COM_INREG PORTRD2
 #define COM_OUTREG PORTWR2
 #define COM_DIRREG PORTDIR2
-
-//not used
-//#define COM_PULLUPREG PORTD
-//#define COM_ISRREG PCMSK2
 
 #endif

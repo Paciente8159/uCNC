@@ -1,7 +1,6 @@
 #include "config.h"
 
-#include "boarddefs.h"
-#include "machinedefs.h"
+#include "mcu.h"
 #include "gcode.h"
 #include "report.h"
 #include "error.h"
@@ -114,9 +113,9 @@ void gcode_parse_comment()
 	uint8_t comment_nest = 1;
 	for(;;)
 	{
-		while(board_peek()=='\0');
+		while(mcu_peek()=='\0');
 		
-		char c = board_peek();
+		char c = mcu_peek();
 		switch(c)
 		{
 			case '(':
@@ -126,7 +125,7 @@ void gcode_parse_comment()
 				comment_nest--;
 				if(comment_nest == 0)
 				{
-					board_getc();
+					mcu_getc();
 					return;
 				}
 				break;
@@ -136,13 +135,13 @@ void gcode_parse_comment()
                 return;
 		}
 		
-		board_getc();
+		mcu_getc();
 	}	
 }
 
 /*
 	STEP 1
-	Fetches the next line from the board communication buffer and preprocesses the string
+	Fetches the next line from the mcu communication buffer and preprocesses the string
 	In the preprocess these steps are executed
 		1. Whitespaces are removed
 		2. Comments are parsed (nothing is done besides parsing for now)
@@ -150,12 +149,11 @@ void gcode_parse_comment()
 */
 void gcode_fetch_frombuffer(char *str)
 {
-	uint8_t count = 0;
-	if(board_peek() != 0)
+	if(mcu_peek() != 0)
 	{
 		for(;;)
 		{
-			char c = board_getc();	
+			char c = mcu_getc();	
 			switch(c)
 			{
 				case ' ':
@@ -164,7 +162,7 @@ void gcode_fetch_frombuffer(char *str)
 					break;
 				case '(':
 					gcode_parse_comment();
-					board_printfp(PSTR("comment"));
+					mcu_printfp(PSTR("comment"));
 					break;
 				case '\n':
 				case '\r':
@@ -822,7 +820,7 @@ void gcode_parse_line(char* str, GCODE_PARSER_STATE *new_state)
 	All coordinates are converted to machine absolute coordinates before sent to the motion controller
 */
 void gcode_execute_line(GCODE_PARSER_STATE *new_state)
-{
+{	
 	float axis[AXIS_COUNT];
 	float feed = 0;
 	float spindle = 0;
@@ -999,7 +997,7 @@ void gcode_execute_line(GCODE_PARSER_STATE *new_state)
 	#endif
 	#ifdef AXIS_C
 		axis[AXIS_C] += new_state->words.xyzabc[AXIS_C] + g_gcode_offset[AXIS_C];
-	#endif	
+	#endif
 	
 	switch(new_state->groups.motion)
 	{
@@ -1045,38 +1043,11 @@ void gcode_init()
 */
 void gcode_parse_nextline()
 {
-	/*#ifdef DEBUGMODE
-		static uint8_t dotcount = 0;
-		if(++dotcount==4)
-			dotcount = 0;
-		switch(dotcount)
-		{
-			case 0:
-				printf("wait   \r");
-				break;
-			case 1:
-				printf("wait.  \r");
-				break;
-			case 2:
-				printf("wait.. \r");
-				break;
-			case 3:
-				printf("wait...\r");
-				break;
-		}
-		
-	#endif*/
 	//nothing to be done
-	if(board_peek() == 0)
+	if(mcu_peek() == 0)
 	{
 		return;
 	}
-	
-	#ifdef DEBUGMODE
-		board_printfp(PSTR("parsing line\n"));
-		fflush(stdout);
-		board_startPerfCounter();
-	#endif
 	
 	char gcode_line[GCODE_PARSER_BUFFER_SIZE];
 	GCODE_PARSER_STATE next_state = {};
@@ -1085,22 +1056,14 @@ void gcode_parse_nextline()
     next_state.groups.nonmodal = 0;
 	gcode_fetch_frombuffer(&gcode_line[0]);
 	gcode_parse_line(&gcode_line[0], &next_state);
-	#ifdef DEBUGMODE
-		uint16_t count = board_stopPerfCounter();
-		board_printfp(PSTR("parsed: "));
-		printf(gcode_line);
-		board_printfp(PSTR(" in %u cycles\n"), count);
-		fflush(stdout);
-	#endif
-	#ifdef DEBUGMODE
-		board_printfp(PSTR("processing command\n"));
-		fflush(stdout);
-		board_startPerfCounter();
-	#endif
 	gcode_execute_line(&next_state);
-	#ifdef DEBUGMODE
-		count = board_stopPerfCounter();
-		board_printfp(PSTR("precessed: in %u cycles\n"), count);
-		fflush(stdout);
-	#endif
+	
+}
+
+void gcode_print_states()
+{
+	mcu_printfp(PSTR("GCode parser active states: "));
+	mcu_printfp(PSTR("G%u "), 20 + g_gcparser_state.groups.units);
+	mcu_printfp(PSTR("G%u "), 17 + g_gcparser_state.groups.plane);
+	mcu_printfp(PSTR("G%u\n"), 90 + g_gcparser_state.groups.distance_mode);
 }

@@ -2,9 +2,6 @@
 #define REPORT_H
 
 #include <stdint.h>
-#include "config.h"
-#include "board.h"
-
 #define REPORT_BUFFER_SIZE 128
 
 void report_error(uint8_t code);

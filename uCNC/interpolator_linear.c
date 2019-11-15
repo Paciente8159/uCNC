@@ -2,297 +2,508 @@
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 #include "config.h"
+#include "mcumap.h"
+#include "mcu.h"
 #include "machinedefs.h"
-#include "boarddefs.h"
+#include "kinematics.h"
 #include "interpolator.h"
 #include "planner.h"
-#include "board.h"
 #include "utils.h"
 #include "ringbuffer.h"
 
-#define PULSE_BUFFER_SIZE 10
-#define INTEGRATOR_DELTA_T 1.0f / F_INTEGRATOR
+#define INTEGRATOR_DELTA_T (1.0f/F_INTEGRATOR)
 
-typedef struct pulse_blk_
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+	#define fastsqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
+#else
+	#define fastsqrt(x) sqrtf(x)
+#endif
+
+//limits segment length to 16 bits
+//for now this is only used in the step counter
+//must try to limit all math to 16bit vars in the future for better ISR performance
+//for now 32bits segments are used beacuse of error accumulation of 16bits segments
+#define MAX_STEPS_PER_SEGM 32768 //2^15 (15bits)
+
+//flag the segment stage being calculated
+#define SEGM_ACCEL 1
+#define SEGM_CRUIZE 2
+#define SEGM_DEACCEL 4
+#define SEGM_ACCEL_CRUIZE (SEGM_ACCEL | SEGM_CRUIZE)
+#define SEGM_ACCEL_DEACCEL (SEGM_ACCEL | SEGM_DEACCEL)
+#define SEGM_CRUIZE_DEACCEL (SEGM_CRUIZE | SEGM_DEACCEL)
+#define SEGM_ACCEL_CRUIZE_DEACCEL (SEGM_ACCEL | SEGM_CRUIZE | SEGM_DEACCEL)
+
+//this will define the number of steps per segment
+//At max frequency the full buffer will contain at least half second of pulses
+//#define MAX_STEPS_PER_SEGM (F_PULSE_MAX>>1)/PULSE_BUFFER_SIZE
+
+//contains data of the block being executed by the pulse routine
+//this block has the necessary data to execute the Bresenham line algorithm
+typedef struct interpolator_blk_
 {
 	uint8_t dirbits;
 	uint32_t steps[STEPPER_COUNT];
 	uint32_t totalsteps;
-	float step_freq;
-	float step_freq_const;
-}PULSE_BLOCK;
-
-typedef struct pulse_sgm_
-{
-	PULSE_BLOCK *block;
-	uint16_t next_pulsebits;
-	uint16_t remaining_steps;
-	float step_freq_inc;
-}PULSE_SEGMENT;
-
-typedef struct
-{
-	uint32_t processed_steps;
-	float steps_mm;
-	uint32_t accel_until;
-	uint32_t deaccel_from;
-	float accel_inc;
-	float accel_inv;
-	PLANNER_MOTION* pl_block;
-	PULSE_BLOCK* pulse_block;
 }INTERPOLATOR_BLOCK;
 
-static INTERPOLATOR_BLOCK g_itp_block;
-static PULSE_SEGMENT exec_segment;
+//contains data of the block segment being executed by the pulse and integrator routines
+//the segment is a fragment of the motion defined in the block
+//this also contains the acceleration/deacceleration info
+typedef struct pulse_sgm_
+{
+	INTERPOLATOR_BLOCK *block;
+	uint32_t errors[STEPPER_COUNT];
+	uint8_t next_stepbits;
+	uint16_t remaining_steps;
+	uint16_t clocks_per_tick;
+	uint8_t ticks_per_step;
+	//bool update_speed;
+}INTERPOLATOR_SEGMENT;
 
 //circular buffers
 //creates new type PULSE_BLOCK_BUFFER
-static PULSE_BLOCK g_itp_block_data[PULSE_BUFFER_SIZE];
-static buffer_t g_itp_block_buffer;
+static INTERPOLATOR_BLOCK interpolator_blk_data[INTERPOLATOR_BUFFER_SIZE>>1];
+static buffer_t interpolator_blk_buffer;
 
-static PULSE_SEGMENT g_itp_segment_data[PULSE_BUFFER_SIZE];
-static buffer_t g_itp_segment_buffer;
+static INTERPOLATOR_SEGMENT interpolator_sgm_data[INTERPOLATOR_BUFFER_SIZE];
+static buffer_t interpolator_sgm_buffer;
 
-//TYPEDEF_BUFFER(PULSE_BLOCK, PULSE_BUFFER_SIZE);
-//PULSE_BLOCK_BUFFER g_itp_block_buffer;
-//creates new type PULSE_BLOCK_BUFFER
-//TYPEDEF_BUFFER(PULSE_SEGMENT, PULSE_BUFFER_SIZE);
-//PULSE_SEGMENT_BUFFER g_itp_segment_buffer;
+//pointer to the segment being executed
+static INTERPOLATOR_SEGMENT *interpolator_running_sgm;
 
-volatile uint16_t g_itp_pulse_tick;
-volatile bool g_itp_busy;
+//stores the current position of the steppers in the interpolator
+static uint32_t interpolator_step_pos[STEPPER_COUNT];
 
+//flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
+static bool interpolator_needs_update;
+static volatile uint8_t interpolator_dirbits;
+//initial values for bresenham algorithm
+//this is shared between pulse and pulsereset functions 
+static uint8_t dirbitsmask[STEPPER_COUNT];
+
+//declares functions called by the stepper ISR
 void interpolator_init()
 {
-	g_itp_busy = false;
-	g_itp_pulse_tick = 0xFFFF;
-	
 	//resets buffers
-	memset(&g_itp_block, 0, sizeof(INTERPOLATOR_BLOCK));
-	memset(&exec_segment, 0, sizeof(PULSE_SEGMENT));
-	
-	
-	
-	//board_stopPulse();
-	//board_stopIntegrator();
-	//board_enableInterrupts();
-	
+	memset(&interpolator_step_pos, 0, sizeof(interpolator_step_pos));
+	memset(&interpolator_running_sgm, 0, sizeof(INTERPOLATOR_SEGMENT));
+
 	//initialize circular buffers
-	g_itp_block_buffer = buffer_init(&g_itp_block_data, sizeof(PULSE_BLOCK), PULSE_BUFFER_SIZE);
-	g_itp_segment_buffer = buffer_init(&g_itp_segment_data, sizeof(PULSE_SEGMENT), PULSE_BUFFER_SIZE);
-	g_itp_block.pl_block = NULL;
+	interpolator_blk_buffer = buffer_init(&interpolator_blk_data, sizeof(INTERPOLATOR_BLOCK), INTERPOLATOR_BUFFER_SIZE);
+	interpolator_sgm_buffer = buffer_init(&interpolator_sgm_data, sizeof(INTERPOLATOR_SEGMENT), INTERPOLATOR_BUFFER_SIZE);
 	
-	board_attachOnIntegrator(interpolator_rt_integrator);
-	board_startIntegrator(F_INTEGRATOR);
-	board_attachOnPulse(interpolator_rt_pulse);
-	board_attachOnPulseReset(interpolator_rt_pulsereset);
-	board_startPulse(10);
+	//initializes bit masks
+	#ifdef DIR0
+	dirbitsmask[0] = DIR0_MASK;
+	#endif
+	#ifdef DIR1
+	dirbitsmask[1] = DIR1_MASK;
+	#endif
+	#ifdef DIR2
+	dirbitsmask[2] = DIR2_MASK;
+	#endif
+	#ifdef DIR3
+	dirbitsmask[3] = DIR3_MASK;
+	#endif
+	#ifdef DIR4
+	dirbitsmask[4] = DIR4_MASK;
+	#endif
+	#ifdef DIR5
+	dirbitsmask[5] = DIR5_MASK;
+	#endif 
+	
+	mcu_startStepISR(65535, 1);
+	/*mcu_attachOnIntegrator(interpolator_rt_integrator);
+	//start and suspend the integrator
+	mcu_changeStepISR(interpolator_running_sgm->clocks_per_tick, interpolator_running_sgm->ticks_per_step);
+	mcu_startIntegrator();
+	mcu_pauseIntegrator();*/
+	//mcu_attachOnStep(interpolator_step);
+	//mcu_attachOnStepReset(interpolator_stepReset);
+	//mcu_startPulse(F_PULSE_MIN);*/
+
+	interpolator_running_sgm = NULL;
+	interpolator_needs_update = false;
 }
 
-void interpolator_exec_planner_block()
+void interpolator_execute()
 {
-	static float steps_mm = 0;
-	static uint32_t remaining_steps = 0;
+	static PLANNER_BLOCK *pl_block = NULL;
+	static INTERPOLATOR_BLOCK *new_block = NULL;
+	//conversion vars
+	static float min_step_distance = 0;
+	static float steps_per_mm = 0;
+	//limits of the speed profile
+	static uint32_t accel_until = 0;
+	static uint32_t deaccel_from = 0;
+	static float junction_speed_sqr = 0;
+	static float half_speed_change = 0;
 	
-	//no planner blocks has beed processed or last planner block was fully processed
-	if(g_itp_block.pl_block==NULL)
-	{
-		//planner is empty or interpolator block buffer full. Nothing to be done
-		if(planner_buffer_empty() || is_buffer_full(g_itp_block_buffer))
-		{
-			return;
-		}
-		
-		//starts to process the planner block
-		g_itp_block.pl_block = planner_get_block();
-		
-		//returns the new block
-		g_itp_block.pulse_block = buffer_write(g_itp_block_buffer, NULL);
-		
-		g_itp_block.pulse_block->dirbits = g_itp_block.pl_block->dirbits;
-		memcpy(&(g_itp_block.pulse_block->steps), &(g_itp_block.pl_block->steps), sizeof(g_itp_block.pulse_block->steps));
-		g_itp_block.pulse_block->totalsteps = g_itp_block.pl_block->totalsteps;
-		
-		g_itp_block.processed_steps = 0;
-		g_itp_block.steps_mm = g_itp_block.pl_block->totalsteps / g_itp_block.pl_block->distance;
-		g_itp_block.accel_inv = 1.0f / g_itp_block.pl_block->acceleration;
-		//calculates the accel and deaccel profiles
-		interpolator_update_profile();
-		
-		//initial steps per second (step frequency)
-		//this is updated in the step integrator (acceleration)
-		g_itp_block.pulse_block->step_freq = (g_itp_block.pl_block->entry_speed_sqr > 0) ? sqrtf(g_itp_block.pl_block->entry_speed_sqr)*g_itp_block.steps_mm : 0;
-		g_itp_block.accel_inc = g_itp_block.pl_block->acceleration * g_itp_block.steps_mm * INTEGRATOR_DELTA_T;
-
-	}
+	//accel profile vars
+	//static float processed_steps = 0;
+	static uint32_t unprocessed_steps = 0;
+	//static uint8_t accel_profile = 0;
 	
 	//creates segments and fills the buffer
-	while(!is_buffer_full(g_itp_segment_buffer))
+	while(!is_buffer_full(interpolator_sgm_buffer))
 	{
-		PULSE_SEGMENT sgm;
-		sgm.block = g_itp_block.pulse_block;
-		
-		//fill ramp accel
-		if(g_itp_block.processed_steps == g_itp_block.pulse_block->totalsteps)
+		//no planner blocks has beed processed or last planner block was fully processed
+		if(pl_block == NULL)
 		{
-			g_itp_block.pl_block=NULL;
-			planner_discard_block();
-			return;
-		}
-		else
-		{
-			if(g_itp_block.processed_steps<g_itp_block.accel_until)//accel
+			//planner is empty or interpolator block buffer full. Nothing to be done
+			if(planner_buffer_empty() || is_buffer_full(interpolator_blk_buffer))
 			{
-				uint32_t steps = g_itp_block.accel_until - g_itp_block.processed_steps;
-				if(steps>F_INTEGRATOR)
-				{
-					g_itp_block.processed_steps+=F_INTEGRATOR;
-					sgm.remaining_steps = F_INTEGRATOR;
-					sgm.step_freq_inc = g_itp_block.accel_inc;
-				}
-				else
-				{
-					g_itp_block.processed_steps=g_itp_block.accel_until;
-					sgm.remaining_steps = (uint16_t)steps;
-					sgm.step_freq_inc = g_itp_block.accel_inc;
-				}
+				return;
 			}
-			else if(g_itp_block.processed_steps<g_itp_block.deaccel_from) //cruize
+			//get the first block in the planner
+			pl_block = planner_get_block();
+			
+			//creates a new interpolator block
+			new_block = buffer_write(interpolator_blk_buffer, NULL);
+			//new_block->step_freq = F_PULSE_MIN;
+			
+			uint32_t step_new_pos[STEPPER_COUNT];
+			//applies the inverse kinematic to get next position in steps
+			kinematics_apply_inverse(pl_block->pos, (uint32_t*)&step_new_pos);
+			
+			//calculates the number of steps to execute
+			uint8_t dirs = pl_block->dirbits;
+			new_block->dirbits = 0;
+			for(uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-				uint32_t steps = g_itp_block.deaccel_from - g_itp_block.processed_steps;
-				if(steps>F_INTEGRATOR)
+				if((dirs & 0x01))
 				{
-					g_itp_block.processed_steps+=F_INTEGRATOR;
-					sgm.remaining_steps = F_INTEGRATOR;
-					sgm.step_freq_inc = 0;
+					new_block->dirbits |= dirbitsmask[i];
 				}
-				else
+				
+				new_block->steps[i] = (!(dirs & 0x01)) ? (step_new_pos[i]-interpolator_step_pos[i]) : (interpolator_step_pos[i]-step_new_pos[i]);
+				dirs>>=1;
+				if(new_block->totalsteps < new_block->steps[i])
 				{
-					g_itp_block.processed_steps=g_itp_block.deaccel_from;
-					sgm.remaining_steps = (uint16_t)steps;
-					sgm.step_freq_inc = 0;
-				}
-			}
-			else//deaccel
-			{
-				uint32_t steps = g_itp_block.pulse_block->totalsteps - g_itp_block.processed_steps;
-				if(steps>F_INTEGRATOR)
-				{
-					g_itp_block.processed_steps+=F_INTEGRATOR;
-					sgm.remaining_steps = F_INTEGRATOR;
-					sgm.step_freq_inc = -g_itp_block.accel_inc;
-				}
-				else
-				{
-					sgm.remaining_steps = (uint16_t)steps;
-					g_itp_block.processed_steps = g_itp_block.pulse_block->totalsteps;
-					sgm.step_freq_inc = -g_itp_block.accel_inc;
+					new_block->totalsteps = new_block->steps[i];
 				}
 			}
 			
-			buffer_write(g_itp_segment_buffer, &sgm);
-			//BUFFER_WRITE_PTR_INC(g_itp_segment_buffer);
-		}	
-	}
+			//copies data for interpolator step_pos
+			//new_block->dirbits = pl_block->dirbits;
+			memcpy(&(interpolator_step_pos), &(step_new_pos), sizeof(step_new_pos));
+			
+			//calculates conversion vars
+			steps_per_mm = ((float)new_block->totalsteps) / pl_block->distance;
+			min_step_distance = 1.0f/steps_per_mm;
+			
+			//initializes data for generating step segments
+			unprocessed_steps = new_block->totalsteps;
+			
+			//flags block for recalculation of speeds
+			interpolator_needs_update = true;
+			
+			half_speed_change = 0.5f * INTEGRATOR_DELTA_T * pl_block->acceleration;
 	
+		}
+
+		uint32_t prev_unprocessed_steps = unprocessed_steps;
+		float min_delta = 0;
+	
+	
+		INTERPOLATOR_SEGMENT *sgm = buffer_get_next_free(interpolator_sgm_buffer);
+		sgm->block = new_block;
+		//sgm->update_speed = true;
+		uint32_t error = sgm->block->totalsteps>>1;
+		
+		for(uint8_t i = 0; i < STEPPER_COUNT; i++)
+		{
+			sgm->errors[i] = error;
+		}
+
+		//forces recalculation of acceleration and deacceleration profiles
+		if(interpolator_needs_update)
+		{
+			interpolator_needs_update = false;
+			float exit_speed_sqr = planner_get_block_exit_speed_sqr();
+			junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
+			
+			accel_until = unprocessed_steps;
+			deaccel_from = 0;
+			if(junction_speed_sqr > pl_block->entry_speed_sqr)
+			{
+				float accel_dist = 0.5f * (junction_speed_sqr - pl_block->entry_speed_sqr) * pl_block->accel_inv;
+				accel_until -= floorf(accel_dist * steps_per_mm);	
+			}
+			
+			if(junction_speed_sqr > exit_speed_sqr)
+			{
+				float deaccel_dist = 0.5f * (junction_speed_sqr - exit_speed_sqr) * pl_block->accel_inv;
+				deaccel_from = floorf(deaccel_dist * steps_per_mm);
+			}
+		}
+		
+		float partial_distance;
+		float current_speed;
+		//acceleration profile
+		if(unprocessed_steps > accel_until)
+		{
+			/*
+				computes the traveled distance within a fixed amount of time
+				this time is the reverse integrator frequency (INTEGRATOR_DELTA_T)
+				for constant acceleration or deceleration the traveled distance will be equal
+				to the same distance traveled at a constant speed given that
+				constant_speed = 0.5 * (final_speed - initial_speed) + initial_speed
+				
+				where
+				
+				(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
+			*/
+			current_speed = fastsqrt(pl_block->entry_speed_sqr);
+			current_speed += half_speed_change;
+			partial_distance = current_speed * INTEGRATOR_DELTA_T;
+			
+			//computes how many steps it can perform at this speed and frame window
+			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
+			
+			//if traveled distance is less the one step fits at least one step
+			float speed_change_sqr;
+			if(steps == 0)
+			{
+				steps = 1;
+			}
+			
+			//if computed steps exceed the remaining steps for the motion shortens the distance
+			if(steps > (unprocessed_steps - accel_until))
+			{
+				steps = (uint16_t) (unprocessed_steps - accel_until);
+			}
+			
+			//recalculates the precise distance to travel the given amount of steps
+			partial_distance = steps * min_step_distance;
+			//calculates the final speed at the end of this position
+			float new_speed_sqr = 2 * pl_block->acceleration * partial_distance + pl_block->entry_speed_sqr;
+			current_speed = 0.5f * (fastsqrt(new_speed_sqr) + fastsqrt(pl_block->entry_speed_sqr));	
+			//completes the segment information (step speed, steps) and updates the block
+			mcu_freq2clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+			sgm->remaining_steps = steps;
+			pl_block->distance -= partial_distance;	
+			pl_block->entry_speed_sqr = new_speed_sqr;	
+		}
+		else if(unprocessed_steps > deaccel_from)
+		{	
+			if(unprocessed_steps == accel_until) //resets float additions error
+			{
+				pl_block->entry_speed_sqr = junction_speed_sqr;
+				pl_block->distance = min_step_distance * accel_until;
+			}
+			
+			//constant speed segment
+			current_speed = fastsqrt(junction_speed_sqr);
+			partial_distance = current_speed * INTEGRATOR_DELTA_T;
+			
+			//computes how many steps it can perform at this speed and frame window
+			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
+			
+			//if traveled distance is less the one step fits at least one step
+			float speed_change_sqr;
+			if(steps == 0)
+			{
+				steps = 1;
+			}
+			
+			//if computed steps exceed the remaining steps for the motion shortens the distance
+			if(steps > (unprocessed_steps - accel_until))
+			{
+				steps = (uint16_t) (unprocessed_steps - accel_until);
+			}
+			
+			//recalculates the precise distance to travel the given amount os steps
+			partial_distance = steps * min_step_distance;
+	
+			//completes the segment information (step speed, steps) and updates the block
+			mcu_freq2clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+			sgm->remaining_steps = steps;
+			
+			//if disance starts to offset to much replace by steps at constant rate * min_step_distance
+			pl_block->distance -= partial_distance;	
+		}
+		else
+		{
+			if(unprocessed_steps == deaccel_from) //resets float additions error
+			{
+				pl_block->entry_speed_sqr = junction_speed_sqr;
+				pl_block->distance = min_step_distance * deaccel_from;
+			}
+			
+			current_speed = fastsqrt(pl_block->entry_speed_sqr);
+			current_speed -= half_speed_change;
+			partial_distance = current_speed * INTEGRATOR_DELTA_T;
+			
+			//computes how many steps it can perform at this speed and frame window
+			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
+			
+			//if traveled distance is less the one step fits at least one step
+			float speed_change_sqr;
+			if(steps == 0)
+			{
+				steps = 1;
+			}
+			
+			//if computed steps exceed the remaining steps for the motion shortens the distance
+			if(steps > unprocessed_steps)
+			{
+				steps = (uint16_t)unprocessed_steps;
+			}
+			
+			//recalculates the precise distance to travel the given amount os steps
+			partial_distance = steps * min_step_distance;
+			//calculates the final speed at the end of this position
+			float new_speed_sqr = pl_block->entry_speed_sqr - (2 * pl_block->acceleration * partial_distance);
+			new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
+			current_speed = 0.5f * (fastsqrt(new_speed_sqr) + fastsqrt(pl_block->entry_speed_sqr));	
+			//completes the segment information (step speed, steps) and updates the block
+			mcu_freq2clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+			sgm->remaining_steps = steps;
+			pl_block->distance -= partial_distance;	
+			pl_block->entry_speed_sqr = new_speed_sqr;	
+		}
+		
+		unprocessed_steps -= sgm->remaining_steps;
+		buffer_write(interpolator_sgm_buffer, NULL);
+		
+		if(unprocessed_steps == 0)
+		{
+			pl_block = NULL;
+			planner_discard_block(); //discards planner block
+			//accel_profile = 0; //no updates necessary to planner
+			break; 
+		}
+	}
 }
 
-void interpolator_update_profile()
+void interpolator_update()
 {
-	float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-	float v_acc_deacc_sqr = 4.0f * g_itp_block.pl_block->acceleration * g_itp_block.pl_block->distance;
-	float v_cruize_sqr = (exit_speed_sqr + g_itp_block.pl_block->entry_speed_sqr + v_acc_deacc_sqr) * 0.25;
-	float target_speed_sqr = g_itp_block.pl_block->target_speed*g_itp_block.pl_block->target_speed;
-	v_cruize_sqr = MIN(v_cruize_sqr, target_speed_sqr);
-	
-	g_itp_block.pulse_block->step_freq_const = sqrtf(v_cruize_sqr)*g_itp_block.steps_mm;
-	float step_dist_const = g_itp_block.accel_inv * 0.5 * g_itp_block.steps_mm;
-	g_itp_block.accel_until = (uint32_t)(v_cruize_sqr - g_itp_block.pl_block->entry_speed_sqr) * step_dist_const;
-	g_itp_block.deaccel_from = g_itp_block.pulse_block->totalsteps - (uint32_t)(v_cruize_sqr - exit_speed_sqr) * step_dist_const;
+	//flags executing block for update
+	interpolator_needs_update = true;
 }
 
 void interpolator_sleep()
 {
-	//board_stopPulse();
+	//mcu_stopPulse();
 }
 
-void interpolator_rt_integrator()
+//always fires before pulse
+void interpolator_stepReset()
 {
-	static bool const_speed = false;
+	static uint8_t dirbits = 0;
+	static uint8_t prev_dirbits = 0;
+
+	//resets all stepper pins
+	mcu_setSteps(0);
 	
-	if(exec_segment.remaining_steps!=0)
+	if(prev_dirbits != interpolator_dirbits)
 	{
-		if(exec_segment.step_freq_inc != 0)
-		{
-			exec_segment.block->step_freq += exec_segment.step_freq_inc;
-			board_changePulse(exec_segment.block->step_freq);
-			const_speed = false;
-		}
-		else if(!const_speed)
-		{
-			exec_segment.block->step_freq = exec_segment.block->step_freq_const;
-			board_changePulse(exec_segment.block->step_freq);
-			const_speed = true;
-		}
+		mcu_setDirs(interpolator_dirbits);
+		prev_dirbits = interpolator_dirbits;
 	}
 }
 
-void interpolator_rt_pulsereset()
+void interpolator_step()
 {
-	board_setStepDirs(exec_segment.next_pulsebits & 0x0555);
-}
-
-void interpolator_rt_pulse()
-{
-	static uint16_t error;
-	static uint32_t step_counter[STEPPER_COUNT];
-	uint8_t dirbits;
-	uint8_t i = STEPPER_COUNT;
+	static uint8_t stepbits = 0;
+	static bool update_step_rate = false; //update delay flag
+	static uint16_t clock = 0;
+	static uint8_t pres = 0;
+	static uint16_t remaining_steps = 0;
 	
-	//resets step bits and pulse
-	board_setStepDirs(exec_segment.next_pulsebits);
-
-	if(exec_segment.remaining_steps!=0)
+	//sets step bits
+	mcu_setSteps(stepbits);
+	stepbits = 0;
+	remaining_steps--;
+	
+	if(update_step_rate)
 	{
-		exec_segment.next_pulsebits &= 0x0555;
-
-		//do loop unroll
-	    do{
-	    	i--;
-	        step_counter[i] += exec_segment.block->steps[i];
-	        if (step_counter[i] > exec_segment.block->totalsteps)
-	        {
-	            step_counter[i] -= exec_segment.block->totalsteps;
-	            SETBIT(exec_segment.next_pulsebits,i<<2 + 1);
-	        }
-	    } while (i);
-	    
-	    exec_segment.remaining_steps--;
+		mcu_changeStepISR(clock, pres);
+		update_step_rate = false;
 	}
 	
-	if(exec_segment.remaining_steps==0)
+	//if no segment running tries to load one
+	if(interpolator_running_sgm == NULL)
 	{
-		if(is_buffer_empty(g_itp_segment_buffer))
+		//loads a new segment
+		interpolator_running_sgm = buffer_get_first(interpolator_sgm_buffer);
+		//if buffer is empty return null
+		if(interpolator_running_sgm == NULL)
 		{
-			//interpolator_sleep();
 			return;
 		}
 		
-		buffer_read(g_itp_segment_buffer, &exec_segment);
-		//BUFFER_READ_PTR_INC(g_itp_segment_buffer);
+		interpolator_dirbits = interpolator_running_sgm->block->dirbits;
+		remaining_steps = interpolator_running_sgm->remaining_steps;
+		update_step_rate = true;
+		clock = interpolator_running_sgm->clocks_per_tick;
+		pres = interpolator_running_sgm->ticks_per_step;
+	}
+
+	//is steps remaining starts calc next step bits
+	if(interpolator_running_sgm != NULL)
+	{
+		//prepares the next step bits mask
+		#ifdef STEP0
+		interpolator_running_sgm->errors[0] += interpolator_running_sgm->block->steps[0];
+		if (interpolator_running_sgm->errors[0] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[0] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP0_MASK;
+		}
+		#endif
+		#ifdef STEP1
+		interpolator_running_sgm->errors[1] += interpolator_running_sgm->block->steps[1];
+		if (interpolator_running_sgm->errors[1] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[1] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP1_MASK;
+		}
+		#endif
+		#ifdef STEP2
+		interpolator_running_sgm->errors[2] += interpolator_running_sgm->block->steps[2];
+		if (interpolator_running_sgm->errors[2] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[2] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP2_MASK;
+		}
+		#endif
+		#ifdef STEP3
+		interpolator_running_sgm->errors[3] += interpolator_running_sgm->block->steps[3];
+		if (interpolator_running_sgm->errors[3] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[3] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP3_MASK;
+		}
+		#endif
+		#ifdef STEP4
+		interpolator_running_sgm->errors[4] += interpolator_running_sgm->block->steps[4];
+		if (interpolator_running_sgm->errors[4] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[4] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP4_MASK;
+		}
+		#endif
+		#ifdef STEP5
+		interpolator_running_sgm->errors[5] += interpolator_running_sgm->block->steps[5];
+		if (interpolator_running_sgm->errors[5] > interpolator_running_sgm->block->totalsteps)
+		{
+			interpolator_running_sgm->errors[5] -= interpolator_running_sgm->block->totalsteps;
+			stepbits |= STEP5_MASK;
+		}
+		#endif
 		
-		exec_segment.next_pulsebits &= 0x0AAA;
-		i = 0;
-		dirbits = exec_segment.block->dirbits;
-		do{
-			if(dirbits&1)
-			{
-				SETBIT(exec_segment.next_pulsebits, i<<2);
-			}
-			dirbits>>=1;
-			step_counter[i] = exec_segment.block->steps[i];
-		} while(++i != STEPPER_COUNT);
+		//one step remaining discards current segment
+		if(remaining_steps == 1)
+		{
+			interpolator_running_sgm = NULL;
+			//advances buffer
+			buffer_read(interpolator_sgm_buffer, NULL);
+		}
 	}
 }
 

@@ -9,8 +9,8 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DBOARD=BOARD_UNO_@@_
-CppCompiler=-gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DBOARD=BOARD_UNO_@@_
+Compiler=-D__SIMUL__ -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
+CppCompiler=-gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
 Linker=-w -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328_@@_
 IsCpp=0
 Icon=
@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
-CompilerSettings=000000e000000000101000000
-UnitCount=29
+CompilerSettings=000000e000100000101000000
+UnitCount=32
 
 [VersionInfo]
 Major=1
@@ -71,36 +71,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit7]
-FileName=boarddefs.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit9]
-FileName=pins.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit11]
-FileName=board_uno.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit12]
 FileName=error.h
 CompileCpp=0
 Folder=
@@ -110,7 +80,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit14]
+[Unit9]
 FileName=kinematics.h
 CompileCpp=0
 Folder=
@@ -120,17 +90,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit15]
-FileName=machinedefs.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit16]
+[Unit11]
 FileName=machines.h
 CompileCpp=0
 Folder=
@@ -140,8 +100,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit18]
-FileName=report.h
+[Unit12]
+FileName=planner.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -150,7 +110,17 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit20]
+[Unit14]
+FileName=structures.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit15]
 FileName=gcode.c
 CompileCpp=0
 Folder=
@@ -160,7 +130,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit21]
+[Unit16]
 FileName=kinematics_cartesian_xyz.c
 CompileCpp=0
 Folder=
@@ -170,17 +140,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit22]
-FileName=planner.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit23]
+[Unit18]
 FileName=report.c
 CompileCpp=0
 Folder=
@@ -190,27 +150,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit24]
-FileName=structures.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit25]
-FileName=cpudefs.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit26]
+[Unit20]
 FileName=interpolator.h
 CompileCpp=0
 Folder=
@@ -220,7 +160,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit27]
+[Unit21]
 FileName=interpolator_linear.c
 CompileCpp=0
 Folder=
@@ -230,7 +170,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit28]
+[Unit22]
 FileName=ringbuffer.c
 CompileCpp=0
 Folder=
@@ -240,7 +180,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit29]
+[Unit23]
 FileName=ringbuffer.h
 CompileCpp=0
 Folder=
@@ -250,8 +190,58 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit24]
+FileName=mcu.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit26]
+FileName=mcumap.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit27]
+FileName=mcus.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit28]
+FileName=mcudefs.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit29]
+FileName=mcumap_atmega328p.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit30]
-FileName=planner.c
+FileName=cnc.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -261,7 +251,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit31]
-FileName=settings.c
+FileName=cnc.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -301,26 +291,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit6]
-FileName=board.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit8]
-FileName=boards.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit10]
 FileName=pins_uno.h
 CompileCpp=0
 Folder=
@@ -330,7 +300,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit13]
+[Unit8]
 FileName=gcode.h
 CompileCpp=0
 Folder=
@@ -340,8 +310,28 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit10]
+FileName=machinedefs.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit13]
+FileName=report.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit17]
-FileName=planner.h
+FileName=planner.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -351,7 +341,27 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit19]
-FileName=structures.h
+FileName=structures.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit25]
+FileName=mcu_atmega328p.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit32]
+FileName=kinematics_corexy.c
 CompileCpp=0
 Folder=
 Compile=1

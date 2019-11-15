@@ -1,5 +1,5 @@
 #include "config.h"
-#include "board.h"
+#include "mcu.h"
 #include "report.h"
 #include <stdio.h>
 #include <stdint.h>

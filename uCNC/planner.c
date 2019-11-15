@@ -11,34 +11,19 @@
 #include <math.h>
 #include <float.h>
 #include "config.h"
+#include "mcu.h"
 #include "settings.h"
 #include "planner.h"
-#include "kinematics.h"
-#include "utils.h"
-#include "motion.h"
+#include "interpolator.h"
 #include "ringbuffer.h"
+#include "utils.h"
 
 uint32_t g_planner_steppos[STEPPER_COUNT];
 float g_planner_coord[AXIS_COUNT];
 float g_planner_dir_vect[AXIS_COUNT];
-/*float g_planner_dist;
-float g_planner_speed;
-float g_planner_exit_speed;
-float g_planner_accel_dist;
-float g_planner_speed;
-float g_planner_accel;
-uint8_t g_planner_dir_bits;
-float planner_top_accel = 0;
-
-PLANNER_MOTION planner_prev_motion;
-PLANNER_MOTION_BLOCK g_planner_buffer[PLANNER_BUFFER_SIZE];
-PLANNER_MOTION_BLOCK* g_planner_buffer_rd;
-PLANNER_MOTION_BLOCK* g_planner_buffer_wt;*/
-static PLANNER_MOTION g_planner_data[PLANNER_BUFFER_SIZE];
-static buffer_t g_planner_buffer;
-//TYPEDEF_BUFFER(PLANNER_MOTION, PLANNER_BUFFER_SIZE);
-//PLANNER_MOTION_BUFFER g_planner_buffer;
-
+static PLANNER_BLOCK g_planner_data[PLANNER_BUFFER_SIZE];
+//ringbuffer_t g_planner_buffer_ring;
+buffer_t g_planner_buffer;
 
 void planner_init()
 {
@@ -46,23 +31,12 @@ void planner_init()
 	memset(&g_planner_coord, 0, AXIS_COUNT*sizeof(float));
 	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
 	//resets buffer
-	//memset(&g_planner_buffer, 0, sizeof(g_planner_buffer));
-	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_MOTION), PLANNER_BUFFER_SIZE);
+	memset(&g_planner_data, 0, sizeof(PLANNER_BLOCK)*PLANNER_BUFFER_SIZE);
+	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_BLOCK), PLANNER_BUFFER_SIZE);
 	
-	/*
-	//creates the circular buffer (uses double linked list)
-	for(uint8_t i = 1; i < PLANNER_BUFFER_SIZE; i++)
-	{
-		g_planner_buffer[i].prev = &g_planner_buffer[i-1];
-		g_planner_buffer[i-1].next = &g_planner_buffer[i];
-	}
-
-	g_planner_buffer[0].prev = &g_planner_buffer[PLANNER_BUFFER_SIZE - 1];
-	g_planner_buffer[PLANNER_BUFFER_SIZE - 1].next = &g_planner_buffer[0];
-
-	//initializes read and write buffer
-	g_planner_buffer_rd = (PLANNER_MOTION_BLOCK*)&g_planner_buffer;
-	g_planner_buffer_wt = g_planner_buffer_rd;*/
+	#ifdef __DEBUG__
+	mcu_printfp(PSTR("Planner initialized\n"));
+	#endif
 }
 
 bool planner_buffer_full()
@@ -75,30 +49,88 @@ bool planner_buffer_empty()
 	return is_buffer_empty(g_planner_buffer);
 }
 
-PLANNER_MOTION* planner_get_block()
+PLANNER_BLOCK* planner_get_block()
 {
-	/*g_planner_buffer_rd = g_planner_buffer_rd->next;
-	return 	g_planner_buffer_rd->prev;	*/
-	//PLANNER_MOTION *ptr = buffer_read(g_planner_buffer);
 	return buffer_get_first(g_planner_buffer);
 }
 
 float planner_get_block_exit_speed_sqr()
 {
-	/*uint8_t next_motion = BUFFER_NEXT_INDEX(g_planner_buffer,BUFFER_READ_INDEX(g_planner_buffer));
-	//only one existing block. Exit speed always 0
-	if(next_motion == BUFFER_WRITE_INDEX(g_planner_buffer))
-	{
-		return 0;
-	}*/
+	//pointer to first buffer
+	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
 	
-	PLANNER_MOTION *m = buffer_get_first(g_planner_buffer);//BUFFER_PTR(g_planner_buffer, next_motion);
-	
-	if(m==NULL)
+	//only one block in the buffer (exit speed is 0)
+	if(m==buffer_get_last(g_planner_buffer))
 		return 0;
+
+	//exit speed = next block entry speed
+	m = buffer_get_next(g_planner_buffer, m);
 	
 	return m->entry_speed_sqr;
 }
+
+float planner_get_block_top_speed(float exit_speed_sqr)
+{
+	//pointer to first buffer
+	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
+	
+	/*
+	Computed the junction speed
+	
+	At full acceleration and deacceleration we have the following equations
+		v_max^2 = v_entry^2 + 2 * distance * acceleration
+		v_max^2 = v_exit^2 + 2 * distance * acceleration
+		
+	In this case v_max^2 for acceleration and deacceleration will be the same at
+	
+	d_deaccel = d_total - d_start;
+	
+	this translates to the equation
+	
+	v_max = v_entry + (2 * acceleration * distance + v_exit - v_entry)/acceleration
+	*/
+
+	float speed_delta = exit_speed_sqr - m->entry_speed_sqr;
+	float speed_change = 2 * m->acceleration * m->distance;
+	speed_change += speed_delta;
+	speed_change *= m->accel_inv;
+	float junction_speed_sqr = m->entry_speed_sqr + speed_change;
+
+	//the average speed can't ever exceed the target speed
+	float target_speed_sqr = m->target_speed*m->target_speed;
+
+	return MIN(junction_speed_sqr, target_speed_sqr);
+}
+//
+///*float planner_get_intersection_distance(float exit_speed_sqr)
+//{
+//	//pointer to first buffer
+//	PLANNER_BLOCK *m = buffer_get_first(g_planner_buffer);
+//	
+//	/*
+//	Computed the junction speed
+//	
+//	At full acceleration and deacceleration we have the following equations
+//		v_max^2 = v_entry^2 + 2 * distance * acceleration
+//		v_max^2 = v_exit^2 + 2 * distance * acceleration
+//		
+//	In this case v_max^2 for acceleration and deacceleration will be the same at
+//	
+//	v_max^2 = v_entry^2 + 2 * distance_entry * acceleration
+//	v_max^2 = v_exit^2 + 2 * distance_exit * acceleration
+//	
+//	this translates to the equation
+//	
+//	distance_offset = distance_entry - distance_exit = (v_exit^2 - v_entry^2)/(2 * acceleration)
+//	
+//	the junction distance will be
+//	distance_total / 2 + distance_offset
+//	*/
+//
+//	float speed_delta = exit_speed_sqr - m->entry_speed_sqr;
+//	float distance_offset = 0.5f * speed_delta * m->accel_inv;
+//	return 0.5f * (m->distance + distance_offset);
+//}
 
 void planner_discard_block()
 {
@@ -107,38 +139,35 @@ void planner_discard_block()
 
 void planner_recalculate()
 {
-	//uint8_t block_index = BUFFER_WRITE_INDEX(g_planner_buffer);
-	//buffer only has one block or is fully optimized so no calculations to be done
-	if(buffer_get_last(g_planner_buffer) == buffer_get_first(g_planner_buffer)) 
-	{
-		return;
-	}
+	PLANNER_BLOCK *last = buffer_get_next_free(g_planner_buffer);
+	PLANNER_BLOCK *first = buffer_get_first(g_planner_buffer);
 	
-	PLANNER_MOTION *block = buffer_get_last(g_planner_buffer);//BUFFER_WRITE_PTR(g_planner_buffer);
+	//starts from the last block
+	PLANNER_BLOCK *block = last;
 	
-	if(block->optimal)
-	{
-		return;
-	} 
-
-	//optimizes entry speeds given the current exit speed
+	
+	//starts in the last added block
+	//calculates the maximum entry speed of the block so that it can do a full stop in the end
 	float entry_speed_sqr = 2 * block->distance * block->acceleration;
 	block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
-	PLANNER_MOTION *next;
-	while(!block->optimal && next!=buffer_get_first(g_planner_buffer))
+	//optimizes entry speeds given the current exit speed (backward pass)
+	PLANNER_BLOCK *next = block;
+	block = buffer_get_prev(g_planner_buffer, next);
+	
+	while(!block->optimal && block != first)
 	{
-		//block_index = BUFFER_PREV_INDEX(g_planner_buffer, block_index);
-		next = block;
-		block = buffer_get_prev(g_planner_buffer, next);
-		//block = BUFFER_PTR(g_planner_buffer, block_index);
 		if(block->entry_speed_sqr != block->entry_max_speed_sqr)
 		{
 			entry_speed_sqr = next->entry_speed_sqr + 2 * block->distance * block->acceleration;
 			block->entry_speed_sqr = MIN(block->entry_max_speed_sqr, entry_speed_sqr);
 		}
+		
+		next = block;
+		block = buffer_get_prev(g_planner_buffer, next);
 	}
-	
-	while(block != buffer_get_last(g_planner_buffer)/*block_index != BUFFER_WRITE_INDEX(g_planner_buffer)*/)
+
+	//optimizes exit speeds (forward pass)
+	while(block != last)
 	{
 		//next block is moving at a faster speed
 		if(block->entry_speed_sqr < next->entry_speed_sqr)
@@ -147,16 +176,21 @@ void planner_recalculate()
 			float exit_speed_sqr = block->entry_speed_sqr + (2 * block->distance * block->acceleration);
 			if(exit_speed_sqr < next->entry_speed_sqr)
 			{
-				//lowers next entry speed
+				//lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
 				//optimization achieved for this movement
 				next->entry_speed_sqr = exit_speed_sqr;
-				block->optimal = true;
+				next->optimal = true;
 			}
 		}
 		
-		//block_index = BUFFER_NEXT_INDEX(g_planner_buffer, block_index);
+		//if the executing block was updated then update the interpolator limits
+		if(block == first)
+		{
+			interpolator_update();
+		}
+
 		block = next;
-		next = buffer_get_next(g_planner_buffer, block);//BUFFER_PTR(g_planner_buffer, block_index);
+		next = buffer_get_next(g_planner_buffer, block);
 	}
 }
 
@@ -167,9 +201,9 @@ void planner_recalculate()
 	The trajectory planner does the following actions:
 		1. Calculates the direction change of the new movement
 */
-void planner_add_line(float* axis, float feed)
+void planner_add_line(float *axis, float feed)
 {
-	PLANNER_MOTION *m = buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
+	PLANNER_BLOCK *m = buffer_get_next_free(g_planner_buffer);//buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
 	m->dirbits = 0;
 	m->target_speed = feed;
 	m->optimal = false;
@@ -179,6 +213,7 @@ void planner_add_line(float* axis, float feed)
 	m->entry_max_speed_sqr = 0;
 
 	m->distance = 0;
+	memcpy(&(m->pos), axis, sizeof(m->pos));
 	for(uint8_t i = AXIS_COUNT; i != 0; )
 	{
 		i--;
@@ -200,7 +235,9 @@ void planner_add_line(float* axis, float feed)
 		return;
 	}
 	
-	uint32_t steps_pos[STEPPER_COUNT];
+	//MOVED TO THE INTERPOLATOR
+	
+	/*uint32_t steps_pos[STEPPER_COUNT];
 	kinematics_apply_inverse(axis, (uint32_t*)&steps_pos);
 	uint8_t dirs = m->dirbits;
 	for(uint8_t i = 0; i < STEPPER_COUNT; i++)
@@ -211,7 +248,7 @@ void planner_add_line(float* axis, float feed)
 		{
 			m->totalsteps = m->steps[i];			
 		}
-	}
+	}*/
 
 	//calculates the normalized direction vector
 	//it also calculates the angle between previous direction and the current
@@ -221,10 +258,14 @@ void planner_add_line(float* axis, float feed)
 	m->distance = sqrtf(m->distance);
 	float inv_magn = 1.0f/m->distance;
 	float cos_theta = 0;
-	dirs = m->dirbits;
+	uint8_t dirs = m->dirbits;
 	//uint8_t prev_index = BUFFER_WRITE_INDEX(g_planner_buffer);
 	//prev_index = BUFFER_PREV_INDEX(g_planner_buffer,prev_index);
-	PLANNER_MOTION *prev = buffer_get_prev(g_planner_buffer, m);//BUFFER_PTR(g_planner_buffer, prev_index);
+	PLANNER_BLOCK *prev = NULL;
+	if(!is_buffer_empty(g_planner_buffer))
+	{
+		prev = buffer_get_prev(g_planner_buffer, m);//BUFFER_PTR(g_planner_buffer, prev_index);
+	}
 	
 	for(uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
@@ -232,7 +273,7 @@ void planner_add_line(float* axis, float feed)
 		if(m->dir_vect[i] != 0)
 		{
 			m->dir_vect[i] *= inv_magn;
-			if(prev != NULL)
+			if(!is_buffer_empty(g_planner_buffer))
 			{
 				cos_theta += m->dir_vect[i] * prev->dir_vect[i];
 			}
@@ -250,6 +291,7 @@ void planner_add_line(float* axis, float feed)
 		dirs>>=1;
 	}
 
+	m->accel_inv = 1.0f / m->acceleration;
 	//reduces target speed if exceeds the maximum allowed speed in the current direction
 	if(m->target_speed > m->max_speed)
 	{
@@ -258,10 +300,10 @@ void planner_add_line(float* axis, float feed)
 	
 	//sets entry and max junction speeds as if it would start and finish from a stoped state
 	m->entry_speed_sqr = 0;
-	m->entry_max_speed_sqr = 0;
+	m->entry_max_speed_sqr = (m->target_speed) * (m->target_speed);
 	
 	//if more than one move stored cals juntion speeds and recalculates speed profiles
-	if(prev != NULL)
+	if(!is_buffer_empty(g_planner_buffer))
 	{
 		//calculates the junction angle with previous
 		if(cos_theta > 0)
@@ -280,7 +322,6 @@ void planner_add_line(float* axis, float feed)
 		//sets the maximum allowed speed at junction (if angle doesn't force a full stop)
 		if(m->angle_factor < 1.0f)
 		{
-			m->entry_max_speed_sqr = m->target_speed*m->target_speed;
 			float junc_speed_sqr = prev->target_speed*(1-m->angle_factor);
 			junc_speed_sqr *= junc_speed_sqr; //sqr speed
 			m->entry_max_speed_sqr = MIN(m->entry_max_speed_sqr, junc_speed_sqr);
@@ -289,256 +330,17 @@ void planner_add_line(float* axis, float feed)
 		
 		planner_recalculate();
 	}
-	else
+	/*else
 	{
 		//first motion in buffer. Not optimizable
 		m->optimal = true;
-	}
+	}*/
 
 	//advances the buffer
-	//BUFFER_WRITE_PTR_INC(g_planner_buffer);
+	buffer_write(g_planner_buffer, NULL);
 	//updates the current planner coordinates
 	memcpy(&g_planner_coord, axis, AXIS_COUNT*sizeof(float));
 }
-
-/*
-void planner_add_line(float* axis, float feed)
-{
-	#ifdef DEBUGMODE
-		board_startPerfCounter();
-	#endif
-	
-	uint32_t steps_pos[STEPPER_COUNT];
-	uint32_t stepspeeds[STEPPER_COUNT];
-	uint32_t stepaccels[STEPPER_COUNT];
-	float axis_speeds[AXIS_COUNT];
-	float axis_accels[AXIS_COUNT];
-	float dir_vect[AXIS_COUNT];
-	float axis_max_accel = planner_top_accel;
-	float axis_max_speed = feed;
-	float axis_max_accel_fact = 0;
-	PLANNER_MOTION new_motion;
-	#ifdef DEBUGMODE
-		uint16_t count = 0;
-	#endif
-	
-	uint8_t isfullstop = 1;
-	uint8_t dirs;
-	
-	//initialize new_motion
-	memset(&new_motion, 0, sizeof(PLANNER_MOTION));
-	
-	//when adding a line the first thing to do is to calculate the direction of the movement
-	//and compare it to the previous movement
-	//this will allow to compute the previous exit speed/next entry speed profiles
-	float magnitude = 0;
-	for(uint8_t i = AXIS_COUNT; i != 0; )
-	{
-		i--;
-		dir_vect[i] = axis[i] - g_planner_coord[i];
-		new_motion.dirs<<=1;
-		if(dir_vect[i] != 0)
-		{
-			magnitude += dir_vect[i] * dir_vect[i];
-			if(dir_vect[i]<0) //sets direction bits
-			{
-				new_motion.dirs |= 0x01;
-			}
-		}
-	}
-	
-	if(magnitude==0) //if no movement exit
-	{
-		#ifdef DEBUGMODE
-			count = board_stopPerfCounter();
-			printf("planner no motion: ");
-			printf(" in %u cycles\n", count);
-		#endif
-		return;
-	}
-	
-	//calculates the normalized direction vector
-	//it also calculates the angle between previous direction and the current
-	//this is given by the equation cos(theta) = dotprod(u,v)/(magnitude(u)*magnitude(v))
-	//since normalized vector are being used (magnitude=1) this simplifies to cos(theta) = dotprod(u,v)
-	//in the same loop the maximum linear speed and accel is calculated
-	magnitude = sqrtf(magnitude);
-	float inv_magn = 1.0f/magnitude;
-	float cos_theta = 0;
-	dirs = new_motion.dirs;
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		//if axis doesn't move skip computations
-		if(dir_vect[i] != 0)
-		{
-			dir_vect[i] *= inv_magn;
-			cos_theta += dir_vect[i] * g_planner_dir_vect[i];
-			float dir_axis_abs = (dirs & 0x01) ? -dir_vect[i] : dir_vect[i];
-			
-			float axis_speed = dir_axis_abs * axis_max_speed;
-			if(axis_speed > g_settings.max_speed[i])//if target speed exceeds the speed allowed for the axis lowers the feed rate
-			{
-				axis_max_speed = g_settings.max_speed[i] / dir_axis_abs;
-			}
-			
-			float axis_accel = axis_max_accel * dir_axis_abs;
-			if(axis_accel > g_settings.max_accel[i]) //determines maximum accel rate for all axis
-			{
-				axis_max_accel = g_settings.max_accel[i] / dir_axis_abs;
-			}
-		}
-		
-		dirs>>=1;
-	}
-	
-	
-	float dir_angle = 0;
-	//if cos is negative the angle is greater then 90� so the previous movement must end with speed = 0
-	//and there is no point in calculating the angle
-	if(cos_theta > 0)
-	{
-		//is not a +90� angle corner
-		isfullstop = 0;
-		//uses the half angle identity conversion to convert from cos(theta) to tan(theta/2)
-		//instead of sqrt((1-cos(theta)/(1+cos(theta))
-		//to simplify the calculations it multiplies by sqrt((1+cos(theta)/(1+cos(theta))
-		//transforming the equation to sqrt((1^2-cos(theta)^2))/(1+cos(theta))
-		//this way the output will be between 0<tan(theta/2)<inf
-		//but if theta is 0�<theta<90� the tan(theta/2) will be 0<tan(theta/2)<1
-		//all angles greater than that can be excluded
-		dir_angle = 1.0f + cos_theta;
-		
-		//if angle is between 0�<theta<90� calculates tan(theta/2) by using trig half angle identities
-		//a direct aproximation can be used to calc the arctan(theta) by considering arctan(theta) = theta * Pi / 4 with an aprox. error of +-5�;
-		//since will output a tan values between 0<tan(theta/2)<1 can be used directly
-		//more accurate methods can be used but at the expense of math operations
-		dir_angle = sqrt((1.0f-cos_theta*cos_theta))/dir_angle;
-	}
-	
-	//finds new junction speed for previous motion
-	float prev_exit_speed_sq;
-	
-	if(!isfullstop)
-	{
-		float prev_exit_speed = axis_max_speed * (1.0f - dir_angle);
-		prev_exit_speed = MIN(prev_exit_speed,g_planner_speed);
-		//the new movement is faster then the previous even with the juntion and there is room to accel more
-		if(g_planner_exit_speed < prev_exit_speed)
-		{
-			//no deaccel
-			planner_prev_motion.deaccel_from = 0;
-			//calc new max speed of previous move
-			float prev_inv_acc = 1.0f / g_planner_accel;
-			//calcs distance to accel to fullspeed
-			float t_accel = (prev_exit_speed - g_planner_exit_speed)*prev_inv_acc;
-			float new_accel_dist = g_planner_accel_dist + t_accel*(g_planner_exit_speed+0.5f*t_accel*g_planner_accel);
-			//can't exceed the full distance minus the previous acceleration distance
-			if(new_accel_dist>g_planner_dist)
-			{
-				planner_prev_motion.accel_until = planner_prev_motion.totalsteps;
-				new_accel_dist = g_planner_dist - g_planner_accel_dist;
-				g_planner_exit_speed = sqrtf(2.0f*new_accel_dist*g_planner_accel + g_planner_exit_speed*g_planner_exit_speed);
-			}
-			else
-			{
-				//find ratio for new distance
-				new_accel_dist = new_accel_dist/g_planner_dist;
-				//new accel
-				planner_prev_motion.accel_until = (uint32_t)roundf(planner_prev_motion.totalsteps*new_accel_dist);
-				g_planner_exit_speed = prev_exit_speed;
-			}
-		}
-		else if(prev_exit_speed > 0)
-		{
-			isfullstop = 0;
-			prev_exit_speed_sq = prev_exit_speed * prev_exit_speed;
-			//must update previous exit speed
-			float prev_deacc = g_planner_speed*g_planner_speed - prev_exit_speed_sq;
-			prev_deacc *= 0.5f / (g_planner_accel * g_planner_dist);//relative percentage of deaccl from the hole move
-			planner_prev_motion.deaccel_from = (uint32_t)roundf(planner_prev_motion.totalsteps * (1.0f - prev_deacc));
-		}
-		else
-		{
-			isfullstop = 1;
-		}
-	}
-	
-	//the previous motion is optimized and goes to the integrator
-
-	//stores the current movement target speed
-	g_planner_speed = axis_max_speed;
-	
-	//checks if it can accelerate to target speed and do a full stop.
-	//if not reduces top target speed
-	//float dt = 1.0f/magnitude;
-	float inv_acc = 0.5f / axis_max_accel;
-	float vf_sqr = axis_max_speed * axis_max_speed;
-	//deaccels from full speed to complete stop
-	float d_deacc = inv_acc * vf_sqr;
-	//same for accel
-	float d_acc = d_deacc;
-	//if previous move doesn't end in a full stop recalcs the accel
-	if(!isfullstop)
-	{
-		d_acc = inv_acc * (vf_sqr - prev_exit_speed_sq);
-	}
-
-	//if it can't reach full speed recalcs the maximum achievable speed
-	if(d_acc + d_deacc > magnitude)
-	{
-		axis_max_speed = axis_max_accel * sqrt(2 * magnitude * inv_acc);
-		d_acc = d_deacc = 0.5f * magnitude;
-	}
-	
-	//reconverts linear speed and accel to a vector
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		axis_speeds[i] = axis_max_speed * dir_vect[i];
-		axis_accels[i] = axis_max_accel * dir_vect[i];
-	}
-
-	//calculates the inverse kinematics for the position, speeds and accel
-	kinematics_apply_inverse(axis, (uint32_t*)&steps_pos);
-	kinematics_apply_inverse((float*)&axis_speeds, (uint32_t*)&stepspeeds);
-	kinematics_apply_inverse((float*)&axis_accels, (uint32_t*)&stepaccels);
-
-	//calculates the number of required steps to execute step rate and step rate accel
-	dirs = new_motion.dirs;
-	for(uint8_t i = 0; i < STEPPER_COUNT; i++)
-	{
-		new_motion.steps[i] = (dirs & 0x01) ? (g_planner_pos[i]-steps_pos[i]) : (steps_pos[i]-g_planner_pos[i]);
-		dirs>>=1;
-		if(new_motion.totalsteps < new_motion.steps[i])
-		{
-			new_motion.totalsteps = new_motion.steps[i];
-			new_motion.speed_rate = (uint16_t)stepspeeds[i];
-			new_motion.accel_rate = (uint16_t)stepaccels[i];			
-		}
-	}
-
-	//calculates the steps needded for accel and deaccel
-	new_motion.accel_until = (uint32_t)round(new_motion.totalsteps*d_acc*inv_magn);
-	new_motion.deaccel_from = (uint32_t)round(new_motion.totalsteps*d_deacc*inv_magn);
-	
-	//updates all variables for next pass
-	memcpy(&planner_prev_motion, &new_motion, sizeof(PLANNER_MOTION));
-	memcpy(&g_planner_pos, &steps_pos, STEPPER_COUNT*sizeof(uint32_t));
-	memcpy(&g_planner_coord, axis, AXIS_COUNT*sizeof(float));
-	memcpy(&g_planner_dir_vect, &dir_vect, AXIS_COUNT*sizeof(float));
-	//stores the exit speed
-	//this speed is the actual top speed reached by the motion after acceleration
-	g_planner_exit_speed = axis_max_speed;
-	g_planner_accel = axis_max_accel;
-	g_planner_dist = magnitude;
-	g_planner_accel_dist = magnitude - d_acc;
-	
-	#ifdef DEBUGMODE
-		count = board_stopPerfCounter();
-		printf("planner motion: ");
-		printf("in %u cycles\n", count);
-	#endif
-}
-*/	
 
 /*
 	Idea for the planner arc function
@@ -559,7 +361,7 @@ void planner_add_arc(float* axis, float* center, uint8_t clockwise, uint8_t plan
 	float dir_vect[AXIS_COUNT];
 
 	//calculate radius start vector
-	float magnitude = 0;
+	//float magnitude = 0;
 	memset(&dir_vect, 0, AXIS_COUNT*sizeof(float));
 	switch(plane)
 	{
