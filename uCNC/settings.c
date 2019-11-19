@@ -49,6 +49,8 @@ void settings_load()
 	g_settings.max_y = 1000.0f;
 	g_settings.max_z = 1000.0f;
 	
+	g_settings.arc_tolerance = 0.05f;
+	
 }
 
 void settings_reset()

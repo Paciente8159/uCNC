@@ -73,7 +73,7 @@ typedef struct
 
 typedef struct
 {
-    float xyzabc[6];
+    float xyzabc[AXIS_COUNT];
     float d;
     float f;
     float h;
@@ -92,6 +92,8 @@ typedef struct
     GCODE_GROUPS groups;
     GCODE_WORDS words;
 } GCODE_PARSER_STATE;
+
+extern GCODE_PARSER_STATE g_gcparser_state;
 
 void gcode_init();
 void gcode_parse_nextline();

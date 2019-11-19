@@ -22,4 +22,6 @@
 //defines the number of supported coordinate systems
 #define COORD_SYS_COUNT 6
 
+#define N_ARC_CORRECTION 12
+
 #endif

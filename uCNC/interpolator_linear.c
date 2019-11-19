@@ -15,12 +15,6 @@
 
 #define INTEGRATOR_DELTA_T (1.0f/F_INTEGRATOR)
 
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-	#define fastsqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
-#else
-	#define fastsqrt(x) sqrtf(x)
-#endif
-
 //limits segment length to 16 bits
 //for now this is only used in the step counter
 //must try to limit all math to 16bit vars in the future for better ISR performance
@@ -115,15 +109,9 @@ void interpolator_init()
 	dirbitsmask[5] = DIR5_MASK;
 	#endif 
 	
+	mcu_attachOnStep(interpolator_step);
+	mcu_attachOnStepReset(interpolator_stepReset);
 	mcu_startStepISR(65535, 1);
-	/*mcu_attachOnIntegrator(interpolator_rt_integrator);
-	//start and suspend the integrator
-	mcu_changeStepISR(interpolator_running_sgm->clocks_per_tick, interpolator_running_sgm->ticks_per_step);
-	mcu_startIntegrator();
-	mcu_pauseIntegrator();*/
-	//mcu_attachOnStep(interpolator_step);
-	//mcu_attachOnStepReset(interpolator_stepReset);
-	//mcu_startPulse(F_PULSE_MIN);*/
 
 	interpolator_running_sgm = NULL;
 	interpolator_needs_update = false;

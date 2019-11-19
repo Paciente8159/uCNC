@@ -18,7 +18,6 @@
 #include "mcumap.h"
 #include "mcu.h"
 #include "utils.h"
-#include "interpolator.h"
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -84,8 +83,8 @@ volatile IO_REGISTER g_mcu_inputs;
 //volatile OUTPUT_REGISTER g_mcu_outputs;
 volatile IO_REGISTER g_mcu_pouts;
 
-ISRTIMER g_mcu_stepCallback;
-ISRTIMER g_mcu_stepResetCallback;
+ISRVOID g_mcu_stepCallback;
+ISRVOID g_mcu_stepResetCallback;
 //ISRTIMER g_mcu_integratorCallback;
 volatile uint16_t g_mcu_tmr0_counter;
 volatile uint16_t g_mcu_tmr0_value;
@@ -95,20 +94,20 @@ ISRCOMRX g_mcu_rs232RxCallback;
 
 ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
-    /*if(g_mcu_stepCallback!=NULL)
+    if(g_mcu_stepCallback!=NULL)
 	{
     	g_mcu_stepCallback();
 	}
-	*/interpolator_step();
+	//interpolator_step();
 }
 
 ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
-    /*if(g_mcu_stepResetCallback!=NULL)
+    if(g_mcu_stepResetCallback!=NULL)
 	{
     	g_mcu_stepResetCallback();
 	}
-	*/interpolator_stepReset();
+	//interpolator_stepReset();
 }
 
 /*ISR(TIMER0_OVF_vect, ISR_BLOCK)

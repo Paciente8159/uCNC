@@ -34,7 +34,7 @@
 
 #include <stdint.h>
 
-typedef void (*ISRTIMER)();
+typedef void (*ISRVOID)();
 typedef void (*ISRPINCHANGE)(volatile uint32_t*);
 typedef void (*ISRCOMRX)(volatile char);
 
@@ -68,6 +68,8 @@ char mcu_peek();
 void mcu_bufferClear();
 void mcu_attachOnReadChar(ISRCOMRX handler);
 void mcu_detachOnReadChar();
+void mcu_attachOnSentChar(ISRVOID handler);
+void mcu_detachOnSentChar();
 
 //RealTime
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
@@ -84,10 +86,10 @@ void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
 void mcu_stopStepISR();
 //attaches a function handle to the pulse ISR
-void mcu_attachOnStep(ISRTIMER handler);
+void mcu_attachOnStep(ISRVOID handler);
 void mcu_detachOnStep();
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void mcu_attachOnStepReset(ISRTIMER handler);
+void mcu_attachOnStepReset(ISRVOID handler);
 void mcu_detachOnStepReset();
 /*
 //starts a constant rate integrator at a given frequency.
@@ -102,6 +104,7 @@ void mcu_resumeIntegrator();
 void mcu_attachOnIntegrator(ISRTIMER handler);
 void mcu_detachOnIntegrator();
 */
+char* mcu_strcpyProgMem(char* __s, const char* __fmt);
 void mcu_printfp(const char* __fmt, ...);
 uint8_t mcu_readProgMemByte(uint8_t* src);
 uint8_t mcu_eeprom_getc(uint16_t address);

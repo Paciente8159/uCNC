@@ -21,7 +21,7 @@ typedef struct
 	float max_x;
 	float max_y;
 	float max_z;
-	
+	float arc_tolerance;
 } SETTINGS;
 
 extern SETTINGS g_settings;

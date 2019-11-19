@@ -22,7 +22,6 @@ typedef struct virtual_map_t
 #include "mcumap.h"
 #include "mcu.h"
 #include "util/timer.h"
-#include "interpolator.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -94,14 +93,16 @@ volatile unsigned long pulse_interval = 0;
 volatile unsigned long resetpulse_interval = 0;
 volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
 volatile unsigned long pulse_counter = 0;
-unsigned long *pulse_counter_ptr;
+volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
 
-ISRTIMER g_mcu_pulseCallback = NULL;
-ISRTIMER g_mcu_pulseResetCallback = NULL;
-ISRTIMER g_mcu_integratorCallback = NULL;
+
+ISRVOID g_mcu_stepCallback = NULL;
+ISRVOID g_mcu_stepResetCallback = NULL;
+ISRVOID g_mcu_integratorCallback = NULL;
 ISRPINCHANGE g_mcu_pinChangeCallback = NULL;
 ISRCOMRX g_mcu_charReceived = NULL;
+ISRVOID g_mcu_charSent = NULL;
 
 pthread_t thread_id;
 pthread_t thread_timer_id;
@@ -131,22 +132,22 @@ void* timersimul()
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
 				(*pulse_counter_ptr) = 0;
-				/*if(g_mcu_pulseCallback!=NULL)
+				if(g_mcu_stepCallback!=NULL)
 				{
-					g_mcu_pulseCallback();
-				}*/
+					g_mcu_stepCallback();
+				}
 				
-				interpolator_step();
+				//interpolator_step();
 			}
 			
 			if((*pulse_counter_ptr)==resetpulse_interval && pulse_enabled )
 			{
-				/*if(g_mcu_pulseResetCallback!=NULL)
+				if(g_mcu_stepResetCallback!=NULL)
 				{
-					g_mcu_pulseResetCallback();
-				}*/
+					g_mcu_stepResetCallback();
+				}
 				
-				interpolator_stepReset();
+				//interpolator_stepReset();
 			}
 			
 			/*if(integrator_counter==integrator_interval && integrator_enabled)
@@ -157,6 +158,11 @@ void* timersimul()
 					g_mcu_integratorCallback();
 				}
 			}*/
+			
+			if(g_mcu_charSent != NULL)
+			{
+				g_mcu_charSent();
+			}
 		}
 		
 		//ticks = newticks;
@@ -220,19 +226,19 @@ void ticksimul()
 		
 		if(pulse_interval != 0)
 		{
-			if(g_mcu_pulseCallback!=NULL)
+			if(g_mcu_stepCallback!=NULL)
 			{
 				if(tick_counter%pulse_interval==0)
 				{
-					g_mcu_pulseCallback();
+					g_mcu_stepCallback();
 				}
 			}
 		    		
-		    if(g_mcu_pulseResetCallback!=NULL)
+		    if(g_mcu_stepResetCallback!=NULL)
 		    {
 		    	if(tick_counter%(pulse_interval + MIN_PULSE_WIDTH_US)==0)
 				{
-					g_mcu_pulseResetCallback();
+					g_mcu_stepResetCallback();
 				}
 			}
 		}
@@ -366,6 +372,21 @@ void mcu_bufferClear()
 	g_mcu_bufferhead = 0;
 }
 
+void mcu_attachOnReadChar(ISRCOMRX handler)
+{
+	g_mcu_charReceived = handler;
+}
+
+void mcu_attachOnSentChar(ISRVOID handler)
+{
+	g_mcu_charSent = handler;
+}
+
+void mcu_detachOnSentChar()
+{
+	g_mcu_charSent = NULL;
+}
+
 //RealTime
 void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
 {
@@ -410,28 +431,28 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 	pulse_enabled = true;
 }
 //stops the pulse 
-void mcu_stopPulse()
+void mcu_stopStepISR()
 {
 	pulse_enabled = false;
 }
 //attaches a function handle to the pulse ISR
-void mcu_attachOnPulse(ISRTIMER handler)
+void mcu_attachOnStep(ISRVOID handler)
 {
-	g_mcu_pulseCallback = handler;
+	g_mcu_stepCallback = handler;
 }
-void mcu_detachOnPulse()
+void mcu_detachOnStep()
 {
-	g_mcu_pulseCallback = NULL;
+	g_mcu_stepCallback = NULL;
 }
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void mcu_attachOnPulseReset(ISRTIMER handler)
+void mcu_attachOnStepReset(ISRVOID handler)
 {
-	g_mcu_pulseResetCallback = handler;
+	g_mcu_stepResetCallback = handler;
 }
 
-void mcu_detachOnPulseReset()
+void mcu_detachOnStepReset()
 {
-	g_mcu_pulseCallback = NULL;
+	g_mcu_stepCallback = NULL;
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
@@ -458,7 +479,7 @@ void mcu_stopIntegrator()
 	integrator_enabled = false;
 }
 //attaches a function handle to the pulse ISR
-void mcu_attachOnIntegrator(ISRTIMER handler)
+void mcu_attachOnIntegrator(ISRVOID handler)
 {
 	g_mcu_integratorCallback = handler;
 }
@@ -491,6 +512,11 @@ void mcu_loadDummyPayload(const char* __fmt, ...)
 	strcpy((char*)&g_mcu_combuffer, payload);
 	g_mcu_buffertail = 0;
 	g_mcu_buffercount++;
+}
+
+char* mcu_strcpyProgMem(char* __s, const char* __fmt)
+{
+	return strcpy(__s, __fmt);
 }
 
 
