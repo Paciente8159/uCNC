@@ -12,6 +12,7 @@
 #include "planner.h"
 #include "utils.h"
 #include "ringbuffer.h"
+#include "cnc.h"
 
 #define INTEGRATOR_DELTA_T (1.0f/F_INTEGRATOR)
 
@@ -84,6 +85,9 @@ void interpolator_init()
 	//resets buffers
 	memset(&interpolator_step_pos, 0, sizeof(interpolator_step_pos));
 	memset(&interpolator_running_sgm, 0, sizeof(INTERPOLATOR_SEGMENT));
+	
+	//reset stepper positions
+	cnc_unhome();
 
 	//initialize circular buffers
 	interpolator_blk_buffer = buffer_init(&interpolator_blk_data, sizeof(INTERPOLATOR_BLOCK), INTERPOLATOR_BUFFER_SIZE);
@@ -111,7 +115,7 @@ void interpolator_init()
 	
 	mcu_attachOnStep(interpolator_step);
 	mcu_attachOnStepReset(interpolator_stepReset);
-	mcu_startStepISR(65535, 1);
+	//mcu_startStepISR(65535, 1);
 
 	interpolator_running_sgm = NULL;
 	interpolator_needs_update = false;
@@ -229,6 +233,13 @@ void interpolator_execute()
 			}
 		}
 		
+		if(g_cnc_state.rt_cmd && RT_CMD_FEED_HOLD)
+		{
+			//forces deacceleration by overriding the profile juntion points
+			accel_until = unprocessed_steps;
+			deaccel_from = unprocessed_steps;
+		}
+		
 		float partial_distance;
 		float current_speed;
 		//acceleration profile
@@ -273,17 +284,12 @@ void interpolator_execute()
 			//completes the segment information (step speed, steps) and updates the block
 			mcu_freq2clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
 			sgm->remaining_steps = steps;
+
 			pl_block->distance -= partial_distance;	
 			pl_block->entry_speed_sqr = new_speed_sqr;	
 		}
 		else if(unprocessed_steps > deaccel_from)
 		{	
-			if(unprocessed_steps == accel_until) //resets float additions error
-			{
-				pl_block->entry_speed_sqr = junction_speed_sqr;
-				pl_block->distance = min_step_distance * accel_until;
-			}
-			
 			//constant speed segment
 			current_speed = fastsqrt(junction_speed_sqr);
 			partial_distance = current_speed * INTEGRATOR_DELTA_T;
@@ -299,9 +305,9 @@ void interpolator_execute()
 			}
 			
 			//if computed steps exceed the remaining steps for the motion shortens the distance
-			if(steps > (unprocessed_steps - accel_until))
+			if(steps > (unprocessed_steps - deaccel_from))
 			{
-				steps = (uint16_t) (unprocessed_steps - accel_until);
+				steps = (uint16_t) (unprocessed_steps - deaccel_from);
 			}
 			
 			//recalculates the precise distance to travel the given amount os steps
@@ -316,14 +322,21 @@ void interpolator_execute()
 		}
 		else
 		{
-			if(unprocessed_steps == deaccel_from) //resets float additions error
-			{
-				pl_block->entry_speed_sqr = junction_speed_sqr;
-				pl_block->distance = min_step_distance * deaccel_from;
-			}
-			
 			current_speed = fastsqrt(pl_block->entry_speed_sqr);
 			current_speed -= half_speed_change;
+			
+						
+			if(g_cnc_state.rt_cmd && RT_CMD_FEED_HOLD)
+			{
+				if(current_speed < 0)
+				{
+					//after a feed hold if 0 speed reached exits and starves the buffer;
+					g_cnc_state.exec_state = EXEC_HOLD;
+					g_cnc_state.rt_cmd &= ~RT_CMD_FEED_HOLD; //clears flag
+					return;
+				}
+			}
+			
 			partial_distance = current_speed * INTEGRATOR_DELTA_T;
 			
 			//computes how many steps it can perform at this speed and frame window
@@ -356,7 +369,18 @@ void interpolator_execute()
 		}
 		
 		unprocessed_steps -= sgm->remaining_steps;
+		if(unprocessed_steps == accel_until) //resets float additions error
+		{
+			pl_block->entry_speed_sqr = junction_speed_sqr;
+			pl_block->distance = min_step_distance * accel_until;
+		}
+		
 		buffer_write(interpolator_sgm_buffer, NULL);
+		if(g_cnc_state.exec_state == EXEC_IDLE)
+		{
+			g_cnc_state.exec_state |= EXEC_CYCLE;
+			mcu_startStepISR(sgm->clocks_per_tick, sgm->ticks_per_step);
+		}
 		
 		if(unprocessed_steps == 0)
 		{
@@ -374,9 +398,16 @@ void interpolator_update()
 	interpolator_needs_update = true;
 }
 
-void interpolator_sleep()
+void interpolator_stop()
 {
-	//mcu_stopPulse();
+	g_cnc_state.exec_state = EXEC_IDLE;
+	mcu_stopStepISR();
+}
+
+void interpolator_clear()
+{
+	buffer_clear(interpolator_sgm_buffer);
+	buffer_clear(interpolator_blk_buffer);
 }
 
 //always fires before pulse
@@ -402,6 +433,16 @@ void interpolator_step()
 	static uint16_t clock = 0;
 	static uint8_t pres = 0;
 	static uint16_t remaining_steps = 0;
+
+	if(g_cnc_state.halt) //in case of any failure or stop trigger activated stops motion
+	{
+		if(interpolator_running_sgm != NULL) //if halt in the middle of a motion considers that homing position was lost
+		{
+			g_cnc_state.is_homed = false;
+		}
+		interpolator_stop();
+		return;
+	}
 	
 	//sets step bits
 	mcu_setSteps(stepbits);
@@ -422,6 +463,7 @@ void interpolator_step()
 		//if buffer is empty return null
 		if(interpolator_running_sgm == NULL)
 		{
+			interpolator_stop(); //the buffer is empty. The ISR can stop
 			return;
 		}
 		
@@ -442,6 +484,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[0] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP0_MASK;
+			if(interpolator_dirbits && DIR0_MASK)
+			{
+				g_cnc_state.rt_position[0]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[0]++;
+			}
 		}
 		#endif
 		#ifdef STEP1
@@ -450,6 +500,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[1] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP1_MASK;
+			if(interpolator_dirbits && DIR1_MASK)
+			{
+				g_cnc_state.rt_position[1]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[1]++;
+			}
 		}
 		#endif
 		#ifdef STEP2
@@ -458,6 +516,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[2] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP2_MASK;
+			if(interpolator_dirbits && DIR1_MASK)
+			{
+				g_cnc_state.rt_position[2]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[2]++;
+			}
 		}
 		#endif
 		#ifdef STEP3
@@ -466,6 +532,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[3] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP3_MASK;
+			if(interpolator_dirbits && DIR1_MASK)
+			{
+				g_cnc_state.rt_position[3]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[3]++;
+			}
 		}
 		#endif
 		#ifdef STEP4
@@ -474,6 +548,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[4] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP4_MASK;
+			if(interpolator_dirbits && DIR1_MASK)
+			{
+				g_cnc_state.rt_position[4]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[4]++;
+			}
 		}
 		#endif
 		#ifdef STEP5
@@ -482,6 +564,14 @@ void interpolator_step()
 		{
 			interpolator_running_sgm->errors[5] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP5_MASK;
+			if(interpolator_dirbits && DIR1_MASK)
+			{
+				g_cnc_state.rt_position[5]--; 
+			}
+			else
+			{
+				g_cnc_state.rt_position[5]++;
+			}
 		}
 		#endif
 		

@@ -14,6 +14,6 @@
 
 void mc_init();
 void mc_line(float* target, float feed);
-void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bool isclockwise, float feed);
+void mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed);
 
 #endif

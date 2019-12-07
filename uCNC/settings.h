@@ -1,30 +1,41 @@
 /*
-	Name: 
-	Copyright: 
-	Author: 
-	Date: 24/09/19 10:16
-	Description: 
+	Name: setting.h - uCNC settings functionalities
+	Copyright: 2019 João Martins
+	Author: João Martins
+	Date: Nov/2019
+	Description: uCNC is a free cnc controller software designed to be flexible and
+	portable to several	microcontrollers/architectures.
+	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
 */
 
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "config.h"
 #include "machinedefs.h"
 
 typedef struct
 {
-	uint16_t step_mm[AXIS_COUNT];
-	float max_speed[AXIS_COUNT];
-	float max_accel[AXIS_COUNT];
-	float max_x;
-	float max_y;
-	float max_z;
+	char version[3];
+	float step_per_mm[AXIS_COUNT];
+	float max_feed_rate[AXIS_COUNT];
+	float acceleration[AXIS_COUNT];
+	float max_distance[AXIS_COUNT];
+	bool step_enable_mask;
+	uint8_t step_invert_mask;
+    uint8_t dir_invert_mask;
+    uint8_t homing_dir_invert_mask;
+    float homing_feed_rate;
+  	float homing_seek_rate;
+  	float homing_offset;
 	float arc_tolerance;
-} SETTINGS;
+	uint8_t tool_count;
+	uint8_t crc;
+} settings_t;
 
-extern SETTINGS g_settings;
+extern settings_t g_settings;
 
 void settings_load();
 void settings_reset();

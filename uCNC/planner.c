@@ -1,9 +1,11 @@
 /*
-	Name: 
-	Copyright: 
-	Author: 
-	Date: 23/09/19 23:19
-	Description: 
+	Name: planner.c - chain planner for linear motions and acceleration/deacceleration profiles
+	Copyright: 2019 João Martins
+	Author: João Martins
+	Date: Oct/2019
+	Description: uCNC is a free cnc controller software designed to be flexible and
+	portable to several	microcontrollers/architectures.
+	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
 */
 
 #include <stdint.h>
@@ -33,10 +35,6 @@ void planner_init()
 	//resets buffer
 	memset(&g_planner_data, 0, sizeof(PLANNER_BLOCK)*PLANNER_BUFFER_SIZE);
 	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_BLOCK), PLANNER_BUFFER_SIZE);
-	
-	#ifdef __DEBUG__
-	mcu_printfp(PSTR("Planner initialized\n"));
-	#endif
 }
 
 bool planner_buffer_full()
@@ -281,10 +279,10 @@ void planner_add_line(float *axis, float feed)
 			float dir_axis_abs = (dirs & 0x01) ? -m->dir_vect[i] : m->dir_vect[i];
 			
 			//calcs maximum allowable speed for this diretion
-			float axis_speed = g_settings.max_speed[i] / dir_axis_abs;
+			float axis_speed = g_settings.max_feed_rate[i] / dir_axis_abs;
 			m->max_speed = MIN(m->max_speed, axis_speed);
 			//calcs maximum allowable acceleration for this direction
-			float axis_accel = g_settings.max_accel[i] / dir_axis_abs;
+			float axis_accel = g_settings.acceleration[i] / dir_axis_abs;
 			m->acceleration = MIN(m->acceleration, axis_accel);
 		}
 		

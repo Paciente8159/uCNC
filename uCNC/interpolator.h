@@ -18,5 +18,7 @@ void interpolator_execute();
 void interpolator_update();
 void interpolator_step();
 void interpolator_stepReset();
+void interpolator_stop();
+void interpolator_clear();
 
 #endif

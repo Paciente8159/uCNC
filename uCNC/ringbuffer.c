@@ -1,3 +1,13 @@
+/*
+	Name: ringbuffer.c - a generic ringbuffer c library with minimalistic dynamic memory usage
+	Copyright: 2019 João Martins
+	Author: João Martins
+	Date: Oct/2019
+	Description: uCNC is a free cnc controller software designed to be flexible and
+	portable to several	microcontrollers/architectures.
+	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+*/
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -105,6 +115,14 @@ void* buffer_write(buffer_t buffer, const void* data)
 	buffer->full = (buffer->head==buffer->tail);
 
 	return dest;
+}
+
+void buffer_clear(buffer_t buffer)
+{
+	buffer->head = 0;
+	buffer->tail = 0;
+	buffer->full = false;
+	buffer->empty = true;
 }
 
 void* buffer_get_next_free(buffer_t buffer)

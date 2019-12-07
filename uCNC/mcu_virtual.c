@@ -21,6 +21,7 @@ typedef struct virtual_map_t
 
 #include "mcumap.h"
 #include "mcu.h"
+#include "settings.h"
 #include "util/timer.h"
 
 #ifndef F_CPU
@@ -95,40 +96,32 @@ volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
 volatile unsigned long pulse_counter = 0;
 volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
-
+volatile bool send_char = false;
 
 ISRVOID g_mcu_stepCallback = NULL;
 ISRVOID g_mcu_stepResetCallback = NULL;
 ISRVOID g_mcu_integratorCallback = NULL;
-ISRPINCHANGE g_mcu_pinChangeCallback = NULL;
+ISRPORTCHANGE g_mcu_pinChangeCallback = NULL;
 ISRCOMRX g_mcu_charReceived = NULL;
 ISRVOID g_mcu_charSent = NULL;
+
 
 pthread_t thread_id;
 pthread_t thread_timer_id;
 
 void* timersimul()
 {
-	//unsigned long freq = getCPUFreq();
 	unsigned long pulse_counter = 0;
 	unsigned long integrator_counter = 0;
-	unsigned long ticks = 0;//getTickCounter();
-	//unsigned long pulse;
-	//unsigned long integrator;
+	unsigned long ticks = 0;
+
 	for(;;)
 	{
-		//unsigned long newticks = ticks+1;//getTickCounter();
-		//unsigned long diff = (newticks>=ticks) ? newticks - ticks : newticks - ticks + (unsigned long)-1;
-		//diff = F_CPU * diff / freq; 
-		
 		if(global_irq_enabled)
 		{
 			if(pulse_enabled)
 				(*pulse_counter_ptr)++;
-		
-			/*if(integrator_enabled)
-				integrator_counter++;*/
-	
+
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
 				(*pulse_counter_ptr) = 0;
@@ -136,8 +129,6 @@ void* timersimul()
 				{
 					g_mcu_stepCallback();
 				}
-				
-				//interpolator_step();
 			}
 			
 			if((*pulse_counter_ptr)==resetpulse_interval && pulse_enabled )
@@ -146,26 +137,23 @@ void* timersimul()
 				{
 					g_mcu_stepResetCallback();
 				}
-				
-				//interpolator_stepReset();
 			}
-			
-			/*if(integrator_counter==integrator_interval && integrator_enabled)
+		}
+	}
+}
+
+void* outsimul()
+{
+	for(;;)
+	{
+		if(global_irq_enabled)
+		{
+			if(g_mcu_charSent != NULL && send_char)
 			{
-				integrator_counter = 0;
-				if(g_mcu_integratorCallback!=NULL)
-				{
-					g_mcu_integratorCallback();
-				}
-			}*/
-			
-			if(g_mcu_charSent != NULL)
-			{
+				send_char = false;
 				g_mcu_charSent();
 			}
 		}
-		
-		//ticks = newticks;
 	}
 }
 
@@ -187,7 +175,7 @@ void* inputsimul()
 				break;
 			case '\r':
 			case '\n':
-				c = '\n';
+				c = '\r';
 				g_mcu_combuffer[g_mcu_bufferhead] = c;
 				g_mcu_buffercount++;
 			default:
@@ -256,6 +244,11 @@ void ticksimul()
 
 void mcu_init()
 {
+	#ifdef __DEBUG__
+	settings_reset();
+	#endif
+	
+	send_char = false;
 	virtualports = &virtualmap;
 	FILE *infile = fopen("inputs.txt", "w+");
 	if(infile!=NULL)
@@ -272,7 +265,8 @@ void mcu_init()
 	g_cpu_freq = getCPUFreq();
 	
 	//start_timer(1, &ticksimul);
-	pthread_create(&thread_id, NULL, &inputsimul, NULL); 
+	pthread_create(&thread_id, NULL, &inputsimul, NULL);
+	pthread_create(&thread_id, NULL, &outsimul, NULL);  
 	pthread_create(&thread_timer_id, NULL, &timersimul, NULL); 
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
@@ -303,12 +297,12 @@ uint8_t mcu_getProbe()
 }
 
 //attaches a function handle to the input pin changed ISR
-void mcu_attachOnInputChange(ISRPINCHANGE handler)
+void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler)
 {
 	g_mcu_pinChangeCallback = handler;
 }
 //detaches the input pin changed ISR
-void mcu_detachOnInputChange()
+void mcu_detachOnLimitTrigger()
 {
 	g_mcu_pinChangeCallback = NULL;
 }
@@ -336,6 +330,7 @@ void mcu_setOutputs(uint16_t value)
 void mcu_putc(char c)
 {
 	putchar(c);
+	send_char = true;
 }
 
 char mcu_getc()
@@ -514,15 +509,14 @@ void mcu_loadDummyPayload(const char* __fmt, ...)
 	g_mcu_buffercount++;
 }
 
-char* mcu_strcpyProgMem(char* __s, const char* __fmt)
+uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	return strcpy(__s, __fmt);
+	
 }
 
-
-uint8_t mcu_readProMemByte(uint8_t* src)
+uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	return *src;
+	
 }
 
 void mcu_startPerfCounter()

@@ -18,6 +18,7 @@
 #include "mcumap.h"
 #include "mcu.h"
 #include "utils.h"
+#include "protocol.h"
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -89,19 +90,23 @@ ISRVOID g_mcu_stepResetCallback;
 volatile uint16_t g_mcu_tmr0_counter;
 volatile uint16_t g_mcu_tmr0_value;
 
-ISRPINCHANGE g_mcu_pinChangeCallback;
 ISRCOMRX g_mcu_rs232RxCallback;
+ISRVOID g_mcu_rs232TxCallback;
 
-ISR(TIMER1_COMPA_vect, ISR_BLOCK)
+ISRPORTCHANGE mcu_limit_trigger_callback;
+static uint8_t mcu_prev_limits;
+ISRPORTCHANGE mcu_control_trigger_callback;
+uint8_t mcu_prev_controls;
+
+ISR(TIMER1_COMPA_vect, ISR_NOBLOCK)
 {
     if(g_mcu_stepCallback!=NULL)
 	{
     	g_mcu_stepCallback();
 	}
-	//interpolator_step();
 }
 
-ISR(TIMER1_COMPB_vect, ISR_BLOCK)
+ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
 {
     if(g_mcu_stepResetCallback!=NULL)
 	{
@@ -110,99 +115,82 @@ ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 	//interpolator_stepReset();
 }
 
-/*ISR(TIMER0_OVF_vect, ISR_BLOCK)
-{
-	if(g_mcu_integratorCallback!=NULL)
-	{
-		g_mcu_integratorCallback();
-	}
-	interpolator_rt_integrator();
-}*/
+/*
+	Fazer modificação
+	ISR apenas para limites e controls
+	criar static e comparar com valor anterior e so disparar callback caso tenha alterado
+*/
 
 #ifdef PORTISR0
 	ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
 	{
-		/*#ifdef __DEBUG__
-		uint32_t tickcount = mcu_getCycles();
-		#endif*/
-	    g_mcu_inputs.r0 = PORTRD0;
-	    if(g_mcu_pinChangeCallback!=NULL)
-	    	g_mcu_pinChangeCallback(&g_mcu_inputs.r);
-	    /*#ifdef __DEBUG__
-		tickcount = mcu_getElapsedCycles(tickcount);
-		MAX(mcu_performacecounters.pinChangeCounter, counter);
-		#endif*/	
+		#ifdef LIMITS_INREG
+	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD0))
+	    {
+	    	uint8_t limits = (LIMITS_INREG & LIMITS_MASK);
+	    	if(mcu_prev_limits != mcu_prev_limits)
+	    	{
+	    		mcu_limit_trigger_callback(limits);
+	    		limits = 
+			}
+	    	
+		}
+		#endif		
 	}
 #endif
 
 #ifdef PORTISR1
 	ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
 	{
-		/*#ifdef __DEBUG__
-		uint32_t tickcount = mcu_getCycles();
-		#endif*/
-	    g_mcu_inputs.r1 = PORTRD1;
-	    if(g_mcu_pinChangeCallback!=NULL)
-	    	g_mcu_pinChangeCallback(&g_mcu_inputs.r);
-	    /*#ifdef __DEBUG__
-		tickcount = mcu_getElapsedCycles(tickcount);
-		MAX(mcu_performacecounters.pinChangeCounter, counter);
-		#endif*/
+	    #ifdef LIMITS_INREG
+	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD1))
+	    {
+	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
+		}
+		#endif
 	}
 #endif
 
 #ifdef PORTISR2
 	ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
 	{
-		/*#ifdef __DEBUG__
-		uint32_t tickcount = mcu_getCycles();
-		#endif*/
-		g_mcu_inputs.r2 = PORTRD2;
-	    //g_mcu_inputs.critical_inputs = (PORTRD2 >> 2);
-	    if(g_mcu_pinChangeCallback!=NULL)
-	    	g_mcu_pinChangeCallback(&g_mcu_inputs.r);
-	    /*#ifdef __DEBUG__
-		tickcount = mcu_getElapsedCycles(tickcount);
-		MAX(mcu_performacecounters.pinChangeCounter, counter);
-		#endif*/
+	    #ifdef LIMITS_INREG
+	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD2))
+	    {
+	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
+		}
+		#endif
 	}
 #endif
 
 #ifdef PORTISR3
 	ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
 	{
-		/*#ifdef __DEBUG__
-		uint32_t tickcount = mcu_getCycles();
-		#endif*/
-		g_mcu_inputs.r3 = PORTRD3;
-	    //g_mcu_inputs.critical_inputs = (PORTRD2 >> 2);
-	    if(g_mcu_pinChangeCallback!=NULL)
-	    	g_mcu_pinChangeCallback(&g_mcu_inputs.r);
-	    /*#ifdef __DEBUG__
-		tickcount = mcu_getElapsedCycles(tickcount);
-		MAX(mcu_performacecounters.pinChangeCounter, counter);
-		#endif*/
+	    #ifdef LIMITS_INREG
+	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD3))
+	    {
+	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
+		}
+		#endif
 	}
 #endif
 
-#if(RX >= 0)
-	ISR(USART_RX_vect, ISR_NOBLOCK)
+#ifdef RX
+	ISR(USART_RX_vect, ISR_BLOCK)
 	{
-        volatile char c = UDR0;
-        g_mcu_rxbuffer[g_mcu_rxhead] = c;
-        if(++g_mcu_rxhead==COM_BUFFER_SIZE)
-        {
-        	g_mcu_rxhead = 0;
-		}
-            
-    	if((c == '\n') | (c == '\r'))
-    	{
-    		g_mcu_rxcount++;
-		}
-
         if(g_mcu_rs232RxCallback!=NULL)
+		{
+	    	g_mcu_rs232RxCallback(UDR0);
+		}
+	}
+#endif
+
+#ifdef TX
+	ISR(USART_TX_vect, ISR_NOBLOCK)
+	{
+        if(g_mcu_rs232TxCallback!=NULL)
         {
-            g_mcu_rs232RxCallback(c);
+            g_mcu_rs232TxCallback();
         }
 	}
 #endif
@@ -213,8 +201,9 @@ void mcu_init()
     
     g_mcu_stepCallback = NULL;
 	g_mcu_stepResetCallback = NULL;
-	g_mcu_pinChangeCallback = NULL;
+	mcu_limit_trigger_callback = NULL;
 	g_mcu_rs232RxCallback = NULL;
+	g_mcu_rs232TxCallback = NULL;
 	
 	//disable WDT
 	wdt_reset();
@@ -362,8 +351,8 @@ void mcu_init()
     UBRR0H = UBRR0_value >> 8;
     UBRR0L = UBRR0_value;
   
-    // enable rx, tx, and interrupt on complete reception of a byte
-    UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
+    // enable rx, tx, and interrupt on complete reception of a byte and UDR empty
+    UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0 | 1<<TXCIE0);
     
 	//enable interrupts
 	sei();
@@ -389,26 +378,30 @@ uint16_t mcu_getAnalog(uint8_t pin)
 //Inputs  
 uint16_t mcu_getInputs()
 {
-	
-	return 0;//g_mcu_inputs.inputs;	
+	IO_REGISTER reg;
+	reg.r = 0;
+	#ifdef DINS_LOW
+	reg.r0 = (DINS_LOW & DINS_LOW_MASK);
+	#endif
+	#ifdef DINS_HIGH
+	reg.r1 = (DINS_HIGH & DINS_HIGH_MASK);
+	#endif
+	return reg.rl;	
 }
 
 uint8_t mcu_getControls()
 {
-	uint8_t val = CONTROLS_INREG & CONTROLS_MASK;
-	return val;
+	return (CONTROLS_INREG & CONTROLS_MASK);
 }
 
 uint8_t mcu_getLimits()
 {
-	uint8_t val = LIMITS_INREG & LIMITS_MASK;
-	return val;
+	return (LIMITS_INREG & LIMITS_MASK);
 }
 
 uint8_t mcu_getProbe()
 {
-	uint8_t val = PROBE_INREG & PROBE_MASK;
-	return val;
+	return (PROBE_INREG & PROBE_MASK);
 }
 
 //outputs
@@ -446,9 +439,9 @@ void mcu_disableInterrupts()
 	cli();
 }
 
-void mcu_attachOnInputChange(ISRPINCHANGE handler)
+void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler)
 {
-	g_mcu_pinChangeCallback = handler;
+	mcu_limit_trigger_callback = handler;
 }
 
 //internal redirect of stdout
@@ -512,6 +505,16 @@ void mcu_attachOnReadChar(ISRCOMRX handler)
 void mcu_detachOnReadChar()
 {
     g_mcu_rs232RxCallback = NULL;
+}
+
+void mcu_attachOnSentChar(ISRVOID handler)
+{
+    g_mcu_rs232TxCallback = handler;
+}
+
+void mcu_detachOnSentChar()
+{
+    g_mcu_rs232TxCallback = NULL;
 }
 
 #ifdef __PROF__
@@ -659,18 +662,18 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
     TCCR1B = prescaller;
 }
 
-void mcu_stopPulse()
+void mcu_stopStepISR()
 {
 	TCCR1B = 0;
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
 }
 
-void mcu_attachOnStep(ISRTIMER handler)
+void mcu_attachOnStep(ISRVOID handler)
 {
 	g_mcu_stepCallback = handler;
 }
 
-void mcu_attachOnStepReset(ISRTIMER handler)
+void mcu_attachOnStepReset(ISRVOID handler)
 {
 	g_mcu_stepResetCallback = handler;
 }
@@ -765,6 +768,14 @@ void mcu_loadDummyPayload(const char *__fmt, ...)
 	
 	//signal read
 	g_mcu_rxcount++;
+}
+
+uint8_t mcu_eeprom_getc(uint16_t address)
+{
+}
+
+uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
 }
 
 #endif

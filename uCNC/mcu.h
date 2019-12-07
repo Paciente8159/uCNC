@@ -26,16 +26,37 @@
 #ifndef MCU_H
 #define MCU_H
 
+#include <string.h>
 #include "mcudefs.h"
 
-#ifndef PSTR
-	#define PSTR(str) str
+#ifndef __romstr__
+	#define __romstr__
+#endif
+
+#ifndef __rom__
+	#define __rom__
+#endif
+
+#ifndef rom_strcpy
+	#define rom_strcpy strcpy
+#endif
+
+#ifndef rom_strncpy
+	#define rom_strncpy strncpy
+#endif
+
+#ifndef rom_memcpy
+	#define rom_memcpy memcpy
+#endif
+
+#ifndef rom_read_byte
+	#define rom_read_byte
 #endif
 
 #include <stdint.h>
 
 typedef void (*ISRVOID)();
-typedef void (*ISRPINCHANGE)(volatile uint32_t*);
+typedef void (*ISRPORTCHANGE)(volatile uint8_t);
 typedef void (*ISRCOMRX)(volatile char);
 
 void mcu_init();
@@ -49,9 +70,9 @@ uint8_t mcu_getControls();
 uint8_t mcu_getLimits();
 uint8_t mcu_getProbe();
 //attaches a function handle to the input pin changed ISR
-void mcu_attachOnInputChange(ISRPINCHANGE handler);
+void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler);
 //detaches the input pin changed ISR
-void mcu_detachOnInputChange();
+void mcu_detachOnLimitTrigger();
 
 //outputs
 //sets all step pins
@@ -91,22 +112,9 @@ void mcu_detachOnStep();
 //attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
 void mcu_attachOnStepReset(ISRVOID handler);
 void mcu_detachOnStepReset();
-/*
-//starts a constant rate integrator at a given frequency.
-void mcu_startIntegrator();
-//stops the pulse 
-void mcu_stopIntegrator();
-//suspends the integrator
-void mcu_pauseIntegrator();
-//resumes the integrator
-void mcu_resumeIntegrator();
-//attaches a function handle to the integrator ISR
-void mcu_attachOnIntegrator(ISRTIMER handler);
-void mcu_detachOnIntegrator();
-*/
-char* mcu_strcpyProgMem(char* __s, const char* __fmt);
+
+/*char* mcu_strcpyProgMem(char* __s, const char* __fmt);*/
 void mcu_printfp(const char* __fmt, ...);
-uint8_t mcu_readProgMemByte(uint8_t* src);
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
 

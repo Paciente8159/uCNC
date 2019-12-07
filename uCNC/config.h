@@ -4,6 +4,10 @@
 #include "mcus.h"
 #include "machines.h"
 
+#define VERSION_NUMBER_HIGH 0
+#define VERSION_NUMBER_LOW 1
+#define REVISION_NUMBER 'A'
+
 /*
 	Choose the mcu type
 	Mcu virtual: simulates a mcu on a PC

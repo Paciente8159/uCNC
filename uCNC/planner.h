@@ -1,9 +1,11 @@
 /*
-	Name: 
-	Copyright: 
-	Author: 
-	Date: 23/09/19 23:14
-	Description: 
+	Name: planner.h - chain planner for linear motions and acceleration/deacceleration profiles
+	Copyright: 2019 João Martins
+	Author: João Martins
+	Date: Oct/2019
+	Description: uCNC is a free cnc controller software designed to be flexible and
+	portable to several	microcontrollers/architectures.
+	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
 */
 
 #ifndef PLANNER_H

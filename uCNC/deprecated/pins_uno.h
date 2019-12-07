@@ -1,3 +1,13 @@
+/*
+	Name: pins_uno.c - chain planner for linear motions and acceleration/deacceleration profiles
+	Copyright: 2019 João Martins
+	Author: João Martins
+	Date: Oct/2019
+	Description: uCNC is a free cnc controller software designed to be flexible and
+	portable to several	microcontrollers/architectures.
+	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+*/
+
 #ifndef PINS_UNO_H
 #define PINS_UNO_H
 

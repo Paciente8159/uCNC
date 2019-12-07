@@ -4,7 +4,7 @@
 #include "settings.h"
 #include "machinedefs.h"
 #include "utils.h"
-#include "gcode.h"
+#include "parser.h"
 #include "motion_control.h"
 #include "planner.h"
 
@@ -26,7 +26,7 @@ void mc_line(float* target, float feed)
 
 
 //applies an algorithm similar to grbl with slight changes
-void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bool isclockwise, float feed)
+void mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed)
 {
 	uint8_t axis_0, axis_1;
 	
@@ -68,11 +68,11 @@ void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bo
 		}
 	}
 	
-	float ptcenter_a = mc_position[axis_0] + center_offset[0];
-	float ptcenter_b = mc_position[axis_1] + center_offset[1];
+	float ptcenter_a = mc_position[axis_0] + center_offset_a;
+	float ptcenter_b = mc_position[axis_1] + center_offset_b;
 	
-  	float pt0_a = -center_offset[0];  // Radius vector from center to current location
-  	float pt0_b = -center_offset[1];
+  	float pt0_a = -center_offset_a;  // Radius vector from center to current location
+  	float pt0_b = -center_offset_b;
   	float pt1_a = target[axis_0] - ptcenter_a;  // Radius vector from center to current location
   	float pt1_b = target[axis_1] - ptcenter_b;
   	
@@ -84,22 +84,14 @@ void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bo
 	
 	if (isclockwise)
 	{
-		if (arc_angle == 0)
-		{
-			arc_angle = -M_PI;
-		}
-		else if (arc_angle > 0)
+		if (arc_angle >= 0)
 		{
 			arc_angle -= 2*M_PI;
 		}
 	}
 	else
 	{
-		if (arc_angle == 0)
-		{
-			arc_angle = M_PI;
-		}
-		else if (arc_angle < 0)
+		if (arc_angle <= 0)
 		{
 			arc_angle += 2*M_PI;
 		}
@@ -116,9 +108,7 @@ void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bo
 		{
 			dist_sgm = length/(segment_count * sqrtf(length));
 		}
-    	
-    	float linear_vecto_inc[AXIS_COUNT];
-    	
+
     	//calculate the incremental linear distance for all other axis
     	for(uint8_t i = AXIS_COUNT; i != 0; )
 		{
@@ -154,8 +144,8 @@ void mc_arc(float* target, float* center_offset, float radius, uint8_t plane, bo
 			float angle = i*arc_per_sgm;
 			float precise_cos = cos(angle);
 			float precise_sin = (angle<=M_PI) ? sqrt(1 - precise_cos*precise_cos) : -sqrt(1-precise_cos*precise_cos); //faster than sin function
-			pt0_a = -center_offset[axis_0]*precise_cos + center_offset[axis_1]*precise_sin;
-			pt0_b = -center_offset[axis_0]*precise_sin - center_offset[axis_1]*precise_cos;
+			pt0_a = -center_offset_a*precise_cos + center_offset_b*precise_sin;
+			pt0_b = -center_offset_a*precise_sin - center_offset_b*precise_cos;
 			count = 0;
 		}
 

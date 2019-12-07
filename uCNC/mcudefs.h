@@ -10,6 +10,12 @@
 #define F_PULSE_MAX 30000
 #define F_PULSE_MIN 1
 #define F_INTEGRATOR 100 //integrator calculates 10ms slices
+#define __rom__ PROGMEM
+#define __romstr__ PSTR
+#define rom_strcpy strcpy_P
+#define rom_strncpy strncpy_P
+#define rom_memcpy memcpy_P
+#define rom_read_byte pgm_read_byte
 #endif
 
 #if(MCU == MCU_VIRTUAL)
