@@ -376,9 +376,9 @@ void interpolator_execute()
 		}
 		
 		buffer_write(interpolator_sgm_buffer, NULL);
-		if(g_cnc_state.exec_state == EXEC_IDLE)
+		if(g_cnc_state.exec_state < EXEC_HOLD) //exec state is not hold or alarm
 		{
-			g_cnc_state.exec_state |= EXEC_CYCLE;
+			g_cnc_state.exec_state |= EXEC_RUN;
 			mcu_startStepISR(sgm->clocks_per_tick, sgm->ticks_per_step);
 		}
 		
@@ -400,7 +400,7 @@ void interpolator_update()
 
 void interpolator_stop()
 {
-	g_cnc_state.exec_state = EXEC_IDLE;
+	g_cnc_state.exec_state &= ~EXEC_RUN;
 	mcu_stopStepISR();
 }
 

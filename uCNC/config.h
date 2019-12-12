@@ -6,7 +6,7 @@
 
 #define VERSION_NUMBER_HIGH 0
 #define VERSION_NUMBER_LOW 1
-#define REVISION_NUMBER 'A'
+#define REVISION_NUMBER 'a'
 
 /*
 	Choose the mcu type

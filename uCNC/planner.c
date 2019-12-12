@@ -20,7 +20,6 @@
 #include "ringbuffer.h"
 #include "utils.h"
 
-uint32_t g_planner_steppos[STEPPER_COUNT];
 float g_planner_coord[AXIS_COUNT];
 float g_planner_dir_vect[AXIS_COUNT];
 static PLANNER_BLOCK g_planner_data[PLANNER_BUFFER_SIZE];
@@ -29,12 +28,17 @@ buffer_t g_planner_buffer;
 
 void planner_init()
 {
-	memset(&g_planner_steppos, 0, STEPPER_COUNT*sizeof(uint32_t));
 	memset(&g_planner_coord, 0, AXIS_COUNT*sizeof(float));
 	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
 	//resets buffer
 	memset(&g_planner_data, 0, sizeof(PLANNER_BLOCK)*PLANNER_BUFFER_SIZE);
 	g_planner_buffer = buffer_init(&g_planner_data, sizeof(PLANNER_BLOCK), PLANNER_BUFFER_SIZE);
+}
+
+void planner_clear()
+{
+	interpolator_clear();
+	buffer_clear(g_planner_buffer);
 }
 
 bool planner_buffer_full()
@@ -233,21 +237,6 @@ void planner_add_line(float *axis, float feed)
 		return;
 	}
 	
-	//MOVED TO THE INTERPOLATOR
-	
-	/*uint32_t steps_pos[STEPPER_COUNT];
-	kinematics_apply_inverse(axis, (uint32_t*)&steps_pos);
-	uint8_t dirs = m->dirbits;
-	for(uint8_t i = 0; i < STEPPER_COUNT; i++)
-	{
-		m->steps[i] = (dirs & 0x01) ? (g_planner_steppos[i]-steps_pos[i]) : (steps_pos[i]-g_planner_steppos[i]);
-		dirs>>=1;
-		if(m->totalsteps < m->steps[i])
-		{
-			m->totalsteps = m->steps[i];			
-		}
-	}*/
-
 	//calculates the normalized direction vector
 	//it also calculates the angle between previous direction and the current
 	//this is given by the equation cos(theta) = dotprod(u,v)/(magnitude(u)*magnitude(v))
@@ -340,36 +329,13 @@ void planner_add_line(float *axis, float feed)
 	memcpy(&g_planner_coord, axis, AXIS_COUNT*sizeof(float));
 }
 
-/*
-	Idea for the planner arc function
-	find arc initial direction given the previous move
-	break the arc in quadrants
-	accel and deaccel will be the same as in linemovemnt
-	for axis of arc the contribution will be the same
-	the magnitude of the each sub arc will be r
-	for other axis must be determined as it wold for a line
-	at this point the gcode must have checked if plane is supported
-	to find normal use the 2d rule were normal of [dx,dy] = [dy,-dx](clockwise) or [-dy,dx](counterclockwise)
-	
-	
-	PROBLEM:CAN ONLY EXECUTE BRESENHAM ARC WITH CARTESIAN
-*/
-void planner_add_arc(float* axis, float* center, uint8_t clockwise, uint8_t plane, float feed)
-{
-	float dir_vect[AXIS_COUNT];
 
-	//calculate radius start vector
-	//float magnitude = 0;
-	memset(&dir_vect, 0, AXIS_COUNT*sizeof(float));
-	switch(plane)
-	{
-		case 0:
-			dir_vect[AXIS_X] = center[AXIS_X] - axis[AXIS_X];
-			dir_vect[AXIS_Y] = center[AXIS_Y] - axis[AXIS_Y];
-			break;
-		case 1:
-		case 2:
-			break;
-	}
-	
+void planner_get_position(float* axis)
+{
+	memcpy(axis, &g_planner_coord, sizeof(g_planner_coord));
+}
+
+void planner_reset_position()
+{
+	memset(&g_planner_coord, 0, sizeof(g_planner_coord));
 }

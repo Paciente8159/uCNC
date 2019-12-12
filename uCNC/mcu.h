@@ -27,7 +27,10 @@
 #define MCU_H
 
 #include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include "mcudefs.h"
+#include "mcumap.h"
 
 #ifndef __romstr__
 	#define __romstr__
@@ -52,8 +55,6 @@
 #ifndef rom_read_byte
 	#define rom_read_byte
 #endif
-
-#include <stdint.h>
 
 typedef void (*ISRVOID)();
 typedef void (*ISRPORTCHANGE)(volatile uint8_t);
@@ -84,13 +85,11 @@ void mcu_setOutputs(uint16_t value);
 
 //Communication functions
 void mcu_putc(char c);
+void mcu_puts(const char* __str);
+bool mcu_is_txready();
 char mcu_getc();
-char mcu_peek();
-void mcu_bufferClear();
 void mcu_attachOnReadChar(ISRCOMRX handler);
 void mcu_detachOnReadChar();
-void mcu_attachOnSentChar(ISRVOID handler);
-void mcu_detachOnSentChar();
 
 //RealTime
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
@@ -98,7 +97,7 @@ void mcu_enableInterrupts();
 //disables all ISR functions
 void mcu_disableInterrupts();
 
-//
+//convert step rate to clock cycles
 void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
@@ -113,11 +112,9 @@ void mcu_detachOnStep();
 void mcu_attachOnStepReset(ISRVOID handler);
 void mcu_detachOnStepReset();
 
-/*char* mcu_strcpyProgMem(char* __s, const char* __fmt);*/
-void mcu_printfp(const char* __fmt, ...);
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
-
+/*
 //measure performance
 #ifdef __DEBUG__
 typedef struct {
@@ -134,8 +131,8 @@ uint32_t mcu_getElapsedCycles(uint32_t cycle_ref);
 //void uint32_t tickcount = mcu_getCycles();
 //uint16_t mcu_stopPerfCounter();
 
-void mcu_loadDummyPayload(const char* __fmt, ...);
-#endif
+///void mcu_loadDummyPayload(const char* __fmt, ...);
+#endif*/
 
 
 #endif

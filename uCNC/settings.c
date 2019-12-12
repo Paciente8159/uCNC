@@ -95,19 +95,23 @@ const settings_t __rom__ defaults = {\
 	.max_distance[AXIS_C] = DEFAULT_C_MAX_DIST,
 	#endif
 
-	.step_enable_mask = DEFAULT_STEP_ENA_MASK,
+	.step_enable_invert = DEFAULT_STEP_ENA_INV,
 	.step_invert_mask = DEFAULT_STEP_INV_MASK,
     .dir_invert_mask = DEFAULT_DIR_INV_MASK,
     .homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
-    .homing_feed_rate = DEFAULT_HOMING_FEED,
-  	.homing_seek_rate = DEFAULT_HOMING_SEEK,
+    .homing_fast_feed_rate = DEFAULT_HOMING_FAST,
+  	.homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
   	.homing_offset = DEFAULT_HOMING_OFFSET,
 	.arc_tolerance = DEFAULT_ARC_TOLERANCE,
 	.tool_count = DEFAULT_TOOL_COUNT,
-	.crc = 0 };
+	.limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
+	.status_report_mask = DEFAULT_STATUS_MASK,
+	.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
+	.max_step_rate = DEFAULT_MAX_STEP_RATE
+	};
 
 
-static uint8_t settings_crc7 (uint8_t  crc, uint8_t* pc, int len)
+/*static uint8_t settings_crc7 (uint8_t  crc, uint8_t* pc, int len)
 {
     do
     {
@@ -115,48 +119,238 @@ static uint8_t settings_crc7 (uint8_t  crc, uint8_t* pc, int len)
 	} while (--len);
 	
     return crc;
+}*/
+
+uint8_t settings_init()
+{
+	return settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t));
 }
 
-void settings_load()
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
 {
-	uint8_t* ptr = (uint8_t*)&g_settings;
-	uint8_t size = sizeof(settings_t);
-
-	for(uint16_t i = size; i !=0; )
+	uint8_t crc = 0;
+	for(uint16_t i = 0; i < size; i++)
 	{
-		i--;
-		ptr[i] = mcu_eeprom_getc(i);
+		__ptr[i] = mcu_eeprom_getc(i + SETTINGS_ADDRESS_OFFSET);
+		crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ __ptr[i]]);
 	}
 	
-	if(g_settings.crc != settings_crc7(0, ptr, size-1) || strcmp(g_settings.version, SETTINGS_VERSION) != 0)
-	{
-		//failed crc check
-		#ifdef __DEBUG__
-			settings_reset(); //for debug loads default settings
-		#endif
-		//report error
-		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
-	}
+	return crc;
 }
 
 void settings_reset()
 {
 	settings_t* ptr = (settings_t*)&g_settings;
 	const settings_t* defptr = &defaults;
+	uint8_t size = sizeof(settings_t);
 	
-	rom_memcpy(ptr, defptr, sizeof(settings_t));
+	rom_memcpy(ptr, defptr, size);
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)ptr, size);
 }
 
-void settings_save()
+void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 {
-	uint8_t* ptr = (uint8_t*)&g_settings;
-	uint8_t size = sizeof(settings_t);
-
-	g_settings.crc = settings_crc7(0, ptr, size-1);
-
 	for(uint16_t i = size; i !=0; )
 	{
 		i--;
-		mcu_eeprom_putc(i, ptr[i]);
+		mcu_eeprom_putc(i + SETTINGS_ADDRESS_OFFSET, __ptr[i]);
+	}
+}
+
+uint8_t settings_change(uint8_t setting, float value)
+{
+	uint8_t result = 0;
+	uint8_t value8 = (uint8_t)value;
+	uint8_t value16 = (uint16_t)value;
+	bool value1 = (value!=0);
+
+	if(value < 0)
+	{
+		return STATUS_NEGATIVE_VALUE;
+	}
+	
+	switch(setting)
+	{
+		case 0:
+			if(value > F_PULSE_MAX)
+			{
+				return STATUS_MAX_STEP_RATE_EXCEEDED;
+			}
+			g_settings.max_step_rate = value16;
+			break;
+		case 2:
+			g_settings.step_invert_mask = value8;
+			break;
+		case 3:
+			g_settings.dir_invert_mask = value8;
+			break;
+		case 4:
+			g_settings.step_enable_invert = value1;
+			break;
+		case 5:
+			g_settings.limits_invert_mask = value8;
+			break;
+		case 7:
+			g_settings.control_invert_mask = value8;
+			break;
+		case 10:
+			g_settings.status_report_mask = value8;
+			break;
+		case 12:
+			g_settings.arc_tolerance = value;
+			break;
+		case 20:
+			if(!g_settings.homing_enabled)
+			{
+				return STATUS_SOFT_LIMIT_ERROR;
+			}
+			g_settings.soft_limits_enabled = value1;
+			break;
+		case 21:
+			g_settings.hard_limits_enabled = value1;
+			break;
+		case 22:
+			g_settings.homing_enabled = value1;
+			break;
+		case 23:
+			g_settings.homing_dir_invert_mask = value8;
+			break;
+		case 24:
+			g_settings.homing_slow_feed_rate = value;
+			break;
+		case 25:
+			g_settings.homing_fast_feed_rate = value;
+			break;
+		case 27:
+			g_settings.homing_offset = value;
+			break;
+		#if(AXIS_COUNT > 0)
+		case 100:
+			g_settings.step_per_mm[0] = value;
+			break;
+		case 110:
+			g_settings.max_feed_rate[0] = value;
+			break;
+		case 120:
+			g_settings.acceleration[0] = value;
+			break;
+		case 130:
+			g_settings.max_distance[0] = value;
+			break;
+		#endif
+		#if(AXIS_COUNT > 1)
+		case 101:
+			g_settings.step_per_mm[1] = value;
+			break;
+		case 111:
+			g_settings.max_feed_rate[1] = value;
+			break;
+		case 121:
+			g_settings.acceleration[1] = value;
+			break;
+		case 131:
+			g_settings.max_distance[1] = value;
+			break;
+		#endif
+		#if(AXIS_COUNT > 2)
+		case 102:
+			g_settings.step_per_mm[2] = value;
+			break;
+		case 112:
+			g_settings.max_feed_rate[2] = value;
+			break;
+		case 122:
+			g_settings.acceleration[2] = value;
+			break;
+		case 132:
+			g_settings.max_distance[2] = value;
+			break;
+		#endif
+		#if(AXIS_COUNT > 3)
+		case 103:
+			g_settings.step_per_mm[3] = value;
+			break;
+		case 113:
+			g_settings.max_feed_rate[3] = value;
+			break;
+		case 123:
+			g_settings.acceleration[3] = value;
+			break;
+		case 133:
+			g_settings.max_distance[3] = value;
+			break;
+		#endif
+		#if(AXIS_COUNT > 4)
+		case 104:
+			g_settings.step_per_mm[4] = value;
+			break;
+		case 114:
+			g_settings.max_feed_rate[4] = value;
+			break;
+		case 124:
+			g_settings.acceleration[4] = value;
+			break;
+		case 134:
+			g_settings.max_distance[4] = value;
+			break;
+		#endif
+		#if(AXIS_COUNT > 5)
+		case 105:
+			g_settings.step_per_mm[5] = value;
+			break;
+		case 115:
+			g_settings.max_feed_rate[5] = value;
+			break;
+		case 125:
+			g_settings.acceleration[5] = value;
+			break;
+		case 135:
+			g_settings.max_distance[5] = value;
+			break;
+		#endif
+		default:
+			return STATUS_INVALID_STATEMENT;
+	}
+	
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, sizeof(settings_t));
+	return result;
+}
+
+void settings_print()
+{
+	protocol_printf(MSG_SETTING_INT, 0, g_settings.max_step_rate);
+	protocol_printf(MSG_SETTING_INT, 2, g_settings.step_invert_mask);
+	protocol_printf(MSG_SETTING_INT, 3, g_settings.dir_invert_mask);
+	protocol_printf(MSG_SETTING_INT, 4, g_settings.step_enable_invert);
+	protocol_printf(MSG_SETTING_INT, 5, g_settings.limits_invert_mask);
+	protocol_printf(MSG_SETTING_INT, 7, g_settings.control_invert_mask);
+	protocol_printf(MSG_SETTING_INT, 10, g_settings.status_report_mask);
+	protocol_printf(MSG_SETTING_FLT, 12, g_settings.arc_tolerance);
+	protocol_printf(MSG_SETTING_INT, 20, g_settings.soft_limits_enabled);
+	protocol_printf(MSG_SETTING_INT, 21, g_settings.hard_limits_enabled);
+	protocol_printf(MSG_SETTING_INT, 22, g_settings.homing_enabled);
+	protocol_printf(MSG_SETTING_INT, 23, g_settings.homing_dir_invert_mask);
+	protocol_printf(MSG_SETTING_FLT, 24, g_settings.homing_slow_feed_rate);
+	protocol_printf(MSG_SETTING_FLT, 25, g_settings.homing_fast_feed_rate);
+	protocol_printf(MSG_SETTING_FLT, 27, g_settings.homing_offset);
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_printf(MSG_SETTING_FLT, 100 + i , g_settings.step_per_mm[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_printf(MSG_SETTING_FLT, 110 + i , g_settings.max_feed_rate[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_printf(MSG_SETTING_FLT, 120 + i , g_settings.acceleration[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_printf(MSG_SETTING_FLT, 130 + i , g_settings.max_distance[i]);
 	}
 }

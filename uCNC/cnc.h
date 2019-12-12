@@ -16,11 +16,12 @@
 #define RT_CMD_SLEEP			128
 
 #define EXEC_IDLE			0 // All flags cleared
-#define EXEC_CYCLE			1 // Cycle is running or motions are being executed
+#define EXEC_RUN			1 // Motions are being executed
 #define EXEC_JOG			2 // Jogging motion
 #define EXEC_HOMING			4 // Homing motion
 #define EXEC_HOLD			8 // Feed hold is active
 #define EXEC_ALARM			16 //Alarm mode
+#define EXEC_SLEEP			32 //Sleep mode
 
 #define KILL_FLAG_MOTION		1
 #define KILL_FLAG_FEED			2
@@ -30,12 +31,14 @@
 typedef struct
 {
     bool halt;
+    bool dry_run;
     bool unlocked;
     bool is_homed;
     uint8_t rt_cmd;
     uint8_t exec_state;
-    uint8_t hard_limits;
-    uint8_t soft_limits;
+    uint8_t alarm;
+    uint8_t limits;
+    //uint8_t soft_limits;
     uint8_t controls;
     uint32_t rt_position[STEPPER_COUNT];
 } cnc_state_t;
@@ -46,7 +49,10 @@ void cnc_init();
 void cnc_reset();
 void cnc_run();
 void cnc_doevents();
+void cnc_home();
 void cnc_unhome();
+void cnc_alarm(uint8_t code);
 void cnc_kill();
+void cnc_unlock();
 
 #endif

@@ -31,4 +31,9 @@ void kinematics_apply_inverse(float* axis, uint32_t* steps);
 */
 void kinematics_apply_forward(uint32_t* steps, float* axis);
 
+/*
+	Executes the homing motion for the given kinematic
+*/
+void kinematics_home();
+
 #endif

@@ -18,11 +18,11 @@ void protocol_init();
 bool protocol_received_cmd();
 char protocol_getc();
 char protocol_peek();
+char* protocol_get_bufferptr();
 void protocol_clear();
 void protocol_puts(const char* __s);
 void protocol_printf(const char* __fmt, ...);
 void protocol_read_char_isr(volatile char c);
-void protocol_write_char_isr();
 #ifdef __DEBUG__
 void protocol_inject_cmd(const char* __fmt, ...);
 #endif

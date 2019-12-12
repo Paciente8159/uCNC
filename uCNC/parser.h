@@ -10,8 +10,15 @@
 extern float g_parser_current_pos[AXIS_COUNT];
 
 void parser_init();
+void parser_reset();
 bool parser_is_ready();
-uint8_t parser_parse_command();
+uint8_t parser_gcode_command();
+uint8_t parser_grbl_command();
 void parser_print_states();
+void parser_print_coordsys();
+bool parser_get_float(float *value, bool *isinteger);
+void parser_parameters_load();
+void parser_parameters_reset();
+void parser_parameters_save();
 
 #endif

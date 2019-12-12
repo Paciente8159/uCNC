@@ -49,6 +49,18 @@
 #define STATUS_INVALID_TOOL 40
 #define STATUS_UNDEFINED_AXIS 41
 
+// Grbl alarm codes. Valid values (1-255). Zero is reserved.
+#define EXEC_ALARM_HARD_LIMIT                 1
+#define EXEC_ALARM_SOFT_LIMIT                 2
+#define EXEC_ALARM_ABORT_CYCLE                3
+#define EXEC_ALARM_PROBE_FAIL_INITIAL         4
+#define EXEC_ALARM_PROBE_FAIL_CONTACT         5
+#define EXEC_ALARM_HOMING_FAIL_RESET          6
+#define EXEC_ALARM_HOMING_FAIL_DOOR           7
+#define EXEC_ALARM_HOMING_FAIL_PULLOFF        8
+#define EXEC_ALARM_HOMING_FAIL_APPROACH       9
+#define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH  10
+
 //formated messages
 #define MSG_OK __romstr__("ok\r\n")
 #define MSG_ERROR __romstr__("error:%d\r\n")
@@ -56,6 +68,7 @@
 #define MSG_STARTUP __romstr__("uCNC %0d.%00d%c ['$' for help]\r\n")
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
 #define MSG_FEEDBACK_GCSTATE __romstr__("[GC:")
+#define MSG_FEEDBACK_COORD __romstr__("[G%d:")
 #define MSG_FEEDBACK_END __romstr__("]\r\n")
 
 //Non query feedback messages
@@ -70,5 +83,8 @@
 #define MSG_FEEDBACK_9 __romstr__("[MSG:Restoring defaults]\r\n")
 #define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
 #define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
+
+#define MSG_SETTING_INT __romstr__("$%d=%d\r\n")
+#define MSG_SETTING_FLT __romstr__("$%d=%0.3f\r\n")
 
 #endif

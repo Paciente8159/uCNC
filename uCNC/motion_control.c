@@ -1,27 +1,44 @@
 #include <math.h>
 #include <string.h>
 #include "config.h"
+#include "grbl_interface.h"
 #include "settings.h"
 #include "machinedefs.h"
 #include "utils.h"
+#include "trigger_control.h"
 #include "parser.h"
-#include "motion_control.h"
 #include "planner.h"
-
-static float mc_position [AXIS_COUNT];
+#include "cnc.h"
+#include "motion_control.h"
 
 void mc_init()
 {
-	memset(&mc_position, 0, sizeof(mc_position));
+	//memset(&mc_position, 0, sizeof(mc_position));
 }
 
 void mc_line(float* target, float feed)
 {
-	while(planner_buffer_full());
+	if(g_settings.soft_limits_enabled && g_settings.homing_enabled)
+	{
+		if(tc_check_boundaries(target))
+		{
+			cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
+		}
+	}
+	
+	if(g_cnc_state.dry_run)
+	{
+		return;
+	}
+	
+	while(planner_buffer_full())
+	{
+		cnc_doevents();
+	}
 	
 	planner_add_line(target, feed);
 	//update motion controller position
-	memcpy(mc_position, target, sizeof(mc_position));
+	//memcpy(mc_position, target, sizeof(mc_position));
 }
 
 
@@ -29,6 +46,9 @@ void mc_line(float* target, float feed)
 void mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed)
 {
 	uint8_t axis_0, axis_1;
+	float mc_position[AXIS_COUNT];
+	
+	planner_get_position((float*)&mc_position);
 	
 	//start points
 	switch(plane)
@@ -139,7 +159,7 @@ void mc_arc(float* target, float center_offset_a, float center_offset_b, float r
 		}
 		else
 		{
-			// Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments. ~375 usec
+			// Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments.
 			// Compute exact location by applying transformation matrix from initial radius vector(=-offset).
 			float angle = i*arc_per_sgm;
 			float precise_cos = cos(angle);
@@ -158,11 +178,12 @@ void mc_arc(float* target, float center_offset_a, float center_offset_b, float r
 			if(i != axis_0 && i != axis_1)
 			{
 				mc_position[i] += dir_vector[i];
-				
 			}
 		}
+		
 	    mc_line(mc_position, feed);
-	  }
-  // Ensure last segment arrives at target location.
-  mc_line(target, feed);
+	}
+	// Ensure last segment arrives at target location.
+	mc_line(target, feed);
+
 }

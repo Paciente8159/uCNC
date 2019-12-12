@@ -26,7 +26,7 @@
 #endif
 
 #ifndef BAUD
-#define BAUD 9600
+#define BAUD 115200
 #endif
 
 #ifndef COM_BUFFER_SIZE
@@ -34,7 +34,6 @@
 #endif
 
 #define PULSE_RESET_DELAY MIN_PULSE_WIDTH_US * F_CPU / 1000000
-//#define INTEGRATOR_BASE_FREQ F_CPU>>8
 
 typedef union{
     uint32_t r; // occupies 4 bytes
@@ -68,12 +67,9 @@ typedef union{
 #endif
 } IO_REGISTER;
 
-//UART communication
-//MACHINE_COMMAND g_mcu_rxbuffer;
-uint8_t g_mcu_rxbuffer[COM_BUFFER_SIZE];
-uint8_t g_mcu_rxhead;
-uint8_t g_mcu_rxtail;
-volatile uint8_t g_mcu_rxcount;
+//USART communication
+char *mcu_tx_buffer;
+volatile bool mcu_tx_ready;
 int mcu_putchar(char c, FILE* stream);
 FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);
 
@@ -112,7 +108,6 @@ ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
 	{
     	g_mcu_stepResetCallback();
 	}
-	//interpolator_stepReset();
 }
 
 /*
@@ -127,13 +122,7 @@ ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
 		#ifdef LIMITS_INREG
 	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD0))
 	    {
-	    	uint8_t limits = (LIMITS_INREG & LIMITS_MASK);
-	    	if(mcu_prev_limits != mcu_prev_limits)
-	    	{
-	    		mcu_limit_trigger_callback(limits);
-	    		limits = 
-			}
-	    	
+	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
 		}
 		#endif		
 	}
@@ -186,12 +175,25 @@ ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
 #endif
 
 #ifdef TX
-	ISR(USART_TX_vect, ISR_NOBLOCK)
+	ISR(USART_UDRE_vect, ISR_BLOCK)
 	{
-        if(g_mcu_rs232TxCallback!=NULL)
-        {
-            g_mcu_rs232TxCallback();
-        }
+		static bool eol = false;
+		char c = *mcu_tx_buffer++;
+		
+		if(!eol)
+		{
+			UDR0 = c;
+			if(c=='\n')
+			{
+				eol = true;
+			}
+		}
+		else
+		{
+			eol = false;
+			mcu_tx_ready = true;
+			UCSR0B &= ~(1<<UDRIE0);
+		}
 	}
 #endif
 
@@ -330,11 +332,12 @@ void mcu_init()
     PCICR = 0xFF;*/
     
     //set serial port
-    g_mcu_rxhead = 0;
+    /*g_mcu_rxhead = 0;
     g_mcu_rxtail = 0;
-    g_mcu_rxcount = 0;
+    g_mcu_rxcount = 0;*/
     
     stdout = &g_mcu_streamout;
+    mcu_tx_ready = true;
     /*#ifdef __DEBUG__
     stdin = &g_mcu_streamin;
     #endif
@@ -352,7 +355,7 @@ void mcu_init()
     UBRR0L = UBRR0_value;
   
     // enable rx, tx, and interrupt on complete reception of a byte and UDR empty
-    UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0 | 1<<TXCIE0);
+    UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
     
 	//enable interrupts
 	sei();
@@ -367,11 +370,6 @@ void mcu_init()
     g_mcu_perfCounterOffset = (uint8_t)mcu_getElapsedCycles(tickcount);
     //g_mcu_perfCounterOffset = mcu_stopPerfCounter();
     #endif*/
-}
-
-uint16_t mcu_getAnalog(uint8_t pin)
-{
-    return 0;
 }
 
 //IO functions    
@@ -453,48 +451,31 @@ int mcu_putchar(char c, FILE* stream)
 
 void mcu_putc(char c)
 {
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
+	while(!mcu_tx_ready);
+	mcu_tx_ready = false;
+	loop_until_bit_is_set(UCSR0A, UDRE0);
+	UDR0 = c;
+	mcu_tx_ready = true;
+    
+}
+
+void mcu_puts(const char* __str)
+{
+	while(!mcu_tx_ready);
+	mcu_tx_ready = false;
+	mcu_tx_buffer = __str;
+	UCSR0B |= (1<<UDRIE0);
+}
+
+bool mcu_is_txready()
+{
+	return mcu_tx_ready;
 }
 
 char mcu_getc()
 {
-	char c = 0;
-
-    if(g_mcu_rxtail!=g_mcu_rxhead)
-    {
-    	c = g_mcu_rxbuffer[g_mcu_rxtail++];
-		if(g_mcu_rxtail>=COM_BUFFER_SIZE)
-		{
-			g_mcu_rxtail = 0;
-		}
-		
-		if(c=='\n')
-		{
-			g_mcu_rxcount--;
-		}
-		
-        return c;
-    }
-
-    return 0;
-}
-
-char mcu_peek()
-{
-	if(g_mcu_rxcount==0)
-	{
-		return 0;
-	}
-    
-	return g_mcu_rxbuffer[g_mcu_rxtail];
-}
-
-void mcu_bufferClear()
-{
-    g_mcu_rxtail = 0;
-    g_mcu_rxhead = 0;
-    g_mcu_rxbuffer[0] = 0;
+	loop_until_bit_is_set(UCSR0A, RXC0);
+    return UDR0;
 }
 
 void mcu_attachOnReadChar(ISRCOMRX handler)
@@ -505,16 +486,6 @@ void mcu_attachOnReadChar(ISRCOMRX handler)
 void mcu_detachOnReadChar()
 {
     g_mcu_rs232RxCallback = NULL;
-}
-
-void mcu_attachOnSentChar(ISRVOID handler)
-{
-    g_mcu_rs232TxCallback = handler;
-}
-
-void mcu_detachOnSentChar()
-{
-    g_mcu_rs232TxCallback = NULL;
 }
 
 #ifdef __PROF__
@@ -676,98 +647,6 @@ void mcu_attachOnStep(ISRVOID handler)
 void mcu_attachOnStepReset(ISRVOID handler)
 {
 	g_mcu_stepResetCallback = handler;
-}
-/*
-//starts a constant rate integrator
-//timer0 overflow with prescaller at 256
-//frequency of integrator = F_CPU/256
-void mcu_startIntegrator()
-{
-	//stops timer
-	TCCR0B = 0;
-	//Normal mode
-    TCCR0A = 0;
-    //resets counter
-    TCNT0 = 0;
-    
-    //float pulse_dur = 1.0f/frequency;
-    //g_mcu_tmr0_value = (uint16_t)((float)(INTEGRATOR_BASE_FREQ)*pulse_dur) - 1;
-    //g_mcu_tmr0_counter = g_mcu_tmr0_value;
-    
-    TIFR0 = 0;
-    TIMSK0 |= (1 << TOIE0);
-	//start timer in Normal mode 256 prescaler
-	TCCR0B = 4;
-}
-
-void mcu_pauseIntegrator()
-{
-	TCCR0B = 0;
-}
-
-void mcu_resumeIntegrator()
-{
-	TCCR0B = 4;
-}
-
-//stops the pulse 
-void mcu_stopIntegrator()
-{
-	TIMSK0 &= ~(1 << TOIE0);
-	//start timer in Normal mode without prescaler
-	TCCR0B = 0;
-}
-//attaches a function handle to the integrator ISR
-void mcu_attachOnIntegrator(ISRTIMER handler)
-{
-	g_mcu_integratorCallback = handler;
-}
-
-void mcu_detachOnIntegrator()
-{
-	g_mcu_integratorCallback = NULL;
-}
-*/
-void mcu_printp(const char *__fmt)
-{
-	char buffer[50];
-	char* newfmt = strcpy_P((char*)&buffer, __fmt);
-	printf(newfmt);
-}
-
-void mcu_printfp(const char *__fmt, ...)
-{
-	char buffer[100];
-	char* newfmt = strcpy_P((char*)&buffer, __fmt);
-	va_list __ap;
- 	va_start(__ap,__fmt);
- 	vprintf(newfmt,__ap);
- 	va_end(__ap);
-}
-
-uint8_t mcu_readProMemByte(uint8_t* src)
-{
-	return pgm_read_byte(src);
-}
-
-void mcu_loadDummyPayload(const char *__fmt, ...)
-{
-	char buffer[50];
-	//erase old string
-	memset((char*)&g_mcu_rxbuffer, 0, COM_BUFFER_SIZE);
-	
-	//print formated string to buffer;
-	char* newfmt = strcpy_P((char*)&buffer, __fmt);
-	va_list __ap;
- 	va_start(__ap,__fmt);
- 	vsprintf((char*)&g_mcu_rxbuffer, newfmt,__ap);
- 	va_end(__ap);
-	
-	g_mcu_rxhead = strlen((const char*)&g_mcu_rxbuffer);
-	g_mcu_rxtail = 0;
-	
-	//signal read
-	g_mcu_rxcount++;
 }
 
 uint8_t mcu_eeprom_getc(uint16_t address)

@@ -76,13 +76,15 @@ uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
 uint8_t g_mcu_buffertail;
 uint8_t g_mcu_buffercount;
-
+char* mcu_tx_buffer;
+volatile bool mcu_tx_ready;
+/*
 #ifdef __DEBUG__
 #define MAX(A,B) if(B>A) A=B
 volatile uint8_t g_mcu_perfCounterOffset = 0;
 volatile PERFORMANCE_METER mcu_performacecounters;
 #endif
-
+*/
 uint32_t _previnputs = 0;
 
 volatile bool global_irq_enabled = false;
@@ -144,15 +146,25 @@ void* timersimul()
 
 void* outsimul()
 {
+	bool eol = false;
+	
 	for(;;)
 	{
-		if(global_irq_enabled)
+		char c = *mcu_tx_buffer++;
+		if(!eol)
 		{
-			if(g_mcu_charSent != NULL && send_char)
+			if(c != '\0')
+				putchar(c);
+			if(c=='\n' || c=='\0')
 			{
-				send_char = false;
-				g_mcu_charSent();
+				eol = true;
 			}
+		}
+		else
+		{
+			eol = false;
+			mcu_tx_ready = true;
+			return NULL;
 		}
 	}
 }
@@ -176,6 +188,8 @@ void* inputsimul()
 			case '\r':
 			case '\n':
 				c = '\r';
+				putchar('\r');
+				putchar('\n');
 				g_mcu_combuffer[g_mcu_bufferhead] = c;
 				g_mcu_buffercount++;
 			default:
@@ -244,10 +258,6 @@ void ticksimul()
 
 void mcu_init()
 {
-	#ifdef __DEBUG__
-	settings_reset();
-	#endif
-	
 	send_char = false;
 	virtualports = &virtualmap;
 	FILE *infile = fopen("inputs.txt", "w+");
@@ -266,7 +276,8 @@ void mcu_init()
 	
 	//start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &inputsimul, NULL);
-	pthread_create(&thread_id, NULL, &outsimul, NULL);  
+	//pthread_create(&thread_id, NULL, &outsimul, NULL);  
+	mcu_tx_ready = true;
 	pthread_create(&thread_timer_id, NULL, &timersimul, NULL); 
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
@@ -331,6 +342,19 @@ void mcu_putc(char c)
 {
 	putchar(c);
 	send_char = true;
+}
+
+bool mcu_is_txready()
+{
+	return mcu_tx_ready;
+}
+
+void mcu_puts(const char* __str)
+{
+	while(!mcu_tx_ready);
+	mcu_tx_ready = false;
+	mcu_tx_buffer = (char*)__str;
+	pthread_create(&thread_id, NULL, &outsimul, NULL);  
 }
 
 char mcu_getc()
@@ -511,12 +535,55 @@ void mcu_loadDummyPayload(const char* __fmt, ...)
 
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	FILE* fp = fopen("virtualeeprom", "r");
+	uint8_t c = 0;
 	
+	if(fp!=NULL)
+	{
+		if(!fseek(fp, address, SEEK_SET))
+		{
+			c = getc(fp);
+			fclose(fp);
+		}
+		
+	}
+	
+	return c;
 }
 
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	FILE* src = fopen("virtualeeprom", "r");
+	FILE* dest = fopen("newvirtualeeprom", "w");
 	
+	for(int i = 0; i < address; i++)
+	{
+		if(src!=NULL)
+			putc(getc(src), dest);
+		else
+			putc(0, dest);
+	}
+	
+	if(src!=NULL)
+		getc(src);
+	putc(value, dest);
+	
+	for(int i = address + 1; i < 1024; i++)
+	{
+		if(src!=NULL)
+			putc(getc(src), dest);
+		else
+			putc(0, dest);
+	}
+	
+	if(src!=NULL)
+		fclose(src);
+	fflush(dest);
+	fclose(dest);
+	remove("virtualeeprom");
+	rename("newvirtualeeprom", "virtualeeprom");
+	
+	return value;
 }
 
 void mcu_startPerfCounter()

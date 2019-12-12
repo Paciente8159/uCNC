@@ -15,10 +15,10 @@
 #include "ringbuffer.h"
 
 #define CMD_BUFFER_SIZE 128
-#define RESP_BUFFER_SIZE 64
+#define RESP_BUFFER_SIZE 128
 static char protocol_cmd_buffer[CMD_BUFFER_SIZE];
 static char protocol_resp_buffer[RESP_BUFFER_SIZE];
-static bool protocol_send_busy;
+//static bool protocol_send_busy;
 static bool protocol_cmd_available;
 static uint8_t protocol_cmd_count;
 volatile static uint8_t read_index;
@@ -44,6 +44,10 @@ void protocol_read_char_isr(volatile char c)
 			//feed hold
 			g_cnc_state.rt_cmd |= RT_CMD_FEED_HOLD;
 			break;
+		case ' ':
+		case '\t':
+			//eats white chars
+			break;
 		default:
 			protocol_cmd_buffer[write_index] = c;
 			write_index++;
@@ -59,34 +63,13 @@ void protocol_read_char_isr(volatile char c)
 	
 }
 
-
-void protocol_write_char_isr()
-{
-	static uint8_t index = 1;
-	char c = protocol_resp_buffer[index++];
-	
-	if(c == '\0') //reached end of response
-	{
-		protocol_send_busy = false; //flags can send new response
-		index = 1; //resets index
-		return;
-	}
-
-	if(c == '\n')
-	{
-		protocol_resp_buffer[index] = '\0'; //ensures end of response marker
-	}
-	
-	mcu_putc(c);
-}
-
 void protocol_init()
 {
 	read_index = 0;
 	write_index = 0;
 	protocol_cmd_count = 0;
 	protocol_cmd_available = false;
-	protocol_send_busy = false;
+	//protocol_send_busy = false;
 	
 	//resets buffers
 	memset(&protocol_cmd_buffer, 0, sizeof(protocol_cmd_buffer));
@@ -94,7 +77,7 @@ void protocol_init()
 	
 	//attaches ISR to functions
 	mcu_attachOnReadChar(protocol_read_char_isr);
-	mcu_attachOnSentChar(protocol_write_char_isr);
+	//mcu_attachOnSentChar(protocol_write_char_isr);
 }
 
 bool protocol_received_cmd()
@@ -120,13 +103,18 @@ char protocol_getc()
 	
 	c = protocol_cmd_buffer[read_index];
 	read_index++;
-	if(c == '\r' || c == '\n') //end of buffer allow incomming 
+	if(c == '\r' || c == '\n') //EOL marker (discard rest of buffer)
 	{
 		protocol_cmd_available = false;
 		read_index = 0;
 	}
 	
 	return c;
+}
+
+char* protocol_get_bufferptr()
+{
+	return &protocol_cmd_buffer[read_index];
 }
 
 char protocol_peek()
@@ -144,21 +132,17 @@ char protocol_peek()
 
 void protocol_puts(const char* __s)
 {
-	while(protocol_send_busy);
+	while(!mcu_is_txready());
 	
-	protocol_send_busy  = true;
 	char *s = rom_strncpy((char*)&protocol_resp_buffer, __s, RESP_BUFFER_SIZE);
-	//send first char
-	//the rest will be sent async
-
-	mcu_putc(protocol_resp_buffer[0]);
+	//transmit async
+	mcu_puts(protocol_resp_buffer);
 }
 
 void protocol_printf(const char* __fmt, ...)
 {
-	while(protocol_send_busy);
+	while(!mcu_is_txready());
 	
-	protocol_send_busy  = true;
 	//writes the formated progmem string to RAM and then print it to the buffer with the parameters
 	char buffer[RESP_BUFFER_SIZE];
 	char* newfmt = rom_strncpy((char*)&buffer, __fmt, RESP_BUFFER_SIZE);
@@ -166,9 +150,9 @@ void protocol_printf(const char* __fmt, ...)
  	va_start(__ap,__fmt);
  	vsprintf((char*)&protocol_resp_buffer, newfmt,__ap);
  	va_end(__ap);
- 	//send first char
-	//the rest will be sent async
- 	mcu_putc(protocol_resp_buffer[0]);
+
+	//transmit async
+ 	mcu_puts(protocol_resp_buffer);
 }
 
 #ifdef __DEBUG__

@@ -24,44 +24,41 @@ void cnc_init()
 	
 	mcu_init();
 	protocol_init();
-	settings_load();
+	if(!settings_init())
+	{
+		settings_reset();
+		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
+	}
 	parser_init();
 	kinematics_init();
 	mc_init();
 	planner_init();
 	interpolator_init();
-	
+	cnc_unhome();
 }
 
 void cnc_reset()
 {
+	protocol_clear();
+	protocol_printf(MSG_STARTUP, VERSION_NUMBER_HIGH, VERSION_NUMBER_LOW, REVISION_NUMBER);
 	//initial state (ALL IS LOCKED)
-	g_cnc_state.exec_state = EXEC_ALARM;
-	g_cnc_state.halt = true;
-	g_cnc_state.rt_cmd = 0;
-	cnc_unhome();
-}
-
-void cnc_run_system_cmd()
-{
-	//eats '$' char
-	protocol_getc();
-	
-	switch(protocol_peek())
+	if(g_settings.homing_enabled)
 	{
-		case 'X':
-			g_cnc_state.exec_state &= ~EXEC_ALARM;
-			protocol_clear();
-			protocol_puts(MSG_FEEDBACK_3);
-			break;
+		g_cnc_state.exec_state = EXEC_ALARM;
+		g_cnc_state.halt = true;
+		protocol_puts(MSG_FEEDBACK_2);
 	}
+	else
+	{
+		g_cnc_state.exec_state = EXEC_IDLE;
+	}
+	g_cnc_state.rt_cmd = 0;
 }
 
 void cnc_run()
 {
-	protocol_printf(MSG_STARTUP, VERSION_NUMBER_HIGH, VERSION_NUMBER_LOW, REVISION_NUMBER);
-	protocol_puts(MSG_FEEDBACK_2);
-	
+	cnc_reset();
+
 	for(;;)
 	{
 		//process gcode commands
@@ -70,65 +67,68 @@ void cnc_run()
 			uint8_t error = 0;
 			if(protocol_peek() == '$') //settings command
 			{
-				cnc_run_system_cmd();
+				error = parser_grbl_command();
 			}
 			else if(!CHECKFLAG(g_cnc_state.exec_state, EXEC_ALARM))
 			{
-				if(parser_is_ready())
-				{
-					error = parser_parse_command();
-					if(error)
-					{
-						protocol_clear();
-						protocol_printf(MSG_ERROR, error);
-					}
-				}
+				error = parser_gcode_command();
 			}
 			else
 			{
 				error = STATUS_SYSTEM_GC_LOCK;
-				protocol_clear();
-				protocol_printf(MSG_ERROR, error);
 			}
+			
+			//clear buffer remaining buffer chars
+			protocol_clear();
 			
 			if(!error)
 			{
-				protocol_clear();
 				protocol_puts(MSG_OK);
+			}
+			else
+			{
+				
+				protocol_printf(MSG_ERROR, error);
 			}
 		}
 		
-		if(CHECKFLAG(g_cnc_state.rt_cmd, RT_CMD_RESET))
-		{
-			//resets everything
-			cnc_reset();
-			return;
-		} 
-
 		cnc_doevents();
-		
 	}
 }
 
 void cnc_doevents()
 {
-	//process realtime commands
-	switch(g_cnc_state.rt_cmd)
+	//reset command
+	if(CHECKFLAG(g_cnc_state.rt_cmd, RT_CMD_RESET))
 	{
-		case RT_CMD_REPORT:
-			parser_print_states();
-			g_cnc_state.rt_cmd &= ~RT_CMD_REPORT;
-			break;
+		cnc_reset();
+		return;
 	}
 	
+	//exit if in alarm mode and ignores all other realtime commands
 	if(!CHECKFLAG(g_cnc_state.exec_state, EXEC_ALARM))
 	{
-		//cycle execution instructions
-		if(g_cnc_state.exec_state && EXEC_CYCLE)
-		{
-			interpolator_execute();
-		}
+		return;
 	}
+	
+	//remaining realtime commands
+	if(CHECKFLAG(g_cnc_state.rt_cmd, RT_CMD_REPORT))
+	{
+		CLEARFLAG(g_cnc_state.rt_cmd, RT_CMD_REPORT);
+		parser_print_states();
+	}
+	
+	//cycle execution instructions
+	if(CHECKFLAG(g_cnc_state.exec_state, EXEC_RUN))
+	{
+		interpolator_execute();
+	}
+}
+
+void cnc_home()
+{
+	g_cnc_state.exec_state |= EXEC_HOMING;
+	kinematics_home();
 }
 
 //resets homing state (clears flag and sets step position to middle)
@@ -142,7 +142,21 @@ void cnc_unhome()
 	}
 }
 
+void cnc_alarm(uint8_t code)
+{
+	g_cnc_state.exec_state = EXEC_ALARM;
+	protocol_printf(MSG_ALARM, code);
+}
+
 void cnc_kill()
 {
 	
+}
+
+void cnc_unlock()
+{
+	g_cnc_state.exec_state = EXEC_IDLE;
+	g_cnc_state.halt = false;
+	g_cnc_state.unlocked = false;
+	protocol_puts(MSG_FEEDBACK_3);
 }
