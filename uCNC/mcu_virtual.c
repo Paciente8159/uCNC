@@ -23,6 +23,8 @@ typedef struct virtual_map_t
 #include "mcu.h"
 #include "settings.h"
 #include "util/timer.h"
+#include "protocol.h"
+#include "interpolator.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -126,19 +128,13 @@ void* timersimul()
 
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
-				(*pulse_counter_ptr) = 0;
-				if(g_mcu_stepCallback!=NULL)
-				{
-					g_mcu_stepCallback();
-				}
+				interpolator_step_isr();
 			}
 			
 			if((*pulse_counter_ptr)==resetpulse_interval && pulse_enabled )
 			{
-				if(g_mcu_stepResetCallback!=NULL)
-				{
-					g_mcu_stepResetCallback();
-				}
+				(*pulse_counter_ptr) = 0;
+				interpolator_step_reset_isr();
 			}
 		}
 	}
@@ -175,37 +171,14 @@ void* inputsimul()
 	{
 		char c = getch();
 		
-		switch(c)
+		if(c == '\b')
 		{
-			case '\b':
-				putchar(c);
-				putchar(' ');
-				if(g_mcu_bufferhead!=g_mcu_buffertail)
-					g_mcu_bufferhead--;
-				g_mcu_combuffer[g_mcu_bufferhead] = '\0';
-				g_mcu_bufferhead--;
-				break;
-			case '\r':
-			case '\n':
-				c = '\r';
-				putchar('\r');
-				putchar('\n');
-				g_mcu_combuffer[g_mcu_bufferhead] = c;
-				g_mcu_buffercount++;
-			default:
-				g_mcu_combuffer[g_mcu_bufferhead] = c;
+			putchar(c);
+			putchar(' ');
 		}
 		
 		putchar(c);
-		if(++g_mcu_bufferhead == COM_BUFFER_SIZE)
-		{
-			g_mcu_bufferhead = 0;
-		}
-		
-		if(g_mcu_charReceived != NULL)
-		{
-			g_mcu_charReceived(c);
-		}
+		protocol_read_char_isr(c);
 	}
 }
 
@@ -432,8 +405,8 @@ void mcu_disableInterrupts()
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
-	pulse_interval = clocks_speed;
-	resetpulse_interval = clocks_speed>>1;
+	pulse_interval = clocks_speed>>1;
+	resetpulse_interval = clocks_speed;
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
@@ -441,12 +414,8 @@ void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	pulse_enabled = false;
-	pulse_interval = clocks_speed;
-	resetpulse_interval = clocks_speed>>1;
-	if((*pulse_counter_ptr)>=pulse_interval)
-	{
-		(*pulse_counter_ptr) = resetpulse_interval - 2;
-	}
+	pulse_interval = clocks_speed>>1;
+	resetpulse_interval = clocks_speed;
 	pulse_enabled = true;
 }
 //stops the pulse 

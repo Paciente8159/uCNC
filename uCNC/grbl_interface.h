@@ -60,6 +60,7 @@
 #define EXEC_ALARM_HOMING_FAIL_PULLOFF        8
 #define EXEC_ALARM_HOMING_FAIL_APPROACH       9
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH  10
+#define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE   11
 
 //formated messages
 #define MSG_OK __romstr__("ok\r\n")
@@ -67,9 +68,7 @@
 #define MSG_ALARM __romstr__("ALARM:%d\r\n")
 #define MSG_STARTUP __romstr__("uCNC %0d.%00d%c ['$' for help]\r\n")
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
-#define MSG_FEEDBACK_GCSTATE __romstr__("[GC:")
-#define MSG_FEEDBACK_COORD __romstr__("[G%d:")
-#define MSG_FEEDBACK_END __romstr__("]\r\n")
+
 
 //Non query feedback messages
 #define MSG_FEEDBACK_1 __romstr__("[MSG:Reset to continue]\r\n")

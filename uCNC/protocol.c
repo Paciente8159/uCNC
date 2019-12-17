@@ -23,15 +23,27 @@ static bool protocol_cmd_available;
 static uint8_t protocol_cmd_count;
 volatile static uint8_t read_index;
 volatile static uint8_t write_index;
+static uint8_t protocol_append_index;
 
-void protocol_read_char_isr(volatile char c)
+void protocol_read_char_isr(char c)
 {
 	switch(c)
 	{
+		#ifdef __DEBUG__
+		case '\b':
+			/*if(write_index!=0)
+			{
+				protocol_cmd_buffer[--write_index] = '\0';
+			}*/
+			break;
+		#endif
 		case 0x18:
 			//imediatly calls killing process
 			g_cnc_state.halt = true; //flags all isr to stop
 			g_cnc_state.rt_cmd |= RT_CMD_RESET;
+			break;
+		case 0x85:
+			g_cnc_state.rt_cmd |= RT_CMD_JOG_CANCEL;
 			break;
 		case '?':
 			g_cnc_state.rt_cmd |= RT_CMD_REPORT;
@@ -46,18 +58,23 @@ void protocol_read_char_isr(volatile char c)
 			break;
 		case ' ':
 		case '\t':
+		case '\v':
 			//eats white chars
 			break;
-		default:
-			protocol_cmd_buffer[write_index] = c;
-			write_index++;
-			if(c == '\r')
+		case '\r':
+		case '\n':
+			if(!protocol_cmd_available) //blocks all chars after cmd is made available
 			{
 				protocol_cmd_buffer[write_index] = '\0'; //ensures end of command marker
 				protocol_cmd_available = true; //flags command available
-				write_index = 0; //resets index
-				read_index = 0; //resets read index
 			}
+			break;
+		default:
+			if(!protocol_cmd_available && c > 35 && c < 126)
+			{
+				protocol_cmd_buffer[write_index++] = c;
+			}
+			
 			break;
 	}
 	
@@ -74,10 +91,6 @@ void protocol_init()
 	//resets buffers
 	memset(&protocol_cmd_buffer, 0, sizeof(protocol_cmd_buffer));
 	memset(&protocol_resp_buffer, 0, sizeof(protocol_resp_buffer));
-	
-	//attaches ISR to functions
-	mcu_attachOnReadChar(protocol_read_char_isr);
-	//mcu_attachOnSentChar(protocol_write_char_isr);
 }
 
 bool protocol_received_cmd()
@@ -87,9 +100,9 @@ bool protocol_received_cmd()
 
 void protocol_clear()
 {
-	protocol_cmd_available = false; //flags command available
 	write_index = 0; //resets index
 	read_index = 0; //resets read index
+	protocol_cmd_available = false; //flags command available
 }
 
 char protocol_getc()
@@ -101,21 +114,21 @@ char protocol_getc()
 		return c;
 	}
 	
-	c = protocol_cmd_buffer[read_index];
-	read_index++;
-	if(c == '\r' || c == '\n') //EOL marker (discard rest of buffer)
+	c = protocol_cmd_buffer[read_index++];
+	if(c == '\0') //EOL marker (discard rest of buffer)
 	{
-		protocol_cmd_available = false;
+		write_index = 0;
 		read_index = 0;
+		protocol_cmd_available = false;
 	}
 	
 	return c;
 }
 
-char* protocol_get_bufferptr()
+/*char* protocol_get_bufferptr()
 {
 	return &protocol_cmd_buffer[read_index];
-}
+}*/
 
 char protocol_peek()
 {
@@ -130,12 +143,36 @@ char protocol_peek()
 	return c;
 }
 
+void protocol_appendf(const char* __fmt, ...)
+{
+	while(!mcu_is_txready());
+	
+	//writes the formated progmem string to RAM and then print it to the buffer with the parameters
+	char buffer[RESP_BUFFER_SIZE];
+	char* newfmt = rom_strncpy((char*)&buffer, __fmt, RESP_BUFFER_SIZE);
+	va_list __ap;
+ 	va_start(__ap,__fmt);
+ 	vsprintf((char*)&protocol_resp_buffer[protocol_append_index], newfmt,__ap);
+ 	va_end(__ap);
+	protocol_append_index = strlen((const char*)&protocol_resp_buffer);
+}
+
+void protocol_append(const char* __s)
+{
+	while(!mcu_is_txready());
+	
+	char *s = rom_strncpy((char*)&protocol_resp_buffer[protocol_append_index], __s, RESP_BUFFER_SIZE - protocol_append_index);
+	protocol_append_index = strlen((const char*)&protocol_resp_buffer);
+}
+
 void protocol_puts(const char* __s)
 {
 	while(!mcu_is_txready());
 	
-	char *s = rom_strncpy((char*)&protocol_resp_buffer, __s, RESP_BUFFER_SIZE);
+	char *s = rom_strncpy((char*)&protocol_resp_buffer[protocol_append_index], __s, RESP_BUFFER_SIZE - protocol_append_index);
+	protocol_append_index = 0;
 	//transmit async
+	
 	mcu_puts(protocol_resp_buffer);
 }
 
@@ -148,9 +185,9 @@ void protocol_printf(const char* __fmt, ...)
 	char* newfmt = rom_strncpy((char*)&buffer, __fmt, RESP_BUFFER_SIZE);
 	va_list __ap;
  	va_start(__ap,__fmt);
- 	vsprintf((char*)&protocol_resp_buffer, newfmt,__ap);
+ 	vsprintf((char*)&protocol_resp_buffer[protocol_append_index], newfmt,__ap);
  	va_end(__ap);
-
+	protocol_append_index = 0;
 	//transmit async
  	mcu_puts(protocol_resp_buffer);
 }
@@ -166,6 +203,7 @@ void protocol_inject_cmd(const char* __fmt, ...)
  	va_end(__ap);
  	//flag cmd recieved
 	protocol_cmd_available = true; //flags command available
+	write_index = 0; //resets index
 	read_index = 0; //resets read index
 }
 #endif

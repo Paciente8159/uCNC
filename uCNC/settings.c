@@ -107,7 +107,10 @@ const settings_t __rom__ defaults = {\
 	.limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
 	.status_report_mask = DEFAULT_STATUS_MASK,
 	.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
-	.max_step_rate = DEFAULT_MAX_STEP_RATE
+	.max_step_rate = DEFAULT_MAX_STEP_RATE,
+	.soft_limits_enabled = false,
+	.hard_limits_enabled = true,
+	.homing_enabled = true
 	};
 
 

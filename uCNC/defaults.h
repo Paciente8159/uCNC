@@ -31,9 +31,9 @@
 #define DEFAULT_C_ACCEL 10
 
 //default max distance traveled by each axis in mm
-#define DEFAULT_X_MAX_DIST 1000
-#define DEFAULT_Y_MAX_DIST 1000
-#define DEFAULT_Z_MAX_DIST 1000
+#define DEFAULT_X_MAX_DIST 200
+#define DEFAULT_Y_MAX_DIST 200
+#define DEFAULT_Z_MAX_DIST 10
 
 #define DEFAULT_STEP_INV_MASK 0
 #define DEFAULT_STEP_ENA_INV 0

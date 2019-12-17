@@ -252,8 +252,7 @@ static bool parser_get_comment()
 					return true;//return error code
 				}
 				break;
-			case '\n':
-			case '\r':
+			case '\0':
                 return false;
 		}
 		
@@ -313,10 +312,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state)
                     return STATUS_BAD_COMMENT_FORMAT;//error code
                 }
 				break;
-			case '\n':
-			case '\r':
-				//eat EOL marker
-				protocol_getc();
+			case '\0':
 				word = '\0'; //EOL marker
 				return STATUS_OK;
 			default:
@@ -1034,7 +1030,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, bool isjog)
 	if(isjog)// if is jog emulates a G1 motion code
 	{
 		//if any motion is declared the jog is invalid
-		if(CHECKFLAG(parser_group0,GCODE_GROUP_MOTION))
+		if((parser_group0 & GCODE_GROUP_MOTION))
     	{
     		return STATUS_INVALID_JOG_COMMAND;
     	}
@@ -1049,7 +1045,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, bool isjog)
     // TODO
     // 38.2 probing
     // 81...89 Canned cycles
-    if(CHECKFLAG(parser_group0,GCODE_GROUP_MOTION))
+    if((parser_group0 & GCODE_GROUP_MOTION))
     {
 		switch(new_state->groups.motion)
 		{
@@ -1512,24 +1508,18 @@ uint8_t parser_gcode_command()
 uint8_t parser_grbl_command()
 {
 	uint8_t result = STATUS_OK;
-	
+
 	protocol_getc(); //eat initial '$'
 	char c = protocol_peek();
 	
-	//grbl commands are only allowed in idle state except unlock/home command
-	if((g_cnc_state.exec_state != EXEC_IDLE) && c != 'H' && c != 'X')
-	{
-		return STATUS_IDLE_ERROR;
-	}
-
 	switch(c)
 	{
-		case '\r':
+		/*case '\r':
 			protocol_puts(MSG_HELP);
-			return STATUS_OK;
+			return STATUS_OK;*/
 		case '$':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1538,7 +1528,7 @@ uint8_t parser_grbl_command()
 			return STATUS_OK;
 		case '#':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1547,7 +1537,7 @@ uint8_t parser_grbl_command()
 			return STATUS_OK;
 		case 'H':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1555,7 +1545,7 @@ uint8_t parser_grbl_command()
 			return STATUS_OK;
 		case 'X':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1563,7 +1553,7 @@ uint8_t parser_grbl_command()
 			return STATUS_OK;
 		case 'G':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1618,7 +1608,7 @@ uint8_t parser_grbl_command()
 			
 			parser_state_t jog_state = {};
 			//copies current parser state and feedrate
-			memcpy(&parser_state.groups, &jog_state.groups, sizeof(parser_groups_t));
+			memcpy(&jog_state.groups, &parser_state.groups, sizeof(parser_groups_t));
 			jog_state.words.f = parser_state.words.f;
 			
 			if(parser_fetch_command(&jog_state) != 0)
@@ -1638,7 +1628,7 @@ uint8_t parser_grbl_command()
 			return parser_exec_command(&jog_state);
 		case 'C':
 			protocol_getc();
-			if(protocol_getc() != '\r')
+			if(protocol_getc() != '\0')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1678,7 +1668,7 @@ uint8_t parser_grbl_command()
 				isinteger = false;
 				parser_get_float(&val, &isinteger);
 				//eat '='
-				if(protocol_getc() != '\r')
+				if(protocol_getc() != '\0')
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
@@ -1693,6 +1683,20 @@ uint8_t parser_grbl_command()
 
 void parser_print_states()
 {
+	uint8_t g1 = parser_state.groups.motion;
+	uint8_t g2 = parser_state.groups.plane + 17;
+	uint8_t g3 = parser_state.groups.distance_mode + 90;
+	uint8_t g6 = parser_state.groups.units + 20;
+	uint8_t g12 = parser_state.groups.coord_system + 54;
+	uint8_t g7 = parser_state.groups.spindle_turning + 3;
+	uint8_t g8 = parser_state.groups.coolant + 7;
+	uint8_t g9 = parser_state.groups.feed_speed_override + 48;
+	uint8_t t = parser_state.words.t;
+	float f = parser_state.words.f;
+	float s = parser_state.words.s;
+	
+	protocol_printf(__romstr__("[GC:G%d G%d G%d G%d G%d M%d M%d M%d T%d F%0.1f S%0.0f]\r\n"), g1, g2, g3, g6, g12, g7, g8, g9, t, f, s);
+	/*
 	protocol_puts(MSG_FEEDBACK_GCSTATE);
 	//group 1
 	protocol_printf(__romstr__("G%d"), parser_state.groups.motion);
@@ -1710,7 +1714,7 @@ void parser_print_states()
 	protocol_printf(__romstr__(" M%d"), parser_state.groups.coolant + 7);
 	//group 9
 	protocol_printf(__romstr__(" M%d"), parser_state.groups.feed_speed_override + 48);
-	/*//group 5
+	/*group 5
 	protocol_printf(__romstr__(" G%d"), parser_state.groups.distance_mode + 90);
     uint8_t g5 = parser_state.groups.feedrate_mode + 93;
     uint8_t g6 = parser_state.groups.units + 20;
@@ -1726,19 +1730,32 @@ void parser_print_states()
     uint8_t s = parser_state.words.s;
     protocol_printf(MSG_GCSTATE, g1, g2, g3, g5, g6, g7, g8, g10, g12, g13, m7, m8, t, f, s);
     */
-    protocol_printf(__romstr__(" T%d"), parser_state.words.t);
+    /*protocol_printf(__romstr__(" T%d"), parser_state.words.t);
     protocol_printf(__romstr__(" F%0.1f"), parser_state.words.f);
     protocol_printf(__romstr__(" S%d"), parser_state.words.s);
-    protocol_puts(MSG_FEEDBACK_END);
+    protocol_puts(MSG_FEEDBACK_END);*/
 }
 
-static void parser_print_coords(float* coords)
+static void parser_print_coords(uint8_t coord, float* coords)
 {
-	for(uint8_t i = 0; i < AXIS_COUNT - 1; i++)
-	{
-		protocol_printf(__romstr__("%0.3f,"), coords[i]);
-	}
-	protocol_printf(__romstr__("%0.3f"), coords[AXIS_COUNT - 1]);
+	#if AXIS_COUNT==0
+	protocol_printf(__romstr__("[G%d:%0.3f]\r\n"), coord, coords[0]);
+	#endif
+	#if AXIS_COUNT==1
+	protocol_printf(__romstr__("[G%d:%0.3f,%0.3f]\r\n"), coord, coords[0], coords[1]);
+	#endif
+	#if AXIS_COUNT==2
+	protocol_printf(__romstr__("[G%d:%0.3f,%0.3f,%0.3f]\r\n"), coord, coords[0], coords[1], coords[2]);
+	#endif
+	#if AXIS_COUNT==3
+	protocol_printf(__romstr__("[G%d:%0.3f,%0.3f,%0.3f,%0.3f]\r\n"), coord, coords[0], coords[1], coords[2], coords[3]);
+	#endif
+	#if AXIS_COUNT==4
+	protocol_printf(__romstr__("[G%d:%0.3f,%0.3f,%0.3f%0.3f,%0.3f]\r\n"), coord, coords[0], coords[1], coords[2], coords[3], coords[4]);
+	#endif
+	#if AXIS_COUNT==5
+	protocol_printf(__romstr__("[G%d:%0.3f,%0.3f,%0.3f,%0.3f,%0.3f,%0.3f]\r\n"), coord, coords[0], coords[1], coords[2], coords[3], coords[4], coords[5]);
+	#endif
 }
 
 void parser_parameters_reset()
@@ -1752,20 +1769,10 @@ void parser_print_coordsys()
 {
 	for(uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
-		protocol_printf(MSG_FEEDBACK_COORD, 54 + i);
-		parser_print_coords((float*)&parser_parameters.coord_sys[i]);
-		protocol_puts(__romstr__("]\r\n"));
+		parser_print_coords(54 + i, (float*)&parser_parameters.coord_sys[i]);
 	}
 	
-	protocol_printf(MSG_FEEDBACK_COORD, 28);
-	parser_print_coords((float*)&parser_parameters.g28home);
-	protocol_puts(__romstr__("]\r\n"));
-	
-	protocol_printf(MSG_FEEDBACK_COORD, 30);
-	parser_print_coords((float*)&parser_parameters.g30home);
-	protocol_puts(__romstr__("]\r\n"));
-		
-	protocol_printf(MSG_FEEDBACK_COORD, 92);
-	parser_print_coords((float*)&parser_parameters.g92offset);
-	protocol_puts(__romstr__("]\r\n"));
+	parser_print_coords(28, (float*)&parser_parameters.g28home);
+	parser_print_coords(30, (float*)&parser_parameters.g30home);
+	parser_print_coords(92, (float*)&parser_parameters.g92offset);
 }

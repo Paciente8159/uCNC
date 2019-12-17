@@ -13,12 +13,15 @@
 #include <math.h>
 #include <float.h>
 #include "config.h"
+#include "grbl_interface.h"
+#include "mcumap.h"
 #include "mcu.h"
 #include "settings.h"
 #include "planner.h"
 #include "interpolator.h"
 #include "ringbuffer.h"
 #include "utils.h"
+#include "cnc.h"
 
 float g_planner_coord[AXIS_COUNT];
 float g_planner_dir_vect[AXIS_COUNT];
@@ -37,7 +40,6 @@ void planner_init()
 
 void planner_clear()
 {
-	interpolator_clear();
 	buffer_clear(g_planner_buffer);
 }
 
@@ -205,6 +207,12 @@ void planner_recalculate()
 */
 void planner_add_line(float *axis, float feed)
 {
+	if(g_cnc_state.controls & ESTOP_MASK)
+	{
+		g_cnc_state.halt = true;
+		return;
+	}
+	
 	PLANNER_BLOCK *m = buffer_get_next_free(g_planner_buffer);//buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
 	m->dirbits = 0;
 	m->target_speed = feed;

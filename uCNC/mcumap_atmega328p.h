@@ -2,35 +2,18 @@
 #define MCUMAP_ATMEGA328P_H
 
 /*
-	Regiter Mapping 
-	Maps the UNO internal 8-bit registers to the 32-bit machine register
-	<PORT3>-<PORT2>-<PORT1>-<PORT0> 
+	MCU specific definitions and replacements
 */
-
-//PORT0
-
-//#define PORTWR0 PORTB
-//#define PORTRD0 PINB
-//#define PORTDIR0 DDRB
-//#define PORTISR0 PCMSK0
-
-//PORT1
-
-#define PORTWR1 PORTC
-//#define PORTRD1 PINC
-#define PORTDIR1 DDRC
-//#define PORTISR1 PCMSK1
-
-//PORT2
-
-#define PORTWR2 PORTD
-#define PORTDIR2 DDRD
-#define PORTRD2 PIND
-#define PORTISR2 PCMSK2
-
-//PORT3
-
-//doesn't have
+#include <avr/pgmspace.h>
+#define F_PULSE_MAX 30000
+#define F_PULSE_MIN 1
+#define F_INTEGRATOR 100 //integrator calculates 10ms slices
+#define __rom__ PROGMEM
+#define __romstr__ PSTR
+#define rom_strcpy strcpy_P
+#define rom_strncpy strncpy_P
+#define rom_memcpy memcpy_P
+#define rom_read_byte pgm_read_byte
 
 /*
 	Setup the IO pins 
@@ -42,44 +25,49 @@
 */
 
 //Setup output pins
-#define STEP0 0
-#define DIR0 3
-#define STEP1 1
-#define DIR1 4
-#define STEP2 2
-#define DIR2 5
-#define STEPS_OUTREG PORTWR1
-#define STEPS_DIRREG PORTDIR1
-#define DIRS_OUTREG PORTWR1
-#define DIRS_DIRREG PORTDIR1
+//SAME AS GRBL for test purposes
+#define STEP0 2
+#define DIR0 5
+#define STEP1 3
+#define DIR1 6
+#define STEP2 4
+#define DIR2 7
+#define STEPS_OUTREG PORTD
+#define STEPS_DIRREG DDRD
+#define DIRS_OUTREG PORTD
+#define DIRS_DIRREG DDRD
 
-#define LIMIT_X 5
-#define LIMIT_Y 6
-#define LIMIT_Z 7
-#define LIMITS_INREG PORTRD2
-#define LIMITS_DIRREG PORTDIR2
-#define LIMITS_PULLUPREG PORTWR2
-#define LIMITS_ISRREG PORTISR2
+//#define PROBE 5
+#define LIMIT_X 1
+#define LIMIT_Y 2
+#define LIMIT_Z 4
+#define LIMITS_INREG PINB
+#define LIMITS_DIRREG DDRB
+#define LIMITS_PULLUPREG PORTB
+#define LIMITS_ISRREG PCMSK0
+#define LIMITS_ISR_ID 0
 
-#define PROBE 4
-#define PROBE_INREG PORTRD2
-#define PROBE_DIRREG PORTDIR2
-#define PROBE_PULLUPREG PORTWR2
-#define PROBE_ISRREG PORTISR2
+#define LIMIT_X_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_Z_PULLUP
 
 //Setup control input pins
-#define ESTOP 2
-#define FHOLD 3
-#define CONTROLS_INREG PORTRD2
-#define CONTROLS_DIRREG PORTDIR2
-#define CONTROLS_PULLUPREG PORTWR2
-#define CONTROLS_ISRREG PORTISR2
+#define ESTOP 0
+#define FHOLD 1
+#define CONTROLS_INREG PINC
+#define CONTROLS_DIRREG DDRC
+#define CONTROLS_PULLUPREG PORTC
+#define CONTROLS_ISRREG PCMSK1
+#define CONTROLS_ISR_ID 1
+
+#define ESTOP_PULLUP
+#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX 0
 #define TX 1
-#define COM_INREG PORTRD2
-#define COM_OUTREG PORTWR2
-#define COM_DIRREG PORTDIR2
+#define COM_INREG PIND
+#define COM_OUTREG PORTD
+#define COM_DIRREG DDRD
 
 #endif

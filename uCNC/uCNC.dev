@@ -9,9 +9,9 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D__SIMUL__ -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
-CppCompiler=-gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
-Linker=-w -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328_@@_
+Compiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
+CppCompiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
+Linker=-w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328_@@_
 IsCpp=0
 Icon=
 ExeOutput=
@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
-CompilerSettings=000000e000100000101000000
-UnitCount=33
+CompilerSettings=0000000000100000000000000
+UnitCount=34
 
 [VersionInfo]
 Major=1
@@ -372,6 +372,16 @@ BuildCmd=
 
 [Unit33]
 FileName=grbl_interface.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit34]
+FileName=defaults.h
 CompileCpp=0
 Folder=
 Compile=1

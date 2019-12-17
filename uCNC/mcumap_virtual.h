@@ -2,6 +2,11 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
+#include "util\timer.h"
+#define F_CPU 1000000
+#define F_PULSE_MAX 30000
+#define F_PULSE_MIN 4
+#define F_INTEGRATOR 50
 
 typedef struct virtual_map_t virtual_map_t;
 

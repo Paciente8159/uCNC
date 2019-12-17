@@ -19,6 +19,8 @@
 #include "mcu.h"
 #include "utils.h"
 #include "protocol.h"
+#include "interpolator.h"
+#include "trigger_control.h"
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -73,41 +75,17 @@ volatile bool mcu_tx_ready;
 int mcu_putchar(char c, FILE* stream);
 FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);
 
-//IO Registers
-//IO_REGISTER g_mcu_dirRegister;
-volatile IO_REGISTER g_mcu_inputs;
-//volatile INPUT_REGISTER g_mcu_inputs;
-//volatile OUTPUT_REGISTER g_mcu_outputs;
-volatile IO_REGISTER g_mcu_pouts;
-
-ISRVOID g_mcu_stepCallback;
-ISRVOID g_mcu_stepResetCallback;
-//ISRTIMER g_mcu_integratorCallback;
-volatile uint16_t g_mcu_tmr0_counter;
-volatile uint16_t g_mcu_tmr0_value;
-
-ISRCOMRX g_mcu_rs232RxCallback;
-ISRVOID g_mcu_rs232TxCallback;
-
-ISRPORTCHANGE mcu_limit_trigger_callback;
 static uint8_t mcu_prev_limits;
-ISRPORTCHANGE mcu_control_trigger_callback;
 uint8_t mcu_prev_controls;
 
-ISR(TIMER1_COMPA_vect, ISR_NOBLOCK)
+ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
-    if(g_mcu_stepCallback!=NULL)
-	{
-    	g_mcu_stepCallback();
-	}
+	interpolator_step_reset_isr();
 }
 
-ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
+ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
-    if(g_mcu_stepResetCallback!=NULL)
-	{
-    	g_mcu_stepResetCallback();
-	}
+    interpolator_step_isr();
 }
 
 /*
@@ -116,96 +94,128 @@ ISR(TIMER1_COMPB_vect, ISR_NOBLOCK)
 	criar static e comparar com valor anterior e so disparar callback caso tenha alterado
 */
 
-#ifdef PORTISR0
-	ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
+ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
+{
+	#if(LIMITS_ISR_ID==0)
+	static uint8_t prev_limits = 0;
+	uint8_t limits = mcu_getLimits();
+	if(prev_limits != limits)
 	{
-		#ifdef LIMITS_INREG
-	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD0))
-	    {
-	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
-		}
-		#endif		
+		tc_limits_isr(limits);
+		prev_limits = limits;
 	}
-#endif
-
-#ifdef PORTISR1
-	ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
+	#endif
+	
+	#if(CONTROLS_ISR_ID==0)
+	static uint8_t prev_controls = 0;
+	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	if(prev_controls != controls)
 	{
-	    #ifdef LIMITS_INREG
-	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD1))
-	    {
-	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
-		}
-		#endif
+		tc_controls_isr(controls);
+		prev_controls = controls;
 	}
-#endif
+	#endif		
+}
 
-#ifdef PORTISR2
-	ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
+ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
+{
+    #if(LIMITS_ISR_ID==1)
+	static uint8_t prev_limits = 0;
+	uint8_t limits = mcu_getLimits();
+	if(prev_limits != limits)
 	{
-	    #ifdef LIMITS_INREG
-	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD2))
-	    {
-	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
-		}
-		#endif
+		tc_limits_isr(limits);
+		prev_limits = limits;
 	}
-#endif
+	#endif
 
-#ifdef PORTISR3
-	ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
+	#if(CONTROLS_ISR_ID==1)
+	static uint8_t prev_controls = 0;
+	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	if(prev_controls != controls)
 	{
-	    #ifdef LIMITS_INREG
-	    if(mcu_limit_trigger_callback != NULL && (LIMITS_INREG == PORTRD3))
-	    {
-	    	mcu_limit_trigger_callback((LIMITS_INREG & LIMITS_MASK));
-		}
-		#endif
+		tc_controls_isr(controls);
+		prev_controls = controls;
 	}
-#endif
+	#endif
+}
 
-#ifdef RX
-	ISR(USART_RX_vect, ISR_BLOCK)
+ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
+{
+    #if(LIMITS_ISR_ID==2)
+	static uint8_t prev_limits = 0;
+	uint8_t limits = mcu_getLimits();
+	if(prev_limits != limits)
 	{
-        if(g_mcu_rs232RxCallback!=NULL)
+		tc_limits_isr(limits);
+		prev_limits = limits;
+	}
+	#endif
+
+	#if(CONTROLS_ISR_ID==2)
+	static uint8_t prev_controls = 0;
+	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	if(prev_controls != controls)
+	{
+		tc_controls_isr(controls);
+		prev_controls = controls;
+	}
+	#endif
+}
+
+ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
+{
+    #if(LIMITS_ISR_ID==3)
+	static uint8_t prev_limits = 0;
+	uint8_t limits = mcu_getLimits();
+	if(prev_limits != limits)
+	{
+		tc_limits_isr(limits);
+		prev_limits = limits;
+	}
+	#endif
+
+	#if(CONTROLS_ISR_ID==3)
+	static uint8_t prev_controls = 0;
+	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	if(prev_controls != controls)
+	{
+		tc_controls_isr(controls);
+		prev_controls = controls;
+	}
+	#endif
+}
+
+ISR(USART_RX_vect, ISR_BLOCK)
+{
+	char c = UDR0;
+	protocol_read_char_isr(c);
+}
+
+ISR(USART_UDRE_vect, ISR_BLOCK)
+{
+	static bool eol = false;
+	char c = *mcu_tx_buffer++;
+	
+	if(!eol)
+	{
+		UDR0 = c;
+		if(c=='\n')
 		{
-	    	g_mcu_rs232RxCallback(UDR0);
+			eol = true;
 		}
 	}
-#endif
-
-#ifdef TX
-	ISR(USART_UDRE_vect, ISR_BLOCK)
+	else
 	{
-		static bool eol = false;
-		char c = *mcu_tx_buffer++;
-		
-		if(!eol)
-		{
-			UDR0 = c;
-			if(c=='\n')
-			{
-				eol = true;
-			}
-		}
-		else
-		{
-			eol = false;
-			mcu_tx_ready = true;
-			UCSR0B &= ~(1<<UDRIE0);
-		}
+		eol = false;
+		mcu_tx_ready = true;
+		UCSR0B &= ~(1<<UDRIE0);
 	}
-#endif
+}
 
 void mcu_init()
 {
     IO_REGISTER reg = {};
-    
-    g_mcu_stepCallback = NULL;
-	g_mcu_stepResetCallback = NULL;
-	mcu_limit_trigger_callback = NULL;
-	g_mcu_rs232RxCallback = NULL;
-	g_mcu_rs232TxCallback = NULL;
 	
 	//disable WDT
 	wdt_reset();
@@ -242,23 +252,23 @@ void mcu_init()
     
     //pull-ups
     #ifdef CONTROLS_PULLUPREG
-        CONTROLS_PULLUPREG = CONTROLS_PULLUP_MASK;
+        CONTROLS_PULLUPREG |= CONTROLS_PULLUP_MASK;
     #endif
     
 	#ifdef LIMITS_PULLUPREG
-        LIMITS_PULLUPREG = LIMITS_PULLUP_MASK;
+        LIMITS_PULLUPREG |= LIMITS_PULLUP_MASK;
     #endif
     
     #ifdef PROBE_PULLUPREG
-        PROBE_PULLUPREG = PROBE_PULLUP_MASK;
+        PROBE_PULLUPREG |= PROBE_PULLUP_MASK;
     #endif
 
     #ifdef DINS_LOW_PULLUPREG
-        DINS_LOW_PULLUPREG = DINS_LOW_PULLUP_MASK;
+        DINS_LOW_PULLUPREG |= DINS_LOW_PULLUP_MASK;
     #endif
     
     #ifdef DINS_HIGH_PULLUPREG
-        DINS_HIGH_PULLUPREG = DINS_HIGH_PULLUP_MASK;
+        DINS_HIGH_PULLUPREG |= DINS_HIGH_PULLUP_MASK;
     #endif
     
     //outputs
@@ -282,21 +292,6 @@ void mcu_init()
         DOUTS_HIGH_DIRREG |= DOUTS_HIGH_MASK;
     #endif
     
-    //initializes input internal register
-    g_mcu_inputs.r = 0;
-    #ifdef PORTRD0
-        g_mcu_inputs.r0 = PORTRD0;
-    #endif
-    #ifdef PORTRD1
-        g_mcu_inputs.r1 = PORTRD1;
-    #endif
-    #ifdef PORTRD2
-        g_mcu_inputs.r2 = PORTRD2;
-    #endif
-    #ifdef PORTRD3
-        g_mcu_inputs.r3 = PORTRD3;
-    #endif
-    
     //initializes interrupts on all input pins
     //first read direction registers on all ports (inputs are set to 0)
     reg.r = 0;
@@ -313,29 +308,18 @@ void mcu_init()
         reg.r3 = PORTDIR3;
     #endif
     
-      /*  
-    //invers values to apply interrupt masks
-    reg.r = ~reg.r;
-    #ifdef PCMSK0
-    	PCMSK0 = reg.r0;
-    #endif
-	#ifdef PCMSK1
-    	PCMSK1 = reg.r1;
-    #endif
-    #ifdef PCMSK2
-    	PCMSK2 = reg.r2;
-    #endif
-    #ifdef PCMSK3
-    	PCMSK3 = reg.r3;
-    #endif
-    //enable interrupts on all inputs
-    PCICR = 0xFF;*/
+    //input interrupts
     
-    //set serial port
-    /*g_mcu_rxhead = 0;
-    g_mcu_rxtail = 0;
-    g_mcu_rxcount = 0;*/
+    //activate Pin on change interrupt
+    PCICR |= ((1<<LIMITS_ISR_ID) | (1<<CONTROLS_ISR_ID));
     
+    #ifdef LIMITS_ISRREG
+    	LIMITS_ISRREG |= LIMITS_MASK;
+    #endif
+    #ifdef CONTROLS_ISRREG
+    	CONTROLS_ISRREG |= CONTROLS_MASK;
+    #endif
+
     stdout = &g_mcu_streamout;
     mcu_tx_ready = true;
     /*#ifdef __DEBUG__
@@ -399,7 +383,7 @@ uint8_t mcu_getLimits()
 
 uint8_t mcu_getProbe()
 {
-	return (PROBE_INREG & PROBE_MASK);
+	return (LIMITS_INREG & PROBE_MASK);
 }
 
 //outputs
@@ -435,11 +419,6 @@ void mcu_enableInterrupts()
 void mcu_disableInterrupts()
 {
 	cli();
-}
-
-void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler)
-{
-	mcu_limit_trigger_callback = handler;
 }
 
 //internal redirect of stdout
@@ -478,15 +457,6 @@ char mcu_getc()
     return UDR0;
 }
 
-void mcu_attachOnReadChar(ISRCOMRX handler)
-{
-    g_mcu_rs232RxCallback = handler;
-}
-
-void mcu_detachOnReadChar()
-{
-    g_mcu_rs232RxCallback = NULL;
-}
 
 #ifdef __PROF__
 /*ISR(TIMER2_OVF_vect)
@@ -622,13 +592,14 @@ void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
-	TCCR1B = 0;
+	//TCCR1B = 0;
+	OCR1B = clocks_speed>>1;
 	OCR1A = clocks_speed;
 	//sets OCR0B to half
 	//this will allways fire step_reset between pulses
-    OCR1B = OCR1A>>1;
+    
 	//reset timer
-    TCNT1 = 0;
+    //TCNT1 = 0;
 	//start timer in CTC mode with the correct prescaler
     TCCR1B = prescaller;
 }
@@ -637,16 +608,6 @@ void mcu_stopStepISR()
 {
 	TCCR1B = 0;
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
-}
-
-void mcu_attachOnStep(ISRVOID handler)
-{
-	g_mcu_stepCallback = handler;
-}
-
-void mcu_attachOnStepReset(ISRVOID handler)
-{
-	g_mcu_stepResetCallback = handler;
 }
 
 uint8_t mcu_eeprom_getc(uint16_t address)

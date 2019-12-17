@@ -3,6 +3,7 @@
 #include "config.h"
 #include "grbl_interface.h"
 #include "settings.h"
+#include "mcumap.h"
 #include "machinedefs.h"
 #include "utils.h"
 #include "trigger_control.h"
@@ -18,11 +19,19 @@ void mc_init()
 
 void mc_line(float* target, float feed)
 {
-	if(g_settings.soft_limits_enabled && g_settings.homing_enabled)
+	if(g_cnc_state.limits)
 	{
-		if(tc_check_boundaries(target))
+		cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+		return;
+	}
+
+	//if soft limits enabled and is homed check boundries
+	if(g_settings.soft_limits_enabled && g_cnc_state.is_homed)
+	{
+		if(!tc_check_boundaries(target))
 		{
 			cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
+			return;
 		}
 	}
 	

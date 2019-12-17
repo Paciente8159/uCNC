@@ -7,38 +7,51 @@
 #include "trigger_control.h"
 #include "cnc.h"
 
-static uint8_t tc_limitmask;
+static volatile bool tc_homing;
 
 void tc_init()
 {
-	tc_limitmask = 0;
+	tc_homing = false;
 }
 
-void tc_set_limit_mask(uint8_t mask)
+void tc_home()
 {
-	tc_limitmask = mask;
+	tc_homing = true;
 }
 
 void tc_limits_isr(uint8_t limits)
-{
-	g_cnc_state.limits = limits;
-	if(tc_limitmask & limits)
+{	
+	limits ^= g_settings.limits_invert_mask;
+	if(g_settings.hard_limits_enabled)
 	{
-		g_cnc_state.halt = true; //kills motion imediatly
+		g_cnc_state.limits = limits;
+		//limits &= tc_limitsmask;
+		if(limits)
+		{
+			g_cnc_state.halt = true; //kills motion imediatly
+			if(!tc_homing)
+			{
+				cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+			}
+		}
 	}
-	
-	cnc_alarm(EXEC_ALARM_HARD_LIMIT);
 }
 
 void tc_controls_isr(uint8_t controls)
 {
 	g_cnc_state.controls = controls;
-	if(g_cnc_state.controls & ESTOP_MASK)
+	if(controls & ESTOP_MASK)
 	{
 		//flags all isr to stop
 		g_cnc_state.halt = true; 
-		g_cnc_state.rt_cmd |= RT_CMD_RESET;
+		cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 		return;
+	}
+	
+	if(controls & (FHOLD_MASK | DOOR_OPEN_MASK))
+	{
+		//flags HOLD
+		g_cnc_state.exec_state |= EXEC_HOLD; 
 	}
 }
 

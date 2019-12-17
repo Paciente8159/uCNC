@@ -70,10 +70,6 @@ uint16_t mcu_getInputs();
 uint8_t mcu_getControls();
 uint8_t mcu_getLimits();
 uint8_t mcu_getProbe();
-//attaches a function handle to the input pin changed ISR
-void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler);
-//detaches the input pin changed ISR
-void mcu_detachOnLimitTrigger();
 
 //outputs
 //sets all step pins
@@ -88,8 +84,6 @@ void mcu_putc(char c);
 void mcu_puts(const char* __str);
 bool mcu_is_txready();
 char mcu_getc();
-void mcu_attachOnReadChar(ISRCOMRX handler);
-void mcu_detachOnReadChar();
 
 //RealTime
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
@@ -105,12 +99,6 @@ void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
 void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
 void mcu_stopStepISR();
-//attaches a function handle to the pulse ISR
-void mcu_attachOnStep(ISRVOID handler);
-void mcu_detachOnStep();
-//attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void mcu_attachOnStepReset(ISRVOID handler);
-void mcu_detachOnStepReset();
 
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
