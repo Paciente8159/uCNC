@@ -12,32 +12,41 @@
 #include "cnc.h"
 #include "motion_control.h"
 
+static bool mc_checkmode;
+
 void mc_init()
 {
-	//memset(&mc_position, 0, sizeof(mc_position));
+	mc_checkmode = false;
 }
 
-void mc_line(float* target, float feed)
+bool mc_toogle_checkmode()
 {
-	if(g_cnc_state.limits)
+	mc_checkmode = !mc_checkmode;
+	return mc_checkmode;
+}
+
+uint8_t mc_line(float* target, float feed)
+{
+	/*if(tc_get_limits(LIMITS_MASK))
 	{
 		cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-		return;
-	}
+		return STATUS_TRAVEL_EXCEEDED;
+	}*/
 
-	//if soft limits enabled and is homed check boundries
-	if(g_settings.soft_limits_enabled && g_cnc_state.is_homed)
+	//check travel limits
+	if(!tc_check_boundaries(target))
 	{
-		if(!tc_check_boundaries(target))
+		if(cnc_get_exec_state(EXEC_JOG))
 		{
-			cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
-			return;
+			return STATUS_TRAVEL_EXCEEDED;
 		}
+		cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
+		return 0;
 	}
 	
-	if(g_cnc_state.dry_run)
+	if(mc_checkmode)// check mode (gcode simulation) doesn't send code to planner
 	{
-		return;
+		return 0;
 	}
 	
 	while(planner_buffer_full())
@@ -46,18 +55,18 @@ void mc_line(float* target, float feed)
 	}
 	
 	planner_add_line(target, feed);
-	//update motion controller position
-	//memcpy(mc_position, target, sizeof(mc_position));
+	return 0;
 }
 
 
 //applies an algorithm similar to grbl with slight changes
-void mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed)
+uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed)
 {
 	uint8_t axis_0, axis_1;
 	float mc_position[AXIS_COUNT];
 	
-	planner_get_position((float*)&mc_position);
+	//copy planner last position
+	memcpy(&mc_position, planner_get_position(), sizeof(mc_position[AXIS_COUNT]));
 	
 	//start points
 	switch(plane)
@@ -190,9 +199,12 @@ void mc_arc(float* target, float center_offset_a, float center_offset_b, float r
 			}
 		}
 		
-	    mc_line(mc_position, feed);
+	    uint8_t error = mc_line(mc_position, feed);
+	    if(error)
+	    {
+	    	return error;
+		}
 	}
 	// Ensure last segment arrives at target location.
-	mc_line(target, feed);
-
+	return mc_line(target, feed);
 }

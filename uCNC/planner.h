@@ -49,7 +49,7 @@ void planner_discard_block();
 void planner_add_line(float* axis, float feed);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
-void planner_get_position(float* axis);
+float* planner_get_position();
 void planner_reset_position();
 
 //REMOVE TO THE MOTION CONTROLLER COMPILATION UNIT (TO BE CREATED)

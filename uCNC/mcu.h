@@ -67,9 +67,9 @@ void mcu_init();
 //returns the value of the input pins
 uint16_t mcu_getInputs();
 //returns the value of the critical input pins
-uint8_t mcu_getControls();
-uint8_t mcu_getLimits();
-uint8_t mcu_getProbe();
+uint8_t mcu_get_controls();
+uint8_t mcu_get_limits();
+uint8_t mcu_get_probe();
 
 //outputs
 //sets all step pins
@@ -98,7 +98,7 @@ void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
 //modifies the pulse frequency
 void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
-void mcu_stopStepISR();
+void mcu_step_isrstop();
 
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);

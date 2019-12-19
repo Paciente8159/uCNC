@@ -8,97 +8,162 @@
 #include "cnc.h"
 
 static volatile bool tc_homing;
+static uint8_t tc_limits;
+static uint8_t tc_controls;
+static uint8_t tc_probe;
 
 void tc_init()
 {
-	tc_homing = false;
-}
-
-void tc_home()
-{
-	tc_homing = true;
+	uint8_t l = (g_settings.hard_limits_enabled) ? (mcu_get_limits() ^ g_settings.limits_invert_mask) : 0;
+	tc_limits = l & ~PROBE_MASK; 
+	tc_controls = mcu_get_controls() ^ g_settings.control_invert_mask;
+	tc_probe = l & PROBE_MASK;
 }
 
 void tc_limits_isr(uint8_t limits)
 {	
 	limits ^= g_settings.limits_invert_mask;
+	
 	if(g_settings.hard_limits_enabled)
 	{
-		g_cnc_state.limits = limits;
+		tc_limits = limits & ~PROBE_MASK;
+		tc_probe = limits & PROBE_MASK;
 		//limits &= tc_limitsmask;
-		if(limits)
+		if(tc_limits)
 		{
-			g_cnc_state.halt = true; //kills motion imediatly
-			if(!tc_homing)
-			{
-				cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-			}
+			cnc_stop();
+			cnc_alarm(EXEC_ALARM_HARD_LIMIT);
 		}
 	}
 }
 
 void tc_controls_isr(uint8_t controls)
 {
-	g_cnc_state.controls = controls;
-	if(controls & ESTOP_MASK)
+	tc_controls = controls ^ g_settings.control_invert_mask;
+	
+	if(tc_controls & ESTOP_MASK)
 	{
-		//flags all isr to stop
-		g_cnc_state.halt = true; 
-		cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
-		return;
+		cnc_exec_rt_command(RT_CMD_RESET);
 	}
 	
-	if(controls & (FHOLD_MASK | DOOR_OPEN_MASK))
+	if(tc_controls & SAFETY_DOOR_MASK)
 	{
-		//flags HOLD
-		g_cnc_state.exec_state |= EXEC_HOLD; 
+		cnc_exec_rt_command(RT_CMD_SAFETY_DOOR);
+	}
+	
+	if(tc_controls & FHOLD_MASK)
+	{
+		cnc_exec_rt_command(RT_CMD_FEED_HOLD);
 	}
 }
 
 bool tc_check_boundaries(float* axis)
 {
-	#ifdef AXIS_X
+	if(cnc_is_homed())
+	{
+		#ifdef AXIS_X
 		if(axis[AXIS_X]<0 || axis[AXIS_X]>g_settings.max_distance[AXIS_X])
 		{
-			g_cnc_state.limits |= LIMIT_X_MASK;
+			//tc_limits |= LIMIT_X_MASK;
 			return false;
-		}
-	#endif
-	#ifdef AXIS_Y
+		}	
+		#endif
+		#ifdef AXIS_Y
 		if(axis[AXIS_Y]<0 || axis[AXIS_Y]>g_settings.max_distance[AXIS_Y])
 		{
-			g_cnc_state.limits |= LIMIT_Y_MASK;
+			//tc_limits |= LIMIT_Y_MASK;
 			return false;
 		}
-	#endif
-	#ifdef AXIS_Z
+		#endif
+		#ifdef AXIS_Z
 		if(axis[AXIS_Z]<0 || axis[AXIS_Z]>g_settings.max_distance[AXIS_Z])
 		{
-			g_cnc_state.limits |= LIMIT_Z_MASK;
+			//tc_limits |= LIMIT_Z_MASK;
 			return false;
 		}
-	#endif
-	#ifdef AXIS_A
+		#endif
+		#ifdef AXIS_A
 		if(axis[AXIS_A]<0 || axis[AXIS_A]>g_settings.max_distance[AXIS_A])
 		{
-			g_cnc_state.limits |= LIMIT_A_MASK;
+			//tc_limits |= LIMIT_A_MASK;
 			return false;
 		}
-	#endif
-	#ifdef AXIS_B
+		#endif
+		#ifdef AXIS_B
 		if(axis[AXIS_B]<0 || axis[AXIS_B]>g_settings.max_distance[AXIS_B])
 		{
-			g_cnc_state.limits |= LIMIT_B_MASK;
+			//tc_limits |= LIMIT_B_MASK;
 			return false;
 		}
-	#endif
-	#ifdef AXIS_C
+		#endif
+		#ifdef AXIS_C
 		if(axis[AXIS_C]<0 || axis[AXIS_C]>g_settings.max_distance[AXIS_C])
 		{
-			g_cnc_state.limits |= LIMIT_C_MASK;
+			//tc_limits |= LIMIT_C_MASK;
 			return false;
 		}
-	#endif
+		#endif
+	}
+	else
+	{
+		#ifdef AXIS_X
+		if(axis[AXIS_X]<-g_settings.max_distance[AXIS_X] || axis[AXIS_X]>g_settings.max_distance[AXIS_X])
+		{
+			//tc_limits |= LIMIT_X_MASK;
+			return false;
+		}	
+		#endif
+		#ifdef AXIS_Y
+		if(axis[AXIS_Y]<-g_settings.max_distance[AXIS_Y] || axis[AXIS_Y]>g_settings.max_distance[AXIS_Y])
+		{
+			//tc_limits |= LIMIT_Y_MASK;
+			return false;
+		}
+		#endif
+		#ifdef AXIS_Z
+		if(axis[AXIS_Z]<-g_settings.max_distance[AXIS_Z] || axis[AXIS_Z]>g_settings.max_distance[AXIS_Z])
+		{
+			//tc_limits |= LIMIT_Z_MASK;
+			return false;
+		}
+		#endif
+		#ifdef AXIS_A
+		if(axis[AXIS_A]<-g_settings.max_distance[AXIS_A] || axis[AXIS_A]>g_settings.max_distance[AXIS_A])
+		{
+			//tc_limits |= LIMIT_A_MASK;
+			return false;
+		}
+		#endif
+		#ifdef AXIS_B
+		if(axis[AXIS_B]<-g_settings.max_distance[AXIS_B] || axis[AXIS_B]>g_settings.max_distance[AXIS_B])
+		{
+			//tc_limits |= LIMIT_B_MASK;
+			return false;
+		}
+		#endif
+		#ifdef AXIS_C
+		if(axis[AXIS_C]<-g_settings.max_distance[AXIS_C] || axis[AXIS_C]>g_settings.max_distance[AXIS_C])
+		{
+			//tc_limits |= LIMIT_C_MASK;
+			return false;
+		}
+		#endif
+	}
 
 	return true;
+}
+
+uint8_t tc_get_limits(uint8_t limitmask)
+{
+	return (tc_limits & limitmask);
+}
+
+uint8_t tc_get_controls(uint8_t controlmask)
+{
+	return (tc_controls & controlmask);
+}
+
+bool tc_get_probe()
+{
+	return tc_probe;
 }

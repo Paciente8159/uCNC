@@ -21,6 +21,7 @@
 #include "interpolator.h"
 #include "ringbuffer.h"
 #include "utils.h"
+#include "trigger_control.h"
 #include "cnc.h"
 
 float g_planner_coord[AXIS_COUNT];
@@ -40,7 +41,12 @@ void planner_init()
 
 void planner_clear()
 {
+	//clears all motions stored in the buffer
 	buffer_clear(g_planner_buffer);
+	//resets dir vector
+	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
+	//resyncs the position with the interpolator
+	interpolator_get_rt_position((float*)&g_planner_coord);
 }
 
 bool planner_buffer_full()
@@ -207,12 +213,12 @@ void planner_recalculate()
 */
 void planner_add_line(float *axis, float feed)
 {
-	if(g_cnc_state.controls & ESTOP_MASK)
+	/*if(tc_get_controls(ESTOP_MASK))
 	{
-		g_cnc_state.halt = true;
+		cnc_kill();
 		return;
 	}
-	
+	*/
 	PLANNER_BLOCK *m = buffer_get_next_free(g_planner_buffer);//buffer_write(g_planner_buffer, NULL);//BUFFER_WRITE_PTR(g_planner_buffer);
 	m->dirbits = 0;
 	m->target_speed = feed;
@@ -338,9 +344,9 @@ void planner_add_line(float *axis, float feed)
 }
 
 
-void planner_get_position(float* axis)
+float* planner_get_position()
 {
-	memcpy(axis, &g_planner_coord, sizeof(g_planner_coord));
+	return (float*)&g_planner_coord;
 }
 
 void planner_reset_position()

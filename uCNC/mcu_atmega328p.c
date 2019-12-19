@@ -98,7 +98,7 @@ ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
 {
 	#if(LIMITS_ISR_ID==0)
 	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_getLimits();
+	uint8_t limits = mcu_get_limits();
 	if(prev_limits != limits)
 	{
 		tc_limits_isr(limits);
@@ -108,7 +108,7 @@ ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
 	
 	#if(CONTROLS_ISR_ID==0)
 	static uint8_t prev_controls = 0;
-	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	uint8_t controls = mcu_get_controls();
 	if(prev_controls != controls)
 	{
 		tc_controls_isr(controls);
@@ -121,7 +121,7 @@ ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
 {
     #if(LIMITS_ISR_ID==1)
 	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_getLimits();
+	uint8_t limits = mcu_get_limits();
 	if(prev_limits != limits)
 	{
 		tc_limits_isr(limits);
@@ -131,7 +131,7 @@ ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
 
 	#if(CONTROLS_ISR_ID==1)
 	static uint8_t prev_controls = 0;
-	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	uint8_t controls = mcu_get_controls();
 	if(prev_controls != controls)
 	{
 		tc_controls_isr(controls);
@@ -144,7 +144,7 @@ ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
 {
     #if(LIMITS_ISR_ID==2)
 	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_getLimits();
+	uint8_t limits = mcu_get_limits();
 	if(prev_limits != limits)
 	{
 		tc_limits_isr(limits);
@@ -154,7 +154,7 @@ ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
 
 	#if(CONTROLS_ISR_ID==2)
 	static uint8_t prev_controls = 0;
-	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	uint8_t controls = mcu_get_controls();
 	if(prev_controls != controls)
 	{
 		tc_controls_isr(controls);
@@ -167,7 +167,7 @@ ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
 {
     #if(LIMITS_ISR_ID==3)
 	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_getLimits();
+	uint8_t limits = mcu_get_limits();
 	if(prev_limits != limits)
 	{
 		tc_limits_isr(limits);
@@ -177,7 +177,7 @@ ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
 
 	#if(CONTROLS_ISR_ID==3)
 	static uint8_t prev_controls = 0;
-	uint8_t controls = (CONTROLS_INREG & CONTROLS_MASK);
+	uint8_t controls = mcu_get_controls();
 	if(prev_controls != controls)
 	{
 		tc_controls_isr(controls);
@@ -371,17 +371,17 @@ uint16_t mcu_getInputs()
 	return reg.rl;	
 }
 
-uint8_t mcu_getControls()
+uint8_t mcu_get_controls()
 {
 	return (CONTROLS_INREG & CONTROLS_MASK);
 }
 
-uint8_t mcu_getLimits()
+uint8_t mcu_get_limits()
 {
 	return (LIMITS_INREG & LIMITS_MASK);
 }
 
-uint8_t mcu_getProbe()
+uint8_t mcu_get_probe()
 {
 	return (LIMITS_INREG & PROBE_MASK);
 }
@@ -604,7 +604,7 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
     TCCR1B = prescaller;
 }
 
-void mcu_stopStepISR()
+void mcu_step_isrstop()
 {
 	TCCR1B = 0;
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));

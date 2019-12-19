@@ -123,9 +123,6 @@ void* timersimul()
 	{
 		if(global_irq_enabled)
 		{
-			if(pulse_enabled)
-				(*pulse_counter_ptr)++;
-
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
 				interpolator_step_isr();
@@ -177,6 +174,10 @@ void* inputsimul()
 			putchar(' ');
 		}
 		
+		if(c>='a' && c<='z') //uppercase
+        {
+            c -= 32;
+        }
 		putchar(c);
 		protocol_read_char_isr(c);
 	}
@@ -193,6 +194,12 @@ void ticksimul()
 	{
 		fscanf(infile, "%uX %uX", &(virtualports->controls), &(virtualports->limits));
 		fclose(infile);
+	}
+	
+	if(global_irq_enabled)
+	{
+		if(pulse_enabled)
+			(*pulse_counter_ptr)++;
 	}
 	
 	/*if(tick_enabled)
@@ -247,7 +254,7 @@ void mcu_init()
 	
 	g_cpu_freq = getCPUFreq();
 	
-	//start_timer(1, &ticksimul);
+	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &inputsimul, NULL);
 	//pthread_create(&thread_id, NULL, &outsimul, NULL);  
 	mcu_tx_ready = true;
@@ -265,17 +272,17 @@ uint16_t mcu_getInputs()
 	return 0;	
 }
 //returns the value of the critical input pins
-uint8_t mcu_getControls()
+uint8_t mcu_get_controls()
 {
 	return virtualports->controls;
 }
 
-uint8_t mcu_getLimits()
+uint8_t mcu_get_limits()
 {
 	return virtualports->limits;
 }
 
-uint8_t mcu_getProbe()
+uint8_t mcu_get_probe()
 {
 	return virtualports->probe;
 }
@@ -419,7 +426,7 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
 	pulse_enabled = true;
 }
 //stops the pulse 
-void mcu_stopStepISR()
+void mcu_step_isrstop()
 {
 	pulse_enabled = false;
 }

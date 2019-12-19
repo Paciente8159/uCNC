@@ -25,36 +25,38 @@ volatile static uint8_t read_index;
 volatile static uint8_t write_index;
 static uint8_t protocol_append_index;
 
-void protocol_read_char_isr(char c)
+void protocol_read_char_isr(uint8_t c)
 {
 	switch(c)
 	{
-		#ifdef __DEBUG__
-		case '\b':
-			/*if(write_index!=0)
-			{
-				protocol_cmd_buffer[--write_index] = '\0';
-			}*/
-			break;
+		#ifdef MCU_VIRTUAL
+		case '\\':
 		#endif
 		case 0x18:
-			//imediatly calls killing process
-			g_cnc_state.halt = true; //flags all isr to stop
-			g_cnc_state.rt_cmd |= RT_CMD_RESET;
+			cnc_exec_rt_command(RT_CMD_RESET);
+			break;
+		#ifdef MCU_VIRTUAL
+		case '<':
+		#endif
+		case 0x84:
+			cnc_exec_rt_command(RT_CMD_SAFETY_DOOR);
 			break;
 		case 0x85:
-			g_cnc_state.rt_cmd |= RT_CMD_JOG_CANCEL;
+			cnc_exec_rt_command(RT_CMD_JOG_CANCEL);
 			break;
 		case '?':
-			g_cnc_state.rt_cmd |= RT_CMD_REPORT;
+			cnc_exec_rt_command(RT_CMD_REPORT);
 			break;
+		#ifdef MCU_VIRTUAL
+		case '/':
+		#endif
 		case '~':
 			//cycle start
-			g_cnc_state.rt_cmd |= RT_CMD_CYCLE_START;
+			cnc_exec_rt_command(RT_CMD_CYCLE_START);
 			break;
 		case '!':
 			//feed hold
-			g_cnc_state.rt_cmd |= RT_CMD_FEED_HOLD;
+			cnc_exec_rt_command(RT_CMD_FEED_HOLD);
 			break;
 		case ' ':
 		case '\t':
@@ -74,7 +76,7 @@ void protocol_read_char_isr(char c)
 			{
 				protocol_cmd_buffer[write_index++] = c;
 			}
-			
+			//protocol_cmd_buffer[write_index++] = c;
 			break;
 	}
 	

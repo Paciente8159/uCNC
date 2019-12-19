@@ -54,8 +54,8 @@ typedef struct
 extern settings_t g_settings;
 
 uint8_t settings_init();
-uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size);
-void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size);
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size);
+void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size);
 void settings_reset();
 uint8_t settings_change(uint8_t setting, float value);
 void settings_print();

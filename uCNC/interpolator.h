@@ -14,11 +14,13 @@
 #define INTERPOLATOR_BUFFER_SIZE 10
 
 void interpolator_init();
-void interpolator_execute();
+void interpolator_run();
 void interpolator_update();
 void interpolator_step_isr();
 void interpolator_step_reset_isr();
 void interpolator_stop();
 void interpolator_clear();
+void interpolator_get_rt_position(float* axis);
+void interpolator_reset_rt_position();
 
 #endif

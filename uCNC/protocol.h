@@ -12,6 +12,7 @@
 #define PROTOCOL_H
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdarg.h>
 
 void protocol_init();
@@ -24,7 +25,7 @@ void protocol_appendf(const char* __fmt, ...);
 void protocol_append(const char* __s);
 void protocol_puts(const char* __s);
 void protocol_printf(const char* __fmt, ...);
-void protocol_read_char_isr(char c);
+void protocol_read_char_isr(uint8_t c);
 #ifdef __DEBUG__
 void protocol_inject_cmd(const char* __fmt, ...);
 #endif

@@ -47,9 +47,9 @@
 #define LIMITS_ISRREG PCMSK0
 #define LIMITS_ISR_ID 0
 
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
+//#define LIMIT_X_PULLUP
+//#define LIMIT_Y_PULLUP
+//#define LIMIT_Z_PULLUP
 
 //Setup control input pins
 #define ESTOP 0
@@ -60,8 +60,8 @@
 #define CONTROLS_ISRREG PCMSK1
 #define CONTROLS_ISR_ID 1
 
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX 0

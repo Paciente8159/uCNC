@@ -108,7 +108,7 @@ const settings_t __rom__ defaults = {\
 	.status_report_mask = DEFAULT_STATUS_MASK,
 	.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
 	.max_step_rate = DEFAULT_MAX_STEP_RATE,
-	.soft_limits_enabled = false,
+	.soft_limits_enabled = true,
 	.hard_limits_enabled = true,
 	.homing_enabled = true
 	};
@@ -129,12 +129,13 @@ uint8_t settings_init()
 	return settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t));
 }
 
-uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
 {
 	uint8_t crc = 0;
-	for(uint16_t i = 0; i < size; i++)
+	for(uint16_t i = size; i !=0; )
 	{
-		__ptr[i] = mcu_eeprom_getc(i + SETTINGS_ADDRESS_OFFSET);
+		i--;
+		__ptr[i] = mcu_eeprom_getc(i + address);
 		crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ __ptr[i]]);
 	}
 	
@@ -151,12 +152,12 @@ void settings_reset()
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)ptr, size);
 }
 
-void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
+void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size)
 {
 	for(uint16_t i = size; i !=0; )
 	{
 		i--;
-		mcu_eeprom_putc(i + SETTINGS_ADDRESS_OFFSET, __ptr[i]);
+		mcu_eeprom_putc(i + address, __ptr[i]);
 	}
 }
 

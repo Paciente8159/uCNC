@@ -17,6 +17,7 @@ uint8_t parser_grbl_command();
 void parser_print_states();
 void parser_print_coordsys();
 bool parser_get_float(float *value, bool *isinteger);
+void parser_get_wco(float* axis);
 void parser_parameters_load();
 void parser_parameters_reset();
 void parser_parameters_save();

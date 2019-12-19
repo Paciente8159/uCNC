@@ -10,10 +10,11 @@
 #define MOTION_CONTROL_H
 
 #include <stdint.h>
-//#include <stdbool.h>
+#include <stdbool.h>
 
 void mc_init();
-void mc_line(float* target, float feed);
-void mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed);
+bool mc_toogle_checkmode();
+uint8_t mc_line(float* target, float feed);
+uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed);
 
 #endif
