@@ -6,9 +6,11 @@
 #include "mcumap.h"
 #include "machinedefs.h"
 #include "utils.h"
+#include "mcu.h"
 #include "trigger_control.h"
 #include "parser.h"
 #include "planner.h"
+#include "interpolator.h"
 #include "cnc.h"
 #include "motion_control.h"
 
@@ -181,7 +183,7 @@ uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, floa
 			// Compute exact location by applying transformation matrix from initial radius vector(=-offset).
 			float angle = i*arc_per_sgm;
 			float precise_cos = cos(angle);
-			float precise_sin = (angle<=M_PI) ? sqrt(1 - precise_cos*precise_cos) : -sqrt(1-precise_cos*precise_cos); //faster than sin function
+			float precise_sin = (angle<=M_PI) ? -sqrt(1 - precise_cos*precise_cos) : sqrt(1-precise_cos*precise_cos); //faster than sin function
 			pt0_a = -center_offset_a*precise_cos + center_offset_b*precise_sin;
 			pt0_b = -center_offset_a*precise_sin - center_offset_b*precise_cos;
 			count = 0;
@@ -208,3 +210,92 @@ uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, floa
 	// Ensure last segment arrives at target location.
 	return mc_line(target, feed);
 }
+
+uint8_t mc_dwell(uint16_t milliseconds)
+{
+	while(cnc_get_exec_state(EXEC_RUN));
+	mcu_delay_ms(milliseconds);
+	
+	return 0;
+}
+
+
+uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
+{
+	float target[AXIS_COUNT];
+	uint8_t axis_mask = (1<<axis);
+	
+	memcpy(&target, planner_get_position(), sizeof(target));
+
+	//unlock the cnc
+	cnc_unlock();
+
+	//if HOLD or ALARM are still active or any limit switch is not cleared fails to home
+	if(cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || tc_get_limits(LIMITS_MASK))
+	{
+		return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
+	}
+	
+	float max_home_dist = -g_settings.max_distance[axis] * 1.5f;
+	//checks homing dir
+	if(g_settings.homing_dir_invert_mask & axis_mask)
+	{
+		max_home_dist = -max_home_dist;
+	}
+	
+	target[axis] += max_home_dist;
+	cnc_set_exec_state(EXEC_HOMING);
+	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
+	do{
+		cnc_doevents();
+	} while(cnc_get_exec_state(EXEC_RUN));
+	
+	//flushes buffers
+	interpolator_stop();
+	interpolator_clear();
+	planner_clear();
+	
+	//if limit was not triggered 
+	if(!tc_get_limits(axis_limit))
+	{
+		return EXEC_ALARM_HOMING_FAIL_APPROACH;
+	}
+	
+	cnc_unlock();
+	//zero's the planner
+	memcpy(&target, planner_get_position(), sizeof(target));
+	max_home_dist = g_settings.homing_offset * 5.0f;
+	
+	//checks homing dir
+	if(g_settings.homing_dir_invert_mask & axis_mask)
+	{
+		max_home_dist = -max_home_dist;
+	}
+	
+	target[axis] += max_home_dist;
+
+	planner_add_line((float*)&target, g_settings.homing_slow_feed_rate * 0.0166666667f);
+
+	do {
+		cnc_doevents();
+		//activates hold (single time) if limit is free
+		if(!tc_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
+		{
+			cnc_set_exec_state(EXEC_HOLD);
+		}
+	} while(cnc_get_exec_state(EXEC_RUN));
+	
+	//stops, flushes buffers and clears the hold if active
+	cnc_stop();
+	interpolator_clear();
+	planner_clear();
+	cnc_clear_exec_state(EXEC_HOLD);
+	
+	if(tc_get_limits(axis_limit))
+	{
+		return EXEC_ALARM_HOMING_FAIL_APPROACH;
+	}
+	
+	return 0;
+}
+

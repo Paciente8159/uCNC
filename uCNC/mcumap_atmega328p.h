@@ -2,20 +2,6 @@
 #define MCUMAP_ATMEGA328P_H
 
 /*
-	MCU specific definitions and replacements
-*/
-#include <avr/pgmspace.h>
-#define F_PULSE_MAX 30000
-#define F_PULSE_MIN 1
-#define F_INTEGRATOR 100 //integrator calculates 10ms slices
-#define __rom__ PROGMEM
-#define __romstr__ PSTR
-#define rom_strcpy strcpy_P
-#define rom_strncpy strncpy_P
-#define rom_memcpy memcpy_P
-#define rom_read_byte pgm_read_byte
-
-/*
 	Setup the IO pins 
 	The definition of the pins must match the PORT/REGISTER bit offset and not the IDE pin number
 	with the formula:
@@ -69,5 +55,12 @@
 #define COM_INREG PIND
 #define COM_OUTREG PORTD
 #define COM_DIRREG DDRD
+
+#define PWM0 3
+#define PWM0_DIRREG DDRB
+#define PWM0_REGINDEX 1
+#define PWM0_TMRAREG TCCR2A
+#define PWM0_TMRBREG TCCR2B
+#define PWM0_CNTREG OCR2A
 
 #endif

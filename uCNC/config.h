@@ -17,6 +17,7 @@
 #define F_CPU 16000000UL
 #define __DEBUG__
 #define __SIMUL__*/
+
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
@@ -27,5 +28,6 @@
 #define COORD_SYS_COUNT 6
 
 #define N_ARC_CORRECTION 12
+#define baud 9600
 
 #endif

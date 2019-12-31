@@ -58,7 +58,8 @@ void cnc_set_exec_state(uint8_t statemask);
 void cnc_clear_exec_state(uint8_t statemask);
 uint8_t cnc_is_homed();
 void cnc_exec_rt_command(uint8_t command);
-uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit);
+//moved to motion control
+//uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit);
 void cnc_reset_position();
 
 #endif

@@ -63,7 +63,7 @@
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE   11
 
 //formated messages
-#define MSG_OK __romstr__("ok\r\n")
+#define MSG_OK __romstr__("ok\n")
 #define MSG_ERROR __romstr__("error:%d\r\n")
 #define MSG_ALARM __romstr__("ALARM:%d\r\n")
 #define MSG_STARTUP __romstr__("uCNC %0d.%00d%c ['$' for help]\r\n")

@@ -79,6 +79,8 @@ void mcu_setDirs(uint8_t value);
 //sets all digital outputs pins
 void mcu_setOutputs(uint16_t value);
 
+void mcu_set_pwm(uint8_t pwm, uint8_t value);
+
 //Communication functions
 void mcu_putc(char c);
 void mcu_puts(const char* __str);
@@ -99,6 +101,8 @@ void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
 void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
 void mcu_step_isrstop();
+
+void mcu_delay_ms(uint16_t miliseconds);
 
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);

@@ -8,6 +8,7 @@
 #include "machinedefs.h"
 #include "kinematics.h"
 #include "interpolator.h"
+#include "settings.h"
 #include "planner.h"
 #include "utils.h"
 #include "ringbuffer.h"
@@ -59,7 +60,7 @@ typedef struct pulse_sgm_
 
 //circular buffers
 //creates new type PULSE_BLOCK_BUFFER
-static INTERPOLATOR_BLOCK interpolator_blk_data[INTERPOLATOR_BUFFER_SIZE>>1];
+static INTERPOLATOR_BLOCK interpolator_blk_data[INTERPOLATOR_BUFFER_SIZE];
 static buffer_t interpolator_blk_buffer;
 
 static INTERPOLATOR_SEGMENT interpolator_sgm_data[INTERPOLATOR_BUFFER_SIZE];
@@ -128,6 +129,11 @@ void interpolator_init()
 	interpolator_isr_finnished = true;
 }
 
+bool interpolator_buffer_is_full()
+{
+	return is_buffer_full(interpolator_sgm_buffer);
+}
+
 void interpolator_run()
 {
 	
@@ -179,17 +185,19 @@ void interpolator_run()
 			kinematics_apply_inverse(interpolator_cur_plan_block->pos, (uint32_t*)&step_new_pos);
 			
 			//calculates the number of steps to execute
-			uint8_t dirs = interpolator_cur_plan_block->dirbits;
 			new_block->dirbits = 0;
 			for(uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-				if((dirs & 0x01))
+				if(step_new_pos[i] >= interpolator_step_pos[i])
 				{
+					new_block->steps[i] = step_new_pos[i]-interpolator_step_pos[i];
+				}
+				else
+				{
+					new_block->steps[i] = interpolator_step_pos[i]-step_new_pos[i];
 					new_block->dirbits |= dirbitsmask[i];
 				}
 				
-				new_block->steps[i] = (!(dirs & 0x01)) ? (step_new_pos[i]-interpolator_step_pos[i]) : (interpolator_step_pos[i]-step_new_pos[i]);
-				dirs>>=1;
 				if(new_block->totalsteps < new_block->steps[i])
 				{
 					new_block->totalsteps = new_block->steps[i];
@@ -441,7 +449,28 @@ void interpolator_get_rt_position(float* axis)
 
 void interpolator_reset_rt_position()
 {
-	memset(&interpolator_rt_step_pos, 0, sizeof(interpolator_rt_step_pos));
+	if(g_settings.homing_enabled)
+	{
+		float origin[AXIS_COUNT];
+		for(uint8_t i = AXIS_COUNT;i != 0;)
+		{
+			i--;
+			if(g_settings.homing_dir_invert_mask & (1<<i))
+			{
+				origin[i] = g_settings.max_distance[i];
+			}
+			else
+			{
+				origin[i] = 0;
+			}
+		}
+		
+		kinematics_apply_inverse((float*)&origin, (uint32_t*)&interpolator_rt_step_pos);
+	}
+	else
+	{
+		memset(&interpolator_rt_step_pos, 0, sizeof(interpolator_rt_step_pos));
+	}
 }
 
 //always fires before pulse
@@ -550,7 +579,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[0] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP0_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR0_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR0_MASK)
 			{
 				interpolator_rt_step_pos[0]--; 
 			}
@@ -566,7 +595,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[1] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP1_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR1_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR1_MASK)
 			{
 				interpolator_rt_step_pos[1]--; 
 			}
@@ -582,7 +611,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[2] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP2_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR1_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR1_MASK)
 			{
 				interpolator_rt_step_pos[2]--; 
 			}
@@ -598,7 +627,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[3] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP3_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR1_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR1_MASK)
 			{
 				interpolator_rt_step_pos[3]--; 
 			}
@@ -614,7 +643,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[4] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP4_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR1_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR1_MASK)
 			{
 				interpolator_rt_step_pos[4]--; 
 			}
@@ -630,7 +659,7 @@ void interpolator_step_isr()
 		{
 			interpolator_running_sgm->block->errors[5] -= interpolator_running_sgm->block->totalsteps;
 			stepbits |= STEP5_MASK;
-			if(interpolator_running_sgm->block->dirbits && DIR1_MASK)
+			if(interpolator_running_sgm->block->dirbits & DIR1_MASK)
 			{
 				interpolator_rt_step_pos[5]--; 
 			}

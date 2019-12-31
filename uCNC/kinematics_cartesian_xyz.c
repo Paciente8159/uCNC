@@ -15,6 +15,7 @@
 #include "settings.h"
 #include "kinematics.h"
 #include "machinedefs.h"
+#include "motion_control.h"
 #include "planner.h"
 #include "trigger_control.h"
 #include "cnc.h"
@@ -54,7 +55,7 @@ void kinematics_apply_forward(uint32_t* steps, float* axis)
 void kinematics_home()
 {
 	uint8_t result = 0;
-	result = cnc_home_axis(AXIS_Z, LIMIT_Z_MASK);
+	result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
 	if(result != 0)
 	{
 		//disables homing and reenables alarm messages
@@ -63,7 +64,7 @@ void kinematics_home()
 		return;
 	}
 	
-	result = cnc_home_axis(AXIS_X, LIMIT_X_MASK);
+	result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
 	if(result != 0)
 	{
 		//disables homing and reenables alarm messages
@@ -72,7 +73,7 @@ void kinematics_home()
 		return;
 	}
 	
-	result = cnc_home_axis(AXIS_Y, LIMIT_Y_MASK);
+	result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
 	if(result != 0)
 	{
 		//disables homing and reenables alarm messages

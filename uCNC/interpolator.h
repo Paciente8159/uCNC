@@ -11,11 +11,18 @@
 
 #include <stdint.h>
 
-#define INTERPOLATOR_BUFFER_SIZE 10
+//the amount of motion precomputed and stored for the step generator is never less then
+//the size of the buffer x time window size
+//in this case the buffer never holds less then 100ms of motions
+
+#define F_INTEGRATOR 100 //integrator calculates 10ms time windows
+#define INTERPOLATOR_BUFFER_SIZE 10 //number of windows in the buffer
+
 
 void interpolator_init();
 void interpolator_run();
 void interpolator_update();
+bool interpolator_buffer_is_full();
 void interpolator_step_isr();
 void interpolator_step_reset_isr();
 void interpolator_stop();

@@ -11,6 +11,7 @@
 #include "config.h"
 #include "protocol.h"
 #include "mcu.h"
+#include "trigger_control.h"
 #include "cnc.h"
 #include "ringbuffer.h"
 
@@ -27,8 +28,31 @@ static uint8_t protocol_append_index;
 
 void protocol_read_char_isr(uint8_t c)
 {
+	#ifdef MCU_VIRTUAL
+	static uint8_t limit;
+	#endif
 	switch(c)
 	{
+		//simulates limits
+		#ifdef MCU_VIRTUAL
+		case '/':
+			limit^=LIMIT_X_MASK;
+			tc_limits_isr(limit);
+			break;
+		#endif
+		#ifdef MCU_VIRTUAL
+		case '*':
+			limit^=LIMIT_Y_MASK;
+			tc_limits_isr(limit);
+			break;
+		#endif
+		#ifdef MCU_VIRTUAL
+		case 174:
+			limit^=LIMIT_Z_MASK;
+			tc_limits_isr(limit);
+			break;
+		#endif
+		
 		#ifdef MCU_VIRTUAL
 		case '\\':
 		#endif
@@ -47,9 +71,6 @@ void protocol_read_char_isr(uint8_t c)
 		case '?':
 			cnc_exec_rt_command(RT_CMD_REPORT);
 			break;
-		#ifdef MCU_VIRTUAL
-		case '/':
-		#endif
 		case '~':
 			//cycle start
 			cnc_exec_rt_command(RT_CMD_CYCLE_START);
@@ -72,7 +93,7 @@ void protocol_read_char_isr(uint8_t c)
 			}
 			break;
 		default:
-			if(!protocol_cmd_available && c > 35 && c < 126)
+			if(!protocol_cmd_available && c > 22 && c < 126)
 			{
 				protocol_cmd_buffer[write_index++] = c;
 			}
@@ -98,6 +119,11 @@ void protocol_init()
 bool protocol_received_cmd()
 {
 	return protocol_cmd_available;
+}
+
+bool protocol_sent_resp()
+{
+	return mcu_is_txready();
 }
 
 void protocol_clear()

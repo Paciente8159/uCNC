@@ -9,7 +9,7 @@
 
 extern float g_parser_current_pos[AXIS_COUNT];
 
-void parser_init();
+bool parser_init();
 void parser_reset();
 bool parser_is_ready();
 uint8_t parser_gcode_command();

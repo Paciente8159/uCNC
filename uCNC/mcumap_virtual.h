@@ -6,7 +6,6 @@
 #define F_CPU 1000
 #define F_PULSE_MAX 30000
 #define F_PULSE_MIN 4
-#define F_INTEGRATOR 50
 
 typedef struct virtual_map_t virtual_map_t;
 
@@ -35,7 +34,7 @@ extern virtports_t virtualports;
 #define LIMIT_Z 2
 #define LIMITS_INREG virtualports->limits
 
-#define PROBE 0
-#define PROBE_INREG virtualports->probe
+#define PROBE 3
+#define PROBE_INREG virtualports->limits
 
 #endif

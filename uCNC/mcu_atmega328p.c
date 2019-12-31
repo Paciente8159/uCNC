@@ -13,6 +13,7 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
+#include <avr/delay.h>
 
 #include "mcudefs.h"
 #include "mcumap.h"
@@ -194,20 +195,11 @@ ISR(USART_RX_vect, ISR_BLOCK)
 
 ISR(USART_UDRE_vect, ISR_BLOCK)
 {
-	static bool eol = false;
 	char c = *mcu_tx_buffer++;
 	
-	if(!eol)
+	UDR0 = c;
+	if(c == '\n')
 	{
-		UDR0 = c;
-		if(c=='\n')
-		{
-			eol = true;
-		}
-	}
-	else
-	{
-		eol = false;
 		mcu_tx_ready = true;
 		UCSR0B &= ~(1<<UDRIE0);
 	}
@@ -222,8 +214,7 @@ void mcu_init()
     MCUSR &= ~(1<<WDRF);
 	WDTCSR |= (1<<WDCE) | (1<<WDE);
 	WDTCSR = 0x00;
-    //g_mcu_dirRegister.r = OUTPUT_PINS;
-    
+
     //sets all outputs and inputs
     //inputs
     #ifdef CONTROLS_DIRREG
@@ -322,10 +313,32 @@ void mcu_init()
 
     stdout = &g_mcu_streamout;
     mcu_tx_ready = true;
-    /*#ifdef __DEBUG__
-    stdin = &g_mcu_streamin;
-    #endif
-	*/
+
+	//PWM's
+	#ifdef PWM0
+		PWM0_DIRREG |= PWM0_MASK;
+		PWM0_TMRAREG |= (1 | (1<<(6 + PWM0_REGINDEX)));
+		PWM0_TMRBREG = 3;
+		PWM0_CNTREG = 0;
+	#endif
+	#ifdef PWM1
+		PWM1_DIRREG |= PWM1_MASK;
+		PWM1_TMRAREG |= (1 | (1<<(6 + PWM1_REGINDEX)));
+		PWM1_TMRBREG = 3;
+		PWM1_CNTREG = 1;
+	#endif
+	#ifdef PWM2
+		PWM2_DIRREG |= PWM2_MASK;
+		PWM2_TMRAREG |= (1 | (1<<(6 + PWM2_REGINDEX)));
+		PWM2_TMRBREG = 3;
+		PWM2_CNTREG = 0;
+	#endif
+	#ifdef PWM3
+		PWM3_DIRREG |= PWM3_MASK;
+		PWM3_TMRAREG |= (1 | (1<<(6 + PWM3_REGINDEX)));
+		PWM3_TMRBREG = 3;
+		PWM3_CNTREG = 0;
+	#endif
 
     // Set baud rate
     #if BAUD < 57600
@@ -343,17 +356,6 @@ void mcu_init()
     
 	//enable interrupts
 	sei();
-	
-	/*#ifdef __PROF__
-	mcu_startTickCounter();
-	g_mcu_perfCounterOffset = 0;
-    //calculate performance offset
-    //uint32_t tickcount = mcu_getCycles();
-    
-    uint32_t tickcount = mcu_getCycles();
-    g_mcu_perfCounterOffset = (uint8_t)mcu_getElapsedCycles(tickcount);
-    //g_mcu_perfCounterOffset = mcu_stopPerfCounter();
-    #endif*/
 }
 
 //IO functions    
@@ -410,6 +412,41 @@ void mcu_setOutputs(uint16_t value)
 	#ifdef DOUTS_HIGH_OUTREG
 		DOUTS_HIGH_OUTREG = (~DOUTS_HIGH_MASK & DOUTS_HIGH_OUTREG) | reg.r1;
 	#endif
+}
+
+void mcu_set_pwm(uint8_t pwm, uint8_t value)
+{
+	switch(pwm)
+	{
+		case 0:
+			#ifdef PWM0
+			PWM0_CNTREG = value;
+			return;
+			#else
+			return;
+			#endif
+		case 1:
+			#ifdef PWM1
+			PWM1_CNTREG = value;
+			return;
+			#else
+			return;
+			#endif
+		case 2:
+			#ifdef PWM2
+			PWM2_CNTREG = value;
+			return;
+			#else
+			return;
+			#endif
+		case 3:
+			#ifdef PWM3
+			PWM3_CNTREG = value;
+			return;
+			#else
+			return;
+			#endif
+	}
 }
 
 void mcu_enableInterrupts()
@@ -610,12 +647,89 @@ void mcu_step_isrstop()
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
 }
 
-uint8_t mcu_eeprom_getc(uint16_t address)
+/*#define MCU_1MS_LOOP F_CPU/1000000
+static __attribute__((always_inline)) void mcu_delay_1ms() 
 {
+	uint16_t loop = MCU_1MS_LOOP;
+	do{
+	}while(--loop);
+}*/
+
+void mcu_delay_ms(uint16_t miliseconds)
+{
+	do{
+		_delay_ms(1);
+	}while(--miliseconds);
+	
 }
 
+#ifndef EEPE
+		#define EEPE  EEWE  //!< EEPROM program/write enable.
+		#define EEMPE EEMWE //!< EEPROM master program/write enable.
+#endif
+
+/* These two are unfortunately not defined in the device include files. */
+#define EEPM1 5 //!< EEPROM Programming Mode Bit 1.
+#define EEPM0 4 //!< EEPROM Programming Mode Bit 0.
+
+uint8_t mcu_eeprom_getc(uint16_t address)
+{
+	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write.
+	EEAR = address; // Set EEPROM address register.
+	EECR = (1<<EERE); // Start EEPROM read operation.
+	return EEDR; // Return the byte read from EEPROM.
+}
+
+//taken from grbl
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	char old_value; // Old EEPROM value.
+	char diff_mask; // Difference mask, i.e. old value XOR new value.
+
+	cli(); // Ensure atomic operation for the write operation.
+	
+	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write
+	do {} while( SPMCSR & (1<<SELFPRGEN) ); // Wait for completion of SPM.
+	
+	EEAR = address; // Set EEPROM address register.
+	EECR = (1<<EERE); // Start EEPROM read operation.
+	old_value = EEDR; // Get old EEPROM value.
+	diff_mask = old_value ^ value; // Get bit differences.
+	
+	// Check if any bits are changed to '1' in the new value.
+	if( diff_mask & value ) {
+		// Now we know that _some_ bits need to be erased to '1'.
+		
+		// Check if any bits in the new value are '0'.
+		if( value != 0xff ) {
+			// Now we know that some bits need to be programmed to '0' also.
+			
+			EEDR = value; // Set EEPROM data register.
+			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
+			       (0<<EEPM1) | (0<<EEPM0); // ...and Erase+Write mode.
+			EECR |= (1<<EEPE);  // Start Erase+Write operation.
+		} else {
+			// Now we know that all bits should be erased.
+
+			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
+			       (1<<EEPM0);  // ...and Erase-only mode.
+			EECR |= (1<<EEPE);  // Start Erase-only operation.
+		}
+	} else {
+		// Now we know that _no_ bits need to be erased to '1'.
+		
+		// Check if any bits are changed from '1' in the old value.
+		if( diff_mask ) {
+			// Now we know that _some_ bits need to the programmed to '0'.
+			
+			EEDR = value;   // Set EEPROM data register.
+			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
+			       (1<<EEPM1);  // ...and Write-only mode.
+			EECR |= (1<<EEPE);  // Start Write-only operation.
+		}
+	}
+	
+	sei(); // Restore interrupt flag state.
 }
 
 #endif

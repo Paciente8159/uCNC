@@ -483,6 +483,10 @@ void mcu_detachOnIntegrator()
 	g_mcu_integratorCallback = NULL;
 }
 
+void mcu_delay_ms(uint16_t miliseconds)
+{
+}
+
 void mcu_printfp(const char* __fmt, ...)
 {
 	char buffer[50];

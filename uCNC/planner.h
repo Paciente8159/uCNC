@@ -16,7 +16,7 @@
 #include "config.h"
 #include "machinedefs.h"
 
-#define PLANNER_BUFFER_SIZE 5
+#define PLANNER_BUFFER_SIZE 2
 
 typedef struct
 {
@@ -50,7 +50,7 @@ void planner_add_line(float* axis, float feed);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
 float* planner_get_position();
-void planner_reset_position();
+void planner_resync_position();
 
 //REMOVE TO THE MOTION CONTROLLER COMPILATION UNIT (TO BE CREATED)
 //void planner_add_arc(float* axis, float* center, uint8_t clockwise, uint8_t plane, float feed);

@@ -185,6 +185,27 @@
 
 #define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK | SAFETY_DOOR_MASK)
 
+#ifdef PWM0
+#define PWM0_MASK BITMASK(PWM0)
+#else
+#define PWM0_MASK 0
+#endif
+#ifdef PWM1
+#define PWM1_MASK BITMASK(PWM1)
+#else
+#define PWM1_MASK 0
+#endif
+#ifdef PWM2
+#define PWM2_MASK BITMASK(PWM2)
+#else
+#define PWM2_MASK 0
+#endif
+#ifdef PWM3
+#define PWM3_MASK BITMASK(PWM3)
+#else
+#define PWM3_MASK 0
+#endif
+
 #ifdef PROBE
 #define PROBE_MASK BITMASK(PROBE)
 #else

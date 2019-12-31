@@ -45,8 +45,8 @@ void planner_clear()
 	buffer_clear(g_planner_buffer);
 	//resets dir vector
 	memset(&g_planner_dir_vect, 0, AXIS_COUNT*sizeof(float));
-	//resyncs the position with the interpolator
-	interpolator_get_rt_position((float*)&g_planner_coord);
+	//resyncs position with interpolator
+	planner_resync_position();
 }
 
 bool planner_buffer_full()
@@ -349,7 +349,8 @@ float* planner_get_position()
 	return (float*)&g_planner_coord;
 }
 
-void planner_reset_position()
+void planner_resync_position()
 {
-	memset(&g_planner_coord, 0, sizeof(g_planner_coord));
+	//resyncs the position with the interpolator
+	interpolator_get_rt_position((float*)&g_planner_coord);
 }

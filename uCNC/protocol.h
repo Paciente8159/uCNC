@@ -17,6 +17,7 @@
 
 void protocol_init();
 bool protocol_received_cmd();
+bool protocol_sent_resp();
 char protocol_getc();
 char protocol_peek();
 //char* protocol_get_bufferptr();

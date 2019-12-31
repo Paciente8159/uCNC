@@ -16,5 +16,7 @@ void mc_init();
 bool mc_toogle_checkmode();
 uint8_t mc_line(float* target, float feed);
 uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed);
+uint8_t mc_dwell(uint16_t milliseconds);
+uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
 
 #endif

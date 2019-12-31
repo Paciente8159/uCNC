@@ -43,8 +43,14 @@ void cnc_init()
 		settings_reset();
 		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
 	}
+	
 	mc_init();
-	parser_init();
+	if(!parser_init())
+	{
+		parser_parameters_reset();
+		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
+	}
+	
 	kinematics_init();
 	planner_init();
 	tc_init();
@@ -349,7 +355,7 @@ void cnc_exec_rt_command(uint8_t command)
 void cnc_doevents()
 {
 	//send report if asked
-	if(cnc_state.send_report)
+	if(cnc_state.send_report && protocol_sent_resp())
 	{
 		cnc_print_status_report();
 		cnc_state.send_report = false;
@@ -484,7 +490,7 @@ uint8_t cnc_is_homed()
 {
 	return cnc_state.homed;
 }
-
+/*moved to motion control
 uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
@@ -563,25 +569,23 @@ uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit)
 	
 	return 0;
 }
-
+*/
 void cnc_offset_home()
 {
 	float target[AXIS_COUNT];
 	
-	cnc_reset_position();
-	//memcpy(&target, planner_get_position(), sizeof(target));
+	memcpy(&target, planner_get_position(), sizeof(target));
 	
 	for(uint8_t i = AXIS_COUNT; i != 0;)
 	{
 		i--;
-		uint8_t axis_mask = (1<<i);
-		if(g_settings.homing_dir_invert_mask & axis_mask)
+		if(g_settings.homing_dir_invert_mask & (1<<i))
 		{
-			target[i] = g_settings.homing_offset;
+			target[i] -= g_settings.homing_offset;
 		}
 		else
 		{
-			target[i] = -g_settings.homing_offset;
+			target[i] += g_settings.homing_offset;
 		}
 		//target[i] += ((g_settings.homing_dir_invert_mask & axis_mask) ? -g_settings.homing_offset : g_settings.homing_offset);
 	}
@@ -595,6 +599,6 @@ void cnc_offset_home()
 void cnc_reset_position()
 {
 	interpolator_reset_rt_position();
-	planner_reset_position();
+	planner_resync_position();
 }
 
