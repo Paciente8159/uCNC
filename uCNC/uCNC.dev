@@ -9,9 +9,9 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
-CppCompiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
-Linker=-w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328_@@_
+Compiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
+CppCompiler=-D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P_@@_
+Linker=-w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328p_@@_
 IsCpp=0
 Icon=
 ExeOutput=
@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
-CompilerSettings=0000000000100000000000000
-UnitCount=34
+CompilerSettings=000000d000110000000000000
+UnitCount=35
 
 [VersionInfo]
 Major=1
@@ -111,26 +111,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit14]
-FileName=ringbuffer.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit15]
-FileName=ringbuffer.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit16]
 FileName=mcu.h
 CompileCpp=0
 Folder=
@@ -140,7 +120,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit18]
+[Unit15]
 FileName=mcumap.h
 CompileCpp=0
 Folder=
@@ -150,8 +130,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit20]
-FileName=mcudefs.h
+[Unit16]
+FileName=mcus.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -160,7 +140,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit21]
+[Unit18]
 FileName=mcumap_atmega328p.h
 CompileCpp=0
 Folder=
@@ -170,17 +150,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit22]
-FileName=cnc.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit23]
+[Unit20]
 FileName=cnc.h
 CompileCpp=0
 Folder=
@@ -190,8 +160,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit24]
-FileName=kinematics_corexy.c
+[Unit21]
+FileName=parser.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -200,7 +170,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit26]
+[Unit22]
 FileName=parser.h
 CompileCpp=0
 Folder=
@@ -210,7 +180,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit27]
+[Unit23]
 FileName=trigger_control.c
 CompileCpp=0
 Folder=
@@ -220,27 +190,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit28]
-FileName=trigger_control.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit29]
-FileName=protocol.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit30]
+[Unit26]
 FileName=protocol.h
 CompileCpp=0
 Folder=
@@ -250,8 +200,48 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit31]
+[Unit27]
 FileName=motion_control.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit28]
+FileName=motion_control.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit29]
+FileName=grbl_interface.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit30]
+FileName=defaults.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit31]
+FileName=pwm_control.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -331,7 +321,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit17]
-FileName=mcu_atmega328p.c
+FileName=mcudefs.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -341,7 +331,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit19]
-FileName=mcus.h
+FileName=cnc.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -351,7 +341,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit25]
-FileName=parser.c
+FileName=protocol.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -361,7 +351,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit32]
-FileName=motion_control.h
+FileName=pwm_control.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -371,7 +361,37 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit33]
-FileName=grbl_interface.h
+FileName=serial.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit36]
+FileName=serial.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit35]
+FileName=mcu_avr.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit24]
+FileName=trigger_control.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -381,7 +401,17 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit34]
-FileName=defaults.h
+FileName=serial.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit37]
+FileName=serial.h
 CompileCpp=0
 Folder=
 Compile=1

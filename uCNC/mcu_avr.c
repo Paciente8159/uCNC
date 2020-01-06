@@ -1,6 +1,39 @@
-#include "config.h"
+/*
+	Name: mcu_avr.c
+	Description: Implements mcu interface on AVR.
+		Besides all the functions declared in the mcu.h it also implements the code responsible
+		for handling:
+			interpolator.h
+				void interpolator_step_isr();
+				void interpolator_step_reset_isr();
+			serial.h
+				void serial_rx_isr(char c);
+				char serial_tx_isr();
+			trigger_control.h
+				void tc_limits_isr(uint8_t limits);
+				void tc_controls_isr(uint8_t controls);
+	Copyright: Copyright (c) JoÃ£o Martins 
+	Author: JoÃ£o Martins
+	Date: 01/11/2019
 
-#if(MCU == MCU_ATMEGA328P)
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+#include "config.h"
+#include "mcudefs.h"
+#include "mcumap.h"
+#include "mcu.h"
+#include "utils.h"
+#include "serial.h"
+#include "interpolator.h"
+#include "trigger_control.h"
+
 #include <math.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -14,14 +47,8 @@
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
 #include <avr/delay.h>
+#include <avr/eeprom.h>
 
-#include "mcudefs.h"
-#include "mcumap.h"
-#include "mcu.h"
-#include "utils.h"
-#include "protocol.h"
-#include "interpolator.h"
-#include "trigger_control.h"
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -71,7 +98,6 @@ typedef union{
 } IO_REGISTER;
 
 //USART communication
-char *mcu_tx_buffer;
 volatile bool mcu_tx_ready;
 int mcu_putchar(char c, FILE* stream);
 FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);
@@ -79,18 +105,65 @@ FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);
 static uint8_t mcu_prev_limits;
 uint8_t mcu_prev_controls;
 
+#ifdef __PERFSTATS__
+volatile uint16_t mcu_perf_step;
+volatile uint16_t mcu_perf_step_reset;
+
+uint16_t mcu_get_step_clocks()
+{
+	uint16_t res = mcu_perf_step;
+	return res;
+}
+uint16_t mcu_get_step_reset_clocks()
+{
+	uint16_t res = mcu_perf_step_reset;
+	return res;
+}
+#endif
+
 ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
+	static bool busy = false;
+	#ifdef __PERFSTATS__
+	uint16_t clocks = TCNT1;
+	#endif
+	if(busy)
+	{
+		return;
+	}
+	busy = true;
 	interpolator_step_reset_isr();
+	
+	#ifdef __PERFSTATS__
+    uint16_t clocks2 = TCNT1;
+    clocks2 -= clocks;
+	mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
+	#endif
+	busy = false;
 }
 
 ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
+	static bool busy = false;
+	#ifdef __PERFSTATS__
+	uint16_t clocks = TCNT1;
+	#endif
+	if(busy)
+	{
+		return;
+	}
+	busy = true;
     interpolator_step_isr();
+    #ifdef __PERFSTATS__
+    uint16_t clocks2 = TCNT1;
+    clocks2 -= clocks;
+	mcu_perf_step = MAX(mcu_perf_step, clocks2);
+	#endif
+	busy = false;
 }
 
 /*
-	Fazer modificação
+	Fazer modificaï¿½ï¿½o
 	ISR apenas para limites e controls
 	criar static e comparar com valor anterior e so disparar callback caso tenha alterado
 */
@@ -189,25 +262,30 @@ ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
 
 ISR(USART_RX_vect, ISR_BLOCK)
 {
-	char c = UDR0;
-	protocol_read_char_isr(c);
+	uint8_t c = UDR0;
+	serial_rx_isr(c);
 }
 
 ISR(USART_UDRE_vect, ISR_BLOCK)
 {
-	char c = *mcu_tx_buffer++;
-	
-	UDR0 = c;
-	if(c == '\n')
+	if(serial_tx_is_empty())
 	{
-		mcu_tx_ready = true;
 		UCSR0B &= ~(1<<UDRIE0);
+		mcu_tx_ready = true;
+		return;
 	}
+	
+	UDR0 = serial_tx_isr();
 }
 
 void mcu_init()
 {
     IO_REGISTER reg = {};
+    
+    #ifdef __PERFSTATS__
+	mcu_perf_step = 0;
+	mcu_perf_step_reset = 0;
+	#endif
 	
 	//disable WDT
 	wdt_reset();
@@ -360,7 +438,7 @@ void mcu_init()
 
 //IO functions    
 //Inputs  
-uint16_t mcu_getInputs()
+uint16_t mcu_get_inputs()
 {
 	IO_REGISTER reg;
 	reg.r = 0;
@@ -391,17 +469,17 @@ uint8_t mcu_get_probe()
 //outputs
 
 //sets all step pins
-void mcu_setSteps(uint8_t value)
+void mcu_set_steps(uint8_t value)
 {
 	STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
 }
 //sets all dir pins
-void mcu_setDirs(uint8_t value)
+void mcu_set_dirs(uint8_t value)
 {
 	DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
 }
 
-void mcu_setOutputs(uint16_t value)
+void mcu_set_outputs(uint16_t value)
 {
 	IO_REGISTER reg = {};
 	reg.rl = value;
@@ -449,11 +527,11 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 	}
 }
 
-void mcu_enableInterrupts()
+void mcu_enable_interrupts()
 {
 	sei();
 }
-void mcu_disableInterrupts()
+void mcu_disable_interrupts()
 {
 	cli();
 }
@@ -465,25 +543,19 @@ int mcu_putchar(char c, FILE* stream)
 	return c;
 }
 
-void mcu_putc(char c)
+void mcu_start_send()
 {
-	while(!mcu_tx_ready);
 	mcu_tx_ready = false;
-	loop_until_bit_is_set(UCSR0A, UDRE0);
-	UDR0 = c;
-	mcu_tx_ready = true;
-    
-}
-
-void mcu_puts(const char* __str)
-{
-	while(!mcu_tx_ready);
-	mcu_tx_ready = false;
-	mcu_tx_buffer = __str;
 	UCSR0B |= (1<<UDRIE0);
 }
 
-bool mcu_is_txready()
+void mcu_putc(char c)
+{
+	loop_until_bit_is_set(UCSR0A, UDRE0);
+	UDR0 = c;
+}
+
+bool mcu_is_tx_ready()
 {
 	return mcu_tx_ready;
 }
@@ -561,12 +633,12 @@ uint16_t mcu_stopPerfCounter()
 #endif
 
 //RealTime
-void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 {
-	if(frequency < F_PULSE_MIN)
-		frequency = F_PULSE_MIN;
-	if(frequency > F_PULSE_MAX)
-		frequency = F_PULSE_MAX;
+	if(frequency < F_STEP_MIN)
+		frequency = F_STEP_MIN;
+	if(frequency > F_STEP_MAX)
+		frequency = F_STEP_MAX;
 		
 	float clockcounter = F_CPU;
 		
@@ -604,7 +676,7 @@ void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
 	TCCR1B = 0;
@@ -626,7 +698,7 @@ void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 }
 
 // se implementar amass deixo de necessitar de prescaler
-void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
 	//TCCR1B = 0;
@@ -641,7 +713,7 @@ void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
     TCCR1B = prescaller;
 }
 
-void mcu_step_isrstop()
+void mcu_step_stop_ISR()
 {
 	TCCR1B = 0;
     TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
@@ -732,4 +804,3 @@ uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 	sei(); // Restore interrupt flag state.
 }
 
-#endif

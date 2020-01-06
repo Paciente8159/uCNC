@@ -1,27 +1,20 @@
-/*H**********************************************************************
-* FILENAME :        fmcompres.c             DESIGN REF: FMCM00
-*
-* DESCRIPTION :
-*       Board basic functions for the mcu controller.
-*
-* PUBLIC FUNCTIONS :
-*       int     FM_CompressFile( FileHandle )
-*       int     FM_DecompressFile( FileHandle )
-*
-* NOTES :
-*       These functions are a part of the FM suite;
-*       See IMS FM0121 for detailed description.
-*
-*       Copyright A.N.Other Co. 1990, 1995.  All rights reserved.
-*
-* AUTHOR :    Arthur Other        START DATE :    16 Jan 99
-*
-* CHANGES :
-*
-* REF NO  VERSION DATE    WHO     DETAIL
-* F21/33  A.03.04 22Jan99 JR      Function CalcHuffman corrected
-*
-*H*/
+/*
+	Name: mcu.h
+	Description: Contains all the function declarations necessary to interact with the MCU
+        This provides a opac intenterface between the uCNC and the MCU unit used to power the uCNC
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 01/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
 
 #ifndef MCU_H
 #define MCU_H
@@ -29,43 +22,16 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "config.h"
 #include "mcudefs.h"
 #include "mcumap.h"
-
-#ifndef __romstr__
-	#define __romstr__
-#endif
-
-#ifndef __rom__
-	#define __rom__
-#endif
-
-#ifndef rom_strcpy
-	#define rom_strcpy strcpy
-#endif
-
-#ifndef rom_strncpy
-	#define rom_strncpy strncpy
-#endif
-
-#ifndef rom_memcpy
-	#define rom_memcpy memcpy
-#endif
-
-#ifndef rom_read_byte
-	#define rom_read_byte
-#endif
-
-typedef void (*ISRVOID)();
-typedef void (*ISRPORTCHANGE)(volatile uint8_t);
-typedef void (*ISRCOMRX)(volatile char);
 
 void mcu_init();
 
 //IO functions    
 //Inputs  
 //returns the value of the input pins
-uint16_t mcu_getInputs();
+uint16_t mcu_get_inputs();
 //returns the value of the critical input pins
 uint8_t mcu_get_controls();
 uint8_t mcu_get_limits();
@@ -73,58 +39,42 @@ uint8_t mcu_get_probe();
 
 //outputs
 //sets all step pins
-void mcu_setSteps(uint8_t value);
+void mcu_set_steps(uint8_t value);
 //sets all dir pins
-void mcu_setDirs(uint8_t value);
+void mcu_set_dirs(uint8_t value);
 //sets all digital outputs pins
-void mcu_setOutputs(uint16_t value);
+void mcu_set_outputs(uint16_t value);
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value);
 
 //Communication functions
+void mcu_start_send();
 void mcu_putc(char c);
-void mcu_puts(const char* __str);
-bool mcu_is_txready();
 char mcu_getc();
 
 //RealTime
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-void mcu_enableInterrupts();
+void mcu_enable_interrupts();
 //disables all ISR functions
-void mcu_disableInterrupts();
+void mcu_disable_interrupts();
 
 //convert step rate to clock cycles
-void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startStepISR(uint16_t ticks, uint8_t prescaller);
+void mcu_start_step_ISR(uint16_t ticks, uint8_t prescaller);
 //modifies the pulse frequency
-void mcu_changeStepISR(uint16_t ticks, uint8_t prescaller);
+void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller);
 //stops the pulse 
-void mcu_step_isrstop();
+void mcu_step_stop_ISR();
 
 void mcu_delay_ms(uint16_t miliseconds);
 
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
-/*
-//measure performance
-#ifdef __DEBUG__
-typedef struct {
-	uint16_t pulseCounter;
-	uint16_t resetPulseCounter;
-	uint16_t integratorCounter;
-	uint16_t pinChangeCounter;
-} PERFORMANCE_METER;
 
-extern volatile PERFORMANCE_METER mcu_performacecounters;
-void mcu_startTickCounter();
-uint32_t mcu_getCycles();
-uint32_t mcu_getElapsedCycles(uint32_t cycle_ref);
-//void uint32_t tickcount = mcu_getCycles();
-//uint16_t mcu_stopPerfCounter();
-
-///void mcu_loadDummyPayload(const char* __fmt, ...);
-#endif*/
-
+#ifdef __PERFSTATS__
+uint16_t mcu_get_step_clocks();
+uint16_t mcu_get_step_reset_clocks();
+#endif
 
 #endif

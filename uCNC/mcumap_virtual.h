@@ -1,11 +1,35 @@
+/*
+	Name: mcumap_virtual.h
+	Description: Contains all MCU and PIN definitions for a PC to run uCNC.
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 01/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #ifndef MCUMAP_VIRTUAL_H
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
 #include "util\timer.h"
 #define F_CPU 1000
-#define F_PULSE_MAX 30000
-#define F_PULSE_MIN 4
+#define F_STEP_MAX 500
+#define F_STEP_MIN 1
+#define __rom__
+#define __romstr__
+#define rom_strptr *
+#define rom_strcpy strcpy
+#define rom_strncpy strncpy
+#define rom_memcpy memcpy
+#define rom_read_byte
 
 typedef struct virtual_map_t virtual_map_t;
 

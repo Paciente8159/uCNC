@@ -1,9 +1,19 @@
 /*
 	Name: kinematics_cartesian_xyz.c
-	Copyright: 
-	Author: Jo�o Martins
-	Date: 24/09/19 11:27
-	Description: Implements the kinematics interface module for a XYZ cartesian machine
+	Description: Implements all kinematics math equations to translate the motion of a cartesian XYZ machine.
+		Also implements the homing motion for this type of machine.
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 26/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #include "config.h"

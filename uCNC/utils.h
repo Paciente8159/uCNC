@@ -1,15 +1,24 @@
 /*
-	Name: utils.h - some usefull macro definitions
-	Copyright: 2019 João Martins
+	Name: utils.h
+	Description: Some useful constants and macros
+	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: Sep/2019
-	Description: uCNC is a free cnc controller software designed to be flexible and
-	portable to several	microcontrollers/architectures.
-	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+	Date: 19/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #ifndef UTILS_H
 #define UTILS_H
+
+#include "mcu.h"
 
 #define SETBIT(x,y) (x |= (1<<y)) /* Set bit y in byte x*/
 #define CLEARBIT(x,y) (x &= ~(1<<y)) /* Clear bit y in byte x*/
@@ -23,12 +32,17 @@
 #define MIN(a,b) (a<b) ? a : b
 #define ABS(a) (a>0) ? a : -a
 
-#define MUL10(X) (((X<<2) + X)<<1)
-
+//Quake III fast sqrt calculation
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-	#define fastsqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
+	#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
 #else
-	#define fastsqrt(x) sqrtf(x)
+	#define fast_sqrt(x) sqrtf(x)
 #endif
 
+#ifndef fast_mult10
+	#define fast_mult10(x) (x*10)
+#endif
+
+#define MM_INCH_MULT 0.0393700787401574803
+#define MIN_SEC_MULT 0.0166666666666666667
 #endif

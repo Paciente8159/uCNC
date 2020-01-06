@@ -1,3 +1,20 @@
+/*
+	Name: motion_control.c
+	Description: Contains the building blocks for performing motions/actions in uCNC
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 19/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #include <math.h>
 #include <string.h>
 #include "config.h"
@@ -43,28 +60,29 @@ uint8_t mc_line(float* target, float feed)
 			return STATUS_TRAVEL_EXCEEDED;
 		}
 		cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
-		return 0;
+		return STATUS_OK;
 	}
 	
 	if(mc_checkmode)// check mode (gcode simulation) doesn't send code to planner
 	{
-		return 0;
+		return STATUS_OK;
 	}
 	
-	while(planner_buffer_full())
+	while(planner_buffer_is_full())
 	{
 		cnc_doevents();
 	}
 	
 	planner_add_line(target, feed);
-	return 0;
+	return STATUS_OK;
 }
 
 
 //applies an algorithm similar to grbl with slight changes
 uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed)
 {
-	uint8_t axis_0, axis_1;
+	uint8_t axis_0 = 0;
+	uint8_t axis_1 = 0;
 	float mc_position[AXIS_COUNT];
 	
 	//copy planner last position

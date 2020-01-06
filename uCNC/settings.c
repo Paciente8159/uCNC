@@ -1,11 +1,19 @@
 /*
-	Name: setting.c - uCNC settings functionalities
-	Copyright: 2019 João Martins
+	Name: settings.c
+	Description: uCNC runtime settings. These functions store settings and other parameters
+		in non-volatile memory.
+	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: Nov/2019
-	Description: uCNC is a free cnc controller software designed to be flexible and
-	portable to several	microcontrollers/architectures.
-	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+	Date: 26/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #include "config.h"
@@ -56,7 +64,7 @@ const uint8_t __rom__ crc7_table[256] = {
 	0x46, 0x4f, 0x54, 0x5d, 0x62, 0x6b, 0x70, 0x79
 };
 
-const settings_t __rom__ defaults = {\
+const settings_t __rom__ default_settings = {\
 	.version = SETTINGS_VERSION,
 	#ifdef AXIS_X
 	.step_per_mm[AXIS_X] = DEFAULT_X_STEP_PER_MM,
@@ -108,47 +116,40 @@ const settings_t __rom__ defaults = {\
 	.status_report_mask = DEFAULT_STATUS_MASK,
 	.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
 	.max_step_rate = DEFAULT_MAX_STEP_RATE,
-	.soft_limits_enabled = false,
-	.hard_limits_enabled = true,
-	.homing_enabled = true
+	.report_inches = DEFAULT_REPORT_INCHES,
+	.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
+	.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
+	.homing_enabled = DEFAULT_HOMING_ENABLED,
+	.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
+	.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM
 	};
 
-
-/*static uint8_t settings_crc7 (uint8_t  crc, uint8_t* pc, int len)
-{
-    do
-    {
-    	crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ *pc++]);
-	} while (--len);
-	
-    return crc;
-}*/
+static uint8_t settings_crc;
 
 bool settings_init()
 {
-	return settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t));
+	return (settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t)) & settings_crc!=0);
 }
 
 bool settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
 {
-	uint8_t crc = 0;
+	settings_crc = 0;
 	for(uint16_t i = size; i !=0; )
 	{
 		i--;
 		__ptr[i] = mcu_eeprom_getc(i + address);
-		crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ __ptr[i]]);
+		settings_crc = *(uint8_t*)rom_read_byte(&crc7_table[settings_crc ^ __ptr[i]]);
 	}
 	
-	return (crc == mcu_eeprom_getc(size + address));
+	return (settings_crc == mcu_eeprom_getc(size + address));
 }
 
 void settings_reset()
 {
 	settings_t* ptr = (settings_t*)&g_settings;
-	const settings_t* defptr = &defaults;
 	uint8_t size = sizeof(settings_t);
 	
-	rom_memcpy(ptr, defptr, size);
+	rom_memcpy(&g_settings, &default_settings, size);
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)ptr, size);
 }
 
@@ -180,7 +181,7 @@ uint8_t settings_change(uint8_t setting, float value)
 	switch(setting)
 	{
 		case 0:
-			if(value > F_PULSE_MAX)
+			if(value > F_STEP_MAX)
 			{
 				return STATUS_MAX_STEP_RATE_EXCEEDED;
 			}
@@ -207,6 +208,9 @@ uint8_t settings_change(uint8_t setting, float value)
 		case 12:
 			g_settings.arc_tolerance = value;
 			break;
+		case 13:
+			g_settings.report_inches = value;
+			break;
 		case 20:
 			if(!g_settings.homing_enabled)
 			{
@@ -231,6 +235,12 @@ uint8_t settings_change(uint8_t setting, float value)
 			break;
 		case 27:
 			g_settings.homing_offset = value;
+			break;
+		case 30:
+			g_settings.spindle_max_rpm = value;
+			break;
+		case 31:
+			g_settings.spindle_min_rpm = value;
 			break;
 		#if(AXIS_COUNT > 0)
 		case 100:
@@ -322,43 +332,4 @@ uint8_t settings_change(uint8_t setting, float value)
 	
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, sizeof(settings_t));
 	return result;
-}
-
-void settings_print()
-{
-	protocol_printf(MSG_SETTING_INT, 0, g_settings.max_step_rate);
-	protocol_printf(MSG_SETTING_INT, 2, g_settings.step_invert_mask);
-	protocol_printf(MSG_SETTING_INT, 3, g_settings.dir_invert_mask);
-	protocol_printf(MSG_SETTING_INT, 4, g_settings.step_enable_invert);
-	protocol_printf(MSG_SETTING_INT, 5, g_settings.limits_invert_mask);
-	protocol_printf(MSG_SETTING_INT, 7, g_settings.control_invert_mask);
-	protocol_printf(MSG_SETTING_INT, 10, g_settings.status_report_mask);
-	protocol_printf(MSG_SETTING_FLT, 12, g_settings.arc_tolerance);
-	protocol_printf(MSG_SETTING_INT, 20, g_settings.soft_limits_enabled);
-	protocol_printf(MSG_SETTING_INT, 21, g_settings.hard_limits_enabled);
-	protocol_printf(MSG_SETTING_INT, 22, g_settings.homing_enabled);
-	protocol_printf(MSG_SETTING_INT, 23, g_settings.homing_dir_invert_mask);
-	protocol_printf(MSG_SETTING_FLT, 24, g_settings.homing_slow_feed_rate);
-	protocol_printf(MSG_SETTING_FLT, 25, g_settings.homing_fast_feed_rate);
-	protocol_printf(MSG_SETTING_FLT, 27, g_settings.homing_offset);
-	
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_printf(MSG_SETTING_FLT, 100 + i , g_settings.step_per_mm[i]);
-	}
-	
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_printf(MSG_SETTING_FLT, 110 + i , g_settings.max_feed_rate[i]);
-	}
-	
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_printf(MSG_SETTING_FLT, 120 + i , g_settings.acceleration[i]);
-	}
-	
-	for(uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		protocol_printf(MSG_SETTING_FLT, 130 + i , g_settings.max_distance[i]);
-	}
 }

@@ -1,27 +1,31 @@
+/*
+	Name: mcudefs.h
+	Description: Defines the available machine types.
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 01/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #ifndef MCUSDEFS_H
 #define MCUSDEFS_H
 
 #include "config.h"
 #include "mcus.h"
 
-#if(MCU == MCU_ATMEGA328P)
 /*
 	MCU port map
 */
+#if(MCU == MCU_ATMEGA328P)
 #include "mcumap_atmega328p.h"
-/*
-	MCU specific definitions and replacements
-*/
-#include <avr/pgmspace.h>
-#define F_PULSE_MAX 30000
-#define F_PULSE_MIN 1
-#define __rom__ PROGMEM
-#define __romstr__ PSTR
-#define rom_strcpy strcpy_P
-#define rom_strncpy strncpy_P
-#define rom_memcpy memcpy_P
-#define rom_read_byte pgm_read_byte
-
 #endif
 
 #if(MCU == MCU_VIRTUAL)

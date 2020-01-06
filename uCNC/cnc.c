@@ -1,3 +1,20 @@
+/*
+	Name: cnc.c
+	Description: uCNC main unit
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 17/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,8 +22,10 @@
 #include "config.h"
 #include "utils.h"
 #include "settings.h"
+#include "mcudefs.h"
 #include "mcu.h"
 #include "grbl_interface.h"
+#include "serial.h"
 #include "protocol.h"
 #include "parser.h"
 #include "kinematics.h"
@@ -37,18 +56,18 @@ void cnc_init()
 	//initializes all systems
 	//mcu
 	mcu_init();
-	protocol_init();
+	serial_init();
 	if(!settings_init())
 	{
 		settings_reset();
-		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
+		protocol_send_error(STATUS_SETTING_READ_FAIL);
 	}
 	
 	mc_init();
 	if(!parser_init())
 	{
 		parser_parameters_reset();
-		protocol_printf(MSG_ERROR, STATUS_SETTING_READ_FAIL);
+		protocol_send_error(STATUS_SETTING_READ_FAIL);
 	}
 	
 	kinematics_init();
@@ -58,249 +77,89 @@ void cnc_init()
 	cnc_state.unlocked = false;
 }
 
-void cnc_print_status_report()
-{
-	static uint8_t report_count = 0;
-	float axis[AXIS_COUNT];
-	static uint8_t report_limit = 30;
-	
-	if(cnc_state.exec_state & EXEC_RUN)
-	{
-		report_limit = 10;
-	}
-	
-	interpolator_get_rt_position((float*)&axis);
-	
-	if(cnc_state.exec_state & EXEC_SLEEP)
-	{
-		protocol_append(__romstr__("<Sleep"));
-	}
-	else if(cnc_state.exec_state & EXEC_ALARM)
-	{
-		protocol_append(__romstr__("<Alarm"));
-	}
-	else if(cnc_state.exec_state & EXEC_DOOR)
-	{
-		if(tc_get_controls(SAFETY_DOOR_MASK))
-		{
-			if((cnc_state.exec_state & EXEC_RUN))
-			{
-				protocol_append(__romstr__("<Door:2"));
-			}
-			else
-			{
-				protocol_append(__romstr__("<Door:1"));
-			}
-		}
-		else
-		{
-			if((cnc_state.exec_state & EXEC_RUN))
-			{
-				protocol_append(__romstr__("<Door:3"));
-			}
-			else
-			{
-				protocol_append(__romstr__("<Door:0"));
-			}
-		}
-	}
-	else if(cnc_state.exec_state & EXEC_HOMING)
-	{
-		protocol_append(__romstr__("<Home"));
-	}
-	else if(cnc_state.exec_state & EXEC_JOG)
-	{
-		protocol_append(__romstr__("<Jog"));
-	}
-	else if(cnc_state.exec_state & EXEC_HOLD)
-	{
-		if((cnc_state.exec_state & EXEC_RUN))
-		{
-			protocol_append(__romstr__("<Hold:1"));
-		}
-		else
-		{
-			protocol_append(__romstr__("<Hold:0"));
-		}
-	}
-	else if(cnc_state.exec_state & EXEC_RUN)
-	{
-		protocol_append(__romstr__("<Run"));
-	}
-	else
-	{
-		protocol_append(__romstr__("<Idle"));
-	}
-		
-	protocol_append(__romstr__("|MPos:"));
-	for(uint8_t i = 0; i < AXIS_COUNT -1; i++)
-	{
-		protocol_appendf(__romstr__("%0.3f,"), axis[i]);
-	}
-	
-	protocol_appendf(__romstr__("%0.3f"), axis[AXIS_COUNT -1]);
-	
-	protocol_append(__romstr__("|FS:0,0"));
-	
-	/*cnc_state.controls = mcu_getControls();
-	cnc_state.limits = mcu_getLimits();
-	cnc_state.limits |= mcu_getProbe();*/
-	
-	if(tc_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | tc_get_limits(LIMITS_MASK))
-	{
-		protocol_append(__romstr__("|Pn:"));
-		
-		if(tc_get_controls(ESTOP_MASK))
-		{
-			protocol_append(__romstr__("R"));
-		}
-		
-		if(tc_get_controls(SAFETY_DOOR_MASK))
-		{
-			protocol_append(__romstr__("D"));
-		}
-		
-		if(tc_get_controls(FHOLD_MASK))
-		{
-			protocol_append(__romstr__("H"));
-		}
-		
-		if(tc_get_probe())
-		{
-			protocol_append(__romstr__("P"));
-		}
-		
-		if(tc_get_limits(LIMIT_X_MASK))
-		{
-			protocol_append(__romstr__("X"));
-		}
-		
-		if(tc_get_limits(LIMIT_Y_MASK))
-		{
-			protocol_append(__romstr__("Y"));
-		}
-		
-		if(tc_get_limits(LIMIT_Z_MASK))
-		{
-			protocol_append(__romstr__("Z"));
-		}
-		
-		if(tc_get_limits(LIMIT_A_MASK))
-		{
-			protocol_append(__romstr__("A"));
-		}
-		
-		if(tc_get_limits(LIMIT_B_MASK))
-		{
-			protocol_append(__romstr__("B"));
-		}
-		
-		if(tc_get_limits(LIMIT_C_MASK))
-		{
-			protocol_append(__romstr__("C"));
-		}
-	}
-		
-	if(report_count>report_limit)
-	{
-		parser_get_wco(axis);
-		protocol_append(__romstr__("|WCO:"));
-		for(uint8_t i = 0; i < AXIS_COUNT -1; i++)
-		{
-			protocol_appendf(__romstr__("%0.3f,"), axis[i]);
-		}
-		
-		protocol_appendf(__romstr__("%0.3f"), axis[AXIS_COUNT -1]);
-		report_count = 0;
-	}
-	
-	protocol_puts(__romstr__(">\r\n\0"));
-	report_count++;
-}
-
 void cnc_reset()
 {
+	cnc_state.reset = false;
 	//clear all systems
 	interpolator_clear();
 	planner_clear();
-	protocol_clear();
-			
-	protocol_printf(MSG_STARTUP, VERSION_NUMBER_HIGH, VERSION_NUMBER_LOW, REVISION_NUMBER);
+	serial_flush();		
+	protocol_send_string(MSG_STARTUP);
 
 	//initial state (ALL IS LOCKED)
-	if(g_settings.homing_enabled && cnc_state.homed != HOME_OK )
+	if(g_settings.homing_enabled && cnc_state.homed != HOME_OK)
 	{
-		cnc_state.exec_state = EXEC_ALARM;
+		cnc_set_exec_state(EXEC_ALARM);
 		cnc_state.unlocked = false;
-		protocol_puts(MSG_FEEDBACK_2);
+		protocol_send_string(MSG_FEEDBACK_2);
 	}
 	else
 	{
 		cnc_unlock();
 	}
 
-	cnc_state.reset = false;
+	//mcu_set_pwm(0,64);
 }
 
 void cnc_run()
 {
 	cnc_reset();
 	
-	//protocol_inject_cmd(__romstr__("$J=G91F100X1"));
-	for(;;)
+	do
 	{
-		if(cnc_state.reset)
-		{
-			return;
-		}
-		
 		//process gcode commands
-		if(protocol_received_cmd())
+		if(!serial_rx_is_empty())
 		{
 			uint8_t error = 0;
-
-			if(protocol_peek() == '$') //settings command
-			{	
-				if(!(cnc_state.exec_state & EXEC_RUN) || (cnc_state.exec_state & EXEC_JOG)) //if it is not running or is in jog otherwise ignore
-				{
+			//protocol_echo();
+			uint8_t c = serial_peek();
+			switch(c)
+			{
+				case '\n':
+					serial_getc();
+					break;
+				case '$':
+					serial_getc();
 					error = parser_grbl_command();
-				}
+					break;
+				default:
+					if((cnc_state.exec_state < EXEC_JOG) && cnc_state.unlocked)
+					{
+						error = parser_gcode_command(false);
+					}
+					else
+					{
+						error = STATUS_SYSTEM_GC_LOCK;
+					}
+					break;
 			}
-			else if((cnc_state.exec_state < EXEC_JOG) && cnc_state.unlocked)
-			{
-				error = parser_gcode_command(false);
-			}
-			else
-			{
-				error = STATUS_SYSTEM_GC_LOCK;
-			}
-			
-			//clear buffer remaining buffer chars
-			protocol_clear();
 			
 			if(!error)
 			{
-				protocol_puts(MSG_OK);
+				protocol_send_ok();
 			}
 			else
 			{
-				
-				protocol_printf(MSG_ERROR, error);
+				protocol_send_error(error);
+				serial_discard_cmd();//flushes the rest of the command
 			}
 		}
 		
 		cnc_doevents();
-	}
+	}while(!cnc_state.reset);
 }
 
 void cnc_exec_rt_command(uint8_t command)
 {
 	switch(command)
 	{
+		case RT_CMD_REPORT:
+			cnc_state.send_report = true;
+			break;
 		case RT_CMD_RESET:
-			if(cnc_state.exec_state & EXEC_HOMING) //if homing
+			if(cnc_get_exec_state(EXEC_HOMING)) //if homing
 			{
-				cnc_state.exec_state &= ~EXEC_HOMING; //clear homing flag that supress alarms
+				cnc_clear_exec_state(EXEC_HOMING); //clear homing flag that supress alarms
 				cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
 			}
 			//imediatly calls killing process
@@ -308,44 +167,41 @@ void cnc_exec_rt_command(uint8_t command)
 			cnc_state.reset = true;			
 			break;
 		case RT_CMD_SAFETY_DOOR:
-			cnc_state.exec_state |= EXEC_DOOR;
-			if(cnc_state.exec_state & EXEC_HOMING) //if homing
+			cnc_set_exec_state(EXEC_DOOR);
+			if(cnc_get_exec_state(EXEC_HOMING)) //if homing
 			{
-				cnc_state.exec_state &= ~EXEC_HOMING; //clear homing flag that supress alarms
+				cnc_clear_exec_state(EXEC_HOMING); //clear homing flag that supress alarms
 				cnc_kill();
 				cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 			}
 			else
 			{
-				cnc_state.exec_state |= EXEC_HOLD;
+				cnc_set_exec_state(EXEC_HOLD);
 			}
 			break;
 		case RT_CMD_JOG_CANCEL:
-			if((cnc_state.exec_state & EXEC_JOG)) //if not jog mode ignores
+			if(cnc_get_exec_state(EXEC_JOG)) //if not jog mode ignores
 			{
-				cnc_state.exec_state |= EXEC_HOLD; //activates hold
+				cnc_set_exec_state(EXEC_HOLD); //activates hold
 			}
 			break;
 		case RT_CMD_FEED_HOLD:
 			if((cnc_state.exec_state < EXEC_HOMING)) //if not in idle, run or jog ignores
 			{
-				cnc_state.exec_state |= EXEC_HOLD; //activates hold
+				cnc_set_exec_state(EXEC_HOLD); //activates hold
 			}
 			break;
 		case RT_CMD_CYCLE_START:
-			if(cnc_state.exec_state > EXEC_HOLD)
+			if(cnc_get_exec_state(EXEC_DOOR | EXEC_ALARM | EXEC_SLEEP))
 			{
 				return;
 			}
 			
-			if(!(cnc_state.exec_state & EXEC_RUN))
+			if(!cnc_get_exec_state(EXEC_RUN))
 			{
 				//clears active hold
-				cnc_state.exec_state &= ~EXEC_HOLD;
+				cnc_clear_exec_state(EXEC_HOLD);
 			}
-			break;
-		case RT_CMD_REPORT:
-			cnc_state.send_report = true;
 			break;	
 	}
 	
@@ -354,42 +210,41 @@ void cnc_exec_rt_command(uint8_t command)
 
 void cnc_doevents()
 {
-	//send report if asked
-	if(cnc_state.send_report && protocol_sent_resp())
-	{
-		cnc_print_status_report();
-		cnc_state.send_report = false;
-	}
-	
 	//exit if in alarm mode and ignores all other realtime commands and exit
-	if(cnc_state.exec_state & EXEC_ALARM)
+	if(cnc_get_exec_state(EXEC_ALARM))
 	{
 		if(cnc_state.active_alarm) //active alarm message
 		{
-			protocol_printf(MSG_ALARM, cnc_state.active_alarm);
+			protocol_send_alarm(cnc_state.active_alarm);
 			cnc_state.active_alarm = 0;
+			return;
 		}
-		return;
 	}
+
+	if(cnc_state.send_report)
+	{
+		protocol_send_status();
+	}
+	cnc_state.send_report = false;
 	
 	if(!cnc_state.unlocked) //cnc is locked
 	{
 		return; //leaves the interpolator dry
 	}
 	
-	if(cnc_state.exec_state & EXEC_HOLD) //there is an active hold
+	if(cnc_get_exec_state(EXEC_HOLD))//there is an active hold
 	{
 		//hold has come to a full stop
-		if(!(cnc_state.exec_state & EXEC_RUN) && (cnc_state.exec_state & EXEC_HOLD))
+		if(!cnc_get_exec_state(EXEC_RUN) && cnc_get_exec_state(EXEC_HOLD))
 		{
 			//if homing or jog flushes buffers
-			if((cnc_state.exec_state & EXEC_HOMING) || (cnc_state.exec_state & EXEC_JOG))
+			if(cnc_get_exec_state(EXEC_HOMING) || cnc_get_exec_state(EXEC_JOG))
 			{
 				interpolator_stop();
 				interpolator_clear();
 				planner_clear();
 				//can clears any active hold, homing or jog
-				cnc_state.exec_state &= ~(EXEC_HOLD | EXEC_HOMING | EXEC_JOG);
+				cnc_clear_exec_state(EXEC_HOLD | EXEC_HOMING | EXEC_JOG);
 			}
 		}
 		
@@ -397,11 +252,12 @@ void cnc_doevents()
 	}
 	
 	interpolator_run();
+
 }
 
 void cnc_home()
 {
-	cnc_state.exec_state |= EXEC_HOMING;
+	cnc_set_exec_state(EXEC_HOMING);
 	kinematics_home();
 }
 
@@ -409,7 +265,7 @@ void cnc_alarm(uint8_t code)
 {
 	if(!cnc_get_exec_state(EXEC_HOMING)) //while homing supress all alarms
 	{
-		cnc_state.exec_state = EXEC_ALARM;
+		cnc_set_exec_state(EXEC_ALARM);
 		cnc_state.active_alarm = code;
 	}
 	
@@ -428,24 +284,12 @@ void cnc_kill()
 
 void cnc_stop()
 {
-	interpolator_stop();
 	//halt is active and was running flags it lost home position
-	if((cnc_state.exec_state & EXEC_RUN) & !cnc_state.unlocked)
+	if(cnc_get_exec_state(EXEC_RUN) & !cnc_state.unlocked)
 	{
+		interpolator_stop();
 		cnc_state.homed |= HOME_NEEDS_REHOME;
 	}
-	cnc_state.exec_state &= ~EXEC_RUN; //signals all motions have stoped
-}
-
-void cnc_safe_stop()
-{
-	interpolator_stop();
-	//halt is active and was running flags it lost home position
-	if((cnc_state.exec_state & EXEC_RUN) & !cnc_state.unlocked)
-	{
-		cnc_state.homed |= HOME_NEEDS_REHOME;
-	}
-	cnc_state.exec_state &= ~EXEC_RUN; //signals all motions have stoped
 }
 
 void cnc_unlock()
@@ -462,12 +306,12 @@ void cnc_unlock()
 		return;
 	}
 	
-	if(cnc_state.exec_state & EXEC_ALARM)
+	if(cnc_get_exec_state(EXEC_ALARM))
 	{
-		protocol_puts(MSG_FEEDBACK_3);
+		protocol_send_string(MSG_FEEDBACK_3);
 	}
 	
-	cnc_state.exec_state = EXEC_IDLE;
+	cnc_clear_exec_state(EXEC_ALARM);
 	cnc_state.unlocked = true;
 }
 
@@ -519,7 +363,7 @@ uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit)
 	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
 	do{
 		cnc_doevents();
-	} while(cnc_state.exec_state & EXEC_RUN);
+	} whilecnc_get_exec_state(EXEC_RUN);
 	
 	//flushes buffers
 	interpolator_stop();
@@ -550,17 +394,17 @@ uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit)
 	do {
 		cnc_doevents();
 		//activates hold (single time) if limit is free
-		if(!tc_get_limits(axis_limit) && !(cnc_state.exec_state & EXEC_HOLD))
+		if(!tc_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
 		{
-			cnc_state.exec_state |= EXEC_HOLD; 
+			cnc_set_exec_state(EXEC_HOLD); 
 		}
-	} while(cnc_state.exec_state & EXEC_RUN);
+	} whilecnc_get_exec_state(EXEC_RUN);
 	
 	//stops, flushes buffers and clears the hold if active
 	cnc_stop();
 	interpolator_clear();
 	planner_clear();
-	cnc_state.exec_state &= ~EXEC_HOLD;
+	cnc_clear_exec_state(EXEC_HOLD);
 	
 	if(tc_get_limits(axis_limit))
 	{
@@ -593,7 +437,7 @@ void cnc_offset_home()
 	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
 	do{
 		cnc_doevents();
-	} while(cnc_state.exec_state & EXEC_RUN);
+	} while(cnc_get_exec_state(EXEC_RUN));
 }
 
 void cnc_reset_position()

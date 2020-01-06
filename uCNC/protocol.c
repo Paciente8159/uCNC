@@ -1,238 +1,417 @@
 /*
-	Name: protocol.c - implementation of a grbl compatible send-response protocol
-	Copyright: 2019 João Martins
+	Name: protocol.h
+	Description: uCNC implementation of a Grbl compatible send-response protocol
+	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: Nov/2019
-	Description: uCNC is a free cnc controller software designed to be flexible and
-	portable to several	microcontrollers/architectures.
-	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+	Date: 19/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #include "config.h"
-#include "protocol.h"
-#include "mcu.h"
+#include "utils.h"
+#include "settings.h"
+#include "serial.h"
+#include "interpolator.h"
 #include "trigger_control.h"
+#include "parser.h"
 #include "cnc.h"
-#include "ringbuffer.h"
+#include "mcu.h"
+#include "protocol.h"
 
-#define CMD_BUFFER_SIZE 128
-#define RESP_BUFFER_SIZE 128
-static char protocol_cmd_buffer[CMD_BUFFER_SIZE];
-static char protocol_resp_buffer[RESP_BUFFER_SIZE];
-//static bool protocol_send_busy;
-static bool protocol_cmd_available;
-static uint8_t protocol_cmd_count;
-volatile static uint8_t read_index;
-volatile static uint8_t write_index;
-static uint8_t protocol_append_index;
-
-void protocol_read_char_isr(uint8_t c)
+void protocol_send_ok()
 {
-	#ifdef MCU_VIRTUAL
-	static uint8_t limit;
-	#endif
-	switch(c)
+	serial_print_str(__romstr__("ok\r\n"));
+}
+
+void protocol_send_error(uint8_t error)
+{
+	serial_print_str(__romstr__("error:"));
+	serial_print_int(error);
+	serial_print_str(__romstr__("\r\n"));
+}
+
+void protocol_send_alarm(uint8_t alarm)
+{
+	serial_print_str(__romstr__("ALARM:"));
+	serial_print_int(alarm);
+	serial_print_str(__romstr__("\r\n"));
+}
+
+void protocol_send_string(const char* __s)
+{
+	serial_print_str(__s);
+}
+
+void protocol_send_status()
+{
+	static uint8_t report_count = 0;
+	float axis[AXIS_COUNT];
+	static uint8_t report_limit = 30;
+
+	//only send report when buffer is empty
+	//this prevents locks and stack overflow of the cnc_doevents()
+	if(!serial_tx_is_empty())
 	{
-		//simulates limits
-		#ifdef MCU_VIRTUAL
-		case '/':
-			limit^=LIMIT_X_MASK;
-			tc_limits_isr(limit);
+		return;
+	}
+
+	if(cnc_get_exec_state(EXEC_RUN))
+	{
+		report_limit = 10;
+	}
+	
+	interpolator_get_rt_position((float*)&axis);
+	float feed = interpolator_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+	
+	uint8_t state = cnc_get_exec_state(0xFF);
+	uint8_t filter = EXEC_SLEEP;
+	while(!(state & filter) && filter)
+	{
+		filter >>= 1;
+	}
+	
+	state &= filter;
+	
+	switch(state)
+	{
+		case EXEC_SLEEP:
+			serial_print_str(__romstr__("<Sleep"));
 			break;
-		#endif
-		#ifdef MCU_VIRTUAL
-		case '*':
-			limit^=LIMIT_Y_MASK;
-			tc_limits_isr(limit);
-			break;
-		#endif
-		#ifdef MCU_VIRTUAL
-		case 174:
-			limit^=LIMIT_Z_MASK;
-			tc_limits_isr(limit);
-			break;
-		#endif
-		
-		#ifdef MCU_VIRTUAL
-		case '\\':
-		#endif
-		case 0x18:
-			cnc_exec_rt_command(RT_CMD_RESET);
-			break;
-		#ifdef MCU_VIRTUAL
-		case '<':
-		#endif
-		case 0x84:
-			cnc_exec_rt_command(RT_CMD_SAFETY_DOOR);
-			break;
-		case 0x85:
-			cnc_exec_rt_command(RT_CMD_JOG_CANCEL);
-			break;
-		case '?':
-			cnc_exec_rt_command(RT_CMD_REPORT);
-			break;
-		case '~':
-			//cycle start
-			cnc_exec_rt_command(RT_CMD_CYCLE_START);
-			break;
-		case '!':
-			//feed hold
-			cnc_exec_rt_command(RT_CMD_FEED_HOLD);
-			break;
-		case ' ':
-		case '\t':
-		case '\v':
-			//eats white chars
-			break;
-		case '\r':
-		case '\n':
-			if(!protocol_cmd_available) //blocks all chars after cmd is made available
+		case EXEC_DOOR:
+			if(tc_get_controls(SAFETY_DOOR_MASK))
 			{
-				protocol_cmd_buffer[write_index] = '\0'; //ensures end of command marker
-				protocol_cmd_available = true; //flags command available
+				if(cnc_get_exec_state(EXEC_RUN))
+				{
+					serial_print_str(__romstr__("<Door:2"));
+				}
+				else
+				{
+					serial_print_str(__romstr__("<Door:1"));
+				}
 			}
+			else
+			{
+				if(cnc_get_exec_state(EXEC_RUN))
+				{
+					serial_print_str(__romstr__("<Door:3"));
+				}
+				else
+				{
+					serial_print_str(__romstr__("<Door:0"));
+				}
+			}
+			break;
+		case EXEC_ALARM:
+			serial_print_str(__romstr__("<Alarm"));
+			break;
+		case EXEC_HOLD:
+			if(cnc_get_exec_state(EXEC_RUN))
+			{
+				serial_print_str(__romstr__("<Hold:1"));
+			}
+			else
+			{
+				serial_print_str(__romstr__("<Hold:0"));
+			}
+			break;
+		case EXEC_HOMING:
+			serial_print_str(__romstr__("<Home"));
+			break;
+		case EXEC_JOG:
+			serial_print_str(__romstr__("<Jog"));
+			break;
+		case EXEC_RUN:
+			serial_print_str(__romstr__("<Run"));
 			break;
 		default:
-			if(!protocol_cmd_available && c > 22 && c < 126)
-			{
-				protocol_cmd_buffer[write_index++] = c;
-			}
-			//protocol_cmd_buffer[write_index++] = c;
+			serial_print_str(__romstr__("<Idle"));
 			break;
 	}
-	
-}
-
-void protocol_init()
-{
-	read_index = 0;
-	write_index = 0;
-	protocol_cmd_count = 0;
-	protocol_cmd_available = false;
-	//protocol_send_busy = false;
-	
-	//resets buffers
-	memset(&protocol_cmd_buffer, 0, sizeof(protocol_cmd_buffer));
-	memset(&protocol_resp_buffer, 0, sizeof(protocol_resp_buffer));
-}
-
-bool protocol_received_cmd()
-{
-	return protocol_cmd_available;
-}
-
-bool protocol_sent_resp()
-{
-	return mcu_is_txready();
-}
-
-void protocol_clear()
-{
-	write_index = 0; //resets index
-	read_index = 0; //resets read index
-	protocol_cmd_available = false; //flags command available
-}
-
-char protocol_getc()
-{
-	char c = '\0';
-	
-	if(!protocol_cmd_available)
+	/*
+	if(cnc_get_exec_state(EXEC_SLEEP))
 	{
-		return c;
+		serial_print_str(__romstr__("<Sleep"));
+	}
+	else if(cnc_get_exec_state(EXEC_ALARM))
+	{
+		serial_print_str(__romstr__("<Alarm"));
+	}
+	else if(cnc_get_exec_state(EXEC_DOOR))
+	{
+		if(tc_get_controls(SAFETY_DOOR_MASK))
+		{
+			if(cnc_get_exec_state(EXEC_RUN))
+			{
+				serial_print_str(__romstr__("<Door:2"));
+			}
+			else
+			{
+				serial_print_str(__romstr__("<Door:1"));
+			}
+		}
+		else
+		{
+			if(cnc_get_exec_state(EXEC_RUN))
+			{
+				serial_print_str(__romstr__("<Door:3"));
+			}
+			else
+			{
+				serial_print_str(__romstr__("<Door:0"));
+			}
+		}
+	}
+	else if(cnc_get_exec_state(EXEC_HOMING))
+	{
+		serial_print_str(__romstr__("<Home"));
+	}
+	else if(cnc_get_exec_state(EXEC_JOG))
+	{
+		serial_print_str(__romstr__("<Jog"));
+	}
+	else if(cnc_get_exec_state(EXEC_HOLD))
+	{
+		if(cnc_get_exec_state(EXEC_RUN))
+		{
+			serial_print_str(__romstr__("<Hold:1"));
+		}
+		else
+		{
+			serial_print_str(__romstr__("<Hold:0"));
+		}
+	}
+	else if(cnc_get_exec_state(EXEC_RUN))
+	{
+		serial_print_str(__romstr__("<Run"));
+	}
+	else
+	{
+		serial_print_str(__romstr__("<Idle"));
+	}
+	*/	
+	serial_print_str(__romstr__("|MPos:"));
+	serial_print_fltarr(axis, AXIS_COUNT);
+	
+	serial_print_str(__romstr__("|FS:"));
+	serial_print_int((uint16_t)feed);
+	serial_putc(',');
+	serial_putc('0');
+
+	if(tc_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | tc_get_limits(LIMITS_MASK))
+	{
+		serial_print_str(__romstr__("|Pn:"));
+		
+		if(tc_get_controls(ESTOP_MASK))
+		{
+			serial_putc('R');
+		}
+		
+		if(tc_get_controls(SAFETY_DOOR_MASK))
+		{
+			serial_putc('D');
+		}
+		
+		if(tc_get_controls(FHOLD_MASK))
+		{
+			serial_putc('H');
+		}
+		
+		if(tc_get_probe())
+		{
+			serial_putc('P');
+		}
+		
+		if(tc_get_limits(LIMIT_X_MASK))
+		{
+			serial_putc('X');
+		}
+		
+		if(tc_get_limits(LIMIT_Y_MASK))
+		{
+			serial_putc('Y');
+		}
+		
+		if(tc_get_limits(LIMIT_Z_MASK))
+		{
+			serial_putc('Z');
+		}
+		
+		if(tc_get_limits(LIMIT_A_MASK))
+		{
+			serial_putc('A');
+		}
+		
+		if(tc_get_limits(LIMIT_B_MASK))
+		{
+			serial_putc('B');
+		}
+		
+		if(tc_get_limits(LIMIT_C_MASK))
+		{
+			serial_putc('C');
+		}
+	}
+	/*	
+	if(report_count>report_limit)
+	{
+		parser_get_wco(axis);
+		serial_print_string(__romstr__("|WCO:"));
+		for(uint8_t i = 0; i < AXIS_COUNT-1; i++)
+		{
+			protocol_printf(__romstr__("%0.3f,"), axis[i]);
+		}
+		
+		protocol_printf(__romstr__("%0.3f"), axis[AXIS_COUNT-1]);
+		report_count = 0;
 	}
 	
-	c = protocol_cmd_buffer[read_index++];
-	if(c == '\0') //EOL marker (discard rest of buffer)
+	#ifdef __PERFSTATS__
+	uint16_t stepclocks = mcu_get_step_clocks();
+	uint16_t stepresetclocks = mcu_get_step_reset_clocks();
+	protocol_printf(__romstr__("|Perf:%d,%d"), stepclocks, stepresetclocks);
+	#endif
+	*/
+	serial_print_str(__romstr__(">\r\n"));
+	report_count++;
+}
+
+void protocol_send_gcode_coordsys()
+{
+	uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
+	for(uint8_t i = 0; i < coordlimit; i++)
 	{
-		write_index = 0;
-		read_index = 0;
-		protocol_cmd_available = false;
+		float* axis = parser_get_coordsys(i);
+		serial_print_str(__romstr__("[G"));
+		serial_print_int(i + 54);
+		serial_putc(':');
+		serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+		serial_print_str(__romstr__("]\r\n"));
 	}
 	
-	return c;
-}
-
-/*char* protocol_get_bufferptr()
-{
-	return &protocol_cmd_buffer[read_index];
-}*/
-
-char protocol_peek()
-{
-	char c = '\0';
-	
-	if(!protocol_cmd_available)
+	for(uint8_t i = 6; i < COORD_SYS_COUNT; i++)
 	{
-		return c;
+		serial_print_int(i - 5);
+		serial_putc(':');
+		serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+		serial_print_str(__romstr__("]\r\n"));
 	}
 	
-	c = protocol_cmd_buffer[read_index];
-	return c;
-}
-
-void protocol_appendf(const char* __fmt, ...)
-{
-	while(!mcu_is_txready());
+	serial_print_str(__romstr__("[G28:"));
+	serial_print_fltarr(parser_get_coordsys(28), AXIS_COUNT);
+	serial_print_str(__romstr__("]\r\n"));
 	
-	//writes the formated progmem string to RAM and then print it to the buffer with the parameters
-	char buffer[RESP_BUFFER_SIZE];
-	char* newfmt = rom_strncpy((char*)&buffer, __fmt, RESP_BUFFER_SIZE);
-	va_list __ap;
- 	va_start(__ap,__fmt);
- 	vsprintf((char*)&protocol_resp_buffer[protocol_append_index], newfmt,__ap);
- 	va_end(__ap);
-	protocol_append_index = strlen((const char*)&protocol_resp_buffer);
-}
-
-void protocol_append(const char* __s)
-{
-	while(!mcu_is_txready());
+	serial_print_str(__romstr__("[G30:"));
+	serial_print_fltarr(parser_get_coordsys(30), AXIS_COUNT);
+	serial_print_str(__romstr__("]\r\n"));
 	
-	char *s = rom_strncpy((char*)&protocol_resp_buffer[protocol_append_index], __s, RESP_BUFFER_SIZE - protocol_append_index);
-	protocol_append_index = strlen((const char*)&protocol_resp_buffer);
+	serial_print_str(__romstr__("[G92:"));
+	serial_print_fltarr(parser_get_coordsys(92), AXIS_COUNT);
+	serial_print_str(__romstr__("]\r\n"));
 }
 
-void protocol_puts(const char* __s)
+void protocol_send_gcode_modes()
 {
-	while(!mcu_is_txready());
+	uint8_t modalgroups[9];
+	uint16_t feed;
+	uint16_t spindle;
 	
-	char *s = rom_strncpy((char*)&protocol_resp_buffer[protocol_append_index], __s, RESP_BUFFER_SIZE - protocol_append_index);
-	protocol_append_index = 0;
-	//transmit async
+	parser_get_modes(modalgroups, &feed, &spindle);
 	
-	mcu_puts(protocol_resp_buffer);
+	serial_print_str(__romstr__("[GC:"));
+	
+	for(uint8_t i = 0; i < 5; i++)
+	{
+		serial_putc('G');
+		serial_print_int(modalgroups[i]);
+		serial_putc(' ');
+	}
+	
+	for(uint8_t i = 5; i < 8; i++)
+	{
+		serial_putc('M');
+		serial_print_int(modalgroups[i]);
+		serial_putc(' ');
+	}
+	
+	serial_putc('T');
+	serial_print_int(modalgroups[8]);
+	serial_putc(' ');
+	
+	serial_putc('F');
+	serial_print_int(feed);
+	serial_putc(' ');
+	
+	serial_putc('S');
+	serial_print_int(spindle);
+
+	serial_print_str(__romstr__("]\r\n"));
 }
 
-void protocol_printf(const char* __fmt, ...)
+static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
 {
-	while(!mcu_is_txready());
-	
-	//writes the formated progmem string to RAM and then print it to the buffer with the parameters
-	char buffer[RESP_BUFFER_SIZE];
-	char* newfmt = rom_strncpy((char*)&buffer, __fmt, RESP_BUFFER_SIZE);
-	va_list __ap;
- 	va_start(__ap,__fmt);
- 	vsprintf((char*)&protocol_resp_buffer[protocol_append_index], newfmt,__ap);
- 	va_end(__ap);
-	protocol_append_index = 0;
-	//transmit async
- 	mcu_puts(protocol_resp_buffer);
+	serial_putc('$');
+	serial_print_int(setting);
+	serial_putc('=');
+	serial_print_int(value);
+	serial_putc('\r');
+	serial_putc('\n');
 }
 
-#ifdef __DEBUG__
-void protocol_inject_cmd(const char* __fmt, ...)
+static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 {
-	char buffer[CMD_BUFFER_SIZE];
-	char* newfmt = rom_strncpy((char*)&buffer, __fmt, CMD_BUFFER_SIZE);
-	va_list __ap;
- 	va_start(__ap,__fmt);
- 	vsprintf((char*)&protocol_cmd_buffer, newfmt,__ap);
- 	va_end(__ap);
- 	//flag cmd recieved
-	protocol_cmd_available = true; //flags command available
-	write_index = 0; //resets index
-	read_index = 0; //resets read index
+	serial_putc('$');
+	serial_print_int(setting);
+	serial_putc('=');
+	serial_print_flt(value);
+	serial_putc('\r');
+	serial_putc('\n');
 }
-#endif
 
+void protocol_send_gcode_settings()
+{
+	protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
+	protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
+	protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
+	protocol_send_gcode_setting_line_int(4, g_settings.step_enable_invert);
+	protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
+	protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
+	protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
+	protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
+	protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
+	protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
+	protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);
+	protocol_send_gcode_setting_line_int(23, g_settings.homing_dir_invert_mask);
+	protocol_send_gcode_setting_line_flt(24, g_settings.homing_slow_feed_rate);
+	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
+	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+	protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
+	protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_send_gcode_setting_line_flt(100 + i , g_settings.step_per_mm[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_send_gcode_setting_line_flt(110 + i , g_settings.max_feed_rate[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_send_gcode_setting_line_flt(120 + i , g_settings.acceleration[i]);
+	}
+	
+	for(uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		protocol_send_gcode_setting_line_flt(130 + i , g_settings.max_distance[i]);
+	}
+}

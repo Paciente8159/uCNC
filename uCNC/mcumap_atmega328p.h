@@ -1,5 +1,40 @@
+/*
+	Name: mcumap_atmega328p.h
+	Description: Contains all MCU and PIN definitions for Arduino UNO to run uCNC.
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 01/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #ifndef MCUMAP_ATMEGA328P_H
 #define MCUMAP_ATMEGA328P_H
+
+/*
+	MCU specific definitions and replacements
+*/
+#include <avr/pgmspace.h>
+#define F_CPU 16000000UL
+#define F_STEP_MAX 30000
+#define F_STEP_MIN 4
+#define __rom__ PROGMEM
+#define __romstr__ PSTR
+#define rom_strptr pgm_read_byte_near
+#define rom_strcpy strcpy_P
+#define rom_strncpy strncpy_P
+#define rom_memcpy memcpy_P
+#define rom_read_byte pgm_read_byte
+//used by the parser
+//this method is faster then normal multiplication
+#define fast_mult10(X) (((X<<2) + X)<<1)
 
 /*
 	Setup the IO pins 

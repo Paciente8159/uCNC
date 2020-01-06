@@ -1,3 +1,32 @@
+/*
+	Name: mcu_virtual.c
+	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate uCNC.
+		For now it's only working/tested on Windows.
+		Besides all the functions declared in the mcu.h it also implements the code responsible
+		for handling:
+			interpolator.h
+				void interpolator_step_isr();
+				void interpolator_step_reset_isr();
+			serial.h
+				void serial_rx_isr(char c);
+				char serial_tx_isr();
+			trigger_control.h
+				void tc_limits_isr(uint8_t limits);
+				void tc_controls_isr(uint8_t controls);
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 01/11/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #include "config.h"
 
 #if(MCU == MCU_VIRTUAL)
@@ -23,7 +52,8 @@ typedef struct virtual_map_t
 #include "mcu.h"
 #include "settings.h"
 #include "util/timer.h"
-#include "protocol.h"
+#include "util/virtualserial.h"
+#include "serial.h"
 #include "interpolator.h"
 
 #ifndef F_CPU
@@ -96,21 +126,14 @@ volatile bool pulse_enabled = false;
 volatile bool integrator_enabled = false;
 volatile unsigned long pulse_interval = 0;
 volatile unsigned long resetpulse_interval = 0;
-volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
+//volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
 volatile unsigned long pulse_counter = 0;
 volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
 volatile bool send_char = false;
 
-ISRVOID g_mcu_stepCallback = NULL;
-ISRVOID g_mcu_stepResetCallback = NULL;
-ISRVOID g_mcu_integratorCallback = NULL;
-ISRPORTCHANGE g_mcu_pinChangeCallback = NULL;
-ISRCOMRX g_mcu_charReceived = NULL;
-ISRVOID g_mcu_charSent = NULL;
-
-
 pthread_t thread_id;
+pthread_t thread_idout;
 pthread_t thread_timer_id;
 
 void* timersimul()
@@ -121,14 +144,14 @@ void* timersimul()
 
 	for(;;)
 	{
-		if(global_irq_enabled)
+		if(global_irq_enabled && pulse_enabled)
 		{
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
 				interpolator_step_isr();
 			}
 			
-			if((*pulse_counter_ptr)==resetpulse_interval && pulse_enabled )
+			if((*pulse_counter_ptr)>=resetpulse_interval && pulse_enabled )
 			{
 				(*pulse_counter_ptr) = 0;
 				interpolator_step_reset_isr();
@@ -137,56 +160,59 @@ void* timersimul()
 	}
 }
 
-void* outsimul()
+
+void* comsimul()
 {
-	bool eol = false;
-	
 	for(;;)
 	{
-		char c = *mcu_tx_buffer++;
-		if(!eol)
+		#ifdef USECONSOLE
+		char c = getch();
+		#else
+		char c = virtualserial_getc();
+		#endif
+		if(c != 0)
 		{
-			if(c != '\0')
-				putchar(c);
-			if(c=='\n' || c=='\0')
-			{
-				eol = true;
-			}
-		}
-		else
-		{
-			eol = false;
-			mcu_tx_ready = true;
-			return NULL;
+			serial_rx_isr(c);
 		}
 	}
 }
 
-void* inputsimul()
+void* comoutsimul()
 {
+	char combuffer[128];
+	static uint8_t i = 0;
 	for(;;)
 	{
-		char c = getch();
-		
-		if(c == '\b')
+		if(mcu_tx_ready)
 		{
-			putchar(c);
-			putchar(' ');
+			char c = serial_tx_isr();
+			if(c != 0)
+			{
+				#ifdef USECONSOLE
+				mcu_putc(c);
+				#else
+				combuffer[i] = c;
+				i++;
+				if(c == '\n')
+				{
+					combuffer[i] = 0;
+					virtualserial_puts(combuffer);
+					i = 0;
+				}
+				#endif
+			}
+			else
+			{
+				mcu_tx_ready = false;
+			}
 		}
-		
-		if(c>='a' && c<='z') //uppercase
-        {
-            c -= 32;
-        }
-		putchar(c);
-		protocol_read_char_isr(c);
 	}
 }
 
 void ticksimul()
 {
 	static uint16_t tick_counter = 0;
-	
+	/*
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 	
@@ -195,45 +221,12 @@ void ticksimul()
 		fscanf(infile, "%uX %uX", &(virtualports->controls), &(virtualports->limits));
 		fclose(infile);
 	}
-	
+	*/
 	if(global_irq_enabled)
 	{
 		if(pulse_enabled)
 			(*pulse_counter_ptr)++;
 	}
-	
-	/*if(tick_enabled)
-	{
-		tick_counter++;
-		
-		if(pulse_interval != 0)
-		{
-			if(g_mcu_stepCallback!=NULL)
-			{
-				if(tick_counter%pulse_interval==0)
-				{
-					g_mcu_stepCallback();
-				}
-			}
-		    		
-		    if(g_mcu_stepResetCallback!=NULL)
-		    {
-		    	if(tick_counter%(pulse_interval + MIN_PULSE_WIDTH_US)==0)
-				{
-					g_mcu_stepResetCallback();
-				}
-			}
-		}
-				
-	    if(g_mcu_pinChangeCallback!=NULL)
-	    {
-	    	if(_previnputs != g_mcu_inputs.reg32in)
-	    	{
-	    		_previnputs = g_mcu_inputs.reg32in;
-	    		g_mcu_pinChangeCallback(&(g_mcu_inputs.reg32in));
-			}	
-		}
-	}*/
 }
 
 void mcu_init()
@@ -253,21 +246,24 @@ void mcu_init()
 	}
 	
 	g_cpu_freq = getCPUFreq();
-	
+	#ifndef USECONSOLE
+	virtualserial_open();
+	#endif
 	start_timer(1, &ticksimul);
-	pthread_create(&thread_id, NULL, &inputsimul, NULL);
-	//pthread_create(&thread_id, NULL, &outsimul, NULL);  
-	mcu_tx_ready = true;
+	pthread_create(&thread_id, NULL, &comsimul, NULL);
+	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
+	mcu_tx_ready = false;
 	pthread_create(&thread_timer_id, NULL, &timersimul, NULL); 
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
-	mcu_enableInterrupts();
+	mcu_enable_interrupts();
+	
 }
 
 //IO functions    
 //Inputs  
 //returns the value of the input pins
-uint16_t mcu_getInputs()
+uint16_t mcu_get_inputs()
 {
 	return 0;	
 }
@@ -287,54 +283,39 @@ uint8_t mcu_get_probe()
 	return virtualports->probe;
 }
 
-//attaches a function handle to the input pin changed ISR
-void mcu_attachOnLimitTrigger(ISRPORTCHANGE handler)
-{
-	g_mcu_pinChangeCallback = handler;
-}
-//detaches the input pin changed ISR
-void mcu_detachOnLimitTrigger()
-{
-	g_mcu_pinChangeCallback = NULL;
-}
 
 //outputs
 //sets all step and dir pins
-void mcu_setSteps(uint8_t value)
+void mcu_set_steps(uint8_t value)
 {	
 	virtualports->steps = value;
 }
 
-void mcu_setDirs(uint8_t value)
+void mcu_set_dirs(uint8_t value)
 {	
 	virtualports->dirs = value;
 }
 
 //sets all digital outputs pins
-void mcu_setOutputs(uint16_t value)
+void mcu_set_outputs(uint16_t value)
 {
 	//g_mcu_outputs.outputs = value;
 }
 
 //Communication functions
 //sends a packet
+void mcu_start_send()
+{
+	mcu_tx_ready = true;
+}
+
 void mcu_putc(char c)
 {
+	#ifdef USECONSOLE
 	putchar(c);
-	send_char = true;
-}
-
-bool mcu_is_txready()
-{
-	return mcu_tx_ready;
-}
-
-void mcu_puts(const char* __str)
-{
-	while(!mcu_tx_ready);
-	mcu_tx_ready = false;
-	mcu_tx_buffer = (char*)__str;
-	pthread_create(&thread_id, NULL, &outsimul, NULL);  
+	#else
+	virtualserial_putc(c);
+	#endif
 }
 
 char mcu_getc()
@@ -371,46 +352,31 @@ void mcu_bufferClear()
 	g_mcu_bufferhead = 0;
 }
 
-void mcu_attachOnReadChar(ISRCOMRX handler)
-{
-	g_mcu_charReceived = handler;
-}
-
-void mcu_attachOnSentChar(ISRVOID handler)
-{
-	g_mcu_charSent = handler;
-}
-
-void mcu_detachOnSentChar()
-{
-	g_mcu_charSent = NULL;
-}
-
 //RealTime
-void mcu_freq2clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
 {
-	if(frequency < F_PULSE_MIN)
-		frequency = F_PULSE_MIN;
-	if(frequency > F_PULSE_MAX)
-		frequency = F_PULSE_MAX;
+	if(frequency < F_STEP_MIN)
+		frequency = F_STEP_MIN;
+	if(frequency > F_STEP_MAX)
+		frequency = F_STEP_MAX;
 
-	*ticks = (uint16_t)floorf((F_CPU/frequency)) - 1;
+	*ticks = (uint16_t)floorf((F_CPU/frequency));
 	*tick_reps = 1;
 }
 
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-void mcu_enableInterrupts()
+void mcu_enable_interrupts()
 {
 	global_irq_enabled = true;
 }
 //disables all ISR functions
-void mcu_disableInterrupts()
+void mcu_disable_interrupts()
 {
 	global_irq_enabled = false;
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	pulse_interval = clocks_speed>>1;
 	resetpulse_interval = clocks_speed;
@@ -418,69 +384,18 @@ void mcu_startStepISR(uint16_t clocks_speed, uint8_t prescaller)
 	pulse_enabled = true;
 }
 
-void mcu_changeStepISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	pulse_enabled = false;
 	pulse_interval = clocks_speed>>1;
 	resetpulse_interval = clocks_speed;
+	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
 //stops the pulse 
-void mcu_step_isrstop()
+void mcu_step_stop_ISR()
 {
 	pulse_enabled = false;
-}
-//attaches a function handle to the pulse ISR
-void mcu_attachOnStep(ISRVOID handler)
-{
-	g_mcu_stepCallback = handler;
-}
-void mcu_detachOnStep()
-{
-	g_mcu_stepCallback = NULL;
-}
-//attaches a function handle to the reset pulse ISR. This is fired MIN_PULSE_WIDTH useconds after pulse ISR
-void mcu_attachOnStepReset(ISRVOID handler)
-{
-	g_mcu_stepResetCallback = handler;
-}
-
-void mcu_detachOnStepReset()
-{
-	g_mcu_stepCallback = NULL;
-}
-
-//starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_startIntegrator()
-{
-	integrator_interval = F_CPU/F_INTEGRATOR;
-	integrator_counter = 0;
-	integrator_enabled = true;
-}
-
-void mcu_resumeIntegrator()
-{
-	integrator_enabled = true;
-}
-
-void mcu_pauseIntegrator()
-{
-	integrator_enabled = false;
-}
-	
-//stops the pulse 
-void mcu_stopIntegrator()
-{
-	integrator_enabled = false;
-}
-//attaches a function handle to the pulse ISR
-void mcu_attachOnIntegrator(ISRVOID handler)
-{
-	g_mcu_integratorCallback = handler;
-}
-void mcu_detachOnIntegrator()
-{
-	g_mcu_integratorCallback = NULL;
 }
 
 void mcu_delay_ms(uint16_t miliseconds)

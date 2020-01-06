@@ -25,7 +25,8 @@ struct ringbuffer_t {
 	bool empty;
 };
 
-uint8_t next_write(buffer_t buffer)
+static inline void next_write(buffer_t buffer) __attribute__((always_inline));
+static inline void next_write(buffer_t buffer)
 {
 	if(++(buffer->head) == buffer->elem_count)
 	{
@@ -36,7 +37,8 @@ uint8_t next_write(buffer_t buffer)
 	buffer->empty = false;
 }
 
-uint8_t next_read(buffer_t buffer)
+static inline void next_read(buffer_t buffer) __attribute__((always_inline));
+static inline void next_read(buffer_t buffer)
 {
 	if(++(buffer->tail) == buffer->elem_count)
 	{

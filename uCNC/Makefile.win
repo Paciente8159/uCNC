@@ -4,14 +4,14 @@
 CPP      = avr-g++.exe
 CC       = avr-gcc.exe
 WINDRES  = 
-OBJ      = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o ringbuffer.o mcu_atmega328p.o cnc.o kinematics_corexy.o parser.o trigger_control.o protocol.o motion_control.o
-LINKOBJ  = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o ringbuffer.o mcu_atmega328p.o cnc.o kinematics_corexy.o parser.o trigger_control.o protocol.o motion_control.o
-LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328
+OBJ      = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o cnc.o parser.o trigger_control.o protocol.o motion_control.o pwm_control.o serial.o mcu_avr.o
+LINKOBJ  = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o cnc.o parser.o trigger_control.o protocol.o motion_control.o pwm_control.o serial.o mcu_avr.o
+LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328p
 INCS     = -I"D:/Program Files/Dev-Cpp/WinAVR/avr/include"
 CXXINCS  = -I"D:/Program Files/Dev-Cpp/WinAVR/avr/include"
 BIN      = uCNC.elf
-CXXFLAGS = $(CXXINCS) -Wall -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
-CFLAGS   = $(INCS) -Wall -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328 -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
+CXXFLAGS = $(CXXINCS) -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
+CFLAGS   = $(INCS) -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
@@ -39,17 +39,8 @@ planner.o: planner.c
 interpolator_linear.o: interpolator_linear.c
 	$(CC) -c interpolator_linear.c -o interpolator_linear.o $(CFLAGS)
 
-ringbuffer.o: ringbuffer.c
-	$(CC) -c ringbuffer.c -o ringbuffer.o $(CFLAGS)
-
-mcu_atmega328p.o: mcu_atmega328p.c
-	$(CC) -c mcu_atmega328p.c -o mcu_atmega328p.o $(CFLAGS)
-
 cnc.o: cnc.c
 	$(CC) -c cnc.c -o cnc.o $(CFLAGS)
-
-kinematics_corexy.o: kinematics_corexy.c
-	$(CC) -c kinematics_corexy.c -o kinematics_corexy.o $(CFLAGS)
 
 parser.o: parser.c
 	$(CC) -c parser.c -o parser.o $(CFLAGS)
@@ -62,3 +53,12 @@ protocol.o: protocol.c
 
 motion_control.o: motion_control.c
 	$(CC) -c motion_control.c -o motion_control.o $(CFLAGS)
+
+pwm_control.o: pwm_control.c
+	$(CC) -c pwm_control.c -o pwm_control.o $(CFLAGS)
+
+serial.o: serial.c
+	$(CC) -c serial.c -o serial.o $(CFLAGS)
+
+mcu_avr.o: mcu_avr.c
+	$(CC) -c mcu_avr.c -o mcu_avr.o $(CFLAGS)

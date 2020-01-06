@@ -1,11 +1,19 @@
 /*
-	Name: setting.h - uCNC settings functionalities
-	Copyright: 2019 João Martins
+	Name: settings.h
+	Description: uCNC runtime settings. These functions store settings and other parameters
+		in non-volatile memory.
+	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: Nov/2019
-	Description: uCNC is a free cnc controller software designed to be flexible and
-	portable to several	microcontrollers/architectures.
-	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+	Date: 26/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #ifndef SETTINGS_H
@@ -28,11 +36,12 @@ typedef struct
     uint8_t dir_invert_mask;
     bool step_enable_invert;
     uint8_t limits_invert_mask;
+	bool probe_invert_mask;
     uint8_t status_report_mask;
     uint8_t control_invert_mask;
 	//juntion deviation is automatic and always on
 	float arc_tolerance;
-	//report always in mm
+	bool report_inches;
 	bool soft_limits_enabled;
 	bool hard_limits_enabled;
 	bool homing_enabled;
@@ -41,6 +50,8 @@ typedef struct
 	float homing_slow_feed_rate;
 	//debouncing not used
 	float homing_offset;
+	float spindle_max_rpm;
+	float spindle_min_rpm;
 	
 	float step_per_mm[AXIS_COUNT];
 	float max_feed_rate[AXIS_COUNT];
@@ -58,6 +69,5 @@ bool settings_load(uint16_t address, uint8_t* __ptr, uint16_t size);
 void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size);
 void settings_reset();
 uint8_t settings_change(uint8_t setting, float value);
-void settings_print();
 
 #endif
