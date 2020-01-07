@@ -1,6 +1,8 @@
 /*
 	Name: planner.h
-	Description: uCNC motion planner
+	Description: Chain planner for linear motions and acceleration/deacceleration profiles.
+        It uses a similar algorithm to Grbl.
+			
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 24/09/2019
@@ -56,7 +58,7 @@ void planner_discard_block();
 void planner_add_line(float* axis, float feed);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
-float* planner_get_position();
+void planner_get_position(float* axis);
 void planner_resync_position();
 
 #endif

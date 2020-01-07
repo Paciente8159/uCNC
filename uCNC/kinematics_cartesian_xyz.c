@@ -2,6 +2,7 @@
 	Name: kinematics_cartesian_xyz.c
 	Description: Implements all kinematics math equations to translate the motion of a cartesian XYZ machine.
 		Also implements the homing motion for this type of machine.
+		
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 26/09/2019
@@ -27,7 +28,7 @@
 #include "machinedefs.h"
 #include "motion_control.h"
 #include "planner.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "cnc.h"
 
 float step_mm_inv[3];

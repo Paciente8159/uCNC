@@ -1,6 +1,7 @@
 /*
 	Name: utils.h
-	Description: Some useful constants and macros
+	Description: Some useful constants and macros.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 19/09/2019

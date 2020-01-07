@@ -2,6 +2,7 @@
 	Name: settings.h
 	Description: uCNC runtime settings. These functions store settings and other parameters
 		in non-volatile memory.
+		
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 26/09/2019

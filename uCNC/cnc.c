@@ -1,6 +1,7 @@
 /*
 	Name: cnc.c
-	Description: uCNC main unit
+	Description: uCNC main unit.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 17/09/2019
@@ -32,7 +33,7 @@
 #include "motion_control.h"
 #include "planner.h"
 #include "interpolator.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "cnc.h"
 
 typedef struct
@@ -72,7 +73,7 @@ void cnc_init()
 	
 	kinematics_init();
 	planner_init();
-	tc_init();
+	dio_init();
 	interpolator_init();
 	cnc_state.unlocked = false;
 }
@@ -205,7 +206,6 @@ void cnc_exec_rt_command(uint8_t command)
 			break;	
 	}
 	
-	//cnc_state.rt_cmd = 0;
 }
 
 void cnc_doevents()
@@ -300,7 +300,7 @@ void cnc_unlock()
 	}
 	
 	//if emergeny stop is pressed it can't unlock
-	if(tc_get_controls(ESTOP_MASK))
+	if(dio_get_controls(ESTOP_MASK))
 	{
 		cnc_state.unlocked = false;
 		return;
@@ -334,91 +334,12 @@ uint8_t cnc_is_homed()
 {
 	return cnc_state.homed;
 }
-/*moved to motion control
-uint8_t cnc_home_axis(uint8_t axis, uint8_t axis_limit)
-{
-	float target[AXIS_COUNT];
-	uint8_t axis_mask = (1<<axis);
-	
-	memcpy(&target, planner_get_position(), sizeof(target));
 
-	//unlock the cnc
-	cnc_unlock();
-
-	//if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-	if(cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || tc_get_limits(LIMITS_MASK))
-	{
-		return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
-	}
-	
-	float max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-	//checks homing dir
-	if(g_settings.homing_dir_invert_mask & axis_mask)
-	{
-		max_home_dist = -max_home_dist;
-	}
-	
-	target[axis] += max_home_dist;
-	cnc_set_exec_state(EXEC_HOMING);
-	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
-	do{
-		cnc_doevents();
-	} whilecnc_get_exec_state(EXEC_RUN);
-	
-	//flushes buffers
-	interpolator_stop();
-	interpolator_clear();
-	planner_clear();
-	
-	//if limit was not triggered 
-	if(!tc_get_limits(axis_limit))
-	{
-		return EXEC_ALARM_HOMING_FAIL_APPROACH;
-	}
-	
-	cnc_unlock();
-	//zero's the planner
-	memcpy(&target, planner_get_position(), sizeof(target));
-	max_home_dist = g_settings.homing_offset * 5.0f;
-	
-	//checks homing dir
-	if(g_settings.homing_dir_invert_mask & axis_mask)
-	{
-		max_home_dist = -max_home_dist;
-	}
-	
-	target[axis] += max_home_dist;
-
-	planner_add_line((float*)&target, g_settings.homing_slow_feed_rate * 0.0166666667f);
-
-	do {
-		cnc_doevents();
-		//activates hold (single time) if limit is free
-		if(!tc_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
-		{
-			cnc_set_exec_state(EXEC_HOLD); 
-		}
-	} whilecnc_get_exec_state(EXEC_RUN);
-	
-	//stops, flushes buffers and clears the hold if active
-	cnc_stop();
-	interpolator_clear();
-	planner_clear();
-	cnc_clear_exec_state(EXEC_HOLD);
-	
-	if(tc_get_limits(axis_limit))
-	{
-		return EXEC_ALARM_HOMING_FAIL_APPROACH;
-	}
-	
-	return 0;
-}
-*/
 void cnc_offset_home()
 {
 	float target[AXIS_COUNT];
 	
-	memcpy(&target, planner_get_position(), sizeof(target));
+	planner_get_position(target);
 	
 	for(uint8_t i = AXIS_COUNT; i != 0;)
 	{
@@ -434,7 +355,7 @@ void cnc_offset_home()
 		//target[i] += ((g_settings.homing_dir_invert_mask & axis_mask) ? -g_settings.homing_offset : g_settings.homing_offset);
 	}
 	
-	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
+	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * MIN_SEC_MULT);
 	do{
 		cnc_doevents();
 	} while(cnc_get_exec_state(EXEC_RUN));

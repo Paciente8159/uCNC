@@ -1,6 +1,7 @@
 /*
 	Name: serial.h
-	Description: Serial communication basic read/write functions uCNC
+	Description: Serial communication basic read/write functions uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 30/12/2019

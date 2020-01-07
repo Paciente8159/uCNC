@@ -1,6 +1,7 @@
 /*
 	Name: serial.c
-	Description: Serial communication basic read/write functions uCNC
+	Description: Serial communication basic read/write functions uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 30/12/2019
@@ -17,8 +18,9 @@
 
 #include "grbl_interface.h"
 #include "settings.h"
+#include "mcudefs.h"
 #include "mcu.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "cnc.h"
 #include "serial.h"
 #include "utils.h"

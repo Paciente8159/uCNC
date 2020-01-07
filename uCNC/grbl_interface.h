@@ -1,6 +1,7 @@
 /*
 	Name: grbl_interface.h
-	Description: uCNC definitions and standard codes used by Grbl
+	Description: uCNC definitions and standard codes used by Grbl.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 07/12/2019

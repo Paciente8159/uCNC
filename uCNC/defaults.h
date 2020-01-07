@@ -1,6 +1,7 @@
 /*
 	Name: defaults.h
-	Description: Compile time default settings for uCNC
+	Description: Compile time default settings for uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 07/12/2019

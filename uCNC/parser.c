@@ -5,7 +5,8 @@
         The parsing is done in 3 steps:
             - Tockenization; Converts the command string to a structure with GCode parameters
             - Validation; Validates the command by checking all the parameters (part 3.5 - 3.7 of the document)
-            - Execution; Executes the command by the orther set in part 3.8 of the document
+            - Execution; Executes the command by the orther set in part 3.8 of the document.
+			
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 07/12/2019
@@ -30,7 +31,7 @@
 #include "protocol.h"
 #include "planner.h"
 #include "motion_control.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "cnc.h"
 #include "parser.h"
 
@@ -914,7 +915,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state)
             }
 
             SETFLAG(parser_word2, GCODE_WORD_S);
-            new_state->words.s = word_val;
+            new_state->words.s = MIN(word_val, g_settings.spindle_max_rpm);
             break;
         case 'T':
             if(CHECKFLAG(parser_word2, GCODE_WORD_T))
@@ -952,7 +953,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state)
 static uint8_t parser_validate_command(parser_state_t *new_state)
 {
 	//pointer to planner position
-	float* parser_last_pos = planner_get_position();
+	float parser_last_pos[AXIS_COUNT];
+	planner_get_position(parser_last_pos);
     
     //only alow groups 3, 6 and modal G53
     if(cnc_get_exec_state(EXEC_JOG))
@@ -1204,11 +1206,12 @@ static uint8_t parser_validate_command(parser_state_t *new_state)
 	//group 13 - path control mode (nothing to be checked)
 	
 	//RS274NGC v3 - 3.6 Input M Codes
-	//group 7 - cutter radius compensation (not implemented yet)
-	//group 7 - cutter radius compensation (not implemented yet)
-	//group 7 - cutter radius compensation (not implemented yet)
-	//group 7 - cutter radius compensation (not implemented yet)
-	//group 7 - cutter radius compensation (not implemented yet)
+	//group 4 - (not implemented yet)
+	//group 6 - (not implemented yet)
+	//group 7 - (nothing to be checked)
+	//group 8 - (not implemented yet)
+	//group 9 - (not implemented yet)
+
 
 	//RS274NGC v3 - 3.7 Other Input Codes
 	//Words S and T must be positive
@@ -1235,7 +1238,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 {	
 	float axis[AXIS_COUNT];
 	float feed = new_state->words.f;
-	float spindle = 0;
+	uint8_t spindle = 0;
 	//plane selection
 	uint8_t a = 0;
 	uint8_t b = 0;
@@ -1243,12 +1246,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 	uint8_t offset_b = 0;
 	float radius;
 	//pointer to planner position
-	float* planner_last_pos = planner_get_position();
+	float planner_last_pos[AXIS_COUNT];
+	
+	planner_get_position(planner_last_pos);
 	
 	//RS274NGC v3 - 3.8 Order of Execution
-
-	//set feed (given the feed mode selected)
-	//uCNC works in units per second and not per minute
+	//1. comment (ignored - already filtered)
+	//2. set feed mode (not implemented yet)
+	//3. set feed rate (uCNC works in units per second and not per minute)
 	if(CHECKFLAG(parser_word0, GCODE_WORD_F))
 	{
 		if(new_state->groups.feedrate_mode != 0)
@@ -1257,14 +1262,37 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 		}
 	}
 		
-	//set spindle speed
-	spindle = new_state->words.s;
+	//4. set spindle speed
+	float spindle_perc = MAX(new_state->words.s, g_settings.spindle_min_rpm)/g_settings.spindle_max_rpm;
+	spindle = (uint8_t)roundf(255 * spindle_perc);
 	
-	//select tool (not implemented)
-	//coolant mode already defined in parser_groups (it is then executed when block is read)
-	//overrides (not implemented)
-	//dwell (not implemented)
-	//set active plane (G17, G18, G19)
+	//5. select tool (not implemented yet)
+	//6. change tool (not implemented yet)
+	//7. spindle on/off (not implemented yet)
+	switch(new_state->groups.spindle_turning)
+	{
+		case 0:
+			mc_spindle(spindle, false);
+			break;
+		case 1:
+			mc_spindle(spindle, true);
+			break;
+		case 2:
+			mc_spindle(0, true);
+			break;
+	}
+	
+	//8. coolant on/off
+	mc_coolant(new_state->groups.coolant);
+
+	//9. overrides (not implemented)
+	//10. dwell (not implemented)
+	if(CHECKFLAG(parser_group1, GCODE_GROUP_NONMODAL) && !new_state->groups.nonmodal)
+	{
+		mc_dwell((uint16_t)(new_state->words.p * 1000));
+	}
+	
+	//11. set active plane (G17, G18, G19)
 	switch(new_state->groups.plane)
 	{
 		case 0:
@@ -1287,7 +1315,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 			break;
 	}
 	
-	//set length units (G20, G21).
+	//12. set length units (G20, G21).
 	if(new_state->groups.units == 0) //all internal state variables must be converted to mm
 	{
 		for(uint8_t i =  AXIS_COUNT; i != 0;)
@@ -1318,18 +1346,17 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 		}
 	}
 
-	//cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
-	//cutter length compensation on or off (G43, G49) (not implemented yet)
-	//coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
+	//13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
+	//14. cutter length compensation on or off (G43, G49) (not implemented yet)
+	//15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
 
-	//set path control mode (G61, G61.1, G64) (not implemented yet)
+	//16. set path control mode (G61, G61.1, G64) (not implemented yet)
 	
-	//set distance mode (G90, G91) (OK nothing to be done)
+	//17. set distance mode (G90, G91) (OK nothing to be done)
 
-	//set retract mode (G98, G99)  (not implemented yet)
-	//home (G28, G30) or change coordinate system data (G10) or set axis offsets (G92, G92.1, G92.2, G92.3) or also modifies target if G53 is active
-	
-	//calcs target
+	//18. set retract mode (G98, G99)  (not implemented yet)
+	//19. home (G28, G30) or change coordinate system data (G10) or set axis offsets (G92, G92.1, G92.2, G92.3)
+	//	or also modifies target if G53 is active. These are executed after calculating intemediate targets (G28 ad G30)
 	if(new_state->groups.nonmodal != 5)//if not modified by G53
 	{
 		memset(&axis, 0, sizeof(axis));	
@@ -1400,9 +1427,6 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 		uint8_t error = 0;
 		switch(new_state->groups.nonmodal)
 		{
-			case 0: //G4
-				mc_dwell((uint16_t)(new_state->words.p * 1000));
-				return 0;
 			case 1: //G10
 				index = (uint8_t)new_state->words.p;
 				index--;
@@ -1411,7 +1435,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 					i--;
 					parser_parameters.coord_sys[index][i] = new_state->words.xyzabc[i];
 				}
-				return 0;
+				return STATUS_OK;
 			case 2: //G28
 				error = mc_line((float*)&axis, feed);
 				if(error)
@@ -1435,22 +1459,23 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 				}
 				
 				memcpy(&parser_parameters.g92offset, &parser_offset_pos, sizeof(parser_offset_pos));
-				return 0;
+				return STATUS_OK;
 			case 10: //G92.1
 				memset(&parser_parameters.g92offset,0, sizeof(parser_parameters.g92offset));
 				memset(&parser_offset_pos,0, sizeof(parser_offset_pos));
-				return 0;
+				return STATUS_OK;
 			case 11: //G92.2
 				memset(&parser_offset_pos,0, sizeof(parser_offset_pos));
-				return 0;
+				return STATUS_OK;
 			case 12: //G92.3
 				memcpy(&parser_offset_pos, &parser_parameters.g92offset, sizeof(parser_offset_pos));
-				return 0;
+				return STATUS_OK;
 		}
 	}
 	
 	float x, y;
-	//perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53. //incomplete (canned cycles not supported)
+	//20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
+	//	incomplete (canned cycles not supported)
 	if(!CHECKFLAG(parser_word0 , GCODE_ALL_AXIS)) //if no axis was issued then no motion to be done
 	{
 		return STATUS_OK;
@@ -1529,7 +1554,30 @@ static uint8_t parser_exec_command(parser_state_t *new_state)
 			break;
 	}
 	
-	//stop (M0, M1, M2, M30, M60).
+	//stop (M0, M1, M2, M30, M60) (not implemented yet).
+	switch(new_state->groups.stopping)
+	{
+		case 0: //M0
+			break;
+		case 1: //M1
+			break;
+		case 2: //M2
+		case 3: //M30
+			//reset to initial states
+			new_state->groups.coord_system = 0;
+			memset(&parser_offset_pos,0, sizeof(parser_offset_pos));
+			new_state->groups.plane = 0;
+			new_state->groups.distance_mode = 1;
+			new_state->groups.feedrate_mode = 1;
+			new_state->groups.feed_speed_override = 1;
+			new_state->groups.cutter_radius_compensation = 0;
+			new_state->groups.spindle_turning = 2;
+			new_state->groups.motion = 1;
+			new_state->groups.coolant = 2;			
+			break;
+		case 6:	//M60
+			break;
+	}
 	return STATUS_OK;
 }
 
@@ -1542,11 +1590,18 @@ bool parser_init()
 	memset(&parser_state, 0, sizeof(parser_state_t));
 	memset(&parser_parameters, 0, sizeof(parser_parameters_t));
 	
-	parser_state.groups.units = 1; //default units mm
-	parser_state.groups.feedrate_mode = 1; //default units/m
-	parser_state.groups.spindle_turning = 2; //spindle off
-	parser_state.groups.coolant = 2; //coolant off
-	parser_state.groups.feed_speed_override = 1; //overrides off
+	parser_state.groups.coord_system = 0; 						//G54
+	memset(&parser_offset_pos,0, sizeof(parser_offset_pos));	//G92.2
+	parser_state.groups.plane = 0;								//G17
+	parser_state.groups.distance_mode = 1;						//G91
+	parser_state.groups.feedrate_mode = 1;						//G94
+	parser_state.groups.feed_speed_override = 0;				//M48
+	parser_state.groups.cutter_radius_compensation = 0;			//M40
+	parser_state.groups.spindle_turning = 2;					//M5
+	parser_state.groups.motion = 1;								//G1
+	parser_state.groups.coolant = 2;							//M9
+	parser_state.groups.units = 1;								//G21
+
 	for(uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		parser_max_feed_rate = MAX(parser_max_feed_rate, g_settings.max_feed_rate[i]);
@@ -1657,7 +1712,7 @@ uint8_t parser_grbl_command()
 				return STATUS_SETTING_DISABLED;
 			}
 			
-			if(tc_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
+			if(dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
 			{
 				return STATUS_CHECK_DOOR;
 			}
@@ -1671,7 +1726,7 @@ uint8_t parser_grbl_command()
 				return STATUS_INVALID_STATEMENT;
 			}
 			
-			if(tc_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
+			if(dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
 			{
 				return STATUS_CHECK_DOOR;
 			}

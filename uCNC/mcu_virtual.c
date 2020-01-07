@@ -11,8 +11,9 @@
 				void serial_rx_isr(char c);
 				char serial_tx_isr();
 			trigger_control.h
-				void tc_limits_isr(uint8_t limits);
-				void tc_controls_isr(uint8_t controls);
+				void dio_limits_isr(uint8_t limits);
+				void dio_controls_isr(uint8_t controls);
+				
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 01/11/2019
@@ -28,8 +29,11 @@
 */
 
 #include "config.h"
+#include "mcudefs.h"
+#include "mcumap.h"
+#include "mcu.h"
 
-#if(MCU == MCU_VIRTUAL)
+#ifdef __MCU_VIRTUAL__
 #include <stdio.h>
 #include <conio.h>
 #include <string.h>
@@ -48,8 +52,6 @@ typedef struct virtual_map_t
 	uint8_t probe;
 }VIRTUAL_MAP;
 
-#include "mcumap.h"
-#include "mcu.h"
 #include "settings.h"
 #include "util/timer.h"
 #include "util/virtualserial.h"
@@ -283,6 +285,14 @@ uint8_t mcu_get_probe()
 	return virtualports->probe;
 }
 
+uint8_t mcu_get_analog(uint8_t channel)
+{
+	return 0;
+}
+
+void mcu_set_pwm(uint8_t pwm, uint8_t value)
+{
+}
 
 //outputs
 //sets all step and dir pins

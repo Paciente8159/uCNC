@@ -1,17 +1,17 @@
-# Project: uCNC
+# Project: uCNCVirt
 # Makefile created by Dev-C++ 5.11
 
-CPP      = avr-g++.exe
-CC       = avr-gcc.exe
-WINDRES  = 
-OBJ      = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o cnc.o parser.o trigger_control.o protocol.o motion_control.o pwm_control.o serial.o mcu_avr.o
-LINKOBJ  = main.o settings.o kinematics_cartesian_xyz.o planner.o interpolator_linear.o cnc.o parser.o trigger_control.o protocol.o motion_control.o pwm_control.o serial.o mcu_avr.o
-LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,-u,vfprintf -lprintf_flt -lm -mmcu=atmega328p
-INCS     = -I"D:/Program Files/Dev-Cpp/WinAVR/avr/include"
-CXXINCS  = -I"D:/Program Files/Dev-Cpp/WinAVR/avr/include"
-BIN      = uCNC.elf
-CXXFLAGS = $(CXXINCS) -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
-CFLAGS   = $(INCS) -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_ATMEGA328P
+CPP      = g++.exe -D__DEBUG__
+CC       = gcc.exe -D__DEBUG__
+WINDRES  = windres.exe
+OBJ      = main.o mcu_virtual.o util/timer.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o cnc.o motion_control.o protocol.o parser.o util/virtualserial.o serial.o dio_control.o
+LINKOBJ  = main.o mcu_virtual.o util/timer.o planner.o settings.o kinematics_cartesian_xyz.o interpolator_linear.o cnc.o motion_control.o protocol.o parser.o util/virtualserial.o serial.o dio_control.o
+LIBS     = -L"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/lib" -L"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -g3
+INCS     = -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/include" -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
+CXXINCS  = -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/include" -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/x86_64-w64-mingw32/include" -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"C:/Users/jcmartins/Downloads/DevCpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
+BIN      = uCNCVirtual.exe
+CXXFLAGS = $(CXXINCS) -Og -std=c99 -g3 -DMCU=MCU_VIRTUAL
+CFLAGS   = $(INCS) -Og -std=c99 -g3 -DMCU=MCU_VIRTUAL -D__SIMUL__
 RM       = rm.exe -f
 
 .PHONY: all all-before all-after clean clean-custom
@@ -27,14 +27,20 @@ $(BIN): $(OBJ)
 main.o: main.c
 	$(CC) -c main.c -o main.o $(CFLAGS)
 
+mcu_virtual.o: mcu_virtual.c
+	$(CC) -c mcu_virtual.c -o mcu_virtual.o $(CFLAGS)
+
+util/timer.o: util/timer.c
+	$(CC) -c util/timer.c -o util/timer.o $(CFLAGS)
+
+planner.o: planner.c
+	$(CC) -c planner.c -o planner.o $(CFLAGS)
+
 settings.o: settings.c
 	$(CC) -c settings.c -o settings.o $(CFLAGS)
 
 kinematics_cartesian_xyz.o: kinematics_cartesian_xyz.c
 	$(CC) -c kinematics_cartesian_xyz.c -o kinematics_cartesian_xyz.o $(CFLAGS)
-
-planner.o: planner.c
-	$(CC) -c planner.c -o planner.o $(CFLAGS)
 
 interpolator_linear.o: interpolator_linear.c
 	$(CC) -c interpolator_linear.c -o interpolator_linear.o $(CFLAGS)
@@ -42,23 +48,20 @@ interpolator_linear.o: interpolator_linear.c
 cnc.o: cnc.c
 	$(CC) -c cnc.c -o cnc.o $(CFLAGS)
 
-parser.o: parser.c
-	$(CC) -c parser.c -o parser.o $(CFLAGS)
-
-trigger_control.o: trigger_control.c
-	$(CC) -c trigger_control.c -o trigger_control.o $(CFLAGS)
+motion_control.o: motion_control.c
+	$(CC) -c motion_control.c -o motion_control.o $(CFLAGS)
 
 protocol.o: protocol.c
 	$(CC) -c protocol.c -o protocol.o $(CFLAGS)
 
-motion_control.o: motion_control.c
-	$(CC) -c motion_control.c -o motion_control.o $(CFLAGS)
+parser.o: parser.c
+	$(CC) -c parser.c -o parser.o $(CFLAGS)
 
-pwm_control.o: pwm_control.c
-	$(CC) -c pwm_control.c -o pwm_control.o $(CFLAGS)
+util/virtualserial.o: util/virtualserial.c
+	$(CC) -c util/virtualserial.c -o util/virtualserial.o $(CFLAGS)
 
 serial.o: serial.c
 	$(CC) -c serial.c -o serial.o $(CFLAGS)
 
-mcu_avr.o: mcu_avr.c
-	$(CC) -c mcu_avr.c -o mcu_avr.o $(CFLAGS)
+dio_control.o: dio_control.c
+	$(CC) -c dio_control.c -o dio_control.o $(CFLAGS)

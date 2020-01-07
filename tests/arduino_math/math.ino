@@ -1,4 +1,4 @@
-uint16_t offset;
+/*uint16_t offset;
 
 #define ADD a + b
 #define SUB a - b
@@ -31,9 +31,9 @@ Serial.println(res);\
 Serial.print("Elapsed (clocks): ");\
 Serial.println(clocks-offset);\
 }
-
+*/
 void setup() {
-  offset = 0;
+  /*offset = 0;
   Serial.begin(9600);
   randomSeed(analogRead(0));
   TCCR1A = 0;
@@ -63,11 +63,17 @@ void setup() {
   DO_OP(float, 0,10000,ROUND);
   DO_OP(float, 0,10000,ROUNDA);
   DO_OP(float, 0,50,INV);
-  DO_OP(float, 0,50,DBL);
+  DO_OP(float, 0,50,DBL);*/
+}
+
+void timeloop(uint16_t loops)
+{
+  do{
+  }while(--loops);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  timeloop(1000);
 
 }

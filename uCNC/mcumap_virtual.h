@@ -1,6 +1,7 @@
 /*
 	Name: mcumap_virtual.h
 	Description: Contains all MCU and PIN definitions for a PC to run uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 01/11/2019

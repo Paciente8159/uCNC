@@ -351,26 +351,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit32]
-FileName=trigger_control.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit33]
-FileName=trigger_control.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit34]
 FileName=util\virtualserial.c
 CompileCpp=0
 Folder=
@@ -380,7 +360,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit35]
+[Unit33]
 FileName=util\virtualserial.h
 CompileCpp=0
 Folder=
@@ -390,7 +370,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit36]
+[Unit34]
 FileName=serial.h
 CompileCpp=0
 Folder=
@@ -400,8 +380,28 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit37]
+[Unit35]
 FileName=serial.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit36]
+FileName=dio_control.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit37]
+FileName=dio_control.h
 CompileCpp=0
 Folder=
 Compile=1

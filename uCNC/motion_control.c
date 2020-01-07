@@ -24,7 +24,7 @@
 #include "machinedefs.h"
 #include "utils.h"
 #include "mcu.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "parser.h"
 #include "planner.h"
 #include "interpolator.h"
@@ -46,14 +46,14 @@ bool mc_toogle_checkmode()
 
 uint8_t mc_line(float* target, float feed)
 {
-	/*if(tc_get_limits(LIMITS_MASK))
+	/*if(dio_get_limits(LIMITS_MASK))
 	{
 		cnc_alarm(EXEC_ALARM_HARD_LIMIT);
 		return STATUS_TRAVEL_EXCEEDED;
 	}*/
 
 	//check travel limits
-	if(!tc_check_boundaries(target))
+	if(!dio_check_boundaries(target))
 	{
 		if(cnc_get_exec_state(EXEC_JOG))
 		{
@@ -86,7 +86,7 @@ uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, floa
 	float mc_position[AXIS_COUNT];
 	
 	//copy planner last position
-	memcpy(&mc_position, planner_get_position(), sizeof(mc_position[AXIS_COUNT]));
+	planner_get_position(mc_position);
 	
 	//start points
 	switch(plane)
@@ -243,13 +243,13 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	float target[AXIS_COUNT];
 	uint8_t axis_mask = (1<<axis);
 	
-	memcpy(&target, planner_get_position(), sizeof(target));
+	planner_get_position(target);
 
 	//unlock the cnc
 	cnc_unlock();
 
 	//if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-	if(cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || tc_get_limits(LIMITS_MASK))
+	if(cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || dio_get_limits(LIMITS_MASK))
 	{
 		return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
 	}
@@ -263,7 +263,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	
 	target[axis] += max_home_dist;
 	cnc_set_exec_state(EXEC_HOMING);
-	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * 0.0166666667f);
+	planner_add_line((float*)&target, g_settings.homing_fast_feed_rate * MIN_SEC_MULT);
 	do{
 		cnc_doevents();
 	} while(cnc_get_exec_state(EXEC_RUN));
@@ -274,14 +274,14 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	planner_clear();
 	
 	//if limit was not triggered 
-	if(!tc_get_limits(axis_limit))
+	if(!dio_get_limits(axis_limit))
 	{
 		return EXEC_ALARM_HOMING_FAIL_APPROACH;
 	}
 	
 	cnc_unlock();
 	//zero's the planner
-	memcpy(&target, planner_get_position(), sizeof(target));
+	planner_get_position(target);
 	max_home_dist = g_settings.homing_offset * 5.0f;
 	
 	//checks homing dir
@@ -292,12 +292,12 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	
 	target[axis] += max_home_dist;
 
-	planner_add_line((float*)&target, g_settings.homing_slow_feed_rate * 0.0166666667f);
+	planner_add_line((float*)&target, g_settings.homing_slow_feed_rate * MIN_SEC_MULT);
 
 	do {
 		cnc_doevents();
 		//activates hold (single time) if limit is free
-		if(!tc_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
+		if(!dio_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
 		{
 			cnc_set_exec_state(EXEC_HOLD);
 		}
@@ -309,7 +309,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	planner_clear();
 	cnc_clear_exec_state(EXEC_HOLD);
 	
-	if(tc_get_limits(axis_limit))
+	if(dio_get_limits(axis_limit))
 	{
 		return EXEC_ALARM_HOMING_FAIL_APPROACH;
 	}
@@ -317,3 +317,35 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	return 0;
 }
 
+uint8_t mc_spindle(uint8_t spindle, bool spindle_ccw)
+{
+	#ifdef USE_SPINDLE
+		if(!spindle_ccw)
+		{
+			dio_clear_outputs(SPINDLE_DIR);
+		}
+		else
+		{
+			dio_set_outputs(SPINDLE_DIR);
+		}
+		dio_set_pwm(SPINDLE_PWM_CHANNEL, spindle);
+	#endif
+	
+	return STATUS_OK;
+}
+
+uint8_t mc_coolant(uint8_t coolant)
+{
+	#ifdef COOLANT_ENABLE_PIN
+	switch(coolant)
+	{
+		case 0:	//mist
+		case 1:	//flood
+			dio_set_outputs(COOLANT_ENABLE_PIN);
+			break;
+		case 2:	//off
+			dio_clear_outputs(COOLANT_ENABLE_PIN);
+			break;
+	}
+	#endif
+}

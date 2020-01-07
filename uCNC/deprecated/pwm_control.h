@@ -1,10 +1,10 @@
 /*
-	Name: mcudefs.h
-	Description: Defines the available machine types.
-	
+	Name: pwm_control.h
+	Description: Controller for PWM pins.
+			
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: 01/11/2019
+	Date: 31/12/2019
 
 	uCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,26 +16,14 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUSDEFS_H
-#define MCUSDEFS_H
+#ifndef PWM_CONTROL_H
+#define PWM_CONTROL_H
 
-#include "mcus.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-/*
-	MCU port map
-*/
-#if(MCU == MCU_ATMEGA328P)
-#include "mcumap_atmega328p.h"
-#define __MCU_AVR__
-#endif
-
-#if(MCU == MCU_VIRTUAL)
-#include "mcumap_virtual.h"
-#define __MCU_VIRTUAL__
-#endif
-
-#ifndef MCU
-#error Undefined mcu
-#endif
+void pwm_run(uint8_t pwm, uint8_t value);
+void pwm_wait_run(uint8_t pwm, uint8_t value);
+void pwm_stop(uint8_t pwm);
 
 #endif

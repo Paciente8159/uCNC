@@ -1,6 +1,7 @@
 /*
 	Name: mcumap_atmega328p.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 01/11/2019
@@ -58,7 +59,7 @@
 #define DIRS_OUTREG PORTD
 #define DIRS_DIRREG DDRD
 
-//#define PROBE 5
+#define PROBE 5
 #define LIMIT_X 1
 #define LIMIT_Y 2
 #define LIMIT_Z 4
@@ -68,9 +69,9 @@
 #define LIMITS_ISRREG PCMSK0
 #define LIMITS_ISR_ID 0
 
-//#define LIMIT_X_PULLUP
-//#define LIMIT_Y_PULLUP
-//#define LIMIT_Z_PULLUP
+#define LIMIT_X_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_Z_PULLUP
 
 //Setup control input pins
 #define ESTOP 0
@@ -81,8 +82,8 @@
 #define CONTROLS_ISRREG PCMSK1
 #define CONTROLS_ISR_ID 1
 
-//#define ESTOP_PULLUP
-//#define FHOLD_PULLUP
+#define ESTOP_PULLUP
+#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX 0
@@ -93,7 +94,7 @@
 
 #define PWM0 3
 #define PWM0_DIRREG DDRB
-#define PWM0_REGINDEX 1
+#define PWM0_OCREG A
 #define PWM0_TMRAREG TCCR2A
 #define PWM0_TMRBREG TCCR2B
 #define PWM0_CNTREG OCR2A

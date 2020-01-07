@@ -1,6 +1,7 @@
 /*
 	Name: machinedefs.h
 	Description: For every existing machine defines the number of AXIS and STEPPERS and the AXIS index.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 11/11/2019

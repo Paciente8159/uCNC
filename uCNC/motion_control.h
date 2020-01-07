@@ -1,6 +1,7 @@
 /*
 	Name: motion_control.h
-	Description: Contains the building blocks for performing motions/actions in uCNC
+	Description: Contains the building blocks for performing motions/actions in uCNC.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 19/11/2019
@@ -27,5 +28,7 @@ uint8_t mc_line(float* target, float feed);
 uint8_t mc_arc(float* target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, float feed);
 uint8_t mc_dwell(uint16_t milliseconds);
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+uint8_t mc_spindle(uint8_t spindle, bool spindle_ccw);
+uint8_t mc_coolant(uint8_t coolant);
 
 #endif

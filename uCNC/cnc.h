@@ -1,6 +1,7 @@
 /*
 	Name: cnc.h
-	Description: uCNC main unit
+	Description: uCNC main unit.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 17/09/2019

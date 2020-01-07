@@ -1,3 +1,22 @@
+/*
+	Name: interpolator_linear.c
+	Description: Implementation of a linear acceleration interpolator for uCNC.
+		The linear acceleration interpolator generates step profiles with constant acceleration.
+		
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
+	Date: 13/10/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
+*/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -498,6 +517,9 @@ void interpolator_run()
 	//starts the step isr if is stoped and there are segments to execute
 	if(!cnc_get_exec_state(EXEC_HOLD|EXEC_ALARM|EXEC_RUN) && (interpolator_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
 	{
+		#ifdef STEPPER_ENABLE
+		dio_set_outputs(STEPPER_ENABLE);
+		#endif
 		cnc_set_exec_state(EXEC_RUN); //flags that it started running
 		mcu_start_step_ISR(interpolator_sgm_data[interpolator_sgm_data_read].clocks_per_tick, interpolator_sgm_data[interpolator_sgm_data_read].ticks_per_step);
 	}

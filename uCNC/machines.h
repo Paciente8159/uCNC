@@ -1,6 +1,7 @@
 /*
 	Name: machines.h
 	Description: Defines the available machine types.
+	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 11/11/2019

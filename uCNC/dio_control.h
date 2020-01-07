@@ -1,11 +1,12 @@
 /*
-	Name: trigger_control.h
+	Name: dio_control.h
 	Description: The input control unit for uCNC.
         This is responsible to check all limit switches (both hardware and software), control switches,
         and probe.
 
 		TODO:
 			-implement generic inputs
+			-implement outputs
 
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
@@ -21,18 +22,25 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef TRIGGER_CONTROL_H
-#define TRIGGER_CONTROL_H
+#ifndef DIGITAL_IO_CONTROL_H
+#define DIGITAL_IO_CONTROL_H
 
 #include <stdbool.h>
 
-void tc_init();
-void tc_limits_isr(uint8_t limits);
-void tc_controls_isr(uint8_t controls);
-bool tc_check_boundaries(float* axis);
-uint8_t tc_get_limits(uint8_t limitmask);
-uint8_t tc_get_controls(uint8_t controlmask);
-bool tc_get_probe();
+void dio_init();
+void dio_limits_isr(uint8_t limits);
+void dio_controls_isr(uint8_t controls);
+bool dio_check_boundaries(float* axis);
+uint8_t dio_get_limits(uint8_t limitmask);
+uint8_t dio_get_controls(uint8_t controlmask);
+bool dio_get_probe();
+
+uint16_t dio_get_inputs();
+void dio_set_outputs(uint16_t mask);
+void dio_clear_outputs(uint16_t mask);
+
+uint8_t dio_get_analog(uint8_t channel);
+void dio_set_pwm(uint8_t channel, uint8_t value);
 
 #endif
 

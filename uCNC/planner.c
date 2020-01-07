@@ -1,11 +1,20 @@
 /*
-	Name: planner.c - chain planner for linear motions and acceleration/deacceleration profiles
-	Copyright: 2019 João Martins
+	Name: planner.c
+	Description: Chain planner for linear motions and acceleration/deacceleration profiles.
+        It uses a similar algorithm to Grbl.
+			
+	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: Oct/2019
-	Description: uCNC is a free cnc controller software designed to be flexible and
-	portable to several	microcontrollers/architectures.
-	uCNC is a FREE SOFTWARE under the terms of the GPLv3 (see <http://www.gnu.org/licenses/>).
+	Date: 24/09/2019
+
+	uCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+	uCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #include <stdint.h>
@@ -20,7 +29,7 @@
 #include "planner.h"
 #include "interpolator.h"
 #include "utils.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "cnc.h"
 
 float planner_coord[AXIS_COUNT];
@@ -226,17 +235,11 @@ void planner_recalculate()
 	It also calculates the amount of necessary steps to perform the transitions
 	The trajectory planner does the following actions:
 		1. Calculates the direction change of the new movement
+		2. Adjusts entry speed according to the angle of the junction point
+		3. Recalculates all chained segments 
 */
 void planner_add_line(float *axis, float feed)
 {
-	/*if(tc_get_controls(ESTOP_MASK))
-	{
-		cnc_kill();
-		return;
-	}
-	*/
-	//PLANNER_BLOCK *m = &planner_data[planner_data_write];//buffer_write(planner_buffer, NULL);//BUFFER_WRITE_PTR(planner_buffer);
-	//uint8_t index = planner_data_read;
 	planner_data[planner_data_write].dirbits = 0;
 	planner_data[planner_data_write].target_speed = feed;
 	planner_data[planner_data_write].optimal = false;
@@ -352,13 +355,13 @@ void planner_add_line(float *axis, float feed)
 	//advances the buffer
 	planner_buffer_write();
 	//updates the current planner coordinates
-	memcpy(&planner_coord, axis, AXIS_COUNT*sizeof(float));
+	memcpy(&planner_coord, axis, sizeof(planner_coord));
 }
 
 
-float* planner_get_position()
+void planner_get_position(float* axis)
 {
-	return (float*)&planner_coord;
+	memcpy(axis, planner_coord, sizeof(planner_coord));
 }
 
 void planner_resync_position()

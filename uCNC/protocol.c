@@ -20,7 +20,7 @@
 #include "settings.h"
 #include "serial.h"
 #include "interpolator.h"
-#include "trigger_control.h"
+#include "dio_control.h"
 #include "parser.h"
 #include "cnc.h"
 #include "mcu.h"
@@ -86,7 +86,7 @@ void protocol_send_status()
 			serial_print_str(__romstr__("<Sleep"));
 			break;
 		case EXEC_DOOR:
-			if(tc_get_controls(SAFETY_DOOR_MASK))
+			if(dio_get_controls(SAFETY_DOOR_MASK))
 			{
 				if(cnc_get_exec_state(EXEC_RUN))
 				{
@@ -146,7 +146,7 @@ void protocol_send_status()
 	}
 	else if(cnc_get_exec_state(EXEC_DOOR))
 	{
-		if(tc_get_controls(SAFETY_DOOR_MASK))
+		if(dio_get_controls(SAFETY_DOOR_MASK))
 		{
 			if(cnc_get_exec_state(EXEC_RUN))
 			{
@@ -205,56 +205,56 @@ void protocol_send_status()
 	serial_putc(',');
 	serial_putc('0');
 
-	if(tc_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | tc_get_limits(LIMITS_MASK))
+	if(dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | dio_get_limits(LIMITS_MASK))
 	{
 		serial_print_str(__romstr__("|Pn:"));
 		
-		if(tc_get_controls(ESTOP_MASK))
+		if(dio_get_controls(ESTOP_MASK))
 		{
 			serial_putc('R');
 		}
 		
-		if(tc_get_controls(SAFETY_DOOR_MASK))
+		if(dio_get_controls(SAFETY_DOOR_MASK))
 		{
 			serial_putc('D');
 		}
 		
-		if(tc_get_controls(FHOLD_MASK))
+		if(dio_get_controls(FHOLD_MASK))
 		{
 			serial_putc('H');
 		}
 		
-		if(tc_get_probe())
+		if(dio_get_probe())
 		{
 			serial_putc('P');
 		}
 		
-		if(tc_get_limits(LIMIT_X_MASK))
+		if(dio_get_limits(LIMIT_X_MASK))
 		{
 			serial_putc('X');
 		}
 		
-		if(tc_get_limits(LIMIT_Y_MASK))
+		if(dio_get_limits(LIMIT_Y_MASK))
 		{
 			serial_putc('Y');
 		}
 		
-		if(tc_get_limits(LIMIT_Z_MASK))
+		if(dio_get_limits(LIMIT_Z_MASK))
 		{
 			serial_putc('Z');
 		}
 		
-		if(tc_get_limits(LIMIT_A_MASK))
+		if(dio_get_limits(LIMIT_A_MASK))
 		{
 			serial_putc('A');
 		}
 		
-		if(tc_get_limits(LIMIT_B_MASK))
+		if(dio_get_limits(LIMIT_B_MASK))
 		{
 			serial_putc('B');
 		}
 		
-		if(tc_get_limits(LIMIT_C_MASK))
+		if(dio_get_limits(LIMIT_C_MASK))
 		{
 			serial_putc('C');
 		}

@@ -2,6 +2,7 @@
 	Name: kinematics_corexy.c
 	Description: Implements all kinematics math equations to translate the motion of a coreXY machine.
 		Also implements the homing motion for this type of machine.
+		
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
 	Date: 11/11/2019
