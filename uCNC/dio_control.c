@@ -25,23 +25,8 @@
 #include "mcu.h"
 #include "mcumap.h"
 #include "dio_control.h"
+#include "parser.h"
 #include "cnc.h"
-
-static volatile bool dio_homing;
-static uint8_t dio_limits;
-static uint8_t dio_controls;
-static uint8_t dio_probe;
-static uint16_t dio_outputs;
-
-void dio_init()
-{
-	uint8_t l = (g_settings.hard_limits_enabled) ? (mcu_get_limits() ^ g_settings.limits_invert_mask) : 0;
-	dio_limits = l & ~PROBE_MASK; 
-	dio_controls = mcu_get_controls() ^ g_settings.control_invert_mask;
-	dio_probe = l & PROBE_MASK;
-	dio_outputs = 0; //set outputs to default state
-	mcu_set_outputs(dio_outputs);
-}
 
 void dio_limits_isr(uint8_t limits)
 {	
@@ -49,10 +34,7 @@ void dio_limits_isr(uint8_t limits)
 	
 	if(g_settings.hard_limits_enabled)
 	{
-		dio_limits = limits & ~PROBE_MASK;
-		dio_probe = limits & PROBE_MASK;
-		//limits &= dio_limitsmask;
-		if(dio_limits)
+		if(limits)
 		{
 			cnc_stop();
 			cnc_alarm(EXEC_ALARM_HARD_LIMIT);
@@ -62,22 +44,36 @@ void dio_limits_isr(uint8_t limits)
 
 void dio_controls_isr(uint8_t controls)
 {
-	dio_controls = controls ^ g_settings.control_invert_mask;
+	controls ^= g_settings.control_invert_mask;
 	
-	if(dio_controls & ESTOP_MASK)
+	if(controls & ESTOP_MASK)
 	{
 		cnc_exec_rt_command(RT_CMD_RESET);
 	}
 	
-	if(dio_controls & SAFETY_DOOR_MASK)
+	if(controls & FHOLD_MASK)
 	{
-		cnc_exec_rt_command(RT_CMD_SAFETY_DOOR);
+		cnc_call_rt_command(RT_CMD_FEED_HOLD);
 	}
+}
+
+void dio_probe_isr(uint8_t probe)
+{
+	//on hit enables hold (directly)
+	cnc_set_exec_state(EXEC_HOLD);
+	//stores rt position
+	parser_sync_probe();
 	
-	if(dio_controls & FHOLD_MASK)
+	
+	/*bool hit = ((!g_settings.probe_invert_mask) ? (probe != 0) : (probe == 0));
+	
+	if(hit)
 	{
-		cnc_exec_rt_command(RT_CMD_FEED_HOLD);
-	}
+		//on hit enables hold (directly)
+		cnc_set_exec_state(EXEC_HOLD);
+		//stores rt position
+		itp_get_rt_position(dio_last_probe);
+	}*/
 }
 
 bool dio_check_boundaries(float* axis)
@@ -86,96 +82,15 @@ bool dio_check_boundaries(float* axis)
 	{
 		return true;
 	}
-	
-	if(cnc_is_homed())
+
+	for(uint8_t i = AXIS_COUNT; i!=0;)
 	{
-		#ifdef AXIS_X
-		if(axis[AXIS_X]<0 || axis[AXIS_X]>g_settings.max_distance[AXIS_X])
+		i--;
+		float value = (axis[i] < 0) ? -axis[i] : axis[i];
+		if(value > g_settings.max_distance[i])
 		{
-			//dio_limits |= LIMIT_X_MASK;
-			return false;
-		}	
-		#endif
-		#ifdef AXIS_Y
-		if(axis[AXIS_Y]<0 || axis[AXIS_Y]>g_settings.max_distance[AXIS_Y])
-		{
-			//dio_limits |= LIMIT_Y_MASK;
 			return false;
 		}
-		#endif
-		#ifdef AXIS_Z
-		if(axis[AXIS_Z]<0 || axis[AXIS_Z]>g_settings.max_distance[AXIS_Z])
-		{
-			//dio_limits |= LIMIT_Z_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_A
-		if(axis[AXIS_A]<0 || axis[AXIS_A]>g_settings.max_distance[AXIS_A])
-		{
-			//dio_limits |= LIMIT_A_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_B
-		if(axis[AXIS_B]<0 || axis[AXIS_B]>g_settings.max_distance[AXIS_B])
-		{
-			//dio_limits |= LIMIT_B_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_C
-		if(axis[AXIS_C]<0 || axis[AXIS_C]>g_settings.max_distance[AXIS_C])
-		{
-			//dio_limits |= LIMIT_C_MASK;
-			return false;
-		}
-		#endif
-	}
-	else
-	{
-		#ifdef AXIS_X
-		if(axis[AXIS_X]<-g_settings.max_distance[AXIS_X] || axis[AXIS_X]>g_settings.max_distance[AXIS_X])
-		{
-			//dio_limits |= LIMIT_X_MASK;
-			return false;
-		}	
-		#endif
-		#ifdef AXIS_Y
-		if(axis[AXIS_Y]<-g_settings.max_distance[AXIS_Y] || axis[AXIS_Y]>g_settings.max_distance[AXIS_Y])
-		{
-			//dio_limits |= LIMIT_Y_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_Z
-		if(axis[AXIS_Z]<-g_settings.max_distance[AXIS_Z] || axis[AXIS_Z]>g_settings.max_distance[AXIS_Z])
-		{
-			//dio_limits |= LIMIT_Z_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_A
-		if(axis[AXIS_A]<-g_settings.max_distance[AXIS_A] || axis[AXIS_A]>g_settings.max_distance[AXIS_A])
-		{
-			//dio_limits |= LIMIT_A_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_B
-		if(axis[AXIS_B]<-g_settings.max_distance[AXIS_B] || axis[AXIS_B]>g_settings.max_distance[AXIS_B])
-		{
-			//dio_limits |= LIMIT_B_MASK;
-			return false;
-		}
-		#endif
-		#ifdef AXIS_C
-		if(axis[AXIS_C]<-g_settings.max_distance[AXIS_C] || axis[AXIS_C]>g_settings.max_distance[AXIS_C])
-		{
-			//dio_limits |= LIMIT_C_MASK;
-			return false;
-		}
-		#endif
 	}
 
 	return true;
@@ -183,17 +98,27 @@ bool dio_check_boundaries(float* axis)
 
 uint8_t dio_get_limits(uint8_t limitmask)
 {
-	return (dio_limits & limitmask);
+	return (mcu_get_limits() & ~PROBE_MASK & limitmask);
 }
 
 uint8_t dio_get_controls(uint8_t controlmask)
 {
-	return (dio_controls & controlmask);
+	return (mcu_get_controls() & controlmask);
+}
+
+void dio_enable_probe()
+{
+	mcu_enable_probe_isr();
+}
+
+void dio_disable_probe()
+{
+	mcu_disable_probe_isr();
 }
 
 bool dio_get_probe()
 {
-	return dio_probe;
+	return (mcu_get_limits() & PROBE_MASK);
 }
 
 uint16_t dio_get_inputs()
@@ -203,14 +128,22 @@ uint16_t dio_get_inputs()
 
 void dio_set_outputs(uint16_t mask)
 {
-	dio_outputs |= mask;
-	mcu_set_outputs(dio_outputs);
+	mcu_set_outputs(mcu_get_outputs() | mask);
 }
 
 void dio_clear_outputs(uint16_t mask)
 {
-	dio_outputs &= ~mask;
-	mcu_set_outputs(dio_outputs);
+	mcu_set_outputs(mcu_get_outputs() & ~mask);
+}
+
+void dio_toogle_outputs(uint16_t mask)
+{
+	mcu_set_outputs(mcu_get_outputs() ^ mask);
+}
+
+uint16_t dio_get_outputs()
+{
+	return mcu_get_outputs();
 }
 
 uint8_t dio_get_analog(uint8_t channel)
@@ -221,4 +154,9 @@ uint8_t dio_get_analog(uint8_t channel)
 void dio_set_pwm(uint8_t channel, uint8_t value)
 {
 	mcu_set_pwm(channel, value);
+}
+
+uint8_t dio_get_pwm(uint8_t channel)
+{
+	return mcu_get_pwm(channel);
 }

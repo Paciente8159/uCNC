@@ -25,16 +25,18 @@
 #include "serial.h"
 #include "utils.h"
 
+#include <math.h>
+
 #define RX_BUFFER_SIZE 128
-#define TX_BUFFER_SIZE 128
+#define TX_BUFFER_SIZE 112
 
 
-static char serial_rx_buffer[RX_BUFFER_SIZE];
+static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 volatile static uint8_t serial_rx_count;
 volatile static uint8_t serial_rx_read;
 volatile static uint8_t serial_rx_write;
 
-static char serial_tx_buffer[TX_BUFFER_SIZE];
+static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
 volatile static uint8_t serial_tx_read;
 volatile static uint8_t serial_tx_write;
 volatile static uint8_t serial_tx_count;
@@ -69,7 +71,7 @@ char serial_getc()
 	#ifdef ECHO_CMD
 	static bool echo = false;
 	#endif
-	char c = '\0';
+	unsigned char c = '\0';
 	
 	if(!serial_rx_count)
 	{
@@ -117,7 +119,7 @@ char serial_peek()
 
 void serial_inject_cmd(const char* __s)
 {
-	char c = rom_strptr(__s++);
+	unsigned char c = rom_strptr(__s++);
 	do{
 		serial_rx_buffer[serial_rx_write] = c;
 		serial_rx_write++;
@@ -138,7 +140,7 @@ void serial_discard_cmd()
 	}
 }
 
-void serial_putc(char c)
+void serial_putc(unsigned char c)
 {
 	while((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
 	{
@@ -162,7 +164,7 @@ void serial_putc(char c)
 
 void serial_print_str(const char* __s)
 {
-	char c = rom_strptr(__s++);
+	unsigned char c = rom_strptr(__s++);
 	do
 	{
 		serial_putc(c);
@@ -170,6 +172,33 @@ void serial_print_str(const char* __s)
 	} while(c != 0);
 }
 
+void serial_print_int(uint16_t num)
+{
+	if (num == 0)
+	{
+		serial_putc('0');
+		return;
+	}
+	
+	unsigned char buffer[6];
+	uint8_t i = 0;
+	
+	while (num > 0)
+	{
+		uint8_t digit = num % 10;
+		num = ((((uint32_t)num * (UINT16_MAX/10))>>16) + ((digit!=0) ? 0 : 1)); //same has divide by 10 but faster
+		buffer[i++] = digit;
+		/*buffer[i++] = num % 10;
+		num /= 10;*/
+	}
+	
+	do
+	{
+		i--;
+		serial_putc('0' + buffer[i]);
+	}while(i);
+}
+/*
 void serial_print_int(uint16_t num)
 {
 	char buffer[6];
@@ -182,29 +211,53 @@ void serial_print_int(uint16_t num)
 		i++;
 	} while(buffer[i] != 0);	
 
-}
+}*/
 
 void serial_print_flt(float num)
 {
-	char buffer[12];
-	if(!g_settings.report_inches)
-	{
-		sprintf(buffer, MSG_FLT, num);
-	}
-	else
+	if(g_settings.report_inches)
 	{
 		num *= MM_INCH_MULT;
-		sprintf(buffer, MSG_FLT_IMPERIAL, num);
 	}
 	
-	
-	uint8_t i = 0;
-	do
+	if(num < 0)
 	{
-		serial_putc(buffer[i]);
-		i++;
-	} while(buffer[i] != 0);
+		serial_putc('-');
+		num = -num;
+	}
 	
+	uint16_t digits = (uint16_t)floorf(num);
+	serial_print_int(digits);
+	serial_putc('.');
+	num -= digits;
+	
+	num *= 1000;
+	digits = (uint16_t)roundf(num);
+	
+	if(g_settings.report_inches)
+	{
+		if(digits<10000)
+		{
+			serial_putc('0');
+		}
+		
+		if(digits<1000)
+		{
+			serial_putc('0');
+		}
+	}
+	
+	if(digits<100)
+	{
+		serial_putc('0');
+	}
+	
+	if(digits<10)
+	{
+		serial_putc('0');
+	}
+
+	serial_print_int(digits);
 }
 
 void serial_print_intarr(uint16_t* arr, int count)
@@ -247,16 +300,18 @@ void serial_flush()
 
 //ISR
 
-void serial_rx_isr(char c)
+void serial_rx_isr(unsigned char c)
 {
 	static uint8_t comment_count = 0;
 	
-	if((c > 0x21) && (c < 0x7B))
+	c &= 0x7F;
+	
+	if((c > 0x22) && (c < 0x7B))
 	{
 		switch(c)
 		{
 			case RT_CMD_REPORT:
-				cnc_exec_rt_command(RT_CMD_REPORT);
+				cnc_call_rt_command((uint8_t)RT_CMD_REPORT);
 				return;
 			case '(':
 				comment_count++;
@@ -286,7 +341,7 @@ void serial_rx_isr(char c)
 				comment_count = 0;
 				break;
 			default:
-				cnc_exec_rt_command((uint8_t)c);
+				cnc_call_rt_command((uint8_t)c);
 				return;
 		}
 	}

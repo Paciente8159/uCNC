@@ -122,19 +122,25 @@ const settings_t __rom__ default_settings = {\
 	.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
 	.homing_enabled = DEFAULT_HOMING_ENABLED,
 	.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-	.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM
+	.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
+	.crc = 0
 	};
 
-static uint8_t settings_crc;
+//static uint8_t settings_crc;
 
-bool settings_init()
+void settings_init()
 {
-	return (settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t)) & settings_crc!=0);
+	uint8_t crc = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t) - 1);
+	if(crc != g_settings.crc || g_settings.crc == 0)
+	{
+		settings_reset();
+		protocol_send_error(STATUS_SETTING_READ_FAIL);
+	}
 }
 
-bool settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
 {
-	settings_crc = 0;
+	uint8_t settings_crc = 0;
 	for(uint16_t i = size; i !=0; )
 	{
 		i--;
@@ -142,16 +148,28 @@ bool settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
 		settings_crc = *(uint8_t*)rom_read_byte(&crc7_table[settings_crc ^ __ptr[i]]);
 	}
 	
-	return (settings_crc == mcu_eeprom_getc(size + address));
+	if(address == SETTINGS_ADDRESS_OFFSET)
+	{
+		g_settings.crc = mcu_eeprom_getc(size + 1 + address);
+	}
+	
+	return settings_crc;
 }
 
 void settings_reset()
 {
-	settings_t* ptr = (settings_t*)&g_settings;
-	uint8_t size = sizeof(settings_t);
+	uint8_t* __ptr = (uint8_t*)&g_settings;
+	uint8_t size = sizeof(settings_t) - 1;
 	
 	rom_memcpy(&g_settings, &default_settings, size);
-	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)ptr, size);
+	g_settings.crc = 0;
+	for(uint16_t i = size; i !=0; )
+	{
+		i--;
+		g_settings.crc = *(uint8_t*)rom_read_byte(&crc7_table[g_settings.crc ^ __ptr[i]]);
+	}
+
+	settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, sizeof(settings_t));
 }
 
 void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size)

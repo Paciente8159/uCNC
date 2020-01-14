@@ -24,8 +24,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "config.h"
-#include "mcudefs.h"
-#include "mcumap.h"
 
 void mcu_init();
 
@@ -34,6 +32,10 @@ void mcu_init();
 uint16_t mcu_get_inputs();
 uint8_t mcu_get_controls();
 uint8_t mcu_get_limits();
+#ifdef PROBE
+void mcu_enable_probe_isr();
+void mcu_disable_probe_isr();
+#endif
 
 uint8_t mcu_get_analog(uint8_t channel);
 
@@ -41,8 +43,10 @@ uint8_t mcu_get_analog(uint8_t channel);
 void mcu_set_steps(uint8_t value);
 void mcu_set_dirs(uint8_t value);
 void mcu_set_outputs(uint16_t value);
+uint16_t mcu_get_outputs();
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value);
+uint8_t mcu_get_pwm(uint8_t pwm);
 
 //Communication functions
 void mcu_start_send(); //Start async send

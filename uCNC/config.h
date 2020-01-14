@@ -68,12 +68,12 @@
 	Spindle configurations.
 	Uncomment to enable
 */
-//#define USE_SPINDLE
+#define USE_SPINDLE
 #ifdef USE_SPINDLE
-	//set PWM channel to use (valid values 0 - 3)
-	#define SPINDLE_PWM_CHANNEL 0
-	//sets the spindle dir pin mask
-	#define SPINDLE_DIR DOUT0_MASK
+//set PWM channel to use (valid values 0 - 3)
+#define SPINDLE_PWM_CHANNEL 0
+//sets the spindle dir pin mask
+#define SPINDLE_DIR DOUT0_MASK
 #endif
 
 /*
@@ -82,14 +82,46 @@
 //#define STEPPER_ENABLE DOUT1_MASK
 
 /*
-	Define a coolant enable pin
+	Define a coolant flood and mist pin
 */
-//#define COOLANT_ENABLE_PIN DOUT2
+#define USE_COOLANT
+#ifdef USE_COOLANT
+#define COOLANT_FLOOD_PIN DOUT1_MASK
+#define COOLANT_MIST_PIN DOUT2_MASK
+#endif
 
 /*
 	Special definitions used to debug code
 */
 //#define __DEBUG__
 //#define __PERFSTATS__
+
+/*
+	Feed overrides increments and ranges
+*/
+#define FEED_OVR_MAX 2.0
+#define FEED_OVR_MIN 0.1
+#define FEED_OVR_COARSE 0.1
+#define FEED_OVR_FINE 0.01
+
+/*
+	Rapid feed overrides ranges
+*/
+#define RAPID_FEED_OVR1 0.50
+#define RAPID_FEED_OVR2 0.25
+
+/*
+	Spindle speed overrides increments and ranges
+*/
+#define SPINDLE_OVR_MAX 2.0
+#define SPINDLE_OVR_MIN 0.1
+#define SPINDLE_OVR_COARSE 0.1
+#define SPINDLE_OVR_FINE 0.01
+
+/*
+	G-code options
+*/
+#define GCODE_IGNORE_LINE_NUMBERS
+//#define GCODE_ACCEPT_WORD_E
 
 #endif

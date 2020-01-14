@@ -23,11 +23,6 @@
 #include <stdint.h>
 
 /*
-	Initializes kinematics
-*/
-void kinematics_init();
-
-/*
 	Converts from machine absolute coordinates to step position.
 	Note: Machine absolute coordinates go from 0 to max_axis.
 	This is done after computing position relative to the active coordinate system
@@ -45,6 +40,6 @@ void kinematics_apply_forward(uint32_t* steps, float* axis);
 /*
 	Executes the homing motion for the given kinematic
 */
-void kinematics_home();
+uint8_t kinematics_home();
 
 #endif

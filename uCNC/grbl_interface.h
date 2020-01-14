@@ -104,7 +104,7 @@
 #define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
 
 #define MSG_INT "%d"
-#define MSG_FLT "%0.3f"
-#define MSG_FLT_IMPERIAL "%0.5f"
+//#define MSG_FLT "%0.3f"
+//#define MSG_FLT_IMPERIAL "%0.5f"
 
 #endif

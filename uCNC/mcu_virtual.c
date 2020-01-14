@@ -5,8 +5,8 @@
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
 			interpolator.h
-				void interpolator_step_isr();
-				void interpolator_step_reset_isr();
+				void itp_step_isr();
+				void itp_step_reset_isr();
 			serial.h
 				void serial_rx_isr(char c);
 				char serial_tx_isr();
@@ -50,6 +50,7 @@ typedef struct virtual_map_t
 	uint8_t controls;
 	uint8_t limits;
 	uint8_t probe;
+	uint16_t outputs;
 }VIRTUAL_MAP;
 
 #include "settings.h"
@@ -69,6 +70,8 @@ typedef struct virtual_map_t
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
+
+#define USECONSOLE
 
 virtports_t virtualports;
 
@@ -150,13 +153,13 @@ void* timersimul()
 		{
 			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
 			{
-				interpolator_step_isr();
+				itp_step_isr();
 			}
 			
 			if((*pulse_counter_ptr)>=resetpulse_interval && pulse_enabled )
 			{
 				(*pulse_counter_ptr) = 0;
-				interpolator_step_reset_isr();
+				itp_step_reset_isr();
 			}
 		}
 	}
@@ -285,6 +288,15 @@ uint8_t mcu_get_probe()
 	return virtualports->probe;
 }
 
+#ifdef PROBE
+void mcu_enable_probe_isr()
+{
+}
+void mcu_disable_probe_isr()
+{
+}
+#endif
+
 uint8_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
@@ -292,6 +304,11 @@ uint8_t mcu_get_analog(uint8_t channel)
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
+}
+
+uint8_t mcu_get_pwm(uint8_t pwm)
+{
+	return 0;
 }
 
 //outputs
@@ -310,6 +327,10 @@ void mcu_set_dirs(uint8_t value)
 void mcu_set_outputs(uint16_t value)
 {
 	//g_mcu_outputs.outputs = value;
+}
+uint16_t mcu_get_outputs()
+{
+	return 0;
 }
 
 //Communication functions

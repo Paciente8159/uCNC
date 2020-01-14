@@ -62,4 +62,9 @@ extern virtports_t virtualports;
 #define PROBE 3
 #define PROBE_INREG virtualports->limits
 
+#define PWM0 0
+#define DOUT0 0
+#define DOUT1 1
+#define DOUT2 2
+
 #endif

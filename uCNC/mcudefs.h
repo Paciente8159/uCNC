@@ -26,7 +26,6 @@
 */
 #if(MCU == MCU_ATMEGA328P)
 #include "mcumap_atmega328p.h"
-#define __MCU_AVR__
 #endif
 
 #if(MCU == MCU_VIRTUAL)

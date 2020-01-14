@@ -26,23 +26,30 @@
 #include "mcu.h"
 #include "protocol.h"
 
+static void procotol_send_newline()
+{
+	serial_putc('\r');
+	serial_putc('\n');
+}
+
 void protocol_send_ok()
 {
-	serial_print_str(__romstr__("ok\r\n"));
+	serial_print_str(__romstr__("ok"));
+	procotol_send_newline();
 }
 
 void protocol_send_error(uint8_t error)
 {
 	serial_print_str(__romstr__("error:"));
 	serial_print_int(error);
-	serial_print_str(__romstr__("\r\n"));
+	procotol_send_newline();
 }
 
 void protocol_send_alarm(uint8_t alarm)
 {
 	serial_print_str(__romstr__("ALARM:"));
 	serial_print_int(alarm);
-	serial_print_str(__romstr__("\r\n"));
+	procotol_send_newline();
 }
 
 void protocol_send_string(const char* __s)
@@ -68,8 +75,9 @@ void protocol_send_status()
 		report_limit = 10;
 	}
 	
-	interpolator_get_rt_position((float*)&axis);
-	float feed = interpolator_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+	itp_get_rt_position((float*)&axis);
+	float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+	float spindle = itp_get_rt_spindle();
 	
 	uint8_t state = cnc_get_exec_state(0xFF);
 	uint8_t filter = EXEC_SLEEP;
@@ -80,130 +88,75 @@ void protocol_send_status()
 	
 	state &= filter;
 	
+	serial_putc('<');
 	switch(state)
 	{
 		case EXEC_SLEEP:
-			serial_print_str(__romstr__("<Sleep"));
+			serial_print_str(__romstr__("Sleep"));
 			break;
 		case EXEC_DOOR:
+			serial_print_str(__romstr__("Door:"));
 			if(dio_get_controls(SAFETY_DOOR_MASK))
 			{
+				
 				if(cnc_get_exec_state(EXEC_RUN))
 				{
-					serial_print_str(__romstr__("<Door:2"));
+					serial_putc('2');
 				}
 				else
 				{
-					serial_print_str(__romstr__("<Door:1"));
+					serial_putc('1');
 				}
 			}
 			else
 			{
 				if(cnc_get_exec_state(EXEC_RUN))
 				{
-					serial_print_str(__romstr__("<Door:3"));
+					serial_putc('3');
 				}
 				else
 				{
-					serial_print_str(__romstr__("<Door:0"));
+					serial_putc('0');
 				}
 			}
 			break;
 		case EXEC_ALARM:
-			serial_print_str(__romstr__("<Alarm"));
+			serial_print_str(__romstr__("Alarm"));
 			break;
 		case EXEC_HOLD:
+			serial_print_str(__romstr__("Hold:"));
 			if(cnc_get_exec_state(EXEC_RUN))
 			{
-				serial_print_str(__romstr__("<Hold:1"));
+				serial_putc('1');
 			}
 			else
 			{
-				serial_print_str(__romstr__("<Hold:0"));
+				serial_putc('0');
 			}
 			break;
 		case EXEC_HOMING:
-			serial_print_str(__romstr__("<Home"));
+			serial_print_str(__romstr__("Home"));
 			break;
 		case EXEC_JOG:
-			serial_print_str(__romstr__("<Jog"));
+			serial_print_str(__romstr__("Jog"));
 			break;
 		case EXEC_RUN:
-			serial_print_str(__romstr__("<Run"));
+			serial_print_str(__romstr__("Run"));
 			break;
 		default:
-			serial_print_str(__romstr__("<Idle"));
+			serial_print_str(__romstr__("Idle"));
 			break;
 	}
-	/*
-	if(cnc_get_exec_state(EXEC_SLEEP))
-	{
-		serial_print_str(__romstr__("<Sleep"));
-	}
-	else if(cnc_get_exec_state(EXEC_ALARM))
-	{
-		serial_print_str(__romstr__("<Alarm"));
-	}
-	else if(cnc_get_exec_state(EXEC_DOOR))
-	{
-		if(dio_get_controls(SAFETY_DOOR_MASK))
-		{
-			if(cnc_get_exec_state(EXEC_RUN))
-			{
-				serial_print_str(__romstr__("<Door:2"));
-			}
-			else
-			{
-				serial_print_str(__romstr__("<Door:1"));
-			}
-		}
-		else
-		{
-			if(cnc_get_exec_state(EXEC_RUN))
-			{
-				serial_print_str(__romstr__("<Door:3"));
-			}
-			else
-			{
-				serial_print_str(__romstr__("<Door:0"));
-			}
-		}
-	}
-	else if(cnc_get_exec_state(EXEC_HOMING))
-	{
-		serial_print_str(__romstr__("<Home"));
-	}
-	else if(cnc_get_exec_state(EXEC_JOG))
-	{
-		serial_print_str(__romstr__("<Jog"));
-	}
-	else if(cnc_get_exec_state(EXEC_HOLD))
-	{
-		if(cnc_get_exec_state(EXEC_RUN))
-		{
-			serial_print_str(__romstr__("<Hold:1"));
-		}
-		else
-		{
-			serial_print_str(__romstr__("<Hold:0"));
-		}
-	}
-	else if(cnc_get_exec_state(EXEC_RUN))
-	{
-		serial_print_str(__romstr__("<Run"));
-	}
-	else
-	{
-		serial_print_str(__romstr__("<Idle"));
-	}
-	*/	
+	
 	serial_print_str(__romstr__("|MPos:"));
 	serial_print_fltarr(axis, AXIS_COUNT);
 	
 	serial_print_str(__romstr__("|FS:"));
 	serial_print_int((uint16_t)feed);
+	#ifdef USE_SPINDLE
 	serial_putc(',');
-	serial_putc('0');
+	serial_print_int((uint16_t)spindle);
+	#endif
 
 	if(dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | dio_get_limits(LIMITS_MASK))
 	{
@@ -279,7 +232,8 @@ void protocol_send_status()
 	protocol_printf(__romstr__("|Perf:%d,%d"), stepclocks, stepresetclocks);
 	#endif
 	*/
-	serial_print_str(__romstr__(">\r\n"));
+	serial_putc('>');
+	procotol_send_newline();
 	report_count++;
 }
 
@@ -293,7 +247,8 @@ void protocol_send_gcode_coordsys()
 		serial_print_int(i + 54);
 		serial_putc(':');
 		serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
-		serial_print_str(__romstr__("]\r\n"));
+		serial_putc(']');
+		procotol_send_newline();
 	}
 	
 	for(uint8_t i = 6; i < COORD_SYS_COUNT; i++)
@@ -301,20 +256,31 @@ void protocol_send_gcode_coordsys()
 		serial_print_int(i - 5);
 		serial_putc(':');
 		serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
-		serial_print_str(__romstr__("]\r\n"));
+		serial_putc(']');
+		procotol_send_newline();
 	}
 	
 	serial_print_str(__romstr__("[G28:"));
 	serial_print_fltarr(parser_get_coordsys(28), AXIS_COUNT);
-	serial_print_str(__romstr__("]\r\n"));
+	serial_putc(']');
+	procotol_send_newline();
 	
 	serial_print_str(__romstr__("[G30:"));
 	serial_print_fltarr(parser_get_coordsys(30), AXIS_COUNT);
-	serial_print_str(__romstr__("]\r\n"));
+	serial_putc(']');
+	procotol_send_newline();
 	
 	serial_print_str(__romstr__("[G92:"));
 	serial_print_fltarr(parser_get_coordsys(92), AXIS_COUNT);
-	serial_print_str(__romstr__("]\r\n"));
+	serial_putc(']');
+	procotol_send_newline();
+	
+	serial_print_str(__romstr__("[PRB:"));
+	serial_print_fltarr(parser_get_coordsys(255), AXIS_COUNT);
+	serial_putc(':');
+	serial_putc('0' + parser_get_probe_result());
+	serial_putc(']');
+	procotol_send_newline();
 }
 
 void protocol_send_gcode_modes()
@@ -330,14 +296,14 @@ void protocol_send_gcode_modes()
 	for(uint8_t i = 0; i < 5; i++)
 	{
 		serial_putc('G');
-		serial_print_int(modalgroups[i]);
+		serial_print_int((int16_t)modalgroups[i]);
 		serial_putc(' ');
 	}
 	
 	for(uint8_t i = 5; i < 8; i++)
 	{
 		serial_putc('M');
-		serial_print_int(modalgroups[i]);
+		serial_print_int((int16_t)modalgroups[i]);
 		serial_putc(' ');
 	}
 	
@@ -352,7 +318,8 @@ void protocol_send_gcode_modes()
 	serial_putc('S');
 	serial_print_int(spindle);
 
-	serial_print_str(__romstr__("]\r\n"));
+	serial_putc(']');
+	procotol_send_newline();
 }
 
 static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
@@ -361,8 +328,7 @@ static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_int(value);
-	serial_putc('\r');
-	serial_putc('\n');
+	procotol_send_newline();
 }
 
 static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
@@ -371,8 +337,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_flt(value);
-	serial_putc('\r');
-	serial_putc('\n');
+	procotol_send_newline();
 }
 
 void protocol_send_gcode_settings()

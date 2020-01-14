@@ -30,18 +30,15 @@
 #include "config.h"
 #include "machinedefs.h"
 
-extern float g_parser_current_pos[AXIS_COUNT];
-
-bool parser_init();
-void parser_reset();
-bool parser_is_ready();
+void parser_init();
+//void parser_reset();
 uint8_t parser_gcode_command();
 uint8_t parser_grbl_command();
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);
 float* parser_get_coordsys(uint8_t system_num);
-void parser_print_coordsys();
-bool parser_get_float(float *value, bool *isinteger);
 void parser_get_wco(float* axis);
+void parser_sync_probe();
+uint8_t parser_get_probe_result();
 void parser_parameters_load();
 void parser_parameters_reset();
 void parser_parameters_save();

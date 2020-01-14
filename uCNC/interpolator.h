@@ -23,16 +23,16 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-void interpolator_init();
-bool interpolator_is_buffer_full();
-void interpolator_run();
-void interpolator_update();
-void interpolator_step_isr();
-void interpolator_step_reset_isr();
-void interpolator_stop();
-void interpolator_clear();
-void interpolator_get_rt_position(float* axis);
-void interpolator_reset_rt_position();
-float interpolator_get_rt_feed();
+void itp_init();
+void itp_run();
+void itp_update();
+void itp_step_isr();
+void itp_step_reset_isr();
+void itp_stop();
+void itp_clear();
+void itp_get_rt_position(float* axis);
+void itp_reset_rt_position();
+float itp_get_rt_feed();
+float itp_get_rt_spindle();
 
 #endif

@@ -27,20 +27,30 @@
 
 #include <stdbool.h>
 
-void dio_init();
+//ISR
 void dio_limits_isr(uint8_t limits);
 void dio_controls_isr(uint8_t controls);
+void dio_probe_isr(uint8_t probe);
+
+//inputs
 bool dio_check_boundaries(float* axis);
 uint8_t dio_get_limits(uint8_t limitmask);
 uint8_t dio_get_controls(uint8_t controlmask);
+void dio_enable_probe();
+void dio_disable_probe();
 bool dio_get_probe();
-
 uint16_t dio_get_inputs();
+
+//outputs
 void dio_set_outputs(uint16_t mask);
 void dio_clear_outputs(uint16_t mask);
+void dio_toogle_outputs(uint16_t mask);
+uint16_t dio_get_outputs();
 
+//analogs
 uint8_t dio_get_analog(uint8_t channel);
 void dio_set_pwm(uint8_t channel, uint8_t value);
+uint8_t dio_get_pwm(uint8_t channel);
 
 #endif
 

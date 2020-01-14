@@ -32,7 +32,7 @@ void serial_inject_cmd(const char* __s);
 void serial_discard_cmd();
 
 bool serial_tx_is_empty();
-void serial_putc(char c);
+void serial_putc(unsigned char c);
 void serial_print_str(const char* __s);
 void serial_print_int(uint16_t num);
 void serial_print_flt(float num);
@@ -41,7 +41,7 @@ void serial_print_fltarr(float* arr, int count);
 void serial_flush();
 
 //ISR
-void serial_rx_isr(char c);
+void serial_rx_isr(unsigned char c);
 char serial_tx_isr();
 
 #endif

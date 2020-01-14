@@ -29,6 +29,15 @@
 
 typedef struct
 {
+	float feed;
+	float spindle;
+	uint8_t coolant;
+	uint16_t dwell;
+	bool no_motion;
+} planner_block_data_t;
+
+typedef struct
+{
 	uint8_t dirbits;
 	float pos[AXIS_COUNT];
 	float dir_vect[AXIS_COUNT];
@@ -36,29 +45,58 @@ typedef struct
 	float distance;
 	float angle_factor;
 
-	float entry_speed_sqr;
-	float entry_max_speed_sqr;
+	float entry_feed_sqr;
+	float entry_max_feed_sqr;
+	float feed_sqr;
+	float rapid_feed_sqr;
 
-	float max_speed;
-	float target_speed;
 	float acceleration;
 	float accel_inv;
 
+	#ifdef USE_SPINDLE
+	float spindle;
+	#endif
+	#ifdef USE_COOLANT
+	uint8_t coolant;
+	#endif
+	uint16_t dwell;
+
 	bool optimal;
-} PLANNER_BLOCK;
+} planner_block_t;
 
 void planner_init();
 void planner_clear();
 bool planner_buffer_is_full();
 bool planner_buffer_is_empty();
-PLANNER_BLOCK* planner_get_block();
+planner_block_t *planner_get_block();
 float planner_get_block_exit_speed_sqr();
 float planner_get_block_top_speed();
+#ifdef USE_SPINDLE
+float planner_get_spindle_speed(uint8_t *pwm, bool *spindle_ccw);
+#endif
+#ifdef USE_COOLANT
+uint8_t planner_get_coolant();
+#endif
 void planner_discard_block();
-void planner_add_line(float* axis, float feed);
+void planner_add_line(float *target, planner_block_data_t block_data);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
-void planner_get_position(float* axis);
+void planner_get_position(float *axis);
 void planner_resync_position();
+
+//overrides
+void planner_toggle_overrides();
+bool planner_get_overrides();
+
+void planner_feed_ovr_reset();
+void planner_feed_ovr_inc(float value);
+
+void planner_rapid_feed_ovr_reset();
+void planner_rapid_feed_ovr(float value);
+#ifdef USE_SPINDLE
+void planner_spindle_ovr_reset();
+void planner_spindle_ovr_inc(float value);
+#endif
+
 
 #endif

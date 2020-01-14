@@ -1,6 +1,7 @@
 #include "cnc.h"
 
-int main()
+void main(void) __attribute__((noreturn));
+void main(void)
 {
 	//initializes all systems
 	cnc_init();
@@ -10,5 +11,4 @@ int main()
 		cnc_run();
 	}
 
-	return 0;
 }

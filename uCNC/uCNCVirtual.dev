@@ -221,7 +221,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit18]
-FileName=interpolator_linear.c
+FileName=mcu.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -231,16 +231,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit20]
-FileName=mcudefs.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit21]
 FileName=mcumap.h
 CompileCpp=0
 Folder=
@@ -250,7 +240,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit22]
+[Unit21]
 FileName=mcus.h
 CompileCpp=0
 Folder=
@@ -260,7 +250,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit23]
+[Unit22]
 FileName=cnc.c
 CompileCpp=0
 Folder=
@@ -270,7 +260,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit24]
+[Unit23]
 FileName=cnc.h
 CompileCpp=0
 Folder=
@@ -280,7 +270,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit25]
+[Unit24]
 FileName=motion_control.h
 CompileCpp=0
 Folder=
@@ -290,7 +280,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit26]
+[Unit25]
 FileName=motion_control.c
 CompileCpp=0
 Folder=
@@ -300,7 +290,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit27]
+[Unit26]
 FileName=protocol.h
 CompileCpp=0
 Folder=
@@ -310,7 +300,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit28]
+[Unit27]
 FileName=protocol.c
 CompileCpp=0
 Folder=
@@ -320,7 +310,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit29]
+[Unit28]
 FileName=defaults.h
 CompileCpp=0
 Folder=
@@ -330,7 +320,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit30]
+[Unit29]
 FileName=parser.c
 CompileCpp=0
 Folder=
@@ -340,7 +330,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit31]
+[Unit30]
 FileName=parser.h
 CompileCpp=0
 Folder=
@@ -350,7 +340,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit32]
+[Unit31]
 FileName=util\virtualserial.c
 CompileCpp=0
 Folder=
@@ -360,7 +350,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit33]
+[Unit32]
 FileName=util\virtualserial.h
 CompileCpp=0
 Folder=
@@ -370,7 +360,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit34]
+[Unit33]
 FileName=serial.h
 CompileCpp=0
 Folder=
@@ -380,7 +370,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit35]
+[Unit34]
 FileName=serial.c
 CompileCpp=0
 Folder=
@@ -390,7 +380,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit36]
+[Unit35]
 FileName=dio_control.c
 CompileCpp=0
 Folder=
@@ -400,8 +390,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit37]
+[Unit36]
 FileName=dio_control.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit37]
+FileName=interpolator_linear.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -431,7 +431,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit19]
-FileName=mcu.h
+FileName=mcudefs.h
 CompileCpp=0
 Folder=
 Compile=1

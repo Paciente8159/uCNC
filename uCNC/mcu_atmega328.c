@@ -4,8 +4,8 @@
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
 			interpolator.h
-				void interpolator_step_isr();
-				void interpolator_step_reset_isr();
+				void itp_step_isr();
+				void itp_step_reset_isr();
 			serial.h
 				void serial_rx_isr(char c);
 				char serial_tx_isr();
@@ -26,10 +26,8 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-
-#ifdef __MCU_AVR__
-
 #include "config.h"
+#if(MCU == MCU_ATMEGA328P)
 #include "mcudefs.h"
 #include "mcumap.h"
 #include "mcu.h"
@@ -52,7 +50,6 @@
 #include <avr/wdt.h>
 #include <avr/delay.h>
 #include <avr/eeprom.h>
-
 
 #define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
 #ifndef F_CPU
@@ -102,8 +99,8 @@ typedef union{
 } IO_REGISTER;
 
 //USART communication
-int mcu_putchar(char c, FILE* stream);
-FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);
+/*int mcu_putchar(char c, FILE* stream);
+FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);*/
 
 #ifdef __PERFSTATS__
 volatile uint16_t mcu_perf_step;
@@ -123,136 +120,112 @@ uint16_t mcu_get_step_reset_clocks()
 
 ISR(TIMER1_COMPA_vect, ISR_BLOCK)
 {
-	static bool busy = false;
 	#ifdef __PERFSTATS__
 	uint16_t clocks = TCNT1;
 	#endif
-	if(busy)
-	{
-		return;
-	}
-	busy = true;
-	interpolator_step_reset_isr();
+	itp_step_reset_isr();
 	
 	#ifdef __PERFSTATS__
     uint16_t clocks2 = TCNT1;
     clocks2 -= clocks;
 	mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
 	#endif
-	busy = false;
 }
 
 ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 {
-	static bool busy = false;
 	#ifdef __PERFSTATS__
 	uint16_t clocks = TCNT1;
 	#endif
-	if(busy)
-	{
-		return;
-	}
-	busy = true;
-    interpolator_step_isr();
+    itp_step_isr();
     #ifdef __PERFSTATS__
     uint16_t clocks2 = TCNT1;
     clocks2 -= clocks;
 	mcu_perf_step = MAX(mcu_perf_step, clocks2);
 	#endif
-	busy = false;
 }
 
 ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
 {
+	static uint8_t  prev_value = 0;
+	uint8_t value = PORTB;
+	uint8_t diff = value ^ prev_value;
 	#if(LIMITS_ISR_ID==0)
-	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_get_limits();
-	if(prev_limits != limits)
+	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr(limits);
-		prev_limits = limits;
+		dio_limits_isr((value & LIMITS_MASK));
 	}
 	#endif
 	
 	#if(CONTROLS_ISR_ID==0)
-	static uint8_t prev_controls = 0;
-	uint8_t controls = mcu_get_controls();
-	if(prev_controls != controls)
+	if(diff & CONTROLS_MASK)
 	{
-		dio_controls_isr(controls);
-		prev_controls = controls;
+		dio_limits_isr((value & CONTROLS_MASK));
 	}
-	#endif		
+	#endif
+	
+	#if(PROBE_ISR_ID==0)
+	if(diff & PROBE_MASK)
+	{
+		dio_probe_isr((value & PROBE_MASK));
+	}
+	#endif			
 }
 
 ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
 {
-    #if(LIMITS_ISR_ID==1)
-	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_get_limits();
-	if(prev_limits != limits)
+	static uint8_t  prev_value = 0;
+	uint8_t value = PORTC;
+	uint8_t diff = value ^ prev_value;
+	#if(LIMITS_ISR_ID==1)
+	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr(limits);
-		prev_limits = limits;
+		dio_limits_isr((value & LIMITS_MASK));
 	}
 	#endif
-
+	
 	#if(CONTROLS_ISR_ID==1)
-	static uint8_t prev_controls = 0;
-	uint8_t controls = mcu_get_controls();
-	if(prev_controls != controls)
+	if(diff & CONTROLS_MASK)
 	{
-		dio_controls_isr(controls);
-		prev_controls = controls;
+		dio_limits_isr((value & CONTROLS_MASK));
+	}
+	#endif
+	
+	#if(PROBE_ISR_ID==1)
+	if(diff & PROBE_MASK)
+	{
+		dio_probe_isr((value & PROBE_MASK));
 	}
 	#endif
 }
 
 ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
 {
-    #if(LIMITS_ISR_ID==2)
-	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_get_limits();
-	if(prev_limits != limits)
+    static uint8_t  prev_value = 0;
+	uint8_t value = PORTD;
+	uint8_t diff = value ^ prev_value;
+	#if(LIMITS_ISR_ID==2)
+	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr(limits);
-		prev_limits = limits;
+		dio_limits_isr((value & LIMITS_MASK));
 	}
 	#endif
-
+	
 	#if(CONTROLS_ISR_ID==2)
-	static uint8_t prev_controls = 0;
-	uint8_t controls = mcu_get_controls();
-	if(prev_controls != controls)
+	if(diff & CONTROLS_MASK)
 	{
-		dio_controls_isr(controls);
-		prev_controls = controls;
+		dio_limits_isr((value & CONTROLS_MASK));
+	}
+	#endif
+	
+	#if(PROBE_ISR_ID==2)
+	if(diff & PROBE_MASK)
+	{
+		dio_probe_isr((value & PROBE_MASK));
 	}
 	#endif
 }
 
-ISR(PCINT3_vect, ISR_NOBLOCK) // input pin on change service routine
-{
-    #if(LIMITS_ISR_ID==3)
-	static uint8_t prev_limits = 0;
-	uint8_t limits = mcu_get_limits();
-	if(prev_limits != limits)
-	{
-		dio_limits_isr(limits);
-		prev_limits = limits;
-	}
-	#endif
-
-	#if(CONTROLS_ISR_ID==3)
-	static uint8_t prev_controls = 0;
-	uint8_t controls = mcu_get_controls();
-	if(prev_controls != controls)
-	{
-		dio_controls_isr(controls);
-		prev_controls = controls;
-	}
-	#endif
-}
 
 ISR(USART_RX_vect, ISR_BLOCK)
 {
@@ -304,12 +277,12 @@ void mcu_init()
         COM_DIRREG = 0;
     #endif
     
-    #ifdef DINS_LOW_DIRREG
-        DINS_LOW_DIRREG = 0;
+    #ifdef DINS_R0_DIRREG
+        DINS_R0_DIRREG = 0;
     #endif
     
-    #ifdef DINS_HIGH_DIRREG
-        DINS_HIGH_DIRREG = 0;
+    #ifdef DINS_R1_DIRREG
+        DINS_R1_DIRREG = 0;
     #endif
 
 	#ifdef ANALOG_DIRREG
@@ -329,12 +302,12 @@ void mcu_init()
         PROBE_PULLUPREG |= PROBE_PULLUP_MASK;
     #endif
 
-    #ifdef DINS_LOW_PULLUPREG
-        DINS_LOW_PULLUPREG |= DINS_LOW_PULLUP_MASK;
+    #ifdef DINS_R0_PULLUPREG
+        DINS_R0_PULLUPREG |= DINS_R0_PULLUP_MASK;
     #endif
     
-    #ifdef DINS_HIGH_PULLUPREG
-        DINS_HIGH_PULLUPREG |= DINS_HIGH_PULLUP_MASK;
+    #ifdef DINS_R1_PULLUPREG
+        DINS_R1_PULLUPREG |= DINS_R1_PULLUP_MASK;
     #endif
     
     //outputs
@@ -350,16 +323,24 @@ void mcu_init()
         COM_DIRREG |= TX_MASK;
     #endif
     
-	#ifdef DOUTS_LOW_DIRREG
-        DOUTS_LOW_DIRREG |= DOUTS_LOW_MASK;
+	#ifdef DOUTS_R0_DIRREG
+        DOUTS_R0_DIRREG |= DOUTS_R0_MASK;
     #endif
     
-    #ifdef DOUTS_HIGH_DIRREG
-        DOUTS_HIGH_DIRREG |= DOUTS_HIGH_MASK;
+    #ifdef DOUTS_R1_DIRREG
+        DOUTS_R1_DIRREG |= DOUTS_R1_MASK;
     #endif
 
     //activate Pin on change interrupt
-    PCICR |= ((1<<LIMITS_ISR_ID) | (1<<CONTROLS_ISR_ID));
+    #ifdef LIMITS_ISR_ID
+    PCICR |= (1<<LIMITS_ISR_ID);
+    #endif
+    #ifdef CONTROLS_ISR_ID
+	PCICR |= (1<<CONTROLS_ISR_ID);
+	#endif
+	#ifdef PROBE_ISR_ID
+	PCICR |= (1<<PROBE_ISR_ID));
+	#endif
     
     #ifdef LIMITS_ISRREG
     	LIMITS_ISRREG |= LIMITS_MASK;
@@ -367,50 +348,37 @@ void mcu_init()
     #ifdef CONTROLS_ISRREG
     	CONTROLS_ISRREG |= CONTROLS_MASK;
     #endif
+    #ifdef PROBE_ISRREG //probe is disabled at start
+    	PROBE_ISRREG &= ~PROBE_MASK;
+    #endif
 
-    stdout = &g_mcu_streamout;
+    //stdout = &g_mcu_streamout;
 
 	//PWM's
-	//TCCRXA Mode 1 - Phase correct with TOP 0xFF
-	//TCCRXB Prescaller 64
+	//TCCRXA Mode 3 - Fast PWM 
+	//TCCRXB Prescaller 1/64
 	#ifdef PWM0
 		PWM0_DIRREG |= PWM0_MASK;
-		#if(PWM0_OCREG==A)
-			PWM0_TMRAREG |= 0x41;
-		#elif(PWM0_OCREG==B)
-			PWM0_TMRAREG |= 0x11;
-		#endif
-		PWM0_TMRBREG = 3;
+		PWM0_TMRAREG = 0x03; //Mode 3
+		PWM0_TMRBREG = PWM0_PRESCMASK; //Prescaller 1/64
 		PWM0_CNTREG = 0;
 	#endif
 	#ifdef PWM1
 		PWM1_DIRREG |= PWM1_MASK;
-		#if(PWM1_OCREG==A)
-			PWM1_TMRAREG |= 0x41;
-		#elif(PWM1_OCREG==B)
-			PWM1_TMRAREG |= 0x11;
-		#endif
-		PWM1_TMRBREG = 3;
+		PWM1_TMRAREG = 0x03; //Mode 3
+		PWM1_TMRBREG = PWM1_PRESCMASK; //Prescaller 1/64
 		PWM1_CNTREG = 0;
 	#endif
 	#ifdef PWM2
 		PWM2_DIRREG |= PWM2_MASK;
-		#if(PWM2_OCREG==A)
-			PWM2_TMRAREG |= 0x41;
-		#elif(PWM2_OCREG==B)
-			PWM2_TMRAREG |= 0x11;
-		#endif
-		PWM2_TMRBREG = 3;
+		PWM2_TMRAREG = 0x03; //Mode 3
+		PWM2_TMRBREG = PWM2_PRESCMASK; //Prescaller 1/64
 		PWM2_CNTREG = 0;
 	#endif
 	#ifdef PWM3
 		PWM3_DIRREG |= PWM3_MASK;
-		#if(PWM3_OCREG==A)
-			PWM3_TMRAREG |= 0x41;
-		#elif(PWM3_OCREG==B)
-			PWM3_TMRAREG |= 0x11;
-		#endif
-		PWM3_TMRBREG = 3;
+		PWM3_TMRAREG = 0x03; //Mode 3
+		PWM3_TMRBREG = PWM3_PRESCMASK; //Prescaller 1/64
 		PWM3_CNTREG = 0;
 	#endif
 
@@ -437,12 +405,12 @@ void mcu_init()
 uint16_t mcu_get_inputs()
 {
 	IO_REGISTER reg;
-	reg.r = 0;
-	#ifdef DINS_LOW
-	reg.r0 = (DINS_LOW & DINS_LOW_MASK);
+	reg.rl = 0;
+	#ifdef DINS_R0_INREG
+	reg.r0 = (DINS_R0_INREG & DINS_R0_MASK);
 	#endif
-	#ifdef DINS_HIGH
-	reg.r1 = (DINS_HIGH & DINS_HIGH_MASK);
+	#ifdef DINS_R1_INREG
+	reg.r1 = (DINS_R1_INREG & DINS_R1_MASK);
 	#endif
 	return reg.rl;	
 }
@@ -457,11 +425,29 @@ uint8_t mcu_get_limits()
 	return (LIMITS_INREG & LIMITS_MASK);
 }
 
+#ifdef PROBE
+void mcu_enable_probe_isr()
+{
+	#ifdef PROBE_ISRREG
+    	PROBE_ISRREG |= PROBE_MASK;
+    #endif
+}
+
+void mcu_disable_probe_isr()
+{
+	#ifdef PROBE_ISRREG
+    	PROBE_ISRREG &= ~PROBE_MASK;
+    #endif
+}
+#endif
+
 uint8_t mcu_get_analog(uint8_t channel)
 {
 	ADMUX = (0x42 | channel); //VRef = Vcc with reading left aligned
 	ADCSRA = 0xC7; //Start read with ADC with 128 prescaller
-	while(CHECKBIT(ADCSRA,ADSC));
+	do
+	{
+	}while(CHECKBIT(ADCSRA,ADSC));
 	uint8_t result = ADCH;
 	ADCSRA = 0; //switch adc off
 	ADMUX = 0; //switch adc off
@@ -484,15 +470,29 @@ void mcu_set_dirs(uint8_t value)
 
 void mcu_set_outputs(uint16_t value)
 {
-	IO_REGISTER reg = {};
+	IO_REGISTER reg;
 	reg.rl = value;
 	
-	#ifdef DOUTS_LOW_OUTREG
-		DOUTS_LOW_OUTREG = (~DOUTS_LOW_MASK & DOUTS_LOW_OUTREG) | reg.r0;
+	#ifdef DOUTS_R0_OUTREG
+		DOUTS_R0_OUTREG = (~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg.r0;
 	#endif
-	#ifdef DOUTS_HIGH_OUTREG
-		DOUTS_HIGH_OUTREG = (~DOUTS_HIGH_MASK & DOUTS_HIGH_OUTREG) | reg.r1;
+	#ifdef DOUTS_R1_OUTREG
+		DOUTS_R1_OUTREG = (~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg.r1;
 	#endif
+}
+
+uint16_t mcu_get_outputs()
+{
+	IO_REGISTER reg;
+
+	#ifdef DOUTS_R0_OUTREG
+		reg.r0 = (~DOUTS_R0_MASK & DOUTS_R0_OUTREG);
+	#endif
+	#ifdef DOUTS_R1_OUTREG
+		reg.r1 = (~DOUTS_R1_MASK & DOUTS_R1_OUTREG);
+	#endif
+	
+	return reg.rl;
 }
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
@@ -505,21 +505,18 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			if(value != 0)
 			{
 				#if(PWM0_OCREG==A)
-					SETFLAG(PWM0_TMRAREG,0x40);
+					SETFLAG(PWM0_TMRAREG,0x80);
 				#elif(PWM0_OCREG==B)
-					SETFLAG(PWM0_TMRAREG,0x10);
+					SETFLAG(PWM0_TMRAREG,0x20);
 				#endif
 			}
 			else
 			{
-				if(value != 0)
-				{
-					#if(PWM0_OCREG==A)
-						CLEARFLAG(PWM0_TMRAREG,0x40);
-					#elif(PWM0_OCREG==B)
-						CLEARFLAG(PWM0_TMRAREG,0x10);
-					#endif
-				}
+				#if(PWM0_OCREG==A)
+					CLEARFLAG(PWM0_TMRAREG,0x80);
+				#elif(PWM0_OCREG==B)
+					CLEARFLAG(PWM0_TMRAREG,0x20);
+				#endif
 			}
 			#endif
 			break;
@@ -529,21 +526,18 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			if(value != 0)
 			{
 				#if(PWM1_OCREG==A)
-					SETFLAG(PWM1_TMRAREG,0x40);
+					SETFLAG(PWM1_TMRAREG,0x80);
 				#elif(PWM1_OCREG==B)
-					SETFLAG(PWM1_TMRAREG,0x10);
+					SETFLAG(PWM1_TMRAREG,0x20);
 				#endif
 			}
 			else
 			{
-				if(value != 0)
-				{
-					#if(PWM1_OCREG==A)
-						CLEARFLAG(PWM1_TMRAREG,0x40);
-					#elif(PWM1_OCREG==B)
-						CLEARFLAG(PWM1_TMRAREG,0x10);
-					#endif
-				}
+				#if(PWM1_OCREG==A)
+					CLEARFLAG(PWM1_TMRAREG,0x80);
+				#elif(PWM1_OCREG==B)
+					CLEARFLAG(PWM1_TMRAREG,0x20);
+				#endif
 			}
 			#endif
 			break;
@@ -553,21 +547,18 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			if(value != 0)
 			{
 				#if(PWM2_OCREG==A)
-					SETFLAG(PWM2_TMRAREG,0x40);
+					SETFLAG(PWM2_TMRAREG,0x80);
 				#elif(PWM2_OCREG==B)
-					SETFLAG(PWM2_TMRAREG,0x10);
+					SETFLAG(PWM2_TMRAREG,0x20);
 				#endif
 			}
 			else
 			{
-				if(value != 0)
-				{
-					#if(PWM2_OCREG==A)
-						CLEARFLAG(PWM2_TMRAREG,0x40);
-					#elif(PWM2_OCREG==B)
-						CLEARFLAG(PWM2_TMRAREG,0x10);
-					#endif
-				}
+				#if(PWM2_OCREG==A)
+					CLEARFLAG(PWM2_TMRAREG,0x80);
+				#elif(PWM2_OCREG==B)
+					CLEARFLAG(PWM2_TMRAREG,0x20);
+				#endif
 			}
 			#endif
 			break;
@@ -577,25 +568,51 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			if(value != 0)
 			{
 				#if(PWM3_OCREG==A)
-					SETFLAG(PWM3_TMRAREG,0x40);
+					SETFLAG(PWM3_TMRAREG,0x80);
 				#elif(PWM3_OCREG==B)
-					SETFLAG(PWM3_TMRAREG,0x10);
+					SETFLAG(PWM3_TMRAREG,0x20);
 				#endif
 			}
 			else
 			{
-				if(value != 0)
-				{
-					#if(PWM3_OCREG==A)
-						CLEARFLAG(PWM3_TMRAREG,0x40);
-					#elif(PWM3_OCREG==B)
-						CLEARFLAG(PWM3_TMRAREG,0x10);
-					#endif
-				}
+				#if(PWM3_OCREG==A)
+					CLEARFLAG(PWM3_TMRAREG,0x80);
+				#elif(PWM3_OCREG==B)
+					CLEARFLAG(PWM3_TMRAREG,0x20);
+				#endif
 			}
 			#endif
 			break;
 	}
+}
+
+uint8_t mcu_get_pwm(uint8_t pwm)
+{
+	switch(pwm)
+	{
+		case 0:
+			#ifdef PWM0
+			return PWM0_CNTREG;
+			#endif
+			break;
+		case 1:
+			#ifdef PWM1
+			return PWM1_CNTREG;
+			#endif
+			break;
+		case 2:
+			#ifdef PWM2
+			return PWM2_CNTREG;
+			#endif
+			break;
+		case 3:
+			#ifdef PWM3
+			return PWM3_CNTREG;
+			#endif
+			break;
+	}
+	
+	return 0;
 }
 
 void mcu_enable_interrupts()
@@ -606,13 +623,13 @@ void mcu_disable_interrupts()
 {
 	cli();
 }
-
+/*
 //internal redirect of stdout
 int mcu_putchar(char c, FILE* stream)
 {
 	mcu_putc(c);
 	return c;
-}
+}*/
 
 void mcu_start_send()
 {
@@ -654,23 +671,23 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 	else if(frequency >= 31)
 	{
 		*prescaller = 10;
-		clockcounter *= 0.125f;
+		clockcounter *= 0.125;
 	}
 	else if(frequency >= 4)
 	{
 		*prescaller = 11;
-		clockcounter *= 0.015625f;
+		clockcounter *= 0.015625;
 		
 	}
 	else if(frequency >= 1)
 	{
 		*prescaller = 12;
-		clockcounter *= 0.00390625f;
+		clockcounter *= 0.00390625;
 	}
 	else
 	{
 		*prescaller = 13;
-		clockcounter *= 0.0009765625f;
+		clockcounter *= 0.0009765625;
 	}
 
 	*ticks = floorf((clockcounter/frequency)) - 1;
