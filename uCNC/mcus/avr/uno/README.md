@@ -15,4 +15,4 @@ Then just run the makefile
 make -f makefile clean all
 ```
 
-In the build folder you will have your hex file to upload to your Uno board
+In the build folder you will have your hex file to upload to your Uno board.

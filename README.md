@@ -77,6 +77,6 @@ In the future uCNC will most probably be extended to:
   - Other??
 
 ### Building uCNC
-For building uCNC go ahead to the folder of the target MCU and follow the instructions specific instructions
+For building uCNC go ahead to the [mcus](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcus) folder of the target MCU and follow the instructions specific to your device.
 
 
