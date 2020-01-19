@@ -26,22 +26,22 @@
 void serial_init();
 
 bool serial_rx_is_empty();
-char serial_getc();
-char serial_peek();
-void serial_inject_cmd(const char* __s);
+unsigned char serial_getc();
+unsigned char serial_peek();
+void serial_inject_cmd(const unsigned char* __s);
 void serial_discard_cmd();
 
 bool serial_tx_is_empty();
 void serial_putc(unsigned char c);
-void serial_print_str(const char* __s);
+void serial_print_str(const unsigned char* __s);
 void serial_print_int(uint16_t num);
 void serial_print_flt(float num);
-void serial_print_intarr(uint16_t* arr, int count);
-void serial_print_fltarr(float* arr, int count);
+void serial_print_intarr(uint16_t* arr, uint8_t count);
+void serial_print_fltarr(float* arr, uint8_t count);
 void serial_flush();
 
 //ISR
 void serial_rx_isr(unsigned char c);
-char serial_tx_isr();
+unsigned char serial_tx_isr();
 
 #endif

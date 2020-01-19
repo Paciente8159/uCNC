@@ -121,27 +121,27 @@ bool dio_get_probe()
 	return (mcu_get_limits() & PROBE_MASK);
 }
 
-uint16_t dio_get_inputs()
+uint32_t dio_get_inputs()
 {
 	return mcu_get_inputs();
 }
 
-void dio_set_outputs(uint16_t mask)
+void dio_set_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() | mask);
 }
 
-void dio_clear_outputs(uint16_t mask)
+void dio_clear_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() & ~mask);
 }
 
-void dio_toogle_outputs(uint16_t mask)
+void dio_toogle_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() ^ mask);
 }
 
-uint16_t dio_get_outputs()
+uint32_t dio_get_outputs()
 {
 	return mcu_get_outputs();
 }

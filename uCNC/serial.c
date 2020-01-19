@@ -43,6 +43,7 @@ volatile static uint8_t serial_tx_count;
 
 void serial_init()
 {
+	#ifdef FORCE_GLOBALS_TO_0
 	serial_rx_write = 0;
 	serial_rx_read = 0;
 	serial_rx_count = 0;
@@ -54,6 +55,7 @@ void serial_init()
 	//resets buffers
 	memset(&serial_rx_buffer, 0, sizeof(serial_rx_buffer));
 	memset(&serial_tx_buffer, 0, sizeof(serial_tx_buffer));
+	#endif
 }
 
 bool serial_rx_is_empty()
@@ -66,7 +68,7 @@ bool serial_tx_is_empty()
 	return (!serial_tx_count);
 }
 
-char serial_getc()
+unsigned char serial_getc()
 {
 	#ifdef ECHO_CMD
 	static bool echo = false;
@@ -112,12 +114,12 @@ char serial_getc()
 	return c;
 }
 
-char serial_peek()
+unsigned char serial_peek()
 {
 	return ((serial_rx_count != 0) ? serial_rx_buffer[serial_rx_read] : 0);
 }
 
-void serial_inject_cmd(const char* __s)
+void serial_inject_cmd(const unsigned char* __s)
 {
 	unsigned char c = rom_strptr(__s++);
 	do{
@@ -162,7 +164,7 @@ void serial_putc(unsigned char c)
 	}
 }
 
-void serial_print_str(const char* __s)
+void serial_print_str(const unsigned char* __s)
 {
 	unsigned char c = rom_strptr(__s++);
 	do
@@ -260,7 +262,7 @@ void serial_print_flt(float num)
 	serial_print_int(digits);
 }
 
-void serial_print_intarr(uint16_t* arr, int count)
+void serial_print_intarr(uint16_t* arr, uint8_t count)
 {
 	do
 	{
@@ -274,7 +276,7 @@ void serial_print_intarr(uint16_t* arr, int count)
 	}while(count);
 }
 
-void serial_print_fltarr(float* arr, int count)
+void serial_print_fltarr(float* arr, uint8_t count)
 {
 	do
 	{
@@ -304,7 +306,7 @@ void serial_rx_isr(unsigned char c)
 {
 	static uint8_t comment_count = 0;
 	
-	c &= 0x7F;
+	//c &= 0x7F;
 	
 	if((c > 0x22) && (c < 0x7B))
 	{
@@ -352,14 +354,14 @@ void serial_rx_isr(unsigned char c)
 	}
 }
 
-char serial_tx_isr()
+unsigned char serial_tx_isr()
 {
 	if(serial_tx_count == 0)
 	{
 		return 0;
 	}
 	
-	char c = serial_tx_buffer[serial_tx_read];
+	unsigned char c = serial_tx_buffer[serial_tx_read];
 	
 	if(c == '\n')
 	{

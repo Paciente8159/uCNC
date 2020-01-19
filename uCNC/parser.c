@@ -144,12 +144,9 @@ typedef struct
 
 typedef struct
 {
-	/*bool relative_mode;
-	float feedrate;*/
 	float g28home[AXIS_COUNT];
 	float g30home[AXIS_COUNT];
 	float g92offset[AXIS_COUNT];
-	//uint8_t coord_sys_index;
 	float coord_sys[COORD_SYS_COUNT][AXIS_COUNT];
 } parser_parameters_t;
 
@@ -166,6 +163,9 @@ static uint8_t parser_word0;
 static uint8_t parser_word1;
 static uint8_t parser_word2;
 
+static uint8_t parser_wco_counter;
+
+static void parser_reset();
 static bool parser_get_float(float *value, bool *isinteger);
 static uint8_t parser_fetch_command(parser_state_t *new_state);
 static uint8_t parser_validate_command(parser_state_t *new_state);
@@ -176,34 +176,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state);
 */
 void parser_init()
 {
+	#ifdef FORCE_GLOBALS_TO_0
 	memset(&parser_state, 0, sizeof(parser_state_t));
 	memset(&parser_last_probe, 0, sizeof(parser_last_probe));
 	parser_last_probe_ok = 0;
+	#endif
 	settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters, sizeof(parser_parameters_t));
-	//memset(&parser_parameters, 0, sizeof(parser_parameters_t));
-
-	parser_state.groups.coord_system = 0;										  //G54
-	memset(&parser_parameters.g92offset, 0, sizeof(parser_parameters.g92offset)); //G92.2
-	parser_state.groups.plane = 0;												  //G17
-	parser_state.groups.distance_mode = 1;										  //G91
-	parser_state.groups.feedrate_mode = 1;										  //G94
-	parser_state.groups.feed_speed_override = 0;								  //M48
-	parser_state.groups.cutter_radius_compensation = 0;							  //M40
-#ifdef USE_SPINDLE
-	parser_state.groups.spindle_turning = 2; //M5
-#endif
-	parser_state.groups.motion = 1; //G1
-#ifdef USE_COOLANT
-	parser_state.groups.coolant = 0; //M9
-#endif
-	parser_state.groups.units = 1; //G21
-
-	/*for (uint8_t i = 0; i < AXIS_COUNT; i++)
-	{
-		parser_max_feed_rate = MAX(parser_max_feed_rate, g_settings.max_feed_rate[i]);
-	}
-
-	parser_max_feed_rate *= MIN_SEC_MULT;*/
+	parser_reset();
 }
 
 /*
@@ -260,6 +239,16 @@ uint8_t parser_gcode_command()
 	return result;
 }
 
+static uint8_t parser_eat_next_char(unsigned char c)
+{
+	if (serial_getc() != c)
+	{
+		return STATUS_INVALID_STATEMENT;
+	}
+	
+	return STATUS_OK;
+}
+
 uint8_t parser_grbl_command()
 {
 	//if not IDLE
@@ -268,37 +257,43 @@ uint8_t parser_grbl_command()
 		return STATUS_IDLE_ERROR;
 	}
 
-	char c = serial_peek();
+	unsigned char c = serial_peek();
+	
+	uint8_t error = 0;
+	switch(c)
+	{
+		case '$':
+		case '#':
+		case 'H':
+		case 'X':
+		case 'G':
+		case 'C':
+			serial_getc();
+			error = parser_eat_next_char('\n');
+			break;
+		case 'R':
+			serial_getc();
+			error |= parser_eat_next_char('S');
+			error |= parser_eat_next_char('T');
+			error |= parser_eat_next_char('=');
+			protocol_send_string(MSG_FEEDBACK_9);
+			break;
+	}
+	
+	if (error)
+	{
+		return STATUS_INVALID_STATEMENT;
+	}
 
 	switch (c)
 	{
-	/*case '\r':
-			serial_print_string(MSG_HELP);
-			return STATUS_OK;*/
 	case '$':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-
 		protocol_send_gcode_settings();
 		return STATUS_OK;
 	case '#':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-
 		protocol_send_gcode_coordsys();
 		return STATUS_OK;
 	case 'H':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
 		if (!g_settings.homing_enabled)
 		{
 			return STATUS_SETTING_DISABLED;
@@ -312,12 +307,6 @@ uint8_t parser_grbl_command()
 		cnc_home();
 		return STATUS_OK;
 	case 'X':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-
 		if (dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
 		{
 			return STATUS_CHECK_DOOR;
@@ -325,28 +314,9 @@ uint8_t parser_grbl_command()
 		cnc_unlock();
 		return STATUS_OK;
 	case 'G':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-
 		protocol_send_gcode_modes();
 		return STATUS_OK;
 	case 'R':
-		serial_getc();
-		if (serial_getc() != 'S')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		if (serial_getc() != 'T')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		if (serial_getc() != '=')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
 		c = serial_getc();
 		switch (c)
 		{
@@ -365,7 +335,7 @@ uint8_t parser_grbl_command()
 			break;
 		}
 
-		return STATUS_OK;
+		return parser_eat_next_char('\n');
 	case 'J': //jog command
 		/*
 				The jog command is parsed like an emulated G1 command without changing the parser state
@@ -373,21 +343,9 @@ uint8_t parser_grbl_command()
 				2. Validates the command (in jog mode)
 				3. Executes it as a G1 command
 			*/
-		serial_getc();
-		if (serial_getc() != '=')
-		{
-			return STATUS_INVALID_JOG_COMMAND;
-		}
-
 		cnc_set_exec_state(EXEC_JOG);
 		return parser_gcode_command();
 	case 'C':
-		serial_getc();
-		if (serial_getc() != '\n')
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-
 		//toggles motion control check mode
 		if (mc_toogle_checkmode())
 		{
@@ -415,7 +373,7 @@ uint8_t parser_grbl_command()
 
 			setting_num = (uint8_t)val;
 			//eat '='
-			if (serial_getc() != '=')
+			if (parser_eat_next_char('='))
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -423,8 +381,8 @@ uint8_t parser_grbl_command()
 			val = 0;
 			isinteger = false;
 			parser_get_float(&val, &isinteger);
-			//eat '='
-			if (serial_getc() != '\n')
+
+			if (parser_eat_next_char('\n'))
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -448,7 +406,7 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
 	modalgroups[5] = parser_state.groups.spindle_turning + 3;
 #endif
 #ifdef USE_COOLANT
-	modalgroups[6] = parser_state.groups.coolant + 7;
+	modalgroups[6] = 9 - parser_state.groups.coolant;
 #endif
 	modalgroups[7] = parser_state.groups.feed_speed_override + 48;
 	modalgroups[8] = parser_state.words.t;
@@ -487,19 +445,57 @@ void parser_parameters_reset()
 	settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (const uint8_t *)&parser_parameters, sizeof(parser_parameters_t));
 }
 
-void parser_get_wco(float *axis)
+bool parser_get_wco(float *axis)
 {
-	for (uint8_t i = AXIS_COUNT; i != 0;)
+	if(!parser_wco_counter)
 	{
-		i--;
-		axis[i] = parser_parameters.g92offset[i] + parser_parameters.coord_sys[parser_state.groups.coord_system][i];
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			axis[i] = parser_parameters.g92offset[i] + parser_parameters.coord_sys[parser_state.groups.coord_system][i];
+		}
+		parser_wco_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
+		return true;
 	}
+	
+	parser_wco_counter--;
+	return false;
 }
 
 void parser_sync_probe()
 {
 	itp_get_rt_position(parser_last_probe);
 }
+
+#ifdef USE_COOLANT
+void parser_toogle_coolant(uint8_t state)
+{
+	parser_update_coolant(parser_state.groups.coolant ^ state);
+}
+
+void parser_update_coolant(uint8_t state)
+{
+	parser_state.groups.coolant = state;
+	
+	switch (parser_state.groups.coolant)
+	{
+	case 0: //off
+		dio_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		break;
+	case 1: //flood
+		dio_clear_outputs(COOLANT_MIST);
+		dio_set_outputs(COOLANT_FLOOD);
+		break;
+	case 2: //mist
+		dio_clear_outputs(COOLANT_FLOOD);
+		dio_set_outputs(COOLANT_MIST);
+		break;
+	case 3: //flood and mist
+		dio_set_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		break;
+	}
+}
+#endif
 
 /*
 	Parses a string to number (real)
@@ -568,12 +564,6 @@ bool parser_get_float(float *value, bool *isinteger)
 
 	do
 	{
-		if (fpcount >= 3)
-		{
-			*value *= 0.001f;
-			fpcount -= 3;
-		}
-
 		if (fpcount >= 2)
 		{
 			*value *= 0.01f;
@@ -653,7 +643,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			return STATUS_BAD_NUMBER_FORMAT;
 		}
 
-		uint8_t *word_group = NULL;
+		uint8_t *word_group = &parser_group0;
 		uint8_t word_group_val = 0;
 
 		switch (word)
@@ -725,35 +715,30 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 					return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
 				}
 
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_MOTION;
 				new_state->groups.motion = code;
 				break;
 			case 17:
 			case 18:
 			case 19:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_PLANE;
 				code -= 17;
 				new_state->groups.plane = code;
 				break;
 			case 90:
 			case 91:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_DISTANCE;
 				code -= 90;
 				new_state->groups.distance_mode = code;
 				break;
 			case 93:
 			case 94:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_FEEDRATE;
 				code -= 93;
 				new_state->groups.feedrate_mode = code;
 				break;
 			case 20:
 			case 21:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_UNITS;
 				code -= 20;
 				new_state->groups.units = code;
@@ -761,7 +746,6 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			case 40:
 			case 41:
 			case 42:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_CUTTERRAD;
 				code -= 40;
 				new_state->groups.cutter_radius_compensation = code;
@@ -769,13 +753,11 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			case 43:
 			case 49:
 				new_state->groups.tool_length_offset = ((code == 43) ? 0 : 1);
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_TOOLLENGTH;
 				new_state->groups.tool_length_offset = 0;
 				break;
 			case 98:
 			case 99:
-				word_group = &parser_group0;
 				word_group_val = GCODE_GROUP_RETURNMODE;
 				code -= 98;
 				new_state->groups.return_mode = code;
@@ -878,7 +860,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			{
 				return STATUS_GCODE_UNSUPPORTED_COMMAND;
 			}
-
+			word_group = &parser_group1;
 			//counts number of M commands
 			mwords++;
 			code = (uint8_t)(word_val);
@@ -889,7 +871,6 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			case 2:
 			case 30:
 			case 60:
-				word_group = &parser_group1;
 				word_group_val = GCODE_GROUP_STOPPING;
 				if (code >= 10)
 				{
@@ -901,31 +882,30 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			case 3:
 			case 4:
 			case 5:
-				word_group = &parser_group1;
 				word_group_val = GCODE_GROUP_SPINDLE;
 				code -= 3;
 				new_state->groups.spindle_turning = code;
 				break;
 #endif
 			case 6:
-				word_group = &parser_group1;
 				word_group_val = GCODE_GROUP_TOOLCHANGE;
 				new_state->groups.tool_change = 1;
 				break;
 #ifdef USE_COOLANT
 			case 7:
-				new_state->groups.coolant |= 1;
-				break;
 			case 8:
-				new_state->groups.coolant |= 2;
+				SETFLAG(parser_group1, GCODE_GROUP_COOLANT);
+				word_group_val = 0;
+				new_state->groups.coolant |= (9 - code);
 				break;
 			case 9:
+				TOGGLEFLAG(parser_group1, GCODE_GROUP_COOLANT);
+				word_group_val = 0;
 				new_state->groups.coolant = 0;
 				break;
 #endif
 			case 48:
 			case 49:
-				word_group = &parser_group1;
 				word_group_val = GCODE_GROUP_ENABLEOVER;
 				code -= 48;
 				new_state->groups.feed_speed_override = code;
@@ -1085,7 +1065,14 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 		}
 		wordcount++;
 
-		TOGGLEFLAG(*word_group, word_group_val);
+		if(word_group_val)
+		{
+			TOGGLEFLAG(*word_group, word_group_val);
+		}
+		else
+		{
+			word_group_val = GCODE_GROUP_COOLANT;
+		}
 		if (!CHECKFLAG(*word_group, word_group_val))
 		{
 			if (word_group == &parser_group0 || word_group == &parser_group1)
@@ -1112,8 +1099,8 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 uint8_t parser_validate_command(parser_state_t *new_state)
 {
 	//pointer to planner position
-	float parser_last_pos[AXIS_COUNT];
-	planner_get_position(parser_last_pos);
+	/*float parser_last_pos[AXIS_COUNT];
+	planner_get_position(parser_last_pos);*/
 
 	//only alow groups 3, 6 and modal G53
 	if (cnc_get_exec_state(EXEC_JOG))
@@ -1247,6 +1234,17 @@ uint8_t parser_validate_command(parser_state_t *new_state)
 				}
 				break;
 			}
+			
+			if (!CHECKFLAG(parser_word0, GCODE_YZPLANE_AXIS))
+			{
+				return STATUS_GCODE_NO_AXIS_WORDS_IN_PLANE;
+			}
+
+			if (!CHECKFLAG(parser_word1, GCODE_YZPLANE_AXIS) && !CHECKFLAG(parser_word1, GCODE_WORD_R))
+			{
+				return STATUS_GCODE_NO_OFFSETS_IN_PLANE;
+			}
+			break;
 			/*if (parser_word1 & GCODE_WORD_R) //arc in radius format
 			{
 				switch (new_state->groups.plane)
@@ -1336,14 +1334,22 @@ uint8_t parser_validate_command(parser_state_t *new_state)
 			break;
 		}
 
-		if ((new_state->groups.motion >= 1 && new_state->groups.motion <= 3) && new_state->words.f == 0)
+//group 5 - feed rate mode
+		if (new_state->groups.motion >= 1 && new_state->groups.motion <= 3)
 		{
-			return STATUS_GCODE_UNDEFINED_FEED_RATE;
+			if (new_state->groups.feedrate_mode == 0 && !CHECKFLAG(parser_word0, GCODE_WORD_F))
+			{
+				return STATUS_GCODE_UNDEFINED_FEED_RATE;
+			}
+			
+			if(new_state->words.f == 0)
+			{
+				return STATUS_GCODE_UNDEFINED_FEED_RATE;
+			}
 		}
 	}
 //group 2 - plane selection (nothing to be checked)
 //group 3 - distance mode (nothing to be checked)
-//group 5 - feed rate mode (not implemented yet)
 
 //group 6 - units (nothing to be checked)
 //group 7 - cutter radius compensation (not implemented yet)
@@ -1402,6 +1408,14 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 	//RS274NGC v3 - 3.8 Order of Execution
 	//1. comment (ignored - already filtered)
 	//2. set feed mode (not implemented yet)
+	block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+	if (new_state->groups.feedrate_mode == 0)
+	{
+		if (new_state->groups.motion >= 1 && new_state->groups.motion <= 3)
+		{
+			block_data.motion_mode = PLANNER_MOTION_MODE_INVERSEFEED;
+		}
+	}
 	//3. set feed rate (uCNC works in units per second and not per minute)
 	if (CHECKFLAG(parser_word0, GCODE_WORD_F))
 	{
@@ -1431,7 +1445,7 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 #endif
 //8. coolant on/off
 #ifdef USE_COOLANT
-	block_data.coolant = new_state->groups.coolant;
+	parser_update_coolant(new_state->groups.coolant);
 #endif
 
 	//9. overrides (not implemented)
@@ -1485,7 +1499,7 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 		}
 
 		//if new feed is defined (normal feed mode) convert o mm
-		if (CHECKFLAG(parser_word0, GCODE_WORD_F) && new_state->groups.feedrate_mode != 0)
+		if (CHECKFLAG(parser_word0, GCODE_WORD_F) && block_data.motion_mode == PLANNER_MOTION_MODE_FEED)
 		{
 			new_state->words.f *= 25.4f;
 		}
@@ -1499,7 +1513,10 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 	//13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
 	//14. cutter length compensation on or off (G43, G49) (not implemented yet)
 	//15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
-
+	if (CHECKFLAG(parser_group1, GCODE_GROUP_COORDSYS))
+	{
+		parser_wco_counter = 0;
+	}
 	//16. set path control mode (G61, G61.1, G64) (not implemented yet)
 
 	//17. set distance mode (G90, G91) (OK nothing to be done)
@@ -1619,20 +1636,23 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 				parser_parameters.g92offset[i] = planner_last_pos[i] - parser_parameters.coord_sys[new_state->groups.coord_system][i] - new_state->words.xyzabc[i];
 			}
 
-			//memcpy(&parser_parameters.g92offset, &parser_offset_pos, sizeof(parser_offset_pos));
+			parser_wco_counter = 0;
 			return STATUS_OK;
 		case 10: //G92.1
 			memset(&parser_parameters.g92offset, 0, sizeof(parser_parameters.g92offset));
 			//memset(&parser_offset_pos, 0, sizeof(parser_offset_pos));
 			settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (const uint8_t *)&parser_parameters, sizeof(parser_parameters_t));
+			parser_wco_counter = 0;
 			return STATUS_OK;
 		case 11: //G92.2
 			memset(&parser_parameters.g92offset, 0, sizeof(parser_parameters.g92offset));
 			//memset(&parser_offset_pos, 0, sizeof(parser_offset_pos));
+			parser_wco_counter = 0;
 			return STATUS_OK;
 		case 12: //G92.3
 			//memcpy(&parser_offset_pos, &parser_parameters.g92offset, sizeof(parser_offset_pos));
 			settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters, sizeof(parser_parameters_t));
+			parser_wco_counter = 0;
 			return STATUS_OK;
 		}
 	}
@@ -1642,7 +1662,14 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 	//	incomplete (canned cycles not supported)
 
 	//limit feed to the maximum possible feed
-	block_data.feed = MIN(block_data.feed, new_state->words.f);
+	if (block_data.motion_mode == PLANNER_MOTION_MODE_FEED)
+	{
+		block_data.feed = MIN(block_data.feed, new_state->words.f);
+	}
+	else
+	{
+		block_data.feed = new_state->words.f;
+	}
 
 	//if at least one axis was present in the command execute the active motion group
 	if (CHECKFLAG(parser_word0, GCODE_ALL_AXIS))
@@ -1750,23 +1777,8 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 	case 2: //M2
 	case 3: //M30
 		//reset to initial states
-		new_state->groups.coord_system = 0;
-		//memset(&parser_offset_pos, 0, sizeof(parser_offset_pos));
-		memset(&parser_parameters.g92offset, 0, sizeof(parser_parameters.g92offset));
-		new_state->groups.plane = 0;
-		new_state->groups.distance_mode = 1;
-		new_state->groups.feedrate_mode = 1;
-		new_state->groups.feed_speed_override = 1;
-		new_state->groups.cutter_radius_compensation = 0;
-#ifdef USE_SPINDLE
-		new_state->groups.spindle_turning = 2;
-		block_data.spindle = 0; //stop spindle
-#endif
-		new_state->groups.motion = 1;
-#ifdef USE_COOLANT
-		new_state->groups.coolant = 0;
-		block_data.coolant = 0; //stop coolant
-#endif
+		parser_reset();
+		protocol_send_string(MSG_FEEDBACK_8);
 		break;
 	case 6: //M60
 		break;
@@ -1780,4 +1792,23 @@ uint8_t parser_exec_command(parser_state_t *new_state)
 	}
 
 	return STATUS_OK;
+}
+
+void parser_reset()
+{
+	parser_state.groups.coord_system = 0;											//G54
+	parser_state.groups.plane = 0;												  	//G17
+	parser_state.groups.feed_speed_override = 0;								  	//M48
+	parser_state.groups.cutter_radius_compensation = 0;							  	//M40
+	parser_state.groups.distance_mode = 1;										 	//G91
+	parser_state.groups.feedrate_mode = 1;										  	//G94
+#ifdef USE_COOLANT
+	parser_state.groups.coolant = 0; 												//M9
+#endif
+#ifdef USE_SPINDLE
+	parser_state.groups.spindle_turning = 2; 										//M5
+#endif
+	parser_state.groups.motion = 1; 												//G1
+	parser_state.groups.units = 1; 													//G21
+	memset(&parser_parameters.g92offset, 0, sizeof(parser_parameters.g92offset));	//G92.2
 }

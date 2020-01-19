@@ -184,9 +184,15 @@ static inline void itp_blk_clear()
 //declares functions called by the stepper ISR
 void itp_init()
 {
+	#ifdef FORCE_GLOBALS_TO_0
 	//resets buffers
 	memset(&itp_step_pos, 0, sizeof(itp_step_pos));
 	memset(&itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
+	itp_running_sgm = NULL;
+	itp_cur_plan_block = NULL;
+	itp_needs_update = false;
+	#endif
+	itp_isr_finnished = true;
 
 	//initialize circular buffers
 	itp_blk_clear();
@@ -211,11 +217,6 @@ void itp_init()
 #ifdef DIR5
 	dirbitsmask[5] = DIR5_MASK;
 #endif
-
-	itp_running_sgm = NULL;
-	itp_cur_plan_block = NULL;
-	itp_needs_update = false;
-	itp_isr_finnished = true;
 }
 
 void itp_run()
@@ -261,27 +262,22 @@ void itp_run()
 			//get the first block in the planner
 			itp_cur_plan_block = planner_get_block();
 
-			//creates a new interpolator block
-			//new_block = &itp_blk_data[itp_blk_data_write];
+			//updates spindle
+			#ifdef USE_SPINDLE
+			planner_update_spindle(true);
+			#endif
 
 			if (itp_cur_plan_block->dwell != 0)
 			{
-				//execute dwell on the stepper isr
-				itp_blk_data[itp_blk_data_write].totalsteps = itp_cur_plan_block->dwell;
-				memset(itp_blk_data[itp_blk_data_write].errors, 0, sizeof(itp_blk_data[itp_blk_data_write].errors));
-				memset(itp_blk_data[itp_blk_data_write].steps, 0, sizeof(itp_blk_data[itp_blk_data_write].steps));
-				itp_sgm_data[itp_sgm_data_write].block = &itp_blk_data[itp_blk_data_write];
-				//clicks every 10ms (100Hz)
-				mcu_freq_to_clocks(100, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
-				itp_sgm_data[itp_sgm_data_write].remaining_steps = itp_cur_plan_block->dwell;
-				itp_sgm_data[itp_sgm_data_write].update_speed = true;
-				itp_sgm_data[itp_sgm_data_write].feed = 0;
-				itp_sgm_buffer_write();
+				itp_delay(itp_cur_plan_block->dwell);
 			}
 
 			if (itp_cur_plan_block->distance == 0)
 			{
-				itp_blk_buffer_write();
+				if (itp_cur_plan_block->dwell != 0)
+				{
+					itp_blk_buffer_write();
+				}
 				itp_cur_plan_block = NULL;
 				planner_discard_block();
 				break; //exits after adding the dwell segment if motion is 0 (empty motion block)
@@ -356,6 +352,11 @@ void itp_run()
 		}
 		else if (itp_needs_update) //forces recalculation of acceleration and deacceleration profiles
 		{
+			//updates spindle
+			#ifdef USE_SPINDLE
+			planner_update_spindle(true);
+			#endif
+			
 			itp_needs_update = false;
 			float exit_speed_sqr = planner_get_block_exit_speed_sqr();
 			junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
@@ -375,8 +376,9 @@ void itp_run()
 			}
 		}
 
-		float partial_distance;
-		float current_speed;
+		
+		float speed_change;
+		float profile_steps_limit;
 		//acceleration profile
 		if (unprocessed_steps > accel_until)
 		{
@@ -391,127 +393,93 @@ void itp_run()
 				
 				(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
 			*/
-			current_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
-			current_speed += half_speed_change;
-			partial_distance = current_speed * INTEGRATOR_DELTA_T;
-
-			//computes how many steps it can perform at this speed and frame window
-			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
-
-			//if traveled distance is less the one step fits at least one step
-			//float speed_change_sqr;
-			if (steps == 0)
-			{
-				steps = 1;
-			}
-
-			//if computed steps exceed the remaining steps for the motion shortens the distance
-			if (steps > (unprocessed_steps - accel_until))
-			{
-				steps = (uint16_t)(unprocessed_steps - accel_until);
-			}
-
-			//recalculates the precise distance to travel the given amount of steps
-			partial_distance = steps * min_step_distance;
-			//calculates the final speed at the end of this position
-			float new_speed_sqr = 2 * itp_cur_plan_block->acceleration * partial_distance + itp_cur_plan_block->entry_feed_sqr;
-			current_speed = 0.5f * (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
-			//completes the segment information (step speed, steps) and updates the block
-			mcu_freq_to_clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
-			sgm->remaining_steps = steps;
+			speed_change = half_speed_change;
+			profile_steps_limit = accel_until;
 			sgm->update_speed = true;
-			itp_cur_plan_block->distance -= partial_distance;
-			itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
+			
 		}
 		else if (unprocessed_steps > deaccel_from)
 		{
+			/*if(unprocessed_steps == accel_until)	//first time in const step speed updates current speed	
+			{
+				itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+			}*/
 			//constant speed segment
-			current_speed = fast_sqrt(junction_speed_sqr);
-			partial_distance = current_speed * INTEGRATOR_DELTA_T;
-
-			//computes how many steps it can perform at this speed and frame window
-			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
-
-			//if traveled distance is less the one step fits at least one step
-			//float speed_change_sqr;
-			if (steps == 0)
-			{
-				steps = 1;
-			}
-
-			//if computed steps exceed the remaining steps for the motion shortens the distance
-			if (steps > (unprocessed_steps - deaccel_from))
-			{
-				steps = (uint16_t)(unprocessed_steps - deaccel_from);
-			}
-
-			//recalculates the precise distance to travel the given amount os steps
-			partial_distance = steps * min_step_distance;
-
-			//completes the segment information (step speed, steps) and updates the block
-			mcu_freq_to_clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
-			sgm->remaining_steps = steps;
+			speed_change = 0;
+			profile_steps_limit = deaccel_from;
 			sgm->update_speed = false;
-			//if distance starts to offset to much replace by steps at constant rate * min_step_distance
-			itp_cur_plan_block->distance -= partial_distance;
 		}
 		else
 		{
-			current_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
-			current_speed -= half_speed_change;
-
-			//if on active hold state
-			if (cnc_get_exec_state(EXEC_HOLD))
-			{
-				if (current_speed < 0)
-				{
-					//after a feed hold if 0 speed reached exits and starves the buffer
-					return;
-				}
-			}
-
-			partial_distance = current_speed * INTEGRATOR_DELTA_T;
-
-			//computes how many steps it can perform at this speed and frame window
-			uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
-
-			//if traveled distance is less the one step fits at least one step
-			//float speed_change_sqr;
-			if (steps == 0)
-			{
-				steps = 1;
-			}
-
-			//if computed steps exceed the remaining steps for the motion shortens the distance
-			if (steps > unprocessed_steps)
-			{
-				steps = (uint16_t)unprocessed_steps;
-			}
-
-			//recalculates the precise distance to travel the given amount os steps
-			partial_distance = steps * min_step_distance;
-			//calculates the final speed at the end of this position
-			float new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - (2 * itp_cur_plan_block->acceleration * partial_distance);
-			new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
-			current_speed = 0.5f * (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
-			//completes the segment information (step speed, steps) and updates the block
-			mcu_freq_to_clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
-			sgm->remaining_steps = steps;
+			speed_change = -half_speed_change;
+			profile_steps_limit = 0;
 			sgm->update_speed = true;
+		}
+		
+		float current_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
+		/*
+			common calculations for all three profiles (accel, constant and deaccel)
+		*/
+		current_speed += speed_change;
+		//if on active hold state
+		if (cnc_get_exec_state(EXEC_HOLD))
+		{
+			if (current_speed < 0)
+			{
+				//after a feed hold if 0 speed reached exits and starves the buffer
+				return;
+			}
+		}
+		
+		float partial_distance = current_speed * INTEGRATOR_DELTA_T;
+		//computes how many steps it can perform at this speed and frame window
+		uint16_t steps = (uint16_t)floorf(partial_distance * steps_per_mm);
+		//if traveled distance is less the one step fits at least one step
+		if (steps == 0)
+		{
+			steps = 1;
+		}
+		//if computed steps exceed the remaining steps for the motion shortens the distance
+		if (steps > (unprocessed_steps - profile_steps_limit))
+		{
+			steps = (uint16_t)(unprocessed_steps - profile_steps_limit);
+		}
+		
+		//recalculates the precise distance to travel the given amount os steps
+		partial_distance = steps * min_step_distance;
 
-			itp_cur_plan_block->distance -= partial_distance;
+		if(sgm->update_speed)
+		{
+			float new_speed_sqr;
+			if(speed_change>0)
+			{
+				//calculates the final speed at the end of this position
+				new_speed_sqr = 2 * itp_cur_plan_block->acceleration * partial_distance + itp_cur_plan_block->entry_feed_sqr;
+			}
+			else
+			{
+				//calculates the final speed at the end of this position
+				new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - (2 * itp_cur_plan_block->acceleration * partial_distance);
+				new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
+			}
+			current_speed = 0.5f * (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
 			itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
 		}
 
+		//completes the segment information (step speed, steps) and updates the block
+		mcu_freq_to_clocks(current_speed * steps_per_mm, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+		sgm->remaining_steps = steps;
+		itp_cur_plan_block->distance -= partial_distance;
+		
 		sgm->feed = current_speed;
 		unprocessed_steps -= sgm->remaining_steps;
+		
 		if (unprocessed_steps == accel_until) //resets float additions error
 		{
 			itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
 			itp_cur_plan_block->distance = min_step_distance * accel_until;
 		}
-
-		if (unprocessed_steps == deaccel_from) //resets float additions error
+		else if (unprocessed_steps == deaccel_from) //resets float additions error
 		{
 			itp_cur_plan_block->distance = min_step_distance * deaccel_from;
 		}
@@ -527,43 +495,6 @@ void itp_run()
 									 //break;
 		}
 	}
-
-//updates coolant and spindle
-#ifdef USE_COOLANT
-	switch (planner_get_coolant())
-	{
-	case 0: //off
-		dio_clear_outputs(COOLANT_FLOOD_PIN | COOLANT_MIST_PIN);
-		break;
-	case 1: //mist
-		dio_set_outputs(COOLANT_MIST_PIN);
-		dio_clear_outputs(COOLANT_FLOOD_PIN);
-		break;
-	case 2: //flood
-		dio_set_outputs(COOLANT_FLOOD_PIN);
-		dio_clear_outputs(COOLANT_MIST_PIN);
-		break;
-	case 3: //flood and mist
-		dio_set_outputs(COOLANT_FLOOD_PIN | COOLANT_MIST_PIN);
-		break;
-	}
-#endif
-
-#ifdef USE_SPINDLE
-	//updates spindle
-	uint8_t pwm;
-	bool ccw;
-	planner_get_spindle_speed(&pwm, &ccw);
-	if (!ccw)
-	{
-		dio_clear_outputs(SPINDLE_DIR);
-	}
-	else
-	{
-		dio_set_outputs(SPINDLE_DIR);
-	}
-	dio_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
-#endif
 
 	//starts the step isr if is stoped and there are segments to execute
 	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
@@ -649,35 +580,6 @@ float itp_get_rt_feed()
 	return feed;
 }
 
-float itp_get_rt_spindle()
-{
-	#ifdef USE_SPINDLE
-	uint8_t pwm;
-	bool ccw;
-	return planner_get_spindle_speed(&pwm, &ccw);
-	#else
-	return 0;
-	#endif
-}
-
-void itp_update_spindle()
-{
-#ifdef USE_SPINDLE
-	//updates spindle
-	uint8_t pwm;
-	bool ccw;
-	planner_get_spindle_speed(&pwm, &ccw);
-	if (!ccw)
-	{
-		dio_clear_outputs(SPINDLE_DIR);
-	}
-	else
-	{
-		dio_set_outputs(SPINDLE_DIR);
-	}
-	dio_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
-#endif
-}
 //always fires before pulse
 void itp_step_reset_isr()
 {
@@ -714,7 +616,10 @@ void itp_step_reset_isr()
 			itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
 			cnc_set_exec_state(EXEC_RUN);
 			itp_isr_finnished = false;
-			dirbits = itp_running_sgm->block->dirbits;
+			if(itp_running_sgm->block!=NULL)
+			{
+				dirbits = itp_running_sgm->block->dirbits;
+			}
 			update_step_rate = itp_running_sgm->update_speed;
 			clock = itp_running_sgm->clocks_per_tick;
 			pres = itp_running_sgm->ticks_per_step;
@@ -751,103 +656,106 @@ void itp_step_isr()
 	if (itp_running_sgm != NULL)
 	{
 		itp_running_sgm->remaining_steps--;
+		if(itp_running_sgm->block!=NULL)
+		{
 //prepares the next step bits mask
 #ifdef STEP0
-		itp_running_sgm->block->errors[0] += itp_running_sgm->block->steps[0];
-		if (itp_running_sgm->block->errors[0] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[0] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP0_MASK;
-			if (itp_running_sgm->block->dirbits & DIR0_MASK)
+			itp_running_sgm->block->errors[0] += itp_running_sgm->block->steps[0];
+			if (itp_running_sgm->block->errors[0] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[0]--;
+				itp_running_sgm->block->errors[0] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP0_MASK;
+				if (itp_running_sgm->block->dirbits & DIR0_MASK)
+				{
+					itp_rt_step_pos[0]--;
+				}
+				else
+				{
+					itp_rt_step_pos[0]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[0]++;
-			}
-		}
 #endif
 #ifdef STEP1
-		itp_running_sgm->block->errors[1] += itp_running_sgm->block->steps[1];
-		if (itp_running_sgm->block->errors[1] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[1] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP1_MASK;
-			if (itp_running_sgm->block->dirbits & DIR1_MASK)
+			itp_running_sgm->block->errors[1] += itp_running_sgm->block->steps[1];
+			if (itp_running_sgm->block->errors[1] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[1]--;
+				itp_running_sgm->block->errors[1] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP1_MASK;
+				if (itp_running_sgm->block->dirbits & DIR1_MASK)
+				{
+					itp_rt_step_pos[1]--;
+				}
+				else
+				{
+					itp_rt_step_pos[1]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[1]++;
-			}
-		}
 #endif
 #ifdef STEP2
-		itp_running_sgm->block->errors[2] += itp_running_sgm->block->steps[2];
-		if (itp_running_sgm->block->errors[2] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[2] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP2_MASK;
-			if (itp_running_sgm->block->dirbits & DIR2_MASK)
+			itp_running_sgm->block->errors[2] += itp_running_sgm->block->steps[2];
+			if (itp_running_sgm->block->errors[2] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[2]--;
+				itp_running_sgm->block->errors[2] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP2_MASK;
+				if (itp_running_sgm->block->dirbits & DIR2_MASK)
+				{
+					itp_rt_step_pos[2]--;
+				}
+				else
+				{
+					itp_rt_step_pos[2]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[2]++;
-			}
-		}
 #endif
 #ifdef STEP3
-		itp_running_sgm->block->errors[3] += itp_running_sgm->block->steps[3];
-		if (itp_running_sgm->block->errors[3] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[3] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP3_MASK;
-			if (itp_running_sgm->block->dirbits & DIR3_MASK)
+			itp_running_sgm->block->errors[3] += itp_running_sgm->block->steps[3];
+			if (itp_running_sgm->block->errors[3] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[3]--;
+				itp_running_sgm->block->errors[3] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP3_MASK;
+				if (itp_running_sgm->block->dirbits & DIR3_MASK)
+				{
+					itp_rt_step_pos[3]--;
+				}
+				else
+				{
+					itp_rt_step_pos[3]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[3]++;
-			}
-		}
 #endif
 #ifdef STEP4
-		itp_running_sgm->block->errors[4] += itp_running_sgm->block->steps[4];
-		if (itp_running_sgm->block->errors[4] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[4] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP4_MASK;
-			if (itp_running_sgm->block->dirbits & DIR4_MASK)
+			itp_running_sgm->block->errors[4] += itp_running_sgm->block->steps[4];
+			if (itp_running_sgm->block->errors[4] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[4]--;
+				itp_running_sgm->block->errors[4] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP4_MASK;
+				if (itp_running_sgm->block->dirbits & DIR4_MASK)
+				{
+					itp_rt_step_pos[4]--;
+				}
+				else
+				{
+					itp_rt_step_pos[4]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[4]++;
-			}
-		}
 #endif
 #ifdef STEP5
-		itp_running_sgm->block->errors[5] += itp_running_sgm->block->steps[5];
-		if (itp_running_sgm->block->errors[5] > itp_running_sgm->block->totalsteps)
-		{
-			itp_running_sgm->block->errors[5] -= itp_running_sgm->block->totalsteps;
-			stepbits |= STEP5_MASK;
-			if (itp_running_sgm->block->dirbits & DIR5_MASK)
+			itp_running_sgm->block->errors[5] += itp_running_sgm->block->steps[5];
+			if (itp_running_sgm->block->errors[5] > itp_running_sgm->block->totalsteps)
 			{
-				itp_rt_step_pos[5]--;
+				itp_running_sgm->block->errors[5] -= itp_running_sgm->block->totalsteps;
+				stepbits |= STEP5_MASK;
+				if (itp_running_sgm->block->dirbits & DIR5_MASK)
+				{
+					itp_rt_step_pos[5]--;
+				}
+				else
+				{
+					itp_rt_step_pos[5]++;
+				}
 			}
-			else
-			{
-				itp_rt_step_pos[5]++;
-			}
-		}
 #endif
+		}
 
 		//one step remaining discards current segment
 		if (itp_running_sgm->remaining_steps == 0)
@@ -863,4 +771,15 @@ void itp_step_isr()
 	}
 
 	//busy = false;
+}
+
+void itp_delay(uint16_t delay)
+{
+	itp_sgm_data[itp_sgm_data_write].block = NULL;
+	//clicks every 10ms (100Hz)
+	mcu_freq_to_clocks(100, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
+	itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
+	itp_sgm_data[itp_sgm_data_write].update_speed = true;
+	itp_sgm_data[itp_sgm_data_write].feed = 0;
+	itp_sgm_buffer_write();
 }

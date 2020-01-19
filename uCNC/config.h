@@ -86,8 +86,8 @@
 */
 #define USE_COOLANT
 #ifdef USE_COOLANT
-#define COOLANT_FLOOD_PIN DOUT1_MASK
-#define COOLANT_MIST_PIN DOUT2_MASK
+#define COOLANT_FLOOD DOUT8_MASK
+#define COOLANT_MIST DOUT9_MASK
 #endif
 
 /*
@@ -97,31 +97,48 @@
 //#define __PERFSTATS__
 
 /*
-	Feed overrides increments and ranges
+	Feed overrides increments and percentage ranges
 */
-#define FEED_OVR_MAX 2.0
-#define FEED_OVR_MIN 0.1
-#define FEED_OVR_COARSE 0.1
-#define FEED_OVR_FINE 0.01
+#define FEED_OVR_MAX 200
+#define FEED_OVR_MIN 10
+#define FEED_OVR_COARSE 10
+#define FEED_OVR_FINE 1
 
 /*
-	Rapid feed overrides ranges
+	Rapid feed overrides percentages
 */
-#define RAPID_FEED_OVR1 0.50
-#define RAPID_FEED_OVR2 0.25
+#define RAPID_FEED_OVR1 50
+#define RAPID_FEED_OVR2 25
 
 /*
-	Spindle speed overrides increments and ranges
+	Spindle speed overrides increments percentages and ranges
 */
-#define SPINDLE_OVR_MAX 2.0
-#define SPINDLE_OVR_MIN 0.1
-#define SPINDLE_OVR_COARSE 0.1
-#define SPINDLE_OVR_FINE 0.01
+#define SPINDLE_OVR_MAX 200
+#define SPINDLE_OVR_MIN 10
+#define SPINDLE_OVR_COARSE 10
+#define SPINDLE_OVR_FINE 1
 
 /*
 	G-code options
 */
 #define GCODE_IGNORE_LINE_NUMBERS
 //#define GCODE_ACCEPT_WORD_E
+
+/*
+	Report specific options
+*/
+#define STATUS_WCO_REPORT_MIN_FREQUENCY 30
+#define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
+
+/*
+	Compiler specific options
+*/
+//#define FORCE_GLOBALS_TO_0
+
+/*
+	Number of seconds of delay before motions restart after releasing from a hold
+*/
+
+#define DELAY_ON_RESUME 4
 
 #endif

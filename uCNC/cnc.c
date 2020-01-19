@@ -42,7 +42,7 @@ typedef struct
     uint8_t system_state;		//signals if CNC is system_state and gcode can run
     volatile uint8_t exec_state;
     uint8_t active_alarm;
-    uint8_t rt_cmd;
+    volatile uint8_t rt_cmd;
 } cnc_state_t;
 
 static cnc_state_t cnc_state;
@@ -50,7 +50,9 @@ static cnc_state_t cnc_state;
 void cnc_init()
 {
 	//initializes cnc state
+	#ifdef FORCE_GLOBALS_TO_0
 	memset(&cnc_state, 0, sizeof(cnc_state_t));
+	#endif
 	
 	//initializes all systems
 	//mcu
@@ -66,7 +68,10 @@ void cnc_init()
 
 void cnc_reset()
 {
+	cnc_state.rt_cmd = 0;
+	cnc_state.active_alarm = EXEC_ALARM_LOCKED;
 	cnc_state.system_state = SYS_OK;
+	cnc_state.exec_state = EXEC_IDLE;
 	//clear all systems
 	itp_clear();
 	planner_clear();
@@ -78,6 +83,16 @@ void cnc_reset()
 	{
 		cnc_set_exec_state(EXEC_ALARM);
 		cnc_state.system_state = SYS_LOCKED;
+		if(dio_get_limits(LIMITS_MASK))
+		{
+			protocol_send_string(MSG_FEEDBACK_7);
+		}
+		#ifdef SAFETY_DOOR_MASK
+		if(dio_get_controls(SAFETY_DOOR_MASK))
+		{
+			protocol_send_string(MSG_FEEDBACK_6);
+		}
+		#endif
 		protocol_send_string(MSG_FEEDBACK_2);
 	}
 	else
@@ -85,7 +100,6 @@ void cnc_reset()
 		cnc_unlock();
 	}
 
-	//mcu_set_pwm(0,64);
 }
 
 void cnc_run()
@@ -133,22 +147,27 @@ void cnc_run()
 		}
 		
 		cnc_doevents();
-	}while(!CHECKFLAG(cnc_state.system_state, SYS_RESET));
+	}while(!CHECKFLAG(cnc_state.system_state, (SYS_RESET | SYS_ALARM)));
+	
+	cnc_kill();
+	
+	if(CHECKFLAG(cnc_state.system_state,SYS_ALARM))
+	{
+		//cnc_state.rt_cmd = 0;
+		
+		protocol_send_string(MSG_FEEDBACK_1);
+		do
+		{
+			//cnc_kill();
+		}while(cnc_state.rt_cmd != RT_CMD_RESET);
+	}
 }
 
 void cnc_call_rt_command(uint8_t command)
 {
-	switch(command)
+	if(!cnc_state.rt_cmd || cnc_state.rt_cmd == RT_CMD_REPORT)
 	{
-		case RT_CMD_REPORT:
-			if(!cnc_state.rt_cmd)
-			{
-				cnc_state.rt_cmd = command;
-			}
-			break;
-		default:
-			cnc_state.rt_cmd = command;
-			break;
+		cnc_state.rt_cmd = command;
 	}
 }
 
@@ -160,14 +179,12 @@ void cnc_exec_rt_command(uint8_t command)
 			protocol_send_status();
 			break;
 		case RT_CMD_RESET:
+			cnc_state.system_state = SYS_RESET;
 			if(cnc_get_exec_state(EXEC_HOMING)) //if homing
 			{
 				cnc_clear_exec_state(EXEC_HOMING); //clear homing flag that supress alarms
 				cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
 			}
-			//imediatly calls killing process
-			cnc_kill();
-			cnc_state.system_state = SYS_RESET;			
 			break;
 		case RT_CMD_SAFETY_DOOR:
 			cnc_set_exec_state(EXEC_DOOR);
@@ -189,7 +206,7 @@ void cnc_exec_rt_command(uint8_t command)
 			}
 			break;
 		case RT_CMD_FEED_HOLD:
-			if((cnc_state.exec_state < EXEC_HOMING)) //if not in idle, run or jog ignores
+			if(cnc_get_exec_state(EXEC_JOG | EXEC_RUN) || cnc_state.exec_state==EXEC_IDLE) //if not in idle, run or jog ignores
 			{
 				cnc_set_exec_state(EXEC_HOLD); //activates hold
 			}
@@ -200,11 +217,13 @@ void cnc_exec_rt_command(uint8_t command)
 				return;
 			}
 			
-			if(!cnc_get_exec_state(EXEC_RUN))
-			{
-				//clears active hold
-				cnc_clear_exec_state(EXEC_HOLD);
-			}
+			//clears active hold
+			#ifdef USE_SPINDLE
+			planner_update_spindle(true);
+			protocol_send_string(MSG_FEEDBACK_10);
+			#endif
+			itp_delay(DELAY_ON_RESUME*100);
+			cnc_clear_exec_state(EXEC_HOLD);
 			break;
 		case RT_CMD_FEED_100:
 			planner_feed_ovr_reset();
@@ -256,29 +275,29 @@ void cnc_exec_rt_command(uint8_t command)
 				}
 				else
 				{
-					uint8_t pwm = 0;
-					bool ccw = false;
-					planner_get_spindle_speed(&pwm, &ccw);
-					dio_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
+					protocol_send_string(MSG_FEEDBACK_10);
+					planner_update_spindle(true);
 				}
 			}
 			break;
 		#endif
 		#ifdef USE_COOLANT
 		case RT_CMD_COOL_FLD_TOGGLE:
-			if(cnc_get_exec_state(EXEC_RUN | EXEC_HOLD) || cnc_state.exec_state == EXEC_IDLE)
-			{
-				dio_toogle_outputs(COOLANT_FLOOD_PIN);
-			}
-			break;
 		case RT_CMD_COOL_MST_TOGGLE:
 			if(cnc_get_exec_state(EXEC_RUN | EXEC_HOLD) || cnc_state.exec_state == EXEC_IDLE)
 			{
-				dio_toogle_outputs(COOLANT_MIST_PIN);
+				parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
 			}
 			break;
 		#endif
 	}
+	
+	#ifdef USE_SPINDLE
+	if(command>=RT_CMD_SPINDLE_100 && command<=RT_CMD_SPINDLE_DEC_FINE)
+	{
+		planner_update_spindle(true);
+	}
+	#endif
 }
 
 void cnc_doevents()
@@ -321,9 +340,9 @@ void cnc_doevents()
 				//can clears any active hold, homing or jog
 				cnc_clear_exec_state(EXEC_HOLD | EXEC_HOMING | EXEC_JOG);
 			}
+			return; //leaves the interpolator dry
 		}
-		
-		return; //leaves the interpolator dry
+		//proceeds do deaccelerate
 	}
 	
 	itp_run();
@@ -352,7 +371,6 @@ void cnc_home()
 	}
 	
 	block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
-	block_data.coolant = 0;
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	//starts offset and waits to finnish
@@ -375,7 +393,7 @@ void cnc_alarm(uint8_t code)
 	}
 	
 	//locks the system
-	cnc_state.system_state = false;
+	cnc_state.system_state = (!g_settings.homing_enabled) ? SYS_RESET : SYS_ALARM;
 }
 
 void cnc_kill()
@@ -385,27 +403,28 @@ void cnc_kill()
 	//stop tools
 	#ifdef USE_SPINDLE
 	dio_set_pwm(SPINDLE_PWM_CHANNEL, 0);
+	dio_clear_outputs(SPINDLE_DIR);
 	#endif
 	#ifdef USE_COOLANT
-	dio_clear_outputs(COOLANT_FLOOD_PIN | COOLANT_MIST_PIN);
+	dio_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
 	#endif
 	itp_clear();
 	planner_clear();
-	cnc_state.system_state = SYS_RESET;
 }
 
 void cnc_stop()
 {
 	//halt is active and was running flags it lost home position
-	if(cnc_get_exec_state(EXEC_RUN) & cnc_state.system_state)
+	if(cnc_get_exec_state(EXEC_RUN) & !cnc_state.system_state)
 	{
-		itp_stop();
+		cnc_state.system_state = SYS_LOCKED;
 	}
+	itp_stop();
 }
 
 void cnc_unlock()
 {
-	if(cnc_state.system_state)
+	if(!cnc_state.system_state)
 	{
 		return;
 	}

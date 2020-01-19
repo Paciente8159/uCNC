@@ -25,27 +25,18 @@
 #include "kinematics.h"
 #include "machinedefs.h"
 
-float step_mm_inv[3];
-
-void kinematics_init()
-{
-	step_mm_inv[0] = 1.0f / (float)g_settings.step_mm[0];
-	step_mm_inv[1] = 1.0f / (float)g_settings.step_mm[1];
-	step_mm_inv[2] = 1.0f / (float)g_settings.step_mm[2];
-}
-
 void kinematics_apply_inverse(float* axis, uint32_t* steps)
 {
-	steps[0] = g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]);
-	steps[1] = g_settings.step_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]);
-	steps[2] = g_settings.step_mm[2] * axis[AXIS_Z];
+	steps[0] = (uint32_t)lroundf(g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
+	steps[1] = (uint32_t)lroundf(g_settings.step_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
+	steps[2] = (uint32_t)lroundf(g_settings.step_mm[2] * axis[AXIS_Z]);
 }
 
 void kinematics_apply_forward(uint32_t* steps, float* axis)
 {
-	axis[AXIS_X] = step_mm_inv[0] * 0.5f * (steps[0] + steps[1]);
-	axis[AXIS_Y] = step_mm_inv[1] * 0.5f * (steps[0] - steps[1]);
-	axis[AXIS_Z] = step_mm_inv[2] * steps[2];
+	axis[AXIS_X] = (float)(step_mm_inv[0] * 0.5f * (steps[0] + steps[1]));
+	axis[AXIS_Y] = (float)(step_mm_inv[1] * 0.5f * (steps[0] - steps[1]));
+	axis[AXIS_Z] = (float)(step_mm_inv[2] * steps[2]);
 }
 
 void kinematics_home()
@@ -54,35 +45,22 @@ void kinematics_home()
 	result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
 	if(result != 0)
 	{
-		//disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		cnc_alarm(result);
-		return;
+		return result;
 	}
 	
 	result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
 	if(result != 0)
 	{
-		//disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		cnc_alarm(result);
-		return;
+		return result;
 	}
 	
 	result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
 	if(result != 0)
 	{
-		//disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		cnc_alarm(result);
-		return;
+		return result;
 	}
 	
-	//move to offset position
-	cnc_offset_home();
-	
-	//if all ok resets coordinates and flags homed state
-	cnc_reset_position();
+	return STATUS_OK;
 }
 
 #endif

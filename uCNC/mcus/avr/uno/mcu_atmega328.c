@@ -26,15 +26,15 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "config.h"
+#include "../../../config.h"
 #if(MCU == MCU_ATMEGA328P)
-#include "mcudefs.h"
-#include "mcumap.h"
-#include "mcu.h"
-#include "utils.h"
-#include "serial.h"
-#include "interpolator.h"
-#include "dio_control.h"
+#include "../../../mcudefs.h"
+#include "../../../mcumap.h"
+#include "../../../mcu.h"
+#include "../../../utils.h"
+#include "../../../serial.h"
+#include "../../../interpolator.h"
+#include "../../../dio_control.h"
 
 #include <math.h>
 #include <inttypes.h>
@@ -65,38 +65,6 @@
 #endif
 
 #define PULSE_RESET_DELAY MIN_PULSE_WIDTH_US * F_CPU / 1000000
-
-typedef union{
-    uint32_t r; // occupies 4 bytes
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-    struct
-    {
-        uint16_t rl;
-        uint16_t rh;
-    };
-    struct
-    {
-        uint8_t r0;
-        uint8_t r1;
-        uint8_t r2;
-        uint8_t r3;
-    };
-#else
-    struct
-    {
-        uint16_t rh;
-        uint16_t rl;
-    };
-    struct
-    {
-        uint8_t r3;
-        uint8_t r2;
-        uint8_t r1;
-        uint8_t r0;
-    }
-    ;
-#endif
-} IO_REGISTER;
 
 //USART communication
 /*int mcu_putchar(char c, FILE* stream);
@@ -150,6 +118,7 @@ ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
 	static uint8_t  prev_value = 0;
 	uint8_t value = PORTB;
 	uint8_t diff = value ^ prev_value;
+	prev_value = value;
 	#if(LIMITS_ISR_ID==0)
 	if(diff & LIMITS_MASK)
 	{
@@ -177,6 +146,7 @@ ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
 	static uint8_t  prev_value = 0;
 	uint8_t value = PORTC;
 	uint8_t diff = value ^ prev_value;
+	prev_value = value;
 	#if(LIMITS_ISR_ID==1)
 	if(diff & LIMITS_MASK)
 	{
@@ -204,6 +174,7 @@ ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
     static uint8_t  prev_value = 0;
 	uint8_t value = PORTD;
 	uint8_t diff = value ^ prev_value;
+	prev_value = value;
 	#if(LIMITS_ISR_ID==2)
 	if(diff & LIMITS_MASK)
 	{
@@ -229,7 +200,7 @@ ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
 
 ISR(USART_RX_vect, ISR_BLOCK)
 {
-	uint8_t c = UDR0;
+	unsigned char c = UDR0;
 	serial_rx_isr(c);
 }
 
@@ -246,7 +217,7 @@ ISR(USART_UDRE_vect, ISR_BLOCK)
 
 void mcu_init()
 {
-    IO_REGISTER reg = {};
+    //IO_REGISTER reg = {};
     
     #ifdef __PERFSTATS__
 	mcu_perf_step = 0;
@@ -284,6 +255,14 @@ void mcu_init()
     #ifdef DINS_R1_DIRREG
         DINS_R1_DIRREG = 0;
     #endif
+    
+    #ifdef DINS_R2_DIRREG
+        DINS_R2_DIRREG = 0;
+    #endif
+    
+    #ifdef DINS_R3_DIRREG
+        DINS_R3_DIRREG = 0;
+    #endif
 
 	#ifdef ANALOG_DIRREG
 		ANALOG_DIRREG = 0;
@@ -310,6 +289,14 @@ void mcu_init()
         DINS_R1_PULLUPREG |= DINS_R1_PULLUP_MASK;
     #endif
     
+    #ifdef DINS_R2_PULLUPREG
+        DINS_R2_PULLUPREG |= DINS_R2_PULLUP_MASK;
+    #endif
+    
+    #ifdef DINS_R3_PULLUPREG
+        DINS_R3_PULLUPREG |= DINS_R3_PULLUP_MASK;
+    #endif
+    
     //outputs
     #ifdef STEPS_DIRREG
         STEPS_DIRREG |= STEPS_MASK;
@@ -330,6 +317,14 @@ void mcu_init()
     #ifdef DOUTS_R1_DIRREG
         DOUTS_R1_DIRREG |= DOUTS_R1_MASK;
     #endif
+    
+    #ifdef DOUTS_R2_DIRREG
+        DOUTS_R2_DIRREG |= DOUTS_R2_MASK;
+    #endif
+    
+    #ifdef DOUTS_R3_DIRREG
+        DOUTS_R3_DIRREG |= DOUTS_R3_MASK;
+    #endif
 
     //activate Pin on change interrupt
     #ifdef LIMITS_ISR_ID
@@ -339,7 +334,7 @@ void mcu_init()
 	PCICR |= (1<<CONTROLS_ISR_ID);
 	#endif
 	#ifdef PROBE_ISR_ID
-	PCICR |= (1<<PROBE_ISR_ID));
+	PCICR |= (1<<PROBE_ISR_ID);
 	#endif
     
     #ifdef LIMITS_ISRREG
@@ -402,17 +397,23 @@ void mcu_init()
 
 //IO functions    
 //Inputs  
-uint16_t mcu_get_inputs()
+uint32_t mcu_get_inputs()
 {
-	IO_REGISTER reg;
-	reg.rl = 0;
+	uint32_t result;
+	uint8_t* reg = &result;
 	#ifdef DINS_R0_INREG
-	reg.r0 = (DINS_R0_INREG & DINS_R0_MASK);
+	reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
 	#endif
 	#ifdef DINS_R1_INREG
-	reg.r1 = (DINS_R1_INREG & DINS_R1_MASK);
+	reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
 	#endif
-	return reg.rl;	
+	#ifdef DINS_R2_INREG
+	reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
+	#endif
+	#ifdef DINS_R3_INREG
+	reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
+	#endif
+	return result;	
 }
 
 uint8_t mcu_get_controls()
@@ -468,31 +469,43 @@ void mcu_set_dirs(uint8_t value)
 	DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
 }
 
-void mcu_set_outputs(uint16_t value)
+void mcu_set_outputs(uint32_t value)
 {
-	IO_REGISTER reg;
-	reg.rl = value;
+	uint8_t* reg = &value;
 	
 	#ifdef DOUTS_R0_OUTREG
-		DOUTS_R0_OUTREG = (~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg.r0;
+		DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
 	#endif
 	#ifdef DOUTS_R1_OUTREG
-		DOUTS_R1_OUTREG = (~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg.r1;
+		DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
 	#endif
 }
 
-uint16_t mcu_get_outputs()
+uint32_t mcu_get_outputs()
 {
-	IO_REGISTER reg;
+	uint32_t result;
+	uint8_t* reg = &result;
 
 	#ifdef DOUTS_R0_OUTREG
-		reg.r0 = (~DOUTS_R0_MASK & DOUTS_R0_OUTREG);
+		reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
 	#endif
 	#ifdef DOUTS_R1_OUTREG
-		reg.r1 = (~DOUTS_R1_MASK & DOUTS_R1_OUTREG);
+		reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
 	#endif
 	
-	return reg.rl;
+	return (result & DOUTS_MASK);
 }
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
@@ -666,7 +679,6 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 	if(frequency >= 245)
 	{
 		*prescaller = 9;
-		
 	}
 	else if(frequency >= 31)
 	{
@@ -676,8 +688,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 	else if(frequency >= 4)
 	{
 		*prescaller = 11;
-		clockcounter *= 0.015625;
-		
+		clockcounter *= 0.015625;		
 	}
 	else if(frequency >= 1)
 	{

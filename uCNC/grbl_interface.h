@@ -68,6 +68,7 @@
 #define STATUS_UNDEFINED_AXIS 41
 #define STATUS_FEED_NOT_SET 42
 
+#define EXEC_ALARM_LOCKED					  0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.
 #define EXEC_ALARM_HARD_LIMIT                 1
 #define EXEC_ALARM_SOFT_LIMIT                 2
@@ -103,7 +104,7 @@
 #define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
 #define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
 
-#define MSG_INT "%d"
+//#define MSG_INT "%d"
 //#define MSG_FLT "%0.3f"
 //#define MSG_FLT_IMPERIAL "%0.5f"
 

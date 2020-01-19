@@ -28,12 +28,12 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "config.h"
-#include "mcudefs.h"
-#include "mcumap.h"
-#include "mcu.h"
+#include "../../config.h"
+#if(MCU == MCU_VIRTUAL)
+#include "../../mcudefs.h"
 
-#ifdef __MCU_VIRTUAL__
+#include "../../mcumap.h"
+#include "../../mcu.h"
 #include <stdio.h>
 #include <conio.h>
 #include <string.h>
@@ -43,40 +43,7 @@
 #include <pthread.h> 
 #include <math.h>
 
-typedef struct virtual_map_t
-{
-	uint8_t steps;
-	uint8_t dirs;
-	uint8_t controls;
-	uint8_t limits;
-	uint8_t probe;
-	uint16_t outputs;
-}VIRTUAL_MAP;
-
-#include "settings.h"
-#include "util/timer.h"
-#include "util/virtualserial.h"
-#include "serial.h"
-#include "interpolator.h"
-
-#ifndef F_CPU
-#define F_CPU 16000000UL
-#endif
-
-#ifndef BAUD
-#define BAUD 115200
-#endif
-
-#ifndef COM_BUFFER_SIZE
-#define COM_BUFFER_SIZE 50
-#endif
-
-#define USECONSOLE
-
-virtports_t virtualports;
-
-static VIRTUAL_MAP virtualmap;
-/*typedef union{
+typedef union{
     uint32_t r; // occupies 4 bytes
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
     struct
@@ -106,7 +73,42 @@ static VIRTUAL_MAP virtualmap;
     }
     ;
 #endif
-} IO_REGISTER;*/
+} IO_REGISTER;
+
+typedef struct virtual_map_t
+{
+	uint8_t steps;
+	uint8_t dirs;
+	uint8_t controls;
+	uint8_t limits;
+	uint8_t probe;
+	IO_REGISTER outputs;
+}VIRTUAL_MAP;
+
+#include "../../settings.h"
+#include "timer.h"
+#include "virtualserial.h"
+#include "../../serial.h"
+#include "../../interpolator.h"
+
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
+
+#ifndef BAUD
+#define BAUD 115200
+#endif
+
+#ifndef COM_BUFFER_SIZE
+#define COM_BUFFER_SIZE 50
+#endif
+
+//#define USECONSOLE
+
+virtports_t virtualports;
+
+static VIRTUAL_MAP virtualmap;
+/**/
 
 //UART communication
 uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
@@ -268,7 +270,7 @@ void mcu_init()
 //IO functions    
 //Inputs  
 //returns the value of the input pins
-uint16_t mcu_get_inputs()
+uint32_t mcu_get_inputs()
 {
 	return 0;	
 }
@@ -324,13 +326,43 @@ void mcu_set_dirs(uint8_t value)
 }
 
 //sets all digital outputs pins
-void mcu_set_outputs(uint16_t value)
+void mcu_set_outputs(uint32_t value)
 {
-	//g_mcu_outputs.outputs = value;
+	IO_REGISTER reg;
+	reg.r = value;
+	
+	#ifdef DOUTS_R0_OUTREG
+		virtualports->outputs.r0 = ((~DOUTS_R0_MASK & virtualports->outputs.r0) | reg.r0);
+	#endif
+	#ifdef DOUTS_R1_OUTREG
+		virtualports->outputs.r1 = ((~DOUTS_R1_MASK & virtualports->outputs.r1) | reg.r1);
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		virtualports->outputs.r2 = ((~DOUTS_R2_MASK & virtualports->outputs.r2) | reg.r2);
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		virtualports->outputs.r3 = ((~DOUTS_R3_MASK & virtualports->outputs.r3) | reg.r3);
+	#endif
 }
-uint16_t mcu_get_outputs()
+
+uint32_t mcu_get_outputs()
 {
-	return 0;
+	IO_REGISTER reg;
+
+	#ifdef DOUTS_R0_OUTREG
+		reg.r0 = virtualports->outputs.r0;
+	#endif
+	#ifdef DOUTS_R1_OUTREG
+		reg.r1 = virtualports->outputs.r1;
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		reg.r2 = virtualports->outputs.r2;
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		reg.r3 = virtualports->outputs.r3;
+	#endif
+	
+	return (reg.r & DOUTS_MASK);
 }
 
 //Communication functions

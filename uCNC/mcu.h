@@ -29,7 +29,7 @@ void mcu_init();
 
 //IO functions    
 //Inputs  
-uint16_t mcu_get_inputs();
+uint32_t mcu_get_inputs();
 uint8_t mcu_get_controls();
 uint8_t mcu_get_limits();
 #ifdef PROBE
@@ -42,8 +42,8 @@ uint8_t mcu_get_analog(uint8_t channel);
 //Outputs
 void mcu_set_steps(uint8_t value);
 void mcu_set_dirs(uint8_t value);
-void mcu_set_outputs(uint16_t value);
-uint16_t mcu_get_outputs();
+void mcu_set_outputs(uint32_t value);
+uint32_t mcu_get_outputs();
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value);
 uint8_t mcu_get_pwm(uint8_t pwm);

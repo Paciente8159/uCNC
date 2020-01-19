@@ -25,12 +25,11 @@
 	MCU port map
 */
 #if(MCU == MCU_ATMEGA328P)
-#include "mcumap_atmega328p.h"
+#include "mcus\avr\uno\mcumap_atmega328p.h"
 #endif
 
 #if(MCU == MCU_VIRTUAL)
-#include "mcumap_virtual.h"
-#define __MCU_VIRTUAL__
+#include "mcus\virtual\mcumap_virtual.h"
 #endif
 
 #ifndef MCU

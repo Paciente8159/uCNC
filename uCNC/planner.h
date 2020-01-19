@@ -27,20 +27,24 @@
 
 #define PLANNER_BUFFER_SIZE 10
 
+#define PLANNER_MOTION_MODE_NOMOTION 0
+#define PLANNER_MOTION_MODE_FEED 1
+#define PLANNER_MOTION_MODE_INVERSEFEED 2
+
 typedef struct
 {
+	float dir_vect[AXIS_COUNT];
+	float distance;
 	float feed;
 	float spindle;
-	uint8_t coolant;
 	uint16_t dwell;
-	bool no_motion;
+	uint8_t motion_mode;
 } planner_block_data_t;
 
 typedef struct
 {
 	uint8_t dirbits;
 	float pos[AXIS_COUNT];
-	float dir_vect[AXIS_COUNT];
 
 	float distance;
 	float angle_factor;
@@ -72,10 +76,7 @@ planner_block_t *planner_get_block();
 float planner_get_block_exit_speed_sqr();
 float planner_get_block_top_speed();
 #ifdef USE_SPINDLE
-float planner_get_spindle_speed(uint8_t *pwm, bool *spindle_ccw);
-#endif
-#ifdef USE_COOLANT
-uint8_t planner_get_coolant();
+float planner_update_spindle(bool update_outputs);
 #endif
 void planner_discard_block();
 void planner_add_line(float *target, planner_block_data_t block_data);
@@ -98,5 +99,6 @@ void planner_spindle_ovr_reset();
 void planner_spindle_ovr_inc(float value);
 #endif
 
+bool planner_get_overflows(uint8_t *overflows);
 
 #endif

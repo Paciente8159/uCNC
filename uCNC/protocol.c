@@ -22,6 +22,7 @@
 #include "interpolator.h"
 #include "dio_control.h"
 #include "parser.h"
+#include "planner.h"
 #include "cnc.h"
 #include "mcu.h"
 #include "protocol.h"
@@ -52,16 +53,80 @@ void protocol_send_alarm(uint8_t alarm)
 	procotol_send_newline();
 }
 
-void protocol_send_string(const char* __s)
+void protocol_send_string(const unsigned char* __s)
 {
 	serial_print_str(__s);
 }
 
+static uint8_t protocol_get_tools()
+{
+	uint8_t modalgroups[9];
+	uint16_t feed;
+	uint16_t spindle;
+	
+	parser_get_modes(modalgroups, &feed, &spindle);
+	
+	uint8_t result = 0;
+	#ifdef USE_COOLANT
+	result = 9 - modalgroups[6];
+	#endif
+	#ifdef USE_SPINDLE
+	if(modalgroups[5] != 5)
+	{
+		result |= ((modalgroups[5] == 3) ? 4 : 8);
+	}
+	#endif
+	return result;
+}
+
+static void protocol_send_status_tail()
+{
+	float axis[AXIS_COUNT];
+	if(parser_get_wco(axis))
+	{
+		serial_print_str(__romstr__("|WCO:"));
+		serial_print_fltarr(axis, AXIS_COUNT);
+		return;
+	}
+	
+	uint8_t ovr[3];
+	if(planner_get_overflows(ovr))
+	{
+		serial_print_str(__romstr__("|Ov:"));
+		serial_print_int(ovr[0]);
+		serial_putc(',');
+		serial_print_int(ovr[1]);
+		serial_putc(',');
+		serial_print_int(ovr[2]);
+		uint8_t tools = protocol_get_tools();
+		if(tools)
+		{
+			serial_print_str(__romstr__("|A:"));
+			if(CHECKFLAG(tools, 4))
+			{
+				serial_putc('S');
+			}
+			if(CHECKFLAG(tools, 8))
+			{
+				serial_putc('C');
+			}
+			if(CHECKFLAG(tools, 1))
+			{
+				serial_putc('F');
+			}
+			
+			if(CHECKFLAG(tools, 2))
+			{
+				serial_putc('M');
+			}
+		}
+		return;
+	}
+}
+
 void protocol_send_status()
 {
-	static uint8_t report_count = 0;
 	float axis[AXIS_COUNT];
-	static uint8_t report_limit = 30;
 
 	//only send report when buffer is empty
 	//this prevents locks and stack overflow of the cnc_doevents()
@@ -70,14 +135,9 @@ void protocol_send_status()
 		return;
 	}
 
-	if(cnc_get_exec_state(EXEC_RUN))
-	{
-		report_limit = 10;
-	}
-	
 	itp_get_rt_position((float*)&axis);
 	float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
-	float spindle = itp_get_rt_spindle();
+	float spindle = planner_update_spindle(false);
 	
 	uint8_t state = cnc_get_exec_state(0xFF);
 	uint8_t filter = EXEC_SLEEP;
@@ -151,7 +211,11 @@ void protocol_send_status()
 	serial_print_str(__romstr__("|MPos:"));
 	serial_print_fltarr(axis, AXIS_COUNT);
 	
+	#ifdef USE_SPINDLE
 	serial_print_str(__romstr__("|FS:"));
+	#else
+	serial_print_str(__romstr__("|F:"));
+	#endif
 	serial_print_int((uint16_t)feed);
 	#ifdef USE_SPINDLE
 	serial_putc(',');
@@ -212,20 +276,9 @@ void protocol_send_status()
 			serial_putc('C');
 		}
 	}
-	/*	
-	if(report_count>report_limit)
-	{
-		parser_get_wco(axis);
-		serial_print_string(__romstr__("|WCO:"));
-		for(uint8_t i = 0; i < AXIS_COUNT-1; i++)
-		{
-			protocol_printf(__romstr__("%0.3f,"), axis[i]);
-		}
-		
-		protocol_printf(__romstr__("%0.3f"), axis[AXIS_COUNT-1]);
-		report_count = 0;
-	}
 	
+	protocol_send_status_tail();
+	/*
 	#ifdef __PERFSTATS__
 	uint16_t stepclocks = mcu_get_step_clocks();
 	uint16_t stepresetclocks = mcu_get_step_reset_clocks();
@@ -234,7 +287,6 @@ void protocol_send_status()
 	*/
 	serial_putc('>');
 	procotol_send_newline();
-	report_count++;
 }
 
 void protocol_send_gcode_coordsys()
@@ -303,7 +355,7 @@ void protocol_send_gcode_modes()
 	for(uint8_t i = 5; i < 8; i++)
 	{
 		serial_putc('M');
-		serial_print_int((int16_t)modalgroups[i]);
+		serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
 		serial_putc(' ');
 	}
 	

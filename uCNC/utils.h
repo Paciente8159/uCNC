@@ -31,9 +31,21 @@
 #define CHECKFLAG(x,y) ((x) & (y)) /* Check byte y in byte x*/
 #define TOGGLEFLAG(x,y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 
-#define MAX(a,b) (a>b) ? a : b
-#define MIN(a,b) (a<b) ? a : b
-#define ABS(a) (a>0) ? a : -a
+#define MAX(a,b) ((a)>(b)) ? (a) : (b)
+#define MIN(a,b) ((a)<(b)) ? (a) : (b)
+#define ABS(a) ((a)>0) ? (a) : -(a)
+
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+    #define __UINT32_R0__ 0
+    #define __UINT32_R1__ 1
+    #define __UINT32_R2__ 2
+    #define __UINT32_R3__ 3
+#else
+    #define __UINT32_R0__ 3
+    #define __UINT32_R1__ 2
+    #define __UINT32_R2__ 1
+    #define __UINT32_R3__ 0
+#endif
 
 //Quake III fast sqrt calculation
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)

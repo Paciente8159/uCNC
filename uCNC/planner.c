@@ -34,10 +34,10 @@
 
 typedef struct
 {
-	float feed_override;
-	float rapid_feed_override;
+	uint8_t feed_override;
+	uint8_t rapid_feed_override;
 	#ifdef USE_SPINDLE
-	float spindle_override;
+	uint8_t spindle_override;
 	#endif
 	bool overrides_enabled;
 
@@ -47,14 +47,12 @@ static float planner_coord[AXIS_COUNT];
 #ifdef USE_SPINDLE
 static float planner_spindle;
 #endif
-#ifdef USE_COOLANT
-static uint8_t planner_coolant;
-#endif
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
 static uint8_t planner_data_read;
 static uint8_t planner_data_slots;
 static planner_overrides_t planner_overrides;
+static uint8_t planner_ovr_counter;
 
 /*
 	Planner buffer functions
@@ -116,24 +114,25 @@ static inline void planner_buffer_clear()
 	planner_data_write = 0;
 	planner_data_read = 0;
 	planner_data_slots = PLANNER_BUFFER_SIZE;
+	#ifdef FORCE_GLOBALS_TO_0
 	memset(planner_data, 0, sizeof(planner_data));
+	#endif
 }
 
 void planner_init()
 {
+	#ifdef FORCE_GLOBALS_TO_0
 	memset(&planner_coord, 0, AXIS_COUNT * sizeof(float));
 	//resets buffer
 	memset(&planner_data, 0, sizeof(planner_data));
+	#endif
 	planner_buffer_clear();
 	planner_overrides.overrides_enabled = true;
-	planner_overrides.feed_override = 1;
-	planner_overrides.rapid_feed_override = 1;
+	planner_overrides.feed_override = 100;
+	planner_overrides.rapid_feed_override = 100;
 	#ifdef USE_SPINDLE
-	planner_overrides.spindle_override = 1;
+	planner_overrides.spindle_override = 100;
 	planner_spindle = 0;
-	#endif
-	#ifdef USE_COOLANT
-	planner_coolant = 0;
 	#endif
 }
 
@@ -143,9 +142,6 @@ void planner_clear()
 	planner_buffer_clear();
 	#ifdef USE_SPINDLE
 	planner_spindle = 0;
-	#endif
-	#ifdef USE_COOLANT
-	planner_coolant = 0;
 	#endif
 	//resyncs position with interpolator
 	planner_resync_position();
@@ -170,15 +166,18 @@ float planner_get_block_exit_speed_sqr()
 		return exit_speed_sqr;
 	}
 
-	if (planner_overrides.feed_override != 1.0)
+	if (planner_overrides.feed_override != 100)
 	{
-		exit_speed_sqr *= (planner_overrides.feed_override * planner_overrides.feed_override);
+		exit_speed_sqr *= planner_overrides.feed_override * planner_overrides.feed_override;
+		exit_speed_sqr *= 0.0001f;
 	}
 
 	//if rapid overrides are active the feed must not exceed the rapid motion feed
-	if (planner_overrides.rapid_feed_override != 1.0)
+	if (planner_overrides.rapid_feed_override != 100)
 	{
-		float rapid_feed_sqr = planner_data[next].rapid_feed_sqr * planner_overrides.rapid_feed_override * planner_overrides.rapid_feed_override;
+		float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
+		rapid_feed_sqr *= planner_overrides.rapid_feed_override * planner_overrides.rapid_feed_override;
+		rapid_feed_sqr *= 0.0001f;
 		exit_speed_sqr = MIN(exit_speed_sqr, rapid_feed_sqr);
 	}
 
@@ -212,16 +211,18 @@ float planner_get_block_top_speed()
 	float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
 	if (planner_overrides.overrides_enabled)
 	{
-		if (planner_overrides.feed_override != 1.0)
+		if (planner_overrides.feed_override != 100)
 		{
-			target_speed_sqr *= (planner_overrides.feed_override * planner_overrides.feed_override);
+			target_speed_sqr *= planner_overrides.feed_override * planner_overrides.feed_override;
+			target_speed_sqr *= 0.0001f;
 		}
 
 		float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
 		//if rapid overrides are active the feed must not exceed the rapid motion feed
-		if (planner_overrides.rapid_feed_override != 1.0)
+		if (planner_overrides.rapid_feed_override != 100)
 		{
-			rapid_feed_sqr *= (planner_overrides.rapid_feed_override * planner_overrides.rapid_feed_override);
+			rapid_feed_sqr *= planner_overrides.rapid_feed_override * planner_overrides.rapid_feed_override;
+			rapid_feed_sqr *= 0.0001f;
 		}
 
 		//can't ever exceed rapid move speed
@@ -232,40 +233,45 @@ float planner_get_block_top_speed()
 }
 
 #ifdef USE_SPINDLE
-float planner_get_spindle_speed(uint8_t *pwm, bool *spindle_ccw)
+float planner_update_spindle(bool update_outputs)
 {
 	float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
-	*pwm = 0;
-	*spindle_ccw = false;
+
+	if(update_outputs)
+	{
+		if (spindle >= 0)
+		{
+			dio_clear_outputs(SPINDLE_DIR);
+		}
+		else
+		{
+			dio_set_outputs(SPINDLE_DIR);
+		}
+	}
+	
 	if (spindle != 0)
 	{
-		if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 1.0)
+		spindle = ABS(spindle);
+		if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
 		{
-			spindle *= planner_overrides.spindle_override;
+			spindle *= 0.01f * planner_overrides.spindle_override;
 		}
 		spindle = MIN(spindle, g_settings.spindle_max_rpm);
 		spindle = MAX(spindle, g_settings.spindle_min_rpm);
-		*pwm = (uint8_t)roundf(255 * (spindle / g_settings.spindle_max_rpm));
-		*pwm = MAX(*pwm, 1);
-
-		if (spindle < 0)
-		{
-			*spindle_ccw = true;
-			return -spindle;
-		}
-		return spindle;
+	}
+	
+	if(update_outputs)
+	{	
+		uint8_t pwm = 0;
+		pwm = (uint8_t)roundf(255 * (spindle / g_settings.spindle_max_rpm));
+		pwm = MAX(pwm, 1);
+		dio_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
 	}
 
 	return spindle;
 }
 #endif
 
-#ifdef USE_COOLANT
-uint8_t planner_get_coolant()
-{
-	return (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
-}
-#endif
 void planner_discard_block()
 {
 	planner_buffer_read();
@@ -340,6 +346,7 @@ void planner_recalculate()
 */
 void planner_add_line(float *target, planner_block_data_t block_data)
 {
+	static float prev_dir_vect[AXIS_COUNT];
 	planner_data[planner_data_write].dirbits = 0;
 	planner_data[planner_data_write].optimal = false;
 	planner_data[planner_data_write].acceleration = 0;
@@ -350,46 +357,27 @@ void planner_add_line(float *target, planner_block_data_t block_data)
 	#ifdef USE_SPINDLE
 	planner_spindle = planner_data[planner_data_write].spindle = block_data.spindle;
 	#endif
-	#ifdef USE_COOLANT
-	planner_data[planner_data_write].coolant = block_data.coolant;
-	#endif
 	planner_data[planner_data_write].dwell = block_data.dwell;
 
-	planner_data[planner_data_write].distance = 0;
-	if(block_data.no_motion)
+	planner_data[planner_data_write].distance = block_data.distance;
+	if(block_data.motion_mode == PLANNER_MOTION_MODE_NOMOTION)
 	{
 		planner_buffer_write();
 		return;
 	}
 
 	memcpy(&(planner_data[planner_data_write].pos), target, sizeof(planner_data[planner_data_write].pos));
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		planner_data[planner_data_write].dir_vect[i] = target[i] - planner_coord[i];
-		planner_data[planner_data_write].dirbits <<= 1;
-		if (planner_data[planner_data_write].dir_vect[i] != 0)
-		{
-			planner_data[planner_data_write].distance += planner_data[planner_data_write].dir_vect[i] * planner_data[planner_data_write].dir_vect[i];
-			if (planner_data[planner_data_write].dir_vect[i] < 0) //sets direction bits
-			{
-				planner_data[planner_data_write].dirbits |= 0x01;
-			}
-		}
-	}
 
 	//calculates the normalized direction vector
 	//it also calculates the angle between previous direction and the current
 	//this is given by the equation cos(theta) = dotprod(u,v)/(magnitude(u)*magnitude(v))
 	//since normalized vector are being used (magnitude=1) this simplifies to cos(theta) = dotprod(u,v)
 	//in the same loop the maximum linear speed and accel is calculated
-	planner_data[planner_data_write].distance = sqrtf(planner_data[planner_data_write].distance);
+	//planner_data[planner_data_write].distance = sqrtf(planner_data[planner_data_write].distance);
 	float inv_magn = 1.0f / planner_data[planner_data_write].distance;
 	float cos_theta = 0;
-	uint8_t dirs = planner_data[planner_data_write].dirbits;
-	//uint8_t prev_index = BUFFER_WRITE_INDEX(planner_buffer);
-	//prev_index = BUFFER_PREV_INDEX(planner_buffer,prev_index);
 	uint8_t prev = 0;
+	
 	if (!planner_buffer_is_empty())
 	{
 		prev = planner_buffer_prev(planner_data_write); //BUFFER_PTR(planner_buffer, prev_index);
@@ -398,28 +386,33 @@ void planner_add_line(float *target, planner_block_data_t block_data)
 	//calculates (given the motion direction), the maximum acceleration an feed allowed by the machine settings.
 	float rapid_feed = FLT_MAX;
 	planner_data[planner_data_write].acceleration = FLT_MAX;
-	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	for (uint8_t i = AXIS_COUNT; i != 0; )
 	{
+		i--;
 		//if target doesn't move skip computations
-		if (planner_data[planner_data_write].dir_vect[i] != 0)
+		if (block_data.dir_vect[i] != 0)
 		{
-			planner_data[planner_data_write].dir_vect[i] *= inv_magn;
+			block_data.dir_vect[i] *= inv_magn;
+			float dir_axis_abs = 1.0f/block_data.dir_vect[i];
+			if (block_data.dir_vect[i] < 0) //sets direction bits
+			{
+				SETBIT(planner_data[planner_data_write].dirbits, i);
+				dir_axis_abs = -dir_axis_abs;
+			}
+			
 			if (!planner_buffer_is_empty())
 			{
-				cos_theta += planner_data[planner_data_write].dir_vect[i] * planner_data[prev].dir_vect[i];
+				cos_theta += block_data.dir_vect[i] * prev_dir_vect[i];
 			}
 
-			float dir_axis_abs = (dirs & 0x01) ? -planner_data[planner_data_write].dir_vect[i] : planner_data[planner_data_write].dir_vect[i];
-
 			//calcs maximum allowable speed for this diretion
-			float axis_speed = g_settings.max_feed_rate[i] / dir_axis_abs;
+			float axis_speed = g_settings.max_feed_rate[i] * dir_axis_abs;
 			rapid_feed = MIN(rapid_feed, axis_speed);
 			//calcs maximum allowable acceleration for this direction
-			float axis_accel = g_settings.acceleration[i] / dir_axis_abs;
+			float axis_accel = g_settings.acceleration[i] * dir_axis_abs;
 			planner_data[planner_data_write].acceleration = MIN(planner_data[planner_data_write].acceleration, axis_accel);
 		}
 
-		dirs >>= 1;
 	}
 
 	planner_data[planner_data_write].accel_inv = 1.0f / planner_data[planner_data_write].acceleration;
@@ -450,7 +443,8 @@ void planner_add_line(float *target, planner_block_data_t block_data)
 			//but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
 			//all angles greater than 1 that can be excluded
 			planner_data[planner_data_write].angle_factor = 1.0f / (1.0f + cos_theta);
-			planner_data[planner_data_write].angle_factor *= sqrt((1.0f - cos_theta * cos_theta));
+			cos_theta = (1.0f - cos_theta * cos_theta);
+			planner_data[planner_data_write].angle_factor *= fast_sqrt(cos_theta);
 		}
 
 		//sets the maximum allowed speed at junction (if angle doesn't force a full stop)
@@ -471,6 +465,8 @@ void planner_add_line(float *target, planner_block_data_t block_data)
 	planner_buffer_write();
 	//updates the current planner coordinates
 	memcpy(&planner_coord, target, sizeof(planner_coord));
+	//updates the previous dir vect
+	memcpy(&prev_dir_vect, block_data.dir_vect, sizeof(prev_dir_vect));
 }
 
 void planner_get_position(float *axis)
@@ -489,6 +485,7 @@ void planner_toogle_overrides()
 {
 	planner_overrides.overrides_enabled = !planner_overrides.overrides_enabled;
 	itp_update();
+	planner_ovr_counter = 0;
 }
 
 bool planner_get_overrides()
@@ -501,9 +498,11 @@ void planner_feed_ovr_inc(float value)
 	planner_overrides.feed_override += value;
 	planner_overrides.feed_override = MAX(planner_overrides.feed_override, FEED_OVR_MIN);
 	planner_overrides.feed_override = MIN(planner_overrides.feed_override, FEED_OVR_MAX);
+	
 	if (planner_overrides.overrides_enabled)
 	{
 		itp_update();
+		planner_ovr_counter = 0;
 	}
 }
 
@@ -512,18 +511,21 @@ void planner_rapid_feed_ovr(float value)
 	planner_overrides.rapid_feed_override = value;
 	if (planner_overrides.overrides_enabled)
 	{
+		planner_ovr_counter = 0;
 		itp_update();
 	}
 }
 
 void planner_feed_ovr_reset()
 {
-	planner_overrides.feed_override = 1;
+	planner_overrides.feed_override = 100;
+	planner_ovr_counter = 0;
 }
 
 void planner_rapid_feed_ovr_reset()
 {
-	planner_overrides.rapid_feed_override = 1;
+	planner_overrides.rapid_feed_override = 100;
+	planner_ovr_counter = 0;
 }
 #ifdef USE_SPINDLE
 void planner_spindle_ovr_inc(float value)
@@ -531,10 +533,32 @@ void planner_spindle_ovr_inc(float value)
 	planner_overrides.spindle_override += value;
 	planner_overrides.spindle_override = MAX(planner_overrides.spindle_override, SPINDLE_OVR_MIN);
 	planner_overrides.spindle_override = MIN(planner_overrides.spindle_override, SPINDLE_OVR_MAX);
+	planner_ovr_counter = 0;
 }
 
 void planner_spindle_ovr_reset()
 {
-	planner_overrides.spindle_override = 1;
+	planner_overrides.spindle_override = 100;
+	planner_ovr_counter = 0;
 }
 #endif
+
+bool planner_get_overflows(uint8_t *overflows)
+{
+	if(!planner_ovr_counter)
+	{
+		overflows[0] = planner_overrides.feed_override;
+		overflows[1] = planner_overrides.rapid_feed_override;
+		#ifdef USE_SPINDLE
+		overflows[2] = planner_overrides.spindle_override;
+		#else
+		overflows[2] = 0;
+		#endif
+		planner_ovr_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
+		return true;
+	}
+	
+	planner_ovr_counter--;
+	return false;
+}
+

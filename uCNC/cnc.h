@@ -28,8 +28,10 @@
 #define SYS_OK 0
 #define SYS_RESET 1
 #define SYS_LOCKED 2
+#define SYS_ALARM 4
 
 //realtime commands             Equivalent extended-ASCII input code
+#define RT_CMD_CLEAR 0
 #define RT_CMD_RESET 0x18
 #define RT_CMD_SAFETY_DOOR 0x84
 #define RT_CMD_FEED_HOLD 0x21

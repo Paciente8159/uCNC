@@ -34,5 +34,6 @@ void itp_get_rt_position(float* axis);
 void itp_reset_rt_position();
 float itp_get_rt_feed();
 float itp_get_rt_spindle();
+void itp_delay(uint16_t delay);
 
 #endif

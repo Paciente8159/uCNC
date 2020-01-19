@@ -20,7 +20,7 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
-#include "util\timer.h"
+#include "timer.h"
 #define F_CPU 1000
 #define F_STEP_MAX 500
 #define F_STEP_MIN 1
@@ -65,6 +65,8 @@ extern virtports_t virtualports;
 #define PWM0 0
 #define DOUT0 0
 #define DOUT1 1
-#define DOUT2 2
+#define DOUTS_R0_OUTREG virtualports->outputs.r0
+#define DOUT8 0
+#define DOUTS_R1_OUTREG virtualports->outputs.r1
 
 #endif

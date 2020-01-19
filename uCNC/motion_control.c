@@ -36,7 +36,9 @@ static bool mc_checkmode;
 
 void mc_init()
 {
+	#ifdef FORCE_GLOBALS_TO_0
 	mc_checkmode = false;
+	#endif
 }
 
 bool mc_toogle_checkmode()
@@ -74,6 +76,30 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 		cnc_doevents();
 	}
 
+	if(block_data.motion_mode != PLANNER_MOTION_MODE_NOMOTION)
+	{
+		float mc_position[AXIS_COUNT];
+
+		//copy planner last position
+		planner_get_position(mc_position);
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			block_data.dir_vect[i] = target[i] - mc_position[i];
+			if (block_data.dir_vect[i] != 0)
+			{
+				block_data.distance += (block_data.dir_vect[i] * block_data.dir_vect[i]);
+			}
+		}
+		
+		block_data.distance = sqrtf(block_data.distance);
+		if(block_data.motion_mode == PLANNER_MOTION_MODE_INVERSEFEED)
+		{
+			//calculates feed rate in reverse feed rate mode
+			block_data.feed = block_data.distance / block_data.feed;
+		}
+	}
+
 	planner_add_line(target, block_data);
 	return STATUS_OK;
 }
@@ -103,27 +129,6 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 		axis_0 = AXIS_Y;
 		axis_1 = AXIS_Z;
 		break;
-	}
-
-	float dir_vector[AXIS_COUNT];
-	float length = 0;
-
-	//for all other axis finds the linear motion distance
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		if (i != axis_0 && i != axis_1)
-		{
-			dir_vector[i] = target[i] - mc_position[i];
-			if (dir_vector[i] != 0)
-			{
-				length += dir_vector[i] * dir_vector[i];
-			}
-		}
-		else
-		{
-			dir_vector[i] = 0;
-		}
 	}
 
 	float ptcenter_a = mc_position[axis_0] + center_offset_a;
@@ -158,21 +163,23 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 	uint16_t segment_count = floor(fabs(0.5 * arc_angle * radius) / sqrt(g_settings.arc_tolerance * (2 * radius - g_settings.arc_tolerance)));
 	float arc_per_sgm = 0;
 	float dist_sgm = 0;
-
-	if (segment_count)
+	
+	//for all other axis finds the linear motion distance
+	float increment[AXIS_COUNT];
+	
+	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{
-		arc_per_sgm = arc_angle / segment_count;
-		if (dist_sgm != 0)
-		{
-			dist_sgm = length / (segment_count * sqrtf(length));
-		}
-
-		//calculate the incremental linear distance for all other axis
-		for (uint8_t i = AXIS_COUNT; i != 0;)
-		{
-			i--;
-			dir_vector[i] *= dist_sgm;
-		}
+		i--;
+		increment[i] = (target[i] - mc_position[i])/segment_count;
+	}
+	
+	increment[axis_0] = 0;
+	increment[axis_1] = 0;
+	
+	if(block_data.motion_mode == PLANNER_MOTION_MODE_INVERSEFEED)
+	{
+		//split the required time to complete the motion with the number of segments
+		block_data.feed /= segment_count;
 	}
 
 	//calculates an aproximation to sine and cosine of the angle segment
@@ -215,7 +222,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 			i--;
 			if (i != axis_0 && i != axis_1)
 			{
-				mc_position[i] += dir_vector[i];
+				mc_position[i] += increment[i];
 			}
 		}
 
@@ -242,7 +249,7 @@ uint8_t mc_dwell(planner_block_data_t block_data)
 	}
 
 	//send dwell (planner linear motion with distance == 0)
-	block_data.no_motion = true;
+	block_data.motion_mode = PLANNER_MOTION_MODE_NOMOTION;
 	planner_add_line(NULL, block_data);
 	return STATUS_OK;
 }
@@ -274,7 +281,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	target[axis] += max_home_dist;
 	cnc_set_exec_state(EXEC_HOMING);
 	block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
-	block_data.coolant = 0;
 	block_data.spindle = 0;
 	block_data.dwell = 0;
 	planner_add_line((float *)&target, block_data);
@@ -345,7 +351,7 @@ uint8_t mc_spindle_coolant(planner_block_data_t block_data)
 		cnc_doevents();
 	}
 
-	block_data.no_motion = true;
+	block_data.motion_mode = PLANNER_MOTION_MODE_NOMOTION;
 	planner_add_line(NULL, block_data);
 	return STATUS_OK;
 }
