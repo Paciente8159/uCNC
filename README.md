@@ -1,4 +1,4 @@
-![alt text](https://github.com/Paciente8159/uCNC/tree/master/docs/logo.png "µCNC Logo")
+![µCNC Logo](https://github.com/Paciente8159/uCNC/tree/master/docs/logo.png)
 
 # µCNC
 µCNC - A universal CNC firmware for microcontrollers
