@@ -1,8 +1,8 @@
-# uCNC
-uCNC - A universal CNC firmware for microcontrollers
+# µCNC
+µCNC - A universal CNC firmware for microcontrollers
 
-## uCNC for PC (Windows only for now)
-uCNC for PC can be built in a couple of ways
+## µCNC for PC (Windows only for now)
+µCNC for PC can be built in a couple of ways
 
 ## Method one - DevC++
 You can use DevC++ (I used portable version 5.11) and open load the uCNC.dev file to load the project and compile. That's it.
