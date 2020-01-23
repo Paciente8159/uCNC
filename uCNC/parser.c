@@ -933,13 +933,14 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 #ifndef GCODE_IGNORE_LINE_NUMBERS
 			word_group = &parser_word2;
 			word_group_val = GCODE_WORD_N;
-
 			if (!isinteger || wordcount != 0 || word_val < 0)
 			{
 				return STATUS_GCODE_INVALID_LINE_NUMBER;
 			}
 
 			new_state->linenum = trunc(word_val);
+#else
+			word_group = NULL;
 #endif
 			break;
 #ifdef AXIS_X
@@ -1078,23 +1079,26 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 			//break;
 		}
-		wordcount++;
-
-		if(word_group_val)
+		
+		if(word_group != NULL)
 		{
-			TOGGLEFLAG(*word_group, word_group_val);
-		}
-		else
-		{
-			word_group_val = GCODE_GROUP_COOLANT;
-		}
-		if (!CHECKFLAG(*word_group, word_group_val))
-		{
-			if (word_group == &parser_group0 || word_group == &parser_group1)
+			wordcount++;
+			if(word_group_val)
 			{
-				return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+				TOGGLEFLAG(*word_group, word_group_val);
 			}
-			return STATUS_GCODE_WORD_REPEATED;
+			else
+			{
+				word_group_val = GCODE_GROUP_COOLANT;
+			}
+			if (!CHECKFLAG(*word_group, word_group_val))
+			{
+				if (word_group == &parser_group0 || word_group == &parser_group1)
+				{
+					return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+				}
+				return STATUS_GCODE_WORD_REPEATED;
+			}
 		}
 	}
 

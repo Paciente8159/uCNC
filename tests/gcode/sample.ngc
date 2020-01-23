@@ -1,7 +1,7 @@
 (this program mills “Hello world” between X=0 and X=81 millimeters)
 n0010 g21 g0 x0 y0 z50
 (top of part should be on XY plane)
-n0020 t1 m6 m3 f20 s4000
+n0020 m3 f20 s4000
 (use an engraver or small ball-nose endmill)
 n0030 g0 x0 y0 z2
 n0040 g1 z-0.5
