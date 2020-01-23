@@ -20,7 +20,7 @@
 #include "settings.h"
 #include "serial.h"
 #include "interpolator.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "parser.h"
 #include "planner.h"
 #include "cnc.h"
@@ -140,7 +140,7 @@ void protocol_send_status()
 	float spindle = planner_update_spindle(false);
 	
 	uint8_t state = cnc_get_exec_state(0xFF);
-	uint8_t filter = EXEC_SLEEP;
+	uint8_t filter = 0x80;
 	while(!(state & filter) && filter)
 	{
 		filter >>= 1;
@@ -151,12 +151,12 @@ void protocol_send_status()
 	serial_putc('<');
 	switch(state)
 	{
-		case EXEC_SLEEP:
-			serial_print_str(__romstr__("Sleep"));
+		case EXEC_ABORT:
+			serial_print_str(__romstr__("Abort"));
 			break;
 		case EXEC_DOOR:
 			serial_print_str(__romstr__("Door:"));
-			if(dio_get_controls(SAFETY_DOOR_MASK))
+			if(io_get_controls(SAFETY_DOOR_MASK))
 			{
 				
 				if(cnc_get_exec_state(EXEC_RUN))
@@ -180,7 +180,7 @@ void protocol_send_status()
 				}
 			}
 			break;
-		case EXEC_ALARM:
+		case EXEC_NOHOME:
 			serial_print_str(__romstr__("Alarm"));
 			break;
 		case EXEC_HOLD:
@@ -222,56 +222,56 @@ void protocol_send_status()
 	serial_print_int((uint16_t)spindle);
 	#endif
 
-	if(dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | dio_get_limits(LIMITS_MASK))
+	if(io_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | io_get_limits(LIMITS_MASK))
 	{
 		serial_print_str(__romstr__("|Pn:"));
 		
-		if(dio_get_controls(ESTOP_MASK))
+		if(io_get_controls(ESTOP_MASK))
 		{
 			serial_putc('R');
 		}
 		
-		if(dio_get_controls(SAFETY_DOOR_MASK))
+		if(io_get_controls(SAFETY_DOOR_MASK))
 		{
 			serial_putc('D');
 		}
 		
-		if(dio_get_controls(FHOLD_MASK))
+		if(io_get_controls(FHOLD_MASK))
 		{
 			serial_putc('H');
 		}
 		
-		if(dio_get_probe())
+		if(io_get_probe())
 		{
 			serial_putc('P');
 		}
 		
-		if(dio_get_limits(LIMIT_X_MASK))
+		if(io_get_limits(LIMIT_X_MASK))
 		{
 			serial_putc('X');
 		}
 		
-		if(dio_get_limits(LIMIT_Y_MASK))
+		if(io_get_limits(LIMIT_Y_MASK))
 		{
 			serial_putc('Y');
 		}
 		
-		if(dio_get_limits(LIMIT_Z_MASK))
+		if(io_get_limits(LIMIT_Z_MASK))
 		{
 			serial_putc('Z');
 		}
 		
-		if(dio_get_limits(LIMIT_A_MASK))
+		if(io_get_limits(LIMIT_A_MASK))
 		{
 			serial_putc('A');
 		}
 		
-		if(dio_get_limits(LIMIT_B_MASK))
+		if(io_get_limits(LIMIT_B_MASK))
 		{
 			serial_putc('B');
 		}
 		
-		if(dio_get_limits(LIMIT_C_MASK))
+		if(io_get_limits(LIMIT_C_MASK))
 		{
 			serial_putc('C');
 		}

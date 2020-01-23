@@ -20,21 +20,37 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
-#include "timer.h"
 #define F_CPU 1000
 #define F_STEP_MAX 500
 #define F_STEP_MIN 1
 #define __rom__
 #define __romstr__
+#define __romarr__ const char
 #define rom_strptr *
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
 #define rom_read_byte
 
-typedef struct virtual_map_t virtual_map_t;
+//commento to use console only
+#define COMPORT "\\\\.\\COM3"
 
-typedef virtual_map_t* virtports_t;
+#ifndef COMPORT
+#define USECONSOLE
+#define COMPORT ""
+#endif
+
+//defines a pointer to an unknow stucture that is defined in the mcu_virtual
+typedef struct virtual_map_t
+{
+	uint8_t steps;
+	uint8_t dirs;
+	uint8_t controls;
+	uint8_t limits;
+	uint8_t probe;
+	uint32_t outputs;
+}VIRTUAL_MAP;
+typedef VIRTUAL_MAP* virtports_t;
 extern virtports_t virtualports;
 
 //joints step/dir pins
@@ -50,8 +66,9 @@ extern virtports_t virtualports;
 
 //critical inputs
 #define ESTOP 0
-#define FHOLD 1
-#define CS_RES 2
+#define SAFETY_DOOR 1
+#define FHOLD 2
+#define CS_RES 3
 #define CONTROLS_INREG virtualports->controls
 
 #define LIMIT_X 0
@@ -65,8 +82,8 @@ extern virtports_t virtualports;
 #define PWM0 0
 #define DOUT0 0
 #define DOUT1 1
-#define DOUTS_R0_OUTREG virtualports->outputs.r0
+#define DOUTS_R0_OUTREG virtualports->outputs
 #define DOUT8 0
-#define DOUTS_R1_OUTREG virtualports->outputs.r1
+#define DOUTS_R1_OUTREG virtualports->outputs
 
 #endif

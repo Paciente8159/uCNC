@@ -19,6 +19,8 @@
 #ifndef GRBL_INTERFACE_H
 #define GRBL_INTERFACE_H
 
+#include "mcudefs.h"
+
 /*
 	Grbl error codes 
 */
@@ -68,7 +70,7 @@
 #define STATUS_UNDEFINED_AXIS 41
 #define STATUS_FEED_NOT_SET 42
 
-#define EXEC_ALARM_LOCKED					  0
+#define EXEC_ALARM_RESET					  0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.
 #define EXEC_ALARM_HARD_LIMIT                 1
 #define EXEC_ALARM_SOFT_LIMIT                 2
@@ -90,7 +92,6 @@
 #define MSG_STARTUP __romstr__("uCNC 0.01a ['$' for help]\r\n")
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
 
-
 //Non query feedback messages
 #define MSG_FEEDBACK_1 __romstr__("[MSG:Reset to continue]\r\n")
 #define MSG_FEEDBACK_2 __romstr__("[MSG:'$H'|'$X' to unlock]\r\n")
@@ -103,6 +104,8 @@
 #define MSG_FEEDBACK_9 __romstr__("[MSG:Restoring defaults]\r\n")
 #define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
 #define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
+/*NEW*/
+#define MSG_FEEDBACK_12 __romstr__("[MSG:Check Emergency Stop]\r\n")
 
 //#define MSG_INT "%d"
 //#define MSG_FLT "%0.3f"

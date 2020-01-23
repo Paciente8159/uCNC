@@ -2,7 +2,7 @@
 
 MCU 	 = virtual
 CC       = gcc.exe
-SOURCE   = main.c settings.c kinematics_cartesian_xyz.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c dio_control.c interpolator_linear.c
+SOURCE   = main.c settings.c kinematics_cartesian_xyz.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c io_control.c interpolator.c
 LIBS     = -L"" -static-libgcc -g3
 INCS     = -I""
 CFLAGS   = $(INCS) -Og -std=gnu99 -g3 -DMCU=MCU_VIRTUAL -D__SIMUL__ -D__DEBUG__

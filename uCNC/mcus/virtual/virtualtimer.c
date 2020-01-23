@@ -28,7 +28,7 @@
 *
 ***************************************************************************
 */
-#include "timer.h"
+#include "virtualtimer.h"
 
 void(*timer_func_handler_pntr)(void);
 

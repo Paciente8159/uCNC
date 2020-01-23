@@ -131,9 +131,10 @@
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 
 /*
-	Compiler specific options
+	Compilation specific options
 */
 //#define FORCE_GLOBALS_TO_0
+//#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
 
 /*
 	Number of seconds of delay before motions restart after releasing from a hold

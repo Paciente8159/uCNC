@@ -25,7 +25,7 @@
 #include "settings.h"
 #include "machinedefs.h"
 #include "utils.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "parser.h"
 #include "planner.h"
 #include "interpolator.h"
@@ -49,14 +49,14 @@ bool mc_toogle_checkmode()
 
 uint8_t mc_line(float *target, planner_block_data_t block_data)
 {
-	/*if(dio_get_limits(LIMITS_MASK))
+	/*if(io_get_limits(LIMITS_MASK))
 	{
 		cnc_alarm(EXEC_ALARM_HARD_LIMIT);
 		return STATUS_TRAVEL_EXCEEDED;
 	}*/
 
 	//check travel limits
-	if (!dio_check_boundaries(target))
+	if (!io_check_boundaries(target))
 	{
 		if (cnc_get_exec_state(EXEC_JOG))
 		{
@@ -161,7 +161,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 	}
 
 	uint16_t segment_count = floor(fabs(0.5 * arc_angle * radius) / sqrt(g_settings.arc_tolerance * (2 * radius - g_settings.arc_tolerance)));
-	float arc_per_sgm = 0;
+	float arc_per_sgm = (segment_count != 0) ? arc_angle/segment_count : arc_angle;
 	float dist_sgm = 0;
 	
 	//for all other axis finds the linear motion distance
@@ -261,17 +261,17 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	planner_block_data_t block_data;
 
 	planner_get_position(target);
-
-	//unlock the cnc
+	
 	cnc_unlock();
 
 	//if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-	if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || dio_get_limits(LIMITS_MASK))
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || io_get_limits(LIMITS_MASK))
 	{
 		return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
 	}
 
 	float max_home_dist = -g_settings.max_distance[axis] * 1.5f;
+	
 	//checks homing dir
 	if (g_settings.homing_dir_invert_mask & axis_mask)
 	{
@@ -279,11 +279,18 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	}
 
 	target[axis] += max_home_dist;
-	cnc_set_exec_state(EXEC_HOMING);
+	//initializes planner block data
+	block_data.distance = ABS(max_home_dist);
+	memset(&block_data.dir_vect,0, sizeof(block_data.dir_vect));
+	block_data.dir_vect[axis] = max_home_dist;
 	block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
 	block_data.spindle = 0;
 	block_data.dwell = 0;
+	block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
 	planner_add_line((float *)&target, block_data);
+	
+	//flags homing clear by the unlock
+	cnc_set_exec_state(EXEC_HOMING);
 	do
 	{
 		cnc_doevents();
@@ -293,19 +300,22 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	itp_stop();
 	itp_clear();
 	planner_clear();
+	
+	if(cnc_get_exec_state(EXEC_ABORT))
+	{
+		return EXEC_ALARM_HOMING_FAIL_RESET;
+	}
 
 	//if limit was not triggered
-	if (!dio_get_limits(axis_limit))
+	if (!io_get_limits(axis_limit))
 	{
 		return EXEC_ALARM_HOMING_FAIL_APPROACH;
 	}
 
-	cnc_unlock();
+
 	//zero's the planner
 	planner_get_position(target);
 	max_home_dist = g_settings.homing_offset * 5.0f;
-
-	//checks homing dir
 	if (g_settings.homing_dir_invert_mask & axis_mask)
 	{
 		max_home_dist = -max_home_dist;
@@ -313,29 +323,37 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 	target[axis] += max_home_dist;
 	block_data.feed = g_settings.homing_slow_feed_rate * MIN_SEC_MULT;
+	block_data.distance = ABS(max_home_dist);
+	block_data.dir_vect[axis] = max_home_dist;
+	//unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
+	//temporary inverts the limit mask to trigger ISR on switch release
+	g_settings.limits_invert_mask ^= axis_limit;
+	cnc_unlock();	
 	planner_add_line((float *)&target, block_data);
-
+	//flags homing clear by the unlock
+	cnc_set_exec_state(EXEC_HOMING);
 	do
 	{
 		cnc_doevents();
-		//activates hold (single time) if limit is free
-		if (!dio_get_limits(axis_limit) && !cnc_get_exec_state(EXEC_HOLD))
-		{
-			cnc_set_exec_state(EXEC_HOLD);
-		}
 	} while (cnc_get_exec_state(EXEC_RUN));
-
+	
+	//resets limit mask
+	g_settings.limits_invert_mask ^= axis_limit;
 	//stops, flushes buffers and clears the hold if active
 	cnc_stop();
 	itp_clear();
 	planner_clear();
-	cnc_clear_exec_state(EXEC_HOLD);
+	
+	if(cnc_get_exec_state(EXEC_ABORT))
+	{
+		return EXEC_ALARM_HOMING_FAIL_RESET;
+	}
 
-	if (dio_get_limits(axis_limit))
+	if (io_get_limits(axis_limit))
 	{
 		return EXEC_ALARM_HOMING_FAIL_APPROACH;
 	}
-
+	
 	return STATUS_OK;
 }
 
@@ -367,7 +385,7 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
 	} while (cnc_get_exec_state(EXEC_RUN));
 
 	mcu_disable_probe_isr();
-	bool probe_notok = (!invert_probe) ? !dio_get_probe() : dio_get_probe();
+	bool probe_notok = (!invert_probe) ? !io_get_probe() : io_get_probe();
 	if(probe_notok)
 	{
 		return EXEC_ALARM_PROBE_FAIL_CONTACT;

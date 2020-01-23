@@ -60,9 +60,9 @@ extern "C" {
 #endif
 
 int virtualserial_open();
-char virtualserial_getc();
-void virtualserial_putc(char c);
-void virtualserial_puts(const char* __str);
+unsigned char  virtualserial_getc();
+void virtualserial_putc(unsigned char  c);
+void virtualserial_puts(const unsigned char* __str);
 int virtualserial_close();
 #ifdef __cplusplus
 } /* extern "C" */

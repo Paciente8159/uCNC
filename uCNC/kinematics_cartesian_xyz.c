@@ -28,7 +28,7 @@
 #include "machinedefs.h"
 #include "motion_control.h"
 /*#include "planner.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "cnc.h"*/
 #include "grbl_interface.h"
 

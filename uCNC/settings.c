@@ -24,11 +24,14 @@
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "protocol.h"
+#include "parser.h"
 
 //if settings struct is changed this version has to change too
 #define SETTINGS_VERSION "V01"
 
 settings_t g_settings;
+
+#ifndef CRC_WITHOUT_LOOKUP_TABLE
 
 const uint8_t __rom__ crc7_table[256] = {
 	0x00, 0x09, 0x12, 0x1b, 0x24, 0x2d, 0x36, 0x3f,
@@ -64,8 +67,23 @@ const uint8_t __rom__ crc7_table[256] = {
 	0x0e, 0x07, 0x1c, 0x15, 0x2a, 0x23, 0x38, 0x31,
 	0x46, 0x4f, 0x54, 0x5d, 0x62, 0x6b, 0x70, 0x79
 };
+#else
+static uint8_t crc7(uint8_t c, uint8_t crc)
+{
+	crc ^= (c & 0x80) ? (c ^ 0x89) : c;
+	for (uint8_t i = 7; i != 0; i--)
+	{
+		crc <<= 1;
+		if (crc & 0x80)
+		{
+			crc^=0x89;
+		}
+	}
+	return(crc);
+}
+#endif
 
-const settings_t __rom__ default_settings = {\
+const settings_t __rom__ default_settings = {
 	.version = SETTINGS_VERSION,
 	#ifdef AXIS_X
 	.step_per_mm[AXIS_X] = DEFAULT_X_STEP_PER_MM,
@@ -107,6 +125,7 @@ const settings_t __rom__ default_settings = {\
 	.step_enable_invert = DEFAULT_STEP_ENA_INV,
 	.step_invert_mask = DEFAULT_STEP_INV_MASK,
     .dir_invert_mask = DEFAULT_DIR_INV_MASK,
+    .probe_invert_mask = DEFAULT_PROBE_INV_MASK,
     .homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
     .homing_fast_feed_rate = DEFAULT_HOMING_FAST,
   	.homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
@@ -128,12 +147,14 @@ const settings_t __rom__ default_settings = {\
 
 //static uint8_t settings_crc;
 
+
 void settings_init()
 {
 	uint8_t crc = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t) - 1);
 	if(crc != g_settings.crc || g_settings.crc == 0)
 	{
 		settings_reset();
+		parser_parameters_reset();
 		protocol_send_error(STATUS_SETTING_READ_FAIL);
 	}
 }
@@ -145,7 +166,12 @@ uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
 	{
 		i--;
 		__ptr[i] = mcu_eeprom_getc(i + address);
-		settings_crc = *(uint8_t*)rom_read_byte(&crc7_table[settings_crc ^ __ptr[i]]);
+		#ifndef CRC_WITHOUT_LOOKUP_TABLE
+		settings_crc ^= __ptr[i];
+		settings_crc = *(uint8_t*)rom_read_byte(&crc7_table[settings_crc]);
+		#else
+		settings_crc = crc7(__ptr[i], settings_crc);
+		#endif
 	}
 	
 	if(address == SETTINGS_ADDRESS_OFFSET)
@@ -166,7 +192,11 @@ void settings_reset()
 	for(uint16_t i = size; i !=0; )
 	{
 		i--;
+		#ifndef CRC_WITHOUT_LOOKUP_TABLE
 		g_settings.crc = *(uint8_t*)rom_read_byte(&crc7_table[g_settings.crc ^ __ptr[i]]);
+		#else
+		g_settings.crc = crc7(__ptr[i], g_settings.crc);
+		#endif
 	}
 
 	settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, sizeof(settings_t));
@@ -179,7 +209,11 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size)
 	{
 		i--;
 		mcu_eeprom_putc(i + address, __ptr[i]);
+		#ifndef CRC_WITHOUT_LOOKUP_TABLE
 		crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ __ptr[i]]);
+		#else
+		crc = crc7(__ptr[i], crc);
+		#endif
 	}
 	
 	mcu_eeprom_putc(size + address, crc);
@@ -217,6 +251,9 @@ uint8_t settings_change(uint8_t setting, float value)
 			break;
 		case 5:
 			g_settings.limits_invert_mask = value8;
+			break;
+		case 6:
+			g_settings.probe_invert_mask = value1;
 			break;
 		case 7:
 			g_settings.control_invert_mask = value8;

@@ -29,7 +29,8 @@
 #define F_STEP_MIN 4
 #define __rom__ PROGMEM
 #define __romstr__ PSTR
-#define rom_strptr pgm_read_byte_near
+#define __romarr__ PGM_P
+#define rom_strptr pgm_read_byte
 #define rom_strcpy strcpy_P
 #define rom_strncpy strncpy_P
 #define rom_memcpy memcpy_P
@@ -37,7 +38,7 @@
 #define NOP _NOP
 //used by the parser
 //this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-#define fast_mult10(X) (((X<<2) + X)<<1)
+#define fast_mult10(X) ((((X)<<2) + (X))<<1)
 
 /*
 	Setup the IO pins 
@@ -73,6 +74,7 @@
 #define LIMITS_ISRREG PCMSK0
 #define LIMITS_ISR_ID 0
 
+//Active limits switch weak pull-ups
 #define LIMIT_X_PULLUP
 #define LIMIT_Y_PULLUP
 #define LIMIT_Z_PULLUP
@@ -94,6 +96,7 @@
 #define CONTROLS_ISRREG PCMSK1
 #define CONTROLS_ISR_ID 1
 
+//Active controls switch weak pull-ups
 #define ESTOP_PULLUP
 #define FHOLD_PULLUP
 
@@ -113,6 +116,7 @@
 #define PWM0_PRESCMASK 0x04
 
 #define DOUT0 5
+#define DOUT1 0
 #define DOUTS_R0_OUTREG PORTB
 #define DOUTS_R0_DIRREG DDRB
 

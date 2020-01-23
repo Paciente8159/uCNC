@@ -20,7 +20,7 @@
 #include "settings.h"
 #include "mcudefs.h"
 #include "mcu.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "cnc.h"
 #include "serial.h"
 #include "utils.h"
@@ -56,6 +56,17 @@ void serial_init()
 	memset(&serial_rx_buffer, 0, sizeof(serial_rx_buffer));
 	memset(&serial_tx_buffer, 0, sizeof(serial_tx_buffer));
 	#endif
+}
+
+void serial_clear()
+{
+	serial_rx_write = 0;
+	serial_rx_read = 0;
+	serial_rx_count = 0;
+	
+	serial_tx_read = 0;
+	serial_tx_write = 0;
+	serial_tx_count = 0;
 }
 
 bool serial_rx_is_empty()
@@ -123,15 +134,9 @@ void serial_inject_cmd(const unsigned char* __s)
 {
 	unsigned char c = rom_strptr(__s++);
 	do{
-		serial_rx_buffer[serial_rx_write] = c;
-		serial_rx_write++;
-		if(serial_rx_write == RX_BUFFER_SIZE)
-		{
-			serial_rx_write = 0;
-		}
+		serial_rx_isr(c);
 		c = rom_strptr(__s++);
 	} while(c != 0);
-	serial_rx_count++;
 }
 
 void serial_discard_cmd()

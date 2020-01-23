@@ -96,6 +96,13 @@
 #define STEPS_MASK (STEP0_MASK | STEP1_MASK | STEP2_MASK | STEP3_MASK | STEP4_MASK | STEP5_MASK)
 #define DIRS_MASK (DIR0_MASK | DIR1_MASK | DIR2_MASK | DIR3_MASK | DIR4_MASK | DIR5_MASK)
 
+#ifndef STEPS_OUTREG
+#error Undefined step output register
+#endif
+#ifndef DIRS_OUTREG
+#error Undefined dir output register
+#endif
+
 #ifdef DOUT0
 #define DOUT0_MASK (BITMASK(DOUT0)<<0)
 #else
@@ -257,7 +264,6 @@
 #define DOUT31_MASK 0
 #endif
 
-
 #define DOUTS_R0 (DOUT0_MASK | DOUT1_MASK | DOUT2_MASK | DOUT3_MASK | DOUT4_MASK | DOUT5_MASK | DOUT6_MASK | DOUT7_MASK)
 #define DOUTS_R1 (DOUT8_MASK | DOUT9_MASK | DOUT10_MASK | DOUT11_MASK | DOUT12_MASK | DOUT13_MASK | DOUT14_MASK | DOUT15_MASK)
 #define DOUTS_R2 (DOUT16_MASK | DOUT17_MASK | DOUT18_MASK | DOUT19_MASK | DOUT20_MASK | DOUT21_MASK | DOUT22_MASK | DOUT23_MASK)
@@ -267,6 +273,30 @@
 #define DOUTS_R2_MASK (DOUTS_R2>>16)
 #define DOUTS_R3_MASK (DOUTS_R3>>24)
 #define DOUTS_MASK (DOUTS_R0 | DOUTS_R1 | DOUTS_R2 | DOUTS_R3)
+
+#if(DOUTS_R0_MASK != 0)
+#ifndef DOUTS_R0_OUTREG
+#error Undefined digital output register 0
+#endif
+#endif
+
+#if(DOUTS_R1_MASK != 0)
+#ifndef DOUTS_R1_OUTREG
+#error Undefined digital output register 1
+#endif
+#endif
+
+#if(DOUTS_R2_MASK != 0)
+#ifndef DOUTS_R2_OUTREG
+#error Undefined digital output register 2
+#endif
+#endif
+
+#if(DOUTS_R3_MASK != 0)
+#ifndef DOUTS_R3_OUTREG
+#error Undefined digital output register 3
+#endif
+#endif
 
 #ifdef ESTOP
 #define ESTOP_MASK BITMASK(ESTOP)
@@ -289,7 +319,13 @@
 #define SAFETY_DOOR_MASK 0
 #endif
 
-#define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK/* | SAFETY_DOOR_MASK*/)
+#define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK | SAFETY_DOOR_MASK)
+
+#if(CONTROLS_MASK != 0)
+#ifndef CONTROLS_INREG
+#error Undefined controls input register
+#endif
+#endif
 
 #ifdef PWM0
 #define PWM0_MASK BITMASK(PWM0)
@@ -337,6 +373,9 @@
 
 #ifdef PROBE
 #define PROBE_MASK BITMASK(PROBE)
+#ifndef PROBE_INREG
+#error Undefined probe input register
+#endif
 #else
 #define PROBE_MASK 0
 #endif
@@ -373,6 +412,12 @@
 #endif
 
 #define LIMITS_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK | LIMIT_A_MASK | LIMIT_B_MASK | LIMIT_C_MASK)
+
+#if(LIMITS_MASK != 0)
+#ifndef LIMITS_INREG
+#error Undefined limits input register
+#endif
+#endif
 
 #ifdef RX
 #define RX_MASK BITMASK(RX)
@@ -557,6 +602,30 @@
 #define DINS_R2_MASK (DINS_R2>>16)
 #define DINS_R3_MASK (DINS_R3>>24)
 #define DINS_MASK (DINS_R0 | DINS_R1 | DINS_R2 | DINS_R3)
+
+#if(DINS_R0_MASK != 0)
+#ifndef DINS_R0_INREG
+#error Undefined digital input register 0
+#endif
+#endif
+
+#if(DINS_R1_MASK != 0)
+#ifndef DINS_R1_INREG
+#error Undefined digital input register 1
+#endif
+#endif
+
+#if(DINS_R2_MASK != 0)
+#ifndef DINS_R2_INREG
+#error Undefined digital input register 2
+#endif
+#endif
+
+#if(DINS_R3_MASK != 0)
+#ifndef DINS_R3_INREG
+#error Undefined digital input register 3
+#endif
+#endif
 
 #ifdef ESTOP_PULLUP
 #define ESTOP_PULLUP_MASK BITMASK(ESTOP)
@@ -777,8 +846,6 @@
 #else
 #define DIN31_PULLUP_MASK 0
 #endif
-
-
 
 #define DINS_R0_PULLUP_MASK (DIN0_PULLUP_MASK | DIN1_PULLUP_MASK | DIN2_PULLUP_MASK | DIN3_PULLUP_MASK | DIN4_PULLUP_MASK | DIN5_PULLUP_MASK | DIN6_PULLUP_MASK | DIN7_PULLUP_MASK)
 #define DINS_R1_PULLUP_MASK (DIN8_PULLUP_MASK | DIN9_PULLUP_MASK | DIN10_PULLUP_MASK | DIN11_PULLUP_MASK | DIN12_PULLUP_MASK | DIN13_PULLUP_MASK | DIN14_PULLUP_MASK | DIN15_PULLUP_MASK)

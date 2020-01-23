@@ -31,7 +31,7 @@
 #include "protocol.h"
 #include "planner.h"
 #include "motion_control.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "interpolator.h"
 #include "cnc.h"
 #include "parser.h"
@@ -271,6 +271,17 @@ uint8_t parser_grbl_command()
 			serial_getc();
 			error = parser_eat_next_char('\n');
 			break;
+		case 'J':
+			serial_getc();
+			if(parser_eat_next_char('='))
+			{
+				return STATUS_INVALID_JOG_COMMAND;
+			}
+			if(cnc_get_exec_state(EXEC_ALARM)) //Jog also is forbidden in with any active alarm
+			{
+				return STATUS_IDLE_ERROR;
+			}
+			break;
 		case 'R':
 			serial_getc();
 			error |= parser_eat_next_char('S');
@@ -299,7 +310,8 @@ uint8_t parser_grbl_command()
 			return STATUS_SETTING_DISABLED;
 		}
 
-		if (dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
+		cnc_unlock();
+		if(cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
@@ -307,11 +319,12 @@ uint8_t parser_grbl_command()
 		cnc_home();
 		return STATUS_OK;
 	case 'X':
-		if (dio_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK))
+		cnc_unlock();
+		if(cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
-		cnc_unlock();
+		protocol_send_string(MSG_FEEDBACK_3);
 		return STATUS_OK;
 	case 'G':
 		protocol_send_gcode_modes();
@@ -343,6 +356,7 @@ uint8_t parser_grbl_command()
 				2. Validates the command (in jog mode)
 				3. Executes it as a G1 command
 			*/
+		
 		cnc_set_exec_state(EXEC_JOG);
 		return parser_gcode_command();
 	case 'C':
@@ -353,7 +367,8 @@ uint8_t parser_grbl_command()
 		}
 		else
 		{
-			cnc_exec_rt_command(RT_CMD_RESET);
+			cnc_stop();
+			cnc_alarm(EXEC_ALARM_RESET);
 			protocol_send_string(MSG_FEEDBACK_5);
 		}
 		return STATUS_OK;
@@ -480,18 +495,18 @@ void parser_update_coolant(uint8_t state)
 	switch (parser_state.groups.coolant)
 	{
 	case 0: //off
-		dio_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		io_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
 		break;
 	case 1: //flood
-		dio_clear_outputs(COOLANT_MIST);
-		dio_set_outputs(COOLANT_FLOOD);
+		io_clear_outputs(COOLANT_MIST);
+		io_set_outputs(COOLANT_FLOOD);
 		break;
 	case 2: //mist
-		dio_clear_outputs(COOLANT_FLOOD);
-		dio_set_outputs(COOLANT_MIST);
+		io_clear_outputs(COOLANT_FLOOD);
+		io_set_outputs(COOLANT_MIST);
 		break;
 	case 3: //flood and mist
-		dio_set_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		io_set_outputs(COOLANT_FLOOD | COOLANT_MIST);
 		break;
 	}
 }

@@ -31,7 +31,7 @@
 #include "planner.h"
 #include "utils.h"
 #include "cnc.h"
-#include "dio_control.h"
+#include "io_control.h"
 
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
@@ -294,22 +294,18 @@ void itp_run()
 
 			//calculates the number of steps to execute
 			itp_blk_data[itp_blk_data_write].dirbits = 0;
-			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+			for (uint8_t i = STEPPER_COUNT; i != 0;)
 			{
-				if ((int32_t)step_new_pos[i] >= (int32_t)itp_step_pos[i])
-				{
-					itp_blk_data[itp_blk_data_write].steps[i] = step_new_pos[i] - itp_step_pos[i];
-				}
-				else
+				i--;
+				itp_blk_data[itp_blk_data_write].steps[i] = step_new_pos[i] - itp_step_pos[i];
+				
+				if(itp_blk_data[itp_blk_data_write].steps[i] > (uint32_t)INT32_MAX)
 				{
 					itp_blk_data[itp_blk_data_write].dirbits |= dirbitsmask[i];
-					itp_blk_data[itp_blk_data_write].steps[i] = itp_step_pos[i] - step_new_pos[i];
+					itp_blk_data[itp_blk_data_write].steps[i] = ~itp_blk_data[itp_blk_data_write].steps[i] + 1;
 				}
-
-				if (itp_blk_data[itp_blk_data_write].totalsteps < itp_blk_data[itp_blk_data_write].steps[i])
-				{
-					itp_blk_data[itp_blk_data_write].totalsteps = itp_blk_data[itp_blk_data_write].steps[i];
-				}
+				
+				itp_blk_data[itp_blk_data_write].totalsteps = MAX(itp_blk_data[itp_blk_data_write].totalsteps, itp_blk_data[itp_blk_data_write].steps[i]);
 			}
 
 			//copies data for interpolator step_pos
@@ -376,7 +372,6 @@ void itp_run()
 			}
 		}
 
-		
 		float speed_change;
 		float profile_steps_limit;
 		//acceleration profile
@@ -500,7 +495,7 @@ void itp_run()
 	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
 	{
 #ifdef STEPPER_ENABLE
-		dio_set_outputs(STEPPER_ENABLE);
+		io_set_outputs(STEPPER_ENABLE);
 #endif
 		cnc_set_exec_state(EXEC_RUN); //flags that it started running
 		mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].clocks_per_tick, itp_sgm_data[itp_sgm_data_read].ticks_per_step);

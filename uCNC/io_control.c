@@ -1,5 +1,5 @@
 /*
-	Name: dio_control.c
+	Name: io_control.c
 	Description: The input control unit for uCNC.
         This is responsible to check all limit switches (both hardware and software), control switches,
         and probe.
@@ -24,11 +24,12 @@
 #include "mcudefs.h"
 #include "mcu.h"
 #include "mcumap.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "parser.h"
+#include "interpolator.h"
 #include "cnc.h"
 
-void dio_limits_isr(uint8_t limits)
+void io_limits_isr(uint8_t limits)
 {	
 	limits ^= g_settings.limits_invert_mask;
 	
@@ -36,47 +37,64 @@ void dio_limits_isr(uint8_t limits)
 	{
 		if(limits)
 		{
-			cnc_stop();
-			cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+			if(cnc_get_exec_state(EXEC_RUN))
+			{
+				cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
+			}
+			itp_stop();
+			cnc_set_exec_state(EXEC_LIMITS);
+			if(!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
+			{
+				cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+			}
 		}
 	}
 }
 
-void dio_controls_isr(uint8_t controls)
+void io_controls_isr(uint8_t controls)
 {
 	controls ^= g_settings.control_invert_mask;
 	
+	#ifdef ESTOP
 	if(controls & ESTOP_MASK)
 	{
-		cnc_exec_rt_command(RT_CMD_RESET);
+		cnc_stop();
+		cnc_alarm(EXEC_ALARM_RESET);
+		return; //forces exit
 	}
-	
+	#endif
+	#ifdef SAFETY_DOOR
+	if(controls & SAFETY_DOOR_MASK)
+	{
+		//safety door activates hold simultaneously to start the controlled stop
+		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+		cnc_call_rt_command(RT_CMD_SAFETY_DOOR);
+	}
+	#endif
+	#ifdef FHOLD
 	if(controls & FHOLD_MASK)
 	{
-		cnc_call_rt_command(RT_CMD_FEED_HOLD);
+		cnc_set_exec_state(EXEC_HOLD);
 	}
+	#endif
+	#ifdef CS_RES
+	if(controls & CS_RES_MASK)
+	{
+		//tries to clear the hold if possible
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+	#endif
 }
 
-void dio_probe_isr(uint8_t probe)
+void io_probe_isr(uint8_t probe)
 {
 	//on hit enables hold (directly)
 	cnc_set_exec_state(EXEC_HOLD);
 	//stores rt position
 	parser_sync_probe();
-	
-	
-	/*bool hit = ((!g_settings.probe_invert_mask) ? (probe != 0) : (probe == 0));
-	
-	if(hit)
-	{
-		//on hit enables hold (directly)
-		cnc_set_exec_state(EXEC_HOLD);
-		//stores rt position
-		itp_get_rt_position(dio_last_probe);
-	}*/
 }
 
-bool dio_check_boundaries(float* axis)
+bool io_check_boundaries(float* axis)
 {
 	if(!g_settings.soft_limits_enabled)
 	{
@@ -96,67 +114,68 @@ bool dio_check_boundaries(float* axis)
 	return true;
 }
 
-uint8_t dio_get_limits(uint8_t limitmask)
+uint8_t io_get_limits(uint8_t limitmask)
 {
-	return (mcu_get_limits() & ~PROBE_MASK & limitmask);
+	return ((mcu_get_limits() ^ g_settings.limits_invert_mask) & limitmask);
 }
 
-uint8_t dio_get_controls(uint8_t controlmask)
+uint8_t io_get_controls(uint8_t controlmask)
 {
-	return (mcu_get_controls() & controlmask);
+	return ((mcu_get_controls() ^ g_settings.control_invert_mask) & controlmask);
 }
 
-void dio_enable_probe()
+void io_enable_probe()
 {
 	mcu_enable_probe_isr();
 }
 
-void dio_disable_probe()
+void io_disable_probe()
 {
 	mcu_disable_probe_isr();
 }
 
-bool dio_get_probe()
+bool io_get_probe()
 {
-	return (mcu_get_limits() & PROBE_MASK);
+	bool probe = (mcu_get_limits() & PROBE_MASK);
+	return (!g_settings.probe_invert_mask) ? probe : !probe;
 }
 
-uint32_t dio_get_inputs()
+uint32_t io_get_inputs()
 {
 	return mcu_get_inputs();
 }
 
-void dio_set_outputs(uint32_t mask)
+void io_set_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() | mask);
 }
 
-void dio_clear_outputs(uint32_t mask)
+void io_clear_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() & ~mask);
 }
 
-void dio_toogle_outputs(uint32_t mask)
+void io_toogle_outputs(uint32_t mask)
 {
 	mcu_set_outputs(mcu_get_outputs() ^ mask);
 }
 
-uint32_t dio_get_outputs()
+uint32_t io_get_outputs()
 {
 	return mcu_get_outputs();
 }
 
-uint8_t dio_get_analog(uint8_t channel)
+uint8_t io_get_analog(uint8_t channel)
 {
 	return mcu_get_analog(channel);
 }
 
-void dio_set_pwm(uint8_t channel, uint8_t value)
+void io_set_pwm(uint8_t channel, uint8_t value)
 {
 	mcu_set_pwm(channel, value);
 }
 
-uint8_t dio_get_pwm(uint8_t channel)
+uint8_t io_get_pwm(uint8_t channel)
 {
 	return mcu_get_pwm(channel);
 }

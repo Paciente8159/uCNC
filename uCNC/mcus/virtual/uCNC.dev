@@ -14,12 +14,12 @@ CppCompiler=-DMCU=MCU_VIRTUAL_@@_
 Linker=
 IsCpp=0
 Icon=
-ExeOutput=
+ExeOutput=build
 ObjectOutput=
 LogOutput=
 LogOutputEnabled=0
 OverrideOutput=0
-OverrideOutputName=uCNCVirtual.exe
+OverrideOutputName=uCNC.exe
 HostApplication=
 UseCustomMakefile=0
 CustomMakefile=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=000000e0e0000000001000000
-UnitCount=37
+UnitCount=38
 
 [VersionInfo]
 Major=1
@@ -321,7 +321,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit29]
-FileName=..\..\dio_control.c
+FileName=..\..\io_control.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -331,7 +331,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit30]
-FileName=..\..\dio_control.h
+FileName=..\..\io_control.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -341,7 +341,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit31]
-FileName=..\..\interpolator_linear.c
+FileName=..\..\interpolator.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -371,7 +371,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit34]
-FileName=timer.c
+FileName=virtualtimer.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -381,7 +381,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit35]
-FileName=timer.h
+FileName=virtualtimer.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -411,7 +411,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit38]
-FileName=serial.h
+FileName=..\..\kinematics_corexy.c
 CompileCpp=0
 Folder=
 Compile=1

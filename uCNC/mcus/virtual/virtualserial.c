@@ -29,6 +29,7 @@
 ***************************************************************************
 */
 #include <stdio.h>
+#include "mcumap_virtual.h"
 #include "virtualserial.h"
 
 #ifdef __linux__
@@ -36,8 +37,8 @@
 #else
 
 HANDLE win_serial = NULL;
-char ComPortName[] = "\\\\.\\COM3";
-char ComParams[] = "baud=115200 parity=N data=8 stop=1";
+unsigned char ComPortName[] = COMPORT;
+unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
 int virtualserial_open()
 {
@@ -99,14 +100,14 @@ int virtualserial_open()
     return 0;
 }
 
-char serial_buffer[127];
+unsigned char serial_buffer[127];
 int serial_charcount = 0;
 int serial_charindex = 0;
 
-char virtualserial_getc()
+unsigned char virtualserial_getc()
 {
 	DWORD dwEventMask;
-	char  TempChar;
+	unsigned char  TempChar;
 	DWORD NoBytesRead;
 
 	if(serial_charcount)
@@ -132,21 +133,21 @@ char virtualserial_getc()
 	return 0;
 }
 
-void virtualserial_putc(char c)
+void virtualserial_putc(unsigned char c)
 {
 	DWORD  dNoOfBytesWritten = 0;          // No of bytes written to the port
 	DWORD dwRes;
 	
 	if (!WriteFile(win_serial, &c, 1, &dNoOfBytesWritten,  NULL))
 		fprintf(stderr, "Error %d in Writing to Serial Port",GetLastError());
-	//fprintf(stderr, "[Reply char]:%c", c);
+	fputc(c,stderr);
 	PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
 		
 }
 
-void virtualserial_puts(const char* __str)
+void virtualserial_puts(const unsigned char* __str)
 {
-	char   lpBuffer[127];		       // lpBuffer should be  char or byte array, otherwise write wil fail
+	unsigned char   lpBuffer[127];		       // lpBuffer should be  char or byte array, otherwise write wil fail
 	strcpy(lpBuffer, __str);
 	DWORD  dNoOFBytestoWrite;              // No of bytes to write into the port
 	DWORD  dNoOfBytesWritten = 0;          // No of bytes written to the port	
@@ -154,7 +155,7 @@ void virtualserial_puts(const char* __str)
 
 	if (!WriteFile(win_serial, lpBuffer, dNoOFBytestoWrite, &dNoOfBytesWritten, NULL))
 		fprintf(stderr, "Error %d in Writing to Serial Port",GetLastError());
-		
+	fputs(__str, stderr);
 	PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
 }
 

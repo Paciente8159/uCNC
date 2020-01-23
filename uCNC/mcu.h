@@ -24,27 +24,116 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "config.h"
+#include "utils.h"
+#include "mcumap.h"
+
+/*IO functions*/
+static inline uint32_t mcu_get_inputs()
+{
+	uint32_t result;
+	uint8_t* reg = (uint8_t*)&result;
+	#ifdef DINS_R0_INREG
+	reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
+	#endif
+	#ifdef DINS_R1_INREG
+	reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
+	#endif
+	#ifdef DINS_R2_INREG
+	reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
+	#endif
+	#ifdef DINS_R3_INREG
+	reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
+	#endif
+	return result;	
+}
+
+static inline uint8_t mcu_get_controls()
+{
+	#ifdef CONTROLS_INREG
+	return (CONTROLS_INREG & CONTROLS_MASK);
+	#else
+	return 0;
+	#endif
+}
+
+static inline uint8_t mcu_get_limits()
+{
+	#ifdef LIMITS_INREG
+	return (LIMITS_INREG & LIMITS_MASK);
+	#else
+	return 0;
+	#endif
+}
+
+static inline bool mcu_get_probe()
+{
+	#ifdef PROBE_INREG
+	return (PROBE_INREG && PROBE_MASK);
+	#else
+	return false;
+	#endif
+}
+
+static inline void mcu_set_steps(uint8_t value)
+{
+	STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
+}
+
+static inline void mcu_set_dirs(uint8_t value)
+{
+	DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
+}
+
+static inline void mcu_set_outputs(uint32_t value)
+{
+	uint8_t* reg = (uint8_t*)&value;
+	
+	#ifdef DOUTS_R0_OUTREG
+		DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
+	#endif
+	#ifdef DOUTS_R1_OUTREG
+		DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
+	#endif
+}
+
+static inline uint32_t mcu_get_outputs()
+{
+	uint32_t result;
+	uint8_t* reg = (uint8_t*)&result;
+
+	#ifdef DOUTS_R0_OUTREG
+		reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
+	#endif
+	#ifdef DOUTS_R1_OUTREG
+		reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
+	#endif
+	#ifdef DOUTS_R2_OUTREG
+		reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
+	#endif
+	#ifdef DOUTS_R3_OUTREG
+		reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
+	#endif
+	
+	return (result & DOUTS_MASK);
+}
 
 void mcu_init();
 
-//IO functions    
-//Inputs  
-uint32_t mcu_get_inputs();
-uint8_t mcu_get_controls();
-uint8_t mcu_get_limits();
 #ifdef PROBE
 void mcu_enable_probe_isr();
 void mcu_disable_probe_isr();
 #endif
 
+//Analog input
 uint8_t mcu_get_analog(uint8_t channel);
 
-//Outputs
-void mcu_set_steps(uint8_t value);
-void mcu_set_dirs(uint8_t value);
-void mcu_set_outputs(uint32_t value);
-uint32_t mcu_get_outputs();
-
+//PWM
 void mcu_set_pwm(uint8_t pwm, uint8_t value);
 uint8_t mcu_get_pwm(uint8_t pwm);
 
@@ -70,15 +159,16 @@ void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller);
 void mcu_step_stop_ISR();
 
 //Custom delay function
-void mcu_delay_ms(uint16_t miliseconds);
+//void mcu_delay_ms(uint16_t miliseconds);
 
 //Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
 
+/*
 #ifdef __PERFSTATS__
 uint16_t mcu_get_step_clocks();
 uint16_t mcu_get_step_reset_clocks();
 #endif
-
+*/
 #endif

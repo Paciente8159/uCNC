@@ -12,7 +12,7 @@
 				char serial_tx_isr();
 			trigger_control.h
 				void dio_limits_isr(uint8_t limits);
-				void dio_controls_isr(uint8_t controls);
+				void io_controls_isr(uint8_t controls);
 				
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
@@ -43,53 +43,12 @@
 #include <pthread.h> 
 #include <math.h>
 
-typedef union{
-    uint32_t r; // occupies 4 bytes
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-    struct
-    {
-        uint16_t rl;
-        uint16_t rh;
-    };
-    struct
-    {
-        uint8_t r0;
-        uint8_t r1;
-        uint8_t r2;
-        uint8_t r3;
-    };
-#else
-    struct
-    {
-        uint16_t rh;
-        uint16_t rl;
-    };
-    struct
-    {
-        uint8_t r3;
-        uint8_t r2;
-        uint8_t r1;
-        uint8_t r0;
-    }
-    ;
-#endif
-} IO_REGISTER;
-
-typedef struct virtual_map_t
-{
-	uint8_t steps;
-	uint8_t dirs;
-	uint8_t controls;
-	uint8_t limits;
-	uint8_t probe;
-	IO_REGISTER outputs;
-}VIRTUAL_MAP;
-
 #include "../../settings.h"
-#include "timer.h"
+#include "virtualtimer.h"
 #include "virtualserial.h"
 #include "../../serial.h"
 #include "../../interpolator.h"
+#include "../../io_control.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -102,8 +61,6 @@ typedef struct virtual_map_t
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
-
-//#define USECONSOLE
 
 virtports_t virtualports;
 
@@ -219,16 +176,38 @@ void* comoutsimul()
 void ticksimul()
 {
 	static uint16_t tick_counter = 0;
-	/*
+	static VIRTUAL_MAP initials = {};
+	
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 	
 	if(infile!=NULL)
 	{
-		fscanf(infile, "%uX %uX", &(virtualports->controls), &(virtualports->limits));
+		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
 		fclose(infile);
+		
+		uint8_t diff = virtualports->limits ^ initials.limits;
+		initials.limits = virtualports->limits;
+		if(diff)
+		{
+			io_limits_isr(initials.limits);
+		}
+
+		diff = virtualports->controls ^ initials.controls;
+		initials.controls = virtualports->controls;
+		if(diff)
+		{
+			io_controls_isr(initials.controls);
+		}
+		
+		diff = virtualports->probe ^ initials.probe;
+		initials.probe = virtualports->probe;
+		if(diff)
+		{
+			io_controls_isr(initials.probe);
+		}
 	}
-	*/
+	
 	if(global_irq_enabled)
 	{
 		if(pulse_enabled)
@@ -240,18 +219,26 @@ void mcu_init()
 {
 	send_char = false;
 	virtualports = &virtualmap;
-	FILE *infile = fopen("inputs.txt", "w+");
+	FILE *infile = fopen("inputs.txt", "r");
 	if(infile!=NULL)
 	{
-		fprintf(infile, "%X %X", virtualports->controls, virtualports->limits);
-		fflush(infile);
+		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
 		fclose(infile);
 	}
 	else
 	{
-		printf("Failed to open input file");
+		infile = fopen("inputs.txt", "w+");
+		if(infile!=NULL)
+		{
+			fprintf(infile, "%X %X %X %lX", virtualports->controls, virtualports->limits, virtualports->probe, virtualports->outputs);
+			fflush(infile);
+			fclose(infile);
+		}
+		else
+		{
+			printf("Failed to open input file");
+		}
 	}
-	
 	g_cpu_freq = getCPUFreq();
 	#ifndef USECONSOLE
 	virtualserial_open();
@@ -268,28 +255,6 @@ void mcu_init()
 }
 
 //IO functions    
-//Inputs  
-//returns the value of the input pins
-uint32_t mcu_get_inputs()
-{
-	return 0;	
-}
-//returns the value of the critical input pins
-uint8_t mcu_get_controls()
-{
-	return virtualports->controls;
-}
-
-uint8_t mcu_get_limits()
-{
-	return virtualports->limits;
-}
-
-uint8_t mcu_get_probe()
-{
-	return virtualports->probe;
-}
-
 #ifdef PROBE
 void mcu_enable_probe_isr()
 {
@@ -304,6 +269,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 	return 0;
 }
 
+//Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
 }
@@ -311,58 +277,6 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
 	return 0;
-}
-
-//outputs
-//sets all step and dir pins
-void mcu_set_steps(uint8_t value)
-{	
-	virtualports->steps = value;
-}
-
-void mcu_set_dirs(uint8_t value)
-{	
-	virtualports->dirs = value;
-}
-
-//sets all digital outputs pins
-void mcu_set_outputs(uint32_t value)
-{
-	IO_REGISTER reg;
-	reg.r = value;
-	
-	#ifdef DOUTS_R0_OUTREG
-		virtualports->outputs.r0 = ((~DOUTS_R0_MASK & virtualports->outputs.r0) | reg.r0);
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		virtualports->outputs.r1 = ((~DOUTS_R1_MASK & virtualports->outputs.r1) | reg.r1);
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		virtualports->outputs.r2 = ((~DOUTS_R2_MASK & virtualports->outputs.r2) | reg.r2);
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		virtualports->outputs.r3 = ((~DOUTS_R3_MASK & virtualports->outputs.r3) | reg.r3);
-	#endif
-}
-
-uint32_t mcu_get_outputs()
-{
-	IO_REGISTER reg;
-
-	#ifdef DOUTS_R0_OUTREG
-		reg.r0 = virtualports->outputs.r0;
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		reg.r1 = virtualports->outputs.r1;
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		reg.r2 = virtualports->outputs.r2;
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		reg.r3 = virtualports->outputs.r3;
-	#endif
-	
-	return (reg.r & DOUTS_MASK);
 }
 
 //Communication functions

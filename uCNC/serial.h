@@ -24,6 +24,7 @@
 #include <stdarg.h>
 
 void serial_init();
+void serial_clear();
 
 bool serial_rx_is_empty();
 unsigned char serial_getc();

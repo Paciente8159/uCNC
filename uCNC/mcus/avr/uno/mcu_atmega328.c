@@ -10,8 +10,8 @@
 				void serial_rx_isr(char c);
 				char serial_tx_isr();
 			trigger_control.h
-				void dio_limits_isr(uint8_t limits);
-				void dio_controls_isr(uint8_t controls);
+				void io_limits_isr(uint8_t limits);
+				void io_controls_isr(uint8_t controls);
 				
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
@@ -34,7 +34,7 @@
 #include "../../../utils.h"
 #include "../../../serial.h"
 #include "../../../interpolator.h"
-#include "../../../dio_control.h"
+#include "../../../io_control.h"
 
 #include <math.h>
 #include <inttypes.h>
@@ -113,86 +113,89 @@ ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 	#endif
 }
 
-ISR(PCINT0_vect, ISR_NOBLOCK) // input pin on change service routine
+ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
-	static uint8_t  prev_value = 0;
-	uint8_t value = PORTB;
-	uint8_t diff = value ^ prev_value;
+	static uint8_t prev_value = 0;
+	uint8_t value = PINB;
+	uint8_t diff = prev_value ^ value;
 	prev_value = value;
+	
 	#if(LIMITS_ISR_ID==0)
 	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr((value & LIMITS_MASK));
+		io_limits_isr(value & LIMITS_MASK);
 	}
 	#endif
 	
 	#if(CONTROLS_ISR_ID==0)
 	if(diff & CONTROLS_MASK)
 	{
-		dio_limits_isr((value & CONTROLS_MASK));
+		io_controls_isr(value & CONTROLS_MASK);
 	}
 	#endif
 	
 	#if(PROBE_ISR_ID==0)
 	if(diff & PROBE_MASK)
 	{
-		dio_probe_isr((value & PROBE_MASK));
+		io_probe_isr(value & PROBE_MASK);
 	}
-	#endif			
+	#endif		
 }
 
-ISR(PCINT1_vect, ISR_NOBLOCK) // input pin on change service routine
+ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 {
-	static uint8_t  prev_value = 0;
-	uint8_t value = PORTC;
-	uint8_t diff = value ^ prev_value;
+	static uint8_t prev_value = 0;
+	uint8_t value = PINC;
+	uint8_t diff = prev_value ^ value;
 	prev_value = value;
+	
 	#if(LIMITS_ISR_ID==1)
 	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr((value & LIMITS_MASK));
+		io_limits_isr(value & LIMITS_MASK);
 	}
 	#endif
 	
 	#if(CONTROLS_ISR_ID==1)
 	if(diff & CONTROLS_MASK)
 	{
-		dio_limits_isr((value & CONTROLS_MASK));
+		io_controls_isr((value & CONTROLS_MASK));
 	}
 	#endif
 	
 	#if(PROBE_ISR_ID==1)
 	if(diff & PROBE_MASK)
 	{
-		dio_probe_isr((value & PROBE_MASK));
+		io_probe_isr(value & PROBE_MASK);
 	}
 	#endif
 }
 
-ISR(PCINT2_vect, ISR_NOBLOCK) // input pin on change service routine
+ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 {
-    static uint8_t  prev_value = 0;
-	uint8_t value = PORTD;
-	uint8_t diff = value ^ prev_value;
+    static uint8_t prev_value = 0;
+	uint8_t value = PIND;
+	uint8_t diff = prev_value ^ value;
 	prev_value = value;
+	
 	#if(LIMITS_ISR_ID==2)
 	if(diff & LIMITS_MASK)
 	{
-		dio_limits_isr((value & LIMITS_MASK));
+		io_limits_isr(value & LIMITS_MASK);
 	}
 	#endif
 	
 	#if(CONTROLS_ISR_ID==2)
 	if(diff & CONTROLS_MASK)
 	{
-		dio_limits_isr((value & CONTROLS_MASK));
+		io_controls_isr(value & CONTROLS_MASK);
 	}
 	#endif
 	
 	#if(PROBE_ISR_ID==2)
 	if(diff & PROBE_MASK)
 	{
-		dio_probe_isr((value & PROBE_MASK));
+		io_probe_isr(value & PROBE_MASK);
 	}
 	#endif
 }
@@ -397,7 +400,7 @@ void mcu_init()
 
 //IO functions    
 //Inputs  
-uint32_t mcu_get_inputs()
+/*uint32_t mcu_get_inputs()
 {
 	uint32_t result;
 	uint8_t* reg = &result;
@@ -424,7 +427,7 @@ uint8_t mcu_get_controls()
 uint8_t mcu_get_limits()
 {
 	return (LIMITS_INREG & LIMITS_MASK);
-}
+}*/
 
 #ifdef PROBE
 void mcu_enable_probe_isr()
@@ -457,7 +460,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 }
 
 //outputs
-
+/*
 //sets all step pins
 void mcu_set_steps(uint8_t value)
 {
@@ -506,7 +509,7 @@ uint32_t mcu_get_outputs()
 	#endif
 	
 	return (result & DOUTS_MASK);
-}
+}*/
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {

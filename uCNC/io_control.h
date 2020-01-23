@@ -1,5 +1,5 @@
 /*
-	Name: dio_control.h
+	Name: io_control.h
 	Description: The input control unit for uCNC.
         This is responsible to check all limit switches (both hardware and software), control switches,
         and probe.
@@ -28,29 +28,29 @@
 #include <stdbool.h>
 
 //ISR
-void dio_limits_isr(uint8_t limits);
-void dio_controls_isr(uint8_t controls);
-void dio_probe_isr(uint8_t probe);
+void io_limits_isr(uint8_t limits);
+void io_controls_isr(uint8_t controls);
+void io_probe_isr(uint8_t probe);
 
 //inputs
-bool dio_check_boundaries(float* axis);
-uint8_t dio_get_limits(uint8_t limitmask);
-uint8_t dio_get_controls(uint8_t controlmask);
-void dio_enable_probe();
-void dio_disable_probe();
-bool dio_get_probe();
-uint32_t dio_get_inputs();
+bool io_check_boundaries(float* axis);
+uint8_t io_get_limits(uint8_t limitmask);
+uint8_t io_get_controls(uint8_t controlmask);
+void io_enable_probe();
+void io_disable_probe();
+bool io_get_probe();
+uint32_t io_get_inputs();
 
 //outputs
-void dio_set_outputs(uint32_t mask);
-void dio_clear_outputs(uint32_t mask);
-void dio_toogle_outputs(uint32_t mask);
-uint32_t dio_get_outputs();
+void io_set_outputs(uint32_t mask);
+void io_clear_outputs(uint32_t mask);
+void io_toogle_outputs(uint32_t mask);
+uint32_t io_get_outputs();
 
 //analogs
-uint8_t dio_get_analog(uint8_t channel);
-void dio_set_pwm(uint8_t channel, uint8_t value);
-uint8_t dio_get_pwm(uint8_t channel);
+uint8_t io_get_analog(uint8_t channel);
+void io_set_pwm(uint8_t channel, uint8_t value);
+uint8_t io_get_pwm(uint8_t channel);
 
 #endif
 

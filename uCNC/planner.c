@@ -29,7 +29,7 @@
 #include "planner.h"
 #include "interpolator.h"
 #include "utils.h"
-#include "dio_control.h"
+#include "io_control.h"
 #include "cnc.h"
 
 typedef struct
@@ -241,14 +241,15 @@ float planner_update_spindle(bool update_outputs)
 	{
 		if (spindle >= 0)
 		{
-			dio_clear_outputs(SPINDLE_DIR);
+			io_clear_outputs(SPINDLE_DIR);
 		}
 		else
 		{
-			dio_set_outputs(SPINDLE_DIR);
+			io_set_outputs(SPINDLE_DIR);
 		}
 	}
 	
+	uint8_t pwm = 0;
 	if (spindle != 0)
 	{
 		spindle = ABS(spindle);
@@ -258,14 +259,13 @@ float planner_update_spindle(bool update_outputs)
 		}
 		spindle = MIN(spindle, g_settings.spindle_max_rpm);
 		spindle = MAX(spindle, g_settings.spindle_min_rpm);
+		pwm = (uint8_t)roundf(255 * (spindle / g_settings.spindle_max_rpm));
+		pwm = MAX(pwm, 1);
 	}
 	
 	if(update_outputs)
 	{	
-		uint8_t pwm = 0;
-		pwm = (uint8_t)roundf(255 * (spindle / g_settings.spindle_max_rpm));
-		pwm = MAX(pwm, 1);
-		dio_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
+		io_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
 	}
 
 	return spindle;

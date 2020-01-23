@@ -19,6 +19,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 ## Current µCNC status
 µCNC is still in it's very early stages so it should be only used for test purposes for now.
 For production stages [Grbl](https://github.com/gnea/grbl) or other G-Codes interpreters/controllers should be used.
+If you decide to test µCNC do it with care.
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
