@@ -103,13 +103,13 @@
 #define PROBE_ISR_ID 1
 */
 //Setup control input pins
-#define ESTOP 0
+/*#define ESTOP 0
 #define FHOLD 1
 #define CS_RES 2
 #define CONTROLS_INREG PINC
 #define CONTROLS_DIRREG DDRC
 #define CONTROLS_PULLUPREG PORTC
-#define CONTROLS_ISR_ID 1
+#define CONTROLS_ISR_ID 1*/
 
 //Active controls switch weak pull-ups
 #define ESTOP_PULLUP
@@ -134,13 +134,23 @@
 
 //Setup generic IO Pins
 //Functions are set in config.h file
-#define DOUT0 5
+/*#define DOUT0 5
 #define DOUT1 0
 #define DOUTS_R0_OUTREG PORTB
 #define DOUTS_R0_DIRREG DDRB
 #define DOUT8 3
 #define DOUTS_R1_OUTREG PORTC
-#define DOUTS_R1_DIRREG DDRC
+#define DOUTS_R1_DIRREG DDRC*/
+
+#define DOUT16 7 //assigns DOUT16 to PIN7
+#define DOUT17 6 //assigns DOUT17 to PIN6
+#define DOUT18 5 //assigns DOUT18 to PIN5
+#define DOUTS_R2_OUTREG PORTA //assings R2_OUTREG (DOUT16-23) to PORT A
+#define DOUTS_R2_DIRREG DDRA
+
+#define STEP0_EN_OUTPIN 16 //assigns STEP0_EN to DOUT16
+#define STEP1_EN_OUTPIN 17 //liassignsnks STEP0_EN to DOUT17
+#define STEP2_EN_OUTPIN 18 //assigns STEP0_EN to DOUT18
 
 //Setup the Timer used has the heartbeat for µCNC
 #define TIMER_ID 1

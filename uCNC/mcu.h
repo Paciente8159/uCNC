@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "config.h"
 #include "utils.h"
+#include "mcudefs.h"
 #include "mcumap.h"
 
 /*IO functions*/

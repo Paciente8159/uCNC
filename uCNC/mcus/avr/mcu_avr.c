@@ -27,8 +27,8 @@
 	See the	GNU General Public License for more details.
 */
 #include "../../config.h"
-#ifdef __MCU_AVR__
 #include "../../mcudefs.h"
+#ifdef __MCU_AVR__
 #include "../../mcumap.h"
 #include "../../mcu.h"
 #include "../../utils.h"
@@ -281,18 +281,18 @@
 #define VAREVAL(prefix,id,suffix) VARNAME(prefix,id,suffix)
 
 //Timer registers
-#define TIMER_COMPB_vect VAREVAL(TIMER, TIMER_ID, _COMPB_vect)
-#define TIMER_COMPA_vect VAREVAL(TIMER, TIMER_ID, _COMPA_vect)
-#define TCNT VAREVAL(TCNT, TIMER_ID, )
-#define TCNT VAREVAL(TCNT, TIMER_ID, )
-#define TCCRA VAREVAL(TCCR, TIMER_ID, A)
-#define TCCRB VAREVAL(TCCR, TIMER_ID, B)
-#define OCRA VAREVAL(OCR, TIMER_ID, A)
-#define OCRB VAREVAL(OCR, TIMER_ID, B)
-#define TIFR VAREVAL(TIFR, TIMER_ID, )
-#define TIMSK VAREVAL(TIMSK, TIMER_ID, )
-#define OCIEB VAREVAL(OCIE, TIMER_ID, B)
-#define OCIEA VAREVAL(OCIE, TIMER_ID, A)
+#define TIMER_COMPB_vect VAREVAL(TIMER, STEP_TIMER_ID, _COMPB_vect)
+#define TIMER_COMPA_vect VAREVAL(TIMER, STEP_TIMER_ID, _COMPA_vect)
+#define TCNT VAREVAL(TCNT, STEP_TIMER_ID, )
+#define TCNT VAREVAL(TCNT, STEP_TIMER_ID, )
+#define TCCRA VAREVAL(TCCR, STEP_TIMER_ID, A)
+#define TCCRB VAREVAL(TCCR, STEP_TIMER_ID, B)
+#define OCRA VAREVAL(OCR, STEP_TIMER_ID, A)
+#define OCRB VAREVAL(OCR, STEP_TIMER_ID, B)
+#define TIFR VAREVAL(TIFR, STEP_TIMER_ID, )
+#define TIMSK VAREVAL(TIMSK, STEP_TIMER_ID, )
+#define OCIEB VAREVAL(OCIE, STEP_TIMER_ID, B)
+#define OCIEA VAREVAL(OCIE, STEP_TIMER_ID, A)
 
 //COM registers
 #ifdef COM_ID
@@ -319,6 +319,122 @@
 #define LIMITS_ISRREG VAREVAL(PCMSK, LIMITS_ISR_ID, )
 #define CONTROLS_ISRREG VAREVAL(PCMSK, CONTROLS_ISR_ID, )
 #define PROBE_ISRREG VAREVAL(PCMSK, PROBE_ISR_ID, )
+
+#ifdef PWM0
+#ifndef PWM0_TIMER_ID
+#error Undefined PWM0 Timer
+#endif
+#if(PWM0_TIMER_ID==STEP_TIMER_ID)
+#error PWM0 timer and Step timer must be different
+#endif
+#ifndef PWM0_OCR_ID
+#error Undefined PWM0 OCR Register
+#endif
+#define PWM0_TMRAREG VAREVAL(TCCR, PWM0_TIMER_ID, A)
+#define PWM0_TMRBREG VAREVAL(TCCR, PWM0_TIMER_ID, B)
+#define PWM0_CNTREG VAREVAL(OCR, PWM0_TIMER_ID, A)
+#if(PWM0_OCR_ID == A)
+#define PWM0_ENABLE_MASK 0x80
+#elif(PWM0_OCR_ID == B)
+#define PWM0_ENABLE_MASK 0x20
+#elif(PWM0_OCR_ID == C)
+#define PWM0_ENABLE_MASK 0x08
+#endif
+#if(PWM0_TIMER_ID==0 || PWM0_TIMER_ID==2)
+#define PWM0_MODE 0x03
+#define PWM0_PRESCALLER 0x04
+#else
+#define PWM0_MODE 0x05
+#define PWM0_PRESCALLER 0x03
+#endif
+#endif
+
+#ifdef PWM1
+#ifndef PWM1_TIMER_ID
+#error Undefined PWM_1 Timer
+#endif
+#if(PWM1_TIMER_ID==STEP_TIMER_ID)
+#error PWM0 timer and Step timer must be different
+#endif
+#ifndef PWM1_OCR_ID
+#error Undefined PWM_1 OCR Register
+#endif
+#define PWM1_TMRAREG VAREVAL(TCCR, PWM1_TIMER_ID, A)
+#define PWM1_TMRBREG VAREVAL(TCCR, PWM1_TIMER_ID, B)
+#define PWM1_CNTREG VAREVAL(OCR, PWM1_TIMER_ID, A)
+#if(PWM0_OCR_ID == A)
+#define PWM0_ENABLE_MASK 0x80
+#elif(PWM0_OCR_ID == B)
+#define PWM0_ENABLE_MASK 0x20
+#elif(PWM0_OCR_ID == C)
+#define PWM0_ENABLE_MASK 0x08
+#endif
+#if(PWM1_TIMER_ID==0 || PWM1_TIMER_ID==2)
+#define PWM1_MODE 0x03
+#define PWM1_PRESCALLER 0x04
+#else
+#define PWM1_MODE 0x05
+#define PWM1_PRESCALLER 0x03
+#endif
+#endif
+
+#ifdef PWM2
+#ifndef PWM2_TIMER_ID
+#error Undefined PWM2 Timer
+#endif
+#if(PWM2_TIMER_ID==STEP_TIMER_ID)
+#error PWM0 timer and Step timer must be different
+#endif
+#ifndef PWM2_OCR_ID
+#error Undefined PWM2 OCR Register
+#endif
+#define PWM2_TMRAREG VAREVAL(TCCR, PWM2_TIMER_ID, A)
+#define PWM2_TMRBREG VAREVAL(TCCR, PWM2_TIMER_ID, B)
+#define PWM2_CNTREG VAREVAL(OCR, PWM2_TIMER_ID, A)
+#if(PWM2_OCR_ID == A)
+#define PWM2_ENABLE_MASK 0x80
+#elif(PWM2_OCR_ID == B)
+#define PWM2_ENABLE_MASK 0x20
+#elif(PWM2_OCR_ID == C)
+#define PWM2_ENABLE_MASK 0x08
+#endif
+#if(PWM2_TIMER_ID==0 || PWM2_TIMER_ID==2)
+#define PWM2_MODE 0x03
+#define PWM2_PRESCALLER 0x04
+#else
+#define PWM2_MODE 0x05
+#define PWM2_PRESCALLER 0x03
+#endif
+#endif
+
+#ifdef PWM3
+#ifndef PWM3_TIMER_ID
+#error Undefined PWM0 Timer
+#endif
+#if(PWM3_TIMER_ID==STEP_TIMER_ID)
+#error PWM0 timer and Step timer must be different
+#endif
+#ifndef PWM0_OCR_ID
+#error Undefined PWM0 OCR Register
+#endif
+#define PWM3_TMRAREG VAREVAL(TCCR, PWM3_TIMER_ID, A)
+#define PWM3_TMRBREG VAREVAL(TCCR, PWM3_TIMER_ID, B)
+#define PWM3_CNTREG VAREVAL(OCR, PWM3_TIMER_ID, A)
+#if(PWM3_OCR_ID == A)
+#define PWM3_ENABLE_MASK 0x80
+#elif(PWM3_OCR_ID == B)
+#define PWM3_ENABLE_MASK 0x20
+#elif(PWM3_OCR_ID == C)
+#define PWM3_ENABLE_MASK 0x08
+#endif
+#if(PWM3_TIMER_ID==0 || PWM3_TIMER_ID==2)
+#define PWM3_MODE 0x03
+#define PWM3_PRESCALLER 0x04
+#else
+#define PWM3_MODE 0x05
+#define PWM3_PRESCALLER 0x03
+#endif
+#endif
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -604,30 +720,30 @@ void mcu_init()
     //stdout = &g_mcu_streamout;
 
 	//PWM's
-	//TCCRXA Mode 3 - Fast PWM 
+	//TCCRXA Mode 3/5 - Fast PWM 
 	//TCCRXB Prescaller 1/64
 	#ifdef PWM0
 		PWM0_DIRREG |= PWM0_MASK;
-		PWM0_TMRAREG = 0x03; //Mode 3
-		PWM0_TMRBREG = PWM0_PRESCMASK; //Prescaller 1/64
+		PWM0_TMRAREG = PWM0_MODE;
+		PWM0_TMRBREG = PWM0_PRESCALLER;
 		PWM0_CNTREG = 0;
 	#endif
 	#ifdef PWM1
 		PWM1_DIRREG |= PWM1_MASK;
-		PWM1_TMRAREG = 0x03; //Mode 3
-		PWM1_TMRBREG = PWM1_PRESCMASK; //Prescaller 1/64
+		PWM1_TMRAREG = PWM1_MODE;
+		PWM1_TMRBREG = PWM1_PRESCALLER;
 		PWM1_CNTREG = 0;
 	#endif
 	#ifdef PWM2
 		PWM2_DIRREG |= PWM2_MASK;
-		PWM2_TMRAREG = 0x03; //Mode 3
-		PWM2_TMRBREG = PWM2_PRESCMASK; //Prescaller 1/64
+		PWM2_TMRAREG = PWM2_MODE;
+		PWM2_TMRBREG = PWM2_PRESCALLER;
 		PWM2_CNTREG = 0;
 	#endif
 	#ifdef PWM3
 		PWM3_DIRREG |= PWM3_MASK;
-		PWM3_TMRAREG = 0x03; //Mode 3
-		PWM3_TMRBREG = PWM3_PRESCMASK; //Prescaller 1/64
+		PWM3_TMRAREG = PWM3_MODE;
+		PWM3_TMRBREG = PWM3_PRESCALLER;
 		PWM3_CNTREG = 0;
 	#endif
 
@@ -690,19 +806,11 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			PWM0_CNTREG = value;
 			if(value != 0)
 			{
-				#if(PWM0_OCREG==A)
-					SETFLAG(PWM0_TMRAREG,0x80);
-				#elif(PWM0_OCREG==B)
-					SETFLAG(PWM0_TMRAREG,0x20);
-				#endif
+				SETFLAG(PWM0_TMRAREG,PWM0_ENABLE_MASK);
 			}
 			else
 			{
-				#if(PWM0_OCREG==A)
-					CLEARFLAG(PWM0_TMRAREG,0x80);
-				#elif(PWM0_OCREG==B)
-					CLEARFLAG(PWM0_TMRAREG,0x20);
-				#endif
+				CLEARFLAG(PWM0_TMRAREG,PWM0_ENABLE_MASK);
 			}
 			#endif
 			break;
@@ -711,19 +819,11 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			PWM1_CNTREG = value;
 			if(value != 0)
 			{
-				#if(PWM1_OCREG==A)
-					SETFLAG(PWM1_TMRAREG,0x80);
-				#elif(PWM1_OCREG==B)
-					SETFLAG(PWM1_TMRAREG,0x20);
-				#endif
+				SETFLAG(PWM1_TMRAREG,PWM1_ENABLE_MASK);
 			}
 			else
 			{
-				#if(PWM1_OCREG==A)
-					CLEARFLAG(PWM1_TMRAREG,0x80);
-				#elif(PWM1_OCREG==B)
-					CLEARFLAG(PWM1_TMRAREG,0x20);
-				#endif
+				CLEARFLAG(PWM1_TMRAREG,PWM1_ENABLE_MASK);
 			}
 			#endif
 			break;
@@ -732,19 +832,11 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			PWM2_CNTREG = value;
 			if(value != 0)
 			{
-				#if(PWM2_OCREG==A)
-					SETFLAG(PWM2_TMRAREG,0x80);
-				#elif(PWM2_OCREG==B)
-					SETFLAG(PWM2_TMRAREG,0x20);
-				#endif
+				SETFLAG(PWM2_TMRAREG,PWM2_ENABLE_MASK);
 			}
 			else
 			{
-				#if(PWM2_OCREG==A)
-					CLEARFLAG(PWM2_TMRAREG,0x80);
-				#elif(PWM2_OCREG==B)
-					CLEARFLAG(PWM2_TMRAREG,0x20);
-				#endif
+				CLEARFLAG(PWM2_TMRAREG,PWM2_ENABLE_MASK);
 			}
 			#endif
 			break;
@@ -753,19 +845,11 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 			PWM3_CNTREG = value;
 			if(value != 0)
 			{
-				#if(PWM3_OCREG==A)
-					SETFLAG(PWM3_TMRAREG,0x80);
-				#elif(PWM3_OCREG==B)
-					SETFLAG(PWM3_TMRAREG,0x20);
-				#endif
+				SETFLAG(PWM3_TMRAREG,PWM3_ENABLE_MASK);
 			}
 			else
 			{
-				#if(PWM3_OCREG==A)
-					CLEARFLAG(PWM3_TMRAREG,0x80);
-				#elif(PWM3_OCREG==B)
-					CLEARFLAG(PWM3_TMRAREG,0x20);
-				#endif
+				CLEARFLAG(PWM3_TMRAREG,PWM3_ENABLE_MASK);
 			}
 			#endif
 			break;
