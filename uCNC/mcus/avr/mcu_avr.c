@@ -26,15 +26,15 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "../../../config.h"
-#if(MCU == MCU_ATMEGA328P)
-#include "../../../mcudefs.h"
-#include "../../../mcumap.h"
-#include "../../../mcu.h"
-#include "../../../utils.h"
-#include "../../../serial.h"
-#include "../../../interpolator.h"
-#include "../../../io_control.h"
+#include "../../config.h"
+#ifdef __MCU_AVR__
+#include "../../mcudefs.h"
+#include "../../mcumap.h"
+#include "../../mcu.h"
+#include "../../utils.h"
+#include "../../serial.h"
+#include "../../interpolator.h"
+#include "../../io_control.h"
 
 #include <math.h>
 #include <inttypes.h>
@@ -48,10 +48,278 @@
 #include <avr/interrupt.h>
 #include <avr/pgmspace.h>
 #include <avr/wdt.h>
-#include <avr/delay.h>
+//#include <avr/delay.h>
 #include <avr/eeprom.h>
 
-#define PORTMASK (OUTPUT_INVERT_MASK|INPUT_PULLUP_MASK)
+#ifdef ESTOP_PULLUP
+#define ESTOP_PULLUP_MASK ESTOP_MASK
+#else
+#define ESTOP_PULLUP_MASK 0
+#endif
+#ifdef FHOLD_PULLUP
+#define FHOLD_PULLUP_MASK FHOLD_MASK
+#else
+#define FHOLD_PULLUP_MASK 0
+#endif
+#ifdef PROBE_PULLUP
+#define PROBE_PULLUP_MASK PROBE_MASK
+#else
+#define PROBE_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_X_PULLUP
+#define LIMIT_X_PULLUP_MASK LIMIT_X_MASK
+#else
+#define LIMIT_X_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_Y_PULLUP
+#define LIMIT_Y_PULLUP_MASK LIMIT_Y_MASK
+#else
+#define LIMIT_Y_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_Z_PULLUP
+#define LIMIT_Z_PULLUP_MASK LIMIT_Z_MASK
+#else
+#define LIMIT_Z_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_A_PULLUP
+#define LIMIT_A_PULLUP_MASK LIMIT_A_MASK
+#else
+#define LIMIT_A_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_B_PULLUP
+#define LIMIT_B_PULLUP_MASK LIMIT_B_MASK
+#else
+#define LIMIT_B_PULLUP_MASK 0
+#endif
+#ifdef LIMIT_C_PULLUP
+#define LIMIT_C_PULLUP_MASK LIMIT_C_MASK
+#else
+#define LIMIT_C_PULLUP_MASK 0
+#endif
+#ifdef CS_RES_PULLUP
+#define CS_RES_PULLUP_MASK CS_RES_MASK
+#else
+#define CS_RES_PULLUP_MASK 0
+#endif
+#ifdef SAFETY_DOOR_PULLUP
+#define SAFETY_DOOR_PULLUP_MASK SAFETY_DOOR_MASK
+#else
+#define SAFETY_DOOR_PULLUP_MASK 0
+#endif
+
+#define CONTROLS_PULLUP_MASK (ESTOP_PULLUP_MASK | FHOLD_PULLUP_MASK | CS_RES_PULLUP_MASK | SAFETY_DOOR_PULLUP_MASK)
+#define LIMITS_PULLUP_MASK (LIMIT_X_PULLUP_MASK | LIMIT_Y_PULLUP_MASK | LIMIT_Z_PULLUP_MASK | LIMIT_A_PULLUP_MASK | LIMIT_B_PULLUP_MASK | LIMIT_C_PULLUP_MASK)
+
+#ifdef DIN0_PULLUP
+#define DIN0_PULLUP_MASK (DIN0_MASK>>0)
+#else
+#define DIN0_PULLUP_MASK 0
+#endif
+#ifdef DIN1_PULLUP
+#define DIN1_PULLUP_MASK (DIN1_MASK>>0)
+#else
+#define DIN1_PULLUP_MASK 0
+#endif
+#ifdef DIN2_PULLUP
+#define DIN2_PULLUP_MASK (DIN2_MASK>>0)
+#else
+#define DIN2_PULLUP_MASK 0
+#endif
+#ifdef DIN3_PULLUP
+#define DIN3_PULLUP_MASK (DIN3_MASK>>0)
+#else
+#define DIN3_PULLUP_MASK 0
+#endif
+#ifdef DIN4_PULLUP
+#define DIN4_PULLUP_MASK (DIN4_MASK>>0)
+#else
+#define DIN4_PULLUP_MASK 0
+#endif
+#ifdef DIN5_PULLUP
+#define DIN5_PULLUP_MASK (DIN5_MASK>>0)
+#else
+#define DIN5_PULLUP_MASK 0
+#endif
+#ifdef DIN6_PULLUP
+#define DIN6_PULLUP_MASK (DIN6_MASK>>0)
+#else
+#define DIN6_PULLUP_MASK 0
+#endif
+#ifdef DIN7_PULLUP
+#define DIN7_PULLUP_MASK (DIN7_MASK>>0)
+#else
+#define DIN7_PULLUP_MASK 0
+#endif
+#ifdef DIN8_PULLUP
+#define DIN8_PULLUP_MASK (DIN8_MASK>>8)
+#else
+#define DIN8_PULLUP_MASK 0
+#endif
+#ifdef DIN9_PULLUP
+#define DIN9_PULLUP_MASK (DIN9_MASK>>8)
+#else
+#define DIN9_PULLUP_MASK 0
+#endif
+#ifdef DIN10_PULLUP
+#define DIN10_PULLUP_MASK (DIN10_MASK>>8)
+#else
+#define DIN10_PULLUP_MASK 0
+#endif
+#ifdef DIN11_PULLUP
+#define DIN11_PULLUP_MASK (DIN11_MASK>>8)
+#else
+#define DIN11_PULLUP_MASK 0
+#endif
+#ifdef DIN12_PULLUP
+#define DIN12_PULLUP_MASK (DIN12_MASK>>8)
+#else
+#define DIN12_PULLUP_MASK 0
+#endif
+#ifdef DIN13_PULLUP
+#define DIN13_PULLUP_MASK (DIN13_MASK>>8)
+#else
+#define DIN13_PULLUP_MASK 0
+#endif
+#ifdef DIN14_PULLUP
+#define DIN14_PULLUP_MASK (DIN14_MASK>>8)
+#else
+#define DIN14_PULLUP_MASK 0
+#endif
+#ifdef DIN15_PULLUP
+#define DIN15_PULLUP_MASK (DIN15_MASK>>8)
+#else
+#define DIN15_PULLUP_MASK 0
+#endif
+#ifdef DIN16_PULLUP
+#define DIN16_PULLUP_MASK (DIN16_MASK>>16)
+#else
+#define DIN16_PULLUP_MASK 0
+#endif
+#ifdef DIN17_PULLUP
+#define DIN17_PULLUP_MASK (DIN17_MASK>>16)
+#else
+#define DIN17_PULLUP_MASK 0
+#endif
+#ifdef DIN18_PULLUP
+#define DIN18_PULLUP_MASK (DIN18_MASK>>16)
+#else
+#define DIN18_PULLUP_MASK 0
+#endif
+#ifdef DIN19_PULLUP
+#define DIN19_PULLUP_MASK (DIN19_MASK>>16)
+#else
+#define DIN19_PULLUP_MASK 0
+#endif
+#ifdef DIN20_PULLUP
+#define DIN20_PULLUP_MASK (DIN20_MASK>>16)
+#else
+#define DIN20_PULLUP_MASK 0
+#endif
+#ifdef DIN21_PULLUP
+#define DIN21_PULLUP_MASK (DIN21_MASK>>16)
+#else
+#define DIN21_PULLUP_MASK 0
+#endif
+#ifdef DIN22_PULLUP
+#define DIN22_PULLUP_MASK (DIN22_MASK>>16)
+#else
+#define DIN22_PULLUP_MASK 0
+#endif
+#ifdef DIN23_PULLUP
+#define DIN23_PULLUP_MASK (DIN23_MASK>>16)
+#else
+#define DIN23_PULLUP_MASK 0
+#endif
+#ifdef DIN24_PULLUP
+#define DIN24_PULLUP_MASK (DIN24_MASK>>24)
+#else
+#define DIN24_PULLUP_MASK 0
+#endif
+#ifdef DIN25_PULLUP
+#define DIN25_PULLUP_MASK (DIN25_MASK>>24)
+#else
+#define DIN25_PULLUP_MASK 0
+#endif
+#ifdef DIN26_PULLUP
+#define DIN26_PULLUP_MASK (DIN26_MASK>>24)
+#else
+#define DIN26_PULLUP_MASK 0
+#endif
+#ifdef DIN27_PULLUP
+#define DIN27_PULLUP_MASK (DIN27_MASK>>24)
+#else
+#define DIN27_PULLUP_MASK 0
+#endif
+#ifdef DIN28_PULLUP
+#define DIN28_PULLUP_MASK (DIN28_MASK>>24)
+#else
+#define DIN28_PULLUP_MASK 0
+#endif
+#ifdef DIN29_PULLUP
+#define DIN29_PULLUP_MASK (DIN29_MASK>>24)
+#else
+#define DIN29_PULLUP_MASK 0
+#endif
+#ifdef DIN30_PULLUP
+#define DIN30_PULLUP_MASK (DIN30_MASK>>24)
+#else
+#define DIN30_PULLUP_MASK 0
+#endif
+#ifdef DIN31_PULLUP
+#define DIN31_PULLUP_MASK (DIN31_MASK>>24)
+#else
+#define DIN31_PULLUP_MASK 0
+#endif
+
+#define DINS_R0_PULLUP_MASK (DIN0_PULLUP_MASK | DIN1_PULLUP_MASK | DIN2_PULLUP_MASK | DIN3_PULLUP_MASK | DIN4_PULLUP_MASK | DIN5_PULLUP_MASK | DIN6_PULLUP_MASK | DIN7_PULLUP_MASK)
+#define DINS_R1_PULLUP_MASK (DIN8_PULLUP_MASK | DIN9_PULLUP_MASK | DIN10_PULLUP_MASK | DIN11_PULLUP_MASK | DIN12_PULLUP_MASK | DIN13_PULLUP_MASK | DIN14_PULLUP_MASK | DIN15_PULLUP_MASK)
+#define DINS_R2_PULLUP_MASK (DIN16_PULLUP_MASK | DIN17_PULLUP_MASK | DIN18_PULLUP_MASK | DIN19_PULLUP_MASK | DIN20_PULLUP_MASK | DIN21_PULLUP_MASK | DIN22_PULLUP_MASK | DIN23_PULLUP_MASK)
+#define DINS_R3_PULLUP_MASK (DIN24_PULLUP_MASK | DIN25_PULLUP_MASK | DIN26_PULLUP_MASK | DIN27_PULLUP_MASK | DIN28_PULLUP_MASK | DIN29_PULLUP_MASK | DIN30_PULLUP_MASK | DIN31_PULLUP_MASK)
+
+//Helper macros
+#define VARNAME(prefix,id,suffix) prefix##id##suffix
+#define VAREVAL(prefix,id,suffix) VARNAME(prefix,id,suffix)
+
+//Timer registers
+#define TIMER_COMPB_vect VAREVAL(TIMER, TIMER_ID, _COMPB_vect)
+#define TIMER_COMPA_vect VAREVAL(TIMER, TIMER_ID, _COMPA_vect)
+#define TCNT VAREVAL(TCNT, TIMER_ID, )
+#define TCNT VAREVAL(TCNT, TIMER_ID, )
+#define TCCRA VAREVAL(TCCR, TIMER_ID, A)
+#define TCCRB VAREVAL(TCCR, TIMER_ID, B)
+#define OCRA VAREVAL(OCR, TIMER_ID, A)
+#define OCRB VAREVAL(OCR, TIMER_ID, B)
+#define TIFR VAREVAL(TIFR, TIMER_ID, )
+#define TIMSK VAREVAL(TIMSK, TIMER_ID, )
+#define OCIEB VAREVAL(OCIE, TIMER_ID, B)
+#define OCIEA VAREVAL(OCIE, TIMER_ID, A)
+
+//COM registers
+#ifdef COM_ID
+#define COM_RX_vect VAREVAL(USART, COM_ID, _RX_vect)
+#define COM_TX_vect VAREVAL(USART, COM_ID, _UDRE_vect)
+#else
+#define COM_RX_vect USART_RX_vect
+#define COM_TX_vect USART_UDRE_vect
+#define COM_ID 0
+#endif
+#define UCSRB VAREVAL(UCSR, COM_ID, B)
+#define UCSRA VAREVAL(UCSR, COM_ID, A)
+#define UDRIE VAREVAL(UDRIE, COM_ID, )
+#define U2X VAREVAL(U2X, COM_ID, )
+#define UBRRH VAREVAL(UBRR, COM_ID, H)
+#define UBRRL VAREVAL(UBRR, COM_ID, L)
+#define RXEN VAREVAL(RXEN, COM_ID, )
+#define TXEN VAREVAL(TXEN, COM_ID, )
+#define RXCIE VAREVAL(RXCIE, COM_ID, )
+#define UDRE VAREVAL(UDRE, COM_ID, )
+#define RXC VAREVAL(RXC, COM_ID, )
+
+//Pin change ISR Registers
+#define LIMITS_ISRREG VAREVAL(PCMSK, LIMITS_ISR_ID, )
+#define CONTROLS_ISRREG VAREVAL(PCMSK, CONTROLS_ISR_ID, )
+#define PROBE_ISRREG VAREVAL(PCMSK, PROBE_ISR_ID, )
+
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
@@ -60,15 +328,6 @@
 #define BAUD 115200
 #endif
 
-#ifndef COM_BUFFER_SIZE
-#define COM_BUFFER_SIZE 50
-#endif
-
-#define PULSE_RESET_DELAY MIN_PULSE_WIDTH_US * F_CPU / 1000000
-
-//USART communication
-/*int mcu_putchar(char c, FILE* stream);
-FILE g_mcu_streamout = FDEV_SETUP_STREAM(mcu_putchar, NULL, _FDEV_SETUP_WRITE);*/
 
 #ifdef __PERFSTATS__
 volatile uint16_t mcu_perf_step;
@@ -86,28 +345,28 @@ uint16_t mcu_get_step_reset_clocks()
 }
 #endif
 
-ISR(TIMER1_COMPA_vect, ISR_BLOCK)
+ISR(TIMER_COMPA_vect, ISR_BLOCK)
 {
 	#ifdef __PERFSTATS__
-	uint16_t clocks = TCNT1;
+	uint16_t clocks = TCNT;
 	#endif
 	itp_step_reset_isr();
 	
 	#ifdef __PERFSTATS__
-    uint16_t clocks2 = TCNT1;
+    uint16_t clocks2 = TCNT;
     clocks2 -= clocks;
 	mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
 	#endif
 }
 
-ISR(TIMER1_COMPB_vect, ISR_BLOCK)
+ISR(TIMER_COMPB_vect, ISR_BLOCK)
 {
 	#ifdef __PERFSTATS__
-	uint16_t clocks = TCNT1;
+	uint16_t clocks = TCNT;
 	#endif
     itp_step_isr();
     #ifdef __PERFSTATS__
-    uint16_t clocks2 = TCNT1;
+    uint16_t clocks2 = TCNT;
     clocks2 -= clocks;
 	mcu_perf_step = MAX(mcu_perf_step, clocks2);
 	#endif
@@ -116,7 +375,7 @@ ISR(TIMER1_COMPB_vect, ISR_BLOCK)
 ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
 	static uint8_t prev_value = 0;
-	uint8_t value = PINB;
+	uint8_t value = PCMASK0_INREG;
 	uint8_t diff = prev_value ^ value;
 	prev_value = value;
 	
@@ -145,7 +404,7 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 {
 	static uint8_t prev_value = 0;
-	uint8_t value = PINC;
+	uint8_t value = PCMASK1_INREG;
 	uint8_t diff = prev_value ^ value;
 	prev_value = value;
 	
@@ -174,7 +433,7 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
-	uint8_t value = PIND;
+	uint8_t value = PCMASK2_INREG;
 	uint8_t diff = prev_value ^ value;
 	prev_value = value;
 	
@@ -200,33 +459,25 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 	#endif
 }
 
-
-ISR(USART_RX_vect, ISR_BLOCK)
+ISR(COM_RX_vect, ISR_BLOCK)
 {
-	unsigned char c = UDR0;
+	unsigned char c = COM_INREG;
 	serial_rx_isr(c);
 }
 
-ISR(USART_UDRE_vect, ISR_BLOCK)
+ISR(COM_TX_vect, ISR_BLOCK)
 {
 	if(serial_tx_is_empty())
 	{
-		UCSR0B &= ~(1<<UDRIE0);
+		UCSRB &= ~(1<<UDRIE);
 		return;
 	}
 	
-	UDR0 = serial_tx_isr();
+	COM_OUTREG = serial_tx_isr();
 }
 
 void mcu_init()
 {
-    //IO_REGISTER reg = {};
-    
-    #ifdef __PERFSTATS__
-	mcu_perf_step = 0;
-	mcu_perf_step_reset = 0;
-	#endif
-	
 	//disable WDT
 	wdt_reset();
     MCUSR &= ~(1<<WDRF);
@@ -381,54 +632,25 @@ void mcu_init()
 	#endif
 
     // Set baud rate
+	uint16_t UBRR_value;
     #if BAUD < 57600
-      uint16_t UBRR0_value = ((F_CPU / (8L * BAUD)) - 1)/2 ;
-      UCSR0A &= ~(1 << U2X0); // baud doubler off  - Only needed on Uno XXX
+      UBRR_value = ((F_CPU / (8L * BAUD)) - 1)/2 ;
+      UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
     #else
-      uint16_t UBRR0_value = ((F_CPU / (4L * BAUD)) - 1)/2;
-      UCSR0A |= (1 << U2X0);  // baud doubler on for high baud rates, i.e. 115200
+      UBRR_value = ((F_CPU / (4L * BAUD)) - 1)/2;
+      UCSRA |= (1 << U2X);  // baud doubler on for high baud rates, i.e. 115200
     #endif
-    UBRR0H = UBRR0_value >> 8;
-    UBRR0L = UBRR0_value;
+    UBRRH = UBRR_value >> 8;
+    UBRRL = UBRR_value;
   
     // enable rx, tx, and interrupt on complete reception of a byte and UDR empty
-    UCSR0B |= (1<<RXEN0 | 1<<TXEN0 | 1<<RXCIE0);
+    UCSRB |= (1<<RXEN | 1<<TXEN | 1<<RXCIE);
     
 	//enable interrupts
 	sei();
 }
 
 //IO functions    
-//Inputs  
-/*uint32_t mcu_get_inputs()
-{
-	uint32_t result;
-	uint8_t* reg = &result;
-	#ifdef DINS_R0_INREG
-	reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
-	#endif
-	#ifdef DINS_R1_INREG
-	reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
-	#endif
-	#ifdef DINS_R2_INREG
-	reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
-	#endif
-	#ifdef DINS_R3_INREG
-	reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
-	#endif
-	return result;	
-}
-
-uint8_t mcu_get_controls()
-{
-	return (CONTROLS_INREG & CONTROLS_MASK);
-}
-
-uint8_t mcu_get_limits()
-{
-	return (LIMITS_INREG & LIMITS_MASK);
-}*/
-
 #ifdef PROBE
 void mcu_enable_probe_isr()
 {
@@ -458,58 +680,6 @@ uint8_t mcu_get_analog(uint8_t channel)
 
 	return result;
 }
-
-//outputs
-/*
-//sets all step pins
-void mcu_set_steps(uint8_t value)
-{
-	STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
-}
-//sets all dir pins
-void mcu_set_dirs(uint8_t value)
-{
-	DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
-}
-
-void mcu_set_outputs(uint32_t value)
-{
-	uint8_t* reg = &value;
-	
-	#ifdef DOUTS_R0_OUTREG
-		DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
-	#endif
-}
-
-uint32_t mcu_get_outputs()
-{
-	uint32_t result;
-	uint8_t* reg = &result;
-
-	#ifdef DOUTS_R0_OUTREG
-		reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
-	#endif
-	
-	return (result & DOUTS_MASK);
-}*/
 
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
@@ -649,24 +819,24 @@ int mcu_putchar(char c, FILE* stream)
 
 void mcu_start_send()
 {
-	SETBIT(UCSR0B,UDRIE0);
+	SETBIT(UCSRB,UDRIE);
 }
 
 void mcu_putc(char c)
 {
-	loop_until_bit_is_set(UCSR0A, UDRE0);
-	UDR0 = c;
+	loop_until_bit_is_set(UCSRA, UDRE);
+	COM_OUTREG = c;
 }
 
 bool mcu_is_tx_ready()
 {
-	return CHECKBIT(UCSR0A, UDRE0);
+	return CHECKBIT(UCSRA, UDRE);
 }
 
 char mcu_getc()
 {
-	loop_until_bit_is_set(UCSR0A, RXC0);
-    return UDR0;
+	loop_until_bit_is_set(UCSRA, RXC);
+    return COM_INREG;
 }
 
 //RealTime
@@ -714,44 +884,44 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
-	TCCR1B = 0;
+	TCCRB = 0;
 	//CTC mode
-    TCCR1A = 0;
+    TCCRA = 0;
     //resets counter
-    TCNT1 = 0;
+    TCNT = 0;
     //set step clock
-    OCR1A = clocks_speed;
+    OCRA = clocks_speed;
 	//sets OCR0B to half
 	//this will allways fire step_reset between pulses
-    OCR1B = OCR1A>>1;
-	TIFR1 = 0;
+    OCRB = OCRA>>1;
+	TIFR = 0;
 	// enable timer interrupts on both match registers
-    TIMSK1 |= (1 << OCIE1B) | (1 << OCIE1A);
+    TIMSK |= (1 << OCIEB) | (1 << OCIEA);
     
     //start timer in CTC mode with the correct prescaler
-    TCCR1B = prescaller;
+    TCCRB = prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
 void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
 	//stops timer
-	//TCCR1B = 0;
-	OCR1B = clocks_speed>>1;
-	OCR1A = clocks_speed;
+	//TCCRB = 0;
+	OCRB = clocks_speed>>1;
+	OCRA = clocks_speed;
 	//sets OCR0B to half
 	//this will allways fire step_reset between pulses
     
 	//reset timer
-    //TCNT1 = 0;
+    //TCNT = 0;
 	//start timer in CTC mode with the correct prescaler
-    TCCR1B = prescaller;
+    TCCRB = prescaller;
 }
 
 void mcu_step_stop_ISR()
 {
-	TCCR1B = 0;
-    TIMSK1 &= ~((1 << OCIE1B) | (1 << OCIE1A));
+	TCCRB = 0;
+    TIMSK &= ~((1 << OCIEB) | (1 << OCIEA));
 }
 
 /*#define MCU_1MS_LOOP F_CPU/1000000
@@ -762,14 +932,16 @@ static __attribute__((always_inline)) void mcu_delay_1ms()
 	}while(--loop);
 }*/
 
-void mcu_delay_ms(uint16_t miliseconds)
+/*void mcu_delay_ms(uint16_t miliseconds)
 {
 	do{
 		_delay_ms(1);
 	}while(--miliseconds);
 	
-}
+}*/
 
+
+//This was copied from grbl
 #ifndef EEPE
 		#define EEPE  EEWE  //!< EEPROM program/write enable.
 		#define EEMPE EEMWE //!< EEPROM master program/write enable.
@@ -787,7 +959,6 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	return EEDR; // Return the byte read from EEPROM.
 }
 
-//taken from grbl
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	char old_value; // Old EEPROM value.

@@ -5,7 +5,7 @@
 µCNC for Uno can be built in a couple of ways
 
 ## Method one - Arduino IDE
-Copy the mcumap_atmega328p.h, mcu_atmega328p.c and uCNC.ino file to the parent µCNC folder is (where all µCNC core code is) and open the ino file with Arduino IDE and just compile and load. You're done.
+Copy the mcumap_uno.h, mcu_avr.c and uCNC.ino file to the parent µCNC folder is (where all µCNC core code is) and open the ino file with Arduino IDE and just compile and load. You're done.
 
 ## Method two - Using the makefile
 First you must have AVR GCC tools installed on your computer.

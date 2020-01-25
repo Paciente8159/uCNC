@@ -165,10 +165,9 @@ void mcu_step_stop_ISR();
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
 
-/*
 #ifdef __PERFSTATS__
 uint16_t mcu_get_step_clocks();
 uint16_t mcu_get_step_reset_clocks();
 #endif
-*/
+
 #endif

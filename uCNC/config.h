@@ -26,9 +26,9 @@
 /*
 	Choose the mcu type
 	MCU_VIRTUAL: simulates a mcu on a PC
-	MCU_ATMEGA328P: atmega328p mcu (Arduino Uno)
+	MCU_UNO_GRBL: atmega328p mcu (Arduino Uno)
 */
-//#define MCU MCU_ATMEGA328P
+//#define MCU MCU_UNO_GRBL
 
 /*
 	Machine kynematics

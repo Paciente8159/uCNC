@@ -24,8 +24,14 @@
 /*
 	MCU port map
 */
-#if(MCU == MCU_ATMEGA328P)
-#include "mcus\avr\uno\mcumap_atmega328p.h"
+#if(MCU == MCU_UNO_GRBL)
+#define __MCU_AVR__
+#include "mcus\avr\mcumap_uno_grbl.h"
+#endif
+
+#if(MCU == MCU_MEGA_RAMBO14)
+#define __MCU_AVR__
+#include "mcus\avr\mcumap_mega_rambo14.h"
 #endif
 
 #if(MCU == MCU_VIRTUAL)
