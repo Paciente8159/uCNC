@@ -68,24 +68,24 @@
 
 //SAME AS GRBL for test purposes
 //Setup step pins
-#define STEP2 4
-#define STEP1 3
-#define STEP0 2
-#define STEPS_OUTREG PORTD
+#define STEP2 4 //assigns STEP2 pin
+#define STEP1 3 //assigns STEP1 pin
+#define STEP0 2 //assigns STEP2 pin
+#define STEPS_OUTREG PORTD //assigns STEPS_OUTREG to a port
 #define STEPS_DIRREG DDRD
 
 //Setup dir pins
-#define DIR2 7
-#define DIR1 6
-#define DIR0 5
-#define DIRS_OUTREG PORTD
+#define DIR2 7 //assigns DIR2 pin
+#define DIR1 6 //assigns DIR1 pin
+#define DIR0 5 //assigns DIR0 pin
+#define DIRS_OUTREG PORTD //assigns DIRS_OUTREG to a port
 #define DIRS_DIRREG DDRD
 
 //Setup limit pins
-#define LIMIT_Z 4
-#define LIMIT_Y 2
-#define LIMIT_X 1
-#define LIMITS_INREG PINB
+#define LIMIT_Z 4 //assigns LIMIT_Z pin
+#define LIMIT_Y 2 //assigns LIMIT_Y pin
+#define LIMIT_X 1 //assigns LIMIT_X pin
+#define LIMITS_INREG PINB //assigns LIMITS_INREG to a port
 #define LIMITS_DIRREG DDRB
 #define LIMITS_PULLUPREG PORTB
 #define LIMITS_ISR_ID 0
@@ -124,13 +124,10 @@
 //#define COM_ID 0 //if only one or default comment this
 
 //Setup PWM
-#define PWM0 3
+#define PWM0 3 //assigns PWM0 pin
 #define PWM0_DIRREG DDRB
-#define PWM0_OCREG A
-#define PWM0_TMRAREG TCCR2A
-#define PWM0_TMRBREG TCCR2B
-#define PWM0_CNTREG OCR2A
-#define PWM0_PRESCMASK 0x04
+#define PWM0_TIMER_ID 2 //assigns PWM0 timer
+#define PWM0_OCR_ID A //assigns PWM0 pwm output source
 
 //Setup generic IO Pins
 //Functions are set in config.h file
@@ -142,7 +139,10 @@
 #define DOUTS_R1_OUTREG PORTC
 #define DOUTS_R1_DIRREG DDRC
 
-//Setup the Timer used has the heartbeat for µCNC
-#define TIMER_ID 1
+//Stepper enable pin. For UNO a single pin is used
+#define STEP0_EN_OUTPIN 1
+
+//Setup the Step Timer used has the heartbeat for µCNC
+#define STEP_TIMER_ID 1
 
 #endif
