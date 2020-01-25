@@ -241,11 +241,11 @@ float planner_update_spindle(bool update_outputs)
 	{
 		if (spindle >= 0)
 		{
-			io_clear_outputs(SPINDLE_DIR);
+			io_clear_outputs(SPINDLE_DIR_MASK);
 		}
 		else
 		{
-			io_set_outputs(SPINDLE_DIR);
+			io_set_outputs(SPINDLE_DIR_MASK);
 		}
 	}
 	

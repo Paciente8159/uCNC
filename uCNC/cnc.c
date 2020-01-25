@@ -211,10 +211,10 @@ void cnc_stop()
 	//stop tools
 	#ifdef USE_SPINDLE
 	io_set_pwm(SPINDLE_PWM_CHANNEL, 0);
-	io_clear_outputs(SPINDLE_DIR);
+	io_clear_outputs(SPINDLE_DIR_MASK);
 	#endif
 	#ifdef USE_COOLANT
-	io_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
+	io_clear_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
 	#endif
 }
 
@@ -294,11 +294,9 @@ void cnc_reset()
 			protocol_send_string(MSG_FEEDBACK_2);
 		}
 	} 
-	/*else
-	{
-		//if all ok warns user that machine is unlocked and ready to use
-		protocol_send_string(MSG_FEEDBACK_3);
-	}*/
+
+	//signals stepper enable pins
+	io_set_outputs(STEPS_EN_MASK);
 }
 
 void cnc_exec_rt_command(uint8_t command)
