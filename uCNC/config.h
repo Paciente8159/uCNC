@@ -36,9 +36,6 @@
 */
 #define MACHINE_KINEMATICS MACHINE_CARTESIAN_XYZ
 
-//defines the uCNC generic mapping
-#include "mcumap.h"
-
 /*
 	Serial COM
 	Defines the serial COM baud rate
@@ -73,7 +70,7 @@
 //set PWM channel to use (valid values 0 - 3)
 #define SPINDLE_PWM_CHANNEL 0
 //sets the spindle dir pin mask
-#define SPINDLE_DIR DOUT0_MASK
+#define SPINDLE_DIR_OUTPIN 0
 #endif
 
 /*
@@ -86,8 +83,8 @@
 */
 #define USE_COOLANT
 #ifdef USE_COOLANT
-#define COOLANT_FLOOD DOUT8_MASK
-#define COOLANT_MIST DOUT9_MASK
+#define COOLANT_FLOOD_OUTPIN 8
+#define COOLANT_MIST_OUTPIN 9
 #endif
 
 /*

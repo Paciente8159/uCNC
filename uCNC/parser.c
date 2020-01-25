@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "mcudefs.h"
+#include "mcumap.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "utils.h"
@@ -495,18 +496,18 @@ void parser_update_coolant(uint8_t state)
 	switch (parser_state.groups.coolant)
 	{
 	case 0: //off
-		io_clear_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		io_clear_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
 		break;
 	case 1: //flood
-		io_clear_outputs(COOLANT_MIST);
-		io_set_outputs(COOLANT_FLOOD);
+		io_clear_outputs(COOLANT_MIST_MASK);
+		io_set_outputs(COOLANT_FLOOD_MASK);
 		break;
 	case 2: //mist
-		io_clear_outputs(COOLANT_FLOOD);
-		io_set_outputs(COOLANT_MIST);
+		io_clear_outputs(COOLANT_FLOOD_MASK);
+		io_set_outputs(COOLANT_MIST_MASK);
 		break;
 	case 3: //flood and mist
-		io_set_outputs(COOLANT_FLOOD | COOLANT_MIST);
+		io_set_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
 		break;
 	}
 }
