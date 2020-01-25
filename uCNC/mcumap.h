@@ -105,42 +105,42 @@
 #endif
 
 #ifdef DOUT0
-#define DOUT0_MASK (BITMASK(DOUT0)<<0)
+#define DOUT0_MASK (BITMASK(DOUT0))
 #else
 #define DOUT0_MASK 0
 #endif
 #ifdef DOUT1
-#define DOUT1_MASK (BITMASK(DOUT1)<<0)
+#define DOUT1_MASK (BITMASK(DOUT1))
 #else
 #define DOUT1_MASK 0
 #endif
 #ifdef DOUT2
-#define DOUT2_MASK (BITMASK(DOUT2)<<0)
+#define DOUT2_MASK (BITMASK(DOUT2))
 #else
 #define DOUT2_MASK 0
 #endif
 #ifdef DOUT3
-#define DOUT3_MASK (BITMASK(DOUT3)<<0)
+#define DOUT3_MASK (BITMASK(DOUT3))
 #else
 #define DOUT3_MASK 0
 #endif
 #ifdef DOUT4
-#define DOUT4_MASK (BITMASK(DOUT4)<<0)
+#define DOUT4_MASK (BITMASK(DOUT4))
 #else
 #define DOUT4_MASK 0
 #endif
 #ifdef DOUT5
-#define DOUT5_MASK (BITMASK(DOUT5)<<0)
+#define DOUT5_MASK (BITMASK(DOUT5))
 #else
 #define DOUT5_MASK 0
 #endif
 #ifdef DOUT6
-#define DOUT6_MASK (BITMASK(DOUT6)<<0)
+#define DOUT6_MASK (BITMASK(DOUT6))
 #else
 #define DOUT6_MASK 0
 #endif
 #ifdef DOUT7
-#define DOUT7_MASK (BITMASK(DOUT7)<<0)
+#define DOUT7_MASK (BITMASK(DOUT7))
 #else
 #define DOUT7_MASK 0
 #endif
@@ -474,122 +474,122 @@
 #define DIN7_MASK 0
 #endif
 #ifdef DIN8
-#define DIN8_MASK BITMASK(DIN8)
+#define DIN8_MASK (BITMASK(DIN8)<<8)
 #else
 #define DIN8_MASK 0
 #endif
 #ifdef DIN9
-#define DIN9_MASK BITMASK(DIN9)
+#define DIN9_MASK (BITMASK(DIN9)<<8)
 #else
 #define DIN9_MASK 0
 #endif
 #ifdef DIN10
-#define DIN10_MASK BITMASK(DIN10)
+#define DIN10_MASK (BITMASK(DIN10)<<8)
 #else
 #define DIN10_MASK 0
 #endif
 #ifdef DIN11
-#define DIN11_MASK BITMASK(DIN11)
+#define DIN11_MASK (BITMASK(DIN11)<<8)
 #else
 #define DIN11_MASK 0
 #endif
 #ifdef DIN12
-#define DIN12_MASK BITMASK(DIN12)
+#define DIN12_MASK (BITMASK(DIN12)<<8)
 #else
 #define DIN12_MASK 0
 #endif
 #ifdef DIN13
-#define DIN13_MASK BITMASK(DIN13)
+#define DIN13_MASK (BITMASK(DIN13)<<8)
 #else
 #define DIN13_MASK 0
 #endif
 #ifdef DIN14
-#define DIN14_MASK BITMASK(DIN14)
+#define DIN14_MASK (BITMASK(DIN14)<<8)
 #else
 #define DIN14_MASK 0
 #endif
 #ifdef DIN15
-#define DIN15_MASK BITMASK(DIN15)
+#define DIN15_MASK (BITMASK(DIN15)<<8)
 #else
 #define DIN15_MASK 0
 #endif
 #ifdef DIN16
-#define DIN16_MASK BITMASK(DIN16)
+#define DIN16_MASK (BITMASK(DIN16)<<16)
 #else
 #define DIN16_MASK 0
 #endif
 #ifdef DIN17
-#define DIN17_MASK BITMASK(DIN17)
+#define DIN17_MASK (BITMASK(DIN17)<<16)
 #else
 #define DIN17_MASK 0
 #endif
 #ifdef DIN18
-#define DIN18_MASK BITMASK(DIN18)
+#define DIN18_MASK (BITMASK(DIN18)<<16)
 #else
 #define DIN18_MASK 0
 #endif
 #ifdef DIN19
-#define DIN19_MASK BITMASK(DIN19)
+#define DIN19_MASK (BITMASK(DIN19)<<16)
 #else
 #define DIN19_MASK 0
 #endif
 #ifdef DIN20
-#define DIN20_MASK BITMASK(DIN20)
+#define DIN20_MASK (BITMASK(DIN20)<<16)
 #else
 #define DIN20_MASK 0
 #endif
 #ifdef DIN21
-#define DIN21_MASK BITMASK(DIN21)
+#define DIN21_MASK (BITMASK(DIN21)<<16)
 #else
 #define DIN21_MASK 0
 #endif
 #ifdef DIN22
-#define DIN22_MASK BITMASK(DIN22)
+#define DIN22_MASK (BITMASK(DIN22)<<16)
 #else
 #define DIN22_MASK 0
 #endif
 #ifdef DIN23
-#define DIN23_MASK BITMASK(DIN23)
+#define DIN23_MASK (BITMASK(DIN23)<<16)
 #else
 #define DIN23_MASK 0
 #endif
 #ifdef DIN24
-#define DIN24_MASK BITMASK(DIN24)
+#define DIN24_MASK (BITMASK(DIN24)<<24)
 #else
 #define DIN24_MASK 0
 #endif
 #ifdef DIN25
-#define DIN25_MASK BITMASK(DIN25)
+#define DIN25_MASK (BITMASK(DIN25)<<24)
 #else
 #define DIN25_MASK 0
 #endif
 #ifdef DIN26
-#define DIN26_MASK BITMASK(DIN26)
+#define DIN26_MASK (BITMASK(DIN26)<<24)
 #else
 #define DIN26_MASK 0
 #endif
 #ifdef DIN27
-#define DIN27_MASK BITMASK(DIN27)
+#define DIN27_MASK (BITMASK(DIN27)<<24)
 #else
 #define DIN27_MASK 0
 #endif
 #ifdef DIN28
-#define DIN28_MASK BITMASK(DIN28)
+#define DIN28_MASK (BITMASK(DIN28)<<24)
 #else
 #define DIN28_MASK 0
 #endif
 #ifdef DIN29
-#define DIN29_MASK BITMASK(DIN29)
+#define DIN29_MASK (BITMASK(DIN29)<<24)
 #else
 #define DIN29_MASK 0
 #endif
 #ifdef DIN30
-#define DIN30_MASK BITMASK(DIN30)
+#define DIN30_MASK (BITMASK(DIN30)<<24)
 #else
 #define DIN30_MASK 0
 #endif
 #ifdef DIN31
-#define DIN31_MASK BITMASK(DIN31)
+#define DIN31_MASK (BITMASK(DIN31)<<24)
 #else
 #define DIN31_MASK 0
 #endif
@@ -688,42 +688,42 @@
 #define LIMITS_PULLUP_MASK (LIMIT_X_PULLUP_MASK | LIMIT_Y_PULLUP_MASK | LIMIT_Z_PULLUP_MASK | LIMIT_A_PULLUP_MASK | LIMIT_B_PULLUP_MASK | LIMIT_C_PULLUP_MASK)
 
 #ifdef DIN0_PULLUP
-#define DIN0_PULLUP_MASK (DIN0_MASK>>0)
+#define DIN0_PULLUP_MASK (DIN0_MASK)
 #else
 #define DIN0_PULLUP_MASK 0
 #endif
 #ifdef DIN1_PULLUP
-#define DIN1_PULLUP_MASK (DIN1_MASK>>0)
+#define DIN1_PULLUP_MASK (DIN1_MASK)
 #else
 #define DIN1_PULLUP_MASK 0
 #endif
 #ifdef DIN2_PULLUP
-#define DIN2_PULLUP_MASK (DIN2_MASK>>0)
+#define DIN2_PULLUP_MASK (DIN2_MASK)
 #else
 #define DIN2_PULLUP_MASK 0
 #endif
 #ifdef DIN3_PULLUP
-#define DIN3_PULLUP_MASK (DIN3_MASK>>0)
+#define DIN3_PULLUP_MASK (DIN3_MASK)
 #else
 #define DIN3_PULLUP_MASK 0
 #endif
 #ifdef DIN4_PULLUP
-#define DIN4_PULLUP_MASK (DIN4_MASK>>0)
+#define DIN4_PULLUP_MASK (DIN4_MASK)
 #else
 #define DIN4_PULLUP_MASK 0
 #endif
 #ifdef DIN5_PULLUP
-#define DIN5_PULLUP_MASK (DIN5_MASK>>0)
+#define DIN5_PULLUP_MASK (DIN5_MASK)
 #else
 #define DIN5_PULLUP_MASK 0
 #endif
 #ifdef DIN6_PULLUP
-#define DIN6_PULLUP_MASK (DIN6_MASK>>0)
+#define DIN6_PULLUP_MASK (DIN6_MASK)
 #else
 #define DIN6_PULLUP_MASK 0
 #endif
 #ifdef DIN7_PULLUP
-#define DIN7_PULLUP_MASK (DIN7_MASK>>0)
+#define DIN7_PULLUP_MASK (DIN7_MASK)
 #else
 #define DIN7_PULLUP_MASK 0
 #endif
@@ -853,34 +853,39 @@
 #define DINS_R2_PULLUP_MASK (DIN16_PULLUP_MASK | DIN17_PULLUP_MASK | DIN18_PULLUP_MASK | DIN19_PULLUP_MASK | DIN20_PULLUP_MASK | DIN21_PULLUP_MASK | DIN22_PULLUP_MASK | DIN23_PULLUP_MASK)
 #define DINS_R3_PULLUP_MASK (DIN24_PULLUP_MASK | DIN25_PULLUP_MASK | DIN26_PULLUP_MASK | DIN27_PULLUP_MASK | DIN28_PULLUP_MASK | DIN29_PULLUP_MASK | DIN30_PULLUP_MASK | DIN31_PULLUP_MASK)
 
+#define _OUTPIN_MASK(X) DOUT##X##_MASK
+#define OUTPIN_MASK(X) _OUTPIN_MASK(X)
+#define _INPIN_MASK(X) DIN##X##_MASK
+#define INPIN_MASK(X) _INPIN_MASK(X)
+
 //Defines masks for all generic purpose pins (using the DOUTS or DIN)
 #ifdef STEP0_EN_OUTPIN
-#define STEP0_EN_MASK (1<<STEP0_EN_OUTPIN)
+#define STEP0_EN_MASK (OUTPIN_MASK(STEP0_EN_OUTPIN))
 #else
 #define STEP0_EN_MASK 0
 #endif
 #ifdef STEP1_EN_OUTPIN
-#define STEP1_EN_MASK (1<<STEP1_EN_OUTPIN)
+#define STEP1_EN_MASK (OUTPIN_MASK(STEP1_EN_OUTPIN))
 #else
 #define STEP1_EN_MASK 0
 #endif
 #ifdef STEP2_EN_OUTPIN
-#define STEP2_EN_MASK (1<<STEP2_EN_OUTPIN)
+#define STEP2_EN_MASK (OUTPIN_MASK(STEP2_EN_OUTPIN))
 #else
 #define STEP2_EN_MASK 0
 #endif
 #ifdef STEP3_EN_OUTPIN
-#define STEP3_EN_MASK (1<<STEP3_EN_OUTPIN)
+#define STEP3_EN_MASK (OUTPIN_MASK(STEP3_EN_OUTPIN))
 #else
 #define STEP3_EN_MASK 0
 #endif
 #ifdef STEP4_EN_OUTPIN
-#define STEP4_EN_MASK (1<<STEP4_EN_OUTPIN)
+#define STEP4_EN_MASK (OUTPIN_MASK(STEP4_EN_OUTPIN))
 #else
 #define STEP4_EN_MASK 0
 #endif
 #ifdef STEP5_EN_OUTPIN
-#define STEP5_EN_MASK (1<<STEP5_EN_OUTPIN)
+#define STEP5_EN_MASK (OUTPIN_MASK(STEP5_EN_OUTPIN))
 #else
 #define STEP5_EN_MASK 0
 #endif
@@ -888,17 +893,17 @@
 #define STEPS_EN_MASK (STEP0_EN_MASK | STEP1_EN_MASK | STEP2_EN_MASK | STEP3_EN_MASK | STEP4_EN_MASK | STEP5_EN_MASK)
 
 #ifdef SPINDLE_DIR_OUTPIN
-#define SPINDLE_DIR_MASK (1<<SPINDLE_DIR_OUTPIN)
+#define SPINDLE_DIR_MASK (OUTPIN_MASK(SPINDLE_DIR_OUTPIN))
 #else
 #define SPINDLE_DIR_MASK 0
 #endif
 #ifdef COOLANT_FLOOD_OUTPIN
-#define COOLANT_FLOOD_MASK (1<<COOLANT_FLOOD_OUTPIN)
+#define COOLANT_FLOOD_MASK (OUTPIN_MASK(COOLANT_FLOOD_OUTPIN))
 #else
 #define COOLANT_FLOOD_MASK 0
 #endif
 #ifdef COOLANT_MIST_OUTPIN
-#define COOLANT_MIST_MASK (1<<COOLANT_MIST_OUTPIN)
+#define COOLANT_MIST_MASK (OUTPIN_MASK(COOLANT_MIST_OUTPIN))
 #else
 #define COOLANT_MIST_MASK 0
 #endif
