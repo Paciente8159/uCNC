@@ -1,9 +1,9 @@
 # Project: uCNC
 
-BOARD	 = UNO_GRBL
+BOARD	 = MEGA_RAMBO14
 ifeq "$(BOARD)" "UNO_GRBL"
 MCU 	 = atmega328p
-else ifeq "$(MCU)" "MEGA_RAMBO14"
+else ifeq "$(BOARD)" "MEGA_RAMBO14"
 MCU 	 = atmega2560
 endif
 CC       = avr-gcc.exe

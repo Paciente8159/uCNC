@@ -94,26 +94,26 @@
 #define LIMIT_X_PULLUP
 #define LIMIT_Y_PULLUP
 #define LIMIT_Z_PULLUP
-/*
+
 //Setup probe pin
-#define PROBE 5
-#define PROBE_INREG PINC
-#define PROBE_DIRREG DDRC
-#define PROBE_PULLUPREG PORTC
+#define PROBE 4
+#define PROBE_INREG PINJ
+#define PROBE_DIRREG DDRJ
+#define PROBE_PULLUPREG PORTJ
 #define PROBE_ISR_ID 1
-*/
+
 //Setup control input pins
-/*#define ESTOP 0
-#define FHOLD 1
-#define CS_RES 2
-#define CONTROLS_INREG PINC
-#define CONTROLS_DIRREG DDRC
-#define CONTROLS_PULLUPREG PORTC
-#define CONTROLS_ISR_ID 1*/
+#define ESTOP 2
+#define FHOLD 3
+//#define CS_RES 2
+#define CONTROLS_INREG PINJ
+#define CONTROLS_DIRREG DDRJ
+#define CONTROLS_PULLUPREG PORTJ
+#define CONTROLS_ISR_ID 1
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX 0
@@ -121,26 +121,23 @@
 #define COM_DIRREG DDRE
 #define COM_INREG UDR0
 #define COM_OUTREG UDR0
-//#define COM_ID 0 //if only one or default comment this
+#define COM_ID 0 //if only one or default comment this
 
 //Setup PWM
 #define PWM0 6
 #define PWM0_DIRREG DDRH
-#define PWM0_OCREG B
-#define PWM0_TMRAREG TCCR2A
-#define PWM0_TMRBREG TCCR2B
-#define PWM0_CNTREG OCR2A
-#define PWM0_PRESCMASK 0x04
+#define PWM0_TIMER_ID 2 //assigns PWM0 timer
+#define PWM0_OCR_ID B //assigns PWM0 pwm output source
 
 //Setup generic IO Pins
 //Functions are set in config.h file
-/*#define DOUT0 5
-#define DOUT1 0
-#define DOUTS_R0_OUTREG PORTB
-#define DOUTS_R0_DIRREG DDRB
+/*#define DOUT0 6
+#define DOUT1 7
+#define DOUTS_R0_OUTREG PORTE
+#define DOUTS_R0_DIRREG DDRE
 #define DOUT8 3
-#define DOUTS_R1_OUTREG PORTC
-#define DOUTS_R1_DIRREG DDRC*/
+#define DOUTS_R1_OUTREG PORTE
+#define DOUTS_R1_DIRREG DDRE*/
 
 #define DOUT16 7 //assigns DOUT16 to PIN7
 #define DOUT17 6 //assigns DOUT17 to PIN6
@@ -153,6 +150,6 @@
 #define STEP2_EN_OUTPIN 18 //assigns STEP0_EN to DOUT18
 
 //Setup the Timer used has the heartbeat for µCNC
-#define TIMER_ID 1
+#define STEP_TIMER_ID 1
 
 #endif
