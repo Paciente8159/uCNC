@@ -1031,6 +1031,10 @@ static __attribute__((always_inline)) void mcu_delay_1ms()
 		#define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
+#ifndef SELFPRGEN
+	#define SELFPRGEN SPMEN
+#endif
+
 /* These two are unfortunately not defined in the device include files. */
 #define EEPM1 5 //!< EEPROM Programming Mode Bit 1.
 #define EEPM0 4 //!< EEPROM Programming Mode Bit 0.

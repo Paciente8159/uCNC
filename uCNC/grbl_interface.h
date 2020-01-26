@@ -19,6 +19,7 @@
 #ifndef GRBL_INTERFACE_H
 #define GRBL_INTERFACE_H
 
+#include "config.h"
 #include "mcudefs.h"
 
 /*
@@ -89,7 +90,9 @@
 #define MSG_ERROR __romstr__("error:")
 #define MSG_ALARM __romstr__("ALARM:")
 #define MSG_ECHO __romstr__("[echo:")
-#define MSG_STARTUP __romstr__("uCNC 0.01a ['$' for help]\r\n")
+#define MSG_STARTUP_START "uCNC "
+#define MSG_STARTUP_END " ['$' for help]\r\n"
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START VERSION MSG_STARTUP_END)
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
 
 //Non query feedback messages
