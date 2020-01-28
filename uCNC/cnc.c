@@ -116,13 +116,8 @@ void cnc_run()
                 protocol_send_error(error);
             }
         }
-
-        if(!cnc_doevents())
-        {
-            break;//while abort is not issued
-        }
     }
-    while(1);
+    while(cnc_doevents());
 
     serial_flush();
     cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
@@ -375,7 +370,7 @@ void cnc_reset()
     //if any alarm state is still active checks system faults
     if(cnc_get_exec_state(EXEC_ALARM))
     {
-        cnc_check_fault_systems();
+        //cnc_check_fault_systems();
         if(!cnc_get_exec_state(EXEC_ABORT))
         {
             protocol_send_string(MSG_FEEDBACK_2);
@@ -417,6 +412,7 @@ void cnc_reset()
 
 void cnc_exec_rt_commands()
 {
+	bool update_spindle = false;
     //executes feeds override rt commands
     uint8_t cmd_mask = 0x80;
     uint8_t command = cnc_state.feed_ovr_cmd; //copies realtime flags states
@@ -461,6 +457,7 @@ void cnc_exec_rt_commands()
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
     while(command)
     {
+    	update_spindle = true;
         switch (command & cmd_mask)
         {
 #ifdef USE_SPINDLE
@@ -485,11 +482,8 @@ void cnc_exec_rt_commands()
                     //toogle state
                     if(io_get_pwm(SPINDLE_PWM_CHANNEL))
                     {
+                    	update_spindle = false;
                         io_set_pwm(SPINDLE_PWM_CHANNEL, 0);
-                    }
-                    else
-                    {
-                        planner_update_spindle(true);
                     }
                 }
                 break;
@@ -497,6 +491,7 @@ void cnc_exec_rt_commands()
 #ifdef USE_COOLANT
             case RT_CMD_COOL_FLD_TOGGLE:
             case RT_CMD_COOL_MST_TOGGLE:
+            	update_spindle = false;
                 if(!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
                 {
                     parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
@@ -510,7 +505,7 @@ void cnc_exec_rt_commands()
     }
 
     #ifdef USE_SPINDLE
-    if(command>=RT_CMD_SPINDLE_100 && command<=RT_CMD_SPINDLE_DEC_FINE)
+    if(update_spindle)
     {
         planner_update_spindle(true);
     }

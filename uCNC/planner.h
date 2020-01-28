@@ -90,13 +90,13 @@ void planner_toggle_overrides();
 bool planner_get_overrides();
 
 void planner_feed_ovr_reset();
-void planner_feed_ovr_inc(float value);
+void planner_feed_ovr_inc(uint8_t value);
 
 void planner_rapid_feed_ovr_reset();
-void planner_rapid_feed_ovr(float value);
+void planner_rapid_feed_ovr(uint8_t value);
 #ifdef USE_SPINDLE
 void planner_spindle_ovr_reset();
-void planner_spindle_ovr_inc(float value);
+void planner_spindle_ovr_inc(uint8_t value);
 #endif
 
 bool planner_get_overflows(uint8_t *overflows);

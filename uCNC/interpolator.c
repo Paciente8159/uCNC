@@ -233,6 +233,7 @@ void itp_run()
     static uint32_t deaccel_from = 0;
     static float junction_speed_sqr = 0;
     static float half_speed_change = 0;
+    static bool initial_accel_negative = false;
 
     //accel profile vars
     //static float processed_steps = 0;
@@ -370,11 +371,18 @@ void itp_run()
 
             accel_until = unprocessed_steps;
             deaccel_from = 0;
-            if (junction_speed_sqr > itp_cur_plan_block->entry_feed_sqr)
+            if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
             {
-                float accel_dist = 0.5f * (junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * itp_cur_plan_block->accel_inv;
+                float accel_dist = 0.5f * ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * itp_cur_plan_block->accel_inv;
                 accel_until -= floorf(accel_dist * steps_per_mm);
+                initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
             }
+            
+            //if entry speed already a junction speed updates it.
+            if(accel_until == unprocessed_steps)
+            {
+            	itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+			}
 
             if (junction_speed_sqr > exit_speed_sqr)
             {
@@ -399,7 +407,7 @@ void itp_run()
 
             	(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
             */
-            speed_change = half_speed_change;
+            speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
             sgm->update_speed = true;
 
@@ -782,8 +790,8 @@ void itp_step_isr()
 void itp_delay(uint16_t delay)
 {
     itp_sgm_data[itp_sgm_data_write].block = NULL;
-    //clicks every 10ms (100Hz)
-    mcu_freq_to_clocks(100, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
+    //clicks every 100ms (10Hz)
+    mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
     itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
     itp_sgm_data[itp_sgm_data_write].update_speed = true;
     itp_sgm_data[itp_sgm_data_write].feed = 0;

@@ -22,6 +22,7 @@
 #include "interpolator.h"
 #include "io_control.h"
 #include "parser.h"
+#include "kinematics.h"
 #include "planner.h"
 #include "cnc.h"
 #include "mcu.h"
@@ -136,6 +137,7 @@ void protocol_send_status()
     }
 
     itp_get_rt_position((float*)&axis);
+    kinematics_apply_reverse_transform((float*)&axis);
     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
     float spindle = planner_update_spindle(false);
 

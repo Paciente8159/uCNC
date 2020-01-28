@@ -497,7 +497,7 @@ bool planner_get_overrides()
     return planner_overrides.overrides_enabled;
 }
 
-void planner_feed_ovr_inc(float value)
+void planner_feed_ovr_inc(uint8_t value)
 {
     planner_overrides.feed_override += value;
     planner_overrides.feed_override = MAX(planner_overrides.feed_override, FEED_OVR_MIN);
@@ -510,7 +510,7 @@ void planner_feed_ovr_inc(float value)
     }
 }
 
-void planner_rapid_feed_ovr(float value)
+void planner_rapid_feed_ovr(uint8_t value)
 {
     planner_overrides.rapid_feed_override = value;
     if (planner_overrides.overrides_enabled)
@@ -532,7 +532,7 @@ void planner_rapid_feed_ovr_reset()
     planner_ovr_counter = 0;
 }
 #ifdef USE_SPINDLE
-void planner_spindle_ovr_inc(float value)
+void planner_spindle_ovr_inc(uint8_t value)
 {
     planner_overrides.spindle_override += value;
     planner_overrides.spindle_override = MAX(planner_overrides.spindle_override, SPINDLE_OVR_MIN);

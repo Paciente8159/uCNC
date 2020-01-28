@@ -167,6 +167,7 @@ static uint8_t parser_word2;
 static uint8_t parser_wco_counter;
 
 static void parser_reset();
+static bool parser_get_comment();
 static bool parser_get_float(float *value, bool *isinteger);
 static uint8_t parser_fetch_command(parser_state_t *new_state);
 static uint8_t parser_validate_command(parser_state_t *new_state);
@@ -635,7 +636,7 @@ bool parser_get_float(float *value, bool *isinteger)
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
 */
-static bool parser_get_comment()
+bool parser_get_comment()
 {
     uint8_t msg_parser = 0;
     for(;;)
@@ -1209,10 +1210,6 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 
 uint8_t parser_validate_command(parser_state_t *new_state)
 {
-    //pointer to planner position
-    /*float parser_last_pos[AXIS_COUNT];
-    planner_get_position(parser_last_pos);*/
-
     //only alow groups 3, 6 and modal G53
     if (cnc_get_exec_state(EXEC_JOG))
     {
@@ -1546,7 +1543,7 @@ uint8_t parser_exec_command(parser_state_t *new_state)
     //spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
     if (CHECKFLAG(parser_word2, GCODE_WORD_S) || CHECKFLAG(parser_group1, GCODE_GROUP_SPINDLE))
     {
-        block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 100.0);
+        block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
     }
 #endif
 //8. coolant on/off
@@ -1564,7 +1561,7 @@ uint8_t parser_exec_command(parser_state_t *new_state)
     if (CHECKFLAG(parser_group1, GCODE_GROUP_NONMODAL) && !new_state->groups.nonmodal)
     {
         //calc dwell in time in 10ms increments
-        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(new_state->words.p * 100.0));
+        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(new_state->words.p * 10.0));
     }
 
     //11. set active plane (G17, G18, G19)

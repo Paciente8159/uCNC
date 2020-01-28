@@ -130,9 +130,9 @@ void* comsimul()
 	for(;;)
 	{
 		#ifdef USECONSOLE
-		char c = getch();
+		unsigned char c = getch();
 		#else
-		char c = virtualserial_getc();
+		unsigned char c = virtualserial_getc();
 		#endif
 		if(c != 0)
 		{

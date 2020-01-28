@@ -329,7 +329,7 @@ void serial_rx_isr(unsigned char c)
 {
     uint8_t prev;
 
-    if(c < 0x7E) //ascii (except CMD_CODE_CYCLE_START and DEL)
+    if(c < ((unsigned char)'~')) //ascii (except CMD_CODE_CYCLE_START and DEL)
     {
         switch(c)
         {

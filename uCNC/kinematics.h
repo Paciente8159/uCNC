@@ -24,7 +24,6 @@
 
 /*
 	Converts from machine absolute coordinates to step position.
-	Note: Machine absolute coordinates go from 0 to max_axis.
 	This is done after computing position relative to the active coordinate system
 */
 void kinematics_apply_inverse(float* axis, uint32_t* steps);
@@ -32,7 +31,6 @@ void kinematics_apply_inverse(float* axis, uint32_t* steps);
 
 /*
 	Converts from step position to machine absolute coordinates
-	Note: Machine absolute coordinates go from 0 to max_axis.
 	This is done after computing position relative to the active coordinate system
 */
 void kinematics_apply_forward(uint32_t* steps, float* axis);
@@ -41,5 +39,17 @@ void kinematics_apply_forward(uint32_t* steps, float* axis);
 	Executes the homing motion for the given kinematic
 */
 uint8_t kinematics_home();
+
+/*
+	Aplies a transformation to the position sent to planner.
+	This is aplied only on normal and jog moves. Homing motions go directly to planner.
+*/
+void kinematics_apply_transform(float* axis);
+
+/*
+	Aplies a reverse transformation to the position returned from the planner.
+	This is aplied only on normal and jog moves. Homing motions go directly to planner.
+*/
+void kinematics_apply_reverse_transform(float* axis);
 
 #endif

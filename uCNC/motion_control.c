@@ -27,6 +27,7 @@
 #include "utils.h"
 #include "io_control.h"
 #include "parser.h"
+#include "kinematics.h"
 #include "planner.h"
 #include "interpolator.h"
 #include "cnc.h"
@@ -49,11 +50,7 @@ bool mc_toogle_checkmode()
 
 uint8_t mc_line(float *target, planner_block_data_t block_data)
 {
-    /*if(io_get_limits(LIMITS_MASK))
-    {
-    	cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-    	return STATUS_TRAVEL_EXCEEDED;
-    }*/
+    kinematics_apply_transform(target);
 
     //check travel limits
     if (!io_check_boundaries(target))
@@ -73,7 +70,7 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-    	cnc_doevents();
+        cnc_doevents();
     }
 
     if(block_data.motion_mode != PLANNER_MOTION_MODE_NOMOTION)
@@ -113,6 +110,8 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 
     //copy planner last position
     planner_get_position(mc_position);
+    //reverses any transformation aplied before
+    kinematics_apply_reverse_transform(mc_position);
 
     //start points
     switch (plane)
@@ -208,8 +207,20 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
             // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
             float angle = i * arc_per_sgm;
             float precise_cos = cos(angle);
-            float precise_sin = (angle >= 0) ? sqrt(1 - precise_cos * precise_cos) : -sqrt(1 - precise_cos * precise_cos); //faster than sin function
-            precise_sin = (ABS(angle)<=M_PI) ? precise_sin : -precise_sin;
+            //calculates sine using sine and cosine relation equation
+            //	sin(x)^2 + cos(x)^2 = 1
+            //
+            //this is executes in about 50% the time of a sin function
+            //https://www.nongnu.org/avr-libc/user-manual/benchmarks.html
+            float precise_sin = sqrt(1 - precise_cos * precise_cos);
+            if(angle >= 0)
+            {
+                precise_sin = (ABS(angle)<=M_PI) ? precise_sin : -precise_sin;
+            }
+            else
+            {
+                precise_sin = (ABS(angle)<=M_PI) ? -precise_sin : precise_sin;
+            }
 
             pt0_a = -center_offset_a * precise_cos + center_offset_b * precise_sin;
             pt0_b = -center_offset_a * precise_sin - center_offset_b * precise_cos;

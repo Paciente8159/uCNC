@@ -63,4 +63,18 @@ void kinematics_home()
     return STATUS_OK;
 }
 
+void kinematics_apply_transform(float* axis)
+{
+    /*
+	Define your custom transform
+    */
+}
+
+void kinematics_apply_reverse_transform(float* axis)
+{
+    /*
+	Define your custom transform inverse operation
+    */
+}
+
 #endif
