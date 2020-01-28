@@ -4,7 +4,7 @@
 
 		TODO: Create an S-curve interpolator
 
-	Copyright: Copyright (c) João Martins 
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 13/10/2019
 

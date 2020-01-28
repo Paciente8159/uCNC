@@ -3,7 +3,7 @@
 	Description: Contains all the function declarations necessary to interact with the MCU.
         This provides a opac intenterface between the uCNC and the MCU unit used to power the uCNC.
 
-	Copyright: Copyright (c) João Martins 
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 01/11/2019
 
@@ -31,97 +31,97 @@
 /*IO functions*/
 static inline uint32_t mcu_get_inputs()
 {
-	uint32_t result;
-	uint8_t* reg = (uint8_t*)&result;
-	#ifdef DINS_R0_INREG
-	reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
-	#endif
-	#ifdef DINS_R1_INREG
-	reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
-	#endif
-	#ifdef DINS_R2_INREG
-	reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
-	#endif
-	#ifdef DINS_R3_INREG
-	reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
-	#endif
-	return result;	
+    uint32_t result;
+    uint8_t* reg = (uint8_t*)&result;
+#ifdef DINS_R0_INREG
+    reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
+#endif
+#ifdef DINS_R1_INREG
+    reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
+#endif
+#ifdef DINS_R2_INREG
+    reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
+#endif
+#ifdef DINS_R3_INREG
+    reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
+#endif
+    return result;
 }
 
 static inline uint8_t mcu_get_controls()
 {
-	#ifdef CONTROLS_INREG
-	return (CONTROLS_INREG & CONTROLS_MASK);
-	#else
-	return 0;
-	#endif
+#ifdef CONTROLS_INREG
+    return (CONTROLS_INREG & CONTROLS_MASK);
+#else
+    return 0;
+#endif
 }
 
 static inline uint8_t mcu_get_limits()
 {
-	#ifdef LIMITS_INREG
-	return (LIMITS_INREG & LIMITS_MASK);
-	#else
-	return 0;
-	#endif
+#ifdef LIMITS_INREG
+    return (LIMITS_INREG & LIMITS_MASK);
+#else
+    return 0;
+#endif
 }
 
 static inline bool mcu_get_probe()
 {
-	#ifdef PROBE_INREG
-	return (PROBE_INREG && PROBE_MASK);
-	#else
-	return false;
-	#endif
+#ifdef PROBE_INREG
+    return (PROBE_INREG && PROBE_MASK);
+#else
+    return false;
+#endif
 }
 
 static inline void mcu_set_steps(uint8_t value)
 {
-	STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
+    STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
 }
 
 static inline void mcu_set_dirs(uint8_t value)
 {
-	DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
+    DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
 }
 
 static inline void mcu_set_outputs(uint32_t value)
 {
-	uint8_t* reg = (uint8_t*)&value;
-	
-	#ifdef DOUTS_R0_OUTREG
-		DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
-	#endif
+    uint8_t* reg = (uint8_t*)&value;
+
+#ifdef DOUTS_R0_OUTREG
+    DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
+#endif
+#ifdef DOUTS_R1_OUTREG
+    DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
+#endif
+#ifdef DOUTS_R2_OUTREG
+    DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
+#endif
+#ifdef DOUTS_R3_OUTREG
+    DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
+#endif
 }
 
 static inline uint32_t mcu_get_outputs()
 {
-	uint32_t result;
-	uint8_t* reg = (uint8_t*)&result;
+    uint32_t result;
+    uint8_t* reg = (uint8_t*)&result;
 
-	#ifdef DOUTS_R0_OUTREG
-		reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
-	#endif
-	#ifdef DOUTS_R1_OUTREG
-		reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
-	#endif
-	#ifdef DOUTS_R2_OUTREG
-		reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
-	#endif
-	#ifdef DOUTS_R3_OUTREG
-		reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
-	#endif
-	
-	return (result & DOUTS_MASK);
+#ifdef DOUTS_R0_OUTREG
+    reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
+#endif
+#ifdef DOUTS_R1_OUTREG
+    reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
+#endif
+#ifdef DOUTS_R2_OUTREG
+    reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
+#endif
+#ifdef DOUTS_R3_OUTREG
+    reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
+#endif
+
+    return (result & DOUTS_MASK);
 }
 
 void mcu_init();
@@ -156,7 +156,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
 void mcu_start_step_ISR(uint16_t ticks, uint8_t prescaller);
 //modifies the pulse frequency
 void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller);
-//stops the pulse 
+//stops the pulse
 void mcu_step_stop_ISR();
 
 //Custom delay function

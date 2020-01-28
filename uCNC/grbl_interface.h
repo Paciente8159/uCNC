@@ -1,8 +1,8 @@
 /*
 	Name: grbl_interface.h
 	Description: uCNC definitions and standard codes used by Grbl.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 07/12/2019
 
@@ -22,9 +22,29 @@
 #include "config.h"
 #include "mcudefs.h"
 
-/*
-	Grbl error codes 
-*/
+//Defines Grbl realtime ascii codes
+#define CMD_CODE_RESET 0x18
+#define CMD_CODE_FEED_HOLD 0x21
+#define CMD_CODE_REPORT 0x3F
+#define CMD_CODE_CYCLE_START 0x7E
+#define CMD_CODE_SAFETY_DOOR 0x84
+#define CMD_CODE_JOG_CANCEL 0x85
+#define CMD_CODE_FEED_100 0x90
+#define CMD_CODE_FEED_INC_COARSE 0x91
+#define CMD_CODE_FEED_DEC_COARSE 0x92
+#define CMD_CODE_FEED_INC_FINE 0x93
+#define CMD_CODE_FEED_DEC_FINE 0x94
+#define CMD_CODE_RAPIDFEED_100 0x95
+#define CMD_CODE_RAPIDFEED_OVR1 0x96
+#define CMD_CODE_RAPIDFEED_OVR2 0x97
+#define CMD_CODE_SPINDLE_100 0x99
+#define CMD_CODE_SPINDLE_INC_COARSE 0x9A
+#define CMD_CODE_SPINDLE_DEC_COARSE 0x9B
+#define CMD_CODE_SPINDLE_INC_FINE 0x9C
+#define CMD_CODE_SPINDLE_DEC_FINE 0x9D
+#define CMD_CODE_SPINDLE_TOGGLE 0x9E
+#define CMD_CODE_COOL_FLD_TOGGLE 0xA0
+#define CMD_CODE_COOL_MST_TOGGLE 0xA1
 
 // Define Grbl status codes. Valid values (0-255)
 #define STATUS_OK 0
@@ -64,7 +84,6 @@
 #define STATUS_GCODE_UNUSED_WORDS 36 //
 #define STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR 37 //
 #define STATUS_GCODE_MAX_VALUE_EXCEEDED 38 //
-
 //additional codes
 #define STATUS_BAD_COMMENT_FORMAT 39
 #define STATUS_INVALID_TOOL 40
@@ -96,6 +115,8 @@
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
 
 //Non query feedback messages
+#define MSG_START __romstr__("[MSG:")
+#define MSG_END __romstr__("]\r\n")
 #define MSG_FEEDBACK_1 __romstr__("[MSG:Reset to continue]\r\n")
 #define MSG_FEEDBACK_2 __romstr__("[MSG:'$H'|'$X' to unlock]\r\n")
 #define MSG_FEEDBACK_3 __romstr__("[MSG:Caution: Unlocked]\r\n")
@@ -108,7 +129,7 @@
 #define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
 #define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
 /*NEW*/
-#define MSG_FEEDBACK_12 __romstr__("[MSG:Check Emergency Stop]\r\n")
+#define MSG_FEEDBACK_12 __romstr__("[MSG:Check Emergency stop]\r\n")
 
 //#define MSG_INT "%d"
 //#define MSG_FLT "%0.3f"

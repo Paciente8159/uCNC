@@ -2,8 +2,8 @@
 	Name: kinematics_cartesian_xyz.c
 	Description: Implements all kinematics math equations to translate the motion of a cartesian XYZ machine.
 		Also implements the homing motion for this type of machine.
-		
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 26/09/2019
 
@@ -34,40 +34,40 @@
 
 void kinematics_apply_inverse(float* axis, uint32_t* steps)
 {
-	steps[0] = (uint32_t)lroundf(g_settings.step_per_mm[0] * axis[AXIS_X]);
-	steps[1] = (uint32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
-	steps[2] = (uint32_t)lroundf(g_settings.step_per_mm[2] * axis[AXIS_Z]);
+    steps[0] = (uint32_t)lroundf(g_settings.step_per_mm[0] * axis[AXIS_X]);
+    steps[1] = (uint32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
+    steps[2] = (uint32_t)lroundf(g_settings.step_per_mm[2] * axis[AXIS_Z]);
 }
 
 void kinematics_apply_forward(uint32_t* steps, float* axis)
 {
-	axis[AXIS_X] = (float)(((int32_t)steps[0]) / g_settings.step_per_mm[0]);
-	axis[AXIS_Y] = (float)(((int32_t)steps[1]) / g_settings.step_per_mm[1]);
-	axis[AXIS_Z] = (float)(((int32_t)steps[2]) / g_settings.step_per_mm[2]);
+    axis[AXIS_X] = (float)(((int32_t)steps[0]) / g_settings.step_per_mm[0]);
+    axis[AXIS_Y] = (float)(((int32_t)steps[1]) / g_settings.step_per_mm[1]);
+    axis[AXIS_Z] = (float)(((int32_t)steps[2]) / g_settings.step_per_mm[2]);
 }
 
 uint8_t kinematics_home()
 {
-	uint8_t result = 0;
-	result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
-	if(result != 0)
-	{
-		return result;
-	}
-	
-	result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
-	if(result != 0)
-	{
-		return result;
-	}
-	
-	result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
-	if(result != 0)
-	{
-		return result;
-	}
-	
-	return STATUS_OK;
+    uint8_t result = 0;
+    result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
+    if(result != 0)
+    {
+        return result;
+    }
+
+    result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
+    if(result != 0)
+    {
+        return result;
+    }
+
+    result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
+    if(result != 0)
+    {
+        return result;
+    }
+
+    return STATUS_OK;
 }
 
 #endif

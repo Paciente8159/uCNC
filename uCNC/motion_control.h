@@ -1,8 +1,8 @@
 /*
 	Name: motion_control.h
 	Description: Contains the building blocks for performing motions/actions in uCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/11/2019
 

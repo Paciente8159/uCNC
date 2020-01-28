@@ -1,6 +1,6 @@
 # Project: uCNC
 
-BOARD	 = MEGA_RAMBO14
+BOARD	 = UNO_GRBL
 ifeq "$(BOARD)" "UNO_GRBL"
 MCU 	 = atmega328p
 else ifeq "$(BOARD)" "MEGA_RAMBO14"

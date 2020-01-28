@@ -3,8 +3,8 @@
 	Description: Declares the functions needed to implement the machine kinematics and homing motion.
 		This defines an opac interface that allows to adapt uCNC to different architectures/mechanics of
 		different machines.
-		
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 26/09/2019
 

@@ -14,7 +14,7 @@ CppCompiler=-DMCU=MCU_VIRTUAL_@@_
 Linker=
 IsCpp=0
 Icon=
-ExeOutput=build
+ExeOutput=
 ObjectOutput=
 LogOutput=
 LogOutputEnabled=0

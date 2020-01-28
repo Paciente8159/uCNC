@@ -1,7 +1,7 @@
 /*
 	Name: protocol.h
 	Description: uCNC implementation of a Grbl compatible send-response protocol
-	Copyright: Copyright (c) João Martins 
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 

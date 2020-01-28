@@ -1,8 +1,8 @@
 /*
 	Name: mcus.h
 	Description: Defines the available mcu types.
-    
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 11/11/2019
 

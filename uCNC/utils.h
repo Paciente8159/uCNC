@@ -1,8 +1,8 @@
 /*
 	Name: utils.h
 	Description: Some useful constants and macros.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 
@@ -36,26 +36,26 @@
 #define ABS(a) ((a)>0) ? (a) : -(a)
 
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-    #define __UINT32_R0__ 0
-    #define __UINT32_R1__ 1
-    #define __UINT32_R2__ 2
-    #define __UINT32_R3__ 3
+#define __UINT32_R0__ 0
+#define __UINT32_R1__ 1
+#define __UINT32_R2__ 2
+#define __UINT32_R3__ 3
 #else
-    #define __UINT32_R0__ 3
-    #define __UINT32_R1__ 2
-    #define __UINT32_R2__ 1
-    #define __UINT32_R3__ 0
+#define __UINT32_R0__ 3
+#define __UINT32_R1__ 2
+#define __UINT32_R2__ 1
+#define __UINT32_R3__ 0
 #endif
 
 //Quake III fast sqrt calculation
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-	#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
+#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
 #else
-	#define fast_sqrt(x) sqrtf(x)
+#define fast_sqrt(x) sqrtf(x)
 #endif
 
 #ifndef fast_mult10
-	#define fast_mult10(x) (x*10)
+#define fast_mult10(x) (x*10)
 #endif
 
 #define MM_INCH_MULT 0.0393700787401574803

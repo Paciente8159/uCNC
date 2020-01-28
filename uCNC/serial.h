@@ -1,8 +1,8 @@
 /*
 	Name: serial.h
 	Description: Serial communication basic read/write functions uCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 30/12/2019
 
@@ -19,6 +19,9 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#define EOL '\0'
+#define OVF 0xFF //overflow char
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -30,7 +33,7 @@ bool serial_rx_is_empty();
 unsigned char serial_getc();
 unsigned char serial_peek();
 void serial_inject_cmd(const unsigned char* __s);
-void serial_discard_cmd();
+void serial_discard_line();
 
 bool serial_tx_is_empty();
 void serial_putc(unsigned char c);

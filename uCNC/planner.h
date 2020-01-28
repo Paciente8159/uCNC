@@ -2,8 +2,8 @@
 	Name: planner.h
 	Description: Chain planner for linear motions and acceleration/deacceleration profiles.
         It uses a similar algorithm to Grbl.
-			
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 24/09/2019
 
@@ -33,39 +33,39 @@
 
 typedef struct
 {
-	float dir_vect[AXIS_COUNT];
-	float distance;
-	float feed;
-	float spindle;
-	uint16_t dwell;
-	uint8_t motion_mode;
+    float dir_vect[AXIS_COUNT];
+    float distance;
+    float feed;
+    float spindle;
+    uint16_t dwell;
+    uint8_t motion_mode;
 } planner_block_data_t;
 
 typedef struct
 {
-	uint8_t dirbits;
-	float pos[AXIS_COUNT];
+    uint8_t dirbits;
+    float pos[AXIS_COUNT];
 
-	float distance;
-	float angle_factor;
+    float distance;
+    float angle_factor;
 
-	float entry_feed_sqr;
-	float entry_max_feed_sqr;
-	float feed_sqr;
-	float rapid_feed_sqr;
+    float entry_feed_sqr;
+    float entry_max_feed_sqr;
+    float feed_sqr;
+    float rapid_feed_sqr;
 
-	float acceleration;
-	float accel_inv;
+    float acceleration;
+    float accel_inv;
 
-	#ifdef USE_SPINDLE
-	float spindle;
-	#endif
-	#ifdef USE_COOLANT
-	uint8_t coolant;
-	#endif
-	uint16_t dwell;
+#ifdef USE_SPINDLE
+    float spindle;
+#endif
+#ifdef USE_COOLANT
+    uint8_t coolant;
+#endif
+    uint16_t dwell;
 
-	bool optimal;
+    bool optimal;
 } planner_block_t;
 
 void planner_init();

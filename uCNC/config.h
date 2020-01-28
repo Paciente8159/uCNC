@@ -1,8 +1,8 @@
 /*
 	Name: config.h
 	Description: Compile time configurations for uCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 
@@ -121,6 +121,7 @@
 	G-code options
 */
 #define GCODE_IGNORE_LINE_NUMBERS
+#define PROCESS_COMMENTS
 //#define GCODE_ACCEPT_WORD_E
 
 /*
@@ -136,9 +137,12 @@
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
 
 /*
-	Number of seconds of delay before motions restart after releasing from a hold
+	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
+	This is used by spindle to ensure spindle gets up to speed in motions
 */
-
+#ifdef USE_SPINDLE
 #define DELAY_ON_RESUME 4
+#define DELAY_ON_SPINDLE_SPEED_CHANGE 1
+#endif
 
 #endif

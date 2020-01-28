@@ -3,12 +3,12 @@
 void main(void) __attribute__((noreturn));
 void main(void)
 {
-	//initializes all systems
-	cnc_init();
-	
-	for(;;)
-	{
-		cnc_run();
-	}
+    //initializes all systems
+    cnc_init();
+
+    for(;;)
+    {
+        cnc_run();
+    }
 
 }

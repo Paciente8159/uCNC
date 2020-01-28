@@ -2,7 +2,7 @@
 	Name: mcumap.h
 	Description: Constains all basic definitions about the I/O names and masks.
 
-	Copyright: Copyright (c) João Martins 
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 01/11/2019
 
@@ -93,7 +93,7 @@
 #else
 #define DIR5_MASK 0
 #endif
-	
+
 #define STEPS_MASK (STEP0_MASK | STEP1_MASK | STEP2_MASK | STEP3_MASK | STEP4_MASK | STEP5_MASK)
 #define DIRS_MASK (DIR0_MASK | DIR1_MASK | DIR2_MASK | DIR3_MASK | DIR4_MASK | DIR5_MASK)
 
