@@ -499,22 +499,24 @@ bool planner_get_overrides()
 
 void planner_feed_ovr_inc(uint8_t value)
 {
-    planner_overrides.feed_override += value;
-    planner_overrides.feed_override = MAX(planner_overrides.feed_override, FEED_OVR_MIN);
-    planner_overrides.feed_override = MIN(planner_overrides.feed_override, FEED_OVR_MAX);
+	uint8_t ovr_val = planner_overrides.feed_override;
+    ovr_val += value;
+    ovr_val = MAX(ovr_val, FEED_OVR_MIN);
+    ovr_val = MIN(ovr_val, FEED_OVR_MAX);
 
-    if (planner_overrides.overrides_enabled)
+    if (planner_overrides.overrides_enabled && ovr_val != planner_overrides.feed_override)
     {
+    	planner_overrides.feed_override = ovr_val;
+    	planner_ovr_counter = 0;
         itp_update();
-        planner_ovr_counter = 0;
     }
 }
 
 void planner_rapid_feed_ovr(uint8_t value)
 {
-    planner_overrides.rapid_feed_override = value;
-    if (planner_overrides.overrides_enabled)
+    if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != value)
     {
+    	planner_overrides.rapid_feed_override = value;
         planner_ovr_counter = 0;
         itp_update();
     }
@@ -522,22 +524,36 @@ void planner_rapid_feed_ovr(uint8_t value)
 
 void planner_feed_ovr_reset()
 {
-    planner_overrides.feed_override = 100;
-    planner_ovr_counter = 0;
+    if (planner_overrides.overrides_enabled && planner_overrides.feed_override != 100)
+    {
+        planner_overrides.feed_override = 100;
+        planner_ovr_counter = 0;
+        itp_update();
+    }
 }
 
 void planner_rapid_feed_ovr_reset()
 {
-    planner_overrides.rapid_feed_override = 100;
-    planner_ovr_counter = 0;
+    if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != 100)
+    {
+        planner_overrides.rapid_feed_override = 100;
+        planner_ovr_counter = 0;
+        itp_update();
+    }
 }
 #ifdef USE_SPINDLE
 void planner_spindle_ovr_inc(uint8_t value)
 {
-    planner_overrides.spindle_override += value;
-    planner_overrides.spindle_override = MAX(planner_overrides.spindle_override, SPINDLE_OVR_MIN);
-    planner_overrides.spindle_override = MIN(planner_overrides.spindle_override, SPINDLE_OVR_MAX);
-    planner_ovr_counter = 0;
+	uint8_t ovr_val = planner_overrides.spindle_override;
+    ovr_val += value;
+    ovr_val = MAX(ovr_val, FEED_OVR_MIN);
+    ovr_val = MIN(ovr_val, FEED_OVR_MAX);
+
+    if (planner_overrides.overrides_enabled && ovr_val != planner_overrides.spindle_override)
+    {
+    	planner_overrides.spindle_override = ovr_val;
+    	planner_ovr_counter = 0;
+    }
 }
 
 void planner_spindle_ovr_reset()
