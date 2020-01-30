@@ -22,6 +22,7 @@
 #include "settings.h"
 #include "mcudefs.h"
 #include "mcu.h"
+#include "serial.h"
 #include "grbl_interface.h"
 #include "protocol.h"
 #include "parser.h"
@@ -71,16 +72,19 @@ const uint8_t __rom__ crc7_table[256] =
 #else
 static uint8_t crc7(uint8_t c, uint8_t crc)
 {
-    crc ^= (c & 0x80) ? (c ^ 0x89) : c;
-    for (uint8_t i = 7; i != 0; i--)
+	uint8_t i = 8;
+    for (;;)
     {
-        crc <<= 1;
         if (crc & 0x80)
         {
             crc^=0x89;
         }
+        if(!--i)
+        {
+        	return(crc);
+		}
+        crc <<= 1;
     }
-    return(crc);
 }
 #endif
 
@@ -144,81 +148,67 @@ const settings_t __rom__ default_settings =
     .homing_enabled = DEFAULT_HOMING_ENABLED,
     .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
     .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
-    .crc = 0
 };
 
 //static uint8_t settings_crc;
 
-
 void settings_init()
 {
-    uint8_t crc = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, sizeof(settings_t) - 1);
-    if(crc != g_settings.crc || g_settings.crc == 0)
+	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, (uint8_t)sizeof(settings_t));
+	
+    if(error || strcmp(g_settings.version, SETTINGS_VERSION))
     {
         settings_reset();
         parser_parameters_reset();
+        settings_erase(STARTUP_COMMAND1_ADDRESS_OFFSET, 1);
+        settings_erase(STARTUP_COMMAND2_ADDRESS_OFFSET, 1);
         protocol_send_error(STATUS_SETTING_READ_FAIL);
     }
 }
 
-uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size)
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
 {
-    uint8_t settings_crc = 0;
-    for(uint16_t i = size; i !=0; )
+    uint8_t crc = 0;
+
+    while (size)
     {
-        i--;
-        __ptr[i] = mcu_eeprom_getc(i + address);
+        size--;
+        uint8_t value = mcu_eeprom_getc(address++);
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
-        settings_crc ^= __ptr[i];
-        settings_crc = *(uint8_t*)rom_read_byte(&crc7_table[settings_crc]);
+        crc = *(uint8_t*)rom_read_byte(&crc7_table[value ^ crc]);
 #else
-        settings_crc = crc7(__ptr[i], settings_crc);
+        crc = crc7(value, crc);
 #endif
+        *__ptr++ = value;
     }
 
-    if(address == SETTINGS_ADDRESS_OFFSET)
-    {
-        g_settings.crc = mcu_eeprom_getc(size + 1 + address);
-    }
-
-    return settings_crc;
+    return (crc ^ mcu_eeprom_getc(address));
 }
 
 void settings_reset()
 {
+	const uint8_t size = sizeof(settings_t);
     uint8_t* __ptr = (uint8_t*)&g_settings;
-    uint8_t size = sizeof(settings_t) - 1;
-
     rom_memcpy(&g_settings, &default_settings, size);
-    g_settings.crc = 0;
-    for(uint16_t i = size; i !=0; )
-    {
-        i--;
-#ifndef CRC_WITHOUT_LOOKUP_TABLE
-        g_settings.crc = *(uint8_t*)rom_read_byte(&crc7_table[g_settings.crc ^ __ptr[i]]);
-#else
-        g_settings.crc = crc7(__ptr[i], g_settings.crc);
-#endif
-    }
-
-    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, sizeof(settings_t));
+    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, size);
 }
 
-void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size)
+void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 {
     uint8_t crc = 0;
-    for(uint16_t i = size; i !=0; )
+
+    while (size)
     {
-        i--;
-        mcu_eeprom_putc(i + address, __ptr[i]);
+        size--;
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
-        crc = *(uint8_t*)rom_read_byte(&crc7_table[crc ^ __ptr[i]]);
+        crc = *(uint8_t*)rom_read_byte(&crc7_table[*__ptr ^ crc]);
 #else
-        crc = crc7(__ptr[i], crc);
+        crc = crc7(*__ptr, crc);
 #endif
+        mcu_eeprom_putc(address++, *__ptr++);
     }
 
-    mcu_eeprom_putc(size + address, crc);
+    mcu_eeprom_putc(address, crc);
 }
 
 uint8_t settings_change(uint8_t setting, float value)
@@ -388,6 +378,52 @@ uint8_t settings_change(uint8_t setting, float value)
             return STATUS_INVALID_STATEMENT;
     }
 
-    settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, sizeof(settings_t));
+    settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
     return result;
+}
+
+void settings_erase(uint16_t address, uint8_t size)
+{
+	while(size)
+	{
+		mcu_eeprom_erase(address++);
+		size--;
+	}
+}
+
+void settings_load_gcode(uint16_t address)
+{
+	uint8_t size = (RX_BUFFER_SIZE >> 1); //defined in serial.h
+	uint8_t crc = 0;
+	unsigned char c;
+	
+	serial_putc('>');
+    do
+    {
+        c = mcu_eeprom_getc(address++);
+        //atomic opration
+        mcu_disable_interrupts();
+        serial_rx_isr(c);
+        mcu_enable_interrupts();
+        if(!c)
+        {
+        	break;
+		}
+		serial_putc(c);
+        size--;
+    }while(size);
+    
+    serial_putc(':');
+}
+
+uint8_t settings_save_gcode(uint16_t address)
+{
+	uint8_t size = (RX_BUFFER_SIZE >> 1);
+	unsigned char c;
+    do
+    {
+        c = serial_getc();
+        mcu_eeprom_putc(address++, (uint8_t)c);
+        size--;
+    }while(size && c);
 }

@@ -21,6 +21,8 @@
 
 #define EOL '\0'
 #define OVF 0xFF //overflow char
+#define RX_BUFFER_SIZE 128 //buffer sizes
+#define TX_BUFFER_SIZE 112 //buffer sizes
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -34,6 +36,7 @@ unsigned char serial_getc();
 unsigned char serial_peek();
 void serial_inject_cmd(const unsigned char* __s);
 void serial_discard_line();
+void serial_restore_line();
 
 bool serial_tx_is_empty();
 void serial_putc(unsigned char c);
@@ -46,6 +49,6 @@ void serial_flush();
 
 //ISR
 void serial_rx_isr(unsigned char c);
-unsigned char serial_tx_isr();
+uint8_t serial_tx_isr();
 
 #endif

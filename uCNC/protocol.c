@@ -394,6 +394,42 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
     procotol_send_newline();
 }
 
+void protocol_send_start_blocks()
+{
+	unsigned char c = 0;
+	uint16_t address = STARTUP_COMMAND1_ADDRESS_OFFSET;
+	serial_print_str(__romstr__("$N0="));
+	for(;;)
+	{
+		settings_load(address++, &c, 1);
+		if(c)
+		{
+			serial_putc(c);
+		}
+		else
+		{
+			procotol_send_newline();
+			break;
+		}
+	}
+	
+	address = STARTUP_COMMAND2_ADDRESS_OFFSET;
+	serial_print_str(__romstr__("$N1="));
+	for(;;)
+	{
+		settings_load(address++, &c, 1);
+		if(c)
+		{
+			serial_putc(c);
+		}
+		else
+		{
+			procotol_send_newline();
+			break;
+		}
+	}
+}
+
 void protocol_send_gcode_settings()
 {
     protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);

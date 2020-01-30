@@ -407,7 +407,7 @@ void mcu_loadDummyPayload(const char* __fmt, ...)
 
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	FILE* fp = fopen("virtualeeprom", "r");
+	FILE* fp = fopen("virtualeeprom", "rb");
 	uint8_t c = 0;
 	
 	if(fp!=NULL)
@@ -424,6 +424,54 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 }
 
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+	FILE* src = fopen("virtualeeprom", "rb+");
+	
+	if(!src)
+	{
+		FILE* dest = fopen("virtualeeprom", "wb");
+		fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
+	}
+
+	/*for(int i = 0; i < address; i++)
+	{
+		getc(src);
+	}*/
+	
+	fseek(src, address, SEEK_SET);
+	putc((int)value, src);
+	
+	fflush(src);
+	fclose(src);
+	return value;
+}
+
+void mcu_eeprom_erase(uint16_t address)
+{
+	FILE* src = fopen("virtualeeprom", "rb+");
+	
+	if(!src)
+	{
+		FILE* dest = fopen("virtualeeprom", "wb");
+		fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
+	}
+
+	fseek(src, address, SEEK_SET);
+	/*for(int i = 0; i < address; i++)
+	{
+		getc(src);
+	}*/
+	
+	putc(0, src);
+	
+	fflush(src);
+	fclose(src);
+}
+
+
+/*uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	FILE* src = fopen("virtualeeprom", "r");
 	FILE* dest = fopen("newvirtualeeprom", "w");
@@ -456,7 +504,7 @@ uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 	rename("newvirtualeeprom", "virtualeeprom");
 	
 	return value;
-}
+}*/
 
 void mcu_startPerfCounter()
 {

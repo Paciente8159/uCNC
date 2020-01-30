@@ -165,6 +165,7 @@ void mcu_step_stop_ISR();
 //Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address);
 uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value);
+void mcu_eeprom_erase(uint16_t address);
 
 #ifdef __PERFSTATS__
 uint16_t mcu_get_step_clocks();

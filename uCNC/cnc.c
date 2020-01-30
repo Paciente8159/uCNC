@@ -61,7 +61,6 @@ void cnc_init()
 #ifdef FORCE_GLOBALS_TO_0
     memset(&cnc_state, 0, sizeof(cnc_state_t));
 #endif
-
     //initializes all systems
     mcu_init();		//mcu
     serial_init();	//serial
@@ -272,6 +271,8 @@ void cnc_home()
     //reset position
     itp_reset_rt_position();
     planner_resync_position();
+    //invokes startup block execution
+    SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1);
 }
 
 void cnc_alarm(uint8_t code)
@@ -376,6 +377,10 @@ void cnc_reset()
             protocol_send_string(MSG_FEEDBACK_2);
         }
     }
+    else
+    {
+    	SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1);
+	}
 
     //signals stepper enable pins
     io_set_outputs(STEPS_EN_MASK);
@@ -413,9 +418,38 @@ void cnc_reset()
 void cnc_exec_rt_commands()
 {
 	bool update_spindle = false;
-    //executes feeds override rt commands
+	
+	//executes feeds override rt commands
     uint8_t cmd_mask = 0x80;
-    uint8_t command = cnc_state.feed_ovr_cmd; //copies realtime flags states
+    uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
+    cnc_state.rt_cmd = RT_CMD_CLEAR; //clears command flags
+    while(command)
+    {
+        switch (command & cmd_mask)
+        {
+            case RT_CMD_REPORT:
+                protocol_send_status();
+                break;
+            case RT_CMD_STARTUP_BLOCK1:
+            	mcu_disable_interrupts(); //atomic operation avoids messsing the start up block
+				settings_load_gcode(STARTUP_COMMAND1_ADDRESS_OFFSET);
+				mcu_enable_interrupts();
+				SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK2); //invokes command 2 on next pass
+                break;
+            case RT_CMD_STARTUP_BLOCK2:
+            	mcu_disable_interrupts();
+				settings_load_gcode(STARTUP_COMMAND2_ADDRESS_OFFSET);
+				mcu_enable_interrupts();
+                break;
+        }
+
+        CLEARFLAG(command, cmd_mask);
+        cmd_mask>>=1;
+    }
+
+    //executes feeds override rt commands
+    cmd_mask = 0x80;
+    command = cnc_state.feed_ovr_cmd; //copies realtime flags states
     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
     while(command)
     {

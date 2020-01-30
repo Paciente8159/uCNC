@@ -577,19 +577,15 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 
 ISR(COM_RX_vect, ISR_BLOCK)
 {
-	unsigned char c = COM_INREG;
-	serial_rx_isr(c);
+	serial_rx_isr(COM_INREG);
 }
 
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if(serial_tx_is_empty())
+	if(!serial_tx_isr())
 	{
 		UCSRB &= ~(1<<UDRIE);
-		return;
 	}
-	
-	COM_OUTREG = serial_tx_isr();
 }
 
 void mcu_init()
@@ -1095,6 +1091,22 @@ uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 		}
 	}
 	
+	sei(); // Restore interrupt flag state.
+}
+
+void mcu_eeprom_erase(uint16_t address)
+{
+	cli(); // Ensure atomic operation for the write operation.
+	
+	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write
+	do {} while( SPMCSR & (1<<SELFPRGEN) ); // Wait for completion of SPM.
+	
+	EEAR = address; // Set EEPROM address register.
+
+	EECR = (1<<EEMPE) | // Set Master Write Enable bit...
+			(1<<EEPM0);  // ...and Erase-only mode.
+	EECR |= (1<<EEPE);  // Start Erase-only operation.
+
 	sei(); // Restore interrupt flag state.
 }
 

@@ -26,10 +26,14 @@
 
 //rt_cmd
 #define RT_CMD_CLEAR 0
-#define RT_CMD_REPORT 1
-#define RT_CMD_SAFETY_DOOR 2
-#define RT_CMD_LIMITS 4
-#define RT_CMD_ABORT 8
+
+#define RT_CMD_STARTUP_BLOCK1 1
+#define RT_CMD_STARTUP_BLOCK2 2
+#define RT_CMD_REPORT 4
+#define RT_CMD_SAFETY_DOOR 16 //does nothing
+#define RT_CMD_LIMITS 32 //does nothing
+#define RT_CMD_ABORT 64
+
 //feed_ovr_cmd
 #define RT_CMD_FEED_100 1
 #define RT_CMD_FEED_INC_COARSE 2

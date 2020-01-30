@@ -33,7 +33,7 @@
 #define rom_read_byte
 
 //commento to use console only
-//#define COMPORT "\\\\.\\COM3"
+#define COMPORT "\\\\.\\COM3"
 
 #ifndef COMPORT
 #define USECONSOLE

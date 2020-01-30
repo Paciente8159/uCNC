@@ -25,9 +25,6 @@
 #include "config.h"
 #include "machinedefs.h"
 
-#define SETTINGS_ADDRESS_OFFSET 0
-#define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET 512
-
 typedef struct
 {
     char version[3];
@@ -60,15 +57,22 @@ typedef struct
     float max_distance[AXIS_COUNT];
 
     uint8_t tool_count;
-    uint8_t crc;
 } settings_t;
+
+#define SETTINGS_ADDRESS_OFFSET 0
+#define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET (SETTINGS_ADDRESS_OFFSET + sizeof(settings_t) + 1)
+#define STARTUP_COMMAND1_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * __SIZEOF_FLOAT__) + 1) * (COORD_SYS_COUNT + 3)))
+#define STARTUP_COMMAND2_ADDRESS_OFFSET (STARTUP_COMMAND1_ADDRESS_OFFSET + (RX_BUFFER_SIZE>>1))
 
 extern settings_t g_settings;
 
 void settings_init();
-uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint16_t size);
-void settings_save(uint16_t address, const uint8_t* __ptr, uint16_t size);
+//Assumes that no structure being saved is bigger than 255 bytes
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size);
+void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size);
 void settings_reset();
 uint8_t settings_change(uint8_t setting, float value);
+void settings_erase(uint16_t address, uint8_t size);
+void settings_load_gcode(uint16_t address);
 
 #endif

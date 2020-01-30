@@ -27,9 +27,6 @@
 
 #include <math.h>
 
-#define RX_BUFFER_SIZE 128
-#define TX_BUFFER_SIZE 112
-
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 volatile static uint8_t serial_rx_count;
 volatile static uint8_t serial_rx_read;
@@ -62,10 +59,12 @@ void serial_clear()
     serial_rx_write = 0;
     serial_rx_read = 0;
     serial_rx_count = 0;
+    serial_rx_buffer[0] = 0;
 
     serial_tx_read = 0;
     serial_tx_write = 0;
     serial_tx_count = 0;
+    serial_tx_buffer[0] = 0;
 }
 
 bool serial_rx_is_empty()
@@ -126,6 +125,21 @@ unsigned char serial_getc()
     }
 
     return c;
+}
+
+void serial_restore_line()
+{
+    //increments line count and goes back to previous EOL
+    serial_rx_count++;
+    serial_rx_read--;
+    do
+    {
+        if(--serial_rx_read==0xFF)
+        {
+            serial_rx_read = RX_BUFFER_SIZE - 1;
+        }
+    } while (serial_rx_buffer[serial_rx_read] != '=' && serial_rx_read!=serial_rx_write);
+    serial_rx_read++;//advances to first block char
 }
 
 unsigned char serial_peek()
@@ -327,8 +341,7 @@ void serial_flush()
 //All ascii will be sent to buffer and processed later (including comments)
 void serial_rx_isr(unsigned char c)
 {
-    uint8_t prev;
-
+    uint8_t write;
     if(c < ((unsigned char)'~')) //ascii (except CMD_CODE_CYCLE_START and DEL)
     {
         switch(c)
@@ -341,19 +354,20 @@ void serial_rx_isr(unsigned char c)
             case '\r':
             case '\n':
                 c = EOL;//replaces CR and LF with EOL and continues
+			case '\0':
                 serial_rx_count++; //continues
             default:
-                serial_rx_buffer[serial_rx_write] = c;
-                prev = serial_rx_write;
-                serial_rx_write++;
-			    if(serial_rx_write == RX_BUFFER_SIZE)
+                write = serial_rx_write;
+                serial_rx_buffer[write] = c;
+			    if(write++ == RX_BUFFER_SIZE)
 			    {
-			        serial_rx_write = 0;
+			        write = 0;
 			    }
-			    if(serial_rx_write==serial_rx_read)
+			    if(write==serial_rx_read)
 			    {
-			    	serial_tx_buffer[prev] = OVF;
+			    	serial_tx_buffer[serial_rx_write] = OVF;
 				}
+                serial_rx_write = write;
                 break;
         }
     }
@@ -363,25 +377,16 @@ void serial_rx_isr(unsigned char c)
     }
 }
 
-unsigned char serial_tx_isr()
+uint8_t serial_tx_isr()
 {
-    if(serial_tx_count == 0)
+    uint8_t read = serial_tx_read;
+    unsigned char c = serial_tx_buffer[read];
+    COM_OUTREG = c;
+    if(++read == TX_BUFFER_SIZE)
     {
-        return 0;
+        read = 0;
     }
-
-    unsigned char c = serial_tx_buffer[serial_tx_read];
-
-    if(c == '\n')
-    {
-        serial_tx_count--;
-    }
-
-    if(++serial_tx_read == TX_BUFFER_SIZE)
-    {
-        serial_tx_read = 0;
-    }
-
-    return c;
+    serial_tx_read = read;
+    return ((c == '\n') ? --serial_tx_count : serial_tx_count);
 }
 
