@@ -582,10 +582,10 @@ ISR(COM_RX_vect, ISR_BLOCK)
 
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if(!serial_tx_isr())
-	{
+	serial_tx_isr();
+	/*{
 		UCSRB &= ~(1<<UDRIE);
-	}
+	}*/
 }
 
 void mcu_init()
@@ -900,6 +900,11 @@ int mcu_putchar(char c, FILE* stream)
 void mcu_start_send()
 {
 	SETBIT(UCSRB,UDRIE);
+}
+
+void mcu_stop_send()
+{
+	CLEARBIT(UCSRB,UDRIE);
 }
 
 void mcu_putc(char c)

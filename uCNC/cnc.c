@@ -63,13 +63,13 @@ void cnc_init()
 #endif
     //initializes all systems
     mcu_init();		//mcu
+    //they will be enable only after reset
     serial_init();	//serial
     settings_init();//settings
     parser_init();	//parser
     mc_init();		//motion control
     planner_init();	//motion planner
     itp_init();		//interpolator
-
     serial_flush();
 }
 
@@ -91,21 +91,34 @@ void cnc_run()
                     serial_getc();
                     break;
                 case '$':
-                    serial_getc();
+                    #ifdef ECHO_CMD
+                    protocol_send_string(MSG_ECHO);
+                    #endif
                     error = parser_grbl_command();
+                    #ifdef ECHO_CMD
+                    protocol_send_string(MSG_END);
+                    #endif
+                    error = parse_grbl_error_code(error); //processes the error code to perform additional actions
                     break;
                 default:
+                    #ifdef ECHO_CMD
+                    protocol_send_string(MSG_ECHO);
+                    #endif
                     if(!cnc_get_exec_state(EXEC_LOCKED))
                     {
                         error = parser_gcode_command();
+                        protocol_send_string(__romstr__("[itp]\r\n"));
                     }
                     else
                     {
                         error = STATUS_SYSTEM_GC_LOCK;
                     }
+
+                    #ifdef ECHO_CMD
+                    protocol_send_string(MSG_END);
+                    #endif
                     break;
             }
-
             if(!error)
             {
                 protocol_send_ok();
@@ -118,8 +131,8 @@ void cnc_run()
     }
     while(cnc_doevents());
 
-    serial_flush();
     cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
+    serial_flush();
     if(cnc_get_exec_state(EXEC_ALARM_ABORT))//checks if any alarm is active (except NOHOME - ignore it)
     {
         cnc_check_fault_systems();
@@ -138,6 +151,7 @@ void cnc_call_rt_command(uint8_t command)
     switch(command)
     {
         case CMD_CODE_RESET:
+            //serial_rx_clear(); //dumps all commands
             cnc_stop();
             cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
             SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
@@ -363,7 +377,6 @@ void cnc_reset()
     //clear all systems
     itp_clear();
     planner_clear();
-    serial_clear();
     protocol_send_string(MSG_STARTUP);
     //tries to clear alarms or active hold state
     cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
@@ -431,15 +444,12 @@ void cnc_exec_rt_commands()
                 protocol_send_status();
                 break;
             case RT_CMD_STARTUP_BLOCK1:
-            	mcu_disable_interrupts(); //atomic operation avoids messsing the start up block
 				settings_load_gcode(STARTUP_COMMAND1_ADDRESS_OFFSET);
-				mcu_enable_interrupts();
 				SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK2); //invokes command 2 on next pass
                 break;
             case RT_CMD_STARTUP_BLOCK2:
-            	mcu_disable_interrupts();
 				settings_load_gcode(STARTUP_COMMAND2_ADDRESS_OFFSET);
-				mcu_enable_interrupts();
+
                 break;
         }
 

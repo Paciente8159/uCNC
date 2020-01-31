@@ -70,7 +70,10 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
 
     if(block_data.motion_mode != PLANNER_MOTION_MODE_NOMOTION)

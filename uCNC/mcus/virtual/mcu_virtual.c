@@ -147,9 +147,10 @@ void* comoutsimul()
 	static uint8_t i = 0;
 	for(;;)
 	{
-		if(mcu_tx_ready)
+		if(!serial_tx_is_empty())
 		{
-			char c = serial_tx_isr();
+			serial_tx_isr();
+			char c = virtualports->uart;
 			if(c != 0)
 			{
 				#ifdef USECONSOLE
@@ -284,6 +285,11 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 void mcu_start_send()
 {
 	mcu_tx_ready = true;
+}
+
+void mcu_stop_send()
+{
+	mcu_tx_ready = false;
 }
 
 void mcu_putc(char c)

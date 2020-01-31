@@ -430,7 +430,7 @@ void protocol_send_start_blocks()
 	}
 }
 
-void protocol_send_gcode_settings()
+void protocol_send_ucnc_settings()
 {
     protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
     protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);

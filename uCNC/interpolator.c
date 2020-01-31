@@ -96,14 +96,15 @@ static uint8_t dirbitsmask[STEPPER_COUNT];
 static volatile bool itp_isr_finnished;
 //static volatile bool itp_running;
 
+volatile static bool itp_busy;
+
 /*
 	Interpolator segment buffer functions
 */
 static inline void itp_sgm_buffer_read()
 {
-    itp_sgm_data_read++;
     itp_sgm_data_slots++;
-    if (itp_sgm_data_read == INTERPOLATOR_BUFFER_SIZE)
+    if (++itp_sgm_data_read == INTERPOLATOR_BUFFER_SIZE)
     {
         itp_sgm_data_read = 0;
     }
@@ -111,9 +112,8 @@ static inline void itp_sgm_buffer_read()
 
 static inline void itp_sgm_buffer_write()
 {
-    itp_sgm_data_write++;
     itp_sgm_data_slots--;
-    if (itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
+    if (++itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
     {
         itp_sgm_data_write = 0;
     }
@@ -154,9 +154,8 @@ static inline void itp_blk_buffer_read()
 
 static inline void itp_blk_buffer_write()
 {
-    itp_blk_data_write++;
     //itp_blk_data_slots--; //AUTOMATIC LOOP
-    if (itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
+    if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
     {
         itp_blk_data_write = 0;
     }
@@ -194,6 +193,7 @@ void itp_init()
     itp_cur_plan_block = NULL;
     itp_needs_update = false;
 #endif
+    itp_busy = false;
     itp_isr_finnished = true;
 
     //initialize circular buffers
@@ -245,6 +245,8 @@ void itp_run()
     //creates segments and fills the buffer
     while (!itp_sgm_is_full())
     {
+        if(io_get_controls(ESTOP_MASK))
+        {return;}
         /* NOT NECESSARY
         /* BLOCKS CAN BE OVERWRITTEN SINCE THEY NEVER WILL BE LARGER THEN THE NUMBER OF SEGMENTS
         //flushes completed blocks
@@ -510,7 +512,7 @@ void itp_run()
         }
     }
 
-    //starts the step isr if is stoped and there are segments to execute
+    //starts the step isr if is stopped and there are segments to execute
     if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
     {
 #ifdef STEPPER_ENABLE
@@ -602,7 +604,11 @@ void itp_step_reset_isr()
     static bool update_step_rate = false;
     static uint16_t clock = 0;
     static uint8_t pres = 0;
-    //static bool busy = false;
+    
+    if(itp_busy) //prevents reentrancy
+    {
+    	return;
+    }
 
     //always resets all stepper pins
     mcu_set_steps(0);
@@ -619,7 +625,10 @@ void itp_step_reset_isr()
         prev_dirbits = dirbits;
     }
 
+    itp_busy = true;
     mcu_enable_interrupts();
+
+    //mcu_enable_interrupts();
     //if no segment running tries to load one
     if (itp_running_sgm == NULL)
     {
@@ -647,25 +656,25 @@ void itp_step_reset_isr()
             }
         }
     }
+
+    itp_busy = false;
 }
 
 void itp_step_isr()
 {
     static uint8_t stepbits = 0;
-    //static bool busy = false;
-    /*
-    if(busy) //prevents reentrancy
+    if(itp_busy) //prevents reentrancy
     {
     	return;
     }
-    */
+
     //sets step bits
     mcu_set_steps(stepbits);
     stepbits = 0;
 
-    //busy = true;
-    //mcu_enableInterrupts();
+    itp_busy = true;
     mcu_enable_interrupts();
+    //mcu_enable_interrupts();
     //is steps remaining starts calc next step bits
     if (itp_running_sgm != NULL)
     {
@@ -784,7 +793,7 @@ void itp_step_isr()
         itp_isr_finnished = true;
     }
 
-    //busy = false;
+    itp_busy = false;
 }
 
 void itp_delay(uint16_t delay)

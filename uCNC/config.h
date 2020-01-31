@@ -23,8 +23,6 @@
 #include "mcus.h"
 #include "machines.h"
 
-#define VERSION "1.0.0-alpha.2"
-
 /*
 	Choose the mcu type
 	MCU_VIRTUAL: simulates a mcu on a PC

@@ -29,13 +29,15 @@
 
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 volatile static uint8_t serial_rx_count;
-volatile static uint8_t serial_rx_read;
+static uint8_t serial_rx_read;
 volatile static uint8_t serial_rx_write;
 
 static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
 volatile static uint8_t serial_tx_read;
-volatile static uint8_t serial_tx_write;
+static uint8_t serial_tx_write;
 volatile static uint8_t serial_tx_count;
+
+static void serial_rx_clear();
 
 void serial_init()
 {
@@ -54,19 +56,6 @@ void serial_init()
 #endif
 }
 
-void serial_clear()
-{
-    serial_rx_write = 0;
-    serial_rx_read = 0;
-    serial_rx_count = 0;
-    serial_rx_buffer[0] = 0;
-
-    serial_tx_read = 0;
-    serial_tx_write = 0;
-    serial_tx_count = 0;
-    serial_tx_buffer[0] = 0;
-}
-
 bool serial_rx_is_empty()
 {
     return (!serial_rx_count);
@@ -79,52 +68,40 @@ bool serial_tx_is_empty()
 
 unsigned char serial_getc()
 {
-#ifdef ECHO_CMD
-    static bool echo = false;
-#endif
-    unsigned char c = EOL;
-
     if(!serial_rx_count)
     {
-        return c;
+        return EOL;
     }
 
-#ifdef ECHO_CMD
-    if(!echo)
+    unsigned char c;
+    do
     {
-        echo = true;
-        serial_print_str(MSG_ECHO);
-    }
-#endif
-
-    c = serial_rx_buffer[serial_rx_read];
-    switch(c)
-    {
-        case EOL: //EOL
-            serial_rx_count--;
-#ifdef ECHO_CMD
-            echo = false;
-            serial_print_str(__romstr__("]\r\n"));
-#endif
-            break;
-        default:
-            if(c>='a' && c<='z') //serial only returns upper case letters
-            {
-                c-=32;
-            }
-#ifdef ECHO_CMD
-            serial_putc(c);
-#endif
-            break;
-    }
-
-    serial_rx_read++;
-    if(serial_rx_read == RX_BUFFER_SIZE)
-    {
-        serial_rx_read = 0;
-    }
-
-    return c;
+        c = serial_rx_buffer[serial_rx_read];
+        if(++serial_rx_read == RX_BUFFER_SIZE)
+        {
+            serial_rx_read = 0;
+        }
+        switch(c)
+        {
+            case EOL: //EOL
+                serial_rx_count--;
+                return EOL;
+            case ' ':
+            case '\t'://eats white chars
+                break;
+            default:
+                if(c >= 'a' && c <= 'z') //serial only returns upper case letters
+                {
+                    c -= 32;
+                }
+                #ifdef ECHO_CMD
+                serial_putc(c);
+                #endif
+                return c;
+        }
+    } while (serial_rx_count);
+    
+    return EOL;
 }
 
 void serial_restore_line()
@@ -144,12 +121,29 @@ void serial_restore_line()
 
 unsigned char serial_peek()
 {
-    unsigned char c = ((serial_rx_count != 0) ? serial_rx_buffer[serial_rx_read] : 0);
-    if(c>='a' && c<='z') //serial only returns upper case letters
+    unsigned char c;
+    while (serial_rx_count)
     {
-        c-=32;
+        c = serial_rx_buffer[serial_rx_read];
+        switch(c)
+        {
+            case ' ':
+            case '\t'://eats white chars
+                if(++serial_rx_read == RX_BUFFER_SIZE)
+                {
+                    serial_rx_read = 0;
+                }
+                break;
+            default:
+                if(c >= 'a' && c <= 'z') //serial only returns upper case letters
+                {
+                    c -= 32;
+                }
+                return c;
+        }
     }
-    return c;
+    
+    return EOL;
 }
 
 void serial_inject_cmd(const unsigned char* __s)
@@ -161,14 +155,6 @@ void serial_inject_cmd(const unsigned char* __s)
         c = rom_strptr(__s++);
     }
     while(c != 0);
-}
-
-void serial_discard_line()
-{
-    if(serial_rx_count != 0)
-    {
-        while(serial_getc() != EOL);
-    }
 }
 
 void serial_putc(unsigned char c)
@@ -332,7 +318,10 @@ void serial_flush()
     while(serial_tx_count)
     {
         mcu_start_send();
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return;
+        }
     }
 }
 
@@ -347,6 +336,7 @@ void serial_rx_isr(unsigned char c)
         switch(c)
         {
             case CMD_CODE_RESET:
+                serial_rx_clear(); //dumps all unexecuted commands
             case CMD_CODE_FEED_HOLD:
             case CMD_CODE_REPORT:
                 cnc_call_rt_command((uint8_t)c);
@@ -354,19 +344,17 @@ void serial_rx_isr(unsigned char c)
             case '\r':
             case '\n':
                 c = EOL;//replaces CR and LF with EOL and continues
-			case '\0':
+			case EOL:
                 serial_rx_count++; //continues
             default:
                 write = serial_rx_write;
                 serial_rx_buffer[write] = c;
-			    if(write++ == RX_BUFFER_SIZE)
+			    if(++write == RX_BUFFER_SIZE)
 			    {
 			        write = 0;
 			    }
-			    if(write==serial_rx_read)
-			    {
-			    	serial_tx_buffer[serial_rx_write] = OVF;
-				}
+                //writes the overflow char ahead
+                serial_rx_buffer[write] = OVF;
                 serial_rx_write = write;
                 break;
         }
@@ -377,16 +365,36 @@ void serial_rx_isr(unsigned char c)
     }
 }
 
-uint8_t serial_tx_isr()
+void serial_tx_isr()
 {
+    if(!serial_tx_count)
+    {
+        return;
+    }
     uint8_t read = serial_tx_read;
     unsigned char c = serial_tx_buffer[read];
     COM_OUTREG = c;
+    if(c == '\n')
+    {
+        if(!--serial_tx_count)
+        {
+            mcu_stop_send();
+        }
+    }
     if(++read == TX_BUFFER_SIZE)
     {
         read = 0;
     }
     serial_tx_read = read;
-    return ((c == '\n') ? --serial_tx_count : serial_tx_count);
 }
 
+void serial_rx_clear()
+{
+    serial_rx_write = 0;
+    serial_rx_read = 0;
+    serial_rx_count = 0;
+    serial_rx_buffer[0] = EOL;
+    serial_tx_write = 0;
+    serial_tx_read = 0;
+    serial_tx_count = 0;
+}

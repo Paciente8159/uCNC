@@ -259,7 +259,7 @@ float planner_update_spindle(bool update_outputs)
         }
         spindle = MIN(spindle, g_settings.spindle_max_rpm);
         spindle = MAX(spindle, g_settings.spindle_min_rpm);
-        pwm = (uint8_t)roundf(255 * (spindle / g_settings.spindle_max_rpm));
+        pwm = (uint8_t)roundf(254 * (spindle / g_settings.spindle_max_rpm));
         pwm = MAX(pwm, 1);
     }
 
@@ -350,6 +350,7 @@ void planner_recalculate()
 */
 void planner_add_line(float *target, planner_block_data_t block_data)
 {
+    protocol_send_string(__romstr__("[planner]\r\n"));
     static float prev_dir_vect[AXIS_COUNT];
     planner_data[planner_data_write].dirbits = 0;
     planner_data[planner_data_write].optimal = false;

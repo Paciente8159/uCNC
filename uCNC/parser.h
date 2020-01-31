@@ -31,6 +31,7 @@
 #include "machinedefs.h"
 
 void parser_init();
+uint8_t parse_grbl_error_code(uint8_t code);
 uint8_t parser_gcode_command();
 uint8_t parser_grbl_command();
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);

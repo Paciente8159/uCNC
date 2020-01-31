@@ -30,7 +30,7 @@ void protocol_send_status();
 void protocol_send_string(const unsigned char* __s);
 void protocol_send_gcode_coordsys();
 void protocol_send_gcode_modes();
-void protocol_send_gcode_settings();
+void protocol_send_ucnc_settings();
 void protocol_send_start_blocks();
 
 #endif

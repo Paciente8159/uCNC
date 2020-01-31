@@ -401,7 +401,7 @@ void settings_load_gcode(uint16_t address)
     do
     {
         c = mcu_eeprom_getc(address++);
-        //atomic opration
+        //atomic operation
         mcu_disable_interrupts();
         serial_rx_isr(c);
         mcu_enable_interrupts();

@@ -175,6 +175,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state);
 static uint8_t parser_validate_command(parser_state_t *new_state);
 static uint8_t parser_exec_command(parser_state_t *new_state);
 static void parser_load_parameters();
+static uint8_t parser_eat_next_char(unsigned char c);
+static void parser_discard_command();
 
 /*
 	Initializes the gcode parser
@@ -212,7 +214,7 @@ uint8_t parser_gcode_command()
     result = parser_fetch_command(&next_state);
     if (result != STATUS_OK)
     {
-        serial_discard_line();//if error during fetch discard the rest of the line
+        parser_discard_command();//if error during fetch discard the rest of the line
         return result;
     }
 
@@ -245,14 +247,63 @@ uint8_t parser_gcode_command()
     return result;
 }
 
-static uint8_t parser_eat_next_char(unsigned char c)
+uint8_t parse_grbl_error_code(uint8_t code)
 {
-    if (serial_peek() != c)
+    switch(code)
     {
-        return STATUS_INVALID_STATEMENT;
+        case GRBL_SEND_SYSTEM_SETTINGS:
+            protocol_send_ucnc_settings();
+            break;
+        case GRBL_SEND_COORD_SYSTEM:
+            protocol_send_gcode_coordsys();
+            break;
+        case GRBL_SEND_PARSER_MODES:
+            protocol_send_gcode_modes();
+            break;
+        case GRBL_SEND_STARTUP_BLOCKS:
+            protocol_send_start_blocks();
+            break;
+        case GRBL_SEND_CHECKMODE_ON:
+            protocol_send_string(MSG_FEEDBACK_4);
+            break;
+        case GRBL_SEND_CHECKMODE_OFF:
+                cnc_stop();
+                cnc_alarm(EXEC_ALARM_RESET);
+                protocol_send_string(MSG_FEEDBACK_5);
+            break;
+        case GRBL_SEND_SETTINGS_RESET:
+            protocol_send_string(MSG_FEEDBACK_9);
+            break;
+        case GRBL_UNLOCK:
+            cnc_unlock();
+            if(cnc_get_exec_state(EXEC_DOOR))
+            {
+                return STATUS_CHECK_DOOR;
+            }
+            protocol_send_string(MSG_FEEDBACK_3);
+            break;
+        case GRBL_HOME:
+            if (!g_settings.homing_enabled)
+            {
+                return STATUS_SETTING_DISABLED;
+                break;
+            }
+
+            cnc_unlock();
+            if(cnc_get_exec_state(EXEC_DOOR))
+            {
+                return STATUS_CHECK_DOOR;
+            }
+
+            cnc_home();
+            break;
+        case GRBL_HELP:
+            protocol_send_string(MSG_HELP);
+            break;
+        default:
+            return code;
     }
 
-    serial_getc();
     return STATUS_OK;
 }
 
@@ -261,10 +312,10 @@ uint8_t parser_grbl_command()
     //if not IDLE
     if (cnc_get_exec_state(EXEC_RUN))
     {
-        serial_discard_line();
+        parser_discard_command();
         return STATUS_IDLE_ERROR;
     }
-
+    serial_getc();
     unsigned char c = serial_peek();
 	uint16_t block_address;
     uint8_t error = STATUS_OK;
@@ -306,8 +357,7 @@ uint8_t parser_grbl_command()
 					}
 					break;
 				case '\0':
-					protocol_send_start_blocks();
-					return STATUS_OK;
+					return GRBL_SEND_STARTUP_BLOCKS;
 				default:
 					error = STATUS_INVALID_STATEMENT;
 					break;
@@ -328,13 +378,15 @@ uint8_t parser_grbl_command()
             {
                 break;
             }
-            protocol_send_string(MSG_FEEDBACK_9);
             break;
+        case EOL:
+            serial_getc();
+            return GRBL_HELP;
     }
 
     if (error)
     {
-        serial_discard_line(); //discards the rest of the line
+        parser_discard_command(); //discards the rest of the line
         return error;
     }
 
@@ -344,37 +396,16 @@ uint8_t parser_grbl_command()
     switch (c)
     {
         case '$':
-            protocol_send_gcode_settings();
-            break;
+            return GRBL_SEND_SYSTEM_SETTINGS;
         case '#':
-            protocol_send_gcode_coordsys();
-            break;
+            return GRBL_SEND_COORD_SYSTEM;
         case 'H':
-            if (!g_settings.homing_enabled)
-            {
-                return STATUS_SETTING_DISABLED;
-                break;
-            }
-
-            cnc_unlock();
-            if(cnc_get_exec_state(EXEC_DOOR))
-            {
-                return STATUS_CHECK_DOOR;
-            }
-
-            cnc_home();
+            return GRBL_HOME;
             break;
         case 'X':
-            cnc_unlock();
-            if(cnc_get_exec_state(EXEC_DOOR))
-            {
-                return STATUS_CHECK_DOOR;
-            }
-            protocol_send_string(MSG_FEEDBACK_3);
-            break;
+            return GRBL_UNLOCK;
         case 'G':
-            protocol_send_gcode_modes();
-            break;
+            return GRBL_SEND_PARSER_MODES;
         case 'R':
             c = serial_peek();
             switch (c)
@@ -394,7 +425,8 @@ uint8_t parser_grbl_command()
                     break;
             }
             serial_getc();
-            return parser_eat_next_char(EOL);
+            error = parser_eat_next_char(EOL);
+            return ((!error) ? GRBL_SEND_SETTINGS_RESET : error);
         case 'J': //jog command
             /*
             		The jog command is parsed like an emulated G1 command without changing the parser state
@@ -428,13 +460,11 @@ uint8_t parser_grbl_command()
             //toggles motion control check mode
             if (mc_toogle_checkmode())
             {
-                protocol_send_string(MSG_FEEDBACK_4);
+                return GRBL_SEND_CHECKMODE_ON;
             }
             else
             {
-                cnc_stop();
-                cnc_alarm(EXEC_ALARM_RESET);
-                protocol_send_string(MSG_FEEDBACK_5);
+                return GRBL_SEND_CHECKMODE_OFF;
             }
             break;
         default:
@@ -477,7 +507,7 @@ uint8_t parser_grbl_command()
 
     if (error)
     {
-        serial_discard_line();
+        parser_discard_command();
     }
     return error;
 }
@@ -606,18 +636,9 @@ bool parser_get_float(float *value, bool *isinteger)
 
     *value = 0;
 
-    if (c == '-')
+    if (c == '-' || c == '+')
     {
-        isnegative = true;
-        serial_getc();
-    }
-    else if (c == '+')
-    {
-        serial_getc();
-    }
-    else if (c == '.')
-    {
-        isfloat = true;
+        isnegative = (c == '-');
         serial_getc();
     }
 
@@ -638,7 +659,6 @@ bool parser_get_float(float *value, bool *isinteger)
         else if (c == '.' && !isfloat)
         {
             isfloat = true;
-            //result = false;
         }
         else
         {
@@ -1984,4 +2004,28 @@ void parser_load_parameters()
             settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE + 1);
         }
     }
+}
+
+void parser_discard_command()
+{
+    unsigned char c = '@';
+    #ifdef ECHO_CMD
+    serial_putc(c);
+    #endif
+    do
+    {
+        
+        c = serial_getc();
+    } while(c != EOL);
+}
+
+uint8_t parser_eat_next_char(unsigned char c)
+{
+    if (serial_peek() != c)
+    {
+        return STATUS_INVALID_STATEMENT;
+    }
+
+    serial_getc();
+    return STATUS_OK;
 }
