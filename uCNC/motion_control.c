@@ -42,6 +42,11 @@ void mc_init()
 #endif
 }
 
+bool mc_get_checkmode()
+{
+    return mc_checkmode;
+}
+
 bool mc_toogle_checkmode()
 {
     mc_checkmode = !mc_checkmode;
@@ -261,7 +266,10 @@ uint8_t mc_dwell(planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
 
     //send dwell (planner linear motion with distance == 0)
@@ -309,7 +317,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     cnc_set_exec_state(EXEC_HOMING);
     do
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
     while (cnc_get_exec_state(EXEC_RUN));
 
@@ -351,7 +362,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     cnc_set_exec_state(EXEC_HOMING);
     do
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
     while (cnc_get_exec_state(EXEC_RUN));
 
@@ -384,7 +398,10 @@ uint8_t mc_spindle_coolant(planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
 
     block_data.motion_mode = PLANNER_MOTION_MODE_NOMOTION;
@@ -400,7 +417,10 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
     mc_line(target, block_data);
     do
     {
-        cnc_doevents();
+        if(!cnc_doevents())
+        {
+            return STATUS_CRITICAL_FAIL;
+        }
     }
     while (cnc_get_exec_state(EXEC_RUN));
 

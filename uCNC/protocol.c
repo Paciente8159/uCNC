@@ -21,6 +21,7 @@
 #include "serial.h"
 #include "interpolator.h"
 #include "io_control.h"
+#include "motion_control.h"
 #include "parser.h"
 #include "kinematics.h"
 #include "planner.h"
@@ -131,10 +132,10 @@ void protocol_send_status()
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
-    if(!serial_tx_is_empty())
+    /*if(!serial_tx_is_empty())
     {
     	return;
-    }
+    }*/
 
     itp_get_rt_position((float*)&axis);
     kinematics_apply_reverse_transform((float*)&axis);
@@ -151,64 +152,72 @@ void protocol_send_status()
     state &= filter;
 
     serial_putc('<');
-    switch(state)
+    if(!mc_get_checkmode() || cnc_get_exec_state(EXEC_ALARM))
     {
-        case EXEC_ABORT:
-            serial_print_str(__romstr__("Abort"));
-            break;
-        case EXEC_DOOR:
-            serial_print_str(__romstr__("Door:"));
-            if(io_get_controls(SAFETY_DOOR_MASK))
-            {
-
-                if(cnc_get_exec_state(EXEC_RUN))
+        switch(state)
+        {
+            case EXEC_ABORT:
+                serial_print_str(__romstr__("Abort"));
+                break;
+            case EXEC_DOOR:
+                serial_print_str(__romstr__("Door:"));
+                if(io_get_controls(SAFETY_DOOR_MASK))
                 {
-                    serial_putc('2');
+
+                    if(cnc_get_exec_state(EXEC_RUN))
+                    {
+                        serial_putc('2');
+                    }
+                    else
+                    {
+                        serial_putc('1');
+                    }
                 }
                 else
                 {
-                    serial_putc('1');
+                    if(cnc_get_exec_state(EXEC_RUN))
+                    {
+                        serial_putc('3');
+                    }
+                    else
+                    {
+                        serial_putc('0');
+                    }
                 }
-            }
-            else
-            {
+                break;
+            case EXEC_NOHOME:
+                serial_print_str(__romstr__("Alarm"));
+                break;
+            case EXEC_HOLD:
+                serial_print_str(__romstr__("Hold:"));
                 if(cnc_get_exec_state(EXEC_RUN))
                 {
-                    serial_putc('3');
+                    serial_putc('1');
                 }
                 else
                 {
                     serial_putc('0');
                 }
-            }
-            break;
-        case EXEC_NOHOME:
-            serial_print_str(__romstr__("Alarm"));
-            break;
-        case EXEC_HOLD:
-            serial_print_str(__romstr__("Hold:"));
-            if(cnc_get_exec_state(EXEC_RUN))
-            {
-                serial_putc('1');
-            }
-            else
-            {
-                serial_putc('0');
-            }
-            break;
-        case EXEC_HOMING:
-            serial_print_str(__romstr__("Home"));
-            break;
-        case EXEC_JOG:
-            serial_print_str(__romstr__("Jog"));
-            break;
-        case EXEC_RUN:
-            serial_print_str(__romstr__("Run"));
-            break;
-        default:
-            serial_print_str(__romstr__("Idle"));
-            break;
+                break;
+            case EXEC_HOMING:
+                serial_print_str(__romstr__("Home"));
+                break;
+            case EXEC_JOG:
+                serial_print_str(__romstr__("Jog"));
+                break;
+            case EXEC_RUN:
+                serial_print_str(__romstr__("Run"));
+                break;
+            default:
+                serial_print_str(__romstr__("Idle"));
+                break;
+        }
     }
+    else
+    {
+        serial_print_str(__romstr__("Check"));
+    }
+    
 
     serial_print_str(__romstr__("|MPos:"));
     serial_print_fltarr(axis, AXIS_COUNT);
@@ -397,7 +406,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 void protocol_send_start_blocks()
 {
 	unsigned char c = 0;
-	uint16_t address = STARTUP_COMMAND1_ADDRESS_OFFSET;
+	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	serial_print_str(__romstr__("$N0="));
 	for(;;)
 	{
@@ -413,7 +422,7 @@ void protocol_send_start_blocks()
 		}
 	}
 	
-	address = STARTUP_COMMAND2_ADDRESS_OFFSET;
+	address = STARTUP_BLOCK1_ADDRESS_OFFSET;
 	serial_print_str(__romstr__("$N1="));
 	for(;;)
 	{

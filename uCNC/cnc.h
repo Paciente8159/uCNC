@@ -27,8 +27,8 @@
 //rt_cmd
 #define RT_CMD_CLEAR 0
 
-#define RT_CMD_STARTUP_BLOCK1 1
-#define RT_CMD_STARTUP_BLOCK2 2
+#define RT_CMD_STARTUP_BLOCK0 1
+#define RT_CMD_STARTUP_BLOCK1 2
 #define RT_CMD_REPORT 4
 #define RT_CMD_SAFETY_DOOR 16 //does nothing
 #define RT_CMD_LIMITS 32 //does nothing
@@ -66,6 +66,7 @@
 #define EXEC_ALARM (EXEC_NOHOME | EXEC_LIMITS | EXEC_DOOR | EXEC_ABORT) //System alarms
 #define EXEC_ALARM_ABORT (EXEC_LIMITS | EXEC_DOOR | EXEC_ABORT) //System alarms checked after abort
 #define EXEC_LOCKED	(EXEC_ALARM | EXEC_HOLD | EXEC_HOMING | EXEC_JOG) //Gcode is locked by an active state
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) //Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255 //All states
 
 

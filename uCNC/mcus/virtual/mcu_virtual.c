@@ -416,7 +416,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	FILE* fp = fopen("virtualeeprom", "rb");
 	uint8_t c = 0;
 	
-	if(fp!=NULL)
+	if(fp != NULL)
 	{
 		if(!fseek(fp, address, SEEK_SET))
 		{
@@ -429,7 +429,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	return c;
 }
 
-uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	FILE* src = fopen("virtualeeprom", "rb+");
 	
@@ -452,7 +452,7 @@ uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 	fclose(src);
 	return value;
 }
-
+/*
 void mcu_eeprom_erase(uint16_t address)
 {
 	FILE* src = fopen("virtualeeprom", "rb+");
@@ -464,17 +464,12 @@ void mcu_eeprom_erase(uint16_t address)
 		src = fopen("virtualeeprom", "rb+");
 	}
 
-	fseek(src, address, SEEK_SET);
-	/*for(int i = 0; i < address; i++)
-	{
-		getc(src);
-	}*/
-	
-	putc(0, src);
+	fseek(src, address, SEEK_SET);	
+	putc(EOF, src);
 	
 	fflush(src);
 	fclose(src);
-}
+}*/
 
 
 /*uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)

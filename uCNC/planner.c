@@ -59,9 +59,8 @@ static uint8_t planner_ovr_counter;
 */
 static inline void planner_buffer_read()
 {
-    planner_data_read++;
     planner_data_slots++;
-    if (planner_data_read == PLANNER_BUFFER_SIZE)
+    if (++planner_data_read == PLANNER_BUFFER_SIZE)
     {
         planner_data_read = 0;
     }
@@ -69,9 +68,8 @@ static inline void planner_buffer_read()
 
 static inline void planner_buffer_write()
 {
-    planner_data_write++;
     planner_data_slots--;
-    if (planner_data_write == PLANNER_BUFFER_SIZE)
+    if (++planner_data_write == PLANNER_BUFFER_SIZE)
     {
         planner_data_write = 0;
     }
@@ -79,8 +77,7 @@ static inline void planner_buffer_write()
 
 static inline uint8_t planner_buffer_next(uint8_t index)
 {
-    index++;
-    if (index == PLANNER_BUFFER_SIZE)
+    if (++index == PLANNER_BUFFER_SIZE)
     {
         index = 0;
     }
@@ -95,8 +92,7 @@ static inline uint8_t planner_buffer_prev(uint8_t index)
         index = PLANNER_BUFFER_SIZE;
     }
 
-    index--;
-    return index;
+    return --index;
 }
 
 bool planner_buffer_is_empty()
@@ -350,7 +346,6 @@ void planner_recalculate()
 */
 void planner_add_line(float *target, planner_block_data_t block_data)
 {
-    protocol_send_string(__romstr__("[planner]\r\n"));
     static float prev_dir_vect[AXIS_COUNT];
     planner_data[planner_data_write].dirbits = 0;
     planner_data[planner_data_write].optimal = false;
@@ -431,8 +426,10 @@ void planner_add_line(float *target, planner_block_data_t block_data)
     //sets entry and max entry feeds as if it would start and finish from a stoped state
     planner_data[planner_data_write].entry_feed_sqr = 0;
     planner_data[planner_data_write].feed_sqr = (block_data.feed * block_data.feed);
-    planner_data[planner_data_write].entry_max_feed_sqr = planner_data[planner_data_write].feed_sqr;
+    planner_data[planner_data_write].entry_max_feed_sqr = 0;
     planner_data[planner_data_write].rapid_feed_sqr = rapid_feed * rapid_feed;
+    //consider initial angle factor of 1 (90� corner or more)
+    float angle_factor = 1;
 
     //if more than one move stored cals juntion speeds and recalculates speed profiles
     if (!planner_buffer_is_empty())
@@ -447,15 +444,15 @@ void planner_add_line(float *target, planner_block_data_t block_data)
             //this way the output will be between 0<tan(theta/2)<inf
             //but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
             //all angles greater than 1 that can be excluded
-            planner_data[planner_data_write].angle_factor = 1.0f / (1.0f + cos_theta);
+            angle_factor = 1.0f / (1.0f + cos_theta);
             cos_theta = (1.0f - cos_theta * cos_theta);
-            planner_data[planner_data_write].angle_factor *= fast_sqrt(cos_theta);
+            angle_factor *= fast_sqrt(cos_theta);
         }
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
-        if (planner_data[planner_data_write].angle_factor < 1.0f)
+        if (angle_factor < 1.0f)
         {
-            float junc_feed_sqr = (1 - planner_data[planner_data_write].angle_factor);
+            float junc_feed_sqr = (1 - angle_factor);
             junc_feed_sqr *= junc_feed_sqr;
             junc_feed_sqr *= planner_data[prev].feed_sqr;
             //the maximum feed is the minimal feed between the previous feed given the angle and the current feed

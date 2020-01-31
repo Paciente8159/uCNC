@@ -25,7 +25,7 @@
 #include "config.h"
 #include "machinedefs.h"
 
-#define PLANNER_BUFFER_SIZE 10
+#define PLANNER_BUFFER_SIZE 12
 
 #define PLANNER_MOTION_MODE_NOMOTION 0
 #define PLANNER_MOTION_MODE_FEED 1
@@ -47,7 +47,7 @@ typedef struct
     float pos[AXIS_COUNT];
 
     float distance;
-    float angle_factor;
+    //float angle_factor;
 
     float entry_feed_sqr;
     float entry_max_feed_sqr;

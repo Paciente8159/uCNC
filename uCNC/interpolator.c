@@ -245,8 +245,11 @@ void itp_run()
     //creates segments and fills the buffer
     while (!itp_sgm_is_full())
     {
-        if(io_get_controls(ESTOP_MASK))
-        {return;}
+        if(cnc_get_exec_state(EXEC_ALARM))
+        {
+            //on any active alarm exits
+            return;
+        }
         /* NOT NECESSARY
         /* BLOCKS CAN BE OVERWRITTEN SINCE THEY NEVER WILL BE LARGER THEN THE NUMBER OF SEGMENTS
         //flushes completed blocks
@@ -340,7 +343,7 @@ void itp_run()
             }
         }
 
-        if(itp_sgm_is_full())
+        if(itp_sgm_is_full()) //re-checks in case an injected dweel filled the buffer
         {
             break;
         }

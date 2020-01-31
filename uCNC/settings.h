@@ -61,8 +61,8 @@ typedef struct
 
 #define SETTINGS_ADDRESS_OFFSET 0
 #define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET (SETTINGS_ADDRESS_OFFSET + sizeof(settings_t) + 1)
-#define STARTUP_COMMAND1_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * __SIZEOF_FLOAT__) + 1) * (COORD_SYS_COUNT + 3)))
-#define STARTUP_COMMAND2_ADDRESS_OFFSET (STARTUP_COMMAND1_ADDRESS_OFFSET + (RX_BUFFER_SIZE>>1))
+#define STARTUP_BLOCK0_ADDRESS_OFFSET (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (((AXIS_COUNT * __SIZEOF_FLOAT__) + 1) * (COORD_SYS_COUNT + 3)))
+#define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 
 extern settings_t g_settings;
 
@@ -73,6 +73,7 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size);
 void settings_reset();
 uint8_t settings_change(uint8_t setting, float value);
 void settings_erase(uint16_t address, uint8_t size);
-void settings_load_gcode(uint16_t address);
+bool settings_check_startup_gcode(uint16_t address);
+void settings_save_startup_gcode(uint16_t address);
 
 #endif

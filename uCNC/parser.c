@@ -350,13 +350,13 @@ uint8_t parser_grbl_command()
         	{
         		case '0':
         		case '1':
-        			block_address = (!(c - '0') ? STARTUP_COMMAND1_ADDRESS_OFFSET : STARTUP_COMMAND2_ADDRESS_OFFSET);
+        			block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
         			if(parser_eat_next_char('='))
         			{
         				error = STATUS_INVALID_STATEMENT;
 					}
 					break;
-				case '\0':
+				case EOL:
 					return GRBL_SEND_STARTUP_BLOCKS;
 				default:
 					error = STATUS_INVALID_STATEMENT;
@@ -449,12 +449,12 @@ uint8_t parser_grbl_command()
         		break;
 			}
 			//everything ok reverts string and saves it
-			serial_restore_line();
-            do
-            {
-                c = serial_getc();
-                settings_save(block_address++, &c, 1);
-            } while (c);
+		    do
+		    {
+		        serial_ungetc();
+		    } while (serial_peek() != '=');
+		    serial_getc();
+			settings_save_startup_gcode(block_address);
             break;
         case 'C':
             //toggles motion control check mode
@@ -772,7 +772,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state)
 {
     bool hasnumber = false;
     float word_val = 0.0;
-    unsigned char word = '\0';
+    unsigned char word = EOL;
     uint8_t code = 0;
     uint8_t wordcount = 0;
     uint8_t mwords = 0;

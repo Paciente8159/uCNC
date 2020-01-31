@@ -37,7 +37,10 @@ volatile static uint8_t serial_tx_read;
 static uint8_t serial_tx_write;
 volatile static uint8_t serial_tx_count;
 
-static void serial_rx_clear();
+static uint8_t serial_read_select;
+static uint16_t serial_read_index;
+
+//static void serial_rx_clear();
 
 void serial_init()
 {
@@ -58,7 +61,16 @@ void serial_init()
 
 bool serial_rx_is_empty()
 {
-    return (!serial_rx_count);
+    switch(serial_read_select)
+    {
+        case SERIAL_UART:
+            return (!serial_rx_count);
+        case SERIAL_N0:
+        case SERIAL_N1:
+            return false;
+    }
+
+    return true;
 }
 
 bool serial_tx_is_empty()
@@ -68,81 +80,121 @@ bool serial_tx_is_empty()
 
 unsigned char serial_getc()
 {
-    if(!serial_rx_count)
+    unsigned char c;
+
+    switch(serial_read_select)
     {
-        return EOL;
+        case SERIAL_UART:
+            if(!serial_rx_count)
+            {
+                return EOL;
+            }
+
+            do
+            {
+                c = serial_rx_buffer[serial_rx_read];
+                if(++serial_rx_read == RX_BUFFER_SIZE)
+                {
+                    serial_rx_read = 0;
+                }
+                switch(c)
+                {
+                    case EOL: //EOL
+                        serial_rx_count--;
+                        return EOL;
+                    case ' ':
+                    case '\t'://eats white chars
+                        break;
+                    default:
+                        if(c >= 'a' && c <= 'z') //serial only returns upper case letters
+                        {
+                            c -= 32;
+                        }
+                        #ifdef ECHO_CMD
+                        serial_putc(c);
+                        #endif
+                        return c;
+                }
+            } while (serial_rx_count);
+            break;
+        case SERIAL_N0:
+        case SERIAL_N1:
+            c = mcu_eeprom_getc(serial_read_index++);
+            if(c)
+            {
+                serial_putc(c);
+            }
+            else
+            {
+                serial_putc(':');
+                serial_read_select = SERIAL_UART; // resets the serial select
+            }
+            return c;
     }
 
-    unsigned char c;
-    do
-    {
-        c = serial_rx_buffer[serial_rx_read];
-        if(++serial_rx_read == RX_BUFFER_SIZE)
-        {
-            serial_rx_read = 0;
-        }
-        switch(c)
-        {
-            case EOL: //EOL
-                serial_rx_count--;
-                return EOL;
-            case ' ':
-            case '\t'://eats white chars
-                break;
-            default:
-                if(c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-                #ifdef ECHO_CMD
-                serial_putc(c);
-                #endif
-                return c;
-        }
-    } while (serial_rx_count);
-    
     return EOL;
 }
 
-void serial_restore_line()
+void serial_ungetc()
 {
-    //increments line count and goes back to previous EOL
-    serial_rx_count++;
-    serial_rx_read--;
-    do
+	if(--serial_rx_read==0xFF)
     {
-        if(--serial_rx_read==0xFF)
-        {
-            serial_rx_read = RX_BUFFER_SIZE - 1;
-        }
-    } while (serial_rx_buffer[serial_rx_read] != '=' && serial_rx_read!=serial_rx_write);
-    serial_rx_read++;//advances to first block char
+        serial_rx_read = RX_BUFFER_SIZE - 1;
+    }
+    
+    if(serial_rx_buffer[serial_rx_read] == EOL)
+    {
+    	serial_rx_count++; //recoverd command
+	}
+}
+
+void serial_select(uint8_t source)
+{
+    serial_read_select = source;
+    switch(serial_read_select)
+    {
+        case SERIAL_N0:
+            serial_putc('>');
+            serial_read_index = STARTUP_BLOCK0_ADDRESS_OFFSET;
+            break;
+        case SERIAL_N1:
+            serial_putc('>');
+            serial_read_index = STARTUP_BLOCK1_ADDRESS_OFFSET;
+                break;
+    }
 }
 
 unsigned char serial_peek()
 {
     unsigned char c;
-    while (serial_rx_count)
+    switch(serial_read_select)
     {
-        c = serial_rx_buffer[serial_rx_read];
-        switch(c)
-        {
-            case ' ':
-            case '\t'://eats white chars
-                if(++serial_rx_read == RX_BUFFER_SIZE)
+        case SERIAL_UART:
+            while (serial_rx_count)
+            {
+                c = serial_rx_buffer[serial_rx_read];
+                switch(c)
                 {
-                    serial_rx_read = 0;
+                    case ' ':
+                    case '\t'://eats white chars
+                        if(++serial_rx_read == RX_BUFFER_SIZE)
+                        {
+                            serial_rx_read = 0;
+                        }
+                        break;
+                    default:
+                        if(c >= 'a' && c <= 'z') //serial only returns upper case letters
+                        {
+                            c -= 32;
+                        }
+                        return c;
                 }
-                break;
-            default:
-                if(c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-                return c;
-        }
+            }
+            break;
+        case SERIAL_N0:
+        case SERIAL_N1:
+            return mcu_eeprom_getc(serial_read_index);
     }
-    
     return EOL;
 }
 
@@ -170,7 +222,7 @@ void serial_putc(unsigned char c)
 
     serial_tx_buffer[serial_tx_write] = c;
     serial_tx_write++;
-    if(c == '\n')
+    if(c == '\n' || c == '\r')
     {
         serial_tx_count++;
         mcu_start_send();
@@ -374,7 +426,7 @@ void serial_tx_isr()
     uint8_t read = serial_tx_read;
     unsigned char c = serial_tx_buffer[read];
     COM_OUTREG = c;
-    if(c == '\n')
+    if(c == '\n' || c == '\r')
     {
         if(!--serial_tx_count)
         {
@@ -394,7 +446,7 @@ void serial_rx_clear()
     serial_rx_read = 0;
     serial_rx_count = 0;
     serial_rx_buffer[0] = EOL;
-    serial_tx_write = 0;
+    /*serial_tx_write = 0;
     serial_tx_read = 0;
-    serial_tx_count = 0;
+    serial_tx_count = 0;*/
 }

@@ -19,10 +19,14 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
-#define EOL '\0'
-#define OVF 0xFF //overflow char
+#define EOL 0x00 //end of line char
+#define OVF 0x7F //overflow char
 #define RX_BUFFER_SIZE 129 //buffer sizes
-#define TX_BUFFER_SIZE 129 //buffer sizes
+#define TX_BUFFER_SIZE 112 //buffer sizes
+
+#define SERIAL_UART 0
+#define SERIAL_N0 1
+#define SERIAL_N1 2
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -32,10 +36,12 @@ void serial_init();
 
 bool serial_rx_is_empty();
 unsigned char serial_getc();
+void serial_ungetc();
 unsigned char serial_peek();
 void serial_inject_cmd(const unsigned char* __s);
 void serial_restore_line();
-//void serial_rx_clear();
+void serial_rx_clear();
+void serial_select(uint8_t source);
 
 bool serial_tx_is_empty();
 void serial_putc(unsigned char c);

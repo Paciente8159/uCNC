@@ -63,7 +63,6 @@ void cnc_init()
 #endif
     //initializes all systems
     mcu_init();		//mcu
-    //they will be enable only after reset
     serial_init();	//serial
     settings_init();//settings
     parser_init();	//parser
@@ -91,32 +90,31 @@ void cnc_run()
                     serial_getc();
                     break;
                 case '$':
-                    #ifdef ECHO_CMD
+#ifdef ECHO_CMD
                     protocol_send_string(MSG_ECHO);
-                    #endif
+#endif
                     error = parser_grbl_command();
-                    #ifdef ECHO_CMD
+#ifdef ECHO_CMD
                     protocol_send_string(MSG_END);
-                    #endif
+#endif
                     error = parse_grbl_error_code(error); //processes the error code to perform additional actions
                     break;
                 default:
-                    #ifdef ECHO_CMD
+#ifdef ECHO_CMD
                     protocol_send_string(MSG_ECHO);
-                    #endif
-                    if(!cnc_get_exec_state(EXEC_LOCKED))
+#endif
+                    if(!cnc_get_exec_state(EXEC_GCODE_LOCKED))
                     {
                         error = parser_gcode_command();
-                        protocol_send_string(__romstr__("[itp]\r\n"));
                     }
                     else
                     {
                         error = STATUS_SYSTEM_GC_LOCK;
                     }
 
-                    #ifdef ECHO_CMD
+#ifdef ECHO_CMD
                     protocol_send_string(MSG_END);
-                    #endif
+#endif
                     break;
             }
             if(!error)
@@ -151,7 +149,7 @@ void cnc_call_rt_command(uint8_t command)
     switch(command)
     {
         case CMD_CODE_RESET:
-            //serial_rx_clear(); //dumps all commands
+            serial_rx_clear(); //dumps all commands
             cnc_stop();
             cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
             SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
@@ -229,7 +227,7 @@ void cnc_call_rt_command(uint8_t command)
 bool cnc_doevents()
 {
     cnc_exec_rt_commands();
-    
+
     if(CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
         protocol_send_status();
@@ -286,7 +284,7 @@ void cnc_home()
     itp_reset_rt_position();
     planner_resync_position();
     //invokes startup block execution
-    SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1);
+    SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
 }
 
 void cnc_alarm(uint8_t code)
@@ -392,8 +390,8 @@ void cnc_reset()
     }
     else
     {
-    	SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1);
-	}
+        SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
+    }
 
     //signals stepper enable pins
     io_set_outputs(STEPS_EN_MASK);
@@ -430,9 +428,9 @@ void cnc_reset()
 
 void cnc_exec_rt_commands()
 {
-	bool update_spindle = false;
-	
-	//executes feeds override rt commands
+    bool update_spindle = false;
+
+    //executes feeds override rt commands
     uint8_t cmd_mask = 0x80;
     uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
     cnc_state.rt_cmd = RT_CMD_CLEAR; //clears command flags
@@ -443,13 +441,19 @@ void cnc_exec_rt_commands()
             case RT_CMD_REPORT:
                 protocol_send_status();
                 break;
-            case RT_CMD_STARTUP_BLOCK1:
-				settings_load_gcode(STARTUP_COMMAND1_ADDRESS_OFFSET);
-				SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK2); //invokes command 2 on next pass
-                break;
-            case RT_CMD_STARTUP_BLOCK2:
-				settings_load_gcode(STARTUP_COMMAND2_ADDRESS_OFFSET);
+            case RT_CMD_STARTUP_BLOCK0:
+                if(settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+                {
+                    serial_select(SERIAL_N0);
+                }
 
+                SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1); //invokes command 2 on next pass
+                break;
+            case RT_CMD_STARTUP_BLOCK1:
+                if(settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
+                {
+                    serial_select(SERIAL_N1);
+                }
                 break;
         }
 
@@ -501,7 +505,7 @@ void cnc_exec_rt_commands()
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
     while(command)
     {
-    	update_spindle = true;
+        update_spindle = true;
         switch (command & cmd_mask)
         {
 #ifdef USE_SPINDLE
@@ -526,7 +530,7 @@ void cnc_exec_rt_commands()
                     //toogle state
                     if(io_get_pwm(SPINDLE_PWM_CHANNEL))
                     {
-                    	update_spindle = false;
+                        update_spindle = false;
                         io_set_pwm(SPINDLE_PWM_CHANNEL, 0);
                     }
                 }
@@ -535,7 +539,7 @@ void cnc_exec_rt_commands()
 #ifdef USE_COOLANT
             case RT_CMD_COOL_FLD_TOGGLE:
             case RT_CMD_COOL_MST_TOGGLE:
-            	update_spindle = false;
+                update_spindle = false;
                 if(!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
                 {
                     parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
@@ -548,12 +552,12 @@ void cnc_exec_rt_commands()
         cmd_mask>>=1;
     }
 
-    #ifdef USE_SPINDLE
+#ifdef USE_SPINDLE
     if(update_spindle)
     {
         planner_update_spindle(true);
     }
-    #endif
+#endif
 }
 
 void cnc_check_fault_systems()

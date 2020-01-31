@@ -160,9 +160,8 @@ void settings_init()
     {
         settings_reset();
         parser_parameters_reset();
-        settings_erase(STARTUP_COMMAND1_ADDRESS_OFFSET, 1);
-        settings_erase(STARTUP_COMMAND2_ADDRESS_OFFSET, 1);
         protocol_send_error(STATUS_SETTING_READ_FAIL);
+        protocol_send_ucnc_settings();
     }
 }
 
@@ -179,7 +178,7 @@ uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
 #else
         crc = crc7(value, crc);
 #endif
-        *__ptr++ = value;
+        *(__ptr++) = value;
     }
 
     return (crc ^ mcu_eeprom_getc(address));
@@ -205,7 +204,7 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 #else
         crc = crc7(*__ptr, crc);
 #endif
-        mcu_eeprom_putc(address++, *__ptr++);
+        mcu_eeprom_putc(address++, *(__ptr++));
     }
 
     mcu_eeprom_putc(address, crc);
@@ -386,44 +385,57 @@ void settings_erase(uint16_t address, uint8_t size)
 {
 	while(size)
 	{
-		mcu_eeprom_erase(address++);
+		mcu_eeprom_putc(address++, EOL);
 		size--;
 	}
+
+	//erase crc byte that is next to data
+	mcu_eeprom_putc(address, EOL);
 }
 
-void settings_load_gcode(uint16_t address)
+bool settings_check_startup_gcode(uint16_t address)
 {
-	uint8_t size = (RX_BUFFER_SIZE >> 1); //defined in serial.h
+	uint8_t size = (RX_BUFFER_SIZE - 1); //defined in serial.h
 	uint8_t crc = 0;
 	unsigned char c;
+	uint16_t cmd_address = address;
 	
-	serial_putc('>');
+	//pre-checks command valid crc
     do
     {
-        c = mcu_eeprom_getc(address++);
-        //atomic operation
-        mcu_disable_interrupts();
-        serial_rx_isr(c);
-        mcu_enable_interrupts();
+        c = mcu_eeprom_getc(cmd_address++);
+        crc = *(uint8_t*)rom_read_byte(&crc7_table[c ^ crc]);
         if(!c)
         {
         	break;
 		}
-		serial_putc(c);
         size--;
     }while(size);
     
-    serial_putc(':');
+    if(crc ^ mcu_eeprom_getc(cmd_address))
+    {
+    	serial_putc('>');
+    	serial_putc(':');
+    	protocol_send_error(STATUS_SETTING_READ_FAIL);
+    	settings_erase(address, 1);
+    	return false;
+	}
+
+    return true;
 }
 
-uint8_t settings_save_gcode(uint16_t address)
+void settings_save_startup_gcode(uint16_t address)
 {
-	uint8_t size = (RX_BUFFER_SIZE >> 1);
+	uint8_t size = (RX_BUFFER_SIZE - 1);
+	uint8_t crc = 0;
 	unsigned char c;
     do
     {
         c = serial_getc();
+        crc = *(uint8_t*)rom_read_byte(&crc7_table[c ^ crc]);
         mcu_eeprom_putc(address++, (uint8_t)c);
         size--;
     }while(size && c);
+    
+    mcu_eeprom_putc(address, crc);
 }
