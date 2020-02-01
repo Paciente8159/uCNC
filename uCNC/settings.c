@@ -174,7 +174,7 @@ uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
         size--;
         uint8_t value = mcu_eeprom_getc(address++);
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
-        crc = *(uint8_t*)rom_read_byte(&crc7_table[value ^ crc]);
+        crc = rom_read_byte(&crc7_table[value ^ crc]);
 #else
         crc = crc7(value, crc);
 #endif
@@ -200,7 +200,7 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
     {
         size--;
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
-        crc = *(uint8_t*)rom_read_byte(&crc7_table[*__ptr ^ crc]);
+        crc = rom_read_byte(&crc7_table[*__ptr ^ crc]);
 #else
         crc = crc7(*__ptr, crc);
 #endif
@@ -404,7 +404,7 @@ bool settings_check_startup_gcode(uint16_t address)
     do
     {
         c = mcu_eeprom_getc(cmd_address++);
-        crc = *(uint8_t*)rom_read_byte(&crc7_table[c ^ crc]);
+        crc = rom_read_byte(&crc7_table[c ^ crc]);
         if(!c)
         {
         	break;
@@ -432,7 +432,7 @@ void settings_save_startup_gcode(uint16_t address)
     do
     {
         c = serial_getc();
-        crc = *(uint8_t*)rom_read_byte(&crc7_table[c ^ crc]);
+        crc = rom_read_byte(&crc7_table[c ^ crc]);
         mcu_eeprom_putc(address++, (uint8_t)c);
         size--;
     }while(size && c);
