@@ -154,9 +154,22 @@ const settings_t __rom__ default_settings =
 
 void settings_init()
 {
+    const char version[3] = SETTINGS_VERSION;
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, (uint8_t)sizeof(settings_t));
+
+    if(!error)
+    {
+        for(uint8_t i = 0; i < 3; i++)
+        {
+            if(g_settings.version[i] != version[i])
+            {
+                error = 1; //just set an error
+                break;
+            }
+        }
+    }
 	
-    if(error || strcmp(g_settings.version, SETTINGS_VERSION))
+    if(error)
     {
         settings_reset();
         parser_parameters_reset();
@@ -377,7 +390,7 @@ uint8_t settings_change(uint8_t setting, float value)
             return STATUS_INVALID_STATEMENT;
     }
 
-    settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
+    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
     return result;
 }
 
