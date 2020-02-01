@@ -23,7 +23,6 @@
 	MCU specific definitions and replacements
 */
 #include <avr/pgmspace.h>
-#include <avr/cpufunc.h>
 
 //defines the frequency of the mcu
 #define F_CPU 16000000UL
@@ -91,9 +90,9 @@
 #define LIMITS_ISR_ID 0
 
 //Active limits switch weak pull-ups
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
+//#define LIMIT_X_PULLUP
+//#define LIMIT_Y_PULLUP
+//#define LIMIT_Z_PULLUP
 
 //Setup probe pin
 #define PROBE 5
@@ -112,8 +111,8 @@
 #define CONTROLS_ISR_ID 1
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX 0

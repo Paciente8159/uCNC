@@ -1,8 +1,8 @@
 /*
 	Name: machinedefs.h
 	Description: For every existing machine defines the number of AXIS and STEPPERS and the AXIS index.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 11/11/2019
 
@@ -27,17 +27,17 @@
 
 //define kynematics
 #if (MACHINE_KINEMATICS == MACHINE_CARTESIAN_XYZ)
-	#define AXIS_COUNT 3
-	#define AXIS_X 0
-	#define AXIS_Y 1
-	#define AXIS_Z 2
-	#define STEPPER_COUNT 3
+#define AXIS_COUNT 3
+#define AXIS_X 0
+#define AXIS_Y 1
+#define AXIS_Z 2
+#define STEPPER_COUNT 3
 #elif (MACHINE_KINEMATICS == MACHINE_COREXY)
-	#define AXIS_COUNT 3
-	#define AXIS_X 0
-	#define AXIS_Y 1
-	#define AXIS_Z 2
-	#define STEPPER_COUNT 3	
+#define AXIS_COUNT 3
+#define AXIS_X 0
+#define AXIS_Y 1
+#define AXIS_Z 2
+#define STEPPER_COUNT 3
 #else
 #error Kinematics not implemented
 #endif

@@ -1,6 +1,6 @@
 # Project: uCNC
 
-BOARD	 = MEGA_RAMBO14
+BOARD	 = UNO_GRBL
 ifeq "$(BOARD)" "UNO_GRBL"
 MCU 	 = atmega328p
 else ifeq "$(BOARD)" "MEGA_RAMBO14"
@@ -42,3 +42,4 @@ all-after: $(BIN)
 	${RM} $(HEX)
 	avr-objcopy -j .text -j .data -O ihex $(BIN) $(HEX)
 	avr-size -C --mcu=$(MCU) $(BIN)
+	avr-objdump -S -d $(BIN) > asm.text

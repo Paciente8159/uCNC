@@ -1,8 +1,8 @@
 /*
 	Name: config.h
 	Description: Compile time configurations for uCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 
@@ -22,8 +22,6 @@
 //include lists of available option
 #include "mcus.h"
 #include "machines.h"
-
-#define VERSION "1.0.0-alpha.2"
 
 /*
 	Choose the mcu type
@@ -76,6 +74,15 @@
 #endif
 
 /*
+	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
+	This is used by spindle to ensure spindle gets up to speed in motions
+*/
+#ifdef USE_SPINDLE
+#define DELAY_ON_RESUME 4
+#define DELAY_ON_SPINDLE_SPEED_CHANGE 1
+#endif
+
+/*
 	Define a stepper enable pin
 */
 //#define STEPPER_ENABLE DOUT1_MASK
@@ -121,6 +128,7 @@
 	G-code options
 */
 #define GCODE_IGNORE_LINE_NUMBERS
+//#define PROCESS_COMMENTS
 //#define GCODE_ACCEPT_WORD_E
 
 /*
@@ -132,13 +140,8 @@
 /*
 	Compilation specific options
 */
-//#define FORCE_GLOBALS_TO_0
+//#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-
-/*
-	Number of seconds of delay before motions restart after releasing from a hold
-*/
-
-#define DELAY_ON_RESUME 4
+//#define NO_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
 
 #endif

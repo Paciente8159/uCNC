@@ -9,9 +9,9 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DMCU=MCU_VIRTUAL -D__SIMUL___@@_
-CppCompiler=-DMCU=MCU_VIRTUAL_@@_
-Linker=
+Compiler=-Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=atmega328p -DF_CPU=16000000L -DMCU=MCU_UNO_GRBL_@@_
+CppCompiler=_@@_
+Linker=-w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=atmega328p_@@_
 IsCpp=0
 Icon=
 ExeOutput=
@@ -27,9 +27,9 @@ CommandLine=
 Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
-CompilerSet=0
-CompilerSettings=000000e0e0000000001000000
-UnitCount=38
+CompilerSet=6
+CompilerSettings=00000000e0100000000000000
+UnitCount=34
 
 [VersionInfo]
 Major=1
@@ -351,7 +351,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit32]
-FileName=mcu_virtual.c
+FileName=..\..\kinematics_corexy.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -361,7 +361,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit33]
-FileName=mcumap_virtual.h
+FileName=mcu_avr.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -371,7 +371,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit34]
-FileName=virtualtimer.c
+FileName=mcumap_uno_grbl.h
 CompileCpp=0
 Folder=
 Compile=1

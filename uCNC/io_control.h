@@ -8,7 +8,7 @@
 			-implement generic inputs
 			-implement outputs
 
-	Copyright: Copyright (c) João Martins 
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 07/12/2019
 

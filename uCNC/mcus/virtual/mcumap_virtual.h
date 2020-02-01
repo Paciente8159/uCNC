@@ -33,7 +33,7 @@
 #define rom_read_byte
 
 //commento to use console only
-#define COMPORT "\\\\.\\COM3"
+//#define COMPORT "\\\\.\\COM3"
 
 #ifndef COMPORT
 #define USECONSOLE
@@ -49,6 +49,7 @@ typedef struct virtual_map_t
 	uint8_t limits;
 	uint8_t probe;
 	uint32_t outputs;
+	unsigned char uart;
 }VIRTUAL_MAP;
 typedef VIRTUAL_MAP* virtports_t;
 extern virtports_t virtualports;
@@ -85,5 +86,8 @@ extern virtports_t virtualports;
 #define DOUTS_R0_OUTREG virtualports->outputs
 #define DOUT8 0
 #define DOUTS_R1_OUTREG virtualports->outputs
+
+#define COM_INREG virtualports->uart
+#define COM_OUTREG virtualports->uart
 
 #endif

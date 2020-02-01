@@ -50,6 +50,7 @@
 #include <avr/wdt.h>
 //#include <avr/delay.h>
 #include <avr/eeprom.h>
+#include <avr/cpufunc.h> 
 
 #ifdef ESTOP_PULLUP
 #define ESTOP_PULLUP_MASK ESTOP_MASK
@@ -577,19 +578,15 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 
 ISR(COM_RX_vect, ISR_BLOCK)
 {
-	unsigned char c = COM_INREG;
-	serial_rx_isr(c);
+	serial_rx_isr(COM_INREG);
 }
 
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if(serial_tx_is_empty())
-	{
+	serial_tx_isr();
+	/*{
 		UCSRB &= ~(1<<UDRIE);
-		return;
-	}
-	
-	COM_OUTREG = serial_tx_isr();
+	}*/
 }
 
 void mcu_init()
@@ -906,6 +903,11 @@ void mcu_start_send()
 	SETBIT(UCSRB,UDRIE);
 }
 
+void mcu_stop_send()
+{
+	CLEARBIT(UCSRB,UDRIE);
+}
+
 void mcu_putc(char c)
 {
 	loop_until_bit_is_set(UCSRA, UDRE);
@@ -1041,61 +1043,84 @@ static __attribute__((always_inline)) void mcu_delay_1ms()
 
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write.
+	do
+	{
+
+	} while(EECR & (1<<EEPE)); // Wait for completion of previous write.
 	EEAR = address; // Set EEPROM address register.
 	EECR = (1<<EERE); // Start EEPROM read operation.
 	return EEDR; // Return the byte read from EEPROM.
 }
 
-uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	char old_value; // Old EEPROM value.
-	char diff_mask; // Difference mask, i.e. old value XOR new value.
+	uint8_t old_value; // Old EEPROM value.
+	uint8_t diff_mask; // Difference mask, i.e. old value XOR new value.
 
 	cli(); // Ensure atomic operation for the write operation.
 	
-	do {} while( EECR & (1<<EEPE) ); // Wait for completion of previous write
-	do {} while( SPMCSR & (1<<SELFPRGEN) ); // Wait for completion of SPM.
+	do
+	{
+	} while(EECR & (1<<EEPE)); // Wait for completion of previous write.
+
+	do
+	{
+	} while(SPMCSR & (1<<SELFPRGEN)); // Wait for completion of SPM.
 	
 	EEAR = address; // Set EEPROM address register.
 	EECR = (1<<EERE); // Start EEPROM read operation.
 	old_value = EEDR; // Get old EEPROM value.
 	diff_mask = old_value ^ value; // Get bit differences.
-	
 	// Check if any bits are changed to '1' in the new value.
-	if( diff_mask & value ) {
+	if(diff_mask & value) {
 		// Now we know that _some_ bits need to be erased to '1'.
-		
 		// Check if any bits in the new value are '0'.
 		if( value != 0xff ) {
 			// Now we know that some bits need to be programmed to '0' also.
-			
 			EEDR = value; // Set EEPROM data register.
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (0<<EEPM1) | (0<<EEPM0); // ...and Erase+Write mode.
+			EECR = ((1<<EEMPE) | (0<<EEPM1) | (0<<EEPM0)); //Erase+Write mode.
 			EECR |= (1<<EEPE);  // Start Erase+Write operation.
 		} else {
 			// Now we know that all bits should be erased.
-
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (1<<EEPM0);  // ...and Erase-only mode.
+			EECR = ((1<<EEMPE) | (1<<EEPM0));  // Erase-only mode.
 			EECR |= (1<<EEPE);  // Start Erase-only operation.
 		}
 	} else {
 		// Now we know that _no_ bits need to be erased to '1'.
-		
 		// Check if any bits are changed from '1' in the old value.
-		if( diff_mask ) {
+		if(diff_mask)
+		{
 			// Now we know that _some_ bits need to the programmed to '0'.
-			
 			EEDR = value;   // Set EEPROM data register.
-			EECR = (1<<EEMPE) | // Set Master Write Enable bit...
-			       (1<<EEPM1);  // ...and Write-only mode.
+			EECR = ((1<<EEMPE) | (1<<EEPM1));  // Write-only mode.
 			EECR |= (1<<EEPE);  // Start Write-only operation.
 		}
 	}
 	
+	do
+	{
+	} while(EECR & (1<<EEPE)); // Wait for completion of previous write before enabling interrupts.
+
 	sei(); // Restore interrupt flag state.
 }
+/*
+void mcu_eeprom_erase(uint16_t address)
+{
+	cli(); // Ensure atomic operation for the write operation.
+	
+	do
+	{
+	} while(EECR & (1<<EEPE)); // Wait for completion of previous write
+
+	do
+	{
+	} while(SPMCSR & (1<<SELFPRGEN)); // Wait for completion of SPM.
+	
+	EEAR = address; // Set EEPROM address register.
+	EECR = (1<<EEMPE) | (1<<EEPM0);  // Erase-only mode.
+	EECR |= (1<<EEPE);  // Start Erase-only operation.
+
+	sei(); // Restore interrupt flag state.
+}*/
 
 #endif

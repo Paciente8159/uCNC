@@ -6,8 +6,8 @@
             - Tockenization; Converts the command string to a structure with GCode parameters
             - Validation; Validates the command by checking all the parameters (part 3.5 - 3.7 of the document)
             - Execution; Executes the command by the orther set in part 3.8 of the document.
-			
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 07/12/2019
 
@@ -31,6 +31,7 @@
 #include "machinedefs.h"
 
 void parser_init();
+uint8_t parse_grbl_error_code(uint8_t code);
 uint8_t parser_gcode_command();
 uint8_t parser_grbl_command();
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);

@@ -100,7 +100,7 @@ int virtualserial_open()
     return 0;
 }
 
-unsigned char serial_buffer[127];
+char serial_buffer[127];
 int serial_charcount = 0;
 int serial_charindex = 0;
 
@@ -114,7 +114,7 @@ unsigned char virtualserial_getc()
 	{
 		serial_charcount--;
 		serial_charindex++;
-		return serial_buffer[serial_charindex];
+		return (unsigned char)serial_buffer[serial_charindex];
 	}
 
 	if(ReadFile(win_serial, serial_buffer, sizeof(serial_buffer), &NoBytesRead, NULL))
@@ -125,7 +125,7 @@ unsigned char virtualserial_getc()
 			//fprintf(stderr, "[Recieved]:%s", serial_buffer);
 			serial_charcount--;
 			serial_charindex = 0;
-			return serial_buffer[0];
+			return (unsigned char)serial_buffer[0];
 		}
 		PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
 	}

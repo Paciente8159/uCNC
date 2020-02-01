@@ -1,10 +1,10 @@
 /*
-	Name: mcus.h
-	Description: Defines the available mcu types.
+	Name: build.h
+	Description: Compile time configurations for uCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 30/01/2020
 
 	uCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,10 +16,12 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUS_H
-#define MCUS_H
+#ifndef BUILD_H
+#define BUILD_H
 
-#define MCU_UNO_GRBL 1
-#define MCU_VIRTUAL 99
+#define MAJOR_MINOR_VERSION "1.0."
+#define PATCH_VERSION "0-alpha.3"
+
+#define VERSION MAJOR_MINOR_VERSION PATCH_VERSION
 
 #endif

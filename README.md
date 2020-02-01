@@ -70,10 +70,10 @@ TODO List of G-Codes in µCNC future releases:
 For that I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
   - Arduino UNO
+  - Arduino MEGA
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 In the future µCNC will most probably be extended to:
-  - Arduino Mega
   - Microchip PIC18F
   - ARM
   - Old PC with a RT OS???

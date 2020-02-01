@@ -130,9 +130,9 @@ void* comsimul()
 	for(;;)
 	{
 		#ifdef USECONSOLE
-		char c = getch();
+		unsigned char c = getch();
 		#else
-		char c = virtualserial_getc();
+		unsigned char c = virtualserial_getc();
 		#endif
 		if(c != 0)
 		{
@@ -147,9 +147,10 @@ void* comoutsimul()
 	static uint8_t i = 0;
 	for(;;)
 	{
-		if(mcu_tx_ready)
+		if(!serial_tx_is_empty())
 		{
-			char c = serial_tx_isr();
+			serial_tx_isr();
+			char c = virtualports->uart;
 			if(c != 0)
 			{
 				#ifdef USECONSOLE
@@ -286,6 +287,11 @@ void mcu_start_send()
 	mcu_tx_ready = true;
 }
 
+void mcu_stop_send()
+{
+	mcu_tx_ready = false;
+}
+
 void mcu_putc(char c)
 {
 	#ifdef USECONSOLE
@@ -407,10 +413,10 @@ void mcu_loadDummyPayload(const char* __fmt, ...)
 
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	FILE* fp = fopen("virtualeeprom", "r");
+	FILE* fp = fopen("virtualeeprom", "rb");
 	uint8_t c = 0;
 	
-	if(fp!=NULL)
+	if(fp != NULL)
 	{
 		if(!fseek(fp, address, SEEK_SET))
 		{
@@ -423,7 +429,50 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 	return c;
 }
 
-uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+	FILE* src = fopen("virtualeeprom", "rb+");
+	
+	if(!src)
+	{
+		FILE* dest = fopen("virtualeeprom", "wb");
+		fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
+	}
+
+	/*for(int i = 0; i < address; i++)
+	{
+		getc(src);
+	}*/
+	
+	fseek(src, address, SEEK_SET);
+	putc((int)value, src);
+	
+	fflush(src);
+	fclose(src);
+	return value;
+}
+/*
+void mcu_eeprom_erase(uint16_t address)
+{
+	FILE* src = fopen("virtualeeprom", "rb+");
+	
+	if(!src)
+	{
+		FILE* dest = fopen("virtualeeprom", "wb");
+		fclose(dest);
+		src = fopen("virtualeeprom", "rb+");
+	}
+
+	fseek(src, address, SEEK_SET);	
+	putc(EOF, src);
+	
+	fflush(src);
+	fclose(src);
+}*/
+
+
+/*uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	FILE* src = fopen("virtualeeprom", "r");
 	FILE* dest = fopen("newvirtualeeprom", "w");
@@ -456,7 +505,7 @@ uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
 	rename("newvirtualeeprom", "virtualeeprom");
 	
 	return value;
-}
+}*/
 
 void mcu_startPerfCounter()
 {

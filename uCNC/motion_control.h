@@ -1,8 +1,8 @@
 /*
 	Name: motion_control.h
 	Description: Contains the building blocks for performing motions/actions in uCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/11/2019
 
@@ -24,6 +24,7 @@
 #include "planner.h"
 
 void mc_init();
+bool mc_get_checkmode();
 bool mc_toogle_checkmode();
 uint8_t mc_line(float *target, planner_block_data_t block_data);
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, planner_block_data_t block_data);
