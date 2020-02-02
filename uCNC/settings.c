@@ -26,6 +26,7 @@
 #include "grbl_interface.h"
 #include "protocol.h"
 #include "parser.h"
+#include "cnc.h"
 
 //if settings struct is changed this version has to change too
 #define SETTINGS_VERSION "V01"
@@ -172,7 +173,6 @@ void settings_init()
     if(error)
     {
         settings_reset();
-        parser_parameters_reset();
         protocol_send_error(STATUS_SETTING_READ_FAIL);
         protocol_send_ucnc_settings();
     }
@@ -211,6 +211,11 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 
     while (size)
     {
+    	if(cnc_get_exec_state(EXEC_RUN))
+    	{
+    		cnc_doevents(); //updates buffer before cycling
+		}
+    	
         size--;
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
         crc = rom_read_byte(&crc7_table[*__ptr ^ crc]);
@@ -398,6 +403,10 @@ void settings_erase(uint16_t address, uint8_t size)
 {
 	while(size)
 	{
+		if(cnc_get_exec_state(EXEC_RUN))
+    	{
+    		cnc_doevents(); //updates buffer before cycling
+		}
 		mcu_eeprom_putc(address++, EOL);
 		size--;
 	}

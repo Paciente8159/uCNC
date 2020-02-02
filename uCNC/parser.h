@@ -35,7 +35,7 @@ uint8_t parse_grbl_error_code(uint8_t code);
 uint8_t parser_gcode_command();
 uint8_t parser_grbl_command();
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);
-float* parser_get_coordsys(uint8_t system_num);
+void parser_get_coordsys(uint8_t system_num, float* axis);
 bool parser_get_wco(float* axis);
 #ifdef USE_COOLANT
 void parser_update_coolant(uint8_t state);

@@ -677,8 +677,8 @@ void itp_step_isr()
 
     itp_busy = true;
     mcu_enable_interrupts();
-    //mcu_enable_interrupts();
-    //is steps remaining starts calc next step bits
+    
+	//is steps remaining starts calc next step bits
     if (itp_running_sgm != NULL)
     {
         itp_running_sgm->remaining_steps--;

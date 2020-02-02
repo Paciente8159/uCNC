@@ -30,7 +30,7 @@
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
-#define rom_read_byte
+#define rom_read_byte *
 
 //commento to use console only
 //#define COMPORT "\\\\.\\COM3"

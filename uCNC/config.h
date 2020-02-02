@@ -82,6 +82,8 @@
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 #endif
 
+#define USE_TOOL_CHANGER
+
 /*
 	Define a stepper enable pin
 */

@@ -302,14 +302,15 @@ void protocol_send_status()
 
 void protocol_send_gcode_coordsys()
 {
+	float axis[AXIS_COUNT];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
     for(uint8_t i = 0; i < coordlimit; i++)
     {
-        float* axis = parser_get_coordsys(i);
+        parser_get_coordsys(i, (float*)&axis);
         serial_print_str(__romstr__("[G"));
         serial_print_int(i + 54);
         serial_putc(':');
-        serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
     }
@@ -318,28 +319,39 @@ void protocol_send_gcode_coordsys()
     {
         serial_print_int(i - 5);
         serial_putc(':');
-        serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+        parser_get_coordsys(i, (float*)&axis);
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
     }
 
     serial_print_str(__romstr__("[G28:"));
-    serial_print_fltarr(parser_get_coordsys(28), AXIS_COUNT);
+    parser_get_coordsys(28, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G30:"));
-    serial_print_fltarr(parser_get_coordsys(30), AXIS_COUNT);
+    parser_get_coordsys(30, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G92:"));
-    serial_print_fltarr(parser_get_coordsys(92), AXIS_COUNT);
+    parser_get_coordsys(92, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_putc(']');
+    procotol_send_newline();
+    
+    serial_print_str(__romstr__("[TLO:"));
+    parser_get_coordsys(254, (float*)&axis);
+    serial_print_flt(axis[0]);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[PRB:"));
-    serial_print_fltarr(parser_get_coordsys(255), AXIS_COUNT);
+    parser_get_coordsys(255, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(':');
     serial_putc('0' + parser_get_probe_result());
     serial_putc(']');

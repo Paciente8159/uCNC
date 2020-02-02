@@ -25,7 +25,7 @@
 #include "config.h"
 #include "machinedefs.h"
 
-#define PLANNER_BUFFER_SIZE 12
+#define PLANNER_BUFFER_SIZE 15
 
 #define PLANNER_MOTION_MODE_NOMOTION 0
 #define PLANNER_MOTION_MODE_FEED 1
