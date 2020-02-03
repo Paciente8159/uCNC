@@ -1,16 +1,16 @@
 /*
 	Name: protocol.h
-	Description: uCNC implementation of a Grbl compatible send-response protocol
+	Description: µCNC implementation of a Grbl compatible send-response protocol
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -140,7 +140,7 @@ void protocol_send_status()
     itp_get_rt_position((float*)&axis);
     kinematics_apply_reverse_transform((float*)&axis);
     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
-    float spindle = planner_update_spindle(false);
+    uint16_t spindle = itp_get_rt_spindle();
 
     uint8_t state = cnc_get_exec_state(0xFF);
     uint8_t filter = 0x80;
@@ -230,8 +230,14 @@ void protocol_send_status()
     serial_print_int((uint16_t)feed);
 #ifdef USE_SPINDLE
     serial_putc(',');
-    serial_print_int((uint16_t)spindle);
+    serial_print_int(spindle);
 #endif
+
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+    serial_print_str(__romstr__("|Ln:"));
+    serial_print_long(itp_get_rt_line_number());
+#endif
+
 
     if(io_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | io_get_limits(LIMITS_MASK))
     {
@@ -302,14 +308,15 @@ void protocol_send_status()
 
 void protocol_send_gcode_coordsys()
 {
+	float axis[AXIS_COUNT];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
     for(uint8_t i = 0; i < coordlimit; i++)
     {
-        float* axis = parser_get_coordsys(i);
+        parser_get_coordsys(i, (float*)&axis);
         serial_print_str(__romstr__("[G"));
         serial_print_int(i + 54);
         serial_putc(':');
-        serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
     }
@@ -318,28 +325,39 @@ void protocol_send_gcode_coordsys()
     {
         serial_print_int(i - 5);
         serial_putc(':');
-        serial_print_fltarr(parser_get_coordsys(i), AXIS_COUNT);
+        parser_get_coordsys(i, (float*)&axis);
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
     }
 
     serial_print_str(__romstr__("[G28:"));
-    serial_print_fltarr(parser_get_coordsys(28), AXIS_COUNT);
+    parser_get_coordsys(28, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G30:"));
-    serial_print_fltarr(parser_get_coordsys(30), AXIS_COUNT);
+    parser_get_coordsys(30, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G92:"));
-    serial_print_fltarr(parser_get_coordsys(92), AXIS_COUNT);
+    parser_get_coordsys(92, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_putc(']');
+    procotol_send_newline();
+    
+    serial_print_str(__romstr__("[TLO:"));
+    parser_get_coordsys(254, (float*)&axis);
+    serial_print_flt(axis[0]);
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[PRB:"));
-    serial_print_fltarr(parser_get_coordsys(255), AXIS_COUNT);
+    parser_get_coordsys(255, (float*)&axis);
+    serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(':');
     serial_putc('0' + parser_get_probe_result());
     serial_putc(']');

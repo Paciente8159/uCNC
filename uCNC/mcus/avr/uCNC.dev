@@ -18,8 +18,8 @@ ExeOutput=
 ObjectOutput=
 LogOutput=
 LogOutputEnabled=0
-OverrideOutput=0
-OverrideOutputName=uCNC.exe
+OverrideOutput=1
+OverrideOutputName=uCNC.elf
 HostApplication=
 UseCustomMakefile=0
 CustomMakefile=
@@ -28,7 +28,7 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=6
-CompilerSettings=00000000e0100000000000000
+CompilerSettings=00000000e0100000001000000
 UnitCount=34
 
 [VersionInfo]

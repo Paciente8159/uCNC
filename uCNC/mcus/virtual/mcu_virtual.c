@@ -1,6 +1,6 @@
 /*
 	Name: mcu_virtual.c
-	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate uCNC.
+	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate µCNC.
 		For now it's only working/tested on Windows.
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
@@ -18,12 +18,12 @@
 	Author: João Martins
 	Date: 01/11/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -102,23 +102,25 @@ pthread_t thread_timer_id;
 
 void* timersimul()
 {
-	unsigned long pulse_counter = 0;
-	unsigned long integrator_counter = 0;
-	unsigned long ticks = 0;
-
+	unsigned long last_counter = 0;
 	for(;;)
 	{
 		if(global_irq_enabled && pulse_enabled)
 		{
-			if((*pulse_counter_ptr)==pulse_interval && pulse_enabled )
+			if(last_counter != *pulse_counter_ptr) //counter changed value
 			{
-				itp_step_isr();
-			}
-			
-			if((*pulse_counter_ptr)>=resetpulse_interval && pulse_enabled )
-			{
-				(*pulse_counter_ptr) = 0;
-				itp_step_reset_isr();
+				if((*pulse_counter_ptr)==pulse_interval && pulse_enabled)
+				{
+					itp_step_isr();
+				}
+				
+				if((*pulse_counter_ptr)>=resetpulse_interval && pulse_enabled )
+				{
+					(*pulse_counter_ptr) = 0;
+					itp_step_reset_isr();
+				}
+				
+				last_counter = *pulse_counter_ptr;
 			}
 		}
 	}
@@ -450,7 +452,6 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	
 	fflush(src);
 	fclose(src);
-	return value;
 }
 /*
 void mcu_eeprom_erase(uint16_t address)

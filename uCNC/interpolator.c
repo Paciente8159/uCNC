@@ -1,18 +1,18 @@
 /*
 	Name: itp_linear.c
-	Description: Implementation of a linear acceleration interpolator for uCNC.
+	Description: Implementation of a linear acceleration interpolator for µCNC.
 		The linear acceleration interpolator generates step profiles with constant acceleration.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 13/10/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -50,6 +50,9 @@ typedef struct itp_blk_
     uint32_t steps[STEPPER_COUNT];
     uint32_t totalsteps;
     uint32_t errors[STEPPER_COUNT];
+    #ifdef GCODE_PROCESS_LINE_NUMBERS
+    uint32_t line;
+    #endif
 } INTERPOLATOR_BLOCK;
 
 //contains data of the block segment being executed by the pulse and integrator routines
@@ -62,6 +65,10 @@ typedef struct pulse_sgm_
     uint16_t remaining_steps;
     uint16_t clocks_per_tick;
     uint8_t ticks_per_step;
+    #ifdef USE_SPINDLE
+    uint8_t spindle;
+    bool spindle_inv;
+    #endif
     float feed;
     bool update_speed;
 } INTERPOLATOR_SEGMENT;
@@ -87,6 +94,7 @@ static INTERPOLATOR_SEGMENT *itp_running_sgm;
 static uint32_t itp_step_pos[STEPPER_COUNT];
 //keeps track of the machine realtime position
 static uint32_t itp_rt_step_pos[STEPPER_COUNT];
+volatile static uint8_t itp_rt_spindle;
 //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
 //static volatile uint8_t itp_dirbits;
@@ -272,11 +280,9 @@ void itp_run()
             }
             //get the first block in the planner
             itp_cur_plan_block = planner_get_block();
-
-            //updates spindle
-#ifdef USE_SPINDLE
-            planner_update_spindle(true);
-#endif
+            #ifdef GCODE_PROCESS_LINE_NUMBERS
+            itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
+            #endif
 
             if (itp_cur_plan_block->dwell != 0)
             {
@@ -285,11 +291,13 @@ void itp_run()
 
             if (itp_cur_plan_block->distance == 0)
             {
-                /* NOT NECESSARY - ONLY DWELL. DOESN'T NEED BLOCK
-                /*if (itp_cur_plan_block->dwell != 0)
-                {
-                	itp_blk_buffer_write();
-                }*/
+                #ifdef USE_SPINDLE
+				if (itp_cur_plan_block->dwell == 0) //if dwell is 0 then run a single loop to updtate outputs (spindle)
+	            {
+	                itp_delay(1);
+	            }
+                #endif
+            	//no motion action (doesn't need a interpolator block = NULL)
                 itp_cur_plan_block = NULL;
                 planner_discard_block();
                 break; //exits after adding the dwell segment if motion is 0 (empty motion block)
@@ -365,11 +373,6 @@ void itp_run()
         }
         else if (itp_needs_update) //forces recalculation of acceleration and deacceleration profiles
         {
-            //updates spindle
-#ifdef USE_SPINDLE
-            planner_update_spindle(true);
-#endif
-
             itp_needs_update = false;
             float exit_speed_sqr = planner_get_block_exit_speed_sqr();
             junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
@@ -491,6 +494,12 @@ void itp_run()
         itp_cur_plan_block->distance -= partial_distance;
 
         sgm->feed = current_speed;
+        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
+        #ifdef LASER_MODE
+        planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
+        #else
+        planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
+        #endif
         unprocessed_steps -= sgm->remaining_steps;
 
         if (unprocessed_steps == accel_until) //resets float additions error
@@ -599,68 +608,72 @@ float itp_get_rt_feed()
     return feed;
 }
 
-//always fires before pulse
+#ifdef USE_SPINDLE
+uint16_t itp_get_rt_spindle()
+{
+	float spindle = (float)itp_rt_spindle;
+	spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	
+	return (uint16_t)roundf(spindle);
+}
+#endif
+
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+uint32_t itp_get_rt_line_number()
+{
+    return ((itp_sgm_data[itp_sgm_data_read].block!=NULL) ? itp_sgm_data[itp_sgm_data_read].block->line : 0);
+}
+#endif
+
+//always fires after pulse
 void itp_step_reset_isr()
 {
-    static uint8_t dirbits = 0;
-    static uint8_t prev_dirbits = 0;
-    static bool update_step_rate = false;
-    static uint16_t clock = 0;
-    static uint8_t pres = 0;
-    
-    if(itp_busy) //prevents reentrancy
-    {
-    	return;
-    }
-
     //always resets all stepper pins
     mcu_set_steps(0);
-
-    if (update_step_rate)
+    
+    if (itp_isr_finnished)
     {
-        update_step_rate = false;
-        mcu_change_step_ISR(clock, pres);
+        itp_stop(); //the buffer is empty. The ISR can stop
+        return; //itp_sgm is null
     }
-
-    if (prev_dirbits != dirbits)
+    
+    if(itp_running_sgm == NULL) //just in case it reenters
     {
-        mcu_set_dirs(dirbits);
-        prev_dirbits = dirbits;
-    }
-
-    itp_busy = true;
-    mcu_enable_interrupts();
-
-    //mcu_enable_interrupts();
-    //if no segment running tries to load one
-    if (itp_running_sgm == NULL)
+    	return;
+	}
+    
+    //if segment needs to update the step ISR (after preloading first step byte
+    if(itp_running_sgm->update_speed)
+	{
+		//set dir bits
+		if(itp_running_sgm->block != NULL)
+		{
+			mcu_set_dirs(itp_running_sgm->block->dirbits);
+		}
+		
+		mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
+		#ifdef USE_SPINDLE
+		mcu_set_pwm(SPINDLE_PWM_CHANNEL, itp_running_sgm->spindle);
+		if(!itp_running_sgm->spindle_inv)
+		{
+			io_clear_outputs(SPINDLE_DIR_MASK);
+		}
+		else
+		{
+			io_set_outputs(SPINDLE_DIR_MASK);
+		}
+		
+		itp_rt_spindle = itp_running_sgm->spindle;
+		#endif
+		itp_running_sgm->update_speed = false;
+	}
+	
+    //one step remaining discards current segment
+    if (itp_running_sgm->remaining_steps == 0)
     {
-        //if buffer is not empty
-        if (itp_sgm_data_slots < INTERPOLATOR_BUFFER_SIZE)
-        {
-            //loads a new segment
-            itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
-            cnc_set_exec_state(EXEC_RUN);
-            itp_isr_finnished = false;
-            if(itp_running_sgm->block!=NULL)
-            {
-                dirbits = itp_running_sgm->block->dirbits;
-            }
-            update_step_rate = itp_running_sgm->update_speed;
-            clock = itp_running_sgm->clocks_per_tick;
-            pres = itp_running_sgm->ticks_per_step;
-        }
-        else
-        {
-            //if buffer is empty and last step has been sent
-            if (itp_isr_finnished)
-            {
-                itp_stop(); //the buffer is empty. The ISR can stop
-            }
-        }
+        itp_running_sgm = NULL;
+        itp_sgm_buffer_read();
     }
-
-    itp_busy = false;
 }
 
 void itp_step_isr()
@@ -677,8 +690,25 @@ void itp_step_isr()
 
     itp_busy = true;
     mcu_enable_interrupts();
-    //mcu_enable_interrupts();
-    //is steps remaining starts calc next step bits
+    
+    //if buffer empty loads one
+    if (itp_running_sgm == NULL)
+    {
+        //if buffer is not empty
+        if (itp_sgm_data_slots < INTERPOLATOR_BUFFER_SIZE)
+        {
+            //loads a new segment
+            itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
+            cnc_set_exec_state(EXEC_RUN);
+            itp_isr_finnished = false;
+        }
+        else
+        {
+        	itp_isr_finnished = true;
+        }
+    }
+    
+	//is steps remaining starts calc next step bits
     if (itp_running_sgm != NULL)
     {
         itp_running_sgm->remaining_steps--;
@@ -783,19 +813,9 @@ void itp_step_isr()
 #endif
         }
 
-        //one step remaining discards current segment
-        if (itp_running_sgm->remaining_steps == 0)
-        {
-            itp_running_sgm = NULL;
-            itp_sgm_buffer_read();
-        }
-    }
-    else
-    {
-        //signals isr to stop after processing last step
-        itp_isr_finnished = true;
     }
 
+	mcu_disable_interrupts();//lock isr before clearin busy flag
     itp_busy = false;
 }
 
@@ -807,5 +827,11 @@ void itp_delay(uint16_t delay)
     itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
     itp_sgm_data[itp_sgm_data_write].update_speed = true;
     itp_sgm_data[itp_sgm_data_write].feed = 0;
+    #ifdef LASER_MODE
+    itp_sgm_data[itp_sgm_data_write].spindle = 0;
+    itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    #else
+    planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    #endif
     itp_sgm_buffer_write();
 }

@@ -1,18 +1,18 @@
 /*
 	Name: settings.c
-	Description: uCNC runtime settings. These functions store settings and other parameters
+	Description: µCNC runtime settings. These functions store settings and other parameters
 		in non-volatile memory.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 26/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -26,6 +26,7 @@
 #include "grbl_interface.h"
 #include "protocol.h"
 #include "parser.h"
+#include "cnc.h"
 
 //if settings struct is changed this version has to change too
 #define SETTINGS_VERSION "V01"
@@ -154,12 +155,24 @@ const settings_t __rom__ default_settings =
 
 void settings_init()
 {
+    const char version[3] = SETTINGS_VERSION;
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, (uint8_t)sizeof(settings_t));
+
+    if(!error)
+    {
+        for(uint8_t i = 0; i < 3; i++)
+        {
+            if(g_settings.version[i] != version[i])
+            {
+                error = 1; //just set an error
+                break;
+            }
+        }
+    }
 	
-    if(error || strcmp(g_settings.version, SETTINGS_VERSION))
+    if(error)
     {
         settings_reset();
-        parser_parameters_reset();
         protocol_send_error(STATUS_SETTING_READ_FAIL);
         protocol_send_ucnc_settings();
     }
@@ -198,6 +211,11 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 
     while (size)
     {
+    	if(cnc_get_exec_state(EXEC_RUN))
+    	{
+    		cnc_doevents(); //updates buffer before cycling
+		}
+    	
         size--;
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
         crc = rom_read_byte(&crc7_table[*__ptr ^ crc]);
@@ -377,7 +395,7 @@ uint8_t settings_change(uint8_t setting, float value)
             return STATUS_INVALID_STATEMENT;
     }
 
-    settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
+    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
     return result;
 }
 
@@ -385,6 +403,10 @@ void settings_erase(uint16_t address, uint8_t size)
 {
 	while(size)
 	{
+		if(cnc_get_exec_state(EXEC_RUN))
+    	{
+    		cnc_doevents(); //updates buffer before cycling
+		}
 		mcu_eeprom_putc(address++, EOL);
 		size--;
 	}

@@ -11,12 +11,12 @@
 	Author: João Martins
 	Date: 07/12/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -35,7 +35,7 @@ uint8_t parse_grbl_error_code(uint8_t code);
 uint8_t parser_gcode_command();
 uint8_t parser_grbl_command();
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);
-float* parser_get_coordsys(uint8_t system_num);
+void parser_get_coordsys(uint8_t system_num, float* axis);
 bool parser_get_wco(float* axis);
 #ifdef USE_COOLANT
 void parser_update_coolant(uint8_t state);

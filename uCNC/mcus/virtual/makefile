@@ -1,4 +1,4 @@
-# Project: uCNC
+# Project: µCNC
 
 MCU 	 = virtual
 CC       = gcc.exe
