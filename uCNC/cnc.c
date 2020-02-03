@@ -1,17 +1,17 @@
 /*
 	Name: cnc.c
-	Description: uCNC main unit.
+	Description: µCNC main unit.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 17/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -149,8 +149,8 @@ void cnc_call_rt_command(uint8_t command)
     switch(command)
     {
         case CMD_CODE_RESET:
-            serial_rx_clear(); //dumps all commands
             cnc_stop();
+            serial_rx_clear(); //dumps all commands
             cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
             SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
             break;
@@ -165,7 +165,6 @@ void cnc_call_rt_command(uint8_t command)
             break;
         case CMD_CODE_SAFETY_DOOR:
             cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
-            SETFLAG(cnc_state.rt_cmd, RT_CMD_SAFETY_DOOR);
             break;
         case CMD_CODE_JOG_CANCEL:
             if(cnc_get_exec_state(EXEC_JOG))
@@ -226,14 +225,9 @@ void cnc_call_rt_command(uint8_t command)
 
 bool cnc_doevents()
 {
-    cnc_exec_rt_commands();
+    cnc_exec_rt_commands(); //executes all pending realtime commands
 
-    if(CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
-    {
-        protocol_send_status();
-        CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
-    }
-
+    //check security interlocking for any problem
     if(!cnc_check_interlocking())
     {
         return !cnc_get_exec_state(EXEC_ABORT);
@@ -318,6 +312,8 @@ void cnc_unlock()
     CLEARFLAG(cnc_state.exec_state,EXEC_NOHOME | EXEC_LIMITS);
     //clears all other locking flags
     cnc_clear_exec_state(EXEC_LOCKED);
+    //signals stepper enable pins
+    io_set_outputs(STEPS_EN_MASK);
 }
 
 uint8_t cnc_get_exec_state(uint8_t statemask)
@@ -366,6 +362,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 
 void cnc_reset()
 {
+    //resets all realtime command flags
     cnc_state.rt_cmd = RT_CMD_CLEAR;
     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
@@ -376,7 +373,7 @@ void cnc_reset()
     itp_clear();
     planner_clear();
     protocol_send_string(MSG_STARTUP);
-    //tries to clear alarms or active hold state
+    //tries to clear alarms or any active hold state
     cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 
     //if any alarm state is still active checks system faults
@@ -390,48 +387,24 @@ void cnc_reset()
     }
     else
     {
+        cnc_unlock();
         SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
     }
-
-    //signals stepper enable pins
-    io_set_outputs(STEPS_EN_MASK);
 }
 
-/*void cnc_exec_rt_messages()
-{
-	//executes rt commands (messages)
-	uint8_t cmd_mask = 0x08;
-    uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
-    cnc_state.rt_cmd = RT_CMD_CLEAR; //clears command flags
-    while(command)
-    {
-        switch (command & cmd_mask)
-        {
-            case RT_CMD_REPORT:
-                protocol_send_status();
-                break;
-            case RT_CMD_SAFETY_DOOR:
-                protocol_send_string(MSG_FEEDBACK_6);
-                break;
-            case RT_CMD_LIMITS:
-                protocol_send_string(MSG_FEEDBACK_7);
-                break;
-            case RT_CMD_ABORT:
-                //protocol_send_string(MSG_FEEDBACK_12); do nothing
-                break;
-        }
-
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask>>=1;
-    }
-}*/
-
+//Executes pending realtime commands
+//Realtime commands are split in to 3 groups
+//  -operation commands
+//  -feed override commands
+//  -tools override commands
+//All active flags will be executed by MSB order (higher first)
+//If two flags have different effects on the same attribute the one with the LSB will run last and overwrite the other
 void cnc_exec_rt_commands()
 {
     bool update_spindle = false;
 
     //executes feeds override rt commands
-    uint8_t cmd_mask = 0x80;
+    uint8_t cmd_mask = 0x04;
     uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
     cnc_state.rt_cmd = RT_CMD_CLEAR; //clears command flags
     while(command)
@@ -442,15 +415,15 @@ void cnc_exec_rt_commands()
                 protocol_send_status();
                 break;
             case RT_CMD_STARTUP_BLOCK0:
-                if(settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+                if(settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0
                 {
                     serial_select(SERIAL_N0);
                 }
 
-                SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1); //invokes command 2 on next pass
+                SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1); //invokes command 1 on next pass
                 break;
             case RT_CMD_STARTUP_BLOCK1:
-                if(settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
+                if(settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET)) //loads command 1
                 {
                     serial_select(SERIAL_N1);
                 }
@@ -555,7 +528,13 @@ void cnc_exec_rt_commands()
 #ifdef USE_SPINDLE
     if(update_spindle)
     {
-        planner_update_spindle(true);
+    	itp_update();
+    	if(planner_buffer_is_empty())
+    	{
+    		planner_block_data_t block = {};
+    		block.spindle = planner_get_previous_spindle_speed();
+    		mc_spindle_coolant(block);
+		}
     }
 #endif
 }

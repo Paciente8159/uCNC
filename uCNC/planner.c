@@ -7,12 +7,12 @@
 	Author: João Martins
 	Date: 24/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -45,7 +45,7 @@ typedef struct
 
 static float planner_coord[AXIS_COUNT];
 #ifdef USE_SPINDLE
-static float planner_spindle;
+static int16_t planner_spindle;
 #endif
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
@@ -229,42 +229,31 @@ float planner_get_block_top_speed()
 }
 
 #ifdef USE_SPINDLE
-float planner_update_spindle(bool update_outputs)
+void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert)
 {
-    float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
+	float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
+	*pwm = 0;
+    *invert = (spindle < 0);
 
-    if(update_outputs)
-    {
-        if (spindle >= 0)
-        {
-            io_clear_outputs(SPINDLE_DIR_MASK);
-        }
-        else
-        {
-            io_set_outputs(SPINDLE_DIR_MASK);
-        }
-    }
-
-    uint8_t pwm = 0;
     if (spindle != 0)
     {
         spindle = ABS(spindle);
+        #ifdef LASER_MODE
+        spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
+        #endif
         if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
         {
-            spindle *= 0.01f * planner_overrides.spindle_override;
+            spindle = 0.01f * planner_overrides.spindle_override * spindle;
         }
         spindle = MIN(spindle, g_settings.spindle_max_rpm);
         spindle = MAX(spindle, g_settings.spindle_min_rpm);
-        pwm = (uint8_t)roundf(254 * (spindle / g_settings.spindle_max_rpm));
-        pwm = MAX(pwm, 1);
+        *pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
     }
+}
 
-    if(update_outputs)
-    {
-        io_set_pwm(SPINDLE_PWM_CHANNEL, pwm);
-    }
-
-    return spindle;
+float planner_get_previous_spindle_speed()
+{
+	return planner_spindle;
 }
 #endif
 
@@ -352,15 +341,19 @@ void planner_add_line(float *target, planner_block_data_t block_data)
     planner_data[planner_data_write].acceleration = 0;
     planner_data[planner_data_write].rapid_feed_sqr = 0;
     planner_data[planner_data_write].feed_sqr = 0;
+    //sets entry and max entry feeds as if it would start and finish from a stoped state
     planner_data[planner_data_write].entry_feed_sqr = 0;
     planner_data[planner_data_write].entry_max_feed_sqr = 0;
 #ifdef USE_SPINDLE
     planner_spindle = planner_data[planner_data_write].spindle = block_data.spindle;
 #endif
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+	planner_data[planner_data_write].line = block_data.line;
+#endif
     planner_data[planner_data_write].dwell = block_data.dwell;
 
     planner_data[planner_data_write].distance = block_data.distance;
-    if(block_data.motion_mode == PLANNER_MOTION_MODE_NOMOTION)
+    if(CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_NOMOTION))
     {
         planner_buffer_write();
         return;
@@ -423,16 +416,13 @@ void planner_add_line(float *target, planner_block_data_t block_data)
         block_data.feed = rapid_feed;
     }
 
-    //sets entry and max entry feeds as if it would start and finish from a stoped state
-    planner_data[planner_data_write].entry_feed_sqr = 0;
     planner_data[planner_data_write].feed_sqr = (block_data.feed * block_data.feed);
-    planner_data[planner_data_write].entry_max_feed_sqr = 0;
     planner_data[planner_data_write].rapid_feed_sqr = rapid_feed * rapid_feed;
     //consider initial angle factor of 1 (90� corner or more)
     float angle_factor = 1;
 
     //if more than one move stored cals juntion speeds and recalculates speed profiles
-    if (!planner_buffer_is_empty())
+    if (!planner_buffer_is_empty() && !CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_EXACT_STOP))
     {
         //calculates the junction angle with previous
         if (cos_theta > 0)
@@ -450,6 +440,9 @@ void planner_add_line(float *target, planner_block_data_t block_data)
         }
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
+        float factor = ((!CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : G64_MAX_ANGLE_FACTOR);
+        angle_factor = MAX(angle_factor - factor, 0);
+        
         if (angle_factor < 1.0f)
         {
             float junc_feed_sqr = (1 - angle_factor);

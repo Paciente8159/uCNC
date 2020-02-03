@@ -1,16 +1,16 @@
 /*
 	Name: motion_control.c
-	Description: Contains the building blocks for performing motions/actions in uCNC
+	Description: Contains the building blocks for performing motions/actions in µCNC
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/11/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -81,7 +81,7 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
         }
     }
 
-    if(block_data.motion_mode != PLANNER_MOTION_MODE_NOMOTION)
+    if(!CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_NOMOTION))
     {
         float mc_position[AXIS_COUNT];
 
@@ -98,7 +98,7 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
         }
 
         block_data.distance = sqrtf(block_data.distance);
-        if(block_data.motion_mode == PLANNER_MOTION_MODE_INVERSEFEED)
+        if(CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_INVERSEFEED))
         {
             //calculates feed rate in reverse feed rate mode
             block_data.feed = block_data.distance / block_data.feed;
@@ -183,7 +183,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     increment[axis_0] = 0;
     increment[axis_1] = 0;
 
-    if(block_data.motion_mode == PLANNER_MOTION_MODE_INVERSEFEED)
+    if(CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_INVERSEFEED))
     {
         //split the required time to complete the motion with the number of segments
         block_data.feed /= segment_count;

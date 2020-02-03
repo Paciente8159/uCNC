@@ -11,12 +11,12 @@
 	Author: João Martins
 	Date: 07/12/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -149,21 +149,21 @@ typedef struct
     float p;
     float q;
     float r;
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+    uint32_t n;
+#endif
 #ifdef USE_SPINDLE
-    float s;
+    int16_t s;
 #endif
     uint8_t t;
 } parser_words_t;
 
 typedef struct
 {
-#ifndef GCODE_IGNORE_LINE_NUMBERS
-    uint32_t linenum;
-#endif
     parser_groups_t groups;
     float feedrate;
 #ifdef USE_SPINDLE
-	float spindle;
+	int16_t spindle;
 #endif
 	uint8_t tool_index;
 } parser_state_t;
@@ -521,7 +521,7 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
     modalgroups[4] = parser_state.groups.coord_system + 54;
 #ifdef USE_SPINDLE
     modalgroups[5] = parser_state.groups.spindle_turning + 3;
-    *spindle = (uint16_t)parser_state.spindle;
+    *spindle = (uint16_t)ABS(parser_state.spindle);
 #endif
 #ifdef USE_COOLANT
     modalgroups[6] = 9 - parser_state.groups.coolant;
@@ -1113,7 +1113,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words)
                 }
                 break;
             case 'N':
-#ifndef GCODE_IGNORE_LINE_NUMBERS
+#ifdef GCODE_PROCESS_LINE_NUMBERS
                 word_group = &parser_word2;
                 word_group_val = GCODE_WORD_N;
                 if (!isinteger || wordcount != 0 || word_val < 0)
@@ -1121,7 +1121,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words)
                     return STATUS_GCODE_INVALID_LINE_NUMBER;
                 }
 
-                new_state->linenum = trunc(word_val);
+                words->n = trunc(word_val);
 #else
                 word_group = NULL;
 #endif
@@ -1243,7 +1243,7 @@ uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words)
             case 'S':
                 word_group = &parser_word2;
                 word_group_val = GCODE_WORD_S;
-                words->s = word_val;
+                words->s = (uint16_t)roundf(word_val);
 
                 break;
 #endif
@@ -1449,15 +1449,25 @@ uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words
 //group 5 - feed rate mode
         if (new_state->groups.motion >= 1 && new_state->groups.motion <= 3)
         {
-            if (new_state->groups.feedrate_mode == 0 && !CHECKFLAG(parser_word0, GCODE_WORD_F))
+        	if(!CHECKFLAG(parser_word0, GCODE_WORD_F))
+        	{
+        		if (new_state->groups.feedrate_mode == 0)
+	            {
+	                return STATUS_GCODE_UNDEFINED_FEED_RATE;
+	            }
+	
+	            if(new_state->feedrate == 0)
+	            {
+	                return STATUS_GCODE_UNDEFINED_FEED_RATE;
+	            }
+			}
+            else
             {
-                return STATUS_GCODE_UNDEFINED_FEED_RATE;
-            }
-
-            if(new_state->feedrate == 0)
-            {
-                return STATUS_GCODE_UNDEFINED_FEED_RATE;
-            }
+            	if(words->f == 0)
+	            {
+	                return STATUS_GCODE_UNDEFINED_FEED_RATE;
+	            }
+			}
         }
     }
 //group 2 - plane selection (nothing to be checked)
@@ -1524,6 +1534,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     float planner_last_pos[AXIS_COUNT];
     planner_block_data_t block_data = {};
 
+    #ifdef GCODE_PROCESS_LINE_NUMBERS
+    block_data.line = words->n;
+    #endif
+
     planner_get_position(planner_last_pos);
 
     //RS274NGC v3 - 3.8 Order of Execution
@@ -1537,7 +1551,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
             block_data.motion_mode = PLANNER_MOTION_MODE_INVERSEFEED;
         }
     }
-    //3. set feed rate (uCNC works in units per second and not per minute)
+    //3. set feed rate (µCNC works in units per second and not per minute)
     if (CHECKFLAG(parser_word0, GCODE_WORD_F))
     {
         if (new_state->groups.feedrate_mode != 0)
@@ -1648,7 +1662,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
         }
 
         //if new feed is defined (normal feed mode) convert o mm
-        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && block_data.motion_mode == PLANNER_MOTION_MODE_FEED)
+        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
         {
             words->f *= 25.4f;
         }
@@ -1674,8 +1688,17 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     	settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
         parser_wco_counter = 0;
     }
-    //16. set path control mode (G61, G61.1, G64) (not implemented yet)
-
+    //16. set path control mode (G61, G61.1, G64)
+    switch(new_state->groups.path_mode)
+    {
+        case 1:
+            block_data.motion_mode |= PLANNER_MOTION_EXACT_STOP;
+            break;
+        case 3:
+            block_data.motion_mode |= PLANNER_MOTION_CONTINUOUS;
+            break;
+    }
+    
     //17. set distance mode (G90, G91) (OK nothing to be done)
 
     //18. set retract mode (G98, G99)  (not implemented yet)
@@ -1684,7 +1707,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     //set the initial feedrate to the maximum value
     block_data.feed = FLT_MAX;
     //limit feed to the maximum possible feed
-    if (block_data.motion_mode == PLANNER_MOTION_MODE_FEED)
+    if (CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
     {
         block_data.feed = MIN(block_data.feed, words->f);
     }

@@ -1,17 +1,17 @@
 /*
 	Name: config.h
-	Description: Compile time configurations for uCNC.
+	Description: Compile time configurations for µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 19/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -44,7 +44,7 @@
 #define BAUD 115200
 
 /*
-	Defines the number of supported coordinate systems supported by uCNC
+	Defines the number of supported coordinate systems supported by µCNC
 	Can be any value between 1 and 9
 */
 
@@ -71,15 +71,13 @@
 #define SPINDLE_PWM_CHANNEL 0
 //sets the spindle dir pin mask
 #define SPINDLE_DIR_OUTPIN 0
-#endif
-
 /*
 	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
 	This is used by spindle to ensure spindle gets up to speed in motions
 */
-#ifdef USE_SPINDLE
 #define DELAY_ON_RESUME 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
+//#define LASER_MODE
 #endif
 
 #define USE_TOOL_CHANGER
@@ -129,9 +127,12 @@
 /*
 	G-code options
 */
-#define GCODE_IGNORE_LINE_NUMBERS
+//#define GCODE_PROCESS_LINE_NUMBERS
 //#define PROCESS_COMMENTS
 //#define GCODE_ACCEPT_WORD_E
+//set factor for countinuos mode
+//value must be set between 0.0 and 1.0 If set to 1.0 is the same as exact path mode (G61)
+#define G64_MAX_ANGLE_FACTOR 0.2f
 
 /*
 	Report specific options

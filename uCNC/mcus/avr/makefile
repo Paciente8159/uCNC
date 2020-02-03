@@ -1,4 +1,4 @@
-# Project: uCNC
+# Project: µCNC
 
 BOARD	 = UNO_GRBL
 ifeq "$(BOARD)" "UNO_GRBL"

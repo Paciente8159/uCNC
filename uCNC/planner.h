@@ -7,12 +7,12 @@
 	Author: João Martins
 	Date: 24/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -27,22 +27,32 @@
 
 #define PLANNER_BUFFER_SIZE 15
 
-#define PLANNER_MOTION_MODE_NOMOTION 0
-#define PLANNER_MOTION_MODE_FEED 1
-#define PLANNER_MOTION_MODE_INVERSEFEED 2
+#define PLANNER_MOTION_MODE_NOMOTION 1
+#define PLANNER_MOTION_MODE_FEED 2
+#define PLANNER_MOTION_MODE_INVERSEFEED 4
+
+#define PLANNER_MOTION_EXACT_PATH 32 //default (not used)
+#define PLANNER_MOTION_EXACT_STOP 64
+#define PLANNER_MOTION_CONTINUOUS 128
 
 typedef struct
 {
+    #ifdef GCODE_PROCESS_LINE_NUMBERS
+    uint32_t line;
+    #endif
     float dir_vect[AXIS_COUNT];
     float distance;
     float feed;
-    float spindle;
+    int16_t spindle;
     uint16_t dwell;
     uint8_t motion_mode;
 } planner_block_data_t;
 
 typedef struct
 {
+    #ifdef GCODE_PROCESS_LINE_NUMBERS
+    uint32_t line;
+    #endif
     uint8_t dirbits;
     float pos[AXIS_COUNT];
 
@@ -58,7 +68,7 @@ typedef struct
     float accel_inv;
 
 #ifdef USE_SPINDLE
-    float spindle;
+    int16_t spindle;
 #endif
 #ifdef USE_COOLANT
     uint8_t coolant;
@@ -76,7 +86,8 @@ planner_block_t *planner_get_block();
 float planner_get_block_exit_speed_sqr();
 float planner_get_block_top_speed();
 #ifdef USE_SPINDLE
-float planner_update_spindle(bool update_outputs);
+void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert);
+float planner_get_previous_spindle_speed();
 #endif
 void planner_discard_block();
 void planner_add_line(float *target, planner_block_data_t block_data);

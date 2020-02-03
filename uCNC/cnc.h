@@ -1,17 +1,17 @@
 /*
 	Name: cnc.h
-	Description: uCNC main unit.
+	Description: µCNC main unit.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 17/09/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -30,9 +30,7 @@
 #define RT_CMD_STARTUP_BLOCK0 1
 #define RT_CMD_STARTUP_BLOCK1 2
 #define RT_CMD_REPORT 4
-#define RT_CMD_SAFETY_DOOR 16 //does nothing
-#define RT_CMD_LIMITS 32 //does nothing
-#define RT_CMD_ABORT 64
+#define RT_CMD_ABORT 128
 
 //feed_ovr_cmd
 #define RT_CMD_FEED_100 1

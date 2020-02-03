@@ -8,12 +8,12 @@
 	Author: João Martins
 	Date: 13/10/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -33,7 +33,10 @@ void itp_clear();
 void itp_get_rt_position(float* axis);
 void itp_reset_rt_position();
 float itp_get_rt_feed();
-float itp_get_rt_spindle();
+uint16_t itp_get_rt_spindle();
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+uint32_t itp_get_rt_line_number();
+#endif
 void itp_delay(uint16_t delay);
 
 #endif

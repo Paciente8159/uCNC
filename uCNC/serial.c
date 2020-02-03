@@ -1,17 +1,17 @@
 /*
 	Name: serial.c
-	Description: Serial communication basic read/write functions uCNC.
+	Description: Serial communication basic read/write functions µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 30/12/2019
 
-	uCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	uCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -272,6 +272,35 @@ void serial_print_int(uint16_t num)
     }
     while(i);
 }
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+void serial_print_long(uint32_t num)
+{
+    if (num == 0)
+    {
+        serial_putc('0');
+        return;
+    }
+
+    unsigned char buffer[11];
+    uint8_t i = 0;
+
+    while (num > 0)
+    {
+        uint8_t digit = num % 10;
+        num = (uint32_t)truncf((float)num * 0.1f);
+        buffer[i++] = digit;
+        /*buffer[i++] = num % 10;
+        num /= 10;*/
+    }
+
+    do
+    {
+        i--;
+        serial_putc('0' + buffer[i]);
+    }
+    while(i);
+}
+#endif
 /*
 void serial_print_int(uint16_t num)
 {

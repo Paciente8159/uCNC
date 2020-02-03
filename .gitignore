@@ -54,7 +54,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-uCNC/mcus/virtual/inputs.txt
 *.win
-uCNC/mcus/virtual/virtualeeprom
-uCNC/mcus/avr/asm.text
+virtualeeprom
+*.txt
