@@ -42,4 +42,4 @@ all-after: $(BIN)
 	${RM} $(HEX)
 	avr-objcopy -j .text -j .data -O ihex $(BIN) $(HEX)
 	avr-size -C --mcu=$(MCU) $(BIN)
-	avr-objdump -S -d $(BIN) > asm.text
+	avr-objdump -S -d $(BIN) > asm.txt
