@@ -5,10 +5,29 @@
 
 # Changelog
 
+## 1.0.0-beta - 2020-02-04
+
+### Added
+  - added initial TLO (tool length offset)
+  - added support for new motion modes (G61.1 and G64)
+  - added initial laser mode support
+  - added CHANGELOG.md
+
+### Changed
+  - modified parser coordinate calculation and non modal gcodes handling so the remaining code executes as it should after these commands
+  - redesined parameters now loaded directly from eeprom and reduced ram usage (about 10% on Arduino Uno)
+  - planner now holds up to 15 motions (stable no memory overflow)
+  - redesigned spindle control to modify pwm according to motion (used in laser mode)
+  - simplified step ISR functions (faster execution times - under 23ms for 3 stepper motors)
+  - cleaned cnc_doevents() and some realtime commands functions handling
+
+### Fixed
+  - fixed settings version compare operation that caused eeprom reset at power up
+
 ## 1.0.0-alpha.3 - 2020-02-01
 
 ### Added
-  - Initial versioning system (Semantic Versioning)
+  - initial versioning system (Semantic Versioning)
   - can now process custom messages on comments and echo them (as explained in RS274NGC)
   - added dummy user transformation funtions to kinematics
   - motion control probing (G38.x commands)
