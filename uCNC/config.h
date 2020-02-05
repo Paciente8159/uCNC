@@ -24,12 +24,13 @@
 #include "machines.h"
 
 /*
-	Choose the mcu type
+	Choose the mcu/board
 	MCU_VIRTUAL: simulates a mcu on a PC
 	MCU_UNO_GRBL: atmega328p mcu (Arduino Uno)
 */
-//#define MCU MCU_UNO_GRBL
+#define MCU MCU_UNO_GRBL
 
+#include "mcudefs.h"
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
@@ -68,9 +69,9 @@
 #define USE_SPINDLE
 #ifdef USE_SPINDLE
 //set PWM channel to use (valid values 0 - 3)
-#define SPINDLE_PWM_CHANNEL 0
+#define SPINDLE_PWM PWM0
 //sets the spindle dir pin mask
-#define SPINDLE_DIR_OUTPIN 0
+#define SPINDLE_DIR DOUT0
 /*
 	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
 	This is used by spindle to ensure spindle gets up to speed in motions
@@ -92,8 +93,8 @@
 */
 #define USE_COOLANT
 #ifdef USE_COOLANT
-#define COOLANT_FLOOD_OUTPIN 8
-#define COOLANT_MIST_OUTPIN 9
+#define COOLANT_FLOOD DOUT1
+#define COOLANT_MIST DOUT2
 #endif
 
 /*

@@ -23,7 +23,6 @@
 #include <float.h>
 #include "config.h"
 #include "grbl_interface.h"
-#include "mcumap.h"
 #include "mcu.h"
 #include "settings.h"
 #include "planner.h"

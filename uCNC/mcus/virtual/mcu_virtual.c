@@ -31,8 +31,6 @@
 #include "../../config.h"
 #if(MCU == MCU_VIRTUAL)
 #include "../../mcudefs.h"
-
-#include "../../mcumap.h"
 #include "../../mcu.h"
 #include <stdio.h>
 #include <conio.h>
@@ -186,14 +184,14 @@ void ticksimul()
 	
 	if(infile!=NULL)
 	{
-		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
+		fscanf(infile, "%lX", &(virtualports->inputs));
 		fclose(infile);
 		
-		uint8_t diff = virtualports->limits ^ initials.limits;
-		initials.limits = virtualports->limits;
-		if(diff)
+		uint32_t diff = virtualports->inputs ^ initials.inputs;
+		initials.inputs = virtualports->inputs;
+		/*if(diff)
 		{
-			io_limits_isr(initials.limits);
+			io_limits_isr(initials.inputs);
 		}
 
 		diff = virtualports->controls ^ initials.controls;
@@ -208,7 +206,7 @@ void ticksimul()
 		if(diff)
 		{
 			io_controls_isr(initials.probe);
-		}
+		}*/
 	}
 	
 	if(global_irq_enabled)
@@ -225,7 +223,7 @@ void mcu_init()
 	FILE *infile = fopen("inputs.txt", "r");
 	if(infile!=NULL)
 	{
-		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
+		fscanf(infile, "%lX", &(virtualports->inputs));
 		fclose(infile);
 	}
 	else
@@ -233,7 +231,7 @@ void mcu_init()
 		infile = fopen("inputs.txt", "w+");
 		if(infile!=NULL)
 		{
-			fprintf(infile, "%X %X %X %lX", virtualports->controls, virtualports->limits, virtualports->probe, virtualports->outputs);
+			fprintf(infile, "%lX", virtualports->inputs);
 			fflush(infile);
 			fclose(infile);
 		}

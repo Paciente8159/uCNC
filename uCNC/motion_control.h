@@ -29,7 +29,7 @@ bool mc_toogle_checkmode();
 uint8_t mc_line(float *target, planner_block_data_t block_data);
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, planner_block_data_t block_data);
 uint8_t mc_dwell(planner_block_data_t block_data);
-uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+uint8_t mc_home_axis(uint8_t axis);
 uint8_t mc_spindle_coolant(planner_block_data_t block_data);
 uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_data);
 

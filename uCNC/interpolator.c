@@ -97,12 +97,7 @@ static uint32_t itp_rt_step_pos[STEPPER_COUNT];
 volatile static uint8_t itp_rt_spindle;
 //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
-//static volatile uint8_t itp_dirbits;
-//initial values for bresenham algorithm
-//this is shared between pulse and pulsereset functions
-static uint8_t dirbitsmask[STEPPER_COUNT];
 static volatile bool itp_isr_finnished;
-//static volatile bool itp_running;
 
 volatile static bool itp_busy;
 
@@ -207,26 +202,6 @@ void itp_init()
     //initialize circular buffers
     itp_blk_clear();
     itp_sgm_clear();
-
-//initializes bit masks
-#ifdef DIR0
-    dirbitsmask[0] = DIR0_MASK;
-#endif
-#ifdef DIR1
-    dirbitsmask[1] = DIR1_MASK;
-#endif
-#ifdef DIR2
-    dirbitsmask[2] = DIR2_MASK;
-#endif
-#ifdef DIR3
-    dirbitsmask[3] = DIR3_MASK;
-#endif
-#ifdef DIR4
-    dirbitsmask[4] = DIR4_MASK;
-#endif
-#ifdef DIR5
-    dirbitsmask[5] = DIR5_MASK;
-#endif
 }
 
 void itp_run()
@@ -321,7 +296,7 @@ void itp_run()
 
                 if(itp_blk_data[itp_blk_data_write].steps[i] > (uint32_t)INT32_MAX)
                 {
-                    itp_blk_data[itp_blk_data_write].dirbits |= dirbitsmask[i];
+                    itp_blk_data[itp_blk_data_write].dirbits |= (1<<i);
                     itp_blk_data[itp_blk_data_write].steps[i] = ~itp_blk_data[itp_blk_data_write].steps[i] + 1;
                 }
 
@@ -629,7 +604,7 @@ uint32_t itp_get_rt_line_number()
 void itp_step_reset_isr()
 {
     //always resets all stepper pins
-    mcu_set_steps(0);
+    io_set_steps(g_settings.step_invert_mask);
     
     if (itp_isr_finnished)
     {
@@ -648,19 +623,19 @@ void itp_step_reset_isr()
 		//set dir bits
 		if(itp_running_sgm->block != NULL)
 		{
-			mcu_set_dirs(itp_running_sgm->block->dirbits);
+			io_set_dirs(itp_running_sgm->block->dirbits);
 		}
 		
 		mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
 		#ifdef USE_SPINDLE
-		mcu_set_pwm(SPINDLE_PWM_CHANNEL, itp_running_sgm->spindle);
+		mcu_set_pwm(SPINDLE_PWM, itp_running_sgm->spindle);
 		if(!itp_running_sgm->spindle_inv)
 		{
-			io_clear_outputs(SPINDLE_DIR_MASK);
+			mcu_clear_output(SPINDLE_DIR);
 		}
 		else
 		{
-			io_set_outputs(SPINDLE_DIR_MASK);
+			mcu_set_output(SPINDLE_DIR);
 		}
 		
 		itp_rt_spindle = itp_running_sgm->spindle;
@@ -685,7 +660,7 @@ void itp_step_isr()
     }
 
     //sets step bits
-    mcu_set_steps(stepbits);
+    io_toggle_steps(stepbits);
     stepbits = 0;
 
     itp_busy = true;

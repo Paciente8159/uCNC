@@ -43,12 +43,8 @@
 //defines a pointer to an unknow stucture that is defined in the mcu_virtual
 typedef struct virtual_map_t
 {
-	uint8_t steps;
-	uint8_t dirs;
-	uint8_t controls;
-	uint8_t limits;
-	uint8_t probe;
 	uint32_t outputs;
+	uint32_t inputs;
 	unsigned char uart;
 }VIRTUAL_MAP;
 typedef VIRTUAL_MAP* virtports_t;
@@ -58,34 +54,35 @@ extern virtports_t virtualports;
 #define STEP0 0
 #define STEP1 1
 #define STEP2 2
-#define STEPS_OUTREG virtualports->steps
+#define DIR0 3
+#define DIR1 4
+#define DIR2 5
+#define PWM0 6
+#define DOUT0 7
+#define DOUT1 8
+#define DOUT2 9
+#define DOUT3 10
+#define STEPS_EN DOUT3
+#define OUTREG virtualports->outputs
 
-#define DIR0 0
-#define DIR1 1
-#define DIR2 2
-#define DIRS_OUTREG virtualports->dirs
+#define mcu_get_output(X) (OUTREG & (1<<(X)))
+#define mcu_set_output(X) (OUTREG |= (1<<(X)))
+#define mcu_clear_output(X) (OUTREG &= ~(1<<(X)))
+#define mcu_toggle_output(X) (OUTREG ^= (1<<(X)))
 
 //critical inputs
 #define ESTOP 0
 #define SAFETY_DOOR 1
 #define FHOLD 2
 #define CS_RES 3
-#define CONTROLS_INREG virtualports->controls
+#define LIMIT_X 4
+#define LIMIT_Y 5
+#define LIMIT_Z 6
+#define PROBE 7
 
-#define LIMIT_X 0
-#define LIMIT_Y 1
-#define LIMIT_Z 2
-#define LIMITS_INREG virtualports->limits
+#define INREG virtualports->inputs
+#define mcu_get_input(X) (INREG & (1<<(X)))
 
-#define PROBE 3
-#define PROBE_INREG virtualports->limits
-
-#define PWM0 0
-#define DOUT0 0
-#define DOUT1 1
-#define DOUTS_R0_OUTREG virtualports->outputs
-#define DOUT8 0
-#define DOUTS_R1_OUTREG virtualports->outputs
 
 #define COM_INREG virtualports->uart
 #define COM_OUTREG virtualports->uart

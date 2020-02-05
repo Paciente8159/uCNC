@@ -25,13 +25,13 @@
 	MCU port map
 */
 #if(MCU == MCU_UNO_GRBL)
-#define __MCU_AVR__
 #include "mcus\avr\mcumap_uno_grbl.h"
+#include "mcus\avr\mcumap_avr.h"
 #endif
 
 #if(MCU == MCU_MEGA_RAMBO14)
-#define __MCU_AVR__
 #include "mcus\avr\mcumap_mega_rambo14.h"
+#include "mcus\avr\mcumap_avr.h"
 #endif
 
 #if(MCU == MCU_VIRTUAL)

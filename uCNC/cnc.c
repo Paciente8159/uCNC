@@ -24,7 +24,6 @@
 #include "utils.h"
 #include "settings.h"
 #include "mcudefs.h"
-#include "mcumap.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "serial.h"
@@ -297,11 +296,12 @@ void cnc_stop()
     itp_stop();
     //stop tools
 #ifdef USE_SPINDLE
-    io_set_pwm(SPINDLE_PWM_CHANNEL, 0);
-    io_clear_outputs(SPINDLE_DIR_MASK);
+    mcu_set_pwm(SPINDLE_PWM, 0);
+    mcu_clear_output(SPINDLE_DIR);
 #endif
 #ifdef USE_COOLANT
-    io_clear_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
+    mcu_clear_output(COOLANT_FLOOD);
+	mcu_clear_output(COOLANT_MIST);
 #endif
 }
 
@@ -313,7 +313,10 @@ void cnc_unlock()
     //clears all other locking flags
     cnc_clear_exec_state(EXEC_LOCKED);
     //signals stepper enable pins
-    io_set_outputs(STEPS_EN_MASK);
+    
+    io_set_steps(g_settings.step_invert_mask);
+    io_set_dirs(g_settings.dir_invert_mask);
+    io_enable_steps();
 }
 
 uint8_t cnc_get_exec_state(uint8_t statemask)
@@ -328,26 +331,27 @@ void cnc_set_exec_state(uint8_t statemask)
 
 void cnc_clear_exec_state(uint8_t statemask)
 {
+    uint8_t controls = io_get_controls();
 #ifdef ESTOP
-    if(io_get_controls(ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
+    if(CHECKFLAG(controls, ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
     {
         CLEARFLAG(statemask,EXEC_ABORT);
     }
 #endif
 #ifdef SAFETY_DOOR
-    if(io_get_controls(SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
+    if(CHECKFLAG(controls, SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
     {
         CLEARFLAG(statemask,EXEC_DOOR);
     }
 #endif
 #ifdef FHOLD
-    if(io_get_controls(FHOLD_MASK)) //can't clear the hold flag if FHOLD is active
+    if(CHECKFLAG(controls, FHOLD_MASK)) //can't clear the hold flag if FHOLD is active
     {
         CLEARFLAG(statemask,EXEC_HOLD);
     }
 #endif
 #if(LIMITS_MASK!=0)
-    if(g_settings.hard_limits_enabled && io_get_controls(LIMITS_MASK)) //can't clear the EXEC_LIMITS is any limit is triggered
+    if(g_settings.hard_limits_enabled && io_get_limits()) //can't clear the EXEC_LIMITS is any limit is triggered
     {
         CLEARFLAG(statemask,EXEC_LIMITS);
     }
@@ -405,7 +409,7 @@ void cnc_exec_rt_commands()
 
     //executes feeds override rt commands
     uint8_t cmd_mask = 0x04;
-    uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
+    uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
     cnc_state.rt_cmd = RT_CMD_CLEAR; //clears command flags
     while(command)
     {
@@ -501,10 +505,10 @@ void cnc_exec_rt_commands()
                 if(cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
                     //toogle state
-                    if(io_get_pwm(SPINDLE_PWM_CHANNEL))
+                    if(mcu_get_pwm(SPINDLE_PWM))
                     {
                         update_spindle = false;
-                        io_set_pwm(SPINDLE_PWM_CHANNEL, 0);
+                        mcu_set_pwm(SPINDLE_PWM, 0);
                     }
                 }
                 break;
@@ -541,14 +545,15 @@ void cnc_exec_rt_commands()
 
 void cnc_check_fault_systems()
 {
+    uint8_t inputs = io_get_controls();
 #ifdef ESTOP
-    if(io_get_controls(ESTOP_MASK)) //fault on emergency stop
+    if(CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
     {
         protocol_send_string(MSG_FEEDBACK_12);
     }
 #endif
 #ifdef SAFETY_DOOR
-    if(io_get_controls(SAFETY_DOOR_MASK)) //fault on safety door
+    if(CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
     {
         protocol_send_string(MSG_FEEDBACK_6);
     }
@@ -556,7 +561,8 @@ void cnc_check_fault_systems()
 #if(LIMITS_MASK != 0)
     if(g_settings.hard_limits_enabled) //fault on limits
     {
-        if(io_get_limits(LIMITS_MASK))
+        inputs = io_get_limits();
+        if(CHECKFLAG(inputs, LIMITS_MASK))
         {
             protocol_send_string(MSG_FEEDBACK_7);
         }

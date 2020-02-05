@@ -23,15 +23,14 @@
 #include "settings.h"
 #include "mcudefs.h"
 #include "mcu.h"
-#include "mcumap.h"
 #include "io_control.h"
 #include "parser.h"
 #include "interpolator.h"
 #include "cnc.h"
 
-void io_limits_isr(uint8_t limits)
+void io_limits_isr()
 {
-    limits ^= g_settings.limits_invert_mask;
+    uint8_t limits = io_get_limits();
 
     if(g_settings.hard_limits_enabled)
     {
@@ -51,39 +50,39 @@ void io_limits_isr(uint8_t limits)
     }
 }
 
-void io_controls_isr(uint8_t controls)
+void io_controls_isr()
 {
-    controls ^= g_settings.control_invert_mask;
+    uint8_t controls = io_get_controls();
 
 #ifdef ESTOP
-    if(controls & ESTOP_MASK)
+    if(CHECKFLAG(controls,ESTOP_MASK))
     {
         cnc_call_rt_command(CMD_CODE_RESET);
         return; //forces exit
     }
 #endif
 #ifdef SAFETY_DOOR
-    if(controls & SAFETY_DOOR_MASK)
+    if(CHECKFLAG(controls,SAFETY_DOOR_MASK))
     {
         //safety door activates hold simultaneously to start the controlled stop
         cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
     }
 #endif
 #ifdef FHOLD
-    if(controls & FHOLD_MASK)
+    if(CHECKFLAG(controls,FHOLD_MASK))
     {
         cnc_call_rt_command(CMD_CODE_FEED_HOLD);
     }
 #endif
 #ifdef CS_RES
-    if(controls & CS_RES_MASK)
+    if(CHECKFLAG(controls,CS_RES_MASK))
     {
         cnc_call_rt_command(CMD_CODE_CYCLE_START);
     }
 #endif
 }
 
-void io_probe_isr(uint8_t probe)
+void io_probe_isr()
 {
     //on hit enables hold (directly)
     cnc_set_exec_state(EXEC_HOLD);
@@ -111,14 +110,57 @@ bool io_check_boundaries(float* axis)
     return true;
 }
 
-uint8_t io_get_limits(uint8_t limitmask)
+uint8_t io_get_limits()
 {
-    return ((mcu_get_limits() ^ g_settings.limits_invert_mask) & limitmask);
+    uint8_t value = 0;
+#ifdef LIMIT_X
+    value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
+#endif
+#ifdef LIMIT_Y
+    value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
+#endif
+#ifdef LIMIT_Z
+    value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
+#endif
+#ifdef LIMIT_X2
+    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
+#endif
+#ifdef LIMIT_Y2
+    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
+#endif
+#ifdef LIMIT_Z2
+    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
+#endif
+#ifdef LIMIT_A
+    value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
+#endif
+#ifdef LIMIT_B
+    value |= ((mcu_get_input(LIMIT_B)) ? LIMIT_B_MASK : 0);
+#endif
+#ifdef LIMIT_C
+    value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
+#endif
+
+    return (value ^ g_settings.limits_invert_mask);
 }
 
-uint8_t io_get_controls(uint8_t controlmask)
+uint8_t io_get_controls()
 {
-    return ((mcu_get_controls() ^ g_settings.control_invert_mask) & controlmask);
+    uint8_t value = 0;
+#ifdef ESTOP
+    value |= ((mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
+#endif
+#ifdef SAFETY_DOOR
+    value |= ((mcu_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
+#endif
+#ifdef FHOLD
+    value |= ((mcu_get_input(FHOLD)) ? FHOLD_MASK : 0);
+#endif
+#ifdef CS_RES
+    value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
+#endif
+
+    return (value ^ g_settings.control_invert_mask);
 }
 
 void io_enable_probe()
@@ -133,46 +175,200 @@ void io_disable_probe()
 
 bool io_get_probe()
 {
-    bool probe = (mcu_get_limits() & PROBE_MASK);
+    bool probe = (mcu_get_input(PROBE)!=0);
     return (!g_settings.probe_invert_mask) ? probe : !probe;
 }
 
-uint32_t io_get_inputs()
+//outputs
+void io_set_steps(uint8_t mask)
 {
-    return mcu_get_inputs();
+#ifdef STEP0
+    if(mask & STEP0_MASK)
+    {
+        mcu_set_output(STEP0);
+    }
+    else
+    {
+        mcu_clear_output(STEP0);
+    }
+#endif
+#ifdef STEP1
+    if(mask & STEP1_MASK)
+    {
+        mcu_set_output(STEP1);
+    }
+    else
+    {
+        mcu_clear_output(STEP1);
+    }
+#endif
+#ifdef STEP2
+    if(mask & STEP2_MASK)
+    {
+        mcu_set_output(STEP2);
+    }
+    else
+    {
+        mcu_clear_output(STEP2);
+    }
+#endif
+#ifdef STEP3
+    if(mask & STEP3_MASK)
+    {
+        mcu_set_output(STEP3);
+    }
+    else
+    {
+        mcu_clear_output(STEP3);
+    }
+#endif
+#ifdef STEP4
+    if(mask & STEP4_MASK)
+    {
+        mcu_set_output(STEP4);
+    }
+    else
+    {
+        mcu_clear_output(STEP4);
+    }
+#endif
+#ifdef STEP5
+    if(mask & STEP5_MASK)
+    {
+        mcu_set_output(STEP5);
+    }
+    else
+    {
+        mcu_clear_output(STEP5);
+    }
+#endif
+
 }
 
-void io_set_outputs(uint32_t mask)
+void io_toggle_steps(uint8_t mask)
 {
-    mcu_set_outputs(mcu_get_outputs() | mask);
+#ifdef STEP0
+    if(mask & STEP0_MASK)
+    {
+        mcu_toggle_output(STEP0);
+    }
+#endif
+#ifdef STEP1
+    if(mask & STEP1_MASK)
+    {
+        mcu_toggle_output(STEP1);
+    }
+#endif
+#ifdef STEP2
+    if(mask & STEP2_MASK)
+    {
+        mcu_toggle_output(STEP2);
+    }
+#endif
+#ifdef STEP3
+    if(mask & STEP3_MASK)
+    {
+        mcu_toggle_output(STEP3);
+    }
+#endif
+#ifdef STEP4
+    if(mask & STEP4_MASK)
+    {
+        mcu_toggle_output(STEP4);
+    }
+#endif
+#ifdef STEP5
+    if(mask & STEP5_MASK)
+    {
+        mcu_toggle_output(STEP5);
+    }
+#endif
+
 }
 
-void io_clear_outputs(uint32_t mask)
+void io_set_dirs(uint8_t mask)
 {
-    mcu_set_outputs(mcu_get_outputs() & ~mask);
+#ifdef DIR0
+    if(mask & DIR0_MASK)
+    {
+        mcu_set_output(DIR0);
+    }
+    else
+    {
+        mcu_clear_output(DIR0);
+    }
+#endif
+#ifdef DIR1
+    if(mask & DIR1_MASK)
+    {
+        mcu_set_output(DIR1);
+    }
+    else
+    {
+        mcu_clear_output(DIR1);
+    }
+#endif
+#ifdef DIR2
+    if(mask & DIR2_MASK)
+    {
+        mcu_set_output(DIR2);
+    }
+    else
+    {
+        mcu_clear_output(DIR2);
+    }
+#endif
+#ifdef DIR3
+    if(mask & DIR3_MASK)
+    {
+        mcu_set_output(DIR3);
+    }
+    else
+    {
+        mcu_clear_output(DIR3);
+    }
+#endif
+#ifdef DIR4
+    if(mask & DIR4_MASK)
+    {
+        mcu_set_output(DIR4);
+    }
+    else
+    {
+        mcu_clear_output(DIR4);
+    }
+#endif
+#ifdef DIR5
+    if(mask & DIR5_MASK)
+    {
+        mcu_set_output(DIR5);
+    }
+    else
+    {
+        mcu_clear_output(DIR5);
+    }
+#endif
+
 }
 
-void io_toogle_outputs(uint32_t mask)
+void io_enable_steps()
 {
-    mcu_set_outputs(mcu_get_outputs() ^ mask);
-}
-
-uint32_t io_get_outputs()
-{
-    return mcu_get_outputs();
-}
-
-uint8_t io_get_analog(uint8_t channel)
-{
-    return mcu_get_analog(channel);
-}
-
-void io_set_pwm(uint8_t channel, uint8_t value)
-{
-    mcu_set_pwm(channel, value);
-}
-
-uint8_t io_get_pwm(uint8_t channel)
-{
-    return mcu_get_pwm(channel);
+    #ifdef STEP0_EN
+    mcu_set_output(STEP0_EN);
+    #endif
+    #ifdef STEP1_EN
+    mcu_set_output(STEP1_EN);
+    #endif
+    #ifdef STEP2_EN
+    mcu_set_output(STEP2_EN);
+    #endif
+    #ifdef STEP3_EN
+    mcu_set_output(STEP3_EN);
+    #endif
+    #ifdef STEP4_EN
+    mcu_set_output(STEP4_EN);
+    #endif
+    #ifdef STEP5_EN
+    mcu_set_output(STEP5_EN);
+    #endif
 }

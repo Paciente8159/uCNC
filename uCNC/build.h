@@ -20,7 +20,7 @@
 #define BUILD_H
 
 #define MAJOR_MINOR_VERSION "1.0."
-#define PATCH_VERSION "0-beta"
+#define PATCH_VERSION "0-beta.2"
 
 #define VERSION MAJOR_MINOR_VERSION PATCH_VERSION
 

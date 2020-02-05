@@ -26,115 +26,45 @@
 #include "config.h"
 #include "utils.h"
 #include "mcudefs.h"
-#include "mcumap.h"
 
 /*IO functions*/
-static inline uint32_t mcu_get_inputs()
-{
-    uint32_t result;
-    uint8_t* reg = (uint8_t*)&result;
-#ifdef DINS_R0_INREG
-    reg[__UINT32_R0__] = (DINS_R0_INREG & DINS_R0_MASK);
-#endif
-#ifdef DINS_R1_INREG
-    reg[__UINT32_R1__] = (DINS_R1_INREG & DINS_R1_MASK);
-#endif
-#ifdef DINS_R2_INREG
-    reg[__UINT32_R2__] = (DINS_R2_INREG & DINS_R2_MASK);
-#endif
-#ifdef DINS_R3_INREG
-    reg[__UINT32_R3__] = (DINS_R3_INREG & DINS_R3_MASK);
-#endif
-    return result;
-}
-
-static inline uint8_t mcu_get_controls()
-{
-#ifdef CONTROLS_INREG
-    return (CONTROLS_INREG & CONTROLS_MASK);
-#else
-    return 0;
-#endif
-}
-
-static inline uint8_t mcu_get_limits()
-{
-#ifdef LIMITS_INREG
-    return (LIMITS_INREG & LIMITS_MASK);
-#else
-    return 0;
-#endif
-}
-
-static inline bool mcu_get_probe()
-{
-#ifdef PROBE_INREG
-    return (PROBE_INREG && PROBE_MASK);
-#else
-    return false;
-#endif
-}
-
-static inline void mcu_set_steps(uint8_t value)
-{
-    STEPS_OUTREG = (~STEPS_MASK & STEPS_OUTREG) | value;
-}
-
-static inline void mcu_set_dirs(uint8_t value)
-{
-    DIRS_OUTREG = (~DIRS_MASK & DIRS_OUTREG) | value;
-}
-
-static inline void mcu_set_outputs(uint32_t value)
-{
-    uint8_t* reg = (uint8_t*)&value;
-
-#ifdef DOUTS_R0_OUTREG
-    DOUTS_R0_OUTREG = ((~DOUTS_R0_MASK & DOUTS_R0_OUTREG) | reg[__UINT32_R0__]);
-#endif
-#ifdef DOUTS_R1_OUTREG
-    DOUTS_R1_OUTREG = ((~DOUTS_R1_MASK & DOUTS_R1_OUTREG) | reg[__UINT32_R1__]);
-#endif
-#ifdef DOUTS_R2_OUTREG
-    DOUTS_R2_OUTREG = ((~DOUTS_R2_MASK & DOUTS_R2_OUTREG) | reg[__UINT32_R2__]);
-#endif
-#ifdef DOUTS_R3_OUTREG
-    DOUTS_R3_OUTREG = ((~DOUTS_R3_MASK & DOUTS_R3_OUTREG) | reg[__UINT32_R3__]);
-#endif
-}
-
-static inline uint32_t mcu_get_outputs()
-{
-    uint32_t result;
-    uint8_t* reg = (uint8_t*)&result;
-
-#ifdef DOUTS_R0_OUTREG
-    reg[__UINT32_R0__] = DOUTS_R0_OUTREG;
-#endif
-#ifdef DOUTS_R1_OUTREG
-    reg[__UINT32_R1__] = DOUTS_R1_OUTREG;
-#endif
-#ifdef DOUTS_R2_OUTREG
-    reg[__UINT32_R2__] = DOUTS_R2_OUTREG;
-#endif
-#ifdef DOUTS_R3_OUTREG
-    reg[__UINT32_R3__] = DOUTS_R3_OUTREG;
+#ifndef mcu_get_input
+uint8_t mcu_get_input(uint8_t pin);
 #endif
 
-    return (result & DOUTS_MASK);
-}
+#ifndef mcu_get_output
+uint8_t mcu_get_output(uint8_t pin);
+#endif
+
+#ifndef mcu_set_output
+void mcu_set_output(uint8_t pin);
+#endif
+
+#ifndef mcu_clear_output
+void mcu_clear_output(uint8_t pin);
+#endif
+
+#ifndef mcu_toggle_output
+void mcu_toggle_output(uint8_t pin);
+#endif
 
 void mcu_init();
-
 void mcu_enable_probe_isr();
 void mcu_disable_probe_isr();
 
 //Analog input
+#ifndef mcu_get_analog
 uint8_t mcu_get_analog(uint8_t channel);
+#endif
 
 //PWM
+#ifndef mcu_set_pwm
 void mcu_set_pwm(uint8_t pwm, uint8_t value);
+#endif
+
+#ifndef mcu_get_pwm
 uint8_t mcu_get_pwm(uint8_t pwm);
+#endif
 
 //Communication functions
 void mcu_start_send(); //Start async send
@@ -144,9 +74,13 @@ char mcu_getc();
 
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
+#ifndef mcu_enable_interrupts
 void mcu_enable_interrupts();
+#endif
 //disables all ISR functions
+#ifndef mcu_enable_interrupts
 void mcu_disable_interrupts();
+#endif
 
 //Timers
 //convert step rate to clock cycles

@@ -141,7 +141,8 @@ void protocol_send_status()
     kinematics_apply_reverse_transform((float*)&axis);
     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
     uint16_t spindle = itp_get_rt_spindle();
-
+    uint8_t controls = io_get_controls();
+    uint8_t limits = io_get_limits();
     uint8_t state = cnc_get_exec_state(0xFF);
     uint8_t filter = 0x80;
     while(!(state & filter) && filter)
@@ -161,7 +162,7 @@ void protocol_send_status()
                 break;
             case EXEC_DOOR:
                 serial_print_str(__romstr__("Door:"));
-                if(io_get_controls(SAFETY_DOOR_MASK))
+                if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
                 {
 
                     if(cnc_get_exec_state(EXEC_RUN))
@@ -238,22 +239,21 @@ void protocol_send_status()
     serial_print_long(itp_get_rt_line_number());
 #endif
 
-
-    if(io_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | io_get_limits(LIMITS_MASK))
+    if(CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) | CHECKFLAG(limits, LIMITS_MASK))
     {
         serial_print_str(__romstr__("|Pn:"));
 
-        if(io_get_controls(ESTOP_MASK))
+        if(CHECKFLAG(controls, ESTOP_MASK))
         {
             serial_putc('R');
         }
 
-        if(io_get_controls(SAFETY_DOOR_MASK))
+        if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
         {
             serial_putc('D');
         }
 
-        if(io_get_controls(FHOLD_MASK))
+        if(CHECKFLAG(controls, FHOLD_MASK))
         {
             serial_putc('H');
         }
@@ -263,32 +263,32 @@ void protocol_send_status()
             serial_putc('P');
         }
 
-        if(io_get_limits(LIMIT_X_MASK))
+        if(CHECKFLAG(limits, LIMIT_X_MASK))
         {
             serial_putc('X');
         }
 
-        if(io_get_limits(LIMIT_Y_MASK))
+        if(CHECKFLAG(limits, LIMIT_Y_MASK))
         {
             serial_putc('Y');
         }
 
-        if(io_get_limits(LIMIT_Z_MASK))
+        if(CHECKFLAG(limits, LIMIT_Z_MASK))
         {
             serial_putc('Z');
         }
 
-        if(io_get_limits(LIMIT_A_MASK))
+        if(CHECKFLAG(limits, LIMIT_A_MASK))
         {
             serial_putc('A');
         }
 
-        if(io_get_limits(LIMIT_B_MASK))
+        if(CHECKFLAG(limits, LIMIT_B_MASK))
         {
             serial_putc('B');
         }
 
-        if(io_get_limits(LIMIT_C_MASK))
+        if(CHECKFLAG(limits, LIMIT_C_MASK))
         {
             serial_putc('C');
         }

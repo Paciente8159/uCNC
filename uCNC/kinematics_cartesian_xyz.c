@@ -49,19 +49,19 @@ void kinematics_apply_forward(uint32_t* steps, float* axis)
 uint8_t kinematics_home()
 {
     uint8_t result = 0;
-    result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
+    result = mc_home_axis(AXIS_Z);
     if(result != 0)
     {
         return result;
     }
 
-    result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
+    result = mc_home_axis(AXIS_X);
     if(result != 0)
     {
         return result;
     }
 
-    result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
+    result = mc_home_axis(AXIS_Y);
     if(result != 0)
     {
         return result;

@@ -19,7 +19,6 @@
 #include <string.h>
 #include "config.h"
 #include "mcudefs.h"
-#include "mcumap.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "settings.h"
@@ -278,8 +277,9 @@ uint8_t mc_dwell(planner_block_data_t block_data)
     return STATUS_OK;
 }
 
-uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
+uint8_t mc_home_axis(uint8_t axis)
 {
+	uint8_t axis_limit = 0;
     float target[AXIS_COUNT];
     uint8_t axis_mask = (1 << axis);
     planner_block_data_t block_data;
@@ -289,7 +289,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     cnc_unlock();
 
     //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || io_get_limits(LIMITS_MASK))
+    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
     {
         return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
     }
@@ -335,7 +335,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     }
 
     //if limit was not triggered
-    if (!io_get_limits(axis_limit))
+    if (!CHECKFLAG(io_get_limits(), axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }
@@ -381,7 +381,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
-    if (io_get_limits(axis_limit))
+    if (CHECKFLAG(io_get_limits(), axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }
