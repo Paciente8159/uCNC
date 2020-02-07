@@ -614,7 +614,7 @@ bool cnc_check_interlocking()
 
     if(CHECKFLAG(cnc_state.exec_state, EXEC_LIMITS))
     {
-        if(!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) //door opened during a homing cycle
+        if(CHECKFLAG(cnc_state.exec_state, EXEC_RUN)) //if a motion is being performed allow trigger the limit switch alarm
         {
             cnc_alarm(EXEC_ALARM_HARD_LIMIT);
         }

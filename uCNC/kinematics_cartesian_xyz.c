@@ -26,10 +26,8 @@
 #include "settings.h"
 #include "kinematics.h"
 #include "machinedefs.h"
-#include "motion_control.h"
-/*#include "planner.h"
 #include "io_control.h"
-#include "cnc.h"*/
+#include "motion_control.h"
 #include "grbl_interface.h"
 
 void kinematics_apply_inverse(float* axis, uint32_t* steps)
@@ -49,25 +47,30 @@ void kinematics_apply_forward(uint32_t* steps, float* axis)
 uint8_t kinematics_home()
 {
     uint8_t result = 0;
-    result = mc_home_axis(AXIS_Z);
+    result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
     if(result != 0)
     {
         return result;
     }
 
-    result = mc_home_axis(AXIS_X);
+    result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
     if(result != 0)
     {
         return result;
     }
 
-    result = mc_home_axis(AXIS_Y);
+    result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
     if(result != 0)
     {
         return result;
     }
 
     return STATUS_OK;
+}
+
+void kinematics_lock_step(uint8_t limits_mask)
+{
+    // do nothing
 }
 
 void kinematics_apply_transform(float* axis)

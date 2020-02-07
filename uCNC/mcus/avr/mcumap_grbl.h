@@ -1,10 +1,10 @@
 /*
-	Name: mcumap_uno_grbl.h
+	Name: mcumap_grbl.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
 	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: 01/11/2019
+	Date: 04/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,13 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_UNO_GRBL_H
-#define MCUMAP_UNO_GRBL_H
-
-//used by the parser
-//this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-//if not defined utils.h will use standard math operation
-#define fast_mult10(X) ((((X)<<2) + (X))<<1)
+#ifndef MCUMAP_GRBL_H
+#define MCUMAP_GRBL_H
 
 #define PCINT0_PORT B
 #define PCINT1_PORT C
@@ -47,13 +42,15 @@
 
 //Setup limit pins
 #define LIMIT_Z_BIT 4 //assigns LIMIT_Z pin
-#define LIMIT_Y_BIT 2 //assigns LIMIT_Y pin
-#define LIMIT_X_BIT 1 //assigns LIMIT_X pin
 #define LIMIT_Z_PORT B //assigns LIMIT_Z port
-#define LIMIT_Y_PORT B //assigns LIMIT_Y port
-#define LIMIT_X_PORT B //assigns LIMIT_X port
 #define LIMIT_Z_ISR 0 //assigns LIMIT_Z ISR
+
+#define LIMIT_Y_BIT 2 //assigns LIMIT_Y pin
+#define LIMIT_Y_PORT B //assigns LIMIT_Y port
 #define LIMIT_Y_ISR 0 //assigns LIMIT_Y ISR
+
+#define LIMIT_X_BIT 1 //assigns LIMIT_X pin
+#define LIMIT_X_PORT B //assigns LIMIT_X port
 #define LIMIT_X_ISR 0 //assigns LIMIT_X ISR
 
 //Active limits switch weak pull-ups
@@ -86,7 +83,8 @@
 #define TX_BIT 1
 #define RX_PORT D
 #define TX_PORT D
-//#define COM_ID 0 //if only one or default comment this
+//only uncomment this if other port other then 0 is used
+//#define COM_NUMBER 0
 
 //Setup PWM
 #define PWM0_BIT 3 //assigns PWM0 pin
@@ -95,7 +93,7 @@
 #define PWM0_TIMER 2
 
 //Setup generic IO Pins
-//Functions are set in config.h file
+//Functionalities are set in config.h file
 #define DOUT0_BIT 5
 #define DOUT0_PORT B
 #define DOUT1_BIT 0
@@ -103,7 +101,7 @@
 #define DOUT2_BIT 3
 #define DOUT2_PORT C
 
-//Stepper enable pin. For UNO a single pin is used
+//Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0
 #define STEP0_EN_PORT B
 

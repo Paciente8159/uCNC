@@ -1,10 +1,10 @@
 /*
-	Name: mcus.h
-	Description: Defines the available mcu types.
+	Name: kinematics_cartesian_xy2.h
+	Description: For every existing machine defines the number of AXIS and STEPPERS and the AXIS index.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 06/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,12 +16,15 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUS_H
-#define MCUS_H
+#ifndef KINEMATICS_CARTESIAN_XY2_H
+#define KINEMATICS_CARTESIAN_XY2_H
 
-#define MCU_GRBL 1
-#define MCU_RAMBO14 2
-#define MCU_RAMPS14 3
-#define MCU_VIRTUAL 99
+//define kynematics
+#define AXIS_COUNT 2
+#define AXIS_X 0
+#define AXIS_Y 1
+
+#define AXIS_DUAL_DRIVE
+#define STEPPER_COUNT 3//Y axis will have 2 axis
 
 #endif

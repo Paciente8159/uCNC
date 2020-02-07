@@ -24,13 +24,18 @@
 /*
 	MCU port map
 */
-#if(MCU == MCU_UNO_GRBL)
-#include "mcus\avr\mcumap_uno_grbl.h"
+#if(MCU == MCU_GRBL)
+#include "mcus\avr\mcumap_grbl.h"
 #include "mcus\avr\mcumap_avr.h"
 #endif
 
-#if(MCU == MCU_MEGA_RAMBO14)
-#include "mcus\avr\mcumap_mega_rambo14.h"
+#if(MCU == MCU_RAMBO14)
+#include "mcus\avr\mcumap_rambo14.h"
+#include "mcus\avr\mcumap_avr.h"
+#endif
+
+#if(MCU == MCU_RAMPS14)
+#include "mcus\avr\mcumap_ramps14.h"
 #include "mcus\avr\mcumap_avr.h"
 #endif
 

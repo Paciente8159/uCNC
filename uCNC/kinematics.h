@@ -36,9 +36,16 @@ void kinematics_apply_inverse(float* axis, uint32_t* steps);
 void kinematics_apply_forward(uint32_t* steps, float* axis);
 
 /*
-	Executes the homing motion for the given kinematic
+	Executes the homing motion for the machine
+	The homing motion for each axis is defined in the motion control
+	In the kinematics home function the axis order of the homing motion and other custom motions can be defined
 */
 uint8_t kinematics_home();
+
+/*
+	In dual drive machines this translates which drive is locked when a particular limit switch is triggered during homing motion
+*/
+void kinematics_lock_step(uint8_t limits_mask);
 
 /*
 	Aplies a transformation to the position sent to planner.

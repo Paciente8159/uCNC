@@ -38,14 +38,18 @@ void io_limits_isr()
         {
             if(cnc_get_exec_state(EXEC_RUN))
             {
-                cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
+                if(g_settings.homing_enabled)
+                {
+                    cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
+                }
+                
+                if(!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
+                {
+                    cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+                }
             }
-            itp_stop();
             cnc_set_exec_state(EXEC_LIMITS);
-            if(!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
-            {
-                cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-            }
+            itp_stop();
         }
     }
 }
@@ -114,22 +118,34 @@ uint8_t io_get_limits()
 {
     uint8_t value = 0;
 #ifdef LIMIT_X
+#ifdef LIMIT_X2
+    value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
+#else
     value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
 #endif
+#endif
 #ifdef LIMIT_Y
+#ifdef LIMIT_Y2
+    value |= ((mcu_get_input(LIMIT_Y)) ? (LIMIT_Y_MASK | LIMITS_LIMIT0_MASK) : 0);
+#else
     value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
 #endif
+#endif
 #ifdef LIMIT_Z
+#ifdef LIMIT_Z2
+    value |= ((mcu_get_input(LIMIT_Z)) ? (LIMIT_Z_MASK | LIMITS_LIMIT0_MASK) : 0);
+#else
     value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
 #endif
+#endif
 #ifdef LIMIT_X2
-    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
+    value |= ((mcu_get_input(LIMIT_X2)) ? (LIMIT_X_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
 #ifdef LIMIT_Y2
-    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
+    value |= ((mcu_get_input(LIMIT_Y2)) ? (LIMIT_Y_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
 #ifdef LIMIT_Z2
-    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
+    value |= ((mcu_get_input(LIMIT_Z2)) ? (LIMIT_Z_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
 #ifdef LIMIT_A
     value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);

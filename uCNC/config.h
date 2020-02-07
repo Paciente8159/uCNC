@@ -25,10 +25,10 @@
 
 /*
 	Choose the mcu/board
-	MCU_VIRTUAL: simulates a mcu on a PC
-	MCU_UNO_GRBL: atmega328p mcu (Arduino Uno)
+	Check mcus.h for list of available MCU/Boards
+	Usually set via makefile
 */
-#define MCU MCU_UNO_GRBL
+#define MCU MCU_GRBL
 
 #include "mcudefs.h"
 /*

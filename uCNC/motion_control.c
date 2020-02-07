@@ -109,33 +109,14 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 }
 
 //applies an algorithm similar to grbl with slight changes
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, planner_block_data_t block_data)
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data)
 {
-    uint8_t axis_0 = 0;
-    uint8_t axis_1 = 0;
     float mc_position[AXIS_COUNT];
 
     //copy planner last position
     planner_get_position(mc_position);
     //reverses any transformation aplied before
     kinematics_apply_reverse_transform(mc_position);
-
-    //start points
-    switch (plane)
-    {
-        case 0:
-            axis_0 = AXIS_X;
-            axis_1 = AXIS_Y;
-            break;
-        case 1:
-            axis_0 = AXIS_X;
-            axis_1 = AXIS_Z;
-            break;
-        case 2:
-            axis_0 = AXIS_Y;
-            axis_1 = AXIS_Z;
-            break;
-    }
 
     float ptcenter_a = mc_position[axis_0] + center_offset_a;
     float ptcenter_b = mc_position[axis_1] + center_offset_b;
@@ -277,12 +258,12 @@ uint8_t mc_dwell(planner_block_data_t block_data)
     return STATUS_OK;
 }
 
-uint8_t mc_home_axis(uint8_t axis)
+uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
-	uint8_t axis_limit = 0;
     float target[AXIS_COUNT];
     uint8_t axis_mask = (1 << axis);
     planner_block_data_t block_data;
+    uint8_t limits_flags;
 
     planner_get_position(target);
 
@@ -294,14 +275,23 @@ uint8_t mc_home_axis(uint8_t axis)
         return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
     }
 
-    float max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-
+    float max_home_dist;
+    max_home_dist = -g_settings.max_distance[axis] * 1.5f;
+    #ifdef AXIS_DUAL_DRIVE
+    //if dual drive axis is active checks for extra contact switch
+    uint8_t attempts = 2;
+    do
+    {
+        attempts--;
+    #endif
+    
     //checks homing dir
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
     }
-
+    planner_resync_position();
+    planner_get_position(target);
     target[axis] += max_home_dist;
     //initializes planner block data
     block_data.distance = ABS(max_home_dist);
@@ -311,8 +301,8 @@ uint8_t mc_home_axis(uint8_t axis)
     block_data.spindle = 0;
     block_data.dwell = 0;
     block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+    cnc_unlock();
     planner_add_line((float *)&target, block_data);
-
     //flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
     do
@@ -334,16 +324,40 @@ uint8_t mc_home_axis(uint8_t axis)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
-    //if limit was not triggered
-    if (!CHECKFLAG(io_get_limits(), axis_limit))
+    limits_flags = io_get_limits();
+
+    //the wrong switch was activated bails
+    if (!CHECKFLAG(limits_flags, axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }
 
+    #ifdef AXIS_DUAL_DRIVE
+        uint8_t dual_limits_flag = limits_flags & LIMITS_DUAL_MASK;
 
-    //zero's the planner
-    planner_get_position(target);
+        if((dual_limits_flag == LIMITS_DUAL_MASK) || !dual_limits_flag ) //both switches are active or is a single switch axis that was activated
+        {
+            break;
+        }
+        kinematics_lock_step(limits_flags);
+        cnc_unlock();
+        max_home_dist = -5; //no more then 5mm offset or alarm
+    } while (attempts);
+    #endif
+
+    //back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
+
+    #ifdef AXIS_DUAL_DRIVE
+    //if dual drive axis is active checks for extra contact switch
+    attempts = 2;
+    do
+    {
+        attempts--;
+    #endif
+    //sync's the planner
+    planner_resync_position();
+    planner_get_position(target);
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
@@ -373,6 +387,7 @@ uint8_t mc_home_axis(uint8_t axis)
     g_settings.limits_invert_mask ^= axis_limit;
     //stops, flushes buffers and clears the hold if active
     cnc_stop();
+    //clearing the interpolator unlockes any locked stepper
     itp_clear();
     planner_clear();
 
@@ -380,6 +395,20 @@ uint8_t mc_home_axis(uint8_t axis)
     {
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
+
+    limits_flags = io_get_limits();
+
+    #ifdef AXIS_DUAL_DRIVE
+        uint8_t dual_limits_flag = limits_flags & LIMITS_DUAL_MASK;
+
+        if(!dual_limits_flag ) //at least one switch is still active
+        {
+            break;
+        }
+        kinematics_lock_step(limits_flags);
+        max_home_dist = 1.0f; //second driver offset must not exceed 1mm
+    } while (attempts);
+    #endif
 
     if (CHECKFLAG(io_get_limits(), axis_limit))
     {

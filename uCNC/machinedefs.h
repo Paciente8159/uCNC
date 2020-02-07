@@ -27,17 +27,11 @@
 
 //define kynematics
 #if (MACHINE_KINEMATICS == MACHINE_CARTESIAN_XYZ)
-#define AXIS_COUNT 3
-#define AXIS_X 0
-#define AXIS_Y 1
-#define AXIS_Z 2
-#define STEPPER_COUNT 3
+#include "kinematics_cartesian_xyz.h"
 #elif (MACHINE_KINEMATICS == MACHINE_COREXY)
-#define AXIS_COUNT 3
-#define AXIS_X 0
-#define AXIS_Y 1
-#define AXIS_Z 2
-#define STEPPER_COUNT 3
+#include "kinematics_corexy.h"
+#elif (MACHINE_KINEMATICS == MACHINE_CARTESIAN_XY2)
+#include "kinematics_cartesian_xy2.h"
 #else
 #error Kinematics not implemented
 #endif

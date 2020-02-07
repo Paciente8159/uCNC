@@ -21,5 +21,6 @@
 
 #define MACHINE_CARTESIAN_XYZ 1
 #define MACHINE_COREXY 2
+#define MACHINE_CARTESIAN_XY2 3
 
 #endif

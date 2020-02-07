@@ -7,11 +7,12 @@
 				void itp_step_isr();
 				void itp_step_reset_isr();
 			serial.h
-				void serial_rx_isr(char c);
+				void serial_rx_isr(unsinged char c);
 				char serial_tx_isr();
 			trigger_control.h
-				void io_limits_isr(uint8_t limits);
-				void io_controls_isr(uint8_t controls);
+				void io_limits_isr();
+				void io_controls_isr();
+                void io_probe_isr(uint8_t probe);
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -52,47 +53,7 @@
 #include <avr/cpufunc.h>
 
 
-//Timer registers
-#ifndef TIMER_NUMBER
-#define TIMER_NUMBER 1
-#endif
-#define TIMER_COMPB_vect __timerbvect__(TIMER_NUMBER)
-#define TIMER_COMPA_vect __timeravect__(TIMER_NUMBER)
-#define TCNT __tcntreg__(TIMER_NUMBER)
-#define TCCRA __tmrareg__(TIMER_NUMBER)
-#define TCCRB __tmrbreg__(TIMER_NUMBER)
-#define OCRA __ocrreg__(TIMER_NUMBER,A)
-#define OCRB __ocrreg__(TIMER_NUMBER,B)
-#define TIFR __tifrreg__(TIMER_NUMBER)
-#define TIMSK __timskreg__(TIMER_NUMBER)
-#define OCIEB __ociebreg__(TIMER_NUMBER)
-#define OCIEA __ocieareg__(TIMER_NUMBER)
 
-//COM registers
-#define UCSRB __ucsrbreg__(COM_NUMBER)
-#define UCSRA __ucsrareg__(COM_NUMBER)
-#define UDRIE __udriereg__(COM_NUMBER)
-#define U2X __u2xreg__(COM_NUMBER)
-#define UBRRH __ubrrhreg__(COM_NUMBER)
-#define UBRRL __ubrrlreg__(COM_NUMBER)
-#define RXEN __rxenreg__(COM_NUMBER)
-#define TXEN __txenreg__(COM_NUMBER)
-#define RXCIE __rxciereg__(COM_NUMBER)
-#define UDRE __udrereg__(COM_NUMBER)
-#define RXC __rxcreg__(COM_NUMBER)
-
-
-//Pin interrupts input register
-#define PCINT0_INREG __inreg__(PCINT0_PORT)
-#define PCINT1_INREG __inreg__(PCINT1_PORT)
-#define PCINT2_INREG __inreg__(PCINT2_PORT)
-
-#define PCINT0_LIMITS_DIFF (LIMIT_X_ISR0 | LIMIT_Y_ISR0 | LIMIT_Z_ISR0 | LIMIT_X2_ISR0 | LIMIT_Y2_ISR0 | LIMIT_Z2_ISR0 | LIMIT_A_ISR0 | LIMIT_B_ISR0 | LIMIT_C_ISR0)
-#define PCINT0_CONTROLS_DIFF (ESTOP_ISR0 | SAFETY_DOOR_ISR0 | FHOLD_ISR0 | CS_RES_ISR0)
-#define PCINT1_LIMITS_DIFF (LIMIT_X_ISR1 | LIMIT_Y_ISR1 | LIMIT_Z_ISR1 | LIMIT_X2_ISR1 | LIMIT_Y2_ISR1 | LIMIT_Z2_ISR1 | LIMIT_A_ISR1 | LIMIT_B_ISR1 | LIMIT_C_ISR1)
-#define PCINT1_CONTROLS_DIFF (ESTOP_ISR1 | SAFETY_DOOR_ISR1 | FHOLD_ISR1 | CS_RES_ISR1)
-#define PCINT2_LIMITS_DIFF (LIMIT_X_ISR2 | LIMIT_Y_ISR2 | LIMIT_Z_ISR2 | LIMIT_X2_ISR2 | LIMIT_Y2_ISR2 | LIMIT_Z2_ISR2 | LIMIT_A_ISR2 | LIMIT_B_ISR2 | LIMIT_C_ISR2)
-#define PCINT2_CONTROLS_DIFF (ESTOP_ISR2 | SAFETY_DOOR_ISR2 | FHOLD_ISR2 | CS_RES_ISR2)
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -146,6 +107,120 @@ ISR(TIMER_COMPB_vect, ISR_BLOCK)
 #endif
 }
 
+#if(PCINTA_MASK==1)
+ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTA_LIMITS_MASK==1)
+    io_limits_isr();
+#endif
+#if(PCINTA_CONTROLS_MASK==1)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRA==1)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTA_MASK==4)
+ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTA_LIMITS_MASK==4)
+    io_limits_isr();
+#endif
+#if(PCINTA_CONTROLS_MASK==4)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRA==4)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTA_MASK==16)
+ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTA_LIMITS_MASK==16)
+    io_limits_isr();
+#endif
+#if(PCINTA_CONTROLS_MASK==16)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRA==16)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTA_MASK==64)
+ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTA_LIMITS_MASK==64)
+    io_limits_isr();
+#endif
+#if(PCINTA_CONTROLS_MASK==64)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRA==64)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTB_MASK==1)
+ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTB_LIMITS_MASK==1)
+    io_limits_isr();
+#endif
+#if(PCINTB_CONTROLS_MASK==1)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRB==1)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTB_MASK==4)
+ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTB_LIMITS_MASK==4)
+    io_limits_isr();
+#endif
+#if(PCINTB_CONTROLS_MASK==4)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRB==4)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTB_MASK==16)
+ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTB_LIMITS_MASK==16)
+    io_limits_isr();
+#endif
+#if(PCINTB_CONTROLS_MASK==16)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRB==16)
+    io_probe_isr();
+#endif
+}
+#endif
+#if(PCINTB_MASK==64)
+ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
+{
+#if(PCINTB_LIMITS_MASK==64)
+    io_limits_isr();
+#endif
+#if(PCINTB_CONTROLS_MASK==64)
+    io_controls_isr();
+#endif
+#if(PROBE_ISRB==64)
+    io_probe_isr();
+#endif
+}
+#endif
+
+#if(PCINT0_MASK!=0)
 ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -153,14 +228,14 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT0_LIMITS_DIFF!=0)
-    if(diff & PCINT0_LIMITS_DIFF)
+#if(PCINT0_LIMITS_MASK!=0)
+    if(diff & PCINT0_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT0_CONTROLS_DIFF!=0)
-    if(diff & PCINT0_CONTROLS_DIFF)
+#if(PCINT0_CONTROLS_MASK!=0)
+    if(diff & PCINT0_CONTROLS_MASK)
     {
         io_controls_isr();
     }
@@ -173,7 +248,9 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
     }
 #endif
 }
+#endif
 
+#if(PCINT1_MASK!=0)
 ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -181,14 +258,14 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT1_LIMITS_DIFF!=0)
-    if(diff & PCINT1_LIMITS_DIFF)
+#if(PCINT1_LIMITS_MASK!=0)
+    if(diff & PCINT1_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT1_CONTROLS_DIFF!=0)
-    if(diff & PCINT1_CONTROLS_DIFF)
+#if(PCINT1_CONTROLS_MASK!=0)
+    if(diff & PCINT1_CONTROLS_MASK)
     {
         io_controls_isr();
     }
@@ -201,7 +278,9 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
     }
 #endif
 }
+#endif
 
+#if(PCINT2_MASK!=0)
 ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -209,14 +288,14 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT2_LIMITS_DIFF!=0)
-    if(diff & PCINT2_LIMITS_DIFF)
+#if(PCINT2_LIMITS_MASK!=0)
+    if(diff & PCINT2_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT2_CONTROLS_DIFF!=0)
-    if(diff & PCINT2_CONTROLS_DIFF)
+#if(PCINT2_CONTROLS_MASK!=0)
+    if(diff & PCINT2_CONTROLS_MASK)
     {
         io_controls_isr();
     }
@@ -229,6 +308,7 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
     }
 #endif
 }
+#endif
 
 ISR(COM_RX_vect, ISR_BLOCK)
 {
@@ -455,131 +535,216 @@ void mcu_init()
     SETBIT(DOUT15_DIRREG, DOUT15_BIT);
 #endif
 #ifdef LIMIT_X
-    CLEARBIT(LIMIT_X_DIRREG, LIMIT_X_BIT);
+CLEARBIT(LIMIT_X_DIRREG, LIMIT_X_BIT);
 #ifdef LIMIT_X_PULLUP
-    SETBIT(LIMIT_X_PORTREG, LIMIT_X_BIT);
+SETBIT(LIMIT_X_PORTREG, LIMIT_X_BIT);
 #endif
 #ifdef LIMIT_X_ISR
-    SETBIT(LIMIT_X_ISRREG, LIMIT_X_BIT);
+#if(LIMIT_X_ISR>=0)
+SETBIT(LIMIT_X_ISRREG, LIMIT_X_BIT);
+#elif(LIMIT_X_ISR<=-1 && LIMIT_X_ISR>=-4)
+SETFLAG(LIMIT_X_ISRREG,LIMIT_X_ISRA);
+#elif(LIMIT_X_ISR<=-5 && LIMIT_X_ISR>=-8)
+SETFLAG(LIMIT_X_ISRREG, LIMIT_X_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_Y
-    CLEARBIT(LIMIT_Y_DIRREG, LIMIT_Y_BIT);
+CLEARBIT(LIMIT_Y_DIRREG, LIMIT_Y_BIT);
 #ifdef LIMIT_Y_PULLUP
-    SETBIT(LIMIT_Y_PORTREG, LIMIT_Y_BIT);
+SETBIT(LIMIT_Y_PORTREG, LIMIT_Y_BIT);
 #endif
 #ifdef LIMIT_Y_ISR
-    SETBIT(LIMIT_Y_ISRREG, LIMIT_Y_BIT);
+#if(LIMIT_Y_ISR>=0)
+SETBIT(LIMIT_Y_ISRREG, LIMIT_Y_BIT);
+#elif(LIMIT_Y_ISR<=-1 && LIMIT_Y_ISR>=-4)
+SETFLAG(LIMIT_Y_ISRREG,LIMIT_Y_ISRA);
+#elif(LIMIT_Y_ISR<=-5 && LIMIT_Y_ISR>=-8)
+SETFLAG(LIMIT_Y_ISRREG, LIMIT_Y_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_Z
-    CLEARBIT(LIMIT_Z_DIRREG, LIMIT_Z_BIT);
+CLEARBIT(LIMIT_Z_DIRREG, LIMIT_Z_BIT);
 #ifdef LIMIT_Z_PULLUP
-    SETBIT(LIMIT_Z_PORTREG, LIMIT_Z_BIT);
+SETBIT(LIMIT_Z_PORTREG, LIMIT_Z_BIT);
 #endif
 #ifdef LIMIT_Z_ISR
-    SETBIT(LIMIT_Z_ISRREG, LIMIT_Z_BIT);
+#if(LIMIT_Z_ISR>=0)
+SETBIT(LIMIT_Z_ISRREG, LIMIT_Z_BIT);
+#elif(LIMIT_Z_ISR<=-1 && LIMIT_Z_ISR>=-4)
+SETFLAG(LIMIT_Z_ISRREG,LIMIT_Z_ISRA);
+#elif(LIMIT_Z_ISR<=-5 && LIMIT_Z_ISR>=-8)
+SETFLAG(LIMIT_Z_ISRREG, LIMIT_Z_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_X2
-    CLEARBIT(LIMIT_X2_DIRREG, LIMIT_X2_BIT);
+CLEARBIT(LIMIT_X2_DIRREG, LIMIT_X2_BIT);
 #ifdef LIMIT_X2_PULLUP
-    SETBIT(LIMIT_X2_PORTREG, LIMIT_X2_BIT);
+SETBIT(LIMIT_X2_PORTREG, LIMIT_X2_BIT);
 #endif
 #ifdef LIMIT_X2_ISR
-    SETBIT(LIMIT_X2_ISRREG, LIMIT_X2_BIT);
+#if(LIMIT_X2_ISR>=0)
+SETBIT(LIMIT_X2_ISRREG, LIMIT_X2_BIT);
+#elif(LIMIT_X2_ISR<=-1 && LIMIT_X2_ISR>=-4)
+SETFLAG(LIMIT_X2_ISRREG,LIMIT_X2_ISRA);
+#elif(LIMIT_X2_ISR<=-5 && LIMIT_X2_ISR>=-8)
+SETFLAG(LIMIT_X2_ISRREG, LIMIT_X2_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_Y2
-    CLEARBIT(LIMIT_Y2_DIRREG, LIMIT_Y2_BIT);
+CLEARBIT(LIMIT_Y2_DIRREG, LIMIT_Y2_BIT);
 #ifdef LIMIT_Y2_PULLUP
-    SETBIT(LIMIT_Y2_PORTREG, LIMIT_Y2_BIT);
+SETBIT(LIMIT_Y2_PORTREG, LIMIT_Y2_BIT);
 #endif
 #ifdef LIMIT_Y2_ISR
-    SETBIT(LIMIT_Y2_ISRREG, LIMIT_Y2_BIT);
+#if(LIMIT_Y2_ISR>=0)
+SETBIT(LIMIT_Y2_ISRREG, LIMIT_Y2_BIT);
+#elif(LIMIT_Y2_ISR<=-1 && LIMIT_Y2_ISR>=-4)
+SETFLAG(LIMIT_Y2_ISRREG,LIMIT_Y2_ISRA);
+#elif(LIMIT_Y2_ISR<=-5 && LIMIT_Y2_ISR>=-8)
+SETFLAG(LIMIT_Y2_ISRREG, LIMIT_Y2_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_Z2
-    CLEARBIT(LIMIT_Z2_DIRREG, LIMIT_Z2_BIT);
+CLEARBIT(LIMIT_Z2_DIRREG, LIMIT_Z2_BIT);
 #ifdef LIMIT_Z2_PULLUP
-    SETBIT(LIMIT_Z2_PORTREG, LIMIT_Z2_BIT);
+SETBIT(LIMIT_Z2_PORTREG, LIMIT_Z2_BIT);
 #endif
 #ifdef LIMIT_Z2_ISR
-    SETBIT(LIMIT_Z2_ISRREG, LIMIT_Z2_BIT);
+#if(LIMIT_Z2_ISR>=0)
+SETBIT(LIMIT_Z2_ISRREG, LIMIT_Z2_BIT);
+#elif(LIMIT_Z2_ISR<=-1 && LIMIT_Z2_ISR>=-4)
+SETFLAG(LIMIT_Z2_ISRREG,LIMIT_Z2_ISRA);
+#elif(LIMIT_Z2_ISR<=-5 && LIMIT_Z2_ISR>=-8)
+SETFLAG(LIMIT_Z2_ISRREG, LIMIT_Z2_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_A
-    CLEARBIT(LIMIT_A_DIRREG, LIMIT_A_BIT);
+CLEARBIT(LIMIT_A_DIRREG, LIMIT_A_BIT);
 #ifdef LIMIT_A_PULLUP
-    SETBIT(LIMIT_A_PORTREG, LIMIT_A_BIT);
+SETBIT(LIMIT_A_PORTREG, LIMIT_A_BIT);
 #endif
 #ifdef LIMIT_A_ISR
-    SETBIT(LIMIT_A_ISRREG, LIMIT_A_BIT);
+#if(LIMIT_A_ISR>=0)
+SETBIT(LIMIT_A_ISRREG, LIMIT_A_BIT);
+#elif(LIMIT_A_ISR<=-1 && LIMIT_A_ISR>=-4)
+SETFLAG(LIMIT_A_ISRREG,LIMIT_A_ISRA);
+#elif(LIMIT_A_ISR<=-5 && LIMIT_A_ISR>=-8)
+SETFLAG(LIMIT_A_ISRREG, LIMIT_A_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_B
-    CLEARBIT(LIMIT_B_DIRREG, LIMIT_B_BIT);
+CLEARBIT(LIMIT_B_DIRREG, LIMIT_B_BIT);
 #ifdef LIMIT_B_PULLUP
-    SETBIT(LIMIT_B_PORTREG, LIMIT_B_BIT);
+SETBIT(LIMIT_B_PORTREG, LIMIT_B_BIT);
 #endif
 #ifdef LIMIT_B_ISR
-    SETBIT(LIMIT_B_ISRREG, LIMIT_B_BIT);
+#if(LIMIT_B_ISR>=0)
+SETBIT(LIMIT_B_ISRREG, LIMIT_B_BIT);
+#elif(LIMIT_B_ISR<=-1 && LIMIT_B_ISR>=-4)
+SETFLAG(LIMIT_B_ISRREG,LIMIT_B_ISRA);
+#elif(LIMIT_B_ISR<=-5 && LIMIT_B_ISR>=-8)
+SETFLAG(LIMIT_B_ISRREG, LIMIT_B_ISRB);
+#endif
 #endif
 #endif
 #ifdef LIMIT_C
-    CLEARBIT(LIMIT_C_DIRREG, LIMIT_C_BIT);
+CLEARBIT(LIMIT_C_DIRREG, LIMIT_C_BIT);
 #ifdef LIMIT_C_PULLUP
-    SETBIT(LIMIT_C_PORTREG, LIMIT_C_BIT);
+SETBIT(LIMIT_C_PORTREG, LIMIT_C_BIT);
 #endif
 #ifdef LIMIT_C_ISR
-    SETBIT(LIMIT_C_ISRREG, LIMIT_C_BIT);
+#if(LIMIT_C_ISR>=0)
+SETBIT(LIMIT_C_ISRREG, LIMIT_C_BIT);
+#elif(LIMIT_C_ISR<=-1 && LIMIT_C_ISR>=-4)
+SETFLAG(LIMIT_C_ISRREG,LIMIT_C_ISRA);
+#elif(LIMIT_C_ISR<=-5 && LIMIT_C_ISR>=-8)
+SETFLAG(LIMIT_C_ISRREG, LIMIT_C_ISRB);
+#endif
 #endif
 #endif
 #ifdef PROBE
-    CLEARBIT(PROBE_DIRREG, PROBE_BIT);
+CLEARBIT(PROBE_DIRREG, PROBE_BIT);
 #ifdef PROBE_PULLUP
-    SETBIT(PROBE_PORTREG, PROBE_BIT);
+SETBIT(PROBE_PORTREG, PROBE_BIT);
 #endif
 #ifdef PROBE_ISR
-    SETBIT(PROBE_ISRREG, PROBE_BIT);
+#if(PROBE_ISR>=0)
+SETBIT(PROBE_ISRREG, PROBE_BIT);
+#elif(PROBE_ISR<=-1 && PROBE_ISR>=-4)
+SETFLAG(PROBE_ISRREG,PROBE_ISRA);
+#elif(PROBE_ISR<=-5 && PROBE_ISR>=-8)
+SETFLAG(PROBE_ISRREG, PROBE_ISRB);
+#endif
 #endif
 #endif
 #ifdef ESTOP
-    CLEARBIT(ESTOP_DIRREG, ESTOP_BIT);
+CLEARBIT(ESTOP_DIRREG, ESTOP_BIT);
 #ifdef ESTOP_PULLUP
-    SETBIT(ESTOP_PORTREG, ESTOP_BIT);
+SETBIT(ESTOP_PORTREG, ESTOP_BIT);
 #endif
 #ifdef ESTOP_ISR
-    SETBIT(ESTOP_ISRREG, ESTOP_BIT);
+#if(ESTOP_ISR>=0)
+SETBIT(ESTOP_ISRREG, ESTOP_BIT);
+#elif(ESTOP_ISR<=-1 && ESTOP_ISR>=-4)
+SETFLAG(ESTOP_ISRREG,ESTOP_ISRA);
+#elif(ESTOP_ISR<=-5 && ESTOP_ISR>=-8)
+SETFLAG(ESTOP_ISRREG, ESTOP_ISRB);
+#endif
 #endif
 #endif
 #ifdef SAFETY_DOOR
-    CLEARBIT(SAFETY_DOOR_DIRREG, SAFETY_DOOR_BIT);
+CLEARBIT(SAFETY_DOOR_DIRREG, SAFETY_DOOR_BIT);
 #ifdef SAFETY_DOOR_PULLUP
-    SETBIT(SAFETY_DOOR_PORTREG, SAFETY_DOOR_BIT);
+SETBIT(SAFETY_DOOR_PORTREG, SAFETY_DOOR_BIT);
 #endif
 #ifdef SAFETY_DOOR_ISR
-    SETBIT(SAFETY_DOOR_ISRREG, SAFETY_DOOR_BIT);
+#if(SAFETY_DOOR_ISR>=0)
+SETBIT(SAFETY_DOOR_ISRREG, SAFETY_DOOR_BIT);
+#elif(SAFETY_DOOR_ISR<=-1 && SAFETY_DOOR_ISR>=-4)
+SETFLAG(SAFETY_DOOR_ISRREG,SAFETY_DOOR_ISRA);
+#elif(SAFETY_DOOR_ISR<=-5 && SAFETY_DOOR_ISR>=-8)
+SETFLAG(SAFETY_DOOR_ISRREG, SAFETY_DOOR_ISRB);
+#endif
 #endif
 #endif
 #ifdef FHOLD
-    CLEARBIT(FHOLD_DIRREG, FHOLD_BIT);
+CLEARBIT(FHOLD_DIRREG, FHOLD_BIT);
 #ifdef FHOLD_PULLUP
-    SETBIT(FHOLD_PORTREG, FHOLD_BIT);
+SETBIT(FHOLD_PORTREG, FHOLD_BIT);
 #endif
 #ifdef FHOLD_ISR
-    SETBIT(FHOLD_ISRREG, FHOLD_BIT);
+#if(FHOLD_ISR>=0)
+SETBIT(FHOLD_ISRREG, FHOLD_BIT);
+#elif(FHOLD_ISR<=-1 && FHOLD_ISR>=-4)
+SETFLAG(FHOLD_ISRREG,FHOLD_ISRA);
+#elif(FHOLD_ISR<=-5 && FHOLD_ISR>=-8)
+SETFLAG(FHOLD_ISRREG, FHOLD_ISRB);
+#endif
 #endif
 #endif
 #ifdef CS_RES
-    CLEARBIT(CS_RES_DIRREG, CS_RES_BIT);
+CLEARBIT(CS_RES_DIRREG, CS_RES_BIT);
 #ifdef CS_RES_PULLUP
-    SETBIT(CS_RES_PORTREG, CS_RES_BIT);
+SETBIT(CS_RES_PORTREG, CS_RES_BIT);
 #endif
 #ifdef CS_RES_ISR
-    SETBIT(CS_RES_ISRREG, CS_RES_BIT);
+#if(CS_RES_ISR>=0)
+SETBIT(CS_RES_ISRREG, CS_RES_BIT);
+#elif(CS_RES_ISR<=-1 && CS_RES_ISR>=-4)
+SETFLAG(CS_RES_ISRREG,CS_RES_ISRA);
+#elif(CS_RES_ISR<=-5 && CS_RES_ISR>=-8)
+SETFLAG(CS_RES_ISRREG, CS_RES_ISRB);
 #endif
 #endif
+#endif
+
 #ifdef ANALOG0
     CLEARBIT(ANALOG0_DIRREG, ANALOG0_BIT);
 #endif
@@ -745,17 +910,17 @@ void mcu_init()
     UCSRB |= (1<<RXEN | 1<<TXEN | 1<<RXCIE);
 
     //enable interrupts on pin changes
-    #if((PCINT0_LIMITS_DIFF | PCINT0_CONTROLS_DIFF | PROBE_ISR0) != 0)
+    #if((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
     SETBIT(PCICR, PCIE0);
     #else
     CLEARBIT(PCICR, PCIE0);
     #endif
-    #if((PCINT1_LIMITS_DIFF | PCINT1_CONTROLS_DIFF | PROBE_ISR1) != 0)
+    #if((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1) != 0)
     SETBIT(PCICR, PCIE1);
     #else
     CLEARBIT(PCICR, PCIE1);
     #endif
-    #if((PCINT2_LIMITS_DIFF | PCINT2_CONTROLS_DIFF | PROBE_ISR2) != 0)
+    #if((PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2) != 0)
     SETBIT(PCICR, PCIE2);
     #else
     CLEARBIT(PCICR, PCIE2);

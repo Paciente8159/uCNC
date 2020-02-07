@@ -23,6 +23,7 @@
 #include "io_control.h"
 #include "motion_control.h"
 #include "parser.h"
+#include "machinedefs.h"
 #include "kinematics.h"
 #include "planner.h"
 #include "cnc.h"
@@ -83,11 +84,11 @@ static uint8_t protocol_get_tools()
 
 static void protocol_send_status_tail()
 {
-    float axis[AXIS_COUNT];
+    float axis[MAX(AXIS_COUNT,3)];
     if(parser_get_wco(axis))
     {
         serial_print_str(__romstr__("|WCO:"));
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         return;
     }
 
@@ -128,7 +129,7 @@ static void protocol_send_status_tail()
 
 void protocol_send_status()
 {
-    float axis[AXIS_COUNT];
+    float axis[MAX(AXIS_COUNT,3)];
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
@@ -186,6 +187,7 @@ void protocol_send_status()
                     }
                 }
                 break;
+            case EXEC_LIMITS:
             case EXEC_NOHOME:
                 serial_print_str(__romstr__("Alarm"));
                 break;
@@ -219,9 +221,8 @@ void protocol_send_status()
         serial_print_str(__romstr__("Check"));
     }
     
-
     serial_print_str(__romstr__("|MPos:"));
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
 
 #ifdef USE_SPINDLE
     serial_print_str(__romstr__("|FS:"));
@@ -308,7 +309,7 @@ void protocol_send_status()
 
 void protocol_send_gcode_coordsys()
 {
-	float axis[AXIS_COUNT];
+	float axis[MAX(AXIS_COUNT,3)];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
     for(uint8_t i = 0; i < coordlimit; i++)
     {
@@ -316,7 +317,7 @@ void protocol_send_gcode_coordsys()
         serial_print_str(__romstr__("[G"));
         serial_print_int(i + 54);
         serial_putc(':');
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         serial_putc(']');
         procotol_send_newline();
     }
@@ -326,38 +327,40 @@ void protocol_send_gcode_coordsys()
         serial_print_int(i - 5);
         serial_putc(':');
         parser_get_coordsys(i, (float*)&axis);
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         serial_putc(']');
         procotol_send_newline();
     }
 
     serial_print_str(__romstr__("[G28:"));
     parser_get_coordsys(28, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G30:"));
     parser_get_coordsys(30, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G92:"));
     parser_get_coordsys(92, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
     
+    #ifdef AXIS_TOOL
     serial_print_str(__romstr__("[TLO:"));
     parser_get_coordsys(254, (float*)&axis);
     serial_print_flt(axis[0]);
     serial_putc(']');
     procotol_send_newline();
+    #endif
 
     serial_print_str(__romstr__("[PRB:"));
     parser_get_coordsys(255, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(':');
     serial_putc('0' + parser_get_probe_result());
     serial_putc(']');

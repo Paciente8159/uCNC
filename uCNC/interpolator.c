@@ -98,6 +98,9 @@ volatile static uint8_t itp_rt_spindle;
 //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
 static volatile bool itp_isr_finnished;
+#ifdef AXIS_DUAL_DRIVE
+static uint8_t itp_step_lock;
+#endif
 
 volatile static bool itp_busy;
 
@@ -198,7 +201,9 @@ void itp_init()
 #endif
     itp_busy = false;
     itp_isr_finnished = true;
-
+    #ifdef AXIS_DUAL_DRIVE
+    itp_step_lock = 0xFF;
+    #endif
     //initialize circular buffers
     itp_blk_clear();
     itp_sgm_clear();
@@ -292,6 +297,10 @@ void itp_run()
             for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
                 i--;
+                #ifdef AXIS_DUAL_DRIVE
+                if(i != itp_step_lock)
+                {
+                #endif
                 itp_blk_data[itp_blk_data_write].steps[i] = step_new_pos[i] - itp_step_pos[i];
 
                 if(itp_blk_data[itp_blk_data_write].steps[i] > (uint32_t)INT32_MAX)
@@ -301,6 +310,9 @@ void itp_run()
                 }
 
                 itp_blk_data[itp_blk_data_write].totalsteps = MAX(itp_blk_data[itp_blk_data_write].totalsteps, itp_blk_data[itp_blk_data_write].steps[i]);
+                #ifdef AXIS_DUAL_DRIVE
+                }
+                #endif
             }
 
             //copies data for interpolator step_pos
@@ -524,6 +536,9 @@ void itp_stop()
 
 void itp_clear()
 {
+    #ifdef AXIS_DUAL_DRIVE
+    itp_step_lock = 0xFF;
+    #endif
     itp_cur_plan_block = NULL;
     itp_running_sgm = NULL;
     //syncs the stored position and the real position
@@ -590,6 +605,13 @@ uint16_t itp_get_rt_spindle()
 	spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
 	
 	return (uint16_t)roundf(spindle);
+}
+#endif
+
+#ifdef AXIS_DUAL_DRIVE
+void itp_lock_stepper(uint8_t stepindex)
+{
+    itp_step_lock = stepindex;
 }
 #endif
 

@@ -148,7 +148,7 @@ const settings_t __rom__ default_settings =
     .hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
     .homing_enabled = DEFAULT_HOMING_ENABLED,
     .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-    .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
+    .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM
 };
 
 //static uint8_t settings_crc;

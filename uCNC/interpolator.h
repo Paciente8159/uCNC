@@ -33,7 +33,12 @@ void itp_clear();
 void itp_get_rt_position(float* axis);
 void itp_reset_rt_position();
 float itp_get_rt_feed();
+#ifdef USE_SPINDLE
 uint16_t itp_get_rt_spindle();
+#endif
+#ifdef AXIS_DUAL_DRIVE
+void itp_lock_stepper(uint8_t stepindex);
+#endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 uint32_t itp_get_rt_line_number();
 #endif
