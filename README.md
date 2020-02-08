@@ -51,7 +51,7 @@ TODO List of G-Codes in µCNC future releases:
 ### µCNC capabilities
 µCNC currently supports up to (depending on the MCU/board capabilities):
   - 6 independent axis 
-  - 6 stepper step/dir drivers
+  - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
   - 9* limit switches (one per axis - *axis X, Y and Z support dual endstops) (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
