@@ -1,10 +1,10 @@
 /*
-	Name: mcus.h
-	Description: Defines the available mcu types.
+	Name: boarddefs.h
+	Description: Defines the available board types.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 07/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,10 +16,37 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUS_H
-#define MCUS_H
+#ifndef BOARDDEFS_H
+#define BOARDDEFS_H
 
-#define MCU_AVR 1
-#define MCU_VIRTUAL 99
+#include "boards.h"
+
+/*
+	MCU port map
+*/
+#if(BOARD != 0)
+#else
+#error Invalid board configuration
+#endif
+
+#if(BOARD == BOARD_GRBL)
+#include "mcus\avr\boardmap_grbl.h"
+#endif
+
+#if(BOARD == BOARD_RAMBO14)
+#include "mcus\avr\boardmap_rambo14.h"
+#endif
+
+#if(BOARD == BOARD_RAMPS14)
+#include "mcus\avr\boardmap_ramps14.h"
+#endif
+
+#if(BOARD == BOARD_VIRTUAL)
+
+#endif
+
+#ifndef BOARD
+#error Undefined board
+#endif
 
 #endif

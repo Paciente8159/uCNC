@@ -1,10 +1,10 @@
 /*
 	Name: mcus.h
-	Description: Defines the available mcu types.
+	Description: Defines the available board types.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 07/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,10 +16,12 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUS_H
-#define MCUS_H
+#ifndef BOARDS_H
+#define BOARDS_H
 
-#define MCU_AVR 1
-#define MCU_VIRTUAL 99
+#define BOARD_GRBL 1
+#define BOARD_RAMBO14 2
+#define BOARD_RAMPS14 3
+#define BOARD_VIRTUAL 99
 
 #endif

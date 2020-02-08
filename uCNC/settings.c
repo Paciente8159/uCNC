@@ -1,18 +1,18 @@
 /*
 	Name: settings.c
-	Description: µCNC runtime settings. These functions store settings and other parameters
+	Description: �CNC runtime settings. These functions store settings and other parameters
 		in non-volatile memory.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 26/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -20,7 +20,6 @@
 #include "config.h"
 #include "defaults.h"
 #include "settings.h"
-#include "mcudefs.h"
 #include "mcu.h"
 #include "serial.h"
 #include "grbl_interface.h"
@@ -194,6 +193,16 @@ uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
         *(__ptr++) = value;
     }
 
+    //fix step invert mask to match mirror step pins
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    #ifdef DUAL_DRIVE_AXIS0
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
+    #endif
+    #ifdef DUAL_DRIVE_AXIS1
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
+    #endif
+    #endif
+
     return (crc ^ mcu_eeprom_getc(address));
 }
 
@@ -203,11 +212,26 @@ void settings_reset()
     uint8_t* __ptr = (uint8_t*)&g_settings;
     rom_memcpy(&g_settings, &default_settings, size);
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, size);
+
+    //fix step invert mask to match mirror step pins
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    #ifdef DUAL_DRIVE_AXIS0
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
+    #endif
+    #ifdef DUAL_DRIVE_AXIS1
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
+    #endif
+    #endif
 }
 
 void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
 {
     uint8_t crc = 0;
+
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    uint8_t temp_step_inv_mask = g_settings.step_invert_mask;
+    g_settings.step_invert_mask &= 63; //sets cloned axis to 0
+    #endif
 
     while (size)
     {
@@ -226,6 +250,10 @@ void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size)
     }
 
     mcu_eeprom_putc(address, crc);
+
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    g_settings.step_invert_mask = temp_step_inv_mask; //restores setting
+    #endif
 }
 
 uint8_t settings_change(uint8_t setting, float value)
@@ -396,6 +424,17 @@ uint8_t settings_change(uint8_t setting, float value)
     }
 
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t*)&g_settings, (uint8_t)sizeof(settings_t));
+
+    //fix step invert mask to match mirror step pins
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    #ifdef DUAL_DRIVE_AXIS0
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
+    #endif
+    #ifdef DUAL_DRIVE_AXIS1
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
+    #endif
+    #endif
+    
     return result;
 }
 

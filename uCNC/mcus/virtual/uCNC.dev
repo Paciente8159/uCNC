@@ -9,8 +9,8 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DMCU=MCU_VIRTUAL -D__SIMUL___@@_
-CppCompiler=-DMCU=MCU_VIRTUAL_@@_
+Compiler=-D__SIMUL___@@_
+CppCompiler=_@@_
 Linker=
 IsCpp=0
 Icon=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=000000e0e0000000001000000
-UnitCount=37
+UnitCount=43
 
 [VersionInfo]
 Major=1
@@ -131,7 +131,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit9]
-FileName=..\..\kinematics_cartesian_xyz.c
+FileName=..\..\kinematics_cartesian.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -401,7 +401,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit38]
-FileName=..\..\kinematics_corexy.c
+FileName=..\..\kinematics_cartesian.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -411,7 +411,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit39]
-FileName=serial.c
+FileName=..\..\boarddefs.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -432,6 +432,46 @@ BuildCmd=
 
 [Unit16]
 FileName=..\..\mcus.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit42]
+FileName=..\..\build.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit43]
+FileName=..\..\kinematics_corexy.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit40]
+FileName=..\..\boards.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit41]
+FileName=..\..\config_helper.h
 CompileCpp=0
 Folder=
 Compile=1

@@ -155,1109 +155,1133 @@
 #define DIO5_INREG (__inreg__(STEP5_PORT))
 #define DIO5_DIRREG (__dirreg__(STEP5_PORT))
 #endif
-#if(defined(STEP0_EN_PORT) && defined(STEP0_EN_BIT))
+#if(defined(STEP6_PORT) && defined(STEP6_BIT))
 #define DIO6 6
-#define STEP0_EN 6
-#define DIO6_PORT (STEP0_EN_PORT)
-#define DIO6_BIT (STEP0_EN_BIT)
+#define STEP6 6
+#define DIO6_PORT (STEP6_PORT)
+#define DIO6_BIT (STEP6_BIT)
+#define STEP6_OUTREG (__outreg__(STEP6_PORT))
+#define STEP6_INREG (__inreg__(STEP6_PORT))
+#define STEP6_DIRREG (__dirreg__(STEP6_PORT))
+#define DIO6_OUTREG (__outreg__(STEP6_PORT))
+#define DIO6_INREG (__inreg__(STEP6_PORT))
+#define DIO6_DIRREG (__dirreg__(STEP6_PORT))
+#endif
+#if(defined(STEP7_PORT) && defined(STEP7_BIT))
+#define DIO7 7
+#define STEP7 7
+#define DIO7_PORT (STEP7_PORT)
+#define DIO7_BIT (STEP7_BIT)
+#define STEP7_OUTREG (__outreg__(STEP7_PORT))
+#define STEP7_INREG (__inreg__(STEP7_PORT))
+#define STEP7_DIRREG (__dirreg__(STEP7_PORT))
+#define DIO7_OUTREG (__outreg__(STEP7_PORT))
+#define DIO7_INREG (__inreg__(STEP7_PORT))
+#define DIO7_DIRREG (__dirreg__(STEP7_PORT))
+#endif
+#if(defined(STEP0_EN_PORT) && defined(STEP0_EN_BIT))
+#define DIO8 8
+#define STEP0_EN 8
+#define DIO8_PORT (STEP0_EN_PORT)
+#define DIO8_BIT (STEP0_EN_BIT)
 #define STEP0_EN_OUTREG (__outreg__(STEP0_EN_PORT))
 #define STEP0_EN_INREG (__inreg__(STEP0_EN_PORT))
 #define STEP0_EN_DIRREG (__dirreg__(STEP0_EN_PORT))
-#define DIO6_OUTREG (__outreg__(STEP0_EN_PORT))
-#define DIO6_INREG (__inreg__(STEP0_EN_PORT))
-#define DIO6_DIRREG (__dirreg__(STEP0_EN_PORT))
+#define DIO8_OUTREG (__outreg__(STEP0_EN_PORT))
+#define DIO8_INREG (__inreg__(STEP0_EN_PORT))
+#define DIO8_DIRREG (__dirreg__(STEP0_EN_PORT))
 #endif
 #if(defined(STEP1_EN_PORT) && defined(STEP1_EN_BIT))
-#define DIO7 7
-#define STEP1_EN 7
-#define DIO7_PORT (STEP1_EN_PORT)
-#define DIO7_BIT (STEP1_EN_BIT)
+#define DIO9 9
+#define STEP1_EN 9
+#define DIO9_PORT (STEP1_EN_PORT)
+#define DIO9_BIT (STEP1_EN_BIT)
 #define STEP1_EN_OUTREG (__outreg__(STEP1_EN_PORT))
 #define STEP1_EN_INREG (__inreg__(STEP1_EN_PORT))
 #define STEP1_EN_DIRREG (__dirreg__(STEP1_EN_PORT))
-#define DIO7_OUTREG (__outreg__(STEP1_EN_PORT))
-#define DIO7_INREG (__inreg__(STEP1_EN_PORT))
-#define DIO7_DIRREG (__dirreg__(STEP1_EN_PORT))
+#define DIO9_OUTREG (__outreg__(STEP1_EN_PORT))
+#define DIO9_INREG (__inreg__(STEP1_EN_PORT))
+#define DIO9_DIRREG (__dirreg__(STEP1_EN_PORT))
 #endif
 #if(defined(STEP2_EN_PORT) && defined(STEP2_EN_BIT))
-#define DIO8 8
-#define STEP2_EN 8
-#define DIO8_PORT (STEP2_EN_PORT)
-#define DIO8_BIT (STEP2_EN_BIT)
+#define DIO10 10
+#define STEP2_EN 10
+#define DIO10_PORT (STEP2_EN_PORT)
+#define DIO10_BIT (STEP2_EN_BIT)
 #define STEP2_EN_OUTREG (__outreg__(STEP2_EN_PORT))
 #define STEP2_EN_INREG (__inreg__(STEP2_EN_PORT))
 #define STEP2_EN_DIRREG (__dirreg__(STEP2_EN_PORT))
-#define DIO8_OUTREG (__outreg__(STEP2_EN_PORT))
-#define DIO8_INREG (__inreg__(STEP2_EN_PORT))
-#define DIO8_DIRREG (__dirreg__(STEP2_EN_PORT))
+#define DIO10_OUTREG (__outreg__(STEP2_EN_PORT))
+#define DIO10_INREG (__inreg__(STEP2_EN_PORT))
+#define DIO10_DIRREG (__dirreg__(STEP2_EN_PORT))
 #endif
 #if(defined(STEP3_EN_PORT) && defined(STEP3_EN_BIT))
-#define DIO9 9
-#define STEP3_EN 9
-#define DIO9_PORT (STEP3_EN_PORT)
-#define DIO9_BIT (STEP3_EN_BIT)
+#define DIO11 11
+#define STEP3_EN 11
+#define DIO11_PORT (STEP3_EN_PORT)
+#define DIO11_BIT (STEP3_EN_BIT)
 #define STEP3_EN_OUTREG (__outreg__(STEP3_EN_PORT))
 #define STEP3_EN_INREG (__inreg__(STEP3_EN_PORT))
 #define STEP3_EN_DIRREG (__dirreg__(STEP3_EN_PORT))
-#define DIO9_OUTREG (__outreg__(STEP3_EN_PORT))
-#define DIO9_INREG (__inreg__(STEP3_EN_PORT))
-#define DIO9_DIRREG (__dirreg__(STEP3_EN_PORT))
+#define DIO11_OUTREG (__outreg__(STEP3_EN_PORT))
+#define DIO11_INREG (__inreg__(STEP3_EN_PORT))
+#define DIO11_DIRREG (__dirreg__(STEP3_EN_PORT))
 #endif
 #if(defined(STEP4_EN_PORT) && defined(STEP4_EN_BIT))
-#define DIO10 10
-#define STEP4_EN 10
-#define DIO10_PORT (STEP4_EN_PORT)
-#define DIO10_BIT (STEP4_EN_BIT)
+#define DIO12 12
+#define STEP4_EN 12
+#define DIO12_PORT (STEP4_EN_PORT)
+#define DIO12_BIT (STEP4_EN_BIT)
 #define STEP4_EN_OUTREG (__outreg__(STEP4_EN_PORT))
 #define STEP4_EN_INREG (__inreg__(STEP4_EN_PORT))
 #define STEP4_EN_DIRREG (__dirreg__(STEP4_EN_PORT))
-#define DIO10_OUTREG (__outreg__(STEP4_EN_PORT))
-#define DIO10_INREG (__inreg__(STEP4_EN_PORT))
-#define DIO10_DIRREG (__dirreg__(STEP4_EN_PORT))
+#define DIO12_OUTREG (__outreg__(STEP4_EN_PORT))
+#define DIO12_INREG (__inreg__(STEP4_EN_PORT))
+#define DIO12_DIRREG (__dirreg__(STEP4_EN_PORT))
 #endif
 #if(defined(STEP5_EN_PORT) && defined(STEP5_EN_BIT))
-#define DIO11 11
-#define STEP5_EN 11
-#define DIO11_PORT (STEP5_EN_PORT)
-#define DIO11_BIT (STEP5_EN_BIT)
+#define DIO13 13
+#define STEP5_EN 13
+#define DIO13_PORT (STEP5_EN_PORT)
+#define DIO13_BIT (STEP5_EN_BIT)
 #define STEP5_EN_OUTREG (__outreg__(STEP5_EN_PORT))
 #define STEP5_EN_INREG (__inreg__(STEP5_EN_PORT))
 #define STEP5_EN_DIRREG (__dirreg__(STEP5_EN_PORT))
-#define DIO11_OUTREG (__outreg__(STEP5_EN_PORT))
-#define DIO11_INREG (__inreg__(STEP5_EN_PORT))
-#define DIO11_DIRREG (__dirreg__(STEP5_EN_PORT))
+#define DIO13_OUTREG (__outreg__(STEP5_EN_PORT))
+#define DIO13_INREG (__inreg__(STEP5_EN_PORT))
+#define DIO13_DIRREG (__dirreg__(STEP5_EN_PORT))
 #endif
 #if(defined(DIR0_PORT) && defined(DIR0_BIT))
-#define DIO12 12
-#define DIR0 12
-#define DIO12_PORT (DIR0_PORT)
-#define DIO12_BIT (DIR0_BIT)
+#define DIO14 14
+#define DIR0 14
+#define DIO14_PORT (DIR0_PORT)
+#define DIO14_BIT (DIR0_BIT)
 #define DIR0_OUTREG (__outreg__(DIR0_PORT))
 #define DIR0_INREG (__inreg__(DIR0_PORT))
 #define DIR0_DIRREG (__dirreg__(DIR0_PORT))
-#define DIO12_OUTREG (__outreg__(DIR0_PORT))
-#define DIO12_INREG (__inreg__(DIR0_PORT))
-#define DIO12_DIRREG (__dirreg__(DIR0_PORT))
+#define DIO14_OUTREG (__outreg__(DIR0_PORT))
+#define DIO14_INREG (__inreg__(DIR0_PORT))
+#define DIO14_DIRREG (__dirreg__(DIR0_PORT))
 #endif
 #if(defined(DIR1_PORT) && defined(DIR1_BIT))
-#define DIO13 13
-#define DIR1 13
-#define DIO13_PORT (DIR1_PORT)
-#define DIO13_BIT (DIR1_BIT)
+#define DIO15 15
+#define DIR1 15
+#define DIO15_PORT (DIR1_PORT)
+#define DIO15_BIT (DIR1_BIT)
 #define DIR1_OUTREG (__outreg__(DIR1_PORT))
 #define DIR1_INREG (__inreg__(DIR1_PORT))
 #define DIR1_DIRREG (__dirreg__(DIR1_PORT))
-#define DIO13_OUTREG (__outreg__(DIR1_PORT))
-#define DIO13_INREG (__inreg__(DIR1_PORT))
-#define DIO13_DIRREG (__dirreg__(DIR1_PORT))
+#define DIO15_OUTREG (__outreg__(DIR1_PORT))
+#define DIO15_INREG (__inreg__(DIR1_PORT))
+#define DIO15_DIRREG (__dirreg__(DIR1_PORT))
 #endif
 #if(defined(DIR2_PORT) && defined(DIR2_BIT))
-#define DIO14 14
-#define DIR2 14
-#define DIO14_PORT (DIR2_PORT)
-#define DIO14_BIT (DIR2_BIT)
+#define DIO16 16
+#define DIR2 16
+#define DIO16_PORT (DIR2_PORT)
+#define DIO16_BIT (DIR2_BIT)
 #define DIR2_OUTREG (__outreg__(DIR2_PORT))
 #define DIR2_INREG (__inreg__(DIR2_PORT))
 #define DIR2_DIRREG (__dirreg__(DIR2_PORT))
-#define DIO14_OUTREG (__outreg__(DIR2_PORT))
-#define DIO14_INREG (__inreg__(DIR2_PORT))
-#define DIO14_DIRREG (__dirreg__(DIR2_PORT))
+#define DIO16_OUTREG (__outreg__(DIR2_PORT))
+#define DIO16_INREG (__inreg__(DIR2_PORT))
+#define DIO16_DIRREG (__dirreg__(DIR2_PORT))
 #endif
 #if(defined(DIR3_PORT) && defined(DIR3_BIT))
-#define DIO15 15
-#define DIR3 15
-#define DIO15_PORT (DIR3_PORT)
-#define DIO15_BIT (DIR3_BIT)
+#define DIO17 17
+#define DIR3 17
+#define DIO17_PORT (DIR3_PORT)
+#define DIO17_BIT (DIR3_BIT)
 #define DIR3_OUTREG (__outreg__(DIR3_PORT))
 #define DIR3_INREG (__inreg__(DIR3_PORT))
 #define DIR3_DIRREG (__dirreg__(DIR3_PORT))
-#define DIO15_OUTREG (__outreg__(DIR3_PORT))
-#define DIO15_INREG (__inreg__(DIR3_PORT))
-#define DIO15_DIRREG (__dirreg__(DIR3_PORT))
+#define DIO17_OUTREG (__outreg__(DIR3_PORT))
+#define DIO17_INREG (__inreg__(DIR3_PORT))
+#define DIO17_DIRREG (__dirreg__(DIR3_PORT))
 #endif
 #if(defined(DIR4_PORT) && defined(DIR4_BIT))
-#define DIO16 16
-#define DIR4 16
-#define DIO16_PORT (DIR4_PORT)
-#define DIO16_BIT (DIR4_BIT)
+#define DIO18 18
+#define DIR4 18
+#define DIO18_PORT (DIR4_PORT)
+#define DIO18_BIT (DIR4_BIT)
 #define DIR4_OUTREG (__outreg__(DIR4_PORT))
 #define DIR4_INREG (__inreg__(DIR4_PORT))
 #define DIR4_DIRREG (__dirreg__(DIR4_PORT))
-#define DIO16_OUTREG (__outreg__(DIR4_PORT))
-#define DIO16_INREG (__inreg__(DIR4_PORT))
-#define DIO16_DIRREG (__dirreg__(DIR4_PORT))
+#define DIO18_OUTREG (__outreg__(DIR4_PORT))
+#define DIO18_INREG (__inreg__(DIR4_PORT))
+#define DIO18_DIRREG (__dirreg__(DIR4_PORT))
 #endif
 #if(defined(DIR5_PORT) && defined(DIR5_BIT))
-#define DIO17 17
-#define DIR5 17
-#define DIO17_PORT (DIR5_PORT)
-#define DIO17_BIT (DIR5_BIT)
+#define DIO19 19
+#define DIR5 19
+#define DIO19_PORT (DIR5_PORT)
+#define DIO19_BIT (DIR5_BIT)
 #define DIR5_OUTREG (__outreg__(DIR5_PORT))
 #define DIR5_INREG (__inreg__(DIR5_PORT))
 #define DIR5_DIRREG (__dirreg__(DIR5_PORT))
-#define DIO17_OUTREG (__outreg__(DIR5_PORT))
-#define DIO17_INREG (__inreg__(DIR5_PORT))
-#define DIO17_DIRREG (__dirreg__(DIR5_PORT))
+#define DIO19_OUTREG (__outreg__(DIR5_PORT))
+#define DIO19_INREG (__inreg__(DIR5_PORT))
+#define DIO19_DIRREG (__dirreg__(DIR5_PORT))
 #endif
 #if(defined(PWM0_PORT) && defined(PWM0_BIT))
-#define DIO18 18
-#define PWM0 18
-#define DIO18_PORT (PWM0_PORT)
-#define DIO18_BIT (PWM0_BIT)
+#define DIO20 20
+#define PWM0 20
+#define DIO20_PORT (PWM0_PORT)
+#define DIO20_BIT (PWM0_BIT)
 #define PWM0_OUTREG (__outreg__(PWM0_PORT))
 #define PWM0_INREG (__inreg__(PWM0_PORT))
 #define PWM0_DIRREG (__dirreg__(PWM0_PORT))
-#define DIO18_OUTREG (__outreg__(PWM0_PORT))
-#define DIO18_INREG (__inreg__(PWM0_PORT))
-#define DIO18_DIRREG (__dirreg__(PWM0_PORT))
+#define DIO20_OUTREG (__outreg__(PWM0_PORT))
+#define DIO20_INREG (__inreg__(PWM0_PORT))
+#define DIO20_DIRREG (__dirreg__(PWM0_PORT))
 #endif
 #if(defined(PWM1_PORT) && defined(PWM1_BIT))
-#define DIO19 19
-#define PWM1 19
-#define DIO19_PORT (PWM1_PORT)
-#define DIO19_BIT (PWM1_BIT)
+#define DIO21 21
+#define PWM1 21
+#define DIO21_PORT (PWM1_PORT)
+#define DIO21_BIT (PWM1_BIT)
 #define PWM1_OUTREG (__outreg__(PWM1_PORT))
 #define PWM1_INREG (__inreg__(PWM1_PORT))
 #define PWM1_DIRREG (__dirreg__(PWM1_PORT))
-#define DIO19_OUTREG (__outreg__(PWM1_PORT))
-#define DIO19_INREG (__inreg__(PWM1_PORT))
-#define DIO19_DIRREG (__dirreg__(PWM1_PORT))
+#define DIO21_OUTREG (__outreg__(PWM1_PORT))
+#define DIO21_INREG (__inreg__(PWM1_PORT))
+#define DIO21_DIRREG (__dirreg__(PWM1_PORT))
 #endif
 #if(defined(PWM2_PORT) && defined(PWM2_BIT))
-#define DIO20 20
-#define PWM2 20
-#define DIO20_PORT (PWM2_PORT)
-#define DIO20_BIT (PWM2_BIT)
+#define DIO22 22
+#define PWM2 22
+#define DIO22_PORT (PWM2_PORT)
+#define DIO22_BIT (PWM2_BIT)
 #define PWM2_OUTREG (__outreg__(PWM2_PORT))
 #define PWM2_INREG (__inreg__(PWM2_PORT))
 #define PWM2_DIRREG (__dirreg__(PWM2_PORT))
-#define DIO20_OUTREG (__outreg__(PWM2_PORT))
-#define DIO20_INREG (__inreg__(PWM2_PORT))
-#define DIO20_DIRREG (__dirreg__(PWM2_PORT))
+#define DIO22_OUTREG (__outreg__(PWM2_PORT))
+#define DIO22_INREG (__inreg__(PWM2_PORT))
+#define DIO22_DIRREG (__dirreg__(PWM2_PORT))
 #endif
 #if(defined(PWM3_PORT) && defined(PWM3_BIT))
-#define DIO21 21
-#define PWM3 21
-#define DIO21_PORT (PWM3_PORT)
-#define DIO21_BIT (PWM3_BIT)
+#define DIO23 23
+#define PWM3 23
+#define DIO23_PORT (PWM3_PORT)
+#define DIO23_BIT (PWM3_BIT)
 #define PWM3_OUTREG (__outreg__(PWM3_PORT))
 #define PWM3_INREG (__inreg__(PWM3_PORT))
 #define PWM3_DIRREG (__dirreg__(PWM3_PORT))
-#define DIO21_OUTREG (__outreg__(PWM3_PORT))
-#define DIO21_INREG (__inreg__(PWM3_PORT))
-#define DIO21_DIRREG (__dirreg__(PWM3_PORT))
+#define DIO23_OUTREG (__outreg__(PWM3_PORT))
+#define DIO23_INREG (__inreg__(PWM3_PORT))
+#define DIO23_DIRREG (__dirreg__(PWM3_PORT))
 #endif
 #if(defined(PWM4_PORT) && defined(PWM4_BIT))
-#define DIO22 22
-#define PWM4 22
-#define DIO22_PORT (PWM4_PORT)
-#define DIO22_BIT (PWM4_BIT)
+#define DIO24 24
+#define PWM4 24
+#define DIO24_PORT (PWM4_PORT)
+#define DIO24_BIT (PWM4_BIT)
 #define PWM4_OUTREG (__outreg__(PWM4_PORT))
 #define PWM4_INREG (__inreg__(PWM4_PORT))
 #define PWM4_DIRREG (__dirreg__(PWM4_PORT))
-#define DIO22_OUTREG (__outreg__(PWM4_PORT))
-#define DIO22_INREG (__inreg__(PWM4_PORT))
-#define DIO22_DIRREG (__dirreg__(PWM4_PORT))
+#define DIO24_OUTREG (__outreg__(PWM4_PORT))
+#define DIO24_INREG (__inreg__(PWM4_PORT))
+#define DIO24_DIRREG (__dirreg__(PWM4_PORT))
 #endif
 #if(defined(PWM5_PORT) && defined(PWM5_BIT))
-#define DIO23 23
-#define PWM5 23
-#define DIO23_PORT (PWM5_PORT)
-#define DIO23_BIT (PWM5_BIT)
+#define DIO25 25
+#define PWM5 25
+#define DIO25_PORT (PWM5_PORT)
+#define DIO25_BIT (PWM5_BIT)
 #define PWM5_OUTREG (__outreg__(PWM5_PORT))
 #define PWM5_INREG (__inreg__(PWM5_PORT))
 #define PWM5_DIRREG (__dirreg__(PWM5_PORT))
-#define DIO23_OUTREG (__outreg__(PWM5_PORT))
-#define DIO23_INREG (__inreg__(PWM5_PORT))
-#define DIO23_DIRREG (__dirreg__(PWM5_PORT))
+#define DIO25_OUTREG (__outreg__(PWM5_PORT))
+#define DIO25_INREG (__inreg__(PWM5_PORT))
+#define DIO25_DIRREG (__dirreg__(PWM5_PORT))
 #endif
 #if(defined(PWM6_PORT) && defined(PWM6_BIT))
-#define DIO24 24
-#define PWM6 24
-#define DIO24_PORT (PWM6_PORT)
-#define DIO24_BIT (PWM6_BIT)
+#define DIO26 26
+#define PWM6 26
+#define DIO26_PORT (PWM6_PORT)
+#define DIO26_BIT (PWM6_BIT)
 #define PWM6_OUTREG (__outreg__(PWM6_PORT))
 #define PWM6_INREG (__inreg__(PWM6_PORT))
 #define PWM6_DIRREG (__dirreg__(PWM6_PORT))
-#define DIO24_OUTREG (__outreg__(PWM6_PORT))
-#define DIO24_INREG (__inreg__(PWM6_PORT))
-#define DIO24_DIRREG (__dirreg__(PWM6_PORT))
+#define DIO26_OUTREG (__outreg__(PWM6_PORT))
+#define DIO26_INREG (__inreg__(PWM6_PORT))
+#define DIO26_DIRREG (__dirreg__(PWM6_PORT))
 #endif
 #if(defined(PWM7_PORT) && defined(PWM7_BIT))
-#define DIO25 25
-#define PWM7 25
-#define DIO25_PORT (PWM7_PORT)
-#define DIO25_BIT (PWM7_BIT)
+#define DIO27 27
+#define PWM7 27
+#define DIO27_PORT (PWM7_PORT)
+#define DIO27_BIT (PWM7_BIT)
 #define PWM7_OUTREG (__outreg__(PWM7_PORT))
 #define PWM7_INREG (__inreg__(PWM7_PORT))
 #define PWM7_DIRREG (__dirreg__(PWM7_PORT))
-#define DIO25_OUTREG (__outreg__(PWM7_PORT))
-#define DIO25_INREG (__inreg__(PWM7_PORT))
-#define DIO25_DIRREG (__dirreg__(PWM7_PORT))
+#define DIO27_OUTREG (__outreg__(PWM7_PORT))
+#define DIO27_INREG (__inreg__(PWM7_PORT))
+#define DIO27_DIRREG (__dirreg__(PWM7_PORT))
 #endif
 #if(defined(PWM8_PORT) && defined(PWM8_BIT))
-#define DIO26 26
-#define PWM8 26
-#define DIO26_PORT (PWM8_PORT)
-#define DIO26_BIT (PWM8_BIT)
+#define DIO28 28
+#define PWM8 28
+#define DIO28_PORT (PWM8_PORT)
+#define DIO28_BIT (PWM8_BIT)
 #define PWM8_OUTREG (__outreg__(PWM8_PORT))
 #define PWM8_INREG (__inreg__(PWM8_PORT))
 #define PWM8_DIRREG (__dirreg__(PWM8_PORT))
-#define DIO26_OUTREG (__outreg__(PWM8_PORT))
-#define DIO26_INREG (__inreg__(PWM8_PORT))
-#define DIO26_DIRREG (__dirreg__(PWM8_PORT))
+#define DIO28_OUTREG (__outreg__(PWM8_PORT))
+#define DIO28_INREG (__inreg__(PWM8_PORT))
+#define DIO28_DIRREG (__dirreg__(PWM8_PORT))
 #endif
 #if(defined(PWM9_PORT) && defined(PWM9_BIT))
-#define DIO27 27
-#define PWM9 27
-#define DIO27_PORT (PWM9_PORT)
-#define DIO27_BIT (PWM9_BIT)
+#define DIO29 29
+#define PWM9 29
+#define DIO29_PORT (PWM9_PORT)
+#define DIO29_BIT (PWM9_BIT)
 #define PWM9_OUTREG (__outreg__(PWM9_PORT))
 #define PWM9_INREG (__inreg__(PWM9_PORT))
 #define PWM9_DIRREG (__dirreg__(PWM9_PORT))
-#define DIO27_OUTREG (__outreg__(PWM9_PORT))
-#define DIO27_INREG (__inreg__(PWM9_PORT))
-#define DIO27_DIRREG (__dirreg__(PWM9_PORT))
+#define DIO29_OUTREG (__outreg__(PWM9_PORT))
+#define DIO29_INREG (__inreg__(PWM9_PORT))
+#define DIO29_DIRREG (__dirreg__(PWM9_PORT))
 #endif
 #if(defined(PWM10_PORT) && defined(PWM10_BIT))
-#define DIO28 28
-#define PWM10 28
-#define DIO28_PORT (PWM10_PORT)
-#define DIO28_BIT (PWM10_BIT)
+#define DIO30 30
+#define PWM10 30
+#define DIO30_PORT (PWM10_PORT)
+#define DIO30_BIT (PWM10_BIT)
 #define PWM10_OUTREG (__outreg__(PWM10_PORT))
 #define PWM10_INREG (__inreg__(PWM10_PORT))
 #define PWM10_DIRREG (__dirreg__(PWM10_PORT))
-#define DIO28_OUTREG (__outreg__(PWM10_PORT))
-#define DIO28_INREG (__inreg__(PWM10_PORT))
-#define DIO28_DIRREG (__dirreg__(PWM10_PORT))
+#define DIO30_OUTREG (__outreg__(PWM10_PORT))
+#define DIO30_INREG (__inreg__(PWM10_PORT))
+#define DIO30_DIRREG (__dirreg__(PWM10_PORT))
 #endif
 #if(defined(PWM11_PORT) && defined(PWM11_BIT))
-#define DIO29 29
-#define PWM11 29
-#define DIO29_PORT (PWM11_PORT)
-#define DIO29_BIT (PWM11_BIT)
+#define DIO31 31
+#define PWM11 31
+#define DIO31_PORT (PWM11_PORT)
+#define DIO31_BIT (PWM11_BIT)
 #define PWM11_OUTREG (__outreg__(PWM11_PORT))
 #define PWM11_INREG (__inreg__(PWM11_PORT))
 #define PWM11_DIRREG (__dirreg__(PWM11_PORT))
-#define DIO29_OUTREG (__outreg__(PWM11_PORT))
-#define DIO29_INREG (__inreg__(PWM11_PORT))
-#define DIO29_DIRREG (__dirreg__(PWM11_PORT))
+#define DIO31_OUTREG (__outreg__(PWM11_PORT))
+#define DIO31_INREG (__inreg__(PWM11_PORT))
+#define DIO31_DIRREG (__dirreg__(PWM11_PORT))
 #endif
 #if(defined(PWM12_PORT) && defined(PWM12_BIT))
-#define DIO30 30
-#define PWM12 30
-#define DIO30_PORT (PWM12_PORT)
-#define DIO30_BIT (PWM12_BIT)
+#define DIO32 32
+#define PWM12 32
+#define DIO32_PORT (PWM12_PORT)
+#define DIO32_BIT (PWM12_BIT)
 #define PWM12_OUTREG (__outreg__(PWM12_PORT))
 #define PWM12_INREG (__inreg__(PWM12_PORT))
 #define PWM12_DIRREG (__dirreg__(PWM12_PORT))
-#define DIO30_OUTREG (__outreg__(PWM12_PORT))
-#define DIO30_INREG (__inreg__(PWM12_PORT))
-#define DIO30_DIRREG (__dirreg__(PWM12_PORT))
+#define DIO32_OUTREG (__outreg__(PWM12_PORT))
+#define DIO32_INREG (__inreg__(PWM12_PORT))
+#define DIO32_DIRREG (__dirreg__(PWM12_PORT))
 #endif
 #if(defined(PWM13_PORT) && defined(PWM13_BIT))
-#define DIO31 31
-#define PWM13 31
-#define DIO31_PORT (PWM13_PORT)
-#define DIO31_BIT (PWM13_BIT)
+#define DIO33 33
+#define PWM13 33
+#define DIO33_PORT (PWM13_PORT)
+#define DIO33_BIT (PWM13_BIT)
 #define PWM13_OUTREG (__outreg__(PWM13_PORT))
 #define PWM13_INREG (__inreg__(PWM13_PORT))
 #define PWM13_DIRREG (__dirreg__(PWM13_PORT))
-#define DIO31_OUTREG (__outreg__(PWM13_PORT))
-#define DIO31_INREG (__inreg__(PWM13_PORT))
-#define DIO31_DIRREG (__dirreg__(PWM13_PORT))
+#define DIO33_OUTREG (__outreg__(PWM13_PORT))
+#define DIO33_INREG (__inreg__(PWM13_PORT))
+#define DIO33_DIRREG (__dirreg__(PWM13_PORT))
 #endif
 #if(defined(PWM14_PORT) && defined(PWM14_BIT))
-#define DIO32 32
-#define PWM14 32
-#define DIO32_PORT (PWM14_PORT)
-#define DIO32_BIT (PWM14_BIT)
+#define DIO34 34
+#define PWM14 34
+#define DIO34_PORT (PWM14_PORT)
+#define DIO34_BIT (PWM14_BIT)
 #define PWM14_OUTREG (__outreg__(PWM14_PORT))
 #define PWM14_INREG (__inreg__(PWM14_PORT))
 #define PWM14_DIRREG (__dirreg__(PWM14_PORT))
-#define DIO32_OUTREG (__outreg__(PWM14_PORT))
-#define DIO32_INREG (__inreg__(PWM14_PORT))
-#define DIO32_DIRREG (__dirreg__(PWM14_PORT))
+#define DIO34_OUTREG (__outreg__(PWM14_PORT))
+#define DIO34_INREG (__inreg__(PWM14_PORT))
+#define DIO34_DIRREG (__dirreg__(PWM14_PORT))
 #endif
 #if(defined(PWM15_PORT) && defined(PWM15_BIT))
-#define DIO33 33
-#define PWM15 33
-#define DIO33_PORT (PWM15_PORT)
-#define DIO33_BIT (PWM15_BIT)
+#define DIO35 35
+#define PWM15 35
+#define DIO35_PORT (PWM15_PORT)
+#define DIO35_BIT (PWM15_BIT)
 #define PWM15_OUTREG (__outreg__(PWM15_PORT))
 #define PWM15_INREG (__inreg__(PWM15_PORT))
 #define PWM15_DIRREG (__dirreg__(PWM15_PORT))
-#define DIO33_OUTREG (__outreg__(PWM15_PORT))
-#define DIO33_INREG (__inreg__(PWM15_PORT))
-#define DIO33_DIRREG (__dirreg__(PWM15_PORT))
+#define DIO35_OUTREG (__outreg__(PWM15_PORT))
+#define DIO35_INREG (__inreg__(PWM15_PORT))
+#define DIO35_DIRREG (__dirreg__(PWM15_PORT))
 #endif
 #if(defined(TX_PORT) && defined(TX_BIT))
-#define DIO34 34
-#define TX 34
-#define DIO34_PORT (TX_PORT)
-#define DIO34_BIT (TX_BIT)
+#define DIO36 36
+#define TX 36
+#define DIO36_PORT (TX_PORT)
+#define DIO36_BIT (TX_BIT)
 #define TX_OUTREG (__outreg__(TX_PORT))
 #define TX_INREG (__inreg__(TX_PORT))
 #define TX_DIRREG (__dirreg__(TX_PORT))
-#define DIO34_OUTREG (__outreg__(TX_PORT))
-#define DIO34_INREG (__inreg__(TX_PORT))
-#define DIO34_DIRREG (__dirreg__(TX_PORT))
+#define DIO36_OUTREG (__outreg__(TX_PORT))
+#define DIO36_INREG (__inreg__(TX_PORT))
+#define DIO36_DIRREG (__dirreg__(TX_PORT))
 #endif
 #if(defined(DOUT0_PORT) && defined(DOUT0_BIT))
-#define DIO35 35
-#define DOUT0 35
-#define DIO35_PORT (DOUT0_PORT)
-#define DIO35_BIT (DOUT0_BIT)
+#define DIO37 37
+#define DOUT0 37
+#define DIO37_PORT (DOUT0_PORT)
+#define DIO37_BIT (DOUT0_BIT)
 #define DOUT0_OUTREG (__outreg__(DOUT0_PORT))
 #define DOUT0_INREG (__inreg__(DOUT0_PORT))
 #define DOUT0_DIRREG (__dirreg__(DOUT0_PORT))
-#define DIO35_OUTREG (__outreg__(DOUT0_PORT))
-#define DIO35_INREG (__inreg__(DOUT0_PORT))
-#define DIO35_DIRREG (__dirreg__(DOUT0_PORT))
+#define DIO37_OUTREG (__outreg__(DOUT0_PORT))
+#define DIO37_INREG (__inreg__(DOUT0_PORT))
+#define DIO37_DIRREG (__dirreg__(DOUT0_PORT))
 #endif
 #if(defined(DOUT1_PORT) && defined(DOUT1_BIT))
-#define DIO36 36
-#define DOUT1 36
-#define DIO36_PORT (DOUT1_PORT)
-#define DIO36_BIT (DOUT1_BIT)
+#define DIO38 38
+#define DOUT1 38
+#define DIO38_PORT (DOUT1_PORT)
+#define DIO38_BIT (DOUT1_BIT)
 #define DOUT1_OUTREG (__outreg__(DOUT1_PORT))
 #define DOUT1_INREG (__inreg__(DOUT1_PORT))
 #define DOUT1_DIRREG (__dirreg__(DOUT1_PORT))
-#define DIO36_OUTREG (__outreg__(DOUT1_PORT))
-#define DIO36_INREG (__inreg__(DOUT1_PORT))
-#define DIO36_DIRREG (__dirreg__(DOUT1_PORT))
+#define DIO38_OUTREG (__outreg__(DOUT1_PORT))
+#define DIO38_INREG (__inreg__(DOUT1_PORT))
+#define DIO38_DIRREG (__dirreg__(DOUT1_PORT))
 #endif
 #if(defined(DOUT2_PORT) && defined(DOUT2_BIT))
-#define DIO37 37
-#define DOUT2 37
-#define DIO37_PORT (DOUT2_PORT)
-#define DIO37_BIT (DOUT2_BIT)
+#define DIO39 39
+#define DOUT2 39
+#define DIO39_PORT (DOUT2_PORT)
+#define DIO39_BIT (DOUT2_BIT)
 #define DOUT2_OUTREG (__outreg__(DOUT2_PORT))
 #define DOUT2_INREG (__inreg__(DOUT2_PORT))
 #define DOUT2_DIRREG (__dirreg__(DOUT2_PORT))
-#define DIO37_OUTREG (__outreg__(DOUT2_PORT))
-#define DIO37_INREG (__inreg__(DOUT2_PORT))
-#define DIO37_DIRREG (__dirreg__(DOUT2_PORT))
+#define DIO39_OUTREG (__outreg__(DOUT2_PORT))
+#define DIO39_INREG (__inreg__(DOUT2_PORT))
+#define DIO39_DIRREG (__dirreg__(DOUT2_PORT))
 #endif
 #if(defined(DOUT3_PORT) && defined(DOUT3_BIT))
-#define DIO38 38
-#define DOUT3 38
-#define DIO38_PORT (DOUT3_PORT)
-#define DIO38_BIT (DOUT3_BIT)
+#define DIO40 40
+#define DOUT3 40
+#define DIO40_PORT (DOUT3_PORT)
+#define DIO40_BIT (DOUT3_BIT)
 #define DOUT3_OUTREG (__outreg__(DOUT3_PORT))
 #define DOUT3_INREG (__inreg__(DOUT3_PORT))
 #define DOUT3_DIRREG (__dirreg__(DOUT3_PORT))
-#define DIO38_OUTREG (__outreg__(DOUT3_PORT))
-#define DIO38_INREG (__inreg__(DOUT3_PORT))
-#define DIO38_DIRREG (__dirreg__(DOUT3_PORT))
+#define DIO40_OUTREG (__outreg__(DOUT3_PORT))
+#define DIO40_INREG (__inreg__(DOUT3_PORT))
+#define DIO40_DIRREG (__dirreg__(DOUT3_PORT))
 #endif
 #if(defined(DOUT4_PORT) && defined(DOUT4_BIT))
-#define DIO39 39
-#define DOUT4 39
-#define DIO39_PORT (DOUT4_PORT)
-#define DIO39_BIT (DOUT4_BIT)
+#define DIO41 41
+#define DOUT4 41
+#define DIO41_PORT (DOUT4_PORT)
+#define DIO41_BIT (DOUT4_BIT)
 #define DOUT4_OUTREG (__outreg__(DOUT4_PORT))
 #define DOUT4_INREG (__inreg__(DOUT4_PORT))
 #define DOUT4_DIRREG (__dirreg__(DOUT4_PORT))
-#define DIO39_OUTREG (__outreg__(DOUT4_PORT))
-#define DIO39_INREG (__inreg__(DOUT4_PORT))
-#define DIO39_DIRREG (__dirreg__(DOUT4_PORT))
+#define DIO41_OUTREG (__outreg__(DOUT4_PORT))
+#define DIO41_INREG (__inreg__(DOUT4_PORT))
+#define DIO41_DIRREG (__dirreg__(DOUT4_PORT))
 #endif
 #if(defined(DOUT5_PORT) && defined(DOUT5_BIT))
-#define DIO40 40
-#define DOUT5 40
-#define DIO40_PORT (DOUT5_PORT)
-#define DIO40_BIT (DOUT5_BIT)
+#define DIO42 42
+#define DOUT5 42
+#define DIO42_PORT (DOUT5_PORT)
+#define DIO42_BIT (DOUT5_BIT)
 #define DOUT5_OUTREG (__outreg__(DOUT5_PORT))
 #define DOUT5_INREG (__inreg__(DOUT5_PORT))
 #define DOUT5_DIRREG (__dirreg__(DOUT5_PORT))
-#define DIO40_OUTREG (__outreg__(DOUT5_PORT))
-#define DIO40_INREG (__inreg__(DOUT5_PORT))
-#define DIO40_DIRREG (__dirreg__(DOUT5_PORT))
+#define DIO42_OUTREG (__outreg__(DOUT5_PORT))
+#define DIO42_INREG (__inreg__(DOUT5_PORT))
+#define DIO42_DIRREG (__dirreg__(DOUT5_PORT))
 #endif
 #if(defined(DOUT6_PORT) && defined(DOUT6_BIT))
-#define DIO41 41
-#define DOUT6 41
-#define DIO41_PORT (DOUT6_PORT)
-#define DIO41_BIT (DOUT6_BIT)
+#define DIO43 43
+#define DOUT6 43
+#define DIO43_PORT (DOUT6_PORT)
+#define DIO43_BIT (DOUT6_BIT)
 #define DOUT6_OUTREG (__outreg__(DOUT6_PORT))
 #define DOUT6_INREG (__inreg__(DOUT6_PORT))
 #define DOUT6_DIRREG (__dirreg__(DOUT6_PORT))
-#define DIO41_OUTREG (__outreg__(DOUT6_PORT))
-#define DIO41_INREG (__inreg__(DOUT6_PORT))
-#define DIO41_DIRREG (__dirreg__(DOUT6_PORT))
+#define DIO43_OUTREG (__outreg__(DOUT6_PORT))
+#define DIO43_INREG (__inreg__(DOUT6_PORT))
+#define DIO43_DIRREG (__dirreg__(DOUT6_PORT))
 #endif
 #if(defined(DOUT7_PORT) && defined(DOUT7_BIT))
-#define DIO42 42
-#define DOUT7 42
-#define DIO42_PORT (DOUT7_PORT)
-#define DIO42_BIT (DOUT7_BIT)
+#define DIO44 44
+#define DOUT7 44
+#define DIO44_PORT (DOUT7_PORT)
+#define DIO44_BIT (DOUT7_BIT)
 #define DOUT7_OUTREG (__outreg__(DOUT7_PORT))
 #define DOUT7_INREG (__inreg__(DOUT7_PORT))
 #define DOUT7_DIRREG (__dirreg__(DOUT7_PORT))
-#define DIO42_OUTREG (__outreg__(DOUT7_PORT))
-#define DIO42_INREG (__inreg__(DOUT7_PORT))
-#define DIO42_DIRREG (__dirreg__(DOUT7_PORT))
+#define DIO44_OUTREG (__outreg__(DOUT7_PORT))
+#define DIO44_INREG (__inreg__(DOUT7_PORT))
+#define DIO44_DIRREG (__dirreg__(DOUT7_PORT))
 #endif
 #if(defined(DOUT8_PORT) && defined(DOUT8_BIT))
-#define DIO43 43
-#define DOUT8 43
-#define DIO43_PORT (DOUT8_PORT)
-#define DIO43_BIT (DOUT8_BIT)
+#define DIO45 45
+#define DOUT8 45
+#define DIO45_PORT (DOUT8_PORT)
+#define DIO45_BIT (DOUT8_BIT)
 #define DOUT8_OUTREG (__outreg__(DOUT8_PORT))
 #define DOUT8_INREG (__inreg__(DOUT8_PORT))
 #define DOUT8_DIRREG (__dirreg__(DOUT8_PORT))
-#define DIO43_OUTREG (__outreg__(DOUT8_PORT))
-#define DIO43_INREG (__inreg__(DOUT8_PORT))
-#define DIO43_DIRREG (__dirreg__(DOUT8_PORT))
+#define DIO45_OUTREG (__outreg__(DOUT8_PORT))
+#define DIO45_INREG (__inreg__(DOUT8_PORT))
+#define DIO45_DIRREG (__dirreg__(DOUT8_PORT))
 #endif
 #if(defined(DOUT9_PORT) && defined(DOUT9_BIT))
-#define DIO44 44
-#define DOUT9 44
-#define DIO44_PORT (DOUT9_PORT)
-#define DIO44_BIT (DOUT9_BIT)
+#define DIO46 46
+#define DOUT9 46
+#define DIO46_PORT (DOUT9_PORT)
+#define DIO46_BIT (DOUT9_BIT)
 #define DOUT9_OUTREG (__outreg__(DOUT9_PORT))
 #define DOUT9_INREG (__inreg__(DOUT9_PORT))
 #define DOUT9_DIRREG (__dirreg__(DOUT9_PORT))
-#define DIO44_OUTREG (__outreg__(DOUT9_PORT))
-#define DIO44_INREG (__inreg__(DOUT9_PORT))
-#define DIO44_DIRREG (__dirreg__(DOUT9_PORT))
+#define DIO46_OUTREG (__outreg__(DOUT9_PORT))
+#define DIO46_INREG (__inreg__(DOUT9_PORT))
+#define DIO46_DIRREG (__dirreg__(DOUT9_PORT))
 #endif
 #if(defined(DOUT10_PORT) && defined(DOUT10_BIT))
-#define DIO45 45
-#define DOUT10 45
-#define DIO45_PORT (DOUT10_PORT)
-#define DIO45_BIT (DOUT10_BIT)
+#define DIO47 47
+#define DOUT10 47
+#define DIO47_PORT (DOUT10_PORT)
+#define DIO47_BIT (DOUT10_BIT)
 #define DOUT10_OUTREG (__outreg__(DOUT10_PORT))
 #define DOUT10_INREG (__inreg__(DOUT10_PORT))
 #define DOUT10_DIRREG (__dirreg__(DOUT10_PORT))
-#define DIO45_OUTREG (__outreg__(DOUT10_PORT))
-#define DIO45_INREG (__inreg__(DOUT10_PORT))
-#define DIO45_DIRREG (__dirreg__(DOUT10_PORT))
+#define DIO47_OUTREG (__outreg__(DOUT10_PORT))
+#define DIO47_INREG (__inreg__(DOUT10_PORT))
+#define DIO47_DIRREG (__dirreg__(DOUT10_PORT))
 #endif
 #if(defined(DOUT11_PORT) && defined(DOUT11_BIT))
-#define DIO46 46
-#define DOUT11 46
-#define DIO46_PORT (DOUT11_PORT)
-#define DIO46_BIT (DOUT11_BIT)
+#define DIO48 48
+#define DOUT11 48
+#define DIO48_PORT (DOUT11_PORT)
+#define DIO48_BIT (DOUT11_BIT)
 #define DOUT11_OUTREG (__outreg__(DOUT11_PORT))
 #define DOUT11_INREG (__inreg__(DOUT11_PORT))
 #define DOUT11_DIRREG (__dirreg__(DOUT11_PORT))
-#define DIO46_OUTREG (__outreg__(DOUT11_PORT))
-#define DIO46_INREG (__inreg__(DOUT11_PORT))
-#define DIO46_DIRREG (__dirreg__(DOUT11_PORT))
+#define DIO48_OUTREG (__outreg__(DOUT11_PORT))
+#define DIO48_INREG (__inreg__(DOUT11_PORT))
+#define DIO48_DIRREG (__dirreg__(DOUT11_PORT))
 #endif
 #if(defined(DOUT12_PORT) && defined(DOUT12_BIT))
-#define DIO47 47
-#define DOUT12 47
-#define DIO47_PORT (DOUT12_PORT)
-#define DIO47_BIT (DOUT12_BIT)
+#define DIO49 49
+#define DOUT12 49
+#define DIO49_PORT (DOUT12_PORT)
+#define DIO49_BIT (DOUT12_BIT)
 #define DOUT12_OUTREG (__outreg__(DOUT12_PORT))
 #define DOUT12_INREG (__inreg__(DOUT12_PORT))
 #define DOUT12_DIRREG (__dirreg__(DOUT12_PORT))
-#define DIO47_OUTREG (__outreg__(DOUT12_PORT))
-#define DIO47_INREG (__inreg__(DOUT12_PORT))
-#define DIO47_DIRREG (__dirreg__(DOUT12_PORT))
+#define DIO49_OUTREG (__outreg__(DOUT12_PORT))
+#define DIO49_INREG (__inreg__(DOUT12_PORT))
+#define DIO49_DIRREG (__dirreg__(DOUT12_PORT))
 #endif
 #if(defined(DOUT13_PORT) && defined(DOUT13_BIT))
-#define DIO48 48
-#define DOUT13 48
-#define DIO48_PORT (DOUT13_PORT)
-#define DIO48_BIT (DOUT13_BIT)
+#define DIO50 50
+#define DOUT13 50
+#define DIO50_PORT (DOUT13_PORT)
+#define DIO50_BIT (DOUT13_BIT)
 #define DOUT13_OUTREG (__outreg__(DOUT13_PORT))
 #define DOUT13_INREG (__inreg__(DOUT13_PORT))
 #define DOUT13_DIRREG (__dirreg__(DOUT13_PORT))
-#define DIO48_OUTREG (__outreg__(DOUT13_PORT))
-#define DIO48_INREG (__inreg__(DOUT13_PORT))
-#define DIO48_DIRREG (__dirreg__(DOUT13_PORT))
+#define DIO50_OUTREG (__outreg__(DOUT13_PORT))
+#define DIO50_INREG (__inreg__(DOUT13_PORT))
+#define DIO50_DIRREG (__dirreg__(DOUT13_PORT))
 #endif
 #if(defined(DOUT14_PORT) && defined(DOUT14_BIT))
-#define DIO49 49
-#define DOUT14 49
-#define DIO49_PORT (DOUT14_PORT)
-#define DIO49_BIT (DOUT14_BIT)
+#define DIO51 51
+#define DOUT14 51
+#define DIO51_PORT (DOUT14_PORT)
+#define DIO51_BIT (DOUT14_BIT)
 #define DOUT14_OUTREG (__outreg__(DOUT14_PORT))
 #define DOUT14_INREG (__inreg__(DOUT14_PORT))
 #define DOUT14_DIRREG (__dirreg__(DOUT14_PORT))
-#define DIO49_OUTREG (__outreg__(DOUT14_PORT))
-#define DIO49_INREG (__inreg__(DOUT14_PORT))
-#define DIO49_DIRREG (__dirreg__(DOUT14_PORT))
+#define DIO51_OUTREG (__outreg__(DOUT14_PORT))
+#define DIO51_INREG (__inreg__(DOUT14_PORT))
+#define DIO51_DIRREG (__dirreg__(DOUT14_PORT))
 #endif
 #if(defined(DOUT15_PORT) && defined(DOUT15_BIT))
-#define DIO50 50
-#define DOUT15 50
-#define DIO50_PORT (DOUT15_PORT)
-#define DIO50_BIT (DOUT15_BIT)
+#define DIO52 52
+#define DOUT15 52
+#define DIO52_PORT (DOUT15_PORT)
+#define DIO52_BIT (DOUT15_BIT)
 #define DOUT15_OUTREG (__outreg__(DOUT15_PORT))
 #define DOUT15_INREG (__inreg__(DOUT15_PORT))
 #define DOUT15_DIRREG (__dirreg__(DOUT15_PORT))
-#define DIO50_OUTREG (__outreg__(DOUT15_PORT))
-#define DIO50_INREG (__inreg__(DOUT15_PORT))
-#define DIO50_DIRREG (__dirreg__(DOUT15_PORT))
+#define DIO52_OUTREG (__outreg__(DOUT15_PORT))
+#define DIO52_INREG (__inreg__(DOUT15_PORT))
+#define DIO52_DIRREG (__dirreg__(DOUT15_PORT))
 #endif
 #if(defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
-#define DIO51 51
-#define LIMIT_X 51
-#define DIO51_PORT (LIMIT_X_PORT)
-#define DIO51_BIT (LIMIT_X_BIT)
+#define DIO53 53
+#define LIMIT_X 53
+#define DIO53_PORT (LIMIT_X_PORT)
+#define DIO53_BIT (LIMIT_X_BIT)
 #define LIMIT_X_OUTREG (__outreg__(LIMIT_X_PORT))
 #define LIMIT_X_INREG (__inreg__(LIMIT_X_PORT))
 #define LIMIT_X_DIRREG (__dirreg__(LIMIT_X_PORT))
-#define DIO51_OUTREG (__outreg__(LIMIT_X_PORT))
-#define DIO51_INREG (__inreg__(LIMIT_X_PORT))
-#define DIO51_DIRREG (__dirreg__(LIMIT_X_PORT))
+#define DIO53_OUTREG (__outreg__(LIMIT_X_PORT))
+#define DIO53_INREG (__inreg__(LIMIT_X_PORT))
+#define DIO53_DIRREG (__dirreg__(LIMIT_X_PORT))
 #endif
 #if(defined(LIMIT_Y_PORT) && defined(LIMIT_Y_BIT))
-#define DIO52 52
-#define LIMIT_Y 52
-#define DIO52_PORT (LIMIT_Y_PORT)
-#define DIO52_BIT (LIMIT_Y_BIT)
+#define DIO54 54
+#define LIMIT_Y 54
+#define DIO54_PORT (LIMIT_Y_PORT)
+#define DIO54_BIT (LIMIT_Y_BIT)
 #define LIMIT_Y_OUTREG (__outreg__(LIMIT_Y_PORT))
 #define LIMIT_Y_INREG (__inreg__(LIMIT_Y_PORT))
 #define LIMIT_Y_DIRREG (__dirreg__(LIMIT_Y_PORT))
-#define DIO52_OUTREG (__outreg__(LIMIT_Y_PORT))
-#define DIO52_INREG (__inreg__(LIMIT_Y_PORT))
-#define DIO52_DIRREG (__dirreg__(LIMIT_Y_PORT))
+#define DIO54_OUTREG (__outreg__(LIMIT_Y_PORT))
+#define DIO54_INREG (__inreg__(LIMIT_Y_PORT))
+#define DIO54_DIRREG (__dirreg__(LIMIT_Y_PORT))
 #endif
 #if(defined(LIMIT_Z_PORT) && defined(LIMIT_Z_BIT))
-#define DIO53 53
-#define LIMIT_Z 53
-#define DIO53_PORT (LIMIT_Z_PORT)
-#define DIO53_BIT (LIMIT_Z_BIT)
+#define DIO55 55
+#define LIMIT_Z 55
+#define DIO55_PORT (LIMIT_Z_PORT)
+#define DIO55_BIT (LIMIT_Z_BIT)
 #define LIMIT_Z_OUTREG (__outreg__(LIMIT_Z_PORT))
 #define LIMIT_Z_INREG (__inreg__(LIMIT_Z_PORT))
 #define LIMIT_Z_DIRREG (__dirreg__(LIMIT_Z_PORT))
-#define DIO53_OUTREG (__outreg__(LIMIT_Z_PORT))
-#define DIO53_INREG (__inreg__(LIMIT_Z_PORT))
-#define DIO53_DIRREG (__dirreg__(LIMIT_Z_PORT))
+#define DIO55_OUTREG (__outreg__(LIMIT_Z_PORT))
+#define DIO55_INREG (__inreg__(LIMIT_Z_PORT))
+#define DIO55_DIRREG (__dirreg__(LIMIT_Z_PORT))
 #endif
 #if(defined(LIMIT_X2_PORT) && defined(LIMIT_X2_BIT))
-#define DIO54 54
-#define LIMIT_X2 54
-#define DIO54_PORT (LIMIT_X2_PORT)
-#define DIO54_BIT (LIMIT_X2_BIT)
+#define DIO56 56
+#define LIMIT_X2 56
+#define DIO56_PORT (LIMIT_X2_PORT)
+#define DIO56_BIT (LIMIT_X2_BIT)
 #define LIMIT_X2_OUTREG (__outreg__(LIMIT_X2_PORT))
 #define LIMIT_X2_INREG (__inreg__(LIMIT_X2_PORT))
 #define LIMIT_X2_DIRREG (__dirreg__(LIMIT_X2_PORT))
-#define DIO54_OUTREG (__outreg__(LIMIT_X2_PORT))
-#define DIO54_INREG (__inreg__(LIMIT_X2_PORT))
-#define DIO54_DIRREG (__dirreg__(LIMIT_X2_PORT))
+#define DIO56_OUTREG (__outreg__(LIMIT_X2_PORT))
+#define DIO56_INREG (__inreg__(LIMIT_X2_PORT))
+#define DIO56_DIRREG (__dirreg__(LIMIT_X2_PORT))
 #endif
 #if(defined(LIMIT_Y2_PORT) && defined(LIMIT_Y2_BIT))
-#define DIO55 55
-#define LIMIT_Y2 55
-#define DIO55_PORT (LIMIT_Y2_PORT)
-#define DIO55_BIT (LIMIT_Y2_BIT)
+#define DIO57 57
+#define LIMIT_Y2 57
+#define DIO57_PORT (LIMIT_Y2_PORT)
+#define DIO57_BIT (LIMIT_Y2_BIT)
 #define LIMIT_Y2_OUTREG (__outreg__(LIMIT_Y2_PORT))
 #define LIMIT_Y2_INREG (__inreg__(LIMIT_Y2_PORT))
 #define LIMIT_Y2_DIRREG (__dirreg__(LIMIT_Y2_PORT))
-#define DIO55_OUTREG (__outreg__(LIMIT_Y2_PORT))
-#define DIO55_INREG (__inreg__(LIMIT_Y2_PORT))
-#define DIO55_DIRREG (__dirreg__(LIMIT_Y2_PORT))
+#define DIO57_OUTREG (__outreg__(LIMIT_Y2_PORT))
+#define DIO57_INREG (__inreg__(LIMIT_Y2_PORT))
+#define DIO57_DIRREG (__dirreg__(LIMIT_Y2_PORT))
 #endif
 #if(defined(LIMIT_Z2_PORT) && defined(LIMIT_Z2_BIT))
-#define DIO56 56
-#define LIMIT_Z2 56
-#define DIO56_PORT (LIMIT_Z2_PORT)
-#define DIO56_BIT (LIMIT_Z2_BIT)
+#define DIO58 58
+#define LIMIT_Z2 58
+#define DIO58_PORT (LIMIT_Z2_PORT)
+#define DIO58_BIT (LIMIT_Z2_BIT)
 #define LIMIT_Z2_OUTREG (__outreg__(LIMIT_Z2_PORT))
 #define LIMIT_Z2_INREG (__inreg__(LIMIT_Z2_PORT))
 #define LIMIT_Z2_DIRREG (__dirreg__(LIMIT_Z2_PORT))
-#define DIO56_OUTREG (__outreg__(LIMIT_Z2_PORT))
-#define DIO56_INREG (__inreg__(LIMIT_Z2_PORT))
-#define DIO56_DIRREG (__dirreg__(LIMIT_Z2_PORT))
+#define DIO58_OUTREG (__outreg__(LIMIT_Z2_PORT))
+#define DIO58_INREG (__inreg__(LIMIT_Z2_PORT))
+#define DIO58_DIRREG (__dirreg__(LIMIT_Z2_PORT))
 #endif
 #if(defined(LIMIT_A_PORT) && defined(LIMIT_A_BIT))
-#define DIO57 57
-#define LIMIT_A 57
-#define DIO57_PORT (LIMIT_A_PORT)
-#define DIO57_BIT (LIMIT_A_BIT)
+#define DIO59 59
+#define LIMIT_A 59
+#define DIO59_PORT (LIMIT_A_PORT)
+#define DIO59_BIT (LIMIT_A_BIT)
 #define LIMIT_A_OUTREG (__outreg__(LIMIT_A_PORT))
 #define LIMIT_A_INREG (__inreg__(LIMIT_A_PORT))
 #define LIMIT_A_DIRREG (__dirreg__(LIMIT_A_PORT))
-#define DIO57_OUTREG (__outreg__(LIMIT_A_PORT))
-#define DIO57_INREG (__inreg__(LIMIT_A_PORT))
-#define DIO57_DIRREG (__dirreg__(LIMIT_A_PORT))
+#define DIO59_OUTREG (__outreg__(LIMIT_A_PORT))
+#define DIO59_INREG (__inreg__(LIMIT_A_PORT))
+#define DIO59_DIRREG (__dirreg__(LIMIT_A_PORT))
 #endif
 #if(defined(LIMIT_B_PORT) && defined(LIMIT_B_BIT))
-#define DIO58 58
-#define LIMIT_B 58
-#define DIO58_PORT (LIMIT_B_PORT)
-#define DIO58_BIT (LIMIT_B_BIT)
+#define DIO60 60
+#define LIMIT_B 60
+#define DIO60_PORT (LIMIT_B_PORT)
+#define DIO60_BIT (LIMIT_B_BIT)
 #define LIMIT_B_OUTREG (__outreg__(LIMIT_B_PORT))
 #define LIMIT_B_INREG (__inreg__(LIMIT_B_PORT))
 #define LIMIT_B_DIRREG (__dirreg__(LIMIT_B_PORT))
-#define DIO58_OUTREG (__outreg__(LIMIT_B_PORT))
-#define DIO58_INREG (__inreg__(LIMIT_B_PORT))
-#define DIO58_DIRREG (__dirreg__(LIMIT_B_PORT))
+#define DIO60_OUTREG (__outreg__(LIMIT_B_PORT))
+#define DIO60_INREG (__inreg__(LIMIT_B_PORT))
+#define DIO60_DIRREG (__dirreg__(LIMIT_B_PORT))
 #endif
 #if(defined(LIMIT_C_PORT) && defined(LIMIT_C_BIT))
-#define DIO59 59
-#define LIMIT_C 59
-#define DIO59_PORT (LIMIT_C_PORT)
-#define DIO59_BIT (LIMIT_C_BIT)
+#define DIO61 61
+#define LIMIT_C 61
+#define DIO61_PORT (LIMIT_C_PORT)
+#define DIO61_BIT (LIMIT_C_BIT)
 #define LIMIT_C_OUTREG (__outreg__(LIMIT_C_PORT))
 #define LIMIT_C_INREG (__inreg__(LIMIT_C_PORT))
 #define LIMIT_C_DIRREG (__dirreg__(LIMIT_C_PORT))
-#define DIO59_OUTREG (__outreg__(LIMIT_C_PORT))
-#define DIO59_INREG (__inreg__(LIMIT_C_PORT))
-#define DIO59_DIRREG (__dirreg__(LIMIT_C_PORT))
+#define DIO61_OUTREG (__outreg__(LIMIT_C_PORT))
+#define DIO61_INREG (__inreg__(LIMIT_C_PORT))
+#define DIO61_DIRREG (__dirreg__(LIMIT_C_PORT))
 #endif
 #if(defined(PROBE_PORT) && defined(PROBE_BIT))
-#define DIO60 60
-#define PROBE 60
-#define DIO60_PORT (PROBE_PORT)
-#define DIO60_BIT (PROBE_BIT)
+#define DIO62 62
+#define PROBE 62
+#define DIO62_PORT (PROBE_PORT)
+#define DIO62_BIT (PROBE_BIT)
 #define PROBE_OUTREG (__outreg__(PROBE_PORT))
 #define PROBE_INREG (__inreg__(PROBE_PORT))
 #define PROBE_DIRREG (__dirreg__(PROBE_PORT))
-#define DIO60_OUTREG (__outreg__(PROBE_PORT))
-#define DIO60_INREG (__inreg__(PROBE_PORT))
-#define DIO60_DIRREG (__dirreg__(PROBE_PORT))
+#define DIO62_OUTREG (__outreg__(PROBE_PORT))
+#define DIO62_INREG (__inreg__(PROBE_PORT))
+#define DIO62_DIRREG (__dirreg__(PROBE_PORT))
 #endif
 #if(defined(ESTOP_PORT) && defined(ESTOP_BIT))
-#define DIO61 61
-#define ESTOP 61
-#define DIO61_PORT (ESTOP_PORT)
-#define DIO61_BIT (ESTOP_BIT)
+#define DIO63 63
+#define ESTOP 63
+#define DIO63_PORT (ESTOP_PORT)
+#define DIO63_BIT (ESTOP_BIT)
 #define ESTOP_OUTREG (__outreg__(ESTOP_PORT))
 #define ESTOP_INREG (__inreg__(ESTOP_PORT))
 #define ESTOP_DIRREG (__dirreg__(ESTOP_PORT))
-#define DIO61_OUTREG (__outreg__(ESTOP_PORT))
-#define DIO61_INREG (__inreg__(ESTOP_PORT))
-#define DIO61_DIRREG (__dirreg__(ESTOP_PORT))
+#define DIO63_OUTREG (__outreg__(ESTOP_PORT))
+#define DIO63_INREG (__inreg__(ESTOP_PORT))
+#define DIO63_DIRREG (__dirreg__(ESTOP_PORT))
 #endif
 #if(defined(SAFETY_DOOR_PORT) && defined(SAFETY_DOOR_BIT))
-#define DIO62 62
-#define SAFETY_DOOR 62
-#define DIO62_PORT (SAFETY_DOOR_PORT)
-#define DIO62_BIT (SAFETY_DOOR_BIT)
+#define DIO64 64
+#define SAFETY_DOOR 64
+#define DIO64_PORT (SAFETY_DOOR_PORT)
+#define DIO64_BIT (SAFETY_DOOR_BIT)
 #define SAFETY_DOOR_OUTREG (__outreg__(SAFETY_DOOR_PORT))
 #define SAFETY_DOOR_INREG (__inreg__(SAFETY_DOOR_PORT))
 #define SAFETY_DOOR_DIRREG (__dirreg__(SAFETY_DOOR_PORT))
-#define DIO62_OUTREG (__outreg__(SAFETY_DOOR_PORT))
-#define DIO62_INREG (__inreg__(SAFETY_DOOR_PORT))
-#define DIO62_DIRREG (__dirreg__(SAFETY_DOOR_PORT))
+#define DIO64_OUTREG (__outreg__(SAFETY_DOOR_PORT))
+#define DIO64_INREG (__inreg__(SAFETY_DOOR_PORT))
+#define DIO64_DIRREG (__dirreg__(SAFETY_DOOR_PORT))
 #endif
 #if(defined(FHOLD_PORT) && defined(FHOLD_BIT))
-#define DIO63 63
-#define FHOLD 63
-#define DIO63_PORT (FHOLD_PORT)
-#define DIO63_BIT (FHOLD_BIT)
+#define DIO65 65
+#define FHOLD 65
+#define DIO65_PORT (FHOLD_PORT)
+#define DIO65_BIT (FHOLD_BIT)
 #define FHOLD_OUTREG (__outreg__(FHOLD_PORT))
 #define FHOLD_INREG (__inreg__(FHOLD_PORT))
 #define FHOLD_DIRREG (__dirreg__(FHOLD_PORT))
-#define DIO63_OUTREG (__outreg__(FHOLD_PORT))
-#define DIO63_INREG (__inreg__(FHOLD_PORT))
-#define DIO63_DIRREG (__dirreg__(FHOLD_PORT))
+#define DIO65_OUTREG (__outreg__(FHOLD_PORT))
+#define DIO65_INREG (__inreg__(FHOLD_PORT))
+#define DIO65_DIRREG (__dirreg__(FHOLD_PORT))
 #endif
 #if(defined(CS_RES_PORT) && defined(CS_RES_BIT))
-#define DIO64 64
-#define CS_RES 64
-#define DIO64_PORT (CS_RES_PORT)
-#define DIO64_BIT (CS_RES_BIT)
+#define DIO66 66
+#define CS_RES 66
+#define DIO66_PORT (CS_RES_PORT)
+#define DIO66_BIT (CS_RES_BIT)
 #define CS_RES_OUTREG (__outreg__(CS_RES_PORT))
 #define CS_RES_INREG (__inreg__(CS_RES_PORT))
 #define CS_RES_DIRREG (__dirreg__(CS_RES_PORT))
-#define DIO64_OUTREG (__outreg__(CS_RES_PORT))
-#define DIO64_INREG (__inreg__(CS_RES_PORT))
-#define DIO64_DIRREG (__dirreg__(CS_RES_PORT))
+#define DIO66_OUTREG (__outreg__(CS_RES_PORT))
+#define DIO66_INREG (__inreg__(CS_RES_PORT))
+#define DIO66_DIRREG (__dirreg__(CS_RES_PORT))
 #endif
 #if(defined(ANALOG0_PORT) && defined(ANALOG0_BIT))
-#define DIO65 65
-#define ANALOG0 65
-#define DIO65_PORT (ANALOG0_PORT)
-#define DIO65_BIT (ANALOG0_BIT)
+#define DIO67 67
+#define ANALOG0 67
+#define DIO67_PORT (ANALOG0_PORT)
+#define DIO67_BIT (ANALOG0_BIT)
 #define ANALOG0_OUTREG (__outreg__(ANALOG0_PORT))
 #define ANALOG0_INREG (__inreg__(ANALOG0_PORT))
 #define ANALOG0_DIRREG (__dirreg__(ANALOG0_PORT))
-#define DIO65_OUTREG (__outreg__(ANALOG0_PORT))
-#define DIO65_INREG (__inreg__(ANALOG0_PORT))
-#define DIO65_DIRREG (__dirreg__(ANALOG0_PORT))
+#define DIO67_OUTREG (__outreg__(ANALOG0_PORT))
+#define DIO67_INREG (__inreg__(ANALOG0_PORT))
+#define DIO67_DIRREG (__dirreg__(ANALOG0_PORT))
 #endif
 #if(defined(ANALOG1_PORT) && defined(ANALOG1_BIT))
-#define DIO66 66
-#define ANALOG1 66
-#define DIO66_PORT (ANALOG1_PORT)
-#define DIO66_BIT (ANALOG1_BIT)
+#define DIO68 68
+#define ANALOG1 68
+#define DIO68_PORT (ANALOG1_PORT)
+#define DIO68_BIT (ANALOG1_BIT)
 #define ANALOG1_OUTREG (__outreg__(ANALOG1_PORT))
 #define ANALOG1_INREG (__inreg__(ANALOG1_PORT))
 #define ANALOG1_DIRREG (__dirreg__(ANALOG1_PORT))
-#define DIO66_OUTREG (__outreg__(ANALOG1_PORT))
-#define DIO66_INREG (__inreg__(ANALOG1_PORT))
-#define DIO66_DIRREG (__dirreg__(ANALOG1_PORT))
+#define DIO68_OUTREG (__outreg__(ANALOG1_PORT))
+#define DIO68_INREG (__inreg__(ANALOG1_PORT))
+#define DIO68_DIRREG (__dirreg__(ANALOG1_PORT))
 #endif
 #if(defined(ANALOG2_PORT) && defined(ANALOG2_BIT))
-#define DIO67 67
-#define ANALOG2 67
-#define DIO67_PORT (ANALOG2_PORT)
-#define DIO67_BIT (ANALOG2_BIT)
+#define DIO69 69
+#define ANALOG2 69
+#define DIO69_PORT (ANALOG2_PORT)
+#define DIO69_BIT (ANALOG2_BIT)
 #define ANALOG2_OUTREG (__outreg__(ANALOG2_PORT))
 #define ANALOG2_INREG (__inreg__(ANALOG2_PORT))
 #define ANALOG2_DIRREG (__dirreg__(ANALOG2_PORT))
-#define DIO67_OUTREG (__outreg__(ANALOG2_PORT))
-#define DIO67_INREG (__inreg__(ANALOG2_PORT))
-#define DIO67_DIRREG (__dirreg__(ANALOG2_PORT))
+#define DIO69_OUTREG (__outreg__(ANALOG2_PORT))
+#define DIO69_INREG (__inreg__(ANALOG2_PORT))
+#define DIO69_DIRREG (__dirreg__(ANALOG2_PORT))
 #endif
 #if(defined(ANALOG3_PORT) && defined(ANALOG3_BIT))
-#define DIO68 68
-#define ANALOG3 68
-#define DIO68_PORT (ANALOG3_PORT)
-#define DIO68_BIT (ANALOG3_BIT)
+#define DIO70 70
+#define ANALOG3 70
+#define DIO70_PORT (ANALOG3_PORT)
+#define DIO70_BIT (ANALOG3_BIT)
 #define ANALOG3_OUTREG (__outreg__(ANALOG3_PORT))
 #define ANALOG3_INREG (__inreg__(ANALOG3_PORT))
 #define ANALOG3_DIRREG (__dirreg__(ANALOG3_PORT))
-#define DIO68_OUTREG (__outreg__(ANALOG3_PORT))
-#define DIO68_INREG (__inreg__(ANALOG3_PORT))
-#define DIO68_DIRREG (__dirreg__(ANALOG3_PORT))
+#define DIO70_OUTREG (__outreg__(ANALOG3_PORT))
+#define DIO70_INREG (__inreg__(ANALOG3_PORT))
+#define DIO70_DIRREG (__dirreg__(ANALOG3_PORT))
 #endif
 #if(defined(ANALOG4_PORT) && defined(ANALOG4_BIT))
-#define DIO69 69
-#define ANALOG4 69
-#define DIO69_PORT (ANALOG4_PORT)
-#define DIO69_BIT (ANALOG4_BIT)
+#define DIO71 71
+#define ANALOG4 71
+#define DIO71_PORT (ANALOG4_PORT)
+#define DIO71_BIT (ANALOG4_BIT)
 #define ANALOG4_OUTREG (__outreg__(ANALOG4_PORT))
 #define ANALOG4_INREG (__inreg__(ANALOG4_PORT))
 #define ANALOG4_DIRREG (__dirreg__(ANALOG4_PORT))
-#define DIO69_OUTREG (__outreg__(ANALOG4_PORT))
-#define DIO69_INREG (__inreg__(ANALOG4_PORT))
-#define DIO69_DIRREG (__dirreg__(ANALOG4_PORT))
+#define DIO71_OUTREG (__outreg__(ANALOG4_PORT))
+#define DIO71_INREG (__inreg__(ANALOG4_PORT))
+#define DIO71_DIRREG (__dirreg__(ANALOG4_PORT))
 #endif
 #if(defined(ANALOG5_PORT) && defined(ANALOG5_BIT))
-#define DIO70 70
-#define ANALOG5 70
-#define DIO70_PORT (ANALOG5_PORT)
-#define DIO70_BIT (ANALOG5_BIT)
+#define DIO72 72
+#define ANALOG5 72
+#define DIO72_PORT (ANALOG5_PORT)
+#define DIO72_BIT (ANALOG5_BIT)
 #define ANALOG5_OUTREG (__outreg__(ANALOG5_PORT))
 #define ANALOG5_INREG (__inreg__(ANALOG5_PORT))
 #define ANALOG5_DIRREG (__dirreg__(ANALOG5_PORT))
-#define DIO70_OUTREG (__outreg__(ANALOG5_PORT))
-#define DIO70_INREG (__inreg__(ANALOG5_PORT))
-#define DIO70_DIRREG (__dirreg__(ANALOG5_PORT))
+#define DIO72_OUTREG (__outreg__(ANALOG5_PORT))
+#define DIO72_INREG (__inreg__(ANALOG5_PORT))
+#define DIO72_DIRREG (__dirreg__(ANALOG5_PORT))
 #endif
 #if(defined(ANALOG6_PORT) && defined(ANALOG6_BIT))
-#define DIO71 71
-#define ANALOG6 71
-#define DIO71_PORT (ANALOG6_PORT)
-#define DIO71_BIT (ANALOG6_BIT)
+#define DIO73 73
+#define ANALOG6 73
+#define DIO73_PORT (ANALOG6_PORT)
+#define DIO73_BIT (ANALOG6_BIT)
 #define ANALOG6_OUTREG (__outreg__(ANALOG6_PORT))
 #define ANALOG6_INREG (__inreg__(ANALOG6_PORT))
 #define ANALOG6_DIRREG (__dirreg__(ANALOG6_PORT))
-#define DIO71_OUTREG (__outreg__(ANALOG6_PORT))
-#define DIO71_INREG (__inreg__(ANALOG6_PORT))
-#define DIO71_DIRREG (__dirreg__(ANALOG6_PORT))
+#define DIO73_OUTREG (__outreg__(ANALOG6_PORT))
+#define DIO73_INREG (__inreg__(ANALOG6_PORT))
+#define DIO73_DIRREG (__dirreg__(ANALOG6_PORT))
 #endif
 #if(defined(ANALOG7_PORT) && defined(ANALOG7_BIT))
-#define DIO72 72
-#define ANALOG7 72
-#define DIO72_PORT (ANALOG7_PORT)
-#define DIO72_BIT (ANALOG7_BIT)
+#define DIO74 74
+#define ANALOG7 74
+#define DIO74_PORT (ANALOG7_PORT)
+#define DIO74_BIT (ANALOG7_BIT)
 #define ANALOG7_OUTREG (__outreg__(ANALOG7_PORT))
 #define ANALOG7_INREG (__inreg__(ANALOG7_PORT))
 #define ANALOG7_DIRREG (__dirreg__(ANALOG7_PORT))
-#define DIO72_OUTREG (__outreg__(ANALOG7_PORT))
-#define DIO72_INREG (__inreg__(ANALOG7_PORT))
-#define DIO72_DIRREG (__dirreg__(ANALOG7_PORT))
+#define DIO74_OUTREG (__outreg__(ANALOG7_PORT))
+#define DIO74_INREG (__inreg__(ANALOG7_PORT))
+#define DIO74_DIRREG (__dirreg__(ANALOG7_PORT))
 #endif
 #if(defined(ANALOG8_PORT) && defined(ANALOG8_BIT))
-#define DIO73 73
-#define ANALOG8 73
-#define DIO73_PORT (ANALOG8_PORT)
-#define DIO73_BIT (ANALOG8_BIT)
+#define DIO75 75
+#define ANALOG8 75
+#define DIO75_PORT (ANALOG8_PORT)
+#define DIO75_BIT (ANALOG8_BIT)
 #define ANALOG8_OUTREG (__outreg__(ANALOG8_PORT))
 #define ANALOG8_INREG (__inreg__(ANALOG8_PORT))
 #define ANALOG8_DIRREG (__dirreg__(ANALOG8_PORT))
-#define DIO73_OUTREG (__outreg__(ANALOG8_PORT))
-#define DIO73_INREG (__inreg__(ANALOG8_PORT))
-#define DIO73_DIRREG (__dirreg__(ANALOG8_PORT))
+#define DIO75_OUTREG (__outreg__(ANALOG8_PORT))
+#define DIO75_INREG (__inreg__(ANALOG8_PORT))
+#define DIO75_DIRREG (__dirreg__(ANALOG8_PORT))
 #endif
 #if(defined(ANALOG9_PORT) && defined(ANALOG9_BIT))
-#define DIO74 74
-#define ANALOG9 74
-#define DIO74_PORT (ANALOG9_PORT)
-#define DIO74_BIT (ANALOG9_BIT)
+#define DIO76 76
+#define ANALOG9 76
+#define DIO76_PORT (ANALOG9_PORT)
+#define DIO76_BIT (ANALOG9_BIT)
 #define ANALOG9_OUTREG (__outreg__(ANALOG9_PORT))
 #define ANALOG9_INREG (__inreg__(ANALOG9_PORT))
 #define ANALOG9_DIRREG (__dirreg__(ANALOG9_PORT))
-#define DIO74_OUTREG (__outreg__(ANALOG9_PORT))
-#define DIO74_INREG (__inreg__(ANALOG9_PORT))
-#define DIO74_DIRREG (__dirreg__(ANALOG9_PORT))
+#define DIO76_OUTREG (__outreg__(ANALOG9_PORT))
+#define DIO76_INREG (__inreg__(ANALOG9_PORT))
+#define DIO76_DIRREG (__dirreg__(ANALOG9_PORT))
 #endif
 #if(defined(ANALOG10_PORT) && defined(ANALOG10_BIT))
-#define DIO75 75
-#define ANALOG10 75
-#define DIO75_PORT (ANALOG10_PORT)
-#define DIO75_BIT (ANALOG10_BIT)
+#define DIO77 77
+#define ANALOG10 77
+#define DIO77_PORT (ANALOG10_PORT)
+#define DIO77_BIT (ANALOG10_BIT)
 #define ANALOG10_OUTREG (__outreg__(ANALOG10_PORT))
 #define ANALOG10_INREG (__inreg__(ANALOG10_PORT))
 #define ANALOG10_DIRREG (__dirreg__(ANALOG10_PORT))
-#define DIO75_OUTREG (__outreg__(ANALOG10_PORT))
-#define DIO75_INREG (__inreg__(ANALOG10_PORT))
-#define DIO75_DIRREG (__dirreg__(ANALOG10_PORT))
+#define DIO77_OUTREG (__outreg__(ANALOG10_PORT))
+#define DIO77_INREG (__inreg__(ANALOG10_PORT))
+#define DIO77_DIRREG (__dirreg__(ANALOG10_PORT))
 #endif
 #if(defined(ANALOG11_PORT) && defined(ANALOG11_BIT))
-#define DIO76 76
-#define ANALOG11 76
-#define DIO76_PORT (ANALOG11_PORT)
-#define DIO76_BIT (ANALOG11_BIT)
+#define DIO78 78
+#define ANALOG11 78
+#define DIO78_PORT (ANALOG11_PORT)
+#define DIO78_BIT (ANALOG11_BIT)
 #define ANALOG11_OUTREG (__outreg__(ANALOG11_PORT))
 #define ANALOG11_INREG (__inreg__(ANALOG11_PORT))
 #define ANALOG11_DIRREG (__dirreg__(ANALOG11_PORT))
-#define DIO76_OUTREG (__outreg__(ANALOG11_PORT))
-#define DIO76_INREG (__inreg__(ANALOG11_PORT))
-#define DIO76_DIRREG (__dirreg__(ANALOG11_PORT))
+#define DIO78_OUTREG (__outreg__(ANALOG11_PORT))
+#define DIO78_INREG (__inreg__(ANALOG11_PORT))
+#define DIO78_DIRREG (__dirreg__(ANALOG11_PORT))
 #endif
 #if(defined(ANALOG12_PORT) && defined(ANALOG12_BIT))
-#define DIO77 77
-#define ANALOG12 77
-#define DIO77_PORT (ANALOG12_PORT)
-#define DIO77_BIT (ANALOG12_BIT)
+#define DIO79 79
+#define ANALOG12 79
+#define DIO79_PORT (ANALOG12_PORT)
+#define DIO79_BIT (ANALOG12_BIT)
 #define ANALOG12_OUTREG (__outreg__(ANALOG12_PORT))
 #define ANALOG12_INREG (__inreg__(ANALOG12_PORT))
 #define ANALOG12_DIRREG (__dirreg__(ANALOG12_PORT))
-#define DIO77_OUTREG (__outreg__(ANALOG12_PORT))
-#define DIO77_INREG (__inreg__(ANALOG12_PORT))
-#define DIO77_DIRREG (__dirreg__(ANALOG12_PORT))
+#define DIO79_OUTREG (__outreg__(ANALOG12_PORT))
+#define DIO79_INREG (__inreg__(ANALOG12_PORT))
+#define DIO79_DIRREG (__dirreg__(ANALOG12_PORT))
 #endif
 #if(defined(ANALOG13_PORT) && defined(ANALOG13_BIT))
-#define DIO78 78
-#define ANALOG13 78
-#define DIO78_PORT (ANALOG13_PORT)
-#define DIO78_BIT (ANALOG13_BIT)
+#define DIO80 80
+#define ANALOG13 80
+#define DIO80_PORT (ANALOG13_PORT)
+#define DIO80_BIT (ANALOG13_BIT)
 #define ANALOG13_OUTREG (__outreg__(ANALOG13_PORT))
 #define ANALOG13_INREG (__inreg__(ANALOG13_PORT))
 #define ANALOG13_DIRREG (__dirreg__(ANALOG13_PORT))
-#define DIO78_OUTREG (__outreg__(ANALOG13_PORT))
-#define DIO78_INREG (__inreg__(ANALOG13_PORT))
-#define DIO78_DIRREG (__dirreg__(ANALOG13_PORT))
+#define DIO80_OUTREG (__outreg__(ANALOG13_PORT))
+#define DIO80_INREG (__inreg__(ANALOG13_PORT))
+#define DIO80_DIRREG (__dirreg__(ANALOG13_PORT))
 #endif
 #if(defined(ANALOG14_PORT) && defined(ANALOG14_BIT))
-#define DIO79 79
-#define ANALOG14 79
-#define DIO79_PORT (ANALOG14_PORT)
-#define DIO79_BIT (ANALOG14_BIT)
+#define DIO81 81
+#define ANALOG14 81
+#define DIO81_PORT (ANALOG14_PORT)
+#define DIO81_BIT (ANALOG14_BIT)
 #define ANALOG14_OUTREG (__outreg__(ANALOG14_PORT))
 #define ANALOG14_INREG (__inreg__(ANALOG14_PORT))
 #define ANALOG14_DIRREG (__dirreg__(ANALOG14_PORT))
-#define DIO79_OUTREG (__outreg__(ANALOG14_PORT))
-#define DIO79_INREG (__inreg__(ANALOG14_PORT))
-#define DIO79_DIRREG (__dirreg__(ANALOG14_PORT))
+#define DIO81_OUTREG (__outreg__(ANALOG14_PORT))
+#define DIO81_INREG (__inreg__(ANALOG14_PORT))
+#define DIO81_DIRREG (__dirreg__(ANALOG14_PORT))
 #endif
 #if(defined(ANALOG15_PORT) && defined(ANALOG15_BIT))
-#define DIO80 80
-#define ANALOG15 80
-#define DIO80_PORT (ANALOG15_PORT)
-#define DIO80_BIT (ANALOG15_BIT)
+#define DIO82 82
+#define ANALOG15 82
+#define DIO82_PORT (ANALOG15_PORT)
+#define DIO82_BIT (ANALOG15_BIT)
 #define ANALOG15_OUTREG (__outreg__(ANALOG15_PORT))
 #define ANALOG15_INREG (__inreg__(ANALOG15_PORT))
 #define ANALOG15_DIRREG (__dirreg__(ANALOG15_PORT))
-#define DIO80_OUTREG (__outreg__(ANALOG15_PORT))
-#define DIO80_INREG (__inreg__(ANALOG15_PORT))
-#define DIO80_DIRREG (__dirreg__(ANALOG15_PORT))
+#define DIO82_OUTREG (__outreg__(ANALOG15_PORT))
+#define DIO82_INREG (__inreg__(ANALOG15_PORT))
+#define DIO82_DIRREG (__dirreg__(ANALOG15_PORT))
 #endif
 #if(defined(RX_PORT) && defined(RX_BIT))
-#define DIO81 81
-#define RX 81
-#define DIO81_PORT (RX_PORT)
-#define DIO81_BIT (RX_BIT)
+#define DIO83 83
+#define RX 83
+#define DIO83_PORT (RX_PORT)
+#define DIO83_BIT (RX_BIT)
 #define RX_OUTREG (__outreg__(RX_PORT))
 #define RX_INREG (__inreg__(RX_PORT))
 #define RX_DIRREG (__dirreg__(RX_PORT))
-#define DIO81_OUTREG (__outreg__(RX_PORT))
-#define DIO81_INREG (__inreg__(RX_PORT))
-#define DIO81_DIRREG (__dirreg__(RX_PORT))
+#define DIO83_OUTREG (__outreg__(RX_PORT))
+#define DIO83_INREG (__inreg__(RX_PORT))
+#define DIO83_DIRREG (__dirreg__(RX_PORT))
 #endif
 #if(defined(DIN0_PORT) && defined(DIN0_BIT))
-#define DIO82 82
-#define DIN0 82
-#define DIO82_PORT (DIN0_PORT)
-#define DIO82_BIT (DIN0_BIT)
+#define DIO84 84
+#define DIN0 84
+#define DIO84_PORT (DIN0_PORT)
+#define DIO84_BIT (DIN0_BIT)
 #define DIN0_OUTREG (__outreg__(DIN0_PORT))
 #define DIN0_INREG (__inreg__(DIN0_PORT))
 #define DIN0_DIRREG (__dirreg__(DIN0_PORT))
-#define DIO82_OUTREG (__outreg__(DIN0_PORT))
-#define DIO82_INREG (__inreg__(DIN0_PORT))
-#define DIO82_DIRREG (__dirreg__(DIN0_PORT))
+#define DIO84_OUTREG (__outreg__(DIN0_PORT))
+#define DIO84_INREG (__inreg__(DIN0_PORT))
+#define DIO84_DIRREG (__dirreg__(DIN0_PORT))
 #endif
 #if(defined(DIN1_PORT) && defined(DIN1_BIT))
-#define DIO83 83
-#define DIN1 83
-#define DIO83_PORT (DIN1_PORT)
-#define DIO83_BIT (DIN1_BIT)
+#define DIO85 85
+#define DIN1 85
+#define DIO85_PORT (DIN1_PORT)
+#define DIO85_BIT (DIN1_BIT)
 #define DIN1_OUTREG (__outreg__(DIN1_PORT))
 #define DIN1_INREG (__inreg__(DIN1_PORT))
 #define DIN1_DIRREG (__dirreg__(DIN1_PORT))
-#define DIO83_OUTREG (__outreg__(DIN1_PORT))
-#define DIO83_INREG (__inreg__(DIN1_PORT))
-#define DIO83_DIRREG (__dirreg__(DIN1_PORT))
+#define DIO85_OUTREG (__outreg__(DIN1_PORT))
+#define DIO85_INREG (__inreg__(DIN1_PORT))
+#define DIO85_DIRREG (__dirreg__(DIN1_PORT))
 #endif
 #if(defined(DIN2_PORT) && defined(DIN2_BIT))
-#define DIO84 84
-#define DIN2 84
-#define DIO84_PORT (DIN2_PORT)
-#define DIO84_BIT (DIN2_BIT)
+#define DIO86 86
+#define DIN2 86
+#define DIO86_PORT (DIN2_PORT)
+#define DIO86_BIT (DIN2_BIT)
 #define DIN2_OUTREG (__outreg__(DIN2_PORT))
 #define DIN2_INREG (__inreg__(DIN2_PORT))
 #define DIN2_DIRREG (__dirreg__(DIN2_PORT))
-#define DIO84_OUTREG (__outreg__(DIN2_PORT))
-#define DIO84_INREG (__inreg__(DIN2_PORT))
-#define DIO84_DIRREG (__dirreg__(DIN2_PORT))
+#define DIO86_OUTREG (__outreg__(DIN2_PORT))
+#define DIO86_INREG (__inreg__(DIN2_PORT))
+#define DIO86_DIRREG (__dirreg__(DIN2_PORT))
 #endif
 #if(defined(DIN3_PORT) && defined(DIN3_BIT))
-#define DIO85 85
-#define DIN3 85
-#define DIO85_PORT (DIN3_PORT)
-#define DIO85_BIT (DIN3_BIT)
+#define DIO87 87
+#define DIN3 87
+#define DIO87_PORT (DIN3_PORT)
+#define DIO87_BIT (DIN3_BIT)
 #define DIN3_OUTREG (__outreg__(DIN3_PORT))
 #define DIN3_INREG (__inreg__(DIN3_PORT))
 #define DIN3_DIRREG (__dirreg__(DIN3_PORT))
-#define DIO85_OUTREG (__outreg__(DIN3_PORT))
-#define DIO85_INREG (__inreg__(DIN3_PORT))
-#define DIO85_DIRREG (__dirreg__(DIN3_PORT))
+#define DIO87_OUTREG (__outreg__(DIN3_PORT))
+#define DIO87_INREG (__inreg__(DIN3_PORT))
+#define DIO87_DIRREG (__dirreg__(DIN3_PORT))
 #endif
 #if(defined(DIN4_PORT) && defined(DIN4_BIT))
-#define DIO86 86
-#define DIN4 86
-#define DIO86_PORT (DIN4_PORT)
-#define DIO86_BIT (DIN4_BIT)
+#define DIO88 88
+#define DIN4 88
+#define DIO88_PORT (DIN4_PORT)
+#define DIO88_BIT (DIN4_BIT)
 #define DIN4_OUTREG (__outreg__(DIN4_PORT))
 #define DIN4_INREG (__inreg__(DIN4_PORT))
 #define DIN4_DIRREG (__dirreg__(DIN4_PORT))
-#define DIO86_OUTREG (__outreg__(DIN4_PORT))
-#define DIO86_INREG (__inreg__(DIN4_PORT))
-#define DIO86_DIRREG (__dirreg__(DIN4_PORT))
+#define DIO88_OUTREG (__outreg__(DIN4_PORT))
+#define DIO88_INREG (__inreg__(DIN4_PORT))
+#define DIO88_DIRREG (__dirreg__(DIN4_PORT))
 #endif
 #if(defined(DIN5_PORT) && defined(DIN5_BIT))
-#define DIO87 87
-#define DIN5 87
-#define DIO87_PORT (DIN5_PORT)
-#define DIO87_BIT (DIN5_BIT)
+#define DIO89 89
+#define DIN5 89
+#define DIO89_PORT (DIN5_PORT)
+#define DIO89_BIT (DIN5_BIT)
 #define DIN5_OUTREG (__outreg__(DIN5_PORT))
 #define DIN5_INREG (__inreg__(DIN5_PORT))
 #define DIN5_DIRREG (__dirreg__(DIN5_PORT))
-#define DIO87_OUTREG (__outreg__(DIN5_PORT))
-#define DIO87_INREG (__inreg__(DIN5_PORT))
-#define DIO87_DIRREG (__dirreg__(DIN5_PORT))
+#define DIO89_OUTREG (__outreg__(DIN5_PORT))
+#define DIO89_INREG (__inreg__(DIN5_PORT))
+#define DIO89_DIRREG (__dirreg__(DIN5_PORT))
 #endif
 #if(defined(DIN6_PORT) && defined(DIN6_BIT))
-#define DIO88 88
-#define DIN6 88
-#define DIO88_PORT (DIN6_PORT)
-#define DIO88_BIT (DIN6_BIT)
+#define DIO90 90
+#define DIN6 90
+#define DIO90_PORT (DIN6_PORT)
+#define DIO90_BIT (DIN6_BIT)
 #define DIN6_OUTREG (__outreg__(DIN6_PORT))
 #define DIN6_INREG (__inreg__(DIN6_PORT))
 #define DIN6_DIRREG (__dirreg__(DIN6_PORT))
-#define DIO88_OUTREG (__outreg__(DIN6_PORT))
-#define DIO88_INREG (__inreg__(DIN6_PORT))
-#define DIO88_DIRREG (__dirreg__(DIN6_PORT))
+#define DIO90_OUTREG (__outreg__(DIN6_PORT))
+#define DIO90_INREG (__inreg__(DIN6_PORT))
+#define DIO90_DIRREG (__dirreg__(DIN6_PORT))
 #endif
 #if(defined(DIN7_PORT) && defined(DIN7_BIT))
-#define DIO89 89
-#define DIN7 89
-#define DIO89_PORT (DIN7_PORT)
-#define DIO89_BIT (DIN7_BIT)
+#define DIO91 91
+#define DIN7 91
+#define DIO91_PORT (DIN7_PORT)
+#define DIO91_BIT (DIN7_BIT)
 #define DIN7_OUTREG (__outreg__(DIN7_PORT))
 #define DIN7_INREG (__inreg__(DIN7_PORT))
 #define DIN7_DIRREG (__dirreg__(DIN7_PORT))
-#define DIO89_OUTREG (__outreg__(DIN7_PORT))
-#define DIO89_INREG (__inreg__(DIN7_PORT))
-#define DIO89_DIRREG (__dirreg__(DIN7_PORT))
+#define DIO91_OUTREG (__outreg__(DIN7_PORT))
+#define DIO91_INREG (__inreg__(DIN7_PORT))
+#define DIO91_DIRREG (__dirreg__(DIN7_PORT))
 #endif
 #if(defined(DIN8_PORT) && defined(DIN8_BIT))
-#define DIO90 90
-#define DIN8 90
-#define DIO90_PORT (DIN8_PORT)
-#define DIO90_BIT (DIN8_BIT)
+#define DIO92 92
+#define DIN8 92
+#define DIO92_PORT (DIN8_PORT)
+#define DIO92_BIT (DIN8_BIT)
 #define DIN8_OUTREG (__outreg__(DIN8_PORT))
 #define DIN8_INREG (__inreg__(DIN8_PORT))
 #define DIN8_DIRREG (__dirreg__(DIN8_PORT))
-#define DIO90_OUTREG (__outreg__(DIN8_PORT))
-#define DIO90_INREG (__inreg__(DIN8_PORT))
-#define DIO90_DIRREG (__dirreg__(DIN8_PORT))
+#define DIO92_OUTREG (__outreg__(DIN8_PORT))
+#define DIO92_INREG (__inreg__(DIN8_PORT))
+#define DIO92_DIRREG (__dirreg__(DIN8_PORT))
 #endif
 #if(defined(DIN9_PORT) && defined(DIN9_BIT))
-#define DIO91 91
-#define DIN9 91
-#define DIO91_PORT (DIN9_PORT)
-#define DIO91_BIT (DIN9_BIT)
+#define DIO93 93
+#define DIN9 93
+#define DIO93_PORT (DIN9_PORT)
+#define DIO93_BIT (DIN9_BIT)
 #define DIN9_OUTREG (__outreg__(DIN9_PORT))
 #define DIN9_INREG (__inreg__(DIN9_PORT))
 #define DIN9_DIRREG (__dirreg__(DIN9_PORT))
-#define DIO91_OUTREG (__outreg__(DIN9_PORT))
-#define DIO91_INREG (__inreg__(DIN9_PORT))
-#define DIO91_DIRREG (__dirreg__(DIN9_PORT))
+#define DIO93_OUTREG (__outreg__(DIN9_PORT))
+#define DIO93_INREG (__inreg__(DIN9_PORT))
+#define DIO93_DIRREG (__dirreg__(DIN9_PORT))
 #endif
 #if(defined(DIN10_PORT) && defined(DIN10_BIT))
-#define DIO92 92
-#define DIN10 92
-#define DIO92_PORT (DIN10_PORT)
-#define DIO92_BIT (DIN10_BIT)
+#define DIO94 94
+#define DIN10 94
+#define DIO94_PORT (DIN10_PORT)
+#define DIO94_BIT (DIN10_BIT)
 #define DIN10_OUTREG (__outreg__(DIN10_PORT))
 #define DIN10_INREG (__inreg__(DIN10_PORT))
 #define DIN10_DIRREG (__dirreg__(DIN10_PORT))
-#define DIO92_OUTREG (__outreg__(DIN10_PORT))
-#define DIO92_INREG (__inreg__(DIN10_PORT))
-#define DIO92_DIRREG (__dirreg__(DIN10_PORT))
+#define DIO94_OUTREG (__outreg__(DIN10_PORT))
+#define DIO94_INREG (__inreg__(DIN10_PORT))
+#define DIO94_DIRREG (__dirreg__(DIN10_PORT))
 #endif
 #if(defined(DIN11_PORT) && defined(DIN11_BIT))
-#define DIO93 93
-#define DIN11 93
-#define DIO93_PORT (DIN11_PORT)
-#define DIO93_BIT (DIN11_BIT)
+#define DIO95 95
+#define DIN11 95
+#define DIO95_PORT (DIN11_PORT)
+#define DIO95_BIT (DIN11_BIT)
 #define DIN11_OUTREG (__outreg__(DIN11_PORT))
 #define DIN11_INREG (__inreg__(DIN11_PORT))
 #define DIN11_DIRREG (__dirreg__(DIN11_PORT))
-#define DIO93_OUTREG (__outreg__(DIN11_PORT))
-#define DIO93_INREG (__inreg__(DIN11_PORT))
-#define DIO93_DIRREG (__dirreg__(DIN11_PORT))
+#define DIO95_OUTREG (__outreg__(DIN11_PORT))
+#define DIO95_INREG (__inreg__(DIN11_PORT))
+#define DIO95_DIRREG (__dirreg__(DIN11_PORT))
 #endif
 #if(defined(DIN12_PORT) && defined(DIN12_BIT))
-#define DIO94 94
-#define DIN12 94
-#define DIO94_PORT (DIN12_PORT)
-#define DIO94_BIT (DIN12_BIT)
+#define DIO96 96
+#define DIN12 96
+#define DIO96_PORT (DIN12_PORT)
+#define DIO96_BIT (DIN12_BIT)
 #define DIN12_OUTREG (__outreg__(DIN12_PORT))
 #define DIN12_INREG (__inreg__(DIN12_PORT))
 #define DIN12_DIRREG (__dirreg__(DIN12_PORT))
-#define DIO94_OUTREG (__outreg__(DIN12_PORT))
-#define DIO94_INREG (__inreg__(DIN12_PORT))
-#define DIO94_DIRREG (__dirreg__(DIN12_PORT))
+#define DIO96_OUTREG (__outreg__(DIN12_PORT))
+#define DIO96_INREG (__inreg__(DIN12_PORT))
+#define DIO96_DIRREG (__dirreg__(DIN12_PORT))
 #endif
 #if(defined(DIN13_PORT) && defined(DIN13_BIT))
-#define DIO95 95
-#define DIN13 95
-#define DIO95_PORT (DIN13_PORT)
-#define DIO95_BIT (DIN13_BIT)
+#define DIO97 97
+#define DIN13 97
+#define DIO97_PORT (DIN13_PORT)
+#define DIO97_BIT (DIN13_BIT)
 #define DIN13_OUTREG (__outreg__(DIN13_PORT))
 #define DIN13_INREG (__inreg__(DIN13_PORT))
 #define DIN13_DIRREG (__dirreg__(DIN13_PORT))
-#define DIO95_OUTREG (__outreg__(DIN13_PORT))
-#define DIO95_INREG (__inreg__(DIN13_PORT))
-#define DIO95_DIRREG (__dirreg__(DIN13_PORT))
+#define DIO97_OUTREG (__outreg__(DIN13_PORT))
+#define DIO97_INREG (__inreg__(DIN13_PORT))
+#define DIO97_DIRREG (__dirreg__(DIN13_PORT))
 #endif
 #if(defined(DIN14_PORT) && defined(DIN14_BIT))
-#define DIO96 96
-#define DIN14 96
-#define DIO96_PORT (DIN14_PORT)
-#define DIO96_BIT (DIN14_BIT)
+#define DIO98 98
+#define DIN14 98
+#define DIO98_PORT (DIN14_PORT)
+#define DIO98_BIT (DIN14_BIT)
 #define DIN14_OUTREG (__outreg__(DIN14_PORT))
 #define DIN14_INREG (__inreg__(DIN14_PORT))
 #define DIN14_DIRREG (__dirreg__(DIN14_PORT))
-#define DIO96_OUTREG (__outreg__(DIN14_PORT))
-#define DIO96_INREG (__inreg__(DIN14_PORT))
-#define DIO96_DIRREG (__dirreg__(DIN14_PORT))
+#define DIO98_OUTREG (__outreg__(DIN14_PORT))
+#define DIO98_INREG (__inreg__(DIN14_PORT))
+#define DIO98_DIRREG (__dirreg__(DIN14_PORT))
 #endif
 #if(defined(DIN15_PORT) && defined(DIN15_BIT))
-#define DIO97 97
-#define DIN15 97
-#define DIO97_PORT (DIN15_PORT)
-#define DIO97_BIT (DIN15_BIT)
+#define DIO99 99
+#define DIN15 99
+#define DIO99_PORT (DIN15_PORT)
+#define DIO99_BIT (DIN15_BIT)
 #define DIN15_OUTREG (__outreg__(DIN15_PORT))
 #define DIN15_INREG (__inreg__(DIN15_PORT))
 #define DIN15_DIRREG (__dirreg__(DIN15_PORT))
-#define DIO97_OUTREG (__outreg__(DIN15_PORT))
-#define DIO97_INREG (__inreg__(DIN15_PORT))
-#define DIO97_DIRREG (__dirreg__(DIN15_PORT))
+#define DIO99_OUTREG (__outreg__(DIN15_PORT))
+#define DIO99_INREG (__inreg__(DIN15_PORT))
+#define DIO99_DIRREG (__dirreg__(DIN15_PORT))
 #endif
 
 //ISR on change inputs
@@ -2017,6 +2041,7 @@
 #endif
 #define DIO64_ISRREG CS_RES_ISRREG
 #endif
+
 //ISR on change defaults
 #ifndef LIMIT_X_ISR0
 #define LIMIT_X_ISR0 0
@@ -2033,6 +2058,7 @@
 #ifndef LIMIT_X_ISRB
 #define LIMIT_X_ISRB 0
 #endif
+#define LIMIT_X_ISR_MASK (LIMIT_X_ISR0 | LIMIT_X_ISR1 | LIMIT_X_ISR2 | LIMIT_X_ISRA | LIMIT_X_ISRB)
 #ifndef LIMIT_Y_ISR0
 #define LIMIT_Y_ISR0 0
 #endif
@@ -2048,6 +2074,7 @@
 #ifndef LIMIT_Y_ISRB
 #define LIMIT_Y_ISRB 0
 #endif
+#define LIMIT_Y_ISR_MASK (LIMIT_Y_ISR0 | LIMIT_Y_ISR1 | LIMIT_Y_ISR2 | LIMIT_Y_ISRA | LIMIT_Y_ISRB)
 #ifndef LIMIT_Z_ISR0
 #define LIMIT_Z_ISR0 0
 #endif
@@ -2063,6 +2090,7 @@
 #ifndef LIMIT_Z_ISRB
 #define LIMIT_Z_ISRB 0
 #endif
+#define LIMIT_Z_ISR_MASK (LIMIT_Z_ISR0 | LIMIT_Z_ISR1 | LIMIT_Z_ISR2 | LIMIT_Z_ISRA | LIMIT_Z_ISRB)
 #ifndef LIMIT_X2_ISR0
 #define LIMIT_X2_ISR0 0
 #endif
@@ -2078,6 +2106,7 @@
 #ifndef LIMIT_X2_ISRB
 #define LIMIT_X2_ISRB 0
 #endif
+#define LIMIT_X2_ISR_MASK (LIMIT_X2_ISR0 | LIMIT_X2_ISR1 | LIMIT_X2_ISR2 | LIMIT_X2_ISRA | LIMIT_X2_ISRB)
 #ifndef LIMIT_Y2_ISR0
 #define LIMIT_Y2_ISR0 0
 #endif
@@ -2093,6 +2122,7 @@
 #ifndef LIMIT_Y2_ISRB
 #define LIMIT_Y2_ISRB 0
 #endif
+#define LIMIT_Y2_ISR_MASK (LIMIT_Y2_ISR0 | LIMIT_Y2_ISR1 | LIMIT_Y2_ISR2 | LIMIT_Y2_ISRA | LIMIT_Y2_ISRB)
 #ifndef LIMIT_Z2_ISR0
 #define LIMIT_Z2_ISR0 0
 #endif
@@ -2108,6 +2138,7 @@
 #ifndef LIMIT_Z2_ISRB
 #define LIMIT_Z2_ISRB 0
 #endif
+#define LIMIT_Z2_ISR_MASK (LIMIT_Z2_ISR0 | LIMIT_Z2_ISR1 | LIMIT_Z2_ISR2 | LIMIT_Z2_ISRA | LIMIT_Z2_ISRB)
 #ifndef LIMIT_A_ISR0
 #define LIMIT_A_ISR0 0
 #endif
@@ -2123,6 +2154,7 @@
 #ifndef LIMIT_A_ISRB
 #define LIMIT_A_ISRB 0
 #endif
+#define LIMIT_A_ISR_MASK (LIMIT_A_ISR0 | LIMIT_A_ISR1 | LIMIT_A_ISR2 | LIMIT_A_ISRA | LIMIT_A_ISRB)
 #ifndef LIMIT_B_ISR0
 #define LIMIT_B_ISR0 0
 #endif
@@ -2138,6 +2170,7 @@
 #ifndef LIMIT_B_ISRB
 #define LIMIT_B_ISRB 0
 #endif
+#define LIMIT_B_ISR_MASK (LIMIT_B_ISR0 | LIMIT_B_ISR1 | LIMIT_B_ISR2 | LIMIT_B_ISRA | LIMIT_B_ISRB)
 #ifndef LIMIT_C_ISR0
 #define LIMIT_C_ISR0 0
 #endif
@@ -2153,6 +2186,7 @@
 #ifndef LIMIT_C_ISRB
 #define LIMIT_C_ISRB 0
 #endif
+#define LIMIT_C_ISR_MASK (LIMIT_C_ISR0 | LIMIT_C_ISR1 | LIMIT_C_ISR2 | LIMIT_C_ISRA | LIMIT_C_ISRB)
 #ifndef PROBE_ISR0
 #define PROBE_ISR0 0
 #endif
@@ -2168,6 +2202,7 @@
 #ifndef PROBE_ISRB
 #define PROBE_ISRB 0
 #endif
+#define PROBE_ISR_MASK (PROBE_ISR0 | PROBE_ISR1 | PROBE_ISR2 | PROBE_ISRA | PROBE_ISRB)
 #ifndef ESTOP_ISR0
 #define ESTOP_ISR0 0
 #endif
@@ -2183,6 +2218,7 @@
 #ifndef ESTOP_ISRB
 #define ESTOP_ISRB 0
 #endif
+#define ESTOP_ISR_MASK (ESTOP_ISR0 | ESTOP_ISR1 | ESTOP_ISR2 | ESTOP_ISRA | ESTOP_ISRB)
 #ifndef SAFETY_DOOR_ISR0
 #define SAFETY_DOOR_ISR0 0
 #endif
@@ -2198,6 +2234,7 @@
 #ifndef SAFETY_DOOR_ISRB
 #define SAFETY_DOOR_ISRB 0
 #endif
+#define SAFETY_DOOR_ISR_MASK (SAFETY_DOOR_ISR0 | SAFETY_DOOR_ISR1 | SAFETY_DOOR_ISR2 | SAFETY_DOOR_ISRA | SAFETY_DOOR_ISRB)
 #ifndef FHOLD_ISR0
 #define FHOLD_ISR0 0
 #endif
@@ -2213,6 +2250,7 @@
 #ifndef FHOLD_ISRB
 #define FHOLD_ISRB 0
 #endif
+#define FHOLD_ISR_MASK (FHOLD_ISR0 | FHOLD_ISR1 | FHOLD_ISR2 | FHOLD_ISRA | FHOLD_ISRB)
 #ifndef CS_RES_ISR0
 #define CS_RES_ISR0 0
 #endif
@@ -2228,568 +2266,570 @@
 #ifndef CS_RES_ISRB
 #define CS_RES_ISRB 0
 #endif
+#define CS_RES_ISR_MASK (CS_RES_ISR0 | CS_RES_ISR1 | CS_RES_ISR2 | CS_RES_ISRA | CS_RES_ISRB)
 
 //PWM pins
 #if(defined(PWM0_OCR) && defined(PWM0_TIMER) && defined(PWM0))
-#define DIO18_OCR (PWM0_OCR)
-#define DIO18_TIMER (PWM0_TIMER)
+#define DIO20_OCR (PWM0_OCR)
+#define DIO20_TIMER (PWM0_TIMER)
 #define PWM0_OCRREG (__ocrreg__(PWM0_TIMER, PWM0_OCR))
 #define PWM0_TMRAREG (__tmrareg__(PWM0_TIMER))
 #define PWM0_TMRBREG (__tmrbreg__(PWM0_TIMER))
-#define DIO18_OCRREG (__ocrreg__(PWM0_TIMER, PWM0_OCR))
-#define DIO18_TMRAREG (__tmrareg__(PWM0_TIMER))
-#define DIO18_TMRBREG (__tmrbreg__(PWM0_TIMER))
+#define DIO20_OCRREG (__ocrreg__(PWM0_TIMER, PWM0_OCR))
+#define DIO20_TMRAREG (__tmrareg__(PWM0_TIMER))
+#define DIO20_TMRBREG (__tmrbreg__(PWM0_TIMER))
 #if(PWM0_OCR == A)
 #define PWM0_ENABLE_MASK 0x80
-#define DIO18_ENABLE_MASK 0x80
+#define DIO20_ENABLE_MASK 0x80
 #elif(PWM0_OCR == B)
 #define PWM0_ENABLE_MASK 0x20
-#define DIO18_ENABLE_MASK 0x20
+#define DIO20_ENABLE_MASK 0x20
 #elif(PWM0_OCR == C)
 #define PWM0_ENABLE_MASK 0x08
-#define DIO18_ENABLE_MASK 0x08
+#define DIO20_ENABLE_MASK 0x08
 #endif
 #if(PWM0_TIMER==0 || PWM0_TIMER==2)
 #define PWM0_MODE 0x03
 #define PWM0_PRESCALLER 0x04
-#define DIO18_MODE 0x03
-#define DIO18_PRESCALLER 0x04
-#else
-#define PWM0_MODE (0x05)
-#define PWM0_PRESCALLER (0x03)
-#define DIO18_MODE (0x05)
-#define DIO18_PRESCALLER (0x03)
-#endif
-#endif
-#if(defined(PWM1_OCR) && defined(PWM1_TIMER) && defined(PWM1))
-#define DIO19_OCR (PWM1_OCR)
-#define DIO19_TIMER (PWM1_TIMER)
-#define PWM1_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_OCR))
-#define PWM1_TMRAREG (__tmrareg__(PWM1_TIMER))
-#define PWM1_TMRBREG (__tmrbreg__(PWM1_TIMER))
-#define DIO19_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_OCR))
-#define DIO19_TMRAREG (__tmrareg__(PWM1_TIMER))
-#define DIO19_TMRBREG (__tmrbreg__(PWM1_TIMER))
-#if(PWM1_OCR == A)
-#define PWM1_ENABLE_MASK 0x80
-#define DIO19_ENABLE_MASK 0x80
-#elif(PWM1_OCR == B)
-#define PWM1_ENABLE_MASK 0x20
-#define DIO19_ENABLE_MASK 0x20
-#elif(PWM1_OCR == C)
-#define PWM1_ENABLE_MASK 0x08
-#define DIO19_ENABLE_MASK 0x08
-#endif
-#if(PWM1_TIMER==0 || PWM1_TIMER==2)
-#define PWM1_MODE 0x03
-#define PWM1_PRESCALLER 0x04
-#define DIO19_MODE 0x03
-#define DIO19_PRESCALLER 0x04
-#else
-#define PWM1_MODE (0x05)
-#define PWM1_PRESCALLER (0x03)
-#define DIO19_MODE (0x05)
-#define DIO19_PRESCALLER (0x03)
-#endif
-#endif
-#if(defined(PWM2_OCR) && defined(PWM2_TIMER) && defined(PWM2))
-#define DIO20_OCR (PWM2_OCR)
-#define DIO20_TIMER (PWM2_TIMER)
-#define PWM2_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_OCR))
-#define PWM2_TMRAREG (__tmrareg__(PWM2_TIMER))
-#define PWM2_TMRBREG (__tmrbreg__(PWM2_TIMER))
-#define DIO20_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_OCR))
-#define DIO20_TMRAREG (__tmrareg__(PWM2_TIMER))
-#define DIO20_TMRBREG (__tmrbreg__(PWM2_TIMER))
-#if(PWM2_OCR == A)
-#define PWM2_ENABLE_MASK 0x80
-#define DIO20_ENABLE_MASK 0x80
-#elif(PWM2_OCR == B)
-#define PWM2_ENABLE_MASK 0x20
-#define DIO20_ENABLE_MASK 0x20
-#elif(PWM2_OCR == C)
-#define PWM2_ENABLE_MASK 0x08
-#define DIO20_ENABLE_MASK 0x08
-#endif
-#if(PWM2_TIMER==0 || PWM2_TIMER==2)
-#define PWM2_MODE 0x03
-#define PWM2_PRESCALLER 0x04
 #define DIO20_MODE 0x03
 #define DIO20_PRESCALLER 0x04
 #else
-#define PWM2_MODE (0x05)
-#define PWM2_PRESCALLER (0x03)
+#define PWM0_MODE (0x05)
+#define PWM0_PRESCALLER (0x03)
 #define DIO20_MODE (0x05)
 #define DIO20_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM3_OCR) && defined(PWM3_TIMER) && defined(PWM3))
-#define DIO21_OCR (PWM3_OCR)
-#define DIO21_TIMER (PWM3_TIMER)
-#define PWM3_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_OCR))
-#define PWM3_TMRAREG (__tmrareg__(PWM3_TIMER))
-#define PWM3_TMRBREG (__tmrbreg__(PWM3_TIMER))
-#define DIO21_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_OCR))
-#define DIO21_TMRAREG (__tmrareg__(PWM3_TIMER))
-#define DIO21_TMRBREG (__tmrbreg__(PWM3_TIMER))
-#if(PWM3_OCR == A)
-#define PWM3_ENABLE_MASK 0x80
+#if(defined(PWM1_OCR) && defined(PWM1_TIMER) && defined(PWM1))
+#define DIO21_OCR (PWM1_OCR)
+#define DIO21_TIMER (PWM1_TIMER)
+#define PWM1_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_OCR))
+#define PWM1_TMRAREG (__tmrareg__(PWM1_TIMER))
+#define PWM1_TMRBREG (__tmrbreg__(PWM1_TIMER))
+#define DIO21_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_OCR))
+#define DIO21_TMRAREG (__tmrareg__(PWM1_TIMER))
+#define DIO21_TMRBREG (__tmrbreg__(PWM1_TIMER))
+#if(PWM1_OCR == A)
+#define PWM1_ENABLE_MASK 0x80
 #define DIO21_ENABLE_MASK 0x80
-#elif(PWM3_OCR == B)
-#define PWM3_ENABLE_MASK 0x20
+#elif(PWM1_OCR == B)
+#define PWM1_ENABLE_MASK 0x20
 #define DIO21_ENABLE_MASK 0x20
-#elif(PWM3_OCR == C)
-#define PWM3_ENABLE_MASK 0x08
+#elif(PWM1_OCR == C)
+#define PWM1_ENABLE_MASK 0x08
 #define DIO21_ENABLE_MASK 0x08
 #endif
-#if(PWM3_TIMER==0 || PWM3_TIMER==2)
-#define PWM3_MODE 0x03
-#define PWM3_PRESCALLER 0x04
+#if(PWM1_TIMER==0 || PWM1_TIMER==2)
+#define PWM1_MODE 0x03
+#define PWM1_PRESCALLER 0x04
 #define DIO21_MODE 0x03
 #define DIO21_PRESCALLER 0x04
 #else
-#define PWM3_MODE (0x05)
-#define PWM3_PRESCALLER (0x03)
+#define PWM1_MODE (0x05)
+#define PWM1_PRESCALLER (0x03)
 #define DIO21_MODE (0x05)
 #define DIO21_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM4_OCR) && defined(PWM4_TIMER) && defined(PWM4))
-#define DIO22_OCR (PWM4_OCR)
-#define DIO22_TIMER (PWM4_TIMER)
-#define PWM4_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_OCR))
-#define PWM4_TMRAREG (__tmrareg__(PWM4_TIMER))
-#define PWM4_TMRBREG (__tmrbreg__(PWM4_TIMER))
-#define DIO22_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_OCR))
-#define DIO22_TMRAREG (__tmrareg__(PWM4_TIMER))
-#define DIO22_TMRBREG (__tmrbreg__(PWM4_TIMER))
-#if(PWM4_OCR == A)
-#define PWM4_ENABLE_MASK 0x80
+#if(defined(PWM2_OCR) && defined(PWM2_TIMER) && defined(PWM2))
+#define DIO22_OCR (PWM2_OCR)
+#define DIO22_TIMER (PWM2_TIMER)
+#define PWM2_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_OCR))
+#define PWM2_TMRAREG (__tmrareg__(PWM2_TIMER))
+#define PWM2_TMRBREG (__tmrbreg__(PWM2_TIMER))
+#define DIO22_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_OCR))
+#define DIO22_TMRAREG (__tmrareg__(PWM2_TIMER))
+#define DIO22_TMRBREG (__tmrbreg__(PWM2_TIMER))
+#if(PWM2_OCR == A)
+#define PWM2_ENABLE_MASK 0x80
 #define DIO22_ENABLE_MASK 0x80
-#elif(PWM4_OCR == B)
-#define PWM4_ENABLE_MASK 0x20
+#elif(PWM2_OCR == B)
+#define PWM2_ENABLE_MASK 0x20
 #define DIO22_ENABLE_MASK 0x20
-#elif(PWM4_OCR == C)
-#define PWM4_ENABLE_MASK 0x08
+#elif(PWM2_OCR == C)
+#define PWM2_ENABLE_MASK 0x08
 #define DIO22_ENABLE_MASK 0x08
 #endif
-#if(PWM4_TIMER==0 || PWM4_TIMER==2)
-#define PWM4_MODE 0x03
-#define PWM4_PRESCALLER 0x04
+#if(PWM2_TIMER==0 || PWM2_TIMER==2)
+#define PWM2_MODE 0x03
+#define PWM2_PRESCALLER 0x04
 #define DIO22_MODE 0x03
 #define DIO22_PRESCALLER 0x04
 #else
-#define PWM4_MODE (0x05)
-#define PWM4_PRESCALLER (0x03)
+#define PWM2_MODE (0x05)
+#define PWM2_PRESCALLER (0x03)
 #define DIO22_MODE (0x05)
 #define DIO22_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM5_OCR) && defined(PWM5_TIMER) && defined(PWM5))
-#define DIO23_OCR (PWM5_OCR)
-#define DIO23_TIMER (PWM5_TIMER)
-#define PWM5_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_OCR))
-#define PWM5_TMRAREG (__tmrareg__(PWM5_TIMER))
-#define PWM5_TMRBREG (__tmrbreg__(PWM5_TIMER))
-#define DIO23_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_OCR))
-#define DIO23_TMRAREG (__tmrareg__(PWM5_TIMER))
-#define DIO23_TMRBREG (__tmrbreg__(PWM5_TIMER))
-#if(PWM5_OCR == A)
-#define PWM5_ENABLE_MASK 0x80
+#if(defined(PWM3_OCR) && defined(PWM3_TIMER) && defined(PWM3))
+#define DIO23_OCR (PWM3_OCR)
+#define DIO23_TIMER (PWM3_TIMER)
+#define PWM3_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_OCR))
+#define PWM3_TMRAREG (__tmrareg__(PWM3_TIMER))
+#define PWM3_TMRBREG (__tmrbreg__(PWM3_TIMER))
+#define DIO23_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_OCR))
+#define DIO23_TMRAREG (__tmrareg__(PWM3_TIMER))
+#define DIO23_TMRBREG (__tmrbreg__(PWM3_TIMER))
+#if(PWM3_OCR == A)
+#define PWM3_ENABLE_MASK 0x80
 #define DIO23_ENABLE_MASK 0x80
-#elif(PWM5_OCR == B)
-#define PWM5_ENABLE_MASK 0x20
+#elif(PWM3_OCR == B)
+#define PWM3_ENABLE_MASK 0x20
 #define DIO23_ENABLE_MASK 0x20
-#elif(PWM5_OCR == C)
-#define PWM5_ENABLE_MASK 0x08
+#elif(PWM3_OCR == C)
+#define PWM3_ENABLE_MASK 0x08
 #define DIO23_ENABLE_MASK 0x08
 #endif
-#if(PWM5_TIMER==0 || PWM5_TIMER==2)
-#define PWM5_MODE 0x03
-#define PWM5_PRESCALLER 0x04
+#if(PWM3_TIMER==0 || PWM3_TIMER==2)
+#define PWM3_MODE 0x03
+#define PWM3_PRESCALLER 0x04
 #define DIO23_MODE 0x03
 #define DIO23_PRESCALLER 0x04
 #else
-#define PWM5_MODE (0x05)
-#define PWM5_PRESCALLER (0x03)
+#define PWM3_MODE (0x05)
+#define PWM3_PRESCALLER (0x03)
 #define DIO23_MODE (0x05)
 #define DIO23_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM6_OCR) && defined(PWM6_TIMER) && defined(PWM6))
-#define DIO24_OCR (PWM6_OCR)
-#define DIO24_TIMER (PWM6_TIMER)
-#define PWM6_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_OCR))
-#define PWM6_TMRAREG (__tmrareg__(PWM6_TIMER))
-#define PWM6_TMRBREG (__tmrbreg__(PWM6_TIMER))
-#define DIO24_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_OCR))
-#define DIO24_TMRAREG (__tmrareg__(PWM6_TIMER))
-#define DIO24_TMRBREG (__tmrbreg__(PWM6_TIMER))
-#if(PWM6_OCR == A)
-#define PWM6_ENABLE_MASK 0x80
+#if(defined(PWM4_OCR) && defined(PWM4_TIMER) && defined(PWM4))
+#define DIO24_OCR (PWM4_OCR)
+#define DIO24_TIMER (PWM4_TIMER)
+#define PWM4_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_OCR))
+#define PWM4_TMRAREG (__tmrareg__(PWM4_TIMER))
+#define PWM4_TMRBREG (__tmrbreg__(PWM4_TIMER))
+#define DIO24_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_OCR))
+#define DIO24_TMRAREG (__tmrareg__(PWM4_TIMER))
+#define DIO24_TMRBREG (__tmrbreg__(PWM4_TIMER))
+#if(PWM4_OCR == A)
+#define PWM4_ENABLE_MASK 0x80
 #define DIO24_ENABLE_MASK 0x80
-#elif(PWM6_OCR == B)
-#define PWM6_ENABLE_MASK 0x20
+#elif(PWM4_OCR == B)
+#define PWM4_ENABLE_MASK 0x20
 #define DIO24_ENABLE_MASK 0x20
-#elif(PWM6_OCR == C)
-#define PWM6_ENABLE_MASK 0x08
+#elif(PWM4_OCR == C)
+#define PWM4_ENABLE_MASK 0x08
 #define DIO24_ENABLE_MASK 0x08
 #endif
-#if(PWM6_TIMER==0 || PWM6_TIMER==2)
-#define PWM6_MODE 0x03
-#define PWM6_PRESCALLER 0x04
+#if(PWM4_TIMER==0 || PWM4_TIMER==2)
+#define PWM4_MODE 0x03
+#define PWM4_PRESCALLER 0x04
 #define DIO24_MODE 0x03
 #define DIO24_PRESCALLER 0x04
 #else
-#define PWM6_MODE (0x05)
-#define PWM6_PRESCALLER (0x03)
+#define PWM4_MODE (0x05)
+#define PWM4_PRESCALLER (0x03)
 #define DIO24_MODE (0x05)
 #define DIO24_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM7_OCR) && defined(PWM7_TIMER) && defined(PWM7))
-#define DIO25_OCR (PWM7_OCR)
-#define DIO25_TIMER (PWM7_TIMER)
-#define PWM7_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_OCR))
-#define PWM7_TMRAREG (__tmrareg__(PWM7_TIMER))
-#define PWM7_TMRBREG (__tmrbreg__(PWM7_TIMER))
-#define DIO25_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_OCR))
-#define DIO25_TMRAREG (__tmrareg__(PWM7_TIMER))
-#define DIO25_TMRBREG (__tmrbreg__(PWM7_TIMER))
-#if(PWM7_OCR == A)
-#define PWM7_ENABLE_MASK 0x80
+#if(defined(PWM5_OCR) && defined(PWM5_TIMER) && defined(PWM5))
+#define DIO25_OCR (PWM5_OCR)
+#define DIO25_TIMER (PWM5_TIMER)
+#define PWM5_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_OCR))
+#define PWM5_TMRAREG (__tmrareg__(PWM5_TIMER))
+#define PWM5_TMRBREG (__tmrbreg__(PWM5_TIMER))
+#define DIO25_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_OCR))
+#define DIO25_TMRAREG (__tmrareg__(PWM5_TIMER))
+#define DIO25_TMRBREG (__tmrbreg__(PWM5_TIMER))
+#if(PWM5_OCR == A)
+#define PWM5_ENABLE_MASK 0x80
 #define DIO25_ENABLE_MASK 0x80
-#elif(PWM7_OCR == B)
-#define PWM7_ENABLE_MASK 0x20
+#elif(PWM5_OCR == B)
+#define PWM5_ENABLE_MASK 0x20
 #define DIO25_ENABLE_MASK 0x20
-#elif(PWM7_OCR == C)
-#define PWM7_ENABLE_MASK 0x08
+#elif(PWM5_OCR == C)
+#define PWM5_ENABLE_MASK 0x08
 #define DIO25_ENABLE_MASK 0x08
 #endif
-#if(PWM7_TIMER==0 || PWM7_TIMER==2)
-#define PWM7_MODE 0x03
-#define PWM7_PRESCALLER 0x04
+#if(PWM5_TIMER==0 || PWM5_TIMER==2)
+#define PWM5_MODE 0x03
+#define PWM5_PRESCALLER 0x04
 #define DIO25_MODE 0x03
 #define DIO25_PRESCALLER 0x04
 #else
-#define PWM7_MODE (0x05)
-#define PWM7_PRESCALLER (0x03)
+#define PWM5_MODE (0x05)
+#define PWM5_PRESCALLER (0x03)
 #define DIO25_MODE (0x05)
 #define DIO25_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM8_OCR) && defined(PWM8_TIMER) && defined(PWM8))
-#define DIO26_OCR (PWM8_OCR)
-#define DIO26_TIMER (PWM8_TIMER)
-#define PWM8_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_OCR))
-#define PWM8_TMRAREG (__tmrareg__(PWM8_TIMER))
-#define PWM8_TMRBREG (__tmrbreg__(PWM8_TIMER))
-#define DIO26_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_OCR))
-#define DIO26_TMRAREG (__tmrareg__(PWM8_TIMER))
-#define DIO26_TMRBREG (__tmrbreg__(PWM8_TIMER))
-#if(PWM8_OCR == A)
-#define PWM8_ENABLE_MASK 0x80
+#if(defined(PWM6_OCR) && defined(PWM6_TIMER) && defined(PWM6))
+#define DIO26_OCR (PWM6_OCR)
+#define DIO26_TIMER (PWM6_TIMER)
+#define PWM6_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_OCR))
+#define PWM6_TMRAREG (__tmrareg__(PWM6_TIMER))
+#define PWM6_TMRBREG (__tmrbreg__(PWM6_TIMER))
+#define DIO26_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_OCR))
+#define DIO26_TMRAREG (__tmrareg__(PWM6_TIMER))
+#define DIO26_TMRBREG (__tmrbreg__(PWM6_TIMER))
+#if(PWM6_OCR == A)
+#define PWM6_ENABLE_MASK 0x80
 #define DIO26_ENABLE_MASK 0x80
-#elif(PWM8_OCR == B)
-#define PWM8_ENABLE_MASK 0x20
+#elif(PWM6_OCR == B)
+#define PWM6_ENABLE_MASK 0x20
 #define DIO26_ENABLE_MASK 0x20
-#elif(PWM8_OCR == C)
-#define PWM8_ENABLE_MASK 0x08
+#elif(PWM6_OCR == C)
+#define PWM6_ENABLE_MASK 0x08
 #define DIO26_ENABLE_MASK 0x08
 #endif
-#if(PWM8_TIMER==0 || PWM8_TIMER==2)
-#define PWM8_MODE 0x03
-#define PWM8_PRESCALLER 0x04
+#if(PWM6_TIMER==0 || PWM6_TIMER==2)
+#define PWM6_MODE 0x03
+#define PWM6_PRESCALLER 0x04
 #define DIO26_MODE 0x03
 #define DIO26_PRESCALLER 0x04
 #else
-#define PWM8_MODE (0x05)
-#define PWM8_PRESCALLER (0x03)
+#define PWM6_MODE (0x05)
+#define PWM6_PRESCALLER (0x03)
 #define DIO26_MODE (0x05)
 #define DIO26_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM9_OCR) && defined(PWM9_TIMER) && defined(PWM9))
-#define DIO27_OCR (PWM9_OCR)
-#define DIO27_TIMER (PWM9_TIMER)
-#define PWM9_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_OCR))
-#define PWM9_TMRAREG (__tmrareg__(PWM9_TIMER))
-#define PWM9_TMRBREG (__tmrbreg__(PWM9_TIMER))
-#define DIO27_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_OCR))
-#define DIO27_TMRAREG (__tmrareg__(PWM9_TIMER))
-#define DIO27_TMRBREG (__tmrbreg__(PWM9_TIMER))
-#if(PWM9_OCR == A)
-#define PWM9_ENABLE_MASK 0x80
+#if(defined(PWM7_OCR) && defined(PWM7_TIMER) && defined(PWM7))
+#define DIO27_OCR (PWM7_OCR)
+#define DIO27_TIMER (PWM7_TIMER)
+#define PWM7_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_OCR))
+#define PWM7_TMRAREG (__tmrareg__(PWM7_TIMER))
+#define PWM7_TMRBREG (__tmrbreg__(PWM7_TIMER))
+#define DIO27_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_OCR))
+#define DIO27_TMRAREG (__tmrareg__(PWM7_TIMER))
+#define DIO27_TMRBREG (__tmrbreg__(PWM7_TIMER))
+#if(PWM7_OCR == A)
+#define PWM7_ENABLE_MASK 0x80
 #define DIO27_ENABLE_MASK 0x80
-#elif(PWM9_OCR == B)
-#define PWM9_ENABLE_MASK 0x20
+#elif(PWM7_OCR == B)
+#define PWM7_ENABLE_MASK 0x20
 #define DIO27_ENABLE_MASK 0x20
-#elif(PWM9_OCR == C)
-#define PWM9_ENABLE_MASK 0x08
+#elif(PWM7_OCR == C)
+#define PWM7_ENABLE_MASK 0x08
 #define DIO27_ENABLE_MASK 0x08
 #endif
-#if(PWM9_TIMER==0 || PWM9_TIMER==2)
-#define PWM9_MODE 0x03
-#define PWM9_PRESCALLER 0x04
+#if(PWM7_TIMER==0 || PWM7_TIMER==2)
+#define PWM7_MODE 0x03
+#define PWM7_PRESCALLER 0x04
 #define DIO27_MODE 0x03
 #define DIO27_PRESCALLER 0x04
 #else
-#define PWM9_MODE (0x05)
-#define PWM9_PRESCALLER (0x03)
+#define PWM7_MODE (0x05)
+#define PWM7_PRESCALLER (0x03)
 #define DIO27_MODE (0x05)
 #define DIO27_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM10_OCR) && defined(PWM10_TIMER) && defined(PWM10))
-#define DIO28_OCR (PWM10_OCR)
-#define DIO28_TIMER (PWM10_TIMER)
-#define PWM10_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_OCR))
-#define PWM10_TMRAREG (__tmrareg__(PWM10_TIMER))
-#define PWM10_TMRBREG (__tmrbreg__(PWM10_TIMER))
-#define DIO28_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_OCR))
-#define DIO28_TMRAREG (__tmrareg__(PWM10_TIMER))
-#define DIO28_TMRBREG (__tmrbreg__(PWM10_TIMER))
-#if(PWM10_OCR == A)
-#define PWM10_ENABLE_MASK 0x80
+#if(defined(PWM8_OCR) && defined(PWM8_TIMER) && defined(PWM8))
+#define DIO28_OCR (PWM8_OCR)
+#define DIO28_TIMER (PWM8_TIMER)
+#define PWM8_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_OCR))
+#define PWM8_TMRAREG (__tmrareg__(PWM8_TIMER))
+#define PWM8_TMRBREG (__tmrbreg__(PWM8_TIMER))
+#define DIO28_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_OCR))
+#define DIO28_TMRAREG (__tmrareg__(PWM8_TIMER))
+#define DIO28_TMRBREG (__tmrbreg__(PWM8_TIMER))
+#if(PWM8_OCR == A)
+#define PWM8_ENABLE_MASK 0x80
 #define DIO28_ENABLE_MASK 0x80
-#elif(PWM10_OCR == B)
-#define PWM10_ENABLE_MASK 0x20
+#elif(PWM8_OCR == B)
+#define PWM8_ENABLE_MASK 0x20
 #define DIO28_ENABLE_MASK 0x20
-#elif(PWM10_OCR == C)
-#define PWM10_ENABLE_MASK 0x08
+#elif(PWM8_OCR == C)
+#define PWM8_ENABLE_MASK 0x08
 #define DIO28_ENABLE_MASK 0x08
 #endif
-#if(PWM10_TIMER==0 || PWM10_TIMER==2)
-#define PWM10_MODE 0x03
-#define PWM10_PRESCALLER 0x04
+#if(PWM8_TIMER==0 || PWM8_TIMER==2)
+#define PWM8_MODE 0x03
+#define PWM8_PRESCALLER 0x04
 #define DIO28_MODE 0x03
 #define DIO28_PRESCALLER 0x04
 #else
-#define PWM10_MODE (0x05)
-#define PWM10_PRESCALLER (0x03)
+#define PWM8_MODE (0x05)
+#define PWM8_PRESCALLER (0x03)
 #define DIO28_MODE (0x05)
 #define DIO28_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM11_OCR) && defined(PWM11_TIMER) && defined(PWM11))
-#define DIO29_OCR (PWM11_OCR)
-#define DIO29_TIMER (PWM11_TIMER)
-#define PWM11_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_OCR))
-#define PWM11_TMRAREG (__tmrareg__(PWM11_TIMER))
-#define PWM11_TMRBREG (__tmrbreg__(PWM11_TIMER))
-#define DIO29_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_OCR))
-#define DIO29_TMRAREG (__tmrareg__(PWM11_TIMER))
-#define DIO29_TMRBREG (__tmrbreg__(PWM11_TIMER))
-#if(PWM11_OCR == A)
-#define PWM11_ENABLE_MASK 0x80
+#if(defined(PWM9_OCR) && defined(PWM9_TIMER) && defined(PWM9))
+#define DIO29_OCR (PWM9_OCR)
+#define DIO29_TIMER (PWM9_TIMER)
+#define PWM9_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_OCR))
+#define PWM9_TMRAREG (__tmrareg__(PWM9_TIMER))
+#define PWM9_TMRBREG (__tmrbreg__(PWM9_TIMER))
+#define DIO29_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_OCR))
+#define DIO29_TMRAREG (__tmrareg__(PWM9_TIMER))
+#define DIO29_TMRBREG (__tmrbreg__(PWM9_TIMER))
+#if(PWM9_OCR == A)
+#define PWM9_ENABLE_MASK 0x80
 #define DIO29_ENABLE_MASK 0x80
-#elif(PWM11_OCR == B)
-#define PWM11_ENABLE_MASK 0x20
+#elif(PWM9_OCR == B)
+#define PWM9_ENABLE_MASK 0x20
 #define DIO29_ENABLE_MASK 0x20
-#elif(PWM11_OCR == C)
-#define PWM11_ENABLE_MASK 0x08
+#elif(PWM9_OCR == C)
+#define PWM9_ENABLE_MASK 0x08
 #define DIO29_ENABLE_MASK 0x08
 #endif
-#if(PWM11_TIMER==0 || PWM11_TIMER==2)
-#define PWM11_MODE 0x03
-#define PWM11_PRESCALLER 0x04
+#if(PWM9_TIMER==0 || PWM9_TIMER==2)
+#define PWM9_MODE 0x03
+#define PWM9_PRESCALLER 0x04
 #define DIO29_MODE 0x03
 #define DIO29_PRESCALLER 0x04
 #else
-#define PWM11_MODE (0x05)
-#define PWM11_PRESCALLER (0x03)
+#define PWM9_MODE (0x05)
+#define PWM9_PRESCALLER (0x03)
 #define DIO29_MODE (0x05)
 #define DIO29_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM12_OCR) && defined(PWM12_TIMER) && defined(PWM12))
-#define DIO30_OCR (PWM12_OCR)
-#define DIO30_TIMER (PWM12_TIMER)
-#define PWM12_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_OCR))
-#define PWM12_TMRAREG (__tmrareg__(PWM12_TIMER))
-#define PWM12_TMRBREG (__tmrbreg__(PWM12_TIMER))
-#define DIO30_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_OCR))
-#define DIO30_TMRAREG (__tmrareg__(PWM12_TIMER))
-#define DIO30_TMRBREG (__tmrbreg__(PWM12_TIMER))
-#if(PWM12_OCR == A)
-#define PWM12_ENABLE_MASK 0x80
+#if(defined(PWM10_OCR) && defined(PWM10_TIMER) && defined(PWM10))
+#define DIO30_OCR (PWM10_OCR)
+#define DIO30_TIMER (PWM10_TIMER)
+#define PWM10_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_OCR))
+#define PWM10_TMRAREG (__tmrareg__(PWM10_TIMER))
+#define PWM10_TMRBREG (__tmrbreg__(PWM10_TIMER))
+#define DIO30_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_OCR))
+#define DIO30_TMRAREG (__tmrareg__(PWM10_TIMER))
+#define DIO30_TMRBREG (__tmrbreg__(PWM10_TIMER))
+#if(PWM10_OCR == A)
+#define PWM10_ENABLE_MASK 0x80
 #define DIO30_ENABLE_MASK 0x80
-#elif(PWM12_OCR == B)
-#define PWM12_ENABLE_MASK 0x20
+#elif(PWM10_OCR == B)
+#define PWM10_ENABLE_MASK 0x20
 #define DIO30_ENABLE_MASK 0x20
-#elif(PWM12_OCR == C)
-#define PWM12_ENABLE_MASK 0x08
+#elif(PWM10_OCR == C)
+#define PWM10_ENABLE_MASK 0x08
 #define DIO30_ENABLE_MASK 0x08
 #endif
-#if(PWM12_TIMER==0 || PWM12_TIMER==2)
-#define PWM12_MODE 0x03
-#define PWM12_PRESCALLER 0x04
+#if(PWM10_TIMER==0 || PWM10_TIMER==2)
+#define PWM10_MODE 0x03
+#define PWM10_PRESCALLER 0x04
 #define DIO30_MODE 0x03
 #define DIO30_PRESCALLER 0x04
 #else
-#define PWM12_MODE (0x05)
-#define PWM12_PRESCALLER (0x03)
+#define PWM10_MODE (0x05)
+#define PWM10_PRESCALLER (0x03)
 #define DIO30_MODE (0x05)
 #define DIO30_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM13_OCR) && defined(PWM13_TIMER) && defined(PWM13))
-#define DIO31_OCR (PWM13_OCR)
-#define DIO31_TIMER (PWM13_TIMER)
-#define PWM13_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_OCR))
-#define PWM13_TMRAREG (__tmrareg__(PWM13_TIMER))
-#define PWM13_TMRBREG (__tmrbreg__(PWM13_TIMER))
-#define DIO31_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_OCR))
-#define DIO31_TMRAREG (__tmrareg__(PWM13_TIMER))
-#define DIO31_TMRBREG (__tmrbreg__(PWM13_TIMER))
-#if(PWM13_OCR == A)
-#define PWM13_ENABLE_MASK 0x80
+#if(defined(PWM11_OCR) && defined(PWM11_TIMER) && defined(PWM11))
+#define DIO31_OCR (PWM11_OCR)
+#define DIO31_TIMER (PWM11_TIMER)
+#define PWM11_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_OCR))
+#define PWM11_TMRAREG (__tmrareg__(PWM11_TIMER))
+#define PWM11_TMRBREG (__tmrbreg__(PWM11_TIMER))
+#define DIO31_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_OCR))
+#define DIO31_TMRAREG (__tmrareg__(PWM11_TIMER))
+#define DIO31_TMRBREG (__tmrbreg__(PWM11_TIMER))
+#if(PWM11_OCR == A)
+#define PWM11_ENABLE_MASK 0x80
 #define DIO31_ENABLE_MASK 0x80
-#elif(PWM13_OCR == B)
-#define PWM13_ENABLE_MASK 0x20
+#elif(PWM11_OCR == B)
+#define PWM11_ENABLE_MASK 0x20
 #define DIO31_ENABLE_MASK 0x20
-#elif(PWM13_OCR == C)
-#define PWM13_ENABLE_MASK 0x08
+#elif(PWM11_OCR == C)
+#define PWM11_ENABLE_MASK 0x08
 #define DIO31_ENABLE_MASK 0x08
 #endif
-#if(PWM13_TIMER==0 || PWM13_TIMER==2)
-#define PWM13_MODE 0x03
-#define PWM13_PRESCALLER 0x04
+#if(PWM11_TIMER==0 || PWM11_TIMER==2)
+#define PWM11_MODE 0x03
+#define PWM11_PRESCALLER 0x04
 #define DIO31_MODE 0x03
 #define DIO31_PRESCALLER 0x04
 #else
-#define PWM13_MODE (0x05)
-#define PWM13_PRESCALLER (0x03)
+#define PWM11_MODE (0x05)
+#define PWM11_PRESCALLER (0x03)
 #define DIO31_MODE (0x05)
 #define DIO31_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM14_OCR) && defined(PWM14_TIMER) && defined(PWM14))
-#define DIO32_OCR (PWM14_OCR)
-#define DIO32_TIMER (PWM14_TIMER)
-#define PWM14_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_OCR))
-#define PWM14_TMRAREG (__tmrareg__(PWM14_TIMER))
-#define PWM14_TMRBREG (__tmrbreg__(PWM14_TIMER))
-#define DIO32_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_OCR))
-#define DIO32_TMRAREG (__tmrareg__(PWM14_TIMER))
-#define DIO32_TMRBREG (__tmrbreg__(PWM14_TIMER))
-#if(PWM14_OCR == A)
-#define PWM14_ENABLE_MASK 0x80
+#if(defined(PWM12_OCR) && defined(PWM12_TIMER) && defined(PWM12))
+#define DIO32_OCR (PWM12_OCR)
+#define DIO32_TIMER (PWM12_TIMER)
+#define PWM12_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_OCR))
+#define PWM12_TMRAREG (__tmrareg__(PWM12_TIMER))
+#define PWM12_TMRBREG (__tmrbreg__(PWM12_TIMER))
+#define DIO32_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_OCR))
+#define DIO32_TMRAREG (__tmrareg__(PWM12_TIMER))
+#define DIO32_TMRBREG (__tmrbreg__(PWM12_TIMER))
+#if(PWM12_OCR == A)
+#define PWM12_ENABLE_MASK 0x80
 #define DIO32_ENABLE_MASK 0x80
-#elif(PWM14_OCR == B)
-#define PWM14_ENABLE_MASK 0x20
+#elif(PWM12_OCR == B)
+#define PWM12_ENABLE_MASK 0x20
 #define DIO32_ENABLE_MASK 0x20
-#elif(PWM14_OCR == C)
-#define PWM14_ENABLE_MASK 0x08
+#elif(PWM12_OCR == C)
+#define PWM12_ENABLE_MASK 0x08
 #define DIO32_ENABLE_MASK 0x08
 #endif
-#if(PWM14_TIMER==0 || PWM14_TIMER==2)
-#define PWM14_MODE 0x03
-#define PWM14_PRESCALLER 0x04
+#if(PWM12_TIMER==0 || PWM12_TIMER==2)
+#define PWM12_MODE 0x03
+#define PWM12_PRESCALLER 0x04
 #define DIO32_MODE 0x03
 #define DIO32_PRESCALLER 0x04
 #else
-#define PWM14_MODE (0x05)
-#define PWM14_PRESCALLER (0x03)
+#define PWM12_MODE (0x05)
+#define PWM12_PRESCALLER (0x03)
 #define DIO32_MODE (0x05)
 #define DIO32_PRESCALLER (0x03)
 #endif
 #endif
-#if(defined(PWM15_OCR) && defined(PWM15_TIMER) && defined(PWM15))
-#define DIO33_OCR (PWM15_OCR)
-#define DIO33_TIMER (PWM15_TIMER)
-#define PWM15_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_OCR))
-#define PWM15_TMRAREG (__tmrareg__(PWM15_TIMER))
-#define PWM15_TMRBREG (__tmrbreg__(PWM15_TIMER))
-#define DIO33_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_OCR))
-#define DIO33_TMRAREG (__tmrareg__(PWM15_TIMER))
-#define DIO33_TMRBREG (__tmrbreg__(PWM15_TIMER))
-#if(PWM15_OCR == A)
-#define PWM15_ENABLE_MASK 0x80
+#if(defined(PWM13_OCR) && defined(PWM13_TIMER) && defined(PWM13))
+#define DIO33_OCR (PWM13_OCR)
+#define DIO33_TIMER (PWM13_TIMER)
+#define PWM13_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_OCR))
+#define PWM13_TMRAREG (__tmrareg__(PWM13_TIMER))
+#define PWM13_TMRBREG (__tmrbreg__(PWM13_TIMER))
+#define DIO33_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_OCR))
+#define DIO33_TMRAREG (__tmrareg__(PWM13_TIMER))
+#define DIO33_TMRBREG (__tmrbreg__(PWM13_TIMER))
+#if(PWM13_OCR == A)
+#define PWM13_ENABLE_MASK 0x80
 #define DIO33_ENABLE_MASK 0x80
-#elif(PWM15_OCR == B)
-#define PWM15_ENABLE_MASK 0x20
+#elif(PWM13_OCR == B)
+#define PWM13_ENABLE_MASK 0x20
 #define DIO33_ENABLE_MASK 0x20
-#elif(PWM15_OCR == C)
-#define PWM15_ENABLE_MASK 0x08
+#elif(PWM13_OCR == C)
+#define PWM13_ENABLE_MASK 0x08
 #define DIO33_ENABLE_MASK 0x08
 #endif
-#if(PWM15_TIMER==0 || PWM15_TIMER==2)
-#define PWM15_MODE 0x03
-#define PWM15_PRESCALLER 0x04
+#if(PWM13_TIMER==0 || PWM13_TIMER==2)
+#define PWM13_MODE 0x03
+#define PWM13_PRESCALLER 0x04
 #define DIO33_MODE 0x03
 #define DIO33_PRESCALLER 0x04
 #else
-#define PWM15_MODE (0x05)
-#define PWM15_PRESCALLER (0x03)
+#define PWM13_MODE (0x05)
+#define PWM13_PRESCALLER (0x03)
 #define DIO33_MODE (0x05)
 #define DIO33_PRESCALLER (0x03)
 #endif
 #endif
-//Analog
+#if(defined(PWM14_OCR) && defined(PWM14_TIMER) && defined(PWM14))
+#define DIO34_OCR (PWM14_OCR)
+#define DIO34_TIMER (PWM14_TIMER)
+#define PWM14_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_OCR))
+#define PWM14_TMRAREG (__tmrareg__(PWM14_TIMER))
+#define PWM14_TMRBREG (__tmrbreg__(PWM14_TIMER))
+#define DIO34_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_OCR))
+#define DIO34_TMRAREG (__tmrareg__(PWM14_TIMER))
+#define DIO34_TMRBREG (__tmrbreg__(PWM14_TIMER))
+#if(PWM14_OCR == A)
+#define PWM14_ENABLE_MASK 0x80
+#define DIO34_ENABLE_MASK 0x80
+#elif(PWM14_OCR == B)
+#define PWM14_ENABLE_MASK 0x20
+#define DIO34_ENABLE_MASK 0x20
+#elif(PWM14_OCR == C)
+#define PWM14_ENABLE_MASK 0x08
+#define DIO34_ENABLE_MASK 0x08
+#endif
+#if(PWM14_TIMER==0 || PWM14_TIMER==2)
+#define PWM14_MODE 0x03
+#define PWM14_PRESCALLER 0x04
+#define DIO34_MODE 0x03
+#define DIO34_PRESCALLER 0x04
+#else
+#define PWM14_MODE (0x05)
+#define PWM14_PRESCALLER (0x03)
+#define DIO34_MODE (0x05)
+#define DIO34_PRESCALLER (0x03)
+#endif
+#endif
+#if(defined(PWM15_OCR) && defined(PWM15_TIMER) && defined(PWM15))
+#define DIO35_OCR (PWM15_OCR)
+#define DIO35_TIMER (PWM15_TIMER)
+#define PWM15_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_OCR))
+#define PWM15_TMRAREG (__tmrareg__(PWM15_TIMER))
+#define PWM15_TMRBREG (__tmrbreg__(PWM15_TIMER))
+#define DIO35_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_OCR))
+#define DIO35_TMRAREG (__tmrareg__(PWM15_TIMER))
+#define DIO35_TMRBREG (__tmrbreg__(PWM15_TIMER))
+#if(PWM15_OCR == A)
+#define PWM15_ENABLE_MASK 0x80
+#define DIO35_ENABLE_MASK 0x80
+#elif(PWM15_OCR == B)
+#define PWM15_ENABLE_MASK 0x20
+#define DIO35_ENABLE_MASK 0x20
+#elif(PWM15_OCR == C)
+#define PWM15_ENABLE_MASK 0x08
+#define DIO35_ENABLE_MASK 0x08
+#endif
+#if(PWM15_TIMER==0 || PWM15_TIMER==2)
+#define PWM15_MODE 0x03
+#define PWM15_PRESCALLER 0x04
+#define DIO35_MODE 0x03
+#define DIO35_PRESCALLER 0x04
+#else
+#define PWM15_MODE (0x05)
+#define PWM15_PRESCALLER (0x03)
+#define DIO35_MODE (0x05)
+#define DIO35_PRESCALLER (0x03)
+#endif
+#endif
+
+//Analog pins
 #ifdef ANALOG0
 #define ANALOG0_ADMUXREG (1<<0)
-#define DIO65_ADMUXREG (1<<0)
+#define DIO67_ADMUXREG (1<<0)
 #endif
 #ifdef ANALOG1
 #define ANALOG1_ADMUXREG (1<<1)
-#define DIO66_ADMUXREG (1<<1)
+#define DIO68_ADMUXREG (1<<1)
 #endif
 #ifdef ANALOG2
 #define ANALOG2_ADMUXREG (1<<2)
-#define DIO67_ADMUXREG (1<<2)
+#define DIO69_ADMUXREG (1<<2)
 #endif
 #ifdef ANALOG3
 #define ANALOG3_ADMUXREG (1<<3)
-#define DIO68_ADMUXREG (1<<3)
+#define DIO70_ADMUXREG (1<<3)
 #endif
 #ifdef ANALOG4
 #define ANALOG4_ADMUXREG (1<<4)
-#define DIO69_ADMUXREG (1<<4)
+#define DIO71_ADMUXREG (1<<4)
 #endif
 #ifdef ANALOG5
 #define ANALOG5_ADMUXREG (1<<5)
-#define DIO70_ADMUXREG (1<<5)
+#define DIO72_ADMUXREG (1<<5)
 #endif
 #ifdef ANALOG6
 #define ANALOG6_ADMUXREG (1<<6)
-#define DIO71_ADMUXREG (1<<6)
+#define DIO73_ADMUXREG (1<<6)
 #endif
 #ifdef ANALOG7
 #define ANALOG7_ADMUXREG (1<<7)
-#define DIO72_ADMUXREG (1<<7)
+#define DIO74_ADMUXREG (1<<7)
 #endif
 #ifdef ANALOG8
 #define ANALOG8_ADMUXREG (1<<8)
-#define DIO73_ADMUXREG (1<<8)
+#define DIO75_ADMUXREG (1<<8)
 #endif
 #ifdef ANALOG9
 #define ANALOG9_ADMUXREG (1<<9)
-#define DIO74_ADMUXREG (1<<9)
+#define DIO76_ADMUXREG (1<<9)
 #endif
 #ifdef ANALOG10
 #define ANALOG10_ADMUXREG (1<<10)
-#define DIO75_ADMUXREG (1<<10)
+#define DIO77_ADMUXREG (1<<10)
 #endif
 #ifdef ANALOG11
 #define ANALOG11_ADMUXREG (1<<11)
-#define DIO76_ADMUXREG (1<<11)
+#define DIO78_ADMUXREG (1<<11)
 #endif
 #ifdef ANALOG12
 #define ANALOG12_ADMUXREG (1<<12)
-#define DIO77_ADMUXREG (1<<12)
+#define DIO79_ADMUXREG (1<<12)
 #endif
 #ifdef ANALOG13
 #define ANALOG13_ADMUXREG (1<<13)
-#define DIO78_ADMUXREG (1<<13)
+#define DIO80_ADMUXREG (1<<13)
 #endif
 #ifdef ANALOG14
 #define ANALOG14_ADMUXREG (1<<14)
-#define DIO79_ADMUXREG (1<<14)
+#define DIO81_ADMUXREG (1<<14)
 #endif
 #ifdef ANALOG15
 #define ANALOG15_ADMUXREG (1<<15)
-#define DIO80_ADMUXREG (1<<15)
+#define DIO82_ADMUXREG (1<<15)
 #endif
 
 //COM registers
@@ -2865,4 +2905,6 @@
 #define mcu_toggle_output(diopin) (SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT)))
 #define mcu_set_pwm(diopin,pwmvalue) {__indirect__(diopin, OCRREG)=pwmvalue;if(pwmvalue!=0){SETFLAG(__indirect__(diopin, TMRAREG),__indirect__(diopin, ENABLE_MASK));}else{CLEARFLAG(__indirect__(diopin, TMRAREG),__indirect__(diopin, ENABLE_MASK));}}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
+#define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
+#define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #endif

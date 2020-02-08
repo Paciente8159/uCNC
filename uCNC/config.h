@@ -1,17 +1,17 @@
 /*
 	Name: config.h
-	Description: Compile time configurations for µCNC.
+	Description: Compile time configurations for �CNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 19/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -24,18 +24,10 @@
 #include "machines.h"
 
 /*
-	Choose the mcu/board
-	Check mcus.h for list of available MCU/Boards
-	Usually set via makefile
+	Choose the mcu
+	Check mcus.h for list of available/supported mcu
 */
-#define MCU MCU_GRBL
-
-#include "mcudefs.h"
-/*
-	Machine kynematics
-	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
-*/
-#define MACHINE_KINEMATICS MACHINE_CARTESIAN_XYZ
+#define MCU MCU_AVR
 
 /*
 	Serial COM
@@ -45,7 +37,28 @@
 #define BAUD 115200
 
 /*
-	Defines the number of supported coordinate systems supported by µCNC
+	Choose the board
+	Check boardss.h for list of available/supported boards
+*/
+#define BOARD BOARD_GRBL
+
+/*
+	Machine kynematics
+	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
+	For custom configurations head to the specified kynematics file
+*/
+#define MACHINE_KINEMATICS MACHINE_CARTESIAN
+
+/*
+	After the main blocks of the controller have been selected the configuration can be build
+*/
+
+#include "boarddefs.h" //sets the mcu pin configuration based on the board
+#include "mcudefs.h" //configures the mcu based on the board pin configuration
+#include "machinedefs.h" //configures the kinematics for the cnc machine
+#include "config_helper.h"
+/*
+	Defines the number of supported coordinate systems supported by �CNC
 	Can be any value between 1 and 9
 */
 
@@ -81,7 +94,7 @@
 //#define LASER_MODE
 #endif
 
-#define USE_TOOL_CHANGER
+//#define USE_TOOL_CHANGER
 
 /*
 	Define a stepper enable pin

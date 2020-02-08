@@ -1,16 +1,16 @@
 /*
 	Name: motion_control.c
-	Description: Contains the building blocks for performing motions/actions in µCNC
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Description: Contains the building blocks for performing motions/actions in �CNC
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 19/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -18,11 +18,9 @@
 #include <math.h>
 #include <string.h>
 #include "config.h"
-#include "mcudefs.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "settings.h"
-#include "machinedefs.h"
 #include "utils.h"
 #include "io_control.h"
 #include "parser.h"
@@ -265,6 +263,15 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_block_data_t block_data;
     uint8_t limits_flags;
 
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    #ifdef DUAL_DRIVE_AXIS0
+    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64|128); //if dual limit pins
+    #endif
+    #ifdef DUAL_DRIVE_AXIS1
+    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64|128); //if dual limit pins
+    #endif
+    #endif
+
     planner_get_position(target);
 
     cnc_unlock();
@@ -274,16 +281,11 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     {
         return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
     }
+    
+    io_set_homing_limits_filter(axis_limit);
 
     float max_home_dist;
     max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-    #ifdef AXIS_DUAL_DRIVE
-    //if dual drive axis is active checks for extra contact switch
-    uint8_t attempts = 2;
-    do
-    {
-        attempts--;
-    #endif
     
     //checks homing dir
     if (g_settings.homing_dir_invert_mask & axis_mask)
@@ -332,29 +334,9 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }
 
-    #ifdef AXIS_DUAL_DRIVE
-        uint8_t dual_limits_flag = limits_flags & LIMITS_DUAL_MASK;
-
-        if((dual_limits_flag == LIMITS_DUAL_MASK) || !dual_limits_flag ) //both switches are active or is a single switch axis that was activated
-        {
-            break;
-        }
-        kinematics_lock_step(limits_flags);
-        cnc_unlock();
-        max_home_dist = -5; //no more then 5mm offset or alarm
-    } while (attempts);
-    #endif
-
     //back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
 
-    #ifdef AXIS_DUAL_DRIVE
-    //if dual drive axis is active checks for extra contact switch
-    attempts = 2;
-    do
-    {
-        attempts--;
-    #endif
     //sync's the planner
     planner_resync_position();
     planner_get_position(target);
@@ -370,6 +352,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
     //temporary inverts the limit mask to trigger ISR on switch release
     g_settings.limits_invert_mask ^= axis_limit;
+    //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
     cnc_unlock();
     planner_add_line((float *)&target, block_data);
     //flags homing clear by the unlock
@@ -398,19 +381,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
     limits_flags = io_get_limits();
 
-    #ifdef AXIS_DUAL_DRIVE
-        uint8_t dual_limits_flag = limits_flags & LIMITS_DUAL_MASK;
-
-        if(!dual_limits_flag ) //at least one switch is still active
-        {
-            break;
-        }
-        kinematics_lock_step(limits_flags);
-        max_home_dist = 1.0f; //second driver offset must not exceed 1mm
-    } while (attempts);
-    #endif
-
-    if (CHECKFLAG(io_get_limits(), axis_limit))
+    if (CHECKFLAG(limits_flags, axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }

@@ -1,17 +1,17 @@
 /*
 	Name: mcumap_virtual.h
-	Description: Contains all MCU and PIN definitions for a PC to run ÂµCNC.
+	Description: Contains all MCU and PIN definitions for a PC to run µCNC.
 	
-	Copyright: Copyright (c) JoÃ£o Martins 
-	Author: JoÃ£o Martins
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
 	Date: 01/11/2019
 
-	ÂµCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	ÂµCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -54,6 +54,7 @@ extern virtports_t virtualports;
 #define STEP0 0
 #define STEP1 1
 #define STEP2 2
+#define STEP6 11
 #define DIR0 3
 #define DIR1 4
 #define DIR2 5
@@ -78,11 +79,11 @@ extern virtports_t virtualports;
 #define LIMIT_X 4
 #define LIMIT_Y 5
 #define LIMIT_Z 6
+#define LIMIT_Y2 6
 #define PROBE 7
 
 #define INREG virtualports->inputs
 #define mcu_get_input(X) (INREG & (1<<(X)))
-
 
 #define COM_INREG virtualports->uart
 #define COM_OUTREG virtualports->uart

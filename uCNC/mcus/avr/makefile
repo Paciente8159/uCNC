@@ -2,7 +2,7 @@
 
 MCU 	 = atmega328p
 CC       = avr-gcc.exe
-SOURCE   = main.c settings.c kinematics_cartesian_xyz.c kinematics_cartesian_xy2.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c io_control.c interpolator.c
+SOURCE   = main.c settings.c kinematics_cartesian.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c io_control.c interpolator.c
 LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=$(MCU)
 CFLAGS   = -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
 BIN      = $(BUILDDIR)/uCNC.elf

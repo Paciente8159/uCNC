@@ -1,19 +1,19 @@
 /*
 	Name: io_control.c
-	Description: The input control unit for µCNC.
+	Description: The input control unit for �CNC.
         This is responsible to check all limit switches (both hardware and software), control switches,
         and probe.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -21,12 +21,13 @@
 #include "config.h"
 #include "grbl_interface.h"
 #include "settings.h"
-#include "mcudefs.h"
 #include "mcu.h"
 #include "io_control.h"
 #include "parser.h"
 #include "interpolator.h"
 #include "cnc.h"
+
+static volatile uint8_t io_limits_homing_filter;
 
 void io_limits_isr()
 {
@@ -38,16 +39,45 @@ void io_limits_isr()
         {
             if(cnc_get_exec_state(EXEC_RUN))
             {
-                if(g_settings.homing_enabled)
-                {
-                    cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
-                }
-                
                 if(!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
                 {
+                	if(g_settings.homing_enabled)
+	                {
+	                    cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
+	                }
+	                
                     cnc_alarm(EXEC_ALARM_HARD_LIMIT);
                 }
+                #ifdef ENABLE_DUAL_DRIVE_AXIS
+                else
+                {
+                	//if homing and dual drive axis are enabled
+                	#ifdef DUAL_DRIVE_AXIS0
+                	if((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
+                	{
+                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
+
+                		if((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                		{
+                			return; //exits and doesn't trip the alarm
+						}
+					}
+                	#endif
+                	#ifdef DUAL_DRIVE_AXIS1
+                	if(limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                	{
+                		if((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                		{
+                			itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
+                		}
+					}
+                	#endif
+				}
+				#endif
             }
+            #ifdef ENABLE_DUAL_DRIVE_AXIS
+            itp_lock_stepper(0); //unlocks axis
+            #endif
             cnc_set_exec_state(EXEC_LIMITS);
             itp_stop();
         }
@@ -195,6 +225,11 @@ bool io_get_probe()
     return (!g_settings.probe_invert_mask) ? probe : !probe;
 }
 
+void io_set_homing_limits_filter(uint8_t filter_mask)
+{
+    io_limits_homing_filter = filter_mask;
+}
+
 //outputs
 void io_set_steps(uint8_t mask)
 {
@@ -258,7 +293,26 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP5);
     }
 #endif
-
+#ifdef STEP6
+    if(mask & STEP6_MASK)
+    {
+        mcu_set_output(STEP6);
+    }
+    else
+    {
+        mcu_clear_output(STEP6);
+    }
+#endif
+#ifdef STEP7
+    if(mask & STEP7_MASK)
+    {
+        mcu_set_output(STEP7);
+    }
+    else
+    {
+        mcu_clear_output(STEP7);
+    }
+#endif
 }
 
 void io_toggle_steps(uint8_t mask)
@@ -297,6 +351,18 @@ void io_toggle_steps(uint8_t mask)
     if(mask & STEP5_MASK)
     {
         mcu_toggle_output(STEP5);
+    }
+#endif
+#ifdef STEP6
+    if(mask & STEP6_MASK)
+    {
+        mcu_toggle_output(STEP6);
+    }
+#endif
+#ifdef STEP7
+    if(mask & STEP7_MASK)
+    {
+        mcu_toggle_output(STEP7);
     }
 #endif
 

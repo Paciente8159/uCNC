@@ -1,18 +1,18 @@
 /*
 	Name: mcu.h
 	Description: Contains all the function declarations necessary to interact with the MCU.
-        This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
+        This provides a opac intenterface between the �CNC and the MCU unit used to power the �CNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 01/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -25,7 +25,6 @@
 #include <stdint.h>
 #include "config.h"
 #include "utils.h"
-#include "mcudefs.h"
 
 /*IO functions*/
 #ifndef mcu_get_input
@@ -49,8 +48,12 @@ void mcu_toggle_output(uint8_t pin);
 #endif
 
 void mcu_init();
+#ifndef mcu_enable_probe_isr
 void mcu_enable_probe_isr();
+#endif
+#ifndef mcu_disable_probe_isr
 void mcu_disable_probe_isr();
+#endif
 
 //Analog input
 #ifndef mcu_get_analog

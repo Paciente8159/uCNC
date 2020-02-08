@@ -7,22 +7,21 @@
             - Validation; Validates the command by checking all the parameters (part 3.5 - 3.7 of the document)
             - Execution; Executes the command by the orther set in part 3.8 of the document.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Jo�o Martins
+	Author: Jo�o Martins
 	Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	�CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	�CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
 #include "config.h"
-#include "mcudefs.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "utils.h"
@@ -1552,7 +1551,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
             block_data.motion_mode = PLANNER_MOTION_MODE_INVERSEFEED;
         }
     }
-    //3. set feed rate (µCNC works in units per second and not per minute)
+    //3. set feed rate (�CNC works in units per second and not per minute)
     if (CHECKFLAG(parser_word0, GCODE_WORD_F))
     {
         if (new_state->groups.feedrate_mode != 0)
