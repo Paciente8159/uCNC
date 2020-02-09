@@ -52,7 +52,7 @@ TODO List of G-Codes in µCNC future releases:
 µCNC currently supports up to (depending on the MCU/board capabilities):
   - 6 independent axis 
   - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
-  - 9* limit switches (one per axis - *axis X, Y and Z support dual endstops) (interrupt driven)
+  - 9* limit switches (6 limit switch (one per axis) plus axis X, Y and Z support dual endstops) (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
   - 1 cycle start/resume input (interrupt driven)
@@ -63,10 +63,10 @@ TODO List of G-Codes in µCNC future releases:
   - 16 generic digital inputs
   - 16 generic digital outputs
 
-µCNC with a configuration similar to Grbl is be able to keep up to 30Khz step rate for a 3 axis machine on an Arduino Uno at 16Mhz.
+µCNC with a configuration similar to Grbl is be able to keep up to 30Khz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the lenght of the segments too, since many short length segments don't allow full speed to be achieved)
 
 ### Current µCNC supported hardware
-µCNC initial development was done both around Arduino UNO board just like GRBL.
+µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in Arduino Mega (for Ramps), or similar boards (like Rambo).
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:

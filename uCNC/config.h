@@ -1,17 +1,17 @@
 /*
 	Name: config.h
-	Description: Compile time configurations for �CNC.
+	Description: Compile time configurations for µCNC.
 
-	Copyright: Copyright (c) Jo�o Martins
-	Author: Jo�o Martins
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
 	Date: 19/09/2019
 
-	�CNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	�CNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -45,7 +45,7 @@
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
-	For custom configurations head to the specified kynematics file
+	For custom/advanced configurations go to the specified kynematics header file
 */
 #define MACHINE_KINEMATICS MACHINE_CARTESIAN
 
@@ -56,9 +56,9 @@
 #include "boarddefs.h" //sets the mcu pin configuration based on the board
 #include "mcudefs.h" //configures the mcu based on the board pin configuration
 #include "machinedefs.h" //configures the kinematics for the cnc machine
-#include "config_helper.h"
+#include "config_helper.h" //runs the config helper to create and define all variables
 /*
-	Defines the number of supported coordinate systems supported by �CNC
+	Defines the number of supported coordinate systems supported by µCNC
 	Can be any value between 1 and 9
 */
 
@@ -94,6 +94,7 @@
 //#define LASER_MODE
 #endif
 
+//not implemented
 //#define USE_TOOL_CHANGER
 
 /*

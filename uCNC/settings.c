@@ -1,18 +1,18 @@
 /*
 	Name: settings.c
-	Description: �CNC runtime settings. These functions store settings and other parameters
+	Description: µCNC runtime settings. These functions store settings and other parameters
 		in non-volatile memory.
 
-	Copyright: Copyright (c) Jo�o Martins
-	Author: Jo�o Martins
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
 	Date: 26/09/2019
 
-	�CNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	�CNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */

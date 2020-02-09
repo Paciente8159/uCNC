@@ -46,9 +46,9 @@
 #define LIMIT_Z_BIT 4 //assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B //assigns LIMIT_Z port
 #define LIMIT_Z_ISR 0 //assigns LIMIT_Z ISR
-#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
+/*#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
 #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-#define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
+#define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin*/
 
 #define LIMIT_Y_BIT 2 //assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B //assigns LIMIT_Y port
@@ -59,9 +59,9 @@
 #define LIMIT_X_ISR 0 //assigns LIMIT_X ISR
 
 //Active limits switch weak pull-ups
-//#define LIMIT_X_PULLUP
-//#define LIMIT_Y_PULLUP
-//#define LIMIT_Z_PULLUP
+#define LIMIT_X_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_Z_PULLUP
 
 //Setup probe pin
 #define PROBE_BIT 5
@@ -80,8 +80,8 @@
 #define CS_RES_ISR 1
 
 //Active controls switch weak pull-ups
-//#define ESTOP_PULLUP
-//#define FHOLD_PULLUP
+#define ESTOP_PULLUP
+#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX_BIT 0

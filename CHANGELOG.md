@@ -5,7 +5,29 @@
 
 # Changelog
 
-## 1.0.0-beta - 2020-02-04
+## [1.0.0-beta.2] - 2020-02-09
+
+### Added
+  - added AVR support by adding external interrupt pins to the limits and control pins range
+  - new dual drive axis support with self squaring homing motion and locking of one stepper in the interpolator stage with the addition of two mirror step pins (with minimal performance loss)
+  - added initial laser mode support
+  - new filter to limits ISR to support dual drive auto squaring with IO overlapping (shared limit switches)
+
+### Changed
+  - complete HAL redesigned to allow independent function pins
+  - new generic AVR HAL implementation
+  - modified system exec_flags to prevent unecessary locks
+  - modified cartesian kinematics (configurable) to fit several types of machines (without the need to code a full kinematics)
+  - separeted the mcu and board now have individual configuration files
+  - updated README.md to reflect changes of beta.2
+
+### Fixed
+  - fixed bug introduced in the beta patch to the homing motion (no limit_flag)
+  - minor modification of mc_arc to prevent error on non existant axis
+  - adapted protocol to send a minimum of 3 axis coordinates (yeld error on interface with OpenCNCPilot and probably other software too)
+  - fixed probe enable and disable functions (now use direct IO on AVR)
+
+## [1.0.0-beta] - 2020-02-04
 
 ### Added
   - added initial TLO (tool length offset)
@@ -87,3 +109,6 @@
 ## 0.01 - Pre-release version - 2020-01-23
 
 ### Initial release
+
+[1.0.0-beta.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta.2
+[1.0.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta
