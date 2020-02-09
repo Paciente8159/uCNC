@@ -1,6 +1,6 @@
 /*
 	Name: mcu_virtual.c
-	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate ÂµCNC.
+	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate µCNC.
 		For now it's only working/tested on Windows.
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
@@ -14,16 +14,16 @@
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
 				
-	Copyright: Copyright (c) JoÃ£o Martins 
-	Author: JoÃ£o Martins
+	Copyright: Copyright (c) João Martins 
+	Author: João Martins
 	Date: 01/11/2019
 
-	ÂµCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	ÂµCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -31,8 +31,6 @@
 #include "../../config.h"
 #if(MCU == MCU_VIRTUAL)
 #include "../../mcudefs.h"
-
-#include "../../mcumap.h"
 #include "../../mcu.h"
 #include <stdio.h>
 #include <conio.h>
@@ -83,54 +81,36 @@ volatile PERFORMANCE_METER mcu_performacecounters;
 */
 uint32_t _previnputs = 0;
 
-volatile bool global_irq_enabled = false;
+volatile bool global_isr_enabled = false;
+volatile unsigned long isr_flags = 0;
+
+#define ISR_PULSE 1
+#define ISR_PULSERESET 2
+#define ISR_COMRX 4
+#define ISR_COMTX 8
+#define ISR_INPUT 16 
 
 unsigned long g_cpu_freq = 0;
-volatile bool pulse_enabled = false;
-volatile bool integrator_enabled = false;
 volatile unsigned long pulse_interval = 0;
 volatile unsigned long resetpulse_interval = 0;
-//volatile unsigned long integrator_interval = F_CPU/F_INTEGRATOR;
 volatile unsigned long pulse_counter = 0;
 volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
+volatile bool pulse_enabled = false;
 volatile bool send_char = false;
+volatile unsigned char uart_char;
 
 pthread_t thread_id;
 pthread_t thread_idout;
 pthread_t thread_timer_id;
 
-void* timersimul()
-{
-	unsigned long last_counter = 0;
-	for(;;)
-	{
-		if(global_irq_enabled && pulse_enabled)
-		{
-			if(last_counter != *pulse_counter_ptr) //counter changed value
-			{
-				if((*pulse_counter_ptr)==pulse_interval && pulse_enabled)
-				{
-					itp_step_isr();
-				}
-				
-				if((*pulse_counter_ptr)>=resetpulse_interval && pulse_enabled )
-				{
-					(*pulse_counter_ptr) = 0;
-					itp_step_reset_isr();
-				}
-				
-				last_counter = *pulse_counter_ptr;
-			}
-		}
-	}
-}
 
-
+//emulates uart RX
 void* comsimul()
 {
 	for(;;)
 	{
+		//while(isr_flags & ISR_COMRX);
 		#ifdef USECONSOLE
 		unsigned char c = getch();
 		#else
@@ -138,35 +118,37 @@ void* comsimul()
 		#endif
 		if(c != 0)
 		{
+			uart_char = c;
 			serial_rx_isr(c);
 		}
 	}
 }
 
+//emulates uart TX
 void* comoutsimul()
 {
-	char combuffer[128];
+	unsigned char combuffer[128];
 	static uint8_t i = 0;
 	for(;;)
 	{
 		if(!serial_tx_is_empty())
 		{
 			serial_tx_isr();
-			char c = virtualports->uart;
+			unsigned char c = virtualports->uart;
 			if(c != 0)
 			{
-				#ifdef USECONSOLE
-				mcu_putc(c);
-				#else
 				combuffer[i] = c;
 				i++;
 				if(c == '\n')
 				{
 					combuffer[i] = 0;
+					#ifdef USECONSOLE
+					puts(combuffer);
+					#else
 					virtualserial_puts(combuffer);
+					#endif
 					i = 0;
 				}
-				#endif
 			}
 			else
 			{
@@ -176,45 +158,72 @@ void* comoutsimul()
 	}
 }
 
+//simulates internal clock (1Kz limited by windows timer)
 void ticksimul()
 {
 	static uint16_t tick_counter = 0;
+	static uint16_t timer_counter = 0;
 	static VIRTUAL_MAP initials = {};
 	
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 	
-	if(infile!=NULL)
+	if(infile!=NULL) //checks input file
 	{
-		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
+		fscanf(infile, "%lX", &(virtualports->inputs));
 		fclose(infile);
 		
-		uint8_t diff = virtualports->limits ^ initials.limits;
-		initials.limits = virtualports->limits;
-		if(diff)
-		{
-			io_limits_isr(initials.limits);
-		}
-
-		diff = virtualports->controls ^ initials.controls;
-		initials.controls = virtualports->controls;
-		if(diff)
-		{
-			io_controls_isr(initials.controls);
-		}
+		uint32_t diff = virtualports->inputs ^ initials.inputs;
+		initials.inputs = virtualports->inputs;
 		
-		diff = virtualports->probe ^ initials.probe;
-		initials.probe = virtualports->probe;
 		if(diff)
 		{
-			io_controls_isr(initials.probe);
+			isr_flags |= ISR_INPUT; //flags input isr
 		}
 	}
 	
-	if(global_irq_enabled)
+	tick_counter++;
+	
+	if(tick_counter==pulse_interval)
 	{
+		isr_flags |= ISR_PULSE; //flags step isr
+	}
+	
+	if(tick_counter>=resetpulse_interval)
+	{
+		isr_flags |= ISR_PULSERESET; //flags step isr
+		tick_counter = 0;
+	}
+
+	if(global_isr_enabled)
+	{
+		bool isr = global_isr_enabled;
+		global_isr_enabled = false;
+		
+		if(isr_flags & ISR_INPUT)
+		{
+			//serial_rx_isr(uart_char);
+			io_limits_isr();
+			io_controls_isr();
+			isr_flags &= ~ISR_INPUT;
+		}
+		
 		if(pulse_enabled)
-			(*pulse_counter_ptr)++;
+		{
+			if(isr_flags & ISR_PULSE)
+			{
+				itp_step_isr();
+				isr_flags &= ~ISR_PULSE;
+			}
+	
+			if(isr_flags & ISR_PULSERESET)
+			{
+				itp_step_reset_isr();
+				isr_flags &= ~ISR_PULSERESET;
+			}
+		}
+		
+		global_isr_enabled = isr;
 	}
 }
 
@@ -225,7 +234,7 @@ void mcu_init()
 	FILE *infile = fopen("inputs.txt", "r");
 	if(infile!=NULL)
 	{
-		fscanf(infile, "%X %X %X %lX", &(virtualports->controls), &(virtualports->limits), &(virtualports->probe), &(virtualports->outputs));
+		fscanf(infile, "%lX", &(virtualports->inputs));
 		fclose(infile);
 	}
 	else
@@ -233,7 +242,7 @@ void mcu_init()
 		infile = fopen("inputs.txt", "w+");
 		if(infile!=NULL)
 		{
-			fprintf(infile, "%X %X %X %lX", virtualports->controls, virtualports->limits, virtualports->probe, virtualports->outputs);
+			fprintf(infile, "%lX", virtualports->inputs);
 			fflush(infile);
 			fclose(infile);
 		}
@@ -250,7 +259,6 @@ void mcu_init()
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	mcu_tx_ready = false;
-	pthread_create(&thread_timer_id, NULL, &timersimul, NULL); 
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
 	mcu_enable_interrupts();
@@ -352,12 +360,12 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
 void mcu_enable_interrupts()
 {
-	global_irq_enabled = true;
+	global_isr_enabled = true;
 }
 //disables all ISR functions
 void mcu_disable_interrupts()
 {
-	global_irq_enabled = false;
+	global_isr_enabled = false;
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds

@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "config.h"
-#include "machinedefs.h"
 
 typedef struct
 {

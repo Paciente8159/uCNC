@@ -22,8 +22,6 @@
 */
 
 #include "config.h"
-#include "mcudefs.h"
-#include "mcumap.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "utils.h"
@@ -615,18 +613,20 @@ void parser_update_coolant(uint8_t state)
     switch (parser_state.groups.coolant)
     {
         case 0: //off
-            io_clear_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
+            mcu_clear_output(COOLANT_FLOOD);
+			mcu_clear_output(COOLANT_MIST);
             break;
         case 1: //flood
-            io_clear_outputs(COOLANT_MIST_MASK);
-            io_set_outputs(COOLANT_FLOOD_MASK);
+            mcu_clear_output(COOLANT_MIST);
+            mcu_set_output(COOLANT_FLOOD);
             break;
         case 2: //mist
-            io_clear_outputs(COOLANT_FLOOD_MASK);
-            io_set_outputs(COOLANT_MIST_MASK);
+            mcu_clear_output(COOLANT_FLOOD);
+            mcu_set_output(COOLANT_MIST);
             break;
         case 3: //flood and mist
-            io_set_outputs(COOLANT_FLOOD_MASK | COOLANT_MIST_MASK);
+            mcu_set_output(COOLANT_FLOOD);
+            mcu_set_output(COOLANT_MIST);
             break;
     }
 }
@@ -1622,24 +1622,30 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     //11. set active plane (G17, G18, G19)
     switch (new_state->groups.plane)
     {
+        #if(defined(AXIS_X) && defined(AXIS_Y))
         case 0:
             a = AXIS_X;
             b = AXIS_Y;
             offset_a = 0;
             offset_b = 1;
             break;
+        #endif
+        #if(defined(AXIS_X) && defined(AXIS_Z))
         case 1:
             a = AXIS_X;
             b = AXIS_Z;
             offset_a = 0;
             offset_b = 2;
             break;
+        #endif
+        #if(defined(AXIS_Y) && defined(AXIS_Z))
         case 2:
             a = AXIS_Y;
             b = AXIS_Z;
             offset_a = 1;
             offset_b = 2;
             break;
+        #endif
     }
 
     //12. set length units (G20, G21).
@@ -1675,12 +1681,14 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
 
     //13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
     //14. cutter length compensation on or off (G43.1, G49)
+    #ifdef AXIS_TOOL
     if ((new_state->groups.tool_length_offset == 1) && CHECKFLAG(parser_group0, GCODE_GROUP_TOOLLENGTH))
     {
         parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
         CLEARFLAG(parser_word0, GCODE_WORD_Z);
-        words->xyzabc[AXIS_Z] = 0; //resets parameter so it it doen't do anything else
+        words->xyzabc[AXIS_TOOL] = 0; //resets parameter so it it doen't do anything else
     }
+    #endif
     //15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
     if (CHECKFLAG(parser_group1, GCODE_GROUP_COORDSYS))
     {
@@ -1802,8 +1810,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                 i--;
                 axis[i] = words->xyzabc[i] + parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
             }
-
-            axis[AXIS_Z] += parser_parameters.tool_length_offset;
+            #ifdef AXIS_TOOL
+            axis[AXIS_TOOL] += parser_parameters.tool_length_offset;
+            #endif
         }
         else
         {
@@ -1933,7 +1942,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                     }
                 }
 
-                return mc_arc(axis, words->ijk[offset_a], words->ijk[offset_b], radius, new_state->groups.plane, (new_state->groups.motion == 2), block_data);
+                return mc_arc(axis, words->ijk[offset_a], words->ijk[offset_b], radius, a, b, (new_state->groups.motion == 2), block_data);
             case 4: //G38.2
             case 5: //G38.3
             case 6: //G38.4

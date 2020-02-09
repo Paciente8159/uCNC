@@ -24,17 +24,10 @@
 #include "machines.h"
 
 /*
-	Choose the mcu type
-	MCU_VIRTUAL: simulates a mcu on a PC
-	MCU_UNO_GRBL: atmega328p mcu (Arduino Uno)
+	Choose the mcu
+	Check mcus.h for list of available/supported mcu
 */
-//#define MCU MCU_UNO_GRBL
-
-/*
-	Machine kynematics
-	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
-*/
-#define MACHINE_KINEMATICS MACHINE_CARTESIAN_XYZ
+#define MCU MCU_AVR
 
 /*
 	Serial COM
@@ -43,6 +36,27 @@
 */
 #define BAUD 115200
 
+/*
+	Choose the board
+	Check boardss.h for list of available/supported boards
+*/
+#define BOARD BOARD_GRBL
+
+/*
+	Machine kynematics
+	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
+	For custom/advanced configurations go to the specified kynematics header file
+*/
+#define MACHINE_KINEMATICS MACHINE_CARTESIAN
+
+/*
+	After the main blocks of the controller have been selected the configuration can be build
+*/
+
+#include "boarddefs.h" //sets the mcu pin configuration based on the board
+#include "mcudefs.h" //configures the mcu based on the board pin configuration
+#include "machinedefs.h" //configures the kinematics for the cnc machine
+#include "config_helper.h" //runs the config helper to create and define all variables
 /*
 	Defines the number of supported coordinate systems supported by µCNC
 	Can be any value between 1 and 9
@@ -68,9 +82,9 @@
 #define USE_SPINDLE
 #ifdef USE_SPINDLE
 //set PWM channel to use (valid values 0 - 3)
-#define SPINDLE_PWM_CHANNEL 0
+#define SPINDLE_PWM PWM0
 //sets the spindle dir pin mask
-#define SPINDLE_DIR_OUTPIN 0
+#define SPINDLE_DIR DOUT0
 /*
 	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
 	This is used by spindle to ensure spindle gets up to speed in motions
@@ -80,7 +94,8 @@
 //#define LASER_MODE
 #endif
 
-#define USE_TOOL_CHANGER
+//not implemented
+//#define USE_TOOL_CHANGER
 
 /*
 	Define a stepper enable pin
@@ -92,8 +107,8 @@
 */
 #define USE_COOLANT
 #ifdef USE_COOLANT
-#define COOLANT_FLOOD_OUTPIN 8
-#define COOLANT_MIST_OUTPIN 9
+#define COOLANT_FLOOD DOUT1
+#define COOLANT_MIST DOUT2
 #endif
 
 /*

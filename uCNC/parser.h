@@ -28,7 +28,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "config.h"
-#include "machinedefs.h"
 
 void parser_init();
 uint8_t parse_grbl_error_code(uint8_t code);

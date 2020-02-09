@@ -1,19 +1,19 @@
 /*
 	Name: kinematics.h
 	Description: Declares the functions needed to implement the machine kinematics and homing motion.
-		This defines an opac interface that allows to adapt ÂµCNC to different architectures/mechanics of
+		This defines an opac interface that allows to adapt µCNC to different architectures/mechanics of
 		different machines.
 
-	Copyright: Copyright (c) JoÃ£o Martins
-	Author: JoÃ£o Martins
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
 	Date: 26/09/2019
 
-	ÂµCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	ÂµCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -36,9 +36,16 @@ void kinematics_apply_inverse(float* axis, uint32_t* steps);
 void kinematics_apply_forward(uint32_t* steps, float* axis);
 
 /*
-	Executes the homing motion for the given kinematic
+	Executes the homing motion for the machine
+	The homing motion for each axis is defined in the motion control
+	In the kinematics home function the axis order of the homing motion and other custom motions can be defined
 */
 uint8_t kinematics_home();
+
+/*
+	In dual drive machines this translates which drive is locked when a particular limit switch is triggered during homing motion
+*/
+void kinematics_lock_step(uint8_t limits_mask);
 
 /*
 	Aplies a transformation to the position sent to planner.

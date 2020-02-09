@@ -25,7 +25,7 @@ For production stages [Grbl](https://github.com/gnea/grbl) or other G-Codes inte
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes in µCNC 1.0.0-beta:
+List of Supported G-Codes in µCNC 1.0.0-beta.2:
   - Non-Modal Commands: G4, G10, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
   - Feed Rate Modes: G93, G94
@@ -49,31 +49,29 @@ TODO List of G-Codes in µCNC future releases:
   - configurable homing positions (G28 and G30)
 
 ### µCNC capabilities
-µCNC currently supports up to:
+µCNC currently supports up to (depending on the MCU/board capabilities):
   - 6 independent axis 
-  - 6 stepper step/dir drivers
-  - 6 limit switches (one per axis) (interrupt driven)
+  - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
+  - 9* limit switches (6 limit switch (one per axis) plus axis X, Y and Z support dual endstops) (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
   - 1 cycle start/resume input (interrupt driven)
   - 1 emergency stop (interrupt driven)
   - 1 door open switch (interrupt driven)
-  - 4 pwm outputs
-  - 4 analog inputs
-  - 32 digital inputs
-  - 32 digital outputs
+  - 16 pwm outputs
+  - 16 analog inputs
+  - 16 generic digital inputs
+  - 16 generic digital outputs
 
-µCNC for configuration similar to Grbl it should (in theory) be able to keep up to 30Khz step rate.
+µCNC with a configuration similar to Grbl is be able to keep up to 30Khz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the lenght of the segments too, since many short length segments don't allow full speed to be achieved)
 
 ### Current µCNC supported hardware
-µCNC initial development was done both around Arduino UNO board just like GRBL.
-For that reason pin groups have the restriction of being in the same port. (Ex. all step pins must reside in the same port). For that reason porting to other existing products is kind of limited (for now).
-For example µCNC can run on Arduino Mega Rambo board but not on Ramps. This will be adressed on the next patch.
+µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in Arduino Mega (for Ramps), or similar boards (like Rambo).
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
   - Arduino UNO
-  - Arduino MEGA - (Rambo for now)
+  - Arduino MEGA
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 In the future µCNC will most probably be extended to:

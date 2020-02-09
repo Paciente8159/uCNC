@@ -21,7 +21,6 @@
 
 #include "config.h"
 #include "build.h"
-#include "mcudefs.h"
 
 //Defines Grbl realtime ascii codes
 #define CMD_CODE_RESET 0x18

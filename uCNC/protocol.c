@@ -83,11 +83,11 @@ static uint8_t protocol_get_tools()
 
 static void protocol_send_status_tail()
 {
-    float axis[AXIS_COUNT];
+    float axis[MAX(AXIS_COUNT,3)];
     if(parser_get_wco(axis))
     {
         serial_print_str(__romstr__("|WCO:"));
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         return;
     }
 
@@ -128,7 +128,7 @@ static void protocol_send_status_tail()
 
 void protocol_send_status()
 {
-    float axis[AXIS_COUNT];
+    float axis[MAX(AXIS_COUNT,3)];
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
@@ -141,7 +141,8 @@ void protocol_send_status()
     kinematics_apply_reverse_transform((float*)&axis);
     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
     uint16_t spindle = itp_get_rt_spindle();
-
+    uint8_t controls = io_get_controls();
+    uint8_t limits = io_get_limits();
     uint8_t state = cnc_get_exec_state(0xFF);
     uint8_t filter = 0x80;
     while(!(state & filter) && filter)
@@ -161,7 +162,7 @@ void protocol_send_status()
                 break;
             case EXEC_DOOR:
                 serial_print_str(__romstr__("Door:"));
-                if(io_get_controls(SAFETY_DOOR_MASK))
+                if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
                 {
 
                     if(cnc_get_exec_state(EXEC_RUN))
@@ -185,6 +186,7 @@ void protocol_send_status()
                     }
                 }
                 break;
+            case EXEC_LIMITS:
             case EXEC_NOHOME:
                 serial_print_str(__romstr__("Alarm"));
                 break;
@@ -218,9 +220,8 @@ void protocol_send_status()
         serial_print_str(__romstr__("Check"));
     }
     
-
     serial_print_str(__romstr__("|MPos:"));
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
 
 #ifdef USE_SPINDLE
     serial_print_str(__romstr__("|FS:"));
@@ -238,22 +239,21 @@ void protocol_send_status()
     serial_print_long(itp_get_rt_line_number());
 #endif
 
-
-    if(io_get_controls(ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK) | io_get_limits(LIMITS_MASK))
+    if(CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) | CHECKFLAG(limits, LIMITS_MASK))
     {
         serial_print_str(__romstr__("|Pn:"));
 
-        if(io_get_controls(ESTOP_MASK))
+        if(CHECKFLAG(controls, ESTOP_MASK))
         {
             serial_putc('R');
         }
 
-        if(io_get_controls(SAFETY_DOOR_MASK))
+        if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
         {
             serial_putc('D');
         }
 
-        if(io_get_controls(FHOLD_MASK))
+        if(CHECKFLAG(controls, FHOLD_MASK))
         {
             serial_putc('H');
         }
@@ -263,32 +263,32 @@ void protocol_send_status()
             serial_putc('P');
         }
 
-        if(io_get_limits(LIMIT_X_MASK))
+        if(CHECKFLAG(limits, LIMIT_X_MASK))
         {
             serial_putc('X');
         }
 
-        if(io_get_limits(LIMIT_Y_MASK))
+        if(CHECKFLAG(limits, LIMIT_Y_MASK))
         {
             serial_putc('Y');
         }
 
-        if(io_get_limits(LIMIT_Z_MASK))
+        if(CHECKFLAG(limits, LIMIT_Z_MASK))
         {
             serial_putc('Z');
         }
 
-        if(io_get_limits(LIMIT_A_MASK))
+        if(CHECKFLAG(limits, LIMIT_A_MASK))
         {
             serial_putc('A');
         }
 
-        if(io_get_limits(LIMIT_B_MASK))
+        if(CHECKFLAG(limits, LIMIT_B_MASK))
         {
             serial_putc('B');
         }
 
-        if(io_get_limits(LIMIT_C_MASK))
+        if(CHECKFLAG(limits, LIMIT_C_MASK))
         {
             serial_putc('C');
         }
@@ -308,7 +308,7 @@ void protocol_send_status()
 
 void protocol_send_gcode_coordsys()
 {
-	float axis[AXIS_COUNT];
+	float axis[MAX(AXIS_COUNT,3)];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
     for(uint8_t i = 0; i < coordlimit; i++)
     {
@@ -316,7 +316,7 @@ void protocol_send_gcode_coordsys()
         serial_print_str(__romstr__("[G"));
         serial_print_int(i + 54);
         serial_putc(':');
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         serial_putc(']');
         procotol_send_newline();
     }
@@ -326,38 +326,40 @@ void protocol_send_gcode_coordsys()
         serial_print_int(i - 5);
         serial_putc(':');
         parser_get_coordsys(i, (float*)&axis);
-        serial_print_fltarr(axis, AXIS_COUNT);
+        serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
         serial_putc(']');
         procotol_send_newline();
     }
 
     serial_print_str(__romstr__("[G28:"));
     parser_get_coordsys(28, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G30:"));
     parser_get_coordsys(30, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
 
     serial_print_str(__romstr__("[G92:"));
     parser_get_coordsys(92, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(']');
     procotol_send_newline();
     
+    #ifdef AXIS_TOOL
     serial_print_str(__romstr__("[TLO:"));
     parser_get_coordsys(254, (float*)&axis);
     serial_print_flt(axis[0]);
     serial_putc(']');
     procotol_send_newline();
+    #endif
 
     serial_print_str(__romstr__("[PRB:"));
     parser_get_coordsys(255, (float*)&axis);
-    serial_print_fltarr(axis, AXIS_COUNT);
+    serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
     serial_putc(':');
     serial_putc('0' + parser_get_probe_result());
     serial_putc(']');

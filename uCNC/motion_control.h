@@ -1,17 +1,17 @@
 /*
 	Name: motion_control.h
-	Description: Contains the building blocks for performing motions/actions in ÂµCNC.
+	Description: Contains the building blocks for performing motions/actions in µCNC.
 
-	Copyright: Copyright (c) JoÃ£o Martins
-	Author: JoÃ£o Martins
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
 	Date: 19/11/2019
 
-	ÂµCNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	ÂµCNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -27,7 +27,7 @@ void mc_init();
 bool mc_get_checkmode();
 bool mc_toogle_checkmode();
 uint8_t mc_line(float *target, planner_block_data_t block_data);
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, planner_block_data_t block_data);
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data);
 uint8_t mc_dwell(planner_block_data_t block_data);
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
 uint8_t mc_spindle_coolant(planner_block_data_t block_data);

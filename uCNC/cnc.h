@@ -22,7 +22,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "config.h"
-#include "machinedefs.h"
 
 //rt_cmd
 #define RT_CMD_CLEAR 0

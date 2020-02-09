@@ -18,12 +18,9 @@
 #include <math.h>
 #include <string.h>
 #include "config.h"
-#include "mcudefs.h"
-#include "mcumap.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "settings.h"
-#include "machinedefs.h"
 #include "utils.h"
 #include "io_control.h"
 #include "parser.h"
@@ -110,33 +107,14 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 }
 
 //applies an algorithm similar to grbl with slight changes
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t plane, bool isclockwise, planner_block_data_t block_data)
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data)
 {
-    uint8_t axis_0 = 0;
-    uint8_t axis_1 = 0;
     float mc_position[AXIS_COUNT];
 
     //copy planner last position
     planner_get_position(mc_position);
     //reverses any transformation aplied before
     kinematics_apply_reverse_transform(mc_position);
-
-    //start points
-    switch (plane)
-    {
-        case 0:
-            axis_0 = AXIS_X;
-            axis_1 = AXIS_Y;
-            break;
-        case 1:
-            axis_0 = AXIS_X;
-            axis_1 = AXIS_Z;
-            break;
-        case 2:
-            axis_0 = AXIS_Y;
-            axis_1 = AXIS_Z;
-            break;
-    }
 
     float ptcenter_a = mc_position[axis_0] + center_offset_a;
     float ptcenter_b = mc_position[axis_1] + center_offset_b;
@@ -283,25 +261,39 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     float target[AXIS_COUNT];
     uint8_t axis_mask = (1 << axis);
     planner_block_data_t block_data;
+    uint8_t limits_flags;
+
+    #ifdef ENABLE_DUAL_DRIVE_AXIS
+    #ifdef DUAL_DRIVE_AXIS0
+    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64|128); //if dual limit pins
+    #endif
+    #ifdef DUAL_DRIVE_AXIS1
+    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64|128); //if dual limit pins
+    #endif
+    #endif
 
     planner_get_position(target);
 
     cnc_unlock();
 
     //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || io_get_limits(LIMITS_MASK))
+    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
     {
         return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
     }
+    
+    io_set_homing_limits_filter(axis_limit);
 
-    float max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-
+    float max_home_dist;
+    max_home_dist = -g_settings.max_distance[axis] * 1.5f;
+    
     //checks homing dir
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
     }
-
+    planner_resync_position();
+    planner_get_position(target);
     target[axis] += max_home_dist;
     //initializes planner block data
     block_data.distance = ABS(max_home_dist);
@@ -311,8 +303,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     block_data.spindle = 0;
     block_data.dwell = 0;
     block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+    cnc_unlock();
     planner_add_line((float *)&target, block_data);
-
     //flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
     do
@@ -334,16 +326,20 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
-    //if limit was not triggered
-    if (!io_get_limits(axis_limit))
+    limits_flags = io_get_limits();
+
+    //the wrong switch was activated bails
+    if (!CHECKFLAG(limits_flags, axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }
 
-
-    //zero's the planner
-    planner_get_position(target);
+    //back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
+
+    //sync's the planner
+    planner_resync_position();
+    planner_get_position(target);
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
@@ -356,6 +352,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
     //temporary inverts the limit mask to trigger ISR on switch release
     g_settings.limits_invert_mask ^= axis_limit;
+    //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
     cnc_unlock();
     planner_add_line((float *)&target, block_data);
     //flags homing clear by the unlock
@@ -373,6 +370,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     g_settings.limits_invert_mask ^= axis_limit;
     //stops, flushes buffers and clears the hold if active
     cnc_stop();
+    //clearing the interpolator unlockes any locked stepper
     itp_clear();
     planner_clear();
 
@@ -381,7 +379,9 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
-    if (io_get_limits(axis_limit))
+    limits_flags = io_get_limits();
+
+    if (CHECKFLAG(limits_flags, axis_limit))
     {
         return EXEC_ALARM_HOMING_FAIL_APPROACH;
     }

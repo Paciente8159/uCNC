@@ -9,8 +9,8 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DMCU=MCU_VIRTUAL -D__SIMUL___@@_
-CppCompiler=-DMCU=MCU_VIRTUAL_@@_
+Compiler=-D__SIMUL___@@_
+CppCompiler=_@@_
 Linker=
 IsCpp=0
 Icon=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=0
 CompilerSettings=000000e0e0000000001000000
-UnitCount=38
+UnitCount=43
 
 [VersionInfo]
 Major=1
@@ -131,7 +131,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit9]
-FileName=..\..\kinematics_cartesian_xyz.c
+FileName=..\..\kinematics_cartesian.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -200,27 +200,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit16]
-FileName=..\..\mcumap.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit17]
-FileName=..\..\mcus.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit18]
 FileName=..\..\cnc.c
 CompileCpp=0
 Folder=
@@ -230,8 +210,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit20]
-FileName=..\..\motion_control.h
+[Unit18]
+FileName=..\..\cnc.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -240,7 +220,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit21]
+[Unit20]
 FileName=..\..\motion_control.c
 CompileCpp=0
 Folder=
@@ -250,7 +230,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit22]
+[Unit21]
 FileName=..\..\protocol.h
 CompileCpp=0
 Folder=
@@ -260,7 +240,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit23]
+[Unit22]
 FileName=..\..\protocol.c
 CompileCpp=0
 Folder=
@@ -270,7 +250,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit24]
+[Unit23]
 FileName=..\..\defaults.h
 CompileCpp=0
 Folder=
@@ -280,7 +260,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit25]
+[Unit24]
 FileName=..\..\parser.c
 CompileCpp=0
 Folder=
@@ -290,7 +270,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit26]
+[Unit25]
 FileName=..\..\parser.h
 CompileCpp=0
 Folder=
@@ -300,7 +280,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit27]
+[Unit26]
 FileName=..\..\serial.h
 CompileCpp=0
 Folder=
@@ -310,7 +290,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit28]
+[Unit27]
 FileName=..\..\serial.c
 CompileCpp=0
 Folder=
@@ -320,7 +300,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit29]
+[Unit28]
 FileName=..\..\io_control.c
 CompileCpp=0
 Folder=
@@ -330,7 +310,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit30]
+[Unit29]
 FileName=..\..\io_control.h
 CompileCpp=0
 Folder=
@@ -340,7 +320,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit31]
+[Unit30]
 FileName=..\..\interpolator.c
 CompileCpp=0
 Folder=
@@ -350,7 +330,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit32]
+[Unit31]
 FileName=mcu_virtual.c
 CompileCpp=0
 Folder=
@@ -360,7 +340,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit33]
+[Unit32]
 FileName=mcumap_virtual.h
 CompileCpp=0
 Folder=
@@ -370,7 +350,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit34]
+[Unit33]
 FileName=virtualtimer.c
 CompileCpp=0
 Folder=
@@ -380,7 +360,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit35]
+[Unit34]
 FileName=virtualtimer.h
 CompileCpp=0
 Folder=
@@ -390,7 +370,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit36]
+[Unit35]
 FileName=virtualserial.c
 CompileCpp=0
 Folder=
@@ -400,7 +380,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit37]
+[Unit36]
 FileName=virtualserial.h
 CompileCpp=0
 Folder=
@@ -410,7 +390,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit38]
+[Unit37]
 FileName=..\..\kinematics_corexy.c
 CompileCpp=0
 Folder=
@@ -420,8 +400,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit38]
+FileName=..\..\kinematics_cartesian.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit39]
-FileName=serial.c
+FileName=..\..\boarddefs.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -431,7 +421,57 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit19]
-FileName=..\..\cnc.h
+FileName=..\..\motion_control.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit16]
+FileName=..\..\mcus.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit42]
+FileName=..\..\build.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit43]
+FileName=..\..\kinematics_corexy.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit40]
+FileName=..\..\boards.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit41]
+FileName=..\..\config_helper.h
 CompileCpp=0
 Folder=
 Compile=1

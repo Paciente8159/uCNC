@@ -1,15 +1,10 @@
 # Project: µCNC
 
-BOARD	 = UNO_GRBL
-ifeq "$(BOARD)" "UNO_GRBL"
 MCU 	 = atmega328p
-else ifeq "$(BOARD)" "MEGA_RAMBO14"
-MCU 	 = atmega2560
-endif
 CC       = avr-gcc.exe
-SOURCE   = main.c settings.c kinematics_cartesian_xyz.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c io_control.c interpolator.c
+SOURCE   = main.c settings.c kinematics_cartesian.c kinematics_corexy.c planner.c cnc.c parser.c protocol.c motion_control.c serial.c io_control.c interpolator.c
 LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=$(MCU)
-CFLAGS   = -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L -DMCU=MCU_$(BOARD)
+CFLAGS   = -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu11 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
 BIN      = $(BUILDDIR)/uCNC.elf
 HEX      = $(BIN:.elf=.hex)
 SOURCEDIR= ../..
@@ -42,4 +37,4 @@ all-after: $(BIN)
 	${RM} $(HEX)
 	avr-objcopy -j .text -j .data -O ihex $(BIN) $(HEX)
 	avr-size -C --mcu=$(MCU) $(BIN)
-	avr-objdump -S -d $(BIN) > asm.txt
+	

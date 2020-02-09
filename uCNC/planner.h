@@ -23,7 +23,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "config.h"
-#include "machinedefs.h"
 
 #define PLANNER_BUFFER_SIZE 15
 

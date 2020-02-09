@@ -23,7 +23,7 @@
 #include "mcu.h"
 #include "settings.h"
 #include "kinematics.h"
-#include "machinedefs.h"
+#include "io_control.h"
 
 void kinematics_apply_inverse(float* axis, uint32_t* steps)
 {
@@ -61,6 +61,11 @@ void kinematics_home()
     }
 
     return STATUS_OK;
+}
+
+void kinematics_lock_step(uint8_t limits_mask)
+{
+    // do nothing
 }
 
 void kinematics_apply_transform(float* axis)

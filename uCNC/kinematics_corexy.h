@@ -1,10 +1,10 @@
 /*
-	Name: build.h
-	Description: Compile time configurations for µCNC.
+	Name: kinematics_corexy.h
+	Description: For every existing machine defines the number of AXIS and STEPPERS and the AXIS index.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 30/01/2020
+	Date: 06/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,12 +16,15 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BUILD_H
-#define BUILD_H
+#ifndef KINEMATICS_COREXY_H
+#define KINEMATICS_COREXY_H
 
-#define MAJOR_MINOR_VERSION "1.0."
-#define PATCH_VERSION "0-beta.2"
-
-#define VERSION MAJOR_MINOR_VERSION PATCH_VERSION
+//define kynematics
+#define AXIS_COUNT 3
+#define AXIS_X 0
+#define AXIS_Y 1
+#define AXIS_Z 2
+#define TOOL_AXIS AXIS_Z
+#define STEPPER_COUNT 3
 
 #endif

@@ -26,31 +26,28 @@
 #define DIGITAL_IO_CONTROL_H
 
 #include <stdbool.h>
+#include "config.h"
 
 //ISR
-void io_limits_isr(uint8_t limits);
-void io_controls_isr(uint8_t controls);
-void io_probe_isr(uint8_t probe);
+void io_limits_isr();
+void io_controls_isr();
+void io_probe_isr();
 
 //inputs
 bool io_check_boundaries(float* axis);
-uint8_t io_get_limits(uint8_t limitmask);
-uint8_t io_get_controls(uint8_t controlmask);
+uint8_t io_get_limits();
+uint8_t io_get_controls();
 void io_enable_probe();
 void io_disable_probe();
 bool io_get_probe();
-uint32_t io_get_inputs();
+void io_set_homing_limits_filter(uint8_t filter_mask);
 
 //outputs
-void io_set_outputs(uint32_t mask);
-void io_clear_outputs(uint32_t mask);
-void io_toogle_outputs(uint32_t mask);
-uint32_t io_get_outputs();
+void io_set_steps(uint8_t mask);
+void io_toggle_steps(uint8_t mask);
+void io_set_dirs(uint8_t mask);
 
-//analogs
-uint8_t io_get_analog(uint8_t channel);
-void io_set_pwm(uint8_t channel, uint8_t value);
-uint8_t io_get_pwm(uint8_t channel);
+void io_enable_steps();
 
 #endif
 
