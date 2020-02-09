@@ -48,8 +48,6 @@
 #define STEP6_MASK 64
 #define STEP7_MASK 128
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
 
@@ -112,8 +110,6 @@
 #define STEP5_ITP_MASK (STEP5_MASK | 128)
 #else
 #define STEP5_ITP_MASK STEP5_MASK
-#endif
-
 #endif
 
 #define DIR0_MASK 1
