@@ -1739,13 +1739,24 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                 break;
             case 1: //G10
                 index = (uint8_t)words->p;
-                index--;
-                for (uint8_t i = AXIS_COUNT; i != 0;)
+                switch(index)
                 {
-                    i--;
-                    parser_parameters.coord_system_offset[i] = words->xyzabc[i];
+                    case 28:
+                        settings_save(G28ADDRESS, (uint8_t *)&words->xyzabc, PARSER_PARAM_SIZE);
+                        break;
+                    case 30:
+                        settings_save(G28ADDRESS, (uint8_t *)&words->xyzabc, PARSER_PARAM_SIZE);
+                        break;
+                    default:
+                        index--;
+                        for (uint8_t i = AXIS_COUNT; i != 0;)
+                        {
+                            i--;
+                            parser_parameters.coord_system_offset[i] = words->xyzabc[i];
+                        }
+                        settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
+                        break;
                 }
-                settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
                 CLEARFLAG(parser_word0, GCODE_ALL_AXIS);
                 break;
             case 2: //G28

@@ -415,14 +415,21 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
     mcu_enable_probe_isr();
 
     mc_line(target, block_data);
+
     do
     {
         if(!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
-    }
-    while (cnc_get_exec_state(EXEC_RUN));
+        #ifdef USE_INPUTS_POOLING_ONLY
+        if(io_get_probe())
+        {
+            io_probe_isr();
+            break;
+        }
+        #endif
+    } while (cnc_get_exec_state(EXEC_RUN));
 
     mcu_disable_probe_isr();
     itp_stop();

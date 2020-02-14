@@ -1,17 +1,17 @@
 /*
 	Name: cnc.c
-	Description: µCNC main unit.
+	Description: ï¿½CNC main unit.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 17/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -224,6 +224,24 @@ void cnc_call_rt_command(uint8_t command)
 
 bool cnc_doevents()
 {
+    #ifdef USE_INPUTS_POOLING_ONLY
+    static uint8_t limits = 0;
+    static uint8_t controls = 0;
+    uint8_t val = io_get_limits();
+    if(limits != val)
+    {
+        io_limits_isr();
+        limits = val;
+    }
+    
+    val = io_get_controls();
+    if(controls != val)
+    {
+        io_controls_isr();
+        controls = val;
+    }
+    #endif
+
     cnc_exec_rt_commands(); //executes all pending realtime commands
 
     //check security interlocking for any problem

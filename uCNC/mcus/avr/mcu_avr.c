@@ -103,6 +103,8 @@ ISR(TIMER_COMPB_vect, ISR_BLOCK)
 #endif
 }
 
+#ifndef USE_INPUTS_POOLING_ONLY
+
 #if(PCINTA_MASK==1)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 {
@@ -304,6 +306,8 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
     }
 #endif
 }
+#endif
+
 #endif
 
 ISR(COM_RX_vect, ISR_BLOCK)
@@ -828,6 +832,7 @@ SETBIT(DIN15_OUTREG, DIN15_BIT);
     UCSRB |= (1<<RXEN | 1<<TXEN | 1<<RXCIE);
 
     //enable interrupts on pin changes
+    #ifndef USE_INPUTS_POOLING_ONLY
     #if((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
     SETBIT(PCICR, PCIE0);
     #else
@@ -842,6 +847,7 @@ SETBIT(DIN15_OUTREG, DIN15_BIT);
     SETBIT(PCICR, PCIE2);
     #else
     CLEARBIT(PCICR, PCIE2);
+    #endif
     #endif
 
     //enable interrupts
