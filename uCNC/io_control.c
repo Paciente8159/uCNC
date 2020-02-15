@@ -211,18 +211,30 @@ uint8_t io_get_controls()
 
 void io_enable_probe()
 {
+    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifdef PROBE
     mcu_enable_probe_isr();
+    #endif
+    #endif
 }
 
 void io_disable_probe()
 {
+    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifdef PROBE
     mcu_disable_probe_isr();
+    #endif
+    #endif
 }
 
 bool io_get_probe()
 {
+    #ifdef PROBE
     bool probe = (mcu_get_input(PROBE)!=0);
     return (!g_settings.probe_invert_mask) ? probe : !probe;
+    #else
+    return false;
+    #endif
 }
 
 void io_set_homing_limits_filter(uint8_t filter_mask)

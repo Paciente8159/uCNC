@@ -471,10 +471,12 @@ void itp_run()
 
         sgm->feed = current_speed;
         float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
+        #ifdef USE_SPINDLE
         #ifdef LASER_MODE
         planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
         #else
         planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
+        #endif
         #endif
         unprocessed_steps -= sgm->remaining_steps;
 
@@ -813,11 +815,13 @@ void itp_delay(uint16_t delay)
     itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
     itp_sgm_data[itp_sgm_data_write].update_speed = true;
     itp_sgm_data[itp_sgm_data_write].feed = 0;
+    #ifdef USE_SPINDLE
     #ifdef LASER_MODE
     itp_sgm_data[itp_sgm_data_write].spindle = 0;
     itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
     #else
     planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    #endif
     #endif
     itp_sgm_buffer_write();
 }

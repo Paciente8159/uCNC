@@ -2905,6 +2905,11 @@
 #define mcu_toggle_output(diopin) (SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT)))
 #define mcu_set_pwm(diopin,pwmvalue) {__indirect__(diopin, OCRREG)=pwmvalue;if(pwmvalue!=0){SETFLAG(__indirect__(diopin, TMRAREG),__indirect__(diopin, ENABLE_MASK));}else{CLEARFLAG(__indirect__(diopin, TMRAREG),__indirect__(diopin, ENABLE_MASK));}}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
+#ifdef PROBE
 #define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
+#else
+#define mcu_enable_probe_isr
+#define mcu_disable_probe_isr
+#endif
 #endif

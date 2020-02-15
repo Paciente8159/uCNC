@@ -81,7 +81,7 @@ char mcu_getc();
 void mcu_enable_interrupts();
 #endif
 //disables all ISR functions
-#ifndef mcu_enable_interrupts
+#ifndef mcu_disable_interrupts
 void mcu_disable_interrupts();
 #endif
 

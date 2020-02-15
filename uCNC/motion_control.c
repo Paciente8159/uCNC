@@ -411,8 +411,9 @@ uint8_t mc_spindle_coolant(planner_block_data_t block_data)
 
 uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_data)
 {
+    #ifdef PROBE
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
-    mcu_enable_probe_isr();
+    io_enable_probe();
 
     mc_line(target, block_data);
 
@@ -431,7 +432,7 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
         #endif
     } while (cnc_get_exec_state(EXEC_RUN));
 
-    mcu_disable_probe_isr();
+    io_disable_probe();
     itp_stop();
     itp_clear();
     planner_clear();
@@ -441,6 +442,8 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
     {
         return EXEC_ALARM_PROBE_FAIL_CONTACT;
     }
+
+    #endif
 
     return STATUS_OK;
 }

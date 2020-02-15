@@ -140,7 +140,9 @@ void protocol_send_status()
     itp_get_rt_position((float*)&axis);
     kinematics_apply_reverse_transform((float*)&axis);
     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+    #ifdef USE_SPINDLE
     uint16_t spindle = itp_get_rt_spindle();
+    #endif
     uint8_t controls = io_get_controls();
     uint8_t limits = io_get_limits();
     uint8_t state = cnc_get_exec_state(0xFF);
