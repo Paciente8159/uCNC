@@ -3,16 +3,16 @@
 	Description: Chain planner for linear motions and acceleration/deacceleration profiles.
         It uses a similar algorithm to Grbl.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 24/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -56,7 +56,7 @@ static uint8_t planner_ovr_counter;
 /*
 	Planner buffer functions
 */
-static inline void planner_buffer_read()
+static inline void planner_buffer_read(void)
 {
     planner_data_slots++;
     if (++planner_data_read == PLANNER_BUFFER_SIZE)
@@ -65,7 +65,7 @@ static inline void planner_buffer_read()
     }
 }
 
-static inline void planner_buffer_write()
+static inline void planner_buffer_write(void)
 {
     planner_data_slots--;
     if (++planner_data_write == PLANNER_BUFFER_SIZE)
@@ -94,17 +94,17 @@ static inline uint8_t planner_buffer_prev(uint8_t index)
     return --index;
 }
 
-bool planner_buffer_is_empty()
+bool planner_buffer_is_empty(void)
 {
     return (planner_data_slots == PLANNER_BUFFER_SIZE);
 }
 
-bool planner_buffer_is_full()
+bool planner_buffer_is_full(void)
 {
     return (planner_data_slots == 0);
 }
 
-static inline void planner_buffer_clear()
+static inline void planner_buffer_clear(void)
 {
     planner_data_write = 0;
     planner_data_read = 0;
@@ -114,7 +114,7 @@ static inline void planner_buffer_clear()
 #endif
 }
 
-void planner_init()
+void planner_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     memset(&planner_coord, 0, AXIS_COUNT * sizeof(float));
@@ -131,7 +131,7 @@ void planner_init()
 #endif
 }
 
-void planner_clear()
+void planner_clear(void)
 {
     //clears all motions stored in the buffer
     planner_buffer_clear();
@@ -142,12 +142,12 @@ void planner_clear()
     planner_resync_position();
 }
 
-planner_block_t *planner_get_block()
+planner_block_t *planner_get_block(void)
 {
     return &planner_data[planner_data_read];
 }
 
-float planner_get_block_exit_speed_sqr()
+float planner_get_block_exit_speed_sqr(void)
 {
     //only one block in the buffer (exit speed is 0)
     if (planner_data_slots >= (PLANNER_BUFFER_SIZE - 1))
@@ -179,7 +179,7 @@ float planner_get_block_exit_speed_sqr()
     return exit_speed_sqr;
 }
 
-float planner_get_block_top_speed()
+float planner_get_block_top_speed(void)
 {
     /*
     Computed the junction speed
@@ -250,18 +250,18 @@ void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert)
     }
 }
 
-float planner_get_previous_spindle_speed()
+float planner_get_previous_spindle_speed(void)
 {
 	return planner_spindle;
 }
 #endif
 
-void planner_discard_block()
+void planner_discard_block(void)
 {
     planner_buffer_read();
 }
 
-void planner_recalculate()
+void planner_recalculate(void)
 {
     uint8_t last = planner_data_write;
     uint8_t first = planner_data_read;
@@ -468,21 +468,21 @@ void planner_get_position(float *axis)
     memcpy(axis, planner_coord, sizeof(planner_coord));
 }
 
-void planner_resync_position()
+void planner_resync_position(void)
 {
     //resyncs the position with the interpolator
     itp_get_rt_position((float *)&planner_coord);
 }
 
 //overrides
-void planner_toggle_overrides()
+void planner_toggle_overrides(void)
 {
     planner_overrides.overrides_enabled = !planner_overrides.overrides_enabled;
     itp_update();
     planner_ovr_counter = 0;
 }
 
-bool planner_get_overrides()
+bool planner_get_overrides(void)
 {
     return planner_overrides.overrides_enabled;
 }
@@ -512,7 +512,7 @@ void planner_rapid_feed_ovr(uint8_t value)
     }
 }
 
-void planner_feed_ovr_reset()
+void planner_feed_ovr_reset(void)
 {
     if (planner_overrides.overrides_enabled && planner_overrides.feed_override != 100)
     {
@@ -522,7 +522,7 @@ void planner_feed_ovr_reset()
     }
 }
 
-void planner_rapid_feed_ovr_reset()
+void planner_rapid_feed_ovr_reset(void)
 {
     if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != 100)
     {
@@ -546,7 +546,7 @@ void planner_spindle_ovr_inc(uint8_t value)
     }
 }
 
-void planner_spindle_ovr_reset()
+void planner_spindle_ovr_reset(void)
 {
     planner_overrides.spindle_override = 100;
     planner_ovr_counter = 0;

@@ -54,7 +54,7 @@ static void cnc_exec_rt_commands();
 static void cnc_exec_rt_messages();
 static void cnc_reset();
 
-void cnc_init()
+void cnc_init(void)
 {
     //initializes cnc state
 #ifdef FORCE_GLOBALS_TO_0
@@ -71,7 +71,7 @@ void cnc_init()
     serial_flush();
 }
 
-void cnc_run()
+void cnc_run(void)
 {
     cnc_reset();
 
@@ -222,7 +222,7 @@ void cnc_call_rt_command(uint8_t command)
     }
 }
 
-bool cnc_doevents()
+bool cnc_doevents(void)
 {
     #ifdef USE_INPUTS_POOLING_ONLY
     static uint8_t limits = 0;
@@ -255,7 +255,7 @@ bool cnc_doevents()
     return !cnc_get_exec_state(EXEC_ABORT);
 }
 
-void cnc_home()
+void cnc_home(void)
 {
     cnc_set_exec_state(EXEC_HOMING);
     uint8_t error = kinematics_home();
@@ -304,7 +304,7 @@ void cnc_alarm(uint8_t code)
     cnc_state.active_alarm = code;
 }
 
-void cnc_stop()
+void cnc_stop(void)
 {
     //halt is active and was running flags it lost home position
     if(cnc_get_exec_state(EXEC_RUN) && g_settings.homing_enabled)
@@ -323,7 +323,7 @@ void cnc_stop()
 #endif
 }
 
-void cnc_unlock()
+void cnc_unlock(void)
 {
     //on unlock any alarm caused by not having homing reference or hitting a limit switch is reset at user request
     //all other alarm flags remain active if any input is still active
@@ -382,7 +382,7 @@ void cnc_clear_exec_state(uint8_t statemask)
     CLEARFLAG(cnc_state.exec_state,statemask);
 }
 
-void cnc_reset()
+void cnc_reset(void)
 {
     //resets all realtime command flags
     cnc_state.rt_cmd = RT_CMD_CLEAR;
@@ -421,7 +421,7 @@ void cnc_reset()
 //  -tools override commands
 //All active flags will be executed by MSB order (higher first)
 //If two flags have different effects on the same attribute the one with the LSB will run last and overwrite the other
-void cnc_exec_rt_commands()
+void cnc_exec_rt_commands(void)
 {
     bool update_spindle = false;
 
@@ -561,7 +561,7 @@ void cnc_exec_rt_commands()
 #endif
 }
 
-void cnc_check_fault_systems()
+void cnc_check_fault_systems(void)
 {
     uint8_t inputs = io_get_controls();
 #ifdef ESTOP
@@ -588,7 +588,7 @@ void cnc_check_fault_systems()
 #endif
 }
 
-bool cnc_check_interlocking()
+bool cnc_check_interlocking(void)
 {
     //if abort is flagged
     if(CHECKFLAG(cnc_state.exec_state, EXEC_ABORT))

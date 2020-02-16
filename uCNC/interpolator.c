@@ -106,7 +106,7 @@ volatile static bool itp_busy;
 /*
 	Interpolator segment buffer functions
 */
-static inline void itp_sgm_buffer_read()
+static inline void itp_sgm_buffer_read(void)
 {
     itp_sgm_data_slots++;
     if (++itp_sgm_data_read == INTERPOLATOR_BUFFER_SIZE)
@@ -115,7 +115,7 @@ static inline void itp_sgm_buffer_read()
     }
 }
 
-static inline void itp_sgm_buffer_write()
+static inline void itp_sgm_buffer_write(void)
 {
     itp_sgm_data_slots--;
     if (++itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
@@ -124,17 +124,17 @@ static inline void itp_sgm_buffer_write()
     }
 }
 
-static inline bool itp_sgm_is_empty()
+static inline bool itp_sgm_is_empty(void)
 {
     return (itp_sgm_data_slots == INTERPOLATOR_BUFFER_SIZE);
 }
 
-static inline bool itp_sgm_is_full()
+static inline bool itp_sgm_is_full(void)
 {
     return (itp_sgm_data_slots == 0);
 }
 
-static inline void itp_sgm_clear()
+static inline void itp_sgm_clear(void)
 {
     itp_sgm_data_write = 0;
     itp_sgm_data_read = 0;
@@ -147,7 +147,7 @@ static inline void itp_sgm_clear()
 */
 //NOT NEEDED
 /*
-static inline void itp_blk_buffer_read()
+static inline void itp_blk_buffer_read(void)
 {
 	itp_blk_data_read++;
 	itp_blk_data_slots++;
@@ -157,7 +157,7 @@ static inline void itp_blk_buffer_read()
 	}
 }*/
 
-static inline void itp_blk_buffer_write()
+static inline void itp_blk_buffer_write(void)
 {
     //itp_blk_data_slots--; //AUTOMATIC LOOP
     if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
@@ -166,17 +166,17 @@ static inline void itp_blk_buffer_write()
     }
 }
 /* NOT NECESSARY
-static inline bool itp_blk_is_empty()
+static inline bool itp_blk_is_empty(void)
 {
 	return (itp_blk_data_slots == INTERPOLATOR_BUFFER_SIZE);
 }*/
 
-/*static inline bool itp_blk_is_full()
+/*static inline bool itp_blk_is_full(void)
 {
 	return (itp_blk_data_slots == 0);
 }*/
 
-static inline void itp_blk_clear()
+static inline void itp_blk_clear(void)
 {
     itp_blk_data_write = 0;
     itp_blk_data_read = 0;
@@ -188,7 +188,7 @@ static inline void itp_blk_clear()
 	Interpolator functions
 */
 //declares functions called by the stepper ISR
-void itp_init()
+void itp_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     //resets buffers
@@ -205,7 +205,7 @@ void itp_init()
     itp_sgm_clear();
 }
 
-void itp_run()
+void itp_run(void)
 {
     //static INTERPOLATOR_BLOCK *new_block = NULL;
     //static bool read_new_block = true;
@@ -470,8 +470,8 @@ void itp_run()
         itp_cur_plan_block->distance -= partial_distance;
 
         sgm->feed = current_speed;
-        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
         #ifdef USE_SPINDLE
+        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
         #ifdef LASER_MODE
         planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
         #else
@@ -513,19 +513,19 @@ void itp_run()
     }
 }
 
-void itp_update()
+void itp_update(void)
 {
     //flags executing block for update
     itp_needs_update = true;
 }
 
-void itp_stop()
+void itp_stop(void)
 {
     mcu_step_stop_ISR();
     cnc_clear_exec_state(EXEC_RUN);
 }
 
-void itp_clear()
+void itp_clear(void)
 {
     itp_cur_plan_block = NULL;
     itp_running_sgm = NULL;
@@ -544,7 +544,7 @@ void itp_get_rt_position(float *axis)
     kinematics_apply_forward((uint32_t *)&step_pos, axis);
 }
 
-void itp_reset_rt_position()
+void itp_reset_rt_position(void)
 {
     if (g_settings.homing_enabled)
     {
@@ -570,7 +570,7 @@ void itp_reset_rt_position()
     }
 }
 
-float itp_get_rt_feed()
+float itp_get_rt_feed(void)
 {
     float feed = 0;
     if (!cnc_get_exec_state(EXEC_RUN))
@@ -587,7 +587,7 @@ float itp_get_rt_feed()
 }
 
 #ifdef USE_SPINDLE
-uint16_t itp_get_rt_spindle()
+uint16_t itp_get_rt_spindle(void)
 {
 	float spindle = (float)itp_rt_spindle;
 	spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
@@ -604,14 +604,14 @@ void itp_lock_stepper(uint8_t lockmask)
 #endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-uint32_t itp_get_rt_line_number()
+uint32_t itp_get_rt_line_number(void)
 {
     return ((itp_sgm_data[itp_sgm_data_read].block!=NULL) ? itp_sgm_data[itp_sgm_data_read].block->line : 0);
 }
 #endif
 
 //always fires after pulse
-void itp_step_reset_isr()
+void itp_step_reset_isr(void)
 {
     //always resets all stepper pins
     io_set_steps(g_settings.step_invert_mask);
@@ -661,7 +661,7 @@ void itp_step_reset_isr()
     }
 }
 
-void itp_step_isr()
+void itp_step_isr(void)
 {
     static uint8_t stepbits = 0;
     if(itp_busy) //prevents reentrancy

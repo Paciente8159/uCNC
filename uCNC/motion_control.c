@@ -32,19 +32,19 @@
 
 static bool mc_checkmode;
 
-void mc_init()
+void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     mc_checkmode = false;
 #endif
 }
 
-bool mc_get_checkmode()
+bool mc_get_checkmode(void)
 {
     return mc_checkmode;
 }
 
-bool mc_toogle_checkmode()
+bool mc_toogle_checkmode(void)
 {
     mc_checkmode = !mc_checkmode;
     return mc_checkmode;

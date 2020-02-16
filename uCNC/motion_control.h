@@ -1,17 +1,17 @@
 /*
 	Name: motion_control.h
-	Description: Contains the building blocks for performing motions/actions in µCNC.
+	Description: Contains the building blocks for performing motions/actions in ï¿½CNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 19/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -23,9 +23,9 @@
 #include <stdbool.h>
 #include "planner.h"
 
-void mc_init();
-bool mc_get_checkmode();
-bool mc_toogle_checkmode();
+void mc_init(void);
+bool mc_get_checkmode(void);
+bool mc_toogle_checkmode(void);
 uint8_t mc_line(float *target, planner_block_data_t block_data);
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data);
 uint8_t mc_dwell(planner_block_data_t block_data);

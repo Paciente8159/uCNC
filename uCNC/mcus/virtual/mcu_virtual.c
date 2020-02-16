@@ -1,6 +1,6 @@
 /*
 	Name: mcu_virtual.c
-	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate µCNC.
+	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate ï¿½CNC.
 		For now it's only working/tested on Windows.
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
@@ -14,16 +14,16 @@
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
 				
-	Copyright: Copyright (c) João Martins 
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins 
+	Author: Joï¿½o Martins
 	Date: 01/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -106,7 +106,7 @@ pthread_t thread_timer_id;
 
 
 //emulates uart RX
-void* comsimul()
+void* comsimul(void)
 {
 	for(;;)
 	{
@@ -125,7 +125,7 @@ void* comsimul()
 }
 
 //emulates uart TX
-void* comoutsimul()
+void* comoutsimul(void)
 {
 	unsigned char combuffer[128];
 	static uint8_t i = 0;
@@ -159,7 +159,7 @@ void* comoutsimul()
 }
 
 //simulates internal clock (1Kz limited by windows timer)
-void ticksimul()
+void ticksimul(void)
 {
 	static uint16_t tick_counter = 0;
 	static uint16_t timer_counter = 0;
@@ -227,7 +227,7 @@ void ticksimul()
 	}
 }
 
-void mcu_init()
+void mcu_init(void)
 {
 	send_char = false;
 	virtualports = &virtualmap;
@@ -267,10 +267,10 @@ void mcu_init()
 
 //IO functions    
 #ifdef PROBE
-void mcu_enable_probe_isr()
+void mcu_enable_probe_isr(void)
 {
 }
-void mcu_disable_probe_isr()
+void mcu_disable_probe_isr(void)
 {
 }
 #endif
@@ -292,12 +292,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 
 //Communication functions
 //sends a packet
-void mcu_start_send()
+void mcu_start_send(void)
 {
 	mcu_tx_ready = true;
 }
 
-void mcu_stop_send()
+void mcu_stop_send(void)
 {
 	mcu_tx_ready = false;
 }
@@ -311,7 +311,7 @@ void mcu_putc(char c)
 	#endif
 }
 
-char mcu_getc()
+char mcu_getc(void)
 {
 	char c = 0;
 	if(g_mcu_buffertail!=g_mcu_bufferhead)
@@ -331,14 +331,14 @@ char mcu_getc()
 	return c;
 }
 
-char mcu_peek()
+char mcu_peek(void)
 {
 	if(g_mcu_buffercount==0)
 		return 0;
 	return g_mcu_combuffer[g_mcu_buffertail];
 }
 
-void mcu_bufferClear()
+void mcu_bufferClear(void)
 {
 	memset(&g_mcu_combuffer, 0, sizeof(char)*COM_BUFFER_SIZE);
 	g_mcu_buffertail = 0;
@@ -358,12 +358,12 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* tick_reps)
 }
 
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-void mcu_enable_interrupts()
+void mcu_enable_interrupts(void)
 {
 	global_isr_enabled = true;
 }
 //disables all ISR functions
-void mcu_disable_interrupts()
+void mcu_disable_interrupts(void)
 {
 	global_isr_enabled = false;
 }
@@ -386,7 +386,7 @@ void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 	pulse_enabled = true;
 }
 //stops the pulse 
-void mcu_step_stop_ISR()
+void mcu_step_stop_ISR(void)
 {
 	pulse_enabled = false;
 }
@@ -516,12 +516,12 @@ void mcu_eeprom_erase(uint16_t address)
 	return value;
 }*/
 
-void mcu_startPerfCounter()
+void mcu_startPerfCounter(void)
 {
 	startCycleCounter();
 }
 
-uint16_t mcu_stopPerfCounter()
+uint16_t mcu_stopPerfCounter(void)
 {
     return (uint16_t)stopCycleCounter();
 }

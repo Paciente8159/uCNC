@@ -73,7 +73,7 @@ void kinematics_apply_forward(uint32_t* steps, float* axis)
     #endif
 }
 
-uint8_t kinematics_home()
+uint8_t kinematics_home(void)
 {
     uint8_t result = 0;
     

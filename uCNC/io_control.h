@@ -29,17 +29,17 @@
 #include "config.h"
 
 //ISR
-void io_limits_isr();
-void io_controls_isr();
-void io_probe_isr();
+void io_limits_isr(void);
+void io_controls_isr(void);
+void io_probe_isr(void);
 
 //inputs
 bool io_check_boundaries(float* axis);
-uint8_t io_get_limits();
-uint8_t io_get_controls();
-void io_enable_probe();
-void io_disable_probe();
-bool io_get_probe();
+uint8_t io_get_limits(void);
+uint8_t io_get_controls(void);
+void io_enable_probe(void);
+void io_disable_probe(void);
+bool io_get_probe(void);
 void io_set_homing_limits_filter(uint8_t filter_mask);
 
 //outputs
@@ -47,7 +47,7 @@ void io_set_steps(uint8_t mask);
 void io_toggle_steps(uint8_t mask);
 void io_set_dirs(uint8_t mask);
 
-void io_enable_steps();
+void io_enable_steps(void);
 
 #endif
 

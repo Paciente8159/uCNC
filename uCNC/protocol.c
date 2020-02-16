@@ -29,13 +29,13 @@
 #include "mcu.h"
 #include "protocol.h"
 
-static void procotol_send_newline()
+static void procotol_send_newline(void)
 {
     serial_putc('\r');
     serial_putc('\n');
 }
 
-void protocol_send_ok()
+void protocol_send_ok(void)
 {
     serial_print_str(__romstr__("ok"));
     procotol_send_newline();
@@ -60,7 +60,7 @@ void protocol_send_string(const unsigned char* __s)
     serial_print_str(__s);
 }
 
-static uint8_t protocol_get_tools()
+static uint8_t protocol_get_tools(void)
 {
     uint8_t modalgroups[9];
     uint16_t feed;
@@ -81,7 +81,7 @@ static uint8_t protocol_get_tools()
     return result;
 }
 
-static void protocol_send_status_tail()
+static void protocol_send_status_tail(void)
 {
     float axis[MAX(AXIS_COUNT,3)];
     if(parser_get_wco(axis))
@@ -126,7 +126,7 @@ static void protocol_send_status_tail()
     }
 }
 
-void protocol_send_status()
+void protocol_send_status(void)
 {
     float axis[MAX(AXIS_COUNT,3)];
 
@@ -308,7 +308,7 @@ void protocol_send_status()
     procotol_send_newline();
 }
 
-void protocol_send_gcode_coordsys()
+void protocol_send_gcode_coordsys(void)
 {
 	float axis[MAX(AXIS_COUNT,3)];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
@@ -368,7 +368,7 @@ void protocol_send_gcode_coordsys()
     procotol_send_newline();
 }
 
-void protocol_send_gcode_modes()
+void protocol_send_gcode_modes(void)
 {
     uint8_t modalgroups[9];
     uint16_t feed;
@@ -425,7 +425,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
     procotol_send_newline();
 }
 
-void protocol_send_start_blocks()
+void protocol_send_start_blocks(void)
 {
 	unsigned char c = 0;
 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
@@ -461,7 +461,7 @@ void protocol_send_start_blocks()
 	}
 }
 
-void protocol_send_ucnc_settings()
+void protocol_send_ucnc_settings(void)
 {
     protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
     protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);

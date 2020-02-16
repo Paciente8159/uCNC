@@ -1,17 +1,17 @@
 /*
 	Name: serial.c
-	Description: Serial communication basic read/write functions µCNC.
+	Description: Serial communication basic read/write functions ï¿½CNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 30/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -42,7 +42,7 @@ static uint16_t serial_read_index;
 
 //static void serial_rx_clear();
 
-void serial_init()
+void serial_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     serial_rx_write = 0;
@@ -59,7 +59,7 @@ void serial_init()
 #endif
 }
 
-bool serial_rx_is_empty()
+bool serial_rx_is_empty(void)
 {
     switch(serial_read_select)
     {
@@ -73,12 +73,12 @@ bool serial_rx_is_empty()
     return true;
 }
 
-bool serial_tx_is_empty()
+bool serial_tx_is_empty(void)
 {
     return (!serial_tx_count);
 }
 
-unsigned char serial_getc()
+unsigned char serial_getc(void)
 {
     unsigned char c;
 
@@ -135,7 +135,7 @@ unsigned char serial_getc()
     return EOL;
 }
 
-void serial_ungetc()
+void serial_ungetc(void)
 {
 	if(--serial_rx_read==0xFF)
     {
@@ -164,7 +164,7 @@ void serial_select(uint8_t source)
     }
 }
 
-unsigned char serial_peek()
+unsigned char serial_peek(void)
 {
     unsigned char c;
     switch(serial_read_select)
@@ -394,7 +394,7 @@ void serial_print_fltarr(float* arr, uint8_t count)
 
 }
 
-void serial_flush()
+void serial_flush(void)
 {
     while(serial_tx_count)
     {
@@ -446,7 +446,7 @@ void serial_rx_isr(unsigned char c)
     }
 }
 
-void serial_tx_isr()
+void serial_tx_isr(void)
 {
     if(!serial_tx_count)
     {
@@ -469,7 +469,7 @@ void serial_tx_isr()
     serial_tx_read = read;
 }
 
-void serial_rx_clear()
+void serial_rx_clear(void)
 {
     serial_rx_write = 0;
     serial_rx_read = 0;

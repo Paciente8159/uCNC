@@ -40,7 +40,7 @@ HANDLE win_serial = NULL;
 unsigned char ComPortName[] = COMPORT;
 unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
-int virtualserial_open()
+int virtualserial_open(void)
 {
 	DCB dcbSerialParams = {};
 	COMMTIMEOUTS timeouts = {};
@@ -104,7 +104,7 @@ char serial_buffer[127];
 int serial_charcount = 0;
 int serial_charindex = 0;
 
-unsigned char virtualserial_getc()
+unsigned char virtualserial_getc(void)
 {
 	DWORD dwEventMask;
 	unsigned char  TempChar;
@@ -159,7 +159,7 @@ void virtualserial_puts(const unsigned char* __str)
 	PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
 }
 
-int virtualserial_close()
+int virtualserial_close(void)
 {
 	// Close serial port
     fprintf(stderr, "Closing serial port COM3...");

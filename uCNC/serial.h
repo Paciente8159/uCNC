@@ -1,17 +1,17 @@
 /*
 	Name: serial.h
-	Description: Serial communication basic read/write functions µCNC.
+	Description: Serial communication basic read/write functions ï¿½CNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 30/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -34,16 +34,16 @@
 
 void serial_init();
 
-bool serial_rx_is_empty();
-unsigned char serial_getc();
-void serial_ungetc();
-unsigned char serial_peek();
+bool serial_rx_is_empty(void);
+unsigned char serial_getc(void);
+void serial_ungetc(void);
+unsigned char serial_peek(void);
 void serial_inject_cmd(const unsigned char* __s);
-void serial_restore_line();
-void serial_rx_clear();
+void serial_restore_line(void);
+void serial_rx_clear(void);
 void serial_select(uint8_t source);
 
-bool serial_tx_is_empty();
+bool serial_tx_is_empty(void);
 void serial_putc(unsigned char c);
 void serial_print_str(const unsigned char* __s);
 void serial_print_int(uint16_t num);
@@ -53,10 +53,10 @@ void serial_print_long(uint32_t num);
 void serial_print_flt(float num);
 void serial_print_intarr(uint16_t* arr, uint8_t count);
 void serial_print_fltarr(float* arr, uint8_t count);
-void serial_flush();
+void serial_flush(void);
 
 //ISR
 void serial_rx_isr(unsigned char c);
-void serial_tx_isr();
+void serial_tx_isr(void);
 
 #endif

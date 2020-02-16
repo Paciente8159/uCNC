@@ -64,12 +64,12 @@
 volatile uint16_t mcu_perf_step;
 volatile uint16_t mcu_perf_step_reset;
 
-uint16_t mcu_get_step_clocks()
+uint16_t mcu_get_step_clocks(void)
 {
     uint16_t res = mcu_perf_step;
     return res;
 }
-uint16_t mcu_get_step_reset_clocks()
+uint16_t mcu_get_step_reset_clocks(void)
 {
     uint16_t res = mcu_perf_step_reset;
     return res;
@@ -323,7 +323,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
     }*/
 }
 
-void mcu_init()
+void mcu_init(void)
 {
     //disable WDT
     wdt_reset();
@@ -857,14 +857,14 @@ SETBIT(DIN15_OUTREG, DIN15_BIT);
 //IO functions
 /*
 #ifdef PROBE
-void mcu_enable_probe_isr()
+void mcu_enable_probe_isr(void)
 {
 #ifdef PROBE_ISRREG
     SETBIT(PROBE_ISRREG, PROBE_BIT);
 #endif
 }
 
-void mcu_disable_probe_isr()
+void mcu_disable_probe_isr(void)
 {
 #ifdef PROBE_ISRREG
     CLEARBIT(PROBE_ISRREG, PROBE_BIT);
@@ -887,21 +887,21 @@ uint8_t mcu_get_analog(uint8_t channel)
     return result;
 }
 
-void mcu_enable_interrupts()
+void mcu_enable_interrupts(void)
 {
     sei();
 }
-void mcu_disable_interrupts()
+void mcu_disable_interrupts(void)
 {
     cli();
 }
 
-void mcu_start_send()
+void mcu_start_send(void)
 {
     SETBIT(UCSRB,UDRIE);
 }
 
-void mcu_stop_send()
+void mcu_stop_send(void)
 {
     CLEARBIT(UCSRB,UDRIE);
 }
@@ -912,12 +912,12 @@ void mcu_putc(char c)
     COM_OUTREG = c;
 }
 
-bool mcu_is_tx_ready()
+bool mcu_is_tx_ready(void)
 {
     return CHECKBIT(UCSRA, UDRE);
 }
 
-char mcu_getc()
+char mcu_getc(void)
 {
     loop_until_bit_is_set(UCSRA, RXC);
     return COM_INREG;
@@ -1002,14 +1002,14 @@ void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
     TCCRB = prescaller;
 }
 
-void mcu_step_stop_ISR()
+void mcu_step_stop_ISR(void)
 {
     TCCRB = 0;
     TIMSK &= ~((1 << OCIEB) | (1 << OCIEA));
 }
 
 /*#define MCU_1MS_LOOP F_CPU/1000000
-static __attribute__((always_inline)) void mcu_delay_1ms()
+static __attribute__((always_inline)) void mcu_delay_1ms(void)
 {
 	uint16_t loop = MCU_1MS_LOOP;
 	do{

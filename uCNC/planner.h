@@ -77,35 +77,35 @@ typedef struct
     bool optimal;
 } planner_block_t;
 
-void planner_init();
-void planner_clear();
-bool planner_buffer_is_full();
-bool planner_buffer_is_empty();
-planner_block_t *planner_get_block();
-float planner_get_block_exit_speed_sqr();
-float planner_get_block_top_speed();
+void planner_init(void);
+void planner_clear(void);
+bool planner_buffer_is_full(void);
+bool planner_buffer_is_empty(void);
+planner_block_t *planner_get_block(void);
+float planner_get_block_exit_speed_sqr(void);
+float planner_get_block_top_speed(void);
 #ifdef USE_SPINDLE
 void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert);
-float planner_get_previous_spindle_speed();
+float planner_get_previous_spindle_speed(void);
 #endif
-void planner_discard_block();
+void planner_discard_block(void);
 void planner_add_line(float *target, planner_block_data_t block_data);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
 void planner_get_position(float *axis);
-void planner_resync_position();
+void planner_resync_position(void);
 
 //overrides
-void planner_toggle_overrides();
-bool planner_get_overrides();
+void planner_toggle_overrides(void);
+bool planner_get_overrides(void);
 
-void planner_feed_ovr_reset();
+void planner_feed_ovr_reset(void);
 void planner_feed_ovr_inc(uint8_t value);
 
 void planner_rapid_feed_ovr_reset();
 void planner_rapid_feed_ovr(uint8_t value);
 #ifdef USE_SPINDLE
-void planner_spindle_ovr_reset();
+void planner_spindle_ovr_reset(void);
 void planner_spindle_ovr_inc(uint8_t value);
 #endif
 
