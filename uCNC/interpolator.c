@@ -351,7 +351,7 @@ void itp_run(void)
         {
             itp_needs_update = false;
             float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-            junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
+            junction_speed_sqr = planner_get_block_top_speed();
 
             accel_until = unprocessed_steps;
             deaccel_from = 0;
