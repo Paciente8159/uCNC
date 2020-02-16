@@ -20,14 +20,8 @@
 #define CONFIG_H
 
 //include lists of available option
-#include "mcus.h"
+#include "boards.h"
 #include "machines.h"
-
-/*
-	Choose the mcu
-	Check mcus.h for list of available/supported mcu
-*/
-#define MCU MCU_AVR
 
 /*
 	Serial COM
@@ -54,7 +48,6 @@
 */
 
 #include "boarddefs.h" //sets the mcu pin configuration based on the board
-#include "mcudefs.h" //configures the mcu based on the board pin configuration
 #include "machinedefs.h" //configures the kinematics for the cnc machine
 #include "config_helper.h" //runs the config helper to create and define all variables
 
