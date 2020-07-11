@@ -124,5 +124,6 @@
 
 ### Initial release
 
+[1.0.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-rc
 [1.0.0-beta.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta.2
 [1.0.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta
