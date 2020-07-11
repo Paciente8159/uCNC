@@ -32,19 +32,19 @@
 
 static bool mc_checkmode;
 
-void mc_init()
+void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     mc_checkmode = false;
 #endif
 }
 
-bool mc_get_checkmode()
+bool mc_get_checkmode(void)
 {
     return mc_checkmode;
 }
 
-bool mc_toogle_checkmode()
+bool mc_toogle_checkmode(void)
 {
     mc_checkmode = !mc_checkmode;
     return mc_checkmode;
@@ -411,20 +411,28 @@ uint8_t mc_spindle_coolant(planner_block_data_t block_data)
 
 uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_data)
 {
+    #ifdef PROBE
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
-    mcu_enable_probe_isr();
+    io_enable_probe();
 
     mc_line(target, block_data);
+
     do
     {
         if(!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
-    }
-    while (cnc_get_exec_state(EXEC_RUN));
+        #ifdef USE_INPUTS_POOLING_ONLY
+        if(io_get_probe())
+        {
+            io_probe_isr();
+            break;
+        }
+        #endif
+    } while (cnc_get_exec_state(EXEC_RUN));
 
-    mcu_disable_probe_isr();
+    io_disable_probe();
     itp_stop();
     itp_clear();
     planner_clear();
@@ -434,6 +442,8 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
     {
         return EXEC_ALARM_PROBE_FAIL_CONTACT;
     }
+
+    #endif
 
     return STATUS_OK;
 }

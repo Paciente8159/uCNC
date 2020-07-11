@@ -190,7 +190,7 @@ static void parser_discard_command();
 /*
 	Initializes the gcode parser
 */
-void parser_init()
+void parser_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
@@ -203,7 +203,7 @@ void parser_init()
 /*
 	Parse the next gcode line available in the buffer and send it to the motion controller
 */
-uint8_t parser_gcode_command()
+uint8_t parser_gcode_command(void)
 {
     uint8_t result = 0;
     //initializes new state
@@ -305,7 +305,7 @@ uint8_t parse_grbl_error_code(uint8_t code)
     return STATUS_OK;
 }
 
-uint8_t parser_grbl_command()
+uint8_t parser_grbl_command(void)
 {
     //if not IDLE
     if (cnc_get_exec_state(EXEC_RUN))
@@ -556,12 +556,12 @@ void parser_get_coordsys(uint8_t system_num, float* axis)
     }
 }
 
-uint8_t parser_get_probe_result()
+uint8_t parser_get_probe_result(void)
 {
     return parser_parameters.last_probe_ok;
 }
 
-void parser_parameters_reset()
+void parser_parameters_reset(void)
 {
     //erase all parameters for G54..G59.x coordinate systems
     memset(&parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
@@ -595,7 +595,7 @@ bool parser_get_wco(float *axis)
     return false;
 }
 
-void parser_sync_probe()
+void parser_sync_probe(void)
 {
     itp_get_rt_position(parser_parameters.last_probe_position);
 }
@@ -719,7 +719,7 @@ bool parser_get_float(float *value, bool *isinteger)
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
 */
-bool parser_get_comment()
+bool parser_get_comment(void)
 {
     uint8_t msg_parser = 0;
     for(;;)
@@ -1739,13 +1739,24 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                 break;
             case 1: //G10
                 index = (uint8_t)words->p;
-                index--;
-                for (uint8_t i = AXIS_COUNT; i != 0;)
+                switch(index)
                 {
-                    i--;
-                    parser_parameters.coord_system_offset[i] = words->xyzabc[i];
+                    case 28:
+                        settings_save(G28ADDRESS, (uint8_t *)&words->xyzabc, PARSER_PARAM_SIZE);
+                        break;
+                    case 30:
+                        settings_save(G28ADDRESS, (uint8_t *)&words->xyzabc, PARSER_PARAM_SIZE);
+                        break;
+                    default:
+                        index--;
+                        for (uint8_t i = AXIS_COUNT; i != 0;)
+                        {
+                            i--;
+                            parser_parameters.coord_system_offset[i] = words->xyzabc[i];
+                        }
+                        settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
+                        break;
                 }
-                settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
                 CLEARFLAG(parser_word0, GCODE_ALL_AXIS);
                 break;
             case 2: //G28
@@ -1989,7 +2000,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     return STATUS_OK;
 }
 
-void parser_reset()
+void parser_reset(void)
 {
     parser_state.groups.coord_system = 0;											//G54
     parser_state.groups.plane = 0;												  	//G17
@@ -2013,7 +2024,7 @@ void parser_reset()
 //loads G92 offset
 //loads G54 coordinate system
 //also checks all other coordinate systems and homing positions
-void parser_load_parameters()
+void parser_load_parameters(void)
 {
     const uint8_t size = PARSER_PARAM_SIZE;
 
@@ -2040,7 +2051,7 @@ void parser_load_parameters()
     }
 }
 
-void parser_discard_command()
+void parser_discard_command(void)
 {
     unsigned char c = '@';
     #ifdef ECHO_CMD

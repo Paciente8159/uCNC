@@ -67,14 +67,14 @@
 #define EXEC_ALLACTIVE 255 //All states
 
 
-void cnc_init();
-void cnc_run();
+void cnc_init(void);
+void cnc_run(void);
 //do events returns true if all OK and false if an ABORT alarm is reached
-bool cnc_doevents();
-void cnc_home();
+bool cnc_doevents(void);
+void cnc_home(void);
 void cnc_alarm(uint8_t code);
-void cnc_stop();
-void cnc_unlock();
+void cnc_stop(void);
+void cnc_unlock(void);
 
 uint8_t cnc_get_exec_state(uint8_t statemask);
 void cnc_set_exec_state(uint8_t statemask);

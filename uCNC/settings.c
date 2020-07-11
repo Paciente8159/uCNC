@@ -152,7 +152,7 @@ const settings_t __rom__ default_settings =
 
 //static uint8_t settings_crc;
 
-void settings_init()
+void settings_init(void)
 {
     const char version[3] = SETTINGS_VERSION;
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t*) &g_settings, (uint8_t)sizeof(settings_t));
@@ -206,7 +206,7 @@ uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size)
     return (crc ^ mcu_eeprom_getc(address));
 }
 
-void settings_reset()
+void settings_reset(void)
 {
 	const uint8_t size = sizeof(settings_t);
     uint8_t* __ptr = (uint8_t*)&g_settings;

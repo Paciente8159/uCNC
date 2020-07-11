@@ -29,7 +29,7 @@
 
 static volatile uint8_t io_limits_homing_filter;
 
-void io_limits_isr()
+void io_limits_isr(void)
 {
     uint8_t limits = io_get_limits();
 
@@ -84,7 +84,7 @@ void io_limits_isr()
     }
 }
 
-void io_controls_isr()
+void io_controls_isr(void)
 {
     uint8_t controls = io_get_controls();
 
@@ -116,7 +116,7 @@ void io_controls_isr()
 #endif
 }
 
-void io_probe_isr()
+void io_probe_isr(void)
 {
     //on hit enables hold (directly)
     cnc_set_exec_state(EXEC_HOLD);
@@ -144,7 +144,7 @@ bool io_check_boundaries(float* axis)
     return true;
 }
 
-uint8_t io_get_limits()
+uint8_t io_get_limits(void)
 {
     uint8_t value = 0;
 #ifdef LIMIT_X
@@ -190,7 +190,7 @@ uint8_t io_get_limits()
     return (value ^ g_settings.limits_invert_mask);
 }
 
-uint8_t io_get_controls()
+uint8_t io_get_controls(void)
 {
     uint8_t value = 0;
 #ifdef ESTOP
@@ -209,20 +209,32 @@ uint8_t io_get_controls()
     return (value ^ g_settings.control_invert_mask);
 }
 
-void io_enable_probe()
+void io_enable_probe(void)
 {
+    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifdef PROBE
     mcu_enable_probe_isr();
+    #endif
+    #endif
 }
 
-void io_disable_probe()
+void io_disable_probe(void)
 {
+    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifdef PROBE
     mcu_disable_probe_isr();
+    #endif
+    #endif
 }
 
-bool io_get_probe()
+bool io_get_probe(void)
 {
+    #ifdef PROBE
     bool probe = (mcu_get_input(PROBE)!=0);
     return (!g_settings.probe_invert_mask) ? probe : !probe;
+    #else
+    return false;
+    #endif
 }
 
 void io_set_homing_limits_filter(uint8_t filter_mask)
@@ -433,7 +445,7 @@ void io_set_dirs(uint8_t mask)
 
 }
 
-void io_enable_steps()
+void io_enable_steps(void)
 {
     #ifdef STEP0_EN
     mcu_set_output(STEP0_EN);

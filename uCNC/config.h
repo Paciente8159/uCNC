@@ -20,14 +20,8 @@
 #define CONFIG_H
 
 //include lists of available option
-#include "mcus.h"
+#include "boards.h"
 #include "machines.h"
-
-/*
-	Choose the mcu
-	Check mcus.h for list of available/supported mcu
-*/
-#define MCU MCU_AVR
 
 /*
 	Serial COM
@@ -54,14 +48,13 @@
 */
 
 #include "boarddefs.h" //sets the mcu pin configuration based on the board
-#include "mcudefs.h" //configures the mcu based on the board pin configuration
 #include "machinedefs.h" //configures the kinematics for the cnc machine
 #include "config_helper.h" //runs the config helper to create and define all variables
+
 /*
 	Defines the number of supported coordinate systems supported by µCNC
 	Can be any value between 1 and 9
 */
-
 #define COORD_SYS_COUNT 6
 
 /*
@@ -70,7 +63,7 @@
 #define N_ARC_CORRECTION 12
 
 /*
-	Echo recieved commands
+	Echo recieved commands.
 	Uncomment to enable. Only necessary to debug communication problems
 */
 //#define ECHO_CMD
@@ -96,11 +89,6 @@
 
 //not implemented
 //#define USE_TOOL_CHANGER
-
-/*
-	Define a stepper enable pin
-*/
-//#define STEPPER_ENABLE DOUT1_MASK
 
 /*
 	Define a coolant flood and mist pin
@@ -161,5 +149,10 @@
 //#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
 //#define NO_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
+
+/*
+	Uses pin pooling for all limits and control pins (no interrupts)
+*/
+//#define USE_INPUTS_POOLING_ONLY
 
 #endif

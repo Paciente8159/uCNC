@@ -39,7 +39,7 @@ void kinematics_apply_forward(uint32_t* steps, float* axis)
     axis[AXIS_Z] = (float)(step_mm_inv[2] * steps[2]);
 }
 
-void kinematics_home()
+void kinematics_home(void)
 {
     uint8_t result = 0;
     result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);

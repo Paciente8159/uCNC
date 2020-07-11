@@ -29,10 +29,10 @@
 #include <stdbool.h>
 #include "config.h"
 
-void parser_init();
+void parser_init(void);
 uint8_t parse_grbl_error_code(uint8_t code);
-uint8_t parser_gcode_command();
-uint8_t parser_grbl_command();
+uint8_t parser_gcode_command(void);
+uint8_t parser_grbl_command(void);
 void parser_get_modes(uint8_t* modalgroups, uint16_t* feed, uint16_t* spindle);
 void parser_get_coordsys(uint8_t system_num, float* axis);
 bool parser_get_wco(float* axis);
@@ -40,10 +40,10 @@ bool parser_get_wco(float* axis);
 void parser_update_coolant(uint8_t state);
 void parser_toogle_coolant(uint8_t state);
 #endif
-void parser_sync_probe();
-uint8_t parser_get_probe_result();
-void parser_parameters_load();
-void parser_parameters_reset();
-void parser_parameters_save();
+void parser_sync_probe(void);
+uint8_t parser_get_probe_result(void);
+void parser_parameters_load(void);
+void parser_parameters_reset(void);
+void parser_parameters_save(void);
 
 #endif

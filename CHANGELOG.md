@@ -5,6 +5,20 @@
 
 # Changelog
 
+## [1.0.0-rc] - 2020-07-11
+
+### Added
+  - added possibility of changing values og G28 and G30 commands via G10 L2 P28 and G10 L2 P30.
+  - added configuration for using software pulling input limit/control pins
+
+### Changed
+  - configuration now simplified (choose board only and the mcu is selected to match the board)
+
+### Fixed
+  - fixed code without probe
+  - fixed code without spindle
+  - compliance to strict-prototype functions
+
 ## [1.0.0-beta.2] - 2020-02-09
 
 ### Added
@@ -110,5 +124,6 @@
 
 ### Initial release
 
+[1.0.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-rc
 [1.0.0-beta.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta.2
 [1.0.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta
