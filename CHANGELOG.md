@@ -5,6 +5,14 @@
 
 # Changelog
 
+## [1.0.0] - not released
+
+### Fixed
+  - fixed parsing error in check mode (planner position not updated after linear motions)
+  - fixed feed override caused feed to go to 0 above 180% feed override value
+  - change macro and library dependencies so that the option for fast Sqrt function works (AVR problem only)
+  - fixed README
+
 ## [1.0.0-rc] - 2020-07-11
 
 ### Added
