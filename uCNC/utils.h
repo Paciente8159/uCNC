@@ -2,16 +2,16 @@
 	Name: utils.h
 	Description: Some useful constants and macros.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) Joï¿½o Martins
+	Author: Joï¿½o Martins
 	Date: 19/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ï¿½CNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ï¿½CNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -21,6 +21,7 @@
 
 #include "config.h"
 
+#ifndef BYTE_OPS
 #define SETBIT(x,y) ((x) |= (1<<(y))) /* Set bit y in byte x*/
 #define CLEARBIT(x,y) ((x) &= ~(1<<(y))) /* Clear bit y in byte x*/
 #define CHECKBIT(x,y) ((x) & (1<<(y))) /* Check bit y in byte x*/
@@ -30,6 +31,7 @@
 #define CLEARFLAG(x,y) ((x) &= ~(y)) /* Clear byte y in byte x*/
 #define CHECKFLAG(x,y) ((x) & (y)) /* Check byte y in byte x*/
 #define TOGGLEFLAG(x,y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+#endif
 
 #define MAX(a,b) (((a)>(b)) ? (a) : (b))
 #define MIN(a,b) (((a)<(b)) ? (a) : (b))
@@ -48,7 +50,7 @@
 #endif
 
 //Quake III based fast sqrt calculation
-#if (!defined(NO_FAST_SQRT) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#if (defined(ENABLE_FAST_SQRT) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
 #define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
 #define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result;})
 #else

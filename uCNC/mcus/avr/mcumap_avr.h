@@ -26,7 +26,6 @@
 /*
 	MCU specific definitions and replacements
 */
-#include "../../utils.h"
 #include <avr/pgmspace.h>
 
 //defines the frequency of the mcu
@@ -42,6 +41,11 @@
 #define rom_strncpy strncpy_P
 #define rom_memcpy memcpy_P
 #define rom_read_byte pgm_read_byte
+
+#define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__ 
+#define __SIZEOF_FLOAT__ 4
+
+
 //used by the parser
 //this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
 //if not defined utils.h will use standard math operation
@@ -2897,6 +2901,18 @@
 //Indirect macro access
 #define __indirect__ex__(X, Y) (DIO##X##_##Y)
 #define __indirect__(X, Y) __indirect__ex__(X,Y)
+
+#ifndef BYTE_OPS
+#define SETBIT(x,y) ((x) |= (1<<(y))) /* Set bit y in byte x*/
+#define CLEARBIT(x,y) ((x) &= ~(1<<(y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x,y) ((x) & (1<<(y))) /* Check bit y in byte x*/
+#define TOGGLEBIT(x,y) ((x) ^= (1<<(y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x,y) ((x) |= (y)) /* Set byte y in byte x*/
+#define CLEARFLAG(x,y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x,y) ((x) & (y)) /* Check byte y in byte x*/
+#define TOGGLEFLAG(x,y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+#endif
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT)))
