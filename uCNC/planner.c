@@ -208,7 +208,8 @@ float planner_get_block_top_speed(void)
     {
         if (planner_overrides.feed_override != 100)
         {
-            target_speed_sqr *= planner_overrides.feed_override * planner_overrides.feed_override;
+            target_speed_sqr *= (float)planner_overrides.feed_override;
+            target_speed_sqr *= (float)planner_overrides.feed_override;
             target_speed_sqr *= 0.0001f;
         }
 
@@ -216,7 +217,8 @@ float planner_get_block_top_speed(void)
         //if rapid overrides are active the feed must not exceed the rapid motion feed
         if (planner_overrides.rapid_feed_override != 100)
         {
-            rapid_feed_sqr *= planner_overrides.rapid_feed_override * planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
             rapid_feed_sqr *= 0.0001f;
         }
 
@@ -465,6 +467,11 @@ void planner_add_line(float *target, planner_block_data_t block_data)
 void planner_get_position(float *axis)
 {
     memcpy(axis, planner_coord, sizeof(planner_coord));
+}
+
+void planner_set_position(float *axis)
+{
+    memcpy(planner_coord, axis, sizeof(planner_coord));
 }
 
 void planner_resync_position(void)

@@ -93,6 +93,7 @@ void planner_add_line(float *target, planner_block_data_t block_data);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
 void planner_get_position(float *axis);
+void planner_set_position(float *axis);
 void planner_resync_position(void);
 
 //overrides
