@@ -18,8 +18,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC is still it's still in a release/ready stage so it should be only used for test purposes for now.
-For production stages [Grbl](https://github.com/gnea/grbl) or other G-Codes interpreters/controllers should be used.
+µCNC 1.0.0 is in Release Candidate and is stable. It can be used in production stages with care.
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
