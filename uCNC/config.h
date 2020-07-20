@@ -34,8 +34,9 @@
 	Choose the board
 	Check boardss.h for list of available/supported boards
 */
+#ifndef BOARD
 #define BOARD BOARD_GRBL
-
+#endif
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
