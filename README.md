@@ -1,4 +1,4 @@
-![GitHub Logo](https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true)
+![GitHub Logo](https://github.com/Paciente8159/uCNC/blob/1.0.x/docs/logo.png?raw=true)
 
 # µCNC
 µCNC - A universal CNC firmware for microcontrollers
@@ -81,6 +81,6 @@ In the future µCNC will most probably be extended to:
   - Other??
 
 ### Building µCNC
-For building µCNC go ahead to the [mcus](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcus) folder of the target MCU and follow the instructions specific to your device.
+For building µCNC go ahead to the [mcus](https://github.com/Paciente8159/uCNC/blob/1.0.x/uCNC/mcus) folder of the target MCU and follow the instructions specific to your device.
 
 
