@@ -6,16 +6,16 @@
 
 ## Method one - Arduino IDE
 Copy the boardmap_YOUR_BOARD.h , mcumap_avr.h, mcu_avr.c and uCNC.ino file to the parent µCNC folder is (where all µCNC core code is) and open the ino file with Arduino IDE.
-You need to edit [mcu_avr.c](https://github.com/Paciente8159/uCNC/blob/1.0.x/uCNC/mcus/avr/mcu_avr.c) to reflect the path changes in the #include declarations of these files.
+
+The file [mcudefs.h](https://github.com/Paciente8159/uCNC/blob/1.0.x/uCNC/mcudefs.h) should be updated to reflect the changes in the path of the files
 Example:
 ```
-#include "../../config.h"
+#include "mcus\avr\mcumap_avr.h"
 ```
 should be changed to
 ```
-#include "config.h"
+#include "mcumap_avr.h"
 ```
-The file [mcudefs.h](https://github.com/Paciente8159/uCNC/blob/1.0.x/uCNC/mcudefs.h) should also be updated to reflect the changes in the path of the files
 
 Choose your target board and just compile and load. You're done.
 

@@ -27,14 +27,14 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "../../config.h"
-#include "../../mcudefs.h"
-#include "../../utils.h"
+#include "config.h"
+#include "mcudefs.h"
+#include "utils.h"
 #include "mcumap_avr.h"
-#include "../../mcu.h"
-#include "../../serial.h"
-#include "../../interpolator.h"
-#include "../../io_control.h"
+#include "mcu.h"
+#include "serial.h"
+#include "interpolator.h"
+#include "io_control.h"
 
 #include <math.h>
 #include <inttypes.h>
