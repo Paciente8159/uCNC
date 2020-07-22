@@ -1,4 +1,4 @@
-![GitHub Logo](https://github.com/Paciente8159/uCNC/blob/1.0.x/docs/logo.png?raw=true)
+![GitHub Logo](https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true)
 
 # µCNC
 µCNC - A universal CNC firmware for microcontrollers
@@ -6,6 +6,9 @@
 # Changelog
 
 ## [1.0.0] - not released
+
+### Changed
+  - modified makefile and instructions for AVR
 
 ### Fixed
   - fixed parsing error in check mode (planner position not updated after linear motions)
