@@ -23,12 +23,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "config.h"
+#include "motion_control.h"
 
+#ifndef PLANNER_BUFFER_SIZE
 #define PLANNER_BUFFER_SIZE 15
-
-#define PLANNER_MOTION_MODE_NOMOTION 1
-#define PLANNER_MOTION_MODE_FEED 2
-#define PLANNER_MOTION_MODE_INVERSEFEED 4
+#endif
 
 #define PLANNER_MOTION_EXACT_PATH 32 //default (not used)
 #define PLANNER_MOTION_EXACT_STOP 64
@@ -39,32 +38,16 @@ typedef struct
     #ifdef GCODE_PROCESS_LINE_NUMBERS
     uint32_t line;
     #endif
-    float dir_vect[AXIS_COUNT];
-    float distance;
-    float feed;
-    int16_t spindle;
-    uint16_t dwell;
-    uint8_t motion_mode;
-} planner_block_data_t;
-
-typedef struct
-{
-    #ifdef GCODE_PROCESS_LINE_NUMBERS
-    uint32_t line;
-    #endif
     uint8_t dirbits;
-    float pos[AXIS_COUNT];
-
-    float distance;
-    //float angle_factor;
+    uint32_t steps[STEPPER_COUNT];
+    uint32_t total_steps;
+    uint8_t step_indexer;
 
     float entry_feed_sqr;
     float entry_max_feed_sqr;
     float feed_sqr;
     float rapid_feed_sqr;
-
     float acceleration;
-    float accel_inv;
 
 #ifdef USE_SPINDLE
     int16_t spindle;
@@ -73,6 +56,9 @@ typedef struct
     uint8_t coolant;
 #endif
     uint16_t dwell;
+#ifdef ENABLE_BACKLASH_COMPENSATION
+    bool backlash_comp;
+#endif
 
     bool optimal;
 } planner_block_t;
@@ -89,11 +75,10 @@ void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert);
 float planner_get_previous_spindle_speed(void);
 #endif
 void planner_discard_block(void);
-void planner_add_line(float *target, planner_block_data_t block_data);
+void planner_add_line(uint32_t *target, motion_data_t block_data);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
-void planner_get_position(float *axis);
-void planner_set_position(float *axis);
+void planner_get_position(uint32_t *steps);
 void planner_resync_position(void);
 
 //overrides

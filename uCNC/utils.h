@@ -2,16 +2,16 @@
 	Name: utils.h
 	Description: Some useful constants and macros.
 
-	Copyright: Copyright (c) Jo�o Martins
-	Author: Jo�o Martins
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
 	Date: 19/09/2019
 
-	�CNC is free software: you can redistribute it and/or modify
+	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	�CNC is distributed WITHOUT ANY WARRANTY;
+	µCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
@@ -19,7 +19,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include "config.h"
+#include <stdint.h>
 
 #ifndef BYTE_OPS
 #define SETBIT(x,y) ((x) |= (1<<(y))) /* Set bit y in byte x*/
@@ -50,7 +50,7 @@
 #endif
 
 //Quake III based fast sqrt calculation
-#if (defined(ENABLE_FAST_SQRT) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#if (defined(ENABLE_FAST_SQRT) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) && (__SIZEOF_FLOAT__ == 4))
 #define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
 #define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result;})
 #else

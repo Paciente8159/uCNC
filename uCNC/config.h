@@ -37,6 +37,7 @@
 #ifndef BOARD
 #define BOARD BOARD_GRBL
 #endif
+
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
@@ -145,15 +146,39 @@
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 
 /*
+	If the type of machine supports skew and needs skew correction (defined in the specified kinematics_xxx.h file)
+*/
+#ifdef ENABLE_SKEW_COMPENSATION
+//uncomment to correct only in the xy axis
+//#define SKEW_COMPENSATION_XY_ONLY
+#endif
+
+/*
+	Changes the planner acceleration profile generation from axis driven to linear actuator driven
+*/
+//#define ENABLE_LINACT_PLANNER
+#ifdef ENABLE_LINACT_PLANNER
+//uncomment to do a stop and start if any of the linear actuators is at a still state or changes direction
+//#define ENABLE_LINACT_COLD_START
+#endif
+
+/*
+	If the type of machine need backlash compensation configure here
+*/
+//#define ENABLE_BACKLASH_COMPENSATION
+
+/*
 	Compilation specific options
 */
 //#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-#define ENABLE_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
+//#define ENABLE_FAST_SQRT //enable  Quake III style fast sqrt utils. Feed rate calculations will be more accurate. In the fast mode the output feed might be +/-5% of the programmed feed
 
 /*
 	Uses pin pooling for all limits and control pins (no interrupts)
 */
 //#define USE_INPUTS_POOLING_ONLY
+
+#include "utils.h"
 
 #endif

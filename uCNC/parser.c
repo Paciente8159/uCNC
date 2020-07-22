@@ -22,12 +22,13 @@
 */
 
 #include "config.h"
+#include "utils.h"
 #include "mcu.h"
 #include "grbl_interface.h"
-#include "utils.h"
 #include "settings.h"
 #include "serial.h"
 #include "protocol.h"
+#include "kinematics.h"
 #include "planner.h"
 #include "motion_control.h"
 #include "io_control.h"
@@ -207,8 +208,8 @@ uint8_t parser_gcode_command(void)
 {
     uint8_t result = 0;
     //initializes new state
-    parser_state_t next_state = {};
-    parser_words_t words = {};
+    parser_state_t next_state = {0};
+    parser_words_t words = {0};
     //next state will be the same as previous except for nonmodal group (is set with 0)
     memcpy(&next_state, &parser_state, sizeof(parser_state_t));
     next_state.groups.nonmodal = 0; //reset nonmodal
@@ -315,7 +316,7 @@ uint8_t parser_grbl_command(void)
     }
     serial_getc();
     unsigned char c = serial_peek();
-	uint16_t block_address;
+	uint16_t block_address = {0};
     uint8_t error = STATUS_OK;
     switch(c)
     {
@@ -389,8 +390,8 @@ uint8_t parser_grbl_command(void)
     }
 
     error = STATUS_OK;
-    parser_state_t next_state = {};
-	parser_words_t words = {};
+    parser_state_t next_state = {0};
+	parser_words_t words = {0};
     switch (c)
     {
         case '$':
@@ -539,7 +540,7 @@ void parser_get_coordsys(uint8_t system_num, float* axis)
         	memcpy(axis, parser_parameters.last_probe_position, sizeof(parser_parameters.last_probe_position));
             break;
         case 254:
-        	memcpy(axis, (float*)&parser_parameters.tool_length_offset, sizeof(float));
+        	memcpy(axis, &parser_parameters.tool_length_offset, sizeof(float));
             break;
         case 28:
             settings_load(G28ADDRESS, (uint8_t*)axis, PARSER_PARAM_SIZE);
@@ -564,7 +565,7 @@ uint8_t parser_get_probe_result(void)
 void parser_parameters_reset(void)
 {
     //erase all parameters for G54..G59.x coordinate systems
-    memset(&parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
+    memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
     for(uint8_t i = 0; i < COORD_SYS_COUNT; i++)
     {
         settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
@@ -597,7 +598,9 @@ bool parser_get_wco(float *axis)
 
 void parser_sync_probe(void)
 {
-    itp_get_rt_position(parser_parameters.last_probe_position);
+    uint32_t step_pos[STEPPER_COUNT];
+	itp_get_rt_position(step_pos);
+	kinematics_apply_forward(step_pos, parser_parameters.last_probe_position);
 }
 
 #ifdef USE_COOLANT
@@ -721,7 +724,9 @@ bool parser_get_float(float *value, bool *isinteger)
 */
 bool parser_get_comment(void)
 {
+	#ifdef PROCESS_COMMENTS
     uint8_t msg_parser = 0;
+    #endif
     for(;;)
     {
         unsigned char c = serial_peek();
@@ -783,7 +788,6 @@ bool parser_get_comment(void)
 */
 uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words)
 {
-    bool hasnumber = false;
     float word_val = 0.0;
     unsigned char word = EOL;
     uint8_t code = 0;
@@ -1532,31 +1536,31 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     float radius;
     //pointer to planner position
     float planner_last_pos[AXIS_COUNT];
-    planner_block_data_t block_data = {};
+    motion_data_t block_data = {0};
 
     #ifdef GCODE_PROCESS_LINE_NUMBERS
     block_data.line = words->n;
     #endif
 
-    planner_get_position(planner_last_pos);
+    mc_get_position(planner_last_pos);
 
     //RS274NGC v3 - 3.8 Order of Execution
     //1. comment (ignored - already filtered)
     //2. set feed mode (not implemented yet)
-    block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+    block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
     if (new_state->groups.feedrate_mode == 0)
     {
         if (new_state->groups.motion >= 1 && new_state->groups.motion <= 3)
         {
-            block_data.motion_mode = PLANNER_MOTION_MODE_INVERSEFEED;
+            block_data.motion_mode = MOTIONCONTROL_MODE_INVERSEFEED;
         }
     }
-    //3. set feed rate (µCNC works in units per second and not per minute)
+    //3. set feed rate
     if (CHECKFLAG(parser_word0, GCODE_WORD_F))
     {
         if (new_state->groups.feedrate_mode != 0)
         {
-            new_state->feedrate = words->f * MIN_SEC_MULT;
+            new_state->feedrate = words->f;
         }
     }
     
@@ -1668,7 +1672,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
         }
 
         //if new feed is defined (normal feed mode) convert o mm
-        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
+        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && CHECKFLAG(block_data.motion_mode,MOTIONCONTROL_MODE_FEED))
         {
             words->f *= 25.4f;
         }
@@ -1715,7 +1719,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
     //set the initial feedrate to the maximum value
     block_data.feed = FLT_MAX;
     //limit feed to the maximum possible feed
-    if (CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
+    if (CHECKFLAG(block_data.motion_mode,MOTIONCONTROL_MODE_FEED))
     {
         block_data.feed = MIN(block_data.feed, words->f);
     }
@@ -1761,7 +1765,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                 break;
             case 2: //G28
             case 3: //G30
-                error = mc_line((float *)&words->xyzabc, block_data);
+                error = mc_line(words->xyzabc, block_data);
                 if (error)
                 {
                     return error;
@@ -1775,14 +1779,14 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                 {
                     settings_load(G30ADDRESS, (uint8_t*)&axis, PARSER_PARAM_SIZE);
                 }
-                error = mc_line((float *)&axis, block_data);
+                error = mc_line(axis, block_data);
                 {
                     return error;
                 }
                 CLEARFLAG(parser_word0, GCODE_ALL_AXIS);
                 break;
             case 5: //G53
-                memcpy(&axis, &words->xyzabc, sizeof(axis));
+                memcpy(axis, words->xyzabc, sizeof(axis));
                 break;
             case 9: //G92
                 for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -1790,21 +1794,21 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
                     i--;
                     parser_parameters.g92_offset[i] = planner_last_pos[i] - parser_parameters.coord_system_offset[i] - words->xyzabc[i];
                 }
-				settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
+				settings_save(G92ADDRESS, (uint8_t *)parser_parameters.g92_offset, PARSER_PARAM_SIZE);
                 parser_wco_counter = 0;
                 CLEARFLAG(parser_word0, GCODE_ALL_AXIS);
                 break;
             case 10: //G92.1
-                memset(&parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
+                memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
                 settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
                 parser_wco_counter = 0;
                 break;
             case 11: //G92.2
-                memset(&parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
+                memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
                 parser_wco_counter = 0;
                 break;
             case 12: //G92.3
-                settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
+                settings_load(G92ADDRESS, (uint8_t *)parser_parameters.g92_offset, PARSER_PARAM_SIZE);
                 parser_wco_counter = 0;
                 break;
         }
@@ -1812,7 +1816,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
 
     if (new_state->groups.nonmodal != 5) //if not modified by G53
     {
-        memset(&axis, 0, sizeof(axis));
+        memset(axis, 0, sizeof(axis));
 
         if ((new_state->groups.distance_mode == 0))
         {
@@ -2026,8 +2030,6 @@ void parser_reset(void)
 //also checks all other coordinate systems and homing positions
 void parser_load_parameters(void)
 {
-    const uint8_t size = PARSER_PARAM_SIZE;
-
     //loads G92
     if(settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
     {
@@ -2046,7 +2048,7 @@ void parser_load_parameters(void)
     //load G54
     if(settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t*)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
     {
-        memset(&parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
+        memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
         settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
     }
 }

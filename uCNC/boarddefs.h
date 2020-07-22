@@ -32,6 +32,8 @@
 
 #if (BOARD == BOARD_GRBL)
 #define MCU MCU_AVR
+//overrides buffer size to fit available memory
+//#define PLANNER_BUFFER_SIZE 14
 #include "mcus\avr\boardmap_grbl.h"
 #endif
 
@@ -46,7 +48,9 @@
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
-
+#define MCU MCU_VIRTUAL
+#include "mcus\virtual\virtualtimer.h"
+#include "mcus\virtual\virtualserial.h"
 #endif
 
 #ifndef BOARD

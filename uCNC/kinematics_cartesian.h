@@ -49,4 +49,9 @@
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
 
+/*
+	Enable Skew compensation
+*/
+//#define ENABLE_SKEW_COMPENSATION
+
 #endif

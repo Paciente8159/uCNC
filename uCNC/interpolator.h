@@ -30,7 +30,7 @@ void itp_step_isr(void);
 void itp_step_reset_isr(void);
 void itp_stop(void);
 void itp_clear(void);
-void itp_get_rt_position(float *axis);
+void itp_get_rt_position(uint32_t *position);
 void itp_reset_rt_position(void);
 float itp_get_rt_feed(void);
 #ifdef USE_SPINDLE
