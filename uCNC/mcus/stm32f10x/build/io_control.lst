@@ -1,0 +1,1464 @@
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 1
+  10              		.eabi_attribute 18, 4
+  11              		.file	"io_control.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.text.io_probe_isr,"ax",%progbits
+  16              		.align	1
+  17              		.global	io_probe_isr
+  18              		.arch armv7-m
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu softvfp
+  24              	io_probe_isr:
+  25              	.LFB67:
+  26              		.file 1 "../../io_control.c"
+   1:../../io_control.c **** /*
+   2:../../io_control.c **** 	Name: io_control.c
+   3:../../io_control.c **** 	Description: The input control unit for µCNC.
+   4:../../io_control.c ****         This is responsible to check all limit switches (both hardware and software), control switc
+   5:../../io_control.c ****         and probe.
+   6:../../io_control.c **** 
+   7:../../io_control.c **** 	Copyright: Copyright (c) João Martins
+   8:../../io_control.c **** 	Author: João Martins
+   9:../../io_control.c **** 	Date: 07/12/2019
+  10:../../io_control.c **** 
+  11:../../io_control.c **** 	µCNC is free software: you can redistribute it and/or modify
+  12:../../io_control.c **** 	it under the terms of the GNU General Public License as published by
+  13:../../io_control.c **** 	the Free Software Foundation, either version 3 of the License, or
+  14:../../io_control.c **** 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+  15:../../io_control.c **** 
+  16:../../io_control.c **** 	µCNC is distributed WITHOUT ANY WARRANTY;
+  17:../../io_control.c **** 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  18:../../io_control.c **** 	See the	GNU General Public License for more details.
+  19:../../io_control.c **** */
+  20:../../io_control.c **** 
+  21:../../io_control.c **** #include "config.h"
+  22:../../io_control.c **** #include "grbl_interface.h"
+  23:../../io_control.c **** #include "settings.h"
+  24:../../io_control.c **** #include "mcu.h"
+  25:../../io_control.c **** #include "io_control.h"
+  26:../../io_control.c **** #include "parser.h"
+  27:../../io_control.c **** #include "interpolator.h"
+  28:../../io_control.c **** #include "cnc.h"
+  29:../../io_control.c **** 
+  30:../../io_control.c **** static volatile uint8_t io_limits_homing_filter;
+  31:../../io_control.c **** 
+  32:../../io_control.c **** void io_limits_isr(void)
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 2
+
+
+  33:../../io_control.c **** {
+  34:../../io_control.c ****     uint8_t limits = io_get_limits();
+  35:../../io_control.c **** 
+  36:../../io_control.c ****     if(g_settings.hard_limits_enabled)
+  37:../../io_control.c ****     {
+  38:../../io_control.c ****         if(limits)
+  39:../../io_control.c ****         {
+  40:../../io_control.c ****             if(cnc_get_exec_state(EXEC_RUN))
+  41:../../io_control.c ****             {
+  42:../../io_control.c ****                 if(!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
+  43:../../io_control.c ****                 {
+  44:../../io_control.c ****                 	if(g_settings.homing_enabled)
+  45:../../io_control.c **** 	                {
+  46:../../io_control.c **** 	                    cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home positio
+  47:../../io_control.c **** 	                }
+  48:../../io_control.c **** 	                
+  49:../../io_control.c ****                     cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+  50:../../io_control.c ****                 }
+  51:../../io_control.c ****                 #ifdef ENABLE_DUAL_DRIVE_AXIS
+  52:../../io_control.c ****                 else
+  53:../../io_control.c ****                 {
+  54:../../io_control.c ****                 	//if homing and dual drive axis are enabled
+  55:../../io_control.c ****                 	#ifdef DUAL_DRIVE_AXIS0
+  56:../../io_control.c ****                 	if((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the li
+  57:../../io_control.c ****                 	{
+  58:../../io_control.c ****                         itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
+  59:../../io_control.c **** 
+  60:../../io_control.c ****                 		if((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+  61:../../io_control.c ****                 		{
+  62:../../io_control.c ****                 			return; //exits and doesn't trip the alarm
+  63:../../io_control.c **** 						}
+  64:../../io_control.c **** 					}
+  65:../../io_control.c ****                 	#endif
+  66:../../io_control.c ****                 	#ifdef DUAL_DRIVE_AXIS1
+  67:../../io_control.c ****                 	if(limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches t
+  68:../../io_control.c ****                 	{
+  69:../../io_control.c ****                 		if((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+  70:../../io_control.c ****                 		{
+  71:../../io_control.c ****                 			itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
+  72:../../io_control.c ****                 		}
+  73:../../io_control.c **** 					}
+  74:../../io_control.c ****                 	#endif
+  75:../../io_control.c **** 				}
+  76:../../io_control.c **** 				#endif
+  77:../../io_control.c ****             }
+  78:../../io_control.c ****             #ifdef ENABLE_DUAL_DRIVE_AXIS
+  79:../../io_control.c ****             itp_lock_stepper(0); //unlocks axis
+  80:../../io_control.c ****             #endif
+  81:../../io_control.c ****             cnc_set_exec_state(EXEC_LIMITS);
+  82:../../io_control.c ****             itp_stop();
+  83:../../io_control.c ****         }
+  84:../../io_control.c ****     }
+  85:../../io_control.c **** }
+  86:../../io_control.c **** 
+  87:../../io_control.c **** void io_controls_isr(void)
+  88:../../io_control.c **** {
+  89:../../io_control.c ****     uint8_t controls = io_get_controls();
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 3
+
+
+  90:../../io_control.c **** 
+  91:../../io_control.c **** #ifdef ESTOP
+  92:../../io_control.c ****     if(CHECKFLAG(controls,ESTOP_MASK))
+  93:../../io_control.c ****     {
+  94:../../io_control.c ****         cnc_call_rt_command(CMD_CODE_RESET);
+  95:../../io_control.c ****         return; //forces exit
+  96:../../io_control.c ****     }
+  97:../../io_control.c **** #endif
+  98:../../io_control.c **** #ifdef SAFETY_DOOR
+  99:../../io_control.c ****     if(CHECKFLAG(controls,SAFETY_DOOR_MASK))
+ 100:../../io_control.c ****     {
+ 101:../../io_control.c ****         //safety door activates hold simultaneously to start the controlled stop
+ 102:../../io_control.c ****         cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
+ 103:../../io_control.c ****     }
+ 104:../../io_control.c **** #endif
+ 105:../../io_control.c **** #ifdef FHOLD
+ 106:../../io_control.c ****     if(CHECKFLAG(controls,FHOLD_MASK))
+ 107:../../io_control.c ****     {
+ 108:../../io_control.c ****         cnc_call_rt_command(CMD_CODE_FEED_HOLD);
+ 109:../../io_control.c ****     }
+ 110:../../io_control.c **** #endif
+ 111:../../io_control.c **** #ifdef CS_RES
+ 112:../../io_control.c ****     if(CHECKFLAG(controls,CS_RES_MASK))
+ 113:../../io_control.c ****     {
+ 114:../../io_control.c ****         cnc_call_rt_command(CMD_CODE_CYCLE_START);
+ 115:../../io_control.c ****     }
+ 116:../../io_control.c **** #endif
+ 117:../../io_control.c **** }
+ 118:../../io_control.c **** 
+ 119:../../io_control.c **** void io_probe_isr(void)
+ 120:../../io_control.c **** {
+  27              		.loc 1 120 1 view -0
+  28              		.cfi_startproc
+  29              		@ args = 0, pretend = 0, frame = 0
+  30              		@ frame_needed = 0, uses_anonymous_args = 0
+  31 0000 08B5     		push	{r3, lr}
+  32              	.LCFI0:
+  33              		.cfi_def_cfa_offset 8
+  34              		.cfi_offset 3, -8
+  35              		.cfi_offset 14, -4
+ 121:../../io_control.c ****     //on hit enables hold (directly)
+ 122:../../io_control.c ****     cnc_set_exec_state(EXEC_HOLD);
+  36              		.loc 1 122 5 view .LVU1
+  37 0002 0220     		movs	r0, #2
+  38 0004 FFF7FEFF 		bl	cnc_set_exec_state
+  39              	.LVL0:
+ 123:../../io_control.c ****     //stores rt position
+ 124:../../io_control.c ****     parser_sync_probe();
+  40              		.loc 1 124 5 view .LVU2
+  41 0008 FFF7FEFF 		bl	parser_sync_probe
+  42              	.LVL1:
+ 125:../../io_control.c **** }
+  43              		.loc 1 125 1 is_stmt 0 view .LVU3
+  44 000c 08BD     		pop	{r3, pc}
+  45              		.cfi_endproc
+  46              	.LFE67:
+  48              		.global	__aeabi_fcmplt
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 4
+
+
+  49              		.section	.text.io_check_boundaries,"ax",%progbits
+  50              		.align	1
+  51              		.global	io_check_boundaries
+  52              		.syntax unified
+  53              		.thumb
+  54              		.thumb_func
+  55              		.fpu softvfp
+  57              	io_check_boundaries:
+  58              	.LVL2:
+  59              	.LFB68:
+ 126:../../io_control.c **** 
+ 127:../../io_control.c **** bool io_check_boundaries(float* axis)
+ 128:../../io_control.c **** {
+  60              		.loc 1 128 1 is_stmt 1 view -0
+  61              		.cfi_startproc
+  62              		@ args = 0, pretend = 0, frame = 0
+  63              		@ frame_needed = 0, uses_anonymous_args = 0
+  64              		.loc 1 128 1 is_stmt 0 view .LVU5
+  65 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+  66              	.LCFI1:
+  67              		.cfi_def_cfa_offset 24
+  68              		.cfi_offset 3, -24
+  69              		.cfi_offset 4, -20
+  70              		.cfi_offset 5, -16
+  71              		.cfi_offset 6, -12
+  72              		.cfi_offset 7, -8
+  73              		.cfi_offset 14, -4
+ 129:../../io_control.c ****     if(!g_settings.soft_limits_enabled)
+  74              		.loc 1 129 5 is_stmt 1 view .LVU6
+  75              		.loc 1 129 19 is_stmt 0 view .LVU7
+  76 0002 124B     		ldr	r3, .L16
+  77 0004 5F7D     		ldrb	r7, [r3, #21]	@ zero_extendqisi2
+  78              		.loc 1 129 7 view .LVU8
+  79 0006 17B1     		cbz	r7, .L13
+  80 0008 0646     		mov	r6, r0
+  81              	.LBB2:
+ 130:../../io_control.c ****     {
+ 131:../../io_control.c ****         return true;
+ 132:../../io_control.c ****     }
+ 133:../../io_control.c **** 
+ 134:../../io_control.c ****     for(uint8_t i = AXIS_COUNT; i!=0;)
+  82              		.loc 1 134 17 view .LVU9
+  83 000a 0324     		movs	r4, #3
+  84 000c 0EE0     		b	.L4
+  85              	.L13:
+  86              		.loc 1 134 17 view .LVU10
+  87              	.LBE2:
+ 131:../../io_control.c ****     }
+  88              		.loc 1 131 16 view .LVU11
+  89 000e 0127     		movs	r7, #1
+  90              	.LVL3:
+  91              	.L5:
+ 135:../../io_control.c ****     {
+ 136:../../io_control.c ****         i--;
+ 137:../../io_control.c ****         float value = (axis[i] < 0) ? -axis[i] : axis[i];
+ 138:../../io_control.c ****         if(value > g_settings.max_distance[i])
+ 139:../../io_control.c ****         {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 5
+
+
+ 140:../../io_control.c ****             return false;
+ 141:../../io_control.c ****         }
+ 142:../../io_control.c ****     }
+ 143:../../io_control.c **** 
+ 144:../../io_control.c ****     return true;
+ 145:../../io_control.c **** }
+  92              		.loc 1 145 1 view .LVU12
+  93 0010 3846     		mov	r0, r7
+  94 0012 F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+  95              	.LVL4:
+  96              	.L15:
+  97              	.LBB5:
+  98              	.LBB3:
+ 137:../../io_control.c ****         if(value > g_settings.max_distance[i])
+  99              		.loc 1 137 48 discriminator 1 view .LVU13
+ 100 0014 05F10045 		add	r5, r5, #-2147483648
+ 101              	.L6:
+ 102              	.LVL5:
+ 138:../../io_control.c ****         {
+ 103              		.loc 1 138 9 is_stmt 1 discriminator 4 view .LVU14
+ 138:../../io_control.c ****         {
+ 104              		.loc 1 138 43 is_stmt 0 discriminator 4 view .LVU15
+ 105 0018 04F11403 		add	r3, r4, #20
+ 106 001c 0B4A     		ldr	r2, .L16
+ 107 001e 02EB8303 		add	r3, r2, r3, lsl #2
+ 138:../../io_control.c ****         {
+ 108              		.loc 1 138 11 discriminator 4 view .LVU16
+ 109 0022 2946     		mov	r1, r5
+ 110 0024 5868     		ldr	r0, [r3, #4]	@ float
+ 111 0026 FFF7FEFF 		bl	__aeabi_fcmplt
+ 112              	.LVL6:
+ 113 002a 60B9     		cbnz	r0, .L14
+ 114              	.LVL7:
+ 115              	.L4:
+ 138:../../io_control.c ****         {
+ 116              		.loc 1 138 11 discriminator 4 view .LVU17
+ 117              	.LBE3:
+ 134:../../io_control.c ****     {
+ 118              		.loc 1 134 33 is_stmt 1 discriminator 1 view .LVU18
+ 134:../../io_control.c ****     {
+ 119              		.loc 1 134 5 is_stmt 0 discriminator 1 view .LVU19
+ 120 002c 002C     		cmp	r4, #0
+ 121 002e EFD0     		beq	.L5
+ 122              	.LBB4:
+ 136:../../io_control.c ****         float value = (axis[i] < 0) ? -axis[i] : axis[i];
+ 123              		.loc 1 136 9 is_stmt 1 view .LVU20
+ 136:../../io_control.c ****         float value = (axis[i] < 0) ? -axis[i] : axis[i];
+ 124              		.loc 1 136 10 is_stmt 0 view .LVU21
+ 125 0030 013C     		subs	r4, r4, #1
+ 126              	.LVL8:
+ 136:../../io_control.c ****         float value = (axis[i] < 0) ? -axis[i] : axis[i];
+ 127              		.loc 1 136 10 view .LVU22
+ 128 0032 E4B2     		uxtb	r4, r4
+ 129              	.LVL9:
+ 137:../../io_control.c ****         if(value > g_settings.max_distance[i])
+ 130              		.loc 1 137 9 is_stmt 1 view .LVU23
+ 137:../../io_control.c ****         if(value > g_settings.max_distance[i])
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 6
+
+
+ 131              		.loc 1 137 28 is_stmt 0 view .LVU24
+ 132 0034 56F82450 		ldr	r5, [r6, r4, lsl #2]	@ float
+ 137:../../io_control.c ****         if(value > g_settings.max_distance[i])
+ 133              		.loc 1 137 48 view .LVU25
+ 134 0038 0021     		movs	r1, #0
+ 135 003a 2846     		mov	r0, r5
+ 136 003c FFF7FEFF 		bl	__aeabi_fcmplt
+ 137              	.LVL10:
+ 138 0040 0028     		cmp	r0, #0
+ 139 0042 E9D0     		beq	.L6
+ 140 0044 E6E7     		b	.L15
+ 141              	.LVL11:
+ 142              	.L14:
+ 140:../../io_control.c ****         }
+ 143              		.loc 1 140 20 view .LVU26
+ 144 0046 0027     		movs	r7, #0
+ 145 0048 E2E7     		b	.L5
+ 146              	.L17:
+ 147 004a 00BF     		.align	2
+ 148              	.L16:
+ 149 004c 00000000 		.word	g_settings
+ 150              	.LBE4:
+ 151              	.LBE5:
+ 152              		.cfi_endproc
+ 153              	.LFE68:
+ 155              		.section	.text.io_get_limits,"ax",%progbits
+ 156              		.align	1
+ 157              		.global	io_get_limits
+ 158              		.syntax unified
+ 159              		.thumb
+ 160              		.thumb_func
+ 161              		.fpu softvfp
+ 163              	io_get_limits:
+ 164              	.LFB69:
+ 146:../../io_control.c **** 
+ 147:../../io_control.c **** uint8_t io_get_limits(void)
+ 148:../../io_control.c **** {
+ 165              		.loc 1 148 1 is_stmt 1 view -0
+ 166              		.cfi_startproc
+ 167              		@ args = 0, pretend = 0, frame = 0
+ 168              		@ frame_needed = 0, uses_anonymous_args = 0
+ 169              		@ link register save eliminated.
+ 149:../../io_control.c ****     uint8_t value = 0;
+ 170              		.loc 1 149 5 view .LVU28
+ 171              	.LVL12:
+ 150:../../io_control.c **** #ifdef LIMIT_X
+ 151:../../io_control.c **** #ifdef LIMIT_X2
+ 152:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
+ 153:../../io_control.c **** #else
+ 154:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
+ 172              		.loc 1 154 5 view .LVU29
+ 173              		.loc 1 154 16 is_stmt 0 view .LVU30
+ 174 0000 0C4A     		ldr	r2, .L23
+ 175 0002 9368     		ldr	r3, [r2, #8]
+ 176              		.loc 1 154 11 view .LVU31
+ 177 0004 C3F30033 		ubfx	r3, r3, #12, #1
+ 178              	.LVL13:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 7
+
+
+ 155:../../io_control.c **** #endif
+ 156:../../io_control.c **** #endif
+ 157:../../io_control.c **** #ifdef LIMIT_Y
+ 158:../../io_control.c **** #ifdef LIMIT_Y2
+ 159:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Y)) ? (LIMIT_Y_MASK | LIMITS_LIMIT0_MASK) : 0);
+ 160:../../io_control.c **** #else
+ 161:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
+ 179              		.loc 1 161 5 is_stmt 1 view .LVU32
+ 180              		.loc 1 161 16 is_stmt 0 view .LVU33
+ 181 0008 9268     		ldr	r2, [r2, #8]
+ 182              		.loc 1 161 55 view .LVU34
+ 183 000a 12F4005F 		tst	r2, #8192
+ 184 000e 0CD0     		beq	.L21
+ 185 0010 0220     		movs	r0, #2
+ 186              	.L19:
+ 187              		.loc 1 161 11 discriminator 4 view .LVU35
+ 188 0012 0343     		orrs	r3, r3, r0
+ 189              	.LVL14:
+ 162:../../io_control.c **** #endif
+ 163:../../io_control.c **** #endif
+ 164:../../io_control.c **** #ifdef LIMIT_Z
+ 165:../../io_control.c **** #ifdef LIMIT_Z2
+ 166:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Z)) ? (LIMIT_Z_MASK | LIMITS_LIMIT0_MASK) : 0);
+ 167:../../io_control.c **** #else
+ 168:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
+ 190              		.loc 1 168 5 is_stmt 1 discriminator 4 view .LVU36
+ 191              		.loc 1 168 16 is_stmt 0 discriminator 4 view .LVU37
+ 192 0014 074A     		ldr	r2, .L23
+ 193 0016 9268     		ldr	r2, [r2, #8]
+ 194              		.loc 1 168 55 discriminator 4 view .LVU38
+ 195 0018 12F4804F 		tst	r2, #16384
+ 196 001c 07D0     		beq	.L22
+ 197              		.loc 1 168 55 view .LVU39
+ 198 001e 0420     		movs	r0, #4
+ 199              	.L20:
+ 200              		.loc 1 168 11 discriminator 4 view .LVU40
+ 201 0020 0343     		orrs	r3, r3, r0
+ 202              	.LVL15:
+ 169:../../io_control.c **** #endif
+ 170:../../io_control.c **** #endif
+ 171:../../io_control.c **** #ifdef LIMIT_X2
+ 172:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_X2)) ? (LIMIT_X_MASK | LIMITS_LIMIT1_MASK) : 0);
+ 173:../../io_control.c **** #endif
+ 174:../../io_control.c **** #ifdef LIMIT_Y2
+ 175:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Y2)) ? (LIMIT_Y_MASK | LIMITS_LIMIT1_MASK) : 0);
+ 176:../../io_control.c **** #endif
+ 177:../../io_control.c **** #ifdef LIMIT_Z2
+ 178:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_Z2)) ? (LIMIT_Z_MASK | LIMITS_LIMIT1_MASK) : 0);
+ 179:../../io_control.c **** #endif
+ 180:../../io_control.c **** #ifdef LIMIT_A
+ 181:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
+ 182:../../io_control.c **** #endif
+ 183:../../io_control.c **** #ifdef LIMIT_B
+ 184:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_B)) ? LIMIT_B_MASK : 0);
+ 185:../../io_control.c **** #endif
+ 186:../../io_control.c **** #ifdef LIMIT_C
+ 187:../../io_control.c ****     value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 8
+
+
+ 188:../../io_control.c **** #endif
+ 189:../../io_control.c **** 
+ 190:../../io_control.c ****     return (value ^ g_settings.limits_invert_mask);
+ 203              		.loc 1 190 5 is_stmt 1 discriminator 4 view .LVU41
+ 204              		.loc 1 190 31 is_stmt 0 discriminator 4 view .LVU42
+ 205 0022 054A     		ldr	r2, .L23+4
+ 206 0024 507A     		ldrb	r0, [r2, #9]	@ zero_extendqisi2
+ 191:../../io_control.c **** }
+ 207              		.loc 1 191 1 discriminator 4 view .LVU43
+ 208 0026 5840     		eors	r0, r0, r3
+ 209 0028 7047     		bx	lr
+ 210              	.L21:
+ 161:../../io_control.c **** #endif
+ 211              		.loc 1 161 55 view .LVU44
+ 212 002a 0020     		movs	r0, #0
+ 213 002c F1E7     		b	.L19
+ 214              	.L22:
+ 168:../../io_control.c **** #endif
+ 215              		.loc 1 168 55 view .LVU45
+ 216 002e 0020     		movs	r0, #0
+ 217 0030 F6E7     		b	.L20
+ 218              	.L24:
+ 219 0032 00BF     		.align	2
+ 220              	.L23:
+ 221 0034 000C0140 		.word	1073810432
+ 222 0038 00000000 		.word	g_settings
+ 223              		.cfi_endproc
+ 224              	.LFE69:
+ 226              		.section	.text.io_limits_isr,"ax",%progbits
+ 227              		.align	1
+ 228              		.global	io_limits_isr
+ 229              		.syntax unified
+ 230              		.thumb
+ 231              		.thumb_func
+ 232              		.fpu softvfp
+ 234              	io_limits_isr:
+ 235              	.LFB65:
+  33:../../io_control.c ****     uint8_t limits = io_get_limits();
+ 236              		.loc 1 33 1 is_stmt 1 view -0
+ 237              		.cfi_startproc
+ 238              		@ args = 0, pretend = 0, frame = 0
+ 239              		@ frame_needed = 0, uses_anonymous_args = 0
+ 240 0000 08B5     		push	{r3, lr}
+ 241              	.LCFI2:
+ 242              		.cfi_def_cfa_offset 8
+ 243              		.cfi_offset 3, -8
+ 244              		.cfi_offset 14, -4
+  34:../../io_control.c **** 
+ 245              		.loc 1 34 5 view .LVU47
+  34:../../io_control.c **** 
+ 246              		.loc 1 34 22 is_stmt 0 view .LVU48
+ 247 0002 FFF7FEFF 		bl	io_get_limits
+ 248              	.LVL16:
+  36:../../io_control.c ****     {
+ 249              		.loc 1 36 5 is_stmt 1 view .LVU49
+  36:../../io_control.c ****     {
+ 250              		.loc 1 36 18 is_stmt 0 view .LVU50
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 9
+
+
+ 251 0006 0F4B     		ldr	r3, .L33
+ 252 0008 9B7D     		ldrb	r3, [r3, #22]	@ zero_extendqisi2
+  36:../../io_control.c ****     {
+ 253              		.loc 1 36 7 view .LVU51
+ 254 000a 03B1     		cbz	r3, .L25
+  38:../../io_control.c ****         {
+ 255              		.loc 1 38 9 is_stmt 1 view .LVU52
+  38:../../io_control.c ****         {
+ 256              		.loc 1 38 11 is_stmt 0 view .LVU53
+ 257 000c 00B9     		cbnz	r0, .L30
+ 258              	.LVL17:
+ 259              	.L25:
+  85:../../io_control.c **** 
+ 260              		.loc 1 85 1 view .LVU54
+ 261 000e 08BD     		pop	{r3, pc}
+ 262              	.LVL18:
+ 263              	.L30:
+  40:../../io_control.c ****             {
+ 264              		.loc 1 40 13 is_stmt 1 view .LVU55
+  40:../../io_control.c ****             {
+ 265              		.loc 1 40 16 is_stmt 0 view .LVU56
+ 266 0010 0120     		movs	r0, #1
+ 267              	.LVL19:
+  40:../../io_control.c ****             {
+ 268              		.loc 1 40 16 view .LVU57
+ 269 0012 FFF7FEFF 		bl	cnc_get_exec_state
+ 270              	.LVL20:
+  40:../../io_control.c ****             {
+ 271              		.loc 1 40 15 view .LVU58
+ 272 0016 28B9     		cbnz	r0, .L31
+ 273              	.L27:
+  81:../../io_control.c ****             itp_stop();
+ 274              		.loc 1 81 13 is_stmt 1 view .LVU59
+ 275 0018 2020     		movs	r0, #32
+ 276 001a FFF7FEFF 		bl	cnc_set_exec_state
+ 277              	.LVL21:
+  82:../../io_control.c ****         }
+ 278              		.loc 1 82 13 view .LVU60
+ 279 001e FFF7FEFF 		bl	itp_stop
+ 280              	.LVL22:
+  85:../../io_control.c **** 
+ 281              		.loc 1 85 1 is_stmt 0 view .LVU61
+ 282 0022 F4E7     		b	.L25
+ 283              	.L31:
+  42:../../io_control.c ****                 {
+ 284              		.loc 1 42 17 is_stmt 1 view .LVU62
+  42:../../io_control.c ****                 {
+ 285              		.loc 1 42 21 is_stmt 0 view .LVU63
+ 286 0024 0820     		movs	r0, #8
+ 287 0026 FFF7FEFF 		bl	cnc_get_exec_state
+ 288              	.LVL23:
+  42:../../io_control.c ****                 {
+ 289              		.loc 1 42 19 view .LVU64
+ 290 002a 0028     		cmp	r0, #0
+ 291 002c F4D1     		bne	.L27
+  44:../../io_control.c **** 	                {
+ 292              		.loc 1 44 18 is_stmt 1 view .LVU65
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 10
+
+
+  44:../../io_control.c **** 	                {
+ 293              		.loc 1 44 31 is_stmt 0 view .LVU66
+ 294 002e 054B     		ldr	r3, .L33
+ 295 0030 DB7D     		ldrb	r3, [r3, #23]	@ zero_extendqisi2
+  44:../../io_control.c **** 	                {
+ 296              		.loc 1 44 20 view .LVU67
+ 297 0032 1BB9     		cbnz	r3, .L32
+ 298              	.L28:
+  49:../../io_control.c ****                 }
+ 299              		.loc 1 49 21 is_stmt 1 view .LVU68
+ 300 0034 0120     		movs	r0, #1
+ 301 0036 FFF7FEFF 		bl	cnc_alarm
+ 302              	.LVL24:
+ 303 003a EDE7     		b	.L27
+ 304              	.L32:
+  46:../../io_control.c **** 	                }
+ 305              		.loc 1 46 22 view .LVU69
+ 306 003c 1020     		movs	r0, #16
+ 307 003e FFF7FEFF 		bl	cnc_set_exec_state
+ 308              	.LVL25:
+ 309 0042 F7E7     		b	.L28
+ 310              	.L34:
+ 311              		.align	2
+ 312              	.L33:
+ 313 0044 00000000 		.word	g_settings
+ 314              		.cfi_endproc
+ 315              	.LFE65:
+ 317              		.section	.text.io_get_controls,"ax",%progbits
+ 318              		.align	1
+ 319              		.global	io_get_controls
+ 320              		.syntax unified
+ 321              		.thumb
+ 322              		.thumb_func
+ 323              		.fpu softvfp
+ 325              	io_get_controls:
+ 326              	.LFB70:
+ 192:../../io_control.c **** 
+ 193:../../io_control.c **** uint8_t io_get_controls(void)
+ 194:../../io_control.c **** {
+ 327              		.loc 1 194 1 view -0
+ 328              		.cfi_startproc
+ 329              		@ args = 0, pretend = 0, frame = 0
+ 330              		@ frame_needed = 0, uses_anonymous_args = 0
+ 331              		@ link register save eliminated.
+ 195:../../io_control.c ****     uint8_t value = 0;
+ 332              		.loc 1 195 5 view .LVU71
+ 333              	.LVL26:
+ 196:../../io_control.c **** #ifdef ESTOP
+ 197:../../io_control.c ****     value |= ((mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
+ 334              		.loc 1 197 5 view .LVU72
+ 335              		.loc 1 197 16 is_stmt 0 view .LVU73
+ 336 0000 0C4A     		ldr	r2, .L40
+ 337 0002 9368     		ldr	r3, [r2, #8]
+ 338              		.loc 1 197 11 view .LVU74
+ 339 0004 C3F34013 		ubfx	r3, r3, #5, #1
+ 340              	.LVL27:
+ 198:../../io_control.c **** #endif
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 11
+
+
+ 199:../../io_control.c **** #ifdef SAFETY_DOOR
+ 200:../../io_control.c ****     value |= ((mcu_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
+ 201:../../io_control.c **** #endif
+ 202:../../io_control.c **** #ifdef FHOLD
+ 203:../../io_control.c ****     value |= ((mcu_get_input(FHOLD)) ? FHOLD_MASK : 0);
+ 341              		.loc 1 203 5 is_stmt 1 view .LVU75
+ 342              		.loc 1 203 16 is_stmt 0 view .LVU76
+ 343 0008 9268     		ldr	r2, [r2, #8]
+ 344              		.loc 1 203 51 view .LVU77
+ 345 000a 12F0400F 		tst	r2, #64
+ 346 000e 0CD0     		beq	.L38
+ 347 0010 0420     		movs	r0, #4
+ 348              	.L36:
+ 349              		.loc 1 203 11 discriminator 4 view .LVU78
+ 350 0012 0343     		orrs	r3, r3, r0
+ 351              	.LVL28:
+ 204:../../io_control.c **** #endif
+ 205:../../io_control.c **** #ifdef CS_RES
+ 206:../../io_control.c ****     value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
+ 352              		.loc 1 206 5 is_stmt 1 discriminator 4 view .LVU79
+ 353              		.loc 1 206 16 is_stmt 0 discriminator 4 view .LVU80
+ 354 0014 074A     		ldr	r2, .L40
+ 355 0016 9268     		ldr	r2, [r2, #8]
+ 356              		.loc 1 206 53 discriminator 4 view .LVU81
+ 357 0018 12F0800F 		tst	r2, #128
+ 358 001c 07D0     		beq	.L39
+ 359              		.loc 1 206 53 view .LVU82
+ 360 001e 0820     		movs	r0, #8
+ 361              	.L37:
+ 362              		.loc 1 206 11 discriminator 4 view .LVU83
+ 363 0020 0343     		orrs	r3, r3, r0
+ 364              	.LVL29:
+ 207:../../io_control.c **** #endif
+ 208:../../io_control.c **** 
+ 209:../../io_control.c ****     return (value ^ g_settings.control_invert_mask);
+ 365              		.loc 1 209 5 is_stmt 1 discriminator 4 view .LVU84
+ 366              		.loc 1 209 31 is_stmt 0 discriminator 4 view .LVU85
+ 367 0022 054A     		ldr	r2, .L40+4
+ 368 0024 107B     		ldrb	r0, [r2, #12]	@ zero_extendqisi2
+ 210:../../io_control.c **** }
+ 369              		.loc 1 210 1 discriminator 4 view .LVU86
+ 370 0026 5840     		eors	r0, r0, r3
+ 371 0028 7047     		bx	lr
+ 372              	.L38:
+ 203:../../io_control.c **** #endif
+ 373              		.loc 1 203 51 view .LVU87
+ 374 002a 0020     		movs	r0, #0
+ 375 002c F1E7     		b	.L36
+ 376              	.L39:
+ 206:../../io_control.c **** #endif
+ 377              		.loc 1 206 53 view .LVU88
+ 378 002e 0020     		movs	r0, #0
+ 379 0030 F6E7     		b	.L37
+ 380              	.L41:
+ 381 0032 00BF     		.align	2
+ 382              	.L40:
+ 383 0034 000C0140 		.word	1073810432
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 12
+
+
+ 384 0038 00000000 		.word	g_settings
+ 385              		.cfi_endproc
+ 386              	.LFE70:
+ 388              		.section	.text.io_controls_isr,"ax",%progbits
+ 389              		.align	1
+ 390              		.global	io_controls_isr
+ 391              		.syntax unified
+ 392              		.thumb
+ 393              		.thumb_func
+ 394              		.fpu softvfp
+ 396              	io_controls_isr:
+ 397              	.LFB66:
+  88:../../io_control.c ****     uint8_t controls = io_get_controls();
+ 398              		.loc 1 88 1 is_stmt 1 view -0
+ 399              		.cfi_startproc
+ 400              		@ args = 0, pretend = 0, frame = 0
+ 401              		@ frame_needed = 0, uses_anonymous_args = 0
+ 402 0000 10B5     		push	{r4, lr}
+ 403              	.LCFI3:
+ 404              		.cfi_def_cfa_offset 8
+ 405              		.cfi_offset 4, -8
+ 406              		.cfi_offset 14, -4
+  89:../../io_control.c **** 
+ 407              		.loc 1 89 5 view .LVU90
+  89:../../io_control.c **** 
+ 408              		.loc 1 89 24 is_stmt 0 view .LVU91
+ 409 0002 FFF7FEFF 		bl	io_get_controls
+ 410              	.LVL30:
+  92:../../io_control.c ****     {
+ 411              		.loc 1 92 5 is_stmt 1 view .LVU92
+  92:../../io_control.c ****     {
+ 412              		.loc 1 92 7 is_stmt 0 view .LVU93
+ 413 0006 10F0010F 		tst	r0, #1
+ 414 000a 07D1     		bne	.L47
+ 415 000c 0446     		mov	r4, r0
+ 106:../../io_control.c ****     {
+ 416              		.loc 1 106 5 is_stmt 1 view .LVU94
+ 106:../../io_control.c ****     {
+ 417              		.loc 1 106 7 is_stmt 0 view .LVU95
+ 418 000e 10F0040F 		tst	r0, #4
+ 419 0012 07D1     		bne	.L48
+ 420              	.LVL31:
+ 421              	.L45:
+ 112:../../io_control.c ****     {
+ 422              		.loc 1 112 5 is_stmt 1 view .LVU96
+ 112:../../io_control.c ****     {
+ 423              		.loc 1 112 7 is_stmt 0 view .LVU97
+ 424 0014 14F0080F 		tst	r4, #8
+ 425 0018 08D1     		bne	.L49
+ 426              	.L42:
+ 117:../../io_control.c **** 
+ 427              		.loc 1 117 1 view .LVU98
+ 428 001a 10BD     		pop	{r4, pc}
+ 429              	.LVL32:
+ 430              	.L47:
+  94:../../io_control.c ****         return; //forces exit
+ 431              		.loc 1 94 9 is_stmt 1 view .LVU99
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 13
+
+
+ 432 001c 1820     		movs	r0, #24
+ 433              	.LVL33:
+  94:../../io_control.c ****         return; //forces exit
+ 434              		.loc 1 94 9 is_stmt 0 view .LVU100
+ 435 001e FFF7FEFF 		bl	cnc_call_rt_command
+ 436              	.LVL34:
+  95:../../io_control.c ****     }
+ 437              		.loc 1 95 9 is_stmt 1 view .LVU101
+ 438 0022 FAE7     		b	.L42
+ 439              	.LVL35:
+ 440              	.L48:
+ 108:../../io_control.c ****     }
+ 441              		.loc 1 108 9 view .LVU102
+ 442 0024 2120     		movs	r0, #33
+ 443              	.LVL36:
+ 108:../../io_control.c ****     }
+ 444              		.loc 1 108 9 is_stmt 0 view .LVU103
+ 445 0026 FFF7FEFF 		bl	cnc_call_rt_command
+ 446              	.LVL37:
+ 447 002a F3E7     		b	.L45
+ 448              	.L49:
+ 114:../../io_control.c ****     }
+ 449              		.loc 1 114 9 is_stmt 1 view .LVU104
+ 450 002c 7E20     		movs	r0, #126
+ 451 002e FFF7FEFF 		bl	cnc_call_rt_command
+ 452              	.LVL38:
+ 453 0032 F2E7     		b	.L42
+ 454              		.cfi_endproc
+ 455              	.LFE66:
+ 457              		.section	.text.io_enable_probe,"ax",%progbits
+ 458              		.align	1
+ 459              		.global	io_enable_probe
+ 460              		.syntax unified
+ 461              		.thumb
+ 462              		.thumb_func
+ 463              		.fpu softvfp
+ 465              	io_enable_probe:
+ 466              	.LFB71:
+ 211:../../io_control.c **** 
+ 212:../../io_control.c **** void io_enable_probe(void)
+ 213:../../io_control.c **** {
+ 467              		.loc 1 213 1 view -0
+ 468              		.cfi_startproc
+ 469              		@ args = 0, pretend = 0, frame = 0
+ 470              		@ frame_needed = 0, uses_anonymous_args = 0
+ 471 0000 08B5     		push	{r3, lr}
+ 472              	.LCFI4:
+ 473              		.cfi_def_cfa_offset 8
+ 474              		.cfi_offset 3, -8
+ 475              		.cfi_offset 14, -4
+ 214:../../io_control.c ****     #ifndef USE_INPUTS_POOLING_ONLY
+ 215:../../io_control.c ****     #ifdef PROBE
+ 216:../../io_control.c ****     mcu_enable_probe_isr();
+ 476              		.loc 1 216 5 view .LVU106
+ 477 0002 FFF7FEFF 		bl	mcu_enable_probe_isr
+ 478              	.LVL39:
+ 217:../../io_control.c ****     #endif
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 14
+
+
+ 218:../../io_control.c ****     #endif
+ 219:../../io_control.c **** }
+ 479              		.loc 1 219 1 is_stmt 0 view .LVU107
+ 480 0006 08BD     		pop	{r3, pc}
+ 481              		.cfi_endproc
+ 482              	.LFE71:
+ 484              		.section	.text.io_disable_probe,"ax",%progbits
+ 485              		.align	1
+ 486              		.global	io_disable_probe
+ 487              		.syntax unified
+ 488              		.thumb
+ 489              		.thumb_func
+ 490              		.fpu softvfp
+ 492              	io_disable_probe:
+ 493              	.LFB72:
+ 220:../../io_control.c **** 
+ 221:../../io_control.c **** void io_disable_probe(void)
+ 222:../../io_control.c **** {
+ 494              		.loc 1 222 1 is_stmt 1 view -0
+ 495              		.cfi_startproc
+ 496              		@ args = 0, pretend = 0, frame = 0
+ 497              		@ frame_needed = 0, uses_anonymous_args = 0
+ 498 0000 08B5     		push	{r3, lr}
+ 499              	.LCFI5:
+ 500              		.cfi_def_cfa_offset 8
+ 501              		.cfi_offset 3, -8
+ 502              		.cfi_offset 14, -4
+ 223:../../io_control.c ****     #ifndef USE_INPUTS_POOLING_ONLY
+ 224:../../io_control.c ****     #ifdef PROBE
+ 225:../../io_control.c ****     mcu_disable_probe_isr();
+ 503              		.loc 1 225 5 view .LVU109
+ 504 0002 FFF7FEFF 		bl	mcu_disable_probe_isr
+ 505              	.LVL40:
+ 226:../../io_control.c ****     #endif
+ 227:../../io_control.c ****     #endif
+ 228:../../io_control.c **** }
+ 506              		.loc 1 228 1 is_stmt 0 view .LVU110
+ 507 0006 08BD     		pop	{r3, pc}
+ 508              		.cfi_endproc
+ 509              	.LFE72:
+ 511              		.section	.text.io_get_probe,"ax",%progbits
+ 512              		.align	1
+ 513              		.global	io_get_probe
+ 514              		.syntax unified
+ 515              		.thumb
+ 516              		.thumb_func
+ 517              		.fpu softvfp
+ 519              	io_get_probe:
+ 520              	.LFB73:
+ 229:../../io_control.c **** 
+ 230:../../io_control.c **** bool io_get_probe(void)
+ 231:../../io_control.c **** {
+ 521              		.loc 1 231 1 is_stmt 1 view -0
+ 522              		.cfi_startproc
+ 523              		@ args = 0, pretend = 0, frame = 0
+ 524              		@ frame_needed = 0, uses_anonymous_args = 0
+ 525              		@ link register save eliminated.
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 15
+
+
+ 232:../../io_control.c ****     #ifdef PROBE
+ 233:../../io_control.c ****     bool probe = (mcu_get_input(PROBE)!=0);
+ 526              		.loc 1 233 5 view .LVU112
+ 527              		.loc 1 233 19 is_stmt 0 view .LVU113
+ 528 0000 064B     		ldr	r3, .L56
+ 529 0002 9868     		ldr	r0, [r3, #8]
+ 530              		.loc 1 233 10 view .LVU114
+ 531 0004 00F40072 		and	r2, r0, #512
+ 532 0008 C0F34020 		ubfx	r0, r0, #9, #1
+ 533              	.LVL41:
+ 234:../../io_control.c ****     return (!g_settings.probe_invert_mask) ? probe : !probe;
+ 534              		.loc 1 234 5 is_stmt 1 view .LVU115
+ 535              		.loc 1 234 24 is_stmt 0 view .LVU116
+ 536 000c 044B     		ldr	r3, .L56+4
+ 537 000e 9B7A     		ldrb	r3, [r3, #10]	@ zero_extendqisi2
+ 538              		.loc 1 234 52 view .LVU117
+ 539 0010 13B1     		cbz	r3, .L55
+ 540              		.loc 1 234 5 discriminator 2 view .LVU118
+ 541 0012 B2FA82F0 		clz	r0, r2
+ 542              	.LVL42:
+ 543              		.loc 1 234 5 discriminator 2 view .LVU119
+ 544 0016 4009     		lsrs	r0, r0, #5
+ 545              	.L55:
+ 235:../../io_control.c ****     #else
+ 236:../../io_control.c ****     return false;
+ 237:../../io_control.c ****     #endif
+ 238:../../io_control.c **** }
+ 546              		.loc 1 238 1 discriminator 4 view .LVU120
+ 547 0018 7047     		bx	lr
+ 548              	.L57:
+ 549 001a 00BF     		.align	2
+ 550              	.L56:
+ 551 001c 000C0140 		.word	1073810432
+ 552 0020 00000000 		.word	g_settings
+ 553              		.cfi_endproc
+ 554              	.LFE73:
+ 556              		.section	.text.io_set_homing_limits_filter,"ax",%progbits
+ 557              		.align	1
+ 558              		.global	io_set_homing_limits_filter
+ 559              		.syntax unified
+ 560              		.thumb
+ 561              		.thumb_func
+ 562              		.fpu softvfp
+ 564              	io_set_homing_limits_filter:
+ 565              	.LVL43:
+ 566              	.LFB74:
+ 239:../../io_control.c **** 
+ 240:../../io_control.c **** void io_set_homing_limits_filter(uint8_t filter_mask)
+ 241:../../io_control.c **** {
+ 567              		.loc 1 241 1 is_stmt 1 view -0
+ 568              		.cfi_startproc
+ 569              		@ args = 0, pretend = 0, frame = 0
+ 570              		@ frame_needed = 0, uses_anonymous_args = 0
+ 571              		@ link register save eliminated.
+ 242:../../io_control.c ****     io_limits_homing_filter = filter_mask;
+ 572              		.loc 1 242 5 view .LVU122
+ 573              		.loc 1 242 29 is_stmt 0 view .LVU123
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 16
+
+
+ 574 0000 014B     		ldr	r3, .L59
+ 575 0002 1870     		strb	r0, [r3]
+ 243:../../io_control.c **** }
+ 576              		.loc 1 243 1 view .LVU124
+ 577 0004 7047     		bx	lr
+ 578              	.L60:
+ 579 0006 00BF     		.align	2
+ 580              	.L59:
+ 581 0008 00000000 		.word	.LANCHOR0
+ 582              		.cfi_endproc
+ 583              	.LFE74:
+ 585              		.section	.text.io_set_steps,"ax",%progbits
+ 586              		.align	1
+ 587              		.global	io_set_steps
+ 588              		.syntax unified
+ 589              		.thumb
+ 590              		.thumb_func
+ 591              		.fpu softvfp
+ 593              	io_set_steps:
+ 594              	.LVL44:
+ 595              	.LFB75:
+ 244:../../io_control.c **** 
+ 245:../../io_control.c **** //outputs
+ 246:../../io_control.c **** void io_set_steps(uint8_t mask)
+ 247:../../io_control.c **** {
+ 596              		.loc 1 247 1 is_stmt 1 view -0
+ 597              		.cfi_startproc
+ 598              		@ args = 0, pretend = 0, frame = 0
+ 599              		@ frame_needed = 0, uses_anonymous_args = 0
+ 600              		@ link register save eliminated.
+ 248:../../io_control.c **** #ifdef STEP0
+ 249:../../io_control.c ****     if(mask & STEP0_MASK)
+ 601              		.loc 1 249 5 view .LVU126
+ 602              		.loc 1 249 7 is_stmt 0 view .LVU127
+ 603 0000 10F0010F 		tst	r0, #1
+ 604 0004 0FD0     		beq	.L62
+ 250:../../io_control.c ****     {
+ 251:../../io_control.c ****         mcu_set_output(STEP0);
+ 605              		.loc 1 251 9 is_stmt 1 view .LVU128
+ 606 0006 0E4B     		ldr	r3, .L68
+ 607 0008 0022     		movs	r2, #0
+ 608 000a 1A61     		str	r2, [r3, #16]
+ 609              	.L63:
+ 252:../../io_control.c ****     }
+ 253:../../io_control.c ****     else
+ 254:../../io_control.c ****     {
+ 255:../../io_control.c ****         mcu_clear_output(STEP0);
+ 256:../../io_control.c ****     }
+ 257:../../io_control.c **** #endif
+ 258:../../io_control.c **** #ifdef STEP1
+ 259:../../io_control.c ****     if(mask & STEP1_MASK)
+ 610              		.loc 1 259 5 view .LVU129
+ 611              		.loc 1 259 7 is_stmt 0 view .LVU130
+ 612 000c 10F0020F 		tst	r0, #2
+ 613 0010 0DD0     		beq	.L64
+ 260:../../io_control.c ****     {
+ 261:../../io_control.c ****         mcu_set_output(STEP1);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 17
+
+
+ 614              		.loc 1 261 9 is_stmt 1 view .LVU131
+ 615 0012 0B4B     		ldr	r3, .L68
+ 616 0014 0122     		movs	r2, #1
+ 617 0016 1A61     		str	r2, [r3, #16]
+ 618              	.L65:
+ 262:../../io_control.c ****     }
+ 263:../../io_control.c ****     else
+ 264:../../io_control.c ****     {
+ 265:../../io_control.c ****         mcu_clear_output(STEP1);
+ 266:../../io_control.c ****     }
+ 267:../../io_control.c **** #endif
+ 268:../../io_control.c **** #ifdef STEP2
+ 269:../../io_control.c ****     if(mask & STEP2_MASK)
+ 619              		.loc 1 269 5 view .LVU132
+ 620              		.loc 1 269 7 is_stmt 0 view .LVU133
+ 621 0018 10F0040F 		tst	r0, #4
+ 622 001c 0BD0     		beq	.L66
+ 270:../../io_control.c ****     {
+ 271:../../io_control.c ****         mcu_set_output(STEP2);
+ 623              		.loc 1 271 9 is_stmt 1 view .LVU134
+ 624 001e 084B     		ldr	r3, .L68
+ 625 0020 0222     		movs	r2, #2
+ 626 0022 1A61     		str	r2, [r3, #16]
+ 627 0024 7047     		bx	lr
+ 628              	.L62:
+ 255:../../io_control.c ****     }
+ 629              		.loc 1 255 9 view .LVU135
+ 630 0026 064B     		ldr	r3, .L68
+ 631 0028 0022     		movs	r2, #0
+ 632 002a 5A61     		str	r2, [r3, #20]
+ 633 002c EEE7     		b	.L63
+ 634              	.L64:
+ 265:../../io_control.c ****     }
+ 635              		.loc 1 265 9 view .LVU136
+ 636 002e 044B     		ldr	r3, .L68
+ 637 0030 0122     		movs	r2, #1
+ 638 0032 5A61     		str	r2, [r3, #20]
+ 639 0034 F0E7     		b	.L65
+ 640              	.L66:
+ 272:../../io_control.c ****     }
+ 273:../../io_control.c ****     else
+ 274:../../io_control.c ****     {
+ 275:../../io_control.c ****         mcu_clear_output(STEP2);
+ 641              		.loc 1 275 9 view .LVU137
+ 642 0036 024B     		ldr	r3, .L68
+ 643 0038 0222     		movs	r2, #2
+ 644 003a 5A61     		str	r2, [r3, #20]
+ 276:../../io_control.c ****     }
+ 277:../../io_control.c **** #endif
+ 278:../../io_control.c **** #ifdef STEP3
+ 279:../../io_control.c ****     if(mask & STEP3_MASK)
+ 280:../../io_control.c ****     {
+ 281:../../io_control.c ****         mcu_set_output(STEP3);
+ 282:../../io_control.c ****     }
+ 283:../../io_control.c ****     else
+ 284:../../io_control.c ****     {
+ 285:../../io_control.c ****         mcu_clear_output(STEP3);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 18
+
+
+ 286:../../io_control.c ****     }
+ 287:../../io_control.c **** #endif
+ 288:../../io_control.c **** #ifdef STEP4
+ 289:../../io_control.c ****     if(mask & STEP4_MASK)
+ 290:../../io_control.c ****     {
+ 291:../../io_control.c ****         mcu_set_output(STEP4);
+ 292:../../io_control.c ****     }
+ 293:../../io_control.c ****     else
+ 294:../../io_control.c ****     {
+ 295:../../io_control.c ****         mcu_clear_output(STEP4);
+ 296:../../io_control.c ****     }
+ 297:../../io_control.c **** #endif
+ 298:../../io_control.c **** #ifdef STEP5
+ 299:../../io_control.c ****     if(mask & STEP5_MASK)
+ 300:../../io_control.c ****     {
+ 301:../../io_control.c ****         mcu_set_output(STEP5);
+ 302:../../io_control.c ****     }
+ 303:../../io_control.c ****     else
+ 304:../../io_control.c ****     {
+ 305:../../io_control.c ****         mcu_clear_output(STEP5);
+ 306:../../io_control.c ****     }
+ 307:../../io_control.c **** #endif
+ 308:../../io_control.c **** #ifdef STEP6
+ 309:../../io_control.c ****     if(mask & STEP6_MASK)
+ 310:../../io_control.c ****     {
+ 311:../../io_control.c ****         mcu_set_output(STEP6);
+ 312:../../io_control.c ****     }
+ 313:../../io_control.c ****     else
+ 314:../../io_control.c ****     {
+ 315:../../io_control.c ****         mcu_clear_output(STEP6);
+ 316:../../io_control.c ****     }
+ 317:../../io_control.c **** #endif
+ 318:../../io_control.c **** #ifdef STEP7
+ 319:../../io_control.c ****     if(mask & STEP7_MASK)
+ 320:../../io_control.c ****     {
+ 321:../../io_control.c ****         mcu_set_output(STEP7);
+ 322:../../io_control.c ****     }
+ 323:../../io_control.c ****     else
+ 324:../../io_control.c ****     {
+ 325:../../io_control.c ****         mcu_clear_output(STEP7);
+ 326:../../io_control.c ****     }
+ 327:../../io_control.c **** #endif
+ 328:../../io_control.c **** }
+ 645              		.loc 1 328 1 is_stmt 0 view .LVU138
+ 646 003c 7047     		bx	lr
+ 647              	.L69:
+ 648 003e 00BF     		.align	2
+ 649              	.L68:
+ 650 0040 00080140 		.word	1073809408
+ 651              		.cfi_endproc
+ 652              	.LFE75:
+ 654              		.section	.text.io_toggle_steps,"ax",%progbits
+ 655              		.align	1
+ 656              		.global	io_toggle_steps
+ 657              		.syntax unified
+ 658              		.thumb
+ 659              		.thumb_func
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 19
+
+
+ 660              		.fpu softvfp
+ 662              	io_toggle_steps:
+ 663              	.LVL45:
+ 664              	.LFB76:
+ 329:../../io_control.c **** 
+ 330:../../io_control.c **** void io_toggle_steps(uint8_t mask)
+ 331:../../io_control.c **** {
+ 665              		.loc 1 331 1 is_stmt 1 view -0
+ 666              		.cfi_startproc
+ 667              		@ args = 0, pretend = 0, frame = 0
+ 668              		@ frame_needed = 0, uses_anonymous_args = 0
+ 669              		.loc 1 331 1 is_stmt 0 view .LVU140
+ 670 0000 10B5     		push	{r4, lr}
+ 671              	.LCFI6:
+ 672              		.cfi_def_cfa_offset 8
+ 673              		.cfi_offset 4, -8
+ 674              		.cfi_offset 14, -4
+ 675 0002 0446     		mov	r4, r0
+ 332:../../io_control.c **** #ifdef STEP0
+ 333:../../io_control.c ****     if(mask & STEP0_MASK)
+ 676              		.loc 1 333 5 is_stmt 1 view .LVU141
+ 677              		.loc 1 333 7 is_stmt 0 view .LVU142
+ 678 0004 10F0010F 		tst	r0, #1
+ 679 0008 06D1     		bne	.L75
+ 680              	.LVL46:
+ 681              	.L71:
+ 334:../../io_control.c ****     {
+ 335:../../io_control.c ****         mcu_toggle_output(STEP0);
+ 336:../../io_control.c ****     }
+ 337:../../io_control.c **** #endif
+ 338:../../io_control.c **** #ifdef STEP1
+ 339:../../io_control.c ****     if(mask & STEP1_MASK)
+ 682              		.loc 1 339 5 is_stmt 1 view .LVU143
+ 683              		.loc 1 339 7 is_stmt 0 view .LVU144
+ 684 000a 14F0020F 		tst	r4, #2
+ 685 000e 07D1     		bne	.L76
+ 686              	.L72:
+ 340:../../io_control.c ****     {
+ 341:../../io_control.c ****         mcu_toggle_output(STEP1);
+ 342:../../io_control.c ****     }
+ 343:../../io_control.c **** #endif
+ 344:../../io_control.c **** #ifdef STEP2
+ 345:../../io_control.c ****     if(mask & STEP2_MASK)
+ 687              		.loc 1 345 5 is_stmt 1 view .LVU145
+ 688              		.loc 1 345 7 is_stmt 0 view .LVU146
+ 689 0010 14F0040F 		tst	r4, #4
+ 690 0014 08D1     		bne	.L77
+ 691              	.L70:
+ 346:../../io_control.c ****     {
+ 347:../../io_control.c ****         mcu_toggle_output(STEP2);
+ 348:../../io_control.c ****     }
+ 349:../../io_control.c **** #endif
+ 350:../../io_control.c **** #ifdef STEP3
+ 351:../../io_control.c ****     if(mask & STEP3_MASK)
+ 352:../../io_control.c ****     {
+ 353:../../io_control.c ****         mcu_toggle_output(STEP3);
+ 354:../../io_control.c ****     }
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 20
+
+
+ 355:../../io_control.c **** #endif
+ 356:../../io_control.c **** #ifdef STEP4
+ 357:../../io_control.c ****     if(mask & STEP4_MASK)
+ 358:../../io_control.c ****     {
+ 359:../../io_control.c ****         mcu_toggle_output(STEP4);
+ 360:../../io_control.c ****     }
+ 361:../../io_control.c **** #endif
+ 362:../../io_control.c **** #ifdef STEP5
+ 363:../../io_control.c ****     if(mask & STEP5_MASK)
+ 364:../../io_control.c ****     {
+ 365:../../io_control.c ****         mcu_toggle_output(STEP5);
+ 366:../../io_control.c ****     }
+ 367:../../io_control.c **** #endif
+ 368:../../io_control.c **** #ifdef STEP6
+ 369:../../io_control.c ****     if(mask & STEP6_MASK)
+ 370:../../io_control.c ****     {
+ 371:../../io_control.c ****         mcu_toggle_output(STEP6);
+ 372:../../io_control.c ****     }
+ 373:../../io_control.c **** #endif
+ 374:../../io_control.c **** #ifdef STEP7
+ 375:../../io_control.c ****     if(mask & STEP7_MASK)
+ 376:../../io_control.c ****     {
+ 377:../../io_control.c ****         mcu_toggle_output(STEP7);
+ 378:../../io_control.c ****     }
+ 379:../../io_control.c **** #endif
+ 380:../../io_control.c **** 
+ 381:../../io_control.c **** }
+ 692              		.loc 1 381 1 view .LVU147
+ 693 0016 10BD     		pop	{r4, pc}
+ 694              	.LVL47:
+ 695              	.L75:
+ 335:../../io_control.c ****     }
+ 696              		.loc 1 335 9 is_stmt 1 view .LVU148
+ 697 0018 0020     		movs	r0, #0
+ 698              	.LVL48:
+ 335:../../io_control.c ****     }
+ 699              		.loc 1 335 9 is_stmt 0 view .LVU149
+ 700 001a FFF7FEFF 		bl	mcu_toggle_output
+ 701              	.LVL49:
+ 702 001e F4E7     		b	.L71
+ 703              	.L76:
+ 341:../../io_control.c ****     }
+ 704              		.loc 1 341 9 is_stmt 1 view .LVU150
+ 705 0020 0120     		movs	r0, #1
+ 706 0022 FFF7FEFF 		bl	mcu_toggle_output
+ 707              	.LVL50:
+ 708 0026 F3E7     		b	.L72
+ 709              	.L77:
+ 347:../../io_control.c ****     }
+ 710              		.loc 1 347 9 view .LVU151
+ 711 0028 0220     		movs	r0, #2
+ 712 002a FFF7FEFF 		bl	mcu_toggle_output
+ 713              	.LVL51:
+ 714              		.loc 1 381 1 is_stmt 0 view .LVU152
+ 715 002e F2E7     		b	.L70
+ 716              		.cfi_endproc
+ 717              	.LFE76:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 21
+
+
+ 719              		.section	.text.io_set_dirs,"ax",%progbits
+ 720              		.align	1
+ 721              		.global	io_set_dirs
+ 722              		.syntax unified
+ 723              		.thumb
+ 724              		.thumb_func
+ 725              		.fpu softvfp
+ 727              	io_set_dirs:
+ 728              	.LVL52:
+ 729              	.LFB77:
+ 382:../../io_control.c **** 
+ 383:../../io_control.c **** void io_set_dirs(uint8_t mask)
+ 384:../../io_control.c **** {
+ 730              		.loc 1 384 1 is_stmt 1 view -0
+ 731              		.cfi_startproc
+ 732              		@ args = 0, pretend = 0, frame = 0
+ 733              		@ frame_needed = 0, uses_anonymous_args = 0
+ 734              		@ link register save eliminated.
+ 385:../../io_control.c **** #ifdef DIR0
+ 386:../../io_control.c ****     if(mask & DIR0_MASK)
+ 735              		.loc 1 386 5 view .LVU154
+ 736              		.loc 1 386 7 is_stmt 0 view .LVU155
+ 737 0000 10F0010F 		tst	r0, #1
+ 738 0004 0FD0     		beq	.L79
+ 387:../../io_control.c ****     {
+ 388:../../io_control.c ****         mcu_set_output(DIR0);
+ 739              		.loc 1 388 9 is_stmt 1 view .LVU156
+ 740 0006 0E4B     		ldr	r3, .L85
+ 741 0008 0322     		movs	r2, #3
+ 742 000a 1A61     		str	r2, [r3, #16]
+ 743              	.L80:
+ 389:../../io_control.c ****     }
+ 390:../../io_control.c ****     else
+ 391:../../io_control.c ****     {
+ 392:../../io_control.c ****         mcu_clear_output(DIR0);
+ 393:../../io_control.c ****     }
+ 394:../../io_control.c **** #endif
+ 395:../../io_control.c **** #ifdef DIR1
+ 396:../../io_control.c ****     if(mask & DIR1_MASK)
+ 744              		.loc 1 396 5 view .LVU157
+ 745              		.loc 1 396 7 is_stmt 0 view .LVU158
+ 746 000c 10F0020F 		tst	r0, #2
+ 747 0010 0DD0     		beq	.L81
+ 397:../../io_control.c ****     {
+ 398:../../io_control.c ****         mcu_set_output(DIR1);
+ 748              		.loc 1 398 9 is_stmt 1 view .LVU159
+ 749 0012 0B4B     		ldr	r3, .L85
+ 750 0014 0422     		movs	r2, #4
+ 751 0016 1A61     		str	r2, [r3, #16]
+ 752              	.L82:
+ 399:../../io_control.c ****     }
+ 400:../../io_control.c ****     else
+ 401:../../io_control.c ****     {
+ 402:../../io_control.c ****         mcu_clear_output(DIR1);
+ 403:../../io_control.c ****     }
+ 404:../../io_control.c **** #endif
+ 405:../../io_control.c **** #ifdef DIR2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 22
+
+
+ 406:../../io_control.c ****     if(mask & DIR2_MASK)
+ 753              		.loc 1 406 5 view .LVU160
+ 754              		.loc 1 406 7 is_stmt 0 view .LVU161
+ 755 0018 10F0040F 		tst	r0, #4
+ 756 001c 0BD0     		beq	.L83
+ 407:../../io_control.c ****     {
+ 408:../../io_control.c ****         mcu_set_output(DIR2);
+ 757              		.loc 1 408 9 is_stmt 1 view .LVU162
+ 758 001e 084B     		ldr	r3, .L85
+ 759 0020 0522     		movs	r2, #5
+ 760 0022 1A61     		str	r2, [r3, #16]
+ 761 0024 7047     		bx	lr
+ 762              	.L79:
+ 392:../../io_control.c ****     }
+ 763              		.loc 1 392 9 view .LVU163
+ 764 0026 064B     		ldr	r3, .L85
+ 765 0028 0322     		movs	r2, #3
+ 766 002a 5A61     		str	r2, [r3, #20]
+ 767 002c EEE7     		b	.L80
+ 768              	.L81:
+ 402:../../io_control.c ****     }
+ 769              		.loc 1 402 9 view .LVU164
+ 770 002e 044B     		ldr	r3, .L85
+ 771 0030 0422     		movs	r2, #4
+ 772 0032 5A61     		str	r2, [r3, #20]
+ 773 0034 F0E7     		b	.L82
+ 774              	.L83:
+ 409:../../io_control.c ****     }
+ 410:../../io_control.c ****     else
+ 411:../../io_control.c ****     {
+ 412:../../io_control.c ****         mcu_clear_output(DIR2);
+ 775              		.loc 1 412 9 view .LVU165
+ 776 0036 024B     		ldr	r3, .L85
+ 777 0038 0522     		movs	r2, #5
+ 778 003a 5A61     		str	r2, [r3, #20]
+ 413:../../io_control.c ****     }
+ 414:../../io_control.c **** #endif
+ 415:../../io_control.c **** #ifdef DIR3
+ 416:../../io_control.c ****     if(mask & DIR3_MASK)
+ 417:../../io_control.c ****     {
+ 418:../../io_control.c ****         mcu_set_output(DIR3);
+ 419:../../io_control.c ****     }
+ 420:../../io_control.c ****     else
+ 421:../../io_control.c ****     {
+ 422:../../io_control.c ****         mcu_clear_output(DIR3);
+ 423:../../io_control.c ****     }
+ 424:../../io_control.c **** #endif
+ 425:../../io_control.c **** #ifdef DIR4
+ 426:../../io_control.c ****     if(mask & DIR4_MASK)
+ 427:../../io_control.c ****     {
+ 428:../../io_control.c ****         mcu_set_output(DIR4);
+ 429:../../io_control.c ****     }
+ 430:../../io_control.c ****     else
+ 431:../../io_control.c ****     {
+ 432:../../io_control.c ****         mcu_clear_output(DIR4);
+ 433:../../io_control.c ****     }
+ 434:../../io_control.c **** #endif
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 23
+
+
+ 435:../../io_control.c **** #ifdef DIR5
+ 436:../../io_control.c ****     if(mask & DIR5_MASK)
+ 437:../../io_control.c ****     {
+ 438:../../io_control.c ****         mcu_set_output(DIR5);
+ 439:../../io_control.c ****     }
+ 440:../../io_control.c ****     else
+ 441:../../io_control.c ****     {
+ 442:../../io_control.c ****         mcu_clear_output(DIR5);
+ 443:../../io_control.c ****     }
+ 444:../../io_control.c **** #endif
+ 445:../../io_control.c **** 
+ 446:../../io_control.c **** }
+ 779              		.loc 1 446 1 is_stmt 0 view .LVU166
+ 780 003c 7047     		bx	lr
+ 781              	.L86:
+ 782 003e 00BF     		.align	2
+ 783              	.L85:
+ 784 0040 00080140 		.word	1073809408
+ 785              		.cfi_endproc
+ 786              	.LFE77:
+ 788              		.section	.text.io_enable_steps,"ax",%progbits
+ 789              		.align	1
+ 790              		.global	io_enable_steps
+ 791              		.syntax unified
+ 792              		.thumb
+ 793              		.thumb_func
+ 794              		.fpu softvfp
+ 796              	io_enable_steps:
+ 797              	.LFB78:
+ 447:../../io_control.c **** 
+ 448:../../io_control.c **** void io_enable_steps(void)
+ 449:../../io_control.c **** {
+ 798              		.loc 1 449 1 is_stmt 1 view -0
+ 799              		.cfi_startproc
+ 800              		@ args = 0, pretend = 0, frame = 0
+ 801              		@ frame_needed = 0, uses_anonymous_args = 0
+ 802              		@ link register save eliminated.
+ 450:../../io_control.c ****     #ifdef STEP0_EN
+ 451:../../io_control.c ****     mcu_set_output(STEP0_EN);
+ 452:../../io_control.c ****     #endif
+ 453:../../io_control.c ****     #ifdef STEP1_EN
+ 454:../../io_control.c ****     mcu_set_output(STEP1_EN);
+ 455:../../io_control.c ****     #endif
+ 456:../../io_control.c ****     #ifdef STEP2_EN
+ 457:../../io_control.c ****     mcu_set_output(STEP2_EN);
+ 458:../../io_control.c ****     #endif
+ 459:../../io_control.c ****     #ifdef STEP3_EN
+ 460:../../io_control.c ****     mcu_set_output(STEP3_EN);
+ 461:../../io_control.c ****     #endif
+ 462:../../io_control.c ****     #ifdef STEP4_EN
+ 463:../../io_control.c ****     mcu_set_output(STEP4_EN);
+ 464:../../io_control.c ****     #endif
+ 465:../../io_control.c ****     #ifdef STEP5_EN
+ 466:../../io_control.c ****     mcu_set_output(STEP5_EN);
+ 467:../../io_control.c ****     #endif
+ 468:../../io_control.c **** }
+ 803              		.loc 1 468 1 view .LVU168
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 24
+
+
+ 804 0000 7047     		bx	lr
+ 805              		.cfi_endproc
+ 806              	.LFE78:
+ 808              		.section	.bss.io_limits_homing_filter,"aw",%nobits
+ 809              		.set	.LANCHOR0,. + 0
+ 812              	io_limits_homing_filter:
+ 813 0000 00       		.space	1
+ 814              		.text
+ 815              	.Letext0:
+ 816              		.file 2 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 817              		.file 3 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 818              		.file 4 "Drivers/CMSIS/Include/core_cm3.h"
+ 819              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
+ 820              		.file 6 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/stm32f103xb.h"
+ 821              		.file 7 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h"
+ 822              		.file 8 "../../settings.h"
+ 823              		.file 9 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\lib\\gcc\\arm-none
+ 824              		.file 10 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 825              		.file 11 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 826              		.file 12 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 827              		.file 13 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 828              		.file 14 "../../mcu.h"
+ 829              		.file 15 "../../cnc.h"
+ 830              		.file 16 "../../parser.h"
+ 831              		.file 17 "../../interpolator.h"
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s 			page 25
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 io_control.c
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:16     .text.io_probe_isr:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:24     .text.io_probe_isr:00000000 io_probe_isr
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:50     .text.io_check_boundaries:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:57     .text.io_check_boundaries:00000000 io_check_boundaries
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:149    .text.io_check_boundaries:0000004c $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:156    .text.io_get_limits:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:163    .text.io_get_limits:00000000 io_get_limits
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:221    .text.io_get_limits:00000034 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:227    .text.io_limits_isr:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:234    .text.io_limits_isr:00000000 io_limits_isr
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:313    .text.io_limits_isr:00000044 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:318    .text.io_get_controls:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:325    .text.io_get_controls:00000000 io_get_controls
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:383    .text.io_get_controls:00000034 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:389    .text.io_controls_isr:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:396    .text.io_controls_isr:00000000 io_controls_isr
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:458    .text.io_enable_probe:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:465    .text.io_enable_probe:00000000 io_enable_probe
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:485    .text.io_disable_probe:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:492    .text.io_disable_probe:00000000 io_disable_probe
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:512    .text.io_get_probe:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:519    .text.io_get_probe:00000000 io_get_probe
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:551    .text.io_get_probe:0000001c $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:557    .text.io_set_homing_limits_filter:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:564    .text.io_set_homing_limits_filter:00000000 io_set_homing_limits_filter
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:581    .text.io_set_homing_limits_filter:00000008 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:586    .text.io_set_steps:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:593    .text.io_set_steps:00000000 io_set_steps
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:650    .text.io_set_steps:00000040 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:655    .text.io_toggle_steps:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:662    .text.io_toggle_steps:00000000 io_toggle_steps
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:720    .text.io_set_dirs:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:727    .text.io_set_dirs:00000000 io_set_dirs
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:784    .text.io_set_dirs:00000040 $d
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:789    .text.io_enable_steps:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:796    .text.io_enable_steps:00000000 io_enable_steps
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:812    .bss.io_limits_homing_filter:00000000 io_limits_homing_filter
+C:\Users\JCEM\AppData\Local\Temp\cc30AfJW.s:813    .bss.io_limits_homing_filter:00000000 $d
+
+UNDEFINED SYMBOLS
+cnc_set_exec_state
+parser_sync_probe
+__aeabi_fcmplt
+g_settings
+cnc_get_exec_state
+itp_stop
+cnc_alarm
+cnc_call_rt_command
+mcu_enable_probe_isr
+mcu_disable_probe_isr
+mcu_toggle_output

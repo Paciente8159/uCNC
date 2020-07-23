@@ -29,6 +29,9 @@
 	Uses 1 start bit + 8 bit + 1 stop bit (no parity)
 */
 #define BAUD 115200
+//uncomment to enable synchronized TX (used in USB VCP)
+//can be used in USART hardware but MCU will be ocuppied while sending every char
+//#define ENABLE_SYNC_TX
 
 /*
 	Choose the board
@@ -73,7 +76,7 @@
 	Spindle configurations.
 	Uncomment to enable
 */
-#define USE_SPINDLE
+//#define USE_SPINDLE
 #ifdef USE_SPINDLE
 //set PWM channel to use (valid values 0 - 3)
 #define SPINDLE_PWM PWM0
@@ -94,7 +97,7 @@
 /*
 	Define a coolant flood and mist pin
 */
-#define USE_COOLANT
+//#define USE_COOLANT
 #ifdef USE_COOLANT
 #define COOLANT_FLOOD DOUT1
 #define COOLANT_MIST DOUT2
@@ -149,7 +152,7 @@
 */
 //#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-#define ENABLE_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
+//#define ENABLE_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
 
 /*
 	Uses pin pooling for all limits and control pins (no interrupts)

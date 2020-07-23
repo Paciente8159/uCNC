@@ -21,7 +21,11 @@
 
 #define EOL 0x00		   //end of line char
 #define OVF 0x7F		   //overflow char
+#ifdef ENABLE_SYNC_TX
+#define RX_BUFFER_SIZE 1
+#else
 #define RX_BUFFER_SIZE 129 //buffer sizes
+#endif
 #define TX_BUFFER_SIZE 112 //buffer sizes
 
 #define SERIAL_UART 0

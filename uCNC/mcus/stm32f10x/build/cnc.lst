@@ -1,0 +1,3058 @@
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 1
+  10              		.eabi_attribute 18, 4
+  11              		.file	"cnc.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.rodata.cnc_check_fault_systems.str1.4,"aMS",%progbits,1
+  16              		.align	2
+  17              	.LC0:
+  18 0000 5B4D5347 		.ascii	"[MSG:Check Emergency stop]\015\012\000"
+  18      3A436865 
+  18      636B2045 
+  18      6D657267 
+  18      656E6379 
+  19 001d 000000   		.align	2
+  20              	.LC1:
+  21 0020 5B4D5347 		.ascii	"[MSG:Check Limits]\015\012\000"
+  21      3A436865 
+  21      636B204C 
+  21      696D6974 
+  21      735D0D0A 
+  22              		.section	.text.cnc_check_fault_systems,"ax",%progbits
+  23              		.align	1
+  24              		.arch armv7-m
+  25              		.syntax unified
+  26              		.thumb
+  27              		.thumb_func
+  28              		.fpu softvfp
+  30              	cnc_check_fault_systems:
+  31              	.LFB81:
+  32              		.file 1 "../../cnc.c"
+   1:../../cnc.c   **** /*
+   2:../../cnc.c   **** 	Name: cnc.c
+   3:../../cnc.c   **** 	Description: µCNC main unit.
+   4:../../cnc.c   **** 
+   5:../../cnc.c   **** 	Copyright: Copyright (c) João Martins
+   6:../../cnc.c   **** 	Author: João Martins
+   7:../../cnc.c   **** 	Date: 17/09/2019
+   8:../../cnc.c   **** 
+   9:../../cnc.c   **** 	µCNC is free software: you can redistribute it and/or modify
+  10:../../cnc.c   **** 	it under the terms of the GNU General Public License as published by
+  11:../../cnc.c   **** 	the Free Software Foundation, either version 3 of the License, or
+  12:../../cnc.c   **** 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+  13:../../cnc.c   **** 
+  14:../../cnc.c   **** 	µCNC is distributed WITHOUT ANY WARRANTY;
+  15:../../cnc.c   **** 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  16:../../cnc.c   **** 	See the	GNU General Public License for more details.
+  17:../../cnc.c   **** */
+  18:../../cnc.c   **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 2
+
+
+  19:../../cnc.c   **** #include <stdio.h>
+  20:../../cnc.c   **** #include <stdlib.h>
+  21:../../cnc.c   **** #include <string.h>
+  22:../../cnc.c   **** #include <stdint.h>
+  23:../../cnc.c   **** #include "config.h"
+  24:../../cnc.c   **** #include "utils.h"
+  25:../../cnc.c   **** #include "settings.h"
+  26:../../cnc.c   **** #include "mcudefs.h"
+  27:../../cnc.c   **** #include "mcu.h"
+  28:../../cnc.c   **** #include "grbl_interface.h"
+  29:../../cnc.c   **** #include "serial.h"
+  30:../../cnc.c   **** #include "protocol.h"
+  31:../../cnc.c   **** #include "parser.h"
+  32:../../cnc.c   **** #include "kinematics.h"
+  33:../../cnc.c   **** #include "motion_control.h"
+  34:../../cnc.c   **** #include "planner.h"
+  35:../../cnc.c   **** #include "interpolator.h"
+  36:../../cnc.c   **** #include "io_control.h"
+  37:../../cnc.c   **** #include "cnc.h"
+  38:../../cnc.c   **** 
+  39:../../cnc.c   **** typedef struct
+  40:../../cnc.c   **** {
+  41:../../cnc.c   ****     //uint8_t system_state;		//signals if CNC is system_state and gcode can run
+  42:../../cnc.c   ****     volatile uint8_t exec_state;
+  43:../../cnc.c   ****     uint8_t active_alarm;
+  44:../../cnc.c   ****     volatile uint8_t rt_cmd;
+  45:../../cnc.c   ****     volatile uint8_t feed_ovr_cmd;
+  46:../../cnc.c   ****     volatile uint8_t tool_ovr_cmd;
+  47:../../cnc.c   **** } cnc_state_t;
+  48:../../cnc.c   **** 
+  49:../../cnc.c   **** static cnc_state_t cnc_state;
+  50:../../cnc.c   **** 
+  51:../../cnc.c   **** static void cnc_check_fault_systems();
+  52:../../cnc.c   **** static bool cnc_check_interlocking();
+  53:../../cnc.c   **** static void cnc_exec_rt_commands();
+  54:../../cnc.c   **** static void cnc_exec_rt_messages();
+  55:../../cnc.c   **** static void cnc_reset();
+  56:../../cnc.c   **** 
+  57:../../cnc.c   **** void cnc_init(void)
+  58:../../cnc.c   **** {
+  59:../../cnc.c   ****     //initializes cnc state
+  60:../../cnc.c   **** #ifdef FORCE_GLOBALS_TO_0
+  61:../../cnc.c   ****     memset(&cnc_state, 0, sizeof(cnc_state_t));
+  62:../../cnc.c   **** #endif
+  63:../../cnc.c   ****     //initializes all systems
+  64:../../cnc.c   ****     mcu_init();      //mcu
+  65:../../cnc.c   ****     serial_init();   //serial
+  66:../../cnc.c   ****     settings_init(); //settings
+  67:../../cnc.c   ****     parser_init();   //parser
+  68:../../cnc.c   ****     mc_init();       //motion control
+  69:../../cnc.c   ****     planner_init();  //motion planner
+  70:../../cnc.c   ****     itp_init();      //interpolator
+  71:../../cnc.c   ****     serial_flush();
+  72:../../cnc.c   **** }
+  73:../../cnc.c   **** 
+  74:../../cnc.c   **** void cnc_run(void)
+  75:../../cnc.c   **** {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 3
+
+
+  76:../../cnc.c   ****     cnc_reset();
+  77:../../cnc.c   **** 
+  78:../../cnc.c   ****     do
+  79:../../cnc.c   ****     {
+  80:../../cnc.c   ****         //process gcode commands
+  81:../../cnc.c   ****         if (!serial_rx_is_empty())
+  82:../../cnc.c   ****         {
+  83:../../cnc.c   ****             uint8_t error = 0;
+  84:../../cnc.c   ****             //protocol_echo();
+  85:../../cnc.c   ****             uint8_t c = serial_peek();
+  86:../../cnc.c   ****             switch (c)
+  87:../../cnc.c   ****             {
+  88:../../cnc.c   ****             case EOL:
+  89:../../cnc.c   ****                 serial_getc();
+  90:../../cnc.c   ****                 break;
+  91:../../cnc.c   ****             case '$':
+  92:../../cnc.c   **** #ifdef ECHO_CMD
+  93:../../cnc.c   ****                 protocol_send_string(MSG_ECHO);
+  94:../../cnc.c   **** #endif
+  95:../../cnc.c   ****                 error = parser_grbl_command();
+  96:../../cnc.c   **** #ifdef ECHO_CMD
+  97:../../cnc.c   ****                 protocol_send_string(MSG_END);
+  98:../../cnc.c   **** #endif
+  99:../../cnc.c   ****                 error = parse_grbl_error_code(error); //processes the error code to perform additio
+ 100:../../cnc.c   ****                 break;
+ 101:../../cnc.c   ****             default:
+ 102:../../cnc.c   **** #ifdef ECHO_CMD
+ 103:../../cnc.c   ****                 protocol_send_string(MSG_ECHO);
+ 104:../../cnc.c   **** #endif
+ 105:../../cnc.c   ****                 if (!cnc_get_exec_state(EXEC_GCODE_LOCKED))
+ 106:../../cnc.c   ****                 {
+ 107:../../cnc.c   ****                     error = parser_gcode_command();
+ 108:../../cnc.c   ****                 }
+ 109:../../cnc.c   ****                 else
+ 110:../../cnc.c   ****                 {
+ 111:../../cnc.c   ****                     error = STATUS_SYSTEM_GC_LOCK;
+ 112:../../cnc.c   ****                 }
+ 113:../../cnc.c   **** 
+ 114:../../cnc.c   **** #ifdef ECHO_CMD
+ 115:../../cnc.c   ****                 protocol_send_string(MSG_END);
+ 116:../../cnc.c   **** #endif
+ 117:../../cnc.c   ****                 break;
+ 118:../../cnc.c   ****             }
+ 119:../../cnc.c   ****             if (!error)
+ 120:../../cnc.c   ****             {
+ 121:../../cnc.c   ****                 protocol_send_ok();
+ 122:../../cnc.c   ****             }
+ 123:../../cnc.c   ****             else
+ 124:../../cnc.c   ****             {
+ 125:../../cnc.c   ****                 protocol_send_error(error);
+ 126:../../cnc.c   ****             }
+ 127:../../cnc.c   ****         }
+ 128:../../cnc.c   ****     } while (cnc_doevents());
+ 129:../../cnc.c   **** 
+ 130:../../cnc.c   ****     cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
+ 131:../../cnc.c   ****     serial_flush();
+ 132:../../cnc.c   ****     if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - igno
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 4
+
+
+ 133:../../cnc.c   ****     {
+ 134:../../cnc.c   ****         cnc_check_fault_systems();
+ 135:../../cnc.c   ****         protocol_send_string(MSG_FEEDBACK_1);
+ 136:../../cnc.c   ****         do
+ 137:../../cnc.c   ****         {
+ 138:../../cnc.c   ****         } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
+ 139:../../cnc.c   ****     }
+ 140:../../cnc.c   **** }
+ 141:../../cnc.c   **** 
+ 142:../../cnc.c   **** void cnc_call_rt_command(uint8_t command)
+ 143:../../cnc.c   **** {
+ 144:../../cnc.c   ****     //executes the realtime commands
+ 145:../../cnc.c   ****     //control commands affect the exec_state directly (Abort, hold, safety door, cycle_start)
+ 146:../../cnc.c   ****     switch (command)
+ 147:../../cnc.c   ****     {
+ 148:../../cnc.c   ****     case CMD_CODE_RESET:
+ 149:../../cnc.c   ****         cnc_stop();
+ 150:../../cnc.c   ****         serial_rx_clear();           //dumps all commands
+ 151:../../cnc.c   ****         cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
+ 152:../../cnc.c   ****         SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
+ 153:../../cnc.c   ****         break;
+ 154:../../cnc.c   ****     case CMD_CODE_FEED_HOLD:
+ 155:../../cnc.c   ****         cnc_set_exec_state(EXEC_HOLD);
+ 156:../../cnc.c   ****         break;
+ 157:../../cnc.c   ****     case CMD_CODE_REPORT:
+ 158:../../cnc.c   ****         SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+ 159:../../cnc.c   ****         break;
+ 160:../../cnc.c   ****     case CMD_CODE_CYCLE_START:
+ 161:../../cnc.c   ****         cnc_clear_exec_state(EXEC_HOLD); //tries to clear hold if possible
+ 162:../../cnc.c   ****         break;
+ 163:../../cnc.c   ****     case CMD_CODE_SAFETY_DOOR:
+ 164:../../cnc.c   ****         cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+ 165:../../cnc.c   ****         break;
+ 166:../../cnc.c   ****     case CMD_CODE_JOG_CANCEL:
+ 167:../../cnc.c   ****         if (cnc_get_exec_state(EXEC_JOG))
+ 168:../../cnc.c   ****         {
+ 169:../../cnc.c   ****             cnc_set_exec_state(EXEC_HOLD);
+ 170:../../cnc.c   ****         }
+ 171:../../cnc.c   ****         break;
+ 172:../../cnc.c   ****     case CMD_CODE_FEED_100:
+ 173:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_100);
+ 174:../../cnc.c   ****         break;
+ 175:../../cnc.c   ****     case CMD_CODE_FEED_INC_COARSE:
+ 176:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_COARSE);
+ 177:../../cnc.c   ****         break;
+ 178:../../cnc.c   ****     case CMD_CODE_FEED_DEC_COARSE:
+ 179:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_COARSE);
+ 180:../../cnc.c   ****         break;
+ 181:../../cnc.c   ****     case CMD_CODE_FEED_INC_FINE:
+ 182:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_FINE);
+ 183:../../cnc.c   ****         break;
+ 184:../../cnc.c   ****     case CMD_CODE_FEED_DEC_FINE:
+ 185:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_FINE);
+ 186:../../cnc.c   ****         break;
+ 187:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_100:
+ 188:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_100);
+ 189:../../cnc.c   ****         break;
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 5
+
+
+ 190:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_OVR1:
+ 191:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR1);
+ 192:../../cnc.c   ****         break;
+ 193:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_OVR2:
+ 194:../../cnc.c   ****         SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR2);
+ 195:../../cnc.c   ****         break;
+ 196:../../cnc.c   ****     case CMD_CODE_SPINDLE_100:
+ 197:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_100);
+ 198:../../cnc.c   ****         break;
+ 199:../../cnc.c   ****     case CMD_CODE_SPINDLE_INC_COARSE:
+ 200:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_COARSE);
+ 201:../../cnc.c   ****         break;
+ 202:../../cnc.c   ****     case CMD_CODE_SPINDLE_DEC_COARSE:
+ 203:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_COARSE);
+ 204:../../cnc.c   ****         break;
+ 205:../../cnc.c   ****     case CMD_CODE_SPINDLE_INC_FINE:
+ 206:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_FINE);
+ 207:../../cnc.c   ****         break;
+ 208:../../cnc.c   ****     case CMD_CODE_SPINDLE_DEC_FINE:
+ 209:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_FINE);
+ 210:../../cnc.c   ****         break;
+ 211:../../cnc.c   ****     case CMD_CODE_SPINDLE_TOGGLE:
+ 212:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_TOGGLE);
+ 213:../../cnc.c   ****         break;
+ 214:../../cnc.c   ****     case CMD_CODE_COOL_FLD_TOGGLE:
+ 215:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_FLD_TOGGLE);
+ 216:../../cnc.c   ****         break;
+ 217:../../cnc.c   ****     case CMD_CODE_COOL_MST_TOGGLE:
+ 218:../../cnc.c   ****         SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_MST_TOGGLE);
+ 219:../../cnc.c   ****         break;
+ 220:../../cnc.c   ****     }
+ 221:../../cnc.c   **** }
+ 222:../../cnc.c   **** 
+ 223:../../cnc.c   **** bool cnc_doevents(void)
+ 224:../../cnc.c   **** {
+ 225:../../cnc.c   **** #ifdef USE_INPUTS_POOLING_ONLY
+ 226:../../cnc.c   ****     static uint8_t limits = 0;
+ 227:../../cnc.c   ****     static uint8_t controls = 0;
+ 228:../../cnc.c   ****     uint8_t val = io_get_limits();
+ 229:../../cnc.c   ****     if (limits != val)
+ 230:../../cnc.c   ****     {
+ 231:../../cnc.c   ****         io_limits_isr();
+ 232:../../cnc.c   ****         limits = val;
+ 233:../../cnc.c   ****     }
+ 234:../../cnc.c   **** 
+ 235:../../cnc.c   ****     val = io_get_controls();
+ 236:../../cnc.c   ****     if (controls != val)
+ 237:../../cnc.c   ****     {
+ 238:../../cnc.c   ****         io_controls_isr();
+ 239:../../cnc.c   ****         controls = val;
+ 240:../../cnc.c   ****     }
+ 241:../../cnc.c   **** #endif
+ 242:../../cnc.c   **** 
+ 243:../../cnc.c   ****     cnc_exec_rt_commands(); //executes all pending realtime commands
+ 244:../../cnc.c   **** 
+ 245:../../cnc.c   ****     //check security interlocking for any problem
+ 246:../../cnc.c   ****     if (!cnc_check_interlocking())
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 6
+
+
+ 247:../../cnc.c   ****     {
+ 248:../../cnc.c   ****         return !cnc_get_exec_state(EXEC_ABORT);
+ 249:../../cnc.c   ****     }
+ 250:../../cnc.c   **** 
+ 251:../../cnc.c   ****     itp_run();
+ 252:../../cnc.c   **** 
+ 253:../../cnc.c   ****     return !cnc_get_exec_state(EXEC_ABORT);
+ 254:../../cnc.c   **** }
+ 255:../../cnc.c   **** 
+ 256:../../cnc.c   **** void cnc_home(void)
+ 257:../../cnc.c   **** {
+ 258:../../cnc.c   ****     cnc_set_exec_state(EXEC_HOMING);
+ 259:../../cnc.c   ****     uint8_t error = kinematics_home();
+ 260:../../cnc.c   ****     if (error)
+ 261:../../cnc.c   ****     {
+ 262:../../cnc.c   ****         //disables homing and reenables alarm messages
+ 263:../../cnc.c   ****         cnc_clear_exec_state(EXEC_HOMING);
+ 264:../../cnc.c   ****         cnc_alarm(error);
+ 265:../../cnc.c   ****         return;
+ 266:../../cnc.c   ****     }
+ 267:../../cnc.c   **** 
+ 268:../../cnc.c   ****     //unlocks the machine to go to offset
+ 269:../../cnc.c   ****     cnc_unlock();
+ 270:../../cnc.c   **** 
+ 271:../../cnc.c   ****     float target[AXIS_COUNT];
+ 272:../../cnc.c   ****     planner_block_data_t block_data;
+ 273:../../cnc.c   ****     planner_get_position(target);
+ 274:../../cnc.c   **** 
+ 275:../../cnc.c   ****     for (uint8_t i = AXIS_COUNT; i != 0;)
+ 276:../../cnc.c   ****     {
+ 277:../../cnc.c   ****         i--;
+ 278:../../cnc.c   ****         target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : 
+ 279:../../cnc.c   ****     }
+ 280:../../cnc.c   **** 
+ 281:../../cnc.c   ****     block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
+ 282:../../cnc.c   ****     block_data.spindle = 0;
+ 283:../../cnc.c   ****     block_data.dwell = 0;
+ 284:../../cnc.c   ****     //starts offset and waits to finnish
+ 285:../../cnc.c   ****     planner_add_line((float *)&target, block_data);
+ 286:../../cnc.c   ****     do
+ 287:../../cnc.c   ****     {
+ 288:../../cnc.c   ****         cnc_doevents();
+ 289:../../cnc.c   ****     } while (cnc_get_exec_state(EXEC_RUN));
+ 290:../../cnc.c   **** 
+ 291:../../cnc.c   ****     //reset position
+ 292:../../cnc.c   ****     itp_reset_rt_position();
+ 293:../../cnc.c   ****     planner_resync_position();
+ 294:../../cnc.c   ****     //invokes startup block execution
+ 295:../../cnc.c   ****     SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
+ 296:../../cnc.c   **** }
+ 297:../../cnc.c   **** 
+ 298:../../cnc.c   **** void cnc_alarm(uint8_t code)
+ 299:../../cnc.c   **** {
+ 300:../../cnc.c   ****     cnc_set_exec_state(EXEC_ABORT);
+ 301:../../cnc.c   ****     cnc_state.active_alarm = code;
+ 302:../../cnc.c   **** }
+ 303:../../cnc.c   **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 7
+
+
+ 304:../../cnc.c   **** void cnc_stop(void)
+ 305:../../cnc.c   **** {
+ 306:../../cnc.c   ****     //halt is active and was running flags it lost home position
+ 307:../../cnc.c   ****     if (cnc_get_exec_state(EXEC_RUN) && g_settings.homing_enabled)
+ 308:../../cnc.c   ****     {
+ 309:../../cnc.c   ****         cnc_set_exec_state(EXEC_NOHOME);
+ 310:../../cnc.c   ****     }
+ 311:../../cnc.c   ****     itp_stop();
+ 312:../../cnc.c   ****     //stop tools
+ 313:../../cnc.c   **** #ifdef USE_SPINDLE
+ 314:../../cnc.c   ****     mcu_set_pwm(SPINDLE_PWM, 0);
+ 315:../../cnc.c   ****     mcu_clear_output(SPINDLE_DIR);
+ 316:../../cnc.c   **** #endif
+ 317:../../cnc.c   **** #ifdef USE_COOLANT
+ 318:../../cnc.c   ****     mcu_clear_output(COOLANT_FLOOD);
+ 319:../../cnc.c   ****     mcu_clear_output(COOLANT_MIST);
+ 320:../../cnc.c   **** #endif
+ 321:../../cnc.c   **** }
+ 322:../../cnc.c   **** 
+ 323:../../cnc.c   **** void cnc_unlock(void)
+ 324:../../cnc.c   **** {
+ 325:../../cnc.c   ****     //on unlock any alarm caused by not having homing reference or hitting a limit switch is reset 
+ 326:../../cnc.c   ****     //all other alarm flags remain active if any input is still active
+ 327:../../cnc.c   ****     CLEARFLAG(cnc_state.exec_state, EXEC_NOHOME | EXEC_LIMITS);
+ 328:../../cnc.c   ****     //clears all other locking flags
+ 329:../../cnc.c   ****     cnc_clear_exec_state(EXEC_LOCKED);
+ 330:../../cnc.c   ****     //signals stepper enable pins
+ 331:../../cnc.c   **** 
+ 332:../../cnc.c   ****     io_set_steps(g_settings.step_invert_mask);
+ 333:../../cnc.c   ****     io_set_dirs(g_settings.dir_invert_mask);
+ 334:../../cnc.c   ****     io_enable_steps();
+ 335:../../cnc.c   **** }
+ 336:../../cnc.c   **** 
+ 337:../../cnc.c   **** uint8_t cnc_get_exec_state(uint8_t statemask)
+ 338:../../cnc.c   **** {
+ 339:../../cnc.c   ****     return CHECKFLAG(cnc_state.exec_state, statemask);
+ 340:../../cnc.c   **** }
+ 341:../../cnc.c   **** 
+ 342:../../cnc.c   **** void cnc_set_exec_state(uint8_t statemask)
+ 343:../../cnc.c   **** {
+ 344:../../cnc.c   ****     SETFLAG(cnc_state.exec_state, statemask);
+ 345:../../cnc.c   **** }
+ 346:../../cnc.c   **** 
+ 347:../../cnc.c   **** void cnc_clear_exec_state(uint8_t statemask)
+ 348:../../cnc.c   **** {
+ 349:../../cnc.c   ****     uint8_t controls = io_get_controls();
+ 350:../../cnc.c   **** #ifdef ESTOP
+ 351:../../cnc.c   ****     if (CHECKFLAG(controls, ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
+ 352:../../cnc.c   ****     {
+ 353:../../cnc.c   ****         CLEARFLAG(statemask, EXEC_ABORT);
+ 354:../../cnc.c   ****     }
+ 355:../../cnc.c   **** #endif
+ 356:../../cnc.c   **** #ifdef SAFETY_DOOR
+ 357:../../cnc.c   ****     if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
+ 358:../../cnc.c   ****     {
+ 359:../../cnc.c   ****         CLEARFLAG(statemask, EXEC_DOOR);
+ 360:../../cnc.c   ****     }
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 8
+
+
+ 361:../../cnc.c   **** #endif
+ 362:../../cnc.c   **** #ifdef FHOLD
+ 363:../../cnc.c   ****     if (CHECKFLAG(controls, FHOLD_MASK)) //can't clear the hold flag if FHOLD is active
+ 364:../../cnc.c   ****     {
+ 365:../../cnc.c   ****         CLEARFLAG(statemask, EXEC_HOLD);
+ 366:../../cnc.c   ****     }
+ 367:../../cnc.c   **** #endif
+ 368:../../cnc.c   **** #if (LIMITS_MASK != 0)
+ 369:../../cnc.c   ****     if (g_settings.hard_limits_enabled && io_get_limits()) //can't clear the EXEC_LIMITS is any lim
+ 370:../../cnc.c   ****     {
+ 371:../../cnc.c   ****         CLEARFLAG(statemask, EXEC_LIMITS);
+ 372:../../cnc.c   ****     }
+ 373:../../cnc.c   **** #endif
+ 374:../../cnc.c   ****     if (g_settings.homing_enabled) //if the machine doesn't know the homing position and homing is 
+ 375:../../cnc.c   ****     {
+ 376:../../cnc.c   ****         CLEARFLAG(statemask, EXEC_NOHOME);
+ 377:../../cnc.c   ****     }
+ 378:../../cnc.c   **** 
+ 379:../../cnc.c   ****     CLEARFLAG(cnc_state.exec_state, statemask);
+ 380:../../cnc.c   **** }
+ 381:../../cnc.c   **** 
+ 382:../../cnc.c   **** void cnc_reset(void)
+ 383:../../cnc.c   **** {
+ 384:../../cnc.c   ****     //resets all realtime command flags
+ 385:../../cnc.c   ****     cnc_state.rt_cmd = RT_CMD_CLEAR;
+ 386:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
+ 387:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
+ 388:../../cnc.c   ****     cnc_state.active_alarm = EXEC_ALARM_RESET;
+ 389:../../cnc.c   ****     cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; //Activates all alarms and hold
+ 390:../../cnc.c   **** 
+ 391:../../cnc.c   ****     //clear all systems
+ 392:../../cnc.c   ****     itp_clear();
+ 393:../../cnc.c   ****     planner_clear();
+ 394:../../cnc.c   ****     protocol_send_string(MSG_STARTUP);
+ 395:../../cnc.c   ****     //tries to clear alarms or any active hold state
+ 396:../../cnc.c   ****     cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
+ 397:../../cnc.c   **** 
+ 398:../../cnc.c   ****     //if any alarm state is still active checks system faults
+ 399:../../cnc.c   ****     if (cnc_get_exec_state(EXEC_ALARM))
+ 400:../../cnc.c   ****     {
+ 401:../../cnc.c   ****         //cnc_check_fault_systems();
+ 402:../../cnc.c   ****         if (!cnc_get_exec_state(EXEC_ABORT))
+ 403:../../cnc.c   ****         {
+ 404:../../cnc.c   ****             protocol_send_string(MSG_FEEDBACK_2);
+ 405:../../cnc.c   ****         }
+ 406:../../cnc.c   ****     }
+ 407:../../cnc.c   ****     else
+ 408:../../cnc.c   ****     {
+ 409:../../cnc.c   ****         cnc_unlock();
+ 410:../../cnc.c   ****         SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
+ 411:../../cnc.c   ****     }
+ 412:../../cnc.c   **** }
+ 413:../../cnc.c   **** 
+ 414:../../cnc.c   **** //Executes pending realtime commands
+ 415:../../cnc.c   **** //Realtime commands are split in to 3 groups
+ 416:../../cnc.c   **** //  -operation commands
+ 417:../../cnc.c   **** //  -feed override commands
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 9
+
+
+ 418:../../cnc.c   **** //  -tools override commands
+ 419:../../cnc.c   **** //All active flags will be executed by MSB order (higher first)
+ 420:../../cnc.c   **** //If two flags have different effects on the same attribute the one with the LSB will run last and 
+ 421:../../cnc.c   **** void cnc_exec_rt_commands(void)
+ 422:../../cnc.c   **** {
+ 423:../../cnc.c   ****     bool update_spindle = false;
+ 424:../../cnc.c   **** 
+ 425:../../cnc.c   ****     //executes feeds override rt commands
+ 426:../../cnc.c   ****     uint8_t cmd_mask = 0x04;
+ 427:../../cnc.c   ****     uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
+ 428:../../cnc.c   ****     cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
+ 429:../../cnc.c   ****     while (command)
+ 430:../../cnc.c   ****     {
+ 431:../../cnc.c   ****         switch (command & cmd_mask)
+ 432:../../cnc.c   ****         {
+ 433:../../cnc.c   ****         case RT_CMD_REPORT:
+ 434:../../cnc.c   ****             protocol_send_status();
+ 435:../../cnc.c   ****             break;
+ 436:../../cnc.c   ****         case RT_CMD_STARTUP_BLOCK0:
+ 437:../../cnc.c   ****             if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0
+ 438:../../cnc.c   ****             {
+ 439:../../cnc.c   ****                 serial_select(SERIAL_N0);
+ 440:../../cnc.c   ****             }
+ 441:../../cnc.c   **** 
+ 442:../../cnc.c   ****             SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1); //invokes command 1 on next pass
+ 443:../../cnc.c   ****             break;
+ 444:../../cnc.c   ****         case RT_CMD_STARTUP_BLOCK1:
+ 445:../../cnc.c   ****             if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET)) //loads command 1
+ 446:../../cnc.c   ****             {
+ 447:../../cnc.c   ****                 serial_select(SERIAL_N1);
+ 448:../../cnc.c   ****             }
+ 449:../../cnc.c   ****             break;
+ 450:../../cnc.c   ****         }
+ 451:../../cnc.c   **** 
+ 452:../../cnc.c   ****         CLEARFLAG(command, cmd_mask);
+ 453:../../cnc.c   ****         cmd_mask >>= 1;
+ 454:../../cnc.c   ****     }
+ 455:../../cnc.c   **** 
+ 456:../../cnc.c   ****     //executes feeds override rt commands
+ 457:../../cnc.c   ****     cmd_mask = 0x80;
+ 458:../../cnc.c   ****     command = cnc_state.feed_ovr_cmd;      //copies realtime flags states
+ 459:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 460:../../cnc.c   ****     while (command)
+ 461:../../cnc.c   ****     {
+ 462:../../cnc.c   ****         switch (command & cmd_mask)
+ 463:../../cnc.c   ****         {
+ 464:../../cnc.c   ****         case RT_CMD_FEED_100:
+ 465:../../cnc.c   ****             planner_feed_ovr_reset();
+ 466:../../cnc.c   ****             break;
+ 467:../../cnc.c   ****         case RT_CMD_FEED_INC_COARSE:
+ 468:../../cnc.c   ****             planner_feed_ovr_inc(FEED_OVR_COARSE);
+ 469:../../cnc.c   ****             break;
+ 470:../../cnc.c   ****         case RT_CMD_FEED_DEC_COARSE:
+ 471:../../cnc.c   ****             planner_feed_ovr_inc(-FEED_OVR_COARSE);
+ 472:../../cnc.c   ****             break;
+ 473:../../cnc.c   ****         case RT_CMD_FEED_INC_FINE:
+ 474:../../cnc.c   ****             planner_feed_ovr_inc(FEED_OVR_FINE);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 10
+
+
+ 475:../../cnc.c   ****             break;
+ 476:../../cnc.c   ****         case RT_CMD_FEED_DEC_FINE:
+ 477:../../cnc.c   ****             planner_feed_ovr_inc(-FEED_OVR_FINE);
+ 478:../../cnc.c   ****             break;
+ 479:../../cnc.c   ****         case RT_CMD_RAPIDFEED_100:
+ 480:../../cnc.c   ****             planner_rapid_feed_ovr_reset();
+ 481:../../cnc.c   ****             break;
+ 482:../../cnc.c   ****         case RT_CMD_RAPIDFEED_OVR1:
+ 483:../../cnc.c   ****             planner_rapid_feed_ovr(RAPID_FEED_OVR1);
+ 484:../../cnc.c   ****             break;
+ 485:../../cnc.c   ****         case RT_CMD_RAPIDFEED_OVR2:
+ 486:../../cnc.c   ****             planner_rapid_feed_ovr(RAPID_FEED_OVR2);
+ 487:../../cnc.c   ****             break;
+ 488:../../cnc.c   ****         }
+ 489:../../cnc.c   **** 
+ 490:../../cnc.c   ****         CLEARFLAG(command, cmd_mask);
+ 491:../../cnc.c   ****         cmd_mask >>= 1;
+ 492:../../cnc.c   ****     }
+ 493:../../cnc.c   **** 
+ 494:../../cnc.c   ****     //executes tools override rt commands
+ 495:../../cnc.c   ****     cmd_mask = 0x80;
+ 496:../../cnc.c   ****     command = cnc_state.tool_ovr_cmd;      //copies realtime flags states
+ 497:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 498:../../cnc.c   ****     while (command)
+ 499:../../cnc.c   ****     {
+ 500:../../cnc.c   ****         update_spindle = true;
+ 501:../../cnc.c   ****         switch (command & cmd_mask)
+ 502:../../cnc.c   ****         {
+ 503:../../cnc.c   **** #ifdef USE_SPINDLE
+ 504:../../cnc.c   ****         case RT_CMD_SPINDLE_100:
+ 505:../../cnc.c   ****             planner_spindle_ovr_reset();
+ 506:../../cnc.c   ****             break;
+ 507:../../cnc.c   ****         case RT_CMD_SPINDLE_INC_COARSE:
+ 508:../../cnc.c   ****             planner_spindle_ovr_inc(SPINDLE_OVR_COARSE);
+ 509:../../cnc.c   ****             break;
+ 510:../../cnc.c   ****         case RT_CMD_SPINDLE_DEC_COARSE:
+ 511:../../cnc.c   ****             planner_spindle_ovr_inc(-SPINDLE_OVR_COARSE);
+ 512:../../cnc.c   ****             break;
+ 513:../../cnc.c   ****         case RT_CMD_SPINDLE_INC_FINE:
+ 514:../../cnc.c   ****             planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+ 515:../../cnc.c   ****             break;
+ 516:../../cnc.c   ****         case RT_CMD_SPINDLE_DEC_FINE:
+ 517:../../cnc.c   ****             planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+ 518:../../cnc.c   ****             break;
+ 519:../../cnc.c   ****         case RT_CMD_SPINDLE_TOGGLE:
+ 520:../../cnc.c   ****             if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available
+ 521:../../cnc.c   ****             {
+ 522:../../cnc.c   ****                 //toogle state
+ 523:../../cnc.c   ****                 if (mcu_get_pwm(SPINDLE_PWM))
+ 524:../../cnc.c   ****                 {
+ 525:../../cnc.c   ****                     update_spindle = false;
+ 526:../../cnc.c   ****                     mcu_set_pwm(SPINDLE_PWM, 0);
+ 527:../../cnc.c   ****                 }
+ 528:../../cnc.c   ****             }
+ 529:../../cnc.c   ****             break;
+ 530:../../cnc.c   **** #endif
+ 531:../../cnc.c   **** #ifdef USE_COOLANT
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 11
+
+
+ 532:../../cnc.c   ****         case RT_CMD_COOL_FLD_TOGGLE:
+ 533:../../cnc.c   ****         case RT_CMD_COOL_MST_TOGGLE:
+ 534:../../cnc.c   ****             update_spindle = false;
+ 535:../../cnc.c   ****             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
+ 536:../../cnc.c   ****             {
+ 537:../../cnc.c   ****                 parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
+ 538:../../cnc.c   ****             }
+ 539:../../cnc.c   ****             break;
+ 540:../../cnc.c   **** #endif
+ 541:../../cnc.c   ****         }
+ 542:../../cnc.c   **** 
+ 543:../../cnc.c   ****         CLEARFLAG(command, cmd_mask);
+ 544:../../cnc.c   ****         cmd_mask >>= 1;
+ 545:../../cnc.c   ****     }
+ 546:../../cnc.c   **** 
+ 547:../../cnc.c   **** #ifdef USE_SPINDLE
+ 548:../../cnc.c   ****     if (update_spindle)
+ 549:../../cnc.c   ****     {
+ 550:../../cnc.c   ****         itp_update();
+ 551:../../cnc.c   ****         if (planner_buffer_is_empty())
+ 552:../../cnc.c   ****         {
+ 553:../../cnc.c   ****             planner_block_data_t block = {};
+ 554:../../cnc.c   ****             block.spindle = planner_get_previous_spindle_speed();
+ 555:../../cnc.c   ****             mc_spindle_coolant(block);
+ 556:../../cnc.c   ****         }
+ 557:../../cnc.c   ****     }
+ 558:../../cnc.c   **** #endif
+ 559:../../cnc.c   **** }
+ 560:../../cnc.c   **** 
+ 561:../../cnc.c   **** void cnc_check_fault_systems(void)
+ 562:../../cnc.c   **** {
+  33              		.loc 1 562 1 view -0
+  34              		.cfi_startproc
+  35              		@ args = 0, pretend = 0, frame = 0
+  36              		@ frame_needed = 0, uses_anonymous_args = 0
+  37 0000 08B5     		push	{r3, lr}
+  38              	.LCFI0:
+  39              		.cfi_def_cfa_offset 8
+  40              		.cfi_offset 3, -8
+  41              		.cfi_offset 14, -4
+ 563:../../cnc.c   ****     uint8_t inputs = io_get_controls();
+  42              		.loc 1 563 5 view .LVU1
+  43              		.loc 1 563 22 is_stmt 0 view .LVU2
+  44 0002 FFF7FEFF 		bl	io_get_controls
+  45              	.LVL0:
+ 564:../../cnc.c   **** #ifdef ESTOP
+ 565:../../cnc.c   ****     if (CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
+  46              		.loc 1 565 5 is_stmt 1 view .LVU3
+  47              		.loc 1 565 8 is_stmt 0 view .LVU4
+  48 0006 10F0010F 		tst	r0, #1
+  49 000a 03D1     		bne	.L5
+  50              	.LVL1:
+  51              	.L2:
+ 566:../../cnc.c   ****     {
+ 567:../../cnc.c   ****         protocol_send_string(MSG_FEEDBACK_12);
+ 568:../../cnc.c   ****     }
+ 569:../../cnc.c   **** #endif
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 12
+
+
+ 570:../../cnc.c   **** #ifdef SAFETY_DOOR
+ 571:../../cnc.c   ****     if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
+ 572:../../cnc.c   ****     {
+ 573:../../cnc.c   ****         protocol_send_string(MSG_FEEDBACK_6);
+ 574:../../cnc.c   ****     }
+ 575:../../cnc.c   **** #endif
+ 576:../../cnc.c   **** #if (LIMITS_MASK != 0)
+ 577:../../cnc.c   ****     if (g_settings.hard_limits_enabled) //fault on limits
+  52              		.loc 1 577 5 is_stmt 1 view .LVU5
+  53              		.loc 1 577 19 is_stmt 0 view .LVU6
+  54 000c 084B     		ldr	r3, .L7
+  55 000e 9B7D     		ldrb	r3, [r3, #22]	@ zero_extendqisi2
+  56              		.loc 1 577 8 view .LVU7
+  57 0010 23B9     		cbnz	r3, .L6
+  58              	.L1:
+ 578:../../cnc.c   ****     {
+ 579:../../cnc.c   ****         inputs = io_get_limits();
+ 580:../../cnc.c   ****         if (CHECKFLAG(inputs, LIMITS_MASK))
+ 581:../../cnc.c   ****         {
+ 582:../../cnc.c   ****             protocol_send_string(MSG_FEEDBACK_7);
+ 583:../../cnc.c   ****         }
+ 584:../../cnc.c   ****     }
+ 585:../../cnc.c   **** #endif
+ 586:../../cnc.c   **** }
+  59              		.loc 1 586 1 view .LVU8
+  60 0012 08BD     		pop	{r3, pc}
+  61              	.LVL2:
+  62              	.L5:
+ 567:../../cnc.c   ****     }
+  63              		.loc 1 567 9 is_stmt 1 view .LVU9
+  64 0014 0748     		ldr	r0, .L7+4
+  65              	.LVL3:
+ 567:../../cnc.c   ****     }
+  66              		.loc 1 567 9 is_stmt 0 view .LVU10
+  67 0016 FFF7FEFF 		bl	protocol_send_string
+  68              	.LVL4:
+  69 001a F7E7     		b	.L2
+  70              	.L6:
+ 579:../../cnc.c   ****         if (CHECKFLAG(inputs, LIMITS_MASK))
+  71              		.loc 1 579 9 is_stmt 1 view .LVU11
+ 579:../../cnc.c   ****         if (CHECKFLAG(inputs, LIMITS_MASK))
+  72              		.loc 1 579 18 is_stmt 0 view .LVU12
+  73 001c FFF7FEFF 		bl	io_get_limits
+  74              	.LVL5:
+ 580:../../cnc.c   ****         {
+  75              		.loc 1 580 9 is_stmt 1 view .LVU13
+ 580:../../cnc.c   ****         {
+  76              		.loc 1 580 12 is_stmt 0 view .LVU14
+  77 0020 10F03F0F 		tst	r0, #63
+  78 0024 F5D0     		beq	.L1
+ 582:../../cnc.c   ****         }
+  79              		.loc 1 582 13 is_stmt 1 view .LVU15
+  80 0026 0448     		ldr	r0, .L7+8
+  81              	.LVL6:
+ 582:../../cnc.c   ****         }
+  82              		.loc 1 582 13 is_stmt 0 view .LVU16
+  83 0028 FFF7FEFF 		bl	protocol_send_string
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 13
+
+
+  84              	.LVL7:
+  85              		.loc 1 586 1 view .LVU17
+  86 002c F1E7     		b	.L1
+  87              	.L8:
+  88 002e 00BF     		.align	2
+  89              	.L7:
+  90 0030 00000000 		.word	g_settings
+  91 0034 00000000 		.word	.LC0
+  92 0038 20000000 		.word	.LC1
+  93              		.cfi_endproc
+  94              	.LFE81:
+  96              		.section	.text.cnc_exec_rt_commands,"ax",%progbits
+  97              		.align	1
+  98              		.syntax unified
+  99              		.thumb
+ 100              		.thumb_func
+ 101              		.fpu softvfp
+ 103              	cnc_exec_rt_commands:
+ 104              	.LFB80:
+ 422:../../cnc.c   ****     bool update_spindle = false;
+ 105              		.loc 1 422 1 is_stmt 1 view -0
+ 106              		.cfi_startproc
+ 107              		@ args = 0, pretend = 0, frame = 0
+ 108              		@ frame_needed = 0, uses_anonymous_args = 0
+ 109 0000 38B5     		push	{r3, r4, r5, lr}
+ 110              	.LCFI1:
+ 111              		.cfi_def_cfa_offset 16
+ 112              		.cfi_offset 3, -16
+ 113              		.cfi_offset 4, -12
+ 114              		.cfi_offset 5, -8
+ 115              		.cfi_offset 14, -4
+ 423:../../cnc.c   **** 
+ 116              		.loc 1 423 5 view .LVU19
+ 117              	.LVL8:
+ 426:../../cnc.c   ****     uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
+ 118              		.loc 1 426 5 view .LVU20
+ 427:../../cnc.c   ****     cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
+ 119              		.loc 1 427 5 view .LVU21
+ 427:../../cnc.c   ****     cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
+ 120              		.loc 1 427 32 is_stmt 0 view .LVU22
+ 121 0002 5A4B     		ldr	r3, .L36
+ 122 0004 9C78     		ldrb	r4, [r3, #2]	@ zero_extendqisi2
+ 427:../../cnc.c   ****     cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
+ 123              		.loc 1 427 13 view .LVU23
+ 124 0006 04F00704 		and	r4, r4, #7
+ 125              	.LVL9:
+ 428:../../cnc.c   ****     while (command)
+ 126              		.loc 1 428 5 is_stmt 1 view .LVU24
+ 428:../../cnc.c   ****     while (command)
+ 127              		.loc 1 428 22 is_stmt 0 view .LVU25
+ 128 000a 0022     		movs	r2, #0
+ 129 000c 9A70     		strb	r2, [r3, #2]
+ 429:../../cnc.c   ****     {
+ 130              		.loc 1 429 5 is_stmt 1 view .LVU26
+ 426:../../cnc.c   ****     uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
+ 131              		.loc 1 426 13 is_stmt 0 view .LVU27
+ 132 000e 0425     		movs	r5, #4
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 14
+
+
+ 429:../../cnc.c   ****     {
+ 133              		.loc 1 429 11 view .LVU28
+ 134 0010 04E0     		b	.L10
+ 135              	.LVL10:
+ 136              	.L12:
+ 434:../../cnc.c   ****             break;
+ 137              		.loc 1 434 13 is_stmt 1 view .LVU29
+ 138 0012 FFF7FEFF 		bl	protocol_send_status
+ 139              	.LVL11:
+ 435:../../cnc.c   ****         case RT_CMD_STARTUP_BLOCK0:
+ 140              		.loc 1 435 13 view .LVU30
+ 141              	.L14:
+ 452:../../cnc.c   ****         cmd_mask >>= 1;
+ 142              		.loc 1 452 9 view .LVU31
+ 143 0016 24EA0504 		bic	r4, r4, r5
+ 144              	.LVL12:
+ 453:../../cnc.c   ****     }
+ 145              		.loc 1 453 9 view .LVU32
+ 453:../../cnc.c   ****     }
+ 146              		.loc 1 453 18 is_stmt 0 view .LVU33
+ 147 001a 6D08     		lsrs	r5, r5, #1
+ 148              	.LVL13:
+ 149              	.L10:
+ 429:../../cnc.c   ****     {
+ 150              		.loc 1 429 11 is_stmt 1 view .LVU34
+ 151 001c F4B1     		cbz	r4, .L33
+ 431:../../cnc.c   ****         {
+ 152              		.loc 1 431 9 view .LVU35
+ 431:../../cnc.c   ****         {
+ 153              		.loc 1 431 25 is_stmt 0 view .LVU36
+ 154 001e 05EA0403 		and	r3, r5, r4
+ 431:../../cnc.c   ****         {
+ 155              		.loc 1 431 9 view .LVU37
+ 156 0022 022B     		cmp	r3, #2
+ 157 0024 11D0     		beq	.L11
+ 158 0026 042B     		cmp	r3, #4
+ 159 0028 F3D0     		beq	.L12
+ 160 002a 012B     		cmp	r3, #1
+ 161 002c F3D1     		bne	.L14
+ 437:../../cnc.c   ****             {
+ 162              		.loc 1 437 13 is_stmt 1 view .LVU38
+ 437:../../cnc.c   ****             {
+ 163              		.loc 1 437 17 is_stmt 0 view .LVU39
+ 164 002e DA20     		movs	r0, #218
+ 165 0030 FFF7FEFF 		bl	settings_check_startup_gcode
+ 166              	.LVL14:
+ 437:../../cnc.c   ****             {
+ 167              		.loc 1 437 16 view .LVU40
+ 168 0034 28B9     		cbnz	r0, .L34
+ 169              	.L15:
+ 442:../../cnc.c   ****             break;
+ 170              		.loc 1 442 13 is_stmt 1 view .LVU41
+ 171 0036 4D4A     		ldr	r2, .L36
+ 172 0038 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 173 003a 43F00203 		orr	r3, r3, #2
+ 174 003e 9370     		strb	r3, [r2, #2]
+ 443:../../cnc.c   ****         case RT_CMD_STARTUP_BLOCK1:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 15
+
+
+ 175              		.loc 1 443 13 view .LVU42
+ 176 0040 E9E7     		b	.L14
+ 177              	.L34:
+ 439:../../cnc.c   ****             }
+ 178              		.loc 1 439 17 view .LVU43
+ 179 0042 0120     		movs	r0, #1
+ 180 0044 FFF7FEFF 		bl	serial_select
+ 181              	.LVL15:
+ 182 0048 F5E7     		b	.L15
+ 183              	.L11:
+ 445:../../cnc.c   ****             {
+ 184              		.loc 1 445 13 view .LVU44
+ 445:../../cnc.c   ****             {
+ 185              		.loc 1 445 17 is_stmt 0 view .LVU45
+ 186 004a DB20     		movs	r0, #219
+ 187 004c FFF7FEFF 		bl	settings_check_startup_gcode
+ 188              	.LVL16:
+ 445:../../cnc.c   ****             {
+ 189              		.loc 1 445 16 view .LVU46
+ 190 0050 0028     		cmp	r0, #0
+ 191 0052 E0D0     		beq	.L14
+ 447:../../cnc.c   ****             }
+ 192              		.loc 1 447 17 is_stmt 1 view .LVU47
+ 193 0054 0220     		movs	r0, #2
+ 194 0056 FFF7FEFF 		bl	serial_select
+ 195              	.LVL17:
+ 196 005a DCE7     		b	.L14
+ 197              	.L33:
+ 457:../../cnc.c   ****     command = cnc_state.feed_ovr_cmd;      //copies realtime flags states
+ 198              		.loc 1 457 5 view .LVU48
+ 199              	.LVL18:
+ 458:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 200              		.loc 1 458 5 view .LVU49
+ 458:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 201              		.loc 1 458 13 is_stmt 0 view .LVU50
+ 202 005c 434B     		ldr	r3, .L36
+ 203 005e DC78     		ldrb	r4, [r3, #3]	@ zero_extendqisi2
+ 204              	.LVL19:
+ 458:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 205              		.loc 1 458 13 view .LVU51
+ 206 0060 E4B2     		uxtb	r4, r4
+ 207              	.LVL20:
+ 459:../../cnc.c   ****     while (command)
+ 208              		.loc 1 459 5 is_stmt 1 view .LVU52
+ 459:../../cnc.c   ****     while (command)
+ 209              		.loc 1 459 28 is_stmt 0 view .LVU53
+ 210 0062 0022     		movs	r2, #0
+ 211 0064 DA70     		strb	r2, [r3, #3]
+ 460:../../cnc.c   ****     {
+ 212              		.loc 1 460 5 is_stmt 1 view .LVU54
+ 457:../../cnc.c   ****     command = cnc_state.feed_ovr_cmd;      //copies realtime flags states
+ 213              		.loc 1 457 14 is_stmt 0 view .LVU55
+ 214 0066 8025     		movs	r5, #128
+ 460:../../cnc.c   ****     {
+ 215              		.loc 1 460 11 view .LVU56
+ 216 0068 0CE0     		b	.L17
+ 217              	.LVL21:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 16
+
+
+ 218              	.L18:
+ 462:../../cnc.c   ****         {
+ 219              		.loc 1 462 9 view .LVU57
+ 220 006a 402B     		cmp	r3, #64
+ 221 006c 6DD0     		beq	.L27
+ 222 006e 802B     		cmp	r3, #128
+ 223 0070 05D1     		bne	.L19
+ 486:../../cnc.c   ****             break;
+ 224              		.loc 1 486 13 is_stmt 1 view .LVU58
+ 225 0072 1920     		movs	r0, #25
+ 226 0074 FFF7FEFF 		bl	planner_rapid_feed_ovr
+ 227              	.LVL22:
+ 487:../../cnc.c   ****         }
+ 228              		.loc 1 487 13 view .LVU59
+ 229 0078 01E0     		b	.L19
+ 230              	.L26:
+ 465:../../cnc.c   ****             break;
+ 231              		.loc 1 465 13 view .LVU60
+ 232 007a FFF7FEFF 		bl	planner_feed_ovr_reset
+ 233              	.LVL23:
+ 466:../../cnc.c   ****         case RT_CMD_FEED_INC_COARSE:
+ 234              		.loc 1 466 13 view .LVU61
+ 235              	.L19:
+ 490:../../cnc.c   ****         cmd_mask >>= 1;
+ 236              		.loc 1 490 9 view .LVU62
+ 237 007e 24EA0504 		bic	r4, r4, r5
+ 238              	.LVL24:
+ 491:../../cnc.c   ****     }
+ 239              		.loc 1 491 9 view .LVU63
+ 491:../../cnc.c   ****     }
+ 240              		.loc 1 491 18 is_stmt 0 view .LVU64
+ 241 0082 6D08     		lsrs	r5, r5, #1
+ 242              	.LVL25:
+ 243              	.L17:
+ 460:../../cnc.c   ****     {
+ 244              		.loc 1 460 11 is_stmt 1 view .LVU65
+ 245 0084 002C     		cmp	r4, #0
+ 246 0086 64D0     		beq	.L35
+ 462:../../cnc.c   ****         {
+ 247              		.loc 1 462 9 view .LVU66
+ 462:../../cnc.c   ****         {
+ 248              		.loc 1 462 25 is_stmt 0 view .LVU67
+ 249 0088 05EA0403 		and	r3, r5, r4
+ 462:../../cnc.c   ****         {
+ 250              		.loc 1 462 9 view .LVU68
+ 251 008c 202B     		cmp	r3, #32
+ 252 008e ECD8     		bhi	.L18
+ 253 0090 5AB2     		sxtb	r2, r3
+ 254 0092 002A     		cmp	r2, #0
+ 255 0094 F3D0     		beq	.L19
+ 256 0096 013B     		subs	r3, r3, #1
+ 257 0098 1F2B     		cmp	r3, #31
+ 258 009a F0D8     		bhi	.L19
+ 259 009c 01A2     		adr	r2, .L21
+ 260 009e 52F823F0 		ldr	pc, [r2, r3, lsl #2]
+ 261 00a2 00BF     		.p2align 2
+ 262              	.L21:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 17
+
+
+ 263 00a4 7B000000 		.word	.L26+1
+ 264 00a8 25010000 		.word	.L25+1
+ 265 00ac 7F000000 		.word	.L19+1
+ 266 00b0 2D010000 		.word	.L24+1
+ 267 00b4 7F000000 		.word	.L19+1
+ 268 00b8 7F000000 		.word	.L19+1
+ 269 00bc 7F000000 		.word	.L19+1
+ 270 00c0 35010000 		.word	.L23+1
+ 271 00c4 7F000000 		.word	.L19+1
+ 272 00c8 7F000000 		.word	.L19+1
+ 273 00cc 7F000000 		.word	.L19+1
+ 274 00d0 7F000000 		.word	.L19+1
+ 275 00d4 7F000000 		.word	.L19+1
+ 276 00d8 7F000000 		.word	.L19+1
+ 277 00dc 7F000000 		.word	.L19+1
+ 278 00e0 3D010000 		.word	.L22+1
+ 279 00e4 7F000000 		.word	.L19+1
+ 280 00e8 7F000000 		.word	.L19+1
+ 281 00ec 7F000000 		.word	.L19+1
+ 282 00f0 7F000000 		.word	.L19+1
+ 283 00f4 7F000000 		.word	.L19+1
+ 284 00f8 7F000000 		.word	.L19+1
+ 285 00fc 7F000000 		.word	.L19+1
+ 286 0100 7F000000 		.word	.L19+1
+ 287 0104 7F000000 		.word	.L19+1
+ 288 0108 7F000000 		.word	.L19+1
+ 289 010c 7F000000 		.word	.L19+1
+ 290 0110 7F000000 		.word	.L19+1
+ 291 0114 7F000000 		.word	.L19+1
+ 292 0118 7F000000 		.word	.L19+1
+ 293 011c 7F000000 		.word	.L19+1
+ 294 0120 45010000 		.word	.L20+1
+ 295              		.p2align 1
+ 296              	.L25:
+ 468:../../cnc.c   ****             break;
+ 297              		.loc 1 468 13 is_stmt 1 view .LVU69
+ 298 0124 0A20     		movs	r0, #10
+ 299 0126 FFF7FEFF 		bl	planner_feed_ovr_inc
+ 300              	.LVL26:
+ 469:../../cnc.c   ****         case RT_CMD_FEED_DEC_COARSE:
+ 301              		.loc 1 469 13 view .LVU70
+ 302 012a A8E7     		b	.L19
+ 303              	.L24:
+ 471:../../cnc.c   ****             break;
+ 304              		.loc 1 471 13 view .LVU71
+ 305 012c F620     		movs	r0, #246
+ 306 012e FFF7FEFF 		bl	planner_feed_ovr_inc
+ 307              	.LVL27:
+ 472:../../cnc.c   ****         case RT_CMD_FEED_INC_FINE:
+ 308              		.loc 1 472 13 view .LVU72
+ 309 0132 A4E7     		b	.L19
+ 310              	.L23:
+ 474:../../cnc.c   ****             break;
+ 311              		.loc 1 474 13 view .LVU73
+ 312 0134 0120     		movs	r0, #1
+ 313 0136 FFF7FEFF 		bl	planner_feed_ovr_inc
+ 314              	.LVL28:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 18
+
+
+ 475:../../cnc.c   ****         case RT_CMD_FEED_DEC_FINE:
+ 315              		.loc 1 475 13 view .LVU74
+ 316 013a A0E7     		b	.L19
+ 317              	.L22:
+ 477:../../cnc.c   ****             break;
+ 318              		.loc 1 477 13 view .LVU75
+ 319 013c FF20     		movs	r0, #255
+ 320 013e FFF7FEFF 		bl	planner_feed_ovr_inc
+ 321              	.LVL29:
+ 478:../../cnc.c   ****         case RT_CMD_RAPIDFEED_100:
+ 322              		.loc 1 478 13 view .LVU76
+ 323 0142 9CE7     		b	.L19
+ 324              	.L20:
+ 480:../../cnc.c   ****             break;
+ 325              		.loc 1 480 13 view .LVU77
+ 326 0144 FFF7FEFF 		bl	planner_rapid_feed_ovr_reset
+ 327              	.LVL30:
+ 481:../../cnc.c   ****         case RT_CMD_RAPIDFEED_OVR1:
+ 328              		.loc 1 481 13 view .LVU78
+ 329 0148 99E7     		b	.L19
+ 330              	.L27:
+ 483:../../cnc.c   ****             break;
+ 331              		.loc 1 483 13 view .LVU79
+ 332 014a 3220     		movs	r0, #50
+ 333 014c FFF7FEFF 		bl	planner_rapid_feed_ovr
+ 334              	.LVL31:
+ 484:../../cnc.c   ****         case RT_CMD_RAPIDFEED_OVR2:
+ 335              		.loc 1 484 13 view .LVU80
+ 336 0150 95E7     		b	.L19
+ 337              	.L35:
+ 495:../../cnc.c   ****     command = cnc_state.tool_ovr_cmd;      //copies realtime flags states
+ 338              		.loc 1 495 5 view .LVU81
+ 339              	.LVL32:
+ 496:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 340              		.loc 1 496 5 view .LVU82
+ 496:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+ 341              		.loc 1 496 13 is_stmt 0 view .LVU83
+ 342 0152 064A     		ldr	r2, .L36
+ 343 0154 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 344 0156 DBB2     		uxtb	r3, r3
+ 345              	.LVL33:
+ 497:../../cnc.c   ****     while (command)
+ 346              		.loc 1 497 5 is_stmt 1 view .LVU84
+ 497:../../cnc.c   ****     while (command)
+ 347              		.loc 1 497 28 is_stmt 0 view .LVU85
+ 348 0158 0021     		movs	r1, #0
+ 349 015a 1171     		strb	r1, [r2, #4]
+ 498:../../cnc.c   ****     {
+ 350              		.loc 1 498 5 is_stmt 1 view .LVU86
+ 495:../../cnc.c   ****     command = cnc_state.tool_ovr_cmd;      //copies realtime flags states
+ 351              		.loc 1 495 14 is_stmt 0 view .LVU87
+ 352 015c 8022     		movs	r2, #128
+ 498:../../cnc.c   ****     {
+ 353              		.loc 1 498 11 view .LVU88
+ 354 015e 02E0     		b	.L30
+ 355              	.LVL34:
+ 356              	.L31:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 19
+
+
+ 500:../../cnc.c   ****         switch (command & cmd_mask)
+ 357              		.loc 1 500 9 is_stmt 1 view .LVU89
+ 501:../../cnc.c   ****         {
+ 358              		.loc 1 501 9 view .LVU90
+ 541:../../cnc.c   **** 
+ 359              		.loc 1 541 9 view .LVU91
+ 543:../../cnc.c   ****         cmd_mask >>= 1;
+ 360              		.loc 1 543 9 view .LVU92
+ 361 0160 23EA0203 		bic	r3, r3, r2
+ 362              	.LVL35:
+ 544:../../cnc.c   ****     }
+ 363              		.loc 1 544 9 view .LVU93
+ 544:../../cnc.c   ****     }
+ 364              		.loc 1 544 18 is_stmt 0 view .LVU94
+ 365 0164 5208     		lsrs	r2, r2, #1
+ 366              	.LVL36:
+ 367              	.L30:
+ 498:../../cnc.c   ****     {
+ 368              		.loc 1 498 11 is_stmt 1 view .LVU95
+ 369 0166 002B     		cmp	r3, #0
+ 370 0168 FAD1     		bne	.L31
+ 559:../../cnc.c   **** 
+ 371              		.loc 1 559 1 is_stmt 0 view .LVU96
+ 372 016a 38BD     		pop	{r3, r4, r5, pc}
+ 373              	.LVL37:
+ 374              	.L37:
+ 559:../../cnc.c   **** 
+ 375              		.loc 1 559 1 view .LVU97
+ 376              		.align	2
+ 377              	.L36:
+ 378 016c 00000000 		.word	.LANCHOR0
+ 379              		.cfi_endproc
+ 380              	.LFE80:
+ 382              		.section	.text.cnc_init,"ax",%progbits
+ 383              		.align	1
+ 384              		.global	cnc_init
+ 385              		.syntax unified
+ 386              		.thumb
+ 387              		.thumb_func
+ 388              		.fpu softvfp
+ 390              	cnc_init:
+ 391              	.LFB68:
+  58:../../cnc.c   ****     //initializes cnc state
+ 392              		.loc 1 58 1 is_stmt 1 view -0
+ 393              		.cfi_startproc
+ 394              		@ args = 0, pretend = 0, frame = 0
+ 395              		@ frame_needed = 0, uses_anonymous_args = 0
+ 396 0000 08B5     		push	{r3, lr}
+ 397              	.LCFI2:
+ 398              		.cfi_def_cfa_offset 8
+ 399              		.cfi_offset 3, -8
+ 400              		.cfi_offset 14, -4
+  64:../../cnc.c   ****     serial_init();   //serial
+ 401              		.loc 1 64 5 view .LVU99
+ 402 0002 FFF7FEFF 		bl	mcu_init
+ 403              	.LVL38:
+  65:../../cnc.c   ****     settings_init(); //settings
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 20
+
+
+ 404              		.loc 1 65 5 view .LVU100
+ 405 0006 FFF7FEFF 		bl	serial_init
+ 406              	.LVL39:
+  66:../../cnc.c   ****     parser_init();   //parser
+ 407              		.loc 1 66 5 view .LVU101
+ 408 000a FFF7FEFF 		bl	settings_init
+ 409              	.LVL40:
+  67:../../cnc.c   ****     mc_init();       //motion control
+ 410              		.loc 1 67 5 view .LVU102
+ 411 000e FFF7FEFF 		bl	parser_init
+ 412              	.LVL41:
+  68:../../cnc.c   ****     planner_init();  //motion planner
+ 413              		.loc 1 68 5 view .LVU103
+ 414 0012 FFF7FEFF 		bl	mc_init
+ 415              	.LVL42:
+  69:../../cnc.c   ****     itp_init();      //interpolator
+ 416              		.loc 1 69 5 view .LVU104
+ 417 0016 FFF7FEFF 		bl	planner_init
+ 418              	.LVL43:
+  70:../../cnc.c   ****     serial_flush();
+ 419              		.loc 1 70 5 view .LVU105
+ 420 001a FFF7FEFF 		bl	itp_init
+ 421              	.LVL44:
+  71:../../cnc.c   **** }
+ 422              		.loc 1 71 5 view .LVU106
+ 423 001e FFF7FEFF 		bl	serial_flush
+ 424              	.LVL45:
+  72:../../cnc.c   **** 
+ 425              		.loc 1 72 1 is_stmt 0 view .LVU107
+ 426 0022 08BD     		pop	{r3, pc}
+ 427              		.cfi_endproc
+ 428              	.LFE68:
+ 430              		.section	.text.cnc_get_exec_state,"ax",%progbits
+ 431              		.align	1
+ 432              		.global	cnc_get_exec_state
+ 433              		.syntax unified
+ 434              		.thumb
+ 435              		.thumb_func
+ 436              		.fpu softvfp
+ 438              	cnc_get_exec_state:
+ 439              	.LVL46:
+ 440              	.LFB76:
+ 338:../../cnc.c   ****     return CHECKFLAG(cnc_state.exec_state, statemask);
+ 441              		.loc 1 338 1 is_stmt 1 view -0
+ 442              		.cfi_startproc
+ 443              		@ args = 0, pretend = 0, frame = 0
+ 444              		@ frame_needed = 0, uses_anonymous_args = 0
+ 445              		@ link register save eliminated.
+ 339:../../cnc.c   **** }
+ 446              		.loc 1 339 5 view .LVU109
+ 339:../../cnc.c   **** }
+ 447              		.loc 1 339 12 is_stmt 0 view .LVU110
+ 448 0000 014B     		ldr	r3, .L41
+ 449 0002 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 340:../../cnc.c   **** 
+ 450              		.loc 1 340 1 view .LVU111
+ 451 0004 1840     		ands	r0, r0, r3
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 21
+
+
+ 452              	.LVL47:
+ 340:../../cnc.c   **** 
+ 453              		.loc 1 340 1 view .LVU112
+ 454 0006 7047     		bx	lr
+ 455              	.L42:
+ 456              		.align	2
+ 457              	.L41:
+ 458 0008 00000000 		.word	.LANCHOR0
+ 459              		.cfi_endproc
+ 460              	.LFE76:
+ 462              		.section	.text.cnc_set_exec_state,"ax",%progbits
+ 463              		.align	1
+ 464              		.global	cnc_set_exec_state
+ 465              		.syntax unified
+ 466              		.thumb
+ 467              		.thumb_func
+ 468              		.fpu softvfp
+ 470              	cnc_set_exec_state:
+ 471              	.LVL48:
+ 472              	.LFB77:
+ 343:../../cnc.c   ****     SETFLAG(cnc_state.exec_state, statemask);
+ 473              		.loc 1 343 1 is_stmt 1 view -0
+ 474              		.cfi_startproc
+ 475              		@ args = 0, pretend = 0, frame = 0
+ 476              		@ frame_needed = 0, uses_anonymous_args = 0
+ 477              		@ link register save eliminated.
+ 344:../../cnc.c   **** }
+ 478              		.loc 1 344 5 view .LVU114
+ 479 0000 024A     		ldr	r2, .L44
+ 480 0002 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 481 0004 0343     		orrs	r3, r3, r0
+ 482 0006 1370     		strb	r3, [r2]
+ 345:../../cnc.c   **** 
+ 483              		.loc 1 345 1 is_stmt 0 view .LVU115
+ 484 0008 7047     		bx	lr
+ 485              	.L45:
+ 486 000a 00BF     		.align	2
+ 487              	.L44:
+ 488 000c 00000000 		.word	.LANCHOR0
+ 489              		.cfi_endproc
+ 490              	.LFE77:
+ 492              		.section	.text.cnc_alarm,"ax",%progbits
+ 493              		.align	1
+ 494              		.global	cnc_alarm
+ 495              		.syntax unified
+ 496              		.thumb
+ 497              		.thumb_func
+ 498              		.fpu softvfp
+ 500              	cnc_alarm:
+ 501              	.LVL49:
+ 502              	.LFB73:
+ 299:../../cnc.c   ****     cnc_set_exec_state(EXEC_ABORT);
+ 503              		.loc 1 299 1 is_stmt 1 view -0
+ 504              		.cfi_startproc
+ 505              		@ args = 0, pretend = 0, frame = 0
+ 506              		@ frame_needed = 0, uses_anonymous_args = 0
+ 299:../../cnc.c   ****     cnc_set_exec_state(EXEC_ABORT);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 22
+
+
+ 507              		.loc 1 299 1 is_stmt 0 view .LVU117
+ 508 0000 10B5     		push	{r4, lr}
+ 509              	.LCFI3:
+ 510              		.cfi_def_cfa_offset 8
+ 511              		.cfi_offset 4, -8
+ 512              		.cfi_offset 14, -4
+ 513 0002 0446     		mov	r4, r0
+ 300:../../cnc.c   ****     cnc_state.active_alarm = code;
+ 514              		.loc 1 300 5 is_stmt 1 view .LVU118
+ 515 0004 8020     		movs	r0, #128
+ 516              	.LVL50:
+ 300:../../cnc.c   ****     cnc_state.active_alarm = code;
+ 517              		.loc 1 300 5 is_stmt 0 view .LVU119
+ 518 0006 FFF7FEFF 		bl	cnc_set_exec_state
+ 519              	.LVL51:
+ 301:../../cnc.c   **** }
+ 520              		.loc 1 301 5 is_stmt 1 view .LVU120
+ 301:../../cnc.c   **** }
+ 521              		.loc 1 301 28 is_stmt 0 view .LVU121
+ 522 000a 014B     		ldr	r3, .L48
+ 523 000c 5C70     		strb	r4, [r3, #1]
+ 302:../../cnc.c   **** 
+ 524              		.loc 1 302 1 view .LVU122
+ 525 000e 10BD     		pop	{r4, pc}
+ 526              	.L49:
+ 527              		.align	2
+ 528              	.L48:
+ 529 0010 00000000 		.word	.LANCHOR0
+ 530              		.cfi_endproc
+ 531              	.LFE73:
+ 533              		.section	.text.cnc_stop,"ax",%progbits
+ 534              		.align	1
+ 535              		.global	cnc_stop
+ 536              		.syntax unified
+ 537              		.thumb
+ 538              		.thumb_func
+ 539              		.fpu softvfp
+ 541              	cnc_stop:
+ 542              	.LFB74:
+ 305:../../cnc.c   ****     //halt is active and was running flags it lost home position
+ 543              		.loc 1 305 1 is_stmt 1 view -0
+ 544              		.cfi_startproc
+ 545              		@ args = 0, pretend = 0, frame = 0
+ 546              		@ frame_needed = 0, uses_anonymous_args = 0
+ 547 0000 08B5     		push	{r3, lr}
+ 548              	.LCFI4:
+ 549              		.cfi_def_cfa_offset 8
+ 550              		.cfi_offset 3, -8
+ 551              		.cfi_offset 14, -4
+ 307:../../cnc.c   ****     {
+ 552              		.loc 1 307 5 view .LVU124
+ 307:../../cnc.c   ****     {
+ 553              		.loc 1 307 9 is_stmt 0 view .LVU125
+ 554 0002 0120     		movs	r0, #1
+ 555 0004 FFF7FEFF 		bl	cnc_get_exec_state
+ 556              	.LVL52:
+ 307:../../cnc.c   ****     {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 23
+
+
+ 557              		.loc 1 307 8 view .LVU126
+ 558 0008 10B1     		cbz	r0, .L51
+ 307:../../cnc.c   ****     {
+ 559              		.loc 1 307 51 discriminator 1 view .LVU127
+ 560 000a 054B     		ldr	r3, .L54
+ 561 000c DB7D     		ldrb	r3, [r3, #23]	@ zero_extendqisi2
+ 307:../../cnc.c   ****     {
+ 562              		.loc 1 307 38 discriminator 1 view .LVU128
+ 563 000e 13B9     		cbnz	r3, .L53
+ 564              	.L51:
+ 311:../../cnc.c   ****     //stop tools
+ 565              		.loc 1 311 5 is_stmt 1 view .LVU129
+ 566 0010 FFF7FEFF 		bl	itp_stop
+ 567              	.LVL53:
+ 321:../../cnc.c   **** 
+ 568              		.loc 1 321 1 is_stmt 0 view .LVU130
+ 569 0014 08BD     		pop	{r3, pc}
+ 570              	.L53:
+ 309:../../cnc.c   ****     }
+ 571              		.loc 1 309 9 is_stmt 1 view .LVU131
+ 572 0016 1020     		movs	r0, #16
+ 573 0018 FFF7FEFF 		bl	cnc_set_exec_state
+ 574              	.LVL54:
+ 575 001c F8E7     		b	.L51
+ 576              	.L55:
+ 577 001e 00BF     		.align	2
+ 578              	.L54:
+ 579 0020 00000000 		.word	g_settings
+ 580              		.cfi_endproc
+ 581              	.LFE74:
+ 583              		.section	.text.cnc_check_interlocking,"ax",%progbits
+ 584              		.align	1
+ 585              		.syntax unified
+ 586              		.thumb
+ 587              		.thumb_func
+ 588              		.fpu softvfp
+ 590              	cnc_check_interlocking:
+ 591              	.LFB82:
+ 587:../../cnc.c   **** 
+ 588:../../cnc.c   **** bool cnc_check_interlocking(void)
+ 589:../../cnc.c   **** {
+ 592              		.loc 1 589 1 view -0
+ 593              		.cfi_startproc
+ 594              		@ args = 0, pretend = 0, frame = 0
+ 595              		@ frame_needed = 0, uses_anonymous_args = 0
+ 596 0000 08B5     		push	{r3, lr}
+ 597              	.LCFI5:
+ 598              		.cfi_def_cfa_offset 8
+ 599              		.cfi_offset 3, -8
+ 600              		.cfi_offset 14, -4
+ 590:../../cnc.c   ****     //if abort is flagged
+ 591:../../cnc.c   ****     if (CHECKFLAG(cnc_state.exec_state, EXEC_ABORT))
+ 601              		.loc 1 591 5 view .LVU133
+ 602              		.loc 1 591 9 is_stmt 0 view .LVU134
+ 603 0002 2B4B     		ldr	r3, .L76
+ 604 0004 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 605              		.loc 1 591 8 view .LVU135
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 24
+
+
+ 606 0006 13F0800F 		tst	r3, #128
+ 607 000a 0BD1     		bne	.L68
+ 592:../../cnc.c   ****     {
+ 593:../../cnc.c   ****         if (cnc_state.active_alarm) //active alarm message
+ 594:../../cnc.c   ****         {
+ 595:../../cnc.c   ****             protocol_send_alarm(cnc_state.active_alarm);
+ 596:../../cnc.c   ****             cnc_state.active_alarm = 0;
+ 597:../../cnc.c   ****             return false;
+ 598:../../cnc.c   ****         }
+ 599:../../cnc.c   ****         return false;
+ 600:../../cnc.c   ****     }
+ 601:../../cnc.c   **** 
+ 602:../../cnc.c   ****     if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR | EXEC_HOLD))
+ 608              		.loc 1 602 5 is_stmt 1 view .LVU136
+ 609              		.loc 1 602 9 is_stmt 0 view .LVU137
+ 610 000c 284B     		ldr	r3, .L76
+ 611 000e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 612              		.loc 1 602 8 view .LVU138
+ 613 0010 13F0420F 		tst	r3, #66
+ 614 0014 3AD0     		beq	.L59
+ 603:../../cnc.c   ****     {
+ 604:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
+ 615              		.loc 1 604 9 is_stmt 1 view .LVU139
+ 616              		.loc 1 604 13 is_stmt 0 view .LVU140
+ 617 0016 264B     		ldr	r3, .L76
+ 618 0018 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 619              		.loc 1 604 12 view .LVU141
+ 620 001a 13F0010F 		tst	r3, #1
+ 621 001e 0CD0     		beq	.L69
+ 605:../../cnc.c   ****         {
+ 606:../../cnc.c   ****             return true;
+ 622              		.loc 1 606 20 view .LVU142
+ 623 0020 0120     		movs	r0, #1
+ 624 0022 03E0     		b	.L58
+ 625              	.L68:
+ 593:../../cnc.c   ****         {
+ 626              		.loc 1 593 9 is_stmt 1 view .LVU143
+ 593:../../cnc.c   ****         {
+ 627              		.loc 1 593 22 is_stmt 0 view .LVU144
+ 628 0024 224B     		ldr	r3, .L76
+ 629 0026 5878     		ldrb	r0, [r3, #1]	@ zero_extendqisi2
+ 593:../../cnc.c   ****         {
+ 630              		.loc 1 593 12 view .LVU145
+ 631 0028 08B9     		cbnz	r0, .L70
+ 599:../../cnc.c   ****     }
+ 632              		.loc 1 599 16 view .LVU146
+ 633 002a 0020     		movs	r0, #0
+ 634              	.L58:
+ 607:../../cnc.c   ****         }
+ 608:../../cnc.c   **** 
+ 609:../../cnc.c   ****         itp_stop();
+ 610:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
+ 611:../../cnc.c   ****         {
+ 612:../../cnc.c   ****             cnc_stop(); //stop all tools not only motion
+ 613:../../cnc.c   ****         }
+ 614:../../cnc.c   **** 
+ 615:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && CHECKFLAG(cnc_state.exec_state, EXEC_DO
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 25
+
+
+ 616:../../cnc.c   ****         {
+ 617:../../cnc.c   ****             cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+ 618:../../cnc.c   ****         }
+ 619:../../cnc.c   **** 
+ 620:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG)) //flushes the buffers if motio
+ 621:../../cnc.c   ****         {
+ 622:../../cnc.c   ****             itp_clear();
+ 623:../../cnc.c   ****             planner_clear();
+ 624:../../cnc.c   ****             CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+ 625:../../cnc.c   ****         }
+ 626:../../cnc.c   **** 
+ 627:../../cnc.c   ****         return false;
+ 628:../../cnc.c   ****     }
+ 629:../../cnc.c   **** 
+ 630:../../cnc.c   ****     if (CHECKFLAG(cnc_state.exec_state, EXEC_LIMITS))
+ 631:../../cnc.c   ****     {
+ 632:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN)) //if a motion is being performed allow trigg
+ 633:../../cnc.c   ****         {
+ 634:../../cnc.c   ****             cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+ 635:../../cnc.c   ****         }
+ 636:../../cnc.c   **** 
+ 637:../../cnc.c   ****         return false;
+ 638:../../cnc.c   ****     }
+ 639:../../cnc.c   **** 
+ 640:../../cnc.c   ****     return true;
+ 641:../../cnc.c   **** }
+ 635              		.loc 1 641 1 view .LVU147
+ 636 002c 08BD     		pop	{r3, pc}
+ 637              	.L70:
+ 595:../../cnc.c   ****             cnc_state.active_alarm = 0;
+ 638              		.loc 1 595 13 is_stmt 1 view .LVU148
+ 639 002e FFF7FEFF 		bl	protocol_send_alarm
+ 640              	.LVL55:
+ 596:../../cnc.c   ****             return false;
+ 641              		.loc 1 596 13 view .LVU149
+ 596:../../cnc.c   ****             return false;
+ 642              		.loc 1 596 36 is_stmt 0 view .LVU150
+ 643 0032 0020     		movs	r0, #0
+ 644 0034 1E4B     		ldr	r3, .L76
+ 645 0036 5870     		strb	r0, [r3, #1]
+ 597:../../cnc.c   ****         }
+ 646              		.loc 1 597 13 is_stmt 1 view .LVU151
+ 597:../../cnc.c   ****         }
+ 647              		.loc 1 597 20 is_stmt 0 view .LVU152
+ 648 0038 F8E7     		b	.L58
+ 649              	.L69:
+ 609:../../cnc.c   ****         if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
+ 650              		.loc 1 609 9 is_stmt 1 view .LVU153
+ 651 003a FFF7FEFF 		bl	itp_stop
+ 652              	.LVL56:
+ 610:../../cnc.c   ****         {
+ 653              		.loc 1 610 9 view .LVU154
+ 610:../../cnc.c   ****         {
+ 654              		.loc 1 610 13 is_stmt 0 view .LVU155
+ 655 003e 1C4B     		ldr	r3, .L76
+ 656 0040 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 610:../../cnc.c   ****         {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 26
+
+
+ 657              		.loc 1 610 12 view .LVU156
+ 658 0042 13F0400F 		tst	r3, #64
+ 659 0046 10D1     		bne	.L71
+ 660              	.L60:
+ 615:../../cnc.c   ****         {
+ 661              		.loc 1 615 9 is_stmt 1 view .LVU157
+ 615:../../cnc.c   ****         {
+ 662              		.loc 1 615 13 is_stmt 0 view .LVU158
+ 663 0048 194B     		ldr	r3, .L76
+ 664 004a 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 615:../../cnc.c   ****         {
+ 665              		.loc 1 615 12 view .LVU159
+ 666 004c 13F0080F 		tst	r3, #8
+ 667 0050 04D0     		beq	.L61
+ 615:../../cnc.c   ****         {
+ 668              		.loc 1 615 61 discriminator 1 view .LVU160
+ 669 0052 174B     		ldr	r3, .L76
+ 670 0054 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 615:../../cnc.c   ****         {
+ 671              		.loc 1 615 58 discriminator 1 view .LVU161
+ 672 0056 13F0400F 		tst	r3, #64
+ 673 005a 09D1     		bne	.L72
+ 674              	.L61:
+ 620:../../cnc.c   ****         {
+ 675              		.loc 1 620 9 is_stmt 1 view .LVU162
+ 620:../../cnc.c   ****         {
+ 676              		.loc 1 620 13 is_stmt 0 view .LVU163
+ 677 005c 144B     		ldr	r3, .L76
+ 678 005e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 620:../../cnc.c   ****         {
+ 679              		.loc 1 620 12 view .LVU164
+ 680 0060 13F00C0F 		tst	r3, #12
+ 681 0064 08D1     		bne	.L73
+ 682              	.L62:
+ 627:../../cnc.c   ****     }
+ 683              		.loc 1 627 9 is_stmt 1 view .LVU165
+ 627:../../cnc.c   ****     }
+ 684              		.loc 1 627 16 is_stmt 0 view .LVU166
+ 685 0066 0020     		movs	r0, #0
+ 686 0068 E0E7     		b	.L58
+ 687              	.L71:
+ 612:../../cnc.c   ****         }
+ 688              		.loc 1 612 13 is_stmt 1 view .LVU167
+ 689 006a FFF7FEFF 		bl	cnc_stop
+ 690              	.LVL57:
+ 691 006e EBE7     		b	.L60
+ 692              	.L72:
+ 617:../../cnc.c   ****         }
+ 693              		.loc 1 617 13 view .LVU168
+ 694 0070 0720     		movs	r0, #7
+ 695 0072 FFF7FEFF 		bl	cnc_alarm
+ 696              	.LVL58:
+ 697 0076 F1E7     		b	.L61
+ 698              	.L73:
+ 622:../../cnc.c   ****             planner_clear();
+ 699              		.loc 1 622 13 view .LVU169
+ 700 0078 FFF7FEFF 		bl	itp_clear
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 27
+
+
+ 701              	.LVL59:
+ 623:../../cnc.c   ****             CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+ 702              		.loc 1 623 13 view .LVU170
+ 703 007c FFF7FEFF 		bl	planner_clear
+ 704              	.LVL60:
+ 624:../../cnc.c   ****         }
+ 705              		.loc 1 624 13 view .LVU171
+ 706 0080 0B4A     		ldr	r2, .L76
+ 707 0082 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 708 0084 03F0F103 		and	r3, r3, #241
+ 709 0088 1370     		strb	r3, [r2]
+ 710 008a ECE7     		b	.L62
+ 711              	.L59:
+ 630:../../cnc.c   ****     {
+ 712              		.loc 1 630 5 view .LVU172
+ 630:../../cnc.c   ****     {
+ 713              		.loc 1 630 9 is_stmt 0 view .LVU173
+ 714 008c 084B     		ldr	r3, .L76
+ 715 008e 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 630:../../cnc.c   ****     {
+ 716              		.loc 1 630 8 view .LVU174
+ 717 0090 13F0200F 		tst	r3, #32
+ 718 0094 01D1     		bne	.L74
+ 640:../../cnc.c   **** }
+ 719              		.loc 1 640 12 view .LVU175
+ 720 0096 0120     		movs	r0, #1
+ 721 0098 C8E7     		b	.L58
+ 722              	.L74:
+ 632:../../cnc.c   ****         {
+ 723              		.loc 1 632 9 is_stmt 1 view .LVU176
+ 632:../../cnc.c   ****         {
+ 724              		.loc 1 632 13 is_stmt 0 view .LVU177
+ 725 009a 054B     		ldr	r3, .L76
+ 726 009c 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 632:../../cnc.c   ****         {
+ 727              		.loc 1 632 12 view .LVU178
+ 728 009e 13F0010F 		tst	r3, #1
+ 729 00a2 01D1     		bne	.L75
+ 730              	.L63:
+ 637:../../cnc.c   ****     }
+ 731              		.loc 1 637 9 is_stmt 1 view .LVU179
+ 637:../../cnc.c   ****     }
+ 732              		.loc 1 637 16 is_stmt 0 view .LVU180
+ 733 00a4 0020     		movs	r0, #0
+ 734 00a6 C1E7     		b	.L58
+ 735              	.L75:
+ 634:../../cnc.c   ****         }
+ 736              		.loc 1 634 13 is_stmt 1 view .LVU181
+ 737 00a8 0120     		movs	r0, #1
+ 738 00aa FFF7FEFF 		bl	cnc_alarm
+ 739              	.LVL61:
+ 740 00ae F9E7     		b	.L63
+ 741              	.L77:
+ 742              		.align	2
+ 743              	.L76:
+ 744 00b0 00000000 		.word	.LANCHOR0
+ 745              		.cfi_endproc
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 28
+
+
+ 746              	.LFE82:
+ 748              		.section	.text.cnc_doevents,"ax",%progbits
+ 749              		.align	1
+ 750              		.global	cnc_doevents
+ 751              		.syntax unified
+ 752              		.thumb
+ 753              		.thumb_func
+ 754              		.fpu softvfp
+ 756              	cnc_doevents:
+ 757              	.LFB71:
+ 224:../../cnc.c   **** #ifdef USE_INPUTS_POOLING_ONLY
+ 758              		.loc 1 224 1 view -0
+ 759              		.cfi_startproc
+ 760              		@ args = 0, pretend = 0, frame = 0
+ 761              		@ frame_needed = 0, uses_anonymous_args = 0
+ 762 0000 08B5     		push	{r3, lr}
+ 763              	.LCFI6:
+ 764              		.cfi_def_cfa_offset 8
+ 765              		.cfi_offset 3, -8
+ 766              		.cfi_offset 14, -4
+ 243:../../cnc.c   **** 
+ 767              		.loc 1 243 5 view .LVU183
+ 768 0002 FFF7FEFF 		bl	cnc_exec_rt_commands
+ 769              	.LVL62:
+ 246:../../cnc.c   ****     {
+ 770              		.loc 1 246 5 view .LVU184
+ 246:../../cnc.c   ****     {
+ 771              		.loc 1 246 10 is_stmt 0 view .LVU185
+ 772 0006 FFF7FEFF 		bl	cnc_check_interlocking
+ 773              	.LVL63:
+ 246:../../cnc.c   ****     {
+ 774              		.loc 1 246 8 view .LVU186
+ 775 000a 40B1     		cbz	r0, .L82
+ 251:../../cnc.c   **** 
+ 776              		.loc 1 251 5 is_stmt 1 view .LVU187
+ 777 000c FFF7FEFF 		bl	itp_run
+ 778              	.LVL64:
+ 253:../../cnc.c   **** }
+ 779              		.loc 1 253 5 view .LVU188
+ 253:../../cnc.c   **** }
+ 780              		.loc 1 253 13 is_stmt 0 view .LVU189
+ 781 0010 8020     		movs	r0, #128
+ 782 0012 FFF7FEFF 		bl	cnc_get_exec_state
+ 783              	.LVL65:
+ 253:../../cnc.c   **** }
+ 784              		.loc 1 253 12 view .LVU190
+ 785 0016 B0FA80F0 		clz	r0, r0
+ 786 001a 4009     		lsrs	r0, r0, #5
+ 787              	.L80:
+ 254:../../cnc.c   **** 
+ 788              		.loc 1 254 1 view .LVU191
+ 789 001c 08BD     		pop	{r3, pc}
+ 790              	.L82:
+ 248:../../cnc.c   ****     }
+ 791              		.loc 1 248 9 is_stmt 1 view .LVU192
+ 248:../../cnc.c   ****     }
+ 792              		.loc 1 248 17 is_stmt 0 view .LVU193
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 29
+
+
+ 793 001e 8020     		movs	r0, #128
+ 794 0020 FFF7FEFF 		bl	cnc_get_exec_state
+ 795              	.LVL66:
+ 248:../../cnc.c   ****     }
+ 796              		.loc 1 248 16 view .LVU194
+ 797 0024 B0FA80F0 		clz	r0, r0
+ 798 0028 4009     		lsrs	r0, r0, #5
+ 799 002a F7E7     		b	.L80
+ 800              		.cfi_endproc
+ 801              	.LFE71:
+ 803              		.section	.text.cnc_clear_exec_state,"ax",%progbits
+ 804              		.align	1
+ 805              		.global	cnc_clear_exec_state
+ 806              		.syntax unified
+ 807              		.thumb
+ 808              		.thumb_func
+ 809              		.fpu softvfp
+ 811              	cnc_clear_exec_state:
+ 812              	.LVL67:
+ 813              	.LFB78:
+ 348:../../cnc.c   ****     uint8_t controls = io_get_controls();
+ 814              		.loc 1 348 1 is_stmt 1 view -0
+ 815              		.cfi_startproc
+ 816              		@ args = 0, pretend = 0, frame = 0
+ 817              		@ frame_needed = 0, uses_anonymous_args = 0
+ 348:../../cnc.c   ****     uint8_t controls = io_get_controls();
+ 818              		.loc 1 348 1 is_stmt 0 view .LVU196
+ 819 0000 10B5     		push	{r4, lr}
+ 820              	.LCFI7:
+ 821              		.cfi_def_cfa_offset 8
+ 822              		.cfi_offset 4, -8
+ 823              		.cfi_offset 14, -4
+ 824 0002 0446     		mov	r4, r0
+ 349:../../cnc.c   **** #ifdef ESTOP
+ 825              		.loc 1 349 5 is_stmt 1 view .LVU197
+ 349:../../cnc.c   **** #ifdef ESTOP
+ 826              		.loc 1 349 24 is_stmt 0 view .LVU198
+ 827 0004 FFF7FEFF 		bl	io_get_controls
+ 828              	.LVL68:
+ 351:../../cnc.c   ****     {
+ 829              		.loc 1 351 5 is_stmt 1 view .LVU199
+ 351:../../cnc.c   ****     {
+ 830              		.loc 1 351 8 is_stmt 0 view .LVU200
+ 831 0008 10F0010F 		tst	r0, #1
+ 832 000c 01D0     		beq	.L84
+ 353:../../cnc.c   ****     }
+ 833              		.loc 1 353 9 is_stmt 1 view .LVU201
+ 834 000e 04F07F04 		and	r4, r4, #127
+ 835              	.LVL69:
+ 836              	.L84:
+ 363:../../cnc.c   ****     {
+ 837              		.loc 1 363 5 view .LVU202
+ 363:../../cnc.c   ****     {
+ 838              		.loc 1 363 8 is_stmt 0 view .LVU203
+ 839 0012 10F0040F 		tst	r0, #4
+ 840 0016 01D0     		beq	.L85
+ 365:../../cnc.c   ****     }
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 30
+
+
+ 841              		.loc 1 365 9 is_stmt 1 view .LVU204
+ 842 0018 04F0FD04 		and	r4, r4, #253
+ 843              	.LVL70:
+ 844              	.L85:
+ 369:../../cnc.c   ****     {
+ 845              		.loc 1 369 5 view .LVU205
+ 369:../../cnc.c   ****     {
+ 846              		.loc 1 369 19 is_stmt 0 view .LVU206
+ 847 001c 0A4B     		ldr	r3, .L90
+ 848 001e 9B7D     		ldrb	r3, [r3, #22]	@ zero_extendqisi2
+ 369:../../cnc.c   ****     {
+ 849              		.loc 1 369 8 view .LVU207
+ 850 0020 53B9     		cbnz	r3, .L89
+ 851              	.LVL71:
+ 852              	.L86:
+ 374:../../cnc.c   ****     {
+ 853              		.loc 1 374 5 is_stmt 1 view .LVU208
+ 374:../../cnc.c   ****     {
+ 854              		.loc 1 374 19 is_stmt 0 view .LVU209
+ 855 0022 094B     		ldr	r3, .L90
+ 856 0024 DB7D     		ldrb	r3, [r3, #23]	@ zero_extendqisi2
+ 374:../../cnc.c   ****     {
+ 857              		.loc 1 374 8 view .LVU210
+ 858 0026 0BB1     		cbz	r3, .L87
+ 376:../../cnc.c   ****     }
+ 859              		.loc 1 376 9 is_stmt 1 view .LVU211
+ 860 0028 04F0EF04 		and	r4, r4, #239
+ 861              	.LVL72:
+ 862              	.L87:
+ 379:../../cnc.c   **** }
+ 863              		.loc 1 379 5 view .LVU212
+ 864 002c 074B     		ldr	r3, .L90+4
+ 865 002e 1878     		ldrb	r0, [r3]	@ zero_extendqisi2
+ 866 0030 20EA0404 		bic	r4, r0, r4
+ 867              	.LVL73:
+ 379:../../cnc.c   **** }
+ 868              		.loc 1 379 5 is_stmt 0 view .LVU213
+ 869 0034 1C70     		strb	r4, [r3]
+ 380:../../cnc.c   **** 
+ 870              		.loc 1 380 1 view .LVU214
+ 871 0036 10BD     		pop	{r4, pc}
+ 872              	.LVL74:
+ 873              	.L89:
+ 369:../../cnc.c   ****     {
+ 874              		.loc 1 369 43 discriminator 1 view .LVU215
+ 875 0038 FFF7FEFF 		bl	io_get_limits
+ 876              	.LVL75:
+ 369:../../cnc.c   ****     {
+ 877              		.loc 1 369 40 discriminator 1 view .LVU216
+ 878 003c 0028     		cmp	r0, #0
+ 879 003e F0D0     		beq	.L86
+ 371:../../cnc.c   ****     }
+ 880              		.loc 1 371 9 is_stmt 1 view .LVU217
+ 881 0040 04F0DF04 		and	r4, r4, #223
+ 882              	.LVL76:
+ 371:../../cnc.c   ****     }
+ 883              		.loc 1 371 9 is_stmt 0 view .LVU218
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 31
+
+
+ 884 0044 EDE7     		b	.L86
+ 885              	.L91:
+ 886 0046 00BF     		.align	2
+ 887              	.L90:
+ 888 0048 00000000 		.word	g_settings
+ 889 004c 00000000 		.word	.LANCHOR0
+ 890              		.cfi_endproc
+ 891              	.LFE78:
+ 893              		.section	.text.cnc_call_rt_command,"ax",%progbits
+ 894              		.align	1
+ 895              		.global	cnc_call_rt_command
+ 896              		.syntax unified
+ 897              		.thumb
+ 898              		.thumb_func
+ 899              		.fpu softvfp
+ 901              	cnc_call_rt_command:
+ 902              	.LVL77:
+ 903              	.LFB70:
+ 143:../../cnc.c   ****     //executes the realtime commands
+ 904              		.loc 1 143 1 is_stmt 1 view -0
+ 905              		.cfi_startproc
+ 906              		@ args = 0, pretend = 0, frame = 0
+ 907              		@ frame_needed = 0, uses_anonymous_args = 0
+ 143:../../cnc.c   ****     //executes the realtime commands
+ 908              		.loc 1 143 1 is_stmt 0 view .LVU220
+ 909 0000 08B5     		push	{r3, lr}
+ 910              	.LCFI8:
+ 911              		.cfi_def_cfa_offset 8
+ 912              		.cfi_offset 3, -8
+ 913              		.cfi_offset 14, -4
+ 146:../../cnc.c   ****     {
+ 914              		.loc 1 146 5 is_stmt 1 view .LVU221
+ 915 0002 1838     		subs	r0, r0, #24
+ 916              	.LVL78:
+ 146:../../cnc.c   ****     {
+ 917              		.loc 1 146 5 is_stmt 0 view .LVU222
+ 918 0004 8928     		cmp	r0, #137
+ 919 0006 52D8     		bhi	.L92
+ 920 0008 DFE800F0 		tbb	[pc, r0]
+ 921              	.L95:
+ 922 000c 45       		.byte	(.L116-.L95)/2
+ 923 000d 51       		.byte	(.L92-.L95)/2
+ 924 000e 51       		.byte	(.L92-.L95)/2
+ 925 000f 51       		.byte	(.L92-.L95)/2
+ 926 0010 51       		.byte	(.L92-.L95)/2
+ 927 0011 51       		.byte	(.L92-.L95)/2
+ 928 0012 51       		.byte	(.L92-.L95)/2
+ 929 0013 51       		.byte	(.L92-.L95)/2
+ 930 0014 51       		.byte	(.L92-.L95)/2
+ 931 0015 52       		.byte	(.L115-.L95)/2
+ 932 0016 51       		.byte	(.L92-.L95)/2
+ 933 0017 51       		.byte	(.L92-.L95)/2
+ 934 0018 51       		.byte	(.L92-.L95)/2
+ 935 0019 51       		.byte	(.L92-.L95)/2
+ 936 001a 51       		.byte	(.L92-.L95)/2
+ 937 001b 51       		.byte	(.L92-.L95)/2
+ 938 001c 51       		.byte	(.L92-.L95)/2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 32
+
+
+ 939 001d 51       		.byte	(.L92-.L95)/2
+ 940 001e 51       		.byte	(.L92-.L95)/2
+ 941 001f 51       		.byte	(.L92-.L95)/2
+ 942 0020 51       		.byte	(.L92-.L95)/2
+ 943 0021 51       		.byte	(.L92-.L95)/2
+ 944 0022 51       		.byte	(.L92-.L95)/2
+ 945 0023 51       		.byte	(.L92-.L95)/2
+ 946 0024 51       		.byte	(.L92-.L95)/2
+ 947 0025 51       		.byte	(.L92-.L95)/2
+ 948 0026 51       		.byte	(.L92-.L95)/2
+ 949 0027 51       		.byte	(.L92-.L95)/2
+ 950 0028 51       		.byte	(.L92-.L95)/2
+ 951 0029 51       		.byte	(.L92-.L95)/2
+ 952 002a 51       		.byte	(.L92-.L95)/2
+ 953 002b 51       		.byte	(.L92-.L95)/2
+ 954 002c 51       		.byte	(.L92-.L95)/2
+ 955 002d 51       		.byte	(.L92-.L95)/2
+ 956 002e 51       		.byte	(.L92-.L95)/2
+ 957 002f 51       		.byte	(.L92-.L95)/2
+ 958 0030 51       		.byte	(.L92-.L95)/2
+ 959 0031 51       		.byte	(.L92-.L95)/2
+ 960 0032 51       		.byte	(.L92-.L95)/2
+ 961 0033 56       		.byte	(.L114-.L95)/2
+ 962 0034 51       		.byte	(.L92-.L95)/2
+ 963 0035 51       		.byte	(.L92-.L95)/2
+ 964 0036 51       		.byte	(.L92-.L95)/2
+ 965 0037 51       		.byte	(.L92-.L95)/2
+ 966 0038 51       		.byte	(.L92-.L95)/2
+ 967 0039 51       		.byte	(.L92-.L95)/2
+ 968 003a 51       		.byte	(.L92-.L95)/2
+ 969 003b 51       		.byte	(.L92-.L95)/2
+ 970 003c 51       		.byte	(.L92-.L95)/2
+ 971 003d 51       		.byte	(.L92-.L95)/2
+ 972 003e 51       		.byte	(.L92-.L95)/2
+ 973 003f 51       		.byte	(.L92-.L95)/2
+ 974 0040 51       		.byte	(.L92-.L95)/2
+ 975 0041 51       		.byte	(.L92-.L95)/2
+ 976 0042 51       		.byte	(.L92-.L95)/2
+ 977 0043 51       		.byte	(.L92-.L95)/2
+ 978 0044 51       		.byte	(.L92-.L95)/2
+ 979 0045 51       		.byte	(.L92-.L95)/2
+ 980 0046 51       		.byte	(.L92-.L95)/2
+ 981 0047 51       		.byte	(.L92-.L95)/2
+ 982 0048 51       		.byte	(.L92-.L95)/2
+ 983 0049 51       		.byte	(.L92-.L95)/2
+ 984 004a 51       		.byte	(.L92-.L95)/2
+ 985 004b 51       		.byte	(.L92-.L95)/2
+ 986 004c 51       		.byte	(.L92-.L95)/2
+ 987 004d 51       		.byte	(.L92-.L95)/2
+ 988 004e 51       		.byte	(.L92-.L95)/2
+ 989 004f 51       		.byte	(.L92-.L95)/2
+ 990 0050 51       		.byte	(.L92-.L95)/2
+ 991 0051 51       		.byte	(.L92-.L95)/2
+ 992 0052 51       		.byte	(.L92-.L95)/2
+ 993 0053 51       		.byte	(.L92-.L95)/2
+ 994 0054 51       		.byte	(.L92-.L95)/2
+ 995 0055 51       		.byte	(.L92-.L95)/2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 33
+
+
+ 996 0056 51       		.byte	(.L92-.L95)/2
+ 997 0057 51       		.byte	(.L92-.L95)/2
+ 998 0058 51       		.byte	(.L92-.L95)/2
+ 999 0059 51       		.byte	(.L92-.L95)/2
+ 1000 005a 51       		.byte	(.L92-.L95)/2
+ 1001 005b 51       		.byte	(.L92-.L95)/2
+ 1002 005c 51       		.byte	(.L92-.L95)/2
+ 1003 005d 51       		.byte	(.L92-.L95)/2
+ 1004 005e 51       		.byte	(.L92-.L95)/2
+ 1005 005f 51       		.byte	(.L92-.L95)/2
+ 1006 0060 51       		.byte	(.L92-.L95)/2
+ 1007 0061 51       		.byte	(.L92-.L95)/2
+ 1008 0062 51       		.byte	(.L92-.L95)/2
+ 1009 0063 51       		.byte	(.L92-.L95)/2
+ 1010 0064 51       		.byte	(.L92-.L95)/2
+ 1011 0065 51       		.byte	(.L92-.L95)/2
+ 1012 0066 51       		.byte	(.L92-.L95)/2
+ 1013 0067 51       		.byte	(.L92-.L95)/2
+ 1014 0068 51       		.byte	(.L92-.L95)/2
+ 1015 0069 51       		.byte	(.L92-.L95)/2
+ 1016 006a 51       		.byte	(.L92-.L95)/2
+ 1017 006b 51       		.byte	(.L92-.L95)/2
+ 1018 006c 51       		.byte	(.L92-.L95)/2
+ 1019 006d 51       		.byte	(.L92-.L95)/2
+ 1020 006e 51       		.byte	(.L92-.L95)/2
+ 1021 006f 51       		.byte	(.L92-.L95)/2
+ 1022 0070 51       		.byte	(.L92-.L95)/2
+ 1023 0071 51       		.byte	(.L92-.L95)/2
+ 1024 0072 5C       		.byte	(.L113-.L95)/2
+ 1025 0073 51       		.byte	(.L92-.L95)/2
+ 1026 0074 51       		.byte	(.L92-.L95)/2
+ 1027 0075 51       		.byte	(.L92-.L95)/2
+ 1028 0076 51       		.byte	(.L92-.L95)/2
+ 1029 0077 51       		.byte	(.L92-.L95)/2
+ 1030 0078 60       		.byte	(.L112-.L95)/2
+ 1031 0079 64       		.byte	(.L111-.L95)/2
+ 1032 007a 51       		.byte	(.L92-.L95)/2
+ 1033 007b 51       		.byte	(.L92-.L95)/2
+ 1034 007c 51       		.byte	(.L92-.L95)/2
+ 1035 007d 51       		.byte	(.L92-.L95)/2
+ 1036 007e 51       		.byte	(.L92-.L95)/2
+ 1037 007f 51       		.byte	(.L92-.L95)/2
+ 1038 0080 51       		.byte	(.L92-.L95)/2
+ 1039 0081 51       		.byte	(.L92-.L95)/2
+ 1040 0082 51       		.byte	(.L92-.L95)/2
+ 1041 0083 51       		.byte	(.L92-.L95)/2
+ 1042 0084 6D       		.byte	(.L110-.L95)/2
+ 1043 0085 73       		.byte	(.L109-.L95)/2
+ 1044 0086 79       		.byte	(.L108-.L95)/2
+ 1045 0087 7F       		.byte	(.L107-.L95)/2
+ 1046 0088 85       		.byte	(.L106-.L95)/2
+ 1047 0089 8B       		.byte	(.L105-.L95)/2
+ 1048 008a 91       		.byte	(.L104-.L95)/2
+ 1049 008b 97       		.byte	(.L103-.L95)/2
+ 1050 008c 51       		.byte	(.L92-.L95)/2
+ 1051 008d 9D       		.byte	(.L102-.L95)/2
+ 1052 008e A3       		.byte	(.L101-.L95)/2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 34
+
+
+ 1053 008f A9       		.byte	(.L100-.L95)/2
+ 1054 0090 AF       		.byte	(.L99-.L95)/2
+ 1055 0091 B5       		.byte	(.L98-.L95)/2
+ 1056 0092 BB       		.byte	(.L97-.L95)/2
+ 1057 0093 51       		.byte	(.L92-.L95)/2
+ 1058 0094 C1       		.byte	(.L96-.L95)/2
+ 1059 0095 C7       		.byte	(.L94-.L95)/2
+ 1060              		.p2align 1
+ 1061              	.L116:
+ 149:../../cnc.c   ****         serial_rx_clear();           //dumps all commands
+ 1062              		.loc 1 149 9 is_stmt 1 view .LVU223
+ 1063 0096 FFF7FEFF 		bl	cnc_stop
+ 1064              	.LVL79:
+ 150:../../cnc.c   ****         cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
+ 1065              		.loc 1 150 9 view .LVU224
+ 1066 009a FFF7FEFF 		bl	serial_rx_clear
+ 1067              	.LVL80:
+ 151:../../cnc.c   ****         SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
+ 1068              		.loc 1 151 9 view .LVU225
+ 1069 009e 0020     		movs	r0, #0
+ 1070 00a0 FFF7FEFF 		bl	cnc_alarm
+ 1071              	.LVL81:
+ 152:../../cnc.c   ****         break;
+ 1072              		.loc 1 152 9 view .LVU226
+ 1073 00a4 404A     		ldr	r2, .L118
+ 1074 00a6 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 1075 00a8 43F08003 		orr	r3, r3, #128
+ 1076 00ac 9370     		strb	r3, [r2, #2]
+ 153:../../cnc.c   ****     case CMD_CODE_FEED_HOLD:
+ 1077              		.loc 1 153 9 view .LVU227
+ 1078              	.L92:
+ 221:../../cnc.c   **** 
+ 1079              		.loc 1 221 1 is_stmt 0 view .LVU228
+ 1080 00ae 08BD     		pop	{r3, pc}
+ 1081              	.L115:
+ 155:../../cnc.c   ****         break;
+ 1082              		.loc 1 155 9 is_stmt 1 view .LVU229
+ 1083 00b0 0220     		movs	r0, #2
+ 1084 00b2 FFF7FEFF 		bl	cnc_set_exec_state
+ 1085              	.LVL82:
+ 156:../../cnc.c   ****     case CMD_CODE_REPORT:
+ 1086              		.loc 1 156 9 view .LVU230
+ 1087 00b6 FAE7     		b	.L92
+ 1088              	.L114:
+ 158:../../cnc.c   ****         break;
+ 1089              		.loc 1 158 9 view .LVU231
+ 1090 00b8 3B4A     		ldr	r2, .L118
+ 1091 00ba 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 1092 00bc 43F00403 		orr	r3, r3, #4
+ 1093 00c0 9370     		strb	r3, [r2, #2]
+ 159:../../cnc.c   ****     case CMD_CODE_CYCLE_START:
+ 1094              		.loc 1 159 9 view .LVU232
+ 1095 00c2 F4E7     		b	.L92
+ 1096              	.L113:
+ 161:../../cnc.c   ****         break;
+ 1097              		.loc 1 161 9 view .LVU233
+ 1098 00c4 0220     		movs	r0, #2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 35
+
+
+ 1099 00c6 FFF7FEFF 		bl	cnc_clear_exec_state
+ 1100              	.LVL83:
+ 162:../../cnc.c   ****     case CMD_CODE_SAFETY_DOOR:
+ 1101              		.loc 1 162 9 view .LVU234
+ 1102 00ca F0E7     		b	.L92
+ 1103              	.L112:
+ 164:../../cnc.c   ****         break;
+ 1104              		.loc 1 164 9 view .LVU235
+ 1105 00cc 4220     		movs	r0, #66
+ 1106 00ce FFF7FEFF 		bl	cnc_clear_exec_state
+ 1107              	.LVL84:
+ 165:../../cnc.c   ****     case CMD_CODE_JOG_CANCEL:
+ 1108              		.loc 1 165 9 view .LVU236
+ 1109 00d2 ECE7     		b	.L92
+ 1110              	.L111:
+ 167:../../cnc.c   ****         {
+ 1111              		.loc 1 167 9 view .LVU237
+ 167:../../cnc.c   ****         {
+ 1112              		.loc 1 167 13 is_stmt 0 view .LVU238
+ 1113 00d4 0420     		movs	r0, #4
+ 1114 00d6 FFF7FEFF 		bl	cnc_get_exec_state
+ 1115              	.LVL85:
+ 167:../../cnc.c   ****         {
+ 1116              		.loc 1 167 12 view .LVU239
+ 1117 00da 0028     		cmp	r0, #0
+ 1118 00dc E7D0     		beq	.L92
+ 169:../../cnc.c   ****         }
+ 1119              		.loc 1 169 13 is_stmt 1 view .LVU240
+ 1120 00de 0220     		movs	r0, #2
+ 1121 00e0 FFF7FEFF 		bl	cnc_set_exec_state
+ 1122              	.LVL86:
+ 1123 00e4 E3E7     		b	.L92
+ 1124              	.L110:
+ 173:../../cnc.c   ****         break;
+ 1125              		.loc 1 173 9 view .LVU241
+ 1126 00e6 304A     		ldr	r2, .L118
+ 1127 00e8 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1128 00ea 43F00103 		orr	r3, r3, #1
+ 1129 00ee D370     		strb	r3, [r2, #3]
+ 174:../../cnc.c   ****     case CMD_CODE_FEED_INC_COARSE:
+ 1130              		.loc 1 174 9 view .LVU242
+ 1131 00f0 DDE7     		b	.L92
+ 1132              	.L109:
+ 176:../../cnc.c   ****         break;
+ 1133              		.loc 1 176 9 view .LVU243
+ 1134 00f2 2D4A     		ldr	r2, .L118
+ 1135 00f4 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1136 00f6 43F00203 		orr	r3, r3, #2
+ 1137 00fa D370     		strb	r3, [r2, #3]
+ 177:../../cnc.c   ****     case CMD_CODE_FEED_DEC_COARSE:
+ 1138              		.loc 1 177 9 view .LVU244
+ 1139 00fc D7E7     		b	.L92
+ 1140              	.L108:
+ 179:../../cnc.c   ****         break;
+ 1141              		.loc 1 179 9 view .LVU245
+ 1142 00fe 2A4A     		ldr	r2, .L118
+ 1143 0100 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 36
+
+
+ 1144 0102 43F00403 		orr	r3, r3, #4
+ 1145 0106 D370     		strb	r3, [r2, #3]
+ 180:../../cnc.c   ****     case CMD_CODE_FEED_INC_FINE:
+ 1146              		.loc 1 180 9 view .LVU246
+ 1147 0108 D1E7     		b	.L92
+ 1148              	.L107:
+ 182:../../cnc.c   ****         break;
+ 1149              		.loc 1 182 9 view .LVU247
+ 1150 010a 274A     		ldr	r2, .L118
+ 1151 010c D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1152 010e 43F00803 		orr	r3, r3, #8
+ 1153 0112 D370     		strb	r3, [r2, #3]
+ 183:../../cnc.c   ****     case CMD_CODE_FEED_DEC_FINE:
+ 1154              		.loc 1 183 9 view .LVU248
+ 1155 0114 CBE7     		b	.L92
+ 1156              	.L106:
+ 185:../../cnc.c   ****         break;
+ 1157              		.loc 1 185 9 view .LVU249
+ 1158 0116 244A     		ldr	r2, .L118
+ 1159 0118 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1160 011a 43F01003 		orr	r3, r3, #16
+ 1161 011e D370     		strb	r3, [r2, #3]
+ 186:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_100:
+ 1162              		.loc 1 186 9 view .LVU250
+ 1163 0120 C5E7     		b	.L92
+ 1164              	.L105:
+ 188:../../cnc.c   ****         break;
+ 1165              		.loc 1 188 9 view .LVU251
+ 1166 0122 214A     		ldr	r2, .L118
+ 1167 0124 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1168 0126 43F02003 		orr	r3, r3, #32
+ 1169 012a D370     		strb	r3, [r2, #3]
+ 189:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_OVR1:
+ 1170              		.loc 1 189 9 view .LVU252
+ 1171 012c BFE7     		b	.L92
+ 1172              	.L104:
+ 191:../../cnc.c   ****         break;
+ 1173              		.loc 1 191 9 view .LVU253
+ 1174 012e 1E4A     		ldr	r2, .L118
+ 1175 0130 D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1176 0132 43F04003 		orr	r3, r3, #64
+ 1177 0136 D370     		strb	r3, [r2, #3]
+ 192:../../cnc.c   ****     case CMD_CODE_RAPIDFEED_OVR2:
+ 1178              		.loc 1 192 9 view .LVU254
+ 1179 0138 B9E7     		b	.L92
+ 1180              	.L103:
+ 194:../../cnc.c   ****         break;
+ 1181              		.loc 1 194 9 view .LVU255
+ 1182 013a 1B4A     		ldr	r2, .L118
+ 1183 013c D378     		ldrb	r3, [r2, #3]	@ zero_extendqisi2
+ 1184 013e 43F08003 		orr	r3, r3, #128
+ 1185 0142 D370     		strb	r3, [r2, #3]
+ 195:../../cnc.c   ****     case CMD_CODE_SPINDLE_100:
+ 1186              		.loc 1 195 9 view .LVU256
+ 1187 0144 B3E7     		b	.L92
+ 1188              	.L102:
+ 197:../../cnc.c   ****         break;
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 37
+
+
+ 1189              		.loc 1 197 9 view .LVU257
+ 1190 0146 184A     		ldr	r2, .L118
+ 1191 0148 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1192 014a 43F00103 		orr	r3, r3, #1
+ 1193 014e 1371     		strb	r3, [r2, #4]
+ 198:../../cnc.c   ****     case CMD_CODE_SPINDLE_INC_COARSE:
+ 1194              		.loc 1 198 9 view .LVU258
+ 1195 0150 ADE7     		b	.L92
+ 1196              	.L101:
+ 200:../../cnc.c   ****         break;
+ 1197              		.loc 1 200 9 view .LVU259
+ 1198 0152 154A     		ldr	r2, .L118
+ 1199 0154 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1200 0156 43F00203 		orr	r3, r3, #2
+ 1201 015a 1371     		strb	r3, [r2, #4]
+ 201:../../cnc.c   ****     case CMD_CODE_SPINDLE_DEC_COARSE:
+ 1202              		.loc 1 201 9 view .LVU260
+ 1203 015c A7E7     		b	.L92
+ 1204              	.L100:
+ 203:../../cnc.c   ****         break;
+ 1205              		.loc 1 203 9 view .LVU261
+ 1206 015e 124A     		ldr	r2, .L118
+ 1207 0160 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1208 0162 43F00403 		orr	r3, r3, #4
+ 1209 0166 1371     		strb	r3, [r2, #4]
+ 204:../../cnc.c   ****     case CMD_CODE_SPINDLE_INC_FINE:
+ 1210              		.loc 1 204 9 view .LVU262
+ 1211 0168 A1E7     		b	.L92
+ 1212              	.L99:
+ 206:../../cnc.c   ****         break;
+ 1213              		.loc 1 206 9 view .LVU263
+ 1214 016a 0F4A     		ldr	r2, .L118
+ 1215 016c 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1216 016e 43F00803 		orr	r3, r3, #8
+ 1217 0172 1371     		strb	r3, [r2, #4]
+ 207:../../cnc.c   ****     case CMD_CODE_SPINDLE_DEC_FINE:
+ 1218              		.loc 1 207 9 view .LVU264
+ 1219 0174 9BE7     		b	.L92
+ 1220              	.L98:
+ 209:../../cnc.c   ****         break;
+ 1221              		.loc 1 209 9 view .LVU265
+ 1222 0176 0C4A     		ldr	r2, .L118
+ 1223 0178 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1224 017a 43F01003 		orr	r3, r3, #16
+ 1225 017e 1371     		strb	r3, [r2, #4]
+ 210:../../cnc.c   ****     case CMD_CODE_SPINDLE_TOGGLE:
+ 1226              		.loc 1 210 9 view .LVU266
+ 1227 0180 95E7     		b	.L92
+ 1228              	.L97:
+ 212:../../cnc.c   ****         break;
+ 1229              		.loc 1 212 9 view .LVU267
+ 1230 0182 094A     		ldr	r2, .L118
+ 1231 0184 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1232 0186 43F02003 		orr	r3, r3, #32
+ 1233 018a 1371     		strb	r3, [r2, #4]
+ 213:../../cnc.c   ****     case CMD_CODE_COOL_FLD_TOGGLE:
+ 1234              		.loc 1 213 9 view .LVU268
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 38
+
+
+ 1235 018c 8FE7     		b	.L92
+ 1236              	.L96:
+ 215:../../cnc.c   ****         break;
+ 1237              		.loc 1 215 9 view .LVU269
+ 1238 018e 064A     		ldr	r2, .L118
+ 1239 0190 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1240 0192 43F04003 		orr	r3, r3, #64
+ 1241 0196 1371     		strb	r3, [r2, #4]
+ 216:../../cnc.c   ****     case CMD_CODE_COOL_MST_TOGGLE:
+ 1242              		.loc 1 216 9 view .LVU270
+ 1243 0198 89E7     		b	.L92
+ 1244              	.L94:
+ 218:../../cnc.c   ****         break;
+ 1245              		.loc 1 218 9 view .LVU271
+ 1246 019a 034A     		ldr	r2, .L118
+ 1247 019c 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 1248 019e 43F08003 		orr	r3, r3, #128
+ 1249 01a2 1371     		strb	r3, [r2, #4]
+ 219:../../cnc.c   ****     }
+ 1250              		.loc 1 219 9 view .LVU272
+ 221:../../cnc.c   **** 
+ 1251              		.loc 1 221 1 is_stmt 0 view .LVU273
+ 1252 01a4 83E7     		b	.L92
+ 1253              	.L119:
+ 1254 01a6 00BF     		.align	2
+ 1255              	.L118:
+ 1256 01a8 00000000 		.word	.LANCHOR0
+ 1257              		.cfi_endproc
+ 1258              	.LFE70:
+ 1260              		.section	.text.cnc_unlock,"ax",%progbits
+ 1261              		.align	1
+ 1262              		.global	cnc_unlock
+ 1263              		.syntax unified
+ 1264              		.thumb
+ 1265              		.thumb_func
+ 1266              		.fpu softvfp
+ 1268              	cnc_unlock:
+ 1269              	.LFB75:
+ 324:../../cnc.c   ****     //on unlock any alarm caused by not having homing reference or hitting a limit switch is reset 
+ 1270              		.loc 1 324 1 is_stmt 1 view -0
+ 1271              		.cfi_startproc
+ 1272              		@ args = 0, pretend = 0, frame = 0
+ 1273              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1274 0000 10B5     		push	{r4, lr}
+ 1275              	.LCFI9:
+ 1276              		.cfi_def_cfa_offset 8
+ 1277              		.cfi_offset 4, -8
+ 1278              		.cfi_offset 14, -4
+ 327:../../cnc.c   ****     //clears all other locking flags
+ 1279              		.loc 1 327 5 view .LVU275
+ 1280 0002 094A     		ldr	r2, .L122
+ 1281 0004 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 1282 0006 03F0CF03 		and	r3, r3, #207
+ 1283 000a 1370     		strb	r3, [r2]
+ 329:../../cnc.c   ****     //signals stepper enable pins
+ 1284              		.loc 1 329 5 view .LVU276
+ 1285 000c FE20     		movs	r0, #254
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 39
+
+
+ 1286 000e FFF7FEFF 		bl	cnc_clear_exec_state
+ 1287              	.LVL87:
+ 332:../../cnc.c   ****     io_set_dirs(g_settings.dir_invert_mask);
+ 1288              		.loc 1 332 5 view .LVU277
+ 1289 0012 064C     		ldr	r4, .L122+4
+ 1290 0014 A079     		ldrb	r0, [r4, #6]	@ zero_extendqisi2
+ 1291 0016 FFF7FEFF 		bl	io_set_steps
+ 1292              	.LVL88:
+ 333:../../cnc.c   ****     io_enable_steps();
+ 1293              		.loc 1 333 5 view .LVU278
+ 1294 001a E079     		ldrb	r0, [r4, #7]	@ zero_extendqisi2
+ 1295 001c FFF7FEFF 		bl	io_set_dirs
+ 1296              	.LVL89:
+ 334:../../cnc.c   **** }
+ 1297              		.loc 1 334 5 view .LVU279
+ 1298 0020 FFF7FEFF 		bl	io_enable_steps
+ 1299              	.LVL90:
+ 335:../../cnc.c   **** 
+ 1300              		.loc 1 335 1 is_stmt 0 view .LVU280
+ 1301 0024 10BD     		pop	{r4, pc}
+ 1302              	.L123:
+ 1303 0026 00BF     		.align	2
+ 1304              	.L122:
+ 1305 0028 00000000 		.word	.LANCHOR0
+ 1306 002c 00000000 		.word	g_settings
+ 1307              		.cfi_endproc
+ 1308              	.LFE75:
+ 1310              		.section	.rodata.cnc_reset.str1.4,"aMS",%progbits,1
+ 1311              		.align	2
+ 1312              	.LC2:
+ 1313 0000 75434E43 		.ascii	"uCNC 1.0.0-rc ['$' for help]\015\012\000"
+ 1313      20312E30 
+ 1313      2E302D72 
+ 1313      63205B27 
+ 1313      24272066 
+ 1314 001f 00       		.align	2
+ 1315              	.LC3:
+ 1316 0020 5B4D5347 		.ascii	"[MSG:'$H'|'$X' to unlock]\015\012\000"
+ 1316      3A272448 
+ 1316      277C2724 
+ 1316      58272074 
+ 1316      6F20756E 
+ 1317              		.section	.text.cnc_reset,"ax",%progbits
+ 1318              		.align	1
+ 1319              		.syntax unified
+ 1320              		.thumb
+ 1321              		.thumb_func
+ 1322              		.fpu softvfp
+ 1324              	cnc_reset:
+ 1325              	.LFB79:
+ 383:../../cnc.c   ****     //resets all realtime command flags
+ 1326              		.loc 1 383 1 is_stmt 1 view -0
+ 1327              		.cfi_startproc
+ 1328              		@ args = 0, pretend = 0, frame = 0
+ 1329              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1330 0000 10B5     		push	{r4, lr}
+ 1331              	.LCFI10:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 40
+
+
+ 1332              		.cfi_def_cfa_offset 8
+ 1333              		.cfi_offset 4, -8
+ 1334              		.cfi_offset 14, -4
+ 385:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
+ 1335              		.loc 1 385 5 view .LVU282
+ 385:../../cnc.c   ****     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
+ 1336              		.loc 1 385 22 is_stmt 0 view .LVU283
+ 1337 0002 134B     		ldr	r3, .L128
+ 1338 0004 0022     		movs	r2, #0
+ 1339 0006 9A70     		strb	r2, [r3, #2]
+ 386:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
+ 1340              		.loc 1 386 5 is_stmt 1 view .LVU284
+ 386:../../cnc.c   ****     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
+ 1341              		.loc 1 386 28 is_stmt 0 view .LVU285
+ 1342 0008 DA70     		strb	r2, [r3, #3]
+ 387:../../cnc.c   ****     cnc_state.active_alarm = EXEC_ALARM_RESET;
+ 1343              		.loc 1 387 5 is_stmt 1 view .LVU286
+ 387:../../cnc.c   ****     cnc_state.active_alarm = EXEC_ALARM_RESET;
+ 1344              		.loc 1 387 28 is_stmt 0 view .LVU287
+ 1345 000a 1A71     		strb	r2, [r3, #4]
+ 388:../../cnc.c   ****     cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; //Activates all alarms and hold
+ 1346              		.loc 1 388 5 is_stmt 1 view .LVU288
+ 388:../../cnc.c   ****     cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; //Activates all alarms and hold
+ 1347              		.loc 1 388 28 is_stmt 0 view .LVU289
+ 1348 000c 5A70     		strb	r2, [r3, #1]
+ 389:../../cnc.c   **** 
+ 1349              		.loc 1 389 5 is_stmt 1 view .LVU290
+ 389:../../cnc.c   **** 
+ 1350              		.loc 1 389 26 is_stmt 0 view .LVU291
+ 1351 000e F224     		movs	r4, #242
+ 1352 0010 1C70     		strb	r4, [r3]
+ 392:../../cnc.c   ****     planner_clear();
+ 1353              		.loc 1 392 5 is_stmt 1 view .LVU292
+ 1354 0012 FFF7FEFF 		bl	itp_clear
+ 1355              	.LVL91:
+ 393:../../cnc.c   ****     protocol_send_string(MSG_STARTUP);
+ 1356              		.loc 1 393 5 view .LVU293
+ 1357 0016 FFF7FEFF 		bl	planner_clear
+ 1358              	.LVL92:
+ 394:../../cnc.c   ****     //tries to clear alarms or any active hold state
+ 1359              		.loc 1 394 5 view .LVU294
+ 1360 001a 0E48     		ldr	r0, .L128+4
+ 1361 001c FFF7FEFF 		bl	protocol_send_string
+ 1362              	.LVL93:
+ 396:../../cnc.c   **** 
+ 1363              		.loc 1 396 5 view .LVU295
+ 1364 0020 2046     		mov	r0, r4
+ 1365 0022 FFF7FEFF 		bl	cnc_clear_exec_state
+ 1366              	.LVL94:
+ 399:../../cnc.c   ****     {
+ 1367              		.loc 1 399 5 view .LVU296
+ 399:../../cnc.c   ****     {
+ 1368              		.loc 1 399 9 is_stmt 0 view .LVU297
+ 1369 0026 F020     		movs	r0, #240
+ 1370 0028 FFF7FEFF 		bl	cnc_get_exec_state
+ 1371              	.LVL95:
+ 399:../../cnc.c   ****     {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 41
+
+
+ 1372              		.loc 1 399 8 view .LVU298
+ 1373 002c 38B1     		cbz	r0, .L125
+ 402:../../cnc.c   ****         {
+ 1374              		.loc 1 402 9 is_stmt 1 view .LVU299
+ 402:../../cnc.c   ****         {
+ 1375              		.loc 1 402 14 is_stmt 0 view .LVU300
+ 1376 002e 8020     		movs	r0, #128
+ 1377 0030 FFF7FEFF 		bl	cnc_get_exec_state
+ 1378              	.LVL96:
+ 402:../../cnc.c   ****         {
+ 1379              		.loc 1 402 12 view .LVU301
+ 1380 0034 50B9     		cbnz	r0, .L124
+ 404:../../cnc.c   ****         }
+ 1381              		.loc 1 404 13 is_stmt 1 view .LVU302
+ 1382 0036 0848     		ldr	r0, .L128+8
+ 1383 0038 FFF7FEFF 		bl	protocol_send_string
+ 1384              	.LVL97:
+ 1385 003c 06E0     		b	.L124
+ 1386              	.L125:
+ 409:../../cnc.c   ****         SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
+ 1387              		.loc 1 409 9 view .LVU303
+ 1388 003e FFF7FEFF 		bl	cnc_unlock
+ 1389              	.LVL98:
+ 410:../../cnc.c   ****     }
+ 1390              		.loc 1 410 9 view .LVU304
+ 1391 0042 034A     		ldr	r2, .L128
+ 1392 0044 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 1393 0046 43F00103 		orr	r3, r3, #1
+ 1394 004a 9370     		strb	r3, [r2, #2]
+ 1395              	.L124:
+ 412:../../cnc.c   **** 
+ 1396              		.loc 1 412 1 is_stmt 0 view .LVU305
+ 1397 004c 10BD     		pop	{r4, pc}
+ 1398              	.L129:
+ 1399 004e 00BF     		.align	2
+ 1400              	.L128:
+ 1401 0050 00000000 		.word	.LANCHOR0
+ 1402 0054 00000000 		.word	.LC2
+ 1403 0058 20000000 		.word	.LC3
+ 1404              		.cfi_endproc
+ 1405              	.LFE79:
+ 1407              		.section	.rodata.cnc_run.str1.4,"aMS",%progbits,1
+ 1408              		.align	2
+ 1409              	.LC4:
+ 1410 0000 5B4D5347 		.ascii	"[MSG:Reset to continue]\015\012\000"
+ 1410      3A526573 
+ 1410      65742074 
+ 1410      6F20636F 
+ 1410      6E74696E 
+ 1411              		.section	.text.cnc_run,"ax",%progbits
+ 1412              		.align	1
+ 1413              		.global	cnc_run
+ 1414              		.syntax unified
+ 1415              		.thumb
+ 1416              		.thumb_func
+ 1417              		.fpu softvfp
+ 1419              	cnc_run:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 42
+
+
+ 1420              	.LFB69:
+  75:../../cnc.c   ****     cnc_reset();
+ 1421              		.loc 1 75 1 is_stmt 1 view -0
+ 1422              		.cfi_startproc
+ 1423              		@ args = 0, pretend = 0, frame = 0
+ 1424              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1425 0000 08B5     		push	{r3, lr}
+ 1426              	.LCFI11:
+ 1427              		.cfi_def_cfa_offset 8
+ 1428              		.cfi_offset 3, -8
+ 1429              		.cfi_offset 14, -4
+  76:../../cnc.c   **** 
+ 1430              		.loc 1 76 5 view .LVU307
+ 1431 0002 FFF7FEFF 		bl	cnc_reset
+ 1432              	.LVL99:
+ 1433 0006 06E0     		b	.L138
+ 1434              	.LVL100:
+ 1435              	.L132:
+ 1436              	.LBB2:
+  89:../../cnc.c   ****                 break;
+ 1437              		.loc 1 89 17 view .LVU308
+ 1438 0008 FFF7FEFF 		bl	serial_getc
+ 1439              	.LVL101:
+  90:../../cnc.c   ****             case '$':
+ 1440              		.loc 1 90 17 view .LVU309
+ 119:../../cnc.c   ****             {
+ 1441              		.loc 1 119 13 view .LVU310
+ 1442              	.L135:
+ 121:../../cnc.c   ****             }
+ 1443              		.loc 1 121 17 view .LVU311
+ 1444 000c FFF7FEFF 		bl	protocol_send_ok
+ 1445              	.LVL102:
+ 1446              	.L131:
+ 121:../../cnc.c   ****             }
+ 1447              		.loc 1 121 17 is_stmt 0 view .LVU312
+ 1448              	.LBE2:
+ 128:../../cnc.c   **** 
+ 1449              		.loc 1 128 13 is_stmt 1 view .LVU313
+ 128:../../cnc.c   **** 
+ 1450              		.loc 1 128 14 is_stmt 0 view .LVU314
+ 1451 0010 FFF7FEFF 		bl	cnc_doevents
+ 1452              	.LVL103:
+ 128:../../cnc.c   **** 
+ 1453              		.loc 1 128 5 view .LVU315
+ 1454 0014 D8B1     		cbz	r0, .L144
+ 1455              	.L138:
+  78:../../cnc.c   ****     {
+ 1456              		.loc 1 78 5 is_stmt 1 view .LVU316
+  81:../../cnc.c   ****         {
+ 1457              		.loc 1 81 9 view .LVU317
+  81:../../cnc.c   ****         {
+ 1458              		.loc 1 81 14 is_stmt 0 view .LVU318
+ 1459 0016 FFF7FEFF 		bl	serial_rx_is_empty
+ 1460              	.LVL104:
+  81:../../cnc.c   ****         {
+ 1461              		.loc 1 81 12 view .LVU319
+ 1462 001a 0028     		cmp	r0, #0
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 43
+
+
+ 1463 001c F8D1     		bne	.L131
+ 1464              	.LBB3:
+  83:../../cnc.c   ****             //protocol_echo();
+ 1465              		.loc 1 83 13 is_stmt 1 view .LVU320
+ 1466              	.LVL105:
+  85:../../cnc.c   ****             switch (c)
+ 1467              		.loc 1 85 13 view .LVU321
+  85:../../cnc.c   ****             switch (c)
+ 1468              		.loc 1 85 25 is_stmt 0 view .LVU322
+ 1469 001e FFF7FEFF 		bl	serial_peek
+ 1470              	.LVL106:
+  86:../../cnc.c   ****             {
+ 1471              		.loc 1 86 13 is_stmt 1 view .LVU323
+ 1472 0022 0028     		cmp	r0, #0
+ 1473 0024 F0D0     		beq	.L132
+ 1474 0026 2428     		cmp	r0, #36
+ 1475 0028 07D0     		beq	.L133
+ 105:../../cnc.c   ****                 {
+ 1476              		.loc 1 105 17 view .LVU324
+ 105:../../cnc.c   ****                 {
+ 1477              		.loc 1 105 22 is_stmt 0 view .LVU325
+ 1478 002a FC20     		movs	r0, #252
+ 1479              	.LVL107:
+ 105:../../cnc.c   ****                 {
+ 1480              		.loc 1 105 22 view .LVU326
+ 1481 002c FFF7FEFF 		bl	cnc_get_exec_state
+ 1482              	.LVL108:
+ 105:../../cnc.c   ****                 {
+ 1483              		.loc 1 105 20 view .LVU327
+ 1484 0030 50B1     		cbz	r0, .L145
+ 111:../../cnc.c   ****                 }
+ 1485              		.loc 1 111 27 view .LVU328
+ 1486 0032 0920     		movs	r0, #9
+ 1487              	.LVL109:
+ 1488              	.L137:
+ 125:../../cnc.c   ****             }
+ 1489              		.loc 1 125 17 is_stmt 1 view .LVU329
+ 1490 0034 FFF7FEFF 		bl	protocol_send_error
+ 1491              	.LVL110:
+ 1492 0038 EAE7     		b	.L131
+ 1493              	.LVL111:
+ 1494              	.L133:
+  95:../../cnc.c   **** #ifdef ECHO_CMD
+ 1495              		.loc 1 95 17 view .LVU330
+  95:../../cnc.c   **** #ifdef ECHO_CMD
+ 1496              		.loc 1 95 25 is_stmt 0 view .LVU331
+ 1497 003a FFF7FEFF 		bl	parser_grbl_command
+ 1498              	.LVL112:
+  99:../../cnc.c   ****                 break;
+ 1499              		.loc 1 99 17 is_stmt 1 view .LVU332
+  99:../../cnc.c   ****                 break;
+ 1500              		.loc 1 99 25 is_stmt 0 view .LVU333
+ 1501 003e FFF7FEFF 		bl	parse_grbl_error_code
+ 1502              	.LVL113:
+ 100:../../cnc.c   ****             default:
+ 1503              		.loc 1 100 17 is_stmt 1 view .LVU334
+ 1504              	.L136:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 44
+
+
+ 119:../../cnc.c   ****             {
+ 1505              		.loc 1 119 13 view .LVU335
+ 119:../../cnc.c   ****             {
+ 1506              		.loc 1 119 16 is_stmt 0 view .LVU336
+ 1507 0042 0028     		cmp	r0, #0
+ 1508 0044 F6D1     		bne	.L137
+ 119:../../cnc.c   ****             {
+ 1509              		.loc 1 119 16 view .LVU337
+ 1510 0046 E1E7     		b	.L135
+ 1511              	.LVL114:
+ 1512              	.L145:
+ 107:../../cnc.c   ****                 }
+ 1513              		.loc 1 107 21 is_stmt 1 view .LVU338
+ 107:../../cnc.c   ****                 }
+ 1514              		.loc 1 107 29 is_stmt 0 view .LVU339
+ 1515 0048 FFF7FEFF 		bl	parser_gcode_command
+ 1516              	.LVL115:
+ 107:../../cnc.c   ****                 }
+ 1517              		.loc 1 107 29 view .LVU340
+ 1518 004c F9E7     		b	.L136
+ 1519              	.LVL116:
+ 1520              	.L144:
+ 107:../../cnc.c   ****                 }
+ 1521              		.loc 1 107 29 view .LVU341
+ 1522              	.LBE3:
+ 130:../../cnc.c   ****     serial_flush();
+ 1523              		.loc 1 130 5 is_stmt 1 view .LVU342
+ 1524 004e 8020     		movs	r0, #128
+ 1525 0050 FFF7FEFF 		bl	cnc_clear_exec_state
+ 1526              	.LVL117:
+ 131:../../cnc.c   ****     if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - igno
+ 1527              		.loc 1 131 5 view .LVU343
+ 1528 0054 FFF7FEFF 		bl	serial_flush
+ 1529              	.LVL118:
+ 132:../../cnc.c   ****     {
+ 1530              		.loc 1 132 5 view .LVU344
+ 132:../../cnc.c   ****     {
+ 1531              		.loc 1 132 9 is_stmt 0 view .LVU345
+ 1532 0058 E020     		movs	r0, #224
+ 1533 005a FFF7FEFF 		bl	cnc_get_exec_state
+ 1534              	.LVL119:
+ 132:../../cnc.c   ****     {
+ 1535              		.loc 1 132 8 view .LVU346
+ 1536 005e 00B9     		cbnz	r0, .L146
+ 1537              	.L130:
+ 140:../../cnc.c   **** 
+ 1538              		.loc 1 140 1 view .LVU347
+ 1539 0060 08BD     		pop	{r3, pc}
+ 1540              	.L146:
+ 134:../../cnc.c   ****         protocol_send_string(MSG_FEEDBACK_1);
+ 1541              		.loc 1 134 9 is_stmt 1 view .LVU348
+ 1542 0062 FFF7FEFF 		bl	cnc_check_fault_systems
+ 1543              	.LVL120:
+ 135:../../cnc.c   ****         do
+ 1544              		.loc 1 135 9 view .LVU349
+ 1545 0066 0448     		ldr	r0, .L147
+ 1546 0068 FFF7FEFF 		bl	protocol_send_string
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 45
+
+
+ 1547              	.LVL121:
+ 1548              	.L140:
+ 136:../../cnc.c   ****         {
+ 1549              		.loc 1 136 9 discriminator 1 view .LVU350
+ 138:../../cnc.c   ****     }
+ 1550              		.loc 1 138 9 discriminator 1 view .LVU351
+ 138:../../cnc.c   ****     }
+ 1551              		.loc 1 138 17 discriminator 1 view .LVU352
+ 138:../../cnc.c   ****     }
+ 1552              		.loc 1 138 19 is_stmt 0 discriminator 1 view .LVU353
+ 1553 006c 034B     		ldr	r3, .L147+4
+ 1554 006e 9B78     		ldrb	r3, [r3, #2]	@ zero_extendqisi2
+ 138:../../cnc.c   ****     }
+ 1555              		.loc 1 138 9 discriminator 1 view .LVU354
+ 1556 0070 13F0800F 		tst	r3, #128
+ 1557 0074 FAD0     		beq	.L140
+ 1558 0076 F3E7     		b	.L130
+ 1559              	.L148:
+ 1560              		.align	2
+ 1561              	.L147:
+ 1562 0078 00000000 		.word	.LC4
+ 1563 007c 00000000 		.word	.LANCHOR0
+ 1564              		.cfi_endproc
+ 1565              	.LFE69:
+ 1567              		.global	__aeabi_fadd
+ 1568              		.global	__aeabi_f2d
+ 1569              		.global	__aeabi_dmul
+ 1570              		.global	__aeabi_d2f
+ 1571              		.section	.text.cnc_home,"ax",%progbits
+ 1572              		.align	1
+ 1573              		.global	cnc_home
+ 1574              		.syntax unified
+ 1575              		.thumb
+ 1576              		.thumb_func
+ 1577              		.fpu softvfp
+ 1579              	cnc_home:
+ 1580              	.LFB72:
+ 257:../../cnc.c   ****     cnc_set_exec_state(EXEC_HOMING);
+ 1581              		.loc 1 257 1 is_stmt 1 view -0
+ 1582              		.cfi_startproc
+ 1583              		@ args = 0, pretend = 0, frame = 40
+ 1584              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1585 0000 30B5     		push	{r4, r5, lr}
+ 1586              	.LCFI12:
+ 1587              		.cfi_def_cfa_offset 12
+ 1588              		.cfi_offset 4, -12
+ 1589              		.cfi_offset 5, -8
+ 1590              		.cfi_offset 14, -4
+ 1591 0002 8FB0     		sub	sp, sp, #60
+ 1592              	.LCFI13:
+ 1593              		.cfi_def_cfa_offset 72
+ 258:../../cnc.c   ****     uint8_t error = kinematics_home();
+ 1594              		.loc 1 258 5 view .LVU356
+ 1595 0004 0820     		movs	r0, #8
+ 1596 0006 FFF7FEFF 		bl	cnc_set_exec_state
+ 1597              	.LVL122:
+ 259:../../cnc.c   ****     if (error)
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 46
+
+
+ 1598              		.loc 1 259 5 view .LVU357
+ 259:../../cnc.c   ****     if (error)
+ 1599              		.loc 1 259 21 is_stmt 0 view .LVU358
+ 1600 000a FFF7FEFF 		bl	kinematics_home
+ 1601              	.LVL123:
+ 260:../../cnc.c   ****     {
+ 1602              		.loc 1 260 5 is_stmt 1 view .LVU359
+ 260:../../cnc.c   ****     {
+ 1603              		.loc 1 260 8 is_stmt 0 view .LVU360
+ 1604 000e 30B9     		cbnz	r0, .L158
+ 269:../../cnc.c   **** 
+ 1605              		.loc 1 269 5 is_stmt 1 view .LVU361
+ 1606 0010 FFF7FEFF 		bl	cnc_unlock
+ 1607              	.LVL124:
+ 271:../../cnc.c   ****     planner_block_data_t block_data;
+ 1608              		.loc 1 271 5 view .LVU362
+ 272:../../cnc.c   ****     planner_get_position(target);
+ 1609              		.loc 1 272 5 view .LVU363
+ 273:../../cnc.c   **** 
+ 1610              		.loc 1 273 5 view .LVU364
+ 1611 0014 0BA8     		add	r0, sp, #44
+ 1612 0016 FFF7FEFF 		bl	planner_get_position
+ 1613              	.LVL125:
+ 275:../../cnc.c   ****     {
+ 1614              		.loc 1 275 5 view .LVU365
+ 1615              	.LBB4:
+ 275:../../cnc.c   ****     {
+ 1616              		.loc 1 275 10 view .LVU366
+ 275:../../cnc.c   ****     {
+ 1617              		.loc 1 275 18 is_stmt 0 view .LVU367
+ 1618 001a 0324     		movs	r4, #3
+ 275:../../cnc.c   ****     {
+ 1619              		.loc 1 275 5 view .LVU368
+ 1620 001c 10E0     		b	.L152
+ 1621              	.LVL126:
+ 1622              	.L158:
+ 275:../../cnc.c   ****     {
+ 1623              		.loc 1 275 5 view .LVU369
+ 1624 001e 0446     		mov	r4, r0
+ 1625              	.LBE4:
+ 263:../../cnc.c   ****         cnc_alarm(error);
+ 1626              		.loc 1 263 9 is_stmt 1 view .LVU370
+ 1627 0020 0820     		movs	r0, #8
+ 1628              	.LVL127:
+ 263:../../cnc.c   ****         cnc_alarm(error);
+ 1629              		.loc 1 263 9 is_stmt 0 view .LVU371
+ 1630 0022 FFF7FEFF 		bl	cnc_clear_exec_state
+ 1631              	.LVL128:
+ 264:../../cnc.c   ****         return;
+ 1632              		.loc 1 264 9 is_stmt 1 view .LVU372
+ 1633 0026 2046     		mov	r0, r4
+ 1634 0028 FFF7FEFF 		bl	cnc_alarm
+ 1635              	.LVL129:
+ 265:../../cnc.c   ****     }
+ 1636              		.loc 1 265 9 view .LVU373
+ 1637 002c 46E0     		b	.L149
+ 1638              	.LVL130:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 47
+
+
+ 1639              	.L153:
+ 1640              	.LBB5:
+ 278:../../cnc.c   ****     }
+ 1641              		.loc 1 278 98 is_stmt 0 discriminator 2 view .LVU374
+ 1642 002e 244B     		ldr	r3, .L160
+ 1643 0030 596A     		ldr	r1, [r3, #36]	@ float
+ 1644              	.L154:
+ 278:../../cnc.c   ****     }
+ 1645              		.loc 1 278 19 discriminator 4 view .LVU375
+ 1646 0032 0EAB     		add	r3, sp, #56
+ 1647 0034 03EB8505 		add	r5, r3, r5, lsl #2
+ 1648 0038 FFF7FEFF 		bl	__aeabi_fadd
+ 1649              	.LVL131:
+ 1650 003c 45F80C0C 		str	r0, [r5, #-12]	@ float
+ 1651              	.LVL132:
+ 1652              	.L152:
+ 275:../../cnc.c   ****     {
+ 1653              		.loc 1 275 34 is_stmt 1 discriminator 1 view .LVU376
+ 275:../../cnc.c   ****     {
+ 1654              		.loc 1 275 5 is_stmt 0 discriminator 1 view .LVU377
+ 1655 0040 94B1     		cbz	r4, .L159
+ 277:../../cnc.c   ****         target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : 
+ 1656              		.loc 1 277 9 is_stmt 1 view .LVU378
+ 277:../../cnc.c   ****         target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : 
+ 1657              		.loc 1 277 10 is_stmt 0 view .LVU379
+ 1658 0042 013C     		subs	r4, r4, #1
+ 1659              	.LVL133:
+ 277:../../cnc.c   ****         target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : 
+ 1660              		.loc 1 277 10 view .LVU380
+ 1661 0044 E4B2     		uxtb	r4, r4
+ 1662              	.LVL134:
+ 278:../../cnc.c   ****     }
+ 1663              		.loc 1 278 9 is_stmt 1 view .LVU381
+ 278:../../cnc.c   ****     }
+ 1664              		.loc 1 278 19 is_stmt 0 view .LVU382
+ 1665 0046 2546     		mov	r5, r4
+ 1666 0048 0EAB     		add	r3, sp, #56
+ 1667 004a 03EB8403 		add	r3, r3, r4, lsl #2
+ 1668 004e 53F80C0C 		ldr	r0, [r3, #-12]	@ float
+ 278:../../cnc.c   ****     }
+ 1669              		.loc 1 278 34 view .LVU383
+ 1670 0052 1B4B     		ldr	r3, .L160
+ 1671 0054 1B7E     		ldrb	r3, [r3, #24]	@ zero_extendqisi2
+ 278:../../cnc.c   ****     }
+ 1672              		.loc 1 278 70 view .LVU384
+ 1673 0056 2341     		asrs	r3, r3, r4
+ 278:../../cnc.c   ****     }
+ 1674              		.loc 1 278 98 view .LVU385
+ 1675 0058 13F0010F 		tst	r3, #1
+ 1676 005c E7D0     		beq	.L153
+ 278:../../cnc.c   ****     }
+ 1677              		.loc 1 278 83 discriminator 1 view .LVU386
+ 1678 005e 184B     		ldr	r3, .L160
+ 1679 0060 596A     		ldr	r1, [r3, #36]	@ float
+ 278:../../cnc.c   ****     }
+ 1680              		.loc 1 278 98 discriminator 1 view .LVU387
+ 1681 0062 01F10041 		add	r1, r1, #-2147483648
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 48
+
+
+ 1682 0066 E4E7     		b	.L154
+ 1683              	.L159:
+ 278:../../cnc.c   ****     }
+ 1684              		.loc 1 278 98 discriminator 1 view .LVU388
+ 1685              	.LBE5:
+ 281:../../cnc.c   ****     block_data.spindle = 0;
+ 1686              		.loc 1 281 5 is_stmt 1 view .LVU389
+ 281:../../cnc.c   ****     block_data.spindle = 0;
+ 1687              		.loc 1 281 33 is_stmt 0 view .LVU390
+ 1688 0068 154B     		ldr	r3, .L160
+ 1689 006a D869     		ldr	r0, [r3, #28]	@ float
+ 1690 006c FFF7FEFF 		bl	__aeabi_f2d
+ 1691              	.LVL135:
+ 281:../../cnc.c   ****     block_data.spindle = 0;
+ 1692              		.loc 1 281 56 view .LVU391
+ 1693 0070 4FF01132 		mov	r2, #286331153
+ 1694 0074 134B     		ldr	r3, .L160+4
+ 1695 0076 FFF7FEFF 		bl	__aeabi_dmul
+ 1696              	.LVL136:
+ 1697 007a FFF7FEFF 		bl	__aeabi_d2f
+ 1698              	.LVL137:
+ 281:../../cnc.c   ****     block_data.spindle = 0;
+ 1699              		.loc 1 281 21 view .LVU392
+ 1700 007e 0890     		str	r0, [sp, #32]	@ float
+ 282:../../cnc.c   ****     block_data.dwell = 0;
+ 1701              		.loc 1 282 5 is_stmt 1 view .LVU393
+ 282:../../cnc.c   ****     block_data.dwell = 0;
+ 1702              		.loc 1 282 24 is_stmt 0 view .LVU394
+ 1703 0080 0023     		movs	r3, #0
+ 1704 0082 ADF82430 		strh	r3, [sp, #36]	@ movhi
+ 283:../../cnc.c   ****     //starts offset and waits to finnish
+ 1705              		.loc 1 283 5 is_stmt 1 view .LVU395
+ 283:../../cnc.c   ****     //starts offset and waits to finnish
+ 1706              		.loc 1 283 22 is_stmt 0 view .LVU396
+ 1707 0086 ADF82630 		strh	r3, [sp, #38]	@ movhi
+ 285:../../cnc.c   ****     do
+ 1708              		.loc 1 285 5 is_stmt 1 view .LVU397
+ 1709 008a 07AB     		add	r3, sp, #28
+ 1710 008c 0FCB     		ldm	r3, {r0, r1, r2, r3}
+ 1711 008e 8DE80F00 		stm	sp, {r0, r1, r2, r3}
+ 1712 0092 04AB     		add	r3, sp, #16
+ 1713 0094 0ECB     		ldm	r3, {r1, r2, r3}
+ 1714 0096 0BA8     		add	r0, sp, #44
+ 1715 0098 FFF7FEFF 		bl	planner_add_line
+ 1716              	.LVL138:
+ 1717              	.L156:
+ 286:../../cnc.c   ****     {
+ 1718              		.loc 1 286 5 discriminator 1 view .LVU398
+ 288:../../cnc.c   ****     } while (cnc_get_exec_state(EXEC_RUN));
+ 1719              		.loc 1 288 9 discriminator 1 view .LVU399
+ 1720 009c FFF7FEFF 		bl	cnc_doevents
+ 1721              	.LVL139:
+ 289:../../cnc.c   **** 
+ 1722              		.loc 1 289 13 discriminator 1 view .LVU400
+ 289:../../cnc.c   **** 
+ 1723              		.loc 1 289 14 is_stmt 0 discriminator 1 view .LVU401
+ 1724 00a0 0120     		movs	r0, #1
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 49
+
+
+ 1725 00a2 FFF7FEFF 		bl	cnc_get_exec_state
+ 1726              	.LVL140:
+ 289:../../cnc.c   **** 
+ 1727              		.loc 1 289 5 discriminator 1 view .LVU402
+ 1728 00a6 0028     		cmp	r0, #0
+ 1729 00a8 F8D1     		bne	.L156
+ 292:../../cnc.c   ****     planner_resync_position();
+ 1730              		.loc 1 292 5 is_stmt 1 view .LVU403
+ 1731 00aa FFF7FEFF 		bl	itp_reset_rt_position
+ 1732              	.LVL141:
+ 293:../../cnc.c   ****     //invokes startup block execution
+ 1733              		.loc 1 293 5 view .LVU404
+ 1734 00ae FFF7FEFF 		bl	planner_resync_position
+ 1735              	.LVL142:
+ 295:../../cnc.c   **** }
+ 1736              		.loc 1 295 5 view .LVU405
+ 1737 00b2 054A     		ldr	r2, .L160+8
+ 1738 00b4 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 1739 00b6 43F00103 		orr	r3, r3, #1
+ 1740 00ba 9370     		strb	r3, [r2, #2]
+ 1741              	.LVL143:
+ 1742              	.L149:
+ 296:../../cnc.c   **** 
+ 1743              		.loc 1 296 1 is_stmt 0 view .LVU406
+ 1744 00bc 0FB0     		add	sp, sp, #60
+ 1745              	.LCFI14:
+ 1746              		.cfi_def_cfa_offset 12
+ 1747              		@ sp needed
+ 1748 00be 30BD     		pop	{r4, r5, pc}
+ 1749              	.L161:
+ 1750              		.align	2
+ 1751              	.L160:
+ 1752 00c0 00000000 		.word	g_settings
+ 1753 00c4 1111913F 		.word	1066471697
+ 1754 00c8 00000000 		.word	.LANCHOR0
+ 1755              		.cfi_endproc
+ 1756              	.LFE72:
+ 1758              		.section	.bss.cnc_state,"aw",%nobits
+ 1759              		.align	2
+ 1760              		.set	.LANCHOR0,. + 0
+ 1763              	cnc_state:
+ 1764 0000 00000000 		.space	5
+ 1764      00
+ 1765              		.text
+ 1766              	.Letext0:
+ 1767              		.file 2 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1768              		.file 3 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\lib\\gcc\\arm-none
+ 1769              		.file 4 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1770              		.file 5 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1771              		.file 6 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1772              		.file 7 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1773              		.file 8 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1774              		.file 9 "Drivers/CMSIS/Include/core_cm3.h"
+ 1775              		.file 10 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
+ 1776              		.file 11 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h"
+ 1777              		.file 12 "../../settings.h"
+ 1778              		.file 13 "../../planner.h"
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 50
+
+
+ 1779              		.file 14 "../../protocol.h"
+ 1780              		.file 15 "../../interpolator.h"
+ 1781              		.file 16 "../../io_control.h"
+ 1782              		.file 17 "../../serial.h"
+ 1783              		.file 18 "../../kinematics.h"
+ 1784              		.file 19 "../../parser.h"
+ 1785              		.file 20 "../../mcu.h"
+ 1786              		.file 21 "../../motion_control.h"
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 51
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 cnc.c
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:16     .rodata.cnc_check_fault_systems.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:23     .text.cnc_check_fault_systems:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:30     .text.cnc_check_fault_systems:00000000 cnc_check_fault_systems
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:90     .text.cnc_check_fault_systems:00000030 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:97     .text.cnc_exec_rt_commands:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:103    .text.cnc_exec_rt_commands:00000000 cnc_exec_rt_commands
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:263    .text.cnc_exec_rt_commands:000000a4 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:295    .text.cnc_exec_rt_commands:00000124 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:378    .text.cnc_exec_rt_commands:0000016c $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:383    .text.cnc_init:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:390    .text.cnc_init:00000000 cnc_init
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:431    .text.cnc_get_exec_state:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:438    .text.cnc_get_exec_state:00000000 cnc_get_exec_state
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:458    .text.cnc_get_exec_state:00000008 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:463    .text.cnc_set_exec_state:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:470    .text.cnc_set_exec_state:00000000 cnc_set_exec_state
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:488    .text.cnc_set_exec_state:0000000c $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:493    .text.cnc_alarm:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:500    .text.cnc_alarm:00000000 cnc_alarm
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:529    .text.cnc_alarm:00000010 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:534    .text.cnc_stop:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:541    .text.cnc_stop:00000000 cnc_stop
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:579    .text.cnc_stop:00000020 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:584    .text.cnc_check_interlocking:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:590    .text.cnc_check_interlocking:00000000 cnc_check_interlocking
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:744    .text.cnc_check_interlocking:000000b0 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:749    .text.cnc_doevents:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:756    .text.cnc_doevents:00000000 cnc_doevents
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:804    .text.cnc_clear_exec_state:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:811    .text.cnc_clear_exec_state:00000000 cnc_clear_exec_state
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:888    .text.cnc_clear_exec_state:00000048 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:894    .text.cnc_call_rt_command:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:901    .text.cnc_call_rt_command:00000000 cnc_call_rt_command
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:922    .text.cnc_call_rt_command:0000000c $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1060   .text.cnc_call_rt_command:00000096 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1256   .text.cnc_call_rt_command:000001a8 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1261   .text.cnc_unlock:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1268   .text.cnc_unlock:00000000 cnc_unlock
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1305   .text.cnc_unlock:00000028 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1311   .rodata.cnc_reset.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1318   .text.cnc_reset:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1324   .text.cnc_reset:00000000 cnc_reset
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1401   .text.cnc_reset:00000050 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1408   .rodata.cnc_run.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1412   .text.cnc_run:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1419   .text.cnc_run:00000000 cnc_run
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1562   .text.cnc_run:00000078 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1572   .text.cnc_home:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1579   .text.cnc_home:00000000 cnc_home
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1752   .text.cnc_home:000000c0 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1759   .bss.cnc_state:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s:1763   .bss.cnc_state:00000000 cnc_state
+
+UNDEFINED SYMBOLS
+io_get_controls
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cc4jpcX9.s 			page 52
+
+
+protocol_send_string
+io_get_limits
+g_settings
+protocol_send_status
+settings_check_startup_gcode
+serial_select
+planner_rapid_feed_ovr
+planner_feed_ovr_reset
+planner_feed_ovr_inc
+planner_rapid_feed_ovr_reset
+mcu_init
+serial_init
+settings_init
+parser_init
+mc_init
+planner_init
+itp_init
+serial_flush
+itp_stop
+protocol_send_alarm
+itp_clear
+planner_clear
+itp_run
+serial_rx_clear
+io_set_steps
+io_set_dirs
+io_enable_steps
+serial_getc
+protocol_send_ok
+serial_rx_is_empty
+serial_peek
+protocol_send_error
+parser_grbl_command
+parse_grbl_error_code
+parser_gcode_command
+__aeabi_fadd
+__aeabi_f2d
+__aeabi_dmul
+__aeabi_d2f
+kinematics_home
+planner_get_position
+planner_add_line
+itp_reset_rt_position
+planner_resync_position

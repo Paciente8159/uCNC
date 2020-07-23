@@ -1,0 +1,730 @@
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 1
+  10              		.eabi_attribute 18, 4
+  11              		.file	"mcu_stm32f10x.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.text.mcu_toggle_output,"ax",%progbits
+  16              		.align	1
+  17              		.global	mcu_toggle_output
+  18              		.arch armv7-m
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  22              		.fpu softvfp
+  24              	mcu_toggle_output:
+  25              	.LVL0:
+  26              	.LFB65:
+  27              		.file 1 "mcu_stm32f10x.c"
+   1:mcu_stm32f10x.c **** /*
+   2:mcu_stm32f10x.c **** 	Name: mcu.h
+   3:mcu_stm32f10x.c **** 	Description: Contains all the function declarations necessary to interact with the MCU.
+   4:mcu_stm32f10x.c ****         This provides a opac intenterface between the µCNC and the MCU unit used to power the µCN
+   5:mcu_stm32f10x.c **** 
+   6:mcu_stm32f10x.c **** 	Copyright: Copyright (c) João Martins
+   7:mcu_stm32f10x.c **** 	Author: João Martins
+   8:mcu_stm32f10x.c **** 	Date: 01/11/2019
+   9:mcu_stm32f10x.c **** 
+  10:mcu_stm32f10x.c **** 	µCNC is free software: you can redistribute it and/or modify
+  11:mcu_stm32f10x.c **** 	it under the terms of the GNU General Public License as published by
+  12:mcu_stm32f10x.c **** 	the Free Software Foundation, either version 3 of the License, or
+  13:mcu_stm32f10x.c **** 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+  14:mcu_stm32f10x.c **** 
+  15:mcu_stm32f10x.c **** 	µCNC is distributed WITHOUT ANY WARRANTY;
+  16:mcu_stm32f10x.c **** 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  17:mcu_stm32f10x.c **** 	See the	GNU General Public License for more details.
+  18:mcu_stm32f10x.c **** */
+  19:mcu_stm32f10x.c **** 
+  20:mcu_stm32f10x.c **** #include "config.h"
+  21:mcu_stm32f10x.c **** #include "mcu.h"
+  22:mcu_stm32f10x.c **** //#include "stm32f1xx_hal.h"
+  23:mcu_stm32f10x.c **** //#include "system_stm32f10x.h"
+  24:mcu_stm32f10x.c **** //#include "serial.h"
+  25:mcu_stm32f10x.c **** /*
+  26:mcu_stm32f10x.c **** static void set_output(uint32_t apben, GPIO_TypeDef* PORT, uint32_t modeoval, uint32_t configoffset
+  27:mcu_stm32f10x.c **** {
+  28:mcu_stm32f10x.c **** 	RCC->APB2ENR |= apben;
+  29:mcu_stm32f10x.c **** 	GPIOReg->
+  30:mcu_stm32f10x.c **** }*/
+  31:mcu_stm32f10x.c **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 2
+
+
+  32:mcu_stm32f10x.c **** 
+  33:mcu_stm32f10x.c **** /*IO functions*/
+  34:mcu_stm32f10x.c **** #ifndef mcu_get_input
+  35:mcu_stm32f10x.c **** uint8_t mcu_get_input(uint8_t pin)
+  36:mcu_stm32f10x.c **** {
+  37:mcu_stm32f10x.c **** 
+  38:mcu_stm32f10x.c **** }
+  39:mcu_stm32f10x.c **** #endif
+  40:mcu_stm32f10x.c **** 
+  41:mcu_stm32f10x.c **** #ifndef mcu_get_output
+  42:mcu_stm32f10x.c **** uint8_t mcu_get_output(uint8_t pin)
+  43:mcu_stm32f10x.c **** {
+  44:mcu_stm32f10x.c **** 
+  45:mcu_stm32f10x.c **** }
+  46:mcu_stm32f10x.c **** #endif
+  47:mcu_stm32f10x.c **** 
+  48:mcu_stm32f10x.c **** #ifndef mcu_set_output
+  49:mcu_stm32f10x.c **** void mcu_set_output(uint8_t pin)
+  50:mcu_stm32f10x.c **** {
+  51:mcu_stm32f10x.c **** 
+  52:mcu_stm32f10x.c **** }
+  53:mcu_stm32f10x.c **** #endif
+  54:mcu_stm32f10x.c **** 
+  55:mcu_stm32f10x.c **** #ifndef mcu_clear_output
+  56:mcu_stm32f10x.c **** void mcu_clear_output(uint8_t pin)
+  57:mcu_stm32f10x.c **** {
+  58:mcu_stm32f10x.c **** 
+  59:mcu_stm32f10x.c **** }
+  60:mcu_stm32f10x.c **** #endif
+  61:mcu_stm32f10x.c **** 
+  62:mcu_stm32f10x.c **** #ifndef mcu_toggle_output
+  63:mcu_stm32f10x.c **** void mcu_toggle_output(uint8_t pin)
+  64:mcu_stm32f10x.c **** {
+  28              		.loc 1 64 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+  65:mcu_stm32f10x.c **** 
+  66:mcu_stm32f10x.c **** }
+  33              		.loc 1 66 1 view .LVU1
+  34 0000 7047     		bx	lr
+  35              		.cfi_endproc
+  36              	.LFE65:
+  38              		.section	.text.mcu_init,"ax",%progbits
+  39              		.align	1
+  40              		.global	mcu_init
+  41              		.syntax unified
+  42              		.thumb
+  43              		.thumb_func
+  44              		.fpu softvfp
+  46              	mcu_init:
+  47              	.LFB66:
+  67:mcu_stm32f10x.c **** #endif
+  68:mcu_stm32f10x.c **** 
+  69:mcu_stm32f10x.c **** 
+  70:mcu_stm32f10x.c **** void mcu_init(void)
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 3
+
+
+  71:mcu_stm32f10x.c **** {
+  48              		.loc 1 71 1 view -0
+  49              		.cfi_startproc
+  50              		@ args = 0, pretend = 0, frame = 0
+  51              		@ frame_needed = 0, uses_anonymous_args = 0
+  52              		@ link register save eliminated.
+  72:mcu_stm32f10x.c ****   
+  73:mcu_stm32f10x.c **** }
+  53              		.loc 1 73 1 view .LVU3
+  54 0000 7047     		bx	lr
+  55              		.cfi_endproc
+  56              	.LFE66:
+  58              		.section	.text.mcu_enable_probe_isr,"ax",%progbits
+  59              		.align	1
+  60              		.global	mcu_enable_probe_isr
+  61              		.syntax unified
+  62              		.thumb
+  63              		.thumb_func
+  64              		.fpu softvfp
+  66              	mcu_enable_probe_isr:
+  67              	.LFB67:
+  74:mcu_stm32f10x.c **** 
+  75:mcu_stm32f10x.c **** #ifndef mcu_enable_probe_isr
+  76:mcu_stm32f10x.c **** void mcu_enable_probe_isr(void)
+  77:mcu_stm32f10x.c **** {
+  68              		.loc 1 77 1 view -0
+  69              		.cfi_startproc
+  70              		@ args = 0, pretend = 0, frame = 0
+  71              		@ frame_needed = 0, uses_anonymous_args = 0
+  72              		@ link register save eliminated.
+  78:mcu_stm32f10x.c **** 
+  79:mcu_stm32f10x.c **** }
+  73              		.loc 1 79 1 view .LVU5
+  74 0000 7047     		bx	lr
+  75              		.cfi_endproc
+  76              	.LFE67:
+  78              		.section	.text.mcu_disable_probe_isr,"ax",%progbits
+  79              		.align	1
+  80              		.global	mcu_disable_probe_isr
+  81              		.syntax unified
+  82              		.thumb
+  83              		.thumb_func
+  84              		.fpu softvfp
+  86              	mcu_disable_probe_isr:
+  87              	.LFB68:
+  80:mcu_stm32f10x.c **** #endif
+  81:mcu_stm32f10x.c **** #ifndef mcu_disable_probe_isr
+  82:mcu_stm32f10x.c **** void mcu_disable_probe_isr(void)
+  83:mcu_stm32f10x.c **** {
+  88              		.loc 1 83 1 view -0
+  89              		.cfi_startproc
+  90              		@ args = 0, pretend = 0, frame = 0
+  91              		@ frame_needed = 0, uses_anonymous_args = 0
+  92              		@ link register save eliminated.
+  84:mcu_stm32f10x.c **** 
+  85:mcu_stm32f10x.c **** }
+  93              		.loc 1 85 1 view .LVU7
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 4
+
+
+  94 0000 7047     		bx	lr
+  95              		.cfi_endproc
+  96              	.LFE68:
+  98              		.section	.text.mcu_get_analog,"ax",%progbits
+  99              		.align	1
+ 100              		.global	mcu_get_analog
+ 101              		.syntax unified
+ 102              		.thumb
+ 103              		.thumb_func
+ 104              		.fpu softvfp
+ 106              	mcu_get_analog:
+ 107              	.LVL1:
+ 108              	.LFB69:
+  86:mcu_stm32f10x.c **** #endif
+  87:mcu_stm32f10x.c **** 
+  88:mcu_stm32f10x.c **** //Analog input
+  89:mcu_stm32f10x.c **** #ifndef mcu_get_analog
+  90:mcu_stm32f10x.c **** uint8_t mcu_get_analog(uint8_t channel)
+  91:mcu_stm32f10x.c **** {
+ 109              		.loc 1 91 1 view -0
+ 110              		.cfi_startproc
+ 111              		@ args = 0, pretend = 0, frame = 0
+ 112              		@ frame_needed = 0, uses_anonymous_args = 0
+ 113              		@ link register save eliminated.
+  92:mcu_stm32f10x.c **** 
+  93:mcu_stm32f10x.c **** }
+ 114              		.loc 1 93 1 view .LVU9
+ 115              	.LVL2:
+ 116              		.loc 1 93 1 is_stmt 0 view .LVU10
+ 117 0000 7047     		bx	lr
+ 118              		.cfi_endproc
+ 119              	.LFE69:
+ 121              		.section	.text.mcu_set_pwm,"ax",%progbits
+ 122              		.align	1
+ 123              		.global	mcu_set_pwm
+ 124              		.syntax unified
+ 125              		.thumb
+ 126              		.thumb_func
+ 127              		.fpu softvfp
+ 129              	mcu_set_pwm:
+ 130              	.LVL3:
+ 131              	.LFB70:
+  94:mcu_stm32f10x.c **** #endif
+  95:mcu_stm32f10x.c **** 
+  96:mcu_stm32f10x.c **** //PWM
+  97:mcu_stm32f10x.c **** #ifndef mcu_set_pwm
+  98:mcu_stm32f10x.c **** void mcu_set_pwm(uint8_t pwm, uint8_t value)
+  99:mcu_stm32f10x.c **** {
+ 132              		.loc 1 99 1 is_stmt 1 view -0
+ 133              		.cfi_startproc
+ 134              		@ args = 0, pretend = 0, frame = 0
+ 135              		@ frame_needed = 0, uses_anonymous_args = 0
+ 136              		@ link register save eliminated.
+ 100:mcu_stm32f10x.c **** 
+ 101:mcu_stm32f10x.c **** }
+ 137              		.loc 1 101 1 view .LVU12
+ 138 0000 7047     		bx	lr
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 5
+
+
+ 139              		.cfi_endproc
+ 140              	.LFE70:
+ 142              		.section	.text.mcu_get_pwm,"ax",%progbits
+ 143              		.align	1
+ 144              		.global	mcu_get_pwm
+ 145              		.syntax unified
+ 146              		.thumb
+ 147              		.thumb_func
+ 148              		.fpu softvfp
+ 150              	mcu_get_pwm:
+ 151              	.LVL4:
+ 152              	.LFB71:
+ 102:mcu_stm32f10x.c **** #endif
+ 103:mcu_stm32f10x.c **** 
+ 104:mcu_stm32f10x.c **** #ifndef mcu_get_pwm
+ 105:mcu_stm32f10x.c **** uint8_t mcu_get_pwm(uint8_t pwm)
+ 106:mcu_stm32f10x.c **** {
+ 153              		.loc 1 106 1 view -0
+ 154              		.cfi_startproc
+ 155              		@ args = 0, pretend = 0, frame = 0
+ 156              		@ frame_needed = 0, uses_anonymous_args = 0
+ 157              		@ link register save eliminated.
+ 107:mcu_stm32f10x.c **** 
+ 108:mcu_stm32f10x.c **** }
+ 158              		.loc 1 108 1 view .LVU14
+ 159              	.LVL5:
+ 160              		.loc 1 108 1 is_stmt 0 view .LVU15
+ 161 0000 7047     		bx	lr
+ 162              		.cfi_endproc
+ 163              	.LFE71:
+ 165              		.section	.text.mcu_start_send,"ax",%progbits
+ 166              		.align	1
+ 167              		.global	mcu_start_send
+ 168              		.syntax unified
+ 169              		.thumb
+ 170              		.thumb_func
+ 171              		.fpu softvfp
+ 173              	mcu_start_send:
+ 174              	.LFB72:
+ 109:mcu_stm32f10x.c **** #endif
+ 110:mcu_stm32f10x.c **** 
+ 111:mcu_stm32f10x.c **** //Communication functions
+ 112:mcu_stm32f10x.c **** void mcu_start_send(void)
+ 113:mcu_stm32f10x.c **** {
+ 175              		.loc 1 113 1 is_stmt 1 view -0
+ 176              		.cfi_startproc
+ 177              		@ args = 0, pretend = 0, frame = 0
+ 178              		@ frame_needed = 0, uses_anonymous_args = 0
+ 179              		@ link register save eliminated.
+ 114:mcu_stm32f10x.c **** 
+ 115:mcu_stm32f10x.c **** }
+ 180              		.loc 1 115 1 view .LVU17
+ 181 0000 7047     		bx	lr
+ 182              		.cfi_endproc
+ 183              	.LFE72:
+ 185              		.section	.text.mcu_stop_send,"ax",%progbits
+ 186              		.align	1
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 6
+
+
+ 187              		.global	mcu_stop_send
+ 188              		.syntax unified
+ 189              		.thumb
+ 190              		.thumb_func
+ 191              		.fpu softvfp
+ 193              	mcu_stop_send:
+ 194              	.LFB73:
+ 116:mcu_stm32f10x.c **** void mcu_stop_send(void)
+ 117:mcu_stm32f10x.c **** {
+ 195              		.loc 1 117 1 view -0
+ 196              		.cfi_startproc
+ 197              		@ args = 0, pretend = 0, frame = 0
+ 198              		@ frame_needed = 0, uses_anonymous_args = 0
+ 199              		@ link register save eliminated.
+ 118:mcu_stm32f10x.c **** 
+ 119:mcu_stm32f10x.c **** }
+ 200              		.loc 1 119 1 view .LVU19
+ 201 0000 7047     		bx	lr
+ 202              		.cfi_endproc
+ 203              	.LFE73:
+ 205              		.section	.text.mcu_putc,"ax",%progbits
+ 206              		.align	1
+ 207              		.global	mcu_putc
+ 208              		.syntax unified
+ 209              		.thumb
+ 210              		.thumb_func
+ 211              		.fpu softvfp
+ 213              	mcu_putc:
+ 214              	.LVL6:
+ 215              	.LFB74:
+ 120:mcu_stm32f10x.c **** 
+ 121:mcu_stm32f10x.c **** #ifdef RX_BUFFER_SIZE
+ 122:mcu_stm32f10x.c **** #undef RX_BUFFER_SIZE
+ 123:mcu_stm32f10x.c **** #endif
+ 124:mcu_stm32f10x.c **** #define RX_BUFFER_SIZE 129
+ 125:mcu_stm32f10x.c **** static unsigned char mcu_rx_buffer[RX_BUFFER_SIZE];
+ 126:mcu_stm32f10x.c **** 
+ 127:mcu_stm32f10x.c **** extern uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+ 128:mcu_stm32f10x.c **** 
+ 129:mcu_stm32f10x.c **** void mcu_putc(char c)
+ 130:mcu_stm32f10x.c **** {
+ 216              		.loc 1 130 1 view -0
+ 217              		.cfi_startproc
+ 218              		@ args = 0, pretend = 0, frame = 0
+ 219              		@ frame_needed = 0, uses_anonymous_args = 0
+ 220              		.loc 1 130 1 is_stmt 0 view .LVU21
+ 221 0000 08B5     		push	{r3, lr}
+ 222              	.LCFI0:
+ 223              		.cfi_def_cfa_offset 8
+ 224              		.cfi_offset 3, -8
+ 225              		.cfi_offset 14, -4
+ 131:mcu_stm32f10x.c **** 	static uint16_t i = 0;
+ 226              		.loc 1 131 2 is_stmt 1 view .LVU22
+ 132:mcu_stm32f10x.c **** 	mcu_rx_buffer[i++] = c;
+ 227              		.loc 1 132 2 view .LVU23
+ 228              		.loc 1 132 17 is_stmt 0 view .LVU24
+ 229 0002 094A     		ldr	r2, .L14
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 7
+
+
+ 230 0004 1388     		ldrh	r3, [r2]
+ 231 0006 591C     		adds	r1, r3, #1
+ 232 0008 89B2     		uxth	r1, r1
+ 233 000a 1180     		strh	r1, [r2]	@ movhi
+ 234              		.loc 1 132 21 view .LVU25
+ 235 000c 074A     		ldr	r2, .L14+4
+ 236 000e D054     		strb	r0, [r2, r3]
+ 133:mcu_stm32f10x.c **** 	if (c == '\n' || c == '\r')
+ 237              		.loc 1 133 2 is_stmt 1 view .LVU26
+ 238              		.loc 1 133 5 is_stmt 0 view .LVU27
+ 239 0010 0A28     		cmp	r0, #10
+ 240 0012 02D0     		beq	.L11
+ 241              		.loc 1 133 16 discriminator 1 view .LVU28
+ 242 0014 0D28     		cmp	r0, #13
+ 243 0016 00D0     		beq	.L11
+ 244              	.LVL7:
+ 245              	.L10:
+ 134:mcu_stm32f10x.c **** 	{
+ 135:mcu_stm32f10x.c **** 		CDC_Transmit_FS((uint8_t*)mcu_rx_buffer, i);
+ 136:mcu_stm32f10x.c **** 		i = 0;
+ 137:mcu_stm32f10x.c **** 	}
+ 138:mcu_stm32f10x.c **** }
+ 246              		.loc 1 138 1 view .LVU29
+ 247 0018 08BD     		pop	{r3, pc}
+ 248              	.LVL8:
+ 249              	.L11:
+ 135:mcu_stm32f10x.c **** 		i = 0;
+ 250              		.loc 1 135 3 is_stmt 1 view .LVU30
+ 251 001a 0448     		ldr	r0, .L14+4
+ 252              	.LVL9:
+ 135:mcu_stm32f10x.c **** 		i = 0;
+ 253              		.loc 1 135 3 is_stmt 0 view .LVU31
+ 254 001c FFF7FEFF 		bl	CDC_Transmit_FS
+ 255              	.LVL10:
+ 136:mcu_stm32f10x.c **** 	}
+ 256              		.loc 1 136 3 is_stmt 1 view .LVU32
+ 136:mcu_stm32f10x.c **** 	}
+ 257              		.loc 1 136 5 is_stmt 0 view .LVU33
+ 258 0020 014B     		ldr	r3, .L14
+ 259 0022 0022     		movs	r2, #0
+ 260 0024 1A80     		strh	r2, [r3]	@ movhi
+ 261              		.loc 1 138 1 view .LVU34
+ 262 0026 F7E7     		b	.L10
+ 263              	.L15:
+ 264              		.align	2
+ 265              	.L14:
+ 266 0028 00000000 		.word	.LANCHOR0
+ 267 002c 00000000 		.word	.LANCHOR1
+ 268              		.cfi_endproc
+ 269              	.LFE74:
+ 271              		.section	.text.mcu_getc,"ax",%progbits
+ 272              		.align	1
+ 273              		.global	mcu_getc
+ 274              		.syntax unified
+ 275              		.thumb
+ 276              		.thumb_func
+ 277              		.fpu softvfp
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 8
+
+
+ 279              	mcu_getc:
+ 280              	.LFB75:
+ 139:mcu_stm32f10x.c **** 
+ 140:mcu_stm32f10x.c **** char mcu_getc(void)
+ 141:mcu_stm32f10x.c **** {
+ 281              		.loc 1 141 1 is_stmt 1 view -0
+ 282              		.cfi_startproc
+ 283              		@ args = 0, pretend = 0, frame = 0
+ 284              		@ frame_needed = 0, uses_anonymous_args = 0
+ 285              		@ link register save eliminated.
+ 142:mcu_stm32f10x.c **** 
+ 143:mcu_stm32f10x.c **** }
+ 286              		.loc 1 143 1 view .LVU36
+ 287 0000 7047     		bx	lr
+ 288              		.cfi_endproc
+ 289              	.LFE75:
+ 291              		.section	.text.mcu_enable_interrupts,"ax",%progbits
+ 292              		.align	1
+ 293              		.global	mcu_enable_interrupts
+ 294              		.syntax unified
+ 295              		.thumb
+ 296              		.thumb_func
+ 297              		.fpu softvfp
+ 299              	mcu_enable_interrupts:
+ 300              	.LFB76:
+ 144:mcu_stm32f10x.c **** 
+ 145:mcu_stm32f10x.c **** //ISR
+ 146:mcu_stm32f10x.c **** //enables all interrupts on the mcu. Must be called to enable all IRS functions
+ 147:mcu_stm32f10x.c **** #ifndef mcu_enable_interrupts
+ 148:mcu_stm32f10x.c **** void mcu_enable_interrupts(void)
+ 149:mcu_stm32f10x.c **** {
+ 301              		.loc 1 149 1 view -0
+ 302              		.cfi_startproc
+ 303              		@ args = 0, pretend = 0, frame = 0
+ 304              		@ frame_needed = 0, uses_anonymous_args = 0
+ 305              		@ link register save eliminated.
+ 150:mcu_stm32f10x.c **** 
+ 151:mcu_stm32f10x.c **** }
+ 306              		.loc 1 151 1 view .LVU38
+ 307 0000 7047     		bx	lr
+ 308              		.cfi_endproc
+ 309              	.LFE76:
+ 311              		.section	.text.mcu_disable_interrupts,"ax",%progbits
+ 312              		.align	1
+ 313              		.global	mcu_disable_interrupts
+ 314              		.syntax unified
+ 315              		.thumb
+ 316              		.thumb_func
+ 317              		.fpu softvfp
+ 319              	mcu_disable_interrupts:
+ 320              	.LFB77:
+ 152:mcu_stm32f10x.c **** #endif
+ 153:mcu_stm32f10x.c **** //disables all ISR functions
+ 154:mcu_stm32f10x.c **** #ifndef mcu_disable_interrupts
+ 155:mcu_stm32f10x.c **** void mcu_disable_interrupts(void)
+ 156:mcu_stm32f10x.c **** {
+ 321              		.loc 1 156 1 view -0
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 9
+
+
+ 322              		.cfi_startproc
+ 323              		@ args = 0, pretend = 0, frame = 0
+ 324              		@ frame_needed = 0, uses_anonymous_args = 0
+ 325              		@ link register save eliminated.
+ 157:mcu_stm32f10x.c **** 
+ 158:mcu_stm32f10x.c **** }
+ 326              		.loc 1 158 1 view .LVU40
+ 327 0000 7047     		bx	lr
+ 328              		.cfi_endproc
+ 329              	.LFE77:
+ 331              		.section	.text.mcu_freq_to_clocks,"ax",%progbits
+ 332              		.align	1
+ 333              		.global	mcu_freq_to_clocks
+ 334              		.syntax unified
+ 335              		.thumb
+ 336              		.thumb_func
+ 337              		.fpu softvfp
+ 339              	mcu_freq_to_clocks:
+ 340              	.LVL11:
+ 341              	.LFB78:
+ 159:mcu_stm32f10x.c **** #endif
+ 160:mcu_stm32f10x.c **** 
+ 161:mcu_stm32f10x.c **** //Timers
+ 162:mcu_stm32f10x.c **** //convert step rate to clock cycles
+ 163:mcu_stm32f10x.c **** void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
+ 164:mcu_stm32f10x.c **** {
+ 342              		.loc 1 164 1 view -0
+ 343              		.cfi_startproc
+ 344              		@ args = 0, pretend = 0, frame = 0
+ 345              		@ frame_needed = 0, uses_anonymous_args = 0
+ 346              		@ link register save eliminated.
+ 165:mcu_stm32f10x.c **** 
+ 166:mcu_stm32f10x.c **** }
+ 347              		.loc 1 166 1 view .LVU42
+ 348 0000 7047     		bx	lr
+ 349              		.cfi_endproc
+ 350              	.LFE78:
+ 352              		.section	.text.mcu_start_step_ISR,"ax",%progbits
+ 353              		.align	1
+ 354              		.global	mcu_start_step_ISR
+ 355              		.syntax unified
+ 356              		.thumb
+ 357              		.thumb_func
+ 358              		.fpu softvfp
+ 360              	mcu_start_step_ISR:
+ 361              	.LVL12:
+ 362              	.LFB79:
+ 167:mcu_stm32f10x.c **** //starts a constant rate pulse at a given frequency.
+ 168:mcu_stm32f10x.c **** void mcu_start_step_ISR(uint16_t ticks, uint8_t prescaller)
+ 169:mcu_stm32f10x.c **** {
+ 363              		.loc 1 169 1 view -0
+ 364              		.cfi_startproc
+ 365              		@ args = 0, pretend = 0, frame = 0
+ 366              		@ frame_needed = 0, uses_anonymous_args = 0
+ 367              		@ link register save eliminated.
+ 170:mcu_stm32f10x.c **** 	
+ 171:mcu_stm32f10x.c **** }
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 10
+
+
+ 368              		.loc 1 171 1 view .LVU44
+ 369 0000 7047     		bx	lr
+ 370              		.cfi_endproc
+ 371              	.LFE79:
+ 373              		.section	.text.mcu_change_step_ISR,"ax",%progbits
+ 374              		.align	1
+ 375              		.global	mcu_change_step_ISR
+ 376              		.syntax unified
+ 377              		.thumb
+ 378              		.thumb_func
+ 379              		.fpu softvfp
+ 381              	mcu_change_step_ISR:
+ 382              	.LVL13:
+ 383              	.LFB80:
+ 172:mcu_stm32f10x.c **** //modifies the pulse frequency
+ 173:mcu_stm32f10x.c **** void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller)
+ 174:mcu_stm32f10x.c **** {
+ 384              		.loc 1 174 1 view -0
+ 385              		.cfi_startproc
+ 386              		@ args = 0, pretend = 0, frame = 0
+ 387              		@ frame_needed = 0, uses_anonymous_args = 0
+ 388              		@ link register save eliminated.
+ 175:mcu_stm32f10x.c **** 	
+ 176:mcu_stm32f10x.c **** }
+ 389              		.loc 1 176 1 view .LVU46
+ 390 0000 7047     		bx	lr
+ 391              		.cfi_endproc
+ 392              	.LFE80:
+ 394              		.section	.text.mcu_step_stop_ISR,"ax",%progbits
+ 395              		.align	1
+ 396              		.global	mcu_step_stop_ISR
+ 397              		.syntax unified
+ 398              		.thumb
+ 399              		.thumb_func
+ 400              		.fpu softvfp
+ 402              	mcu_step_stop_ISR:
+ 403              	.LFB81:
+ 177:mcu_stm32f10x.c **** //stops the pulse
+ 178:mcu_stm32f10x.c **** void mcu_step_stop_ISR(void)
+ 179:mcu_stm32f10x.c **** {
+ 404              		.loc 1 179 1 view -0
+ 405              		.cfi_startproc
+ 406              		@ args = 0, pretend = 0, frame = 0
+ 407              		@ frame_needed = 0, uses_anonymous_args = 0
+ 408              		@ link register save eliminated.
+ 180:mcu_stm32f10x.c **** 	
+ 181:mcu_stm32f10x.c **** }
+ 409              		.loc 1 181 1 view .LVU48
+ 410 0000 7047     		bx	lr
+ 411              		.cfi_endproc
+ 412              	.LFE81:
+ 414              		.section	.text.mcu_eeprom_getc,"ax",%progbits
+ 415              		.align	1
+ 416              		.global	mcu_eeprom_getc
+ 417              		.syntax unified
+ 418              		.thumb
+ 419              		.thumb_func
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 11
+
+
+ 420              		.fpu softvfp
+ 422              	mcu_eeprom_getc:
+ 423              	.LVL14:
+ 424              	.LFB82:
+ 182:mcu_stm32f10x.c **** 
+ 183:mcu_stm32f10x.c **** //Custom delay function
+ 184:mcu_stm32f10x.c **** //void mcu_delay_ms(uint16_t miliseconds);
+ 185:mcu_stm32f10x.c **** 
+ 186:mcu_stm32f10x.c **** //Non volatile memory
+ 187:mcu_stm32f10x.c **** uint8_t mcu_eeprom_getc(uint16_t address)
+ 188:mcu_stm32f10x.c **** {
+ 425              		.loc 1 188 1 view -0
+ 426              		.cfi_startproc
+ 427              		@ args = 0, pretend = 0, frame = 0
+ 428              		@ frame_needed = 0, uses_anonymous_args = 0
+ 429              		@ link register save eliminated.
+ 189:mcu_stm32f10x.c **** 	
+ 190:mcu_stm32f10x.c **** }
+ 430              		.loc 1 190 1 view .LVU50
+ 431              	.LVL15:
+ 432              		.loc 1 190 1 is_stmt 0 view .LVU51
+ 433 0000 7047     		bx	lr
+ 434              		.cfi_endproc
+ 435              	.LFE82:
+ 437              		.section	.text.mcu_eeprom_putc,"ax",%progbits
+ 438              		.align	1
+ 439              		.global	mcu_eeprom_putc
+ 440              		.syntax unified
+ 441              		.thumb
+ 442              		.thumb_func
+ 443              		.fpu softvfp
+ 445              	mcu_eeprom_putc:
+ 446              	.LVL16:
+ 447              	.LFB83:
+ 191:mcu_stm32f10x.c **** 
+ 192:mcu_stm32f10x.c **** void mcu_eeprom_putc(uint16_t address, uint8_t value)
+ 193:mcu_stm32f10x.c **** {
+ 448              		.loc 1 193 1 is_stmt 1 view -0
+ 449              		.cfi_startproc
+ 450              		@ args = 0, pretend = 0, frame = 0
+ 451              		@ frame_needed = 0, uses_anonymous_args = 0
+ 452              		@ link register save eliminated.
+ 194:mcu_stm32f10x.c **** 	
+ 195:mcu_stm32f10x.c **** }
+ 453              		.loc 1 195 1 view .LVU53
+ 454 0000 7047     		bx	lr
+ 455              		.cfi_endproc
+ 456              	.LFE83:
+ 458              		.section	.bss.i.6158,"aw",%nobits
+ 459              		.align	1
+ 460              		.set	.LANCHOR0,. + 0
+ 463              	i.6158:
+ 464 0000 0000     		.space	2
+ 465              		.section	.bss.mcu_rx_buffer,"aw",%nobits
+ 466              		.align	2
+ 467              		.set	.LANCHOR1,. + 0
+ 470              	mcu_rx_buffer:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 12
+
+
+ 471 0000 00000000 		.space	129
+ 471      00000000 
+ 471      00000000 
+ 471      00000000 
+ 471      00000000 
+ 472              		.text
+ 473              	.Letext0:
+ 474              		.file 2 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 475              		.file 3 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 476              		.file 4 "Drivers/CMSIS/Include/core_cm3.h"
+ 477              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
+ 478              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h"
+ 479              		.file 7 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\lib\\gcc\\arm-none
+ 480              		.file 8 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 481              		.file 9 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 482              		.file 10 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s 			page 13
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 mcu_stm32f10x.c
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:16     .text.mcu_toggle_output:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:24     .text.mcu_toggle_output:00000000 mcu_toggle_output
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:39     .text.mcu_init:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:46     .text.mcu_init:00000000 mcu_init
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:59     .text.mcu_enable_probe_isr:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:66     .text.mcu_enable_probe_isr:00000000 mcu_enable_probe_isr
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:79     .text.mcu_disable_probe_isr:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:86     .text.mcu_disable_probe_isr:00000000 mcu_disable_probe_isr
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:99     .text.mcu_get_analog:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:106    .text.mcu_get_analog:00000000 mcu_get_analog
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:122    .text.mcu_set_pwm:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:129    .text.mcu_set_pwm:00000000 mcu_set_pwm
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:143    .text.mcu_get_pwm:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:150    .text.mcu_get_pwm:00000000 mcu_get_pwm
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:166    .text.mcu_start_send:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:173    .text.mcu_start_send:00000000 mcu_start_send
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:186    .text.mcu_stop_send:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:193    .text.mcu_stop_send:00000000 mcu_stop_send
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:206    .text.mcu_putc:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:213    .text.mcu_putc:00000000 mcu_putc
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:266    .text.mcu_putc:00000028 $d
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:272    .text.mcu_getc:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:279    .text.mcu_getc:00000000 mcu_getc
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:292    .text.mcu_enable_interrupts:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:299    .text.mcu_enable_interrupts:00000000 mcu_enable_interrupts
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:312    .text.mcu_disable_interrupts:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:319    .text.mcu_disable_interrupts:00000000 mcu_disable_interrupts
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:332    .text.mcu_freq_to_clocks:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:339    .text.mcu_freq_to_clocks:00000000 mcu_freq_to_clocks
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:353    .text.mcu_start_step_ISR:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:360    .text.mcu_start_step_ISR:00000000 mcu_start_step_ISR
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:374    .text.mcu_change_step_ISR:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:381    .text.mcu_change_step_ISR:00000000 mcu_change_step_ISR
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:395    .text.mcu_step_stop_ISR:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:402    .text.mcu_step_stop_ISR:00000000 mcu_step_stop_ISR
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:415    .text.mcu_eeprom_getc:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:422    .text.mcu_eeprom_getc:00000000 mcu_eeprom_getc
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:438    .text.mcu_eeprom_putc:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:445    .text.mcu_eeprom_putc:00000000 mcu_eeprom_putc
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:459    .bss.i.6158:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:463    .bss.i.6158:00000000 i.6158
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:466    .bss.mcu_rx_buffer:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\cce7veiF.s:470    .bss.mcu_rx_buffer:00000000 mcu_rx_buffer
+
+UNDEFINED SYMBOLS
+CDC_Transmit_FS

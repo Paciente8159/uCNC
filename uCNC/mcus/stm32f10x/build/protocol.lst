@@ -1,0 +1,2820 @@
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.eabi_attribute 20, 1
+   3              		.eabi_attribute 21, 1
+   4              		.eabi_attribute 23, 3
+   5              		.eabi_attribute 24, 1
+   6              		.eabi_attribute 25, 1
+   7              		.eabi_attribute 26, 1
+   8              		.eabi_attribute 30, 1
+   9              		.eabi_attribute 34, 1
+  10              		.eabi_attribute 18, 4
+  11              		.file	"protocol.c"
+  12              		.text
+  13              	.Ltext0:
+  14              		.cfi_sections	.debug_frame
+  15              		.section	.text.procotol_send_newline,"ax",%progbits
+  16              		.align	1
+  17              		.arch armv7-m
+  18              		.syntax unified
+  19              		.thumb
+  20              		.thumb_func
+  21              		.fpu softvfp
+  23              	procotol_send_newline:
+  24              	.LFB65:
+  25              		.file 1 "../../protocol.c"
+   1:../../protocol.c **** /*
+   2:../../protocol.c **** 	Name: protocol.h
+   3:../../protocol.c **** 	Description: µCNC implementation of a Grbl compatible send-response protocol
+   4:../../protocol.c **** 	Copyright: Copyright (c) João Martins
+   5:../../protocol.c **** 	Author: João Martins
+   6:../../protocol.c **** 	Date: 19/09/2019
+   7:../../protocol.c **** 
+   8:../../protocol.c **** 	µCNC is free software: you can redistribute it and/or modify
+   9:../../protocol.c **** 	it under the terms of the GNU General Public License as published by
+  10:../../protocol.c **** 	the Free Software Foundation, either version 3 of the License, or
+  11:../../protocol.c **** 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+  12:../../protocol.c **** 
+  13:../../protocol.c **** 	µCNC is distributed WITHOUT ANY WARRANTY;
+  14:../../protocol.c **** 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  15:../../protocol.c **** 	See the	GNU General Public License for more details.
+  16:../../protocol.c **** */
+  17:../../protocol.c **** 
+  18:../../protocol.c **** #include "config.h"
+  19:../../protocol.c **** #include "utils.h"
+  20:../../protocol.c **** #include "settings.h"
+  21:../../protocol.c **** #include "serial.h"
+  22:../../protocol.c **** #include "interpolator.h"
+  23:../../protocol.c **** #include "io_control.h"
+  24:../../protocol.c **** #include "motion_control.h"
+  25:../../protocol.c **** #include "parser.h"
+  26:../../protocol.c **** #include "kinematics.h"
+  27:../../protocol.c **** #include "planner.h"
+  28:../../protocol.c **** #include "cnc.h"
+  29:../../protocol.c **** #include "mcu.h"
+  30:../../protocol.c **** #include "protocol.h"
+  31:../../protocol.c **** 
+  32:../../protocol.c **** static void procotol_send_newline(void)
+  33:../../protocol.c **** {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 2
+
+
+  26              		.loc 1 33 1 view -0
+  27              		.cfi_startproc
+  28              		@ args = 0, pretend = 0, frame = 0
+  29              		@ frame_needed = 0, uses_anonymous_args = 0
+  30 0000 08B5     		push	{r3, lr}
+  31              	.LCFI0:
+  32              		.cfi_def_cfa_offset 8
+  33              		.cfi_offset 3, -8
+  34              		.cfi_offset 14, -4
+  34:../../protocol.c ****     serial_putc('\r');
+  35              		.loc 1 34 5 view .LVU1
+  36 0002 0D20     		movs	r0, #13
+  37 0004 FFF7FEFF 		bl	serial_putc
+  38              	.LVL0:
+  35:../../protocol.c ****     serial_putc('\n');
+  39              		.loc 1 35 5 view .LVU2
+  40 0008 0A20     		movs	r0, #10
+  41 000a FFF7FEFF 		bl	serial_putc
+  42              	.LVL1:
+  36:../../protocol.c **** }
+  43              		.loc 1 36 1 is_stmt 0 view .LVU3
+  44 000e 08BD     		pop	{r3, pc}
+  45              		.cfi_endproc
+  46              	.LFE65:
+  48              		.section	.text.protocol_send_gcode_setting_line_int,"ax",%progbits
+  49              		.align	1
+  50              		.syntax unified
+  51              		.thumb
+  52              		.thumb_func
+  53              		.fpu softvfp
+  55              	protocol_send_gcode_setting_line_int:
+  56              	.LVL2:
+  57              	.LFB75:
+  37:../../protocol.c **** 
+  38:../../protocol.c **** void protocol_send_ok(void)
+  39:../../protocol.c **** {
+  40:../../protocol.c ****     serial_print_str(__romstr__("ok"));
+  41:../../protocol.c ****     procotol_send_newline();
+  42:../../protocol.c **** }
+  43:../../protocol.c **** 
+  44:../../protocol.c **** void protocol_send_error(uint8_t error)
+  45:../../protocol.c **** {
+  46:../../protocol.c ****     serial_print_str(__romstr__("error:"));
+  47:../../protocol.c ****     serial_print_int(error);
+  48:../../protocol.c ****     procotol_send_newline();
+  49:../../protocol.c **** }
+  50:../../protocol.c **** 
+  51:../../protocol.c **** void protocol_send_alarm(uint8_t alarm)
+  52:../../protocol.c **** {
+  53:../../protocol.c ****     serial_print_str(__romstr__("ALARM:"));
+  54:../../protocol.c ****     serial_print_int(alarm);
+  55:../../protocol.c ****     procotol_send_newline();
+  56:../../protocol.c **** }
+  57:../../protocol.c **** 
+  58:../../protocol.c **** void protocol_send_string(const unsigned char* __s)
+  59:../../protocol.c **** {
+  60:../../protocol.c ****     serial_print_str(__s);
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 3
+
+
+  61:../../protocol.c **** }
+  62:../../protocol.c **** 
+  63:../../protocol.c **** static uint8_t protocol_get_tools(void)
+  64:../../protocol.c **** {
+  65:../../protocol.c ****     uint8_t modalgroups[9];
+  66:../../protocol.c ****     uint16_t feed;
+  67:../../protocol.c ****     uint16_t spindle;
+  68:../../protocol.c **** 
+  69:../../protocol.c ****     parser_get_modes(modalgroups, &feed, &spindle);
+  70:../../protocol.c **** 
+  71:../../protocol.c ****     uint8_t result = 0;
+  72:../../protocol.c **** #ifdef USE_COOLANT
+  73:../../protocol.c ****     result = 9 - modalgroups[6];
+  74:../../protocol.c **** #endif
+  75:../../protocol.c **** #ifdef USE_SPINDLE
+  76:../../protocol.c ****     if(modalgroups[5] != 5)
+  77:../../protocol.c ****     {
+  78:../../protocol.c ****         result |= ((modalgroups[5] == 3) ? 4 : 8);
+  79:../../protocol.c ****     }
+  80:../../protocol.c **** #endif
+  81:../../protocol.c ****     return result;
+  82:../../protocol.c **** }
+  83:../../protocol.c **** 
+  84:../../protocol.c **** static void protocol_send_status_tail(void)
+  85:../../protocol.c **** {
+  86:../../protocol.c ****     float axis[MAX(AXIS_COUNT,3)];
+  87:../../protocol.c ****     if(parser_get_wco(axis))
+  88:../../protocol.c ****     {
+  89:../../protocol.c ****         serial_print_str(__romstr__("|WCO:"));
+  90:../../protocol.c ****         serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+  91:../../protocol.c ****         return;
+  92:../../protocol.c ****     }
+  93:../../protocol.c **** 
+  94:../../protocol.c ****     uint8_t ovr[3];
+  95:../../protocol.c ****     if(planner_get_overflows(ovr))
+  96:../../protocol.c ****     {
+  97:../../protocol.c ****         serial_print_str(__romstr__("|Ov:"));
+  98:../../protocol.c ****         serial_print_int(ovr[0]);
+  99:../../protocol.c ****         serial_putc(',');
+ 100:../../protocol.c ****         serial_print_int(ovr[1]);
+ 101:../../protocol.c ****         serial_putc(',');
+ 102:../../protocol.c ****         serial_print_int(ovr[2]);
+ 103:../../protocol.c ****         uint8_t tools = protocol_get_tools();
+ 104:../../protocol.c ****         if(tools)
+ 105:../../protocol.c ****         {
+ 106:../../protocol.c ****             serial_print_str(__romstr__("|A:"));
+ 107:../../protocol.c ****             if(CHECKFLAG(tools, 4))
+ 108:../../protocol.c ****             {
+ 109:../../protocol.c ****                 serial_putc('S');
+ 110:../../protocol.c ****             }
+ 111:../../protocol.c ****             if(CHECKFLAG(tools, 8))
+ 112:../../protocol.c ****             {
+ 113:../../protocol.c ****                 serial_putc('C');
+ 114:../../protocol.c ****             }
+ 115:../../protocol.c ****             if(CHECKFLAG(tools, 1))
+ 116:../../protocol.c ****             {
+ 117:../../protocol.c ****                 serial_putc('F');
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 4
+
+
+ 118:../../protocol.c ****             }
+ 119:../../protocol.c **** 
+ 120:../../protocol.c ****             if(CHECKFLAG(tools, 2))
+ 121:../../protocol.c ****             {
+ 122:../../protocol.c ****                 serial_putc('M');
+ 123:../../protocol.c ****             }
+ 124:../../protocol.c ****         }
+ 125:../../protocol.c ****         return;
+ 126:../../protocol.c ****     }
+ 127:../../protocol.c **** }
+ 128:../../protocol.c **** 
+ 129:../../protocol.c **** void protocol_send_status(void)
+ 130:../../protocol.c **** {
+ 131:../../protocol.c ****     float axis[MAX(AXIS_COUNT,3)];
+ 132:../../protocol.c **** 
+ 133:../../protocol.c ****     //only send report when buffer is empty
+ 134:../../protocol.c ****     //this prevents locks and stack overflow of the cnc_doevents()
+ 135:../../protocol.c ****     /*if(!serial_tx_is_empty())
+ 136:../../protocol.c ****     {
+ 137:../../protocol.c ****     	return;
+ 138:../../protocol.c ****     }*/
+ 139:../../protocol.c **** 
+ 140:../../protocol.c ****     itp_get_rt_position((float*)&axis);
+ 141:../../protocol.c ****     kinematics_apply_reverse_transform((float*)&axis);
+ 142:../../protocol.c ****     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+ 143:../../protocol.c ****     #ifdef USE_SPINDLE
+ 144:../../protocol.c ****     uint16_t spindle = itp_get_rt_spindle();
+ 145:../../protocol.c ****     #endif
+ 146:../../protocol.c ****     uint8_t controls = io_get_controls();
+ 147:../../protocol.c ****     uint8_t limits = io_get_limits();
+ 148:../../protocol.c ****     uint8_t state = cnc_get_exec_state(0xFF);
+ 149:../../protocol.c ****     uint8_t filter = 0x80;
+ 150:../../protocol.c ****     while(!(state & filter) && filter)
+ 151:../../protocol.c ****     {
+ 152:../../protocol.c ****         filter >>= 1;
+ 153:../../protocol.c ****     }
+ 154:../../protocol.c **** 
+ 155:../../protocol.c ****     state &= filter;
+ 156:../../protocol.c **** 
+ 157:../../protocol.c ****     serial_putc('<');
+ 158:../../protocol.c ****     if(!mc_get_checkmode() || cnc_get_exec_state(EXEC_ALARM))
+ 159:../../protocol.c ****     {
+ 160:../../protocol.c ****         switch(state)
+ 161:../../protocol.c ****         {
+ 162:../../protocol.c ****             case EXEC_ABORT:
+ 163:../../protocol.c ****                 serial_print_str(__romstr__("Abort"));
+ 164:../../protocol.c ****                 break;
+ 165:../../protocol.c ****             case EXEC_DOOR:
+ 166:../../protocol.c ****                 serial_print_str(__romstr__("Door:"));
+ 167:../../protocol.c ****                 if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
+ 168:../../protocol.c ****                 {
+ 169:../../protocol.c **** 
+ 170:../../protocol.c ****                     if(cnc_get_exec_state(EXEC_RUN))
+ 171:../../protocol.c ****                     {
+ 172:../../protocol.c ****                         serial_putc('2');
+ 173:../../protocol.c ****                     }
+ 174:../../protocol.c ****                     else
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 5
+
+
+ 175:../../protocol.c ****                     {
+ 176:../../protocol.c ****                         serial_putc('1');
+ 177:../../protocol.c ****                     }
+ 178:../../protocol.c ****                 }
+ 179:../../protocol.c ****                 else
+ 180:../../protocol.c ****                 {
+ 181:../../protocol.c ****                     if(cnc_get_exec_state(EXEC_RUN))
+ 182:../../protocol.c ****                     {
+ 183:../../protocol.c ****                         serial_putc('3');
+ 184:../../protocol.c ****                     }
+ 185:../../protocol.c ****                     else
+ 186:../../protocol.c ****                     {
+ 187:../../protocol.c ****                         serial_putc('0');
+ 188:../../protocol.c ****                     }
+ 189:../../protocol.c ****                 }
+ 190:../../protocol.c ****                 break;
+ 191:../../protocol.c ****             case EXEC_LIMITS:
+ 192:../../protocol.c ****             case EXEC_NOHOME:
+ 193:../../protocol.c ****                 serial_print_str(__romstr__("Alarm"));
+ 194:../../protocol.c ****                 break;
+ 195:../../protocol.c ****             case EXEC_HOLD:
+ 196:../../protocol.c ****                 serial_print_str(__romstr__("Hold:"));
+ 197:../../protocol.c ****                 if(cnc_get_exec_state(EXEC_RUN))
+ 198:../../protocol.c ****                 {
+ 199:../../protocol.c ****                     serial_putc('1');
+ 200:../../protocol.c ****                 }
+ 201:../../protocol.c ****                 else
+ 202:../../protocol.c ****                 {
+ 203:../../protocol.c ****                     serial_putc('0');
+ 204:../../protocol.c ****                 }
+ 205:../../protocol.c ****                 break;
+ 206:../../protocol.c ****             case EXEC_HOMING:
+ 207:../../protocol.c ****                 serial_print_str(__romstr__("Home"));
+ 208:../../protocol.c ****                 break;
+ 209:../../protocol.c ****             case EXEC_JOG:
+ 210:../../protocol.c ****                 serial_print_str(__romstr__("Jog"));
+ 211:../../protocol.c ****                 break;
+ 212:../../protocol.c ****             case EXEC_RUN:
+ 213:../../protocol.c ****                 serial_print_str(__romstr__("Run"));
+ 214:../../protocol.c ****                 break;
+ 215:../../protocol.c ****             default:
+ 216:../../protocol.c ****                 serial_print_str(__romstr__("Idle"));
+ 217:../../protocol.c ****                 break;
+ 218:../../protocol.c ****         }
+ 219:../../protocol.c ****     }
+ 220:../../protocol.c ****     else
+ 221:../../protocol.c ****     {
+ 222:../../protocol.c ****         serial_print_str(__romstr__("Check"));
+ 223:../../protocol.c ****     }
+ 224:../../protocol.c ****     
+ 225:../../protocol.c ****     serial_print_str(__romstr__("|MPos:"));
+ 226:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 227:../../protocol.c **** 
+ 228:../../protocol.c **** #ifdef USE_SPINDLE
+ 229:../../protocol.c ****     serial_print_str(__romstr__("|FS:"));
+ 230:../../protocol.c **** #else
+ 231:../../protocol.c ****     serial_print_str(__romstr__("|F:"));
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 6
+
+
+ 232:../../protocol.c **** #endif
+ 233:../../protocol.c ****     serial_print_int((uint16_t)feed);
+ 234:../../protocol.c **** #ifdef USE_SPINDLE
+ 235:../../protocol.c ****     serial_putc(',');
+ 236:../../protocol.c ****     serial_print_int(spindle);
+ 237:../../protocol.c **** #endif
+ 238:../../protocol.c **** 
+ 239:../../protocol.c **** #ifdef GCODE_PROCESS_LINE_NUMBERS
+ 240:../../protocol.c ****     serial_print_str(__romstr__("|Ln:"));
+ 241:../../protocol.c ****     serial_print_long(itp_get_rt_line_number());
+ 242:../../protocol.c **** #endif
+ 243:../../protocol.c **** 
+ 244:../../protocol.c ****     if(CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) | CHECKFLAG(limits, LIMITS
+ 245:../../protocol.c ****     {
+ 246:../../protocol.c ****         serial_print_str(__romstr__("|Pn:"));
+ 247:../../protocol.c **** 
+ 248:../../protocol.c ****         if(CHECKFLAG(controls, ESTOP_MASK))
+ 249:../../protocol.c ****         {
+ 250:../../protocol.c ****             serial_putc('R');
+ 251:../../protocol.c ****         }
+ 252:../../protocol.c **** 
+ 253:../../protocol.c ****         if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
+ 254:../../protocol.c ****         {
+ 255:../../protocol.c ****             serial_putc('D');
+ 256:../../protocol.c ****         }
+ 257:../../protocol.c **** 
+ 258:../../protocol.c ****         if(CHECKFLAG(controls, FHOLD_MASK))
+ 259:../../protocol.c ****         {
+ 260:../../protocol.c ****             serial_putc('H');
+ 261:../../protocol.c ****         }
+ 262:../../protocol.c **** 
+ 263:../../protocol.c ****         if(io_get_probe())
+ 264:../../protocol.c ****         {
+ 265:../../protocol.c ****             serial_putc('P');
+ 266:../../protocol.c ****         }
+ 267:../../protocol.c **** 
+ 268:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_X_MASK))
+ 269:../../protocol.c ****         {
+ 270:../../protocol.c ****             serial_putc('X');
+ 271:../../protocol.c ****         }
+ 272:../../protocol.c **** 
+ 273:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_Y_MASK))
+ 274:../../protocol.c ****         {
+ 275:../../protocol.c ****             serial_putc('Y');
+ 276:../../protocol.c ****         }
+ 277:../../protocol.c **** 
+ 278:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_Z_MASK))
+ 279:../../protocol.c ****         {
+ 280:../../protocol.c ****             serial_putc('Z');
+ 281:../../protocol.c ****         }
+ 282:../../protocol.c **** 
+ 283:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_A_MASK))
+ 284:../../protocol.c ****         {
+ 285:../../protocol.c ****             serial_putc('A');
+ 286:../../protocol.c ****         }
+ 287:../../protocol.c **** 
+ 288:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_B_MASK))
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 7
+
+
+ 289:../../protocol.c ****         {
+ 290:../../protocol.c ****             serial_putc('B');
+ 291:../../protocol.c ****         }
+ 292:../../protocol.c **** 
+ 293:../../protocol.c ****         if(CHECKFLAG(limits, LIMIT_C_MASK))
+ 294:../../protocol.c ****         {
+ 295:../../protocol.c ****             serial_putc('C');
+ 296:../../protocol.c ****         }
+ 297:../../protocol.c ****     }
+ 298:../../protocol.c **** 
+ 299:../../protocol.c ****     protocol_send_status_tail();
+ 300:../../protocol.c ****     /*
+ 301:../../protocol.c ****     #ifdef __PERFSTATS__
+ 302:../../protocol.c ****     uint16_t stepclocks = mcu_get_step_clocks();
+ 303:../../protocol.c ****     uint16_t stepresetclocks = mcu_get_step_reset_clocks();
+ 304:../../protocol.c ****     protocol_printf(__romstr__("|Perf:%d,%d"), stepclocks, stepresetclocks);
+ 305:../../protocol.c ****     #endif
+ 306:../../protocol.c ****     */
+ 307:../../protocol.c ****     serial_putc('>');
+ 308:../../protocol.c ****     procotol_send_newline();
+ 309:../../protocol.c **** }
+ 310:../../protocol.c **** 
+ 311:../../protocol.c **** void protocol_send_gcode_coordsys(void)
+ 312:../../protocol.c **** {
+ 313:../../protocol.c **** 	float axis[MAX(AXIS_COUNT,3)];
+ 314:../../protocol.c ****     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
+ 315:../../protocol.c ****     for(uint8_t i = 0; i < coordlimit; i++)
+ 316:../../protocol.c ****     {
+ 317:../../protocol.c ****         parser_get_coordsys(i, (float*)&axis);
+ 318:../../protocol.c ****         serial_print_str(__romstr__("[G"));
+ 319:../../protocol.c ****         serial_print_int(i + 54);
+ 320:../../protocol.c ****         serial_putc(':');
+ 321:../../protocol.c ****         serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 322:../../protocol.c ****         serial_putc(']');
+ 323:../../protocol.c ****         procotol_send_newline();
+ 324:../../protocol.c ****     }
+ 325:../../protocol.c **** 
+ 326:../../protocol.c ****     for(uint8_t i = 6; i < COORD_SYS_COUNT; i++)
+ 327:../../protocol.c ****     {
+ 328:../../protocol.c ****         serial_print_int(i - 5);
+ 329:../../protocol.c ****         serial_putc(':');
+ 330:../../protocol.c ****         parser_get_coordsys(i, (float*)&axis);
+ 331:../../protocol.c ****         serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 332:../../protocol.c ****         serial_putc(']');
+ 333:../../protocol.c ****         procotol_send_newline();
+ 334:../../protocol.c ****     }
+ 335:../../protocol.c **** 
+ 336:../../protocol.c ****     serial_print_str(__romstr__("[G28:"));
+ 337:../../protocol.c ****     parser_get_coordsys(28, (float*)&axis);
+ 338:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 339:../../protocol.c ****     serial_putc(']');
+ 340:../../protocol.c ****     procotol_send_newline();
+ 341:../../protocol.c **** 
+ 342:../../protocol.c ****     serial_print_str(__romstr__("[G30:"));
+ 343:../../protocol.c ****     parser_get_coordsys(30, (float*)&axis);
+ 344:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 345:../../protocol.c ****     serial_putc(']');
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 8
+
+
+ 346:../../protocol.c ****     procotol_send_newline();
+ 347:../../protocol.c **** 
+ 348:../../protocol.c ****     serial_print_str(__romstr__("[G92:"));
+ 349:../../protocol.c ****     parser_get_coordsys(92, (float*)&axis);
+ 350:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 351:../../protocol.c ****     serial_putc(']');
+ 352:../../protocol.c ****     procotol_send_newline();
+ 353:../../protocol.c ****     
+ 354:../../protocol.c ****     #ifdef AXIS_TOOL
+ 355:../../protocol.c ****     serial_print_str(__romstr__("[TLO:"));
+ 356:../../protocol.c ****     parser_get_coordsys(254, (float*)&axis);
+ 357:../../protocol.c ****     serial_print_flt(axis[0]);
+ 358:../../protocol.c ****     serial_putc(']');
+ 359:../../protocol.c ****     procotol_send_newline();
+ 360:../../protocol.c ****     #endif
+ 361:../../protocol.c **** 
+ 362:../../protocol.c ****     serial_print_str(__romstr__("[PRB:"));
+ 363:../../protocol.c ****     parser_get_coordsys(255, (float*)&axis);
+ 364:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 365:../../protocol.c ****     serial_putc(':');
+ 366:../../protocol.c ****     serial_putc('0' + parser_get_probe_result());
+ 367:../../protocol.c ****     serial_putc(']');
+ 368:../../protocol.c ****     procotol_send_newline();
+ 369:../../protocol.c **** }
+ 370:../../protocol.c **** 
+ 371:../../protocol.c **** void protocol_send_gcode_modes(void)
+ 372:../../protocol.c **** {
+ 373:../../protocol.c ****     uint8_t modalgroups[9];
+ 374:../../protocol.c ****     uint16_t feed;
+ 375:../../protocol.c ****     uint16_t spindle;
+ 376:../../protocol.c **** 
+ 377:../../protocol.c ****     parser_get_modes(modalgroups, &feed, &spindle);
+ 378:../../protocol.c **** 
+ 379:../../protocol.c ****     serial_print_str(__romstr__("[GC:"));
+ 380:../../protocol.c **** 
+ 381:../../protocol.c ****     for(uint8_t i = 0; i < 5; i++)
+ 382:../../protocol.c ****     {
+ 383:../../protocol.c ****         serial_putc('G');
+ 384:../../protocol.c ****         serial_print_int((int16_t)modalgroups[i]);
+ 385:../../protocol.c ****         serial_putc(' ');
+ 386:../../protocol.c ****     }
+ 387:../../protocol.c **** 
+ 388:../../protocol.c ****     for(uint8_t i = 5; i < 8; i++)
+ 389:../../protocol.c ****     {
+ 390:../../protocol.c ****         serial_putc('M');
+ 391:../../protocol.c ****         serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
+ 392:../../protocol.c ****         serial_putc(' ');
+ 393:../../protocol.c ****     }
+ 394:../../protocol.c **** 
+ 395:../../protocol.c ****     serial_putc('T');
+ 396:../../protocol.c ****     serial_print_int(modalgroups[8]);
+ 397:../../protocol.c ****     serial_putc(' ');
+ 398:../../protocol.c **** 
+ 399:../../protocol.c ****     serial_putc('F');
+ 400:../../protocol.c ****     serial_print_int(feed);
+ 401:../../protocol.c ****     serial_putc(' ');
+ 402:../../protocol.c **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 9
+
+
+ 403:../../protocol.c ****     serial_putc('S');
+ 404:../../protocol.c ****     serial_print_int(spindle);
+ 405:../../protocol.c **** 
+ 406:../../protocol.c ****     serial_putc(']');
+ 407:../../protocol.c ****     procotol_send_newline();
+ 408:../../protocol.c **** }
+ 409:../../protocol.c **** 
+ 410:../../protocol.c **** static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
+ 411:../../protocol.c **** {
+  58              		.loc 1 411 1 is_stmt 1 view -0
+  59              		.cfi_startproc
+  60              		@ args = 0, pretend = 0, frame = 0
+  61              		@ frame_needed = 0, uses_anonymous_args = 0
+  62              		.loc 1 411 1 is_stmt 0 view .LVU5
+  63 0000 38B5     		push	{r3, r4, r5, lr}
+  64              	.LCFI1:
+  65              		.cfi_def_cfa_offset 16
+  66              		.cfi_offset 3, -16
+  67              		.cfi_offset 4, -12
+  68              		.cfi_offset 5, -8
+  69              		.cfi_offset 14, -4
+  70 0002 0546     		mov	r5, r0
+  71 0004 0C46     		mov	r4, r1
+ 412:../../protocol.c ****     serial_putc('$');
+  72              		.loc 1 412 5 is_stmt 1 view .LVU6
+  73 0006 2420     		movs	r0, #36
+  74              	.LVL3:
+  75              		.loc 1 412 5 is_stmt 0 view .LVU7
+  76 0008 FFF7FEFF 		bl	serial_putc
+  77              	.LVL4:
+ 413:../../protocol.c ****     serial_print_int(setting);
+  78              		.loc 1 413 5 is_stmt 1 view .LVU8
+  79 000c 2846     		mov	r0, r5
+  80 000e FFF7FEFF 		bl	serial_print_int
+  81              	.LVL5:
+ 414:../../protocol.c ****     serial_putc('=');
+  82              		.loc 1 414 5 view .LVU9
+  83 0012 3D20     		movs	r0, #61
+  84 0014 FFF7FEFF 		bl	serial_putc
+  85              	.LVL6:
+ 415:../../protocol.c ****     serial_print_int(value);
+  86              		.loc 1 415 5 view .LVU10
+  87 0018 2046     		mov	r0, r4
+  88 001a FFF7FEFF 		bl	serial_print_int
+  89              	.LVL7:
+ 416:../../protocol.c ****     procotol_send_newline();
+  90              		.loc 1 416 5 view .LVU11
+  91 001e FFF7FEFF 		bl	procotol_send_newline
+  92              	.LVL8:
+ 417:../../protocol.c **** }
+  93              		.loc 1 417 1 is_stmt 0 view .LVU12
+  94 0022 38BD     		pop	{r3, r4, r5, pc}
+  95              		.cfi_endproc
+  96              	.LFE75:
+  98              		.section	.text.protocol_get_tools,"ax",%progbits
+  99              		.align	1
+ 100              		.syntax unified
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 10
+
+
+ 101              		.thumb
+ 102              		.thumb_func
+ 103              		.fpu softvfp
+ 105              	protocol_get_tools:
+ 106              	.LFB70:
+  64:../../protocol.c ****     uint8_t modalgroups[9];
+ 107              		.loc 1 64 1 is_stmt 1 view -0
+ 108              		.cfi_startproc
+ 109              		@ args = 0, pretend = 0, frame = 16
+ 110              		@ frame_needed = 0, uses_anonymous_args = 0
+ 111 0000 00B5     		push	{lr}
+ 112              	.LCFI2:
+ 113              		.cfi_def_cfa_offset 4
+ 114              		.cfi_offset 14, -4
+ 115 0002 85B0     		sub	sp, sp, #20
+ 116              	.LCFI3:
+ 117              		.cfi_def_cfa_offset 24
+  65:../../protocol.c ****     uint16_t feed;
+ 118              		.loc 1 65 5 view .LVU14
+  66:../../protocol.c ****     uint16_t spindle;
+ 119              		.loc 1 66 5 view .LVU15
+  67:../../protocol.c **** 
+ 120              		.loc 1 67 5 view .LVU16
+  69:../../protocol.c **** 
+ 121              		.loc 1 69 5 view .LVU17
+ 122 0004 6A46     		mov	r2, sp
+ 123 0006 0DF10201 		add	r1, sp, #2
+ 124 000a 01A8     		add	r0, sp, #4
+ 125 000c FFF7FEFF 		bl	parser_get_modes
+ 126              	.LVL9:
+  71:../../protocol.c **** #ifdef USE_COOLANT
+ 127              		.loc 1 71 5 view .LVU18
+  81:../../protocol.c **** }
+ 128              		.loc 1 81 5 view .LVU19
+  82:../../protocol.c **** 
+ 129              		.loc 1 82 1 is_stmt 0 view .LVU20
+ 130 0010 0020     		movs	r0, #0
+ 131 0012 05B0     		add	sp, sp, #20
+ 132              	.LCFI4:
+ 133              		.cfi_def_cfa_offset 4
+ 134              		@ sp needed
+ 135 0014 5DF804FB 		ldr	pc, [sp], #4
+ 136              		.cfi_endproc
+ 137              	.LFE70:
+ 139              		.section	.rodata.protocol_send_status_tail.str1.4,"aMS",%progbits,1
+ 140              		.align	2
+ 141              	.LC0:
+ 142 0000 7C57434F 		.ascii	"|WCO:\000"
+ 142      3A00
+ 143 0006 0000     		.align	2
+ 144              	.LC1:
+ 145 0008 7C4F763A 		.ascii	"|Ov:\000"
+ 145      00
+ 146 000d 000000   		.align	2
+ 147              	.LC2:
+ 148 0010 7C413A00 		.ascii	"|A:\000"
+ 149              		.section	.text.protocol_send_status_tail,"ax",%progbits
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 11
+
+
+ 150              		.align	1
+ 151              		.syntax unified
+ 152              		.thumb
+ 153              		.thumb_func
+ 154              		.fpu softvfp
+ 156              	protocol_send_status_tail:
+ 157              	.LFB71:
+  85:../../protocol.c ****     float axis[MAX(AXIS_COUNT,3)];
+ 158              		.loc 1 85 1 is_stmt 1 view -0
+ 159              		.cfi_startproc
+ 160              		@ args = 0, pretend = 0, frame = 16
+ 161              		@ frame_needed = 0, uses_anonymous_args = 0
+ 162 0000 10B5     		push	{r4, lr}
+ 163              	.LCFI5:
+ 164              		.cfi_def_cfa_offset 8
+ 165              		.cfi_offset 4, -8
+ 166              		.cfi_offset 14, -4
+ 167 0002 84B0     		sub	sp, sp, #16
+ 168              	.LCFI6:
+ 169              		.cfi_def_cfa_offset 24
+  86:../../protocol.c ****     if(parser_get_wco(axis))
+ 170              		.loc 1 86 5 view .LVU22
+  87:../../protocol.c ****     {
+ 171              		.loc 1 87 5 view .LVU23
+  87:../../protocol.c ****     {
+ 172              		.loc 1 87 8 is_stmt 0 view .LVU24
+ 173 0004 01A8     		add	r0, sp, #4
+ 174 0006 FFF7FEFF 		bl	parser_get_wco
+ 175              	.LVL10:
+  87:../../protocol.c ****     {
+ 176              		.loc 1 87 7 view .LVU25
+ 177 000a 28B9     		cbnz	r0, .L17
+  94:../../protocol.c ****     if(planner_get_overflows(ovr))
+ 178              		.loc 1 94 5 is_stmt 1 view .LVU26
+  95:../../protocol.c ****     {
+ 179              		.loc 1 95 5 view .LVU27
+  95:../../protocol.c ****     {
+ 180              		.loc 1 95 8 is_stmt 0 view .LVU28
+ 181 000c 6846     		mov	r0, sp
+ 182 000e FFF7FEFF 		bl	planner_get_overflows
+ 183              	.LVL11:
+  95:../../protocol.c ****     {
+ 184              		.loc 1 95 7 view .LVU29
+ 185 0012 48B9     		cbnz	r0, .L18
+ 186              	.L7:
+ 127:../../protocol.c **** 
+ 187              		.loc 1 127 1 view .LVU30
+ 188 0014 04B0     		add	sp, sp, #16
+ 189              	.LCFI7:
+ 190              		.cfi_remember_state
+ 191              		.cfi_def_cfa_offset 8
+ 192              		@ sp needed
+ 193 0016 10BD     		pop	{r4, pc}
+ 194              	.L17:
+ 195              	.LCFI8:
+ 196              		.cfi_restore_state
+  89:../../protocol.c ****         serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 12
+
+
+ 197              		.loc 1 89 9 is_stmt 1 view .LVU31
+ 198 0018 2048     		ldr	r0, .L22
+ 199 001a FFF7FEFF 		bl	serial_print_str
+ 200              	.LVL12:
+  90:../../protocol.c ****         return;
+ 201              		.loc 1 90 9 view .LVU32
+ 202 001e 0321     		movs	r1, #3
+ 203 0020 01A8     		add	r0, sp, #4
+ 204 0022 FFF7FEFF 		bl	serial_print_fltarr
+ 205              	.LVL13:
+  91:../../protocol.c ****     }
+ 206              		.loc 1 91 9 view .LVU33
+ 207 0026 F5E7     		b	.L7
+ 208              	.L18:
+ 209              	.LBB2:
+  97:../../protocol.c ****         serial_print_int(ovr[0]);
+ 210              		.loc 1 97 9 view .LVU34
+ 211 0028 1D48     		ldr	r0, .L22+4
+ 212 002a FFF7FEFF 		bl	serial_print_str
+ 213              	.LVL14:
+  98:../../protocol.c ****         serial_putc(',');
+ 214              		.loc 1 98 9 view .LVU35
+ 215 002e 9DF80000 		ldrb	r0, [sp]	@ zero_extendqisi2
+ 216 0032 FFF7FEFF 		bl	serial_print_int
+ 217              	.LVL15:
+  99:../../protocol.c ****         serial_print_int(ovr[1]);
+ 218              		.loc 1 99 9 view .LVU36
+ 219 0036 2C20     		movs	r0, #44
+ 220 0038 FFF7FEFF 		bl	serial_putc
+ 221              	.LVL16:
+ 100:../../protocol.c ****         serial_putc(',');
+ 222              		.loc 1 100 9 view .LVU37
+ 223 003c 9DF80100 		ldrb	r0, [sp, #1]	@ zero_extendqisi2
+ 224 0040 FFF7FEFF 		bl	serial_print_int
+ 225              	.LVL17:
+ 101:../../protocol.c ****         serial_print_int(ovr[2]);
+ 226              		.loc 1 101 9 view .LVU38
+ 227 0044 2C20     		movs	r0, #44
+ 228 0046 FFF7FEFF 		bl	serial_putc
+ 229              	.LVL18:
+ 102:../../protocol.c ****         uint8_t tools = protocol_get_tools();
+ 230              		.loc 1 102 9 view .LVU39
+ 231 004a 9DF80200 		ldrb	r0, [sp, #2]	@ zero_extendqisi2
+ 232 004e FFF7FEFF 		bl	serial_print_int
+ 233              	.LVL19:
+ 103:../../protocol.c ****         if(tools)
+ 234              		.loc 1 103 9 view .LVU40
+ 103:../../protocol.c ****         if(tools)
+ 235              		.loc 1 103 25 is_stmt 0 view .LVU41
+ 236 0052 FFF7FEFF 		bl	protocol_get_tools
+ 237              	.LVL20:
+ 104:../../protocol.c ****         {
+ 238              		.loc 1 104 9 is_stmt 1 view .LVU42
+ 104:../../protocol.c ****         {
+ 239              		.loc 1 104 11 is_stmt 0 view .LVU43
+ 240 0056 0446     		mov	r4, r0
+ 241 0058 0028     		cmp	r0, #0
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 13
+
+
+ 242 005a DBD0     		beq	.L7
+ 106:../../protocol.c ****             if(CHECKFLAG(tools, 4))
+ 243              		.loc 1 106 13 is_stmt 1 view .LVU44
+ 244 005c 1148     		ldr	r0, .L22+8
+ 245              	.LVL21:
+ 106:../../protocol.c ****             if(CHECKFLAG(tools, 4))
+ 246              		.loc 1 106 13 is_stmt 0 view .LVU45
+ 247 005e FFF7FEFF 		bl	serial_print_str
+ 248              	.LVL22:
+ 107:../../protocol.c ****             {
+ 249              		.loc 1 107 13 is_stmt 1 view .LVU46
+ 107:../../protocol.c ****             {
+ 250              		.loc 1 107 15 is_stmt 0 view .LVU47
+ 251 0062 14F0040F 		tst	r4, #4
+ 252 0066 0CD1     		bne	.L19
+ 253              	.L12:
+ 111:../../protocol.c ****             {
+ 254              		.loc 1 111 13 is_stmt 1 view .LVU48
+ 111:../../protocol.c ****             {
+ 255              		.loc 1 111 15 is_stmt 0 view .LVU49
+ 256 0068 14F0080F 		tst	r4, #8
+ 257 006c 0DD1     		bne	.L20
+ 258              	.L13:
+ 115:../../protocol.c ****             {
+ 259              		.loc 1 115 13 is_stmt 1 view .LVU50
+ 115:../../protocol.c ****             {
+ 260              		.loc 1 115 15 is_stmt 0 view .LVU51
+ 261 006e 14F0010F 		tst	r4, #1
+ 262 0072 0ED1     		bne	.L21
+ 263              	.L14:
+ 120:../../protocol.c ****             {
+ 264              		.loc 1 120 13 is_stmt 1 view .LVU52
+ 120:../../protocol.c ****             {
+ 265              		.loc 1 120 15 is_stmt 0 view .LVU53
+ 266 0074 14F0020F 		tst	r4, #2
+ 267 0078 CCD0     		beq	.L7
+ 122:../../protocol.c ****             }
+ 268              		.loc 1 122 17 is_stmt 1 view .LVU54
+ 269 007a 4D20     		movs	r0, #77
+ 270 007c FFF7FEFF 		bl	serial_putc
+ 271              	.LVL23:
+ 125:../../protocol.c ****     }
+ 272              		.loc 1 125 9 view .LVU55
+ 273 0080 C8E7     		b	.L7
+ 274              	.L19:
+ 109:../../protocol.c ****             }
+ 275              		.loc 1 109 17 view .LVU56
+ 276 0082 5320     		movs	r0, #83
+ 277 0084 FFF7FEFF 		bl	serial_putc
+ 278              	.LVL24:
+ 279 0088 EEE7     		b	.L12
+ 280              	.L20:
+ 113:../../protocol.c ****             }
+ 281              		.loc 1 113 17 view .LVU57
+ 282 008a 4320     		movs	r0, #67
+ 283 008c FFF7FEFF 		bl	serial_putc
+ 284              	.LVL25:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 14
+
+
+ 285 0090 EDE7     		b	.L13
+ 286              	.L21:
+ 117:../../protocol.c ****             }
+ 287              		.loc 1 117 17 view .LVU58
+ 288 0092 4620     		movs	r0, #70
+ 289 0094 FFF7FEFF 		bl	serial_putc
+ 290              	.LVL26:
+ 291 0098 ECE7     		b	.L14
+ 292              	.L23:
+ 293 009a 00BF     		.align	2
+ 294              	.L22:
+ 295 009c 00000000 		.word	.LC0
+ 296 00a0 08000000 		.word	.LC1
+ 297 00a4 10000000 		.word	.LC2
+ 298              	.LBE2:
+ 299              		.cfi_endproc
+ 300              	.LFE71:
+ 302              		.section	.text.protocol_send_gcode_setting_line_flt,"ax",%progbits
+ 303              		.align	1
+ 304              		.syntax unified
+ 305              		.thumb
+ 306              		.thumb_func
+ 307              		.fpu softvfp
+ 309              	protocol_send_gcode_setting_line_flt:
+ 310              	.LVL27:
+ 311              	.LFB76:
+ 418:../../protocol.c **** 
+ 419:../../protocol.c **** static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
+ 420:../../protocol.c **** {
+ 312              		.loc 1 420 1 view -0
+ 313              		.cfi_startproc
+ 314              		@ args = 0, pretend = 0, frame = 0
+ 315              		@ frame_needed = 0, uses_anonymous_args = 0
+ 316              		.loc 1 420 1 is_stmt 0 view .LVU60
+ 317 0000 38B5     		push	{r3, r4, r5, lr}
+ 318              	.LCFI9:
+ 319              		.cfi_def_cfa_offset 16
+ 320              		.cfi_offset 3, -16
+ 321              		.cfi_offset 4, -12
+ 322              		.cfi_offset 5, -8
+ 323              		.cfi_offset 14, -4
+ 324 0002 0546     		mov	r5, r0
+ 325 0004 0C46     		mov	r4, r1
+ 421:../../protocol.c ****     serial_putc('$');
+ 326              		.loc 1 421 5 is_stmt 1 view .LVU61
+ 327 0006 2420     		movs	r0, #36
+ 328              	.LVL28:
+ 329              		.loc 1 421 5 is_stmt 0 view .LVU62
+ 330 0008 FFF7FEFF 		bl	serial_putc
+ 331              	.LVL29:
+ 422:../../protocol.c ****     serial_print_int(setting);
+ 332              		.loc 1 422 5 is_stmt 1 view .LVU63
+ 333 000c 2846     		mov	r0, r5
+ 334 000e FFF7FEFF 		bl	serial_print_int
+ 335              	.LVL30:
+ 423:../../protocol.c ****     serial_putc('=');
+ 336              		.loc 1 423 5 view .LVU64
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 15
+
+
+ 337 0012 3D20     		movs	r0, #61
+ 338 0014 FFF7FEFF 		bl	serial_putc
+ 339              	.LVL31:
+ 424:../../protocol.c ****     serial_print_flt(value);
+ 340              		.loc 1 424 5 view .LVU65
+ 341 0018 2046     		mov	r0, r4
+ 342 001a FFF7FEFF 		bl	serial_print_flt
+ 343              	.LVL32:
+ 425:../../protocol.c ****     procotol_send_newline();
+ 344              		.loc 1 425 5 view .LVU66
+ 345 001e FFF7FEFF 		bl	procotol_send_newline
+ 346              	.LVL33:
+ 426:../../protocol.c **** }
+ 347              		.loc 1 426 1 is_stmt 0 view .LVU67
+ 348 0022 38BD     		pop	{r3, r4, r5, pc}
+ 349              		.loc 1 426 1 view .LVU68
+ 350              		.cfi_endproc
+ 351              	.LFE76:
+ 353              		.section	.rodata.protocol_send_ok.str1.4,"aMS",%progbits,1
+ 354              		.align	2
+ 355              	.LC3:
+ 356 0000 6F6B00   		.ascii	"ok\000"
+ 357              		.section	.text.protocol_send_ok,"ax",%progbits
+ 358              		.align	1
+ 359              		.global	protocol_send_ok
+ 360              		.syntax unified
+ 361              		.thumb
+ 362              		.thumb_func
+ 363              		.fpu softvfp
+ 365              	protocol_send_ok:
+ 366              	.LFB66:
+  39:../../protocol.c ****     serial_print_str(__romstr__("ok"));
+ 367              		.loc 1 39 1 is_stmt 1 view -0
+ 368              		.cfi_startproc
+ 369              		@ args = 0, pretend = 0, frame = 0
+ 370              		@ frame_needed = 0, uses_anonymous_args = 0
+ 371 0000 08B5     		push	{r3, lr}
+ 372              	.LCFI10:
+ 373              		.cfi_def_cfa_offset 8
+ 374              		.cfi_offset 3, -8
+ 375              		.cfi_offset 14, -4
+  40:../../protocol.c ****     procotol_send_newline();
+ 376              		.loc 1 40 5 view .LVU70
+ 377 0002 0348     		ldr	r0, .L28
+ 378 0004 FFF7FEFF 		bl	serial_print_str
+ 379              	.LVL34:
+  41:../../protocol.c **** }
+ 380              		.loc 1 41 5 view .LVU71
+ 381 0008 FFF7FEFF 		bl	procotol_send_newline
+ 382              	.LVL35:
+  42:../../protocol.c **** 
+ 383              		.loc 1 42 1 is_stmt 0 view .LVU72
+ 384 000c 08BD     		pop	{r3, pc}
+ 385              	.L29:
+ 386 000e 00BF     		.align	2
+ 387              	.L28:
+ 388 0010 00000000 		.word	.LC3
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 16
+
+
+ 389              		.cfi_endproc
+ 390              	.LFE66:
+ 392              		.section	.rodata.protocol_send_error.str1.4,"aMS",%progbits,1
+ 393              		.align	2
+ 394              	.LC4:
+ 395 0000 6572726F 		.ascii	"error:\000"
+ 395      723A00
+ 396              		.section	.text.protocol_send_error,"ax",%progbits
+ 397              		.align	1
+ 398              		.global	protocol_send_error
+ 399              		.syntax unified
+ 400              		.thumb
+ 401              		.thumb_func
+ 402              		.fpu softvfp
+ 404              	protocol_send_error:
+ 405              	.LVL36:
+ 406              	.LFB67:
+  45:../../protocol.c ****     serial_print_str(__romstr__("error:"));
+ 407              		.loc 1 45 1 is_stmt 1 view -0
+ 408              		.cfi_startproc
+ 409              		@ args = 0, pretend = 0, frame = 0
+ 410              		@ frame_needed = 0, uses_anonymous_args = 0
+  45:../../protocol.c ****     serial_print_str(__romstr__("error:"));
+ 411              		.loc 1 45 1 is_stmt 0 view .LVU74
+ 412 0000 10B5     		push	{r4, lr}
+ 413              	.LCFI11:
+ 414              		.cfi_def_cfa_offset 8
+ 415              		.cfi_offset 4, -8
+ 416              		.cfi_offset 14, -4
+ 417 0002 0446     		mov	r4, r0
+  46:../../protocol.c ****     serial_print_int(error);
+ 418              		.loc 1 46 5 is_stmt 1 view .LVU75
+ 419 0004 0448     		ldr	r0, .L32
+ 420              	.LVL37:
+  46:../../protocol.c ****     serial_print_int(error);
+ 421              		.loc 1 46 5 is_stmt 0 view .LVU76
+ 422 0006 FFF7FEFF 		bl	serial_print_str
+ 423              	.LVL38:
+  47:../../protocol.c ****     procotol_send_newline();
+ 424              		.loc 1 47 5 is_stmt 1 view .LVU77
+ 425 000a 2046     		mov	r0, r4
+ 426 000c FFF7FEFF 		bl	serial_print_int
+ 427              	.LVL39:
+  48:../../protocol.c **** }
+ 428              		.loc 1 48 5 view .LVU78
+ 429 0010 FFF7FEFF 		bl	procotol_send_newline
+ 430              	.LVL40:
+  49:../../protocol.c **** 
+ 431              		.loc 1 49 1 is_stmt 0 view .LVU79
+ 432 0014 10BD     		pop	{r4, pc}
+ 433              	.L33:
+ 434 0016 00BF     		.align	2
+ 435              	.L32:
+ 436 0018 00000000 		.word	.LC4
+ 437              		.cfi_endproc
+ 438              	.LFE67:
+ 440              		.section	.rodata.protocol_send_alarm.str1.4,"aMS",%progbits,1
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 17
+
+
+ 441              		.align	2
+ 442              	.LC5:
+ 443 0000 414C4152 		.ascii	"ALARM:\000"
+ 443      4D3A00
+ 444              		.section	.text.protocol_send_alarm,"ax",%progbits
+ 445              		.align	1
+ 446              		.global	protocol_send_alarm
+ 447              		.syntax unified
+ 448              		.thumb
+ 449              		.thumb_func
+ 450              		.fpu softvfp
+ 452              	protocol_send_alarm:
+ 453              	.LVL41:
+ 454              	.LFB68:
+  52:../../protocol.c ****     serial_print_str(__romstr__("ALARM:"));
+ 455              		.loc 1 52 1 is_stmt 1 view -0
+ 456              		.cfi_startproc
+ 457              		@ args = 0, pretend = 0, frame = 0
+ 458              		@ frame_needed = 0, uses_anonymous_args = 0
+  52:../../protocol.c ****     serial_print_str(__romstr__("ALARM:"));
+ 459              		.loc 1 52 1 is_stmt 0 view .LVU81
+ 460 0000 10B5     		push	{r4, lr}
+ 461              	.LCFI12:
+ 462              		.cfi_def_cfa_offset 8
+ 463              		.cfi_offset 4, -8
+ 464              		.cfi_offset 14, -4
+ 465 0002 0446     		mov	r4, r0
+  53:../../protocol.c ****     serial_print_int(alarm);
+ 466              		.loc 1 53 5 is_stmt 1 view .LVU82
+ 467 0004 0448     		ldr	r0, .L36
+ 468              	.LVL42:
+  53:../../protocol.c ****     serial_print_int(alarm);
+ 469              		.loc 1 53 5 is_stmt 0 view .LVU83
+ 470 0006 FFF7FEFF 		bl	serial_print_str
+ 471              	.LVL43:
+  54:../../protocol.c ****     procotol_send_newline();
+ 472              		.loc 1 54 5 is_stmt 1 view .LVU84
+ 473 000a 2046     		mov	r0, r4
+ 474 000c FFF7FEFF 		bl	serial_print_int
+ 475              	.LVL44:
+  55:../../protocol.c **** }
+ 476              		.loc 1 55 5 view .LVU85
+ 477 0010 FFF7FEFF 		bl	procotol_send_newline
+ 478              	.LVL45:
+  56:../../protocol.c **** 
+ 479              		.loc 1 56 1 is_stmt 0 view .LVU86
+ 480 0014 10BD     		pop	{r4, pc}
+ 481              	.L37:
+ 482 0016 00BF     		.align	2
+ 483              	.L36:
+ 484 0018 00000000 		.word	.LC5
+ 485              		.cfi_endproc
+ 486              	.LFE68:
+ 488              		.section	.text.protocol_send_string,"ax",%progbits
+ 489              		.align	1
+ 490              		.global	protocol_send_string
+ 491              		.syntax unified
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 18
+
+
+ 492              		.thumb
+ 493              		.thumb_func
+ 494              		.fpu softvfp
+ 496              	protocol_send_string:
+ 497              	.LVL46:
+ 498              	.LFB69:
+  59:../../protocol.c ****     serial_print_str(__s);
+ 499              		.loc 1 59 1 is_stmt 1 view -0
+ 500              		.cfi_startproc
+ 501              		@ args = 0, pretend = 0, frame = 0
+ 502              		@ frame_needed = 0, uses_anonymous_args = 0
+  59:../../protocol.c ****     serial_print_str(__s);
+ 503              		.loc 1 59 1 is_stmt 0 view .LVU88
+ 504 0000 08B5     		push	{r3, lr}
+ 505              	.LCFI13:
+ 506              		.cfi_def_cfa_offset 8
+ 507              		.cfi_offset 3, -8
+ 508              		.cfi_offset 14, -4
+  60:../../protocol.c **** }
+ 509              		.loc 1 60 5 is_stmt 1 view .LVU89
+ 510 0002 FFF7FEFF 		bl	serial_print_str
+ 511              	.LVL47:
+  61:../../protocol.c **** 
+ 512              		.loc 1 61 1 is_stmt 0 view .LVU90
+ 513 0006 08BD     		pop	{r3, pc}
+ 514              		.cfi_endproc
+ 515              	.LFE69:
+ 517              		.global	__aeabi_fmul
+ 518              		.section	.rodata.protocol_send_status.str1.4,"aMS",%progbits,1
+ 519              		.align	2
+ 520              	.LC6:
+ 521 0000 41626F72 		.ascii	"Abort\000"
+ 521      7400
+ 522 0006 0000     		.align	2
+ 523              	.LC7:
+ 524 0008 446F6F72 		.ascii	"Door:\000"
+ 524      3A00
+ 525 000e 0000     		.align	2
+ 526              	.LC8:
+ 527 0010 416C6172 		.ascii	"Alarm\000"
+ 527      6D00
+ 528 0016 0000     		.align	2
+ 529              	.LC9:
+ 530 0018 486F6C64 		.ascii	"Hold:\000"
+ 530      3A00
+ 531 001e 0000     		.align	2
+ 532              	.LC10:
+ 533 0020 486F6D65 		.ascii	"Home\000"
+ 533      00
+ 534 0025 000000   		.align	2
+ 535              	.LC11:
+ 536 0028 4A6F6700 		.ascii	"Jog\000"
+ 537              		.align	2
+ 538              	.LC12:
+ 539 002c 52756E00 		.ascii	"Run\000"
+ 540              		.align	2
+ 541              	.LC13:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 19
+
+
+ 542 0030 49646C65 		.ascii	"Idle\000"
+ 542      00
+ 543 0035 000000   		.align	2
+ 544              	.LC14:
+ 545 0038 43686563 		.ascii	"Check\000"
+ 545      6B00
+ 546 003e 0000     		.align	2
+ 547              	.LC15:
+ 548 0040 7C4D506F 		.ascii	"|MPos:\000"
+ 548      733A00
+ 549 0047 00       		.align	2
+ 550              	.LC16:
+ 551 0048 7C463A00 		.ascii	"|F:\000"
+ 552              		.global	__aeabi_f2uiz
+ 553              		.align	2
+ 554              	.LC17:
+ 555 004c 7C506E3A 		.ascii	"|Pn:\000"
+ 555      00
+ 556              		.section	.text.protocol_send_status,"ax",%progbits
+ 557              		.align	1
+ 558              		.global	protocol_send_status
+ 559              		.syntax unified
+ 560              		.thumb
+ 561              		.thumb_func
+ 562              		.fpu softvfp
+ 564              	protocol_send_status:
+ 565              	.LFB72:
+ 130:../../protocol.c ****     float axis[MAX(AXIS_COUNT,3)];
+ 566              		.loc 1 130 1 is_stmt 1 view -0
+ 567              		.cfi_startproc
+ 568              		@ args = 0, pretend = 0, frame = 16
+ 569              		@ frame_needed = 0, uses_anonymous_args = 0
+ 570 0000 F0B5     		push	{r4, r5, r6, r7, lr}
+ 571              	.LCFI14:
+ 572              		.cfi_def_cfa_offset 20
+ 573              		.cfi_offset 4, -20
+ 574              		.cfi_offset 5, -16
+ 575              		.cfi_offset 6, -12
+ 576              		.cfi_offset 7, -8
+ 577              		.cfi_offset 14, -4
+ 578 0002 85B0     		sub	sp, sp, #20
+ 579              	.LCFI15:
+ 580              		.cfi_def_cfa_offset 40
+ 131:../../protocol.c **** 
+ 581              		.loc 1 131 5 view .LVU92
+ 140:../../protocol.c ****     kinematics_apply_reverse_transform((float*)&axis);
+ 582              		.loc 1 140 5 view .LVU93
+ 583 0004 01A8     		add	r0, sp, #4
+ 584 0006 FFF7FEFF 		bl	itp_get_rt_position
+ 585              	.LVL48:
+ 141:../../protocol.c ****     float feed = itp_get_rt_feed() * 60.0f; //convert from mm/s to mm/m
+ 586              		.loc 1 141 5 view .LVU94
+ 587 000a 01A8     		add	r0, sp, #4
+ 588 000c FFF7FEFF 		bl	kinematics_apply_reverse_transform
+ 589              	.LVL49:
+ 142:../../protocol.c ****     #ifdef USE_SPINDLE
+ 590              		.loc 1 142 5 view .LVU95
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 20
+
+
+ 142:../../protocol.c ****     #ifdef USE_SPINDLE
+ 591              		.loc 1 142 18 is_stmt 0 view .LVU96
+ 592 0010 FFF7FEFF 		bl	itp_get_rt_feed
+ 593              	.LVL50:
+ 142:../../protocol.c ****     #ifdef USE_SPINDLE
+ 594              		.loc 1 142 11 view .LVU97
+ 595 0014 7749     		ldr	r1, .L82
+ 596 0016 FFF7FEFF 		bl	__aeabi_fmul
+ 597              	.LVL51:
+ 598 001a 0746     		mov	r7, r0
+ 599              	.LVL52:
+ 146:../../protocol.c ****     uint8_t limits = io_get_limits();
+ 600              		.loc 1 146 5 is_stmt 1 view .LVU98
+ 146:../../protocol.c ****     uint8_t limits = io_get_limits();
+ 601              		.loc 1 146 24 is_stmt 0 view .LVU99
+ 602 001c FFF7FEFF 		bl	io_get_controls
+ 603              	.LVL53:
+ 146:../../protocol.c ****     uint8_t limits = io_get_limits();
+ 604              		.loc 1 146 24 view .LVU100
+ 605 0020 0646     		mov	r6, r0
+ 606              	.LVL54:
+ 147:../../protocol.c ****     uint8_t state = cnc_get_exec_state(0xFF);
+ 607              		.loc 1 147 5 is_stmt 1 view .LVU101
+ 147:../../protocol.c ****     uint8_t state = cnc_get_exec_state(0xFF);
+ 608              		.loc 1 147 22 is_stmt 0 view .LVU102
+ 609 0022 FFF7FEFF 		bl	io_get_limits
+ 610              	.LVL55:
+ 611 0026 0546     		mov	r5, r0
+ 612              	.LVL56:
+ 148:../../protocol.c ****     uint8_t filter = 0x80;
+ 613              		.loc 1 148 5 is_stmt 1 view .LVU103
+ 148:../../protocol.c ****     uint8_t filter = 0x80;
+ 614              		.loc 1 148 21 is_stmt 0 view .LVU104
+ 615 0028 FF20     		movs	r0, #255
+ 616 002a FFF7FEFF 		bl	cnc_get_exec_state
+ 617              	.LVL57:
+ 618 002e 0246     		mov	r2, r0
+ 619              	.LVL58:
+ 149:../../protocol.c ****     while(!(state & filter) && filter)
+ 620              		.loc 1 149 5 is_stmt 1 view .LVU105
+ 150:../../protocol.c ****     {
+ 621              		.loc 1 150 5 view .LVU106
+ 149:../../protocol.c ****     while(!(state & filter) && filter)
+ 622              		.loc 1 149 13 is_stmt 0 view .LVU107
+ 623 0030 8023     		movs	r3, #128
+ 150:../../protocol.c ****     {
+ 624              		.loc 1 150 10 view .LVU108
+ 625 0032 00E0     		b	.L41
+ 626              	.LVL59:
+ 627              	.L43:
+ 152:../../protocol.c ****     }
+ 628              		.loc 1 152 9 is_stmt 1 view .LVU109
+ 152:../../protocol.c ****     }
+ 629              		.loc 1 152 16 is_stmt 0 view .LVU110
+ 630 0034 5B08     		lsrs	r3, r3, #1
+ 631              	.LVL60:
+ 632              	.L41:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 21
+
+
+ 150:../../protocol.c ****     {
+ 633              		.loc 1 150 10 is_stmt 1 view .LVU111
+ 634 0036 13EA0204 		ands	r4, r3, r2
+ 635 003a 01D1     		bne	.L42
+ 150:../../protocol.c ****     {
+ 636              		.loc 1 150 29 is_stmt 0 discriminator 1 view .LVU112
+ 637 003c 002B     		cmp	r3, #0
+ 638 003e F9D1     		bne	.L43
+ 639              	.L42:
+ 155:../../protocol.c **** 
+ 640              		.loc 1 155 5 is_stmt 1 view .LVU113
+ 641              	.LVL61:
+ 157:../../protocol.c ****     if(!mc_get_checkmode() || cnc_get_exec_state(EXEC_ALARM))
+ 642              		.loc 1 157 5 view .LVU114
+ 643 0040 3C20     		movs	r0, #60
+ 644 0042 FFF7FEFF 		bl	serial_putc
+ 645              	.LVL62:
+ 158:../../protocol.c ****     {
+ 646              		.loc 1 158 5 view .LVU115
+ 158:../../protocol.c ****     {
+ 647              		.loc 1 158 9 is_stmt 0 view .LVU116
+ 648 0046 FFF7FEFF 		bl	mc_get_checkmode
+ 649              	.LVL63:
+ 158:../../protocol.c ****     {
+ 650              		.loc 1 158 7 view .LVU117
+ 651 004a D0B9     		cbnz	r0, .L71
+ 652              	.L44:
+ 160:../../protocol.c ****         {
+ 653              		.loc 1 160 9 is_stmt 1 view .LVU118
+ 654 004c 202C     		cmp	r4, #32
+ 655 004e 21D8     		bhi	.L46
+ 656 0050 63B2     		sxtb	r3, r4
+ 657 0052 002B     		cmp	r3, #0
+ 658 0054 00F08180 		beq	.L47
+ 659 0058 631E     		subs	r3, r4, #1
+ 660 005a 1F2B     		cmp	r3, #31
+ 661 005c 7DD8     		bhi	.L47
+ 662 005e DFE803F0 		tbb	[pc, r3]
+ 663              	.L49:
+ 664 0062 78       		.byte	(.L53-.L49)/2
+ 665 0063 61       		.byte	(.L52-.L49)/2
+ 666 0064 7C       		.byte	(.L47-.L49)/2
+ 667 0065 74       		.byte	(.L51-.L49)/2
+ 668 0066 7C       		.byte	(.L47-.L49)/2
+ 669 0067 7C       		.byte	(.L47-.L49)/2
+ 670 0068 7C       		.byte	(.L47-.L49)/2
+ 671 0069 70       		.byte	(.L50-.L49)/2
+ 672 006a 7C       		.byte	(.L47-.L49)/2
+ 673 006b 7C       		.byte	(.L47-.L49)/2
+ 674 006c 7C       		.byte	(.L47-.L49)/2
+ 675 006d 7C       		.byte	(.L47-.L49)/2
+ 676 006e 7C       		.byte	(.L47-.L49)/2
+ 677 006f 7C       		.byte	(.L47-.L49)/2
+ 678 0070 7C       		.byte	(.L47-.L49)/2
+ 679 0071 5D       		.byte	(.L48-.L49)/2
+ 680 0072 7C       		.byte	(.L47-.L49)/2
+ 681 0073 7C       		.byte	(.L47-.L49)/2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 22
+
+
+ 682 0074 7C       		.byte	(.L47-.L49)/2
+ 683 0075 7C       		.byte	(.L47-.L49)/2
+ 684 0076 7C       		.byte	(.L47-.L49)/2
+ 685 0077 7C       		.byte	(.L47-.L49)/2
+ 686 0078 7C       		.byte	(.L47-.L49)/2
+ 687 0079 7C       		.byte	(.L47-.L49)/2
+ 688 007a 7C       		.byte	(.L47-.L49)/2
+ 689 007b 7C       		.byte	(.L47-.L49)/2
+ 690 007c 7C       		.byte	(.L47-.L49)/2
+ 691 007d 7C       		.byte	(.L47-.L49)/2
+ 692 007e 7C       		.byte	(.L47-.L49)/2
+ 693 007f 7C       		.byte	(.L47-.L49)/2
+ 694 0080 7C       		.byte	(.L47-.L49)/2
+ 695 0081 5D       		.byte	(.L48-.L49)/2
+ 696              		.p2align 1
+ 697              	.L71:
+ 158:../../protocol.c ****     {
+ 698              		.loc 1 158 31 is_stmt 0 discriminator 1 view .LVU119
+ 699 0082 F020     		movs	r0, #240
+ 700 0084 FFF7FEFF 		bl	cnc_get_exec_state
+ 701              	.LVL64:
+ 158:../../protocol.c ****     {
+ 702              		.loc 1 158 28 discriminator 1 view .LVU120
+ 703 0088 0028     		cmp	r0, #0
+ 704 008a DFD1     		bne	.L44
+ 222:../../protocol.c ****     }
+ 705              		.loc 1 222 9 is_stmt 1 view .LVU121
+ 706 008c 5A48     		ldr	r0, .L82+4
+ 707 008e FFF7FEFF 		bl	serial_print_str
+ 708              	.LVL65:
+ 709 0092 06E0     		b	.L55
+ 710              	.L46:
+ 160:../../protocol.c ****         {
+ 711              		.loc 1 160 9 is_stmt 0 view .LVU122
+ 712 0094 402C     		cmp	r4, #64
+ 713 0096 23D0     		beq	.L54
+ 714 0098 802C     		cmp	r4, #128
+ 715 009a 5ED1     		bne	.L47
+ 163:../../protocol.c ****                 break;
+ 716              		.loc 1 163 17 is_stmt 1 view .LVU123
+ 717 009c 5748     		ldr	r0, .L82+8
+ 718 009e FFF7FEFF 		bl	serial_print_str
+ 719              	.LVL66:
+ 164:../../protocol.c ****             case EXEC_DOOR:
+ 720              		.loc 1 164 17 view .LVU124
+ 721              	.L55:
+ 225:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 722              		.loc 1 225 5 view .LVU125
+ 723 00a2 5748     		ldr	r0, .L82+12
+ 724 00a4 FFF7FEFF 		bl	serial_print_str
+ 725              	.LVL67:
+ 226:../../protocol.c **** 
+ 726              		.loc 1 226 5 view .LVU126
+ 727 00a8 0321     		movs	r1, #3
+ 728 00aa 01A8     		add	r0, sp, #4
+ 729 00ac FFF7FEFF 		bl	serial_print_fltarr
+ 730              	.LVL68:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 23
+
+
+ 231:../../protocol.c **** #endif
+ 731              		.loc 1 231 5 view .LVU127
+ 732 00b0 5448     		ldr	r0, .L82+16
+ 733 00b2 FFF7FEFF 		bl	serial_print_str
+ 734              	.LVL69:
+ 233:../../protocol.c **** #ifdef USE_SPINDLE
+ 735              		.loc 1 233 5 view .LVU128
+ 736 00b6 3846     		mov	r0, r7
+ 737 00b8 FFF7FEFF 		bl	__aeabi_f2uiz
+ 738              	.LVL70:
+ 739 00bc 80B2     		uxth	r0, r0
+ 740 00be FFF7FEFF 		bl	serial_print_int
+ 741              	.LVL71:
+ 244:../../protocol.c ****     {
+ 742              		.loc 1 244 5 view .LVU129
+ 244:../../protocol.c ****     {
+ 743              		.loc 1 244 7 is_stmt 0 view .LVU130
+ 744 00c2 06F00703 		and	r3, r6, #7
+ 745 00c6 05F03F02 		and	r2, r5, #63
+ 746 00ca 1343     		orrs	r3, r3, r2
+ 747 00cc 49D1     		bne	.L72
+ 748              	.L60:
+ 299:../../protocol.c ****     /*
+ 749              		.loc 1 299 5 is_stmt 1 view .LVU131
+ 750 00ce FFF7FEFF 		bl	protocol_send_status_tail
+ 751              	.LVL72:
+ 307:../../protocol.c ****     procotol_send_newline();
+ 752              		.loc 1 307 5 view .LVU132
+ 753 00d2 3E20     		movs	r0, #62
+ 754 00d4 FFF7FEFF 		bl	serial_putc
+ 755              	.LVL73:
+ 308:../../protocol.c **** }
+ 756              		.loc 1 308 5 view .LVU133
+ 757 00d8 FFF7FEFF 		bl	procotol_send_newline
+ 758              	.LVL74:
+ 309:../../protocol.c **** 
+ 759              		.loc 1 309 1 is_stmt 0 view .LVU134
+ 760 00dc 05B0     		add	sp, sp, #20
+ 761              	.LCFI16:
+ 762              		.cfi_remember_state
+ 763              		.cfi_def_cfa_offset 20
+ 764              		@ sp needed
+ 765 00de F0BD     		pop	{r4, r5, r6, r7, pc}
+ 766              	.LVL75:
+ 767              	.L54:
+ 768              	.LCFI17:
+ 769              		.cfi_restore_state
+ 166:../../protocol.c ****                 if(CHECKFLAG(controls, SAFETY_DOOR_MASK))
+ 770              		.loc 1 166 17 is_stmt 1 view .LVU135
+ 771 00e0 4948     		ldr	r0, .L82+20
+ 772 00e2 FFF7FEFF 		bl	serial_print_str
+ 773              	.LVL76:
+ 167:../../protocol.c ****                 {
+ 774              		.loc 1 167 17 view .LVU136
+ 167:../../protocol.c ****                 {
+ 775              		.loc 1 167 19 is_stmt 0 view .LVU137
+ 776 00e6 16F0020F 		tst	r6, #2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 24
+
+
+ 777 00ea 0BD0     		beq	.L56
+ 170:../../protocol.c ****                     {
+ 778              		.loc 1 170 21 is_stmt 1 view .LVU138
+ 170:../../protocol.c ****                     {
+ 779              		.loc 1 170 24 is_stmt 0 view .LVU139
+ 780 00ec 0120     		movs	r0, #1
+ 781 00ee FFF7FEFF 		bl	cnc_get_exec_state
+ 782              	.LVL77:
+ 170:../../protocol.c ****                     {
+ 783              		.loc 1 170 23 view .LVU140
+ 784 00f2 18B1     		cbz	r0, .L57
+ 172:../../protocol.c ****                     }
+ 785              		.loc 1 172 25 is_stmt 1 view .LVU141
+ 786 00f4 3220     		movs	r0, #50
+ 787 00f6 FFF7FEFF 		bl	serial_putc
+ 788              	.LVL78:
+ 789 00fa D2E7     		b	.L55
+ 790              	.L57:
+ 176:../../protocol.c ****                     }
+ 791              		.loc 1 176 25 view .LVU142
+ 792 00fc 3120     		movs	r0, #49
+ 793 00fe FFF7FEFF 		bl	serial_putc
+ 794              	.LVL79:
+ 795 0102 CEE7     		b	.L55
+ 796              	.L56:
+ 181:../../protocol.c ****                     {
+ 797              		.loc 1 181 21 view .LVU143
+ 181:../../protocol.c ****                     {
+ 798              		.loc 1 181 24 is_stmt 0 view .LVU144
+ 799 0104 0120     		movs	r0, #1
+ 800 0106 FFF7FEFF 		bl	cnc_get_exec_state
+ 801              	.LVL80:
+ 181:../../protocol.c ****                     {
+ 802              		.loc 1 181 23 view .LVU145
+ 803 010a 18B1     		cbz	r0, .L58
+ 183:../../protocol.c ****                     }
+ 804              		.loc 1 183 25 is_stmt 1 view .LVU146
+ 805 010c 3320     		movs	r0, #51
+ 806 010e FFF7FEFF 		bl	serial_putc
+ 807              	.LVL81:
+ 808 0112 C6E7     		b	.L55
+ 809              	.L58:
+ 187:../../protocol.c ****                     }
+ 810              		.loc 1 187 25 view .LVU147
+ 811 0114 3020     		movs	r0, #48
+ 812 0116 FFF7FEFF 		bl	serial_putc
+ 813              	.LVL82:
+ 814 011a C2E7     		b	.L55
+ 815              	.L48:
+ 193:../../protocol.c ****                 break;
+ 816              		.loc 1 193 17 view .LVU148
+ 817 011c 3B48     		ldr	r0, .L82+24
+ 818 011e FFF7FEFF 		bl	serial_print_str
+ 819              	.LVL83:
+ 194:../../protocol.c ****             case EXEC_HOLD:
+ 820              		.loc 1 194 17 view .LVU149
+ 821 0122 BEE7     		b	.L55
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 25
+
+
+ 822              	.L52:
+ 196:../../protocol.c ****                 if(cnc_get_exec_state(EXEC_RUN))
+ 823              		.loc 1 196 17 view .LVU150
+ 824 0124 3A48     		ldr	r0, .L82+28
+ 825 0126 FFF7FEFF 		bl	serial_print_str
+ 826              	.LVL84:
+ 197:../../protocol.c ****                 {
+ 827              		.loc 1 197 17 view .LVU151
+ 197:../../protocol.c ****                 {
+ 828              		.loc 1 197 20 is_stmt 0 view .LVU152
+ 829 012a 0120     		movs	r0, #1
+ 830 012c FFF7FEFF 		bl	cnc_get_exec_state
+ 831              	.LVL85:
+ 197:../../protocol.c ****                 {
+ 832              		.loc 1 197 19 view .LVU153
+ 833 0130 18B1     		cbz	r0, .L59
+ 199:../../protocol.c ****                 }
+ 834              		.loc 1 199 21 is_stmt 1 view .LVU154
+ 835 0132 3120     		movs	r0, #49
+ 836 0134 FFF7FEFF 		bl	serial_putc
+ 837              	.LVL86:
+ 838 0138 B3E7     		b	.L55
+ 839              	.L59:
+ 203:../../protocol.c ****                 }
+ 840              		.loc 1 203 21 view .LVU155
+ 841 013a 3020     		movs	r0, #48
+ 842 013c FFF7FEFF 		bl	serial_putc
+ 843              	.LVL87:
+ 844 0140 AFE7     		b	.L55
+ 845              	.L50:
+ 207:../../protocol.c ****                 break;
+ 846              		.loc 1 207 17 view .LVU156
+ 847 0142 3448     		ldr	r0, .L82+32
+ 848 0144 FFF7FEFF 		bl	serial_print_str
+ 849              	.LVL88:
+ 208:../../protocol.c ****             case EXEC_JOG:
+ 850              		.loc 1 208 17 view .LVU157
+ 851 0148 ABE7     		b	.L55
+ 852              	.L51:
+ 210:../../protocol.c ****                 break;
+ 853              		.loc 1 210 17 view .LVU158
+ 854 014a 3348     		ldr	r0, .L82+36
+ 855 014c FFF7FEFF 		bl	serial_print_str
+ 856              	.LVL89:
+ 211:../../protocol.c ****             case EXEC_RUN:
+ 857              		.loc 1 211 17 view .LVU159
+ 858 0150 A7E7     		b	.L55
+ 859              	.L53:
+ 213:../../protocol.c ****                 break;
+ 860              		.loc 1 213 17 view .LVU160
+ 861 0152 3248     		ldr	r0, .L82+40
+ 862 0154 FFF7FEFF 		bl	serial_print_str
+ 863              	.LVL90:
+ 214:../../protocol.c ****             default:
+ 864              		.loc 1 214 17 view .LVU161
+ 865 0158 A3E7     		b	.L55
+ 866              	.L47:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 26
+
+
+ 216:../../protocol.c ****                 break;
+ 867              		.loc 1 216 17 view .LVU162
+ 868 015a 3148     		ldr	r0, .L82+44
+ 869 015c FFF7FEFF 		bl	serial_print_str
+ 870              	.LVL91:
+ 217:../../protocol.c ****         }
+ 871              		.loc 1 217 17 view .LVU163
+ 872 0160 9FE7     		b	.L55
+ 873              	.L72:
+ 246:../../protocol.c **** 
+ 874              		.loc 1 246 9 view .LVU164
+ 875 0162 3048     		ldr	r0, .L82+48
+ 876 0164 FFF7FEFF 		bl	serial_print_str
+ 877              	.LVL92:
+ 248:../../protocol.c ****         {
+ 878              		.loc 1 248 9 view .LVU165
+ 248:../../protocol.c ****         {
+ 879              		.loc 1 248 11 is_stmt 0 view .LVU166
+ 880 0168 16F0010F 		tst	r6, #1
+ 881 016c 1ED1     		bne	.L73
+ 882              	.L61:
+ 253:../../protocol.c ****         {
+ 883              		.loc 1 253 9 is_stmt 1 view .LVU167
+ 253:../../protocol.c ****         {
+ 884              		.loc 1 253 11 is_stmt 0 view .LVU168
+ 885 016e 16F0020F 		tst	r6, #2
+ 886 0172 1FD1     		bne	.L74
+ 887              	.L62:
+ 258:../../protocol.c ****         {
+ 888              		.loc 1 258 9 is_stmt 1 view .LVU169
+ 258:../../protocol.c ****         {
+ 889              		.loc 1 258 11 is_stmt 0 view .LVU170
+ 890 0174 16F0040F 		tst	r6, #4
+ 891 0178 20D1     		bne	.L75
+ 892              	.L63:
+ 263:../../protocol.c ****         {
+ 893              		.loc 1 263 9 is_stmt 1 view .LVU171
+ 263:../../protocol.c ****         {
+ 894              		.loc 1 263 12 is_stmt 0 view .LVU172
+ 895 017a FFF7FEFF 		bl	io_get_probe
+ 896              	.LVL93:
+ 263:../../protocol.c ****         {
+ 897              		.loc 1 263 11 view .LVU173
+ 898 017e 08BB     		cbnz	r0, .L76
+ 899              	.L64:
+ 268:../../protocol.c ****         {
+ 900              		.loc 1 268 9 is_stmt 1 view .LVU174
+ 268:../../protocol.c ****         {
+ 901              		.loc 1 268 11 is_stmt 0 view .LVU175
+ 902 0180 15F0010F 		tst	r5, #1
+ 903 0184 22D1     		bne	.L77
+ 904              	.L65:
+ 273:../../protocol.c ****         {
+ 905              		.loc 1 273 9 is_stmt 1 view .LVU176
+ 273:../../protocol.c ****         {
+ 906              		.loc 1 273 11 is_stmt 0 view .LVU177
+ 907 0186 15F0020F 		tst	r5, #2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 27
+
+
+ 908 018a 23D1     		bne	.L78
+ 909              	.L66:
+ 278:../../protocol.c ****         {
+ 910              		.loc 1 278 9 is_stmt 1 view .LVU178
+ 278:../../protocol.c ****         {
+ 911              		.loc 1 278 11 is_stmt 0 view .LVU179
+ 912 018c 15F0040F 		tst	r5, #4
+ 913 0190 24D1     		bne	.L79
+ 914              	.L67:
+ 283:../../protocol.c ****         {
+ 915              		.loc 1 283 9 is_stmt 1 view .LVU180
+ 283:../../protocol.c ****         {
+ 916              		.loc 1 283 11 is_stmt 0 view .LVU181
+ 917 0192 15F0080F 		tst	r5, #8
+ 918 0196 25D1     		bne	.L80
+ 919              	.L68:
+ 288:../../protocol.c ****         {
+ 920              		.loc 1 288 9 is_stmt 1 view .LVU182
+ 288:../../protocol.c ****         {
+ 921              		.loc 1 288 11 is_stmt 0 view .LVU183
+ 922 0198 15F0100F 		tst	r5, #16
+ 923 019c 26D1     		bne	.L81
+ 924              	.L69:
+ 293:../../protocol.c ****         {
+ 925              		.loc 1 293 9 is_stmt 1 view .LVU184
+ 293:../../protocol.c ****         {
+ 926              		.loc 1 293 11 is_stmt 0 view .LVU185
+ 927 019e 15F0200F 		tst	r5, #32
+ 928 01a2 94D0     		beq	.L60
+ 295:../../protocol.c ****         }
+ 929              		.loc 1 295 13 is_stmt 1 view .LVU186
+ 930 01a4 4320     		movs	r0, #67
+ 931 01a6 FFF7FEFF 		bl	serial_putc
+ 932              	.LVL94:
+ 933 01aa 90E7     		b	.L60
+ 934              	.L73:
+ 250:../../protocol.c ****         }
+ 935              		.loc 1 250 13 view .LVU187
+ 936 01ac 5220     		movs	r0, #82
+ 937 01ae FFF7FEFF 		bl	serial_putc
+ 938              	.LVL95:
+ 939 01b2 DCE7     		b	.L61
+ 940              	.L74:
+ 255:../../protocol.c ****         }
+ 941              		.loc 1 255 13 view .LVU188
+ 942 01b4 4420     		movs	r0, #68
+ 943 01b6 FFF7FEFF 		bl	serial_putc
+ 944              	.LVL96:
+ 945 01ba DBE7     		b	.L62
+ 946              	.L75:
+ 260:../../protocol.c ****         }
+ 947              		.loc 1 260 13 view .LVU189
+ 948 01bc 4820     		movs	r0, #72
+ 949 01be FFF7FEFF 		bl	serial_putc
+ 950              	.LVL97:
+ 951 01c2 DAE7     		b	.L63
+ 952              	.L76:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 28
+
+
+ 265:../../protocol.c ****         }
+ 953              		.loc 1 265 13 view .LVU190
+ 954 01c4 5020     		movs	r0, #80
+ 955 01c6 FFF7FEFF 		bl	serial_putc
+ 956              	.LVL98:
+ 957 01ca D9E7     		b	.L64
+ 958              	.L77:
+ 270:../../protocol.c ****         }
+ 959              		.loc 1 270 13 view .LVU191
+ 960 01cc 5820     		movs	r0, #88
+ 961 01ce FFF7FEFF 		bl	serial_putc
+ 962              	.LVL99:
+ 963 01d2 D8E7     		b	.L65
+ 964              	.L78:
+ 275:../../protocol.c ****         }
+ 965              		.loc 1 275 13 view .LVU192
+ 966 01d4 5920     		movs	r0, #89
+ 967 01d6 FFF7FEFF 		bl	serial_putc
+ 968              	.LVL100:
+ 969 01da D7E7     		b	.L66
+ 970              	.L79:
+ 280:../../protocol.c ****         }
+ 971              		.loc 1 280 13 view .LVU193
+ 972 01dc 5A20     		movs	r0, #90
+ 973 01de FFF7FEFF 		bl	serial_putc
+ 974              	.LVL101:
+ 975 01e2 D6E7     		b	.L67
+ 976              	.L80:
+ 285:../../protocol.c ****         }
+ 977              		.loc 1 285 13 view .LVU194
+ 978 01e4 4120     		movs	r0, #65
+ 979 01e6 FFF7FEFF 		bl	serial_putc
+ 980              	.LVL102:
+ 981 01ea D5E7     		b	.L68
+ 982              	.L81:
+ 290:../../protocol.c ****         }
+ 983              		.loc 1 290 13 view .LVU195
+ 984 01ec 4220     		movs	r0, #66
+ 985 01ee FFF7FEFF 		bl	serial_putc
+ 986              	.LVL103:
+ 987 01f2 D4E7     		b	.L69
+ 988              	.L83:
+ 989              		.align	2
+ 990              	.L82:
+ 991 01f4 00007042 		.word	1114636288
+ 992 01f8 38000000 		.word	.LC14
+ 993 01fc 00000000 		.word	.LC6
+ 994 0200 40000000 		.word	.LC15
+ 995 0204 48000000 		.word	.LC16
+ 996 0208 08000000 		.word	.LC7
+ 997 020c 10000000 		.word	.LC8
+ 998 0210 18000000 		.word	.LC9
+ 999 0214 20000000 		.word	.LC10
+ 1000 0218 28000000 		.word	.LC11
+ 1001 021c 2C000000 		.word	.LC12
+ 1002 0220 30000000 		.word	.LC13
+ 1003 0224 4C000000 		.word	.LC17
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 29
+
+
+ 1004              		.cfi_endproc
+ 1005              	.LFE72:
+ 1007              		.section	.rodata.protocol_send_gcode_coordsys.str1.4,"aMS",%progbits,1
+ 1008              		.align	2
+ 1009              	.LC18:
+ 1010 0000 5B4700   		.ascii	"[G\000"
+ 1011 0003 00       		.align	2
+ 1012              	.LC19:
+ 1013 0004 5B473238 		.ascii	"[G28:\000"
+ 1013      3A00
+ 1014 000a 0000     		.align	2
+ 1015              	.LC20:
+ 1016 000c 5B473330 		.ascii	"[G30:\000"
+ 1016      3A00
+ 1017 0012 0000     		.align	2
+ 1018              	.LC21:
+ 1019 0014 5B473932 		.ascii	"[G92:\000"
+ 1019      3A00
+ 1020 001a 0000     		.align	2
+ 1021              	.LC22:
+ 1022 001c 5B544C4F 		.ascii	"[TLO:\000"
+ 1022      3A00
+ 1023 0022 0000     		.align	2
+ 1024              	.LC23:
+ 1025 0024 5B505242 		.ascii	"[PRB:\000"
+ 1025      3A00
+ 1026              		.section	.text.protocol_send_gcode_coordsys,"ax",%progbits
+ 1027              		.align	1
+ 1028              		.global	protocol_send_gcode_coordsys
+ 1029              		.syntax unified
+ 1030              		.thumb
+ 1031              		.thumb_func
+ 1032              		.fpu softvfp
+ 1034              	protocol_send_gcode_coordsys:
+ 1035              	.LFB73:
+ 312:../../protocol.c **** 	float axis[MAX(AXIS_COUNT,3)];
+ 1036              		.loc 1 312 1 view -0
+ 1037              		.cfi_startproc
+ 1038              		@ args = 0, pretend = 0, frame = 16
+ 1039              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1040 0000 10B5     		push	{r4, lr}
+ 1041              	.LCFI18:
+ 1042              		.cfi_def_cfa_offset 8
+ 1043              		.cfi_offset 4, -8
+ 1044              		.cfi_offset 14, -4
+ 1045 0002 84B0     		sub	sp, sp, #16
+ 1046              	.LCFI19:
+ 1047              		.cfi_def_cfa_offset 24
+ 313:../../protocol.c ****     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
+ 1048              		.loc 1 313 2 view .LVU197
+ 314:../../protocol.c ****     for(uint8_t i = 0; i < coordlimit; i++)
+ 1049              		.loc 1 314 5 view .LVU198
+ 1050              	.LVL104:
+ 315:../../protocol.c ****     {
+ 1051              		.loc 1 315 5 view .LVU199
+ 1052              	.LBB3:
+ 315:../../protocol.c ****     {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 30
+
+
+ 1053              		.loc 1 315 9 view .LVU200
+ 315:../../protocol.c ****     {
+ 1054              		.loc 1 315 17 is_stmt 0 view .LVU201
+ 1055 0004 0024     		movs	r4, #0
+ 1056              	.LVL105:
+ 1057              	.L85:
+ 315:../../protocol.c ****     {
+ 1058              		.loc 1 315 24 is_stmt 1 discriminator 1 view .LVU202
+ 315:../../protocol.c ****     {
+ 1059              		.loc 1 315 5 is_stmt 0 discriminator 1 view .LVU203
+ 1060 0006 052C     		cmp	r4, #5
+ 1061 0008 19D8     		bhi	.L88
+ 317:../../protocol.c ****         serial_print_str(__romstr__("[G"));
+ 1062              		.loc 1 317 9 is_stmt 1 discriminator 3 view .LVU204
+ 1063 000a 01A9     		add	r1, sp, #4
+ 1064 000c 2046     		mov	r0, r4
+ 1065 000e FFF7FEFF 		bl	parser_get_coordsys
+ 1066              	.LVL106:
+ 318:../../protocol.c ****         serial_print_int(i + 54);
+ 1067              		.loc 1 318 9 discriminator 3 view .LVU205
+ 1068 0012 3848     		ldr	r0, .L89
+ 1069 0014 FFF7FEFF 		bl	serial_print_str
+ 1070              	.LVL107:
+ 319:../../protocol.c ****         serial_putc(':');
+ 1071              		.loc 1 319 9 discriminator 3 view .LVU206
+ 1072 0018 04F13600 		add	r0, r4, #54
+ 1073 001c FFF7FEFF 		bl	serial_print_int
+ 1074              	.LVL108:
+ 320:../../protocol.c ****         serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 1075              		.loc 1 320 9 discriminator 3 view .LVU207
+ 1076 0020 3A20     		movs	r0, #58
+ 1077 0022 FFF7FEFF 		bl	serial_putc
+ 1078              	.LVL109:
+ 321:../../protocol.c ****         serial_putc(']');
+ 1079              		.loc 1 321 9 discriminator 3 view .LVU208
+ 1080 0026 0321     		movs	r1, #3
+ 1081 0028 01A8     		add	r0, sp, #4
+ 1082 002a FFF7FEFF 		bl	serial_print_fltarr
+ 1083              	.LVL110:
+ 322:../../protocol.c ****         procotol_send_newline();
+ 1084              		.loc 1 322 9 discriminator 3 view .LVU209
+ 1085 002e 5D20     		movs	r0, #93
+ 1086 0030 FFF7FEFF 		bl	serial_putc
+ 1087              	.LVL111:
+ 323:../../protocol.c ****     }
+ 1088              		.loc 1 323 9 discriminator 3 view .LVU210
+ 1089 0034 FFF7FEFF 		bl	procotol_send_newline
+ 1090              	.LVL112:
+ 315:../../protocol.c ****     {
+ 1091              		.loc 1 315 40 discriminator 3 view .LVU211
+ 315:../../protocol.c ****     {
+ 1092              		.loc 1 315 41 is_stmt 0 discriminator 3 view .LVU212
+ 1093 0038 0134     		adds	r4, r4, #1
+ 1094              	.LVL113:
+ 315:../../protocol.c ****     {
+ 1095              		.loc 1 315 41 discriminator 3 view .LVU213
+ 1096 003a E4B2     		uxtb	r4, r4
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 31
+
+
+ 1097              	.LVL114:
+ 315:../../protocol.c ****     {
+ 1098              		.loc 1 315 41 discriminator 3 view .LVU214
+ 1099 003c E3E7     		b	.L85
+ 1100              	.L88:
+ 315:../../protocol.c ****     {
+ 1101              		.loc 1 315 41 discriminator 3 view .LVU215
+ 1102              	.LBE3:
+ 326:../../protocol.c ****     {
+ 1103              		.loc 1 326 5 is_stmt 1 discriminator 1 view .LVU216
+ 326:../../protocol.c ****     {
+ 1104              		.loc 1 326 9 discriminator 1 view .LVU217
+ 1105              	.LVL115:
+ 326:../../protocol.c ****     {
+ 1106              		.loc 1 326 24 discriminator 1 view .LVU218
+ 336:../../protocol.c ****     parser_get_coordsys(28, (float*)&axis);
+ 1107              		.loc 1 336 5 discriminator 1 view .LVU219
+ 1108 003e 2E48     		ldr	r0, .L89+4
+ 1109 0040 FFF7FEFF 		bl	serial_print_str
+ 1110              	.LVL116:
+ 337:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 1111              		.loc 1 337 5 discriminator 1 view .LVU220
+ 1112 0044 01A9     		add	r1, sp, #4
+ 1113 0046 1C20     		movs	r0, #28
+ 1114 0048 FFF7FEFF 		bl	parser_get_coordsys
+ 1115              	.LVL117:
+ 338:../../protocol.c ****     serial_putc(']');
+ 1116              		.loc 1 338 5 discriminator 1 view .LVU221
+ 1117 004c 0321     		movs	r1, #3
+ 1118 004e 01A8     		add	r0, sp, #4
+ 1119 0050 FFF7FEFF 		bl	serial_print_fltarr
+ 1120              	.LVL118:
+ 339:../../protocol.c ****     procotol_send_newline();
+ 1121              		.loc 1 339 5 discriminator 1 view .LVU222
+ 1122 0054 5D20     		movs	r0, #93
+ 1123 0056 FFF7FEFF 		bl	serial_putc
+ 1124              	.LVL119:
+ 340:../../protocol.c **** 
+ 1125              		.loc 1 340 5 discriminator 1 view .LVU223
+ 1126 005a FFF7FEFF 		bl	procotol_send_newline
+ 1127              	.LVL120:
+ 342:../../protocol.c ****     parser_get_coordsys(30, (float*)&axis);
+ 1128              		.loc 1 342 5 discriminator 1 view .LVU224
+ 1129 005e 2748     		ldr	r0, .L89+8
+ 1130 0060 FFF7FEFF 		bl	serial_print_str
+ 1131              	.LVL121:
+ 343:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 1132              		.loc 1 343 5 discriminator 1 view .LVU225
+ 1133 0064 01A9     		add	r1, sp, #4
+ 1134 0066 1E20     		movs	r0, #30
+ 1135 0068 FFF7FEFF 		bl	parser_get_coordsys
+ 1136              	.LVL122:
+ 344:../../protocol.c ****     serial_putc(']');
+ 1137              		.loc 1 344 5 discriminator 1 view .LVU226
+ 1138 006c 0321     		movs	r1, #3
+ 1139 006e 01A8     		add	r0, sp, #4
+ 1140 0070 FFF7FEFF 		bl	serial_print_fltarr
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 32
+
+
+ 1141              	.LVL123:
+ 345:../../protocol.c ****     procotol_send_newline();
+ 1142              		.loc 1 345 5 discriminator 1 view .LVU227
+ 1143 0074 5D20     		movs	r0, #93
+ 1144 0076 FFF7FEFF 		bl	serial_putc
+ 1145              	.LVL124:
+ 346:../../protocol.c **** 
+ 1146              		.loc 1 346 5 discriminator 1 view .LVU228
+ 1147 007a FFF7FEFF 		bl	procotol_send_newline
+ 1148              	.LVL125:
+ 348:../../protocol.c ****     parser_get_coordsys(92, (float*)&axis);
+ 1149              		.loc 1 348 5 discriminator 1 view .LVU229
+ 1150 007e 2048     		ldr	r0, .L89+12
+ 1151 0080 FFF7FEFF 		bl	serial_print_str
+ 1152              	.LVL126:
+ 349:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 1153              		.loc 1 349 5 discriminator 1 view .LVU230
+ 1154 0084 01A9     		add	r1, sp, #4
+ 1155 0086 5C20     		movs	r0, #92
+ 1156 0088 FFF7FEFF 		bl	parser_get_coordsys
+ 1157              	.LVL127:
+ 350:../../protocol.c ****     serial_putc(']');
+ 1158              		.loc 1 350 5 discriminator 1 view .LVU231
+ 1159 008c 0321     		movs	r1, #3
+ 1160 008e 01A8     		add	r0, sp, #4
+ 1161 0090 FFF7FEFF 		bl	serial_print_fltarr
+ 1162              	.LVL128:
+ 351:../../protocol.c ****     procotol_send_newline();
+ 1163              		.loc 1 351 5 discriminator 1 view .LVU232
+ 1164 0094 5D20     		movs	r0, #93
+ 1165 0096 FFF7FEFF 		bl	serial_putc
+ 1166              	.LVL129:
+ 352:../../protocol.c ****     
+ 1167              		.loc 1 352 5 discriminator 1 view .LVU233
+ 1168 009a FFF7FEFF 		bl	procotol_send_newline
+ 1169              	.LVL130:
+ 355:../../protocol.c ****     parser_get_coordsys(254, (float*)&axis);
+ 1170              		.loc 1 355 5 discriminator 1 view .LVU234
+ 1171 009e 1948     		ldr	r0, .L89+16
+ 1172 00a0 FFF7FEFF 		bl	serial_print_str
+ 1173              	.LVL131:
+ 356:../../protocol.c ****     serial_print_flt(axis[0]);
+ 1174              		.loc 1 356 5 discriminator 1 view .LVU235
+ 1175 00a4 01A9     		add	r1, sp, #4
+ 1176 00a6 FE20     		movs	r0, #254
+ 1177 00a8 FFF7FEFF 		bl	parser_get_coordsys
+ 1178              	.LVL132:
+ 357:../../protocol.c ****     serial_putc(']');
+ 1179              		.loc 1 357 5 discriminator 1 view .LVU236
+ 1180 00ac 0198     		ldr	r0, [sp, #4]	@ float
+ 1181 00ae FFF7FEFF 		bl	serial_print_flt
+ 1182              	.LVL133:
+ 358:../../protocol.c ****     procotol_send_newline();
+ 1183              		.loc 1 358 5 discriminator 1 view .LVU237
+ 1184 00b2 5D20     		movs	r0, #93
+ 1185 00b4 FFF7FEFF 		bl	serial_putc
+ 1186              	.LVL134:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 33
+
+
+ 359:../../protocol.c ****     #endif
+ 1187              		.loc 1 359 5 discriminator 1 view .LVU238
+ 1188 00b8 FFF7FEFF 		bl	procotol_send_newline
+ 1189              	.LVL135:
+ 362:../../protocol.c ****     parser_get_coordsys(255, (float*)&axis);
+ 1190              		.loc 1 362 5 discriminator 1 view .LVU239
+ 1191 00bc 1248     		ldr	r0, .L89+20
+ 1192 00be FFF7FEFF 		bl	serial_print_str
+ 1193              	.LVL136:
+ 363:../../protocol.c ****     serial_print_fltarr(axis, MAX(AXIS_COUNT,3));
+ 1194              		.loc 1 363 5 discriminator 1 view .LVU240
+ 1195 00c2 01A9     		add	r1, sp, #4
+ 1196 00c4 FF20     		movs	r0, #255
+ 1197 00c6 FFF7FEFF 		bl	parser_get_coordsys
+ 1198              	.LVL137:
+ 364:../../protocol.c ****     serial_putc(':');
+ 1199              		.loc 1 364 5 discriminator 1 view .LVU241
+ 1200 00ca 0321     		movs	r1, #3
+ 1201 00cc 01A8     		add	r0, sp, #4
+ 1202 00ce FFF7FEFF 		bl	serial_print_fltarr
+ 1203              	.LVL138:
+ 365:../../protocol.c ****     serial_putc('0' + parser_get_probe_result());
+ 1204              		.loc 1 365 5 discriminator 1 view .LVU242
+ 1205 00d2 3A20     		movs	r0, #58
+ 1206 00d4 FFF7FEFF 		bl	serial_putc
+ 1207              	.LVL139:
+ 366:../../protocol.c ****     serial_putc(']');
+ 1208              		.loc 1 366 5 discriminator 1 view .LVU243
+ 366:../../protocol.c ****     serial_putc(']');
+ 1209              		.loc 1 366 23 is_stmt 0 discriminator 1 view .LVU244
+ 1210 00d8 FFF7FEFF 		bl	parser_get_probe_result
+ 1211              	.LVL140:
+ 366:../../protocol.c ****     serial_putc(']');
+ 1212              		.loc 1 366 5 discriminator 1 view .LVU245
+ 1213 00dc 3030     		adds	r0, r0, #48
+ 1214 00de C0B2     		uxtb	r0, r0
+ 1215 00e0 FFF7FEFF 		bl	serial_putc
+ 1216              	.LVL141:
+ 367:../../protocol.c ****     procotol_send_newline();
+ 1217              		.loc 1 367 5 is_stmt 1 discriminator 1 view .LVU246
+ 1218 00e4 5D20     		movs	r0, #93
+ 1219 00e6 FFF7FEFF 		bl	serial_putc
+ 1220              	.LVL142:
+ 368:../../protocol.c **** }
+ 1221              		.loc 1 368 5 discriminator 1 view .LVU247
+ 1222 00ea FFF7FEFF 		bl	procotol_send_newline
+ 1223              	.LVL143:
+ 369:../../protocol.c **** 
+ 1224              		.loc 1 369 1 is_stmt 0 discriminator 1 view .LVU248
+ 1225 00ee 04B0     		add	sp, sp, #16
+ 1226              	.LCFI20:
+ 1227              		.cfi_def_cfa_offset 8
+ 1228              		@ sp needed
+ 1229 00f0 10BD     		pop	{r4, pc}
+ 1230              	.LVL144:
+ 1231              	.L90:
+ 369:../../protocol.c **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 34
+
+
+ 1232              		.loc 1 369 1 discriminator 1 view .LVU249
+ 1233 00f2 00BF     		.align	2
+ 1234              	.L89:
+ 1235 00f4 00000000 		.word	.LC18
+ 1236 00f8 04000000 		.word	.LC19
+ 1237 00fc 0C000000 		.word	.LC20
+ 1238 0100 14000000 		.word	.LC21
+ 1239 0104 1C000000 		.word	.LC22
+ 1240 0108 24000000 		.word	.LC23
+ 1241              		.cfi_endproc
+ 1242              	.LFE73:
+ 1244              		.section	.rodata.protocol_send_gcode_modes.str1.4,"aMS",%progbits,1
+ 1245              		.align	2
+ 1246              	.LC24:
+ 1247 0000 5B47433A 		.ascii	"[GC:\000"
+ 1247      00
+ 1248              		.section	.text.protocol_send_gcode_modes,"ax",%progbits
+ 1249              		.align	1
+ 1250              		.global	protocol_send_gcode_modes
+ 1251              		.syntax unified
+ 1252              		.thumb
+ 1253              		.thumb_func
+ 1254              		.fpu softvfp
+ 1256              	protocol_send_gcode_modes:
+ 1257              	.LFB74:
+ 372:../../protocol.c ****     uint8_t modalgroups[9];
+ 1258              		.loc 1 372 1 is_stmt 1 view -0
+ 1259              		.cfi_startproc
+ 1260              		@ args = 0, pretend = 0, frame = 16
+ 1261              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1262 0000 10B5     		push	{r4, lr}
+ 1263              	.LCFI21:
+ 1264              		.cfi_def_cfa_offset 8
+ 1265              		.cfi_offset 4, -8
+ 1266              		.cfi_offset 14, -4
+ 1267 0002 84B0     		sub	sp, sp, #16
+ 1268              	.LCFI22:
+ 1269              		.cfi_def_cfa_offset 24
+ 373:../../protocol.c ****     uint16_t feed;
+ 1270              		.loc 1 373 5 view .LVU251
+ 374:../../protocol.c ****     uint16_t spindle;
+ 1271              		.loc 1 374 5 view .LVU252
+ 375:../../protocol.c **** 
+ 1272              		.loc 1 375 5 view .LVU253
+ 377:../../protocol.c **** 
+ 1273              		.loc 1 377 5 view .LVU254
+ 1274 0004 6A46     		mov	r2, sp
+ 1275 0006 0DF10201 		add	r1, sp, #2
+ 1276 000a 01A8     		add	r0, sp, #4
+ 1277 000c FFF7FEFF 		bl	parser_get_modes
+ 1278              	.LVL145:
+ 379:../../protocol.c **** 
+ 1279              		.loc 1 379 5 view .LVU255
+ 1280 0010 2948     		ldr	r0, .L102
+ 1281 0012 FFF7FEFF 		bl	serial_print_str
+ 1282              	.LVL146:
+ 381:../../protocol.c ****     {
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 35
+
+
+ 1283              		.loc 1 381 5 view .LVU256
+ 1284              	.LBB4:
+ 381:../../protocol.c ****     {
+ 1285              		.loc 1 381 9 view .LVU257
+ 381:../../protocol.c ****     {
+ 1286              		.loc 1 381 17 is_stmt 0 view .LVU258
+ 1287 0016 0024     		movs	r4, #0
+ 1288              	.LVL147:
+ 1289              	.L92:
+ 381:../../protocol.c ****     {
+ 1290              		.loc 1 381 24 is_stmt 1 discriminator 1 view .LVU259
+ 381:../../protocol.c ****     {
+ 1291              		.loc 1 381 5 is_stmt 0 discriminator 1 view .LVU260
+ 1292 0018 042C     		cmp	r4, #4
+ 1293 001a 0ED8     		bhi	.L100
+ 383:../../protocol.c ****         serial_print_int((int16_t)modalgroups[i]);
+ 1294              		.loc 1 383 9 is_stmt 1 discriminator 3 view .LVU261
+ 1295 001c 4720     		movs	r0, #71
+ 1296 001e FFF7FEFF 		bl	serial_putc
+ 1297              	.LVL148:
+ 384:../../protocol.c ****         serial_putc(' ');
+ 1298              		.loc 1 384 9 discriminator 3 view .LVU262
+ 384:../../protocol.c ****         serial_putc(' ');
+ 1299              		.loc 1 384 46 is_stmt 0 discriminator 3 view .LVU263
+ 1300 0022 04AB     		add	r3, sp, #16
+ 1301 0024 2344     		add	r3, r3, r4
+ 384:../../protocol.c ****         serial_putc(' ');
+ 1302              		.loc 1 384 9 discriminator 3 view .LVU264
+ 1303 0026 13F80C0C 		ldrb	r0, [r3, #-12]	@ zero_extendqisi2
+ 1304 002a FFF7FEFF 		bl	serial_print_int
+ 1305              	.LVL149:
+ 385:../../protocol.c ****     }
+ 1306              		.loc 1 385 9 is_stmt 1 discriminator 3 view .LVU265
+ 1307 002e 2020     		movs	r0, #32
+ 1308 0030 FFF7FEFF 		bl	serial_putc
+ 1309              	.LVL150:
+ 381:../../protocol.c ****     {
+ 1310              		.loc 1 381 31 discriminator 3 view .LVU266
+ 381:../../protocol.c ****     {
+ 1311              		.loc 1 381 32 is_stmt 0 discriminator 3 view .LVU267
+ 1312 0034 0134     		adds	r4, r4, #1
+ 1313              	.LVL151:
+ 381:../../protocol.c ****     {
+ 1314              		.loc 1 381 32 discriminator 3 view .LVU268
+ 1315 0036 E4B2     		uxtb	r4, r4
+ 1316              	.LVL152:
+ 381:../../protocol.c ****     {
+ 1317              		.loc 1 381 32 discriminator 3 view .LVU269
+ 1318 0038 EEE7     		b	.L92
+ 1319              	.L100:
+ 381:../../protocol.c ****     {
+ 1320              		.loc 1 381 32 discriminator 3 view .LVU270
+ 1321              	.LBE4:
+ 1322              	.LBB5:
+ 388:../../protocol.c ****     {
+ 1323              		.loc 1 388 17 view .LVU271
+ 1324 003a 0524     		movs	r4, #5
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 36
+
+
+ 1325              	.LVL153:
+ 388:../../protocol.c ****     {
+ 1326              		.loc 1 388 17 view .LVU272
+ 1327 003c 0AE0     		b	.L94
+ 1328              	.LVL154:
+ 1329              	.L95:
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1330              		.loc 1 391 81 discriminator 3 view .LVU273
+ 1331 003e 04AB     		add	r3, sp, #16
+ 1332 0040 2344     		add	r3, r3, r4
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1333              		.loc 1 391 9 discriminator 3 view .LVU274
+ 1334 0042 13F80C0C 		ldrb	r0, [r3, #-12]	@ zero_extendqisi2
+ 1335              	.L96:
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1336              		.loc 1 391 9 discriminator 6 view .LVU275
+ 1337 0046 FFF7FEFF 		bl	serial_print_int
+ 1338              	.LVL155:
+ 392:../../protocol.c ****     }
+ 1339              		.loc 1 392 9 is_stmt 1 discriminator 6 view .LVU276
+ 1340 004a 2020     		movs	r0, #32
+ 1341 004c FFF7FEFF 		bl	serial_putc
+ 1342              	.LVL156:
+ 388:../../protocol.c ****     {
+ 1343              		.loc 1 388 31 discriminator 6 view .LVU277
+ 388:../../protocol.c ****     {
+ 1344              		.loc 1 388 32 is_stmt 0 discriminator 6 view .LVU278
+ 1345 0050 0134     		adds	r4, r4, #1
+ 1346              	.LVL157:
+ 388:../../protocol.c ****     {
+ 1347              		.loc 1 388 32 discriminator 6 view .LVU279
+ 1348 0052 E4B2     		uxtb	r4, r4
+ 1349              	.LVL158:
+ 1350              	.L94:
+ 388:../../protocol.c ****     {
+ 1351              		.loc 1 388 24 is_stmt 1 discriminator 2 view .LVU280
+ 388:../../protocol.c ****     {
+ 1352              		.loc 1 388 5 is_stmt 0 discriminator 2 view .LVU281
+ 1353 0054 072C     		cmp	r4, #7
+ 1354 0056 0CD8     		bhi	.L101
+ 390:../../protocol.c ****         serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
+ 1355              		.loc 1 390 9 is_stmt 1 view .LVU282
+ 1356 0058 4D20     		movs	r0, #77
+ 1357 005a FFF7FEFF 		bl	serial_putc
+ 1358              	.LVL159:
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1359              		.loc 1 391 9 view .LVU283
+ 1360 005e 062C     		cmp	r4, #6
+ 1361 0060 EDD1     		bne	.L95
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1362              		.loc 1 391 56 is_stmt 0 discriminator 2 view .LVU284
+ 1363 0062 04AB     		add	r3, sp, #16
+ 1364 0064 2344     		add	r3, r3, r4
+ 1365 0066 13F80C3C 		ldrb	r3, [r3, #-12]	@ zero_extendqisi2
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1366              		.loc 1 391 42 discriminator 2 view .LVU285
+ 1367 006a 062B     		cmp	r3, #6
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 37
+
+
+ 1368 006c E7D1     		bne	.L95
+ 391:../../protocol.c ****         serial_putc(' ');
+ 1369              		.loc 1 391 9 view .LVU286
+ 1370 006e 0720     		movs	r0, #7
+ 1371 0070 E9E7     		b	.L96
+ 1372              	.L101:
+ 1373              	.LBE5:
+ 395:../../protocol.c ****     serial_print_int(modalgroups[8]);
+ 1374              		.loc 1 395 5 is_stmt 1 view .LVU287
+ 1375 0072 5420     		movs	r0, #84
+ 1376 0074 FFF7FEFF 		bl	serial_putc
+ 1377              	.LVL160:
+ 396:../../protocol.c ****     serial_putc(' ');
+ 1378              		.loc 1 396 5 view .LVU288
+ 1379 0078 9DF80C00 		ldrb	r0, [sp, #12]	@ zero_extendqisi2
+ 1380 007c FFF7FEFF 		bl	serial_print_int
+ 1381              	.LVL161:
+ 397:../../protocol.c **** 
+ 1382              		.loc 1 397 5 view .LVU289
+ 1383 0080 2020     		movs	r0, #32
+ 1384 0082 FFF7FEFF 		bl	serial_putc
+ 1385              	.LVL162:
+ 399:../../protocol.c ****     serial_print_int(feed);
+ 1386              		.loc 1 399 5 view .LVU290
+ 1387 0086 4620     		movs	r0, #70
+ 1388 0088 FFF7FEFF 		bl	serial_putc
+ 1389              	.LVL163:
+ 400:../../protocol.c ****     serial_putc(' ');
+ 1390              		.loc 1 400 5 view .LVU291
+ 1391 008c BDF80200 		ldrh	r0, [sp, #2]
+ 1392 0090 FFF7FEFF 		bl	serial_print_int
+ 1393              	.LVL164:
+ 401:../../protocol.c **** 
+ 1394              		.loc 1 401 5 view .LVU292
+ 1395 0094 2020     		movs	r0, #32
+ 1396 0096 FFF7FEFF 		bl	serial_putc
+ 1397              	.LVL165:
+ 403:../../protocol.c ****     serial_print_int(spindle);
+ 1398              		.loc 1 403 5 view .LVU293
+ 1399 009a 5320     		movs	r0, #83
+ 1400 009c FFF7FEFF 		bl	serial_putc
+ 1401              	.LVL166:
+ 404:../../protocol.c **** 
+ 1402              		.loc 1 404 5 view .LVU294
+ 1403 00a0 BDF80000 		ldrh	r0, [sp]
+ 1404 00a4 FFF7FEFF 		bl	serial_print_int
+ 1405              	.LVL167:
+ 406:../../protocol.c ****     procotol_send_newline();
+ 1406              		.loc 1 406 5 view .LVU295
+ 1407 00a8 5D20     		movs	r0, #93
+ 1408 00aa FFF7FEFF 		bl	serial_putc
+ 1409              	.LVL168:
+ 407:../../protocol.c **** }
+ 1410              		.loc 1 407 5 view .LVU296
+ 1411 00ae FFF7FEFF 		bl	procotol_send_newline
+ 1412              	.LVL169:
+ 408:../../protocol.c **** 
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 38
+
+
+ 1413              		.loc 1 408 1 is_stmt 0 view .LVU297
+ 1414 00b2 04B0     		add	sp, sp, #16
+ 1415              	.LCFI23:
+ 1416              		.cfi_def_cfa_offset 8
+ 1417              		@ sp needed
+ 1418 00b4 10BD     		pop	{r4, pc}
+ 1419              	.LVL170:
+ 1420              	.L103:
+ 408:../../protocol.c **** 
+ 1421              		.loc 1 408 1 view .LVU298
+ 1422 00b6 00BF     		.align	2
+ 1423              	.L102:
+ 1424 00b8 00000000 		.word	.LC24
+ 1425              		.cfi_endproc
+ 1426              	.LFE74:
+ 1428              		.section	.rodata.protocol_send_start_blocks.str1.4,"aMS",%progbits,1
+ 1429              		.align	2
+ 1430              	.LC25:
+ 1431 0000 244E303D 		.ascii	"$N0=\000"
+ 1431      00
+ 1432 0005 000000   		.align	2
+ 1433              	.LC26:
+ 1434 0008 244E313D 		.ascii	"$N1=\000"
+ 1434      00
+ 1435              		.section	.text.protocol_send_start_blocks,"ax",%progbits
+ 1436              		.align	1
+ 1437              		.global	protocol_send_start_blocks
+ 1438              		.syntax unified
+ 1439              		.thumb
+ 1440              		.thumb_func
+ 1441              		.fpu softvfp
+ 1443              	protocol_send_start_blocks:
+ 1444              	.LFB77:
+ 427:../../protocol.c **** 
+ 428:../../protocol.c **** void protocol_send_start_blocks(void)
+ 429:../../protocol.c **** {
+ 1445              		.loc 1 429 1 is_stmt 1 view -0
+ 1446              		.cfi_startproc
+ 1447              		@ args = 0, pretend = 0, frame = 8
+ 1448              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1449 0000 10B5     		push	{r4, lr}
+ 1450              	.LCFI24:
+ 1451              		.cfi_def_cfa_offset 8
+ 1452              		.cfi_offset 4, -8
+ 1453              		.cfi_offset 14, -4
+ 1454 0002 82B0     		sub	sp, sp, #8
+ 1455              	.LCFI25:
+ 1456              		.cfi_def_cfa_offset 16
+ 430:../../protocol.c **** 	unsigned char c = 0;
+ 1457              		.loc 1 430 2 view .LVU300
+ 1458              		.loc 1 430 16 is_stmt 0 view .LVU301
+ 1459 0004 0023     		movs	r3, #0
+ 1460 0006 8DF80730 		strb	r3, [sp, #7]
+ 431:../../protocol.c **** 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
+ 1461              		.loc 1 431 2 is_stmt 1 view .LVU302
+ 1462              	.LVL171:
+ 432:../../protocol.c **** 	serial_print_str(__romstr__("$N0="));
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 39
+
+
+ 1463              		.loc 1 432 2 view .LVU303
+ 1464 000a 1548     		ldr	r0, .L110
+ 1465 000c FFF7FEFF 		bl	serial_print_str
+ 1466              	.LVL172:
+ 431:../../protocol.c **** 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
+ 1467              		.loc 1 431 11 is_stmt 0 view .LVU304
+ 1468 0010 DA20     		movs	r0, #218
+ 1469              	.LVL173:
+ 1470              	.L106:
+ 433:../../protocol.c **** 	for(;;)
+ 1471              		.loc 1 433 2 is_stmt 1 view .LVU305
+ 434:../../protocol.c **** 	{
+ 435:../../protocol.c **** 		settings_load(address++, &c, 1);
+ 1472              		.loc 1 435 3 view .LVU306
+ 1473 0012 431C     		adds	r3, r0, #1
+ 1474 0014 9CB2     		uxth	r4, r3
+ 1475              	.LVL174:
+ 1476              		.loc 1 435 3 is_stmt 0 view .LVU307
+ 1477 0016 0122     		movs	r2, #1
+ 1478 0018 0DF10701 		add	r1, sp, #7
+ 1479 001c FFF7FEFF 		bl	settings_load
+ 1480              	.LVL175:
+ 436:../../protocol.c **** 		if(c)
+ 1481              		.loc 1 436 3 is_stmt 1 view .LVU308
+ 1482              		.loc 1 436 6 is_stmt 0 view .LVU309
+ 1483 0020 9DF80700 		ldrb	r0, [sp, #7]	@ zero_extendqisi2
+ 1484              		.loc 1 436 5 view .LVU310
+ 1485 0024 18B1     		cbz	r0, .L105
+ 437:../../protocol.c **** 		{
+ 438:../../protocol.c **** 			serial_putc(c);
+ 1486              		.loc 1 438 4 is_stmt 1 view .LVU311
+ 1487 0026 FFF7FEFF 		bl	serial_putc
+ 1488              	.LVL176:
+ 433:../../protocol.c **** 	{
+ 1489              		.loc 1 433 7 view .LVU312
+ 435:../../protocol.c **** 		if(c)
+ 1490              		.loc 1 435 3 is_stmt 0 view .LVU313
+ 1491 002a 2046     		mov	r0, r4
+ 1492 002c F1E7     		b	.L106
+ 1493              	.L105:
+ 439:../../protocol.c **** 		}
+ 440:../../protocol.c **** 		else
+ 441:../../protocol.c **** 		{
+ 442:../../protocol.c **** 			procotol_send_newline();
+ 1494              		.loc 1 442 4 is_stmt 1 view .LVU314
+ 1495 002e FFF7FEFF 		bl	procotol_send_newline
+ 1496              	.LVL177:
+ 443:../../protocol.c **** 			break;
+ 1497              		.loc 1 443 4 view .LVU315
+ 444:../../protocol.c **** 		}
+ 445:../../protocol.c **** 	}
+ 446:../../protocol.c **** 	
+ 447:../../protocol.c **** 	address = STARTUP_BLOCK1_ADDRESS_OFFSET;
+ 1498              		.loc 1 447 2 view .LVU316
+ 448:../../protocol.c **** 	serial_print_str(__romstr__("$N1="));
+ 1499              		.loc 1 448 2 view .LVU317
+ 1500 0032 0C48     		ldr	r0, .L110+4
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 40
+
+
+ 1501 0034 FFF7FEFF 		bl	serial_print_str
+ 1502              	.LVL178:
+ 447:../../protocol.c **** 	serial_print_str(__romstr__("$N1="));
+ 1503              		.loc 1 447 10 is_stmt 0 view .LVU318
+ 1504 0038 DB20     		movs	r0, #219
+ 1505              	.LVL179:
+ 1506              	.L108:
+ 449:../../protocol.c **** 	for(;;)
+ 1507              		.loc 1 449 2 is_stmt 1 view .LVU319
+ 450:../../protocol.c **** 	{
+ 451:../../protocol.c **** 		settings_load(address++, &c, 1);
+ 1508              		.loc 1 451 3 view .LVU320
+ 1509 003a 431C     		adds	r3, r0, #1
+ 1510 003c 9CB2     		uxth	r4, r3
+ 1511              	.LVL180:
+ 1512              		.loc 1 451 3 is_stmt 0 view .LVU321
+ 1513 003e 0122     		movs	r2, #1
+ 1514 0040 0DF10701 		add	r1, sp, #7
+ 1515 0044 FFF7FEFF 		bl	settings_load
+ 1516              	.LVL181:
+ 452:../../protocol.c **** 		if(c)
+ 1517              		.loc 1 452 3 is_stmt 1 view .LVU322
+ 1518              		.loc 1 452 6 is_stmt 0 view .LVU323
+ 1519 0048 9DF80700 		ldrb	r0, [sp, #7]	@ zero_extendqisi2
+ 1520              		.loc 1 452 5 view .LVU324
+ 1521 004c 18B1     		cbz	r0, .L107
+ 453:../../protocol.c **** 		{
+ 454:../../protocol.c **** 			serial_putc(c);
+ 1522              		.loc 1 454 4 is_stmt 1 view .LVU325
+ 1523 004e FFF7FEFF 		bl	serial_putc
+ 1524              	.LVL182:
+ 449:../../protocol.c **** 	{
+ 1525              		.loc 1 449 7 view .LVU326
+ 451:../../protocol.c **** 		if(c)
+ 1526              		.loc 1 451 3 is_stmt 0 view .LVU327
+ 1527 0052 2046     		mov	r0, r4
+ 1528 0054 F1E7     		b	.L108
+ 1529              	.L107:
+ 455:../../protocol.c **** 		}
+ 456:../../protocol.c **** 		else
+ 457:../../protocol.c **** 		{
+ 458:../../protocol.c **** 			procotol_send_newline();
+ 1530              		.loc 1 458 4 is_stmt 1 view .LVU328
+ 1531 0056 FFF7FEFF 		bl	procotol_send_newline
+ 1532              	.LVL183:
+ 459:../../protocol.c **** 			break;
+ 1533              		.loc 1 459 4 view .LVU329
+ 460:../../protocol.c **** 		}
+ 461:../../protocol.c **** 	}
+ 462:../../protocol.c **** }
+ 1534              		.loc 1 462 1 is_stmt 0 view .LVU330
+ 1535 005a 02B0     		add	sp, sp, #8
+ 1536              	.LCFI26:
+ 1537              		.cfi_def_cfa_offset 8
+ 1538              		@ sp needed
+ 1539 005c 10BD     		pop	{r4, pc}
+ 1540              	.LVL184:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 41
+
+
+ 1541              	.L111:
+ 1542              		.loc 1 462 1 view .LVU331
+ 1543 005e 00BF     		.align	2
+ 1544              	.L110:
+ 1545 0060 00000000 		.word	.LC25
+ 1546 0064 08000000 		.word	.LC26
+ 1547              		.cfi_endproc
+ 1548              	.LFE77:
+ 1550              		.section	.text.protocol_send_ucnc_settings,"ax",%progbits
+ 1551              		.align	1
+ 1552              		.global	protocol_send_ucnc_settings
+ 1553              		.syntax unified
+ 1554              		.thumb
+ 1555              		.thumb_func
+ 1556              		.fpu softvfp
+ 1558              	protocol_send_ucnc_settings:
+ 1559              	.LFB78:
+ 463:../../protocol.c **** 
+ 464:../../protocol.c **** void protocol_send_ucnc_settings(void)
+ 465:../../protocol.c **** {
+ 1560              		.loc 1 465 1 is_stmt 1 view -0
+ 1561              		.cfi_startproc
+ 1562              		@ args = 0, pretend = 0, frame = 0
+ 1563              		@ frame_needed = 0, uses_anonymous_args = 0
+ 1564 0000 10B5     		push	{r4, lr}
+ 1565              	.LCFI27:
+ 1566              		.cfi_def_cfa_offset 8
+ 1567              		.cfi_offset 4, -8
+ 1568              		.cfi_offset 14, -4
+ 466:../../protocol.c ****     protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
+ 1569              		.loc 1 466 5 view .LVU333
+ 1570 0002 444C     		ldr	r4, .L122
+ 1571 0004 A188     		ldrh	r1, [r4, #4]
+ 1572 0006 0020     		movs	r0, #0
+ 1573 0008 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1574              	.LVL185:
+ 467:../../protocol.c ****     protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
+ 1575              		.loc 1 467 5 view .LVU334
+ 1576 000c A179     		ldrb	r1, [r4, #6]	@ zero_extendqisi2
+ 1577 000e 0220     		movs	r0, #2
+ 1578 0010 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1579              	.LVL186:
+ 468:../../protocol.c ****     protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
+ 1580              		.loc 1 468 5 view .LVU335
+ 1581 0014 E179     		ldrb	r1, [r4, #7]	@ zero_extendqisi2
+ 1582 0016 0320     		movs	r0, #3
+ 1583 0018 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1584              	.LVL187:
+ 469:../../protocol.c ****     protocol_send_gcode_setting_line_int(4, g_settings.step_enable_invert);
+ 1585              		.loc 1 469 5 view .LVU336
+ 1586 001c 217A     		ldrb	r1, [r4, #8]	@ zero_extendqisi2
+ 1587 001e 0420     		movs	r0, #4
+ 1588 0020 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1589              	.LVL188:
+ 470:../../protocol.c ****     protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
+ 1590              		.loc 1 470 5 view .LVU337
+ 1591 0024 617A     		ldrb	r1, [r4, #9]	@ zero_extendqisi2
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 42
+
+
+ 1592 0026 0520     		movs	r0, #5
+ 1593 0028 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1594              	.LVL189:
+ 471:../../protocol.c ****     protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
+ 1595              		.loc 1 471 5 view .LVU338
+ 1596 002c 217B     		ldrb	r1, [r4, #12]	@ zero_extendqisi2
+ 1597 002e 0720     		movs	r0, #7
+ 1598 0030 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1599              	.LVL190:
+ 472:../../protocol.c ****     protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
+ 1600              		.loc 1 472 5 view .LVU339
+ 1601 0034 E17A     		ldrb	r1, [r4, #11]	@ zero_extendqisi2
+ 1602 0036 0A20     		movs	r0, #10
+ 1603 0038 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1604              	.LVL191:
+ 473:../../protocol.c ****     protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
+ 1605              		.loc 1 473 5 view .LVU340
+ 1606 003c 2169     		ldr	r1, [r4, #16]	@ float
+ 1607 003e 0C20     		movs	r0, #12
+ 1608 0040 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1609              	.LVL192:
+ 474:../../protocol.c ****     protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
+ 1610              		.loc 1 474 5 view .LVU341
+ 1611 0044 617D     		ldrb	r1, [r4, #21]	@ zero_extendqisi2
+ 1612 0046 1420     		movs	r0, #20
+ 1613 0048 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1614              	.LVL193:
+ 475:../../protocol.c ****     protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
+ 1615              		.loc 1 475 5 view .LVU342
+ 1616 004c A17D     		ldrb	r1, [r4, #22]	@ zero_extendqisi2
+ 1617 004e 1520     		movs	r0, #21
+ 1618 0050 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1619              	.LVL194:
+ 476:../../protocol.c ****     protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);
+ 1620              		.loc 1 476 5 view .LVU343
+ 1621 0054 E17D     		ldrb	r1, [r4, #23]	@ zero_extendqisi2
+ 1622 0056 1620     		movs	r0, #22
+ 1623 0058 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1624              	.LVL195:
+ 477:../../protocol.c ****     protocol_send_gcode_setting_line_int(23, g_settings.homing_dir_invert_mask);
+ 1625              		.loc 1 477 5 view .LVU344
+ 1626 005c 217E     		ldrb	r1, [r4, #24]	@ zero_extendqisi2
+ 1627 005e 1720     		movs	r0, #23
+ 1628 0060 FFF7FEFF 		bl	protocol_send_gcode_setting_line_int
+ 1629              	.LVL196:
+ 478:../../protocol.c ****     protocol_send_gcode_setting_line_flt(24, g_settings.homing_slow_feed_rate);
+ 1630              		.loc 1 478 5 view .LVU345
+ 1631 0064 216A     		ldr	r1, [r4, #32]	@ float
+ 1632 0066 1820     		movs	r0, #24
+ 1633 0068 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1634              	.LVL197:
+ 479:../../protocol.c ****     protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
+ 1635              		.loc 1 479 5 view .LVU346
+ 1636 006c E169     		ldr	r1, [r4, #28]	@ float
+ 1637 006e 1920     		movs	r0, #25
+ 1638 0070 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1639              	.LVL198:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 43
+
+
+ 480:../../protocol.c ****     protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+ 1640              		.loc 1 480 5 view .LVU347
+ 1641 0074 616A     		ldr	r1, [r4, #36]	@ float
+ 1642 0076 1B20     		movs	r0, #27
+ 1643 0078 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1644              	.LVL199:
+ 481:../../protocol.c ****     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
+ 1645              		.loc 1 481 5 view .LVU348
+ 1646 007c A16A     		ldr	r1, [r4, #40]	@ float
+ 1647 007e 1E20     		movs	r0, #30
+ 1648 0080 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1649              	.LVL200:
+ 482:../../protocol.c ****     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
+ 1650              		.loc 1 482 5 view .LVU349
+ 1651 0084 E16A     		ldr	r1, [r4, #44]	@ float
+ 1652 0086 1F20     		movs	r0, #31
+ 1653 0088 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1654              	.LVL201:
+ 483:../../protocol.c **** 
+ 484:../../protocol.c ****     for(uint8_t i = 0; i < AXIS_COUNT; i++)
+ 1655              		.loc 1 484 5 view .LVU350
+ 1656              	.LBB6:
+ 1657              		.loc 1 484 9 view .LVU351
+ 1658              		.loc 1 484 17 is_stmt 0 view .LVU352
+ 1659 008c 0024     		movs	r4, #0
+ 1660              		.loc 1 484 5 view .LVU353
+ 1661 008e 0BE0     		b	.L113
+ 1662              	.LVL202:
+ 1663              	.L114:
+ 485:../../protocol.c ****     {
+ 486:../../protocol.c ****         protocol_send_gcode_setting_line_flt(100 + i , g_settings.step_per_mm[i]);
+ 1664              		.loc 1 486 9 is_stmt 1 discriminator 3 view .LVU354
+ 1665 0090 04F10C02 		add	r2, r4, #12
+ 1666 0094 04F16400 		add	r0, r4, #100
+ 1667 0098 1E4B     		ldr	r3, .L122
+ 1668 009a 53F82210 		ldr	r1, [r3, r2, lsl #2]	@ float
+ 1669 009e C0B2     		uxtb	r0, r0
+ 1670 00a0 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1671              	.LVL203:
+ 484:../../protocol.c ****     {
+ 1672              		.loc 1 484 40 discriminator 3 view .LVU355
+ 484:../../protocol.c ****     {
+ 1673              		.loc 1 484 41 is_stmt 0 discriminator 3 view .LVU356
+ 1674 00a4 0134     		adds	r4, r4, #1
+ 1675              	.LVL204:
+ 484:../../protocol.c ****     {
+ 1676              		.loc 1 484 41 discriminator 3 view .LVU357
+ 1677 00a6 E4B2     		uxtb	r4, r4
+ 1678              	.LVL205:
+ 1679              	.L113:
+ 484:../../protocol.c ****     {
+ 1680              		.loc 1 484 24 is_stmt 1 discriminator 1 view .LVU358
+ 484:../../protocol.c ****     {
+ 1681              		.loc 1 484 5 is_stmt 0 discriminator 1 view .LVU359
+ 1682 00a8 022C     		cmp	r4, #2
+ 1683 00aa F1D9     		bls	.L114
+ 1684              	.LBE6:
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 44
+
+
+ 1685              	.LBB7:
+ 487:../../protocol.c ****     }
+ 488:../../protocol.c **** 
+ 489:../../protocol.c ****     for(uint8_t i = 0; i < AXIS_COUNT; i++)
+ 1686              		.loc 1 489 17 view .LVU360
+ 1687 00ac 0024     		movs	r4, #0
+ 1688              	.LVL206:
+ 1689              		.loc 1 489 17 view .LVU361
+ 1690 00ae 0CE0     		b	.L115
+ 1691              	.LVL207:
+ 1692              	.L116:
+ 490:../../protocol.c ****     {
+ 491:../../protocol.c ****         protocol_send_gcode_setting_line_flt(110 + i , g_settings.max_feed_rate[i]);
+ 1693              		.loc 1 491 9 is_stmt 1 discriminator 3 view .LVU362
+ 1694 00b0 04F10E02 		add	r2, r4, #14
+ 1695 00b4 174B     		ldr	r3, .L122
+ 1696 00b6 03EB8203 		add	r3, r3, r2, lsl #2
+ 1697 00ba 04F16E00 		add	r0, r4, #110
+ 1698 00be 5968     		ldr	r1, [r3, #4]	@ float
+ 1699 00c0 C0B2     		uxtb	r0, r0
+ 1700 00c2 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1701              	.LVL208:
+ 489:../../protocol.c ****     {
+ 1702              		.loc 1 489 40 discriminator 3 view .LVU363
+ 489:../../protocol.c ****     {
+ 1703              		.loc 1 489 41 is_stmt 0 discriminator 3 view .LVU364
+ 1704 00c6 0134     		adds	r4, r4, #1
+ 1705              	.LVL209:
+ 489:../../protocol.c ****     {
+ 1706              		.loc 1 489 41 discriminator 3 view .LVU365
+ 1707 00c8 E4B2     		uxtb	r4, r4
+ 1708              	.LVL210:
+ 1709              	.L115:
+ 489:../../protocol.c ****     {
+ 1710              		.loc 1 489 24 is_stmt 1 discriminator 1 view .LVU366
+ 489:../../protocol.c ****     {
+ 1711              		.loc 1 489 5 is_stmt 0 discriminator 1 view .LVU367
+ 1712 00ca 022C     		cmp	r4, #2
+ 1713 00cc F0D9     		bls	.L116
+ 1714              	.LBE7:
+ 1715              	.LBB8:
+ 492:../../protocol.c ****     }
+ 493:../../protocol.c **** 
+ 494:../../protocol.c ****     for(uint8_t i = 0; i < AXIS_COUNT; i++)
+ 1716              		.loc 1 494 17 view .LVU368
+ 1717 00ce 0024     		movs	r4, #0
+ 1718              	.LVL211:
+ 1719              		.loc 1 494 17 view .LVU369
+ 1720 00d0 0BE0     		b	.L117
+ 1721              	.LVL212:
+ 1722              	.L118:
+ 495:../../protocol.c ****     {
+ 496:../../protocol.c ****         protocol_send_gcode_setting_line_flt(120 + i , g_settings.acceleration[i]);
+ 1723              		.loc 1 496 9 is_stmt 1 discriminator 3 view .LVU370
+ 1724 00d2 04F11202 		add	r2, r4, #18
+ 1725 00d6 04F17800 		add	r0, r4, #120
+ 1726 00da 0E4B     		ldr	r3, .L122
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 45
+
+
+ 1727 00dc 53F82210 		ldr	r1, [r3, r2, lsl #2]	@ float
+ 1728 00e0 C0B2     		uxtb	r0, r0
+ 1729 00e2 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1730              	.LVL213:
+ 494:../../protocol.c ****     {
+ 1731              		.loc 1 494 40 discriminator 3 view .LVU371
+ 494:../../protocol.c ****     {
+ 1732              		.loc 1 494 41 is_stmt 0 discriminator 3 view .LVU372
+ 1733 00e6 0134     		adds	r4, r4, #1
+ 1734              	.LVL214:
+ 494:../../protocol.c ****     {
+ 1735              		.loc 1 494 41 discriminator 3 view .LVU373
+ 1736 00e8 E4B2     		uxtb	r4, r4
+ 1737              	.LVL215:
+ 1738              	.L117:
+ 494:../../protocol.c ****     {
+ 1739              		.loc 1 494 24 is_stmt 1 discriminator 1 view .LVU374
+ 494:../../protocol.c ****     {
+ 1740              		.loc 1 494 5 is_stmt 0 discriminator 1 view .LVU375
+ 1741 00ea 022C     		cmp	r4, #2
+ 1742 00ec F1D9     		bls	.L118
+ 1743              	.LBE8:
+ 1744              	.LBB9:
+ 497:../../protocol.c ****     }
+ 498:../../protocol.c **** 
+ 499:../../protocol.c ****     for(uint8_t i = 0; i < AXIS_COUNT; i++)
+ 1745              		.loc 1 499 17 view .LVU376
+ 1746 00ee 0024     		movs	r4, #0
+ 1747              	.LVL216:
+ 1748              		.loc 1 499 17 view .LVU377
+ 1749 00f0 0CE0     		b	.L119
+ 1750              	.LVL217:
+ 1751              	.L120:
+ 500:../../protocol.c ****     {
+ 501:../../protocol.c ****         protocol_send_gcode_setting_line_flt(130 + i , g_settings.max_distance[i]);
+ 1752              		.loc 1 501 9 is_stmt 1 discriminator 3 view .LVU378
+ 1753 00f2 04F11402 		add	r2, r4, #20
+ 1754 00f6 074B     		ldr	r3, .L122
+ 1755 00f8 03EB8203 		add	r3, r3, r2, lsl #2
+ 1756 00fc A4F17E00 		sub	r0, r4, #126
+ 1757 0100 5968     		ldr	r1, [r3, #4]	@ float
+ 1758 0102 C0B2     		uxtb	r0, r0
+ 1759 0104 FFF7FEFF 		bl	protocol_send_gcode_setting_line_flt
+ 1760              	.LVL218:
+ 499:../../protocol.c ****     {
+ 1761              		.loc 1 499 40 discriminator 3 view .LVU379
+ 499:../../protocol.c ****     {
+ 1762              		.loc 1 499 41 is_stmt 0 discriminator 3 view .LVU380
+ 1763 0108 0134     		adds	r4, r4, #1
+ 1764              	.LVL219:
+ 499:../../protocol.c ****     {
+ 1765              		.loc 1 499 41 discriminator 3 view .LVU381
+ 1766 010a E4B2     		uxtb	r4, r4
+ 1767              	.LVL220:
+ 1768              	.L119:
+ 499:../../protocol.c ****     {
+ 1769              		.loc 1 499 24 is_stmt 1 discriminator 1 view .LVU382
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 46
+
+
+ 499:../../protocol.c ****     {
+ 1770              		.loc 1 499 5 is_stmt 0 discriminator 1 view .LVU383
+ 1771 010c 022C     		cmp	r4, #2
+ 1772 010e F0D9     		bls	.L120
+ 1773              	.LBE9:
+ 502:../../protocol.c ****     }
+ 503:../../protocol.c **** }
+ 1774              		.loc 1 503 1 view .LVU384
+ 1775 0110 10BD     		pop	{r4, pc}
+ 1776              	.LVL221:
+ 1777              	.L123:
+ 1778              		.loc 1 503 1 view .LVU385
+ 1779 0112 00BF     		.align	2
+ 1780              	.L122:
+ 1781 0114 00000000 		.word	g_settings
+ 1782              		.cfi_endproc
+ 1783              	.LFE78:
+ 1785              		.text
+ 1786              	.Letext0:
+ 1787              		.file 2 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1788              		.file 3 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1789              		.file 4 "Drivers/CMSIS/Include/core_cm3.h"
+ 1790              		.file 5 "Drivers/CMSIS/Device/ST/STM32F1xx/Include/system_stm32f1xx.h"
+ 1791              		.file 6 "Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h"
+ 1792              		.file 7 "../../settings.h"
+ 1793              		.file 8 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\lib\\gcc\\arm-none
+ 1794              		.file 9 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\inc
+ 1795              		.file 10 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 1796              		.file 11 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 1797              		.file 12 "c:\\program files (x86)\\gnu arm embedded toolchain\\9 2020-q2-update\\arm-none-eabi\\in
+ 1798              		.file 13 "../../serial.h"
+ 1799              		.file 14 "../../parser.h"
+ 1800              		.file 15 "../../interpolator.h"
+ 1801              		.file 16 "../../kinematics.h"
+ 1802              		.file 17 "../../io_control.h"
+ 1803              		.file 18 "../../cnc.h"
+ 1804              		.file 19 "../../motion_control.h"
+ 1805              		.file 20 "../../planner.h"
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 47
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 protocol.c
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:16     .text.procotol_send_newline:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:23     .text.procotol_send_newline:00000000 procotol_send_newline
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:49     .text.protocol_send_gcode_setting_line_int:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:55     .text.protocol_send_gcode_setting_line_int:00000000 protocol_send_gcode_setting_line_int
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:99     .text.protocol_get_tools:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:105    .text.protocol_get_tools:00000000 protocol_get_tools
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:140    .rodata.protocol_send_status_tail.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:150    .text.protocol_send_status_tail:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:156    .text.protocol_send_status_tail:00000000 protocol_send_status_tail
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:295    .text.protocol_send_status_tail:0000009c $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:303    .text.protocol_send_gcode_setting_line_flt:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:309    .text.protocol_send_gcode_setting_line_flt:00000000 protocol_send_gcode_setting_line_flt
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:354    .rodata.protocol_send_ok.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:358    .text.protocol_send_ok:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:365    .text.protocol_send_ok:00000000 protocol_send_ok
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:388    .text.protocol_send_ok:00000010 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:393    .rodata.protocol_send_error.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:397    .text.protocol_send_error:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:404    .text.protocol_send_error:00000000 protocol_send_error
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:436    .text.protocol_send_error:00000018 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:441    .rodata.protocol_send_alarm.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:445    .text.protocol_send_alarm:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:452    .text.protocol_send_alarm:00000000 protocol_send_alarm
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:484    .text.protocol_send_alarm:00000018 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:489    .text.protocol_send_string:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:496    .text.protocol_send_string:00000000 protocol_send_string
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:519    .rodata.protocol_send_status.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:557    .text.protocol_send_status:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:564    .text.protocol_send_status:00000000 protocol_send_status
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:664    .text.protocol_send_status:00000062 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:696    .text.protocol_send_status:00000082 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:991    .text.protocol_send_status:000001f4 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1008   .rodata.protocol_send_gcode_coordsys.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1027   .text.protocol_send_gcode_coordsys:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1034   .text.protocol_send_gcode_coordsys:00000000 protocol_send_gcode_coordsys
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1235   .text.protocol_send_gcode_coordsys:000000f4 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1245   .rodata.protocol_send_gcode_modes.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1249   .text.protocol_send_gcode_modes:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1256   .text.protocol_send_gcode_modes:00000000 protocol_send_gcode_modes
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1424   .text.protocol_send_gcode_modes:000000b8 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1429   .rodata.protocol_send_start_blocks.str1.4:00000000 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1436   .text.protocol_send_start_blocks:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1443   .text.protocol_send_start_blocks:00000000 protocol_send_start_blocks
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1545   .text.protocol_send_start_blocks:00000060 $d
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1551   .text.protocol_send_ucnc_settings:00000000 $t
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1558   .text.protocol_send_ucnc_settings:00000000 protocol_send_ucnc_settings
+C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s:1781   .text.protocol_send_ucnc_settings:00000114 $d
+
+UNDEFINED SYMBOLS
+serial_putc
+serial_print_int
+parser_get_modes
+parser_get_wco
+planner_get_overflows
+serial_print_str
+ARM GAS  C:\Users\JCEM\AppData\Local\Temp\ccSbvOAn.s 			page 48
+
+
+serial_print_fltarr
+serial_print_flt
+__aeabi_fmul
+__aeabi_f2uiz
+itp_get_rt_position
+kinematics_apply_reverse_transform
+itp_get_rt_feed
+io_get_controls
+io_get_limits
+cnc_get_exec_state
+mc_get_checkmode
+io_get_probe
+parser_get_coordsys
+parser_get_probe_result
+settings_load
+g_settings
