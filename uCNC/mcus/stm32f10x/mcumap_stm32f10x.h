@@ -3513,12 +3513,6 @@
 		__indirect__(diopin, ADC)->CR2 |= 0x1UL; \
 }
 
-#define mcu_config_timer(timer)
-{
-	TIMERREG->CR1 = 0;
-	TIMERREG->PSC = 71;
-}
-
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = __indirect__(diopin, BIT))

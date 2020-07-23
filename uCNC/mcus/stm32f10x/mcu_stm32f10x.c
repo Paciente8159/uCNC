@@ -519,25 +519,25 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 //starts a constant rate pulse at a given frequency.
 void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller)
 {
-	TIMER_REG->PSC = prescaller;
-	TIMER_REG->ARR = ticks;
-	TIMER_REG->CR1 |= 0xE1UL; //enable counter in center-aligned mode and autoreload pre buffered
-	TIMER_REG->DIER |= 0x1UL;
-	HAL_NVIC_EnableIRQ(TIMER_IRQ);
+	//__indirect(TIMER_REG,)->PSC = prescaller;
+	//__indirect(TIMER_REG,)->ARR = ticks;
+	//__indirect(TIMER_REG,)->CR1 |= 0xE1UL; //enable counter in center-aligned mode and autoreload pre buffered
+	//__indirect(TIMER_REG,)->DIER |= 0x1UL;
+	//HAL_NVIC_EnableIRQ(TIMER_IRQ);
 }
 
 //modifies the pulse frequency
 void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller)
 {
-	TIMERREG->PSC = prescaller;
-	TIMERREG->ARR = ticks;
+	//__indirect(TIMER_REG,)->PSC = prescaller;
+	//__indirect(TIMER_REG,)->ARR = ticks;
 }
 
 //stops the pulse
 void mcu_step_stop_ISR(void)
 {
-	TIMERREG->CR1 &= ~0x1UL;
-	TIMERREG->DIER &= ~0x1UL;
+	//__indirect(TIMER_REG,)->CR1 &= ~0x1UL;
+	//__indirect(TIMER_REG,)->DIER &= ~0x1UL;
 }
 
 //Custom delay function
