@@ -924,7 +924,7 @@ char mcu_getc(void)
 }
 
 //RealTime
-void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint16_t* prescaller)
 {
     if(frequency < F_STEP_MIN)
         frequency = F_STEP_MIN;
@@ -965,7 +965,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_start_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
     //stops timer
     TCCRB = 0;
@@ -983,11 +983,11 @@ void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
     TIMSK |= (1 << OCIEB) | (1 << OCIEA);
 
     //start timer in CTC mode with the correct prescaler
-    TCCRB = prescaller;
+    TCCRB = (uint8_t)prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
-void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_change_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
     //stops timer
     //TCCRB = 0;
@@ -999,7 +999,7 @@ void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
     //reset timer
     //TCNT = 0;
     //start timer in CTC mode with the correct prescaler
-    TCCRB = prescaller;
+    TCCRB = (uint8_t)prescaller;
 }
 
 void mcu_step_stop_ISR(void)

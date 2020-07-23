@@ -344,7 +344,7 @@ void mcu_bufferClear(void)
 }
 
 //RealTime
-void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint8_t *tick_reps)
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 {
 	if (frequency < F_STEP_MIN)
 		frequency = F_STEP_MIN;
@@ -367,7 +367,7 @@ void mcu_disable_interrupts(void)
 }
 
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
-void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_start_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
 	pulse_interval = clocks_speed >> 1;
 	resetpulse_interval = clocks_speed;
@@ -375,7 +375,7 @@ void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 	pulse_enabled = true;
 }
 
-void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
+void mcu_change_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
 	pulse_enabled = false;
 	pulse_interval = clocks_speed >> 1;

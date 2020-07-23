@@ -47,10 +47,10 @@
 
 #if (BOARD == BOARD_BLUEPILL)
 #define MCU MCU_STM32F10X
-#ifndef ENABLE_SYNC_TX //enable sync send (used for USB VCP)
+#include "mcus\stm32f10x\boardmap_bluepill.h"
+#ifndef COM_PORT //enable sync send (used for USB VCP)
 #define ENABLE_SYNC_TX
 #endif
-#include "mcus\stm32f10x\boardmap_bluepill.h"
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
