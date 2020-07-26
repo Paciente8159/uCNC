@@ -3410,14 +3410,21 @@
 #define UDRE __udrereg__(COM_NUMBER)
 #define RXC __rxcreg__(COM_NUMBER)
 */
+
 //Timer registers
 #ifndef TIMER_NUMBER
 #define TIMER_NUMBER 2
 #endif
-#define TIMER_REG __helper__(TIM,TIMER_NUMBER,)//__timreg__(TIMER_NUMBER)
-#if (TIMER_NUMBER==1 || TIMER_NUMBER==8)
+#define TIMER_REG __helper__(TIM,TIMER_NUMBER,)
+#if (TIMER_NUMBER==1 || (TIMER_NUMBER>=8 & TIMER_NUMBER<=11))
+#define TIMER_ENREG APB2ENR
+#define TIMER_RESETREG APB1RSTR
+#define TIMER_APB __helper__(RCC_APB2ENR_TIM,TIMER_NUMBER, EN)
 #define TIMER_IRQ __helper__(TIM,TIMER_NUMBER, _UP_IRQn)
 #else
+#define TIMER_ENREG APB1ENR
+#define TIMER_RESETREG APB1RSTR
+#define TIMER_APB __helper__(RCC_APB1ENR_TIM,TIMER_NUMBER, EN)
 #define TIMER_IRQ __helper__(TIM,TIMER_NUMBER, _IRQn)
 #endif
 
@@ -3446,9 +3453,9 @@
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = __indirect__(diopin, BIT))
-#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BRR = __indirect__(diopin, BIT))
-#define mcu_toogle_output(diopin) (TOGGLEFLAG(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
+#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U<<__indirect__(diopin, BIT)))
+#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BRR = (1U<<__indirect__(diopin, BIT)))
+#define mcu_toggle_output(diopin) (TOGGLEBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_pwm(diopin, pwmvalue)                                                                                                           \
 	{                                                                                                                                           \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((((uint32_t)__indirect__(diopin, TIMREG)->ARR) * pwmvalue) / 255); \

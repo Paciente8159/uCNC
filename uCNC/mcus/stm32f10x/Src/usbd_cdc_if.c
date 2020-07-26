@@ -269,6 +269,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     //serial_putc((unsigned char)Buf[i]);
     serial_rx_isr((unsigned char)Buf[i]);
   }
+  
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);

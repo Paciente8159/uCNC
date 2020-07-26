@@ -66,7 +66,7 @@
 //#define PROBE_ISR 1
 
 //Setup control input pins
-#define ESTOP_BIT 5
+/*#define ESTOP_BIT 5
 #define ESTOP_PORT B
 //#define ESTOP_ISR
 #define FHOLD_BIT 6
@@ -78,8 +78,8 @@
 #define CS_RES_ISR 1*/
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup COM pins (must match selected COM port)
 //#define RX_BIT 10
@@ -108,11 +108,14 @@
 #define DOUT2_BIT 3
 #define DOUT2_PORT C
 */
+#define DOUT15_BIT 13
+#define DOUT15_PORT C
+
 //Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 15
 #define STEP0_EN_PORT A
 
 //Setup the Step Timer used has the heartbeat for µCNC
-#define TIMER_NUMBER 1
+#define TIMER_NUMBER 2
 
 #endif
