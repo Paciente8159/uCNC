@@ -86,35 +86,36 @@ extern void itp_step_reset_isr(void);
 		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
 	}
 
-#define mcu_serial_isr()                                                            \
-	{                                                                               \
-		if (COM_USART->SR & (1U << 5U))                                            \
-		{                                                                           \
-			unsigned char c = COM_INREG;                                            \
-			serial_rx_isr(c);                                                       \
-		}                                                                           \
-		if (COM_USART->SR & (1U << 7U))                                            \
-		{                                                                           \
-			serial_tx_isr();                                                        \
-		}                                                                           \
-		COM_USART->SR = 0;                                                          \
-		NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F)); \
+__attribute__((always_inline)) static inline void mcu_serial_isr(void)
+{
+	if (COM_USART->SR & (1U << 5U))
+	{
+		unsigned char c = COM_INREG;
+		serial_rx_isr(c);
 	}
+	if (COM_USART->SR & (1U << 7U))
+	{
+		serial_tx_isr();
+	}
+	COM_USART->SR = 0;
+	NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
+}
 
-#define mcu_timer_isr()                                                                 \
-	{                                                                                   \
-		static bool resetstep = false;                                                  \
-		if ((TIMER_REG->SR & 1))                                                        \
-		{                                                                               \
-			if (!resetstep)                                                             \
-				itp_step_isr();                                                         \
-			else                                                                        \
-				itp_step_reset_isr();                                                   \
-			resetstep != resetstep;                                                     \
-		}                                                                               \
-		TIMER_REG->SR = 0;                                                              \
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F)); \
+__attribute__((always_inline)) static inline void mcu_timer_isr(void)
+{
+	static bool resetstep = false;
+	if ((TIMER_REG->SR & 1))
+	{
+		if (!resetstep)
+			itp_step_isr();
+		else
+			itp_step_reset_isr();
+		resetstep = !resetstep;
 	}
+	TIMER_REG->SR = 0;
+	NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+	mcu_enable_interrupts();
+}
 
 #if (COM_PORT == 1)
 void USART1_IRQHandler(void)
@@ -702,7 +703,7 @@ void mcu_disable_interrupts(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	//up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 1) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -719,16 +720,17 @@ void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller)
 {
 	RCC->TIMER_ENREG |= TIMER_APB;
 	TIMER_REG->CR1 = 0;
-	TIMER_REG->DIER = 1;
+	TIMER_REG->DIER = 0;
 	TIMER_REG->PSC = prescaller;
 	TIMER_REG->ARR = ticks;
-	TIMER_REG->SR = 0;
+	TIMER_REG->EGR |= 0x01;
+	TIMER_REG->SR &= ~0x01;
 
 	NVIC->ISER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-	NVIC->IP[(uint32_t)(TIMER_IRQ)] = ((2 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-	NVIC->ICER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-
-	TIMER_REG->CR1 = 0x00E1; //enable timer center-aligned count mode 3
+	NVIC->IP[(uint32_t)(TIMER_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
+	NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+	TIMER_REG->DIER |= 1;
+	TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
 }
 
 //modifies the pulse frequency
@@ -736,6 +738,7 @@ void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller)
 {
 	TIMER_REG->ARR = ticks;
 	TIMER_REG->PSC = prescaller;
+	TIMER_REG->EGR |= 0x01;
 }
 
 //stops the pulse
@@ -743,7 +746,7 @@ void mcu_step_stop_ISR(void)
 {
 	TIMER_REG->CR1 &= ~0x1;
 	TIMER_REG->DIER &= ~0x1;
-	TIMER_REG->SR = 0;
+	TIMER_REG->SR &= ~0x01;
 	NVIC->ICER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
 }
 
