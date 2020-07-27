@@ -31,8 +31,8 @@
 #define STEP1_PORT D //assigns STEP1 port
 #define STEP0_BIT 2 //assigns STEP0 pin
 #define STEP0_PORT D //assigns STEP0 port
-#define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
-#define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
+//#define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
+//#define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
 
 //Setup dir pins
 #define DIR2_BIT 7 //assigns DIR2 pin

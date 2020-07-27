@@ -161,12 +161,12 @@ uint8_t mc_line(float *target, motion_data_t block_data)
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
         //checks if any of the linear actuators there is a shift in direction
-        if (mc_last_dirbits ^ block_data.dirbits)
+        uint8_t inverted_steps = mc_last_dirbits ^ block_data.dirbits;
+        if (inverted_steps)
         {
-            motion_data_t backlash_block_data = {};
-            memcpy(backlash_block_data, block_data, sizeof(block_data));
+            motion_data_t backlash_block_data = {0};
+            memcpy(&backlash_block_data, &block_data, sizeof(motion_data_t));
             memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
-            backlash_block_data.cos_theta = 0;   //forces entry speed of 0
             backlash_block_data.total_steps = 0; //recalculates total_steps
             backlash_block_data.feed = FLT_MAX;  //max feedrate possible (same as rapid move)
 
@@ -175,7 +175,7 @@ uint8_t mc_line(float *target, motion_data_t block_data)
             for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
                 i--;
-                if (((mc_last_dirbits ^ block_data.dirbits) & (1 << i)) != 0)
+                if (inverted_steps & (1 << i))
                 {
                     backlash_block_data.steps[i] = g_settings.backlash_steps[i];
                     backlash_block_data.full_steps += backlash_block_data.steps[i];
@@ -198,12 +198,6 @@ uint8_t mc_line(float *target, motion_data_t block_data)
             }
 
             mc_last_dirbits = block_data.dirbits;
-        }
-
-        //checks if any of the linear actuators there is a shift in direction
-        if (mc_last_dirbits ^ block_data.dirbits)
-        {
-            block_data.cos_theta = 0; //forces entry speed of 0
         }
 #endif
         //calculated the total motion execution time @ the given rate

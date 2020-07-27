@@ -159,7 +159,7 @@
 //#define ENABLE_LINACT_PLANNER
 #ifdef ENABLE_LINACT_PLANNER
 //uncomment to do a stop and start if any of the linear actuators is at a still state or changes direction
-//#define ENABLE_LINACT_COLD_START
+#define ENABLE_LINACT_COLD_START
 #endif
 
 /*

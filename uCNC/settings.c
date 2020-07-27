@@ -110,15 +110,15 @@ const settings_t __rom__ default_settings =
 #endif
 
 #ifdef ENABLE_SKEW_COMPENSATION
-        .skew_xy_factor = DEFAULT_skew_xy_factor;
+        .skew_xy_factor = 0,
 #ifndef SKEW_COMPENSATION_XY_ONLY
-.skew_xz_factor = DEFAULT_skew_xy_factor;
-.skew_yz_factor;
+.skew_xz_factor = 0,
+.skew_yz_factor = 0,
 #endif
 #endif
 
 #if STEPPER_COUNT > 0
-    .step_per_mm[0] = DEFAULT_0_STEP_PER_MM,
+.step_per_mm[0] = DEFAULT_0_STEP_PER_MM,
     .max_feed_rate[0] = DEFAULT_0_MAX_FEED,
     .acceleration[0] = DEFAULT_0_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -186,7 +186,8 @@ const settings_t __rom__ default_settings =
     .homing_enabled = DEFAULT_HOMING_ENABLED,
     .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
     .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM
-};
+}
+;
 
 //static uint8_t settings_crc;
 
