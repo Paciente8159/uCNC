@@ -1671,8 +1671,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
             }
         }
 
-        //if new feed is defined (normal feed mode) convert o mm
-        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && CHECKFLAG(block_data.motion_mode,MOTIONCONTROL_MODE_FEED))
+        //if normal feed mode convert to mm/s
+        if (CHECKFLAG(block_data.motion_mode,MOTIONCONTROL_MODE_FEED))
         {
             words->f *= 25.4f;
         }
