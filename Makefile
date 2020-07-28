@@ -5,4 +5,4 @@ MAKE 	 = make
 .PHONY: avr
 
 avr:
-	cd ./uCNC/mcus/avr/ && $(MAKE) clean all
+	cd ./uCNC/mcus/avr/ && $(MAKE) all
