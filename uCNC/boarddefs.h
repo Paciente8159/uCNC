@@ -32,17 +32,17 @@
 
 #if (BOARD == BOARD_GRBL)
 #define MCU MCU_AVR
-#include "mcus\avr\boardmap_grbl.h"
+#include "mcus/avr/boardmap_grbl.h"
 #endif
 
 #if (BOARD == BOARD_RAMBO14)
 #define MCU MCU_AVR
-#include "mcus\avr\boardmap_rambo14.h"
+#include "mcus/avr/boardmap_rambo14.h"
 #endif
 
 #if (BOARD == BOARD_RAMPS14)
 #define MCU MCU_AVR
-#include "mcus\avr\boardmap_ramps14.h"
+#include "mcus/avr/boardmap_ramps14.h"
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
