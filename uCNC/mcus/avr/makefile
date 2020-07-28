@@ -20,7 +20,7 @@ RM       = rm -f
 all: all-before $(BIN) all-after
 
 clean: clean-custom
-	${RM} $(LINKOBJ) $(DOBJ) $(BIN) $(HEX)
+	-${RM} $(LINKOBJ) $(DOBJ) $(BIN) $(HEX)
 
 all-before:
 	-mkdir build
