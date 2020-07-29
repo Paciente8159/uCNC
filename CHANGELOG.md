@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.0.0] - not released
+## [1.0.0] - 2020-07-30
 
 ### Changed
   - modified makefile and instructions for AVR
@@ -14,7 +14,11 @@
   - fixed parsing error in check mode (planner position not updated after linear motions)
   - fixed feed override caused feed to go to 0 above 180% feed override value
   - change macro and library dependencies so that the option for fast Sqrt function works (AVR problem only)
+  - fixed feed issue while G20(inches) was active that made the internal feed state value to always be converted from inches to mm even if not explicitly declared in the gcode command. This caused the feed rate to decay to 0.
+  - fixed jog state that was permanently on after a finnished (not aborted) jog motion. New jog commands were also not accepted while in this state
+  - fixed parsing of reset commands ($RST=) that accepted non regular/incomplete forms of the command 
   - fixed README
+  - fixed devCpp project file (compilation errors) 
 
 ## [1.0.0-rc] - 2020-07-11
 
