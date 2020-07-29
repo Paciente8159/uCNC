@@ -1,17 +1,17 @@
 /*
 	Name: defaults.h
-	Description: Compile time default settings for µCNC.
+	Description: Compile time default settings for ÂµCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
+	Copyright: Copyright (c) JoÃ£o Martins
+	Author: JoÃ£o Martins
 	Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
+	ÂµCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
+	ÂµCNC is distributed WITHOUT ANY WARRANTY;
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
