@@ -437,9 +437,9 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     //back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
 
-    //sync's the planner
-    planner_resync_position();
-    mc_resync_position();
+    //sync's the planner and motion control done when clearing the planner
+    //planner_resync_position();
+    //mc_resync_position();
     mc_get_position(target);
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {

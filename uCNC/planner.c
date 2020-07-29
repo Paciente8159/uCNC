@@ -26,6 +26,7 @@
 #include "mcu.h"
 #include "settings.h"
 #include "planner.h"
+#include "motion_control.h"
 #include "interpolator.h"
 #include "io_control.h"
 #include "cnc.h"
@@ -139,6 +140,8 @@ void planner_clear(void)
 #endif
     //resyncs position with interpolator
     planner_resync_position();
+    //forces motion control to resync postition after clearing the planner buffer
+    mc_resync_position();
 }
 
 planner_block_t *planner_get_block(void)
