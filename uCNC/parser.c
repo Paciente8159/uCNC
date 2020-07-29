@@ -364,15 +364,18 @@ uint8_t parser_grbl_command(void)
 			break;			
         case 'R':
             serial_getc();
-            if(parser_eat_next_char('S'))
+            error = parser_eat_next_char('S');
+            if(error)
             {
                 break;
             }
-            if(parser_eat_next_char('T'))
+            error = parser_eat_next_char('T');
+            if(error)
             {
                 break;
             }
-            if(parser_eat_next_char('='))
+            error = parser_eat_next_char('=');
+            if(error)
             {
                 break;
             }
