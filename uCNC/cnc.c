@@ -636,6 +636,12 @@ bool cnc_check_interlocking(void)
 
         return false;
     }
+	
+    //clears EXEC_JOG if not step ISR is stopped and planner has no more moves
+    if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
+    {
+        CLEARFLAG(cnc_state.exec_state, EXEC_JOG);
+    }
 
     return true;
 }

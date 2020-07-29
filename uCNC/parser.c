@@ -335,7 +335,7 @@ uint8_t parser_grbl_command(void)
                 error = STATUS_INVALID_JOG_COMMAND;
                 break;
             }
-            if(cnc_get_exec_state(EXEC_ALLACTIVE)) //Jog only allowed in IDLE
+            if(cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) //Jog only allowed in IDLE or JOG mode
             {
                 error = STATUS_IDLE_ERROR;
                 break;
