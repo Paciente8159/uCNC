@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D__SIMUL___@@_
+Compiler=-D__SIMUL__ -DMCU=MCU_VIRTUAL_@@_
 CppCompiler=_@@_
 Linker=
 IsCpp=0
@@ -27,8 +27,8 @@ CommandLine=
 Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
-CompilerSet=0
-CompilerSettings=000000e0e0000000001000000
+CompilerSet=1
+CompilerSettings=00000000e0000000001000000
 UnitCount=43
 
 [VersionInfo]
