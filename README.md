@@ -18,14 +18,14 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC 1.0.0 is in Release Candidate and is stable. It can be used in production stages with care.
+µCNC 1.0.0 is stable. Never the less for use in production work extreme it is recomended to do a dry run before doing the work.
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
 
 ```
 List of Supported G-Codes in µCNC 1.0.0-beta.2:
-  - Non-Modal Commands: G4, G10, G28, G30, G53, G92, G92.1, G92.2, G92.3
+  - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
   - Feed Rate Modes: G93, G94
   - Unit Modes: G20, G21
@@ -40,12 +40,13 @@ List of Supported G-Codes in µCNC 1.0.0-beta.2:
   - Spindle Control: M3, M4, M5
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
   - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
+
+  _*also G10 L2 P28 and P30 to set homming coordinates_
 ```
 
 TODO List of G-Codes in µCNC future releases:
   - Program Flow: M0, M1
   - PID control
-  - configurable homing positions (G28 and G30)
 
 ### µCNC capabilities
 µCNC currently supports up to (depending on the MCU/board capabilities):
