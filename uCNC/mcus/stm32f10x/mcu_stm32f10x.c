@@ -601,6 +601,7 @@ void mcu_init(void)
 #endif
 
 	mcu_enable_interrupts();
+	mcu_clear_output(LED);
 }
 
 #ifndef mcu_enable_probe_isr
@@ -660,6 +661,7 @@ extern uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
 
 void mcu_putc(char c)
 {
+	mcu_toggle_output(LED);
 #ifdef COM_PORT
 	while (!(COM_USART->SR & (1 << 7)))
 		;
