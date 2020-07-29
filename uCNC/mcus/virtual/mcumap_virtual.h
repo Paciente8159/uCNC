@@ -33,11 +33,11 @@
 #define rom_read_byte *
 
 //commento to use console only
-//#define COMPORT "\\\\.\\COM3"
+//#define COM_PORT "\\\\.\\COM3"
 
-#ifndef COMPORT
+#ifndef COM_PORT
 #define USECONSOLE
-#define COMPORT ""
+#define COM_PORT ""
 #endif
 
 //defines a pointer to an unknow stucture that is defined in the mcu_virtual

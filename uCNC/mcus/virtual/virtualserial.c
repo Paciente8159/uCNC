@@ -37,7 +37,7 @@
 #else
 
 HANDLE win_serial = NULL;
-unsigned char ComPortName[] = COMPORT;
+unsigned char ComPortName[] = COM_PORT;
 unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
 int virtualserial_open(void)

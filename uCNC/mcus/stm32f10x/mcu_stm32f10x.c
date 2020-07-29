@@ -86,6 +86,7 @@ extern void itp_step_reset_isr(void);
 		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
 	}
 
+#ifdef COM_PORT
 __attribute__((always_inline)) static inline void mcu_serial_isr(void)
 {
 	if (COM_USART->SR & (1U << 5U))
@@ -100,6 +101,7 @@ __attribute__((always_inline)) static inline void mcu_serial_isr(void)
 	COM_USART->SR = 0;
 	NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
 }
+#endif
 
 __attribute__((always_inline)) static inline void mcu_timer_isr(void)
 {
@@ -669,7 +671,7 @@ void mcu_putc(char c)
 	if (c == '\n' || i == (TX_BUFFER_SIZE - 1))
 	{
 		mcu_tx_buffer[i] = 0;
-		CDC_Transmit_FS(mcu_tx_buffer, i);
+		while(CDC_Transmit_FS(mcu_tx_buffer, i));
 		i = 0;
 	}
 #endif
