@@ -49,8 +49,8 @@
 	After the main blocks of the controller have been selected the configuration can be build
 */
 
-#include "boarddefs.h" //sets the mcu pin configuration based on the board
-#include "machinedefs.h" //configures the kinematics for the cnc machine
+#include "boarddefs.h"	   //sets the mcu pin configuration based on the board
+#include "machinedefs.h"   //configures the kinematics for the cnc machine
 #include "config_helper.h" //runs the config helper to create and define all variables
 
 /*
@@ -168,16 +168,23 @@
 //#define ENABLE_BACKLASH_COMPENSATION
 
 /*
-	Compilation specific options
+	Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).
+	The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
+	Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
 */
-//#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
-//#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-//#define ENABLE_FAST_SQRT //enable  Quake III style fast sqrt utils. Feed rate calculations will be more accurate. In the fast mode the output feed might be +/-5% of the programmed feed
+#define DSS_MAX_OVERSAMPLING 0
 
 /*
 	Uses pin pooling for all limits and control pins (no interrupts)
 */
 //#define USE_INPUTS_POOLING_ONLY
+
+/*
+	Compilation specific options
+*/
+//#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
+//#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
+//#define ENABLE_FAST_SQRT //enable  Quake III style fast sqrt utils. Feed rate calculations will be more accurate. In the fast mode the output feed might be +/-5% of the programmed feed
 
 #include "utils.h"
 
