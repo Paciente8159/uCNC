@@ -262,15 +262,15 @@ uint8_t parse_grbl_error_code(uint8_t code)
             protocol_send_start_blocks();
             break;
         case GRBL_SEND_CHECKMODE_ON:
-            protocol_send_string(MSG_FEEDBACK_4);
+            protocol_send_feedback(MSG_FEEDBACK_4);
             break;
         case GRBL_SEND_CHECKMODE_OFF:
                 cnc_stop();
                 cnc_alarm(EXEC_ALARM_RESET);
-                protocol_send_string(MSG_FEEDBACK_5);
+                protocol_send_feedback(MSG_FEEDBACK_5);
             break;
         case GRBL_SEND_SETTINGS_RESET:
-            protocol_send_string(MSG_FEEDBACK_9);
+            protocol_send_feedback(MSG_FEEDBACK_9);
             break;
         case GRBL_UNLOCK:
             cnc_unlock();
@@ -278,7 +278,7 @@ uint8_t parse_grbl_error_code(uint8_t code)
             {
                 return STATUS_CHECK_DOOR;
             }
-            protocol_send_string(MSG_FEEDBACK_3);
+            protocol_send_feedback(MSG_FEEDBACK_3);
             break;
         case GRBL_HOME:
             if (!g_settings.homing_enabled)
@@ -518,18 +518,21 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
     modalgroups[0] = parser_state.groups.motion;
     modalgroups[1] = parser_state.groups.plane + 17;
     modalgroups[2] = parser_state.groups.distance_mode + 90;
-    modalgroups[3] = parser_state.groups.units + 20;
-    modalgroups[4] = parser_state.groups.coord_system + 54;
+    modalgroups[3] = parser_state.groups.feedrate_mode + 93;
+    modalgroups[4] = parser_state.groups.units + 20;
+    modalgroups[5] = (!parser_state.groups.tool_length_offset ? 49 : 43);
+    modalgroups[6] = parser_state.groups.coord_system + 54;
+    modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
-    modalgroups[5] = parser_state.groups.spindle_turning + 3;
+    modalgroups[8] = parser_state.groups.spindle_turning + 3;
     *spindle = (uint16_t)ABS(parser_state.spindle);
 #endif
 #ifdef USE_COOLANT
-    modalgroups[6] = 9 - parser_state.groups.coolant;
+    modalgroups[9] = 9 - parser_state.groups.coolant;
 #endif
-    modalgroups[7] = parser_state.groups.feed_speed_override + 48;
+    modalgroups[10] = parser_state.groups.feed_speed_override + 48;
 #ifdef USE_TOOL_CHANGER
-    modalgroups[8] = parser_state.tool_index;
+    modalgroups[11] = parser_state.tool_index;
 #endif
     *feed = (uint16_t)parser_state.feedrate;
 }
@@ -1987,7 +1990,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
         case 3: //M30
             //reset to initial states
             parser_reset();
-            protocol_send_string(MSG_FEEDBACK_8);
+            protocol_send_feedback(MSG_FEEDBACK_8);
             break;
         case 6: //M60
             break;
@@ -2010,7 +2013,7 @@ void parser_reset(void)
     parser_state.groups.feed_speed_override = 0;								  	//M48
     parser_state.groups.cutter_radius_compensation = 0;							  	//G40
     parser_state.groups.distance_mode = 0;										 	//G90
-    parser_state.groups.feedrate_mode = 0;										  	//G94
+    parser_state.groups.feedrate_mode = 1;										  	//G94
     parser_state.groups.tool_length_offset = 0;										//G49
 #ifdef USE_COOLANT
     parser_state.groups.coolant = 0; 												//M9

@@ -131,19 +131,19 @@
 //Non query feedback messages
 #define MSG_START __romstr__("[MSG:")
 #define MSG_END __romstr__("]\r\n")
-#define MSG_FEEDBACK_1 __romstr__("[MSG:Reset to continue]\r\n")
-#define MSG_FEEDBACK_2 __romstr__("[MSG:'$H'|'$X' to unlock]\r\n")
-#define MSG_FEEDBACK_3 __romstr__("[MSG:Caution: Unlocked]\r\n")
-#define MSG_FEEDBACK_4 __romstr__("[MSG:Enabled]\r\n")
-#define MSG_FEEDBACK_5 __romstr__("[MSG:Disabled]\r\n")
-#define MSG_FEEDBACK_6 __romstr__("[MSG:Check Door]\r\n")
-#define MSG_FEEDBACK_7 __romstr__("[MSG:Check Limits]\r\n")
-#define MSG_FEEDBACK_8 __romstr__("[MSG:Pgm End]\r\n")
-#define MSG_FEEDBACK_9 __romstr__("[MSG:Restoring defaults]\r\n")
-#define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
-#define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
+#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
+#define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
+#define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")
+#define MSG_FEEDBACK_4 __romstr__("Enabled")
+#define MSG_FEEDBACK_5 __romstr__("Disabled")
+#define MSG_FEEDBACK_6 __romstr__("Check Door")
+#define MSG_FEEDBACK_7 __romstr__("Check Limits")
+#define MSG_FEEDBACK_8 __romstr__("Pgm End")
+#define MSG_FEEDBACK_9 __romstr__("Restoring defaults")
+#define MSG_FEEDBACK_10 __romstr__("Restoring spindle")
+//#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
-#define MSG_FEEDBACK_12 __romstr__("[MSG:Check Emergency stop]\r\n")
+#define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
 
 //#define MSG_INT "%d"
 //#define MSG_FLT "%0.3f"

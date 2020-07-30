@@ -28,6 +28,7 @@
 #include "cnc.h"
 #include "mcu.h"
 #include "protocol.h"
+#include "grbl_interface.h"
 
 static void procotol_send_newline(void)
 {
@@ -58,6 +59,13 @@ void protocol_send_alarm(uint8_t alarm)
 void protocol_send_string(const unsigned char* __s)
 {
     serial_print_str(__s);
+}
+
+void protocol_send_feedback(const unsigned char* __s)
+{
+    serial_print_str(MSG_START);
+    serial_print_str(__s);
+    serial_print_str(MSG_END);
 }
 
 static uint8_t protocol_get_tools(void)
@@ -370,7 +378,7 @@ void protocol_send_gcode_coordsys(void)
 
 void protocol_send_gcode_modes(void)
 {
-    uint8_t modalgroups[9];
+    uint8_t modalgroups[12];
     uint16_t feed;
     uint16_t spindle;
 
@@ -378,14 +386,23 @@ void protocol_send_gcode_modes(void)
 
     serial_print_str(__romstr__("[GC:"));
 
-    for(uint8_t i = 0; i < 5; i++)
+    for(uint8_t i = 0; i < 7; i++)
     {
         serial_putc('G');
         serial_print_int((int16_t)modalgroups[i]);
         serial_putc(' ');
     }
 
-    for(uint8_t i = 5; i < 8; i++)
+    serial_putc('G');
+    serial_print_int(61);
+    if(modalgroups[7]==62)
+    {
+        serial_putc('.');
+        serial_putc('1');
+    }
+    serial_putc(' ');
+
+    for(uint8_t i = 8; i < 11; i++)
     {
         serial_putc('M');
         serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
@@ -393,7 +410,7 @@ void protocol_send_gcode_modes(void)
     }
 
     serial_putc('T');
-    serial_print_int(modalgroups[8]);
+    serial_print_int(modalgroups[11]);
     serial_putc(' ');
 
     serial_putc('F');

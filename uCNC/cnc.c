@@ -132,7 +132,7 @@ void cnc_run(void)
     if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - ignore it)
     {
         cnc_check_fault_systems();
-        protocol_send_string(MSG_FEEDBACK_1);
+        protocol_send_feedback(MSG_FEEDBACK_1);
         do
         {
         } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
@@ -401,7 +401,7 @@ void cnc_reset(void)
         //cnc_check_fault_systems();
         if (!cnc_get_exec_state(EXEC_ABORT))
         {
-            protocol_send_string(MSG_FEEDBACK_2);
+            protocol_send_feedback(MSG_FEEDBACK_2);
         }
     }
     else
@@ -564,13 +564,13 @@ void cnc_check_fault_systems(void)
 #ifdef ESTOP
     if (CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
     {
-        protocol_send_string(MSG_FEEDBACK_12);
+        protocol_send_feedback(MSG_FEEDBACK_12);
     }
 #endif
 #ifdef SAFETY_DOOR
     if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
     {
-        protocol_send_string(MSG_FEEDBACK_6);
+        protocol_send_feedback(MSG_FEEDBACK_6);
     }
 #endif
 #if (LIMITS_MASK != 0)
@@ -579,7 +579,7 @@ void cnc_check_fault_systems(void)
         inputs = io_get_limits();
         if (CHECKFLAG(inputs, LIMITS_MASK))
         {
-            protocol_send_string(MSG_FEEDBACK_7);
+            protocol_send_feedback(MSG_FEEDBACK_7);
         }
     }
 #endif
