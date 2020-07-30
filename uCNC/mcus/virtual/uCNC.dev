@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D__SIMUL__ -DMCU=MCU_VIRTUAL_@@_
+Compiler=-D__SIMUL__ -DBOARD=BOARD_VIRTUAL_@@_
 CppCompiler=_@@_
 Linker=
 IsCpp=0
