@@ -56,7 +56,7 @@ static uint8_t planner_ovr_counter;
 /*
 	Planner buffer functions
 */
-static inline void planner_buffer_read(void)
+static void planner_buffer_read(void)
 {
     planner_data_slots++;
     if (++planner_data_read == PLANNER_BUFFER_SIZE)
@@ -65,7 +65,7 @@ static inline void planner_buffer_read(void)
     }
 }
 
-static inline void planner_buffer_write(void)
+FORCEINLINE_FORSIZE static void planner_buffer_write(void)
 {
     planner_data_slots--;
     if (++planner_data_write == PLANNER_BUFFER_SIZE)
@@ -74,7 +74,7 @@ static inline void planner_buffer_write(void)
     }
 }
 
-static inline uint8_t planner_buffer_next(uint8_t index)
+static uint8_t planner_buffer_next(uint8_t index)
 {
     if (++index == PLANNER_BUFFER_SIZE)
     {
@@ -84,7 +84,7 @@ static inline uint8_t planner_buffer_next(uint8_t index)
     return index;
 }
 
-static inline uint8_t planner_buffer_prev(uint8_t index)
+static uint8_t planner_buffer_prev(uint8_t index)
 {
     if (index == 0)
     {
@@ -104,7 +104,7 @@ bool planner_buffer_is_full(void)
     return (planner_data_slots == 0);
 }
 
-static inline void planner_buffer_clear(void)
+static void planner_buffer_clear(void)
 {
     planner_data_write = 0;
     planner_data_read = 0;

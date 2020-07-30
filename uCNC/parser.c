@@ -183,9 +183,9 @@ static bool parser_get_float(float *value, bool *isinteger);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words);
 static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words);
-static void parser_load_parameters();
-static uint8_t parser_eat_next_char(unsigned char c);
-static void parser_discard_command();
+FORCEINLINE_FORSIZE static void parser_load_parameters();
+FORCEINLINE_FORSIZE static uint8_t parser_eat_next_char(unsigned char c);
+FORCEINLINE_FORSIZE static void parser_discard_command();
 
 /*
 	Initializes the gcode parser

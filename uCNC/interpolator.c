@@ -106,7 +106,7 @@ volatile static bool itp_busy;
 /*
 	Interpolator segment buffer functions
 */
-static inline void itp_sgm_buffer_read(void)
+static void itp_sgm_buffer_read(void)
 {
     itp_sgm_data_slots++;
     if (++itp_sgm_data_read == INTERPOLATOR_BUFFER_SIZE)
@@ -115,7 +115,7 @@ static inline void itp_sgm_buffer_read(void)
     }
 }
 
-static inline void itp_sgm_buffer_write(void)
+static void itp_sgm_buffer_write(void)
 {
     itp_sgm_data_slots--;
     if (++itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
@@ -124,17 +124,17 @@ static inline void itp_sgm_buffer_write(void)
     }
 }
 
-static inline bool itp_sgm_is_empty(void)
+static bool itp_sgm_is_empty(void)
 {
     return (itp_sgm_data_slots == INTERPOLATOR_BUFFER_SIZE);
 }
 
-static inline bool itp_sgm_is_full(void)
+static bool itp_sgm_is_full(void)
 {
     return (itp_sgm_data_slots == 0);
 }
 
-static inline void itp_sgm_clear(void)
+static void itp_sgm_clear(void)
 {
     itp_sgm_data_write = 0;
     itp_sgm_data_read = 0;
@@ -147,7 +147,7 @@ static inline void itp_sgm_clear(void)
 */
 //NOT NEEDED
 /*
-static inline void itp_blk_buffer_read(void)
+static void itp_blk_buffer_read(void)
 {
 	itp_blk_data_read++;
 	itp_blk_data_slots++;
@@ -157,7 +157,7 @@ static inline void itp_blk_buffer_read(void)
 	}
 }*/
 
-static inline void itp_blk_buffer_write(void)
+static void itp_blk_buffer_write(void)
 {
     //itp_blk_data_slots--; //AUTOMATIC LOOP
     if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
@@ -166,17 +166,17 @@ static inline void itp_blk_buffer_write(void)
     }
 }
 /* NOT NECESSARY
-static inline bool itp_blk_is_empty(void)
+static bool itp_blk_is_empty(void)
 {
 	return (itp_blk_data_slots == INTERPOLATOR_BUFFER_SIZE);
 }*/
 
-/*static inline bool itp_blk_is_full(void)
+/*static bool itp_blk_is_full(void)
 {
 	return (itp_blk_data_slots == 0);
 }*/
 
-static inline void itp_blk_clear(void)
+static void itp_blk_clear(void)
 {
     itp_blk_data_write = 0;
     itp_blk_data_read = 0;
