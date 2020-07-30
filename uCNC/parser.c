@@ -2008,9 +2008,9 @@ void parser_reset(void)
     parser_state.groups.coord_system = 0;											//G54
     parser_state.groups.plane = 0;												  	//G17
     parser_state.groups.feed_speed_override = 0;								  	//M48
-    parser_state.groups.cutter_radius_compensation = 0;							  	//M40
-    parser_state.groups.distance_mode = 1;										 	//G91
-    parser_state.groups.feedrate_mode = 1;										  	//G94
+    parser_state.groups.cutter_radius_compensation = 0;							  	//G40
+    parser_state.groups.distance_mode = 0;										 	//G90
+    parser_state.groups.feedrate_mode = 0;										  	//G94
     parser_state.groups.tool_length_offset = 0;										//G49
 #ifdef USE_COOLANT
     parser_state.groups.coolant = 0; 												//M9
