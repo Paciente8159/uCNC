@@ -45,6 +45,9 @@ typedef struct
     int16_t spindle;
     uint16_t dwell;
     uint8_t motion_mode;
+    #ifdef USE_COOLANT
+    uint8_t coolant;
+    #endif
 } planner_block_data_t;
 
 typedef struct

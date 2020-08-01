@@ -88,29 +88,11 @@ void cnc_run(void)
             case EOL:
                 serial_getc();
                 break;
-            case '$':
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_ECHO);
-#endif
-                error = parser_grbl_command();
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_END);
-#endif
-                error = parse_grbl_error_code(error); //processes the error code to perform additional actions
-                break;
             default:
 #ifdef ECHO_CMD
                 protocol_send_string(MSG_ECHO);
 #endif
-                if (!cnc_get_exec_state(EXEC_GCODE_LOCKED))
-                {
-                    error = parser_gcode_command();
-                }
-                else
-                {
-                    error = STATUS_SYSTEM_GC_LOCK;
-                }
-
+                error = parser_read_command();
 #ifdef ECHO_CMD
                 protocol_send_string(MSG_END);
 #endif
