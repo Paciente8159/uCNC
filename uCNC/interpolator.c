@@ -1,5 +1,5 @@
 /*
-	Name: itp_linear.c
+	Name: interpolator.c
 	Description: Implementation of a linear acceleration interpolator for µCNC.
 		The linear acceleration interpolator generates step profiles with constant acceleration.
 
@@ -67,6 +67,9 @@ typedef struct pulse_sgm_
     uint16_t remaining_steps;
     uint16_t clocks_per_tick;
     uint8_t ticks_per_step;
+#if (DSS_MAX_OVERSAMPLING != 0)
+    uint8_t next_dss;
+#endif
 #ifdef USE_SPINDLE
     uint8_t spindle;
     bool spindle_inv;
@@ -265,33 +268,34 @@ void itp_run(void)
                 break; //exits after adding the dwell segment if motion is 0 (empty motion block)
             }
 
-            //erases previous values
-            //erases previous values
-            #ifdef ENABLE_BACKLASH_COMPENSATION
+//overwrites previous values
+#ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
-            #endif
+#endif
             itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
-            itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps;
-            memcpy(itp_blk_data[itp_blk_data_write].steps, itp_cur_plan_block->steps, sizeof(itp_blk_data[itp_blk_data_write].steps));
+            itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
+            //memcpy(itp_blk_data[itp_blk_data_write].steps, itp_cur_plan_block->steps, sizeof(itp_blk_data[itp_blk_data_write].steps));
 
             /*float mm_step[AXIS_COUNT];
             uint32_t step_mm[STEPPER_COUNT];
             memset(&step_mm, 0, sizeof(step_mm));*/
-            
+
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
             feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->step_indexer];
             float sqr_step_speed = 0;
 
-			for(uint8_t i = STEPPER_COUNT; i!=0;)
-			{
-				i--;
-				sqr_step_speed += (float)itp_cur_plan_block->steps[i] * (float)itp_cur_plan_block->steps[i];
-			}
-			
-			sqr_step_speed *= total_step_inv * total_step_inv;
+            for (uint8_t i = STEPPER_COUNT; i != 0;)
+            {
+                i--;
+                sqr_step_speed += (float)itp_cur_plan_block->steps[i] * (float)itp_cur_plan_block->steps[i];
+                itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+                itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
+            }
 
-	        feed_convert *= fast_sqrt(sqr_step_speed);
-			/*
+            sqr_step_speed *= total_step_inv * total_step_inv;
+
+            feed_convert *= fast_sqrt(sqr_step_speed);
+            /*
             step_mm[itp_cur_plan_block->step_indexer] = 1;
             kinematics_apply_forward(step_mm, mm_step);
             feed_convert = 0;
@@ -303,18 +307,18 @@ void itp_run(void)
 
             feed_convert = fast_sqrt(feed_convert) * 60.f;*/
             //initializes data for generating step segments
-            unprocessed_steps = itp_blk_data[itp_blk_data_write].total_steps;
+            unprocessed_steps = itp_cur_plan_block->total_steps;
 
             //flags block for recalculation of speeds
             itp_needs_update = true;
 
             half_speed_change = 0.5f * INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
 
-            uint32_t error = itp_blk_data[itp_blk_data_write].total_steps >> 1;
-            for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+            /*for (uint8_t i = 0; i < STEPPER_COUNT; i++)
             {
-                itp_blk_data[itp_blk_data_write].errors[i] = error;
+                itp_blk_data[itp_blk_data_write].errors[i] = itp_blk_data[itp_blk_data_write].total_steps;
             }
+            itp_blk_data[itp_blk_data_write].total_steps <<= 1;*/
         }
 
         if (itp_sgm_is_full()) //re-checks in case an injected dweel filled the buffer
@@ -442,21 +446,43 @@ void itp_run(void)
             itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
         }
 
+//The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
+//This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
+//This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
+//This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
+//DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+#if (DSS_MAX_OVERSAMPLING != 0)
+        uint32_t step_speed = (uint32_t)round(current_speed);
+        static uint8_t prev_dss = 0;
+        uint8_t dss = 0;
+        while (step_speed < (F_STEP_MAX >> 2) && dss < DSS_MAX_OVERSAMPLING && segm_steps > 1)
+        {
+            step_speed <<= 1;
+            dss++;
+        }
+
+        sgm->next_dss = dss - prev_dss;
+        prev_dss = dss;
+
         //completes the segment information (step speed, steps) and updates the block
-        mcu_freq_to_clocks(current_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+        sgm->remaining_steps = segm_steps << dss;
+        mcu_freq_to_clocks((float)step_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+#else
         sgm->remaining_steps = segm_steps;
+        mcu_freq_to_clocks(current_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+#endif
         itp_cur_plan_block->total_steps -= segm_steps;
 
         sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
-	float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
+        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
         planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
 #else
         planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
 #endif
 #endif
-        unprocessed_steps -= sgm->remaining_steps;
+        unprocessed_steps -= segm_steps;
 
         if (unprocessed_steps == accel_until) //resets float additions error
         {
@@ -468,8 +494,6 @@ void itp_run(void)
             itp_cur_plan_block->total_steps = deaccel_from;
         }
 
-        itp_sgm_buffer_write();
-
         if (unprocessed_steps == 0)
         {
             itp_blk_buffer_write();
@@ -478,6 +502,9 @@ void itp_run(void)
             //accel_profile = 0; //no updates necessary to planner
             //break;
         }
+
+        //finally write the segment
+        itp_sgm_buffer_write();
     }
 
     //starts the step isr if is stopped and there are segments to execute
@@ -606,13 +633,14 @@ void itp_step_reset_isr(void)
     //if segment needs to update the step ISR (after preloading first step byte
     if (itp_running_sgm->update_speed)
     {
+        mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
+
         //set dir bits
         if (itp_running_sgm->block != NULL)
         {
             io_set_dirs(itp_running_sgm->block->dirbits);
         }
 
-        mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
 #ifdef USE_SPINDLE
         mcu_set_pwm(SPINDLE_PWM, itp_running_sgm->spindle);
         if (!itp_running_sgm->spindle_inv)
@@ -662,6 +690,56 @@ void itp_step_isr(void)
             itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
             cnc_set_exec_state(EXEC_RUN);
             itp_isr_finnished = false;
+#if (DSS_MAX_OVERSAMPLING != 0)
+            if (itp_running_sgm->next_dss != 0)
+            {
+                if (!(itp_running_sgm->next_dss & 0xF8))
+                {
+                    itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
+#ifdef STEP0
+                    itp_running_sgm->block->errors[0] <<= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP1
+                    itp_running_sgm->block->errors[1] <<= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP2
+                    itp_running_sgm->block->errors[2] <<= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP3
+                    itp_running_sgm->block->errors[3] <<= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP4
+                    itp_running_sgm->block->errors[4] <<= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP5
+                    itp_running_sgm->block->errors[5] <<= itp_running_sgm->next_dss;
+#endif
+                }
+                else
+                {
+                    itp_running_sgm->next_dss = -itp_running_sgm->next_dss;
+                    itp_running_sgm->block->total_steps >>= itp_running_sgm->next_dss;
+#ifdef STEP0
+                    itp_running_sgm->block->errors[0] >>= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP1
+                    itp_running_sgm->block->errors[1] >>= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP2
+                    itp_running_sgm->block->errors[2] >>= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP3
+                    itp_running_sgm->block->errors[3] >>= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP4
+                    itp_running_sgm->block->errors[4] >>= itp_running_sgm->next_dss;
+#endif
+#ifdef STEP5
+                    itp_running_sgm->block->errors[5] >>= itp_running_sgm->next_dss;
+#endif
+                }
+            }
+#endif
         }
         else
         {
