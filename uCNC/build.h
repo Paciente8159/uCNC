@@ -19,8 +19,8 @@
 #ifndef BUILD_H
 #define BUILD_H
 
-#define MAJOR_MINOR_VERSION "1.1."
-#define PATCH_VERSION "0-alpha"
+#define MAJOR_MINOR_VERSION "1.0."
+#define PATCH_VERSION "0"
 
 #define VERSION MAJOR_MINOR_VERSION PATCH_VERSION
 

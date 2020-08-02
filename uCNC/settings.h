@@ -50,22 +50,10 @@ typedef struct
     float spindle_max_rpm;
     float spindle_min_rpm;
 
-    float step_per_mm[STEPPER_COUNT];
-    float max_feed_rate[STEPPER_COUNT];
-    float acceleration[STEPPER_COUNT];
-
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    uint16_t backlash_steps[STEPPER_COUNT];
-#endif
+    float step_per_mm[AXIS_COUNT];
+    float max_feed_rate[AXIS_COUNT];
+    float acceleration[AXIS_COUNT];
     float max_distance[AXIS_COUNT];
-
-#ifdef ENABLE_SKEW_COMPENSATION
-    float skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-    float skew_xz_factor;
-    float skew_yz_factor;
-#endif
-#endif
 
     uint8_t tool_count;
 } settings_t;
@@ -79,8 +67,8 @@ extern settings_t g_settings;
 
 void settings_init(void);
 //Assumes that no structure being saved is bigger than 255 bytes
-uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
-void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size);
+uint8_t settings_load(uint16_t address, uint8_t* __ptr, uint8_t size);
+void settings_save(uint16_t address, const uint8_t* __ptr, uint8_t size);
 void settings_reset(void);
 uint8_t settings_change(uint8_t setting, float value);
 void settings_erase(uint16_t address, uint8_t size);

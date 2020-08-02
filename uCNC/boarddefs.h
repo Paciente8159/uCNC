@@ -32,8 +32,6 @@
 
 #if (BOARD == BOARD_GRBL)
 #define MCU MCU_AVR
-//overrides buffer size to fit available memory
-//#define PLANNER_BUFFER_SIZE 14
 #include "mcus\avr\boardmap_grbl.h"
 #endif
 

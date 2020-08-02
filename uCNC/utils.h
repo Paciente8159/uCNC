@@ -19,7 +19,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdint.h>
+#include "config.h"
 
 #ifndef BYTE_OPS
 #define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
@@ -50,9 +50,9 @@
 #endif
 
 //Quake III based fast sqrt calculation
-#if (defined(ENABLE_FAST_SQRT) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__) && (__SIZEOF_FLOAT__ == 4))
-#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
-#define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result;})
+#if (defined(ENABLE_FAST_SQRT) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result; })
+#define fast_inv_sqrt(x) ({int32_t result = 0x0x5F375A86 - (*(int32_t*)&x >> 1);*(float*)&result; })
 #else
 #define fast_sqrt(x) sqrtf(x)
 #define fast_inv_sqrt(x) 1.0f / sqrtf(x)

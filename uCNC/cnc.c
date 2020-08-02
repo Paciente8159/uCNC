@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "config.h"
+#include "utils.h"
 #include "settings.h"
 #include "mcudefs.h"
 #include "mcu.h"
@@ -50,6 +51,7 @@ static cnc_state_t cnc_state;
 static void cnc_check_fault_systems();
 static bool cnc_check_interlocking();
 static void cnc_exec_rt_commands();
+static void cnc_exec_rt_messages();
 static void cnc_reset();
 
 void cnc_init(void)
@@ -62,10 +64,10 @@ void cnc_init(void)
     mcu_init();      //mcu
     serial_init();   //serial
     settings_init(); //settings
-    itp_init();      //interpolator
-    planner_init();  //motion planner
-    mc_init();       //motion control
     parser_init();   //parser
+    mc_init();       //motion control
+    planner_init();  //motion planner
+    itp_init();      //interpolator
     serial_flush();
 }
 
@@ -239,20 +241,20 @@ void cnc_home(void)
     cnc_unlock();
 
     float target[AXIS_COUNT];
-    motion_data_t block_data;
-    mc_get_position(target);
+    planner_block_data_t block_data;
+    planner_get_position(target);
 
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
-        target[i] += ((g_settings.homing_dir_invert_mask & (1<<i)) ? -g_settings.homing_offset : g_settings.homing_offset);
+        target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
     }
 
-    block_data.feed = g_settings.homing_fast_feed_rate;
+    block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
     block_data.spindle = 0;
     block_data.dwell = 0;
     //starts offset and waits to finnish
-    mc_line(target, block_data);
+    planner_add_line((float *)&target, block_data);
     do
     {
         cnc_doevents();
@@ -520,7 +522,7 @@ void cnc_exec_rt_commands(void)
         itp_update();
         if (planner_buffer_is_empty())
         {
-            motion_data_t block = {0};
+            planner_block_data_t block = {};
             block.spindle = planner_get_previous_spindle_speed();
             mc_spindle_coolant(block);
         }

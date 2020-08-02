@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "config.h"
+#include "utils.h"
 
 /*IO functions*/
 #ifndef mcu_get_input
