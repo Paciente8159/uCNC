@@ -906,21 +906,9 @@ void mcu_stop_send(void)
     CLEARBIT(UCSRB,UDRIE);
 }
 
-void mcu_putc(char c)
-{
-    loop_until_bit_is_set(UCSRA, UDRE);
-    COM_OUTREG = c;
-}
-
 bool mcu_is_tx_ready(void)
 {
     return CHECKBIT(UCSRA, UDRE);
-}
-
-char mcu_getc(void)
-{
-    loop_until_bit_is_set(UCSRA, RXC);
-    return COM_INREG;
 }
 
 //RealTime
