@@ -146,7 +146,11 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
         }
     }
 
-    uint16_t segment_count = floor(fabs(0.5 * arc_angle * radius) / sqrt(g_settings.arc_tolerance * (2 * radius - g_settings.arc_tolerance)));
+    //uses as temporary vars
+    float radiusangle = radius * arc_angle;
+    det = fast_flt_div2(radiusangle);
+    float diameter = fast_flt_mul2(radius);
+    uint16_t segment_count = floor(fabs(radiusangle) / sqrt(g_settings.arc_tolerance * (diameter - g_settings.arc_tolerance)));
     float arc_per_sgm = (segment_count != 0) ? arc_angle/segment_count : arc_angle;
     float dist_sgm = 0;
 
@@ -174,7 +178,8 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     float arc_per_sgm_sqr = arc_per_sgm * arc_per_sgm;
     float cos_per_sgm = 1 - 0.1666666667f * arc_per_sgm_sqr;
     float sin_per_sgm = arc_per_sgm * cos_per_sgm;
-    cos_per_sgm = 1 - 0.25f * arc_per_sgm_sqr * (cos_per_sgm + 1);
+    cos_per_sgm = arc_per_sgm_sqr * (cos_per_sgm + 1);
+    cos_per_sgm = 1 - fast_flt_div4(cos_per_sgm);
 
     uint8_t count = 0;
 

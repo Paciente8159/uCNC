@@ -1314,7 +1314,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
                     c_factor = -sqrt((c_factor) / (x_sqr + y_sqr));
 
-                    if (new_state->groups.motion == 3)
+                    if (new_state->groups.motion == G3)
                     {
                         c_factor = -c_factor;
                     }
@@ -1328,6 +1328,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                     // Complete the operation by calculating the actual center of the arc
                     words->ijk[offset_a] = 0.5 * (x - (y * c_factor));
                     words->ijk[offset_b] = 0.5 * (y + (x * c_factor));
+                    words->ijk[offset_a] = fast_flt_div2(words->ijk[offset_a]);
+                    words->ijk[offset_b] = fast_flt_div2(words->ijk[offset_b]);
                     radius = words->r;
                 }
                 else //offset mode
@@ -1338,7 +1340,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                     float x1 = x - words->ijk[offset_a];
                     float y1 = y - words->ijk[offset_b];
                     float r1 = sqrt(x1 * x1 + y1 * y1);
-                    if (fabs(radius - r1) > 0.002) //error must not exceed 0.002mm
+                    if (fabs(radius - r1) > 0.002) //error must not exceed 0.002mm according to the NIST RS274NGC standard
                     {
                         return STATUS_GCODE_INVALID_TARGET;
                     }
