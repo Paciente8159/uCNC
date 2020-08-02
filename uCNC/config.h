@@ -152,8 +152,8 @@
 //#define ENABLE_FAST_SQRT //enable the using of Quake III style super fast sqrt. Feed rate display will be more precise but calculations will be slower.
 
 /*
-	Uses pin pooling for all limits and control pins (no interrupts)
+	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
-//#define USE_INPUTS_POOLING_ONLY
+//#define FORCE_SOFT_POLLING
 
 #endif
