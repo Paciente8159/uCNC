@@ -1,7 +1,7 @@
 # Project: µCNC
 
 MCU 	 = atmega328p
-CC       = avr-gcc.exe
+CC       = avr-gcc
 LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections -mmcu=$(MCU)
 CFLAGS   = -I"../../" -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
 BIN      = $(BUILDDIR)/uCNC.elf
@@ -13,7 +13,7 @@ BUILDDIR = build
 OBJ 	 = $(SOURCE:.c=.o)
 LINKOBJ  = $(addprefix $(BUILDDIR)/,$(notdir $(OBJ)))
 DOBJ 	 = $(LINKOBJ:.o=.d)
-RM       = rm.exe -f
+RM       = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 

@@ -149,11 +149,11 @@
 */
 //#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
 //#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-#define ENABLE_FAST_SQRT //disable the using of Quake III style fast sqrt. Feed rate display will be more precise.
+//#define ENABLE_FAST_SQRT //enable the using of Quake III style super fast sqrt. Feed rate display will be more precise but calculations will be slower.
 
 /*
-	Uses pin pooling for all limits and control pins (no interrupts)
+	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
-//#define USE_INPUTS_POOLING_ONLY
+//#define FORCE_SOFT_POLLING
 
 #endif

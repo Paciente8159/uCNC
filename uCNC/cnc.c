@@ -222,23 +222,13 @@ void cnc_call_rt_command(uint8_t command)
 
 bool cnc_doevents(void)
 {
-#ifdef USE_INPUTS_POOLING_ONLY
-    static uint8_t limits = 0;
-    static uint8_t controls = 0;
-    uint8_t val = io_get_limits();
-    if (limits != val)
-    {
-        io_limits_isr();
-        limits = val;
-    }
 
-    val = io_get_controls();
-    if (controls != val)
-    {
-        io_controls_isr();
-        controls = val;
-    }
-#endif
+    #if((LIMITEN_MASK^LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
+    io_limits_isr();
+    #endif
+    #if((CONTROLEN_MASK^CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
+    io_controls_isr();
+    #endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
 
@@ -635,6 +625,12 @@ bool cnc_check_interlocking(void)
         }
 
         return false;
+    }
+	
+    //clears EXEC_JOG if not step ISR is stopped and planner has no more moves
+    if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
+    {
+        CLEARFLAG(cnc_state.exec_state, EXEC_JOG);
     }
 
     return true;

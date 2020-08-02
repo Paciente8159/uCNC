@@ -46,7 +46,7 @@
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
-
+#define MCU MCU_VIRTUAL
 #endif
 
 #ifndef BOARD

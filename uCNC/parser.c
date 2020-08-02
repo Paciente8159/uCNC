@@ -335,7 +335,7 @@ uint8_t parser_grbl_command(void)
                 error = STATUS_INVALID_JOG_COMMAND;
                 break;
             }
-            if(cnc_get_exec_state(EXEC_ALLACTIVE)) //Jog only allowed in IDLE
+            if(cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) //Jog only allowed in IDLE or JOG mode
             {
                 error = STATUS_IDLE_ERROR;
                 break;
@@ -364,15 +364,18 @@ uint8_t parser_grbl_command(void)
 			break;			
         case 'R':
             serial_getc();
-            if(parser_eat_next_char('S'))
+            error = parser_eat_next_char('S');
+            if(error)
             {
                 break;
             }
-            if(parser_eat_next_char('T'))
+            error = parser_eat_next_char('T');
+            if(error)
             {
                 break;
             }
-            if(parser_eat_next_char('='))
+            error = parser_eat_next_char('=');
+            if(error)
             {
                 break;
             }
@@ -1667,8 +1670,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words)
             }
         }
 
-        //if new feed is defined (normal feed mode) convert o mm
-        if (CHECKFLAG(parser_word0, GCODE_WORD_F) && CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
+        //if normal feed mode convert to mm/s
+        if (CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_FEED))
         {
             words->f *= 25.4f;
         }
@@ -2005,8 +2008,8 @@ void parser_reset(void)
     parser_state.groups.coord_system = 0;											//G54
     parser_state.groups.plane = 0;												  	//G17
     parser_state.groups.feed_speed_override = 0;								  	//M48
-    parser_state.groups.cutter_radius_compensation = 0;							  	//M40
-    parser_state.groups.distance_mode = 1;										 	//G91
+    parser_state.groups.cutter_radius_compensation = 0;							  	//G40
+    parser_state.groups.distance_mode = 0;										 	//G90
     parser_state.groups.feedrate_mode = 1;										  	//G94
     parser_state.groups.tool_length_offset = 0;										//G49
 #ifdef USE_COOLANT

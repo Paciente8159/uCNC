@@ -67,6 +67,7 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
+	planner_set_position(target);
         return STATUS_OK;
     }
 
@@ -423,7 +424,7 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
         {
             return STATUS_CRITICAL_FAIL;
         }
-        #ifdef USE_INPUTS_POOLING_ONLY
+        #if(defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK!=PROBEISR_MASK))
         if(io_get_probe())
         {
             io_probe_isr();
