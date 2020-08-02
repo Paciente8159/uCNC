@@ -100,7 +100,6 @@ uint8_t mc_line(float *target, motion_data_t block_data)
 
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
-	planner_set_position(target);
         return STATUS_OK;
     }
 

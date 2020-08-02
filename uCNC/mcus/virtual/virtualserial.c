@@ -42,8 +42,8 @@ unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
 int virtualserial_open(void)
 {
-	DCB dcbSerialParams = {};
-	COMMTIMEOUTS timeouts = {};
+	DCB dcbSerialParams = {0};
+	COMMTIMEOUTS timeouts = {0};
 	win_serial = NULL;
 	fprintf(stderr, "Opening serial port %s...", ComPortName);
     win_serial = CreateFileA(ComPortName

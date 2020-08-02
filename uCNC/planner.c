@@ -202,7 +202,7 @@ float planner_get_block_top_speed(void)
     */
     float exit_speed_sqr = planner_get_block_exit_speed_sqr();
     float speed_delta = exit_speed_sqr - planner_data[planner_data_read].entry_feed_sqr;
-    float speed_change = planner_data[planner_data_read].acceleration * planner_data[planner_data_read].distance;
+    float speed_change = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
     speed_change = fast_flt_mul2(speed_change);
     speed_change += speed_delta;
     float junction_speed_sqr = speed_change * 0.5f;
@@ -274,8 +274,7 @@ void planner_recalculate(void)
     uint8_t block = planner_data_write;
     //starts in the last added block
     //calculates the maximum entry speed of the block so that it can do a full stop in the end
-    float doubledistaccel = planner_data[block].distance * planner_data[block].acceleration;
-    doubledistaccel = fast_flt_mul2(doubledistaccel);
+    float doubledistaccel = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
     float entry_feed_sqr = (planner_data[block].dwell == 0) ? (doubledistaccel) : 0;
     planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
     //optimizes entry speeds given the current exit speed (backward pass)

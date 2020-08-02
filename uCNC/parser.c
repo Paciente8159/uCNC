@@ -925,7 +925,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     float radius;
     //pointer to planner position
     float planner_last_pos[AXIS_COUNT];
-    planner_block_data_t block_data = {};
+    motion_data_t block_data = {0};
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     block_data.line = words->n;
@@ -936,10 +936,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //RS274NGC v3 - 3.8 Order of Execution
     //1. comment (ignored - already filtered)
     //2. set feed mode
-    block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+    block_data.motion_mode = MOTIONCONTROL_MODE_INVERSEFEED;
     if (new_state->groups.feedrate_mode == G93)
     {
-        block_data.motion_mode = PLANNER_MOTION_MODE_INVERSEFEED;
+        block_data.motion_mode = MOTIONCONTROL_MODE_INVERSEFEED;
     }
     //3. set feed rate (µCNC works in units per second and not per minute)
     if (CHECKFLAG(cmd->words, GCODE_WORD_F))
@@ -1102,7 +1102,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //set the initial feedrate to the maximum value
     block_data.feed = FLT_MAX;
     //limit feed to the maximum possible feed
-    if (CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_MODE_FEED))
+    if (CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_FEED))
     {
         block_data.feed = MIN(block_data.feed, new_state->feedrate);
     }
@@ -1144,7 +1144,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                 settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
                 break;
             }
-            block_data.motion_mode |= PLANNER_MOTION_MODE_NOMOTION;
+            block_data.motion_mode |= MOTIONCONTROL_MODE_NOMOTION;
             break;
         case G28: //G28
         case G30: //G30
@@ -1166,7 +1166,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             {
                 return error;
             }
-            block_data.motion_mode |= PLANNER_MOTION_MODE_NOMOTION;
+            block_data.motion_mode |= MOTIONCONTROL_MODE_NOMOTION;
             break;
         case G53: //G53
             memcpy(&axis, &words->xyzabc, sizeof(axis));
@@ -1179,7 +1179,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             }
             settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
             parser_wco_counter = 0;
-            block_data.motion_mode |= PLANNER_MOTION_MODE_NOMOTION;
+            block_data.motion_mode |= MOTIONCONTROL_MODE_NOMOTION;
             break;
         case G92_1: //G92.1
             memset(&parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
@@ -1198,7 +1198,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     }
 
 	//if by any reason this is a nomotion command skip the next calculations
-    if (!CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_MODE_NOMOTION))
+    if (!CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_NOMOTION))
     {
 
         if (new_state->groups.nonmodal != G53) //if not modified by G53

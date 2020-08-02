@@ -162,7 +162,7 @@ void ticksimul(void)
 {
 	static uint16_t tick_counter = 0;
 	static uint16_t timer_counter = 0;
-	static VIRTUAL_MAP initials = {};
+	static VIRTUAL_MAP initials = {0};
 
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
