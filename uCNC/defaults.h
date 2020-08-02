@@ -19,36 +19,35 @@
 #ifndef DEFAULTS_H
 #define DEFAULTS_H
 
+#include "config.h"
 #include "mcu.h"
 
 //default step per mm
-#define DEFAULT_X_STEP_PER_MM 200
-#define DEFAULT_Y_STEP_PER_MM 200
-#define DEFAULT_Z_STEP_PER_MM 200
-#define DEFAULT_A_STEP_PER_MM 200
-#define DEFAULT_B_STEP_PER_MM 200
-#define DEFAULT_C_STEP_PER_MM 200
-
+#define DEFAULT_0_STEP_PER_MM 200
+#define DEFAULT_1_STEP_PER_MM 200
+#define DEFAULT_2_STEP_PER_MM 200
+#define DEFAULT_3_STEP_PER_MM 200
+#define DEFAULT_4_STEP_PER_MM 200
+#define DEFAULT_5_STEP_PER_MM 200
 //default feed in mm/m
-#define DEFAULT_X_MAX_FEED 500
-#define DEFAULT_Y_MAX_FEED 500
-#define DEFAULT_Z_MAX_FEED 500
-#define DEFAULT_A_MAX_FEED 500
-#define DEFAULT_B_MAX_FEED 500
-#define DEFAULT_C_MAX_FEED 500
+#define DEFAULT_0_MAX_FEED 500
+#define DEFAULT_1_MAX_FEED 500
+#define DEFAULT_2_MAX_FEED 500
+#define DEFAULT_3_MAX_FEED 500
+#define DEFAULT_4_MAX_FEED 500
+#define DEFAULT_5_MAX_FEED 500
+//default acceleration in mm/s^2
+#define DEFAULT_0_ACCEL 10
+#define DEFAULT_1_ACCEL 10
+#define DEFAULT_2_ACCEL 10
+#define DEFAULT_3_ACCEL 10
+#define DEFAULT_4_ACCEL 10
+#define DEFAULT_5_ACCEL 10
 
 #define DEFAULT_HOMING_DIR_INV_MASK 0
 #define DEFAULT_HOMING_SLOW 10
 #define DEFAULT_HOMING_FAST 50
 #define DEFAULT_HOMING_OFFSET 2
-
-//default acceleration in mm/s^2
-#define DEFAULT_X_ACCEL 10
-#define DEFAULT_Y_ACCEL 10
-#define DEFAULT_Z_ACCEL 10
-#define DEFAULT_A_ACCEL 10
-#define DEFAULT_B_ACCEL 10
-#define DEFAULT_C_ACCEL 10
 
 //default max distance traveled by each axis in mm
 #define DEFAULT_X_MAX_DIST 200

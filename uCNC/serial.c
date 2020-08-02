@@ -15,7 +15,8 @@
 	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-
+#include <math.h>
+#include "config.h"
 #include "grbl_interface.h"
 #include "settings.h"
 #include "mcudefs.h"
@@ -23,19 +24,16 @@
 #include "io_control.h"
 #include "cnc.h"
 #include "serial.h"
-#include "utils.h"
-
-#include <math.h>
 
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
-volatile static uint8_t serial_rx_count;
+static volatile uint8_t serial_rx_count;
 static uint8_t serial_rx_read;
-volatile static uint8_t serial_rx_write;
+static volatile uint8_t serial_rx_write;
 
 static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
-volatile static uint8_t serial_tx_read;
+static volatile uint8_t serial_tx_read;
 static uint8_t serial_tx_write;
-volatile static uint8_t serial_tx_count;
+static volatile uint8_t serial_tx_count;
 
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
@@ -54,8 +52,8 @@ void serial_init(void)
     serial_tx_count = 0;
 
     //resets buffers
-    memset(&serial_rx_buffer, 0, sizeof(serial_rx_buffer));
-    memset(&serial_tx_buffer, 0, sizeof(serial_tx_buffer));
+    memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
+    memset(serial_tx_buffer, 0, sizeof(serial_tx_buffer));
 #endif
 }
 

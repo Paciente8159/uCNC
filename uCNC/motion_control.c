@@ -17,11 +17,12 @@
 
 #include <math.h>
 #include <string.h>
+#include <float.h>
 #include "config.h"
+#include "utils.h"
 #include "mcu.h"
 #include "grbl_interface.h"
 #include "settings.h"
-#include "utils.h"
 #include "io_control.h"
 #include "parser.h"
 #include "kinematics.h"
@@ -30,13 +31,30 @@
 #include "cnc.h"
 #include "motion_control.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+#ifndef M_COS_TAYLOR_1
+#define M_COS_TAYLOR_1 0.16666667163372039794921875
+#endif
+
 static bool mc_checkmode;
+static float mc_last_target[AXIS_COUNT];
+static float mc_prev_transformed_target[AXIS_COUNT];
+//static float mc_prev_target_dir[AXIS_COUNT];
+#ifdef ENABLE_BACKLASH_COMPENSATION
+static uint8_t mc_last_dirbits;
+#endif
 
 void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     mc_checkmode = false;
+    memset(mc_last_target, 0, sizeof(mc_last_target));
+    memset(mc_prev_transformed_target, 0, sizeof(mc_prev_transformed_target));
+    memset(mc_prev_target_dir, 0, sizeof(mc_prev_target_dir));
 #endif
+    mc_resync_position();
 }
 
 bool mc_get_checkmode(void)
@@ -49,12 +67,27 @@ bool mc_toogle_checkmode(void)
     mc_checkmode = !mc_checkmode;
     return mc_checkmode;
 }
-
-uint8_t mc_line(float *target, planner_block_data_t block_data)
+// all motions should go through mc_line before entering the final motion pipeline
+// after this stage the motion follows a pipeline that performs the following steps
+// 1. decouples the target point from the remaining pipeline
+// 2. applies all kinematic transformations to the target
+// 3. converts the target in actuator position
+// 4. calculates motion change from the previous line
+uint8_t mc_line(float *target, motion_data_t block_data)
 {
-    kinematics_apply_transform(target);
+    uint32_t step_new_pos[STEPPER_COUNT];
+    float feed = block_data.feed;
 
-    //check travel limits
+    //update the last target position and direction
+    memcpy(mc_last_target, target, sizeof(mc_last_target));
+
+    //In jog/homming mode no kinematics modifications is applied to prevent unwanted axis movements
+    if (!cnc_get_exec_state(EXEC_JOG | EXEC_HOMING))
+    {
+        kinematics_apply_transform(target);
+    }
+
+    //check travel limits (soft limits)
     if (!io_check_boundaries(target))
     {
         if (cnc_get_exec_state(EXEC_JOG))
@@ -73,49 +106,119 @@ uint8_t mc_line(float *target, planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
     }
 
-    if(!CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_NOMOTION))
+    if (!CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_NOMOTION))
     {
-        float mc_position[AXIS_COUNT];
+        //applies the inverse kinematic to get next position in steps
+        kinematics_apply_inverse(target, step_new_pos);
 
-        //copy planner last position
-        planner_get_position(mc_position);
+        //calculates the aproximation of the inverted travelled distance
+        float inv_dist = 0;
+        //kinematics_apply_forward(block_data.steps, target); // converts the target point to a vector that represents the line segment to be travelled
         for (uint8_t i = AXIS_COUNT; i != 0;)
         {
             i--;
-            block_data.dir_vect[i] = target[i] - mc_position[i];
-            if (block_data.dir_vect[i] != 0)
+            block_data.dir_vect[i] = target[i] - mc_prev_transformed_target[i];
+            inv_dist += block_data.dir_vect[i] * block_data.dir_vect[i];
+            mc_prev_transformed_target[i] = target[i];
+        }
+
+        inv_dist = fast_inv_sqrt(inv_dist);
+
+//calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
+#ifndef ENABLE_LINACT_PLANNER
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            block_data.dir_vect[i] *= inv_dist;
+        }
+#endif
+
+        //gets the last position feed to the planner and calculates the step count of the line segment to execute
+        planner_get_position(block_data.steps);
+        for (uint8_t i = STEPPER_COUNT; i != 0;)
+        {
+            i--;
+            block_data.steps[i] = step_new_pos[i] - block_data.steps[i];
+
+            if (block_data.steps[i] > (uint32_t)INT32_MAX) //step count is negative (update dirbit and calculate the one's complement (negative representation))
             {
-                block_data.distance += (block_data.dir_vect[i] * block_data.dir_vect[i]);
+                block_data.dirbits |= (1 << i);
+                block_data.steps[i] = ~block_data.steps[i] + 1;
+            }
+
+            block_data.full_steps += block_data.steps[i];
+            if (block_data.total_steps < block_data.steps[i])
+            {
+                block_data.total_steps = block_data.steps[i];
+                block_data.step_indexer = i;
             }
         }
 
-        block_data.distance = sqrtf(block_data.distance);
-        if(CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_INVERSEFEED))
+#ifdef ENABLE_BACKLASH_COMPENSATION
+        //checks if any of the linear actuators there is a shift in direction
+        uint8_t inverted_steps = mc_last_dirbits ^ block_data.dirbits;
+        if (inverted_steps)
         {
-            //calculates feed rate in reverse feed rate mode
-            block_data.feed = block_data.distance / block_data.feed;
+            motion_data_t backlash_block_data = {0};
+            memcpy(&backlash_block_data, &block_data, sizeof(motion_data_t));
+            memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
+            backlash_block_data.total_steps = 0; //recalculates total_steps
+            backlash_block_data.feed = FLT_MAX;  //max feedrate possible (same as rapid move)
+
+            SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
+
+            for (uint8_t i = STEPPER_COUNT; i != 0;)
+            {
+                i--;
+                if (inverted_steps & (1 << i))
+                {
+                    backlash_block_data.steps[i] = g_settings.backlash_steps[i];
+                    backlash_block_data.full_steps += backlash_block_data.steps[i];
+                    if (backlash_block_data.total_steps < backlash_block_data.steps[i])
+                    {
+                        backlash_block_data.total_steps = backlash_block_data.steps[i];
+                        backlash_block_data.step_indexer = i;
+                    }
+                }
+            }
+
+            planner_add_line(NULL, backlash_block_data);
+
+            while (planner_buffer_is_full())
+            {
+                if (!cnc_doevents())
+                {
+                    return STATUS_CRITICAL_FAIL;
+                }
+            }
+
+            mc_last_dirbits = block_data.dirbits;
         }
+#endif
+        //calculated the total motion execution time @ the given rate
+        float inv_delta = (!CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data.feed * inv_dist) : (1.0f / block_data.feed));
+        block_data.feed = (float)block_data.total_steps * inv_delta;
     }
 
-    planner_add_line(target, block_data);
+    planner_add_line(step_new_pos, block_data);
+    //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
+    block_data.feed = feed;
     return STATUS_OK;
 }
 
 //applies an algorithm similar to grbl with slight changes
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data)
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t block_data)
 {
     float mc_position[AXIS_COUNT];
 
-    //copy planner last position
-    planner_get_position(mc_position);
-    //reverses any transformation aplied before
-    kinematics_apply_reverse_transform(mc_position);
+    //copy motion control last position
+    mc_get_position(mc_position);
 
     float ptcenter_a = mc_position[axis_0] + center_offset_a;
     float ptcenter_b = mc_position[axis_1] + center_offset_b;
@@ -160,13 +263,13 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
-        increment[i] = (target[i] - mc_position[i])/segment_count;
+        increment[i] = (target[i] - mc_position[i]) / segment_count;
     }
 
     increment[axis_0] = 0;
     increment[axis_1] = 0;
 
-    if(CHECKFLAG(block_data.motion_mode,PLANNER_MOTION_MODE_INVERSEFEED))
+    if (CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_INVERSEFEED))
     {
         //split the required time to complete the motion with the number of segments
         block_data.feed /= segment_count;
@@ -176,7 +279,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     //improves the error for the cosine by calculating an extra term of the taylor series at the expence of an extra multiplication and addition
     //applies arc correction has grbl does
     float arc_per_sgm_sqr = arc_per_sgm * arc_per_sgm;
-    float cos_per_sgm = 1 - 0.1666666667f * arc_per_sgm_sqr;
+    float cos_per_sgm = 1 - M_COS_TAYLOR_1 * arc_per_sgm_sqr;
     float sin_per_sgm = arc_per_sgm * cos_per_sgm;
     cos_per_sgm = arc_per_sgm_sqr * (cos_per_sgm + 1);
     cos_per_sgm = 1 - fast_flt_div4(cos_per_sgm);
@@ -205,13 +308,13 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
             //this is executes in about 50% the time of a sin function
             //https://www.nongnu.org/avr-libc/user-manual/benchmarks.html
             float precise_sin = sqrt(1 - precise_cos * precise_cos);
-            if(angle >= 0)
+            if (angle >= 0)
             {
-                precise_sin = (ABS(angle)<=M_PI) ? precise_sin : -precise_sin;
+                precise_sin = (ABS(angle) <= M_PI) ? precise_sin : -precise_sin;
             }
             else
             {
-                precise_sin = (ABS(angle)<=M_PI) ? -precise_sin : precise_sin;
+                precise_sin = (ABS(angle) <= M_PI) ? -precise_sin : precise_sin;
             }
 
             pt0_a = -center_offset_a * precise_cos + center_offset_b * precise_sin;
@@ -241,7 +344,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     return mc_line(target, block_data);
 }
 
-uint8_t mc_dwell(planner_block_data_t block_data)
+uint8_t mc_dwell(motion_data_t block_data)
 {
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
@@ -250,14 +353,14 @@ uint8_t mc_dwell(planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
     }
 
     //send dwell (planner linear motion with distance == 0)
-    block_data.motion_mode = PLANNER_MOTION_MODE_NOMOTION;
+    SETFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_NOMOTION);
     planner_add_line(NULL, block_data);
     return STATUS_OK;
 }
@@ -266,19 +369,17 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
     float target[AXIS_COUNT];
     uint8_t axis_mask = (1 << axis);
-    planner_block_data_t block_data;
+    motion_data_t block_data;
     uint8_t limits_flags;
 
-    #ifdef ENABLE_DUAL_DRIVE_AXIS
-    #ifdef DUAL_DRIVE_AXIS0
-    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64|128); //if dual limit pins
-    #endif
-    #ifdef DUAL_DRIVE_AXIS1
-    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64|128); //if dual limit pins
-    #endif
-    #endif
-
-    planner_get_position(target);
+#ifdef ENABLE_DUAL_DRIVE_AXIS
+#ifdef DUAL_DRIVE_AXIS0
+    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64 | 128); //if dual limit pins
+#endif
+#ifdef DUAL_DRIVE_AXIS1
+    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64 | 128); //if dual limit pins
+#endif
+#endif
 
     cnc_unlock();
 
@@ -287,47 +388,47 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     {
         return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
     }
-    
+
     io_set_homing_limits_filter(axis_limit);
 
     float max_home_dist;
     max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-    
+
     //checks homing dir
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
     }
     planner_resync_position();
-    planner_get_position(target);
+    mc_resync_position();
+    mc_get_position(target);
     target[axis] += max_home_dist;
     //initializes planner block data
-    block_data.distance = ABS(max_home_dist);
-    memset(&block_data.dir_vect,0, sizeof(block_data.dir_vect));
-    block_data.dir_vect[axis] = max_home_dist;
-    block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
+    block_data.total_steps = ABS(max_home_dist);
+    memset(block_data.steps, 0, sizeof(block_data.steps));
+    block_data.steps[axis] = max_home_dist;
+    block_data.feed = g_settings.homing_fast_feed_rate;
     block_data.spindle = 0;
     block_data.dwell = 0;
-    block_data.motion_mode = PLANNER_MOTION_MODE_FEED;
+    SETFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_FEED);
     cnc_unlock();
-    planner_add_line((float *)&target, block_data);
+    mc_line(target, block_data);
     //flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
     do
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
-    }
-    while (cnc_get_exec_state(EXEC_RUN));
+    } while (cnc_get_exec_state(EXEC_RUN));
 
     //flushes buffers
     itp_stop();
     itp_clear();
     planner_clear();
 
-    if(cnc_get_exec_state(EXEC_ABORT))
+    if (cnc_get_exec_state(EXEC_ABORT))
     {
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
@@ -343,34 +444,34 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     //back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
 
-    //sync's the planner
-    planner_resync_position();
-    planner_get_position(target);
+    //sync's the planner and motion control done when clearing the planner
+    //planner_resync_position();
+    //mc_resync_position();
+    mc_get_position(target);
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
     }
 
     target[axis] += max_home_dist;
-    block_data.feed = g_settings.homing_slow_feed_rate * MIN_SEC_MULT;
-    block_data.distance = ABS(max_home_dist);
-    block_data.dir_vect[axis] = max_home_dist;
+    block_data.feed = g_settings.homing_slow_feed_rate;
+    block_data.total_steps = ABS(max_home_dist);
+    block_data.steps[axis] = max_home_dist;
     //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
     //temporary inverts the limit mask to trigger ISR on switch release
     g_settings.limits_invert_mask ^= axis_limit;
     //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
     cnc_unlock();
-    planner_add_line((float *)&target, block_data);
+    mc_line(target, block_data);
     //flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
     do
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
-    }
-    while (cnc_get_exec_state(EXEC_RUN));
+    } while (cnc_get_exec_state(EXEC_RUN));
 
     //resets limit mask
     g_settings.limits_invert_mask ^= axis_limit;
@@ -380,7 +481,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     itp_clear();
     planner_clear();
 
-    if(cnc_get_exec_state(EXEC_ABORT))
+    if (cnc_get_exec_state(EXEC_ABORT))
     {
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
@@ -395,7 +496,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     return STATUS_OK;
 }
 
-uint8_t mc_spindle_coolant(planner_block_data_t block_data)
+uint8_t mc_spindle_coolant(motion_data_t block_data)
 {
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
@@ -404,20 +505,20 @@ uint8_t mc_spindle_coolant(planner_block_data_t block_data)
 
     while (planner_buffer_is_full())
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
     }
 
-    block_data.motion_mode = PLANNER_MOTION_MODE_NOMOTION;
+    SETFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_NOMOTION);
     planner_add_line(NULL, block_data);
     return STATUS_OK;
 }
 
-uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_data)
+uint8_t mc_probe(float *target, bool invert_probe, motion_data_t block_data)
 {
-    #ifdef PROBE
+#ifdef PROBE
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
     io_enable_probe();
 
@@ -425,17 +526,18 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
 
     do
     {
-        if(!cnc_doevents())
+        if (!cnc_doevents())
         {
             return STATUS_CRITICAL_FAIL;
         }
+
         #if(defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK!=PROBEISR_MASK))
         if(io_get_probe())
         {
             io_probe_isr();
             break;
         }
-        #endif
+#endif
     } while (cnc_get_exec_state(EXEC_RUN));
 
     io_disable_probe();
@@ -444,14 +546,25 @@ uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_da
     planner_clear();
     cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
     bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
-    if(probe_notok)
+    if (probe_notok)
     {
         return EXEC_ALARM_PROBE_FAIL_CONTACT;
     }
 
-    #endif
+#endif
 
     return STATUS_OK;
 }
 
+void mc_get_position(float *target)
+{
+    memcpy(target, mc_last_target, sizeof(mc_last_target));
+}
 
+void mc_resync_position(void)
+{
+    uint32_t pos[STEPPER_COUNT];
+    planner_get_position(pos);
+    kinematics_apply_forward(pos, mc_last_target);
+    kinematics_apply_reverse_transform(mc_last_target);
+}

@@ -21,16 +21,39 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "planner.h"
+
+#define MOTIONCONTROL_MODE_NOMOTION 1
+#define MOTIONCONTROL_MODE_FEED 2
+#define MOTIONCONTROL_MODE_INVERSEFEED 4
+#define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 8
+
+typedef struct
+{
+    #ifdef GCODE_PROCESS_LINE_NUMBERS
+    uint32_t line;
+    #endif
+    uint32_t steps[STEPPER_COUNT];
+    float dir_vect[STEPPER_COUNT];
+    uint8_t dirbits;
+    uint32_t full_steps; //number of steps of all linear actuators
+    uint32_t total_steps; //the number of pulses needed to generate all steps (maximum of all linear actuators)
+    float feed;
+    uint8_t step_indexer;
+    int16_t spindle;
+    uint16_t dwell;
+    uint8_t motion_mode;
+} motion_data_t;
 
 void mc_init(void);
 bool mc_get_checkmode(void);
 bool mc_toogle_checkmode(void);
-uint8_t mc_line(float *target, planner_block_data_t block_data);
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, planner_block_data_t block_data);
-uint8_t mc_dwell(planner_block_data_t block_data);
+uint8_t mc_line(float *target, motion_data_t block_data);
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t block_data);
+uint8_t mc_dwell(motion_data_t block_data);
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
-uint8_t mc_spindle_coolant(planner_block_data_t block_data);
-uint8_t mc_probe(float *target, bool invert_probe, planner_block_data_t block_data);
+uint8_t mc_spindle_coolant(motion_data_t block_data);
+uint8_t mc_probe(float *target, bool invert_probe, motion_data_t block_data);
+void mc_get_position(float *target);
+void mc_resync_position(void);
 
 #endif
