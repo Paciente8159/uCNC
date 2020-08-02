@@ -318,7 +318,8 @@ void itp_run(void)
             //flags block for recalculation of speeds
             itp_needs_update = true;
 
-            half_speed_change = 0.5f * INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+            half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+            half_speed_change = fast_flt_div2(half_speed_change);
 
             uint32_t error = itp_blk_data[itp_blk_data_write].totalsteps >> 1;
             for (uint8_t i = 0; i < STEPPER_COUNT; i++)
@@ -357,7 +358,8 @@ void itp_run(void)
             deaccel_from = 0;
             if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
             {
-                float accel_dist = 0.5f * ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * itp_cur_plan_block->accel_inv;
+                float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * itp_cur_plan_block->accel_inv;
+                accel_dist = fast_flt_div2(accel_dist);
                 accel_until -= floorf(accel_dist * steps_per_mm);
                 initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
             }
@@ -370,7 +372,8 @@ void itp_run(void)
 
             if (junction_speed_sqr > exit_speed_sqr)
             {
-                float deaccel_dist = 0.5f * (junction_speed_sqr - exit_speed_sqr) * itp_cur_plan_block->accel_inv;
+                float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) * itp_cur_plan_block->accel_inv;
+                deaccel_dist = fast_flt_div2(deaccel_dist);
                 deaccel_from = floorf(deaccel_dist * steps_per_mm);
             }
         }
@@ -448,19 +451,21 @@ void itp_run(void)
 
         if(sgm->update_speed)
         {
-            float new_speed_sqr;
+            float new_speed_sqr = itp_cur_plan_block->acceleration * partial_distance;
+            new_speed_sqr = fast_flt_mul2(new_speed_sqr);
             if(speed_change>0)
             {
                 //calculates the final speed at the end of this position
-                new_speed_sqr = 2 * itp_cur_plan_block->acceleration * partial_distance + itp_cur_plan_block->entry_feed_sqr;
+                new_speed_sqr += itp_cur_plan_block->entry_feed_sqr;
             }
             else
             {
                 //calculates the final speed at the end of this position
-                new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - (2 * itp_cur_plan_block->acceleration * partial_distance);
+                new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - new_speed_sqr;
                 new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
             }
-            current_speed = 0.5f * (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
+            current_speed = (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
+            current_speed = fast_flt_div2(current_speed);
             itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
         }
 

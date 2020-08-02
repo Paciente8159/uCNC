@@ -92,17 +92,17 @@
 
 //special Grbl system commands return codes
 //These are not error codes but codes to print requested reports after parsing a grbl command
-#define GRBL_SEND_SYSTEM_SETTINGS 128
-#define GRBL_SEND_COORD_SYSTEM 129
-#define GRBL_SEND_PARSER_MODES	130
-#define GRBL_SEND_STARTUP_BLOCKS 131
-#define GRBL_SEND_CHECKMODE_ON 132
-#define GRBL_SEND_CHECKMODE_OFF 133
-#define GRBL_SEND_SETTINGS_RESET 134
-#define GRBL_UNLOCK 135
-#define GRBL_HOME 136
-#define GRBL_HELP 137
-
+#define GRBL_SYSTEM_CMD 128
+#define GRBL_SEND_SYSTEM_SETTINGS (GRBL_SYSTEM_CMD + 0)
+#define GRBL_SEND_COORD_SYSTEM (GRBL_SYSTEM_CMD + 1)
+#define GRBL_SEND_PARSER_MODES	(GRBL_SYSTEM_CMD + 2)
+#define GRBL_SEND_STARTUP_BLOCKS (GRBL_SYSTEM_CMD + 3)
+#define GRBL_TOGGLE_CHECKMODE (GRBL_SYSTEM_CMD + 4)
+#define GRBL_SEND_SETTINGS_RESET (GRBL_SYSTEM_CMD + 5)
+#define GRBL_UNLOCK (GRBL_SYSTEM_CMD + 6)
+#define GRBL_HOME (GRBL_SYSTEM_CMD + 7)
+#define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
+#define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
 #define EXEC_ALARM_RESET					  0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.

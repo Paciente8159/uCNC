@@ -198,7 +198,8 @@ float planner_get_block_top_speed(void)
     */
     float exit_speed_sqr = planner_get_block_exit_speed_sqr();
     float speed_delta = exit_speed_sqr - planner_data[planner_data_read].entry_feed_sqr;
-    float speed_change = 2 * planner_data[planner_data_read].acceleration * planner_data[planner_data_read].distance;
+    float speed_change = planner_data[planner_data_read].acceleration * planner_data[planner_data_read].distance;
+    speed_change = fast_flt_mul2(speed_change);
     speed_change += speed_delta;
     speed_change *= planner_data[planner_data_read].accel_inv;
     float junction_speed_sqr = planner_data[planner_data_read].entry_feed_sqr + speed_change;
@@ -270,7 +271,9 @@ void planner_recalculate(void)
     uint8_t block = planner_data_write;
     //starts in the last added block
     //calculates the maximum entry speed of the block so that it can do a full stop in the end
-    float entry_feed_sqr = (planner_data[block].dwell == 0) ? (2 * planner_data[block].distance * planner_data[block].acceleration) : 0;
+    float doubledistaccel = planner_data[block].distance * planner_data[block].acceleration;
+    doubledistaccel = fast_flt_mul2(doubledistaccel);
+    float entry_feed_sqr = (planner_data[block].dwell == 0) ? (doubledistaccel) : 0;
     planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
     //optimizes entry speeds given the current exit speed (backward pass)
     uint8_t next = block;
@@ -284,7 +287,7 @@ void planner_recalculate(void)
         }
         else if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
         {
-            entry_feed_sqr = planner_data[next].entry_feed_sqr + 2 * planner_data[block].distance * planner_data[block].acceleration;
+            entry_feed_sqr = planner_data[next].entry_feed_sqr + doubledistaccel;
             planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
         }
 
@@ -299,7 +302,7 @@ void planner_recalculate(void)
         if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
         {
             //check if the next block entry speed can be achieved
-            float exit_speed_sqr = planner_data[block].entry_feed_sqr + (2 * planner_data[block].distance * planner_data[block].acceleration);
+            float exit_speed_sqr = planner_data[block].entry_feed_sqr + (doubledistaccel);
             if (exit_speed_sqr < planner_data[next].entry_feed_sqr)
             {
                 //lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
