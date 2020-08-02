@@ -148,7 +148,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 
     //uses as temporary vars
     float radiusangle = radius * arc_angle;
-    det = fast_flt_div2(radiusangle);
+    radiusangle = fast_flt_div2(radiusangle);
     float diameter = fast_flt_mul2(radius);
     uint16_t segment_count = floor(fabs(radiusangle) / sqrt(g_settings.arc_tolerance * (diameter - g_settings.arc_tolerance)));
     float arc_per_sgm = (segment_count != 0) ? arc_angle/segment_count : arc_angle;

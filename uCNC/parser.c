@@ -1326,8 +1326,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                     }
 
                     // Complete the operation by calculating the actual center of the arc
-                    words->ijk[offset_a] = 0.5 * (x - (y * c_factor));
-                    words->ijk[offset_b] = 0.5 * (y + (x * c_factor));
+                    words->ijk[offset_a] = (x - (y * c_factor));
+                    words->ijk[offset_b] = (y + (x * c_factor));
                     words->ijk[offset_a] = fast_flt_div2(words->ijk[offset_a]);
                     words->ijk[offset_b] = fast_flt_div2(words->ijk[offset_b]);
                     radius = words->r;
