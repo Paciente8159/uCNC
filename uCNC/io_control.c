@@ -211,7 +211,7 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifndef FORCE_SOFT_POLLING
     #ifdef PROBE
     mcu_enable_probe_isr();
     #endif
@@ -220,7 +220,7 @@ void io_enable_probe(void)
 
 void io_disable_probe(void)
 {
-    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifndef FORCE_SOFT_POLLING
     #ifdef PROBE
     mcu_disable_probe_isr();
     #endif

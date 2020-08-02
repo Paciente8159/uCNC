@@ -49,8 +49,6 @@
 
 #if (BOARD == BOARD_VIRTUAL)
 #define MCU MCU_VIRTUAL
-#include "mcus\virtual\virtualtimer.h"
-#include "mcus\virtual\virtualserial.h"
 #endif
 
 #ifndef BOARD

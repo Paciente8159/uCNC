@@ -22,20 +22,20 @@
 #include <stdint.h>
 
 #ifndef BYTE_OPS
-#define SETBIT(x,y) ((x) |= (1<<(y))) /* Set bit y in byte x*/
-#define CLEARBIT(x,y) ((x) &= ~(1<<(y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x,y) ((x) & (1<<(y))) /* Check bit y in byte x*/
-#define TOGGLEBIT(x,y) ((x) ^= (1<<(y))) /* Toggle bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1 << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1 << (y)))	/* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1 << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x,y) ((x) |= (y)) /* Set byte y in byte x*/
-#define CLEARFLAG(x,y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x,y) ((x) & (y)) /* Check byte y in byte x*/
-#define TOGGLEFLAG(x,y) ((x) ^= (y)) /* Toggle byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
-#define MAX(a,b) (((a)>(b)) ? (a) : (b))
-#define MIN(a,b) (((a)<(b)) ? (a) : (b))
-#define ABS(a) (((a)>0) ? (a) : -(a))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define ABS(a) (((a) > 0) ? (a) : -(a))
 
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 #define __UINT32_R0__ 0
@@ -55,11 +55,23 @@
 #define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result;})
 #else
 #define fast_sqrt(x) sqrtf(x)
-#define fast_inv_sqrt(x) 1.0f/sqrtf(x)
+#define fast_inv_sqrt(x) 1.0f / sqrtf(x)
+#endif
+
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#define fast_flt_div2(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)-0x00800000) | (result &(~0x7f800000)); (*(float*)&result);})
+#define fast_flt_div4(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)-0x01000000) | (result &(~0x7f800000)); (*(float*)&result);})
+#define fast_flt_mul2(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)+0x00800000) | (result &(~0x7f800000)); (*(float*)&result);})
+#define fast_flt_mul4(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)+0x01000000) | (result &(~0x7f800000)); (*(float*)&result);})
+#else
+#define fast_flt_div2(x) ((x)*0.5f)
+#define fast_flt_div4(x) ((x)*0.25f)
+#define fast_flt_mul2(x) ((x)*2.0f)
+#define fast_flt_mul4(x) ((x)*4.0f)
 #endif
 
 #ifndef fast_mult10
-#define fast_mult10(x) (x*10)
+#define fast_mult10(x) (x * 10)
 #endif
 
 #define MM_INCH_MULT 0.0393700787401574803

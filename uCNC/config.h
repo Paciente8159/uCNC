@@ -175,9 +175,9 @@
 #define DSS_MAX_OVERSAMPLING 0
 
 /*
-	Uses pin pooling for all limits and control pins (no interrupts)
+	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
-//#define USE_INPUTS_POOLING_ONLY
+//#define FORCE_SOFT_POLLING
 
 /*
 	Compilation specific options

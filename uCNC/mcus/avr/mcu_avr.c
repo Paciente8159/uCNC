@@ -103,7 +103,7 @@ ISR(TIMER_COMPB_vect, ISR_BLOCK)
 #endif
 }
 
-#ifndef USE_INPUTS_POOLING_ONLY
+#ifndef FORCE_SOFT_POLLING
 
 #if(PCINTA_MASK==1)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
@@ -832,7 +832,7 @@ SETBIT(DIN15_OUTREG, DIN15_BIT);
     UCSRB |= (1<<RXEN | 1<<TXEN | 1<<RXCIE);
 
     //enable interrupts on pin changes
-    #ifndef USE_INPUTS_POOLING_ONLY
+    #ifndef FORCE_SOFT_POLLING
     #if((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
     SETBIT(PCICR, PCIE0);
     #else
@@ -906,21 +906,9 @@ void mcu_stop_send(void)
     CLEARBIT(UCSRB,UDRIE);
 }
 
-void mcu_putc(char c)
-{
-    loop_until_bit_is_set(UCSRA, UDRE);
-    COM_OUTREG = c;
-}
-
 bool mcu_is_tx_ready(void)
 {
     return CHECKBIT(UCSRA, UDRE);
-}
-
-char mcu_getc(void)
-{
-    loop_until_bit_is_set(UCSRA, RXC);
-    return COM_INREG;
 }
 
 //RealTime

@@ -445,7 +445,7 @@ void serial_tx_isr(void)
     }
     uint8_t read = serial_tx_read;
     unsigned char c = serial_tx_buffer[read];
-    COM_OUTREG = c;
+    mcu_putc(c);
     if (c == '\n' || c == '\r')
     {
         if (!--serial_tx_count)

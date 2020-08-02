@@ -71,8 +71,14 @@ uint8_t mcu_get_pwm(uint8_t pwm);
 //Communication functions
 void mcu_start_send(void); //Start async send
 void mcu_stop_send(void); //Stop async send
+
+#ifndef mcu_putc
 void mcu_putc(char c);
+#endif
+
+#ifndef mcu_getc
 char mcu_getc(void);
+#endif
 
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
