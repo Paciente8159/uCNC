@@ -17,7 +17,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -931,22 +931,22 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     block_data.line = words->n;
 #endif
 
-    planner_get_position(planner_last_pos);
+    mc_get_position(&planner_last_pos);
 
     //RS274NGC v3 - 3.8 Order of Execution
     //1. comment (ignored - already filtered)
     //2. set feed mode
-    block_data.motion_mode = MOTIONCONTROL_MODE_INVERSEFEED;
+    block_data.motion_mode = MOTIONCONTROL_MODE_FEED; //default mode
     if (new_state->groups.feedrate_mode == G93)
     {
-        block_data.motion_mode = MOTIONCONTROL_MODE_INVERSEFEED;
+        block_data.motion_mode |= MOTIONCONTROL_MODE_INVERSEFEED;
     }
     //3. set feed rate (µCNC works in units per second and not per minute)
     if (CHECKFLAG(cmd->words, GCODE_WORD_F))
     {
         if (new_state->groups.feedrate_mode != G93)
         {
-            new_state->feedrate = words->f * MIN_SEC_MULT;
+            new_state->feedrate = words->f;// * MIN_SEC_MULT;
         }
     }
 
@@ -1102,7 +1102,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //set the initial feedrate to the maximum value
     block_data.feed = FLT_MAX;
     //limit feed to the maximum possible feed
-    if (CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_FEED))
+    if (!CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_INVERSEFEED))
     {
         block_data.feed = MIN(block_data.feed, new_state->feedrate);
     }
@@ -1121,7 +1121,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         case G4:                                        //G4
             if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS)) //if no axis was issued then no motion group is going to be executed and execute dwell
             {
-                return mc_dwell(block_data);
+                return mc_dwell(&block_data);
             }
             break;
         case G10: //G10
@@ -1148,7 +1148,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             break;
         case G28: //G28
         case G30: //G30
-            error = mc_line((float *)&words->xyzabc, block_data);
+            error = mc_line((float *)&words->xyzabc, &block_data);
             if (error)
             {
                 return error;
@@ -1162,7 +1162,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             {
                 settings_load(G30ADDRESS, (uint8_t *)&axis, PARSER_PARAM_SIZE);
             }
-            error = mc_line((float *)&axis, block_data);
+            error = mc_line((float *)&axis, &block_data);
             {
                 return error;
             }
@@ -1283,7 +1283,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                 {
                     return STATUS_FEED_NOT_SET;
                 }
-                return mc_line(axis, block_data);
+                return mc_line(axis, &block_data);
             case G2:
             case G3:
                 if (block_data.feed == 0)
@@ -1305,7 +1305,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
                     float x_sqr = x * x;
                     float y_sqr = y * y;
-                    float c_factor = 4.0 * words->r * words->r - x_sqr - y_sqr;
+                    float c_factor = words->r * words->r;
+                    c_factor = fast_flt_mul4(c_factor) - x_sqr - y_sqr;
 
                     if (c_factor < 0)
                     {
@@ -1346,12 +1347,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                     }
                 }
 
-                return mc_arc(axis, words->ijk[offset_a], words->ijk[offset_b], radius, a, b, (new_state->groups.motion == 2), block_data);
+                return mc_arc(axis, words->ijk[offset_a], words->ijk[offset_b], radius, a, b, (new_state->groups.motion == 2), &block_data);
             case 4: //G38.2
             case 5: //G38.3
             case 6: //G38.4
             case 7: //G38.5
-                probe_error = mc_probe(axis, (new_state->groups.motion > 5), block_data);
+                probe_error = mc_probe(axis, (new_state->groups.motion > 5), &block_data);
                 if (probe_error)
                 {
                     parser_parameters.last_probe_ok = 0;
@@ -1388,7 +1389,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //spindle and coolant must be updated
     if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE | GCODE_GROUP_COOLANT))
     {
-        return mc_spindle_coolant(block_data);
+        return mc_spindle_coolant(&block_data);
     }
 
     return STATUS_OK;
@@ -1707,7 +1708,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 93:
     case 94:
         new_group |= GCODE_GROUP_FEEDRATE;
-        code -= 93;
         new_state->groups.feedrate_mode = code - 93;
         break;
     case 20:

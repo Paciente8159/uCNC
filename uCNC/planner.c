@@ -13,7 +13,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -201,7 +201,7 @@ float planner_get_block_top_speed(void)
     v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
     */
     float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-    float speed_delta = exit_speed_sqr - planner_data[planner_data_read].entry_feed_sqr;
+    float speed_delta = exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
     float speed_change = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
     speed_change = fast_flt_mul2(speed_change);
     speed_change += speed_delta;
@@ -339,7 +339,7 @@ void planner_recalculate(void)
 		3. The entry feed (initialy set to 0)
 		4. The maximum entry feed given the juntion angle between planner blocks
 */
-void planner_add_line(uint32_t *target, motion_data_t block_data)
+void planner_add_line(uint32_t *target, motion_data_t* block_data)
 {
 #ifdef ENABLE_LINACT_PLANNER
     static float last_dir_vect[STEPPER_COUNT];
@@ -347,9 +347,9 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     static float last_dir_vect[AXIS_COUNT];
 #endif
 
-    planner_data[planner_data_write].dirbits = block_data.dirbits;
-    planner_data[planner_data_write].total_steps = block_data.total_steps;
-    //planner_data[planner_data_write].step_indexer = block_data.step_indexer;
+    planner_data[planner_data_write].dirbits = block_data->dirbits;
+    planner_data[planner_data_write].total_steps = block_data->total_steps;
+    //planner_data[planner_data_write].step_indexer = block_data->step_indexer;
     planner_data[planner_data_write].optimal = false;
     planner_data[planner_data_write].acceleration = 0;
     planner_data[planner_data_write].rapid_feed_sqr = 0;
@@ -358,21 +358,21 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     planner_data[planner_data_write].entry_feed_sqr = 0;
     planner_data[planner_data_write].entry_max_feed_sqr = 0;
 #ifdef USE_SPINDLE
-    planner_spindle = planner_data[planner_data_write].spindle = block_data.spindle;
+    planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-    planner_data[planner_data_write].line = block_data.line;
+    planner_data[planner_data_write].line = block_data->line;
 #endif
-    planner_data[planner_data_write].dwell = block_data.dwell;
+    planner_data[planner_data_write].dwell = block_data->dwell;
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    if (CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
+    if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
     {
         planner_data[planner_data_write].backlash_comp = true;
     }
 #endif
 
-    if (CHECKFLAG(block_data.motion_mode, MOTIONCONTROL_MODE_NOMOTION))
+    if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION))
     {
         memset(planner_data[planner_data_write].steps, 0, sizeof(planner_data[planner_data_write].steps));
         planner_data[planner_data_write].total_steps = 0;
@@ -381,14 +381,14 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     }
     else
     {
-        memcpy(planner_data[planner_data_write].steps, block_data.steps, sizeof(block_data.steps));
-        planner_data[planner_data_write].total_steps = block_data.total_steps;
+        memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(block_data->steps));
+        planner_data[planner_data_write].total_steps = block_data->total_steps;
     }
 
     //calculates the normalized vector with the amount of motion in any linear actuator
     //also calculates the maximum feedrate and acceleration for each linear actuator
 #ifdef ENABLE_LINACT_PLANNER
-    float inv_total_steps = 1.0f / (float)(block_data.full_steps);
+    float inv_total_steps = 1.0f / (float)(block_data->full_steps);
 #endif
 #ifdef ENABLE_LINACT_COLD_START
     bool coldstart = false;
@@ -405,8 +405,8 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
-        cos_theta += block_data.dir_vect[i] * last_dir_vect[i];
-        last_dir_vect[i] = block_data.dir_vect[i];
+        cos_theta += block_data->dir_vect[i] * last_dir_vect[i];
+        last_dir_vect[i] = block_data->dir_vect[i];
     }
 #endif
     
@@ -445,18 +445,18 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     }
 
     //converts to steps per second (st/s)
-    block_data.feed *= MIN_SEC_MULT;
+    block_data->feed *= MIN_SEC_MULT;
     rapid_feed *= MIN_SEC_MULT;
-    rapid_feed *= (float)block_data.total_steps;
+    rapid_feed *= (float)block_data->total_steps;
     //converts to steps per second^2 (st/s^2)
-    planner_data[planner_data_write].acceleration *= (float)block_data.total_steps;
+    planner_data[planner_data_write].acceleration *= (float)block_data->total_steps;
 
-    if (block_data.feed > rapid_feed)
+    if (block_data->feed > rapid_feed)
     {
-        block_data.feed = rapid_feed;
+        block_data->feed = rapid_feed;
     }
 
-    planner_data[planner_data_write].feed_sqr = block_data.feed * block_data.feed;
+    planner_data[planner_data_write].feed_sqr = block_data->feed * block_data->feed;
     planner_data[planner_data_write].rapid_feed_sqr = rapid_feed * rapid_feed;
 
     //consider initial angle factor of 1 (90 degree angle corner or more)
@@ -479,7 +479,7 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
     }
 
     //if more than one move stored cals juntion speeds and recalculates speed profiles
-    if (cos_theta != 0 && !CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_EXACT_STOP | MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
+    if (cos_theta != 0 && !CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_EXACT_STOP | MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
     {
         //calculates the junction angle with previous
         if (cos_theta > 0)
@@ -497,7 +497,7 @@ void planner_add_line(uint32_t *target, motion_data_t block_data)
         }
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
-        float factor = ((!CHECKFLAG(block_data.motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : G64_MAX_ANGLE_FACTOR);
+        float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : G64_MAX_ANGLE_FACTOR);
         angle_factor = MAX(angle_factor - factor, 0);
 
         if (angle_factor < 1.0f)

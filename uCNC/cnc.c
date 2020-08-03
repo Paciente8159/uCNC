@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -252,7 +252,7 @@ void cnc_home(void)
     block_data.spindle = 0;
     block_data.dwell = 0;
     //starts offset and waits to finnish
-    mc_line(target, block_data);
+    mc_line(target, &block_data);
     do
     {
         cnc_doevents();
@@ -522,7 +522,7 @@ void cnc_exec_rt_commands(void)
         {
             motion_data_t block = {0};
             block.spindle = planner_get_previous_spindle_speed();
-            mc_spindle_coolant(block);
+            mc_spindle_coolant(&block);
         }
     }
 #endif

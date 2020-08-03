@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -22,10 +22,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define MOTIONCONTROL_MODE_FEED 0
 #define MOTIONCONTROL_MODE_NOMOTION 1
-#define MOTIONCONTROL_MODE_FEED 2
-#define MOTIONCONTROL_MODE_INVERSEFEED 4
-#define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 8
+#define MOTIONCONTROL_MODE_INVERSEFEED 2
+#define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 4
 
 typedef struct
 {
@@ -50,12 +50,12 @@ typedef struct
 void mc_init(void);
 bool mc_get_checkmode(void);
 bool mc_toogle_checkmode(void);
-uint8_t mc_line(float *target, motion_data_t block_data);
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t block_data);
-uint8_t mc_dwell(motion_data_t block_data);
+uint8_t mc_line(float *target, motion_data_t* block_data);
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t* block_data);
+uint8_t mc_dwell(motion_data_t* block_data);
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
-uint8_t mc_spindle_coolant(motion_data_t block_data);
-uint8_t mc_probe(float *target, bool invert_probe, motion_data_t block_data);
+uint8_t mc_spindle_coolant(motion_data_t* block_data);
+uint8_t mc_probe(float *target, bool invert_probe, motion_data_t* block_data);
 void mc_get_position(float *target);
 void mc_resync_position(void);
 

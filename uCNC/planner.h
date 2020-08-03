@@ -13,7 +13,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -75,7 +75,7 @@ void planner_get_spindle_speed(float scale, uint8_t* pwm,bool* invert);
 float planner_get_previous_spindle_speed(void);
 #endif
 void planner_discard_block(void);
-void planner_add_line(uint32_t *target, motion_data_t block_data);
+void planner_add_line(uint32_t *target, motion_data_t* block_data);
 void planner_add_analog_output(uint8_t output, uint8_t value);
 void planner_add_digital_output(uint8_t output, uint8_t value);
 void planner_get_position(uint32_t *steps);
