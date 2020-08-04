@@ -73,7 +73,7 @@ bool serial_rx_is_empty(void)
 
 bool serial_tx_is_empty(void)
 {
-    return (!serial_tx_count);
+    return (!serial_tx_count && (serial_tx_write == serial_tx_read));
 }
 
 unsigned char serial_getc(void)
@@ -87,33 +87,25 @@ unsigned char serial_getc(void)
         {
             return EOL;
         }
-
-        do
+        
+        c = serial_rx_buffer[serial_rx_read];
+        if (++serial_rx_read == RX_BUFFER_SIZE)
         {
-            c = serial_rx_buffer[serial_rx_read];
-            if (++serial_rx_read == RX_BUFFER_SIZE)
-            {
-                serial_rx_read = 0;
-            }
-            switch (c)
-            {
-            case EOL: //EOL
-                serial_rx_count--;
-                return EOL;
-            case ' ':
-            case '\t': //eats white chars
-                break;
-            default:
-                if (c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-#ifdef ECHO_CMD
-                serial_putc(c);
-#endif
-                return c;
-            }
-        } while (serial_rx_count);
+            serial_rx_read = 0;
+        }
+        
+		switch(c)
+		{
+			case '\r':
+			case '\n':
+			case EOL:
+				serial_rx_count--;
+				return EOL;
+			case '\t':
+				return ' ';
+		}
+
+		return c;
         break;
     case SERIAL_N0:
     case SERIAL_N1:
@@ -168,26 +160,18 @@ unsigned char serial_peek(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-        while (serial_rx_count)
-        {
-            c = serial_rx_buffer[serial_rx_read];
-            switch (c)
-            {
-            case ' ':
-            case '\t': //eats white chars
-                if (++serial_rx_read == RX_BUFFER_SIZE)
-                {
-                    serial_rx_read = 0;
-                }
-                break;
-            default:
-                if (c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-                return c;
-            }
-        }
+         c = serial_rx_buffer[serial_rx_read];
+         switch(c)
+         {
+         	case '\r':
+         	case '\n':
+         	case EOL:
+         		return EOL;
+         	case '\t':
+         		return ' ';
+         	default:
+         		return c;
+		 }
         break;
     case SERIAL_N0:
     case SERIAL_N1:

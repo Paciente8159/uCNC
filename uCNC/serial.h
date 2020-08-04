@@ -21,8 +21,9 @@
 
 #define EOL 0x00		   //end of line char
 #define OVF 0x7F		   //overflow char
-#define RX_BUFFER_SIZE 129 //buffer sizes
-#define TX_BUFFER_SIZE 112 //buffer sizes
+#define SAFEMARGIN 2
+#define RX_BUFFER_SIZE 128 + SAFEMARGIN//buffer sizes
+#define TX_BUFFER_SIZE 112 + SAFEMARGIN//buffer sizes
 
 #define SERIAL_UART 0
 #define SERIAL_N0 1

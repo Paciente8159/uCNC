@@ -68,6 +68,8 @@ const uint8_t __rom__ crc7_table[256] =
         0x5f, 0x56, 0x4d, 0x44, 0x7b, 0x72, 0x69, 0x60,
         0x0e, 0x07, 0x1c, 0x15, 0x2a, 0x23, 0x38, 0x31,
         0x46, 0x4f, 0x54, 0x5d, 0x62, 0x6b, 0x70, 0x79};
+
+#define crc7(x, y) rom_read_byte(&crc7_table[x ^ y])
 #else
 static uint8_t crc7(uint8_t c, uint8_t crc)
 {
@@ -224,11 +226,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
     {
         size--;
         uint8_t value = mcu_eeprom_getc(address++);
-#ifndef CRC_WITHOUT_LOOKUP_TABLE
-        crc = rom_read_byte(&crc7_table[value ^ crc]);
-#else
         crc = crc7(value, crc);
-#endif
         *(__ptr++) = value;
     }
 
@@ -247,9 +245,8 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 
 void settings_reset(void)
 {
-    const uint8_t size = sizeof(settings_t);
-    rom_memcpy(&g_settings, &default_settings, size);
-    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, size);
+    rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+    settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, sizeof(settings_t));
 
 //fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -279,11 +276,7 @@ void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
         }
 
         size--;
-#ifndef CRC_WITHOUT_LOOKUP_TABLE
-        crc = rom_read_byte(&crc7_table[*__ptr ^ crc]);
-#else
         crc = crc7(*__ptr, crc);
-#endif
         mcu_eeprom_putc(address++, *(__ptr++));
     }
 
@@ -558,7 +551,7 @@ bool settings_check_startup_gcode(uint16_t address)
     do
     {
         c = mcu_eeprom_getc(cmd_address++);
-        crc = rom_read_byte(&crc7_table[c ^ crc]);
+        crc = crc7(c, crc);
         if (!c)
         {
             break;
@@ -586,7 +579,7 @@ void settings_save_startup_gcode(uint16_t address)
     do
     {
         c = serial_getc();
-        crc = rom_read_byte(&crc7_table[c ^ crc]);
+        crc = crc7(c, crc);
         mcu_eeprom_putc(address++, (uint8_t)c);
         size--;
     } while (size && c);

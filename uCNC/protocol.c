@@ -27,6 +27,7 @@
 #include "cnc.h"
 #include "mcu.h"
 #include "protocol.h"
+#include "grbl_interface.h"
 
 static void procotol_send_newline(void)
 {
@@ -57,6 +58,13 @@ void protocol_send_alarm(uint8_t alarm)
 void protocol_send_string(const unsigned char *__s)
 {
     serial_print_str(__s);
+}
+
+void protocol_send_feedback(const unsigned char* __s)
+{
+    serial_print_str(MSG_START);
+    serial_print_str(__s);
+    serial_print_str(MSG_END);
 }
 
 static uint8_t protocol_get_tools(void)
@@ -131,10 +139,10 @@ void protocol_send_status(void)
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
-    /*if(!serial_tx_is_empty())
+    if(!serial_tx_is_empty())
     {
     	return;
-    }*/
+    }
 
     uint32_t steppos[STEPPER_COUNT];
     itp_get_rt_position(steppos);

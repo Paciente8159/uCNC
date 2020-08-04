@@ -30,6 +30,7 @@
 #include "interpolator.h"
 #include "io_control.h"
 #include "cnc.h"
+#include "utils.h"
 
 typedef struct
 {
@@ -53,277 +54,12 @@ static uint8_t planner_data_slots;
 static planner_overrides_t planner_overrides;
 static uint8_t planner_ovr_counter;
 
-/*
-	Planner buffer functions
-*/
-static inline void planner_buffer_read(void)
-{
-    planner_data_slots++;
-    if (++planner_data_read == PLANNER_BUFFER_SIZE)
-    {
-        planner_data_read = 0;
-    }
-}
-
-static inline void planner_buffer_write(void)
-{
-    planner_data_slots--;
-    if (++planner_data_write == PLANNER_BUFFER_SIZE)
-    {
-        planner_data_write = 0;
-    }
-}
-
-static inline uint8_t planner_buffer_next(uint8_t index)
-{
-    if (++index == PLANNER_BUFFER_SIZE)
-    {
-        index = 0;
-    }
-
-    return index;
-}
-
-static inline uint8_t planner_buffer_prev(uint8_t index)
-{
-    if (index == 0)
-    {
-        index = PLANNER_BUFFER_SIZE;
-    }
-
-    return --index;
-}
-
-bool planner_buffer_is_empty(void)
-{
-    return (planner_data_slots == PLANNER_BUFFER_SIZE);
-}
-
-bool planner_buffer_is_full(void)
-{
-    return (planner_data_slots == 0);
-}
-
-static inline void planner_buffer_clear(void)
-{
-    planner_data_write = 0;
-    planner_data_read = 0;
-    planner_data_slots = PLANNER_BUFFER_SIZE;
-#ifdef FORCE_GLOBALS_TO_0
-    memset(planner_data, 0, sizeof(planner_data));
-#endif
-}
-
-void planner_init(void)
-{
-#ifdef FORCE_GLOBALS_TO_0
-    memset(planner_pos, 0, sizeof(planner_pos));
-    //resets buffer
-    memset(planner_data, 0, sizeof(planner_data));
-#endif
-    planner_buffer_clear();
-    planner_overrides.overrides_enabled = true;
-    planner_overrides.feed_override = 100;
-    planner_overrides.rapid_feed_override = 100;
-#ifdef USE_SPINDLE
-    planner_overrides.spindle_override = 100;
-    planner_spindle = 0;
-#endif
-}
-
-void planner_clear(void)
-{
-    //clears all motions stored in the buffer
-    planner_buffer_clear();
-#ifdef USE_SPINDLE
-    planner_spindle = 0;
-#endif
-    //resyncs position with interpolator
-    planner_resync_position();
-    //forces motion control to resync postition after clearing the planner buffer
-    mc_resync_position();
-}
-
-planner_block_t *planner_get_block(void)
-{
-    return &planner_data[planner_data_read];
-}
-
-float planner_get_block_exit_speed_sqr(void)
-{
-    //only one block in the buffer (exit speed is 0)
-    if (PLANNER_BUFFER_SIZE - planner_data_slots < 2)
-        return 0;
-
-    //exit speed = next block entry speed
-    uint8_t next = planner_buffer_next(planner_data_read);
-    float exit_speed_sqr = planner_data[next].entry_feed_sqr;
-    if (!planner_overrides.overrides_enabled)
-    {
-        return exit_speed_sqr;
-    }
-
-    if (planner_overrides.feed_override != 100)
-    {
-        exit_speed_sqr *= (float)planner_overrides.feed_override;
-        exit_speed_sqr *= (float)planner_overrides.feed_override;
-        exit_speed_sqr *= 0.0001f;
-    }
-
-    //if rapid overrides are active the feed must not exceed the rapid motion feed
-    if (planner_overrides.rapid_feed_override != 100)
-    {
-        float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
-        rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-        rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-        rapid_feed_sqr *= 0.0001f;
-        exit_speed_sqr = MIN(exit_speed_sqr, rapid_feed_sqr);
-    }
-
-    return exit_speed_sqr;
-}
-
-float planner_get_block_top_speed(void)
-{
-    /*
-    Computed the junction speed
-
-    At full acceleration and deacceleration we have the following equations
-    	v_max_entry^2 = v_entry^2 + 2 * d_start * acceleration
-    	v_max_exit^2 = v_exit^2 + 2 * d_deaccel * acceleration
-
-    In this case v_max_entry^2 = v_max_exit^2 at the point where
-
-    d_deaccel = d_total - d_start;
-
-    this translates to the equation
-
-    v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
-    */
-    float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-    float speed_delta = exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
-    float speed_change = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
-    speed_change = fast_flt_mul2(speed_change);
-    speed_change += speed_delta;
-    float junction_speed_sqr = speed_change * 0.5f;
-
-    float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
-    if (planner_overrides.overrides_enabled)
-    {
-        if (planner_overrides.feed_override != 100)
-        {
-            target_speed_sqr *= (float)planner_overrides.feed_override;
-            target_speed_sqr *= (float)planner_overrides.feed_override;
-            target_speed_sqr *= 0.0001f;
-        }
-
-        float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
-        //if rapid overrides are active the feed must not exceed the rapid motion feed
-        if (planner_overrides.rapid_feed_override != 100)
-        {
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-            rapid_feed_sqr *= 0.0001f;
-        }
-
-        //can't ever exceed rapid move speed
-        target_speed_sqr = MIN(target_speed_sqr, rapid_feed_sqr);
-    }
-
-    return MIN(junction_speed_sqr, target_speed_sqr);
-}
-
-#ifdef USE_SPINDLE
-void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
-{
-    float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
-    *pwm = 0;
-    *invert = (spindle < 0);
-
-    if (spindle != 0)
-    {
-        spindle = ABS(spindle);
-#ifdef LASER_MODE
-        spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
-#endif
-        if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
-        {
-            spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;
-        }
-        spindle = MIN(spindle, g_settings.spindle_max_rpm);
-        spindle = MAX(spindle, g_settings.spindle_min_rpm);
-        *pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
-    }
-}
-
-float planner_get_previous_spindle_speed(void)
-{
-    return planner_spindle;
-}
-#endif
-
-void planner_discard_block(void)
-{
-    planner_buffer_read();
-}
-
-void planner_recalculate(void)
-{
-    uint8_t last = planner_data_write;
-    uint8_t first = planner_data_read;
-    uint8_t block = planner_data_write;
-    //starts in the last added block
-    //calculates the maximum entry speed of the block so that it can do a full stop in the end
-    float doubledistaccel = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
-    float entry_feed_sqr = (planner_data[block].dwell == 0) ? (doubledistaccel) : 0;
-    planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
-    //optimizes entry speeds given the current exit speed (backward pass)
-    uint8_t next = block;
-    block = planner_buffer_prev(block);
-
-    while (!planner_data[block].optimal && block != first)
-    {
-        if (planner_data[block].dwell != 0)
-        {
-            planner_data[block].entry_feed_sqr = 0;
-        }
-        else if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
-        {
-            entry_feed_sqr = planner_data[next].entry_feed_sqr + doubledistaccel;
-            planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
-        }
-
-        next = block;
-        block = planner_buffer_prev(block);
-    }
-
-    //optimizes exit speeds (forward pass)
-    while (block != last)
-    {
-        //next block is moving at a faster speed
-        if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
-        {
-            //check if the next block entry speed can be achieved
-            float exit_speed_sqr = planner_data[block].entry_feed_sqr + (doubledistaccel);
-            if (exit_speed_sqr < planner_data[next].entry_feed_sqr)
-            {
-                //lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
-                //optimization achieved for this movement
-                planner_data[next].entry_feed_sqr = exit_speed_sqr;
-                planner_data[next].optimal = true;
-            }
-        }
-
-        //if the executing block was updated then update the interpolator limits
-        if (block == first)
-        {
-            itp_update();
-        }
-
-        block = next;
-        next = planner_buffer_next(block);
-    }
-}
+static void planner_buffer_write(void);
+static void planner_buffer_read(void);
+FORCEINLINE static uint8_t planner_buffer_next(uint8_t index);
+FORCEINLINE static uint8_t planner_buffer_prev(uint8_t index);
+FORCEINLINE static void planner_recalculate(void);
+FORCEINLINE static void planner_buffer_clear(void);
 
 /*
 	Adds a new line to the trajectory planner
@@ -339,7 +75,7 @@ void planner_recalculate(void)
 		3. The entry feed (initialy set to 0)
 		4. The maximum entry feed given the juntion angle between planner blocks
 */
-void planner_add_line(uint32_t *target, motion_data_t* block_data)
+void planner_add_line(uint32_t *target, motion_data_t *block_data)
 {
 #ifdef ENABLE_LINACT_PLANNER
     static float last_dir_vect[STEPPER_COUNT];
@@ -381,7 +117,7 @@ void planner_add_line(uint32_t *target, motion_data_t* block_data)
     }
     else
     {
-        memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(block_data->steps));
+        memcpy(planner_data[planner_data_write].steps, block_data->steps, STEPPER_COUNT * sizeof(uint32_t));
         planner_data[planner_data_write].total_steps = block_data->total_steps;
     }
 
@@ -397,7 +133,6 @@ void planner_add_line(uint32_t *target, motion_data_t* block_data)
     float rapid_feed = FLT_MAX;
     planner_data[planner_data_write].acceleration = FLT_MAX;
 
-
 #ifdef ENABLE_LINACT_PLANNER
     float dir_vect[STEPPER_COUNT];
     memset(dir_vect, 0, sizeof(dir_vect));
@@ -409,7 +144,7 @@ void planner_add_line(uint32_t *target, motion_data_t* block_data)
         last_dir_vect[i] = block_data->dir_vect[i];
     }
 #endif
-    
+
     for (uint8_t i = STEPPER_COUNT; i != 0;)
     {
         i--;
@@ -440,8 +175,8 @@ void planner_add_line(uint32_t *target, motion_data_t* block_data)
         }
         else
         {
-        	last_dir_vect[i] = 0;
-		}
+            last_dir_vect[i] = 0;
+        }
     }
 
     //converts to steps per second (st/s)
@@ -519,6 +254,274 @@ void planner_add_line(uint32_t *target, motion_data_t* block_data)
     if (target != NULL)
     {
         memcpy(planner_step_pos, target, sizeof(planner_step_pos));
+    }
+}
+
+/*
+	Planner buffer functions
+*/
+static void planner_buffer_read(void)
+{
+    planner_data_slots++;
+    if (++planner_data_read == PLANNER_BUFFER_SIZE)
+    {
+        planner_data_read = 0;
+    }
+}
+
+static void planner_buffer_write(void)
+{
+    planner_data_slots--;
+    if (++planner_data_write == PLANNER_BUFFER_SIZE)
+    {
+        planner_data_write = 0;
+    }
+}
+
+static uint8_t planner_buffer_next(uint8_t index)
+{
+    if (++index == PLANNER_BUFFER_SIZE)
+    {
+        index = 0;
+    }
+
+    return index;
+}
+
+static uint8_t planner_buffer_prev(uint8_t index)
+{
+    if (index == 0)
+    {
+        index = PLANNER_BUFFER_SIZE;
+    }
+
+    return --index;
+}
+
+bool planner_buffer_is_empty(void)
+{
+    return (planner_data_slots == PLANNER_BUFFER_SIZE);
+}
+
+bool planner_buffer_is_full(void)
+{
+    return (planner_data_slots == 0);
+}
+
+static void planner_buffer_clear(void)
+{
+    planner_data_write = 0;
+    planner_data_read = 0;
+    planner_data_slots = PLANNER_BUFFER_SIZE;
+#ifdef FORCE_GLOBALS_TO_0
+    memset(planner_data, 0, sizeof(planner_data));
+#endif
+}
+
+void planner_init(void)
+{
+#ifdef FORCE_GLOBALS_TO_0
+    memset(planner_step_pos, 0, sizeof(planner_step_pos));
+    //resets buffer
+    memset(planner_data, 0, sizeof(planner_data));
+#endif
+    planner_buffer_clear();
+    planner_overrides.overrides_enabled = true;
+    planner_overrides.feed_override = 100;
+    planner_overrides.rapid_feed_override = 100;
+#ifdef USE_SPINDLE
+    planner_overrides.spindle_override = 100;
+    planner_spindle = 0;
+#endif
+}
+
+void planner_clear(void)
+{
+    //clears all motions stored in the buffer
+    planner_buffer_clear();
+#ifdef USE_SPINDLE
+    planner_spindle = 0;
+#endif
+    //resyncs position with interpolator
+    planner_resync_position();
+    //forces motion control to resync postition after clearing the planner buffer
+    mc_resync_position();
+}
+
+planner_block_t *planner_get_block(void)
+{
+    return &planner_data[planner_data_read];
+}
+
+float planner_get_block_exit_speed_sqr(void)
+{
+    //only one block in the buffer (exit speed is 0)
+    if (PLANNER_BUFFER_SIZE - planner_data_slots < 2)
+        return 0;
+
+    //exit speed = next block entry speed
+    uint8_t next = planner_buffer_next(planner_data_read);
+    float exit_speed_sqr = planner_data[next].entry_feed_sqr;
+    float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
+
+    if (planner_overrides.overrides_enabled)
+    {
+        if (planner_overrides.feed_override != 100)
+        {
+            exit_speed_sqr *= (float)planner_overrides.feed_override;
+            exit_speed_sqr *= (float)planner_overrides.feed_override;
+            exit_speed_sqr *= 0.0001f;
+        }
+
+        //if rapid overrides are active the feed must not exceed the rapid motion feed
+        if (planner_overrides.rapid_feed_override != 100)
+        {
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= 0.0001f;
+        }
+    }
+
+    return MIN(exit_speed_sqr, rapid_feed_sqr);
+}
+
+float planner_get_block_top_speed(void)
+{
+    /*
+    Computed the junction speed
+
+    At full acceleration and deacceleration we have the following equations
+    	v_max_entry^2 = v_entry^2 + 2 * d_start * acceleration
+    	v_max_exit^2 = v_exit^2 + 2 * d_deaccel * acceleration
+
+    In this case v_max_entry^2 = v_max_exit^2 at the point where
+
+    d_deaccel = d_total - d_start;
+
+    this translates to the equation
+
+    v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
+    */
+    float exit_speed_sqr = planner_get_block_exit_speed_sqr();
+    float speed_delta = exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
+    float speed_change = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
+    speed_change = fast_flt_mul2(speed_change);
+    speed_change += speed_delta;
+    float junction_speed_sqr = fast_flt_div2(speed_change);
+    float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
+    float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
+    if (planner_overrides.overrides_enabled)
+    {
+        if (planner_overrides.feed_override != 100)
+        {
+            target_speed_sqr *= (float)planner_overrides.feed_override;
+            target_speed_sqr *= (float)planner_overrides.feed_override;
+            target_speed_sqr *= 0.0001f;
+        }
+
+        //if rapid overrides are active the feed must not exceed the rapid motion feed
+        if (planner_overrides.rapid_feed_override != 100)
+        {
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= 0.0001f;
+        }
+    }
+
+    //can't ever exceed rapid move speed
+    target_speed_sqr = MIN(target_speed_sqr, rapid_feed_sqr);
+    return MIN(junction_speed_sqr, target_speed_sqr);
+}
+
+#ifdef USE_SPINDLE
+void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
+{
+    float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
+    *pwm = 0;
+    *invert = (spindle < 0);
+
+    if (spindle != 0)
+    {
+        spindle = ABS(spindle);
+#ifdef LASER_MODE
+        spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
+#endif
+        if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
+        {
+            spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;
+        }
+        spindle = MIN(spindle, g_settings.spindle_max_rpm);
+        spindle = MAX(spindle, g_settings.spindle_min_rpm);
+        *pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
+    }
+}
+
+float planner_get_previous_spindle_speed(void)
+{
+    return planner_spindle;
+}
+#endif
+
+void planner_discard_block(void)
+{
+    planner_buffer_read();
+}
+
+static void planner_recalculate(void)
+{
+    uint8_t last = planner_data_write;
+    uint8_t first = planner_data_read;
+    uint8_t block = planner_data_write;
+    //starts in the last added block
+    //calculates the maximum entry speed of the block so that it can do a full stop in the end
+    float doubledistaccel = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
+    float entry_feed_sqr = (planner_data[block].dwell == 0) ? (doubledistaccel) : 0;
+    planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
+    //optimizes entry speeds given the current exit speed (backward pass)
+    uint8_t next = block;
+    block = planner_buffer_prev(block);
+
+    while (!planner_data[block].optimal && block != first)
+    {
+        if (planner_data[block].dwell != 0)
+        {
+            planner_data[block].entry_feed_sqr = 0;
+        }
+        else if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
+        {
+            entry_feed_sqr = planner_data[next].entry_feed_sqr + doubledistaccel;
+            planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
+        }
+
+        next = block;
+        block = planner_buffer_prev(block);
+    }
+
+    //optimizes exit speeds (forward pass)
+    while (block != last)
+    {
+        //next block is moving at a faster speed
+        if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
+        {
+            //check if the next block entry speed can be achieved
+            float exit_speed_sqr = planner_data[block].entry_feed_sqr + (doubledistaccel);
+            if (exit_speed_sqr < planner_data[next].entry_feed_sqr)
+            {
+                //lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
+                //optimization achieved for this movement
+                planner_data[next].entry_feed_sqr = exit_speed_sqr;
+                planner_data[next].optimal = true;
+            }
+        }
+
+        //if the executing block was updated then update the interpolator limits
+        if (block == first)
+        {
+            itp_update();
+        }
+
+        block = next;
+        next = planner_buffer_next(block);
     }
 }
 

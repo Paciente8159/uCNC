@@ -78,3 +78,5 @@
 #define MIN_SEC_MULT 0.0166666666666666667
 #define UINT8_MAX_INV 0.0039215686274509804
 #endif
+
+#define FORCEINLINE __attribute__((always_inline)) inline

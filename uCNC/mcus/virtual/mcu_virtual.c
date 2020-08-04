@@ -119,6 +119,13 @@ void *comsimul(void)
 		{
 			uart_char = c;
 			serial_rx_isr(c);
+			if(c == '\n' | c=='\r')
+			{
+				while(!serial_rx_is_empty())
+				{
+					usleep(1);
+				}
+			}
 		}
 	}
 }
@@ -130,10 +137,10 @@ void *comoutsimul(void)
 	static uint8_t i = 0;
 	for (;;)
 	{
-		if (!serial_tx_is_empty())
+		if (mcu_tx_ready)
 		{
 			serial_tx_isr();
-			unsigned char c = virtualports->uart;
+			/*unsigned char c = virtualports->uart;
 			if (c != 0)
 			{
 				combuffer[i] = c;
@@ -152,8 +159,9 @@ void *comoutsimul(void)
 			else
 			{
 				mcu_tx_ready = false;
-			}
+			}*/
 		}
+		usleep(1);
 	}
 }
 

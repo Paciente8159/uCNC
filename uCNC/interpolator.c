@@ -498,6 +498,9 @@ void itp_run(void)
         {
             itp_cur_plan_block->total_steps = deaccel_from;
         }
+        
+        //finally write the segment
+        itp_sgm_buffer_write();
 
         if (unprocessed_steps == 0)
         {
@@ -507,9 +510,6 @@ void itp_run(void)
             //accel_profile = 0; //no updates necessary to planner
             //break;
         }
-
-        //finally write the segment
-        itp_sgm_buffer_write();
     }
 
     //starts the step isr if is stopped and there are segments to execute
@@ -549,7 +549,7 @@ void itp_clear(void)
 
 void itp_get_rt_position(uint32_t *position)
 {
-    memcpy(position, &itp_rt_step_pos, sizeof(itp_rt_step_pos));
+    memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 }
 
 void itp_reset_rt_position(void)
