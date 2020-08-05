@@ -413,38 +413,6 @@ void parser_sync_probe(void)
     itp_get_rt_position(parser_parameters.last_probe_position);
 }
 
-#ifdef USE_COOLANT
-void parser_toogle_coolant(uint8_t state)
-{
-    parser_update_coolant(parser_state.groups.coolant ^ state);
-}
-
-void parser_update_coolant(uint8_t state)
-{
-    parser_state.groups.coolant = state;
-
-    switch (parser_state.groups.coolant)
-    {
-    case 0: //off
-        mcu_clear_output(COOLANT_FLOOD);
-        mcu_clear_output(COOLANT_MIST);
-        break;
-    case 1: //flood
-        mcu_clear_output(COOLANT_MIST);
-        mcu_set_output(COOLANT_FLOOD);
-        break;
-    case 2: //mist
-        mcu_clear_output(COOLANT_FLOOD);
-        mcu_set_output(COOLANT_MIST);
-        break;
-    case 3: //flood and mist
-        mcu_set_output(COOLANT_FLOOD);
-        mcu_set_output(COOLANT_MIST);
-        break;
-    }
-}
-#endif
-
 static uint8_t parser_grbl_command(void)
 {
     //if not IDLE
@@ -970,6 +938,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //pointer to planner position
     float planner_last_pos[AXIS_COUNT];
     motion_data_t block_data = {0};
+    bool updatetools = false;
 
     //stoping from previous command is active
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1005,6 +974,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     if (CHECKFLAG(cmd->words, GCODE_WORD_S))
     {
         new_state->spindle = words->s;
+        updatetools = true;
     }
 #endif
 //5. select tool
@@ -1035,18 +1005,23 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
     if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
     {
+        updatetools = true;
         block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
     }
 #endif
 //8. coolant on/off
 #ifdef USE_COOLANT
+    if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
+    {
+        updatetools = true;
+    }
     block_data.coolant = new_state->groups.coolant;
-    //moving to planner
-    //parser_update_coolant(new_state->groups.coolant);
+//moving to planner
+//parser_update_coolant(new_state->groups.coolant);
 #endif
 
     //9. overrides
-    if ((new_state->groups.feed_speed_override == 0) != planner_get_overrides())
+    if ((new_state->groups.feed_speed_override == M48) != planner_get_overrides())
     {
         planner_toggle_overrides();
     }
@@ -1135,7 +1110,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     if (CHECKFLAG(cmd->groups, GCODE_GROUP_COORDSYS))
     {
         parser_parameters.coord_system_index = new_state->groups.coord_system;
-        settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
+        settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset[0], PARSER_PARAM_SIZE);
         parser_wco_counter = 0;
     }
     //16. set path control mode (G61, G61.1, G64)
@@ -1185,7 +1160,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             index = G30HOME;
             break;
         default:
-            index = words->p;
+            index--;
             address = SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET);
             break;
         }
@@ -1291,6 +1266,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     if (index <= G30HOME)
     {
         settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&axis[0], PARSER_PARAM_SIZE);
+        parser_wco_counter = 0;
     }
 
     switch (new_state->groups.nonmodal)
@@ -1337,8 +1313,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
     float x, y;
     //20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
+    //only if any axis word was used
     //incomplete (canned cycles not supported)
-    if (new_state->groups.nonmodal == 0)
+    if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
     {
         uint8_t probe_error;
 
@@ -1354,6 +1331,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                 return STATUS_FEED_NOT_SET;
             }
             error = mc_line(axis, &block_data);
+            updatetools = false; //tool was updated with the motion control command
             break;
         case G2:
         case G3:
@@ -1420,6 +1398,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             }
 
             error = mc_arc(axis, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
+            updatetools = false; //tool was updated with the motion control command
             break;
         case 4: //G38.2
         case 5: //G38.3
@@ -1461,10 +1440,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     }
 
     //if reached here the execution was not intersected
-    //send a spindle and coolant update
-    if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE | GCODE_GROUP_COOLANT))
+    //send a spindle and coolant update if needed
+    if (updatetools)
     {
-        return mc_spindle_coolant(&block_data);
+        return mc_update_tools(&block_data);
     }
 
     return STATUS_OK;
@@ -1970,13 +1949,13 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 #ifdef USE_COOLANT
     case 7:
     case 8:
-        new_group |= GCODE_GROUP_COOLANT;
-        new_state->groups.coolant |= (9 - code);
-        break;
+        cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
+        new_state->groups.coolant |= (code - (M7-1));
+        return STATUS_OK;
     case 9:
-        new_group |= GCODE_GROUP_COOLANT;
+        cmd->groups |= GCODE_GROUP_COOLANT;
         new_state->groups.coolant = M9;
-        break;
+        return STATUS_OK;
 #endif
     case 48:
     case 49:
@@ -2171,16 +2150,16 @@ static void parser_reset(void)
 {
     parser_state.groups.coord_system = G54;               //G54
     parser_state.groups.plane = G17;                      //G17
-    parser_state.groups.feed_speed_override = 0;          //M48
+    parser_state.groups.feed_speed_override = M48;          //M48
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94
     parser_state.groups.tool_length_offset = G49;         //G49
 #ifdef USE_COOLANT
-    parser_state.groups.coolant = 0; //M9
+    parser_state.groups.coolant = M9; //M9
 #endif
 #ifdef USE_SPINDLE
-    parser_state.groups.spindle_turning = 2; //M5
+    parser_state.groups.spindle_turning = M5; //M5
 #endif
     parser_state.groups.motion = G1;                                     //G1
     parser_state.groups.units = G21;                                     //G21

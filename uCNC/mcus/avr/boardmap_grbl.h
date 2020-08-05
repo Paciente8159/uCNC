@@ -80,8 +80,8 @@
 #define CS_RES_ISR 1
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX_BIT 0
@@ -101,10 +101,8 @@
 //Functionalities are set in config.h file
 #define DOUT0_BIT 5
 #define DOUT0_PORT B
-#define DOUT1_BIT 0
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
-#define DOUT2_PORT C
+#define DOUT1_BIT 3
+#define DOUT1_PORT C
 
 //Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0

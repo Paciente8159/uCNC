@@ -279,8 +279,12 @@ void cnc_stop(void)
     mcu_clear_output(SPINDLE_DIR);
 #endif
 #ifdef USE_COOLANT
+#ifdef COOLANT_FLOOD
     mcu_clear_output(COOLANT_FLOOD);
+    #endif
+#ifdef COOLANT_MIST
     mcu_clear_output(COOLANT_MIST);
+#endif
 #endif
 }
 
@@ -384,7 +388,7 @@ void cnc_reset(void)
 //If two flags have different effects on the same attribute the one with the LSB will run last and overwrite the other
 void cnc_exec_rt_commands(void)
 {
-    bool update_spindle = false;
+    bool update_tools = false;
 
     //executes feeds override rt commands
     uint8_t cmd_mask = 0x04;
@@ -461,7 +465,7 @@ void cnc_exec_rt_commands(void)
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
     while (command)
     {
-        update_spindle = true;
+        update_tools = true;
         switch (command & cmd_mask)
         {
 #ifdef USE_SPINDLE
@@ -486,7 +490,7 @@ void cnc_exec_rt_commands(void)
                 //toogle state
                 if (mcu_get_pwm(SPINDLE_PWM))
                 {
-                    update_spindle = false;
+                    update_tools = false;
                     mcu_set_pwm(SPINDLE_PWM, 0);
                 }
             }
@@ -495,10 +499,11 @@ void cnc_exec_rt_commands(void)
 #ifdef USE_COOLANT
         case RT_CMD_COOL_FLD_TOGGLE:
         case RT_CMD_COOL_MST_TOGGLE:
-            update_spindle = false;
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
+                uint8_t coolovr = (cmd_mask==RT_CMD_COOL_FLD_TOGGLE) ? 1 : 0;
+                coolovr |= (cmd_mask==RT_CMD_COOL_MST_TOGGLE) ? 2 : 0;
+                planner_coolant_ovr_toggle(coolovr);
             }
             break;
 #endif
@@ -508,18 +513,19 @@ void cnc_exec_rt_commands(void)
         cmd_mask >>= 1;
     }
 
-#ifdef USE_SPINDLE
-    if (update_spindle)
+    if (update_tools)
     {
         itp_update();
         if (planner_buffer_is_empty())
         {
             motion_data_t block = {0};
+            #ifdef USE_SPINDLE
+            block.coolant = planner_get_previous_coolant();
             block.spindle = planner_get_previous_spindle_speed();
-            mc_spindle_coolant(&block);
+            #endif
+            mc_update_tools(&block);
         }
     }
-#endif
 }
 
 void cnc_check_fault_systems(void)

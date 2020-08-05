@@ -54,7 +54,7 @@ uint8_t mc_line(float *target, motion_data_t* block_data);
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t* block_data);
 uint8_t mc_dwell(motion_data_t* block_data);
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
-uint8_t mc_spindle_coolant(motion_data_t* block_data);
+uint8_t mc_update_tools(motion_data_t* block_data);
 uint8_t mc_probe(float *target, bool invert_probe, motion_data_t* block_data);
 void mc_get_position(float *target);
 void mc_resync_position(void);

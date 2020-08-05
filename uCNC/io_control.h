@@ -211,4 +211,12 @@ void io_set_dirs(uint8_t mask);
 
 void io_enable_steps(void);
 
+#ifdef USE_SPINDLE
+void io_set_spindle(uint8_t value, bool invert);
+#endif
+
+#ifdef USE_coolant
+void io_set_coolant(uint8_t value);
+#endif
+
 #endif

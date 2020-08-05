@@ -39,6 +39,9 @@ typedef struct
 #ifdef USE_SPINDLE
     uint8_t spindle_override;
 #endif
+#ifdef USE_COOLANT
+    uint8_t coolant_override;
+#endif
     bool overrides_enabled;
 
 } planner_overrides_t;
@@ -46,6 +49,9 @@ typedef struct
 static uint32_t planner_step_pos[STEPPER_COUNT];
 #ifdef USE_SPINDLE
 static int16_t planner_spindle;
+#endif
+#ifdef USE_COOLANT
+static uint8_t planner_coolant;
 #endif
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
@@ -95,6 +101,9 @@ void planner_add_line(uint32_t *target, motion_data_t *block_data)
     planner_data[planner_data_write].entry_max_feed_sqr = 0;
 #ifdef USE_SPINDLE
     planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
+#endif
+#ifdef USE_COOLANT
+    planner_coolant = planner_data[planner_data_write].coolant = block_data->coolant;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     planner_data[planner_data_write].line = block_data->line;
@@ -327,11 +336,13 @@ void planner_init(void)
 #endif
     planner_buffer_clear();
     planner_overrides.overrides_enabled = true;
-    planner_overrides.feed_override = 100;
-    planner_overrides.rapid_feed_override = 100;
+    planner_feed_ovr_reset();
+    planner_rapid_feed_ovr_reset();
 #ifdef USE_SPINDLE
-    planner_overrides.spindle_override = 100;
-    planner_spindle = 0;
+    planner_spindle_ovr_reset();
+#endif
+#ifdef USE_COOLANT
+    planner_coolant_ovr_reset();
 #endif
 }
 
@@ -341,6 +352,9 @@ void planner_clear(void)
     planner_buffer_clear();
 #ifdef USE_SPINDLE
     planner_spindle = 0;
+#endif
+#ifdef USE_COOLANT
+    planner_coolant = 0;
 #endif
     //resyncs position with interpolator
     planner_resync_position();
@@ -462,6 +476,25 @@ float planner_get_previous_spindle_speed(void)
 }
 #endif
 
+#ifdef USE_COOLANT
+uint8_t planner_get_coolant(void)
+{
+	uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
+	
+	if (planner_overrides.overrides_enabled)
+	{
+		coolant ^= planner_overrides.coolant_override;
+	}
+	
+	return coolant;
+}
+
+uint8_t planner_get_previous_coolant(void)
+{
+    return planner_coolant;
+}
+#endif
+
 void planner_discard_block(void)
 {
     planner_buffer_read();
@@ -578,20 +611,20 @@ void planner_feed_ovr_reset(void)
 {
     if (planner_overrides.overrides_enabled && planner_overrides.feed_override != 100)
     {
-        planner_overrides.feed_override = 100;
-        planner_ovr_counter = 0;
         itp_update();
     }
+    planner_overrides.feed_override = 100;
+    planner_ovr_counter = 0;
 }
 
 void planner_rapid_feed_ovr_reset(void)
 {
     if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != 100)
     {
-        planner_overrides.rapid_feed_override = 100;
-        planner_ovr_counter = 0;
         itp_update();
     }
+    planner_overrides.rapid_feed_override = 100;
+    planner_ovr_counter = 0;
 }
 #ifdef USE_SPINDLE
 void planner_spindle_ovr_inc(uint8_t value)
@@ -612,6 +645,20 @@ void planner_spindle_ovr_reset(void)
 {
     planner_overrides.spindle_override = 100;
     planner_ovr_counter = 0;
+}
+#endif
+
+#ifdef USE_COOLANT
+uint8_t planner_coolant_ovr_toggle(uint8_t value)
+{
+    planner_overrides.coolant_override ^= value;
+    return planner_overrides.coolant_override;
+}
+
+void planner_coolant_ovr_reset(void)
+{
+    planner_coolant = 0;
+    planner_overrides.coolant_override = 0;
 }
 #endif
 

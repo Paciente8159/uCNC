@@ -98,7 +98,7 @@
 #define USE_COOLANT
 #ifdef USE_COOLANT
 #define COOLANT_FLOOD DOUT1
-#define COOLANT_MIST DOUT2
+//#define COOLANT_MIST DOUT2
 #endif
 
 /*

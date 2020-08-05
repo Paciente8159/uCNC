@@ -496,7 +496,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     return STATUS_OK;
 }
 
-uint8_t mc_spindle_coolant(motion_data_t* block_data)
+uint8_t mc_update_tools(motion_data_t* block_data)
 {
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
