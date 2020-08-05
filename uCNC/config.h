@@ -62,7 +62,7 @@
 /*
 	Number of segments of an arc computed with aprox. of sin/cos math operation before performing a full calculation
 */
-#define N_ARC_CORRECTION 12
+#define N_ARC_CORRECTION 16
 
 /*
 	Echo recieved commands.
@@ -182,10 +182,12 @@
 /*
 	Compilation specific options
 */
-//#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
-//#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-//#define ENABLE_FAST_SQRT //enable  Quake III style fast sqrt utils. Feed rate calculations will be more accurate. In the fast mode the output feed might be +/-5% of the programmed feed
-
+//ensure all variables are set to 0 at start up
+//#define FORCE_GLOBALS_TO_0
+//saves a little program memory bytes but much more slow CRC check
+//#define CRC_WITHOUT_LOOKUP_TABLE
+//EXPERIMENTAL! Uncomment to enable fast math macros to shorten the computinig time needed for a couple of math operations. This will affect the reported feed rate precision. Output binary will be bigger
+//#define ENABLE_FAST_MATH 
 #include "utils.h"
 
 #endif

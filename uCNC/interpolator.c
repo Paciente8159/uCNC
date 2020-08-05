@@ -203,7 +203,6 @@ void itp_init(void)
     itp_running_sgm = NULL;
     itp_cur_plan_block = NULL;
     itp_needs_update = false;
-    itp_coolant = 0;
 #endif
     itp_busy = false;
     itp_isr_finnished = true;

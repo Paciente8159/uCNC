@@ -840,7 +840,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
             }
             break;
         case G80: //G80 and
-            if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
+            if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
             {
 
                 return STATUS_GCODE_AXIS_WORDS_EXIST;
@@ -991,13 +991,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #ifdef USE_SPINDLE
     switch (new_state->groups.spindle_turning)
     {
-    case 0:
+    case M3:
         block_data.spindle = new_state->spindle;
         break;
-    case 1:
+    case M4:
         block_data.spindle = -new_state->spindle;
         break;
-    case 2:
+    case M5:
         block_data.spindle = 0;
         break;
     }
@@ -1749,16 +1749,19 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         default:
             return STATUS_GCODE_UNSUPPORTED_COMMAND;
         }
-        if (code >= 80)
+        if (code == 80)
         {
             code -= 72;
-            cmd->group_0_1_useaxis = false;
         }
         else if (cmd->group_0_1_useaxis)
         {
             return STATUS_GCODE_MODAL_GROUP_VIOLATION;
         }
-        cmd->group_0_1_useaxis = true;
+        else
+        {
+            cmd->group_0_1_useaxis = true;
+        }
+
         new_group |= GCODE_GROUP_MOTION;
         new_state->groups.motion = code;
         break;

@@ -187,7 +187,7 @@ uint8_t mc_line(float *target, motion_data_t* block_data)
                 }
             }
 
-            planner_add_line(NULL, backlash_block_data);
+            planner_add_line(NULL, &backlash_block_data);
 
             while (planner_buffer_is_full())
             {
