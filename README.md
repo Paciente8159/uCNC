@@ -1,4 +1,7 @@
-![GitHub Logo](https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true)
+<p align="center">
+<img src="https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true">
+</p>
+
 
 # µCNC
 µCNC - A universal CNC firmware for microcontrollers
@@ -18,7 +21,11 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC 1.0.0 is stable. Never the less for use in production work extreme it is recomended to do a dry run before doing the work.
+µCNC current version is v1.1.0. This update brought a significant amount of new features and bug fixes. Among the list of new features is now possible to: 
+   - Configurable backlash compensation
+   - Configurable axis skew compensation
+   - Alternative new planner strategy (linear actuator driven for high inertia machines)
+   - Dynamic step spreading algorithm (similar to Grbl's AMASS) to reduce vibrations caused by steppers at slower step rates
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
@@ -41,7 +48,7 @@ List of Supported G-Codes in µCNC 1.0.0-beta.2:
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
   - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
-  _*also G10 L2 P28 and P30 to set homming coordinates_
+  _* also G10 L2 P28 and P30 to set homming coordinates_
 ```
 
 TODO List of G-Codes in µCNC future releases:
@@ -52,7 +59,7 @@ TODO List of G-Codes in µCNC future releases:
 µCNC currently supports up to (depending on the MCU/board capabilities):
   - 6 independent axis 
   - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
-  - 9* limit switches (6 limit switch (one per axis) plus axis X, Y and Z support dual endstops) (interrupt driven)
+  - 8* limit switches (6 limit switch (one per axis) plus option second axis X, Y or Z support dual endstops) (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
   - 1 cycle start/resume input (interrupt driven)

@@ -5,18 +5,42 @@
 
 # Changelog
 
+## [1.1.0] - unreleased
+
+Version 1.1.0 comes with many added features and improvements over the previous version. It also fixes many of the bugs and limitations of the previous implementation. These are:
+
+### Added
+  - added new planner mode (linear actuator driven) that can be enabled via config file. This plans acceleration and deceleration based on the motion change in the linear actuators and not the cartesian axis. This should be advantageous on mechanically heavy machines. Also an option to enforce cold start motions (if any linear actuator starts at velocity 0 all other go to a full stop when ending the previous move - hybrid G61 and G61.1) (#23)
+  - added backlash compensation on the fly (enabled via config file) with configurable via parameters `$140´(X), `$141´(Y), `$142´(Z), `$143´(A), `$144´(B) and `$145´ (C) (#23)
+  - added axis skew compensation (enabled via config file)  with configurable via parameters `$37´(XY), `$38´(XZ) and `$39´(YZ) (#23)
+  - added new DSS (dynamic step spread) algorithm (similar to Grbl's AMASS (enabled via config file). This distributes step execution at lower step rates so that the vibration noise produced is reduced. (#22) (#18)
+
+### Changed
+  - modified distribution of main (to follow #15)
+  - improved C99 standard compliance of code
+  - new completely redesigned parser/gcode interpreter (easier to debug). A single functions is called to read and execute both gcode and grbl commands. (#21)
+  - complete active modal codes report (#20)
+  - improved separation of comment message processing and command echo (debug purposes only)
+
+### Fixed
+  - fixed overflow serial error that occur if 128 bytes (Grbl's limit) were sent to the buffer.
+  - fixed several compilation errors with other configurations
+  - fixed avr mapfile for grbl
+
 ## [1.0.0] - 2020-07-30
 
 ### Changed
   - modified makefile and instructions for AVR
+  - improved soft polling of input limits and control pins (#11)
+  - improved HAL design for future microcontrollers (#13)
 
 ### Fixed
   - fixed parsing error in check mode (planner position not updated after linear motions)
   - fixed feed override caused feed to go to 0 above 180% feed override value
   - change macro and library dependencies so that the option for fast Sqrt function works (AVR problem only)
-  - fixed feed issue while G20(inches) was active that made the internal feed state value to always be converted from inches to mm even if not explicitly declared in the gcode command. This caused the feed rate to decay to 0.
-  - fixed jog state that was permanently on after a finnished (not aborted) jog motion. New jog commands were also not accepted while in this state
-  - fixed parsing of reset commands ($RST=) that accepted non regular/incomplete forms of the command 
+  - fixed feed issue while G20(inches) was active that made the internal feed state value to always be converted from inches to mm even if not explicitly declared in the gcode command. This caused the feed rate to decay to 0. (#16)
+  - fixed jog state that was permanently on after a finished (not aborted) jog motion. New jog commands were also not accepted while in this state (#19)
+  - fixed parsing of reset commands ($RST=) that accepted non regular/incomplete forms of the command (#14)
   - fixed README
   - fixed devCpp project file (compilation errors) 
 
@@ -45,15 +69,15 @@
 ### Changed
   - complete HAL redesigned to allow independent function pins
   - new generic AVR HAL implementation
-  - modified system exec_flags to prevent unecessary locks
+  - modified system exec_flags to prevent unnecessary locks
   - modified cartesian kinematics (configurable) to fit several types of machines (without the need to code a full kinematics)
-  - separeted the mcu and board now have individual configuration files
+  - separated the mcu and board now have individual configuration files
   - updated README.md to reflect changes of beta.2
 
 ### Fixed
   - fixed bug introduced in the beta patch to the homing motion (no limit_flag)
-  - minor modification of mc_arc to prevent error on non existant axis
-  - adapted protocol to send a minimum of 3 axis coordinates (yeld error on interface with OpenCNCPilot and probably other software too)
+  - minor modification of mc_arc to prevent error on non existent axis
+  - adapted protocol to send a minimum of 3 axis coordinates (yield error on interface with OpenCNCPilot and probably other software too)
   - fixed probe enable and disable functions (now use direct IO on AVR)
 
 ## [1.0.0-beta] - 2020-02-04
@@ -66,11 +90,11 @@
 
 ### Changed
   - modified parser coordinate calculation and non modal gcodes handling so the remaining code executes as it should after these commands
-  - redesined parameters now loaded directly from eeprom and reduced ram usage (about 10% on Arduino Uno)
+  - redesigned parameters now loaded directly from eeprom and reduced ram usage (about 10% on Arduino UNO)
   - planner now holds up to 15 motions (stable no memory overflow)
   - redesigned spindle control to modify pwm according to motion (used in laser mode)
   - simplified step ISR functions (faster execution times - under 23ms for 3 stepper motors)
-  - cleaned cnc_doevents() and some realtime commands functions handling
+  - cleaned cnc_doevents() and some real-time commands functions handling
 
 ### Fixed
   - fixed settings version compare operation that caused eeprom reset at power up
@@ -80,7 +104,7 @@
 ### Added
   - initial versioning system (Semantic Versioning)
   - can now process custom messages on comments and echo them (as explained in RS274NGC)
-  - added dummy user transformation funtions to kinematics
+  - added dummy user transformation functions to kinematics
   - motion control probing (G38.x commands)
   - new mcu erase eeprom function
   - added startup blocks functionalities
@@ -89,7 +113,7 @@
   - spindle delays after start/stop on hold state and motion exact stop mode on spindle speed change
 
 ### Changed
-  - redesigned the realtime commands response system
+  - redesigned the real-time commands response system
   - several modifications to serial functions (new ISR read char, new EOL char and overflow error detection mechanics). Also char to upper and other char processing stages moved from ISR to make it more slim
   - more optimizations on the serial ISR functions
   - interpolator blocks are no longer monitored (they are overwritten on the fly when computing new planner block)
@@ -97,13 +121,13 @@
   - redesigned settings with crc checksum on all cnc and parser parameters
   - redesigned command echo with char indication parser error
   - added several escapes in loops with cnc_doevent() (avoid locks and exit loops on system abort)
-  - interpolator buffer managment optimizations
+  - interpolator buffer management optimizations
   - new strategy to handle startup blocks by serial read functions redirection
   - small planner buffer optimizations
   - several small optimizations regarding volatile variables
 
 ### Fixed
-  - parser fixed by repositioning the commands discard function from the main loop to the parser internals and running only when needed (this would cause elimination of a hole line of unprocessed g-code after a line with error had been completly read by parser)
+  - parser fixed by repositioning the commands discard function from the main loop to the parser internals and running only when needed (this would cause elimination of a hole line of unprocessed g-code after a line with error had been completely read by parser)
   - arc motion control generator (G2, G3 commands) had several errors caused by bad ABS macro math function definition (utils.h) and the incremental error compensation stage
   - planner forces motions with dwells to start with zero speed (so stop motion previous to dwell is executed)
   - improved stability that randomly caused locks
@@ -112,8 +136,8 @@
   - fixed spindle pwm (MAX speed set output to 0)
   - fixed planner acceleration (error on angle factor calculation between vectors)
   - fixed gcode lines parsing error on Hold (they would return error)
-  - fixed VERY STUPID bug that caused no error on virtual mcu mcu but made avr mcu eeprom function not work properly
-  - fixed EXEC_FLAGS to fix locked state behaviour
+  - fixed VERY STUPID bug that caused no error on virtual mcu but made avr mcu eeprom function not work properly
+  - fixed EXEC_FLAGS to fix locked state behavior
 
 ## 1.0.0-alpha.2 - 2020-01-25
 
@@ -139,6 +163,7 @@
 
 ### Initial release
 
+[1.1.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0
 [1.0.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-rc
 [1.0.0-beta.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-beta.2

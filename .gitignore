@@ -61,3 +61,6 @@ dkms.conf
 *.win
 virtualeeprom
 *.txt
+
+# Other files
+*.dat

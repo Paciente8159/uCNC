@@ -328,18 +328,21 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
     modalgroups[0] = parser_state.groups.motion;
     modalgroups[1] = parser_state.groups.plane + 17;
     modalgroups[2] = parser_state.groups.distance_mode + 90;
-    modalgroups[3] = parser_state.groups.units + 20;
-    modalgroups[4] = parser_state.groups.coord_system + 54;
+    modalgroups[3] = parser_state.groups.feedrate_mode + 93;
+    modalgroups[4] = parser_state.groups.units + 20;
+    modalgroups[5] = (!parser_state.groups.tool_length_offset ? 49 : 43);
+    modalgroups[6] = parser_state.groups.coord_system + 54;
+    modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
-    modalgroups[5] = parser_state.groups.spindle_turning + 3;
+    modalgroups[8] = parser_state.groups.spindle_turning + 3;
     *spindle = (uint16_t)ABS(parser_state.spindle);
 #endif
 #ifdef USE_COOLANT
-    modalgroups[6] = 9 - parser_state.groups.coolant;
+    modalgroups[9] = 9 - parser_state.groups.coolant;
 #endif
-    modalgroups[7] = parser_state.groups.feed_speed_override + 48;
+    modalgroups[10] = parser_state.groups.feed_speed_override + 48;
 #ifdef USE_TOOL_CHANGER
-    modalgroups[8] = parser_state.tool_index;
+    modalgroups[11] = parser_state.tool_index;
 #endif
     *feed = (uint16_t)parser_state.feedrate;
 }
