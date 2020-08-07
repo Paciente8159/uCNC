@@ -103,122 +103,122 @@ ISR(TIMER_COMPB_vect, ISR_BLOCK)
 #endif
 }
 
-#ifndef FORCE_SOFT_POLLING
+#ifndef USE_INPUTS_POOLING_ONLY
 
-#if(PCINTA_MASK==1)
+#if (PCINTA_MASK == 1)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTA_LIMITS_MASK==1)
+#if (PCINTA_LIMITS_MASK == 1)
     io_limits_isr();
 #endif
-#if(PCINTA_CONTROLS_MASK==1)
+#if (PCINTA_CONTROLS_MASK == 1)
     io_controls_isr();
 #endif
-#if(PROBE_ISRA==1)
+#if (PROBE_ISRA == 1)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTA_MASK==4)
+#if (PCINTA_MASK == 4)
 ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTA_LIMITS_MASK==4)
+#if (PCINTA_LIMITS_MASK == 4)
     io_limits_isr();
 #endif
-#if(PCINTA_CONTROLS_MASK==4)
+#if (PCINTA_CONTROLS_MASK == 4)
     io_controls_isr();
 #endif
-#if(PROBE_ISRA==4)
+#if (PROBE_ISRA == 4)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTA_MASK==16)
+#if (PCINTA_MASK == 16)
 ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTA_LIMITS_MASK==16)
+#if (PCINTA_LIMITS_MASK == 16)
     io_limits_isr();
 #endif
-#if(PCINTA_CONTROLS_MASK==16)
+#if (PCINTA_CONTROLS_MASK == 16)
     io_controls_isr();
 #endif
-#if(PROBE_ISRA==16)
+#if (PROBE_ISRA == 16)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTA_MASK==64)
+#if (PCINTA_MASK == 64)
 ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTA_LIMITS_MASK==64)
+#if (PCINTA_LIMITS_MASK == 64)
     io_limits_isr();
 #endif
-#if(PCINTA_CONTROLS_MASK==64)
+#if (PCINTA_CONTROLS_MASK == 64)
     io_controls_isr();
 #endif
-#if(PROBE_ISRA==64)
+#if (PROBE_ISRA == 64)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTB_MASK==1)
+#if (PCINTB_MASK == 1)
 ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTB_LIMITS_MASK==1)
+#if (PCINTB_LIMITS_MASK == 1)
     io_limits_isr();
 #endif
-#if(PCINTB_CONTROLS_MASK==1)
+#if (PCINTB_CONTROLS_MASK == 1)
     io_controls_isr();
 #endif
-#if(PROBE_ISRB==1)
+#if (PROBE_ISRB == 1)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTB_MASK==4)
+#if (PCINTB_MASK == 4)
 ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTB_LIMITS_MASK==4)
+#if (PCINTB_LIMITS_MASK == 4)
     io_limits_isr();
 #endif
-#if(PCINTB_CONTROLS_MASK==4)
+#if (PCINTB_CONTROLS_MASK == 4)
     io_controls_isr();
 #endif
-#if(PROBE_ISRB==4)
+#if (PROBE_ISRB == 4)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTB_MASK==16)
+#if (PCINTB_MASK == 16)
 ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTB_LIMITS_MASK==16)
+#if (PCINTB_LIMITS_MASK == 16)
     io_limits_isr();
 #endif
-#if(PCINTB_CONTROLS_MASK==16)
+#if (PCINTB_CONTROLS_MASK == 16)
     io_controls_isr();
 #endif
-#if(PROBE_ISRB==16)
+#if (PROBE_ISRB == 16)
     io_probe_isr();
 #endif
 }
 #endif
-#if(PCINTB_MASK==64)
+#if (PCINTB_MASK == 64)
 ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if(PCINTB_LIMITS_MASK==64)
+#if (PCINTB_LIMITS_MASK == 64)
     io_limits_isr();
 #endif
-#if(PCINTB_CONTROLS_MASK==64)
+#if (PCINTB_CONTROLS_MASK == 64)
     io_controls_isr();
 #endif
-#if(PROBE_ISRB==64)
+#if (PROBE_ISRB == 64)
     io_probe_isr();
 #endif
 }
 #endif
 
-#if(PCINT0_MASK!=0)
+#if (PCINT0_MASK != 0)
 ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -226,21 +226,21 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT0_LIMITS_MASK!=0)
-    if(diff & PCINT0_LIMITS_MASK)
+#if (PCINT0_LIMITS_MASK != 0)
+    if (diff & PCINT0_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT0_CONTROLS_MASK!=0)
-    if(diff & PCINT0_CONTROLS_MASK)
+#if (PCINT0_CONTROLS_MASK != 0)
+    if (diff & PCINT0_CONTROLS_MASK)
     {
         io_controls_isr();
     }
 #endif
 
-#if(PROBE_ISR0!=0)
-    if(CHECKBIT(diff,PROBE_BIT))
+#if (PROBE_ISR0 != 0)
+    if (CHECKBIT(diff, PROBE_BIT))
     {
         io_probe_isr();
     }
@@ -248,7 +248,7 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 }
 #endif
 
-#if(PCINT1_MASK!=0)
+#if (PCINT1_MASK != 0)
 ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -256,21 +256,21 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT1_LIMITS_MASK!=0)
-    if(diff & PCINT1_LIMITS_MASK)
+#if (PCINT1_LIMITS_MASK != 0)
+    if (diff & PCINT1_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT1_CONTROLS_MASK!=0)
-    if(diff & PCINT1_CONTROLS_MASK)
+#if (PCINT1_CONTROLS_MASK != 0)
+    if (diff & PCINT1_CONTROLS_MASK)
     {
         io_controls_isr();
     }
 #endif
 
-#if(PROBE_ISR1!=0)
-    if(CHECKBIT(diff,PROBE_BIT))
+#if (PROBE_ISR1 != 0)
+    if (CHECKBIT(diff, PROBE_BIT))
     {
         io_probe_isr();
     }
@@ -278,7 +278,7 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 }
 #endif
 
-#if(PCINT2_MASK!=0)
+#if (PCINT2_MASK != 0)
 ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 {
     static uint8_t prev_value = 0;
@@ -286,21 +286,21 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
     uint8_t diff = prev_value ^ value;
     prev_value = value;
 
-#if(PCINT2_LIMITS_MASK!=0)
-    if(diff & PCINT2_LIMITS_MASK)
+#if (PCINT2_LIMITS_MASK != 0)
+    if (diff & PCINT2_LIMITS_MASK)
     {
         io_limits_isr();
     }
 #endif
-#if(PCINT2_CONTROLS_MASK!=0)
-    if(diff & PCINT2_CONTROLS_MASK)
+#if (PCINT2_CONTROLS_MASK != 0)
+    if (diff & PCINT2_CONTROLS_MASK)
     {
         io_controls_isr();
     }
 #endif
 
-#if(PROBE_ISR2!=0)
-    if(CHECKBIT(diff,PROBE_BIT))
+#if (PROBE_ISR2 != 0)
+    if (CHECKBIT(diff, PROBE_BIT))
     {
         io_probe_isr();
     }
@@ -323,495 +323,458 @@ ISR(COM_TX_vect, ISR_BLOCK)
     }*/
 }
 
+#define mcu_config_ouput(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
+#define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
+#define mcu_config_pwm(x)                                       \
+    {                                                           \
+        SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));  \
+        __indirect__(x, TMRAREG) = __indirect__(x, MODE);       \
+        __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER); \
+        __indirect__(x, OCRREG) = 0;                            \
+    }
+
 void mcu_init(void)
 {
     //disable WDT
     wdt_reset();
-    MCUSR &= ~(1<<WDRF);
-    WDTCSR |= (1<<WDCE) | (1<<WDE);
+    MCUSR &= ~(1 << WDRF);
+    WDTCSR |= (1 << WDCE) | (1 << WDE);
     WDTCSR = 0x00;
 
     //configure all pins
     //autogenerated
 #ifdef STEP0
-    SETBIT(STEP0_DIRREG, STEP0_BIT);
+    mcu_config_ouput(STEP0);
 #endif
 #ifdef STEP1
-    SETBIT(STEP1_DIRREG, STEP1_BIT);
+    mcu_config_ouput(STEP1);
 #endif
 #ifdef STEP2
-    SETBIT(STEP2_DIRREG, STEP2_BIT);
+    mcu_config_ouput(STEP2);
 #endif
 #ifdef STEP3
-    SETBIT(STEP3_DIRREG, STEP3_BIT);
+    mcu_config_ouput(STEP3);
 #endif
 #ifdef STEP4
-    SETBIT(STEP4_DIRREG, STEP4_BIT);
+    mcu_config_ouput(STEP4);
 #endif
 #ifdef STEP5
-    SETBIT(STEP5_DIRREG, STEP5_BIT);
+    mcu_config_ouput(STEP5);
 #endif
 #ifdef STEP6
-    SETBIT(STEP6_DIRREG, STEP6_BIT);
+    mcu_config_ouput(STEP6);
 #endif
 #ifdef STEP7
-    SETBIT(STEP7_DIRREG, STEP7_BIT);
+    mcu_config_ouput(STEP7);
 #endif
 #ifdef STEP0_EN
-    SETBIT(STEP0_EN_DIRREG, STEP0_EN_BIT);
+    mcu_config_ouput(STEP0_EN);
 #endif
 #ifdef STEP1_EN
-    SETBIT(STEP1_EN_DIRREG, STEP1_EN_BIT);
+    mcu_config_ouput(STEP1_EN);
 #endif
 #ifdef STEP2_EN
-    SETBIT(STEP2_EN_DIRREG, STEP2_EN_BIT);
+    mcu_config_ouput(STEP2_EN);
 #endif
 #ifdef STEP3_EN
-    SETBIT(STEP3_EN_DIRREG, STEP3_EN_BIT);
+    mcu_config_ouput(STEP3_EN);
 #endif
 #ifdef STEP4_EN
-    SETBIT(STEP4_EN_DIRREG, STEP4_EN_BIT);
+    mcu_config_ouput(STEP4_EN);
 #endif
 #ifdef STEP5_EN
-    SETBIT(STEP5_EN_DIRREG, STEP5_EN_BIT);
+    mcu_config_ouput(STEP5_EN);
 #endif
 #ifdef DIR0
-    SETBIT(DIR0_DIRREG, DIR0_BIT);
+    mcu_config_ouput(DIR0);
 #endif
 #ifdef DIR1
-    SETBIT(DIR1_DIRREG, DIR1_BIT);
+    mcu_config_ouput(DIR1);
 #endif
 #ifdef DIR2
-    SETBIT(DIR2_DIRREG, DIR2_BIT);
+    mcu_config_ouput(DIR2);
 #endif
 #ifdef DIR3
-    SETBIT(DIR3_DIRREG, DIR3_BIT);
+    mcu_config_ouput(DIR3);
 #endif
 #ifdef DIR4
-    SETBIT(DIR4_DIRREG, DIR4_BIT);
+    mcu_config_ouput(DIR4);
 #endif
 #ifdef DIR5
-    SETBIT(DIR5_DIRREG, DIR5_BIT);
+    mcu_config_ouput(DIR5);
 #endif
 #ifdef PWM0
-    SETBIT(PWM0_DIRREG, PWM0_BIT);
-    PWM0_TMRAREG = PWM0_MODE;
-    PWM0_TMRBREG = PWM0_PRESCALLER;
-    PWM0_OCRREG = 0;
+    mcu_config_pwm(PWM0);
 #endif
 #ifdef PWM1
-    SETBIT(PWM1_DIRREG, PWM1_BIT);
-    PWM1_TMRAREG = PWM1_MODE;
-    PWM1_TMRBREG = PWM1_PRESCALLER;
-    PWM1_OCRREG = 0;
+    mcu_config_pwm(PWM1);
 #endif
 #ifdef PWM2
-    SETBIT(PWM2_DIRREG, PWM2_BIT);
-    PWM2_TMRAREG = PWM2_MODE;
-    PWM2_TMRBREG = PWM2_PRESCALLER;
-    PWM2_OCRREG = 0;
+    mcu_config_pwm(PWM2);
 #endif
 #ifdef PWM3
-    SETBIT(PWM3_DIRREG, PWM3_BIT);
-    PWM3_TMRAREG = PWM3_MODE;
-    PWM3_TMRBREG = PWM3_PRESCALLER;
-    PWM3_OCRREG = 0;
+    mcu_config_pwm(PWM3);
 #endif
 #ifdef PWM4
-    SETBIT(PWM4_DIRREG, PWM4_BIT);
-    PWM4_TMRAREG = PWM4_MODE;
-    PWM4_TMRBREG = PWM4_PRESCALLER;
-    PWM4_OCRREG = 0;
+    mcu_config_pwm(PWM4);
 #endif
 #ifdef PWM5
-    SETBIT(PWM5_DIRREG, PWM5_BIT);
-    PWM5_TMRAREG = PWM5_MODE;
-    PWM5_TMRBREG = PWM5_PRESCALLER;
-    PWM5_OCRREG = 0;
+    mcu_config_pwm(PWM5);
 #endif
 #ifdef PWM6
-    SETBIT(PWM6_DIRREG, PWM6_BIT);
-    PWM6_TMRAREG = PWM6_MODE;
-    PWM6_TMRBREG = PWM6_PRESCALLER;
-    PWM6_OCRREG = 0;
+    mcu_config_pwm(PWM6);
 #endif
 #ifdef PWM7
-    SETBIT(PWM7_DIRREG, PWM7_BIT);
-    PWM7_TMRAREG = PWM7_MODE;
-    PWM7_TMRBREG = PWM7_PRESCALLER;
-    PWM7_OCRREG = 0;
+    mcu_config_pwm(PWM7);
 #endif
 #ifdef PWM8
-    SETBIT(PWM8_DIRREG, PWM8_BIT);
-    PWM8_TMRAREG = PWM8_MODE;
-    PWM8_TMRBREG = PWM8_PRESCALLER;
-    PWM8_OCRREG = 0;
+    mcu_config_pwm(PWM8);
 #endif
 #ifdef PWM9
-    SETBIT(PWM9_DIRREG, PWM9_BIT);
-    PWM9_TMRAREG = PWM9_MODE;
-    PWM9_TMRBREG = PWM9_PRESCALLER;
-    PWM9_OCRREG = 0;
+    mcu_config_pwm(PWM9);
 #endif
 #ifdef PWM10
-    SETBIT(PWM10_DIRREG, PWM10_BIT);
-    PWM10_TMRAREG = PWM10_MODE;
-    PWM10_TMRBREG = PWM10_PRESCALLER;
-    PWM10_OCRREG = 0;
+    mcu_config_pwm(PWM10);
 #endif
 #ifdef PWM11
-    SETBIT(PWM11_DIRREG, PWM11_BIT);
-    PWM11_TMRAREG = PWM11_MODE;
-    PWM11_TMRBREG = PWM11_PRESCALLER;
-    PWM11_OCRREG = 0;
+    mcu_config_pwm(PWM11);
 #endif
 #ifdef PWM12
-    SETBIT(PWM12_DIRREG, PWM12_BIT);
-    PWM12_TMRAREG = PWM12_MODE;
-    PWM12_TMRBREG = PWM12_PRESCALLER;
-    PWM12_OCRREG = 0;
+    mcu_config_pwm(PWM12);
 #endif
 #ifdef PWM13
-    SETBIT(PWM13_DIRREG, PWM13_BIT);
-    PWM13_TMRAREG = PWM13_MODE;
-    PWM13_TMRBREG = PWM13_PRESCALLER;
-    PWM13_OCRREG = 0;
+    mcu_config_pwm(PWM13);
 #endif
 #ifdef PWM14
-    SETBIT(PWM14_DIRREG, PWM14_BIT);
-    PWM14_TMRAREG = PWM14_MODE;
-    PWM14_TMRBREG = PWM14_PRESCALLER;
-    PWM14_OCRREG = 0;
+    mcu_config_pwm(PWM14);
 #endif
 #ifdef PWM15
-    SETBIT(PWM15_DIRREG, PWM15_BIT);
-    PWM15_TMRAREG = PWM15_MODE;
-    PWM15_TMRBREG = PWM15_PRESCALLER;
-    PWM15_OCRREG = 0;
+    mcu_config_pwm(PWM15);
 #endif
 #ifdef TX
-    SETBIT(TX_DIRREG, TX_BIT);
+    mcu_config_ouput(TX);
 #endif
 #ifdef DOUT0
-    SETBIT(DOUT0_DIRREG, DOUT0_BIT);
+    mcu_config_ouput(DOUT0);
 #endif
 #ifdef DOUT1
-    SETBIT(DOUT1_DIRREG, DOUT1_BIT);
+    mcu_config_ouput(DOUT1);
 #endif
 #ifdef DOUT2
-    SETBIT(DOUT2_DIRREG, DOUT2_BIT);
+    mcu_config_ouput(DOUT2);
 #endif
 #ifdef DOUT3
-    SETBIT(DOUT3_DIRREG, DOUT3_BIT);
+    mcu_config_ouput(DOUT3);
 #endif
 #ifdef DOUT4
-    SETBIT(DOUT4_DIRREG, DOUT4_BIT);
+    mcu_config_ouput(DOUT4);
 #endif
 #ifdef DOUT5
-    SETBIT(DOUT5_DIRREG, DOUT5_BIT);
+    mcu_config_ouput(DOUT5);
 #endif
 #ifdef DOUT6
-    SETBIT(DOUT6_DIRREG, DOUT6_BIT);
+    mcu_config_ouput(DOUT6);
 #endif
 #ifdef DOUT7
-    SETBIT(DOUT7_DIRREG, DOUT7_BIT);
+    mcu_config_ouput(DOUT7);
 #endif
 #ifdef DOUT8
-    SETBIT(DOUT8_DIRREG, DOUT8_BIT);
+    mcu_config_ouput(DOUT8);
 #endif
 #ifdef DOUT9
-    SETBIT(DOUT9_DIRREG, DOUT9_BIT);
+    mcu_config_ouput(DOUT9);
 #endif
 #ifdef DOUT10
-    SETBIT(DOUT10_DIRREG, DOUT10_BIT);
+    mcu_config_ouput(DOUT10);
 #endif
 #ifdef DOUT11
-    SETBIT(DOUT11_DIRREG, DOUT11_BIT);
+    mcu_config_ouput(DOUT11);
 #endif
 #ifdef DOUT12
-    SETBIT(DOUT12_DIRREG, DOUT12_BIT);
+    mcu_config_ouput(DOUT12);
 #endif
 #ifdef DOUT13
-    SETBIT(DOUT13_DIRREG, DOUT13_BIT);
+    mcu_config_ouput(DOUT13);
 #endif
 #ifdef DOUT14
-    SETBIT(DOUT14_DIRREG, DOUT14_BIT);
+    mcu_config_ouput(DOUT14);
 #endif
 #ifdef DOUT15
-    SETBIT(DOUT15_DIRREG, DOUT15_BIT);
+    mcu_config_ouput(DOUT15);
 #endif
 #ifdef LIMIT_X
-CLEARBIT(LIMIT_X_DIRREG, LIMIT_X_BIT);
+    mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
-SETBIT(LIMIT_X_OUTREG, LIMIT_X_BIT);
+    mcu_config_pullup(LIMIT_X);
 #endif
 #ifdef LIMIT_X_ISR
-SETFLAG(LIMIT_X_ISRREG, LIMIT_X_ISR_MASK);
+    mcu_config_input_isr(LIMIT_X);
 #endif
 #endif
 #ifdef LIMIT_Y
-CLEARBIT(LIMIT_Y_DIRREG, LIMIT_Y_BIT);
+    mcu_config_input(LIMIT_Y);
 #ifdef LIMIT_Y_PULLUP
-SETBIT(LIMIT_Y_OUTREG, LIMIT_Y_BIT);
+    mcu_config_pullup(LIMIT_Y);
 #endif
 #ifdef LIMIT_Y_ISR
-SETFLAG(LIMIT_Y_ISRREG, LIMIT_Y_ISR_MASK);
+    mcu_config_input_isr(LIMIT_Y);
 #endif
 #endif
 #ifdef LIMIT_Z
-CLEARBIT(LIMIT_Z_DIRREG, LIMIT_Z_BIT);
+    mcu_config_input(LIMIT_Z);
 #ifdef LIMIT_Z_PULLUP
-SETBIT(LIMIT_Z_OUTREG, LIMIT_Z_BIT);
+    mcu_config_pullup(LIMIT_Z);
 #endif
 #ifdef LIMIT_Z_ISR
-SETFLAG(LIMIT_Z_ISRREG, LIMIT_Z_ISR_MASK);
+    mcu_config_input_isr(LIMIT_Z);
 #endif
 #endif
 #ifdef LIMIT_X2
-CLEARBIT(LIMIT_X2_DIRREG, LIMIT_X2_BIT);
+    mcu_config_input(LIMIT_X2);
 #ifdef LIMIT_X2_PULLUP
-SETBIT(LIMIT_X2_OUTREG, LIMIT_X2_BIT);
+    mcu_config_pullup(LIMIT_X2);
 #endif
 #ifdef LIMIT_X2_ISR
-SETFLAG(LIMIT_X2_ISRREG, LIMIT_X2_ISR_MASK);
+    mcu_config_input_isr(LIMIT_X2);
 #endif
 #endif
 #ifdef LIMIT_Y2
-CLEARBIT(LIMIT_Y2_DIRREG, LIMIT_Y2_BIT);
+    mcu_config_input(LIMIT_Y2);
 #ifdef LIMIT_Y2_PULLUP
-SETBIT(LIMIT_Y2_OUTREG, LIMIT_Y2_BIT);
+    mcu_config_pullup(LIMIT_Y2);
 #endif
 #ifdef LIMIT_Y2_ISR
-SETFLAG(LIMIT_Y2_ISRREG, LIMIT_Y2_ISR_MASK);
+    mcu_config_input_isr(LIMIT_Y2);
 #endif
 #endif
 #ifdef LIMIT_Z2
-CLEARBIT(LIMIT_Z2_DIRREG, LIMIT_Z2_BIT);
+    mcu_config_input(LIMIT_Z2);
 #ifdef LIMIT_Z2_PULLUP
-SETBIT(LIMIT_Z2_OUTREG, LIMIT_Z2_BIT);
+    mcu_config_pullup(LIMIT_Z2);
 #endif
 #ifdef LIMIT_Z2_ISR
-SETFLAG(LIMIT_Z2_ISRREG, LIMIT_Z2_ISR_MASK);
+    mcu_config_input_isr(LIMIT_Z2);
 #endif
 #endif
 #ifdef LIMIT_A
-CLEARBIT(LIMIT_A_DIRREG, LIMIT_A_BIT);
+    mcu_config_input(LIMIT_A);
 #ifdef LIMIT_A_PULLUP
-SETBIT(LIMIT_A_OUTREG, LIMIT_A_BIT);
+    mcu_config_pullup(LIMIT_A);
 #endif
 #ifdef LIMIT_A_ISR
-SETFLAG(LIMIT_A_ISRREG, LIMIT_A_ISR_MASK);
+    mcu_config_input_isr(LIMIT_A);
 #endif
 #endif
 #ifdef LIMIT_B
-CLEARBIT(LIMIT_B_DIRREG, LIMIT_B_BIT);
+    mcu_config_input(LIMIT_B);
 #ifdef LIMIT_B_PULLUP
-SETBIT(LIMIT_B_OUTREG, LIMIT_B_BIT);
+    mcu_config_pullup(LIMIT_B);
 #endif
 #ifdef LIMIT_B_ISR
-SETFLAG(LIMIT_B_ISRREG, LIMIT_B_ISR_MASK);
+    mcu_config_input_isr(LIMIT_B);
 #endif
 #endif
 #ifdef LIMIT_C
-CLEARBIT(LIMIT_C_DIRREG, LIMIT_C_BIT);
+    mcu_config_input(LIMIT_C);
 #ifdef LIMIT_C_PULLUP
-SETBIT(LIMIT_C_OUTREG, LIMIT_C_BIT);
+    mcu_config_pullup(LIMIT_C);
 #endif
 #ifdef LIMIT_C_ISR
-SETFLAG(LIMIT_C_ISRREG, LIMIT_C_ISR_MASK);
+    mcu_config_input_isr(LIMIT_C);
 #endif
 #endif
 #ifdef PROBE
-CLEARBIT(PROBE_DIRREG, PROBE_BIT);
+    mcu_config_input(PROBE);
 #ifdef PROBE_PULLUP
-SETBIT(PROBE_OUTREG, PROBE_BIT);
+    mcu_config_pullup(PROBE);
 #endif
 #ifdef PROBE_ISR
-SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK);
+    mcu_config_input_isr(PROBE);
 #endif
 #endif
 #ifdef ESTOP
-CLEARBIT(ESTOP_DIRREG, ESTOP_BIT);
+    mcu_config_input(ESTOP);
 #ifdef ESTOP_PULLUP
-SETBIT(ESTOP_OUTREG, ESTOP_BIT);
+    mcu_config_pullup(ESTOP);
 #endif
 #ifdef ESTOP_ISR
-SETFLAG(ESTOP_ISRREG, ESTOP_ISR_MASK);
+    mcu_config_input_isr(ESTOP);
 #endif
 #endif
 #ifdef SAFETY_DOOR
-CLEARBIT(SAFETY_DOOR_DIRREG, SAFETY_DOOR_BIT);
+    mcu_config_input(SAFETY_DOOR);
 #ifdef SAFETY_DOOR_PULLUP
-SETBIT(SAFETY_DOOR_OUTREG, SAFETY_DOOR_BIT);
+    mcu_config_pullup(SAFETY_DOOR);
 #endif
 #ifdef SAFETY_DOOR_ISR
-SETFLAG(SAFETY_DOOR_ISRREG, SAFETY_DOOR_ISR_MASK);
+    mcu_config_input_isr(SAFETY_DOOR);
 #endif
 #endif
 #ifdef FHOLD
-CLEARBIT(FHOLD_DIRREG, FHOLD_BIT);
+    mcu_config_input(FHOLD);
 #ifdef FHOLD_PULLUP
-SETBIT(FHOLD_OUTREG, FHOLD_BIT);
+    mcu_config_pullup(FHOLD);
 #endif
 #ifdef FHOLD_ISR
-SETFLAG(FHOLD_ISRREG, FHOLD_ISR_MASK);
+    mcu_config_input_isr(FHOLD);
 #endif
 #endif
 #ifdef CS_RES
-CLEARBIT(CS_RES_DIRREG, CS_RES_BIT);
+    mcu_config_input(CS_RES);
 #ifdef CS_RES_PULLUP
-SETBIT(CS_RES_OUTREG, CS_RES_BIT);
+    mcu_config_pullup(CS_RES);
 #endif
 #ifdef CS_RES_ISR
-SETFLAG(CS_RES_ISRREG, CS_RES_ISR_MASK);
+    mcu_config_input_isr(CS_RES);
 #endif
 #endif
-
 #ifdef ANALOG0
-    CLEARBIT(ANALOG0_DIRREG, ANALOG0_BIT);
+    mcu_config_input(ANALOG0);
 #endif
 #ifdef ANALOG1
-    CLEARBIT(ANALOG1_DIRREG, ANALOG1_BIT);
+    mcu_config_input(ANALOG1);
 #endif
 #ifdef ANALOG2
-    CLEARBIT(ANALOG2_DIRREG, ANALOG2_BIT);
+    mcu_config_input(ANALOG2);
 #endif
 #ifdef ANALOG3
-    CLEARBIT(ANALOG3_DIRREG, ANALOG3_BIT);
+    mcu_config_input(ANALOG3);
 #endif
 #ifdef ANALOG4
-    CLEARBIT(ANALOG4_DIRREG, ANALOG4_BIT);
+    mcu_config_input(ANALOG4);
 #endif
 #ifdef ANALOG5
-    CLEARBIT(ANALOG5_DIRREG, ANALOG5_BIT);
+    mcu_config_input(ANALOG5);
 #endif
 #ifdef ANALOG6
-    CLEARBIT(ANALOG6_DIRREG, ANALOG6_BIT);
+    mcu_config_input(ANALOG6);
 #endif
 #ifdef ANALOG7
-    CLEARBIT(ANALOG7_DIRREG, ANALOG7_BIT);
+    mcu_config_input(ANALOG7);
 #endif
 #ifdef ANALOG8
-    CLEARBIT(ANALOG8_DIRREG, ANALOG8_BIT);
+    mcu_config_input(ANALOG8);
 #endif
 #ifdef ANALOG9
-    CLEARBIT(ANALOG9_DIRREG, ANALOG9_BIT);
+    mcu_config_input(ANALOG9);
 #endif
 #ifdef ANALOG10
-    CLEARBIT(ANALOG10_DIRREG, ANALOG10_BIT);
+    mcu_config_input(ANALOG10);
 #endif
 #ifdef ANALOG11
-    CLEARBIT(ANALOG11_DIRREG, ANALOG11_BIT);
+    mcu_config_input(ANALOG11);
 #endif
 #ifdef ANALOG12
-    CLEARBIT(ANALOG12_DIRREG, ANALOG12_BIT);
+    mcu_config_input(ANALOG12);
 #endif
 #ifdef ANALOG13
-    CLEARBIT(ANALOG13_DIRREG, ANALOG13_BIT);
+    mcu_config_input(ANALOG13);
 #endif
 #ifdef ANALOG14
-    CLEARBIT(ANALOG14_DIRREG, ANALOG14_BIT);
+    mcu_config_input(ANALOG14);
 #endif
 #ifdef ANALOG15
-    CLEARBIT(ANALOG15_DIRREG, ANALOG15_BIT);
+    mcu_config_input(ANALOG15);
 #endif
 #ifdef RX
-    CLEARBIT(RX_DIRREG, RX_BIT);
+    mcu_config_input(RX);
 #endif
 #ifdef DIN0
-CLEARBIT(DIN0_DIRREG, DIN0_BIT);
+    mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
-SETBIT(DIN0_OUTREG, DIN0_BIT);
+    mcu_config_pullup(DIN0);
 #endif
 #endif
 #ifdef DIN1
-CLEARBIT(DIN1_DIRREG, DIN1_BIT);
+    mcu_config_input(DIN1);
 #ifdef DIN1_PULLUP
-SETBIT(DIN1_OUTREG, DIN1_BIT);
+    mcu_config_pullup(DIN1);
 #endif
 #endif
 #ifdef DIN2
-CLEARBIT(DIN2_DIRREG, DIN2_BIT);
+    mcu_config_input(DIN2);
 #ifdef DIN2_PULLUP
-SETBIT(DIN2_OUTREG, DIN2_BIT);
+    mcu_config_pullup(DIN2);
 #endif
 #endif
 #ifdef DIN3
-CLEARBIT(DIN3_DIRREG, DIN3_BIT);
+    mcu_config_input(DIN3);
 #ifdef DIN3_PULLUP
-SETBIT(DIN3_OUTREG, DIN3_BIT);
+    mcu_config_pullup(DIN3);
 #endif
 #endif
 #ifdef DIN4
-CLEARBIT(DIN4_DIRREG, DIN4_BIT);
+    mcu_config_input(DIN4);
 #ifdef DIN4_PULLUP
-SETBIT(DIN4_OUTREG, DIN4_BIT);
+    mcu_config_pullup(DIN4);
 #endif
 #endif
 #ifdef DIN5
-CLEARBIT(DIN5_DIRREG, DIN5_BIT);
+    mcu_config_input(DIN5);
 #ifdef DIN5_PULLUP
-SETBIT(DIN5_OUTREG, DIN5_BIT);
+    mcu_config_pullup(DIN5);
 #endif
 #endif
 #ifdef DIN6
-CLEARBIT(DIN6_DIRREG, DIN6_BIT);
+    mcu_config_input(DIN6);
 #ifdef DIN6_PULLUP
-SETBIT(DIN6_OUTREG, DIN6_BIT);
+    mcu_config_pullup(DIN6);
 #endif
 #endif
 #ifdef DIN7
-CLEARBIT(DIN7_DIRREG, DIN7_BIT);
+    mcu_config_input(DIN7);
 #ifdef DIN7_PULLUP
-SETBIT(DIN7_OUTREG, DIN7_BIT);
+    mcu_config_pullup(DIN7);
 #endif
 #endif
 #ifdef DIN8
-CLEARBIT(DIN8_DIRREG, DIN8_BIT);
+    mcu_config_input(DIN8);
 #ifdef DIN8_PULLUP
-SETBIT(DIN8_OUTREG, DIN8_BIT);
+    mcu_config_pullup(DIN8);
 #endif
 #endif
 #ifdef DIN9
-CLEARBIT(DIN9_DIRREG, DIN9_BIT);
+    mcu_config_input(DIN9);
 #ifdef DIN9_PULLUP
-SETBIT(DIN9_OUTREG, DIN9_BIT);
+    mcu_config_pullup(DIN9);
 #endif
 #endif
 #ifdef DIN10
-CLEARBIT(DIN10_DIRREG, DIN10_BIT);
+    mcu_config_input(DIN10);
 #ifdef DIN10_PULLUP
-SETBIT(DIN10_OUTREG, DIN10_BIT);
+    mcu_config_pullup(DIN10);
 #endif
 #endif
 #ifdef DIN11
-CLEARBIT(DIN11_DIRREG, DIN11_BIT);
+    mcu_config_input(DIN11);
 #ifdef DIN11_PULLUP
-SETBIT(DIN11_OUTREG, DIN11_BIT);
+    mcu_config_pullup(DIN11);
 #endif
 #endif
 #ifdef DIN12
-CLEARBIT(DIN12_DIRREG, DIN12_BIT);
+    mcu_config_input(DIN12);
 #ifdef DIN12_PULLUP
-SETBIT(DIN12_OUTREG, DIN12_BIT);
+    mcu_config_pullup(DIN12);
 #endif
 #endif
 #ifdef DIN13
-CLEARBIT(DIN13_DIRREG, DIN13_BIT);
+    mcu_config_input(DIN13);
 #ifdef DIN13_PULLUP
-SETBIT(DIN13_OUTREG, DIN13_BIT);
+    mcu_config_pullup(DIN13);
 #endif
 #endif
 #ifdef DIN14
-CLEARBIT(DIN14_DIRREG, DIN14_BIT);
+    mcu_config_input(DIN14);
 #ifdef DIN14_PULLUP
-SETBIT(DIN14_OUTREG, DIN14_BIT);
+    mcu_config_pullup(DIN14);
 #endif
 #endif
 #ifdef DIN15
-CLEARBIT(DIN15_DIRREG, DIN15_BIT);
+    mcu_config_input(DIN15);
 #ifdef DIN15_PULLUP
-SETBIT(DIN15_OUTREG, DIN15_BIT);
+    mcu_config_pullup(DIN15);
 #endif
 #endif
 
@@ -819,73 +782,42 @@ SETBIT(DIN15_OUTREG, DIN15_BIT);
     // Set baud rate
     uint16_t UBRR_value;
 #if BAUD < 57600
-    UBRR_value = ((F_CPU / (8L * BAUD)) - 1)/2 ;
+    UBRR_value = ((F_CPU / (8L * BAUD)) - 1) / 2;
     UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
 #else
-    UBRR_value = ((F_CPU / (4L * BAUD)) - 1)/2;
-    UCSRA |= (1 << U2X);  // baud doubler on for high baud rates, i.e. 115200
+    UBRR_value = ((F_CPU / (4L * BAUD)) - 1) / 2;
+    UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
 #endif
     UBRRH = UBRR_value >> 8;
     UBRRL = UBRR_value;
 
     // enable rx, tx, and interrupt on complete reception of a byte and UDR empty
-    UCSRB |= (1<<RXEN | 1<<TXEN | 1<<RXCIE);
+    UCSRB |= (1 << RXEN | 1 << TXEN | 1 << RXCIE);
 
-    //enable interrupts on pin changes
-    #ifndef FORCE_SOFT_POLLING
-    #if((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
+//enable interrupts on pin changes
+#ifndef USE_INPUTS_POOLING_ONLY
+#if ((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
     SETBIT(PCICR, PCIE0);
-    #else
+#else
     CLEARBIT(PCICR, PCIE0);
-    #endif
-    #if((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1) != 0)
+#endif
+#if ((PCINT1_LIMITS_MASK | PCINT1_CONTROLS_MASK | PROBE_ISR1) != 0)
     SETBIT(PCICR, PCIE1);
-    #else
+#else
     CLEARBIT(PCICR, PCIE1);
-    #endif
-    #if((PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2) != 0)
+#endif
+#if ((PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2) != 0)
     SETBIT(PCICR, PCIE2);
-    #else
+#else
     CLEARBIT(PCICR, PCIE2);
-    #endif
-    #endif
+#endif
+#endif
 
     //enable interrupts
     sei();
 }
 
 //IO functions
-/*
-#ifdef PROBE
-void mcu_enable_probe_isr(void)
-{
-#ifdef PROBE_ISRREG
-    SETBIT(PROBE_ISRREG, PROBE_BIT);
-#endif
-}
-
-void mcu_disable_probe_isr(void)
-{
-#ifdef PROBE_ISRREG
-    CLEARBIT(PROBE_ISRREG, PROBE_BIT);
-#endif
-}
-#endif*/
-
-uint8_t mcu_get_analog(uint8_t channel)
-{
-    ADMUX = (0x42 | channel); //VRef = Vcc with reading left aligned
-    ADCSRA = 0xC7; //Start read with ADC with 128 prescaller
-    do
-    {
-    }
-    while(CHECKBIT(ADCSRA,ADSC));
-    uint8_t result = ADCH;
-    ADCSRA = 0; //switch adc off
-    ADMUX = 0; //switch adc off
-
-    return result;
-}
 
 void mcu_enable_interrupts(void)
 {
@@ -898,12 +830,18 @@ void mcu_disable_interrupts(void)
 
 void mcu_start_send(void)
 {
-    SETBIT(UCSRB,UDRIE);
+    SETBIT(UCSRB, UDRIE);
 }
 
 void mcu_stop_send(void)
 {
-    CLEARBIT(UCSRB,UDRIE);
+    CLEARBIT(UCSRB, UDRIE);
+}
+
+void mcu_putc(char c)
+{
+    loop_until_bit_is_set(UCSRA, UDRE);
+    COM_OUTREG = c;
 }
 
 bool mcu_is_tx_ready(void)
@@ -911,31 +849,37 @@ bool mcu_is_tx_ready(void)
     return CHECKBIT(UCSRA, UDRE);
 }
 
-//RealTime
-void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
+char mcu_getc(void)
 {
-    if(frequency < F_STEP_MIN)
+    loop_until_bit_is_set(UCSRA, RXC);
+    return COM_INREG;
+}
+
+//RealTime
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint8_t *prescaller)
+{
+    if (frequency < F_STEP_MIN)
         frequency = F_STEP_MIN;
-    if(frequency > F_STEP_MAX)
+    if (frequency > F_STEP_MAX)
         frequency = F_STEP_MAX;
 
     float clockcounter = F_CPU;
 
-    if(frequency >= 245)
+    if (frequency >= 245)
     {
         *prescaller = 9;
     }
-    else if(frequency >= 31)
+    else if (frequency >= 31)
     {
         *prescaller = 10;
         clockcounter *= 0.125;
     }
-    else if(frequency >= 4)
+    else if (frequency >= 4)
     {
         *prescaller = 11;
         clockcounter *= 0.015625;
     }
-    else if(frequency >= 1)
+    else if (frequency >= 1)
     {
         *prescaller = 12;
         clockcounter *= 0.00390625;
@@ -946,7 +890,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller)
         clockcounter *= 0.0009765625;
     }
 
-    *ticks = floorf((clockcounter/frequency)) - 1;
+    *ticks = floorf((clockcounter / frequency)) - 1;
 }
 /*
 	initializes the pulse ISR
@@ -965,13 +909,13 @@ void mcu_start_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
     OCRA = clocks_speed;
     //sets OCR0B to half
     //this will allways fire step_reset between pulses
-    OCRB = OCRA>>1;
+    OCRB = OCRA >> 1;
     TIFR = 0;
     // enable timer interrupts on both match registers
     TIMSK |= (1 << OCIEB) | (1 << OCIEA);
 
     //start timer in CTC mode with the correct prescaler
-    TCCRB = prescaller;
+    TCCRB = (uint8_t)prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
@@ -979,7 +923,7 @@ void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
 {
     //stops timer
     //TCCRB = 0;
-    OCRB = clocks_speed>>1;
+    OCRB = clocks_speed >> 1;
     OCRA = clocks_speed;
     //sets OCR0B to half
     //this will allways fire step_reset between pulses
@@ -987,7 +931,7 @@ void mcu_change_step_ISR(uint16_t clocks_speed, uint8_t prescaller)
     //reset timer
     //TCNT = 0;
     //start timer in CTC mode with the correct prescaler
-    TCCRB = prescaller;
+    TCCRB = (uint8_t)prescaller;
 }
 
 void mcu_step_stop_ISR(void)
@@ -1012,10 +956,9 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 
 }*/
 
-
 //This was copied from grbl
 #ifndef EEPE
-#define EEPE  EEWE  //!< EEPROM program/write enable.
+#define EEPE EEWE   //!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
 #endif
 
@@ -1032,11 +975,10 @@ uint8_t mcu_eeprom_getc(uint16_t address)
     do
     {
 
-    }
-    while(EECR & (1<<EEPE));   // Wait for completion of previous write.
-    EEAR = address; // Set EEPROM address register.
-    EECR = (1<<EERE); // Start EEPROM read operation.
-    return EEDR; // Return the byte read from EEPROM.
+    } while (EECR & (1 << EEPE)); // Wait for completion of previous write.
+    EEAR = address;               // Set EEPROM address register.
+    EECR = (1 << EERE);           // Start EEPROM read operation.
+    return EEDR;                  // Return the byte read from EEPROM.
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -1048,54 +990,51 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
     do
     {
-    }
-    while(EECR & (1<<EEPE));   // Wait for completion of previous write.
+    } while (EECR & (1 << EEPE)); // Wait for completion of previous write.
 
     do
     {
-    }
-    while(SPMCSR & (1<<SELFPRGEN));   // Wait for completion of SPM.
+    } while (SPMCSR & (1 << SELFPRGEN)); // Wait for completion of SPM.
 
-    EEAR = address; // Set EEPROM address register.
-    EECR = (1<<EERE); // Start EEPROM read operation.
-    old_value = EEDR; // Get old EEPROM value.
+    EEAR = address;                // Set EEPROM address register.
+    EECR = (1 << EERE);            // Start EEPROM read operation.
+    old_value = EEDR;              // Get old EEPROM value.
     diff_mask = old_value ^ value; // Get bit differences.
     // Check if any bits are changed to '1' in the new value.
-    if(diff_mask & value)
+    if (diff_mask & value)
     {
         // Now we know that _some_ bits need to be erased to '1'.
         // Check if any bits in the new value are '0'.
-        if( value != 0xff )
+        if (value != 0xff)
         {
             // Now we know that some bits need to be programmed to '0' also.
-            EEDR = value; // Set EEPROM data register.
-            EECR = ((1<<EEMPE) | (0<<EEPM1) | (0<<EEPM0)); //Erase+Write mode.
-            EECR |= (1<<EEPE);  // Start Erase+Write operation.
+            EEDR = value;                                        // Set EEPROM data register.
+            EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); //Erase+Write mode.
+            EECR |= (1 << EEPE);                                 // Start Erase+Write operation.
         }
         else
         {
             // Now we know that all bits should be erased.
-            EECR = ((1<<EEMPE) | (1<<EEPM0));  // Erase-only mode.
-            EECR |= (1<<EEPE);  // Start Erase-only operation.
+            EECR = ((1 << EEMPE) | (1 << EEPM0)); // Erase-only mode.
+            EECR |= (1 << EEPE);                  // Start Erase-only operation.
         }
     }
     else
     {
         // Now we know that _no_ bits need to be erased to '1'.
         // Check if any bits are changed from '1' in the old value.
-        if(diff_mask)
+        if (diff_mask)
         {
             // Now we know that _some_ bits need to the programmed to '0'.
-            EEDR = value;   // Set EEPROM data register.
-            EECR = ((1<<EEMPE) | (1<<EEPM1));  // Write-only mode.
-            EECR |= (1<<EEPE);  // Start Write-only operation.
+            EEDR = value;                         // Set EEPROM data register.
+            EECR = ((1 << EEMPE) | (1 << EEPM1)); // Write-only mode.
+            EECR |= (1 << EEPE);                  // Start Write-only operation.
         }
     }
 
     do
     {
-    }
-    while(EECR & (1<<EEPE));   // Wait for completion of previous write before enabling interrupts.
+    } while (EECR & (1 << EEPE)); // Wait for completion of previous write before enabling interrupts.
 
     sei(); // Restore interrupt flag state.
 }
