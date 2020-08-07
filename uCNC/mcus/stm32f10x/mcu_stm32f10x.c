@@ -28,9 +28,9 @@ extern void itp_step_isr(void);
 extern void itp_step_reset_isr(void);
 
 #define GPIO_RESET 0xfU
-#define GPIO_OUT_PP_50MHZ 0x7U
-#define GPIO_OUTALT_PP_50MHZ 0xBU
-#define GPIO_OUTALT_OD_50MHZ 0xFU
+#define GPIO_OUT_PP_10MHZ 0x1U
+#define GPIO_OUTALT_PP_2MHZ 0xaU
+#define GPIO_OUTALT_OD_2MHZ 0xeU
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits
@@ -39,7 +39,7 @@ extern void itp_step_reset_isr(void);
 	{                                                                                                                         \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                         \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_10MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 	}
 #define mcu_config_input(diopin)                                                                                          \
 	{                                                                                                                     \
@@ -55,10 +55,10 @@ extern void itp_step_reset_isr(void);
 	}
 #define mcu_config_pwm(diopin)                                                                                                   \
 	{                                                                                                                            \
-		RCC->APB2ENR |= (__indirect__(diopin, APB2EN) | 0x1U);                                                                   \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
-		RCC->APB1ENR = __indirect__(diopin, APB1EN);                                                                             \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_2MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ));                                  \
@@ -210,7 +210,7 @@ static void mcu_usart_init(void)
 	RCC->COM_APB |= (COM_APBEN);
 	RCC->APB2ENR |= __indirect__(TX, APB2EN);
 	__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
-	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(TX, CROFF)) << 2));
+	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_10MHZ << ((__indirect__(TX, CROFF)) << 2));
 	RCC->APB2ENR |= __indirect__(RX, APB2EN);
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
@@ -601,7 +601,9 @@ void mcu_init(void)
 #endif
 
 	mcu_enable_interrupts();
+#ifdef LED
 	mcu_clear_output(LED);
+#endif
 }
 
 #ifndef mcu_enable_probe_isr
@@ -661,7 +663,9 @@ extern uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
 
 void mcu_putc(char c)
 {
+#ifdef LED
 	mcu_toggle_output(LED);
+#endif
 #ifdef COM_PORT
 	while (!(COM_USART->SR & (1 << 7)))
 		;
@@ -673,7 +677,8 @@ void mcu_putc(char c)
 	if (c == '\n' || i == (TX_BUFFER_SIZE - 1))
 	{
 		mcu_tx_buffer[i] = 0;
-		while(CDC_Transmit_FS(mcu_tx_buffer, i));
+		while (CDC_Transmit_FS(mcu_tx_buffer, i))
+			;
 		i = 0;
 	}
 #endif

@@ -38,7 +38,7 @@
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_GRBL
+#define BOARD BOARD_BLUEPILL
 #endif
 /*
 	Machine kynematics

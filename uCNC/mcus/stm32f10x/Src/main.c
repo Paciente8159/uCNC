@@ -96,9 +96,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  mcu_set_pwm(PWM0,128);
   while (1)
   {
-    cnc_run();
+    //cnc_run();
+    mcu_toggle_output(DOUT0);
+    mcu_toggle_output(LED);
+    HAL_Delay(1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

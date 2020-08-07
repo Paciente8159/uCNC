@@ -184,8 +184,46 @@
 #define DIO5_CR STEP5_CR
 #define DIO5_CROFF STEP5_CROFF
 #endif
+#if (defined(STEP6_PORT) && defined(STEP6_BIT))
+#define STEP6 6
+#define STEP6_APB2EN (__rccapb2gpioen__(STEP6_PORT))
+#define STEP6_GPIO (__gpio__(STEP6_PORT))
+#if (STEP6_BIT < 8)
+#define STEP6_CROFF STEP6_BIT
+#define STEP6_CR CRL
+#else
+#define STEP6_CROFF STEP6_BIT - 8
+#define STEP6_CR CRH
+#endif
+#define DIO6 6
+#define DIO6_PORT STEP6_PORT
+#define DIO6_BIT STEP6_BIT
+#define DIO6_APB2EN STEP6_APB2EN
+#define DIO6_GPIO STEP6_GPIO
+#define DIO6_CR STEP6_CR
+#define DIO6_CROFF STEP6_CROFF
+#endif
+#if (defined(STEP7_PORT) && defined(STEP7_BIT))
+#define STEP7 7
+#define STEP7_APB2EN (__rccapb2gpioen__(STEP7_PORT))
+#define STEP7_GPIO (__gpio__(STEP7_PORT))
+#if (STEP7_BIT < 8)
+#define STEP7_CROFF STEP7_BIT
+#define STEP7_CR CRL
+#else
+#define STEP7_CROFF STEP7_BIT - 8
+#define STEP7_CR CRH
+#endif
+#define DIO7 7
+#define DIO7_PORT STEP7_PORT
+#define DIO7_BIT STEP7_BIT
+#define DIO7_APB2EN STEP7_APB2EN
+#define DIO7_GPIO STEP7_GPIO
+#define DIO7_CR STEP7_CR
+#define DIO7_CROFF STEP7_CROFF
+#endif
 #if (defined(STEP0_EN_PORT) && defined(STEP0_EN_BIT))
-#define STEP0_EN 6
+#define STEP0_EN 8
 #define STEP0_EN_APB2EN (__rccapb2gpioen__(STEP0_EN_PORT))
 #define STEP0_EN_GPIO (__gpio__(STEP0_EN_PORT))
 #if (STEP0_EN_BIT < 8)
@@ -195,16 +233,16 @@
 #define STEP0_EN_CROFF STEP0_EN_BIT - 8
 #define STEP0_EN_CR CRH
 #endif
-#define DIO6 6
-#define DIO6_PORT STEP0_EN_PORT
-#define DIO6_BIT STEP0_EN_BIT
-#define DIO6_APB2EN STEP0_EN_APB2EN
-#define DIO6_GPIO STEP0_EN_GPIO
-#define DIO6_CR STEP0_EN_CR
-#define DIO6_CROFF STEP0_EN_CROFF
+#define DIO8 8
+#define DIO8_PORT STEP0_EN_PORT
+#define DIO8_BIT STEP0_EN_BIT
+#define DIO8_APB2EN STEP0_EN_APB2EN
+#define DIO8_GPIO STEP0_EN_GPIO
+#define DIO8_CR STEP0_EN_CR
+#define DIO8_CROFF STEP0_EN_CROFF
 #endif
 #if (defined(STEP1_EN_PORT) && defined(STEP1_EN_BIT))
-#define STEP1_EN 7
+#define STEP1_EN 9
 #define STEP1_EN_APB2EN (__rccapb2gpioen__(STEP1_EN_PORT))
 #define STEP1_EN_GPIO (__gpio__(STEP1_EN_PORT))
 #if (STEP1_EN_BIT < 8)
@@ -214,16 +252,16 @@
 #define STEP1_EN_CROFF STEP1_EN_BIT - 8
 #define STEP1_EN_CR CRH
 #endif
-#define DIO7 7
-#define DIO7_PORT STEP1_EN_PORT
-#define DIO7_BIT STEP1_EN_BIT
-#define DIO7_APB2EN STEP1_EN_APB2EN
-#define DIO7_GPIO STEP1_EN_GPIO
-#define DIO7_CR STEP1_EN_CR
-#define DIO7_CROFF STEP1_EN_CROFF
+#define DIO9 9
+#define DIO9_PORT STEP1_EN_PORT
+#define DIO9_BIT STEP1_EN_BIT
+#define DIO9_APB2EN STEP1_EN_APB2EN
+#define DIO9_GPIO STEP1_EN_GPIO
+#define DIO9_CR STEP1_EN_CR
+#define DIO9_CROFF STEP1_EN_CROFF
 #endif
 #if (defined(STEP2_EN_PORT) && defined(STEP2_EN_BIT))
-#define STEP2_EN 8
+#define STEP2_EN 10
 #define STEP2_EN_APB2EN (__rccapb2gpioen__(STEP2_EN_PORT))
 #define STEP2_EN_GPIO (__gpio__(STEP2_EN_PORT))
 #if (STEP2_EN_BIT < 8)
@@ -233,16 +271,16 @@
 #define STEP2_EN_CROFF STEP2_EN_BIT - 8
 #define STEP2_EN_CR CRH
 #endif
-#define DIO8 8
-#define DIO8_PORT STEP2_EN_PORT
-#define DIO8_BIT STEP2_EN_BIT
-#define DIO8_APB2EN STEP2_EN_APB2EN
-#define DIO8_GPIO STEP2_EN_GPIO
-#define DIO8_CR STEP2_EN_CR
-#define DIO8_CROFF STEP2_EN_CROFF
+#define DIO10 10
+#define DIO10_PORT STEP2_EN_PORT
+#define DIO10_BIT STEP2_EN_BIT
+#define DIO10_APB2EN STEP2_EN_APB2EN
+#define DIO10_GPIO STEP2_EN_GPIO
+#define DIO10_CR STEP2_EN_CR
+#define DIO10_CROFF STEP2_EN_CROFF
 #endif
 #if (defined(STEP3_EN_PORT) && defined(STEP3_EN_BIT))
-#define STEP3_EN 9
+#define STEP3_EN 11
 #define STEP3_EN_APB2EN (__rccapb2gpioen__(STEP3_EN_PORT))
 #define STEP3_EN_GPIO (__gpio__(STEP3_EN_PORT))
 #if (STEP3_EN_BIT < 8)
@@ -252,16 +290,16 @@
 #define STEP3_EN_CROFF STEP3_EN_BIT - 8
 #define STEP3_EN_CR CRH
 #endif
-#define DIO9 9
-#define DIO9_PORT STEP3_EN_PORT
-#define DIO9_BIT STEP3_EN_BIT
-#define DIO9_APB2EN STEP3_EN_APB2EN
-#define DIO9_GPIO STEP3_EN_GPIO
-#define DIO9_CR STEP3_EN_CR
-#define DIO9_CROFF STEP3_EN_CROFF
+#define DIO11 11
+#define DIO11_PORT STEP3_EN_PORT
+#define DIO11_BIT STEP3_EN_BIT
+#define DIO11_APB2EN STEP3_EN_APB2EN
+#define DIO11_GPIO STEP3_EN_GPIO
+#define DIO11_CR STEP3_EN_CR
+#define DIO11_CROFF STEP3_EN_CROFF
 #endif
 #if (defined(STEP4_EN_PORT) && defined(STEP4_EN_BIT))
-#define STEP4_EN 10
+#define STEP4_EN 12
 #define STEP4_EN_APB2EN (__rccapb2gpioen__(STEP4_EN_PORT))
 #define STEP4_EN_GPIO (__gpio__(STEP4_EN_PORT))
 #if (STEP4_EN_BIT < 8)
@@ -271,16 +309,16 @@
 #define STEP4_EN_CROFF STEP4_EN_BIT - 8
 #define STEP4_EN_CR CRH
 #endif
-#define DIO10 10
-#define DIO10_PORT STEP4_EN_PORT
-#define DIO10_BIT STEP4_EN_BIT
-#define DIO10_APB2EN STEP4_EN_APB2EN
-#define DIO10_GPIO STEP4_EN_GPIO
-#define DIO10_CR STEP4_EN_CR
-#define DIO10_CROFF STEP4_EN_CROFF
+#define DIO12 12
+#define DIO12_PORT STEP4_EN_PORT
+#define DIO12_BIT STEP4_EN_BIT
+#define DIO12_APB2EN STEP4_EN_APB2EN
+#define DIO12_GPIO STEP4_EN_GPIO
+#define DIO12_CR STEP4_EN_CR
+#define DIO12_CROFF STEP4_EN_CROFF
 #endif
 #if (defined(STEP5_EN_PORT) && defined(STEP5_EN_BIT))
-#define STEP5_EN 11
+#define STEP5_EN 13
 #define STEP5_EN_APB2EN (__rccapb2gpioen__(STEP5_EN_PORT))
 #define STEP5_EN_GPIO (__gpio__(STEP5_EN_PORT))
 #if (STEP5_EN_BIT < 8)
@@ -290,16 +328,16 @@
 #define STEP5_EN_CROFF STEP5_EN_BIT - 8
 #define STEP5_EN_CR CRH
 #endif
-#define DIO11 11
-#define DIO11_PORT STEP5_EN_PORT
-#define DIO11_BIT STEP5_EN_BIT
-#define DIO11_APB2EN STEP5_EN_APB2EN
-#define DIO11_GPIO STEP5_EN_GPIO
-#define DIO11_CR STEP5_EN_CR
-#define DIO11_CROFF STEP5_EN_CROFF
+#define DIO13 13
+#define DIO13_PORT STEP5_EN_PORT
+#define DIO13_BIT STEP5_EN_BIT
+#define DIO13_APB2EN STEP5_EN_APB2EN
+#define DIO13_GPIO STEP5_EN_GPIO
+#define DIO13_CR STEP5_EN_CR
+#define DIO13_CROFF STEP5_EN_CROFF
 #endif
 #if (defined(DIR0_PORT) && defined(DIR0_BIT))
-#define DIR0 12
+#define DIR0 14
 #define DIR0_APB2EN (__rccapb2gpioen__(DIR0_PORT))
 #define DIR0_GPIO (__gpio__(DIR0_PORT))
 #if (DIR0_BIT < 8)
@@ -309,16 +347,16 @@
 #define DIR0_CROFF DIR0_BIT - 8
 #define DIR0_CR CRH
 #endif
-#define DIO12 12
-#define DIO12_PORT DIR0_PORT
-#define DIO12_BIT DIR0_BIT
-#define DIO12_APB2EN DIR0_APB2EN
-#define DIO12_GPIO DIR0_GPIO
-#define DIO12_CR DIR0_CR
-#define DIO12_CROFF DIR0_CROFF
+#define DIO14 14
+#define DIO14_PORT DIR0_PORT
+#define DIO14_BIT DIR0_BIT
+#define DIO14_APB2EN DIR0_APB2EN
+#define DIO14_GPIO DIR0_GPIO
+#define DIO14_CR DIR0_CR
+#define DIO14_CROFF DIR0_CROFF
 #endif
 #if (defined(DIR1_PORT) && defined(DIR1_BIT))
-#define DIR1 13
+#define DIR1 15
 #define DIR1_APB2EN (__rccapb2gpioen__(DIR1_PORT))
 #define DIR1_GPIO (__gpio__(DIR1_PORT))
 #if (DIR1_BIT < 8)
@@ -328,16 +366,16 @@
 #define DIR1_CROFF DIR1_BIT - 8
 #define DIR1_CR CRH
 #endif
-#define DIO13 13
-#define DIO13_PORT DIR1_PORT
-#define DIO13_BIT DIR1_BIT
-#define DIO13_APB2EN DIR1_APB2EN
-#define DIO13_GPIO DIR1_GPIO
-#define DIO13_CR DIR1_CR
-#define DIO13_CROFF DIR1_CROFF
+#define DIO15 15
+#define DIO15_PORT DIR1_PORT
+#define DIO15_BIT DIR1_BIT
+#define DIO15_APB2EN DIR1_APB2EN
+#define DIO15_GPIO DIR1_GPIO
+#define DIO15_CR DIR1_CR
+#define DIO15_CROFF DIR1_CROFF
 #endif
 #if (defined(DIR2_PORT) && defined(DIR2_BIT))
-#define DIR2 14
+#define DIR2 16
 #define DIR2_APB2EN (__rccapb2gpioen__(DIR2_PORT))
 #define DIR2_GPIO (__gpio__(DIR2_PORT))
 #if (DIR2_BIT < 8)
@@ -347,16 +385,16 @@
 #define DIR2_CROFF DIR2_BIT - 8
 #define DIR2_CR CRH
 #endif
-#define DIO14 14
-#define DIO14_PORT DIR2_PORT
-#define DIO14_BIT DIR2_BIT
-#define DIO14_APB2EN DIR2_APB2EN
-#define DIO14_GPIO DIR2_GPIO
-#define DIO14_CR DIR2_CR
-#define DIO14_CROFF DIR2_CROFF
+#define DIO16 16
+#define DIO16_PORT DIR2_PORT
+#define DIO16_BIT DIR2_BIT
+#define DIO16_APB2EN DIR2_APB2EN
+#define DIO16_GPIO DIR2_GPIO
+#define DIO16_CR DIR2_CR
+#define DIO16_CROFF DIR2_CROFF
 #endif
 #if (defined(DIR3_PORT) && defined(DIR3_BIT))
-#define DIR3 15
+#define DIR3 17
 #define DIR3_APB2EN (__rccapb2gpioen__(DIR3_PORT))
 #define DIR3_GPIO (__gpio__(DIR3_PORT))
 #if (DIR3_BIT < 8)
@@ -366,16 +404,16 @@
 #define DIR3_CROFF DIR3_BIT - 8
 #define DIR3_CR CRH
 #endif
-#define DIO15 15
-#define DIO15_PORT DIR3_PORT
-#define DIO15_BIT DIR3_BIT
-#define DIO15_APB2EN DIR3_APB2EN
-#define DIO15_GPIO DIR3_GPIO
-#define DIO15_CR DIR3_CR
-#define DIO15_CROFF DIR3_CROFF
+#define DIO17 17
+#define DIO17_PORT DIR3_PORT
+#define DIO17_BIT DIR3_BIT
+#define DIO17_APB2EN DIR3_APB2EN
+#define DIO17_GPIO DIR3_GPIO
+#define DIO17_CR DIR3_CR
+#define DIO17_CROFF DIR3_CROFF
 #endif
 #if (defined(DIR4_PORT) && defined(DIR4_BIT))
-#define DIR4 16
+#define DIR4 18
 #define DIR4_APB2EN (__rccapb2gpioen__(DIR4_PORT))
 #define DIR4_GPIO (__gpio__(DIR4_PORT))
 #if (DIR4_BIT < 8)
@@ -385,16 +423,16 @@
 #define DIR4_CROFF DIR4_BIT - 8
 #define DIR4_CR CRH
 #endif
-#define DIO16 16
-#define DIO16_PORT DIR4_PORT
-#define DIO16_BIT DIR4_BIT
-#define DIO16_APB2EN DIR4_APB2EN
-#define DIO16_GPIO DIR4_GPIO
-#define DIO16_CR DIR4_CR
-#define DIO16_CROFF DIR4_CROFF
+#define DIO18 18
+#define DIO18_PORT DIR4_PORT
+#define DIO18_BIT DIR4_BIT
+#define DIO18_APB2EN DIR4_APB2EN
+#define DIO18_GPIO DIR4_GPIO
+#define DIO18_CR DIR4_CR
+#define DIO18_CROFF DIR4_CROFF
 #endif
 #if (defined(DIR5_PORT) && defined(DIR5_BIT))
-#define DIR5 17
+#define DIR5 19
 #define DIR5_APB2EN (__rccapb2gpioen__(DIR5_PORT))
 #define DIR5_GPIO (__gpio__(DIR5_PORT))
 #if (DIR5_BIT < 8)
@@ -404,16 +442,16 @@
 #define DIR5_CROFF DIR5_BIT - 8
 #define DIR5_CR CRH
 #endif
-#define DIO17 17
-#define DIO17_PORT DIR5_PORT
-#define DIO17_BIT DIR5_BIT
-#define DIO17_APB2EN DIR5_APB2EN
-#define DIO17_GPIO DIR5_GPIO
-#define DIO17_CR DIR5_CR
-#define DIO17_CROFF DIR5_CROFF
+#define DIO19 19
+#define DIO19_PORT DIR5_PORT
+#define DIO19_BIT DIR5_BIT
+#define DIO19_APB2EN DIR5_APB2EN
+#define DIO19_GPIO DIR5_GPIO
+#define DIO19_CR DIR5_CR
+#define DIO19_CROFF DIR5_CROFF
 #endif
 #if (defined(PWM0_PORT) && defined(PWM0_BIT))
-#define PWM0 18
+#define PWM0 20
 #define PWM0_APB2EN (__rccapb2gpioen__(PWM0_PORT))
 #define PWM0_GPIO (__gpio__(PWM0_PORT))
 #if (PWM0_BIT < 8)
@@ -423,16 +461,16 @@
 #define PWM0_CROFF PWM0_BIT - 8
 #define PWM0_CR CRH
 #endif
-#define DIO18 18
-#define DIO18_PORT PWM0_PORT
-#define DIO18_BIT PWM0_BIT
-#define DIO18_APB2EN PWM0_APB2EN
-#define DIO18_GPIO PWM0_GPIO
-#define DIO18_CR PWM0_CR
-#define DIO18_CROFF PWM0_CROFF
+#define DIO20 20
+#define DIO20_PORT PWM0_PORT
+#define DIO20_BIT PWM0_BIT
+#define DIO20_APB2EN PWM0_APB2EN
+#define DIO20_GPIO PWM0_GPIO
+#define DIO20_CR PWM0_CR
+#define DIO20_CROFF PWM0_CROFF
 #endif
 #if (defined(PWM1_PORT) && defined(PWM1_BIT))
-#define PWM1 19
+#define PWM1 21
 #define PWM1_APB2EN (__rccapb2gpioen__(PWM1_PORT))
 #define PWM1_GPIO (__gpio__(PWM1_PORT))
 #if (PWM1_BIT < 8)
@@ -442,16 +480,16 @@
 #define PWM1_CROFF PWM1_BIT - 8
 #define PWM1_CR CRH
 #endif
-#define DIO19 19
-#define DIO19_PORT PWM1_PORT
-#define DIO19_BIT PWM1_BIT
-#define DIO19_APB2EN PWM1_APB2EN
-#define DIO19_GPIO PWM1_GPIO
-#define DIO19_CR PWM1_CR
-#define DIO19_CROFF PWM1_CROFF
+#define DIO21 21
+#define DIO21_PORT PWM1_PORT
+#define DIO21_BIT PWM1_BIT
+#define DIO21_APB2EN PWM1_APB2EN
+#define DIO21_GPIO PWM1_GPIO
+#define DIO21_CR PWM1_CR
+#define DIO21_CROFF PWM1_CROFF
 #endif
 #if (defined(PWM2_PORT) && defined(PWM2_BIT))
-#define PWM2 20
+#define PWM2 22
 #define PWM2_APB2EN (__rccapb2gpioen__(PWM2_PORT))
 #define PWM2_GPIO (__gpio__(PWM2_PORT))
 #if (PWM2_BIT < 8)
@@ -461,16 +499,16 @@
 #define PWM2_CROFF PWM2_BIT - 8
 #define PWM2_CR CRH
 #endif
-#define DIO20 20
-#define DIO20_PORT PWM2_PORT
-#define DIO20_BIT PWM2_BIT
-#define DIO20_APB2EN PWM2_APB2EN
-#define DIO20_GPIO PWM2_GPIO
-#define DIO20_CR PWM2_CR
-#define DIO20_CROFF PWM2_CROFF
+#define DIO22 22
+#define DIO22_PORT PWM2_PORT
+#define DIO22_BIT PWM2_BIT
+#define DIO22_APB2EN PWM2_APB2EN
+#define DIO22_GPIO PWM2_GPIO
+#define DIO22_CR PWM2_CR
+#define DIO22_CROFF PWM2_CROFF
 #endif
 #if (defined(PWM3_PORT) && defined(PWM3_BIT))
-#define PWM3 21
+#define PWM3 23
 #define PWM3_APB2EN (__rccapb2gpioen__(PWM3_PORT))
 #define PWM3_GPIO (__gpio__(PWM3_PORT))
 #if (PWM3_BIT < 8)
@@ -480,16 +518,16 @@
 #define PWM3_CROFF PWM3_BIT - 8
 #define PWM3_CR CRH
 #endif
-#define DIO21 21
-#define DIO21_PORT PWM3_PORT
-#define DIO21_BIT PWM3_BIT
-#define DIO21_APB2EN PWM3_APB2EN
-#define DIO21_GPIO PWM3_GPIO
-#define DIO21_CR PWM3_CR
-#define DIO21_CROFF PWM3_CROFF
+#define DIO23 23
+#define DIO23_PORT PWM3_PORT
+#define DIO23_BIT PWM3_BIT
+#define DIO23_APB2EN PWM3_APB2EN
+#define DIO23_GPIO PWM3_GPIO
+#define DIO23_CR PWM3_CR
+#define DIO23_CROFF PWM3_CROFF
 #endif
 #if (defined(PWM4_PORT) && defined(PWM4_BIT))
-#define PWM4 22
+#define PWM4 24
 #define PWM4_APB2EN (__rccapb2gpioen__(PWM4_PORT))
 #define PWM4_GPIO (__gpio__(PWM4_PORT))
 #if (PWM4_BIT < 8)
@@ -499,16 +537,16 @@
 #define PWM4_CROFF PWM4_BIT - 8
 #define PWM4_CR CRH
 #endif
-#define DIO22 22
-#define DIO22_PORT PWM4_PORT
-#define DIO22_BIT PWM4_BIT
-#define DIO22_APB2EN PWM4_APB2EN
-#define DIO22_GPIO PWM4_GPIO
-#define DIO22_CR PWM4_CR
-#define DIO22_CROFF PWM4_CROFF
+#define DIO24 24
+#define DIO24_PORT PWM4_PORT
+#define DIO24_BIT PWM4_BIT
+#define DIO24_APB2EN PWM4_APB2EN
+#define DIO24_GPIO PWM4_GPIO
+#define DIO24_CR PWM4_CR
+#define DIO24_CROFF PWM4_CROFF
 #endif
 #if (defined(PWM5_PORT) && defined(PWM5_BIT))
-#define PWM5 23
+#define PWM5 25
 #define PWM5_APB2EN (__rccapb2gpioen__(PWM5_PORT))
 #define PWM5_GPIO (__gpio__(PWM5_PORT))
 #if (PWM5_BIT < 8)
@@ -518,16 +556,16 @@
 #define PWM5_CROFF PWM5_BIT - 8
 #define PWM5_CR CRH
 #endif
-#define DIO23 23
-#define DIO23_PORT PWM5_PORT
-#define DIO23_BIT PWM5_BIT
-#define DIO23_APB2EN PWM5_APB2EN
-#define DIO23_GPIO PWM5_GPIO
-#define DIO23_CR PWM5_CR
-#define DIO23_CROFF PWM5_CROFF
+#define DIO25 25
+#define DIO25_PORT PWM5_PORT
+#define DIO25_BIT PWM5_BIT
+#define DIO25_APB2EN PWM5_APB2EN
+#define DIO25_GPIO PWM5_GPIO
+#define DIO25_CR PWM5_CR
+#define DIO25_CROFF PWM5_CROFF
 #endif
 #if (defined(PWM6_PORT) && defined(PWM6_BIT))
-#define PWM6 24
+#define PWM6 26
 #define PWM6_APB2EN (__rccapb2gpioen__(PWM6_PORT))
 #define PWM6_GPIO (__gpio__(PWM6_PORT))
 #if (PWM6_BIT < 8)
@@ -537,16 +575,16 @@
 #define PWM6_CROFF PWM6_BIT - 8
 #define PWM6_CR CRH
 #endif
-#define DIO24 24
-#define DIO24_PORT PWM6_PORT
-#define DIO24_BIT PWM6_BIT
-#define DIO24_APB2EN PWM6_APB2EN
-#define DIO24_GPIO PWM6_GPIO
-#define DIO24_CR PWM6_CR
-#define DIO24_CROFF PWM6_CROFF
+#define DIO26 26
+#define DIO26_PORT PWM6_PORT
+#define DIO26_BIT PWM6_BIT
+#define DIO26_APB2EN PWM6_APB2EN
+#define DIO26_GPIO PWM6_GPIO
+#define DIO26_CR PWM6_CR
+#define DIO26_CROFF PWM6_CROFF
 #endif
 #if (defined(PWM7_PORT) && defined(PWM7_BIT))
-#define PWM7 25
+#define PWM7 27
 #define PWM7_APB2EN (__rccapb2gpioen__(PWM7_PORT))
 #define PWM7_GPIO (__gpio__(PWM7_PORT))
 #if (PWM7_BIT < 8)
@@ -556,16 +594,16 @@
 #define PWM7_CROFF PWM7_BIT - 8
 #define PWM7_CR CRH
 #endif
-#define DIO25 25
-#define DIO25_PORT PWM7_PORT
-#define DIO25_BIT PWM7_BIT
-#define DIO25_APB2EN PWM7_APB2EN
-#define DIO25_GPIO PWM7_GPIO
-#define DIO25_CR PWM7_CR
-#define DIO25_CROFF PWM7_CROFF
+#define DIO27 27
+#define DIO27_PORT PWM7_PORT
+#define DIO27_BIT PWM7_BIT
+#define DIO27_APB2EN PWM7_APB2EN
+#define DIO27_GPIO PWM7_GPIO
+#define DIO27_CR PWM7_CR
+#define DIO27_CROFF PWM7_CROFF
 #endif
 #if (defined(PWM8_PORT) && defined(PWM8_BIT))
-#define PWM8 26
+#define PWM8 28
 #define PWM8_APB2EN (__rccapb2gpioen__(PWM8_PORT))
 #define PWM8_GPIO (__gpio__(PWM8_PORT))
 #if (PWM8_BIT < 8)
@@ -575,16 +613,16 @@
 #define PWM8_CROFF PWM8_BIT - 8
 #define PWM8_CR CRH
 #endif
-#define DIO26 26
-#define DIO26_PORT PWM8_PORT
-#define DIO26_BIT PWM8_BIT
-#define DIO26_APB2EN PWM8_APB2EN
-#define DIO26_GPIO PWM8_GPIO
-#define DIO26_CR PWM8_CR
-#define DIO26_CROFF PWM8_CROFF
+#define DIO28 28
+#define DIO28_PORT PWM8_PORT
+#define DIO28_BIT PWM8_BIT
+#define DIO28_APB2EN PWM8_APB2EN
+#define DIO28_GPIO PWM8_GPIO
+#define DIO28_CR PWM8_CR
+#define DIO28_CROFF PWM8_CROFF
 #endif
 #if (defined(PWM9_PORT) && defined(PWM9_BIT))
-#define PWM9 27
+#define PWM9 29
 #define PWM9_APB2EN (__rccapb2gpioen__(PWM9_PORT))
 #define PWM9_GPIO (__gpio__(PWM9_PORT))
 #if (PWM9_BIT < 8)
@@ -594,16 +632,16 @@
 #define PWM9_CROFF PWM9_BIT - 8
 #define PWM9_CR CRH
 #endif
-#define DIO27 27
-#define DIO27_PORT PWM9_PORT
-#define DIO27_BIT PWM9_BIT
-#define DIO27_APB2EN PWM9_APB2EN
-#define DIO27_GPIO PWM9_GPIO
-#define DIO27_CR PWM9_CR
-#define DIO27_CROFF PWM9_CROFF
+#define DIO29 29
+#define DIO29_PORT PWM9_PORT
+#define DIO29_BIT PWM9_BIT
+#define DIO29_APB2EN PWM9_APB2EN
+#define DIO29_GPIO PWM9_GPIO
+#define DIO29_CR PWM9_CR
+#define DIO29_CROFF PWM9_CROFF
 #endif
 #if (defined(PWM10_PORT) && defined(PWM10_BIT))
-#define PWM10 28
+#define PWM10 30
 #define PWM10_APB2EN (__rccapb2gpioen__(PWM10_PORT))
 #define PWM10_GPIO (__gpio__(PWM10_PORT))
 #if (PWM10_BIT < 8)
@@ -613,16 +651,16 @@
 #define PWM10_CROFF PWM10_BIT - 8
 #define PWM10_CR CRH
 #endif
-#define DIO28 28
-#define DIO28_PORT PWM10_PORT
-#define DIO28_BIT PWM10_BIT
-#define DIO28_APB2EN PWM10_APB2EN
-#define DIO28_GPIO PWM10_GPIO
-#define DIO28_CR PWM10_CR
-#define DIO28_CROFF PWM10_CROFF
+#define DIO30 30
+#define DIO30_PORT PWM10_PORT
+#define DIO30_BIT PWM10_BIT
+#define DIO30_APB2EN PWM10_APB2EN
+#define DIO30_GPIO PWM10_GPIO
+#define DIO30_CR PWM10_CR
+#define DIO30_CROFF PWM10_CROFF
 #endif
 #if (defined(PWM11_PORT) && defined(PWM11_BIT))
-#define PWM11 29
+#define PWM11 31
 #define PWM11_APB2EN (__rccapb2gpioen__(PWM11_PORT))
 #define PWM11_GPIO (__gpio__(PWM11_PORT))
 #if (PWM11_BIT < 8)
@@ -632,16 +670,16 @@
 #define PWM11_CROFF PWM11_BIT - 8
 #define PWM11_CR CRH
 #endif
-#define DIO29 29
-#define DIO29_PORT PWM11_PORT
-#define DIO29_BIT PWM11_BIT
-#define DIO29_APB2EN PWM11_APB2EN
-#define DIO29_GPIO PWM11_GPIO
-#define DIO29_CR PWM11_CR
-#define DIO29_CROFF PWM11_CROFF
+#define DIO31 31
+#define DIO31_PORT PWM11_PORT
+#define DIO31_BIT PWM11_BIT
+#define DIO31_APB2EN PWM11_APB2EN
+#define DIO31_GPIO PWM11_GPIO
+#define DIO31_CR PWM11_CR
+#define DIO31_CROFF PWM11_CROFF
 #endif
 #if (defined(PWM12_PORT) && defined(PWM12_BIT))
-#define PWM12 30
+#define PWM12 32
 #define PWM12_APB2EN (__rccapb2gpioen__(PWM12_PORT))
 #define PWM12_GPIO (__gpio__(PWM12_PORT))
 #if (PWM12_BIT < 8)
@@ -651,16 +689,16 @@
 #define PWM12_CROFF PWM12_BIT - 8
 #define PWM12_CR CRH
 #endif
-#define DIO30 30
-#define DIO30_PORT PWM12_PORT
-#define DIO30_BIT PWM12_BIT
-#define DIO30_APB2EN PWM12_APB2EN
-#define DIO30_GPIO PWM12_GPIO
-#define DIO30_CR PWM12_CR
-#define DIO30_CROFF PWM12_CROFF
+#define DIO32 32
+#define DIO32_PORT PWM12_PORT
+#define DIO32_BIT PWM12_BIT
+#define DIO32_APB2EN PWM12_APB2EN
+#define DIO32_GPIO PWM12_GPIO
+#define DIO32_CR PWM12_CR
+#define DIO32_CROFF PWM12_CROFF
 #endif
 #if (defined(PWM13_PORT) && defined(PWM13_BIT))
-#define PWM13 31
+#define PWM13 33
 #define PWM13_APB2EN (__rccapb2gpioen__(PWM13_PORT))
 #define PWM13_GPIO (__gpio__(PWM13_PORT))
 #if (PWM13_BIT < 8)
@@ -670,16 +708,16 @@
 #define PWM13_CROFF PWM13_BIT - 8
 #define PWM13_CR CRH
 #endif
-#define DIO31 31
-#define DIO31_PORT PWM13_PORT
-#define DIO31_BIT PWM13_BIT
-#define DIO31_APB2EN PWM13_APB2EN
-#define DIO31_GPIO PWM13_GPIO
-#define DIO31_CR PWM13_CR
-#define DIO31_CROFF PWM13_CROFF
+#define DIO33 33
+#define DIO33_PORT PWM13_PORT
+#define DIO33_BIT PWM13_BIT
+#define DIO33_APB2EN PWM13_APB2EN
+#define DIO33_GPIO PWM13_GPIO
+#define DIO33_CR PWM13_CR
+#define DIO33_CROFF PWM13_CROFF
 #endif
 #if (defined(PWM14_PORT) && defined(PWM14_BIT))
-#define PWM14 32
+#define PWM14 34
 #define PWM14_APB2EN (__rccapb2gpioen__(PWM14_PORT))
 #define PWM14_GPIO (__gpio__(PWM14_PORT))
 #if (PWM14_BIT < 8)
@@ -689,16 +727,16 @@
 #define PWM14_CROFF PWM14_BIT - 8
 #define PWM14_CR CRH
 #endif
-#define DIO32 32
-#define DIO32_PORT PWM14_PORT
-#define DIO32_BIT PWM14_BIT
-#define DIO32_APB2EN PWM14_APB2EN
-#define DIO32_GPIO PWM14_GPIO
-#define DIO32_CR PWM14_CR
-#define DIO32_CROFF PWM14_CROFF
+#define DIO34 34
+#define DIO34_PORT PWM14_PORT
+#define DIO34_BIT PWM14_BIT
+#define DIO34_APB2EN PWM14_APB2EN
+#define DIO34_GPIO PWM14_GPIO
+#define DIO34_CR PWM14_CR
+#define DIO34_CROFF PWM14_CROFF
 #endif
 #if (defined(PWM15_PORT) && defined(PWM15_BIT))
-#define PWM15 33
+#define PWM15 35
 #define PWM15_APB2EN (__rccapb2gpioen__(PWM15_PORT))
 #define PWM15_GPIO (__gpio__(PWM15_PORT))
 #if (PWM15_BIT < 8)
@@ -708,16 +746,16 @@
 #define PWM15_CROFF PWM15_BIT - 8
 #define PWM15_CR CRH
 #endif
-#define DIO33 33
-#define DIO33_PORT PWM15_PORT
-#define DIO33_BIT PWM15_BIT
-#define DIO33_APB2EN PWM15_APB2EN
-#define DIO33_GPIO PWM15_GPIO
-#define DIO33_CR PWM15_CR
-#define DIO33_CROFF PWM15_CROFF
+#define DIO35 35
+#define DIO35_PORT PWM15_PORT
+#define DIO35_BIT PWM15_BIT
+#define DIO35_APB2EN PWM15_APB2EN
+#define DIO35_GPIO PWM15_GPIO
+#define DIO35_CR PWM15_CR
+#define DIO35_CROFF PWM15_CROFF
 #endif
 #if (defined(TX_PORT) && defined(TX_BIT))
-#define TX 34
+#define TX 36
 #define TX_APB2EN (__rccapb2gpioen__(TX_PORT))
 #define TX_GPIO (__gpio__(TX_PORT))
 #if (TX_BIT < 8)
@@ -727,16 +765,16 @@
 #define TX_CROFF TX_BIT - 8
 #define TX_CR CRH
 #endif
-#define DIO34 34
-#define DIO34_PORT TX_PORT
-#define DIO34_BIT TX_BIT
-#define DIO34_APB2EN TX_APB2EN
-#define DIO34_GPIO TX_GPIO
-#define DIO34_CR TX_CR
-#define DIO34_CROFF TX_CROFF
+#define DIO36 36
+#define DIO36_PORT TX_PORT
+#define DIO36_BIT TX_BIT
+#define DIO36_APB2EN TX_APB2EN
+#define DIO36_GPIO TX_GPIO
+#define DIO36_CR TX_CR
+#define DIO36_CROFF TX_CROFF
 #endif
 #if (defined(DOUT0_PORT) && defined(DOUT0_BIT))
-#define DOUT0 35
+#define DOUT0 37
 #define DOUT0_APB2EN (__rccapb2gpioen__(DOUT0_PORT))
 #define DOUT0_GPIO (__gpio__(DOUT0_PORT))
 #if (DOUT0_BIT < 8)
@@ -746,16 +784,16 @@
 #define DOUT0_CROFF DOUT0_BIT - 8
 #define DOUT0_CR CRH
 #endif
-#define DIO35 35
-#define DIO35_PORT DOUT0_PORT
-#define DIO35_BIT DOUT0_BIT
-#define DIO35_APB2EN DOUT0_APB2EN
-#define DIO35_GPIO DOUT0_GPIO
-#define DIO35_CR DOUT0_CR
-#define DIO35_CROFF DOUT0_CROFF
+#define DIO37 37
+#define DIO37_PORT DOUT0_PORT
+#define DIO37_BIT DOUT0_BIT
+#define DIO37_APB2EN DOUT0_APB2EN
+#define DIO37_GPIO DOUT0_GPIO
+#define DIO37_CR DOUT0_CR
+#define DIO37_CROFF DOUT0_CROFF
 #endif
 #if (defined(DOUT1_PORT) && defined(DOUT1_BIT))
-#define DOUT1 36
+#define DOUT1 38
 #define DOUT1_APB2EN (__rccapb2gpioen__(DOUT1_PORT))
 #define DOUT1_GPIO (__gpio__(DOUT1_PORT))
 #if (DOUT1_BIT < 8)
@@ -765,16 +803,16 @@
 #define DOUT1_CROFF DOUT1_BIT - 8
 #define DOUT1_CR CRH
 #endif
-#define DIO36 36
-#define DIO36_PORT DOUT1_PORT
-#define DIO36_BIT DOUT1_BIT
-#define DIO36_APB2EN DOUT1_APB2EN
-#define DIO36_GPIO DOUT1_GPIO
-#define DIO36_CR DOUT1_CR
-#define DIO36_CROFF DOUT1_CROFF
+#define DIO38 38
+#define DIO38_PORT DOUT1_PORT
+#define DIO38_BIT DOUT1_BIT
+#define DIO38_APB2EN DOUT1_APB2EN
+#define DIO38_GPIO DOUT1_GPIO
+#define DIO38_CR DOUT1_CR
+#define DIO38_CROFF DOUT1_CROFF
 #endif
 #if (defined(DOUT2_PORT) && defined(DOUT2_BIT))
-#define DOUT2 37
+#define DOUT2 39
 #define DOUT2_APB2EN (__rccapb2gpioen__(DOUT2_PORT))
 #define DOUT2_GPIO (__gpio__(DOUT2_PORT))
 #if (DOUT2_BIT < 8)
@@ -784,16 +822,16 @@
 #define DOUT2_CROFF DOUT2_BIT - 8
 #define DOUT2_CR CRH
 #endif
-#define DIO37 37
-#define DIO37_PORT DOUT2_PORT
-#define DIO37_BIT DOUT2_BIT
-#define DIO37_APB2EN DOUT2_APB2EN
-#define DIO37_GPIO DOUT2_GPIO
-#define DIO37_CR DOUT2_CR
-#define DIO37_CROFF DOUT2_CROFF
+#define DIO39 39
+#define DIO39_PORT DOUT2_PORT
+#define DIO39_BIT DOUT2_BIT
+#define DIO39_APB2EN DOUT2_APB2EN
+#define DIO39_GPIO DOUT2_GPIO
+#define DIO39_CR DOUT2_CR
+#define DIO39_CROFF DOUT2_CROFF
 #endif
 #if (defined(DOUT3_PORT) && defined(DOUT3_BIT))
-#define DOUT3 38
+#define DOUT3 40
 #define DOUT3_APB2EN (__rccapb2gpioen__(DOUT3_PORT))
 #define DOUT3_GPIO (__gpio__(DOUT3_PORT))
 #if (DOUT3_BIT < 8)
@@ -803,16 +841,16 @@
 #define DOUT3_CROFF DOUT3_BIT - 8
 #define DOUT3_CR CRH
 #endif
-#define DIO38 38
-#define DIO38_PORT DOUT3_PORT
-#define DIO38_BIT DOUT3_BIT
-#define DIO38_APB2EN DOUT3_APB2EN
-#define DIO38_GPIO DOUT3_GPIO
-#define DIO38_CR DOUT3_CR
-#define DIO38_CROFF DOUT3_CROFF
+#define DIO40 40
+#define DIO40_PORT DOUT3_PORT
+#define DIO40_BIT DOUT3_BIT
+#define DIO40_APB2EN DOUT3_APB2EN
+#define DIO40_GPIO DOUT3_GPIO
+#define DIO40_CR DOUT3_CR
+#define DIO40_CROFF DOUT3_CROFF
 #endif
 #if (defined(DOUT4_PORT) && defined(DOUT4_BIT))
-#define DOUT4 39
+#define DOUT4 41
 #define DOUT4_APB2EN (__rccapb2gpioen__(DOUT4_PORT))
 #define DOUT4_GPIO (__gpio__(DOUT4_PORT))
 #if (DOUT4_BIT < 8)
@@ -822,16 +860,16 @@
 #define DOUT4_CROFF DOUT4_BIT - 8
 #define DOUT4_CR CRH
 #endif
-#define DIO39 39
-#define DIO39_PORT DOUT4_PORT
-#define DIO39_BIT DOUT4_BIT
-#define DIO39_APB2EN DOUT4_APB2EN
-#define DIO39_GPIO DOUT4_GPIO
-#define DIO39_CR DOUT4_CR
-#define DIO39_CROFF DOUT4_CROFF
+#define DIO41 41
+#define DIO41_PORT DOUT4_PORT
+#define DIO41_BIT DOUT4_BIT
+#define DIO41_APB2EN DOUT4_APB2EN
+#define DIO41_GPIO DOUT4_GPIO
+#define DIO41_CR DOUT4_CR
+#define DIO41_CROFF DOUT4_CROFF
 #endif
 #if (defined(DOUT5_PORT) && defined(DOUT5_BIT))
-#define DOUT5 40
+#define DOUT5 42
 #define DOUT5_APB2EN (__rccapb2gpioen__(DOUT5_PORT))
 #define DOUT5_GPIO (__gpio__(DOUT5_PORT))
 #if (DOUT5_BIT < 8)
@@ -841,16 +879,16 @@
 #define DOUT5_CROFF DOUT5_BIT - 8
 #define DOUT5_CR CRH
 #endif
-#define DIO40 40
-#define DIO40_PORT DOUT5_PORT
-#define DIO40_BIT DOUT5_BIT
-#define DIO40_APB2EN DOUT5_APB2EN
-#define DIO40_GPIO DOUT5_GPIO
-#define DIO40_CR DOUT5_CR
-#define DIO40_CROFF DOUT5_CROFF
+#define DIO42 42
+#define DIO42_PORT DOUT5_PORT
+#define DIO42_BIT DOUT5_BIT
+#define DIO42_APB2EN DOUT5_APB2EN
+#define DIO42_GPIO DOUT5_GPIO
+#define DIO42_CR DOUT5_CR
+#define DIO42_CROFF DOUT5_CROFF
 #endif
 #if (defined(DOUT6_PORT) && defined(DOUT6_BIT))
-#define DOUT6 41
+#define DOUT6 43
 #define DOUT6_APB2EN (__rccapb2gpioen__(DOUT6_PORT))
 #define DOUT6_GPIO (__gpio__(DOUT6_PORT))
 #if (DOUT6_BIT < 8)
@@ -860,16 +898,16 @@
 #define DOUT6_CROFF DOUT6_BIT - 8
 #define DOUT6_CR CRH
 #endif
-#define DIO41 41
-#define DIO41_PORT DOUT6_PORT
-#define DIO41_BIT DOUT6_BIT
-#define DIO41_APB2EN DOUT6_APB2EN
-#define DIO41_GPIO DOUT6_GPIO
-#define DIO41_CR DOUT6_CR
-#define DIO41_CROFF DOUT6_CROFF
+#define DIO43 43
+#define DIO43_PORT DOUT6_PORT
+#define DIO43_BIT DOUT6_BIT
+#define DIO43_APB2EN DOUT6_APB2EN
+#define DIO43_GPIO DOUT6_GPIO
+#define DIO43_CR DOUT6_CR
+#define DIO43_CROFF DOUT6_CROFF
 #endif
 #if (defined(DOUT7_PORT) && defined(DOUT7_BIT))
-#define DOUT7 42
+#define DOUT7 44
 #define DOUT7_APB2EN (__rccapb2gpioen__(DOUT7_PORT))
 #define DOUT7_GPIO (__gpio__(DOUT7_PORT))
 #if (DOUT7_BIT < 8)
@@ -879,16 +917,16 @@
 #define DOUT7_CROFF DOUT7_BIT - 8
 #define DOUT7_CR CRH
 #endif
-#define DIO42 42
-#define DIO42_PORT DOUT7_PORT
-#define DIO42_BIT DOUT7_BIT
-#define DIO42_APB2EN DOUT7_APB2EN
-#define DIO42_GPIO DOUT7_GPIO
-#define DIO42_CR DOUT7_CR
-#define DIO42_CROFF DOUT7_CROFF
+#define DIO44 44
+#define DIO44_PORT DOUT7_PORT
+#define DIO44_BIT DOUT7_BIT
+#define DIO44_APB2EN DOUT7_APB2EN
+#define DIO44_GPIO DOUT7_GPIO
+#define DIO44_CR DOUT7_CR
+#define DIO44_CROFF DOUT7_CROFF
 #endif
 #if (defined(DOUT8_PORT) && defined(DOUT8_BIT))
-#define DOUT8 43
+#define DOUT8 45
 #define DOUT8_APB2EN (__rccapb2gpioen__(DOUT8_PORT))
 #define DOUT8_GPIO (__gpio__(DOUT8_PORT))
 #if (DOUT8_BIT < 8)
@@ -898,16 +936,16 @@
 #define DOUT8_CROFF DOUT8_BIT - 8
 #define DOUT8_CR CRH
 #endif
-#define DIO43 43
-#define DIO43_PORT DOUT8_PORT
-#define DIO43_BIT DOUT8_BIT
-#define DIO43_APB2EN DOUT8_APB2EN
-#define DIO43_GPIO DOUT8_GPIO
-#define DIO43_CR DOUT8_CR
-#define DIO43_CROFF DOUT8_CROFF
+#define DIO45 45
+#define DIO45_PORT DOUT8_PORT
+#define DIO45_BIT DOUT8_BIT
+#define DIO45_APB2EN DOUT8_APB2EN
+#define DIO45_GPIO DOUT8_GPIO
+#define DIO45_CR DOUT8_CR
+#define DIO45_CROFF DOUT8_CROFF
 #endif
 #if (defined(DOUT9_PORT) && defined(DOUT9_BIT))
-#define DOUT9 44
+#define DOUT9 46
 #define DOUT9_APB2EN (__rccapb2gpioen__(DOUT9_PORT))
 #define DOUT9_GPIO (__gpio__(DOUT9_PORT))
 #if (DOUT9_BIT < 8)
@@ -917,16 +955,16 @@
 #define DOUT9_CROFF DOUT9_BIT - 8
 #define DOUT9_CR CRH
 #endif
-#define DIO44 44
-#define DIO44_PORT DOUT9_PORT
-#define DIO44_BIT DOUT9_BIT
-#define DIO44_APB2EN DOUT9_APB2EN
-#define DIO44_GPIO DOUT9_GPIO
-#define DIO44_CR DOUT9_CR
-#define DIO44_CROFF DOUT9_CROFF
+#define DIO46 46
+#define DIO46_PORT DOUT9_PORT
+#define DIO46_BIT DOUT9_BIT
+#define DIO46_APB2EN DOUT9_APB2EN
+#define DIO46_GPIO DOUT9_GPIO
+#define DIO46_CR DOUT9_CR
+#define DIO46_CROFF DOUT9_CROFF
 #endif
 #if (defined(DOUT10_PORT) && defined(DOUT10_BIT))
-#define DOUT10 45
+#define DOUT10 47
 #define DOUT10_APB2EN (__rccapb2gpioen__(DOUT10_PORT))
 #define DOUT10_GPIO (__gpio__(DOUT10_PORT))
 #if (DOUT10_BIT < 8)
@@ -936,16 +974,16 @@
 #define DOUT10_CROFF DOUT10_BIT - 8
 #define DOUT10_CR CRH
 #endif
-#define DIO45 45
-#define DIO45_PORT DOUT10_PORT
-#define DIO45_BIT DOUT10_BIT
-#define DIO45_APB2EN DOUT10_APB2EN
-#define DIO45_GPIO DOUT10_GPIO
-#define DIO45_CR DOUT10_CR
-#define DIO45_CROFF DOUT10_CROFF
+#define DIO47 47
+#define DIO47_PORT DOUT10_PORT
+#define DIO47_BIT DOUT10_BIT
+#define DIO47_APB2EN DOUT10_APB2EN
+#define DIO47_GPIO DOUT10_GPIO
+#define DIO47_CR DOUT10_CR
+#define DIO47_CROFF DOUT10_CROFF
 #endif
 #if (defined(DOUT11_PORT) && defined(DOUT11_BIT))
-#define DOUT11 46
+#define DOUT11 48
 #define DOUT11_APB2EN (__rccapb2gpioen__(DOUT11_PORT))
 #define DOUT11_GPIO (__gpio__(DOUT11_PORT))
 #if (DOUT11_BIT < 8)
@@ -955,16 +993,16 @@
 #define DOUT11_CROFF DOUT11_BIT - 8
 #define DOUT11_CR CRH
 #endif
-#define DIO46 46
-#define DIO46_PORT DOUT11_PORT
-#define DIO46_BIT DOUT11_BIT
-#define DIO46_APB2EN DOUT11_APB2EN
-#define DIO46_GPIO DOUT11_GPIO
-#define DIO46_CR DOUT11_CR
-#define DIO46_CROFF DOUT11_CROFF
+#define DIO48 48
+#define DIO48_PORT DOUT11_PORT
+#define DIO48_BIT DOUT11_BIT
+#define DIO48_APB2EN DOUT11_APB2EN
+#define DIO48_GPIO DOUT11_GPIO
+#define DIO48_CR DOUT11_CR
+#define DIO48_CROFF DOUT11_CROFF
 #endif
 #if (defined(DOUT12_PORT) && defined(DOUT12_BIT))
-#define DOUT12 47
+#define DOUT12 49
 #define DOUT12_APB2EN (__rccapb2gpioen__(DOUT12_PORT))
 #define DOUT12_GPIO (__gpio__(DOUT12_PORT))
 #if (DOUT12_BIT < 8)
@@ -974,16 +1012,16 @@
 #define DOUT12_CROFF DOUT12_BIT - 8
 #define DOUT12_CR CRH
 #endif
-#define DIO47 47
-#define DIO47_PORT DOUT12_PORT
-#define DIO47_BIT DOUT12_BIT
-#define DIO47_APB2EN DOUT12_APB2EN
-#define DIO47_GPIO DOUT12_GPIO
-#define DIO47_CR DOUT12_CR
-#define DIO47_CROFF DOUT12_CROFF
+#define DIO49 49
+#define DIO49_PORT DOUT12_PORT
+#define DIO49_BIT DOUT12_BIT
+#define DIO49_APB2EN DOUT12_APB2EN
+#define DIO49_GPIO DOUT12_GPIO
+#define DIO49_CR DOUT12_CR
+#define DIO49_CROFF DOUT12_CROFF
 #endif
 #if (defined(DOUT13_PORT) && defined(DOUT13_BIT))
-#define DOUT13 48
+#define DOUT13 50
 #define DOUT13_APB2EN (__rccapb2gpioen__(DOUT13_PORT))
 #define DOUT13_GPIO (__gpio__(DOUT13_PORT))
 #if (DOUT13_BIT < 8)
@@ -993,16 +1031,16 @@
 #define DOUT13_CROFF DOUT13_BIT - 8
 #define DOUT13_CR CRH
 #endif
-#define DIO48 48
-#define DIO48_PORT DOUT13_PORT
-#define DIO48_BIT DOUT13_BIT
-#define DIO48_APB2EN DOUT13_APB2EN
-#define DIO48_GPIO DOUT13_GPIO
-#define DIO48_CR DOUT13_CR
-#define DIO48_CROFF DOUT13_CROFF
+#define DIO50 50
+#define DIO50_PORT DOUT13_PORT
+#define DIO50_BIT DOUT13_BIT
+#define DIO50_APB2EN DOUT13_APB2EN
+#define DIO50_GPIO DOUT13_GPIO
+#define DIO50_CR DOUT13_CR
+#define DIO50_CROFF DOUT13_CROFF
 #endif
 #if (defined(DOUT14_PORT) && defined(DOUT14_BIT))
-#define DOUT14 49
+#define DOUT14 51
 #define DOUT14_APB2EN (__rccapb2gpioen__(DOUT14_PORT))
 #define DOUT14_GPIO (__gpio__(DOUT14_PORT))
 #if (DOUT14_BIT < 8)
@@ -1012,16 +1050,16 @@
 #define DOUT14_CROFF DOUT14_BIT - 8
 #define DOUT14_CR CRH
 #endif
-#define DIO49 49
-#define DIO49_PORT DOUT14_PORT
-#define DIO49_BIT DOUT14_BIT
-#define DIO49_APB2EN DOUT14_APB2EN
-#define DIO49_GPIO DOUT14_GPIO
-#define DIO49_CR DOUT14_CR
-#define DIO49_CROFF DOUT14_CROFF
+#define DIO51 51
+#define DIO51_PORT DOUT14_PORT
+#define DIO51_BIT DOUT14_BIT
+#define DIO51_APB2EN DOUT14_APB2EN
+#define DIO51_GPIO DOUT14_GPIO
+#define DIO51_CR DOUT14_CR
+#define DIO51_CROFF DOUT14_CROFF
 #endif
 #if (defined(DOUT15_PORT) && defined(DOUT15_BIT))
-#define DOUT15 50
+#define DOUT15 52
 #define DOUT15_APB2EN (__rccapb2gpioen__(DOUT15_PORT))
 #define DOUT15_GPIO (__gpio__(DOUT15_PORT))
 #if (DOUT15_BIT < 8)
@@ -1031,16 +1069,16 @@
 #define DOUT15_CROFF DOUT15_BIT - 8
 #define DOUT15_CR CRH
 #endif
-#define DIO50 50
-#define DIO50_PORT DOUT15_PORT
-#define DIO50_BIT DOUT15_BIT
-#define DIO50_APB2EN DOUT15_APB2EN
-#define DIO50_GPIO DOUT15_GPIO
-#define DIO50_CR DOUT15_CR
-#define DIO50_CROFF DOUT15_CROFF
+#define DIO52 52
+#define DIO52_PORT DOUT15_PORT
+#define DIO52_BIT DOUT15_BIT
+#define DIO52_APB2EN DOUT15_APB2EN
+#define DIO52_GPIO DOUT15_GPIO
+#define DIO52_CR DOUT15_CR
+#define DIO52_CROFF DOUT15_CROFF
 #endif
 #if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
-#define LIMIT_X 51
+#define LIMIT_X 53
 #define LIMIT_X_APB2EN (__rccapb2gpioen__(LIMIT_X_PORT))
 #define LIMIT_X_GPIO (__gpio__(LIMIT_X_PORT))
 #if (LIMIT_X_BIT < 8)
@@ -1050,16 +1088,16 @@
 #define LIMIT_X_CROFF LIMIT_X_BIT - 8
 #define LIMIT_X_CR CRH
 #endif
-#define DIO51 51
-#define DIO51_PORT LIMIT_X_PORT
-#define DIO51_BIT LIMIT_X_BIT
-#define DIO51_APB2EN LIMIT_X_APB2EN
-#define DIO51_GPIO LIMIT_X_GPIO
-#define DIO51_CR LIMIT_X_CR
-#define DIO51_CROFF LIMIT_X_CROFF
+#define DIO53 53
+#define DIO53_PORT LIMIT_X_PORT
+#define DIO53_BIT LIMIT_X_BIT
+#define DIO53_APB2EN LIMIT_X_APB2EN
+#define DIO53_GPIO LIMIT_X_GPIO
+#define DIO53_CR LIMIT_X_CR
+#define DIO53_CROFF LIMIT_X_CROFF
 #endif
 #if (defined(LIMIT_Y_PORT) && defined(LIMIT_Y_BIT))
-#define LIMIT_Y 52
+#define LIMIT_Y 54
 #define LIMIT_Y_APB2EN (__rccapb2gpioen__(LIMIT_Y_PORT))
 #define LIMIT_Y_GPIO (__gpio__(LIMIT_Y_PORT))
 #if (LIMIT_Y_BIT < 8)
@@ -1069,16 +1107,16 @@
 #define LIMIT_Y_CROFF LIMIT_Y_BIT - 8
 #define LIMIT_Y_CR CRH
 #endif
-#define DIO52 52
-#define DIO52_PORT LIMIT_Y_PORT
-#define DIO52_BIT LIMIT_Y_BIT
-#define DIO52_APB2EN LIMIT_Y_APB2EN
-#define DIO52_GPIO LIMIT_Y_GPIO
-#define DIO52_CR LIMIT_Y_CR
-#define DIO52_CROFF LIMIT_Y_CROFF
+#define DIO54 54
+#define DIO54_PORT LIMIT_Y_PORT
+#define DIO54_BIT LIMIT_Y_BIT
+#define DIO54_APB2EN LIMIT_Y_APB2EN
+#define DIO54_GPIO LIMIT_Y_GPIO
+#define DIO54_CR LIMIT_Y_CR
+#define DIO54_CROFF LIMIT_Y_CROFF
 #endif
 #if (defined(LIMIT_Z_PORT) && defined(LIMIT_Z_BIT))
-#define LIMIT_Z 53
+#define LIMIT_Z 55
 #define LIMIT_Z_APB2EN (__rccapb2gpioen__(LIMIT_Z_PORT))
 #define LIMIT_Z_GPIO (__gpio__(LIMIT_Z_PORT))
 #if (LIMIT_Z_BIT < 8)
@@ -1088,16 +1126,16 @@
 #define LIMIT_Z_CROFF LIMIT_Z_BIT - 8
 #define LIMIT_Z_CR CRH
 #endif
-#define DIO53 53
-#define DIO53_PORT LIMIT_Z_PORT
-#define DIO53_BIT LIMIT_Z_BIT
-#define DIO53_APB2EN LIMIT_Z_APB2EN
-#define DIO53_GPIO LIMIT_Z_GPIO
-#define DIO53_CR LIMIT_Z_CR
-#define DIO53_CROFF LIMIT_Z_CROFF
+#define DIO55 55
+#define DIO55_PORT LIMIT_Z_PORT
+#define DIO55_BIT LIMIT_Z_BIT
+#define DIO55_APB2EN LIMIT_Z_APB2EN
+#define DIO55_GPIO LIMIT_Z_GPIO
+#define DIO55_CR LIMIT_Z_CR
+#define DIO55_CROFF LIMIT_Z_CROFF
 #endif
 #if (defined(LIMIT_X2_PORT) && defined(LIMIT_X2_BIT))
-#define LIMIT_X2 54
+#define LIMIT_X2 56
 #define LIMIT_X2_APB2EN (__rccapb2gpioen__(LIMIT_X2_PORT))
 #define LIMIT_X2_GPIO (__gpio__(LIMIT_X2_PORT))
 #if (LIMIT_X2_BIT < 8)
@@ -1107,16 +1145,16 @@
 #define LIMIT_X2_CROFF LIMIT_X2_BIT - 8
 #define LIMIT_X2_CR CRH
 #endif
-#define DIO54 54
-#define DIO54_PORT LIMIT_X2_PORT
-#define DIO54_BIT LIMIT_X2_BIT
-#define DIO54_APB2EN LIMIT_X2_APB2EN
-#define DIO54_GPIO LIMIT_X2_GPIO
-#define DIO54_CR LIMIT_X2_CR
-#define DIO54_CROFF LIMIT_X2_CROFF
+#define DIO56 56
+#define DIO56_PORT LIMIT_X2_PORT
+#define DIO56_BIT LIMIT_X2_BIT
+#define DIO56_APB2EN LIMIT_X2_APB2EN
+#define DIO56_GPIO LIMIT_X2_GPIO
+#define DIO56_CR LIMIT_X2_CR
+#define DIO56_CROFF LIMIT_X2_CROFF
 #endif
 #if (defined(LIMIT_Y2_PORT) && defined(LIMIT_Y2_BIT))
-#define LIMIT_Y2 55
+#define LIMIT_Y2 57
 #define LIMIT_Y2_APB2EN (__rccapb2gpioen__(LIMIT_Y2_PORT))
 #define LIMIT_Y2_GPIO (__gpio__(LIMIT_Y2_PORT))
 #if (LIMIT_Y2_BIT < 8)
@@ -1126,16 +1164,16 @@
 #define LIMIT_Y2_CROFF LIMIT_Y2_BIT - 8
 #define LIMIT_Y2_CR CRH
 #endif
-#define DIO55 55
-#define DIO55_PORT LIMIT_Y2_PORT
-#define DIO55_BIT LIMIT_Y2_BIT
-#define DIO55_APB2EN LIMIT_Y2_APB2EN
-#define DIO55_GPIO LIMIT_Y2_GPIO
-#define DIO55_CR LIMIT_Y2_CR
-#define DIO55_CROFF LIMIT_Y2_CROFF
+#define DIO57 57
+#define DIO57_PORT LIMIT_Y2_PORT
+#define DIO57_BIT LIMIT_Y2_BIT
+#define DIO57_APB2EN LIMIT_Y2_APB2EN
+#define DIO57_GPIO LIMIT_Y2_GPIO
+#define DIO57_CR LIMIT_Y2_CR
+#define DIO57_CROFF LIMIT_Y2_CROFF
 #endif
 #if (defined(LIMIT_Z2_PORT) && defined(LIMIT_Z2_BIT))
-#define LIMIT_Z2 56
+#define LIMIT_Z2 58
 #define LIMIT_Z2_APB2EN (__rccapb2gpioen__(LIMIT_Z2_PORT))
 #define LIMIT_Z2_GPIO (__gpio__(LIMIT_Z2_PORT))
 #if (LIMIT_Z2_BIT < 8)
@@ -1145,16 +1183,16 @@
 #define LIMIT_Z2_CROFF LIMIT_Z2_BIT - 8
 #define LIMIT_Z2_CR CRH
 #endif
-#define DIO56 56
-#define DIO56_PORT LIMIT_Z2_PORT
-#define DIO56_BIT LIMIT_Z2_BIT
-#define DIO56_APB2EN LIMIT_Z2_APB2EN
-#define DIO56_GPIO LIMIT_Z2_GPIO
-#define DIO56_CR LIMIT_Z2_CR
-#define DIO56_CROFF LIMIT_Z2_CROFF
+#define DIO58 58
+#define DIO58_PORT LIMIT_Z2_PORT
+#define DIO58_BIT LIMIT_Z2_BIT
+#define DIO58_APB2EN LIMIT_Z2_APB2EN
+#define DIO58_GPIO LIMIT_Z2_GPIO
+#define DIO58_CR LIMIT_Z2_CR
+#define DIO58_CROFF LIMIT_Z2_CROFF
 #endif
 #if (defined(LIMIT_A_PORT) && defined(LIMIT_A_BIT))
-#define LIMIT_A 57
+#define LIMIT_A 59
 #define LIMIT_A_APB2EN (__rccapb2gpioen__(LIMIT_A_PORT))
 #define LIMIT_A_GPIO (__gpio__(LIMIT_A_PORT))
 #if (LIMIT_A_BIT < 8)
@@ -1164,16 +1202,16 @@
 #define LIMIT_A_CROFF LIMIT_A_BIT - 8
 #define LIMIT_A_CR CRH
 #endif
-#define DIO57 57
-#define DIO57_PORT LIMIT_A_PORT
-#define DIO57_BIT LIMIT_A_BIT
-#define DIO57_APB2EN LIMIT_A_APB2EN
-#define DIO57_GPIO LIMIT_A_GPIO
-#define DIO57_CR LIMIT_A_CR
-#define DIO57_CROFF LIMIT_A_CROFF
+#define DIO59 59
+#define DIO59_PORT LIMIT_A_PORT
+#define DIO59_BIT LIMIT_A_BIT
+#define DIO59_APB2EN LIMIT_A_APB2EN
+#define DIO59_GPIO LIMIT_A_GPIO
+#define DIO59_CR LIMIT_A_CR
+#define DIO59_CROFF LIMIT_A_CROFF
 #endif
 #if (defined(LIMIT_B_PORT) && defined(LIMIT_B_BIT))
-#define LIMIT_B 58
+#define LIMIT_B 60
 #define LIMIT_B_APB2EN (__rccapb2gpioen__(LIMIT_B_PORT))
 #define LIMIT_B_GPIO (__gpio__(LIMIT_B_PORT))
 #if (LIMIT_B_BIT < 8)
@@ -1183,16 +1221,16 @@
 #define LIMIT_B_CROFF LIMIT_B_BIT - 8
 #define LIMIT_B_CR CRH
 #endif
-#define DIO58 58
-#define DIO58_PORT LIMIT_B_PORT
-#define DIO58_BIT LIMIT_B_BIT
-#define DIO58_APB2EN LIMIT_B_APB2EN
-#define DIO58_GPIO LIMIT_B_GPIO
-#define DIO58_CR LIMIT_B_CR
-#define DIO58_CROFF LIMIT_B_CROFF
+#define DIO60 60
+#define DIO60_PORT LIMIT_B_PORT
+#define DIO60_BIT LIMIT_B_BIT
+#define DIO60_APB2EN LIMIT_B_APB2EN
+#define DIO60_GPIO LIMIT_B_GPIO
+#define DIO60_CR LIMIT_B_CR
+#define DIO60_CROFF LIMIT_B_CROFF
 #endif
 #if (defined(LIMIT_C_PORT) && defined(LIMIT_C_BIT))
-#define LIMIT_C 59
+#define LIMIT_C 61
 #define LIMIT_C_APB2EN (__rccapb2gpioen__(LIMIT_C_PORT))
 #define LIMIT_C_GPIO (__gpio__(LIMIT_C_PORT))
 #if (LIMIT_C_BIT < 8)
@@ -1202,16 +1240,16 @@
 #define LIMIT_C_CROFF LIMIT_C_BIT - 8
 #define LIMIT_C_CR CRH
 #endif
-#define DIO59 59
-#define DIO59_PORT LIMIT_C_PORT
-#define DIO59_BIT LIMIT_C_BIT
-#define DIO59_APB2EN LIMIT_C_APB2EN
-#define DIO59_GPIO LIMIT_C_GPIO
-#define DIO59_CR LIMIT_C_CR
-#define DIO59_CROFF LIMIT_C_CROFF
+#define DIO61 61
+#define DIO61_PORT LIMIT_C_PORT
+#define DIO61_BIT LIMIT_C_BIT
+#define DIO61_APB2EN LIMIT_C_APB2EN
+#define DIO61_GPIO LIMIT_C_GPIO
+#define DIO61_CR LIMIT_C_CR
+#define DIO61_CROFF LIMIT_C_CROFF
 #endif
 #if (defined(PROBE_PORT) && defined(PROBE_BIT))
-#define PROBE 60
+#define PROBE 62
 #define PROBE_APB2EN (__rccapb2gpioen__(PROBE_PORT))
 #define PROBE_GPIO (__gpio__(PROBE_PORT))
 #if (PROBE_BIT < 8)
@@ -1221,16 +1259,16 @@
 #define PROBE_CROFF PROBE_BIT - 8
 #define PROBE_CR CRH
 #endif
-#define DIO60 60
-#define DIO60_PORT PROBE_PORT
-#define DIO60_BIT PROBE_BIT
-#define DIO60_APB2EN PROBE_APB2EN
-#define DIO60_GPIO PROBE_GPIO
-#define DIO60_CR PROBE_CR
-#define DIO60_CROFF PROBE_CROFF
+#define DIO62 62
+#define DIO62_PORT PROBE_PORT
+#define DIO62_BIT PROBE_BIT
+#define DIO62_APB2EN PROBE_APB2EN
+#define DIO62_GPIO PROBE_GPIO
+#define DIO62_CR PROBE_CR
+#define DIO62_CROFF PROBE_CROFF
 #endif
 #if (defined(ESTOP_PORT) && defined(ESTOP_BIT))
-#define ESTOP 61
+#define ESTOP 63
 #define ESTOP_APB2EN (__rccapb2gpioen__(ESTOP_PORT))
 #define ESTOP_GPIO (__gpio__(ESTOP_PORT))
 #if (ESTOP_BIT < 8)
@@ -1240,16 +1278,16 @@
 #define ESTOP_CROFF ESTOP_BIT - 8
 #define ESTOP_CR CRH
 #endif
-#define DIO61 61
-#define DIO61_PORT ESTOP_PORT
-#define DIO61_BIT ESTOP_BIT
-#define DIO61_APB2EN ESTOP_APB2EN
-#define DIO61_GPIO ESTOP_GPIO
-#define DIO61_CR ESTOP_CR
-#define DIO61_CROFF ESTOP_CROFF
+#define DIO63 63
+#define DIO63_PORT ESTOP_PORT
+#define DIO63_BIT ESTOP_BIT
+#define DIO63_APB2EN ESTOP_APB2EN
+#define DIO63_GPIO ESTOP_GPIO
+#define DIO63_CR ESTOP_CR
+#define DIO63_CROFF ESTOP_CROFF
 #endif
 #if (defined(SAFETY_DOOR_PORT) && defined(SAFETY_DOOR_BIT))
-#define SAFETY_DOOR 62
+#define SAFETY_DOOR 64
 #define SAFETY_DOOR_APB2EN (__rccapb2gpioen__(SAFETY_DOOR_PORT))
 #define SAFETY_DOOR_GPIO (__gpio__(SAFETY_DOOR_PORT))
 #if (SAFETY_DOOR_BIT < 8)
@@ -1259,16 +1297,16 @@
 #define SAFETY_DOOR_CROFF SAFETY_DOOR_BIT - 8
 #define SAFETY_DOOR_CR CRH
 #endif
-#define DIO62 62
-#define DIO62_PORT SAFETY_DOOR_PORT
-#define DIO62_BIT SAFETY_DOOR_BIT
-#define DIO62_APB2EN SAFETY_DOOR_APB2EN
-#define DIO62_GPIO SAFETY_DOOR_GPIO
-#define DIO62_CR SAFETY_DOOR_CR
-#define DIO62_CROFF SAFETY_DOOR_CROFF
+#define DIO64 64
+#define DIO64_PORT SAFETY_DOOR_PORT
+#define DIO64_BIT SAFETY_DOOR_BIT
+#define DIO64_APB2EN SAFETY_DOOR_APB2EN
+#define DIO64_GPIO SAFETY_DOOR_GPIO
+#define DIO64_CR SAFETY_DOOR_CR
+#define DIO64_CROFF SAFETY_DOOR_CROFF
 #endif
 #if (defined(FHOLD_PORT) && defined(FHOLD_BIT))
-#define FHOLD 63
+#define FHOLD 65
 #define FHOLD_APB2EN (__rccapb2gpioen__(FHOLD_PORT))
 #define FHOLD_GPIO (__gpio__(FHOLD_PORT))
 #if (FHOLD_BIT < 8)
@@ -1278,16 +1316,16 @@
 #define FHOLD_CROFF FHOLD_BIT - 8
 #define FHOLD_CR CRH
 #endif
-#define DIO63 63
-#define DIO63_PORT FHOLD_PORT
-#define DIO63_BIT FHOLD_BIT
-#define DIO63_APB2EN FHOLD_APB2EN
-#define DIO63_GPIO FHOLD_GPIO
-#define DIO63_CR FHOLD_CR
-#define DIO63_CROFF FHOLD_CROFF
+#define DIO65 65
+#define DIO65_PORT FHOLD_PORT
+#define DIO65_BIT FHOLD_BIT
+#define DIO65_APB2EN FHOLD_APB2EN
+#define DIO65_GPIO FHOLD_GPIO
+#define DIO65_CR FHOLD_CR
+#define DIO65_CROFF FHOLD_CROFF
 #endif
 #if (defined(CS_RES_PORT) && defined(CS_RES_BIT))
-#define CS_RES 64
+#define CS_RES 66
 #define CS_RES_APB2EN (__rccapb2gpioen__(CS_RES_PORT))
 #define CS_RES_GPIO (__gpio__(CS_RES_PORT))
 #if (CS_RES_BIT < 8)
@@ -1297,16 +1335,16 @@
 #define CS_RES_CROFF CS_RES_BIT - 8
 #define CS_RES_CR CRH
 #endif
-#define DIO64 64
-#define DIO64_PORT CS_RES_PORT
-#define DIO64_BIT CS_RES_BIT
-#define DIO64_APB2EN CS_RES_APB2EN
-#define DIO64_GPIO CS_RES_GPIO
-#define DIO64_CR CS_RES_CR
-#define DIO64_CROFF CS_RES_CROFF
+#define DIO66 66
+#define DIO66_PORT CS_RES_PORT
+#define DIO66_BIT CS_RES_BIT
+#define DIO66_APB2EN CS_RES_APB2EN
+#define DIO66_GPIO CS_RES_GPIO
+#define DIO66_CR CS_RES_CR
+#define DIO66_CROFF CS_RES_CROFF
 #endif
 #if (defined(ANALOG0_PORT) && defined(ANALOG0_BIT))
-#define ANALOG0 65
+#define ANALOG0 67
 #define ANALOG0_APB2EN (__rccapb2gpioen__(ANALOG0_PORT))
 #define ANALOG0_GPIO (__gpio__(ANALOG0_PORT))
 #if (ANALOG0_BIT < 8)
@@ -1316,16 +1354,16 @@
 #define ANALOG0_CROFF ANALOG0_BIT - 8
 #define ANALOG0_CR CRH
 #endif
-#define DIO65 65
-#define DIO65_PORT ANALOG0_PORT
-#define DIO65_BIT ANALOG0_BIT
-#define DIO65_APB2EN ANALOG0_APB2EN
-#define DIO65_GPIO ANALOG0_GPIO
-#define DIO65_CR ANALOG0_CR
-#define DIO65_CROFF ANALOG0_CROFF
+#define DIO67 67
+#define DIO67_PORT ANALOG0_PORT
+#define DIO67_BIT ANALOG0_BIT
+#define DIO67_APB2EN ANALOG0_APB2EN
+#define DIO67_GPIO ANALOG0_GPIO
+#define DIO67_CR ANALOG0_CR
+#define DIO67_CROFF ANALOG0_CROFF
 #endif
 #if (defined(ANALOG1_PORT) && defined(ANALOG1_BIT))
-#define ANALOG1 66
+#define ANALOG1 68
 #define ANALOG1_APB2EN (__rccapb2gpioen__(ANALOG1_PORT))
 #define ANALOG1_GPIO (__gpio__(ANALOG1_PORT))
 #if (ANALOG1_BIT < 8)
@@ -1335,16 +1373,16 @@
 #define ANALOG1_CROFF ANALOG1_BIT - 8
 #define ANALOG1_CR CRH
 #endif
-#define DIO66 66
-#define DIO66_PORT ANALOG1_PORT
-#define DIO66_BIT ANALOG1_BIT
-#define DIO66_APB2EN ANALOG1_APB2EN
-#define DIO66_GPIO ANALOG1_GPIO
-#define DIO66_CR ANALOG1_CR
-#define DIO66_CROFF ANALOG1_CROFF
+#define DIO68 68
+#define DIO68_PORT ANALOG1_PORT
+#define DIO68_BIT ANALOG1_BIT
+#define DIO68_APB2EN ANALOG1_APB2EN
+#define DIO68_GPIO ANALOG1_GPIO
+#define DIO68_CR ANALOG1_CR
+#define DIO68_CROFF ANALOG1_CROFF
 #endif
 #if (defined(ANALOG2_PORT) && defined(ANALOG2_BIT))
-#define ANALOG2 67
+#define ANALOG2 69
 #define ANALOG2_APB2EN (__rccapb2gpioen__(ANALOG2_PORT))
 #define ANALOG2_GPIO (__gpio__(ANALOG2_PORT))
 #if (ANALOG2_BIT < 8)
@@ -1354,16 +1392,16 @@
 #define ANALOG2_CROFF ANALOG2_BIT - 8
 #define ANALOG2_CR CRH
 #endif
-#define DIO67 67
-#define DIO67_PORT ANALOG2_PORT
-#define DIO67_BIT ANALOG2_BIT
-#define DIO67_APB2EN ANALOG2_APB2EN
-#define DIO67_GPIO ANALOG2_GPIO
-#define DIO67_CR ANALOG2_CR
-#define DIO67_CROFF ANALOG2_CROFF
+#define DIO69 69
+#define DIO69_PORT ANALOG2_PORT
+#define DIO69_BIT ANALOG2_BIT
+#define DIO69_APB2EN ANALOG2_APB2EN
+#define DIO69_GPIO ANALOG2_GPIO
+#define DIO69_CR ANALOG2_CR
+#define DIO69_CROFF ANALOG2_CROFF
 #endif
 #if (defined(ANALOG3_PORT) && defined(ANALOG3_BIT))
-#define ANALOG3 68
+#define ANALOG3 70
 #define ANALOG3_APB2EN (__rccapb2gpioen__(ANALOG3_PORT))
 #define ANALOG3_GPIO (__gpio__(ANALOG3_PORT))
 #if (ANALOG3_BIT < 8)
@@ -1373,16 +1411,16 @@
 #define ANALOG3_CROFF ANALOG3_BIT - 8
 #define ANALOG3_CR CRH
 #endif
-#define DIO68 68
-#define DIO68_PORT ANALOG3_PORT
-#define DIO68_BIT ANALOG3_BIT
-#define DIO68_APB2EN ANALOG3_APB2EN
-#define DIO68_GPIO ANALOG3_GPIO
-#define DIO68_CR ANALOG3_CR
-#define DIO68_CROFF ANALOG3_CROFF
+#define DIO70 70
+#define DIO70_PORT ANALOG3_PORT
+#define DIO70_BIT ANALOG3_BIT
+#define DIO70_APB2EN ANALOG3_APB2EN
+#define DIO70_GPIO ANALOG3_GPIO
+#define DIO70_CR ANALOG3_CR
+#define DIO70_CROFF ANALOG3_CROFF
 #endif
 #if (defined(ANALOG4_PORT) && defined(ANALOG4_BIT))
-#define ANALOG4 69
+#define ANALOG4 71
 #define ANALOG4_APB2EN (__rccapb2gpioen__(ANALOG4_PORT))
 #define ANALOG4_GPIO (__gpio__(ANALOG4_PORT))
 #if (ANALOG4_BIT < 8)
@@ -1392,16 +1430,16 @@
 #define ANALOG4_CROFF ANALOG4_BIT - 8
 #define ANALOG4_CR CRH
 #endif
-#define DIO69 69
-#define DIO69_PORT ANALOG4_PORT
-#define DIO69_BIT ANALOG4_BIT
-#define DIO69_APB2EN ANALOG4_APB2EN
-#define DIO69_GPIO ANALOG4_GPIO
-#define DIO69_CR ANALOG4_CR
-#define DIO69_CROFF ANALOG4_CROFF
+#define DIO71 71
+#define DIO71_PORT ANALOG4_PORT
+#define DIO71_BIT ANALOG4_BIT
+#define DIO71_APB2EN ANALOG4_APB2EN
+#define DIO71_GPIO ANALOG4_GPIO
+#define DIO71_CR ANALOG4_CR
+#define DIO71_CROFF ANALOG4_CROFF
 #endif
 #if (defined(ANALOG5_PORT) && defined(ANALOG5_BIT))
-#define ANALOG5 70
+#define ANALOG5 72
 #define ANALOG5_APB2EN (__rccapb2gpioen__(ANALOG5_PORT))
 #define ANALOG5_GPIO (__gpio__(ANALOG5_PORT))
 #if (ANALOG5_BIT < 8)
@@ -1411,16 +1449,16 @@
 #define ANALOG5_CROFF ANALOG5_BIT - 8
 #define ANALOG5_CR CRH
 #endif
-#define DIO70 70
-#define DIO70_PORT ANALOG5_PORT
-#define DIO70_BIT ANALOG5_BIT
-#define DIO70_APB2EN ANALOG5_APB2EN
-#define DIO70_GPIO ANALOG5_GPIO
-#define DIO70_CR ANALOG5_CR
-#define DIO70_CROFF ANALOG5_CROFF
+#define DIO72 72
+#define DIO72_PORT ANALOG5_PORT
+#define DIO72_BIT ANALOG5_BIT
+#define DIO72_APB2EN ANALOG5_APB2EN
+#define DIO72_GPIO ANALOG5_GPIO
+#define DIO72_CR ANALOG5_CR
+#define DIO72_CROFF ANALOG5_CROFF
 #endif
 #if (defined(ANALOG6_PORT) && defined(ANALOG6_BIT))
-#define ANALOG6 71
+#define ANALOG6 73
 #define ANALOG6_APB2EN (__rccapb2gpioen__(ANALOG6_PORT))
 #define ANALOG6_GPIO (__gpio__(ANALOG6_PORT))
 #if (ANALOG6_BIT < 8)
@@ -1430,16 +1468,16 @@
 #define ANALOG6_CROFF ANALOG6_BIT - 8
 #define ANALOG6_CR CRH
 #endif
-#define DIO71 71
-#define DIO71_PORT ANALOG6_PORT
-#define DIO71_BIT ANALOG6_BIT
-#define DIO71_APB2EN ANALOG6_APB2EN
-#define DIO71_GPIO ANALOG6_GPIO
-#define DIO71_CR ANALOG6_CR
-#define DIO71_CROFF ANALOG6_CROFF
+#define DIO73 73
+#define DIO73_PORT ANALOG6_PORT
+#define DIO73_BIT ANALOG6_BIT
+#define DIO73_APB2EN ANALOG6_APB2EN
+#define DIO73_GPIO ANALOG6_GPIO
+#define DIO73_CR ANALOG6_CR
+#define DIO73_CROFF ANALOG6_CROFF
 #endif
 #if (defined(ANALOG7_PORT) && defined(ANALOG7_BIT))
-#define ANALOG7 72
+#define ANALOG7 74
 #define ANALOG7_APB2EN (__rccapb2gpioen__(ANALOG7_PORT))
 #define ANALOG7_GPIO (__gpio__(ANALOG7_PORT))
 #if (ANALOG7_BIT < 8)
@@ -1449,16 +1487,16 @@
 #define ANALOG7_CROFF ANALOG7_BIT - 8
 #define ANALOG7_CR CRH
 #endif
-#define DIO72 72
-#define DIO72_PORT ANALOG7_PORT
-#define DIO72_BIT ANALOG7_BIT
-#define DIO72_APB2EN ANALOG7_APB2EN
-#define DIO72_GPIO ANALOG7_GPIO
-#define DIO72_CR ANALOG7_CR
-#define DIO72_CROFF ANALOG7_CROFF
+#define DIO74 74
+#define DIO74_PORT ANALOG7_PORT
+#define DIO74_BIT ANALOG7_BIT
+#define DIO74_APB2EN ANALOG7_APB2EN
+#define DIO74_GPIO ANALOG7_GPIO
+#define DIO74_CR ANALOG7_CR
+#define DIO74_CROFF ANALOG7_CROFF
 #endif
 #if (defined(ANALOG8_PORT) && defined(ANALOG8_BIT))
-#define ANALOG8 73
+#define ANALOG8 75
 #define ANALOG8_APB2EN (__rccapb2gpioen__(ANALOG8_PORT))
 #define ANALOG8_GPIO (__gpio__(ANALOG8_PORT))
 #if (ANALOG8_BIT < 8)
@@ -1468,16 +1506,16 @@
 #define ANALOG8_CROFF ANALOG8_BIT - 8
 #define ANALOG8_CR CRH
 #endif
-#define DIO73 73
-#define DIO73_PORT ANALOG8_PORT
-#define DIO73_BIT ANALOG8_BIT
-#define DIO73_APB2EN ANALOG8_APB2EN
-#define DIO73_GPIO ANALOG8_GPIO
-#define DIO73_CR ANALOG8_CR
-#define DIO73_CROFF ANALOG8_CROFF
+#define DIO75 75
+#define DIO75_PORT ANALOG8_PORT
+#define DIO75_BIT ANALOG8_BIT
+#define DIO75_APB2EN ANALOG8_APB2EN
+#define DIO75_GPIO ANALOG8_GPIO
+#define DIO75_CR ANALOG8_CR
+#define DIO75_CROFF ANALOG8_CROFF
 #endif
 #if (defined(ANALOG9_PORT) && defined(ANALOG9_BIT))
-#define ANALOG9 74
+#define ANALOG9 76
 #define ANALOG9_APB2EN (__rccapb2gpioen__(ANALOG9_PORT))
 #define ANALOG9_GPIO (__gpio__(ANALOG9_PORT))
 #if (ANALOG9_BIT < 8)
@@ -1487,16 +1525,16 @@
 #define ANALOG9_CROFF ANALOG9_BIT - 8
 #define ANALOG9_CR CRH
 #endif
-#define DIO74 74
-#define DIO74_PORT ANALOG9_PORT
-#define DIO74_BIT ANALOG9_BIT
-#define DIO74_APB2EN ANALOG9_APB2EN
-#define DIO74_GPIO ANALOG9_GPIO
-#define DIO74_CR ANALOG9_CR
-#define DIO74_CROFF ANALOG9_CROFF
+#define DIO76 76
+#define DIO76_PORT ANALOG9_PORT
+#define DIO76_BIT ANALOG9_BIT
+#define DIO76_APB2EN ANALOG9_APB2EN
+#define DIO76_GPIO ANALOG9_GPIO
+#define DIO76_CR ANALOG9_CR
+#define DIO76_CROFF ANALOG9_CROFF
 #endif
 #if (defined(ANALOG10_PORT) && defined(ANALOG10_BIT))
-#define ANALOG10 75
+#define ANALOG10 77
 #define ANALOG10_APB2EN (__rccapb2gpioen__(ANALOG10_PORT))
 #define ANALOG10_GPIO (__gpio__(ANALOG10_PORT))
 #if (ANALOG10_BIT < 8)
@@ -1506,16 +1544,16 @@
 #define ANALOG10_CROFF ANALOG10_BIT - 8
 #define ANALOG10_CR CRH
 #endif
-#define DIO75 75
-#define DIO75_PORT ANALOG10_PORT
-#define DIO75_BIT ANALOG10_BIT
-#define DIO75_APB2EN ANALOG10_APB2EN
-#define DIO75_GPIO ANALOG10_GPIO
-#define DIO75_CR ANALOG10_CR
-#define DIO75_CROFF ANALOG10_CROFF
+#define DIO77 77
+#define DIO77_PORT ANALOG10_PORT
+#define DIO77_BIT ANALOG10_BIT
+#define DIO77_APB2EN ANALOG10_APB2EN
+#define DIO77_GPIO ANALOG10_GPIO
+#define DIO77_CR ANALOG10_CR
+#define DIO77_CROFF ANALOG10_CROFF
 #endif
 #if (defined(ANALOG11_PORT) && defined(ANALOG11_BIT))
-#define ANALOG11 76
+#define ANALOG11 78
 #define ANALOG11_APB2EN (__rccapb2gpioen__(ANALOG11_PORT))
 #define ANALOG11_GPIO (__gpio__(ANALOG11_PORT))
 #if (ANALOG11_BIT < 8)
@@ -1525,16 +1563,16 @@
 #define ANALOG11_CROFF ANALOG11_BIT - 8
 #define ANALOG11_CR CRH
 #endif
-#define DIO76 76
-#define DIO76_PORT ANALOG11_PORT
-#define DIO76_BIT ANALOG11_BIT
-#define DIO76_APB2EN ANALOG11_APB2EN
-#define DIO76_GPIO ANALOG11_GPIO
-#define DIO76_CR ANALOG11_CR
-#define DIO76_CROFF ANALOG11_CROFF
+#define DIO78 78
+#define DIO78_PORT ANALOG11_PORT
+#define DIO78_BIT ANALOG11_BIT
+#define DIO78_APB2EN ANALOG11_APB2EN
+#define DIO78_GPIO ANALOG11_GPIO
+#define DIO78_CR ANALOG11_CR
+#define DIO78_CROFF ANALOG11_CROFF
 #endif
 #if (defined(ANALOG12_PORT) && defined(ANALOG12_BIT))
-#define ANALOG12 77
+#define ANALOG12 79
 #define ANALOG12_APB2EN (__rccapb2gpioen__(ANALOG12_PORT))
 #define ANALOG12_GPIO (__gpio__(ANALOG12_PORT))
 #if (ANALOG12_BIT < 8)
@@ -1544,16 +1582,16 @@
 #define ANALOG12_CROFF ANALOG12_BIT - 8
 #define ANALOG12_CR CRH
 #endif
-#define DIO77 77
-#define DIO77_PORT ANALOG12_PORT
-#define DIO77_BIT ANALOG12_BIT
-#define DIO77_APB2EN ANALOG12_APB2EN
-#define DIO77_GPIO ANALOG12_GPIO
-#define DIO77_CR ANALOG12_CR
-#define DIO77_CROFF ANALOG12_CROFF
+#define DIO79 79
+#define DIO79_PORT ANALOG12_PORT
+#define DIO79_BIT ANALOG12_BIT
+#define DIO79_APB2EN ANALOG12_APB2EN
+#define DIO79_GPIO ANALOG12_GPIO
+#define DIO79_CR ANALOG12_CR
+#define DIO79_CROFF ANALOG12_CROFF
 #endif
 #if (defined(ANALOG13_PORT) && defined(ANALOG13_BIT))
-#define ANALOG13 78
+#define ANALOG13 80
 #define ANALOG13_APB2EN (__rccapb2gpioen__(ANALOG13_PORT))
 #define ANALOG13_GPIO (__gpio__(ANALOG13_PORT))
 #if (ANALOG13_BIT < 8)
@@ -1563,16 +1601,16 @@
 #define ANALOG13_CROFF ANALOG13_BIT - 8
 #define ANALOG13_CR CRH
 #endif
-#define DIO78 78
-#define DIO78_PORT ANALOG13_PORT
-#define DIO78_BIT ANALOG13_BIT
-#define DIO78_APB2EN ANALOG13_APB2EN
-#define DIO78_GPIO ANALOG13_GPIO
-#define DIO78_CR ANALOG13_CR
-#define DIO78_CROFF ANALOG13_CROFF
+#define DIO80 80
+#define DIO80_PORT ANALOG13_PORT
+#define DIO80_BIT ANALOG13_BIT
+#define DIO80_APB2EN ANALOG13_APB2EN
+#define DIO80_GPIO ANALOG13_GPIO
+#define DIO80_CR ANALOG13_CR
+#define DIO80_CROFF ANALOG13_CROFF
 #endif
 #if (defined(ANALOG14_PORT) && defined(ANALOG14_BIT))
-#define ANALOG14 79
+#define ANALOG14 81
 #define ANALOG14_APB2EN (__rccapb2gpioen__(ANALOG14_PORT))
 #define ANALOG14_GPIO (__gpio__(ANALOG14_PORT))
 #if (ANALOG14_BIT < 8)
@@ -1582,16 +1620,16 @@
 #define ANALOG14_CROFF ANALOG14_BIT - 8
 #define ANALOG14_CR CRH
 #endif
-#define DIO79 79
-#define DIO79_PORT ANALOG14_PORT
-#define DIO79_BIT ANALOG14_BIT
-#define DIO79_APB2EN ANALOG14_APB2EN
-#define DIO79_GPIO ANALOG14_GPIO
-#define DIO79_CR ANALOG14_CR
-#define DIO79_CROFF ANALOG14_CROFF
+#define DIO81 81
+#define DIO81_PORT ANALOG14_PORT
+#define DIO81_BIT ANALOG14_BIT
+#define DIO81_APB2EN ANALOG14_APB2EN
+#define DIO81_GPIO ANALOG14_GPIO
+#define DIO81_CR ANALOG14_CR
+#define DIO81_CROFF ANALOG14_CROFF
 #endif
 #if (defined(ANALOG15_PORT) && defined(ANALOG15_BIT))
-#define ANALOG15 80
+#define ANALOG15 82
 #define ANALOG15_APB2EN (__rccapb2gpioen__(ANALOG15_PORT))
 #define ANALOG15_GPIO (__gpio__(ANALOG15_PORT))
 #if (ANALOG15_BIT < 8)
@@ -1601,16 +1639,16 @@
 #define ANALOG15_CROFF ANALOG15_BIT - 8
 #define ANALOG15_CR CRH
 #endif
-#define DIO80 80
-#define DIO80_PORT ANALOG15_PORT
-#define DIO80_BIT ANALOG15_BIT
-#define DIO80_APB2EN ANALOG15_APB2EN
-#define DIO80_GPIO ANALOG15_GPIO
-#define DIO80_CR ANALOG15_CR
-#define DIO80_CROFF ANALOG15_CROFF
+#define DIO82 82
+#define DIO82_PORT ANALOG15_PORT
+#define DIO82_BIT ANALOG15_BIT
+#define DIO82_APB2EN ANALOG15_APB2EN
+#define DIO82_GPIO ANALOG15_GPIO
+#define DIO82_CR ANALOG15_CR
+#define DIO82_CROFF ANALOG15_CROFF
 #endif
 #if (defined(RX_PORT) && defined(RX_BIT))
-#define RX 81
+#define RX 83
 #define RX_APB2EN (__rccapb2gpioen__(RX_PORT))
 #define RX_GPIO (__gpio__(RX_PORT))
 #if (RX_BIT < 8)
@@ -1620,16 +1658,16 @@
 #define RX_CROFF RX_BIT - 8
 #define RX_CR CRH
 #endif
-#define DIO81 81
-#define DIO81_PORT RX_PORT
-#define DIO81_BIT RX_BIT
-#define DIO81_APB2EN RX_APB2EN
-#define DIO81_GPIO RX_GPIO
-#define DIO81_CR RX_CR
-#define DIO81_CROFF RX_CROFF
+#define DIO83 83
+#define DIO83_PORT RX_PORT
+#define DIO83_BIT RX_BIT
+#define DIO83_APB2EN RX_APB2EN
+#define DIO83_GPIO RX_GPIO
+#define DIO83_CR RX_CR
+#define DIO83_CROFF RX_CROFF
 #endif
 #if (defined(DIN0_PORT) && defined(DIN0_BIT))
-#define DIN0 82
+#define DIN0 84
 #define DIN0_APB2EN (__rccapb2gpioen__(DIN0_PORT))
 #define DIN0_GPIO (__gpio__(DIN0_PORT))
 #if (DIN0_BIT < 8)
@@ -1639,16 +1677,16 @@
 #define DIN0_CROFF DIN0_BIT - 8
 #define DIN0_CR CRH
 #endif
-#define DIO82 82
-#define DIO82_PORT DIN0_PORT
-#define DIO82_BIT DIN0_BIT
-#define DIO82_APB2EN DIN0_APB2EN
-#define DIO82_GPIO DIN0_GPIO
-#define DIO82_CR DIN0_CR
-#define DIO82_CROFF DIN0_CROFF
+#define DIO84 84
+#define DIO84_PORT DIN0_PORT
+#define DIO84_BIT DIN0_BIT
+#define DIO84_APB2EN DIN0_APB2EN
+#define DIO84_GPIO DIN0_GPIO
+#define DIO84_CR DIN0_CR
+#define DIO84_CROFF DIN0_CROFF
 #endif
 #if (defined(DIN1_PORT) && defined(DIN1_BIT))
-#define DIN1 83
+#define DIN1 85
 #define DIN1_APB2EN (__rccapb2gpioen__(DIN1_PORT))
 #define DIN1_GPIO (__gpio__(DIN1_PORT))
 #if (DIN1_BIT < 8)
@@ -1658,16 +1696,16 @@
 #define DIN1_CROFF DIN1_BIT - 8
 #define DIN1_CR CRH
 #endif
-#define DIO83 83
-#define DIO83_PORT DIN1_PORT
-#define DIO83_BIT DIN1_BIT
-#define DIO83_APB2EN DIN1_APB2EN
-#define DIO83_GPIO DIN1_GPIO
-#define DIO83_CR DIN1_CR
-#define DIO83_CROFF DIN1_CROFF
+#define DIO85 85
+#define DIO85_PORT DIN1_PORT
+#define DIO85_BIT DIN1_BIT
+#define DIO85_APB2EN DIN1_APB2EN
+#define DIO85_GPIO DIN1_GPIO
+#define DIO85_CR DIN1_CR
+#define DIO85_CROFF DIN1_CROFF
 #endif
 #if (defined(DIN2_PORT) && defined(DIN2_BIT))
-#define DIN2 84
+#define DIN2 86
 #define DIN2_APB2EN (__rccapb2gpioen__(DIN2_PORT))
 #define DIN2_GPIO (__gpio__(DIN2_PORT))
 #if (DIN2_BIT < 8)
@@ -1677,16 +1715,16 @@
 #define DIN2_CROFF DIN2_BIT - 8
 #define DIN2_CR CRH
 #endif
-#define DIO84 84
-#define DIO84_PORT DIN2_PORT
-#define DIO84_BIT DIN2_BIT
-#define DIO84_APB2EN DIN2_APB2EN
-#define DIO84_GPIO DIN2_GPIO
-#define DIO84_CR DIN2_CR
-#define DIO84_CROFF DIN2_CROFF
+#define DIO86 86
+#define DIO86_PORT DIN2_PORT
+#define DIO86_BIT DIN2_BIT
+#define DIO86_APB2EN DIN2_APB2EN
+#define DIO86_GPIO DIN2_GPIO
+#define DIO86_CR DIN2_CR
+#define DIO86_CROFF DIN2_CROFF
 #endif
 #if (defined(DIN3_PORT) && defined(DIN3_BIT))
-#define DIN3 85
+#define DIN3 87
 #define DIN3_APB2EN (__rccapb2gpioen__(DIN3_PORT))
 #define DIN3_GPIO (__gpio__(DIN3_PORT))
 #if (DIN3_BIT < 8)
@@ -1696,16 +1734,16 @@
 #define DIN3_CROFF DIN3_BIT - 8
 #define DIN3_CR CRH
 #endif
-#define DIO85 85
-#define DIO85_PORT DIN3_PORT
-#define DIO85_BIT DIN3_BIT
-#define DIO85_APB2EN DIN3_APB2EN
-#define DIO85_GPIO DIN3_GPIO
-#define DIO85_CR DIN3_CR
-#define DIO85_CROFF DIN3_CROFF
+#define DIO87 87
+#define DIO87_PORT DIN3_PORT
+#define DIO87_BIT DIN3_BIT
+#define DIO87_APB2EN DIN3_APB2EN
+#define DIO87_GPIO DIN3_GPIO
+#define DIO87_CR DIN3_CR
+#define DIO87_CROFF DIN3_CROFF
 #endif
 #if (defined(DIN4_PORT) && defined(DIN4_BIT))
-#define DIN4 86
+#define DIN4 88
 #define DIN4_APB2EN (__rccapb2gpioen__(DIN4_PORT))
 #define DIN4_GPIO (__gpio__(DIN4_PORT))
 #if (DIN4_BIT < 8)
@@ -1715,16 +1753,16 @@
 #define DIN4_CROFF DIN4_BIT - 8
 #define DIN4_CR CRH
 #endif
-#define DIO86 86
-#define DIO86_PORT DIN4_PORT
-#define DIO86_BIT DIN4_BIT
-#define DIO86_APB2EN DIN4_APB2EN
-#define DIO86_GPIO DIN4_GPIO
-#define DIO86_CR DIN4_CR
-#define DIO86_CROFF DIN4_CROFF
+#define DIO88 88
+#define DIO88_PORT DIN4_PORT
+#define DIO88_BIT DIN4_BIT
+#define DIO88_APB2EN DIN4_APB2EN
+#define DIO88_GPIO DIN4_GPIO
+#define DIO88_CR DIN4_CR
+#define DIO88_CROFF DIN4_CROFF
 #endif
 #if (defined(DIN5_PORT) && defined(DIN5_BIT))
-#define DIN5 87
+#define DIN5 89
 #define DIN5_APB2EN (__rccapb2gpioen__(DIN5_PORT))
 #define DIN5_GPIO (__gpio__(DIN5_PORT))
 #if (DIN5_BIT < 8)
@@ -1734,16 +1772,16 @@
 #define DIN5_CROFF DIN5_BIT - 8
 #define DIN5_CR CRH
 #endif
-#define DIO87 87
-#define DIO87_PORT DIN5_PORT
-#define DIO87_BIT DIN5_BIT
-#define DIO87_APB2EN DIN5_APB2EN
-#define DIO87_GPIO DIN5_GPIO
-#define DIO87_CR DIN5_CR
-#define DIO87_CROFF DIN5_CROFF
+#define DIO89 89
+#define DIO89_PORT DIN5_PORT
+#define DIO89_BIT DIN5_BIT
+#define DIO89_APB2EN DIN5_APB2EN
+#define DIO89_GPIO DIN5_GPIO
+#define DIO89_CR DIN5_CR
+#define DIO89_CROFF DIN5_CROFF
 #endif
 #if (defined(DIN6_PORT) && defined(DIN6_BIT))
-#define DIN6 88
+#define DIN6 90
 #define DIN6_APB2EN (__rccapb2gpioen__(DIN6_PORT))
 #define DIN6_GPIO (__gpio__(DIN6_PORT))
 #if (DIN6_BIT < 8)
@@ -1753,16 +1791,16 @@
 #define DIN6_CROFF DIN6_BIT - 8
 #define DIN6_CR CRH
 #endif
-#define DIO88 88
-#define DIO88_PORT DIN6_PORT
-#define DIO88_BIT DIN6_BIT
-#define DIO88_APB2EN DIN6_APB2EN
-#define DIO88_GPIO DIN6_GPIO
-#define DIO88_CR DIN6_CR
-#define DIO88_CROFF DIN6_CROFF
+#define DIO90 90
+#define DIO90_PORT DIN6_PORT
+#define DIO90_BIT DIN6_BIT
+#define DIO90_APB2EN DIN6_APB2EN
+#define DIO90_GPIO DIN6_GPIO
+#define DIO90_CR DIN6_CR
+#define DIO90_CROFF DIN6_CROFF
 #endif
 #if (defined(DIN7_PORT) && defined(DIN7_BIT))
-#define DIN7 89
+#define DIN7 91
 #define DIN7_APB2EN (__rccapb2gpioen__(DIN7_PORT))
 #define DIN7_GPIO (__gpio__(DIN7_PORT))
 #if (DIN7_BIT < 8)
@@ -1772,16 +1810,16 @@
 #define DIN7_CROFF DIN7_BIT - 8
 #define DIN7_CR CRH
 #endif
-#define DIO89 89
-#define DIO89_PORT DIN7_PORT
-#define DIO89_BIT DIN7_BIT
-#define DIO89_APB2EN DIN7_APB2EN
-#define DIO89_GPIO DIN7_GPIO
-#define DIO89_CR DIN7_CR
-#define DIO89_CROFF DIN7_CROFF
+#define DIO91 91
+#define DIO91_PORT DIN7_PORT
+#define DIO91_BIT DIN7_BIT
+#define DIO91_APB2EN DIN7_APB2EN
+#define DIO91_GPIO DIN7_GPIO
+#define DIO91_CR DIN7_CR
+#define DIO91_CROFF DIN7_CROFF
 #endif
 #if (defined(DIN8_PORT) && defined(DIN8_BIT))
-#define DIN8 90
+#define DIN8 92
 #define DIN8_APB2EN (__rccapb2gpioen__(DIN8_PORT))
 #define DIN8_GPIO (__gpio__(DIN8_PORT))
 #if (DIN8_BIT < 8)
@@ -1791,16 +1829,16 @@
 #define DIN8_CROFF DIN8_BIT - 8
 #define DIN8_CR CRH
 #endif
-#define DIO90 90
-#define DIO90_PORT DIN8_PORT
-#define DIO90_BIT DIN8_BIT
-#define DIO90_APB2EN DIN8_APB2EN
-#define DIO90_GPIO DIN8_GPIO
-#define DIO90_CR DIN8_CR
-#define DIO90_CROFF DIN8_CROFF
+#define DIO92 92
+#define DIO92_PORT DIN8_PORT
+#define DIO92_BIT DIN8_BIT
+#define DIO92_APB2EN DIN8_APB2EN
+#define DIO92_GPIO DIN8_GPIO
+#define DIO92_CR DIN8_CR
+#define DIO92_CROFF DIN8_CROFF
 #endif
 #if (defined(DIN9_PORT) && defined(DIN9_BIT))
-#define DIN9 91
+#define DIN9 93
 #define DIN9_APB2EN (__rccapb2gpioen__(DIN9_PORT))
 #define DIN9_GPIO (__gpio__(DIN9_PORT))
 #if (DIN9_BIT < 8)
@@ -1810,16 +1848,16 @@
 #define DIN9_CROFF DIN9_BIT - 8
 #define DIN9_CR CRH
 #endif
-#define DIO91 91
-#define DIO91_PORT DIN9_PORT
-#define DIO91_BIT DIN9_BIT
-#define DIO91_APB2EN DIN9_APB2EN
-#define DIO91_GPIO DIN9_GPIO
-#define DIO91_CR DIN9_CR
-#define DIO91_CROFF DIN9_CROFF
+#define DIO93 93
+#define DIO93_PORT DIN9_PORT
+#define DIO93_BIT DIN9_BIT
+#define DIO93_APB2EN DIN9_APB2EN
+#define DIO93_GPIO DIN9_GPIO
+#define DIO93_CR DIN9_CR
+#define DIO93_CROFF DIN9_CROFF
 #endif
 #if (defined(DIN10_PORT) && defined(DIN10_BIT))
-#define DIN10 92
+#define DIN10 94
 #define DIN10_APB2EN (__rccapb2gpioen__(DIN10_PORT))
 #define DIN10_GPIO (__gpio__(DIN10_PORT))
 #if (DIN10_BIT < 8)
@@ -1829,16 +1867,16 @@
 #define DIN10_CROFF DIN10_BIT - 8
 #define DIN10_CR CRH
 #endif
-#define DIO92 92
-#define DIO92_PORT DIN10_PORT
-#define DIO92_BIT DIN10_BIT
-#define DIO92_APB2EN DIN10_APB2EN
-#define DIO92_GPIO DIN10_GPIO
-#define DIO92_CR DIN10_CR
-#define DIO92_CROFF DIN10_CROFF
+#define DIO94 94
+#define DIO94_PORT DIN10_PORT
+#define DIO94_BIT DIN10_BIT
+#define DIO94_APB2EN DIN10_APB2EN
+#define DIO94_GPIO DIN10_GPIO
+#define DIO94_CR DIN10_CR
+#define DIO94_CROFF DIN10_CROFF
 #endif
 #if (defined(DIN11_PORT) && defined(DIN11_BIT))
-#define DIN11 93
+#define DIN11 95
 #define DIN11_APB2EN (__rccapb2gpioen__(DIN11_PORT))
 #define DIN11_GPIO (__gpio__(DIN11_PORT))
 #if (DIN11_BIT < 8)
@@ -1848,16 +1886,16 @@
 #define DIN11_CROFF DIN11_BIT - 8
 #define DIN11_CR CRH
 #endif
-#define DIO93 93
-#define DIO93_PORT DIN11_PORT
-#define DIO93_BIT DIN11_BIT
-#define DIO93_APB2EN DIN11_APB2EN
-#define DIO93_GPIO DIN11_GPIO
-#define DIO93_CR DIN11_CR
-#define DIO93_CROFF DIN11_CROFF
+#define DIO95 95
+#define DIO95_PORT DIN11_PORT
+#define DIO95_BIT DIN11_BIT
+#define DIO95_APB2EN DIN11_APB2EN
+#define DIO95_GPIO DIN11_GPIO
+#define DIO95_CR DIN11_CR
+#define DIO95_CROFF DIN11_CROFF
 #endif
 #if (defined(DIN12_PORT) && defined(DIN12_BIT))
-#define DIN12 94
+#define DIN12 96
 #define DIN12_APB2EN (__rccapb2gpioen__(DIN12_PORT))
 #define DIN12_GPIO (__gpio__(DIN12_PORT))
 #if (DIN12_BIT < 8)
@@ -1867,16 +1905,16 @@
 #define DIN12_CROFF DIN12_BIT - 8
 #define DIN12_CR CRH
 #endif
-#define DIO94 94
-#define DIO94_PORT DIN12_PORT
-#define DIO94_BIT DIN12_BIT
-#define DIO94_APB2EN DIN12_APB2EN
-#define DIO94_GPIO DIN12_GPIO
-#define DIO94_CR DIN12_CR
-#define DIO94_CROFF DIN12_CROFF
+#define DIO96 96
+#define DIO96_PORT DIN12_PORT
+#define DIO96_BIT DIN12_BIT
+#define DIO96_APB2EN DIN12_APB2EN
+#define DIO96_GPIO DIN12_GPIO
+#define DIO96_CR DIN12_CR
+#define DIO96_CROFF DIN12_CROFF
 #endif
 #if (defined(DIN13_PORT) && defined(DIN13_BIT))
-#define DIN13 95
+#define DIN13 97
 #define DIN13_APB2EN (__rccapb2gpioen__(DIN13_PORT))
 #define DIN13_GPIO (__gpio__(DIN13_PORT))
 #if (DIN13_BIT < 8)
@@ -1886,16 +1924,16 @@
 #define DIN13_CROFF DIN13_BIT - 8
 #define DIN13_CR CRH
 #endif
-#define DIO95 95
-#define DIO95_PORT DIN13_PORT
-#define DIO95_BIT DIN13_BIT
-#define DIO95_APB2EN DIN13_APB2EN
-#define DIO95_GPIO DIN13_GPIO
-#define DIO95_CR DIN13_CR
-#define DIO95_CROFF DIN13_CROFF
+#define DIO97 97
+#define DIO97_PORT DIN13_PORT
+#define DIO97_BIT DIN13_BIT
+#define DIO97_APB2EN DIN13_APB2EN
+#define DIO97_GPIO DIN13_GPIO
+#define DIO97_CR DIN13_CR
+#define DIO97_CROFF DIN13_CROFF
 #endif
 #if (defined(DIN14_PORT) && defined(DIN14_BIT))
-#define DIN14 96
+#define DIN14 98
 #define DIN14_APB2EN (__rccapb2gpioen__(DIN14_PORT))
 #define DIN14_GPIO (__gpio__(DIN14_PORT))
 #if (DIN14_BIT < 8)
@@ -1905,16 +1943,16 @@
 #define DIN14_CROFF DIN14_BIT - 8
 #define DIN14_CR CRH
 #endif
-#define DIO96 96
-#define DIO96_PORT DIN14_PORT
-#define DIO96_BIT DIN14_BIT
-#define DIO96_APB2EN DIN14_APB2EN
-#define DIO96_GPIO DIN14_GPIO
-#define DIO96_CR DIN14_CR
-#define DIO96_CROFF DIN14_CROFF
+#define DIO98 98
+#define DIO98_PORT DIN14_PORT
+#define DIO98_BIT DIN14_BIT
+#define DIO98_APB2EN DIN14_APB2EN
+#define DIO98_GPIO DIN14_GPIO
+#define DIO98_CR DIN14_CR
+#define DIO98_CROFF DIN14_CROFF
 #endif
 #if (defined(DIN15_PORT) && defined(DIN15_BIT))
-#define DIN15 97
+#define DIN15 99
 #define DIN15_APB2EN (__rccapb2gpioen__(DIN15_PORT))
 #define DIN15_GPIO (__gpio__(DIN15_PORT))
 #if (DIN15_BIT < 8)
@@ -1924,13 +1962,13 @@
 #define DIN15_CROFF DIN15_BIT - 8
 #define DIN15_CR CRH
 #endif
-#define DIO97 97
-#define DIO97_PORT DIN15_PORT
-#define DIO97_BIT DIN15_BIT
-#define DIO97_APB2EN DIN15_APB2EN
-#define DIO97_GPIO DIN15_GPIO
-#define DIO97_CR DIN15_CR
-#define DIO97_CROFF DIN15_CROFF
+#define DIO99 99
+#define DIO99_PORT DIN15_PORT
+#define DIO99_BIT DIN15_BIT
+#define DIO99_APB2EN DIN15_APB2EN
+#define DIO99_GPIO DIN15_GPIO
+#define DIO99_CR DIN15_CR
+#define DIO99_CROFF DIN15_CROFF
 #endif
 
 /**********************************************
@@ -2887,8 +2925,14 @@
 **********************************************/
 
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
+#if (PWM0_TIMER==1 || (PWM0_TIMER>=8 & PWM0_TIMER<=11))
+#define PWM0_ENREG RCC->APB2ENR
+#define PWM0_APBEN __helper__(RCC_APB2ENR_TIM,PWM0_TIMER, EN)
+#else
+#define PWM0_ENREG RCC->APB1ENR
+#define PWM0_APBEN __helper__(RCC_APB1ENR_TIM,PWM0_TIMER, EN)
+#endif
 #define PWM0_TIMREG (__tim__(PWM0_TIMER))
-#define PWM0_APB1EN (__rccapb1timen__(PWM0_TIMER))
 #ifndef PWM0_FREQ
 #define PWM0_FREQ 1000
 #endif
@@ -2903,15 +2947,18 @@
 #define PWM0_CCMREG CCMR1
 #endif
 #define PWM0_CCR __ccr__(PWM0_CHANNEL)
-#define DIO18_TIMER PWM0_TIMER
-#define DIO18_CHANNEL PWM0_CHANNEL
-#define DIO18_TIMREG PWM0_TIMREG
-#define DIO18_APB1EN PWM0_APB1EN
-#define DIO18_FREQ PWM0_FREQ
-#define DIO18_MODE PWM0_MODE
-#define DIO18_CCMREG PWM0_CCMREG
-#define DIO18_CCR PWM0_CCR
+#define DIO20_TIMER PWM0_TIMER
+#define DIO20_CHANNEL PWM0_CHANNEL
+#define DIO20_ENREG PWM0_ENREG
+#define DIO20_APBEN PWM0_APBEN
+#define DIO20_TIMREG PWM0_TIMREG
+#define DIO20_APBEN PWM0_APBEN
+#define DIO20_FREQ PWM0_FREQ
+#define DIO20_MODE PWM0_MODE
+#define DIO20_CCMREG PWM0_CCMREG
+#define DIO20_CCR PWM0_CCR
 #endif
+
 #if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
 #define PWM1_TIMREG (__tim__(PWM1_TIMER))
 #define PWM1_APB1EN (__rccapb1timen__(PWM1_TIMER))

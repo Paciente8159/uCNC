@@ -44,16 +44,10 @@
 //Setup limit pins
 #define LIMIT_Z_BIT 14 //assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B //assigns LIMIT_Z port
-//#define LIMIT_Z_ISR	   //enables LIMIT_Z ISR
-//#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
-//#define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-//#define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
 #define LIMIT_Y_BIT 13 //assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B //assigns LIMIT_Y port
-//#define LIMIT_Y_ISR 0 //assigns LIMIT_Y ISR
 #define LIMIT_X_BIT 12 //assigns LIMIT_X pin
 #define LIMIT_X_PORT B //assigns LIMIT_X port
-//#define LIMIT_X_ISR    //enables LIMIT_X ISR
 
 //Active limits switch weak pull-ups
 #define LIMIT_X_PULLUP
@@ -94,16 +88,16 @@
 //#define RX_PORT A
 
 //Setup PWM
-//#define PWM0_BIT 0	//assigns PWM0 pin
-//#define PWM0_PORT A //assigns PWM0 pin
-//#define PWM0_CHANNEL 1
-//#define PWM0_TIMER 2
-/*
+#define PWM0_BIT 8	//assigns PWM0 pin
+#define PWM0_PORT A //assigns PWM0 pin
+#define PWM0_CHANNEL 1
+#define PWM0_TIMER 1
+
 //Setup generic IO Pins
 //Functionalities are set in config.h file
-#define DOUT0_BIT 5
+#define DOUT0_BIT 0
 #define DOUT0_PORT B
-#define DOUT1_BIT 0
+/*#define DOUT1_BIT 0
 #define DOUT1_PORT B
 #define DOUT2_BIT 3
 #define DOUT2_PORT C
@@ -119,8 +113,8 @@
 #define TIMER_NUMBER 2
 
 //in this case include de mcumap file to generate the definition do DOUT15 and assign to LED
-#include "mcumap_stm32f10x.h"
-
 #define LED DOUT15
+
+#include "mcumap_stm32f10x.h"
 
 #endif
