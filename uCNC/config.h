@@ -76,7 +76,7 @@
 	Spindle configurations.
 	Uncomment to enable
 */
-//#define USE_SPINDLE
+#define USE_SPINDLE
 #ifdef USE_SPINDLE
 //set PWM channel to use (valid values 0 - 3)
 #define SPINDLE_PWM PWM0

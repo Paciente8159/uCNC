@@ -53,18 +53,21 @@ extern void itp_step_reset_isr(void);
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= ~(GPIO_IN_PP << ((__indirect__(diopin, CROFF)) << 2U));    \
 		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                              \
 	}
-#define mcu_config_pwm(diopin)                                                                                                   \
-	{                                                                                                                            \
-		RCC->APB2ENR |= 0x1U;                                                                                                    \
-		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+#define mcu_config_pwm(diopin)                                                                                                  \
+	{                                                                                                                           \
+		RCC->APB2ENR |= 0x1U;                                                                                                   \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                             \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));         \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_2MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ));                                  \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)(__indirect__(diopin, TIMREG)->ARR >> 1U);           \
-		__indirect__(diopin, TIMREG)->CCER |= (1U << (__indirect__(diopin, CHANNEL) - 1));                                       \
-		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                  \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                  \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                            \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                               \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                        \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                             \
+		__indirect__(diopin, ENOUTPUT);                                                                                       \
 	}
 
 #define mcu_config_input_isr(diopin)                                                                                      \
