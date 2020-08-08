@@ -78,7 +78,7 @@
 #define STEP0_CROFF STEP0_BIT
 #define STEP0_CR CRL
 #else
-#define STEP0_CROFF STEP0_BIT - 8
+#define STEP0_CROFF (STEP0_BIT&0x03)
 #define STEP0_CR CRH
 #endif
 #define DIO0 0
@@ -97,7 +97,7 @@
 #define STEP1_CROFF STEP1_BIT
 #define STEP1_CR CRL
 #else
-#define STEP1_CROFF STEP1_BIT - 8
+#define STEP1_CROFF (STEP1_BIT&0x03)
 #define STEP1_CR CRH
 #endif
 #define DIO1 1
@@ -116,7 +116,7 @@
 #define STEP2_CROFF STEP2_BIT
 #define STEP2_CR CRL
 #else
-#define STEP2_CROFF STEP2_BIT - 8
+#define STEP2_CROFF (STEP2_BIT&0x03)
 #define STEP2_CR CRH
 #endif
 #define DIO2 2
@@ -135,7 +135,7 @@
 #define STEP3_CROFF STEP3_BIT
 #define STEP3_CR CRL
 #else
-#define STEP3_CROFF STEP3_BIT - 8
+#define STEP3_CROFF (STEP3_BIT&0x03)
 #define STEP3_CR CRH
 #endif
 #define DIO3 3
@@ -154,7 +154,7 @@
 #define STEP4_CROFF STEP4_BIT
 #define STEP4_CR CRL
 #else
-#define STEP4_CROFF STEP4_BIT - 8
+#define STEP4_CROFF (STEP4_BIT&0x03)
 #define STEP4_CR CRH
 #endif
 #define DIO4 4
@@ -173,7 +173,7 @@
 #define STEP5_CROFF STEP5_BIT
 #define STEP5_CR CRL
 #else
-#define STEP5_CROFF STEP5_BIT - 8
+#define STEP5_CROFF (STEP5_BIT&0x03)
 #define STEP5_CR CRH
 #endif
 #define DIO5 5
@@ -192,7 +192,7 @@
 #define STEP6_CROFF STEP6_BIT
 #define STEP6_CR CRL
 #else
-#define STEP6_CROFF STEP6_BIT - 8
+#define STEP6_CROFF (STEP6_BIT&0x03)
 #define STEP6_CR CRH
 #endif
 #define DIO6 6
@@ -211,7 +211,7 @@
 #define STEP7_CROFF STEP7_BIT
 #define STEP7_CR CRL
 #else
-#define STEP7_CROFF STEP7_BIT - 8
+#define STEP7_CROFF (STEP7_BIT&0x03)
 #define STEP7_CR CRH
 #endif
 #define DIO7 7
@@ -230,7 +230,7 @@
 #define STEP0_EN_CROFF STEP0_EN_BIT
 #define STEP0_EN_CR CRL
 #else
-#define STEP0_EN_CROFF STEP0_EN_BIT - 8
+#define STEP0_EN_CROFF (STEP0_EN_BIT&0x03)
 #define STEP0_EN_CR CRH
 #endif
 #define DIO8 8
@@ -249,7 +249,7 @@
 #define STEP1_EN_CROFF STEP1_EN_BIT
 #define STEP1_EN_CR CRL
 #else
-#define STEP1_EN_CROFF STEP1_EN_BIT - 8
+#define STEP1_EN_CROFF (STEP1_EN_BIT&0x03)
 #define STEP1_EN_CR CRH
 #endif
 #define DIO9 9
@@ -268,7 +268,7 @@
 #define STEP2_EN_CROFF STEP2_EN_BIT
 #define STEP2_EN_CR CRL
 #else
-#define STEP2_EN_CROFF STEP2_EN_BIT - 8
+#define STEP2_EN_CROFF (STEP2_EN_BIT&0x03)
 #define STEP2_EN_CR CRH
 #endif
 #define DIO10 10
@@ -287,7 +287,7 @@
 #define STEP3_EN_CROFF STEP3_EN_BIT
 #define STEP3_EN_CR CRL
 #else
-#define STEP3_EN_CROFF STEP3_EN_BIT - 8
+#define STEP3_EN_CROFF (STEP3_EN_BIT&0x03)
 #define STEP3_EN_CR CRH
 #endif
 #define DIO11 11
@@ -306,7 +306,7 @@
 #define STEP4_EN_CROFF STEP4_EN_BIT
 #define STEP4_EN_CR CRL
 #else
-#define STEP4_EN_CROFF STEP4_EN_BIT - 8
+#define STEP4_EN_CROFF (STEP4_EN_BIT&0x03)
 #define STEP4_EN_CR CRH
 #endif
 #define DIO12 12
@@ -325,7 +325,7 @@
 #define STEP5_EN_CROFF STEP5_EN_BIT
 #define STEP5_EN_CR CRL
 #else
-#define STEP5_EN_CROFF STEP5_EN_BIT - 8
+#define STEP5_EN_CROFF (STEP5_EN_BIT&0x03)
 #define STEP5_EN_CR CRH
 #endif
 #define DIO13 13
@@ -344,7 +344,7 @@
 #define DIR0_CROFF DIR0_BIT
 #define DIR0_CR CRL
 #else
-#define DIR0_CROFF DIR0_BIT - 8
+#define DIR0_CROFF (DIR0_BIT&0x03)
 #define DIR0_CR CRH
 #endif
 #define DIO14 14
@@ -363,7 +363,7 @@
 #define DIR1_CROFF DIR1_BIT
 #define DIR1_CR CRL
 #else
-#define DIR1_CROFF DIR1_BIT - 8
+#define DIR1_CROFF (DIR1_BIT&0x03)
 #define DIR1_CR CRH
 #endif
 #define DIO15 15
@@ -382,7 +382,7 @@
 #define DIR2_CROFF DIR2_BIT
 #define DIR2_CR CRL
 #else
-#define DIR2_CROFF DIR2_BIT - 8
+#define DIR2_CROFF (DIR2_BIT&0x03)
 #define DIR2_CR CRH
 #endif
 #define DIO16 16
@@ -401,7 +401,7 @@
 #define DIR3_CROFF DIR3_BIT
 #define DIR3_CR CRL
 #else
-#define DIR3_CROFF DIR3_BIT - 8
+#define DIR3_CROFF (DIR3_BIT&0x03)
 #define DIR3_CR CRH
 #endif
 #define DIO17 17
@@ -420,7 +420,7 @@
 #define DIR4_CROFF DIR4_BIT
 #define DIR4_CR CRL
 #else
-#define DIR4_CROFF DIR4_BIT - 8
+#define DIR4_CROFF (DIR4_BIT&0x03)
 #define DIR4_CR CRH
 #endif
 #define DIO18 18
@@ -439,7 +439,7 @@
 #define DIR5_CROFF DIR5_BIT
 #define DIR5_CR CRL
 #else
-#define DIR5_CROFF DIR5_BIT - 8
+#define DIR5_CROFF (DIR5_BIT&0x03)
 #define DIR5_CR CRH
 #endif
 #define DIO19 19
@@ -458,7 +458,7 @@
 #define PWM0_CROFF PWM0_BIT
 #define PWM0_CR CRL
 #else
-#define PWM0_CROFF PWM0_BIT - 8
+#define PWM0_CROFF (PWM0_BIT&0x03)
 #define PWM0_CR CRH
 #endif
 #define DIO20 20
@@ -477,7 +477,7 @@
 #define PWM1_CROFF PWM1_BIT
 #define PWM1_CR CRL
 #else
-#define PWM1_CROFF PWM1_BIT - 8
+#define PWM1_CROFF (PWM1_BIT&0x03)
 #define PWM1_CR CRH
 #endif
 #define DIO21 21
@@ -496,7 +496,7 @@
 #define PWM2_CROFF PWM2_BIT
 #define PWM2_CR CRL
 #else
-#define PWM2_CROFF PWM2_BIT - 8
+#define PWM2_CROFF (PWM2_BIT&0x03)
 #define PWM2_CR CRH
 #endif
 #define DIO22 22
@@ -515,7 +515,7 @@
 #define PWM3_CROFF PWM3_BIT
 #define PWM3_CR CRL
 #else
-#define PWM3_CROFF PWM3_BIT - 8
+#define PWM3_CROFF (PWM3_BIT&0x03)
 #define PWM3_CR CRH
 #endif
 #define DIO23 23
@@ -534,7 +534,7 @@
 #define PWM4_CROFF PWM4_BIT
 #define PWM4_CR CRL
 #else
-#define PWM4_CROFF PWM4_BIT - 8
+#define PWM4_CROFF (PWM4_BIT&0x03)
 #define PWM4_CR CRH
 #endif
 #define DIO24 24
@@ -553,7 +553,7 @@
 #define PWM5_CROFF PWM5_BIT
 #define PWM5_CR CRL
 #else
-#define PWM5_CROFF PWM5_BIT - 8
+#define PWM5_CROFF (PWM5_BIT&0x03)
 #define PWM5_CR CRH
 #endif
 #define DIO25 25
@@ -572,7 +572,7 @@
 #define PWM6_CROFF PWM6_BIT
 #define PWM6_CR CRL
 #else
-#define PWM6_CROFF PWM6_BIT - 8
+#define PWM6_CROFF (PWM6_BIT&0x03)
 #define PWM6_CR CRH
 #endif
 #define DIO26 26
@@ -591,7 +591,7 @@
 #define PWM7_CROFF PWM7_BIT
 #define PWM7_CR CRL
 #else
-#define PWM7_CROFF PWM7_BIT - 8
+#define PWM7_CROFF (PWM7_BIT&0x03)
 #define PWM7_CR CRH
 #endif
 #define DIO27 27
@@ -610,7 +610,7 @@
 #define PWM8_CROFF PWM8_BIT
 #define PWM8_CR CRL
 #else
-#define PWM8_CROFF PWM8_BIT - 8
+#define PWM8_CROFF (PWM8_BIT&0x03)
 #define PWM8_CR CRH
 #endif
 #define DIO28 28
@@ -629,7 +629,7 @@
 #define PWM9_CROFF PWM9_BIT
 #define PWM9_CR CRL
 #else
-#define PWM9_CROFF PWM9_BIT - 8
+#define PWM9_CROFF (PWM9_BIT&0x03)
 #define PWM9_CR CRH
 #endif
 #define DIO29 29
@@ -648,7 +648,7 @@
 #define PWM10_CROFF PWM10_BIT
 #define PWM10_CR CRL
 #else
-#define PWM10_CROFF PWM10_BIT - 8
+#define PWM10_CROFF (PWM10_BIT&0x03)
 #define PWM10_CR CRH
 #endif
 #define DIO30 30
@@ -667,7 +667,7 @@
 #define PWM11_CROFF PWM11_BIT
 #define PWM11_CR CRL
 #else
-#define PWM11_CROFF PWM11_BIT - 8
+#define PWM11_CROFF (PWM11_BIT&0x03)
 #define PWM11_CR CRH
 #endif
 #define DIO31 31
@@ -686,7 +686,7 @@
 #define PWM12_CROFF PWM12_BIT
 #define PWM12_CR CRL
 #else
-#define PWM12_CROFF PWM12_BIT - 8
+#define PWM12_CROFF (PWM12_BIT&0x03)
 #define PWM12_CR CRH
 #endif
 #define DIO32 32
@@ -705,7 +705,7 @@
 #define PWM13_CROFF PWM13_BIT
 #define PWM13_CR CRL
 #else
-#define PWM13_CROFF PWM13_BIT - 8
+#define PWM13_CROFF (PWM13_BIT&0x03)
 #define PWM13_CR CRH
 #endif
 #define DIO33 33
@@ -724,7 +724,7 @@
 #define PWM14_CROFF PWM14_BIT
 #define PWM14_CR CRL
 #else
-#define PWM14_CROFF PWM14_BIT - 8
+#define PWM14_CROFF (PWM14_BIT&0x03)
 #define PWM14_CR CRH
 #endif
 #define DIO34 34
@@ -743,7 +743,7 @@
 #define PWM15_CROFF PWM15_BIT
 #define PWM15_CR CRL
 #else
-#define PWM15_CROFF PWM15_BIT - 8
+#define PWM15_CROFF (PWM15_BIT&0x03)
 #define PWM15_CR CRH
 #endif
 #define DIO35 35
@@ -762,7 +762,7 @@
 #define TX_CROFF TX_BIT
 #define TX_CR CRL
 #else
-#define TX_CROFF TX_BIT - 8
+#define TX_CROFF (TX_BIT&0x03)
 #define TX_CR CRH
 #endif
 #define DIO36 36
@@ -781,7 +781,7 @@
 #define DOUT0_CROFF DOUT0_BIT
 #define DOUT0_CR CRL
 #else
-#define DOUT0_CROFF DOUT0_BIT - 8
+#define DOUT0_CROFF (DOUT0_BIT&0x03)
 #define DOUT0_CR CRH
 #endif
 #define DIO37 37
@@ -800,7 +800,7 @@
 #define DOUT1_CROFF DOUT1_BIT
 #define DOUT1_CR CRL
 #else
-#define DOUT1_CROFF DOUT1_BIT - 8
+#define DOUT1_CROFF (DOUT1_BIT&0x03)
 #define DOUT1_CR CRH
 #endif
 #define DIO38 38
@@ -819,7 +819,7 @@
 #define DOUT2_CROFF DOUT2_BIT
 #define DOUT2_CR CRL
 #else
-#define DOUT2_CROFF DOUT2_BIT - 8
+#define DOUT2_CROFF (DOUT2_BIT&0x03)
 #define DOUT2_CR CRH
 #endif
 #define DIO39 39
@@ -838,7 +838,7 @@
 #define DOUT3_CROFF DOUT3_BIT
 #define DOUT3_CR CRL
 #else
-#define DOUT3_CROFF DOUT3_BIT - 8
+#define DOUT3_CROFF (DOUT3_BIT&0x03)
 #define DOUT3_CR CRH
 #endif
 #define DIO40 40
@@ -857,7 +857,7 @@
 #define DOUT4_CROFF DOUT4_BIT
 #define DOUT4_CR CRL
 #else
-#define DOUT4_CROFF DOUT4_BIT - 8
+#define DOUT4_CROFF (DOUT4_BIT&0x03)
 #define DOUT4_CR CRH
 #endif
 #define DIO41 41
@@ -876,7 +876,7 @@
 #define DOUT5_CROFF DOUT5_BIT
 #define DOUT5_CR CRL
 #else
-#define DOUT5_CROFF DOUT5_BIT - 8
+#define DOUT5_CROFF (DOUT5_BIT&0x03)
 #define DOUT5_CR CRH
 #endif
 #define DIO42 42
@@ -895,7 +895,7 @@
 #define DOUT6_CROFF DOUT6_BIT
 #define DOUT6_CR CRL
 #else
-#define DOUT6_CROFF DOUT6_BIT - 8
+#define DOUT6_CROFF (DOUT6_BIT&0x03)
 #define DOUT6_CR CRH
 #endif
 #define DIO43 43
@@ -914,7 +914,7 @@
 #define DOUT7_CROFF DOUT7_BIT
 #define DOUT7_CR CRL
 #else
-#define DOUT7_CROFF DOUT7_BIT - 8
+#define DOUT7_CROFF (DOUT7_BIT&0x03)
 #define DOUT7_CR CRH
 #endif
 #define DIO44 44
@@ -933,7 +933,7 @@
 #define DOUT8_CROFF DOUT8_BIT
 #define DOUT8_CR CRL
 #else
-#define DOUT8_CROFF DOUT8_BIT - 8
+#define DOUT8_CROFF (DOUT8_BIT&0x03)
 #define DOUT8_CR CRH
 #endif
 #define DIO45 45
@@ -952,7 +952,7 @@
 #define DOUT9_CROFF DOUT9_BIT
 #define DOUT9_CR CRL
 #else
-#define DOUT9_CROFF DOUT9_BIT - 8
+#define DOUT9_CROFF (DOUT9_BIT&0x03)
 #define DOUT9_CR CRH
 #endif
 #define DIO46 46
@@ -971,7 +971,7 @@
 #define DOUT10_CROFF DOUT10_BIT
 #define DOUT10_CR CRL
 #else
-#define DOUT10_CROFF DOUT10_BIT - 8
+#define DOUT10_CROFF (DOUT10_BIT&0x03)
 #define DOUT10_CR CRH
 #endif
 #define DIO47 47
@@ -990,7 +990,7 @@
 #define DOUT11_CROFF DOUT11_BIT
 #define DOUT11_CR CRL
 #else
-#define DOUT11_CROFF DOUT11_BIT - 8
+#define DOUT11_CROFF (DOUT11_BIT&0x03)
 #define DOUT11_CR CRH
 #endif
 #define DIO48 48
@@ -1009,7 +1009,7 @@
 #define DOUT12_CROFF DOUT12_BIT
 #define DOUT12_CR CRL
 #else
-#define DOUT12_CROFF DOUT12_BIT - 8
+#define DOUT12_CROFF (DOUT12_BIT&0x03)
 #define DOUT12_CR CRH
 #endif
 #define DIO49 49
@@ -1028,7 +1028,7 @@
 #define DOUT13_CROFF DOUT13_BIT
 #define DOUT13_CR CRL
 #else
-#define DOUT13_CROFF DOUT13_BIT - 8
+#define DOUT13_CROFF (DOUT13_BIT&0x03)
 #define DOUT13_CR CRH
 #endif
 #define DIO50 50
@@ -1047,7 +1047,7 @@
 #define DOUT14_CROFF DOUT14_BIT
 #define DOUT14_CR CRL
 #else
-#define DOUT14_CROFF DOUT14_BIT - 8
+#define DOUT14_CROFF (DOUT14_BIT&0x03)
 #define DOUT14_CR CRH
 #endif
 #define DIO51 51
@@ -1066,7 +1066,7 @@
 #define DOUT15_CROFF DOUT15_BIT
 #define DOUT15_CR CRL
 #else
-#define DOUT15_CROFF DOUT15_BIT - 8
+#define DOUT15_CROFF (DOUT15_BIT&0x03)
 #define DOUT15_CR CRH
 #endif
 #define DIO52 52
@@ -1085,7 +1085,7 @@
 #define LIMIT_X_CROFF LIMIT_X_BIT
 #define LIMIT_X_CR CRL
 #else
-#define LIMIT_X_CROFF LIMIT_X_BIT - 8
+#define LIMIT_X_CROFF (LIMIT_X_BIT&0x03)
 #define LIMIT_X_CR CRH
 #endif
 #define DIO53 53
@@ -1104,7 +1104,7 @@
 #define LIMIT_Y_CROFF LIMIT_Y_BIT
 #define LIMIT_Y_CR CRL
 #else
-#define LIMIT_Y_CROFF LIMIT_Y_BIT - 8
+#define LIMIT_Y_CROFF (LIMIT_Y_BIT&0x03)
 #define LIMIT_Y_CR CRH
 #endif
 #define DIO54 54
@@ -1123,7 +1123,7 @@
 #define LIMIT_Z_CROFF LIMIT_Z_BIT
 #define LIMIT_Z_CR CRL
 #else
-#define LIMIT_Z_CROFF LIMIT_Z_BIT - 8
+#define LIMIT_Z_CROFF (LIMIT_Z_BIT&0x03)
 #define LIMIT_Z_CR CRH
 #endif
 #define DIO55 55
@@ -1142,7 +1142,7 @@
 #define LIMIT_X2_CROFF LIMIT_X2_BIT
 #define LIMIT_X2_CR CRL
 #else
-#define LIMIT_X2_CROFF LIMIT_X2_BIT - 8
+#define LIMIT_X2_CROFF (LIMIT_X2_BIT&0x03)
 #define LIMIT_X2_CR CRH
 #endif
 #define DIO56 56
@@ -1161,7 +1161,7 @@
 #define LIMIT_Y2_CROFF LIMIT_Y2_BIT
 #define LIMIT_Y2_CR CRL
 #else
-#define LIMIT_Y2_CROFF LIMIT_Y2_BIT - 8
+#define LIMIT_Y2_CROFF (LIMIT_Y2_BIT&0x03)
 #define LIMIT_Y2_CR CRH
 #endif
 #define DIO57 57
@@ -1180,7 +1180,7 @@
 #define LIMIT_Z2_CROFF LIMIT_Z2_BIT
 #define LIMIT_Z2_CR CRL
 #else
-#define LIMIT_Z2_CROFF LIMIT_Z2_BIT - 8
+#define LIMIT_Z2_CROFF (LIMIT_Z2_BIT&0x03)
 #define LIMIT_Z2_CR CRH
 #endif
 #define DIO58 58
@@ -1199,7 +1199,7 @@
 #define LIMIT_A_CROFF LIMIT_A_BIT
 #define LIMIT_A_CR CRL
 #else
-#define LIMIT_A_CROFF LIMIT_A_BIT - 8
+#define LIMIT_A_CROFF (LIMIT_A_BIT&0x03)
 #define LIMIT_A_CR CRH
 #endif
 #define DIO59 59
@@ -1218,7 +1218,7 @@
 #define LIMIT_B_CROFF LIMIT_B_BIT
 #define LIMIT_B_CR CRL
 #else
-#define LIMIT_B_CROFF LIMIT_B_BIT - 8
+#define LIMIT_B_CROFF (LIMIT_B_BIT&0x03)
 #define LIMIT_B_CR CRH
 #endif
 #define DIO60 60
@@ -1237,7 +1237,7 @@
 #define LIMIT_C_CROFF LIMIT_C_BIT
 #define LIMIT_C_CR CRL
 #else
-#define LIMIT_C_CROFF LIMIT_C_BIT - 8
+#define LIMIT_C_CROFF (LIMIT_C_BIT&0x03)
 #define LIMIT_C_CR CRH
 #endif
 #define DIO61 61
@@ -1256,7 +1256,7 @@
 #define PROBE_CROFF PROBE_BIT
 #define PROBE_CR CRL
 #else
-#define PROBE_CROFF PROBE_BIT - 8
+#define PROBE_CROFF (PROBE_BIT&0x03)
 #define PROBE_CR CRH
 #endif
 #define DIO62 62
@@ -1275,7 +1275,7 @@
 #define ESTOP_CROFF ESTOP_BIT
 #define ESTOP_CR CRL
 #else
-#define ESTOP_CROFF ESTOP_BIT - 8
+#define ESTOP_CROFF (ESTOP_BIT&0x03)
 #define ESTOP_CR CRH
 #endif
 #define DIO63 63
@@ -1294,7 +1294,7 @@
 #define SAFETY_DOOR_CROFF SAFETY_DOOR_BIT
 #define SAFETY_DOOR_CR CRL
 #else
-#define SAFETY_DOOR_CROFF SAFETY_DOOR_BIT - 8
+#define SAFETY_DOOR_CROFF (SAFETY_DOOR_BIT&0x03)
 #define SAFETY_DOOR_CR CRH
 #endif
 #define DIO64 64
@@ -1313,7 +1313,7 @@
 #define FHOLD_CROFF FHOLD_BIT
 #define FHOLD_CR CRL
 #else
-#define FHOLD_CROFF FHOLD_BIT - 8
+#define FHOLD_CROFF (FHOLD_BIT&0x03)
 #define FHOLD_CR CRH
 #endif
 #define DIO65 65
@@ -1332,7 +1332,7 @@
 #define CS_RES_CROFF CS_RES_BIT
 #define CS_RES_CR CRL
 #else
-#define CS_RES_CROFF CS_RES_BIT - 8
+#define CS_RES_CROFF (CS_RES_BIT&0x03)
 #define CS_RES_CR CRH
 #endif
 #define DIO66 66
@@ -1351,7 +1351,7 @@
 #define ANALOG0_CROFF ANALOG0_BIT
 #define ANALOG0_CR CRL
 #else
-#define ANALOG0_CROFF ANALOG0_BIT - 8
+#define ANALOG0_CROFF (ANALOG0_BIT&0x03)
 #define ANALOG0_CR CRH
 #endif
 #define DIO67 67
@@ -1370,7 +1370,7 @@
 #define ANALOG1_CROFF ANALOG1_BIT
 #define ANALOG1_CR CRL
 #else
-#define ANALOG1_CROFF ANALOG1_BIT - 8
+#define ANALOG1_CROFF (ANALOG1_BIT&0x03)
 #define ANALOG1_CR CRH
 #endif
 #define DIO68 68
@@ -1389,7 +1389,7 @@
 #define ANALOG2_CROFF ANALOG2_BIT
 #define ANALOG2_CR CRL
 #else
-#define ANALOG2_CROFF ANALOG2_BIT - 8
+#define ANALOG2_CROFF (ANALOG2_BIT&0x03)
 #define ANALOG2_CR CRH
 #endif
 #define DIO69 69
@@ -1408,7 +1408,7 @@
 #define ANALOG3_CROFF ANALOG3_BIT
 #define ANALOG3_CR CRL
 #else
-#define ANALOG3_CROFF ANALOG3_BIT - 8
+#define ANALOG3_CROFF (ANALOG3_BIT&0x03)
 #define ANALOG3_CR CRH
 #endif
 #define DIO70 70
@@ -1427,7 +1427,7 @@
 #define ANALOG4_CROFF ANALOG4_BIT
 #define ANALOG4_CR CRL
 #else
-#define ANALOG4_CROFF ANALOG4_BIT - 8
+#define ANALOG4_CROFF (ANALOG4_BIT&0x03)
 #define ANALOG4_CR CRH
 #endif
 #define DIO71 71
@@ -1446,7 +1446,7 @@
 #define ANALOG5_CROFF ANALOG5_BIT
 #define ANALOG5_CR CRL
 #else
-#define ANALOG5_CROFF ANALOG5_BIT - 8
+#define ANALOG5_CROFF (ANALOG5_BIT&0x03)
 #define ANALOG5_CR CRH
 #endif
 #define DIO72 72
@@ -1465,7 +1465,7 @@
 #define ANALOG6_CROFF ANALOG6_BIT
 #define ANALOG6_CR CRL
 #else
-#define ANALOG6_CROFF ANALOG6_BIT - 8
+#define ANALOG6_CROFF (ANALOG6_BIT&0x03)
 #define ANALOG6_CR CRH
 #endif
 #define DIO73 73
@@ -1484,7 +1484,7 @@
 #define ANALOG7_CROFF ANALOG7_BIT
 #define ANALOG7_CR CRL
 #else
-#define ANALOG7_CROFF ANALOG7_BIT - 8
+#define ANALOG7_CROFF (ANALOG7_BIT&0x03)
 #define ANALOG7_CR CRH
 #endif
 #define DIO74 74
@@ -1503,7 +1503,7 @@
 #define ANALOG8_CROFF ANALOG8_BIT
 #define ANALOG8_CR CRL
 #else
-#define ANALOG8_CROFF ANALOG8_BIT - 8
+#define ANALOG8_CROFF (ANALOG8_BIT&0x03)
 #define ANALOG8_CR CRH
 #endif
 #define DIO75 75
@@ -1522,7 +1522,7 @@
 #define ANALOG9_CROFF ANALOG9_BIT
 #define ANALOG9_CR CRL
 #else
-#define ANALOG9_CROFF ANALOG9_BIT - 8
+#define ANALOG9_CROFF (ANALOG9_BIT&0x03)
 #define ANALOG9_CR CRH
 #endif
 #define DIO76 76
@@ -1541,7 +1541,7 @@
 #define ANALOG10_CROFF ANALOG10_BIT
 #define ANALOG10_CR CRL
 #else
-#define ANALOG10_CROFF ANALOG10_BIT - 8
+#define ANALOG10_CROFF (ANALOG10_BIT&0x03)
 #define ANALOG10_CR CRH
 #endif
 #define DIO77 77
@@ -1560,7 +1560,7 @@
 #define ANALOG11_CROFF ANALOG11_BIT
 #define ANALOG11_CR CRL
 #else
-#define ANALOG11_CROFF ANALOG11_BIT - 8
+#define ANALOG11_CROFF (ANALOG11_BIT&0x03)
 #define ANALOG11_CR CRH
 #endif
 #define DIO78 78
@@ -1579,7 +1579,7 @@
 #define ANALOG12_CROFF ANALOG12_BIT
 #define ANALOG12_CR CRL
 #else
-#define ANALOG12_CROFF ANALOG12_BIT - 8
+#define ANALOG12_CROFF (ANALOG12_BIT&0x03)
 #define ANALOG12_CR CRH
 #endif
 #define DIO79 79
@@ -1598,7 +1598,7 @@
 #define ANALOG13_CROFF ANALOG13_BIT
 #define ANALOG13_CR CRL
 #else
-#define ANALOG13_CROFF ANALOG13_BIT - 8
+#define ANALOG13_CROFF (ANALOG13_BIT&0x03)
 #define ANALOG13_CR CRH
 #endif
 #define DIO80 80
@@ -1617,7 +1617,7 @@
 #define ANALOG14_CROFF ANALOG14_BIT
 #define ANALOG14_CR CRL
 #else
-#define ANALOG14_CROFF ANALOG14_BIT - 8
+#define ANALOG14_CROFF (ANALOG14_BIT&0x03)
 #define ANALOG14_CR CRH
 #endif
 #define DIO81 81
@@ -1636,7 +1636,7 @@
 #define ANALOG15_CROFF ANALOG15_BIT
 #define ANALOG15_CR CRL
 #else
-#define ANALOG15_CROFF ANALOG15_BIT - 8
+#define ANALOG15_CROFF (ANALOG15_BIT&0x03)
 #define ANALOG15_CR CRH
 #endif
 #define DIO82 82
@@ -1655,7 +1655,7 @@
 #define RX_CROFF RX_BIT
 #define RX_CR CRL
 #else
-#define RX_CROFF RX_BIT - 8
+#define RX_CROFF (RX_BIT&0x03)
 #define RX_CR CRH
 #endif
 #define DIO83 83
@@ -1674,7 +1674,7 @@
 #define DIN0_CROFF DIN0_BIT
 #define DIN0_CR CRL
 #else
-#define DIN0_CROFF DIN0_BIT - 8
+#define DIN0_CROFF (DIN0_BIT&0x03)
 #define DIN0_CR CRH
 #endif
 #define DIO84 84
@@ -1693,7 +1693,7 @@
 #define DIN1_CROFF DIN1_BIT
 #define DIN1_CR CRL
 #else
-#define DIN1_CROFF DIN1_BIT - 8
+#define DIN1_CROFF (DIN1_BIT&0x03)
 #define DIN1_CR CRH
 #endif
 #define DIO85 85
@@ -1712,7 +1712,7 @@
 #define DIN2_CROFF DIN2_BIT
 #define DIN2_CR CRL
 #else
-#define DIN2_CROFF DIN2_BIT - 8
+#define DIN2_CROFF (DIN2_BIT&0x03)
 #define DIN2_CR CRH
 #endif
 #define DIO86 86
@@ -1731,7 +1731,7 @@
 #define DIN3_CROFF DIN3_BIT
 #define DIN3_CR CRL
 #else
-#define DIN3_CROFF DIN3_BIT - 8
+#define DIN3_CROFF (DIN3_BIT&0x03)
 #define DIN3_CR CRH
 #endif
 #define DIO87 87
@@ -1750,7 +1750,7 @@
 #define DIN4_CROFF DIN4_BIT
 #define DIN4_CR CRL
 #else
-#define DIN4_CROFF DIN4_BIT - 8
+#define DIN4_CROFF (DIN4_BIT&0x03)
 #define DIN4_CR CRH
 #endif
 #define DIO88 88
@@ -1769,7 +1769,7 @@
 #define DIN5_CROFF DIN5_BIT
 #define DIN5_CR CRL
 #else
-#define DIN5_CROFF DIN5_BIT - 8
+#define DIN5_CROFF (DIN5_BIT&0x03)
 #define DIN5_CR CRH
 #endif
 #define DIO89 89
@@ -1788,7 +1788,7 @@
 #define DIN6_CROFF DIN6_BIT
 #define DIN6_CR CRL
 #else
-#define DIN6_CROFF DIN6_BIT - 8
+#define DIN6_CROFF (DIN6_BIT&0x03)
 #define DIN6_CR CRH
 #endif
 #define DIO90 90
@@ -1807,7 +1807,7 @@
 #define DIN7_CROFF DIN7_BIT
 #define DIN7_CR CRL
 #else
-#define DIN7_CROFF DIN7_BIT - 8
+#define DIN7_CROFF (DIN7_BIT&0x03)
 #define DIN7_CR CRH
 #endif
 #define DIO91 91
@@ -1826,7 +1826,7 @@
 #define DIN8_CROFF DIN8_BIT
 #define DIN8_CR CRL
 #else
-#define DIN8_CROFF DIN8_BIT - 8
+#define DIN8_CROFF (DIN8_BIT&0x03)
 #define DIN8_CR CRH
 #endif
 #define DIO92 92
@@ -1845,7 +1845,7 @@
 #define DIN9_CROFF DIN9_BIT
 #define DIN9_CR CRL
 #else
-#define DIN9_CROFF DIN9_BIT - 8
+#define DIN9_CROFF (DIN9_BIT&0x03)
 #define DIN9_CR CRH
 #endif
 #define DIO93 93
@@ -1864,7 +1864,7 @@
 #define DIN10_CROFF DIN10_BIT
 #define DIN10_CR CRL
 #else
-#define DIN10_CROFF DIN10_BIT - 8
+#define DIN10_CROFF (DIN10_BIT&0x03)
 #define DIN10_CR CRH
 #endif
 #define DIO94 94
@@ -1883,7 +1883,7 @@
 #define DIN11_CROFF DIN11_BIT
 #define DIN11_CR CRL
 #else
-#define DIN11_CROFF DIN11_BIT - 8
+#define DIN11_CROFF (DIN11_BIT&0x03)
 #define DIN11_CR CRH
 #endif
 #define DIO95 95
@@ -1902,7 +1902,7 @@
 #define DIN12_CROFF DIN12_BIT
 #define DIN12_CR CRL
 #else
-#define DIN12_CROFF DIN12_BIT - 8
+#define DIN12_CROFF (DIN12_BIT&0x03)
 #define DIN12_CR CRH
 #endif
 #define DIO96 96
@@ -1921,7 +1921,7 @@
 #define DIN13_CROFF DIN13_BIT
 #define DIN13_CR CRL
 #else
-#define DIN13_CROFF DIN13_BIT - 8
+#define DIN13_CROFF (DIN13_BIT&0x03)
 #define DIN13_CR CRH
 #endif
 #define DIO97 97
@@ -1940,7 +1940,7 @@
 #define DIN14_CROFF DIN14_BIT
 #define DIN14_CR CRL
 #else
-#define DIN14_CROFF DIN14_BIT - 8
+#define DIN14_CROFF (DIN14_BIT&0x03)
 #define DIN14_CR CRH
 #endif
 #define DIO98 98
@@ -1959,7 +1959,7 @@
 #define DIN15_CROFF DIN15_BIT
 #define DIN15_CR CRL
 #else
-#define DIN15_CROFF DIN15_BIT - 8
+#define DIN15_CROFF (DIN15_BIT&0x03)
 #define DIN15_CR CRH
 #endif
 #define DIO99 99
@@ -1984,941 +1984,207 @@
 #define _EXTINT(X) EXTINT_##X
 #define EXTINT(X) _EXTINT(X)
 
-#if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
-#define LIMIT_X_EXTIREG (LIMIT_X_BIT >> 2)
-#define LIMIT_X_EXTIVAL (EXTINT(LIMIT_X_PORT) << (LIMIT_X_BIT & 0x0F))
-#define DIO51_EXTIREG LIMIT_X_EXTIREG
-#define DIO51_EXTIVAL LIMIT_X_EXTIVAL
-#endif
-/*
-#if(defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
-#define DIO52_ISR (LIMIT_Y_ISR)
-#define LIMIT_Y_ISRREG (__pcmskreg__(LIMIT_Y_ISR))
-#if(LIMIT_Y_ISR==0)
-#define LIMIT_Y_ISR0 (1 << LIMIT_Y_BIT)
-#endif
-#if(LIMIT_Y_ISR==1)
-#define LIMIT_Y_ISR1 (1 << LIMIT_Y_BIT)
-#endif
-#if(LIMIT_Y_ISR==2)
-#define LIMIT_Y_ISR2 (1 << LIMIT_Y_BIT)
-#endif
-#if(LIMIT_Y_ISR==-1)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 1
-#endif
-#if(LIMIT_Y_ISR==-2)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 4
-#endif
-#if(LIMIT_Y_ISR==-3)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 16
-#endif
-#if(LIMIT_Y_ISR==-4)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRA 64
-#endif
-#if(LIMIT_Y_ISR==-5)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
-#define LIMIT_Y_ISRB 1
-#endif
-#if(LIMIT_Y_ISR==-6)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 4
-#endif
-#if(LIMIT_Y_ISR==-7)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 16
-#endif
-#if(LIMIT_Y_ISR==-8)
-#undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRB
-#define LIMIT_Y_ISRB 64
-#endif
-#define DIO52_ISRREG LIMIT_Y_ISRREG
-#endif
-#if(defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
-#define DIO53_ISR (LIMIT_Z_ISR)
-#define LIMIT_Z_ISRREG (__pcmskreg__(LIMIT_Z_ISR))
-#if(LIMIT_Z_ISR==0)
-#define LIMIT_Z_ISR0 (1 << LIMIT_Z_BIT)
-#endif
-#if(LIMIT_Z_ISR==1)
-#define LIMIT_Z_ISR1 (1 << LIMIT_Z_BIT)
-#endif
-#if(LIMIT_Z_ISR==2)
-#define LIMIT_Z_ISR2 (1 << LIMIT_Z_BIT)
-#endif
-#if(LIMIT_Z_ISR==-1)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 1
-#endif
-#if(LIMIT_Z_ISR==-2)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 4
-#endif
-#if(LIMIT_Z_ISR==-3)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 16
-#endif
-#if(LIMIT_Z_ISR==-4)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRA 64
-#endif
-#if(LIMIT_Z_ISR==-5)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
-#define LIMIT_Z_ISRB 1
-#endif
-#if(LIMIT_Z_ISR==-6)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 4
-#endif
-#if(LIMIT_Z_ISR==-7)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 16
-#endif
-#if(LIMIT_Z_ISR==-8)
-#undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRB
-#define LIMIT_Z_ISRB 64
-#endif
-#define DIO53_ISRREG LIMIT_Z_ISRREG
-#endif
-#if(defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
-#define DIO54_ISR (LIMIT_X2_ISR)
-#define LIMIT_X2_ISRREG (__pcmskreg__(LIMIT_X2_ISR))
-#if(LIMIT_X2_ISR==0)
-#define LIMIT_X2_ISR0 (1 << LIMIT_X2_BIT)
-#endif
-#if(LIMIT_X2_ISR==1)
-#define LIMIT_X2_ISR1 (1 << LIMIT_X2_BIT)
-#endif
-#if(LIMIT_X2_ISR==2)
-#define LIMIT_X2_ISR2 (1 << LIMIT_X2_BIT)
-#endif
-#if(LIMIT_X2_ISR==-1)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 1
-#endif
-#if(LIMIT_X2_ISR==-2)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 4
-#endif
-#if(LIMIT_X2_ISR==-3)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 16
-#endif
-#if(LIMIT_X2_ISR==-4)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRA 64
-#endif
-#if(LIMIT_X2_ISR==-5)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
-#define LIMIT_X2_ISRB 1
-#endif
-#if(LIMIT_X2_ISR==-6)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 4
-#endif
-#if(LIMIT_X2_ISR==-7)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 16
-#endif
-#if(LIMIT_X2_ISR==-8)
-#undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRB
-#define LIMIT_X2_ISRB 64
-#endif
-#define DIO54_ISRREG LIMIT_X2_ISRREG
-#endif
-#if(defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
-#define DIO55_ISR (LIMIT_Y2_ISR)
-#define LIMIT_Y2_ISRREG (__pcmskreg__(LIMIT_Y2_ISR))
-#if(LIMIT_Y2_ISR==0)
-#define LIMIT_Y2_ISR0 (1 << LIMIT_Y2_BIT)
-#endif
-#if(LIMIT_Y2_ISR==1)
-#define LIMIT_Y2_ISR1 (1 << LIMIT_Y2_BIT)
-#endif
-#if(LIMIT_Y2_ISR==2)
-#define LIMIT_Y2_ISR2 (1 << LIMIT_Y2_BIT)
-#endif
-#if(LIMIT_Y2_ISR==-1)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 1
-#endif
-#if(LIMIT_Y2_ISR==-2)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 4
-#endif
-#if(LIMIT_Y2_ISR==-3)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 16
-#endif
-#if(LIMIT_Y2_ISR==-4)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRA 64
-#endif
-#if(LIMIT_Y2_ISR==-5)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
-#define LIMIT_Y2_ISRB 1
-#endif
-#if(LIMIT_Y2_ISR==-6)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 4
-#endif
-#if(LIMIT_Y2_ISR==-7)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 16
-#endif
-#if(LIMIT_Y2_ISR==-8)
-#undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRB
-#define LIMIT_Y2_ISRB 64
-#endif
-#define DIO55_ISRREG LIMIT_Y2_ISRREG
-#endif
-#if(defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
-#define DIO56_ISR (LIMIT_Z2_ISR)
-#define LIMIT_Z2_ISRREG (__pcmskreg__(LIMIT_Z2_ISR))
-#if(LIMIT_Z2_ISR==0)
-#define LIMIT_Z2_ISR0 (1 << LIMIT_Z2_BIT)
-#endif
-#if(LIMIT_Z2_ISR==1)
-#define LIMIT_Z2_ISR1 (1 << LIMIT_Z2_BIT)
-#endif
-#if(LIMIT_Z2_ISR==2)
-#define LIMIT_Z2_ISR2 (1 << LIMIT_Z2_BIT)
-#endif
-#if(LIMIT_Z2_ISR==-1)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 1
-#endif
-#if(LIMIT_Z2_ISR==-2)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 4
-#endif
-#if(LIMIT_Z2_ISR==-3)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 16
-#endif
-#if(LIMIT_Z2_ISR==-4)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRA 64
-#endif
-#if(LIMIT_Z2_ISR==-5)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
-#define LIMIT_Z2_ISRB 1
-#endif
-#if(LIMIT_Z2_ISR==-6)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 4
-#endif
-#if(LIMIT_Z2_ISR==-7)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 16
-#endif
-#if(LIMIT_Z2_ISR==-8)
-#undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRB
-#define LIMIT_Z2_ISRB 64
-#endif
-#define DIO56_ISRREG LIMIT_Z2_ISRREG
-#endif
-#if(defined(LIMIT_A_ISR) && defined(LIMIT_A))
-#define DIO57_ISR (LIMIT_A_ISR)
-#define LIMIT_A_ISRREG (__pcmskreg__(LIMIT_A_ISR))
-#if(LIMIT_A_ISR==0)
-#define LIMIT_A_ISR0 (1 << LIMIT_A_BIT)
-#endif
-#if(LIMIT_A_ISR==1)
-#define LIMIT_A_ISR1 (1 << LIMIT_A_BIT)
-#endif
-#if(LIMIT_A_ISR==2)
-#define LIMIT_A_ISR2 (1 << LIMIT_A_BIT)
-#endif
-#if(LIMIT_A_ISR==-1)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 1
-#endif
-#if(LIMIT_A_ISR==-2)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 4
-#endif
-#if(LIMIT_A_ISR==-3)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 16
-#endif
-#if(LIMIT_A_ISR==-4)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRA 64
-#endif
-#if(LIMIT_A_ISR==-5)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
-#define LIMIT_A_ISRB 1
-#endif
-#if(LIMIT_A_ISR==-6)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 4
-#endif
-#if(LIMIT_A_ISR==-7)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 16
-#endif
-#if(LIMIT_A_ISR==-8)
-#undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRB
-#define LIMIT_A_ISRB 64
-#endif
-#define DIO57_ISRREG LIMIT_A_ISRREG
-#endif
-#if(defined(LIMIT_B_ISR) && defined(LIMIT_B))
-#define DIO58_ISR (LIMIT_B_ISR)
-#define LIMIT_B_ISRREG (__pcmskreg__(LIMIT_B_ISR))
-#if(LIMIT_B_ISR==0)
-#define LIMIT_B_ISR0 (1 << LIMIT_B_BIT)
-#endif
-#if(LIMIT_B_ISR==1)
-#define LIMIT_B_ISR1 (1 << LIMIT_B_BIT)
-#endif
-#if(LIMIT_B_ISR==2)
-#define LIMIT_B_ISR2 (1 << LIMIT_B_BIT)
-#endif
-#if(LIMIT_B_ISR==-1)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 1
-#endif
-#if(LIMIT_B_ISR==-2)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 4
-#endif
-#if(LIMIT_B_ISR==-3)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 16
-#endif
-#if(LIMIT_B_ISR==-4)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRA 64
-#endif
-#if(LIMIT_B_ISR==-5)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
-#define LIMIT_B_ISRB 1
-#endif
-#if(LIMIT_B_ISR==-6)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 4
-#endif
-#if(LIMIT_B_ISR==-7)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 16
-#endif
-#if(LIMIT_B_ISR==-8)
-#undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRB
-#define LIMIT_B_ISRB 64
-#endif
-#define DIO58_ISRREG LIMIT_B_ISRREG
-#endif
-#if(defined(LIMIT_C_ISR) && defined(LIMIT_C))
-#define DIO59_ISR (LIMIT_C_ISR)
-#define LIMIT_C_ISRREG (__pcmskreg__(LIMIT_C_ISR))
-#if(LIMIT_C_ISR==0)
-#define LIMIT_C_ISR0 (1 << LIMIT_C_BIT)
-#endif
-#if(LIMIT_C_ISR==1)
-#define LIMIT_C_ISR1 (1 << LIMIT_C_BIT)
-#endif
-#if(LIMIT_C_ISR==2)
-#define LIMIT_C_ISR2 (1 << LIMIT_C_BIT)
-#endif
-#if(LIMIT_C_ISR==-1)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 1
-#endif
-#if(LIMIT_C_ISR==-2)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 4
-#endif
-#if(LIMIT_C_ISR==-3)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 16
-#endif
-#if(LIMIT_C_ISR==-4)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRA 64
-#endif
-#if(LIMIT_C_ISR==-5)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
-#define LIMIT_C_ISRB 1
-#endif
-#if(LIMIT_C_ISR==-6)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 4
-#endif
-#if(LIMIT_C_ISR==-7)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 16
-#endif
-#if(LIMIT_C_ISR==-8)
-#undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRB
-#define LIMIT_C_ISRB 64
-#endif
-#define DIO59_ISRREG LIMIT_C_ISRREG
-#endif
-#if(defined(PROBE_ISR) && defined(PROBE))
-#define DIO60_ISR (PROBE_ISR)
-#define PROBE_ISRREG (__pcmskreg__(PROBE_ISR))
-#if(PROBE_ISR==0)
-#define PROBE_ISR0 (1 << PROBE_BIT)
-#endif
-#if(PROBE_ISR==1)
-#define PROBE_ISR1 (1 << PROBE_BIT)
-#endif
-#if(PROBE_ISR==2)
-#define PROBE_ISR2 (1 << PROBE_BIT)
-#endif
-#if(PROBE_ISR==-1)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 1
-#endif
-#if(PROBE_ISR==-2)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 4
-#endif
-#if(PROBE_ISR==-3)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 16
-#endif
-#if(PROBE_ISR==-4)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRA 64
-#endif
-#if(PROBE_ISR==-5)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
-#define PROBE_ISRB 1
-#endif
-#if(PROBE_ISR==-6)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRB
-#define PROBE_ISRB 4
-#endif
-#if(PROBE_ISR==-7)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRB
-#define PROBE_ISRB 16
-#endif
-#if(PROBE_ISR==-8)
-#undef PROBE_ISRREG
-#define PROBE_ISRREG EICRB
-#define PROBE_ISRB 64
-#endif
-#define DIO60_ISRREG PROBE_ISRREG
-#endif
-#if(defined(ESTOP_ISR) && defined(ESTOP))
-#define DIO61_ISR (ESTOP_ISR)
-#define ESTOP_ISRREG (__pcmskreg__(ESTOP_ISR))
-#if(ESTOP_ISR==0)
-#define ESTOP_ISR0 (1 << ESTOP_BIT)
-#endif
-#if(ESTOP_ISR==1)
-#define ESTOP_ISR1 (1 << ESTOP_BIT)
-#endif
-#if(ESTOP_ISR==2)
-#define ESTOP_ISR2 (1 << ESTOP_BIT)
-#endif
-#if(ESTOP_ISR==-1)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 1
-#endif
-#if(ESTOP_ISR==-2)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 4
-#endif
-#if(ESTOP_ISR==-3)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 16
-#endif
-#if(ESTOP_ISR==-4)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRA 64
-#endif
-#if(ESTOP_ISR==-5)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
-#define ESTOP_ISRB 1
-#endif
-#if(ESTOP_ISR==-6)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 4
-#endif
-#if(ESTOP_ISR==-7)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 16
-#endif
-#if(ESTOP_ISR==-8)
-#undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRB
-#define ESTOP_ISRB 64
-#endif
-#define DIO61_ISRREG ESTOP_ISRREG
-#endif
-#if(defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
-#define DIO62_ISR (SAFETY_DOOR_ISR)
-#define SAFETY_DOOR_ISRREG (__pcmskreg__(SAFETY_DOOR_ISR))
-#if(SAFETY_DOOR_ISR==0)
-#define SAFETY_DOOR_ISR0 (1 << SAFETY_DOOR_BIT)
-#endif
-#if(SAFETY_DOOR_ISR==1)
-#define SAFETY_DOOR_ISR1 (1 << SAFETY_DOOR_BIT)
-#endif
-#if(SAFETY_DOOR_ISR==2)
-#define SAFETY_DOOR_ISR2 (1 << SAFETY_DOOR_BIT)
-#endif
-#if(SAFETY_DOOR_ISR==-1)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 1
-#endif
-#if(SAFETY_DOOR_ISR==-2)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 4
-#endif
-#if(SAFETY_DOOR_ISR==-3)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 16
-#endif
-#if(SAFETY_DOOR_ISR==-4)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRA 64
-#endif
-#if(SAFETY_DOOR_ISR==-5)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
-#define SAFETY_DOOR_ISRB 1
-#endif
-#if(SAFETY_DOOR_ISR==-6)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 4
-#endif
-#if(SAFETY_DOOR_ISR==-7)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 16
-#endif
-#if(SAFETY_DOOR_ISR==-8)
-#undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRB
-#define SAFETY_DOOR_ISRB 64
-#endif
-#define DIO62_ISRREG SAFETY_DOOR_ISRREG
-#endif
-#if(defined(FHOLD_ISR) && defined(FHOLD))
-#define DIO63_ISR (FHOLD_ISR)
-#define FHOLD_ISRREG (__pcmskreg__(FHOLD_ISR))
-#if(FHOLD_ISR==0)
-#define FHOLD_ISR0 (1 << FHOLD_BIT)
-#endif
-#if(FHOLD_ISR==1)
-#define FHOLD_ISR1 (1 << FHOLD_BIT)
-#endif
-#if(FHOLD_ISR==2)
-#define FHOLD_ISR2 (1 << FHOLD_BIT)
-#endif
-#if(FHOLD_ISR==-1)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 1
-#endif
-#if(FHOLD_ISR==-2)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 4
-#endif
-#if(FHOLD_ISR==-3)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 16
-#endif
-#if(FHOLD_ISR==-4)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRA 64
-#endif
-#if(FHOLD_ISR==-5)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
-#define FHOLD_ISRB 1
-#endif
-#if(FHOLD_ISR==-6)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 4
-#endif
-#if(FHOLD_ISR==-7)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 16
-#endif
-#if(FHOLD_ISR==-8)
-#undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRB
-#define FHOLD_ISRB 64
-#endif
-#define DIO63_ISRREG FHOLD_ISRREG
-#endif
-#if(defined(CS_RES_ISR) && defined(CS_RES))
-#define DIO64_ISR (CS_RES_ISR)
-#define CS_RES_ISRREG (__pcmskreg__(CS_RES_ISR))
-#if(CS_RES_ISR==0)
-#define CS_RES_ISR0 (1 << CS_RES_BIT)
-#endif
-#if(CS_RES_ISR==1)
-#define CS_RES_ISR1 (1 << CS_RES_BIT)
-#endif
-#if(CS_RES_ISR==2)
-#define CS_RES_ISR2 (1 << CS_RES_BIT)
-#endif
-#if(CS_RES_ISR==-1)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 1
-#endif
-#if(CS_RES_ISR==-2)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 4
-#endif
-#if(CS_RES_ISR==-3)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 16
-#endif
-#if(CS_RES_ISR==-4)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRA 64
-#endif
-#if(CS_RES_ISR==-5)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
-#define CS_RES_ISRB 1
-#endif
-#if(CS_RES_ISR==-6)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 4
-#endif
-#if(CS_RES_ISR==-7)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 16
-#endif
-#if(CS_RES_ISR==-8)
-#undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRB
-#define CS_RES_ISRB 64
-#endif
-#define DIO64_ISRREG CS_RES_ISRREG
-#endif
+#define EXTIRQ_0 EXTI0_IRQn
+#define EXTIRQ_1 EXTI1_IRQn
+#define EXTIRQ_2 EXTI2_IRQn
+#define EXTIRQ_3 EXTI3_IRQn
+#define EXTIRQ_4 EXTI4_IRQn
+#define EXTIRQ_5 EXTI9_5_IRQn
+#define EXTIRQ_6 EXTI9_5_IRQn
+#define EXTIRQ_7 EXTI9_5_IRQn
+#define EXTIRQ_8 EXTI9_5_IRQn
+#define EXTIRQ_9 EXTI9_5_IRQn
+#define EXTIRQ_10 EXTI15_10_IRQn
+#define EXTIRQ_11 EXTI15_10_IRQn
+#define EXTIRQ_12 EXTI15_10_IRQn
+#define EXTIRQ_13 EXTI15_10_IRQn
+#define EXTIRQ_14 EXTI15_10_IRQn
+#define EXTIRQ_15 EXTI15_10_IRQn
+#define _EXTIRQ(X) EXTIRQ_##X
+#define EXTIRQ(X) _EXTIRQ(X)
 
-//ISR on change defaults
-#ifndef LIMIT_X_ISR0
-#define LIMIT_X_ISR0 0
+#if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
+#define LIMIT_X_EXTIREG ((LIMIT_X_BIT >> 2) & 0x03)
+#define LIMIT_X_EXTIBITMASK (1<<LIMIT_X_BIT)
+#define LIMIT_X_IRQ EXTIRQ(LIMIT_X_BIT)
+#define LIMIT_X_EXTIVAL (EXTINT(LIMIT_X_PORT) << ((LIMIT_X_BIT & 0x03)<<2))
+#define DIO53_EXTIREG LIMIT_X_EXTIREG
+#define DIO53_EXTIVAL LIMIT_X_EXTIVAL
+#define DIO53_IRQ LIMIT_X_IRQ
+#define DIO53_EXTIBITMASK LIMIT_X_EXTIBITMASK
+#else
+#define LIMIT_X_EXTIMASK 0
+#define LIMIT_X_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
+#define LIMIT_Y_EXTIREG ((LIMIT_Y_BIT >> 2) & 0x03)
+#define LIMIT_Y_EXTIBITMASK (1<<LIMIT_Y_BIT)
+#define LIMIT_Y_IRQ EXTIRQ(LIMIT_Y_BIT)
+#define LIMIT_Y_EXTIVAL (EXTINT(LIMIT_Y_PORT) << ((LIMIT_Y_BIT & 0x03)<<2))
+#define DIO54_EXTIREG LIMIT_Y_EXTIREG
+#define DIO54_EXTIVAL LIMIT_Y_EXTIVAL
+#define DIO54_IRQ LIMIT_Y_IRQ
+#define DIO54_EXTIBITMASK LIMIT_Y_EXTIBITMASK
+#else
+#define LIMIT_Y_EXTIMASK 0
+#define LIMIT_Y_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
+#define LIMIT_Z_EXTIREG ((LIMIT_Z_BIT >> 2) & 0x03)
+#define LIMIT_Z_EXTIBITMASK (1<<LIMIT_Z_BIT)
+#define LIMIT_Z_IRQ EXTIRQ(LIMIT_Z_BIT)
+#define LIMIT_Z_EXTIVAL (EXTINT(LIMIT_Z_PORT) << ((LIMIT_Z_BIT & 0x03)<<2))
+#define DIO55_EXTIREG LIMIT_Z_EXTIREG
+#define DIO55_EXTIVAL LIMIT_Z_EXTIVAL
+#define DIO55_IRQ LIMIT_Z_IRQ
+#define DIO55_EXTIBITMASK LIMIT_Z_EXTIBITMASK
+#else
+#define LIMIT_Z_EXTIMASK 0
+#define LIMIT_Z_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
+#define LIMIT_X2_EXTIREG ((LIMIT_X2_BIT >> 2) & 0x03)
+#define LIMIT_X2_EXTIBITMASK (1<<LIMIT_X2_BIT)
+#define LIMIT_X2_IRQ EXTIRQ(LIMIT_X2_BIT)
+#define LIMIT_X2_EXTIVAL (EXTINT(LIMIT_X2_PORT) << ((LIMIT_X2_BIT & 0x03)<<2))
+#define DIO56_EXTIREG LIMIT_X2_EXTIREG
+#define DIO56_EXTIVAL LIMIT_X2_EXTIVAL
+#define DIO56_IRQ LIMIT_X2_IRQ
+#define DIO56_EXTIBITMASK LIMIT_X2_EXTIBITMASK
+#else
+#define LIMIT_X2_EXTIMASK 0
+#define LIMIT_X2_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
+#define LIMIT_Y2_EXTIREG ((LIMIT_Y2_BIT >> 2) & 0x03)
+#define LIMIT_Y2_EXTIBITMASK (1<<LIMIT_Y2_BIT)
+#define LIMIT_Y2_IRQ EXTIRQ(LIMIT_Y2_BIT)
+#define LIMIT_Y2_EXTIVAL (EXTINT(LIMIT_Y2_PORT) << ((LIMIT_Y2_BIT & 0x03)<<2))
+#define DIO57_EXTIREG LIMIT_Y2_EXTIREG
+#define DIO57_EXTIVAL LIMIT_Y2_EXTIVAL
+#define DIO57_IRQ LIMIT_Y2_IRQ
+#define DIO57_EXTIBITMASK LIMIT_Y2_EXTIBITMASK
+#else
+#define LIMIT_Y2_EXTIMASK 0
+#define LIMIT_Y2_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
+#define LIMIT_Z2_EXTIREG ((LIMIT_Z2_BIT >> 2) & 0x03)
+#define LIMIT_Z2_EXTIBITMASK (1<<LIMIT_Z2_BIT)
+#define LIMIT_Z2_IRQ EXTIRQ(LIMIT_Z2_BIT)
+#define LIMIT_Z2_EXTIVAL (EXTINT(LIMIT_Z2_PORT) << ((LIMIT_Z2_BIT & 0x03)<<2))
+#define DIO58_EXTIREG LIMIT_Z2_EXTIREG
+#define DIO58_EXTIVAL LIMIT_Z2_EXTIVAL
+#define DIO58_IRQ LIMIT_Z2_IRQ
+#define DIO58_EXTIBITMASK LIMIT_Z2_EXTIBITMASK
+#else
+#define LIMIT_Z2_EXTIMASK 0
+#define LIMIT_Z2_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
+#define LIMIT_A_EXTIREG ((LIMIT_A_BIT >> 2) & 0x03)
+#define LIMIT_A_EXTIBITMASK (1<<LIMIT_A_BIT)
+#define LIMIT_A_IRQ EXTIRQ(LIMIT_A_BIT)
+#define LIMIT_A_EXTIVAL (EXTINT(LIMIT_A_PORT) << ((LIMIT_A_BIT & 0x03)<<2))
+#define DIO59_EXTIREG LIMIT_A_EXTIREG
+#define DIO59_EXTIVAL LIMIT_A_EXTIVAL
+#define DIO59_IRQ LIMIT_A_IRQ
+#define DIO59_EXTIBITMASK LIMIT_A_EXTIBITMASK
+#else
+#define LIMIT_A_EXTIMASK 0
+#define LIMIT_A_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
+#define LIMIT_B_EXTIREG ((LIMIT_B_BIT >> 2) & 0x03)
+#define LIMIT_B_EXTIBITMASK (1<<LIMIT_B_BIT)
+#define LIMIT_B_IRQ EXTIRQ(LIMIT_B_BIT)
+#define LIMIT_B_EXTIVAL (EXTINT(LIMIT_B_PORT) << ((LIMIT_B_BIT & 0x03)<<2))
+#define DIO60_EXTIREG LIMIT_B_EXTIREG
+#define DIO60_EXTIVAL LIMIT_B_EXTIVAL
+#define DIO60_IRQ LIMIT_B_IRQ
+#define DIO60_EXTIBITMASK LIMIT_B_EXTIBITMASK
+#else
+#define LIMIT_B_EXTIMASK 0
+#define LIMIT_B_EXTIBITMASK 0
+#endif
+#if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
+#define LIMIT_C_EXTIREG ((LIMIT_C_BIT >> 2) & 0x03)
+#define LIMIT_C_EXTIBITMASK (1<<LIMIT_C_BIT)
+#define LIMIT_C_IRQ EXTIRQ(LIMIT_C_BIT)
+#define LIMIT_C_EXTIVAL (EXTINT(LIMIT_C_PORT) << ((LIMIT_C_BIT & 0x03)<<2))
+#define DIO61_EXTIREG LIMIT_C_EXTIREG
+#define DIO61_EXTIVAL LIMIT_C_EXTIVAL
+#define DIO61_IRQ LIMIT_C_IRQ
+#define DIO61_EXTIBITMASK LIMIT_C_EXTIBITMASK
+#else
+#define LIMIT_C_EXTIMASK 0
+#define LIMIT_C_EXTIBITMASK 0
+#endif
+#if (defined(PROBE_ISR) && defined(PROBE))
+#define PROBE_EXTIREG ((PROBE_BIT >> 2) & 0x03)
+#define PROBE_EXTIBITMASK (1<<PROBE_BIT)
+#define PROBE_IRQ EXTIRQ(PROBE_BIT)
+#define PROBE_EXTIVAL (EXTINT(PROBE_PORT) << ((PROBE_BIT & 0x03)<<2))
+#define DIO62_EXTIREG PROBE_EXTIREG
+#define DIO62_EXTIVAL PROBE_EXTIVAL
+#define DIO62_IRQ PROBE_IRQ
+#define DIO62_EXTIBITMASK PROBE_EXTIBITMASK
+#else
+#define PROBE_EXTIMASK 0
+#define PROBE_EXTIBITMASK 0
+#endif
+#if (defined(ESTOP_ISR) && defined(ESTOP))
+#define ESTOP_EXTIREG ((ESTOP_BIT >> 2) & 0x03)
+#define ESTOP_EXTIBITMASK (1<<ESTOP_BIT)
+#define ESTOP_IRQ EXTIRQ(ESTOP_BIT)
+#define ESTOP_EXTIVAL (EXTINT(ESTOP_PORT) << ((ESTOP_BIT & 0x03)<<2))
+#define DIO63_EXTIREG ESTOP_EXTIREG
+#define DIO63_EXTIVAL ESTOP_EXTIVAL
+#define DIO63_IRQ ESTOP_IRQ
+#define DIO63_EXTIBITMASK ESTOP_EXTIBITMASK
+#else
+#define ESTOP_EXTIMASK 0
+#define ESTOP_EXTIBITMASK 0
+#endif
+#if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
+#define SAFETY_DOOR_EXTIREG ((SAFETY_DOOR_BIT >> 2) & 0x03)
+#define SAFETY_DOOR_EXTIBITMASK (1<<SAFETY_DOOR_BIT)
+#define SAFETY_DOOR_IRQ EXTIRQ(SAFETY_DOOR_BIT)
+#define SAFETY_DOOR_EXTIVAL (EXTINT(SAFETY_DOOR_PORT) << ((SAFETY_DOOR_BIT & 0x03)<<2))
+#define DIO64_EXTIREG SAFETY_DOOR_EXTIREG
+#define DIO64_EXTIVAL SAFETY_DOOR_EXTIVAL
+#define DIO64_IRQ SAFETY_DOOR_IRQ
+#define DIO64_EXTIBITMASK SAFETY_DOOR_EXTIBITMASK
+#else
+#define SAFETY_DOOR_EXTIMASK 0
+#define SAFETY_DOOR_EXTIBITMASK 0
+#endif
+#if (defined(FHOLD_ISR) && defined(FHOLD))
+#define FHOLD_EXTIREG ((FHOLD_BIT >> 2) & 0x03)
+#define FHOLD_EXTIBITMASK (1<<FHOLD_BIT)
+#define FHOLD_IRQ EXTIRQ(FHOLD_BIT)
+#define FHOLD_EXTIVAL (EXTINT(FHOLD_PORT) << ((FHOLD_BIT & 0x03)<<2))
+#define DIO65_EXTIREG FHOLD_EXTIREG
+#define DIO65_EXTIVAL FHOLD_EXTIVAL
+#define DIO65_IRQ FHOLD_IRQ
+#define DIO65_EXTIBITMASK FHOLD_EXTIBITMASK
+#else
+#define FHOLD_EXTIMASK 0
+#define FHOLD_EXTIBITMASK 0
+#endif
+#if (defined(CS_RES_ISR) && defined(CS_RES))
+#define CS_RES_EXTIREG ((CS_RES_BIT >> 2) & 0x03)
+#define CS_RES_EXTIBITMASK (1<<CS_RES_BIT)
+#define CS_RES_IRQ EXTIRQ(CS_RES_BIT)
+#define CS_RES_EXTIVAL (EXTINT(CS_RES_PORT) << ((CS_RES_BIT & 0x03)<<2))
+#define DIO66_EXTIREG CS_RES_EXTIREG
+#define DIO66_EXTIVAL CS_RES_EXTIVAL
+#define DIO66_IRQ CS_RES_IRQ
+#define DIO66_EXTIBITMASK CS_RES_EXTIBITMASK
+#else
+#define CS_RES_EXTIMASK 0
+#define CS_RES_EXTIBITMASK 0
 #endif
-#ifndef LIMIT_X_ISR1
-#define LIMIT_X_ISR1 0
-#endif
-#ifndef LIMIT_X_ISR2
-#define LIMIT_X_ISR2 0
-#endif
-#ifndef LIMIT_X_ISRA
-#define LIMIT_X_ISRA 0
-#endif
-#ifndef LIMIT_X_ISRB
-#define LIMIT_X_ISRB 0
-#endif
-#define LIMIT_X_ISR_MASK (LIMIT_X_ISR0 | LIMIT_X_ISR1 | LIMIT_X_ISR2 | LIMIT_X_ISRA | LIMIT_X_ISRB)
-#ifndef LIMIT_Y_ISR0
-#define LIMIT_Y_ISR0 0
-#endif
-#ifndef LIMIT_Y_ISR1
-#define LIMIT_Y_ISR1 0
-#endif
-#ifndef LIMIT_Y_ISR2
-#define LIMIT_Y_ISR2 0
-#endif
-#ifndef LIMIT_Y_ISRA
-#define LIMIT_Y_ISRA 0
-#endif
-#ifndef LIMIT_Y_ISRB
-#define LIMIT_Y_ISRB 0
-#endif
-#define LIMIT_Y_ISR_MASK (LIMIT_Y_ISR0 | LIMIT_Y_ISR1 | LIMIT_Y_ISR2 | LIMIT_Y_ISRA | LIMIT_Y_ISRB)
-#ifndef LIMIT_Z_ISR0
-#define LIMIT_Z_ISR0 0
-#endif
-#ifndef LIMIT_Z_ISR1
-#define LIMIT_Z_ISR1 0
-#endif
-#ifndef LIMIT_Z_ISR2
-#define LIMIT_Z_ISR2 0
-#endif
-#ifndef LIMIT_Z_ISRA
-#define LIMIT_Z_ISRA 0
-#endif
-#ifndef LIMIT_Z_ISRB
-#define LIMIT_Z_ISRB 0
-#endif
-#define LIMIT_Z_ISR_MASK (LIMIT_Z_ISR0 | LIMIT_Z_ISR1 | LIMIT_Z_ISR2 | LIMIT_Z_ISRA | LIMIT_Z_ISRB)
-#ifndef LIMIT_X2_ISR0
-#define LIMIT_X2_ISR0 0
-#endif
-#ifndef LIMIT_X2_ISR1
-#define LIMIT_X2_ISR1 0
-#endif
-#ifndef LIMIT_X2_ISR2
-#define LIMIT_X2_ISR2 0
-#endif
-#ifndef LIMIT_X2_ISRA
-#define LIMIT_X2_ISRA 0
-#endif
-#ifndef LIMIT_X2_ISRB
-#define LIMIT_X2_ISRB 0
-#endif
-#define LIMIT_X2_ISR_MASK (LIMIT_X2_ISR0 | LIMIT_X2_ISR1 | LIMIT_X2_ISR2 | LIMIT_X2_ISRA | LIMIT_X2_ISRB)
-#ifndef LIMIT_Y2_ISR0
-#define LIMIT_Y2_ISR0 0
-#endif
-#ifndef LIMIT_Y2_ISR1
-#define LIMIT_Y2_ISR1 0
-#endif
-#ifndef LIMIT_Y2_ISR2
-#define LIMIT_Y2_ISR2 0
-#endif
-#ifndef LIMIT_Y2_ISRA
-#define LIMIT_Y2_ISRA 0
-#endif
-#ifndef LIMIT_Y2_ISRB
-#define LIMIT_Y2_ISRB 0
-#endif
-#define LIMIT_Y2_ISR_MASK (LIMIT_Y2_ISR0 | LIMIT_Y2_ISR1 | LIMIT_Y2_ISR2 | LIMIT_Y2_ISRA | LIMIT_Y2_ISRB)
-#ifndef LIMIT_Z2_ISR0
-#define LIMIT_Z2_ISR0 0
-#endif
-#ifndef LIMIT_Z2_ISR1
-#define LIMIT_Z2_ISR1 0
-#endif
-#ifndef LIMIT_Z2_ISR2
-#define LIMIT_Z2_ISR2 0
-#endif
-#ifndef LIMIT_Z2_ISRA
-#define LIMIT_Z2_ISRA 0
-#endif
-#ifndef LIMIT_Z2_ISRB
-#define LIMIT_Z2_ISRB 0
-#endif
-#define LIMIT_Z2_ISR_MASK (LIMIT_Z2_ISR0 | LIMIT_Z2_ISR1 | LIMIT_Z2_ISR2 | LIMIT_Z2_ISRA | LIMIT_Z2_ISRB)
-#ifndef LIMIT_A_ISR0
-#define LIMIT_A_ISR0 0
-#endif
-#ifndef LIMIT_A_ISR1
-#define LIMIT_A_ISR1 0
-#endif
-#ifndef LIMIT_A_ISR2
-#define LIMIT_A_ISR2 0
-#endif
-#ifndef LIMIT_A_ISRA
-#define LIMIT_A_ISRA 0
-#endif
-#ifndef LIMIT_A_ISRB
-#define LIMIT_A_ISRB 0
-#endif
-#define LIMIT_A_ISR_MASK (LIMIT_A_ISR0 | LIMIT_A_ISR1 | LIMIT_A_ISR2 | LIMIT_A_ISRA | LIMIT_A_ISRB)
-#ifndef LIMIT_B_ISR0
-#define LIMIT_B_ISR0 0
-#endif
-#ifndef LIMIT_B_ISR1
-#define LIMIT_B_ISR1 0
-#endif
-#ifndef LIMIT_B_ISR2
-#define LIMIT_B_ISR2 0
-#endif
-#ifndef LIMIT_B_ISRA
-#define LIMIT_B_ISRA 0
-#endif
-#ifndef LIMIT_B_ISRB
-#define LIMIT_B_ISRB 0
-#endif
-#define LIMIT_B_ISR_MASK (LIMIT_B_ISR0 | LIMIT_B_ISR1 | LIMIT_B_ISR2 | LIMIT_B_ISRA | LIMIT_B_ISRB)
-#ifndef LIMIT_C_ISR0
-#define LIMIT_C_ISR0 0
-#endif
-#ifndef LIMIT_C_ISR1
-#define LIMIT_C_ISR1 0
-#endif
-#ifndef LIMIT_C_ISR2
-#define LIMIT_C_ISR2 0
-#endif
-#ifndef LIMIT_C_ISRA
-#define LIMIT_C_ISRA 0
-#endif
-#ifndef LIMIT_C_ISRB
-#define LIMIT_C_ISRB 0
-#endif
-#define LIMIT_C_ISR_MASK (LIMIT_C_ISR0 | LIMIT_C_ISR1 | LIMIT_C_ISR2 | LIMIT_C_ISRA | LIMIT_C_ISRB)
-#ifndef PROBE_ISR0
-#define PROBE_ISR0 0
-#endif
-#ifndef PROBE_ISR1
-#define PROBE_ISR1 0
-#endif
-#ifndef PROBE_ISR2
-#define PROBE_ISR2 0
-#endif
-#ifndef PROBE_ISRA
-#define PROBE_ISRA 0
-#endif
-#ifndef PROBE_ISRB
-#define PROBE_ISRB 0
-#endif
-#define PROBE_ISR_MASK (PROBE_ISR0 | PROBE_ISR1 | PROBE_ISR2 | PROBE_ISRA | PROBE_ISRB)
-#ifndef ESTOP_ISR0
-#define ESTOP_ISR0 0
-#endif
-#ifndef ESTOP_ISR1
-#define ESTOP_ISR1 0
-#endif
-#ifndef ESTOP_ISR2
-#define ESTOP_ISR2 0
-#endif
-#ifndef ESTOP_ISRA
-#define ESTOP_ISRA 0
-#endif
-#ifndef ESTOP_ISRB
-#define ESTOP_ISRB 0
-#endif
-#define ESTOP_ISR_MASK (ESTOP_ISR0 | ESTOP_ISR1 | ESTOP_ISR2 | ESTOP_ISRA | ESTOP_ISRB)
-#ifndef SAFETY_DOOR_ISR0
-#define SAFETY_DOOR_ISR0 0
-#endif
-#ifndef SAFETY_DOOR_ISR1
-#define SAFETY_DOOR_ISR1 0
-#endif
-#ifndef SAFETY_DOOR_ISR2
-#define SAFETY_DOOR_ISR2 0
-#endif
-#ifndef SAFETY_DOOR_ISRA
-#define SAFETY_DOOR_ISRA 0
-#endif
-#ifndef SAFETY_DOOR_ISRB
-#define SAFETY_DOOR_ISRB 0
-#endif
-#define SAFETY_DOOR_ISR_MASK (SAFETY_DOOR_ISR0 | SAFETY_DOOR_ISR1 | SAFETY_DOOR_ISR2 | SAFETY_DOOR_ISRA | SAFETY_DOOR_ISRB)
-#ifndef FHOLD_ISR0
-#define FHOLD_ISR0 0
-#endif
-#ifndef FHOLD_ISR1
-#define FHOLD_ISR1 0
-#endif
-#ifndef FHOLD_ISR2
-#define FHOLD_ISR2 0
-#endif
-#ifndef FHOLD_ISRA
-#define FHOLD_ISRA 0
-#endif
-#ifndef FHOLD_ISRB
-#define FHOLD_ISRB 0
-#endif
-#define FHOLD_ISR_MASK (FHOLD_ISR0 | FHOLD_ISR1 | FHOLD_ISR2 | FHOLD_ISRA | FHOLD_ISRB)
-#ifndef CS_RES_ISR0
-#define CS_RES_ISR0 0
-#endif
-#ifndef CS_RES_ISR1
-#define CS_RES_ISR1 0
-#endif
-#ifndef CS_RES_ISR2
-#define CS_RES_ISR2 0
-#endif
-#ifndef CS_RES_ISRA
-#define CS_RES_ISRA 0
-#endif
-#ifndef CS_RES_ISRB
-#define CS_RES_ISRB 0
-#endif
-#define CS_RES_ISR_MASK (CS_RES_ISR0 | CS_RES_ISR1 | CS_RES_ISR2 | CS_RES_ISRA | CS_RES_ISRB)
 
 /**********************************************
 *	PWM pins

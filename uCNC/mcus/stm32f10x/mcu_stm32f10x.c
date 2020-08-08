@@ -26,6 +26,9 @@ extern void serial_rx_isr(unsigned char c);
 extern void serial_tx_isr(void);
 extern void itp_step_isr(void);
 extern void itp_step_reset_isr(void);
+extern void io_limits_isr(void);
+extern void io_controls_isr(void);
+extern void io_probe_isr(void);
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_10MHZ 0x1U
@@ -35,23 +38,23 @@ extern void itp_step_reset_isr(void);
 #define GPIO_IN_PP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits
 
-#define mcu_config_output(diopin)                                                                                             \
-	{                                                                                                                         \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                         \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_10MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+#define mcu_config_output(diopin)                                                                                           \
+	{                                                                                                                       \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_10MHZ << (__indirect__(diopin, CROFF) << 2U)); \
 	}
-#define mcu_config_input(diopin)                                                                                          \
-	{                                                                                                                     \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                     \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << ((__indirect__(diopin, CROFF)) << 2U)); \
+#define mcu_config_input(diopin)                                                                                        \
+	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
-#define mcu_config_pullup(diopin)                                                                                          \
-	{                                                                                                                      \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_IN_FLOAT << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= ~(GPIO_IN_PP << ((__indirect__(diopin, CROFF)) << 2U));    \
-		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                              \
+#define mcu_config_pullup(diopin)                                                                                        \
+	{                                                                                                                    \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PP << (__indirect__(diopin, CROFF) << 2U));     \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                            \
 	}
 #define mcu_config_pwm(diopin)                                                                                                  \
 	{                                                                                                                           \
@@ -67,17 +70,20 @@ extern void itp_step_reset_isr(void);
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                               \
 		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                        \
 		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                             \
-		__indirect__(diopin, ENOUTPUT);                                                                                       \
+		__indirect__(diopin, ENOUTPUT);                                                                                         \
 	}
 
 #define mcu_config_input_isr(diopin)                                                                                      \
 	{                                                                                                                     \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~__indirect__(diopin, EXTIVAL);                                    \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= __indirect__(diopin, EXTIVAL);                                     \
+		RCC->APB2ENR |= 0x1U;                                                                                             \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2));               \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                                   \
 		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                                    \
 		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                                    \
 		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                                     \
-		NVIC->ISER[((6 + __indirect__(diopin, EXTIREG)) >> 5U)] = (1U << ((6U + __indirect__(diopin, EXTIREG)) & 0x1FU)); \
+		NVIC->ISER[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
+		NVIC->IP[(uint32_t)(__indirect__(diopin, IRQ))] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);                         \
+		NVIC->ICPR[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
 	}
 
 #define mcu_config_analog(diopin)                                                                                       \
@@ -90,7 +96,7 @@ extern void itp_step_reset_isr(void);
 	}
 
 #ifdef COM_PORT
-__attribute__((always_inline)) static inline void mcu_serial_isr(void)
+void mcu_serial_isr(void)
 {
 	if (COM_USART->SR & (1U << 5U))
 	{
@@ -106,7 +112,7 @@ __attribute__((always_inline)) static inline void mcu_serial_isr(void)
 }
 #endif
 
-__attribute__((always_inline)) static inline void mcu_timer_isr(void)
+void mcu_timer_isr(void)
 {
 	static bool resetstep = false;
 	if ((TIMER_REG->SR & 1))
@@ -122,89 +128,58 @@ __attribute__((always_inline)) static inline void mcu_timer_isr(void)
 	mcu_enable_interrupts();
 }
 
-#if (COM_PORT == 1)
-void USART1_IRQHandler(void)
+#define LIMITS_EXTIBITMASK (LIMIT_X_EXTIBITMASK | LIMIT_Y_EXTIBITMASK | LIMIT_Z_EXTIBITMASK | LIMIT_X2_EXTIBITMASK | LIMIT_Y2_EXTIBITMASK | LIMIT_Z2_EXTIBITMASK | LIMIT_A_EXTIBITMASK | LIMIT_B_EXTIBITMASK | LIMIT_C_EXTIBITMASK)
+#define CONTROLS_EXTIBITMASK (ESTOP_EXTIBITMASK | SAFETY_DOOR_EXTIBITMASK | FHOLD_EXTIBITMASK | CS_RES_EXTIBITMASK)
+#define ALL_EXTIBITMASK (LIMITS_EXTIBITMASK | CONTROLS_EXTIBITMASK | PROBE_EXTIBITMASK)
+
+#if (ALL_EXTIBITMASK!=0)
+void mcu_input_isr(void)
 {
-	mcu_serial_isr();
-}
-#elif (COM_PORT == 2)
-void USART2_IRQHandler(void)
-{
-	mcu_serial_isr();
-}
-#elif (COM_PORT == 3)
-void USART3_IRQHandler(void)
-{
-	mcu_serial_isr();
-}
-#elif (COM_PORT == 4)
-void UART4_IRQHandler(void)
-{
-	mcu_serial_isr();
-}
-#elif (COM_PORT == 5)
-void UART5_IRQHandler(void)
-{
-	mcu_serial_isr();
+#if (LIMITS_EXTIBITMASK!=0)
+	if (EXTI->PR & LIMITS_EXTIBITMASK)
+	{
+		io_limits_isr();
+		EXTI->PR = LIMITS_EXTIBITMASK;
+	}
+#endif
+#if (CONTROLS_EXTIBITMASK!=0)
+	if (EXTI->PR & CONTROLS_EXTIBITMASK)
+	{
+		io_controls_isr();
+		EXTI->PR = CONTROLS_EXTIBITMASK;
+	}
+#endif
+#if (PROBE_EXTIBITMASK & 0x01)
+	if (EXTI->PR & PROBE_EXTIBITMASK)
+	{
+		io_probe_isr();
+		EXTI->PR = PROBE_EXTIBITMASK;
+	}
+#endif
+#if(ALL_EXTIBITMASK==0x0001)
+NVIC->ICPR[((uint32_t)(EXTI0_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI0_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK==0x0002)
+NVIC->ICPR[((uint32_t)(EXTI1_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI1_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK==0x0004)
+NVIC->ICPR[((uint32_t)(EXTI2_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI2_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK==0x0008)
+NVIC->ICPR[((uint32_t)(EXTI3_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI3_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK==0x0010)
+NVIC->ICPR[((uint32_t)(EXTI4_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI4_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK&0x03E0)
+NVIC->ICPR[((uint32_t)(EXTI9_5_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI9_5_IRQn)&0x1F));
+#endif
+#if(ALL_EXTIBITMASK==0xFC00)
+NVIC->ICPR[((uint32_t)(EXTI15_10_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI15_10_IRQn)&0x1F));
+#endif
 }
 #endif
 
-#if (TIMER_NUMBER == 1)
-void TIM1_UP_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 2)
-void TIM2_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 3)
-void TIM3_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 4)
-void TIM4_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 5)
-void TIM5_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 6)
-void TIM6_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_NUMBER == 7)
-void TIM7_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_UP_NUMBER == 8)
-void TIM8_UP_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_UP_NUMBER == 9)
-void TIM9_UP_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_UP_NUMBER == 10)
-void TIM10_UP_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#elif (TIMER_UP_NUMBER == 11)
-void TIM11_UP_IRQHandler(void)
-{
-	mcu_timer_isr();
-}
-#endif
 
 static void mcu_usart_init(void)
 {
@@ -285,6 +260,12 @@ void mcu_init(void)
 #endif
 #ifdef STEP5
 	mcu_config_output(STEP5);
+#endif
+#ifdef STEP6
+	mcu_config_output(STEP6);
+#endif
+#ifdef STEP7
+	mcu_config_output(STEP7);
 #endif
 #ifdef STEP0_EN
 	mcu_config_output(STEP0_EN);
@@ -370,6 +351,7 @@ void mcu_init(void)
 #ifdef PWM15
 	mcu_config_pwm(PWM15);
 #endif
+
 #ifdef DOUT0
 	mcu_config_output(DOUT0);
 #endif
@@ -420,84 +402,126 @@ void mcu_init(void)
 #endif
 #ifdef LIMIT_X
 	mcu_config_input(LIMIT_X);
+#ifdef LIMIT_X_PULLUP
+	mcu_config_pullup(LIMIT_X);
+#endif
 #ifdef LIMIT_X_ISR
 	mcu_config_input_isr(LIMIT_X);
 #endif
 #endif
 #ifdef LIMIT_Y
 	mcu_config_input(LIMIT_Y);
+#ifdef LIMIT_Y_PULLUP
+	mcu_config_pullup(LIMIT_Y);
+#endif
 #ifdef LIMIT_Y_ISR
 	mcu_config_input_isr(LIMIT_Y);
 #endif
 #endif
 #ifdef LIMIT_Z
 	mcu_config_input(LIMIT_Z);
+#ifdef LIMIT_Z_PULLUP
+	mcu_config_pullup(LIMIT_Z);
+#endif
 #ifdef LIMIT_Z_ISR
 	mcu_config_input_isr(LIMIT_Z);
 #endif
 #endif
 #ifdef LIMIT_X2
 	mcu_config_input(LIMIT_X2);
+#ifdef LIMIT_X2_PULLUP
+	mcu_config_pullup(LIMIT_X2);
+#endif
 #ifdef LIMIT_X2_ISR
 	mcu_config_input_isr(LIMIT_X2);
 #endif
 #endif
 #ifdef LIMIT_Y2
 	mcu_config_input(LIMIT_Y2);
+#ifdef LIMIT_Y2_PULLUP
+	mcu_config_pullup(LIMIT_Y2);
+#endif
 #ifdef LIMIT_Y2_ISR
 	mcu_config_input_isr(LIMIT_Y2);
 #endif
 #endif
 #ifdef LIMIT_Z2
 	mcu_config_input(LIMIT_Z2);
+#ifdef LIMIT_Z2_PULLUP
+	mcu_config_pullup(LIMIT_Z2);
+#endif
 #ifdef LIMIT_Z2_ISR
 	mcu_config_input_isr(LIMIT_Z2);
 #endif
 #endif
 #ifdef LIMIT_A
 	mcu_config_input(LIMIT_A);
+#ifdef LIMIT_A_PULLUP
+	mcu_config_pullup(LIMIT_A);
+#endif
 #ifdef LIMIT_A_ISR
 	mcu_config_input_isr(LIMIT_A);
 #endif
 #endif
 #ifdef LIMIT_B
 	mcu_config_input(LIMIT_B);
+#ifdef LIMIT_B_PULLUP
+	mcu_config_pullup(LIMIT_B);
+#endif
 #ifdef LIMIT_B_ISR
 	mcu_config_input_isr(LIMIT_B);
 #endif
 #endif
 #ifdef LIMIT_C
 	mcu_config_input(LIMIT_C);
+#ifdef LIMIT_C_PULLUP
+	mcu_config_pullup(LIMIT_C);
+#endif
 #ifdef LIMIT_C_ISR
 	mcu_config_input_isr(LIMIT_C);
 #endif
 #endif
 #ifdef PROBE
 	mcu_config_input(PROBE);
+#ifdef PROBE_PULLUP
+	mcu_config_pullup(PROBE);
+#endif
 #ifdef PROBE_ISR
 	mcu_config_input_isr(PROBE);
 #endif
 #endif
 #ifdef ESTOP
 	mcu_config_input(ESTOP);
+#ifdef ESTOP_PULLUP
+	mcu_config_pullup(ESTOP);
+#endif
 #ifdef ESTOP_ISR
 	mcu_config_input_isr(ESTOP);
 #endif
 #endif
 #ifdef SAFETY_DOOR
 	mcu_config_input(SAFETY_DOOR);
+#ifdef SAFETY_DOOR_PULLUP
+	mcu_config_pullup(SAFETY_DOOR);
+#endif
 #ifdef SAFETY_DOOR_ISR
 	mcu_config_input_isr(SAFETY_DOOR);
 #endif
 #endif
 #ifdef FHOLD
 	mcu_config_input(FHOLD);
+#ifdef FHOLD_PULLUP
+	mcu_config_pullup(FHOLD);
+#endif
 #ifdef FHOLD_ISR
 	mcu_config_input_isr(FHOLD);
 #endif
 #endif
 #ifdef CS_RES
 	mcu_config_input(CS_RES);
+#ifdef CS_RES_PULLUP
+	mcu_config_pullup(CS_RES);
+#endif
 #ifdef CS_RES_ISR
 	mcu_config_input_isr(CS_RES);
 #endif
@@ -550,59 +574,108 @@ void mcu_init(void)
 #ifdef ANALOG15
 	mcu_config_analog(ANALOG15);
 #endif
+
 #ifdef DIN0
 	mcu_config_input(DIN0);
+#ifdef DIN0_PULLUP
+	mcu_config_pullup(DIN0);
+#endif
 #endif
 #ifdef DIN1
 	mcu_config_input(DIN1);
+#ifdef DIN1_PULLUP
+	mcu_config_pullup(DIN1);
+#endif
 #endif
 #ifdef DIN2
 	mcu_config_input(DIN2);
+#ifdef DIN2_PULLUP
+	mcu_config_pullup(DIN2);
+#endif
 #endif
 #ifdef DIN3
 	mcu_config_input(DIN3);
+#ifdef DIN3_PULLUP
+	mcu_config_pullup(DIN3);
+#endif
 #endif
 #ifdef DIN4
 	mcu_config_input(DIN4);
+#ifdef DIN4_PULLUP
+	mcu_config_pullup(DIN4);
+#endif
 #endif
 #ifdef DIN5
 	mcu_config_input(DIN5);
+#ifdef DIN5_PULLUP
+	mcu_config_pullup(DIN5);
+#endif
 #endif
 #ifdef DIN6
 	mcu_config_input(DIN6);
+#ifdef DIN6_PULLUP
+	mcu_config_pullup(DIN6);
+#endif
 #endif
 #ifdef DIN7
 	mcu_config_input(DIN7);
+#ifdef DIN7_PULLUP
+	mcu_config_pullup(DIN7);
+#endif
 #endif
 #ifdef DIN8
 	mcu_config_input(DIN8);
+#ifdef DIN8_PULLUP
+	mcu_config_pullup(DIN8);
+#endif
 #endif
 #ifdef DIN9
 	mcu_config_input(DIN9);
+#ifdef DIN9_PULLUP
+	mcu_config_pullup(DIN9);
+#endif
 #endif
 #ifdef DIN10
 	mcu_config_input(DIN10);
+#ifdef DIN10_PULLUP
+	mcu_config_pullup(DIN10);
+#endif
 #endif
 #ifdef DIN11
 	mcu_config_input(DIN11);
+#ifdef DIN11_PULLUP
+	mcu_config_pullup(DIN11);
+#endif
 #endif
 #ifdef DIN12
 	mcu_config_input(DIN12);
+#ifdef DIN12_PULLUP
+	mcu_config_pullup(DIN12);
+#endif
 #endif
 #ifdef DIN13
 	mcu_config_input(DIN13);
+#ifdef DIN13_PULLUP
+	mcu_config_pullup(DIN13);
+#endif
 #endif
 #ifdef DIN14
 	mcu_config_input(DIN14);
+#ifdef DIN14_PULLUP
+	mcu_config_pullup(DIN14);
+#endif
 #endif
 #ifdef DIN15
 	mcu_config_input(DIN15);
+#ifdef DIN15_PULLUP
+	mcu_config_pullup(DIN15);
+#endif
 #endif
 
 #ifdef COM_PORT
 	mcu_usart_init();
 #endif
-
+                 
 	mcu_enable_interrupts();
 #ifdef LED
 	mcu_clear_output(LED);

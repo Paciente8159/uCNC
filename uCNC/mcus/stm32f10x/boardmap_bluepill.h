@@ -53,27 +53,33 @@
 #define LIMIT_X_PULLUP
 #define LIMIT_Y_PULLUP
 #define LIMIT_Z_PULLUP
+//Active limits switch interrupt
+#define LIMIT_Z_ISR
+#define LIMIT_Y_ISR
+#define LIMIT_X_ISR
 
 //Setup probe pin
 #define PROBE_BIT 9
 #define PROBE_PORT B
-//#define PROBE_ISR 1
+#define PROBE_ISR
 
 //Setup control input pins
 #define ESTOP_BIT 5
 #define ESTOP_PORT B
-//#define ESTOP_ISR
 #define FHOLD_BIT 6
 #define FHOLD_PORT B
 #define CS_RES_BIT 7
 #define CS_RES_PORT B
-/*#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1*/
 
 //Active controls switch weak pull-ups
 #define ESTOP_PULLUP
 #define FHOLD_PULLUP
+#define CS_RES_PULLUP
+
+//Active controls switch interrupt
+#define ESTOP_ISR
+#define FHOLD_ISR
+#define CS_RES_ISR
 
 //Setup COM pins (must match selected COM port)
 //#define RX_BIT 10
