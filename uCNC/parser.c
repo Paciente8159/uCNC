@@ -539,6 +539,7 @@ static uint8_t parser_grbl_command(void)
         {
             float val = 0;
             uint8_t setting_num = 0;
+            serial_ungetc();
             error = parser_get_float(&val);
             if (!error)
             {
