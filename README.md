@@ -74,7 +74,7 @@ TODO List of G-Codes in µCNC future releases:
 µCNC with a configuration similar to Grbl is be able to keep up to 30Khz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the lenght of the segments too, since many short length segments don't allow full speed to be achieved)
 
 ### Current µCNC supported hardware
-µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in Arduino Mega (for Ramps), or similar boards (like Rambo).
+µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). With v1.1.0 STM32F10x was added.
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
