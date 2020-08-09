@@ -26,6 +26,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
    - Configurable axis skew compensation
    - Alternative new planner strategy (linear actuator driven for high inertia machines)
    - Dynamic step spreading algorithm (similar to Grbl's AMASS) to reduce vibrations caused by steppers at slower step rates
+   - HAL for STM32F1 boards now available
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
@@ -79,6 +80,7 @@ I used several UNO emulators but debugging was not easy. So a kind of virtual bo
 It can run on:
   - Arduino UNO
   - Arduino MEGA
+  - STM32F1 Blue Pill
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 In the future µCNC will most probably be extended to:

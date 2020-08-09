@@ -10,10 +10,11 @@
 Version 1.1.0 comes with many added features and improvements over the previous version. It also fixes many of the bugs and limitations of the previous implementation. These are:
 
 ### Added
-  - added new planner mode (linear actuator driven) that can be enabled via config file. This plans acceleration and deceleration based on the motion change in the linear actuators and not the cartesian axis. This should be advantageous on mechanically heavy machines. Also an option to enforce cold start motions (if any linear actuator starts at velocity 0 all other go to a full stop when ending the previous move - hybrid G61 and G61.1) (#23)
-  - added backlash compensation on the fly (enabled via config file) with configurable via parameters `$140´(X), `$141´(Y), `$142´(Z), `$143´(A), `$144´(B) and `$145´ (C) (#23)
-  - added axis skew compensation (enabled via config file)  with configurable via parameters `$37´(XY), `$38´(XZ) and `$39´(YZ) (#23)
-  - added new DSS (dynamic step spread) algorithm (similar to Grbl's AMASS (enabled via config file). This distributes step execution at lower step rates so that the vibration noise produced is reduced. (#22) (#18)
+  - new planner mode (linear actuator driven) that can be enabled via config file. This plans acceleration and deceleration based on the motion change in the linear actuators and not the cartesian axis. This should be advantageous on mechanically heavy machines. Also an option to enforce cold start motions (if any linear actuator starts at velocity 0 all other go to a full stop when ending the previous move - hybrid G61 and G61.1) (#23)
+  - new backlash compensation (enabled via config file) with configurable via parameters `$140´(X), `$141´(Y), `$142´(Z), `$143´(A), `$144´(B) and `$145´ (C) (#23)
+  - new axis skew compensation (enabled via config file)  with configurable via parameters `$37´(XY), `$38´(XZ) and `$39´(YZ) (#23)
+  - new DSS (dynamic step spread) algorithm (similar to Grbl's AMASS (enabled via config file). This distributes step execution at lower step rates so that the vibration noise produced is reduced. (#22) (#18)
+  - new STM32F10x HAL (#15). Although not all features are available it is usable. Boardmap for blue pill board available.
 
 ### Changed
   - modified distribution of main (to follow #15)
@@ -23,6 +24,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
   - improved separation of comment message processing and command echo (debug purposes only)
 
 ### Fixed
+  - fixed AVR HAL pwm generation was not working for all channels. Also analog reading is now available.
   - fixed overflow serial error that occur if 128 bytes (Grbl's limit) were sent to the buffer.
   - fixed several compilation errors with other configurations
   - fixed avr mapfile for grbl
