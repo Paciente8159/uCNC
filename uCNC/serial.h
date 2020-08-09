@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -21,8 +21,13 @@
 
 #define EOL 0x00		   //end of line char
 #define OVF 0x7F		   //overflow char
-#define RX_BUFFER_SIZE 129 //buffer sizes
-#define TX_BUFFER_SIZE 112 //buffer sizes
+#define SAFEMARGIN 2
+#define RX_BUFFER_SIZE 128 + SAFEMARGIN//buffer sizes
+#ifdef ENABLE_SYNC_TX
+#define TX_BUFFER_SIZE 1
+#else
+#define TX_BUFFER_SIZE 112 + SAFEMARGIN//buffer sizes
+#endif
 
 #define SERIAL_UART 0
 #define SERIAL_N0 1

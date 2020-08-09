@@ -33,6 +33,7 @@
 *.dylib
 
 # Executables
+build/
 *.exe
 *.out
 *.app
@@ -60,3 +61,6 @@ dkms.conf
 *.win
 virtualeeprom
 *.txt
+
+# Other files
+*.dat

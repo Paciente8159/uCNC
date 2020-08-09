@@ -1,4 +1,4 @@
-/*uint16_t offset;
+uint16_t offset;
 
 #define ADD a + b
 #define SUB a - b
@@ -12,6 +12,8 @@
 #define COS cos(a)
 #define SIN sin(a)
 #define TAN tan(a)
+#define HALF (0.5f*a)
+#define HALF_FAST ({uint32_t result = (*(int32_t*)&a); result = ((result&0x7f800000)!=0) ? (((result-0x00800000)&0x7f800000) | (result &(~0x7f800000))) : (result>>1); (*(float*)&result);})
 
 #define PRINT_OP(X) Serial.println(#X)
 
@@ -26,14 +28,17 @@ Serial.print("a = ");\
 Serial.println(a);\
 Serial.print("b = ");\
 Serial.println(b);\
-Serial.print("res = ");\
+if(a<res) \
+Serial.print("res > ");\
+else \
+Serial.print("res < ");\
 Serial.println(res);\
 Serial.print("Elapsed (clocks): ");\
 Serial.println(clocks-offset);\
 }
-*/
+
 void setup() {
-  /*offset = 0;
+  offset = 0;
   Serial.begin(9600);
   randomSeed(analogRead(0));
   TCCR1A = 0;
@@ -63,7 +68,10 @@ void setup() {
   DO_OP(float, 0,10000,ROUND);
   DO_OP(float, 0,10000,ROUNDA);
   DO_OP(float, 0,50,INV);
-  DO_OP(float, 0,50,DBL);*/
+  DO_OP(float, 0,50,DBL);
+  DO_OP(float, 0,10000,HALF);
+  DO_OP(float, 0,10000,HALF_FAST);
+  DO_OP(float, 0.0000001,0.000002,HALF_FAST);
 }
 
 void timeloop(uint16_t loops)

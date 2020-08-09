@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -31,8 +31,8 @@
 #define STEP1_PORT D //assigns STEP1 port
 #define STEP0_BIT 2 //assigns STEP0 pin
 #define STEP0_PORT D //assigns STEP0 port
-#define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
-#define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
+//#define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
+//#define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
 
 //Setup dir pins
 #define DIR2_BIT 7 //assigns DIR2 pin
@@ -80,8 +80,8 @@
 #define CS_RES_ISR 1
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+//#define ESTOP_PULLUP
+//#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX_BIT 0
@@ -101,10 +101,8 @@
 //Functionalities are set in config.h file
 #define DOUT0_BIT 5
 #define DOUT0_PORT B
-#define DOUT1_BIT 0
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
-#define DOUT2_PORT C
+#define DOUT1_BIT 3
+#define DOUT1_PORT C
 
 //Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0

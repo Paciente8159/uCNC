@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdint.h>
 #include "config.h"
-#include "utils.h"
 #include "settings.h"
 #include "mcudefs.h"
 #include "mcu.h"
@@ -51,7 +50,6 @@ static cnc_state_t cnc_state;
 static void cnc_check_fault_systems();
 static bool cnc_check_interlocking();
 static void cnc_exec_rt_commands();
-static void cnc_exec_rt_messages();
 static void cnc_reset();
 
 void cnc_init(void)
@@ -64,10 +62,10 @@ void cnc_init(void)
     mcu_init();      //mcu
     serial_init();   //serial
     settings_init(); //settings
-    parser_init();   //parser
-    mc_init();       //motion control
-    planner_init();  //motion planner
     itp_init();      //interpolator
+    planner_init();  //motion planner
+    mc_init();       //motion control
+    parser_init();   //parser
     serial_flush();
 }
 
@@ -85,35 +83,11 @@ void cnc_run(void)
             uint8_t c = serial_peek();
             switch (c)
             {
-            case EOL:
+            case EOL: //not necessary but faster to catch empty lines and windows newline (CR+LF)
                 serial_getc();
                 break;
-            case '$':
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_ECHO);
-#endif
-                error = parser_grbl_command();
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_END);
-#endif
-                error = parse_grbl_error_code(error); //processes the error code to perform additional actions
-                break;
             default:
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_ECHO);
-#endif
-                if (!cnc_get_exec_state(EXEC_GCODE_LOCKED))
-                {
-                    error = parser_gcode_command();
-                }
-                else
-                {
-                    error = STATUS_SYSTEM_GC_LOCK;
-                }
-
-#ifdef ECHO_CMD
-                protocol_send_string(MSG_END);
-#endif
+                error = parser_read_command();
                 break;
             }
             if (!error)
@@ -132,7 +106,7 @@ void cnc_run(void)
     if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - ignore it)
     {
         cnc_check_fault_systems();
-        protocol_send_string(MSG_FEEDBACK_1);
+        protocol_send_feedback(MSG_FEEDBACK_1);
         do
         {
         } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
@@ -259,20 +233,20 @@ void cnc_home(void)
     cnc_unlock();
 
     float target[AXIS_COUNT];
-    planner_block_data_t block_data;
-    planner_get_position(target);
+    motion_data_t block_data;
+    mc_get_position(target);
 
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
-        target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
+        target[i] += ((g_settings.homing_dir_invert_mask & (1<<i)) ? -g_settings.homing_offset : g_settings.homing_offset);
     }
 
-    block_data.feed = g_settings.homing_fast_feed_rate * MIN_SEC_MULT;
+    block_data.feed = g_settings.homing_fast_feed_rate;
     block_data.spindle = 0;
     block_data.dwell = 0;
     //starts offset and waits to finnish
-    planner_add_line((float *)&target, block_data);
+    mc_line(target, &block_data);
     do
     {
         cnc_doevents();
@@ -305,8 +279,12 @@ void cnc_stop(void)
     mcu_clear_output(SPINDLE_DIR);
 #endif
 #ifdef USE_COOLANT
+#ifdef COOLANT_FLOOD
     mcu_clear_output(COOLANT_FLOOD);
+    #endif
+#ifdef COOLANT_MIST
     mcu_clear_output(COOLANT_MIST);
+#endif
 #endif
 }
 
@@ -391,7 +369,7 @@ void cnc_reset(void)
         //cnc_check_fault_systems();
         if (!cnc_get_exec_state(EXEC_ABORT))
         {
-            protocol_send_string(MSG_FEEDBACK_2);
+            protocol_send_feedback(MSG_FEEDBACK_2);
         }
     }
     else
@@ -410,7 +388,7 @@ void cnc_reset(void)
 //If two flags have different effects on the same attribute the one with the LSB will run last and overwrite the other
 void cnc_exec_rt_commands(void)
 {
-    bool update_spindle = false;
+    bool update_tools = false;
 
     //executes feeds override rt commands
     uint8_t cmd_mask = 0x04;
@@ -487,7 +465,7 @@ void cnc_exec_rt_commands(void)
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
     while (command)
     {
-        update_spindle = true;
+        update_tools = true;
         switch (command & cmd_mask)
         {
 #ifdef USE_SPINDLE
@@ -512,7 +490,7 @@ void cnc_exec_rt_commands(void)
                 //toogle state
                 if (mcu_get_pwm(SPINDLE_PWM))
                 {
-                    update_spindle = false;
+                    update_tools = false;
                     mcu_set_pwm(SPINDLE_PWM, 0);
                 }
             }
@@ -521,10 +499,11 @@ void cnc_exec_rt_commands(void)
 #ifdef USE_COOLANT
         case RT_CMD_COOL_FLD_TOGGLE:
         case RT_CMD_COOL_MST_TOGGLE:
-            update_spindle = false;
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                parser_toogle_coolant(command - (RT_CMD_COOL_FLD_TOGGLE - 1));
+                uint8_t coolovr = (cmd_mask==RT_CMD_COOL_FLD_TOGGLE) ? 1 : 0;
+                coolovr |= (cmd_mask==RT_CMD_COOL_MST_TOGGLE) ? 2 : 0;
+                planner_coolant_ovr_toggle(coolovr);
             }
             break;
 #endif
@@ -534,18 +513,19 @@ void cnc_exec_rt_commands(void)
         cmd_mask >>= 1;
     }
 
-#ifdef USE_SPINDLE
-    if (update_spindle)
+    if (update_tools)
     {
         itp_update();
         if (planner_buffer_is_empty())
         {
-            planner_block_data_t block = {};
+            motion_data_t block = {0};
+            #ifdef USE_SPINDLE
+            block.coolant = planner_get_previous_coolant();
             block.spindle = planner_get_previous_spindle_speed();
-            mc_spindle_coolant(block);
+            #endif
+            mc_update_tools(&block);
         }
     }
-#endif
 }
 
 void cnc_check_fault_systems(void)
@@ -554,13 +534,13 @@ void cnc_check_fault_systems(void)
 #ifdef ESTOP
     if (CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
     {
-        protocol_send_string(MSG_FEEDBACK_12);
+        protocol_send_feedback(MSG_FEEDBACK_12);
     }
 #endif
 #ifdef SAFETY_DOOR
     if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
     {
-        protocol_send_string(MSG_FEEDBACK_6);
+        protocol_send_feedback(MSG_FEEDBACK_6);
     }
 #endif
 #if (LIMITS_MASK != 0)
@@ -569,7 +549,7 @@ void cnc_check_fault_systems(void)
         inputs = io_get_limits();
         if (CHECKFLAG(inputs, LIMITS_MASK))
         {
-            protocol_send_string(MSG_FEEDBACK_7);
+            protocol_send_feedback(MSG_FEEDBACK_7);
         }
     }
 #endif

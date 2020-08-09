@@ -11,7 +11,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -28,6 +28,7 @@ void protocol_send_error(uint8_t error);
 void protocol_send_alarm(uint8_t alarm);
 void protocol_send_status(void);
 void protocol_send_string(const unsigned char *__s);
+void protocol_send_feedback(const unsigned char *__s);
 void protocol_send_gcode_coordsys(void);
 void protocol_send_gcode_modes(void);
 void protocol_send_ucnc_settings(void);

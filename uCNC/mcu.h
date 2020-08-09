@@ -13,7 +13,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -24,7 +24,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "config.h"
-#include "utils.h"
 
 /*IO functions*/
 #ifndef mcu_get_input
@@ -93,11 +92,11 @@ void mcu_disable_interrupts(void);
 
 //Timers
 //convert step rate to clock cycles
-void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint16_t* prescaller);
 //starts a constant rate pulse at a given frequency.
-void mcu_start_step_ISR(uint16_t ticks, uint8_t prescaller);
+void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller);
 //modifies the pulse frequency
-void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller);
+void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller);
 //stops the pulse
 void mcu_step_stop_ISR(void);
 

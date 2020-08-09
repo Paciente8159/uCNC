@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -29,6 +29,9 @@
 	Uses 1 start bit + 8 bit + 1 stop bit (no parity)
 */
 #define BAUD 115200
+//uncomment to enable synchronized TX (used in USB VCP)
+//can be used in USART hardware but MCU will be ocuppied while sending every char
+//#define ENABLE_SYNC_TX
 
 /*
 	Choose the board
@@ -37,6 +40,7 @@
 #ifndef BOARD
 #define BOARD BOARD_GRBL
 #endif
+
 /*
 	Machine kynematics
 	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
@@ -48,8 +52,8 @@
 	After the main blocks of the controller have been selected the configuration can be build
 */
 
-#include "boarddefs.h" //sets the mcu pin configuration based on the board
-#include "machinedefs.h" //configures the kinematics for the cnc machine
+#include "boarddefs.h"	   //sets the mcu pin configuration based on the board
+#include "machinedefs.h"   //configures the kinematics for the cnc machine
 #include "config_helper.h" //runs the config helper to create and define all variables
 
 /*
@@ -61,7 +65,7 @@
 /*
 	Number of segments of an arc computed with aprox. of sin/cos math operation before performing a full calculation
 */
-#define N_ARC_CORRECTION 12
+#define N_ARC_CORRECTION 16
 
 /*
 	Echo recieved commands.
@@ -97,7 +101,7 @@
 #define USE_COOLANT
 #ifdef USE_COOLANT
 #define COOLANT_FLOOD DOUT1
-#define COOLANT_MIST DOUT2
+//#define COOLANT_MIST DOUT2
 #endif
 
 /*
@@ -145,15 +149,48 @@
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 
 /*
-	Compilation specific options
+	If the type of machine supports skew and needs skew correction (defined in the specified kinematics_xxx.h file)
 */
-//#define FORCE_GLOBALS_TO_0 //ensure all variables are set to 0 at start up
-//#define CRC_WITHOUT_LOOKUP_TABLE //saves a little program memory bytes but much more slow CRC check
-//#define ENABLE_FAST_SQRT //enable the using of Quake III style super fast sqrt. Feed rate display will be more precise but calculations will be slower.
+#ifdef ENABLE_SKEW_COMPENSATION
+//uncomment to correct only in the xy axis
+//#define SKEW_COMPENSATION_XY_ONLY
+#endif
+
+/*
+	Changes the planner acceleration profile generation from axis driven to linear actuator driven
+*/
+//#define ENABLE_LINACT_PLANNER
+#ifdef ENABLE_LINACT_PLANNER
+//uncomment to do a stop and start if any of the linear actuators is at a still state or changes direction
+//#define ENABLE_LINACT_COLD_START
+#endif
+
+/*
+	If the type of machine need backlash compensation configure here
+*/
+//#define ENABLE_BACKLASH_COMPENSATION
+
+/*
+	Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).
+	The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
+	Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
+*/
+#define DSS_MAX_OVERSAMPLING 0
 
 /*
 	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
 //#define FORCE_SOFT_POLLING
+
+/*
+	Compilation specific options
+*/
+//ensure all variables are set to 0 at start up
+//#define FORCE_GLOBALS_TO_0
+//saves a little program memory bytes but much more slow CRC check
+//#define CRC_WITHOUT_LOOKUP_TABLE
+//EXPERIMENTAL! Uncomment to enable fast math macros to shorten the computinig time needed for a couple of math operations. This will affect the reported feed rate precision. Output binary will be bigger
+//#define ENABLE_FAST_MATH 
+#include "utils.h"
 
 #endif

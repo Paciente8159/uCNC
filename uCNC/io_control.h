@@ -18,7 +18,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -210,5 +210,13 @@ void io_toggle_steps(uint8_t mask);
 void io_set_dirs(uint8_t mask);
 
 void io_enable_steps(void);
+
+#ifdef USE_SPINDLE
+void io_set_spindle(uint8_t value, bool invert);
+#endif
+
+#ifdef USE_coolant
+void io_set_coolant(uint8_t value);
+#endif
 
 #endif

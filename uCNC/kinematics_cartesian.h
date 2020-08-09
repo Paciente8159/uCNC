@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -48,5 +48,10 @@
 //#define DUAL_DRIVE_AXIS0 X
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
+
+/*
+	Enable Skew compensation
+*/
+//#define ENABLE_SKEW_COMPENSATION
 
 #endif

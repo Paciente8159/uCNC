@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -92,17 +92,17 @@
 
 //special Grbl system commands return codes
 //These are not error codes but codes to print requested reports after parsing a grbl command
-#define GRBL_SEND_SYSTEM_SETTINGS 128
-#define GRBL_SEND_COORD_SYSTEM 129
-#define GRBL_SEND_PARSER_MODES	130
-#define GRBL_SEND_STARTUP_BLOCKS 131
-#define GRBL_SEND_CHECKMODE_ON 132
-#define GRBL_SEND_CHECKMODE_OFF 133
-#define GRBL_SEND_SETTINGS_RESET 134
-#define GRBL_UNLOCK 135
-#define GRBL_HOME 136
-#define GRBL_HELP 137
-
+#define GRBL_SYSTEM_CMD 128
+#define GRBL_SEND_SYSTEM_SETTINGS (GRBL_SYSTEM_CMD + 0)
+#define GRBL_SEND_COORD_SYSTEM (GRBL_SYSTEM_CMD + 1)
+#define GRBL_SEND_PARSER_MODES	(GRBL_SYSTEM_CMD + 2)
+#define GRBL_SEND_STARTUP_BLOCKS (GRBL_SYSTEM_CMD + 3)
+#define GRBL_TOGGLE_CHECKMODE (GRBL_SYSTEM_CMD + 4)
+#define GRBL_SEND_SETTINGS_RESET (GRBL_SYSTEM_CMD + 5)
+#define GRBL_UNLOCK (GRBL_SYSTEM_CMD + 6)
+#define GRBL_HOME (GRBL_SYSTEM_CMD + 7)
+#define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
+#define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
 #define EXEC_ALARM_RESET					  0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.
@@ -131,19 +131,20 @@
 //Non query feedback messages
 #define MSG_START __romstr__("[MSG:")
 #define MSG_END __romstr__("]\r\n")
-#define MSG_FEEDBACK_1 __romstr__("[MSG:Reset to continue]\r\n")
-#define MSG_FEEDBACK_2 __romstr__("[MSG:'$H'|'$X' to unlock]\r\n")
-#define MSG_FEEDBACK_3 __romstr__("[MSG:Caution: Unlocked]\r\n")
-#define MSG_FEEDBACK_4 __romstr__("[MSG:Enabled]\r\n")
-#define MSG_FEEDBACK_5 __romstr__("[MSG:Disabled]\r\n")
-#define MSG_FEEDBACK_6 __romstr__("[MSG:Check Door]\r\n")
-#define MSG_FEEDBACK_7 __romstr__("[MSG:Check Limits]\r\n")
-#define MSG_FEEDBACK_8 __romstr__("[MSG:Pgm End]\r\n")
-#define MSG_FEEDBACK_9 __romstr__("[MSG:Restoring defaults]\r\n")
-#define MSG_FEEDBACK_10 __romstr__("[MSG:Restoring spindle]\r\n")
-#define MSG_FEEDBACK_11 __romstr__("[MSG:Sleeping]\r\n")
+#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
+#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
+#define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
+#define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")
+#define MSG_FEEDBACK_4 __romstr__("Enabled")
+#define MSG_FEEDBACK_5 __romstr__("Disabled")
+#define MSG_FEEDBACK_6 __romstr__("Check Door")
+#define MSG_FEEDBACK_7 __romstr__("Check Limits")
+#define MSG_FEEDBACK_8 __romstr__("Pgm End")
+#define MSG_FEEDBACK_9 __romstr__("Restoring defaults")
+#define MSG_FEEDBACK_10 __romstr__("Restoring spindle")
+//#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
-#define MSG_FEEDBACK_12 __romstr__("[MSG:Check Emergency stop]\r\n")
+#define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
 
 //#define MSG_INT "%d"
 //#define MSG_FLT "%0.3f"

@@ -12,10 +12,11 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-
+#include <math.h>
+#include "config.h"
 #include "grbl_interface.h"
 #include "settings.h"
 #include "mcudefs.h"
@@ -23,19 +24,16 @@
 #include "io_control.h"
 #include "cnc.h"
 #include "serial.h"
-#include "utils.h"
-
-#include <math.h>
 
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
-volatile static uint8_t serial_rx_count;
+static volatile uint8_t serial_rx_count;
 static uint8_t serial_rx_read;
-volatile static uint8_t serial_rx_write;
+static volatile uint8_t serial_rx_write;
 
 static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
-volatile static uint8_t serial_tx_read;
+static volatile uint8_t serial_tx_read;
 static uint8_t serial_tx_write;
-volatile static uint8_t serial_tx_count;
+static volatile uint8_t serial_tx_count;
 
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
@@ -54,8 +52,8 @@ void serial_init(void)
     serial_tx_count = 0;
 
     //resets buffers
-    memset(&serial_rx_buffer, 0, sizeof(serial_rx_buffer));
-    memset(&serial_tx_buffer, 0, sizeof(serial_tx_buffer));
+    memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
+    memset(serial_tx_buffer, 0, sizeof(serial_tx_buffer));
 #endif
 }
 
@@ -75,7 +73,7 @@ bool serial_rx_is_empty(void)
 
 bool serial_tx_is_empty(void)
 {
-    return (!serial_tx_count);
+    return (!serial_tx_count && (serial_tx_write == serial_tx_read));
 }
 
 unsigned char serial_getc(void)
@@ -90,32 +88,24 @@ unsigned char serial_getc(void)
             return EOL;
         }
 
-        do
+        c = serial_rx_buffer[serial_rx_read];
+        if (++serial_rx_read == RX_BUFFER_SIZE)
         {
-            c = serial_rx_buffer[serial_rx_read];
-            if (++serial_rx_read == RX_BUFFER_SIZE)
-            {
-                serial_rx_read = 0;
-            }
-            switch (c)
-            {
-            case EOL: //EOL
-                serial_rx_count--;
-                return EOL;
-            case ' ':
-            case '\t': //eats white chars
-                break;
-            default:
-                if (c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-#ifdef ECHO_CMD
-                serial_putc(c);
-#endif
-                return c;
-            }
-        } while (serial_rx_count);
+            serial_rx_read = 0;
+        }
+
+        switch (c)
+        {
+        case '\r':
+        case '\n':
+        case EOL:
+            serial_rx_count--;
+            return EOL;
+        case '\t':
+            return ' ';
+        }
+
+        return c;
         break;
     case SERIAL_N0:
     case SERIAL_N1:
@@ -170,25 +160,17 @@ unsigned char serial_peek(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-        while (serial_rx_count)
+        c = serial_rx_buffer[serial_rx_read];
+        switch (c)
         {
-            c = serial_rx_buffer[serial_rx_read];
-            switch (c)
-            {
-            case ' ':
-            case '\t': //eats white chars
-                if (++serial_rx_read == RX_BUFFER_SIZE)
-                {
-                    serial_rx_read = 0;
-                }
-                break;
-            default:
-                if (c >= 'a' && c <= 'z') //serial only returns upper case letters
-                {
-                    c -= 32;
-                }
-                return c;
-            }
+        case '\r':
+        case '\n':
+        case EOL:
+            return EOL;
+        case '\t':
+            return ' ';
+        default:
+            return c;
         }
         break;
     case SERIAL_N0:
@@ -210,6 +192,9 @@ void serial_inject_cmd(const unsigned char *__s)
 
 void serial_putc(unsigned char c)
 {
+#ifdef ENABLE_SYNC_TX
+    mcu_putc(c);
+#else
     while ((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
     {
         mcu_start_send();    //starts async send and loops while buffer full
@@ -231,6 +216,7 @@ void serial_putc(unsigned char c)
     {
         serial_tx_write = 0;
     }
+#endif
 }
 
 void serial_print_str(const unsigned char *__s)
@@ -441,6 +427,7 @@ void serial_rx_isr(unsigned char c)
 
 void serial_tx_isr(void)
 {
+#ifndef ENABLE_SYNC_TX
     if (!serial_tx_count)
     {
         return;
@@ -460,6 +447,7 @@ void serial_tx_isr(void)
         read = 0;
     }
     serial_tx_read = read;
+#endif
 }
 
 void serial_rx_clear(void)

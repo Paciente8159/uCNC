@@ -35,6 +35,7 @@
 #ifdef __linux__
 
 #else
+#include <windows.h>
 
 HANDLE win_serial = NULL;
 unsigned char ComPortName[] = COMPORT;
@@ -42,8 +43,8 @@ unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
 int virtualserial_open(void)
 {
-	DCB dcbSerialParams = {};
-	COMMTIMEOUTS timeouts = {};
+	DCB dcbSerialParams = {0};
+	COMMTIMEOUTS timeouts = {0};
 	win_serial = NULL;
 	fprintf(stderr, "Opening serial port %s...", ComPortName);
     win_serial = CreateFileA(ComPortName
@@ -133,17 +134,23 @@ unsigned char virtualserial_getc(void)
 	return 0;
 }
 
+char serial_tx_buffer[127];
+
 void virtualserial_putc(unsigned char c)
 {
-	DWORD  dNoOfBytesWritten = 0;          // No of bytes written to the port
-	DWORD dwRes;
-	
-	if (!WriteFile(win_serial, &c, 1, &dNoOfBytesWritten,  NULL))
-		fprintf(stderr, "Error %d in Writing to Serial Port",GetLastError());
-	fputc(c,stderr);
-	PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
-		
+	static uint8_t index = 0;
+
+	serial_tx_buffer[index] = c;
+	index++;
+	serial_tx_buffer[index] = 0;
+	if(c=='\n')
+	{
+		virtualserial_puts(&serial_tx_buffer);
+		index = 0;
+	}
 }
+
+
 
 void virtualserial_puts(const unsigned char* __str)
 {
@@ -155,7 +162,7 @@ void virtualserial_puts(const unsigned char* __str)
 
 	if (!WriteFile(win_serial, lpBuffer, dNoOFBytestoWrite, &dNoOfBytesWritten, NULL))
 		fprintf(stderr, "Error %d in Writing to Serial Port",GetLastError());
-	fputs(__str, stderr);
+	//fputs(__str, stderr);
 	PurgeComm(win_serial, PURGE_TXABORT| PURGE_RXABORT|PURGE_TXCLEAR|PURGE_RXCLEAR);
 }
 

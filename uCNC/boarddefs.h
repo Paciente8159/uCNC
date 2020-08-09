@@ -45,6 +45,14 @@
 #include "mcus\avr\boardmap_ramps14.h"
 #endif
 
+#if (BOARD == BOARD_BLUEPILL)
+#define MCU MCU_STM32F10X
+#include "mcus\stm32f10x\boardmap_bluepill.h"
+#ifndef COM_PORT //enable sync send (used for USB VCP)
+#define ENABLE_SYNC_TX
+#endif
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #define MCU MCU_VIRTUAL
 #endif

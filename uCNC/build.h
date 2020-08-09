@@ -12,14 +12,14 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
 #ifndef BUILD_H
 #define BUILD_H
 
-#define MAJOR_MINOR_VERSION "1.0."
+#define MAJOR_MINOR_VERSION "1.1."
 #define PATCH_VERSION "0"
 
 #define VERSION MAJOR_MINOR_VERSION PATCH_VERSION
