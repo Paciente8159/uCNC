@@ -24,7 +24,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
   - improved separation of comment message processing and command echo (debug purposes only)
 
 ### Fixed
-  - fixed AVR HAL pwm generation was not working for all channels. Also analog reading is now available.
+  - fixed AVR HAL pwm generation was not working for all channels. Also analog reading is now available. (#25) 
   - fixed overflow serial error that occur if 128 bytes (Grbl's limit) were sent to the buffer.
   - fixed several compilation errors with other configurations
   - fixed avr mapfile for grbl
