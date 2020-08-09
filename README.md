@@ -32,7 +32,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes in µCNC 1.0.0-beta.2:
+List of Supported G-Codes since µCNC 1.0.0-beta.2:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
   - Feed Rate Modes: G93, G94
@@ -60,7 +60,7 @@ TODO List of G-Codes in µCNC future releases:
 µCNC currently supports up to (depending on the MCU/board capabilities):
   - 6 independent axis 
   - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
-  - 8* limit switches (6 limit switch (one per axis) plus option second axis X, Y or Z support dual endstops) (interrupt driven)
+  - 9* limit switches (6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops) (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
   - 1 cycle start/resume input (interrupt driven)
