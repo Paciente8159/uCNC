@@ -87,25 +87,25 @@ unsigned char serial_getc(void)
         {
             return EOL;
         }
-        
+
         c = serial_rx_buffer[serial_rx_read];
         if (++serial_rx_read == RX_BUFFER_SIZE)
         {
             serial_rx_read = 0;
         }
-        
-		switch(c)
-		{
-			case '\r':
-			case '\n':
-			case EOL:
-				serial_rx_count--;
-				return EOL;
-			case '\t':
-				return ' ';
-		}
 
-		return c;
+        switch (c)
+        {
+        case '\r':
+        case '\n':
+        case EOL:
+            serial_rx_count--;
+            return EOL;
+        case '\t':
+            return ' ';
+        }
+
+        return c;
         break;
     case SERIAL_N0:
     case SERIAL_N1:
@@ -160,18 +160,18 @@ unsigned char serial_peek(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-         c = serial_rx_buffer[serial_rx_read];
-         switch(c)
-         {
-         	case '\r':
-         	case '\n':
-         	case EOL:
-         		return EOL;
-         	case '\t':
-         		return ' ';
-         	default:
-         		return c;
-		 }
+        c = serial_rx_buffer[serial_rx_read];
+        switch (c)
+        {
+        case '\r':
+        case '\n':
+        case EOL:
+            return EOL;
+        case '\t':
+            return ' ';
+        default:
+            return c;
+        }
         break;
     case SERIAL_N0:
     case SERIAL_N1:
@@ -192,6 +192,9 @@ void serial_inject_cmd(const unsigned char *__s)
 
 void serial_putc(unsigned char c)
 {
+#ifdef ENABLE_SYNC_TX
+    mcu_putc(c);
+#else
     while ((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
     {
         mcu_start_send();    //starts async send and loops while buffer full
@@ -213,6 +216,7 @@ void serial_putc(unsigned char c)
     {
         serial_tx_write = 0;
     }
+#endif
 }
 
 void serial_print_str(const unsigned char *__s)
@@ -423,6 +427,7 @@ void serial_rx_isr(unsigned char c)
 
 void serial_tx_isr(void)
 {
+#ifndef ENABLE_SYNC_TX
     if (!serial_tx_count)
     {
         return;
@@ -442,6 +447,7 @@ void serial_tx_isr(void)
         read = 0;
     }
     serial_tx_read = read;
+#endif
 }
 
 void serial_rx_clear(void)

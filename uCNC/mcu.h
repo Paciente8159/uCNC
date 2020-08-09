@@ -92,11 +92,11 @@ void mcu_disable_interrupts(void);
 
 //Timers
 //convert step rate to clock cycles
-void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint8_t* prescaller);
+void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint16_t* prescaller);
 //starts a constant rate pulse at a given frequency.
-void mcu_start_step_ISR(uint16_t ticks, uint8_t prescaller);
+void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller);
 //modifies the pulse frequency
-void mcu_change_step_ISR(uint16_t ticks, uint8_t prescaller);
+void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller);
 //stops the pulse
 void mcu_step_stop_ISR(void);
 

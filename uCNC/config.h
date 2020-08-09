@@ -29,6 +29,9 @@
 	Uses 1 start bit + 8 bit + 1 stop bit (no parity)
 */
 #define BAUD 115200
+//uncomment to enable synchronized TX (used in USB VCP)
+//can be used in USART hardware but MCU will be ocuppied while sending every char
+//#define ENABLE_SYNC_TX
 
 /*
 	Choose the board

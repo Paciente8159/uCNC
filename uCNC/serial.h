@@ -23,7 +23,11 @@
 #define OVF 0x7F		   //overflow char
 #define SAFEMARGIN 2
 #define RX_BUFFER_SIZE 128 + SAFEMARGIN//buffer sizes
+#ifdef ENABLE_SYNC_TX
+#define TX_BUFFER_SIZE 1
+#else
 #define TX_BUFFER_SIZE 112 + SAFEMARGIN//buffer sizes
+#endif
 
 #define SERIAL_UART 0
 #define SERIAL_N0 1

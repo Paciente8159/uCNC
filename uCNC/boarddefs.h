@@ -12,7 +12,7 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
@@ -32,8 +32,6 @@
 
 #if (BOARD == BOARD_GRBL)
 #define MCU MCU_AVR
-//overrides buffer size to fit available memory
-//#define PLANNER_BUFFER_SIZE 14
 #include "mcus\avr\boardmap_grbl.h"
 #endif
 
@@ -45,6 +43,14 @@
 #if (BOARD == BOARD_RAMPS14)
 #define MCU MCU_AVR
 #include "mcus\avr\boardmap_ramps14.h"
+#endif
+
+#if (BOARD == BOARD_BLUEPILL)
+#define MCU MCU_STM32F10X
+#include "mcus\stm32f10x\boardmap_bluepill.h"
+#ifndef COM_PORT //enable sync send (used for USB VCP)
+#define ENABLE_SYNC_TX
+#endif
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
