@@ -30,15 +30,15 @@
 #endif
 
 #if(MCU == MCU_AVR)
-#include "mcus\avr\mcumap_avr.h"
+#include "mcus/avr/mcumap_avr.h"
 #endif
 
 #if(MCU == MCU_STM32F10X)
-#include "mcus\stm32f10x\mcumap_stm32f10x.h"
+#include "mcus/stm32f10x/mcumap_stm32f10x.h"
 #endif
 
 #if(MCU == MCU_VIRTUAL)
-#include "mcus\virtual\mcumap_virtual.h"
+#include "mcus/virtual/mcumap_virtual.h"
 #endif
 
 #ifndef MCU
