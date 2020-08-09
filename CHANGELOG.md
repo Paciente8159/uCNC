@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.1.0] - unreleased
+## [1.1.0] - 2020-08-09
 
 Version 1.1.0 comes with many added features and improvements over the previous version. It also fixes many of the bugs and limitations of the previous implementation. These are:
 
