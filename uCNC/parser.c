@@ -666,7 +666,15 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
             protocol_send_string(MSG_ECHO);
         }
 #endif
-        parser_get_token(&word, &value);
+        error = parser_get_token(&word, &value);
+        if(error)
+        {
+        	parser_discard_command();
+#ifdef ECHO_CMD
+            protocol_send_string(MSG_END);
+#endif
+        	return error;
+		}
         uint8_t code = (uint8_t)floorf(value);
         //check mantissa
         uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
