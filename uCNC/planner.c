@@ -458,7 +458,10 @@ void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
     {
         spindle = ABS(spindle);
 #ifdef LASER_MODE
-        spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
+        if (g_settings.laser_mode && *invert) //scales laser power only if invert is active (M4)
+        {
+            spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
+        }
 #endif
         if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
         {
@@ -479,14 +482,14 @@ float planner_get_previous_spindle_speed(void)
 #ifdef USE_COOLANT
 uint8_t planner_get_coolant(void)
 {
-	uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
-	
-	if (planner_overrides.overrides_enabled)
-	{
-		coolant ^= planner_overrides.coolant_override;
-	}
-	
-	return coolant;
+    uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
+
+    if (planner_overrides.overrides_enabled)
+    {
+        coolant ^= planner_overrides.coolant_override;
+    }
+
+    return coolant;
 }
 
 uint8_t planner_get_previous_coolant(void)

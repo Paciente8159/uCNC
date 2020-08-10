@@ -114,82 +114,82 @@ const settings_t __rom__ default_settings =
 #ifdef ENABLE_SKEW_COMPENSATION
         .skew_xy_factor = 0,
 #ifndef SKEW_COMPENSATION_XY_ONLY
-.skew_xz_factor = 0,
-.skew_yz_factor = 0,
+        .skew_xz_factor = 0,
+        .skew_yz_factor = 0,
 #endif
 #endif
 
 #if STEPPER_COUNT > 0
-.step_per_mm[0] = DEFAULT_0_STEP_PER_MM,
-    .max_feed_rate[0] = DEFAULT_0_MAX_FEED,
-    .acceleration[0] = DEFAULT_0_ACCEL,
+        .step_per_mm[0] = DEFAULT_0_STEP_PER_MM,
+        .max_feed_rate[0] = DEFAULT_0_MAX_FEED,
+        .acceleration[0] = DEFAULT_0_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[0] = 0,
+        .backlash_steps[0] = 0,
 #endif
 #endif
 #if STEPPER_COUNT > 1
-    .step_per_mm[1] = DEFAULT_1_STEP_PER_MM,
-    .max_feed_rate[1] = DEFAULT_1_MAX_FEED,
-    .acceleration[1] = DEFAULT_1_ACCEL,
+        .step_per_mm[1] = DEFAULT_1_STEP_PER_MM,
+        .max_feed_rate[1] = DEFAULT_1_MAX_FEED,
+        .acceleration[1] = DEFAULT_1_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[1] = 0,
+        .backlash_steps[1] = 0,
 #endif
 #endif
 #if STEPPER_COUNT > 2
-    .step_per_mm[2] = DEFAULT_2_STEP_PER_MM,
-    .max_feed_rate[2] = DEFAULT_2_MAX_FEED,
-    .acceleration[2] = DEFAULT_2_ACCEL,
+        .step_per_mm[2] = DEFAULT_2_STEP_PER_MM,
+        .max_feed_rate[2] = DEFAULT_2_MAX_FEED,
+        .acceleration[2] = DEFAULT_2_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[2] = 0,
+        .backlash_steps[2] = 0,
 #endif
 #endif
 #if STEPPER_COUNT > 3
-    .step_per_mm[3] = DEFAULT_3_STEP_PER_MM,
-    .max_feed_rate[3] = DEFAULT_3_MAX_FEED,
-    .acceleration[3] = DEFAULT_3_ACCEL,
+        .step_per_mm[3] = DEFAULT_3_STEP_PER_MM,
+        .max_feed_rate[3] = DEFAULT_3_MAX_FEED,
+        .acceleration[3] = DEFAULT_3_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[3] = 0,
+        .backlash_steps[3] = 0,
 #endif
 #endif
 #if STEPPER_COUNT > 4
-    .step_per_mm[4] = DEFAULT_4_STEP_PER_MM,
-    .max_feed_rate[4] = DEFAULT_4_MAX_FEED,
-    .acceleration[4] = DEFAULT_4_ACCEL,
+        .step_per_mm[4] = DEFAULT_4_STEP_PER_MM,
+        .max_feed_rate[4] = DEFAULT_4_MAX_FEED,
+        .acceleration[4] = DEFAULT_4_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[4] = 0,
+        .backlash_steps[4] = 0,
 #endif
 #endif
 #if STEPPER_COUNT > 5
-    .step_per_mm[5] = DEFAULT_5_STEP_PER_MM,
-    .max_feed_rate[5] = DEFAULT_5_MAX_FEED,
-    .acceleration[5] = DEFAULT_5_ACCEL,
+        .step_per_mm[5] = DEFAULT_5_STEP_PER_MM,
+        .max_feed_rate[5] = DEFAULT_5_MAX_FEED,
+        .acceleration[5] = DEFAULT_5_ACCEL,
 #ifdef ENABLE_BACKLASH_COMPENSATION
-    .backlash_steps[5] = 0,
+        .backlash_steps[5] = 0,
 #endif
 #endif
-
-    .step_enable_invert = DEFAULT_STEP_ENA_INV,
-    .step_invert_mask = DEFAULT_STEP_INV_MASK,
-    .dir_invert_mask = DEFAULT_DIR_INV_MASK,
-    .probe_invert_mask = DEFAULT_PROBE_INV_MASK,
-    .homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
-    .homing_fast_feed_rate = DEFAULT_HOMING_FAST,
-    .homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
-    .homing_offset = DEFAULT_HOMING_OFFSET,
-    .arc_tolerance = DEFAULT_ARC_TOLERANCE,
-    .tool_count = DEFAULT_TOOL_COUNT,
-    .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
-    .status_report_mask = DEFAULT_STATUS_MASK,
-    .control_invert_mask = DEFAULT_CONTROL_INV_MASK,
-    .max_step_rate = DEFAULT_MAX_STEP_RATE,
-    .report_inches = DEFAULT_REPORT_INCHES,
-    .soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
-    .hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
-    .homing_enabled = DEFAULT_HOMING_ENABLED,
-    .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-    .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM
-}
-;
+#ifdef LASER_MODE
+        .laser_mode = 0,
+#endif
+        .step_enable_invert = DEFAULT_STEP_ENA_INV,
+        .step_invert_mask = DEFAULT_STEP_INV_MASK,
+        .dir_invert_mask = DEFAULT_DIR_INV_MASK,
+        .probe_invert_mask = DEFAULT_PROBE_INV_MASK,
+        .homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
+        .homing_fast_feed_rate = DEFAULT_HOMING_FAST,
+        .homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
+        .homing_offset = DEFAULT_HOMING_OFFSET,
+        .arc_tolerance = DEFAULT_ARC_TOLERANCE,
+        .tool_count = DEFAULT_TOOL_COUNT,
+        .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
+        .status_report_mask = DEFAULT_STATUS_MASK,
+        .control_invert_mask = DEFAULT_CONTROL_INV_MASK,
+        .max_step_rate = DEFAULT_MAX_STEP_RATE,
+        .report_inches = DEFAULT_REPORT_INCHES,
+        .soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
+        .hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
+        .homing_enabled = DEFAULT_HOMING_ENABLED,
+        .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
+        .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM};
 
 //static uint8_t settings_crc;
 
@@ -366,6 +366,11 @@ uint8_t settings_change(uint8_t setting, float value)
     case 31:
         g_settings.spindle_min_rpm = value;
         break;
+#ifdef LASER_MODE
+    case 32:
+        g_settings.laser_mode = value8;
+        break;
+#endif
 #ifdef ENABLE_SKEW_COMPENSATION
     case 37:
         g_settings.skew_xy_factor = value;

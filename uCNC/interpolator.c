@@ -498,7 +498,7 @@ void itp_run(void)
         {
             itp_cur_plan_block->total_steps = deaccel_from;
         }
-        
+
         //finally write the segment
         itp_sgm_buffer_write();
 
@@ -512,10 +512,10 @@ void itp_run(void)
         }
     }
 
-    #ifdef USE_COOLANT
+#ifdef USE_COOLANT
     //updated the coolant pins
     io_set_coolant(planner_get_coolant());
-    #endif
+#endif
 
     //starts the step isr if is stopped and there are segments to execute
     if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
@@ -538,6 +538,13 @@ void itp_stop(void)
 {
     mcu_step_stop_ISR();
     cnc_clear_exec_state(EXEC_RUN);
+#ifdef LASER_MODE
+    if (g_settings.laser_mode)
+    {
+        io_set_spindle(0, false);
+        itp_rt_spindle = 0;
+    }
+#endif
 }
 
 void itp_clear(void)
@@ -650,7 +657,7 @@ void itp_step_reset_isr(void)
         {
             io_set_dirs(itp_running_sgm->block->dirbits);
         }
-        
+
 #ifdef USE_SPINDLE
         io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
         itp_rt_spindle = itp_running_sgm->spindle;
@@ -913,8 +920,15 @@ void itp_delay(uint16_t delay)
     itp_sgm_data[itp_sgm_data_write].feed = 0;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
-    itp_sgm_data[itp_sgm_data_write].spindle = 0;
-    itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    if (g_settings.laser_mode)
+    {
+        itp_sgm_data[itp_sgm_data_write].spindle = 0;
+        itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    }
+    else
+    {
+        planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    }
 #else
     planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
 #endif

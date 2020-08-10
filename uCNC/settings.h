@@ -53,12 +53,11 @@ typedef struct
     float step_per_mm[STEPPER_COUNT];
     float max_feed_rate[STEPPER_COUNT];
     float acceleration[STEPPER_COUNT];
-
+    float max_distance[AXIS_COUNT];
+    uint8_t tool_count;
 #ifdef ENABLE_BACKLASH_COMPENSATION
     uint16_t backlash_steps[STEPPER_COUNT];
 #endif
-    float max_distance[AXIS_COUNT];
-
 #ifdef ENABLE_SKEW_COMPENSATION
     float skew_xy_factor;
 #ifndef SKEW_COMPENSATION_XY_ONLY
@@ -66,8 +65,9 @@ typedef struct
     float skew_yz_factor;
 #endif
 #endif
-
-    uint8_t tool_count;
+#ifdef LASER_MODE
+    uint8_t laser_mode;
+#endif
 } settings_t;
 
 #define SETTINGS_ADDRESS_OFFSET 0

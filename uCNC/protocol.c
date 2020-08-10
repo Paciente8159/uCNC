@@ -60,7 +60,7 @@ void protocol_send_string(const unsigned char *__s)
     serial_print_str(__s);
 }
 
-void protocol_send_feedback(const unsigned char* __s)
+void protocol_send_feedback(const unsigned char *__s)
 {
     serial_print_str(MSG_START);
     serial_print_str(__s);
@@ -139,9 +139,9 @@ void protocol_send_status(void)
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
-    if(!serial_tx_is_empty())
+    if (!serial_tx_is_empty())
     {
-    	return;
+        return;
     }
 
     uint32_t steppos[STEPPER_COUNT];
@@ -387,7 +387,7 @@ void protocol_send_gcode_modes(void)
 
     serial_print_str(__romstr__("[GC:"));
 
-    for(uint8_t i = 0; i < 7; i++)
+    for (uint8_t i = 0; i < 7; i++)
     {
         serial_putc('G');
         serial_print_int((int16_t)modalgroups[i]);
@@ -396,17 +396,17 @@ void protocol_send_gcode_modes(void)
 
     serial_putc('G');
     serial_print_int(61);
-    if(modalgroups[7]==62)
+    if (modalgroups[7] == 62)
     {
         serial_putc('.');
         serial_putc('1');
     }
     serial_putc(' ');
 
-    for(uint8_t i = 8; i < 11; i++)
+    for (uint8_t i = 8; i < 11; i++)
     {
         serial_putc('M');
-        serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
+        serial_print_int((int16_t)((i == 6 && modalgroups[i] == 6) ? 7 : modalgroups[i]));
         serial_putc(' ');
     }
 
@@ -498,6 +498,9 @@ void protocol_send_ucnc_settings(void)
     protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
+#ifdef LASER_MODE
+    protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
+#endif
 
 #ifdef ENABLE_SKEW_COMPENSATION
     protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
