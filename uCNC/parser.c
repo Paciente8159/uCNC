@@ -193,12 +193,12 @@ typedef struct
 #ifdef USE_SPINDLE
     uint8_t spindle_turning : 2;
 #else
-    uint8_t : 2;               //unused
+    uint8_t : 2; //unused
 #endif
 #ifdef USE_COOLANT
     uint8_t coolant : 2;
 #else
-    uint8_t : 2;               //unused
+    uint8_t : 2; //unused
 #endif
 } parser_groups_t;
 
@@ -323,26 +323,37 @@ uint8_t parser_read_command(void)
     return parser_gcode_command();
 }
 
-void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
+void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t* coolant)
 {
-    modalgroups[0] = parser_state.groups.motion;
+    modalgroups[0] = (parser_state.groups.motion < 8) ? parser_state.groups.motion : (72 + parser_state.groups.motion);
     modalgroups[1] = parser_state.groups.plane + 17;
     modalgroups[2] = parser_state.groups.distance_mode + 90;
     modalgroups[3] = parser_state.groups.feedrate_mode + 93;
     modalgroups[4] = parser_state.groups.units + 20;
-    modalgroups[5] = (!parser_state.groups.tool_length_offset ? 49 : 43);
+    modalgroups[5] = ((parser_state.groups.tool_length_offset == G49) ? 49 : 43);
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
-    modalgroups[8] = parser_state.groups.spindle_turning + 3;
+    modalgroups[8] = ((parser_state.groups.spindle_turning==M5) ? 5 : (2 + parser_state.groups.spindle_turning));
     *spindle = (uint16_t)ABS(parser_state.spindle);
+#else
+    modalgroups[8] = 5;
 #endif
 #ifdef USE_COOLANT
+    *coolant = parser_state.groups.coolant;
+#ifdef COOLANT_MIST
+    modalgroups[9] = (parser_state.groups.coolant==M9) ? 9 : MIN(parser_state.groups.coolant+6,8);
+#else
     modalgroups[9] = 9 - parser_state.groups.coolant;
 #endif
-    modalgroups[10] = parser_state.groups.feed_speed_override + 48;
+#else
+    modalgroups[9] = 9;
+#endif
+    modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
 #ifdef USE_TOOL_CHANGER
     modalgroups[11] = parser_state.tool_index;
+#else
+    modalgroups[11] = 1;
 #endif
     *feed = (uint16_t)parser_state.feedrate;
 }
@@ -668,14 +679,14 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
         }
 #endif
         error = parser_get_token(&word, &value);
-        if(error)
+        if (error)
         {
-        	parser_discard_command();
+            parser_discard_command();
 #ifdef ECHO_CMD
             protocol_send_string(MSG_END);
 #endif
-        	return error;
-		}
+            return error;
+        }
         uint8_t code = (uint8_t)floorf(value);
         //check mantissa
         uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
@@ -1965,7 +1976,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 7:
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
-        new_state->groups.coolant |= (code - (M7-1));
+        new_state->groups.coolant |= (code - 6);
         return STATUS_OK;
     case 9:
         cmd->groups |= GCODE_GROUP_COOLANT;
@@ -2165,7 +2176,7 @@ static void parser_reset(void)
 {
     parser_state.groups.coord_system = G54;               //G54
     parser_state.groups.plane = G17;                      //G17
-    parser_state.groups.feed_speed_override = M48;          //M48
+    parser_state.groups.feed_speed_override = M48;        //M48
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94

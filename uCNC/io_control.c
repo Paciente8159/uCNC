@@ -482,42 +482,7 @@ void io_set_spindle(uint8_t value, bool invert)
 
 #ifdef USE_COOLANT
 void io_set_coolant(uint8_t value)
-{ /*
-    switch (value)
-    {
-    case 0: //off
-#ifdef COOLANT_FLOOD
-        mcu_clear_output(COOLANT_FLOOD);
-#endif
-#ifdef COOLANT_MIST
-        mcu_clear_output(COOLANT_MIST);
-#endif
-        break;
-    case 1: //flood
-#ifdef COOLANT_FLOOD
-        mcu_set_output(COOLANT_FLOOD);
-#endif
-#ifdef COOLANT_MIST
-        mcu_clear_output(COOLANT_MIST);
-#endif
-        break;
-    case 2: //mist
-#ifdef COOLANT_FLOOD
-        mcu_clear_output(COOLANT_FLOOD);
-#endif
-#ifdef COOLANT_MIST
-        mcu_set_output(COOLANT_MIST);
-#endif
-        break;
-    case 3: //flood and mist
-#ifdef COOLANT_FLOOD
-        mcu_set_output(COOLANT_FLOOD);
-#endif
-#ifdef COOLANT_MIST
-        mcu_set_output(COOLANT_MIST);
-#endif
-        break;
-    }*/
+{
 #ifdef COOLANT_FLOOD
     if (value & 0x01)
     {
