@@ -65,8 +65,8 @@ typedef struct pulse_sgm_
     INTERPOLATOR_BLOCK *block;
     uint8_t next_stepbits;
     uint16_t remaining_steps;
-    uint16_t clocks_per_tick;
-    uint8_t ticks_per_step;
+    uint16_t timer_counter;
+    uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
     uint8_t next_dss;
 #endif
@@ -471,10 +471,10 @@ void itp_run(void)
 
         //completes the segment information (step speed, steps) and updates the block
         sgm->remaining_steps = segm_steps << dss;
-        mcu_freq_to_clocks((float)step_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+        mcu_freq_to_clocks((float)step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
-        mcu_freq_to_clocks(current_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+        mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
         itp_cur_plan_block->total_steps -= segm_steps;
 
@@ -524,7 +524,7 @@ void itp_run(void)
         io_set_outputs(STEPPER_ENABLE);
 #endif
         cnc_set_exec_state(EXEC_RUN); //flags that it started running
-        mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].clocks_per_tick, itp_sgm_data[itp_sgm_data_read].ticks_per_step);
+        mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
     }
 }
 
@@ -643,7 +643,7 @@ void itp_step_reset_isr(void)
     //if segment needs to update the step ISR (after preloading first step byte
     if (itp_running_sgm->update_speed)
     {
-        mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
+        mcu_change_step_ISR(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
 
         //set dir bits
         if (itp_running_sgm->block != NULL)
@@ -907,7 +907,7 @@ void itp_delay(uint16_t delay)
 {
     itp_sgm_data[itp_sgm_data_write].block = NULL;
     //clicks every 100ms (10Hz)
-    mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
+    mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
     itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
     itp_sgm_data[itp_sgm_data_write].update_speed = true;
     itp_sgm_data[itp_sgm_data_write].feed = 0;
