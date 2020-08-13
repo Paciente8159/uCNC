@@ -166,11 +166,19 @@
 #endif
 
 /*
-	Enables dynamic acceleration interpolator
+	Modify the Riemann integrator step generation algorithm
 */
-#define ENABLE_S_CURVE_ACCELERATION
-//#define CONST_SPEED_DELTA_MULT 2
+//uncomment to enable S-Curve acceleration profile generation
+//this uses a variable acceleration speed profile instead of the normal linear acceleration profile
+//#define ENABLE_S_CURVE_ACCELERATION
+
+//Uncomment and modify the sampling frequency of the Riemann integrator that generates the steps and speeds executed in the timer ISR
+//The default value is 100 samples per second (giving a sampling window of 10ms)
 //#define F_INTEGRATOR 100
+
+//uncomment and modify the value of the sampling in the constant speed phase of the motion this reduces the number of cycles needed to
+//send all pulses to the ISR but will also increase the response time of realtime commands. The default value is 2
+//#define CONST_SPEED_DELTA_MULT 2
 
 /*
 	If the type of machine need backlash compensation configure here
