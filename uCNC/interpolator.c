@@ -32,13 +32,21 @@
 #include "io_control.h"
 #include "kinematics.h"
 
+//sampling frequency used to compute the Riemann integration algorithm that generates the step profiles during acceleration
+#ifndef F_INTEGRATOR
 #define F_INTEGRATOR 100
+#endif
+//the equivalent time frame size given the frequency
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
+//at constant velocity increase the integral range to reduce sampling rate
+#ifndef CONST_SPEED_DELTA_MULT
+#define CONST_SPEED_DELTA_MULT 2
+#endif
 //the amount of motion precomputed and stored for the step generator is never less then
 //the size of the buffer x time window size
 //in this case the buffer never holds less then 50ms of motions
 
-//integrator calculates 10ms (minimum size) time frame windows
+//integrator calculates INTEGRATOR_DELTA_T seconds (minimum size) time frame windows
 #define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
 
 //contains data of the block being executed by the pulse routine
@@ -478,14 +486,21 @@ void itp_run(void)
 
             if (current_speed > 0)
             {
+                if (!sgm->update_speed)
+                {
+                    average_speed = current_speed;
+                    partial_distance = MIN(average_speed * INTEGRATOR_DELTA_T * CONST_SPEED_DELTA_MULT, 65535.0f);
+                }
+                else
+                {
 #ifndef ENABLE_S_CURVE_ACCELERATION
-                average_speed = current_speed + previous_speed;
-                average_speed = fast_flt_div2(average_speed);
-                partial_distance = MIN(average_speed * INTEGRATOR_DELTA_T, 65535.0f);
+                    average_speed = current_speed + previous_speed;
+                    average_speed = fast_flt_div2(average_speed);
+                    partial_distance = MIN(average_speed * INTEGRATOR_DELTA_T, 65535.0f);
 #else
-            partial_distance += MIN(average_speed * INTEGRATOR_DELTA_T, 65535.0f);
+                partial_distance += MIN(average_speed * INTEGRATOR_DELTA_T, 65535.0f);
 #endif
-
+                }
                 //computes how many steps it will perform at this speed and frame window
                 segm_steps = (uint16_t)roundf(partial_distance);
                 if (segm_steps != 0)

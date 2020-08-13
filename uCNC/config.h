@@ -168,7 +168,9 @@
 /*
 	Enables dynamic acceleration interpolator
 */
-//#define ENABLE_S_CURVE_ACCELERATION
+#define ENABLE_S_CURVE_ACCELERATION
+//#define CONST_SPEED_DELTA_MULT 2
+//#define F_INTEGRATOR 100
 
 /*
 	If the type of machine need backlash compensation configure here
