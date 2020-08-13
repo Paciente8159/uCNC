@@ -590,6 +590,9 @@ void itp_run(void)
             itp_blk_buffer_write();
             itp_cur_plan_block = NULL;
             planner_discard_block(); //discards planner block
+            #if (DSS_MAX_OVERSAMPLING != 0)
+            prev_dss = 0;
+            #endif
             //accel_profile = 0; //no updates necessary to planner
             //break;
         }
