@@ -166,6 +166,11 @@
 #endif
 
 /*
+	Enables dynamic acceleration interpolator
+*/
+//#define ENABLE_S_CURVE_ACCELERATION
+
+/*
 	If the type of machine need backlash compensation configure here
 */
 //#define ENABLE_BACKLASH_COMPENSATION
