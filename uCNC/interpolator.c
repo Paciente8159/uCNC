@@ -498,7 +498,7 @@ void itp_run(void)
         {
             itp_cur_plan_block->total_steps = deaccel_from;
         }
-        
+
         //finally write the segment
         itp_sgm_buffer_write();
 
@@ -507,15 +507,18 @@ void itp_run(void)
             itp_blk_buffer_write();
             itp_cur_plan_block = NULL;
             planner_discard_block(); //discards planner block
+#if (DSS_MAX_OVERSAMPLING != 0)
+            prev_dss = 0;
+#endif
             //accel_profile = 0; //no updates necessary to planner
             //break;
         }
     }
 
-    #ifdef USE_COOLANT
+#ifdef USE_COOLANT
     //updated the coolant pins
     io_set_coolant(planner_get_coolant());
-    #endif
+#endif
 
     //starts the step isr if is stopped and there are segments to execute
     if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
@@ -650,7 +653,7 @@ void itp_step_reset_isr(void)
         {
             io_set_dirs(itp_running_sgm->block->dirbits);
         }
-        
+
 #ifdef USE_SPINDLE
         io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
         itp_rt_spindle = itp_running_sgm->spindle;
