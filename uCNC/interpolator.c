@@ -32,6 +32,10 @@
 #include "io_control.h"
 #include "kinematics.h"
 
+#if(DSS_MAX_OVERSAMPLING<0 || DSS_MAX_OVERSAMPLING>3)
+#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
+#endif
+
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
 //the amount of motion precomputed and stored for the step generator is never less then
