@@ -484,7 +484,7 @@ void io_set_spindle(uint8_t value, bool invert)
 void io_set_coolant(uint8_t value)
 {
 #ifdef COOLANT_FLOOD
-    if (value & 0x01)
+    if (value & COOLANT_MASK)
     {
         mcu_set_output(COOLANT_FLOOD);
     }
@@ -494,7 +494,8 @@ void io_set_coolant(uint8_t value)
     }
 #endif
 #ifdef COOLANT_MIST
-    if (value & 0x02)
+#if (COOLANT_FLOOD != COOLANT_MIST)
+    if (value & MIST_MASK)
     {
         mcu_set_output(COOLANT_MIST);
     }
@@ -502,6 +503,7 @@ void io_set_coolant(uint8_t value)
     {
         mcu_clear_output(COOLANT_MIST);
     }
+#endif
 #endif
 }
 #endif

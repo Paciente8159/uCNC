@@ -503,11 +503,14 @@ void cnc_exec_rt_commands(void)
 #endif
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                uint8_t coolovr = (cmd_mask == RT_CMD_COOL_FLD_TOGGLE) ? 1 : 0;
-#ifdef COOLANT_MIST
-                coolovr |= (cmd_mask == RT_CMD_COOL_MST_TOGGLE) ? 2 : 0;
-#endif
-                planner_coolant_ovr_toggle(coolovr);
+                if (cmd_mask == RT_CMD_COOL_FLD_TOGGLE)
+                {
+                    planner_coolant_ovr_toggle(COOLANT_MASK);
+                }
+                if (cmd_mask == RT_CMD_COOL_MST_TOGGLE)
+                {
+                    planner_coolant_ovr_toggle(MIST_MASK);
+                }
             }
             break;
 #endif

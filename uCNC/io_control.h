@@ -190,6 +190,9 @@
 #define CONTROLEN_MASK (CONTROLEN_ESTOP | CONTROLEN_SAFETY_DOOR | CONTROLEN_FHOLD | CONTROLEN_CS_RES)
 #define CONTROLISR_MASK (CONTROLISR_ESTOP | CONTROLISR_SAFETY_DOOR | CONTROLISR_FHOLD | CONTROLISR_CS_RES)
 
+#define COOLANT_MASK 0x02
+#define MIST_MASK 0x01
+
 //ISR
 void io_limits_isr(void);
 void io_controls_isr(void);
@@ -215,7 +218,7 @@ void io_enable_steps(void);
 void io_set_spindle(uint8_t value, bool invert);
 #endif
 
-#ifdef USE_coolant
+#ifdef USE_COOLANT
 void io_set_coolant(uint8_t value);
 #endif
 

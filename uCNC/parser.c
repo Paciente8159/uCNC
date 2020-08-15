@@ -147,8 +147,8 @@
 #define M4 2
 #define M5 0
 #define M6 0
-#define M7 1
-#define M8 2
+#define M7 MIST_MASK
+#define M8 COOLANT_MASK
 #define M9 0
 #define M48 1
 #define M49 0
@@ -323,7 +323,7 @@ uint8_t parser_read_command(void)
     return parser_gcode_command();
 }
 
-void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t* coolant)
+void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
 {
     modalgroups[0] = (parser_state.groups.motion < 8) ? parser_state.groups.motion : (72 + parser_state.groups.motion);
     modalgroups[1] = parser_state.groups.plane + 17;
@@ -334,19 +334,16 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
-    modalgroups[8] = ((parser_state.groups.spindle_turning==M5) ? 5 : (2 + parser_state.groups.spindle_turning));
+    modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
     *spindle = (uint16_t)ABS(parser_state.spindle);
 #else
     modalgroups[8] = 5;
 #endif
 #ifdef USE_COOLANT
     *coolant = parser_state.groups.coolant;
-#ifdef COOLANT_MIST
-    modalgroups[9] = (parser_state.groups.coolant==M9) ? 9 : MIN(parser_state.groups.coolant+6,8);
+    modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
 #else
-    modalgroups[9] = 9 - parser_state.groups.coolant;
-#endif
-#else
+
     modalgroups[9] = 9;
 #endif
     modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
@@ -1973,10 +1970,16 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_state->groups.tool_change = M6;
         break;
 #ifdef USE_COOLANT
+#ifdef COOLANT_MIST
     case 7:
+#endif
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
-        new_state->groups.coolant |= (code - 6);
+#ifdef COOLANT_MIST
+        new_state->groups.coolant |= ((code == 8) ? M8 : M7);
+#else
+        new_state->groups.coolant |= M8;
+#endif
         return STATUS_OK;
     case 9:
         cmd->groups |= GCODE_GROUP_COOLANT;
