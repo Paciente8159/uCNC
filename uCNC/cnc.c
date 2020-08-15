@@ -507,10 +507,12 @@ void cnc_exec_rt_commands(void)
                 {
                     planner_coolant_ovr_toggle(COOLANT_MASK);
                 }
+#ifdef COOLANT_MIST
                 if (cmd_mask == RT_CMD_COOL_MST_TOGGLE)
                 {
                     planner_coolant_ovr_toggle(MIST_MASK);
                 }
+#endif
             }
             break;
 #endif
