@@ -32,6 +32,10 @@
 #include "io_control.h"
 #include "kinematics.h"
 
+#if(DSS_MAX_OVERSAMPLING<0 || DSS_MAX_OVERSAMPLING>3)
+#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
+#endif
+
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
 //the amount of motion precomputed and stored for the step generator is never less then
@@ -65,8 +69,8 @@ typedef struct pulse_sgm_
     INTERPOLATOR_BLOCK *block;
     uint8_t next_stepbits;
     uint16_t remaining_steps;
-    uint16_t clocks_per_tick;
-    uint8_t ticks_per_step;
+    uint16_t timer_counter;
+    uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
     uint8_t next_dss;
 #endif
@@ -471,10 +475,10 @@ void itp_run(void)
 
         //completes the segment information (step speed, steps) and updates the block
         sgm->remaining_steps = segm_steps << dss;
-        mcu_freq_to_clocks((float)step_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+        mcu_freq_to_clocks((float)step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
-        mcu_freq_to_clocks(current_speed, &(sgm->clocks_per_tick), &(sgm->ticks_per_step));
+        mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
         itp_cur_plan_block->total_steps -= segm_steps;
 
@@ -498,7 +502,7 @@ void itp_run(void)
         {
             itp_cur_plan_block->total_steps = deaccel_from;
         }
-        
+
         //finally write the segment
         itp_sgm_buffer_write();
 
@@ -507,15 +511,18 @@ void itp_run(void)
             itp_blk_buffer_write();
             itp_cur_plan_block = NULL;
             planner_discard_block(); //discards planner block
+#if (DSS_MAX_OVERSAMPLING != 0)
+            prev_dss = 0;
+#endif
             //accel_profile = 0; //no updates necessary to planner
             //break;
         }
     }
 
-    #ifdef USE_COOLANT
+#ifdef USE_COOLANT
     //updated the coolant pins
     io_set_coolant(planner_get_coolant());
-    #endif
+#endif
 
     //starts the step isr if is stopped and there are segments to execute
     if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
@@ -524,7 +531,7 @@ void itp_run(void)
         io_set_outputs(STEPPER_ENABLE);
 #endif
         cnc_set_exec_state(EXEC_RUN); //flags that it started running
-        mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].clocks_per_tick, itp_sgm_data[itp_sgm_data_read].ticks_per_step);
+        mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
     }
 }
 
@@ -643,14 +650,14 @@ void itp_step_reset_isr(void)
     //if segment needs to update the step ISR (after preloading first step byte
     if (itp_running_sgm->update_speed)
     {
-        mcu_change_step_ISR(itp_running_sgm->clocks_per_tick, itp_running_sgm->ticks_per_step);
+        mcu_change_step_ISR(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
 
         //set dir bits
         if (itp_running_sgm->block != NULL)
         {
             io_set_dirs(itp_running_sgm->block->dirbits);
         }
-        
+
 #ifdef USE_SPINDLE
         io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
         itp_rt_spindle = itp_running_sgm->spindle;
@@ -907,7 +914,7 @@ void itp_delay(uint16_t delay)
 {
     itp_sgm_data[itp_sgm_data_write].block = NULL;
     //clicks every 100ms (10Hz)
-    mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].clocks_per_tick), &(itp_sgm_data[itp_sgm_data_write].ticks_per_step));
+    mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
     itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
     itp_sgm_data[itp_sgm_data_write].update_speed = true;
     itp_sgm_data[itp_sgm_data_write].feed = 0;
