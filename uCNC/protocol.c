@@ -69,23 +69,20 @@ void protocol_send_feedback(const unsigned char* __s)
 
 static uint8_t protocol_get_tools(void)
 {
-    uint8_t modalgroups[9];
+    uint8_t modalgroups[12];
     uint16_t feed;
     uint16_t spindle;
+    uint8_t coolant;
 
-    parser_get_modes(modalgroups, &feed, &spindle);
+    parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
-    uint8_t result = 0;
-#ifdef USE_COOLANT
-    result = 9 - modalgroups[6];
-#endif
 #ifdef USE_SPINDLE
-    if (modalgroups[5] != 5)
+    if (modalgroups[8] != 5)
     {
-        result |= ((modalgroups[5] == 3) ? 4 : 8);
+        coolant |= ((modalgroups[8] == 3) ? 4 : 8);
     }
 #endif
-    return result;
+    return coolant;
 }
 
 static void protocol_send_status_tail(void)
@@ -377,37 +374,46 @@ void protocol_send_gcode_coordsys(void)
     procotol_send_newline();
 }
 
+static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
+{
+    serial_putc(word);
+    serial_print_int(val);
+    if(mantissa)
+    {
+        serial_putc('.');
+        serial_print_int(mantissa);
+    }
+    serial_putc(' ');
+}
+
 void protocol_send_gcode_modes(void)
 {
     uint8_t modalgroups[12];
     uint16_t feed;
     uint16_t spindle;
+    uint8_t coolant;
 
-    parser_get_modes(modalgroups, &feed, &spindle);
+    parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
     serial_print_str(__romstr__("[GC:"));
 
     for(uint8_t i = 0; i < 7; i++)
     {
-        serial_putc('G');
-        serial_print_int((int16_t)modalgroups[i]);
-        serial_putc(' ');
+        protocol_send_parser_modalstate('G', modalgroups[i], 0);
     }
 
-    serial_putc('G');
-    serial_print_int(61);
     if(modalgroups[7]==62)
     {
-        serial_putc('.');
-        serial_putc('1');
+        protocol_send_parser_modalstate('G', 61, 1);
     }
-    serial_putc(' ');
+    else
+    {
+        protocol_send_parser_modalstate('G', modalgroups[7], 0);
+    }
 
     for(uint8_t i = 8; i < 11; i++)
     {
-        serial_putc('M');
-        serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
-        serial_putc(' ');
+        protocol_send_parser_modalstate('M', modalgroups[i], 0);
     }
 
     serial_putc('T');

@@ -197,12 +197,12 @@ void cnc_call_rt_command(uint8_t command)
 bool cnc_doevents(void)
 {
 
-    #if((LIMITEN_MASK^LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
+#if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
     io_limits_isr();
-    #endif
-    #if((CONTROLEN_MASK^CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
+#endif
+#if ((CONTROLEN_MASK ^ CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
     io_controls_isr();
-    #endif
+#endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
 
@@ -239,7 +239,7 @@ void cnc_home(void)
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
-        target[i] += ((g_settings.homing_dir_invert_mask & (1<<i)) ? -g_settings.homing_offset : g_settings.homing_offset);
+        target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
     }
 
     block_data.feed = g_settings.homing_fast_feed_rate;
@@ -281,7 +281,7 @@ void cnc_stop(void)
 #ifdef USE_COOLANT
 #ifdef COOLANT_FLOOD
     mcu_clear_output(COOLANT_FLOOD);
-    #endif
+#endif
 #ifdef COOLANT_MIST
     mcu_clear_output(COOLANT_MIST);
 #endif
@@ -498,12 +498,21 @@ void cnc_exec_rt_commands(void)
 #endif
 #ifdef USE_COOLANT
         case RT_CMD_COOL_FLD_TOGGLE:
+#ifdef COOLANT_MIST
         case RT_CMD_COOL_MST_TOGGLE:
+#endif
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                uint8_t coolovr = (cmd_mask==RT_CMD_COOL_FLD_TOGGLE) ? 1 : 0;
-                coolovr |= (cmd_mask==RT_CMD_COOL_MST_TOGGLE) ? 2 : 0;
-                planner_coolant_ovr_toggle(coolovr);
+                if (cmd_mask == RT_CMD_COOL_FLD_TOGGLE)
+                {
+                    planner_coolant_ovr_toggle(COOLANT_MASK);
+                }
+#ifdef COOLANT_MIST
+                if (cmd_mask == RT_CMD_COOL_MST_TOGGLE)
+                {
+                    planner_coolant_ovr_toggle(MIST_MASK);
+                }
+#endif
             }
             break;
 #endif
@@ -519,10 +528,10 @@ void cnc_exec_rt_commands(void)
         if (planner_buffer_is_empty())
         {
             motion_data_t block = {0};
-            #ifdef USE_SPINDLE
+#ifdef USE_SPINDLE
             block.coolant = planner_get_previous_coolant();
             block.spindle = planner_get_previous_spindle_speed();
-            #endif
+#endif
             mc_update_tools(&block);
         }
     }
@@ -606,7 +615,7 @@ bool cnc_check_interlocking(void)
 
         return false;
     }
-	
+
     //clears EXEC_JOG if not step ISR is stopped and planner has no more moves
     if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
     {
