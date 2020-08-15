@@ -102,6 +102,9 @@
 #ifdef USE_COOLANT
 #define COOLANT_FLOOD DOUT1
 //#define COOLANT_MIST DOUT2
+#ifndef COOLANT_MIST
+//uncomment to accept M7 act as M8
+//#define M7_SAME_AS_M8
 #endif
 
 /*

@@ -1973,6 +1973,9 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 #ifdef COOLANT_MIST
     case 7:
 #endif
+#ifdef M7_SAME_AS_M8
+    case 7:
+#endif
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
 #ifdef COOLANT_MIST
