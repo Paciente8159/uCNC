@@ -2007,7 +2007,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 7:
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
-        new_state->groups.coolant |= (code - (M7 - 1));
+        new_state->groups.coolant |= (code - (M7-1));
         return STATUS_OK;
     case 9:
         cmd->groups |= GCODE_GROUP_COOLANT;
