@@ -3021,17 +3021,13 @@
 	}
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 #ifdef PROBE
-#define mcu_enable_probe_isr()        \
-	{                                 \
-		SETBIT(EXTI->IMR, PROBE_BIT); \
-	}
-#define mcu_disable_probe_isr()         \
-	{                                   \
-		CLEARBIT(EXTI->IMR, PROBE_BIT); \
-	}
+#ifdef PROBE_ISR
+#define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
+#define mcu_disable_probe_isr() CLEARBIT(EXTI->IMR, PROBE_BIT)
 #else
-#define mcu_enable_probe_isr
-#define mcu_disable_probe_isr
+#define mcu_enable_probe_isr()
+#define mcu_disable_probe_isr()
+#endif
 #endif
 
 #define mcu_enable_interrupts __enable_irq

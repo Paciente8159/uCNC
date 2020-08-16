@@ -813,40 +813,17 @@ void mcu_init(void)
 #endif
 #endif
 
+    //disable probe isr
+    mcu_disable_probe_isr();
     //enable interrupts
-    sei();
+    mcu_enable_interrupts();
 }
 
 //IO functions
-
-void mcu_enable_interrupts(void)
-{
-    sei();
-}
-void mcu_disable_interrupts(void)
-{
-    cli();
-}
-
-void mcu_start_send(void)
-{
-    SETBIT(UCSRB, UDRIE);
-}
-
-void mcu_stop_send(void)
-{
-    CLEARBIT(UCSRB, UDRIE);
-}
-
 void mcu_putc(char c)
 {
     loop_until_bit_is_set(UCSRA, UDRE);
     COM_OUTREG = c;
-}
-
-bool mcu_is_tx_ready(void)
-{
-    return CHECKBIT(UCSRA, UDRE);
 }
 
 char mcu_getc(void)

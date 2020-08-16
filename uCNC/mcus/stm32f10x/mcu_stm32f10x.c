@@ -675,7 +675,7 @@ void mcu_init(void)
 #ifdef COM_PORT
 	mcu_usart_init();
 #endif
-                 
+	mcu_disable_probe_isr();
 	mcu_enable_interrupts();
 #ifdef LED
 	mcu_clear_output(LED);

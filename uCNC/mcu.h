@@ -69,8 +69,12 @@ uint8_t mcu_get_pwm(uint8_t pwm);
 #endif
 
 //Communication functions
+#ifndef mcu_start_send
 void mcu_start_send(void); //Start async send
+#endif
+#ifndef mcu_stop_send
 void mcu_stop_send(void); //Stop async send
+#endif
 
 #ifndef mcu_putc
 void mcu_putc(char c);
