@@ -1026,7 +1026,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
     {
         updatetools = true;
-        block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
+#ifdef LASER_MODE
+        if (!g_settings.laser_mode)
+        {
+#endif
+            block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
+#ifdef LASER_MODE
+        }
+#endif
     }
 #endif
 //8. coolant on/off
@@ -1051,10 +1058,23 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     {
         //calc dwell in time in 10ms increments
         block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p * 10.0));
+#ifdef LASER_MODE
+        //laser disabled in dwell
+        int16_t laserpwm = block_data.spindle;
+        if (g_settings.laser_mode)
+        {
+            block_data.spindle = 0;
+        }
+#endif
         if (mc_dwell(&block_data))
         {
             return STATUS_CRITICAL_FAIL;
         }
+
+#ifdef LASER_MODE
+        //laser disabled in dwell
+        block_data.spindle = laserpwm;
+#endif
         new_state->groups.nonmodal = 0;
     }
 
@@ -1289,6 +1309,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         parser_wco_counter = 0;
     }
 
+#ifdef LASER_MODE
+    //laser disabled in nonmodal moves
+    if (g_settings.laser_mode && new_state->groups.nonmodal)
+    {
+        block_data.spindle = 0;
+    }
+#endif
+
     switch (new_state->groups.nonmodal)
     {
     case G28: //G28
@@ -1345,6 +1373,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             //rapid move
             block_data.feed = FLT_MAX;
             //continues to send G1 at maximum feed rate
+#ifdef LASER_MODE
+            //laser disabled in G0
+            if (g_settings.laser_mode)
+            {
+                block_data.spindle = 0;
+            }
+#endif
         case G1:
             if (block_data.feed == 0)
             {
@@ -1463,6 +1498,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //send a spindle and coolant update if needed
     if (updatetools)
     {
+#ifdef LASER_MODE
+        //laser disabled in G0
+        if (g_settings.laser_mode)
+        {
+            block_data.spindle = 0;
+        }
+#endif
         return mc_update_tools(&block_data);
     }
 

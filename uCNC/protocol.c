@@ -60,7 +60,7 @@ void protocol_send_string(const unsigned char *__s)
     serial_print_str(__s);
 }
 
-void protocol_send_feedback(const unsigned char* __s)
+void protocol_send_feedback(const unsigned char *__s)
 {
     serial_print_str(MSG_START);
     serial_print_str(__s);
@@ -136,9 +136,9 @@ void protocol_send_status(void)
 
     //only send report when buffer is empty
     //this prevents locks and stack overflow of the cnc_doevents()
-    if(!serial_tx_is_empty())
+    if (!serial_tx_is_empty())
     {
-    	return;
+        return;
     }
 
     uint32_t steppos[STEPPER_COUNT];
@@ -397,7 +397,7 @@ void protocol_send_gcode_modes(void)
 
     serial_print_str(__romstr__("[GC:"));
 
-    for(uint8_t i = 0; i < 7; i++)
+    for (uint8_t i = 0; i < 7; i++)
     {
         protocol_send_parser_modalstate('G', modalgroups[i], 0);
     }
@@ -504,6 +504,9 @@ void protocol_send_ucnc_settings(void)
     protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
+#ifdef LASER_MODE
+    protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
+#endif
 
 #ifdef ENABLE_SKEW_COMPENSATION
     protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);

@@ -545,6 +545,13 @@ void itp_stop(void)
 {
     mcu_step_stop_ISR();
     cnc_clear_exec_state(EXEC_RUN);
+#ifdef LASER_MODE
+    if (g_settings.laser_mode)
+    {
+        io_set_spindle(0, false);
+        itp_rt_spindle = 0;
+    }
+#endif
 }
 
 void itp_clear(void)
@@ -920,8 +927,15 @@ void itp_delay(uint16_t delay)
     itp_sgm_data[itp_sgm_data_write].feed = 0;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
-    itp_sgm_data[itp_sgm_data_write].spindle = 0;
-    itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    if (g_settings.laser_mode)
+    {
+        itp_sgm_data[itp_sgm_data_write].spindle = 0;
+        itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    }
+    else
+    {
+        planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    }
 #else
     planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
 #endif
