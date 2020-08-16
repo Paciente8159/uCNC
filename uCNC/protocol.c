@@ -394,20 +394,18 @@ void protocol_send_gcode_modes(void)
         serial_putc(' ');
     }
 
-    serial_putc('G');
-    serial_print_int(61);
-    if (modalgroups[7]==62)
+    if(modalgroups[7]==62)
     {
-        serial_putc('.');
-        serial_putc('1');
+        protocol_send_parser_modalstate('G', 61, 1);
     }
-    serial_putc(' ');
-
-    for (uint8_t i = 8; i < 11; i++)
+    else
     {
-        serial_putc('M');
-        serial_print_int((int16_t)((i==6 && modalgroups[i]==6) ? 7 : modalgroups[i]));
-        serial_putc(' ');
+        protocol_send_parser_modalstate('G', modalgroups[7], 0);
+    }
+
+    for(uint8_t i = 8; i < 11; i++)
+    {
+        protocol_send_parser_modalstate('M', modalgroups[i], 0);
     }
 
     serial_putc('T');
