@@ -13,7 +13,7 @@ uint16_t offset;
 #define SIN sin(a)
 #define TAN tan(a)
 #define HALF (0.5f*a)
-#define HALF_FAST ({uint32_t result = (*(int32_t*)&a); result = ((result&0x7f800000)!=0) ? (((result-0x00800000)&0x7f800000) | (result &(~0x7f800000))) : (result>>1); (*(float*)&result);})
+#define HALF_FAST ({int32_t result = (*(int32_t*)&a); if((result&0x7f800000)!=0) result-=0x00800000; else result = 0; (*(float*)&result); })
 
 #define PRINT_OP(X) Serial.println(#X)
 
@@ -71,7 +71,7 @@ void setup() {
   DO_OP(float, 0,50,DBL);
   DO_OP(float, 0,10000,HALF);
   DO_OP(float, 0,10000,HALF_FAST);
-  DO_OP(float, 0.0000001,0.000002,HALF_FAST);
+  DO_OP(float, -50000,-10,HALF_FAST);
 }
 
 void timeloop(uint16_t loops)

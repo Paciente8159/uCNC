@@ -50,15 +50,15 @@
 #endif
 
 #if (defined(ENABLE_FAST_MATH) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-//actually it should be ((result&0x7f800000)!=0) ? (((result-0x00800000)&0x7f800000) | (result &(~0x7f800000))) : (result>>1); but this is at n^-38 so 0 is a good approximation
-//div2 takes about 37 clock cycles on AVR instead of 144 if multiply by 0.5f
-#define fast_flt_div2(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)!=0) ? (((result-0x00800000)&0x7f800000) | (result &(~0x7f800000))) : 0; (*(float*)&result);})
-#define fast_flt_div4(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)!=0) ? (((result-0x01000000)&0x7f800000) | (result &(~0x7f800000))) : 0; (*(float*)&result);})
-#define fast_flt_mul2(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)!=0x7f000000) ? (((result+0x00800000)&0x7f800000) | (result &(~0x7f800000))) : 0x7f800000; (*(float*)&result);})
-#define fast_flt_mul4(x) ({uint32_t result = (*(int32_t*)&x); result = ((result&0x7f800000)!=0x7f000000) ? (((result+0x01000000)&0x7f800000) | (result &(~0x7f800000))) : 0x7f800000; (*(float*)&result);})
+//performs direct float manipulation and bit shifting. At the very end spectrum of the float (to infinity and to 0) makes aproximation either to 0 or infinity
+//div2 takes about 26 clock cycles on AVR instead of 144 if multiply by 0.5f (x5.5 faster)
+#define fast_flt_div2(x) ({int32_t result = (*(int32_t*)&x); if((result&0x7f800000)!=0) result-=0x00800000; else result = 0; (*(float*)&result); })
+#define fast_flt_div4(x) ({int32_t result = (*(int32_t*)&x); if((result&0x7f000000)!=0) result-=0x01000000; else result = 0; (*(float*)&result); })
+#define fast_flt_mul2(x) ({int32_t result = (*(int32_t*)&x); if((result&0x7f800000)!=0x7f800000) result+=0x00800000; else result |= 0x7f800000; (*(float*)&result); })
+#define fast_flt_mul4(x) ({int32_t result = (*(int32_t*)&x); if((result&0x7f800000)!=0x7f000000) result+=0x01000000; else result |= 0x7f800000; (*(float*)&result); })
 //Quake III based fast sqrt calculation
-#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result;})
-#define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result;})
+#define fast_sqrt(x) ({int32_t result = 0x1fbb4000 + (*(int32_t*)&x >> 1);*(float*)&result; })
+#define fast_inv_sqrt(x) ({int32_t result = 0x5f3759df - (*(int32_t*)&x >> 1);*(float*)&result; })
 #else
 #define fast_flt_div2(x) ((x)*0.5f)
 #define fast_flt_div4(x) ((x)*0.25f)
