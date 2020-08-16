@@ -106,6 +106,7 @@
 //uncomment to accept M7 act as M8
 //#define M7_SAME_AS_M8
 #endif
+#endif
 
 /*
 	Special definitions used to debug code

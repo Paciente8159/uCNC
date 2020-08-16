@@ -116,12 +116,12 @@ static void protocol_send_status_tail(void)
             {
                 serial_putc('C');
             }
-            if (CHECKFLAG(tools, 1))
+            if (CHECKFLAG(tools, COOLANT_MASK))
             {
                 serial_putc('F');
             }
 
-            if (CHECKFLAG(tools, 2))
+            if (CHECKFLAG(tools, MIST_MASK))
             {
                 serial_putc('M');
             }
