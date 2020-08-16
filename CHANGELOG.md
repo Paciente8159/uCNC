@@ -5,6 +5,19 @@
 
 # Changelog
 
+## [1.1.1] - Unreleased
+
+### Changed
+  - improved laser mode to be compliant to Grbl's laser mode. Laser mode also has auto shutdown feature when motion stops #29
+  - checks if DSS setting value is valid #30
+
+### Fixed
+  - coolant/mist on/off functions and overrides #28
+  - fixed parser active modal groups report #28
+  - fixed active tools report #28
+  - fixed DSS oversampling that was not reseted after motion end #30
+
+
 ## [1.1.0] - 2020-08-09
 
 Version 1.1.0 comes with many added features and improvements over the previous version. It also fixes many of the bugs and limitations of the previous implementation. These are:
@@ -165,6 +178,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.1.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0
 [1.0.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0-rc
