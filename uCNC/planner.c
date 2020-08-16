@@ -479,14 +479,14 @@ float planner_get_previous_spindle_speed(void)
 #ifdef USE_COOLANT
 uint8_t planner_get_coolant(void)
 {
-	uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
-	
-	if (planner_overrides.overrides_enabled)
-	{
-		coolant ^= planner_overrides.coolant_override;
-	}
-	
-	return coolant;
+    uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
+
+    if (planner_overrides.overrides_enabled)
+    {
+        coolant ^= planner_overrides.coolant_override;
+    }
+
+    return coolant;
 }
 
 uint8_t planner_get_previous_coolant(void)

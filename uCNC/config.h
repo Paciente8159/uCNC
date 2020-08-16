@@ -192,7 +192,7 @@
 	The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
 	Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
 */
-#define DSS_MAX_OVERSAMPLING 1
+#define DSS_MAX_OVERSAMPLING 0
 
 /*
 	If the type of machine need backlash compensation configure here

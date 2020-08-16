@@ -668,14 +668,14 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
         }
 #endif
         error = parser_get_token(&word, &value);
-        if(error)
+        if (error)
         {
-        	parser_discard_command();
+            parser_discard_command();
 #ifdef ECHO_CMD
             protocol_send_string(MSG_END);
 #endif
-        	return error;
-		}
+            return error;
+        }
         uint8_t code = (uint8_t)floorf(value);
         //check mantissa
         uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
@@ -1965,7 +1965,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 7:
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
-        new_state->groups.coolant |= (code - (M7-1));
+        new_state->groups.coolant |= (code - (M7 - 1));
         return STATUS_OK;
     case 9:
         cmd->groups |= GCODE_GROUP_COOLANT;
@@ -2165,7 +2165,7 @@ static void parser_reset(void)
 {
     parser_state.groups.coord_system = G54;               //G54
     parser_state.groups.plane = G17;                      //G17
-    parser_state.groups.feed_speed_override = M48;          //M48
+    parser_state.groups.feed_speed_override = M48;        //M48
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94
