@@ -42,10 +42,6 @@
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
 #define rom_read_byte *
-//used by the parser
-//this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-//if not defined utils.h will use standard math operation
-#define fast_mult10(X) ((((X) << 2) + (X)) << 1)
 
 //Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right

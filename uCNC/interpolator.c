@@ -291,25 +291,14 @@ void itp_run(void)
             for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
                 i--;
-                sqr_step_speed += (float)itp_cur_plan_block->steps[i] * (float)itp_cur_plan_block->steps[i];
+                sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                 itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                 itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
             }
 
-            sqr_step_speed *= total_step_inv * total_step_inv;
+            sqr_step_speed *= fast_flt_pow2(total_step_inv);
+            feed_convert *= fast_flt_sqrt(sqr_step_speed);
 
-            feed_convert *= fast_sqrt(sqr_step_speed);
-            /*
-            step_mm[itp_cur_plan_block->step_indexer] = 1;
-            kinematics_apply_forward(step_mm, mm_step);
-            feed_convert = 0;
-            for (uint8_t i = AXIS_COUNT; i != 0;)
-            {
-                i--;
-                feed_convert += mm_step[i] * mm_step[i];
-            }
-
-            feed_convert = fast_sqrt(feed_convert) * 60.f;*/
             //initializes data for generating step segments
             unprocessed_steps = itp_cur_plan_block->total_steps;
 
@@ -406,7 +395,7 @@ void itp_run(void)
             sgm->update_speed = true;
         }
 
-        float current_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
+        float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
         /*
         	common calculations for all three profiles (accel, constant and deaccel)
         */
@@ -450,7 +439,7 @@ void itp_run(void)
                 new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - new_speed_sqr;
                 new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
             }
-            current_speed = (fast_sqrt(new_speed_sqr) + fast_sqrt(itp_cur_plan_block->entry_feed_sqr));
+            current_speed = (fast_flt_sqrt(new_speed_sqr) + fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr));
             current_speed = fast_flt_div2(current_speed);
             itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
         }
@@ -485,7 +474,7 @@ void itp_run(void)
         sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
-        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
+        float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
         planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
 #else
         planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));

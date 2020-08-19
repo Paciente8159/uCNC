@@ -200,8 +200,8 @@ void planner_add_line(uint32_t *target, motion_data_t *block_data)
         block_data->feed = rapid_feed;
     }
 
-    planner_data[planner_data_write].feed_sqr = block_data->feed * block_data->feed;
-    planner_data[planner_data_write].rapid_feed_sqr = rapid_feed * rapid_feed;
+    planner_data[planner_data_write].feed_sqr = fast_flt_pow2(block_data->feed);
+    planner_data[planner_data_write].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
 
     //consider initial angle factor of 1 (90 degree angle corner or more)
     float angle_factor = 1.0f;
@@ -236,8 +236,8 @@ void planner_add_line(uint32_t *target, motion_data_t *block_data)
             //but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
             //all angles greater than 1 that can be excluded
             angle_factor = 1.0f / (1.0f + cos_theta);
-            cos_theta = (1.0f - cos_theta * cos_theta);
-            angle_factor *= fast_sqrt(cos_theta);
+            cos_theta = (1.0f - fast_flt_pow2(cos_theta));
+            angle_factor *= fast_flt_sqrt(cos_theta);
         }
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
@@ -247,7 +247,7 @@ void planner_add_line(uint32_t *target, motion_data_t *block_data)
         if (angle_factor < 1.0f)
         {
             float junc_feed_sqr = (1 - angle_factor);
-            junc_feed_sqr *= junc_feed_sqr;
+            junc_feed_sqr = fast_flt_pow2(junc_feed_sqr);
             junc_feed_sqr *= planner_data[prev].feed_sqr;
             //the maximum feed is the minimal feed between the previous feed given the angle and the current feed
             planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, junc_feed_sqr);
@@ -382,16 +382,14 @@ float planner_get_block_exit_speed_sqr(void)
     {
         if (planner_overrides.feed_override != 100)
         {
-            exit_speed_sqr *= (float)planner_overrides.feed_override;
-            exit_speed_sqr *= (float)planner_overrides.feed_override;
+            exit_speed_sqr *= fast_flt_pow2((float)planner_overrides.feed_override);
             exit_speed_sqr *= 0.0001f;
         }
 
         //if rapid overrides are active the feed must not exceed the rapid motion feed
         if (planner_overrides.rapid_feed_override != 100)
         {
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= fast_flt_pow2((float)planner_overrides.rapid_feed_override);
             rapid_feed_sqr *= 0.0001f;
         }
     }
@@ -428,16 +426,14 @@ float planner_get_block_top_speed(void)
     {
         if (planner_overrides.feed_override != 100)
         {
-            target_speed_sqr *= (float)planner_overrides.feed_override;
-            target_speed_sqr *= (float)planner_overrides.feed_override;
+            target_speed_sqr *= fast_flt_pow2((float)planner_overrides.feed_override);
             target_speed_sqr *= 0.0001f;
         }
 
         //if rapid overrides are active the feed must not exceed the rapid motion feed
         if (planner_overrides.rapid_feed_override != 100)
         {
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
-            rapid_feed_sqr *= (float)planner_overrides.rapid_feed_override;
+            rapid_feed_sqr *= fast_flt_pow2((float)planner_overrides.rapid_feed_override);
             rapid_feed_sqr *= 0.0001f;
         }
     }

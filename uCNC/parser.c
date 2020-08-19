@@ -1591,7 +1591,7 @@ static uint8_t parser_get_float(float *value)
         uint8_t digit = (uint8_t)c - 48;
         if (digit <= 9)
         {
-            intval = fast_mult10(intval) + digit;
+            intval = fast_int_mul10(intval) + digit;
             if (fpcount)
             {
                 fpcount++;
