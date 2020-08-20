@@ -139,11 +139,17 @@
 /*
 	G-code options
 */
+//processes and displays the currently executing gcode numbered line
 //#define GCODE_PROCESS_LINE_NUMBERS
+
+//processes comment as defined in the RS274NGC
 //#define PROCESS_COMMENTS
+
+//accepts the E word (currently is processed has A)
 //#define GCODE_ACCEPT_WORD_E
-//set factor for countinuos mode
-//value must be set between 0.0 and 1.0 If set to 1.0 is the same as exact path mode (G61)
+
+//set factor for countinuos mode (G64)
+//value must be set between 0.0 and 1.0 If set to 0.0 is the same as exact path mode (G61)
 #define G64_MAX_ANGLE_FACTOR 0.2f
 
 /*
@@ -191,10 +197,15 @@
 */
 //ensure all variables are set to 0 at start up
 //#define FORCE_GLOBALS_TO_0
+
 //saves a little program memory bytes but much more slow CRC check
 //#define CRC_WITHOUT_LOOKUP_TABLE
-//EXPERIMENTAL! Uncomment to enable fast math macros to shorten the computinig time needed for a couple of math operations. This will affect the reported feed rate precision. Output binary will be bigger
-//#define ENABLE_FAST_MATH 
+
+//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
+//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
+//No fast math macros are and shoud be used in functions that calculate coordinates to avoid positional errors except multiply and divide by powers of 2 macros
+//#define ENABLE_FAST_MATH
+
 #include "utils.h"
 
 #endif

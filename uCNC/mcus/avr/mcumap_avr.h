@@ -48,8 +48,8 @@
 
 //used by the parser
 //this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
-//if not defined utils.h will use standard math operation
-#define fast_mult10(X) ((((X) << 2) + (X)) << 1)
+//overrides utils.h definition to implement this method with or without fast math option enabled
+#define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
 //Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
