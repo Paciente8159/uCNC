@@ -10,12 +10,14 @@
 ### Changed
   - improved laser mode to be compliant to Grbl's laser mode. Laser mode also has auto shutdown feature when motion stops #29
   - checks if DSS setting value is valid #30
+  - improved fast math functions (more stability) and added new fast math pow2 function #33
 
 ### Fixed
   - coolant/mist on/off functions and overrides #28
   - fixed parser active modal groups report #28
   - fixed active tools report #28
   - fixed DSS oversampling that was not reseted after motion end #30
+  - fixed probing ISR tripping at startup by forcing probe_isr_disable after mcu_init #32
 
 
 ## [1.1.0] - 2020-08-09
