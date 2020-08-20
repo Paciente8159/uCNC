@@ -60,6 +60,7 @@ void cnc_init(void)
 #endif
     //initializes all systems
     mcu_init();      //mcu
+    mcu_disable_probe_isr(); //forces probe isr disabling
     serial_init();   //serial
     settings_init(); //settings
     itp_init();      //interpolator

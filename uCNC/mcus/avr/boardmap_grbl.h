@@ -80,8 +80,8 @@
 #define CS_RES_ISR 1
 
 //Active controls switch weak pull-ups
-//#define ESTOP_PULLUP
-//#define FHOLD_PULLUP
+#define ESTOP_PULLUP
+#define FHOLD_PULLUP
 
 //Setup com pins
 #define RX_BIT 0

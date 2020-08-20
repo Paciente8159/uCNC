@@ -27,6 +27,7 @@
 	MCU specific definitions and replacements
 */
 #include <avr/pgmspace.h>
+#include <avr/interrupt.h>
 
 //defines the frequency of the mcu
 #define F_CPU 16000000UL
@@ -2862,11 +2863,20 @@
 	})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 #define mcu_get_analog(diopin) ({ADMUX=(0x60|ANALOG0_CHANNEL);ADCSRA = (0xC0|ANALOG0_PRESC);while(ADCSRA & 0x40);ADCH;})
-#ifdef PROBE
+#ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #else
-#define mcu_enable_probe_isr
-#define mcu_disable_probe_isr
+#define mcu_enable_probe_isr()
+#define mcu_disable_probe_isr()
 #endif
+
+#define mcu_enable_interrupts sei
+#define mcu_disable_interrupts cli
+
+#define mcu_start_send() SETBIT(UCSRB, UDRIE)
+#define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
+
+
+
 #endif
