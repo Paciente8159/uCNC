@@ -32,7 +32,7 @@
 #include "io_control.h"
 #include "kinematics.h"
 
-#if(DSS_MAX_OVERSAMPLING<0 || DSS_MAX_OVERSAMPLING>3)
+#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
 #endif
 
@@ -231,6 +231,7 @@ void itp_run(void)
     static float junction_speed_sqr = 0;
     static float delta = 0;
 #ifdef ENABLE_S_CURVE_ACCELERATION
+    static bool can_update = true;
     static float previous_accel = 0;
     static float mid_entry_speed_sqr = 0;
     static float mid_exit_speed_sqr = 0;
@@ -304,13 +305,13 @@ void itp_run(void)
             for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
                 i--;
-                sqr_step_speed += (float)itp_cur_plan_block->steps[i] * (float)itp_cur_plan_block->steps[i];
+                sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                 itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                 itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
             }
 
-            sqr_step_speed *= total_step_inv * total_step_inv;
-            feed_convert *= fast_sqrt(sqr_step_speed);
+            sqr_step_speed *= fast_flt_pow2(total_step_inv);
+            feed_convert *= fast_flt_sqrt(sqr_step_speed);
 
             //initializes data for generating step segments
             unprocessed_steps = itp_cur_plan_block->total_steps;
@@ -320,6 +321,8 @@ void itp_run(void)
 
 #ifndef ENABLE_S_CURVE_ACCELERATION
             delta = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+#else
+            can_update = true;
 #endif
         }
 
@@ -341,44 +344,51 @@ void itp_run(void)
         }
         else if (itp_needs_update) //forces recalculation of acceleration and deacceleration profiles
         {
-            itp_needs_update = false;
-            float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-            junction_speed_sqr = planner_get_block_top_speed();
-            accel_until = unprocessed_steps;
-            deaccel_from = 0;
 #ifdef ENABLE_S_CURVE_ACCELERATION
-            float jerk = itp_cur_plan_block->acceleration * itp_cur_plan_block->acceleration * fast_inv_sqrt(junction_speed_sqr);
-            delta = fast_flt_mul4(jerk) * INTEGRATOR_DELTA_T;
-            previous_accel = 0;
-            mid_entry_speed_sqr = junction_speed_sqr + itp_cur_plan_block->entry_feed_sqr;
-            mid_entry_speed_sqr = fast_flt_div4(mid_entry_speed_sqr);
-            mid_exit_speed_sqr = junction_speed_sqr + exit_speed_sqr;
-            mid_exit_speed_sqr = fast_flt_div4(mid_exit_speed_sqr);
+            if (can_update)
+            {
+#endif
+                itp_needs_update = false;
+                float exit_speed_sqr = planner_get_block_exit_speed_sqr();
+                junction_speed_sqr = planner_get_block_top_speed();
+                accel_until = unprocessed_steps;
+                deaccel_from = 0;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                float jerk = fast_flt_pow2(itp_cur_plan_block->acceleration) * fast_flt_invsqrt(junction_speed_sqr);
+                delta = fast_flt_mul4(jerk) * INTEGRATOR_DELTA_T;
+                previous_accel = 0;
+                mid_entry_speed_sqr = junction_speed_sqr + itp_cur_plan_block->entry_feed_sqr;
+                mid_entry_speed_sqr = fast_flt_div4(mid_entry_speed_sqr);
+                mid_exit_speed_sqr = junction_speed_sqr + exit_speed_sqr;
+                mid_exit_speed_sqr = fast_flt_div4(mid_exit_speed_sqr);
 #endif
 
-            if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
-            {
-                float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
-                accel_dist = fast_flt_div2(accel_dist);
-                accel_until -= floorf(accel_dist);
-                initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
-            }
+                if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
+                {
+                    float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
+                    accel_dist = fast_flt_div2(accel_dist);
+                    accel_until -= floorf(accel_dist);
+                    initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
+                }
 
-            //if entry speed already a junction speed updates it.
-            if (accel_until == unprocessed_steps)
-            {
-                itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-            }
+                //if entry speed already a junction speed updates it.
+                if (accel_until == unprocessed_steps)
+                {
+                    itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+                }
 
-            if (junction_speed_sqr > exit_speed_sqr)
-            {
-                float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) / itp_cur_plan_block->acceleration;
-                deaccel_dist = fast_flt_div2(deaccel_dist);
-                deaccel_from = floorf(deaccel_dist);
+                if (junction_speed_sqr > exit_speed_sqr)
+                {
+                    float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) / itp_cur_plan_block->acceleration;
+                    deaccel_dist = fast_flt_div2(deaccel_dist);
+                    deaccel_from = floorf(deaccel_dist);
+                }
+#ifdef ENABLE_S_CURVE_ACCELERATION
             }
+#endif
         }
 
-        float previous_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
+        float previous_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
         float current_speed = previous_speed;
         float profile_steps_limit;
         uint16_t segm_steps = 0;
@@ -442,6 +452,8 @@ void itp_run(void)
                 }
                 average_speed -= average_accel * INTEGRATOR_DELTA_T;
             }
+
+            can_update = false;
 #endif
 
                 profile_steps_limit = accel_until;
@@ -452,6 +464,9 @@ void itp_run(void)
                 //constant speed segment
                 profile_steps_limit = deaccel_from;
                 sgm->update_speed = false;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                can_update = true;
+#endif
             }
             else
             {
@@ -470,6 +485,7 @@ void itp_run(void)
                 previous_accel -= delta;
             }
             average_speed -= average_accel * INTEGRATOR_DELTA_T;
+            can_update = false;
 #endif
                 profile_steps_limit = 0;
                 sgm->update_speed = true;
@@ -509,7 +525,7 @@ void itp_run(void)
                 segm_steps = (uint16_t)roundf(partial_distance);
                 if (segm_steps != 0)
                 {
-                    itp_cur_plan_block->entry_feed_sqr = current_speed * current_speed;
+                    itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
                 }
 #ifndef ENABLE_S_CURVE_ACCELERATION
                 else
@@ -517,7 +533,7 @@ void itp_run(void)
                     //if traveled distance is less the one step fits at least one step
                     segm_steps = 1;
                     itp_cur_plan_block->entry_feed_sqr += fast_flt_mul2(itp_cur_plan_block->acceleration);
-                    current_speed = fast_sqrt(itp_cur_plan_block->entry_feed_sqr);
+                    current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
                     average_speed = fast_flt_div2(current_speed);
                 }
 #endif
@@ -569,7 +585,7 @@ void itp_run(void)
         sgm->feed = average_speed * feed_convert;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
-        float top_speed_inv = fast_inv_sqrt(junction_speed_sqr);
+        float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
         planner_get_spindle_speed(MIN(1, average_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
 #else
         planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
