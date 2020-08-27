@@ -88,4 +88,6 @@ extern virtports_t virtualports;
 #define COM_INREG virtualports->uart
 #define COM_OUTREG virtualports->uart
 
+#define mcu_dealy_ms(x) delay(x)
+
 #endif

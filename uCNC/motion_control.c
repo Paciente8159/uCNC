@@ -72,7 +72,7 @@ bool mc_toogle_checkmode(void)
 // 2. applies all kinematic transformations to the target
 // 3. converts the target in actuator position
 // 4. calculates motion change from the previous line
-uint8_t mc_line(float *target, motion_data_t* block_data)
+uint8_t mc_line(float *target, motion_data_t *block_data)
 {
     uint32_t step_new_pos[STEPPER_COUNT];
     float feed = block_data->feed;
@@ -212,7 +212,7 @@ uint8_t mc_line(float *target, motion_data_t* block_data)
 }
 
 //applies an algorithm similar to grbl with slight changes
-uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t* block_data)
+uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data)
 {
     float mc_position[AXIS_COUNT];
 
@@ -253,7 +253,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     radiusangle = fast_flt_div2(radiusangle);
     float diameter = fast_flt_mul2(radius);
     uint16_t segment_count = floor(fabs(radiusangle) / sqrt(g_settings.arc_tolerance * (diameter - g_settings.arc_tolerance)));
-    float arc_per_sgm = (segment_count != 0) ? arc_angle/segment_count : arc_angle;
+    float arc_per_sgm = (segment_count != 0) ? arc_angle / segment_count : arc_angle;
     float dist_sgm = 0;
 
     //for all other axis finds the linear motion distance
@@ -343,7 +343,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     return mc_line(target, block_data);
 }
 
-uint8_t mc_dwell(motion_data_t* block_data)
+uint8_t mc_dwell(motion_data_t *block_data)
 {
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
@@ -433,6 +433,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
+    mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
     limits_flags = io_get_limits();
 
     //the wrong switch was activated bails
@@ -486,6 +487,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return EXEC_ALARM_HOMING_FAIL_RESET;
     }
 
+    mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
     limits_flags = io_get_limits();
 
     if (CHECKFLAG(limits_flags, axis_limit))
@@ -496,7 +498,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     return STATUS_OK;
 }
 
-uint8_t mc_update_tools(motion_data_t* block_data)
+uint8_t mc_update_tools(motion_data_t *block_data)
 {
     if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
@@ -516,7 +518,7 @@ uint8_t mc_update_tools(motion_data_t* block_data)
     return STATUS_OK;
 }
 
-uint8_t mc_probe(float *target, bool invert_probe, motion_data_t* block_data)
+uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
 {
 #ifdef PROBE
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
@@ -531,8 +533,8 @@ uint8_t mc_probe(float *target, bool invert_probe, motion_data_t* block_data)
             return STATUS_CRITICAL_FAIL;
         }
 
-        #if(defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK!=PROBEISR_MASK))
-        if(io_get_probe())
+#if (defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK != PROBEISR_MASK))
+        if (io_get_probe())
         {
             io_probe_isr();
             break;
@@ -545,6 +547,7 @@ uint8_t mc_probe(float *target, bool invert_probe, motion_data_t* block_data)
     itp_clear();
     planner_clear();
     cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
+    mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
     bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
     if (probe_notok)
     {

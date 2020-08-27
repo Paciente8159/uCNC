@@ -105,7 +105,9 @@ void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller);
 void mcu_step_stop_ISR(void);
 
 //Custom delay function
-//void mcu_delay_ms(uint16_t miliseconds);
+#ifndef mcu_delay_ms
+void mcu_delay_ms(uint16_t miliseconds);
+#endif
 
 //Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address);

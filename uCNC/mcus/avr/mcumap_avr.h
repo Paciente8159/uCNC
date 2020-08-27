@@ -28,9 +28,12 @@
 */
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
+#include <avr/delay.h>
 
 //defines the frequency of the mcu
+#ifndef F_CPU
 #define F_CPU 16000000UL
+#endif
 //defines the maximum and minimum step rates
 #define F_STEP_MAX 30000
 #define F_STEP_MIN 4
@@ -2877,6 +2880,6 @@
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
 
-
+#define mcu_delay_ms(x) {while(x--) _delay_us(996);}
 
 #endif

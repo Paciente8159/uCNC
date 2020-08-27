@@ -29,7 +29,9 @@
 #include "stm32f1xx_hal.h"
 
 //defines the frequency of the mcu
+#ifndef F_CPU
 #define F_CPU 72000000UL
+#endif
 //defines the maximum and minimum step rates
 #define F_STEP_MAX 30000
 #define F_STEP_MIN 4
@@ -3028,5 +3030,7 @@
 
 #define mcu_enable_interrupts __enable_irq
 #define mcu_disable_interrupts __disable_irq
+
+#define mcu_delay_ms(x) HAL_Delay(x)
 
 #endif
