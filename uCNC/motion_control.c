@@ -127,7 +127,7 @@ uint8_t mc_line(float *target, motion_data_t* block_data)
             mc_prev_transformed_target[i] = target[i];
         }
 
-        inv_dist = fast_inv_sqrt(inv_dist);
+        inv_dist = fast_flt_invsqrt(inv_dist);
 
 //calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
 #ifndef ENABLE_LINACT_PLANNER

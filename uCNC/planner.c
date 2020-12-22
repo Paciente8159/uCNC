@@ -237,7 +237,7 @@ void planner_add_line(uint32_t *target, motion_data_t *block_data)
             //all angles greater than 1 that can be excluded
             angle_factor = 1.0f / (1.0f + cos_theta);
             cos_theta = (1.0f - cos_theta * cos_theta);
-            angle_factor *= fast_sqrt(cos_theta);
+            angle_factor *= fast_flt_sqrt(cos_theta);
         }
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
