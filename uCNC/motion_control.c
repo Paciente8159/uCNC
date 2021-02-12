@@ -474,6 +474,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         }
     } while (cnc_get_exec_state(EXEC_RUN));
 
+    mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
     //resets limit mask
     g_settings.limits_invert_mask ^= axis_limit;
     //stops, flushes buffers and clears the hold if active
@@ -547,7 +548,7 @@ uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
     itp_clear();
     planner_clear();
     cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
-    mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+    mcu_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
     bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
     if (probe_notok)
     {
