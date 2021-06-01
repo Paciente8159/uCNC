@@ -115,6 +115,8 @@
 //in this case include de mcumap file to generate the definition do DOUT15 and assign to LED
 #define LED DOUT15
 
+#define RTC_ENABLE
+
 #include "mcumap_stm32f10x.h"
 
 #endif

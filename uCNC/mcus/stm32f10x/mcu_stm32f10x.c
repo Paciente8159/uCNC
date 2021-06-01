@@ -112,6 +112,10 @@ void mcu_serial_isr(void)
 }
 #endif
 
+#ifdef RTC_ENABLE
+void mcu_start_rtc(void);
+#endif
+
 void mcu_timer_isr(void)
 {
 	static bool resetstep = false;
@@ -680,6 +684,9 @@ void mcu_init(void)
 #ifdef LED
 	mcu_clear_output(LED);
 #endif
+#ifdef RTC_ENABLE
+	mcu_start_rtc();
+#endif
 }
 
 #ifndef mcu_enable_probe_isr
@@ -837,6 +844,28 @@ void mcu_step_stop_ISR(void)
 
 //Custom delay function
 //void mcu_delay_ms(uint16_t miliseconds);
+
+#ifdef RTC_ENABLE
+//gets the mcu running time in ms
+static volatile uint32_t mcu_runtime_ms;
+uint32_t mcu_time_ms() {
+    uint32_t val = mcu_runtime_ms;
+    return val;
+}
+
+void mcu_start_rtc()
+{
+    SysTick->CTRL = 0;
+	SysTick->LOAD = 72000 - 1;
+	SysTick->VAL = 0;
+	SysTick->CTRL = 7;
+}
+
+void mcu_tick_isr(void)
+{
+	mcu_runtime_ms++;
+}
+#endif
 
 //Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
