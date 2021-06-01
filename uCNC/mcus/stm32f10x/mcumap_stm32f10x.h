@@ -2967,20 +2967,20 @@
 */
 
 //Timer registers
-#ifndef TIMER_NUMBER
-#define TIMER_NUMBER 2
+#ifndef ITP_TIMER
+#define ITP_TIMER 2
 #endif
-#define TIMER_REG __helper__(TIM,TIMER_NUMBER,)
-#if (TIMER_NUMBER==1 || (TIMER_NUMBER>=8 & TIMER_NUMBER<=11))
+#define TIMER_REG __helper__(TIM,ITP_TIMER,)
+#if (ITP_TIMER==1 || (ITP_TIMER>=8 & ITP_TIMER<=11))
 #define TIMER_ENREG APB2ENR
 #define TIMER_RESETREG APB1RSTR
-#define TIMER_APB __helper__(RCC_APB2ENR_TIM,TIMER_NUMBER, EN)
-#define TIMER_IRQ __helper__(TIM,TIMER_NUMBER, _UP_IRQn)
+#define TIMER_APB __helper__(RCC_APB2ENR_TIM,ITP_TIMER, EN)
+#define TIMER_IRQ __helper__(TIM,ITP_TIMER, _UP_IRQn)
 #else
 #define TIMER_ENREG APB1ENR
 #define TIMER_RESETREG APB1RSTR
-#define TIMER_APB __helper__(RCC_APB1ENR_TIM,TIMER_NUMBER, EN)
-#define TIMER_IRQ __helper__(TIM,TIMER_NUMBER, _IRQn)
+#define TIMER_APB __helper__(RCC_APB1ENR_TIM,ITP_TIMER, EN)
+#define TIMER_IRQ __helper__(TIM,ITP_TIMER, _IRQn)
 #endif
 
 #define __indirect__ex__(X, Y) DIO##X##_##Y

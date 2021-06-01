@@ -110,7 +110,7 @@
 #define STEP0_EN_PORT A
 
 //Setup the Step Timer used has the heartbeat for µCNC
-#define TIMER_NUMBER 2
+#define ITP_NUMBER 2
 
 //in this case include de mcumap file to generate the definition do DOUT15 and assign to LED
 #define LED DOUT15
