@@ -188,7 +188,7 @@ static void mcu_usart_init(void)
 	RCC->COM_APB |= (COM_APBEN);
 	RCC->APB2ENR |= __indirect__(TX, APB2EN);
 	__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
-	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_10MHZ << ((__indirect__(TX, CROFF)) << 2));
+	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_2MHZ << ((__indirect__(TX, CROFF)) << 2));
 	RCC->APB2ENR |= __indirect__(RX, APB2EN);
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
