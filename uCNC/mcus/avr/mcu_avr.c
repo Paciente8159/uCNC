@@ -832,9 +832,9 @@ void mcu_init(void)
     //enable interrupts
     mcu_enable_interrupts();
 
-    #ifdef RTC_ENABLE
+#ifdef RTC_ENABLE
     mcu_start_rtc();
-    #endif
+#endif
 }
 
 //IO functions
@@ -953,7 +953,8 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 
 #ifdef RTC_ENABLE
 //gets the mcu running time in ms
-uint32_t mcu_time_ms() {
+uint32_t mcu_millis()
+{
     uint32_t val = mcu_runtime_ms;
     return val;
 }

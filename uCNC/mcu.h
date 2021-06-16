@@ -96,7 +96,7 @@ void mcu_disable_interrupts(void);
 
 //Timers
 //convert step rate to clock cycles
-void mcu_freq_to_clocks(float frequency, uint16_t* ticks, uint16_t* prescaller);
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
 //starts a constant rate pulse at a given frequency.
 void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller);
 //modifies the pulse frequency
@@ -108,7 +108,7 @@ void mcu_step_stop_ISR(void);
 //void mcu_delay_ms(uint16_t miliseconds);
 #ifdef RTC_ENABLE
 //gets the mcu running time in ms
-uint32_t mcu_time_ms();
+uint32_t mcu_millis();
 #endif
 
 //Non volatile memory
