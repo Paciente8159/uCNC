@@ -83,11 +83,14 @@ It can run on:
   - STM32F1 Blue Pill
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
-In the future µCNC will most probably be extended to:
-  - Microchip PIC18F
-  - ARM
-  - Old PC with a RT OS???
-  - Other??
+### µCNC roadmap
+Right now a couple of changes are being staged in µCNC to prepare for future and easier expansions.
+These changes are:
+  - Including an RTC functionality in the MCU HAL needed by future blocks to be added like closed looped hardware (tool speed encoding, positional encoders, etc..)
+  - Change the files path structure to be more organic and well organized
+  - Possibly integrate µCNC with Arduino IDE across all platforms
+  - Possibly move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb)
+  - Add more hardware configurations (SAMD21 developement has started)
 
 ### Building µCNC
 For building µCNC go ahead to the [mcus](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcus) folder of the target MCU and follow the instructions specific to your device.
