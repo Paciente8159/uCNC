@@ -123,8 +123,13 @@
 #define MSG_ERROR __romstr__("error:")
 #define MSG_ALARM __romstr__("ALARM:")
 #define MSG_ECHO __romstr__("[echo:")
+#ifndef EMULATE_GRBL_STARTUP
 #define MSG_STARTUP_START "uCNC "
 #define MSG_STARTUP_END " ['$' for help]\r\n"
+#else
+#define MSG_STARTUP_START "Grbl "
+#define MSG_STARTUP_END " ['$' for uCNC help]\r\n"
+#endif
 #define MSG_STARTUP __romstr__(MSG_STARTUP_START VERSION MSG_STARTUP_END)
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
 
