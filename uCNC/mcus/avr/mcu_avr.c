@@ -827,14 +827,14 @@ void mcu_init(void)
 #endif
 #endif
 
+#ifdef RTC_ENABLE
+    mcu_start_rtc();
+#endif
+
     //disable probe isr
     mcu_disable_probe_isr();
     //enable interrupts
     mcu_enable_interrupts();
-
-#ifdef RTC_ENABLE
-    mcu_start_rtc();
-#endif
 }
 
 //IO functions
@@ -961,10 +961,10 @@ uint32_t mcu_millis()
 
 void mcu_start_rtc()
 {
-#if (F_CPU <= 16000000)
-    uint8_t clocks = (F_CPU >> 6) - 1;
+#if (F_CPU <= 16000000UL)
+    uint8_t clocks = ((F_CPU / 1000) >> 6) - 1;
 #else
-    uint8_t clocks = (F_CPU >> 8) - 1;
+    uint8_t clocks = ((F_CPU / 1000) >> 8) - 1;
 #endif
     //stops timer
     RTC_TCCRB = 0;
@@ -979,7 +979,7 @@ void mcu_start_rtc()
     // enable timer interrupts on both match registers
     RTC_TIMSK |= (1 << RTC_OCIEA);
 //start timer in CTC mode with the correct prescaler
-#if (F_CPU <= 16000000)
+#if (F_CPU <= 16000000UL)
 #if (RTC_TIMER != 2)
     RTC_TCCRB |= 3;
 #else

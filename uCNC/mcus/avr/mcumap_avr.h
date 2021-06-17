@@ -2877,21 +2877,29 @@
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue)                                                    \
-	({                                                                                   \
-		__indirect__(diopin, OCRREG) = pwmvalue;                                         \
-		if (pwmvalue != 0)                                                               \
-		{                                                                                \
-			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-		}                                                                                \
-		else                                                                             \
-		{                                                                                \
-			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		}                                                                                \
-	})
+#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
+#define mcu_set_pwm(diopin, pwmvalue)                                                        \
+	(                                                                                        \
+		{                                                                                    \
+			__indirect__(diopin, OCRREG) = pwmvalue;                                         \
+			if (pwmvalue != 0)                                                               \
+			{                                                                                \
+				SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
+			}                                                                                \
+			else                                                                             \
+			{                                                                                \
+				CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
+			}                                                                                \
+		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_get_analog(diopin) ({ADMUX=(0x60|ANALOG0_CHANNEL);ADCSRA = (0xC0|ANALOG0_PRESC);while(ADCSRA & 0x40);ADCH;})
+#define mcu_get_analog(diopin) (          \
+	{                                     \
+		ADMUX = (0x60 | ANALOG0_CHANNEL); \
+		ADCSRA = (0xC0 | ANALOG0_PRESC);  \
+		while (ADCSRA & 0x40)             \
+			;                             \
+		ADCH;                             \
+	})
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
@@ -2905,7 +2913,5 @@
 
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
-
-
 
 #endif
