@@ -21,12 +21,12 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.1.0. This update brought a significant amount of new features and bug fixes. Among the list of new features is now possible to: 
-   - Configurable backlash compensation
-   - Configurable axis skew compensation
-   - Alternative new planner strategy (linear actuator driven for high inertia machines)
-   - Dynamic step spreading algorithm (similar to Grbl's AMASS) to reduce vibrations caused by steppers at slower step rates
-   - HAL for STM32F1 boards now available
+µCNC current version is v1.1.1. This update added a few new features needed for the (near) future upgrade and some more bug fixes.
+These include:
+
+   - Added and RTC to the µCNC mcu HAL
+   - Software configurable debounce delay for homming switches
+   - Additional (configurable via build) option to emulate Grbl startup message to improve software compatibility (like Candle and others)
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
