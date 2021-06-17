@@ -50,11 +50,11 @@ extern void io_probe_isr(void);
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
-#define mcu_config_pullup(diopin)                                                                                        \
-	{                                                                                                                    \
+#define mcu_config_pullup(diopin)                                                                                     \
+	{                                                                                                                 \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PP << (__indirect__(diopin, CROFF) << 2U));     \
-		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                            \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PP << (__indirect__(diopin, CROFF) << 2U));  \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
 	}
 #define mcu_config_pwm(diopin)                                                                                                  \
 	{                                                                                                                           \
@@ -112,6 +112,10 @@ void mcu_serial_isr(void)
 }
 #endif
 
+#ifdef RTC_ENABLE
+static void mcu_start_rtc(void);
+#endif
+
 void mcu_timer_isr(void)
 {
 	static bool resetstep = false;
@@ -132,17 +136,17 @@ void mcu_timer_isr(void)
 #define CONTROLS_EXTIBITMASK (ESTOP_EXTIBITMASK | SAFETY_DOOR_EXTIBITMASK | FHOLD_EXTIBITMASK | CS_RES_EXTIBITMASK)
 #define ALL_EXTIBITMASK (LIMITS_EXTIBITMASK | CONTROLS_EXTIBITMASK | PROBE_EXTIBITMASK)
 
-#if (ALL_EXTIBITMASK!=0)
+#if (ALL_EXTIBITMASK != 0)
 void mcu_input_isr(void)
 {
-#if (LIMITS_EXTIBITMASK!=0)
+#if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
 		io_limits_isr();
 		EXTI->PR = LIMITS_EXTIBITMASK;
 	}
 #endif
-#if (CONTROLS_EXTIBITMASK!=0)
+#if (CONTROLS_EXTIBITMASK != 0)
 	if (EXTI->PR & CONTROLS_EXTIBITMASK)
 	{
 		io_controls_isr();
@@ -156,30 +160,29 @@ void mcu_input_isr(void)
 		EXTI->PR = PROBE_EXTIBITMASK;
 	}
 #endif
-#if(ALL_EXTIBITMASK==0x0001)
-NVIC->ICPR[((uint32_t)(EXTI0_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI0_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0x0001)
+	NVIC->ICPR[((uint32_t)(EXTI0_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI0_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK==0x0002)
-NVIC->ICPR[((uint32_t)(EXTI1_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI1_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0x0002)
+	NVIC->ICPR[((uint32_t)(EXTI1_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI1_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK==0x0004)
-NVIC->ICPR[((uint32_t)(EXTI2_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI2_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0x0004)
+	NVIC->ICPR[((uint32_t)(EXTI2_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI2_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK==0x0008)
-NVIC->ICPR[((uint32_t)(EXTI3_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI3_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0x0008)
+	NVIC->ICPR[((uint32_t)(EXTI3_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI3_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK==0x0010)
-NVIC->ICPR[((uint32_t)(EXTI4_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI4_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0x0010)
+	NVIC->ICPR[((uint32_t)(EXTI4_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI4_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK&0x03E0)
-NVIC->ICPR[((uint32_t)(EXTI9_5_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI9_5_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK & 0x03E0)
+	NVIC->ICPR[((uint32_t)(EXTI9_5_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI9_5_IRQn)&0x1F));
 #endif
-#if(ALL_EXTIBITMASK==0xFC00)
-NVIC->ICPR[((uint32_t)(EXTI15_10_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI15_10_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK == 0xFC00)
+	NVIC->ICPR[((uint32_t)(EXTI15_10_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI15_10_IRQn)&0x1F));
 #endif
 }
 #endif
-
 
 static void mcu_usart_init(void)
 {
@@ -680,6 +683,9 @@ void mcu_init(void)
 #ifdef LED
 	mcu_clear_output(LED);
 #endif
+#ifdef RTC_ENABLE
+	mcu_start_rtc();
+#endif
 }
 
 #ifndef mcu_enable_probe_isr
@@ -837,6 +843,29 @@ void mcu_step_stop_ISR(void)
 
 //Custom delay function
 //void mcu_delay_ms(uint16_t miliseconds);
+
+#ifdef RTC_ENABLE
+//gets the mcu running time in ms
+static volatile uint32_t mcu_runtime_ms;
+uint32_t mcu_millis()
+{
+	uint32_t val = mcu_runtime_ms;
+	return val;
+}
+
+void mcu_start_rtc()
+{
+	SysTick->CTRL = 0;
+	SysTick->LOAD = (F_CPU / 1000) - 1;
+	SysTick->VAL = 0;
+	SysTick->CTRL = 7;
+}
+
+void mcu_tick_isr(void)
+{
+	mcu_runtime_ms++;
+}
+#endif
 
 //Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)

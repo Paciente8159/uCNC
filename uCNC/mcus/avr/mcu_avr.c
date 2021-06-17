@@ -76,28 +76,38 @@ uint16_t mcu_get_step_reset_clocks(void)
 }
 #endif
 
-ISR(TIMER_COMPA_vect, ISR_BLOCK)
+#ifdef RTC_ENABLE
+//gets the mcu running time in ms
+static volatile uint32_t mcu_runtime_ms;
+ISR(RTC_COMPA_vect, ISR_BLOCK)
+{
+    mcu_enable_interrupts();
+    mcu_runtime_ms++;
+}
+#endif
+
+ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
 #ifdef __PERFSTATS__
-    uint16_t clocks = TCNT;
+    uint16_t clocks = ITP_TCNT;
 #endif
     itp_step_reset_isr();
 
 #ifdef __PERFSTATS__
-    uint16_t clocks2 = TCNT;
+    uint16_t clocks2 = ITP_TCNT;
     clocks2 -= clocks;
     mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
 #endif
 }
 
-ISR(TIMER_COMPB_vect, ISR_BLOCK)
+ISR(ITP_COMPB_vect, ISR_BLOCK)
 {
 #ifdef __PERFSTATS__
-    uint16_t clocks = TCNT;
+    uint16_t clocks = ITP_TCNT;
 #endif
     itp_step_isr();
 #ifdef __PERFSTATS__
-    uint16_t clocks2 = TCNT;
+    uint16_t clocks2 = ITP_TCNT;
     clocks2 -= clocks;
     mcu_perf_step = MAX(mcu_perf_step, clocks2);
 #endif
@@ -334,6 +344,10 @@ ISR(COM_TX_vect, ISR_BLOCK)
         __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER); \
         __indirect__(x, OCRREG) = 0;                            \
     }
+
+#ifdef RTC_ENABLE
+static void mcu_start_rtc();
+#endif
 
 void mcu_init(void)
 {
@@ -813,6 +827,10 @@ void mcu_init(void)
 #endif
 #endif
 
+#ifdef RTC_ENABLE
+    mcu_start_rtc();
+#endif
+
     //disable probe isr
     mcu_disable_probe_isr();
     //enable interrupts
@@ -877,44 +895,44 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 void mcu_start_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
     //stops timer
-    TCCRB = 0;
+    ITP_TCCRB = 0;
     //CTC mode
-    TCCRA = 0;
+    ITP_TCNT = 0;
     //resets counter
-    TCNT = 0;
+    ITP_TCNT = 0;
     //set step clock
-    OCRA = clocks_speed;
+    ITP_OCRA = clocks_speed;
     //sets OCR0B to half
     //this will allways fire step_reset between pulses
-    OCRB = OCRA >> 1;
-    TIFR = 0;
+    ITP_OCRB = ITP_OCRA >> 1;
+    ITP_TIFR = 0;
     // enable timer interrupts on both match registers
-    TIMSK |= (1 << OCIEB) | (1 << OCIEA);
+    ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 
     //start timer in CTC mode with the correct prescaler
-    TCCRB = (uint8_t)prescaller;
+    ITP_TCCRB = (uint8_t)prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
 void mcu_change_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
 {
     //stops timer
-    //TCCRB = 0;
-    OCRB = clocks_speed >> 1;
-    OCRA = clocks_speed;
+    //ITP_TCCRB = 0;
+    ITP_OCRB = clocks_speed >> 1;
+    ITP_OCRA = clocks_speed;
     //sets OCR0B to half
     //this will allways fire step_reset between pulses
 
     //reset timer
-    //TCNT = 0;
+    //ITP_TCNT = 0;
     //start timer in CTC mode with the correct prescaler
-    TCCRB = (uint8_t)prescaller;
+    ITP_TCCRB = (uint8_t)prescaller;
 }
 
 void mcu_step_stop_ISR(void)
 {
-    TCCRB = 0;
-    TIMSK &= ~((1 << OCIEB) | (1 << OCIEA));
+    ITP_TCCRB = 0;
+    ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
 }
 
 /*#define MCU_1MS_LOOP F_CPU/1000000
@@ -932,6 +950,50 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 	}while(--miliseconds);
 
 }*/
+
+#ifdef RTC_ENABLE
+//gets the mcu running time in ms
+uint32_t mcu_millis()
+{
+    uint32_t val = mcu_runtime_ms;
+    return val;
+}
+
+void mcu_start_rtc()
+{
+#if (F_CPU <= 16000000UL)
+    uint8_t clocks = ((F_CPU / 1000) >> 6) - 1;
+#else
+    uint8_t clocks = ((F_CPU / 1000) >> 8) - 1;
+#endif
+    //stops timer
+    RTC_TCCRB = 0;
+    //CTC mode
+    RTC_TCCRA = 0;
+    //resets counter
+    RTC_TCNT = 0;
+    //set step clock
+    RTC_OCRA = clocks;
+    RTC_TCCRA |= 2;
+    RTC_TIFR = 0;
+    // enable timer interrupts on both match registers
+    RTC_TIMSK |= (1 << RTC_OCIEA);
+//start timer in CTC mode with the correct prescaler
+#if (F_CPU <= 16000000UL)
+#if (RTC_TIMER != 2)
+    RTC_TCCRB |= 3;
+#else
+    RTC_TCCRB |= 4;
+#endif
+#else
+#if (RTC_TIMER != 2)
+    RTC_TCCRB |= 4;
+#else
+    RTC_TCCRB |= 6;
+#endif
+#endif
+}
+#endif
 
 //This was copied from grbl
 #ifndef EEPE

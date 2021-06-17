@@ -26,14 +26,25 @@
 /*
 	MCU specific definitions and replacements
 */
+#include "config.h"
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 
+/*
+	AVR Defaults
+*/
 //defines the frequency of the mcu
+#ifndef F_CPU
 #define F_CPU 16000000UL
+#endif
 //defines the maximum and minimum step rates
+#ifndef F_STEP_MAX
 #define F_STEP_MAX 30000
+#endif
+#ifndef F_STEP_MIN
 #define F_STEP_MIN 4
+#endif
+
 //defines special mcu to access flash strings and arrays
 #define __rom__ PROGMEM
 #define __romstr__ PSTR
@@ -2790,20 +2801,38 @@
 #define RXC __rxcreg__(COM_NUMBER)
 
 //Timer registers
-#ifndef TIMER_NUMBER
-#define TIMER_NUMBER 1
+#ifndef ITP_TIMER
+#define ITP_TIMER 1
 #endif
-#define TIMER_COMPB_vect __timerbvect__(TIMER_NUMBER)
-#define TIMER_COMPA_vect __timeravect__(TIMER_NUMBER)
-#define TCNT __tcntreg__(TIMER_NUMBER)
-#define TCCRA __tmrareg__(TIMER_NUMBER)
-#define TCCRB __tmrbreg__(TIMER_NUMBER)
-#define OCRA __ocrreg__(TIMER_NUMBER, A)
-#define OCRB __ocrreg__(TIMER_NUMBER, B)
-#define TIFR __tifrreg__(TIMER_NUMBER)
-#define TIMSK __timskreg__(TIMER_NUMBER)
-#define OCIEB __ociebreg__(TIMER_NUMBER)
-#define OCIEA __ocieareg__(TIMER_NUMBER)
+#define ITP_COMPB_vect __timerbvect__(ITP_TIMER)
+#define ITP_COMPA_vect __timeravect__(ITP_TIMER)
+#define ITP_TCNT __tcntreg__(ITP_TIMER)
+#define ITP_TCCRA __tmrareg__(ITP_TIMER)
+#define ITP_TCCRB __tmrbreg__(ITP_TIMER)
+#define ITP_OCRA __ocrreg__(ITP_TIMER, A)
+#define ITP_OCRB __ocrreg__(ITP_TIMER, B)
+#define ITP_TIFR __tifrreg__(ITP_TIMER)
+#define ITP_TIMSK __timskreg__(ITP_TIMER)
+#define ITP_OCIEB __ociebreg__(ITP_TIMER)
+#define ITP_OCIEA __ocieareg__(ITP_TIMER)
+
+#ifdef RTC_ENABLE
+#ifndef RTC_TIMER
+//Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
+#define RTC_TIMER 0
+#endif
+#define RTC_COMPB_vect __timerbvect__(RTC_TIMER)
+#define RTC_COMPA_vect __timeravect__(RTC_TIMER)
+#define RTC_TCNT __tcntreg__(RTC_TIMER)
+#define RTC_TCCRA __tmrareg__(RTC_TIMER)
+#define RTC_TCCRB __tmrbreg__(RTC_TIMER)
+#define RTC_OCRA __ocrreg__(RTC_TIMER, A)
+#define RTC_OCRB __ocrreg__(RTC_TIMER, B)
+#define RTC_TIFR __tifrreg__(RTC_TIMER)
+#define RTC_TIMSK __timskreg__(RTC_TIMER)
+#define RTC_OCIEB __ociebreg__(RTC_TIMER)
+#define RTC_OCIEA __ocieareg__(RTC_TIMER)
+#endif
 
 //Pin interrupts input register
 
@@ -2848,21 +2877,29 @@
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue)                                                    \
-	({                                                                                   \
-		__indirect__(diopin, OCRREG) = pwmvalue;                                         \
-		if (pwmvalue != 0)                                                               \
-		{                                                                                \
-			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-		}                                                                                \
-		else                                                                             \
-		{                                                                                \
-			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		}                                                                                \
-	})
+#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
+#define mcu_set_pwm(diopin, pwmvalue)                                                        \
+	(                                                                                        \
+		{                                                                                    \
+			__indirect__(diopin, OCRREG) = pwmvalue;                                         \
+			if (pwmvalue != 0)                                                               \
+			{                                                                                \
+				SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
+			}                                                                                \
+			else                                                                             \
+			{                                                                                \
+				CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
+			}                                                                                \
+		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_get_analog(diopin) ({ADMUX=(0x60|ANALOG0_CHANNEL);ADCSRA = (0xC0|ANALOG0_PRESC);while(ADCSRA & 0x40);ADCH;})
+#define mcu_get_analog(diopin) (          \
+	{                                     \
+		ADMUX = (0x60 | ANALOG0_CHANNEL); \
+		ADCSRA = (0xC0 | ANALOG0_PRESC);  \
+		while (ADCSRA & 0x40)             \
+			;                             \
+		ADCH;                             \
+	})
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
 #define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
@@ -2876,7 +2913,5 @@
 
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
-
-
 
 #endif
