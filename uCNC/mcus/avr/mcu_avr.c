@@ -346,7 +346,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
     }
 
 #ifdef RTC_ENABLE
-void mcu_start_rtc();
+static void mcu_start_rtc();
 #endif
 
 void mcu_init(void)
@@ -961,20 +961,37 @@ uint32_t mcu_millis()
 
 void mcu_start_rtc()
 {
+#if (F_CPU <= 16000000)
+    uint8_t clocks = (F_CPU >> 6) - 1;
+#else
+    uint8_t clocks = (F_CPU >> 8) - 1;
+#endif
     //stops timer
     RTC_TCCRB = 0;
     //CTC mode
-    RTC_TCNT = 0;
+    RTC_TCCRA = 0;
     //resets counter
     RTC_TCNT = 0;
     //set step clock
-    RTC_OCRA = 249;
+    RTC_OCRA = clocks;
     RTC_TCCRA |= 2;
     RTC_TIFR = 0;
     // enable timer interrupts on both match registers
     RTC_TIMSK |= (1 << RTC_OCIEA);
-    //start timer in CTC mode with the correct prescaler
+//start timer in CTC mode with the correct prescaler
+#if (F_CPU <= 16000000)
+#if (RTC_TIMER != 2)
     RTC_TCCRB |= 3;
+#else
+    RTC_TCCRB |= 4;
+#endif
+#else
+#if (RTC_TIMER != 2)
+    RTC_TCCRB |= 4;
+#else
+    RTC_TCCRB |= 6;
+#endif
+#endif
 }
 #endif
 

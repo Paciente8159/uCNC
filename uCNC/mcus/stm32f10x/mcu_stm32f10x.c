@@ -113,7 +113,7 @@ void mcu_serial_isr(void)
 #endif
 
 #ifdef RTC_ENABLE
-void mcu_start_rtc(void);
+static void mcu_start_rtc(void);
 #endif
 
 void mcu_timer_isr(void)
@@ -856,7 +856,7 @@ uint32_t mcu_millis()
 void mcu_start_rtc()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = 72000 - 1;
+	SysTick->LOAD = (F_CPU / 1000) - 1;
 	SysTick->VAL = 0;
 	SysTick->CTRL = 7;
 }
