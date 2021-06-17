@@ -5,19 +5,29 @@
 
 # Changelog
 
-## [1.1.1] - Unreleased
+## [1.1.1] - 2021-06-17
+
+Version 1.1.1 comes with added features and improvements over the previous version. It also fixes a couple of bugs of the previous implementation. These are:
+
+### Added
+  - new mcu internal RTC to provide a running time reference (#38)
+  - new build option to emulate Grbl startup message so that it can be recognized by several Grbl GUI applications like Candle (#36)
+  - new software limit switch debouncing delay configurable via EEPROM (option/command $26=) (#34)
 
 ### Changed
-  - improved laser mode to be compliant to Grbl's laser mode. Laser mode also has auto shutdown feature when motion stops #29
-  - checks if DSS setting value is valid #30
-  - improved fast math functions (more stability) and added new fast math pow2 function #33
+  - improved laser mode to be compliant to Grbl's laser mode. Laser mode also has auto shutdown feature when motion stops (#29)
+  - checks if DSS setting value is valid (#30)
+  - improved fast math functions (more stability) and added new fast math pow2 function (#33)
 
 ### Fixed
-  - coolant/mist on/off functions and overrides #28
-  - fixed parser active modal groups report #28
-  - fixed active tools report #28
-  - fixed DSS oversampling that was not reseted after motion end #30
-  - fixed probing ISR tripping at startup by forcing probe_isr_disable after mcu_init #32
+  - fixed AVR HAL output pin toggle function. (#38) 
+  - fixed hardware serial on ST32F10x HAL to work in sync mode (in async the communication breaks) (#37).
+  - coolant/mist on/off functions and overrides (#28)
+  - fixed parser active modal groups report (#28)
+  - fixed active tools report (#28)
+  - fixed DSS oversampling that was not reseted after motion end (#30)
+  - fixed probing ISR tripping at startup by forcing probe_isr_disable after mcu_init (#32)
+
 
 
 ## [1.1.0] - 2020-08-09

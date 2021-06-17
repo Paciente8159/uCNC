@@ -86,7 +86,7 @@ It can run on:
 ### µCNC roadmap
 Right now a couple of changes are being staged in µCNC to prepare for future and easier expansions.
 These changes are:
-  - Including an RTC functionality in the MCU HAL needed by future blocks to be added like closed looped hardware (tool speed encoding, positional encoders, etc..)
+  - Add some extra functionalities like tool speed encoding, positional encoders, etc...
   - Change the files path structure to be more organic and well organized
   - Possibly integrate µCNC with Arduino IDE across all platforms
   - Possibly move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb)
