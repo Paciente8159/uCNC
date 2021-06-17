@@ -112,7 +112,7 @@ uint32_t mcu_millis();
 
 #ifndef mcu_delay_ms
 //Custom delay function
-void mcu_delay_ms(uint16_t miliseconds);
+void mcu_delay_ms(uint32_t miliseconds);
 #endif
 
 //Non volatile memory

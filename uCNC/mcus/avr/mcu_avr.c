@@ -943,7 +943,7 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 	}while(--loop);
 }*/
 
-/*void mcu_delay_ms(uint16_t miliseconds)
+/*void mcu_delay_ms(uint32_t miliseconds)
 {
 	do{
 		_delay_ms(1);
@@ -957,6 +957,16 @@ uint32_t mcu_millis()
 {
     uint32_t val = mcu_runtime_ms;
     return val;
+}
+
+void mcu_delay_ms(uint32_t miliseconds)
+{
+    uint32_t t_start = mcu_runtime_ms;
+    uint32_t t_end = mcu_runtime_ms;
+    while (t_end - t_start < miliseconds)
+    {
+        t_end = mcu_runtime_ms;
+    }
 }
 
 void mcu_start_rtc()

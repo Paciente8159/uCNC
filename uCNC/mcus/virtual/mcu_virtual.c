@@ -119,9 +119,9 @@ void *comsimul(void)
 		{
 			uart_char = c;
 			serial_rx_isr(c);
-			if(c == '\n' | c=='\r')
+			if (c == '\n' | c == '\r')
 			{
-				while(!serial_rx_is_empty())
+				while (!serial_rx_is_empty())
 				{
 					usleep(1);
 				}
@@ -397,7 +397,7 @@ void mcu_step_stop_ISR(void)
 	pulse_enabled = false;
 }
 
-void mcu_delay_ms(uint16_t miliseconds)
+void mcu_delay_ms(uint32_t miliseconds)
 {
 }
 
