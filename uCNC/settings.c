@@ -27,8 +27,8 @@
 #include "parser.h"
 #include "cnc.h"
 
-//if settings struct is changed this version has to change too
-#define SETTINGS_VERSION "V02"
+//if settings struct is changed this version should change too
+#define SETTINGS_VERSION "V03"
 
 settings_t g_settings;
 
@@ -189,7 +189,8 @@ const settings_t __rom__ default_settings =
         .hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
         .homing_enabled = DEFAULT_HOMING_ENABLED,
         .spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-        .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM};
+        .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
+        .debounce_ms = DEFAULT_DEBOUNCE_MS};
 
 //static uint8_t settings_crc;
 
@@ -356,6 +357,9 @@ uint8_t settings_change(uint8_t setting, float value)
         break;
     case 25:
         g_settings.homing_fast_feed_rate = value;
+        break;
+    case 26:
+        g_settings.debounce_ms = value16;
         break;
     case 27:
         g_settings.homing_offset = value;

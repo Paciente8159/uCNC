@@ -29,6 +29,7 @@
 #include "config.h"
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
+#include <avr/delay.h>
 
 /*
 	AVR Defaults
@@ -2913,5 +2914,11 @@
 
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
+
+#define mcu_delay_ms(x)     \
+	{                       \
+		while (x--)         \
+			_delay_us(996); \
+	}
 
 #endif
