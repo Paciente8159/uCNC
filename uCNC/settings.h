@@ -42,6 +42,7 @@ typedef struct
     bool soft_limits_enabled;
     bool hard_limits_enabled;
     bool homing_enabled;
+    uint16_t debounce_ms;
     uint8_t homing_dir_invert_mask;
     float homing_fast_feed_rate;
     float homing_slow_feed_rate;

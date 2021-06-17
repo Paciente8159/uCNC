@@ -105,10 +105,14 @@ void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller);
 void mcu_step_stop_ISR(void);
 
 //Custom delay function
-//void mcu_delay_ms(uint16_t miliseconds);
 #ifdef RTC_ENABLE
 //gets the mcu running time in ms
 uint32_t mcu_millis();
+#endif
+
+#ifndef mcu_delay_ms
+//Custom delay function
+void mcu_delay_ms(uint32_t miliseconds);
 #endif
 
 //Non volatile memory

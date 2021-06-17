@@ -501,6 +501,7 @@ void protocol_send_ucnc_settings(void)
     protocol_send_gcode_setting_line_int(23, g_settings.homing_dir_invert_mask);
     protocol_send_gcode_setting_line_flt(24, g_settings.homing_slow_feed_rate);
     protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
+    protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
     protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
