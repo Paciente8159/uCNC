@@ -24,6 +24,8 @@ extern "C"
 {
 #endif
 
+#include "hal/kinematics/kinematics.h"
+
 #ifndef KINEMATIC
 #error Undefined kinematics
 #endif

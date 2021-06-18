@@ -19,6 +19,11 @@
 #ifndef BOARDMAP_BLUEPILL_H
 #define BOARDMAP_BLUEPILL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //Setup step pins
 #define STEP2_BIT 2	 //assigns STEP2 pin
 #define STEP2_PORT A //assigns STEP2 port
@@ -117,6 +122,8 @@
 
 #define RTC_ENABLE
 
-#include "mcumap_stm32f10x.h"
+#ifdef __cplusplus
+}
+#endif
 
 #endif

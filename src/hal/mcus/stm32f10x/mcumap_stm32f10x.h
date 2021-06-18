@@ -19,6 +19,11 @@
 #ifndef MCUMAP_STM32F10x_H
 #define MCUMAP_STM32F10x_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
 	Generates all the interface definitions.
 	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
@@ -3032,5 +3037,9 @@
 #define mcu_disable_interrupts __disable_irq
 
 #define mcu_delay_ms(x) HAL_Delay(x)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

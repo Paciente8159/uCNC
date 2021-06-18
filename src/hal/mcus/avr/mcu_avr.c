@@ -34,6 +34,8 @@ extern "C"
 #endif
 
 #include "cnc.h"
+
+#if (MCU == MCU_AVR)
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
@@ -801,8 +803,8 @@ extern "C"
                 UBRR_value = ((F_CPU / (8L * BAUD)) - 1) / 2;
                 UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
 #else
-        UBRR_value = ((F_CPU / (4L * BAUD)) - 1) / 2;
-        UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
+                UBRR_value = ((F_CPU / (4L * BAUD)) - 1) / 2;
+                UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
 #endif
                 UBRRH = UBRR_value >> 8;
                 UBRRL = UBRR_value;
@@ -1089,6 +1091,7 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 
                 sei(); // Restore interrupt flag state.
         }
+#endif
 
 #ifdef __cplusplus
 }

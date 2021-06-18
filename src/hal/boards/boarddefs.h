@@ -47,7 +47,7 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_BLUEPILL)
-#include "hal/boards/stm3210x/boardmap_bluepill.h"
+#include "hal/boards/stm32/boardmap_bluepill.h"
 #ifndef COM_PORT //enable sync send (used for USB VCP)
 #define ENABLE_SYNC_TX
 #endif

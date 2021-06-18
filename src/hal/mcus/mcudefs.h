@@ -24,7 +24,10 @@ extern "C"
 {
 #endif
 
-#include "hal/mcus/mcus.h"
+/*
+	MCU port map
+*/
+#if (BOAD != 0)
 
 #if (BOARD == BOARD_UNO || BOARD == BOARD_RAMBO14 || BOARD == BOARD_RAMPS14)
 #define MCU MCU_AVR
@@ -34,10 +37,6 @@ extern "C"
 #define MCU MCU_STM32F10X
 #endif
 
-/*
-	MCU port map
-*/
-#if (MCU != 0)
 #else
 #error Invalid mcu configuration
 #endif

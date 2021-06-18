@@ -24,8 +24,7 @@ extern "C"
 {
 #endif
 
-#include "cnc_config.h"
-#include "cnc_build.h"
+#include "cnc.h"
 
 //Defines Grbl realtime ascii codes
 #define CMD_CODE_RESET 0x18

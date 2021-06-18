@@ -41,6 +41,7 @@ build/
 *.x86_64
 *.hex
 *.lst
+*.lss
 *.bin
 *.elf
 
