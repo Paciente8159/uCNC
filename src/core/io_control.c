@@ -26,9 +26,9 @@ extern "C"
 #include "ucnc.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
-#include "io_control.h"
-#include "parser.h"
-#include "interpolator.h"
+#include "core/io_control.h"
+#include "core/parser.h"
+#include "core/interpolator.h"
 
     static volatile uint8_t io_limits_homing_filter;
 

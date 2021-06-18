@@ -56,14 +56,14 @@ extern "C"
 
 //define kynematics
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
-#include "kinematic_cartesian.h"
+#include "hal/kinematics/kinematic_cartesian.h"
 #elif (KINEMATIC == KINEMATIC_COREXY)
 #include "hal/kinematics/kinematic_corexy.h"
 #else
 #error Kinematics not implemented
 #endif
 
-#include "kinematic.h"
+#include "hal/kinematics/kinematic.h"
 
 #ifdef __cplusplus
 }

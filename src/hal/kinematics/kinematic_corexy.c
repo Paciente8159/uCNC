@@ -22,7 +22,7 @@ extern "C"
 {
 #endif
 
-#include "ucnc_config.h"
+#include "ucnc.h"
 
 #if (KINEMATIC == KINEMATIC_COREXY)
 #include "interface/settings.h"

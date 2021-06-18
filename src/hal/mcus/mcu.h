@@ -25,10 +25,10 @@ extern "C"
 {
 #endif
 
+#include "ucnc_config.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "../../ucnc_config.h"
 
 /*IO functions*/
 #ifndef mcu_get_input

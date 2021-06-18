@@ -21,15 +21,15 @@ extern "C"
 #endif
 
 #include "ucnc.h"
-#include "settings.h"
-#include "serial.h"
+#include "interface/settings.h"
+#include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
 #include "core/motion_control.h"
 #include "core/parser.h"
 #include "core/planner.h"
 #include "protocol.h"
-#include "grbl_interface.h"
+#include "interface/grbl_interface.h"
 
     static void procotol_send_newline(void)
     {

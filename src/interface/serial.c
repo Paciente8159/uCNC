@@ -23,10 +23,10 @@ extern "C"
 
 #include <math.h>
 #include "ucnc.h"
-#include "grbl_interface.h"
-#include "settings.h"
+#include "interface/grbl_interface.h"
+#include "interface/settings.h"
 #include "core/io_control.h"
-#include "serial.h"
+#include "interface/serial.h"
 
     static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
     static volatile uint8_t serial_rx_count;

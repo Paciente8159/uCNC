@@ -28,10 +28,10 @@ extern "C"
 #include <math.h>
 #include <float.h>
 #include "ucnc.h"
-#include "interpolator.h"
+#include "core/interpolator.h"
 #include "interface/settings.h"
-#include "planner.h"
-#include "io_control.h"
+#include "core/planner.h"
+#include "core/io_control.h"
 
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3

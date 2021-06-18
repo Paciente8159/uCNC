@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#include "boards.h"
+#include "hal/boards/boards.h"
 
 /*
 	MCU port map
@@ -35,7 +35,7 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_UNO)
-#include "avr/boardmap_uno.h"
+#include "hal/boards/avr/boardmap_uno.h"
 #endif
 
 #if (BOARD == BOARD_RAMBO14)

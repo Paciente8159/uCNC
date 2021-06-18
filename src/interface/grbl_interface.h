@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include "ucnc_config.h"
+#include "ucnc_build.h"
 
 //Defines Grbl realtime ascii codes
 #define CMD_CODE_RESET 0x18
@@ -128,14 +129,13 @@ extern "C"
 #define MSG_ALARM __romstr__("ALARM:\0")
 #define MSG_ECHO __romstr__("[echo:\0")
 #ifndef EMULATE_GRBL_STARTUP
-#define MSG_STARTUP_START "uCNC "
+#define MSG_STARTUP_START "uCNC \0"
 #define MSG_STARTUP_END " ['$' for help]\r\n\0"
 #else
-#define MSG_STARTUP_START "Grbl "
-#define MSG_STARTUP_END " ['$' for uCNC help]\r\n"
+#define MSG_STARTUP_START "Grbl \"
+#define MSG_STARTUP_END " ['$' for uCNC help]\r\n\0"
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START)
-// UCNC_VERSION MSG_STARTUP_END))
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START UCNC_VERSION MSG_STARTUP_END)
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n\0")
 
 //Non query feedback messages

@@ -23,11 +23,11 @@ extern "C"
 #endif
 
 #include "ucnc.h"
-#include "defaults.h"
-#include "settings.h"
-#include "serial.h"
-#include "grbl_interface.h"
-#include "protocol.h"
+#include "interface/defaults.h"
+#include "interface/settings.h"
+#include "interface/serial.h"
+#include "interface/grbl_interface.h"
+#include "interface/protocol.h"
 #include "core/parser.h"
 
 //if settings struct is changed this version should change too

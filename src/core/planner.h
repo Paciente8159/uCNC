@@ -26,7 +26,7 @@ extern "C"
 #endif
 
 #include "ucnc.h"
-#include "motion_control.h"
+#include "core/motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 

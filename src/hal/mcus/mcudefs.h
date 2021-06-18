@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#include "mcus.h"
+#include "hal/mcus/mcus.h"
 
 #if (BOARD == BOARD_UNO || BOARD == BOARD_RAMBO14 || BOARD == BOARD_RAMPS14)
 #define MCU MCU_AVR
@@ -43,7 +43,7 @@ extern "C"
 #endif
 
 #if (MCU == MCU_AVR)
-#include "avr/mcumap_avr.h"
+#include "hal/mcus/avr/mcumap_avr.h"
 #endif
 
 #if (MCU == MCU_STM32F10X)
@@ -61,7 +61,7 @@ extern "C"
 #error Undefined mcu
 #endif
 
-#include "mcu.h"
+#include "hal/mcus/mcu.h"
 
 #ifdef __cplusplus
 }

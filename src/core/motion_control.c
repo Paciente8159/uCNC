@@ -23,11 +23,11 @@ extern "C"
 #include "ucnc.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
-#include "io_control.h"
-#include "parser.h"
-#include "planner.h"
-#include "interpolator.h"
-#include "motion_control.h"
+#include "core/io_control.h"
+#include "core/parser.h"
+#include "core/planner.h"
+#include "core/interpolator.h"
+#include "core/motion_control.h"
 #include <math.h>
 #include <string.h>
 #include <float.h>
