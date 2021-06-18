@@ -1,5 +1,5 @@
 /*
-	Name: ucnc_hal_config.h
+	Name: cnc_hal_config.h
 	Description: Compile time HAL configurations for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -18,6 +18,11 @@
 
 #ifndef UCNC_HAL_CONFIG_H
 #define UCNC_HAL_CONFIG_H
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 /**
  * 
@@ -42,6 +47,10 @@
 #ifdef USE_COOLANT
 #define COOLANT_FLOOD DOUT1
 //#define COOLANT_MIST DOUT2
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

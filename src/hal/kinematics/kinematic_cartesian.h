@@ -19,6 +19,11 @@
 #ifndef KINEMATIC_CARTESIAN_H
 #define KINEMATIC_CARTESIAN_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
 #define STEPPER_COUNT AXIS_COUNT
 
@@ -37,9 +42,12 @@
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
 
-/*
+	/*
 	Enable Skew compensation
 */
-//#define ENABLE_SKEW_COMPENSATION
+	//#define ENABLE_SKEW_COMPENSATION
 
+#ifdef __cplusplus
+}
+#endif
 #endif

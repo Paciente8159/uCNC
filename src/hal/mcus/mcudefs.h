@@ -19,7 +19,20 @@
 #ifndef MCUSDEFS_H
 #define MCUSDEFS_H
 
-#include "hal/mcus/mcus.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include "mcus.h"
+
+#if (BOARD == BOARD_UNO || BOARD == BOARD_RAMBO14 || BOARD == BOARD_RAMPS14)
+#define MCU MCU_AVR
+#endif
+
+#if (BOARD == BOARD_BLUEPILL)
+#define MCU MCU_STM32F10X
+#endif
 
 /*
 	MCU port map
@@ -30,7 +43,7 @@
 #endif
 
 #if (MCU == MCU_AVR)
-#include "hal/mcus/avr/mcumap_avr.h"
+#include "avr/mcumap_avr.h"
 #endif
 
 #if (MCU == MCU_STM32F10X)
@@ -48,6 +61,10 @@
 #error Undefined mcu
 #endif
 
-#include "hal/mcus/mcu.h"
+#include "mcu.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

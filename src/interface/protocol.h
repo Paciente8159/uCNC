@@ -18,20 +18,29 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
 
-bool protocol_is_busy(void);
-void protocol_send_ok(void);
-void protocol_send_error(uint8_t error);
-void protocol_send_alarm(uint8_t alarm);
-void protocol_send_status(void);
-void protocol_send_string(const unsigned char *__s);
-void protocol_send_feedback(const unsigned char *__s);
-void protocol_send_gcode_coordsys(void);
-void protocol_send_gcode_modes(void);
-void protocol_send_ucnc_settings(void);
-void protocol_send_start_blocks(void);
+	bool protocol_is_busy(void);
+	void protocol_send_ok(void);
+	void protocol_send_error(uint8_t error);
+	void protocol_send_alarm(uint8_t alarm);
+	void protocol_send_status(void);
+	void protocol_send_string(const unsigned char *__s);
+	void protocol_send_feedback(const unsigned char *__s);
+	void protocol_send_gcode_coordsys(void);
+	void protocol_send_gcode_modes(void);
+	void protocol_send_cnc_settings(void);
+	void protocol_send_start_blocks(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

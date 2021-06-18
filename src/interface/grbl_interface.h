@@ -19,6 +19,11 @@
 #ifndef GRBL_INTERFACE_H
 #define GRBL_INTERFACE_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "ucnc_config.h"
 
 //Defines Grbl realtime ascii codes
@@ -118,40 +123,45 @@
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
 
 //formated messages
-#define MSG_OK __romstr__("ok\r\n")
-#define MSG_ERROR __romstr__("error:")
-#define MSG_ALARM __romstr__("ALARM:")
-#define MSG_ECHO __romstr__("[echo:")
+#define MSG_OK __romstr__("ok\r\n\0")
+#define MSG_ERROR __romstr__("error:\0")
+#define MSG_ALARM __romstr__("ALARM:\0")
+#define MSG_ECHO __romstr__("[echo:\0")
 #ifndef EMULATE_GRBL_STARTUP
 #define MSG_STARTUP_START "uCNC "
-#define MSG_STARTUP_END " ['$' for help]\r\n"
+#define MSG_STARTUP_END " ['$' for help]\r\n\0"
 #else
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " ['$' for uCNC help]\r\n"
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START VERSION MSG_STARTUP_END)
-#define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START)
+// UCNC_VERSION MSG_STARTUP_END))
+#define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n\0")
 
 //Non query feedback messages
-#define MSG_START __romstr__("[MSG:")
-#define MSG_END __romstr__("]\r\n")
-#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
-#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
-#define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
-#define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")
-#define MSG_FEEDBACK_4 __romstr__("Enabled")
-#define MSG_FEEDBACK_5 __romstr__("Disabled")
-#define MSG_FEEDBACK_6 __romstr__("Check Door")
-#define MSG_FEEDBACK_7 __romstr__("Check Limits")
-#define MSG_FEEDBACK_8 __romstr__("Pgm End")
-#define MSG_FEEDBACK_9 __romstr__("Restoring defaults")
-#define MSG_FEEDBACK_10 __romstr__("Restoring spindle")
+#define MSG_START __romstr__("[MSG:\0")
+#define MSG_END __romstr__("]\r\n\0")
+#define MSG_FEEDBACK_1 __romstr__("Reset to continue\0")
+#define MSG_FEEDBACK_1 __romstr__("Reset to continue\0")
+#define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock\0")
+#define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked\0")
+#define MSG_FEEDBACK_4 __romstr__("Enabled\0")
+#define MSG_FEEDBACK_5 __romstr__("Disabled\0")
+#define MSG_FEEDBACK_6 __romstr__("Check Door\0")
+#define MSG_FEEDBACK_7 __romstr__("Check Limits\0")
+#define MSG_FEEDBACK_8 __romstr__("Pgm End\0")
+#define MSG_FEEDBACK_9 __romstr__("Restoring defaults\0")
+#define MSG_FEEDBACK_10 __romstr__("Restoring spindle\0")
 //#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
-#define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
+#define MSG_FEEDBACK_12 __romstr__("Check Emergency stop\0")
 
-//#define MSG_INT "%d"
-//#define MSG_FLT "%0.3f"
-//#define MSG_FLT_IMPERIAL "%0.5f"
+	//#define MSG_INT "%d"
+	//#define MSG_FLT "%0.3f"
+	//#define MSG_FLT_IMPERIAL "%0.5f"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

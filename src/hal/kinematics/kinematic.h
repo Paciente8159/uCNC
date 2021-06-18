@@ -20,42 +20,51 @@
 #ifndef KINEMATIC_H
 #define KINEMATIC_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 
-/*
+	/*
 	Converts from machine absolute coordinates to step position.
 	This is done after computing position relative to the active coordinate system
 */
-void kinematics_apply_inverse(float *axis, uint32_t *steps);
+	void kinematics_apply_inverse(float *axis, uint32_t *steps);
 
-/*
+	/*
 	Converts from step position to machine absolute coordinates
 	This is done after computing position relative to the active coordinate system
 */
-void kinematics_apply_forward(uint32_t *steps, float *axis);
+	void kinematics_apply_forward(uint32_t *steps, float *axis);
 
-/*
+	/*
 	Executes the homing motion for the machine
 	The homing motion for each axis is defined in the motion control
 	In the kinematics home function the axis order of the homing motion and other custom motions can be defined
 */
-uint8_t kinematics_home(void);
+	uint8_t kinematics_home(void);
 
-/*
+	/*
 	In dual drive machines this translates which drive is locked when a particular limit switch is triggered during homing motion
 */
-void kinematics_lock_step(uint8_t limits_mask);
+	void kinematics_lock_step(uint8_t limits_mask);
 
-/*
+	/*
 	Aplies a transformation to the position sent to planner.
 	This is aplied only on normal and jog moves. Homing motions go directly to planner.
 */
-void kinematics_apply_transform(float *axis);
+	void kinematics_apply_transform(float *axis);
 
-/*
+	/*
 	Aplies a reverse transformation to the position returned from the planner.
 	This is aplied only on normal and jog moves. Homing motions go directly to planner.
 */
-void kinematics_apply_reverse_transform(float *axis);
+	void kinematics_apply_reverse_transform(float *axis);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

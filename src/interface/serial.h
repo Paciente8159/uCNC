@@ -19,6 +19,11 @@
 #ifndef SERIAL_H
 #define SERIAL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "ucnc.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -38,31 +43,35 @@
 #define SERIAL_N0 1
 #define SERIAL_N1 2
 
-void serial_init();
+	void serial_init();
 
-bool serial_rx_is_empty(void);
-unsigned char serial_getc(void);
-void serial_ungetc(void);
-unsigned char serial_peek(void);
-void serial_inject_cmd(const unsigned char *__s);
-void serial_restore_line(void);
-void serial_rx_clear(void);
-void serial_select(uint8_t source);
+	bool serial_rx_is_empty(void);
+	unsigned char serial_getc(void);
+	void serial_ungetc(void);
+	unsigned char serial_peek(void);
+	void serial_inject_cmd(const unsigned char *__s);
+	void serial_restore_line(void);
+	void serial_rx_clear(void);
+	void serial_select(uint8_t source);
 
-bool serial_tx_is_empty(void);
-void serial_putc(unsigned char c);
-void serial_print_str(const unsigned char *__s);
-void serial_print_int(uint16_t num);
+	bool serial_tx_is_empty(void);
+	void serial_putc(unsigned char c);
+	void serial_print_str(const unsigned char *__s);
+	void serial_print_int(uint16_t num);
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-void serial_print_long(uint32_t num);
+	void serial_print_long(uint32_t num);
 #endif
-void serial_print_flt(float num);
-void serial_print_intarr(uint16_t *arr, uint8_t count);
-void serial_print_fltarr(float *arr, uint8_t count);
-void serial_flush(void);
+	void serial_print_flt(float num);
+	void serial_print_intarr(uint16_t *arr, uint8_t count);
+	void serial_print_fltarr(float *arr, uint8_t count);
+	void serial_flush(void);
 
-//ISR
-void serial_rx_isr(unsigned char c);
-void serial_tx_isr(void);
+	//ISR
+	void serial_rx_isr(unsigned char c);
+	void serial_tx_isr(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

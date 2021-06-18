@@ -19,6 +19,11 @@
 #ifndef KINEMATIC_COREXY_H
 #define KINEMATIC_COREXY_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //define kynematics
 /*
 	Uncomment this feature to enable tool length compensation
@@ -27,5 +32,9 @@
 
 //this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
 #define STEPPER_COUNT AXIS_COUNT
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

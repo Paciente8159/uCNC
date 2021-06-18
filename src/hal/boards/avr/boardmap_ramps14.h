@@ -19,36 +19,41 @@
 #ifndef MCUMAP_RAMPS14_H
 #define MCUMAP_RAMPS14_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define PCINT0_PORT B
 #define PCINT1_PORT J
 #define PCINT2_PORT K
 
 //SAME AS GRBL for test purposes
 //Setup step pins
-#define STEP2_BIT 3 //assigns STEP2 pin
+#define STEP2_BIT 3	 //assigns STEP2 pin
 #define STEP2_PORT L //assigns STEP2 port
-#define STEP1_BIT 6 //assigns STEP1 pin
+#define STEP1_BIT 6	 //assigns STEP1 pin
 #define STEP1_PORT F //assigns STEP1 port
-#define STEP0_BIT 0 //assigns STEP0 pin
+#define STEP0_BIT 0	 //assigns STEP0 pin
 #define STEP0_PORT F //assigns STEP0 port
 
 //Setup dir pins
-#define DIR2_BIT 1 //assigns DIR2 pin
+#define DIR2_BIT 1	//assigns DIR2 pin
 #define DIR2_PORT L //assigns DIR2 port
-#define DIR1_BIT 7 //assigns DIR1 pin
+#define DIR1_BIT 7	//assigns DIR1 pin
 #define DIR1_PORT F //assigns DIR1 port
-#define DIR0_BIT 1 //assigns DIR0 pin
+#define DIR0_BIT 1	//assigns DIR0 pin
 #define DIR0_PORT F //assigns DIR0 port
 
 //Setup limit pins
-#define LIMIT_Z_BIT 3 //assigns LIMIT_Z pin
-#define LIMIT_Y_BIT 1 //assigns LIMIT_Y pin
-#define LIMIT_X_BIT 5 //assigns LIMIT_X pin
+#define LIMIT_Z_BIT 3  //assigns LIMIT_Z pin
+#define LIMIT_Y_BIT 1  //assigns LIMIT_Y pin
+#define LIMIT_X_BIT 5  //assigns LIMIT_X pin
 #define LIMIT_Z_PORT D //assigns LIMIT_Z port
 #define LIMIT_Y_PORT J //assigns LIMIT_Y port
 #define LIMIT_X_PORT E //assigns LIMIT_X port
 #define LIMIT_Z_ISR -4 //assigns LIMIT_Z ISR
-#define LIMIT_Y_ISR 1 //assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR 1  //assigns LIMIT_Y ISR
 #define LIMIT_X_ISR -6 //assigns LIMIT_X ISR
 
 //Active limits switch weak pull-ups
@@ -85,7 +90,7 @@
 //#define COM_NUMBER 0
 
 //Setup PWM
-#define PWM0_BIT 5 //assigns PWM0 pin
+#define PWM0_BIT 5	//assigns PWM0 pin
 #define PWM0_PORT H //assigns PWM0 pin
 #define PWM0_OCR C
 #define PWM0_TIMER 4
@@ -114,6 +119,10 @@
 //Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 //Timer 0 is set by default
 //#define RTC_TIMER 0
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

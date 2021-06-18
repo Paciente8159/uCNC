@@ -19,6 +19,11 @@
 #ifndef UCNC_CONFIG_H
 #define UCNC_CONFIG_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //include lists of available option
 #include "hal/boards/boards.h"
 #include "hal/kinematics/kinematics.h"
@@ -98,7 +103,6 @@
 #ifdef USE_COOLANT
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
-#endif
 #endif
 
 /*
@@ -180,28 +184,32 @@
 */
 #define DSS_MAX_OVERSAMPLING 0
 
-/*
+	/*
 	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
-//#define FORCE_SOFT_POLLING
+	//#define FORCE_SOFT_POLLING
 
-/*
+	/*
 	Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
 */
-//#define EMULATE_GRBL_STARTUP
+	//#define EMULATE_GRBL_STARTUP
 
-/*
+	/*
 	Compilation specific options
 */
-//ensure all variables are set to 0 at start up
-//#define FORCE_GLOBALS_TO_0
+	//ensure all variables are set to 0 at start up
+	//#define FORCE_GLOBALS_TO_0
 
-//saves a little program memory bytes but much more slow CRC check
-//#define CRC_WITHOUT_LOOKUP_TABLE
+	//saves a little program memory bytes but much more slow CRC check
+	//#define CRC_WITHOUT_LOOKUP_TABLE
 
-//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
-//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
-//No fast math macros are and shoud be used in functions that calculate coordinates to avoid positional errors except multiply and divide by powers of 2 macros
-//#define ENABLE_FAST_MATH
+	//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
+	//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
+	//No fast math macros are and shoud be used in functions that calculate coordinates to avoid positional errors except multiply and divide by powers of 2 macros
+	//#define ENABLE_FAST_MATH
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

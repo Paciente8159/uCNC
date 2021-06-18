@@ -1,4 +1,4 @@
-#include "cnc.h"
+#include "ucnc.h"
 
 void main(void) __attribute__((noreturn));
 void main(void)
@@ -6,9 +6,8 @@ void main(void)
     //initializes all systems
     cnc_init();
 
-    for(;;)
+    for (;;)
     {
         cnc_run();
     }
-
 }

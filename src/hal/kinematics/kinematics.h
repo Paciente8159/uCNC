@@ -19,8 +19,17 @@
 #ifndef KINEMATICS_H
 #define KINEMATICS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define KINEMATIC_CARTESIAN 1
 #define KINEMATIC_COREXY 2
 #define KINEMATIC_CARTESIAN_XY2 3
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

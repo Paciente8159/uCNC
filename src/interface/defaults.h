@@ -19,6 +19,11 @@
 #ifndef DEFAULTS_H
 #define DEFAULTS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //default step per mm
 #define DEFAULT_0_STEP_PER_MM 200
 #define DEFAULT_1_STEP_PER_MM 200
@@ -78,5 +83,9 @@
 #define DEFAULT_SOFT_LIMITS_ENABLED 0
 
 #define DEFAULT_DEBOUNCE_MS 250
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

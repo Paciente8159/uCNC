@@ -19,6 +19,11 @@
 #ifndef UCNC_H
 #define UCNC_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 //rt_cmd
 #define RT_CMD_CLEAR 0
 
@@ -171,10 +176,10 @@
 //machine kinematics configurations
 #include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
 //final HAL configurations
-#include "hal/ucnc_hal_config.h" //inicializes the HAL hardcoded connections
+#include "hal/cnc_hal_config.h" //inicializes the HAL hardcoded connections
 //initializes core utilities (like fast math functions)
 #include "core/utils.h"
-/**
+	/**
  * 
  * From this point on the CNC controller HAL is defined
  * 
@@ -183,18 +188,22 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-void cnc_init(void);
-void cnc_run(void);
-//do events returns true if all OK and false if an ABORT alarm is reached
-bool cnc_dotasks(void);
-void cnc_home(void);
-void cnc_alarm(uint8_t code);
-void cnc_stop(void);
-void cnc_unlock(void);
+	void cnc_init(void);
+	void cnc_run(void);
+	//do events returns true if all OK and false if an ABORT alarm is reached
+	bool cnc_dotasks(void);
+	void cnc_home(void);
+	void cnc_alarm(uint8_t code);
+	void cnc_stop(void);
+	void cnc_unlock(void);
 
-uint8_t cnc_get_exec_state(uint8_t statemask);
-void cnc_set_exec_state(uint8_t statemask);
-void cnc_clear_exec_state(uint8_t statemask);
-void cnc_call_rt_command(uint8_t command);
+	uint8_t cnc_get_exec_state(uint8_t statemask);
+	void cnc_set_exec_state(uint8_t statemask);
+	void cnc_clear_exec_state(uint8_t statemask);
+	void cnc_call_rt_command(uint8_t command);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

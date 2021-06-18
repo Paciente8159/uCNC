@@ -19,6 +19,11 @@
 #ifndef MCUMAP_AVR_H
 #define MCUMAP_AVR_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
 	Generates all the interface definitions.
 	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
@@ -2833,7 +2838,7 @@
 #define RTC_OCIEA __ocieareg__(RTC_TIMER)
 #endif
 
-//Pin interrupts input register
+	//Pin interrupts input register
 
 #define PCINT0_INREG __inreg__(PCINT0_PORT)
 #define PCINT1_INREG __inreg__(PCINT1_PORT)
@@ -2912,5 +2917,9 @@
 
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

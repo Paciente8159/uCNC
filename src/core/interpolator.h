@@ -21,27 +21,36 @@
 #ifndef INTERPOLATOR_H
 #define INTERPOLATOR_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
-void itp_init(void);
-void itp_run(void);
-void itp_update(void);
-void itp_step_isr(void);
-void itp_step_reset_isr(void);
-void itp_stop(void);
-void itp_clear(void);
-void itp_get_rt_position(uint32_t *position);
-void itp_reset_rt_position(void);
-float itp_get_rt_feed(void);
+	void itp_init(void);
+	void itp_run(void);
+	void itp_update(void);
+	void itp_step_isr(void);
+	void itp_step_reset_isr(void);
+	void itp_stop(void);
+	void itp_clear(void);
+	void itp_get_rt_position(uint32_t *position);
+	void itp_reset_rt_position(void);
+	float itp_get_rt_feed(void);
 #ifdef USE_SPINDLE
-uint16_t itp_get_rt_spindle(void);
+	uint16_t itp_get_rt_spindle(void);
 #endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-void itp_lock_stepper(uint8_t lockmask);
+	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-uint32_t itp_get_rt_line_number(void);
+	uint32_t itp_get_rt_line_number(void);
 #endif
-void itp_delay(uint16_t delay);
+	void itp_delay(uint16_t delay);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

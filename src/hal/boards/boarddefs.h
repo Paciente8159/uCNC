@@ -19,8 +19,12 @@
 #ifndef BOARDDEFS_H
 #define BOARDDEFS_H
 
-#include "hal/mcus/mcus.h"
-#include "hal/boards/boards.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include "boards.h"
 
 /*
 	MCU port map
@@ -31,22 +35,18 @@
 #endif
 
 #if (BOARD == BOARD_UNO)
-#define MCU MCU_AVR
-#include "hal/boards/avr/boardmap_uno.h"
+#include "avr/boardmap_uno.h"
 #endif
 
 #if (BOARD == BOARD_RAMBO14)
-#define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_rambo14.h"
 #endif
 
 #if (BOARD == BOARD_RAMPS14)
-#define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_ramps14.h"
 #endif
 
 #if (BOARD == BOARD_BLUEPILL)
-#define MCU MCU_STM32F10X
 #include "hal/boards/stm3210x/boardmap_bluepill.h"
 #ifndef COM_PORT //enable sync send (used for USB VCP)
 #define ENABLE_SYNC_TX
@@ -54,11 +54,14 @@
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
-#define MCU MCU_VIRTUAL
 #endif
 
 #ifndef BOARD
 #error Undefined board
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

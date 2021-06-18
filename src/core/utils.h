@@ -19,6 +19,11 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h>
 
 #ifndef BYTE_OPS
@@ -50,44 +55,99 @@
 #endif
 
 #if (defined(ENABLE_FAST_MATH) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-typedef union {
-	float f;
-	int32_t i;
-	struct
+	typedef union
 	{
-		uint16_t w0;
-		int16_t w1;
-	};
-	struct
-	{
-		uint8_t b0;
-		uint8_t b1;
-		uint8_t b2;
-		int8_t b3;
-	};
-	struct
-	{
-		int32_t mant : 23;
-		int32_t expn : 8;
-		int32_t sign : 1;
-	};
-} flt_t;
+		float f;
+		int32_t i;
+		struct
+		{
+			uint16_t w0;
+			int16_t w1;
+		};
+		struct
+		{
+			uint8_t b0;
+			uint8_t b1;
+			uint8_t b2;
+			int8_t b3;
+		};
+		struct
+		{
+			int32_t mant : 23;
+			int32_t expn : 8;
+			int32_t sign : 1;
+		};
+	} flt_t;
 //performs direct float manipulation and bit shifting. At the very end spectrum of the float (to infinity and to 0) makes aproximation either to 0 or infinity
 //div2 takes about 13 clock cycles on AVR instead of 144 if multiply by 0.5f (x11 faster)
 //div4 takes about 9 clock cycles on AVR instead of 144 if multiply by 0.25f (x16 faster)
 //mul2 takes about 11 clock cycles on AVR instead of 144 if multiply by 0.25f (x13 faster)
 //mul4 takes about 7 clock cycles on AVR instead of 144 if multiply by 0.25f (x20 faster)
-#define fast_flt_div2(x) ({flt_t res; res.f = (x); if(res.w1&0x7f80) res.i-=0x00800000; else res.i = 0; res.f; })
-#define fast_flt_div4(x) ({flt_t res; res.f = (x); if(res.b3&0x7f) res.i-=0x01000000; else res.i = 0; res.f; })
-#define fast_flt_mul2(x) ({flt_t res; res.f = (x); if((res.w1&0x7f80)!=0x7f80) res.i+=0x00800000; res.f; })
-#define fast_flt_mul4(x) ({flt_t res; res.f = (x); if((res.b3&0x7f)!=0x7f) res.i+=0x01000000; res.f; })
+#define fast_flt_div2(x) (       \
+	{                            \
+		flt_t res;               \
+		res.f = (x);             \
+		if (res.w1 & 0x7f80)     \
+			res.i -= 0x00800000; \
+		else                     \
+			res.i = 0;           \
+		res.f;                   \
+	})
+#define fast_flt_div4(x) (       \
+	{                            \
+		flt_t res;               \
+		res.f = (x);             \
+		if (res.b3 & 0x7f)       \
+			res.i -= 0x01000000; \
+		else                     \
+			res.i = 0;           \
+		res.f;                   \
+	})
+#define fast_flt_mul2(x) (               \
+	{                                    \
+		flt_t res;                       \
+		res.f = (x);                     \
+		if ((res.w1 & 0x7f80) != 0x7f80) \
+			res.i += 0x00800000;         \
+		res.f;                           \
+	})
+#define fast_flt_mul4(x) (           \
+	{                                \
+		flt_t res;                   \
+		res.f = (x);                 \
+		if ((res.b3 & 0x7f) != 0x7f) \
+			res.i += 0x01000000;     \
+		res.f;                       \
+	})
 //Quake III based fast sqrt calculation
 //fast_flt_sqrt takes about 19 clock cycles on AVR instead of +/-482 if using normal sqrt (x25 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_sqrt(x) ({flt_t res; res.f = (x); if(res.i) res.i=(0x1fbeecc0 + (res.i>>1)); res.f; })
+#define fast_flt_sqrt(x) (                       \
+	{                                            \
+		flt_t res;                               \
+		res.f = (x);                             \
+		if (res.i)                               \
+			res.i = (0x1fbeecc0 + (res.i >> 1)); \
+		res.f;                                   \
+	})
 //fast_flt_invsqrt takes about 18 clock cycles on AVR instead of +/-960 if using normal 1/sqrt (x53 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_invsqrt(x) ({flt_t res; res.f = (x); res.i=(0x5f3759df - (res.i>>1)); res.f; })
+#define fast_flt_invsqrt(x) (                \
+	{                                        \
+		flt_t res;                           \
+		res.f = (x);                         \
+		res.i = (0x5f3759df - (res.i >> 1)); \
+		res.f;                               \
+	})
 //fast_flt_pow2 takes about 25 clock cycles on AVR instead of 144 if using normal pow or muliply by itself (x~5.5 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_pow2(x) ({flt_t res; res.f = (x); if(!(res.b3&0x20)) res.i=((res.i << 1) - 0x3f7adaba); else res.f = INFINITY; ((!res.sign) ? res.f : 0); })
+#define fast_flt_pow2(x) (                       \
+	{                                            \
+		flt_t res;                               \
+		res.f = (x);                             \
+		if (!(res.b3 & 0x20))                    \
+			res.i = ((res.i << 1) - 0x3f7adaba); \
+		else                                     \
+			res.f = INFINITY;                    \
+		((!res.sign) ? res.f : 0);               \
+	})
 //mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
@@ -108,6 +168,11 @@ typedef union {
 #define MM_INCH_MULT 0.0393700787401574803
 #define MIN_SEC_MULT 0.0166666666666666667
 #define UINT8_MAX_INV 0.0039215686274509804
-#endif
 
 #define FORCEINLINE __attribute__((always_inline)) inline
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

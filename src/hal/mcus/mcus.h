@@ -19,8 +19,17 @@
 #ifndef MCUS_H
 #define MCUS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define MCU_AVR 1
 #define MCU_STM32F10X 10
 #define MCU_VIRTUAL 99
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -25,6 +25,11 @@
 #ifndef DIGITAL_IO_CONTROL_H
 #define DIGITAL_IO_CONTROL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include "ucnc.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -193,33 +198,37 @@
 #define COOLANT_MASK 0x02
 #define MIST_MASK 0x01
 
-//ISR
-void io_limits_isr(void);
-void io_controls_isr(void);
-void io_probe_isr(void);
+	//ISR
+	void io_limits_isr(void);
+	void io_controls_isr(void);
+	void io_probe_isr(void);
 
-//inputs
-bool io_check_boundaries(float *axis);
-uint8_t io_get_limits(void);
-uint8_t io_get_controls(void);
-void io_enable_probe(void);
-void io_disable_probe(void);
-bool io_get_probe(void);
-void io_set_homing_limits_filter(uint8_t filter_mask);
+	//inputs
+	bool io_check_boundaries(float *axis);
+	uint8_t io_get_limits(void);
+	uint8_t io_get_controls(void);
+	void io_enable_probe(void);
+	void io_disable_probe(void);
+	bool io_get_probe(void);
+	void io_set_homing_limits_filter(uint8_t filter_mask);
 
-//outputs
-void io_set_steps(uint8_t mask);
-void io_toggle_steps(uint8_t mask);
-void io_set_dirs(uint8_t mask);
+	//outputs
+	void io_set_steps(uint8_t mask);
+	void io_toggle_steps(uint8_t mask);
+	void io_set_dirs(uint8_t mask);
 
-void io_enable_steps(void);
+	void io_enable_steps(void);
 
 #ifdef USE_SPINDLE
-void io_set_spindle(uint8_t value, bool invert);
+	void io_set_spindle(uint8_t value, bool invert);
 #endif
 
 #ifdef USE_COOLANT
-void io_set_coolant(uint8_t value);
+	void io_set_coolant(uint8_t value);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

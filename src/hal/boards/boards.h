@@ -19,10 +19,19 @@
 #ifndef BOARDS_H
 #define BOARDS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define BOARD_UNO 1
 #define BOARD_RAMBO14 2
 #define BOARD_RAMPS14 3
 #define BOARD_BLUEPILL 10
 #define BOARD_VIRTUAL 99
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

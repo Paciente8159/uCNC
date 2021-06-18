@@ -19,6 +19,11 @@
 #ifndef KINEMATICDEFS_H
 #define KINEMATICDEFS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #ifndef KINEMATIC
 #error Undefined kinematics
 #endif
@@ -51,13 +56,17 @@
 
 //define kynematics
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
-#include "hal/kinematics/kinematic_cartesian.h"
+#include "kinematic_cartesian.h"
 #elif (KINEMATIC == KINEMATIC_COREXY)
 #include "hal/kinematics/kinematic_corexy.h"
 #else
 #error Kinematics not implemented
 #endif
 
-#include "hal/kinematics/kinematic.h"
+#include "kinematic.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
