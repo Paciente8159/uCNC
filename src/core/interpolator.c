@@ -27,7 +27,7 @@ extern "C"
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
-#include "ucnc.h"
+#include "cnc.h"
 #include "core/interpolator.h"
 #include "interface/settings.h"
 #include "core/planner.h"

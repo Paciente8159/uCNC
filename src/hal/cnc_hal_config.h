@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef UCNC_HAL_CONFIG_H
-#define UCNC_HAL_CONFIG_H
+#ifndef CNC_HAL_CONFIG_H
+#define CNC_HAL_CONFIG_H
 
 #ifdef __cplusplus
 extern "C"

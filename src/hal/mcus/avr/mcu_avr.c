@@ -33,7 +33,7 @@ extern "C"
 {
 #endif
 
-#include "ucnc.h"
+#include "cnc.h"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"

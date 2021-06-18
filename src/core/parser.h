@@ -29,7 +29,7 @@ extern "C"
 {
 #endif
 
-#include "ucnc.h"
+#include "cnc.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>

@@ -3,12 +3,13 @@
 MCU 	 = atmega328p
 CC       = avr-gcc
 LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,--relax -mmcu=$(MCU)
-CFLAGS   = -I"../../" -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
+CFLAGS   = -I"../../src/" -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
 BIN      = $(BUILDDIR)/uCNC.elf
 HEX      = $(BIN:.elf=.hex)
-SOURCEDIR= ../..
+SOURCEDIR= ../../src
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 SOURCE   = $(wildcard *.c)\
-		   $(wildcard $(SOURCEDIR)/*.c)
+		   $(call rwildcard,$(SOURCEDIR)/,*.c)
 BUILDDIR = build
 OBJ 	 = $(SOURCE:.c=.o)
 LINKOBJ  = $(addprefix $(BUILDDIR)/,$(notdir $(OBJ)))
@@ -20,7 +21,7 @@ RM       = rm -f
 all: all-before $(BIN) all-after
 
 clean: clean-custom
-	${RM} $(LINKOBJ) $(DOBJ) $(BIN) $(HEX)
+	-rm -fR $(BUILDDIR)
 
 all-before:
 	-mkdir build

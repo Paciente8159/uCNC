@@ -191,7 +191,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit17]
-FileName=..\..\ucnc.h
+FileName=..\..\cnc.h
 CompileCpp=0
 Folder=
 Compile=1

@@ -1,5 +1,5 @@
 /*
-	Name: ucnc_config.h
+	Name: cnc_config.h
 	Description: Compile time configurations for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef UCNC_CONFIG_H
-#define UCNC_CONFIG_H
+#ifndef CNC_CONFIG_H
+#define CNC_CONFIG_H
 
 #ifdef __cplusplus
 extern "C"

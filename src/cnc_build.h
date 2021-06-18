@@ -1,5 +1,5 @@
 /*
-	Name: ucnc_build.h
+	Name: cnc_build.h
 	Description: Compile time configurations for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,18 +16,18 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef UCNC_BUILD_H
-#define UCNC_BUILD_H
+#ifndef CNC_BUILD_H
+#define CNC_BUILD_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define UCNC_MAJOR_MINOR_VERSION "1.1."
-#define UCNC_PATCH_VERSION "1"
+#define CNC_MAJOR_MINOR_VERSION "1.1."
+#define CNC_PATCH_VERSION "1"
 
-#define UCNC_VERSION UCNC_MAJOR_MINOR_VERSION UCNC_PATCH_VERSION
+#define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
 
 #ifdef __cplusplus
 }

@@ -24,8 +24,8 @@ extern "C"
 {
 #endif
 
-#include "ucnc_config.h"
-#include "ucnc_build.h"
+#include "cnc_config.h"
+#include "cnc_build.h"
 
 //Defines Grbl realtime ascii codes
 #define CMD_CODE_RESET 0x18
@@ -135,7 +135,7 @@ extern "C"
 #define MSG_STARTUP_START "Grbl \"
 #define MSG_STARTUP_END " ['$' for uCNC help]\r\n\0"
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START UCNC_VERSION MSG_STARTUP_END)
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END)
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n\0")
 
 //Non query feedback messages

@@ -25,7 +25,7 @@ extern "C"
 {
 #endif
 
-#include "ucnc.h"
+#include "cnc.h"
 #include <stdint.h>
 #include <stdbool.h>
 

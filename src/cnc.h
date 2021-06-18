@@ -1,5 +1,5 @@
 /*
-	Name: ucnc.h
+	Name: cnc.h
 	Description: µCNC main unit.
 
 	Copyright: Copyright (c) João Martins
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef UCNC_H
-#define UCNC_H
+#ifndef CNC_H
+#define CNC_H
 
 #ifdef __cplusplus
 extern "C"
@@ -169,7 +169,7 @@ extern "C"
 
 //make the needed includes (do not change the order)
 //user configurations
-#include "ucnc_config.h"
+#include "cnc_config.h"
 //board and mcu configurations
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
 #include "hal/mcus/mcudefs.h"	  //configures the MCU for the selected board

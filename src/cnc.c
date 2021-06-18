@@ -25,7 +25,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include "ucnc.h"
+#include "cnc.h"
 #include "interface/settings.h"
 #include "interface/grbl_interface.h"
 #include "interface/serial.h"

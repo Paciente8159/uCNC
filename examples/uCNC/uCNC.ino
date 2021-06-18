@@ -1,4 +1,4 @@
-#include <ucnc.h>
+#include <cnc.h>
 
 void setup()
 {
