@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include "hal/boards/boards.h"
+#include "hal/mcus/mcus.h"
 
 /*
 	MCU port map
@@ -35,18 +36,22 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_UNO)
+#define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_uno.h"
 #endif
 
 #if (BOARD == BOARD_RAMBO14)
+#define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_rambo14.h"
 #endif
 
 #if (BOARD == BOARD_RAMPS14)
+#define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_ramps14.h"
 #endif
 
 #if (BOARD == BOARD_BLUEPILL)
+#define MCU MCU_STM32F10X
 #include "hal/boards/stm32/boardmap_bluepill.h"
 #ifndef COM_PORT //enable sync send (used for USB VCP)
 #define ENABLE_SYNC_TX
@@ -59,6 +64,8 @@ extern "C"
 #ifndef BOARD
 #error Undefined board
 #endif
+
+#include "hal/mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus
 }

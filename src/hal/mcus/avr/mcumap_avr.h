@@ -2820,7 +2820,6 @@ extern "C"
 #define ITP_OCIEB __ociebreg__(ITP_TIMER)
 #define ITP_OCIEA __ocieareg__(ITP_TIMER)
 
-#ifdef RTC_ENABLE
 #ifndef RTC_TIMER
 //Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 #define RTC_TIMER 0
@@ -2836,7 +2835,6 @@ extern "C"
 #define RTC_TIMSK __timskreg__(RTC_TIMER)
 #define RTC_OCIEB __ociebreg__(RTC_TIMER)
 #define RTC_OCIEA __ocieareg__(RTC_TIMER)
-#endif
 
 	//Pin interrupts input register
 

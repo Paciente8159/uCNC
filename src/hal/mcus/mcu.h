@@ -109,11 +109,9 @@ extern "C"
 	//stops the pulse
 	void mcu_step_stop_ISR(void);
 
-//Custom delay function
-#ifdef RTC_ENABLE
+	//Custom delay function
 	//gets the mcu running time in ms
 	uint32_t mcu_millis();
-#endif
 
 #ifndef mcu_delay_ms
 	//Custom delay function

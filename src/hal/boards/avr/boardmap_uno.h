@@ -117,12 +117,9 @@ extern "C"
 	//Timer 1 is used by default
 	//#define ITP_TIMER 1
 
-#define RTC_ENABLE
-#ifdef RTC_ENABLE
-//Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-//Timer 0 is set by default
-//#define RTC_TIMER 0
-#endif
+	//Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
+	//Timer 0 is set by default
+	//#define RTC_TIMER 0
 
 #ifdef __cplusplus
 }

@@ -32,6 +32,11 @@ OPT = -Os
 BUILD_DIR = build
 
 ######################################
+# helper
+######################################
+rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
+
+######################################
 # source
 ######################################
 # C sources
@@ -64,18 +69,7 @@ Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
 Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-mcu_stm32f10x.c \
-../../settings.c \
-../../cnc.c \
-../../interpolator.c \
-../../io_control.c \
-../../kinematics_cartesian.c \
-../../kinematics_corexy.c \
-../../motion_control.c \
-../../parser.c \
-../../planner.c \
-../../protocol.c \
-../../serial.c
+$(call rwildcard,../../src,*.c) 
 
 # ASM sources
 ASM_SOURCES =  \
@@ -131,6 +125,14 @@ C_DEFS =  \
 AS_INCLUDES = 
 
 # C includes
+C_HEADERS =  \
+$(call rwildcard,Inc/,*.h) \
+$(call rwildcard,Drivers/STM32F1xx_HAL_Driver/Inc/,*.h) \
+$(call rwildcard,Middlewares/ST/STM32_USB_Device_Library/,*.h) \
+$(call rwildcard,Drivers/CMSIS/Device/ST/STM32F1xx/Include/,*.h) \
+$(call rwildcard,Drivers/CMSIS/Include/,*.h)
+
+# C includes
 C_INCLUDES =  \
 -IInc \
 -IDrivers/STM32F1xx_HAL_Driver/Inc \
@@ -138,8 +140,8 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
--IDrivers/CMSIS/Include \
--I"../../"
+-IDrivers/CMSIS/Include/ \
+-I"../../src/"
 
 
 # compile gcc flags

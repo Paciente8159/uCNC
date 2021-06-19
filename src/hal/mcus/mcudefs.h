@@ -24,23 +24,11 @@ extern "C"
 {
 #endif
 
+#include "hal/mcus/mcus.h"
+
 /*
 	MCU port map
 */
-#if (BOAD != 0)
-
-#if (BOARD == BOARD_UNO || BOARD == BOARD_RAMBO14 || BOARD == BOARD_RAMPS14)
-#define MCU MCU_AVR
-#endif
-
-#if (BOARD == BOARD_BLUEPILL)
-#define MCU MCU_STM32F10X
-#endif
-
-#else
-#error Invalid mcu configuration
-#endif
-
 #if (MCU == MCU_AVR)
 #include "hal/mcus/avr/mcumap_avr.h"
 #endif
@@ -60,7 +48,7 @@ extern "C"
 #error Undefined mcu
 #endif
 
-#include "hal/mcus/mcu.h"
+#include "hal/mcus/mcu.h" //exposes the MCU HAL interface
 
 #ifdef __cplusplus
 }

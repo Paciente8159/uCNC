@@ -24,9 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "config.h"
 #include "cnc.h"
-#include "mcu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

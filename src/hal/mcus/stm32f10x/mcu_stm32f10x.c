@@ -111,9 +111,7 @@ extern "C"
 	}
 #endif
 
-#ifdef RTC_ENABLE
 	static void mcu_start_rtc(void);
-#endif
 
 	void mcu_timer_isr(void)
 	{
@@ -682,9 +680,8 @@ extern "C"
 #ifdef LED
 		mcu_clear_output(LED);
 #endif
-#ifdef RTC_ENABLE
+
 		mcu_start_rtc();
-#endif
 	}
 
 #ifndef mcu_enable_probe_isr
@@ -842,8 +839,6 @@ extern "C"
 
 	//Custom delay function
 	//void mcu_delay_ms(uint32_t miliseconds);
-
-#ifdef RTC_ENABLE
 	//gets the mcu running time in ms
 	static volatile uint32_t mcu_runtime_ms;
 	uint32_t mcu_millis()
@@ -864,7 +859,6 @@ extern "C"
 	{
 		mcu_runtime_ms++;
 	}
-#endif
 
 	//Non volatile memory
 	uint8_t mcu_eeprom_getc(uint16_t address)

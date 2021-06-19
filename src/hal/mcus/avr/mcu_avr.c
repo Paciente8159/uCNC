@@ -80,7 +80,6 @@ extern "C"
         }
 #endif
 
-#ifdef RTC_ENABLE
         //gets the mcu running time in ms
         static volatile uint32_t mcu_runtime_ms;
         ISR(RTC_COMPA_vect, ISR_BLOCK)
@@ -88,7 +87,6 @@ extern "C"
                 mcu_enable_interrupts();
                 mcu_runtime_ms++;
         }
-#endif
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
         {
@@ -349,9 +347,7 @@ extern "C"
                 __indirect__(x, OCRREG) = 0;                            \
         }
 
-#ifdef RTC_ENABLE
         static void mcu_start_rtc();
-#endif
 
         void mcu_init(void)
         {
@@ -831,9 +827,7 @@ extern "C"
 #endif
 #endif
 
-#ifdef RTC_ENABLE
                 mcu_start_rtc();
-#endif
 
                 //disable probe isr
                 mcu_disable_probe_isr();
@@ -955,7 +949,6 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 
 }*/
 
-#ifdef RTC_ENABLE
         //gets the mcu running time in ms
         uint32_t mcu_millis()
         {
@@ -1007,7 +1000,6 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 #endif
 #endif
         }
-#endif
 
 //This was copied from grbl
 #ifndef EEPE

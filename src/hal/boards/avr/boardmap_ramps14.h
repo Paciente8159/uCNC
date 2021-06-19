@@ -112,14 +112,12 @@ extern "C"
 #define STEP2_EN_BIT 0
 #define STEP2_EN_PORT K
 
-//Setup the Step Timer used has the heartbeat for µCNC
-//Timer 1 is used by default
-//#define ITP_TIMER 1
-#ifdef RTC_ENABLE
-//Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-//Timer 0 is set by default
-//#define RTC_TIMER 0
-#endif
+	//Setup the Step Timer used has the heartbeat for µCNC
+	//Timer 1 is used by default
+	//#define ITP_TIMER 1
+	//Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
+	//Timer 0 is set by default
+	//#define RTC_TIMER 0
 
 #ifdef __cplusplus
 }
