@@ -305,13 +305,7 @@ extern "C"
         }
 
         protocol_send_status_tail();
-        /*
-    #ifdef __PERFSTATS__
-    uint16_t stepclocks = mcu_get_step_clocks();
-    uint16_t stepresetclocks = mcu_get_step_reset_clocks();
-    protocol_printf(__romstr__("|Perf:%d,%d"), stepclocks, stepresetclocks);
-    #endif
-    */
+
         serial_putc('>');
         procotol_send_newline();
     }

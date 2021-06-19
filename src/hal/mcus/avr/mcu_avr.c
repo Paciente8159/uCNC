@@ -64,22 +64,6 @@ extern "C"
 #define BAUD 115200
 #endif
 
-#ifdef __PERFSTATS__
-        volatile uint16_t mcu_perf_step;
-        volatile uint16_t mcu_perf_step_reset;
-
-        uint16_t mcu_get_step_clocks(void)
-        {
-                uint16_t res = mcu_perf_step;
-                return res;
-        }
-        uint16_t mcu_get_step_reset_clocks(void)
-        {
-                uint16_t res = mcu_perf_step_reset;
-                return res;
-        }
-#endif
-
         //gets the mcu running time in ms
         static volatile uint32_t mcu_runtime_ms;
         ISR(RTC_COMPA_vect, ISR_BLOCK)
@@ -90,29 +74,12 @@ extern "C"
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
         {
-#ifdef __PERFSTATS__
-                uint16_t clocks = ITP_TCNT;
-#endif
                 itp_step_reset_isr();
-
-#ifdef __PERFSTATS__
-                uint16_t clocks2 = ITP_TCNT;
-                clocks2 -= clocks;
-                mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
-#endif
         }
 
         ISR(ITP_COMPB_vect, ISR_BLOCK)
         {
-#ifdef __PERFSTATS__
-                uint16_t clocks = ITP_TCNT;
-#endif
                 itp_step_isr();
-#ifdef __PERFSTATS__
-                uint16_t clocks2 = ITP_TCNT;
-                clocks2 -= clocks;
-                mcu_perf_step = MAX(mcu_perf_step, clocks2);
-#endif
         }
 
 #ifndef USE_INPUTS_POOLING_ONLY
@@ -998,6 +965,23 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 #else
                 RTC_TCCRB |= 6;
 #endif
+#endif
+        }
+
+        void mcu_dotasks()
+        {
+#ifdef ENABLE_SYNC_RX
+                while (CHECKBIT(UCSRA, RXC))
+                {
+                        unsigned char c = mcu_getc();
+                        serial_rx_isr(c);
+                }
+#endif
+#ifdef ENABLE_SYNC_TX
+                if (CHECKBIT(UCSRA, UDRE))
+                {
+                        serial_tx_isr();
+                }
 #endif
         }
 

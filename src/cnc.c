@@ -198,6 +198,8 @@ extern "C"
 
     bool cnc_dotasks(void)
     {
+        //run all mcu_internal tasks
+        mcu_dotasks();
 
 #if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
         io_limits_isr();

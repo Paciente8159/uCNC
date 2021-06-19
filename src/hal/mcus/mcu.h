@@ -52,9 +52,11 @@ extern "C"
 #endif
 
 	void mcu_init(void);
+
 #ifndef mcu_enable_probe_isr
 	void mcu_enable_probe_isr(void);
 #endif
+
 #ifndef mcu_disable_probe_isr
 	void mcu_disable_probe_isr(void);
 #endif
@@ -77,6 +79,7 @@ extern "C"
 #ifndef mcu_start_send
 	void mcu_start_send(void); //Start async send
 #endif
+
 #ifndef mcu_stop_send
 	void mcu_stop_send(void); //Stop async send
 #endif
@@ -118,14 +121,11 @@ extern "C"
 	void mcu_delay_ms(uint32_t miliseconds);
 #endif
 
+	void mcu_dotasks(void);
+
 	//Non volatile memory
 	uint8_t mcu_eeprom_getc(uint16_t address);
 	void mcu_eeprom_putc(uint16_t address, uint8_t value);
-
-#ifdef __PERFSTATS__
-	uint16_t mcu_get_step_clocks(void);
-	uint16_t mcu_get_step_reset_clocks(void);
-#endif
 
 #ifdef __cplusplus
 }

@@ -195,31 +195,27 @@ extern "C"
 
     void serial_putc(unsigned char c)
     {
-#ifdef ENABLE_SYNC_TX
-        mcu_putc(c);
-#else
-    while ((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
-    {
-        mcu_start_send();   //starts async send and loops while buffer full
-        if (!cnc_dotasks()) //on any alarm abort
+        while ((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
         {
-            return;
+            mcu_start_send();   //starts async send and loops while buffer full
+            if (!cnc_dotasks()) //on any alarm abort
+            {
+                return;
+            }
+        } //while buffer is full
+
+        serial_tx_buffer[serial_tx_write] = c;
+        serial_tx_write++;
+        if (c == '\n' || c == '\r')
+        {
+            serial_tx_count++;
+            mcu_start_send();
         }
-    } //while buffer is full
 
-    serial_tx_buffer[serial_tx_write] = c;
-    serial_tx_write++;
-    if (c == '\n' || c == '\r')
-    {
-        serial_tx_count++;
-        mcu_start_send();
-    }
-
-    if (serial_tx_write == TX_BUFFER_SIZE)
-    {
-        serial_tx_write = 0;
-    }
-#endif
+        if (serial_tx_write == TX_BUFFER_SIZE)
+        {
+            serial_tx_write = 0;
+        }
     }
 
     void serial_print_str(const unsigned char *__s)
@@ -430,7 +426,6 @@ void serial_print_int(uint16_t num)
 
     void serial_tx_isr(void)
     {
-#ifndef ENABLE_SYNC_TX
         if (!serial_tx_count)
         {
             return;
@@ -450,7 +445,6 @@ void serial_print_int(uint16_t num)
             read = 0;
         }
         serial_tx_read = read;
-#endif
     }
 
     void serial_rx_clear(void)

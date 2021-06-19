@@ -81,16 +81,12 @@ extern "C"
 //#define CS_RES_ISR
 
 //Setup COM pins (must match selected COM port)
-//#define RX_BIT 10
-//#define TX_BIT 9
-//#define RX_PORT A
-//#define TX_PORT A
-//only uncomment this if not using USB VCP
-//#define COM_PORT 1
-//#define TX_BIT 9
-//#define TX_PORT A
-//#define RX_BIT 10
-//#define RX_PORT A
+//Comment these to use USB virtual port
+#define COM_PORT 1
+#define TX_BIT 9
+#define TX_PORT A
+#define RX_BIT 10
+#define RX_PORT A
 
 //Setup PWM
 #define PWM0_BIT 8	//assigns PWM0 pin

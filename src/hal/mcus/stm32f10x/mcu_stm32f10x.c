@@ -715,22 +715,6 @@ extern "C"
 	}
 #endif
 
-	//Communication functions
-	void mcu_start_send(void)
-	{
-//not used with USB VCP
-#ifdef COM_PORT
-		COM_USART->CR1 |= (1 << 7);
-#endif
-	}
-	void mcu_stop_send(void)
-	{
-//not used with USB VCP
-#ifdef COM_PORT
-		COM_USART->CR1 &= ~(1 << 7);
-#endif
-	}
-
 #ifdef TX_BUFFER_SIZE
 #undef TX_BUFFER_SIZE
 #endif
@@ -860,6 +844,23 @@ extern "C"
 		mcu_runtime_ms++;
 	}
 
+	void mcu_dotasks()
+	{
+#ifdef ENABLE_SYNC_RX
+		while (COM_USART->SR & (1 << 5))
+		{
+			unsigned char c = mcu_getc();
+			serial_rx_isr(c);
+		}
+#endif
+#ifdef ENABLE_SYNC_TX
+		if (COM_USART->SR & (1 << 7))
+		{
+			serial_tx_isr();
+		}
+#endif
+	}
+
 	//Non volatile memory
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
@@ -869,11 +870,6 @@ extern "C"
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	}
-
-#ifdef __PERFSTATS__
-	uint16_t mcu_get_step_clocks(void);
-	uint16_t mcu_get_step_reset_clocks(void);
-#endif
 
 #endif
 

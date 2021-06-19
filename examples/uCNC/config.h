@@ -82,7 +82,6 @@
 	Special definitions used to debug code
 */
 //#define __DEBUG__
-//#define __PERFSTATS__
 
 /*
 	Feed overrides increments and percentage ranges

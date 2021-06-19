@@ -2913,8 +2913,13 @@ extern "C"
 #define mcu_enable_interrupts sei
 #define mcu_disable_interrupts cli
 
+#ifndef ENABLE_SYNC_TX
 #define mcu_start_send() SETBIT(UCSRB, UDRIE)
 #define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
+#else
+#define mcu_start_send()
+#define mcu_stop_send()
+#endif
 
 #ifdef __cplusplus
 }
