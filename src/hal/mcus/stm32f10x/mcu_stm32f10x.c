@@ -72,17 +72,17 @@ extern "C"
 		__indirect__(diopin, ENOUTPUT);                                                                                         \
 	}
 
-#define mcu_config_input_isr(diopin)                                                                                      \
-	{                                                                                                                     \
-		RCC->APB2ENR |= 0x1U;                                                                                             \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2));               \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                                   \
-		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                                     \
-		NVIC->ISER[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
-		NVIC->IP[(uint32_t)(__indirect__(diopin, IRQ))] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);                         \
-		NVIC->ICPR[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
+#define mcu_config_input_isr(diopin)                                                                        \
+	{                                                                                                       \
+		RCC->APB2ENR |= 0x1U;                                                                               \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2)); \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                     \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                      \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                      \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                       \
+		__NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                        \
+		__NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                   \
+		__NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                  \
 	}
 
 #define mcu_config_analog(diopin)                                                                                       \
@@ -107,7 +107,7 @@ extern "C"
 			serial_tx_isr();
 		}
 		COM_USART->SR = 0;
-		NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
+		__NVIC_ClearPendingIRQ(COM_IRQ);
 	}
 #endif
 
@@ -125,7 +125,7 @@ extern "C"
 			resetstep = !resetstep;
 		}
 		TIMER_REG->SR = 0;
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		__NVIC_ClearPendingIRQ(TIMER_IRQ);
 		mcu_enable_interrupts();
 	}
 
@@ -158,25 +158,25 @@ extern "C"
 		}
 #endif
 #if (ALL_EXTIBITMASK == 0x0001)
-		NVIC->ICPR[((uint32_t)(EXTI0_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI0_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI0_IRQn);
 #endif
 #if (ALL_EXTIBITMASK == 0x0002)
-		NVIC->ICPR[((uint32_t)(EXTI1_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI1_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI1_IRQn);
 #endif
 #if (ALL_EXTIBITMASK == 0x0004)
-		NVIC->ICPR[((uint32_t)(EXTI2_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI2_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI2_IRQn);
 #endif
 #if (ALL_EXTIBITMASK == 0x0008)
-		NVIC->ICPR[((uint32_t)(EXTI3_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI3_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI3_IRQn);
 #endif
 #if (ALL_EXTIBITMASK == 0x0010)
-		NVIC->ICPR[((uint32_t)(EXTI4_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI4_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI4_IRQn);
 #endif
 #if (ALL_EXTIBITMASK & 0x03E0)
-		NVIC->ICPR[((uint32_t)(EXTI9_5_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI9_5_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 #endif
 #if (ALL_EXTIBITMASK == 0xFC00)
-		NVIC->ICPR[((uint32_t)(EXTI15_10_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI15_10_IRQn)&0x1F));
+		__NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 #endif
 	}
 #endif
@@ -203,9 +203,9 @@ extern "C"
 		brr <<= 4;
 		brr += (uint16_t)roundf(16.0f * baudrate);
 		COM_USART->BRR = brr;
-		NVIC->ISER[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
-		NVIC->IP[(uint32_t)(COM_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-		NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
+		__NVIC_EnableIRQ(COM_IRQ);
+		__NVIC_SetPriority(COM_IRQ, 2);
+		__NVIC_ClearPendingIRQ(COM_IRQ);
 		COM_USART->CR1 |= 0x202C; // enable TE, RE, UE, TXEIE
 #endif
 	}
@@ -243,6 +243,8 @@ extern "C"
 
 	void mcu_init(void)
 	{
+		SystemInit();
+
 #ifdef STEP0
 		mcu_config_output(STEP0);
 #endif
@@ -797,9 +799,9 @@ extern "C"
 		TIMER_REG->EGR |= 0x01;
 		TIMER_REG->SR &= ~0x01;
 
-		NVIC->ISER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-		NVIC->IP[(uint32_t)(TIMER_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		__NVIC_EnableIRQ(TIMER_IRQ);
+		__NVIC_SetPriority(TIMER_IRQ, 1);
+		__NVIC_ClearPendingIRQ(TIMER_IRQ);
 		TIMER_REG->DIER |= 1;
 		TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
 	}
@@ -818,7 +820,7 @@ extern "C"
 		TIMER_REG->CR1 &= ~0x1;
 		TIMER_REG->DIER &= ~0x1;
 		TIMER_REG->SR &= ~0x01;
-		NVIC->ICER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		__NVIC_DisableIRQ(TIMER_IRQ);
 	}
 
 	//Custom delay function
