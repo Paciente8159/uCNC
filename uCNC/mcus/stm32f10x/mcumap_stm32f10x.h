@@ -76,7 +76,7 @@
 #define STEP0_CROFF STEP0_BIT
 #define STEP0_CR CRL
 #else
-#define STEP0_CROFF (STEP0_BIT&0x03)
+#define STEP0_CROFF (STEP0_BIT & 0x05)
 #define STEP0_CR CRH
 #endif
 #define DIO0 0
@@ -95,7 +95,7 @@
 #define STEP1_CROFF STEP1_BIT
 #define STEP1_CR CRL
 #else
-#define STEP1_CROFF (STEP1_BIT&0x03)
+#define STEP1_CROFF (STEP1_BIT & 0x05)
 #define STEP1_CR CRH
 #endif
 #define DIO1 1
@@ -114,7 +114,7 @@
 #define STEP2_CROFF STEP2_BIT
 #define STEP2_CR CRL
 #else
-#define STEP2_CROFF (STEP2_BIT&0x03)
+#define STEP2_CROFF (STEP2_BIT & 0x05)
 #define STEP2_CR CRH
 #endif
 #define DIO2 2
@@ -133,7 +133,7 @@
 #define STEP3_CROFF STEP3_BIT
 #define STEP3_CR CRL
 #else
-#define STEP3_CROFF (STEP3_BIT&0x03)
+#define STEP3_CROFF (STEP3_BIT & 0x05)
 #define STEP3_CR CRH
 #endif
 #define DIO3 3
@@ -152,7 +152,7 @@
 #define STEP4_CROFF STEP4_BIT
 #define STEP4_CR CRL
 #else
-#define STEP4_CROFF (STEP4_BIT&0x03)
+#define STEP4_CROFF (STEP4_BIT & 0x05)
 #define STEP4_CR CRH
 #endif
 #define DIO4 4
@@ -171,7 +171,7 @@
 #define STEP5_CROFF STEP5_BIT
 #define STEP5_CR CRL
 #else
-#define STEP5_CROFF (STEP5_BIT&0x03)
+#define STEP5_CROFF (STEP5_BIT & 0x05)
 #define STEP5_CR CRH
 #endif
 #define DIO5 5
@@ -190,7 +190,7 @@
 #define STEP6_CROFF STEP6_BIT
 #define STEP6_CR CRL
 #else
-#define STEP6_CROFF (STEP6_BIT&0x03)
+#define STEP6_CROFF (STEP6_BIT & 0x05)
 #define STEP6_CR CRH
 #endif
 #define DIO6 6
@@ -209,7 +209,7 @@
 #define STEP7_CROFF STEP7_BIT
 #define STEP7_CR CRL
 #else
-#define STEP7_CROFF (STEP7_BIT&0x03)
+#define STEP7_CROFF (STEP7_BIT & 0x05)
 #define STEP7_CR CRH
 #endif
 #define DIO7 7
@@ -228,7 +228,7 @@
 #define STEP0_EN_CROFF STEP0_EN_BIT
 #define STEP0_EN_CR CRL
 #else
-#define STEP0_EN_CROFF (STEP0_EN_BIT&0x03)
+#define STEP0_EN_CROFF (STEP0_EN_BIT & 0x05)
 #define STEP0_EN_CR CRH
 #endif
 #define DIO8 8
@@ -247,7 +247,7 @@
 #define STEP1_EN_CROFF STEP1_EN_BIT
 #define STEP1_EN_CR CRL
 #else
-#define STEP1_EN_CROFF (STEP1_EN_BIT&0x03)
+#define STEP1_EN_CROFF (STEP1_EN_BIT & 0x05)
 #define STEP1_EN_CR CRH
 #endif
 #define DIO9 9
@@ -266,7 +266,7 @@
 #define STEP2_EN_CROFF STEP2_EN_BIT
 #define STEP2_EN_CR CRL
 #else
-#define STEP2_EN_CROFF (STEP2_EN_BIT&0x03)
+#define STEP2_EN_CROFF (STEP2_EN_BIT & 0x05)
 #define STEP2_EN_CR CRH
 #endif
 #define DIO10 10
@@ -285,7 +285,7 @@
 #define STEP3_EN_CROFF STEP3_EN_BIT
 #define STEP3_EN_CR CRL
 #else
-#define STEP3_EN_CROFF (STEP3_EN_BIT&0x03)
+#define STEP3_EN_CROFF (STEP3_EN_BIT & 0x05)
 #define STEP3_EN_CR CRH
 #endif
 #define DIO11 11
@@ -304,7 +304,7 @@
 #define STEP4_EN_CROFF STEP4_EN_BIT
 #define STEP4_EN_CR CRL
 #else
-#define STEP4_EN_CROFF (STEP4_EN_BIT&0x03)
+#define STEP4_EN_CROFF (STEP4_EN_BIT & 0x05)
 #define STEP4_EN_CR CRH
 #endif
 #define DIO12 12
@@ -323,7 +323,7 @@
 #define STEP5_EN_CROFF STEP5_EN_BIT
 #define STEP5_EN_CR CRL
 #else
-#define STEP5_EN_CROFF (STEP5_EN_BIT&0x03)
+#define STEP5_EN_CROFF (STEP5_EN_BIT & 0x05)
 #define STEP5_EN_CR CRH
 #endif
 #define DIO13 13
@@ -342,7 +342,7 @@
 #define DIR0_CROFF DIR0_BIT
 #define DIR0_CR CRL
 #else
-#define DIR0_CROFF (DIR0_BIT&0x03)
+#define DIR0_CROFF (DIR0_BIT & 0x05)
 #define DIR0_CR CRH
 #endif
 #define DIO14 14
@@ -361,7 +361,7 @@
 #define DIR1_CROFF DIR1_BIT
 #define DIR1_CR CRL
 #else
-#define DIR1_CROFF (DIR1_BIT&0x03)
+#define DIR1_CROFF (DIR1_BIT & 0x05)
 #define DIR1_CR CRH
 #endif
 #define DIO15 15
@@ -380,7 +380,7 @@
 #define DIR2_CROFF DIR2_BIT
 #define DIR2_CR CRL
 #else
-#define DIR2_CROFF (DIR2_BIT&0x03)
+#define DIR2_CROFF (DIR2_BIT & 0x05)
 #define DIR2_CR CRH
 #endif
 #define DIO16 16
@@ -399,7 +399,7 @@
 #define DIR3_CROFF DIR3_BIT
 #define DIR3_CR CRL
 #else
-#define DIR3_CROFF (DIR3_BIT&0x03)
+#define DIR3_CROFF (DIR3_BIT & 0x05)
 #define DIR3_CR CRH
 #endif
 #define DIO17 17
@@ -418,7 +418,7 @@
 #define DIR4_CROFF DIR4_BIT
 #define DIR4_CR CRL
 #else
-#define DIR4_CROFF (DIR4_BIT&0x03)
+#define DIR4_CROFF (DIR4_BIT & 0x05)
 #define DIR4_CR CRH
 #endif
 #define DIO18 18
@@ -437,7 +437,7 @@
 #define DIR5_CROFF DIR5_BIT
 #define DIR5_CR CRL
 #else
-#define DIR5_CROFF (DIR5_BIT&0x03)
+#define DIR5_CROFF (DIR5_BIT & 0x05)
 #define DIR5_CR CRH
 #endif
 #define DIO19 19
@@ -456,7 +456,7 @@
 #define PWM0_CROFF PWM0_BIT
 #define PWM0_CR CRL
 #else
-#define PWM0_CROFF (PWM0_BIT&0x03)
+#define PWM0_CROFF (PWM0_BIT & 0x05)
 #define PWM0_CR CRH
 #endif
 #define DIO20 20
@@ -475,7 +475,7 @@
 #define PWM1_CROFF PWM1_BIT
 #define PWM1_CR CRL
 #else
-#define PWM1_CROFF (PWM1_BIT&0x03)
+#define PWM1_CROFF (PWM1_BIT & 0x05)
 #define PWM1_CR CRH
 #endif
 #define DIO21 21
@@ -494,7 +494,7 @@
 #define PWM2_CROFF PWM2_BIT
 #define PWM2_CR CRL
 #else
-#define PWM2_CROFF (PWM2_BIT&0x03)
+#define PWM2_CROFF (PWM2_BIT & 0x05)
 #define PWM2_CR CRH
 #endif
 #define DIO22 22
@@ -513,7 +513,7 @@
 #define PWM3_CROFF PWM3_BIT
 #define PWM3_CR CRL
 #else
-#define PWM3_CROFF (PWM3_BIT&0x03)
+#define PWM3_CROFF (PWM3_BIT & 0x05)
 #define PWM3_CR CRH
 #endif
 #define DIO23 23
@@ -532,7 +532,7 @@
 #define PWM4_CROFF PWM4_BIT
 #define PWM4_CR CRL
 #else
-#define PWM4_CROFF (PWM4_BIT&0x03)
+#define PWM4_CROFF (PWM4_BIT & 0x05)
 #define PWM4_CR CRH
 #endif
 #define DIO24 24
@@ -551,7 +551,7 @@
 #define PWM5_CROFF PWM5_BIT
 #define PWM5_CR CRL
 #else
-#define PWM5_CROFF (PWM5_BIT&0x03)
+#define PWM5_CROFF (PWM5_BIT & 0x05)
 #define PWM5_CR CRH
 #endif
 #define DIO25 25
@@ -570,7 +570,7 @@
 #define PWM6_CROFF PWM6_BIT
 #define PWM6_CR CRL
 #else
-#define PWM6_CROFF (PWM6_BIT&0x03)
+#define PWM6_CROFF (PWM6_BIT & 0x05)
 #define PWM6_CR CRH
 #endif
 #define DIO26 26
@@ -589,7 +589,7 @@
 #define PWM7_CROFF PWM7_BIT
 #define PWM7_CR CRL
 #else
-#define PWM7_CROFF (PWM7_BIT&0x03)
+#define PWM7_CROFF (PWM7_BIT & 0x05)
 #define PWM7_CR CRH
 #endif
 #define DIO27 27
@@ -608,7 +608,7 @@
 #define PWM8_CROFF PWM8_BIT
 #define PWM8_CR CRL
 #else
-#define PWM8_CROFF (PWM8_BIT&0x03)
+#define PWM8_CROFF (PWM8_BIT & 0x05)
 #define PWM8_CR CRH
 #endif
 #define DIO28 28
@@ -627,7 +627,7 @@
 #define PWM9_CROFF PWM9_BIT
 #define PWM9_CR CRL
 #else
-#define PWM9_CROFF (PWM9_BIT&0x03)
+#define PWM9_CROFF (PWM9_BIT & 0x05)
 #define PWM9_CR CRH
 #endif
 #define DIO29 29
@@ -646,7 +646,7 @@
 #define PWM10_CROFF PWM10_BIT
 #define PWM10_CR CRL
 #else
-#define PWM10_CROFF (PWM10_BIT&0x03)
+#define PWM10_CROFF (PWM10_BIT & 0x05)
 #define PWM10_CR CRH
 #endif
 #define DIO30 30
@@ -665,7 +665,7 @@
 #define PWM11_CROFF PWM11_BIT
 #define PWM11_CR CRL
 #else
-#define PWM11_CROFF (PWM11_BIT&0x03)
+#define PWM11_CROFF (PWM11_BIT & 0x05)
 #define PWM11_CR CRH
 #endif
 #define DIO31 31
@@ -684,7 +684,7 @@
 #define PWM12_CROFF PWM12_BIT
 #define PWM12_CR CRL
 #else
-#define PWM12_CROFF (PWM12_BIT&0x03)
+#define PWM12_CROFF (PWM12_BIT & 0x05)
 #define PWM12_CR CRH
 #endif
 #define DIO32 32
@@ -703,7 +703,7 @@
 #define PWM13_CROFF PWM13_BIT
 #define PWM13_CR CRL
 #else
-#define PWM13_CROFF (PWM13_BIT&0x03)
+#define PWM13_CROFF (PWM13_BIT & 0x05)
 #define PWM13_CR CRH
 #endif
 #define DIO33 33
@@ -722,7 +722,7 @@
 #define PWM14_CROFF PWM14_BIT
 #define PWM14_CR CRL
 #else
-#define PWM14_CROFF (PWM14_BIT&0x03)
+#define PWM14_CROFF (PWM14_BIT & 0x05)
 #define PWM14_CR CRH
 #endif
 #define DIO34 34
@@ -741,7 +741,7 @@
 #define PWM15_CROFF PWM15_BIT
 #define PWM15_CR CRL
 #else
-#define PWM15_CROFF (PWM15_BIT&0x03)
+#define PWM15_CROFF (PWM15_BIT & 0x05)
 #define PWM15_CR CRH
 #endif
 #define DIO35 35
@@ -760,7 +760,7 @@
 #define TX_CROFF TX_BIT
 #define TX_CR CRL
 #else
-#define TX_CROFF (TX_BIT&0x03)
+#define TX_CROFF (TX_BIT & 0x05)
 #define TX_CR CRH
 #endif
 #define DIO36 36
@@ -779,7 +779,7 @@
 #define DOUT0_CROFF DOUT0_BIT
 #define DOUT0_CR CRL
 #else
-#define DOUT0_CROFF (DOUT0_BIT&0x03)
+#define DOUT0_CROFF (DOUT0_BIT & 0x05)
 #define DOUT0_CR CRH
 #endif
 #define DIO37 37
@@ -798,7 +798,7 @@
 #define DOUT1_CROFF DOUT1_BIT
 #define DOUT1_CR CRL
 #else
-#define DOUT1_CROFF (DOUT1_BIT&0x03)
+#define DOUT1_CROFF (DOUT1_BIT & 0x05)
 #define DOUT1_CR CRH
 #endif
 #define DIO38 38
@@ -817,7 +817,7 @@
 #define DOUT2_CROFF DOUT2_BIT
 #define DOUT2_CR CRL
 #else
-#define DOUT2_CROFF (DOUT2_BIT&0x03)
+#define DOUT2_CROFF (DOUT2_BIT & 0x05)
 #define DOUT2_CR CRH
 #endif
 #define DIO39 39
@@ -836,7 +836,7 @@
 #define DOUT3_CROFF DOUT3_BIT
 #define DOUT3_CR CRL
 #else
-#define DOUT3_CROFF (DOUT3_BIT&0x03)
+#define DOUT3_CROFF (DOUT3_BIT & 0x05)
 #define DOUT3_CR CRH
 #endif
 #define DIO40 40
@@ -855,7 +855,7 @@
 #define DOUT4_CROFF DOUT4_BIT
 #define DOUT4_CR CRL
 #else
-#define DOUT4_CROFF (DOUT4_BIT&0x03)
+#define DOUT4_CROFF (DOUT4_BIT & 0x05)
 #define DOUT4_CR CRH
 #endif
 #define DIO41 41
@@ -874,7 +874,7 @@
 #define DOUT5_CROFF DOUT5_BIT
 #define DOUT5_CR CRL
 #else
-#define DOUT5_CROFF (DOUT5_BIT&0x03)
+#define DOUT5_CROFF (DOUT5_BIT & 0x05)
 #define DOUT5_CR CRH
 #endif
 #define DIO42 42
@@ -893,7 +893,7 @@
 #define DOUT6_CROFF DOUT6_BIT
 #define DOUT6_CR CRL
 #else
-#define DOUT6_CROFF (DOUT6_BIT&0x03)
+#define DOUT6_CROFF (DOUT6_BIT & 0x05)
 #define DOUT6_CR CRH
 #endif
 #define DIO43 43
@@ -912,7 +912,7 @@
 #define DOUT7_CROFF DOUT7_BIT
 #define DOUT7_CR CRL
 #else
-#define DOUT7_CROFF (DOUT7_BIT&0x03)
+#define DOUT7_CROFF (DOUT7_BIT & 0x05)
 #define DOUT7_CR CRH
 #endif
 #define DIO44 44
@@ -931,7 +931,7 @@
 #define DOUT8_CROFF DOUT8_BIT
 #define DOUT8_CR CRL
 #else
-#define DOUT8_CROFF (DOUT8_BIT&0x03)
+#define DOUT8_CROFF (DOUT8_BIT & 0x05)
 #define DOUT8_CR CRH
 #endif
 #define DIO45 45
@@ -950,7 +950,7 @@
 #define DOUT9_CROFF DOUT9_BIT
 #define DOUT9_CR CRL
 #else
-#define DOUT9_CROFF (DOUT9_BIT&0x03)
+#define DOUT9_CROFF (DOUT9_BIT & 0x05)
 #define DOUT9_CR CRH
 #endif
 #define DIO46 46
@@ -969,7 +969,7 @@
 #define DOUT10_CROFF DOUT10_BIT
 #define DOUT10_CR CRL
 #else
-#define DOUT10_CROFF (DOUT10_BIT&0x03)
+#define DOUT10_CROFF (DOUT10_BIT & 0x05)
 #define DOUT10_CR CRH
 #endif
 #define DIO47 47
@@ -988,7 +988,7 @@
 #define DOUT11_CROFF DOUT11_BIT
 #define DOUT11_CR CRL
 #else
-#define DOUT11_CROFF (DOUT11_BIT&0x03)
+#define DOUT11_CROFF (DOUT11_BIT & 0x05)
 #define DOUT11_CR CRH
 #endif
 #define DIO48 48
@@ -1007,7 +1007,7 @@
 #define DOUT12_CROFF DOUT12_BIT
 #define DOUT12_CR CRL
 #else
-#define DOUT12_CROFF (DOUT12_BIT&0x03)
+#define DOUT12_CROFF (DOUT12_BIT & 0x05)
 #define DOUT12_CR CRH
 #endif
 #define DIO49 49
@@ -1026,7 +1026,7 @@
 #define DOUT13_CROFF DOUT13_BIT
 #define DOUT13_CR CRL
 #else
-#define DOUT13_CROFF (DOUT13_BIT&0x03)
+#define DOUT13_CROFF (DOUT13_BIT & 0x05)
 #define DOUT13_CR CRH
 #endif
 #define DIO50 50
@@ -1045,7 +1045,7 @@
 #define DOUT14_CROFF DOUT14_BIT
 #define DOUT14_CR CRL
 #else
-#define DOUT14_CROFF (DOUT14_BIT&0x03)
+#define DOUT14_CROFF (DOUT14_BIT & 0x05)
 #define DOUT14_CR CRH
 #endif
 #define DIO51 51
@@ -1064,7 +1064,7 @@
 #define DOUT15_CROFF DOUT15_BIT
 #define DOUT15_CR CRL
 #else
-#define DOUT15_CROFF (DOUT15_BIT&0x03)
+#define DOUT15_CROFF (DOUT15_BIT & 0x05)
 #define DOUT15_CR CRH
 #endif
 #define DIO52 52
@@ -1083,7 +1083,7 @@
 #define LIMIT_X_CROFF LIMIT_X_BIT
 #define LIMIT_X_CR CRL
 #else
-#define LIMIT_X_CROFF (LIMIT_X_BIT&0x03)
+#define LIMIT_X_CROFF (LIMIT_X_BIT & 0x05)
 #define LIMIT_X_CR CRH
 #endif
 #define DIO53 53
@@ -1102,7 +1102,7 @@
 #define LIMIT_Y_CROFF LIMIT_Y_BIT
 #define LIMIT_Y_CR CRL
 #else
-#define LIMIT_Y_CROFF (LIMIT_Y_BIT&0x03)
+#define LIMIT_Y_CROFF (LIMIT_Y_BIT & 0x05)
 #define LIMIT_Y_CR CRH
 #endif
 #define DIO54 54
@@ -1121,7 +1121,7 @@
 #define LIMIT_Z_CROFF LIMIT_Z_BIT
 #define LIMIT_Z_CR CRL
 #else
-#define LIMIT_Z_CROFF (LIMIT_Z_BIT&0x03)
+#define LIMIT_Z_CROFF (LIMIT_Z_BIT & 0x05)
 #define LIMIT_Z_CR CRH
 #endif
 #define DIO55 55
@@ -1140,7 +1140,7 @@
 #define LIMIT_X2_CROFF LIMIT_X2_BIT
 #define LIMIT_X2_CR CRL
 #else
-#define LIMIT_X2_CROFF (LIMIT_X2_BIT&0x03)
+#define LIMIT_X2_CROFF (LIMIT_X2_BIT & 0x05)
 #define LIMIT_X2_CR CRH
 #endif
 #define DIO56 56
@@ -1159,7 +1159,7 @@
 #define LIMIT_Y2_CROFF LIMIT_Y2_BIT
 #define LIMIT_Y2_CR CRL
 #else
-#define LIMIT_Y2_CROFF (LIMIT_Y2_BIT&0x03)
+#define LIMIT_Y2_CROFF (LIMIT_Y2_BIT & 0x05)
 #define LIMIT_Y2_CR CRH
 #endif
 #define DIO57 57
@@ -1178,7 +1178,7 @@
 #define LIMIT_Z2_CROFF LIMIT_Z2_BIT
 #define LIMIT_Z2_CR CRL
 #else
-#define LIMIT_Z2_CROFF (LIMIT_Z2_BIT&0x03)
+#define LIMIT_Z2_CROFF (LIMIT_Z2_BIT & 0x05)
 #define LIMIT_Z2_CR CRH
 #endif
 #define DIO58 58
@@ -1197,7 +1197,7 @@
 #define LIMIT_A_CROFF LIMIT_A_BIT
 #define LIMIT_A_CR CRL
 #else
-#define LIMIT_A_CROFF (LIMIT_A_BIT&0x03)
+#define LIMIT_A_CROFF (LIMIT_A_BIT & 0x05)
 #define LIMIT_A_CR CRH
 #endif
 #define DIO59 59
@@ -1216,7 +1216,7 @@
 #define LIMIT_B_CROFF LIMIT_B_BIT
 #define LIMIT_B_CR CRL
 #else
-#define LIMIT_B_CROFF (LIMIT_B_BIT&0x03)
+#define LIMIT_B_CROFF (LIMIT_B_BIT & 0x05)
 #define LIMIT_B_CR CRH
 #endif
 #define DIO60 60
@@ -1235,7 +1235,7 @@
 #define LIMIT_C_CROFF LIMIT_C_BIT
 #define LIMIT_C_CR CRL
 #else
-#define LIMIT_C_CROFF (LIMIT_C_BIT&0x03)
+#define LIMIT_C_CROFF (LIMIT_C_BIT & 0x05)
 #define LIMIT_C_CR CRH
 #endif
 #define DIO61 61
@@ -1254,7 +1254,7 @@
 #define PROBE_CROFF PROBE_BIT
 #define PROBE_CR CRL
 #else
-#define PROBE_CROFF (PROBE_BIT&0x03)
+#define PROBE_CROFF (PROBE_BIT & 0x05)
 #define PROBE_CR CRH
 #endif
 #define DIO62 62
@@ -1273,7 +1273,7 @@
 #define ESTOP_CROFF ESTOP_BIT
 #define ESTOP_CR CRL
 #else
-#define ESTOP_CROFF (ESTOP_BIT&0x03)
+#define ESTOP_CROFF (ESTOP_BIT & 0x05)
 #define ESTOP_CR CRH
 #endif
 #define DIO63 63
@@ -1292,7 +1292,7 @@
 #define SAFETY_DOOR_CROFF SAFETY_DOOR_BIT
 #define SAFETY_DOOR_CR CRL
 #else
-#define SAFETY_DOOR_CROFF (SAFETY_DOOR_BIT&0x03)
+#define SAFETY_DOOR_CROFF (SAFETY_DOOR_BIT & 0x05)
 #define SAFETY_DOOR_CR CRH
 #endif
 #define DIO64 64
@@ -1311,7 +1311,7 @@
 #define FHOLD_CROFF FHOLD_BIT
 #define FHOLD_CR CRL
 #else
-#define FHOLD_CROFF (FHOLD_BIT&0x03)
+#define FHOLD_CROFF (FHOLD_BIT & 0x05)
 #define FHOLD_CR CRH
 #endif
 #define DIO65 65
@@ -1330,7 +1330,7 @@
 #define CS_RES_CROFF CS_RES_BIT
 #define CS_RES_CR CRL
 #else
-#define CS_RES_CROFF (CS_RES_BIT&0x03)
+#define CS_RES_CROFF (CS_RES_BIT & 0x05)
 #define CS_RES_CR CRH
 #endif
 #define DIO66 66
@@ -1349,7 +1349,7 @@
 #define ANALOG0_CROFF ANALOG0_BIT
 #define ANALOG0_CR CRL
 #else
-#define ANALOG0_CROFF (ANALOG0_BIT&0x03)
+#define ANALOG0_CROFF (ANALOG0_BIT & 0x05)
 #define ANALOG0_CR CRH
 #endif
 #define DIO67 67
@@ -1368,7 +1368,7 @@
 #define ANALOG1_CROFF ANALOG1_BIT
 #define ANALOG1_CR CRL
 #else
-#define ANALOG1_CROFF (ANALOG1_BIT&0x03)
+#define ANALOG1_CROFF (ANALOG1_BIT & 0x05)
 #define ANALOG1_CR CRH
 #endif
 #define DIO68 68
@@ -1387,7 +1387,7 @@
 #define ANALOG2_CROFF ANALOG2_BIT
 #define ANALOG2_CR CRL
 #else
-#define ANALOG2_CROFF (ANALOG2_BIT&0x03)
+#define ANALOG2_CROFF (ANALOG2_BIT & 0x05)
 #define ANALOG2_CR CRH
 #endif
 #define DIO69 69
@@ -1406,7 +1406,7 @@
 #define ANALOG3_CROFF ANALOG3_BIT
 #define ANALOG3_CR CRL
 #else
-#define ANALOG3_CROFF (ANALOG3_BIT&0x03)
+#define ANALOG3_CROFF (ANALOG3_BIT & 0x05)
 #define ANALOG3_CR CRH
 #endif
 #define DIO70 70
@@ -1425,7 +1425,7 @@
 #define ANALOG4_CROFF ANALOG4_BIT
 #define ANALOG4_CR CRL
 #else
-#define ANALOG4_CROFF (ANALOG4_BIT&0x03)
+#define ANALOG4_CROFF (ANALOG4_BIT & 0x05)
 #define ANALOG4_CR CRH
 #endif
 #define DIO71 71
@@ -1444,7 +1444,7 @@
 #define ANALOG5_CROFF ANALOG5_BIT
 #define ANALOG5_CR CRL
 #else
-#define ANALOG5_CROFF (ANALOG5_BIT&0x03)
+#define ANALOG5_CROFF (ANALOG5_BIT & 0x05)
 #define ANALOG5_CR CRH
 #endif
 #define DIO72 72
@@ -1463,7 +1463,7 @@
 #define ANALOG6_CROFF ANALOG6_BIT
 #define ANALOG6_CR CRL
 #else
-#define ANALOG6_CROFF (ANALOG6_BIT&0x03)
+#define ANALOG6_CROFF (ANALOG6_BIT & 0x05)
 #define ANALOG6_CR CRH
 #endif
 #define DIO73 73
@@ -1482,7 +1482,7 @@
 #define ANALOG7_CROFF ANALOG7_BIT
 #define ANALOG7_CR CRL
 #else
-#define ANALOG7_CROFF (ANALOG7_BIT&0x03)
+#define ANALOG7_CROFF (ANALOG7_BIT & 0x05)
 #define ANALOG7_CR CRH
 #endif
 #define DIO74 74
@@ -1501,7 +1501,7 @@
 #define ANALOG8_CROFF ANALOG8_BIT
 #define ANALOG8_CR CRL
 #else
-#define ANALOG8_CROFF (ANALOG8_BIT&0x03)
+#define ANALOG8_CROFF (ANALOG8_BIT & 0x05)
 #define ANALOG8_CR CRH
 #endif
 #define DIO75 75
@@ -1520,7 +1520,7 @@
 #define ANALOG9_CROFF ANALOG9_BIT
 #define ANALOG9_CR CRL
 #else
-#define ANALOG9_CROFF (ANALOG9_BIT&0x03)
+#define ANALOG9_CROFF (ANALOG9_BIT & 0x05)
 #define ANALOG9_CR CRH
 #endif
 #define DIO76 76
@@ -1539,7 +1539,7 @@
 #define ANALOG10_CROFF ANALOG10_BIT
 #define ANALOG10_CR CRL
 #else
-#define ANALOG10_CROFF (ANALOG10_BIT&0x03)
+#define ANALOG10_CROFF (ANALOG10_BIT & 0x05)
 #define ANALOG10_CR CRH
 #endif
 #define DIO77 77
@@ -1558,7 +1558,7 @@
 #define ANALOG11_CROFF ANALOG11_BIT
 #define ANALOG11_CR CRL
 #else
-#define ANALOG11_CROFF (ANALOG11_BIT&0x03)
+#define ANALOG11_CROFF (ANALOG11_BIT & 0x05)
 #define ANALOG11_CR CRH
 #endif
 #define DIO78 78
@@ -1577,7 +1577,7 @@
 #define ANALOG12_CROFF ANALOG12_BIT
 #define ANALOG12_CR CRL
 #else
-#define ANALOG12_CROFF (ANALOG12_BIT&0x03)
+#define ANALOG12_CROFF (ANALOG12_BIT & 0x05)
 #define ANALOG12_CR CRH
 #endif
 #define DIO79 79
@@ -1596,7 +1596,7 @@
 #define ANALOG13_CROFF ANALOG13_BIT
 #define ANALOG13_CR CRL
 #else
-#define ANALOG13_CROFF (ANALOG13_BIT&0x03)
+#define ANALOG13_CROFF (ANALOG13_BIT & 0x05)
 #define ANALOG13_CR CRH
 #endif
 #define DIO80 80
@@ -1615,7 +1615,7 @@
 #define ANALOG14_CROFF ANALOG14_BIT
 #define ANALOG14_CR CRL
 #else
-#define ANALOG14_CROFF (ANALOG14_BIT&0x03)
+#define ANALOG14_CROFF (ANALOG14_BIT & 0x05)
 #define ANALOG14_CR CRH
 #endif
 #define DIO81 81
@@ -1634,7 +1634,7 @@
 #define ANALOG15_CROFF ANALOG15_BIT
 #define ANALOG15_CR CRL
 #else
-#define ANALOG15_CROFF (ANALOG15_BIT&0x03)
+#define ANALOG15_CROFF (ANALOG15_BIT & 0x05)
 #define ANALOG15_CR CRH
 #endif
 #define DIO82 82
@@ -1653,7 +1653,7 @@
 #define RX_CROFF RX_BIT
 #define RX_CR CRL
 #else
-#define RX_CROFF (RX_BIT&0x03)
+#define RX_CROFF (RX_BIT & 0x05)
 #define RX_CR CRH
 #endif
 #define DIO83 83
@@ -1672,7 +1672,7 @@
 #define DIN0_CROFF DIN0_BIT
 #define DIN0_CR CRL
 #else
-#define DIN0_CROFF (DIN0_BIT&0x03)
+#define DIN0_CROFF (DIN0_BIT & 0x05)
 #define DIN0_CR CRH
 #endif
 #define DIO84 84
@@ -1691,7 +1691,7 @@
 #define DIN1_CROFF DIN1_BIT
 #define DIN1_CR CRL
 #else
-#define DIN1_CROFF (DIN1_BIT&0x03)
+#define DIN1_CROFF (DIN1_BIT & 0x05)
 #define DIN1_CR CRH
 #endif
 #define DIO85 85
@@ -1710,7 +1710,7 @@
 #define DIN2_CROFF DIN2_BIT
 #define DIN2_CR CRL
 #else
-#define DIN2_CROFF (DIN2_BIT&0x03)
+#define DIN2_CROFF (DIN2_BIT & 0x05)
 #define DIN2_CR CRH
 #endif
 #define DIO86 86
@@ -1729,7 +1729,7 @@
 #define DIN3_CROFF DIN3_BIT
 #define DIN3_CR CRL
 #else
-#define DIN3_CROFF (DIN3_BIT&0x03)
+#define DIN3_CROFF (DIN3_BIT & 0x05)
 #define DIN3_CR CRH
 #endif
 #define DIO87 87
@@ -1748,7 +1748,7 @@
 #define DIN4_CROFF DIN4_BIT
 #define DIN4_CR CRL
 #else
-#define DIN4_CROFF (DIN4_BIT&0x03)
+#define DIN4_CROFF (DIN4_BIT & 0x05)
 #define DIN4_CR CRH
 #endif
 #define DIO88 88
@@ -1767,7 +1767,7 @@
 #define DIN5_CROFF DIN5_BIT
 #define DIN5_CR CRL
 #else
-#define DIN5_CROFF (DIN5_BIT&0x03)
+#define DIN5_CROFF (DIN5_BIT & 0x05)
 #define DIN5_CR CRH
 #endif
 #define DIO89 89
@@ -1786,7 +1786,7 @@
 #define DIN6_CROFF DIN6_BIT
 #define DIN6_CR CRL
 #else
-#define DIN6_CROFF (DIN6_BIT&0x03)
+#define DIN6_CROFF (DIN6_BIT & 0x05)
 #define DIN6_CR CRH
 #endif
 #define DIO90 90
@@ -1805,7 +1805,7 @@
 #define DIN7_CROFF DIN7_BIT
 #define DIN7_CR CRL
 #else
-#define DIN7_CROFF (DIN7_BIT&0x03)
+#define DIN7_CROFF (DIN7_BIT & 0x05)
 #define DIN7_CR CRH
 #endif
 #define DIO91 91
@@ -1824,7 +1824,7 @@
 #define DIN8_CROFF DIN8_BIT
 #define DIN8_CR CRL
 #else
-#define DIN8_CROFF (DIN8_BIT&0x03)
+#define DIN8_CROFF (DIN8_BIT & 0x05)
 #define DIN8_CR CRH
 #endif
 #define DIO92 92
@@ -1843,7 +1843,7 @@
 #define DIN9_CROFF DIN9_BIT
 #define DIN9_CR CRL
 #else
-#define DIN9_CROFF (DIN9_BIT&0x03)
+#define DIN9_CROFF (DIN9_BIT & 0x05)
 #define DIN9_CR CRH
 #endif
 #define DIO93 93
@@ -1862,7 +1862,7 @@
 #define DIN10_CROFF DIN10_BIT
 #define DIN10_CR CRL
 #else
-#define DIN10_CROFF (DIN10_BIT&0x03)
+#define DIN10_CROFF (DIN10_BIT & 0x05)
 #define DIN10_CR CRH
 #endif
 #define DIO94 94
@@ -1881,7 +1881,7 @@
 #define DIN11_CROFF DIN11_BIT
 #define DIN11_CR CRL
 #else
-#define DIN11_CROFF (DIN11_BIT&0x03)
+#define DIN11_CROFF (DIN11_BIT & 0x05)
 #define DIN11_CR CRH
 #endif
 #define DIO95 95
@@ -1900,7 +1900,7 @@
 #define DIN12_CROFF DIN12_BIT
 #define DIN12_CR CRL
 #else
-#define DIN12_CROFF (DIN12_BIT&0x03)
+#define DIN12_CROFF (DIN12_BIT & 0x05)
 #define DIN12_CR CRH
 #endif
 #define DIO96 96
@@ -1919,7 +1919,7 @@
 #define DIN13_CROFF DIN13_BIT
 #define DIN13_CR CRL
 #else
-#define DIN13_CROFF (DIN13_BIT&0x03)
+#define DIN13_CROFF (DIN13_BIT & 0x05)
 #define DIN13_CR CRH
 #endif
 #define DIO97 97
@@ -1938,7 +1938,7 @@
 #define DIN14_CROFF DIN14_BIT
 #define DIN14_CR CRL
 #else
-#define DIN14_CROFF (DIN14_BIT&0x03)
+#define DIN14_CROFF (DIN14_BIT & 0x05)
 #define DIN14_CR CRH
 #endif
 #define DIO98 98
@@ -1957,7 +1957,7 @@
 #define DIN15_CROFF DIN15_BIT
 #define DIN15_CR CRL
 #else
-#define DIN15_CROFF (DIN15_BIT&0x03)
+#define DIN15_CROFF (DIN15_BIT & 0x05)
 #define DIN15_CR CRH
 #endif
 #define DIO99 99
@@ -2003,9 +2003,9 @@
 
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define LIMIT_X_EXTIREG ((LIMIT_X_BIT >> 2) & 0x03)
-#define LIMIT_X_EXTIBITMASK (1<<LIMIT_X_BIT)
+#define LIMIT_X_EXTIBITMASK (1 << LIMIT_X_BIT)
 #define LIMIT_X_IRQ EXTIRQ(LIMIT_X_BIT)
-#define LIMIT_X_EXTIVAL (EXTINT(LIMIT_X_PORT) << ((LIMIT_X_BIT & 0x03)<<2))
+#define LIMIT_X_EXTIVAL (EXTINT(LIMIT_X_PORT) << ((LIMIT_X_BIT & 0x03) << 2))
 #define DIO53_EXTIREG LIMIT_X_EXTIREG
 #define DIO53_EXTIVAL LIMIT_X_EXTIVAL
 #define DIO53_IRQ LIMIT_X_IRQ
@@ -2016,9 +2016,9 @@
 #endif
 #if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
 #define LIMIT_Y_EXTIREG ((LIMIT_Y_BIT >> 2) & 0x03)
-#define LIMIT_Y_EXTIBITMASK (1<<LIMIT_Y_BIT)
+#define LIMIT_Y_EXTIBITMASK (1 << LIMIT_Y_BIT)
 #define LIMIT_Y_IRQ EXTIRQ(LIMIT_Y_BIT)
-#define LIMIT_Y_EXTIVAL (EXTINT(LIMIT_Y_PORT) << ((LIMIT_Y_BIT & 0x03)<<2))
+#define LIMIT_Y_EXTIVAL (EXTINT(LIMIT_Y_PORT) << ((LIMIT_Y_BIT & 0x03) << 2))
 #define DIO54_EXTIREG LIMIT_Y_EXTIREG
 #define DIO54_EXTIVAL LIMIT_Y_EXTIVAL
 #define DIO54_IRQ LIMIT_Y_IRQ
@@ -2029,9 +2029,9 @@
 #endif
 #if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
 #define LIMIT_Z_EXTIREG ((LIMIT_Z_BIT >> 2) & 0x03)
-#define LIMIT_Z_EXTIBITMASK (1<<LIMIT_Z_BIT)
+#define LIMIT_Z_EXTIBITMASK (1 << LIMIT_Z_BIT)
 #define LIMIT_Z_IRQ EXTIRQ(LIMIT_Z_BIT)
-#define LIMIT_Z_EXTIVAL (EXTINT(LIMIT_Z_PORT) << ((LIMIT_Z_BIT & 0x03)<<2))
+#define LIMIT_Z_EXTIVAL (EXTINT(LIMIT_Z_PORT) << ((LIMIT_Z_BIT & 0x03) << 2))
 #define DIO55_EXTIREG LIMIT_Z_EXTIREG
 #define DIO55_EXTIVAL LIMIT_Z_EXTIVAL
 #define DIO55_IRQ LIMIT_Z_IRQ
@@ -2042,9 +2042,9 @@
 #endif
 #if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
 #define LIMIT_X2_EXTIREG ((LIMIT_X2_BIT >> 2) & 0x03)
-#define LIMIT_X2_EXTIBITMASK (1<<LIMIT_X2_BIT)
+#define LIMIT_X2_EXTIBITMASK (1 << LIMIT_X2_BIT)
 #define LIMIT_X2_IRQ EXTIRQ(LIMIT_X2_BIT)
-#define LIMIT_X2_EXTIVAL (EXTINT(LIMIT_X2_PORT) << ((LIMIT_X2_BIT & 0x03)<<2))
+#define LIMIT_X2_EXTIVAL (EXTINT(LIMIT_X2_PORT) << ((LIMIT_X2_BIT & 0x03) << 2))
 #define DIO56_EXTIREG LIMIT_X2_EXTIREG
 #define DIO56_EXTIVAL LIMIT_X2_EXTIVAL
 #define DIO56_IRQ LIMIT_X2_IRQ
@@ -2055,9 +2055,9 @@
 #endif
 #if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
 #define LIMIT_Y2_EXTIREG ((LIMIT_Y2_BIT >> 2) & 0x03)
-#define LIMIT_Y2_EXTIBITMASK (1<<LIMIT_Y2_BIT)
+#define LIMIT_Y2_EXTIBITMASK (1 << LIMIT_Y2_BIT)
 #define LIMIT_Y2_IRQ EXTIRQ(LIMIT_Y2_BIT)
-#define LIMIT_Y2_EXTIVAL (EXTINT(LIMIT_Y2_PORT) << ((LIMIT_Y2_BIT & 0x03)<<2))
+#define LIMIT_Y2_EXTIVAL (EXTINT(LIMIT_Y2_PORT) << ((LIMIT_Y2_BIT & 0x03) << 2))
 #define DIO57_EXTIREG LIMIT_Y2_EXTIREG
 #define DIO57_EXTIVAL LIMIT_Y2_EXTIVAL
 #define DIO57_IRQ LIMIT_Y2_IRQ
@@ -2068,9 +2068,9 @@
 #endif
 #if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
 #define LIMIT_Z2_EXTIREG ((LIMIT_Z2_BIT >> 2) & 0x03)
-#define LIMIT_Z2_EXTIBITMASK (1<<LIMIT_Z2_BIT)
+#define LIMIT_Z2_EXTIBITMASK (1 << LIMIT_Z2_BIT)
 #define LIMIT_Z2_IRQ EXTIRQ(LIMIT_Z2_BIT)
-#define LIMIT_Z2_EXTIVAL (EXTINT(LIMIT_Z2_PORT) << ((LIMIT_Z2_BIT & 0x03)<<2))
+#define LIMIT_Z2_EXTIVAL (EXTINT(LIMIT_Z2_PORT) << ((LIMIT_Z2_BIT & 0x03) << 2))
 #define DIO58_EXTIREG LIMIT_Z2_EXTIREG
 #define DIO58_EXTIVAL LIMIT_Z2_EXTIVAL
 #define DIO58_IRQ LIMIT_Z2_IRQ
@@ -2081,9 +2081,9 @@
 #endif
 #if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
 #define LIMIT_A_EXTIREG ((LIMIT_A_BIT >> 2) & 0x03)
-#define LIMIT_A_EXTIBITMASK (1<<LIMIT_A_BIT)
+#define LIMIT_A_EXTIBITMASK (1 << LIMIT_A_BIT)
 #define LIMIT_A_IRQ EXTIRQ(LIMIT_A_BIT)
-#define LIMIT_A_EXTIVAL (EXTINT(LIMIT_A_PORT) << ((LIMIT_A_BIT & 0x03)<<2))
+#define LIMIT_A_EXTIVAL (EXTINT(LIMIT_A_PORT) << ((LIMIT_A_BIT & 0x03) << 2))
 #define DIO59_EXTIREG LIMIT_A_EXTIREG
 #define DIO59_EXTIVAL LIMIT_A_EXTIVAL
 #define DIO59_IRQ LIMIT_A_IRQ
@@ -2094,9 +2094,9 @@
 #endif
 #if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
 #define LIMIT_B_EXTIREG ((LIMIT_B_BIT >> 2) & 0x03)
-#define LIMIT_B_EXTIBITMASK (1<<LIMIT_B_BIT)
+#define LIMIT_B_EXTIBITMASK (1 << LIMIT_B_BIT)
 #define LIMIT_B_IRQ EXTIRQ(LIMIT_B_BIT)
-#define LIMIT_B_EXTIVAL (EXTINT(LIMIT_B_PORT) << ((LIMIT_B_BIT & 0x03)<<2))
+#define LIMIT_B_EXTIVAL (EXTINT(LIMIT_B_PORT) << ((LIMIT_B_BIT & 0x03) << 2))
 #define DIO60_EXTIREG LIMIT_B_EXTIREG
 #define DIO60_EXTIVAL LIMIT_B_EXTIVAL
 #define DIO60_IRQ LIMIT_B_IRQ
@@ -2107,9 +2107,9 @@
 #endif
 #if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
 #define LIMIT_C_EXTIREG ((LIMIT_C_BIT >> 2) & 0x03)
-#define LIMIT_C_EXTIBITMASK (1<<LIMIT_C_BIT)
+#define LIMIT_C_EXTIBITMASK (1 << LIMIT_C_BIT)
 #define LIMIT_C_IRQ EXTIRQ(LIMIT_C_BIT)
-#define LIMIT_C_EXTIVAL (EXTINT(LIMIT_C_PORT) << ((LIMIT_C_BIT & 0x03)<<2))
+#define LIMIT_C_EXTIVAL (EXTINT(LIMIT_C_PORT) << ((LIMIT_C_BIT & 0x03) << 2))
 #define DIO61_EXTIREG LIMIT_C_EXTIREG
 #define DIO61_EXTIVAL LIMIT_C_EXTIVAL
 #define DIO61_IRQ LIMIT_C_IRQ
@@ -2120,9 +2120,9 @@
 #endif
 #if (defined(PROBE_ISR) && defined(PROBE))
 #define PROBE_EXTIREG ((PROBE_BIT >> 2) & 0x03)
-#define PROBE_EXTIBITMASK (1<<PROBE_BIT)
+#define PROBE_EXTIBITMASK (1 << PROBE_BIT)
 #define PROBE_IRQ EXTIRQ(PROBE_BIT)
-#define PROBE_EXTIVAL (EXTINT(PROBE_PORT) << ((PROBE_BIT & 0x03)<<2))
+#define PROBE_EXTIVAL (EXTINT(PROBE_PORT) << ((PROBE_BIT & 0x03) << 2))
 #define DIO62_EXTIREG PROBE_EXTIREG
 #define DIO62_EXTIVAL PROBE_EXTIVAL
 #define DIO62_IRQ PROBE_IRQ
@@ -2133,9 +2133,9 @@
 #endif
 #if (defined(ESTOP_ISR) && defined(ESTOP))
 #define ESTOP_EXTIREG ((ESTOP_BIT >> 2) & 0x03)
-#define ESTOP_EXTIBITMASK (1<<ESTOP_BIT)
+#define ESTOP_EXTIBITMASK (1 << ESTOP_BIT)
 #define ESTOP_IRQ EXTIRQ(ESTOP_BIT)
-#define ESTOP_EXTIVAL (EXTINT(ESTOP_PORT) << ((ESTOP_BIT & 0x03)<<2))
+#define ESTOP_EXTIVAL (EXTINT(ESTOP_PORT) << ((ESTOP_BIT & 0x03) << 2))
 #define DIO63_EXTIREG ESTOP_EXTIREG
 #define DIO63_EXTIVAL ESTOP_EXTIVAL
 #define DIO63_IRQ ESTOP_IRQ
@@ -2146,9 +2146,9 @@
 #endif
 #if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
 #define SAFETY_DOOR_EXTIREG ((SAFETY_DOOR_BIT >> 2) & 0x03)
-#define SAFETY_DOOR_EXTIBITMASK (1<<SAFETY_DOOR_BIT)
+#define SAFETY_DOOR_EXTIBITMASK (1 << SAFETY_DOOR_BIT)
 #define SAFETY_DOOR_IRQ EXTIRQ(SAFETY_DOOR_BIT)
-#define SAFETY_DOOR_EXTIVAL (EXTINT(SAFETY_DOOR_PORT) << ((SAFETY_DOOR_BIT & 0x03)<<2))
+#define SAFETY_DOOR_EXTIVAL (EXTINT(SAFETY_DOOR_PORT) << ((SAFETY_DOOR_BIT & 0x03) << 2))
 #define DIO64_EXTIREG SAFETY_DOOR_EXTIREG
 #define DIO64_EXTIVAL SAFETY_DOOR_EXTIVAL
 #define DIO64_IRQ SAFETY_DOOR_IRQ
@@ -2159,9 +2159,9 @@
 #endif
 #if (defined(FHOLD_ISR) && defined(FHOLD))
 #define FHOLD_EXTIREG ((FHOLD_BIT >> 2) & 0x03)
-#define FHOLD_EXTIBITMASK (1<<FHOLD_BIT)
+#define FHOLD_EXTIBITMASK (1 << FHOLD_BIT)
 #define FHOLD_IRQ EXTIRQ(FHOLD_BIT)
-#define FHOLD_EXTIVAL (EXTINT(FHOLD_PORT) << ((FHOLD_BIT & 0x03)<<2))
+#define FHOLD_EXTIVAL (EXTINT(FHOLD_PORT) << ((FHOLD_BIT & 0x03) << 2))
 #define DIO65_EXTIREG FHOLD_EXTIREG
 #define DIO65_EXTIVAL FHOLD_EXTIVAL
 #define DIO65_IRQ FHOLD_IRQ
@@ -2172,9 +2172,9 @@
 #endif
 #if (defined(CS_RES_ISR) && defined(CS_RES))
 #define CS_RES_EXTIREG ((CS_RES_BIT >> 2) & 0x03)
-#define CS_RES_EXTIBITMASK (1<<CS_RES_BIT)
+#define CS_RES_EXTIBITMASK (1 << CS_RES_BIT)
 #define CS_RES_IRQ EXTIRQ(CS_RES_BIT)
-#define CS_RES_EXTIVAL (EXTINT(CS_RES_PORT) << ((CS_RES_BIT & 0x03)<<2))
+#define CS_RES_EXTIVAL (EXTINT(CS_RES_PORT) << ((CS_RES_BIT & 0x03) << 2))
 #define DIO66_EXTIREG CS_RES_EXTIREG
 #define DIO66_EXTIVAL CS_RES_EXTIVAL
 #define DIO66_IRQ CS_RES_IRQ
@@ -2188,12 +2188,12 @@
 *	PWM pins
 **********************************************/
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
-#if (PWM0_TIMER==1 || (PWM0_TIMER>=8 & PWM0_TIMER<=11))
+#if (PWM0_TIMER == 1 || (PWM0_TIMER >= 8 & PWM0_TIMER <= 11))
 #define PWM0_ENREG RCC->APB2ENR
-#define PWM0_APBEN __helper__(RCC_APB2ENR_TIM,PWM0_TIMER, EN)
+#define PWM0_APBEN __helper__(RCC_APB2ENR_TIM, PWM0_TIMER, EN)
 #else
 #define PWM0_ENREG RCC->APB1ENR
-#define PWM0_APBEN __helper__(RCC_APB1ENR_TIM,PWM0_TIMER, EN)
+#define PWM0_APBEN __helper__(RCC_APB1ENR_TIM, PWM0_TIMER, EN)
 #endif
 #define PWM0_TIMREG (__tim__(PWM0_TIMER))
 #ifndef PWM0_FREQ
@@ -2209,12 +2209,14 @@
 #else
 #define PWM0_CCMREG CCMR1
 #endif
-#if (PWM0_TIMER==1)
-#define PWM0_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM0_TIMER==8)
-#define PWM0_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM0_TIMER == 1)
+#define PWM0_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM0_TIMER == 8)
+#define PWM0_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM0_ENOUTPUT {}
+#define PWM0_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM0_CCR __ccr__(PWM0_CHANNEL)
 #define DIO20_TIMER PWM0_TIMER
@@ -2230,12 +2232,12 @@
 #define DIO20_ENOUTPUT PWM0_ENOUTPUT
 #endif
 #if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
-#if (PWM1_TIMER==1 || (PWM1_TIMER>=8 & PWM1_TIMER<=11))
+#if (PWM1_TIMER == 1 || (PWM1_TIMER >= 8 & PWM1_TIMER <= 11))
 #define PWM1_ENREG RCC->APB2ENR
-#define PWM1_APBEN __helper__(RCC_APB2ENR_TIM,PWM1_TIMER, EN)
+#define PWM1_APBEN __helper__(RCC_APB2ENR_TIM, PWM1_TIMER, EN)
 #else
 #define PWM1_ENREG RCC->APB1ENR
-#define PWM1_APBEN __helper__(RCC_APB1ENR_TIM,PWM1_TIMER, EN)
+#define PWM1_APBEN __helper__(RCC_APB1ENR_TIM, PWM1_TIMER, EN)
 #endif
 #define PWM1_TIMREG (__tim__(PWM1_TIMER))
 #ifndef PWM1_FREQ
@@ -2251,12 +2253,14 @@
 #else
 #define PWM1_CCMREG CCMR1
 #endif
-#if (PWM1_TIMER==1)
-#define PWM1_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM1_TIMER==8)
-#define PWM1_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM1_TIMER == 1)
+#define PWM1_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM1_TIMER == 8)
+#define PWM1_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM1_ENOUTPUT {}
+#define PWM1_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM1_CCR __ccr__(PWM1_CHANNEL)
 #define DIO21_TIMER PWM1_TIMER
@@ -2272,12 +2276,12 @@
 #define DIO21_ENOUTPUT PWM1_ENOUTPUT
 #endif
 #if (defined(PWM2_CHANNEL) && defined(PWM2_TIMER) && defined(PWM2))
-#if (PWM2_TIMER==1 || (PWM2_TIMER>=8 & PWM2_TIMER<=11))
+#if (PWM2_TIMER == 1 || (PWM2_TIMER >= 8 & PWM2_TIMER <= 11))
 #define PWM2_ENREG RCC->APB2ENR
-#define PWM2_APBEN __helper__(RCC_APB2ENR_TIM,PWM2_TIMER, EN)
+#define PWM2_APBEN __helper__(RCC_APB2ENR_TIM, PWM2_TIMER, EN)
 #else
 #define PWM2_ENREG RCC->APB1ENR
-#define PWM2_APBEN __helper__(RCC_APB1ENR_TIM,PWM2_TIMER, EN)
+#define PWM2_APBEN __helper__(RCC_APB1ENR_TIM, PWM2_TIMER, EN)
 #endif
 #define PWM2_TIMREG (__tim__(PWM2_TIMER))
 #ifndef PWM2_FREQ
@@ -2293,12 +2297,14 @@
 #else
 #define PWM2_CCMREG CCMR1
 #endif
-#if (PWM2_TIMER==1)
-#define PWM2_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM2_TIMER==8)
-#define PWM2_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM2_TIMER == 1)
+#define PWM2_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM2_TIMER == 8)
+#define PWM2_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM2_ENOUTPUT {}
+#define PWM2_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM2_CCR __ccr__(PWM2_CHANNEL)
 #define DIO22_TIMER PWM2_TIMER
@@ -2314,12 +2320,12 @@
 #define DIO22_ENOUTPUT PWM2_ENOUTPUT
 #endif
 #if (defined(PWM3_CHANNEL) && defined(PWM3_TIMER) && defined(PWM3))
-#if (PWM3_TIMER==1 || (PWM3_TIMER>=8 & PWM3_TIMER<=11))
+#if (PWM3_TIMER == 1 || (PWM3_TIMER >= 8 & PWM3_TIMER <= 11))
 #define PWM3_ENREG RCC->APB2ENR
-#define PWM3_APBEN __helper__(RCC_APB2ENR_TIM,PWM3_TIMER, EN)
+#define PWM3_APBEN __helper__(RCC_APB2ENR_TIM, PWM3_TIMER, EN)
 #else
 #define PWM3_ENREG RCC->APB1ENR
-#define PWM3_APBEN __helper__(RCC_APB1ENR_TIM,PWM3_TIMER, EN)
+#define PWM3_APBEN __helper__(RCC_APB1ENR_TIM, PWM3_TIMER, EN)
 #endif
 #define PWM3_TIMREG (__tim__(PWM3_TIMER))
 #ifndef PWM3_FREQ
@@ -2335,12 +2341,14 @@
 #else
 #define PWM3_CCMREG CCMR1
 #endif
-#if (PWM3_TIMER==1)
-#define PWM3_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM3_TIMER==8)
-#define PWM3_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM3_TIMER == 1)
+#define PWM3_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM3_TIMER == 8)
+#define PWM3_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM3_ENOUTPUT {}
+#define PWM3_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM3_CCR __ccr__(PWM3_CHANNEL)
 #define DIO23_TIMER PWM3_TIMER
@@ -2356,12 +2364,12 @@
 #define DIO23_ENOUTPUT PWM3_ENOUTPUT
 #endif
 #if (defined(PWM4_CHANNEL) && defined(PWM4_TIMER) && defined(PWM4))
-#if (PWM4_TIMER==1 || (PWM4_TIMER>=8 & PWM4_TIMER<=11))
+#if (PWM4_TIMER == 1 || (PWM4_TIMER >= 8 & PWM4_TIMER <= 11))
 #define PWM4_ENREG RCC->APB2ENR
-#define PWM4_APBEN __helper__(RCC_APB2ENR_TIM,PWM4_TIMER, EN)
+#define PWM4_APBEN __helper__(RCC_APB2ENR_TIM, PWM4_TIMER, EN)
 #else
 #define PWM4_ENREG RCC->APB1ENR
-#define PWM4_APBEN __helper__(RCC_APB1ENR_TIM,PWM4_TIMER, EN)
+#define PWM4_APBEN __helper__(RCC_APB1ENR_TIM, PWM4_TIMER, EN)
 #endif
 #define PWM4_TIMREG (__tim__(PWM4_TIMER))
 #ifndef PWM4_FREQ
@@ -2377,12 +2385,14 @@
 #else
 #define PWM4_CCMREG CCMR1
 #endif
-#if (PWM4_TIMER==1)
-#define PWM4_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM4_TIMER==8)
-#define PWM4_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM4_TIMER == 1)
+#define PWM4_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM4_TIMER == 8)
+#define PWM4_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM4_ENOUTPUT {}
+#define PWM4_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM4_CCR __ccr__(PWM4_CHANNEL)
 #define DIO24_TIMER PWM4_TIMER
@@ -2398,12 +2408,12 @@
 #define DIO24_ENOUTPUT PWM4_ENOUTPUT
 #endif
 #if (defined(PWM5_CHANNEL) && defined(PWM5_TIMER) && defined(PWM5))
-#if (PWM5_TIMER==1 || (PWM5_TIMER>=8 & PWM5_TIMER<=11))
+#if (PWM5_TIMER == 1 || (PWM5_TIMER >= 8 & PWM5_TIMER <= 11))
 #define PWM5_ENREG RCC->APB2ENR
-#define PWM5_APBEN __helper__(RCC_APB2ENR_TIM,PWM5_TIMER, EN)
+#define PWM5_APBEN __helper__(RCC_APB2ENR_TIM, PWM5_TIMER, EN)
 #else
 #define PWM5_ENREG RCC->APB1ENR
-#define PWM5_APBEN __helper__(RCC_APB1ENR_TIM,PWM5_TIMER, EN)
+#define PWM5_APBEN __helper__(RCC_APB1ENR_TIM, PWM5_TIMER, EN)
 #endif
 #define PWM5_TIMREG (__tim__(PWM5_TIMER))
 #ifndef PWM5_FREQ
@@ -2419,12 +2429,14 @@
 #else
 #define PWM5_CCMREG CCMR1
 #endif
-#if (PWM5_TIMER==1)
-#define PWM5_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM5_TIMER==8)
-#define PWM5_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM5_TIMER == 1)
+#define PWM5_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM5_TIMER == 8)
+#define PWM5_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM5_ENOUTPUT {}
+#define PWM5_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM5_CCR __ccr__(PWM5_CHANNEL)
 #define DIO25_TIMER PWM5_TIMER
@@ -2440,12 +2452,12 @@
 #define DIO25_ENOUTPUT PWM5_ENOUTPUT
 #endif
 #if (defined(PWM6_CHANNEL) && defined(PWM6_TIMER) && defined(PWM6))
-#if (PWM6_TIMER==1 || (PWM6_TIMER>=8 & PWM6_TIMER<=11))
+#if (PWM6_TIMER == 1 || (PWM6_TIMER >= 8 & PWM6_TIMER <= 11))
 #define PWM6_ENREG RCC->APB2ENR
-#define PWM6_APBEN __helper__(RCC_APB2ENR_TIM,PWM6_TIMER, EN)
+#define PWM6_APBEN __helper__(RCC_APB2ENR_TIM, PWM6_TIMER, EN)
 #else
 #define PWM6_ENREG RCC->APB1ENR
-#define PWM6_APBEN __helper__(RCC_APB1ENR_TIM,PWM6_TIMER, EN)
+#define PWM6_APBEN __helper__(RCC_APB1ENR_TIM, PWM6_TIMER, EN)
 #endif
 #define PWM6_TIMREG (__tim__(PWM6_TIMER))
 #ifndef PWM6_FREQ
@@ -2461,12 +2473,14 @@
 #else
 #define PWM6_CCMREG CCMR1
 #endif
-#if (PWM6_TIMER==1)
-#define PWM6_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM6_TIMER==8)
-#define PWM6_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM6_TIMER == 1)
+#define PWM6_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM6_TIMER == 8)
+#define PWM6_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM6_ENOUTPUT {}
+#define PWM6_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM6_CCR __ccr__(PWM6_CHANNEL)
 #define DIO26_TIMER PWM6_TIMER
@@ -2482,12 +2496,12 @@
 #define DIO26_ENOUTPUT PWM6_ENOUTPUT
 #endif
 #if (defined(PWM7_CHANNEL) && defined(PWM7_TIMER) && defined(PWM7))
-#if (PWM7_TIMER==1 || (PWM7_TIMER>=8 & PWM7_TIMER<=11))
+#if (PWM7_TIMER == 1 || (PWM7_TIMER >= 8 & PWM7_TIMER <= 11))
 #define PWM7_ENREG RCC->APB2ENR
-#define PWM7_APBEN __helper__(RCC_APB2ENR_TIM,PWM7_TIMER, EN)
+#define PWM7_APBEN __helper__(RCC_APB2ENR_TIM, PWM7_TIMER, EN)
 #else
 #define PWM7_ENREG RCC->APB1ENR
-#define PWM7_APBEN __helper__(RCC_APB1ENR_TIM,PWM7_TIMER, EN)
+#define PWM7_APBEN __helper__(RCC_APB1ENR_TIM, PWM7_TIMER, EN)
 #endif
 #define PWM7_TIMREG (__tim__(PWM7_TIMER))
 #ifndef PWM7_FREQ
@@ -2503,12 +2517,14 @@
 #else
 #define PWM7_CCMREG CCMR1
 #endif
-#if (PWM7_TIMER==1)
-#define PWM7_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM7_TIMER==8)
-#define PWM7_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM7_TIMER == 1)
+#define PWM7_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM7_TIMER == 8)
+#define PWM7_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM7_ENOUTPUT {}
+#define PWM7_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM7_CCR __ccr__(PWM7_CHANNEL)
 #define DIO27_TIMER PWM7_TIMER
@@ -2524,12 +2540,12 @@
 #define DIO27_ENOUTPUT PWM7_ENOUTPUT
 #endif
 #if (defined(PWM8_CHANNEL) && defined(PWM8_TIMER) && defined(PWM8))
-#if (PWM8_TIMER==1 || (PWM8_TIMER>=8 & PWM8_TIMER<=11))
+#if (PWM8_TIMER == 1 || (PWM8_TIMER >= 8 & PWM8_TIMER <= 11))
 #define PWM8_ENREG RCC->APB2ENR
-#define PWM8_APBEN __helper__(RCC_APB2ENR_TIM,PWM8_TIMER, EN)
+#define PWM8_APBEN __helper__(RCC_APB2ENR_TIM, PWM8_TIMER, EN)
 #else
 #define PWM8_ENREG RCC->APB1ENR
-#define PWM8_APBEN __helper__(RCC_APB1ENR_TIM,PWM8_TIMER, EN)
+#define PWM8_APBEN __helper__(RCC_APB1ENR_TIM, PWM8_TIMER, EN)
 #endif
 #define PWM8_TIMREG (__tim__(PWM8_TIMER))
 #ifndef PWM8_FREQ
@@ -2545,12 +2561,14 @@
 #else
 #define PWM8_CCMREG CCMR1
 #endif
-#if (PWM8_TIMER==1)
-#define PWM8_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM8_TIMER==8)
-#define PWM8_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM8_TIMER == 1)
+#define PWM8_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM8_TIMER == 8)
+#define PWM8_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM8_ENOUTPUT {}
+#define PWM8_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM8_CCR __ccr__(PWM8_CHANNEL)
 #define DIO28_TIMER PWM8_TIMER
@@ -2566,12 +2584,12 @@
 #define DIO28_ENOUTPUT PWM8_ENOUTPUT
 #endif
 #if (defined(PWM9_CHANNEL) && defined(PWM9_TIMER) && defined(PWM9))
-#if (PWM9_TIMER==1 || (PWM9_TIMER>=8 & PWM9_TIMER<=11))
+#if (PWM9_TIMER == 1 || (PWM9_TIMER >= 8 & PWM9_TIMER <= 11))
 #define PWM9_ENREG RCC->APB2ENR
-#define PWM9_APBEN __helper__(RCC_APB2ENR_TIM,PWM9_TIMER, EN)
+#define PWM9_APBEN __helper__(RCC_APB2ENR_TIM, PWM9_TIMER, EN)
 #else
 #define PWM9_ENREG RCC->APB1ENR
-#define PWM9_APBEN __helper__(RCC_APB1ENR_TIM,PWM9_TIMER, EN)
+#define PWM9_APBEN __helper__(RCC_APB1ENR_TIM, PWM9_TIMER, EN)
 #endif
 #define PWM9_TIMREG (__tim__(PWM9_TIMER))
 #ifndef PWM9_FREQ
@@ -2587,12 +2605,14 @@
 #else
 #define PWM9_CCMREG CCMR1
 #endif
-#if (PWM9_TIMER==1)
-#define PWM9_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM9_TIMER==8)
-#define PWM9_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM9_TIMER == 1)
+#define PWM9_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM9_TIMER == 8)
+#define PWM9_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM9_ENOUTPUT {}
+#define PWM9_ENOUTPUT \
+	{                 \
+	}
 #endif
 #define PWM9_CCR __ccr__(PWM9_CHANNEL)
 #define DIO29_TIMER PWM9_TIMER
@@ -2608,12 +2628,12 @@
 #define DIO29_ENOUTPUT PWM9_ENOUTPUT
 #endif
 #if (defined(PWM10_CHANNEL) && defined(PWM10_TIMER) && defined(PWM10))
-#if (PWM10_TIMER==1 || (PWM10_TIMER>=8 & PWM10_TIMER<=11))
+#if (PWM10_TIMER == 1 || (PWM10_TIMER >= 8 & PWM10_TIMER <= 11))
 #define PWM10_ENREG RCC->APB2ENR
-#define PWM10_APBEN __helper__(RCC_APB2ENR_TIM,PWM10_TIMER, EN)
+#define PWM10_APBEN __helper__(RCC_APB2ENR_TIM, PWM10_TIMER, EN)
 #else
 #define PWM10_ENREG RCC->APB1ENR
-#define PWM10_APBEN __helper__(RCC_APB1ENR_TIM,PWM10_TIMER, EN)
+#define PWM10_APBEN __helper__(RCC_APB1ENR_TIM, PWM10_TIMER, EN)
 #endif
 #define PWM10_TIMREG (__tim__(PWM10_TIMER))
 #ifndef PWM10_FREQ
@@ -2629,12 +2649,14 @@
 #else
 #define PWM10_CCMREG CCMR1
 #endif
-#if (PWM10_TIMER==1)
-#define PWM10_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM10_TIMER==8)
-#define PWM10_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM10_TIMER == 1)
+#define PWM10_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM10_TIMER == 8)
+#define PWM10_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM10_ENOUTPUT {}
+#define PWM10_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM10_CCR __ccr__(PWM10_CHANNEL)
 #define DIO30_TIMER PWM10_TIMER
@@ -2650,12 +2672,12 @@
 #define DIO30_ENOUTPUT PWM10_ENOUTPUT
 #endif
 #if (defined(PWM11_CHANNEL) && defined(PWM11_TIMER) && defined(PWM11))
-#if (PWM11_TIMER==1 || (PWM11_TIMER>=8 & PWM11_TIMER<=11))
+#if (PWM11_TIMER == 1 || (PWM11_TIMER >= 8 & PWM11_TIMER <= 11))
 #define PWM11_ENREG RCC->APB2ENR
-#define PWM11_APBEN __helper__(RCC_APB2ENR_TIM,PWM11_TIMER, EN)
+#define PWM11_APBEN __helper__(RCC_APB2ENR_TIM, PWM11_TIMER, EN)
 #else
 #define PWM11_ENREG RCC->APB1ENR
-#define PWM11_APBEN __helper__(RCC_APB1ENR_TIM,PWM11_TIMER, EN)
+#define PWM11_APBEN __helper__(RCC_APB1ENR_TIM, PWM11_TIMER, EN)
 #endif
 #define PWM11_TIMREG (__tim__(PWM11_TIMER))
 #ifndef PWM11_FREQ
@@ -2671,12 +2693,14 @@
 #else
 #define PWM11_CCMREG CCMR1
 #endif
-#if (PWM11_TIMER==1)
-#define PWM11_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM11_TIMER==8)
-#define PWM11_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM11_TIMER == 1)
+#define PWM11_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM11_TIMER == 8)
+#define PWM11_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM11_ENOUTPUT {}
+#define PWM11_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM11_CCR __ccr__(PWM11_CHANNEL)
 #define DIO31_TIMER PWM11_TIMER
@@ -2692,12 +2716,12 @@
 #define DIO31_ENOUTPUT PWM11_ENOUTPUT
 #endif
 #if (defined(PWM12_CHANNEL) && defined(PWM12_TIMER) && defined(PWM12))
-#if (PWM12_TIMER==1 || (PWM12_TIMER>=8 & PWM12_TIMER<=11))
+#if (PWM12_TIMER == 1 || (PWM12_TIMER >= 8 & PWM12_TIMER <= 11))
 #define PWM12_ENREG RCC->APB2ENR
-#define PWM12_APBEN __helper__(RCC_APB2ENR_TIM,PWM12_TIMER, EN)
+#define PWM12_APBEN __helper__(RCC_APB2ENR_TIM, PWM12_TIMER, EN)
 #else
 #define PWM12_ENREG RCC->APB1ENR
-#define PWM12_APBEN __helper__(RCC_APB1ENR_TIM,PWM12_TIMER, EN)
+#define PWM12_APBEN __helper__(RCC_APB1ENR_TIM, PWM12_TIMER, EN)
 #endif
 #define PWM12_TIMREG (__tim__(PWM12_TIMER))
 #ifndef PWM12_FREQ
@@ -2713,12 +2737,14 @@
 #else
 #define PWM12_CCMREG CCMR1
 #endif
-#if (PWM12_TIMER==1)
-#define PWM12_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM12_TIMER==8)
-#define PWM12_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM12_TIMER == 1)
+#define PWM12_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM12_TIMER == 8)
+#define PWM12_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM12_ENOUTPUT {}
+#define PWM12_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM12_CCR __ccr__(PWM12_CHANNEL)
 #define DIO32_TIMER PWM12_TIMER
@@ -2734,12 +2760,12 @@
 #define DIO32_ENOUTPUT PWM12_ENOUTPUT
 #endif
 #if (defined(PWM13_CHANNEL) && defined(PWM13_TIMER) && defined(PWM13))
-#if (PWM13_TIMER==1 || (PWM13_TIMER>=8 & PWM13_TIMER<=11))
+#if (PWM13_TIMER == 1 || (PWM13_TIMER >= 8 & PWM13_TIMER <= 11))
 #define PWM13_ENREG RCC->APB2ENR
-#define PWM13_APBEN __helper__(RCC_APB2ENR_TIM,PWM13_TIMER, EN)
+#define PWM13_APBEN __helper__(RCC_APB2ENR_TIM, PWM13_TIMER, EN)
 #else
 #define PWM13_ENREG RCC->APB1ENR
-#define PWM13_APBEN __helper__(RCC_APB1ENR_TIM,PWM13_TIMER, EN)
+#define PWM13_APBEN __helper__(RCC_APB1ENR_TIM, PWM13_TIMER, EN)
 #endif
 #define PWM13_TIMREG (__tim__(PWM13_TIMER))
 #ifndef PWM13_FREQ
@@ -2755,12 +2781,14 @@
 #else
 #define PWM13_CCMREG CCMR1
 #endif
-#if (PWM13_TIMER==1)
-#define PWM13_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM13_TIMER==8)
-#define PWM13_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM13_TIMER == 1)
+#define PWM13_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM13_TIMER == 8)
+#define PWM13_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM13_ENOUTPUT {}
+#define PWM13_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM13_CCR __ccr__(PWM13_CHANNEL)
 #define DIO33_TIMER PWM13_TIMER
@@ -2776,12 +2804,12 @@
 #define DIO33_ENOUTPUT PWM13_ENOUTPUT
 #endif
 #if (defined(PWM14_CHANNEL) && defined(PWM14_TIMER) && defined(PWM14))
-#if (PWM14_TIMER==1 || (PWM14_TIMER>=8 & PWM14_TIMER<=11))
+#if (PWM14_TIMER == 1 || (PWM14_TIMER >= 8 & PWM14_TIMER <= 11))
 #define PWM14_ENREG RCC->APB2ENR
-#define PWM14_APBEN __helper__(RCC_APB2ENR_TIM,PWM14_TIMER, EN)
+#define PWM14_APBEN __helper__(RCC_APB2ENR_TIM, PWM14_TIMER, EN)
 #else
 #define PWM14_ENREG RCC->APB1ENR
-#define PWM14_APBEN __helper__(RCC_APB1ENR_TIM,PWM14_TIMER, EN)
+#define PWM14_APBEN __helper__(RCC_APB1ENR_TIM, PWM14_TIMER, EN)
 #endif
 #define PWM14_TIMREG (__tim__(PWM14_TIMER))
 #ifndef PWM14_FREQ
@@ -2797,12 +2825,14 @@
 #else
 #define PWM14_CCMREG CCMR1
 #endif
-#if (PWM14_TIMER==1)
-#define PWM14_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM14_TIMER==8)
-#define PWM14_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM14_TIMER == 1)
+#define PWM14_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM14_TIMER == 8)
+#define PWM14_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM14_ENOUTPUT {}
+#define PWM14_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM14_CCR __ccr__(PWM14_CHANNEL)
 #define DIO34_TIMER PWM14_TIMER
@@ -2818,12 +2848,12 @@
 #define DIO34_ENOUTPUT PWM14_ENOUTPUT
 #endif
 #if (defined(PWM15_CHANNEL) && defined(PWM15_TIMER) && defined(PWM15))
-#if (PWM15_TIMER==1 || (PWM15_TIMER>=8 & PWM15_TIMER<=11))
+#if (PWM15_TIMER == 1 || (PWM15_TIMER >= 8 & PWM15_TIMER <= 11))
 #define PWM15_ENREG RCC->APB2ENR
-#define PWM15_APBEN __helper__(RCC_APB2ENR_TIM,PWM15_TIMER, EN)
+#define PWM15_APBEN __helper__(RCC_APB2ENR_TIM, PWM15_TIMER, EN)
 #else
 #define PWM15_ENREG RCC->APB1ENR
-#define PWM15_APBEN __helper__(RCC_APB1ENR_TIM,PWM15_TIMER, EN)
+#define PWM15_APBEN __helper__(RCC_APB1ENR_TIM, PWM15_TIMER, EN)
 #endif
 #define PWM15_TIMREG (__tim__(PWM15_TIMER))
 #ifndef PWM15_FREQ
@@ -2839,12 +2869,14 @@
 #else
 #define PWM15_CCMREG CCMR1
 #endif
-#if (PWM15_TIMER==1)
-#define PWM15_ENOUTPUT ({TIM1->BDTR |= (1 << 15);})
-#elif (PWM15_TIMER==8)
-#define PWM15_ENOUTPUT ({TIM8->BDTR |= (1 << 15);})
+#if (PWM15_TIMER == 1)
+#define PWM15_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#elif (PWM15_TIMER == 8)
+#define PWM15_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
 #else
-#define PWM15_ENOUTPUT {}
+#define PWM15_ENOUTPUT \
+	{                  \
+	}
 #endif
 #define PWM15_CCR __ccr__(PWM15_CHANNEL)
 #define DIO35_TIMER PWM15_TIMER
@@ -2972,17 +3004,17 @@
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
 #endif
-#define TIMER_REG __helper__(TIM,ITP_TIMER,)
-#if (ITP_TIMER==1 || (ITP_TIMER>=8 & ITP_TIMER<=11))
+#define TIMER_REG __helper__(TIM, ITP_TIMER, )
+#if (ITP_TIMER == 1 || (ITP_TIMER >= 8 & ITP_TIMER <= 11))
 #define TIMER_ENREG APB2ENR
 #define TIMER_RESETREG APB1RSTR
-#define TIMER_APB __helper__(RCC_APB2ENR_TIM,ITP_TIMER, EN)
-#define TIMER_IRQ __helper__(TIM,ITP_TIMER, _UP_IRQn)
+#define TIMER_APB __helper__(RCC_APB2ENR_TIM, ITP_TIMER, EN)
+#define TIMER_IRQ __helper__(TIM, ITP_TIMER, _UP_IRQn)
 #else
 #define TIMER_ENREG APB1ENR
 #define TIMER_RESETREG APB1RSTR
-#define TIMER_APB __helper__(RCC_APB1ENR_TIM,ITP_TIMER, EN)
-#define TIMER_IRQ __helper__(TIM,ITP_TIMER, _IRQn)
+#define TIMER_APB __helper__(RCC_APB1ENR_TIM, ITP_TIMER, EN)
+#define TIMER_IRQ __helper__(TIM, ITP_TIMER, _IRQn)
 #endif
 
 #define __indirect__ex__(X, Y) DIO##X##_##Y
@@ -3010,8 +3042,8 @@
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U<<__indirect__(diopin, BIT)))
-#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BRR = (1U<<__indirect__(diopin, BIT)))
+#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT)))
+#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BRR = (1U << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (TOGGLEBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_pwm(diopin, pwmvalue)                                                                                                           \
 	{                                                                                                                                           \
