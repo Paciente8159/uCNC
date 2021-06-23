@@ -111,6 +111,7 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
+                mcu_dotasks();
             } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
         }
     }

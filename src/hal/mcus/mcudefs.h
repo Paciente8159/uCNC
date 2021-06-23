@@ -36,7 +36,6 @@ extern "C"
 #if (MCU == MCU_STM32F10X)
 //this MCU does not work well with both TX and RX interrupt
 //this forces the sync TX method to fix communication
-#define ENABLE_SYNC_TX
 #include "hal/mcus/stm32f10x/mcumap_stm32f10x.h"
 #endif
 

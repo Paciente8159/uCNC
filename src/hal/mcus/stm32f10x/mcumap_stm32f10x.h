@@ -31,7 +31,7 @@ extern "C"
 /*
 	MCU specific definitions and replacements
 */
-#include "stm32f1xx_hal.h"
+#include "stm32f10x.h"
 
 //defines the frequency of the mcu
 #ifndef F_CPU
@@ -81,7 +81,7 @@ extern "C"
 #define STEP0_CROFF STEP0_BIT
 #define STEP0_CR CRL
 #else
-#define STEP0_CROFF (STEP0_BIT & 0x03)
+#define STEP0_CROFF (STEP0_BIT & 0x05)
 #define STEP0_CR CRH
 #endif
 #define DIO0 0
@@ -100,7 +100,7 @@ extern "C"
 #define STEP1_CROFF STEP1_BIT
 #define STEP1_CR CRL
 #else
-#define STEP1_CROFF (STEP1_BIT & 0x03)
+#define STEP1_CROFF (STEP1_BIT & 0x05)
 #define STEP1_CR CRH
 #endif
 #define DIO1 1
@@ -119,7 +119,7 @@ extern "C"
 #define STEP2_CROFF STEP2_BIT
 #define STEP2_CR CRL
 #else
-#define STEP2_CROFF (STEP2_BIT & 0x03)
+#define STEP2_CROFF (STEP2_BIT & 0x05)
 #define STEP2_CR CRH
 #endif
 #define DIO2 2
@@ -138,7 +138,7 @@ extern "C"
 #define STEP3_CROFF STEP3_BIT
 #define STEP3_CR CRL
 #else
-#define STEP3_CROFF (STEP3_BIT & 0x03)
+#define STEP3_CROFF (STEP3_BIT & 0x05)
 #define STEP3_CR CRH
 #endif
 #define DIO3 3
@@ -157,7 +157,7 @@ extern "C"
 #define STEP4_CROFF STEP4_BIT
 #define STEP4_CR CRL
 #else
-#define STEP4_CROFF (STEP4_BIT & 0x03)
+#define STEP4_CROFF (STEP4_BIT & 0x05)
 #define STEP4_CR CRH
 #endif
 #define DIO4 4
@@ -176,7 +176,7 @@ extern "C"
 #define STEP5_CROFF STEP5_BIT
 #define STEP5_CR CRL
 #else
-#define STEP5_CROFF (STEP5_BIT & 0x03)
+#define STEP5_CROFF (STEP5_BIT & 0x05)
 #define STEP5_CR CRH
 #endif
 #define DIO5 5
@@ -195,7 +195,7 @@ extern "C"
 #define STEP6_CROFF STEP6_BIT
 #define STEP6_CR CRL
 #else
-#define STEP6_CROFF (STEP6_BIT & 0x03)
+#define STEP6_CROFF (STEP6_BIT & 0x05)
 #define STEP6_CR CRH
 #endif
 #define DIO6 6
@@ -214,7 +214,7 @@ extern "C"
 #define STEP7_CROFF STEP7_BIT
 #define STEP7_CR CRL
 #else
-#define STEP7_CROFF (STEP7_BIT & 0x03)
+#define STEP7_CROFF (STEP7_BIT & 0x05)
 #define STEP7_CR CRH
 #endif
 #define DIO7 7
@@ -233,7 +233,7 @@ extern "C"
 #define STEP0_EN_CROFF STEP0_EN_BIT
 #define STEP0_EN_CR CRL
 #else
-#define STEP0_EN_CROFF (STEP0_EN_BIT & 0x03)
+#define STEP0_EN_CROFF (STEP0_EN_BIT & 0x05)
 #define STEP0_EN_CR CRH
 #endif
 #define DIO8 8
@@ -252,7 +252,7 @@ extern "C"
 #define STEP1_EN_CROFF STEP1_EN_BIT
 #define STEP1_EN_CR CRL
 #else
-#define STEP1_EN_CROFF (STEP1_EN_BIT & 0x03)
+#define STEP1_EN_CROFF (STEP1_EN_BIT & 0x05)
 #define STEP1_EN_CR CRH
 #endif
 #define DIO9 9
@@ -271,7 +271,7 @@ extern "C"
 #define STEP2_EN_CROFF STEP2_EN_BIT
 #define STEP2_EN_CR CRL
 #else
-#define STEP2_EN_CROFF (STEP2_EN_BIT & 0x03)
+#define STEP2_EN_CROFF (STEP2_EN_BIT & 0x05)
 #define STEP2_EN_CR CRH
 #endif
 #define DIO10 10
@@ -290,7 +290,7 @@ extern "C"
 #define STEP3_EN_CROFF STEP3_EN_BIT
 #define STEP3_EN_CR CRL
 #else
-#define STEP3_EN_CROFF (STEP3_EN_BIT & 0x03)
+#define STEP3_EN_CROFF (STEP3_EN_BIT & 0x05)
 #define STEP3_EN_CR CRH
 #endif
 #define DIO11 11
@@ -309,7 +309,7 @@ extern "C"
 #define STEP4_EN_CROFF STEP4_EN_BIT
 #define STEP4_EN_CR CRL
 #else
-#define STEP4_EN_CROFF (STEP4_EN_BIT & 0x03)
+#define STEP4_EN_CROFF (STEP4_EN_BIT & 0x05)
 #define STEP4_EN_CR CRH
 #endif
 #define DIO12 12
@@ -328,7 +328,7 @@ extern "C"
 #define STEP5_EN_CROFF STEP5_EN_BIT
 #define STEP5_EN_CR CRL
 #else
-#define STEP5_EN_CROFF (STEP5_EN_BIT & 0x03)
+#define STEP5_EN_CROFF (STEP5_EN_BIT & 0x05)
 #define STEP5_EN_CR CRH
 #endif
 #define DIO13 13
@@ -347,7 +347,7 @@ extern "C"
 #define DIR0_CROFF DIR0_BIT
 #define DIR0_CR CRL
 #else
-#define DIR0_CROFF (DIR0_BIT & 0x03)
+#define DIR0_CROFF (DIR0_BIT & 0x05)
 #define DIR0_CR CRH
 #endif
 #define DIO14 14
@@ -366,7 +366,7 @@ extern "C"
 #define DIR1_CROFF DIR1_BIT
 #define DIR1_CR CRL
 #else
-#define DIR1_CROFF (DIR1_BIT & 0x03)
+#define DIR1_CROFF (DIR1_BIT & 0x05)
 #define DIR1_CR CRH
 #endif
 #define DIO15 15
@@ -385,7 +385,7 @@ extern "C"
 #define DIR2_CROFF DIR2_BIT
 #define DIR2_CR CRL
 #else
-#define DIR2_CROFF (DIR2_BIT & 0x03)
+#define DIR2_CROFF (DIR2_BIT & 0x05)
 #define DIR2_CR CRH
 #endif
 #define DIO16 16
@@ -404,7 +404,7 @@ extern "C"
 #define DIR3_CROFF DIR3_BIT
 #define DIR3_CR CRL
 #else
-#define DIR3_CROFF (DIR3_BIT & 0x03)
+#define DIR3_CROFF (DIR3_BIT & 0x05)
 #define DIR3_CR CRH
 #endif
 #define DIO17 17
@@ -423,7 +423,7 @@ extern "C"
 #define DIR4_CROFF DIR4_BIT
 #define DIR4_CR CRL
 #else
-#define DIR4_CROFF (DIR4_BIT & 0x03)
+#define DIR4_CROFF (DIR4_BIT & 0x05)
 #define DIR4_CR CRH
 #endif
 #define DIO18 18
@@ -442,7 +442,7 @@ extern "C"
 #define DIR5_CROFF DIR5_BIT
 #define DIR5_CR CRL
 #else
-#define DIR5_CROFF (DIR5_BIT & 0x03)
+#define DIR5_CROFF (DIR5_BIT & 0x05)
 #define DIR5_CR CRH
 #endif
 #define DIO19 19
@@ -461,7 +461,7 @@ extern "C"
 #define PWM0_CROFF PWM0_BIT
 #define PWM0_CR CRL
 #else
-#define PWM0_CROFF (PWM0_BIT & 0x03)
+#define PWM0_CROFF (PWM0_BIT & 0x05)
 #define PWM0_CR CRH
 #endif
 #define DIO20 20
@@ -480,7 +480,7 @@ extern "C"
 #define PWM1_CROFF PWM1_BIT
 #define PWM1_CR CRL
 #else
-#define PWM1_CROFF (PWM1_BIT & 0x03)
+#define PWM1_CROFF (PWM1_BIT & 0x05)
 #define PWM1_CR CRH
 #endif
 #define DIO21 21
@@ -499,7 +499,7 @@ extern "C"
 #define PWM2_CROFF PWM2_BIT
 #define PWM2_CR CRL
 #else
-#define PWM2_CROFF (PWM2_BIT & 0x03)
+#define PWM2_CROFF (PWM2_BIT & 0x05)
 #define PWM2_CR CRH
 #endif
 #define DIO22 22
@@ -518,7 +518,7 @@ extern "C"
 #define PWM3_CROFF PWM3_BIT
 #define PWM3_CR CRL
 #else
-#define PWM3_CROFF (PWM3_BIT & 0x03)
+#define PWM3_CROFF (PWM3_BIT & 0x05)
 #define PWM3_CR CRH
 #endif
 #define DIO23 23
@@ -537,7 +537,7 @@ extern "C"
 #define PWM4_CROFF PWM4_BIT
 #define PWM4_CR CRL
 #else
-#define PWM4_CROFF (PWM4_BIT & 0x03)
+#define PWM4_CROFF (PWM4_BIT & 0x05)
 #define PWM4_CR CRH
 #endif
 #define DIO24 24
@@ -556,7 +556,7 @@ extern "C"
 #define PWM5_CROFF PWM5_BIT
 #define PWM5_CR CRL
 #else
-#define PWM5_CROFF (PWM5_BIT & 0x03)
+#define PWM5_CROFF (PWM5_BIT & 0x05)
 #define PWM5_CR CRH
 #endif
 #define DIO25 25
@@ -575,7 +575,7 @@ extern "C"
 #define PWM6_CROFF PWM6_BIT
 #define PWM6_CR CRL
 #else
-#define PWM6_CROFF (PWM6_BIT & 0x03)
+#define PWM6_CROFF (PWM6_BIT & 0x05)
 #define PWM6_CR CRH
 #endif
 #define DIO26 26
@@ -594,7 +594,7 @@ extern "C"
 #define PWM7_CROFF PWM7_BIT
 #define PWM7_CR CRL
 #else
-#define PWM7_CROFF (PWM7_BIT & 0x03)
+#define PWM7_CROFF (PWM7_BIT & 0x05)
 #define PWM7_CR CRH
 #endif
 #define DIO27 27
@@ -613,7 +613,7 @@ extern "C"
 #define PWM8_CROFF PWM8_BIT
 #define PWM8_CR CRL
 #else
-#define PWM8_CROFF (PWM8_BIT & 0x03)
+#define PWM8_CROFF (PWM8_BIT & 0x05)
 #define PWM8_CR CRH
 #endif
 #define DIO28 28
@@ -632,7 +632,7 @@ extern "C"
 #define PWM9_CROFF PWM9_BIT
 #define PWM9_CR CRL
 #else
-#define PWM9_CROFF (PWM9_BIT & 0x03)
+#define PWM9_CROFF (PWM9_BIT & 0x05)
 #define PWM9_CR CRH
 #endif
 #define DIO29 29
@@ -651,7 +651,7 @@ extern "C"
 #define PWM10_CROFF PWM10_BIT
 #define PWM10_CR CRL
 #else
-#define PWM10_CROFF (PWM10_BIT & 0x03)
+#define PWM10_CROFF (PWM10_BIT & 0x05)
 #define PWM10_CR CRH
 #endif
 #define DIO30 30
@@ -670,7 +670,7 @@ extern "C"
 #define PWM11_CROFF PWM11_BIT
 #define PWM11_CR CRL
 #else
-#define PWM11_CROFF (PWM11_BIT & 0x03)
+#define PWM11_CROFF (PWM11_BIT & 0x05)
 #define PWM11_CR CRH
 #endif
 #define DIO31 31
@@ -689,7 +689,7 @@ extern "C"
 #define PWM12_CROFF PWM12_BIT
 #define PWM12_CR CRL
 #else
-#define PWM12_CROFF (PWM12_BIT & 0x03)
+#define PWM12_CROFF (PWM12_BIT & 0x05)
 #define PWM12_CR CRH
 #endif
 #define DIO32 32
@@ -708,7 +708,7 @@ extern "C"
 #define PWM13_CROFF PWM13_BIT
 #define PWM13_CR CRL
 #else
-#define PWM13_CROFF (PWM13_BIT & 0x03)
+#define PWM13_CROFF (PWM13_BIT & 0x05)
 #define PWM13_CR CRH
 #endif
 #define DIO33 33
@@ -727,7 +727,7 @@ extern "C"
 #define PWM14_CROFF PWM14_BIT
 #define PWM14_CR CRL
 #else
-#define PWM14_CROFF (PWM14_BIT & 0x03)
+#define PWM14_CROFF (PWM14_BIT & 0x05)
 #define PWM14_CR CRH
 #endif
 #define DIO34 34
@@ -746,7 +746,7 @@ extern "C"
 #define PWM15_CROFF PWM15_BIT
 #define PWM15_CR CRL
 #else
-#define PWM15_CROFF (PWM15_BIT & 0x03)
+#define PWM15_CROFF (PWM15_BIT & 0x05)
 #define PWM15_CR CRH
 #endif
 #define DIO35 35
@@ -765,7 +765,7 @@ extern "C"
 #define TX_CROFF TX_BIT
 #define TX_CR CRL
 #else
-#define TX_CROFF (TX_BIT & 0x03)
+#define TX_CROFF (TX_BIT & 0x05)
 #define TX_CR CRH
 #endif
 #define DIO36 36
@@ -784,7 +784,7 @@ extern "C"
 #define DOUT0_CROFF DOUT0_BIT
 #define DOUT0_CR CRL
 #else
-#define DOUT0_CROFF (DOUT0_BIT & 0x03)
+#define DOUT0_CROFF (DOUT0_BIT & 0x05)
 #define DOUT0_CR CRH
 #endif
 #define DIO37 37
@@ -803,7 +803,7 @@ extern "C"
 #define DOUT1_CROFF DOUT1_BIT
 #define DOUT1_CR CRL
 #else
-#define DOUT1_CROFF (DOUT1_BIT & 0x03)
+#define DOUT1_CROFF (DOUT1_BIT & 0x05)
 #define DOUT1_CR CRH
 #endif
 #define DIO38 38
@@ -822,7 +822,7 @@ extern "C"
 #define DOUT2_CROFF DOUT2_BIT
 #define DOUT2_CR CRL
 #else
-#define DOUT2_CROFF (DOUT2_BIT & 0x03)
+#define DOUT2_CROFF (DOUT2_BIT & 0x05)
 #define DOUT2_CR CRH
 #endif
 #define DIO39 39
@@ -841,7 +841,7 @@ extern "C"
 #define DOUT3_CROFF DOUT3_BIT
 #define DOUT3_CR CRL
 #else
-#define DOUT3_CROFF (DOUT3_BIT & 0x03)
+#define DOUT3_CROFF (DOUT3_BIT & 0x05)
 #define DOUT3_CR CRH
 #endif
 #define DIO40 40
@@ -860,7 +860,7 @@ extern "C"
 #define DOUT4_CROFF DOUT4_BIT
 #define DOUT4_CR CRL
 #else
-#define DOUT4_CROFF (DOUT4_BIT & 0x03)
+#define DOUT4_CROFF (DOUT4_BIT & 0x05)
 #define DOUT4_CR CRH
 #endif
 #define DIO41 41
@@ -879,7 +879,7 @@ extern "C"
 #define DOUT5_CROFF DOUT5_BIT
 #define DOUT5_CR CRL
 #else
-#define DOUT5_CROFF (DOUT5_BIT & 0x03)
+#define DOUT5_CROFF (DOUT5_BIT & 0x05)
 #define DOUT5_CR CRH
 #endif
 #define DIO42 42
@@ -898,7 +898,7 @@ extern "C"
 #define DOUT6_CROFF DOUT6_BIT
 #define DOUT6_CR CRL
 #else
-#define DOUT6_CROFF (DOUT6_BIT & 0x03)
+#define DOUT6_CROFF (DOUT6_BIT & 0x05)
 #define DOUT6_CR CRH
 #endif
 #define DIO43 43
@@ -917,7 +917,7 @@ extern "C"
 #define DOUT7_CROFF DOUT7_BIT
 #define DOUT7_CR CRL
 #else
-#define DOUT7_CROFF (DOUT7_BIT & 0x03)
+#define DOUT7_CROFF (DOUT7_BIT & 0x05)
 #define DOUT7_CR CRH
 #endif
 #define DIO44 44
@@ -936,7 +936,7 @@ extern "C"
 #define DOUT8_CROFF DOUT8_BIT
 #define DOUT8_CR CRL
 #else
-#define DOUT8_CROFF (DOUT8_BIT & 0x03)
+#define DOUT8_CROFF (DOUT8_BIT & 0x05)
 #define DOUT8_CR CRH
 #endif
 #define DIO45 45
@@ -955,7 +955,7 @@ extern "C"
 #define DOUT9_CROFF DOUT9_BIT
 #define DOUT9_CR CRL
 #else
-#define DOUT9_CROFF (DOUT9_BIT & 0x03)
+#define DOUT9_CROFF (DOUT9_BIT & 0x05)
 #define DOUT9_CR CRH
 #endif
 #define DIO46 46
@@ -974,7 +974,7 @@ extern "C"
 #define DOUT10_CROFF DOUT10_BIT
 #define DOUT10_CR CRL
 #else
-#define DOUT10_CROFF (DOUT10_BIT & 0x03)
+#define DOUT10_CROFF (DOUT10_BIT & 0x05)
 #define DOUT10_CR CRH
 #endif
 #define DIO47 47
@@ -993,7 +993,7 @@ extern "C"
 #define DOUT11_CROFF DOUT11_BIT
 #define DOUT11_CR CRL
 #else
-#define DOUT11_CROFF (DOUT11_BIT & 0x03)
+#define DOUT11_CROFF (DOUT11_BIT & 0x05)
 #define DOUT11_CR CRH
 #endif
 #define DIO48 48
@@ -1012,7 +1012,7 @@ extern "C"
 #define DOUT12_CROFF DOUT12_BIT
 #define DOUT12_CR CRL
 #else
-#define DOUT12_CROFF (DOUT12_BIT & 0x03)
+#define DOUT12_CROFF (DOUT12_BIT & 0x05)
 #define DOUT12_CR CRH
 #endif
 #define DIO49 49
@@ -1031,7 +1031,7 @@ extern "C"
 #define DOUT13_CROFF DOUT13_BIT
 #define DOUT13_CR CRL
 #else
-#define DOUT13_CROFF (DOUT13_BIT & 0x03)
+#define DOUT13_CROFF (DOUT13_BIT & 0x05)
 #define DOUT13_CR CRH
 #endif
 #define DIO50 50
@@ -1050,7 +1050,7 @@ extern "C"
 #define DOUT14_CROFF DOUT14_BIT
 #define DOUT14_CR CRL
 #else
-#define DOUT14_CROFF (DOUT14_BIT & 0x03)
+#define DOUT14_CROFF (DOUT14_BIT & 0x05)
 #define DOUT14_CR CRH
 #endif
 #define DIO51 51
@@ -1069,7 +1069,7 @@ extern "C"
 #define DOUT15_CROFF DOUT15_BIT
 #define DOUT15_CR CRL
 #else
-#define DOUT15_CROFF (DOUT15_BIT & 0x03)
+#define DOUT15_CROFF (DOUT15_BIT & 0x05)
 #define DOUT15_CR CRH
 #endif
 #define DIO52 52
@@ -1088,7 +1088,7 @@ extern "C"
 #define LIMIT_X_CROFF LIMIT_X_BIT
 #define LIMIT_X_CR CRL
 #else
-#define LIMIT_X_CROFF (LIMIT_X_BIT & 0x03)
+#define LIMIT_X_CROFF (LIMIT_X_BIT & 0x05)
 #define LIMIT_X_CR CRH
 #endif
 #define DIO53 53
@@ -1107,7 +1107,7 @@ extern "C"
 #define LIMIT_Y_CROFF LIMIT_Y_BIT
 #define LIMIT_Y_CR CRL
 #else
-#define LIMIT_Y_CROFF (LIMIT_Y_BIT & 0x03)
+#define LIMIT_Y_CROFF (LIMIT_Y_BIT & 0x05)
 #define LIMIT_Y_CR CRH
 #endif
 #define DIO54 54
@@ -1126,7 +1126,7 @@ extern "C"
 #define LIMIT_Z_CROFF LIMIT_Z_BIT
 #define LIMIT_Z_CR CRL
 #else
-#define LIMIT_Z_CROFF (LIMIT_Z_BIT & 0x03)
+#define LIMIT_Z_CROFF (LIMIT_Z_BIT & 0x05)
 #define LIMIT_Z_CR CRH
 #endif
 #define DIO55 55
@@ -1145,7 +1145,7 @@ extern "C"
 #define LIMIT_X2_CROFF LIMIT_X2_BIT
 #define LIMIT_X2_CR CRL
 #else
-#define LIMIT_X2_CROFF (LIMIT_X2_BIT & 0x03)
+#define LIMIT_X2_CROFF (LIMIT_X2_BIT & 0x05)
 #define LIMIT_X2_CR CRH
 #endif
 #define DIO56 56
@@ -1164,7 +1164,7 @@ extern "C"
 #define LIMIT_Y2_CROFF LIMIT_Y2_BIT
 #define LIMIT_Y2_CR CRL
 #else
-#define LIMIT_Y2_CROFF (LIMIT_Y2_BIT & 0x03)
+#define LIMIT_Y2_CROFF (LIMIT_Y2_BIT & 0x05)
 #define LIMIT_Y2_CR CRH
 #endif
 #define DIO57 57
@@ -1183,7 +1183,7 @@ extern "C"
 #define LIMIT_Z2_CROFF LIMIT_Z2_BIT
 #define LIMIT_Z2_CR CRL
 #else
-#define LIMIT_Z2_CROFF (LIMIT_Z2_BIT & 0x03)
+#define LIMIT_Z2_CROFF (LIMIT_Z2_BIT & 0x05)
 #define LIMIT_Z2_CR CRH
 #endif
 #define DIO58 58
@@ -1202,7 +1202,7 @@ extern "C"
 #define LIMIT_A_CROFF LIMIT_A_BIT
 #define LIMIT_A_CR CRL
 #else
-#define LIMIT_A_CROFF (LIMIT_A_BIT & 0x03)
+#define LIMIT_A_CROFF (LIMIT_A_BIT & 0x05)
 #define LIMIT_A_CR CRH
 #endif
 #define DIO59 59
@@ -1221,7 +1221,7 @@ extern "C"
 #define LIMIT_B_CROFF LIMIT_B_BIT
 #define LIMIT_B_CR CRL
 #else
-#define LIMIT_B_CROFF (LIMIT_B_BIT & 0x03)
+#define LIMIT_B_CROFF (LIMIT_B_BIT & 0x05)
 #define LIMIT_B_CR CRH
 #endif
 #define DIO60 60
@@ -1240,7 +1240,7 @@ extern "C"
 #define LIMIT_C_CROFF LIMIT_C_BIT
 #define LIMIT_C_CR CRL
 #else
-#define LIMIT_C_CROFF (LIMIT_C_BIT & 0x03)
+#define LIMIT_C_CROFF (LIMIT_C_BIT & 0x05)
 #define LIMIT_C_CR CRH
 #endif
 #define DIO61 61
@@ -1259,7 +1259,7 @@ extern "C"
 #define PROBE_CROFF PROBE_BIT
 #define PROBE_CR CRL
 #else
-#define PROBE_CROFF (PROBE_BIT & 0x03)
+#define PROBE_CROFF (PROBE_BIT & 0x05)
 #define PROBE_CR CRH
 #endif
 #define DIO62 62
@@ -1278,7 +1278,7 @@ extern "C"
 #define ESTOP_CROFF ESTOP_BIT
 #define ESTOP_CR CRL
 #else
-#define ESTOP_CROFF (ESTOP_BIT & 0x03)
+#define ESTOP_CROFF (ESTOP_BIT & 0x05)
 #define ESTOP_CR CRH
 #endif
 #define DIO63 63
@@ -1297,7 +1297,7 @@ extern "C"
 #define SAFETY_DOOR_CROFF SAFETY_DOOR_BIT
 #define SAFETY_DOOR_CR CRL
 #else
-#define SAFETY_DOOR_CROFF (SAFETY_DOOR_BIT & 0x03)
+#define SAFETY_DOOR_CROFF (SAFETY_DOOR_BIT & 0x05)
 #define SAFETY_DOOR_CR CRH
 #endif
 #define DIO64 64
@@ -1316,7 +1316,7 @@ extern "C"
 #define FHOLD_CROFF FHOLD_BIT
 #define FHOLD_CR CRL
 #else
-#define FHOLD_CROFF (FHOLD_BIT & 0x03)
+#define FHOLD_CROFF (FHOLD_BIT & 0x05)
 #define FHOLD_CR CRH
 #endif
 #define DIO65 65
@@ -1335,7 +1335,7 @@ extern "C"
 #define CS_RES_CROFF CS_RES_BIT
 #define CS_RES_CR CRL
 #else
-#define CS_RES_CROFF (CS_RES_BIT & 0x03)
+#define CS_RES_CROFF (CS_RES_BIT & 0x05)
 #define CS_RES_CR CRH
 #endif
 #define DIO66 66
@@ -1354,7 +1354,7 @@ extern "C"
 #define ANALOG0_CROFF ANALOG0_BIT
 #define ANALOG0_CR CRL
 #else
-#define ANALOG0_CROFF (ANALOG0_BIT & 0x03)
+#define ANALOG0_CROFF (ANALOG0_BIT & 0x05)
 #define ANALOG0_CR CRH
 #endif
 #define DIO67 67
@@ -1373,7 +1373,7 @@ extern "C"
 #define ANALOG1_CROFF ANALOG1_BIT
 #define ANALOG1_CR CRL
 #else
-#define ANALOG1_CROFF (ANALOG1_BIT & 0x03)
+#define ANALOG1_CROFF (ANALOG1_BIT & 0x05)
 #define ANALOG1_CR CRH
 #endif
 #define DIO68 68
@@ -1392,7 +1392,7 @@ extern "C"
 #define ANALOG2_CROFF ANALOG2_BIT
 #define ANALOG2_CR CRL
 #else
-#define ANALOG2_CROFF (ANALOG2_BIT & 0x03)
+#define ANALOG2_CROFF (ANALOG2_BIT & 0x05)
 #define ANALOG2_CR CRH
 #endif
 #define DIO69 69
@@ -1411,7 +1411,7 @@ extern "C"
 #define ANALOG3_CROFF ANALOG3_BIT
 #define ANALOG3_CR CRL
 #else
-#define ANALOG3_CROFF (ANALOG3_BIT & 0x03)
+#define ANALOG3_CROFF (ANALOG3_BIT & 0x05)
 #define ANALOG3_CR CRH
 #endif
 #define DIO70 70
@@ -1430,7 +1430,7 @@ extern "C"
 #define ANALOG4_CROFF ANALOG4_BIT
 #define ANALOG4_CR CRL
 #else
-#define ANALOG4_CROFF (ANALOG4_BIT & 0x03)
+#define ANALOG4_CROFF (ANALOG4_BIT & 0x05)
 #define ANALOG4_CR CRH
 #endif
 #define DIO71 71
@@ -1449,7 +1449,7 @@ extern "C"
 #define ANALOG5_CROFF ANALOG5_BIT
 #define ANALOG5_CR CRL
 #else
-#define ANALOG5_CROFF (ANALOG5_BIT & 0x03)
+#define ANALOG5_CROFF (ANALOG5_BIT & 0x05)
 #define ANALOG5_CR CRH
 #endif
 #define DIO72 72
@@ -1468,7 +1468,7 @@ extern "C"
 #define ANALOG6_CROFF ANALOG6_BIT
 #define ANALOG6_CR CRL
 #else
-#define ANALOG6_CROFF (ANALOG6_BIT & 0x03)
+#define ANALOG6_CROFF (ANALOG6_BIT & 0x05)
 #define ANALOG6_CR CRH
 #endif
 #define DIO73 73
@@ -1487,7 +1487,7 @@ extern "C"
 #define ANALOG7_CROFF ANALOG7_BIT
 #define ANALOG7_CR CRL
 #else
-#define ANALOG7_CROFF (ANALOG7_BIT & 0x03)
+#define ANALOG7_CROFF (ANALOG7_BIT & 0x05)
 #define ANALOG7_CR CRH
 #endif
 #define DIO74 74
@@ -1506,7 +1506,7 @@ extern "C"
 #define ANALOG8_CROFF ANALOG8_BIT
 #define ANALOG8_CR CRL
 #else
-#define ANALOG8_CROFF (ANALOG8_BIT & 0x03)
+#define ANALOG8_CROFF (ANALOG8_BIT & 0x05)
 #define ANALOG8_CR CRH
 #endif
 #define DIO75 75
@@ -1525,7 +1525,7 @@ extern "C"
 #define ANALOG9_CROFF ANALOG9_BIT
 #define ANALOG9_CR CRL
 #else
-#define ANALOG9_CROFF (ANALOG9_BIT & 0x03)
+#define ANALOG9_CROFF (ANALOG9_BIT & 0x05)
 #define ANALOG9_CR CRH
 #endif
 #define DIO76 76
@@ -1544,7 +1544,7 @@ extern "C"
 #define ANALOG10_CROFF ANALOG10_BIT
 #define ANALOG10_CR CRL
 #else
-#define ANALOG10_CROFF (ANALOG10_BIT & 0x03)
+#define ANALOG10_CROFF (ANALOG10_BIT & 0x05)
 #define ANALOG10_CR CRH
 #endif
 #define DIO77 77
@@ -1563,7 +1563,7 @@ extern "C"
 #define ANALOG11_CROFF ANALOG11_BIT
 #define ANALOG11_CR CRL
 #else
-#define ANALOG11_CROFF (ANALOG11_BIT & 0x03)
+#define ANALOG11_CROFF (ANALOG11_BIT & 0x05)
 #define ANALOG11_CR CRH
 #endif
 #define DIO78 78
@@ -1582,7 +1582,7 @@ extern "C"
 #define ANALOG12_CROFF ANALOG12_BIT
 #define ANALOG12_CR CRL
 #else
-#define ANALOG12_CROFF (ANALOG12_BIT & 0x03)
+#define ANALOG12_CROFF (ANALOG12_BIT & 0x05)
 #define ANALOG12_CR CRH
 #endif
 #define DIO79 79
@@ -1601,7 +1601,7 @@ extern "C"
 #define ANALOG13_CROFF ANALOG13_BIT
 #define ANALOG13_CR CRL
 #else
-#define ANALOG13_CROFF (ANALOG13_BIT & 0x03)
+#define ANALOG13_CROFF (ANALOG13_BIT & 0x05)
 #define ANALOG13_CR CRH
 #endif
 #define DIO80 80
@@ -1620,7 +1620,7 @@ extern "C"
 #define ANALOG14_CROFF ANALOG14_BIT
 #define ANALOG14_CR CRL
 #else
-#define ANALOG14_CROFF (ANALOG14_BIT & 0x03)
+#define ANALOG14_CROFF (ANALOG14_BIT & 0x05)
 #define ANALOG14_CR CRH
 #endif
 #define DIO81 81
@@ -1639,7 +1639,7 @@ extern "C"
 #define ANALOG15_CROFF ANALOG15_BIT
 #define ANALOG15_CR CRL
 #else
-#define ANALOG15_CROFF (ANALOG15_BIT & 0x03)
+#define ANALOG15_CROFF (ANALOG15_BIT & 0x05)
 #define ANALOG15_CR CRH
 #endif
 #define DIO82 82
@@ -1658,7 +1658,7 @@ extern "C"
 #define RX_CROFF RX_BIT
 #define RX_CR CRL
 #else
-#define RX_CROFF (RX_BIT & 0x03)
+#define RX_CROFF (RX_BIT & 0x05)
 #define RX_CR CRH
 #endif
 #define DIO83 83
@@ -1677,7 +1677,7 @@ extern "C"
 #define DIN0_CROFF DIN0_BIT
 #define DIN0_CR CRL
 #else
-#define DIN0_CROFF (DIN0_BIT & 0x03)
+#define DIN0_CROFF (DIN0_BIT & 0x05)
 #define DIN0_CR CRH
 #endif
 #define DIO84 84
@@ -1696,7 +1696,7 @@ extern "C"
 #define DIN1_CROFF DIN1_BIT
 #define DIN1_CR CRL
 #else
-#define DIN1_CROFF (DIN1_BIT & 0x03)
+#define DIN1_CROFF (DIN1_BIT & 0x05)
 #define DIN1_CR CRH
 #endif
 #define DIO85 85
@@ -1715,7 +1715,7 @@ extern "C"
 #define DIN2_CROFF DIN2_BIT
 #define DIN2_CR CRL
 #else
-#define DIN2_CROFF (DIN2_BIT & 0x03)
+#define DIN2_CROFF (DIN2_BIT & 0x05)
 #define DIN2_CR CRH
 #endif
 #define DIO86 86
@@ -1734,7 +1734,7 @@ extern "C"
 #define DIN3_CROFF DIN3_BIT
 #define DIN3_CR CRL
 #else
-#define DIN3_CROFF (DIN3_BIT & 0x03)
+#define DIN3_CROFF (DIN3_BIT & 0x05)
 #define DIN3_CR CRH
 #endif
 #define DIO87 87
@@ -1753,7 +1753,7 @@ extern "C"
 #define DIN4_CROFF DIN4_BIT
 #define DIN4_CR CRL
 #else
-#define DIN4_CROFF (DIN4_BIT & 0x03)
+#define DIN4_CROFF (DIN4_BIT & 0x05)
 #define DIN4_CR CRH
 #endif
 #define DIO88 88
@@ -1772,7 +1772,7 @@ extern "C"
 #define DIN5_CROFF DIN5_BIT
 #define DIN5_CR CRL
 #else
-#define DIN5_CROFF (DIN5_BIT & 0x03)
+#define DIN5_CROFF (DIN5_BIT & 0x05)
 #define DIN5_CR CRH
 #endif
 #define DIO89 89
@@ -1791,7 +1791,7 @@ extern "C"
 #define DIN6_CROFF DIN6_BIT
 #define DIN6_CR CRL
 #else
-#define DIN6_CROFF (DIN6_BIT & 0x03)
+#define DIN6_CROFF (DIN6_BIT & 0x05)
 #define DIN6_CR CRH
 #endif
 #define DIO90 90
@@ -1810,7 +1810,7 @@ extern "C"
 #define DIN7_CROFF DIN7_BIT
 #define DIN7_CR CRL
 #else
-#define DIN7_CROFF (DIN7_BIT & 0x03)
+#define DIN7_CROFF (DIN7_BIT & 0x05)
 #define DIN7_CR CRH
 #endif
 #define DIO91 91
@@ -1829,7 +1829,7 @@ extern "C"
 #define DIN8_CROFF DIN8_BIT
 #define DIN8_CR CRL
 #else
-#define DIN8_CROFF (DIN8_BIT & 0x03)
+#define DIN8_CROFF (DIN8_BIT & 0x05)
 #define DIN8_CR CRH
 #endif
 #define DIO92 92
@@ -1848,7 +1848,7 @@ extern "C"
 #define DIN9_CROFF DIN9_BIT
 #define DIN9_CR CRL
 #else
-#define DIN9_CROFF (DIN9_BIT & 0x03)
+#define DIN9_CROFF (DIN9_BIT & 0x05)
 #define DIN9_CR CRH
 #endif
 #define DIO93 93
@@ -1867,7 +1867,7 @@ extern "C"
 #define DIN10_CROFF DIN10_BIT
 #define DIN10_CR CRL
 #else
-#define DIN10_CROFF (DIN10_BIT & 0x03)
+#define DIN10_CROFF (DIN10_BIT & 0x05)
 #define DIN10_CR CRH
 #endif
 #define DIO94 94
@@ -1886,7 +1886,7 @@ extern "C"
 #define DIN11_CROFF DIN11_BIT
 #define DIN11_CR CRL
 #else
-#define DIN11_CROFF (DIN11_BIT & 0x03)
+#define DIN11_CROFF (DIN11_BIT & 0x05)
 #define DIN11_CR CRH
 #endif
 #define DIO95 95
@@ -1905,7 +1905,7 @@ extern "C"
 #define DIN12_CROFF DIN12_BIT
 #define DIN12_CR CRL
 #else
-#define DIN12_CROFF (DIN12_BIT & 0x03)
+#define DIN12_CROFF (DIN12_BIT & 0x05)
 #define DIN12_CR CRH
 #endif
 #define DIO96 96
@@ -1924,7 +1924,7 @@ extern "C"
 #define DIN13_CROFF DIN13_BIT
 #define DIN13_CR CRL
 #else
-#define DIN13_CROFF (DIN13_BIT & 0x03)
+#define DIN13_CROFF (DIN13_BIT & 0x05)
 #define DIN13_CR CRH
 #endif
 #define DIO97 97
@@ -1943,7 +1943,7 @@ extern "C"
 #define DIN14_CROFF DIN14_BIT
 #define DIN14_CR CRL
 #else
-#define DIN14_CROFF (DIN14_BIT & 0x03)
+#define DIN14_CROFF (DIN14_BIT & 0x05)
 #define DIN14_CR CRH
 #endif
 #define DIO98 98
@@ -1962,7 +1962,7 @@ extern "C"
 #define DIN15_CROFF DIN15_BIT
 #define DIN15_CR CRL
 #else
-#define DIN15_CROFF (DIN15_BIT & 0x03)
+#define DIN15_CROFF (DIN15_BIT & 0x05)
 #define DIN15_CR CRH
 #endif
 #define DIO99 99
@@ -2971,6 +2971,9 @@ extern "C"
 #if (COM_PORT < 4)
 #define COM_USART __usart__(COM_PORT)
 #define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
+#if (!defined(ENABLE_SYNC_TX) & !defined(ENABLE_SYNC_RX))
+#define mcu_serial_isr __helper__(USART, COM_PORT, _IRQHandler)
+#endif
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
 #if (COM_PORT == 1)
@@ -2983,6 +2986,9 @@ extern "C"
 #else
 #define COM_USART __uart__(COM_PORT)
 #define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
+#if (!defined(ENABLE_SYNC_TX) & !defined(ENABLE_SYNC_RX))
+#define mcu_serial_isr __helper__(UART, COM_PORT, _IRQHandler)
+#endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
 #define COM_OUTREG (COM_USART)->DR
@@ -2990,6 +2996,33 @@ extern "C"
 #endif
 #else
 #define ENABLE_SYNC_TX //disable async TX and use USB VCP
+#define ENABLE_SYNC_RX
+#if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
+#define USB_VCP
+#define mcu_usb_isr USB_HP_CAN1_TX_IRQHandler
+#define mcu_usb_isr USB_LP_CAN1_RX0_IRQHandler
+#define mcu_usb_isr USBWakeUp_IRQHandler
+#define USB_DP 1000
+#define USB_DP_APB2EN (__rccapb2gpioen__(USB_DP_PORT))
+#define USB_DP_GPIO (__gpio__(USB_DP_PORT))
+#if (USB_DP_BIT < 8)
+#define USB_DP_CROFF USB_DP_BIT
+#define USB_DP_CR CRL
+#else
+#define USB_DP_CROFF (USB_DP_BIT & 0x03)
+#define USB_DP_CR CRH
+#endif
+#define USB_DM 1001
+#define USB_DM_APB2EN (__rccapb2gpioen__(USB_DM_PORT))
+#define USB_DM_GPIO (__gpio__(USB_DM_PORT))
+#if (USB_DM_BIT < 8)
+#define USB_DM_CROFF USB_DM_BIT
+#define USB_DM_CR CRL
+#else
+#define USB_DM_CROFF (USB_DM_BIT & 0x03)
+#define USB_DM_CR CRH
+#endif
+#endif
 #endif
 
 /*#define UCSRB __ucsrbreg__(COM_NUMBER)
@@ -3068,8 +3101,6 @@ extern "C"
 #define mcu_enable_interrupts __enable_irq
 #define mcu_disable_interrupts __disable_irq
 
-#define mcu_delay_ms(x) HAL_Delay(x)
-
 #ifndef ENABLE_SYNC_TX
 #define mcu_start_send() SETBIT(COM_USART->CR1, 7)
 #define mcu_stop_send() CLEARBIT(COM_USART->CR1, 7)
@@ -3077,6 +3108,73 @@ extern "C"
 #define mcu_start_send()
 #define mcu_stop_send()
 #endif
+
+#define GPIO_RESET 0xfU
+#define GPIO_OUT_PP_50MHZ 0x3U
+#define GPIO_OUTALT_PP_50MHZ 0xbU
+#define GPIO_IN_FLOAT 0x4U
+#define GPIO_IN_PUP 0x8U
+#define GPIO_IN_ANALOG 0 //not needed after reseting bits
+
+#define mcu_config_output(diopin)                                                                                           \
+	{                                                                                                                       \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_input(diopin)                                                                                        \
+	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_pullup(diopin)                                                                                     \
+	{                                                                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
+	}
+
+#define mcu_config_pwm(diopin)                                                                                                   \
+	{                                                                                                                            \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, ENOUTPUT);                                                                                          \
+	}
+
+#define mcu_config_input_isr(diopin)                                                                                      \
+	{                                                                                                                     \
+		RCC->APB2ENR |= 0x1U;                                                                                             \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2));               \
+		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                                   \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                                    \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                                    \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                                     \
+		NVIC->ISER[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
+		NVIC->IP[(uint32_t)(__indirect__(diopin, IRQ))] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);                         \
+		NVIC->ICPR[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
+	}
+
+#define mcu_config_analog(diopin)                                                                                       \
+	{                                                                                                                   \
+		RCC->CFGR &= ~(0x11U << 14U);                                                                                   \
+		RCC->CFGR |= (0x10U << 14U);                                                                                    \
+		RCC->APB2ENR |= ((0x1U << (8U + __indirect__(diopin, ADCEN))) | __indirect__(diopin, APB2EN) | 0x1U);           \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
+	}
 
 #ifdef __cplusplus
 }

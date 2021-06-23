@@ -24,6 +24,18 @@ extern "C"
 {
 #endif
 
+#ifndef STM32F103x6
+#define STM32F103x6
+#endif
+
+#ifndef STM32F10X_MD
+#define STM32F10X_MD
+#endif
+
+#ifndef F_CPU
+#define F_CPU 72000000UL
+#endif
+
 //Setup step pins
 #define STEP2_BIT 2	 //assigns STEP2 pin
 #define STEP2_PORT A //assigns STEP2 port
@@ -83,10 +95,19 @@ extern "C"
 //Setup COM pins (must match selected COM port)
 //Comment these to use USB virtual port
 #define COM_PORT 1
+//On the STM32 always use sync TX UART (async doesn't work well)
+//#define ENABLE_SYNC_TX
+#ifdef COM_PORT
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
+#else
+#define USB_DM_BIT 11
+#define USB_DM_PORT A
+#define USB_DP_BIT 12
+#define USB_DP_PORT A
+#endif
 
 //Setup PWM
 #define PWM0_BIT 8	//assigns PWM0 pin
@@ -103,6 +124,7 @@ extern "C"
 #define DOUT2_BIT 3
 #define DOUT2_PORT B
 
+//enable pin
 #define DOUT15_BIT 13
 #define DOUT15_PORT C
 
@@ -112,11 +134,6 @@ extern "C"
 
 //Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_NUMBER 2
-
-//in this case include de mcumap file to generate the definition do DOUT15 and assign to LED
-#define LED DOUT15
-
-#define RTC_ENABLE
 
 #ifdef __cplusplus
 }

@@ -15,7 +15,6 @@
 ######################################
 TARGET = uCNC
 
-
 ######################################
 # building variables
 ######################################
@@ -23,7 +22,6 @@ TARGET = uCNC
 DEBUG = 0
 # optimization
 OPT = -Os
-
 
 #######################################
 # paths
@@ -41,39 +39,13 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 ######################################
 # C sources
 C_SOURCES =  \
-Src/main.c \
-Src/usb_device.c \
-Src/usbd_conf.c \
-Src/usbd_desc.c \
-Src/usbd_cdc_if.c \
-Src/stm32f1xx_it.c \
-Src/stm32f1xx_hal_msp.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
-Src/system_stm32f1xx.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
-Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+stm32f103.c \
+main.c \
 $(call rwildcard,../../src,*.c) 
 
 # ASM sources
-ASM_SOURCES =  \
-startup_stm32f103xb.s
+#ASM_SOURCES =  \
+#startup_stm32f103xb.s
 
 
 #######################################
@@ -117,31 +89,24 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DUSE_HAL_DRIVER \
--DSTM32F103xB \
--DBOARD=BOARD_BLUEPILL 
+-DSTM32F103x6 \
+-DSTM32F10X_MD \
+-DBOARD=BOARD_BLUEPILL
+#-DCFG_TUSB_MCU=OPT_MCU_STM32F1
 
 # AS includes
 AS_INCLUDES = 
 
 # C includes
 C_HEADERS =  \
-$(call rwildcard,Inc/,*.h) \
-$(call rwildcard,Drivers/STM32F1xx_HAL_Driver/Inc/,*.h) \
-$(call rwildcard,Middlewares/ST/STM32_USB_Device_Library/,*.h) \
-$(call rwildcard,Drivers/CMSIS/Device/ST/STM32F1xx/Include/,*.h) \
-$(call rwildcard,Drivers/CMSIS/Include/,*.h)
+$(call rwildcard,../../src/,*.h) \
 
 # C includes
 C_INCLUDES =  \
--IInc \
--IDrivers/STM32F1xx_HAL_Driver/Inc \
--IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
--IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
--IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
--IDrivers/CMSIS/Include/ \
+-I"./" \
+-Idrivers \
 -I"../../src/"
+#$(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
 
 # compile gcc flags
@@ -162,7 +127,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32F103C8Tx_FLASH.ld
+LDSCRIPT = stm32f103.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 

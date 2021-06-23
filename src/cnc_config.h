@@ -39,15 +39,15 @@ extern "C"
 #endif
 //uncomment to enable synchronized TX (used in USB VCP)
 //enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven
-//#define ENABLE_SYNC_TX
-//#define ENABLE_SYNC_RX
+#define ENABLE_SYNC_TX
+#define ENABLE_SYNC_RX
 
 /*
 	Choose the board
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_BLUEPILL
 #endif
 
 /*

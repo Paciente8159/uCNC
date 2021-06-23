@@ -521,7 +521,7 @@ static inline bool itp_blk_is_empty(void)
             io_set_outputs(STEPPER_ENABLE);
 #endif
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
-            mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+            mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
         }
     }
 
@@ -533,7 +533,7 @@ static inline bool itp_blk_is_empty(void)
 
     void itp_stop(void)
     {
-        mcu_step_stop_ISR();
+        mcu_stop_itp_isr();
         cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
@@ -647,7 +647,7 @@ static inline bool itp_blk_is_empty(void)
         //if segment needs to update the step ISR (after preloading first step byte
         if (itp_running_sgm->update_speed)
         {
-            mcu_change_step_ISR(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+            mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
 
             //set dir bits
             if (itp_running_sgm->block != NULL)

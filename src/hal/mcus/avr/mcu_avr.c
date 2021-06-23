@@ -857,7 +857,7 @@ extern "C"
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-        void mcu_start_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
+        void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
         {
                 //stops timer
                 ITP_TCCRB = 0;
@@ -879,7 +879,7 @@ extern "C"
         }
 
         // se implementar amass deixo de necessitar de prescaler
-        void mcu_change_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
+        void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
         {
                 //stops timer
                 //ITP_TCCRB = 0;
@@ -894,7 +894,7 @@ extern "C"
                 ITP_TCCRB = (uint8_t)prescaller;
         }
 
-        void mcu_step_stop_ISR(void)
+        void mcu_stop_itp_isr(void)
         {
                 ITP_TCCRB = 0;
                 ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
@@ -929,6 +929,7 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
                 uint32_t t_end = mcu_runtime_ms;
                 while (t_end - t_start < miliseconds)
                 {
+                        mcu_dotasks();
                         t_end = mcu_runtime_ms;
                 }
         }
