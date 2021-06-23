@@ -5,6 +5,13 @@
 
 # Changelog
 
+## [1.1.2] - 2021-06-23
+
+Version 1.1.2 fixes an critical error on the STM32 HAL that cause several IO problems:
+
+### Fixed
+  - fixed STM32 HAL pin configuration macros caused bad pin configurations leading to unpredictable behavior. (#40) 
+
 ## [1.1.1] - 2021-06-17
 
 Version 1.1.1 comes with added features and improvements over the previous version. It also fixes a couple of bugs of the previous implementation. These are:
