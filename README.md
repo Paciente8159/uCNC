@@ -21,7 +21,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.1.1. This update added a few new features needed for the (near) future upgrade and some more bug fixes.
+µCNC current version is v1.1.x. This update added a few new features needed for the (near) future upgrade and some more bug fixes.
 These include:
 
    - Added and RTC to the µCNC mcu HAL
