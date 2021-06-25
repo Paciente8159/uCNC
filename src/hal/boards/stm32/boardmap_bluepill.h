@@ -94,9 +94,10 @@ extern "C"
 
 //Setup COM pins (must match selected COM port)
 //Comment these to use USB virtual port
+#ifndef USB_VCP
 #define COM_PORT 1
+#endif
 //On the STM32 always use sync TX UART (async doesn't work well)
-//#define ENABLE_SYNC_TX
 #ifdef COM_PORT
 #define TX_BIT 9
 #define TX_PORT A

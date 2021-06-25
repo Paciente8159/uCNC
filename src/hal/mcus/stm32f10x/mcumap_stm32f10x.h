@@ -2968,10 +2968,13 @@ extern "C"
 */
 //COM registers
 #ifdef COM_PORT
+//this MCU does not work well with both TX and RX interrupt
+//this forces the sync TX method to fix communication
+#define ENABLE_SYNC_TX
 #if (COM_PORT < 4)
 #define COM_USART __usart__(COM_PORT)
 #define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) & !defined(ENABLE_SYNC_RX))
+#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define mcu_serial_isr __helper__(USART, COM_PORT, _IRQHandler)
 #endif
 #define COM_OUTREG (COM_USART)->DR
@@ -2995,33 +2998,51 @@ extern "C"
 #define COM_INREG (COM_USART)->DR
 #endif
 #else
-#define ENABLE_SYNC_TX //disable async TX and use USB VCP
-#define ENABLE_SYNC_RX
 #if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
+#ifndef USB_VCP
 #define USB_VCP
+//this MCU does not work well with both TX and RX interrupt
+//this forces the sync TX method to fix communication
+#define ENABLE_SYNC_TX
+#define ENABLE_SYNC_RX
+#endif
 #define mcu_usb_isr USB_HP_CAN1_TX_IRQHandler
 #define mcu_usb_isr USB_LP_CAN1_RX0_IRQHandler
 #define mcu_usb_isr USBWakeUp_IRQHandler
-#define USB_DP 1000
+#define USB_DP 100
 #define USB_DP_APB2EN (__rccapb2gpioen__(USB_DP_PORT))
 #define USB_DP_GPIO (__gpio__(USB_DP_PORT))
 #if (USB_DP_BIT < 8)
 #define USB_DP_CROFF USB_DP_BIT
 #define USB_DP_CR CRL
 #else
-#define USB_DP_CROFF (USB_DP_BIT & 0x03)
+#define USB_DP_CROFF (USB_DP_BIT & 0x05)
 #define USB_DP_CR CRH
 #endif
-#define USB_DM 1001
+#define DIO100 USB_DP
+#define DIO100_PORT USB_DP_PORT
+#define DIO100_BIT USB_DP_BIT
+#define DIO100_APB2EN USB_DP_APB2EN
+#define DIO100_GPIO USB_DP_GPIO
+#define DIO100_CR USB_DP_CR
+#define DIO100_CROFF USB_DP_CROFF
+#define USB_DM 101
 #define USB_DM_APB2EN (__rccapb2gpioen__(USB_DM_PORT))
 #define USB_DM_GPIO (__gpio__(USB_DM_PORT))
 #if (USB_DM_BIT < 8)
 #define USB_DM_CROFF USB_DM_BIT
 #define USB_DM_CR CRL
 #else
-#define USB_DM_CROFF (USB_DM_BIT & 0x03)
+#define USB_DM_CROFF (USB_DM_BIT & 0x05)
 #define USB_DM_CR CRH
 #endif
+#define DIO101 USB_DM
+#define DIO101_PORT USB_DM_PORT
+#define DIO101_BIT USB_DM_BIT
+#define DIO101_APB2EN USB_DM_APB2EN
+#define DIO101_GPIO USB_DM_GPIO
+#define DIO101_CR USB_DM_CR
+#define DIO101_CROFF USB_DM_CROFF
 #endif
 #endif
 
@@ -3101,9 +3122,14 @@ extern "C"
 #define mcu_enable_interrupts __enable_irq
 #define mcu_disable_interrupts __disable_irq
 
+#ifdef COM_PORT
 #ifndef ENABLE_SYNC_TX
-#define mcu_start_send() SETBIT(COM_USART->CR1, 7)
-#define mcu_stop_send() CLEARBIT(COM_USART->CR1, 7)
+#define mcu_start_send() (COM_USART->CR1 |= (USART_CR1_TXEIE))
+#define mcu_stop_send() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
+#else
+#define mcu_start_send()
+#define mcu_stop_send()
+#endif
 #else
 #define mcu_start_send()
 #define mcu_stop_send()

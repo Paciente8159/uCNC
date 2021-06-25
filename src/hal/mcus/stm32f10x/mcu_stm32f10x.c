@@ -33,6 +33,81 @@ extern "C"
 #ifdef USB_VCP
 #include "tusb_config.h"
 #include "tusb.h"
+
+#define USB_BASE (APB1PERIPH_BASE + 0x00005C00UL)
+	typedef struct
+	{
+		__IO uint16_t EP0R;			 /*!< USB Endpoint 0 register,                   Address offset: 0x00 */
+		__IO uint16_t RESERVED0;	 /*!< Reserved */
+		__IO uint16_t EP1R;			 /*!< USB Endpoint 1 register,                   Address offset: 0x04 */
+		__IO uint16_t RESERVED1;	 /*!< Reserved */
+		__IO uint16_t EP2R;			 /*!< USB Endpoint 2 register,                   Address offset: 0x08 */
+		__IO uint16_t RESERVED2;	 /*!< Reserved */
+		__IO uint16_t EP3R;			 /*!< USB Endpoint 3 register,                   Address offset: 0x0C */
+		__IO uint16_t RESERVED3;	 /*!< Reserved */
+		__IO uint16_t EP4R;			 /*!< USB Endpoint 4 register,                   Address offset: 0x10 */
+		__IO uint16_t RESERVED4;	 /*!< Reserved */
+		__IO uint16_t EP5R;			 /*!< USB Endpoint 5 register,                   Address offset: 0x14 */
+		__IO uint16_t RESERVED5;	 /*!< Reserved */
+		__IO uint16_t EP6R;			 /*!< USB Endpoint 6 register,                   Address offset: 0x18 */
+		__IO uint16_t RESERVED6;	 /*!< Reserved */
+		__IO uint16_t EP7R;			 /*!< USB Endpoint 7 register,                   Address offset: 0x1C */
+		__IO uint16_t RESERVED7[17]; /*!< Reserved */
+		__IO uint16_t CNTR;			 /*!< Control register,                          Address offset: 0x40 */
+		__IO uint16_t RESERVED8;	 /*!< Reserved */
+		__IO uint16_t ISTR;			 /*!< Interrupt status register,                 Address offset: 0x44 */
+		__IO uint16_t RESERVED9;	 /*!< Reserved */
+		__IO uint16_t FNR;			 /*!< Frame number register,                     Address offset: 0x48 */
+		__IO uint16_t RESERVEDA;	 /*!< Reserved */
+		__IO uint16_t DADDR;		 /*!< Device address register,                   Address offset: 0x4C */
+		__IO uint16_t RESERVEDB;	 /*!< Reserved */
+		__IO uint16_t BTABLE;		 /*!< Buffer Table address register,             Address offset: 0x50 */
+		__IO uint16_t RESERVEDC;	 /*!< Reserved */
+	} USB_TypeDef;
+
+#define USB ((USB_TypeDef *)USB_BASE)
+
+/*!< Common registers */
+/*******************  Bit definition for USB_CNTR register  *******************/
+#define USB_CNTR_FRES_Pos (0U)
+#define USB_CNTR_FRES_Msk (0x1UL << USB_CNTR_FRES_Pos) /*!< 0x00000001 */
+#define USB_CNTR_FRES USB_CNTR_FRES_Msk				   /*!< Force USB Reset */
+#define USB_CNTR_PDWN_Pos (1U)
+#define USB_CNTR_PDWN_Msk (0x1UL << USB_CNTR_PDWN_Pos) /*!< 0x00000002 */
+#define USB_CNTR_PDWN USB_CNTR_PDWN_Msk				   /*!< Power down */
+#define USB_CNTR_LP_MODE_Pos (2U)
+#define USB_CNTR_LP_MODE_Msk (0x1UL << USB_CNTR_LP_MODE_Pos) /*!< 0x00000004 */
+#define USB_CNTR_LP_MODE USB_CNTR_LP_MODE_Msk				 /*!< Low-power mode */
+#define USB_CNTR_FSUSP_Pos (3U)
+#define USB_CNTR_FSUSP_Msk (0x1UL << USB_CNTR_FSUSP_Pos) /*!< 0x00000008 */
+#define USB_CNTR_FSUSP USB_CNTR_FSUSP_Msk				 /*!< Force suspend */
+#define USB_CNTR_RESUME_Pos (4U)
+#define USB_CNTR_RESUME_Msk (0x1UL << USB_CNTR_RESUME_Pos) /*!< 0x00000010 */
+#define USB_CNTR_RESUME USB_CNTR_RESUME_Msk				   /*!< Resume request */
+#define USB_CNTR_ESOFM_Pos (8U)
+#define USB_CNTR_ESOFM_Msk (0x1UL << USB_CNTR_ESOFM_Pos) /*!< 0x00000100 */
+#define USB_CNTR_ESOFM USB_CNTR_ESOFM_Msk				 /*!< Expected Start Of Frame Interrupt Mask */
+#define USB_CNTR_SOFM_Pos (9U)
+#define USB_CNTR_SOFM_Msk (0x1UL << USB_CNTR_SOFM_Pos) /*!< 0x00000200 */
+#define USB_CNTR_SOFM USB_CNTR_SOFM_Msk				   /*!< Start Of Frame Interrupt Mask */
+#define USB_CNTR_RESETM_Pos (10U)
+#define USB_CNTR_RESETM_Msk (0x1UL << USB_CNTR_RESETM_Pos) /*!< 0x00000400 */
+#define USB_CNTR_RESETM USB_CNTR_RESETM_Msk				   /*!< RESET Interrupt Mask */
+#define USB_CNTR_SUSPM_Pos (11U)
+#define USB_CNTR_SUSPM_Msk (0x1UL << USB_CNTR_SUSPM_Pos) /*!< 0x00000800 */
+#define USB_CNTR_SUSPM USB_CNTR_SUSPM_Msk				 /*!< Suspend mode Interrupt Mask */
+#define USB_CNTR_WKUPM_Pos (12U)
+#define USB_CNTR_WKUPM_Msk (0x1UL << USB_CNTR_WKUPM_Pos) /*!< 0x00001000 */
+#define USB_CNTR_WKUPM USB_CNTR_WKUPM_Msk				 /*!< Wakeup Interrupt Mask */
+#define USB_CNTR_ERRM_Pos (13U)
+#define USB_CNTR_ERRM_Msk (0x1UL << USB_CNTR_ERRM_Pos) /*!< 0x00002000 */
+#define USB_CNTR_ERRM USB_CNTR_ERRM_Msk				   /*!< Error Interrupt Mask */
+#define USB_CNTR_PMAOVRM_Pos (14U)
+#define USB_CNTR_PMAOVRM_Msk (0x1UL << USB_CNTR_PMAOVRM_Pos) /*!< 0x00004000 */
+#define USB_CNTR_PMAOVRM USB_CNTR_PMAOVRM_Msk				 /*!< Packet Memory Area Over / Underrun Interrupt Mask */
+#define USB_CNTR_CTRM_Pos (15U)
+#define USB_CNTR_CTRM_Msk (0x1UL << USB_CNTR_CTRM_Pos) /*!< 0x00008000 */
+#define USB_CNTR_CTRM USB_CNTR_CTRM_Msk				   /*!< Correct Transfer Interrupt Mask */
 #endif
 
 	/**
@@ -50,20 +125,21 @@ extern "C"
 	void mcu_serial_isr(void)
 	{
 #ifndef ENABLE_SYNC_RX
-		if (COM_USART->SR & (1U << 5U))
+		if (COM_USART->SR & USART_SR_RXNE)
 		{
 			unsigned char c = COM_INREG;
 			serial_rx_isr(c);
+			COM_USART->SR &= ~USART_SR_RXNE;
 		}
 #endif
 
 #ifndef ENABLE_SYNC_TX
-		if (COM_USART->SR & (1U << 7U))
+		if (COM_USART->SR & (USART_SR_TXE | USART_SR_TC))
 		{
 			serial_tx_isr();
+			COM_USART->SR &= ~(USART_SR_TXE | USART_SR_TC);
 		}
 #endif
-		COM_USART->SR = 0;
 		NVIC_ClearPendingIRQ(COM_IRQ);
 	}
 #elif defined(USB_VCP)
@@ -734,38 +810,36 @@ extern "C"
 		brr <<= 4;
 		brr += (uint16_t)roundf(16.0f * baudrate);
 		COM_USART->BRR = brr;
-#if (defined(ENABLE_SYNC_TX) | defined(ENABLE_SYNC_RX))
+#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
 		NVIC_EnableIRQ(COM_IRQ);
 		NVIC_SetPriority(COM_IRQ, 3);
 		NVIC_ClearPendingIRQ(COM_IRQ);
 #endif
-		COM_USART->CR1 |= 0x200C; // enable TE, RE, UE
-#ifndef ENABLE_SYNC_TX
-		COM_USART->CR1 |= (1U << 7); // enable TXEIE
-#endif
+		COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE, Oversampling 8-bit
+// #ifndef ENABLE_SYNC_TX
+// 		COM_USART->CR1 |= (USART_CR1_TXEIE); // enable TXEIE
+// #endif
 #ifndef ENABLE_SYNC_RX
-		COM_USART->CR1 |= (1U << 5); // enable RXNEIE
+		COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 #endif
+		COM_USART->CR1 |= USART_CR1_UE; //Enable UART
 #else
 		//configure USB as Virtual COM port
-		CLEARFLAG(RCC->APB1ENR, RCC_APB1ENR_USBEN);
-		RCC->APB2ENR |= __indirect__(USB_DM, APB2EN);
-		__indirect__(USB_DM, GPIO)->__indirect__(USB_DM, CR) &= ~(GPIO_RESET << ((__indirect__(USB_DM, CROFF)) << 2));
-		__indirect__(USB_DM, GPIO)->__indirect__(USB_DM, CR) |= (GPIO_IN_FLOAT << ((__indirect__(USB_DM, CROFF)) << 2));
-		RCC->APB2ENR |= __indirect__(USB_DP, APB2EN);
-		__indirect__(USB_DP, GPIO)->__indirect__(USB_DP, CR) &= ~(GPIO_RESET << ((__indirect__(USB_DP, CROFF)) << 2));
-		__indirect__(USB_DP, GPIO)->__indirect__(USB_DP, CR) |= (GPIO_IN_FLOAT << ((__indirect__(USB_DP, CROFF)) << 2));
+		RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+		mcu_config_input(USB_DM);
+		mcu_config_input(USB_DP);
 		NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
 		NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
 		NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
-		NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQHandler);
-		NVIC_SetPriority(USB_LP_CAN1_RX0_IRQHandler, 10);
-		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQHandler);
-		NVIC_EnableIRQ(USBWakeUp_IRQHandler);
-		NVIC_SetPriority(USBWakeUp_IRQHandler, 10);
-		NVIC_ClearPendingIRQ(USBWakeUp_IRQHandler);
-		//Enable USB
-		SETFLAG(RCC->APB1ENR, RCC_APB1ENR_USBEN);
+		NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+		NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
+		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
+		NVIC_EnableIRQ(USBWakeUp_IRQn);
+		NVIC_SetPriority(USBWakeUp_IRQn, 10);
+		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+		//Enable USB interrupts and enable usb
+		USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
+		RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 		tusb_init();
 #endif
 	}
@@ -776,30 +850,36 @@ extern "C"
 		mcu_toggle_output(LED);
 #endif
 #ifdef COM_PORT
-		while (!(COM_USART->SR & (1 << 7)))
+		while (!(COM_USART->SR & USART_SR_TXE))
 			;
 		COM_OUTREG = c;
 #endif
 #ifdef USB_VCP
 		while (!tud_cdc_write_available())
 		{
-			tud_cdc_write_char(c);
+			tud_task();
 		}
+		tud_cdc_write_char(c);
 #endif
 	}
 
 	char mcu_getc(void)
 	{
+#ifdef LED
+		mcu_toggle_output(LED);
+#endif
 #ifdef COM_PORT
-		while (!(COM_USART->SR & (1 << 5)))
+		while (!(COM_USART->SR & USART_SR_RXNE))
 			;
 		return COM_INREG;
 #endif
 #ifdef USB_VCP
 		while (!tud_cdc_available())
 		{
-			return (unsigned char)tud_cdc_read_char();
+			tud_task();
 		}
+
+		return (unsigned char)tud_cdc_read_char();
 #endif
 	}
 
@@ -845,9 +925,9 @@ extern "C"
 		TIMER_REG->EGR |= 0x01;
 		TIMER_REG->SR &= ~0x01;
 
-		NVIC->ISER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-		NVIC->IP[(uint32_t)(TIMER_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		NVIC_EnableIRQ(TIMER_IRQ);
+		NVIC_SetPriority(TIMER_IRQ, 1);
+		NVIC_ClearPendingIRQ(TIMER_IRQ);
 		TIMER_REG->DIER |= 1;
 		TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
 	}
@@ -866,7 +946,7 @@ extern "C"
 		TIMER_REG->CR1 &= ~0x1;
 		TIMER_REG->DIER &= ~0x1;
 		TIMER_REG->SR &= ~0x01;
-		NVIC->ICER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		NVIC_DisableIRQ(TIMER_IRQ);
 	}
 
 	//Custom delay function

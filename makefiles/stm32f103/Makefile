@@ -14,6 +14,7 @@
 # target
 ######################################
 TARGET = uCNC
+USE_USB = TRUE
 
 ######################################
 # building variables
@@ -41,7 +42,11 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 C_SOURCES =  \
 stm32f103.c \
 main.c \
-$(call rwildcard,../../src,*.c) 
+$(call rwildcard,../../src,*.c)
+
+ifdef USE_USB
+C_SOURCES += $(call rwildcard,../../tinyusb/src/,*.c)
+endif
 
 # ASM sources
 #ASM_SOURCES =  \
@@ -92,22 +97,31 @@ C_DEFS =  \
 -DSTM32F103x6 \
 -DSTM32F10X_MD \
 -DBOARD=BOARD_BLUEPILL
-#-DCFG_TUSB_MCU=OPT_MCU_STM32F1
+
+ifdef USE_USB
+C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_STM32F1 \
+-DUSB_VCP
+endif
 
 # AS includes
 AS_INCLUDES = 
 
 # C includes
-C_HEADERS =  \
-$(call rwildcard,../../src/,*.h) \
+ifdef USE_USB
+C_HEADERS = $(call rwildcard,../../tinyusb/src/,*.h)
+C_HEADERS += $(call rwildcard,../../tinyusb/hw/mcu/st/cmsis_device_f1/Include/,*.h)
+endif
+
 
 # C includes
 C_INCLUDES =  \
 -I"./" \
 -Idrivers \
 -I"../../src/"
-#$(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
+ifdef USE_USB
+C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
+endif
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
