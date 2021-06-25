@@ -9,11 +9,8 @@ HEX      = $(BIN:.elf=.hex)
 SOURCEDIR= ../../src
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 SOURCE   = $(wildcard *.c)\
-		   $(wildcard $(SOURCEDIR)/*.c)\
-		   $(call rwildcard,$(SOURCEDIR)/core/,*.c)\
-		   $(call rwildcard,$(SOURCEDIR)/interface/,*.c)\
-		   $(call rwildcard,$(SOURCEDIR)/hal/kinematics/,*.c)\
-		   $(call rwildcard,$(SOURCEDIR)/hal/mcus/avr/,*.c)
+		   $(call rwildcard,$(SOURCEDIR)/,*.c)
+		   
 BUILDDIR = build
 OBJ 	 = $(SOURCE:.c=.o)
 LINKOBJ  = $(addprefix $(BUILDDIR)/,$(notdir $(OBJ)))

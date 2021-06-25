@@ -35,8 +35,7 @@ extern "C"
 
     static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
     static volatile uint8_t serial_tx_read;
-    static uint8_t serial_tx_write;
-    static volatile uint8_t serial_tx_count;
+    static volatile uint8_t serial_tx_write;
 
     static uint8_t serial_read_select;
     static uint16_t serial_read_index;
@@ -52,7 +51,6 @@ extern "C"
 
         serial_tx_read = 0;
         serial_tx_write = 0;
-        serial_tx_count = 0;
 
         //resets buffers
         memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
@@ -76,7 +74,7 @@ extern "C"
 
     bool serial_tx_is_empty(void)
     {
-        return (!serial_tx_count && (serial_tx_write == serial_tx_read));
+        return (serial_tx_write == serial_tx_read);
     }
 
     unsigned char serial_getc(void)
@@ -195,9 +193,16 @@ extern "C"
 
     void serial_putc(unsigned char c)
     {
-        while ((serial_tx_write == serial_tx_read) && (serial_tx_count != 0))
+        uint8_t write = serial_tx_write;
+        if (++write == TX_BUFFER_SIZE)
         {
-            mcu_start_send();   //starts async send and loops while buffer full
+            write = 0;
+        }
+        while (write == serial_tx_read)
+        {
+#ifndef ENABLE_SYNC_TX
+            mcu_start_send(); //starts async send and loops while buffer full
+#endif
             if (!cnc_dotasks()) //on any alarm abort
             {
                 return;
@@ -205,17 +210,10 @@ extern "C"
         } //while buffer is full
 
         serial_tx_buffer[serial_tx_write] = c;
-        serial_tx_write++;
-        if (c == '\n' || c == '\r')
-        {
-            serial_tx_count++;
-            mcu_start_send();
-        }
-
-        if (serial_tx_write == TX_BUFFER_SIZE)
-        {
-            serial_tx_write = 0;
-        }
+        serial_tx_write = write;
+#ifndef ENABLE_SYNC_TX
+        mcu_start_send();
+#endif
     }
 
     void serial_print_str(const unsigned char *__s)
@@ -374,9 +372,11 @@ void serial_print_int(uint16_t num)
 
     void serial_flush(void)
     {
-        while (serial_tx_count)
+        while (serial_tx_write != serial_tx_read)
         {
+#ifndef ENABLE_SYNC_TX
             mcu_start_send();
+#endif
             if (!cnc_dotasks())
             {
                 return;
@@ -426,25 +426,21 @@ void serial_print_int(uint16_t num)
 
     void serial_tx_isr(void)
     {
-        if (!serial_tx_count)
-        {
-            return;
-        }
         uint8_t read = serial_tx_read;
+
         unsigned char c = serial_tx_buffer[read];
-        mcu_putc(c);
-        if (c == '\n' || c == '\r')
-        {
-            if (!--serial_tx_count)
-            {
-                mcu_stop_send();
-            }
-        }
         if (++read == TX_BUFFER_SIZE)
         {
             read = 0;
         }
         serial_tx_read = read;
+#ifndef ENABLE_SYNC_TX
+        if (read == serial_tx_write)
+        {
+            mcu_stop_send();
+        }
+#endif
+        mcu_putc(c);
     }
 
     void serial_rx_clear(void)
@@ -453,9 +449,6 @@ void serial_print_int(uint16_t num)
         serial_rx_read = 0;
         serial_rx_count = 0;
         serial_rx_buffer[0] = EOL;
-        /*serial_tx_write = 0;
-    serial_tx_read = 0;
-    serial_tx_count = 0;*/
     }
 
 #ifdef __cplusplus

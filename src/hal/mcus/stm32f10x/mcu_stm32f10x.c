@@ -804,7 +804,7 @@ extern "C"
 		COM_USART->CR3 = 0;
 		COM_USART->SR = 0;
 		// //115200 baudrate
-		float baudrate = ((float)F_CPU / (16.0f * (float)BAUD));
+		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUD));
 		uint16_t brr = (uint16_t)baudrate;
 		baudrate -= brr;
 		brr <<= 4;
@@ -850,8 +850,10 @@ extern "C"
 		mcu_toggle_output(LED);
 #endif
 #ifdef COM_PORT
+#ifdef ENABLE_SYNC_TX
 		while (!(COM_USART->SR & USART_SR_TXE))
 			;
+#endif
 		COM_OUTREG = c;
 #endif
 #ifdef USB_VCP
@@ -869,8 +871,10 @@ extern "C"
 		mcu_toggle_output(LED);
 #endif
 #ifdef COM_PORT
+#ifdef ENABLE_SYNC_RX
 		while (!(COM_USART->SR & USART_SR_RXNE))
 			;
+#endif
 		return COM_INREG;
 #endif
 #ifdef USB_VCP
@@ -1000,7 +1004,7 @@ extern "C"
 		}
 #endif
 #ifdef ENABLE_SYNC_TX
-		if (mcu_write_available())
+		if (!serial_tx_is_empty())
 		{
 			serial_tx_isr();
 		}

@@ -805,13 +805,17 @@ extern "C"
         //IO functions
         void mcu_putc(char c)
         {
+#ifdef ENABLE_SYNC_TX
                 loop_until_bit_is_set(UCSRA, UDRE);
+#endif
                 COM_OUTREG = c;
         }
 
         char mcu_getc(void)
         {
+#ifdef ENABLE_SYNC_RX
                 loop_until_bit_is_set(UCSRA, RXC);
+#endif
                 return COM_INREG;
         }
 
@@ -979,7 +983,7 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
                 }
 #endif
 #ifdef ENABLE_SYNC_TX
-                if (CHECKBIT(UCSRA, UDRE))
+                if (!serial_tx_is_empty())
                 {
                         serial_tx_isr();
                 }
