@@ -160,6 +160,7 @@ extern "C"
 		tud_int_handler(0);
 		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
 	}
+
 #endif
 
 	void mcu_timer_isr(void)
@@ -815,10 +816,10 @@ extern "C"
 		NVIC_SetPriority(COM_IRQ, 3);
 		NVIC_ClearPendingIRQ(COM_IRQ);
 #endif
-		COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE, Oversampling 8-bit
-// #ifndef ENABLE_SYNC_TX
-// 		COM_USART->CR1 |= (USART_CR1_TXEIE); // enable TXEIE
-// #endif
+		COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE
+#ifndef ENABLE_SYNC_TX
+		COM_USART->CR1 |= (USART_CR1_TXEIE); // enable TXEIE
+#endif
 #ifndef ENABLE_SYNC_RX
 		COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 #endif
@@ -857,11 +858,11 @@ extern "C"
 		COM_OUTREG = c;
 #endif
 #ifdef USB_VCP
-		while (!tud_cdc_write_available())
-		{
-			tud_task();
-		}
 		tud_cdc_write_char(c);
+		if (c == '\r')
+		{
+			tud_cdc_write_flush();
+		}
 #endif
 	}
 
@@ -890,15 +891,11 @@ extern "C"
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr
-	void mcu_enable_global_isr(void)
-	{
-	}
+#error "mcu_enable_global_isr undefined"
 #endif
 //disables all ISR functions
 #ifndef mcu_disable_global_isr
-	void mcu_disable_global_isr(void)
-	{
-	}
+#error "mcu_disable_global_isr undefined"
 #endif
 
 	//Timers
@@ -971,8 +968,8 @@ extern "C"
 	}
 
 #ifdef COM_PORT
-#define mcu_read_available() CHECKBIT(COM_USART->SR, 5)
-#define mcu_write_available() CHECKBIT(COM_USART->SR, 7)
+#define mcu_read_available() (COM_USART->SR & USART_SR_RXNE)
+#define mcu_write_available() (COM_USART->SR & USART_SR_TXE)
 #else
 #ifdef USB_VCP
 #define mcu_read_available() tud_cdc_available()

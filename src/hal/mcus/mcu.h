@@ -201,7 +201,7 @@ extern "C"
 	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
-	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_tasks
+	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
 	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
 	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
 	 * */

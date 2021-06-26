@@ -50,6 +50,13 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+//on this MCU force sync TX (async does not work well in UART)
+#define ENABLE_SYNC_TX
+#ifdef USB_VCP
+//if USB VCP is used force RX sync also
+#define ENABLE_SYNC_RX
+#endif
+
 //Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
@@ -3001,14 +3008,7 @@ extern "C"
 #if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
 #ifndef USB_VCP
 #define USB_VCP
-//this MCU does not work well with both TX and RX interrupt
-//this forces the sync TX method to fix communication
-#define ENABLE_SYNC_TX
-#define ENABLE_SYNC_RX
 #endif
-#define mcu_usb_isr USB_HP_CAN1_TX_IRQHandler
-#define mcu_usb_isr USB_LP_CAN1_RX0_IRQHandler
-#define mcu_usb_isr USBWakeUp_IRQHandler
 #define USB_DP 100
 #define USB_DP_APB2EN (__rccapb2gpioen__(USB_DP_PORT))
 #define USB_DP_GPIO (__gpio__(USB_DP_PORT))
@@ -3063,6 +3063,7 @@ extern "C"
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
 #endif
+#define mcu_timer_isr __helper__(TIM, ITP_TIMER, _IRQHandler)
 #define TIMER_REG __helper__(TIM, ITP_TIMER, )
 #if (ITP_TIMER == 1 || (ITP_TIMER >= 8 & ITP_TIMER <= 11))
 #define TIMER_ENREG APB2ENR
