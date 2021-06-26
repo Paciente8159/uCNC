@@ -175,7 +175,7 @@ extern "C"
 		}
 		TIMER_REG->SR = 0;
 		NVIC_ClearPendingIRQ(TIMER_IRQ);
-		mcu_enable_interrupts();
+		mcu_enable_global_isr();
 	}
 
 #define LIMITS_EXTIBITMASK (LIMIT_X_EXTIBITMASK | LIMIT_Y_EXTIBITMASK | LIMIT_Z_EXTIBITMASK | LIMIT_X2_EXTIBITMASK | LIMIT_Y2_EXTIBITMASK | LIMIT_Z2_EXTIBITMASK | LIMIT_A_EXTIBITMASK | LIMIT_B_EXTIBITMASK | LIMIT_C_EXTIBITMASK)
@@ -719,7 +719,7 @@ extern "C"
 		mcu_usart_init();
 		mcu_tick_init();
 		mcu_disable_probe_isr();
-		mcu_enable_interrupts();
+		mcu_enable_global_isr();
 	}
 
 	/*IO functions*/
@@ -889,14 +889,14 @@ extern "C"
 
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-#ifndef mcu_enable_interrupts
-	void mcu_enable_interrupts(void)
+#ifndef mcu_enable_global_isr
+	void mcu_enable_global_isr(void)
 	{
 	}
 #endif
 //disables all ISR functions
-#ifndef mcu_disable_interrupts
-	void mcu_disable_interrupts(void)
+#ifndef mcu_disable_global_isr
+	void mcu_disable_global_isr(void)
 	{
 	}
 #endif

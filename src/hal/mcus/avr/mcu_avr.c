@@ -68,7 +68,7 @@ extern "C"
         static volatile uint32_t mcu_runtime_ms;
         ISR(RTC_COMPA_vect, ISR_BLOCK)
         {
-                mcu_enable_interrupts();
+                mcu_enable_global_isr();
                 mcu_runtime_ms++;
         }
 
@@ -799,7 +799,7 @@ extern "C"
                 //disable probe isr
                 mcu_disable_probe_isr();
                 //enable interrupts
-                mcu_enable_interrupts();
+                mcu_enable_global_isr();
         }
 
         //IO functions
@@ -903,22 +903,6 @@ extern "C"
                 ITP_TCCRB = 0;
                 ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
         }
-
-        /*#define MCU_1MS_LOOP F_CPU/1000000
-static __attribute__((always_inline)) void mcu_delay_1ms(void)
-{
-	uint16_t loop = MCU_1MS_LOOP;
-	do{
-	}while(--loop);
-}*/
-
-        /*void mcu_delay_ms(uint32_t miliseconds)
-{
-	do{
-		_delay_ms(1);
-	}while(--miliseconds);
-
-}*/
 
         //gets the mcu running time in ms
         uint32_t mcu_millis()

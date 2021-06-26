@@ -683,7 +683,7 @@ static inline bool itp_blk_is_empty(void)
         stepbits = 0;
 
         itp_busy = true;
-        mcu_enable_interrupts();
+        mcu_enable_global_isr();
 
         //if buffer empty loads one
         if (itp_running_sgm == NULL)
@@ -903,7 +903,7 @@ static inline bool itp_blk_is_empty(void)
 #ifdef ENABLE_DUAL_DRIVE_AXIS
         stepbits &= ~itp_step_lock;
 #endif
-        mcu_disable_interrupts(); //lock isr before clearin busy flag
+        mcu_disable_global_isr(); //lock isr before clearin busy flag
         itp_busy = false;
     }
 

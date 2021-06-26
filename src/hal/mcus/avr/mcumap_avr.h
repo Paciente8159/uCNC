@@ -2910,15 +2910,15 @@ extern "C"
 #define mcu_disable_probe_isr()
 #endif
 
-#define mcu_enable_interrupts sei
-#define mcu_disable_interrupts cli
+#define mcu_enable_global_isr sei
+#define mcu_disable_global_isr cli
 
 #ifndef ENABLE_SYNC_TX
-#define mcu_start_send() SETBIT(UCSRB, UDRIE)
-#define mcu_stop_send() CLEARBIT(UCSRB, UDRIE)
+#define mcu_enable_tx_isr() SETBIT(UCSRB, UDRIE)
+#define mcu_disable_tx_isr() CLEARBIT(UCSRB, UDRIE)
 #else
-#define mcu_start_send()
-#define mcu_stop_send()
+#define mcu_enable_tx_isr()
+#define mcu_disable_tx_isr()
 #endif
 
 #ifdef __cplusplus

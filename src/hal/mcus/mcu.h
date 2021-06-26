@@ -76,12 +76,12 @@ extern "C"
 #endif
 
 //Communication functions
-#ifndef mcu_start_send
-	void mcu_start_send(void); //Start async send
+#ifndef mcu_enable_tx_isr
+	void mcu_enable_tx_isr(void); //Start async send
 #endif
 
-#ifndef mcu_stop_send
-	void mcu_stop_send(void); //Stop async send
+#ifndef mcu_disable_tx_isr
+	void mcu_disable_tx_isr(void); //Stop async send
 #endif
 
 #ifndef mcu_putc
@@ -94,12 +94,12 @@ extern "C"
 
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-#ifndef mcu_enable_interrupts
-	void mcu_enable_interrupts(void);
+#ifndef mcu_enable_global_isr
+	void mcu_enable_global_isr(void);
 #endif
 //disables all ISR functions
-#ifndef mcu_disable_interrupts
-	void mcu_disable_interrupts(void);
+#ifndef mcu_disable_global_isr
+	void mcu_disable_global_isr(void);
 #endif
 
 	//Timers

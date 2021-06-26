@@ -201,7 +201,7 @@ extern "C"
         while (write == serial_tx_read)
         {
 #ifndef ENABLE_SYNC_TX
-            mcu_start_send(); //starts async send and loops while buffer full
+            mcu_enable_tx_isr(); //starts async send and loops while buffer full
 #endif
             if (!cnc_dotasks()) //on any alarm abort
             {
@@ -212,7 +212,7 @@ extern "C"
         serial_tx_buffer[serial_tx_write] = c;
         serial_tx_write = write;
 #ifndef ENABLE_SYNC_TX
-        mcu_start_send();
+        mcu_enable_tx_isr();
 #endif
     }
 
@@ -375,7 +375,7 @@ void serial_print_int(uint16_t num)
         while (serial_tx_write != serial_tx_read)
         {
 #ifndef ENABLE_SYNC_TX
-            mcu_start_send();
+            mcu_enable_tx_isr();
 #endif
             if (!cnc_dotasks())
             {
@@ -437,7 +437,7 @@ void serial_print_int(uint16_t num)
 #ifndef ENABLE_SYNC_TX
         if (read == serial_tx_write)
         {
-            mcu_stop_send();
+            mcu_disable_tx_isr();
         }
 #endif
         mcu_putc(c);

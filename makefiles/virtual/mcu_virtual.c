@@ -268,7 +268,7 @@ void mcu_init(void)
 	mcu_tx_ready = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
-	mcu_enable_interrupts();
+	mcu_enable_global_isr();
 }
 
 //IO functions
@@ -298,12 +298,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 
 //Communication functions
 //sends a packet
-void mcu_start_send(void)
+void mcu_enable_tx_isr(void)
 {
 	mcu_tx_ready = true;
 }
 
-void mcu_stop_send(void)
+void mcu_disable_tx_isr(void)
 {
 	mcu_tx_ready = false;
 }
@@ -364,12 +364,12 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 }
 
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-void mcu_enable_interrupts(void)
+void mcu_enable_global_isr(void)
 {
 	global_isr_enabled = true;
 }
 //disables all ISR functions
-void mcu_disable_interrupts(void)
+void mcu_disable_global_isr(void)
 {
 	global_isr_enabled = false;
 }
