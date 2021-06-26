@@ -961,17 +961,6 @@ extern "C"
 		return val;
 	}
 
-	void mcu_delay_ms(uint32_t miliseconds)
-	{
-		uint32_t start = mcu_runtime_ms;
-		uint32_t end = mcu_runtime_ms;
-		while (end - start < miliseconds)
-		{
-			mcu_dotasks();
-			end = mcu_runtime_ms;
-		}
-	}
-
 	void mcu_tick_init()
 	{
 		SysTick->CTRL = 0;

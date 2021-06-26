@@ -911,17 +911,6 @@ extern "C"
                 return val;
         }
 
-        void mcu_delay_ms(uint32_t miliseconds)
-        {
-                uint32_t t_start = mcu_runtime_ms;
-                uint32_t t_end = mcu_runtime_ms;
-                while (t_end - t_start < miliseconds)
-                {
-                        mcu_dotasks();
-                        t_end = mcu_runtime_ms;
-                }
-        }
-
         void mcu_start_rtc()
         {
 #if (F_CPU <= 16000000UL)
@@ -960,6 +949,7 @@ extern "C"
         void mcu_dotasks()
         {
 #ifdef ENABLE_SYNC_RX
+                //read any char that is received
                 while (CHECKBIT(UCSRA, RXC))
                 {
                         unsigned char c = mcu_getc();
@@ -967,6 +957,7 @@ extern "C"
                 }
 #endif
 #ifdef ENABLE_SYNC_TX
+                //if there is still chars to send in the serial buffer send them
                 if (!serial_tx_is_empty())
                 {
                         serial_tx_isr();

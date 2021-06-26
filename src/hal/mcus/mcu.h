@@ -31,100 +31,205 @@ extern "C"
 #include <stdint.h>
 
 /*IO functions*/
+
+/**
+ * get the value of a digital input pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_get_input
 	uint8_t mcu_get_input(uint8_t pin);
 #endif
 
+/**
+ * gets the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_get_output
 	uint8_t mcu_get_output(uint8_t pin);
 #endif
 
+/**
+ * sets the value of a digital output pin to logical 1
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_set_output
 	void mcu_set_output(uint8_t pin);
 #endif
 
+/**
+ * sets the value of a digital output pin to logical 0
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_clear_output
 	void mcu_clear_output(uint8_t pin);
 #endif
 
+/**
+ * toggles the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_toggle_output
 	void mcu_toggle_output(uint8_t pin);
 #endif
 
+	/**
+	 * initializes the mcu
+	 * this function needs to:
+	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+	 *   - configure all interrupts
+	 *   - configure uart or usb
+	 *   - start the internal RTC
+	 * */
 	void mcu_init(void);
 
+/**
+ * enables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_enable_probe_isr
 	void mcu_enable_probe_isr(void);
 #endif
 
+/**
+ * disables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_disable_probe_isr
 	void mcu_disable_probe_isr(void);
 #endif
 
-//Analog input
+/**
+ * gets the voltage value of a built-in ADC pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_get_analog
 	uint8_t mcu_get_analog(uint8_t channel);
 #endif
 
-//PWM
+/**
+ * sets the pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_set_pwm
 	void mcu_set_pwm(uint8_t pwm, uint8_t value);
 #endif
 
+/**
+ * gets the configured pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_get_pwm
 	uint8_t mcu_get_pwm(uint8_t pwm);
 #endif
 
-//Communication functions
+/**
+ * enables the uart TX mcu isr when the tx register is empty (or in alternative transmition is completed)
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_enable_tx_isr
 	void mcu_enable_tx_isr(void); //Start async send
 #endif
 
+/**
+ * disables the uart TX mcu isr when the tx register is empty (or in alternative transmition is completed)
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_disable_tx_isr
 	void mcu_disable_tx_isr(void); //Stop async send
 #endif
 
+/**
+ * sends a char either via uart (hardware, software or USB virtual COM port)
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_putc
 	void mcu_putc(char c);
 #endif
 
+/**
+ * gets a char either via uart (hardware, software or USB virtual COM port)
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_getc
 	char mcu_getc(void);
 #endif
 
 //ISR
-//enables all interrupts on the mcu. Must be called to enable all IRS functions
+/**
+ * enables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_enable_global_isr
 	void mcu_enable_global_isr(void);
 #endif
-//disables all ISR functions
+
+/**
+ * disables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
 #ifndef mcu_disable_global_isr
 	void mcu_disable_global_isr(void);
 #endif
 
-	//Timers
-	//convert step rate to clock cycles
+	//Step interpolator
+	/**
+	 * convert step rate to clock cycles
+	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
-	//starts a constant rate pulse at a given frequency.
+
+	/**
+	 * starts the timer interrupt that generates the step pulses for the interpolator
+	 * */
 	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller);
-	//modifies the pulse frequency
+
+	/**
+	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+	 * */
 	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller);
-	//stops the pulse
+
+	/**
+	 * stops the timer interrupt that generates the step pulses for the interpolator
+	 * */
 	void mcu_stop_itp_isr(void);
 
-	//Custom delay function
-	//gets the mcu running time in ms
+	/**
+	 * gets the MCU running time in milliseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
 	uint32_t mcu_millis();
 
-#ifndef mcu_delay_ms
-	//Custom delay function
-	void mcu_delay_ms(uint32_t miliseconds);
-#endif
-
+	/**
+	 * runs all internal tasks of the MCU.
+	 * for the moment these are:
+	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_tasks
+	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
+	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
+	 * */
 	void mcu_dotasks(void);
 
+	/**
+	 * generates a delay in ms.
+	 * */
+	static void mcu_delay_ms(uint32_t miliseconds)
+	{
+		uint32_t t_start = mcu_millis();
+		uint32_t t_end = mcu_millis();
+		while (t_end - t_start < miliseconds)
+		{
+			mcu_dotasks();
+			t_end = mcu_millis();
+		}
+	}
+
 	//Non volatile memory
+	/**
+	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+	 * */
 	uint8_t mcu_eeprom_getc(uint16_t address);
+
+	/**
+	 * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+	 * */
 	void mcu_eeprom_putc(uint16_t address, uint8_t value);
 
 #ifdef __cplusplus
