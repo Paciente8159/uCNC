@@ -488,6 +488,7 @@ extern "C"
         protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
         protocol_send_gcode_setting_line_int(4, g_settings.step_enable_invert);
         protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
+        protocol_send_gcode_setting_line_int(6, g_settings.probe_invert_mask);
         protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
         protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
         protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
