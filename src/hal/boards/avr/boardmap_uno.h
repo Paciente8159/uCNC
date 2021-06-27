@@ -103,9 +103,13 @@ extern "C"
 #define PWM0_TIMER 2
 
 //Setup generic IO Pins
-//Functionalities are set in config.h file
+//Functionalities are set in cnc_hal_config.h file
+
+//spindle dir
 #define DOUT0_BIT 5
 #define DOUT0_PORT B
+
+//coolant
 #define DOUT1_BIT 3
 #define DOUT1_PORT C
 

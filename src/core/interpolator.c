@@ -518,7 +518,7 @@ static inline bool itp_blk_is_empty(void)
         if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
         {
 #ifdef STEPPER_ENABLE
-            io_set_outputs(STEPPER_ENABLE);
+            mcu_clear_output(STEPPER_ENABLE);
 #endif
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);

@@ -69,6 +69,9 @@ extern "C"
         mc_init();               //motion control
         parser_init();           //parser
         serial_flush();
+#ifdef STEPPER_ENABLE
+        mcu_set_output(STEPPER_ENABLE);
+#endif
     }
 
     void cnc_run(void)

@@ -53,8 +53,13 @@ extern "C"
 #define COOLANT_FLOOD DOUT1
 #endif
 #ifdef DOUT2
-//#define COOLANT_MIST DOUT2
+#define COOLANT_MIST DOUT2
 #endif
+#endif
+
+/*define stepper enable/disable pin*/
+#ifdef STEP0_EN
+#define STEPPER_ENABLE STEP0_EN
 #endif
 
 #ifdef DOUT15
