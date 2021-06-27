@@ -57,11 +57,6 @@ extern "C"
 #endif
 #endif
 
-/*define stepper enable/disable pin*/
-#ifdef STEP0_EN
-#define STEPPER_ENABLE STEP0_EN
-#endif
-
 #ifdef DOUT15
 #define LED DOUT15
 #endif

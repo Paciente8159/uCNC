@@ -369,23 +369,8 @@ extern "C"
 #ifdef STEP7
 		mcu_config_output(STEP7);
 #endif
-#ifdef STEP0_EN
-		mcu_config_output(STEP0_EN);
-#endif
-#ifdef STEP1_EN
-		mcu_config_output(STEP1_EN);
-#endif
-#ifdef STEP2_EN
-		mcu_config_output(STEP2_EN);
-#endif
-#ifdef STEP3_EN
-		mcu_config_output(STEP3_EN);
-#endif
-#ifdef STEP4_EN
-		mcu_config_output(STEP4_EN);
-#endif
-#ifdef STEP5_EN
-		mcu_config_output(STEP5_EN);
+#ifdef STEPPER_ENABLE
+		mcu_config_output(STEPPER_ENABLE);
 #endif
 #ifdef DIR0
 		mcu_config_output(DIR0);
