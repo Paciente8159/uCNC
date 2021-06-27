@@ -7,4 +7,6 @@
   2. You must also edit [mcus.h](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcus.h) and [mcudefs.h](https://github.com/Paciente8159/uCNC/blob/master/uCNC/mcudefs.h) to add you custom MCU.
 
   Compile it and test it.
+
+  For more detailed explanation please refer to the [wiki](https://github.com/Paciente8159/uCNC/wiki/Understanding-the-HAL#Creating-the-HAL-for-a-custom-MCU)
   

@@ -27,6 +27,7 @@ These include:
    - Added and RTC to the µCNC mcu HAL
    - Software configurable debounce delay for homming switches
    - Additional (configurable via build) option to emulate Grbl startup message to improve software compatibility (like Candle and others)
+   - Some important bug fixes in for the STM32F1 HAL
 
 ### G-Codes support
 µCNC for now supports most of the RS274NGC v3:
@@ -80,16 +81,17 @@ I used several UNO emulators but debugging was not easy. So a kind of virtual bo
 It can run on:
   - Arduino UNO
   - Arduino MEGA
-  - STM32F1 Blue Pill
+  - STM32F1 Blue Pill (with some limitations)
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
 Right now a couple of changes are being staged in µCNC to prepare for future and easier expansions.
 These changes are:
   - Add some extra functionalities like tool speed encoding, positional encoders, etc...
-  - Change the files path structure to be more organic and well organized
+  - Improvements to the HAL
+  - Change the files path structure to be more organic and well organized (this is already implemented for the next release)
   - Possibly integrate µCNC with Arduino IDE across all platforms
-  - Possibly move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb)
+  - Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb) (this is already implemented for the next release)
   - Add more hardware configurations (SAMD21 developement has started)
 
 ### Building µCNC
