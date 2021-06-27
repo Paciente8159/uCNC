@@ -117,6 +117,66 @@ extern "C"
 	 **/
 	static volatile uint32_t mcu_runtime_ms;
 
+#define mcu_config_output(diopin)                                                                                           \
+	{                                                                                                                       \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_input(diopin)                                                                                        \
+	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_pullup(diopin)                                                                                     \
+	{                                                                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
+	}
+
+#define mcu_config_pwm(diopin)                                                                                                   \
+	{                                                                                                                            \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, ENOUTPUT);                                                                                          \
+	}
+
+#define mcu_config_input_isr(diopin)                                                                            \
+	{                                                                                                           \
+		RCC->APB2ENR |= 0x1U;                                                                                   \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
+	}
+
+#define mcu_config_analog(diopin)                                                                                       \
+	{                                                                                                                   \
+		RCC->CFGR &= ~(0x11U << 14U);                                                                                   \
+		RCC->CFGR |= (0x10U << 14U);                                                                                    \
+		RCC->APB2ENR |= ((0x1U << (8U + __indirect__(diopin, ADCEN))) | __indirect__(diopin, APB2EN) | 0x1U);           \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
+	}
+
 /**
  * The isr functions
  * The respective IRQHandler will execute these functions 
@@ -209,35 +269,35 @@ extern "C"
 #endif
 	}
 
-#if (ALL_EXTIBITMASK == 0x0001)
+#if (ALL_EXTIBITMASK & 0x0001)
 	void EXTI0_IRQHandler(void)
 	{
 		mcu_input_isr();
 		NVIC_ClearPendingIRQ(EXTI0_IRQn);
 	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0002)
+#if (ALL_EXTIBITMASK & 0x0002)
 	void EXTI1_IRQHandler(void)
 	{
 		mcu_input_isr();
 		NVIC_ClearPendingIRQ(EXTI1_IRQn);
 	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0004)
+#if (ALL_EXTIBITMASK & 0x0004)
 	void EXTI2_IRQHandler(void)
 	{
 		mcu_input_isr();
 		NVIC_ClearPendingIRQ(EXTI2_IRQn);
 	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0008)
+#if (ALL_EXTIBITMASK & 0x0008)
 	void EXTI3_IRQHandler(void)
 	{
 		mcu_input_isr();
 		NVIC_ClearPendingIRQ(EXTI3_IRQn);
 	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0010)
+#if (ALL_EXTIBITMASK & 0x0010)
 	void EXTI4_IRQHandler(void)
 	{
 		mcu_input_isr();
@@ -251,7 +311,7 @@ extern "C"
 		NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 	}
 #endif
-#if (ALL_EXTIBITMASK == 0xFC00)
+#if (ALL_EXTIBITMASK & 0xFC00)
 	void EXTI15_10_IRQHandler(void)
 	{
 		mcu_input_isr();
@@ -723,7 +783,7 @@ extern "C"
 		mcu_enable_global_isr();
 	}
 
-	/*IO functions*/
+/*IO functions*/
 #ifndef mcu_get_input
 	uint8_t mcu_get_input(uint8_t pin)
 	{

@@ -328,7 +328,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             g_settings.probe_invert_mask = value1;
             break;
         case 7:
-            g_settings.control_invert_mask = value8;
+            g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
             break;
         case 10:
             g_settings.status_report_mask = value8;

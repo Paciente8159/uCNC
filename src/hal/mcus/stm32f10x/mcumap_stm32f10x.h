@@ -2014,10 +2014,10 @@ extern "C"
 #define EXTIRQ(X) _EXTIRQ(X)
 
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
-#define LIMIT_X_EXTIREG ((LIMIT_X_BIT >> 2) & 0x03)
+#define LIMIT_X_EXTIREG (LIMIT_X_BIT >> 2)
 #define LIMIT_X_EXTIBITMASK (1 << LIMIT_X_BIT)
 #define LIMIT_X_IRQ EXTIRQ(LIMIT_X_BIT)
-#define LIMIT_X_EXTIVAL (EXTINT(LIMIT_X_PORT) << ((LIMIT_X_BIT & 0x03) << 2))
+#define LIMIT_X_EXTIVAL ((EXTINT(LIMIT_X_PORT)) << ((LIMIT_X_BIT & 0x03) << 2))
 #define DIO53_EXTIREG LIMIT_X_EXTIREG
 #define DIO53_EXTIVAL LIMIT_X_EXTIVAL
 #define DIO53_IRQ LIMIT_X_IRQ
@@ -2027,10 +2027,10 @@ extern "C"
 #define LIMIT_X_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
-#define LIMIT_Y_EXTIREG ((LIMIT_Y_BIT >> 2) & 0x03)
+#define LIMIT_Y_EXTIREG (LIMIT_Y_BIT >> 2)
 #define LIMIT_Y_EXTIBITMASK (1 << LIMIT_Y_BIT)
 #define LIMIT_Y_IRQ EXTIRQ(LIMIT_Y_BIT)
-#define LIMIT_Y_EXTIVAL (EXTINT(LIMIT_Y_PORT) << ((LIMIT_Y_BIT & 0x03) << 2))
+#define LIMIT_Y_EXTIVAL ((EXTINT(LIMIT_Y_PORT)) << ((LIMIT_Y_BIT & 0x03) << 2))
 #define DIO54_EXTIREG LIMIT_Y_EXTIREG
 #define DIO54_EXTIVAL LIMIT_Y_EXTIVAL
 #define DIO54_IRQ LIMIT_Y_IRQ
@@ -2040,10 +2040,10 @@ extern "C"
 #define LIMIT_Y_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
-#define LIMIT_Z_EXTIREG ((LIMIT_Z_BIT >> 2) & 0x03)
+#define LIMIT_Z_EXTIREG (LIMIT_Z_BIT >> 2)
 #define LIMIT_Z_EXTIBITMASK (1 << LIMIT_Z_BIT)
 #define LIMIT_Z_IRQ EXTIRQ(LIMIT_Z_BIT)
-#define LIMIT_Z_EXTIVAL (EXTINT(LIMIT_Z_PORT) << ((LIMIT_Z_BIT & 0x03) << 2))
+#define LIMIT_Z_EXTIVAL ((EXTINT(LIMIT_Z_PORT)) << ((LIMIT_Z_BIT & 0x03) << 2))
 #define DIO55_EXTIREG LIMIT_Z_EXTIREG
 #define DIO55_EXTIVAL LIMIT_Z_EXTIVAL
 #define DIO55_IRQ LIMIT_Z_IRQ
@@ -2053,10 +2053,10 @@ extern "C"
 #define LIMIT_Z_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
-#define LIMIT_X2_EXTIREG ((LIMIT_X2_BIT >> 2) & 0x03)
+#define LIMIT_X2_EXTIREG (LIMIT_X2_BIT >> 2)
 #define LIMIT_X2_EXTIBITMASK (1 << LIMIT_X2_BIT)
 #define LIMIT_X2_IRQ EXTIRQ(LIMIT_X2_BIT)
-#define LIMIT_X2_EXTIVAL (EXTINT(LIMIT_X2_PORT) << ((LIMIT_X2_BIT & 0x03) << 2))
+#define LIMIT_X2_EXTIVAL ((EXTINT(LIMIT_X2_PORT)) << ((LIMIT_X2_BIT & 0x03) << 2))
 #define DIO56_EXTIREG LIMIT_X2_EXTIREG
 #define DIO56_EXTIVAL LIMIT_X2_EXTIVAL
 #define DIO56_IRQ LIMIT_X2_IRQ
@@ -2066,10 +2066,10 @@ extern "C"
 #define LIMIT_X2_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
-#define LIMIT_Y2_EXTIREG ((LIMIT_Y2_BIT >> 2) & 0x03)
+#define LIMIT_Y2_EXTIREG (LIMIT_Y2_BIT >> 2)
 #define LIMIT_Y2_EXTIBITMASK (1 << LIMIT_Y2_BIT)
 #define LIMIT_Y2_IRQ EXTIRQ(LIMIT_Y2_BIT)
-#define LIMIT_Y2_EXTIVAL (EXTINT(LIMIT_Y2_PORT) << ((LIMIT_Y2_BIT & 0x03) << 2))
+#define LIMIT_Y2_EXTIVAL ((EXTINT(LIMIT_Y2_PORT)) << ((LIMIT_Y2_BIT & 0x03) << 2))
 #define DIO57_EXTIREG LIMIT_Y2_EXTIREG
 #define DIO57_EXTIVAL LIMIT_Y2_EXTIVAL
 #define DIO57_IRQ LIMIT_Y2_IRQ
@@ -2079,10 +2079,10 @@ extern "C"
 #define LIMIT_Y2_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
-#define LIMIT_Z2_EXTIREG ((LIMIT_Z2_BIT >> 2) & 0x03)
+#define LIMIT_Z2_EXTIREG (LIMIT_Z2_BIT >> 2)
 #define LIMIT_Z2_EXTIBITMASK (1 << LIMIT_Z2_BIT)
 #define LIMIT_Z2_IRQ EXTIRQ(LIMIT_Z2_BIT)
-#define LIMIT_Z2_EXTIVAL (EXTINT(LIMIT_Z2_PORT) << ((LIMIT_Z2_BIT & 0x03) << 2))
+#define LIMIT_Z2_EXTIVAL ((EXTINT(LIMIT_Z2_PORT)) << ((LIMIT_Z2_BIT & 0x03) << 2))
 #define DIO58_EXTIREG LIMIT_Z2_EXTIREG
 #define DIO58_EXTIVAL LIMIT_Z2_EXTIVAL
 #define DIO58_IRQ LIMIT_Z2_IRQ
@@ -2092,10 +2092,10 @@ extern "C"
 #define LIMIT_Z2_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
-#define LIMIT_A_EXTIREG ((LIMIT_A_BIT >> 2) & 0x03)
+#define LIMIT_A_EXTIREG (LIMIT_A_BIT >> 2)
 #define LIMIT_A_EXTIBITMASK (1 << LIMIT_A_BIT)
 #define LIMIT_A_IRQ EXTIRQ(LIMIT_A_BIT)
-#define LIMIT_A_EXTIVAL (EXTINT(LIMIT_A_PORT) << ((LIMIT_A_BIT & 0x03) << 2))
+#define LIMIT_A_EXTIVAL ((EXTINT(LIMIT_A_PORT)) << ((LIMIT_A_BIT & 0x03) << 2))
 #define DIO59_EXTIREG LIMIT_A_EXTIREG
 #define DIO59_EXTIVAL LIMIT_A_EXTIVAL
 #define DIO59_IRQ LIMIT_A_IRQ
@@ -2105,10 +2105,10 @@ extern "C"
 #define LIMIT_A_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
-#define LIMIT_B_EXTIREG ((LIMIT_B_BIT >> 2) & 0x03)
+#define LIMIT_B_EXTIREG (LIMIT_B_BIT >> 2)
 #define LIMIT_B_EXTIBITMASK (1 << LIMIT_B_BIT)
 #define LIMIT_B_IRQ EXTIRQ(LIMIT_B_BIT)
-#define LIMIT_B_EXTIVAL (EXTINT(LIMIT_B_PORT) << ((LIMIT_B_BIT & 0x03) << 2))
+#define LIMIT_B_EXTIVAL ((EXTINT(LIMIT_B_PORT)) << ((LIMIT_B_BIT & 0x03) << 2))
 #define DIO60_EXTIREG LIMIT_B_EXTIREG
 #define DIO60_EXTIVAL LIMIT_B_EXTIVAL
 #define DIO60_IRQ LIMIT_B_IRQ
@@ -2118,10 +2118,10 @@ extern "C"
 #define LIMIT_B_EXTIBITMASK 0
 #endif
 #if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
-#define LIMIT_C_EXTIREG ((LIMIT_C_BIT >> 2) & 0x03)
+#define LIMIT_C_EXTIREG (LIMIT_C_BIT >> 2)
 #define LIMIT_C_EXTIBITMASK (1 << LIMIT_C_BIT)
 #define LIMIT_C_IRQ EXTIRQ(LIMIT_C_BIT)
-#define LIMIT_C_EXTIVAL (EXTINT(LIMIT_C_PORT) << ((LIMIT_C_BIT & 0x03) << 2))
+#define LIMIT_C_EXTIVAL ((EXTINT(LIMIT_C_PORT)) << ((LIMIT_C_BIT & 0x03) << 2))
 #define DIO61_EXTIREG LIMIT_C_EXTIREG
 #define DIO61_EXTIVAL LIMIT_C_EXTIVAL
 #define DIO61_IRQ LIMIT_C_IRQ
@@ -2131,10 +2131,10 @@ extern "C"
 #define LIMIT_C_EXTIBITMASK 0
 #endif
 #if (defined(PROBE_ISR) && defined(PROBE))
-#define PROBE_EXTIREG ((PROBE_BIT >> 2) & 0x03)
+#define PROBE_EXTIREG (PROBE_BIT >> 2)
 #define PROBE_EXTIBITMASK (1 << PROBE_BIT)
 #define PROBE_IRQ EXTIRQ(PROBE_BIT)
-#define PROBE_EXTIVAL (EXTINT(PROBE_PORT) << ((PROBE_BIT & 0x03) << 2))
+#define PROBE_EXTIVAL ((EXTINT(PROBE_PORT)) << ((PROBE_BIT & 0x03) << 2))
 #define DIO62_EXTIREG PROBE_EXTIREG
 #define DIO62_EXTIVAL PROBE_EXTIVAL
 #define DIO62_IRQ PROBE_IRQ
@@ -2144,10 +2144,10 @@ extern "C"
 #define PROBE_EXTIBITMASK 0
 #endif
 #if (defined(ESTOP_ISR) && defined(ESTOP))
-#define ESTOP_EXTIREG ((ESTOP_BIT >> 2) & 0x03)
+#define ESTOP_EXTIREG (ESTOP_BIT >> 2)
 #define ESTOP_EXTIBITMASK (1 << ESTOP_BIT)
 #define ESTOP_IRQ EXTIRQ(ESTOP_BIT)
-#define ESTOP_EXTIVAL (EXTINT(ESTOP_PORT) << ((ESTOP_BIT & 0x03) << 2))
+#define ESTOP_EXTIVAL ((EXTINT(ESTOP_PORT)) << ((ESTOP_BIT & 0x03) << 2))
 #define DIO63_EXTIREG ESTOP_EXTIREG
 #define DIO63_EXTIVAL ESTOP_EXTIVAL
 #define DIO63_IRQ ESTOP_IRQ
@@ -2157,10 +2157,10 @@ extern "C"
 #define ESTOP_EXTIBITMASK 0
 #endif
 #if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
-#define SAFETY_DOOR_EXTIREG ((SAFETY_DOOR_BIT >> 2) & 0x03)
+#define SAFETY_DOOR_EXTIREG (SAFETY_DOOR_BIT >> 2)
 #define SAFETY_DOOR_EXTIBITMASK (1 << SAFETY_DOOR_BIT)
 #define SAFETY_DOOR_IRQ EXTIRQ(SAFETY_DOOR_BIT)
-#define SAFETY_DOOR_EXTIVAL (EXTINT(SAFETY_DOOR_PORT) << ((SAFETY_DOOR_BIT & 0x03) << 2))
+#define SAFETY_DOOR_EXTIVAL ((EXTINT(SAFETY_DOOR_PORT)) << ((SAFETY_DOOR_BIT & 0x03) << 2))
 #define DIO64_EXTIREG SAFETY_DOOR_EXTIREG
 #define DIO64_EXTIVAL SAFETY_DOOR_EXTIVAL
 #define DIO64_IRQ SAFETY_DOOR_IRQ
@@ -2170,10 +2170,10 @@ extern "C"
 #define SAFETY_DOOR_EXTIBITMASK 0
 #endif
 #if (defined(FHOLD_ISR) && defined(FHOLD))
-#define FHOLD_EXTIREG ((FHOLD_BIT >> 2) & 0x03)
+#define FHOLD_EXTIREG (FHOLD_BIT >> 2)
 #define FHOLD_EXTIBITMASK (1 << FHOLD_BIT)
 #define FHOLD_IRQ EXTIRQ(FHOLD_BIT)
-#define FHOLD_EXTIVAL (EXTINT(FHOLD_PORT) << ((FHOLD_BIT & 0x03) << 2))
+#define FHOLD_EXTIVAL ((EXTINT(FHOLD_PORT)) << ((FHOLD_BIT & 0x03) << 2))
 #define DIO65_EXTIREG FHOLD_EXTIREG
 #define DIO65_EXTIVAL FHOLD_EXTIVAL
 #define DIO65_IRQ FHOLD_IRQ
@@ -2183,10 +2183,10 @@ extern "C"
 #define FHOLD_EXTIBITMASK 0
 #endif
 #if (defined(CS_RES_ISR) && defined(CS_RES))
-#define CS_RES_EXTIREG ((CS_RES_BIT >> 2) & 0x03)
+#define CS_RES_EXTIREG (CS_RES_BIT >> 2)
 #define CS_RES_EXTIBITMASK (1 << CS_RES_BIT)
 #define CS_RES_IRQ EXTIRQ(CS_RES_BIT)
-#define CS_RES_EXTIVAL (EXTINT(CS_RES_PORT) << ((CS_RES_BIT & 0x03) << 2))
+#define CS_RES_EXTIVAL ((EXTINT(CS_RES_PORT)) << ((CS_RES_BIT & 0x03) << 2))
 #define DIO66_EXTIREG CS_RES_EXTIREG
 #define DIO66_EXTIVAL CS_RES_EXTIVAL
 #define DIO66_IRQ CS_RES_IRQ
@@ -3142,66 +3142,6 @@ extern "C"
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PUP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits
-
-#define mcu_config_output(diopin)                                                                                           \
-	{                                                                                                                       \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
-	}
-
-#define mcu_config_input(diopin)                                                                                        \
-	{                                                                                                                   \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
-	}
-
-#define mcu_config_pullup(diopin)                                                                                     \
-	{                                                                                                                 \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
-	}
-
-#define mcu_config_pwm(diopin)                                                                                                   \
-	{                                                                                                                            \
-		RCC->APB2ENR |= 0x1U;                                                                                                    \
-		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
-		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
-		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
-		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
-		__indirect__(diopin, ENOUTPUT);                                                                                          \
-	}
-
-#define mcu_config_input_isr(diopin)                                                                                      \
-	{                                                                                                                     \
-		RCC->APB2ENR |= 0x1U;                                                                                             \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2));               \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                                   \
-		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                                     \
-		NVIC->ISER[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
-		NVIC->IP[(uint32_t)(__indirect__(diopin, IRQ))] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);                         \
-		NVIC->ICPR[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
-	}
-
-#define mcu_config_analog(diopin)                                                                                       \
-	{                                                                                                                   \
-		RCC->CFGR &= ~(0x11U << 14U);                                                                                   \
-		RCC->CFGR |= (0x10U << 14U);                                                                                    \
-		RCC->APB2ENR |= ((0x1U << (8U + __indirect__(diopin, ADCEN))) | __indirect__(diopin, APB2EN) | 0x1U);           \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
-	}
 
 #ifdef __cplusplus
 }
