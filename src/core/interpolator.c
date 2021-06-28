@@ -518,10 +518,10 @@ static inline bool itp_blk_is_empty(void)
         if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
         {
 #ifdef STEPPER_ENABLE
-            io_set_outputs(STEPPER_ENABLE);
+            mcu_clear_output(STEPPER_ENABLE);
 #endif
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
-            mcu_start_step_ISR(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+            mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
         }
     }
 
@@ -533,7 +533,7 @@ static inline bool itp_blk_is_empty(void)
 
     void itp_stop(void)
     {
-        mcu_step_stop_ISR();
+        mcu_stop_itp_isr();
         cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
@@ -647,7 +647,7 @@ static inline bool itp_blk_is_empty(void)
         //if segment needs to update the step ISR (after preloading first step byte
         if (itp_running_sgm->update_speed)
         {
-            mcu_change_step_ISR(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+            mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
 
             //set dir bits
             if (itp_running_sgm->block != NULL)
@@ -683,7 +683,7 @@ static inline bool itp_blk_is_empty(void)
         stepbits = 0;
 
         itp_busy = true;
-        mcu_enable_interrupts();
+        mcu_enable_global_isr();
 
         //if buffer empty loads one
         if (itp_running_sgm == NULL)
@@ -903,7 +903,7 @@ static inline bool itp_blk_is_empty(void)
 #ifdef ENABLE_DUAL_DRIVE_AXIS
         stepbits &= ~itp_step_lock;
 #endif
-        mcu_disable_interrupts(); //lock isr before clearin busy flag
+        mcu_disable_global_isr(); //lock isr before clearin busy flag
         itp_busy = false;
     }
 

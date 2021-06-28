@@ -38,9 +38,8 @@ extern "C"
 #define BAUD 115200
 #endif
 //uncomment to enable synchronized TX (used in USB VCP)
-//can be used in UART hardware but MCU will be ocuppied while sending every char
+//enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven
 //#define ENABLE_SYNC_TX
-//can be used in UART hardware but char reading will be poolled instead of interrupt driven
 //#define ENABLE_SYNC_RX
 
 /*
@@ -110,7 +109,6 @@ extern "C"
 	Special definitions used to debug code
 */
 //#define __DEBUG__
-//#define __PERFSTATS__
 
 /*
 	Feed overrides increments and percentage ranges

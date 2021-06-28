@@ -64,55 +64,22 @@ extern "C"
 #define BAUD 115200
 #endif
 
-#ifdef __PERFSTATS__
-        volatile uint16_t mcu_perf_step;
-        volatile uint16_t mcu_perf_step_reset;
-
-        uint16_t mcu_get_step_clocks(void)
-        {
-                uint16_t res = mcu_perf_step;
-                return res;
-        }
-        uint16_t mcu_get_step_reset_clocks(void)
-        {
-                uint16_t res = mcu_perf_step_reset;
-                return res;
-        }
-#endif
-
         //gets the mcu running time in ms
         static volatile uint32_t mcu_runtime_ms;
         ISR(RTC_COMPA_vect, ISR_BLOCK)
         {
-                mcu_enable_interrupts();
+                mcu_enable_global_isr();
                 mcu_runtime_ms++;
         }
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
         {
-#ifdef __PERFSTATS__
-                uint16_t clocks = ITP_TCNT;
-#endif
                 itp_step_reset_isr();
-
-#ifdef __PERFSTATS__
-                uint16_t clocks2 = ITP_TCNT;
-                clocks2 -= clocks;
-                mcu_perf_step_reset = MAX(mcu_perf_step_reset, clocks2);
-#endif
         }
 
         ISR(ITP_COMPB_vect, ISR_BLOCK)
         {
-#ifdef __PERFSTATS__
-                uint16_t clocks = ITP_TCNT;
-#endif
                 itp_step_isr();
-#ifdef __PERFSTATS__
-                uint16_t clocks2 = ITP_TCNT;
-                clocks2 -= clocks;
-                mcu_perf_step = MAX(mcu_perf_step, clocks2);
-#endif
         }
 
 #ifndef USE_INPUTS_POOLING_ONLY
@@ -383,23 +350,8 @@ extern "C"
 #ifdef STEP7
                 mcu_config_ouput(STEP7);
 #endif
-#ifdef STEP0_EN
-                mcu_config_ouput(STEP0_EN);
-#endif
-#ifdef STEP1_EN
-                mcu_config_ouput(STEP1_EN);
-#endif
-#ifdef STEP2_EN
-                mcu_config_ouput(STEP2_EN);
-#endif
-#ifdef STEP3_EN
-                mcu_config_ouput(STEP3_EN);
-#endif
-#ifdef STEP4_EN
-                mcu_config_ouput(STEP4_EN);
-#endif
-#ifdef STEP5_EN
-                mcu_config_ouput(STEP5_EN);
+#ifdef STEPPER_ENABLE
+                mcu_config_ouput(STEPPER_ENABLE);
 #endif
 #ifdef DIR0
                 mcu_config_ouput(DIR0);
@@ -832,19 +784,23 @@ extern "C"
                 //disable probe isr
                 mcu_disable_probe_isr();
                 //enable interrupts
-                mcu_enable_interrupts();
+                mcu_enable_global_isr();
         }
 
         //IO functions
         void mcu_putc(char c)
         {
+#ifdef ENABLE_SYNC_TX
                 loop_until_bit_is_set(UCSRA, UDRE);
+#endif
                 COM_OUTREG = c;
         }
 
         char mcu_getc(void)
         {
+#ifdef ENABLE_SYNC_RX
                 loop_until_bit_is_set(UCSRA, RXC);
+#endif
                 return COM_INREG;
         }
 
@@ -890,7 +846,7 @@ extern "C"
 	In Arduino this is done in TIMER1
 	The frequency range is from 4Hz to F_PULSE
 */
-        void mcu_start_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
+        void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
         {
                 //stops timer
                 ITP_TCCRB = 0;
@@ -912,7 +868,7 @@ extern "C"
         }
 
         // se implementar amass deixo de necessitar de prescaler
-        void mcu_change_step_ISR(uint16_t clocks_speed, uint16_t prescaller)
+        void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
         {
                 //stops timer
                 //ITP_TCCRB = 0;
@@ -927,43 +883,17 @@ extern "C"
                 ITP_TCCRB = (uint8_t)prescaller;
         }
 
-        void mcu_step_stop_ISR(void)
+        void mcu_stop_itp_isr(void)
         {
                 ITP_TCCRB = 0;
                 ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
         }
-
-        /*#define MCU_1MS_LOOP F_CPU/1000000
-static __attribute__((always_inline)) void mcu_delay_1ms(void)
-{
-	uint16_t loop = MCU_1MS_LOOP;
-	do{
-	}while(--loop);
-}*/
-
-        /*void mcu_delay_ms(uint32_t miliseconds)
-{
-	do{
-		_delay_ms(1);
-	}while(--miliseconds);
-
-}*/
 
         //gets the mcu running time in ms
         uint32_t mcu_millis()
         {
                 uint32_t val = mcu_runtime_ms;
                 return val;
-        }
-
-        void mcu_delay_ms(uint32_t miliseconds)
-        {
-                uint32_t t_start = mcu_runtime_ms;
-                uint32_t t_end = mcu_runtime_ms;
-                while (t_end - t_start < miliseconds)
-                {
-                        t_end = mcu_runtime_ms;
-                }
         }
 
         void mcu_start_rtc()
@@ -998,6 +928,25 @@ static __attribute__((always_inline)) void mcu_delay_1ms(void)
 #else
                 RTC_TCCRB |= 6;
 #endif
+#endif
+        }
+
+        void mcu_dotasks()
+        {
+#ifdef ENABLE_SYNC_RX
+                //read any char that is received
+                while (CHECKBIT(UCSRA, RXC))
+                {
+                        unsigned char c = mcu_getc();
+                        serial_rx_isr(c);
+                }
+#endif
+#ifdef ENABLE_SYNC_TX
+                //if there is still chars to send in the serial buffer send them
+                if (!serial_tx_is_empty())
+                {
+                        serial_tx_isr();
+                }
 #endif
         }
 

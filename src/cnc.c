@@ -69,6 +69,9 @@ extern "C"
         mc_init();               //motion control
         parser_init();           //parser
         serial_flush();
+#ifdef STEPPER_ENABLE
+        mcu_set_output(STEPPER_ENABLE);
+#endif
     }
 
     void cnc_run(void)
@@ -111,6 +114,7 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
+                mcu_dotasks();
             } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
         }
     }
@@ -198,6 +202,8 @@ extern "C"
 
     bool cnc_dotasks(void)
     {
+        //run all mcu_internal tasks
+        mcu_dotasks();
 
 #if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
         io_limits_isr();

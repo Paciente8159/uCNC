@@ -103,15 +103,19 @@ extern "C"
 #define PWM0_TIMER 2
 
 //Setup generic IO Pins
-//Functionalities are set in config.h file
+//Functionalities are set in cnc_hal_config.h file
+
+//spindle dir
 #define DOUT0_BIT 5
 #define DOUT0_PORT B
+
+//coolant
 #define DOUT1_BIT 3
 #define DOUT1_PORT C
 
 //Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEP0_EN_BIT 0
-#define STEP0_EN_PORT B
+#define STEPPER_ENABLE_BIT 0
+#define STEPPER_ENABLE_PORT B
 
 	//Setup the Step Timer used has the heartbeat for µCNC
 	//Timer 1 is used by default

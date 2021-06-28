@@ -25,64 +25,147 @@ extern "C"
 #include "cnc.h"
 
 #if (MCU == MCU_STM32F10X)
+#include "core_cm3.h"
+#include "mcumap_stm32f10x.h"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
+#ifdef USB_VCP
+#include "tusb_config.h"
+#include "tusb.h"
 
-#define GPIO_RESET 0xfU
-#define GPIO_OUT_PP_10MHZ 0x1U
-#define GPIO_OUTALT_PP_2MHZ 0xaU
-#define GPIO_OUTALT_OD_2MHZ 0xeU
-#define GPIO_IN_FLOAT 0x4U
-#define GPIO_IN_PP 0x8U
-#define GPIO_IN_ANALOG 0 //not needed after reseting bits
+#define USB_BASE (APB1PERIPH_BASE + 0x00005C00UL)
+	typedef struct
+	{
+		__IO uint16_t EP0R;			 /*!< USB Endpoint 0 register,                   Address offset: 0x00 */
+		__IO uint16_t RESERVED0;	 /*!< Reserved */
+		__IO uint16_t EP1R;			 /*!< USB Endpoint 1 register,                   Address offset: 0x04 */
+		__IO uint16_t RESERVED1;	 /*!< Reserved */
+		__IO uint16_t EP2R;			 /*!< USB Endpoint 2 register,                   Address offset: 0x08 */
+		__IO uint16_t RESERVED2;	 /*!< Reserved */
+		__IO uint16_t EP3R;			 /*!< USB Endpoint 3 register,                   Address offset: 0x0C */
+		__IO uint16_t RESERVED3;	 /*!< Reserved */
+		__IO uint16_t EP4R;			 /*!< USB Endpoint 4 register,                   Address offset: 0x10 */
+		__IO uint16_t RESERVED4;	 /*!< Reserved */
+		__IO uint16_t EP5R;			 /*!< USB Endpoint 5 register,                   Address offset: 0x14 */
+		__IO uint16_t RESERVED5;	 /*!< Reserved */
+		__IO uint16_t EP6R;			 /*!< USB Endpoint 6 register,                   Address offset: 0x18 */
+		__IO uint16_t RESERVED6;	 /*!< Reserved */
+		__IO uint16_t EP7R;			 /*!< USB Endpoint 7 register,                   Address offset: 0x1C */
+		__IO uint16_t RESERVED7[17]; /*!< Reserved */
+		__IO uint16_t CNTR;			 /*!< Control register,                          Address offset: 0x40 */
+		__IO uint16_t RESERVED8;	 /*!< Reserved */
+		__IO uint16_t ISTR;			 /*!< Interrupt status register,                 Address offset: 0x44 */
+		__IO uint16_t RESERVED9;	 /*!< Reserved */
+		__IO uint16_t FNR;			 /*!< Frame number register,                     Address offset: 0x48 */
+		__IO uint16_t RESERVEDA;	 /*!< Reserved */
+		__IO uint16_t DADDR;		 /*!< Device address register,                   Address offset: 0x4C */
+		__IO uint16_t RESERVEDB;	 /*!< Reserved */
+		__IO uint16_t BTABLE;		 /*!< Buffer Table address register,             Address offset: 0x50 */
+		__IO uint16_t RESERVEDC;	 /*!< Reserved */
+	} USB_TypeDef;
+
+#define USB ((USB_TypeDef *)USB_BASE)
+
+/*!< Common registers */
+/*******************  Bit definition for USB_CNTR register  *******************/
+#define USB_CNTR_FRES_Pos (0U)
+#define USB_CNTR_FRES_Msk (0x1UL << USB_CNTR_FRES_Pos) /*!< 0x00000001 */
+#define USB_CNTR_FRES USB_CNTR_FRES_Msk				   /*!< Force USB Reset */
+#define USB_CNTR_PDWN_Pos (1U)
+#define USB_CNTR_PDWN_Msk (0x1UL << USB_CNTR_PDWN_Pos) /*!< 0x00000002 */
+#define USB_CNTR_PDWN USB_CNTR_PDWN_Msk				   /*!< Power down */
+#define USB_CNTR_LP_MODE_Pos (2U)
+#define USB_CNTR_LP_MODE_Msk (0x1UL << USB_CNTR_LP_MODE_Pos) /*!< 0x00000004 */
+#define USB_CNTR_LP_MODE USB_CNTR_LP_MODE_Msk				 /*!< Low-power mode */
+#define USB_CNTR_FSUSP_Pos (3U)
+#define USB_CNTR_FSUSP_Msk (0x1UL << USB_CNTR_FSUSP_Pos) /*!< 0x00000008 */
+#define USB_CNTR_FSUSP USB_CNTR_FSUSP_Msk				 /*!< Force suspend */
+#define USB_CNTR_RESUME_Pos (4U)
+#define USB_CNTR_RESUME_Msk (0x1UL << USB_CNTR_RESUME_Pos) /*!< 0x00000010 */
+#define USB_CNTR_RESUME USB_CNTR_RESUME_Msk				   /*!< Resume request */
+#define USB_CNTR_ESOFM_Pos (8U)
+#define USB_CNTR_ESOFM_Msk (0x1UL << USB_CNTR_ESOFM_Pos) /*!< 0x00000100 */
+#define USB_CNTR_ESOFM USB_CNTR_ESOFM_Msk				 /*!< Expected Start Of Frame Interrupt Mask */
+#define USB_CNTR_SOFM_Pos (9U)
+#define USB_CNTR_SOFM_Msk (0x1UL << USB_CNTR_SOFM_Pos) /*!< 0x00000200 */
+#define USB_CNTR_SOFM USB_CNTR_SOFM_Msk				   /*!< Start Of Frame Interrupt Mask */
+#define USB_CNTR_RESETM_Pos (10U)
+#define USB_CNTR_RESETM_Msk (0x1UL << USB_CNTR_RESETM_Pos) /*!< 0x00000400 */
+#define USB_CNTR_RESETM USB_CNTR_RESETM_Msk				   /*!< RESET Interrupt Mask */
+#define USB_CNTR_SUSPM_Pos (11U)
+#define USB_CNTR_SUSPM_Msk (0x1UL << USB_CNTR_SUSPM_Pos) /*!< 0x00000800 */
+#define USB_CNTR_SUSPM USB_CNTR_SUSPM_Msk				 /*!< Suspend mode Interrupt Mask */
+#define USB_CNTR_WKUPM_Pos (12U)
+#define USB_CNTR_WKUPM_Msk (0x1UL << USB_CNTR_WKUPM_Pos) /*!< 0x00001000 */
+#define USB_CNTR_WKUPM USB_CNTR_WKUPM_Msk				 /*!< Wakeup Interrupt Mask */
+#define USB_CNTR_ERRM_Pos (13U)
+#define USB_CNTR_ERRM_Msk (0x1UL << USB_CNTR_ERRM_Pos) /*!< 0x00002000 */
+#define USB_CNTR_ERRM USB_CNTR_ERRM_Msk				   /*!< Error Interrupt Mask */
+#define USB_CNTR_PMAOVRM_Pos (14U)
+#define USB_CNTR_PMAOVRM_Msk (0x1UL << USB_CNTR_PMAOVRM_Pos) /*!< 0x00004000 */
+#define USB_CNTR_PMAOVRM USB_CNTR_PMAOVRM_Msk				 /*!< Packet Memory Area Over / Underrun Interrupt Mask */
+#define USB_CNTR_CTRM_Pos (15U)
+#define USB_CNTR_CTRM_Msk (0x1UL << USB_CNTR_CTRM_Pos) /*!< 0x00008000 */
+#define USB_CNTR_CTRM USB_CNTR_CTRM_Msk				   /*!< Correct Transfer Interrupt Mask */
+#endif
+
+	/**
+	 * The internal clock counter
+	 * Increments every millisecond
+	 * Can count up to almost 50 days
+	 **/
+	static volatile uint32_t mcu_runtime_ms;
 
 #define mcu_config_output(diopin)                                                                                           \
 	{                                                                                                                       \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_10MHZ << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
 	}
+
 #define mcu_config_input(diopin)                                                                                        \
 	{                                                                                                                   \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
+
 #define mcu_config_pullup(diopin)                                                                                     \
 	{                                                                                                                 \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PP << (__indirect__(diopin, CROFF) << 2U));  \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
 	}
-#define mcu_config_pwm(diopin)                                                                                                  \
-	{                                                                                                                           \
-		RCC->APB2ENR |= 0x1U;                                                                                                   \
-		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                             \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));         \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_2MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                  \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                  \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                             \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                            \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                \
-		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                               \
-		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                        \
-		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                             \
-		__indirect__(diopin, ENOUTPUT);                                                                                         \
+
+#define mcu_config_pwm(diopin)                                                                                                   \
+	{                                                                                                                            \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, ENOUTPUT);                                                                                          \
 	}
 
-#define mcu_config_input_isr(diopin)                                                                                      \
-	{                                                                                                                     \
-		RCC->APB2ENR |= 0x1U;                                                                                             \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] &= ~(0xF << ((__indirect__(diopin, BIT) & 0x03) << 2));               \
-		AFIO->EXTICR[__indirect__(diopin, EXTIREG)] |= (__indirect__(diopin, EXTIVAL));                                   \
-		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                                    \
-		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                                     \
-		NVIC->ISER[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
-		NVIC->IP[(uint32_t)(__indirect__(diopin, IRQ))] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);                         \
-		NVIC->ICPR[((uint32_t)(__indirect__(diopin, IRQ)) >> 5)] = (1 << ((uint32_t)(__indirect__(diopin, IRQ)) & 0x1F)); \
+#define mcu_config_input_isr(diopin)                                                                            \
+	{                                                                                                           \
+		RCC->APB2ENR |= 0x1U;                                                                                   \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
 	}
 
 #define mcu_config_analog(diopin)                                                                                       \
@@ -94,24 +177,51 @@ extern "C"
 		__indirect__(diopin, ADC)->CR2 |= 0x1;                                                                          \
 	}
 
+/**
+ * The isr functions
+ * The respective IRQHandler will execute these functions 
+ **/
 #ifdef COM_PORT
 	void mcu_serial_isr(void)
 	{
-		if (COM_USART->SR & (1U << 5U))
+#ifndef ENABLE_SYNC_RX
+		if (COM_USART->SR & USART_SR_RXNE)
 		{
 			unsigned char c = COM_INREG;
 			serial_rx_isr(c);
+			COM_USART->SR &= ~USART_SR_RXNE;
 		}
-		if (COM_USART->SR & (1U << 7U))
-		{
-			serial_tx_isr();
-		}
-		COM_USART->SR = 0;
-		NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
-	}
 #endif
 
-	static void mcu_start_rtc(void);
+#ifndef ENABLE_SYNC_TX
+		if (COM_USART->SR & (USART_SR_TXE | USART_SR_TC))
+		{
+			serial_tx_isr();
+			COM_USART->SR &= ~(USART_SR_TXE | USART_SR_TC);
+		}
+#endif
+		NVIC_ClearPendingIRQ(COM_IRQ);
+	}
+#elif defined(USB_VCP)
+	void USB_HP_CAN1_TX_IRQHandler(void)
+	{
+		tud_int_handler(0);
+		NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
+	}
+
+	void USB_LP_CAN1_RX0_IRQHandler(void)
+	{
+		tud_int_handler(0);
+		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
+	}
+
+	void USBWakeUp_IRQHandler(void)
+	{
+		tud_int_handler(0);
+		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+	}
+
+#endif
 
 	void mcu_timer_isr(void)
 	{
@@ -125,8 +235,8 @@ extern "C"
 			resetstep = !resetstep;
 		}
 		TIMER_REG->SR = 0;
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-		mcu_enable_interrupts();
+		NVIC_ClearPendingIRQ(TIMER_IRQ);
+		mcu_enable_global_isr();
 	}
 
 #define LIMITS_EXTIBITMASK (LIMIT_X_EXTIBITMASK | LIMIT_Y_EXTIBITMASK | LIMIT_Z_EXTIBITMASK | LIMIT_X2_EXTIBITMASK | LIMIT_Y2_EXTIBITMASK | LIMIT_Z2_EXTIBITMASK | LIMIT_A_EXTIBITMASK | LIMIT_B_EXTIBITMASK | LIMIT_C_EXTIBITMASK)
@@ -157,89 +267,81 @@ extern "C"
 			EXTI->PR = PROBE_EXTIBITMASK;
 		}
 #endif
-#if (ALL_EXTIBITMASK == 0x0001)
-		NVIC->ICPR[((uint32_t)(EXTI0_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI0_IRQn)&0x1F));
+	}
+
+#if (ALL_EXTIBITMASK & 0x0001)
+	void EXTI0_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI0_IRQn);
+	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0002)
-		NVIC->ICPR[((uint32_t)(EXTI1_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI1_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK & 0x0002)
+	void EXTI1_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI1_IRQn);
+	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0004)
-		NVIC->ICPR[((uint32_t)(EXTI2_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI2_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK & 0x0004)
+	void EXTI2_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI2_IRQn);
+	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0008)
-		NVIC->ICPR[((uint32_t)(EXTI3_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI3_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK & 0x0008)
+	void EXTI3_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI3_IRQn);
+	}
 #endif
-#if (ALL_EXTIBITMASK == 0x0010)
-		NVIC->ICPR[((uint32_t)(EXTI4_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI4_IRQn)&0x1F));
+#if (ALL_EXTIBITMASK & 0x0010)
+	void EXTI4_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI4_IRQn);
+	}
 #endif
 #if (ALL_EXTIBITMASK & 0x03E0)
-		NVIC->ICPR[((uint32_t)(EXTI9_5_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI9_5_IRQn)&0x1F));
-#endif
-#if (ALL_EXTIBITMASK == 0xFC00)
-		NVIC->ICPR[((uint32_t)(EXTI15_10_IRQn) >> 5)] = (1 << ((uint32_t)(EXTI15_10_IRQn)&0x1F));
-#endif
+	void EXTI9_5_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 	}
+#endif
+#if (ALL_EXTIBITMASK & 0xFC00)
+	void EXTI15_10_IRQHandler(void)
+	{
+		mcu_input_isr();
+		NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
+	}
+#endif
 #endif
 
-	static void mcu_usart_init(void)
+	void SysTick_Handler(void)
 	{
-#ifdef COM_PORT
-		RCC->APB2ENR |= (RCC_APB2ENR_AFIOEN);
-		RCC->COM_APB |= (COM_APBEN);
-		RCC->APB2ENR |= __indirect__(TX, APB2EN);
-		__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
-		__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_2MHZ << ((__indirect__(TX, CROFF)) << 2));
-		RCC->APB2ENR |= __indirect__(RX, APB2EN);
-		__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
-		__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
-		COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
-		COM_USART->CR2 = 0; //1 stop bit STOP=00
-		COM_USART->CR3 = 0;
-		COM_USART->SR = 0;
-		// //115200 baudrate
-		float baudrate = ((float)F_CPU / (16.0f * (float)BAUD));
-		uint16_t brr = (uint16_t)baudrate;
-		baudrate -= brr;
-		brr <<= 4;
-		brr += (uint16_t)roundf(16.0f * baudrate);
-		COM_USART->BRR = brr;
-		NVIC->ISER[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
-		NVIC->IP[(uint32_t)(COM_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-		NVIC->ICPR[((uint32_t)(COM_IRQ) >> 5)] = (1 << ((uint32_t)(COM_IRQ)&0x1F));
-		COM_USART->CR1 |= 0x202C; // enable TE, RE, UE, TXEIE
+		mcu_runtime_ms++;
+		static uint32_t last_ms = 0;
+		if (mcu_runtime_ms - last_ms > 1000)
+		{
+			last_ms = mcu_runtime_ms;
+#ifdef LED
+			mcu_toggle_output(LED);
 #endif
+		}
 	}
 
-/*IO functions*/
-#ifndef mcu_get_input
-	uint8_t mcu_get_input(uint8_t pin)
-	{
-	}
-#endif
-
-#ifndef mcu_get_output
-	uint8_t mcu_get_output(uint8_t pin)
-	{
-	}
-#endif
-
-#ifndef mcu_set_output
-	void mcu_set_output(uint8_t pin)
-	{
-	}
-#endif
-
-#ifndef mcu_clear_output
-	void mcu_clear_output(uint8_t pin)
-	{
-	}
-#endif
-
-#ifndef mcu_toggle_output
-	void mcu_toggle_output(uint8_t pin)
-	{
-	}
-#endif
+	/**
+	 * 
+ * Initializes the mcu:
+ *   1. Configures all IO
+ *   2. Configures UART/USB
+ *   3. Starts internal clock (RTC)
+ **/
+	static void mcu_tick_init(void);
+	static void mcu_usart_init(void);
 
 	void mcu_init(void)
 	{
@@ -267,23 +369,8 @@ extern "C"
 #ifdef STEP7
 		mcu_config_output(STEP7);
 #endif
-#ifdef STEP0_EN
-		mcu_config_output(STEP0_EN);
-#endif
-#ifdef STEP1_EN
-		mcu_config_output(STEP1_EN);
-#endif
-#ifdef STEP2_EN
-		mcu_config_output(STEP2_EN);
-#endif
-#ifdef STEP3_EN
-		mcu_config_output(STEP3_EN);
-#endif
-#ifdef STEP4_EN
-		mcu_config_output(STEP4_EN);
-#endif
-#ifdef STEP5_EN
-		mcu_config_output(STEP5_EN);
+#ifdef STEPPER_ENABLE
+		mcu_config_output(STEPPER_ENABLE);
 #endif
 #ifdef DIR0
 		mcu_config_output(DIR0);
@@ -672,17 +759,45 @@ extern "C"
 #endif
 #endif
 
-#ifdef COM_PORT
-		mcu_usart_init();
-#endif
-		mcu_disable_probe_isr();
-		mcu_enable_interrupts();
 #ifdef LED
-		mcu_clear_output(LED);
+		mcu_config_output(LED);
+#endif
+		mcu_usart_init();
+		mcu_tick_init();
+		mcu_disable_probe_isr();
+		mcu_enable_global_isr();
+	}
+
+/*IO functions*/
+#ifndef mcu_get_input
+	uint8_t mcu_get_input(uint8_t pin)
+	{
+	}
 #endif
 
-		mcu_start_rtc();
+#ifndef mcu_get_output
+	uint8_t mcu_get_output(uint8_t pin)
+	{
 	}
+#endif
+
+#ifndef mcu_set_output
+	void mcu_set_output(uint8_t pin)
+	{
+	}
+#endif
+
+#ifndef mcu_clear_output
+	void mcu_clear_output(uint8_t pin)
+	{
+	}
+#endif
+
+#ifndef mcu_toggle_output
+	void mcu_toggle_output(uint8_t pin)
+	{
+	}
+#endif
 
 #ifndef mcu_enable_probe_isr
 	void mcu_enable_probe_isr(void)
@@ -715,29 +830,65 @@ extern "C"
 	}
 #endif
 
-	//Communication functions
-	void mcu_start_send(void)
-	{
-//not used with USB VCP
-#ifdef COM_PORT
-		COM_USART->CR1 |= (1 << 7);
-#endif
-	}
-	void mcu_stop_send(void)
-	{
-//not used with USB VCP
-#ifdef COM_PORT
-		COM_USART->CR1 &= ~(1 << 7);
-#endif
-	}
-
-#ifdef TX_BUFFER_SIZE
-#undef TX_BUFFER_SIZE
-#endif
-#define TX_BUFFER_SIZE 128
 	static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
 
-	extern uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
+	void mcu_usart_init(void)
+	{
+#ifdef COM_PORT
+		/*enables RCC clocks and GPIO*/
+		RCC->APB2ENR |= (RCC_APB2ENR_AFIOEN);
+		RCC->COM_APB |= (COM_APBEN);
+		RCC->APB2ENR |= __indirect__(TX, APB2EN);
+		__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
+		__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(TX, CROFF)) << 2));
+		RCC->APB2ENR |= __indirect__(RX, APB2EN);
+		__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
+		__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
+		/*setup UART*/
+		COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
+		COM_USART->CR2 = 0; //1 stop bit STOP=00
+		COM_USART->CR3 = 0;
+		COM_USART->SR = 0;
+		// //115200 baudrate
+		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUD));
+		uint16_t brr = (uint16_t)baudrate;
+		baudrate -= brr;
+		brr <<= 4;
+		brr += (uint16_t)roundf(16.0f * baudrate);
+		COM_USART->BRR = brr;
+#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
+		NVIC_EnableIRQ(COM_IRQ);
+		NVIC_SetPriority(COM_IRQ, 3);
+		NVIC_ClearPendingIRQ(COM_IRQ);
+#endif
+		COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE
+#ifndef ENABLE_SYNC_TX
+		COM_USART->CR1 |= (USART_CR1_TXEIE); // enable TXEIE
+#endif
+#ifndef ENABLE_SYNC_RX
+		COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+#endif
+		COM_USART->CR1 |= USART_CR1_UE; //Enable UART
+#else
+		//configure USB as Virtual COM port
+		RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+		mcu_config_input(USB_DM);
+		mcu_config_input(USB_DP);
+		NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+		NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
+		NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
+		NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+		NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
+		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
+		NVIC_EnableIRQ(USBWakeUp_IRQn);
+		NVIC_SetPriority(USBWakeUp_IRQn, 10);
+		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+		//Enable USB interrupts and enable usb
+		USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
+		RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+		tusb_init();
+#endif
+	}
 
 	void mcu_putc(char c)
 	{
@@ -745,44 +896,51 @@ extern "C"
 		mcu_toggle_output(LED);
 #endif
 #ifdef COM_PORT
-		while (!(COM_USART->SR & (1 << 7)))
+#ifdef ENABLE_SYNC_TX
+		while (!(COM_USART->SR & USART_SR_TXE))
 			;
+#endif
 		COM_OUTREG = c;
-#else
-		static uint16_t i = 0;
-		mcu_tx_buffer[i] = (uint8_t)c;
-		i++;
-		if (c == '\n' || i == (TX_BUFFER_SIZE - 1))
+#endif
+#ifdef USB_VCP
+		tud_cdc_write_char(c);
+		if (c == '\r')
 		{
-			mcu_tx_buffer[i] = 0;
-			while (CDC_Transmit_FS(mcu_tx_buffer, i))
-				;
-			i = 0;
+			tud_cdc_write_flush();
 		}
 #endif
 	}
 
 	char mcu_getc(void)
 	{
+#ifdef LED
+		mcu_toggle_output(LED);
+#endif
 #ifdef COM_PORT
-		while (!(COM_USART->SR & (1 << 5)))
+#ifdef ENABLE_SYNC_RX
+		while (!(COM_USART->SR & USART_SR_RXNE))
 			;
+#endif
 		return COM_INREG;
+#endif
+#ifdef USB_VCP
+		while (!tud_cdc_available())
+		{
+			tud_task();
+		}
+
+		return (unsigned char)tud_cdc_read_char();
 #endif
 	}
 
 //ISR
 //enables all interrupts on the mcu. Must be called to enable all IRS functions
-#ifndef mcu_enable_interrupts
-	void mcu_enable_interrupts(void)
-	{
-	}
+#ifndef mcu_enable_global_isr
+#error "mcu_enable_global_isr undefined"
 #endif
 //disables all ISR functions
-#ifndef mcu_disable_interrupts
-	void mcu_disable_interrupts(void)
-	{
-	}
+#ifndef mcu_disable_global_isr
+#error "mcu_disable_global_isr undefined"
 #endif
 
 	//Timers
@@ -803,7 +961,7 @@ extern "C"
 	}
 
 	//starts a constant rate pulse at a given frequency.
-	void mcu_start_step_ISR(uint16_t ticks, uint16_t prescaller)
+	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	{
 		RCC->TIMER_ENREG |= TIMER_APB;
 		TIMER_REG->CR1 = 0;
@@ -813,15 +971,15 @@ extern "C"
 		TIMER_REG->EGR |= 0x01;
 		TIMER_REG->SR &= ~0x01;
 
-		NVIC->ISER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
-		NVIC->IP[(uint32_t)(TIMER_IRQ)] = ((1 << (8 - __NVIC_PRIO_BITS)) & 0xff);
-		NVIC->ICPR[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		NVIC_EnableIRQ(TIMER_IRQ);
+		NVIC_SetPriority(TIMER_IRQ, 1);
+		NVIC_ClearPendingIRQ(TIMER_IRQ);
 		TIMER_REG->DIER |= 1;
 		TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
 	}
 
 	//modifies the pulse frequency
-	void mcu_change_step_ISR(uint16_t ticks, uint16_t prescaller)
+	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	{
 		TIMER_REG->ARR = ticks;
 		TIMER_REG->PSC = prescaller;
@@ -829,35 +987,59 @@ extern "C"
 	}
 
 	//stops the pulse
-	void mcu_step_stop_ISR(void)
+	void mcu_stop_itp_isr(void)
 	{
 		TIMER_REG->CR1 &= ~0x1;
 		TIMER_REG->DIER &= ~0x1;
 		TIMER_REG->SR &= ~0x01;
-		NVIC->ICER[((uint32_t)(TIMER_IRQ) >> 5)] = (1 << ((uint32_t)(TIMER_IRQ)&0x1F));
+		NVIC_DisableIRQ(TIMER_IRQ);
 	}
 
 	//Custom delay function
-	//void mcu_delay_ms(uint32_t miliseconds);
 	//gets the mcu running time in ms
-	static volatile uint32_t mcu_runtime_ms;
 	uint32_t mcu_millis()
 	{
 		uint32_t val = mcu_runtime_ms;
 		return val;
 	}
 
-	void mcu_start_rtc()
+	void mcu_tick_init()
 	{
 		SysTick->CTRL = 0;
-		SysTick->LOAD = (F_CPU / 1000) - 1;
+		SysTick->LOAD = (((F_CPU >> 3) / 1000) - 1);
 		SysTick->VAL = 0;
-		SysTick->CTRL = 7;
+		NVIC_SetPriority(SysTick_IRQn, 10);
+		SysTick->CTRL = 3; //Start SysTick (ABH clock/8)
 	}
 
-	void mcu_tick_isr(void)
+#ifdef COM_PORT
+#define mcu_read_available() (COM_USART->SR & USART_SR_RXNE)
+#define mcu_write_available() (COM_USART->SR & USART_SR_TXE)
+#else
+#ifdef USB_VCP
+#define mcu_read_available() tud_cdc_available()
+#define mcu_write_available() tud_cdc_write_available()
+#endif
+#endif
+
+	void mcu_dotasks()
 	{
-		mcu_runtime_ms++;
+#ifdef USB_VCP
+		tud_task(); // tinyusb device task
+#endif
+#ifdef ENABLE_SYNC_RX
+		while (mcu_read_available())
+		{
+			unsigned char c = mcu_getc();
+			serial_rx_isr(c);
+		}
+#endif
+#ifdef ENABLE_SYNC_TX
+		if (!serial_tx_is_empty())
+		{
+			serial_tx_isr();
+		}
+#endif
 	}
 
 	//Non volatile memory
@@ -869,11 +1051,6 @@ extern "C"
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
 	}
-
-#ifdef __PERFSTATS__
-	uint16_t mcu_get_step_clocks(void);
-	uint16_t mcu_get_step_reset_clocks(void);
-#endif
 
 #endif
 

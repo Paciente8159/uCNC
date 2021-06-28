@@ -10,6 +10,7 @@ SOURCEDIR= ../../src
 rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 SOURCE   = $(wildcard *.c)\
 		   $(call rwildcard,$(SOURCEDIR)/,*.c)
+		   
 BUILDDIR = build
 OBJ 	 = $(SOURCE:.c=.o)
 LINKOBJ  = $(addprefix $(BUILDDIR)/,$(notdir $(OBJ)))

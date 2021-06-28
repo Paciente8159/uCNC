@@ -37,16 +37,28 @@ extern "C"
 	Uncomment to enable
 */
 #ifdef USE_SPINDLE
+#ifdef PWM0
 #define SPINDLE_PWM PWM0
+#endif
+#ifdef DOUT0
 #define SPINDLE_DIR DOUT0
+#endif
 #endif
 
 /*
 	Define a coolant flood and mist pin
 */
 #ifdef USE_COOLANT
+#ifdef DOUT1
 #define COOLANT_FLOOD DOUT1
-//#define COOLANT_MIST DOUT2
+#endif
+#ifdef DOUT2
+#define COOLANT_MIST DOUT2
+#endif
+#endif
+
+#ifdef DOUT15
+#define LED DOUT15
 #endif
 
 #ifdef __cplusplus

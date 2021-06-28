@@ -170,11 +170,7 @@ extern "C"
 #include "cnc_build.h"
 //make the needed includes (do not change the order)
 //user configurations
-#ifdef CNC_CUSTOM_CONFIG
-#include #CNC_CUSTOM_CONFIG
-#else
 #include "cnc_config.h"
-#endif
 //board and mcu configurations
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
 //machine kinematics configurations
