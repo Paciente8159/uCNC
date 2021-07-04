@@ -96,6 +96,26 @@ extern "C"
 #define STEP6_MASK 64
 #define STEP7_MASK 128
 
+#define DIR0_MASK 1
+#define DIR1_MASK 2
+#define DIR2_MASK 4
+#define DIR3_MASK 8
+#define DIR4_MASK 16
+#define DIR5_MASK 32
+
+#include "cnc_build.h"
+//make the needed includes (do not change the order)
+//user configurations
+#include "cnc_config.h"
+//board and mcu configurations
+#include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
+//machine kinematics configurations
+#include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
+//final HAL configurations
+#include "hal/cnc_hal_config.h" //inicializes the HAL hardcoded connections
+//initializes core utilities (like fast math functions)
+#include "core/utils.h"
+
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
 
@@ -160,25 +180,6 @@ extern "C"
 #define STEP5_ITP_MASK STEP5_MASK
 #endif
 
-#define DIR0_MASK 1
-#define DIR1_MASK 2
-#define DIR2_MASK 4
-#define DIR3_MASK 8
-#define DIR4_MASK 16
-#define DIR5_MASK 32
-
-#include "cnc_build.h"
-//make the needed includes (do not change the order)
-//user configurations
-#include "cnc_config.h"
-//board and mcu configurations
-#include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
-//machine kinematics configurations
-#include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
-//final HAL configurations
-#include "hal/cnc_hal_config.h" //inicializes the HAL hardcoded connections
-//initializes core utilities (like fast math functions)
-#include "core/utils.h"
 	/**
  * 
  * From this point on the CNC controller HAL is defined

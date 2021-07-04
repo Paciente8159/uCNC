@@ -69,9 +69,6 @@ extern "C"
 #define ENCODERS 0
 #endif
 
-#define DIN0 100
-#define ENC0_PULSE DIN0
-
 #ifdef __cplusplus
 }
 #endif
