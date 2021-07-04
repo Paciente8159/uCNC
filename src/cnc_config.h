@@ -106,6 +106,14 @@ extern "C"
 #endif
 
 /*
+	Sets the number of PID controllers to be used
+	The PID controllers are configured in the cnc_hal_config.h
+*/
+#define PID_CONTROLLERS 0
+
+#define ENCODERS 1
+
+/*
 	Special definitions used to debug code
 */
 //#define __DEBUG__
