@@ -89,7 +89,9 @@ extern "C"
 #endif
 #endif
 
-	void pid_dotasks(void);
+#define PID_BITSHIFT_FACTOR 8
+
+	void pid_update_isr(void);
 
 #ifdef __cplusplus
 }
