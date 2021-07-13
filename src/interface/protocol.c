@@ -540,6 +540,15 @@ extern "C"
             protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
         }
 #endif
+
+#if PID_CONTROLLERS > 0
+        for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
+        {
+            protocol_send_gcode_setting_line_int(200 + fast_int_mul10(i), g_settings.pid_gain[i]);
+            protocol_send_gcode_setting_line_int(201 + fast_int_mul10(i), g_settings.pid_gain[i]);
+            protocol_send_gcode_setting_line_int(202 + fast_int_mul10(i), g_settings.pid_gain[i]);
+        }
+#endif
     }
 
 #ifdef __cplusplus

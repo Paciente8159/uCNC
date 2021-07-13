@@ -128,19 +128,19 @@ extern "C"
         if (current_pid < PID_CONTROLLERS)
         {
             int16_t error = MIN(pid_get_error(current_pid), 0xffff);
-            int64_t output = settings.pids[current_pid][0] * error;
+            int64_t output = g_settings.pid_gain[current_pid][0] * error;
 
-            if (settings.pids[current_pid][1])
+            if (g_settings.pid_gain[current_pid][1])
             {
                 cumulative_delta[current_pid] += (error >> 7) + (error >> 12);
-                output += settings.pids[current_pid][1] * cumulative_delta[current_pid];
+                output += g_settings.pid_gain[current_pid][1] * cumulative_delta[current_pid];
             }
 
-            if (settings.pids[current_pid][2])
+            if (g_settings.pid_gain[current_pid][2])
             {
                 int32_t rateerror = (error - last_error[current_pid]);
                 rateerror = (rateerror << 7) - (rateerror >> 2);
-                output += settings.pids[current_pid][1] * cumulative_delta[current_pid];
+                output += g_settings.pid_gain[current_pid][2] * cumulative_delta[current_pid];
             }
 
             last_error[current_pid] = error;
