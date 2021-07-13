@@ -31,6 +31,9 @@ extern "C"
 #include "core/interpolator.h"
 
     static volatile uint8_t io_limits_homing_filter;
+#if PID_CONTROLLERS > 0
+    static uint8_t io_spindle_speed;
+#endif
 
     void io_limits_isr(void)
     {
@@ -515,6 +518,9 @@ extern "C"
 #ifdef USE_SPINDLE
     void io_set_spindle(uint8_t value, bool invert)
     {
+#if PID_CONTROLLERS > 0
+        io_spindle_speed = value;
+#endif
         if (!invert)
         {
             mcu_clear_output(SPINDLE_DIR);
@@ -524,6 +530,14 @@ extern "C"
             mcu_set_output(SPINDLE_DIR);
         }
         mcu_set_pwm(SPINDLE_PWM, value);
+    }
+
+    void io_get_spindle(void)
+    {
+#if PID_CONTROLLERS > 0
+        return io_spindle_speed;
+#endif
+        return mcu_get_pwm(SPINDLE_PWM);
     }
 #endif
 
