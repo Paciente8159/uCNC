@@ -80,6 +80,11 @@ extern "C"
  * #define PID0_OUTPUT(X) (mcu_set_pwm(PWM0, X))
  * 
  * */
+	//reference to io_get_spindle defined in io_control
+	extern uint8_t io_get_spindle(void);
+#define SPINDLE_SPEED ANALOG0
+#define PID0_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
+#define PID0_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
 
 #ifdef __cplusplus
 }

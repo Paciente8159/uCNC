@@ -24,11 +24,13 @@ extern "C"
 {
 #endif
 
+#include "cnc.h"
+
 #if PID_CONTROLLERS > 0
 #ifndef PID0_DELTA
 #error "The PID0 error is not defined"
 #endif
-#ifndef PID0_OUT
+#ifndef PID0_OUTPUT
 #error "The PID0 output is not defined"
 #endif
 #endif
@@ -36,7 +38,7 @@ extern "C"
 #ifndef PID1_DELTA
 #error "The PID1 error is not defined"
 #endif
-#ifndef PID1_OUT
+#ifndef PID1_OUTPUT
 #error "The PID1 output is not defined"
 #endif
 #endif
@@ -44,7 +46,7 @@ extern "C"
 #ifndef PID2_DELTA
 #error "The PID2 error is not defined"
 #endif
-#ifndef PID2_OUT
+#ifndef PID2_OUTPUT
 #error "The PID2 output is not defined"
 #endif
 #endif
@@ -52,7 +54,7 @@ extern "C"
 #ifndef PID3_DELTA
 #error "The PID3 error is not defined"
 #endif
-#ifndef PID3_OUT
+#ifndef PID3_OUTPUT
 #error "The PID3 output is not defined"
 #endif
 #endif
@@ -60,7 +62,7 @@ extern "C"
 #ifndef PID4_DELTA
 #error "The PID4 error is not defined"
 #endif
-#ifndef PID4_OUT
+#ifndef PID4_OUTPUT
 #error "The PID4 output is not defined"
 #endif
 #endif
@@ -68,7 +70,7 @@ extern "C"
 #ifndef PID5_DELTA
 #error "The PID5 error is not defined"
 #endif
-#ifndef PID5_OUT
+#ifndef PID5_OUTPUT
 #error "The PID5 output is not defined"
 #endif
 #endif
@@ -76,7 +78,7 @@ extern "C"
 #ifndef PID6_DELTA
 #error "The PID6 error is not defined"
 #endif
-#ifndef PID6_OUT
+#ifndef PID6_OUTPUT
 #error "The PID6 output is not defined"
 #endif
 #endif
@@ -84,13 +86,14 @@ extern "C"
 #ifndef PID7_DELTA
 #error "The PID7 error is not defined"
 #endif
-#ifndef PID7_OUT
+#ifndef PID7_OUTPUT
 #error "The PID7 output is not defined"
 #endif
 #endif
 
 #define PID_BITSHIFT_FACTOR 8
 
+	void pid_init(void);
 	void pid_update_isr(void);
 
 #ifdef __cplusplus

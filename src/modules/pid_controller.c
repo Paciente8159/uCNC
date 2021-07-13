@@ -22,11 +22,16 @@ extern "C"
 #endif
 
 #include "cnc.h"
+#include "pid_controller.h"
+#include "interface/settings.h"
 #include <stdint.h>
 
 #if (PID_CONTROLLERS > 0)
     static int32_t cumulative_delta[PID_CONTROLLERS];
     static int32_t last_error[PID_CONTROLLERS];
+    static int32_t kp[PID_CONTROLLERS];
+    static int32_t ki[PID_CONTROLLERS];
+    static int32_t kd[PID_CONTROLLERS];
 #endif
 
     static int32_t pid_get_error(uint8_t i)
@@ -119,35 +124,52 @@ extern "C"
 
     //PID ISR should run once every millisecond
     //this is equal to a 125Hz sampling rate (for 8 PID controllers)
-    //to reduce computation cycles the value of 124.12Hz (the error/2^7 + error/2^12) is used to compute the integral part of the error
-    //to reduce computation cycles the value of 124Hz (the error*2^7 - error*2^2) is used to compute the derivative part of the error
+    //this precomputes the PID factors to save computation cycles
+    void pid_init(void)
+    {
+#if (PID_CONTROLLERS > 0)
+        for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
+        {
+            kp[i] = (int32_t)(g_settings.pid_gain[i][0] * (float)(1 << PID_BITSHIFT_FACTOR));
+            ki[i] = (int32_t)(g_settings.pid_gain[i][1] * (float)(1 << PID_BITSHIFT_FACTOR) / 125.0f);
+            kd[i] = (int32_t)(g_settings.pid_gain[i][2] * (float)(1 << PID_BITSHIFT_FACTOR) * 125.0f);
+        }
+#endif
+    }
+
     void pid_update_isr(void)
     {
 #if (PID_CONTROLLERS > 0)
+
         static uint8_t current_pid = 0;
         if (current_pid < PID_CONTROLLERS)
         {
-            int16_t error = MIN(pid_get_error(current_pid), 0xffff);
-            int64_t output = g_settings.pid_gain[current_pid][0] * error;
+            int32_t error = pid_get_error(current_pid);
+            int64_t output = 0;
 
-            if (g_settings.pid_gain[current_pid][1])
+            if (kp[current_pid])
             {
-                cumulative_delta[current_pid] += (error >> 7) + (error >> 12);
-                output += g_settings.pid_gain[current_pid][1] * cumulative_delta[current_pid];
+                output = kp[current_pid] * error;
             }
 
-            if (g_settings.pid_gain[current_pid][2])
+            if (ki[current_pid])
             {
-                int32_t rateerror = (error - last_error[current_pid]);
-                rateerror = (rateerror << 7) - (rateerror >> 2);
-                output += g_settings.pid_gain[current_pid][2] * cumulative_delta[current_pid];
+                int64_t sum = cumulative_delta[current_pid] + error;
+                sum = MIN(sum, 0x7FFFFFFF);
+                cumulative_delta[current_pid] = (int32_t)MAX(sum, -0x7FFFFFFF);
+
+                output += ki[current_pid] * cumulative_delta[current_pid];
+            }
+
+            if (kd[current_pid])
+            {
+                int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
+                output += rateerror;
             }
 
             last_error[current_pid] = error;
-            last_ms[current_pid] = current_ms;
-
-            int16_t pid_result = MIN((output >> PID_BITSHIFT_FACTOR), 255);
-            pid_result = MAX(pid_result, -255);
+            output = MIN(output, 255);
+            uint8_t pid_result = MAX(output, 0);
             pid_set_output(current_pid, pid_result);
         }
 
@@ -155,6 +177,7 @@ extern "C"
         {
             current_pid = 0;
         }
+
 #endif
     }
 

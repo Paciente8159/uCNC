@@ -111,7 +111,7 @@ extern "C"
 */
 #define PID_CONTROLLERS 0
 
-#define ENCODERS 1
+#define ENCODERS 0
 
 /*
 	Special definitions used to debug code

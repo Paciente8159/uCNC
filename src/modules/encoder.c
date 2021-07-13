@@ -1,6 +1,7 @@
 #include "encoder.h"
 
-static int32_t g_encoders_pos[ENCODERS];
+#if ENCODERS > 0
+int32_t g_encoders_pos[ENCODERS];
 
 static uint8_t read_encoder_pulses(void)
 {
@@ -89,3 +90,5 @@ void encoders_isr(void)
     }
 #endif
 }
+
+#endif

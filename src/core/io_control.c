@@ -32,7 +32,7 @@ extern "C"
 
     static volatile uint8_t io_limits_homing_filter;
 #if PID_CONTROLLERS > 0
-    static uint8_t io_spindle_speed;
+    static volatile uint8_t io_spindle_speed;
 #endif
 
     void io_limits_isr(void)
@@ -532,12 +532,13 @@ extern "C"
         mcu_set_pwm(SPINDLE_PWM, value);
     }
 
-    void io_get_spindle(void)
+    uint8_t io_get_spindle(void)
     {
 #if PID_CONTROLLERS > 0
         return io_spindle_speed;
-#endif
+#else
         return mcu_get_pwm(SPINDLE_PWM);
+#endif
     }
 #endif
 

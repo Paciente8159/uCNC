@@ -35,6 +35,8 @@ extern "C"
 #include "core/planner.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
+#include "modules/encoder.h"
+#include "modules/pid_controller.h"
 
     typedef struct
     {
@@ -68,6 +70,7 @@ extern "C"
         planner_init();          //motion planner
         mc_init();               //motion control
         parser_init();           //parser
+        pid_init();              //pid
         serial_flush();
 #ifdef STEPPER_ENABLE
         mcu_set_output(STEPPER_ENABLE);

@@ -27,6 +27,8 @@ extern "C"
 #include "cnc.h"
 
 #if ENCODERS > 0
+
+#if ENCODERS > 0
 #ifndef ENC0_PULSE
 #error "The ENC0 pulse pin is not defined"
 #endif
@@ -106,6 +108,8 @@ extern "C"
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 #endif

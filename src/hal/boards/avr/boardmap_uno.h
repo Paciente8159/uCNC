@@ -113,6 +113,12 @@ extern "C"
 #define DOUT1_BIT 3
 #define DOUT1_PORT C
 
+//spindle speed sensor
+#define ANALOG0_BIT 4
+#define ANALOG0_PORT C
+#define ANALOG0_CHANNEL 4
+#define ANALOG0_PRESC 0
+
 //Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEPPER_ENABLE_BIT 0
 #define STEPPER_ENABLE_PORT B

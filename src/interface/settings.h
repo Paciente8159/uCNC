@@ -75,7 +75,7 @@ extern "C"
                 uint8_t laser_mode;
 #endif
 #if PID_CONTROLLERS > 0
-                int16_t pid_gain[PID_CONTROLLERS][3];
+                float pid_gain[PID_CONTROLLERS][3];
 #endif
         } settings_t;
 
