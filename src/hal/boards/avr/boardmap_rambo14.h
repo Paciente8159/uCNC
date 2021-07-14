@@ -1,5 +1,5 @@
 /*
-	Name: mcumap_rambo14.h
+	Name: boardmap_rambo14.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
 	
 	Copyright: Copyright (c) João Martins 

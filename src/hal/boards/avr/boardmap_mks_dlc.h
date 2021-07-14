@@ -1,10 +1,10 @@
 /*
-	Name: boardmap_uno.h
+	Name: boardmap_mks_dlc.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
 	
 	Copyright: Copyright (c) João Martins 
 	Author: João Martins
-	Date: 04/02/2020
+	Date: 14/07/2021
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_GRBL_H
-#define MCUMAP_GRBL_H
+#ifndef MCUMAP_MKS_DLC_H
+#define MCUMAP_MKS_DLC_H
 
 #ifdef __cplusplus
 extern "C"
@@ -69,24 +69,24 @@ extern "C"
 #define LIMIT_Z_PULLUP
 
 //Setup probe pin
-#define PROBE_BIT 5
-#define PROBE_PORT C
-#define PROBE_ISR 1
+// #define PROBE_BIT 5
+// #define PROBE_PORT C
+// #define PROBE_ISR 1
 
 //Setup control input pins
-#define ESTOP_BIT 0
-#define FHOLD_BIT 1
-#define CS_RES_BIT 2
-#define ESTOP_PORT C
-#define FHOLD_PORT C
-#define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
+// #define ESTOP_BIT 0
+// #define FHOLD_BIT 1
+// #define CS_RES_BIT 2
+// #define ESTOP_PORT C
+// #define FHOLD_PORT C
+// #define CS_RES_PORT C
+// #define ESTOP_ISR 1
+// #define FHOLD_ISR 1
+// #define CS_RES_ISR 1
 
 //Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
+// #define ESTOP_PULLUP
+// #define FHOLD_PULLUP
 
 //Setup com pins
 #define RX_BIT 0
@@ -110,14 +110,14 @@ extern "C"
 #define DOUT0_PORT B
 
 //coolant
-#define DOUT1_BIT 3
-#define DOUT1_PORT C
+// #define DOUT1_BIT 3
+// #define DOUT1_PORT C
 
 //spindle speed sensor
-#define ANALOG0_BIT 4
-#define ANALOG0_PORT C
-#define ANALOG0_CHANNEL 4
-#define ANALOG0_PRESC 0
+// #define ANALOG0_BIT 4
+// #define ANALOG0_PORT C
+// #define ANALOG0_CHANNEL 4
+// #define ANALOG0_PRESC 0
 
 //Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEPPER_ENABLE_BIT 0

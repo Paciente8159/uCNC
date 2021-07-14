@@ -1,5 +1,5 @@
 /*
-	Name: ucnc.c
+	Name: cnc.c
 	Description: µCNC main unit.
 
 	Copyright: Copyright (c) João Martins

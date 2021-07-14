@@ -1,5 +1,5 @@
 /*
-	Name: mcus.h
+	Name: boards.h
 	Description: Defines the available board types.
 
 	Copyright: Copyright (c) João Martins
@@ -27,6 +27,7 @@ extern "C"
 #define BOARD_UNO 1
 #define BOARD_RAMBO14 2
 #define BOARD_RAMPS14 3
+#define BOARD_MKS_DLC 4
 #define BOARD_BLUEPILL 10
 #define BOARD_VIRTUAL 99
 

@@ -1,6 +1,6 @@
 /*
-	Name: mcumap_avr.h
-	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
+	Name: mcumap_stm32f10x.h
+	Description: Contains all MCU and PIN definitions for STM32F10x to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins

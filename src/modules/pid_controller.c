@@ -1,6 +1,6 @@
 /*
 	Name: pid_controller.c
-	Description: µCNC main unit.
+	Description: PID controller for µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins

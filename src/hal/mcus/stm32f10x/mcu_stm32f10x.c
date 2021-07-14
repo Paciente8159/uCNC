@@ -1,5 +1,5 @@
 /*
-	Name: mcu.h
+	Name: mcu_stm32f10x.h
 	Description: Contains all the function declarations necessary to interact with the MCU.
         This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
 

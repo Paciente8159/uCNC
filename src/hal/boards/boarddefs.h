@@ -40,6 +40,11 @@ extern "C"
 #include "hal/boards/avr/boardmap_uno.h"
 #endif
 
+#if (BOARD == BOARD_MKS_DLC)
+#define MCU MCU_AVR
+#include "hal/boards/avr/boardmap_mks_dlc.h"
+#endif
+
 #if (BOARD == BOARD_RAMBO14)
 #define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_rambo14.h"
