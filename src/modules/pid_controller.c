@@ -190,10 +190,6 @@ extern "C"
             {
                 int32_t error = pid_get_error(current_pid);
                 int64_t output = 0;
-
-                serial_print_int((int16_t)error);
-                serial_putc('\n');
-
                 if (kp[current_pid])
                 {
                     output = kp[current_pid] * error;
@@ -216,8 +212,9 @@ extern "C"
 
                 last_error[current_pid] = error;
                 output >>= PID_BITSHIFT_FACTOR;
-                output = MIN(output, 255);
-                uint8_t pid_result = MAX(output, 0);
+                output = MIN(output, PID_OUTPUT_MAX);
+                output = MAX(output, PID_OUTPUT_MIN);
+                uint8_t pid_result = (uint8_t)output;
                 pid_set_output(current_pid, pid_result);
             }
 
