@@ -71,10 +71,8 @@ extern "C"
         mc_init();               //motion control
         parser_init();           //parser
         pid_init();              //pid
-        serial_flush();
-#ifdef STEPPER_ENABLE
-        mcu_set_output(STEPPER_ENABLE);
-#endif
+        serial_flush();          //flushes any remaining serial output
+        io_enable_steps();       //enables stepper motors
     }
 
     void cnc_run(void)

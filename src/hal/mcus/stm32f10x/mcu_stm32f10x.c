@@ -375,6 +375,22 @@ extern "C"
 #ifdef STEPPER_ENABLE
 		mcu_config_output(STEPPER_ENABLE);
 #endif
+#ifdef STEPPER1_ENABLE
+		mcu_config_output(STEPPER1_ENABLE);
+#endif
+#ifdef STEPPER2_ENABLE
+		mcu_config_output(STEPPER2_ENABLE);
+#endif
+#ifdef STEPPER3_ENABLE
+		mcu_config_output(STEPPER3_ENABLE);
+#endif
+#ifdef STEPPER4_ENABLE
+		mcu_config_output(STEPPER4_ENABLE);
+#endif
+#ifdef STEPPER5_ENABLE
+		mcu_config_output(STEPPER5_ENABLE);
+#endif
+
 #ifdef DIR0
 		mcu_config_output(DIR0);
 #endif

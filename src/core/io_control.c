@@ -495,23 +495,23 @@ extern "C"
 
     void io_enable_steps(void)
     {
-#ifdef STEP0_EN
-        mcu_set_output(STEP0_EN);
+#ifdef STEPPER_ENABLE
+        mcu_set_output(STEPPER_ENABLE);
 #endif
-#ifdef STEP1_EN
-        mcu_set_output(STEP1_EN);
+#ifdef STEPPER1_ENABLE
+        mcu_set_output(STEPPER1_ENABLE);
 #endif
-#ifdef STEP2_EN
-        mcu_set_output(STEP2_EN);
+#ifdef STEPPER2_ENABLE
+        mcu_set_output(STEPPER2_ENABLE);
 #endif
-#ifdef STEP3_EN
-        mcu_set_output(STEP3_EN);
+#ifdef STEPPER3_ENABLE
+        mcu_set_output(STEPPER3_ENABLE);
 #endif
-#ifdef STEP4_EN
-        mcu_set_output(STEP4_EN);
+#ifdef STEPPER4_ENABLE
+        mcu_set_output(STEPPER4_ENABLE);
 #endif
-#ifdef STEP5_EN
-        mcu_set_output(STEP5_EN);
+#ifdef STEPPER5_ENABLE
+        mcu_set_output(STEPPER5_ENABLE);
 #endif
     }
 
