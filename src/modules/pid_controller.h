@@ -33,6 +33,11 @@ extern "C"
 #ifndef PID0_OUTPUT
 #error "The PID0 output is not defined"
 #endif
+#ifndef PID0_FREQ_DIV
+#define PID0_FREQ_DIV 1
+#elif (PID0_FREQ_DIV < 1 || PID0_FREQ_DIV > 250)
+#error "The PID0 sampling frequency devider value must be between 1 and 250"
+#endif
 #endif
 #if PID_CONTROLLERS > 1
 #ifndef PID1_DELTA
@@ -40,6 +45,11 @@ extern "C"
 #endif
 #ifndef PID1_OUTPUT
 #error "The PID1 output is not defined"
+#endif
+#ifndef PID1_FREQ_DIV
+#define PID1_FREQ_DIV 1
+#elif (PID1_FREQ_DIV < 1 || PID1_FREQ_DIV > 250)
+#error "The PID1 sampling frequency devider value must be between 1 and 250"
 #endif
 #endif
 #if PID_CONTROLLERS > 2
@@ -49,6 +59,11 @@ extern "C"
 #ifndef PID2_OUTPUT
 #error "The PID2 output is not defined"
 #endif
+#ifndef PID2_FREQ_DIV
+#define PID2_FREQ_DIV 1
+#elif (PID2_FREQ_DIV < 1 || PID2_FREQ_DIV > 250)
+#error "The PID2 sampling frequency devider value must be between 1 and 250"
+#endif
 #endif
 #if PID_CONTROLLERS > 3
 #ifndef PID3_DELTA
@@ -56,6 +71,11 @@ extern "C"
 #endif
 #ifndef PID3_OUTPUT
 #error "The PID3 output is not defined"
+#endif
+#ifndef PID3_FREQ_DIV
+#define PID3_FREQ_DIV 1
+#elif (PID3_FREQ_DIV < 1 || PID3_FREQ_DIV > 250)
+#error "The PID3 sampling frequency devider value must be between 1 and 250"
 #endif
 #endif
 #if PID_CONTROLLERS > 4
@@ -65,6 +85,11 @@ extern "C"
 #ifndef PID4_OUTPUT
 #error "The PID4 output is not defined"
 #endif
+#ifndef PID4_FREQ_DIV
+#define PID4_FREQ_DIV 1
+#elif (PID4_FREQ_DIV < 1 || PID4_FREQ_DIV > 250)
+#error "The PID4 sampling frequency devider value must be between 1 and 250"
+#endif
 #endif
 #if PID_CONTROLLERS > 5
 #ifndef PID5_DELTA
@@ -72,6 +97,11 @@ extern "C"
 #endif
 #ifndef PID5_OUTPUT
 #error "The PID5 output is not defined"
+#endif
+#ifndef PID5_FREQ_DIV
+#define PID5_FREQ_DIV 1
+#elif (PID5_FREQ_DIV < 1 || PID5_FREQ_DIV > 250)
+#error "The PID5 sampling frequency devider value must be between 1 and 250"
 #endif
 #endif
 #if PID_CONTROLLERS > 6
@@ -81,6 +111,11 @@ extern "C"
 #ifndef PID6_OUTPUT
 #error "The PID6 output is not defined"
 #endif
+#ifndef PID6_FREQ_DIV
+#define PID6_FREQ_DIV 1
+#elif (PID6_FREQ_DIV < 1 || PID6_FREQ_DIV > 250)
+#error "The PID6 sampling frequency devider value must be between 1 and 250"
+#endif
 #endif
 #if PID_CONTROLLERS > 7
 #ifndef PID7_DELTA
@@ -88,6 +123,11 @@ extern "C"
 #endif
 #ifndef PID7_OUTPUT
 #error "The PID7 output is not defined"
+#endif
+#ifndef PID7_FREQ_DIV
+#define PID7_FREQ_DIV 1
+#elif (PID7_FREQ_DIV < 1 || PID7_FREQ_DIV > 250)
+#error "The PID7 sampling frequency devider value must be between 1 and 250"
 #endif
 #endif
 
