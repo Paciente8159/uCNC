@@ -82,8 +82,8 @@ extern "C"
 //#define ECHO_CMD
 
 /*
-	Spindle configurations.
-	Uncomment to enable
+	Enables the spindle
+	Uncomment to enable. Pinout configurations are set in the cnc_hal_config.h
 */
 #define USE_SPINDLE
 #ifdef USE_SPINDLE
@@ -111,6 +111,10 @@ extern "C"
 */
 #define PID_CONTROLLERS 0
 
+/*
+	Sets the number of encoders to be used
+	The encoders are configured in the cnc_hal_config.h
+*/
 #define ENCODERS 0
 
 /*

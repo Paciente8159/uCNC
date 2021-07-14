@@ -101,10 +101,9 @@ extern "C"
 #define ENC7_MASK (1 << 7)
 #endif
 
-	extern int32_t g_encoders_pos[ENCODERS];
-
 	void encoders_isr(void);
-	void get_encoder(uint8_t id);
+	void encoders_get_position(uint8_t i);
+	void encoders_reset_position(void);
 
 #ifdef __cplusplus
 }
