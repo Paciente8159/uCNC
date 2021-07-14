@@ -31,6 +31,9 @@ extern "C"
 #include "core/interpolator.h"
 
     static volatile uint8_t io_limits_homing_filter;
+#if PID_CONTROLLERS > 0
+    static volatile uint8_t io_spindle_speed;
+#endif
 
     void io_limits_isr(void)
     {
@@ -249,6 +252,7 @@ extern "C"
     void io_set_steps(uint8_t mask)
     {
 #ifdef STEP0
+#ifdef STEP0_ISTEPPER
         if (mask & STEP0_MASK)
         {
             mcu_set_output(STEP0);
@@ -258,7 +262,9 @@ extern "C"
             mcu_clear_output(STEP0);
         }
 #endif
+#endif
 #ifdef STEP1
+#ifdef STEP1_ISTEPPER
         if (mask & STEP1_MASK)
         {
             mcu_set_output(STEP1);
@@ -268,7 +274,9 @@ extern "C"
             mcu_clear_output(STEP1);
         }
 #endif
+#endif
 #ifdef STEP2
+#ifdef STEP2_ISTEPPER
         if (mask & STEP2_MASK)
         {
             mcu_set_output(STEP2);
@@ -278,7 +286,9 @@ extern "C"
             mcu_clear_output(STEP2);
         }
 #endif
+#endif
 #ifdef STEP3
+#ifdef STEP3_ISTEPPER
         if (mask & STEP3_MASK)
         {
             mcu_set_output(STEP3);
@@ -288,7 +298,9 @@ extern "C"
             mcu_clear_output(STEP3);
         }
 #endif
+#endif
 #ifdef STEP4
+#ifdef STEP4_ISTEPPER
         if (mask & STEP4_MASK)
         {
             mcu_set_output(STEP4);
@@ -298,7 +310,9 @@ extern "C"
             mcu_clear_output(STEP4);
         }
 #endif
+#endif
 #ifdef STEP5
+#ifdef STEP5_ISTEPPER
         if (mask & STEP5_MASK)
         {
             mcu_set_output(STEP5);
@@ -308,7 +322,9 @@ extern "C"
             mcu_clear_output(STEP5);
         }
 #endif
+#endif
 #ifdef STEP6
+#ifdef STEP6_ISTEPPER
         if (mask & STEP6_MASK)
         {
             mcu_set_output(STEP6);
@@ -318,7 +334,9 @@ extern "C"
             mcu_clear_output(STEP6);
         }
 #endif
+#endif
 #ifdef STEP7
+#ifdef STEP7_ISTEPPER
         if (mask & STEP7_MASK)
         {
             mcu_set_output(STEP7);
@@ -328,63 +346,81 @@ extern "C"
             mcu_clear_output(STEP7);
         }
 #endif
+#endif
     }
 
     void io_toggle_steps(uint8_t mask)
     {
 #ifdef STEP0
+#ifdef STEP0_ISSTEPPER
         if (mask & STEP0_MASK)
         {
             mcu_toggle_output(STEP0);
         }
 #endif
+#endif
 #ifdef STEP1
+#ifdef STEP1_ISSTEPPER
         if (mask & STEP1_MASK)
         {
             mcu_toggle_output(STEP1);
         }
 #endif
+#endif
 #ifdef STEP2
+#ifdef STEP2_ISSTEPPER
         if (mask & STEP2_MASK)
         {
             mcu_toggle_output(STEP2);
         }
 #endif
+#endif
 #ifdef STEP3
+#ifdef STEP3_ISSTEPPER
         if (mask & STEP3_MASK)
         {
             mcu_toggle_output(STEP3);
         }
 #endif
+#endif
 #ifdef STEP4
+#ifdef STEP4_ISSTEPPER
         if (mask & STEP4_MASK)
         {
             mcu_toggle_output(STEP4);
         }
 #endif
+#endif
 #ifdef STEP5
+#ifdef STEP5_ISSTEPPER
         if (mask & STEP5_MASK)
         {
             mcu_toggle_output(STEP5);
         }
 #endif
+#endif
 #ifdef STEP6
+#ifdef STEP6_ISSTEPPER
         if (mask & STEP6_MASK)
         {
             mcu_toggle_output(STEP6);
         }
 #endif
+#endif
 #ifdef STEP7
+#ifdef STEP7_ISSTEPPER
         if (mask & STEP7_MASK)
         {
             mcu_toggle_output(STEP7);
         }
+#endif
 #endif
     }
 
     void io_set_dirs(uint8_t mask)
     {
 #ifdef DIR0
+#ifdef STEP0_ISSTEPPER
         if (mask & DIR0_MASK)
         {
             mcu_set_output(DIR0);
@@ -394,7 +430,9 @@ extern "C"
             mcu_clear_output(DIR0);
         }
 #endif
+#endif
 #ifdef DIR1
+#ifdef STEP1_ISSTEPPER
         if (mask & DIR1_MASK)
         {
             mcu_set_output(DIR1);
@@ -404,7 +442,9 @@ extern "C"
             mcu_clear_output(DIR1);
         }
 #endif
+#endif
 #ifdef DIR2
+#ifdef STEP2_ISSTEPPER
         if (mask & DIR2_MASK)
         {
             mcu_set_output(DIR2);
@@ -414,7 +454,9 @@ extern "C"
             mcu_clear_output(DIR2);
         }
 #endif
+#endif
 #ifdef DIR3
+#ifdef STEP3_ISSTEPPER
         if (mask & DIR3_MASK)
         {
             mcu_set_output(DIR3);
@@ -424,7 +466,9 @@ extern "C"
             mcu_clear_output(DIR3);
         }
 #endif
+#endif
 #ifdef DIR4
+#ifdef STEP4_ISSTEPPER
         if (mask & DIR4_MASK)
         {
             mcu_set_output(DIR4);
@@ -434,7 +478,9 @@ extern "C"
             mcu_clear_output(DIR4);
         }
 #endif
+#endif
 #ifdef DIR5
+#ifdef STEP5_ISSTEPPER
         if (mask & DIR5_MASK)
         {
             mcu_set_output(DIR5);
@@ -443,6 +489,7 @@ extern "C"
         {
             mcu_clear_output(DIR5);
         }
+#endif
 #endif
     }
 
@@ -471,6 +518,9 @@ extern "C"
 #ifdef USE_SPINDLE
     void io_set_spindle(uint8_t value, bool invert)
     {
+#if PID_CONTROLLERS > 0
+        io_spindle_speed = value;
+#endif
         if (!invert)
         {
             mcu_clear_output(SPINDLE_DIR);
@@ -480,6 +530,15 @@ extern "C"
             mcu_set_output(SPINDLE_DIR);
         }
         mcu_set_pwm(SPINDLE_PWM, value);
+    }
+
+    uint8_t io_get_spindle(void)
+    {
+#if PID_CONTROLLERS > 0
+        return io_spindle_speed;
+#else
+        return mcu_get_pwm(SPINDLE_PWM);
+#endif
     }
 #endif
 

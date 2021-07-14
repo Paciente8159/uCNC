@@ -221,6 +221,7 @@ extern "C"
 
 #ifdef USE_SPINDLE
 	void io_set_spindle(uint8_t value, bool invert);
+	uint8_t io_get_spindle(void);
 #endif
 
 #ifdef USE_COOLANT

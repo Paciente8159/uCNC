@@ -30,6 +30,7 @@ extern "C"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
+#include "modules/pid_controller.h"
 #ifdef USB_VCP
 #include "tusb_config.h"
 #include "tusb.h"
@@ -323,14 +324,16 @@ extern "C"
 	void SysTick_Handler(void)
 	{
 		mcu_runtime_ms++;
+		mcu_enable_global_isr();
+		pid_update_isr();
+#ifdef LED
 		static uint32_t last_ms = 0;
 		if (mcu_runtime_ms - last_ms > 1000)
 		{
 			last_ms = mcu_runtime_ms;
-#ifdef LED
 			mcu_toggle_output(LED);
-#endif
 		}
+#endif
 	}
 
 	/**

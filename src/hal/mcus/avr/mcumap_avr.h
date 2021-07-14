@@ -1243,6 +1243,32 @@ extern "C"
 #define DIO94_DIRREG (__dirreg__(DIN15_PORT))
 #endif
 
+//define motor if motor is stepper or other
+#if (defined(STEP0_PORT) && defined(STEP0_BIT))
+#define STEP0_ISSTEPPER
+#endif
+#if (defined(STEP1_PORT) && defined(STEP1_BIT))
+#define STEP1_ISSTEPPER
+#endif
+#if (defined(STEP2_PORT) && defined(STEP2_BIT))
+#define STEP2_ISSTEPPER
+#endif
+#if (defined(STEP3_PORT) && defined(STEP3_BIT))
+#define STEP3_ISSTEPPER
+#endif
+#if (defined(STEP4_PORT) && defined(STEP4_BIT))
+#define STEP4_ISSTEPPER
+#endif
+#if (defined(STEP5_PORT) && defined(STEP5_BIT))
+#define STEP5_ISSTEPPER
+#endif
+#if (defined(STEP6_PORT) && defined(STEP6_BIT))
+#define STEP6_ISSTEPPER
+#endif
+#if (defined(STEP7_PORT) && defined(STEP7_BIT))
+#define STEP7_ISSTEPPER
+#endif
+
 //ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO48_ISR (LIMIT_X_ISR)
@@ -2000,6 +2026,438 @@ extern "C"
 #endif
 #define DIO61_ISRREG CS_RES_ISRREG
 #endif
+#if (defined(DIN0_ISR) && defined(DIN0))
+#define DIO79_ISR (DIN0_ISR)
+#define DIN0_ISRREG (__pcmskreg__(DIN0_ISR))
+#if (DIN0_ISR == 0)
+#define DIN0_ISR0 (1 << DIN0_BIT)
+#endif
+#if (DIN0_ISR == 1)
+#define DIN0_ISR1 (1 << DIN0_BIT)
+#endif
+#if (DIN0_ISR == 2)
+#define DIN0_ISR2 (1 << DIN0_BIT)
+#endif
+#if (DIN0_ISR == -1)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRA 1
+#endif
+#if (DIN0_ISR == -2)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRA 4
+#endif
+#if (DIN0_ISR == -3)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRA 16
+#endif
+#if (DIN0_ISR == -4)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRA 64
+#endif
+#if (DIN0_ISR == -5)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRA
+#define DIN0_ISRB 1
+#endif
+#if (DIN0_ISR == -6)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRB
+#define DIN0_ISRB 4
+#endif
+#if (DIN0_ISR == -7)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRB
+#define DIN0_ISRB 16
+#endif
+#if (DIN0_ISR == -8)
+#undef DIN0_ISRREG
+#define DIN0_ISRREG EICRB
+#define DIN0_ISRB 64
+#endif
+#define DIO79_ISRREG DIN0_ISRREG
+#endif
+#if (defined(DIN1_ISR) && defined(DIN1))
+#define DIO80_ISR (DIN1_ISR)
+#define DIN1_ISRREG (__pcmskreg__(DIN1_ISR))
+#if (DIN1_ISR == 0)
+#define DIN1_ISR0 (1 << DIN1_BIT)
+#endif
+#if (DIN1_ISR == 1)
+#define DIN1_ISR1 (1 << DIN1_BIT)
+#endif
+#if (DIN1_ISR == 2)
+#define DIN1_ISR2 (1 << DIN1_BIT)
+#endif
+#if (DIN1_ISR == -1)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRA 1
+#endif
+#if (DIN1_ISR == -2)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRA 4
+#endif
+#if (DIN1_ISR == -3)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRA 16
+#endif
+#if (DIN1_ISR == -4)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRA 64
+#endif
+#if (DIN1_ISR == -5)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRA
+#define DIN1_ISRB 1
+#endif
+#if (DIN1_ISR == -6)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRB
+#define DIN1_ISRB 4
+#endif
+#if (DIN1_ISR == -7)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRB
+#define DIN1_ISRB 16
+#endif
+#if (DIN1_ISR == -8)
+#undef DIN1_ISRREG
+#define DIN1_ISRREG EICRB
+#define DIN1_ISRB 64
+#endif
+#define DIO80_ISRREG DIN1_ISRREG
+#endif
+#if (defined(DIN2_ISR) && defined(DIN2))
+#define DIO81_ISR (DIN2_ISR)
+#define DIN2_ISRREG (__pcmskreg__(DIN2_ISR))
+#if (DIN2_ISR == 0)
+#define DIN2_ISR0 (1 << DIN2_BIT)
+#endif
+#if (DIN2_ISR == 1)
+#define DIN2_ISR1 (1 << DIN2_BIT)
+#endif
+#if (DIN2_ISR == 2)
+#define DIN2_ISR2 (1 << DIN2_BIT)
+#endif
+#if (DIN2_ISR == -1)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRA 1
+#endif
+#if (DIN2_ISR == -2)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRA 4
+#endif
+#if (DIN2_ISR == -3)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRA 16
+#endif
+#if (DIN2_ISR == -4)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRA 64
+#endif
+#if (DIN2_ISR == -5)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRA
+#define DIN2_ISRB 1
+#endif
+#if (DIN2_ISR == -6)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRB
+#define DIN2_ISRB 4
+#endif
+#if (DIN2_ISR == -7)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRB
+#define DIN2_ISRB 16
+#endif
+#if (DIN2_ISR == -8)
+#undef DIN2_ISRREG
+#define DIN2_ISRREG EICRB
+#define DIN2_ISRB 64
+#endif
+#define DIO81_ISRREG DIN2_ISRREG
+#endif
+#if (defined(DIN3_ISR) && defined(DIN3))
+#define DIO82_ISR (DIN3_ISR)
+#define DIN3_ISRREG (__pcmskreg__(DIN3_ISR))
+#if (DIN3_ISR == 0)
+#define DIN3_ISR0 (1 << DIN3_BIT)
+#endif
+#if (DIN3_ISR == 1)
+#define DIN3_ISR1 (1 << DIN3_BIT)
+#endif
+#if (DIN3_ISR == 2)
+#define DIN3_ISR2 (1 << DIN3_BIT)
+#endif
+#if (DIN3_ISR == -1)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRA 1
+#endif
+#if (DIN3_ISR == -2)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRA 4
+#endif
+#if (DIN3_ISR == -3)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRA 16
+#endif
+#if (DIN3_ISR == -4)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRA 64
+#endif
+#if (DIN3_ISR == -5)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRA
+#define DIN3_ISRB 1
+#endif
+#if (DIN3_ISR == -6)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRB
+#define DIN3_ISRB 4
+#endif
+#if (DIN3_ISR == -7)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRB
+#define DIN3_ISRB 16
+#endif
+#if (DIN3_ISR == -8)
+#undef DIN3_ISRREG
+#define DIN3_ISRREG EICRB
+#define DIN3_ISRB 64
+#endif
+#define DIO82_ISRREG DIN3_ISRREG
+#endif
+#if (defined(DIN4_ISR) && defined(DIN4))
+#define DIO83_ISR (DIN4_ISR)
+#define DIN4_ISRREG (__pcmskreg__(DIN4_ISR))
+#if (DIN4_ISR == 0)
+#define DIN4_ISR0 (1 << DIN4_BIT)
+#endif
+#if (DIN4_ISR == 1)
+#define DIN4_ISR1 (1 << DIN4_BIT)
+#endif
+#if (DIN4_ISR == 2)
+#define DIN4_ISR2 (1 << DIN4_BIT)
+#endif
+#if (DIN4_ISR == -1)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRA 1
+#endif
+#if (DIN4_ISR == -2)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRA 4
+#endif
+#if (DIN4_ISR == -3)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRA 16
+#endif
+#if (DIN4_ISR == -4)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRA 64
+#endif
+#if (DIN4_ISR == -5)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRA
+#define DIN4_ISRB 1
+#endif
+#if (DIN4_ISR == -6)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRB
+#define DIN4_ISRB 4
+#endif
+#if (DIN4_ISR == -7)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRB
+#define DIN4_ISRB 16
+#endif
+#if (DIN4_ISR == -8)
+#undef DIN4_ISRREG
+#define DIN4_ISRREG EICRB
+#define DIN4_ISRB 64
+#endif
+#define DIO83_ISRREG DIN4_ISRREG
+#endif
+#if (defined(DIN5_ISR) && defined(DIN5))
+#define DIO84_ISR (DIN5_ISR)
+#define DIN5_ISRREG (__pcmskreg__(DIN5_ISR))
+#if (DIN5_ISR == 0)
+#define DIN5_ISR0 (1 << DIN5_BIT)
+#endif
+#if (DIN5_ISR == 1)
+#define DIN5_ISR1 (1 << DIN5_BIT)
+#endif
+#if (DIN5_ISR == 2)
+#define DIN5_ISR2 (1 << DIN5_BIT)
+#endif
+#if (DIN5_ISR == -1)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRA 1
+#endif
+#if (DIN5_ISR == -2)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRA 4
+#endif
+#if (DIN5_ISR == -3)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRA 16
+#endif
+#if (DIN5_ISR == -4)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRA 64
+#endif
+#if (DIN5_ISR == -5)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRA
+#define DIN5_ISRB 1
+#endif
+#if (DIN5_ISR == -6)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRB
+#define DIN5_ISRB 4
+#endif
+#if (DIN5_ISR == -7)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRB
+#define DIN5_ISRB 16
+#endif
+#if (DIN5_ISR == -8)
+#undef DIN5_ISRREG
+#define DIN5_ISRREG EICRB
+#define DIN5_ISRB 64
+#endif
+#define DIO84_ISRREG DIN5_ISRREG
+#endif
+#if (defined(DIN6_ISR) && defined(DIN6))
+#define DIO85_ISR (DIN6_ISR)
+#define DIN6_ISRREG (__pcmskreg__(DIN6_ISR))
+#if (DIN6_ISR == 0)
+#define DIN6_ISR0 (1 << DIN6_BIT)
+#endif
+#if (DIN6_ISR == 1)
+#define DIN6_ISR1 (1 << DIN6_BIT)
+#endif
+#if (DIN6_ISR == 2)
+#define DIN6_ISR2 (1 << DIN6_BIT)
+#endif
+#if (DIN6_ISR == -1)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRA 1
+#endif
+#if (DIN6_ISR == -2)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRA 4
+#endif
+#if (DIN6_ISR == -3)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRA 16
+#endif
+#if (DIN6_ISR == -4)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRA 64
+#endif
+#if (DIN6_ISR == -5)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRA
+#define DIN6_ISRB 1
+#endif
+#if (DIN6_ISR == -6)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRB
+#define DIN6_ISRB 4
+#endif
+#if (DIN6_ISR == -7)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRB
+#define DIN6_ISRB 16
+#endif
+#if (DIN6_ISR == -8)
+#undef DIN6_ISRREG
+#define DIN6_ISRREG EICRB
+#define DIN6_ISRB 64
+#endif
+#define DIO85_ISRREG DIN6_ISRREG
+#endif
+#if (defined(DIN7_ISR) && defined(DIN7))
+#define DIO86_ISR (DIN7_ISR)
+#define DIN7_ISRREG (__pcmskreg__(DIN7_ISR))
+#if (DIN7_ISR == 0)
+#define DIN7_ISR0 (1 << DIN7_BIT)
+#endif
+#if (DIN7_ISR == 1)
+#define DIN7_ISR1 (1 << DIN7_BIT)
+#endif
+#if (DIN7_ISR == 2)
+#define DIN7_ISR2 (1 << DIN7_BIT)
+#endif
+#if (DIN7_ISR == -1)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRA 1
+#endif
+#if (DIN7_ISR == -2)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRA 4
+#endif
+#if (DIN7_ISR == -3)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRA 16
+#endif
+#if (DIN7_ISR == -4)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRA 64
+#endif
+#if (DIN7_ISR == -5)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRA
+#define DIN7_ISRB 1
+#endif
+#if (DIN7_ISR == -6)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRB
+#define DIN7_ISRB 4
+#endif
+#if (DIN7_ISR == -7)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRB
+#define DIN7_ISRB 16
+#endif
+#if (DIN7_ISR == -8)
+#undef DIN7_ISRREG
+#define DIN7_ISRREG EICRB
+#define DIN7_ISRB 64
+#endif
+#define DIO86_ISRREG DIN7_ISRREG
+#endif
 
 //ISR on change defaults
 #ifndef LIMIT_X_ISR0
@@ -2296,6 +2754,174 @@ extern "C"
 #endif
 #define DIO61_ISR_MASK CS_RES_ISR_MASK
 #define DIO61_ISRREG CS_RES_ISRREG
+#ifndef DIN0_ISR0
+#define DIN0_ISR0 0
+#endif
+#ifndef DIN0_ISR1
+#define DIN0_ISR1 0
+#endif
+#ifndef DIN0_ISR2
+#define DIN0_ISR2 0
+#endif
+#ifndef DIN0_ISRA
+#define DIN0_ISRA 0
+#endif
+#ifndef DIN0_ISRB
+#define DIN0_ISRB 0
+#endif
+#define DIN0_ISR_MASK (DIN0_ISR0 | DIN0_ISR1 | DIN0_ISR2 | DIN0_ISRA | DIN0_ISRB)
+#ifndef DIN0_ISR_MASK
+#define DIN0_ISR_MASK 0
+#endif
+#define DIO79_ISR_MASK DIN0_ISR_MASK
+#define DIO79_ISRREG DIN0_ISRREG
+#ifndef DIN1_ISR0
+#define DIN1_ISR0 0
+#endif
+#ifndef DIN1_ISR1
+#define DIN1_ISR1 0
+#endif
+#ifndef DIN1_ISR2
+#define DIN1_ISR2 0
+#endif
+#ifndef DIN1_ISRA
+#define DIN1_ISRA 0
+#endif
+#ifndef DIN1_ISRB
+#define DIN1_ISRB 0
+#endif
+#define DIN1_ISR_MASK (DIN1_ISR0 | DIN1_ISR1 | DIN1_ISR2 | DIN1_ISRA | DIN1_ISRB)
+#ifndef DIN1_ISR_MASK
+#define DIN1_ISR_MASK 0
+#endif
+#define DIO80_ISR_MASK DIN1_ISR_MASK
+#define DIO80_ISRREG DIN1_ISRREG
+#ifndef DIN2_ISR0
+#define DIN2_ISR0 0
+#endif
+#ifndef DIN2_ISR1
+#define DIN2_ISR1 0
+#endif
+#ifndef DIN2_ISR2
+#define DIN2_ISR2 0
+#endif
+#ifndef DIN2_ISRA
+#define DIN2_ISRA 0
+#endif
+#ifndef DIN2_ISRB
+#define DIN2_ISRB 0
+#endif
+#define DIN2_ISR_MASK (DIN2_ISR0 | DIN2_ISR1 | DIN2_ISR2 | DIN2_ISRA | DIN2_ISRB)
+#ifndef DIN2_ISR_MASK
+#define DIN2_ISR_MASK 0
+#endif
+#define DIO81_ISR_MASK DIN2_ISR_MASK
+#define DIO81_ISRREG DIN2_ISRREG
+#ifndef DIN3_ISR0
+#define DIN3_ISR0 0
+#endif
+#ifndef DIN3_ISR1
+#define DIN3_ISR1 0
+#endif
+#ifndef DIN3_ISR2
+#define DIN3_ISR2 0
+#endif
+#ifndef DIN3_ISRA
+#define DIN3_ISRA 0
+#endif
+#ifndef DIN3_ISRB
+#define DIN3_ISRB 0
+#endif
+#define DIN3_ISR_MASK (DIN3_ISR0 | DIN3_ISR1 | DIN3_ISR2 | DIN3_ISRA | DIN3_ISRB)
+#ifndef DIN3_ISR_MASK
+#define DIN3_ISR_MASK 0
+#endif
+#define DIO82_ISR_MASK DIN3_ISR_MASK
+#define DIO82_ISRREG DIN3_ISRREG
+#ifndef DIN4_ISR0
+#define DIN4_ISR0 0
+#endif
+#ifndef DIN4_ISR1
+#define DIN4_ISR1 0
+#endif
+#ifndef DIN4_ISR2
+#define DIN4_ISR2 0
+#endif
+#ifndef DIN4_ISRA
+#define DIN4_ISRA 0
+#endif
+#ifndef DIN4_ISRB
+#define DIN4_ISRB 0
+#endif
+#define DIN4_ISR_MASK (DIN4_ISR0 | DIN4_ISR1 | DIN4_ISR2 | DIN4_ISRA | DIN4_ISRB)
+#ifndef DIN4_ISR_MASK
+#define DIN4_ISR_MASK 0
+#endif
+#define DIO83_ISR_MASK DIN4_ISR_MASK
+#define DIO83_ISRREG DIN4_ISRREG
+#ifndef DIN5_ISR0
+#define DIN5_ISR0 0
+#endif
+#ifndef DIN5_ISR1
+#define DIN5_ISR1 0
+#endif
+#ifndef DIN5_ISR2
+#define DIN5_ISR2 0
+#endif
+#ifndef DIN5_ISRA
+#define DIN5_ISRA 0
+#endif
+#ifndef DIN5_ISRB
+#define DIN5_ISRB 0
+#endif
+#define DIN5_ISR_MASK (DIN5_ISR0 | DIN5_ISR1 | DIN5_ISR2 | DIN5_ISRA | DIN5_ISRB)
+#ifndef DIN5_ISR_MASK
+#define DIN5_ISR_MASK 0
+#endif
+#define DIO84_ISR_MASK DIN5_ISR_MASK
+#define DIO84_ISRREG DIN5_ISRREG
+#ifndef DIN6_ISR0
+#define DIN6_ISR0 0
+#endif
+#ifndef DIN6_ISR1
+#define DIN6_ISR1 0
+#endif
+#ifndef DIN6_ISR2
+#define DIN6_ISR2 0
+#endif
+#ifndef DIN6_ISRA
+#define DIN6_ISRA 0
+#endif
+#ifndef DIN6_ISRB
+#define DIN6_ISRB 0
+#endif
+#define DIN6_ISR_MASK (DIN6_ISR0 | DIN6_ISR1 | DIN6_ISR2 | DIN6_ISRA | DIN6_ISRB)
+#ifndef DIN6_ISR_MASK
+#define DIN6_ISR_MASK 0
+#endif
+#define DIO85_ISR_MASK DIN6_ISR_MASK
+#define DIO85_ISRREG DIN6_ISRREG
+#ifndef DIN7_ISR0
+#define DIN7_ISR0 0
+#endif
+#ifndef DIN7_ISR1
+#define DIN7_ISR1 0
+#endif
+#ifndef DIN7_ISR2
+#define DIN7_ISR2 0
+#endif
+#ifndef DIN7_ISRA
+#define DIN7_ISRA 0
+#endif
+#ifndef DIN7_ISRB
+#define DIN7_ISRB 0
+#endif
+#define DIN7_ISR_MASK (DIN7_ISR0 | DIN7_ISR1 | DIN7_ISR2 | DIN7_ISRA | DIN7_ISRB)
+#ifndef DIN7_ISR_MASK
+#define DIN7_ISR_MASK 0
+#endif
+#define DIO86_ISR_MASK DIN7_ISR_MASK
+#define DIO86_ISRREG DIN7_ISRREG
 
 //PWM pins
 #define PWMENMASKA 0x80
@@ -2721,6 +3347,72 @@ extern "C"
 #define DIO30_PRESCALLER PWM15_PRESCALLER
 #endif
 
+//Analog registers
+#ifdef ANALOG0
+#define DIO62_PRESC ANALOG0_PRESC
+#define DIO62_CHANNEL ANALOG0_CHANNEL
+#endif
+#ifdef ANALOG1
+#define DIO63_PRESC ANALOG1_PRESC
+#define DIO63_CHANNEL ANALOG1_CHANNEL
+#endif
+#ifdef ANALOG2
+#define DIO64_PRESC ANALOG2_PRESC
+#define DIO64_CHANNEL ANALOG2_CHANNEL
+#endif
+#ifdef ANALOG3
+#define DIO65_PRESC ANALOG3_PRESC
+#define DIO65_CHANNEL ANALOG3_CHANNEL
+#endif
+#ifdef ANALOG4
+#define DIO66_PRESC ANALOG4_PRESC
+#define DIO66_CHANNEL ANALOG4_CHANNEL
+#endif
+#ifdef ANALOG5
+#define DIO67_PRESC ANALOG5_PRESC
+#define DIO67_CHANNEL ANALOG5_CHANNEL
+#endif
+#ifdef ANALOG6
+#define DIO68_PRESC ANALOG6_PRESC
+#define DIO68_CHANNEL ANALOG6_CHANNEL
+#endif
+#ifdef ANALOG7
+#define DIO69_PRESC ANALOG7_PRESC
+#define DIO69_CHANNEL ANALOG7_CHANNEL
+#endif
+#ifdef ANALOG8
+#define DIO70_PRESC ANALOG8_PRESC
+#define DIO70_CHANNEL ANALOG8_CHANNEL
+#endif
+#ifdef ANALOG9
+#define DIO71_PRESC ANALOG9_PRESC
+#define DIO71_CHANNEL ANALOG9_CHANNEL
+#endif
+#ifdef ANALOG10
+#define DIO72_PRESC ANALOG10_PRESC
+#define DIO72_CHANNEL ANALOG10_CHANNEL
+#endif
+#ifdef ANALOG11
+#define DIO73_PRESC ANALOG11_PRESC
+#define DIO73_CHANNEL ANALOG11_CHANNEL
+#endif
+#ifdef ANALOG12
+#define DIO74_PRESC ANALOG12_PRESC
+#define DIO74_CHANNEL ANALOG12_CHANNEL
+#endif
+#ifdef ANALOG13
+#define DIO75_PRESC ANALOG13_PRESC
+#define DIO75_CHANNEL ANALOG13_CHANNEL
+#endif
+#ifdef ANALOG14
+#define DIO76_PRESC ANALOG14_PRESC
+#define DIO76_CHANNEL ANALOG14_CHANNEL
+#endif
+#ifdef ANALOG15
+#define DIO77_PRESC ANALOG15_PRESC
+#define DIO77_CHANNEL ANALOG15_CHANNEL
+#endif
+
 //COM registers
 #ifndef COM_NUMBER
 #define COM_RX_vect USART_RX_vect
@@ -2834,13 +3526,13 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_get_analog(diopin) (          \
-	{                                     \
-		ADMUX = (0x60 | ANALOG0_CHANNEL); \
-		ADCSRA = (0xC0 | ANALOG0_PRESC);  \
-		while (ADCSRA & 0x40)             \
-			;                             \
-		ADCH;                             \
+#define mcu_get_analog(diopin) (                        \
+	{                                                   \
+		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
+		ADCSRA = (0xC0 | __indirect__(diopin, PRESC));  \
+		while (ADCSRA & 0x40)                           \
+			;                                           \
+		ADCH;                                           \
 	})
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)

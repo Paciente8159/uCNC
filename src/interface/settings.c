@@ -29,6 +29,7 @@ extern "C"
 #include "interface/grbl_interface.h"
 #include "interface/protocol.h"
 #include "core/parser.h"
+#include "modules/pid_controller.h"
 
 //if settings struct is changed this version should change too
 #define SETTINGS_VERSION "V03"
@@ -173,6 +174,47 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 #ifdef LASER_MODE
             .laser_mode = 0,
 #endif
+#if PID_CONTROLLERS > 0
+            .pid_gain[0][0] = 0,
+            .pid_gain[0][1] = 0,
+            .pid_gain[0][2] = 0,
+#endif
+#if PID_CONTROLLERS > 1
+            .pid_gain[1][1] = 0,
+            .pid_gain[1][1] = 0,
+            .pid_gain[1][2] = 0,
+#endif
+#if PID_CONTROLLERS > 2
+            .pid_gain[2][2] = 0,
+            .pid_gain[2][1] = 0,
+            .pid_gain[2][2] = 0,
+#endif
+#if PID_CONTROLLERS > 3
+            .pid_gain[3][3] = 0,
+            .pid_gain[3][1] = 0,
+            .pid_gain[3][2] = 0,
+#endif
+#if PID_CONTROLLERS > 4
+            .pid_gain[4][4] = 0,
+            .pid_gain[4][1] = 0,
+            .pid_gain[4][2] = 0,
+#endif
+#if PID_CONTROLLERS > 5
+            .pid_gain[5][5] = 0,
+            .pid_gain[5][1] = 0,
+            .pid_gain[5][2] = 0,
+#endif
+#if PID_CONTROLLERS > 6
+            .pid_gain[6][6] = 0,
+            .pid_gain[6][1] = 0,
+            .pid_gain[6][2] = 0,
+#endif
+#if PID_CONTROLLERS > 7
+            .pid_gain[7][7] = 0,
+            .pid_gain[7][1] = 0,
+            .pid_gain[7][2] = 0,
+#endif
+
             .step_enable_invert = DEFAULT_STEP_ENA_INV,
             .step_invert_mask = DEFAULT_STEP_INV_MASK,
             .dir_invert_mask = DEFAULT_DIR_INV_MASK,
@@ -517,10 +559,101 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             break;
 #endif
 #endif
+#if PID_CONTROLLERS > 0
+        case 200:
+            g_settings.pid_gain[0][0] = value;
+            break;
+        case 201:
+            g_settings.pid_gain[0][1] = value;
+            break;
+        case 202:
+            g_settings.pid_gain[0][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 1
+        case 210:
+            g_settings.pid_gain[1][0] = value;
+            break;
+        case 211:
+            g_settings.pid_gain[1][1] = value;
+            break;
+        case 212:
+            g_settings.pid_gain[1][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 2
+        case 220:
+            g_settings.pid_gain[2][0] = value;
+            break;
+        case 221:
+            g_settings.pid_gain[2][1] = value;
+            break;
+        case 222:
+            g_settings.pid_gain[2][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 3
+        case 230:
+            g_settings.pid_gain[3][0] = value;
+            break;
+        case 231:
+            g_settings.pid_gain[3][1] = value;
+            break;
+        case 232:
+            g_settings.pid_gain[3][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 4
+        case 240:
+            g_settings.pid_gain[4][0] = value;
+            break;
+        case 241:
+            g_settings.pid_gain[4][1] = value;
+            break;
+        case 242:
+            g_settings.pid_gain[4][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 5
+        case 250:
+            g_settings.pid_gain[5][0] = value;
+            break;
+        case 251:
+            g_settings.pid_gain[5][1] = value;
+            break;
+        case 252:
+            g_settings.pid_gain[5][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 6
+        case 260:
+            g_settings.pid_gain[6][0] = value;
+            break;
+        case 261:
+            g_settings.pid_gain[6][1] = value;
+            break;
+        case 262:
+            g_settings.pid_gain[6][2] = value;
+            break;
+#endif
+#if PID_CONTROLLERS > 7
+        case 270:
+            g_settings.pid_gain[7][0] = value;
+            break;
+        case 271:
+            g_settings.pid_gain[7][1] = value;
+            break;
+        case 272:
+            g_settings.pid_gain[7][2] = value;
+            break;
+#endif
         default:
             return STATUS_INVALID_STATEMENT;
         }
 
+#if PID_CONTROLLERS > 0
+        pid_init();
+#endif
         settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 //fix step invert mask to match mirror step pins
@@ -532,7 +665,6 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
 #endif
 #endif
-
         return result;
     }
 

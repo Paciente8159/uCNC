@@ -82,8 +82,8 @@ extern "C"
 //#define ECHO_CMD
 
 /*
-	Spindle configurations.
-	Uncomment to enable
+	Enables the spindle
+	Uncomment to enable. Pinout configurations are set in the cnc_hal_config.h
 */
 #define USE_SPINDLE
 #ifdef USE_SPINDLE
@@ -104,6 +104,18 @@ extern "C"
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
 #endif
+
+/*
+	Sets the number of PID controllers to be used
+	The PID controllers are configured in the cnc_hal_config.h
+*/
+#define PID_CONTROLLERS 0
+
+/*
+	Sets the number of encoders to be used
+	The encoders are configured in the cnc_hal_config.h
+*/
+#define ENCODERS 0
 
 /*
 	Special definitions used to debug code

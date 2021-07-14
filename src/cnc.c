@@ -35,6 +35,8 @@ extern "C"
 #include "core/planner.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
+#include "modules/encoder.h"
+#include "modules/pid_controller.h"
 
     typedef struct
     {
@@ -68,6 +70,7 @@ extern "C"
         planner_init();          //motion planner
         mc_init();               //motion control
         parser_init();           //parser
+        pid_init();              //pid
         serial_flush();
 #ifdef STEPPER_ENABLE
         mcu_set_output(STEPPER_ENABLE);
@@ -283,16 +286,10 @@ extern "C"
         itp_stop();
         //stop tools
 #ifdef USE_SPINDLE
-        mcu_set_pwm(SPINDLE_PWM, 0);
-        mcu_clear_output(SPINDLE_DIR);
+        io_set_spindle(0, false);
 #endif
 #ifdef USE_COOLANT
-#ifdef COOLANT_FLOOD
-        mcu_clear_output(COOLANT_FLOOD);
-#endif
-#ifdef COOLANT_MIST
-        mcu_clear_output(COOLANT_MIST);
-#endif
+        io_set_coolant(0);
 #endif
     }
 

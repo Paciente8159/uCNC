@@ -226,7 +226,7 @@ extern "C"
         } while (c != 0);
     }
 
-    void serial_print_int(uint16_t num)
+    void serial_print_int(int16_t num)
     {
         if (num == 0)
         {
@@ -236,6 +236,11 @@ extern "C"
 
         unsigned char buffer[6];
         uint8_t i = 0;
+        if (num < 0)
+        {
+            serial_putc('-');
+            num = -num;
+        }
 
         while (num > 0)
         {
@@ -253,7 +258,7 @@ extern "C"
         } while (i);
     }
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-    void serial_print_long(uint32_t num)
+    void serial_print_long(int32_t num)
     {
         if (num == 0)
         {
@@ -263,6 +268,12 @@ extern "C"
 
         unsigned char buffer[11];
         uint8_t i = 0;
+
+        if (num < 0)
+        {
+            serial_putc('-');
+            num = -num;
+        }
 
         while (num > 0)
         {

@@ -39,6 +39,7 @@ extern "C"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
+#include "modules/pid_controller.h"
 
 #include <math.h>
 #include <inttypes.h>
@@ -68,8 +69,9 @@ extern "C"
         static volatile uint32_t mcu_runtime_ms;
         ISR(RTC_COMPA_vect, ISR_BLOCK)
         {
-                mcu_enable_global_isr();
                 mcu_runtime_ms++;
+                mcu_enable_global_isr();
+                pid_update_isr();
         }
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
