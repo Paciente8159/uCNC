@@ -82,7 +82,7 @@ extern "C"
         bool spindle_inv;
 #endif
         float feed;
-        bool update_speed;
+        uint8_t update_speed;
     } INTERPOLATOR_SEGMENT;
 
     //circular buffers
@@ -357,7 +357,7 @@ extern "C"
             */
                 speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
                 profile_steps_limit = accel_until;
-                sgm->update_speed = true;
+                sgm->update_speed = 1;
                 is_initial_transition = true;
             }
             else if (unprocessed_steps > deaccel_from)
@@ -365,14 +365,14 @@ extern "C"
                 //constant speed segment
                 speed_change = 0;
                 profile_steps_limit = deaccel_from;
-                sgm->update_speed = is_initial_transition;
+                sgm->update_speed = is_initial_transition ? 2 : 0;
                 is_initial_transition = false;
             }
             else
             {
                 speed_change = -half_speed_change;
                 profile_steps_limit = 0;
-                sgm->update_speed = true;
+                sgm->update_speed = 1;
                 is_initial_transition = true;
             }
 
@@ -627,12 +627,16 @@ extern "C"
         //if segment needs to update the step ISR (after preloading first step byte)
         if (itp_running_sgm->update_speed)
         {
-            mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+            if (itp_running_sgm->update_speed & 0x01)
+            {
+                mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+            }
+            io_set_dirs(itp_running_sgm->block->dirbits);
 #ifdef USE_SPINDLE
             io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
             itp_rt_spindle = itp_running_sgm->spindle;
 #endif
-            itp_running_sgm->update_speed = false;
+            itp_running_sgm->update_speed = 0;
         }
 
         //one step remaining discards current segment
@@ -670,10 +674,10 @@ extern "C"
                 itp_isr_finnished = false;
                 if (itp_running_sgm->block != NULL)
                 {
-                    io_set_dirs(itp_running_sgm->block->dirbits);
 #if (DSS_MAX_OVERSAMPLING != 0)
                     if (itp_running_sgm->next_dss != 0)
                     {
+                        itp_running_sgm->block->main_axis = 0; //disables direct step increment to force step calculation
                         if (!(itp_running_sgm->next_dss & 0xF8))
                         {
                             itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
