@@ -251,7 +251,7 @@ extern "C"
     //outputs
     void io_set_steps(uint8_t mask)
     {
-#ifdef STEP0
+#if (STEPPER_COUNT > 0 && defined(STEP0))
 #ifndef STEP0_NOTSTEPPER
         if (mask & STEP0_MASK)
         {
@@ -263,7 +263,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP1
+#if (STEPPER_COUNT > 1 && defined(STEP1))
 #ifndef STEP1_NOTSTEPPER
         if (mask & STEP1_MASK)
         {
@@ -275,7 +275,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP2
+#if (STEPPER_COUNT > 2 && defined(STEP2))
 #ifndef STEP2_NOTSTEPPER
         if (mask & STEP2_MASK)
         {
@@ -287,7 +287,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP3
+#if (STEPPER_COUNT > 3 && defined(STEP3))
 #ifndef STEP3_NOTSTEPPER
         if (mask & STEP3_MASK)
         {
@@ -299,7 +299,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP4
+#if (STEPPER_COUNT > 4 && defined(STEP4))
 #ifndef STEP4_NOTSTEPPER
         if (mask & STEP4_MASK)
         {
@@ -311,7 +311,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP5
+#if (STEPPER_COUNT > 5 && defined(STEP5))
 #ifndef STEP5_NOTSTEPPER
         if (mask & STEP5_MASK)
         {
@@ -351,7 +351,7 @@ extern "C"
 
     void io_toggle_steps(uint8_t mask)
     {
-#ifdef STEP0
+#if (STEPPER_COUNT > 0 && defined(STEP0))
 #ifdef STEP0_ISSTEPPER
         if (mask & STEP0_MASK)
         {
@@ -359,7 +359,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP1
+#if (STEPPER_COUNT > 1 && defined(STEP1))
 #ifdef STEP1_ISSTEPPER
         if (mask & STEP1_MASK)
         {
@@ -367,7 +367,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP2
+#if (STEPPER_COUNT > 2 && defined(STEP2))
 #ifdef STEP2_ISSTEPPER
         if (mask & STEP2_MASK)
         {
@@ -375,7 +375,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP3
+#if (STEPPER_COUNT > 3 && defined(STEP3))
 #ifdef STEP3_ISSTEPPER
         if (mask & STEP3_MASK)
         {
@@ -383,7 +383,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP4
+#if (STEPPER_COUNT > 4 && defined(STEP4))
 #ifdef STEP4_ISSTEPPER
         if (mask & STEP4_MASK)
         {
@@ -391,7 +391,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP5
+#if (STEPPER_COUNT > 5 && defined(STEP5))
 #ifdef STEP5_ISSTEPPER
         if (mask & STEP5_MASK)
         {
@@ -419,7 +419,7 @@ extern "C"
 
     void io_set_dirs(uint8_t mask)
     {
-#ifdef DIR0
+#if (STEPPER_COUNT > 0 && defined(DIR0))
 #ifdef STEP0_ISSTEPPER
         if (mask & DIR0_MASK)
         {
@@ -431,7 +431,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef DIR1
+#if (STEPPER_COUNT > 1 && defined(DIR1))
 #ifdef STEP1_ISSTEPPER
         if (mask & DIR1_MASK)
         {
@@ -443,7 +443,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef DIR2
+#if (STEPPER_COUNT > 2 && defined(DIR2))
 #ifdef STEP2_ISSTEPPER
         if (mask & DIR2_MASK)
         {
@@ -455,7 +455,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef DIR3
+#if (STEPPER_COUNT > 3 && defined(DIR3))
 #ifdef STEP3_ISSTEPPER
         if (mask & DIR3_MASK)
         {
@@ -467,7 +467,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef DIR4
+#if (STEPPER_COUNT > 4 && defined(DIR4))
 #ifdef STEP4_ISSTEPPER
         if (mask & DIR4_MASK)
         {
@@ -479,7 +479,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef DIR5
+#if (STEPPER_COUNT > 5 && defined(DIR5))
 #ifdef STEP5_ISSTEPPER
         if (mask & DIR5_MASK)
         {

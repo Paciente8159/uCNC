@@ -497,9 +497,6 @@ extern "C"
         //starts the step isr if is stopped and there are segments to execute
         if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
         {
-#ifdef STEPPER_ENABLE
-            mcu_clear_output(STEPPER_ENABLE);
-#endif
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
         }
@@ -681,22 +678,22 @@ extern "C"
                         if (!(itp_running_sgm->next_dss & 0xF8))
                         {
                             itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
-#ifdef STEP0
+#if (STEPPER_COUNT > 0 && defined(STEP0))
                             itp_running_sgm->block->errors[0] <<= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP1
+#if (STEPPER_COUNT > 1 && defined(STEP1))
                             itp_running_sgm->block->errors[1] <<= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP2
+#if (STEPPER_COUNT > 2 && defined(STEP2))
                             itp_running_sgm->block->errors[2] <<= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP3
+#if (STEPPER_COUNT > 3 && defined(STEP3))
                             itp_running_sgm->block->errors[3] <<= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP4
+#if (STEPPER_COUNT > 4 && defined(STEP4))
                             itp_running_sgm->block->errors[4] <<= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP5
+#if (STEPPER_COUNT > 5 && defined(STEP5))
                             itp_running_sgm->block->errors[5] <<= itp_running_sgm->next_dss;
 #endif
                         }
@@ -704,22 +701,22 @@ extern "C"
                         {
                             itp_running_sgm->next_dss = -itp_running_sgm->next_dss;
                             itp_running_sgm->block->total_steps >>= itp_running_sgm->next_dss;
-#ifdef STEP0
+#if (STEPPER_COUNT > 0 && defined(STEP0))
                             itp_running_sgm->block->errors[0] >>= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP1
+#if (STEPPER_COUNT > 1 && defined(STEP1))
                             itp_running_sgm->block->errors[1] >>= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP2
+#if (STEPPER_COUNT > 2 && defined(STEP2))
                             itp_running_sgm->block->errors[2] >>= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP3
+#if (STEPPER_COUNT > 3 && defined(STEP3))
                             itp_running_sgm->block->errors[3] >>= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP4
+#if (STEPPER_COUNT > 4 && defined(STEP4))
                             itp_running_sgm->block->errors[4] >>= itp_running_sgm->next_dss;
 #endif
-#ifdef STEP5
+#if (STEPPER_COUNT > 5 && defined(STEP5))
                             itp_running_sgm->block->errors[5] >>= itp_running_sgm->next_dss;
 #endif
                         }
@@ -741,7 +738,7 @@ extern "C"
             if (itp_running_sgm->block != NULL)
             {
 //prepares the next step bits mask
-#ifdef STEP0
+#if (STEPPER_COUNT > 0 && defined(STEP0))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 0)
                 {
@@ -777,7 +774,7 @@ extern "C"
 #endif
                 }
 #endif
-#ifdef STEP1
+#if (STEPPER_COUNT > 1 && defined(STEP1))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 1)
                 {
@@ -813,7 +810,7 @@ extern "C"
 #endif
                 }
 #endif
-#ifdef STEP2
+#if (STEPPER_COUNT > 2 && defined(STEP2))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 2)
                 {
@@ -849,7 +846,7 @@ extern "C"
 #endif
                 }
 #endif
-#ifdef STEP3
+#if (STEPPER_COUNT > 3 && defined(STEP3))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 3)
                 {
@@ -885,7 +882,7 @@ extern "C"
 #endif
                 }
 #endif
-#ifdef STEP4
+#if (STEPPER_COUNT > 4 && defined(STEP4))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 4)
                 {
@@ -921,7 +918,7 @@ extern "C"
 #endif
                 }
 #endif
-#ifdef STEP5
+#if (STEPPER_COUNT > 5 && defined(STEP5))
                 dostep = false;
                 if (itp_running_sgm->block->main_axis == 5)
                 {

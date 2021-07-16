@@ -30,7 +30,9 @@ extern "C"
 /*
 	Uncomment this feature to enable tool length compensation
 */
+#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
 #define AXIS_TOOL AXIS_Z
+#endif
 
 /*
 	Uncomment this feature to enable up to 2 dual drive axis
