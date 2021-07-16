@@ -468,6 +468,7 @@ extern "C"
             spindle = MIN(spindle, g_settings.spindle_max_rpm);
             spindle = MAX(spindle, g_settings.spindle_min_rpm);
             *pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
+            *pwm = MAX(*pwm, PWM_MIN_OUTPUT);
         }
     }
 

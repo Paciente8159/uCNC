@@ -532,7 +532,9 @@ extern "C"
             {
                 motion_data_t block = {0};
 #ifdef USE_SPINDLE
+#ifdef USE_COOLANT
                 block.coolant = planner_get_previous_coolant();
+#endif
                 block.spindle = planner_get_previous_spindle_speed();
 #endif
                 mc_update_tools(&block);
