@@ -70,8 +70,10 @@ extern "C"
         ISR(RTC_COMPA_vect, ISR_BLOCK)
         {
                 mcu_runtime_ms++;
+#if PID_CONTROLLERS > 0
                 mcu_enable_global_isr();
                 pid_update_isr();
+#endif
         }
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)

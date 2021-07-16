@@ -70,9 +70,11 @@ extern "C"
         planner_init();          //motion planner
         mc_init();               //motion control
         parser_init();           //parser
-        pid_init();              //pid
-        serial_flush();          //flushes any remaining serial output
-        io_enable_steps();       //enables stepper motors
+#if PID_CONTROLLERS > 0
+        pid_init(); //pid
+#endif
+        serial_flush();    //flushes any remaining serial output
+        io_enable_steps(); //enables stepper motors
     }
 
     void cnc_run(void)
