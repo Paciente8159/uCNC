@@ -47,14 +47,14 @@ extern "C"
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_MKS_DLC
 #endif
 
 /*
 	Kinematic
 	Defines axis count
-	Defines the machine kynematics (cartesian, corexy, delta, custom, ...)
-	For custom/advanced configurations go to the specified kynematics header file
+	Defines the machine kinematics (cartesian, corexy, delta, custom, ...)
+	For custom/advanced configurations go to the specified kinematics header file
 */
 #ifndef AXIS_COUNT
 #define AXIS_COUNT 3
@@ -93,13 +93,15 @@ extern "C"
 */
 #define DELAY_ON_RESUME 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
-//#define LASER_MODE
+#define LASER_MODE
+//minimum output if the value of S is other then 0
+#define PWM_MIN_OUTPUT 1
 #endif
 
 /*
 	Define a coolant flood and mist pin
 */
-#define USE_COOLANT
+//#define USE_COOLANT
 #ifdef USE_COOLANT
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8

@@ -28,10 +28,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../config.h"
+#include "cnc.h"
 #if (MCU == MCU_VIRTUAL)
-#include "../../mcudefs.h"
-#include "../../mcu.h"
 #include <stdio.h>
 #include <conio.h>
 #include <string.h>
@@ -41,12 +39,12 @@
 #include <pthread.h>
 #include <math.h>
 
-#include "../../settings.h"
+#include "interface/settings.h"
 #include "virtualtimer.h"
 #include "virtualserial.h"
-#include "../../serial.h"
-#include "../../interpolator.h"
-#include "../../io_control.h"
+#include "interface/serial.h"
+#include "core/interpolator.h"
+#include "core/io_control.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL

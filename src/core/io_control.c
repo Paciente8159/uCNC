@@ -252,7 +252,7 @@ extern "C"
     void io_set_steps(uint8_t mask)
     {
 #ifdef STEP0
-#ifdef STEP0_ISTEPPER
+#ifndef STEP0_NOTSTEPPER
         if (mask & STEP0_MASK)
         {
             mcu_set_output(STEP0);
@@ -264,7 +264,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP1
-#ifdef STEP1_ISTEPPER
+#ifndef STEP1_NOTSTEPPER
         if (mask & STEP1_MASK)
         {
             mcu_set_output(STEP1);
@@ -276,7 +276,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP2
-#ifdef STEP2_ISTEPPER
+#ifndef STEP2_NOTSTEPPER
         if (mask & STEP2_MASK)
         {
             mcu_set_output(STEP2);
@@ -288,7 +288,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP3
-#ifdef STEP3_ISTEPPER
+#ifndef STEP3_NOTSTEPPER
         if (mask & STEP3_MASK)
         {
             mcu_set_output(STEP3);
@@ -300,7 +300,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP4
-#ifdef STEP4_ISTEPPER
+#ifndef STEP4_NOTSTEPPER
         if (mask & STEP4_MASK)
         {
             mcu_set_output(STEP4);
@@ -312,7 +312,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP5
-#ifdef STEP5_ISTEPPER
+#ifndef STEP5_NOTSTEPPER
         if (mask & STEP5_MASK)
         {
             mcu_set_output(STEP5);
@@ -324,7 +324,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP6
-#ifdef STEP6_ISTEPPER
+#ifndef STEP6_NOTSTEPPER
         if (mask & STEP6_MASK)
         {
             mcu_set_output(STEP6);
@@ -336,7 +336,7 @@ extern "C"
 #endif
 #endif
 #ifdef STEP7
-#ifdef STEP7_ISTEPPER
+#ifndef STEP7_NOTSTEPPER
         if (mask & STEP7_MASK)
         {
             mcu_set_output(STEP7);
@@ -521,14 +521,21 @@ extern "C"
 #if PID_CONTROLLERS > 0
         io_spindle_speed = value;
 #endif
-        if (!invert)
+#ifdef LASER_MODE
+        if (!g_settings.laser_mode)
         {
-            mcu_clear_output(SPINDLE_DIR);
+#endif
+            if (!invert)
+            {
+                mcu_clear_output(SPINDLE_DIR);
+            }
+            else
+            {
+                mcu_set_output(SPINDLE_DIR);
+            }
+#ifdef LASER_MODE
         }
-        else
-        {
-            mcu_set_output(SPINDLE_DIR);
-        }
+#endif
         mcu_set_pwm(SPINDLE_PWM, value);
     }
 

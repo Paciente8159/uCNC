@@ -30,7 +30,11 @@ extern "C"
 /*
 	MCU port map
 */
-#if (BOARD != 0)
+#ifndef BOARD
+#error Undefined board
+#endif
+
+#if (BOARD)
 #else
 #error Invalid board configuration
 #endif
@@ -40,7 +44,7 @@ extern "C"
 #include "hal/boards/avr/boardmap_uno.h"
 #endif
 
-#if (BOARD == BOARD_MKS_DLC)
+#if(BOARD==BOARD_MKS_DLC)
 #define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_mks_dlc.h"
 #endif
