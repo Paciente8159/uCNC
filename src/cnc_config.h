@@ -144,9 +144,9 @@ extern "C"
 /*
 	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
 */
-#define DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_LIMITS
-#define DISABLE_PROBE
+// #define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_LIMITS
+// #define DISABLE_PROBE
 
 /*
 	G-code options

@@ -511,6 +511,7 @@ extern "C"
     void itp_stop(void)
     {
         mcu_stop_itp_isr();
+        io_set_steps(g_settings.step_invert_mask);
         cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
@@ -628,7 +629,11 @@ extern "C"
             {
                 mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
             }
-            io_set_dirs(itp_running_sgm->block->dirbits);
+
+            if (itp_running_sgm->block)
+            {
+                io_set_dirs(itp_running_sgm->block->dirbits);
+            }
 #ifdef USE_SPINDLE
             io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
             itp_rt_spindle = itp_running_sgm->spindle;
@@ -674,7 +679,7 @@ extern "C"
 #if (DSS_MAX_OVERSAMPLING != 0)
                     if (itp_running_sgm->next_dss != 0)
                     {
-                        itp_running_sgm->block->main_axis = 0; //disables direct step increment to force step calculation
+                        itp_running_sgm->block->main_axis = 255; //disables direct step increment to force step calculation
                         if (!(itp_running_sgm->next_dss & 0xF8))
                         {
                             itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
