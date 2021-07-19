@@ -40,9 +40,6 @@ extern "C"
 //Comment these to use USB virtual port
 #ifndef USB_VCP
 #define COM_PORT 1
-#define AXIS_COUNT 4
-#else
-#define AXIS_COUNT 5
 #endif
 
 //Setup step pins

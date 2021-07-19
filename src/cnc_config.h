@@ -120,11 +120,6 @@ extern "C"
 #define ENCODERS 0
 
 /*
-	Special definitions used to debug code
-*/
-//#define __DEBUG__
-
-/*
 	Feed overrides increments and percentage ranges
 */
 #define FEED_OVR_MAX 200
@@ -145,6 +140,13 @@ extern "C"
 #define SPINDLE_OVR_MIN 10
 #define SPINDLE_OVR_COARSE 10
 #define SPINDLE_OVR_FINE 1
+
+/*
+	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
+*/
+#define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_LIMITS
+#define DISABLE_PROBE
 
 /*
 	G-code options
@@ -205,7 +207,7 @@ extern "C"
 	/*
 	Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
 */
-	//#define EMULATE_GRBL_STARTUP
+	// #define EMULATE_GRBL_STARTUP
 
 	/*
 	Compilation specific options
