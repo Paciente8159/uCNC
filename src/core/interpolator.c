@@ -33,10 +33,6 @@ extern "C"
 #include "core/planner.h"
 #include "core/io_control.h"
 
-#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
-#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
-#endif
-
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
 //the amount of motion precomputed and stored for the step generator is never less then
@@ -53,9 +49,9 @@ extern "C"
         uint8_t main_axis;
         uint8_t idle_axis;
         uint8_t dirbits;
-        uint32_t steps[STEPPER_COUNT];
-        uint32_t total_steps;
-        uint32_t errors[STEPPER_COUNT];
+        uint16_t steps[STEPPER_COUNT];
+        uint16_t total_steps;
+        uint16_t errors[STEPPER_COUNT];
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         uint32_t line;
 #endif

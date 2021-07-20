@@ -128,7 +128,7 @@ extern "C"
         }
         else
         {
-            memcpy(planner_data[planner_data_write].steps, block_data->steps, STEPPER_COUNT * sizeof(uint32_t));
+            memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(planner_data[planner_data_write].steps));
             planner_data[planner_data_write].total_steps = block_data->total_steps;
         }
 

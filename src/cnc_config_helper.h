@@ -124,6 +124,10 @@ extern "C"
 #endif
 #endif
 
+#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
+#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
+#endif
+
 #ifdef __cplusplus
 }
 #endif

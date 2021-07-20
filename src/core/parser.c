@@ -390,7 +390,7 @@ extern "C"
     void parser_parameters_reset(void)
     {
         //erase all parameters for G54..G59.x coordinate systems
-        memset(parser_parameters.coord_system_offset, 0, AXIS_COUNT * sizeof(float));
+        memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
         for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
         {
             settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
@@ -1208,10 +1208,10 @@ extern "C"
             }
             break;
         case G92_1: //G92.1
-            memset(g92permanentoffset, 0, AXIS_COUNT * sizeof(float));
+            memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
             //continue
         case G92_2: //G92.2
-            memset(parser_parameters.g92_offset, 0, AXIS_COUNT * sizeof(float));
+            memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
             parser_wco_counter = 0;
             new_state->groups.nonmodal = 0; //this command is compatible with motion commands
             break;
@@ -2237,9 +2237,9 @@ extern "C"
 #ifdef USE_SPINDLE
         parser_state.groups.spindle_turning = M5; //M5
 #endif
-        parser_state.groups.motion = G1;                                     //G1
-        parser_state.groups.units = G21;                                     //G21
-        memset(parser_parameters.g92_offset, 0, AXIS_COUNT * sizeof(float)); //G92.2
+        parser_state.groups.motion = G1;                                               //G1
+        parser_state.groups.units = G21;                                               //G21
+        memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); //G92.2
     }
 
     //loads parameters
@@ -2253,7 +2253,7 @@ extern "C"
         //loads G92
         if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
         {
-            memset(parser_parameters.g92_offset, 0, AXIS_COUNT * sizeof(float));
+            memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
             settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
         }
 
@@ -2268,7 +2268,7 @@ extern "C"
         //load G54
         if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
         {
-            memset(parser_parameters.coord_system_offset, 0, AXIS_COUNT * sizeof(float));
+            memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
             settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
         }
     }

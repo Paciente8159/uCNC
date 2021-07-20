@@ -67,7 +67,115 @@ extern "C"
         mc_checkmode = !mc_checkmode;
         return mc_checkmode;
     }
-    // all motions should go through mc_line before entering the final motion pipeline
+
+    static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
+    {
+        uint32_t step_new_pos[STEPPER_COUNT];
+        float feed = block_data->feed;
+
+        //applies the inverse kinematic to get next position in steps
+        kinematics_apply_inverse(target, &step_new_pos);
+
+        //calculates the aproximation of the inverted travelled distance
+        float inv_dist = 0;
+        //kinematics_apply_forward(block_data->steps, target); // converts the target point to a vector that represents the line segment to be travelled
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            block_data->dir_vect[i] = target[i] - mc_prev_transformed_target[i];
+            inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
+            mc_prev_transformed_target[i] = target[i];
+        }
+
+        inv_dist = fast_flt_invsqrt(inv_dist);
+
+//calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
+#ifndef ENABLE_LINACT_PLANNER
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            block_data->dir_vect[i] *= inv_dist;
+        }
+#endif
+
+        //gets the last position feed to the planner and calculates the step count of the line segment to execute
+        uint32_t prev_pos[STEPPER_COUNT];
+        planner_get_position(&prev_pos);
+        for (uint8_t i = STEPPER_COUNT; i != 0;)
+        {
+            i--;
+            prev_pos[i] = step_new_pos[i] - prev_pos[i];
+
+            if (prev_pos[i] > (uint32_t)INT32_MAX) //step count is negative (update dirbit and calculate the one's complement (negative representation))
+            {
+                block_data->dirbits |= (1 << i);
+                block_data->steps[i] = (uint16_t)-prev_pos[i];
+            }
+            else
+            {
+                block_data->steps[i] = (uint16_t)prev_pos[i];
+            }
+
+            block_data->full_steps += block_data->steps[i];
+            if (block_data->total_steps < block_data->steps[i])
+            {
+                block_data->total_steps = block_data->steps[i];
+                block_data->step_indexer = i;
+            }
+        }
+
+#ifdef ENABLE_BACKLASH_COMPENSATION
+        //checks if any of the linear actuators there is a shift in direction
+        uint8_t inverted_steps = mc_last_dirbits ^ block_data->dirbits;
+        if (inverted_steps)
+        {
+            motion_data_t backlash_block_data = {0};
+            memcpy(&backlash_block_data, block_data, sizeof(motion_data_t));
+            memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
+            backlash_block_data.total_steps = 0; //recalculates total_steps
+            backlash_block_data.feed = FLT_MAX;  //max feedrate possible (same as rapid move)
+
+            SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
+
+            for (uint8_t i = STEPPER_COUNT; i != 0;)
+            {
+                i--;
+                if (inverted_steps & (1 << i))
+                {
+                    backlash_block_data.steps[i] = g_settings.backlash_steps[i];
+                    backlash_block_data.full_steps += backlash_block_data.steps[i];
+                    if (backlash_block_data.total_steps < backlash_block_data.steps[i])
+                    {
+                        backlash_block_data.total_steps = backlash_block_data.steps[i];
+                        backlash_block_data.step_indexer = i;
+                    }
+                }
+            }
+
+            planner_add_line(NULL, &backlash_block_data);
+
+            while (planner_buffer_is_full())
+            {
+                if (!cnc_dotasks())
+                {
+                    return STATUS_CRITICAL_FAIL;
+                }
+            }
+
+            mc_last_dirbits = block_data->dirbits;
+        }
+#endif
+        //calculated the total motion execution time @ the given rate
+        float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : (1.0f / block_data->feed));
+        block_data->feed = (float)block_data->total_steps * inv_delta;
+
+        planner_add_line(step_new_pos, block_data);
+        //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
+        block_data->feed = feed;
+        return STATUS_OK;
+    }
+
+    // all motions should go through mc_line before entering the final planner pipeline
     // after this stage the motion follows a pipeline that performs the following steps
     // 1. decouples the target point from the remaining pipeline
     // 2. applies all kinematic transformations to the target
@@ -78,8 +186,9 @@ extern "C"
         uint32_t step_new_pos[STEPPER_COUNT];
         float feed = block_data->feed;
         block_data->dirbits = 0; //reset dirbits (this prevents odd behaviour generated by long arcs)
+        memset(&step_new_pos, 0, sizeof(step_new_pos));
 
-        //update the last target position and direction
+        //update the last target position and direction before any user transformation is applied (like skew correction)
         memcpy(mc_last_target, target, sizeof(mc_last_target));
 
         //In jog/homming mode no kinematics modifications is applied to prevent unwanted axis movements
@@ -114,101 +223,88 @@ extern "C"
 
         if (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION))
         {
-            //applies the inverse kinematic to get next position in steps
+            //for 8-bit MCU
+            //checks the amount of steps that this motion translates to
+            //if the amount of steps is higher than the limit for the 16bit bresenham algorithm
+            //splits the line into smaller segments
+            float motion_segment[AXIS_COUNT];
+            for (uint8_t i = AXIS_COUNT; i != 0;)
+            {
+                i--;
+                motion_segment[i] = target[i] - mc_prev_transformed_target[i];
+            }
+
             kinematics_apply_inverse(target, &step_new_pos);
 
-            //calculates the aproximation of the inverted travelled distance
-            float inv_dist = 0;
-            //kinematics_apply_forward(block_data->steps, target); // converts the target point to a vector that represents the line segment to be travelled
-            for (uint8_t i = AXIS_COUNT; i != 0;)
-            {
-                i--;
-                block_data->dir_vect[i] = target[i] - mc_prev_transformed_target[i];
-                inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
-                mc_prev_transformed_target[i] = target[i];
-            }
-
-            inv_dist = fast_flt_invsqrt(inv_dist);
-
-//calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
-#ifndef ENABLE_LINACT_PLANNER
-            for (uint8_t i = AXIS_COUNT; i != 0;)
-            {
-                i--;
-                block_data->dir_vect[i] *= inv_dist;
-            }
-#endif
-
-            //gets the last position feed to the planner and calculates the step count of the line segment to execute
-            planner_get_position(&block_data->steps);
+            uint32_t max_steps = 0;
             for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
                 i--;
-                block_data->steps[i] = step_new_pos[i] - block_data->steps[i];
-
-                if (block_data->steps[i] > (uint32_t)INT32_MAX) //step count is negative (update dirbit and calculate the one's complement (negative representation))
-                {
-                    block_data->dirbits |= (1 << i);
-                    block_data->steps[i] = -block_data->steps[i];
-                }
-
-                block_data->full_steps += block_data->steps[i];
-                if (block_data->total_steps < block_data->steps[i])
-                {
-                    block_data->total_steps = block_data->steps[i];
-                    block_data->step_indexer = i;
-                }
+                max_steps = MAX(max_steps, (ABS(((int32_t)step_new_pos[i]))));
             }
 
-#ifdef ENABLE_BACKLASH_COMPENSATION
-            //checks if any of the linear actuators there is a shift in direction
-            uint8_t inverted_steps = mc_last_dirbits ^ block_data->dirbits;
-            if (inverted_steps)
+            if (max_steps > MAX_STEPS_PER_LINE)
             {
-                motion_data_t backlash_block_data = {0};
-                memcpy(&backlash_block_data, block_data, sizeof(motion_data_t));
-                memset(backlash_block_data.steps, 0, STEPPER_COUNT * sizeof(uint32_t));
-                backlash_block_data.total_steps = 0; //recalculates total_steps
-                backlash_block_data.feed = FLT_MAX;  //max feedrate possible (same as rapid move)
+                uint32_t m = (max_steps >> MAX_STEPS_PER_LINE_BITS) + 1;
+                float m_inv = 1.0f / (float)m;
 
-                SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
-
-                for (uint8_t i = STEPPER_COUNT; i != 0;)
+                for (uint8_t i = AXIS_COUNT; i != 0;)
                 {
                     i--;
-                    if (inverted_steps & (1 << i))
+                    motion_segment[i] *= m_inv;
+                }
+
+                while (m)
+                {
+                    uint8_t error;
+
+                    m--;
+                    while (planner_buffer_is_full())
                     {
-                        backlash_block_data.steps[i] = g_settings.backlash_steps[i];
-                        backlash_block_data.full_steps += backlash_block_data.steps[i];
-                        if (backlash_block_data.total_steps < backlash_block_data.steps[i])
+                        if (!cnc_dotasks())
                         {
-                            backlash_block_data.total_steps = backlash_block_data.steps[i];
-                            backlash_block_data.step_indexer = i;
+                            return STATUS_CRITICAL_FAIL;
+                        }
+                    }
+
+                    if (m)
+                    {
+                        float new_target[AXIS_COUNT];
+                        for (uint8_t i = AXIS_COUNT; i != 0;)
+                        {
+                            i--;
+                            new_target[i] = mc_prev_transformed_target[i] + motion_segment[i];
+                        }
+
+                        error = mc_line_segment(new_target, block_data);
+                        if (error)
+                        {
+                            return error;
+                        }
+                    }
+                    else
+                    {
+                        error = mc_line_segment(target, block_data);
+                        if (error)
+                        {
+                            return error;
                         }
                     }
                 }
-
-                planner_add_line(NULL, &backlash_block_data);
-
-                while (planner_buffer_is_full())
-                {
-                    if (!cnc_dotasks())
-                    {
-                        return STATUS_CRITICAL_FAIL;
-                    }
-                }
-
-                mc_last_dirbits = block_data->dirbits;
             }
-#endif
-            //calculated the total motion execution time @ the given rate
-            float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : (1.0f / block_data->feed));
-            block_data->feed = (float)block_data->total_steps * inv_delta;
+            else
+            {
+                uint8_t error = mc_line_segment(target, block_data);
+                if (error)
+                {
+                    return error;
+                }
+            }
         }
-
-        planner_add_line(step_new_pos, block_data);
-        //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
-        block_data->feed = feed;
+        else
+        {
+            planner_add_line(step_new_pos, block_data);
+        }
         return STATUS_OK;
     }
 
@@ -406,7 +502,7 @@ extern "C"
         target[axis] += max_home_dist;
         //initializes planner block data
         block_data.total_steps = ABS(max_home_dist);
-        memset(block_data.steps, 0, STEPPER_COUNT * sizeof(uint32_t));
+        memset(block_data.steps, 0, sizeof(block_data.steps));
         block_data.steps[axis] = max_home_dist;
         block_data.feed = g_settings.homing_fast_feed_rate;
         block_data.spindle = 0;
