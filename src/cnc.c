@@ -398,13 +398,17 @@ extern "C"
         //executes feeds override rt commands
         uint8_t cmd_mask = 0x04;
         uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
-        cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
+        cnc_state.rt_cmd = 0;                      //clears command flags
         while (command)
         {
             switch (command & cmd_mask)
             {
             case RT_CMD_REPORT:
-                protocol_send_status();
+                if (!protocol_is_busy())
+                {
+                    protocol_send_status();
+                }
+
                 break;
             case RT_CMD_STARTUP_BLOCK0:
                 if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0
