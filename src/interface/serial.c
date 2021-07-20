@@ -369,16 +369,27 @@ void serial_print_int(uint16_t num)
 
     void serial_print_fltarr(float *arr, uint8_t count)
     {
+        uint8_t i = count;
         do
         {
             serial_print_flt(*arr++);
-            count--;
-            if (count)
+            i--;
+            if (i)
             {
                 serial_putc(',');
             }
 
-        } while (count);
+        } while (i);
+
+        if (count < 3)
+        {
+            i = 3 - count;
+            do
+            {
+                serial_putc(',');
+                serial_print_flt(0);
+            } while (--i);
+        }
     }
 
     void serial_flush(void)
