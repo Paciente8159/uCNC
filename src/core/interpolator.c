@@ -615,6 +615,7 @@ extern "C"
 
         if (itp_running_sgm == NULL) //just in case it reenters
         {
+            itp_isr_finnished = true;
             return;
         }
 
@@ -954,8 +955,7 @@ extern "C"
 #endif
                 }
 #endif
-                
-            }
+                        }
             itp_running_sgm->remaining_steps--;
         }
 
