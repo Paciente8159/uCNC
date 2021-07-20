@@ -954,8 +954,9 @@ extern "C"
 #endif
                 }
 #endif
-                itp_running_sgm->remaining_steps--;
+                
             }
+            itp_running_sgm->remaining_steps--;
         }
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS

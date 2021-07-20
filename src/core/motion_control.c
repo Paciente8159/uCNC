@@ -242,6 +242,12 @@ extern "C"
                 i--;
                 max_steps = MAX(max_steps, (ABS(((int32_t)step_new_pos[i]))));
             }
+            
+            if(!max_steps) {
+            	SETFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
+            	planner_add_line(NULL, block_data);
+            	return STATUS_OK;
+			}
 
             if (max_steps > MAX_STEPS_PER_LINE)
             {
