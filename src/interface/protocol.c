@@ -31,42 +31,58 @@ extern "C"
 #include "protocol.h"
 #include "interface/grbl_interface.h"
 
+    static bool protocol_busy;
+
+    bool protocol_is_busy(void)
+    {
+        return protocol_busy;
+    }
+
     static void procotol_send_newline(void)
     {
-        serial_putc('\r');
-        serial_putc('\n');
+        serial_print_str(MSG_EOL);
     }
 
     void protocol_send_ok(void)
     {
-        serial_print_str(__romstr__("ok"));
+        protocol_busy = true;
+        serial_print_str(MSG_OK);
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     void protocol_send_error(uint8_t error)
     {
-        serial_print_str(__romstr__("error:"));
+        protocol_busy = true;
+        serial_print_str(MSG_ERROR);
         serial_print_int(error);
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     void protocol_send_alarm(uint8_t alarm)
     {
-        serial_print_str(__romstr__("ALARM:"));
+        protocol_busy = true;
+        serial_print_str(MSG_ALARM);
         serial_print_int(alarm);
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     void protocol_send_string(const unsigned char *__s)
     {
+        protocol_busy = true;
         serial_print_str(__s);
+        protocol_busy = false;
     }
 
     void protocol_send_feedback(const unsigned char *__s)
     {
+        protocol_busy = true;
         serial_print_str(MSG_START);
         serial_print_str(__s);
         serial_print_str(MSG_END);
+        protocol_busy = false;
     }
 
     static uint8_t protocol_get_tools(void)
@@ -93,7 +109,7 @@ extern "C"
         if (parser_get_wco(axis))
         {
             serial_print_str(__romstr__("|WCO:"));
-            serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+            serial_print_fltarr(axis, AXIS_COUNT);
             return;
         }
 
@@ -134,14 +150,8 @@ extern "C"
 
     void protocol_send_status(void)
     {
+        protocol_busy = true;
         float axis[MAX(AXIS_COUNT, 3)];
-
-        //only send report when buffer is empty
-        //this prevents locks and stack overflow of the cnc_dotasks()
-        if (!serial_tx_is_empty())
-        {
-            return;
-        }
 
         uint32_t steppos[STEPPER_COUNT];
         itp_get_rt_position(steppos);
@@ -231,7 +241,7 @@ extern "C"
         }
 
         serial_print_str(__romstr__("|MPos:"));
-        serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+        serial_print_fltarr(axis, AXIS_COUNT);
 
 #ifdef USE_SPINDLE
         serial_print_str(__romstr__("|FS:"));
@@ -308,10 +318,12 @@ extern "C"
 
         serial_putc('>');
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     void protocol_send_gcode_coordsys(void)
     {
+        protocol_busy = true;
         float axis[MAX(AXIS_COUNT, 3)];
         uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
         for (uint8_t i = 0; i < coordlimit; i++)
@@ -320,7 +332,7 @@ extern "C"
             serial_print_str(__romstr__("[G"));
             serial_print_int(i + 54);
             serial_putc(':');
-            serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+            serial_print_fltarr(axis, AXIS_COUNT);
             serial_putc(']');
             procotol_send_newline();
         }
@@ -330,26 +342,26 @@ extern "C"
             serial_print_int(i - 5);
             serial_putc(':');
             parser_get_coordsys(i, axis);
-            serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+            serial_print_fltarr(axis, AXIS_COUNT);
             serial_putc(']');
             procotol_send_newline();
         }
 
         serial_print_str(__romstr__("[G28:"));
         parser_get_coordsys(28, axis);
-        serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
 
         serial_print_str(__romstr__("[G30:"));
         parser_get_coordsys(30, axis);
-        serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
 
         serial_print_str(__romstr__("[G92:"));
         parser_get_coordsys(92, axis);
-        serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(']');
         procotol_send_newline();
 
@@ -363,11 +375,12 @@ extern "C"
 
         serial_print_str(__romstr__("[PRB:"));
         parser_get_coordsys(255, axis);
-        serial_print_fltarr(axis, MAX(AXIS_COUNT, 3));
+        serial_print_fltarr(axis, AXIS_COUNT);
         serial_putc(':');
         serial_putc('0' + parser_get_probe_result());
         serial_putc(']');
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
@@ -389,6 +402,7 @@ extern "C"
         uint16_t spindle;
         uint8_t coolant;
 
+        protocol_busy = true;
         parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
         serial_print_str(__romstr__("[GC:"));
@@ -425,6 +439,7 @@ extern "C"
 
         serial_putc(']');
         procotol_send_newline();
+        protocol_busy = false;
     }
 
     static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
@@ -447,6 +462,7 @@ extern "C"
 
     void protocol_send_start_blocks(void)
     {
+        protocol_busy = true;
         unsigned char c = 0;
         uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
         serial_print_str(__romstr__("$N0="));
@@ -479,10 +495,12 @@ extern "C"
                 break;
             }
         }
+        protocol_busy = false;
     }
 
     void protocol_send_cnc_settings(void)
     {
+        protocol_busy = true;
         protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
         protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
         protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
@@ -549,6 +567,7 @@ extern "C"
             protocol_send_gcode_setting_line_flt(202 + fast_int_mul10(i), g_settings.pid_gain[i][2]);
         }
 #endif
+        protocol_busy = false;
     }
 
 #ifdef __cplusplus

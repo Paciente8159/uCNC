@@ -123,23 +123,25 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
 
 //formated messages
-#define MSG_OK __romstr__("ok\r\n")
+#define STR_EOL "\r\n"
+#define MSG_EOL __romstr__(STR_EOL)
+#define MSG_OK __romstr__("ok")
 #define MSG_ERROR __romstr__("error:")
 #define MSG_ALARM __romstr__("ALARM:")
 #define MSG_ECHO __romstr__("[echo:")
 #ifndef EMULATE_GRBL_STARTUP
 #define MSG_STARTUP_START "uCNC "
-#define MSG_STARTUP_END " ['$' for help]\r\n"
+#define MSG_STARTUP_END " ['$' for help]"
 #else
 #define MSG_STARTUP_START "Grbl "
-#define MSG_STARTUP_END " ['$' for uCNC help]\r\n"
+#define MSG_STARTUP_END " ['$' for uCNC help]"
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END)
-#define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]\r\n")
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
+#define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
 
 //Non query feedback messages
 #define MSG_START __romstr__("[MSG:")
-#define MSG_END __romstr__("]\r\n")
+#define MSG_END __romstr__("]" STR_EOL)
 #define MSG_FEEDBACK_1 __romstr__("Reset to continue")
 #define MSG_FEEDBACK_1 __romstr__("Reset to continue")
 #define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
