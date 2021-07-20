@@ -88,7 +88,7 @@ volatile unsigned long isr_flags = 0;
 #define ISR_COMTX 8
 #define ISR_INPUT 16
 
-unsigned long g_cpu_freq = 0;
+volatile unsigned long g_cpu_freq = 0;
 volatile unsigned long pulse_interval = 0;
 volatile unsigned long resetpulse_interval = 0;
 volatile unsigned long pulse_counter = 0;
@@ -101,6 +101,7 @@ volatile unsigned char uart_char;
 pthread_t thread_id;
 pthread_t thread_idout;
 pthread_t thread_timer_id;
+pthread_t thread_step_id;
 
 //emulates uart RX
 void *comsimul(void)
@@ -121,7 +122,7 @@ void *comsimul(void)
 			{
 				while (!serial_rx_is_empty())
 				{
-					usleep(1);
+					//sleep(1);
 				}
 			}
 		}
@@ -138,38 +139,92 @@ void *comoutsimul(void)
 		if (mcu_tx_ready)
 		{
 			serial_tx_isr();
-			/*unsigned char c = virtualports->uart;
-			if (c != 0)
+		}
+		//sleep(1);
+	}
+}
+
+void *stepsimul(void)
+{
+	static uint16_t tick_counter = 0;
+	static uint16_t timer_counter = 0;
+	unsigned long lasttime = getTickCounter();
+
+	while (1)
+	{
+
+		unsigned long time = getTickCounter();
+		unsigned long elapsed = time - lasttime;
+		elapsed *= F_CPU;
+		elapsed /= g_cpu_freq;
+		elapsed = (elapsed < 100) ? elapsed : 100;
+
+		while (elapsed--)
+		{
+			if (pulse_interval && resetpulse_interval && pulse_enabled)
 			{
-				combuffer[i] = c;
-				i++;
-				if (c == '\n')
-				{
-					combuffer[i] = 0;
-#ifdef USECONSOLE
-					puts(combuffer);
-#else
-					virtualserial_puts(combuffer);
-#endif
-					i = 0;
-				}
+				tick_counter++;
 			}
 			else
 			{
-				mcu_tx_ready = false;
-			}*/
+				tick_counter = 0;
+				break;
+			}
+
+			if (tick_counter == pulse_interval)
+			{
+				isr_flags |= ISR_PULSE; //flags step isr
+			}
+
+			if (tick_counter >= resetpulse_interval)
+			{
+				isr_flags |= ISR_PULSERESET; //flags step isr
+				tick_counter = 0;
+			}
+
+			if (global_isr_enabled)
+			{
+				bool isr = global_isr_enabled;
+				global_isr_enabled = false;
+
+				if (isr_flags & ISR_INPUT)
+				{
+					//serial_rx_isr(uart_char);
+					io_limits_isr();
+					io_controls_isr();
+					isr_flags &= ~ISR_INPUT;
+				}
+
+				if (pulse_enabled)
+				{
+					if (isr_flags & ISR_PULSE)
+					{
+						itp_step_isr();
+						isr_flags &= ~ISR_PULSE;
+					}
+
+					if (isr_flags & ISR_PULSERESET)
+					{
+						itp_step_reset_isr();
+						isr_flags &= ~ISR_PULSERESET;
+					}
+				}
+
+				global_isr_enabled = isr;
+			}
+
+			lasttime = time;
 		}
-		usleep(1);
 	}
 }
 
 //simulates internal clock (1Kz limited by windows timer)
+static uint32_t mcu_runtime = 0;
 void ticksimul(void)
 {
-	static uint16_t tick_counter = 0;
-	static uint16_t timer_counter = 0;
-	static VIRTUAL_MAP initials = {0};
 
+	static VIRTUAL_MAP initials = {0};
+	/*
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 
@@ -185,51 +240,14 @@ void ticksimul(void)
 		{
 			isr_flags |= ISR_INPUT; //flags input isr
 		}
-	}
+	}*/
 
-	tick_counter++;
+	mcu_runtime++;
+}
 
-	if (tick_counter == pulse_interval)
-	{
-		isr_flags |= ISR_PULSE; //flags step isr
-	}
-
-	if (tick_counter >= resetpulse_interval)
-	{
-		isr_flags |= ISR_PULSERESET; //flags step isr
-		tick_counter = 0;
-	}
-
-	if (global_isr_enabled)
-	{
-		bool isr = global_isr_enabled;
-		global_isr_enabled = false;
-
-		if (isr_flags & ISR_INPUT)
-		{
-			//serial_rx_isr(uart_char);
-			io_limits_isr();
-			io_controls_isr();
-			isr_flags &= ~ISR_INPUT;
-		}
-
-		if (pulse_enabled)
-		{
-			if (isr_flags & ISR_PULSE)
-			{
-				itp_step_isr();
-				isr_flags &= ~ISR_PULSE;
-			}
-
-			if (isr_flags & ISR_PULSERESET)
-			{
-				itp_step_reset_isr();
-				isr_flags &= ~ISR_PULSERESET;
-			}
-		}
-
-		global_isr_enabled = isr;
-	}
+uint32_t mcu_millis()
+{
+	return mcu_runtime;
 }
 
 void mcu_init(void)
@@ -263,6 +281,7 @@ void mcu_init(void)
 	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
+	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
 	mcu_tx_ready = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
@@ -270,14 +289,12 @@ void mcu_init(void)
 }
 
 //IO functions
-#ifdef PROBE
 void mcu_enable_probe_isr(void)
 {
 }
 void mcu_disable_probe_isr(void)
 {
 }
-#endif
 
 uint8_t mcu_get_analog(uint8_t channel)
 {
@@ -312,6 +329,7 @@ void mcu_putc(char c)
 	putchar(c);
 #else
 	virtualserial_putc(c);
+	putchar(c);
 #endif
 }
 
@@ -375,8 +393,8 @@ void mcu_disable_global_isr(void)
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
-	pulse_interval = clocks_speed >> 1;
 	resetpulse_interval = clocks_speed;
+	pulse_interval = resetpulse_interval >> 1;
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
@@ -384,8 +402,8 @@ void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	pulse_enabled = false;
-	pulse_interval = clocks_speed >> 1;
 	resetpulse_interval = clocks_speed;
+	pulse_interval = resetpulse_interval >> 1;
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
@@ -393,10 +411,6 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 void mcu_stop_itp_isr(void)
 {
 	pulse_enabled = false;
-}
-
-void mcu_delay_ms(uint32_t miliseconds)
-{
 }
 
 void mcu_printfp(const char *__fmt, ...)
@@ -526,6 +540,23 @@ void mcu_startPerfCounter(void)
 uint16_t mcu_stopPerfCounter(void)
 {
 	return (uint16_t)stopCycleCounter();
+}
+
+void mcu_dotasks(void)
+{
+#ifdef ENABLE_SYNC_RX
+	while (mcu_read_available())
+	{
+		unsigned char c = mcu_getc();
+		serial_rx_isr(c);
+	}
+#endif
+#ifdef ENABLE_SYNC_TX
+	if (!serial_tx_is_empty())
+	{
+		serial_tx_isr();
+	}
+#endif
 }
 
 #endif

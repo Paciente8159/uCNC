@@ -20,8 +20,8 @@
 #define MCUMAP_VIRTUAL_H
 
 #include <stdint.h>
-#define F_CPU 1000
-#define F_STEP_MAX 500
+#define F_CPU 1000000
+#define F_STEP_MAX 30000
 #define F_STEP_MIN 1
 #define __rom__
 #define __romstr__
@@ -33,7 +33,7 @@
 #define rom_read_byte *
 
 //commento to use console only
-//#define COMPORT "\\\\.\\COM3"
+#define COMPORT "\\\\.\\COM7"
 
 #ifndef COMPORT
 #define USECONSOLE
@@ -46,8 +46,8 @@ typedef struct virtual_map_t
 	uint32_t outputs;
 	uint32_t inputs;
 	unsigned char uart;
-}VIRTUAL_MAP;
-typedef VIRTUAL_MAP* virtports_t;
+} VIRTUAL_MAP;
+typedef VIRTUAL_MAP *virtports_t;
 extern virtports_t virtualports;
 
 //joints step/dir pins
@@ -66,10 +66,10 @@ extern virtports_t virtualports;
 #define STEPS_EN DOUT3
 #define OUTREG virtualports->outputs
 
-#define mcu_get_output(X) (OUTREG & (1<<(X)))
-#define mcu_set_output(X) (OUTREG |= (1<<(X)))
-#define mcu_clear_output(X) (OUTREG &= ~(1<<(X)))
-#define mcu_toggle_output(X) (OUTREG ^= (1<<(X)))
+#define mcu_get_output(X) (OUTREG & (1 << (X)))
+#define mcu_set_output(X) (OUTREG |= (1 << (X)))
+#define mcu_clear_output(X) (OUTREG &= ~(1 << (X)))
+#define mcu_toggle_output(X) (OUTREG ^= (1 << (X)))
 
 //critical inputs
 #define ESTOP 0
@@ -83,7 +83,7 @@ extern virtports_t virtualports;
 #define PROBE 7
 
 #define INREG virtualports->inputs
-#define mcu_get_input(X) (INREG & (1<<(X)))
+#define mcu_get_input(X) (INREG & (1 << (X)))
 
 #define COM_INREG virtualports->uart
 #define COM_OUTREG virtualports->uart
