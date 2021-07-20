@@ -171,7 +171,6 @@ extern "C"
 
         planner_add_line(step_new_pos, block_data);
         //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
-        block_data->feed = feed;
         return STATUS_OK;
     }
 
@@ -234,7 +233,7 @@ extern "C"
                 motion_segment[i] = target[i] - mc_prev_transformed_target[i];
             }
 
-            kinematics_apply_inverse(target, &step_new_pos);
+            kinematics_apply_inverse(motion_segment, &step_new_pos);
 
             uint32_t max_steps = 0;
             for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -242,12 +241,13 @@ extern "C"
                 i--;
                 max_steps = MAX(max_steps, (ABS(((int32_t)step_new_pos[i]))));
             }
-            
-            if(!max_steps) {
-            	SETFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
-            	planner_add_line(NULL, block_data);
-            	return STATUS_OK;
-			}
+
+            if (!max_steps)
+            {
+                SETFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
+                planner_add_line(NULL, block_data);
+                return STATUS_OK;
+            }
 
             if (max_steps > MAX_STEPS_PER_LINE)
             {
@@ -309,8 +309,10 @@ extern "C"
         }
         else
         {
-            planner_add_line(step_new_pos, block_data);
+            planner_add_line(NULL, block_data);
         }
+
+        block_data->feed = feed;
         return STATUS_OK;
     }
 
