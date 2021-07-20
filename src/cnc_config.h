@@ -144,9 +144,9 @@ extern "C"
 /*
 	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
 */
-// #define DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_LIMITS
-// #define DISABLE_PROBE
+#define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_LIMITS
+#define DISABLE_PROBE
 
 /*
 	G-code options
@@ -199,15 +199,15 @@ extern "C"
 */
 #define DSS_MAX_OVERSAMPLING 0
 
-	/*
+/*
 	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
-	//#define FORCE_SOFT_POLLING
+//#define FORCE_SOFT_POLLING
 
-	/*
+/*
 	Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
 */
-	// #define EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP
 
 	/*
 	Compilation specific options
