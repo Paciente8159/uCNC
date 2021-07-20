@@ -734,7 +734,6 @@ extern "C"
         //is steps remaining starts calc next step bits
         if (itp_running_sgm != NULL)
         {
-            itp_running_sgm->remaining_steps--;
             bool dostep;
             if (itp_running_sgm->block != NULL)
             {
@@ -955,6 +954,7 @@ extern "C"
 #endif
                 }
 #endif
+                itp_running_sgm->remaining_steps--;
             }
         }
 
