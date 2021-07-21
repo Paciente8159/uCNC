@@ -30,6 +30,9 @@
 */
 #include <stdio.h>
 
+typedef void (*send_char_callback)();
+typedef void (*read_char_callback)(unsigned char);
+
 #ifdef __linux__
 
 #include <sys/time.h>
@@ -56,17 +59,17 @@
 #define serial_INCLUDED
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
-int virtualserial_open();
-unsigned char  virtualserial_getc();
-void virtualserial_putc(unsigned char  c);
-void virtualserial_puts(const unsigned char* __str);
-int virtualserial_close();
+    int virtualserial_open(send_char_callback a, read_char_callback b);
+    unsigned char virtualserial_getc();
+    void virtualserial_putc(unsigned char c);
+    void virtualserial_puts(const unsigned char *__str);
+    int virtualserial_close();
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
 
 #endif
-

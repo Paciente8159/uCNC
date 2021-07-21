@@ -449,6 +449,10 @@ void serial_print_int(uint16_t num)
     void serial_tx_isr(void)
     {
         uint8_t read = serial_tx_read;
+        if (read == serial_tx_write)
+        {
+            return;
+        }
 
         unsigned char c = serial_tx_buffer[read];
         if (++read == TX_BUFFER_SIZE)

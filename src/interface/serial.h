@@ -30,10 +30,14 @@ extern "C"
 #include <stdarg.h>
 
 #define EOL 0x00 //end of line char
-#define OVF 0x7F //overflow char
+#define OVF 0x2A //overflow char
 #define SAFEMARGIN 2
-#define RX_BUFFER_SIZE 128 + SAFEMARGIN //buffer sizes
-#define TX_BUFFER_SIZE 112 + SAFEMARGIN //buffer sizes
+#define RX_BUFFER_SIZE (128 + SAFEMARGIN) //buffer sizes
+#ifndef ECHO_CMD
+#define TX_BUFFER_SIZE (112 + SAFEMARGIN) //buffer sizes
+#else
+#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) //buffer sizes
+#endif
 
 #define SERIAL_UART 0
 #define SERIAL_N0 1

@@ -106,14 +106,18 @@ pthread_t thread_step_id;
 //emulates uart RX
 void *comsimul(void)
 {
+#ifndef USECONSOLE
+
+#ifndef ENABLE_SYNC_TX
+	virtualserial_open(&serial_tx_isr, &serial_rx_isr);
+#else
+	virtualserial_open(NULL, &serial_rx_isr);
+#endif
+
+#else
 	for (;;)
 	{
-//while(isr_flags & ISR_COMRX);
-#ifdef USECONSOLE
 		unsigned char c = getch();
-#else
-		unsigned char c = virtualserial_getc();
-#endif
 		if (c != 0)
 		{
 			uart_char = c;
@@ -122,11 +126,11 @@ void *comsimul(void)
 			{
 				while (!serial_rx_is_empty())
 				{
-					//sleep(1);
 				}
 			}
 		}
 	}
+#endif
 }
 
 //emulates uart TX
@@ -140,7 +144,6 @@ void *comoutsimul(void)
 		{
 			serial_tx_isr();
 		}
-		//sleep(1);
 	}
 }
 
@@ -275,12 +278,11 @@ void mcu_init(void)
 		}
 	}
 	g_cpu_freq = getCPUFreq();
-#ifndef USECONSOLE
-	virtualserial_open();
-#endif
 	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
+#ifdef USECONSOLE
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
+#endif
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
 	mcu_tx_ready = false;
 	g_mcu_buffercount = 0;
@@ -315,6 +317,9 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 //sends a packet
 void mcu_enable_tx_isr(void)
 {
+#ifndef USECONSOLE
+	serial_tx_isr();
+#endif
 	mcu_tx_ready = true;
 }
 
