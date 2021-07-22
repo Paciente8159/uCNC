@@ -78,12 +78,12 @@ extern "C"
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
         {
-                itp_step_reset_isr();
+                itp_step_isr();
         }
 
         ISR(ITP_COMPB_vect, ISR_BLOCK)
         {
-                itp_step_isr();
+                itp_step_reset_isr();
         }
 
 #ifndef USE_INPUTS_POOLING_ONLY
@@ -297,7 +297,7 @@ extern "C"
         {
                 serial_rx_isr(COM_INREG);
         }
-
+#ifndef ENABLE_SYNC_TX
         ISR(COM_TX_vect, ISR_BLOCK)
         {
                 serial_tx_isr();
@@ -305,6 +305,7 @@ extern "C"
     	UCSRB &= ~(1<<UDRIE);
     }*/
         }
+#endif
 
 #define mcu_config_ouput(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))

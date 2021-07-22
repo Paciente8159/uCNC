@@ -31,13 +31,13 @@ extern "C"
 	Converts from machine absolute coordinates to step position.
 	This is done after computing position relative to the active coordinate system
 */
-	void kinematics_apply_inverse(float *axis, uint32_t *steps);
+	void kinematics_apply_inverse(float *axis, int32_t *steps);
 
 	/*
 	Converts from step position to machine absolute coordinates
 	This is done after computing position relative to the active coordinate system
 */
-	void kinematics_apply_forward(uint32_t *steps, float *axis);
+	void kinematics_apply_forward(int32_t *steps, float *axis);
 
 	/*
 	Executes the homing motion for the machine

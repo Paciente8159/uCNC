@@ -30,8 +30,9 @@ extern "C"
 
     static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
     static volatile uint8_t serial_rx_count;
-    static uint8_t serial_rx_read;
+    static volatile uint8_t serial_rx_read;
     static volatile uint8_t serial_rx_write;
+    static volatile uint8_t serial_rx_overflow;
 
     static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
     static volatile uint8_t serial_tx_read;
@@ -80,7 +81,7 @@ extern "C"
     unsigned char serial_getc(void)
     {
         unsigned char c;
-
+        uint8_t read;
         switch (serial_read_select)
         {
         case SERIAL_UART:
@@ -89,11 +90,13 @@ extern "C"
                 return EOL;
             }
 
-            c = serial_rx_buffer[serial_rx_read];
-            if (++serial_rx_read == RX_BUFFER_SIZE)
+            read = serial_rx_read;
+            c = serial_rx_buffer[read];
+            if (++read == RX_BUFFER_SIZE)
             {
-                serial_rx_read = 0;
+                read = 0;
             }
+            serial_rx_read = read;
 
             switch (c)
             {
@@ -428,14 +431,21 @@ void serial_print_int(uint16_t num)
             case EOL:
                 serial_rx_count++; //continues
             default:
+                if (serial_rx_overflow)
+                {
+                    c = OVF;
+                }
                 write = serial_rx_write;
                 serial_rx_buffer[write] = c;
                 if (++write == RX_BUFFER_SIZE)
                 {
                     write = 0;
                 }
-                //writes the overflow char ahead
-                serial_rx_buffer[write] = OVF;
+                if (write == serial_rx_read)
+                {
+                    serial_rx_overflow++;
+                }
+
                 serial_rx_write = write;
                 break;
             }
@@ -474,6 +484,7 @@ void serial_print_int(uint16_t num)
         serial_rx_write = 0;
         serial_rx_read = 0;
         serial_rx_count = 0;
+        serial_rx_overflow = 0;
         serial_rx_buffer[0] = EOL;
     }
 

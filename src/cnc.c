@@ -398,7 +398,7 @@ extern "C"
         //executes feeds override rt commands
         uint8_t cmd_mask = 0x04;
         uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
-        cnc_state.rt_cmd = 0;                      //clears command flags
+        cnc_state.rt_cmd = RT_CMD_CLEAR;           //clears command flags
         while (command)
         {
             switch (command & cmd_mask)
