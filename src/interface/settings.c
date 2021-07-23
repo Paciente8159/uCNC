@@ -382,7 +382,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             g_settings.report_inches = value;
             break;
         case 20:
-            if (!g_settings.homing_enabled)
+            if (!g_settings.homing_enabled && value1)
             {
                 return STATUS_SOFT_LIMIT_ERROR;
             }
