@@ -960,7 +960,6 @@ extern "C"
         //pointer to planner position
         float planner_last_pos[AXIS_COUNT];
         motion_data_t block_data = {0};
-        bool updatetools = false;
 
         //stoping from previous command is active
         if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -996,7 +995,7 @@ extern "C"
         if (CHECKFLAG(cmd->words, GCODE_WORD_S))
         {
             new_state->spindle = words->s;
-            updatetools = true;
+            block_data.update_tools = (parser_state.spindle != new_state->spindle);
         }
 #endif
 //5. select tool
@@ -1027,7 +1026,7 @@ extern "C"
         //spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
         if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
         {
-            updatetools = true;
+            block_data.update_tools = true;
 #ifdef LASER_MODE
             if (!g_settings.laser_mode)
             {
@@ -1042,7 +1041,7 @@ extern "C"
 #ifdef USE_COOLANT
         if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
         {
-            updatetools = true;
+            block_date.update_tools = true;
         }
         block_data.coolant = new_state->groups.coolant;
 //moving to planner
@@ -1066,6 +1065,7 @@ extern "C"
             if (g_settings.laser_mode)
             {
                 block_data.spindle = 0;
+                block_data.update_tools = true;
             }
 #endif
             if (mc_dwell(&block_data))
@@ -1388,7 +1388,6 @@ extern "C"
                     return STATUS_FEED_NOT_SET;
                 }
                 error = mc_line(axis, &block_data);
-                updatetools = false; //tool was updated with the motion control command
                 break;
             case G2:
             case G3:
@@ -1455,7 +1454,6 @@ extern "C"
                 }
 
                 error = mc_arc(axis, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
-                updatetools = false; //tool was updated with the motion control command
                 break;
             case 4: //G38.2
             case 5: //G38.3
@@ -1498,7 +1496,7 @@ extern "C"
 
         //if reached here the execution was not intersected
         //send a spindle and coolant update if needed
-        if (updatetools)
+        if (block_data.update_tools)
         {
 #ifdef LASER_MODE
             //laser disabled in G0

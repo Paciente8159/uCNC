@@ -48,6 +48,7 @@ extern "C"
                 float feed;
                 uint8_t step_indexer;
                 int16_t spindle;
+                bool update_tools;
                 uint16_t dwell;
                 uint8_t motion_mode;
 #ifdef USE_COOLANT

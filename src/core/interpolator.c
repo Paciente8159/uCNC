@@ -233,7 +233,7 @@ extern "C"
 #ifdef USE_SPINDLE
                     if (itp_cur_plan_block->dwell == 0) //if dwell is 0 then run a single loop to updtate outputs (spindle)
                     {
-                        itp_delay(1);
+                        itp_delay(0);
                     }
 #endif
                     //no motion action (doesn't need a interpolator block = NULL)
@@ -952,8 +952,15 @@ extern "C"
     {
         itp_sgm_data[itp_sgm_data_write].block = NULL;
         //clicks every 100ms (10Hz)
-        mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
+        if (delay)
+        {
+            mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+        }
+        else
+        {
+            mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+        }
+        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay,1);
         itp_sgm_data[itp_sgm_data_write].update_speed = 1;
         itp_sgm_data[itp_sgm_data_write].feed = 0;
 #ifdef USE_SPINDLE
