@@ -32,19 +32,16 @@ extern "C"
 #define MOTIONCONTROL_MODE_INVERSEFEED 2
 #define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 4
 
-#define MAX_STEPS_PER_LINE_BITS (16 - (2 + DSS_MAX_OVERSAMPLING))
-#define MAX_STEPS_PER_LINE (1 << MAX_STEPS_PER_LINE_BITS)
-
         typedef struct
         {
 #ifdef GCODE_PROCESS_LINE_NUMBERS
                 uint32_t line;
 #endif
-                uint16_t steps[STEPPER_COUNT];
+                step_t steps[STEPPER_COUNT];
                 float dir_vect[AXIS_COUNT];
                 uint8_t dirbits;
-                uint32_t full_steps;  //number of steps of all linear actuators
-                uint16_t total_steps; //the number of pulses needed to generate all steps (maximum of all linear actuators)
+                uint32_t full_steps; //number of steps of all linear actuators
+                step_t total_steps;  //the number of pulses needed to generate all steps (maximum of all linear actuators)
                 float feed;
                 uint8_t step_indexer;
                 int16_t spindle;

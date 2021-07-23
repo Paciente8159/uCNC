@@ -200,6 +200,12 @@ extern "C"
 #define DSS_MAX_OVERSAMPLING 0
 
 /*
+	Modifies the bresenham algorithm to use a 16-version.
+	This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments.
+*/
+//#define BRESENHAM_16BIT
+
+/*
 	Forces pin pooling for all limits and control pins (with or without interrupts)
 */
 //#define FORCE_SOFT_POLLING

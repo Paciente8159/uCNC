@@ -44,8 +44,8 @@ extern "C"
         uint32_t line;
 #endif
         uint8_t dirbits;
-        uint16_t steps[STEPPER_COUNT];
-        uint16_t total_steps;
+        step_t steps[STEPPER_COUNT];
+        step_t total_steps;
         uint8_t step_indexer;
 
         float entry_feed_sqr;

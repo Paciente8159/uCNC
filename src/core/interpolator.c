@@ -49,9 +49,9 @@ extern "C"
         uint8_t main_axis;
         uint8_t idle_axis;
         uint8_t dirbits;
-        uint16_t steps[STEPPER_COUNT];
-        uint16_t total_steps;
-        uint16_t errors[STEPPER_COUNT];
+        step_t steps[STEPPER_COUNT];
+        step_t total_steps;
+        step_t errors[STEPPER_COUNT];
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         uint32_t line;
 #endif
@@ -960,7 +960,7 @@ extern "C"
         {
             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
         }
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay,1);
+        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 1);
         itp_sgm_data[itp_sgm_data_write].update_speed = 1;
         itp_sgm_data[itp_sgm_data_write].feed = 0;
 #ifdef USE_SPINDLE

@@ -510,6 +510,7 @@ extern "C"
         protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
         protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
         protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
+        protocol_send_gcode_setting_line_int(13, g_settings.report_inches);
         protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
         protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
         protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);

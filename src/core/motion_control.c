@@ -109,11 +109,11 @@ extern "C"
             if (prev_pos[i] < 0) //step count is negative (update dirbit and calculate the one's complement (negative representation))
             {
                 block_data->dirbits |= (1 << i);
-                block_data->steps[i] = (uint16_t)-prev_pos[i];
+                block_data->steps[i] = (step_t)-prev_pos[i];
             }
             else
             {
-                block_data->steps[i] = (uint16_t)prev_pos[i];
+                block_data->steps[i] = (step_t)prev_pos[i];
             }
 
             block_data->full_steps += block_data->steps[i];
