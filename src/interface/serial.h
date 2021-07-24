@@ -54,7 +54,6 @@ extern "C"
 	void serial_rx_clear(void);
 	void serial_select(uint8_t source);
 
-	bool serial_tx_is_empty(void);
 	void serial_putc(unsigned char c);
 	void serial_print_str(const unsigned char *__s);
 	void serial_print_int(int16_t num);

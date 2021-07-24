@@ -300,10 +300,8 @@ extern "C"
 #ifndef ENABLE_SYNC_TX
         ISR(COM_TX_vect, ISR_BLOCK)
         {
+                CLEARBIT(UCSRB, UDRIE);
                 serial_tx_isr();
-                /*{
-    	UCSRB &= ~(1<<UDRIE);
-    }*/
         }
 #endif
 
@@ -810,10 +808,16 @@ extern "C"
         //IO functions
         void mcu_putc(char c)
         {
+                if (c != 0)
+                {
 #ifdef ENABLE_SYNC_TX
-                loop_until_bit_is_set(UCSRA, UDRE);
+                        loop_until_bit_is_set(UCSRA, UDRE);
 #endif
-                COM_OUTREG = c;
+                        COM_OUTREG = c;
+                }
+#ifndef ENABLE_SYNC_TX
+                SETBIT(UCSRB, UDRIE);
+#endif
         }
 
         char mcu_getc(void)
@@ -959,13 +963,6 @@ extern "C"
                 {
                         unsigned char c = mcu_getc();
                         serial_rx_isr(c);
-                }
-#endif
-#ifdef ENABLE_SYNC_TX
-                //if there is still chars to send in the serial buffer send them
-                if (!serial_tx_is_empty())
-                {
-                        serial_tx_isr();
                 }
 #endif
         }

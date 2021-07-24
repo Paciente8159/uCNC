@@ -3149,17 +3149,26 @@ extern "C"
 #define mcu_enable_global_isr __enable_irq
 #define mcu_disable_global_isr __disable_irq
 
+// #ifdef COM_PORT
+// #ifndef ENABLE_SYNC_TX
+// #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
+// #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
+// #else
+// #define mcu_enable_tx_isr()
+// #define mcu_disable_tx_isr()
+// #endif
+// #else
+// #define mcu_enable_tx_isr()
+// #define mcu_disable_tx_isr()
+// #endif
 #ifdef COM_PORT
-#ifndef ENABLE_SYNC_TX
-#define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
-#define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
+#define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
+#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
 #else
-#define mcu_enable_tx_isr()
-#define mcu_disable_tx_isr()
+#ifdef USB_VCP
+#define mcu_rx_ready() tud_cdc_available()
+#define mcu_tx_ready() tud_cdc_write_available()
 #endif
-#else
-#define mcu_enable_tx_isr()
-#define mcu_disable_tx_isr()
 #endif
 
 #define GPIO_RESET 0xfU

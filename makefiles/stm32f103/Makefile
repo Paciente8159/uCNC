@@ -14,7 +14,7 @@
 # target
 ######################################
 TARGET = uCNC
-USE_USB = TRUE
+#USE_USB = TRUE
 
 ######################################
 # building variables
