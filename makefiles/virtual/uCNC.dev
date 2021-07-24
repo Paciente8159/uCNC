@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0100000001000000
-UnitCount=45
+UnitCount=47
 
 [VersionInfo]
 Major=1
@@ -501,7 +501,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit46]
-FileName=..\..\src\modules\pid_controller.c
+FileName=..\..\src\hal\mcus\virtual\mcu_virtual.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -511,7 +511,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit47]
-FileName=..\..\src\modules\pid_controller.h
+FileName=..\..\src\hal\mcus\virtual\mcumap_virtual.h
 CompileCpp=0
 Folder=
 Compile=1

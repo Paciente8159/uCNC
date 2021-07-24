@@ -124,6 +124,19 @@ extern "C"
 #endif
 #endif
 
+#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
+#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
+#endif
+
+#ifndef BRESENHAM_16BIT
+	typedef uint32_t step_t;
+#define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))
+#else
+typedef uint16_t step_t;
+#define MAX_STEPS_PER_LINE_BITS (16 - (2 + DSS_MAX_OVERSAMPLING))
+#endif
+#define MAX_STEPS_PER_LINE (1 << MAX_STEPS_PER_LINE_BITS)
+
 #ifdef __cplusplus
 }
 #endif

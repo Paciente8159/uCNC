@@ -30,40 +30,67 @@ extern "C"
 #include <stdio.h>
 #include <math.h>
 
-    void kinematics_apply_inverse(float *axis, uint32_t *steps)
+    void kinematics_apply_inverse(float *axis, int32_t *steps)
     {
-        steps[0] = (uint32_t)lroundf(g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
-        steps[1] = (uint32_t)lroundf(g_settings.step_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
-        steps[2] = (uint32_t)lroundf(g_settings.step_mm[2] * axis[AXIS_Z]);
+        steps[0] = (int32_t)lroundf(g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
+        steps[1] = (int32_t)lroundf(g_settings.step_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
+        steps[2] = (int32_t)lroundf(g_settings.step_mm[2] * axis[AXIS_Z]);
     }
 
-    void kinematics_apply_forward(uint32_t *steps, float *axis)
+    void kinematics_apply_forward(int32_t *steps, float *axis)
     {
-        axis[AXIS_X] = (float)(step_mm_inv[0] * 0.5f * (steps[0] + steps[1]));
-        axis[AXIS_Y] = (float)(step_mm_inv[1] * 0.5f * (steps[0] - steps[1]));
+        axis[AXIS_X] = (float)(step_mm_inv[0] * 0.5f * (float)(steps[0] + steps[1]));
+        axis[AXIS_Y] = (float)(step_mm_inv[1] * 0.5f * (float)(steps[0] - steps[1]));
         axis[AXIS_Z] = (float)(step_mm_inv[2] * steps[2]);
     }
 
-    void kinematics_home(void)
+    uint8_t kinematics_home(void)
     {
         uint8_t result = 0;
+
+#ifdef AXIS_Z
         result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
         if (result != 0)
         {
             return result;
         }
-
+#endif
+#ifdef AXIS_X
         result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
         if (result != 0)
         {
             return result;
         }
-
+#endif
+#ifdef AXIS_Y
         result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
         if (result != 0)
         {
             return result;
         }
+#endif
+
+#ifdef AXIS_A
+        result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
+        if (result != 0)
+        {
+            return result;
+        }
+#endif
+#ifdef AXIS_B
+        result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
+        if (result != 0)
+        {
+            return result;
+        }
+#endif
+#ifdef AXIS_C
+        result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
+        if (result != 0)
+        {
+            return result;
+        }
+#endif
 
         return STATUS_OK;
     }

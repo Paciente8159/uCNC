@@ -48,7 +48,7 @@ extern "C"
 
     } planner_overrides_t;
 
-    static uint32_t planner_step_pos[STEPPER_COUNT];
+    static int32_t planner_step_pos[STEPPER_COUNT];
 #ifdef USE_SPINDLE
     static int16_t planner_spindle;
 #endif
@@ -83,7 +83,7 @@ extern "C"
 		3. The entry feed (initialy set to 0)
 		4. The maximum entry feed given the juntion angle between planner blocks
 */
-    void planner_add_line(uint32_t *target, motion_data_t *block_data)
+    void planner_add_line(int32_t *target, motion_data_t *block_data)
     {
 #ifdef ENABLE_LINACT_PLANNER
         static float last_dir_vect[STEPPER_COUNT];
@@ -128,7 +128,7 @@ extern "C"
         }
         else
         {
-            memcpy(planner_data[planner_data_write].steps, block_data->steps, STEPPER_COUNT * sizeof(uint32_t));
+            memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(planner_data[planner_data_write].steps));
             planner_data[planner_data_write].total_steps = block_data->total_steps;
         }
 
@@ -560,7 +560,7 @@ extern "C"
         }
     }
 
-    void planner_get_position(uint32_t *steps)
+    void planner_get_position(int32_t *steps)
     {
         memcpy(steps, planner_step_pos, sizeof(planner_step_pos));
     }

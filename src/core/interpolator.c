@@ -33,10 +33,6 @@ extern "C"
 #include "core/planner.h"
 #include "core/io_control.h"
 
-#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
-#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
-#endif
-
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
 //the amount of motion precomputed and stored for the step generator is never less then
@@ -53,9 +49,9 @@ extern "C"
         uint8_t main_axis;
         uint8_t idle_axis;
         uint8_t dirbits;
-        uint32_t steps[STEPPER_COUNT];
-        uint32_t total_steps;
-        uint32_t errors[STEPPER_COUNT];
+        step_t steps[STEPPER_COUNT];
+        step_t total_steps;
+        step_t errors[STEPPER_COUNT];
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         uint32_t line;
 #endif
@@ -103,18 +99,15 @@ extern "C"
     static volatile INTERPOLATOR_SEGMENT volatile *itp_running_sgm;
 
     //stores the current position of the steppers in the interpolator after processing a planner block
-    static uint32_t itp_step_pos[STEPPER_COUNT];
+    static int32_t itp_step_pos[STEPPER_COUNT];
     //keeps track of the machine realtime position
-    static uint32_t itp_rt_step_pos[STEPPER_COUNT];
+    static int32_t itp_rt_step_pos[STEPPER_COUNT];
     static volatile uint8_t itp_rt_spindle;
     //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
     static bool itp_needs_update;
-    static volatile bool itp_isr_finnished;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
     volatile static uint8_t itp_step_lock;
 #endif
-
-    static volatile bool itp_busy;
 
     /*
 	Interpolator segment buffer functions
@@ -186,8 +179,6 @@ extern "C"
         itp_cur_plan_block = NULL;
         itp_needs_update = false;
 #endif
-        itp_busy = false;
-        itp_isr_finnished = true;
         //initialize circular buffers
         itp_blk_clear();
         itp_sgm_clear();
@@ -242,7 +233,7 @@ extern "C"
 #ifdef USE_SPINDLE
                     if (itp_cur_plan_block->dwell == 0) //if dwell is 0 then run a single loop to updtate outputs (spindle)
                     {
-                        itp_delay(1);
+                        itp_delay(0);
                     }
 #endif
                     //no motion action (doesn't need a interpolator block = NULL)
@@ -495,7 +486,7 @@ extern "C"
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
-        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
+        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots < INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
         {
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
@@ -512,6 +503,7 @@ extern "C"
     {
         mcu_stop_itp_isr();
         io_set_steps(g_settings.step_invert_mask);
+        io_set_dirs(g_settings.dir_invert_mask);
         cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
@@ -534,7 +526,7 @@ extern "C"
         itp_blk_clear();
     }
 
-    void itp_get_rt_position(uint32_t *position)
+    void itp_get_rt_position(int32_t *position)
     {
         memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
     }
@@ -610,48 +602,12 @@ extern "C"
     {
         //always resets all stepper pins
         io_set_steps(g_settings.step_invert_mask);
-
-        if (itp_isr_finnished)
-        {
-            itp_stop(); //the buffer is empty. The ISR can stop
-            return;     //itp_sgm is null
-        }
-
-        if (itp_running_sgm == NULL) //just in case it reenters
-        {
-            return;
-        }
-
-        //if segment needs to update the step ISR (after preloading first step byte)
-        if (itp_running_sgm->update_speed)
-        {
-            if (itp_running_sgm->update_speed & 0x01)
-            {
-                mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
-            }
-
-            if (itp_running_sgm->block)
-            {
-                io_set_dirs(itp_running_sgm->block->dirbits);
-            }
-#ifdef USE_SPINDLE
-            io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
-            itp_rt_spindle = itp_running_sgm->spindle;
-#endif
-            itp_running_sgm->update_speed = 0;
-        }
-
-        //one step remaining discards current segment
-        if (!itp_running_sgm->remaining_steps)
-        {
-            itp_running_sgm = NULL;
-            itp_sgm_buffer_read();
-        }
     }
 
     void itp_step_isr(void)
     {
         static uint8_t stepbits = 0;
+        static bool itp_busy = false;
         if (itp_busy) //prevents reentrancy
         {
             return;
@@ -673,7 +629,6 @@ extern "C"
                 //loads a new segment
                 itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
                 cnc_set_exec_state(EXEC_RUN);
-                itp_isr_finnished = false;
                 if (itp_running_sgm->block != NULL)
                 {
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -727,18 +682,34 @@ extern "C"
                         }
                     }
 #endif
+                    //set dir pins for current
+                    io_set_dirs(itp_running_sgm->block->dirbits);
+                }
+
+                if (itp_running_sgm->update_speed)
+                {
+                    if (itp_running_sgm->update_speed & 0x01)
+                    {
+                        mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+                    }
+#ifdef USE_SPINDLE
+                    io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
+                    itp_rt_spindle = itp_running_sgm->spindle;
+#endif
+                    itp_running_sgm->update_speed = 0;
                 }
             }
             else
             {
-                itp_isr_finnished = true;
+                itp_stop(); //the buffer is empty. The ISR can stop
+                itp_busy = false;
+                return;
             }
         }
 
         //is steps remaining starts calc next step bits
         if (itp_running_sgm != NULL)
         {
-            itp_running_sgm->remaining_steps--;
             bool dostep;
             if (itp_running_sgm->block != NULL)
             {
@@ -960,6 +931,14 @@ extern "C"
                 }
 #endif
             }
+
+            //no step remaining discards current segment
+            if (!(--itp_running_sgm->remaining_steps))
+            {
+                itp_running_sgm->block = NULL;
+                itp_running_sgm = NULL;
+                itp_sgm_buffer_read();
+            }
         }
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -973,9 +952,16 @@ extern "C"
     {
         itp_sgm_data[itp_sgm_data_write].block = NULL;
         //clicks every 100ms (10Hz)
-        mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = delay;
-        itp_sgm_data[itp_sgm_data_write].update_speed = true;
+        if (delay)
+        {
+            mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+        }
+        else
+        {
+            mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+        }
+        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 1);
+        itp_sgm_data[itp_sgm_data_write].update_speed = 1;
         itp_sgm_data[itp_sgm_data_write].feed = 0;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE

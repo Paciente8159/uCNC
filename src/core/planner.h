@@ -44,8 +44,8 @@ extern "C"
         uint32_t line;
 #endif
         uint8_t dirbits;
-        uint32_t steps[STEPPER_COUNT];
-        uint32_t total_steps;
+        step_t steps[STEPPER_COUNT];
+        step_t total_steps;
         uint8_t step_indexer;
 
         float entry_feed_sqr;
@@ -84,10 +84,10 @@ extern "C"
     uint8_t planner_get_previous_coolant(void);
 #endif
     void planner_discard_block(void);
-    void planner_add_line(uint32_t *target, motion_data_t *block_data);
+    void planner_add_line(int32_t *target, motion_data_t *block_data);
     void planner_add_analog_output(uint8_t output, uint8_t value);
     void planner_add_digital_output(uint8_t output, uint8_t value);
-    void planner_get_position(uint32_t *steps);
+    void planner_get_position(int32_t *steps);
     void planner_resync_position(void);
 
     //overrides
