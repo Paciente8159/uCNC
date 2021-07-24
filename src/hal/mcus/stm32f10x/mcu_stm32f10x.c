@@ -190,14 +190,12 @@ extern "C"
 		{
 			unsigned char c = COM_INREG;
 			serial_rx_isr(c);
-			COM_USART->SR &= ~USART_SR_RXNE;
 		}
 #endif
 
 #ifndef ENABLE_SYNC_TX
 		if (COM_USART->SR & (USART_SR_TXE | USART_SR_TC))
 		{
-			COM_USART->SR &= ~(USART_SR_TXE | USART_SR_TC);
 			COM_USART->CR1 &= ~(USART_CR1_TXEIE);
 			serial_tx_isr();
 		}
@@ -889,6 +887,10 @@ extern "C"
 		COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 #endif
 		COM_USART->CR1 |= USART_CR1_UE; //Enable UART
+#ifdef ENABLE_SYNC_TX
+		//this null char is needed to set TXE bit by the harware
+		COM_OUTREG = 0;
+#endif
 #else
 		//configure USB as Virtual COM port
 		RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;

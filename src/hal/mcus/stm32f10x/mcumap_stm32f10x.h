@@ -50,10 +50,9 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-//on this MCU force sync TX (async does not work well in UART)
-#define ENABLE_SYNC_TX
 #ifdef USB_VCP
 //if USB VCP is used force RX sync also
+#define ENABLE_SYNC_TX
 #define ENABLE_SYNC_RX
 #endif
 
