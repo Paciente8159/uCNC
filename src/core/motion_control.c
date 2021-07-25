@@ -97,7 +97,7 @@ extern "C"
             if (block_data->total_steps < block_data->steps[i])
             {
                 block_data->total_steps = block_data->steps[i];
-                block_data->step_indexer = i;
+                block_data->main_stepper = i;
             }
         }
 
@@ -124,7 +124,7 @@ extern "C"
                     if (backlash_block_data.total_steps < backlash_block_data.steps[i])
                     {
                         backlash_block_data.total_steps = backlash_block_data.steps[i];
-                        backlash_block_data.step_indexer = i;
+                        backlash_block_data.main_stepper = i;
                     }
                 }
             }

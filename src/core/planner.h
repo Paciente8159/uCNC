@@ -46,7 +46,7 @@ extern "C"
         uint8_t dirbits;
         step_t steps[STEPPER_COUNT];
         step_t total_steps;
-        uint8_t step_indexer;
+        uint8_t main_stepper;
 
         float entry_feed_sqr;
         float entry_max_feed_sqr;

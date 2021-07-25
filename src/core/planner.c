@@ -58,12 +58,11 @@ extern "C"
     static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
     static uint8_t planner_data_write;
     static uint8_t planner_data_read;
-    static uint8_t planner_data_slots;
+    static uint8_t planner_data_blocks;
     static planner_overrides_t planner_overrides;
     static uint8_t planner_ovr_counter;
 
-    static void planner_buffer_write(void);
-    static void planner_buffer_read(void);
+    static void planner_add_block(void);
     FORCEINLINE static uint8_t planner_buffer_next(uint8_t index);
     FORCEINLINE static uint8_t planner_buffer_prev(uint8_t index);
     FORCEINLINE static void planner_recalculate(void);
@@ -92,8 +91,7 @@ extern "C"
 #endif
 
         planner_data[planner_data_write].dirbits = block_data->dirbits;
-        planner_data[planner_data_write].total_steps = block_data->total_steps;
-        //planner_data[planner_data_write].step_indexer = block_data->step_indexer;
+        planner_data[planner_data_write].main_stepper = block_data->main_stepper;
         planner_data[planner_data_write].optimal = false;
         planner_data[planner_data_write].acceleration = 0;
         planner_data[planner_data_write].rapid_feed_sqr = 0;
@@ -123,14 +121,12 @@ extern "C"
         {
             memset(planner_data[planner_data_write].steps, 0, sizeof(planner_data[planner_data_write].steps));
             planner_data[planner_data_write].total_steps = 0;
-            planner_buffer_write();
+            planner_add_block();
             return;
         }
-        else
-        {
-            memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(planner_data[planner_data_write].steps));
-            planner_data[planner_data_write].total_steps = block_data->total_steps;
-        }
+
+        memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(planner_data[planner_data_write].steps));
+        planner_data[planner_data_write].total_steps = block_data->total_steps;
 
         //calculates the normalized vector with the amount of motion in any linear actuator
         //also calculates the maximum feedrate and acceleration for each linear actuator
@@ -260,7 +256,7 @@ extern "C"
         }
 
         //advances the buffer
-        planner_buffer_write();
+        planner_add_block();
         //updates the current planner coordinates
         if (target != NULL)
         {
@@ -271,22 +267,30 @@ extern "C"
     /*
 	Planner buffer functions
 */
-    static void planner_buffer_read(void)
-    {
-        planner_data_slots++;
-        if (++planner_data_read == PLANNER_BUFFER_SIZE)
-        {
-            planner_data_read = 0;
-        }
-    }
 
-    static void planner_buffer_write(void)
+    static void planner_add_block(void)
     {
-        planner_data_slots--;
         if (++planner_data_write == PLANNER_BUFFER_SIZE)
         {
             planner_data_write = 0;
         }
+
+        planner_data_blocks++;
+    }
+
+    void planner_discard_block(void)
+    {
+        if (!planner_data_blocks)
+        {
+            return;
+        }
+
+        if (++planner_data_read == PLANNER_BUFFER_SIZE)
+        {
+            planner_data_read = 0;
+        }
+
+        planner_data_blocks--;
     }
 
     static uint8_t planner_buffer_next(uint8_t index)
@@ -311,19 +315,19 @@ extern "C"
 
     bool planner_buffer_is_empty(void)
     {
-        return (planner_data_slots == PLANNER_BUFFER_SIZE);
+        return (!planner_data_blocks);
     }
 
     bool planner_buffer_is_full(void)
     {
-        return (planner_data_slots == 0);
+        return (planner_data_blocks == PLANNER_BUFFER_SIZE);
     }
 
     static void planner_buffer_clear(void)
     {
         planner_data_write = 0;
         planner_data_read = 0;
-        planner_data_slots = PLANNER_BUFFER_SIZE;
+        planner_data_blocks = 0;
 #ifdef FORCE_GLOBALS_TO_0
         memset(planner_data, 0, sizeof(planner_data));
 #endif
@@ -372,7 +376,7 @@ extern "C"
     float planner_get_block_exit_speed_sqr(void)
     {
         //only one block in the buffer (exit speed is 0)
-        if (PLANNER_BUFFER_SIZE - planner_data_slots < 2)
+        if (planner_data_blocks < 2)
             return 0;
 
         //exit speed = next block entry speed
@@ -448,7 +452,7 @@ extern "C"
 #ifdef USE_SPINDLE
     void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
     {
-        float spindle = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_spindle : planner_data[planner_data_read].spindle;
+        float spindle = (!planner_data_blocks) ? planner_spindle : planner_data[planner_data_read].spindle;
         *pwm = 0;
         *invert = (spindle < 0);
 
@@ -481,7 +485,7 @@ extern "C"
 #ifdef USE_COOLANT
     uint8_t planner_get_coolant(void)
     {
-        uint8_t coolant = (planner_data_slots == PLANNER_BUFFER_SIZE) ? planner_coolant : planner_data[planner_data_read].coolant;
+        uint8_t coolant = (!planner_data_blocks) ? planner_coolant : planner_data[planner_data_read].coolant;
 
         if (planner_overrides.overrides_enabled)
         {
@@ -496,11 +500,6 @@ extern "C"
         return planner_coolant;
     }
 #endif
-
-    void planner_discard_block(void)
-    {
-        planner_buffer_read();
-    }
 
     static void planner_recalculate(void)
     {
