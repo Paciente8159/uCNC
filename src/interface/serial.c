@@ -29,13 +29,13 @@ extern "C"
 #include "interface/serial.h"
 
     static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
-    static volatile uint8_t serial_rx_read;
+    static uint8_t serial_rx_read;
     static volatile uint8_t serial_rx_write;
     static volatile uint8_t serial_rx_overflow;
 #ifndef ENABLE_SYNC_TX
     static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
     static volatile uint8_t serial_tx_read;
-    static volatile uint8_t serial_tx_write;
+    static uint8_t serial_tx_write;
 #endif
 
     static uint8_t serial_read_select;
@@ -75,7 +75,6 @@ extern "C"
     unsigned char serial_getc(void)
     {
         unsigned char c;
-        uint8_t read;
         switch (serial_read_select)
         {
         case SERIAL_UART:
@@ -87,13 +86,11 @@ extern "C"
                 }
             }
 
-            read = serial_rx_read;
-            c = serial_rx_buffer[read];
-            if (++read == RX_BUFFER_SIZE)
+            c = serial_rx_buffer[serial_rx_read];
+            if (++serial_rx_read == RX_BUFFER_SIZE)
             {
-                read = 0;
+                serial_rx_read = 0;
             }
-            serial_rx_read = read;
 
             switch (c)
             {
