@@ -43,7 +43,7 @@ extern "C"
                 uint32_t full_steps; //number of steps of all linear actuators
                 step_t total_steps;  //the number of pulses needed to generate all steps (maximum of all linear actuators)
                 float feed;
-                uint8_t step_indexer;
+                uint8_t main_stepper;
                 int16_t spindle;
                 bool update_tools;
                 uint16_t dwell;

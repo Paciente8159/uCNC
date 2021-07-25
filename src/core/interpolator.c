@@ -46,7 +46,7 @@ extern "C"
     //this block has the necessary data to execute the Bresenham line algorithm
     typedef struct itp_blk_
     {
-        uint8_t main_axis;
+        uint8_t main_stepper;
         uint8_t idle_axis;
         uint8_t dirbits;
         step_t steps[STEPPER_COUNT];
@@ -66,7 +66,7 @@ extern "C"
     typedef struct pulse_sgm_
     {
         INTERPOLATOR_BLOCK *block;
-        uint8_t main_axis;
+        uint8_t main_stepper;
         uint16_t remaining_steps;
         uint16_t timer_counter;
         uint16_t timer_prescaller;
@@ -250,19 +250,16 @@ extern "C"
                 itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
                 float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
-                feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->step_indexer];
+                feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
                 float sqr_step_speed = 0;
                 itp_blk_data[itp_blk_data_write].idle_axis = 0;
+                itp_blk_data[itp_blk_data_write].main_stepper = itp_cur_plan_block->main_stepper;
                 for (uint8_t i = STEPPER_COUNT; i != 0;)
                 {
                     i--;
                     sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                     itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                     itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
-                    if (itp_cur_plan_block->steps[i] == itp_cur_plan_block->total_steps)
-                    {
-                        itp_blk_data[itp_blk_data_write].main_axis = i;
-                    }
                     if (!itp_cur_plan_block->steps[i])
                     {
                         itp_blk_data[itp_blk_data_write].idle_axis |= (1 << i);
@@ -634,7 +631,7 @@ extern "C"
 #if (DSS_MAX_OVERSAMPLING != 0)
                     if (itp_running_sgm->next_dss != 0)
                     {
-                        itp_running_sgm->block->main_axis = 255; //disables direct step increment to force step calculation
+                        itp_running_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
                         if (!(itp_running_sgm->next_dss & 0xF8))
                         {
                             itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
@@ -716,7 +713,7 @@ extern "C"
 //prepares the next step bits mask
 #if (STEPPER_COUNT > 0 && defined(STEP0))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 0)
+                if (itp_running_sgm->block->main_stepper == 0)
                 {
                     dostep = true;
                 }
@@ -752,7 +749,7 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 1 && defined(STEP1))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 1)
+                if (itp_running_sgm->block->main_stepper == 1)
                 {
                     dostep = true;
                 }
@@ -788,7 +785,7 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 2 && defined(STEP2))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 2)
+                if (itp_running_sgm->block->main_stepper == 2)
                 {
                     dostep = true;
                 }
@@ -824,7 +821,7 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 3 && defined(STEP3))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 3)
+                if (itp_running_sgm->block->main_stepper == 3)
                 {
                     dostep = true;
                 }
@@ -860,7 +857,7 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 4 && defined(STEP4))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 4)
+                if (itp_running_sgm->block->main_stepper == 4)
                 {
                     dostep = true;
                 }
@@ -896,7 +893,7 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 5 && defined(STEP5))
                 dostep = false;
-                if (itp_running_sgm->block->main_axis == 5)
+                if (itp_running_sgm->block->main_stepper == 5)
                 {
                     dostep = true;
                 }
