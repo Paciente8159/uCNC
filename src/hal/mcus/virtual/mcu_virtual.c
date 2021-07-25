@@ -556,12 +556,6 @@ void mcu_dotasks(void)
 		serial_rx_isr(c);
 	}
 #endif
-#ifdef ENABLE_SYNC_TX
-	if (!serial_tx_is_empty())
-	{
-		serial_tx_isr();
-	}
-#endif
 }
 
 #endif

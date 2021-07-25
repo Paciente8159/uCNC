@@ -3,7 +3,7 @@
 MCU 	 = atmega328p
 CC       = avr-gcc
 LIBS     = -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,--relax -mmcu=$(MCU)
-CFLAGS   = -I"../../src/" -Os -Wall -Wextra -D__DEBUG__ -Os -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
+CFLAGS   = -I"../../src/" -Os -Wall -Wextra -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -MMD -flto -fno-fat-lto-objects -mmcu=$(MCU) -DF_CPU=16000000L
 BIN      = $(BUILDDIR)/uCNC.elf
 HEX      = $(BIN:.elf=.hex)
 SOURCEDIR= ../../src

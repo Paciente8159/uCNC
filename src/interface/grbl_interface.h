@@ -121,6 +121,7 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_APPROACH 9
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
+#define EXEC_ALARM_STARTUP 255 //this is a special alarm that signals µCNC is starting up. It's not a real alarm.
 
 //formated messages
 #define STR_EOL "\r\n"

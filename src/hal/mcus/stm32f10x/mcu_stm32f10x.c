@@ -190,15 +190,14 @@ extern "C"
 		{
 			unsigned char c = COM_INREG;
 			serial_rx_isr(c);
-			COM_USART->SR &= ~USART_SR_RXNE;
 		}
 #endif
 
 #ifndef ENABLE_SYNC_TX
 		if (COM_USART->SR & (USART_SR_TXE | USART_SR_TC))
 		{
+			COM_USART->CR1 &= ~(USART_CR1_TXEIE);
 			serial_tx_isr();
-			COM_USART->SR &= ~(USART_SR_TXE | USART_SR_TC);
 		}
 #endif
 		NVIC_ClearPendingIRQ(COM_IRQ);
@@ -888,6 +887,10 @@ extern "C"
 		COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 #endif
 		COM_USART->CR1 |= USART_CR1_UE; //Enable UART
+#ifdef ENABLE_SYNC_TX
+		//this null char is needed to set TXE bit by the harware
+		COM_OUTREG = 0;
+#endif
 #else
 		//configure USB as Virtual COM port
 		RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
@@ -915,15 +918,25 @@ extern "C"
 		mcu_toggle_output(LED);
 #endif
 #ifdef COM_PORT
+
+		if (c != 0)
+		{
 #ifdef ENABLE_SYNC_TX
-		while (!(COM_USART->SR & USART_SR_TXE))
-			;
+			while (!(COM_USART->SR & USART_SR_TXE))
+				;
 #endif
-		COM_OUTREG = c;
+			COM_OUTREG = c;
+		}
+#ifndef ENABLE_SYNC_TX
+		COM_USART->CR1 |= (USART_CR1_TXEIE);
+#endif
 #endif
 #ifdef USB_VCP
-		tud_cdc_write_char(c);
-		if (c == '\r')
+		if (c != 0)
+		{
+			tud_cdc_write_char(c);
+		}
+		if (c == '\r' || c == 0)
 		{
 			tud_cdc_write_flush();
 		}
@@ -1031,32 +1044,16 @@ extern "C"
 		SysTick->CTRL = 3; //Start SysTick (ABH clock/8)
 	}
 
-#ifdef COM_PORT
-#define mcu_read_available() (COM_USART->SR & USART_SR_RXNE)
-#define mcu_write_available() (COM_USART->SR & USART_SR_TXE)
-#else
-#ifdef USB_VCP
-#define mcu_read_available() tud_cdc_available()
-#define mcu_write_available() tud_cdc_write_available()
-#endif
-#endif
-
 	void mcu_dotasks()
 	{
 #ifdef USB_VCP
 		tud_task(); // tinyusb device task
 #endif
 #ifdef ENABLE_SYNC_RX
-		while (mcu_read_available())
+		while (mcu_rx_ready())
 		{
 			unsigned char c = mcu_getc();
 			serial_rx_isr(c);
-		}
-#endif
-#ifdef ENABLE_SYNC_TX
-		if (!serial_tx_is_empty())
-		{
-			serial_tx_isr();
 		}
 #endif
 	}

@@ -61,6 +61,7 @@ extern "C"
 #ifdef FORCE_GLOBALS_TO_0
         memset(&cnc_state, 0, sizeof(cnc_state_t));
 #endif
+        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
         //initializes all systems
         mcu_init();              //mcu
         mcu_disable_probe_isr(); //forces probe isr disabling
@@ -73,7 +74,6 @@ extern "C"
 #if PID_CONTROLLERS > 0
         pid_init(); //pid
 #endif
-        serial_flush();    //flushes any remaining serial output
         io_enable_steps(); //enables stepper motors
     }
 
@@ -207,6 +207,12 @@ extern "C"
     {
         //run all mcu_internal tasks
         mcu_dotasks();
+
+        //let µCNC finnish startup/reset code
+        if (cnc_state.active_alarm == EXEC_ALARM_STARTUP)
+        {
+            return;
+        }
 
 #if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
         io_limits_isr();
@@ -354,17 +360,19 @@ extern "C"
 
     void cnc_reset(void)
     {
+        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
         //resets all realtime command flags
         cnc_state.rt_cmd = RT_CMD_CLEAR;
         cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
         cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
-        cnc_state.active_alarm = EXEC_ALARM_RESET;
         cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; //Activates all alarms and hold
 
         //clear all systems
         itp_clear();
         planner_clear();
         protocol_send_string(MSG_STARTUP);
+
+        cnc_state.active_alarm = EXEC_ALARM_RESET;
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 

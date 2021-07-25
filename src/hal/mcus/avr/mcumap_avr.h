@@ -3595,8 +3595,8 @@ extern "C"
 		ADCH;                                           \
 	})
 #ifdef PROBE_ISR
-#define mcu_enable_probe_isr() SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
-#define mcu_disable_probe_isr() CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK)
+#define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
+#define mcu_disable_probe_isr() (CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
 #else
 #define mcu_enable_probe_isr()
 #define mcu_disable_probe_isr()
@@ -3605,13 +3605,8 @@ extern "C"
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
 
-#ifndef ENABLE_SYNC_TX
-#define mcu_enable_tx_isr() SETBIT(UCSRB, UDRIE)
-#define mcu_disable_tx_isr() CLEARBIT(UCSRB, UDRIE)
-#else
-#define mcu_enable_tx_isr()
-#define mcu_disable_tx_isr()
-#endif
+#define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
+#define mcu_rx_ready() (CHECKBIT(UCSRA, RX))
 
 #ifdef __cplusplus
 }

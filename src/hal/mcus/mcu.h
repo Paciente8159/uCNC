@@ -123,19 +123,17 @@ extern "C"
 #endif
 
 /**
- * enables the uart TX mcu isr when the tx register is empty (or in alternative transmition is completed)
- * can be defined either as a function or a macro call
+ * checks if the serial hardware of the MCU is ready do send the next char
  * */
-#ifndef mcu_enable_tx_isr
-	void mcu_enable_tx_isr(void); //Start async send
+#ifndef mcu_tx_ready
+	bool mcu_tx_ready(void); //Start async send
 #endif
 
 /**
- * disables the uart TX mcu isr when the tx register is empty (or in alternative transmition is completed)
- * can be defined either as a function or a macro call
+ * checks if the serial hardware of the MCU has a new char ready to be read
  * */
-#ifndef mcu_disable_tx_isr
-	void mcu_disable_tx_isr(void); //Stop async send
+#ifndef mcu_rx_ready
+	bool mcu_rx_ready(void); //Stop async send
 #endif
 
 /**
