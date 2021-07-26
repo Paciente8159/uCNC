@@ -58,14 +58,14 @@ extern "C"
 #ifdef ENABLE_BACKLASH_COMPENSATION
         bool backlash_comp;
 #endif
-    } INTERPOLATOR_BLOCK;
+    } itp_block_t;
 
     //contains data of the block segment being executed by the pulse and integrator routines
     //the segment is a fragment of the motion defined in the block
     //this also contains the acceleration/deacceleration info
     typedef struct pulse_sgm_
     {
-        INTERPOLATOR_BLOCK *block;
+        itp_block_t *block;
         uint8_t main_stepper;
         uint16_t remaining_steps;
         uint16_t timer_counter;
@@ -79,24 +79,20 @@ extern "C"
 #endif
         float feed;
         uint8_t update_speed;
-    } INTERPOLATOR_SEGMENT;
+    } itp_segment_t;
 
     //circular buffers
     //creates new type PULSE_BLOCK_BUFFER
-    static INTERPOLATOR_BLOCK itp_blk_data[INTERPOLATOR_BUFFER_SIZE];
+    static itp_block_t itp_blk_data[INTERPOLATOR_BUFFER_SIZE];
     static uint8_t itp_blk_data_write;
-    static uint8_t itp_blk_data_read;
-    static uint8_t itp_blk_data_slots;
 
-    static INTERPOLATOR_SEGMENT itp_sgm_data[INTERPOLATOR_BUFFER_SIZE];
-    static volatile uint8_t itp_sgm_data_write;
-    static uint8_t itp_sgm_data_read;
-    static volatile uint8_t itp_sgm_data_slots;
+    static itp_segment_t itp_sgm_data[INTERPOLATOR_BUFFER_SIZE];
+    static uint8_t itp_sgm_data_write;
+    static volatile uint8_t itp_sgm_data_read;
+    static volatile uint8_t itp_sgm_data_segments;
     //static buffer_t itp_sgm_buffer;
 
     static planner_block_t *itp_cur_plan_block;
-    //pointer to the segment being executed
-    static volatile INTERPOLATOR_SEGMENT volatile *itp_running_sgm;
 
     //stores the current position of the steppers in the interpolator after processing a planner block
     static int32_t itp_step_pos[STEPPER_COUNT];
@@ -109,59 +105,74 @@ extern "C"
     volatile static uint8_t itp_step_lock;
 #endif
 
+    static void itp_sgm_buffer_read(void);
+    static void itp_sgm_buffer_write(void);
+    FORCEINLINE static bool itp_sgm_is_empty(void);
+    FORCEINLINE static bool itp_sgm_is_full(void);
+    FORCEINLINE static void itp_sgm_clear(void);
+    FORCEINLINE static void itp_blk_buffer_write(void);
+    static void itp_blk_clear(void);
+
     /*
 	Interpolator segment buffer functions
 */
-    static inline void itp_sgm_buffer_read(void)
+    static void itp_sgm_buffer_read(void)
     {
-        itp_sgm_data_slots++;
-        if (++itp_sgm_data_read == INTERPOLATOR_BUFFER_SIZE)
+        if (!itp_sgm_data_segments)
         {
-            itp_sgm_data_read = 0;
+            return;
         }
+
+        uint8_t read = itp_sgm_data_read;
+        if (++read == INTERPOLATOR_BUFFER_SIZE)
+        {
+            read = 0;
+        }
+
+        itp_sgm_data_read = read;
+        itp_sgm_data_segments--;
     }
 
-    static inline void itp_sgm_buffer_write(void)
+    static void itp_sgm_buffer_write(void)
     {
-        itp_sgm_data_slots--;
         if (++itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
         {
             itp_sgm_data_write = 0;
         }
+
+        itp_sgm_data_segments++;
     }
 
-    static inline bool itp_sgm_is_empty(void)
+    static bool itp_sgm_is_empty(void)
     {
-        return (itp_sgm_data_slots == INTERPOLATOR_BUFFER_SIZE);
+        return (!itp_sgm_data_segments);
     }
 
-    static inline bool itp_sgm_is_full(void)
+    static bool itp_sgm_is_full(void)
     {
-        return (itp_sgm_data_slots == 0);
+        return (itp_sgm_data_segments == INTERPOLATOR_BUFFER_SIZE);
     }
 
-    static inline void itp_sgm_clear(void)
+    static void itp_sgm_clear(void)
     {
         itp_sgm_data_write = 0;
         itp_sgm_data_read = 0;
-        itp_sgm_data_slots = INTERPOLATOR_BUFFER_SIZE;
+        itp_sgm_data_segments = 0;
         memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
     }
 
-    static inline void itp_blk_buffer_write(void)
+    static void itp_blk_buffer_write(void)
     {
-        //itp_blk_data_slots--; //AUTOMATIC LOOP
+        //curcular always. No need to control override
         if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
         {
             itp_blk_data_write = 0;
         }
     }
 
-    static inline void itp_blk_clear(void)
+    static void itp_blk_clear(void)
     {
         itp_blk_data_write = 0;
-        itp_blk_data_read = 0;
-        itp_blk_data_slots = INTERPOLATOR_BUFFER_SIZE;
         memset(itp_blk_data, 0, sizeof(itp_blk_data));
     }
 
@@ -175,7 +186,7 @@ extern "C"
         //resets buffers
         memset(itp_step_pos, 0, sizeof(itp_step_pos));
         memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
-        itp_running_sgm = NULL;
+        itp_rt_sgm = NULL;
         itp_cur_plan_block = NULL;
         itp_needs_update = false;
 #endif
@@ -198,7 +209,7 @@ extern "C"
         //accel profile vars
         static uint32_t unprocessed_steps = 0;
 
-        INTERPOLATOR_SEGMENT *sgm = NULL;
+        itp_segment_t *sgm = NULL;
 
         //creates segments and fills the buffer
         while (!itp_sgm_is_full())
@@ -213,6 +224,7 @@ extern "C"
             if (itp_cur_plan_block == NULL)
             {
                 //planner is empty or interpolator block buffer full. Nothing to be done
+                //itp block will never be full if itp segment is not full
                 if (planner_buffer_is_empty() /* || itp_blk_is_full()*/)
                 {
                     break;
@@ -461,9 +473,6 @@ extern "C"
                 itp_cur_plan_block->total_steps = deaccel_from;
             }
 
-            //finally write the segment
-            itp_sgm_buffer_write();
-
             if (unprocessed_steps == 0)
             {
                 itp_blk_buffer_write();
@@ -475,6 +484,9 @@ extern "C"
                 //accel_profile = 0; //no updates necessary to planner
                 //break;
             }
+
+            //finally write the segment
+            itp_sgm_buffer_write();
         }
 
 #ifdef USE_COOLANT
@@ -483,7 +495,7 @@ extern "C"
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
-        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && (itp_sgm_data_slots < INTERPOLATOR_BUFFER_SIZE)) //exec state is not hold or alarm and not already running
+        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && !itp_sgm_is_empty()) //exec state is not hold or alarm and not already running
         {
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
@@ -498,7 +510,6 @@ extern "C"
 
     void itp_stop(void)
     {
-        mcu_stop_itp_isr();
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
         cnc_clear_exec_state(EXEC_RUN);
@@ -509,17 +520,17 @@ extern "C"
             itp_rt_spindle = 0;
         }
 #endif
+        mcu_stop_itp_isr();
     }
 
     void itp_clear(void)
     {
         itp_cur_plan_block = NULL;
-        itp_running_sgm = NULL;
         //syncs the stored position and the real position
         memcpy(itp_step_pos, itp_rt_step_pos, sizeof(itp_step_pos));
         itp_sgm_data_write = 0;
         itp_sgm_data_read = 0;
-        itp_sgm_data_slots = INTERPOLATOR_BUFFER_SIZE;
+        itp_sgm_data_segments = 0;
         itp_blk_clear();
     }
 
@@ -562,7 +573,7 @@ extern "C"
             return feed;
         }
 
-        if (itp_sgm_data_slots != INTERPOLATOR_BUFFER_SIZE)
+        if (itp_sgm_data_segments)
         {
             feed = itp_sgm_data[itp_sgm_data_read].feed;
         }
@@ -605,6 +616,8 @@ extern "C"
     {
         static uint8_t stepbits = 0;
         static bool itp_busy = false;
+        static itp_segment_t *itp_rt_sgm = NULL; //pointer to the segment being executed
+
         if (itp_busy) //prevents reentrancy
         {
             return;
@@ -618,111 +631,112 @@ extern "C"
         mcu_enable_global_isr();
 
         //if buffer empty loads one
-        if (itp_running_sgm == NULL)
+        if (itp_rt_sgm == NULL)
         {
             //if buffer is not empty
-            if (itp_sgm_data_slots < INTERPOLATOR_BUFFER_SIZE)
+            if (!itp_sgm_is_empty())
             {
                 //loads a new segment
-                itp_running_sgm = &itp_sgm_data[itp_sgm_data_read];
+                itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
                 cnc_set_exec_state(EXEC_RUN);
-                if (itp_running_sgm->block != NULL)
+                if (itp_rt_sgm->block != NULL)
                 {
 #if (DSS_MAX_OVERSAMPLING != 0)
-                    if (itp_running_sgm->next_dss != 0)
+                    if (itp_rt_sgm->next_dss != 0)
                     {
-                        itp_running_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
-                        if (!(itp_running_sgm->next_dss & 0xF8))
+                        itp_rt_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
+                        if (!(itp_rt_sgm->next_dss & 0xF8))
                         {
-                            itp_running_sgm->block->total_steps <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->total_steps <<= itp_rt_sgm->next_dss;
 #if (STEPPER_COUNT > 0 && defined(STEP0))
-                            itp_running_sgm->block->errors[0] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[0] <<= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 1 && defined(STEP1))
-                            itp_running_sgm->block->errors[1] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[1] <<= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 2 && defined(STEP2))
-                            itp_running_sgm->block->errors[2] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[2] <<= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 3 && defined(STEP3))
-                            itp_running_sgm->block->errors[3] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[3] <<= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 4 && defined(STEP4))
-                            itp_running_sgm->block->errors[4] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[4] <<= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 5 && defined(STEP5))
-                            itp_running_sgm->block->errors[5] <<= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[5] <<= itp_rt_sgm->next_dss;
 #endif
                         }
                         else
                         {
-                            itp_running_sgm->next_dss = -itp_running_sgm->next_dss;
-                            itp_running_sgm->block->total_steps >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->next_dss = -itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->total_steps >>= itp_rt_sgm->next_dss;
 #if (STEPPER_COUNT > 0 && defined(STEP0))
-                            itp_running_sgm->block->errors[0] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[0] >>= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 1 && defined(STEP1))
-                            itp_running_sgm->block->errors[1] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[1] >>= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 2 && defined(STEP2))
-                            itp_running_sgm->block->errors[2] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[2] >>= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 3 && defined(STEP3))
-                            itp_running_sgm->block->errors[3] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[3] >>= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 4 && defined(STEP4))
-                            itp_running_sgm->block->errors[4] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[4] >>= itp_rt_sgm->next_dss;
 #endif
 #if (STEPPER_COUNT > 5 && defined(STEP5))
-                            itp_running_sgm->block->errors[5] >>= itp_running_sgm->next_dss;
+                            itp_rt_sgm->block->errors[5] >>= itp_rt_sgm->next_dss;
 #endif
                         }
                     }
 #endif
                     //set dir pins for current
-                    io_set_dirs(itp_running_sgm->block->dirbits);
+                    io_set_dirs(itp_rt_sgm->block->dirbits);
                 }
 
-                if (itp_running_sgm->update_speed)
+                if (itp_rt_sgm->update_speed)
                 {
-                    if (itp_running_sgm->update_speed & 0x01)
+                    if (itp_rt_sgm->update_speed & 0x01)
                     {
-                        mcu_change_itp_isr(itp_running_sgm->timer_counter, itp_running_sgm->timer_prescaller);
+                        mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
 #ifdef USE_SPINDLE
-                    io_set_spindle(itp_running_sgm->spindle, itp_running_sgm->spindle_inv);
-                    itp_rt_spindle = itp_running_sgm->spindle;
+                    io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
+                    itp_rt_spindle = itp_rt_sgm->spindle;
 #endif
-                    itp_running_sgm->update_speed = 0;
+                    itp_rt_sgm->update_speed = 0;
                 }
             }
             else
             {
-                itp_stop(); //the buffer is empty. The ISR can stop
+                mcu_disable_global_isr();
                 itp_busy = false;
+                itp_stop(); //the buffer is empty. The ISR can stop
                 return;
             }
         }
 
         //is steps remaining starts calc next step bits
-        if (itp_running_sgm != NULL)
+        if (itp_rt_sgm->remaining_steps)
         {
             bool dostep;
-            if (itp_running_sgm->block != NULL)
+            if (itp_rt_sgm->block != NULL)
             {
 //prepares the next step bits mask
 #if (STEPPER_COUNT > 0 && defined(STEP0))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 0)
+                if (itp_rt_sgm->block->main_stepper == 0)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP0_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
                 {
-                    itp_running_sgm->block->errors[0] += itp_running_sgm->block->steps[0];
-                    if (itp_running_sgm->block->errors[0] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
+                    if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[0] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -731,10 +745,10 @@ extern "C"
                 {
                     stepbits |= STEP0_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR0_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR0_MASK)
                         {
                             itp_rt_step_pos[0]--;
                         }
@@ -749,16 +763,16 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 1 && defined(STEP1))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 1)
+                if (itp_rt_sgm->block->main_stepper == 1)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP1_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
                 {
-                    itp_running_sgm->block->errors[1] += itp_running_sgm->block->steps[1];
-                    if (itp_running_sgm->block->errors[1] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
+                    if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[1] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -767,10 +781,10 @@ extern "C"
                 {
                     stepbits |= STEP1_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR1_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR1_MASK)
                         {
                             itp_rt_step_pos[1]--;
                         }
@@ -785,16 +799,16 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 2 && defined(STEP2))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 2)
+                if (itp_rt_sgm->block->main_stepper == 2)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP2_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
                 {
-                    itp_running_sgm->block->errors[2] += itp_running_sgm->block->steps[2];
-                    if (itp_running_sgm->block->errors[2] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
+                    if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[2] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -803,10 +817,10 @@ extern "C"
                 {
                     stepbits |= STEP2_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR2_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR2_MASK)
                         {
                             itp_rt_step_pos[2]--;
                         }
@@ -821,16 +835,16 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 3 && defined(STEP3))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 3)
+                if (itp_rt_sgm->block->main_stepper == 3)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP3_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
                 {
-                    itp_running_sgm->block->errors[3] += itp_running_sgm->block->steps[3];
-                    if (itp_running_sgm->block->errors[3] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
+                    if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[3] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -839,10 +853,10 @@ extern "C"
                 {
                     stepbits |= STEP3_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR3_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR3_MASK)
                         {
                             itp_rt_step_pos[3]--;
                         }
@@ -857,16 +871,16 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 4 && defined(STEP4))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 4)
+                if (itp_rt_sgm->block->main_stepper == 4)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP4_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
                 {
-                    itp_running_sgm->block->errors[4] += itp_running_sgm->block->steps[4];
-                    if (itp_running_sgm->block->errors[4] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
+                    if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[4] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -875,10 +889,10 @@ extern "C"
                 {
                     stepbits |= STEP4_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR4_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR4_MASK)
                         {
                             itp_rt_step_pos[4]--;
                         }
@@ -893,16 +907,16 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 5 && defined(STEP5))
                 dostep = false;
-                if (itp_running_sgm->block->main_stepper == 5)
+                if (itp_rt_sgm->block->main_stepper == 5)
                 {
                     dostep = true;
                 }
-                else if (!(itp_running_sgm->block->idle_axis & STEP5_MASK))
+                else if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
                 {
-                    itp_running_sgm->block->errors[5] += itp_running_sgm->block->steps[5];
-                    if (itp_running_sgm->block->errors[5] > itp_running_sgm->block->total_steps)
+                    itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
+                    if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
                     {
-                        itp_running_sgm->block->errors[5] -= itp_running_sgm->block->total_steps;
+                        itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
                         dostep = true;
                     }
                 }
@@ -911,10 +925,10 @@ extern "C"
                 {
                     stepbits |= STEP5_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-                    if (!itp_running_sgm->block->backlash_comp)
+                    if (!itp_rt_sgm->block->backlash_comp)
                     {
 #endif
-                        if (itp_running_sgm->block->dirbits & DIR5_MASK)
+                        if (itp_rt_sgm->block->dirbits & DIR5_MASK)
                         {
                             itp_rt_step_pos[5]--;
                         }
@@ -930,12 +944,15 @@ extern "C"
             }
 
             //no step remaining discards current segment
-            if (!(--itp_running_sgm->remaining_steps))
-            {
-                itp_running_sgm->block = NULL;
-                itp_running_sgm = NULL;
-                itp_sgm_buffer_read();
-            }
+            --itp_rt_sgm->remaining_steps;
+        }
+
+        //no step remaining discards current segment
+        if (!itp_rt_sgm->remaining_steps)
+        {
+            itp_rt_sgm->block = NULL;
+            itp_rt_sgm = NULL;
+            itp_sgm_buffer_read();
         }
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
