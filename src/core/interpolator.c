@@ -94,8 +94,6 @@ extern "C"
 
     static planner_block_t *itp_cur_plan_block;
 
-    //stores the current position of the steppers in the interpolator after processing a planner block
-    static int32_t itp_step_pos[STEPPER_COUNT];
     //keeps track of the machine realtime position
     static int32_t itp_rt_step_pos[STEPPER_COUNT];
     static volatile uint8_t itp_rt_spindle;
@@ -184,9 +182,7 @@ extern "C"
     {
 #ifdef FORCE_GLOBALS_TO_0
         //resets buffers
-        memset(itp_step_pos, 0, sizeof(itp_step_pos));
         memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
-        itp_rt_sgm = NULL;
         itp_cur_plan_block = NULL;
         itp_needs_update = false;
 #endif
@@ -381,24 +377,24 @@ extern "C"
         	common calculations for all three profiles (accel, constant and deaccel)
         */
             current_speed += speed_change;
-            //if on active hold state
-            if (cnc_get_exec_state(EXEC_HOLD))
+
+            if (current_speed <= 0)
             {
-                if (current_speed < 0)
+                if (cnc_get_exec_state(EXEC_HOLD))
                 {
-                    //after a feed hold if 0 speed reached exits and starves the buffer
                     return;
                 }
+
+                //speed can't be negative
+                current_speed = 0;
             }
 
-            float partial_distance = MIN(current_speed * INTEGRATOR_DELTA_T, 65535.0f);
+            float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), 65535.0f);
+            //if traveled distance is less the one step fits at least one step
+            partial_distance = MAX(partial_distance, 1.0f);
             //computes how many steps it will perform at this speed and frame window
             uint16_t segm_steps = (uint16_t)floorf(partial_distance);
-            //if traveled distance is less the one step fits at least one step
-            if (segm_steps == 0)
-            {
-                segm_steps = 1;
-            }
+
             //if computed steps exceed the remaining steps for the motion shortens the distance
             if (segm_steps > (unprocessed_steps - profile_steps_limit))
             {
@@ -526,8 +522,6 @@ extern "C"
     void itp_clear(void)
     {
         itp_cur_plan_block = NULL;
-        //syncs the stored position and the real position
-        memcpy(itp_step_pos, itp_rt_step_pos, sizeof(itp_step_pos));
         itp_sgm_data_write = 0;
         itp_sgm_data_read = 0;
         itp_sgm_data_segments = 0;
