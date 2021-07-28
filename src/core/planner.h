@@ -74,7 +74,7 @@ extern "C"
     bool planner_buffer_is_empty(void);
     planner_block_t *planner_get_block(void);
     float planner_get_block_exit_speed_sqr(void);
-    float planner_get_block_top_speed(void);
+    float planner_get_block_top_speed(float exit_speed_sqr);
 #ifdef USE_SPINDLE
     void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert);
     float planner_get_previous_spindle_speed(void);

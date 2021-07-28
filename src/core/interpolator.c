@@ -198,12 +198,9 @@ extern "C"
         static uint32_t deaccel_from = 0;
         static float junction_speed_sqr = 0;
         static float half_speed_change = 0;
-        static bool initial_accel_negative = false;
+        //static bool initial_accel_negative = false;
         static float feed_convert = 0;
         static bool is_initial_transition = true;
-
-        //accel profile vars
-        static uint32_t unprocessed_steps = 0;
 
         itp_segment_t *sgm = NULL;
 
@@ -277,9 +274,6 @@ extern "C"
                 sqr_step_speed *= fast_flt_pow2(total_step_inv);
                 feed_convert *= fast_flt_sqrt(sqr_step_speed);
 
-                //initializes data for generating step segments
-                unprocessed_steps = itp_cur_plan_block->total_steps;
-
                 //flags block for recalculation of speeds
                 itp_needs_update = true;
                 //in every new block speed update is needed
@@ -288,6 +282,8 @@ extern "C"
                 half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
                 half_speed_change = fast_flt_div2(half_speed_change);
             }
+
+            uint32_t remaining_steps = itp_cur_plan_block->total_steps;
 
             if (itp_sgm_is_full()) //re-checks in case an injected dweel filled the buffer
             {
@@ -301,31 +297,37 @@ extern "C"
             if (cnc_get_exec_state(EXEC_HOLD))
             {
                 //forces deacceleration by overriding the profile juntion points
-                accel_until = unprocessed_steps;
-                deaccel_from = unprocessed_steps;
+                accel_until = remaining_steps;
+                deaccel_from = remaining_steps;
                 itp_needs_update = true;
             }
             else if (itp_needs_update) //forces recalculation of acceleration and deacceleration profiles
             {
                 itp_needs_update = false;
                 float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-                junction_speed_sqr = planner_get_block_top_speed();
+                junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
 
-                accel_until = unprocessed_steps;
+                accel_until = remaining_steps;
                 deaccel_from = 0;
-                if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
+                if (junction_speed_sqr > itp_cur_plan_block->entry_feed_sqr)
                 {
                     float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
                     accel_dist = fast_flt_div2(accel_dist);
                     accel_until -= floorf(accel_dist);
-                    initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
+                    //initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
+                }
+                else
+                {
+                    //it's already travelling at higher speeed than it should
+                    //use this value to calculate the deacceleration
+                    junction_speed_sqr = itp_cur_plan_block->entry_feed_sqr;
                 }
 
                 //if entry speed already a junction speed updates it.
-                if (accel_until == unprocessed_steps)
+                /*if (accel_until == remaining_steps)
                 {
                     itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-                }
+                }*/
 
                 if (junction_speed_sqr > exit_speed_sqr)
                 {
@@ -338,7 +340,7 @@ extern "C"
             float speed_change;
             float profile_steps_limit;
             //acceleration profile
-            if (unprocessed_steps > accel_until)
+            if (remaining_steps > accel_until)
             {
                 /*
             	computes the traveled distance within a fixed amount of time
@@ -351,12 +353,12 @@ extern "C"
 
             	(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
             */
-                speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
+                speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
                 profile_steps_limit = accel_until;
                 sgm->update_speed = 1;
                 is_initial_transition = true;
             }
-            else if (unprocessed_steps > deaccel_from)
+            else if (remaining_steps > deaccel_from)
             {
                 //constant speed segment
                 speed_change = 0;
@@ -389,16 +391,16 @@ extern "C"
                 current_speed = 0;
             }
 
-            float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), 65535.0f);
+            float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), remaining_steps);
             //if traveled distance is less the one step fits at least one step
             partial_distance = MAX(partial_distance, 1.0f);
             //computes how many steps it will perform at this speed and frame window
             uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 
             //if computed steps exceed the remaining steps for the motion shortens the distance
-            if (segm_steps > (unprocessed_steps - profile_steps_limit))
+            if (segm_steps > (remaining_steps - profile_steps_limit))
             {
-                segm_steps = (uint16_t)(unprocessed_steps - profile_steps_limit);
+                segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
             }
 
             if (speed_change)
@@ -446,7 +448,6 @@ extern "C"
         sgm->remaining_steps = segm_steps;
         mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
-            itp_cur_plan_block->total_steps -= segm_steps;
 
             sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
@@ -457,19 +458,16 @@ extern "C"
             planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
 #endif
 #endif
-            unprocessed_steps -= segm_steps;
+            remaining_steps -= segm_steps;
 
-            if (unprocessed_steps == accel_until) //resets float additions error
+            if (remaining_steps == accel_until) //resets float additions error
             {
                 itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-                itp_cur_plan_block->total_steps = accel_until;
-            }
-            else if (unprocessed_steps == deaccel_from) //resets float additions error
-            {
-                itp_cur_plan_block->total_steps = deaccel_from;
             }
 
-            if (unprocessed_steps == 0)
+            itp_cur_plan_block->total_steps = remaining_steps;
+
+            if (itp_cur_plan_block->total_steps == 0)
             {
                 itp_blk_buffer_write();
                 itp_cur_plan_block = NULL;
