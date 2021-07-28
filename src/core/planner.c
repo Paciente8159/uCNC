@@ -403,7 +403,7 @@ extern "C"
         return MIN(exit_speed_sqr, rapid_feed_sqr);
     }
 
-    float planner_get_block_top_speed(void)
+    float planner_get_block_top_speed(float exit_speed_sqr)
     {
         /*
     Computed the junction speed
@@ -420,12 +420,28 @@ extern "C"
 
     v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
     */
-        float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-        float speed_delta = exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
-        float speed_change = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
-        speed_change = fast_flt_mul2(speed_change);
-        speed_change += speed_delta;
-        float junction_speed_sqr = fast_flt_div2(speed_change);
+        //calculates the difference between the entry speed and the exit speed
+        float speed_delta = exit_speed_sqr - planner_data[planner_data_read].entry_feed_sqr;
+        //caclculates the speed increase/decrease for the given distance
+        float junction_speed_sqr = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
+        junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
+        //if there is enough space to accelerate computes the junction speed
+        if (junction_speed_sqr >= speed_delta)
+        {
+            junction_speed_sqr += exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
+            junction_speed_sqr = fast_flt_div2(junction_speed_sqr);
+        }
+        else if (exit_speed_sqr > planner_data[planner_data_read].entry_feed_sqr)
+        {
+            //will never reach the desired exit speed even accelerating all the way
+            junction_speed_sqr += planner_data[planner_data_read].entry_feed_sqr;
+        }
+        else
+        {
+            //will overshoot the desired exit speed even deaccelerating all the way
+            junction_speed_sqr = planner_data[planner_data_read].entry_feed_sqr;
+        }
+
         float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
         float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
         if (planner_overrides.overrides_enabled)
@@ -505,45 +521,56 @@ extern "C"
     {
         uint8_t last = planner_data_write;
         uint8_t first = planner_data_read;
-        uint8_t block = planner_data_write;
+        uint8_t block = last;
+
         //starts in the last added block
         //calculates the maximum entry speed of the block so that it can do a full stop in the end
-        float doubledistaccel = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
-        float entry_feed_sqr = (planner_data[block].dwell == 0) ? (doubledistaccel) : 0;
-        planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
+        if (planner_data_blocks < 2)
+        {
+            planner_data[block].entry_feed_sqr = 0;
+            return;
+        }
         //optimizes entry speeds given the current exit speed (backward pass)
-        uint8_t next = block;
-        block = planner_buffer_prev(block);
+        uint8_t next = planner_buffer_next(block);
 
         while (!planner_data[block].optimal && block != first)
         {
+            float speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
             if (planner_data[block].dwell != 0)
             {
                 planner_data[block].entry_feed_sqr = 0;
             }
             else if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
             {
-                entry_feed_sqr = planner_data[next].entry_feed_sqr + doubledistaccel;
-                planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, entry_feed_sqr);
+                speedchange = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
+                speedchange += (block != last) ? planner_data[next].entry_max_feed_sqr : 0;
+                planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
+            }
+            else
+            {
+                //found optimal
+                break;
             }
 
             next = block;
             block = planner_buffer_prev(block);
         }
 
+        next = planner_buffer_next(block);
         //optimizes exit speeds (forward pass)
         while (block != last)
         {
             //next block is moving at a faster speed
             if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
             {
+                float speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
                 //check if the next block entry speed can be achieved
-                float exit_speed_sqr = planner_data[block].entry_feed_sqr + (doubledistaccel);
-                if (exit_speed_sqr < planner_data[next].entry_feed_sqr)
+                speedchange += planner_data[block].entry_feed_sqr;
+                if (speedchange < planner_data[next].entry_feed_sqr)
                 {
                     //lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
                     //optimization achieved for this movement
-                    planner_data[next].entry_feed_sqr = exit_speed_sqr;
+                    planner_data[next].entry_feed_sqr = MIN(planner_data[next].entry_max_feed_sqr, speedchange);
                     planner_data[next].optimal = true;
                 }
             }

@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #define F_CPU 1000000
-#define F_STEP_MAX 30000
+#define F_STEP_MAX 40000
 #define F_STEP_MIN 1
 #define __rom__
 #define __romstr__
@@ -35,7 +35,7 @@
 #define ENABLE_SYNC_TX
 
 //commento to use console only
-#define COMPORT "\\\\.\\COM7"
+//#define COMPORT "\\\\.\\COM7"
 
 #ifndef COMPORT
 #define USECONSOLE

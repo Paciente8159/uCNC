@@ -405,8 +405,8 @@ extern "C"
 
         //executes feeds override rt commands
         uint8_t cmd_mask = 0x04;
-        uint8_t command = cnc_state.rt_cmd & 0x07; //copies realtime flags states
-        cnc_state.rt_cmd = 0;                      //clears command flags
+        uint8_t command = cnc_state.rt_cmd & 0x07;   //copies realtime flags states
+        CLEARFLAG(cnc_state.rt_cmd, ~RT_CMD_REPORT); //clears all command flags except report request
         while (command)
         {
             switch (command & cmd_mask)
@@ -415,6 +415,7 @@ extern "C"
                 if (!protocol_is_busy())
                 {
                     protocol_send_status();
+                    CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
                 }
 
                 break;

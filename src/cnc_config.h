@@ -200,7 +200,7 @@ extern "C"
 #define DSS_MAX_OVERSAMPLING 0
 
 /*
-	Modifies the bresenham algorithm to use a 16-version.
+	Modifies the bresenham algorithm to use a 16-version (experimental).
 	This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments.
 */
 //#define BRESENHAM_16BIT

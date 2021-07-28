@@ -971,7 +971,7 @@ extern "C"
         block_data.line = words->n;
 #endif
 
-        mc_get_position(&planner_last_pos);
+        mc_get_position(planner_last_pos);
 
         //RS274NGC v3 - 3.8 Order of Execution
         //1. comment (ignored - already filtered)
@@ -1234,7 +1234,6 @@ extern "C"
         }
         else
         {
-            mc_get_position(planner_last_pos);
             //if by any reason this is a nomotion command or world coordinates are used skip this
             switch (new_state->groups.nonmodal)
             {

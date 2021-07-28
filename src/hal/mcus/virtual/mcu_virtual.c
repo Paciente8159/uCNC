@@ -121,12 +121,13 @@ void *comsimul(void)
 		if (c != 0)
 		{
 			uart_char = c;
+			while (!serial_rx_is_empty())
+				{
+				}
 			serial_rx_isr(c);
 			if (c == '\n' | c == '\r')
 			{
-				while (!serial_rx_is_empty())
-				{
-				}
+				
 			}
 		}
 	}
