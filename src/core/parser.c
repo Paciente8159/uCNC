@@ -2174,6 +2174,12 @@ extern "C"
         default:
             if (c >= 'A' && c <= 'Z') //invalid recognized char
             {
+#ifdef IGNORE_UNDEFINED_AXIS
+                if (c <= 'C' || c >= 'X') //ignore undefined axis chars
+                {
+                    return STATUS_OK;
+                }
+#endif
                 return STATUS_GCODE_UNUSED_WORDS;
             }
             return STATUS_INVALID_STATEMENT;

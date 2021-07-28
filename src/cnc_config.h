@@ -144,13 +144,16 @@ extern "C"
 /*
 	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
 */
-#define DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_LIMITS
-#define DISABLE_PROBE
+// #define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_LIMITS
+// #define DISABLE_PROBE
 
 /*
 	G-code options
 */
+//ignores undefined axis in gcode instead of sending an error
+#define IGNORE_UNDEFINED_AXIS
+
 //processes and displays the currently executing gcode numbered line
 //#define GCODE_PROCESS_LINE_NUMBERS
 
@@ -178,46 +181,47 @@ extern "C"
 //#define SKEW_COMPENSATION_XY_ONLY
 #endif
 
-/*
-	Changes the planner acceleration profile generation from axis driven to linear actuator driven
-*/
-//#define ENABLE_LINACT_PLANNER
+	/**
+	 * Changes the planner acceleration profile generation from axis driven to linear actuator driven
+	 */
+	//#define ENABLE_LINACT_PLANNER
 #ifdef ENABLE_LINACT_PLANNER
-//uncomment to do a stop and start if any of the linear actuators is at a still state or changes direction
-//#define ENABLE_LINACT_COLD_START
+	//uncomment to do a stop and start if any of the linear actuators is at a still state or changes direction
+	//#define ENABLE_LINACT_COLD_START
 #endif
 
-/*
-	If the type of machine need backlash compensation configure here
-*/
-//#define ENABLE_BACKLASH_COMPENSATION
+	/**
+	 * If the type of machine need backlash compensation configure here
+	 */
+	//#define ENABLE_BACKLASH_COMPENSATION
 
-/*
-	Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).
-	The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
-	Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
-*/
+	/**
+	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).
+	 * The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
+	 * Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
+	 */
 #define DSS_MAX_OVERSAMPLING 0
 
-/*
-	Modifies the bresenham algorithm to use a 16-version (experimental).
-	This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments.
-*/
-//#define BRESENHAM_16BIT
+	/**
+	 * Modifies the bresenham algorithm to use a 16-version (experimental).
+	 * This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments. 	 * 
+	 */
 
-/*
-	Forces pin pooling for all limits and control pins (with or without interrupts)
-*/
-//#define FORCE_SOFT_POLLING
+	//#define BRESENHAM_16BIT
 
-/*
-	Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
-*/
-#define EMULATE_GRBL_STARTUP
+	/**
+	 * Forces pin pooling for all limits and control pins (with or without interrupts)
+	 */
+	//#define FORCE_SOFT_POLLING
 
-	/*
-	Compilation specific options
-*/
+	/**
+	 * Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
+	 */
+	//#define EMULATE_GRBL_STARTUP
+
+	/**
+	 * Compilation specific options
+	 */
 	//ensure all variables are set to 0 at start up
 	//#define FORCE_GLOBALS_TO_0
 
