@@ -41,6 +41,8 @@ extern "C"
                 bool probe_invert_mask;
                 uint8_t status_report_mask;
                 uint8_t control_invert_mask;
+                //value must be set between -1.0 and 1.0 If set to 0.0 is the same as exact path mode (G61) and -1.0 is the same as exact stop mode (G61.1)
+                float g64_angle_factor;
                 //juntion deviation is automatic and always on
                 float arc_tolerance;
                 bool report_inches;

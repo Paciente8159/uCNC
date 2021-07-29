@@ -502,6 +502,11 @@ extern "C"
     {
         protocol_busy = true;
         protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
+#ifdef EMULATE_GRBL_STARTUP
+        // just adds this for compatibility
+        // this setting is not used
+        protocol_send_gcode_setting_line_int(1, 0);
+#endif
         protocol_send_gcode_setting_line_int(2, g_settings.step_invert_mask);
         protocol_send_gcode_setting_line_int(3, g_settings.dir_invert_mask);
         protocol_send_gcode_setting_line_int(4, g_settings.step_enable_invert);
@@ -509,6 +514,7 @@ extern "C"
         protocol_send_gcode_setting_line_int(6, g_settings.probe_invert_mask);
         protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
         protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
+        protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
         protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
         protocol_send_gcode_setting_line_int(13, g_settings.report_inches);
         protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);

@@ -238,8 +238,9 @@ extern "C"
                 }
 
                 //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
-                float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : G64_MAX_ANGLE_FACTOR);
+                float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : g_settings.g64_angle_factor);
                 angle_factor = MAX(angle_factor - factor, 0);
+                angle_factor = MIN(angle_factor, 1);
 
                 if (angle_factor < 1.0f)
                 {

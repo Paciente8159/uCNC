@@ -163,10 +163,6 @@ extern "C"
 //accepts the E word (currently is processed has A)
 //#define GCODE_ACCEPT_WORD_E
 
-//set factor for countinuos mode (G64)
-//value must be set between 0.0 and 1.0 If set to 0.0 is the same as exact path mode (G61)
-#define G64_MAX_ANGLE_FACTOR 0.2f
-
 /*
 	Report specific options
 */

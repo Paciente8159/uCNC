@@ -432,7 +432,9 @@ extern "C"
             uint32_t step_speed = (uint32_t)round(current_speed);
             static uint8_t prev_dss = 0;
             uint8_t dss = 0;
-            while (step_speed < (F_STEP_MAX >> 2) && dss < DSS_MAX_OVERSAMPLING && segm_steps > 1)
+            uint32_t f_step_max = (uint32_t)g_settings.max_step_rate;
+            f_step_max >>= 2;
+            while (step_speed < f_step_max && dss < DSS_MAX_OVERSAMPLING && segm_steps > 1)
             {
                 step_speed <<= 1;
                 dss++;
@@ -446,6 +448,7 @@ extern "C"
             mcu_freq_to_clocks((float)step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
+        current_speed = MIN(current_speed, g_settings.max_step_rate);
         mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
 
