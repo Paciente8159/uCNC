@@ -92,6 +92,8 @@ extern "C"
 #define STATUS_BAD_COMMENT_FORMAT 39
 #define STATUS_INVALID_TOOL 40
 #define STATUS_FEED_NOT_SET 41
+#define STATUS_SETTING_WRITE_FAIL 42
+#define STATUS_SETTING_PROTECTED_FAIL 43
 #define STATUS_CRITICAL_FAIL 255
 
 //special Grbl system commands return codes
