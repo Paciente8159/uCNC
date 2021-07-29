@@ -32,7 +32,7 @@ extern "C"
 #include "modules/pid_controller.h"
 
 //if settings struct is changed this version should change too
-#define SETTINGS_VERSION "V03"
+#define SETTINGS_VERSION "V04"
 
     settings_t g_settings;
 
@@ -223,6 +223,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             .homing_fast_feed_rate = DEFAULT_HOMING_FAST,
             .homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
             .homing_offset = DEFAULT_HOMING_OFFSET,
+            .g64_angle_factor = DEFAULT_G64_FACTOR,
             .arc_tolerance = DEFAULT_ARC_TOLERANCE,
             .tool_count = DEFAULT_TOOL_COUNT,
             .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
@@ -384,6 +385,12 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             }
             g_settings.max_step_rate = value16;
             break;
+#ifdef EMULATE_GRBL_STARTUP
+        // just adds this for compatibility
+        // this setting is not used
+        case 1:
+            break;
+#endif
         case 2:
             g_settings.step_invert_mask = value8;
             break;
@@ -404,6 +411,9 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             break;
         case 10:
             g_settings.status_report_mask = value8;
+            break;
+        case 11:
+            g_settings.g64_angle_factor = value;
             break;
         case 12:
             g_settings.arc_tolerance = value;

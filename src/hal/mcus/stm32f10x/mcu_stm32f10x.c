@@ -27,6 +27,7 @@ extern "C"
 #if (MCU == MCU_STM32F10X)
 #include "core_cm3.h"
 #include "mcumap_stm32f10x.h"
+#include "interface/settings.h"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
@@ -980,6 +981,10 @@ extern "C"
 	//convert step rate to clock cycles
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	{
+		if (frequency > g_settings.max_step_rate)
+		{
+			frequency = g_settings.max_step_rate;
+		}
 		//up and down counter (generates half the step rate at each event)
 		uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 		*prescaller = 1;

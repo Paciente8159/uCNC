@@ -37,6 +37,7 @@ extern "C"
 
 #if (MCU == MCU_AVR)
 #include "interface/serial.h"
+#include "interface/settings.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
 #include "modules/pid_controller.h"
@@ -835,6 +836,8 @@ extern "C"
                         frequency = F_STEP_MIN;
                 if (frequency > F_STEP_MAX)
                         frequency = F_STEP_MAX;
+                if (frequency > g_settings.max_step_rate)
+                        frequency = g_settings.max_step_rate;
 
                 float clockcounter = F_CPU;
 
