@@ -31,6 +31,7 @@ extern "C"
 #include "core/interpolator.h"
 #include "core/io_control.h"
 #include "modules/pid_controller.h"
+
 #ifdef USB_VCP
 #include "tusb_config.h"
 #include "tusb.h"
@@ -1061,11 +1062,83 @@ extern "C"
 	//Non volatile memory
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
-		return 0;
+		uint16_t top = address & 0xfc00;
+		uint16_t bottom = address & 0x03ff;
+		bottom <<= 1;
+		address = (top | bottom);
+		uint16_t value = *((volatile uint16_t *)(FLASH_BASE + address));
+		return (uint8_t)(value & 0xff);
 	}
 
+	static void mcu_eeprom_erase(uint16_t address)
+	{
+		while (FLASH->SR & FLASH_SR_BSY)
+			; // wait while busy
+		//unlock flash if locked
+		if (FLASH->CR & FLASH_CR_LOCK)
+		{
+			FLASH->KEYR = 0x45670123;
+			FLASH->KEYR = 0xCDEF89AB;
+		}
+		FLASH->CR = 0;			   // Ensure PG bit is low
+		FLASH->CR |= FLASH_CR_PER; // set the PER bit
+		FLASH->AR = (FLASH_BASE + address);
+		FLASH->CR |= FLASH_CR_STRT; // set the start bit
+		while (FLASH->SR & FLASH_SR_BSY)
+			; // wait while busy
+		FLASH->CR = 0;
+	}
+
+	extern void protocol_send_error(uint8_t error);
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+		mcu_disable_global_isr(); // Ensure atomic operation for the write operation.
+
+		switch (address)
+		{
+		case SETTINGS_ADDRESS_OFFSET:
+		case SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET:
+		case STARTUP_BLOCK0_ADDRESS_OFFSET:
+		case STARTUP_BLOCK1_ADDRESS_OFFSET:
+			mcu_eeprom_erase(address);
+			break;
+		}
+
+		// copy old value to new var
+		uint16_t old_value = mcu_eeprom_getc(address);
+		uint16_t top = address & 0xfc00;
+		uint16_t bottom = address & 0x03ff;
+		bottom <<= 1;
+		address = (top | bottom);
+
+		uint16_t new_value = value;
+
+		// nothing changed
+		if (old_value != new_value)
+		{
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+
+			// unlock flash if locked
+			if (FLASH->CR & FLASH_CR_LOCK)
+			{
+				FLASH->KEYR = 0x45670123;
+				FLASH->KEYR = 0xCDEF89AB;
+			}
+			FLASH->CR = 0;
+			FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
+			*((volatile uint16_t *)(FLASH_BASE + address)) = new_value;
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+			if (FLASH->SR & FLASH_SR_PGERR)
+				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
+			if (FLASH->SR & FLASH_SR_WRPRTERR)
+				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
+			FLASH->CR = 0;				 // Ensure PG bit is low
+			FLASH->SR = 0;
+		}
+
+		mcu_enable_global_isr(); // Restore interrupt flag state.*/
 	}
 
 #endif

@@ -50,6 +50,26 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+#ifdef SETTINGS_ADDRESS_OFFSET
+#undef SETTINGS_ADDRESS_OFFSET
+#endif
+#define SETTINGS_ADDRESS_OFFSET 0xbc00
+
+#ifdef SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET
+#undef SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET
+#endif
+#define SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET 0xc000
+
+#ifdef STARTUP_BLOCK0_ADDRESS_OFFSET
+#undef STARTUP_BLOCK0_ADDRESS_OFFSET
+#endif
+#define STARTUP_BLOCK0_ADDRESS_OFFSET 0xc400
+
+#ifdef STARTUP_BLOCK1_ADDRESS_OFFSET
+#undef STARTUP_BLOCK1_ADDRESS_OFFSET
+#endif
+#define STARTUP_BLOCK1_ADDRESS_OFFSET 0xc800
+
 #ifdef USB_VCP
 //if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
@@ -3145,8 +3165,8 @@ extern "C"
 #endif
 #endif
 
-#define mcu_enable_global_isr __enable_irq
-#define mcu_disable_global_isr __disable_irq
+#define mcu_enable_global_isr() __enable_irq()
+#define mcu_disable_global_isr() __disable_irq()
 
 // #ifdef COM_PORT
 // #ifndef ENABLE_SYNC_TX
