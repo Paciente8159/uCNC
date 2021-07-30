@@ -11,12 +11,12 @@ Version 1.2.0 is a major revision from the previous version that packs lots of n
 Some of the major new features of this version are:
   - the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
   - the addition off new PID and encoder modules to be used by the new HAL config, powered by an internal RTC clock.
-  - integration [tinyUSB](https://github.com/hathach/tinyusb), a complete USB stackframe that simplifies the creation of HAL code for new MCU.
+  - integration [tinyUSB](https://github.com/hathach/tinyusb), a complete USB stack frame that simplifies the creation of HAL code for new MCU.
   - the addition of an option for a 16-bit version of the bresenham line algorithm that can improve step rate for weak 8-bit processors or for specific applications like laser engraving.
   - several revisions, improvements and important bug fixes in the core of µCNC to generate reliable stepping code.
 
 ### Added
-  - added basic settings for grbl if startup emulation enabled (this includes $1-it's not used and always returns 0 and $11-that sets the G64-cosine factor. This value should be between -1 and 1. If 0 it acts as G61-exact path mode and -1 acts as G61.1 exact stop mode) (#55)
+  - added basic settings for Grbl if startup emulation enabled (this includes $1-it's not used and always returns 0 and $11-that sets the G64-cosine factor. This value should be between -1 and 1. If 0 it acts as G61-exact path mode and -1 acts as G61.1 exact stop mode) (#55)
   - $0-max step rate is now used to top limit stepping frequency (#55)
   - implemented stm32f1 EEPROM emulation in flash (with limitations) (#54)
   - added new option for the 16-bit bresenham (instead of the 32-bit) version of the stepping generator algorithm (#49)
@@ -26,7 +26,7 @@ Some of the major new features of this version are:
   - added internal RTC (#38)
 
 ### Changed
-  - cleaned code, redundant function call, unecessary volatile attributes from variables and unused variable in the motion control, planner and interpolator stages of the core code (#52)
+  - cleaned code, redundant function call, unnecessary volatile attributes from variables and unused variable in the motion control, planner and interpolator stages of the core code (#52)
   - modified planner paths of motion and motionless actions (#51)
   - added main stepping and idle information to speed up general stepping calculations in the stepping ISR (#51)
   - optimization for synchronous serial TX with direct serial output without buffer (#50)
@@ -34,10 +34,10 @@ Some of the major new features of this version are:
   - modified motion control to reduce number of planner blocks for motions of length 0 (#49)
   - improved real time status report (?) (no longer needing and empty buffer to send report-more responsive) (#48)
   - response protocol collisions avoidance (#48)
-  - report will now always report at least 3 axis even if less than 3 are configured (to keep report struture needed by interface softwares) (#48)
-  - virtual mcu update to reflect current µCNC interface (#47)
+  - report will now always report at least 3 axis even if less than 3 are configured (to keep report structure needed by interface softwares) (#48)
+  - virtual MCU update to reflect current µCNC interface (#47)
   - added option to disable controls or limits IO globally (#45)
-  - completly new file structure
+  - completely new file structure
 
 ### Fixed
   - fixed planner speed profile calculations that was missing speed change between blocks and was causing random miss stepping calculations (#52)
@@ -46,7 +46,6 @@ Some of the major new features of this version are:
   - fixed error message on disabling soft limits command with homing disabled (#49)
   - small step ISR code fixing (#46)
   - fixed stepper enable pin set/reset to match most stepper drivers (negative logic) (#42)
-
 
 ## [1.1.2] - 2021-06-23
 
