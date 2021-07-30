@@ -124,7 +124,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ## [1.0.0-rc] - 2020-07-11
 
 ### Added
-  - added possibility of changing values og G28 and G30 commands via G10 L2 P28 and G10 L2 P30.
+  - added possibility of changing values of G28 and G30 commands via G10 L2 P28 and G10 L2 P30.
   - added configuration for using software pulling input limit/control pins
 
 ### Changed
