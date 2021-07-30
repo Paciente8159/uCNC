@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.2.0] - 2021-08-01
+## [1.2.0] - 2021-07-31
 
 Version 1.2.0 is a major revision from the previous version that packs lots of new features and bug fixes.
 Some of the major new features of this version are:
