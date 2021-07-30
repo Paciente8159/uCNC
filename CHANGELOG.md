@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.2.0] - 
+## [1.2.0] - 2021-08-01
 
 Version 1.2.0 is a major revision from the previous version that packs lots of new features and bug fixes.
 Some of the major new features of this version are:
@@ -240,6 +240,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0
 [1.1.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.0
