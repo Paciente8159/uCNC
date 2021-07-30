@@ -22,7 +22,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.2.0. This update added lot of new features needed for the (near) future upgrade and some more bug fixes.
+µCNC current version is v1.2.0. This update added lot of new features needed for the future harware/features support and some important bug fixes.
 These include:
 
   - the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
@@ -90,7 +90,7 @@ A couple were introduced with version 1.2.0 of µCNC to prepare for future and e
 These changes are:
   - Add some extra functionalities like tool speed encoding, positional encoders, etc...
   - Change the files path structure to be more organic and well organized
-  - Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb), opening the possibilities for new MCU's
+  - Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb), opening the possibilities and speed development for new MCU's
 
 Future versions are in plan for:
   - Possibly integrate µCNC with Arduino IDE across all platforms (in study)
