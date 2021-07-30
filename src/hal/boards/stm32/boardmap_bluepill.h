@@ -160,8 +160,8 @@ extern "C"
 #define STEPPER_ENABLE_BIT 15
 #define STEPPER_ENABLE_PORT A
 
-//Setup the Step Timer used has the heartbeat for µCNC
-#define ITP_NUMBER 2
+	//Setup the Step Timer used has the heartbeat for µCNC
+	//#define ITP_TIMER 2
 
 #ifdef __cplusplus
 }
