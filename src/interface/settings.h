@@ -32,7 +32,7 @@ extern "C"
         typedef struct
         {
                 char version[3];
-                uint16_t max_step_rate;
+                float max_step_rate;
                 //step delay not used
                 uint8_t step_invert_mask;
                 uint8_t dir_invert_mask;

@@ -383,7 +383,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             {
                 return STATUS_MAX_STEP_RATE_EXCEEDED;
             }
-            g_settings.max_step_rate = value16;
+            g_settings.max_step_rate = value;
             break;
 #ifdef EMULATE_GRBL_STARTUP
         // just adds this for compatibility
