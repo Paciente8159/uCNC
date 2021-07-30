@@ -5,12 +5,54 @@
 
 # Changelog
 
-## [1.1.2] - 2021-06-23
+## [1.2.0] - 2021-08-01
 
-Version 1.1.2 fixes an critical error on the STM32 HAL that cause several IO problems:
+Version 1.2.0 is a major revision from the previous version that packs lots of new features and bug fixes.
+Some of the major new features of this version are:
+  - the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
+  - the addition off new PID and encoder modules to be used by the new HAL config, powered by an internal RTC clock.
+  - integration [tinyUSB](https://github.com/hathach/tinyusb), a complete USB stack frame that simplifies the creation of HAL code for new MCU.
+  - the addition of an option for a 16-bit version of the bresenham line algorithm that can improve step rate for weak 8-bit processors or for specific applications like laser engraving.
+  - several revisions, improvements and important bug fixes in the core of µCNC to generate reliable stepping code.
+
+### Added
+  - added basic settings for Grbl if startup emulation enabled (this includes $1-it's not used and always returns 0 and $11-that sets the G64-cosine factor. This value should be between -1 and 1. If 0 it acts as G61-exact path mode and -1 acts as G61.1 exact stop mode) (#55)
+  - $0-max step rate is now used to top limit stepping frequency (#55)
+  - implemented stm32f1 EEPROM emulation in flash (with limitations) (#54)
+  - added new option for the 16-bit bresenham (instead of the 32-bit) version of the stepping generator algorithm (#49)
+  - added new PID and encoder modules. PID parameters can be stored via commands $2x0 - Kp, $2x1 - Ki and $2x2 - Kd (#42)
+  - integrated [tinyUSB](https://github.com/hathach/tinyusb) and adapted the core to use it (optional) (#41)
+  - new HAL configuration file
+  - added internal RTC (#38)
+
+### Changed
+  - cleaned code, redundant function call, unnecessary volatile attributes from variables and unused variable in the motion control, planner and interpolator stages of the core code (#52)
+  - modified planner paths of motion and motionless actions (#51)
+  - added main stepping and idle information to speed up general stepping calculations in the stepping ISR (#51)
+  - optimization for synchronous serial TX with direct serial output without buffer (#50)
+  - modified ring buffer in TX to consume chars without waiting for a CR or LF (#49)
+  - modified motion control to reduce number of planner blocks for motions of length 0 (#49)
+  - improved real time status report (?) (no longer needing and empty buffer to send report-more responsive) (#48)
+  - response protocol collisions avoidance (#48)
+  - report will now always report at least 3 axis even if less than 3 are configured (to keep report structure needed by interface softwares) (#48)
+  - virtual MCU update to reflect current µCNC interface (#47)
+  - added option to disable controls or limits IO globally (#45)
+  - completely new file structure
 
 ### Fixed
-  - fixed STM32 HAL pin configuration macros caused bad pin configurations leading to unpredictable behavior. (#40) 
+  - fixed planner speed profile calculations that was missing speed change between blocks and was causing random miss stepping calculations (#52)
+  - added initial NULL char sending after configuration of UART to force TXE hardware set for STM32 and deleted duplicate SYNC TX config for STM32 (#50)
+  - fixed inch report mode setting that was hidden (#49)
+  - fixed error message on disabling soft limits command with homing disabled (#49)
+  - small step ISR code fixing (#46)
+  - fixed stepper enable pin set/reset to match most stepper drivers (negative logic) (#42)
+
+## [1.1.2] - 2021-06-23
+
+Version 1.1.2 fixes a critical error on the STM32 HAL that cause several IO problems. µCNC core and AVR have no changes from the previous version:
+
+### Changed
+  - fixed STM32 HAL pin configuration macros caused bad pin configurations leading to unpredictable behavior. (#40)
 
 ## [1.1.1] - 2021-06-17
 
@@ -81,7 +123,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ## [1.0.0-rc] - 2020-07-11
 
 ### Added
-  - added possibility of changing values og G28 and G30 commands via G10 L2 P28 and G10 L2 P30.
+  - added possibility of changing values of G28 and G30 commands via G10 L2 P28 and G10 L2 P30.
   - added configuration for using software pulling input limit/control pins
 
 ### Changed
@@ -197,6 +239,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0
+[1.1.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.0
 [1.0.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.0.0
