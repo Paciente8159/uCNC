@@ -38,7 +38,7 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 //defines the maximum and minimum step rates
-#define F_STEP_MAX 30000
+#define F_STEP_MAX 100000
 #define F_STEP_MIN 4
 //defines special mcu to access flash strings and arrays
 #define __rom__
@@ -3185,8 +3185,8 @@ extern "C"
 #define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
 #else
 #ifdef USB_VCP
-#define mcu_rx_ready() tud_cdc_available()
-#define mcu_tx_ready() tud_cdc_write_available()
+#define mcu_rx_ready() tud_cdc_n_available(0)
+#define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
 #endif
 
