@@ -205,6 +205,7 @@ extern "C"
 
     bool cnc_dotasks(void)
     {
+        static bool lock_itp = false;
         //run all mcu_internal tasks
         mcu_dotasks();
 
@@ -229,7 +230,12 @@ extern "C"
             return !cnc_get_exec_state(EXEC_ABORT);
         }
 
-        itp_run();
+        if (!lock_itp)
+        {
+            lock_itp = true;
+            itp_run();
+            lock_itp = false;
+        }
 
         return !cnc_get_exec_state(EXEC_ABORT);
     }

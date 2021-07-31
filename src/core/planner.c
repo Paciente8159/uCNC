@@ -121,6 +121,7 @@ extern "C"
         {
             memset(planner_data[planner_data_write].steps, 0, sizeof(planner_data[planner_data_write].steps));
             planner_data[planner_data_write].total_steps = 0;
+            planner_data[planner_data_write].action = block_data->motion_mode & (MOTIONCONTROL_MODE_PAUSEPROGRAM | MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL);
         }
         else
         {
