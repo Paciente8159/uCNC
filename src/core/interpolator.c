@@ -42,6 +42,13 @@ extern "C"
 //integrator calculates 10ms (minimum size) time frame windows
 #define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
 
+//Itp update flags
+#define ITP_NOUPDATE 0
+#define ITP_DWELL 1
+#define ITP_UPDATE_TOOLS 2
+#define ITP_PAUSE 4
+#define ITP_PAUSE_CONDITIONAL 8
+
     //contains data of the block being executed by the pulse routine
     //this block has the necessary data to execute the Bresenham line algorithm
     typedef struct itp_blk_
@@ -78,7 +85,7 @@ extern "C"
         bool spindle_inv;
 #endif
         float feed;
-        uint8_t update_speed;
+        uint8_t update_itp;
     } itp_segment_t;
 
     //circular buffers
@@ -110,6 +117,7 @@ extern "C"
     FORCEINLINE static void itp_sgm_clear(void);
     FORCEINLINE static void itp_blk_buffer_write(void);
     static void itp_blk_clear(void);
+    FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
 
     /*
 	Interpolator segment buffer functions
@@ -228,23 +236,38 @@ extern "C"
                 itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
 
+                uint8_t nomotion_type = ITP_NOUPDATE;
                 if (itp_cur_plan_block->dwell != 0)
                 {
-                    itp_delay(itp_cur_plan_block->dwell);
+                    nomotion_type |= ITP_DWELL;
                 }
 
                 if (itp_cur_plan_block->total_steps == 0)
                 {
 #ifdef USE_SPINDLE
-                    if (itp_cur_plan_block->dwell == 0) //if dwell is 0 then run a single loop to updtate outputs (spindle)
-                    {
-                        itp_delay(0);
-                    }
+                    nomotion_type = ITP_UPDATE_TOOLS;
 #endif
-                    //no motion action (doesn't need a interpolator block = NULL)
-                    itp_cur_plan_block = NULL;
-                    planner_discard_block();
-                    break; //exits after adding the dwell segment if motion is 0 (empty motion block)
+                    if (itp_cur_plan_block->action & (MOTIONCONTROL_MODE_PAUSEPROGRAM | MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL))
+                    {
+                        nomotion_type |= ITP_PAUSE;
+                    }
+
+                    if (itp_cur_plan_block->action & (MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL))
+                    {
+                        nomotion_type |= ITP_PAUSE_CONDITIONAL;
+                    }
+                }
+
+                if (nomotion_type)
+                {
+                    itp_nomotion(nomotion_type, itp_cur_plan_block->dwell);
+                    if (nomotion_type > ITP_DWELL)
+                    {
+                        //no motion action (doesn't need a interpolator block = NULL)
+                        itp_cur_plan_block = NULL;
+                        planner_discard_block();
+                        break; //exits after adding the dwell segment if motion is 0 (empty motion block)
+                    }
                 }
 
 //overwrites previous values
@@ -355,7 +378,7 @@ extern "C"
             */
                 speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
                 profile_steps_limit = accel_until;
-                sgm->update_speed = 1;
+                sgm->update_itp = ITP_DWELL;
                 is_initial_transition = true;
             }
             else if (remaining_steps > deaccel_from)
@@ -363,14 +386,14 @@ extern "C"
                 //constant speed segment
                 speed_change = 0;
                 profile_steps_limit = deaccel_from;
-                sgm->update_speed = is_initial_transition ? 2 : 0;
+                sgm->update_itp = is_initial_transition ? ITP_UPDATE_TOOLS : ITP_NOUPDATE;
                 is_initial_transition = false;
             }
             else
             {
                 speed_change = -half_speed_change;
                 profile_steps_limit = 0;
-                sgm->update_speed = 1;
+                sgm->update_itp = ITP_DWELL;
                 is_initial_transition = true;
             }
 
@@ -691,17 +714,31 @@ extern "C"
                     io_set_dirs(itp_rt_sgm->block->dirbits);
                 }
 
-                if (itp_rt_sgm->update_speed)
+                if (itp_rt_sgm->update_itp)
                 {
-                    if (itp_rt_sgm->update_speed & 0x01)
+                    if (itp_rt_sgm->update_itp & ITP_DWELL)
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+                    }
+                    else if (itp_rt_sgm->update_itp & ITP_PAUSE)
+                    {
+                        mcu_disable_global_isr();
+                        itp_busy = false;
+#ifdef M1_CONDITION
+                        if (!M1_CONDITION)
+                        {
+                            return;
+                        }
+#endif
+                        itp_stop(); //stop the isr
+                        cnc_set_exec_state(EXEC_HOLD);
+                        return;
                     }
 #ifdef USE_SPINDLE
                     io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
                     itp_rt_spindle = itp_rt_sgm->spindle;
 #endif
-                    itp_rt_sgm->update_speed = 0;
+                    itp_rt_sgm->update_itp = ITP_NOUPDATE;
                 }
             }
             else
@@ -957,8 +994,16 @@ extern "C"
         itp_busy = false;
     }
 
-    void itp_delay(uint16_t delay)
+    void itp_nomotion(uint8_t type, uint16_t delay)
     {
+        while (itp_sgm_is_full())
+        {
+            if (!cnc_dotasks())
+            {
+                return;
+            }
+        }
+
         itp_sgm_data[itp_sgm_data_write].block = NULL;
         //clicks every 100ms (10Hz)
         if (delay)
@@ -969,9 +1014,9 @@ extern "C"
         {
             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
         }
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 1);
-        itp_sgm_data[itp_sgm_data_write].update_speed = 1;
+        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
         itp_sgm_data[itp_sgm_data_write].feed = 0;
+        itp_sgm_data[itp_sgm_data_write].update_itp = type;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
         if (g_settings.laser_mode)

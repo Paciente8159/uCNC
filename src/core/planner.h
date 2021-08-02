@@ -64,7 +64,7 @@ extern "C"
 #ifdef ENABLE_BACKLASH_COMPENSATION
         bool backlash_comp;
 #endif
-
+        uint8_t action;
         bool optimal;
     } planner_block_t;
 

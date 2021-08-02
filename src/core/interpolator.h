@@ -47,7 +47,6 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	uint32_t itp_get_rt_line_number(void);
 #endif
-	void itp_delay(uint16_t delay);
 
 #ifdef __cplusplus
 }

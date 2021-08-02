@@ -961,10 +961,15 @@ extern "C"
         float planner_last_pos[AXIS_COUNT];
         motion_data_t block_data = {0};
 
-        //stoping from previous command is active
+        //stoping from previous command M2 or M30 command
         if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
         {
-            return STATUS_OK;
+            if (new_state->groups.stopping == 3 || new_state->groups.stopping == 4)
+            {
+                return STATUS_PROGRAM_ENDED;
+            }
+            
+            new_state->groups.stopping = 0;
         }
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -1480,6 +1485,8 @@ extern "C"
         switch (new_state->groups.stopping)
         {
         case 1: //M0
+            block_data.update_tools = true;
+            block_data.motion_mode |= MOTIONCONTROL_MODE_NOMOTION | MOTIONCONTROL_MODE_PAUSEPROGRAM;
             break;
         case 2: //M1
             break;
