@@ -547,7 +547,7 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_ABORT))
+        if (cnc_get_exec_state(EXEC_KILL))
         {
             return EXEC_ALARM_HOMING_FAIL_RESET;
         }
@@ -602,7 +602,7 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_ABORT))
+        if (cnc_get_exec_state(EXEC_KILL))
         {
             return EXEC_ALARM_HOMING_FAIL_RESET;
         }

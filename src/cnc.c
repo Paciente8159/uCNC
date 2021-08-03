@@ -42,7 +42,7 @@ extern "C"
     {
         //uint8_t system_state;		//signals if CNC is system_state and gcode can run
         volatile uint8_t exec_state;
-        uint8_t active_alarm;
+        uint8_t loop_state;
         volatile uint8_t rt_cmd;
         volatile uint8_t feed_ovr_cmd;
         volatile uint8_t tool_ovr_cmd;
@@ -53,7 +53,7 @@ extern "C"
     static void cnc_check_fault_systems();
     static bool cnc_check_interlocking();
     static void cnc_exec_rt_commands();
-    static void cnc_reset();
+    FORCEINLINE static void cnc_reset();
 
     void cnc_init(void)
     {
@@ -61,7 +61,7 @@ extern "C"
 #ifdef FORCE_GLOBALS_TO_0
         memset(&cnc_state, 0, sizeof(cnc_state_t));
 #endif
-        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP;
         //initializes all systems
         mcu_init();              //mcu
         mcu_disable_probe_isr(); //forces probe isr disabling
@@ -109,7 +109,9 @@ extern "C"
             }
         } while (cnc_dotasks());
 
-        cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
+        cnc_state.loop_state = LOOP_ERROR_RESET;
+
+        cnc_clear_exec_state(EXEC_KILL); //clears the kill flag
         serial_flush();
         if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active (except NOHOME - ignore it)
         {
@@ -117,7 +119,7 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
-                mcu_dotasks();
+                cnc_dotasks();
             } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
         }
     }
@@ -125,13 +127,21 @@ extern "C"
     void cnc_call_rt_command(uint8_t command)
     {
         //executes the realtime commands
+        //only reset command is executed right away
         //control commands affect the exec_state directly (Abort, hold, safety door, cycle_start)
+        //the effects are then propagate in the cnc_dotasks
         switch (command)
         {
         case CMD_CODE_RESET:
-            cnc_stop();
-            serial_rx_clear();           //dumps all commands
-            cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
+            if (cnc_get_exec_state(EXEC_RUN))
+            {
+                cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
+            }
+            else
+            {
+                cnc_alarm(EXEC_ALARM_RESET);
+            }
+            serial_rx_clear(); //dumps all commands
             SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
             break;
         case CMD_CODE_FEED_HOLD:
@@ -210,7 +220,7 @@ extern "C"
         mcu_dotasks();
 
         //let µCNC finnish startup/reset code
-        if (cnc_state.active_alarm == EXEC_ALARM_STARTUP)
+        if (cnc_state.loop_state == LOOP_STARTUP)
         {
             return;
         }
@@ -227,7 +237,7 @@ extern "C"
         //check security interlocking for any problem
         if (!cnc_check_interlocking())
         {
-            return !cnc_get_exec_state(EXEC_ABORT);
+            return !cnc_get_exec_state(EXEC_KILL);
         }
 
         if (!lock_itp)
@@ -237,7 +247,7 @@ extern "C"
             lock_itp = false;
         }
 
-        return !cnc_get_exec_state(EXEC_ABORT);
+        return !cnc_get_exec_state(EXEC_KILL);
     }
 
     void cnc_home(void)
@@ -284,8 +294,12 @@ extern "C"
 
     void cnc_alarm(uint8_t code)
     {
-        cnc_set_exec_state(EXEC_ABORT);
-        cnc_state.active_alarm = code;
+        cnc_set_exec_state(EXEC_KILL);
+        cnc_stop();
+        if (code)
+        {
+            protocol_send_alarm(code);
+        }
     }
 
     void cnc_stop(void)
@@ -333,10 +347,11 @@ extern "C"
     void cnc_clear_exec_state(uint8_t statemask)
     {
         uint8_t controls = io_get_controls();
+
 #ifdef ESTOP
         if (CHECKFLAG(controls, ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
         {
-            CLEARFLAG(statemask, EXEC_ABORT);
+            CLEARFLAG(statemask, EXEC_KILL);
         }
 #endif
 #ifdef SAFETY_DOOR
@@ -387,7 +402,7 @@ extern "C"
 
     void cnc_reset(void)
     {
-        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP;
         //resets all realtime command flags
         cnc_state.rt_cmd = RT_CMD_CLEAR;
         cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
@@ -399,7 +414,7 @@ extern "C"
         planner_clear();
         protocol_send_string(MSG_STARTUP);
 
-        cnc_state.active_alarm = EXEC_ALARM_RESET;
+        cnc_state.loop_state = LOOP_RUNNING;
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 
@@ -407,7 +422,7 @@ extern "C"
         if (cnc_get_exec_state(EXEC_ALARM))
         {
             //cnc_check_fault_systems();
-            if (!cnc_get_exec_state(EXEC_ABORT))
+            if (!cnc_get_exec_state(EXEC_KILL))
             {
                 protocol_send_feedback(MSG_FEEDBACK_2);
             }
@@ -616,19 +631,14 @@ extern "C"
     bool cnc_check_interlocking(void)
     {
         //if abort is flagged
-        if (CHECKFLAG(cnc_state.exec_state, EXEC_ABORT))
+        if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
         {
-            if (cnc_state.active_alarm) //active alarm message
-            {
-                protocol_send_alarm(cnc_state.active_alarm);
-                cnc_state.active_alarm = 0;
-                return false;
-            }
             return false;
         }
 
         if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR | EXEC_HOLD))
         {
+            //machine is still running after hold/security door
             if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
             {
                 return true;
@@ -637,12 +647,14 @@ extern "C"
             itp_stop();
             if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
             {
-                cnc_stop(); //stop all tools not only motion
-            }
-
-            if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && CHECKFLAG(cnc_state.exec_state, EXEC_DOOR)) //door opened during a homing cycle
-            {
-                cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+                if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) //door opened during a homing cycle
+                {
+                    cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+                }
+                else
+                {
+                    cnc_stop(); //stop all tools not only motion
+                }
             }
 
             if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG)) //flushes the buffers if motions was homing or jog

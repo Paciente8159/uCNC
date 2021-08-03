@@ -47,7 +47,7 @@ extern "C"
                 {
                     if (!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
                     {
-                        if (g_settings.homing_enabled)
+                        if (g_settings.hard_limits_enabled)
                         {
                             cnc_set_exec_state(EXEC_LIMITS); //if motions was executing flags home position lost
                         }

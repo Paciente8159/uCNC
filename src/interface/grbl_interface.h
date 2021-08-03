@@ -111,6 +111,10 @@ extern "C"
 #define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
+#define LOOP_STARTUP 0
+#define LOOP_RUNNING 1
+#define LOOP_ERROR_RESET 2
+
 #define EXEC_ALARM_RESET 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.
 #define EXEC_ALARM_HARD_LIMIT 1
@@ -124,7 +128,6 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_APPROACH 9
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
-#define EXEC_ALARM_STARTUP 255 //this is a special alarm that signals µCNC is starting up. It's not a real alarm.
 
 //formated messages
 #define STR_EOL "\r\n"

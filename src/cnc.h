@@ -61,8 +61,8 @@ extern "C"
 #define EXEC_HOMING 16											// Homing in execution
 #define EXEC_LIMITS 32											// Limit switch is active or position lost
 #define EXEC_DOOR 64											// Safety door open
-#define EXEC_ABORT 128											// Emergency stop
-#define EXEC_ALARM (EXEC_LIMITS | EXEC_DOOR | EXEC_ABORT)		// System alarms
+#define EXEC_KILL 128											// Emergency stop
+#define EXEC_ALARM (EXEC_LIMITS | EXEC_DOOR | EXEC_KILL)		// System alarms
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255										// All states
 

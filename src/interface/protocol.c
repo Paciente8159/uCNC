@@ -177,7 +177,7 @@ extern "C"
         {
             switch (state)
             {
-            case EXEC_ABORT:
+            case EXEC_KILL:
                 serial_print_str(__romstr__("Abort"));
                 break;
             case EXEC_DOOR:
