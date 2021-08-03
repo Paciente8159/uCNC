@@ -49,7 +49,7 @@ extern "C"
                     {
                         if (g_settings.homing_enabled)
                         {
-                            cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
+                            cnc_set_exec_state(EXEC_LIMITS); //if motions was executing flags home position lost
                         }
 
                         cnc_alarm(EXEC_ALARM_HARD_LIMIT);

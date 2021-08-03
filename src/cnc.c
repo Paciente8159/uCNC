@@ -111,7 +111,7 @@ extern "C"
 
         cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
         serial_flush();
-        if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - ignore it)
+        if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active (except NOHOME - ignore it)
         {
             cnc_check_fault_systems();
             protocol_send_feedback(MSG_FEEDBACK_1);
@@ -293,7 +293,7 @@ extern "C"
         //halt is active and was running flags it lost home position
         if (cnc_get_exec_state(EXEC_RUN) && g_settings.homing_enabled)
         {
-            cnc_set_exec_state(EXEC_NOHOME);
+            cnc_set_exec_state(EXEC_LIMITS);
         }
         itp_stop();
         //stop tools
@@ -308,10 +308,11 @@ extern "C"
     void cnc_unlock(void)
     {
         //on unlock any alarm caused by not having homing reference or hitting a limit switch is reset at user request
+        //this must be done directly beacuse cnc_clear_exec_state will check the limit switch state
         //all other alarm flags remain active if any input is still active
-        CLEARFLAG(cnc_state.exec_state, EXEC_NOHOME | EXEC_LIMITS);
+        CLEARFLAG(cnc_state.exec_state, EXEC_LIMITS);
         //clears all other locking flags
-        cnc_clear_exec_state(EXEC_GCODE_LOCKED);
+        cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_HOLD);
         //signals stepper enable pins
 
         io_set_steps(g_settings.step_invert_mask);
@@ -350,24 +351,26 @@ extern "C"
             CLEARFLAG(statemask, EXEC_HOLD);
         }
 #endif
+
+        uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
-        if (g_settings.hard_limits_enabled && io_get_limits()) //can't clear the EXEC_LIMITS is any limit is triggered
+        limits = io_get_limits(); //can't clear the EXEC_LIMITS is any limit is triggered
+#endif
+        if (g_settings.homing_enabled && limits) //if the machine doesn't know the homing position and homing is enabled
         {
             CLEARFLAG(statemask, EXEC_LIMITS);
-        }
-#endif
-        if (g_settings.homing_enabled) //if the machine doesn't know the homing position and homing is enabled
-        {
-            CLEARFLAG(statemask, EXEC_NOHOME);
         }
 
         if (CHECKFLAG(statemask, EXEC_HOLD))
         {
+            SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
+            CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
             itp_sync_spindle();
             if (!planner_buffer_is_empty())
             {
                 cnc_delay_ms(DELAY_ON_RESUME * 1000);
             }
+            CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
         CLEARFLAG(cnc_state.exec_state, statemask);
     }
@@ -663,10 +666,10 @@ extern "C"
         }
 
         //clears EXEC_JOG if not step ISR is stopped and planner has no more moves
-        if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
+        /*if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
         {
             CLEARFLAG(cnc_state.exec_state, EXEC_JOG);
-        }
+        }*/
 
         return true;
     }

@@ -312,12 +312,12 @@ extern "C"
 
         if (error == GRBL_JOG_CMD)
         {
-            if (cnc_get_exec_state(EXEC_GCODE_LOCKED & ~EXEC_JOG))
+            if (cnc_get_exec_state(~EXEC_JOG))
             {
                 return STATUS_SYSTEM_GC_LOCK;
             }
         }
-        else if (cnc_get_exec_state(EXEC_GCODE_LOCKED))
+        else if (cnc_get_exec_state(~EXEC_RUN))
         {
             return STATUS_SYSTEM_GC_LOCK;
         }

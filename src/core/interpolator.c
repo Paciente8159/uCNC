@@ -510,7 +510,7 @@ extern "C"
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
-        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && itp_sgm_data_segments) //exec state is not hold or alarm and not already running
+        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && itp_sgm_data_segments) //exec state is not hold or alarm and not already running
         {
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);

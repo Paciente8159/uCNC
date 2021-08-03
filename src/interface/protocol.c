@@ -207,7 +207,6 @@ extern "C"
                 }
                 break;
             case EXEC_LIMITS:
-            case EXEC_NOHOME:
                 serial_print_str(__romstr__("Alarm"));
                 break;
             case EXEC_HOLD:
@@ -227,6 +226,7 @@ extern "C"
             case EXEC_JOG:
                 serial_print_str(__romstr__("Jog"));
                 break;
+            case EXEC_RESUMING:
             case EXEC_RUN:
                 serial_print_str(__romstr__("Run"));
                 break;
