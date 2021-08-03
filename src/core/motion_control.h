@@ -28,11 +28,10 @@ extern "C"
 #include <stdbool.h>
 
 #define MOTIONCONTROL_MODE_FEED 0
-#define MOTIONCONTROL_MODE_NOMOTION 1
-#define MOTIONCONTROL_MODE_INVERSEFEED 2
-#define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 4
-#define MOTIONCONTROL_MODE_PAUSEPROGRAM 8
-#define MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL 16
+#define MOTIONCONTROL_MODE_INVERSEFEED 1
+#define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 2
+#define MOTIONCONTROL_MODE_PAUSEPROGRAM 4
+#define MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL 8
 
         typedef struct
         {
@@ -58,12 +57,20 @@ extern "C"
         void mc_init(void);
         bool mc_get_checkmode(void);
         bool mc_toogle_checkmode(void);
+
+        //async motions
         uint8_t mc_line(float *target, motion_data_t *block_data);
         uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data);
+
+        //sync motions
         uint8_t mc_dwell(motion_data_t *block_data);
-        uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+        uint8_t mc_pause(void);
         uint8_t mc_update_tools(motion_data_t *block_data);
+
+        //mixed/special motions
+        uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
         uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data);
+
         void mc_get_position(float *target);
         void mc_resync_position(void);
 

@@ -141,10 +141,10 @@ extern "C"
             SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
             break;
         case CMD_CODE_CYCLE_START:
-            cnc_clear_exec_state(EXEC_HOLD); //tries to clear hold if possible
+            SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); //tries to clear hold if possible
             break;
         case CMD_CODE_SAFETY_DOOR:
-            cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+            cnc_set_exec_state(EXEC_HOLD | EXEC_DOOR);
             break;
         case CMD_CODE_JOG_CANCEL:
             if (cnc_get_exec_state(EXEC_JOG))
@@ -277,7 +277,7 @@ extern "C"
 
         //reset position
         itp_reset_rt_position();
-        planner_resync_position();
+        planner_sync_position();
         //invokes startup block execution
         SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
     }
@@ -311,7 +311,7 @@ extern "C"
         //all other alarm flags remain active if any input is still active
         CLEARFLAG(cnc_state.exec_state, EXEC_NOHOME | EXEC_LIMITS);
         //clears all other locking flags
-        cnc_clear_exec_state(EXEC_LOCKED);
+        cnc_clear_exec_state(EXEC_GCODE_LOCKED);
         //signals stepper enable pins
 
         io_set_steps(g_settings.step_invert_mask);
@@ -341,7 +341,7 @@ extern "C"
 #ifdef SAFETY_DOOR
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
         {
-            CLEARFLAG(statemask, EXEC_DOOR);
+            CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
         }
 #endif
 #ifdef FHOLD
@@ -361,7 +361,25 @@ extern "C"
             CLEARFLAG(statemask, EXEC_NOHOME);
         }
 
+        if (CHECKFLAG(statemask, EXEC_HOLD))
+        {
+            itp_sync_spindle();
+            if (!planner_buffer_is_empty())
+            {
+                cnc_delay_ms(DELAY_ON_RESUME * 1000);
+            }
+        }
         CLEARFLAG(cnc_state.exec_state, statemask);
+    }
+
+    void cnc_delay_ms(uint32_t miliseconds)
+    {
+        uint32_t t_start = mcu_millis();
+        uint32_t t_end = mcu_millis();
+        while (t_end - t_start < miliseconds && cnc_dotasks())
+        {
+            t_end = mcu_millis();
+        }
     }
 
     void cnc_reset(void)
@@ -410,8 +428,8 @@ extern "C"
         bool update_tools = false;
 
         //executes feeds override rt commands
-        uint8_t cmd_mask = 0x04;
-        uint8_t command = cnc_state.rt_cmd & 0x07;   //copies realtime flags states
+        uint8_t cmd_mask = 0x08;
+        uint8_t command = cnc_state.rt_cmd & 0x0F;   //copies realtime flags states
         CLEARFLAG(cnc_state.rt_cmd, ~RT_CMD_REPORT); //clears all command flags except report request
         while (command)
         {
@@ -423,7 +441,9 @@ extern "C"
                     protocol_send_status();
                     CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
                 }
-
+                break;
+            case RT_CMD_CYCLE_START:
+                cnc_clear_exec_state(EXEC_HOLD);
                 break;
             case RT_CMD_STARTUP_BLOCK0:
                 if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0

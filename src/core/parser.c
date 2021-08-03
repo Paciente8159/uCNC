@@ -968,7 +968,7 @@ extern "C"
             {
                 return STATUS_PROGRAM_ENDED;
             }
-            
+
             new_state->groups.stopping = 0;
         }
 
@@ -1036,7 +1036,7 @@ extern "C"
             if (!g_settings.laser_mode)
             {
 #endif
-                block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
+                block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #ifdef LASER_MODE
             }
 #endif
@@ -1063,26 +1063,15 @@ extern "C"
         if (new_state->groups.nonmodal == G4)
         {
             //calc dwell in time in 10ms increments
-            block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p * 10.0));
-#ifdef LASER_MODE
-            //laser disabled in dwell
-            int16_t laserpwm = block_data.spindle;
-            if (g_settings.laser_mode)
-            {
-                block_data.spindle = 0;
-                block_data.update_tools = true;
-            }
-#endif
-            if (mc_dwell(&block_data))
-            {
-                return STATUS_CRITICAL_FAIL;
-            }
-
-#ifdef LASER_MODE
-            //laser disabled in dwell
-            block_data.spindle = laserpwm;
-#endif
+            block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p));
             new_state->groups.nonmodal = 0;
+        }
+
+        //after all spindle, overrides, coolant and dwells are set
+        //execute sync if dwell is present
+        if (block_data.dwell)
+        {
+            mc_dwell(&block_data);
         }
 
         //11. set active plane (G17, G18, G19)
@@ -1482,35 +1471,41 @@ extern "C"
         }
 
         //stop (M0, M1, M2, M30, M60) (not implemented yet).
+        bool hold = false;
+        bool resetparser = false;
         switch (new_state->groups.stopping)
         {
         case 1: //M0
-            block_data.update_tools = true;
-            block_data.motion_mode |= MOTIONCONTROL_MODE_NOMOTION | MOTIONCONTROL_MODE_PAUSEPROGRAM;
+        case 6: //M60 (pallet change has no effect)
+            hold = true;
             break;
         case 2: //M1
+#ifdef M1_CONDITION_ASSERT
+            hold = M1_CONDITION_ASSERT;
+#endif
             break;
         case 3: //M2
-        case 4: //M30
-            //reset to initial states
-            parser_reset();
-            protocol_send_feedback(MSG_FEEDBACK_8);
+        case 4: //M30 (pallet change has no effect)
+            hold = true;
+            resetparser = true;
             break;
-        case 6: //M60
-            break;
+        }
+
+        if (hold)
+        {
+            mc_pause();
+            if (resetparser)
+            {
+                cnc_stop();
+                parser_reset();
+                protocol_send_feedback(MSG_FEEDBACK_8);
+            }
         }
 
         //if reached here the execution was not intersected
         //send a spindle and coolant update if needed
         if (block_data.update_tools)
         {
-#ifdef LASER_MODE
-            //laser disabled in G0
-            if (g_settings.laser_mode)
-            {
-                block_data.spindle = 0;
-            }
-#endif
             return mc_update_tools(&block_data);
         }
 
