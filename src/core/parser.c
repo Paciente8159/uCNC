@@ -271,7 +271,7 @@ extern "C"
     FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
     static uint8_t parser_grbl_command(void);
     FORCEINLINE static uint8_t parser_gcode_command(void);
-    FORCEINLINE static void parser_discard_command(void);
+    static void parser_discard_command(void);
     static void parser_reset();
 
     /*
@@ -305,7 +305,6 @@ extern "C"
             }
             else
             {
-
                 return error;
             }
         }
@@ -319,6 +318,7 @@ extern "C"
         }
         else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
         {
+            parser_discard_command();
             return STATUS_SYSTEM_GC_LOCK;
         }
 
