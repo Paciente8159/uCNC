@@ -371,7 +371,6 @@ extern "C"
             switch (c)
             {
             case CMD_CODE_RESET:
-                serial_rx_clear(); //dumps all unexecuted commands
             case CMD_CODE_FEED_HOLD:
             case CMD_CODE_REPORT:
                 cnc_call_rt_command((uint8_t)c);

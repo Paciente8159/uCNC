@@ -39,9 +39,12 @@ extern "C"
 #include "modules/pid_controller.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_STARTUP_BLOCKS 1
-#define LOOP_RUNNING 2
-#define LOOP_ERROR_RESET 3
+#define LOOP_STARTUP_BLOCK0 1
+#define LOOP_STARTUP_BLOCK1 2
+#define LOOP_RUNNING 4
+#define LOOP_ERROR_RESET 8
+#define LOOP_STARTUP_BLOCKS (LOOP_STARTUP_BLOCK0 | LOOP_STARTUP_BLOCK1)
+#define LOOP_STARTUP (LOOP_STARTUP_RESET | LOOP_STARTUP_BLOCKS)
 
     typedef struct
     {
@@ -85,6 +88,8 @@ extern "C"
     void cnc_run(void)
     {
         cnc_reset();
+        cnc_state.loop_state = LOOP_STARTUP_BLOCK0;
+        serial_select(SERIAL_N0);
 
         do
         {
@@ -112,6 +117,15 @@ extern "C"
                     protocol_send_error(error);
                 }
             }
+
+            if (cnc_state.loop_state != LOOP_RUNNING)
+            {
+                cnc_state.loop_state <<= 1;
+                if (cnc_state.loop_state == LOOP_STARTUP_BLOCK1)
+                {
+                    serial_select(SERIAL_N1);
+                }
+            }
         } while (cnc_dotasks());
 
         cnc_state.loop_state = LOOP_ERROR_RESET;
@@ -120,7 +134,6 @@ extern "C"
         if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active
         {
             cnc_check_fault_systems();
-            protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
                 cnc_clear_exec_state(EXEC_KILL); //tries to clear the kill flag if possible
@@ -373,9 +386,12 @@ extern "C"
 #if (LIMITS_MASK != 0)
         limits = io_get_limits(); //can't clear the EXEC_LIMITS is any limit is triggered
 #endif
-        if (g_settings.hard_limits_enabled && limits) //if hardlimits are enabled and limits are triggered
+        if (g_settings.hard_limits_enabled) //if hardlimits are enabled and limits are triggered
         {
-            CLEARFLAG(statemask, EXEC_LIMITS);
+            if (limits || g_settings.homing_enabled)
+            {
+                CLEARFLAG(statemask, EXEC_LIMITS);
+            }
         }
 
         if (CHECKFLAG(statemask, EXEC_HOLD))
@@ -389,6 +405,7 @@ extern "C"
             }
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
+
         CLEARFLAG(cnc_state.exec_state, statemask);
     }
 
@@ -416,7 +433,6 @@ extern "C"
         planner_clear();
         protocol_send_string(MSG_STARTUP);
 
-        cnc_state.loop_state = LOOP_STARTUP_BLOCKS;
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 
@@ -432,7 +448,6 @@ extern "C"
         else
         {
             cnc_unlock();
-            SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
         }
     }
 
@@ -448,15 +463,15 @@ extern "C"
         bool update_tools = false;
 
         //executes feeds override rt commands
-        uint8_t cmd_mask = 0x08;
-        uint8_t command = cnc_state.rt_cmd & 0x0F;   //copies realtime flags states
+        uint8_t cmd_mask = 0x02;
+        uint8_t command = cnc_state.rt_cmd & 0x03;   //copies realtime flags states
         CLEARFLAG(cnc_state.rt_cmd, ~RT_CMD_REPORT); //clears all command flags except report request
         while (command)
         {
             switch (command & cmd_mask)
             {
             case RT_CMD_REPORT:
-                if (!protocol_is_busy() && cnc_state.loop_state >= LOOP_RUNNING)
+                if (!protocol_is_busy() && !(cnc_state.loop_state & LOOP_STARTUP))
                 {
                     protocol_send_status();
                     CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
@@ -464,21 +479,6 @@ extern "C"
                 break;
             case RT_CMD_CYCLE_START:
                 cnc_clear_exec_state(EXEC_HOLD);
-                break;
-            case RT_CMD_STARTUP_BLOCK0:
-                if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0
-                {
-                    serial_select(SERIAL_N0);
-                }
-
-                SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK1); //invokes command 1 on next pass
-                break;
-            case RT_CMD_STARTUP_BLOCK1:
-                if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET)) //loads command 1
-                {
-                    serial_select(SERIAL_N1);
-                    cnc_state.loop_state = LOOP_RUNNING;
-                }
                 break;
             }
 
@@ -606,16 +606,19 @@ extern "C"
 
     void cnc_check_fault_systems(void)
     {
+        bool fail = false;
         uint8_t inputs = io_get_controls();
 #ifdef ESTOP
         if (CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
         {
+            fail = true;
             protocol_send_feedback(MSG_FEEDBACK_12);
         }
 #endif
 #ifdef SAFETY_DOOR
         if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
         {
+            fail = true;
             protocol_send_feedback(MSG_FEEDBACK_6);
         }
 #endif
@@ -625,10 +628,16 @@ extern "C"
             inputs = io_get_limits();
             if (CHECKFLAG(inputs, LIMITS_MASK))
             {
+                fail = true;
                 protocol_send_feedback(MSG_FEEDBACK_7);
             }
         }
 #endif
+
+        if (fail)
+        {
+            protocol_send_feedback(MSG_FEEDBACK_1);
+        }
     }
 
     bool cnc_check_interlocking(void)
