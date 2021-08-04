@@ -782,7 +782,7 @@ extern "C"
                 //P is not between 1 and N of coord systems
                 if (words->p != 28 && words->p != 30)
                 {
-                    if (words->p < 1 || words->p > COORD_SYS_COUNT)
+                    if (words->p > COORD_SYS_COUNT)
                     {
                         return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
                     }
@@ -1184,7 +1184,7 @@ extern "C"
         switch (new_state->groups.nonmodal)
         {
         case G10: //G10
-            index = (uint8_t)words->p;
+            index = ((uint8_t)words->p) ? words->p : (parser_parameters.coord_system_index + 1);
             switch (index)
             {
             case 28:
@@ -1301,6 +1301,10 @@ extern "C"
         if (index <= G30HOME)
         {
             settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&axis[0], PARSER_PARAM_SIZE);
+            if (index == parser_parameters.coord_system_index)
+            {
+                memcpy(parser_parameters.coord_system_offset, axis, sizeof(parser_parameters.coord_system_offset));
+            }
             parser_wco_counter = 0;
         }
 
@@ -1343,7 +1347,7 @@ extern "C"
             for (uint8_t i = AXIS_COUNT; i != 0;)
             {
                 i--;
-                parser_parameters.g92_offset[i] = planner_last_pos[i] - parser_parameters.coord_system_offset[i] - axis[i];
+                parser_parameters.g92_offset[i] = -(axis[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
             }
             memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
             //settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
