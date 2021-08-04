@@ -112,7 +112,7 @@ extern "C"
         cnc_state.loop_state = LOOP_ERROR_RESET;
 
         serial_flush();
-        if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active (except NOHOME - ignore it)
+        if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active
         {
             cnc_check_fault_systems();
             protocol_send_feedback(MSG_FEEDBACK_1);

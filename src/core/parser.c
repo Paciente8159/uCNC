@@ -317,7 +317,7 @@ extern "C"
                 return STATUS_SYSTEM_GC_LOCK;
             }
         }
-        else if (cnc_get_exec_state(~EXEC_RUN))
+        else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
         {
             return STATUS_SYSTEM_GC_LOCK;
         }
