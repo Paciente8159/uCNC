@@ -122,12 +122,11 @@ void *comsimul(void)
 		{
 			uart_char = c;
 			while (!serial_rx_is_empty())
-				{
-				}
+			{
+			}
 			serial_rx_isr(c);
 			if (c == '\n' | c == '\r')
 			{
-				
 			}
 		}
 	}
@@ -148,20 +147,30 @@ void *comoutsimul(void)
 	}
 }
 
+//simulates internal clock (1Kz limited by windows timer)
+volatile static uint32_t mcu_runtime = 0;
+
 void *stepsimul(void)
 {
 	static uint16_t tick_counter = 0;
 	static uint16_t timer_counter = 0;
 	unsigned long lasttime = getTickCounter();
-
+	unsigned long acumm = 0;
 	while (1)
 	{
 
 		unsigned long time = getTickCounter();
 		unsigned long elapsed = time - lasttime;
+		acumm += elapsed;
 		elapsed *= F_CPU;
 		elapsed /= g_cpu_freq;
 		elapsed = (elapsed < 100) ? elapsed : 100;
+
+		while (acumm > (F_CPU / 1000))
+		{
+			acumm -= (F_CPU / 1000);
+			mcu_runtime++;
+		}
 
 		while (elapsed--)
 		{
@@ -222,8 +231,6 @@ void *stepsimul(void)
 	}
 }
 
-//simulates internal clock (1Kz limited by windows timer)
-static uint32_t mcu_runtime = 0;
 void ticksimul(void)
 {
 
@@ -279,7 +286,7 @@ void mcu_init(void)
 		}
 	}
 	g_cpu_freq = getCPUFreq();
-	start_timer(1, &ticksimul);
+	//start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
 #ifdef USECONSOLE
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);

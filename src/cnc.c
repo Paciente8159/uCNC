@@ -38,11 +38,16 @@ extern "C"
 #include "modules/encoder.h"
 #include "modules/pid_controller.h"
 
+#define LOOP_STARTUP_RESET 0
+#define LOOP_STARTUP_BLOCKS 1
+#define LOOP_RUNNING 2
+#define LOOP_ERROR_RESET 3
+
     typedef struct
     {
         //uint8_t system_state;		//signals if CNC is system_state and gcode can run
         volatile uint8_t exec_state;
-        uint8_t active_alarm;
+        uint8_t loop_state;
         volatile uint8_t rt_cmd;
         volatile uint8_t feed_ovr_cmd;
         volatile uint8_t tool_ovr_cmd;
@@ -53,7 +58,7 @@ extern "C"
     static void cnc_check_fault_systems();
     static bool cnc_check_interlocking();
     static void cnc_exec_rt_commands();
-    static void cnc_reset();
+    FORCEINLINE static void cnc_reset();
 
     void cnc_init(void)
     {
@@ -61,7 +66,7 @@ extern "C"
 #ifdef FORCE_GLOBALS_TO_0
         memset(&cnc_state, 0, sizeof(cnc_state_t));
 #endif
-        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP_RESET;
         //initializes all systems
         mcu_init();              //mcu
         mcu_disable_probe_isr(); //forces probe isr disabling
@@ -109,29 +114,38 @@ extern "C"
             }
         } while (cnc_dotasks());
 
-        cnc_clear_exec_state(EXEC_ABORT); //clears the abort flag
+        cnc_state.loop_state = LOOP_ERROR_RESET;
+
         serial_flush();
-        if (cnc_get_exec_state(EXEC_ALARM_ABORT)) //checks if any alarm is active (except NOHOME - ignore it)
+        if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active
         {
             cnc_check_fault_systems();
             protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
-                mcu_dotasks();
-            } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
+                cnc_clear_exec_state(EXEC_KILL); //tries to clear the kill flag if possible
+            } while (!cnc_dotasks());
         }
     }
 
     void cnc_call_rt_command(uint8_t command)
     {
         //executes the realtime commands
+        //only reset command is executed right away
         //control commands affect the exec_state directly (Abort, hold, safety door, cycle_start)
+        //the effects are then propagate in the cnc_dotasks
         switch (command)
         {
         case CMD_CODE_RESET:
-            cnc_stop();
-            serial_rx_clear();           //dumps all commands
-            cnc_alarm(EXEC_ALARM_RESET); //abort state is activated through cnc_alarm
+            if (cnc_get_exec_state(EXEC_RUN))
+            {
+                cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
+            }
+            else
+            {
+                cnc_alarm(EXEC_ALARM_RESET);
+            }
+            serial_rx_clear(); //dumps all commands
             SETFLAG(cnc_state.rt_cmd, RT_CMD_ABORT);
             break;
         case CMD_CODE_FEED_HOLD:
@@ -141,10 +155,10 @@ extern "C"
             SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
             break;
         case CMD_CODE_CYCLE_START:
-            cnc_clear_exec_state(EXEC_HOLD); //tries to clear hold if possible
+            SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); //tries to clear hold if possible
             break;
         case CMD_CODE_SAFETY_DOOR:
-            cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+            cnc_set_exec_state(EXEC_HOLD | EXEC_DOOR);
             break;
         case CMD_CODE_JOG_CANCEL:
             if (cnc_get_exec_state(EXEC_JOG))
@@ -210,7 +224,7 @@ extern "C"
         mcu_dotasks();
 
         //let µCNC finnish startup/reset code
-        if (cnc_state.active_alarm == EXEC_ALARM_STARTUP)
+        if (cnc_state.loop_state == LOOP_STARTUP_RESET)
         {
             return;
         }
@@ -227,7 +241,7 @@ extern "C"
         //check security interlocking for any problem
         if (!cnc_check_interlocking())
         {
-            return !cnc_get_exec_state(EXEC_ABORT);
+            return !cnc_get_exec_state(EXEC_KILL);
         }
 
         if (!lock_itp)
@@ -237,7 +251,7 @@ extern "C"
             lock_itp = false;
         }
 
-        return !cnc_get_exec_state(EXEC_ABORT);
+        return !cnc_get_exec_state(EXEC_KILL);
     }
 
     void cnc_home(void)
@@ -277,15 +291,17 @@ extern "C"
 
         //reset position
         itp_reset_rt_position();
-        planner_resync_position();
-        //invokes startup block execution
-        SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
+        planner_sync_position();
     }
 
     void cnc_alarm(uint8_t code)
     {
-        cnc_set_exec_state(EXEC_ABORT);
-        cnc_state.active_alarm = code;
+        cnc_set_exec_state(EXEC_KILL);
+        cnc_stop();
+        if (code)
+        {
+            protocol_send_alarm(code);
+        }
     }
 
     void cnc_stop(void)
@@ -293,7 +309,7 @@ extern "C"
         //halt is active and was running flags it lost home position
         if (cnc_get_exec_state(EXEC_RUN) && g_settings.homing_enabled)
         {
-            cnc_set_exec_state(EXEC_NOHOME);
+            cnc_set_exec_state(EXEC_LIMITS);
         }
         itp_stop();
         //stop tools
@@ -308,10 +324,11 @@ extern "C"
     void cnc_unlock(void)
     {
         //on unlock any alarm caused by not having homing reference or hitting a limit switch is reset at user request
+        //this must be done directly beacuse cnc_clear_exec_state will check the limit switch state
         //all other alarm flags remain active if any input is still active
-        CLEARFLAG(cnc_state.exec_state, EXEC_NOHOME | EXEC_LIMITS);
+        CLEARFLAG(cnc_state.exec_state, EXEC_LIMITS);
         //clears all other locking flags
-        cnc_clear_exec_state(EXEC_LOCKED);
+        cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_HOLD);
         //signals stepper enable pins
 
         io_set_steps(g_settings.step_invert_mask);
@@ -332,16 +349,17 @@ extern "C"
     void cnc_clear_exec_state(uint8_t statemask)
     {
         uint8_t controls = io_get_controls();
+
 #ifdef ESTOP
         if (CHECKFLAG(controls, ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
         {
-            CLEARFLAG(statemask, EXEC_ABORT);
+            CLEARFLAG(statemask, EXEC_KILL);
         }
 #endif
 #ifdef SAFETY_DOOR
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
         {
-            CLEARFLAG(statemask, EXEC_DOOR);
+            CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
         }
 #endif
 #ifdef FHOLD
@@ -350,23 +368,43 @@ extern "C"
             CLEARFLAG(statemask, EXEC_HOLD);
         }
 #endif
+
+        uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
-        if (g_settings.hard_limits_enabled && io_get_limits()) //can't clear the EXEC_LIMITS is any limit is triggered
+        limits = io_get_limits(); //can't clear the EXEC_LIMITS is any limit is triggered
+#endif
+        if (g_settings.hard_limits_enabled && limits) //if hardlimits are enabled and limits are triggered
         {
             CLEARFLAG(statemask, EXEC_LIMITS);
         }
-#endif
-        if (g_settings.homing_enabled) //if the machine doesn't know the homing position and homing is enabled
-        {
-            CLEARFLAG(statemask, EXEC_NOHOME);
-        }
 
+        if (CHECKFLAG(statemask, EXEC_HOLD))
+        {
+            SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
+            CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+            itp_sync_spindle();
+            if (!planner_buffer_is_empty())
+            {
+                cnc_delay_ms(DELAY_ON_RESUME * 1000);
+            }
+            CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
+        }
         CLEARFLAG(cnc_state.exec_state, statemask);
+    }
+
+    void cnc_delay_ms(uint32_t miliseconds)
+    {
+        uint32_t t_start = mcu_millis();
+        uint32_t t_end = mcu_millis();
+        while (t_end - t_start < miliseconds && cnc_dotasks())
+        {
+            t_end = mcu_millis();
+        }
     }
 
     void cnc_reset(void)
     {
-        cnc_state.active_alarm = EXEC_ALARM_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP_RESET;
         //resets all realtime command flags
         cnc_state.rt_cmd = RT_CMD_CLEAR;
         cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
@@ -378,7 +416,7 @@ extern "C"
         planner_clear();
         protocol_send_string(MSG_STARTUP);
 
-        cnc_state.active_alarm = EXEC_ALARM_RESET;
+        cnc_state.loop_state = LOOP_STARTUP_BLOCKS;
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 
@@ -386,7 +424,7 @@ extern "C"
         if (cnc_get_exec_state(EXEC_ALARM))
         {
             //cnc_check_fault_systems();
-            if (!cnc_get_exec_state(EXEC_ABORT))
+            if (!cnc_get_exec_state(EXEC_KILL))
             {
                 protocol_send_feedback(MSG_FEEDBACK_2);
             }
@@ -410,20 +448,22 @@ extern "C"
         bool update_tools = false;
 
         //executes feeds override rt commands
-        uint8_t cmd_mask = 0x04;
-        uint8_t command = cnc_state.rt_cmd & 0x07;   //copies realtime flags states
+        uint8_t cmd_mask = 0x08;
+        uint8_t command = cnc_state.rt_cmd & 0x0F;   //copies realtime flags states
         CLEARFLAG(cnc_state.rt_cmd, ~RT_CMD_REPORT); //clears all command flags except report request
         while (command)
         {
             switch (command & cmd_mask)
             {
             case RT_CMD_REPORT:
-                if (!protocol_is_busy())
+                if (!protocol_is_busy() && cnc_state.loop_state >= LOOP_RUNNING)
                 {
                     protocol_send_status();
                     CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
                 }
-
+                break;
+            case RT_CMD_CYCLE_START:
+                cnc_clear_exec_state(EXEC_HOLD);
                 break;
             case RT_CMD_STARTUP_BLOCK0:
                 if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET)) //loads command 0
@@ -437,6 +477,7 @@ extern "C"
                 if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET)) //loads command 1
                 {
                     serial_select(SERIAL_N1);
+                    cnc_state.loop_state = LOOP_RUNNING;
                 }
                 break;
             }
@@ -593,19 +634,14 @@ extern "C"
     bool cnc_check_interlocking(void)
     {
         //if abort is flagged
-        if (CHECKFLAG(cnc_state.exec_state, EXEC_ABORT))
+        if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
         {
-            if (cnc_state.active_alarm) //active alarm message
-            {
-                protocol_send_alarm(cnc_state.active_alarm);
-                cnc_state.active_alarm = 0;
-                return false;
-            }
             return false;
         }
 
         if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR | EXEC_HOLD))
         {
+            //machine is still running after hold/security door
             if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
             {
                 return true;
@@ -614,12 +650,14 @@ extern "C"
             itp_stop();
             if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
             {
-                cnc_stop(); //stop all tools not only motion
-            }
-
-            if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && CHECKFLAG(cnc_state.exec_state, EXEC_DOOR)) //door opened during a homing cycle
-            {
-                cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+                if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) //door opened during a homing cycle
+                {
+                    cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+                }
+                else
+                {
+                    cnc_stop(); //stop all tools not only motion
+                }
             }
 
             if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG)) //flushes the buffers if motions was homing or jog
@@ -643,10 +681,10 @@ extern "C"
         }
 
         //clears EXEC_JOG if not step ISR is stopped and planner has no more moves
-        if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
+        /*if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN) && planner_buffer_is_empty())
         {
             CLEARFLAG(cnc_state.exec_state, EXEC_JOG);
-        }
+        }*/
 
         return true;
     }

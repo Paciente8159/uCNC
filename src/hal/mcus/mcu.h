@@ -205,20 +205,6 @@ extern "C"
 	 * */
 	void mcu_dotasks(void);
 
-	/**
-	 * generates a delay in ms.
-	 * */
-	static void mcu_delay_ms(uint32_t miliseconds)
-	{
-		uint32_t t_start = mcu_millis();
-		uint32_t t_end = mcu_millis();
-		while (t_end - t_start < miliseconds)
-		{
-			mcu_dotasks();
-			t_end = mcu_millis();
-		}
-	}
-
 	//Non volatile memory
 	/**
 	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
