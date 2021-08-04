@@ -1109,26 +1109,26 @@ extern "C"
             for (uint8_t i = AXIS_COUNT; i != 0;)
             {
                 i--;
-                words->xyzabc[i] *= 25.4f;
+                words->xyzabc[i] *= INCH_MM_MULT;
             }
 
             //check if any i, j or k words were used
             if (CHECKFLAG(cmd->words, GCODE_IJK_AXIS))
             {
-                words->ijk[0] *= 25.4f;
-                words->ijk[1] *= 25.4f;
-                words->ijk[2] *= 25.4f;
+                words->ijk[0] *= INCH_MM_MULT;
+                words->ijk[1] *= INCH_MM_MULT;
+                words->ijk[2] *= INCH_MM_MULT;
             }
 
             //if normal feed mode convert to mm/s
             if (CHECKFLAG(cmd->words, GCODE_WORD_F) && (new_state->groups.feedrate_mode != G93))
             {
-                new_state->feedrate *= 25.4f;
+                new_state->feedrate *= INCH_MM_MULT;
             }
 
             if (CHECKFLAG(cmd->words, GCODE_WORD_R))
             {
-                words->r *= 25.4f;
+                words->r *= INCH_MM_MULT;
             }
         }
 

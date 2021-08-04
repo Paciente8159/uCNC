@@ -248,7 +248,7 @@ extern "C"
 #else
     serial_print_str(MSG_STATUS_F);
 #endif
-        serial_print_int((uint16_t)feed);
+        serial_print_fltunits(feed);
 #ifdef USE_SPINDLE
         serial_putc(',');
         serial_print_int(spindle);
@@ -431,7 +431,7 @@ extern "C"
         serial_putc(' ');
 
         serial_putc('F');
-        serial_print_int(feed);
+        serial_print_fltunits(feed);
         serial_putc(' ');
 
         serial_putc('S');
@@ -501,7 +501,7 @@ extern "C"
     void protocol_send_cnc_settings(void)
     {
         protocol_busy = true;
-        protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
+        protocol_send_gcode_setting_line_flt(0, g_settings.max_step_rate);
 #ifdef EMULATE_GRBL_STARTUP
         // just adds this for compatibility
         // this setting is not used

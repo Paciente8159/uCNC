@@ -233,39 +233,7 @@ extern "C"
         } while (c != 0);
     }
 
-    void serial_print_int(int16_t num)
-    {
-        if (num == 0)
-        {
-            serial_putc('0');
-            return;
-        }
-
-        unsigned char buffer[6];
-        uint8_t i = 0;
-        if (num < 0)
-        {
-            serial_putc('-');
-            num = -num;
-        }
-
-        while (num > 0)
-        {
-            uint8_t digit = num % 10;
-            num = ((((uint32_t)num * (UINT16_MAX / 10)) >> 16) + ((digit != 0) ? 0 : 1)); //same has divide by 10 but faster
-            buffer[i++] = digit;
-            /*buffer[i++] = num % 10;
-        num /= 10;*/
-        }
-
-        do
-        {
-            i--;
-            serial_putc('0' + buffer[i]);
-        } while (i);
-    }
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-    void serial_print_long(int32_t num)
+    void serial_print_int(int32_t num)
     {
         if (num == 0)
         {
@@ -287,8 +255,6 @@ extern "C"
             uint8_t digit = num % 10;
             num = (uint32_t)truncf((float)num * 0.1f);
             buffer[i++] = digit;
-            /*buffer[i++] = num % 10;
-        num /= 10;*/
         }
 
         do
@@ -297,36 +263,25 @@ extern "C"
             serial_putc('0' + buffer[i]);
         } while (i);
     }
-#endif
 
     void serial_print_flt(float num)
     {
-        if (g_settings.report_inches)
-        {
-            num *= MM_INCH_MULT;
-        }
-
         if (num < 0)
         {
             serial_putc('-');
             num = -num;
         }
 
-        uint16_t digits = (uint16_t)floorf(num);
+        uint32_t digits = (uint32_t)floorf(num);
         serial_print_int(digits);
         serial_putc('.');
         num -= digits;
 
-        num *= 1000;
-        digits = (uint16_t)roundf(num);
+        num *= (!g_settings.report_inches) ? 1000 : 10000;
+        digits = (uint32_t)roundf(num);
 
         if (g_settings.report_inches)
         {
-            if (digits < 10000)
-            {
-                serial_putc('0');
-            }
-
             if (digits < 1000)
             {
                 serial_putc('0');
@@ -344,6 +299,12 @@ extern "C"
         }
 
         serial_print_int(digits);
+    }
+
+    void serial_print_fltunits(float num)
+    {
+        num = (!g_settings.report_inches) ? num : (num * MM_INCH_MULT);
+        serial_print_flt(num);
     }
 
     void serial_print_intarr(uint16_t *arr, uint8_t count)
@@ -365,7 +326,7 @@ extern "C"
         uint8_t i = count;
         do
         {
-            serial_print_flt(*arr++);
+            serial_print_fltunits(*arr++);
             i--;
             if (i)
             {
