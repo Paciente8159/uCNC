@@ -111,10 +111,6 @@ extern "C"
 #define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
-#define LOOP_STARTUP 0
-#define LOOP_RUNNING 1
-#define LOOP_ERROR_RESET 2
-
 #define EXEC_ALARM_RESET 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved.
 #define EXEC_ALARM_HARD_LIMIT 1
@@ -149,7 +145,6 @@ extern "C"
 //Non query feedback messages
 #define MSG_START __romstr__("[MSG:")
 #define MSG_END __romstr__("]" STR_EOL)
-#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
 #define MSG_FEEDBACK_1 __romstr__("Reset to continue")
 #define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
 #define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")

@@ -38,6 +38,11 @@ extern "C"
 #include "modules/encoder.h"
 #include "modules/pid_controller.h"
 
+#define LOOP_STARTUP_RESET 0
+#define LOOP_STARTUP_BLOCKS 1
+#define LOOP_RUNNING 2
+#define LOOP_ERROR_RESET 3
+
     typedef struct
     {
         //uint8_t system_state;		//signals if CNC is system_state and gcode can run
@@ -61,7 +66,7 @@ extern "C"
 #ifdef FORCE_GLOBALS_TO_0
         memset(&cnc_state, 0, sizeof(cnc_state_t));
 #endif
-        cnc_state.loop_state = LOOP_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP_RESET;
         //initializes all systems
         mcu_init();              //mcu
         mcu_disable_probe_isr(); //forces probe isr disabling
@@ -219,7 +224,7 @@ extern "C"
         mcu_dotasks();
 
         //let µCNC finnish startup/reset code
-        if (cnc_state.loop_state == LOOP_STARTUP)
+        if (cnc_state.loop_state == LOOP_STARTUP_RESET)
         {
             return;
         }
@@ -399,7 +404,7 @@ extern "C"
 
     void cnc_reset(void)
     {
-        cnc_state.loop_state = LOOP_STARTUP;
+        cnc_state.loop_state = LOOP_STARTUP_RESET;
         //resets all realtime command flags
         cnc_state.rt_cmd = RT_CMD_CLEAR;
         cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
@@ -411,7 +416,7 @@ extern "C"
         planner_clear();
         protocol_send_string(MSG_STARTUP);
 
-        cnc_state.loop_state = LOOP_RUNNING;
+        cnc_state.loop_state = LOOP_STARTUP_BLOCKS;
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
 
@@ -451,7 +456,7 @@ extern "C"
             switch (command & cmd_mask)
             {
             case RT_CMD_REPORT:
-                if (!protocol_is_busy())
+                if (!protocol_is_busy() && cnc_state.loop_state >= LOOP_RUNNING)
                 {
                     protocol_send_status();
                     CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
@@ -472,6 +477,7 @@ extern "C"
                 if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET)) //loads command 1
                 {
                     serial_select(SERIAL_N1);
+                    cnc_state.loop_state = LOOP_RUNNING;
                 }
                 break;
             }
