@@ -386,9 +386,12 @@ extern "C"
 #if (LIMITS_MASK != 0)
         limits = io_get_limits(); //can't clear the EXEC_LIMITS is any limit is triggered
 #endif
-        if (g_settings.hard_limits_enabled && limits) //if hardlimits are enabled and limits are triggered
+        if (g_settings.hard_limits_enabled) //if hardlimits are enabled and limits are triggered
         {
-            CLEARFLAG(statemask, EXEC_LIMITS);
+            if (limits || g_settings.homing_enabled)
+            {
+                CLEARFLAG(statemask, EXEC_LIMITS);
+            }
         }
 
         if (CHECKFLAG(statemask, EXEC_HOLD))
@@ -402,6 +405,7 @@ extern "C"
             }
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
+
         CLEARFLAG(cnc_state.exec_state, statemask);
     }
 
