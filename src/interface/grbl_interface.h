@@ -164,6 +164,24 @@ extern "C"
 /*NEW*/
 #define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
 
+#define MSG_STATUS_ALARM __romstr__("Alarm")
+#define MSG_STATUS_DOOR __romstr__("Door:")
+#define MSG_STATUS_HOLD __romstr__("Hold:")
+#define MSG_STATUS_HOME __romstr__("Home")
+#define MSG_STATUS_JOG __romstr__("Jog")
+#define MSG_STATUS_RUN __romstr__("Run")
+#define MSG_STATUS_IDLE __romstr__("Idle")
+#define MSG_STATUS_CHECK __romstr__("Check")
+
+#define MSG_STATUS_MPOS __romstr__("|MPos:")
+#define MSG_STATUS_FS __romstr__("|FS:")
+#define MSG_STATUS_F __romstr__("|F:")
+#define MSG_STATUS_WCO __romstr__("|WCO:")
+#define MSG_STATUS_OVR __romstr__("|Ov:")
+#define MSG_STATUS_TOOL __romstr__("|A:")
+#define MSG_STATUS_LINE __romstr__("|Ln:")
+#define MSG_STATUS_PIN __romstr__("|Pn:")
+
 	//#define MSG_INT "%d"
 	//#define MSG_FLT "%0.3f"
 	//#define MSG_FLT_IMPERIAL "%0.5f"

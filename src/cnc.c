@@ -111,7 +111,6 @@ extern "C"
 
         cnc_state.loop_state = LOOP_ERROR_RESET;
 
-        cnc_clear_exec_state(EXEC_KILL); //clears the kill flag
         serial_flush();
         if (cnc_get_exec_state(EXEC_ALARM)) //checks if any alarm is active (except NOHOME - ignore it)
         {
@@ -119,8 +118,8 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_1);
             do
             {
-                cnc_dotasks();
-            } while (!CHECKFLAG(cnc_state.rt_cmd, RT_CMD_ABORT));
+                cnc_clear_exec_state(EXEC_KILL); //tries to clear the kill flag if possible
+            } while (!cnc_dotasks());
         }
     }
 
@@ -288,8 +287,6 @@ extern "C"
         //reset position
         itp_reset_rt_position();
         planner_sync_position();
-        //invokes startup block execution
-        SETFLAG(cnc_state.rt_cmd, RT_CMD_STARTUP_BLOCK0);
     }
 
     void cnc_alarm(uint8_t code)
@@ -371,7 +368,7 @@ extern "C"
 #if (LIMITS_MASK != 0)
         limits = io_get_limits(); //can't clear the EXEC_LIMITS is any limit is triggered
 #endif
-        if (g_settings.homing_enabled && limits) //if the machine doesn't know the homing position and homing is enabled
+        if (g_settings.hard_limits_enabled && limits) //if hardlimits are enabled and limits are triggered
         {
             CLEARFLAG(statemask, EXEC_LIMITS);
         }
