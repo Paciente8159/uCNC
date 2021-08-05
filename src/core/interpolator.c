@@ -45,10 +45,7 @@ extern "C"
 
 //Itp update flags
 #define ITP_NOUPDATE 0
-#define ITP_DWELL 1
-#define ITP_UPDATE_TOOLS 2
-#define ITP_PAUSE 4
-#define ITP_PAUSE_CONDITIONAL 8
+#define ITP_UPDATE_ISR 1
 
     //contains data of the block being executed by the pulse routine
     //this block has the necessary data to execute the Bresenham line algorithm
@@ -230,40 +227,6 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
                 itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
-/*
-                uint8_t nomotion_type = ITP_NOUPDATE;
-                if (itp_cur_plan_block->dwell != 0)
-                {
-                    nomotion_type |= ITP_DWELL;
-                }
-
-                if (itp_cur_plan_block->total_steps == 0)
-                {
-#ifdef USE_SPINDLE
-                    nomotion_type = ITP_UPDATE_TOOLS;
-#endif
-                    if (itp_cur_plan_block->action & (MOTIONCONTROL_MODE_PAUSEPROGRAM | MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL))
-                    {
-                        nomotion_type |= ITP_PAUSE;
-                    }
-
-                    if (itp_cur_plan_block->action & (MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL))
-                    {
-                        nomotion_type |= ITP_PAUSE_CONDITIONAL;
-                    }
-                }
-
-                if (nomotion_type)
-                {
-                    itp_nomotion(nomotion_type, itp_cur_plan_block->dwell);
-                    if (nomotion_type > ITP_DWELL)
-                    {
-                        //no motion action (doesn't need a interpolator block = NULL)
-                        itp_cur_plan_block = NULL;
-                        planner_discard_block();
-                        break; //exits after adding the dwell segment if motion is 0 (empty motion block)
-                    }
-                }*/
 
 //overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -373,7 +336,7 @@ extern "C"
             */
                 speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
                 profile_steps_limit = accel_until;
-                sgm->update_itp = ITP_DWELL;
+                sgm->update_itp = ITP_UPDATE_ISR;
                 is_initial_transition = true;
             }
             else if (remaining_steps > deaccel_from)
@@ -381,14 +344,14 @@ extern "C"
                 //constant speed segment
                 speed_change = 0;
                 profile_steps_limit = deaccel_from;
-                sgm->update_itp = is_initial_transition ? ITP_UPDATE_TOOLS : ITP_NOUPDATE;
+                sgm->update_itp = is_initial_transition ? ITP_UPDATE_ISR : ITP_NOUPDATE;
                 is_initial_transition = false;
             }
             else
             {
                 speed_change = -half_speed_change;
                 profile_steps_limit = 0;
-                sgm->update_itp = ITP_DWELL;
+                sgm->update_itp = ITP_UPDATE_ISR;
                 is_initial_transition = true;
             }
 
@@ -734,23 +697,9 @@ extern "C"
 
                 if (itp_rt_sgm->update_itp)
                 {
-                    if (itp_rt_sgm->update_itp & ITP_DWELL)
+                    if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
-                    }
-                    else if (itp_rt_sgm->update_itp & ITP_PAUSE)
-                    {
-                        mcu_disable_global_isr();
-                        itp_busy = false;
-#ifdef M1_CONDITION
-                        if (!M1_CONDITION)
-                        {
-                            return;
-                        }
-#endif
-                        itp_stop(); //stop the isr
-                        cnc_set_exec_state(EXEC_HOLD);
-                        return;
                     }
 #ifdef USE_SPINDLE
                     io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
