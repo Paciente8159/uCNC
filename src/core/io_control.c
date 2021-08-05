@@ -43,44 +43,32 @@ extern "C"
         {
             if (limits)
             {
-                if (cnc_get_exec_state(EXEC_RUN))
-                {
-                    if (!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
-                    {
-                        if (g_settings.hard_limits_enabled)
-                        {
-                            cnc_set_exec_state(EXEC_LIMITS); //if motions was executing flags home position lost
-                        }
-
-                        cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-                    }
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-                    else
-                    {
+                if (cnc_get_exec_state(EXEC_RUN) & cnc_get_exec_state(EXEC_HOMING))
+                {
 //if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE_AXIS0
-                        if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
-                        {
-                            itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
+                    if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
+                    {
+                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
 
-                            if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
-                            {
-                                return; //exits and doesn't trip the alarm
-                            }
+                        if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                        {
+                            return; //exits and doesn't trip the alarm
                         }
+                    }
 #endif
 #ifdef DUAL_DRIVE_AXIS1
-                        if (limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                    if (limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                    {
+                        if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
                         {
-                            if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
-                            {
-                                itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
-                            }
+                            itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
                         }
-#endif
                     }
 #endif
                 }
+#endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
                 itp_lock_stepper(0); //unlocks axis
 #endif

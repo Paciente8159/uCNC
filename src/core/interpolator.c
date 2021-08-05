@@ -527,7 +527,6 @@ extern "C"
     {
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-        cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
         {
@@ -764,7 +763,8 @@ extern "C"
             {
                 mcu_disable_global_isr();
                 itp_busy = false;
-                itp_stop(); //the buffer is empty. The ISR can stop
+                itp_stop();                     //the buffer is empty. The ISR can stop
+                cnc_clear_exec_state(EXEC_RUN); //this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
                 return;
             }
         }
