@@ -163,6 +163,7 @@ extern "C"
 #endif
         uint8_t controls = io_get_controls();
         uint8_t limits = io_get_limits();
+        bool probe = io_get_probe();
         uint8_t state = cnc_get_exec_state(0xFF);
         uint8_t filter = 0x80;
         while (!(state & filter) && filter)
@@ -259,7 +260,7 @@ extern "C"
         serial_print_long(itp_get_rt_line_number());
 #endif
 
-        if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) | CHECKFLAG(limits, LIMITS_MASK))
+        if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
         {
             serial_print_str(MSG_STATUS_PIN);
 
@@ -278,7 +279,7 @@ extern "C"
                 serial_putc('H');
             }
 
-            if (io_get_probe())
+            if (probe)
             {
                 serial_putc('P');
             }
