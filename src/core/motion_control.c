@@ -503,9 +503,11 @@ extern "C"
         cnc_unlock(true);
 
         //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
+        io_limits_isr();
+        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
         {
-            return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
+            return STATUS_CRITICAL_FAIL;
         }
 
         io_set_homing_limits_filter(axis_limit);
@@ -530,10 +532,12 @@ extern "C"
         block_data.spindle = 0;
         block_data.dwell = 0;
         block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
+
         cnc_unlock(true);
-        mc_line(target, &block_data);
-        //flags homing clear by the unlock
+        //re-flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
+        mc_line(target, &block_data);
+
         do
         {
             if (!cnc_dotasks())
@@ -553,7 +557,9 @@ extern "C"
         //the wrong switch was activated bails
         if (!CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
         //back off from switch at lower speed
@@ -602,7 +608,9 @@ extern "C"
 
         if (CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
         return STATUS_OK;
@@ -641,7 +649,8 @@ extern "C"
         bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
         if (probe_notok)
         {
-            return EXEC_ALARM_PROBE_FAIL_CONTACT;
+            cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
+            return STATUS_CRITICAL_FAIL;
         }
 
 #endif

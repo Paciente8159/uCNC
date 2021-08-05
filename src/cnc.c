@@ -197,7 +197,7 @@ extern "C"
         {
             //disables homing and reenables alarm messages
             cnc_clear_exec_state(EXEC_HOMING);
-            cnc_alarm(error);
+            //cnc_alarm(error);
             return;
         }
 
@@ -676,7 +676,7 @@ extern "C"
             }
             else
             {
-                cnc_alarm(EXEC_ALARM_RESET); //reset or emergency stop
+                cnc_alarm(cnc_state.alarm); //reset or emergency stop or any other (software) alarm
             }
             return false;
         }
@@ -692,6 +692,10 @@ extern "C"
             if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && io_get_limits()) //if a motion is being performed allow trigger the limit switch alarm
             {
                 cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+            }
+            else
+            {
+                CLEARFLAG(cnc_state.exec_state, EXEC_RUN);
             }
 
             return false;

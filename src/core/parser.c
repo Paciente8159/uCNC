@@ -1462,7 +1462,7 @@ extern "C"
                     parser_parameters.last_probe_ok = 0;
                     if (!(new_state->groups.motion & 0x01))
                     {
-                        cnc_alarm(probe_error);
+                        return probe_error;
                     }
                 }
                 parser_parameters.last_probe_ok = 1;
