@@ -256,6 +256,7 @@ extern "C"
     static parser_parameters_t parser_parameters;
     static uint8_t parser_wco_counter;
     static float g92permanentoffset[AXIS_COUNT];
+    static int32_t rt_probe_step_pos[STEPPER_COUNT];
 
     static unsigned char parser_get_next_preprocessed(bool peek);
     FORCEINLINE static uint8_t parser_get_comment(void);
@@ -423,7 +424,13 @@ extern "C"
 
     void parser_sync_probe(void)
     {
-        itp_get_rt_position(parser_parameters.last_probe_position);
+        itp_get_rt_position(rt_probe_step_pos);
+    }
+
+    void parser_update_probe_pos(void)
+    {
+        kinematics_apply_forward(rt_probe_step_pos, parser_parameters.last_probe_position);
+        kinematics_apply_reverse_transform(parser_parameters.last_probe_position);
     }
 
     static uint8_t parser_grbl_command(void)

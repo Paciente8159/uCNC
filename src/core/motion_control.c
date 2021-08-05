@@ -621,7 +621,7 @@ extern "C"
 #ifdef PROBE
         uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
         io_enable_probe();
-
+        block_data->feed = g_settings.homing_fast_feed_rate;
         mc_line(target, block_data);
 
         do
@@ -641,13 +641,15 @@ extern "C"
         } while (cnc_get_exec_state(EXEC_RUN));
 
         io_disable_probe();
-        itp_stop();
+        cnc_stop();
         itp_clear();
         planner_clear();
+        parser_update_probe_pos();
         cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
         cnc_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
-        bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
-        if (probe_notok)
+        bool probe_ok = io_get_probe();
+        probe_ok = (!invert_probe) ? probe_ok : !probe_ok;
+        if (!probe_ok)
         {
             cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
             return STATUS_CRITICAL_FAIL;
