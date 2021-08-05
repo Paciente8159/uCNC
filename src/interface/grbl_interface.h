@@ -112,7 +112,7 @@ extern "C"
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
 #define EXEC_ALARM_RESET 0
-// Grbl alarm codes. Valid values (1-255). Zero is reserved.
+// Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
 #define EXEC_ALARM_HARD_LIMIT 1
 #define EXEC_ALARM_SOFT_LIMIT 2
 #define EXEC_ALARM_ABORT_CYCLE 3
@@ -124,6 +124,7 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_APPROACH 9
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
+#define EXEC_ALARM_EMERGENCY_STOP 12
 
 //formated messages
 #define STR_EOL "\r\n"

@@ -488,6 +488,11 @@ extern "C"
 
     void itp_stop(void)
     {
+        // any stop command while running triggers an HALT alarm
+        if (cnc_get_exec_state(EXEC_RUN))
+        {
+            cnc_set_exec_state(EXEC_HALT);
+        }
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
 #ifdef LASER_MODE
@@ -712,8 +717,8 @@ extern "C"
             {
                 mcu_disable_global_isr();
                 itp_busy = false;
-                itp_stop();                     //the buffer is empty. The ISR can stop
                 cnc_clear_exec_state(EXEC_RUN); //this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+                itp_stop();                     //the buffer is empty. The ISR can stop
                 return;
             }
         }

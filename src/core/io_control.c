@@ -72,8 +72,8 @@ extern "C"
 #ifdef ENABLE_DUAL_DRIVE_AXIS
                 itp_lock_stepper(0); //unlocks axis
 #endif
-                cnc_set_exec_state(EXEC_LIMITS);
                 itp_stop();
+                cnc_set_exec_state(EXEC_HALT);
             }
         }
     }
@@ -85,7 +85,7 @@ extern "C"
 #ifdef ESTOP
         if (CHECKFLAG(controls, ESTOP_MASK))
         {
-            cnc_call_rt_command(CMD_CODE_RESET);
+            cnc_set_exec_state(EXEC_KILL);
             return; //forces exit
         }
 #endif
@@ -93,13 +93,13 @@ extern "C"
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
         {
             //safety door activates hold simultaneously to start the controlled stop
-            cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
+            cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
         }
 #endif
 #ifdef FHOLD
         if (CHECKFLAG(controls, FHOLD_MASK))
         {
-            cnc_call_rt_command(CMD_CODE_FEED_HOLD);
+            cnc_set_exec_state(EXEC_HOLD);
         }
 #endif
 #ifdef CS_RES

@@ -206,7 +206,7 @@ extern "C"
                     }
                 }
                 break;
-            case EXEC_LIMITS:
+            case EXEC_HALT:
                 serial_print_str(MSG_STATUS_ALARM);
                 break;
             case EXEC_HOLD:

@@ -620,7 +620,7 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_9);
             return STATUS_OK;
         case GRBL_UNLOCK:
-            cnc_unlock();
+            cnc_unlock(true);
             if (cnc_get_exec_state(EXEC_DOOR))
             {
                 return STATUS_CHECK_DOOR;
@@ -633,7 +633,7 @@ extern "C"
                 return STATUS_SETTING_DISABLED;
             }
 
-            cnc_unlock();
+            cnc_unlock(true);
             if (cnc_get_exec_state(EXEC_DOOR))
             {
                 return STATUS_CHECK_DOOR;

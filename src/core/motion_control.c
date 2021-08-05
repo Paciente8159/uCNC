@@ -500,7 +500,7 @@ extern "C"
 #endif
 #endif
 
-        cnc_unlock();
+        cnc_unlock(true);
 
         //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
         if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
@@ -530,7 +530,7 @@ extern "C"
         block_data.spindle = 0;
         block_data.dwell = 0;
         block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
-        cnc_unlock();
+        cnc_unlock(true);
         mc_line(target, &block_data);
         //flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
@@ -546,11 +546,6 @@ extern "C"
         itp_stop();
         itp_clear();
         planner_clear();
-
-        if (cnc_get_exec_state(EXEC_KILL))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
 
         cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
@@ -577,11 +572,11 @@ extern "C"
         block_data.feed = g_settings.homing_slow_feed_rate;
         block_data.total_steps = ABS(max_home_dist);
         block_data.steps[axis] = max_home_dist;
-        //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
+        //unlocks the machine for next motion (this will clear the EXEC_HALT flag
         //temporary inverts the limit mask to trigger ISR on switch release
         g_settings.limits_invert_mask ^= axis_limit;
         //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
-        cnc_unlock();
+        cnc_unlock(true);
         mc_line(target, &block_data);
         //flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
@@ -601,11 +596,6 @@ extern "C"
         //clearing the interpolator unlockes any locked stepper
         itp_clear();
         planner_clear();
-
-        if (cnc_get_exec_state(EXEC_KILL))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
 
         cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
