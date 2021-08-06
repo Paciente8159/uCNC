@@ -7,7 +7,7 @@
 
 ## [1.2.1] - 2021-08-06
 
-Version 1.2.1 is a minor revision from the previous version. This version aims mainly to improve the overhall response of µCNC and fix a few bugs.
+Version 1.2.1 is a minor revision from the previous version. This version aims mainly to improve the overall response of µCNC and fix a few bugs.
 The following things were changed:
 
 ### Added
@@ -19,9 +19,9 @@ The following things were changed:
   - all hard/soft limit alarms cause the firmware to lock until software reset is issued as described by Grbl (#63)
   - readapted homing and probing to the new interlocking logic (#63)
   - startup code improvements (#62)
-  - modified µCNC to execute synchronous motions at motion control level. This reduces the pipeline travelling of the code at the expense of additional restart delay that is negletable (#59)
+  - modified µCNC to execute synchronous motions at motion control level. This reduces the pipeline travelling of the code at the expense of additional restart delay that is neglectable (#59)
   - dropped the Abort status in favor of the Alarm status to be more Grbl compliant (#59)
-  - blocked status reports during startup blocks to prevent startup block ill-formated strings that were causing the interface softwares to correctly recognize the responses (#59)
+  - blocked status reports during startup blocks to prevent startup block ill-formated strings that were causing the interface software to correctly recognize the responses (#59)
 
 ### Fixed
   - fixed axis drifting after homing. This happened on all motions until an explicit coordinate was set for that axis (#63)
