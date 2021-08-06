@@ -195,118 +195,114 @@ extern "C"
         }
 
         uint8_t error = STATUS_OK;
+        int32_t step_new_pos[STEPPER_COUNT];
+        int32_t step_old_pos[STEPPER_COUNT];
+        //converts transformed target to stepper position
+        kinematics_apply_inverse(target, step_new_pos);
+        //calculates the amount of stepper motion for this motion
+        planner_get_position(step_old_pos);
 
-        if (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION))
+        uint32_t max_steps = 0;
+        block_data->dirbits = 0;
+        block_data->main_stepper = 255;
+        for (uint8_t i = STEPPER_COUNT; i != 0;)
         {
-            int32_t step_new_pos[STEPPER_COUNT];
-            int32_t step_old_pos[STEPPER_COUNT];
-            //converts transformed target to stepper position
-            kinematics_apply_inverse(target, step_new_pos);
-            //calculates the amount of stepper motion for this motion
-            planner_get_position(step_old_pos);
-
-            uint32_t max_steps = 0;
-            block_data->dirbits = 0;
-            block_data->main_stepper = 255;
-            for (uint8_t i = STEPPER_COUNT; i != 0;)
+            i--;
+            int32_t steps = step_new_pos[i] - step_old_pos[i];
+            if (steps < 0)
             {
-                i--;
-                int32_t steps = step_new_pos[i] - step_old_pos[i];
-                if (steps < 0)
-                {
-                    block_data->dirbits |= (1 << i);
-                }
-
-                steps = ABS(steps);
-                if (max_steps < steps)
-                {
-                    max_steps = steps;
-                    block_data->main_stepper = i;
-                }
+                block_data->dirbits |= (1 << i);
             }
 
-            //no significant motion will take place. don't send any thing to the planner
-            if (!max_steps)
+            steps = ABS(steps);
+            if (max_steps < steps)
             {
-                return STATUS_OK;
+                max_steps = steps;
+                block_data->main_stepper = i;
             }
+        }
 
-            //checks the amount of steps that this motion translates to
-            //if the amount of steps is higher than the limit for the 16bit bresenham algorithm
-            //splits the line into smaller segments
+        //no significant motion will take place. don't send any thing to the planner
+        if (!max_steps)
+        {
+            return STATUS_OK;
+        }
 
-            //calculates the aproximation of the inverted travelled distance
-            float inv_dist = 0;
-            float motion_segment[AXIS_COUNT];
-            for (uint8_t i = AXIS_COUNT; i != 0;)
-            {
-                i--;
-                motion_segment[i] = target[i] - prev_target[i];
-                block_data->dir_vect[i] = motion_segment[i];
-                inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
-            }
+        //checks the amount of steps that this motion translates to
+        //if the amount of steps is higher than the limit for the 16bit bresenham algorithm
+        //splits the line into smaller segments
 
-            inv_dist = fast_flt_invsqrt(inv_dist);
+        //calculates the aproximation of the inverted travelled distance
+        float inv_dist = 0;
+        float motion_segment[AXIS_COUNT];
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            motion_segment[i] = target[i] - prev_target[i];
+            block_data->dir_vect[i] = motion_segment[i];
+            inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
+        }
 
-            //calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
+        inv_dist = fast_flt_invsqrt(inv_dist);
+
+        //calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
 #ifndef ENABLE_LINACT_PLANNER
-            for (uint8_t i = AXIS_COUNT; i != 0;)
-            {
-                i--;
-                block_data->dir_vect[i] *= inv_dist;
-            }
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            block_data->dir_vect[i] *= inv_dist;
+        }
 #endif
 
-            //calculated the total motion execution time @ the given rate
-            float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : (1.0f / block_data->feed));
-            block_data->feed = (float)max_steps * inv_delta;
+        //calculated the total motion execution time @ the given rate
+        float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : (1.0f / block_data->feed));
+        block_data->feed = (float)max_steps * inv_delta;
 
-            //this contains a motion. Any tool update will be done here
-            block_data->update_tools = false;
-            uint32_t line_segments = 1;
-            if (max_steps > MAX_STEPS_PER_LINE)
+        //this contains a motion. Any tool update will be done here
+        block_data->update_tools = false;
+        uint32_t line_segments = 1;
+        if (max_steps > MAX_STEPS_PER_LINE)
+        {
+            line_segments += (max_steps >> MAX_STEPS_PER_LINE_BITS);
+            float m_inv = 1.0f / (float)line_segments;
+            for (uint8_t i = AXIS_COUNT; i != 0;)
             {
-                line_segments += (max_steps >> MAX_STEPS_PER_LINE_BITS);
-                float m_inv = 1.0f / (float)line_segments;
+                i--;
+                motion_segment[i] *= m_inv;
+            }
+        }
+
+        while (line_segments--)
+        {
+            while (planner_buffer_is_full())
+            {
+                if (!cnc_dotasks())
+                {
+                    block_data->feed = feed;
+                    return STATUS_CRITICAL_FAIL;
+                }
+            }
+
+            if (line_segments)
+            {
                 for (uint8_t i = AXIS_COUNT; i != 0;)
                 {
                     i--;
-                    motion_segment[i] *= m_inv;
+                    prev_target[i] += motion_segment[i];
+                }
+
+                error = mc_line_segment(prev_target, block_data);
+                if (error)
+                {
+                    break;
                 }
             }
-
-            while (line_segments--)
+            else
             {
-                while (planner_buffer_is_full())
+                error = mc_line_segment(target, block_data);
+                if (error)
                 {
-                    if (!cnc_dotasks())
-                    {
-                        block_data->feed = feed;
-                        return STATUS_CRITICAL_FAIL;
-                    }
-                }
-
-                if (line_segments)
-                {
-                    for (uint8_t i = AXIS_COUNT; i != 0;)
-                    {
-                        i--;
-                        prev_target[i] += motion_segment[i];
-                    }
-
-                    error = mc_line_segment(prev_target, block_data);
-                    if (error)
-                    {
-                        break;
-                    }
-                }
-                else
-                {
-                    error = mc_line_segment(target, block_data);
-                    if (error)
-                    {
-                        break;
-                    }
+                    break;
                 }
             }
         }
@@ -449,23 +445,42 @@ extern "C"
 
     uint8_t mc_dwell(motion_data_t *block_data)
     {
-        if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+        if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
         {
-            return STATUS_OK;
+            mc_update_tools(block_data);
+            cnc_delay_ms(block_data->dwell);
         }
 
-        while (planner_buffer_is_full())
+        return STATUS_OK;
+    }
+
+    uint8_t mc_pause(void)
+    {
+        if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
         {
-            if (!cnc_dotasks())
+            if (itp_sync())
             {
                 return STATUS_CRITICAL_FAIL;
             }
         }
 
-        //send dwell (planner linear motion with distance == 0)
-        SETFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
-        planner_add_line(NULL, block_data);
-        CLEARFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
+        cnc_set_exec_state(EXEC_HOLD);
+        return STATUS_OK;
+    }
+
+    uint8_t mc_update_tools(motion_data_t *block_data)
+    {
+        if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
+        {
+            if (itp_sync())
+            {
+                return STATUS_CRITICAL_FAIL;
+            }
+            //synchronizes the tools
+            planner_sync_tools(block_data);
+            itp_sync_spindle();
+        }
+
         return STATUS_OK;
     }
 
@@ -485,12 +500,14 @@ extern "C"
 #endif
 #endif
 
-        cnc_unlock();
+        cnc_unlock(true);
 
         //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
+        io_limits_isr();
+        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
         {
-            return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
+            return STATUS_CRITICAL_FAIL;
         }
 
         io_set_homing_limits_filter(axis_limit);
@@ -503,8 +520,7 @@ extern "C"
         {
             max_home_dist = -max_home_dist;
         }
-        planner_resync_position();
-        mc_resync_position();
+        planner_sync_position();
         mc_get_position(target);
         target[axis] += max_home_dist;
         //initializes planner block data
@@ -515,10 +531,12 @@ extern "C"
         block_data.spindle = 0;
         block_data.dwell = 0;
         block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
-        cnc_unlock();
-        mc_line(target, &block_data);
-        //flags homing clear by the unlock
+
+        cnc_unlock(true);
+        //re-flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
+        mc_line(target, &block_data);
+
         do
         {
             if (!cnc_dotasks())
@@ -532,26 +550,22 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_ABORT))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
-
-        mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+        cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
 
         //the wrong switch was activated bails
         if (!CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
         //back off from switch at lower speed
         max_home_dist = g_settings.homing_offset * 5.0f;
 
         //sync's the planner and motion control done when clearing the planner
-        //planner_resync_position();
-        mc_resync_position();
+        planner_sync_position();
         mc_get_position(target);
         if (g_settings.homing_dir_invert_mask & axis_mask)
         {
@@ -562,11 +576,11 @@ extern "C"
         block_data.feed = g_settings.homing_slow_feed_rate;
         block_data.total_steps = ABS(max_home_dist);
         block_data.steps[axis] = max_home_dist;
-        //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
+        //unlocks the machine for next motion (this will clear the EXEC_HALT flag
         //temporary inverts the limit mask to trigger ISR on switch release
         g_settings.limits_invert_mask ^= axis_limit;
         //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
-        cnc_unlock();
+        cnc_unlock(true);
         mc_line(target, &block_data);
         //flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
@@ -578,7 +592,7 @@ extern "C"
             }
         } while (cnc_get_exec_state(EXEC_RUN));
 
-        mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+        cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         //resets limit mask
         g_settings.limits_invert_mask ^= axis_limit;
         //stops, flushes buffers and clears the hold if active
@@ -587,39 +601,16 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_ABORT))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
-
-        mcu_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+        cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
 
         if (CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
-        return STATUS_OK;
-    }
-
-    uint8_t mc_update_tools(motion_data_t *block_data)
-    {
-        if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
-        {
-            return STATUS_OK;
-        }
-
-        while (planner_buffer_is_full())
-        {
-            if (!cnc_dotasks())
-            {
-                return STATUS_CRITICAL_FAIL;
-            }
-        }
-
-        SETFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_NOMOTION);
-        planner_add_line(NULL, block_data);
         return STATUS_OK;
     }
 
@@ -628,7 +619,7 @@ extern "C"
 #ifdef PROBE
         uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
         io_enable_probe();
-
+        block_data->feed = g_settings.homing_fast_feed_rate;
         mc_line(target, block_data);
 
         do
@@ -648,15 +639,18 @@ extern "C"
         } while (cnc_get_exec_state(EXEC_RUN));
 
         io_disable_probe();
-        itp_stop();
+        cnc_stop();
         itp_clear();
         planner_clear();
+        parser_update_probe_pos();
         cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
-        mcu_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
-        bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
-        if (probe_notok)
+        cnc_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
+        bool probe_ok = io_get_probe();
+        probe_ok = (!invert_probe) ? probe_ok : !probe_ok;
+        if (!probe_ok)
         {
-            return EXEC_ALARM_PROBE_FAIL_CONTACT;
+            cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
+            return STATUS_CRITICAL_FAIL;
         }
 
 #endif

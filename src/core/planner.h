@@ -60,11 +60,10 @@ extern "C"
 #ifdef USE_COOLANT
         uint8_t coolant;
 #endif
-        uint16_t dwell;
 #ifdef ENABLE_BACKLASH_COMPENSATION
         bool backlash_comp;
 #endif
-
+        uint8_t action;
         bool optimal;
     } planner_block_t;
 
@@ -88,7 +87,8 @@ extern "C"
     void planner_add_analog_output(uint8_t output, uint8_t value);
     void planner_add_digital_output(uint8_t output, uint8_t value);
     void planner_get_position(int32_t *steps);
-    void planner_resync_position(void);
+    void planner_sync_position(void);
+    void planner_sync_tools(motion_data_t *block_data);
 
     //overrides
     void planner_toggle_overrides(void);

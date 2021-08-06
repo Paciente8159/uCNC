@@ -38,6 +38,8 @@ extern "C"
 	void itp_get_rt_position(int32_t *position);
 	void itp_reset_rt_position(void);
 	float itp_get_rt_feed(void);
+	uint8_t itp_sync(void);
+	uint8_t itp_sync_spindle(void);
 #ifdef USE_SPINDLE
 	uint16_t itp_get_rt_spindle(void);
 #endif
@@ -47,7 +49,6 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	uint32_t itp_get_rt_line_number(void);
 #endif
-	void itp_delay(uint16_t delay);
 
 #ifdef __cplusplus
 }

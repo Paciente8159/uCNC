@@ -94,6 +94,7 @@ extern "C"
 #define STATUS_FEED_NOT_SET 41
 #define STATUS_SETTING_WRITE_FAIL 42
 #define STATUS_SETTING_PROTECTED_FAIL 43
+#define STATUS_PROGRAM_ENDED 44
 #define STATUS_CRITICAL_FAIL 255
 
 //special Grbl system commands return codes
@@ -110,8 +111,9 @@ extern "C"
 #define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
 
+#define EXEC_ALARM_EMERGENCY_STOP -1
 #define EXEC_ALARM_RESET 0
-// Grbl alarm codes. Valid values (1-255). Zero is reserved.
+// Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
 #define EXEC_ALARM_HARD_LIMIT 1
 #define EXEC_ALARM_SOFT_LIMIT 2
 #define EXEC_ALARM_ABORT_CYCLE 3
@@ -123,7 +125,6 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_APPROACH 9
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
-#define EXEC_ALARM_STARTUP 255 //this is a special alarm that signals µCNC is starting up. It's not a real alarm.
 
 //formated messages
 #define STR_EOL "\r\n"
@@ -146,7 +147,6 @@ extern "C"
 #define MSG_START __romstr__("[MSG:")
 #define MSG_END __romstr__("]" STR_EOL)
 #define MSG_FEEDBACK_1 __romstr__("Reset to continue")
-#define MSG_FEEDBACK_1 __romstr__("Reset to continue")
 #define MSG_FEEDBACK_2 __romstr__("'$H'|'$X' to unlock")
 #define MSG_FEEDBACK_3 __romstr__("Caution: Unlocked")
 #define MSG_FEEDBACK_4 __romstr__("Enabled")
@@ -159,6 +159,24 @@ extern "C"
 //#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
 #define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
+
+#define MSG_STATUS_ALARM __romstr__("Alarm")
+#define MSG_STATUS_DOOR __romstr__("Door:")
+#define MSG_STATUS_HOLD __romstr__("Hold:")
+#define MSG_STATUS_HOME __romstr__("Home")
+#define MSG_STATUS_JOG __romstr__("Jog")
+#define MSG_STATUS_RUN __romstr__("Run")
+#define MSG_STATUS_IDLE __romstr__("Idle")
+#define MSG_STATUS_CHECK __romstr__("Check")
+
+#define MSG_STATUS_MPOS __romstr__("|MPos:")
+#define MSG_STATUS_FS __romstr__("|FS:")
+#define MSG_STATUS_F __romstr__("|F:")
+#define MSG_STATUS_WCO __romstr__("|WCO:")
+#define MSG_STATUS_OVR __romstr__("|Ov:")
+#define MSG_STATUS_TOOL __romstr__("|A:")
+#define MSG_STATUS_LINE __romstr__("|Ln:")
+#define MSG_STATUS_PIN __romstr__("|Pn:")
 
 	//#define MSG_INT "%d"
 	//#define MSG_FLT "%0.3f"

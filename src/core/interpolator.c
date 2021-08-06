@@ -29,6 +29,7 @@ extern "C"
 #include <float.h>
 #include "cnc.h"
 #include "core/interpolator.h"
+#include "interface/grbl_interface.h"
 #include "interface/settings.h"
 #include "core/planner.h"
 #include "core/io_control.h"
@@ -41,6 +42,10 @@ extern "C"
 
 //integrator calculates 10ms (minimum size) time frame windows
 #define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
+
+//Itp update flags
+#define ITP_NOUPDATE 0
+#define ITP_UPDATE_ISR 1
 
     //contains data of the block being executed by the pulse routine
     //this block has the necessary data to execute the Bresenham line algorithm
@@ -78,7 +83,7 @@ extern "C"
         bool spindle_inv;
 #endif
         float feed;
-        uint8_t update_speed;
+        uint8_t update_itp;
     } itp_segment_t;
 
     //circular buffers
@@ -105,11 +110,11 @@ extern "C"
 
     static void itp_sgm_buffer_read(void);
     static void itp_sgm_buffer_write(void);
-    FORCEINLINE static bool itp_sgm_is_empty(void);
     FORCEINLINE static bool itp_sgm_is_full(void);
     FORCEINLINE static void itp_sgm_clear(void);
     FORCEINLINE static void itp_blk_buffer_write(void);
     static void itp_blk_clear(void);
+    FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
 
     /*
 	Interpolator segment buffer functions
@@ -139,11 +144,6 @@ extern "C"
         }
 
         itp_sgm_data_segments++;
-    }
-
-    static bool itp_sgm_is_empty(void)
-    {
-        return (!itp_sgm_data_segments);
     }
 
     static bool itp_sgm_is_full(void)
@@ -227,25 +227,6 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
                 itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
-
-                if (itp_cur_plan_block->dwell != 0)
-                {
-                    itp_delay(itp_cur_plan_block->dwell);
-                }
-
-                if (itp_cur_plan_block->total_steps == 0)
-                {
-#ifdef USE_SPINDLE
-                    if (itp_cur_plan_block->dwell == 0) //if dwell is 0 then run a single loop to updtate outputs (spindle)
-                    {
-                        itp_delay(0);
-                    }
-#endif
-                    //no motion action (doesn't need a interpolator block = NULL)
-                    itp_cur_plan_block = NULL;
-                    planner_discard_block();
-                    break; //exits after adding the dwell segment if motion is 0 (empty motion block)
-                }
 
 //overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -355,7 +336,7 @@ extern "C"
             */
                 speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
                 profile_steps_limit = accel_until;
-                sgm->update_speed = 1;
+                sgm->update_itp = ITP_UPDATE_ISR;
                 is_initial_transition = true;
             }
             else if (remaining_steps > deaccel_from)
@@ -363,14 +344,14 @@ extern "C"
                 //constant speed segment
                 speed_change = 0;
                 profile_steps_limit = deaccel_from;
-                sgm->update_speed = is_initial_transition ? 2 : 0;
+                sgm->update_itp = is_initial_transition ? ITP_UPDATE_ISR : ITP_NOUPDATE;
                 is_initial_transition = false;
             }
             else
             {
                 speed_change = -half_speed_change;
                 profile_steps_limit = 0;
-                sgm->update_speed = 1;
+                sgm->update_itp = ITP_UPDATE_ISR;
                 is_initial_transition = true;
             }
 
@@ -492,7 +473,7 @@ extern "C"
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
-        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN) && !itp_sgm_is_empty()) //exec state is not hold or alarm and not already running
+        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && itp_sgm_data_segments) //exec state is not hold or alarm and not already running
         {
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
@@ -507,9 +488,13 @@ extern "C"
 
     void itp_stop(void)
     {
+        // any stop command while running triggers an HALT alarm
+        if (cnc_get_exec_state(EXEC_RUN))
+        {
+            cnc_set_exec_state(EXEC_HALT);
+        }
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-        cnc_clear_exec_state(EXEC_RUN);
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
         {
@@ -576,6 +561,30 @@ extern "C"
         return feed;
     }
 
+    uint8_t itp_sync(void)
+    {
+        while (!planner_buffer_is_empty() || itp_sgm_data_segments)
+        {
+            if (!cnc_dotasks())
+            {
+                return STATUS_CRITICAL_FAIL;
+            }
+        }
+
+        return STATUS_OK;
+    }
+
+    //sync spindle in a stopped motion
+    uint8_t itp_sync_spindle(void)
+    {
+#ifdef USE_SPINDLE
+        uint8_t spindle = 0;
+        bool spindle_inv = 0;
+        planner_get_spindle_speed(0, &spindle, &spindle_inv);
+        io_set_spindle(spindle, spindle_inv);
+#endif
+    }
+
 #ifdef USE_SPINDLE
     uint16_t itp_get_rt_spindle(void)
     {
@@ -629,7 +638,7 @@ extern "C"
         if (itp_rt_sgm == NULL)
         {
             //if buffer is not empty
-            if (!itp_sgm_is_empty())
+            if (itp_sgm_data_segments)
             {
                 //loads a new segment
                 itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
@@ -691,9 +700,9 @@ extern "C"
                     io_set_dirs(itp_rt_sgm->block->dirbits);
                 }
 
-                if (itp_rt_sgm->update_speed)
+                if (itp_rt_sgm->update_itp)
                 {
-                    if (itp_rt_sgm->update_speed & 0x01)
+                    if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
@@ -701,14 +710,15 @@ extern "C"
                     io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
                     itp_rt_spindle = itp_rt_sgm->spindle;
 #endif
-                    itp_rt_sgm->update_speed = 0;
+                    itp_rt_sgm->update_itp = ITP_NOUPDATE;
                 }
             }
             else
             {
                 mcu_disable_global_isr();
                 itp_busy = false;
-                itp_stop(); //the buffer is empty. The ISR can stop
+                cnc_clear_exec_state(EXEC_RUN); //this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+                itp_stop();                     //the buffer is empty. The ISR can stop
                 return;
             }
         }
@@ -957,8 +967,16 @@ extern "C"
         itp_busy = false;
     }
 
-    void itp_delay(uint16_t delay)
+    void itp_nomotion(uint8_t type, uint16_t delay)
     {
+        while (itp_sgm_is_full())
+        {
+            if (!cnc_dotasks())
+            {
+                return;
+            }
+        }
+
         itp_sgm_data[itp_sgm_data_write].block = NULL;
         //clicks every 100ms (10Hz)
         if (delay)
@@ -969,9 +987,9 @@ extern "C"
         {
             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
         }
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 1);
-        itp_sgm_data[itp_sgm_data_write].update_speed = 1;
+        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
         itp_sgm_data[itp_sgm_data_write].feed = 0;
+        itp_sgm_data[itp_sgm_data_write].update_itp = type;
 #ifdef USE_SPINDLE
 #ifdef LASER_MODE
         if (g_settings.laser_mode)

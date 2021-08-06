@@ -44,6 +44,7 @@ void parser_update_coolant(uint8_t state);
 void parser_toogle_coolant(uint8_t state);
 #endif*/
 	void parser_sync_probe(void);
+	void parser_update_probe_pos(void);
 	uint8_t parser_get_probe_result(void);
 	void parser_parameters_load(void);
 	void parser_parameters_reset(void);

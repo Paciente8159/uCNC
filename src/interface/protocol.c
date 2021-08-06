@@ -60,7 +60,7 @@ extern "C"
         protocol_busy = false;
     }
 
-    void protocol_send_alarm(uint8_t alarm)
+    void protocol_send_alarm(int8_t alarm)
     {
         protocol_busy = true;
         serial_print_str(MSG_ALARM);
@@ -108,7 +108,7 @@ extern "C"
         float axis[MAX(AXIS_COUNT, 3)];
         if (parser_get_wco(axis))
         {
-            serial_print_str(__romstr__("|WCO:"));
+            serial_print_str(MSG_STATUS_WCO);
             serial_print_fltarr(axis, AXIS_COUNT);
             return;
         }
@@ -116,7 +116,7 @@ extern "C"
         uint8_t ovr[3];
         if (planner_get_overflows(ovr))
         {
-            serial_print_str(__romstr__("|Ov:"));
+            serial_print_str(MSG_STATUS_OVR);
             serial_print_int(ovr[0]);
             serial_putc(',');
             serial_print_int(ovr[1]);
@@ -125,7 +125,7 @@ extern "C"
             uint8_t tools = protocol_get_tools();
             if (tools)
             {
-                serial_print_str(__romstr__("|A:"));
+                serial_print_str(MSG_STATUS_TOOL);
                 if (CHECKFLAG(tools, 4))
                 {
                     serial_putc('S');
@@ -163,6 +163,7 @@ extern "C"
 #endif
         uint8_t controls = io_get_controls();
         uint8_t limits = io_get_limits();
+        bool probe = io_get_probe();
         uint8_t state = cnc_get_exec_state(0xFF);
         uint8_t filter = 0x80;
         while (!(state & filter) && filter)
@@ -177,11 +178,11 @@ extern "C"
         {
             switch (state)
             {
-            case EXEC_ABORT:
-                serial_print_str(__romstr__("Abort"));
+            case EXEC_KILL:
+                serial_print_str(MSG_STATUS_ALARM);
                 break;
             case EXEC_DOOR:
-                serial_print_str(__romstr__("Door:"));
+                serial_print_str(MSG_STATUS_DOOR);
                 if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
                 {
 
@@ -206,12 +207,11 @@ extern "C"
                     }
                 }
                 break;
-            case EXEC_LIMITS:
-            case EXEC_NOHOME:
-                serial_print_str(__romstr__("Alarm"));
+            case EXEC_HALT:
+                serial_print_str(MSG_STATUS_ALARM);
                 break;
             case EXEC_HOLD:
-                serial_print_str(__romstr__("Hold:"));
+                serial_print_str(MSG_STATUS_HOLD);
                 if (cnc_get_exec_state(EXEC_RUN))
                 {
                     serial_putc('1');
@@ -222,46 +222,47 @@ extern "C"
                 }
                 break;
             case EXEC_HOMING:
-                serial_print_str(__romstr__("Home"));
+                serial_print_str(MSG_STATUS_HOME);
                 break;
             case EXEC_JOG:
-                serial_print_str(__romstr__("Jog"));
+                serial_print_str(MSG_STATUS_JOG);
                 break;
+            case EXEC_RESUMING:
             case EXEC_RUN:
-                serial_print_str(__romstr__("Run"));
+                serial_print_str(MSG_STATUS_RUN);
                 break;
             default:
-                serial_print_str(__romstr__("Idle"));
+                serial_print_str(MSG_STATUS_IDLE);
                 break;
             }
         }
         else
         {
-            serial_print_str(__romstr__("Check"));
+            serial_print_str(MSG_STATUS_CHECK);
         }
 
-        serial_print_str(__romstr__("|MPos:"));
+        serial_print_str(MSG_STATUS_MPOS);
         serial_print_fltarr(axis, AXIS_COUNT);
 
 #ifdef USE_SPINDLE
-        serial_print_str(__romstr__("|FS:"));
+        serial_print_str(MSG_STATUS_FS);
 #else
-    serial_print_str(__romstr__("|F:"));
+    serial_print_str(MSG_STATUS_F);
 #endif
-        serial_print_int((uint16_t)feed);
+        serial_print_fltunits(feed);
 #ifdef USE_SPINDLE
         serial_putc(',');
         serial_print_int(spindle);
 #endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-        serial_print_str(__romstr__("|Ln:"));
+        serial_print_str(MSG_STATUS_LINE);
         serial_print_long(itp_get_rt_line_number());
 #endif
 
-        if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) | CHECKFLAG(limits, LIMITS_MASK))
+        if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
         {
-            serial_print_str(__romstr__("|Pn:"));
+            serial_print_str(MSG_STATUS_PIN);
 
             if (CHECKFLAG(controls, ESTOP_MASK))
             {
@@ -278,7 +279,7 @@ extern "C"
                 serial_putc('H');
             }
 
-            if (io_get_probe())
+            if (probe)
             {
                 serial_putc('P');
             }
@@ -431,7 +432,7 @@ extern "C"
         serial_putc(' ');
 
         serial_putc('F');
-        serial_print_int(feed);
+        serial_print_fltunits(feed);
         serial_putc(' ');
 
         serial_putc('S');
@@ -501,7 +502,7 @@ extern "C"
     void protocol_send_cnc_settings(void)
     {
         protocol_busy = true;
-        protocol_send_gcode_setting_line_int(0, g_settings.max_step_rate);
+        protocol_send_gcode_setting_line_flt(0, g_settings.max_step_rate);
 #ifdef EMULATE_GRBL_STARTUP
         // just adds this for compatibility
         // this setting is not used

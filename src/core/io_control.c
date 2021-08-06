@@ -43,49 +43,37 @@ extern "C"
         {
             if (limits)
             {
-                if (cnc_get_exec_state(EXEC_RUN))
-                {
-                    if (!cnc_get_exec_state(EXEC_HOMING)) //if not in a homing motion triggers an alarm
-                    {
-                        if (g_settings.homing_enabled)
-                        {
-                            cnc_set_exec_state(EXEC_NOHOME); //if motions was executing flags home position lost
-                        }
-
-                        cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-                    }
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-                    else
-                    {
+                if (cnc_get_exec_state(EXEC_RUN) & cnc_get_exec_state(EXEC_HOMING))
+                {
 //if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE_AXIS0
-                        if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
-                        {
-                            itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
+                    if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
+                    {
+                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
 
-                            if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
-                            {
-                                return; //exits and doesn't trip the alarm
-                            }
+                        if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                        {
+                            return; //exits and doesn't trip the alarm
                         }
+                    }
 #endif
 #ifdef DUAL_DRIVE_AXIS1
-                        if (limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                    if (limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                    {
+                        if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
                         {
-                            if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
-                            {
-                                itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
-                            }
+                            itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
                         }
-#endif
                     }
 #endif
                 }
+#endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
                 itp_lock_stepper(0); //unlocks axis
 #endif
-                cnc_set_exec_state(EXEC_LIMITS);
                 itp_stop();
+                cnc_set_exec_state(EXEC_HALT);
             }
         }
     }
@@ -97,7 +85,7 @@ extern "C"
 #ifdef ESTOP
         if (CHECKFLAG(controls, ESTOP_MASK))
         {
-            cnc_call_rt_command(CMD_CODE_RESET);
+            cnc_set_exec_state(EXEC_KILL);
             return; //forces exit
         }
 #endif
@@ -105,13 +93,13 @@ extern "C"
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
         {
             //safety door activates hold simultaneously to start the controlled stop
-            cnc_call_rt_command(CMD_CODE_SAFETY_DOOR);
+            cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
         }
 #endif
 #ifdef FHOLD
         if (CHECKFLAG(controls, FHOLD_MASK))
         {
-            cnc_call_rt_command(CMD_CODE_FEED_HOLD);
+            cnc_set_exec_state(EXEC_HOLD);
         }
 #endif
 #ifdef CS_RES
@@ -493,7 +481,7 @@ extern "C"
 #endif
     }
 
-    void io_enable_steps(void)
+    void io_disable_steppers(void)
     {
 #ifdef STEPPER_ENABLE
         mcu_set_output(STEPPER_ENABLE);
@@ -512,6 +500,28 @@ extern "C"
 #endif
 #ifdef STEPPER5_ENABLE
         mcu_set_output(STEPPER5_ENABLE);
+#endif
+    }
+
+    void io_enable_steppers(void)
+    {
+#ifdef STEPPER_ENABLE
+        mcu_clear_output(STEPPER_ENABLE);
+#endif
+#ifdef STEPPER1_ENABLE
+        mcu_clear_output(STEPPER1_ENABLE);
+#endif
+#ifdef STEPPER2_ENABLE
+        mcu_clear_output(STEPPER2_ENABLE);
+#endif
+#ifdef STEPPER3_ENABLE
+        mcu_clear_output(STEPPER3_ENABLE);
+#endif
+#ifdef STEPPER4_ENABLE
+        mcu_clear_output(STEPPER4_ENABLE);
+#endif
+#ifdef STEPPER5_ENABLE
+        mcu_clear_output(STEPPER5_ENABLE);
 #endif
     }
 

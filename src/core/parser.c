@@ -256,6 +256,7 @@ extern "C"
     static parser_parameters_t parser_parameters;
     static uint8_t parser_wco_counter;
     static float g92permanentoffset[AXIS_COUNT];
+    static int32_t rt_probe_step_pos[STEPPER_COUNT];
 
     static unsigned char parser_get_next_preprocessed(bool peek);
     FORCEINLINE static uint8_t parser_get_comment(void);
@@ -271,7 +272,7 @@ extern "C"
     FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
     static uint8_t parser_grbl_command(void);
     FORCEINLINE static uint8_t parser_gcode_command(void);
-    FORCEINLINE static void parser_discard_command(void);
+    static void parser_discard_command(void);
     static void parser_reset();
 
     /*
@@ -305,20 +306,20 @@ extern "C"
             }
             else
             {
-
                 return error;
             }
         }
 
         if (error == GRBL_JOG_CMD)
         {
-            if (cnc_get_exec_state(EXEC_GCODE_LOCKED & ~EXEC_JOG))
+            if (cnc_get_exec_state(~EXEC_JOG))
             {
                 return STATUS_SYSTEM_GC_LOCK;
             }
         }
-        else if (cnc_get_exec_state(EXEC_GCODE_LOCKED))
+        else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
         {
+            parser_discard_command();
             return STATUS_SYSTEM_GC_LOCK;
         }
 
@@ -423,7 +424,13 @@ extern "C"
 
     void parser_sync_probe(void)
     {
-        itp_get_rt_position(parser_parameters.last_probe_position);
+        itp_get_rt_position(rt_probe_step_pos);
+    }
+
+    void parser_update_probe_pos(void)
+    {
+        kinematics_apply_forward(rt_probe_step_pos, parser_parameters.last_probe_position);
+        kinematics_apply_reverse_transform(parser_parameters.last_probe_position);
     }
 
     static uint8_t parser_grbl_command(void)
@@ -620,7 +627,7 @@ extern "C"
             protocol_send_feedback(MSG_FEEDBACK_9);
             return STATUS_OK;
         case GRBL_UNLOCK:
-            cnc_unlock();
+            cnc_unlock(true);
             if (cnc_get_exec_state(EXEC_DOOR))
             {
                 return STATUS_CHECK_DOOR;
@@ -633,7 +640,7 @@ extern "C"
                 return STATUS_SETTING_DISABLED;
             }
 
-            cnc_unlock();
+            cnc_unlock(true);
             if (cnc_get_exec_state(EXEC_DOOR))
             {
                 return STATUS_CHECK_DOOR;
@@ -782,7 +789,7 @@ extern "C"
                 //P is not between 1 and N of coord systems
                 if (words->p != 28 && words->p != 30)
                 {
-                    if (words->p < 1 || words->p > COORD_SYS_COUNT)
+                    if (words->p > COORD_SYS_COUNT)
                     {
                         return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
                     }
@@ -961,10 +968,15 @@ extern "C"
         float planner_last_pos[AXIS_COUNT];
         motion_data_t block_data = {0};
 
-        //stoping from previous command is active
+        //stoping from previous command M2 or M30 command
         if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
         {
-            return STATUS_OK;
+            if (new_state->groups.stopping == 3 || new_state->groups.stopping == 4)
+            {
+                return STATUS_PROGRAM_ENDED;
+            }
+
+            new_state->groups.stopping = 0;
         }
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -1031,7 +1043,7 @@ extern "C"
             if (!g_settings.laser_mode)
             {
 #endif
-                block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 10.0);
+                block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #ifdef LASER_MODE
             }
 #endif
@@ -1058,26 +1070,15 @@ extern "C"
         if (new_state->groups.nonmodal == G4)
         {
             //calc dwell in time in 10ms increments
-            block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p * 10.0));
-#ifdef LASER_MODE
-            //laser disabled in dwell
-            int16_t laserpwm = block_data.spindle;
-            if (g_settings.laser_mode)
-            {
-                block_data.spindle = 0;
-                block_data.update_tools = true;
-            }
-#endif
-            if (mc_dwell(&block_data))
-            {
-                return STATUS_CRITICAL_FAIL;
-            }
-
-#ifdef LASER_MODE
-            //laser disabled in dwell
-            block_data.spindle = laserpwm;
-#endif
+            block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p));
             new_state->groups.nonmodal = 0;
+        }
+
+        //after all spindle, overrides, coolant and dwells are set
+        //execute sync if dwell is present
+        if (block_data.dwell)
+        {
+            mc_dwell(&block_data);
         }
 
         //11. set active plane (G17, G18, G19)
@@ -1115,26 +1116,26 @@ extern "C"
             for (uint8_t i = AXIS_COUNT; i != 0;)
             {
                 i--;
-                words->xyzabc[i] *= 25.4f;
+                words->xyzabc[i] *= INCH_MM_MULT;
             }
 
             //check if any i, j or k words were used
             if (CHECKFLAG(cmd->words, GCODE_IJK_AXIS))
             {
-                words->ijk[0] *= 25.4f;
-                words->ijk[1] *= 25.4f;
-                words->ijk[2] *= 25.4f;
+                words->ijk[0] *= INCH_MM_MULT;
+                words->ijk[1] *= INCH_MM_MULT;
+                words->ijk[2] *= INCH_MM_MULT;
             }
 
             //if normal feed mode convert to mm/s
             if (CHECKFLAG(cmd->words, GCODE_WORD_F) && (new_state->groups.feedrate_mode != G93))
             {
-                new_state->feedrate *= 25.4f;
+                new_state->feedrate *= INCH_MM_MULT;
             }
 
             if (CHECKFLAG(cmd->words, GCODE_WORD_R))
             {
-                words->r *= 25.4f;
+                words->r *= INCH_MM_MULT;
             }
         }
 
@@ -1190,7 +1191,7 @@ extern "C"
         switch (new_state->groups.nonmodal)
         {
         case G10: //G10
-            index = (uint8_t)words->p;
+            index = ((uint8_t)words->p) ? words->p : (parser_parameters.coord_system_index + 1);
             switch (index)
             {
             case 28:
@@ -1307,6 +1308,10 @@ extern "C"
         if (index <= G30HOME)
         {
             settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&axis[0], PARSER_PARAM_SIZE);
+            if (index == parser_parameters.coord_system_index)
+            {
+                memcpy(parser_parameters.coord_system_offset, axis, sizeof(parser_parameters.coord_system_offset));
+            }
             parser_wco_counter = 0;
         }
 
@@ -1349,7 +1354,7 @@ extern "C"
             for (uint8_t i = AXIS_COUNT; i != 0;)
             {
                 i--;
-                parser_parameters.g92_offset[i] = planner_last_pos[i] - parser_parameters.coord_system_offset[i] - axis[i];
+                parser_parameters.g92_offset[i] = -(axis[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
             }
             memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
             //settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
@@ -1464,7 +1469,7 @@ extern "C"
                     parser_parameters.last_probe_ok = 0;
                     if (!(new_state->groups.motion & 0x01))
                     {
-                        cnc_alarm(probe_error);
+                        return probe_error;
                     }
                 }
                 parser_parameters.last_probe_ok = 1;
@@ -1477,33 +1482,41 @@ extern "C"
         }
 
         //stop (M0, M1, M2, M30, M60) (not implemented yet).
+        bool hold = false;
+        bool resetparser = false;
         switch (new_state->groups.stopping)
         {
         case 1: //M0
+        case 6: //M60 (pallet change has no effect)
+            hold = true;
             break;
         case 2: //M1
+#ifdef M1_CONDITION_ASSERT
+            hold = M1_CONDITION_ASSERT;
+#endif
             break;
         case 3: //M2
-        case 4: //M30
-            //reset to initial states
-            parser_reset();
-            protocol_send_feedback(MSG_FEEDBACK_8);
+        case 4: //M30 (pallet change has no effect)
+            hold = true;
+            resetparser = true;
             break;
-        case 6: //M60
-            break;
+        }
+
+        if (hold)
+        {
+            mc_pause();
+            if (resetparser)
+            {
+                cnc_stop();
+                parser_reset();
+                protocol_send_feedback(MSG_FEEDBACK_8);
+            }
         }
 
         //if reached here the execution was not intersected
         //send a spindle and coolant update if needed
         if (block_data.update_tools)
         {
-#ifdef LASER_MODE
-            //laser disabled in G0
-            if (g_settings.laser_mode)
-            {
-                block_data.spindle = 0;
-            }
-#endif
             return mc_update_tools(&block_data);
         }
 

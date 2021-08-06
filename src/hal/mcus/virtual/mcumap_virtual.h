@@ -94,6 +94,4 @@ extern virtports_t virtualports;
 #define mcu_tx_ready() true
 #define mcu_rx_ready() true
 
-#define mcu_delay_ms(x) delay(x)
-
 #endif

@@ -5,6 +5,30 @@
 
 # Changelog
 
+## [1.2.1] - 2021-08-06
+
+Version 1.2.1 is a minor revision from the previous version. This version aims mainly to improve the overall response of µCNC and fix a few bugs.
+The following things were changed:
+
+### Added
+  - added support for G10 L2 P0 (current coordinate system) (#61)
+  - implemented codes M0 and M1. M60 is also supported but behave like M0 (#58)
+
+### Changed
+  - revised and improved interlocking system that is more straight forward (code flow). Also this makes µCNC act more inline with the interface described by Grbl (#63)
+  - all hard/soft limit alarms cause the firmware to lock until software reset is issued as described by Grbl (#63)
+  - readapted homing and probing to the new interlocking logic (#63)
+  - startup code improvements (#62)
+  - modified µCNC to execute synchronous motions at motion control level. This reduces the pipeline travelling of the code at the expense of additional restart delay that is neglectable (#59)
+  - dropped the Abort status in favor of the Alarm status to be more Grbl compliant (#59)
+  - blocked status reports during startup blocks to prevent startup block ill-formated strings that were causing the interface software to correctly recognize the responses (#59)
+
+### Fixed
+  - fixed axis drifting after homing. This happened on all motions until an explicit coordinate was set for that axis (#63)
+  - fixed hidden probe alarm status that only showed if other input alarms were active (#63)
+  - G92 and G5x.x offset calculations (#61)
+  - fixed inch report mode converted values output (#60)
+
 ## [1.2.0] - 2021-07-31
 
 Version 1.2.0 is a major revision from the previous version that packs lots of new features and bug fixes.
@@ -239,6 +263,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.1
 [1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0
 [1.1.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.2
 [1.1.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.1
