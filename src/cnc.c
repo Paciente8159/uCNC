@@ -203,7 +203,7 @@ extern "C"
         cnc_unlock(true);
 
         float target[AXIS_COUNT];
-        motion_data_t block_data;
+        motion_data_t block_data = {0};
         mc_get_position(target);
 
         for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -225,6 +225,7 @@ extern "C"
         //reset position
         itp_reset_rt_position();
         planner_sync_position();
+        mc_resync_position();
     }
 
     void cnc_alarm(uint8_t code)

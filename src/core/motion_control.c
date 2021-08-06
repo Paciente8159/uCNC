@@ -566,7 +566,7 @@ extern "C"
         max_home_dist = g_settings.homing_offset * 5.0f;
 
         //sync's the planner and motion control done when clearing the planner
-        //planner_sync_position();
+        planner_sync_position();
         mc_resync_position();
         mc_get_position(target);
         if (g_settings.homing_dir_invert_mask & axis_mask)
