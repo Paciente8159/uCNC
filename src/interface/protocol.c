@@ -60,7 +60,7 @@ extern "C"
         protocol_busy = false;
     }
 
-    void protocol_send_alarm(uint8_t alarm)
+    void protocol_send_alarm(int8_t alarm)
     {
         protocol_busy = true;
         serial_print_str(MSG_ALARM);

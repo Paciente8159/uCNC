@@ -356,8 +356,6 @@ extern "C"
 #endif
         //resyncs position with interpolator
         planner_sync_position();
-        //forces motion control to resync postition after clearing the planner buffer
-        mc_resync_position();
     }
 
     planner_block_t *planner_get_block(void)
@@ -583,6 +581,8 @@ extern "C"
     {
         //resyncs the position with the interpolator
         itp_get_rt_position(planner_step_pos);
+        //forces the motion control to resync as well
+        mc_resync_position();
     }
 
     void planner_sync_tools(motion_data_t *block_data)

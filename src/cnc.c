@@ -39,8 +39,9 @@ extern "C"
 #include "modules/pid_controller.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING 1
-#define LOOP_ERROR_RESET 2
+#define LOOP_RUNNING_FIRST_RUN 1
+#define LOOP_RUNNING 2
+#define LOOP_ERROR_RESET 3
 
 #define UNLOCK_ERROR 0
 #define UNLOCK_LOCKED 1
@@ -54,7 +55,7 @@ extern "C"
         volatile uint8_t rt_cmd;
         volatile uint8_t feed_ovr_cmd;
         volatile uint8_t tool_ovr_cmd;
-        volatile uint8_t alarm;
+        volatile int8_t alarm;
     } cnc_state_t;
 
     static cnc_state_t cnc_state;
@@ -92,7 +93,7 @@ extern "C"
         // tries to reset. If fails jumps to error
         if (cnc_reset())
         {
-            cnc_state.loop_state = LOOP_RUNNING;
+            cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
             serial_select(SERIAL_UART);
 
             do
@@ -106,7 +107,10 @@ extern "C"
         if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
             io_disable_steppers();
-            protocol_send_alarm(cnc_state.alarm);
+            if (cnc_state.alarm)
+            {
+                protocol_send_alarm(cnc_state.alarm);
+            }
             cnc_check_fault_systems();
             do
             {
@@ -141,6 +145,8 @@ extern "C"
             {
                 protocol_send_error(error);
             }
+
+            cnc_state.loop_state = LOOP_RUNNING;
         }
     }
 
@@ -225,10 +231,9 @@ extern "C"
         //reset position
         itp_reset_rt_position();
         planner_sync_position();
-        mc_resync_position();
     }
 
-    void cnc_alarm(uint8_t code)
+    void cnc_alarm(int8_t code)
     {
         cnc_set_exec_state(EXEC_KILL);
         cnc_stop();
@@ -286,6 +291,15 @@ extern "C"
             io_set_steps(g_settings.step_invert_mask);
             io_set_dirs(g_settings.dir_invert_mask);
             io_enable_steppers();
+
+            if (cnc_state.loop_state < LOOP_RUNNING)
+            {
+                serial_select(SERIAL_N0);
+                cnc_exec_cmd();
+                serial_select(SERIAL_N1);
+                cnc_exec_cmd();
+                serial_select(SERIAL_UART);
+            }
         }
 
         return UNLOCK_OK;
@@ -377,14 +391,6 @@ extern "C"
         protocol_send_string(MSG_STARTUP);
 
         uint8_t ok = cnc_unlock(false);
-
-        if (ok == UNLOCK_OK)
-        {
-            serial_select(SERIAL_N0);
-            cnc_exec_cmd();
-            serial_select(SERIAL_N1);
-            cnc_exec_cmd();
-        }
 
         if (ok)
         {
@@ -661,7 +667,7 @@ extern "C"
         }
 #endif
 
-        if (cnc_get_exec_state(EXEC_KILL))
+        if (cnc_get_exec_state(EXEC_KILL) && cnc_state.alarm)
         {
             protocol_send_feedback(MSG_FEEDBACK_1);
         }
