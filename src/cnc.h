@@ -29,7 +29,7 @@ extern "C"
 
 #define RT_CMD_REPORT 1
 #define RT_CMD_CYCLE_START 2
-#define RT_CMD_ABORT 128
+#define RT_CMD_RESET 4
 
 //feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -57,10 +57,10 @@ extern "C"
 #define EXEC_HOLD 4												// Feed hold is active
 #define EXEC_JOG 8												// Jogging in execution
 #define EXEC_HOMING 16											// Homing in execution
-#define EXEC_LIMITS 32											// Limit switch is active or position lost
+#define EXEC_HALT 32											// Limit switch is active or position lost due to abrupt stop
 #define EXEC_DOOR 64											// Safety door open
 #define EXEC_KILL 128											// Emergency stop
-#define EXEC_ALARM (EXEC_LIMITS | EXEC_DOOR | EXEC_KILL)		// System alarms
+#define EXEC_ALARM (EXEC_HALT | EXEC_DOOR | EXEC_KILL)			// System alarms
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255										// All states
 
@@ -193,9 +193,9 @@ extern "C"
 	//do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
 	void cnc_home(void);
-	void cnc_alarm(uint8_t code);
+	void cnc_alarm(int8_t code);
 	void cnc_stop(void);
-	void cnc_unlock(void);
+	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);
 
 	uint8_t cnc_get_exec_state(uint8_t statemask);

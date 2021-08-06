@@ -500,12 +500,14 @@ extern "C"
 #endif
 #endif
 
-        cnc_unlock();
+        cnc_unlock(true);
 
         //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
+        io_limits_isr();
+        if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
         {
-            return EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE;
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
+            return STATUS_CRITICAL_FAIL;
         }
 
         io_set_homing_limits_filter(axis_limit);
@@ -530,10 +532,12 @@ extern "C"
         block_data.spindle = 0;
         block_data.dwell = 0;
         block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
-        cnc_unlock();
-        mc_line(target, &block_data);
-        //flags homing clear by the unlock
+
+        cnc_unlock(true);
+        //re-flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
+        mc_line(target, &block_data);
+
         do
         {
             if (!cnc_dotasks())
@@ -547,25 +551,22 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_KILL))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
-
         cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
 
         //the wrong switch was activated bails
         if (!CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
         //back off from switch at lower speed
         max_home_dist = g_settings.homing_offset * 5.0f;
 
         //sync's the planner and motion control done when clearing the planner
-        //planner_sync_position();
+        planner_sync_position();
         mc_resync_position();
         mc_get_position(target);
         if (g_settings.homing_dir_invert_mask & axis_mask)
@@ -577,11 +578,11 @@ extern "C"
         block_data.feed = g_settings.homing_slow_feed_rate;
         block_data.total_steps = ABS(max_home_dist);
         block_data.steps[axis] = max_home_dist;
-        //unlocks the machine for next motion (this will clear the EXEC_LIMITS flag
+        //unlocks the machine for next motion (this will clear the EXEC_HALT flag
         //temporary inverts the limit mask to trigger ISR on switch release
         g_settings.limits_invert_mask ^= axis_limit;
         //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
-        cnc_unlock();
+        cnc_unlock(true);
         mc_line(target, &block_data);
         //flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
@@ -602,17 +603,14 @@ extern "C"
         itp_clear();
         planner_clear();
 
-        if (cnc_get_exec_state(EXEC_KILL))
-        {
-            return EXEC_ALARM_HOMING_FAIL_RESET;
-        }
-
         cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         limits_flags = io_get_limits();
 
         if (CHECKFLAG(limits_flags, axis_limit))
         {
-            return EXEC_ALARM_HOMING_FAIL_APPROACH;
+            cnc_set_exec_state(EXEC_HALT);
+            cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+            return STATUS_CRITICAL_FAIL;
         }
 
         return STATUS_OK;
@@ -623,7 +621,7 @@ extern "C"
 #ifdef PROBE
         uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
         io_enable_probe();
-
+        block_data->feed = g_settings.homing_fast_feed_rate;
         mc_line(target, block_data);
 
         do
@@ -643,15 +641,18 @@ extern "C"
         } while (cnc_get_exec_state(EXEC_RUN));
 
         io_disable_probe();
-        itp_stop();
+        cnc_stop();
         itp_clear();
         planner_clear();
+        parser_update_probe_pos();
         cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
         cnc_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
-        bool probe_notok = (!invert_probe) ? io_get_probe() : !io_get_probe();
-        if (probe_notok)
+        bool probe_ok = io_get_probe();
+        probe_ok = (!invert_probe) ? probe_ok : !probe_ok;
+        if (!probe_ok)
         {
-            return EXEC_ALARM_PROBE_FAIL_CONTACT;
+            cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
+            return STATUS_CRITICAL_FAIL;
         }
 
 #endif

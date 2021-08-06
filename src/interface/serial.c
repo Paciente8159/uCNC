@@ -80,10 +80,7 @@ extern "C"
         case SERIAL_UART:
             while (serial_rx_write == serial_rx_read)
             {
-                if (!cnc_dotasks())
-                {
-                    return STATUS_CRITICAL_FAIL;
-                }
+                cnc_dotasks();
             }
 
             c = serial_rx_buffer[serial_rx_read];
@@ -154,10 +151,7 @@ extern "C"
         case SERIAL_UART:
             while (serial_rx_write == serial_rx_read)
             {
-                if (!cnc_dotasks())
-                {
-                    return STATUS_CRITICAL_FAIL;
-                }
+                cnc_dotasks();
             }
             c = serial_rx_buffer[serial_rx_read];
             switch (c)
@@ -199,10 +193,7 @@ extern "C"
         }
         while (write == serial_tx_read)
         {
-            if (!cnc_dotasks()) //on any alarm abort
-            {
-                return;
-            }
+            cnc_dotasks();
         } //while buffer is full
 
         serial_tx_buffer[serial_tx_write] = c;
@@ -214,10 +205,7 @@ extern "C"
 #else
     while (!mcu_tx_ready())
     {
-        if (!cnc_dotasks()) //on any alarm abort
-        {
-            return;
-        }
+        cnc_dotasks();
     }
     mcu_putc(c);
 #endif
@@ -352,10 +340,7 @@ extern "C"
         while (serial_tx_write != serial_tx_read)
         {
             mcu_putc(0);
-            if (!cnc_dotasks())
-            {
-                return;
-            }
+            cnc_dotasks();
         }
 #endif
     }

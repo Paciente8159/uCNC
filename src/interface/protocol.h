@@ -30,7 +30,7 @@ extern "C"
 	bool protocol_is_busy(void);
 	void protocol_send_ok(void);
 	void protocol_send_error(uint8_t error);
-	void protocol_send_alarm(uint8_t alarm);
+	void protocol_send_alarm(int8_t alarm);
 	void protocol_send_status(void);
 	void protocol_send_string(const unsigned char *__s);
 	void protocol_send_feedback(const unsigned char *__s);
