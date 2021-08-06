@@ -217,7 +217,8 @@ extern "C"
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
 
-	void io_enable_steps(void);
+	void io_enable_steppers(void);
+	void io_disable_steppers(void);
 
 #ifdef USE_SPINDLE
 	void io_set_spindle(uint8_t value, bool invert);

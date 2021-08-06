@@ -39,12 +39,12 @@ extern "C"
 #include "modules/pid_controller.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_STARTUP_BLOCK0 1
-#define LOOP_STARTUP_BLOCK1 2
-#define LOOP_RUNNING 4
-#define LOOP_ERROR_RESET 8
-#define LOOP_STARTUP_BLOCKS (LOOP_STARTUP_BLOCK0 | LOOP_STARTUP_BLOCK1)
-#define LOOP_STARTUP (LOOP_STARTUP_RESET | LOOP_STARTUP_BLOCKS)
+#define LOOP_RUNNING 1
+#define LOOP_ERROR_RESET 2
+
+#define UNLOCK_ERROR 0
+#define UNLOCK_LOCKED 1
+#define UNLOCK_OK 2
 
     typedef struct
     {
@@ -59,10 +59,11 @@ extern "C"
 
     static cnc_state_t cnc_state;
 
-    static void cnc_check_fault_systems();
-    static bool cnc_check_interlocking();
-    static void cnc_exec_rt_commands();
-    static bool cnc_reset();
+    static void cnc_check_fault_systems(void);
+    static bool cnc_check_interlocking(void);
+    static void cnc_exec_rt_commands(void);
+    static bool cnc_reset(void);
+    static void cnc_exec_cmd(void);
 
     void cnc_init(void)
     {
@@ -72,18 +73,18 @@ extern "C"
 #endif
         cnc_state.loop_state = LOOP_STARTUP_RESET;
         //initializes all systems
-        mcu_init();              //mcu
-        mcu_disable_probe_isr(); //forces probe isr disabling
-        serial_init();           //serial
-        settings_init();         //settings
-        itp_init();              //interpolator
-        planner_init();          //motion planner
-        mc_init();               //motion control
-        parser_init();           //parser
+        mcu_init();            //mcu
+        io_disable_steppers(); //disables steppers at start
+        io_disable_probe();    //forces probe isr disabling
+        serial_init();         //serial
+        settings_init();       //settings
+        itp_init();            //interpolator
+        planner_init();        //motion planner
+        mc_init();             //motion control
+        parser_init();         //parser
 #if PID_CONTROLLERS > 0
         pid_init(); //pid
 #endif
-        io_enable_steps(); //enables stepper motors
     }
 
     void cnc_run(void)
@@ -91,51 +92,20 @@ extern "C"
         // tries to reset. If fails jumps to error
         if (cnc_reset())
         {
-            cnc_state.loop_state = LOOP_STARTUP_BLOCK0;
-            serial_select(SERIAL_N0);
+            cnc_state.loop_state = LOOP_RUNNING;
+            serial_select(SERIAL_UART);
 
             do
             {
-                //process gcode commands
-                if (!serial_rx_is_empty())
-                {
-                    uint8_t error = 0;
-                    //protocol_echo();
-                    uint8_t c = serial_peek();
-                    switch (c)
-                    {
-                    case EOL: //not necessary but faster to catch empty lines and windows newline (CR+LF)
-                        serial_getc();
-                        break;
-                    default:
-                        error = parser_read_command();
-                        break;
-                    }
-                    if (!error)
-                    {
-                        protocol_send_ok();
-                    }
-                    else
-                    {
-                        protocol_send_error(error);
-                    }
-                }
-
-                if (cnc_state.loop_state != LOOP_RUNNING)
-                {
-                    cnc_state.loop_state <<= 1;
-                    if (cnc_state.loop_state == LOOP_STARTUP_BLOCK1)
-                    {
-                        serial_select(SERIAL_N1);
-                    }
-                }
+                cnc_exec_cmd();
             } while (cnc_dotasks());
         }
 
         cnc_state.loop_state = LOOP_ERROR_RESET;
         serial_flush();
-        if (cnc_state.alarm)
+        if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
+            io_disable_steppers();
             protocol_send_alarm(cnc_state.alarm);
             cnc_check_fault_systems();
             do
@@ -143,6 +113,34 @@ extern "C"
                 cnc_clear_exec_state(EXEC_ALARM);
                 cnc_dotasks();
             } while (cnc_state.alarm);
+        }
+    }
+
+    void cnc_exec_cmd(void)
+    {
+        //process gcode commands
+        if (!serial_rx_is_empty())
+        {
+            uint8_t error = 0;
+            //protocol_echo();
+            uint8_t c = serial_peek();
+            switch (c)
+            {
+            case EOL: //not necessary but faster to catch empty lines and windows newline (CR+LF)
+                serial_getc();
+                break;
+            default:
+                error = parser_read_command();
+                break;
+            }
+            if (!error)
+            {
+                protocol_send_ok();
+            }
+            else
+            {
+                protocol_send_error(error);
+            }
         }
     }
 
@@ -248,7 +246,7 @@ extern "C"
 #endif
     }
 
-    bool cnc_unlock(bool force)
+    uint8_t cnc_unlock(bool force)
     {
         //tries to clear alarms or any active hold state
         cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
@@ -267,10 +265,11 @@ extern "C"
             if (!cnc_get_exec_state(EXEC_KILL))
             {
                 protocol_send_feedback(MSG_FEEDBACK_2);
+                return UNLOCK_LOCKED;
             }
             else
             {
-                return false;
+                return UNLOCK_ERROR;
             }
         }
         else
@@ -285,10 +284,10 @@ extern "C"
 
             io_set_steps(g_settings.step_invert_mask);
             io_set_dirs(g_settings.dir_invert_mask);
-            io_enable_steps();
+            io_enable_steppers();
         }
 
-        return true;
+        return UNLOCK_OK;
     }
 
     uint8_t cnc_get_exec_state(uint8_t statemask)
@@ -376,7 +375,22 @@ extern "C"
         planner_clear();
         protocol_send_string(MSG_STARTUP);
 
-        return cnc_unlock(false);
+        uint8_t ok = cnc_unlock(false);
+
+        if (ok == UNLOCK_OK)
+        {
+            serial_select(SERIAL_N0);
+            cnc_exec_cmd();
+            serial_select(SERIAL_N1);
+            cnc_exec_cmd();
+        }
+
+        if (ok)
+        {
+            io_enable_steppers();
+        }
+
+        return (ok != 0);
     }
 
     void cnc_call_rt_command(uint8_t command)
@@ -484,7 +498,7 @@ extern "C"
                 cnc_alarm(EXEC_ALARM_RESET);
                 return;
             case RT_CMD_REPORT:
-                if (!protocol_is_busy() && !(cnc_state.loop_state & LOOP_STARTUP))
+                if (!protocol_is_busy() && cnc_state.loop_state)
                 {
                     protocol_send_status();
                     CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
