@@ -22,7 +22,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.2.0. This update added lot of new features needed for the future hardware/features support and some important bug fixes.
+µCNC current version is v1.2.1. This update added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
 
   - the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
@@ -31,6 +31,7 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
+µCNC v1.2.1 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
@@ -45,17 +46,17 @@ List of Supported G-Codes since µCNC 1.0.0-beta.2:
   - Cutter Compensation Modes: G40
   - Coordinate System Modes: G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3
   - Control Modes: G61, G61.1, G64
-  - Program Flow: M2, M30(same has M2)
+  - Program Flow: M0, M1, M2, M30(same has M2), M60(same has M0)
   - Coolant Control: M7, M8, M9
   - Spindle Control: M3, M4, M5
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
   - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
   _* also G10 L2 P28 and P30 to set homing coordinates_
+  _* also G10 L2 P0 to set the current coordinates system offset_
 ```
 
 TODO List of G-Codes in µCNC future releases:
-  - Program Flow: M0, M1 with the new HAL config
   - extending the capabilities and functions of the new HAL config
 
 ### µCNC capabilities
