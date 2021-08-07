@@ -22,7 +22,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.2.1. You can check all the changes and bug fixes in the (CHANGELOG)[https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md].
+µCNC current version is v1.2.1. You can check all the changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
 
