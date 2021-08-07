@@ -216,6 +216,11 @@ extern "C"
 	 * */
 	void mcu_eeprom_putc(uint16_t address, uint8_t value);
 
+	/**
+	 * flushes all recorded registers into the eeprom.
+	 * */
+	void mcu_eeprom_flush(void);
+
 #ifdef __cplusplus
 }
 #endif
