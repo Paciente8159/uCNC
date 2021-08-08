@@ -104,12 +104,13 @@ extern "C"
         case SERIAL_N0:
         case SERIAL_N1:
             c = mcu_eeprom_getc(serial_read_index++);
-            if (c)
+            if (c > 0 && c < 128)
             {
                 serial_putc(c);
             }
             else
             {
+                c = 0;
                 serial_putc(':');
                 serial_read_select = SERIAL_UART; // resets the serial select
             }
@@ -168,7 +169,8 @@ extern "C"
             break;
         case SERIAL_N0:
         case SERIAL_N1:
-            return mcu_eeprom_getc(serial_read_index);
+            c = mcu_eeprom_getc(serial_read_index);
+            return (c > 0 && c < 128) ? c : 0;
         }
         return EOL;
     }

@@ -1048,6 +1048,7 @@ extern "C"
 	void mcu_dotasks()
 	{
 #ifdef USB_VCP
+		tud_cdc_write_flush();
 		tud_task(); // tinyusb device task
 #endif
 #ifdef ENABLE_SYNC_RX
