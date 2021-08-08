@@ -306,33 +306,6 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 #endif
     }
 
-    FORCEINLINE static bool setting_has_changed(uint16_t address, const uint8_t *__ptr, uint8_t size)
-    {
-        uint8_t crc = 0;
-        uint8_t *__checkptr = __ptr;
-        while (size)
-        {
-            if (cnc_get_exec_state(EXEC_RUN))
-            {
-                cnc_dotasks(); //updates buffer before cycling
-            }
-
-            size--;
-            crc = crc7(*__checkptr, crc);
-            if (*(__checkptr++) != mcu_eeprom_getc(address++))
-            {
-                return true;
-            }
-        }
-
-        if (crc != mcu_eeprom_getc(address))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
     void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
     {
         uint8_t crc = 0;
@@ -342,22 +315,20 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         g_settings.step_invert_mask &= 63; //sets cloned axis to 0
 #endif
 
-        if (setting_has_changed(address, __ptr, size))
+        while (size)
         {
-            while (size)
+            if (cnc_get_exec_state(EXEC_RUN))
             {
-                if (cnc_get_exec_state(EXEC_RUN))
-                {
-                    cnc_dotasks(); //updates buffer before cycling
-                }
-
-                size--;
-                crc = crc7(*__ptr, crc);
-                mcu_eeprom_putc(address++, *(__ptr++));
+                cnc_dotasks(); //updates buffer before cycling
             }
 
-            mcu_eeprom_putc(address, crc);
+            size--;
+            crc = crc7(*__ptr, crc);
+            mcu_eeprom_putc(address++, *(__ptr++));
         }
+
+        mcu_eeprom_putc(address, crc);
+        mcu_eeprom_flush();
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
         g_settings.step_invert_mask = temp_step_inv_mask; //restores setting
