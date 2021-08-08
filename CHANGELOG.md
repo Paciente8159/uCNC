@@ -5,6 +5,18 @@
 
 # Changelog
 
+## [1.2.2] - 2021-08-08
+
+Version 1.2.2 is a minor revision an targets a couple of issues on the STM32.
+The following things were changed:
+
+### Changed
+  - minor modification to startup blocks calling. They are now executed as soon as they are called. On error the next block is not executed. (#67)
+  - improved SMT32F1 EEPROM-Flash emulation. Now uses a single page that is copied to RAM before being stored. This also fixes EEPROM using on STM32F1 making it fully functional. HAL was readapted for mcu.h. On AVR added dummy function to support new HAL. (#66)
+
+### Fixed
+  - fixed flash eeprom reading that caused SMT32F1 to hang with USB virtual COM port. SMT32F1 default value for errased flash is 0xFF and not 0x00. This caused the startup blocks to read a sequence of 0xFF chars. This was fixed by filtering the accepted values to standard asccii only. Both serial versions of SMT32F1 and AVR were not affected. (#65)
+
 ## [1.2.1] - 2021-08-06
 
 Version 1.2.1 is a minor revision from the previous version. This version aims mainly to improve the overall response of µCNC and fix a few bugs.
@@ -263,6 +275,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.2
 [1.2.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.1
 [1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0
 [1.1.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.1.2

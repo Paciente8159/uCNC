@@ -64,7 +64,7 @@ extern "C"
     static bool cnc_check_interlocking(void);
     static void cnc_exec_rt_commands(void);
     static bool cnc_reset(void);
-    static void cnc_exec_cmd(void);
+    static bool cnc_exec_cmd(void);
 
     void cnc_init(void)
     {
@@ -98,8 +98,7 @@ extern "C"
 
             do
             {
-                cnc_exec_cmd();
-            } while (cnc_dotasks());
+            } while (cnc_exec_cmd());
         }
 
         cnc_state.loop_state = LOOP_ERROR_RESET;
@@ -120,7 +119,7 @@ extern "C"
         }
     }
 
-    void cnc_exec_cmd(void)
+    bool cnc_exec_cmd(void)
     {
         //process gcode commands
         if (!serial_rx_is_empty())
@@ -148,6 +147,8 @@ extern "C"
 
             cnc_state.loop_state = LOOP_RUNNING;
         }
+
+        return cnc_dotasks();
     }
 
     bool cnc_dotasks(void)
@@ -295,9 +296,15 @@ extern "C"
             if (cnc_state.loop_state < LOOP_RUNNING)
             {
                 serial_select(SERIAL_N0);
-                cnc_exec_cmd();
+                if (!cnc_exec_cmd())
+                {
+                    return UNLOCK_ERROR;
+                }
                 serial_select(SERIAL_N1);
-                cnc_exec_cmd();
+                if (!cnc_exec_cmd())
+                {
+                    return UNLOCK_ERROR;
+                }
                 serial_select(SERIAL_UART);
             }
         }

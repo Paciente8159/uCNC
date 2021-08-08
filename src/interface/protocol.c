@@ -470,7 +470,7 @@ extern "C"
         for (;;)
         {
             settings_load(address++, &c, 1);
-            if (c)
+            if (c > 0 && c < 128)
             {
                 serial_putc(c);
             }
@@ -486,7 +486,7 @@ extern "C"
         for (;;)
         {
             settings_load(address++, &c, 1);
-            if (c)
+            if (c > 0 && c < 128)
             {
                 serial_putc(c);
             }

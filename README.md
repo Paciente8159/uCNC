@@ -22,7 +22,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.2.1. You can check all the changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current version is v1.2.2. You can check all the changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
 
@@ -36,7 +36,7 @@ These include:
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes since µCNC 1.0.0-beta.2:
+List of Supported G-Codes since µCNC 1.2.1:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
   - Feed Rate Modes: G93, G94

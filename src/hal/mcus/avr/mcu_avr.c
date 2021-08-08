@@ -1049,6 +1049,11 @@ extern "C"
 
                 sei(); // Restore interrupt flag state.
         }
+
+        void mcu_eeprom_flush()
+        {
+                //do nothing
+        }
 #endif
 
 #ifdef __cplusplus
