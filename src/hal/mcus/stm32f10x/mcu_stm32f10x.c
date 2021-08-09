@@ -869,7 +869,7 @@ extern "C"
 		COM_USART->CR3 = 0;
 		COM_USART->SR = 0;
 		// //115200 baudrate
-		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUD));
+		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUDRATE));
 		uint16_t brr = (uint16_t)baudrate;
 		baudrate -= brr;
 		brr <<= 4;

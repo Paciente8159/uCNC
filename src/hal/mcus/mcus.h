@@ -27,6 +27,7 @@ extern "C"
 #define MCU_NONE 0
 #define MCU_AVR 1
 #define MCU_STM32F10X 10
+#define MCU_SAMD21 20
 #define MCU_VIRTUAL 99
 
 #ifdef __cplusplus

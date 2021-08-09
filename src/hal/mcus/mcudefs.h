@@ -37,6 +37,10 @@ extern "C"
 #include "hal/mcus/stm32f10x/mcumap_stm32f10x.h"
 #endif
 
+#if (MCU == MCU_SAMD21)
+#include "hal/mcus/samd21/mcumap_samd21.h"
+#endif
+
 #if (MCU == MCU_VIRTUAL)
 #include "hal/mcus/virtual/mcumap_virtual.h"
 #endif

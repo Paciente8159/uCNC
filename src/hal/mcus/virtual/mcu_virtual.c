@@ -50,8 +50,8 @@
 #define F_CPU 16000000UL
 #endif
 
-#ifndef BAUD
-#define BAUD 115200
+#ifndef BAUDRATE
+#define BAUDRATE 115200
 #endif
 
 #ifndef COM_BUFFER_SIZE

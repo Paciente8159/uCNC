@@ -34,8 +34,8 @@ extern "C"
 	Defines the serial COM baud rate
 	Uses 1 start bit + 8 bit + 1 stop bit (no parity)
 */
-#ifndef BAUD
-#define BAUD 115200
+#ifndef BAUDRATE
+#define BAUDRATE 115200
 #endif
 //uncomment to enable synchronized TX (used in USB VCP)
 //enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven

@@ -61,8 +61,8 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 
-#ifndef BAUD
-#define BAUD 115200
+#ifndef BAUDRATE
+#define BAUDRATE 115200
 #endif
 
         //gets the mcu running time in ms
@@ -765,11 +765,11 @@ extern "C"
                 //Set COM port
                 // Set baud rate
                 uint16_t UBRR_value;
-#if BAUD < 57600
-                UBRR_value = ((F_CPU / (8L * BAUD)) - 1) / 2;
+#if BAUDRATE < 57600
+                UBRR_value = ((F_CPU / (8L * BAUDRATE)) - 1) / 2;
                 UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
 #else
-                UBRR_value = ((F_CPU / (4L * BAUD)) - 1) / 2;
+                UBRR_value = ((F_CPU / (4L * BAUDRATE)) - 1) / 2;
                 UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
 #endif
                 UBRRH = UBRR_value >> 8;

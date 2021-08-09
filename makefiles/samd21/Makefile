@@ -14,7 +14,7 @@
 # target
 ######################################
 TARGET = uCNC
-USE_USB = TRUE
+#USE_USB = TRUE
 
 ######################################
 # building variables
@@ -40,7 +40,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 ######################################
 # C sources
 C_SOURCES =  \
-stm32f103.c \
+samd21.c \
 main.c \
 $(call rwildcard,../../src,*.c)
 
@@ -77,7 +77,7 @@ BIN = $(CP) -O binary -S
 # CFLAGS
 #######################################
 # cpu
-CPU = -mcpu=cortex-m3
+CPU = -mcpu=cortex-m0plus
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -94,12 +94,12 @@ AS_DEFS =
 
 # C defines
 C_DEFS =  \
--DSTM32F103x6 \
--DSTM32F10X_MD \
--DBOARD=BOARD_BLUEPILL
+-DSAMD21 \
+-D__SAMD21E18A__ \
+-DBOARD=BOARD_MZERO
 
 ifdef USE_USB
-C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_STM32F1 \
+C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
 -DUSB_VCP
 endif
 
@@ -109,7 +109,6 @@ AS_INCLUDES =
 # C includes
 ifdef USE_USB
 C_HEADERS = $(call rwildcard,../../tinyusb/src/,*.h)
-C_HEADERS += $(call rwildcard,../../tinyusb/hw/mcu/st/cmsis_device_f1/Include/,*.h)
 endif
 
 
@@ -141,7 +140,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = stm32f103.ld
+LDSCRIPT = samd21.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 
