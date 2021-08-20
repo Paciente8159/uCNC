@@ -1,49 +1,15 @@
 /**
- * \file
- *
- * \brief gcc starttup file for SAMD21
- *
- * Copyright (c) 2013-2014 Atmel Corporation. All rights reserved.
- *
- * \asf_license_start
- *
- * \page License
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- *
- * 3. The name of Atmel may not be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * 4. This software may only be redistributed and used in connection with an
- *    Atmel microcontroller product.
- *
- * THIS SOFTWARE IS PROVIDED BY ATMEL "AS IS" AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT ARE
- * EXPRESSLY AND SPECIFICALLY DISCLAIMED. IN NO EVENT SHALL ATMEL BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- * \asf_license_stop
- *
+ * start up file for SAMD21
+ * This is directly derived from the SMT32F1 startup file
  */
 
-#include "samd21.h"
+#include "sam.h"
 
-/* Initialize segments */
+// /* Initialize segments */
+typedef void (*const intfunc)(void);
+
+#define WEAK __attribute__((weak))
+extern unsigned long _svtor;
 extern unsigned long _etext;
 extern unsigned long _sidata;
 extern unsigned long _sdata;
@@ -52,109 +18,17 @@ extern unsigned long _sbss;
 extern unsigned long _ebss;
 extern unsigned long _estack;
 
-/** \cond DOXYGEN_SHOULD_SKIP_THIS */
-int main(void);
-/** \endcond */
+void Reset_Handler(void) __attribute__((__interrupt__));
+void __Init_Data(void);
+void SystemInit(void);
+void Default_Handler(void);
+extern void main(void);
 
-/* Default empty handler */
-void Dummy_Handler(void);
-
-/* Cortex-M0+ core handlers */
-void NMI_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void HardFault_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SVC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void PendSV_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SysTick_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-
-/* Peripherals handlers */
-void PM_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SYSCTRL_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void WDT_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void RTC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void EIC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void NVMCTRL_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void DMAC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void USB_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void EVSYS_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM0_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM1_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM2_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM3_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM4_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void SERCOM5_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TCC0_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TCC1_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TCC2_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TC3_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TC4_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TC5_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TC6_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void TC7_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void ADC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void AC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void DAC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void PTC_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-void I2S_Handler(void) __attribute__((weak, alias("Dummy_Handler")));
-
-/* Exception Table */
-__attribute__((section(".vectors")))
-const DeviceVectors exception_table = {
-
-    /* Configure Initial Stack Pointer, using linker-generated symbols */
-    (void *)(&_estack),
-
-    (void *)Reset_Handler,
-    (void *)NMI_Handler,
-    (void *)HardFault_Handler,
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)SVC_Handler,
-    (void *)(0UL), /* Reserved */
-    (void *)(0UL), /* Reserved */
-    (void *)PendSV_Handler,
-    (void *)SysTick_Handler,
-
-    /* Configurable interrupts */
-    (void *)PM_Handler,      /*  0 Power Manager */
-    (void *)SYSCTRL_Handler, /*  1 System Control */
-    (void *)WDT_Handler,     /*  2 Watchdog Timer */
-    (void *)RTC_Handler,     /*  3 Real-Time Counter */
-    (void *)EIC_Handler,     /*  4 External Interrupt Controller */
-    (void *)NVMCTRL_Handler, /*  5 Non-Volatile Memory Controller */
-    (void *)DMAC_Handler,    /*  6 Direct Memory Access Controller */
-    (void *)USB_Handler,     /*  7 Universal Serial Bus */
-    (void *)EVSYS_Handler,   /*  8 Event System Interface */
-    (void *)SERCOM0_Handler, /*  9 Serial Communication Interface 0 */
-    (void *)SERCOM1_Handler, /* 10 Serial Communication Interface 1 */
-    (void *)SERCOM2_Handler, /* 11 Serial Communication Interface 2 */
-    (void *)SERCOM3_Handler, /* 12 Serial Communication Interface 3 */
-    (void *)SERCOM4_Handler, /* 13 Serial Communication Interface 4 */
-    (void *)SERCOM5_Handler, /* 14 Serial Communication Interface 5 */
-    (void *)TCC0_Handler,    /* 15 Timer Counter Control 0 */
-    (void *)TCC1_Handler,    /* 16 Timer Counter Control 1 */
-    (void *)TCC2_Handler,    /* 17 Timer Counter Control 2 */
-    (void *)TC3_Handler,     /* 18 Basic Timer Counter 0 */
-    (void *)TC4_Handler,     /* 19 Basic Timer Counter 1 */
-    (void *)TC5_Handler,     /* 20 Basic Timer Counter 2 */
-    (void *)TC6_Handler,     /* 21 Basic Timer Counter 3 */
-    (void *)TC7_Handler,     /* 22 Basic Timer Counter 4 */
-    (void *)ADC_Handler,     /* 23 Analog Digital Converter */
-    (void *)AC_Handler,      /* 24 Analog Comparators */
-    (void *)DAC_Handler,     /* 25 Digital Analog Converter */
-    (void *)PTC_Handler,     /* 26 Peripheral Touch Controller */
-    (void *)I2S_Handler      /* 27 Inter-IC Sound Interface */
-};
-
-/**
- * \brief This is the code that gets called on processor reset.
- * To initialize the device, and call the main() routine.
+/* Init Data
+ * Loads data from addresses defined in linker file into RAM
+ * Zero bss (statically allocated uninitialized variables)
  */
-void Reset_Handler(void)
+void __Init_Data(void)
 {
         unsigned long *src, *dst;
         /* copy the data segment into ram */
@@ -168,22 +42,218 @@ void Reset_Handler(void)
         dst = &_sbss;
         while (dst < &_ebss)
                 *(dst++) = 0;
-
-        /* Set the vector table base address */
-        SCB->VTOR = 0x00000000;
-
-        /* Branch to main function */
-        main();
-
-        /* Infinite loop */
-        while (1)
-                ;
 }
 
-/**
- * \brief Default interrupt handler for unused IRQs.
+/* This function is straight from the system_stm32f10x.c library file and
+ * is called within the startup file:
+ * 1. After each device reset the HSI is used as System clock source.
+ * 2. This function assumes that an external 8MHz crystal is used to drive the System clock.
  */
-void Dummy_Handler(void)
+void SystemInit(void)
+{
+        /* Set the correct number of wait states for 48 MHz @ 3.3v */
+        NVMCTRL->CTRLB.bit.RWS = 1;
+        /* This works around a quirk in the hardware (errata 1.2.1) -
+   the DFLLCTRL register must be manually reset to this value before
+   configuration. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+        SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+        /* Write the coarse and fine calibration from NVM. */
+        uint32_t coarse =
+            ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) & FUSES_DFLL48M_COARSE_CAL_Msk) >> FUSES_DFLL48M_COARSE_CAL_Pos;
+        uint32_t fine =
+            ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) & FUSES_DFLL48M_FINE_CAL_Msk) >> FUSES_DFLL48M_FINE_CAL_Pos;
+
+        SYSCTRL->DFLLVAL.reg = SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
+
+        /* Wait for the write to finish. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+#ifdef USB_VCP
+        SYSCTRL->DFLLCTRL.reg |=
+            /* Enable USB clock recovery mode */
+            SYSCTRL_DFLLCTRL_USBCRM |
+            /* Disable chill cycle as per datasheet to speed up locking.
+       This is specified in section 17.6.7.2.2, and chill cycles
+       are described in section 17.6.7.2.1. */
+            SYSCTRL_DFLLCTRL_CCDIS;
+
+        /* Configure the DFLL to multiply the 1 kHz clock to 48 MHz */
+        SYSCTRL->DFLLMUL.reg =
+            /* This value is output frequency / reference clock frequency,
+       so 48 MHz / 1 kHz */
+            SYSCTRL_DFLLMUL_MUL(48000) |
+            /* The coarse and fine values can be set to their minimum
+       since coarse is fixed in USB clock recovery mode and
+       fine should lock on quickly. */
+            SYSCTRL_DFLLMUL_FSTEP(1) |
+            SYSCTRL_DFLLMUL_CSTEP(1);
+        /* Closed loop mode */
+        SYSCTRL->DFLLCTRL.bit.MODE = 1;
+#endif
+
+        /* Enable the DFLL */
+        SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
+
+        /* Wait for the write to finish */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+        /* Setup GCLK0 using the DFLL @ 48 MHz */
+        GCLK->GENCTRL.reg =
+            GCLK_GENCTRL_ID(0) |
+            GCLK_GENCTRL_SRC_DFLL48M |
+            /* Improve the duty cycle. */
+            GCLK_GENCTRL_IDC |
+            GCLK_GENCTRL_GENEN;
+
+        /* Wait for the write to complete */
+        while (GCLK->STATUS.bit.SYNCBUSY)
+                ;
+
+#ifdef USE_VCP
+        USB->DEVICE.QOSCTRL.bit.CQOS = 2;
+        USB->DEVICE.QOSCTRL.bit.DQOS = 2;
+#endif
+}
+
+void Reset_Handler(void)
+{
+        /* Initialize data and bss */
+        __Init_Data();
+        unsigned long *pSrc = (unsigned long *)&_svtor;
+        SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
+        SystemInit();
+        while (1)
+        {
+                main();
+        }
+        while (1)
+        {
+        }
+}
+
+void WEAK NMI_Handler(void);
+void WEAK HardFault_Handler(void);
+void WEAK SVC_Handler(void);
+void WEAK PendSV_Handler(void);
+void WEAK SysTick_Handler(void);
+void WEAK PM_Handler(void);
+void WEAK SYSCTRL_Handler(void);
+void WEAK WDT_Handler(void);
+void WEAK RTC_Handler(void);
+void WEAK EIC_Handler(void);
+void WEAK NVMCTRL_Handler(void);
+void WEAK DMAC_Handler(void);
+void WEAK USB_Handler(void);
+void WEAK EVSYS_Handler(void);
+void WEAK SERCOM0_Handler(void);
+void WEAK SERCOM1_Handler(void);
+void WEAK SERCOM2_Handler(void);
+void WEAK SERCOM3_Handler(void);
+void WEAK SERCOM4_Handler(void);
+void WEAK SERCOM5_Handler(void);
+void WEAK TCC0_Handler(void);
+void WEAK TCC1_Handler(void);
+void WEAK TCC2_Handler(void);
+void WEAK TC3_Handler(void);
+void WEAK TC4_Handler(void);
+void WEAK TC5_Handler(void);
+void WEAK TC6_Handler(void);
+void WEAK TC7_Handler(void);
+void WEAK ADC_Handler(void);
+void WEAK AC_Handler(void);
+void WEAK DAC_Handler(void);
+void WEAK PTC_Handler(void);
+void WEAK I2S_Handler(void);
+
+__attribute__((section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
+    (intfunc)((unsigned long *)&_estack), /* The stack pointer after relocation */
+    Reset_Handler,
+    NMI_Handler,
+    HardFault_Handler,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    SVC_Handler,
+    0,
+    0,
+    PendSV_Handler,
+    SysTick_Handler,
+    PM_Handler,
+    SYSCTRL_Handler,
+    WDT_Handler,
+    RTC_Handler,
+    EIC_Handler,
+    NVMCTRL_Handler,
+    DMAC_Handler,
+    USB_Handler,
+    EVSYS_Handler,
+    SERCOM0_Handler,
+    SERCOM1_Handler,
+    SERCOM2_Handler,
+    SERCOM3_Handler,
+    SERCOM4_Handler,
+    SERCOM5_Handler,
+    TCC0_Handler,
+    TCC1_Handler,
+    TCC2_Handler,
+    TC3_Handler,
+    TC4_Handler,
+    TC5_Handler,
+    TC6_Handler,
+    TC7_Handler,
+    ADC_Handler,
+    AC_Handler,
+    DAC_Handler,
+    PTC_Handler,
+    I2S_Handler,
+};
+
+#pragma weak NMI_Handler = Default_Handler
+#pragma weak HardFault_Handler = Default_Handler
+#pragma weak SVC_Handler = Default_Handler
+#pragma weak PendSV_Handler = Default_Handler
+#pragma weak SysTick_Handler = Default_Handler
+#pragma weak PM_Handler = Default_Handler
+#pragma weak SYSCTRL_Handler = Default_Handler
+#pragma weak WDT_Handler = Default_Handler
+#pragma weak RTC_Handler = Default_Handler
+#pragma weak EIC_Handler = Default_Handler
+#pragma weak NVMCTRL_Handler = Default_Handler
+#pragma weak DMAC_Handler = Default_Handler
+#pragma weak USB_Handler = Default_Handler
+#pragma weak EVSYS_Handler = Default_Handler
+#pragma weak SERCOM0_Handler = Default_Handler
+#pragma weak SERCOM1_Handler = Default_Handler
+#pragma weak SERCOM2_Handler = Default_Handler
+#pragma weak SERCOM3_Handler = Default_Handler
+#pragma weak SERCOM4_Handler = Default_Handler
+#pragma weak SERCOM5_Handler = Default_Handler
+#pragma weak TCC0_Handler = Default_Handler
+#pragma weak TCC1_Handler = Default_Handler
+#pragma weak TCC2_Handler = Default_Handler
+#pragma weak TC3_Handler = Default_Handler
+#pragma weak TC4_Handler = Default_Handler
+#pragma weak TC5_Handler = Default_Handler
+#pragma weak TC6_Handler = Default_Handler
+#pragma weak TC7_Handler = Default_Handler
+#pragma weak ADC_Handler = Default_Handler
+#pragma weak AC_Handler = Default_Handler
+#pragma weak DAC_Handler = Default_Handler
+#pragma weak PTC_Handler = Default_Handler
+#pragma weak I2S_Handler = Default_Handler
+
+void Default_Handler(void)
 {
         while (1)
         {

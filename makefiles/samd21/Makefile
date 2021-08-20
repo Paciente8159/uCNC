@@ -14,7 +14,7 @@
 # target
 ######################################
 TARGET = uCNC
-#USE_USB = TRUE
+USE_USB = TRUE
 
 ######################################
 # building variables
@@ -115,7 +115,7 @@ endif
 # C includes
 C_INCLUDES =  \
 -I"./" \
--Idrivers \
+-Idrivers/ \
 -I"../../src/"
 
 ifdef USE_USB

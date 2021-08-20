@@ -101,18 +101,12 @@ extern "C"
 #define RX_BIT 11
 #define RX_PORT A
 #else
-#define USB_DM_BIT 11
+#define USB_DM_BIT 24
 #define USB_DM_PORT A
-#define USB_DP_BIT 12
+#define USB_DM_MUX G
+#define USB_DP_BIT 25
 #define USB_DP_PORT A
-#define STEP4_BIT 3	   //assigns STEP4 pin
-#define STEP4_PORT A   //assigns STEP4 port
-#define DIR4_BIT 7	   //assigns DIR4 pin
-#define DIR4_PORT A	   //assigns DIR4 port
-#define LIMIT_B_BIT 11 //assigns LIMIT_A pin
-#define LIMIT_B_PORT B //assigns LIMIT_A port
-#define LIMIT_B_PULLUP
-#define LIMIT_B_ISR
+#define USB_DP_MUX G
 #endif
 
 //Setup PWM
@@ -127,6 +121,10 @@ extern "C"
 //spindle dir
 #define DOUT0_BIT 17
 #define DOUT0_PORT A
+
+//teste led pin
+#define DOUT15_BIT 17
+#define DOUT15_PORT A
 
 //coolant
 #define DOUT1_BIT 4

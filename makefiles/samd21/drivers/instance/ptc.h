@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief Low-level initialization functions called upon chip startup
+ * \brief Instance description for PTC
  *
  * Copyright (c) 2018 Microchip Technology Inc.
  *
@@ -27,22 +27,10 @@
  *
  */
 
-#ifndef _SYSTEM_SAMD21_H_INCLUDED_
-#define _SYSTEM_SAMD21_H_INCLUDED_
+#ifndef _SAMD21_PTC_INSTANCE_
+#define _SAMD21_PTC_INSTANCE_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* ========== Instance parameters for PTC peripheral ========== */
+#define PTC_GCLK_ID                 34       // Index of Generic Clock
 
-#include <stdint.h>
-
-extern uint32_t SystemCoreClock;   /*!< System Clock Frequency (Core Clock)  */
-
-void SystemInit(void);
-void SystemCoreClockUpdate(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* SYSTEM_SAMD21_H_INCLUDED */
+#endif /* _SAMD21_PTC_INSTANCE_ */

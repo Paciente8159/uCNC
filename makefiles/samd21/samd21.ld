@@ -11,16 +11,18 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 20K
-FLASH (rx)     : ORIGIN = 0x00000000, LENGTH = 256K
+FLASH (rx)     : ORIGIN = 0x00002000, LENGTH = 248K
 }
 
 /* Define output sections */
 SECTIONS
 {
+  
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
-    . = ALIGN(4);
+    . = ALIGN(0x2000);
+    _svtor = .;
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
   } >FLASH

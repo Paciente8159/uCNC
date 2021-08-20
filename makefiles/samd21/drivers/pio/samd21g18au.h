@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief Peripheral I/O description for SAMD21G17A
+ * \brief Peripheral I/O description for SAMD21G18AU
  *
  * Copyright (c) 2018 Microchip Technology Inc.
  *
@@ -27,8 +27,8 @@
  *
  */
 
-#ifndef _SAMD21G17A_PIO_
-#define _SAMD21G17A_PIO_
+#ifndef _SAMD21G18AU_PIO_
+#define _SAMD21G18AU_PIO_
 
 #define PIN_PA00                            0  /**< \brief Pin Number for PA00 */
 #define PORT_PA00              (_UL_(1) <<  0) /**< \brief PORT Mask  for PA00 */
@@ -94,23 +94,13 @@
 #define PORT_PB02              (_UL_(1) <<  2) /**< \brief PORT Mask  for PB02 */
 #define PIN_PB03                           35  /**< \brief Pin Number for PB03 */
 #define PORT_PB03              (_UL_(1) <<  3) /**< \brief PORT Mask  for PB03 */
+#define PIN_PB04                           36  /**< \brief Pin Number for PB04 */
+#define PORT_PB04              (_UL_(1) <<  4) /**< \brief PORT Mask  for PB04 */
 #define PIN_PB08                           40  /**< \brief Pin Number for PB08 */
 #define PORT_PB08              (_UL_(1) <<  8) /**< \brief PORT Mask  for PB08 */
 #define PIN_PB09                           41  /**< \brief Pin Number for PB09 */
 #define PORT_PB09              (_UL_(1) <<  9) /**< \brief PORT Mask  for PB09 */
-#define PIN_PB10                           42  /**< \brief Pin Number for PB10 */
-#define PORT_PB10              (_UL_(1) << 10) /**< \brief PORT Mask  for PB10 */
-#define PIN_PB11                           43  /**< \brief Pin Number for PB11 */
-#define PORT_PB11              (_UL_(1) << 11) /**< \brief PORT Mask  for PB11 */
-#define PIN_PB22                           54  /**< \brief Pin Number for PB22 */
-#define PORT_PB22              (_UL_(1) << 22) /**< \brief PORT Mask  for PB22 */
-#define PIN_PB23                           55  /**< \brief Pin Number for PB23 */
-#define PORT_PB23              (_UL_(1) << 23) /**< \brief PORT Mask  for PB23 */
 /* ========== PORT definition for GCLK peripheral ========== */
-#define PIN_PB22H_GCLK_IO0             _L_(54) /**< \brief GCLK signal: IO0 on PB22 mux H */
-#define MUX_PB22H_GCLK_IO0              _L_(7)
-#define PINMUX_PB22H_GCLK_IO0      ((PIN_PB22H_GCLK_IO0 << 16) | MUX_PB22H_GCLK_IO0)
-#define PORT_PB22H_GCLK_IO0    (_UL_(1) << 22)
 #define PIN_PA14H_GCLK_IO0             _L_(14) /**< \brief GCLK signal: IO0 on PA14 mux H */
 #define MUX_PA14H_GCLK_IO0              _L_(7)
 #define PINMUX_PA14H_GCLK_IO0      ((PIN_PA14H_GCLK_IO0 << 16) | MUX_PA14H_GCLK_IO0)
@@ -127,10 +117,6 @@
 #define MUX_PA30H_GCLK_IO0              _L_(7)
 #define PINMUX_PA30H_GCLK_IO0      ((PIN_PA30H_GCLK_IO0 << 16) | MUX_PA30H_GCLK_IO0)
 #define PORT_PA30H_GCLK_IO0    (_UL_(1) << 30)
-#define PIN_PB23H_GCLK_IO1             _L_(55) /**< \brief GCLK signal: IO1 on PB23 mux H */
-#define MUX_PB23H_GCLK_IO1              _L_(7)
-#define PINMUX_PB23H_GCLK_IO1      ((PIN_PB23H_GCLK_IO1 << 16) | MUX_PB23H_GCLK_IO1)
-#define PORT_PB23H_GCLK_IO1    (_UL_(1) << 23)
 #define PIN_PA15H_GCLK_IO1             _L_(15) /**< \brief GCLK signal: IO1 on PA15 mux H */
 #define MUX_PA15H_GCLK_IO1              _L_(7)
 #define PINMUX_PA15H_GCLK_IO1      ((PIN_PA15H_GCLK_IO1 << 16) | MUX_PA15H_GCLK_IO1)
@@ -151,10 +137,6 @@
 #define MUX_PA20H_GCLK_IO4              _L_(7)
 #define PINMUX_PA20H_GCLK_IO4      ((PIN_PA20H_GCLK_IO4 << 16) | MUX_PA20H_GCLK_IO4)
 #define PORT_PA20H_GCLK_IO4    (_UL_(1) << 20)
-#define PIN_PB10H_GCLK_IO4             _L_(42) /**< \brief GCLK signal: IO4 on PB10 mux H */
-#define MUX_PB10H_GCLK_IO4              _L_(7)
-#define PINMUX_PB10H_GCLK_IO4      ((PIN_PB10H_GCLK_IO4 << 16) | MUX_PB10H_GCLK_IO4)
-#define PORT_PB10H_GCLK_IO4    (_UL_(1) << 10)
 #define PIN_PA11H_GCLK_IO5             _L_(11) /**< \brief GCLK signal: IO5 on PA11 mux H */
 #define MUX_PA11H_GCLK_IO5              _L_(7)
 #define PINMUX_PA11H_GCLK_IO5      ((PIN_PA11H_GCLK_IO5 << 16) | MUX_PA11H_GCLK_IO5)
@@ -163,10 +145,6 @@
 #define MUX_PA21H_GCLK_IO5              _L_(7)
 #define PINMUX_PA21H_GCLK_IO5      ((PIN_PA21H_GCLK_IO5 << 16) | MUX_PA21H_GCLK_IO5)
 #define PORT_PA21H_GCLK_IO5    (_UL_(1) << 21)
-#define PIN_PB11H_GCLK_IO5             _L_(43) /**< \brief GCLK signal: IO5 on PB11 mux H */
-#define MUX_PB11H_GCLK_IO5              _L_(7)
-#define PINMUX_PB11H_GCLK_IO5      ((PIN_PB11H_GCLK_IO5 << 16) | MUX_PB11H_GCLK_IO5)
-#define PORT_PB11H_GCLK_IO5    (_UL_(1) << 11)
 #define PIN_PA22H_GCLK_IO6             _L_(22) /**< \brief GCLK signal: IO6 on PA22 mux H */
 #define MUX_PA22H_GCLK_IO6              _L_(7)
 #define PINMUX_PA22H_GCLK_IO6      ((PIN_PA22H_GCLK_IO6 << 16) | MUX_PA22H_GCLK_IO6)
@@ -236,6 +214,11 @@
 #define PINMUX_PA20A_EIC_EXTINT4   ((PIN_PA20A_EIC_EXTINT4 << 16) | MUX_PA20A_EIC_EXTINT4)
 #define PORT_PA20A_EIC_EXTINT4  (_UL_(1) << 20)
 #define PIN_PA20A_EIC_EXTINT_NUM        _L_(4) /**< \brief EIC signal: PIN_PA20 External Interrupt Line */
+#define PIN_PB04A_EIC_EXTINT4          _L_(36) /**< \brief EIC signal: EXTINT4 on PB04 mux A */
+#define MUX_PB04A_EIC_EXTINT4           _L_(0)
+#define PINMUX_PB04A_EIC_EXTINT4   ((PIN_PB04A_EIC_EXTINT4 << 16) | MUX_PB04A_EIC_EXTINT4)
+#define PORT_PB04A_EIC_EXTINT4  (_UL_(1) <<  4)
+#define PIN_PB04A_EIC_EXTINT_NUM        _L_(4) /**< \brief EIC signal: PIN_PB04 External Interrupt Line */
 #define PIN_PA05A_EIC_EXTINT5           _L_(5) /**< \brief EIC signal: EXTINT5 on PA05 mux A */
 #define MUX_PA05A_EIC_EXTINT5           _L_(0)
 #define PINMUX_PA05A_EIC_EXTINT5   ((PIN_PA05A_EIC_EXTINT5 << 16) | MUX_PA05A_EIC_EXTINT5)
@@ -256,11 +239,6 @@
 #define PINMUX_PA22A_EIC_EXTINT6   ((PIN_PA22A_EIC_EXTINT6 << 16) | MUX_PA22A_EIC_EXTINT6)
 #define PORT_PA22A_EIC_EXTINT6  (_UL_(1) << 22)
 #define PIN_PA22A_EIC_EXTINT_NUM        _L_(6) /**< \brief EIC signal: PIN_PA22 External Interrupt Line */
-#define PIN_PB22A_EIC_EXTINT6          _L_(54) /**< \brief EIC signal: EXTINT6 on PB22 mux A */
-#define MUX_PB22A_EIC_EXTINT6           _L_(0)
-#define PINMUX_PB22A_EIC_EXTINT6   ((PIN_PB22A_EIC_EXTINT6 << 16) | MUX_PB22A_EIC_EXTINT6)
-#define PORT_PB22A_EIC_EXTINT6  (_UL_(1) << 22)
-#define PIN_PB22A_EIC_EXTINT_NUM        _L_(6) /**< \brief EIC signal: PIN_PB22 External Interrupt Line */
 #define PIN_PA07A_EIC_EXTINT7           _L_(7) /**< \brief EIC signal: EXTINT7 on PA07 mux A */
 #define MUX_PA07A_EIC_EXTINT7           _L_(0)
 #define PINMUX_PA07A_EIC_EXTINT7   ((PIN_PA07A_EIC_EXTINT7 << 16) | MUX_PA07A_EIC_EXTINT7)
@@ -271,11 +249,6 @@
 #define PINMUX_PA23A_EIC_EXTINT7   ((PIN_PA23A_EIC_EXTINT7 << 16) | MUX_PA23A_EIC_EXTINT7)
 #define PORT_PA23A_EIC_EXTINT7  (_UL_(1) << 23)
 #define PIN_PA23A_EIC_EXTINT_NUM        _L_(7) /**< \brief EIC signal: PIN_PA23 External Interrupt Line */
-#define PIN_PB23A_EIC_EXTINT7          _L_(55) /**< \brief EIC signal: EXTINT7 on PB23 mux A */
-#define MUX_PB23A_EIC_EXTINT7           _L_(0)
-#define PINMUX_PB23A_EIC_EXTINT7   ((PIN_PB23A_EIC_EXTINT7 << 16) | MUX_PB23A_EIC_EXTINT7)
-#define PORT_PB23A_EIC_EXTINT7  (_UL_(1) << 23)
-#define PIN_PB23A_EIC_EXTINT_NUM        _L_(7) /**< \brief EIC signal: PIN_PB23 External Interrupt Line */
 #define PIN_PA28A_EIC_EXTINT8          _L_(28) /**< \brief EIC signal: EXTINT8 on PA28 mux A */
 #define MUX_PA28A_EIC_EXTINT8           _L_(0)
 #define PINMUX_PA28A_EIC_EXTINT8   ((PIN_PA28A_EIC_EXTINT8 << 16) | MUX_PA28A_EIC_EXTINT8)
@@ -306,11 +279,6 @@
 #define PINMUX_PA30A_EIC_EXTINT10  ((PIN_PA30A_EIC_EXTINT10 << 16) | MUX_PA30A_EIC_EXTINT10)
 #define PORT_PA30A_EIC_EXTINT10  (_UL_(1) << 30)
 #define PIN_PA30A_EIC_EXTINT_NUM       _L_(10) /**< \brief EIC signal: PIN_PA30 External Interrupt Line */
-#define PIN_PB10A_EIC_EXTINT10         _L_(42) /**< \brief EIC signal: EXTINT10 on PB10 mux A */
-#define MUX_PB10A_EIC_EXTINT10          _L_(0)
-#define PINMUX_PB10A_EIC_EXTINT10  ((PIN_PB10A_EIC_EXTINT10 << 16) | MUX_PB10A_EIC_EXTINT10)
-#define PORT_PB10A_EIC_EXTINT10  (_UL_(1) << 10)
-#define PIN_PB10A_EIC_EXTINT_NUM       _L_(10) /**< \brief EIC signal: PIN_PB10 External Interrupt Line */
 #define PIN_PA11A_EIC_EXTINT11         _L_(11) /**< \brief EIC signal: EXTINT11 on PA11 mux A */
 #define MUX_PA11A_EIC_EXTINT11          _L_(0)
 #define PINMUX_PA11A_EIC_EXTINT11  ((PIN_PA11A_EIC_EXTINT11 << 16) | MUX_PA11A_EIC_EXTINT11)
@@ -321,11 +289,6 @@
 #define PINMUX_PA31A_EIC_EXTINT11  ((PIN_PA31A_EIC_EXTINT11 << 16) | MUX_PA31A_EIC_EXTINT11)
 #define PORT_PA31A_EIC_EXTINT11  (_UL_(1) << 31)
 #define PIN_PA31A_EIC_EXTINT_NUM       _L_(11) /**< \brief EIC signal: PIN_PA31 External Interrupt Line */
-#define PIN_PB11A_EIC_EXTINT11         _L_(43) /**< \brief EIC signal: EXTINT11 on PB11 mux A */
-#define MUX_PB11A_EIC_EXTINT11          _L_(0)
-#define PINMUX_PB11A_EIC_EXTINT11  ((PIN_PB11A_EIC_EXTINT11 << 16) | MUX_PB11A_EIC_EXTINT11)
-#define PORT_PB11A_EIC_EXTINT11  (_UL_(1) << 11)
-#define PIN_PB11A_EIC_EXTINT_NUM       _L_(11) /**< \brief EIC signal: PIN_PB11 External Interrupt Line */
 #define PIN_PA12A_EIC_EXTINT12         _L_(12) /**< \brief EIC signal: EXTINT12 on PA12 mux A */
 #define MUX_PA12A_EIC_EXTINT12          _L_(0)
 #define PINMUX_PA12A_EIC_EXTINT12  ((PIN_PA12A_EIC_EXTINT12 << 16) | MUX_PA12A_EIC_EXTINT12)
@@ -539,18 +502,10 @@
 #define MUX_PA14D_SERCOM4_PAD2          _L_(3)
 #define PINMUX_PA14D_SERCOM4_PAD2  ((PIN_PA14D_SERCOM4_PAD2 << 16) | MUX_PA14D_SERCOM4_PAD2)
 #define PORT_PA14D_SERCOM4_PAD2  (_UL_(1) << 14)
-#define PIN_PB10D_SERCOM4_PAD2         _L_(42) /**< \brief SERCOM4 signal: PAD2 on PB10 mux D */
-#define MUX_PB10D_SERCOM4_PAD2          _L_(3)
-#define PINMUX_PB10D_SERCOM4_PAD2  ((PIN_PB10D_SERCOM4_PAD2 << 16) | MUX_PB10D_SERCOM4_PAD2)
-#define PORT_PB10D_SERCOM4_PAD2  (_UL_(1) << 10)
 #define PIN_PA15D_SERCOM4_PAD3         _L_(15) /**< \brief SERCOM4 signal: PAD3 on PA15 mux D */
 #define MUX_PA15D_SERCOM4_PAD3          _L_(3)
 #define PINMUX_PA15D_SERCOM4_PAD3  ((PIN_PA15D_SERCOM4_PAD3 << 16) | MUX_PA15D_SERCOM4_PAD3)
 #define PORT_PA15D_SERCOM4_PAD3  (_UL_(1) << 15)
-#define PIN_PB11D_SERCOM4_PAD3         _L_(43) /**< \brief SERCOM4 signal: PAD3 on PB11 mux D */
-#define MUX_PB11D_SERCOM4_PAD3          _L_(3)
-#define PINMUX_PB11D_SERCOM4_PAD3  ((PIN_PB11D_SERCOM4_PAD3 << 16) | MUX_PB11D_SERCOM4_PAD3)
-#define PORT_PB11D_SERCOM4_PAD3  (_UL_(1) << 11)
 /* ========== PORT definition for SERCOM5 peripheral ========== */
 #define PIN_PA22D_SERCOM5_PAD0         _L_(22) /**< \brief SERCOM5 signal: PAD0 on PA22 mux D */
 #define MUX_PA22D_SERCOM5_PAD0          _L_(3)
@@ -572,10 +527,6 @@
 #define MUX_PA24D_SERCOM5_PAD2          _L_(3)
 #define PINMUX_PA24D_SERCOM5_PAD2  ((PIN_PA24D_SERCOM5_PAD2 << 16) | MUX_PA24D_SERCOM5_PAD2)
 #define PORT_PA24D_SERCOM5_PAD2  (_UL_(1) << 24)
-#define PIN_PB22D_SERCOM5_PAD2         _L_(54) /**< \brief SERCOM5 signal: PAD2 on PB22 mux D */
-#define MUX_PB22D_SERCOM5_PAD2          _L_(3)
-#define PINMUX_PB22D_SERCOM5_PAD2  ((PIN_PB22D_SERCOM5_PAD2 << 16) | MUX_PB22D_SERCOM5_PAD2)
-#define PORT_PB22D_SERCOM5_PAD2  (_UL_(1) << 22)
 #define PIN_PA20C_SERCOM5_PAD2         _L_(20) /**< \brief SERCOM5 signal: PAD2 on PA20 mux C */
 #define MUX_PA20C_SERCOM5_PAD2          _L_(2)
 #define PINMUX_PA20C_SERCOM5_PAD2  ((PIN_PA20C_SERCOM5_PAD2 << 16) | MUX_PA20C_SERCOM5_PAD2)
@@ -584,10 +535,6 @@
 #define MUX_PA25D_SERCOM5_PAD3          _L_(3)
 #define PINMUX_PA25D_SERCOM5_PAD3  ((PIN_PA25D_SERCOM5_PAD3 << 16) | MUX_PA25D_SERCOM5_PAD3)
 #define PORT_PA25D_SERCOM5_PAD3  (_UL_(1) << 25)
-#define PIN_PB23D_SERCOM5_PAD3         _L_(55) /**< \brief SERCOM5 signal: PAD3 on PB23 mux D */
-#define MUX_PB23D_SERCOM5_PAD3          _L_(3)
-#define PINMUX_PB23D_SERCOM5_PAD3  ((PIN_PB23D_SERCOM5_PAD3 << 16) | MUX_PB23D_SERCOM5_PAD3)
-#define PORT_PB23D_SERCOM5_PAD3  (_UL_(1) << 23)
 #define PIN_PA21C_SERCOM5_PAD3         _L_(21) /**< \brief SERCOM5 signal: PAD3 on PA21 mux C */
 #define MUX_PA21C_SERCOM5_PAD3          _L_(2)
 #define PINMUX_PA21C_SERCOM5_PAD3  ((PIN_PA21C_SERCOM5_PAD3 << 16) | MUX_PA21C_SERCOM5_PAD3)
@@ -633,10 +580,6 @@
 #define MUX_PA22F_TCC0_WO4              _L_(5)
 #define PINMUX_PA22F_TCC0_WO4      ((PIN_PA22F_TCC0_WO4 << 16) | MUX_PA22F_TCC0_WO4)
 #define PORT_PA22F_TCC0_WO4    (_UL_(1) << 22)
-#define PIN_PB10F_TCC0_WO4             _L_(42) /**< \brief TCC0 signal: WO4 on PB10 mux F */
-#define MUX_PB10F_TCC0_WO4              _L_(5)
-#define PINMUX_PB10F_TCC0_WO4      ((PIN_PB10F_TCC0_WO4 << 16) | MUX_PB10F_TCC0_WO4)
-#define PORT_PB10F_TCC0_WO4    (_UL_(1) << 10)
 #define PIN_PA15F_TCC0_WO5             _L_(15) /**< \brief TCC0 signal: WO5 on PA15 mux F */
 #define MUX_PA15F_TCC0_WO5              _L_(5)
 #define PINMUX_PA15F_TCC0_WO5      ((PIN_PA15F_TCC0_WO5 << 16) | MUX_PA15F_TCC0_WO5)
@@ -645,10 +588,6 @@
 #define MUX_PA23F_TCC0_WO5              _L_(5)
 #define PINMUX_PA23F_TCC0_WO5      ((PIN_PA23F_TCC0_WO5 << 16) | MUX_PA23F_TCC0_WO5)
 #define PORT_PA23F_TCC0_WO5    (_UL_(1) << 23)
-#define PIN_PB11F_TCC0_WO5             _L_(43) /**< \brief TCC0 signal: WO5 on PB11 mux F */
-#define MUX_PB11F_TCC0_WO5              _L_(5)
-#define PINMUX_PB11F_TCC0_WO5      ((PIN_PB11F_TCC0_WO5 << 16) | MUX_PB11F_TCC0_WO5)
-#define PORT_PB11F_TCC0_WO5    (_UL_(1) << 11)
 #define PIN_PA12F_TCC0_WO6             _L_(12) /**< \brief TCC0 signal: WO6 on PA12 mux F */
 #define MUX_PA12F_TCC0_WO6              _L_(5)
 #define PINMUX_PA12F_TCC0_WO6      ((PIN_PA12F_TCC0_WO6 << 16) | MUX_PA12F_TCC0_WO6)
@@ -778,18 +717,28 @@
 #define MUX_PA24E_TC5_WO0               _L_(4)
 #define PINMUX_PA24E_TC5_WO0       ((PIN_PA24E_TC5_WO0 << 16) | MUX_PA24E_TC5_WO0)
 #define PORT_PA24E_TC5_WO0     (_UL_(1) << 24)
-#define PIN_PB10E_TC5_WO0              _L_(42) /**< \brief TC5 signal: WO0 on PB10 mux E */
-#define MUX_PB10E_TC5_WO0               _L_(4)
-#define PINMUX_PB10E_TC5_WO0       ((PIN_PB10E_TC5_WO0 << 16) | MUX_PB10E_TC5_WO0)
-#define PORT_PB10E_TC5_WO0     (_UL_(1) << 10)
 #define PIN_PA25E_TC5_WO1              _L_(25) /**< \brief TC5 signal: WO1 on PA25 mux E */
 #define MUX_PA25E_TC5_WO1               _L_(4)
 #define PINMUX_PA25E_TC5_WO1       ((PIN_PA25E_TC5_WO1 << 16) | MUX_PA25E_TC5_WO1)
 #define PORT_PA25E_TC5_WO1     (_UL_(1) << 25)
-#define PIN_PB11E_TC5_WO1              _L_(43) /**< \brief TC5 signal: WO1 on PB11 mux E */
-#define MUX_PB11E_TC5_WO1               _L_(4)
-#define PINMUX_PB11E_TC5_WO1       ((PIN_PB11E_TC5_WO1 << 16) | MUX_PB11E_TC5_WO1)
-#define PORT_PB11E_TC5_WO1     (_UL_(1) << 11)
+/* ========== PORT definition for TC6 peripheral ========== */
+#define PIN_PB02E_TC6_WO0              _L_(34) /**< \brief TC6 signal: WO0 on PB02 mux E */
+#define MUX_PB02E_TC6_WO0               _L_(4)
+#define PINMUX_PB02E_TC6_WO0       ((PIN_PB02E_TC6_WO0 << 16) | MUX_PB02E_TC6_WO0)
+#define PORT_PB02E_TC6_WO0     (_UL_(1) <<  2)
+#define PIN_PB03E_TC6_WO1              _L_(35) /**< \brief TC6 signal: WO1 on PB03 mux E */
+#define MUX_PB03E_TC6_WO1               _L_(4)
+#define PINMUX_PB03E_TC6_WO1       ((PIN_PB03E_TC6_WO1 << 16) | MUX_PB03E_TC6_WO1)
+#define PORT_PB03E_TC6_WO1     (_UL_(1) <<  3)
+/* ========== PORT definition for TC7 peripheral ========== */
+#define PIN_PA20E_TC7_WO0              _L_(20) /**< \brief TC7 signal: WO0 on PA20 mux E */
+#define MUX_PA20E_TC7_WO0               _L_(4)
+#define PINMUX_PA20E_TC7_WO0       ((PIN_PA20E_TC7_WO0 << 16) | MUX_PA20E_TC7_WO0)
+#define PORT_PA20E_TC7_WO0     (_UL_(1) << 20)
+#define PIN_PA21E_TC7_WO1              _L_(21) /**< \brief TC7 signal: WO1 on PA21 mux E */
+#define MUX_PA21E_TC7_WO1               _L_(4)
+#define PINMUX_PA21E_TC7_WO1       ((PIN_PA21E_TC7_WO1 << 16) | MUX_PA21E_TC7_WO1)
+#define PORT_PA21E_TC7_WO1     (_UL_(1) << 21)
 /* ========== PORT definition for ADC peripheral ========== */
 #define PIN_PA02B_ADC_AIN0              _L_(2) /**< \brief ADC signal: AIN0 on PA02 mux B */
 #define MUX_PA02B_ADC_AIN0              _L_(1)
@@ -831,6 +780,10 @@
 #define MUX_PB03B_ADC_AIN11             _L_(1)
 #define PINMUX_PB03B_ADC_AIN11     ((PIN_PB03B_ADC_AIN11 << 16) | MUX_PB03B_ADC_AIN11)
 #define PORT_PB03B_ADC_AIN11   (_UL_(1) <<  3)
+#define PIN_PB04B_ADC_AIN12            _L_(36) /**< \brief ADC signal: AIN12 on PB04 mux B */
+#define MUX_PB04B_ADC_AIN12             _L_(1)
+#define PINMUX_PB04B_ADC_AIN12     ((PIN_PB04B_ADC_AIN12 << 16) | MUX_PB04B_ADC_AIN12)
+#define PORT_PB04B_ADC_AIN12   (_UL_(1) <<  4)
 #define PIN_PA08B_ADC_AIN16             _L_(8) /**< \brief ADC signal: AIN16 on PA08 mux B */
 #define MUX_PA08B_ADC_AIN16             _L_(1)
 #define PINMUX_PA08B_ADC_AIN16     ((PIN_PA08B_ADC_AIN16 << 16) | MUX_PA08B_ADC_AIN16)
@@ -906,10 +859,6 @@
 #define MUX_PA09G_I2S_MCK0              _L_(6)
 #define PINMUX_PA09G_I2S_MCK0      ((PIN_PA09G_I2S_MCK0 << 16) | MUX_PA09G_I2S_MCK0)
 #define PORT_PA09G_I2S_MCK0    (_UL_(1) <<  9)
-#define PIN_PB10G_I2S_MCK1             _L_(42) /**< \brief I2S signal: MCK1 on PB10 mux G */
-#define MUX_PB10G_I2S_MCK1              _L_(6)
-#define PINMUX_PB10G_I2S_MCK1      ((PIN_PB10G_I2S_MCK1 << 16) | MUX_PB10G_I2S_MCK1)
-#define PORT_PB10G_I2S_MCK1    (_UL_(1) << 10)
 #define PIN_PA10G_I2S_SCK0             _L_(10) /**< \brief I2S signal: SCK0 on PA10 mux G */
 #define MUX_PA10G_I2S_SCK0              _L_(6)
 #define PINMUX_PA10G_I2S_SCK0      ((PIN_PA10G_I2S_SCK0 << 16) | MUX_PA10G_I2S_SCK0)
@@ -918,10 +867,6 @@
 #define MUX_PA20G_I2S_SCK0              _L_(6)
 #define PINMUX_PA20G_I2S_SCK0      ((PIN_PA20G_I2S_SCK0 << 16) | MUX_PA20G_I2S_SCK0)
 #define PORT_PA20G_I2S_SCK0    (_UL_(1) << 20)
-#define PIN_PB11G_I2S_SCK1             _L_(43) /**< \brief I2S signal: SCK1 on PB11 mux G */
-#define MUX_PB11G_I2S_SCK1              _L_(6)
-#define PINMUX_PB11G_I2S_SCK1      ((PIN_PB11G_I2S_SCK1 << 16) | MUX_PB11G_I2S_SCK1)
-#define PORT_PB11G_I2S_SCK1    (_UL_(1) << 11)
 #define PIN_PA07G_I2S_SD0               _L_(7) /**< \brief I2S signal: SD0 on PA07 mux G */
 #define MUX_PA07G_I2S_SD0               _L_(6)
 #define PINMUX_PA07G_I2S_SD0       ((PIN_PA07G_I2S_SD0 << 16) | MUX_PA07G_I2S_SD0)
@@ -935,4 +880,4 @@
 #define PINMUX_PA08G_I2S_SD1       ((PIN_PA08G_I2S_SD1 << 16) | MUX_PA08G_I2S_SD1)
 #define PORT_PA08G_I2S_SD1     (_UL_(1) <<  8)
 
-#endif /* _SAMD21G17A_PIO_ */
+#endif /* _SAMD21G18AU_PIO_ */
