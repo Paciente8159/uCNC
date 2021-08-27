@@ -4,7 +4,7 @@
 
 
 # µCNC
-µCNC - A universal CNC firmware for microcontrollers
+µCNC - Universal CNC firmware for microcontrollers
 
 ## About µCNC
 Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://linuxcnc.org/), µCNC started to take shape in the second half of 2019 in an attempt to come out with a G-Code interpreter/controller software/firmware that is both compact and powerful as Grbl and flexible and modular as LinuxCNC, with the following goals in mind:
