@@ -39,73 +39,63 @@ extern "C"
 #include "tusb.h"
 #endif
 
-        //     static void mcu_setup_clocks(void)
-        //     {
-        //         /* Set the correct number of wait states for 48 MHz @ 3.3v */
-        //         NVMCTRL->CTRLB.bit.RWS = 1;
-        //         /* This works around a quirk in the hardware (errata 1.2.1) -
-        //    the DFLLCTRL register must be manually reset to this value before
-        //    configuration. */
-        //         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-        //             ;
-        //         SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
-        //         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-        //             ;
+        //setups internal timers (all will run @ 1Mhz on GCLK1)
+        static void mcu_setup_clocks(void)
+        {
+                /* Configure internal oscillator dv by 8 (1Mhz)*/
+                SYSCTRL->OSC8M.bit.PRESC = 0x03; // divide by 8
+                SYSCTRL->OSC8M.bit.ENABLE = 1;
 
-        //         /* Write the coarse and fine calibration from NVM. */
-        //         uint32_t coarse =
-        //             ((*(uint32_t *)SYSCTRL_FUSES_DFLL48M_COARSE_CAL_ADDR) & SYSCTRL_FUSES_DFLL48M_COARSE_CAL_Msk) >> SYSCTRL_FUSES_DFLL48M_COARSE_CAL_Pos;
-        //         /*uint32_t fine =
-        //             ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) & FUSES_DFLL48M_FINE_CAL_Msk) >> FUSES_DFLL48M_FINE_CAL_Pos;*/
+                /* Configure GCLK1's divider - in this case, divided by 8 */
+                GCLK->GENDIV.reg = GCLK_GENDIV_ID(2) | GCLK_GENDIV_DIV(1);
 
-        //         SYSCTRL->DFLLVAL.reg = SYSCTRL_FUSES_DFLL48M_COARSE_CAL(coarse);
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
 
-        //         /* Wait for the write to finish. */
-        //         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-        //             ;
+                /* Setup GCLK1 using the 8 MHz oscillator / 8 */
+                GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_SRC_OSC8M | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN /* | GCLK_GENCTRL_OE*/;
 
-        // #ifdef USB_VCP
-        //         SYSCTRL->DFLLCTRL.reg |=
-        //             /* Enable USB clock recovery mode */
-        //             SYSCTRL_DFLLCTRL_USBCRM |
-        //             /* Disable chill cycle as per datasheet to speed up locking.
-        //        This is specified in section 17.6.7.2.2, and chill cycles
-        //        are described in section 17.6.7.2.1. */
-        //             SYSCTRL_DFLLCTRL_CCDIS;
+                /* Wait for the write to complete */
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
 
-        //         /* Configure the DFLL to multiply the 1 kHz clock to 48 MHz */
-        //         SYSCTRL->DFLLMUL.reg =
-        //             /* This value is output frequency / reference clock frequency,
-        //        so 48 MHz / 1 kHz */
-        //             SYSCTRL_DFLLMUL_MUL(48000) |
-        //             /* The coarse and fine values can be set to their minimum
-        //        since coarse is fixed in USB clock recovery mode and
-        //        fine should lock on quickly. */
-        //             SYSCTRL_DFLLMUL_FSTEP(1) |
-        //             SYSCTRL_DFLLMUL_CSTEP(1);
-        //         /* Closed loop mode */
-        //         SYSCTRL->DFLLCTRL.bit.MODE = 1;
-        // #endif
+                /* Connect GCLK1 itp timer*/
+                GCLK->CLKCTRL.reg = ITP_CLKCTRL | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK2;
 
-        //         /* Enable the DFLL */
-        //         SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
+                /* Wait for the write to complete. */
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
 
-        //         /* Wait for the write to finish */
-        //         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-        //             ;
+                PM->APBCMASK.reg |= (ITP_APBCMASK);
 
-        //         /* Setup GCLK0 using the DFLL @ 48 MHz */
-        //         GCLK->GENCTRL.reg =
-        //             GCLK_GENCTRL_ID(0) |
-        //             GCLK_GENCTRL_SRC_DFLL48M |
-        //             /* Improve the duty cycle. */
-        //             GCLK_GENCTRL_IDC |
-        //             GCLK_GENCTRL_GENEN;
+                /*PORT->Group[0].DIRSET.reg = (1 << 16);
+                PORT->Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
+                PORT->Group[0].PMUX[16 >> 1].bit.PMUXE |= PORT_PMUX_PMUXE_H;*/
+        }
 
-        //         /* Wait for the write to complete */
-        //         while (GCLK->STATUS.bit.SYNCBUSY)
-        //             ;
-        //     }
+        void mcu_timer_isr(void)
+        {
+                static bool resetstep = false;
+
+#if (ITP_TIMER < 3)
+                if (ITP_REG->INTFLAG.bit.MC0)
+                {
+                        ITP_REG->INTFLAG.bit.MC0 = 1;
+#else
+                if (ITP_REG->COUNT16.INTFLAG.bit.MC0)
+                {
+                        ITP_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+#endif
+                        if (!resetstep)
+                                itp_step_isr();
+                        else
+                                itp_step_reset_isr();
+                        resetstep = !resetstep;
+                }
+
+                NVIC_ClearPendingIRQ(ITP_IRQ);
+                mcu_enable_global_isr();
+        }
 
         void mcu_usart_init(void)
         {
@@ -230,23 +220,23 @@ extern "C"
 #ifdef DIR5
                 mcu_config_output(DIR5);
 #endif
-#ifdef STEPPER_ENABLE0
-                mcu_config_output(STEPPER_ENABLE0);
+#ifdef STEP0_EN
+                mcu_config_output(STEP0_EN);
 #endif
-#ifdef STEPPER_ENABLE1
-                mcu_config_output(STEPPER_ENABLE1);
+#ifdef STEP1_EN
+                mcu_config_output(STEP1_EN);
 #endif
-#ifdef STEPPER_ENABLE2
-                mcu_config_output(STEPPER_ENABLE2);
+#ifdef STEP2_EN
+                mcu_config_output(STEP2_EN);
 #endif
-#ifdef STEPPER_ENABLE3
-                mcu_config_output(STEPPER_ENABLE3);
+#ifdef STEP3_EN
+                mcu_config_output(STEP3_EN);
 #endif
-#ifdef STEPPER_ENABLE4
-                mcu_config_output(STEPPER_ENABLE4);
+#ifdef STEP4_EN
+                mcu_config_output(STEP4_EN);
 #endif
-#ifdef STEPPER_ENABLE5
-                mcu_config_output(STEPPER_ENABLE5);
+#ifdef STEP5_EN
+                mcu_config_output(STEP5_EN);
 #endif
 #ifdef PWM0
                 mcu_config_pwm(PWM0);
@@ -644,43 +634,21 @@ extern "C"
 #ifdef RX
                 mcu_config_input(RX);
 #endif
+#ifdef USB_DM
+                mcu_config_input(USB_DM);
+#endif
+#ifdef USB_DP
+                mcu_config_input(USB_DP);
+#endif
 
-                //mcu_setup_clocks();
+                mcu_setup_clocks();
                 mcu_tick_init();
                 mcu_usart_init();
                 mcu_enable_global_isr();
         }
 
 /*IO functions*/
-#ifndef mcu_get_input
-        uint8_t mcu_get_input(uint8_t pin)
-        {
-        }
-#endif
 
-#ifndef mcu_get_output
-        uint8_t mcu_get_output(uint8_t pin)
-        {
-        }
-#endif
-
-#ifndef mcu_set_output
-        void mcu_set_output(uint8_t pin)
-        {
-        }
-#endif
-
-#ifndef mcu_clear_output
-        void mcu_clear_output(uint8_t pin)
-        {
-        }
-#endif
-
-#ifndef mcu_toggle_output
-        void mcu_toggle_output(uint8_t pin)
-        {
-        }
-#endif
 /**
  * enables the pin probe mcu isr on change
  * can be defined either as a function or a macro call
@@ -822,28 +790,153 @@ extern "C"
         /**
 	 * convert step rate to clock cycles
 	 * */
-        void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller) {}
+        void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
+        {
+                if (frequency < F_STEP_MIN)
+                        frequency = F_STEP_MIN;
+                if (frequency > F_STEP_MAX)
+                        frequency = F_STEP_MAX;
+
+                float clockcounter = 1000000;
+                frequency *= 2.0f;
+
+                if (frequency >= 16)
+                {
+                        *prescaller = 0;
+                }
+                else if (frequency >= 8)
+                {
+                        *prescaller = 1;
+                        clockcounter *= 0.5;
+                }
+                else if (frequency >= 4)
+                {
+                        *prescaller = 2;
+                        clockcounter *= 0.25;
+                }
+                else if (frequency >= 2)
+                {
+                        *prescaller = 3;
+                        clockcounter *= 0.125;
+                }
+                else if (frequency >= 1)
+                {
+                        *prescaller = 4;
+                        clockcounter *= 0.0625;
+                }
+                else
+                {
+                        *prescaller = 7;
+                        clockcounter *= 0.0009765625;
+                }
+
+                *ticks = floorf((clockcounter / frequency)) - 1;
+        }
 
         /**
 	 * starts the timer interrupt that generates the step pulses for the interpolator
 	 * */
-        void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller) {}
+        void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
+        {
+#if (ITP_TIMER < 3)
+                //reset timer
+                ITP_REG->CTRLA.bit.SWRST = 1;
+                while (ITP_REG->SYNCBUSY.bit.SWRST)
+                        ;
+                //enable the timer in the APB
+                ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+                ITP_REG->WAVE.bit.WAVEGEN = 1;                      // match compare
+                while (ITP_REG->SYNCBUSY.bit.WAVE)
+                        ;
+                ITP_REG->CC[0].reg = ticks;
+                while (ITP_REG->SYNCBUSY.bit.CC0)
+                        ;
+                NVIC_EnableIRQ(ITP_IRQ);
+                NVIC_SetPriority(ITP_IRQ, 1);
+                NVIC_ClearPendingIRQ(ITP_IRQ);
+                ITP_REG->INTENSET.bit.MC0 = 1;
+                ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+                while (ITP_REG->SYNCBUSY.bit.ENABLE)
+                        ;
+#else
+                //reset timer
+                ITP_REG->COUNT16.CTRLA.bit.SWRST = 1;
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+                //enable the timer in the APB
+                ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+                ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;                     // match compare
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+                ITP_REG->COUNT16.CC[0].reg = ticks;
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+                NVIC_EnableIRQ(ITP_IRQ);
+                NVIC_SetPriority(ITP_IRQ, 1);
+                NVIC_ClearPendingIRQ(ITP_IRQ);
+                ITP_REG->COUNT16.INTENSET.bit.MC0 = 1;
+                ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+#endif
+        }
 
         /**
 	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
 	 * */
-        void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller) {}
+        void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
+        {
+#if (ITP_TIMER < 3)
+                ITP_REG->CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+                while (ITP_REG->SYNCBUSY.bit.ENABLE)
+                        ;
+                ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+                ITP_REG->CC[0].reg = ticks;
+                while (ITP_REG->SYNCBUSY.bit.CC0)
+                        ;
+                ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+                while (ITP_REG->SYNCBUSY.bit.ENABLE)
+                        ;
+#else
+                ITP_REG->COUNT16.CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+                ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+                ITP_REG->COUNT16.CC[0].reg = ticks;
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+                ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+#endif
+        }
 
         /**
 	 * stops the timer interrupt that generates the step pulses for the interpolator
 	 * */
-        void mcu_stop_itp_isr(void) {}
+        void mcu_stop_itp_isr(void)
+        {
+#if (ITP_TIMER < 3)
+                ITP_REG->CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+                while (ITP_REG->SYNCBUSY.bit.ENABLE)
+                        ;
+#else
+                ITP_REG->COUNT16.CTRLA.bit.ENABLE = 0;
+                while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                        ;
+#endif
+                NVIC_DisableIRQ(ITP_IRQ);
+        }
 
         /**
 	 * gets the MCU running time in milliseconds.
 	 * the time counting is controled by the internal RTC
 	 * */
-        uint32_t mcu_millis() { return 0; }
+        uint32_t mcu_millis()
+        {
+                uint32_t c = mcu_runtime_ms;
+                return c;
+        }
 
         /**
 	 * runs all internal tasks of the MCU.

@@ -39,11 +39,11 @@ extern "C"
 #endif
 
 //Setup step pins
-#define STEP0_BIT 14 //assigns STEP0 pin
+#define STEP0_BIT 8	 //assigns STEP0 pin
 #define STEP0_PORT A //assigns STEP0 port
 #define STEP1_BIT 9	 //assigns STEP1 pin
 #define STEP1_PORT A //assigns STEP1 port
-#define STEP2_BIT 8	 //assigns STEP2 pin
+#define STEP2_BIT 14 //assigns STEP2 pin
 #define STEP2_PORT A //assigns STEP2 port
 
 //Setup dir pins
@@ -73,7 +73,7 @@ extern "C"
 #define LIMIT_Z_ISR
 
 //Setup control input pins
-#define ESTOP_BIT 1
+#define ESTOP_BIT 2
 #define ESTOP_PORT A
 #define FHOLD_BIT 8
 #define FHOLD_PORT B
@@ -123,23 +123,19 @@ extern "C"
 #define DOUT0_PORT A
 
 //teste led pin
-#define DOUT15_BIT 17
+#define DOUT15_BIT 10
 #define DOUT15_PORT A
 
 //coolant
 #define DOUT1_BIT 4
 #define DOUT1_PORT A
 
-//stepper enable
-#define DOUT3_BIT 15
-#define DOUT3_PORT A
-
 //Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEPPER_ENABLE_BIT 6
-#define STEPPER_ENABLE_PORT A
+#define STEP0_EN_BIT 6
+#define STEP0_EN_PORT A
 
 	//Setup the Step Timer used has the heartbeat for µCNC
-	//#define ITP_TIMER 2
+	//#define ITP_TIMER 3
 
 #ifdef __cplusplus
 }

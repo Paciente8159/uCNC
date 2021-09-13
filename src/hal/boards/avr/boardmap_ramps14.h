@@ -105,12 +105,12 @@ extern "C"
 #define DOUT2_PORT C*/
 
 //Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEPPER_ENABLE_BIT 7
-#define STEPPER_ENABLE_PORT D
-#define STEPPER1_ENABLE_BIT 2
-#define STEPPER1_ENABLE_PORT F
-#define STEPPER2_ENABLE_BIT 0
-#define STEPPER2_ENABLE_PORT K
+#define STEP0_EN_BIT 7
+#define STEP0_EN_PORT D
+#define STEP1_EN_BIT 2
+#define STEP1_EN_PORT F
+#define STEP2_EN_BIT 0
+#define STEP2_EN_PORT K
 
 	//Setup the Step Timer used has the heartbeat for µCNC
 	//Timer 1 is used by default

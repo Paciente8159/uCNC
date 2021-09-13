@@ -78,6 +78,7 @@ extern "C"
 /**********************************************
 *	IO Pins
 **********************************************/
+//IO pins
 #if (defined(STEP0_PORT) && defined(STEP0_BIT))
 #define STEP0 0
 #define STEP0_GPIO (PORTREG(STEP0_PORT))
@@ -190,53 +191,53 @@ extern "C"
 #define DIO13_BIT DIR5_BIT
 #define DIO13_GPIO DIR5_GPIO
 #endif
-#if (defined(STEPPER_ENABLE0_PORT) && defined(STEPPER_ENABLE0_BIT))
-#define STEPPER_ENABLE0 14
-#define STEPPER_ENABLE0_GPIO (PORTREG(STEPPER_ENABLE0_PORT))
+#if (defined(STEP0_EN_PORT) && defined(STEP0_EN_BIT))
+#define STEP0_EN 14
+#define STEP0_EN_GPIO (PORTREG(STEP0_EN_PORT))
 #define DIO14 14
-#define DIO14_PORT STEPPER_ENABLE0_PORT
-#define DIO14_BIT STEPPER_ENABLE0_BIT
-#define DIO14_GPIO STEPPER_ENABLE0_GPIO
+#define DIO14_PORT STEP0_EN_PORT
+#define DIO14_BIT STEP0_EN_BIT
+#define DIO14_GPIO STEP0_EN_GPIO
 #endif
-#if (defined(STEPPER_ENABLE1_PORT) && defined(STEPPER_ENABLE1_BIT))
-#define STEPPER_ENABLE1 15
-#define STEPPER_ENABLE1_GPIO (PORTREG(STEPPER_ENABLE1_PORT))
+#if (defined(STEP1_EN_PORT) && defined(STEP1_EN_BIT))
+#define STEP1_EN 15
+#define STEP1_EN_GPIO (PORTREG(STEP1_EN_PORT))
 #define DIO15 15
-#define DIO15_PORT STEPPER_ENABLE1_PORT
-#define DIO15_BIT STEPPER_ENABLE1_BIT
-#define DIO15_GPIO STEPPER_ENABLE1_GPIO
+#define DIO15_PORT STEP1_EN_PORT
+#define DIO15_BIT STEP1_EN_BIT
+#define DIO15_GPIO STEP1_EN_GPIO
 #endif
-#if (defined(STEPPER_ENABLE2_PORT) && defined(STEPPER_ENABLE2_BIT))
-#define STEPPER_ENABLE2 16
-#define STEPPER_ENABLE2_GPIO (PORTREG(STEPPER_ENABLE2_PORT))
+#if (defined(STEP2_EN_PORT) && defined(STEP2_EN_BIT))
+#define STEP2_EN 16
+#define STEP2_EN_GPIO (PORTREG(STEP2_EN_PORT))
 #define DIO16 16
-#define DIO16_PORT STEPPER_ENABLE2_PORT
-#define DIO16_BIT STEPPER_ENABLE2_BIT
-#define DIO16_GPIO STEPPER_ENABLE2_GPIO
+#define DIO16_PORT STEP2_EN_PORT
+#define DIO16_BIT STEP2_EN_BIT
+#define DIO16_GPIO STEP2_EN_GPIO
 #endif
-#if (defined(STEPPER_ENABLE3_PORT) && defined(STEPPER_ENABLE3_BIT))
-#define STEPPER_ENABLE3 17
-#define STEPPER_ENABLE3_GPIO (PORTREG(STEPPER_ENABLE3_PORT))
+#if (defined(STEP3_EN_PORT) && defined(STEP3_EN_BIT))
+#define STEP3_EN 17
+#define STEP3_EN_GPIO (PORTREG(STEP3_EN_PORT))
 #define DIO17 17
-#define DIO17_PORT STEPPER_ENABLE3_PORT
-#define DIO17_BIT STEPPER_ENABLE3_BIT
-#define DIO17_GPIO STEPPER_ENABLE3_GPIO
+#define DIO17_PORT STEP3_EN_PORT
+#define DIO17_BIT STEP3_EN_BIT
+#define DIO17_GPIO STEP3_EN_GPIO
 #endif
-#if (defined(STEPPER_ENABLE4_PORT) && defined(STEPPER_ENABLE4_BIT))
-#define STEPPER_ENABLE4 18
-#define STEPPER_ENABLE4_GPIO (PORTREG(STEPPER_ENABLE4_PORT))
+#if (defined(STEP4_EN_PORT) && defined(STEP4_EN_BIT))
+#define STEP4_EN 18
+#define STEP4_EN_GPIO (PORTREG(STEP4_EN_PORT))
 #define DIO18 18
-#define DIO18_PORT STEPPER_ENABLE4_PORT
-#define DIO18_BIT STEPPER_ENABLE4_BIT
-#define DIO18_GPIO STEPPER_ENABLE4_GPIO
+#define DIO18_PORT STEP4_EN_PORT
+#define DIO18_BIT STEP4_EN_BIT
+#define DIO18_GPIO STEP4_EN_GPIO
 #endif
-#if (defined(STEPPER_ENABLE5_PORT) && defined(STEPPER_ENABLE5_BIT))
-#define STEPPER_ENABLE5 19
-#define STEPPER_ENABLE5_GPIO (PORTREG(STEPPER_ENABLE5_PORT))
+#if (defined(STEP5_EN_PORT) && defined(STEP5_EN_BIT))
+#define STEP5_EN 19
+#define STEP5_EN_GPIO (PORTREG(STEP5_EN_PORT))
 #define DIO19 19
-#define DIO19_PORT STEPPER_ENABLE5_PORT
-#define DIO19_BIT STEPPER_ENABLE5_BIT
-#define DIO19_GPIO STEPPER_ENABLE5_GPIO
+#define DIO19_PORT STEP5_EN_PORT
+#define DIO19_BIT STEP5_EN_BIT
+#define DIO19_GPIO STEP5_EN_GPIO
 #endif
 #if (defined(PWM0_PORT) && defined(PWM0_BIT))
 #define PWM0 20
@@ -878,6 +879,22 @@ extern "C"
 #define DIO99_BIT RX_BIT
 #define DIO99_GPIO RX_GPIO
 #endif
+#if (defined(USB_DM_PORT) && defined(USB_DM_BIT))
+#define USB_DM 100
+#define USB_DM_GPIO (PORTREG(USB_DM_PORT))
+#define DIO100 100
+#define DIO100_PORT USB_DM_PORT
+#define DIO100_BIT USB_DM_BIT
+#define DIO100_GPIO USB_DM_GPIO
+#endif
+#if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
+#define USB_DP 101
+#define USB_DP_GPIO (PORTREG(USB_DP_PORT))
+#define DIO101 101
+#define DIO101_PORT USB_DP_PORT
+#define DIO101_BIT USB_DP_BIT
+#define DIO101_GPIO USB_DP_GPIO
+#endif
 
 #define __pinmuxevenodd0 PMUXE
 #define __pinmuxevenodd2 PMUXE
@@ -952,6 +969,25 @@ extern "C"
 #define DIO101_PMUXVAL USB_DP_PMUXVAL
 #endif
 #endif
+
+/*timers*/
+#define gclk_clkctrl(X) (0x1A + (X >> 1))
+
+#ifndef ITP_TIMER
+#define ITP_TIMER 2
+#endif
+#if (ITP_TIMER < 3)
+#define mcu_timer_isr __helper__(TCC, ITP_TIMER, _Handler)
+#define ITP_REG __helper__(TCC, ITP_TIMER, )
+#define ITP_IRQ __helper__(TCC, ITP_TIMER, _IRQn)
+#define ITP_APBCMASK __helper__(PM_APBCMASK_TCC, ITP_TIMER, )
+#else
+#define mcu_timer_isr __helper__(TC, ITP_TIMER, _Handler)
+#define ITP_REG __helper__(TC, ITP_TIMER, )
+#define ITP_IRQ __helper__(TC, ITP_TIMER, _IRQn)
+#define ITP_APBCMASK __helper__(PM_APBCMASK_TC, ITP_TIMER, )
+#endif
+#define ITP_CLKCTRL gclk_clkctrl(ITP_TIMER)
 
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)

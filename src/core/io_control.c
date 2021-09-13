@@ -483,45 +483,45 @@ extern "C"
 
     void io_disable_steppers(void)
     {
-#ifdef STEPPER_ENABLE
-        mcu_set_output(STEPPER_ENABLE);
+#ifdef STEP0_EN
+        mcu_set_output(STEP0_EN);
 #endif
-#ifdef STEPPER1_ENABLE
-        mcu_set_output(STEPPER1_ENABLE);
+#ifdef STEP1_EN
+        mcu_set_output(STEP1_EN);
 #endif
-#ifdef STEPPER2_ENABLE
-        mcu_set_output(STEPPER2_ENABLE);
+#ifdef STEP2_EN
+        mcu_set_output(STEP2_EN);
 #endif
-#ifdef STEPPER3_ENABLE
-        mcu_set_output(STEPPER3_ENABLE);
+#ifdef STEP3_EN
+        mcu_set_output(STEP3_EN);
 #endif
-#ifdef STEPPER4_ENABLE
-        mcu_set_output(STEPPER4_ENABLE);
+#ifdef STEP4_EN
+        mcu_set_output(STEP4_EN);
 #endif
-#ifdef STEPPER5_ENABLE
-        mcu_set_output(STEPPER5_ENABLE);
+#ifdef STEP5_EN
+        mcu_set_output(STEP5_EN);
 #endif
     }
 
     void io_enable_steppers(void)
     {
-#ifdef STEPPER_ENABLE
-        mcu_clear_output(STEPPER_ENABLE);
+#ifdef STEP0_EN
+        mcu_clear_output(STEP0_EN);
 #endif
-#ifdef STEPPER1_ENABLE
-        mcu_clear_output(STEPPER1_ENABLE);
+#ifdef STEP1_EN
+        mcu_clear_output(STEP1_EN);
 #endif
-#ifdef STEPPER2_ENABLE
-        mcu_clear_output(STEPPER2_ENABLE);
+#ifdef STEP2_EN
+        mcu_clear_output(STEP2_EN);
 #endif
-#ifdef STEPPER3_ENABLE
-        mcu_clear_output(STEPPER3_ENABLE);
+#ifdef STEP3_EN
+        mcu_clear_output(STEP3_EN);
 #endif
-#ifdef STEPPER4_ENABLE
-        mcu_clear_output(STEPPER4_ENABLE);
+#ifdef STEP4_EN
+        mcu_clear_output(STEP4_EN);
 #endif
-#ifdef STEPPER5_ENABLE
-        mcu_clear_output(STEPPER5_ENABLE);
+#ifdef STEP5_EN
+        mcu_clear_output(STEP5_EN);
 #endif
     }
 
