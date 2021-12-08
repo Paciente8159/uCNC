@@ -101,7 +101,7 @@ extern "C"
 /*
 	Define a coolant flood and mist pin
 */
-//#define USE_COOLANT
+#define USE_COOLANT
 #ifdef USE_COOLANT
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
