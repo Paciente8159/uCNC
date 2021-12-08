@@ -546,7 +546,9 @@ extern "C"
 #ifdef LASER_MODE
         }
 #endif
+#ifdef SPINDLE_PWM
         mcu_set_pwm(SPINDLE_PWM, value);
+#endif
     }
 
     uint8_t io_get_spindle(void)
@@ -554,7 +556,9 @@ extern "C"
 #if PID_CONTROLLERS > 0
         return io_spindle_speed;
 #else
+#ifdef SPINDLE_PWM
         return mcu_get_pwm(SPINDLE_PWM);
+#endif
 #endif
     }
 #endif

@@ -361,11 +361,13 @@ extern "C"
         {
             SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
             CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+#ifdef USE_SPINDLE
             itp_sync_spindle();
             if (!planner_buffer_is_empty())
             {
                 cnc_delay_ms(DELAY_ON_RESUME * 1000);
             }
+#endif
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
 
@@ -395,6 +397,7 @@ extern "C"
         serial_rx_clear();
         itp_clear();
         planner_clear();
+        parser_init();
         protocol_send_string(MSG_STARTUP);
 
         uint8_t ok = cnc_unlock(false);
@@ -593,12 +596,14 @@ extern "C"
             case RT_CMD_SPINDLE_TOGGLE:
                 if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
-                    //toogle state
+//toogle state
+#ifdef SPINDLE_PWM
                     if (mcu_get_pwm(SPINDLE_PWM))
                     {
                         update_tools = false;
                         mcu_set_pwm(SPINDLE_PWM, 0);
                     }
+#endif
                 }
                 break;
 #endif
