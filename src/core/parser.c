@@ -1053,7 +1053,7 @@ extern "C"
 #ifdef USE_COOLANT
         if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
         {
-            block_date.update_tools = true;
+            block_data.update_tools = true;
         }
         block_data.coolant = new_state->groups.coolant;
 //moving to planner
