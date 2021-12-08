@@ -535,6 +535,7 @@ extern "C"
         if (!g_settings.laser_mode)
         {
 #endif
+#ifdef SPINDLE_DIR
             if (!invert)
             {
                 mcu_clear_output(SPINDLE_DIR);
@@ -543,10 +544,13 @@ extern "C"
             {
                 mcu_set_output(SPINDLE_DIR);
             }
+#endif
 #ifdef LASER_MODE
         }
 #endif
+#ifdef SPINDLE_PWM
         mcu_set_pwm(SPINDLE_PWM, value);
+#endif
     }
 
     uint8_t io_get_spindle(void)
@@ -554,8 +558,11 @@ extern "C"
 #if PID_CONTROLLERS > 0
         return io_spindle_speed;
 #else
+#ifdef SPINDLE_PWM
         return mcu_get_pwm(SPINDLE_PWM);
 #endif
+#endif
+        return 0;
     }
 #endif
 

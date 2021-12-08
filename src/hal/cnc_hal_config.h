@@ -29,10 +29,9 @@ extern "C"
  * The HAL config file is were the IO pins are "connected" to
  * alias name to be used inside µCNC 
  * 
- * /
+ */
 
-
-/*
+/**
 	Spindle configurations.
 	Uncomment to enable
 */

@@ -68,9 +68,9 @@ extern "C"
 #define LIMIT_Z_PULLUP
 
 //Enable limits switch interrupt
-#define LIMIT_X_ISR
-#define LIMIT_Y_ISR
-#define LIMIT_Z_ISR
+// #define LIMIT_X_ISR
+// #define LIMIT_Y_ISR
+// #define LIMIT_Z_ISR
 
 //Setup control input pins
 #define ESTOP_BIT 2
@@ -90,9 +90,9 @@ extern "C"
 #define CS_RES_PULLUP
 
 //Enable controls switch interrupt
-#define ESTOP_ISR
-#define FHOLD_ISR
-#define CS_RES_ISR
+// #define ESTOP_ISR
+// #define FHOLD_ISR
+// #define CS_RES_ISR
 
 //On the STM32 always use sync TX UART (async doesn't work well)
 #ifdef COM_PORT
@@ -101,6 +101,7 @@ extern "C"
 #define RX_BIT 11
 #define RX_PORT A
 #else
+#ifdef USB_VCP
 #define USB_DM_BIT 24
 #define USB_DM_PORT A
 #define USB_DM_MUX G
@@ -108,12 +109,14 @@ extern "C"
 #define USB_DP_PORT A
 #define USB_DP_MUX G
 #endif
+#endif
 
 //Setup PWM
-#define PWM0_BIT 16 //assigns PWM0 pin
-#define PWM0_PORT A //assigns PWM0 pin
-#define PWM0_CHANNEL 1
-#define PWM0_TIMER 1
+#define PWM0_BIT 16	   //assigns PWM0 pin
+#define PWM0_PORT A	   //assigns PWM0 port
+#define PWM0_CHANNEL 0 //assigns PWM0 channel
+#define PWM0_TIMER 2   //assigns PWM0 timer
+#define PWM0_MUX E	   //assigns PWM0 mux
 
 //Setup generic IO Pins
 //Functionalities are set in cnc_hal_config.h file
@@ -123,8 +126,8 @@ extern "C"
 #define DOUT0_PORT A
 
 //teste led pin
-#define DOUT15_BIT 10
-#define DOUT15_PORT A
+// #define DOUT15_BIT 17
+// #define DOUT15_PORT A
 
 //coolant
 #define DOUT1_BIT 4
@@ -135,7 +138,7 @@ extern "C"
 #define STEP0_EN_PORT A
 
 	//Setup the Step Timer used has the heartbeat for µCNC
-	//#define ITP_TIMER 3
+	//#define ITP_TIMER 5
 
 #ifdef __cplusplus
 }

@@ -107,8 +107,9 @@ endif
 AS_INCLUDES = 
 
 # C includes
+C_HEADERS = $(call rwildcard,./,*.h)
 ifdef USE_USB
-C_HEADERS = $(call rwildcard,../../tinyusb/src/,*.h)
+C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
 endif
 
 
@@ -118,9 +119,7 @@ C_INCLUDES =  \
 -Idrivers/ \
 -I"../../src/"
 
-ifdef USE_USB
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
-endif
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

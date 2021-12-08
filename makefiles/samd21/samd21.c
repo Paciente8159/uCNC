@@ -53,6 +53,75 @@ void SystemInit(void)
 {
         /* Set the correct number of wait states for 48 MHz @ 3.3v */
         NVMCTRL->CTRLB.bit.RWS = 1;
+
+#ifndef USB_VCP
+        /* Crystal oscillators can take a long time to startup. This
+               waits the maximum amount of time (4 seconds). This can be
+               reduced depending on your crystal oscillator. */
+        SYSCTRL->OSC32K.reg = SYSCTRL_OSC32K_STARTUP(0x7) | SYSCTRL_OSC32K_EN32K;
+
+        /* This has to be a separate write as per datasheet section 17.6.3 */
+        SYSCTRL->OSC32K.bit.ENABLE = 1;
+
+        /* Wait for the external crystal to be ready */
+        while (!SYSCTRL->PCLKSR.bit.OSC32KRDY)
+                ;
+
+        /* Configure GCLK1's divider - in this case, no division - so just divide by one */
+        GCLK->GENDIV.reg = GCLK_GENDIV_ID(1) | GCLK_GENDIV_DIV(1);
+
+        /* Setup GCLK1 using the external 32.768 kHz oscillator */
+        GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(1) | GCLK_GENCTRL_SRC_OSC32K | /* Improve the duty cycle. */ GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+
+        /* Wait for the write to complete */
+        while (GCLK->STATUS.bit.SYNCBUSY)
+                ;
+
+        GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_DFLL48 | GCLK_CLKCTRL_GEN_GCLK1 | GCLK_CLKCTRL_CLKEN;
+
+        /* This works around a quirk in the hardware (errata 1.2.1) -
+           the DFLLCTRL register must be manually reset to this value before
+           configuration. */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+        SYSCTRL->DFLLCTRL.reg = SYSCTRL_DFLLCTRL_ENABLE;
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+        /* Set up the multiplier. This tells the DFLL to multiply the 32.768 kHz
+           reference clock to 48 MHz */
+        SYSCTRL->DFLLMUL.reg =
+            /* This value is output frequency / reference clock frequency,
+               so 48 MHz / 32.768 kHz */
+            SYSCTRL_DFLLMUL_MUL(1465) |
+            /* The coarse and fine step are used by the DFLL to lock
+               on to the target frequency. These are set to half
+               of the maximum value. Lower values mean less overshoot,
+               whereas higher values typically result in some overshoot but
+               faster locking. */
+            SYSCTRL_DFLLMUL_FSTEP(511) | // max value: 1023
+            SYSCTRL_DFLLMUL_CSTEP(31);   // max value: 63
+
+        /* Wait for the write to finish */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+        /* Write the coarse and fine calibration from NVM. */
+        uint32_t coarse =
+            ((*(uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR) & FUSES_DFLL48M_COARSE_CAL_Msk) >> FUSES_DFLL48M_COARSE_CAL_Pos;
+        uint32_t fine =
+            ((*(uint32_t *)FUSES_DFLL48M_FINE_CAL_ADDR) & FUSES_DFLL48M_FINE_CAL_Msk) >> FUSES_DFLL48M_FINE_CAL_Pos;
+
+        SYSCTRL->DFLLVAL.reg = SYSCTRL_DFLLVAL_COARSE(coarse) | SYSCTRL_DFLLVAL_FINE(fine);
+
+        /* Wait for the write to finish */
+        while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
+                ;
+
+        /* Enable the DFLL */
+        SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
+
+#else
         /* This works around a quirk in the hardware (errata 1.2.1) -
    the DFLLCTRL register must be manually reset to this value before
    configuration. */
@@ -72,9 +141,9 @@ void SystemInit(void)
 
         /* Wait for the write to finish. */
         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-                ;
+        {
+        };
 
-#ifdef USB_VCP
         SYSCTRL->DFLLCTRL.reg |=
             /* Enable USB clock recovery mode */
             SYSCTRL_DFLLCTRL_USBCRM |
@@ -93,16 +162,18 @@ void SystemInit(void)
        fine should lock on quickly. */
             SYSCTRL_DFLLMUL_FSTEP(1) |
             SYSCTRL_DFLLMUL_CSTEP(1);
+
         /* Closed loop mode */
         SYSCTRL->DFLLCTRL.bit.MODE = 1;
-#endif
 
         /* Enable the DFLL */
         SYSCTRL->DFLLCTRL.bit.ENABLE = 1;
 
-        /* Wait for the write to finish */
+        /* Wait for the write to complete */
         while (!SYSCTRL->PCLKSR.bit.DFLLRDY)
-                ;
+        {
+        };
+#endif
 
         /* Setup GCLK0 using the DFLL @ 48 MHz */
         GCLK->GENCTRL.reg =
@@ -114,9 +185,10 @@ void SystemInit(void)
 
         /* Wait for the write to complete */
         while (GCLK->STATUS.bit.SYNCBUSY)
-                ;
+        {
+        };
 
-#ifdef USE_VCP
+#ifdef USB_VCP
         USB->DEVICE.QOSCTRL.bit.CQOS = 2;
         USB->DEVICE.QOSCTRL.bit.DQOS = 2;
 #endif

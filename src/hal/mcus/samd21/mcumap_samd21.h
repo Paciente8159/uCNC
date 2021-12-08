@@ -970,11 +970,44 @@ extern "C"
 #endif
 #endif
 
+/*PWM*/
+#ifdef PWM0
+#define PWM0_PMUX (pinmux(PWM0_PORT, PWM0_BIT))
+#define PWM0_PMUXVAL (pinmuxval(PWM0_MUX))
+#if (PWM0_TIMER < 3)
+#define PWM0_TMR __helper__(TCC, PWM0_TIMER, )
+#define PWM0_APBCMASK __helper__(PM_APBCMASK_TCC, PWM0_TIMER, )
+#define PWM0_CONFIG (                         \
+	{                                         \
+		PWM0_TMR->CTRLA.bit.SWRST = 1;        \
+		while (PWM0_TMR->SYNCBUSY.bit.SWRST)  \
+			;                                 \
+		PWM0_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM0_TMR->WAVE.bit.WAVEGEN = 2;       \
+		while (TCC2->SYNCBUSY.bit.WAVE)       \
+			;                                 \
+		PWM0_TMR->PER.bit.PER = 255;          \
+		while (PWM0_TMR->SYNCBUSY.bit.PER)    \
+			;                                 \
+		PWM0_TMR->CTRLA.bit.ENABLE = 1;       \
+		while (PWM0_TMR->SYNCBUSY.bit.ENABLE) \
+			;                                 \
+	})
+#define PWM0_DUTYCYCLE (PWM0_TMR->CC[PWM0_CHANNEL].bit.CC)
+#else
+#endif
+#define DIO20_PMUX PWM0_PMUX
+#define DIO20_PMUXVAL PWM0_PMUXVAL
+#define DIO20_TMR PWM0_TMR
+#define DIO20_CONFIG PWM0_CONFIG
+#define DIO20_DUTYCYCLE PWM0_DUTYCYCLE
+#endif
+
 /*timers*/
 #define gclk_clkctrl(X) (0x1A + (X >> 1))
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 2
+#define ITP_TIMER 5
 #endif
 #if (ITP_TIMER < 3)
 #define mcu_timer_isr __helper__(TCC, ITP_TIMER, _Handler)
@@ -1039,18 +1072,23 @@ extern "C"
 	})
 
 #define mcu_config_input_isr(diopin) ({})
-#define mcu_config_pwm(diopin) ({})
+#define mcu_config_pwm(diopin) (                                                     \
+	{                                                                                \
+		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));       \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
+		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
+		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
+		(__indirect__(diopin, CONFIG));                                              \
+	})
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO).OUTSET.reg = (1UL << __indirect__(diopin, BIT)))
 #define mcu_clear_output(diopin) (__indirect__(diopin, GPIO).OUTCLR.reg = (1UL << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (__indirect__(diopin, GPIO).OUTTGL.reg = (1UL << __indirect__(diopin, BIT)))
+
+#define mcu_set_pwm(diopin, pwmvalue) ({ (__indirect__(diopin, DUTYCYCLE)) = pwmvalue; })
 /*
-#define mcu_set_pwm(diopin, pwmvalue)                                                                                                           \
-	{                                                                                                                                           \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((((uint32_t)__indirect__(diopin, TIMREG)->ARR) * pwmvalue) / 255); \
-	}
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 #ifdef PROBE
 #ifdef PROBE_ISR

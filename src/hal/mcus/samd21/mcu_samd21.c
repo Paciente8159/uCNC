@@ -26,6 +26,7 @@ extern "C"
 
 #if (MCU == MCU_SAMD21)
 #include "core_cm0plus.h"
+#include "mcumap_samd21.h"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
@@ -39,42 +40,49 @@ extern "C"
 #include "tusb.h"
 #endif
 
-        //setups internal timers (all will run @ 1Mhz on GCLK1)
+        //setups internal timers (all will run @ 1Mhz on GCLK4)
         static void mcu_setup_clocks(void)
         {
-                /* Configure internal oscillator dv by 8 (1Mhz)*/
-                SYSCTRL->OSC8M.bit.PRESC = 0x03; // divide by 8
-                SYSCTRL->OSC8M.bit.ENABLE = 1;
+                PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
 
-                /* Configure GCLK1's divider - in this case, divided by 8 */
-                GCLK->GENDIV.reg = GCLK_GENDIV_ID(2) | GCLK_GENDIV_DIV(1);
+                /* Configure GCLK4's divider - in this case, divided by 1 */
+                GCLK->GENDIV.reg = GCLK_GENDIV_ID(4) | GCLK_GENDIV_DIV(48);
 
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
 
-                /* Setup GCLK1 using the 8 MHz oscillator / 8 */
-                GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_SRC_OSC8M | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN /* | GCLK_GENCTRL_OE*/;
-
+                /* Setup GCLK4 using the DFLL @48Mhz */
+                GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(4) | GCLK_GENCTRL_SRC_DFLL48M | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_OE;
                 /* Wait for the write to complete */
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
 
-                /* Connect GCLK1 itp timer*/
-                GCLK->CLKCTRL.reg = ITP_CLKCTRL | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK2;
-
+                /* Connect GCLK4 to all timers*/
+                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_TCC0_TCC1;
+                /* Wait for the write to complete. */
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
+                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_TCC2_TC3;
+                /* Wait for the write to complete. */
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
+                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_TC4_TC5;
+                /* Wait for the write to complete. */
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
+                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_TC6_TC7;
                 /* Wait for the write to complete. */
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
 
-                PM->APBCMASK.reg |= (ITP_APBCMASK);
-
-                /*PORT->Group[0].DIRSET.reg = (1 << 16);
-                PORT->Group[0].PINCFG[16].reg |= PORT_PINCFG_PMUXEN;
-                PORT->Group[0].PMUX[16 >> 1].bit.PMUXE |= PORT_PMUX_PMUXE_H;*/
+                PORT->Group[0].DIRSET.reg = (1 << 10);
+                PORT->Group[0].PINCFG[10].reg |= PORT_PINCFG_PMUXEN;
+                PORT->Group[0].PMUX[10 >> 1].bit.PMUXE |= PORT_PMUX_PMUXE_H;
         }
 
         void mcu_timer_isr(void)
         {
+                mcu_disable_global_isr();
                 static bool resetstep = false;
 
 #if (ITP_TIMER < 3)
@@ -103,6 +111,8 @@ extern "C"
 
 #endif
 #ifdef USB_VCP
+                PM->AHBMASK.reg |= PM_AHBMASK_USB;
+
                 mcu_config_input(USB_DM);
                 mcu_config_input(USB_DP);
                 mcu_config_altfunc(USB_DM);
@@ -114,17 +124,15 @@ extern "C"
                 GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_USB;
                 /* Wait for the write to complete. */
                 while (GCLK->STATUS.bit.SYNCBUSY)
-                {
-                };
-                PM->AHBMASK.reg |= PM_AHBMASK_USB;
+                        ;
+
                 USB->DEVICE.INTENSET.reg = USB_DEVICE_EPINTENSET_MASK;
                 USB->DEVICE.CTRLA.bit.ENABLE = 1;
                 USB->DEVICE.CTRLA.bit.MODE = 0;
                 USB->DEVICE.CTRLB.bit.SPDCONF = 0; //.reg &= ~USB_DEVICE_CTRLB_SPDCONF_Msk;
                 //USB->DEVICE.CTRLB.reg |= USB_DEVICE_CTRLB_SPDCONF_FS;
                 while (USB->DEVICE.SYNCBUSY.bit.SWRST)
-                {
-                };
+                        ;
                 tusb_init();
 #endif
         }
@@ -132,8 +140,10 @@ extern "C"
 #ifdef USB_VCP
         void USB_Handler(void)
         {
+                mcu_disable_global_isr();
                 tud_int_handler(0);
                 NVIC_ClearPendingIRQ(USB_IRQn);
+                mcu_enable_global_isr();
         }
 #endif
 
@@ -157,6 +167,7 @@ extern "C"
                         mcu_toggle_output(LED);
                 }
 #endif
+                NVIC_ClearPendingIRQ(SysTick_IRQn);
         }
 
         void mcu_tick_init()
@@ -178,6 +189,7 @@ extern "C"
 	 * */
         void mcu_init(void)
         {
+                mcu_setup_clocks();
 #ifdef STEP0
                 mcu_config_output(STEP0);
 #endif
@@ -640,10 +652,8 @@ extern "C"
 #ifdef USB_DP
                 mcu_config_input(USB_DP);
 #endif
-
-                mcu_setup_clocks();
-                mcu_tick_init();
                 mcu_usart_init();
+                mcu_tick_init();
                 mcu_enable_global_isr();
         }
 
@@ -891,7 +901,7 @@ extern "C"
                 while (ITP_REG->SYNCBUSY.bit.ENABLE)
                         ;
                 ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
-                ITP_REG->CC[0].reg = ticks;
+                ITP_REG->CC[0].bit.CC = ticks;
                 while (ITP_REG->SYNCBUSY.bit.CC0)
                         ;
                 ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
@@ -902,7 +912,7 @@ extern "C"
                 while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                         ;
                 ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
-                ITP_REG->COUNT16.CC[0].reg = ticks;
+                ITP_REG->COUNT16.CC[0].bit.CC = ticks;
                 while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                         ;
                 ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection

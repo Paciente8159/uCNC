@@ -3177,8 +3177,7 @@ extern "C"
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
 #endif
-#else
-#if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
+#elif (defined(USB_DP_PORT) && defined(USB_DP_BIT))
 #ifndef USB_VCP
 #define USB_VCP
 #endif

@@ -1053,7 +1053,7 @@ extern "C"
 #ifdef USE_COOLANT
         if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
         {
-            block_date.update_tools = true;
+            block_data.update_tools = true;
         }
         block_data.coolant = new_state->groups.coolant;
 //moving to planner
@@ -2247,6 +2247,7 @@ extern "C"
         parser_state.groups.distance_mode = G90;              //G90
         parser_state.groups.feedrate_mode = G94;              //G94
         parser_state.groups.tool_length_offset = G49;         //G49
+        parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
 #ifdef USE_COOLANT
         parser_state.groups.coolant = M9; //M9
 #endif
