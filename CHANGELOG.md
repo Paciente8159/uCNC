@@ -5,6 +5,19 @@
 
 # Changelog
 
+## [1.2.3] - 2021-12-08
+
+Version 1.2.3 is a minor revision and improves a couple of functionalities.
+The following things were changed:
+
+### Changed
+  - added parser unlocking on soft-reset to unlock board after end program M codes M2 and M30 (#69)
+  - option USE_COOLANT active by default (#69)
+
+### Fixed
+  - fixed typo that cause compilation error on option USE_COOLANT (#69)
+  - fixed code compilation errors without SPINDLE_PWM defined (#69)
+
 ## [1.2.2] - 2021-08-08
 
 Version 1.2.2 is a minor revision an targets a couple of issues on the STM32.
@@ -275,6 +288,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.3
 [1.2.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.2
 [1.2.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.1
 [1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0
