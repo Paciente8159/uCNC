@@ -45,6 +45,7 @@ main.c \
 $(call rwildcard,../../src,*.c)
 
 ifdef USE_USB
+C_SOURCES += ../../tinyusb/tusb_descriptors.c
 C_SOURCES += $(call rwildcard,../../tinyusb/src/,*.c)
 endif
 
@@ -109,6 +110,7 @@ AS_INCLUDES =
 # C includes
 C_HEADERS = $(call rwildcard,./,*.h)
 ifdef USE_USB
+C_HEADERS += ../../tinyusb/tusb_config.h
 C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
 C_HEADERS += $(call rwildcard,../../tinyusb/hw/mcu/st/cmsis_device_f1/Include/,*.h)
 endif

@@ -213,7 +213,7 @@ extern "C"
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
 	 */
-	//#define EMULATE_GRBL_STARTUP
+	#define EMULATE_GRBL_STARTUP
 
 	/**
 	 * Compilation specific options
