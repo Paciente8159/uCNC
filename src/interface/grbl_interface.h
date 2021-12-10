@@ -110,6 +110,9 @@ extern "C"
 #define GRBL_HOME (GRBL_SYSTEM_CMD + 7)
 #define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
+#define GRBL_SETTINGS_SAVED (GRBL_SYSTEM_CMD + 10)
+#define GRBL_SETTINGS_LOADED (GRBL_SYSTEM_CMD + 11)
+#define GRBL_SETTINGS_DEFAULT (GRBL_SYSTEM_CMD + 12)
 
 #define EXEC_ALARM_EMERGENCY_STOP -1
 #define EXEC_ALARM_RESET 0
@@ -159,6 +162,9 @@ extern "C"
 //#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
 #define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
+#define MSG_FEEDBACK_13 __romstr__("Settings saved")
+#define MSG_FEEDBACK_14 __romstr__("Settings loaded")
+#define MSG_FEEDBACK_15 __romstr__("Settings defaults")
 
 #define MSG_STATUS_ALARM __romstr__("Alarm")
 #define MSG_STATUS_DOOR __romstr__("Door:")
