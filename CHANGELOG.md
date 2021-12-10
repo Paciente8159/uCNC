@@ -5,6 +5,25 @@
 
 # Changelog
 
+## [1.2.4] - 2021-12-10
+
+Version 1.2.4 is a minor revision and improves a couple of functionalities.
+The following things were changed:
+
+### Added
+  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_SETTING_EXTRA_CMDS in cnc_config.h active by default) (#70)
+
+    This set of new commands allow a more granular control over the settings stored in EEPROM/Flash to prevent wearing.
+    When enabled all grbl $x=val are only changed in SRAM. To set them in non volatile memory a save command must be issued.
+    3 additional commands are added:
+    $SS - Settings save. This stores all values to EEPROM/Flash
+    $SL - Settings load. This loads all values from EEPROM/Flash
+    $SR - Settings reset. This loads all default values from ROM
+
+### Changed
+  - enabled Grbl startup emulation to improve µCNC compatibility. Many Grbl interfaces expect the grbl startup message and won't recognize µCNC because of that simple fact (#70)
+  - changed tinyUSB config and descriptors file location and updated makefile for STM32  (#70)
+
 ## [1.2.3] - 2021-12-08
 
 Version 1.2.3 is a minor revision and improves a couple of functionalities.
@@ -288,6 +307,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
 [1.2.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.3
 [1.2.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.2
 [1.2.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.1
