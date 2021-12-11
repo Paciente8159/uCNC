@@ -22,7 +22,12 @@ USE_USB = TRUE
 # debug build?
 DEBUG = 0
 # optimization
+ifeq ($(DEBUG), 1)
+OPT = -Og
+else
 OPT = -Os
+endif
+
 
 #######################################
 # paths

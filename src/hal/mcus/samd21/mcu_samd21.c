@@ -972,48 +972,37 @@ extern "C"
 
 //Non volatile memory
 //SAMD devices page size never exceeds 1024 bytes
+#define NVM_EEPROM_SIZE 0x400 //1Kb of emulated EEPROM is enough
 #define NVM_BASE_ADDRESS 0x00000000
-#define NVM_PAGE_SIZE (8 * NVMCTRL->PARAM.bit.PSZ)
+#define NVM_PAGE_SIZE (8 * (1 + NVMCTRL->PARAM.bit.PSZ))
 #define NVM_PAGE_COUNT (NVMCTRL->PARAM.bit.NVMP)
 #define NVM_SIZE (NVM_PAGE_SIZE * NVM_PAGE_COUNT)
 #define NVM_ROW_SIZE (NVM_PAGE_SIZE << 2) //Equivalent to a NVM Row = 4*pages
-#define NVM_EEPROM_SIZE 0x1000             //4Kb of emulated EEPROM
-#define NVM_EEPROM_BASE (NVM_BASE_ADDRESS + NVM_SIZE - NVM_EEPROM_SIZE)
+#define NVM_EEPROM_ROWS ((uint8_t)ceil(NVM_EEPROM_SIZE / NVM_ROW_SIZE))
+#define NVM_EEPROM_BASE (NVM_BASE_ADDRESS + NVM_SIZE - (NVM_EEPROM_ROWS * NVM_ROW_SIZE))
 
-        static uint8_t samd21_flash_row[NVM_EEPROM_SIZE]; //4kb max
-        static uint16_t samd21_flash_current_row = -1;
-        static bool samd21_flash_modified;
-
-        //checks if the current page is loaded to ram
-        //if not loads it
-        static uint16_t mcu_access_flash_page(uint16_t address, bool samd21_flash_new_row)
-        {
-                uint16_t row_size = NVM_ROW_SIZE;
-
-                uint16_t address_row = address & row_size;
-                uint16_t address_offset = address & (row_size - 1);
-                if (samd21_flash_current_row != address_row)
-                {
-                        if (samd21_flash_new_row)
-                        {
-                                mcu_eeprom_flush();
-                        }
-                        samd21_flash_modified = false;
-                        samd21_flash_current_row = address_row;
-                        memcpy(&samd21_flash_row[0], (const void *)(NVM_EEPROM_BASE + address_row), NVM_ROW_SIZE);
-                }
-
-                return address_offset;
-        }
+        static uint8_t samd21_flash_row[NVM_EEPROM_SIZE]; //1kb max
+        static bool samd21_flash_modified = false;
+        static bool samd21_eeprom_loaded = false;
 
         /**
 	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
 	 * */
         uint8_t mcu_eeprom_getc(uint16_t address)
         {
-                return 0;
-                uint16_t offset = mcu_access_flash_page(address, false);
-                return samd21_flash_row[offset];
+                uint16_t eepromsize = NVM_EEPROM_SIZE;
+                uint32_t eeprombase = NVM_EEPROM_BASE;
+
+                address &= (NVM_EEPROM_SIZE - 1); //keep within 1Kb address range
+
+                if (!samd21_eeprom_loaded)
+                {
+                        memcpy(&samd21_flash_row[0], (const void *)(NVM_EEPROM_BASE), NVM_EEPROM_SIZE);
+                        samd21_eeprom_loaded = true;
+                        samd21_flash_modified = false;
+                }
+
+                return samd21_flash_row[address];
         }
 
         /**
@@ -1021,85 +1010,103 @@ extern "C"
 	 * */
         void mcu_eeprom_putc(uint16_t address, uint8_t value)
         {
-                uint16_t offset = mcu_access_flash_page(address, true);
+                address &= (NVM_EEPROM_SIZE - 1);
 
-                if (samd21_flash_row[offset] != value)
+                if (!samd21_eeprom_loaded)
+                {
+                        memcpy(&samd21_flash_row[0], (const void *)(NVM_EEPROM_BASE), NVM_EEPROM_SIZE);
+                        samd21_eeprom_loaded = true;
+                        samd21_flash_modified = false;
+                }
+
+                if (samd21_flash_row[address] != value)
                 {
                         samd21_flash_modified = true;
                 }
 
-                samd21_flash_row[offset] = value;
+                samd21_flash_row[address] = value;
         }
 
         /**
 	 * flushes all recorded registers into the eeprom.
 	 * */
-        static inline uint32_t read_unaligned_uint32(const void *data)
-        {
-                union
-                {
-                        uint32_t u32;
-                        uint8_t u8[4];
-                } res;
-
-                const uint8_t *d = (const uint8_t *)data;
-
-                res.u8[0] = d[0];
-                res.u8[1] = d[1];
-                res.u8[2] = d[2];
-                res.u8[3] = d[3];
-                return res.u32;
-        }
 
         void mcu_eeprom_flush(void)
         {
-                // if (samd21_flash_modified)
-                // {
-                //         // Data boundaries is the size of a nvm row
-                //         uint32_t size = NVM_ROW_SIZE;
+                if (samd21_flash_modified)
+                {
+                        int32_t size = (int32_t)NVM_EEPROM_SIZE;
+                        uint32_t eeprom_offset = 0;
 
-                //         volatile uint32_t *dst_addr = (volatile uint32_t *)(NVM_EEPROM_BASE + samd21_flash_current_row);
-                //         const uint8_t *src_addr = (uint8_t *)&samd21_flash_row[0];
+                        volatile uint32_t *dst_addr = (volatile uint32_t *)((const volatile void *)NVM_EEPROM_BASE);
+                        const uint32_t *src_addr = (uint32_t *)&samd21_flash_row[0];
 
-                //         mcu_disable_global_isr();
+                        mcu_disable_global_isr();
 
-                //         // Disable automatic page write
-                //         NVMCTRL->CTRLB.bit.MANW = 1;
+                        //update rows
+                        // for (uint16_t r = 0; r < NVM_EEPROM_ROWS; r++)
+                        // {
+                        //         //row was modified
+                        //         uint32_t cmpsize = (size > NVM_ROW_SIZE) ? NVM_ROW_SIZE : size;
+                        //         if (memcmp(dst_addr, src_addr, cmpsize) != 0)
+                        //         {
+                        //                 // Enable automatic page write
+                        //                 NVMCTRL->CTRLB.bit.MANW = 1;
+                        //                 while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                         ;
 
-                //         //set the flash address to erase/write
-                //         NVMCTRL->ADDR.reg = (NVM_EEPROM_BASE + samd21_flash_current_row);
-                //         while (!NVMCTRL->INTFLAG.bit.READY)
-                //                 ;
-                //         //erase region for writing
-                //         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_ER;
-                //         while (!NVMCTRL->INTFLAG.bit.READY)
-                //                 ;
+                        //                 //set the flash address to erase/write half-word (datasheet 22.8.8)
+                        //                 NVMCTRL->ADDR.reg = (((NVM_EEPROM_BASE + eeprom_offset) >> 1) & 0xFFFF);
+                        //                 while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                         ;
 
-                //         // Do writes in pages
-                //         while (size)
-                //         {
-                //                 // Execute "PBC" Page Buffer Clear
-                //                 NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
-                //                 while (!NVMCTRL->INTFLAG.bit.READY)
-                //                         ;
+                        //                 //erase region for writing
+                        //                 NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_ER;
+                        //                 while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                         ;
 
-                //                 // Fill page buffer
-                //                 for (uint32_t i = 0; i < (NVM_PAGE_SIZE >> 2); i++)
-                //                 {
-                //                         *dst_addr = read_unaligned_uint32(src_addr);
-                //                         src_addr++;
-                //                         dst_addr++;
-                //                         size--;
-                //                 }
+                        //                 //4 pages per NVM row
+                        //                 for (uint8_t p = 0; p < 4; p++)
+                        //                 {
+                        //                         NVMCTRL->ADDR.reg = (((NVM_EEPROM_BASE + eeprom_offset) >> 1) & 0xFFFF);
+                        //                         while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                                 ;
 
-                //                 // Execute "WP" Write Page
-                //                 NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
-                //                 while (!NVMCTRL->INTFLAG.bit.READY)
-                //                         ;
-                //         }
+                        //                         // Execute "PBC" Page Buffer Clear
+                        //                         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_PBC;
+                        //                         while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                                 ;
 
-                //         mcu_enable_global_isr();
-                // }
+                        //                         // Fill page buffer
+                        //                         for (uint32_t i = 0; i < (NVM_PAGE_SIZE>>2); i++)
+                        //                         {
+                        //                                 *dst_addr = (size > 0) ? *src_addr : 0xffffffff;
+                        //                                 dst_addr++;
+                        //                                 src_addr++;
+                        //                                 // Data boundaries of the eeprom in 16bit chuncks
+                        //                                 eeprom_offset += 4;
+                        //                                 size -= 4;
+                        //                         }
+
+                        //                         // Execute "WP" Write Page
+                        //                         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
+                        //                         while (!NVMCTRL->INTFLAG.bit.READY)
+                        //                                 ;
+                        //                 }
+                        //         }
+                        //         else
+                        //         {
+                        //                 dst_addr += cmpsize;
+                        //                 src_addr += cmpsize;
+                        //                 eeprom_offset += cmpsize;
+                        //                 size -= cmpsize;
+                        //         }
+                        // }
+
+                        mcu_enable_global_isr();
+                }
+
+                samd21_flash_modified = false;
         }
 
 #endif

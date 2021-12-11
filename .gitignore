@@ -65,3 +65,7 @@ virtualeeprom
 
 # Other files
 *.dat
+*.cfg
+
+# VSCode
+.vscode/

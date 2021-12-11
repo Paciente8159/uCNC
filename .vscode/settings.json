@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "mcudefs.h": "c",
-        "mcumap.h": "c"
-    }
-}

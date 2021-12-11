@@ -50,11 +50,6 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#ifdef SETTINGS_ADDRESS_OFFSET
-#undef SETTINGS_ADDRESS_OFFSET
-#endif
-#define SETTINGS_ADDRESS_OFFSET 0xfc00
-
 #ifdef USB_VCP
 //if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
