@@ -69,6 +69,11 @@ extern "C"
 #include "hal/boards/samd21/boardmap_mzero.h"
 #endif
 
+#if (BOARD == BOARD_ZERO)
+#define MCU MCU_SAMD21
+#include "hal/boards/samd21/boardmap_zero.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #endif
 
