@@ -352,6 +352,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         switch (setting)
         {
         case 0:
+            value = 1000000.0f / value;
             if (value > F_STEP_MAX)
             {
                 return STATUS_MAX_STEP_RATE_EXCEEDED;

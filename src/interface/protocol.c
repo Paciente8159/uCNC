@@ -502,7 +502,7 @@ extern "C"
     void protocol_send_cnc_settings(void)
     {
         protocol_busy = true;
-        protocol_send_gcode_setting_line_flt(0, g_settings.max_step_rate);
+        protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
 #ifdef EMULATE_GRBL_STARTUP
         // just adds this for compatibility
         // this setting is not used
