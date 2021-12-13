@@ -5,6 +5,23 @@
 
 # Changelog
 
+## [1.3.x] - Unreleased
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
+The following things were changed:
+
+### Added
+  - added SAMD21 (Arduino Zero and M0 boards) initial support. This is still an early release so there are still limitations. These are:
+    - Interrupt driven inputs not implemented (only working via soft pooling)
+    - Serial port COM not implemented. (limited to Virtual COM port via USB)
+    - Analog inputs not implemented. (this feature is outside of the Grbl scope)
+
+### Changed
+  - none
+
+### Fixed
+  - none
+
 ## [1.2.2] - 2021-08-08
 
 Version 1.2.2 is a minor revision an targets a couple of issues on the STM32.
