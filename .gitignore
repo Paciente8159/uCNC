@@ -68,3 +68,5 @@ virtualeeprom
 
 # VSCode
 .vscode/
+*.json
+*.cfg
