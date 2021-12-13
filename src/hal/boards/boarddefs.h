@@ -44,7 +44,7 @@ extern "C"
 #include "hal/boards/avr/boardmap_uno.h"
 #endif
 
-#if(BOARD==BOARD_MKS_DLC)
+#if (BOARD == BOARD_MKS_DLC)
 #define MCU MCU_AVR
 #include "hal/boards/avr/boardmap_mks_dlc.h"
 #endif
@@ -62,6 +62,16 @@ extern "C"
 #if (BOARD == BOARD_BLUEPILL)
 #define MCU MCU_STM32F10X
 #include "hal/boards/stm32/boardmap_bluepill.h"
+#endif
+
+#if (BOARD == BOARD_MZERO)
+#define MCU MCU_SAMD21
+#include "hal/boards/samd21/boardmap_mzero.h"
+#endif
+
+#if (BOARD == BOARD_ZERO)
+#define MCU MCU_SAMD21
+#include "hal/boards/samd21/boardmap_zero.h"
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)

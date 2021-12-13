@@ -5,19 +5,20 @@
 
 # Changelog
 
-## [1.2.x] - unreleased
+## [1.3.b] - Unreleased
 
-Version 1.2.x is a minor revision and improves a couple of functionalities.
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
 The following things were changed:
 
 ### Added
-  - none
+  - added SAMD21 (Arduino Zero and M0 boards) initial support. This is still an early release so there are still limitations for SAMD21. These are:  (#72)
+    - Interrupt driven inputs not implemented (only working via soft pooling)
+    - Serial port COM not implemented. (limited to Virtual COM port via USB)
+    - Analog inputs not implemented. (this feature is outside of the Grbl scope)
+  - AVR and STM32 remain unchanged.
 
 ### Changed
-  - modified setting $0=val to work the same way has Grbl
-
-### Fixed
-  - none
+  - modified setting $0=val to work the same way has Grbl (#71)
 
 ## [1.2.4] - 2021-12-10
 
@@ -321,6 +322,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
 [1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
 [1.2.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.3
 [1.2.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.2

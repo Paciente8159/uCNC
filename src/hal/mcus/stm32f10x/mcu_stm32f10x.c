@@ -372,25 +372,6 @@ extern "C"
 #ifdef STEP7
 		mcu_config_output(STEP7);
 #endif
-#ifdef STEPPER_ENABLE
-		mcu_config_output(STEPPER_ENABLE);
-#endif
-#ifdef STEPPER1_ENABLE
-		mcu_config_output(STEPPER1_ENABLE);
-#endif
-#ifdef STEPPER2_ENABLE
-		mcu_config_output(STEPPER2_ENABLE);
-#endif
-#ifdef STEPPER3_ENABLE
-		mcu_config_output(STEPPER3_ENABLE);
-#endif
-#ifdef STEPPER4_ENABLE
-		mcu_config_output(STEPPER4_ENABLE);
-#endif
-#ifdef STEPPER5_ENABLE
-		mcu_config_output(STEPPER5_ENABLE);
-#endif
-
 #ifdef DIR0
 		mcu_config_output(DIR0);
 #endif
@@ -408,6 +389,24 @@ extern "C"
 #endif
 #ifdef DIR5
 		mcu_config_output(DIR5);
+#endif
+#ifdef STEP0_EN
+		mcu_config_output(STEP0_EN);
+#endif
+#ifdef STEP1_EN
+		mcu_config_output(STEP1_EN);
+#endif
+#ifdef STEP2_EN
+		mcu_config_output(STEP2_EN);
+#endif
+#ifdef STEP3_EN
+		mcu_config_output(STEP3_EN);
+#endif
+#ifdef STEP4_EN
+		mcu_config_output(STEP4_EN);
+#endif
+#ifdef STEP5_EN
+		mcu_config_output(STEP5_EN);
 #endif
 #ifdef PWM0
 		mcu_config_pwm(PWM0);
@@ -457,7 +456,6 @@ extern "C"
 #ifdef PWM15
 		mcu_config_pwm(PWM15);
 #endif
-
 #ifdef DOUT0
 		mcu_config_output(DOUT0);
 #endif
@@ -680,11 +678,13 @@ extern "C"
 #ifdef ANALOG15
 		mcu_config_analog(ANALOG15);
 #endif
-
 #ifdef DIN0
 		mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
 		mcu_config_pullup(DIN0);
+#endif
+#ifdef DIN0_ISR
+		mcu_config_input_isr(DIN0);
 #endif
 #endif
 #ifdef DIN1
@@ -692,11 +692,17 @@ extern "C"
 #ifdef DIN1_PULLUP
 		mcu_config_pullup(DIN1);
 #endif
+#ifdef DIN1_ISR
+		mcu_config_input_isr(DIN1);
+#endif
 #endif
 #ifdef DIN2
 		mcu_config_input(DIN2);
 #ifdef DIN2_PULLUP
 		mcu_config_pullup(DIN2);
+#endif
+#ifdef DIN2_ISR
+		mcu_config_input_isr(DIN2);
 #endif
 #endif
 #ifdef DIN3
@@ -704,11 +710,17 @@ extern "C"
 #ifdef DIN3_PULLUP
 		mcu_config_pullup(DIN3);
 #endif
+#ifdef DIN3_ISR
+		mcu_config_input_isr(DIN3);
+#endif
 #endif
 #ifdef DIN4
 		mcu_config_input(DIN4);
 #ifdef DIN4_PULLUP
 		mcu_config_pullup(DIN4);
+#endif
+#ifdef DIN4_ISR
+		mcu_config_input_isr(DIN4);
 #endif
 #endif
 #ifdef DIN5
@@ -716,17 +728,26 @@ extern "C"
 #ifdef DIN5_PULLUP
 		mcu_config_pullup(DIN5);
 #endif
+#ifdef DIN5_ISR
+		mcu_config_input_isr(DIN5);
+#endif
 #endif
 #ifdef DIN6
 		mcu_config_input(DIN6);
 #ifdef DIN6_PULLUP
 		mcu_config_pullup(DIN6);
 #endif
+#ifdef DIN6_ISR
+		mcu_config_input_isr(DIN6);
+#endif
 #endif
 #ifdef DIN7
 		mcu_config_input(DIN7);
 #ifdef DIN7_PULLUP
 		mcu_config_pullup(DIN7);
+#endif
+#ifdef DIN7_ISR
+		mcu_config_input_isr(DIN7);
 #endif
 #endif
 #ifdef DIN8
@@ -777,10 +798,19 @@ extern "C"
 		mcu_config_pullup(DIN15);
 #endif
 #endif
-
-#ifdef LED
-		mcu_config_output(LED);
+#ifdef TX
+		mcu_config_output(TX);
 #endif
+#ifdef RX
+		mcu_config_input(RX);
+#endif
+#ifdef USB_DM
+		mcu_config_input(USB_DM);
+#endif
+#ifdef USB_DP
+		mcu_config_input(USB_DP);
+#endif
+
 		mcu_usart_init();
 		mcu_tick_init();
 		mcu_disable_probe_isr();
@@ -869,7 +899,7 @@ extern "C"
 		COM_USART->CR3 = 0;
 		COM_USART->SR = 0;
 		// //115200 baudrate
-		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUD));
+		float baudrate = ((float)(F_CPU >> 4) / ((float)BAUDRATE));
 		uint16_t brr = (uint16_t)baudrate;
 		baudrate -= brr;
 		brr <<= 4;
