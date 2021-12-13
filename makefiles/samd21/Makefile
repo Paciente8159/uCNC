@@ -44,10 +44,8 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 # source
 ######################################
 # C sources
-C_SOURCES =  \
-samd21.c \
-main.c \
-$(call rwildcard,../../src,*.c)
+C_SOURCES = $(call rwildcard,./,*.c)
+C_SOURCES += $(call rwildcard,../../src,*.c)
 
 ifdef USE_USB
 C_SOURCES += ../../tinyusb/tusb_descriptors.c
@@ -124,6 +122,7 @@ endif
 C_INCLUDES =  \
 -I"./" \
 -Idrivers/ \
+-Iasf/ \
 -I"../../src/"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
