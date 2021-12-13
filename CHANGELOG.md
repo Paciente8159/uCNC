@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.b] - Unreleased
+## [1.3.b] - 2021-12-13
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
 The following things were changed:
