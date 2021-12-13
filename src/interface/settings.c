@@ -293,7 +293,9 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
     void settings_reset(void)
     {
         rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
-        settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, sizeof(settings_t));
+#ifndef ENABLE_SETTING_EXTRA_CMDS
+        settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+#endif
 
 //fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -350,6 +352,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         switch (setting)
         {
         case 0:
+            value = 1000000.0f / value;
             if (value > F_STEP_MAX)
             {
                 return STATUS_MAX_STEP_RATE_EXCEEDED;
@@ -662,10 +665,13 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             return STATUS_INVALID_STATEMENT;
         }
 
+#ifndef ENABLE_SETTING_EXTRA_CMDS
+        settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+#endif
+
 #if PID_CONTROLLERS > 0
         pid_init();
 #endif
-        settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 //fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS

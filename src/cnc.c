@@ -361,11 +361,13 @@ extern "C"
         {
             SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
             CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+#ifdef USE_SPINDLE
             itp_sync_spindle();
             if (!planner_buffer_is_empty())
             {
                 cnc_delay_ms(DELAY_ON_RESUME * 1000);
             }
+#endif
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
 

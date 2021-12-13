@@ -4,7 +4,7 @@
 
 
 # µCNC
-µCNC - A universal CNC firmware for microcontrollers
+µCNC - Universal CNC firmware for microcontrollers
 
 ## About µCNC
 Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://linuxcnc.org/), µCNC started to take shape in the second half of 2019 in an attempt to come out with a G-Code interpreter/controller software/firmware that is both compact and powerful as Grbl and flexible and modular as LinuxCNC, with the following goals in mind:
@@ -22,7 +22,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current version is v1.3. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.3. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 Version 1.3 added support for SAMD21 MCU and the Arduino Zero/M0 boards.
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:

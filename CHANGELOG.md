@@ -5,22 +5,52 @@
 
 # Changelog
 
-## [1.3.x] - Unreleased
+## [1.3.b] - Unreleased
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
 The following things were changed:
 
 ### Added
-  - added SAMD21 (Arduino Zero and M0 boards) initial support. This is still an early release so there are still limitations. These are:
+  - added SAMD21 (Arduino Zero and M0 boards) initial support. This is still an early release so there are still limitations for SAMD21. These are:  (#72)
     - Interrupt driven inputs not implemented (only working via soft pooling)
     - Serial port COM not implemented. (limited to Virtual COM port via USB)
     - Analog inputs not implemented. (this feature is outside of the Grbl scope)
+  - AVR and STM32 remain unchanged.
 
 ### Changed
-  - none
+  - modified setting $0=val to work the same way has Grbl (#71)
+
+## [1.2.4] - 2021-12-10
+
+Version 1.2.4 is a minor revision and improves a couple of functionalities.
+The following things were changed:
+
+### Added
+  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_SETTING_EXTRA_CMDS in cnc_config.h active by default) (#70)
+
+    This set of new commands allow a more granular control over the settings stored in EEPROM/Flash to prevent wearing.
+    When enabled all grbl $x=val are only changed in SRAM. To set them in non volatile memory a save command must be issued.
+    3 additional commands are added:
+    $SS - Settings save. This stores all values to EEPROM/Flash
+    $SL - Settings load. This loads all values from EEPROM/Flash
+    $SR - Settings reset. This loads all default values from ROM
+
+### Changed
+  - enabled Grbl startup emulation to improve µCNC compatibility. Many Grbl interfaces expect the grbl startup message and won't recognize µCNC because of that simple fact (#70)
+  - changed tinyUSB config and descriptors file location and updated makefile for STM32  (#70)
+
+## [1.2.3] - 2021-12-08
+
+Version 1.2.3 is a minor revision and improves a couple of functionalities.
+The following things were changed:
+
+### Changed
+  - added parser unlocking on soft-reset to unlock board after end program M codes M2 and M30 (#69)
+  - option USE_COOLANT active by default (#69)
 
 ### Fixed
-  - none
+  - fixed typo that cause compilation error on option USE_COOLANT (#69)
+  - fixed code compilation errors without SPINDLE_PWM defined (#69)
 
 ## [1.2.2] - 2021-08-08
 
@@ -292,6 +322,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
+[1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
+[1.2.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.3
 [1.2.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.2
 [1.2.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.1
 [1.2.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.0

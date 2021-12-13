@@ -449,18 +449,17 @@ extern "C"
         switch (c)
         {
         case '$':
-            return (!parser_eat_next_char(EOL)) ? GRBL_SEND_SYSTEM_SETTINGS : STATUS_INVALID_STATEMENT;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_SETTINGS : STATUS_INVALID_STATEMENT;
         case '#':
-            return (!parser_eat_next_char(EOL)) ? GRBL_SEND_COORD_SYSTEM : STATUS_INVALID_STATEMENT;
-            error = GRBL_SEND_COORD_SYSTEM;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_COORD_SYSTEM : STATUS_INVALID_STATEMENT;
         case 'H':
-            return (!parser_eat_next_char(EOL)) ? GRBL_HOME : STATUS_INVALID_STATEMENT;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_HOME : STATUS_INVALID_STATEMENT;
         case 'X':
-            return (!parser_eat_next_char(EOL)) ? GRBL_UNLOCK : STATUS_INVALID_STATEMENT;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_UNLOCK : STATUS_INVALID_STATEMENT;
         case 'G':
-            return (!parser_eat_next_char(EOL)) ? GRBL_SEND_PARSER_MODES : STATUS_INVALID_STATEMENT;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_PARSER_MODES : STATUS_INVALID_STATEMENT;
         case 'C':
-            return (!parser_eat_next_char(EOL)) ? GRBL_TOGGLE_CHECKMODE : STATUS_INVALID_STATEMENT;
+            return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_TOGGLE_CHECKMODE : STATUS_INVALID_STATEMENT;
         case 'J':
             if (parser_eat_next_char('='))
             {
@@ -505,6 +504,11 @@ extern "C"
                 return STATUS_INVALID_STATEMENT;
             }
             break;
+#ifdef ENABLE_SETTING_EXTRA_CMDS
+        case 'S':
+            //new settings command
+            break;
+#endif
         case EOL:
             return GRBL_HELP;
         }
@@ -516,22 +520,49 @@ extern "C"
         {
         case 'R':
             c = serial_getc();
+            if (parser_eat_next_char(EOL) != STATUS_OK)
+            {
+                return STATUS_INVALID_STATEMENT;
+            }
             switch (c)
             {
             case '$':
                 settings_reset();
+                settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
                 break;
             case '#':
                 parser_parameters_reset();
                 break;
             case '*':
                 settings_reset();
+                settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
                 parser_parameters_reset();
                 break;
             default:
                 return STATUS_INVALID_STATEMENT;
             }
-            return ((!parser_eat_next_char(EOL)) ? GRBL_SEND_SETTINGS_RESET : STATUS_INVALID_STATEMENT);
+#ifdef ENABLE_SETTING_EXTRA_CMDS
+        case 'S':
+            c = serial_getc();
+            if (parser_eat_next_char(EOL) != STATUS_OK)
+            {
+                return STATUS_INVALID_STATEMENT;
+            }
+            switch (c)
+            {
+            case 'S':
+                settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+                return GRBL_SETTINGS_SAVED;
+            case 'L':
+                settings_init();
+                return GRBL_SETTINGS_LOADED;
+            case 'R':
+                settings_reset();
+                return GRBL_SETTINGS_DEFAULT;
+            default:
+                return STATUS_INVALID_STATEMENT;
+            }
+#endif
         case 'N':
             error = parser_fetch_command(&next_state, &words, &cmd);
             if (error)
@@ -601,16 +632,16 @@ extern "C"
         {
         case GRBL_SEND_SYSTEM_SETTINGS:
             protocol_send_cnc_settings();
-            return STATUS_OK;
+            break;
         case GRBL_SEND_COORD_SYSTEM:
             protocol_send_gcode_coordsys();
-            return STATUS_OK;
+            break;
         case GRBL_SEND_PARSER_MODES:
             protocol_send_gcode_modes();
-            return STATUS_OK;
+            break;
         case GRBL_SEND_STARTUP_BLOCKS:
             protocol_send_start_blocks();
-            return STATUS_OK;
+            break;
         case GRBL_TOGGLE_CHECKMODE:
             if (mc_toogle_checkmode())
             {
@@ -622,10 +653,10 @@ extern "C"
                 cnc_alarm(EXEC_ALARM_RESET);
                 protocol_send_feedback(MSG_FEEDBACK_5);
             }
-            return STATUS_OK;
+            break;
         case GRBL_SEND_SETTINGS_RESET:
             protocol_send_feedback(MSG_FEEDBACK_9);
-            return STATUS_OK;
+            break;
         case GRBL_UNLOCK:
             cnc_unlock(true);
             if (cnc_get_exec_state(EXEC_DOOR))
@@ -633,7 +664,7 @@ extern "C"
                 return STATUS_CHECK_DOOR;
             }
             protocol_send_feedback(MSG_FEEDBACK_3);
-            return STATUS_OK;
+            break;
         case GRBL_HOME:
             if (!g_settings.homing_enabled)
             {
@@ -647,10 +678,21 @@ extern "C"
             }
 
             cnc_home();
-            return STATUS_OK;
+            break;
         case GRBL_HELP:
             protocol_send_string(MSG_HELP);
-            return STATUS_OK;
+            break;
+#ifdef ENABLE_SETTING_EXTRA_CMDS
+        case GRBL_SETTINGS_SAVED:
+            protocol_send_feedback(MSG_FEEDBACK_13);
+            break;
+        case GRBL_SETTINGS_LOADED:
+            protocol_send_feedback(MSG_FEEDBACK_14);
+            break;
+        case GRBL_SETTINGS_DEFAULT:
+            protocol_send_feedback(MSG_FEEDBACK_15);
+            break;
+#endif
         default:
             return code;
         }
