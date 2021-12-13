@@ -65,3 +65,5 @@ virtualeeprom
 
 # Other files
 *.dat
+*.json
+*.cfg
