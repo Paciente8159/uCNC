@@ -5,6 +5,20 @@
 
 # Changelog
 
+## [1.2.x] - unreleased
+
+Version 1.2.x is a minor revision and improves a couple of functionalities.
+The following things were changed:
+
+### Added
+  - none
+
+### Changed
+  - modified setting $0=val to work the same way has Grbl
+
+### Fixed
+  - none
+
 ## [1.2.4] - 2021-12-10
 
 Version 1.2.4 is a minor revision and improves a couple of functionalities.
