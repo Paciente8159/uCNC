@@ -14,7 +14,7 @@ Beta2 fixes the following issue:
   - added SAMD21 extra debug flags for GDB (#74)
 
 ### Changed
-  - cnc spindle speed and resume delay baypass if set to 0 (#73)
+  - cnc spindle speed and resume delay bypass if set to 0 (#73)
   - cnc spindle at cnc stop has now moved to the interpolator unit (#74)
 
 ### Fixed
