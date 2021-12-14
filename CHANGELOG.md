@@ -10,11 +10,17 @@
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
 Beta2 fixes the following issue:
 
+### Added
+  - added SAMD21 extra debug flags for GDB (#74)
+
 ### Changed
   - cnc spindle speed and resume delay baypass if set to 0 (#73)
+  - cnc spindle at cnc stop has now moved to the interpolator unit (#74)
 
 ### Fixed
   - while executing real time commands with the CS_RES pin always active caused and infinite loop inside the tool delay (caused stack overflow error on SAMD21) (#73)
+  - executing a soft reset caused unowned exception fault on SAMD21. Recoded alarm to prevent calling itself. This also repeats the emergency stop message while the ESTOP is pressed. (#74)
+  - removed generic clock output code(used to debug the generic clock working). (#74)
 
 ## [1.3.b] - 2021-12-13
 

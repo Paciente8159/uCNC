@@ -63,7 +63,7 @@ extern "C"
                         ;
 
                 /* Setup GCLK4 using the DFLL @48Mhz */
-                GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(4) | GCLK_GENCTRL_SRC_DFLL48M | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_OE;
+                GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(4) | GCLK_GENCTRL_SRC_DFLL48M | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
                 /* Wait for the write to complete */
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
@@ -85,10 +85,6 @@ extern "C"
                 /* Wait for the write to complete. */
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
-
-                PORT->Group[0].DIRSET.reg = (1 << 10);
-                PORT->Group[0].PINCFG[10].reg |= PORT_PINCFG_PMUXEN;
-                PORT->Group[0].PMUX[10 >> 1].bit.PMUXE |= PORT_PMUX_PMUXE_H;
         }
 
         void mcu_timer_isr(void)

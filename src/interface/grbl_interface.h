@@ -114,8 +114,9 @@ extern "C"
 #define GRBL_SETTINGS_LOADED (GRBL_SYSTEM_CMD + 11)
 #define GRBL_SETTINGS_DEFAULT (GRBL_SYSTEM_CMD + 12)
 
+#define EXEC_ALARM_SOFTRESET -2
 #define EXEC_ALARM_EMERGENCY_STOP -1
-#define EXEC_ALARM_RESET 0
+#define EXEC_ALARM_NOALARM 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
 #define EXEC_ALARM_HARD_LIMIT 1
 #define EXEC_ALARM_SOFT_LIMIT 2

@@ -649,8 +649,7 @@ extern "C"
             }
             else
             {
-                cnc_stop();
-                cnc_alarm(EXEC_ALARM_RESET);
+                cnc_alarm(EXEC_ALARM_SOFTRESET);
                 protocol_send_feedback(MSG_FEEDBACK_5);
             }
             break;

@@ -106,11 +106,13 @@ extern "C"
         if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
             io_disable_steppers();
-            if (cnc_state.alarm)
+            if (cnc_state.alarm > 0)
             {
                 protocol_send_alarm(cnc_state.alarm);
             }
+
             cnc_check_fault_systems();
+            cnc_state.alarm = 0;
             do
             {
                 cnc_clear_exec_state(EXEC_ALARM);
@@ -245,12 +247,7 @@ extern "C"
     {
         itp_stop();
         //stop tools
-#ifdef USE_SPINDLE
-        io_set_spindle(0, false);
-#endif
-#ifdef USE_COOLANT
-        io_set_coolant(0);
-#endif
+        itp_stop_tools();
     }
 
     uint8_t cnc_unlock(bool force)
@@ -518,7 +515,7 @@ extern "C"
             switch (command & cmd_mask)
             {
             case RT_CMD_RESET:
-                cnc_alarm(EXEC_ALARM_RESET);
+                cnc_alarm(EXEC_ALARM_SOFTRESET);
                 return;
             case RT_CMD_REPORT:
                 if (!protocol_is_busy() && cnc_state.loop_state)
@@ -685,9 +682,16 @@ extern "C"
         }
 #endif
 
-        if (cnc_get_exec_state(EXEC_KILL) && cnc_state.alarm)
+        if (cnc_get_exec_state(EXEC_KILL))
         {
-            protocol_send_feedback(MSG_FEEDBACK_1);
+            switch(cnc_state.alarm) {
+                case EXEC_ALARM_SOFTRESET:
+                case EXEC_ALARM_NOALARM:
+                    break;
+                default:
+                    protocol_send_feedback(MSG_FEEDBACK_1);
+                    break;
+            }
         }
     }
 
@@ -712,10 +716,6 @@ extern "C"
             else if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN)) //reset or emergency stop during a running cycle
             {
                 cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
-            }
-            else
-            {
-                cnc_alarm(cnc_state.alarm); //reset or emergency stop or any other (software) alarm
             }
             return false;
         }
@@ -743,10 +743,13 @@ extern "C"
         //opened door or hold with the machine still moving
         if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR | EXEC_HOLD) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
         {
-            itp_stop();
             if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
             {
                 cnc_stop(); //stop all tools not only motion
+            }
+            else
+            {
+                itp_stop(); //stop motion
             }
 
             if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG)) //flushes the buffers if motions was homing or jog

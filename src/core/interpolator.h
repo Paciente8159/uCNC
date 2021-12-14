@@ -34,6 +34,7 @@ extern "C"
 	void itp_step_isr(void);
 	void itp_step_reset_isr(void);
 	void itp_stop(void);
+	void itp_stop_tools(void);
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
 	void itp_reset_rt_position(void);
