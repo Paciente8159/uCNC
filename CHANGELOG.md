@@ -5,6 +5,17 @@
 
 # Changelog
 
+## [1.3.b2] - 2021-12-14
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
+Beta2 fixes the following issue:
+
+### Changed
+  - cnc spindle speed and resume delay baypass if set to 0 (#73)
+
+### Fixed
+  - while executing real time commands with the CS_RES pin always active caused and infinite loop inside the tool delay (caused stack overflow error on SAMD21) (#73)
+
 ## [1.3.b] - 2021-12-13
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
@@ -322,6 +333,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
 [1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
 [1.2.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.3

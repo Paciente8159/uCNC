@@ -365,7 +365,9 @@ extern "C"
             itp_sync_spindle();
             if (!planner_buffer_is_empty())
             {
+#if (DELAY_ON_RESUME > 0)
                 cnc_delay_ms(DELAY_ON_RESUME * 1000);
+#endif
             }
 #endif
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
@@ -430,7 +432,11 @@ extern "C"
             SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
             break;
         case CMD_CODE_CYCLE_START:
-            SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); //tries to clear hold if possible
+            //prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
+            if (!CHECKFLAG(cnc_state.exec_state, EXEC_RESUMING))
+            {
+                SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); //tries to clear hold if possible
+            }
             break;
         case CMD_CODE_SAFETY_DOOR:
             SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
