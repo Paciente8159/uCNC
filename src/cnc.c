@@ -682,9 +682,16 @@ extern "C"
         }
 #endif
 
-        if (cnc_get_exec_state(EXEC_KILL) && cnc_state.alarm)
+        if (cnc_get_exec_state(EXEC_KILL))
         {
-            protocol_send_feedback(MSG_FEEDBACK_1);
+            switch(cnc_state.alarm) {
+                case EXEC_ALARM_SOFTRESET:
+                case EXEC_ALARM_NOALARM:
+                    break;
+                default:
+                    protocol_send_feedback(MSG_FEEDBACK_1);
+                    break;
+            }
         }
     }
 
