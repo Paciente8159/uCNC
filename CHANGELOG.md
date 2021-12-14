@@ -17,7 +17,7 @@ Beta2 fixes the following issue:
   - cnc spindle at cnc stop has now moved to the interpolator unit (#74)
 
 ### Fixed
-  - executing a soft reset caused unkowned exception fault on SAMD21. Recoded alarm to prevent calling itself. This also repeats the emergency stop message while the ESTOP is pressed. (#74)
+  - executing a soft reset caused unowned exception fault on SAMD21. Recoded alarm to prevent calling itself. This also repeats the emergency stop message while the ESTOP is pressed. (#74)
   - removed generic clock output code(used to debug the generic clock working). (#74)
 
 ## [1.3.b] - 2021-12-13
