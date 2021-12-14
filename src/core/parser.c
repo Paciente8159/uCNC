@@ -1084,7 +1084,9 @@ extern "C"
             if (!g_settings.laser_mode)
             {
 #endif
+#if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
                 block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+#endif
 #ifdef LASER_MODE
             }
 #endif

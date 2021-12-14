@@ -14,9 +14,11 @@ Beta2 fixes the following issue:
   - added SAMD21 extra debug flags for GDB (#74)
 
 ### Changed
+  - cnc spindle speed and resume delay baypass if set to 0 (#73)
   - cnc spindle at cnc stop has now moved to the interpolator unit (#74)
 
 ### Fixed
+  - while executing real time commands with the CS_RES pin always active caused and infinite loop inside the tool delay (caused stack overflow error on SAMD21) (#73)
   - executing a soft reset caused unowned exception fault on SAMD21. Recoded alarm to prevent calling itself. This also repeats the emergency stop message while the ESTOP is pressed. (#74)
   - removed generic clock output code(used to debug the generic clock working). (#74)
 
