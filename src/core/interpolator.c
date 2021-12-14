@@ -505,6 +505,19 @@ extern "C"
         mcu_stop_itp_isr();
     }
 
+    void itp_stop_tools(void)
+    {
+#ifdef USE_SPINDLE
+        if (itp_rt_spindle != 0)
+        {
+            io_set_spindle(0, false);
+        }
+#endif
+#ifdef USE_COOLANT
+        io_set_coolant(0);
+#endif
+    }
+
     void itp_clear(void)
     {
         itp_cur_plan_block = NULL;

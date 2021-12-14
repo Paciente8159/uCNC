@@ -247,15 +247,7 @@ extern "C"
     {
         itp_stop();
         //stop tools
-#ifdef USE_SPINDLE
-        if (itp_get_rt_spindle())
-        {
-            io_set_spindle(0, false);
-        }
-#endif
-#ifdef USE_COOLANT
-        io_set_coolant(0);
-#endif
+        itp_stop_tools();
     }
 
     uint8_t cnc_unlock(bool force)
