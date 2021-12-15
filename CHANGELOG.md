@@ -5,6 +5,21 @@
 
 # Changelog
 
+## [1.3.rc] - unreleased
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
+Release Candidate fixes the following issue:
+
+### Added
+  - implemented Hardware UART in SAMD21 (#75)
+
+### Changed
+  - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
+  - modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
+
+### Fixed
+  - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
+
 ## [1.3.b2] - 2021-12-14
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
@@ -339,6 +354,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
 [1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
