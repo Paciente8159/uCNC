@@ -362,8 +362,18 @@ extern "C"
             itp_sync_spindle();
             if (!planner_buffer_is_empty())
             {
-#if (DELAY_ON_RESUME > 0)
-                cnc_delay_ms(DELAY_ON_RESUME * 1000);
+#if (DELAY_ON_RESUME_SPINDLE > 0)
+                cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+#endif
+            }
+#endif
+#ifdef USE_COOLANT
+            //updated the coolant pins
+            io_set_coolant(planner_get_coolant());
+            if (!planner_buffer_is_empty())
+            {
+#if (DELAY_ON_RESUME_COOLANT > 0)
+                cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
 #endif
             }
 #endif
@@ -684,13 +694,14 @@ extern "C"
 
         if (cnc_get_exec_state(EXEC_KILL))
         {
-            switch(cnc_state.alarm) {
-                case EXEC_ALARM_SOFTRESET:
-                case EXEC_ALARM_NOALARM:
-                    break;
-                default:
-                    protocol_send_feedback(MSG_FEEDBACK_1);
-                    break;
+            switch (cnc_state.alarm)
+            {
+            case EXEC_ALARM_SOFTRESET:
+            case EXEC_ALARM_NOALARM:
+                break;
+            default:
+                protocol_send_feedback(MSG_FEEDBACK_1);
+                break;
             }
         }
     }

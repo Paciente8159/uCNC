@@ -5,6 +5,14 @@
 
 # Changelog
 
+## [1.3.rc] - unreleased
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
+Release Candidate fixes the following issue:
+
+### Added
+  - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
+
 ## [1.3.b2] - 2021-12-14
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
@@ -339,6 +347,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
 [1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4
