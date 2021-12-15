@@ -1008,7 +1008,7 @@ extern "C"
 #define COM_IRQ __helper__(SERCOM, COM_NUMBER, _IRQn)
 #define mcu_com_isr __helper__(SERCOM, COM_NUMBER, _Handler)
 #define COM_OUTREG (COM->USART.DATA.reg)
-#define COM_INREG ((volatile uint16_t)COM->USART.DATA.reg)
+#define COM_INREG (COM->USART.DATA.reg)
 #define COM_TX_PAD sercompad(_TX,TX_PAD)
 #define COM_RX_PAD sercompad(_RX,RX_PAD)
 #endif

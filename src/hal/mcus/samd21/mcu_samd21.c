@@ -133,7 +133,7 @@ extern "C"
 #ifndef ENABLE_SYNC_TX
                 if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
                 {
-                        COM->USART.INTENCLR.bit.DRE = 1;
+                        COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
                         serial_tx_isr();
                 }
 #endif
@@ -146,21 +146,7 @@ extern "C"
 #ifdef COM_PORT
                 PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
-                SYSCTRL->OSC8M.bit.PRESC = 0;                          // no prescaler (is 8 on reset)
-                SYSCTRL->OSC8M.reg |= 1 << SYSCTRL_OSC8M_ENABLE_Pos;   // enable source
- 
-                GCLK->GENDIV.bit.ID = 0x03;                            // select GCLK_GEN[3]
-                GCLK->GENDIV.bit.DIV = 0;                              // no prescaler
- 
-                GCLK->GENCTRL.bit.ID = 0x03;                           // select GCLK_GEN[3]
-                GCLK->GENCTRL.reg |= GCLK_GENCTRL_SRC_OSC8M;           // OSC8M source
-                GCLK->GENCTRL.bit.GENEN = 1;                           // enable generator
-                
-                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_SERCOM5_CORE;      // SERCOM5 multiplexer GCLK_PERIPHERAL[n]
-                GCLK->CLKCTRL.reg |= GCLK_CLKCTRL_GEN_GCLK3;           // select multiplexer source GCLK_GEN[3]
-                GCLK->CLKCTRL.bit.CLKEN = 1;                           // enable generic clock (for baud rate generation)
-
-                /* Setup GCLK0 SERCOMx to use GENCLK0 */
+                /* Setup GCLK SERCOMx to use GENCLK0 */
                 GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_COM;
                 while (GCLK->STATUS.bit.SYNCBUSY)
                         ;
@@ -185,7 +171,7 @@ extern "C"
                 while (COM->USART.SYNCBUSY.bit.CTRLB)
                         ;
 
-                uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE)/((float)(F_CPU>>4)))));
+                uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE)/(F_CPU>>4))));
 
                 COM->USART.BAUD.reg = baud;
                 mcu_config_altfunc(TX);
@@ -193,6 +179,7 @@ extern "C"
 
 #ifndef ENABLE_SYNC_RX
                 COM->USART.INTENSET.bit.RXC = 1; //enable recieved interrupt
+                COM->USART.INTENSET.bit.ERROR = 1;
 #endif
                 NVIC_ClearPendingIRQ(COM_IRQ);
                 NVIC_EnableIRQ(COM_IRQ);
@@ -898,7 +885,7 @@ extern "C"
 #ifdef ENABLE_SYNC_RX
                 while (!mcu_rx_ready()));
 #endif
-                return COM_INREG;
+                return (char)(0xff & COM_INREG);
 #endif
 #endif
         }

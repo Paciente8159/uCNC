@@ -102,6 +102,7 @@ extern "C"
 #define TX_PAD 2
 #define RX_BIT 11
 #define RX_PORT A
+#define RX_MUX C
 #define RX_PAD 3
 //set COM number. By default COM0 is used
 //#define COM_NUMBER 0
