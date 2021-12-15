@@ -14,13 +14,13 @@
 # target
 ######################################
 TARGET = uCNC
-USE_USB = TRUE
+#USE_USB = TRUE
 
 ######################################
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG = 1
 # optimization
 ifeq ($(DEBUG), 1)
 OPT = -Og
