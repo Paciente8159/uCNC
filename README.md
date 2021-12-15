@@ -83,9 +83,9 @@ TODO List of G-Codes in µCNC future releases:
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
-  - Arduino UNO
-  - Arduino MEGA
-  - STM32F1 Blue Pill
+  - AVR (Arduino UNO/MEGA)
+  - SAMD21 (Arduino Zero/M0)
+  - STM32F1 (Bluepill)
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
