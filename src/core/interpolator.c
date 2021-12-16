@@ -743,7 +743,7 @@ extern "C"
             if (itp_rt_sgm->block != NULL)
             {
 //prepares the next step bits mask
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0 && STEP0 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 0)
                 {
@@ -779,7 +779,7 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1 && STEP1 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 1)
                 {
@@ -815,7 +815,7 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2 && STEP2 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 2)
                 {
@@ -851,7 +851,7 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3 && STEP3 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 3)
                 {
@@ -887,7 +887,7 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4 && STEP4 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 4)
                 {
@@ -923,7 +923,7 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5 && STEP5 >= 0)
                 dostep = false;
                 if (itp_rt_sgm->block->main_stepper == 5)
                 {

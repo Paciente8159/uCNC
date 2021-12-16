@@ -323,19 +323,19 @@ extern "C"
     {
         uint8_t controls = io_get_controls();
 
-#ifdef ESTOP
+#if (ESTOP >= 0)
         if (CHECKFLAG(controls, ESTOP_MASK)) //can't clear the alarm flag if ESTOP is active
         {
             CLEARFLAG(statemask, EXEC_KILL);
         }
 #endif
-#ifdef SAFETY_DOOR
+#if (SAFETY_DOOR >= 0)
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) //can't clear the door flag if SAFETY_DOOR is active
         {
             CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
         }
 #endif
-#ifdef FHOLD
+#if (FHOLD >= 0)
         if (CHECKFLAG(controls, FHOLD_MASK)) //can't clear the hold flag if FHOLD is active
         {
             CLEARFLAG(statemask, EXEC_HOLD);
@@ -600,13 +600,14 @@ extern "C"
                 if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
 //toogle state
-#ifdef SPINDLE_PWM
-                    if (mcu_get_pwm(SPINDLE_PWM))
-                    {
-                        update_tools = false;
-                        mcu_set_pwm(SPINDLE_PWM, 0);
-                    }
-#endif
+//COMMENT
+// #if (SPINDLE_PWM >= 0)
+//                     if (mcu_get_pwm(SPINDLE_PWM))
+//                     {
+//                         update_tools = false;
+//                         mcu_set_pwm(SPINDLE_PWM, 0);
+//                     }
+// #endif
                 }
                 break;
 #endif
@@ -659,13 +660,13 @@ extern "C"
 #ifdef CONTROLS_MASK
         inputs = io_get_controls();
 #endif
-#ifdef ESTOP
+#if (ESTOP >= 0)
         if (CHECKFLAG(inputs, ESTOP_MASK)) //fault on emergency stop
         {
             protocol_send_feedback(MSG_FEEDBACK_12);
         }
 #endif
-#ifdef SAFETY_DOOR
+#if (SAFETY_DOOR >= 0)
         if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) //fault on safety door
         {
             protocol_send_feedback(MSG_FEEDBACK_6);
@@ -684,13 +685,14 @@ extern "C"
 
         if (cnc_get_exec_state(EXEC_KILL))
         {
-            switch(cnc_state.alarm) {
-                case EXEC_ALARM_SOFTRESET:
-                case EXEC_ALARM_NOALARM:
-                    break;
-                default:
-                    protocol_send_feedback(MSG_FEEDBACK_1);
-                    break;
+            switch (cnc_state.alarm)
+            {
+            case EXEC_ALARM_SOFTRESET:
+            case EXEC_ALARM_NOALARM:
+                break;
+            default:
+                protocol_send_feedback(MSG_FEEDBACK_1);
+                break;
             }
         }
     }
@@ -701,7 +703,7 @@ extern "C"
         //if kill leave
         if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
         {
-#ifdef ESTOP
+#if (ESTOP >= 0)
             //the emergency stop is pressed.
             if (io_get_controls() & ESTOP_MASK)
             {

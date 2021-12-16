@@ -2067,7 +2067,7 @@ extern "C"
             new_state->groups.tool_change = M6;
             break;
 #ifdef USE_COOLANT
-#ifdef COOLANT_MIST
+#if COOLANT_MIST >= 0
         case 7:
 #endif
 #ifdef M7_SAME_AS_M8
@@ -2075,7 +2075,7 @@ extern "C"
 #endif
         case 8:
             cmd->groups |= GCODE_GROUP_COOLANT; //word overlapping allowed
-#ifdef COOLANT_MIST
+#if COOLANT_MIST >= 0
             new_state->groups.coolant |= ((code == 8) ? M8 : M7);
 #else
             new_state->groups.coolant |= M8;

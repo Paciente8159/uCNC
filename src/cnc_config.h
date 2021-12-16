@@ -108,6 +108,12 @@ extern "C"
 #endif
 
 /*
+	Sets the number of tools to be used
+	The PID controllers are configured in the cnc_hal_config.h
+*/
+#define TOOL_COUNT 1
+
+/*
 	Sets the number of PID controllers to be used
 	The PID controllers are configured in the cnc_hal_config.h
 */

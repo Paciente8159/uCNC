@@ -443,7 +443,7 @@ extern "C"
                 mcu_config_input_isr(PROBE);
 #endif
 #endif
-#ifdef ESTOP
+#if (ESTOP >= 0)
                 mcu_config_input(ESTOP);
 #ifdef ESTOP_PULLUP
                 mcu_config_pullup(ESTOP);

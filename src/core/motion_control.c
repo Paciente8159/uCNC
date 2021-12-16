@@ -616,7 +616,7 @@ extern "C"
 
     uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
     {
-#ifdef PROBE
+#if PROBE >= 0
         uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
         io_enable_probe();
         block_data->feed = g_settings.homing_fast_feed_rate;

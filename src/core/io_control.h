@@ -34,7 +34,7 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef LIMIT_X
+#if LIMIT_X >= 0
 #define LIMITEN_LIMIT_X (1 << (LIMIT_X - LIMIT_X))
 #ifdef LIMIT_X_ISR
 #define LIMITISR_LIMIT_X (1 << (LIMIT_X - LIMIT_X))
@@ -45,7 +45,7 @@ extern "C"
 #define LIMITEN_LIMIT_X 0
 #define LIMITISR_LIMIT_X 0
 #endif
-#ifdef LIMIT_Y
+#if LIMIT_Y >= 0
 #define LIMITEN_LIMIT_Y (1 << (LIMIT_Y - LIMIT_X))
 #ifdef LIMIT_Y_ISR
 #define LIMITISR_LIMIT_Y (1 << (LIMIT_Y - LIMIT_X))
@@ -56,7 +56,7 @@ extern "C"
 #define LIMITEN_LIMIT_Y 0
 #define LIMITISR_LIMIT_Y 0
 #endif
-#ifdef LIMIT_Z
+#if LIMIT_Z >= 0
 #define LIMITEN_LIMIT_Z (1 << (LIMIT_Z - LIMIT_X))
 #ifdef LIMIT_Z_ISR
 #define LIMITISR_LIMIT_Z (1 << (LIMIT_Z - LIMIT_X))
@@ -67,7 +67,7 @@ extern "C"
 #define LIMITEN_LIMIT_Z 0
 #define LIMITISR_LIMIT_Z 0
 #endif
-#ifdef LIMIT_X2
+#if LIMIT_X2 >= 0
 #define LIMITEN_LIMIT_X2 (1 << (LIMIT_X2 - LIMIT_X))
 #ifdef LIMIT_X2_ISR
 #define LIMITISR_LIMIT_X2 (1 << (LIMIT_X2 - LIMIT_X))
@@ -78,7 +78,7 @@ extern "C"
 #define LIMITEN_LIMIT_X2 0
 #define LIMITISR_LIMIT_X2 0
 #endif
-#ifdef LIMIT_Y2
+#if LIMIT_Y2 >= 0
 #define LIMITEN_LIMIT_Y2 (1 << (LIMIT_Y2 - LIMIT_X))
 #ifdef LIMIT_Y2_ISR
 #define LIMITISR_LIMIT_Y2 (1 << (LIMIT_Y2 - LIMIT_X))
@@ -89,7 +89,7 @@ extern "C"
 #define LIMITEN_LIMIT_Y2 0
 #define LIMITISR_LIMIT_Y2 0
 #endif
-#ifdef LIMIT_Z2
+#if LIMIT_Z2 >= 0
 #define LIMITEN_LIMIT_Z2 (1 << (LIMIT_Z2 - LIMIT_X))
 #ifdef LIMIT_Z2_ISR
 #define LIMITISR_LIMIT_Z2 (1 << (LIMIT_Z2 - LIMIT_X))
@@ -100,7 +100,7 @@ extern "C"
 #define LIMITEN_LIMIT_Z2 0
 #define LIMITISR_LIMIT_Z2 0
 #endif
-#ifdef LIMIT_A
+#if LIMIT_A >= 0
 #define LIMITEN_LIMIT_A (1 << (LIMIT_A - LIMIT_X))
 #ifdef LIMIT_A_ISR
 #define LIMITISR_LIMIT_A (1 << (LIMIT_A - LIMIT_X))
@@ -111,7 +111,7 @@ extern "C"
 #define LIMITEN_LIMIT_A 0
 #define LIMITISR_LIMIT_A 0
 #endif
-#ifdef LIMIT_B
+#if LIMIT_B >= 0
 #define LIMITEN_LIMIT_B (1 << (LIMIT_B - LIMIT_X))
 #ifdef LIMIT_B_ISR
 #define LIMITISR_LIMIT_B (1 << (LIMIT_B - LIMIT_X))
@@ -122,7 +122,7 @@ extern "C"
 #define LIMITEN_LIMIT_B 0
 #define LIMITISR_LIMIT_B 0
 #endif
-#ifdef LIMIT_C
+#if LIMIT_C >= 0
 #define LIMITEN_LIMIT_C (1 << (LIMIT_C - LIMIT_X))
 #ifdef LIMIT_C_ISR
 #define LIMITISR_LIMIT_C (1 << (LIMIT_C - LIMIT_X))
@@ -133,7 +133,7 @@ extern "C"
 #define LIMITEN_LIMIT_C 0
 #define LIMITISR_LIMIT_C 0
 #endif
-#ifdef PROBE
+#if PROBE >= 0
 #define PROBEEN_MASK 1
 #ifdef PROBE_ISR
 #define PROBEISR_MASK 1
@@ -144,7 +144,7 @@ extern "C"
 #define PROBEEN_MASK 0
 #define PROBEISR_MASK 0
 #endif
-#ifdef ESTOP
+#if ESTOP >= 0
 #define CONTROLEN_ESTOP (1 << (ESTOP - ESTOP))
 #ifdef ESTOP_ISR
 #define CONTROLISR_ESTOP (1 << (ESTOP - ESTOP))
@@ -155,7 +155,7 @@ extern "C"
 #define CONTROLEN_ESTOP 0
 #define CONTROLISR_ESTOP 0
 #endif
-#ifdef SAFETY_DOOR
+#if SAFETY_DOOR >= 0
 #define CONTROLEN_SAFETY_DOOR (1 << (SAFETY_DOOR - ESTOP))
 #ifdef SAFETY_DOOR_ISR
 #define CONTROLISR_SAFETY_DOOR (1 << (SAFETY_DOOR - ESTOP))
@@ -166,7 +166,7 @@ extern "C"
 #define CONTROLEN_SAFETY_DOOR 0
 #define CONTROLISR_SAFETY_DOOR 0
 #endif
-#ifdef FHOLD
+#if FHOLD >= 0
 #define CONTROLEN_FHOLD (1 << (FHOLD - ESTOP))
 #ifdef FHOLD_ISR
 #define CONTROLISR_FHOLD (1 << (FHOLD - ESTOP))
@@ -177,7 +177,7 @@ extern "C"
 #define CONTROLEN_FHOLD 0
 #define CONTROLISR_FHOLD 0
 #endif
-#ifdef CS_RES
+#if CS_RES >= 0
 #define CONTROLEN_CS_RES (1 << (CS_RES - ESTOP))
 #ifdef CS_RES_ISR
 #define CONTROLISR_CS_RES (1 << (CS_RES - ESTOP))
@@ -197,7 +197,6 @@ extern "C"
 
 #define COOLANT_MASK 0x02
 #define MIST_MASK 0x01
-
 	//ISR
 	void io_limits_isr(void);
 	void io_controls_isr(void);
@@ -221,12 +220,14 @@ extern "C"
 	void io_disable_steppers(void);
 
 #ifdef USE_SPINDLE
-	void io_set_spindle(uint8_t value, bool invert);
+	// void io_set_spindle(uint8_t value, bool invert);
+	#define io_set_spindle tool_update_spindle
 	uint8_t io_get_spindle(void);
 #endif
 
 #ifdef USE_COOLANT
-	void io_set_coolant(uint8_t value);
+	//void io_set_coolant(uint8_t value);
+	#define io_set_coolant tool_update_coolant
 #endif
 
 #ifdef __cplusplus
