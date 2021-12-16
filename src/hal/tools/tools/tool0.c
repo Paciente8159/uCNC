@@ -37,7 +37,7 @@ extern "C"
 #define COOLANT_FLOOD DOUT1
 #define COOLANT_MIST DOUT2
 
-    void tool0_update_spindle(uint8_t value, bool invert)
+    void tool0_set_spindle(uint8_t value, bool invert)
     {
 #if SPINDLE_DIR >= 0
         if (!invert)
@@ -55,7 +55,7 @@ extern "C"
 #endif
     }
 
-    void tool0_update_coolant(uint8_t value)
+    void tool0_set_coolant(uint8_t value)
     {
 #if COOLANT_FLOOD >= 0
         if (value & COOLANT_MASK)
@@ -84,8 +84,8 @@ extern "C"
     const tool_t __rom__ tool0 = {
         .startup_code = NULL,
         .shutdown_code = NULL,
-        .update_spindle = &tool0_update_spindle,
-        .update_coolant = &tool0_update_coolant,
+        .set_spindle = &tool0_set_spindle,
+        .set_coolant = &tool0_set_coolant,
         .get_spindle = NULL,
         .pid_controller = NULL};
 

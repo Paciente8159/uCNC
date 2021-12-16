@@ -469,7 +469,7 @@ extern "C"
 
 #ifdef USE_COOLANT
         //updated the coolant pins
-        io_set_coolant(planner_get_coolant());
+        tool_set_coolant(planner_get_coolant());
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
@@ -498,7 +498,7 @@ extern "C"
 #ifdef LASER_MODE
         if (g_settings.laser_mode)
         {
-            io_set_spindle(0, false);
+            tool_set_spindle(0, false);
             itp_rt_spindle = 0;
         }
 #endif
@@ -510,11 +510,11 @@ extern "C"
 #ifdef USE_SPINDLE
         if (itp_rt_spindle != 0)
         {
-            io_set_spindle(0, false);
+            tool_set_spindle(0, false);
         }
 #endif
 #ifdef USE_COOLANT
-        io_set_coolant(0);
+        tool_set_coolant(0);
 #endif
     }
 
@@ -594,7 +594,7 @@ extern "C"
         uint8_t spindle = 0;
         bool spindle_inv = 0;
         planner_get_spindle_speed(0, &spindle, &spindle_inv);
-        io_set_spindle(spindle, spindle_inv);
+        tool_set_spindle(spindle, spindle_inv);
 #endif
     }
 
@@ -720,7 +720,7 @@ extern "C"
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
 #ifdef USE_SPINDLE
-                    io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
+                    tool_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
                     itp_rt_spindle = itp_rt_sgm->spindle;
 #endif
                     itp_rt_sgm->update_itp = ITP_NOUPDATE;

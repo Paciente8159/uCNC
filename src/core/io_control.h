@@ -219,17 +219,6 @@ extern "C"
 	void io_enable_steppers(void);
 	void io_disable_steppers(void);
 
-#ifdef USE_SPINDLE
-	// void io_set_spindle(uint8_t value, bool invert);
-	#define io_set_spindle tool_update_spindle
-	uint8_t io_get_spindle(void);
-#endif
-
-#ifdef USE_COOLANT
-	//void io_set_coolant(uint8_t value);
-	#define io_set_coolant tool_update_coolant
-#endif
-
 #ifdef __cplusplus
 }
 #endif

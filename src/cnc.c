@@ -83,8 +83,11 @@ extern "C"
         planner_init();        //motion planner
         mc_init();             //motion control
         parser_init();         //parser
+#if TOOL_COUNT > 0
+        tool_init();
+#endif
 #if PID_CONTROLLERS > 0
-        pid_init(); //pid
+            pid_init(); //pid
 #endif
     }
 
@@ -599,15 +602,15 @@ extern "C"
             case RT_CMD_SPINDLE_TOGGLE:
                 if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
-//toogle state
-//COMMENT
-// #if (SPINDLE_PWM >= 0)
-//                     if (mcu_get_pwm(SPINDLE_PWM))
-//                     {
-//                         update_tools = false;
-//                         mcu_set_pwm(SPINDLE_PWM, 0);
-//                     }
-// #endif
+                    //toogle state
+                    //COMMENT
+                    // #if (SPINDLE_PWM >= 0)
+                    //                     if (io_get_spindle())
+                    //                     {
+                    //                         update_tools = false;
+                    //                         io_set_spindle(0, false);
+                    //                     }
+                    // #endif
                 }
                 break;
 #endif

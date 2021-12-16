@@ -25,28 +25,30 @@ extern "C"
 #include "cnc.h"
 #include <stdlib.h>
 
-	static tool_t *tool_current;
+	static tool_t tool_current;
 
 	void tool_init(void)
 	{
 #ifdef FORCE_GLOBALS_TO_0
-		tool_current = NULL;
+		tool_current = {};
 #endif
+
+		tool_change(0);
 	}
 
 	void tool_change(uint8_t tool)
 	{
 		tool_stop();
-		if (tool_current->shutdown_code)
+		if (tool_current.shutdown_code)
 		{
-			(tool_current->shutdown_code)();
+			tool_current.shutdown_code();
 		}
 
 		switch (tool)
 		{
 #if TOOL_COUNT > 0
 		case 0:
-			tool_current = (tool_t *)&tool0;
+			rom_memcpy(&tool_current, &tool0, sizeof(tool_t));
 			break;
 #endif
 #if TOOL_COUNT > 1
@@ -125,46 +127,45 @@ extern "C"
 			break;
 #endif
 		default:
-			tool_current = NULL;
+			memset(&tool_current, 0, sizeof(tool_t));
 			break;
 		}
-
-		if (tool_current->startup_code)
+		if (tool_current.startup_code)
 		{
-			(tool_current->startup_code)();
+			tool_current.startup_code();
 		}
 	}
 
-	void tool_update_spindle(uint8_t value, bool invert)
+	void tool_set_spindle(uint8_t value, bool invert)
 	{
-		if (tool_current->update_spindle)
+		if (tool_current.set_spindle)
 		{
-			(tool_current->update_spindle)(value, invert);
+			tool_current.set_spindle(value, invert);
 		}
 	}
 
 	int tool_get_spindle()
 	{
-		if (tool_current->get_spindle)
+		if (tool_current.get_spindle)
 		{
-			return (tool_current->get_spindle)();
+			return tool_current.get_spindle();
 		}
 
 		return -1;
 	}
 
-	void tool_update_coolant(uint8_t value)
+	void tool_set_coolant(uint8_t value)
 	{
-		if ((tool_current->update_coolant))
+		if (tool_current.set_coolant)
 		{
-			return (tool_current->update_coolant)(value);
+			return tool_current.set_coolant(value);
 		}
 	}
 
 	void tool_stop()
 	{
-		(tool_current->update_spindle)(0, false);
-		(tool_current->update_coolant)(0);
+		tool_set_spindle(0, false);
+		tool_set_coolant(0);
 	}
 
 #ifdef __cplusplus
