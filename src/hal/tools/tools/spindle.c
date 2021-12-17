@@ -70,12 +70,16 @@ extern "C"
         SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
     }
 
+    uint8_t spindle1_get_speed(void) {
+        return mcu_get_pwm(SPINDLE_PWM);
+    }
+
     const tool_t __rom__ spindle1 = {
         .startup_code = NULL,
         .shutdown_code = NULL,
         .set_speed = &spindle1_set_speed,
         .set_coolant = &spindle1_set_coolant,
-        .get_spindle = NULL,
+        .get_speed = &spindle1_get_speed,
         .pid_controller = NULL};
 
 #ifdef __cplusplus

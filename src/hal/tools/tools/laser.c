@@ -36,7 +36,7 @@ extern "C"
  * */
 
 //give names to the pins (easier to identify)
-#define SPINDLE_PWM PWM0
+#define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 
     static bool previous_lase_mode;
@@ -57,13 +57,13 @@ extern "C"
     void laser1_set_speed(uint8_t value, bool invert)
     {
 //easy macro to execute the same code as below
-//SET_LASER(SPINDLE_PWM, value, invert);
+//SET_LASER(LASER_PWM, value, invert);
 
 //speed optimized version (in AVR it's 24 instruction cycles)
-#if SPINDLE_PWM >= 0
-        if (SPINDLE_PWM > 0)
+#if LASER_PWM >= 0
+        if (LASER_PWM > 0)
         {
-            mcu_set_pwm(SPINDLE_PWM, value);
+            mcu_set_pwm(LASER_PWM, value);
         }
 #endif
     }
@@ -74,12 +74,16 @@ extern "C"
         SET_COOLANT(COOLANT_FLOOD, -1, value);
     }
 
+    uint8_t laser1_get_speed(void) {
+        return mcu_get_pwm(LASER_PWM);
+    }
+
     const tool_t __rom__ laser1 = {
         .startup_code = &laser1_startup_code,
         .shutdown_code = &laser1_shutdown_code,
         .set_speed = &laser1_set_speed,
         .set_coolant = NULL,
-        .get_spindle = NULL,
+        .get_speed = &laser1_get_speed,
         .pid_controller = NULL};
 
 #ifdef __cplusplus

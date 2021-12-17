@@ -39,7 +39,7 @@ extern "C"
 		tool_func shutdown_code;
 		tool_spindle_func set_speed;
 		tool_coolant_func set_coolant;
-		tool_func get_spindle;
+		tool_func get_speed;
 		tool_func pid_controller;
 	} tool_t;
 
@@ -47,7 +47,7 @@ extern "C"
 	void tool_change(uint8_t tool);
 	void tool_set_speed(uint8_t value, bool invert);
 	void tool_set_coolant(uint8_t value);
-	int tool_get_spindle(void);
+	int tool_get_speed(void);
 	void tool_stop(void);
 
 #ifdef __cplusplus

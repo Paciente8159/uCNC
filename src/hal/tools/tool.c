@@ -198,12 +198,12 @@ extern "C"
 #endif
 	}
 
-	int tool_get_spindle()
+	int tool_get_speed()
 	{
 #ifdef USE_SPINDLE
-		if (tool_current.get_spindle)
+		if (tool_current.get_speed)
 		{
-			return tool_current.get_spindle();
+			return tool_current.get_speed();
 		}
 #endif
 		return -1;
