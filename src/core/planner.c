@@ -465,12 +465,12 @@ extern "C"
         if (spindle != 0)
         {
             spindle = ABS(spindle);
-#ifdef LASER_MODE
+
             if (g_settings.laser_mode && *invert) //scales laser power only if invert is active (M4)
             {
                 spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
             }
-#endif
+
             if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
             {
                 spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;

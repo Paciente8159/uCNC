@@ -82,6 +82,14 @@ extern "C"
 //#define ECHO_CMD
 
 /*
+	Sets/limits the number of tools to be used
+	The tool and tool order are configured in the cnc_hal_config.h
+*/
+#define TOOL_COUNT 2
+
+
+#if TOOL_COUNT > 0
+/*
 	Enables the spindle
 	Uncomment to enable. Pinout configurations are set in the cnc_hal_config.h
 */
@@ -93,7 +101,6 @@ extern "C"
 */
 #define DELAY_ON_RESUME 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
-#define LASER_MODE
 //minimum output if the value of S is other then 0
 #define PWM_MIN_OUTPUT 1
 #endif
@@ -106,12 +113,7 @@ extern "C"
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
 #endif
-
-/*
-	Sets the number of tools to be used
-	The PID controllers are configured in the cnc_hal_config.h
-*/
-#define TOOL_COUNT 1
+#endif
 
 /*
 	Sets the number of PID controllers to be used

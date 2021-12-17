@@ -171,7 +171,7 @@ extern "C"
 #define NUMBER_ISFLOAT 0x40
 #define NUMBER_ISNEGATIVE 0x80
 
-    //32bytes in total
+    //33bytes in total
     typedef struct
     {
         //1byte
@@ -190,7 +190,7 @@ extern "C"
         uint8_t return_mode : 1;
         uint8_t feed_speed_override : 1;
         //1byte
-        uint8_t tool_change : 1;
+        uint8_t tool_change : 5;
         uint8_t stopping : 3;
 #ifdef USE_SPINDLE
         uint8_t spindle_turning : 2;
@@ -202,6 +202,7 @@ extern "C"
 #else
     uint8_t : 2; //unused
 #endif
+        uint8_t : 4; //unused
     } parser_groups_t;
 
     typedef struct
@@ -350,11 +351,8 @@ extern "C"
     modalgroups[9] = 9;
 #endif
         modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
-#if TOOL_COUNT > 1
         modalgroups[11] = parser_state.tool_index;
-#else
-    modalgroups[11] = TOOL_COUNT;
-#endif
+
         *feed = (uint16_t)parser_state.feedrate;
     }
 
@@ -977,16 +975,16 @@ extern "C"
             return STATUS_NEGATIVE_VALUE;
         }
 #endif
-#if TOOL_COUNT > 1
+
         if (words->t < 0)
         {
             return STATUS_NEGATIVE_VALUE;
         }
-        if (words->t >= TOOL_COUNT)
+        if (words->t > TOOL_COUNT)
         {
             return STATUS_INVALID_TOOL;
         }
-#endif
+
         return STATUS_OK;
     }
 
@@ -1055,19 +1053,24 @@ extern "C"
 #if TOOL_COUNT > 1
         if (CHECKFLAG(cmd->words, GCODE_WORD_T))
         {
-            if(new_state->tool_index != words->t){
-
-                itp_sync();
-                //tool 0 is the same as no tool (has stated in RS274NGC v3 - 3.7.3)
-                tool_change(words->t);
-                new_state->tool_index = words->t;
+            if (new_state->tool_index != words->t)
+            {
+                new_state->groups.tool_change = words->t;
             }
+        }
+
+        //6. M6 change tool (not implemented yet)
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLCHANGE))
+        {
+            itp_sync();
+            //tool 0 is the same as no tool (has stated in RS274NGC v3 - 3.7.3)
+            tool_change(words->t);
+            new_state->tool_index = new_state->groups.tool_change;
         }
 #else
     new_state->tool_index = TOOL_COUNT; //tool is always 1. if 0 there is no tool
 #endif
 
-//6. change tool (not implemented yet)
 //7. spindle on/off
 #ifdef USE_SPINDLE
         switch (new_state->groups.spindle_turning)
@@ -1087,16 +1090,12 @@ extern "C"
         if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
         {
             block_data.update_tools = true;
-#ifdef LASER_MODE
             if (!g_settings.laser_mode)
             {
-#endif
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
                 block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #endif
-#ifdef LASER_MODE
             }
-#endif
         }
 #endif
 //8. coolant on/off
@@ -1365,13 +1364,11 @@ extern "C"
             parser_wco_counter = 0;
         }
 
-#ifdef LASER_MODE
         //laser disabled in nonmodal moves
         if (g_settings.laser_mode && new_state->groups.nonmodal)
         {
             block_data.spindle = 0;
         }
-#endif
 
         switch (new_state->groups.nonmodal)
         {
@@ -1429,13 +1426,11 @@ extern "C"
                 //rapid move
                 block_data.feed = FLT_MAX;
                 //continues to send G1 at maximum feed rate
-#ifdef LASER_MODE
                 //laser disabled in G0
                 if (g_settings.laser_mode)
                 {
                     block_data.spindle = 0;
                 }
-#endif
             case G1:
                 if (block_data.feed == 0)
                 {
@@ -2071,7 +2066,8 @@ extern "C"
 #endif
         case 6:
             new_group |= GCODE_GROUP_TOOLCHANGE;
-            new_state->groups.tool_change = 1;
+            //new_state->groups.tool_change //has the new tool to load
+            //new_state->groups.tool_change = 1;
             break;
 #ifdef USE_COOLANT
 #if COOLANT_MIST >= 0
@@ -2303,6 +2299,13 @@ extern "C"
 #endif
 #ifdef USE_SPINDLE
         parser_state.groups.spindle_turning = M5; //M5
+#endif
+#ifdef TOOL_COUNT> 0
+        parser_state.groups.tool_change = 1;
+        parser_state.tool_index = 1;
+#else
+    parser_state.groups.tool_change = 1;
+    parser_state.tool_index = 1;
 #endif
         parser_state.groups.motion = G1;                                               //G1
         parser_state.groups.units = G21;                                               //G21

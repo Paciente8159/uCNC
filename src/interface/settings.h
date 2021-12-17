@@ -73,9 +73,7 @@ extern "C"
                 float skew_yz_factor;
 #endif
 #endif
-#ifdef LASER_MODE
                 uint8_t laser_mode;
-#endif
 #if PID_CONTROLLERS > 0
                 float pid_gain[PID_CONTROLLERS][3];
 #endif

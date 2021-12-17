@@ -190,28 +190,33 @@ extern "C"
 
 	void tool_set_speed(uint8_t value, bool invert)
 	{
+#ifdef USE_SPINDLE
 		if (tool_current.set_speed)
 		{
 			tool_current.set_speed(value, invert);
 		}
+#endif
 	}
 
 	int tool_get_spindle()
 	{
+#ifdef USE_SPINDLE
 		if (tool_current.get_spindle)
 		{
 			return tool_current.get_spindle();
 		}
-
+#endif
 		return -1;
 	}
 
 	void tool_set_coolant(uint8_t value)
 	{
+#ifdef USE_COOLANT
 		if (tool_current.set_coolant)
 		{
 			return tool_current.set_coolant(value);
 		}
+#endif
 	}
 
 	void tool_stop()

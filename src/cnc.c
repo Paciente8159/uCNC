@@ -600,7 +600,7 @@ extern "C"
                 if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
 //toogle state
-#if (TOOL_COUNT >= 0)
+#ifdef USE_SPINDLE
                     if (tool_get_spindle())
                     {
                         update_tools = false;

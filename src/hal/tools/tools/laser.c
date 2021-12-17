@@ -24,7 +24,10 @@ extern "C"
 
 #include "cnc.h"
 #include "core/io_control.h"
+#include "interface/settings.h"
 #include "hal/tools/tool_helper.h"
+
+#include <stdbool.h>
 
     /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
@@ -36,17 +39,33 @@ extern "C"
 #define SPINDLE_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 
+    static bool previous_lase_mode;
+
+    void laser1_startup_code(void)
+    {
+        //force laser mode
+        previous_lase_mode = g_settings.laser_mode;
+        g_settings.laser_mode = 1;
+    }
+
+    void laser1_shutdown_code(void)
+    {
+        //restore laser mode
+        g_settings.laser_mode = previous_lase_mode;
+    }
+
     void laser1_set_speed(uint8_t value, bool invert)
     {
-        //easy macro to execute the same code as below
-        //SET_LASER(SPINDLE_PWM, value, invert);
+//easy macro to execute the same code as below
+//SET_LASER(SPINDLE_PWM, value, invert);
 
-        //speed optimized version (in AVR it's 24 instruction cycles)
-        #if SPINDLE_PWM >= 0
-        if(SPINDLE_PWM>0) {
-                mcu_set_pwm(SPINDLE_PWM, value);
+//speed optimized version (in AVR it's 24 instruction cycles)
+#if SPINDLE_PWM >= 0
+        if (SPINDLE_PWM > 0)
+        {
+            mcu_set_pwm(SPINDLE_PWM, value);
         }
-        #endif
+#endif
     }
 
     void laser1_set_coolant(uint8_t value)
@@ -56,8 +75,8 @@ extern "C"
     }
 
     const tool_t __rom__ laser1 = {
-        .startup_code = NULL,
-        .shutdown_code = NULL,
+        .startup_code = &laser1_startup_code,
+        .shutdown_code = &laser1_shutdown_code,
         .set_speed = &laser1_set_speed,
         .set_coolant = NULL,
         .get_spindle = NULL,

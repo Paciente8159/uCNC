@@ -435,12 +435,8 @@ extern "C"
 
             sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
-#ifdef LASER_MODE
             float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
             planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
-#else
-            planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
-#endif
 #endif
             remaining_steps -= segm_steps;
 
@@ -466,7 +462,6 @@ extern "C"
             //finally write the segment
             itp_sgm_buffer_write();
         }
-
 #ifdef USE_COOLANT
         //updated the coolant pins
         tool_set_coolant(planner_get_coolant());
@@ -495,13 +490,14 @@ extern "C"
         }
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-#ifdef LASER_MODE
+#ifdef USE_SPINDLE
         if (g_settings.laser_mode)
         {
             tool_set_speed(0, false);
             itp_rt_spindle = 0;
         }
 #endif
+
         mcu_stop_itp_isr();
     }
 
@@ -713,6 +709,7 @@ extern "C"
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
+
 #ifdef USE_SPINDLE
                     tool_set_speed(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
                     itp_rt_spindle = itp_rt_sgm->spindle;
@@ -974,46 +971,42 @@ extern "C"
         itp_busy = false;
     }
 
-//     void itp_nomotion(uint8_t type, uint16_t delay)
-//     {
-//         while (itp_sgm_is_full())
-//         {
-//             if (!cnc_dotasks())
-//             {
-//                 return;
-//             }
-//         }
+    //     void itp_nomotion(uint8_t type, uint16_t delay)
+    //     {
+    //         while (itp_sgm_is_full())
+    //         {
+    //             if (!cnc_dotasks())
+    //             {
+    //                 return;
+    //             }
+    //         }
 
-//         itp_sgm_data[itp_sgm_data_write].block = NULL;
-//         //clicks every 100ms (10Hz)
-//         if (delay)
-//         {
-//             mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         else
-//         {
-//             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-//         }
-//         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
-//         itp_sgm_data[itp_sgm_data_write].feed = 0;
-//         itp_sgm_data[itp_sgm_data_write].update_itp = type;
-// #ifdef USE_SPINDLE
-// #ifdef LASER_MODE
-//         if (g_settings.laser_mode)
-//         {
-//             itp_sgm_data[itp_sgm_data_write].spindle = 0;
-//             itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
-//         }
-//         else
-//         {
-//             planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-//         }
-// #else
-//         planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-// #endif
-// #endif
-//         itp_sgm_buffer_write();
-//     }
+    //         itp_sgm_data[itp_sgm_data_write].block = NULL;
+    //         //clicks every 100ms (10Hz)
+    //         if (delay)
+    //         {
+    //             mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+    //         }
+    //         else
+    //         {
+    //             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+    //         }
+    //         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
+    //         itp_sgm_data[itp_sgm_data_write].feed = 0;
+    //         itp_sgm_data[itp_sgm_data_write].update_itp = type;
+    // #ifdef USE_SPINDLE
+    //         if (g_settings.laser_mode)
+    //         {
+    //             itp_sgm_data[itp_sgm_data_write].spindle = 0;
+    //             itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    //         }
+    //         else
+    //         {
+    //             planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    //         }
+    // #endif
+    //         itp_sgm_buffer_write();
+    //     }
 
 #ifdef __cplusplus
 }
