@@ -5,6 +5,14 @@
 
 # Changelog
 
+## [1.3.rc] - Unreleased
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support. It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
+RC adds/fixes the following issue:
+
+### Added
+  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools.
+
 ## [1.3.b2] - 2021-12-14
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
@@ -339,6 +347,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
 [1.2.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.2.4

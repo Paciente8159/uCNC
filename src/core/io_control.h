@@ -195,8 +195,6 @@ extern "C"
 #define CONTROLEN_MASK (CONTROLEN_ESTOP | CONTROLEN_SAFETY_DOOR | CONTROLEN_FHOLD | CONTROLEN_CS_RES)
 #define CONTROLISR_MASK (CONTROLISR_ESTOP | CONTROLISR_SAFETY_DOOR | CONTROLISR_FHOLD | CONTROLISR_CS_RES)
 
-#define COOLANT_MASK 0x02
-#define MIST_MASK 0x01
 	//ISR
 	void io_limits_isr(void);
 	void io_controls_isr(void);
@@ -215,6 +213,9 @@ extern "C"
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
+
+	void io_set_pwm(uint8_t pin, uint8_t value);
+	void io_set_output(uint8_t pin, bool state);
 
 	void io_enable_steppers(void);
 	void io_disable_steppers(void);

@@ -481,6 +481,269 @@ extern "C"
 #endif
     }
 
+    void io_set_pwm(uint8_t pin, uint8_t value)
+    {
+        switch (pin)
+        {
+#if (PWM0 >= 0)
+        case PWM0:
+            mcu_set_pwm(PWM0, value);
+            break;
+#endif
+#if (PWM1 >= 0)
+        case PWM1:
+            mcu_set_pwm(PWM1, value);
+            break;
+#endif
+#if (PWM2 >= 0)
+        case PWM2:
+            mcu_set_pwm(PWM2, value);
+            break;
+#endif
+#if (PWM3 >= 0)
+        case PWM3:
+            mcu_set_pwm(PWM3, value);
+            break;
+#endif
+#if (PWM4 >= 0)
+        case PWM4:
+            mcu_set_pwm(PWM4, value);
+            break;
+#endif
+#if (PWM5 >= 0)
+        case PWM5:
+            mcu_set_pwm(PWM5, value);
+            break;
+#endif
+#if (PWM6 >= 0)
+        case PWM6:
+            mcu_set_pwm(PWM6, value);
+            break;
+#endif
+#if (PWM7 >= 0)
+        case PWM7:
+            mcu_set_pwm(PWM7, value);
+            break;
+#endif
+#if (PWM8 >= 0)
+        case PWM8:
+            mcu_set_pwm(PWM8, value);
+            break;
+#endif
+#if (PWM9 >= 0)
+        case PWM9:
+            mcu_set_pwm(PWM9, value);
+            break;
+#endif
+#if (PWM10 >= 0)
+        case PWM10:
+            mcu_set_pwm(PWM10, value);
+            break;
+#endif
+#if (PWM11 >= 0)
+        case PWM11:
+            mcu_set_pwm(PWM11, value);
+            break;
+#endif
+#if (PWM12 >= 0)
+        case PWM12:
+            mcu_set_pwm(PWM12, value);
+            break;
+#endif
+#if (PWM13 >= 0)
+        case PWM13:
+            mcu_set_pwm(PWM13, value);
+            break;
+#endif
+#if (PWM14 >= 0)
+        case PWM14:
+            mcu_set_pwm(PWM14, value);
+            break;
+#endif
+#if (PWM15 >= 0)
+        case PWM15:
+            mcu_set_pwm(PWM15, value);
+            break;
+#endif
+        }
+    }
+
+    void io_set_output(uint8_t pin, bool state)
+    {
+        if (state)
+        {
+            switch (pin)
+            {
+#if (DOUT0 >= 0)
+            case DOUT0:
+                mcu_set_output(DOUT0);
+                break;
+#endif
+#if (DOUT1 >= 0)
+            case DOUT1:
+                mcu_set_output(DOUT1);
+                break;
+#endif
+#if (DOUT2 >= 0)
+            case DOUT2:
+                mcu_set_output(DOUT2);
+                break;
+#endif
+#if (DOUT3 >= 0)
+            case DOUT3:
+                mcu_set_output(DOUT3);
+                break;
+#endif
+#if (DOUT4 >= 0)
+            case DOUT4:
+                mcu_set_output(DOUT4);
+                break;
+#endif
+#if (DOUT5 >= 0)
+            case DOUT5:
+                mcu_set_output(DOUT5);
+                break;
+#endif
+#if (DOUT6 >= 0)
+            case DOUT6:
+                mcu_set_output(DOUT6);
+                break;
+#endif
+#if (DOUT7 >= 0)
+            case DOUT7:
+                mcu_set_output(DOUT7);
+                break;
+#endif
+#if (DOUT8 >= 0)
+            case DOUT8:
+                mcu_set_output(DOUT8);
+                break;
+#endif
+#if (DOUT9 >= 0)
+            case DOUT9:
+                mcu_set_output(DOUT9);
+                break;
+#endif
+#if (DOUT10 >= 0)
+            case DOUT10:
+                mcu_set_output(DOUT10);
+                break;
+#endif
+#if (DOUT11 >= 0)
+            case DOUT11:
+                mcu_set_output(DOUT11);
+                break;
+#endif
+#if (DOUT12 >= 0)
+            case DOUT12:
+                mcu_set_output(DOUT12);
+                break;
+#endif
+#if (DOUT13 >= 0)
+            case DOUT13:
+                mcu_set_output(DOUT13);
+                break;
+#endif
+#if (DOUT14 >= 0)
+            case DOUT14:
+                mcu_set_output(DOUT14);
+                break;
+#endif
+#if (DOUT15 >= 0)
+            case DOUT15:
+                mcu_set_output(DOUT15);
+                break;
+#endif
+            }
+        }
+        else
+        {
+            switch (pin)
+            {
+#if (DOUT0 >= 0)
+            case DOUT0:
+                mcu_clear_output(DOUT0);
+                break;
+#endif
+#if (DOUT1 >= 0)
+            case DOUT1:
+                mcu_clear_output(DOUT1);
+                break;
+#endif
+#if (DOUT2 >= 0)
+            case DOUT2:
+                mcu_clear_output(DOUT2);
+                break;
+#endif
+#if (DOUT3 >= 0)
+            case DOUT3:
+                mcu_clear_output(DOUT3);
+                break;
+#endif
+#if (DOUT4 >= 0)
+            case DOUT4:
+                mcu_clear_output(DOUT4);
+                break;
+#endif
+#if (DOUT5 >= 0)
+            case DOUT5:
+                mcu_clear_output(DOUT5);
+                break;
+#endif
+#if (DOUT6 >= 0)
+            case DOUT6:
+                mcu_clear_output(DOUT6);
+                break;
+#endif
+#if (DOUT7 >= 0)
+            case DOUT7:
+                mcu_clear_output(DOUT7);
+                break;
+#endif
+#if (DOUT8 >= 0)
+            case DOUT8:
+                mcu_clear_output(DOUT8);
+                break;
+#endif
+#if (DOUT9 >= 0)
+            case DOUT9:
+                mcu_clear_output(DOUT9);
+                break;
+#endif
+#if (DOUT10 >= 0)
+            case DOUT10:
+                mcu_clear_output(DOUT10);
+                break;
+#endif
+#if (DOUT11 >= 0)
+            case DOUT11:
+                mcu_clear_output(DOUT11);
+                break;
+#endif
+#if (DOUT12 >= 0)
+            case DOUT12:
+                mcu_clear_output(DOUT12);
+                break;
+#endif
+#if (DOUT13 >= 0)
+            case DOUT13:
+                mcu_clear_output(DOUT13);
+                break;
+#endif
+#if (DOUT14 >= 0)
+            case DOUT14:
+                mcu_clear_output(DOUT14);
+                break;
+#endif
+#if (DOUT15 >= 0)
+            case DOUT15:
+                mcu_clear_output(DOUT15);
+                break;
+#endif
+            }
+        }
+    }
+
     void io_disable_steppers(void)
     {
 #if (STEP0_EN >= 0)

@@ -27,13 +27,65 @@ extern "C"
 
 	static tool_t tool_current;
 
+	//this variable is not used but forces the compiler to compile the selected tools compilation units
+	const tool_t *__rom__ const tools[] = {
+#ifdef TOOL1
+		&TOOL1,
+#endif
+#ifdef TOOL2
+		&TOOL2,
+#endif
+#ifdef TOOL3
+		&TOOL3,
+#endif
+#ifdef TOOL4
+		&TOOL4,
+#endif
+#ifdef TOOL5
+		&TOOL5,
+#endif
+#ifdef TOOL6
+		&TOOL6,
+#endif
+#ifdef TOOL7
+		&TOOL7,
+#endif
+#ifdef TOOL8
+		&TOOL8,
+#endif
+#ifdef TOOL9
+		&TOOL9,
+#endif
+#ifdef TOOL10
+		&TOOL10,
+#endif
+#ifdef TOOL11
+		&TOOL11,
+#endif
+#ifdef TOOL12
+		&TOOL12,
+#endif
+#ifdef TOOL13
+		&TOOL13,
+#endif
+#ifdef TOOL14
+		&TOOL14,
+#endif
+#ifdef TOOL15
+		&TOOL15,
+#endif
+#ifdef TOOL16
+		&TOOL16,
+#endif
+	};
+
 	void tool_init(void)
 	{
 #ifdef FORCE_GLOBALS_TO_0
 		tool_current = {};
 #endif
 
-		tool_change(0);
+		tool_change(1);
 	}
 
 	void tool_change(uint8_t tool)
@@ -46,84 +98,84 @@ extern "C"
 
 		switch (tool)
 		{
-#if TOOL_COUNT > 0
-		case 0:
-			rom_memcpy(&tool_current, &tool0, sizeof(tool_t));
-			break;
-#endif
-#if TOOL_COUNT > 1
+#ifdef TOOL1
 		case 1:
-			tool_current = (tool_t *)&tool1;
+			rom_memcpy(&tool_current, &TOOL1, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 2
+#ifdef TOOL2
 		case 2:
-			tool_current = (tool_t *)&tool2;
+			rom_memcpy(&tool_current, &TOOL2, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 3
+#ifdef TOOL3
 		case 3:
-			tool_current = (tool_t *)&tool3;
+			rom_memcpy(&tool_current, &TOOL3, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 4
+#ifdef TOOL4
 		case 4:
-			tool_current = (tool_t *)&tool4;
+			rom_memcpy(&tool_current, &TOOL4, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 5
+#ifdef TOOL5
 		case 5:
-			tool_current = (tool_t *)&tool5;
+			rom_memcpy(&tool_current, &TOOL5, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 6
+#ifdef TOOL6
 		case 6:
-			tool_current = (tool_t *)&tool6;
+			rom_memcpy(&tool_current, &TOOL6, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 7
+#ifdef TOOL7
 		case 7:
-			tool_current = (tool_t *)&tool7;
+			rom_memcpy(&tool_current, &TOOL7, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 8
+#ifdef TOOL8
 		case 8:
-			tool_current = (tool_t *)&tool8;
+			rom_memcpy(&tool_current, &TOOL8, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 9
+#ifdef TOOL9
 		case 9:
-			tool_current = (tool_t *)&tool9;
+			rom_memcpy(&tool_current, &TOOL9, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 10
+#ifdef TOOL10
 		case 10:
-			tool_current = (tool_t *)&tool10;
+			rom_memcpy(&tool_current, &TOOL10, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 11
+#ifdef TOOL11
 		case 11:
-			tool_current = (tool_t *)&tool11;
+			rom_memcpy(&tool_current, &TOOL11, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 12
+#ifdef TOOL12
 		case 12:
-			tool_current = (tool_t *)&tool12;
+			rom_memcpy(&tool_current, &TOOL12, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 13
+#ifdef TOOL13
 		case 13:
-			tool_current = (tool_t *)&tool13;
+			rom_memcpy(&tool_current, &TOOL13, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 14
+#ifdef TOOL14
 		case 14:
-			tool_current = (tool_t *)&tool14;
+			rom_memcpy(&tool_current, &TOOL14, sizeof(tool_t));
 			break;
 #endif
-#if TOOL_COUNT > 15
+#ifdef TOOL15
 		case 15:
-			tool_current = (tool_t *)&tool15;
+			rom_memcpy(&tool_current, &TOOL15, sizeof(tool_t));
+			break;
+#endif
+#ifdef TOOL16
+		case 16:
+			rom_memcpy(&tool_current, &TOOL16, sizeof(tool_t));
 			break;
 #endif
 		default:
@@ -136,11 +188,11 @@ extern "C"
 		}
 	}
 
-	void tool_set_spindle(uint8_t value, bool invert)
+	void tool_set_speed(uint8_t value, bool invert)
 	{
-		if (tool_current.set_spindle)
+		if (tool_current.set_speed)
 		{
-			tool_current.set_spindle(value, invert);
+			tool_current.set_speed(value, invert);
 		}
 	}
 
@@ -164,7 +216,7 @@ extern "C"
 
 	void tool_stop()
 	{
-		tool_set_spindle(0, false);
+		tool_set_speed(0, false);
 		tool_set_coolant(0);
 	}
 

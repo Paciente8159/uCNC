@@ -87,7 +87,7 @@ extern "C"
         tool_init();
 #endif
 #if PID_CONTROLLERS > 0
-            pid_init(); //pid
+        pid_init(); //pid
 #endif
     }
 
@@ -229,10 +229,7 @@ extern "C"
         block_data.dwell = 0;
         //starts offset and waits to finnish
         mc_line(target, &block_data);
-        do
-        {
-            cnc_dotasks();
-        } while (cnc_get_exec_state(EXEC_RUN));
+        itp_sync();
 
         //reset position
         itp_reset_rt_position();
@@ -602,15 +599,14 @@ extern "C"
             case RT_CMD_SPINDLE_TOGGLE:
                 if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
                 {
-                    //toogle state
-                    //COMMENT
-                    // #if (SPINDLE_PWM >= 0)
-                    //                     if (io_get_spindle())
-                    //                     {
-                    //                         update_tools = false;
-                    //                         io_set_spindle(0, false);
-                    //                     }
-                    // #endif
+//toogle state
+#if (TOOL_COUNT >= 0)
+                    if (tool_get_spindle())
+                    {
+                        update_tools = false;
+                        tool_set_speed(0, false);
+                    }
+#endif
                 }
                 break;
 #endif

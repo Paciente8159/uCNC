@@ -228,7 +228,7 @@ extern "C"
 #ifdef USE_SPINDLE
         int16_t s;
 #endif
-        uint8_t t;
+        int8_t t;
         uint8_t l;
     } parser_words_t;
 
@@ -350,10 +350,10 @@ extern "C"
     modalgroups[9] = 9;
 #endif
         modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
-#ifdef USE_TOOL_CHANGER
+#if TOOL_COUNT > 1
         modalgroups[11] = parser_state.tool_index;
 #else
-    modalgroups[11] = 1;
+    modalgroups[11] = TOOL_COUNT;
 #endif
         *feed = (uint16_t)parser_state.feedrate;
     }
@@ -964,7 +964,7 @@ extern "C"
 
 //RS274NGC v3 - 3.6 Input M Codes
 //group 4 - stopping (nothing to be checked)
-//group 6 - tool change(not implemented yet)
+//group 6 - tool change(nothing to be checked)
 //group 7 - spindle turning (nothing to be checked)
 //group 8 - coolant (nothing to be checked)
 //group 9 - enable/disable feed and speed override switches (not implemented)
@@ -977,12 +977,12 @@ extern "C"
             return STATUS_NEGATIVE_VALUE;
         }
 #endif
-#ifdef USE_TOOL_CHANGER
+#if TOOL_COUNT > 1
         if (words->t < 0)
         {
             return STATUS_NEGATIVE_VALUE;
         }
-        if (words->t > g_settings.tool_count)
+        if (words->t >= TOOL_COUNT)
         {
             return STATUS_INVALID_TOOL;
         }
@@ -1052,14 +1052,21 @@ extern "C"
         }
 #endif
 //5. select tool
-#ifdef USE_TOOL_CHANGER
+#if TOOL_COUNT > 1
         if (CHECKFLAG(cmd->words, GCODE_WORD_T))
         {
-            new_state->tool_index = words->t;
+            if(new_state->tool_index != words->t){
+
+                itp_sync();
+                //tool 0 is the same as no tool (has stated in RS274NGC v3 - 3.7.3)
+                tool_change(words->t);
+                new_state->tool_index = words->t;
+            }
         }
 #else
-    new_state->tool_index = 1; //tool is allways 1
+    new_state->tool_index = TOOL_COUNT; //tool is always 1. if 0 there is no tool
 #endif
+
 //6. change tool (not implemented yet)
 //7. spindle on/off
 #ifdef USE_SPINDLE
@@ -2064,7 +2071,7 @@ extern "C"
 #endif
         case 6:
             new_group |= GCODE_GROUP_TOOLCHANGE;
-            new_state->groups.tool_change = M6;
+            new_state->groups.tool_change = 1;
             break;
 #ifdef USE_COOLANT
 #if COOLANT_MIST >= 0

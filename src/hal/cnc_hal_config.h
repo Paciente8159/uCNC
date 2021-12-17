@@ -32,29 +32,17 @@ extern "C"
  */
 
 /**
-	Spindle configurations.
-	Uncomment to enable
+	Tool definition
+	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
-#ifdef USE_SPINDLE
-#ifdef PWM0
-#define SPINDLE_PWM PWM0
-#endif
-#ifdef DOUT0
-#define SPINDLE_DIR DOUT0
-#endif
-#endif
 
-/*
-	Define a coolant flood and mist pin
-*/
-#ifdef USE_COOLANT
-#ifdef DOUT1
-#define COOLANT_FLOOD DOUT1
-#endif
-#ifdef DOUT2
-#define COOLANT_MIST DOUT2
-#endif
-#endif
+//declare the tool to be used
+extern const tool_t __rom__ spindle1;
+extern const tool_t __rom__ laser1;
+
+//assign the tools from 1 to 16
+#define TOOL1 spindle1
+#define TOOL2 laser1
 
 #ifdef DOUT15
 #define LED DOUT15

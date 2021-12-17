@@ -25,6 +25,7 @@ extern "C"
 {
 #endif
 
+#include "hal/tools/tool_helper.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -36,19 +37,15 @@ extern "C"
 	{
 		tool_func startup_code;
 		tool_func shutdown_code;
-		tool_spindle_func set_spindle;
+		tool_spindle_func set_speed;
 		tool_coolant_func set_coolant;
 		tool_func get_spindle;
 		tool_func pid_controller;
 	} tool_t;
 
-#if TOOL_COUNT > 0
-	extern const tool_t tool0;
-#endif
-
 	void tool_init(void);
 	void tool_change(uint8_t tool);
-	void tool_set_spindle(uint8_t value, bool invert);
+	void tool_set_speed(uint8_t value, bool invert);
 	void tool_set_coolant(uint8_t value);
 	int tool_get_spindle(void);
 	void tool_stop(void);

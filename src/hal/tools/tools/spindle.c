@@ -1,6 +1,7 @@
 /*
-	Name: tool0.c
-	Description: Defines Tool0 for µCNC.
+	Name: spindle.c
+	Description: Defines a spindle tool using PWM0-speed and DOUT0-dir for µCNC.
+                 Defines a coolant output using DOUT1 and DOUT2.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -22,8 +23,8 @@ extern "C"
 #endif
 
 #include "cnc.h"
-#include "interface/settings.h"
 #include "core/io_control.h"
+#include "hal/tools/tool_helper.h"
 
     /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
@@ -37,55 +38,43 @@ extern "C"
 #define COOLANT_FLOOD DOUT1
 #define COOLANT_MIST DOUT2
 
-    void tool0_set_spindle(uint8_t value, bool invert)
+    void spindle1_set_speed(uint8_t value, bool invert)
     {
-#if SPINDLE_DIR >= 0
-        if (!invert)
-        {
-            mcu_clear_output(SPINDLE_DIR);
-        }
-        else
-        {
-            mcu_set_output(SPINDLE_DIR);
-        }
-#endif
+        //easy macro to execute the same code as below
+        //SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
 
-#if SPINDLE_PWM >= 0
-        mcu_set_pwm(SPINDLE_PWM, value);
-#endif
+        //speed optimized version (in AVR it's 24 instruction cycles)
+        #if SPINDLE_DIR >= 0
+        if(SPINDLE_DIR>0) {
+                if (!invert)
+                {
+                    mcu_clear_output(SPINDLE_DIR);
+                }
+                else
+                {
+                    mcu_set_output(SPINDLE_DIR);
+                }
+        }
+        #endif
+
+        #if SPINDLE_PWM >= 0
+        if(SPINDLE_PWM>0) {
+                mcu_set_pwm(SPINDLE_PWM, value);
+        }
+        #endif
     }
 
-    void tool0_set_coolant(uint8_t value)
+    void spindle1_set_coolant(uint8_t value)
     {
-#if COOLANT_FLOOD >= 0
-        if (value & COOLANT_MASK)
-        {
-            mcu_set_output(COOLANT_FLOOD);
-        }
-        else
-        {
-            mcu_clear_output(COOLANT_FLOOD);
-        }
-#endif
-#if COOLANT_MIST >= 0
-#if (COOLANT_FLOOD != COOLANT_MIST)
-        if (value & MIST_MASK)
-        {
-            mcu_set_output(COOLANT_MIST);
-        }
-        else
-        {
-            mcu_clear_output(COOLANT_MIST);
-        }
-#endif
-#endif
+        //easy macro
+        SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
     }
 
-    const tool_t __rom__ tool0 = {
+    const tool_t __rom__ spindle1 = {
         .startup_code = NULL,
         .shutdown_code = NULL,
-        .set_spindle = &tool0_set_spindle,
-        .set_coolant = &tool0_set_coolant,
+        .set_speed = &spindle1_set_speed,
+        .set_coolant = &spindle1_set_coolant,
         .get_spindle = NULL,
         .pid_controller = NULL};
 

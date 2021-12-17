@@ -458,7 +458,7 @@ extern "C"
     {
         if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
         {
-            if (itp_sync())
+            if (itp_sync() != STATUS_OK)
             {
                 return STATUS_CRITICAL_FAIL;
             }
@@ -472,7 +472,7 @@ extern "C"
     {
         if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
         {
-            if (itp_sync())
+            if (itp_sync() != STATUS_OK)
             {
                 return STATUS_CRITICAL_FAIL;
             }
@@ -537,13 +537,10 @@ extern "C"
         cnc_set_exec_state(EXEC_HOMING);
         mc_line(target, &block_data);
 
-        do
+        if (itp_sync() != STATUS_OK)
         {
-            if (!cnc_dotasks())
-            {
-                return STATUS_CRITICAL_FAIL;
-            }
-        } while (cnc_get_exec_state(EXEC_RUN));
+            return STATUS_CRITICAL_FAIL;
+        }
 
         //flushes buffers
         itp_stop();
@@ -584,13 +581,10 @@ extern "C"
         mc_line(target, &block_data);
         //flags homing clear by the unlock
         cnc_set_exec_state(EXEC_HOMING);
-        do
+        if (itp_sync() != STATUS_OK)
         {
-            if (!cnc_dotasks())
-            {
-                return STATUS_CRITICAL_FAIL;
-            }
-        } while (cnc_get_exec_state(EXEC_RUN));
+            return STATUS_CRITICAL_FAIL;
+        }
 
         cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
         //resets limit mask
