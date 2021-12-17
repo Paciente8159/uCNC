@@ -11,7 +11,7 @@ Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) supp
 RC adds/fixes the following issue:
 
 ### Added
-  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools.
+  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools. (#77)
 
 ## [1.3.b2] - 2021-12-14
 
