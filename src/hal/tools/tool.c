@@ -214,7 +214,7 @@ extern "C"
 #ifdef USE_COOLANT
 		if (tool_current.set_coolant)
 		{
-			return tool_current.set_coolant(value);
+			tool_current.set_coolant(value);
 		}
 #endif
 	}
@@ -223,6 +223,13 @@ extern "C"
 	{
 		tool_set_speed(0, false);
 		tool_set_coolant(0);
+	}
+
+	uint8_t tool_pid_update(void) {
+		if (tool_current.pid_controller)
+		{
+			return tool_current.pid_controller();
+		}
 	}
 
 #ifdef __cplusplus

@@ -49,6 +49,7 @@ extern "C"
 	void tool_set_coolant(uint8_t value);
 	int tool_get_speed(void);
 	void tool_stop(void);
+	uint8_t tool_pid_update(void);
 
 #ifdef __cplusplus
 }
