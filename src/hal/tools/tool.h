@@ -25,6 +25,8 @@ extern "C"
 {
 #endif
 
+#define TOOLDEF __attribute__ ((used)) 
+
 #include "hal/tools/tool_helper.h"
 #include <stdbool.h>
 #include <stdint.h>

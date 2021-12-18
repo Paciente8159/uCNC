@@ -74,7 +74,7 @@ extern "C"
         return mcu_get_pwm(SPINDLE_PWM);
     }
 
-    const tool_t __rom__ spindle1 = {
+    TOOLDEF const tool_t __rom__ spindle1 = {
         .startup_code = NULL,
         .shutdown_code = NULL,
         .set_speed = &spindle1_set_speed,

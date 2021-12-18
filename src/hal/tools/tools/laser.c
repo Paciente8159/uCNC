@@ -78,7 +78,7 @@ extern "C"
         return mcu_get_pwm(LASER_PWM);
     }
 
-    const tool_t __rom__ laser1 = {
+    TOOLDEF const tool_t __rom__ laser1 = {
         .startup_code = &laser1_startup_code,
         .shutdown_code = &laser1_shutdown_code,
         .set_speed = &laser1_set_speed,
