@@ -44,7 +44,7 @@ extern const tool_t __rom__ laser1;
 #define TOOL1 spindle1
 #define TOOL2 laser1
 
-#ifdef DOUT15
+#if DOUT15 >= 0
 #define LED DOUT15
 #endif
 
