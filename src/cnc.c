@@ -446,7 +446,7 @@ extern "C"
         {
         case CMD_CODE_RESET:
             SETFLAG(cnc_state.rt_cmd, RT_CMD_RESET);
-            SETFLAG(cnc_state.exec_state, EXEC_KILL);
+            //SETFLAG(cnc_state.exec_state, EXEC_KILL);
             break;
         case CMD_CODE_FEED_HOLD:
             SETFLAG(cnc_state.exec_state, EXEC_HOLD);
