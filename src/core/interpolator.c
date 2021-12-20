@@ -227,6 +227,8 @@ extern "C"
                 }
                 //get the first block in the planner
                 itp_cur_plan_block = planner_get_block();
+                //clear the data block
+                memset(&itp_blk_data[itp_blk_data_write], 0, sizeof(itp_block_t));
 #ifdef GCODE_PROCESS_LINE_NUMBERS
                 itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
@@ -282,6 +284,8 @@ extern "C"
             }
 
             sgm = &itp_sgm_data[itp_sgm_data_write];
+            //clear the data segment
+            memset(sgm, 0, sizeof(itp_segment_t));
             sgm->block = &itp_blk_data[itp_blk_data_write];
 
             //if an hold is active forces to deaccelerate
@@ -742,7 +746,7 @@ extern "C"
         //is steps remaining starts calc next step bits
         if (itp_rt_sgm->remaining_steps)
         {
-            bool dostep;
+            bool dostep = false;
             if (itp_rt_sgm->block != NULL)
             {
 //prepares the next step bits mask

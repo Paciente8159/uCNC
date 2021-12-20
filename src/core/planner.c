@@ -89,16 +89,17 @@ extern "C"
 #else
     static float last_dir_vect[AXIS_COUNT];
 #endif
-
+        //clear the planner block
+        memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
         planner_data[planner_data_write].dirbits = block_data->dirbits;
         planner_data[planner_data_write].main_stepper = block_data->main_stepper;
-        planner_data[planner_data_write].optimal = false;
-        planner_data[planner_data_write].acceleration = 0;
-        planner_data[planner_data_write].rapid_feed_sqr = 0;
-        planner_data[planner_data_write].feed_sqr = 0;
-        //sets entry and max entry feeds as if it would start and finish from a stoped state
-        planner_data[planner_data_write].entry_feed_sqr = 0;
-        planner_data[planner_data_write].entry_max_feed_sqr = 0;
+        // planner_data[planner_data_write].optimal = false;
+        // planner_data[planner_data_write].acceleration = 0;
+        // planner_data[planner_data_write].rapid_feed_sqr = 0;
+        // planner_data[planner_data_write].feed_sqr = 0;
+        // //sets entry and max entry feeds as if it would start and finish from a stoped state
+        // planner_data[planner_data_write].entry_feed_sqr = 0;
+        // planner_data[planner_data_write].entry_max_feed_sqr = 0;
 #ifdef USE_SPINDLE
         planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
 #endif
