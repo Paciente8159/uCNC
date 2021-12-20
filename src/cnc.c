@@ -354,6 +354,7 @@ extern "C"
             }
         }
 
+        //if releasing from a HOLD state with and active delay in exec
         if (CHECKFLAG(statemask, EXEC_HOLD) && CHECKFLAG(cnc_state.exec_state, EXEC_HOLD))
         {
             SETFLAG(cnc_state.exec_state, EXEC_RESUMING);

@@ -12,6 +12,14 @@ Release Candidate fixes the following issue:
 
 ### Added
   - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
+  - implemented Hardware UART in SAMD21 (#75)
+
+### Changed
+  - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
+  - modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
+
+### Fixed
+  - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
 
 ## [1.3.b2] - 2021-12-14
 

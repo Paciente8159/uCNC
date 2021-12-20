@@ -42,6 +42,17 @@ extern "C"
 //#define ENABLE_SYNC_TX
 //#define ENABLE_SYNC_RX
 
+//uncomment to enable USB VCP instead of serial hardware
+//#define USB_VCP
+#ifdef USB_VCP
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#ifndef ENABLE_SYNC_RX
+#define ENABLE_SYNC_RX
+#endif
+#endif
+
 /*
 	Choose the board
 	Check boardss.h for list of available/supported boards
