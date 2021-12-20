@@ -102,7 +102,8 @@ extern "C"
 	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
 	This is used by spindle to ensure spindle gets up to speed in motions
 */
-#define DELAY_ON_RESUME 4
+#define DELAY_ON_RESUME_SPINDLE 4
+#define DELAY_ON_RESUME_COOLANT 1
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 #define LASER_MODE
 //minimum output if the value of S is other then 0

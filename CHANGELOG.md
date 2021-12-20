@@ -11,6 +11,7 @@ Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) supp
 Release Candidate fixes the following issue:
 
 ### Added
+  - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
   - implemented Hardware UART in SAMD21 (#75)
 
 ### Changed
