@@ -19,7 +19,8 @@ RC adds/fixes the following issue:
   - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
   - modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
   - modified planner buffer size in AVR size to prevent memory errors  (#77)
-  - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data.  (#77)
+  - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data. (#77)
+  - step ISR optimizations (for main stepper and idle steppers) are now optional. (#77)
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
