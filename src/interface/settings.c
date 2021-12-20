@@ -171,9 +171,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             .backlash_steps[5] = 0,
 #endif
 #endif
-#ifdef LASER_MODE
             .laser_mode = 0,
-#endif
 #if PID_CONTROLLERS > 0
             .pid_gain[0][0] = 0,
             .pid_gain[0][1] = 0,
@@ -225,7 +223,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             .homing_offset = DEFAULT_HOMING_OFFSET,
             .g64_angle_factor = DEFAULT_G64_FACTOR,
             .arc_tolerance = DEFAULT_ARC_TOLERANCE,
-            .tool_count = DEFAULT_TOOL_COUNT,
+            //.tool_count = DEFAULT_STARTUP_TOOL,
             .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
             .status_report_mask = DEFAULT_STATUS_MASK,
             .control_invert_mask = DEFAULT_CONTROL_INV_MASK,
@@ -429,11 +427,9 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         case 31:
             g_settings.spindle_min_rpm = value;
             break;
-#ifdef LASER_MODE
         case 32:
             g_settings.laser_mode = value8;
             break;
-#endif
 #ifdef ENABLE_SKEW_COMPENSATION
         case 37:
             g_settings.skew_xy_factor = value;

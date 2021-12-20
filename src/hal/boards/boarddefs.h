@@ -41,6 +41,8 @@ extern "C"
 
 #if (BOARD == BOARD_UNO)
 #define MCU MCU_AVR
+//reduces RAM usage a bit to prevent hardware resets
+#define PLANNER_BUFFER_SIZE 14
 #include "hal/boards/avr/boardmap_uno.h"
 #endif
 

@@ -5,18 +5,22 @@
 
 # Changelog
 
-## [1.3.rc] - unreleased
+## [1.3.rc] - Unreleased
 
-Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
-Release Candidate fixes the following issue:
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support. It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
+RC adds/fixes the following issue:
 
 ### Added
+  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools. (#77)
   - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
   - implemented Hardware UART in SAMD21 (#75)
 
 ### Changed
   - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
   - modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
+  - modified planner buffer size in AVR size to prevent memory errors  (#77)
+  - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data. (#77)
+  - step ISR optimizations (for main stepper and idle steppers) are now optional. (#77)
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)

@@ -181,6 +181,8 @@ extern "C"
 
     void pid_update_isr(void)
     {
+        tool_pid_update();
+        
 #if (PID_CONTROLLERS > 0)
 
         static uint8_t current_pid = 0;

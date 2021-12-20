@@ -23,7 +23,11 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 
 ## Current µCNC status
 µCNC current major version is v1.3. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
-Version 1.3 added support for SAMD21 MCU and the Arduino Zero/M0 boards.
+Version 1.3 added a couple of new features.
+
+  - added support for SAMD21 MCU and the Arduino Zero/M0 boards.
+  - new HAL for tool change and management.
+
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
 
@@ -37,7 +41,7 @@ These include:
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes since µCNC 1.2.1:
+List of Supported G-Codes since µCNC 1.3.0:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
   - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
   - Feed Rate Modes: G93, G94
@@ -51,6 +55,7 @@ List of Supported G-Codes since µCNC 1.2.1:
   - Program Flow: M0, M1, M2, M30(same has M2), M60(same has M0)
   - Coolant Control: M7, M8, M9
   - Spindle Control: M3, M4, M5
+  - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
   - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 

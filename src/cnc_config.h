@@ -93,6 +93,14 @@ extern "C"
 //#define ECHO_CMD
 
 /*
+	Sets/limits the number of tools to be used
+	The tool and tool order are configured in the cnc_hal_config.h
+*/
+#define TOOL_COUNT 2
+
+
+#if TOOL_COUNT > 0
+/*
 	Enables the spindle
 	Uncomment to enable. Pinout configurations are set in the cnc_hal_config.h
 */
@@ -105,7 +113,6 @@ extern "C"
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_RESUME_COOLANT 1
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
-#define LASER_MODE
 //minimum output if the value of S is other then 0
 #define PWM_MIN_OUTPUT 1
 #endif
@@ -117,6 +124,7 @@ extern "C"
 #ifdef USE_COOLANT
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
+#endif
 #endif
 
 /*
@@ -202,6 +210,14 @@ extern "C"
 	 * If the type of machine need backlash compensation configure here
 	 */
 	//#define ENABLE_BACKLASH_COMPENSATION
+
+	/**
+	 * Uncomment these to enable step ISR calculation strategies (uses more memory)
+	 * STEP_ISR_SKIP_MAIN - carries the information about the main stepper (performs a step in every ISR tick) and skips calculations
+	 * STEP_ISR_SKIP_IDLE - carries the information about the idle steppers (performs 0 steps in the ISR tick) and skips calculations
+	 * */
+	// #define STEP_ISR_SKIP_MAIN
+	// #define STEP_ISR_SKIP_IDLE
 
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).

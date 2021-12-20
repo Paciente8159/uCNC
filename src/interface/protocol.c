@@ -528,9 +528,7 @@ extern "C"
         protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
         protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
         protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
-#ifdef LASER_MODE
         protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
-#endif
 
 #ifdef ENABLE_SKEW_COMPENSATION
         protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);

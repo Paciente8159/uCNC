@@ -108,8 +108,10 @@ extern "C"
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
 //machine kinematics configurations
 #include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
-//general user options configurations
+//fill remaining configurations
 #include "cnc_config_helper.h"
+//machine tools configurations
+#include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 //final HAL configurations
 #include "hal/cnc_hal_config.h" //inicializes the HAL hardcoded connections
 //initializes core utilities (like fast math functions)

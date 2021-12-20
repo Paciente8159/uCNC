@@ -82,27 +82,27 @@ extern "C"
     {
         uint8_t controls = io_get_controls();
 
-#ifdef ESTOP
+#if (ESTOP >= 0)
         if (CHECKFLAG(controls, ESTOP_MASK))
         {
             cnc_set_exec_state(EXEC_KILL);
             return; //forces exit
         }
 #endif
-#ifdef SAFETY_DOOR
+#if (SAFETY_DOOR >= 0)
         if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
         {
             //safety door activates hold simultaneously to start the controlled stop
             cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
         }
 #endif
-#ifdef FHOLD
+#if (FHOLD >= 0)
         if (CHECKFLAG(controls, FHOLD_MASK))
         {
             cnc_set_exec_state(EXEC_HOLD);
         }
 #endif
-#ifdef CS_RES
+#if (CS_RES >= 0)
         if (CHECKFLAG(controls, CS_RES_MASK))
         {
             cnc_call_rt_command(CMD_CODE_CYCLE_START);
@@ -141,43 +141,43 @@ extern "C"
     uint8_t io_get_limits(void)
     {
         uint8_t value = 0;
-#ifdef LIMIT_X
-#ifdef LIMIT_X2
+#if (LIMIT_X >= 0)
+#if (LIMIT_X2 >= 0)
         value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
 #else
         value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
 #endif
 #endif
-#ifdef LIMIT_Y
-#ifdef LIMIT_Y2
+#if (LIMIT_Y >= 0)
+#if (LIMIT_Y2 >= 0)
         value |= ((mcu_get_input(LIMIT_Y)) ? (LIMIT_Y_MASK | LIMITS_LIMIT0_MASK) : 0);
 #else
         value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
 #endif
 #endif
-#ifdef LIMIT_Z
-#ifdef LIMIT_Z2
+#if (LIMIT_Z >= 0)
+#if (LIMIT_Z2 >= 0)
         value |= ((mcu_get_input(LIMIT_Z)) ? (LIMIT_Z_MASK | LIMITS_LIMIT0_MASK) : 0);
 #else
         value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
-#ifdef LIMIT_X2
+#if (LIMIT_X2 >= 0)
         value |= ((mcu_get_input(LIMIT_X2)) ? (LIMIT_X_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
-#ifdef LIMIT_Y2
+#if (LIMIT_Y2 >= 0)
         value |= ((mcu_get_input(LIMIT_Y2)) ? (LIMIT_Y_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
-#ifdef LIMIT_Z2
+#if (LIMIT_Z2 >= 0)
         value |= ((mcu_get_input(LIMIT_Z2)) ? (LIMIT_Z_MASK | LIMITS_LIMIT1_MASK) : 0);
 #endif
-#ifdef LIMIT_A
+#if (LIMIT_A >= 0)
         value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
 #endif
-#ifdef LIMIT_B
+#if (LIMIT_B >= 0)
         value |= ((mcu_get_input(LIMIT_B)) ? LIMIT_B_MASK : 0);
 #endif
-#ifdef LIMIT_C
+#if (LIMIT_C >= 0)
         value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
 #endif
 
@@ -187,16 +187,16 @@ extern "C"
     uint8_t io_get_controls(void)
     {
         uint8_t value = 0;
-#ifdef ESTOP
+#if (ESTOP >= 0)
         value |= ((mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
 #endif
-#ifdef SAFETY_DOOR
+#if (SAFETY_DOOR >= 0)
         value |= ((mcu_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
 #endif
-#ifdef FHOLD
+#if (FHOLD >= 0)
         value |= ((mcu_get_input(FHOLD)) ? FHOLD_MASK : 0);
 #endif
-#ifdef CS_RES
+#if (CS_RES >= 0)
         value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
 #endif
 
@@ -206,7 +206,7 @@ extern "C"
     void io_enable_probe(void)
     {
 #ifndef FORCE_SOFT_POLLING
-#ifdef PROBE
+#if (PROBE >= 0)
         mcu_enable_probe_isr();
 #endif
 #endif
@@ -215,7 +215,7 @@ extern "C"
     void io_disable_probe(void)
     {
 #ifndef FORCE_SOFT_POLLING
-#ifdef PROBE
+#if (PROBE >= 0)
         mcu_disable_probe_isr();
 #endif
 #endif
@@ -223,7 +223,7 @@ extern "C"
 
     bool io_get_probe(void)
     {
-#ifdef PROBE
+#if (PROBE >= 0)
         bool probe = (mcu_get_input(PROBE) != 0);
         return (!g_settings.probe_invert_mask) ? probe : !probe;
 #else
@@ -239,7 +239,7 @@ extern "C"
     //outputs
     void io_set_steps(uint8_t mask)
     {
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0 && (STEP0 >= 0))
 #ifndef STEP0_NOTSTEPPER
         if (mask & STEP0_MASK)
         {
@@ -251,7 +251,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1 && (STEP1 >= 0))
 #ifndef STEP1_NOTSTEPPER
         if (mask & STEP1_MASK)
         {
@@ -263,7 +263,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2 && (STEP2 >= 0))
 #ifndef STEP2_NOTSTEPPER
         if (mask & STEP2_MASK)
         {
@@ -275,7 +275,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3 && (STEP3 >= 0))
 #ifndef STEP3_NOTSTEPPER
         if (mask & STEP3_MASK)
         {
@@ -287,7 +287,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4 && (STEP4 >= 0))
 #ifndef STEP4_NOTSTEPPER
         if (mask & STEP4_MASK)
         {
@@ -299,7 +299,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5 && (STEP5 >= 0))
 #ifndef STEP5_NOTSTEPPER
         if (mask & STEP5_MASK)
         {
@@ -311,7 +311,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP6
+#if (STEP6 >= 0)
 #ifndef STEP6_NOTSTEPPER
         if (mask & STEP6_MASK)
         {
@@ -323,7 +323,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP7
+#if (STEP7 >= 0)
 #ifndef STEP7_NOTSTEPPER
         if (mask & STEP7_MASK)
         {
@@ -339,7 +339,7 @@ extern "C"
 
     void io_toggle_steps(uint8_t mask)
     {
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0 && (STEP0 >= 0))
 #ifdef STEP0_ISSTEPPER
         if (mask & STEP0_MASK)
         {
@@ -347,7 +347,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1 && (STEP1 >= 0))
 #ifdef STEP1_ISSTEPPER
         if (mask & STEP1_MASK)
         {
@@ -355,7 +355,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2 && (STEP2 >= 0))
 #ifdef STEP2_ISSTEPPER
         if (mask & STEP2_MASK)
         {
@@ -363,7 +363,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3 && (STEP3 >= 0))
 #ifdef STEP3_ISSTEPPER
         if (mask & STEP3_MASK)
         {
@@ -371,7 +371,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4 && (STEP4 >= 0))
 #ifdef STEP4_ISSTEPPER
         if (mask & STEP4_MASK)
         {
@@ -379,7 +379,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5 && (STEP5 >= 0))
 #ifdef STEP5_ISSTEPPER
         if (mask & STEP5_MASK)
         {
@@ -387,7 +387,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP6
+#if (STEP6 >= 0)
 #ifdef STEP6_ISSTEPPER
         if (mask & STEP6_MASK)
         {
@@ -395,7 +395,7 @@ extern "C"
         }
 #endif
 #endif
-#ifdef STEP7
+#if (STEP7 >= 0)
 #ifdef STEP7_ISSTEPPER
         if (mask & STEP7_MASK)
         {
@@ -407,7 +407,7 @@ extern "C"
 
     void io_set_dirs(uint8_t mask)
     {
-#if (STEPPER_COUNT > 0 && defined(DIR0))
+#if (STEPPER_COUNT > 0 && (DIR0 >= 0))
 #ifdef STEP0_ISSTEPPER
         if (mask & DIR0_MASK)
         {
@@ -419,7 +419,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 1 && defined(DIR1))
+#if (STEPPER_COUNT > 1 && (DIR1 >= 0))
 #ifdef STEP1_ISSTEPPER
         if (mask & DIR1_MASK)
         {
@@ -431,7 +431,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 2 && defined(DIR2))
+#if (STEPPER_COUNT > 2 && (DIR2 >= 0))
 #ifdef STEP2_ISSTEPPER
         if (mask & DIR2_MASK)
         {
@@ -443,7 +443,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 3 && defined(DIR3))
+#if (STEPPER_COUNT > 3 && (DIR3 >= 0))
 #ifdef STEP3_ISSTEPPER
         if (mask & DIR3_MASK)
         {
@@ -455,7 +455,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 4 && defined(DIR4))
+#if (STEPPER_COUNT > 4 && (DIR4 >= 0))
 #ifdef STEP4_ISSTEPPER
         if (mask & DIR4_MASK)
         {
@@ -467,7 +467,7 @@ extern "C"
         }
 #endif
 #endif
-#if (STEPPER_COUNT > 5 && defined(DIR5))
+#if (STEPPER_COUNT > 5 && (DIR5 >= 0))
 #ifdef STEP5_ISSTEPPER
         if (mask & DIR5_MASK)
         {
@@ -481,118 +481,312 @@ extern "C"
 #endif
     }
 
+    void io_set_pwm(uint8_t pin, uint8_t value)
+    {
+        switch (pin)
+        {
+#if (PWM0 >= 0)
+        case PWM0:
+            mcu_set_pwm(PWM0, value);
+            break;
+#endif
+#if (PWM1 >= 0)
+        case PWM1:
+            mcu_set_pwm(PWM1, value);
+            break;
+#endif
+#if (PWM2 >= 0)
+        case PWM2:
+            mcu_set_pwm(PWM2, value);
+            break;
+#endif
+#if (PWM3 >= 0)
+        case PWM3:
+            mcu_set_pwm(PWM3, value);
+            break;
+#endif
+#if (PWM4 >= 0)
+        case PWM4:
+            mcu_set_pwm(PWM4, value);
+            break;
+#endif
+#if (PWM5 >= 0)
+        case PWM5:
+            mcu_set_pwm(PWM5, value);
+            break;
+#endif
+#if (PWM6 >= 0)
+        case PWM6:
+            mcu_set_pwm(PWM6, value);
+            break;
+#endif
+#if (PWM7 >= 0)
+        case PWM7:
+            mcu_set_pwm(PWM7, value);
+            break;
+#endif
+#if (PWM8 >= 0)
+        case PWM8:
+            mcu_set_pwm(PWM8, value);
+            break;
+#endif
+#if (PWM9 >= 0)
+        case PWM9:
+            mcu_set_pwm(PWM9, value);
+            break;
+#endif
+#if (PWM10 >= 0)
+        case PWM10:
+            mcu_set_pwm(PWM10, value);
+            break;
+#endif
+#if (PWM11 >= 0)
+        case PWM11:
+            mcu_set_pwm(PWM11, value);
+            break;
+#endif
+#if (PWM12 >= 0)
+        case PWM12:
+            mcu_set_pwm(PWM12, value);
+            break;
+#endif
+#if (PWM13 >= 0)
+        case PWM13:
+            mcu_set_pwm(PWM13, value);
+            break;
+#endif
+#if (PWM14 >= 0)
+        case PWM14:
+            mcu_set_pwm(PWM14, value);
+            break;
+#endif
+#if (PWM15 >= 0)
+        case PWM15:
+            mcu_set_pwm(PWM15, value);
+            break;
+#endif
+        }
+    }
+
+    void io_set_output(uint8_t pin, bool state)
+    {
+        if (state)
+        {
+            switch (pin)
+            {
+#if (DOUT0 >= 0)
+            case DOUT0:
+                mcu_set_output(DOUT0);
+                break;
+#endif
+#if (DOUT1 >= 0)
+            case DOUT1:
+                mcu_set_output(DOUT1);
+                break;
+#endif
+#if (DOUT2 >= 0)
+            case DOUT2:
+                mcu_set_output(DOUT2);
+                break;
+#endif
+#if (DOUT3 >= 0)
+            case DOUT3:
+                mcu_set_output(DOUT3);
+                break;
+#endif
+#if (DOUT4 >= 0)
+            case DOUT4:
+                mcu_set_output(DOUT4);
+                break;
+#endif
+#if (DOUT5 >= 0)
+            case DOUT5:
+                mcu_set_output(DOUT5);
+                break;
+#endif
+#if (DOUT6 >= 0)
+            case DOUT6:
+                mcu_set_output(DOUT6);
+                break;
+#endif
+#if (DOUT7 >= 0)
+            case DOUT7:
+                mcu_set_output(DOUT7);
+                break;
+#endif
+#if (DOUT8 >= 0)
+            case DOUT8:
+                mcu_set_output(DOUT8);
+                break;
+#endif
+#if (DOUT9 >= 0)
+            case DOUT9:
+                mcu_set_output(DOUT9);
+                break;
+#endif
+#if (DOUT10 >= 0)
+            case DOUT10:
+                mcu_set_output(DOUT10);
+                break;
+#endif
+#if (DOUT11 >= 0)
+            case DOUT11:
+                mcu_set_output(DOUT11);
+                break;
+#endif
+#if (DOUT12 >= 0)
+            case DOUT12:
+                mcu_set_output(DOUT12);
+                break;
+#endif
+#if (DOUT13 >= 0)
+            case DOUT13:
+                mcu_set_output(DOUT13);
+                break;
+#endif
+#if (DOUT14 >= 0)
+            case DOUT14:
+                mcu_set_output(DOUT14);
+                break;
+#endif
+#if (DOUT15 >= 0)
+            case DOUT15:
+                mcu_set_output(DOUT15);
+                break;
+#endif
+            }
+        }
+        else
+        {
+            switch (pin)
+            {
+#if (DOUT0 >= 0)
+            case DOUT0:
+                mcu_clear_output(DOUT0);
+                break;
+#endif
+#if (DOUT1 >= 0)
+            case DOUT1:
+                mcu_clear_output(DOUT1);
+                break;
+#endif
+#if (DOUT2 >= 0)
+            case DOUT2:
+                mcu_clear_output(DOUT2);
+                break;
+#endif
+#if (DOUT3 >= 0)
+            case DOUT3:
+                mcu_clear_output(DOUT3);
+                break;
+#endif
+#if (DOUT4 >= 0)
+            case DOUT4:
+                mcu_clear_output(DOUT4);
+                break;
+#endif
+#if (DOUT5 >= 0)
+            case DOUT5:
+                mcu_clear_output(DOUT5);
+                break;
+#endif
+#if (DOUT6 >= 0)
+            case DOUT6:
+                mcu_clear_output(DOUT6);
+                break;
+#endif
+#if (DOUT7 >= 0)
+            case DOUT7:
+                mcu_clear_output(DOUT7);
+                break;
+#endif
+#if (DOUT8 >= 0)
+            case DOUT8:
+                mcu_clear_output(DOUT8);
+                break;
+#endif
+#if (DOUT9 >= 0)
+            case DOUT9:
+                mcu_clear_output(DOUT9);
+                break;
+#endif
+#if (DOUT10 >= 0)
+            case DOUT10:
+                mcu_clear_output(DOUT10);
+                break;
+#endif
+#if (DOUT11 >= 0)
+            case DOUT11:
+                mcu_clear_output(DOUT11);
+                break;
+#endif
+#if (DOUT12 >= 0)
+            case DOUT12:
+                mcu_clear_output(DOUT12);
+                break;
+#endif
+#if (DOUT13 >= 0)
+            case DOUT13:
+                mcu_clear_output(DOUT13);
+                break;
+#endif
+#if (DOUT14 >= 0)
+            case DOUT14:
+                mcu_clear_output(DOUT14);
+                break;
+#endif
+#if (DOUT15 >= 0)
+            case DOUT15:
+                mcu_clear_output(DOUT15);
+                break;
+#endif
+            }
+        }
+    }
+
     void io_disable_steppers(void)
     {
-#ifdef STEP0_EN
+#if (STEP0_EN >= 0)
         mcu_set_output(STEP0_EN);
 #endif
-#ifdef STEP1_EN
+#if (STEP1_EN >= 0)
         mcu_set_output(STEP1_EN);
 #endif
-#ifdef STEP2_EN
+#if (STEP2_EN >= 0)
         mcu_set_output(STEP2_EN);
 #endif
-#ifdef STEP3_EN
+#if (STEP3_EN >= 0)
         mcu_set_output(STEP3_EN);
 #endif
-#ifdef STEP4_EN
+#if (STEP4_EN >= 0)
         mcu_set_output(STEP4_EN);
 #endif
-#ifdef STEP5_EN
+#if (STEP5_EN >= 0)
         mcu_set_output(STEP5_EN);
 #endif
     }
 
     void io_enable_steppers(void)
     {
-#ifdef STEP0_EN
+#if (STEP0_EN >= 0)
         mcu_clear_output(STEP0_EN);
 #endif
-#ifdef STEP1_EN
+#if (STEP1_EN >= 0)
         mcu_clear_output(STEP1_EN);
 #endif
-#ifdef STEP2_EN
+#if (STEP2_EN >= 0)
         mcu_clear_output(STEP2_EN);
 #endif
-#ifdef STEP3_EN
+#if (STEP3_EN >= 0)
         mcu_clear_output(STEP3_EN);
 #endif
-#ifdef STEP4_EN
+#if (STEP4_EN >= 0)
         mcu_clear_output(STEP4_EN);
 #endif
-#ifdef STEP5_EN
+#if (STEP5_EN >= 0)
         mcu_clear_output(STEP5_EN);
 #endif
     }
-
-#ifdef USE_SPINDLE
-    void io_set_spindle(uint8_t value, bool invert)
-    {
-#if PID_CONTROLLERS > 0
-        io_spindle_speed = value;
-#endif
-#ifdef LASER_MODE
-        if (!g_settings.laser_mode)
-        {
-#endif
-#ifdef SPINDLE_DIR
-            if (!invert)
-            {
-                mcu_clear_output(SPINDLE_DIR);
-            }
-            else
-            {
-                mcu_set_output(SPINDLE_DIR);
-            }
-#endif
-#ifdef LASER_MODE
-        }
-#endif
-#ifdef SPINDLE_PWM
-        mcu_set_pwm(SPINDLE_PWM, value);
-#endif
-    }
-
-    uint8_t io_get_spindle(void)
-    {
-#if PID_CONTROLLERS > 0
-        return io_spindle_speed;
-#else
-#ifdef SPINDLE_PWM
-        return mcu_get_pwm(SPINDLE_PWM);
-#endif
-#endif
-        return 0;
-    }
-#endif
-
-#ifdef USE_COOLANT
-    void io_set_coolant(uint8_t value)
-    {
-#ifdef COOLANT_FLOOD
-        if (value & COOLANT_MASK)
-        {
-            mcu_set_output(COOLANT_FLOOD);
-        }
-        else
-        {
-            mcu_clear_output(COOLANT_FLOOD);
-        }
-#endif
-#ifdef COOLANT_MIST
-#if (COOLANT_FLOOD != COOLANT_MIST)
-        if (value & MIST_MASK)
-        {
-            mcu_set_output(COOLANT_MIST);
-        }
-        else
-        {
-            mcu_clear_output(COOLANT_MIST);
-        }
-#endif
-#endif
-    }
-#endif
 
 #ifdef __cplusplus
 }

@@ -51,8 +51,12 @@ extern "C"
     //this block has the necessary data to execute the Bresenham line algorithm
     typedef struct itp_blk_
     {
+#ifdef STEP_ISR_SKIP_MAIN
         uint8_t main_stepper;
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
         uint8_t idle_axis;
+#endif
         uint8_t dirbits;
         step_t steps[STEPPER_COUNT];
         step_t total_steps;
@@ -71,7 +75,6 @@ extern "C"
     typedef struct pulse_sgm_
     {
         itp_block_t *block;
-        uint8_t main_stepper;
         uint16_t remaining_steps;
         uint16_t timer_counter;
         uint16_t timer_prescaller;
@@ -114,7 +117,7 @@ extern "C"
     FORCEINLINE static void itp_sgm_clear(void);
     FORCEINLINE static void itp_blk_buffer_write(void);
     static void itp_blk_clear(void);
-    FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
+    //FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
 
     /*
 	Interpolator segment buffer functions
@@ -224,6 +227,8 @@ extern "C"
                 }
                 //get the first block in the planner
                 itp_cur_plan_block = planner_get_block();
+                //clear the data block
+                memset(&itp_blk_data[itp_blk_data_write], 0, sizeof(itp_block_t));
 #ifdef GCODE_PROCESS_LINE_NUMBERS
                 itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
@@ -238,18 +243,25 @@ extern "C"
                 float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
                 feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
                 float sqr_step_speed = 0;
+
+#ifdef STEP_ISR_SKIP_IDLE
                 itp_blk_data[itp_blk_data_write].idle_axis = 0;
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 itp_blk_data[itp_blk_data_write].main_stepper = itp_cur_plan_block->main_stepper;
+#endif
                 for (uint8_t i = STEPPER_COUNT; i != 0;)
                 {
                     i--;
                     sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                     itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                     itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
+#ifdef STEP_ISR_SKIP_IDLE
                     if (!itp_cur_plan_block->steps[i])
                     {
                         itp_blk_data[itp_blk_data_write].idle_axis |= (1 << i);
                     }
+#endif
                 }
 
                 sqr_step_speed *= fast_flt_pow2(total_step_inv);
@@ -272,6 +284,8 @@ extern "C"
             }
 
             sgm = &itp_sgm_data[itp_sgm_data_write];
+            //clear the data segment
+            memset(sgm, 0, sizeof(itp_segment_t));
             sgm->block = &itp_blk_data[itp_blk_data_write];
 
             //if an hold is active forces to deaccelerate
@@ -435,12 +449,8 @@ extern "C"
 
             sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
-#ifdef LASER_MODE
             float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
             planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
-#else
-            planner_get_spindle_speed(1, &(sgm->spindle), &(sgm->spindle_inv));
-#endif
 #endif
             remaining_steps -= segm_steps;
 
@@ -466,10 +476,9 @@ extern "C"
             //finally write the segment
             itp_sgm_buffer_write();
         }
-
 #ifdef USE_COOLANT
         //updated the coolant pins
-        io_set_coolant(planner_get_coolant());
+        tool_set_coolant(planner_get_coolant());
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
@@ -495,27 +504,20 @@ extern "C"
         }
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-#ifdef LASER_MODE
+#ifdef USE_SPINDLE
         if (g_settings.laser_mode)
         {
-            io_set_spindle(0, false);
+            tool_set_speed(0, false);
             itp_rt_spindle = 0;
         }
 #endif
+
         mcu_stop_itp_isr();
     }
 
     void itp_stop_tools(void)
     {
-#ifdef USE_SPINDLE
-        if (itp_rt_spindle != 0)
-        {
-            io_set_spindle(0, false);
-        }
-#endif
-#ifdef USE_COOLANT
-        io_set_coolant(0);
-#endif
+        tool_stop();
     }
 
     void itp_clear(void)
@@ -574,9 +576,11 @@ extern "C"
         return feed;
     }
 
+    //flushes all motions from all systems (planner or interpolator)
+    //used to make a sync motion
     uint8_t itp_sync(void)
     {
-        while (!planner_buffer_is_empty() || itp_sgm_data_segments)
+        while (!planner_buffer_is_empty() || itp_sgm_data_segments || cnc_get_exec_state(EXEC_RUN))
         {
             if (!cnc_dotasks())
             {
@@ -594,7 +598,7 @@ extern "C"
         uint8_t spindle = 0;
         bool spindle_inv = 0;
         planner_get_spindle_speed(0, &spindle, &spindle_inv);
-        io_set_spindle(spindle, spindle_inv);
+        tool_set_speed(spindle, spindle_inv);
 #endif
     }
 
@@ -661,7 +665,9 @@ extern "C"
 #if (DSS_MAX_OVERSAMPLING != 0)
                     if (itp_rt_sgm->next_dss != 0)
                     {
+#ifdef STEP_ISR_SKIP_MAIN
                         itp_rt_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
+#endif
                         if (!(itp_rt_sgm->next_dss & 0xF8))
                         {
                             itp_rt_sgm->block->total_steps <<= itp_rt_sgm->next_dss;
@@ -719,8 +725,9 @@ extern "C"
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
+
 #ifdef USE_SPINDLE
-                    io_set_spindle(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
+                    tool_set_speed(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
                     itp_rt_spindle = itp_rt_sgm->spindle;
 #endif
                     itp_rt_sgm->update_itp = ITP_NOUPDATE;
@@ -739,25 +746,36 @@ extern "C"
         //is steps remaining starts calc next step bits
         if (itp_rt_sgm->remaining_steps)
         {
-            bool dostep;
+            bool dostep = false;
             if (itp_rt_sgm->block != NULL)
             {
 //prepares the next step bits mask
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0 && STEP0 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 0)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
-                    if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
                     {
-                        itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
+                        if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -779,21 +797,32 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1 && STEP1 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 1)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
-                    if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
                     {
-                        itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
+                        if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -815,21 +844,32 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2 && STEP2 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 2)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
-                    if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
                     {
-                        itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
+                        if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -851,21 +891,32 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3 && STEP3 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 3)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
-                    if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
                     {
-                        itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
+                        if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -887,21 +938,32 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4 && STEP4 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 4)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
-                    if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
                     {
-                        itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
+                        if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -923,21 +985,32 @@ extern "C"
 #endif
                 }
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5 && STEP5 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 5)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
-                    if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
                     {
-                        itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
+                        if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -980,46 +1053,42 @@ extern "C"
         itp_busy = false;
     }
 
-    void itp_nomotion(uint8_t type, uint16_t delay)
-    {
-        while (itp_sgm_is_full())
-        {
-            if (!cnc_dotasks())
-            {
-                return;
-            }
-        }
+    //     void itp_nomotion(uint8_t type, uint16_t delay)
+    //     {
+    //         while (itp_sgm_is_full())
+    //         {
+    //             if (!cnc_dotasks())
+    //             {
+    //                 return;
+    //             }
+    //         }
 
-        itp_sgm_data[itp_sgm_data_write].block = NULL;
-        //clicks every 100ms (10Hz)
-        if (delay)
-        {
-            mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-        }
-        else
-        {
-            mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
-        }
-        itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
-        itp_sgm_data[itp_sgm_data_write].feed = 0;
-        itp_sgm_data[itp_sgm_data_write].update_itp = type;
-#ifdef USE_SPINDLE
-#ifdef LASER_MODE
-        if (g_settings.laser_mode)
-        {
-            itp_sgm_data[itp_sgm_data_write].spindle = 0;
-            itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
-        }
-        else
-        {
-            planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-        }
-#else
-        planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
-#endif
-#endif
-        itp_sgm_buffer_write();
-    }
+    //         itp_sgm_data[itp_sgm_data_write].block = NULL;
+    //         //clicks every 100ms (10Hz)
+    //         if (delay)
+    //         {
+    //             mcu_freq_to_clocks(10, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+    //         }
+    //         else
+    //         {
+    //             mcu_freq_to_clocks(g_settings.max_step_rate, &(itp_sgm_data[itp_sgm_data_write].timer_counter), &(itp_sgm_data[itp_sgm_data_write].timer_prescaller));
+    //         }
+    //         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
+    //         itp_sgm_data[itp_sgm_data_write].feed = 0;
+    //         itp_sgm_data[itp_sgm_data_write].update_itp = type;
+    // #ifdef USE_SPINDLE
+    //         if (g_settings.laser_mode)
+    //         {
+    //             itp_sgm_data[itp_sgm_data_write].spindle = 0;
+    //             itp_sgm_data[itp_sgm_data_write].spindle_inv = false;
+    //         }
+    //         else
+    //         {
+    //             planner_get_spindle_speed(1, &(itp_sgm_data[itp_sgm_data_write].spindle), &(itp_sgm_data[itp_sgm_data_write].spindle_inv));
+    //         }
+    // #endif
+    //         itp_sgm_buffer_write();
+    //     }
 
 #ifdef __cplusplus
 }
