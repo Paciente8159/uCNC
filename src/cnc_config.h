@@ -42,6 +42,17 @@ extern "C"
 //#define ENABLE_SYNC_TX
 //#define ENABLE_SYNC_RX
 
+//uncomment to enable USB VCP instead of serial hardware
+//#define USB_VCP
+#ifdef USB_VCP
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#ifndef ENABLE_SYNC_RX
+#define ENABLE_SYNC_RX
+#endif
+#endif
+
 /*
 	Choose the board
 	Check boardss.h for list of available/supported boards
@@ -99,7 +110,8 @@ extern "C"
 	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
 	This is used by spindle to ensure spindle gets up to speed in motions
 */
-#define DELAY_ON_RESUME 4
+#define DELAY_ON_RESUME_SPINDLE 4
+#define DELAY_ON_RESUME_COOLANT 1
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 //minimum output if the value of S is other then 0
 #define PWM_MIN_OUTPUT 1

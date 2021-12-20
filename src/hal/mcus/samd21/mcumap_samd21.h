@@ -964,31 +964,53 @@ extern "C"
 #define _pinmuxval(X) (pinmuxval_##X)
 #define pinmuxval(X) (_pinmuxval(X))
 
+#define sercompad_RX_0 (0x0U)
+#define sercompad_RX_1 (0x1U)
+#define sercompad_RX_2 (0x2U)
+#define sercompad_RX_3 (0x3U)
+#define sercompad_TX_0 (0x2U)
+#define sercompad_TX_2 (0x1U)
+#define _sercompad(X,Y) (sercompad##X##_##Y)
+#define sercompad(X,Y) (_sercompad(X,Y))
+
 #ifdef USB_VCP
-#if (defined(USB_DM_PORT) && defined(USB_DM_BIT))
-#define USB_DM 100
-#define USB_DM_GPIO (PORTREG(USB_DM_PORT))
+#ifdef USB_DM
 #define USB_DM_PMUX (pinmux(USB_DM_PORT, USB_DM_BIT))
 #define USB_DM_PMUXVAL (pinmuxval(USB_DM_MUX))
-#define DIO100 100
-#define DIO100_PORT USB_DM_PORT
-#define DIO100_BIT USB_DM_BIT
-#define DIO100_GPIO USB_DM_GPIO
 #define DIO100_PMUX USB_DM_PMUX
 #define DIO100_PMUXVAL USB_DM_PMUXVAL
 #endif
-#if (defined(USB_DP_PORT) && defined(USB_DP_BIT))
-#define USB_DP 101
-#define USB_DP_GPIO (PORTREG(USB_DP_PORT))
+#ifdef USB_DP
 #define USB_DP_PMUX (pinmux(USB_DP_PORT, USB_DP_BIT))
 #define USB_DP_PMUXVAL (pinmuxval(USB_DP_MUX))
-#define DIO101 101
-#define DIO101_PORT USB_DP_PORT
-#define DIO101_BIT USB_DP_BIT
-#define DIO101_GPIO USB_DP_GPIO
 #define DIO101_PMUX USB_DP_PMUX
 #define DIO101_PMUXVAL USB_DP_PMUXVAL
 #endif
+#else
+#ifdef TX
+#define TX_PMUX (pinmux(TX_PORT, TX_BIT))
+#define TX_PMUXVAL (pinmuxval(TX_MUX))
+#define DIO98_PMUX TX_PMUX
+#define DIO98_PMUXVAL TX_PMUXVAL
+#endif
+#ifdef RX
+#define RX_PMUX (pinmux(RX_PORT, RX_BIT))
+#define RX_PMUXVAL (pinmuxval(RX_MUX))
+#define DIO99_PMUX RX_PMUX
+#define DIO99_PMUXVAL RX_PMUXVAL
+#endif
+#ifndef COM_NUMBER
+#define COM_NUMBER 0
+#endif
+#define COM __helper__(SERCOM,COM_NUMBER,)
+#define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM,COM_NUMBER,)
+#define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM,COM_NUMBER,_CORE)
+#define COM_IRQ __helper__(SERCOM, COM_NUMBER, _IRQn)
+#define mcu_com_isr __helper__(SERCOM, COM_NUMBER, _Handler)
+#define COM_OUTREG (COM->USART.DATA.reg)
+#define COM_INREG (COM->USART.DATA.reg)
+#define COM_TX_PAD sercompad(_TX,TX_PAD)
+#define COM_RX_PAD sercompad(_RX,RX_PAD)
 #endif
 
 /*timers-unused*/
@@ -1006,7 +1028,7 @@ extern "C"
 		PWM0_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM0_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM0_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM0_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM0_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM0_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1026,7 +1048,7 @@ extern "C"
 		while (PWM0_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM0_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM0_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM0_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM0_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM0_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1056,7 +1078,7 @@ extern "C"
 		PWM1_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM1_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM1_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM1_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM1_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM1_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1076,7 +1098,7 @@ extern "C"
 		while (PWM1_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM1_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM1_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM1_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM1_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM1_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1106,7 +1128,7 @@ extern "C"
 		PWM2_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM2_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM2_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM2_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM2_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM2_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1126,7 +1148,7 @@ extern "C"
 		while (PWM2_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM2_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM2_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM2_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM2_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM2_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1156,7 +1178,7 @@ extern "C"
 		PWM3_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM3_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM3_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM3_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM3_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM3_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1176,7 +1198,7 @@ extern "C"
 		while (PWM3_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM3_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM3_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM3_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM3_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM3_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1206,7 +1228,7 @@ extern "C"
 		PWM4_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM4_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM4_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM4_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM4_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM4_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1226,7 +1248,7 @@ extern "C"
 		while (PWM4_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM4_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM4_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM4_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM4_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM4_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1256,7 +1278,7 @@ extern "C"
 		PWM5_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM5_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM5_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM5_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM5_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM5_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1276,7 +1298,7 @@ extern "C"
 		while (PWM5_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM5_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM5_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM5_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM5_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM5_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1306,7 +1328,7 @@ extern "C"
 		PWM6_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM6_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM6_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM6_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM6_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM6_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1326,7 +1348,7 @@ extern "C"
 		while (PWM6_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM6_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM6_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM6_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM6_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM6_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1356,7 +1378,7 @@ extern "C"
 		PWM7_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM7_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM7_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM7_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM7_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM7_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1376,7 +1398,7 @@ extern "C"
 		while (PWM7_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM7_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM7_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM7_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM7_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM7_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1406,7 +1428,7 @@ extern "C"
 		PWM8_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM8_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM8_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM8_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM8_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM8_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1426,7 +1448,7 @@ extern "C"
 		while (PWM8_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM8_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM8_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM8_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM8_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM8_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1456,7 +1478,7 @@ extern "C"
 		PWM9_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM9_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                 \
-		PWM9_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM9_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM9_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM9_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                 \
@@ -1476,7 +1498,7 @@ extern "C"
 		while (PWM9_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
 		PWM9_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM9_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM9_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM9_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM9_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
@@ -1506,7 +1528,7 @@ extern "C"
 		PWM10_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM10_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM10_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM10_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM10_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM10_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1526,7 +1548,7 @@ extern "C"
 		while (PWM10_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM10_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM10_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM10_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM10_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM10_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1556,7 +1578,7 @@ extern "C"
 		PWM11_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM11_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM11_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM11_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM11_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM11_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1576,7 +1598,7 @@ extern "C"
 		while (PWM11_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM11_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM11_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM11_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM11_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM11_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1606,7 +1628,7 @@ extern "C"
 		PWM12_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM12_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM12_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM12_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM12_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM12_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1626,7 +1648,7 @@ extern "C"
 		while (PWM12_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM12_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM12_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM12_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM12_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM12_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1656,7 +1678,7 @@ extern "C"
 		PWM13_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM13_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM13_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM13_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM13_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM13_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1676,7 +1698,7 @@ extern "C"
 		while (PWM13_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM13_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM13_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM13_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM13_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM13_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1706,7 +1728,7 @@ extern "C"
 		PWM14_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM14_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM14_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM14_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM14_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM14_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1726,7 +1748,7 @@ extern "C"
 		while (PWM14_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM14_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM14_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM14_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM14_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM14_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1756,7 +1778,7 @@ extern "C"
 		PWM15_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM15_TMR->SYNCBUSY.bit.SWRST)  \
 			;                                  \
-		PWM15_TMR->CTRLA.bit.PRESCALER = 7;    \
+		PWM15_TMR->CTRLA.bit.PRESCALER = 2;    \
 		PWM15_TMR->WAVE.bit.WAVEGEN = 2;       \
 		while (PWM15_TMR->SYNCBUSY.bit.WAVE)   \
 			;                                  \
@@ -1776,7 +1798,7 @@ extern "C"
 		while (PWM15_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
 		PWM15_TMR->COUNT8.CTRLA.bit.MODE = 1;         \
-		PWM15_TMR->COUNT8.CTRLA.bit.PRESCALER = 7;    \
+		PWM15_TMR->COUNT8.CTRLA.bit.PRESCALER = 2;    \
 		PWM15_TMR->COUNT8.CTRLA.bit.WAVEGEN = 2;      \
 		while (PWM15_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
@@ -1890,38 +1912,17 @@ extern "C"
 */
 #define mcu_enable_global_isr() __enable_irq()
 #define mcu_disable_global_isr() __disable_irq()
-/*
-// #ifdef COM_PORT
-// #ifndef ENABLE_SYNC_TX
-// #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
-// #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
+
 #ifdef COM_PORT
-#define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
-#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
+#define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)
+#define mcu_tx_ready() (COM->USART.INTFLAG.bit.DRE)
 #else
-*/
 #ifdef USB_VCP
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
-/*
 #endif
 
-#define GPIO_RESET 0xfU
-#define GPIO_OUT_PP_50MHZ 0x3U
-#define GPIO_OUTALT_PP_50MHZ 0xbU
-#define GPIO_IN_FLOAT 0x4U
-#define GPIO_IN_PUP 0x8U
-#define GPIO_IN_ANALOG 0 //not needed after reseting bits
-*/
 #ifdef __cplusplus
 }
 #endif

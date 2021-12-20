@@ -54,6 +54,13 @@ extern "C"
         //setups internal timers (all will run @ 1Mhz on GCLK4)
         static void mcu_setup_clocks(void)
         {
+                PM->CPUSEL.reg = 0;
+                PM->APBASEL.reg = 0;
+                PM->APBBSEL.reg = 0;
+                PM->APBCSEL.reg = 0;
+                PM->AHBMASK.reg |= (PM_AHBMASK_NVMCTRL);
+                PM->APBAMASK.reg |= (PM_APBAMASK_PM | PM_APBAMASK_SYSCTRL | PM_APBAMASK_GCLK | PM_APBAMASK_RTC);
+                PM->APBBMASK.reg |= (PM_APBBMASK_NVMCTRL | PM_APBBMASK_PORT | PM_APBBMASK_USB);
                 PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
 
                 /* Configure GCLK4's divider - in this case, divided by 1 */
@@ -108,13 +115,80 @@ extern "C"
                         resetstep = !resetstep;
                 }
 
-                NVIC_ClearPendingIRQ(ITP_IRQ);
                 mcu_enable_global_isr();
         }
+
+#ifdef COM_PORT
+        void mcu_com_isr()
+        {
+                mcu_disable_global_isr();
+#ifndef ENABLE_SYNC_RX
+                if (COM->USART.INTFLAG.bit.RXC && COM->USART.INTENSET.bit.RXC)
+                {
+                        COM->USART.INTFLAG.bit.RXC = 1;
+                        unsigned char c = (0xff & COM_INREG);
+                        serial_rx_isr(c);
+                }
+#endif
+#ifndef ENABLE_SYNC_TX
+                if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
+                {
+                        COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+                        serial_tx_isr();
+                }
+#endif
+                mcu_enable_global_isr();
+        }
+#endif
 
         void mcu_usart_init(void)
         {
 #ifdef COM_PORT
+                PM->APBCMASK.reg |= PM_APBCMASK_COM;
+
+                /* Setup GCLK SERCOMx to use GENCLK0 */
+                GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_COM;
+                while (GCLK->STATUS.bit.SYNCBUSY)
+                        ;
+
+                // Start the Software Reset
+                COM->USART.CTRLA.bit.SWRST = 1;
+
+                while (COM->USART.SYNCBUSY.bit.SWRST)
+                        ;
+
+                COM->USART.CTRLA.bit.MODE = 1;
+                COM->USART.CTRLA.bit.SAMPR = 0;  //16x sample rate
+                COM->USART.CTRLA.bit.FORM = 0;   //no parity
+                COM->USART.CTRLA.bit.DORD = 1;  //LSB first
+                COM->USART.CTRLA.bit.RXPO = COM_RX_PAD;    // RX on PAD3
+                COM->USART.CTRLA.bit.TXPO = COM_TX_PAD;    // TX on PAD2
+                COM->USART.CTRLB.bit.SBMODE = 0; //one stop bit
+                COM->USART.CTRLB.bit.CHSIZE = 0; //8 bits
+                COM->USART.CTRLB.bit.RXEN = 1;      // enable receiver
+                COM->USART.CTRLB.bit.TXEN = 1;// enable transmitter
+
+                while (COM->USART.SYNCBUSY.bit.CTRLB)
+                        ;
+
+                uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE)/(F_CPU>>4))));
+
+                COM->USART.BAUD.reg = baud;
+                mcu_config_altfunc(TX);
+                mcu_config_altfunc(RX);
+
+#ifndef ENABLE_SYNC_RX
+                COM->USART.INTENSET.bit.RXC = 1; //enable recieved interrupt
+                COM->USART.INTENSET.bit.ERROR = 1;
+#endif
+                NVIC_ClearPendingIRQ(COM_IRQ);
+                NVIC_EnableIRQ(COM_IRQ);
+                NVIC_SetPriority(COM_IRQ, 10);
+
+                //enable COM
+                COM->USART.CTRLA.bit.ENABLE = 1;
+                while (COM->USART.SYNCBUSY.bit.ENABLE)
+                        ;
 
 #endif
 #ifdef USB_VCP
@@ -124,9 +198,9 @@ extern "C"
                 mcu_config_input(USB_DP);
                 mcu_config_altfunc(USB_DM);
                 mcu_config_altfunc(USB_DP);
+                NVIC_ClearPendingIRQ(USB_IRQn);
                 NVIC_EnableIRQ(USB_IRQn);
                 NVIC_SetPriority(USB_IRQn, 10);
-                NVIC_ClearPendingIRQ(USB_IRQn);
 
                 GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_USB;
                 /* Wait for the write to complete. */
@@ -149,7 +223,6 @@ extern "C"
         {
                 mcu_disable_global_isr();
                 tud_int_handler(0);
-                NVIC_ClearPendingIRQ(USB_IRQn);
                 mcu_enable_global_isr();
         }
 #endif
@@ -163,18 +236,33 @@ extern "C"
 
         void SysTick_Handler(void)
         {
-                mcu_runtime_ms++;
-                mcu_enable_global_isr();
-                pid_update_isr();
-#ifdef LED
-                static uint32_t last_ms = 0;
-                if (mcu_runtime_ms - last_ms > 1000)
+                static bool running = false;
+                static uint32_t counter = 0;
+                mcu_disable_global_isr();
+                counter++;
+                mcu_runtime_ms = counter;
+
+                if (!running)
                 {
-                        last_ms = mcu_runtime_ms;
-                        mcu_toggle_output(LED);
-                }
+                        running = true;
+                        mcu_enable_global_isr();
+                        pid_update_isr();
+#ifdef LED
+                        if ((counter & 0x200))
+                        {
+                                mcu_set_output(LED);
+                        }
+                        else
+                        {
+                                mcu_clear_output(LED);
+                        }
+
 #endif
-                NVIC_ClearPendingIRQ(SysTick_IRQn);
+                        mcu_disable_global_isr();
+                        running = false;
+                }
+
+                mcu_enable_global_isr();
         }
 
         void mcu_tick_init()
@@ -757,6 +845,20 @@ extern "C"
                 {
                         tud_cdc_write_flush();
                 }
+#else
+#ifdef COM
+                if (c != 0)
+                {
+#ifdef ENABLE_SYNC_TX
+                        while (!mcu_tx_ready())
+                                ;
+#endif
+                        COM_OUTREG = c;
+                }
+#ifndef ENABLE_SYNC_TX
+                COM->USART.INTENSET.bit.DRE = 1; //enable recieved interrupt
+#endif
+#endif
 #endif
         }
 #endif
@@ -778,6 +880,13 @@ extern "C"
                 }
 
                 return (unsigned char)tud_cdc_read_char();
+#else
+#ifdef COM
+#ifdef ENABLE_SYNC_RX
+                while (!mcu_rx_ready()));
+#endif
+                return (char)(0xff & COM_INREG);
+#endif
 #endif
         }
 #endif
@@ -868,9 +977,11 @@ extern "C"
                 ITP_REG->CC[0].reg = ticks;
                 while (ITP_REG->SYNCBUSY.bit.CC0)
                         ;
-                NVIC_EnableIRQ(ITP_IRQ);
+
                 NVIC_SetPriority(ITP_IRQ, 1);
                 NVIC_ClearPendingIRQ(ITP_IRQ);
+                NVIC_EnableIRQ(ITP_IRQ);
+
                 ITP_REG->INTENSET.bit.MC0 = 1;
                 ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
                 while (ITP_REG->SYNCBUSY.bit.ENABLE)
@@ -888,9 +999,10 @@ extern "C"
                 ITP_REG->COUNT16.CC[0].reg = ticks;
                 while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                         ;
-                NVIC_EnableIRQ(ITP_IRQ);
                 NVIC_SetPriority(ITP_IRQ, 1);
                 NVIC_ClearPendingIRQ(ITP_IRQ);
+                NVIC_EnableIRQ(ITP_IRQ);
+
                 ITP_REG->COUNT16.INTENSET.bit.MC0 = 1;
                 ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection
                 while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
@@ -942,6 +1054,7 @@ extern "C"
                 while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                         ;
 #endif
+                ITP_REG->COUNT16.INTENCLR.bit.MC0 = 1;
                 NVIC_DisableIRQ(ITP_IRQ);
         }
 

@@ -98,8 +98,14 @@ extern "C"
 #ifdef COM_PORT
 #define TX_BIT 10
 #define TX_PORT A
+#define TX_MUX C
+#define TX_PAD 2
 #define RX_BIT 11
 #define RX_PORT A
+#define RX_MUX C
+#define RX_PAD 3
+//set COM number. By default COM0 is used
+//#define COM_NUMBER 0
 #else
 #ifdef USB_VCP
 #define USB_DM_BIT 24

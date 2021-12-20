@@ -12,6 +12,18 @@ RC adds/fixes the following issue:
 
 ### Added
   - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools. (#77)
+  - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
+  - implemented Hardware UART in SAMD21 (#75)
+
+### Changed
+  - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
+  - modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
+  - modified planner buffer size in AVR size to prevent memory errors  (#77)
+  - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data.  (#77)
+
+### Fixed
+  - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
+  - fixed SAMD21 PWM frequency configuration (now is aprox 976Hz like AVR) (#78)
 
 ## [1.3.b2] - 2021-12-14
 

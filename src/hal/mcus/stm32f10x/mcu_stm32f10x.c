@@ -165,9 +165,9 @@ extern "C"
 		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
 		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
 		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
-		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
 		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
 		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
 	}
 
 #define mcu_config_analog(diopin)                                                                                       \
@@ -186,6 +186,7 @@ extern "C"
 #ifdef COM_PORT
 	void mcu_serial_isr(void)
 	{
+		mcu_disable_global_isr();
 #ifndef ENABLE_SYNC_RX
 		if (COM_USART->SR & USART_SR_RXNE)
 		{
@@ -201,25 +202,28 @@ extern "C"
 			serial_tx_isr();
 		}
 #endif
-		NVIC_ClearPendingIRQ(COM_IRQ);
+		mcu_enable_global_isr();
 	}
 #elif defined(USB_VCP)
 	void USB_HP_CAN1_TX_IRQHandler(void)
 	{
+		mcu_disable_global_isr();
 		tud_int_handler(0);
-		NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
+		mcu_enable_global_isr();
 	}
 
 	void USB_LP_CAN1_RX0_IRQHandler(void)
 	{
+		mcu_disable_global_isr();
 		tud_int_handler(0);
-		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
+		mcu_enable_global_isr();
 	}
 
 	void USBWakeUp_IRQHandler(void)
 	{
+		mcu_disable_global_isr();
 		tud_int_handler(0);
-		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+		mcu_enable_global_isr();
 	}
 
 #endif
@@ -227,6 +231,7 @@ extern "C"
 	void mcu_timer_isr(void)
 	{
 		static bool resetstep = false;
+		mcu_disable_global_isr();
 		if ((TIMER_REG->SR & 1))
 		{
 			if (!resetstep)
@@ -236,7 +241,6 @@ extern "C"
 			resetstep = !resetstep;
 		}
 		TIMER_REG->SR = 0;
-		NVIC_ClearPendingIRQ(TIMER_IRQ);
 		mcu_enable_global_isr();
 	}
 
@@ -274,66 +278,75 @@ extern "C"
 	void EXTI0_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI0_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0x0002)
 	void EXTI1_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI1_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0x0004)
 	void EXTI2_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI2_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0x0008)
 	void EXTI3_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI3_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0x0010)
 	void EXTI4_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI4_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0x03E0)
 	void EXTI9_5_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI9_5_IRQn);
 	}
 #endif
 #if (ALL_EXTIBITMASK & 0xFC00)
 	void EXTI15_10_IRQHandler(void)
 	{
 		mcu_input_isr();
-		NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 	}
 #endif
 #endif
 
 	void SysTick_Handler(void)
 	{
-		mcu_runtime_ms++;
-		mcu_enable_global_isr();
-		pid_update_isr();
-#ifdef LED
-		static uint32_t last_ms = 0;
-		if (mcu_runtime_ms - last_ms > 1000)
+		static bool running = false;
+		static uint32_t counter = 0;
+		mcu_disable_global_isr();
+		counter++;
+		mcu_runtime_ms = counter;
+
+		if (!running)
 		{
-			last_ms = mcu_runtime_ms;
-			mcu_toggle_output(LED);
-		}
+			running = true;
+			mcu_enable_global_isr();
+			pid_update_isr();
+#ifdef LED
+			if ((counter & 0x200))
+			{
+				mcu_set_output(LED);
+			}
+			else
+			{
+				mcu_clear_output(LED);
+			}
+
 #endif
+			mcu_disable_global_isr();
+			running = false;
+		}
+
+		mcu_enable_global_isr();
 	}
 
 	/**
@@ -906,9 +919,9 @@ extern "C"
 		brr += (uint16_t)roundf(16.0f * baudrate);
 		COM_USART->BRR = brr;
 #if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
-		NVIC_EnableIRQ(COM_IRQ);
 		NVIC_SetPriority(COM_IRQ, 3);
 		NVIC_ClearPendingIRQ(COM_IRQ);
+		NVIC_EnableIRQ(COM_IRQ);
 #endif
 		COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE
 #ifndef ENABLE_SYNC_TX
@@ -927,15 +940,16 @@ extern "C"
 		RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 		mcu_config_input(USB_DM);
 		mcu_config_input(USB_DP);
-		NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
 		NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
 		NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
-		NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+		NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
 		NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
 		NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
-		NVIC_EnableIRQ(USBWakeUp_IRQn);
+		NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
 		NVIC_SetPriority(USBWakeUp_IRQn, 10);
 		NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+		NVIC_EnableIRQ(USBWakeUp_IRQn);
+		
 		//Enable USB interrupts and enable usb
 		USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
 		RCC->APB1ENR |= RCC_APB1ENR_USBEN;
@@ -1034,9 +1048,10 @@ extern "C"
 		TIMER_REG->EGR |= 0x01;
 		TIMER_REG->SR &= ~0x01;
 
-		NVIC_EnableIRQ(TIMER_IRQ);
 		NVIC_SetPriority(TIMER_IRQ, 1);
 		NVIC_ClearPendingIRQ(TIMER_IRQ);
+		NVIC_EnableIRQ(TIMER_IRQ);
+		
 		TIMER_REG->DIER |= 1;
 		TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
 	}
