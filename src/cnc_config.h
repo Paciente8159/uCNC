@@ -200,6 +200,14 @@ extern "C"
 	//#define ENABLE_BACKLASH_COMPENSATION
 
 	/**
+	 * Uncomment these to enable step ISR calculation strategies (uses more memory)
+	 * STEP_ISR_SKIP_MAIN - carries the information about the main stepper (performs a step in every ISR tick) and skips calculations
+	 * STEP_ISR_SKIP_IDLE - carries the information about the idle steppers (performs 0 steps in the ISR tick) and skips calculations
+	 * */
+	#define STEP_ISR_SKIP_MAIN
+	#define STEP_ISR_SKIP_IDLE
+
+	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).
 	 * The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
 	 * Value should range from 0 to 3. With a value o 0 the DSS will be disabled.

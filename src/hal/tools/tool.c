@@ -28,7 +28,7 @@ extern "C"
 	static tool_t tool_current;
 
 	//this variable is not used but forces the compiler to compile the selected tools compilation units
-	const tool_t *__rom__ const tools[] = {
+	TOOLDEF const tool_t *__rom__ const tools[] = {
 #ifdef TOOL1
 		&TOOL1,
 #endif

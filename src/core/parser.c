@@ -190,7 +190,11 @@ extern "C"
         uint8_t return_mode : 1;
         uint8_t feed_speed_override : 1;
         //1byte
+#if TOOL_COUNT > 1
         uint8_t tool_change : 5;
+#else
+    uint8_t tool_change : 1;
+#endif
         uint8_t stopping : 3;
 #ifdef USE_SPINDLE
         uint8_t spindle_turning : 2;
@@ -244,7 +248,9 @@ extern "C"
     {
         parser_groups_t groups;
         float feedrate;
+#if TOOL_COUNT > 0
         uint8_t tool_index;
+#endif
 #ifdef USE_SPINDLE
         int16_t spindle;
 #endif
@@ -351,7 +357,11 @@ extern "C"
     modalgroups[9] = 9;
 #endif
         modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
+#if TOOL_COUNT > 0
         modalgroups[11] = parser_state.tool_index;
+#else
+    modalgroups[11] = 0;
+#endif
 
         *feed = (uint16_t)parser_state.feedrate;
     }
@@ -1050,7 +1060,7 @@ extern "C"
         }
 #endif
 //5. select tool
-#if TOOL_COUNT > 1
+#if TOOL_COUNT > 0
         if (CHECKFLAG(cmd->words, GCODE_WORD_T))
         {
             if (new_state->tool_index != words->t)
@@ -1067,8 +1077,6 @@ extern "C"
             tool_change(words->t);
             new_state->tool_index = new_state->groups.tool_change;
         }
-#else
-    new_state->tool_index = TOOL_COUNT; //tool is always 1. if 0 there is no tool
 #endif
 
 //7. spindle on/off
@@ -2066,8 +2074,6 @@ extern "C"
 #endif
         case 6:
             new_group |= GCODE_GROUP_TOOLCHANGE;
-            //new_state->groups.tool_change //has the new tool to load
-            //new_state->groups.tool_change = 1;
             break;
 #ifdef USE_COOLANT
 #if COOLANT_MIST >= 0
@@ -2300,12 +2306,11 @@ extern "C"
 #ifdef USE_SPINDLE
         parser_state.groups.spindle_turning = M5; //M5
 #endif
-#ifdef TOOL_COUNT> 0
+#if TOOL_COUNT > 0
         parser_state.groups.tool_change = 1;
         parser_state.tool_index = 1;
 #else
-    parser_state.groups.tool_change = 1;
-    parser_state.tool_index = 1;
+    parser_state.groups.tool_change = 0;
 #endif
         parser_state.groups.motion = G1;                                               //G1
         parser_state.groups.units = G21;                                               //G21

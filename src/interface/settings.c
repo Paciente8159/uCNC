@@ -223,7 +223,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
             .homing_offset = DEFAULT_HOMING_OFFSET,
             .g64_angle_factor = DEFAULT_G64_FACTOR,
             .arc_tolerance = DEFAULT_ARC_TOLERANCE,
-            .tool_count = DEFAULT_STARTUP_TOOL,
+            //.tool_count = DEFAULT_STARTUP_TOOL,
             .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
             .status_report_mask = DEFAULT_STATUS_MASK,
             .control_invert_mask = DEFAULT_CONTROL_INV_MASK,

@@ -51,8 +51,12 @@ extern "C"
     //this block has the necessary data to execute the Bresenham line algorithm
     typedef struct itp_blk_
     {
+#ifdef STEP_ISR_SKIP_MAIN
         uint8_t main_stepper;
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
         uint8_t idle_axis;
+#endif
         uint8_t dirbits;
         step_t steps[STEPPER_COUNT];
         step_t total_steps;
@@ -71,7 +75,6 @@ extern "C"
     typedef struct pulse_sgm_
     {
         itp_block_t *block;
-        uint8_t main_stepper;
         uint16_t remaining_steps;
         uint16_t timer_counter;
         uint16_t timer_prescaller;
@@ -238,18 +241,25 @@ extern "C"
                 float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
                 feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
                 float sqr_step_speed = 0;
+
+#ifdef STEP_ISR_SKIP_IDLE
                 itp_blk_data[itp_blk_data_write].idle_axis = 0;
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 itp_blk_data[itp_blk_data_write].main_stepper = itp_cur_plan_block->main_stepper;
+#endif
                 for (uint8_t i = STEPPER_COUNT; i != 0;)
                 {
                     i--;
                     sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                     itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                     itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
+#ifdef STEP_ISR_SKIP_IDLE
                     if (!itp_cur_plan_block->steps[i])
                     {
                         itp_blk_data[itp_blk_data_write].idle_axis |= (1 << i);
                     }
+#endif
                 }
 
                 sqr_step_speed *= fast_flt_pow2(total_step_inv);
@@ -651,7 +661,9 @@ extern "C"
 #if (DSS_MAX_OVERSAMPLING != 0)
                     if (itp_rt_sgm->next_dss != 0)
                     {
+#ifdef STEP_ISR_SKIP_MAIN
                         itp_rt_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
+#endif
                         if (!(itp_rt_sgm->next_dss & 0xF8))
                         {
                             itp_rt_sgm->block->total_steps <<= itp_rt_sgm->next_dss;
@@ -736,19 +748,30 @@ extern "C"
 //prepares the next step bits mask
 #if (STEPPER_COUNT > 0 && STEP0 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 0)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
-                    if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
                     {
-                        itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
+                        if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -772,19 +795,30 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 1 && STEP1 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 1)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
-                    if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
                     {
-                        itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
+                        if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -808,19 +842,30 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 2 && STEP2 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 2)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
-                    if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
                     {
-                        itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
+                        if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -844,19 +889,30 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 3 && STEP3 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 3)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
-                    if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
                     {
-                        itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
+                        if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -880,19 +936,30 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 4 && STEP4 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 4)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
-                    if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
                     {
-                        itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
+                        if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
@@ -916,19 +983,30 @@ extern "C"
 #endif
 #if (STEPPER_COUNT > 5 && STEP5 >= 0)
                 dostep = false;
+#ifdef STEP_ISR_SKIP_MAIN
                 if (itp_rt_sgm->block->main_stepper == 5)
                 {
                     dostep = true;
                 }
-                else if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
+                else
                 {
-                    itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
-                    if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+                    if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
                     {
-                        itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
-                        dostep = true;
+#endif
+                        itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
+                        if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+                        {
+                            itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
+                            dostep = true;
+                        }
+#ifdef STEP_ISR_SKIP_IDLE
                     }
+#endif
+#ifdef STEP_ISR_SKIP_MAIN
                 }
+#endif
 
                 if (dostep)
                 {
