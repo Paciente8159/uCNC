@@ -354,18 +354,44 @@ extern "C"
             }
         }
 
-        if (CHECKFLAG(statemask, EXEC_HOLD))
+        //if releasing from a HOLD state with and active delay in exec
+        if (CHECKFLAG(statemask, EXEC_HOLD) && CHECKFLAG(cnc_state.exec_state, EXEC_HOLD))
         {
             SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
             CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
 #ifdef USE_SPINDLE
             itp_sync_spindle();
-            if (!planner_buffer_is_empty())
+#if (DELAY_ON_RESUME_SPINDLE > 0)
+#ifdef LASER_MODE
+            if (!g_settings.laser_mode)
             {
-#if (DELAY_ON_RESUME > 0)
-                cnc_delay_ms(DELAY_ON_RESUME * 1000);
 #endif
+                if (!planner_buffer_is_empty())
+                {
+                    cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+                }
+#ifdef LASER_MODE
             }
+#endif
+#endif
+#endif
+#ifdef USE_COOLANT
+            //updated the coolant pins
+            io_set_coolant(planner_get_coolant());
+#if (DELAY_ON_RESUME_COOLANT > 0)
+#ifdef LASER_MODE
+            if (!g_settings.laser_mode)
+            {
+#endif
+                if (!planner_buffer_is_empty())
+                {
+
+                    cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+                }
+#ifdef LASER_MODE
+            }
+#endif
+#endif
 #endif
             CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
         }
@@ -684,13 +710,14 @@ extern "C"
 
         if (cnc_get_exec_state(EXEC_KILL))
         {
-            switch(cnc_state.alarm) {
-                case EXEC_ALARM_SOFTRESET:
-                case EXEC_ALARM_NOALARM:
-                    break;
-                default:
-                    protocol_send_feedback(MSG_FEEDBACK_1);
-                    break;
+            switch (cnc_state.alarm)
+            {
+            case EXEC_ALARM_SOFTRESET:
+            case EXEC_ALARM_NOALARM:
+                break;
+            default:
+                protocol_send_feedback(MSG_FEEDBACK_1);
+                break;
             }
         }
     }
