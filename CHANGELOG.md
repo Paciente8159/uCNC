@@ -20,6 +20,7 @@ Release Candidate fixes the following issue:
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
+  - fixed SAMD21 PWM frequency configuration (now is aprox 976Hz like AVR) (#78)
 
 ## [1.3.b2] - 2021-12-14
 
