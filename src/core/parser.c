@@ -719,6 +719,9 @@ extern "C"
 */
     static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
     {
+    	#ifdef GCODE_COUNT_TEXT_LINES
+    	static uint32_t linecounter = 0;
+    	#endif
         uint8_t error = STATUS_OK;
         uint8_t wordcount = 0;
         for (;;)
@@ -749,6 +752,11 @@ extern "C"
             switch (word)
             {
             case EOL:
+#ifdef GCODE_COUNT_TEXT_LINES
+                //if enabled store line number
+                linecounter++;
+                words->n=linecounter;
+#endif
 #ifdef ECHO_CMD
                 protocol_send_string(MSG_END);
 #endif
@@ -2121,7 +2129,12 @@ extern "C"
         switch (c)
         {
         case 'N':
-            //doesn't need processing (if it fails to be in the begining of the line throws error)
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+#ifndef GCODE_COUNT_TEXT_LINES
+            //if enabled store line number
+            words->n = value;
+#endif
+#endif
             break;
 #ifdef AXIS_X
         case 'X':

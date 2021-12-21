@@ -257,7 +257,7 @@ extern "C"
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         serial_print_str(MSG_STATUS_LINE);
-        serial_print_long(itp_get_rt_line_number());
+        serial_print_int(itp_get_rt_line_number());
 #endif
 
         if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
