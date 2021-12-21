@@ -719,9 +719,9 @@ extern "C"
 */
     static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
     {
-    	#ifdef GCODE_COUNT_TEXT_LINES
-    	static uint32_t linecounter = 0;
-    	#endif
+#ifdef GCODE_COUNT_TEXT_LINES
+        static uint32_t linecounter = 0;
+#endif
         uint8_t error = STATUS_OK;
         uint8_t wordcount = 0;
         for (;;)
@@ -755,7 +755,7 @@ extern "C"
 #ifdef GCODE_COUNT_TEXT_LINES
                 //if enabled store line number
                 linecounter++;
-                words->n=linecounter;
+                words->n = linecounter;
 #endif
 #ifdef ECHO_CMD
                 protocol_send_string(MSG_END);
@@ -1014,16 +1014,17 @@ extern "C"
 */
     static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
     {
-        float axis[AXIS_COUNT];
+        float target[AXIS_COUNT];
+        float planner_last_pos[AXIS_COUNT];
         //plane selection
         uint8_t a = 0;
         uint8_t b = 0;
         uint8_t offset_a = 0;
         uint8_t offset_b = 0;
         float radius;
-        //pointer to planner position
-        float planner_last_pos[AXIS_COUNT];
         motion_data_t block_data = {0};
+
+        mc_get_position(planner_last_pos);
 
         //stoping from previous command M2 or M30 command
         if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1039,8 +1040,6 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         block_data.line = words->n;
 #endif
-
-        mc_get_position(planner_last_pos);
 
         //RS274NGC v3 - 3.8 Order of Execution
         //1. comment (ignored - already filtered)
@@ -1232,10 +1231,49 @@ extern "C"
             break;
         }
 
-        //17. set distance mode (G90, G91) (OK nothing to be done)
+        //17. set distance mode (G90, G91)
+        memcpy(target, planner_last_pos, sizeof(planner_last_pos));
+
+        //for all not explicitly declared target retain their position or add offset
+#ifdef AXIS_X
+        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+        {
+            target[AXIS_X] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_X] : (words->xyzabc[AXIS_X] + target[AXIS_X]);
+        }
+#endif
+#ifdef AXIS_Y
+        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+        {
+            target[AXIS_Y] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Y] : (words->xyzabc[AXIS_Y] + target[AXIS_Y]);
+        }
+#endif
+#ifdef AXIS_Z
+        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+        {
+            target[AXIS_Z] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Z] : (words->xyzabc[AXIS_Z] + target[AXIS_Z]);
+        }
+#endif
+#ifdef AXIS_A
+        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+        {
+            target[AXIS_A] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
+        }
+#endif
+#ifdef AXIS_B
+        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+        {
+            target[AXIS_B] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
+        }
+#endif
+#ifdef AXIS_C
+        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+        {
+            target[AXIS_C] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
+        }
+#endif
 
         //18. set retract mode (G98, G99)  (not implemented yet)
-        //19. home (G28, G30) or change coordinate system data (G10) or set axis offsets (G92, G92.1, G92.2, G92.3)
+        //19. home (G28, G30) or change coordinate system data (G10) or set target offsets (G92, G92.1, G92.2, G92.3)
         //	or also modifies target if G53 is active. These are executed after calculating intemediate targets (G28 ad G30)
         //set the initial feedrate to the maximum value
         block_data.feed = FLT_MAX;
@@ -1288,24 +1326,16 @@ extern "C"
             break;
         }
 
-        memcpy(axis, words->xyzabc, sizeof(axis));
+        // check from were to read the previous values for the target array
+        if (index == 255)
+        {
 
-        // check from were to read the previous values for the axis array
-        if (index != 255)
-        {
-            if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&planner_last_pos[0], PARSER_PARAM_SIZE))
-            {
-                memset(planner_last_pos, 0, sizeof(planner_last_pos));
-            }
-        }
-        else
-        {
-            //if by any reason this is a nomotion command or world coordinates are used skip this
             switch (new_state->groups.nonmodal)
             {
             case G53:
-            case G28:
-            case G30:
+                //G28 and G30 make the planed motion (absolute or relative)
+                //        case G28:
+                //        case G30:
                 break;
             default:
                 if ((new_state->groups.distance_mode == G90))
@@ -1313,69 +1343,23 @@ extern "C"
                     for (uint8_t i = AXIS_COUNT; i != 0;)
                     {
                         i--;
-                        axis[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
+                        target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
                     }
 #ifdef AXIS_TOOL
-                    axis[AXIS_TOOL] += parser_parameters.tool_length_offset;
+                    target[AXIS_TOOL] += parser_parameters.tool_length_offset;
 #endif
-                }
-                else
-                {
-                    for (uint8_t i = AXIS_COUNT; i != 0;)
-                    {
-                        i--;
-                        axis[i] += planner_last_pos[i];
-                    }
                 }
                 break;
             }
         }
 
-//for all not explicitly declared axis retain their position
-#ifdef AXIS_X
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_X))
-        {
-            axis[AXIS_X] = planner_last_pos[AXIS_X];
-        }
-#endif
-#ifdef AXIS_Y
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_Y))
-        {
-            axis[AXIS_Y] = planner_last_pos[AXIS_Y];
-        }
-#endif
-#ifdef AXIS_Z
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_Z))
-        {
-            axis[AXIS_Z] = planner_last_pos[AXIS_Z];
-        }
-#endif
-#ifdef AXIS_A
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
-            axis[AXIS_A] = planner_last_pos[AXIS_A];
-        }
-#endif
-#ifdef AXIS_B
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
-            axis[AXIS_B] = planner_last_pos[AXIS_B];
-        }
-#endif
-#ifdef AXIS_C
-        if (!CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
-            axis[AXIS_C] = planner_last_pos[AXIS_C];
-        }
-#endif
-
         //stores G10 L2 command in the right address
         if (index <= G30HOME)
         {
-            settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&axis[0], PARSER_PARAM_SIZE);
+            settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&target[0], PARSER_PARAM_SIZE);
             if (index == parser_parameters.coord_system_index)
             {
-                memcpy(parser_parameters.coord_system_offset, axis, sizeof(parser_parameters.coord_system_offset));
+                memcpy(parser_parameters.coord_system_offset, target, sizeof(parser_parameters.coord_system_offset));
             }
             parser_wco_counter = 0;
         }
@@ -1393,7 +1377,7 @@ extern "C"
             block_data.feed = FLT_MAX;
             if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
             {
-                error = mc_line(axis, &block_data);
+                error = mc_line(target, &block_data);
                 if (error)
                 {
                     return error;
@@ -1402,13 +1386,13 @@ extern "C"
 
             if (new_state->groups.nonmodal == G28)
             {
-                settings_load(G28ADDRESS, (uint8_t *)&axis, PARSER_PARAM_SIZE);
+                settings_load(G28ADDRESS, (uint8_t *)&target, PARSER_PARAM_SIZE);
             }
             else
             {
-                settings_load(G30ADDRESS, (uint8_t *)&axis, PARSER_PARAM_SIZE);
+                settings_load(G30ADDRESS, (uint8_t *)&target, PARSER_PARAM_SIZE);
             }
-            error = mc_line((float *)&axis, &block_data);
+            error = mc_line((float *)&target, &block_data);
             {
                 return error;
             }
@@ -1417,7 +1401,7 @@ extern "C"
             for (uint8_t i = AXIS_COUNT; i != 0;)
             {
                 i--;
-                parser_parameters.g92_offset[i] = -(axis[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
+                parser_parameters.g92_offset[i] = -(target[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
             }
             memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
             //settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
@@ -1430,7 +1414,7 @@ extern "C"
 
         float x, y;
         //20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
-        //only if any axis word was used
+        //only if any target word was used
         //incomplete (canned cycles not supported)
         if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
         {
@@ -1452,7 +1436,7 @@ extern "C"
                 {
                     return STATUS_FEED_NOT_SET;
                 }
-                error = mc_line(axis, &block_data);
+                error = mc_line(target, &block_data);
                 break;
             case G2:
             case G3:
@@ -1462,8 +1446,8 @@ extern "C"
                 }
 
                 //target points
-                x = axis[a] - planner_last_pos[a];
-                y = axis[b] - planner_last_pos[b];
+                x = target[a] - planner_last_pos[a];
+                y = target[b] - planner_last_pos[b];
                 float center_offset_a = words->ijk[offset_a];
                 float center_offset_b = words->ijk[offset_b];
                 //radius mode
@@ -1518,13 +1502,13 @@ extern "C"
                     }
                 }
 
-                error = mc_arc(axis, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
+                error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
                 break;
             case 4: //G38.2
             case 5: //G38.3
             case 6: //G38.4
             case 7: //G38.5
-                probe_error = mc_probe(axis, (new_state->groups.motion > 5), &block_data);
+                probe_error = mc_probe(target, (new_state->groups.motion > 5), &block_data);
                 if (probe_error)
                 {
                     parser_parameters.last_probe_ok = 0;
