@@ -11,9 +11,10 @@ Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) supp
 RC adds/fixes the following issue:
 
 ### Added
-  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools. (#77)
+  - added the new tool HAL. This new HAL sacrifices a bit of step rate performance in favor of the possibility of being able to use multiple tools. (#77) (#80)
   - added extra delay for coolant on resume from any hold (hold, safety-door) to emulate Grbl (#76)
   - implemented Hardware UART in SAMD21 (#75)
+  - real line number status (ignores N word and outputs the real line number of the command) (#81)
 
 ### Changed
   - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
@@ -21,10 +22,13 @@ RC adds/fixes the following issue:
   - modified planner buffer size in AVR size to prevent memory errors  (#77)
   - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data. (#77)
   - step ISR optimizations (for main stepper and idle steppers) are now optional. (#77)
+  - new AVR make file (#82)
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
   - fixed SAMD21 PWM frequency configuration (now is aprox 976Hz like AVR) (#78)
+  - real line number (N word) processing was not being read (#81)
+  - fixed welcome message not being sent after soft reset (#79)
 
 ## [1.3.b2] - 2021-12-14
 
