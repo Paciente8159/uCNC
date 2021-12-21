@@ -233,7 +233,8 @@ extern "C"
 
         //reset position
         itp_reset_rt_position();
-        planner_sync_position();
+        //sync's the motion control with the real time position
+        mc_sync_position();
     }
 
     void cnc_alarm(int8_t code)

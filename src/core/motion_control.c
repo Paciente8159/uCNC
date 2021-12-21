@@ -41,6 +41,7 @@ extern "C"
 
     static bool mc_checkmode;
     static float mc_last_target[AXIS_COUNT];
+    static int32_t mc_last_step_pos[STEPPER_COUNT];
 //static float mc_prev_target_dir[AXIS_COUNT];
 #ifdef ENABLE_BACKLASH_COMPENSATION
     static uint8_t mc_last_dirbits;
@@ -52,7 +53,7 @@ extern "C"
         mc_checkmode = false;
         memset(mc_last_target, 0, sizeof(mc_last_target));
 #endif
-        mc_resync_position();
+        mc_sync_position();
     }
 
     bool mc_get_checkmode(void)
@@ -73,16 +74,13 @@ extern "C"
         //applies the inverse kinematic to get next position in steps
         kinematics_apply_inverse(target, step_new_pos);
 
-        //gets the last position feed to the planner and calculates the step count of the line segment to execute
-        int32_t prev_pos[STEPPER_COUNT];
-        planner_get_position(prev_pos);
         //resets accumulator vars of the block
         block_data->full_steps = 0;
         block_data->total_steps = 0;
         for (uint8_t i = STEPPER_COUNT; i != 0;)
         {
             i--;
-            int32_t steps = step_new_pos[i] - prev_pos[i];
+            int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
             steps = ABS(steps);
             block_data->steps[i] = (step_t)steps;
 
@@ -92,6 +90,9 @@ extern "C"
                 block_data->total_steps = steps;
             }
         }
+
+        //stores current step target position
+        memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
         //checks if any of the linear actuators there is a shift in direction
@@ -196,11 +197,9 @@ extern "C"
 
         uint8_t error = STATUS_OK;
         int32_t step_new_pos[STEPPER_COUNT];
-        int32_t step_old_pos[STEPPER_COUNT];
         //converts transformed target to stepper position
         kinematics_apply_inverse(target, step_new_pos);
         //calculates the amount of stepper motion for this motion
-        planner_get_position(step_old_pos);
 
         uint32_t max_steps = 0;
         block_data->dirbits = 0;
@@ -208,7 +207,7 @@ extern "C"
         for (uint8_t i = STEPPER_COUNT; i != 0;)
         {
             i--;
-            int32_t steps = step_new_pos[i] - step_old_pos[i];
+            int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
             if (steps < 0)
             {
                 block_data->dirbits |= (1 << i);
@@ -317,7 +316,7 @@ extern "C"
         float mc_position[AXIS_COUNT];
 
         //copy motion control last position
-        mc_get_position(mc_position);
+        memcpy(mc_position, mc_last_target, sizeof(mc_last_target));
 
         float ptcenter_a = mc_position[axis_0] + center_offset_a;
         float ptcenter_b = mc_position[axis_1] + center_offset_b;
@@ -520,7 +519,9 @@ extern "C"
         {
             max_home_dist = -max_home_dist;
         }
-        planner_sync_position();
+
+        //sync's the motion control with the real time position
+        mc_sync_position();
         mc_get_position(target);
         target[axis] += max_home_dist;
         //initializes planner block data
@@ -561,8 +562,8 @@ extern "C"
         //back off from switch at lower speed
         max_home_dist = g_settings.homing_offset * 5.0f;
 
-        //sync's the planner and motion control done when clearing the planner
-        planner_sync_position();
+        //sync's the motion control with the real time position
+        mc_sync_position();
         mc_get_position(target);
         if (g_settings.homing_dir_invert_mask & axis_mask)
         {
@@ -657,10 +658,10 @@ extern "C"
         memcpy(target, mc_last_target, sizeof(mc_last_target));
     }
 
-    void mc_resync_position(void)
+    void mc_sync_position(void)
     {
         int32_t pos[STEPPER_COUNT];
-        planner_get_position(pos);
+        itp_get_rt_position(pos);
         kinematics_apply_forward(pos, mc_last_target);
         kinematics_apply_reverse_transform(mc_last_target);
     }

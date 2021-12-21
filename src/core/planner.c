@@ -48,7 +48,6 @@ extern "C"
 
     } planner_overrides_t;
 
-    static int32_t planner_step_pos[STEPPER_COUNT];
 #ifdef USE_SPINDLE
     static int16_t planner_spindle;
 #endif
@@ -250,11 +249,7 @@ extern "C"
 
         //advances the buffer
         planner_add_block();
-        //updates the current planner coordinates
-        if (target != NULL)
-        {
-            memcpy(planner_step_pos, target, sizeof(planner_step_pos));
-        }
+
     }
 
     /*
@@ -329,7 +324,6 @@ extern "C"
     void planner_init(void)
     {
 #ifdef FORCE_GLOBALS_TO_0
-        memset(planner_step_pos, 0, sizeof(planner_step_pos));
         //resets buffer
         memset(planner_data, 0, sizeof(planner_data));
 #endif
@@ -355,8 +349,6 @@ extern "C"
 #ifdef USE_COOLANT
         planner_coolant = 0;
 #endif
-        //resyncs position with interpolator
-        planner_sync_position();
     }
 
     planner_block_t *planner_get_block(void)
@@ -571,19 +563,6 @@ extern "C"
             block = next;
             next = planner_buffer_next(block);
         }
-    }
-
-    void planner_get_position(int32_t *steps)
-    {
-        memcpy(steps, planner_step_pos, sizeof(planner_step_pos));
-    }
-
-    void planner_sync_position(void)
-    {
-        //resyncs the position with the interpolator
-        itp_get_rt_position(planner_step_pos);
-        //forces the motion control to resync as well
-        mc_resync_position();
     }
 
     void planner_sync_tools(motion_data_t *block_data)

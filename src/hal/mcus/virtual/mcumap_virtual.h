@@ -35,7 +35,7 @@
 #define ENABLE_SYNC_TX
 
 //commento to use console only
-//#define COMPORT "\\\\.\\COM7"
+//#define COMPORT "\\\\.\\COM11"
 
 #ifndef COMPORT
 #define USECONSOLE
