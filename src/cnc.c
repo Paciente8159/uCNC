@@ -377,7 +377,7 @@ extern "C"
 #endif
 #ifdef USE_COOLANT
             //updated the coolant pins
-            io_set_coolant(planner_get_coolant());
+            tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
 #ifdef LASER_MODE
             if (!g_settings.laser_mode)

@@ -719,6 +719,9 @@ extern "C"
 */
     static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
     {
+    	#ifdef GCODE_COUNT_TEXT_LINES
+    	static uint32_t linecounter = 0;
+    	#endif
         uint8_t error = STATUS_OK;
         uint8_t wordcount = 0;
         for (;;)
@@ -751,7 +754,8 @@ extern "C"
             case EOL:
 #ifdef GCODE_COUNT_TEXT_LINES
                 //if enabled store line number
-                words->n++;
+                linecounter++;
+                words->n=linecounter;
 #endif
 #ifdef ECHO_CMD
                 protocol_send_string(MSG_END);

@@ -491,6 +491,10 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	fflush(src);
 	fclose(src);
 }
+
+void mcu_eeprom_flush()
+{
+}
 /*
 void mcu_eeprom_erase(uint16_t address)
 {
