@@ -81,7 +81,7 @@ extern "C"
 		3. The entry feed (initialy set to 0)
 		4. The maximum entry feed given the juntion angle between planner blocks
 */
-    void planner_add_line(int32_t *target, motion_data_t *block_data)
+    void planner_add_line(motion_data_t *block_data)
     {
 #ifdef ENABLE_LINACT_PLANNER
         static float last_dir_vect[STEPPER_COUNT];
