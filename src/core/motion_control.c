@@ -124,7 +124,7 @@ extern "C"
                 }
             }
 
-            planner_add_line(NULL, &backlash_block_data);
+            planner_add_line(&backlash_block_data);
             //dwell should only execute on the first request
             block_data->dwell = 0;
 
