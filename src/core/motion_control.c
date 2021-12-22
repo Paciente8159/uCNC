@@ -140,7 +140,7 @@ extern "C"
         }
 #endif
 
-        planner_add_line(step_new_pos, block_data);
+        planner_add_line(block_data);
         //dwell should only execute on the first request
         block_data->dwell = 0;
         //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
