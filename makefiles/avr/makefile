@@ -82,6 +82,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = atmega328p
+FREQ = 16000000L
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -125,9 +126,9 @@ C_INCLUDES =  \
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
 # compile gcc flags
-ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) -w -Os -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,--relax
+ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) -w $(OPT) -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,--relax
 
-CFLAGS = $(MCU) -DF_CPU=16000000L $(C_DEFS) $(C_INCLUDES) -Os -Wall -Wextra -gdwarf-2 -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -MMD -flto -fno-fat-lto-objects
+CFLAGS = $(MCU) -DF_CPU=$(FREQ) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -Wextra -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -flto -fno-fat-lto-objects
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g3 -ggdb3 -gdwarf-2
