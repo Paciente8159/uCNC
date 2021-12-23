@@ -423,6 +423,7 @@ extern "C"
         serial_rx_clear();
         itp_clear();
         planner_clear();
+        mc_init();
         parser_init();
         protocol_send_string(MSG_STARTUP);
 
