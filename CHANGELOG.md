@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.rc] - Unreleased
+## [1.3.rc] - 2021-12-26
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support. It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
 RC adds/fixes the following issue:
