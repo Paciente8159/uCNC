@@ -233,7 +233,8 @@ extern "C"
 
         //reset position
         itp_reset_rt_position();
-        planner_sync_position();
+        //sync's the motion control with the real time position
+        mc_sync_position();
     }
 
     void cnc_alarm(int8_t code)
@@ -422,6 +423,7 @@ extern "C"
         serial_rx_clear();
         itp_clear();
         planner_clear();
+        mc_init();
         parser_init();
         protocol_send_string(MSG_STARTUP);
 

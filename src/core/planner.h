@@ -83,11 +83,9 @@ extern "C"
     uint8_t planner_get_previous_coolant(void);
 #endif
     void planner_discard_block(void);
-    void planner_add_line(int32_t *target, motion_data_t *block_data);
+    void planner_add_line(motion_data_t *block_data);
     void planner_add_analog_output(uint8_t output, uint8_t value);
     void planner_add_digital_output(uint8_t output, uint8_t value);
-    void planner_get_position(int32_t *steps);
-    void planner_sync_position(void);
     void planner_sync_tools(motion_data_t *block_data);
 
     //overrides

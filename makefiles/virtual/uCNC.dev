@@ -521,7 +521,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit48]
-FileName=..\..\..\..\..\Desktop\ucnc\src\hal\tools\tool.c
+FileName=..\..\src\hal\tools\tool.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -531,7 +531,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit49]
-FileName=..\..\..\..\..\Desktop\ucnc\src\hal\tools\tool.h
+FileName=..\..\src\hal\tools\tool.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -541,7 +541,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit50]
-FileName=..\..\..\..\..\Desktop\ucnc\src\hal\tools\tool_helper.h
+FileName=..\..\src\hal\tools\tool_helper.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -551,7 +551,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit51]
-FileName=..\..\..\..\..\Desktop\ucnc\src\hal\tools\tools\laser.c
+FileName=..\..\src\hal\tools\tools\laser.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -561,7 +561,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit52]
-FileName=..\..\..\..\..\Desktop\ucnc\src\hal\tools\tools\spindle.c
+FileName=..\..\src\hal\tools\tools\spindle.c
 CompileCpp=0
 Folder=
 Compile=1

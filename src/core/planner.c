@@ -48,7 +48,6 @@ extern "C"
 
     } planner_overrides_t;
 
-    static int32_t planner_step_pos[STEPPER_COUNT];
 #ifdef USE_SPINDLE
     static int16_t planner_spindle;
 #endif
@@ -82,7 +81,7 @@ extern "C"
 		3. The entry feed (initialy set to 0)
 		4. The maximum entry feed given the juntion angle between planner blocks
 */
-    void planner_add_line(int32_t *target, motion_data_t *block_data)
+    void planner_add_line(motion_data_t *block_data)
     {
 #ifdef ENABLE_LINACT_PLANNER
         static float last_dir_vect[STEPPER_COUNT];
@@ -93,13 +92,7 @@ extern "C"
         memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
         planner_data[planner_data_write].dirbits = block_data->dirbits;
         planner_data[planner_data_write].main_stepper = block_data->main_stepper;
-        // planner_data[planner_data_write].optimal = false;
-        // planner_data[planner_data_write].acceleration = 0;
-        // planner_data[planner_data_write].rapid_feed_sqr = 0;
-        // planner_data[planner_data_write].feed_sqr = 0;
-        // //sets entry and max entry feeds as if it would start and finish from a stoped state
-        // planner_data[planner_data_write].entry_feed_sqr = 0;
-        // planner_data[planner_data_write].entry_max_feed_sqr = 0;
+
 #ifdef USE_SPINDLE
         planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
 #endif
@@ -250,11 +243,7 @@ extern "C"
 
         //advances the buffer
         planner_add_block();
-        //updates the current planner coordinates
-        if (target != NULL)
-        {
-            memcpy(planner_step_pos, target, sizeof(planner_step_pos));
-        }
+
     }
 
     /*
@@ -329,7 +318,6 @@ extern "C"
     void planner_init(void)
     {
 #ifdef FORCE_GLOBALS_TO_0
-        memset(planner_step_pos, 0, sizeof(planner_step_pos));
         //resets buffer
         memset(planner_data, 0, sizeof(planner_data));
 #endif
@@ -355,8 +343,6 @@ extern "C"
 #ifdef USE_COOLANT
         planner_coolant = 0;
 #endif
-        //resyncs position with interpolator
-        planner_sync_position();
     }
 
     planner_block_t *planner_get_block(void)
@@ -571,19 +557,6 @@ extern "C"
             block = next;
             next = planner_buffer_next(block);
         }
-    }
-
-    void planner_get_position(int32_t *steps)
-    {
-        memcpy(steps, planner_step_pos, sizeof(planner_step_pos));
-    }
-
-    void planner_sync_position(void)
-    {
-        //resyncs the position with the interpolator
-        itp_get_rt_position(planner_step_pos);
-        //forces the motion control to resync as well
-        mc_resync_position();
     }
 
     void planner_sync_tools(motion_data_t *block_data)
