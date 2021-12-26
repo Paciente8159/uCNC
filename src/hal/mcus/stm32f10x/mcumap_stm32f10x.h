@@ -3257,8 +3257,9 @@ extern "C"
 #endif
 #endif
 
-#define mcu_enable_global_isr() __enable_irq()
-#define mcu_disable_global_isr() __disable_irq()
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr !__get_PRIMASK
 
 // #ifdef COM_PORT
 // #ifndef ENABLE_SYNC_TX

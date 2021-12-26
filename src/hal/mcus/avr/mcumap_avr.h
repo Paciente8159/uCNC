@@ -3603,6 +3603,7 @@ extern "C"
 
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
+#define mcu_get_global_isr (SREG && 0x80)
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))

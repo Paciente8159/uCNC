@@ -172,6 +172,24 @@ extern "C"
 
 #define FORCEINLINE __attribute__((always_inline)) inline
 
+
+	static FORCEINLINE uint8_t __atomic_in(void)
+	{
+		mcu_disable_global_isr();
+		return 1;
+	}
+
+	static FORCEINLINE uint8_t __atomic_out(uint8_t s)
+	{
+		if (s)
+		{
+			mcu_enable_global_isr();
+		}
+		return 0;
+	}
+
+#define __ATOMIC__ for (uint8_t __AtomRestore = mcu_get_global_isr, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = __atomic_out(__AtomRestore))
+
 #ifdef __cplusplus
 }
 #endif

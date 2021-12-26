@@ -95,9 +95,8 @@ extern "C"
     static uint8_t itp_blk_data_write;
 
     static itp_segment_t itp_sgm_data[INTERPOLATOR_BUFFER_SIZE];
-    static uint8_t itp_sgm_data_write;
+    static volatile uint8_t itp_sgm_data_write;
     static volatile uint8_t itp_sgm_data_read;
-    static volatile uint8_t itp_sgm_data_segments;
     //static buffer_t itp_sgm_buffer;
 
     static planner_block_t *itp_cur_plan_block;
@@ -114,6 +113,7 @@ extern "C"
     static void itp_sgm_buffer_read(void);
     static void itp_sgm_buffer_write(void);
     FORCEINLINE static bool itp_sgm_is_full(void);
+    FORCEINLINE static bool itp_sgm_is_empty(void);
     FORCEINLINE static void itp_sgm_clear(void);
     FORCEINLINE static void itp_blk_buffer_write(void);
     static void itp_blk_clear(void);
@@ -124,41 +124,82 @@ extern "C"
 */
     static void itp_sgm_buffer_read(void)
     {
-        if (!itp_sgm_data_segments)
+        uint8_t read;
+        __ATOMIC__
         {
-            return;
+            read = itp_sgm_data_read;
+            if (read == itp_sgm_data_write)
+            {
+                return;
+            }
         }
 
-        uint8_t read = itp_sgm_data_read;
         if (++read == INTERPOLATOR_BUFFER_SIZE)
         {
             read = 0;
         }
 
-        itp_sgm_data_read = read;
-        itp_sgm_data_segments--;
+        __ATOMIC__
+        {
+            itp_sgm_data_read = read;
+        }
     }
 
     static void itp_sgm_buffer_write(void)
     {
-        if (++itp_sgm_data_write == INTERPOLATOR_BUFFER_SIZE)
+        uint8_t write;
+        __ATOMIC__
         {
-            itp_sgm_data_write = 0;
+            write = itp_sgm_data_write;
         }
 
-        itp_sgm_data_segments++;
+        if (++write == INTERPOLATOR_BUFFER_SIZE)
+        {
+            write = 0;
+        }
+
+        __ATOMIC__
+        {
+            if (itp_sgm_buffer_read != write)
+            {
+                itp_sgm_data_write = write;
+            }
+        }
     }
 
     static bool itp_sgm_is_full(void)
     {
-        return (itp_sgm_data_segments == INTERPOLATOR_BUFFER_SIZE);
+         uint8_t write, read;
+        __ATOMIC__
+        {
+            write = itp_sgm_data_write;
+            read = itp_sgm_buffer_read;
+        }
+
+        if (++write == INTERPOLATOR_BUFFER_SIZE)
+        {
+            write = 0;
+        }
+        return (write == read);
+    }
+
+    static bool itp_sgm_is_empty(void)
+    {
+        __ATOMIC__
+        {
+            return (itp_sgm_buffer_read == itp_sgm_data_write);
+        }
+
+        return false;
     }
 
     static void itp_sgm_clear(void)
     {
-        itp_sgm_data_write = 0;
-        itp_sgm_data_read = 0;
-        itp_sgm_data_segments = 0;
+        __ATOMIC__
+        {
+            itp_sgm_data_write = 0;
+            itp_sgm_data_read = 0;
+        }
         memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
     }
 
@@ -278,12 +319,10 @@ extern "C"
 
             uint32_t remaining_steps = itp_cur_plan_block->total_steps;
 
-            if (itp_sgm_is_full()) //re-checks in case an injected dweel filled the buffer
+            __ATOMIC__
             {
-                break;
+                sgm = &itp_sgm_data[itp_sgm_data_write];
             }
-
-            sgm = &itp_sgm_data[itp_sgm_data_write];
             //clear the data segment
             memset(sgm, 0, sizeof(itp_segment_t));
             sgm->block = &itp_blk_data[itp_blk_data_write];
@@ -482,10 +521,13 @@ extern "C"
 #endif
 
         //starts the step isr if is stopped and there are segments to execute
-        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && itp_sgm_data_segments) //exec state is not hold or alarm and not already running
+        if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) //exec state is not hold or alarm and not already running
         {
             cnc_set_exec_state(EXEC_RUN); //flags that it started running
-            mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+            __ATOMIC__
+            {
+                mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+            }
         }
     }
 
@@ -523,9 +565,11 @@ extern "C"
     void itp_clear(void)
     {
         itp_cur_plan_block = NULL;
-        itp_sgm_data_write = 0;
-        itp_sgm_data_read = 0;
-        itp_sgm_data_segments = 0;
+        __ATOMIC__
+        {
+            itp_sgm_data_write = 0;
+            itp_sgm_data_read = 0;
+        }
         itp_blk_clear();
     }
 
@@ -568,7 +612,7 @@ extern "C"
             return feed;
         }
 
-        if (itp_sgm_data_segments)
+        if (!itp_sgm_is_empty())
         {
             feed = itp_sgm_data[itp_sgm_data_read].feed;
         }
@@ -580,7 +624,7 @@ extern "C"
     //used to make a sync motion
     uint8_t itp_sync(void)
     {
-        while (!planner_buffer_is_empty() || itp_sgm_data_segments || cnc_get_exec_state(EXEC_RUN))
+        while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || cnc_get_exec_state(EXEC_RUN))
         {
             if (!cnc_dotasks())
             {
@@ -655,10 +699,13 @@ extern "C"
         if (itp_rt_sgm == NULL)
         {
             //if buffer is not empty
-            if (itp_sgm_data_segments)
+            if (!itp_sgm_is_empty())
             {
                 //loads a new segment
-                itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
+                __ATOMIC__
+                {
+                    itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
+                }
                 cnc_set_exec_state(EXEC_RUN);
                 if (itp_rt_sgm->block != NULL)
                 {

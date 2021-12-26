@@ -403,6 +403,10 @@ void mcu_disable_global_isr(void)
 	global_isr_enabled = false;
 }
 
+uint8_t mcu_get_global_isr(void) {
+	return global_isr_enabled;
+}
+
 //starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
