@@ -970,8 +970,8 @@ extern "C"
 #define sercompad_RX_3 (0x3U)
 #define sercompad_TX_0 (0x2U)
 #define sercompad_TX_2 (0x1U)
-#define _sercompad(X,Y) (sercompad##X##_##Y)
-#define sercompad(X,Y) (_sercompad(X,Y))
+#define _sercompad(X, Y) (sercompad##X##_##Y)
+#define sercompad(X, Y) (_sercompad(X, Y))
 
 #ifdef USB_VCP
 #ifdef USB_DM
@@ -1002,15 +1002,15 @@ extern "C"
 #ifndef COM_NUMBER
 #define COM_NUMBER 0
 #endif
-#define COM __helper__(SERCOM,COM_NUMBER,)
-#define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM,COM_NUMBER,)
-#define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM,COM_NUMBER,_CORE)
+#define COM __helper__(SERCOM, COM_NUMBER, )
+#define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM, COM_NUMBER, )
+#define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM, COM_NUMBER, _CORE)
 #define COM_IRQ __helper__(SERCOM, COM_NUMBER, _IRQn)
 #define mcu_com_isr __helper__(SERCOM, COM_NUMBER, _Handler)
 #define COM_OUTREG (COM->USART.DATA.reg)
 #define COM_INREG (COM->USART.DATA.reg)
-#define COM_TX_PAD sercompad(_TX,TX_PAD)
-#define COM_RX_PAD sercompad(_RX,RX_PAD)
+#define COM_TX_PAD sercompad(_TX, TX_PAD)
+#define COM_RX_PAD sercompad(_RX, RX_PAD)
 #endif
 
 /*timers-unused*/
@@ -1910,8 +1910,9 @@ extern "C"
 #endif
 #endif
 */
-#define mcu_enable_global_isr() __enable_irq()
-#define mcu_disable_global_isr() __disable_irq()
+#define mcu_enable_global_isr __enable_irq
+#define mcu_disable_global_isr __disable_irq
+#define mcu_get_global_isr (__get_PRIMASK == 0)
 
 #ifdef COM_PORT
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)

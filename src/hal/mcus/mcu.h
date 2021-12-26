@@ -169,6 +169,14 @@ extern "C"
 	void mcu_disable_global_isr(void);
 #endif
 
+/**
+ * gets global interrupts state on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_global_isr
+	bool mcu_get_global_isr(void);
+#endif
+
 	//Step interpolator
 	/**
 	 * convert step rate to clock cycles

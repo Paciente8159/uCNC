@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef BYTE_OPS
 #define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
@@ -171,6 +172,23 @@ extern "C"
 #define UINT8_MAX_INV 0.0039215686274509804f
 
 #define FORCEINLINE __attribute__((always_inline)) inline
+
+
+	static FORCEINLINE uint8_t __atomic_in(void)
+	{
+		mcu_disable_global_isr();
+		return 1;
+	}
+
+	static FORCEINLINE uint8_t __atomic_out(bool s)
+	{
+		if (s)
+		{
+			mcu_enable_global_isr();
+		}
+	}
+
+#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
 
 #ifdef __cplusplus
 }

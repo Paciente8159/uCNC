@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0100000001000000
-UnitCount=52
+UnitCount=53
 
 [VersionInfo]
 Major=1
@@ -520,16 +520,6 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit48]
-FileName=..\..\src\hal\tools\tool.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
 [Unit49]
 FileName=..\..\src\hal\tools\tool.h
 CompileCpp=0
@@ -562,6 +552,26 @@ BuildCmd=
 
 [Unit52]
 FileName=..\..\src\hal\tools\tools\spindle.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit53]
+FileName=..\..\src\core\fifo.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit48]
+FileName=..\..\src\hal\tools\tool.c
 CompileCpp=0
 Folder=
 Compile=1
