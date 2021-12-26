@@ -160,7 +160,7 @@ extern "C"
 
         __ATOMIC__
         {
-            if (itp_sgm_buffer_read != write)
+            if (itp_sgm_data_read != write)
             {
                 itp_sgm_data_write = write;
             }
@@ -173,7 +173,7 @@ extern "C"
         __ATOMIC__
         {
             write = itp_sgm_data_write;
-            read = itp_sgm_buffer_read;
+            read = itp_sgm_data_read;
         }
 
         if (++write == INTERPOLATOR_BUFFER_SIZE)
@@ -187,7 +187,7 @@ extern "C"
     {
         __ATOMIC__
         {
-            return (itp_sgm_buffer_read == itp_sgm_data_write);
+            return (itp_sgm_data_read == itp_sgm_data_write);
         }
 
         return false;

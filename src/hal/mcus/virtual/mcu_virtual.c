@@ -403,7 +403,7 @@ void mcu_disable_global_isr(void)
 	global_isr_enabled = false;
 }
 
-uint8_t mcu_get_global_isr(void) {
+bool mcu_get_global_isr(void) {
 	return global_isr_enabled;
 }
 

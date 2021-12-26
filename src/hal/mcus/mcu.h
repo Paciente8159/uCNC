@@ -174,7 +174,7 @@ extern "C"
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
-	uint8_t mcu_get_global_isr(void);
+	bool mcu_get_global_isr(void);
 #endif
 
 	//Step interpolator
