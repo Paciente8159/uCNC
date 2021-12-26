@@ -23,6 +23,8 @@ RC adds/fixes the following issue:
   - planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data. (#77)
   - step ISR optimizations (for main stepper and idle steppers) are now optional. (#77)
   - new AVR make file (#82)
+  - modified/simplified parser G90/G91 (absolute/relative coordinates) (#83)
+  - removed planner position tracking. Modified/simplified position tracking inside motion control. This is more memory effective and prevents desynchronization problems between the motion controller and the interpolator (#84)
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
@@ -30,6 +32,7 @@ RC adds/fixes the following issue:
   - real line number (N word) processing was not being read (#81)
   - fixed welcome message not being sent after soft reset (#79)
   - fixed step generation ISR random problems (stop working). This was caused by problems in the segment buffer read write. Solved by adding atomic lock blocks to the code (#85)
+  - G28 and G30 now perform in whatever coordinate mode before travelling home (RS274NGC compliant) (#83)
 
 ## [1.3.b2] - 2021-12-14
 

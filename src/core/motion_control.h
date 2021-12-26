@@ -72,7 +72,7 @@ extern "C"
         uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data);
 
         void mc_get_position(float *target);
-        void mc_resync_position(void);
+        void mc_sync_position(void);
 
 #ifdef __cplusplus
 }
