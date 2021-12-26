@@ -29,6 +29,7 @@ RC adds/fixes the following issue:
   - fixed SAMD21 PWM frequency configuration (now is aprox 976Hz like AVR) (#78)
   - real line number (N word) processing was not being read (#81)
   - fixed welcome message not being sent after soft reset (#79)
+  - fixed step generation ISR random problems (stop working). This was caused by problems in the segment buffer read write. Solved by adding atomic lock blocks to the code (#85)
 
 ## [1.3.b2] - 2021-12-14
 
