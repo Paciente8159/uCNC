@@ -137,7 +137,7 @@ extern "C"
 #define PID_OUTPUT_MIN 0
 
 	void pid_init(void);
-	void pid_update_isr(void);
+	void pid_update(void);
 
 #ifdef __cplusplus
 }

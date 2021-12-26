@@ -179,7 +179,7 @@ extern "C"
 #endif
     }
 
-    void pid_update_isr(void)
+    void pid_update(void)
     {
         tool_pid_update();
         
