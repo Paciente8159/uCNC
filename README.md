@@ -102,7 +102,7 @@ These changes are:
 
 Future versions are in plan for:
   - Possibly integrate µCNC with Arduino IDE across all platforms (in study)
-  - Add more hardware configurations (SAMD21 development has started)
+  - Add more hardware configurations (ESP32 integration will start soon)
 
 ### Building µCNC
 For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.
