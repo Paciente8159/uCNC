@@ -188,7 +188,7 @@ extern "C"
 		}
 	}
 
-#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
 
 #ifdef __cplusplus
 }

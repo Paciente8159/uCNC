@@ -30,7 +30,6 @@ extern "C"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
-#include "modules/pid_controller.h"
 
 #include "sam.h"
 #include "instance/nvmctrl.h"
@@ -50,6 +49,8 @@ extern "C"
 #include "tusb_config.h"
 #include "tusb.h"
 #endif
+
+volatile bool samd21_global_isr_enabled;
 
         //setups internal timers (all will run @ 1Mhz on GCLK4)
         static void mcu_setup_clocks(void)
@@ -236,33 +237,8 @@ extern "C"
 
         void SysTick_Handler(void)
         {
-                static bool running = false;
-                static uint32_t counter = 0;
-                mcu_disable_global_isr();
-                counter++;
-                mcu_runtime_ms = counter;
-
-                if (!running)
-                {
-                        running = true;
-                        mcu_enable_global_isr();
-                        pid_update_isr();
-#ifdef LED
-                        if ((counter & 0x200))
-                        {
-                                mcu_set_output(LED);
-                        }
-                        else
-                        {
-                                mcu_clear_output(LED);
-                        }
-
-#endif
-                        mcu_disable_global_isr();
-                        running = false;
-                }
-
-                mcu_enable_global_isr();
+                mcu_runtime_ms++;
+		cnc_scheduletasks();
         }
 
         void mcu_tick_init()
@@ -284,6 +260,7 @@ extern "C"
 	 * */
         void mcu_init(void)
         {
+                samd21_global_isr_enabled = false;
                 mcu_setup_clocks();
 #if STEP0 >= 0
                 mcu_config_output(STEP0);

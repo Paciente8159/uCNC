@@ -25,6 +25,7 @@ RC adds/fixes the following issue:
   - new AVR make file (#82)
   - modified/simplified parser G90/G91 (absolute/relative coordinates) (#83)
   - removed planner position tracking. Modified/simplified position tracking inside motion control. This is more memory effective and prevents desynchronization problems between the motion controller and the interpolator (#84)
+  - moved scheduled code running from hardware implementation to cnc (common) compilation unit. Makes code (pid update or other) architecture agnostic. (#86)
 
 ### Fixed
   - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)

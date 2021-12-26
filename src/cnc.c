@@ -199,6 +199,38 @@ extern "C"
         return !cnc_get_exec_state(EXEC_KILL);
     }
 
+    //this function is executed every millisecond
+    void cnc_scheduletasks(void)
+    {
+        static bool running = false;
+        static uint32_t counter = 0;
+        mcu_disable_global_isr();
+        counter++;
+
+        if (!running)
+        {
+            running = true;
+            mcu_enable_global_isr();
+            pid_update();
+#ifdef LED
+            //this blinks aprox. once every 1024ms
+            if ((counter & 0x200))
+            {
+                io_set_output(LED, true);
+            }
+            else
+            {
+                io_set_output(LED, false);
+            }
+
+#endif
+            mcu_disable_global_isr();
+            running = false;
+        }
+
+        mcu_enable_global_isr();
+    }
+
     void cnc_home(void)
     {
         cnc_set_exec_state(EXEC_HOMING);

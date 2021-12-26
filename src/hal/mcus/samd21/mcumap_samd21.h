@@ -32,6 +32,7 @@ extern "C"
 	MCU specific definitions and replacements
 */
 #include "sam.h"
+#include <stdbool.h>
 
 //defines the frequency of the mcu
 #ifndef F_CPU
@@ -1910,9 +1911,10 @@ extern "C"
 #endif
 #endif
 */
-#define mcu_enable_global_isr __enable_irq
-#define mcu_disable_global_isr __disable_irq
-#define mcu_get_global_isr (__get_PRIMASK == 0)
+extern volatile bool samd21_global_isr_enabled;
+#define mcu_enable_global_isr() ({__enable_irq(); samd21_global_isr_enabled = true;})
+#define mcu_disable_global_isr() ({samd21_global_isr_enabled = false; __disable_irq(); })
+#define mcu_get_global_isr() ({ samd21_global_isr_enabled; })
 
 #ifdef COM_PORT
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)

@@ -32,6 +32,7 @@ extern "C"
 	MCU specific definitions and replacements
 */
 #include "stm32f10x.h"
+#include <stdbool.h>
 
 //defines the frequency of the mcu
 #ifndef F_CPU
@@ -3257,9 +3258,10 @@ extern "C"
 #endif
 #endif
 
-#define mcu_enable_global_isr __enable_irq
-#define mcu_disable_global_isr __disable_irq
-#define mcu_get_global_isr (__get_PRIMASK == 0)
+extern volatile bool stm32_global_isr_enabled;
+#define mcu_enable_global_isr() ({__enable_irq(); stm32_global_isr_enabled = true;})
+#define mcu_disable_global_isr() ({stm32_global_isr_enabled = false; __disable_irq(); })
+#define mcu_get_global_isr() ({ stm32_global_isr_enabled; })
 
 // #ifdef COM_PORT
 // #ifndef ENABLE_SYNC_TX

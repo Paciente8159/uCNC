@@ -39,7 +39,6 @@ extern "C"
 #include "interface/serial.h"
 #include "core/interpolator.h"
 #include "core/io_control.h"
-#include "modules/pid_controller.h"
 
 #include <math.h>
 #include <inttypes.h>
@@ -70,10 +69,7 @@ extern "C"
         ISR(RTC_COMPA_vect, ISR_BLOCK)
         {
                 mcu_runtime_ms++;
-#if PID_CONTROLLERS > 0
-                mcu_enable_global_isr();
-                pid_update_isr();
-#endif
+		cnc_scheduletasks();
         }
 
         ISR(ITP_COMPA_vect, ISR_BLOCK)
