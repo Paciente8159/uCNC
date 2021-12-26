@@ -216,11 +216,11 @@ extern "C"
             //this blinks aprox. once every 1024ms
             if ((counter & 0x200))
             {
-                io_set_output(LED);
+                io_set_output(LED, true);
             }
             else
             {
-                io_set_output(LED);
+                io_set_output(LED, false);
             }
 
 #endif

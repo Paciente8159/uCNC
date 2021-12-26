@@ -32,6 +32,7 @@ extern "C"
 	MCU specific definitions and replacements
 */
 #include "stm32f10x.h"
+#include <stdbool.h>
 
 //defines the frequency of the mcu
 #ifndef F_CPU
