@@ -86,7 +86,7 @@ extern const tool_t __rom__ laser1;
  * ENC0_DIR -> a regular input PIN that detects the direction of the encoding step
  * */
 	//#define ENC0_PULSE DIN0
-	//#define ENC0_DIR DIN1
+	//#define ENC0_DIR DIN8
 
 #ifdef __cplusplus
 }

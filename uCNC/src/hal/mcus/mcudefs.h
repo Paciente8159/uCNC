@@ -31,6 +31,9 @@ extern "C"
 */
 #if (MCU == MCU_AVR)
 #include "avr/mcumap_avr.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_NONE
+#endif
 #endif
 
 #if (MCU == MCU_STM32F10X)

@@ -46,7 +46,7 @@ extern "C"
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_MZERO
+#define BOARD BOARD_UNO
 #endif
 
 /*
@@ -85,7 +85,6 @@ extern "C"
 	The tool and tool order are configured in the cnc_hal_config.h
 */
 #define TOOL_COUNT 2
-
 
 #if TOOL_COUNT > 0
 /*
@@ -198,18 +197,18 @@ extern "C"
 	//#define ENABLE_LINACT_COLD_START
 #endif
 
-	/**
+/**
 	 * If the type of machine need backlash compensation configure here
 	 */
-	//#define ENABLE_BACKLASH_COMPENSATION
+//#define ENABLE_BACKLASH_COMPENSATION
 
-	/**
+/**
 	 * Uncomment these to enable step ISR calculation strategies (uses more memory)
 	 * STEP_ISR_SKIP_MAIN - carries the information about the main stepper (performs a step in every ISR tick) and skips calculations
 	 * STEP_ISR_SKIP_IDLE - carries the information about the idle steppers (performs 0 steps in the ISR tick) and skips calculations
 	 * */
-	// #define STEP_ISR_SKIP_MAIN
-	// #define STEP_ISR_SKIP_IDLE
+#define STEP_ISR_SKIP_MAIN
+#define STEP_ISR_SKIP_IDLE
 
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic Step Spread) algorithm (Similar to Grbl AMASS).

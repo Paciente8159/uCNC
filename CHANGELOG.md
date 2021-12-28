@@ -5,6 +5,16 @@
 
 # Changelog
 
+## [1.3.rc2] - Unreleased
+
+Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
+It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
+File structure as changed and tinyUSB was modified and integrated to allow compiling code using Arduino IDE.
+RC2 adds/fixes the following issue:
+
+### Changed
+  - modified file structure and tinyUSB was modified and integrated to allow compiling code using Arduino IDE (#87)
+
 ## [1.3.rc] - 2021-12-26
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support. It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
@@ -369,6 +379,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.rc2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc2
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
