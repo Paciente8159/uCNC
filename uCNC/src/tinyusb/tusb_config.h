@@ -32,11 +32,7 @@ extern "C"
 #endif
 
 /*aditional config for Arduino IDE*/
-#ifdef ARDUINO_ARCH_SAMD
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_SAMD21
-#endif
-#endif
+#include "../cnc.h"
 
 //--------------------------------------------------------------------
 // COMMON CONFIGURATION

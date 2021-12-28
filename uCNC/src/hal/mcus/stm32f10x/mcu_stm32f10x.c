@@ -32,83 +32,83 @@ extern "C"
 #include "../../../core/io_control.h"
 
 #ifdef USB_VCP
-#include "tusb_config.h"
-#include "tusb.h"
+#include "../../../tinyusb/tusb_config.h"
+#include "../../../tinyusb/src/tusb.h"
 
-#define USB_BASE (APB1PERIPH_BASE + 0x00005C00UL)
-	typedef struct
-	{
-		__IO uint16_t EP0R;			 /*!< USB Endpoint 0 register,                   Address offset: 0x00 */
-		__IO uint16_t RESERVED0;	 /*!< Reserved */
-		__IO uint16_t EP1R;			 /*!< USB Endpoint 1 register,                   Address offset: 0x04 */
-		__IO uint16_t RESERVED1;	 /*!< Reserved */
-		__IO uint16_t EP2R;			 /*!< USB Endpoint 2 register,                   Address offset: 0x08 */
-		__IO uint16_t RESERVED2;	 /*!< Reserved */
-		__IO uint16_t EP3R;			 /*!< USB Endpoint 3 register,                   Address offset: 0x0C */
-		__IO uint16_t RESERVED3;	 /*!< Reserved */
-		__IO uint16_t EP4R;			 /*!< USB Endpoint 4 register,                   Address offset: 0x10 */
-		__IO uint16_t RESERVED4;	 /*!< Reserved */
-		__IO uint16_t EP5R;			 /*!< USB Endpoint 5 register,                   Address offset: 0x14 */
-		__IO uint16_t RESERVED5;	 /*!< Reserved */
-		__IO uint16_t EP6R;			 /*!< USB Endpoint 6 register,                   Address offset: 0x18 */
-		__IO uint16_t RESERVED6;	 /*!< Reserved */
-		__IO uint16_t EP7R;			 /*!< USB Endpoint 7 register,                   Address offset: 0x1C */
-		__IO uint16_t RESERVED7[17]; /*!< Reserved */
-		__IO uint16_t CNTR;			 /*!< Control register,                          Address offset: 0x40 */
-		__IO uint16_t RESERVED8;	 /*!< Reserved */
-		__IO uint16_t ISTR;			 /*!< Interrupt status register,                 Address offset: 0x44 */
-		__IO uint16_t RESERVED9;	 /*!< Reserved */
-		__IO uint16_t FNR;			 /*!< Frame number register,                     Address offset: 0x48 */
-		__IO uint16_t RESERVEDA;	 /*!< Reserved */
-		__IO uint16_t DADDR;		 /*!< Device address register,                   Address offset: 0x4C */
-		__IO uint16_t RESERVEDB;	 /*!< Reserved */
-		__IO uint16_t BTABLE;		 /*!< Buffer Table address register,             Address offset: 0x50 */
-		__IO uint16_t RESERVEDC;	 /*!< Reserved */
-	} USB_TypeDef;
+// #define USB_BASE (APB1PERIPH_BASE + 0x00005C00UL)
+// 	typedef struct
+// 	{
+// 		__IO uint16_t EP0R;			 /*!< USB Endpoint 0 register,                   Address offset: 0x00 */
+// 		__IO uint16_t RESERVED0;	 /*!< Reserved */
+// 		__IO uint16_t EP1R;			 /*!< USB Endpoint 1 register,                   Address offset: 0x04 */
+// 		__IO uint16_t RESERVED1;	 /*!< Reserved */
+// 		__IO uint16_t EP2R;			 /*!< USB Endpoint 2 register,                   Address offset: 0x08 */
+// 		__IO uint16_t RESERVED2;	 /*!< Reserved */
+// 		__IO uint16_t EP3R;			 /*!< USB Endpoint 3 register,                   Address offset: 0x0C */
+// 		__IO uint16_t RESERVED3;	 /*!< Reserved */
+// 		__IO uint16_t EP4R;			 /*!< USB Endpoint 4 register,                   Address offset: 0x10 */
+// 		__IO uint16_t RESERVED4;	 /*!< Reserved */
+// 		__IO uint16_t EP5R;			 /*!< USB Endpoint 5 register,                   Address offset: 0x14 */
+// 		__IO uint16_t RESERVED5;	 /*!< Reserved */
+// 		__IO uint16_t EP6R;			 /*!< USB Endpoint 6 register,                   Address offset: 0x18 */
+// 		__IO uint16_t RESERVED6;	 /*!< Reserved */
+// 		__IO uint16_t EP7R;			 /*!< USB Endpoint 7 register,                   Address offset: 0x1C */
+// 		__IO uint16_t RESERVED7[17]; /*!< Reserved */
+// 		__IO uint16_t CNTR;			 /*!< Control register,                          Address offset: 0x40 */
+// 		__IO uint16_t RESERVED8;	 /*!< Reserved */
+// 		__IO uint16_t ISTR;			 /*!< Interrupt status register,                 Address offset: 0x44 */
+// 		__IO uint16_t RESERVED9;	 /*!< Reserved */
+// 		__IO uint16_t FNR;			 /*!< Frame number register,                     Address offset: 0x48 */
+// 		__IO uint16_t RESERVEDA;	 /*!< Reserved */
+// 		__IO uint16_t DADDR;		 /*!< Device address register,                   Address offset: 0x4C */
+// 		__IO uint16_t RESERVEDB;	 /*!< Reserved */
+// 		__IO uint16_t BTABLE;		 /*!< Buffer Table address register,             Address offset: 0x50 */
+// 		__IO uint16_t RESERVEDC;	 /*!< Reserved */
+// 	} USB_TypeDef;
 
-#define USB ((USB_TypeDef *)USB_BASE)
+// #define USB ((USB_TypeDef *)USB_BASE)
 
-/*!< Common registers */
-/*******************  Bit definition for USB_CNTR register  *******************/
-#define USB_CNTR_FRES_Pos (0U)
-#define USB_CNTR_FRES_Msk (0x1UL << USB_CNTR_FRES_Pos) /*!< 0x00000001 */
-#define USB_CNTR_FRES USB_CNTR_FRES_Msk				   /*!< Force USB Reset */
-#define USB_CNTR_PDWN_Pos (1U)
-#define USB_CNTR_PDWN_Msk (0x1UL << USB_CNTR_PDWN_Pos) /*!< 0x00000002 */
-#define USB_CNTR_PDWN USB_CNTR_PDWN_Msk				   /*!< Power down */
-#define USB_CNTR_LP_MODE_Pos (2U)
-#define USB_CNTR_LP_MODE_Msk (0x1UL << USB_CNTR_LP_MODE_Pos) /*!< 0x00000004 */
-#define USB_CNTR_LP_MODE USB_CNTR_LP_MODE_Msk				 /*!< Low-power mode */
-#define USB_CNTR_FSUSP_Pos (3U)
-#define USB_CNTR_FSUSP_Msk (0x1UL << USB_CNTR_FSUSP_Pos) /*!< 0x00000008 */
-#define USB_CNTR_FSUSP USB_CNTR_FSUSP_Msk				 /*!< Force suspend */
-#define USB_CNTR_RESUME_Pos (4U)
-#define USB_CNTR_RESUME_Msk (0x1UL << USB_CNTR_RESUME_Pos) /*!< 0x00000010 */
-#define USB_CNTR_RESUME USB_CNTR_RESUME_Msk				   /*!< Resume request */
-#define USB_CNTR_ESOFM_Pos (8U)
-#define USB_CNTR_ESOFM_Msk (0x1UL << USB_CNTR_ESOFM_Pos) /*!< 0x00000100 */
-#define USB_CNTR_ESOFM USB_CNTR_ESOFM_Msk				 /*!< Expected Start Of Frame Interrupt Mask */
-#define USB_CNTR_SOFM_Pos (9U)
-#define USB_CNTR_SOFM_Msk (0x1UL << USB_CNTR_SOFM_Pos) /*!< 0x00000200 */
-#define USB_CNTR_SOFM USB_CNTR_SOFM_Msk				   /*!< Start Of Frame Interrupt Mask */
-#define USB_CNTR_RESETM_Pos (10U)
-#define USB_CNTR_RESETM_Msk (0x1UL << USB_CNTR_RESETM_Pos) /*!< 0x00000400 */
-#define USB_CNTR_RESETM USB_CNTR_RESETM_Msk				   /*!< RESET Interrupt Mask */
-#define USB_CNTR_SUSPM_Pos (11U)
-#define USB_CNTR_SUSPM_Msk (0x1UL << USB_CNTR_SUSPM_Pos) /*!< 0x00000800 */
-#define USB_CNTR_SUSPM USB_CNTR_SUSPM_Msk				 /*!< Suspend mode Interrupt Mask */
-#define USB_CNTR_WKUPM_Pos (12U)
-#define USB_CNTR_WKUPM_Msk (0x1UL << USB_CNTR_WKUPM_Pos) /*!< 0x00001000 */
-#define USB_CNTR_WKUPM USB_CNTR_WKUPM_Msk				 /*!< Wakeup Interrupt Mask */
-#define USB_CNTR_ERRM_Pos (13U)
-#define USB_CNTR_ERRM_Msk (0x1UL << USB_CNTR_ERRM_Pos) /*!< 0x00002000 */
-#define USB_CNTR_ERRM USB_CNTR_ERRM_Msk				   /*!< Error Interrupt Mask */
-#define USB_CNTR_PMAOVRM_Pos (14U)
-#define USB_CNTR_PMAOVRM_Msk (0x1UL << USB_CNTR_PMAOVRM_Pos) /*!< 0x00004000 */
-#define USB_CNTR_PMAOVRM USB_CNTR_PMAOVRM_Msk				 /*!< Packet Memory Area Over / Underrun Interrupt Mask */
-#define USB_CNTR_CTRM_Pos (15U)
-#define USB_CNTR_CTRM_Msk (0x1UL << USB_CNTR_CTRM_Pos) /*!< 0x00008000 */
-#define USB_CNTR_CTRM USB_CNTR_CTRM_Msk				   /*!< Correct Transfer Interrupt Mask */
+// /*!< Common registers */
+// /*******************  Bit definition for USB_CNTR register  *******************/
+// #define USB_CNTR_FRES_Pos (0U)
+// #define USB_CNTR_FRES_Msk (0x1UL << USB_CNTR_FRES_Pos) /*!< 0x00000001 */
+// #define USB_CNTR_FRES USB_CNTR_FRES_Msk				   /*!< Force USB Reset */
+// #define USB_CNTR_PDWN_Pos (1U)
+// #define USB_CNTR_PDWN_Msk (0x1UL << USB_CNTR_PDWN_Pos) /*!< 0x00000002 */
+// #define USB_CNTR_PDWN USB_CNTR_PDWN_Msk				   /*!< Power down */
+// #define USB_CNTR_LP_MODE_Pos (2U)
+// #define USB_CNTR_LP_MODE_Msk (0x1UL << USB_CNTR_LP_MODE_Pos) /*!< 0x00000004 */
+// #define USB_CNTR_LP_MODE USB_CNTR_LP_MODE_Msk				 /*!< Low-power mode */
+// #define USB_CNTR_FSUSP_Pos (3U)
+// #define USB_CNTR_FSUSP_Msk (0x1UL << USB_CNTR_FSUSP_Pos) /*!< 0x00000008 */
+// #define USB_CNTR_FSUSP USB_CNTR_FSUSP_Msk				 /*!< Force suspend */
+// #define USB_CNTR_RESUME_Pos (4U)
+// #define USB_CNTR_RESUME_Msk (0x1UL << USB_CNTR_RESUME_Pos) /*!< 0x00000010 */
+// #define USB_CNTR_RESUME USB_CNTR_RESUME_Msk				   /*!< Resume request */
+// #define USB_CNTR_ESOFM_Pos (8U)
+// #define USB_CNTR_ESOFM_Msk (0x1UL << USB_CNTR_ESOFM_Pos) /*!< 0x00000100 */
+// #define USB_CNTR_ESOFM USB_CNTR_ESOFM_Msk				 /*!< Expected Start Of Frame Interrupt Mask */
+// #define USB_CNTR_SOFM_Pos (9U)
+// #define USB_CNTR_SOFM_Msk (0x1UL << USB_CNTR_SOFM_Pos) /*!< 0x00000200 */
+// #define USB_CNTR_SOFM USB_CNTR_SOFM_Msk				   /*!< Start Of Frame Interrupt Mask */
+// #define USB_CNTR_RESETM_Pos (10U)
+// #define USB_CNTR_RESETM_Msk (0x1UL << USB_CNTR_RESETM_Pos) /*!< 0x00000400 */
+// #define USB_CNTR_RESETM USB_CNTR_RESETM_Msk				   /*!< RESET Interrupt Mask */
+// #define USB_CNTR_SUSPM_Pos (11U)
+// #define USB_CNTR_SUSPM_Msk (0x1UL << USB_CNTR_SUSPM_Pos) /*!< 0x00000800 */
+// #define USB_CNTR_SUSPM USB_CNTR_SUSPM_Msk				 /*!< Suspend mode Interrupt Mask */
+// #define USB_CNTR_WKUPM_Pos (12U)
+// #define USB_CNTR_WKUPM_Msk (0x1UL << USB_CNTR_WKUPM_Pos) /*!< 0x00001000 */
+// #define USB_CNTR_WKUPM USB_CNTR_WKUPM_Msk				 /*!< Wakeup Interrupt Mask */
+// #define USB_CNTR_ERRM_Pos (13U)
+// #define USB_CNTR_ERRM_Msk (0x1UL << USB_CNTR_ERRM_Pos) /*!< 0x00002000 */
+// #define USB_CNTR_ERRM USB_CNTR_ERRM_Msk				   /*!< Error Interrupt Mask */
+// #define USB_CNTR_PMAOVRM_Pos (14U)
+// #define USB_CNTR_PMAOVRM_Msk (0x1UL << USB_CNTR_PMAOVRM_Pos) /*!< 0x00004000 */
+// #define USB_CNTR_PMAOVRM USB_CNTR_PMAOVRM_Msk				 /*!< Packet Memory Area Over / Underrun Interrupt Mask */
+// #define USB_CNTR_CTRM_Pos (15U)
+// #define USB_CNTR_CTRM_Msk (0x1UL << USB_CNTR_CTRM_Pos) /*!< 0x00008000 */
+// #define USB_CNTR_CTRM USB_CNTR_CTRM_Msk				   /*!< Correct Transfer Interrupt Mask */
 #endif
 
 	/**
@@ -318,7 +318,11 @@ extern "C"
 #endif
 #endif
 
+#ifndef ARDUINO_ARCH_STM32
 	void SysTick_Handler(void)
+	#else
+	void  osSystickHandler(void)
+	#endif
 	{
 		mcu_runtime_ms++;
 		cnc_scheduletasks();

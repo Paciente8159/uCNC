@@ -35,10 +35,16 @@ extern "C"
 
 #if (MCU == MCU_STM32F10X)
 #include "stm32f10x/mcumap_stm32f10x.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_STM32F1
+#endif
 #endif
 
 #if (MCU == MCU_SAMD21)
 #include "samd21/mcumap_samd21.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_SAMD21
+#endif
 #endif
 
 #if (MCU == MCU_VIRTUAL)

@@ -119,7 +119,6 @@ extern "C"
                 mcu_enable_global_isr();
         }
 
-#ifndef ARDUINO_ARCH_SAMD
 #ifdef COM_PORT
         void mcu_com_isr()
         {
@@ -141,7 +140,6 @@ extern "C"
 #endif
                 mcu_enable_global_isr();
         }
-#endif
 #endif
 
         void mcu_usart_init(void)

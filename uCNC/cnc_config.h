@@ -32,21 +32,14 @@ extern "C"
 #ifndef BAUDRATE
 #define BAUDRATE 115200
 #endif
-//uncomment to enable synchronized TX (used in USB VCP)
-//enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven
+
+//uncomment to force enable synchronized TX/RX (used in USB VCP)
+//enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven (sync RX may cause problems with hardware USART)
 // #define ENABLE_SYNC_TX
 // #define ENABLE_SYNC_RX
 
-//uncomment to enable USB VCP instead of serial hardware
+//uncomment to enable USB VCP instead of serial hardware (for MCU's with Hardware USB)
 #define USB_VCP
-#ifdef USB_VCP
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
-#endif
-#ifndef ENABLE_SYNC_RX
-#define ENABLE_SYNC_RX
-#endif
-#endif
 
 /*
 	Choose the board
