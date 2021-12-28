@@ -44,18 +44,9 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 # source
 ######################################
 # C sources
-C_SOURCES = $(call rwildcard,./,*.c)
-C_SOURCES += $(call rwildcard,../../src,*.c)
-
-ifdef USE_USB
-C_SOURCES += ../../tinyusb/tusb_descriptors.c
-C_SOURCES += $(call rwildcard,../../tinyusb/src/,*.c)
-endif
-
-# ASM sources
-#ASM_SOURCES =  \
-#startup_stm32f103xb.s
-
+SRC_FILES = $(call rwildcard,./,*.c)
+SRC_FILES += $(call rwildcard,../../uCNC,*.c)
+C_SOURCES = $(filter-out $(call rwildcard,../../uCNC/src/tinyusb,*.c), $(SRC_FILES))
 
 #######################################
 # binaries
@@ -84,12 +75,6 @@ BIN = $(CP) -O binary -S
 CPU = atmega328p
 FREQ = 16000000L
 
-# fpu
-# NONE for Cortex-M0/M0+/M3
-
-# float-abi
-
-
 # mcu
 MCU = -mmcu=$(CPU)
 
@@ -102,26 +87,18 @@ C_DEFS =  \
 -DUNO \
 -DBOARD=BOARD_UNO
 
-ifdef USE_USB
-C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
--DUSB_VCP
-endif
-
 # AS includes
 AS_INCLUDES = 
 
 # C includes
-C_HEADERS = $(call rwildcard,./,*.h)
-ifdef USE_USB
-C_HEADERS += ../../tinyusb/tusb_config.h
-C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
-endif
-
+HDR_FILES = $(call rwildcard,./,*.h)
+C_HEADERS = $(filter-out $(call rwildcard,../../uCNC/src/tinyusb,*.h), $(HDR_FILES))
 
 # C includes
 C_INCLUDES =  \
 -I"./" \
--I"../../src/"
+-I"../../uCNC/" \
+-I"../../uCNC/src"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
@@ -149,10 +126,10 @@ all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o)))
 vpath %.c $(sort $(dir $(C_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS)
 	$(CC) $(OBJECTS) $(ASFLAGS) -o $@
 	$(SZ) -C --mcu=$(CPU) $@
 

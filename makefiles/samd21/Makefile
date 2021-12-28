@@ -14,7 +14,6 @@
 # target
 ######################################
 TARGET = uCNC
-USE_USB = TRUE
 
 ######################################
 # building variables
@@ -45,12 +44,12 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 ######################################
 # C sources
 C_SOURCES = $(call rwildcard,./,*.c)
-C_SOURCES += $(call rwildcard,../../src,*.c)
+C_SOURCES += $(call rwildcard,../../uCNC/src,*.c)
 
-ifdef USE_USB
-C_SOURCES += ../../tinyusb/tusb_descriptors.c
-C_SOURCES += $(call rwildcard,../../tinyusb/src/,*.c)
-endif
+# ifdef USE_USB
+# C_SOURCES += ../../tinyusb/tusb_descriptors.c
+# C_SOURCES += $(call rwildcard,../../tinyusb/src/,*.c)
+# endif
 
 # ASM sources
 #ASM_SOURCES =  \
@@ -102,20 +101,20 @@ C_DEFS =  \
 -D__SAMD21E18A__ \
 -DBOARD=BOARD_MZERO
 
-ifdef USE_USB
-C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
--DUSB_VCP
-endif
+# ifdef USE_USB
+# C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
+# -DUSB_VCP
+# endif
 
 # AS includes
 AS_INCLUDES = 
 
 # C includes
 C_HEADERS = $(call rwildcard,./,*.h)
-ifdef USE_USB
-C_HEADERS += ../../tinyusb/tusb_config.h
-C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
-endif
+# ifdef USE_USB
+# C_HEADERS += ../../tinyusb/tusb_config.h
+# C_HEADERS += $(call rwildcard,../../tinyusb/src/,*.h)
+# endif
 
 
 # C includes
@@ -123,7 +122,8 @@ C_INCLUDES =  \
 -I"./" \
 -Idrivers/ \
 -Iasf/ \
--I"../../src/"
+-I"../../uCNC/" \
+-I"../../uCNC/src/"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
@@ -166,13 +166,13 @@ vpath %.c $(sort $(dir $(C_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 
-$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
-$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.s | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS)
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
