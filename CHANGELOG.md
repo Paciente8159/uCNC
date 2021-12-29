@@ -12,6 +12,10 @@ It also adds the new tool HAL that allows to have multiple tools in the µCNC an
 File structure as changed and tinyUSB was modified and integrated to allow compiling code using Arduino IDE.
 RC2 adds/fixes the following issue:
 
+### Added
+  - implemented STM32F1 analog input reading (#88)
+  - implemented io_control analog reading function (#88)
+
 ### Changed
   - modified file structure and tinyUSB was modified and integrated to allow compiling code using Arduino IDE (#87)
 
