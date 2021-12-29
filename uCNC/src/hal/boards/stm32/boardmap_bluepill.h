@@ -160,6 +160,11 @@ extern "C"
 #define STEP0_EN_BIT 15
 #define STEP0_EN_PORT A
 
+//analog input
+// #define ANALOG0_BIT 1
+// #define ANALOG0_PORT B
+// #define ANALOG0_CHANNEL 9
+
 	//Setup the Step Timer used has the heartbeat for µCNC
 	//#define ITP_TIMER 2
 

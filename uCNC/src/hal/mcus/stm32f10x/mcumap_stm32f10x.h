@@ -3080,72 +3080,102 @@ extern "C"
 /**********************************************
 *	Analog pins
 **********************************************/
-/*
 #ifdef ANALOG0
-#define ANALOG0_ADMUXREG (1<<0)
-#define DIO66_ADMUXREG (1<<0)
+#ifndef ANALOG0_CHANNEL
+#define ANALOG0_CHANNEL -1
+#endif
+#define DIO66_CHANNEL ANALOG0_CHANNEL
 #endif
 #ifdef ANALOG1
-#define ANALOG1_ADMUXREG (1<<1)
-#define DIO67_ADMUXREG (1<<1)
+#ifndef ANALOG1_CHANNEL
+#define ANALOG1_CHANNEL -1
+#endif
+#define DIO67_CHANNEL ANALOG1_CHANNEL
 #endif
 #ifdef ANALOG2
-#define ANALOG2_ADMUXREG (1<<2)
-#define DIO68_ADMUXREG (1<<2)
+#ifndef ANALOG2_CHANNEL
+#define ANALOG2_CHANNEL -1
+#endif
+#define DIO68_CHANNEL ANALOG2_CHANNEL
 #endif
 #ifdef ANALOG3
-#define ANALOG3_ADMUXREG (1<<3)
-#define DIO69_ADMUXREG (1<<3)
+#ifndef ANALOG3_CHANNEL
+#define ANALOG3_CHANNEL -1
+#endif
+#define DIO69_CHANNEL ANALOG3_CHANNEL
 #endif
 #ifdef ANALOG4
-#define ANALOG4_ADMUXREG (1<<4)
-#define DIO70_ADMUXREG (1<<4)
+#ifndef ANALOG4_CHANNEL
+#define ANALOG4_CHANNEL -1
+#endif
+#define DIO70_CHANNEL ANALOG4_CHANNEL
 #endif
 #ifdef ANALOG5
-#define ANALOG5_ADMUXREG (1<<5)
-#define DIO71_ADMUXREG (1<<5)
+#ifndef ANALOG5_CHANNEL
+#define ANALOG5_CHANNEL -1
+#endif
+#define DIO71_CHANNEL ANALOG5_CHANNEL
 #endif
 #ifdef ANALOG6
-#define ANALOG6_ADMUXREG (1<<6)
-#define DIO72_ADMUXREG (1<<6)
+#ifndef ANALOG6_CHANNEL
+#define ANALOG6_CHANNEL -1
+#endif
+#define DIO72_CHANNEL ANALOG6_CHANNEL
 #endif
 #ifdef ANALOG7
-#define ANALOG7_ADMUXREG (1<<7)
-#define DIO73_ADMUXREG (1<<7)
+#ifndef ANALOG7_CHANNEL
+#define ANALOG7_CHANNEL -1
+#endif
+#define DIO73_CHANNEL ANALOG7_CHANNEL
 #endif
 #ifdef ANALOG8
-#define ANALOG8_ADMUXREG (1<<8)
-#define DIO74_ADMUXREG (1<<8)
+#ifndef ANALOG8_CHANNEL
+#define ANALOG8_CHANNEL -1
+#endif
+#define DIO74_CHANNEL ANALOG8_CHANNEL
 #endif
 #ifdef ANALOG9
-#define ANALOG9_ADMUXREG (1<<9)
-#define DIO75_ADMUXREG (1<<9)
+#ifndef ANALOG9_CHANNEL
+#define ANALOG9_CHANNEL -1
+#endif
+#define DIO75_CHANNEL ANALOG9_CHANNEL
 #endif
 #ifdef ANALOG10
-#define ANALOG10_ADMUXREG (1<<10)
-#define DIO76_ADMUXREG (1<<10)
+#ifndef ANALOG10_CHANNEL
+#define ANALOG10_CHANNEL -1
+#endif
+#define DIO76_CHANNEL ANALOG10_CHANNEL
 #endif
 #ifdef ANALOG11
-#define ANALOG11_ADMUXREG (1<<11)
-#define DIO77_ADMUXREG (1<<11)
+#ifndef ANALOG11_CHANNEL
+#define ANALOG11_CHANNEL -1
+#endif
+#define DIO77_CHANNEL ANALOG11_CHANNEL
 #endif
 #ifdef ANALOG12
-#define ANALOG12_ADMUXREG (1<<12)
-#define DIO78_ADMUXREG (1<<12)
+#ifndef ANALOG12_CHANNEL
+#define ANALOG12_CHANNEL -1
+#endif
+#define DIO78_CHANNEL ANALOG12_CHANNEL
 #endif
 #ifdef ANALOG13
-#define ANALOG13_ADMUXREG (1<<13)
-#define DIO79_ADMUXREG (1<<13)
+#ifndef ANALOG13_CHANNEL
+#define ANALOG13_CHANNEL -1
+#endif
+#define DIO79_CHANNEL ANALOG13_CHANNEL
 #endif
 #ifdef ANALOG14
-#define ANALOG14_ADMUXREG (1<<14)
-#define DIO80_ADMUXREG (1<<14)
+#ifndef ANALOG14_CHANNEL
+#define ANALOG14_CHANNEL -1
+#endif
+#define DIO80_CHANNEL ANALOG14_CHANNEL
 #endif
 #ifdef ANALOG15
-#define ANALOG15_ADMUXREG (1<<15)
-#define DIO81_ADMUXREG (1<<15)
+#ifndef ANALOG15_CHANNEL
+#define ANALOG15_CHANNEL -1
 #endif
-*/
+#define DIO81_CHANNEL ANALOG15_CHANNEL
+#endif
 
 //COM registers
 #ifdef COM_PORT
@@ -3238,6 +3268,75 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y))
 #endif
 
+#define mcu_config_output(diopin)                                                                                           \
+	{                                                                                                                       \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_input(diopin)                                                                                        \
+	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_pullup(diopin) (                                                                                   \
+	{                                                                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
+	})
+
+#define mcu_config_pwm(diopin) (                                                                                                 \
+	{                                                                                                                            \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, ENOUTPUT);                                                                                          \
+	})
+
+#define mcu_config_input_isr(diopin) (                                                                          \
+	{                                                                                                           \
+		RCC->APB2ENR |= 0x1U;                                                                                   \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
+	})
+
+#define mcu_config_analog(diopin) (                                                                                     \
+	{                                                                                                                   \
+		RCC->CFGR &= ~(RCC_CFGR_ADCPRE);                                                                                \
+		RCC->CFGR |= RCC_CFGR_ADCPRE_DIV6;                                                                              \
+		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN | __indirect__(diopin, APB2EN) | 0x1U);                                     \
+		ADC1->SQR1 = 1;				/*one conversion*/                                                                  \
+		ADC1->CR2 &= ~ADC_CR2_CONT; /*single conversion mode*/                                                          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
+		ADC1->CR2 |= ADC_CR2_ADON;	 /*enable adc*/                                                                     \
+		ADC1->CR2 |= ADC_CR2_RSTCAL; /*reset calibration*/                                                              \
+		while (ADC1->CR2 & ADC_CR2_RSTCAL)                                                                              \
+			;                                                                                                           \
+		ADC1->CR2 |= ADC_CR2_CAL; /*start calibration*/                                                                 \
+		while (ADC1->CR2 & ADC_CR2_CAL)                                                                                 \
+			;                                                                                                           \
+		ADC1->CR2 |= (ADC_CR2_EXTSEL|ADC_CR2_EXTTRIG); /*external start trigger software*/                                                \
+	})
+
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT)))
@@ -3248,6 +3347,17 @@ extern "C"
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((((uint32_t)__indirect__(diopin, TIMREG)->ARR) * pwmvalue) / 255); \
 	}
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
+
+#define mcu_get_analog(diopin) (                    \
+	{                                               \
+		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
+		ADC1->CR2 |= ADC_CR2_SWSTART;               \
+		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
+		while (!(ADC1->SR & ADC_SR_EOS))            \
+			;                                       \
+		ADC1->SR &= ~ADC_SR_EOS;                    \
+		(0xFF & (ADC1->DR >> 4));                   \
+	})
 #ifdef PROBE
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
@@ -3258,9 +3368,17 @@ extern "C"
 #endif
 #endif
 
-extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr() ({__enable_irq(); stm32_global_isr_enabled = true;})
-#define mcu_disable_global_isr() ({stm32_global_isr_enabled = false; __disable_irq(); })
+	extern volatile bool stm32_global_isr_enabled;
+#define mcu_enable_global_isr() (        \
+	{                                    \
+		__enable_irq();                  \
+		stm32_global_isr_enabled = true; \
+	})
+#define mcu_disable_global_isr() (        \
+	{                                     \
+		stm32_global_isr_enabled = false; \
+		__disable_irq();                  \
+	})
 #define mcu_get_global_isr() ({ stm32_global_isr_enabled; })
 
 // #ifdef COM_PORT
