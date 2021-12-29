@@ -14,6 +14,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
    - Independent hardware. All MCU/hardware operations are written in a single translation unit that acts like a standardized HAL interface, leaving the CNC controlling code independent of the MCU architecture has long has it has the necessary abilities to execute code and respond to interrupts in a predictable. Porting µCNC for a different MCU should be fairly straight forward.
    - Independent kinematics. Another dimension of the HAL is the possibility of defining how the translation between machine coordinates and the motions is translated back and forth. This should theoretically allow µCNC to be easily adaptable to several types of machines like cartesian, coreXY, deltas and others. µCNC supports up to 6 axis.
    - As of version 1.2.0 the addition of a HAL config that allow the user to build link inputs and outputs of the controller to specific functions or modules (like using a generic input has an encoder input or a PWM output has a servo controller with a PID module)
+   - As of version 1.3.0 a new dimension to the HAL was added. The tool HAL. This allow to add multiple tools that can perform different task with µCNC.
 3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the hole wheel at least :-P). For that reason µCNC (tries) to use the exact same protocol has Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 ## Supporting the project
@@ -27,6 +28,7 @@ Version 1.3 added a couple of new features.
 
   - added support for SAMD21 MCU and the Arduino Zero/M0 boards.
   - new HAL for tool change and management.
+  - modified file structure and modified tinyUSB source code files to allow compiling and loading the firmware with Arduino IDE.
 
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
@@ -37,7 +39,7 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
-µCNC v1.2.1 added additional Gcode support.
+µCNC v1.3.x added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
@@ -84,13 +86,13 @@ TODO List of G-Codes in µCNC future releases:
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
 
 ### Current µCNC supported hardware
-µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). With v1.1.0 STM32F10x was added.
+µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
   - AVR (Arduino UNO/MEGA)
-  - SAMD21 (Arduino Zero/M0)
-  - STM32F1 (Bluepill)
+  - SAMD21 (Arduino Zero/M0) - v1.3.x
+  - STM32F1 (Bluepill) - v1.1.x
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
@@ -101,8 +103,8 @@ These changes are:
   - Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb), opening the possibilities and speed development for new MCU's
 
 Future versions are in plan for:
-  - Possibly integrate µCNC with Arduino IDE across all platforms (in study)
   - Add more hardware configurations (ESP32 integration will start soon)
 
 ### Building µCNC
 For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.
+Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino. See how to build the project for your board in the [wiki](https://github.com/Paciente8159/uCNC/wiki).
