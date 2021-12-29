@@ -17,11 +17,6 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include "../../../cnc.h"
 #include "../../../core/io_control.h"
 #include "../../../interface/settings.h"
@@ -29,7 +24,7 @@ extern "C"
 
 #include <stdbool.h>
 
-    /**
+/**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
  * This spindle also has a coolant pin assigned to DOUT1
  * 
@@ -39,53 +34,50 @@ extern "C"
 #define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 
-    static bool previous_lase_mode;
+static bool previous_lase_mode;
 
-    void laser1_startup_code(void)
-    {
-        //force laser mode
-        previous_lase_mode = g_settings.laser_mode;
-        g_settings.laser_mode = 1;
-    }
+void laser1_startup_code(void)
+{
+    //force laser mode
+    previous_lase_mode = g_settings.laser_mode;
+    g_settings.laser_mode = 1;
+}
 
-    void laser1_shutdown_code(void)
-    {
-        //restore laser mode
-        g_settings.laser_mode = previous_lase_mode;
-    }
+void laser1_shutdown_code(void)
+{
+    //restore laser mode
+    g_settings.laser_mode = previous_lase_mode;
+}
 
-    void laser1_set_speed(uint8_t value, bool invert)
-    {
+void laser1_set_speed(uint8_t value, bool invert)
+{
 //easy macro to execute the same code as below
 //SET_LASER(LASER_PWM, value, invert);
 
 //speed optimized version (in AVR it's 24 instruction cycles)
 #if LASER_PWM >= 0
-        if (LASER_PWM > 0)
-        {
-            mcu_set_pwm(LASER_PWM, value);
-        }
-#endif
-    }
-
-    void laser1_set_coolant(uint8_t value)
+    if (LASER_PWM > 0)
     {
-        //easy macro
-        SET_COOLANT(COOLANT_FLOOD, -1, value);
+        mcu_set_pwm(LASER_PWM, value);
     }
-
-    uint8_t laser1_get_speed(void) {
-        return mcu_get_pwm(LASER_PWM);
-    }
-
-    const tool_t __rom__ laser1 = {
-        .startup_code = &laser1_startup_code,
-        .shutdown_code = &laser1_shutdown_code,
-        .set_speed = &laser1_set_speed,
-        .set_coolant = NULL,
-        .get_speed = &laser1_get_speed,
-        .pid_controller = NULL};
-
-#ifdef __cplusplus
-}
 #endif
+}
+
+void laser1_set_coolant(uint8_t value)
+{
+    //easy macro
+    SET_COOLANT(COOLANT_FLOOD, -1, value);
+}
+
+uint8_t laser1_get_speed(void)
+{
+    return mcu_get_pwm(LASER_PWM);
+}
+
+const tool_t __rom__ laser1 = {
+    .startup_code = &laser1_startup_code,
+    .shutdown_code = &laser1_shutdown_code,
+    .set_speed = &laser1_set_speed,
+    .set_coolant = NULL,
+    .get_speed = &laser1_get_speed,
+    .pid_controller = NULL};

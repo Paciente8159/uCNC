@@ -18,11 +18,6 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 #include "../cnc.h"
 #include "../interface/grbl_interface.h"
 #include "../interface/settings.h"
@@ -787,7 +782,4 @@ extern "C"
         mcu_clear_output(STEP5_EN);
 #endif
     }
-
-#ifdef __cplusplus
-}
-#endif
+    
