@@ -199,6 +199,7 @@ extern "C"
 	void io_limits_isr(void);
 	void io_controls_isr(void);
 	void io_probe_isr(void);
+	void io_inputs_isr(void);
 
 	//inputs
 	bool io_check_boundaries(float *axis);

@@ -133,6 +133,10 @@ bool io_check_boundaries(float *axis)
     return true;
 }
 
+void io_inputs_isr(void)
+{
+}
+
 uint8_t io_get_limits(void)
 {
     uint8_t value = 0;
@@ -788,68 +792,68 @@ uint8_t io_get_analog(uint8_t pin)
     switch (pin)
     {
 #if (ANALOG0 >= 0)
-        case ANALOG0:
-            return mcu_get_analog(ANALOG0);
+    case ANALOG0:
+        return mcu_get_analog(ANALOG0);
 #endif
 #if (ANALOG1 >= 0)
-        case ANALOG1:
-            return mcu_get_analog(ANALOG1);
+    case ANALOG1:
+        return mcu_get_analog(ANALOG1);
 #endif
 #if (ANALOG2 >= 0)
-        case ANALOG2:
-            return mcu_get_analog(ANALOG2);
+    case ANALOG2:
+        return mcu_get_analog(ANALOG2);
 #endif
 #if (ANALOG3 >= 0)
-        case ANALOG3:
-            return mcu_get_analog(ANALOG3);
+    case ANALOG3:
+        return mcu_get_analog(ANALOG3);
 #endif
 #if (ANALOG4 >= 0)
-        case ANALOG4:
-            return mcu_get_analog(ANALOG4);
+    case ANALOG4:
+        return mcu_get_analog(ANALOG4);
 #endif
 #if (ANALOG5 >= 0)
-        case ANALOG5:
-            return mcu_get_analog(ANALOG5);
+    case ANALOG5:
+        return mcu_get_analog(ANALOG5);
 #endif
 #if (ANALOG6 >= 0)
-        case ANALOG6:
-            return mcu_get_analog(ANALOG6);
+    case ANALOG6:
+        return mcu_get_analog(ANALOG6);
 #endif
 #if (ANALOG7 >= 0)
-        case ANALOG7:
-            return mcu_get_analog(ANALOG7);
+    case ANALOG7:
+        return mcu_get_analog(ANALOG7);
 #endif
 #if (ANALOG8 >= 0)
-        case ANALOG8:
-            return mcu_get_analog(ANALOG8);
+    case ANALOG8:
+        return mcu_get_analog(ANALOG8);
 #endif
 #if (ANALOG9 >= 0)
-        case ANALOG9:
-            return mcu_get_analog(ANALOG9);
+    case ANALOG9:
+        return mcu_get_analog(ANALOG9);
 #endif
 #if (ANALOG10 >= 0)
-        case ANALOG10:
-            return mcu_get_analog(ANALOG10);
+    case ANALOG10:
+        return mcu_get_analog(ANALOG10);
 #endif
 #if (ANALOG11 >= 0)
-        case ANALOG11:
-            return mcu_get_analog(ANALOG11);
+    case ANALOG11:
+        return mcu_get_analog(ANALOG11);
 #endif
 #if (ANALOG12 >= 0)
-        case ANALOG12:
-            return mcu_get_analog(ANALOG12);
+    case ANALOG12:
+        return mcu_get_analog(ANALOG12);
 #endif
 #if (ANALOG13 >= 0)
-        case ANALOG13:
-            return mcu_get_analog(ANALOG13);
+    case ANALOG13:
+        return mcu_get_analog(ANALOG13);
 #endif
 #if (ANALOG14 >= 0)
-        case ANALOG14:
-            return mcu_get_analog(ANALOG14);
+    case ANALOG14:
+        return mcu_get_analog(ANALOG14);
 #endif
 #if (ANALOG15 >= 0)
-        case ANALOG15:
-            return mcu_get_analog(ANALOG15);
+    case ANALOG15:
+        return mcu_get_analog(ANALOG15);
 #endif
     }
 }

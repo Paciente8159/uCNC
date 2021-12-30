@@ -90,6 +90,19 @@ static void mcu_setup_clocks(void)
         while (GCLK->STATUS.bit.SYNCBUSY)
                 ;
 
+#if (SAMD21_EIC_MASK != 0)
+        GCLK->CLKCTRL.reg = (uint16_t)(GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_EIC);
+        EIC->CTRL.bit.ENABLE = 1;
+        while (EIC->STATUS.bit.SYNCBUSY)
+                ;
+        /*all external interrupts will be on pin change with filter*/
+        EIC->CONFIG[0].reg = 0xbbbbbbbb;
+        EIC->CONFIG[1].reg = 0xbbbbbbbb;
+        EIC->INTENSET.reg = SAMD21_EIC_MASK;
+        NVIC_ClearPendingIRQ(EIC_IRQn);
+        NVIC_SetPriority(EIC_IRQn, 6);
+        NVIC_EnableIRQ(EIC_IRQn);
+#endif
         //ADC clock
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;
         /* Wait for the write to complete. */
@@ -129,6 +142,57 @@ static void mcu_setup_clocks(void)
         while (ADC->STATUS.bit.SYNCBUSY)
                 ;
 }
+
+#if (SAMD21_EIC_MASK != 0)
+
+#if (PROBE_EICMASK != 0)
+static bool mcu_probe_isr_enabled;
+#endif
+
+void EIC_Handler(void)
+{
+        static bool running = false;
+        mcu_disable_global_isr();
+        if (running)
+        {
+                return;
+        }
+
+        running = true;
+        mcu_enable_global_isr();
+
+#if (LIMITS_EICMASK != 0)
+        if (EIC->INTFLAG.reg & LIMITS_EICMASK)
+        {
+                io_limits_isr();
+        }
+#endif
+#if (CONTROLS_EICMASK != 0)
+        if (EIC->INTFLAG.reg & CONTROLS_EICMASK)
+        {
+                io_controls_isr();
+        }
+#endif
+#if (PROBE_EICMASK != 0)
+        if (EIC->INTFLAG.reg & PROBE_EICMASK && mcu_probe_isr_enabled)
+        {
+                io_probe_isr();
+        }
+#endif
+#if (DIN_IO_EICMASK != 0)
+        if (EIC->INTFLAG.reg & DIN_IO_EICMASK)
+        {
+                io_inputs_isr();
+        }
+#endif
+
+        //clears interrupt flags
+        mcu_disable_global_isr();
+        running = false;
+        EIC->INTFLAG.reg = SAMD21_EIC_MASK;
+        mcu_enable_global_isr();
+}
+#endif
 
 void mcu_timer_isr(void)
 {
@@ -219,7 +283,7 @@ void mcu_usart_init(void)
 #endif
         NVIC_ClearPendingIRQ(COM_IRQ);
         NVIC_EnableIRQ(COM_IRQ);
-        NVIC_SetPriority(COM_IRQ, 10);
+        NVIC_SetPriority(COM_IRQ, 0);
 
         //enable COM
         COM->USART.CTRLA.bit.ENABLE = 1;
@@ -236,7 +300,7 @@ void mcu_usart_init(void)
         mcu_config_altfunc(USB_DP);
         NVIC_ClearPendingIRQ(USB_IRQn);
         NVIC_EnableIRQ(USB_IRQn);
-        NVIC_SetPriority(USB_IRQn, 10);
+        NVIC_SetPriority(USB_IRQn, 5);
 
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_USB;
         /* Wait for the write to complete. */
@@ -793,6 +857,9 @@ void mcu_init(void)
 #ifndef mcu_enable_probe_isr
 void mcu_enable_probe_isr(void)
 {
+#if (PROBE_EICMASK != 0)
+        mcu_probe_isr_enabled = true;
+#endif
 }
 #endif
 
@@ -803,6 +870,9 @@ void mcu_enable_probe_isr(void)
 #ifndef mcu_disable_probe_isr
 void mcu_disable_probe_isr(void)
 {
+#if (PROBE_EICMASK != 0)
+        mcu_probe_isr_enabled = false;
+#endif
 }
 #endif
 

@@ -13,6 +13,7 @@ File structure as changed and tinyUSB was modified and integrated to allow compi
 RC2 adds/fixes the following issue:
 
 ### Added
+  - implemented SAMD21 digital input ISR (#89)
   - implemented STM32F1 analog input reading (#88)
   - implemented io_control analog reading function (#88)
   - implemented SAMD21 analog reading function (#90)

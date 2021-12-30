@@ -68,9 +68,9 @@ extern "C"
 #define LIMIT_Z_PULLUP
 
 //Enable limits switch interrupt
-// #define LIMIT_X_ISR
-// #define LIMIT_Y_ISR
-// #define LIMIT_Z_ISR
+#define LIMIT_X_ISR
+#define LIMIT_Y_ISR
+#define LIMIT_Z_ISR
 
 //Setup control input pins
 #define ESTOP_BIT 2
@@ -90,9 +90,9 @@ extern "C"
 #define CS_RES_PULLUP
 
 //Enable controls switch interrupt
-// #define ESTOP_ISR
-// #define FHOLD_ISR
-// #define CS_RES_ISR
+#define ESTOP_ISR
+#define FHOLD_ISR
+#define CS_RES_ISR
 
 //On the STM32 always use sync TX UART (async doesn't work well)
 #ifdef COM_PORT

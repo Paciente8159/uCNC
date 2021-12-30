@@ -1014,6 +1014,301 @@ extern "C"
 #define COM_RX_PAD sercompad(_RX, RX_PAD)
 #endif
 
+/*ISR inputs*/
+#if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
+#define LIMIT_X_ISRBIT (LIMIT_X_BIT & 0x0F)
+#define LIMIT_X_ISRMASK (1 << (LIMIT_X_BIT & 0x0F))
+#define LIMIT_X_PMUXVAL 0
+#define LIMIT_X_PMUX (pinmux(LIMIT_X_PORT, LIMIT_X_BIT))
+#define DIO52_ISRBIT LIMIT_X_ISRBIT
+#define DIO52_ISRMASK LIMIT_X_ISRMASK
+#define DIO52_PMUXVAL 0
+#define DIO52_PMUX LIMIT_X_PMUX
+#else
+#define LIMIT_X_ISRMASK 0
+#define DIO52_ISRMASK 0
+#endif
+#if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
+#define LIMIT_Y_ISRBIT (LIMIT_Y_BIT & 0x0F)
+#define LIMIT_Y_ISRMASK (1 << (LIMIT_Y_BIT & 0x0F))
+#define LIMIT_Y_PMUXVAL 0
+#define LIMIT_Y_PMUX (pinmux(LIMIT_Y_PORT, LIMIT_Y_BIT))
+#define DIO53_ISRBIT LIMIT_Y_ISRBIT
+#define DIO53_ISRMASK LIMIT_Y_ISRMASK
+#define DIO53_PMUXVAL 0
+#define DIO53_PMUX LIMIT_Y_PMUX
+#else
+#define LIMIT_Y_ISRMASK 0
+#define DIO53_ISRMASK 0
+#endif
+#if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
+#define LIMIT_Z_ISRBIT (LIMIT_Z_BIT & 0x0F)
+#define LIMIT_Z_ISRMASK (1 << (LIMIT_Z_BIT & 0x0F))
+#define LIMIT_Z_PMUXVAL 0
+#define LIMIT_Z_PMUX (pinmux(LIMIT_Z_PORT, LIMIT_Z_BIT))
+#define DIO54_ISRBIT LIMIT_Z_ISRBIT
+#define DIO54_ISRMASK LIMIT_Z_ISRMASK
+#define DIO54_PMUXVAL 0
+#define DIO54_PMUX LIMIT_Z_PMUX
+#else
+#define LIMIT_Z_ISRMASK 0
+#define DIO54_ISRMASK 0
+#endif
+#if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
+#define LIMIT_X2_ISRBIT (LIMIT_X2_BIT & 0x0F)
+#define LIMIT_X2_ISRMASK (1 << (LIMIT_X2_BIT & 0x0F))
+#define LIMIT_X2_PMUXVAL 0
+#define LIMIT_X2_PMUX (pinmux(LIMIT_X2_PORT, LIMIT_X2_BIT))
+#define DIO55_ISRBIT LIMIT_X2_ISRBIT
+#define DIO55_ISRMASK LIMIT_X2_ISRMASK
+#define DIO55_PMUXVAL 0
+#define DIO55_PMUX LIMIT_X2_PMUX
+#else
+#define LIMIT_X2_ISRMASK 0
+#define DIO55_ISRMASK 0
+#endif
+#if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
+#define LIMIT_Y2_ISRBIT (LIMIT_Y2_BIT & 0x0F)
+#define LIMIT_Y2_ISRMASK (1 << (LIMIT_Y2_BIT & 0x0F))
+#define LIMIT_Y2_PMUXVAL 0
+#define LIMIT_Y2_PMUX (pinmux(LIMIT_Y2_PORT, LIMIT_Y2_BIT))
+#define DIO56_ISRBIT LIMIT_Y2_ISRBIT
+#define DIO56_ISRMASK LIMIT_Y2_ISRMASK
+#define DIO56_PMUXVAL 0
+#define DIO56_PMUX LIMIT_Y2_PMUX
+#else
+#define LIMIT_Y2_ISRMASK 0
+#define DIO56_ISRMASK 0
+#endif
+#if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
+#define LIMIT_Z2_ISRBIT (LIMIT_Z2_BIT & 0x0F)
+#define LIMIT_Z2_ISRMASK (1 << (LIMIT_Z2_BIT & 0x0F))
+#define LIMIT_Z2_PMUXVAL 0
+#define LIMIT_Z2_PMUX (pinmux(LIMIT_Z2_PORT, LIMIT_Z2_BIT))
+#define DIO57_ISRBIT LIMIT_Z2_ISRBIT
+#define DIO57_ISRMASK LIMIT_Z2_ISRMASK
+#define DIO57_PMUXVAL 0
+#define DIO57_PMUX LIMIT_Z2_PMUX
+#else
+#define LIMIT_Z2_ISRMASK 0
+#define DIO57_ISRMASK 0
+#endif
+#if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
+#define LIMIT_A_ISRBIT (LIMIT_A_BIT & 0x0F)
+#define LIMIT_A_ISRMASK (1 << (LIMIT_A_BIT & 0x0F))
+#define LIMIT_A_PMUXVAL 0
+#define LIMIT_A_PMUX (pinmux(LIMIT_A_PORT, LIMIT_A_BIT))
+#define DIO58_ISRBIT LIMIT_A_ISRBIT
+#define DIO58_ISRMASK LIMIT_A_ISRMASK
+#define DIO58_PMUXVAL 0
+#define DIO58_PMUX LIMIT_A_PMUX
+#else
+#define LIMIT_A_ISRMASK 0
+#define DIO58_ISRMASK 0
+#endif
+#if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
+#define LIMIT_B_ISRBIT (LIMIT_B_BIT & 0x0F)
+#define LIMIT_B_ISRMASK (1 << (LIMIT_B_BIT & 0x0F))
+#define LIMIT_B_PMUXVAL 0
+#define LIMIT_B_PMUX (pinmux(LIMIT_B_PORT, LIMIT_B_BIT))
+#define DIO59_ISRBIT LIMIT_B_ISRBIT
+#define DIO59_ISRMASK LIMIT_B_ISRMASK
+#define DIO59_PMUXVAL 0
+#define DIO59_PMUX LIMIT_B_PMUX
+#else
+#define LIMIT_B_ISRMASK 0
+#define DIO59_ISRMASK 0
+#endif
+#if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
+#define LIMIT_C_ISRBIT (LIMIT_C_BIT & 0x0F)
+#define LIMIT_C_ISRMASK (1 << (LIMIT_C_BIT & 0x0F))
+#define LIMIT_C_PMUXVAL 0
+#define LIMIT_C_PMUX (pinmux(LIMIT_C_PORT, LIMIT_C_BIT))
+#define DIO60_ISRBIT LIMIT_C_ISRBIT
+#define DIO60_ISRMASK LIMIT_C_ISRMASK
+#define DIO60_PMUXVAL 0
+#define DIO60_PMUX LIMIT_C_PMUX
+#else
+#define LIMIT_C_ISRMASK 0
+#define DIO60_ISRMASK 0
+#endif
+#if (defined(PROBE_ISR) && defined(PROBE))
+#define PROBE_ISRBIT (PROBE_BIT & 0x0F)
+#define PROBE_ISRMASK (1 << (PROBE_BIT & 0x0F))
+#define PROBE_PMUXVAL 0
+#define PROBE_PMUX (pinmux(PROBE_PORT, PROBE_BIT))
+#define DIO61_ISRBIT PROBE_ISRBIT
+#define DIO61_ISRMASK PROBE_ISRMASK
+#define DIO61_PMUXVAL 0
+#define DIO61_PMUX PROBE_PMUX
+#else
+#define PROBE_ISRMASK 0
+#define DIO61_ISRMASK 0
+#endif
+#if (defined(ESTOP_ISR) && defined(ESTOP))
+#define ESTOP_ISRBIT (ESTOP_BIT & 0x0F)
+#define ESTOP_ISRMASK (1 << (ESTOP_BIT & 0x0F))
+#define ESTOP_PMUXVAL 0
+#define ESTOP_PMUX (pinmux(ESTOP_PORT, ESTOP_BIT))
+#define DIO62_ISRBIT ESTOP_ISRBIT
+#define DIO62_ISRMASK ESTOP_ISRMASK
+#define DIO62_PMUXVAL 0
+#define DIO62_PMUX ESTOP_PMUX
+#else
+#define ESTOP_ISRMASK 0
+#define DIO62_ISRMASK 0
+#endif
+#if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
+#define SAFETY_DOOR_ISRBIT (SAFETY_DOOR_BIT & 0x0F)
+#define SAFETY_DOOR_ISRMASK (1 << (SAFETY_DOOR_BIT & 0x0F))
+#define SAFETY_DOOR_PMUXVAL 0
+#define SAFETY_DOOR_PMUX (pinmux(SAFETY_DOOR_PORT, SAFETY_DOOR_BIT))
+#define DIO63_ISRBIT SAFETY_DOOR_ISRBIT
+#define DIO63_ISRMASK SAFETY_DOOR_ISRMASK
+#define DIO63_PMUXVAL 0
+#define DIO63_PMUX SAFETY_DOOR_PMUX
+#else
+#define SAFETY_DOOR_ISRMASK 0
+#define DIO63_ISRMASK 0
+#endif
+#if (defined(FHOLD_ISR) && defined(FHOLD))
+#define FHOLD_ISRBIT (FHOLD_BIT & 0x0F)
+#define FHOLD_ISRMASK (1 << (FHOLD_BIT & 0x0F))
+#define FHOLD_PMUXVAL 0
+#define FHOLD_PMUX (pinmux(FHOLD_PORT, FHOLD_BIT))
+#define DIO64_ISRBIT FHOLD_ISRBIT
+#define DIO64_ISRMASK FHOLD_ISRMASK
+#define DIO64_PMUXVAL 0
+#define DIO64_PMUX FHOLD_PMUX
+#else
+#define FHOLD_ISRMASK 0
+#define DIO64_ISRMASK 0
+#endif
+#if (defined(CS_RES_ISR) && defined(CS_RES))
+#define CS_RES_ISRBIT (CS_RES_BIT & 0x0F)
+#define CS_RES_ISRMASK (1 << (CS_RES_BIT & 0x0F))
+#define CS_RES_PMUXVAL 0
+#define CS_RES_PMUX (pinmux(CS_RES_PORT, CS_RES_BIT))
+#define DIO65_ISRBIT CS_RES_ISRBIT
+#define DIO65_ISRMASK CS_RES_ISRMASK
+#define DIO65_PMUXVAL 0
+#define DIO65_PMUX CS_RES_PMUX
+#else
+#define CS_RES_ISRMASK 0
+#define DIO65_ISRMASK 0
+#endif
+#if (defined(DIN0_ISR) && defined(DIN0))
+#define DIN0_ISRBIT (DIN0_BIT & 0x0F)
+#define DIN0_ISRMASK (1 << (DIN0_BIT & 0x0F))
+#define DIN0_PMUXVAL 0
+#define DIN0_PMUX (pinmux(DIN0_PORT, DIN0_BIT))
+#define DIO82_ISRBIT DIN0_ISRBIT
+#define DIO82_ISRMASK DIN0_ISRMASK
+#define DIO82_PMUXVAL 0
+#define DIO82_PMUX DIN0_PMUX
+#else
+#define DIN0_ISRMASK 0
+#define DIO82_ISRMASK 0
+#endif
+#if (defined(DIN1_ISR) && defined(DIN1))
+#define DIN1_ISRBIT (DIN1_BIT & 0x0F)
+#define DIN1_ISRMASK (1 << (DIN1_BIT & 0x0F))
+#define DIN1_PMUXVAL 0
+#define DIN1_PMUX (pinmux(DIN1_PORT, DIN1_BIT))
+#define DIO83_ISRBIT DIN1_ISRBIT
+#define DIO83_ISRMASK DIN1_ISRMASK
+#define DIO83_PMUXVAL 0
+#define DIO83_PMUX DIN1_PMUX
+#else
+#define DIN1_ISRMASK 0
+#define DIO83_ISRMASK 0
+#endif
+#if (defined(DIN2_ISR) && defined(DIN2))
+#define DIN2_ISRBIT (DIN2_BIT & 0x0F)
+#define DIN2_ISRMASK (1 << (DIN2_BIT & 0x0F))
+#define DIN2_PMUXVAL 0
+#define DIN2_PMUX (pinmux(DIN2_PORT, DIN2_BIT))
+#define DIO84_ISRBIT DIN2_ISRBIT
+#define DIO84_ISRMASK DIN2_ISRMASK
+#define DIO84_PMUXVAL 0
+#define DIO84_PMUX DIN2_PMUX
+#else
+#define DIN2_ISRMASK 0
+#define DIO84_ISRMASK 0
+#endif
+#if (defined(DIN3_ISR) && defined(DIN3))
+#define DIN3_ISRBIT (DIN3_BIT & 0x0F)
+#define DIN3_ISRMASK (1 << (DIN3_BIT & 0x0F))
+#define DIN3_PMUXVAL 0
+#define DIN3_PMUX (pinmux(DIN3_PORT, DIN3_BIT))
+#define DIO85_ISRBIT DIN3_ISRBIT
+#define DIO85_ISRMASK DIN3_ISRMASK
+#define DIO85_PMUXVAL 0
+#define DIO85_PMUX DIN3_PMUX
+#else
+#define DIN3_ISRMASK 0
+#define DIO85_ISRMASK 0
+#endif
+#if (defined(DIN4_ISR) && defined(DIN4))
+#define DIN4_ISRBIT (DIN4_BIT & 0x0F)
+#define DIN4_ISRMASK (1 << (DIN4_BIT & 0x0F))
+#define DIN4_PMUXVAL 0
+#define DIN4_PMUX (pinmux(DIN4_PORT, DIN4_BIT))
+#define DIO86_ISRBIT DIN4_ISRBIT
+#define DIO86_ISRMASK DIN4_ISRMASK
+#define DIO86_PMUXVAL 0
+#define DIO86_PMUX DIN4_PMUX
+#else
+#define DIN4_ISRMASK 0
+#define DIO86_ISRMASK 0
+#endif
+#if (defined(DIN5_ISR) && defined(DIN5))
+#define DIN5_ISRBIT (DIN5_BIT & 0x0F)
+#define DIN5_ISRMASK (1 << (DIN5_BIT & 0x0F))
+#define DIN5_PMUXVAL 0
+#define DIN5_PMUX (pinmux(DIN5_PORT, DIN5_BIT))
+#define DIO87_ISRBIT DIN5_ISRBIT
+#define DIO87_ISRMASK DIN5_ISRMASK
+#define DIO87_PMUXVAL 0
+#define DIO87_PMUX DIN5_PMUX
+#else
+#define DIN5_ISRMASK 0
+#define DIO87_ISRMASK 0
+#endif
+#if (defined(DIN6_ISR) && defined(DIN6))
+#define DIN6_ISRBIT (DIN6_BIT & 0x0F)
+#define DIN6_ISRMASK (1 << (DIN6_BIT & 0x0F))
+#define DIN6_PMUXVAL 0
+#define DIN6_PMUX (pinmux(DIN6_PORT, DIN6_BIT))
+#define DIO88_ISRBIT DIN6_ISRBIT
+#define DIO88_ISRMASK DIN6_ISRMASK
+#define DIO88_PMUXVAL 0
+#define DIO88_PMUX DIN6_PMUX
+#else
+#define DIN6_ISRMASK 0
+#define DIO88_ISRMASK 0
+#endif
+#if (defined(DIN7_ISR) && defined(DIN7))
+#define DIN7_ISRBIT (DIN7_BIT & 0x0F)
+#define DIN7_ISRMASK (1 << (DIN7_BIT & 0x0F))
+#define DIN7_PMUXVAL 0
+#define DIN7_PMUX (pinmux(DIN7_PORT, DIN7_BIT))
+#define DIO89_ISRBIT DIN7_ISRBIT
+#define DIO89_ISRMASK DIN7_ISRMASK
+#define DIO89_PMUXVAL 0
+#define DIO89_PMUX DIN7_PMUX
+#else
+#define DIN7_ISRMASK 0
+#define DIO89_ISRMASK 0
+#endif
+
+#define LIMITS_EICMASK (LIMIT_X_ISRMASK | LIMIT_Y_ISRMASK | LIMIT_Z_ISRMASK | LIMIT_X2_ISRMASK | LIMIT_Y2_ISRMASK | LIMIT_Z2_ISRMASK | LIMIT_A_ISRMASK | LIMIT_B_ISRMASK | LIMIT_C_ISRMASK)
+#define CONTROLS_EICMASK (ESTOP_ISRMASK | SAFETY_DOOR_ISRMASK | FHOLD_ISRMASK | CS_RES_ISRMASK)
+#define PROBE_EICMASK (PROBE_ISRMASK)
+#define DIN_IO_EICMASK (DIN0_ISRMASK | DIN1_ISRMASK | DIN2_ISRMASK | DIN3_ISRMASK | DIN4_ISRMASK | DIN5_ISRMASK | DIN6_ISRMASK | DIN7_ISRMASK)
+
+#define SAMD21_EIC_MASK (LIMITS_EICMASK | CONTROLS_EICMASK | PROBE_EICMASK | DIN_IO_EICMASK)
+
 /*timers-unused*/
 #define gclk_clkctrl(X) (0x1A + (X >> 1))
 
@@ -2062,7 +2357,8 @@ extern "C"
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
 	})
 
-#define mcu_config_input_isr(diopin) ({})
+#define mcu_config_input_isr(diopin) (mcu_config_altfunc(diopin))
+
 #define mcu_config_pwm(diopin) (                                                     \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));       \
