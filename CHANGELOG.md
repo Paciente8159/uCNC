@@ -13,10 +13,11 @@ File structure as changed and tinyUSB was modified and integrated to allow compi
 RC2 adds/fixes the following issue:
 
 ### Added
-  - implemented SAMD21 digital input ISR (#89)
+  - implemented SAMD21 digital input ISR and io_inputs_isr (#89)
   - implemented STM32F1 analog input reading (#88)
   - implemented io_control analog reading function (#88)
   - implemented SAMD21 analog reading function (#90)
+  - implemented io_inputs_isr on AVR and STM32 (#91)
 
 ### Changed
   - modified file structure and tinyUSB was modified and integrated to allow compiling code using Arduino IDE (#87)
