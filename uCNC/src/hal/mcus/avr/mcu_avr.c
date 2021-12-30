@@ -91,6 +91,9 @@ ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 #if (PROBE_ISRA == 1)
         io_probe_isr();
 #endif
+#if (PCINTA_DIN_IO_MASK == 1)
+        io_inputs_isr();
+#endif
 }
 #endif
 #if (PCINTA_MASK == 4)
@@ -104,6 +107,9 @@ ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PROBE_ISRA == 4)
         io_probe_isr();
+#endif
+#if (PCINTA_DIN_IO_MASK == 4)
+        io_inputs_isr();
 #endif
 }
 #endif
@@ -119,6 +125,9 @@ ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 #if (PROBE_ISRA == 16)
         io_probe_isr();
 #endif
+#if (PCINTA_DIN_IO_MASK == 16)
+        io_inputs_isr();
+#endif
 }
 #endif
 #if (PCINTA_MASK == 64)
@@ -132,6 +141,9 @@ ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PROBE_ISRA == 64)
         io_probe_isr();
+#endif
+#if (PCINTA_DIN_IO_MASK == 64)
+        io_inputs_isr();
 #endif
 }
 #endif
@@ -147,6 +159,9 @@ ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 #if (PROBE_ISRB == 1)
         io_probe_isr();
 #endif
+#if (PCINTB_DIN_IO_MASK == 1)
+        io_inputs_isr();
+#endif
 }
 #endif
 #if (PCINTB_MASK == 4)
@@ -160,6 +175,9 @@ ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PROBE_ISRB == 4)
         io_probe_isr();
+#endif
+#if (PCINTB_DIN_IO_MASK == 4)
+        io_inputs_isr();
 #endif
 }
 #endif
@@ -175,6 +193,9 @@ ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 #if (PROBE_ISRB == 16)
         io_probe_isr();
 #endif
+#if (PCINTB_DIN_IO_MASK == 16)
+        io_inputs_isr();
+#endif
 }
 #endif
 #if (PCINTB_MASK == 64)
@@ -188,6 +209,9 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 #if (PROBE_ISRB == 64)
         io_probe_isr();
+#endif
+#if (PCINTB_DIN_IO_MASK == 64)
+        io_inputs_isr();
 #endif
 }
 #endif
@@ -217,6 +241,13 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
         if (CHECKBIT(diff, PROBE_BIT))
         {
                 io_probe_isr();
+        }
+#endif
+
+#if (PCINT0_DIN_IO_MASK != 0)
+        if (diff & PCINT0_DIN_IO_MASK)
+        {
+                io_inputs_isr();
         }
 #endif
 }
@@ -249,6 +280,13 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
                 io_probe_isr();
         }
 #endif
+
+#if (PCINT1_DIN_IO_MASK != 0)
+        if (diff & PCINT1_DIN_IO_MASK)
+        {
+                io_inputs_isr();
+        }
+#endif
 }
 #endif
 
@@ -277,6 +315,13 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
         if (CHECKBIT(diff, PROBE_BIT))
         {
                 io_probe_isr();
+        }
+#endif
+
+#if (PCINT2_DIN_IO_MASK != 0)
+        if (diff & PCINT2_DIN_IO_MASK)
+        {
+                io_inputs_isr();
         }
 #endif
 }
