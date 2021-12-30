@@ -5,6 +5,11 @@
 
 # Changelog
 
+## [1.3.1] - Unreleased
+
+### Changed
+  - modified ADC sampling frequencies on devices to make them more similar. The sample rate on all devices should be aprox. 125~100KHz (#91)
+
 ## [1.3.0] - 2021-12-30
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.

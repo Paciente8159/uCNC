@@ -170,6 +170,9 @@ extern "C"
 #define INCH_MM_MULT 25.4f
 #define MIN_SEC_MULT 0.0166666666666666667f
 #define UINT8_MAX_INV 0.0039215686274509804f
+#ifndef LOG2
+#define LOG2 0.3010299956639811952f
+#endif
 
 #define FORCEINLINE __attribute__((always_inline)) inline
 

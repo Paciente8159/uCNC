@@ -48,6 +48,7 @@
 volatile bool samd21_global_isr_enabled;
 
 //setups internal timers (all will run @ 1Mhz on GCLK4)
+#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU/1000000))
 static void mcu_setup_clocks(void)
 {
         PM->CPUSEL.reg = 0;
@@ -60,8 +61,8 @@ static void mcu_setup_clocks(void)
         PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
         PM->APBCMASK.reg |= PM_APBCMASK_ADC;
 
-        /* Configure GCLK4's divider - in this case, divided by 1 */
-        GCLK->GENDIV.reg = GCLK_GENDIV_ID(4) | GCLK_GENDIV_DIV(48);
+        /* Configure GCLK4's divider - to run @ 1Mhz*/
+        GCLK->GENDIV.reg = GCLK_GENDIV_ID(4) | GCLK_GENDIV_DIV(MAIN_CLOCK_DIV);
 
         while (GCLK->STATUS.bit.SYNCBUSY)
                 ;
