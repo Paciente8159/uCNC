@@ -56,7 +56,7 @@ extern const tool_t __rom__ laser1;
 #define ENCODERS 0
 #endif
 
-	/**
+/**
  * To use the PID controller 2 definitions are needed
  * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
  * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
