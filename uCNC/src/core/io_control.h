@@ -210,6 +210,8 @@ extern "C"
 	bool io_get_probe(void);
 	void io_set_homing_limits_filter(uint8_t filter_mask);
 
+	uint8_t io_get_analog(uint8_t pin);
+
 	//outputs
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);

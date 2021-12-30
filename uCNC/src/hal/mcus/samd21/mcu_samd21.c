@@ -58,6 +58,7 @@ static void mcu_setup_clocks(void)
         PM->APBAMASK.reg |= (PM_APBAMASK_PM | PM_APBAMASK_SYSCTRL | PM_APBAMASK_GCLK | PM_APBAMASK_RTC);
         PM->APBBMASK.reg |= (PM_APBBMASK_NVMCTRL | PM_APBBMASK_PORT | PM_APBBMASK_USB);
         PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
+        PM->APBCMASK.reg |= PM_APBCMASK_ADC;
 
         /* Configure GCLK4's divider - in this case, divided by 1 */
         GCLK->GENDIV.reg = GCLK_GENDIV_ID(4) | GCLK_GENDIV_DIV(48);
@@ -102,6 +103,44 @@ static void mcu_setup_clocks(void)
         NVIC_SetPriority(EIC_IRQn, 6);
         NVIC_EnableIRQ(EIC_IRQn);
 #endif
+        //ADC clock
+        GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;
+        /* Wait for the write to complete. */
+        while (GCLK->STATUS.bit.SYNCBUSY)
+                ;
+
+        //adc reset
+        ADC->CTRLA.bit.SWRST = 1;
+        while (ADC->STATUS.bit.SYNCBUSY)
+                ;
+        //set resolution
+        ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
+        ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
+        while (ADC->STATUS.bit.SYNCBUSY)
+                ;
+
+        //set ref voltage
+        ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_DIV2_Val;
+        ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val;
+        /* Wait for bus synchronization. */
+        while (ADC->STATUS.bit.SYNCBUSY)
+                ;
+
+        uint32_t bias = (*((uint32_t *)ADC_FUSES_BIASCAL_ADDR) & ADC_FUSES_BIASCAL_Msk) >> ADC_FUSES_BIASCAL_Pos;
+        uint32_t linearity = (*((uint32_t *)ADC_FUSES_LINEARITY_0_ADDR) & ADC_FUSES_LINEARITY_0_Msk) >> ADC_FUSES_LINEARITY_0_Pos;
+        linearity |= ((*((uint32_t *)ADC_FUSES_LINEARITY_1_ADDR) & ADC_FUSES_LINEARITY_1_Msk) >> ADC_FUSES_LINEARITY_1_Pos) << 5;
+
+        /* Wait for bus synchronization. */
+        while (ADC->STATUS.bit.SYNCBUSY)
+                ;
+
+        /* Write the calibration data. */
+        ADC->CALIB.reg = ADC_CALIB_BIAS_CAL(bias) | ADC_CALIB_LINEARITY_CAL(linearity);
+        ADC->AVGCTRL.reg = ADC_AVGCTRL_SAMPLENUM_1;
+        ADC->INPUTCTRL.bit.MUXNEG = 0x18; //select internal ground
+        ADC->CTRLA.bit.ENABLE = 1;
+        while (ADC->STATUS.bit.SYNCBUSY)
+                ;
 }
 
 #if (SAMD21_EIC_MASK != 0)
@@ -609,52 +648,68 @@ void mcu_init(void)
 #endif
 #endif
 #if ANALOG0 >= 0
-        mcu_config_input(ANALOG0);
+        mcu_config_analog(ANALOG0);
+        mcu_get_analog(ANALOG0);
 #endif
 #if ANALOG1 >= 0
-        mcu_config_input(ANALOG1);
+        mcu_config_analog(ANALOG1);
+        mcu_get_analog(ANALOG1);
 #endif
 #if ANALOG2 >= 0
-        mcu_config_input(ANALOG2);
+        mcu_config_analog(ANALOG2);
+        mcu_get_analog(ANALOG2);
 #endif
 #if ANALOG3 >= 0
-        mcu_config_input(ANALOG3);
+        mcu_config_analog(ANALOG3);
+        mcu_get_analog(ANALOG3);
 #endif
 #if ANALOG4 >= 0
-        mcu_config_input(ANALOG4);
+        mcu_config_analog(ANALOG4);
+        mcu_get_analog(ANALOG4);
 #endif
 #if ANALOG5 >= 0
-        mcu_config_input(ANALOG5);
+        mcu_config_analog(ANALOG5);
+        mcu_get_analog(ANALOG5);
 #endif
 #if ANALOG6 >= 0
-        mcu_config_input(ANALOG6);
+        mcu_config_analog(ANALOG6);
+        mcu_get_analog(ANALOG6);
 #endif
 #if ANALOG7 >= 0
-        mcu_config_input(ANALOG7);
+        mcu_config_analog(ANALOG7);
+        mcu_get_analog(ANALOG7);
 #endif
 #if ANALOG8 >= 0
-        mcu_config_input(ANALOG8);
+        mcu_config_analog(ANALOG8);
+        mcu_get_analog(ANALOG8);
 #endif
 #if ANALOG9 >= 0
-        mcu_config_input(ANALOG9);
+        mcu_config_analog(ANALOG9);
+        mcu_get_analog(ANALOG9);
 #endif
 #if ANALOG10 >= 0
-        mcu_config_input(ANALOG10);
+        mcu_config_analog(ANALOG10);
+        mcu_get_analog(ANALOG10);
 #endif
 #if ANALOG11 >= 0
-        mcu_config_input(ANALOG11);
+        mcu_config_analog(ANALOG11);
+        mcu_get_analog(ANALOG11);
 #endif
 #if ANALOG12 >= 0
-        mcu_config_input(ANALOG12);
+        mcu_config_analog(ANALOG12);
+        mcu_get_analog(ANALOG12);
 #endif
 #if ANALOG13 >= 0
-        mcu_config_input(ANALOG13);
+        mcu_config_analog(ANALOG13);
+        mcu_get_analog(ANALOG13);
 #endif
 #if ANALOG14 >= 0
-        mcu_config_input(ANALOG14);
+        mcu_config_analog(ANALOG14);
+        mcu_get_analog(ANALOG14);
 #endif
 #if ANALOG15 >= 0
-        mcu_config_input(ANALOG15);
+        mcu_config_analog(ANALOG15);
+        mcu_get_analog(ANALOG15);
 #endif
 #if DIN0 >= 0
         mcu_config_input(DIN0);

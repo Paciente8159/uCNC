@@ -135,6 +135,11 @@ extern "C"
 // #define DOUT15_BIT 17
 // #define DOUT15_PORT A
 
+//analog input
+// #define ANALOG0_BIT 5
+// #define ANALOG0_PORT A
+// #define ANALOG0_CHANNEL 5
+
 //coolant
 #define DOUT1_BIT 4
 #define DOUT1_PORT A
