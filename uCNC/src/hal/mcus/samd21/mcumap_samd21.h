@@ -1819,6 +1819,184 @@ extern "C"
 #define DIO35_DUTYCYCLE PWM15_DUTYCYCLE
 #endif
 
+/*Analog*/
+#if ANALOG0 >= 0
+#ifdef ANALOG0_CHANNEL
+#define ANALOG0_PMUXVAL 1
+#define ANALOG0_PMUX (pinmux(ANALOG0_PORT, ANALOG0_BIT))
+#endif
+#define DIO66_CHANNEL ANALOG0_CHANNEL
+#define DIO66_PMUXVAL ANALOG0_PMUXVAL
+#define DIO66_PMUX ANALOG0_PMUX
+#else
+#error "ANALOG0_CHANNEL not defined"
+#endif
+#if ANALOG1 >= 0
+#ifdef ANALOG1_CHANNEL
+#define ANALOG1_PMUXVAL 1
+#define ANALOG1_PMUX (pinmux(ANALOG1_PORT, ANALOG1_BIT))
+#endif
+#define DIO67_CHANNEL ANALOG1_CHANNEL
+#define DIO67_PMUXVAL ANALOG1_PMUXVAL
+#define DIO67_PMUX ANALOG1_PMUX
+#else
+#error "ANALOG1_CHANNEL not defined"
+#endif
+#if ANALOG2 >= 0
+#ifdef ANALOG2_CHANNEL
+#define ANALOG2_PMUXVAL 1
+#define ANALOG2_PMUX (pinmux(ANALOG2_PORT, ANALOG2_BIT))
+#endif
+#define DIO68_CHANNEL ANALOG2_CHANNEL
+#define DIO68_PMUXVAL ANALOG2_PMUXVAL
+#define DIO68_PMUX ANALOG2_PMUX
+#else
+#error "ANALOG2_CHANNEL not defined"
+#endif
+#if ANALOG3 >= 0
+#ifdef ANALOG3_CHANNEL
+#define ANALOG3_PMUXVAL 1
+#define ANALOG3_PMUX (pinmux(ANALOG3_PORT, ANALOG3_BIT))
+#endif
+#define DIO69_CHANNEL ANALOG3_CHANNEL
+#define DIO69_PMUXVAL ANALOG3_PMUXVAL
+#define DIO69_PMUX ANALOG3_PMUX
+#else
+#error "ANALOG3_CHANNEL not defined"
+#endif
+#if ANALOG4 >= 0
+#ifdef ANALOG4_CHANNEL
+#define ANALOG4_PMUXVAL 1
+#define ANALOG4_PMUX (pinmux(ANALOG4_PORT, ANALOG4_BIT))
+#endif
+#define DIO70_CHANNEL ANALOG4_CHANNEL
+#define DIO70_PMUXVAL ANALOG4_PMUXVAL
+#define DIO70_PMUX ANALOG4_PMUX
+#else
+#error "ANALOG4_CHANNEL not defined"
+#endif
+#if ANALOG5 >= 0
+#ifdef ANALOG5_CHANNEL
+#define ANALOG5_PMUXVAL 1
+#define ANALOG5_PMUX (pinmux(ANALOG5_PORT, ANALOG5_BIT))
+#endif
+#define DIO71_CHANNEL ANALOG5_CHANNEL
+#define DIO71_PMUXVAL ANALOG5_PMUXVAL
+#define DIO71_PMUX ANALOG5_PMUX
+#else
+#error "ANALOG5_CHANNEL not defined"
+#endif
+#if ANALOG6 >= 0
+#ifdef ANALOG6_CHANNEL
+#define ANALOG6_PMUXVAL 1
+#define ANALOG6_PMUX (pinmux(ANALOG6_PORT, ANALOG6_BIT))
+#endif
+#define DIO72_CHANNEL ANALOG6_CHANNEL
+#define DIO72_PMUXVAL ANALOG6_PMUXVAL
+#define DIO72_PMUX ANALOG6_PMUX
+#else
+#error "ANALOG6_CHANNEL not defined"
+#endif
+#if ANALOG7 >= 0
+#ifdef ANALOG7_CHANNEL
+#define ANALOG7_PMUXVAL 1
+#define ANALOG7_PMUX (pinmux(ANALOG7_PORT, ANALOG7_BIT))
+#endif
+#define DIO73_CHANNEL ANALOG7_CHANNEL
+#define DIO73_PMUXVAL ANALOG7_PMUXVAL
+#define DIO73_PMUX ANALOG7_PMUX
+#else
+#error "ANALOG7_CHANNEL not defined"
+#endif
+#if ANALOG8 >= 0
+#ifdef ANALOG8_CHANNEL
+#define ANALOG8_PMUXVAL 1
+#define ANALOG8_PMUX (pinmux(ANALOG8_PORT, ANALOG8_BIT))
+#endif
+#define DIO74_CHANNEL ANALOG8_CHANNEL
+#define DIO74_PMUXVAL ANALOG8_PMUXVAL
+#define DIO74_PMUX ANALOG8_PMUX
+#else
+#error "ANALOG8_CHANNEL not defined"
+#endif
+#if ANALOG9 >= 0
+#ifdef ANALOG9_CHANNEL
+#define ANALOG9_PMUXVAL 1
+#define ANALOG9_PMUX (pinmux(ANALOG9_PORT, ANALOG9_BIT))
+#endif
+#define DIO75_CHANNEL ANALOG9_CHANNEL
+#define DIO75_PMUXVAL ANALOG9_PMUXVAL
+#define DIO75_PMUX ANALOG9_PMUX
+#else
+#error "ANALOG9_CHANNEL not defined"
+#endif
+#if ANALOG10 >= 0
+#ifdef ANALOG10_CHANNEL
+#define ANALOG10_PMUXVAL 1
+#define ANALOG10_PMUX (pinmux(ANALOG10_PORT, ANALOG10_BIT))
+#endif
+#define DIO76_CHANNEL ANALOG10_CHANNEL
+#define DIO76_PMUXVAL ANALOG10_PMUXVAL
+#define DIO76_PMUX ANALOG10_PMUX
+#else
+#error "ANALOG10_CHANNEL not defined"
+#endif
+#if ANALOG11 >= 0
+#ifdef ANALOG11_CHANNEL
+#define ANALOG11_PMUXVAL 1
+#define ANALOG11_PMUX (pinmux(ANALOG11_PORT, ANALOG11_BIT))
+#endif
+#define DIO77_CHANNEL ANALOG11_CHANNEL
+#define DIO77_PMUXVAL ANALOG11_PMUXVAL
+#define DIO77_PMUX ANALOG11_PMUX
+#else
+#error "ANALOG11_CHANNEL not defined"
+#endif
+#if ANALOG12 >= 0
+#ifdef ANALOG12_CHANNEL
+#define ANALOG12_PMUXVAL 1
+#define ANALOG12_PMUX (pinmux(ANALOG12_PORT, ANALOG12_BIT))
+#endif
+#define DIO78_CHANNEL ANALOG12_CHANNEL
+#define DIO78_PMUXVAL ANALOG12_PMUXVAL
+#define DIO78_PMUX ANALOG12_PMUX
+#else
+#error "ANALOG12_CHANNEL not defined"
+#endif
+#if ANALOG13 >= 0
+#ifdef ANALOG13_CHANNEL
+#define ANALOG13_PMUXVAL 1
+#define ANALOG13_PMUX (pinmux(ANALOG13_PORT, ANALOG13_BIT))
+#endif
+#define DIO79_CHANNEL ANALOG13_CHANNEL
+#define DIO79_PMUXVAL ANALOG13_PMUXVAL
+#define DIO79_PMUX ANALOG13_PMUX
+#else
+#error "ANALOG13_CHANNEL not defined"
+#endif
+#if ANALOG14 >= 0
+#ifdef ANALOG14_CHANNEL
+#define ANALOG14_PMUXVAL 1
+#define ANALOG14_PMUX (pinmux(ANALOG14_PORT, ANALOG14_BIT))
+#endif
+#define DIO80_CHANNEL ANALOG14_CHANNEL
+#define DIO80_PMUXVAL ANALOG14_PMUXVAL
+#define DIO80_PMUX ANALOG14_PMUX
+#else
+#error "ANALOG14_CHANNEL not defined"
+#endif
+#if ANALOG15 >= 0
+#ifdef ANALOG15_CHANNEL
+#define ANALOG15_PMUXVAL 1
+#define ANALOG15_PMUX (pinmux(ANALOG15_PORT, ANALOG15_BIT))
+#endif
+#define DIO81_CHANNEL ANALOG15_CHANNEL
+#define DIO81_PMUXVAL ANALOG15_PMUXVAL
+#define DIO81_PMUX ANALOG15_PMUX
+#else
+#error "ANALOG15_CHANNEL not defined"
+#endif
+
 /*µCNC Pulse ISR*/
 #ifndef ITP_TIMER
 #define ITP_TIMER 5
@@ -1871,10 +2049,12 @@ extern "C"
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 2); \
 		SETBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT));       \
 	})
-#define mcu_config_analog(diopin) (                                              \
-	{                                                                            \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;    \
+#define mcu_config_analog(diopin) (                                                  \
+	{                                                                                \
+		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
+		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
+		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
 	})
 #define mcu_config_altfunc(diopin) (                                                 \
 	{                                                                                \
@@ -1899,7 +2079,23 @@ extern "C"
 #define mcu_toggle_output(diopin) (__indirect__(diopin, GPIO).OUTTGL.reg = (1UL << __indirect__(diopin, BIT)))
 
 #define mcu_set_pwm(diopin, pwmvalue) ({ (__indirect__(diopin, DUTYCYCLE)) = pwmvalue; })
-/*
+
+#define mcu_get_analog(diopin) (                                     \
+	{                                                                \
+		while (ADC->STATUS.bit.SYNCBUSY)                             \
+			ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                   \
+		;                                                            \
+		while (ADC->STATUS.bit.SYNCBUSY)                             \
+			;                                                        \
+		ADC->INPUTCTRL.bit.MUXPOS = (__indirect__(diopin, CHANNEL)); \
+		while (ADC->STATUS.bit.SYNCBUSY)                             \
+			;                                                        \
+		ADC->SWTRIG.bit.START = 1;                                   \
+		while (!(ADC->INTFLAG.bit.RESRDY))                           \
+			;                                                        \
+		ADC->RESULT.reg;                                             \
+	})
+	/*
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 #ifdef PROBE
 #ifdef PROBE_ISR
@@ -1911,9 +2107,17 @@ extern "C"
 #endif
 #endif
 */
-extern volatile bool samd21_global_isr_enabled;
-#define mcu_enable_global_isr() ({__enable_irq(); samd21_global_isr_enabled = true;})
-#define mcu_disable_global_isr() ({samd21_global_isr_enabled = false; __disable_irq(); })
+	extern volatile bool samd21_global_isr_enabled;
+#define mcu_enable_global_isr() (         \
+	{                                     \
+		__enable_irq();                   \
+		samd21_global_isr_enabled = true; \
+	})
+#define mcu_disable_global_isr() (         \
+	{                                      \
+		samd21_global_isr_enabled = false; \
+		__disable_irq();                   \
+	})
 #define mcu_get_global_isr() ({ samd21_global_isr_enabled; })
 
 #ifdef COM_PORT
