@@ -133,6 +133,11 @@
         return true;
     }
 
+    void io_inputs_isr(void)
+    {
+        
+    }
+
     uint8_t io_get_limits(void)
     {
         uint8_t value = 0;
