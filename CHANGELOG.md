@@ -13,7 +13,7 @@ File structure as changed and tinyUSB was modified and integrated to allow compi
 RC2 adds/fixes the following issue:
 
 ### Added
-  - added SAMD21 analog reading function (#)
+  - added SAMD21 analog reading function (#90)
 
 ### Changed
   - modified file structure and tinyUSB was modified and integrated to allow compiling code using Arduino IDE (#87)
