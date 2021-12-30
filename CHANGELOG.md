@@ -12,6 +12,9 @@ It also adds the new tool HAL that allows to have multiple tools in the µCNC an
 File structure as changed and tinyUSB was modified and integrated to allow compiling code using Arduino IDE.
 RC2 adds/fixes the following issue:
 
+### Added
+  - added SAMD21 analog reading function (#)
+
 ### Changed
   - modified file structure and tinyUSB was modified and integrated to allow compiling code using Arduino IDE (#87)
 
