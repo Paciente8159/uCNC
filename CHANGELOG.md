@@ -386,7 +386,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.3.rc2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc2
+[1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b
