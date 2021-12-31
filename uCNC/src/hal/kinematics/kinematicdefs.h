@@ -69,8 +69,8 @@ extern "C"
 #endif
 #if (AXIS_COUNT > 5)
 #define AXIS_C 5
-#ifndef STEP6
-#error "STEP6 is not configured for the number of AXIS defined"
+#ifndef STEP5
+#error "STEP5 is not configured for the number of AXIS defined"
 #endif
 #endif
 

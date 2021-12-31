@@ -713,22 +713,22 @@ void itp_step_isr(void)
                     if (!(itp_rt_sgm->next_dss & 0xF8))
                     {
                         itp_rt_sgm->block->total_steps <<= itp_rt_sgm->next_dss;
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0)
                         itp_rt_sgm->block->errors[0] <<= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1)
                         itp_rt_sgm->block->errors[1] <<= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2)
                         itp_rt_sgm->block->errors[2] <<= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3)
                         itp_rt_sgm->block->errors[3] <<= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4)
                         itp_rt_sgm->block->errors[4] <<= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5)
                         itp_rt_sgm->block->errors[5] <<= itp_rt_sgm->next_dss;
 #endif
                     }
@@ -736,22 +736,22 @@ void itp_step_isr(void)
                     {
                         itp_rt_sgm->next_dss = -itp_rt_sgm->next_dss;
                         itp_rt_sgm->block->total_steps >>= itp_rt_sgm->next_dss;
-#if (STEPPER_COUNT > 0 && defined(STEP0))
+#if (STEPPER_COUNT > 0)
                         itp_rt_sgm->block->errors[0] >>= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 1 && defined(STEP1))
+#if (STEPPER_COUNT > 1)
                         itp_rt_sgm->block->errors[1] >>= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 2 && defined(STEP2))
+#if (STEPPER_COUNT > 2)
                         itp_rt_sgm->block->errors[2] >>= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 3 && defined(STEP3))
+#if (STEPPER_COUNT > 3)
                         itp_rt_sgm->block->errors[3] >>= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 4 && defined(STEP4))
+#if (STEPPER_COUNT > 4)
                         itp_rt_sgm->block->errors[4] >>= itp_rt_sgm->next_dss;
 #endif
-#if (STEPPER_COUNT > 5 && defined(STEP5))
+#if (STEPPER_COUNT > 5)
                         itp_rt_sgm->block->errors[5] >>= itp_rt_sgm->next_dss;
 #endif
                     }
@@ -792,7 +792,7 @@ void itp_step_isr(void)
         if (itp_rt_sgm->block != NULL)
         {
 //prepares the next step bits mask
-#if (STEPPER_COUNT > 0 && STEP0 >= 0)
+#if (STEPPER_COUNT > 0)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 0)
@@ -839,7 +839,7 @@ void itp_step_isr(void)
 #endif
             }
 #endif
-#if (STEPPER_COUNT > 1 && STEP1 >= 0)
+#if (STEPPER_COUNT > 1)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 1)
@@ -886,7 +886,7 @@ void itp_step_isr(void)
 #endif
             }
 #endif
-#if (STEPPER_COUNT > 2 && STEP2 >= 0)
+#if (STEPPER_COUNT > 2)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 2)
@@ -933,7 +933,7 @@ void itp_step_isr(void)
 #endif
             }
 #endif
-#if (STEPPER_COUNT > 3 && STEP3 >= 0)
+#if (STEPPER_COUNT > 3)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 3)
@@ -980,7 +980,7 @@ void itp_step_isr(void)
 #endif
             }
 #endif
-#if (STEPPER_COUNT > 4 && STEP4 >= 0)
+#if (STEPPER_COUNT > 4)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 4)
@@ -1027,7 +1027,7 @@ void itp_step_isr(void)
 #endif
             }
 #endif
-#if (STEPPER_COUNT > 5 && STEP5 >= 0)
+#if (STEPPER_COUNT > 5)
             dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
             if (itp_rt_sgm->block->main_stepper == 5)
