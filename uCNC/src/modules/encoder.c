@@ -51,7 +51,7 @@ static uint8_t read_encoder_pulses(void)
     return value;
 }
 
-void encoders_isr(void)
+void encoders_update(void)
 {
     static uint8_t last_pulse = 0;
     uint8_t pulse = read_encoder_pulses();

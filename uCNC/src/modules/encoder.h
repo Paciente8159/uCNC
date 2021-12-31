@@ -101,7 +101,7 @@ extern "C"
 #define ENC7_MASK (1 << 7)
 #endif
 
-	void encoders_isr(void);
+	void encoders_update(void);
 	void encoders_get_position(uint8_t i);
 	void encoders_reset_position(void);
 
