@@ -102,8 +102,8 @@ extern "C"
 #endif
 
 	void encoders_isr(void);
-	void encoders_get_position(uint8_t i);
-	void encoders_reset_position(void);
+	void encoder_get_position(uint8_t i);
+	void encoder_reset_position(void);
 
 #ifdef __cplusplus
 }
