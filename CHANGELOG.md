@@ -8,7 +8,7 @@
 ## [1.3.1] - Unreleased
 
 ### Changed
-  - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder)
+  - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
 
 ## [1.3.0] - 2021-12-30
 
@@ -391,6 +391,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
