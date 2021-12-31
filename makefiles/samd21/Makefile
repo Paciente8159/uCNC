@@ -97,7 +97,9 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+BUILD_OPTIONS ?=
+
+C_DEFS =  $(BUILD_OPTIONS)\
 -DSAMD21 \
 -D__SAMD21E18A__ \
 -DBOARD=BOARD_$(BOARD)

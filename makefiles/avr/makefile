@@ -87,7 +87,9 @@ MCU = -mmcu=$(CPU)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+BUILD_OPTIONS ?=
+
+C_DEFS =  $(BUILD_OPTIONS)\
 -D$(BOARD) \
 -DBOARD=BOARD_$(BOARD)
 
