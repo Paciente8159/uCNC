@@ -19,8 +19,11 @@ TARGET = uCNC
 ######################################
 # building variables
 ######################################
+ifneq "$(findstring debug, $(MAKECMDGOALS))" ""
+DEBUG = 1
+endif
 # debug build?
-DEBUG = 0
+DEBUG ?= 0
 # optimization
 ifeq ($(DEBUG), 1)
 OPT = -Og
