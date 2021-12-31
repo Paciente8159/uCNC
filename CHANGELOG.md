@@ -5,6 +5,11 @@
 
 # Changelog
 
+## [1.3.1] - Unreleased
+
+### Changed
+  - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder)
+
 ## [1.3.0] - 2021-12-30
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
