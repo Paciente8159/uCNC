@@ -3574,14 +3574,6 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_get_analog(diopin) (                        \
-	{                                                   \
-		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
-		ADCSRA = (0xC0 | __indirect__(diopin, PRESC));  \
-		while (ADCSRA & 0x40)                           \
-			;                                           \
-		ADCH;                                           \
-	})
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
 #define mcu_disable_probe_isr() (CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
