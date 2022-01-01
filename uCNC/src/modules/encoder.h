@@ -102,7 +102,7 @@ extern "C"
 #endif
 
 	void encoders_update(void);
-	void encoders_get_position(uint8_t i);
+	int32_t encoders_get_position(uint8_t i);
 	void encoders_reset_position(void);
 
 #ifdef __cplusplus
