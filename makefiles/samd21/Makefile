@@ -19,7 +19,7 @@ TARGET = uCNC
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG ?= 0
 # optimization
 ifeq ($(DEBUG), 1)
 OPT = -Og
@@ -81,6 +81,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m0plus
+BOARD ?= MZERO
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -96,10 +97,12 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+BUILD_OPTIONS ?=
+
+C_DEFS =  $(BUILD_OPTIONS)\
 -DSAMD21 \
 -D__SAMD21E18A__ \
--DBOARD=BOARD_MZERO
+-DBOARD=BOARD_$(BOARD)
 
 # ifdef USE_USB
 # C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
