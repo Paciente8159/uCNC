@@ -21,6 +21,7 @@
 #include "../cnc.h"
 #include "../interface/grbl_interface.h"
 #include "../interface/settings.h"
+#include "../modules/encoder.h"
 #include "io_control.h"
 #include "parser.h"
 #include "interpolator.h"
@@ -135,6 +136,9 @@ bool io_check_boundaries(float *axis)
 
 void io_inputs_isr(void)
 {
+    #if ENCODERS > 0
+    encoders_update();
+    #endif
 }
 
 uint8_t io_get_limits(void)
