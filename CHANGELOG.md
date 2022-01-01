@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Fixed
+  - added tool PID to cnc scheduled tasks (#95)
+  
 ### Changed
   - modified makefiles to read a few command options (#96)
 
