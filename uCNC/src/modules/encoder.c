@@ -16,12 +16,13 @@
 	See the	GNU General Public License for more details.
 */
 
+#include "../cnc.h"
 #include "encoder.h"
 
 #if ENCODERS > 0
 static int32_t encoders_pos[ENCODERS];
 
-static uint8_t read_encoder_pulses(void)
+static FORCEINLINE uint8_t read_encoder_pulses(void)
 {
     uint8_t value = 0;
 #if ENCODERS > 0
@@ -51,7 +52,7 @@ static uint8_t read_encoder_pulses(void)
     return value;
 }
 
-static uint8_t read_encoder_dirs(void)
+static FORCEINLINE uint8_t read_encoder_dirs(void)
 {
     uint8_t value = 0;
 #if ENCODERS > 0
@@ -140,13 +141,17 @@ void encoders_update(void)
 #endif
 }
 
-int32_t encoders_get_position(uint8_t i)
+int32_t encoder_get_pos(uint8_t i)
 {
-    int32_t pos = encoders_pos[i];
-    return pos;
+    return encoders_pos[i];
 }
 
-void encoders_reset_position(void)
+void encoder_reset_pos(uint8_t i)
+{
+    encoders_pos[i] = 0;
+}
+
+void encoders_reset_pos(void)
 {
 #if ENCODERS > 0
     for (uint8_t i = 0; i < ENCODERS; i++)

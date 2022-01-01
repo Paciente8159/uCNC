@@ -5,6 +5,22 @@
 
 # Changelog
 
+## [1.3.1] - Unreleased
+
+Version 1.3.1 changes are:
+
+### Added
+  - added generic inputs ISR to AVR and STM32 (#94)
+  - added encoder specific reset function (#94)
+
+### Changed
+
+### Fixed
+  - fixed encoder module missing dir function and pulse previous state not being stored (#94)
+  - fixed input/limits/control ISR reentrancy in SAMD21 and STM32 (#94)
+  - call missing encoder update on input isr callback (#94)
+  - return argument on get_encoder_pos (#94)
+
 ## [1.3.rc2] - Unreleased
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
@@ -386,6 +402,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.rc2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc2
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
