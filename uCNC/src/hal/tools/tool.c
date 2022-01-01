@@ -222,8 +222,11 @@ void tool_stop()
 
 uint8_t tool_pid_update(void)
 {
+#ifdef USE_SPINDLE
 	if (tool_current.pid_controller)
 	{
 		return tool_current.pid_controller();
 	}
+#endif
+	return 0;
 }

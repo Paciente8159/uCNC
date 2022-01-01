@@ -20,7 +20,7 @@ TARGET = uCNC
 # building variables
 ######################################
 # debug build?
-DEBUG = 0
+DEBUG ?= 0
 # optimization
 # optimization
 ifeq ($(DEBUG), 1)
@@ -84,6 +84,7 @@ BIN = $(CP) -O binary -S
 #######################################
 # cpu
 CPU = -mcpu=cortex-m3
+BOARD ?= BLUEPILL
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -99,10 +100,12 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+BUILD_OPTIONS ?=
+
+C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F103x6 \
 -DSTM32F10X_MD \
--DBOARD=BOARD_BLUEPILL
+-DBOARD=BOARD_$(BOARD)
 
 # ifdef USE_USB
 # C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_STM32F1 \

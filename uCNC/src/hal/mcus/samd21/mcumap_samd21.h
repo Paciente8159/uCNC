@@ -892,32 +892,6 @@ extern "C"
 #define DIO101_GPIO USB_DP_GPIO
 #endif
 
-//define motor if motor is stepper or other
-#if (defined(STEP0_PORT) && defined(STEP0_BIT))
-#define STEP0_ISSTEPPER
-#endif
-#if (defined(STEP1_PORT) && defined(STEP1_BIT))
-#define STEP1_ISSTEPPER
-#endif
-#if (defined(STEP2_PORT) && defined(STEP2_BIT))
-#define STEP2_ISSTEPPER
-#endif
-#if (defined(STEP3_PORT) && defined(STEP3_BIT))
-#define STEP3_ISSTEPPER
-#endif
-#if (defined(STEP4_PORT) && defined(STEP4_BIT))
-#define STEP4_ISSTEPPER
-#endif
-#if (defined(STEP5_PORT) && defined(STEP5_BIT))
-#define STEP5_ISSTEPPER
-#endif
-#if (defined(STEP6_PORT) && defined(STEP6_BIT))
-#define STEP6_ISSTEPPER
-#endif
-#if (defined(STEP7_PORT) && defined(STEP7_BIT))
-#define STEP7_ISSTEPPER
-#endif
-
 #define __pinmuxevenodd0 PMUXE
 #define __pinmuxevenodd2 PMUXE
 #define __pinmuxevenodd4 PMUXE

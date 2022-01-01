@@ -243,7 +243,6 @@ void io_set_homing_limits_filter(uint8_t filter_mask)
 void io_set_steps(uint8_t mask)
 {
 #if (STEPPER_COUNT > 0 && (STEP0 >= 0))
-#ifndef STEP0_NOTSTEPPER
     if (mask & STEP0_MASK)
     {
         mcu_set_output(STEP0);
@@ -252,10 +251,9 @@ void io_set_steps(uint8_t mask)
     {
         mcu_clear_output(STEP0);
     }
-#endif
+
 #endif
 #if (STEPPER_COUNT > 1 && (STEP1 >= 0))
-#ifndef STEP1_NOTSTEPPER
     if (mask & STEP1_MASK)
     {
         mcu_set_output(STEP1);
@@ -265,9 +263,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP1);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 2 && (STEP2 >= 0))
-#ifndef STEP2_NOTSTEPPER
     if (mask & STEP2_MASK)
     {
         mcu_set_output(STEP2);
@@ -277,9 +273,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP2);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 3 && (STEP3 >= 0))
-#ifndef STEP3_NOTSTEPPER
     if (mask & STEP3_MASK)
     {
         mcu_set_output(STEP3);
@@ -289,9 +283,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP3);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 4 && (STEP4 >= 0))
-#ifndef STEP4_NOTSTEPPER
     if (mask & STEP4_MASK)
     {
         mcu_set_output(STEP4);
@@ -301,9 +293,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP4);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 5 && (STEP5 >= 0))
-#ifndef STEP5_NOTSTEPPER
     if (mask & STEP5_MASK)
     {
         mcu_set_output(STEP5);
@@ -313,9 +303,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP5);
     }
 #endif
-#endif
 #if (STEP6 >= 0)
-#ifndef STEP6_NOTSTEPPER
     if (mask & STEP6_MASK)
     {
         mcu_set_output(STEP6);
@@ -325,9 +313,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP6);
     }
 #endif
-#endif
 #if (STEP7 >= 0)
-#ifndef STEP7_NOTSTEPPER
     if (mask & STEP7_MASK)
     {
         mcu_set_output(STEP7);
@@ -337,81 +323,63 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP7);
     }
 #endif
-#endif
 }
 
 void io_toggle_steps(uint8_t mask)
 {
 #if (STEPPER_COUNT > 0 && (STEP0 >= 0))
-#ifdef STEP0_ISSTEPPER
     if (mask & STEP0_MASK)
     {
         mcu_toggle_output(STEP0);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 1 && (STEP1 >= 0))
-#ifdef STEP1_ISSTEPPER
     if (mask & STEP1_MASK)
     {
         mcu_toggle_output(STEP1);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 2 && (STEP2 >= 0))
-#ifdef STEP2_ISSTEPPER
     if (mask & STEP2_MASK)
     {
         mcu_toggle_output(STEP2);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 3 && (STEP3 >= 0))
-#ifdef STEP3_ISSTEPPER
     if (mask & STEP3_MASK)
     {
         mcu_toggle_output(STEP3);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 4 && (STEP4 >= 0))
-#ifdef STEP4_ISSTEPPER
     if (mask & STEP4_MASK)
     {
         mcu_toggle_output(STEP4);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 5 && (STEP5 >= 0))
-#ifdef STEP5_ISSTEPPER
     if (mask & STEP5_MASK)
     {
         mcu_toggle_output(STEP5);
     }
 #endif
-#endif
 #if (STEP6 >= 0)
-#ifdef STEP6_ISSTEPPER
     if (mask & STEP6_MASK)
     {
         mcu_toggle_output(STEP6);
     }
 #endif
-#endif
 #if (STEP7 >= 0)
-#ifdef STEP7_ISSTEPPER
     if (mask & STEP7_MASK)
     {
         mcu_toggle_output(STEP7);
     }
-#endif
 #endif
 }
 
 void io_set_dirs(uint8_t mask)
 {
 #if (STEPPER_COUNT > 0 && (DIR0 >= 0))
-#ifdef STEP0_ISSTEPPER
     if (mask & DIR0_MASK)
     {
         mcu_set_output(DIR0);
@@ -421,9 +389,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR0);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 1 && (DIR1 >= 0))
-#ifdef STEP1_ISSTEPPER
     if (mask & DIR1_MASK)
     {
         mcu_set_output(DIR1);
@@ -433,9 +399,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR1);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 2 && (DIR2 >= 0))
-#ifdef STEP2_ISSTEPPER
     if (mask & DIR2_MASK)
     {
         mcu_set_output(DIR2);
@@ -445,9 +409,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR2);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 3 && (DIR3 >= 0))
-#ifdef STEP3_ISSTEPPER
     if (mask & DIR3_MASK)
     {
         mcu_set_output(DIR3);
@@ -457,9 +419,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR3);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 4 && (DIR4 >= 0))
-#ifdef STEP4_ISSTEPPER
     if (mask & DIR4_MASK)
     {
         mcu_set_output(DIR4);
@@ -469,9 +429,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR4);
     }
 #endif
-#endif
 #if (STEPPER_COUNT > 5 && (DIR5 >= 0))
-#ifdef STEP5_ISSTEPPER
     if (mask & DIR5_MASK)
     {
         mcu_set_output(DIR5);
@@ -480,7 +438,6 @@ void io_set_dirs(uint8_t mask)
     {
         mcu_clear_output(DIR5);
     }
-#endif
 #endif
 }
 

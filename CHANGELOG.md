@@ -14,8 +14,11 @@ Version 1.3.1 changes are:
   - added encoder specific reset function (#94)
 
 ### Changed
+  - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
+  - modified makefiles to read a few command options (#96)
 
 ### Fixed
+  - added tool PID to cnc scheduled tasks (#95)
   - fixed encoder module missing dir function and pulse previous state not being stored (#94)
   - fixed input/limits/control ISR reentrancy in SAMD21 and STM32 (#94)
   - call missing encoder update on input isr callback (#94)
