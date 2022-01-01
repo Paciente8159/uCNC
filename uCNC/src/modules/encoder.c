@@ -109,12 +109,12 @@ void encoders_isr(void)
 #endif
 }
 
-void encoders_get_position(uint8_t i)
+void encoder_get_position(uint8_t i)
 {
     return g_encoders_pos[i];
 }
 
-void encoders_reset_position(void)
+void encoder_reset_position(void)
 {
 #if ENCODERS > 0
     for (uint8_t i = 0; i < ENCODERS; i++)
