@@ -21,12 +21,12 @@ Version 1.3.1 changes are:
   - call missing encoder update on input isr callback (#94)
   - return argument on get_encoder_pos (#94)
 
-## [1.3.rc2] - Unreleased
+## [1.3.0] - 2021-12-30
 
 Version 1.3 is a major revision an targets add SAMD21 (Arduino Zero and M0) support.
 It also adds the new tool HAL that allows to have multiple tools in the µCNC and support for gcode M6 command.
 File structure as changed and tinyUSB was modified and integrated to allow compiling code using Arduino IDE.
-RC2 adds/fixes the following issue:
+The final version implements/adds the following improvements:
 
 ### Added
   - implemented SAMD21 digital input ISR and io_inputs_isr (#89)
@@ -403,7 +403,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ### Initial release
 
 [1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
-[1.3.rc2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc2
+[1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc
 [1.3.b2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b2
 [1.3.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.b

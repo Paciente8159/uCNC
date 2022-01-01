@@ -37,12 +37,12 @@ extern "C"
 
 	typedef struct
 	{
-		tool_func startup_code;
-		tool_func shutdown_code;
-		tool_spindle_func set_speed;
-		tool_coolant_func set_coolant;
-		tool_func get_speed;
-		tool_func pid_controller;
+		tool_func startup_code; /*runs any custom code after the tool is loaded*/
+		tool_func shutdown_code; /*runs any custom code before the tool is unloaded*/
+		tool_spindle_func set_speed; /*sets the speed/power of the tool*/
+		tool_coolant_func set_coolant; /*enables/disables the coolant*/
+		tool_func get_speed; /*gets the tool speed/power*/
+		tool_func pid_controller; /*runs de PID update code needed to keep the tool at the desired speed/power*/
 	} tool_t;
 
 	void tool_init(void);
