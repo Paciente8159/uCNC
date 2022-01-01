@@ -7,6 +7,9 @@
 
 ### Fixed
   - added tool PID to cnc scheduled tasks (#95)
+  
+### Changed
+  - modified makefiles to read a few command options (#96)
 
 ## [1.3.0] - 2021-12-30
 
