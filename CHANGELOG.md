@@ -9,6 +9,10 @@
 
 ### Changed
   - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
+  - modified makefiles to read a few command options (#96)
+
+### Fixed
+  - added tool PID to cnc scheduled tasks (#95)
 
 ## [1.3.0] - 2021-12-30
 

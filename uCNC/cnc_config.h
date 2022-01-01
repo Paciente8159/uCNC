@@ -39,7 +39,9 @@ extern "C"
 // #define ENABLE_SYNC_RX
 
 //uncomment to enable USB VCP instead of serial hardware (for MCU's with Hardware USB)
+#if !defined(USB_VCP) && !defined(NO_USB_VCP)
 #define USB_VCP
+#endif
 
 /*
 	Choose the board
@@ -84,7 +86,9 @@ extern "C"
 	Sets/limits the number of tools to be used
 	The tool and tool order are configured in the cnc_hal_config.h
 */
+#ifndef TOOL_COUNT
 #define TOOL_COUNT 2
+#endif
 
 #if TOOL_COUNT > 0
 /*
@@ -98,7 +102,6 @@ extern "C"
 	This is used by spindle to ensure spindle gets up to speed in motions
 */
 #define DELAY_ON_RESUME_SPINDLE 4
-#define DELAY_ON_RESUME_COOLANT 1
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 //minimum output if the value of S is other then 0
 #define PWM_MIN_OUTPUT 1
@@ -109,6 +112,7 @@ extern "C"
 */
 #define USE_COOLANT
 #ifdef USE_COOLANT
+#define DELAY_ON_RESUME_COOLANT 1
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
 #endif

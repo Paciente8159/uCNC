@@ -69,6 +69,8 @@ extern const tool_t __rom__ laser1;
  * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
  * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
  * 
+ * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
+ * 
  * */
 	//here is an example on how to add an PID controller to the spindle
 	//this exemple assumes that the spindle speed is feedback via an analog pin
