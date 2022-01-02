@@ -11,7 +11,7 @@
 ### Added
   - added generic inputs ISR to AVR and STM32 (#94)
   - added encoder specific reset function (#94)
-  - added extra command $P to list the state of all pins. This output each configured pin state a formated message (#97)
+  - added extra command $P to list the state of all pins. This output each configured pin state a formatted message (#97)
 
 ### Changed
   - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
