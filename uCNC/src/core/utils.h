@@ -39,9 +39,15 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
+#ifndef MAX
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+#ifndef ABS
 #define ABS(a) (((a) > 0) ? (a) : -(a))
+#endif
 
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 #define __UINT32_R0__ 0

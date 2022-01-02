@@ -27,23 +27,6 @@ extern "C"
 //this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
 #define STEPPER_COUNT AXIS_COUNT
 
-/*
-	Uncomment this feature to enable tool length compensation
-*/
-#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
-#define AXIS_TOOL AXIS_Z
-#endif
-
-/*
-	Uncomment this feature to enable up to 2 dual drive axis
-*/
-//#define ENABLE_DUAL_DRIVE_AXIS
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-//defines the first dual drive capable step output
-//#define DUAL_DRIVE_AXIS0 X
-//#define DUAL_DRIVE_AXIS1 Y
-#endif
-
 	/*
 	Enable Skew compensation
 */

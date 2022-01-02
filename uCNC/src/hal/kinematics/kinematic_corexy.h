@@ -25,10 +25,6 @@ extern "C"
 #endif
 
 //define kynematics
-/*
-	Uncomment this feature to enable tool length compensation
-*/
-#define AXIS_TOOL AXIS_Z
 
 //this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
 #define STEPPER_COUNT AXIS_COUNT
