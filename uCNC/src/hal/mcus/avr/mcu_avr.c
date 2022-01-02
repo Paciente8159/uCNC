@@ -345,6 +345,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
+
 #define mcu_config_pwm(x)                                               \
         {                                                               \
                 SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));  \
@@ -352,6 +353,16 @@ ISR(COM_TX_vect, ISR_BLOCK)
                 __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER); \
                 __indirect__(x, OCRREG) = 0;                            \
         }
+
+#define ADC_PRESC (MIN(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
+#define mcu_get_analog(diopin) (                        \
+	{                                                   \
+		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
+		ADCSRA = (0xC0 | ADC_PRESC);  \
+		while (ADCSRA & 0x40)                           \
+			;                                           \
+		ADCH;                                           \
+	})
 
 static void mcu_start_rtc();
 

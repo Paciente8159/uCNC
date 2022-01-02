@@ -3382,67 +3382,51 @@ extern "C"
 
 //Analog channel and prescaller
 #ifdef ANALOG0
-#define DIO66_PRESC ANALOG0_PRESC
 #define DIO66_CHANNEL ANALOG0_CHANNEL
 #endif
 #ifdef ANALOG1
-#define DIO67_PRESC ANALOG1_PRESC
 #define DIO67_CHANNEL ANALOG1_CHANNEL
 #endif
 #ifdef ANALOG2
-#define DIO68_PRESC ANALOG2_PRESC
 #define DIO68_CHANNEL ANALOG2_CHANNEL
 #endif
 #ifdef ANALOG3
-#define DIO69_PRESC ANALOG3_PRESC
 #define DIO69_CHANNEL ANALOG3_CHANNEL
 #endif
 #ifdef ANALOG4
-#define DIO70_PRESC ANALOG4_PRESC
 #define DIO70_CHANNEL ANALOG4_CHANNEL
 #endif
 #ifdef ANALOG5
-#define DIO71_PRESC ANALOG5_PRESC
 #define DIO71_CHANNEL ANALOG5_CHANNEL
 #endif
 #ifdef ANALOG6
-#define DIO72_PRESC ANALOG6_PRESC
 #define DIO72_CHANNEL ANALOG6_CHANNEL
 #endif
 #ifdef ANALOG7
-#define DIO73_PRESC ANALOG7_PRESC
 #define DIO73_CHANNEL ANALOG7_CHANNEL
 #endif
 #ifdef ANALOG8
-#define DIO74_PRESC ANALOG8_PRESC
 #define DIO74_CHANNEL ANALOG8_CHANNEL
 #endif
 #ifdef ANALOG9
-#define DIO75_PRESC ANALOG9_PRESC
 #define DIO75_CHANNEL ANALOG9_CHANNEL
 #endif
 #ifdef ANALOG10
-#define DIO76_PRESC ANALOG10_PRESC
 #define DIO76_CHANNEL ANALOG10_CHANNEL
 #endif
 #ifdef ANALOG11
-#define DIO77_PRESC ANALOG11_PRESC
 #define DIO77_CHANNEL ANALOG11_CHANNEL
 #endif
 #ifdef ANALOG12
-#define DIO78_PRESC ANALOG12_PRESC
 #define DIO78_CHANNEL ANALOG12_CHANNEL
 #endif
 #ifdef ANALOG13
-#define DIO79_PRESC ANALOG13_PRESC
 #define DIO79_CHANNEL ANALOG13_CHANNEL
 #endif
 #ifdef ANALOG14
-#define DIO80_PRESC ANALOG14_PRESC
 #define DIO80_CHANNEL ANALOG14_CHANNEL
 #endif
 #ifdef ANALOG15
-#define DIO81_PRESC ANALOG15_PRESC
 #define DIO81_CHANNEL ANALOG15_CHANNEL
 #endif
 
@@ -3564,14 +3548,6 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_get_analog(diopin) (                        \
-	{                                                   \
-		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
-		ADCSRA = (0xC0 | __indirect__(diopin, PRESC));  \
-		while (ADCSRA & 0x40)                           \
-			;                                           \
-		ADCH;                                           \
-	})
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
 #define mcu_disable_probe_isr() (CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK))

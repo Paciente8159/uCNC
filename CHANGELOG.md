@@ -7,8 +7,6 @@
 
 ## [1.3.1] - Unreleased
 
-Version 1.3.1 changes are:
-
 ### Added
   - added generic inputs ISR to AVR and STM32 (#94)
   - added encoder specific reset function (#94)
@@ -17,6 +15,7 @@ Version 1.3.1 changes are:
 ### Changed
   - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
   - modified makefiles to read a few command options (#96)
+  - modified ADC sampling frequencies on devices to make them more similar. The sample rate on all devices should be aprox. 125~100KHz (#93)
 
 ### Fixed
   - added tool PID to cnc scheduled tasks (#95)
