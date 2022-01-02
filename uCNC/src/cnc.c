@@ -163,12 +163,12 @@ bool cnc_dotasks(void)
         return true;
     }
 
-#if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
+// #if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
     io_limits_isr();
-#endif
-#if ((CONTROLEN_MASK ^ CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
+// #endif
+// #if ((CONTROLEN_MASK ^ CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
     io_controls_isr();
-#endif
+// #endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
 

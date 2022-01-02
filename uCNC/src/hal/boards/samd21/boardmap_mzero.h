@@ -68,9 +68,10 @@ extern "C"
 #define LIMIT_Z_PULLUP
 
 //Enable limits switch interrupt
-#define LIMIT_X_ISR
-#define LIMIT_Y_ISR
-#define LIMIT_Z_ISR
+//REMOVED-LIMIT_Y and ESTOP share the same exti(2)
+// #define LIMIT_X_ISR
+// #define LIMIT_Y_ISR
+// #define LIMIT_Z_ISR
 
 //Setup control input pins
 #define ESTOP_BIT 2

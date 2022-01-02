@@ -48,7 +48,7 @@
 volatile bool samd21_global_isr_enabled;
 
 //setups internal timers (all will run @ 1Mhz on GCLK4)
-#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU/1000000))
+#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / 1000000))
 static void mcu_setup_clocks(void)
 {
         PM->CPUSEL.reg = 0;
@@ -93,18 +93,23 @@ static void mcu_setup_clocks(void)
 
 #if (SAMD21_EIC_MASK != 0)
         GCLK->CLKCTRL.reg = (uint16_t)(GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_EIC);
-        EIC->CTRL.bit.ENABLE = 1;
+        EIC->CTRL.bit.SWRST = 1;
         while (EIC->STATUS.bit.SYNCBUSY)
                 ;
         /*all external interrupts will be on pin change with filter*/
-        EIC->CONFIG[0].reg = 0xbbbbbbbb;
-        EIC->CONFIG[1].reg = 0xbbbbbbbb;
+        EIC->CONFIG[0].reg = (EIC_CONFIG_SENSE0_BOTH | EIC_CONFIG_FILTEN0 | EIC_CONFIG_SENSE1_BOTH | EIC_CONFIG_FILTEN1 | EIC_CONFIG_SENSE2_BOTH | EIC_CONFIG_FILTEN2 | EIC_CONFIG_SENSE3_BOTH | EIC_CONFIG_FILTEN3 | EIC_CONFIG_SENSE4_BOTH | EIC_CONFIG_FILTEN4 | EIC_CONFIG_SENSE5_BOTH | EIC_CONFIG_FILTEN5 | EIC_CONFIG_SENSE6_BOTH | EIC_CONFIG_FILTEN6 | EIC_CONFIG_SENSE7_BOTH | EIC_CONFIG_FILTEN7);
+        EIC->CONFIG[1].reg = (EIC_CONFIG_SENSE0_BOTH | EIC_CONFIG_FILTEN0 | EIC_CONFIG_SENSE1_BOTH | EIC_CONFIG_FILTEN1 | EIC_CONFIG_SENSE2_BOTH | EIC_CONFIG_FILTEN2 | EIC_CONFIG_SENSE3_BOTH | EIC_CONFIG_FILTEN3 | EIC_CONFIG_SENSE4_BOTH | EIC_CONFIG_FILTEN4 | EIC_CONFIG_SENSE5_BOTH | EIC_CONFIG_FILTEN5 | EIC_CONFIG_SENSE6_BOTH | EIC_CONFIG_FILTEN6 | EIC_CONFIG_SENSE7_BOTH | EIC_CONFIG_FILTEN7);
         NVIC_SetPriority(EIC_IRQn, 6);
         NVIC_ClearPendingIRQ(EIC_IRQn);
         NVIC_EnableIRQ(EIC_IRQn);
         EIC->EVCTRL.reg = 0;
         EIC->INTFLAG.reg = SAMD21_EIC_MASK;
-        EIC->INTENSET.reg = SAMD21_EIC_MASK;  
+        EIC->INTENSET.reg = SAMD21_EIC_MASK;
+        while (EIC->STATUS.bit.SYNCBUSY)
+                ;
+        EIC->CTRL.bit.ENABLE = 1;
+        while (EIC->STATUS.bit.SYNCBUSY)
+                ;
 #endif
         //ADC clock
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;
