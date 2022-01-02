@@ -219,7 +219,7 @@ extern "C"
 	 * The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
 	 * Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
 	 */
-#define DSS_MAX_OVERSAMPLING 0
+#define DSS_MAX_OVERSAMPLING 3
 
 /**
 	 * Modifies the bresenham algorithm to use a 16-version (experimental).
@@ -246,7 +246,7 @@ extern "C"
 	 * $SL - Settings load - Loads settings from EEPROM/Flash to SRAM
      * $SR - Settings reset - Reloads the default value settings from ROM to SRAM
 	 */
-// #define ENABLE_SETTING_EXTRA_CMDS
+#define ENABLE_SETTING_EXTRA_CMDS
 
 	/**
 	 * Compilation specific options
@@ -255,7 +255,7 @@ extern "C"
 	//#define FORCE_GLOBALS_TO_0
 
 	//saves a little program memory bytes but much more slow CRC check
-	//#define CRC_WITHOUT_LOOKUP_TABLE
+	#define CRC_WITHOUT_LOOKUP_TABLE
 
 	//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
 	//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
