@@ -5,7 +5,8 @@
 
 # Changelog
 
-## [1.3.1] - Unreleased
+## [1.3.1] - 2022-01-02
+µCNC version 1.3.1 has the following modifications:
 
 ### Added
   - added generic inputs ISR to AVR and STM32 (#94)
