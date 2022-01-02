@@ -56,7 +56,7 @@ extern const tool_t __rom__ laser1;
 #define ENCODERS 0
 #endif
 
-	/**
+/**
  * To use the PID controller 2 definitions are needed
  * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
  * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
@@ -68,6 +68,8 @@ extern const tool_t __rom__ laser1;
  * 
  * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
  * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
+ * 
+ * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
  * 
  * */
 	//here is an example on how to add an PID controller to the spindle

@@ -19,8 +19,11 @@ TARGET = uCNC
 ######################################
 # building variables
 ######################################
+# ifneq "$(findstring debug, $(MAKECMDGOALS))" ""
+# DEBUG = 1
+# endif
 # debug build?
-DEBUG = 0
+DEBUG ?= 0
 # optimization
 ifeq ($(DEBUG), 1)
 OPT = -Og
@@ -72,8 +75,9 @@ BIN = $(CP) -O binary -S
 # CFLAGS
 #######################################
 # cpu
-CPU = atmega328p
-FREQ = 16000000L
+CPU ?= atmega328p
+FREQ ?= 16000000L
+BOARD ?= UNO
 
 # mcu
 MCU = -mmcu=$(CPU)
@@ -83,9 +87,11 @@ MCU = -mmcu=$(CPU)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
--DUNO \
--DBOARD=BOARD_UNO
+BUILD_OPTIONS ?=
+
+C_DEFS =  $(BUILD_OPTIONS)\
+-D$(BOARD) \
+-DBOARD=BOARD_$(BOARD)
 
 # AS includes
 AS_INCLUDES = 

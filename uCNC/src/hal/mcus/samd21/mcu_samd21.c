@@ -99,10 +99,12 @@ static void mcu_setup_clocks(void)
         /*all external interrupts will be on pin change with filter*/
         EIC->CONFIG[0].reg = 0xbbbbbbbb;
         EIC->CONFIG[1].reg = 0xbbbbbbbb;
-        EIC->INTENSET.reg = SAMD21_EIC_MASK;
-        NVIC_ClearPendingIRQ(EIC_IRQn);
         NVIC_SetPriority(EIC_IRQn, 6);
+        NVIC_ClearPendingIRQ(EIC_IRQn);
         NVIC_EnableIRQ(EIC_IRQn);
+        EIC->EVCTRL.reg = 0;
+        EIC->INTFLAG.reg = SAMD21_EIC_MASK;
+        EIC->INTENSET.reg = SAMD21_EIC_MASK;  
 #endif
         //ADC clock
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;
@@ -156,6 +158,8 @@ void EIC_Handler(void)
         mcu_disable_global_isr();
         if (running)
         {
+                EIC->INTFLAG.reg = SAMD21_EIC_MASK;
+                mcu_enable_global_isr();
                 return;
         }
 

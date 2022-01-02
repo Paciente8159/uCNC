@@ -1303,32 +1303,6 @@ extern "C"
 #define DIO99_DIRREG (__dirreg__(RX_PORT))
 #endif
 
-//define motor if motor is stepper or other
-#if (defined(STEP0_PORT) && defined(STEP0_BIT))
-#define STEP0_ISSTEPPER
-#endif
-#if (defined(STEP1_PORT) && defined(STEP1_BIT))
-#define STEP1_ISSTEPPER
-#endif
-#if (defined(STEP2_PORT) && defined(STEP2_BIT))
-#define STEP2_ISSTEPPER
-#endif
-#if (defined(STEP3_PORT) && defined(STEP3_BIT))
-#define STEP3_ISSTEPPER
-#endif
-#if (defined(STEP4_PORT) && defined(STEP4_BIT))
-#define STEP4_ISSTEPPER
-#endif
-#if (defined(STEP5_PORT) && defined(STEP5_BIT))
-#define STEP5_ISSTEPPER
-#endif
-#if (defined(STEP6_PORT) && defined(STEP6_BIT))
-#define STEP6_ISSTEPPER
-#endif
-#if (defined(STEP7_PORT) && defined(STEP7_BIT))
-#define STEP7_ISSTEPPER
-#endif
-
 //ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO52_ISR (LIMIT_X_ISR)

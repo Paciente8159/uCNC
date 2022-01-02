@@ -7,8 +7,22 @@
 
 ## [1.3.1] - Unreleased
 
+### Added
+  - added generic inputs ISR to AVR and STM32 (#94)
+  - added encoder specific reset function (#94)
+  - added extra command $P to list the state of all pins. This output each configured pin state a formated message (#97)
+
 ### Changed
+  - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
+  - modified makefiles to read a few command options (#96)
   - modified ADC sampling frequencies on devices to make them more similar. The sample rate on all devices should be aprox. 125~100KHz (#93)
+
+### Fixed
+  - added tool PID to cnc scheduled tasks (#95)
+  - fixed encoder module missing dir function and pulse previous state not being stored (#94)
+  - fixed input/limits/control ISR reentrancy in SAMD21 and STM32 (#94)
+  - call missing encoder update on input isr callback (#94)
+  - return argument on get_encoder_pos (#94)
 
 ## [1.3.0] - 2021-12-30
 

@@ -184,34 +184,47 @@ void mcu_timer_isr(void)
 #if (ALL_EXTIBITMASK != 0)
 void mcu_input_isr(void)
 {
+	static bool running = false;
+	mcu_disable_global_isr();
+	if (running)
+	{
+		EXTI->PR = ALL_EXTIBITMASK;
+		mcu_enable_global_isr();
+		return;
+	}
+
+	running = true;
+	mcu_enable_global_isr();
+
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
 		io_limits_isr();
-		EXTI->PR = LIMITS_EXTIBITMASK;
 	}
 #endif
 #if (CONTROLS_EXTIBITMASK != 0)
 	if (EXTI->PR & CONTROLS_EXTIBITMASK)
 	{
 		io_controls_isr();
-		EXTI->PR = CONTROLS_EXTIBITMASK;
 	}
 #endif
 #if (PROBE_EXTIBITMASK & 0x01)
 	if (EXTI->PR & PROBE_EXTIBITMASK)
 	{
 		io_probe_isr();
-		EXTI->PR = PROBE_EXTIBITMASK;
 	}
 #endif
 #if (DIN_IO_EXTIBITMASK != 0)
 	if (EXTI->PR & DIN_IO_EXTIBITMASK)
 	{
 		io_inputs_isr();
-		EXTI->PR = DIN_IO_EXTIBITMASK;
 	}
 #endif
+
+	mcu_disable_global_isr();
+	running = false;
+	EXTI->PR = ALL_EXTIBITMASK;
+	mcu_enable_global_isr();
 }
 
 #if (ALL_EXTIBITMASK & 0x0001)

@@ -39,39 +39,21 @@ extern "C"
 //defines the axis word and the internal µCNC coordinate index
 #if (AXIS_COUNT > 0)
 #define AXIS_X 0
-#ifndef STEP0
-#error "STEP0 is not configured for the number of AXIS defined"
-#endif
 #endif
 #if (AXIS_COUNT > 1)
 #define AXIS_Y 1
-#ifndef STEP1
-#error "STEP1 is not configured for the number of AXIS defined"
-#endif
 #endif
 #if (AXIS_COUNT > 2)
 #define AXIS_Z 2
-#ifndef STEP2
-#error "STEP2 is not configured for the number of AXIS defined"
-#endif
 #endif
 #if (AXIS_COUNT > 3)
 #define AXIS_A 3
-#ifndef STEP3
-#error "STEP3 is not configured for the number of AXIS defined"
-#endif
 #endif
 #if (AXIS_COUNT > 4)
 #define AXIS_B 4
-#ifndef STEP4
-#error "STEP4 is not configured for the number of AXIS defined"
-#endif
 #endif
 #if (AXIS_COUNT > 5)
 #define AXIS_C 5
-#ifndef STEP6
-#error "STEP6 is not configured for the number of AXIS defined"
-#endif
 #endif
 
 //define kynematics

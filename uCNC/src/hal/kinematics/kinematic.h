@@ -47,11 +47,6 @@ extern "C"
 	uint8_t kinematics_home(void);
 
 	/*
-	In dual drive machines this translates which drive is locked when a particular limit switch is triggered during homing motion
-*/
-	void kinematics_lock_step(uint8_t limits_mask);
-
-	/*
 	Aplies a transformation to the position sent to planner.
 	This is aplied only on normal and jog moves. Homing motions go directly to planner.
 */

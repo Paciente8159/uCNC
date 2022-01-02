@@ -207,6 +207,7 @@ void cnc_scheduletasks(void)
         running = true;
         mcu_enable_global_isr();
         pid_update();
+        tool_pid_update();
 #ifdef LED
         //this blinks aprox. once every 1024ms
         if ((counter & 0x200))
