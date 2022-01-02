@@ -223,6 +223,8 @@ extern "C"
 	void io_enable_steppers(void);
 	void io_disable_steppers(void);
 
+	int16_t io_get_pinvalue(uint8_t pin);
+
 #ifdef __cplusplus
 }
 #endif

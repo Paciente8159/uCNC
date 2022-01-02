@@ -570,3 +570,47 @@ void protocol_send_cnc_settings(void)
 #endif
     protocol_busy = false;
 }
+
+#ifdef ENABLE_SETTING_EXTRA_CMDS
+void protocol_send_pins_states(void)
+{
+    protocol_busy = true;
+    for (uint8_t i = 0; i < 98; i++)
+    {
+        int16_t val = io_get_pinvalue(i);
+        if (val >= 0)
+        {
+            if (i < 20)
+            {
+                serial_print_str(__romstr__("[SO:"));
+            }
+            else if (i < 36)
+            {
+                serial_print_str(__romstr__("[P:"));
+            }
+            else if (i < 52)
+            {
+                serial_print_str(__romstr__("[O:"));
+            }
+            else if (i < 66)
+            {
+                serial_print_str(__romstr__("[SI:"));
+            }
+            else if (i < 82)
+            {
+                serial_print_str(__romstr__("[A:"));
+            }
+            else
+            {
+                serial_print_str(__romstr__("[I:"));
+            }
+            serial_print_int(i);
+            serial_putc(':');
+            serial_print_int(val);
+            serial_print_str(MSG_END);
+        }
+    }
+
+    protocol_busy = false;
+}
+#endif
