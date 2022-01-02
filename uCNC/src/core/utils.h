@@ -176,7 +176,6 @@ extern "C"
 
 #define FORCEINLINE __attribute__((always_inline)) inline
 
-
 	static FORCEINLINE uint8_t __atomic_in(void)
 	{
 		mcu_disable_global_isr();

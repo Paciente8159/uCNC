@@ -29,7 +29,7 @@
 ***************************************************************************
 */
 #include <stdio.h>
-#include "hal/mcus/virtual/mcumap_virtual.h"
+#include "../../uCNC/src/hal/mcus/virtual/mcumap_virtual.h"
 #include "virtualserial.h"
 
 #ifdef __linux__
