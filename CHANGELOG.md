@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.1] - 2022-01-02
+## [1.3.1] - Unrelease
 µCNC version 1.3.1 has the following modifications:
 
 ### Added
