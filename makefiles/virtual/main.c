@@ -1,4 +1,4 @@
-#include "cnc.h"
+#include "../../uCNC/src/cnc.h"
 
 void main(void) __attribute__((noreturn));
 void main(void)
