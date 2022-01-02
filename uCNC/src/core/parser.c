@@ -511,6 +511,9 @@ static uint8_t parser_grbl_command(void)
     case 'S':
         //new settings command
         break;
+    case 'P':
+        return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_PINS_STATES : STATUS_INVALID_STATEMENT;
+        break;
 #endif
     case EOL:
         return GRBL_HELP;
@@ -693,6 +696,9 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
         break;
     case GRBL_SETTINGS_DEFAULT:
         protocol_send_feedback(MSG_FEEDBACK_15);
+        break;
+    case GRBL_PINS_STATES:
+        protocol_send_pins_states();
         break;
 #endif
     default:
