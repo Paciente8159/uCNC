@@ -25,6 +25,7 @@
   - fixed input/limits/control ISR reentrancy in SAMD21 and STM32 (#94)
   - call missing encoder update on input isr callback (#94)
   - return argument on get_encoder_pos (#94)
+  - enforced soft polling of inputs and controls on cnc_dotasks. collision between LIMIT_Y and ESTOP shared exti(2) was preventing ESTOP from triggering actions (#99)
 
 ## [1.3.0] - 2021-12-30
 
