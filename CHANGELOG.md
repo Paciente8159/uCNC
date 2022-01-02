@@ -16,6 +16,7 @@
   - modified the preprocessor definitions for step generation algorithm and undefined step actuator pins (virtual steppers for servo+encoder) (#92)
   - modified makefiles to read a few command options (#96)
   - modified ADC sampling frequencies on devices to make them more similar. The sample rate on all devices should be aprox. 125~100KHz (#93)
+  - modified bresenham algorithm variables initialization. Produces the same result but keeps variables with half the value (doubles the number of supported steps) (#98)
 
 ### Fixed
   - added tool PID to cnc scheduled tasks (#95)
