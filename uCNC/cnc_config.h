@@ -246,7 +246,7 @@ extern "C"
 	 * $SL - Settings load - Loads settings from EEPROM/Flash to SRAM
      * $SR - Settings reset - Reloads the default value settings from ROM to SRAM
 	 */
-#define ENABLE_SETTING_EXTRA_CMDS
+// #define ENABLE_SETTING_EXTRA_CMDS
 
 	/**
 	 * Compilation specific options

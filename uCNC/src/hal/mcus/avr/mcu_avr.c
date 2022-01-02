@@ -354,16 +354,6 @@ ISR(COM_TX_vect, ISR_BLOCK)
                 __indirect__(x, OCRREG) = 0;                            \
         }
 
-#define ADC_PRESC (MIN(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin) (                        \
-	{                                                   \
-		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
-		ADCSRA = (0xC0 | ADC_PRESC);  \
-		while (ADCSRA & 0x40)                           \
-			;                                           \
-		ADCH;                                           \
-	})
-
 static void mcu_start_rtc();
 
 void mcu_init(void)

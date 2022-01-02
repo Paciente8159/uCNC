@@ -3548,6 +3548,23 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
+#define _min(a,b) (((a) < (b)) ? (a) : (b))
+#ifndef LOG2
+#define LOG2 0.3010299956639811952f
+#endif
+#ifndef F_CPU
+#define F_CPU 16000000UL
+#endif
+#define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
+#define mcu_get_analog(diopin) (                        \
+	{                                                   \
+		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
+		ADCSRA = (0xC0 | ADC_PRESC);  \
+		while (ADCSRA & 0x40)                           \
+			;                                           \
+		ADCH;                                           \
+	})
+
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
 #define mcu_disable_probe_isr() (CLEARFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
