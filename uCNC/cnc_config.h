@@ -87,7 +87,7 @@ extern "C"
 	The tool and tool order are configured in the cnc_hal_config.h
 */
 #ifndef TOOL_COUNT
-#define TOOL_COUNT 2
+#define TOOL_COUNT 1
 #endif
 
 #if TOOL_COUNT > 0

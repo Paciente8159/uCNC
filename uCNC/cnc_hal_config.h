@@ -38,11 +38,11 @@ extern "C"
 
 //declare the tool to be used
 extern const tool_t __rom__ spindle1;
-extern const tool_t __rom__ laser1;
+//extern const tool_t __rom__ laser1;
 
 //assign the tools from 1 to 16
 #define TOOL1 spindle1
-#define TOOL2 laser1
+//#define TOOL2 laser1
 
 #if DOUT15 >= 0
 #define LED DOUT15
