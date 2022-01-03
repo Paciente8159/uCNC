@@ -133,8 +133,8 @@ extern "C"
 
 //These parameters adjust the PID to use integer math only and output limiting (usually to be used with PWM)
 #define PID_BITSHIFT_FACTOR 8
-#define PID_OUTPUT_MAX 255
-#define PID_OUTPUT_MIN 0
+#define PID_OUTPUT_MAX 127
+#define PID_OUTPUT_MIN -127
 
 	void pid_init(void);
 	void pid_update(void);
