@@ -196,7 +196,13 @@ extern "C"
 		}
 	}
 
+	static FORCEINLINE uint8_t __atomic_out_on()
+	{
+		mcu_enable_global_isr();
+	}
+
 #define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC_FORCEON__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 0, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
 
 #ifdef __cplusplus
 }

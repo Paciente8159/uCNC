@@ -198,9 +198,6 @@ bool cnc_dotasks(void)
 void cnc_scheduletasks(void)
 {
     static bool running = false;
-    static uint32_t counter = 0;
-    mcu_disable_global_isr();
-    counter++;
 
     if (!running)
     {
@@ -210,7 +207,7 @@ void cnc_scheduletasks(void)
         tool_pid_update();
 #ifdef LED
         //this blinks aprox. once every 1024ms
-        if ((counter & 0x200))
+        if ((mcu_millis() & 0x200))
         {
             io_set_output(LED, true);
         }
@@ -223,8 +220,6 @@ void cnc_scheduletasks(void)
         mcu_disable_global_isr();
         running = false;
     }
-
-    mcu_enable_global_isr();
 }
 
 void cnc_home(void)

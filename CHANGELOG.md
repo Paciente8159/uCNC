@@ -5,6 +5,11 @@
 
 # Changelog
 
+### Changed
+  - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code.
+  - simplified global ISR unlocking inside cnc_scheduletasks
+  - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable.
+
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
 
