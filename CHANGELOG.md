@@ -5,6 +5,10 @@
 
 # Changelog
 
+### Changed
+  - modified encoder module to allow it work has a unidirectional encoder (simple counter)
+  - moved encoder and PID definitions to cnc_hal_config.h
+
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
 

@@ -94,49 +94,49 @@ void encoders_update(void)
 #if ENCODERS > 0
     if ((diff & ENC0_MASK & pulse))
     {
-        encoders_pos[0] += (dir && ENC0_MASK) ? -1 : 1;
+        encoders_pos[0] += (dir && ENC0_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 1
     if ((diff & ENC1_MASK & pulse))
     {
-        encoders_pos[1] += (dir & ENC1_MASK) ? -1 : 1;
+        encoders_pos[1] += (dir & ENC1_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 2
     if ((diff & ENC2_MASK & pulse))
     {
-        encoders_pos[2] += (dir & ENC2_MASK) ? -1 : 1;
+        encoders_pos[2] += (dir & ENC2_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 3
     if ((diff & ENC3_MASK & pulse))
     {
-        encoders_pos[3] += (dir & ENC3_MASK) ? -1 : 1;
+        encoders_pos[3] += (dir & ENC3_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 4
     if ((diff & ENC4_MASK & pulse))
     {
-        encoders_pos[4] += (dir & ENC4_MASK) ? -1 : 1;
+        encoders_pos[4] += (dir & ENC4_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 5
     if ((diff & ENC5_MASK & pulse))
     {
-        encoders_pos[5] += (dir & ENC5_MASK) ? -1 : 1;
+        encoders_pos[5] += (dir & ENC5_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 6
     if ((diff & ENC6_MASK & pulse))
     {
-        encoders_pos[6] += (dir & ENC6_MASK) ? -1 : 1;
+        encoders_pos[6] += (dir & ENC6_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 7
     if ((diff & ENC7_MASK & pulse))
     {
-        encoders_pos[7] += (dir & ENC7_MASK) ? -1 : 1;
+        encoders_pos[7] += (dir & ENC7_MASK) ? 1 : -1;
     }
 #endif
 }
