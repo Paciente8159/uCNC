@@ -220,7 +220,8 @@ void planner_add_line(motion_data_t *block_data)
 
         //sets the maximum allowed speed at junction (if angle doesn't force a full stop)
         float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : g_settings.g64_angle_factor);
-        angle_factor = CLAMP(angle_factor - factor, 0, 1);
+        angle_factor = MAX(angle_factor - factor, 0);
+        angle_factor = MIN(angle_factor, 1);
 
         if (angle_factor < 1.0f)
         {

@@ -420,9 +420,9 @@ void itp_run(void)
             current_speed = 0;
         }
 
+        float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), remaining_steps);
         //if traveled distance is less the one step fits at least one step
-        float partial_distance = CLAMP((current_speed * INTEGRATOR_DELTA_T), 1.0f, remaining_steps);
-        
+        partial_distance = MAX(partial_distance, 1.0f);
         //computes how many steps it will perform at this speed and frame window
         uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 
