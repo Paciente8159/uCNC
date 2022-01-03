@@ -5,6 +5,10 @@
 
 # Changelog
 
+### Changed
+  - modified/fixed PID controller to output positive/negative variation result
+  - added CLAMP macro to utils.h
+
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
 

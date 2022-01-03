@@ -45,6 +45,9 @@ extern "C"
 #ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
+#ifndef CLAMP
+#define CLAMP(a, b, c) (MIN((c), MAX((a), (b))))
+#endif
 #ifndef ABS
 #define ABS(a) (((a) > 0) ? (a) : -(a))
 #endif

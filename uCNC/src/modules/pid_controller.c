@@ -194,8 +194,8 @@ void pid_update(void)
             if (ki[current_pid])
             {
                 int64_t sum = cumulative_delta[current_pid] + error;
-                sum = MIN(sum, 0x7FFFFFFF);
-                cumulative_delta[current_pid] = (int32_t)MAX(sum, -0x7FFFFFFF);
+                sum = CLAMP(sum, -0x7FFFFFFF, 0x7FFFFFFF);
+                cumulative_delta[current_pid] = (int32_t)sum;
 
                 output += ki[current_pid] * cumulative_delta[current_pid];
             }
@@ -207,10 +207,12 @@ void pid_update(void)
             }
 
             last_error[current_pid] = error;
+            bool isneg = (output<0) ? true : false;
+            output = (!isneg) ? output : -output;
             output >>= PID_BITSHIFT_FACTOR;
-            output = MIN(output, PID_OUTPUT_MAX);
-            output = MAX(output, PID_OUTPUT_MIN);
-            uint8_t pid_result = (uint8_t)output;
+            output = (!isneg) ? output : -output;
+            output = CLAMP(output, PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+            int8_t pid_result = (int8_t)output;
             pid_set_output(current_pid, pid_result);
         }
 
