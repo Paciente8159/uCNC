@@ -131,9 +131,9 @@ C_INCLUDES =  \
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
 # compile gcc flags
-ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -nostdlib -fno-threadsafe-statics -fno-rtti -fno-exceptions
 
-CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -nostdlib -fno-threadsafe-statics -fno-rtti -fno-exceptions
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g3 -ggdb3 -gdwarf-2

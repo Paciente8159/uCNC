@@ -198,19 +198,39 @@ bool cnc_dotasks(void)
 void cnc_scheduletasks(void)
 {
     static bool running = false;
-    static uint32_t counter = 0;
-    mcu_disable_global_isr();
-    counter++;
+    static uint8_t last_limits = 0;
+    static uint8_t last_controls = 0;
 
     if (!running)
     {
         running = true;
         mcu_enable_global_isr();
-        pid_update();
-        tool_pid_update();
+//checks any limit or control input state change (every 16ms)
+#if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
+        uint8_t millis = (uint8_t)(0xff & mcu_millis());
+        if ((millis & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
+        {
+            uint8_t inputs = io_get_limits();
+            uint8_t diff = (inputs ^ last_limits) & inputs;
+            last_limits = inputs;
+            if (diff != 0)
+            {
+                io_limits_isr();
+            }
+            inputs = io_get_controls();
+            diff = (inputs ^ last_controls) & inputs;
+            last_controls = inputs;
+            if (diff != 0)
+            {
+                io_controls_isr();
+            }
+            pid_update();
+            tool_pid_update();
+        }
+#endif
 #ifdef LED
         //this blinks aprox. once every 1024ms
-        if ((counter & 0x200))
+        if ((mcu_millis() & 0x200))
         {
             io_set_output(LED, true);
         }
@@ -223,8 +243,6 @@ void cnc_scheduletasks(void)
         mcu_disable_global_isr();
         running = false;
     }
-
-    mcu_enable_global_isr();
 }
 
 void cnc_home(void)

@@ -154,18 +154,7 @@ static bool mcu_probe_isr_enabled;
 
 void EIC_Handler(void)
 {
-        static bool running = false;
         mcu_disable_global_isr();
-        if (running)
-        {
-                EIC->INTFLAG.reg = SAMD21_EIC_MASK;
-                mcu_enable_global_isr();
-                return;
-        }
-
-        running = true;
-        mcu_enable_global_isr();
-
 #if (LIMITS_EICMASK != 0)
         if (EIC->INTFLAG.reg & LIMITS_EICMASK)
         {
@@ -191,9 +180,6 @@ void EIC_Handler(void)
         }
 #endif
 
-        //clears interrupt flags
-        mcu_disable_global_isr();
-        running = false;
         EIC->INTFLAG.reg = SAMD21_EIC_MASK;
         mcu_enable_global_isr();
 }
@@ -345,8 +331,10 @@ void SysTick_Handler(void)
 void sysTickHook(void)
 #endif
 {
+        mcu_disable_global_isr();
         mcu_runtime_ms++;
         cnc_scheduletasks();
+        mcu_enable_global_isr();
 }
 
 void mcu_tick_init()
