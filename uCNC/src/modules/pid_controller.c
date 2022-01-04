@@ -175,8 +175,6 @@ void pid_init(void)
 
 void pid_update(void)
 {
-    tool_pid_update();
-
 #if (PID_CONTROLLERS > 0)
 
     static uint8_t current_pid = 0;
