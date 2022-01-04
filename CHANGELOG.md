@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Changed
+  - modified feed override flags so M48/M49 will only affect at code execution order
+
 ### Fixed
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value
   - fixed M48/M49 parsing error (after calling overrides were always turned off)
