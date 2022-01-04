@@ -102,9 +102,9 @@ extern "C"
 #endif
 
 	void encoders_update(void);
-	int32_t encoder_get_pos(uint8_t i);
-	void encoder_reset_pos(uint8_t i);
-	void encoders_reset_pos(void);
+	int32_t encoder_get_position(uint8_t i);
+	void encoder_reset_position(uint8_t i, int32_t position);
+	void encoders_reset_position(void);
 
 #ifdef __cplusplus
 }

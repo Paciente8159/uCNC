@@ -141,17 +141,20 @@ void encoders_update(void)
 #endif
 }
 
-int32_t encoder_get_pos(uint8_t i)
+int32_t encoder_get_position(uint8_t i)
 {
     return encoders_pos[i];
 }
 
-void encoder_reset_pos(uint8_t i)
+void encoder_reset_position(uint8_t i, int32_t position);
 {
-    encoders_pos[i] = 0;
+    __ATOMIC__
+    {
+        encoders_pos[i] = position;
+    }
 }
 
-void encoders_reset_pos(void)
+void encoders_reset_position(void)
 {
 #if ENCODERS > 0
     for (uint8_t i = 0; i < ENCODERS; i++)
