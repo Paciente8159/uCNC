@@ -23,10 +23,18 @@
 #if (PID_CONTROLLERS > 0)
 static int32_t cumulative_delta[PID_CONTROLLERS];
 static int32_t last_error[PID_CONTROLLERS];
-static int32_t kp[PID_CONTROLLERS];
-static int32_t ki[PID_CONTROLLERS];
-static int32_t kd[PID_CONTROLLERS];
+static uint16_t kp[PID_CONTROLLERS];
+static uint16_t ki[PID_CONTROLLERS];
+static uint32_t kd[PID_CONTROLLERS];
 static uint8_t pid_freqdiv[PID_CONTROLLERS];
+
+#define GAIN_FLT_TO_INT (1 << PID_BITSHIFT_FACTOR)
+#define ERROR_MAX (GAIN_FLT_TO_INT - 1)
+#define KP_MAX (GAIN_FLT_TO_INT - 1)
+#define KI_MAX (((GAIN_FLT_TO_INT << 1) >> PID_DIVISIONS) - 1)
+#define KD_MAX ((GAIN_FLT_TO_INT << 10) - 1)
+#define ERROR_SUM_MAX (1 << (31 - PID_BITSHIFT_FACTOR - PID_DIVISIONS))
+
 #endif
 
 static int32_t pid_get_freqdiv(uint8_t i)
@@ -158,25 +166,58 @@ static int32_t pid_set_output(uint8_t i, int16_t val)
     }
 }
 
+static void pid_stop()
+{
+
+#if (PID_CONTROLLERS > 0)
+    PID0_STOP();
+#endif
+#if (PID_CONTROLLERS > 1)
+    PID1_STOP();
+#endif
+#if (PID_CONTROLLERS > 2)
+    PID2_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 3)
+    PID3_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 4)
+    PID4_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 5)
+    PID5_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 6)
+    PID6_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 7)
+    PID7_STOP(val);
+#endif
+}
+
 //PID ISR should run once every millisecond
-//this is equal to a 125Hz sampling rate (for 8 PID controllers)
+//sampling rate is 1000/(log2*(Nº of PID controllers))
+//a single PID controller can run at 1000Hz
+//all 8 PID will run at a max freq of 125Hz
 //this precomputes the PID factors to save computation cycles
 void pid_init(void)
 {
 #if (PID_CONTROLLERS > 0)
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        kp[i] = (int32_t)(g_settings.pid_gain[i][0] * (float)(1 << PID_BITSHIFT_FACTOR));
-        ki[i] = (int32_t)((g_settings.pid_gain[i][1] * (float)(1 << PID_BITSHIFT_FACTOR)) / (125.0f / (float)pid_get_freqdiv(i)));
-        kd[i] = (int32_t)((g_settings.pid_gain[i][2] * (float)(1 << PID_BITSHIFT_FACTOR)) * (125.0f / (float)pid_get_freqdiv(i)));
+        //error gains must be between 0% and 100% (0 and 1)
+        uint32_t k = (uint32_t)(g_settings.pid_gain[i][0] * (float)ERROR_MAX);
+        kp[i] = (uint16_t)CLAMP(k, 0, KP_MAX);
+        k = (uint32_t)((g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
+        ki[i] = (uint16_t)CLAMP(k, 0, KI_MAX);
+        k = (uint32_t)((g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
+        kd[i] = (uint32_t)CLAMP(k, 0, KD_MAX);
     }
 #endif
 }
 
 void pid_update(void)
 {
-    tool_pid_update();
-
 #if (PID_CONTROLLERS > 0)
 
     static uint8_t current_pid = 0;
@@ -184,36 +225,41 @@ void pid_update(void)
     {
         if (!pid_freqdiv[current_pid])
         {
+            //keeps all math in 32bit
+            //9bits
             int32_t error = pid_get_error(current_pid);
-            int64_t output = 0;
+            CLAMP(error, -ERROR_MAX, ERROR_MAX);
+            int32_t output = 0;
             if (kp[current_pid])
             {
+                //max 16bits
                 output = kp[current_pid] * error;
             }
 
             if (ki[current_pid])
             {
-                int64_t sum = cumulative_delta[current_pid] + error;
-                sum = CLAMP(sum, -0x7FFFFFFF, 0x7FFFFFFF);
+                int32_t sum = cumulative_delta[current_pid] + error;
+                sum = CLAMP(sum, -ERROR_SUM_MAX, ERROR_SUM_MAX);
                 cumulative_delta[current_pid] = (int32_t)sum;
-
+                //max 31bits
                 output += ki[current_pid] * cumulative_delta[current_pid];
             }
 
             if (kd[current_pid])
             {
+                //max 26bits
                 int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
                 output += rateerror;
             }
 
             last_error[current_pid] = error;
-            bool isneg = (output<0) ? true : false;
+            bool isneg = (output < 0) ? true : false;
             output = (!isneg) ? output : -output;
             output >>= PID_BITSHIFT_FACTOR;
             output = (!isneg) ? output : -output;
+            //9bits
             output = CLAMP(output, PID_OUTPUT_MIN, PID_OUTPUT_MAX);
-            int8_t pid_result = (int8_t)output;
-            pid_set_output(current_pid, pid_result);
+            pid_set_output(current_pid, (int16_t)output);
         }
 
         if (++pid_freqdiv[current_pid] >= pid_get_freqdiv(current_pid))
@@ -222,7 +268,8 @@ void pid_update(void)
         }
     }
 
-    if (++current_pid >= 8)
+    //restart
+    if (++current_pid >= PID_CONTROLLERS)
     {
         current_pid = 0;
     }

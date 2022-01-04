@@ -195,22 +195,24 @@ bool cnc_dotasks(void)
 }
 
 //this function is executed every millisecond
-void cnc_scheduletasks(void)
+void cnc_scheduletasks(uint32_t millis)
 {
     static bool running = false;
-    static uint32_t counter = 0;
     mcu_disable_global_isr();
-    counter++;
 
     if (!running)
     {
         running = true;
         mcu_enable_global_isr();
-        pid_update();
-        tool_pid_update();
+
+        if (!cnc_get_exec_state(EXEC_ALARM))
+        {
+            pid_update();
+            tool_pid_update();
+        }
 #ifdef LED
         //this blinks aprox. once every 1024ms
-        if ((counter & 0x200))
+        if ((millis & 0x200))
         {
             io_set_output(LED, true);
         }
@@ -277,6 +279,10 @@ void cnc_stop(void)
     itp_stop();
     //stop tools
     itp_stop_tools();
+
+#if PID_CONTROLLERS > 0
+    pid_stop();
+#endif
 }
 
 uint8_t cnc_unlock(bool force)

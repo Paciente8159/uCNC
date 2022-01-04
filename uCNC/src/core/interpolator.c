@@ -422,7 +422,7 @@ void itp_run(void)
 
         //if traveled distance is less the one step fits at least one step
         float partial_distance = CLAMP((current_speed * INTEGRATOR_DELTA_T), 1.0f, remaining_steps);
-        
+
         //computes how many steps it will perform at this speed and frame window
         uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 
@@ -573,6 +573,14 @@ void itp_get_rt_position(int32_t *position)
     memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 }
 
+int32_t itp_get_rt_position_index(int8_t index)
+{
+    __ATOMIC__
+    {
+        return itp_rt_step_pos[index];
+    }
+}
+
 void itp_reset_rt_position(void)
 {
     if (g_settings.homing_enabled)
@@ -648,6 +656,11 @@ uint16_t itp_get_rt_spindle(void)
     spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
 
     return (uint16_t)roundf(spindle);
+}
+
+uint8_t itp_get_rt_spindle_pwm(void)
+{
+    return itp_rt_spindle;
 }
 #endif
 

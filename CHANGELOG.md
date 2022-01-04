@@ -5,9 +5,20 @@
 
 # Changelog
 
+### Added
+  - added pid_stop action and alarm checking (safety stop)
+  - added new interpolator functions to be used by the PID module
+
 ### Changed
   - modified/fixed PID controller to output positive/negative variation result
   - added CLAMP macro to utils.h
+  - variable PID frequency depending on the number of PID defined. Frequency is now 1000/log2(Total PID's) in Hz
+  - optimized memory sizes for Kp, Kd and Ki gains
+  - PID math executes in 32bit integer math only
+  - modified scheduletasks and added isr locking to SAMD21 and STM32
+
+### Fixed
+  - removed duplicate tool PID call
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:

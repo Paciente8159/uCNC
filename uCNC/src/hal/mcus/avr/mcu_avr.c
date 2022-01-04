@@ -63,8 +63,7 @@
 static volatile uint32_t mcu_runtime_ms;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
-        mcu_runtime_ms++;
-        cnc_scheduletasks();
+        cnc_scheduletasks(++mcu_runtime_ms);
 }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)

@@ -37,12 +37,14 @@ extern "C"
 	void itp_stop_tools(void);
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
+	int32_t itp_get_rt_position_index(int8_t index);
 	void itp_reset_rt_position(void);
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	uint8_t itp_sync_spindle(void);
 #ifdef USE_SPINDLE
 	uint16_t itp_get_rt_spindle(void);
+	uint8_t itp_get_rt_spindle_value(void);
 #endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 	void itp_lock_stepper(uint8_t lockmask);
