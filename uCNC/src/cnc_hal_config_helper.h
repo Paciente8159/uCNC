@@ -40,14 +40,20 @@ extern "C"
 #endif
 
 #if PID_CONTROLLERS > 0
-#ifndef PID0_DELTA
-#error "The PID0 error is not defined"
+#ifdef PID0_DELTA
+#error "The PID0 is reserved for the tool PID"
+#else
+#define PID0_DELTA ({})
 #endif
 #ifndef PID0_OUTPUT
-#error "The PID0 output is not defined"
+#error "The PID0 is reserved for the tool PID"
+#else
+#define PID0_OUTPUT(X) (tool_pid_update());
 #endif
 #ifndef PID0_STOP
-#error "The PID0 stop is not defined"
+#error "The PID0 is reserved for the tool PID"
+#else
+#define PID0_STOP tool_stop;
 #endif
 #ifndef PID0_FREQ_DIV
 #define PID0_FREQ_DIV 1

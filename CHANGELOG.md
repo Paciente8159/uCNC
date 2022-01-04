@@ -17,6 +17,7 @@
   - PID math executes in 32bit integer math only
   - modified scheduletasks and added isr locking to SAMD21 and STM32
   - moved some definitions to a new cnc_hal_config_helper.h file that is available via cnc.h
+  - hardwired tool pid to PID0 controller
 
 ### Fixed
   - removed duplicate tool PID call

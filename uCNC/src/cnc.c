@@ -208,7 +208,6 @@ void cnc_scheduletasks(uint32_t millis)
         if (!cnc_get_exec_state(EXEC_ALARM))
         {
             pid_update();
-            tool_pid_update();
         }
 #ifdef LED
         //this blinks aprox. once every 1024ms
