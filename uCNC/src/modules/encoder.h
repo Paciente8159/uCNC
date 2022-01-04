@@ -35,6 +35,7 @@ extern "C"
 #ifndef ENC0_DIR
 #error "The ENC0 dir pin is not defined"
 #endif
+#define ENC0 0
 #define ENC0_MASK (1 << 0)
 #endif
 #if ENCODERS > 1
@@ -44,6 +45,7 @@ extern "C"
 #ifndef ENC1_DIR
 #error "The ENC1 dir pin is not defined"
 #endif
+#define ENC1 1
 #define ENC1_MASK (1 << 1)
 #endif
 #if ENCODERS > 2
@@ -53,6 +55,7 @@ extern "C"
 #ifndef ENC2_DIR
 #error "The ENC2 dir pin is not defined"
 #endif
+#define ENC2 2
 #define ENC2_MASK (1 << 2)
 #endif
 #if ENCODERS > 3
@@ -62,6 +65,7 @@ extern "C"
 #ifndef ENC3_DIR
 #error "The ENC3 dir pin is not defined"
 #endif
+#define ENC3 3
 #define ENC3_MASK (1 << 3)
 #endif
 #if ENCODERS > 4
@@ -71,6 +75,7 @@ extern "C"
 #ifndef ENC4_DIR
 #error "The ENC4 dir pin is not defined"
 #endif
+#define ENC4 4
 #define ENC4_MASK (1 << 4)
 #endif
 #if ENCODERS > 5
@@ -80,6 +85,7 @@ extern "C"
 #ifndef ENC5_DIR
 #error "The ENC5 dir pin is not defined"
 #endif
+#define ENC5 5
 #define ENC5_MASK (1 << 5)
 #endif
 #if ENCODERS > 6
@@ -89,6 +95,7 @@ extern "C"
 #ifndef ENC6_DIR
 #error "The ENC6 dir pin is not defined"
 #endif
+#define ENC6 6
 #define ENC6_MASK (1 << 6)
 #endif
 #if ENCODERS > 7
@@ -98,6 +105,7 @@ extern "C"
 #ifndef ENC7_DIR
 #error "The ENC7 dir pin is not defined"
 #endif
+#define ENC7 7
 #define ENC7_MASK (1 << 7)
 #endif
 
