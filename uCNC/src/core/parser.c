@@ -1126,10 +1126,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 
     //9. overrides
-    if ((new_state->groups.feed_speed_override == M48) != planner_get_overrides())
-    {
-        planner_toggle_overrides();
-    }
+    block_data.feed_override = (bool)new_state->groups.feed_speed_override;
 
     //10. dwell
     if (new_state->groups.nonmodal == G4)
@@ -2091,8 +2088,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 48:
     case 49:
         new_group |= GCODE_GROUP_ENABLEOVER;
-        code = (code == 48) ? M48 : M49;
-        new_state->groups.feed_speed_override = code;
+        new_state->groups.feed_speed_override = (code == 48) ? M48 : M49;
         break;
     default:
         return STATUS_GCODE_UNSUPPORTED_COMMAND;
