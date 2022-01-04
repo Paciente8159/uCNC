@@ -1126,10 +1126,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 
     //9. overrides
-    if ((bool)new_state->groups.feed_speed_override != planner_get_overrides())
-    {
-        planner_toggle_overrides();
-    }
+    block_data.feed_override = (bool)new_state->groups.feed_speed_override;
 
     //10. dwell
     if (new_state->groups.nonmodal == G4)
