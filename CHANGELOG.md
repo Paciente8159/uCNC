@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Fixed
+  - fixed spindle override max and min values (#100)
+
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
 
