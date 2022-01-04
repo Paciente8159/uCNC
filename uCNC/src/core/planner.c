@@ -625,8 +625,8 @@ void planner_spindle_ovr_inc(uint8_t value)
 {
     uint8_t ovr_val = planner_overrides.spindle_override;
     ovr_val += value;
-    ovr_val = MAX(ovr_val, FEED_OVR_MIN);
-    ovr_val = MIN(ovr_val, FEED_OVR_MAX);
+    ovr_val = MAX(ovr_val, SPINDLE_OVR_MIN);
+    ovr_val = MIN(ovr_val, SPINDLE_OVR_MAX);
 
     if (planner_overrides.overrides_enabled && ovr_val != planner_overrides.spindle_override)
     {
