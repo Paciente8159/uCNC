@@ -65,6 +65,7 @@ extern "C"
 #endif
         uint8_t action;
         bool optimal;
+        bool feed_override;
     } planner_block_t;
 
     void planner_init(void);
@@ -89,9 +90,6 @@ extern "C"
     void planner_sync_tools(motion_data_t *block_data);
 
     //overrides
-    void planner_toggle_overrides(void);
-    bool planner_get_overrides(void);
-
     void planner_feed_ovr_reset(void);
     void planner_feed_ovr_inc(uint8_t value);
 

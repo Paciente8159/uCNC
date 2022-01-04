@@ -331,7 +331,7 @@ void itp_run(void)
             {
                 //it's already travelling at higher speeed than it should
                 //use this value to calculate the deacceleration
-                junction_speed_sqr = itp_cur_plan_block->entry_feed_sqr;
+                itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
             }
 
             //if entry speed already a junction speed updates it.

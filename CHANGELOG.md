@@ -5,6 +5,8 @@
 
 # Changelog
 
+## Unreleased
+
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
   - simplified global ISR unlocking inside cnc_scheduletasks (#101)
@@ -12,6 +14,12 @@
   - modified SAMD21 compilation flags and board configurations (#101)
   - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
   - removed duplicate tool pid call (#101)
+  - modified feed override flags so M48/M49 will only affect at code execution order (#102)
+
+### Fixed
+  - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
+  - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
+  - fixed spindle override max and min values (#100)
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:

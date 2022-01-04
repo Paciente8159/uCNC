@@ -39,8 +39,6 @@ typedef struct
 #ifdef USE_COOLANT
     uint8_t coolant_override;
 #endif
-    bool overrides_enabled;
-
 } planner_overrides_t;
 
 #ifdef USE_SPINDLE
@@ -87,6 +85,7 @@ void planner_add_line(motion_data_t *block_data)
     memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
     planner_data[planner_data_write].dirbits = block_data->dirbits;
     planner_data[planner_data_write].main_stepper = block_data->main_stepper;
+    planner_data[planner_data_write].feed_override = block_data->feed_override;
 
 #ifdef USE_SPINDLE
     planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
@@ -316,7 +315,6 @@ void planner_init(void)
     memset(planner_data, 0, sizeof(planner_data));
 #endif
     planner_buffer_clear();
-    planner_overrides.overrides_enabled = true;
     planner_feed_ovr_reset();
     planner_rapid_feed_ovr_reset();
 #ifdef USE_SPINDLE
@@ -355,7 +353,7 @@ float planner_get_block_exit_speed_sqr(void)
     float exit_speed_sqr = planner_data[next].entry_feed_sqr;
     float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
 
-    if (planner_overrides.overrides_enabled)
+    if (planner_data[next].feed_override)
     {
         if (planner_overrides.feed_override != 100)
         {
@@ -415,7 +413,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
     float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
     float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
-    if (planner_overrides.overrides_enabled)
+    if (planner_data[planner_data_read].feed_override)
     {
         if (planner_overrides.feed_override != 100)
         {
@@ -452,7 +450,7 @@ void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
             spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
         }
 
-        if (planner_overrides.overrides_enabled && planner_overrides.spindle_override != 100)
+        if (planner_data[planner_data_read].feed_override && planner_overrides.spindle_override != 100)
         {
             spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;
         }
@@ -474,10 +472,7 @@ uint8_t planner_get_coolant(void)
 {
     uint8_t coolant = (!planner_data_blocks) ? planner_coolant : planner_data[planner_data_read].coolant;
 
-    if (planner_overrides.overrides_enabled)
-    {
-        coolant ^= planner_overrides.coolant_override;
-    }
+    coolant ^= planner_overrides.coolant_override;
 
     return coolant;
 }
@@ -564,18 +559,6 @@ void planner_sync_tools(motion_data_t *block_data)
 }
 
 //overrides
-void planner_toggle_overrides(void)
-{
-    planner_overrides.overrides_enabled = !planner_overrides.overrides_enabled;
-    itp_update();
-    planner_ovr_counter = 0;
-}
-
-bool planner_get_overrides(void)
-{
-    return planner_overrides.overrides_enabled;
-}
-
 void planner_feed_ovr_inc(uint8_t value)
 {
     uint8_t ovr_val = planner_overrides.feed_override;
@@ -583,7 +566,7 @@ void planner_feed_ovr_inc(uint8_t value)
     ovr_val = MAX(ovr_val, FEED_OVR_MIN);
     ovr_val = MIN(ovr_val, FEED_OVR_MAX);
 
-    if (planner_overrides.overrides_enabled && ovr_val != planner_overrides.feed_override)
+    if (ovr_val != planner_overrides.feed_override)
     {
         planner_overrides.feed_override = ovr_val;
         planner_ovr_counter = 0;
@@ -593,7 +576,7 @@ void planner_feed_ovr_inc(uint8_t value)
 
 void planner_rapid_feed_ovr(uint8_t value)
 {
-    if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != value)
+    if (planner_overrides.rapid_feed_override != value)
     {
         planner_overrides.rapid_feed_override = value;
         planner_ovr_counter = 0;
@@ -603,7 +586,7 @@ void planner_rapid_feed_ovr(uint8_t value)
 
 void planner_feed_ovr_reset(void)
 {
-    if (planner_overrides.overrides_enabled && planner_overrides.feed_override != 100)
+    if (planner_overrides.feed_override != 100)
     {
         itp_update();
     }
@@ -613,7 +596,7 @@ void planner_feed_ovr_reset(void)
 
 void planner_rapid_feed_ovr_reset(void)
 {
-    if (planner_overrides.overrides_enabled && planner_overrides.rapid_feed_override != 100)
+    if (planner_overrides.rapid_feed_override != 100)
     {
         itp_update();
     }
@@ -625,10 +608,10 @@ void planner_spindle_ovr_inc(uint8_t value)
 {
     uint8_t ovr_val = planner_overrides.spindle_override;
     ovr_val += value;
-    ovr_val = MAX(ovr_val, FEED_OVR_MIN);
-    ovr_val = MIN(ovr_val, FEED_OVR_MAX);
+    ovr_val = MAX(ovr_val, SPINDLE_OVR_MIN);
+    ovr_val = MIN(ovr_val, SPINDLE_OVR_MAX);
 
-    if (planner_overrides.overrides_enabled && ovr_val != planner_overrides.spindle_override)
+    if (ovr_val != planner_overrides.spindle_override)
     {
         planner_overrides.spindle_override = ovr_val;
         planner_ovr_counter = 0;
