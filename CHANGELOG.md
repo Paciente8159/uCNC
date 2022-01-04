@@ -6,11 +6,12 @@
 # Changelog
 
 ### Changed
-  - modified feed override flags so M48/M49 will only affect at code execution order
+  - modified feed override flags so M48/M49 will only affect at code execution order (#102)
 
 ### Fixed
-  - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value
-  - fixed M48/M49 parsing error (after calling overrides were always turned off)
+  - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
+  - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
+  - fixed spindle override max and min values (#100)
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
