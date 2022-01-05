@@ -1025,7 +1025,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     float radius;
     motion_data_t block_data = {0};
 
-    mc_get_position(planner_last_pos);
+    mc_get_position(&planner_last_pos);
 
     //stoping from previous command M2 or M30 command
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))

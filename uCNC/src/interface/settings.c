@@ -423,7 +423,7 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.spindle_min_rpm = value;
         break;
     case 32:
-        g_settings.laser_mode = value8;
+        g_settings.laser_mode = value1;
         break;
 #ifdef ENABLE_SKEW_COMPENSATION
     case 37:

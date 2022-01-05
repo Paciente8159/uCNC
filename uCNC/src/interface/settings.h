@@ -36,19 +36,15 @@ extern "C"
                 //step delay not used
                 uint8_t step_invert_mask;
                 uint8_t dir_invert_mask;
-                bool step_enable_invert;
+
                 uint8_t limits_invert_mask;
-                bool probe_invert_mask;
+
                 uint8_t status_report_mask;
                 uint8_t control_invert_mask;
                 //value must be set between -1.0 and 1.0 If set to 0.0 is the same as exact path mode (G61) and -1.0 is the same as exact stop mode (G61.1)
                 float g64_angle_factor;
                 //juntion deviation is automatic and always on
                 float arc_tolerance;
-                bool report_inches;
-                bool soft_limits_enabled;
-                bool hard_limits_enabled;
-                bool homing_enabled;
                 uint16_t debounce_ms;
                 uint8_t homing_dir_invert_mask;
                 float homing_fast_feed_rate;
@@ -63,6 +59,21 @@ extern "C"
                 float acceleration[STEPPER_COUNT];
                 float max_distance[AXIS_COUNT];
                 uint8_t tool_count;
+                union
+                {
+                        struct
+                        {
+                                uint8_t step_enable_invert : 1;
+                                uint8_t probe_invert_mask : 1;
+                                uint8_t report_inches : 1;
+                                uint8_t soft_limits_enabled : 1;
+                                uint8_t hard_limits_enabled : 1;
+                                uint8_t homing_enabled : 1;
+                                uint8_t laser_mode : 1;
+                                uint8_t : 1; //unused
+                        };
+                        uint8_t flags;
+                };
 #ifdef ENABLE_BACKLASH_COMPENSATION
                 uint16_t backlash_steps[STEPPER_COUNT];
 #endif
@@ -73,7 +84,7 @@ extern "C"
                 float skew_yz_factor;
 #endif
 #endif
-                uint8_t laser_mode;
+                
 #if PID_CONTROLLERS > 0
                 float pid_gain[PID_CONTROLLERS][3];
 #endif

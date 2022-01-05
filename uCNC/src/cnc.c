@@ -678,7 +678,7 @@ void cnc_exec_rt_commands(void)
                 if (tool_get_speed())
                 {
                     update_tools = false;
-                    tool_set_speed(0, false);
+                    tool_set_speed(0);
                 }
 #endif
             }

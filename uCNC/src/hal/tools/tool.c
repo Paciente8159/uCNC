@@ -183,17 +183,17 @@ void tool_change(uint8_t tool)
 	}
 }
 
-void tool_set_speed(uint8_t value, bool invert)
+void tool_set_speed(int16_t value)
 {
 #ifdef USE_SPINDLE
 	if (tool_current.set_speed)
 	{
-		tool_current.set_speed(value, invert);
+		tool_current.set_speed((uint8_t)(0xff&(uint16_t)value), (value < 0));
 	}
 #endif
 }
 
-int tool_get_speed()
+uint8_t tool_get_speed()
 {
 #ifdef USE_SPINDLE
 	if (tool_current.get_speed)
@@ -201,7 +201,7 @@ int tool_get_speed()
 		return tool_current.get_speed();
 	}
 #endif
-	return -1;
+	return 0;
 }
 
 void tool_set_coolant(uint8_t value)
@@ -216,7 +216,7 @@ void tool_set_coolant(uint8_t value)
 
 void tool_stop()
 {
-	tool_set_speed(0, false);
+	tool_set_speed(0);
 	tool_set_coolant(0);
 }
 
