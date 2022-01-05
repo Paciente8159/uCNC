@@ -435,17 +435,17 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 }
 
 #ifdef USE_SPINDLE
-void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
+int16_t planner_get_spindle_speed(float scale)
 {
     float spindle = (!planner_data_blocks) ? planner_spindle : planner_data[planner_data_read].spindle;
-    *pwm = 0;
-    *invert = (spindle < 0);
+    int16_t pwm = 0;
 
     if (spindle != 0)
     {
+        bool neg = (spindle < 0);
         spindle = ABS(spindle);
 
-        if (g_settings.laser_mode && *invert) //scales laser power only if invert is active (M4)
+        if (g_settings.laser_mode && neg) //scales laser power only if invert is active (M4)
         {
             spindle *= scale; //scale calculated in laser mode (otherwise scale is always 1)
         }
@@ -456,8 +456,10 @@ void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert)
         }
         spindle = MIN(spindle, g_settings.spindle_max_rpm);
         spindle = MAX(spindle, g_settings.spindle_min_rpm);
-        *pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
-        *pwm = MAX(*pwm, PWM_MIN_OUTPUT);
+        pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
+        pwm = MAX(pwm, PWM_MIN_OUTPUT);
+
+        return (!neg) ? pwm : -pwm;
     }
 }
 
