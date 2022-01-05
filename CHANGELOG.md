@@ -15,7 +15,7 @@
   - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
   - removed duplicate tool pid call (#101)
   - modified feed override flags so M48/M49 will only affect at code execution order (#102)
-  - modified tool speed update and read functions and integrated HAL tool in the core of µCNC
+  - modified tool speed update and read functions and integrated HAL tool in the core of µCNC (#106)
 
 ### Fixed
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
