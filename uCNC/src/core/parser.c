@@ -84,7 +84,7 @@
 #define GCODE_XZPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Z)
 #define GCODE_YZPLANE_AXIS (GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJPLANE_AXIS (GCODE_XYPLANE_AXIS << 8)
-#define GCODE_IKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
+#define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
@@ -1126,16 +1126,13 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
 
     //9. overrides
-    if ((new_state->groups.feed_speed_override == M48) != planner_get_overrides())
-    {
-        planner_toggle_overrides();
-    }
+    block_data.feed_override = (bool)new_state->groups.feed_speed_override;
 
     //10. dwell
     if (new_state->groups.nonmodal == G4)
     {
-        //calc dwell in time in 10ms increments
-        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p));
+        //calc dwell in milliseconds
+        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p * 1000.f, 65535)));
         new_state->groups.nonmodal = 0;
     }
 
@@ -1153,24 +1150,24 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     case 0:
         a = AXIS_X;
         b = AXIS_Y;
-        offset_a = 0;
-        offset_b = 1;
+        offset_a = AXIS_X;
+        offset_b = AXIS_Y;
         break;
 #endif
 #if (defined(AXIS_X) && defined(AXIS_Z))
     case 1:
-        a = AXIS_X;
-        b = AXIS_Z;
-        offset_a = 0;
-        offset_b = 2;
+        a = AXIS_Z;
+        b = AXIS_X;
+        offset_a = AXIS_Z;
+        offset_b = AXIS_X;
         break;
 #endif
 #if (defined(AXIS_Y) && defined(AXIS_Z))
     case 2:
         a = AXIS_Y;
         b = AXIS_Z;
-        offset_a = 1;
-        offset_b = 2;
+        offset_a = AXIS_Y;
+        offset_b = AXIS_Z;
         break;
 #endif
     }
@@ -1236,40 +1233,41 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     memcpy(target, planner_last_pos, sizeof(planner_last_pos));
 
     //for all not explicitly declared target retain their position or add offset
+    bool abspos = (new_state->groups.distance_mode == G90) | (new_state->groups.nonmodal == G53);
 #ifdef AXIS_X
     if (CHECKFLAG(cmd->words, GCODE_WORD_X))
     {
-        target[AXIS_X] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_X] : (words->xyzabc[AXIS_X] + target[AXIS_X]);
+        target[AXIS_X] = (abspos) ? words->xyzabc[AXIS_X] : (words->xyzabc[AXIS_X] + target[AXIS_X]);
     }
 #endif
 #ifdef AXIS_Y
     if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
     {
-        target[AXIS_Y] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Y] : (words->xyzabc[AXIS_Y] + target[AXIS_Y]);
+        target[AXIS_Y] = (abspos) ? words->xyzabc[AXIS_Y] : (words->xyzabc[AXIS_Y] + target[AXIS_Y]);
     }
 #endif
 #ifdef AXIS_Z
     if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
     {
-        target[AXIS_Z] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Z] : (words->xyzabc[AXIS_Z] + target[AXIS_Z]);
+        target[AXIS_Z] = (abspos) ? words->xyzabc[AXIS_Z] : (words->xyzabc[AXIS_Z] + target[AXIS_Z]);
     }
 #endif
 #ifdef AXIS_A
     if (CHECKFLAG(cmd->words, GCODE_WORD_A))
     {
-        target[AXIS_A] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
+        target[AXIS_A] = (abspos) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
     }
 #endif
 #ifdef AXIS_B
     if (CHECKFLAG(cmd->words, GCODE_WORD_B))
     {
-        target[AXIS_B] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
+        target[AXIS_B] = (abspos) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
     }
 #endif
 #ifdef AXIS_C
     if (CHECKFLAG(cmd->words, GCODE_WORD_C))
     {
-        target[AXIS_C] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
+        target[AXIS_C] = (abspos) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
     }
 #endif
 
@@ -1344,10 +1342,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                 for (uint8_t i = AXIS_COUNT; i != 0;)
                 {
                     i--;
-                    target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
+                    if (CHECKFLAG(cmd->words, (1 << i)))
+                    {
+                        target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
+                    }
                 }
 #ifdef AXIS_TOOL
-                target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+                if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+                {
+                    target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+                }
 #endif
             }
             break;
@@ -2091,8 +2095,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 48:
     case 49:
         new_group |= GCODE_GROUP_ENABLEOVER;
-        code = (code == 48) ? M48 : M49;
-        new_state->groups.feed_speed_override = code;
+        new_state->groups.feed_speed_override = (code == 48) ? M48 : M49;
         break;
     default:
         return STATUS_GCODE_UNSUPPORTED_COMMAND;

@@ -198,7 +198,8 @@ bool cnc_dotasks(void)
 void cnc_scheduletasks(uint32_t millis)
 {
     static bool running = false;
-    mcu_disable_global_isr();
+    static uint8_t last_limits = 0;
+    static uint8_t last_controls = 0;
 
     if (!running)
     {
@@ -209,6 +210,30 @@ void cnc_scheduletasks(uint32_t millis)
         {
             pid_update();
         }
+
+//checks any limit or control input state change (every 16ms)
+#if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
+        uint8_t millis = (uint8_t)(0xff & mcu_millis());
+        if ((millis & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
+        {
+            uint8_t inputs = io_get_limits();
+            uint8_t diff = (inputs ^ last_limits) & inputs;
+            last_limits = inputs;
+            if (diff != 0)
+            {
+                io_limits_isr();
+            }
+            inputs = io_get_controls();
+            diff = (inputs ^ last_controls) & inputs;
+            last_controls = inputs;
+            if (diff != 0)
+            {
+                io_controls_isr();
+            }
+            pid_update();
+            tool_pid_update();
+        }
+#endif
 #ifdef LED
         //this blinks aprox. once every 1024ms
         if ((millis & 0x200))
@@ -224,8 +249,6 @@ void cnc_scheduletasks(uint32_t millis)
         mcu_disable_global_isr();
         running = false;
     }
-
-    mcu_enable_global_isr();
 }
 
 void cnc_home(void)
@@ -436,11 +459,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    uint32_t t_end = mcu_millis();
-    while (t_end - t_start < miliseconds && cnc_dotasks())
-    {
-        t_end = mcu_millis();
-    }
+    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks())
+        ;
 }
 
 bool cnc_reset(void)
@@ -665,7 +685,7 @@ void cnc_exec_rt_commands(void)
                 if (tool_get_speed())
                 {
                     update_tools = false;
-                    tool_set_speed(0, false);
+                    tool_set_speed(0);
                 }
 #endif
             }

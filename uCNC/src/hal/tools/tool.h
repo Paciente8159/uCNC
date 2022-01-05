@@ -47,9 +47,9 @@ extern "C"
 
 	void tool_init(void);
 	void tool_change(uint8_t tool);
-	void tool_set_speed(uint8_t value, bool invert);
+	void tool_set_speed(int16_t value);
 	void tool_set_coolant(uint8_t value);
-	int tool_get_speed(void);
+	uint8_t tool_get_speed(void);
 	void tool_stop(void);
 	uint8_t tool_pid_update(void);
 

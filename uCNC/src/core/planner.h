@@ -57,14 +57,19 @@ extern "C"
 #ifdef USE_SPINDLE
         int16_t spindle;
 #endif
-#ifdef USE_COOLANT
-        uint8_t coolant;
-#endif
-#ifdef ENABLE_BACKLASH_COMPENSATION
-        bool backlash_comp;
-#endif
+
         uint8_t action;
-        bool optimal;
+        union
+        {
+            struct
+            {
+                uint8_t coolant : 2;
+                uint8_t optimal : 1;
+                uint8_t feed_override : 1;
+                uint8_t backlash_comp : 1;
+            };
+            uint8_t flags;
+        };
     } planner_block_t;
 
     void planner_init(void);
@@ -75,7 +80,7 @@ extern "C"
     float planner_get_block_exit_speed_sqr(void);
     float planner_get_block_top_speed(float exit_speed_sqr);
 #ifdef USE_SPINDLE
-    void planner_get_spindle_speed(float scale, uint8_t *pwm, bool *invert);
+    int16_t planner_get_spindle_speed(float scale);
     float planner_get_previous_spindle_speed(void);
 #endif
 #ifdef USE_COOLANT
@@ -89,9 +94,6 @@ extern "C"
     void planner_sync_tools(motion_data_t *block_data);
 
     //overrides
-    void planner_toggle_overrides(void);
-    bool planner_get_overrides(void);
-
     void planner_feed_ovr_reset(void);
     void planner_feed_ovr_inc(uint8_t value);
 
