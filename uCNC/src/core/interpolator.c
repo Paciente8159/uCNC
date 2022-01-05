@@ -325,18 +325,12 @@ void itp_run(void)
                 accel_until -= floorf(accel_dist);
                 //initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
             }
-            else
-            {
-                //it's already travelling at higher speeed than it should
-                //use this value to calculate the deacceleration
-                itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-            }
 
             //if entry speed already a junction speed updates it.
-            /*if (accel_until == remaining_steps)
-                {
-                    itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-                }*/
+            if (accel_until == remaining_steps)
+            {
+                itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+            }
 
             if (junction_speed_sqr > exit_speed_sqr)
             {

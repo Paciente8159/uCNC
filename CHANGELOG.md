@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.2] - 2022-01-05
+## [1.3.2] - Unreleased
 
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
@@ -26,6 +26,7 @@
   - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
   - fixed G4 P word was not convert from seconds to milliseconds on the parser (#103)
   - fixed G53 with active G91 (ignores G91) and now travels to the absolute position (#103)
+  - fixed interpolator speed calculations for slow movements with instant max speed that and speed was set to 0 (#105)
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
