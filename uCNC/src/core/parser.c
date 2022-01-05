@@ -1132,7 +1132,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     if (new_state->groups.nonmodal == G4)
     {
         //calc dwell in milliseconds
-        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p*1000.f, 65535)));
+        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p * 1000.f, 65535)));
         new_state->groups.nonmodal = 0;
     }
 
@@ -1341,10 +1341,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
                 for (uint8_t i = AXIS_COUNT; i != 0;)
                 {
                     i--;
-                    target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
+                    if (CHECKFLAG(cmd->words, (1 << i)))
+                    {
+                        target[i] += parser_parameters.coord_system_offset[i] + parser_parameters.g92_offset[i];
+                    }
                 }
 #ifdef AXIS_TOOL
-                target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+                if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+                {
+                    target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+                }
 #endif
             }
             break;

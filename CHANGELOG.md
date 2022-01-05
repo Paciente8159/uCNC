@@ -17,10 +17,11 @@
   - modified feed override flags so M48/M49 will only affect at code execution order (#102)
 
 ### Fixed
-  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
   - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
   - fixed spindle override max and min values (#100)
+  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error
+  - -fixed motion commands (G0,G1, etcc) with active offset (G92 or G5x) and a given axis is omitted was reapplying the offset
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:
