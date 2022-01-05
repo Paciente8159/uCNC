@@ -21,7 +21,7 @@ It also addresses several critical bug fixes in the gcode parsing (some of them 
   - modified tool speed update and read functions and integrated HAL tool in the core of µCNC (#106)
 
 ### Fixed
-  - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
+  - fixed feed override after reaching top speed feed was reset to normal (100%) neglecting feed override value (#102)
   - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
   - fixed spindle override max and min values (#100)
   - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error (#103)
