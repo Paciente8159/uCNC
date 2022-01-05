@@ -84,7 +84,7 @@
 #define GCODE_XZPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Z)
 #define GCODE_YZPLANE_AXIS (GCODE_WORD_Y | GCODE_WORD_Z)
 #define GCODE_IJPLANE_AXIS (GCODE_XYPLANE_AXIS << 8)
-#define GCODE_IKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
+#define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
@@ -1150,24 +1150,24 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     case 0:
         a = AXIS_X;
         b = AXIS_Y;
-        offset_a = 0;
-        offset_b = 1;
+        offset_a = AXIS_X;
+        offset_b = AXIS_Y;
         break;
 #endif
 #if (defined(AXIS_X) && defined(AXIS_Z))
     case 1:
-        a = AXIS_X;
-        b = AXIS_Z;
-        offset_a = 0;
-        offset_b = 2;
+        a = AXIS_Z;
+        b = AXIS_X;
+        offset_a = AXIS_Z;
+        offset_b = AXIS_X;
         break;
 #endif
 #if (defined(AXIS_Y) && defined(AXIS_Z))
     case 2:
         a = AXIS_Y;
         b = AXIS_Z;
-        offset_a = 1;
-        offset_b = 2;
+        offset_a = AXIS_Y;
+        offset_b = AXIS_Z;
         break;
 #endif
     }
