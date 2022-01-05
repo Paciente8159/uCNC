@@ -5,7 +5,7 @@
 
 # Changelog
 
-## Unreleased
+## Unreleasedz
 
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
@@ -15,6 +15,8 @@
   - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
   - removed duplicate tool pid call (#101)
   - modified feed override flags so M48/M49 will only affect at code execution order (#102)
+  - modified structs (bit packing) to reduce optimize memory
+  - modified tool speed update and reading to integrate the new tool HAL
 
 ### Fixed
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
