@@ -10,7 +10,33 @@
   - added reset calls for motors encoders
   - moved encoder and PID definitions to cnc_hal_config.h
 
+## [1.3.2] - 2022-01-05
+
+µCNC version 1.3.2 aims to develop encoder and PID modules to make them more flexible/usable.
+It also addresses several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+
+### Changed
+  - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
+  - simplified global ISR unlocking inside cnc_scheduletasks (#101)
+  - included limits and control in a configurable scheduled checking (ISR fail safe) (#101)
+  - modified SAMD21 compilation flags and board configurations (#101)
+  - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
+  - removed duplicate tool pid call (#101)
+  - modified feed override flags so M48/M49 will only affect at code execution order (#102)
+  - modified tool speed update and read functions and integrated HAL tool in the core of µCNC (#106)
+
+### Fixed
+  - fixed feed override after reaching top speed feed was reset to normal (100%) neglecting feed override value (#102)
+  - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
+  - fixed spindle override max and min values (#100)
+  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error (#103)
+  - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
+  - fixed G4 P word was not convert from seconds to milliseconds on the parser (#103)
+  - fixed G53 with active G91 (ignores G91) and now travels to the absolute position (#103)
+  - fixed interpolator speed calculations for slow movements with instant max speed that and speed was set to 0 causing µCNC to stop generating steps and not moving (#105)
+
 ## [1.3.1] - 2022-01-02
+
 µCNC version 1.3.1 has the following modifications:
 
 ### Added
@@ -412,6 +438,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
 [1.3.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.rc

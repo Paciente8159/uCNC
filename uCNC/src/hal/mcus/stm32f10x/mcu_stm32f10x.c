@@ -162,8 +162,9 @@ void USBWakeUp_IRQHandler(void)
 
 void mcu_timer_isr(void)
 {
-	static bool resetstep = false;
 	mcu_disable_global_isr();
+
+	static bool resetstep = false;
 	if ((TIMER_REG->SR & 1))
 	{
 		if (!resetstep)
@@ -173,6 +174,7 @@ void mcu_timer_isr(void)
 		resetstep = !resetstep;
 	}
 	TIMER_REG->SR = 0;
+	
 	mcu_enable_global_isr();
 }
 
@@ -182,20 +184,9 @@ void mcu_timer_isr(void)
 #define ALL_EXTIBITMASK (LIMITS_EXTIBITMASK | CONTROLS_EXTIBITMASK | PROBE_EXTIBITMASK | DIN_IO_EXTIBITMASK)
 
 #if (ALL_EXTIBITMASK != 0)
-void mcu_input_isr(void)
+static void mcu_input_isr(void)
 {
-	static bool running = false;
-	mcu_disable_global_isr();
-	if (running)
-	{
-		EXTI->PR = ALL_EXTIBITMASK;
-		mcu_enable_global_isr();
-		return;
-	}
-
-	running = true;
-	mcu_enable_global_isr();
-
+	
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
@@ -221,8 +212,6 @@ void mcu_input_isr(void)
 	}
 #endif
 
-	mcu_disable_global_isr();
-	running = false;
 	EXTI->PR = ALL_EXTIBITMASK;
 	mcu_enable_global_isr();
 }
@@ -277,8 +266,10 @@ void SysTick_Handler(void)
 void osSystickHandler(void)
 #endif
 {
+	mcu_disable_global_isr();
 	mcu_runtime_ms++;
 	cnc_scheduletasks();
+	mcu_enable_global_isr();
 }
 
 /**

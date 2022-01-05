@@ -46,12 +46,13 @@ extern "C"
                 float feed;
                 uint8_t main_stepper;
                 int16_t spindle;
-                bool update_tools;
                 uint16_t dwell;
                 uint8_t motion_mode;
 #ifdef USE_COOLANT
                 uint8_t coolant;
 #endif
+                bool update_tools;
+                bool feed_override;
         } motion_data_t;
 
         void mc_init(void);

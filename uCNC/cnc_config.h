@@ -104,7 +104,7 @@ extern "C"
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 //minimum output if the value of S is other then 0
-#define PWM_MIN_OUTPUT 1
+#define PWM_MIN_OUTPUT 0
 #endif
 
 /*
@@ -139,13 +139,6 @@ extern "C"
 #define SPINDLE_OVR_MIN 10
 #define SPINDLE_OVR_COARSE 10
 #define SPINDLE_OVR_FINE 1
-
-/*
-	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
-*/
-// #define DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_LIMITS
-// #define DISABLE_PROBE
 
 /*
 	G-code options
@@ -220,6 +213,17 @@ extern "C"
 	 * Forces pin pooling for all limits and control pins (with or without interrupts)
 	 */
 //#define FORCE_SOFT_POLLING
+/*
+	Runs a check for state change inside the scheduler. This is a failsafe check to pin ISR checking
+	The value sets the frequency of this safety check that is executed every 2^(CONTROLS_SCHEDULE_CHECK) milliseconds. A negative value will disable this feature. The maximum is 7
+*/
+#define CTRL_SCHED_CHECK 4
+/*
+	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
+*/
+// #define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_LIMITS
+// #define DISABLE_PROBE
 
 /**
 	 * Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
@@ -234,16 +238,16 @@ extern "C"
 	 * $SL - Settings load - Loads settings from EEPROM/Flash to SRAM
      * $SR - Settings reset - Reloads the default value settings from ROM to SRAM
 	 */
-#define ENABLE_SETTING_EXTRA_CMDS
+//#define ENABLE_SETTING_EXTRA_CMDS
 
-	/**
+/**
 	 * Compilation specific options
 	 */
-	//ensure all variables are set to 0 at start up
-	//#define FORCE_GLOBALS_TO_0
+//ensure all variables are set to 0 at start up
+//#define FORCE_GLOBALS_TO_0
 
-	//saves a little program memory bytes but much more slow CRC check
-	#define CRC_WITHOUT_LOOKUP_TABLE
+//saves a little program memory bytes but much more slow CRC check
+#define CRC_WITHOUT_LOOKUP_TABLE
 
 	//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
 	//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
