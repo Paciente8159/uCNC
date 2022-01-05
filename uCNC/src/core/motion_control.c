@@ -28,10 +28,10 @@
 #include <float.h>
 
 #ifndef M_PI
-#define M_PI 3.14159265358979323846
+#define M_PI 3.1415926535897932385f
 #endif
 #ifndef M_COS_TAYLOR_1
-#define M_COS_TAYLOR_1 0.16666667163372039794921875
+#define M_COS_TAYLOR_1 0.1666666666666666667f
 #endif
 
 static bool mc_checkmode;
