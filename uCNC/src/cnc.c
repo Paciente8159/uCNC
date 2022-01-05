@@ -449,11 +449,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    uint32_t t_end = mcu_millis();
-    while (t_end - t_start < miliseconds && cnc_dotasks())
-    {
-        t_end = mcu_millis();
-    }
+    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks());
 }
 
 bool cnc_reset(void)

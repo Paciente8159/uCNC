@@ -1131,8 +1131,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //10. dwell
     if (new_state->groups.nonmodal == G4)
     {
-        //calc dwell in time in 10ms increments
-        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(words->p));
+        //calc dwell in milliseconds
+        block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p*1000.f, 65535)));
         new_state->groups.nonmodal = 0;
     }
 
