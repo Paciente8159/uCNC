@@ -98,6 +98,8 @@ volatile bool pulse_enabled = false;
 volatile bool send_char = false;
 volatile unsigned char uart_char;
 
+uint8_t pwms[16];
+
 pthread_t thread_id;
 pthread_t thread_idout;
 pthread_t thread_timer_id;
@@ -314,11 +316,12 @@ uint8_t mcu_get_analog(uint8_t channel)
 //Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
+	pwms[pwm] = value;
 }
 
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	return 0;
+	return pwms[pwm];
 }
 
 //Communication functions

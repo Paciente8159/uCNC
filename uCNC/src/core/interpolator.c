@@ -77,11 +77,10 @@ typedef struct pulse_sgm_
     uint8_t next_dss;
 #endif
 #ifdef USE_SPINDLE
-    uint8_t spindle;
-    bool spindle_inv;
+    int16_t spindle;
 #endif
     float feed;
-    uint8_t update_itp;
+    bool update_itp;
 } itp_segment_t;
 
 //circular buffers
@@ -98,7 +97,6 @@ static planner_block_t *itp_cur_plan_block;
 
 //keeps track of the machine realtime position
 static int32_t itp_rt_step_pos[STEPPER_COUNT];
-static volatile uint8_t itp_rt_spindle;
 //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -360,7 +358,7 @@ void itp_run(void)
             */
             speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
-            sgm->update_itp = ITP_UPDATE_ISR;
+            sgm->update_itp = true;
             is_initial_transition = true;
         }
         else if (remaining_steps > deaccel_from)
@@ -368,14 +366,14 @@ void itp_run(void)
             //constant speed segment
             speed_change = 0;
             profile_steps_limit = deaccel_from;
-            sgm->update_itp = is_initial_transition ? ITP_UPDATE_ISR : ITP_NOUPDATE;
+            sgm->update_itp = is_initial_transition ? true : false;
             is_initial_transition = false;
         }
         else
         {
             speed_change = -half_speed_change;
             profile_steps_limit = 0;
-            sgm->update_itp = ITP_UPDATE_ISR;
+            sgm->update_itp = true;
             is_initial_transition = true;
         }
 
@@ -460,7 +458,7 @@ void itp_run(void)
         sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
         float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
-        planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv), &(sgm->spindle), &(sgm->spindle_inv));
+        sgm->spindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 #endif
         remaining_steps -= segm_steps;
 
@@ -520,8 +518,7 @@ void itp_stop(void)
 #ifdef USE_SPINDLE
     if (g_settings.laser_mode)
     {
-        tool_set_speed(0, false);
-        itp_rt_spindle = 0;
+        tool_set_speed(0);
     }
 #endif
 
@@ -610,17 +607,14 @@ uint8_t itp_sync(void)
 uint8_t itp_sync_spindle(void)
 {
 #ifdef USE_SPINDLE
-    uint8_t spindle = 0;
-    bool spindle_inv = 0;
-    planner_get_spindle_speed(0, &spindle, &spindle_inv);
-    tool_set_speed(spindle, spindle_inv);
+    tool_set_speed(planner_get_spindle_speed(0));
 #endif
 }
 
 #ifdef USE_SPINDLE
 uint16_t itp_get_rt_spindle(void)
 {
-    float spindle = (float)itp_rt_spindle;
+    float spindle = (float)tool_get_speed();
     spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
 
     return (uint16_t)roundf(spindle);
@@ -730,14 +724,13 @@ void itp_step_isr(void)
 
                 if (itp_rt_sgm->update_itp)
                 {
-                    if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
+                    if (itp_rt_sgm->update_itp)
                     {
                         mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                     }
 
 #ifdef USE_SPINDLE
-                    tool_set_speed(itp_rt_sgm->spindle, itp_rt_sgm->spindle_inv);
-                    itp_rt_spindle = itp_rt_sgm->spindle;
+                    tool_set_speed(itp_rt_sgm->spindle);
 #endif
                     itp_rt_sgm->update_itp = ITP_NOUPDATE;
                 }
