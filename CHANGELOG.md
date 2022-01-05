@@ -5,7 +5,7 @@
 
 # Changelog
 
-## Unreleased
+## [1.3.2] - 2022-01-05
 
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
@@ -20,6 +20,10 @@
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglegting feed override value (#102)
   - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
   - fixed spindle override max and min values (#100)
+  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error (#103)
+  - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
+  - fixed G4 P word was not convert from seconds to milliseconds on the parser (#103)
+  - fixed G53 with active G91 (ignores G91) and now travels to the absolute position (#103)
 
 ## [1.3.1] - 2022-01-02
 µCNC version 1.3.1 has the following modifications:

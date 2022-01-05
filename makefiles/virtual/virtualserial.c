@@ -54,7 +54,8 @@ int virtualserial_open(send_char_callback a, read_char_callback b)
     OVERLAPPED osStatus = {0};
 
     fprintf(stderr, "Opening serial port %s...", ComPortName);
-    hComm = CreateFileA(ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+    hComm = CreateFileA(
+	ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
                         OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (hComm == INVALID_HANDLE_VALUE)
     {
