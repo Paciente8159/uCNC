@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.2] - Unreleased
+## [1.3.2] - 2022-01-05
 
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
