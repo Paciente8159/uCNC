@@ -1233,40 +1233,41 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     memcpy(target, planner_last_pos, sizeof(planner_last_pos));
 
     //for all not explicitly declared target retain their position or add offset
+    bool abspos = (new_state->groups.distance_mode == G90) | (new_state->groups.nonmodal == G53);
 #ifdef AXIS_X
     if (CHECKFLAG(cmd->words, GCODE_WORD_X))
     {
-        target[AXIS_X] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_X] : (words->xyzabc[AXIS_X] + target[AXIS_X]);
+        target[AXIS_X] = (abspos) ? words->xyzabc[AXIS_X] : (words->xyzabc[AXIS_X] + target[AXIS_X]);
     }
 #endif
 #ifdef AXIS_Y
     if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
     {
-        target[AXIS_Y] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Y] : (words->xyzabc[AXIS_Y] + target[AXIS_Y]);
+        target[AXIS_Y] = (abspos) ? words->xyzabc[AXIS_Y] : (words->xyzabc[AXIS_Y] + target[AXIS_Y]);
     }
 #endif
 #ifdef AXIS_Z
     if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
     {
-        target[AXIS_Z] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_Z] : (words->xyzabc[AXIS_Z] + target[AXIS_Z]);
+        target[AXIS_Z] = (abspos) ? words->xyzabc[AXIS_Z] : (words->xyzabc[AXIS_Z] + target[AXIS_Z]);
     }
 #endif
 #ifdef AXIS_A
     if (CHECKFLAG(cmd->words, GCODE_WORD_A))
     {
-        target[AXIS_A] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
+        target[AXIS_A] = (abspos) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
     }
 #endif
 #ifdef AXIS_B
     if (CHECKFLAG(cmd->words, GCODE_WORD_B))
     {
-        target[AXIS_B] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
+        target[AXIS_B] = (abspos) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
     }
 #endif
 #ifdef AXIS_C
     if (CHECKFLAG(cmd->words, GCODE_WORD_C))
     {
-        target[AXIS_C] = (new_state->groups.distance_mode == G90) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
+        target[AXIS_C] = (abspos) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
     }
 #endif
 
