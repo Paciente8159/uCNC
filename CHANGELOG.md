@@ -7,8 +7,7 @@
 
 ## [1.3.2] - 2022-01-05
 
-µCNC version 1.3.2 aims to develop encoder and PID modules to make them more flexible/usable.
-It also addresses several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+µCNC version 1.3.2 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
 
 ### Changed
   - removed atomic blocks added with (#85) and relocated global ISR unlocking inside step ISR to be executed only in the step calculation section of the code (#101)
