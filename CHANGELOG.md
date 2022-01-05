@@ -22,6 +22,7 @@
   - fixed spindle override max and min values (#100)
   - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error
   - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) and a given axis is omitted was reapplying the offset
+  - fixed G4 P word was not convert from seconds to milliseconds on the parser
   - fixed G53 with active G91 (ignores G91) and now travels to the absolute position
 
 ## [1.3.1] - 2022-01-02
