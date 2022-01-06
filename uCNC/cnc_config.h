@@ -119,18 +119,6 @@ extern "C"
 #endif
 
 /*
-	Sets the number of PID controllers to be used
-	The PID controllers are configured in the cnc_hal_config.h
-*/
-#define PID_CONTROLLERS 0
-
-/*
-	Sets the number of encoders to be used
-	The encoders are configured in the cnc_hal_config.h
-*/
-#define ENCODERS 0
-
-/*
 	Feed overrides increments and percentage ranges
 */
 #define FEED_OVR_MAX 200

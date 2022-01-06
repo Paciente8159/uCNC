@@ -5,6 +5,11 @@
 
 # Changelog
 
+### Changed
+  - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
+  - added reset calls for motors encoders (#107)
+  - moved encoder and PID definitions to cnc_hal_config.h (#107)
+
 ## [1.3.2] - 2022-01-05
 
 µCNC version 1.3.2 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):

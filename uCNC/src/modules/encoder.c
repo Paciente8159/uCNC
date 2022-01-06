@@ -20,6 +20,86 @@
 #include "encoder.h"
 
 #if ENCODERS > 0
+#ifndef ENC0_PULSE
+#error "The ENC0 pulse pin is not defined"
+#endif
+#ifndef ENC0_DIR
+#error "The ENC0 dir pin is not defined"
+#endif
+#define ENC0 0
+#define ENC0_MASK (1 << 0)
+#endif
+#if ENCODERS > 1
+#ifndef ENC1_PULSE
+#error "The ENC1 pulse pin is not defined"
+#endif
+#ifndef ENC1_DIR
+#error "The ENC1 dir pin is not defined"
+#endif
+#define ENC1 1
+#define ENC1_MASK (1 << 1)
+#endif
+#if ENCODERS > 2
+#ifndef ENC2_PULSE
+#error "The ENC2 pulse pin is not defined"
+#endif
+#ifndef ENC2_DIR
+#error "The ENC2 dir pin is not defined"
+#endif
+#define ENC2 2
+#define ENC2_MASK (1 << 2)
+#endif
+#if ENCODERS > 3
+#ifndef ENC3_PULSE
+#error "The ENC3 pulse pin is not defined"
+#endif
+#ifndef ENC3_DIR
+#error "The ENC3 dir pin is not defined"
+#endif
+#define ENC3 3
+#define ENC3_MASK (1 << 3)
+#endif
+#if ENCODERS > 4
+#ifndef ENC4_PULSE
+#error "The ENC4 pulse pin is not defined"
+#endif
+#ifndef ENC4_DIR
+#error "The ENC4 dir pin is not defined"
+#endif
+#define ENC4 4
+#define ENC4_MASK (1 << 4)
+#endif
+#if ENCODERS > 5
+#ifndef ENC5_PULSE
+#error "The ENC5 pulse pin is not defined"
+#endif
+#ifndef ENC5_DIR
+#error "The ENC5 dir pin is not defined"
+#endif
+#define ENC5 5
+#define ENC5_MASK (1 << 5)
+#endif
+#if ENCODERS > 6
+#ifndef ENC6_PULSE
+#error "The ENC6 pulse pin is not defined"
+#endif
+#ifndef ENC6_DIR
+#error "The ENC6 dir pin is not defined"
+#endif
+#define ENC6 6
+#define ENC6_MASK (1 << 6)
+#endif
+#if ENCODERS > 7
+#ifndef ENC7_PULSE
+#error "The ENC7 pulse pin is not defined"
+#endif
+#ifndef ENC7_DIR
+#error "The ENC7 dir pin is not defined"
+#endif
+#define ENC7 7
+#define ENC7_MASK (1 << 7)
+#endif
+
 static int32_t encoders_pos[ENCODERS];
 
 static FORCEINLINE uint8_t read_encoder_pulses(void)
@@ -94,71 +174,78 @@ void encoders_update(void)
 #if ENCODERS > 0
     if ((diff & ENC0_MASK & pulse))
     {
-        encoders_pos[0] += (dir && ENC0_MASK) ? -1 : 1;
+        encoders_pos[0] += (dir && ENC0_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 1
     if ((diff & ENC1_MASK & pulse))
     {
-        encoders_pos[1] += (dir & ENC1_MASK) ? -1 : 1;
+        encoders_pos[1] += (dir & ENC1_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 2
     if ((diff & ENC2_MASK & pulse))
     {
-        encoders_pos[2] += (dir & ENC2_MASK) ? -1 : 1;
+        encoders_pos[2] += (dir & ENC2_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 3
     if ((diff & ENC3_MASK & pulse))
     {
-        encoders_pos[3] += (dir & ENC3_MASK) ? -1 : 1;
+        encoders_pos[3] += (dir & ENC3_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 4
     if ((diff & ENC4_MASK & pulse))
     {
-        encoders_pos[4] += (dir & ENC4_MASK) ? -1 : 1;
+        encoders_pos[4] += (dir & ENC4_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 5
     if ((diff & ENC5_MASK & pulse))
     {
-        encoders_pos[5] += (dir & ENC5_MASK) ? -1 : 1;
+        encoders_pos[5] += (dir & ENC5_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 6
     if ((diff & ENC6_MASK & pulse))
     {
-        encoders_pos[6] += (dir & ENC6_MASK) ? -1 : 1;
+        encoders_pos[6] += (dir & ENC6_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 7
     if ((diff & ENC7_MASK & pulse))
     {
-        encoders_pos[7] += (dir & ENC7_MASK) ? -1 : 1;
+        encoders_pos[7] += (dir & ENC7_MASK) ? 1 : -1;
     }
 #endif
 }
 
-int32_t encoder_get_pos(uint8_t i)
+int32_t encoder_get_position(uint8_t i)
 {
-    return encoders_pos[i];
+    __ATOMIC__
+    {
+        return encoders_pos[i];
+    }
 }
 
-void encoder_reset_pos(uint8_t i)
+void encoder_reset_position(uint8_t i, int32_t position)
 {
-    encoders_pos[i] = 0;
+    __ATOMIC__
+    {
+        encoders_pos[i] = position;
+    }
 }
 
-void encoders_reset_pos(void)
+void encoders_reset_position(void)
 {
 #if ENCODERS > 0
-    for (uint8_t i = 0; i < ENCODERS; i++)
+    __ATOMIC__
     {
-        encoders_pos[i] = 0;
+        for (uint8_t i = 0; i < ENCODERS; i++)
+        {
+            encoders_pos[i] = 0;
+        }
     }
 #endif
 }
-
-#endif
