@@ -16,6 +16,7 @@
 
 ### Fixed
   - fixed tool length offset was not affecting the `WCO` position report
+  - tool length is set to 0 after reset
   - fixed pid settings index
   - modified settings change code (smaller and more efficient) (#110)
 
