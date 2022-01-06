@@ -100,7 +100,6 @@
 #define ENC7_MASK (1 << 7)
 #endif
 
-
 static int32_t encoders_pos[ENCODERS];
 
 static FORCEINLINE uint8_t read_encoder_pulses(void)
@@ -224,7 +223,10 @@ void encoders_update(void)
 
 int32_t encoder_get_position(uint8_t i)
 {
-    return encoders_pos[i];
+    __ATOMIC__
+    {
+        return encoders_pos[i];
+    }
 }
 
 void encoder_reset_position(uint8_t i, int32_t position)
@@ -238,9 +240,12 @@ void encoder_reset_position(uint8_t i, int32_t position)
 void encoders_reset_position(void)
 {
 #if ENCODERS > 0
-    for (uint8_t i = 0; i < ENCODERS; i++)
+    __ATOMIC__
     {
-        encoders_pos[i] = 0;
+        for (uint8_t i = 0; i < ENCODERS; i++)
+        {
+            encoders_pos[i] = 0;
+        }
     }
 #endif
 }

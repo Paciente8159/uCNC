@@ -23,6 +23,7 @@
 #include "../core/motion_control.h"
 #include "../core/parser.h"
 #include "../core/planner.h"
+#include "../modules/encoder.h"
 #include "protocol.h"
 #include "grbl_interface.h"
 
