@@ -1209,6 +1209,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
         CLEARFLAG(cmd->words, GCODE_WORD_Z);
         words->xyzabc[AXIS_TOOL] = 0; //resets parameter so it it doen't do anything else
+        parser_wco_counter = 0;
     }
 #endif
     //15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
