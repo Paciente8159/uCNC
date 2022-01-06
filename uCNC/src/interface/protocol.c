@@ -526,6 +526,14 @@ void protocol_send_cnc_settings(void)
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
     protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
 
+#if TOOL_COUNT > 0
+    protocol_send_gcode_setting_line_int(40, g_settings.default_tool);
+    for (uint8_t i = 0; i < TOOL_COUNT; i++)
+    {
+        protocol_send_gcode_setting_line_flt(41 + i, g_settings.tool_length_offset[i]);
+    }
+#endif
+
 #ifdef ENABLE_SKEW_COMPENSATION
     protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
 #ifndef SKEW_COMPENSATION_XY_ONLY

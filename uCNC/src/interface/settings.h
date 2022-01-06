@@ -62,7 +62,10 @@ extern "C"
                 float max_feed_rate[STEPPER_COUNT];
                 float acceleration[STEPPER_COUNT];
                 float max_distance[AXIS_COUNT];
-                uint8_t tool_count;
+#if TOOL_COUNT > 0
+                uint8_t default_tool;
+                float tool_length_offset[TOOL_COUNT];
+#endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
                 uint16_t backlash_steps[STEPPER_COUNT];
 #endif

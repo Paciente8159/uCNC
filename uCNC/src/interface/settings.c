@@ -173,39 +173,88 @@ const settings_t __rom__ default_settings =
         .pid_gain[0][2] = 0,
 #endif
 #if PID_CONTROLLERS > 1
-        .pid_gain[1][1] = 0,
+        .pid_gain[1][0] = 0,
         .pid_gain[1][1] = 0,
         .pid_gain[1][2] = 0,
 #endif
 #if PID_CONTROLLERS > 2
-        .pid_gain[2][2] = 0,
+        .pid_gain[2][0] = 0,
         .pid_gain[2][1] = 0,
         .pid_gain[2][2] = 0,
 #endif
 #if PID_CONTROLLERS > 3
-        .pid_gain[3][3] = 0,
+        .pid_gain[3][0] = 0,
         .pid_gain[3][1] = 0,
         .pid_gain[3][2] = 0,
 #endif
 #if PID_CONTROLLERS > 4
-        .pid_gain[4][4] = 0,
+        .pid_gain[4][0] = 0,
         .pid_gain[4][1] = 0,
         .pid_gain[4][2] = 0,
 #endif
 #if PID_CONTROLLERS > 5
-        .pid_gain[5][5] = 0,
+        .pid_gain[5][0] = 0,
         .pid_gain[5][1] = 0,
         .pid_gain[5][2] = 0,
 #endif
 #if PID_CONTROLLERS > 6
-        .pid_gain[6][6] = 0,
+        .pid_gain[6][0] = 0,
         .pid_gain[6][1] = 0,
         .pid_gain[6][2] = 0,
 #endif
 #if PID_CONTROLLERS > 7
-        .pid_gain[7][7] = 0,
+        .pid_gain[7][0] = 0,
         .pid_gain[7][1] = 0,
         .pid_gain[7][2] = 0,
+#endif
+#if TOOL_COUNT > 0
+        .default_tool = DEFAULT_STARTUP_TOOL,
+        .tool_length_offset[0] = 0,
+#endif
+#if TOOL_COUNT > 1
+        .tool_length_offset[1] = 0,
+#endif
+#if TOOL_COUNT > 2
+        .tool_length_offset[2] = 0,
+#endif
+#if TOOL_COUNT > 3
+        .tool_length_offset[3] = 0,
+#endif
+#if TOOL_COUNT > 4
+        .tool_length_offset[4] = 0,
+#endif
+#if TOOL_COUNT > 5
+        .tool_length_offset[5] = 0,
+#endif
+#if TOOL_COUNT > 6
+        .tool_length_offset[6] = 0,
+#endif
+#if TOOL_COUNT > 7
+        .tool_length_offset[7] = 0,
+#endif
+#if TOOL_COUNT > 8
+        .tool_length_offset[8] = 0,
+#endif
+#if TOOL_COUNT > 9
+        .tool_length_offset[9] = 0,
+#endif
+#if TOOL_COUNT > 10
+        .tool_length_offset[10] = 0,
+#endif
+#if TOOL_COUNT > 11
+        .tool_length_offset[11] = 0,
+#endif
+#if TOOL_COUNT > 12
+        .tool_length_offset[12] = 0,
+#endif
+#if TOOL_COUNT > 13
+        .tool_length_offset[13] = 0,
+#endif
+#if TOOL_COUNT > 14
+        .tool_length_offset[14] = 0,
+#endif
+#if TOOL_COUNT > 15
+        .tool_length_offset[15] = 0,
 #endif
 
         .step_enable_invert = DEFAULT_STEP_ENA_INV,
@@ -218,7 +267,6 @@ const settings_t __rom__ default_settings =
         .homing_offset = DEFAULT_HOMING_OFFSET,
         .g64_angle_factor = DEFAULT_G64_FACTOR,
         .arc_tolerance = DEFAULT_ARC_TOLERANCE,
-        //.tool_count = DEFAULT_STARTUP_TOOL,
         .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
         .status_report_mask = DEFAULT_STATUS_MASK,
         .control_invert_mask = DEFAULT_CONTROL_INV_MASK,
@@ -652,7 +700,20 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.pid_gain[7][2] = value;
         break;
 #endif
+#if TOOL_COUNT > 0
+    case 40:
+        g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
+        break;
+#endif
     default:
+#if TOOL_COUNT > 0
+        if (setting > 40 && setting <= 46)
+        {
+            setting-=41;
+            g_settings.tool_length_offset[setting] = value;
+            break;
+        }
+#endif
         return STATUS_INVALID_STATEMENT;
     }
 

@@ -109,7 +109,7 @@
 #define G40 0
 #define G41 1
 #define G42 2
-#define G43_1 0
+#define G43 0
 #define G49 1
 #define G98 0
 #define G99 1
@@ -414,8 +414,8 @@ bool parser_get_wco(float *axis)
             axis[i] = parser_parameters.g92_offset[i] + parser_parameters.coord_system_offset[i];
         }
 
-#ifdef AXIS_Z
-//axis[AXIS_Z] += parser_parameters.tool_length_offset;
+#ifdef AXIS_TOOL
+        axis[AXIS_TOOL] += parser_parameters.tool_length_offset;
 #endif
         parser_wco_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
         return true;
@@ -968,7 +968,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
     //group 6 - units (nothing to be checked)
     //group 7 - cutter radius compensation (not implemented yet)
     //group 8 - tool length offset
-    if ((new_state->groups.tool_length_offset == G43_1) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tool_length_offset == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         if (!CHECKFLAG(cmd->words, GCODE_WORD_Z))
         {
@@ -1204,7 +1204,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 //13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
 //14. cutter length compensation on or off (G43.1, G49)
 #ifdef AXIS_TOOL
-    if ((new_state->groups.tool_length_offset == 1) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tool_length_offset == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
         CLEARFLAG(cmd->words, GCODE_WORD_Z);
@@ -1830,7 +1830,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         {
             //codes with possible mantissa
         case 38:
-        case 43:
         case 59:
         case 61:
         case 92:
@@ -1919,17 +1918,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         break;
     case 43: //doesn't support G43 but G43.1 (takes Z coordinate input has offset)
     case 49:
-        if (code == 43)
-        {
-            switch (mantissa)
-            {
-            case 10:
-                break;
-            default:
-                return STATUS_GCODE_UNSUPPORTED_COMMAND;
-            }
-        }
-        new_state->groups.tool_length_offset = ((code == 49) ? G49 : G43_1);
+        new_state->groups.tool_length_offset = ((code == 49) ? G49 : G43);
         new_group |= GCODE_GROUP_TOOLLENGTH;
         break;
     case 98:
@@ -2237,6 +2226,31 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 
         words->t = (uint8_t)trunc(value);
         break;
+    case 'H':
+//special case for G43
+//is valid if preceded from a G43/G49
+//it get's converted to a Z word with tool length
+#if TOOL_COUNT > 0
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+        {
+            if (mantissa)
+            {
+                return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+            }
+
+            uint8_t index = (uint8_t)trunc(value);
+            if (index < 1 || index > TOOL_COUNT)
+            {
+                return STATUS_INVALID_TOOL;
+            }
+            index--;
+            cmd->words |= GCODE_WORD_Z;
+            words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
+        }
+#else
+        return STATUS_GCODE_UNUSED_WORDS;
+#endif
+        break;
     default:
         if (c >= 'A' && c <= 'Z') //invalid recognized char
         {
@@ -2309,7 +2323,7 @@ static void parser_reset(void)
 #endif
 #if TOOL_COUNT > 0
     parser_state.groups.tool_change = 1;
-    parser_state.tool_index = 1;
+    parser_state.tool_index = g_settings.default_tool;
 #else
     parser_state.groups.tool_change = 0;
 #endif
