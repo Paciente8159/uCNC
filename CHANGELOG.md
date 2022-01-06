@@ -6,18 +6,17 @@
 # Changelog
 
 ### Added
-  - added configurable default loading tool and tools offset
+  - added configurable default loading tool and tools offset (#109)
 
 ### Changed
   - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
-  - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` 
+  - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
 
 ### Fixed
-  - fixed tool length offset was not affecting the `WCO` position report
-  - tool length is set to 0 after reset
-  - fixed pid settings index
+  - fixed tool length offset was not affecting the `WCO` position report (#109)
+  - tool length is set to 0 after reset (#109)
   - modified settings change code (smaller and more efficient) (#110)
 
 ### Fixed
