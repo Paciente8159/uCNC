@@ -23,6 +23,7 @@
 #include "../core/motion_control.h"
 #include "../core/parser.h"
 #include "../core/planner.h"
+#include "../modules/encoder.h"
 #include "protocol.h"
 #include "grbl_interface.h"
 
@@ -610,6 +611,15 @@ void protocol_send_pins_states(void)
             serial_print_str(MSG_END);
         }
     }
+
+#if ENCODERS > 0
+    for (uint8_t i = 0; i < ENCODERS; i++)
+    {
+        serial_print_str(__romstr__("[EC:"));
+        serial_print_int(encoder_get_position(i));
+        serial_print_str(MSG_END);
+    }
+#endif
 
     protocol_busy = false;
 }

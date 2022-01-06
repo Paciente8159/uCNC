@@ -478,6 +478,9 @@ bool cnc_reset(void)
     planner_clear();
     mc_init();
     parser_init();
+#if ENCODERS > 0
+    encoders_reset_position();
+#endif
     protocol_send_string(MSG_STARTUP);
 
     uint8_t ok = cnc_unlock(false);

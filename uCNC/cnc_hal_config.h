@@ -49,32 +49,44 @@ extern "C"
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
 
-/**
+	/**
 	Tool definition
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
 
-//declare the tool to be used
-extern const tool_t __rom__ spindle1;
+	//declare the tool to be used
+	extern const tool_t __rom__ spindle1;
 //extern const tool_t __rom__ laser1;
 
 //assign the tools from 1 to 16
 #define TOOL1 spindle1
-//#define TOOL2 laser1
+	//#define TOOL2 laser1
 
 #if DOUT15 >= 0
 #define LED DOUT15
 #endif
 
-#ifndef PID_CONTROLLERS
-#define PID_CONTROLLERS 0
-#endif
-
-#ifndef ENCODERS
+/*
+	Sets the number of encoders to be used (max of 8)
+*/
 #define ENCODERS 0
-#endif
 
 /**
+ * To use the encoder counter 2 definitions are needed
+ * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
+ * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
+ * Defined encoders must match the number of encoders and numeral defined above.
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * */
+	//#define ENC0_PULSE DIN0
+	//#define ENC0_DIR DIN8
+
+/*
+	Sets the number of PID controllers to be used
+*/
+#define PID_CONTROLLERS 0
+
+	/**
  * To use the PID controller 2 definitions are needed
  * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
  * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
@@ -99,14 +111,6 @@ extern const tool_t __rom__ spindle1;
 	// #define PID0_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
 	// //optional
 	// #define PID0_FREQ_DIV 50
-
-	/**
- * To use the encoder counter 2 definitions are needed
- * ENC0_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
- * ENC0_DIR -> a regular input PIN that detects the direction of the encoding step
- * */
-	//#define ENC0_PULSE DIN0
-	//#define ENC0_DIR DIN8
 
 #ifdef __cplusplus
 }

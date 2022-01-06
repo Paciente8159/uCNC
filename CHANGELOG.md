@@ -6,18 +6,21 @@
 # Changelog
 
 ### Added
-  - added pid_stop action and alarm checking (safety stop)
-  - added new interpolator functions to be used by the PID module
+  - added pid_stop action and alarm checking (safety stop) (#108)
+  - added new interpolator functions to be used by the PID module (#108)
 
 ### Changed
-  - modified/fixed PID controller to output positive/negative variation result
-  - added CLAMP macro to utils.h
-  - variable PID frequency depending on the number of PID defined. Frequency is now 1000/log2(Total PID's) in Hz
-  - optimized memory sizes for Kp, Kd and Ki gains
-  - PID math executes in 32bit integer math only
-  - modified scheduletasks and added isr locking to SAMD21 and STM32
-  - moved some definitions to a new cnc_hal_config_helper.h file that is available via cnc.h
-  - hardwired tool pid to PID0 controller
+  - modified/fixed PID controller to output positive/negative variation result (#108)
+  - added CLAMP macro to utils.h (#108)
+  - variable PID frequency depending on the number of PID defined. Frequency is now 1000/log2(Total PID's) in Hz (#108)
+  - optimized memory sizes for Kp, Kd and Ki gains (#108)
+  - PID math executes in 32bit integer math only (#108)
+  - modified scheduletasks and added isr locking to SAMD21 and STM32 (#108)
+  - moved some definitions to a new cnc_hal_config_helper.h file that is available via cnc.h (#108)
+  - hardwired tool pid to PID0 controller (#108)
+  - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
+  - added reset calls for motors encoders (#107)
+  - moved encoder and PID definitions to cnc_hal_config.h (#107)
 
 ## [1.3.2] - 2022-01-05
 
