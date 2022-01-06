@@ -207,6 +207,55 @@ const settings_t __rom__ default_settings =
         .pid_gain[7][1] = 0,
         .pid_gain[7][2] = 0,
 #endif
+#if TOOL_COUNT > 0
+        .default_tool = DEFAULT_STARTUP_TOOL,
+        .tool_length_offset[0] = 0,
+#endif
+#if TOOL_COUNT > 1
+        .tool_length_offset[1] = 0,
+#endif
+#if TOOL_COUNT > 2
+        .tool_length_offset[2] = 0,
+#endif
+#if TOOL_COUNT > 3
+        .tool_length_offset[3] = 0,
+#endif
+#if TOOL_COUNT > 4
+        .tool_length_offset[4] = 0,
+#endif
+#if TOOL_COUNT > 5
+        .tool_length_offset[5] = 0,
+#endif
+#if TOOL_COUNT > 6
+        .tool_length_offset[6] = 0,
+#endif
+#if TOOL_COUNT > 7
+        .tool_length_offset[7] = 0,
+#endif
+#if TOOL_COUNT > 8
+        .tool_length_offset[8] = 0,
+#endif
+#if TOOL_COUNT > 9
+        .tool_length_offset[9] = 0,
+#endif
+#if TOOL_COUNT > 10
+        .tool_length_offset[10] = 0,
+#endif
+#if TOOL_COUNT > 11
+        .tool_length_offset[11] = 0,
+#endif
+#if TOOL_COUNT > 12
+        .tool_length_offset[12] = 0,
+#endif
+#if TOOL_COUNT > 13
+        .tool_length_offset[13] = 0,
+#endif
+#if TOOL_COUNT > 14
+        .tool_length_offset[14] = 0,
+#endif
+#if TOOL_COUNT > 15
+        .tool_length_offset[15] = 0,
+#endif
 
         .step_enable_invert = DEFAULT_STEP_ENA_INV,
         .step_invert_mask = DEFAULT_STEP_INV_MASK,
@@ -437,6 +486,11 @@ uint8_t settings_change(uint8_t setting, float value)
         break;
 #endif
 #endif
+#if TOOL_COUNT > 0
+    case 40:
+        g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
+        break;
+#endif
     default:
         if (setting >= 100 && setting < (100 + STEPPER_COUNT))
         {
@@ -484,6 +538,14 @@ uint8_t settings_change(uint8_t setting, float value)
                 return STATUS_INVALID_STATEMENT;
             }
             g_settings.pid_gain[pid][k] = value;
+        }
+#endif
+#if TOOL_COUNT > 0
+        else if (setting > 40 && setting <= 56)
+        {
+            setting -= 41;
+            g_settings.tool_length_offset[setting] = value;
+            break;
         }
 #endif
 

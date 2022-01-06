@@ -5,10 +5,18 @@
 
 # Changelog
 
+### Added
+  - added configurable default loading tool and tools offset (#109)
+
 ### Changed
   - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
+  - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
+
+### Fixed
+  - fixed tool length offset was not affecting the `WCO` position report (#109)
+  - tool length is set to 0 after reset (#109)
   - modified settings change code (smaller and more efficient) (#110)
 
 ### Fixed
@@ -25,17 +33,17 @@
   - modified SAMD21 compilation flags and board configurations (#101)
   - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
   - removed duplicate tool pid call (#101)
-  - modified feed override flags so M48/M49 will only affect at code execution order (#102)
+  - modified feed override flags so `M48/M49` will only affect at code execution order (#102)
   - modified tool speed update and read functions and integrated HAL tool in the core of µCNC (#106)
 
 ### Fixed
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglecting feed override value (#102)
-  - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
+  - fixed `M48/M49` parsing error (after calling overrides were always turned off) (#102)
   - fixed spindle override max and min values (#100)
-  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error (#103)
-  - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
-  - fixed G4 P word was not convert from seconds to milliseconds on the parser (#103)
-  - fixed G53 with active G91 (ignores G91) and now travels to the absolute position (#103)
+  - fixed arc commands `G2/G3` with `G18` active parsing validation errors and mirrored motion error (#103)
+  - fixed motion commands (`G0`,`G1`, etc) with active offset (`G92` or `G5x`) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
+  - fixed `G4 P` word was not convert from seconds to milliseconds on the parser (#103)
+  - fixed `G53` with active `G91` (ignores `G91`) and now travels to the absolute position (#103)
   - fixed interpolator speed calculations for slow movements with instant max speed that and speed was set to 0 causing µCNC to stop generating steps and not moving (#105)
 
 ## [1.3.1] - 2022-01-02
