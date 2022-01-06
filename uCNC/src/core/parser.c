@@ -181,7 +181,7 @@ typedef struct
     uint8_t distance_mode : 1;
     uint8_t feedrate_mode : 1;
     uint8_t units : 1;
-    uint8_t tool_length_offset : 1;
+    uint8_t tlo_mode : 1;
     uint8_t return_mode : 1;
     uint8_t feed_speed_override : 1;
     //1byte
@@ -335,7 +335,7 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
     modalgroups[2] = parser_state.groups.distance_mode + 90;
     modalgroups[3] = parser_state.groups.feedrate_mode + 93;
     modalgroups[4] = parser_state.groups.units + 20;
-    modalgroups[5] = ((parser_state.groups.tool_length_offset == G49) ? 49 : 43);
+    modalgroups[5] = ((parser_state.groups.tlo_mode == G49) ? 49 : 43);
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
@@ -968,7 +968,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
     //group 6 - units (nothing to be checked)
     //group 7 - cutter radius compensation (not implemented yet)
     //group 8 - tool length offset
-    if ((new_state->groups.tool_length_offset == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         if (!CHECKFLAG(cmd->words, GCODE_WORD_Z))
         {
@@ -1204,7 +1204,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 //13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
 //14. cutter length compensation on or off (G43.1, G49)
 #ifdef AXIS_TOOL
-    if ((new_state->groups.tool_length_offset == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
         CLEARFLAG(cmd->words, GCODE_WORD_Z);
@@ -1919,7 +1919,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         break;
     case 43: //doesn't support G43 but G43.1 (takes Z coordinate input has offset)
     case 49:
-        new_state->groups.tool_length_offset = ((code == 49) ? G49 : G43);
+        new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
         new_group |= GCODE_GROUP_TOOLLENGTH;
         break;
     case 98:
@@ -2314,7 +2314,7 @@ static void parser_reset(void)
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94
-    parser_state.groups.tool_length_offset = G49;         //G49
+    parser_state.groups.tlo_mode = G49;         //G49
     parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
 #ifdef USE_COOLANT
     parser_state.groups.coolant = M9; //M9
@@ -2331,6 +2331,7 @@ static void parser_reset(void)
     parser_state.groups.motion = G1;                                               //G1
     parser_state.groups.units = G21;                                               //G21
     memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); //G92.2
+    parser_parameters.tool_length_offset = 0;
 }
 
 //loads parameters
