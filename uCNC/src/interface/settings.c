@@ -541,7 +541,7 @@ uint8_t settings_change(uint8_t setting, float value)
         }
 #endif
 #if TOOL_COUNT > 0
-        else if (setting > 40 && setting <= 46)
+        else if (setting > 40 && setting <= 56)
         {
             setting -= 41;
             g_settings.tool_length_offset[setting] = value;

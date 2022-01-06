@@ -525,6 +525,13 @@ void protocol_send_cnc_settings(void)
     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
     protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
+#ifdef ENABLE_SKEW_COMPENSATION
+    protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
+#ifndef SKEW_COMPENSATION_XY_ONLY
+    protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
+    protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
+#endif
+#endif
 
 #if TOOL_COUNT > 0
     protocol_send_gcode_setting_line_int(40, g_settings.default_tool);
@@ -532,14 +539,6 @@ void protocol_send_cnc_settings(void)
     {
         protocol_send_gcode_setting_line_flt(41 + i, g_settings.tool_length_offset[i]);
     }
-#endif
-
-#ifdef ENABLE_SKEW_COMPENSATION
-    protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
-#ifndef SKEW_COMPENSATION_XY_ONLY
-    protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
-    protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
-#endif
 #endif
 
     for (uint8_t i = 0; i < STEPPER_COUNT; i++)
@@ -572,9 +571,9 @@ void protocol_send_cnc_settings(void)
 #if PID_CONTROLLERS > 0
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        protocol_send_gcode_setting_line_flt(150 + 4*i, g_settings.pid_gain[i][0]);
-        protocol_send_gcode_setting_line_flt(151 + 4*i, g_settings.pid_gain[i][1]);
-        protocol_send_gcode_setting_line_flt(152 + 4*i, g_settings.pid_gain[i][2]);
+        protocol_send_gcode_setting_line_flt(150 + 4 * i, g_settings.pid_gain[i][0]);
+        protocol_send_gcode_setting_line_flt(151 + 4 * i, g_settings.pid_gain[i][1]);
+        protocol_send_gcode_setting_line_flt(152 + 4 * i, g_settings.pid_gain[i][2]);
     }
 #endif
     protocol_busy = false;
