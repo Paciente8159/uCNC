@@ -34,8 +34,7 @@ extern "C"
 /*
 	Uncomment this feature to enable tool length compensation
 */
-#define ENABLE_TOOL_LENGTH_COMPENSATION
-#if (defined(ENABLE_TOOL_LENGTH_COMPENSATION) && defined(AXIS_Z))
+#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
 #define AXIS_TOOL AXIS_Z
 #endif
 
