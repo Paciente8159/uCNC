@@ -496,7 +496,6 @@ uint8_t settings_change(uint8_t setting, float value)
         {
             setting -= 100;
             g_settings.step_per_mm[setting] = value;
-            break;
         }
         else if (setting >= 110 && setting < (110 + STEPPER_COUNT))
         {
@@ -545,11 +544,13 @@ uint8_t settings_change(uint8_t setting, float value)
         {
             setting -= 41;
             g_settings.tool_length_offset[setting] = value;
-            break;
+            
         }
 #endif
-
-        return STATUS_INVALID_STATEMENT;
+        else {
+            return STATUS_INVALID_STATEMENT;
+        }
+        break;
     }
 
 #ifndef ENABLE_SETTING_EXTRA_CMDS
