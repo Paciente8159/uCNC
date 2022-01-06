@@ -6,9 +6,9 @@
 # Changelog
 
 ### Changed
-  - modified encoder module to allow it work has a unidirectional encoder (simple counter)
-  - added reset calls for motors encoders
-  - moved encoder and PID definitions to cnc_hal_config.h
+  - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
+  - added reset calls for motors encoders (#107)
+  - moved encoder and PID definitions to cnc_hal_config.h (#107)
 
 ## [1.3.2] - 2022-01-05
 
