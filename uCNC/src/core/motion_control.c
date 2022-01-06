@@ -603,7 +603,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     return STATUS_OK;
 }
 
-uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
+uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
 #if PROBE >= 0
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
@@ -619,7 +619,7 @@ uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
         }
 
 #if (defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK != PROBEISR_MASK))
-        if (io_get_probe())
+        if (io_get_probe() ^ (flags & 0x01))
         {
             io_probe_isr();
             break;
@@ -632,19 +632,24 @@ uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data)
     itp_clear();
     planner_clear();
     parser_update_probe_pos();
-    cnc_clear_exec_state(~prev_state & EXEC_HOLD); //restores HOLD previous state
-    cnc_delay_ms(g_settings.debounce_ms);          //adds a delay before reading io pin (debounce)
+    //sync the position of the motion control
+    mc_sync_position();
+    cnc_clear_exec_state(~prev_state | ~EXEC_HOLD); //restores HOLD previous state
+    cnc_delay_ms(g_settings.debounce_ms);           //adds a delay before reading io pin (debounce)
     bool probe_ok = io_get_probe();
-    probe_ok = (!invert_probe) ? probe_ok : !probe_ok;
+    probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? !probe_ok : probe_ok;
     if (!probe_ok)
     {
-        cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
-        return STATUS_CRITICAL_FAIL;
+        if (!(flags & MOTIONCONTROL_PROBE_NOALARM_ONFAIL))
+        {
+            cnc_alarm(EXEC_ALARM_PROBE_FAIL_CONTACT);
+        }
+        return STATUS_OK;
     }
 
 #endif
 
-    return STATUS_OK;
+    return STATUS_PROBE_SUCCESS;
 }
 
 void mc_get_position(float *target)

@@ -369,12 +369,20 @@ void protocol_send_gcode_coordsys(void)
     serial_putc(']');
     procotol_send_newline();
 #endif
+    protocol_send_probe_result(parser_get_probe_result());
 
+    protocol_busy = false;
+}
+
+void protocol_send_probe_result(uint8_t val)
+{
+    float axis[MAX(AXIS_COUNT, 3)];
+    protocol_busy = true;
     serial_print_str(__romstr__("[PRB:"));
     parser_get_coordsys(255, axis);
     serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(':');
-    serial_putc('0' + parser_get_probe_result());
+    serial_putc('0' + val);
     serial_putc(']');
     procotol_send_newline();
     protocol_busy = false;

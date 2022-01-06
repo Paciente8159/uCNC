@@ -81,7 +81,6 @@ extern virtports_t virtualports;
 #define LIMIT_X 4
 #define LIMIT_Y 5
 #define LIMIT_Z 6
-#define LIMIT_Y2 6
 #define PROBE 7
 
 #define INREG virtualports->inputs

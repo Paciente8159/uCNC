@@ -101,13 +101,13 @@ void cnc_run(void)
 
     cnc_state.loop_state = LOOP_ERROR_RESET;
     serial_flush();
+    if (cnc_state.alarm > 0)
+    {
+        protocol_send_alarm(cnc_state.alarm);
+    }
     if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
     {
         io_disable_steppers();
-        if (cnc_state.alarm > 0)
-        {
-            protocol_send_alarm(cnc_state.alarm);
-        }
 
         cnc_check_fault_systems();
         cnc_state.alarm = 0;
@@ -449,7 +449,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks());
+    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks())
+        ;
 }
 
 bool cnc_reset(void)

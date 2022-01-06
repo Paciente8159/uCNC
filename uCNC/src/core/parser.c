@@ -939,7 +939,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         }
 
         //group 5 - feed rate mode
-        if (new_state->groups.motion >= G1 && new_state->groups.motion <= G3)
+        if (new_state->groups.motion >= G1 && new_state->groups.motion <= G38_5)
         {
             if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
             {
@@ -1424,8 +1424,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //incomplete (canned cycles not supported)
     if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
     {
-        uint8_t probe_error;
-
+        uint8_t probe_flags;
         switch (new_state->groups.motion)
         {
         case G0:
@@ -1514,16 +1513,24 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         case 5: //G38.3
         case 6: //G38.4
         case 7: //G38.5
-            probe_error = mc_probe(target, (new_state->groups.motion > 5), &block_data);
-            if (probe_error)
+            probe_flags = (new_state->groups.motion > 5) ? 1 : 0;
+            probe_flags |= (new_state->groups.motion & 0x01) ? 2 : 0;
+
+            error = mc_probe(target, probe_flags, &block_data);
+            if (error == STATUS_PROBE_SUCCESS)
+            {
+                parser_parameters.last_probe_ok = 1;
+                error = STATUS_OK;
+            }
+            else
             {
                 parser_parameters.last_probe_ok = 0;
-                if (!(new_state->groups.motion & 0x01))
-                {
-                    return probe_error;
-                }
             }
-            parser_parameters.last_probe_ok = 1;
+
+            if (error == STATUS_OK)
+            {
+                protocol_send_probe_result(parser_parameters.last_probe_ok);
+            }
         }
     }
 
@@ -2314,7 +2321,7 @@ static void parser_reset(void)
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94
-    parser_state.groups.tlo_mode = G49;         //G49
+    parser_state.groups.tlo_mode = G49;                   //G49
     parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
 #ifdef USE_COOLANT
     parser_state.groups.coolant = M9; //M9
