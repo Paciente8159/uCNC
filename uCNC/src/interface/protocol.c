@@ -572,9 +572,9 @@ void protocol_send_cnc_settings(void)
 #if PID_CONTROLLERS > 0
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        protocol_send_gcode_setting_line_flt(200 + fast_int_mul10(i), g_settings.pid_gain[i][0]);
-        protocol_send_gcode_setting_line_flt(201 + fast_int_mul10(i), g_settings.pid_gain[i][1]);
-        protocol_send_gcode_setting_line_flt(202 + fast_int_mul10(i), g_settings.pid_gain[i][2]);
+        protocol_send_gcode_setting_line_flt(150 + 4*i, g_settings.pid_gain[i][0]);
+        protocol_send_gcode_setting_line_flt(151 + 4*i, g_settings.pid_gain[i][1]);
+        protocol_send_gcode_setting_line_flt(152 + 4*i, g_settings.pid_gain[i][2]);
     }
 #endif
     protocol_busy = false;
