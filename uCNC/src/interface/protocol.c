@@ -170,13 +170,18 @@ void protocol_send_status(void)
     state &= filter;
 
     serial_putc('<');
-    if (!mc_get_checkmode() || cnc_get_exec_state(EXEC_ALARM))
+    if (cnc_has_alarm())
+    {
+        serial_print_str(MSG_STATUS_ALARM);
+    }
+    else if(mc_get_checkmode())
+    {
+        serial_print_str(MSG_STATUS_CHECK);
+    }
+    else
     {
         switch (state)
         {
-        case EXEC_KILL:
-            serial_print_str(MSG_STATUS_ALARM);
-            break;
         case EXEC_DOOR:
             serial_print_str(MSG_STATUS_DOOR);
             if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
@@ -231,10 +236,6 @@ void protocol_send_status(void)
             serial_print_str(MSG_STATUS_IDLE);
             break;
         }
-    }
-    else
-    {
-        serial_print_str(MSG_STATUS_CHECK);
     }
 
     serial_print_str(MSG_STATUS_MPOS);

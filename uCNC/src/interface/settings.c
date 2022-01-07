@@ -546,7 +546,7 @@ uint8_t settings_change(uint8_t setting, float value)
             g_settings.tool_length_offset[setting] = value;
         }
 #endif
-        else{
+        else {
             return STATUS_INVALID_STATEMENT;
         }
         break;
