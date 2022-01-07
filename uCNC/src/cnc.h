@@ -58,6 +58,7 @@ extern "C"
 #define EXEC_JOG 8												// Jogging in execution
 #define EXEC_HOMING 16											// Homing in execution
 #define EXEC_HALT 32											// Limit switch is active or position lost due to abrupt stop
+#define EXEC_HOMING_HIT (EXEC_HOMING|EXEC_HALT)					// Limit switch is active during a homing motion
 #define EXEC_DOOR 64											// Safety door open
 #define EXEC_KILL 128											// Emergency stop
 #define EXEC_ALARM (EXEC_HALT | EXEC_DOOR | EXEC_KILL)			// System alarms

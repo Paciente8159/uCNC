@@ -183,7 +183,7 @@ bool cnc_dotasks(void)
 
     if (cnc_has_alarm())
     {
-        return !cnc_get_exec_state(EXEC_KILL);
+        return !cnc_get_exec_state(EXEC_KILL|EXEC_HOMING);
     }
 
     //µCNC already in error loop. No point in sending the alarms
