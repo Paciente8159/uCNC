@@ -44,9 +44,9 @@ static uint8_t mc_last_dirbits;
 void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-    mc_checkmode = false;
     memset(mc_last_step_pos, 0, sizeof(mc_last_step_pos));
 #endif
+    mc_checkmode = false;
     mc_sync_position();
 }
 
@@ -140,7 +140,7 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
         //dwell should only execute on the first request
         block_data->dwell = 0;
     }
-    
+
     return STATUS_OK;
 }
 
