@@ -88,35 +88,44 @@ void cnc_init(void)
 
 void cnc_run(void)
 {
-    // tries to reset. If fails jumps to error
-    if (cnc_reset())
-    {
-        cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
-        serial_select(SERIAL_UART);
+    cnc_reset();
+    
+    cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
+    serial_select(SERIAL_UART);
 
+    // tries to reset. If fails jumps to error
+    while (cnc_unlock(false))
+    {
         do
         {
         } while (cnc_exec_cmd());
-    }
 
-    cnc_state.loop_state = LOOP_ERROR_RESET;
-    serial_flush();
-    if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
-    {
-        io_disable_steppers();
+        cnc_state.loop_state = LOOP_ERROR_RESET;
+        serial_flush();
         if (cnc_state.alarm > 0)
         {
             protocol_send_alarm(cnc_state.alarm);
         }
-
-        cnc_check_fault_systems();
-        cnc_state.alarm = 0;
-        do
+        if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
-            cnc_clear_exec_state(EXEC_ALARM);
-            cnc_dotasks();
-        } while (cnc_state.alarm);
+            io_disable_steppers();
+            cnc_check_fault_systems();
+            break;
+        }
     }
+
+    do
+    {
+        if (!serial_rx_is_empty())
+        {
+            if (serial_getc() == EOL)
+            {
+                protocol_send_feedback(MSG_FEEDBACK_12);
+                protocol_send_ok();
+            }
+        }
+        cnc_dotasks();
+    } while (io_get_controls() & ESTOP_MASK);
 }
 
 bool cnc_exec_cmd(void)
@@ -171,6 +180,11 @@ bool cnc_dotasks(void)
 #endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
+
+    if (cnc_has_alarm())
+    {
+        return !cnc_get_exec_state(EXEC_KILL);
+    }
 
     //µCNC already in error loop. No point in sending the alarms
     if (cnc_state.loop_state == LOOP_ERROR_RESET)
@@ -290,6 +304,11 @@ void cnc_alarm(int8_t code)
     cnc_state.alarm = code;
 }
 
+bool cnc_has_alarm()
+{
+    return ((CHECKFLAG(cnc_state.exec_state, EXEC_ALARM) != EXEC_IDLE) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
+}
+
 void cnc_stop(void)
 {
     itp_stop();
@@ -308,6 +327,7 @@ uint8_t cnc_unlock(bool force)
     if (force)
     {
         CLEARFLAG(cnc_state.exec_state, EXEC_HALT);
+        cnc_state.alarm = EXEC_ALARM_NOALARM;
     }
 
     //if any alarm state is still active checks system faults
@@ -353,6 +373,7 @@ uint8_t cnc_unlock(bool force)
         }
     }
 
+    io_enable_steppers();
     return UNLOCK_OK;
 }
 
@@ -388,6 +409,12 @@ void cnc_clear_exec_state(uint8_t statemask)
         CLEARFLAG(statemask, EXEC_HOLD);
     }
 #endif
+
+    //has a pending (not cleared by user) alarm
+    if (cnc_state.alarm)
+    {
+        CLEARFLAG(statemask, EXEC_HALT);
+    }
 
     uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
@@ -449,7 +476,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks());
+    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks())
+        ;
 }
 
 bool cnc_reset(void)
@@ -460,6 +488,7 @@ bool cnc_reset(void)
     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
     cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
     cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; //Activates all alarms and hold
+    cnc_state.alarm = EXEC_ALARM_NOALARM;
 
     //clear all systems
     serial_rx_clear();
@@ -471,15 +500,16 @@ bool cnc_reset(void)
     encoders_reset_position();
 #endif
     protocol_send_string(MSG_STARTUP);
+    serial_flush();
 
-    uint8_t ok = cnc_unlock(false);
+    // uint8_t ok = cnc_unlock(false);
 
-    if (ok)
-    {
-        io_enable_steppers();
-    }
+    // if (ok)
+    // {
+    //     io_enable_steppers();
+    // }
 
-    return (ok != 0);
+    // return (ok != 0);
 }
 
 void cnc_call_rt_command(uint8_t command)

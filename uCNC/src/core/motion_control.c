@@ -44,9 +44,9 @@ static uint8_t mc_last_dirbits;
 void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-    mc_checkmode = false;
     memset(mc_last_step_pos, 0, sizeof(mc_last_step_pos));
 #endif
+    mc_checkmode = false;
     mc_sync_position();
 }
 
@@ -88,56 +88,59 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
     //stores current step target position
     memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    //checks if any of the linear actuators there is a shift in direction
-    uint8_t inverted_steps = mc_last_dirbits ^ block_data->dirbits;
-    if (inverted_steps)
+    if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
-        motion_data_t backlash_block_data = {0};
-        memcpy(&backlash_block_data, block_data, sizeof(motion_data_t));
-        memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
-        //resets accumulator vars
-        backlash_block_data.total_steps = 0;
-        backlash_block_data.full_steps = 0;
-        backlash_block_data.feed = FLT_MAX; //max feedrate possible (same as rapid move)
-
-        SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
-
-        for (uint8_t i = STEPPER_COUNT; i != 0;)
+#ifdef ENABLE_BACKLASH_COMPENSATION
+        //checks if any of the linear actuators there is a shift in direction
+        uint8_t inverted_steps = mc_last_dirbits ^ block_data->dirbits;
+        if (inverted_steps)
         {
-            i--;
-            if (inverted_steps & (1 << i))
+            motion_data_t backlash_block_data = {0};
+            memcpy(&backlash_block_data, block_data, sizeof(motion_data_t));
+            memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
+            //resets accumulator vars
+            backlash_block_data.total_steps = 0;
+            backlash_block_data.full_steps = 0;
+            backlash_block_data.feed = FLT_MAX; //max feedrate possible (same as rapid move)
+
+            SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
+
+            for (uint8_t i = STEPPER_COUNT; i != 0;)
             {
-                backlash_block_data.steps[i] = g_settings.backlash_steps[i];
-                backlash_block_data.full_steps += backlash_block_data.steps[i];
-                if (backlash_block_data.total_steps < backlash_block_data.steps[i])
+                i--;
+                if (inverted_steps & (1 << i))
                 {
-                    backlash_block_data.total_steps = backlash_block_data.steps[i];
-                    backlash_block_data.main_stepper = i;
+                    backlash_block_data.steps[i] = g_settings.backlash_steps[i];
+                    backlash_block_data.full_steps += backlash_block_data.steps[i];
+                    if (backlash_block_data.total_steps < backlash_block_data.steps[i])
+                    {
+                        backlash_block_data.total_steps = backlash_block_data.steps[i];
+                        backlash_block_data.main_stepper = i;
+                    }
                 }
             }
-        }
 
-        planner_add_line(&backlash_block_data);
-        //dwell should only execute on the first request
-        block_data->dwell = 0;
+            planner_add_line(&backlash_block_data);
+            //dwell should only execute on the first request
+            block_data->dwell = 0;
 
-        while (planner_buffer_is_full())
-        {
-            if (!cnc_dotasks())
+            while (planner_buffer_is_full())
             {
-                return STATUS_CRITICAL_FAIL;
+                if (!cnc_dotasks())
+                {
+                    return STATUS_CRITICAL_FAIL;
+                }
             }
-        }
 
-        mc_last_dirbits = block_data->dirbits;
-    }
+            mc_last_dirbits = block_data->dirbits;
+        }
 #endif
 
-    planner_add_line(block_data);
-    //dwell should only execute on the first request
-    block_data->dwell = 0;
-    //restores previous feed (this decouples de mm/min to step/min conversion - prevents feed modification in reused data_blocks like in arcs)
+        planner_add_line(block_data);
+        //dwell should only execute on the first request
+        block_data->dwell = 0;
+    }
+
     return STATUS_OK;
 }
 
@@ -170,11 +173,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
             return STATUS_TRAVEL_EXCEEDED;
         }
         cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
-        return STATUS_OK;
-    }
-
-    if (mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
-    {
         return STATUS_OK;
     }
 

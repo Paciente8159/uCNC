@@ -237,7 +237,7 @@ void ticksimul(void)
 {
 
 	static VIRTUAL_MAP initials = {0};
-	/*
+
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 
@@ -253,7 +253,7 @@ void ticksimul(void)
 		{
 			isr_flags |= ISR_INPUT; //flags input isr
 		}
-	}*/
+	}
 
 	mcu_runtime++;
 }
@@ -288,7 +288,7 @@ void mcu_init(void)
 		}
 	}
 	g_cpu_freq = getCPUFreq();
-	//start_timer(1, &ticksimul);
+	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
 #ifdef USECONSOLE
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);

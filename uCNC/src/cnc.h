@@ -201,6 +201,7 @@ extern "C"
 	void cnc_scheduletasks(void);
 	void cnc_home(void);
 	void cnc_alarm(int8_t code);
+	bool cnc_has_alarm();
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);

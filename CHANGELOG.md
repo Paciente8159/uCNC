@@ -13,11 +13,14 @@
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
   - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
+  - modified alarm locking and report messages on alarm status. Soft stop alarm require unlock only. Hard stops will cause soft reset on unlock (#111)
 
 ### Fixed
   - fixed tool length offset was not affecting the `WCO` position report (#109)
   - tool length is set to 0 after reset (#109)
   - modified settings change code (smaller and more efficient) (#110)
+  - fixed check mode position update of motion control preventing invalid target errors (#111)
+  - fixed sticky check mode even after soft-reset (#111)
 
 ### Fixed
   - fixed PID settings offsets (#110)
