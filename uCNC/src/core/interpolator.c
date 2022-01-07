@@ -656,6 +656,10 @@ uint8_t itp_sync(void)
     {
         if (!cnc_dotasks())
         {
+            if (cnc_get_exec_state(EXEC_HOMING_HIT) == EXEC_HOMING_HIT)
+            {
+                break;
+            }
             return STATUS_CRITICAL_FAIL;
         }
     }

@@ -15,6 +15,7 @@
   - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
   - probe command returns report like Grbl (#112)
   - modified alarm locking and report messages on alarm status. Soft stop alarm require unlock only. Hard stops will cause soft reset on unlock (#111)
+  - homing motions adjusted to adapt to alarm modifications done in (#111)
 
 ### Fixed
   - fixed tool length offset was not affecting the `WCO` position report (#109)
