@@ -453,9 +453,8 @@ uint8_t mc_pause(void)
         {
             return STATUS_CRITICAL_FAIL;
         }
+        cnc_set_exec_state(EXEC_HOLD);
     }
-
-    cnc_set_exec_state(EXEC_HOLD);
     return STATUS_OK;
 }
 
