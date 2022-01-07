@@ -13,12 +13,16 @@
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
   - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
+  - probe command returns report like Grbl (#112)
   - modified alarm locking and report messages on alarm status. Soft stop alarm require unlock only. Hard stops will cause soft reset on unlock (#111)
 
 ### Fixed
   - fixed tool length offset was not affecting the `WCO` position report (#109)
   - tool length is set to 0 after reset (#109)
   - modified settings change code (smaller and more efficient) (#110)
+  - fixed feed validation in motion group 0 to include probing commands (`G38.x`) (#112)
+  - fixed probing commands (`G38.4` and `G38.5`) reverse probe logic triggering (#112)
+  - fixed fail to probe target message and alarm (#112)
   - fixed check mode position update of motion control preventing invalid target errors (#111)
   - fixed sticky check mode even after soft-reset (#111)
 

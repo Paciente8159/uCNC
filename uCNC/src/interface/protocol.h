@@ -34,6 +34,7 @@ extern "C"
 	void protocol_send_status(void);
 	void protocol_send_string(const unsigned char *__s);
 	void protocol_send_feedback(const unsigned char *__s);
+	void protocol_send_probe_result(uint8_t val);
 	void protocol_send_gcode_coordsys(void);
 	void protocol_send_gcode_modes(void);
 	void protocol_send_cnc_settings(void);

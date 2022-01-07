@@ -544,7 +544,6 @@ uint8_t settings_change(uint8_t setting, float value)
         {
             setting -= 41;
             g_settings.tool_length_offset[setting] = value;
-            
         }
 #endif
         else {
