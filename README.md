@@ -39,7 +39,7 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
-µCNC v1.3.x added additional Gcode support.
+µCNC v1.3.3 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
@@ -50,7 +50,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Unit Modes: G20, G21
   - Distance Modes: G90, G91
   - Plane Select Modes: G17, G18, G19
-  - Tool Length Offset Modes: G43.1 G49
+  - Tool Length Offset Modes: G43 G49
   - Cutter Compensation Modes: G40
   - Coordinate System Modes: G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3
   - Control Modes: G61, G61.1, G64
