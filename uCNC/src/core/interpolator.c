@@ -254,7 +254,7 @@ void itp_run(void)
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
             itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
-            itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps;
+            itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
             feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
@@ -270,8 +270,8 @@ void itp_run(void)
             {
                 i--;
                 sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
-                itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps >> 1;
-                itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i];
+                itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+                itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
                 if (!itp_cur_plan_block->steps[i])
                 {

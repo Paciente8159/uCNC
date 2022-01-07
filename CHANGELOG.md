@@ -26,6 +26,7 @@
   - fixed fail to probe target message and alarm (#112)
   - fixed check mode position update of motion control preventing invalid target errors (#111)
   - fixed sticky check mode even after soft-reset (#111)
+  - partially reverted modifications (#98) and (#84) that caused the the machine real position to diverge due to error accumulation with G91 (relative distance) active
 
 ### Fixed
   - fixed PID settings offsets (#110)
