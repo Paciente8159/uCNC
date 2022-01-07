@@ -32,7 +32,7 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define ENABLE_SYNC_TX
+//#define ENABLE_SYNC_TX
 
 //commento to use console only
 #define COMPORT "\\\\.\\COM11"

@@ -65,7 +65,7 @@ extern "C"
 
     int virtualserial_open(send_char_callback a, read_char_callback b);
     unsigned char virtualserial_getc();
-    void virtualserial_putc(unsigned char c);
+    void virtualserial_putc(unsigned char c, send_char_callback a);
     void virtualserial_puts(const unsigned char *__str);
     int virtualserial_close();
 #ifdef __cplusplus
