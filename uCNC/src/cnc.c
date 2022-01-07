@@ -373,7 +373,6 @@ uint8_t cnc_unlock(bool force)
         }
     }
 
-    io_enable_steppers();
     return UNLOCK_OK;
 }
 
