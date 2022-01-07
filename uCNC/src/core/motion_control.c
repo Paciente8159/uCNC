@@ -605,7 +605,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 #if PROBE >= 0
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
     io_enable_probe();
-    block_data->feed = g_settings.homing_fast_feed_rate;
     mc_line(target, block_data);
 
     do
@@ -658,4 +657,5 @@ void mc_get_position(float *target)
 void mc_sync_position(void)
 {
     itp_get_rt_position(mc_last_step_pos);
+    parser_sync_position();
 }

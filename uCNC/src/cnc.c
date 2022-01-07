@@ -89,7 +89,7 @@ void cnc_init(void)
 void cnc_run(void)
 {
     cnc_reset();
-    
+
     cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
     serial_select(SERIAL_UART);
 
@@ -183,7 +183,7 @@ bool cnc_dotasks(void)
 
     if (cnc_has_alarm())
     {
-        return !cnc_get_exec_state(EXEC_KILL|EXEC_HOMING);
+        return !cnc_get_exec_state(EXEC_KILL | EXEC_HOMING);
     }
 
     //µCNC already in error loop. No point in sending the alarms

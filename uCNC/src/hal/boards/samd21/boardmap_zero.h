@@ -39,11 +39,11 @@ extern "C"
 #endif
 
 //Setup step pins
-#define STEP0_BIT 14	 //assigns STEP0 pin
+#define STEP0_BIT 14 //assigns STEP0 pin
 #define STEP0_PORT A //assigns STEP0 port
 #define STEP1_BIT 9	 //assigns STEP1 pin
 #define STEP1_PORT A //assigns STEP1 port
-#define STEP2_BIT 8 //assigns STEP2 pin
+#define STEP2_BIT 8	 //assigns STEP2 pin
 #define STEP2_PORT A //assigns STEP2 port
 
 //Setup dir pins

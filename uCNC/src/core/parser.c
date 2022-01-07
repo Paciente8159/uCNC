@@ -259,6 +259,7 @@ static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
+static float parser_last_pos[AXIS_COUNT];
 
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
@@ -285,8 +286,9 @@ void parser_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
     memset(&parser_parameters, 0, sizeof(parser_parameters_t));
+    memset(parser_last_pos, 0, sizefo(parser_last_pos))
 #endif
-    parser_parameters_load();
+        parser_parameters_load();
     parser_reset();
 }
 
@@ -1016,7 +1018,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
     float target[AXIS_COUNT];
-    float planner_last_pos[AXIS_COUNT];
     //plane selection
     uint8_t a = 0;
     uint8_t b = 0;
@@ -1024,8 +1025,6 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     uint8_t offset_b = 0;
     float radius;
     motion_data_t block_data = {0};
-
-    mc_get_position(planner_last_pos);
 
     //stoping from previous command M2 or M30 command
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1231,7 +1230,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     }
 
     //17. set distance mode (G90, G91)
-    memcpy(target, planner_last_pos, sizeof(planner_last_pos));
+    memcpy(target, parser_last_pos, sizeof(parser_last_pos));
 
     //for all not explicitly declared target retain their position or add offset
     bool abspos = (new_state->groups.distance_mode == G90) | (new_state->groups.nonmodal == G53);
@@ -1407,7 +1406,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         for (uint8_t i = AXIS_COUNT; i != 0;)
         {
             i--;
-            parser_parameters.g92_offset[i] = -(target[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
+            parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
         }
         memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
         //settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
@@ -1451,8 +1450,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             }
 
             //target points
-            x = target[a] - planner_last_pos[a];
-            y = target[b] - planner_last_pos[b];
+            x = target[a] - parser_last_pos[a];
+            y = target[b] - parser_last_pos[b];
             float center_offset_a = words->ijk[offset_a];
             float center_offset_b = words->ijk[offset_b];
             //radius mode
@@ -1531,6 +1530,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             {
                 protocol_send_probe_result(parser_parameters.last_probe_ok);
             }
+
+            return error;
         }
     }
 
@@ -1538,6 +1539,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     {
         return error;
     }
+
+    //saves position
+    memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 
     //stop (M0, M1, M2, M30, M60) (not implemented yet).
     bool hold = false;
@@ -2370,4 +2374,9 @@ void parser_parameters_load(void)
         memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
         settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
     }
+}
+
+void parser_sync_position(void)
+{
+    mc_get_position(parser_last_pos);
 }
