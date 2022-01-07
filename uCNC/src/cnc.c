@@ -89,13 +89,13 @@ void cnc_init(void)
 void cnc_run(void)
 {
     cnc_reset();
+    
+    cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
+    serial_select(SERIAL_UART);
 
     // tries to reset. If fails jumps to error
     while (cnc_unlock(false))
     {
-        cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
-        serial_select(SERIAL_UART);
-
         do
         {
         } while (cnc_exec_cmd());
@@ -110,9 +110,22 @@ void cnc_run(void)
         {
             io_disable_steppers();
             cnc_check_fault_systems();
-            return;
+            break;
         }
     }
+
+    do
+    {
+        if (!serial_rx_is_empty())
+        {
+            if (serial_getc() == EOL)
+            {
+                protocol_send_feedback(MSG_FEEDBACK_12);
+                protocol_send_ok();
+            }
+        }
+        cnc_dotasks();
+    } while (io_get_controls() & ESTOP_MASK);
 }
 
 bool cnc_exec_cmd(void)
@@ -487,6 +500,7 @@ bool cnc_reset(void)
     encoders_reset_position();
 #endif
     protocol_send_string(MSG_STARTUP);
+    serial_flush();
 
     // uint8_t ok = cnc_unlock(false);
 

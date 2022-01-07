@@ -37,7 +37,7 @@
 #else
 #include <windows.h>
 
-HANDLE hComm = NULL;
+volatile HANDLE hComm = NULL;
 unsigned char ComPortName[] = COMPORT;
 unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
