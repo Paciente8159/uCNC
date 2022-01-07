@@ -5,6 +5,12 @@
 
 # Changelog
 
+## [1.3.3] - 2022-01-07
+
+µCNC version 1.3.3 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+It also removes `G43.1` (non compliant RS274NGC command) and replaces it with the `G43` compliant version. It still accepts the `Z` word. For tool lengths the `H` word should be used.
+Tool lengths can be set and stored in settings `$41=<Tool1 offset>..$42=<Tool2 offset>...etc`. Also the default tool loaded at start/reset is stored via setting `$40`
+
 ### Added
   - added configurable default loading tool and tools offset (#109)
 
