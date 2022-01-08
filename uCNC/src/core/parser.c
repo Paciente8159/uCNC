@@ -1930,19 +1930,16 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_state->groups.cutter_radius_compensation = code - 40;
         break;
     case 43: //doesn't support G43 but G43.1 (takes Z coordinate input has offset)
-    case 49:
-        if (code == 43)
+        switch (mantissa)
         {
-            switch (mantissa)
-            {
-            case 0:
-            case 10:
-                //G43.1 same as G43
-                break;
-            default:
-                return STATUS_GCODE_UNSUPPORTED_COMMAND;
-            }
+        case 255:
+        case 10:
+            //G43.1 same as G43
+            break;
+        default:
+            return STATUS_GCODE_UNSUPPORTED_COMMAND;
         }
+    case 49:
         new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
         new_group |= GCODE_GROUP_TOOLLENGTH;
         break;
