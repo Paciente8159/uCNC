@@ -246,7 +246,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
     //calculated the total motion execution time @ the given rate
     float feed = block_data->feed;
-    float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : (1.0f / block_data->feed));
+    float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
     block_data->feed = (float)max_steps * inv_delta;
 
     //this contains a motion. Any tool update will be done here

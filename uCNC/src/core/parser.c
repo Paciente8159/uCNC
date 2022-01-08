@@ -124,7 +124,7 @@
 #define G59_3 8
 #define G61 0
 #define G61_1 1
-#define G64 2
+#define G64 3
 #define G4 1
 #define G10 2
 #define G28 3
@@ -1059,10 +1059,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //3. set feed rate (µCNC works in units per second and not per minute)
     if (CHECKFLAG(cmd->words, GCODE_WORD_F))
     {
-        if (new_state->groups.feedrate_mode != G93)
-        {
-            new_state->feedrate = words->f; // * MIN_SEC_MULT;
-        }
+        new_state->feedrate = words->f; // * MIN_SEC_MULT;
     }
 
 //4. set spindle speed
@@ -1228,10 +1225,10 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //16. set path control mode (G61, G61.1, G64)
     switch (new_state->groups.path_mode)
     {
-    case 1:
+    case G61_1:
         block_data.motion_mode |= PLANNER_MOTION_EXACT_STOP;
         break;
-    case 3:
+    case G64:
         block_data.motion_mode |= PLANNER_MOTION_CONTINUOUS;
         break;
     }
