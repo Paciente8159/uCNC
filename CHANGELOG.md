@@ -7,6 +7,9 @@
 
 ### Changed
   - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
+  
+### Fixed
+  - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
 
 ## [1.3.3] - 2022-01-07
 
