@@ -7,6 +7,7 @@
 
 ### Changed
   - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
+  - added `G43` and `G43.1` violation check against MOTION group commands (#115)
   
 ### Fixed
   - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
