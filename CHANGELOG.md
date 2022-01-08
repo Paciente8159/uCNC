@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Changed
+  - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
+
 ## [1.3.3] - 2022-01-07
 
 µCNC version 1.3.3 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
