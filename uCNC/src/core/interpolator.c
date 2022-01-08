@@ -74,7 +74,7 @@ typedef struct pulse_sgm_
     uint16_t timer_counter;
     uint16_t timer_prescaller;
 #if (DSS_MAX_OVERSAMPLING != 0)
-    uint8_t next_dss;
+    int8_t next_dss;
 #endif
 #ifdef USE_SPINDLE
     int16_t spindle;
@@ -217,7 +217,7 @@ void itp_run(void)
     static uint32_t deaccel_from = 0;
     static float junction_speed_sqr = 0;
     static float half_speed_change = 0;
-    //static bool initial_accel_negative = false;
+    static bool initial_accel_negative = false;
     static float feed_convert = 0;
     static bool is_initial_transition = true;
 
@@ -318,12 +318,12 @@ void itp_run(void)
 
             accel_until = remaining_steps;
             deaccel_from = 0;
-            if (junction_speed_sqr > itp_cur_plan_block->entry_feed_sqr)
+            if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
             {
                 float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
                 accel_dist = fast_flt_div2(accel_dist);
                 accel_until -= floorf(accel_dist);
-                //initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
+                initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
             }
 
             //if entry speed already a junction speed updates it.
@@ -356,7 +356,7 @@ void itp_run(void)
 
             	(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
             */
-            speed_change = half_speed_change; //(!initial_accel_negative) ? half_speed_change : -half_speed_change;
+            speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
             sgm->update_itp = true;
             is_initial_transition = true;
@@ -735,49 +735,51 @@ void itp_step_isr(void)
 #ifdef STEP_ISR_SKIP_MAIN
                         itp_rt_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
 #endif
-                        if (!(itp_rt_sgm->next_dss & 0xF8))
+                        uint8_t dss;
+                        if (itp_rt_sgm->next_dss > 0)
                         {
-                            itp_rt_sgm->block->total_steps <<= itp_rt_sgm->next_dss;
+                            dss = itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->total_steps <<= dss;
 #if (STEPPER_COUNT > 0)
-                            itp_rt_sgm->block->errors[0] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[0] <<= dss;
 #endif
 #if (STEPPER_COUNT > 1)
-                            itp_rt_sgm->block->errors[1] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[1] <<= dss;
 #endif
 #if (STEPPER_COUNT > 2)
-                            itp_rt_sgm->block->errors[2] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[2] <<= dss;
 #endif
 #if (STEPPER_COUNT > 3)
-                            itp_rt_sgm->block->errors[3] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[3] <<= dss;
 #endif
 #if (STEPPER_COUNT > 4)
-                            itp_rt_sgm->block->errors[4] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[4] <<= dss;
 #endif
 #if (STEPPER_COUNT > 5)
-                            itp_rt_sgm->block->errors[5] <<= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[5] <<= dss;
 #endif
                         }
                         else
                         {
-                            itp_rt_sgm->next_dss = -itp_rt_sgm->next_dss;
-                            itp_rt_sgm->block->total_steps >>= itp_rt_sgm->next_dss;
+                            dss = -itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->total_steps >>= dss;
 #if (STEPPER_COUNT > 0)
-                            itp_rt_sgm->block->errors[0] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[0] >>= dss;
 #endif
 #if (STEPPER_COUNT > 1)
-                            itp_rt_sgm->block->errors[1] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[1] >>= dss;
 #endif
 #if (STEPPER_COUNT > 2)
-                            itp_rt_sgm->block->errors[2] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[2] >>= dss;
 #endif
 #if (STEPPER_COUNT > 3)
-                            itp_rt_sgm->block->errors[3] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[3] >>= dss;
 #endif
 #if (STEPPER_COUNT > 4)
-                            itp_rt_sgm->block->errors[4] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[4] >>= dss;
 #endif
 #if (STEPPER_COUNT > 5)
-                            itp_rt_sgm->block->errors[5] >>= itp_rt_sgm->next_dss;
+                            itp_rt_sgm->block->errors[5] >>= dss;
 #endif
                         }
                     }
