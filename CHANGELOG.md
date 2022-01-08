@@ -11,6 +11,7 @@
   
 ### Fixed
   - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
+  - fixed `G93` (inverse feed mode) feedrate calculation (#117)
 
 ## [1.3.3] - 2022-01-07
 
