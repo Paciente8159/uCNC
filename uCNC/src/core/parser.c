@@ -976,6 +976,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         {
             return STATUS_GCODE_AXIS_WORDS_EXIST;
         }
+
+        //since G43.1 (and currently G43) support and uses word Z it can't be in the same line as a MOTION group command
+        //this may be reviewed in the future
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
+        {
+            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+        }
     }
 //group 10 - return mode in canned cycles (not implemented yet)
 //group 12 - coordinate system selection (nothing to be checked)
