@@ -976,6 +976,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         {
             return STATUS_GCODE_AXIS_WORDS_EXIST;
         }
+
+        //since G43.1 (and currently G43) support and uses word Z it can't be in the same line as a MOTION group command
+        //this may be reviewed in the future
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
+        {
+            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+        }
     }
 //group 10 - return mode in canned cycles (not implemented yet)
 //group 12 - coordinate system selection (nothing to be checked)
@@ -1842,6 +1849,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         {
             //codes with possible mantissa
         case 38:
+        case 43:
         case 59:
         case 61:
         case 92:
@@ -1929,6 +1937,15 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_state->groups.cutter_radius_compensation = code - 40;
         break;
     case 43: //doesn't support G43 but G43.1 (takes Z coordinate input has offset)
+        switch (mantissa)
+        {
+        case 255:
+        case 10:
+            //G43.1 same as G43
+            break;
+        default:
+            return STATUS_GCODE_UNSUPPORTED_COMMAND;
+        }
     case 49:
         new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
         new_group |= GCODE_GROUP_TOOLLENGTH;
