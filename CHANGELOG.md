@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Fixed
+  - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations.
+
 ## [1.3.3] - 2022-01-07
 
 µCNC version 1.3.3 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
