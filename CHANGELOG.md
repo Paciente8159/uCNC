@@ -9,6 +9,7 @@
   - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
   - added `G43` and `G43.1` violation check against MOTION group commands (#115)
   - `M2`can be now cleared with `$X`or `$H` commands (#119)
+  - modified step generation (makes slow speed motions more smooth and linear) with increased speed linearity
   
 ### Fixed
   - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
@@ -44,8 +45,6 @@ Encoders are also working in uni and bidirectional mode. Each encoder position i
   - fixed check mode position update of motion control preventing invalid target errors (#111)
   - fixed sticky check mode even after soft-reset (#111)
   - partially reverted modifications (#98) and (#84) that caused the the machine real position to diverge due to error accumulation with G91 (relative distance) active (#114)
-
-### Fixed
   - fixed PID settings offsets (#110)
 
 ## [1.3.2] - 2022-01-05
@@ -475,6 +474,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
