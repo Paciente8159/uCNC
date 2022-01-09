@@ -276,7 +276,6 @@ FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
-static void parser_reset();
 
 /*
 	Initializes the gcode parser
@@ -2331,7 +2330,7 @@ static void parser_discard_command(void)
     } while (c != EOL);
 }
 
-static void parser_reset(void)
+void parser_reset(void)
 {
     parser_state.groups.coord_system = G54;               //G54
     parser_state.groups.plane = G17;                      //G17

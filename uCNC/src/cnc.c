@@ -356,6 +356,7 @@ uint8_t cnc_unlock(bool force)
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
         io_enable_steppers();
+        parser_reset();
 
         if (cnc_state.loop_state < LOOP_RUNNING)
         {
