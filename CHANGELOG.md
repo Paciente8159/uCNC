@@ -9,7 +9,7 @@
   - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
   - added `G43` and `G43.1` violation check against MOTION group commands (#115)
   - `M2`can be now cleared with `$X`or `$H` commands (#119)
-  - modified step generation (makes slow speed motions more smooth and linear) with increased speed linearity
+  - modified step generation (makes slow speed motions more smooth and linear) with increased speed linearity (#120)
   
 ### Fixed
   - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
