@@ -220,6 +220,7 @@ void itp_run(void)
     static bool initial_accel_negative = false;
     static float feed_convert = 0;
     static bool is_initial_transition = true;
+    static float partial_distance;
 
     itp_segment_t *sgm = NULL;
 
@@ -394,36 +395,32 @@ void itp_run(void)
             current_speed = 0;
         }
 
-        float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), remaining_steps);
-        //if traveled distance is less the one step fits at least one step
-        partial_distance = MAX(partial_distance, 1.0f);
-        //computes how many steps it will perform at this speed and frame window
-        uint16_t segm_steps = (uint16_t)floorf(partial_distance);
-
-        //if computed steps exceed the remaining steps for the motion shortens the distance
-        if (segm_steps > (remaining_steps - profile_steps_limit))
+        float sample_distance = current_speed * INTEGRATOR_DELTA_T;
+        //
+        if (sample_distance == 0)
         {
-            segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
+            sample_distance = remaining_steps;
         }
+
+        partial_distance += MIN(sample_distance, remaining_steps);
+        //computes how many steps it will perform at this speed and frame window
+        uint32_t segm_steps = (uint32_t)floorf(partial_distance);
+        partial_distance -= segm_steps;
 
         if (speed_change)
         {
-            float new_speed_sqr = itp_cur_plan_block->acceleration * segm_steps;
-            new_speed_sqr = fast_flt_mul2(new_speed_sqr);
-            if (speed_change > 0)
-            {
-                //calculates the final speed at the end of this position
-                new_speed_sqr += itp_cur_plan_block->entry_feed_sqr;
-            }
-            else
-            {
-                //calculates the final speed at the end of this position
-                new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - new_speed_sqr;
-                new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
-            }
-            current_speed = (fast_flt_sqrt(new_speed_sqr) + fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr));
-            current_speed = fast_flt_div2(current_speed);
-            itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
+            float new_speed_sqr = current_speed;
+            new_speed_sqr += speed_change;
+            new_speed_sqr = MAX(new_speed_sqr, 0);
+            itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(new_speed_sqr);
+        }
+
+        //if computed steps exceed the remaining steps for the motion shortens the distance
+        if (segm_steps >= (remaining_steps - profile_steps_limit))
+        {
+            segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
+            float junction_speed = fast_flt_sqrt(junction_speed_sqr);
+            current_speed = MIN(junction_speed, current_speed);
         }
 
 //The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
@@ -432,14 +429,14 @@ void itp_run(void)
 //This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
 //DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
-        uint32_t step_speed = (uint32_t)round(current_speed);
+        float step_speed = current_speed;
         static uint8_t prev_dss = 0;
         uint8_t dss = 0;
         uint32_t f_step_max = (uint32_t)g_settings.max_step_rate;
         f_step_max >>= 2;
         while (step_speed < f_step_max && dss < DSS_MAX_OVERSAMPLING && segm_steps > 1)
         {
-            step_speed <<= 1;
+            step_speed = fast_flt_mul2(step_speed);
             dss++;
         }
 
@@ -448,7 +445,7 @@ void itp_run(void)
 
         //completes the segment information (step speed, steps) and updates the block
         sgm->remaining_steps = segm_steps << dss;
-        mcu_freq_to_clocks((float)step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
+        mcu_freq_to_clocks(step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
         current_speed = MIN(current_speed, g_settings.max_step_rate);
