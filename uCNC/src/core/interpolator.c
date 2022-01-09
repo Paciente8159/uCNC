@@ -440,6 +440,11 @@ void itp_run(void)
             dss++;
         }
 
+        //even at constant speed if dss is applied step frequency isr must be updated
+        if (dss != prev_dss)
+        {
+            sgm->update_itp = true;
+        }
         sgm->next_dss = dss - prev_dss;
         prev_dss = dss;
 
