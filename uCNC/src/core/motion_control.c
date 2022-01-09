@@ -362,7 +362,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED))
     {
         //split the required time to complete the motion with the number of segments
-        block_data->feed /= segment_count;
+        block_data->feed *= segment_count;
     }
 
     //calculates an aproximation to sine and cosine of the angle segment
