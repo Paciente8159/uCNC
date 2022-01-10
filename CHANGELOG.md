@@ -5,8 +5,11 @@
 
 # Changelog
 
+## [1.3.4] - 2022-01-10
+µCNC version 1.3.4 adds a few improvements and also fixes some issues with inverse feedrate mode `G93` and realtime feed overrides.
+
 ### Changed
-  - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
+  - added `G43.1` again for back compatibility with Grbl. Will work the same way has `G43` (#115)
   - added `G43` and `G43.1` violation check against MOTION group commands (#115)
   - `M2`can be now cleared with `$X`or `$H` commands (#119)
   - modified DSS to force step ISR frequency to update on DSS change (#121)
