@@ -166,7 +166,7 @@ static int32_t pid_set_output(uint8_t i, int16_t val)
     }
 }
 
-static void pid_stop()
+void pid_stop()
 {
 
 #if (PID_CONTROLLERS > 0)

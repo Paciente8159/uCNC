@@ -690,7 +690,7 @@ uint16_t itp_get_rt_spindle(void)
 
 uint8_t itp_get_rt_spindle_pwm(void)
 {
-    return itp_rt_spindle;
+    return tool_get_speed();
 }
 #endif
 
