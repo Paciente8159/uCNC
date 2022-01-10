@@ -37,11 +37,11 @@
 #else
 #include <windows.h>
 
-HANDLE hComm = NULL;
+volatile HANDLE hComm = NULL;
 unsigned char ComPortName[] = COMPORT;
 unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
 
-int virtualserial_open(send_char_callback a, read_char_callback b)
+int virtualserial_open(send_char_callback a,  read_char_callback b)
 {
     DCB dcbSerialParams = {0};
     COMMTIMEOUTS timeouts = {MAXDWORD, 0, 0, 0, 0};
@@ -55,8 +55,8 @@ int virtualserial_open(send_char_callback a, read_char_callback b)
 
     fprintf(stderr, "Opening serial port %s...", ComPortName);
     hComm = CreateFileA(
-	ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
-                        OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+        ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+        OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
     if (hComm == INVALID_HANDLE_VALUE)
     {
         fprintf(stderr, "Error\n");
@@ -199,7 +199,7 @@ int virtualserial_open(send_char_callback a, read_char_callback b)
                                 // An error occurred when calling the ReadFile function.
                                 break;
                             }*/
-
+                    default:
                         break;
                     }
                 }
@@ -274,7 +274,7 @@ unsigned char virtualserial_getc(void)
 
 char serial_tx_buffer[127];
 
-void virtualserial_putc(unsigned char c)
+void virtualserial_putc(unsigned char c, send_char_callback a)
 {
     DWORD dNoOfBytesWritten = 0; // No of bytes written to the port
     OVERLAPPED osWrite = {0};
@@ -295,101 +295,104 @@ void virtualserial_putc(unsigned char c)
             // WriteFile failed, but isn't delayed. Report error and abort.
             fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
         }
-        else
+    }
+    else
+    {
+        // Write is pending.
+        dwRes = WaitForSingleObject(osWrite.hEvent, INFINITE);
+        switch (dwRes)
         {
-            // Write is pending.
-            dwRes = WaitForSingleObject(osWrite.hEvent, INFINITE);
-            switch (dwRes)
-            {
-            // OVERLAPPED structure's event has been signaled.
-            case WAIT_OBJECT_0:
-                if (!GetOverlappedResult(hComm, &osWrite, &dNoOfBytesWritten, FALSE))
-                    fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
-                else
-                    // Write operation completed successfully.
-                    break;
-
-            default:
-                // An error has occurred in WaitForSingleObject.
-                // This usually indicates a problem with the
-                // OVERLAPPED structure's event handle.
+        // OVERLAPPED structure's event has been signaled.
+        case WAIT_OBJECT_0:
+            if (!GetOverlappedResult(hComm, &osWrite, &dNoOfBytesWritten, FALSE))
                 fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+            else
+                // Write operation completed successfully.
+                if(a) {
+                	a();
+				}
                 break;
-            }
-        }
 
-        CloseHandle(osWrite.hEvent);
-    }
-}
-
-/*void virtualserial_putc(unsigned char c)
-{
-    static uint8_t index = 0;
-
-    serial_tx_buffer[index] = c;
-    index++;
-    serial_tx_buffer[index] = 0;
-    if (c == '\n')
-    {
-        virtualserial_puts(&serial_tx_buffer);
-        index = 0;
-    }
-}*/
-
-void virtualserial_puts(const unsigned char *__str)
-{
-    unsigned char lpBuffer[127]; // lpBuffer should be  char or byte array, otherwise write wil fail
-    strcpy(lpBuffer, __str);
-    DWORD dNoOFBytestoWrite;           // No of bytes to write into the port
-    DWORD dNoOfBytesWritten = 0;       // No of bytes written to the port
-    dNoOFBytestoWrite = strlen(__str); // Calculating the no of bytes to write into the port
-    OVERLAPPED osWrite = {0};
-    DWORD dwRes;
-
-    osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-    if (osWrite.hEvent == NULL)
-    {
-        fprintf(stderr, "Error %d in creating Writing Event to Serial Port", GetLastError());
-        return;
-    }
-    // error creating overlapped event handle
-
-    if (!WriteFile(hComm, lpBuffer, dNoOFBytestoWrite, &dNoOfBytesWritten, &osWrite))
-    {
-        if (GetLastError() != ERROR_IO_PENDING)
-        {
-            // WriteFile failed, but isn't delayed. Report error and abort.
+        default:
+            // An error has occurred in WaitForSingleObject.
+            // This usually indicates a problem with the
+            // OVERLAPPED structure's event handle.
             fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+            break;
         }
-        else
-        {
-            // Write is pending.
-            dwRes = WaitForSingleObject(osWrite.hEvent, INFINITE);
-            switch (dwRes)
-            {
-            // OVERLAPPED structure's event has been signaled.
-            case WAIT_OBJECT_0:
-                if (!GetOverlappedResult(hComm, &osWrite, &dNoOfBytesWritten, FALSE))
-                    fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
-                else
-                    // Write operation completed successfully.
-                    break;
-
-            default:
-                // An error has occurred in WaitForSingleObject.
-                // This usually indicates a problem with the
-                // OVERLAPPED structure's event handle.
-                fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
-                break;
-            }
-        }
-
-        CloseHandle(osWrite.hEvent);
     }
 
-    //fputs(__str, stderr);
-    //PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+    CloseHandle(osWrite.hEvent);
 }
+
+// void virtualserial_putc(unsigned char c)
+// {
+//     static uint8_t index = 0;
+
+//     serial_tx_buffer[index] = c;
+//     index++;
+//     serial_tx_buffer[index] = 0;
+//     if (c == '\n')
+//     {
+//         virtualserial_puts(&serial_tx_buffer);
+//         index = 0;
+//     }
+// }
+
+// void virtualserial_puts(const unsigned char *__str)
+// {
+//     unsigned char lpBuffer[127]; // lpBuffer should be  char or byte array, otherwise write wil fail
+//     strcpy(lpBuffer, __str);
+//     DWORD dNoOFBytestoWrite;           // No of bytes to write into the port
+//     DWORD dNoOfBytesWritten = 0;       // No of bytes written to the port
+//     dNoOFBytestoWrite = strlen(__str); // Calculating the no of bytes to write into the port
+//     OVERLAPPED osWrite = {0};
+//     DWORD dwRes;
+
+//     osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+//     if (osWrite.hEvent == NULL)
+//     {
+//         fprintf(stderr, "Error %d in creating Writing Event to Serial Port", GetLastError());
+//         return;
+//     }
+//     // error creating overlapped event handle
+
+//     if (!WriteFile(hComm, lpBuffer, dNoOFBytestoWrite, &dNoOfBytesWritten, &osWrite))
+//     {
+//         if (GetLastError() != ERROR_IO_PENDING)
+//         {
+//             // WriteFile failed, but isn't delayed. Report error and abort.
+//             fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+//         }
+//         else
+//         {
+//             // Write is pending.
+//             dwRes = WaitForSingleObject(osWrite.hEvent, INFINITE);
+//             switch (dwRes)
+//             {
+//             // OVERLAPPED structure's event has been signaled.
+//             case WAIT_OBJECT_0:
+//                 if (!GetOverlappedResult(hComm, &osWrite, &dNoOfBytesWritten, FALSE))
+//                     fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+//                 else
+//                     // Write operation completed successfully.
+//                     break;
+
+//             default:
+//                 // An error has occurred in WaitForSingleObject.
+//                 // This usually indicates a problem with the
+//                 // OVERLAPPED structure's event handle.
+//                 fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+//                 break;
+//             }
+//         }
+
+//         CloseHandle(osWrite.hEvent);
+//     }
+
+//     //fputs(__str, stderr);
+//     //PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+// }
 
 int virtualserial_close(void)
 {

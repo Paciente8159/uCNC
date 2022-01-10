@@ -74,9 +74,9 @@
 #define GCODE_WORD_T 0x8000
 //H and Q are related to unsupported commands
 
-#if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
-#define GCODE_WORDS_EXTENDED
-#endif
+// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
+// #define GCODE_WORDS_EXTENDED
+// #endif
 
 #define GCODE_JOG_INVALID_WORDS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_D | GCODE_WORD_L | GCODE_WORD_P | GCODE_WORD_R | GCODE_WORD_T | GCODE_WORD_S)
 #define GCODE_ALL_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z | GCODE_WORD_A | GCODE_WORD_B | GCODE_WORD_C)
@@ -109,7 +109,7 @@
 #define G40 0
 #define G41 1
 #define G42 2
-#define G43_1 0
+#define G43 0
 #define G49 1
 #define G98 0
 #define G99 1
@@ -124,7 +124,7 @@
 #define G59_3 8
 #define G61 0
 #define G61_1 1
-#define G64 2
+#define G64 3
 #define G4 1
 #define G10 2
 #define G28 3
@@ -181,7 +181,7 @@ typedef struct
     uint8_t distance_mode : 1;
     uint8_t feedrate_mode : 1;
     uint8_t units : 1;
-    uint8_t tool_length_offset : 1;
+    uint8_t tlo_mode : 1;
     uint8_t return_mode : 1;
     uint8_t feed_speed_override : 1;
     //1byte
@@ -259,6 +259,7 @@ static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
+static float parser_last_pos[AXIS_COUNT];
 
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
@@ -275,7 +276,6 @@ FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
-static void parser_reset();
 
 /*
 	Initializes the gcode parser
@@ -285,8 +285,9 @@ void parser_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
     memset(&parser_parameters, 0, sizeof(parser_parameters_t));
+    memset(parser_last_pos, 0, sizefo(parser_last_pos))
 #endif
-    parser_parameters_load();
+        parser_parameters_load();
     parser_reset();
 }
 
@@ -335,7 +336,7 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
     modalgroups[2] = parser_state.groups.distance_mode + 90;
     modalgroups[3] = parser_state.groups.feedrate_mode + 93;
     modalgroups[4] = parser_state.groups.units + 20;
-    modalgroups[5] = ((parser_state.groups.tool_length_offset == G49) ? 49 : 43);
+    modalgroups[5] = ((parser_state.groups.tlo_mode == G49) ? 49 : 43);
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
 #ifdef USE_SPINDLE
@@ -414,8 +415,8 @@ bool parser_get_wco(float *axis)
             axis[i] = parser_parameters.g92_offset[i] + parser_parameters.coord_system_offset[i];
         }
 
-#ifdef AXIS_Z
-//axis[AXIS_Z] += parser_parameters.tool_length_offset;
+#ifdef AXIS_TOOL
+        axis[AXIS_TOOL] += parser_parameters.tool_length_offset;
 #endif
         parser_wco_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
         return true;
@@ -939,7 +940,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         }
 
         //group 5 - feed rate mode
-        if (new_state->groups.motion >= G1 && new_state->groups.motion <= G3)
+        if (new_state->groups.motion >= G1 && new_state->groups.motion <= G38_5)
         {
             if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
             {
@@ -968,11 +969,18 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
     //group 6 - units (nothing to be checked)
     //group 7 - cutter radius compensation (not implemented yet)
     //group 8 - tool length offset
-    if ((new_state->groups.tool_length_offset == G43_1) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         if (!CHECKFLAG(cmd->words, GCODE_WORD_Z))
         {
             return STATUS_GCODE_AXIS_WORDS_EXIST;
+        }
+
+        //since G43.1 (and currently G43) support and uses word Z it can't be in the same line as a MOTION group command
+        //this may be reviewed in the future
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
+        {
+            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
         }
     }
 //group 10 - return mode in canned cycles (not implemented yet)
@@ -1016,7 +1024,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
     float target[AXIS_COUNT];
-    float planner_last_pos[AXIS_COUNT];
     //plane selection
     uint8_t a = 0;
     uint8_t b = 0;
@@ -1024,8 +1031,6 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     uint8_t offset_b = 0;
     float radius;
     motion_data_t block_data = {0};
-
-    mc_get_position(planner_last_pos);
 
     //stoping from previous command M2 or M30 command
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1053,10 +1058,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //3. set feed rate (µCNC works in units per second and not per minute)
     if (CHECKFLAG(cmd->words, GCODE_WORD_F))
     {
-        if (new_state->groups.feedrate_mode != G93)
-        {
-            new_state->feedrate = words->f; // * MIN_SEC_MULT;
-        }
+        new_state->feedrate = words->f; // * MIN_SEC_MULT;
     }
 
 //4. set spindle speed
@@ -1204,11 +1206,12 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 //13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
 //14. cutter length compensation on or off (G43.1, G49)
 #ifdef AXIS_TOOL
-    if ((new_state->groups.tool_length_offset == 1) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
         parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
         CLEARFLAG(cmd->words, GCODE_WORD_Z);
         words->xyzabc[AXIS_TOOL] = 0; //resets parameter so it it doen't do anything else
+        parser_wco_counter = 0;
     }
 #endif
     //15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
@@ -1221,16 +1224,16 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //16. set path control mode (G61, G61.1, G64)
     switch (new_state->groups.path_mode)
     {
-    case 1:
+    case G61_1:
         block_data.motion_mode |= PLANNER_MOTION_EXACT_STOP;
         break;
-    case 3:
+    case G64:
         block_data.motion_mode |= PLANNER_MOTION_CONTINUOUS;
         break;
     }
 
     //17. set distance mode (G90, G91)
-    memcpy(target, planner_last_pos, sizeof(planner_last_pos));
+    memcpy(target, parser_last_pos, sizeof(parser_last_pos));
 
     //for all not explicitly declared target retain their position or add offset
     bool abspos = (new_state->groups.distance_mode == G90) | (new_state->groups.nonmodal == G53);
@@ -1406,7 +1409,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         for (uint8_t i = AXIS_COUNT; i != 0;)
         {
             i--;
-            parser_parameters.g92_offset[i] = -(target[i] - planner_last_pos[i] - parser_parameters.g92_offset[i]);
+            parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
         }
         memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
         //settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
@@ -1423,8 +1426,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //incomplete (canned cycles not supported)
     if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
     {
-        uint8_t probe_error;
-
+        uint8_t probe_flags;
         switch (new_state->groups.motion)
         {
         case G0:
@@ -1451,8 +1453,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
             }
 
             //target points
-            x = target[a] - planner_last_pos[a];
-            y = target[b] - planner_last_pos[b];
+            x = target[a] - parser_last_pos[a];
+            y = target[b] - parser_last_pos[b];
             float center_offset_a = words->ijk[offset_a];
             float center_offset_b = words->ijk[offset_b];
             //radius mode
@@ -1513,16 +1515,26 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         case 5: //G38.3
         case 6: //G38.4
         case 7: //G38.5
-            probe_error = mc_probe(target, (new_state->groups.motion > 5), &block_data);
-            if (probe_error)
+            probe_flags = (new_state->groups.motion > 5) ? 1 : 0;
+            probe_flags |= (new_state->groups.motion & 0x01) ? 2 : 0;
+
+            error = mc_probe(target, probe_flags, &block_data);
+            if (error == STATUS_PROBE_SUCCESS)
+            {
+                parser_parameters.last_probe_ok = 1;
+                error = STATUS_OK;
+            }
+            else
             {
                 parser_parameters.last_probe_ok = 0;
-                if (!(new_state->groups.motion & 0x01))
-                {
-                    return probe_error;
-                }
             }
-            parser_parameters.last_probe_ok = 1;
+
+            if (error == STATUS_OK)
+            {
+                protocol_send_probe_result(parser_parameters.last_probe_ok);
+            }
+
+            return error;
         }
     }
 
@@ -1530,6 +1542,9 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     {
         return error;
     }
+
+    //saves position
+    memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 
     //stop (M0, M1, M2, M30, M60) (not implemented yet).
     bool hold = false;
@@ -1558,7 +1573,6 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         if (resetparser)
         {
             cnc_stop();
-            parser_reset();
             protocol_send_feedback(MSG_FEEDBACK_8);
         }
     }
@@ -1918,18 +1932,17 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_state->groups.cutter_radius_compensation = code - 40;
         break;
     case 43: //doesn't support G43 but G43.1 (takes Z coordinate input has offset)
-    case 49:
-        if (code == 43)
+        switch (mantissa)
         {
-            switch (mantissa)
-            {
-            case 10:
-                break;
-            default:
-                return STATUS_GCODE_UNSUPPORTED_COMMAND;
-            }
+        case 255:
+        case 10:
+            //G43.1 same as G43
+            break;
+        default:
+            return STATUS_GCODE_UNSUPPORTED_COMMAND;
         }
-        new_state->groups.tool_length_offset = ((code == 49) ? G49 : G43_1);
+    case 49:
+        new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
         new_group |= GCODE_GROUP_TOOLLENGTH;
         break;
     case 98:
@@ -2237,6 +2250,31 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 
         words->t = (uint8_t)trunc(value);
         break;
+    case 'H':
+//special case for G43
+//is valid if preceded from a G43/G49
+//it get's converted to a Z word with tool length
+#if TOOL_COUNT > 0
+        if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+        {
+            if (mantissa)
+            {
+                return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+            }
+
+            uint8_t index = (uint8_t)trunc(value);
+            if (index < 1 || index > TOOL_COUNT)
+            {
+                return STATUS_INVALID_TOOL;
+            }
+            index--;
+            cmd->words |= GCODE_WORD_Z;
+            words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
+        }
+#else
+        return STATUS_GCODE_UNUSED_WORDS;
+#endif
+        break;
     default:
         if (c >= 'A' && c <= 'Z') //invalid recognized char
         {
@@ -2291,7 +2329,7 @@ static void parser_discard_command(void)
     } while (c != EOL);
 }
 
-static void parser_reset(void)
+void parser_reset(void)
 {
     parser_state.groups.coord_system = G54;               //G54
     parser_state.groups.plane = G17;                      //G17
@@ -2299,7 +2337,7 @@ static void parser_reset(void)
     parser_state.groups.cutter_radius_compensation = G40; //G40
     parser_state.groups.distance_mode = G90;              //G90
     parser_state.groups.feedrate_mode = G94;              //G94
-    parser_state.groups.tool_length_offset = G49;         //G49
+    parser_state.groups.tlo_mode = G49;                   //G49
     parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
 #ifdef USE_COOLANT
     parser_state.groups.coolant = M9; //M9
@@ -2309,13 +2347,14 @@ static void parser_reset(void)
 #endif
 #if TOOL_COUNT > 0
     parser_state.groups.tool_change = 1;
-    parser_state.tool_index = 1;
+    parser_state.tool_index = g_settings.default_tool;
 #else
     parser_state.groups.tool_change = 0;
 #endif
     parser_state.groups.motion = G1;                                               //G1
     parser_state.groups.units = G21;                                               //G21
     memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); //G92.2
+    parser_parameters.tool_length_offset = 0;
 }
 
 //loads parameters
@@ -2347,4 +2386,9 @@ void parser_parameters_load(void)
         memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
         settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
     }
+}
+
+void parser_sync_position(void)
+{
+    mc_get_position(parser_last_pos);
 }

@@ -173,39 +173,88 @@ const settings_t __rom__ default_settings =
         .pid_gain[0][2] = 0,
 #endif
 #if PID_CONTROLLERS > 1
-        .pid_gain[1][1] = 0,
+        .pid_gain[1][0] = 0,
         .pid_gain[1][1] = 0,
         .pid_gain[1][2] = 0,
 #endif
 #if PID_CONTROLLERS > 2
-        .pid_gain[2][2] = 0,
+        .pid_gain[2][0] = 0,
         .pid_gain[2][1] = 0,
         .pid_gain[2][2] = 0,
 #endif
 #if PID_CONTROLLERS > 3
-        .pid_gain[3][3] = 0,
+        .pid_gain[3][0] = 0,
         .pid_gain[3][1] = 0,
         .pid_gain[3][2] = 0,
 #endif
 #if PID_CONTROLLERS > 4
-        .pid_gain[4][4] = 0,
+        .pid_gain[4][0] = 0,
         .pid_gain[4][1] = 0,
         .pid_gain[4][2] = 0,
 #endif
 #if PID_CONTROLLERS > 5
-        .pid_gain[5][5] = 0,
+        .pid_gain[5][0] = 0,
         .pid_gain[5][1] = 0,
         .pid_gain[5][2] = 0,
 #endif
 #if PID_CONTROLLERS > 6
-        .pid_gain[6][6] = 0,
+        .pid_gain[6][0] = 0,
         .pid_gain[6][1] = 0,
         .pid_gain[6][2] = 0,
 #endif
 #if PID_CONTROLLERS > 7
-        .pid_gain[7][7] = 0,
+        .pid_gain[7][0] = 0,
         .pid_gain[7][1] = 0,
         .pid_gain[7][2] = 0,
+#endif
+#if TOOL_COUNT > 0
+        .default_tool = DEFAULT_STARTUP_TOOL,
+        .tool_length_offset[0] = 0,
+#endif
+#if TOOL_COUNT > 1
+        .tool_length_offset[1] = 0,
+#endif
+#if TOOL_COUNT > 2
+        .tool_length_offset[2] = 0,
+#endif
+#if TOOL_COUNT > 3
+        .tool_length_offset[3] = 0,
+#endif
+#if TOOL_COUNT > 4
+        .tool_length_offset[4] = 0,
+#endif
+#if TOOL_COUNT > 5
+        .tool_length_offset[5] = 0,
+#endif
+#if TOOL_COUNT > 6
+        .tool_length_offset[6] = 0,
+#endif
+#if TOOL_COUNT > 7
+        .tool_length_offset[7] = 0,
+#endif
+#if TOOL_COUNT > 8
+        .tool_length_offset[8] = 0,
+#endif
+#if TOOL_COUNT > 9
+        .tool_length_offset[9] = 0,
+#endif
+#if TOOL_COUNT > 10
+        .tool_length_offset[10] = 0,
+#endif
+#if TOOL_COUNT > 11
+        .tool_length_offset[11] = 0,
+#endif
+#if TOOL_COUNT > 12
+        .tool_length_offset[12] = 0,
+#endif
+#if TOOL_COUNT > 13
+        .tool_length_offset[13] = 0,
+#endif
+#if TOOL_COUNT > 14
+        .tool_length_offset[14] = 0,
+#endif
+#if TOOL_COUNT > 15
+        .tool_length_offset[15] = 0,
 #endif
 
         .step_enable_invert = DEFAULT_STEP_ENA_INV,
@@ -218,7 +267,6 @@ const settings_t __rom__ default_settings =
         .homing_offset = DEFAULT_HOMING_OFFSET,
         .g64_angle_factor = DEFAULT_G64_FACTOR,
         .arc_tolerance = DEFAULT_ARC_TOLERANCE,
-        //.tool_count = DEFAULT_STARTUP_TOOL,
         .limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
         .status_report_mask = DEFAULT_STATUS_MASK,
         .control_invert_mask = DEFAULT_CONTROL_INV_MASK,
@@ -438,222 +486,70 @@ uint8_t settings_change(uint8_t setting, float value)
         break;
 #endif
 #endif
-#if (AXIS_COUNT > 0)
-    case 130:
-        g_settings.max_distance[0] = value;
-        break;
-#endif
-#if (AXIS_COUNT > 1)
-    case 131:
-        g_settings.max_distance[1] = value;
-        break;
-#endif
-#if (AXIS_COUNT > 2)
-    case 132:
-        g_settings.max_distance[2] = value;
-        break;
-#endif
-#if (AXIS_COUNT > 3)
-    case 133:
-        g_settings.max_distance[3] = value;
-        break;
-#endif
-#if (AXIS_COUNT > 4)
-    case 134:
-        g_settings.max_distance[4] = value;
-        break;
-#endif
-#if (AXIS_COUNT > 5)
-    case 135:
-        g_settings.max_distance[5] = value;
-        break;
-#endif
-#if (STEPPER_COUNT > 0)
-    case 100:
-        g_settings.step_per_mm[0] = value;
-        break;
-    case 110:
-        g_settings.max_feed_rate[0] = value;
-        break;
-    case 120:
-        g_settings.acceleration[0] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 140:
-        g_settings.backlash_steps[0] = value;
-        break;
-#endif
-#endif
-#if (STEPPER_COUNT > 1)
-    case 101:
-        g_settings.step_per_mm[1] = value;
-        break;
-    case 111:
-        g_settings.max_feed_rate[1] = value;
-        break;
-    case 121:
-        g_settings.acceleration[1] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 141:
-        g_settings.backlash_steps[1] = value;
-        break;
-#endif
-#endif
-#if (STEPPER_COUNT > 2)
-    case 102:
-        g_settings.step_per_mm[2] = value;
-        break;
-    case 112:
-        g_settings.max_feed_rate[2] = value;
-        break;
-    case 122:
-        g_settings.acceleration[2] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 142:
-        g_settings.backlash_steps[2] = value;
-        break;
-#endif
-#endif
-#if (STEPPER_COUNT > 3)
-    case 103:
-        g_settings.step_per_mm[3] = value;
-        break;
-    case 113:
-        g_settings.max_feed_rate[3] = value;
-        break;
-    case 123:
-        g_settings.acceleration[3] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 143:
-        g_settings.backlash_steps[3] = value;
-        break;
-#endif
-#endif
-#if (STEPPER_COUNT > 4)
-    case 104:
-        g_settings.step_per_mm[4] = value;
-        break;
-    case 114:
-        g_settings.max_feed_rate[4] = value;
-        break;
-    case 124:
-        g_settings.acceleration[4] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 144:
-        g_settings.backlash_steps[4] = value;
-        break;
-#endif
-#endif
-#if (STEPPER_COUNT > 5)
-    case 105:
-        g_settings.step_per_mm[5] = value;
-        break;
-    case 115:
-        g_settings.max_feed_rate[5] = value;
-        break;
-    case 125:
-        g_settings.acceleration[5] = value;
-        break;
-#ifdef ENABLE_BACKLASH_COMPENSATION
-    case 145:
-        g_settings.backlash_steps[5] = value;
-        break;
-#endif
-#endif
-#if PID_CONTROLLERS > 0
-    case 200:
-        g_settings.pid_gain[0][0] = value;
-        break;
-    case 201:
-        g_settings.pid_gain[0][1] = value;
-        break;
-    case 202:
-        g_settings.pid_gain[0][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 1
-    case 210:
-        g_settings.pid_gain[1][0] = value;
-        break;
-    case 211:
-        g_settings.pid_gain[1][1] = value;
-        break;
-    case 212:
-        g_settings.pid_gain[1][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 2
-    case 220:
-        g_settings.pid_gain[2][0] = value;
-        break;
-    case 221:
-        g_settings.pid_gain[2][1] = value;
-        break;
-    case 222:
-        g_settings.pid_gain[2][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 3
-    case 230:
-        g_settings.pid_gain[3][0] = value;
-        break;
-    case 231:
-        g_settings.pid_gain[3][1] = value;
-        break;
-    case 232:
-        g_settings.pid_gain[3][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 4
-    case 240:
-        g_settings.pid_gain[4][0] = value;
-        break;
-    case 241:
-        g_settings.pid_gain[4][1] = value;
-        break;
-    case 242:
-        g_settings.pid_gain[4][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 5
-    case 250:
-        g_settings.pid_gain[5][0] = value;
-        break;
-    case 251:
-        g_settings.pid_gain[5][1] = value;
-        break;
-    case 252:
-        g_settings.pid_gain[5][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 6
-    case 260:
-        g_settings.pid_gain[6][0] = value;
-        break;
-    case 261:
-        g_settings.pid_gain[6][1] = value;
-        break;
-    case 262:
-        g_settings.pid_gain[6][2] = value;
-        break;
-#endif
-#if PID_CONTROLLERS > 7
-    case 270:
-        g_settings.pid_gain[7][0] = value;
-        break;
-    case 271:
-        g_settings.pid_gain[7][1] = value;
-        break;
-    case 272:
-        g_settings.pid_gain[7][2] = value;
+#if TOOL_COUNT > 0
+    case 40:
+        g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
         break;
 #endif
     default:
-        return STATUS_INVALID_STATEMENT;
+        if (setting >= 100 && setting < (100 + STEPPER_COUNT))
+        {
+            setting -= 100;
+            g_settings.step_per_mm[setting] = value;
+        }
+        else if (setting >= 110 && setting < (110 + STEPPER_COUNT))
+        {
+            setting -= 110;
+            g_settings.max_feed_rate[setting] = value;
+        }
+        else if (setting >= 120 && setting < (120 + STEPPER_COUNT))
+        {
+            setting -= 120;
+            g_settings.acceleration[setting] = value;
+        }
+        else if (setting >= 130 && setting < (130 + AXIS_COUNT))
+        {
+            setting -= 130;
+            g_settings.max_distance[setting] = value;
+        }
+        else if (setting >= 130 && setting < (130 + AXIS_COUNT))
+        {
+            setting -= 130;
+            g_settings.max_distance[setting] = value;
+        }
+#ifdef ENABLE_BACKLASH_COMPENSATION
+        else if (setting >= 140 && setting < (140 + STEPPER_COUNT))
+        {
+            setting -= 140;
+            g_settings.backlash_steps[setting] = value16;
+        }
+#endif
+#if PID_CONTROLLERS > 0
+        //kp ki and kd 0 -> 150, 151, 152
+        //kp ki and kd 1 -> 154, 155, 156, etc...
+        else if (setting >= 150 && setting < (150 + (4 * PID_CONTROLLERS)))
+        {
+            uint8_t k = setting & 0x03;
+            uint8_t pid = (setting >> 2) & 0x03;
+            //3 is invalid index
+            if (k == 0x03)
+            {
+                return STATUS_INVALID_STATEMENT;
+            }
+            g_settings.pid_gain[pid][k] = value;
+        }
+#endif
+#if TOOL_COUNT > 0
+        else if (setting > 40 && setting <= 56)
+        {
+            setting -= 41;
+            g_settings.tool_length_offset[setting] = value;
+        }
+#endif
+        else {
+            return STATUS_INVALID_STATEMENT;
+        }
+        break;
     }
 
 #ifndef ENABLE_SETTING_EXTRA_CMDS

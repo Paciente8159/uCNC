@@ -589,20 +589,20 @@ void planner_feed_ovr_reset(void)
 {
     if (planner_overrides.feed_override != 100)
     {
+        planner_overrides.feed_override = 100;
+        planner_ovr_counter = 0;
         itp_update();
     }
-    planner_overrides.feed_override = 100;
-    planner_ovr_counter = 0;
 }
 
 void planner_rapid_feed_ovr_reset(void)
 {
     if (planner_overrides.rapid_feed_override != 100)
     {
+        planner_overrides.rapid_feed_override = 100;
+        planner_ovr_counter = 0;
         itp_update();
     }
-    planner_overrides.rapid_feed_override = 100;
-    planner_ovr_counter = 0;
 }
 #ifdef USE_SPINDLE
 void planner_spindle_ovr_inc(uint8_t value)

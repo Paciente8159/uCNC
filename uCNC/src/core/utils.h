@@ -52,6 +52,10 @@ extern "C"
 #define ABS(a) (((a) > 0) ? (a) : -(a))
 #endif
 
+#ifndef CLAMP
+#define CLAMP(a, b, c) (MAX(b, MIN(a, c)))
+#endif
+
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 #define __UINT32_R0__ 0
 #define __UINT32_R1__ 1

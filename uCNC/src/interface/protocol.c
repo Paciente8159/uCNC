@@ -170,13 +170,18 @@ void protocol_send_status(void)
     state &= filter;
 
     serial_putc('<');
-    if (!mc_get_checkmode() || cnc_get_exec_state(EXEC_ALARM))
+    if (cnc_has_alarm())
+    {
+        serial_print_str(MSG_STATUS_ALARM);
+    }
+    else if(mc_get_checkmode())
+    {
+        serial_print_str(MSG_STATUS_CHECK);
+    }
+    else
     {
         switch (state)
         {
-        case EXEC_KILL:
-            serial_print_str(MSG_STATUS_ALARM);
-            break;
         case EXEC_DOOR:
             serial_print_str(MSG_STATUS_DOOR);
             if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
@@ -231,10 +236,6 @@ void protocol_send_status(void)
             serial_print_str(MSG_STATUS_IDLE);
             break;
         }
-    }
-    else
-    {
-        serial_print_str(MSG_STATUS_CHECK);
     }
 
     serial_print_str(MSG_STATUS_MPOS);
@@ -369,12 +370,20 @@ void protocol_send_gcode_coordsys(void)
     serial_putc(']');
     procotol_send_newline();
 #endif
+    protocol_send_probe_result(parser_get_probe_result());
 
+    protocol_busy = false;
+}
+
+void protocol_send_probe_result(uint8_t val)
+{
+    float axis[MAX(AXIS_COUNT, 3)];
+    protocol_busy = true;
     serial_print_str(__romstr__("[PRB:"));
     parser_get_coordsys(255, axis);
     serial_print_fltarr(axis, AXIS_COUNT);
     serial_putc(':');
-    serial_putc('0' + parser_get_probe_result());
+    serial_putc('0' + val);
     serial_putc(']');
     procotol_send_newline();
     protocol_busy = false;
@@ -525,13 +534,20 @@ void protocol_send_cnc_settings(void)
     protocol_send_gcode_setting_line_flt(30, g_settings.spindle_max_rpm);
     protocol_send_gcode_setting_line_flt(31, g_settings.spindle_min_rpm);
     protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
-
 #ifdef ENABLE_SKEW_COMPENSATION
     protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
 #ifndef SKEW_COMPENSATION_XY_ONLY
     protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
     protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
 #endif
+#endif
+
+#if TOOL_COUNT > 0
+    protocol_send_gcode_setting_line_int(40, g_settings.default_tool);
+    for (uint8_t i = 0; i < TOOL_COUNT; i++)
+    {
+        protocol_send_gcode_setting_line_flt(41 + i, g_settings.tool_length_offset[i]);
+    }
 #endif
 
     for (uint8_t i = 0; i < STEPPER_COUNT; i++)
@@ -564,9 +580,9 @@ void protocol_send_cnc_settings(void)
 #if PID_CONTROLLERS > 0
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        protocol_send_gcode_setting_line_flt(200 + fast_int_mul10(i), g_settings.pid_gain[i][0]);
-        protocol_send_gcode_setting_line_flt(201 + fast_int_mul10(i), g_settings.pid_gain[i][1]);
-        protocol_send_gcode_setting_line_flt(202 + fast_int_mul10(i), g_settings.pid_gain[i][2]);
+        protocol_send_gcode_setting_line_flt(150 + 4 * i, g_settings.pid_gain[i][0]);
+        protocol_send_gcode_setting_line_flt(151 + 4 * i, g_settings.pid_gain[i][1]);
+        protocol_send_gcode_setting_line_flt(152 + 4 * i, g_settings.pid_gain[i][2]);
     }
 #endif
     protocol_busy = false;

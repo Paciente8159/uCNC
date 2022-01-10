@@ -49,6 +49,8 @@ void parser_toogle_coolant(uint8_t state);
 	void parser_parameters_load(void);
 	void parser_parameters_reset(void);
 	void parser_parameters_save(void);
+	void parser_sync_position(void);
+	void parser_reset(void);
 
 #ifdef __cplusplus
 }

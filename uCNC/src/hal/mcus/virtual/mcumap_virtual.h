@@ -32,7 +32,7 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#define ENABLE_SYNC_TX
+//#define ENABLE_SYNC_TX
 
 //commento to use console only
 #define COMPORT "\\\\.\\COM11"
@@ -81,7 +81,6 @@ extern virtports_t virtualports;
 #define LIMIT_X 4
 #define LIMIT_Y 5
 #define LIMIT_Z 6
-#define LIMIT_Y2 6
 #define PROBE 7
 
 #define INREG virtualports->inputs

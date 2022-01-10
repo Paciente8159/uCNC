@@ -1,6 +1,7 @@
 G90 (use absolute coordinates)
 G0 X0 Y0 Z0 (move back to origin)
 G91 (relative)
+F1000
 G1 X0.024Y0.012Z0.006
 X0.024Y0.012Z0.006
 X0.024Y0.012Z0.006
@@ -4003,3 +4004,4 @@ X0.024Y0.012Z0.006
 X0.024Y0.012Z0.006
 G90
 G0 X0 Y0 Z0 (move back to origin)
+M2

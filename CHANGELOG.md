@@ -8,6 +8,32 @@
 ### Added
   - added pid_stop action and alarm checking (safety stop) (#108)
   - added new interpolator functions to be used by the PID module (#108)
+  
+## [1.3.4] - 2022-01-10
+µCNC version 1.3.4 adds a few improvements and also fixes some issues with inverse feedrate mode `G93` and realtime feed overrides.
+
+### Changed
+  - added `G43.1` again for back compatibility with Grbl. Will work the same way has `G43` (#115)
+  - added `G43` and `G43.1` violation check against MOTION group commands (#115)
+  - `M2`can be now cleared with `$X` or `$H` commands (#119)
+  - modified DSS to force step ISR frequency to update on DSS change (#121)
+  - removed DSS minimum step limitation to prevent DSS algorithm on/off oscillation resulting in a smoother motion (#121)
+  - added configurable DSS cutoff frequency (#121)
+  
+### Fixed
+  - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
+  - fixed `G93` (inverse feed mode) feedrate calculation (#117)
+  - fixed `G93` (inverse feed mode) feedrate calculation for arcs (#118)
+
+## [1.3.3] - 2022-01-07
+
+µCNC version 1.3.3 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+It also removes `G43.1` (non compliant RS274NGC command) and replaces it with the `G43` compliant version. It still accepts the `Z` word. For tool lengths the `H` word should be used.
+Tool lengths can be set and stored in settings `$41=<Tool1 offset>..$42=<Tool2 offset>...etc`. Also the default tool loaded at start/reset is stored via setting `$40`.
+Encoders are also working in uni and bidirectional mode. Each encoder position is also reported by command `$P` available via `config.h` 
+
+### Added
+  - added configurable default loading tool and tools offset (#109)
 
 ### Changed
   - modified/fixed PID controller to output positive/negative variation result (#108)
@@ -21,6 +47,24 @@
   - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
+  - modified removed `G43.1` command and added `G43` command has defined in the RS274NGC. A similar command to previous `G43.1` is possible with `G43 Z<value>` (#109)
+  - probe command returns report like Grbl (#112)
+  - modified alarm locking and report messages on alarm status. Soft stop alarm require unlock only. Hard stops will cause soft reset on unlock (#111)
+  - homing motions adjusted to adapt to alarm modifications done in (#111) (#113)
+
+### Fixed
+  - fixed tool length offset was not affecting the `WCO` position report (#109)
+  - tool length is set to 0 after reset (#109)
+  - modified settings change code (smaller and more efficient) (#110)
+  - fixed feed validation in motion group 0 to include probing commands (`G38.x`) (#112)
+  - fixed probing commands (`G38.4` and `G38.5`) reverse probe logic triggering (#112)
+  - fixed fail to probe target message and alarm (#112)
+  - fixed check mode position update of motion control preventing invalid target errors (#111)
+  - fixed sticky check mode even after soft-reset (#111)
+  - partially reverted modifications (#98) and (#84) that caused the the machine real position to diverge due to error accumulation with G91 (relative distance) active (#114)
+
+### Fixed
+  - fixed PID settings offsets (#110)
 
 ## [1.3.2] - 2022-01-05
 
@@ -33,17 +77,17 @@
   - modified SAMD21 compilation flags and board configurations (#101)
   - reviewed SAMD21 and STM32 ISR to ensure they run in block mode (only one ISR at the time). ISR unlocking is controller by µCNC to make it more predictable (#101)
   - removed duplicate tool pid call (#101)
-  - modified feed override flags so M48/M49 will only affect at code execution order (#102)
+  - modified feed override flags so `M48/M49` will only affect at code execution order (#102)
   - modified tool speed update and read functions and integrated HAL tool in the core of µCNC (#106)
 
 ### Fixed
   - fixed feed override after reaching top speed feed was reset to normal (100%) neglecting feed override value (#102)
-  - fixed M48/M49 parsing error (after calling overrides were always turned off) (#102)
+  - fixed `M48/M49` parsing error (after calling overrides were always turned off) (#102)
   - fixed spindle override max and min values (#100)
-  - fixed arc commands G2/G3 with G18 active parsing validation errors and mirrored motion error (#103)
-  - fixed motion commands (G0,G1, etc) with active offset (G92 or G5x) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
-  - fixed G4 P word was not convert from seconds to milliseconds on the parser (#103)
-  - fixed G53 with active G91 (ignores G91) and now travels to the absolute position (#103)
+  - fixed arc commands `G2/G3` with `G18` active parsing validation errors and mirrored motion error (#103)
+  - fixed motion commands (`G0`,`G1`, etc) with active offset (`G92` or `G5x`) introduced with (#83) and a given axis is omitted was reapplying the offset (#103)
+  - fixed `G4 P` word was not convert from seconds to milliseconds on the parser (#103)
+  - fixed `G53` with active `G91` (ignores `G91`) and now travels to the absolute position (#103)
   - fixed interpolator speed calculations for slow movements with instant max speed that and speed was set to 0 causing µCNC to stop generating steps and not moving (#105)
 
 ## [1.3.1] - 2022-01-02
@@ -449,6 +493,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4
+[1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0

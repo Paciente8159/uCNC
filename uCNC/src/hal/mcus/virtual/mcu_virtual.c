@@ -70,6 +70,7 @@ uint8_t g_mcu_buffertail;
 uint8_t g_mcu_buffercount;
 char *mcu_tx_buffer;
 volatile bool mcu_tx_ready;
+volatile bool mcu_tx_enabled;
 /*
 #ifdef __DEBUG__
 #define MAX(A,B) if(B>A) A=B
@@ -105,16 +106,28 @@ pthread_t thread_idout;
 pthread_t thread_timer_id;
 pthread_t thread_step_id;
 
+void mcu_rx_isr(unsigned char c)
+{
+	if(c) {
+		serial_rx_isr(c);
+	}
+}
+
+void mcu_tx_isr(void)
+{
+	mcu_tx_ready = true;
+}
+
 //emulates uart RX
 void *comsimul(void)
 {
 #ifndef USECONSOLE
 
-#ifndef ENABLE_SYNC_TX
-	virtualserial_open(&serial_tx_isr, &serial_rx_isr);
-#else
-	virtualserial_open(NULL, &serial_rx_isr);
-#endif
+//#ifndef ENABLE_SYNC_TX
+	virtualserial_open(&mcu_tx_isr, &mcu_rx_isr);
+//#else
+//	virtualserial_open(NULL, &mcu_rx_isr);
+//#endif
 
 #else
 	for (;;)
@@ -138,13 +151,14 @@ void *comsimul(void)
 //emulates uart TX
 void *comoutsimul(void)
 {
-	unsigned char combuffer[128];
-	static uint8_t i = 0;
 	for (;;)
 	{
-		if (mcu_tx_ready)
+		if (mcu_tx_enabled)
 		{
+			mcu_tx_enabled = false;
+			//mcu_tx_ready = false;
 			serial_tx_isr();
+			//mcu_tx_ready = true;
 		}
 	}
 }
@@ -237,7 +251,7 @@ void ticksimul(void)
 {
 
 	static VIRTUAL_MAP initials = {0};
-	/*
+
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
 
@@ -253,7 +267,7 @@ void ticksimul(void)
 		{
 			isr_flags |= ISR_INPUT; //flags input isr
 		}
-	}*/
+	}
 
 	mcu_runtime++;
 }
@@ -288,13 +302,14 @@ void mcu_init(void)
 		}
 	}
 	g_cpu_freq = getCPUFreq();
-	//start_timer(1, &ticksimul);
+	start_timer(1, &ticksimul);
 	pthread_create(&thread_id, NULL, &comsimul, NULL);
-#ifdef USECONSOLE
+//#ifdef USECONSOLE
 	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
-#endif
+//#endif
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
-	mcu_tx_ready = false;
+	mcu_tx_ready = true;
+	mcu_tx_enabled = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
 	mcu_enable_global_isr();
@@ -331,12 +346,12 @@ void mcu_enable_tx_isr(void)
 #ifndef USECONSOLE
 	serial_tx_isr();
 #endif
-	mcu_tx_ready = true;
+	mcu_tx_enabled = true;
 }
 
 void mcu_disable_tx_isr(void)
 {
-	mcu_tx_ready = false;
+	mcu_tx_enabled = false;
 }
 
 void mcu_putc(char c)
@@ -344,8 +359,16 @@ void mcu_putc(char c)
 #ifdef USECONSOLE
 	putchar(c);
 #else
-	virtualserial_putc(c);
-	putchar(c);
+	if (c != 0)
+	{
+		while (!mcu_tx_ready)
+			;
+			mcu_tx_ready = false;
+		virtualserial_putc(c, &mcu_tx_isr);
+		putchar(c);
+		
+	}
+	mcu_tx_enabled = true;
 #endif
 }
 
@@ -406,7 +429,8 @@ void mcu_disable_global_isr(void)
 	global_isr_enabled = false;
 }
 
-bool mcu_get_global_isr(void) {
+bool mcu_get_global_isr(void)
+{
 	return global_isr_enabled;
 }
 

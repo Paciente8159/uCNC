@@ -33,6 +33,9 @@ extern "C"
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM 4
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL 8
 
+#define MOTIONCONTROL_PROBE_INVERT 1
+#define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
+
         typedef struct
         {
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -70,7 +73,7 @@ extern "C"
 
         //mixed/special motions
         uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
-        uint8_t mc_probe(float *target, bool invert_probe, motion_data_t *block_data);
+        uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
 
         void mc_get_position(float *target);
         void mc_sync_position(void);

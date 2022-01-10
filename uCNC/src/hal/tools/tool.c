@@ -18,6 +18,7 @@
 */
 
 #include "../../cnc.h"
+#include "../../interface/settings.h"
 #include <stdlib.h>
 
 static tool_t tool_current;
@@ -80,7 +81,7 @@ void tool_init(void)
 	tool_current = {};
 #endif
 
-	tool_change(1);
+	tool_change(g_settings.default_tool);
 }
 
 void tool_change(uint8_t tool)
