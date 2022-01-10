@@ -27,7 +27,7 @@
 #include "../modules/pid_controller.h"
 
 //if settings struct is changed this version should change too
-#define SETTINGS_VERSION "V04"
+#define SETTINGS_VERSION "V05"
 
 settings_t g_settings;
 
@@ -487,7 +487,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 #endif
 #if TOOL_COUNT > 0
-    case 40:
+    case 80:
         g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
         break;
 #endif
@@ -525,12 +525,12 @@ uint8_t settings_change(uint8_t setting, float value)
         }
 #endif
 #if PID_CONTROLLERS > 0
-        //kp ki and kd 0 -> 150, 151, 152
-        //kp ki and kd 1 -> 154, 155, 156, etc...
-        else if (setting >= 150 && setting < (150 + (4 * PID_CONTROLLERS)))
+        //kp ki and kd 0 -> 41, 42, 43
+        //kp ki and kd 1 -> 45, 46, 47, etc...
+        else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
         {
-            uint8_t k = setting & 0x03;
-            uint8_t pid = (setting >> 2) & 0x03;
+            uint8_t k = (setting & 0x03);
+            uint8_t pid = (setting >> 2) - 10;
             //3 is invalid index
             if (k == 0x03)
             {
@@ -540,13 +540,14 @@ uint8_t settings_change(uint8_t setting, float value)
         }
 #endif
 #if TOOL_COUNT > 0
-        else if (setting > 40 && setting <= 56)
+        else if (setting > 80 && setting <= 96)
         {
-            setting -= 41;
+            setting -= 80;
             g_settings.tool_length_offset[setting] = value;
         }
 #endif
-        else {
+        else
+        {
             return STATUS_INVALID_STATEMENT;
         }
         break;

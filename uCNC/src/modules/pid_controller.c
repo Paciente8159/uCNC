@@ -249,10 +249,10 @@ void pid_update(void)
             {
                 //max 26bits
                 int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
+                last_error[current_pid] = error;
                 output += rateerror;
             }
 
-            last_error[current_pid] = error;
             bool isneg = (output < 0) ? true : false;
             output = (!isneg) ? output : -output;
             output >>= PID_BITSHIFT_FACTOR;

@@ -36,24 +36,24 @@ extern "C"
 #define PID_DIVISIONS 3
 #endif
 
-#define PID_SAMP_FREQ (1000/(1<<PID_DIVISIONS))
+#define PID_SAMP_FREQ (1000 / (1 << PID_DIVISIONS))
 #endif
 
 #if PID_CONTROLLERS > 0
 #ifdef PID0_DELTA
 #error "The PID0 is reserved for the tool PID"
 #else
-#define PID0_DELTA ({})
+#define PID0_DELTA() ({ 0; })
 #endif
-#ifndef PID0_OUTPUT
+#ifdef PID0_OUTPUT
 #error "The PID0 is reserved for the tool PID"
 #else
 #define PID0_OUTPUT(X) (tool_pid_update());
 #endif
-#ifndef PID0_STOP
+#ifdef PID0_STOP
 #error "The PID0 is reserved for the tool PID"
 #else
-#define PID0_STOP tool_stop;
+#define PID0_STOP() tool_stop();
 #endif
 #ifndef PID0_FREQ_DIV
 #define PID0_FREQ_DIV 1

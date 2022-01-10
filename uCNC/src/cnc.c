@@ -70,6 +70,7 @@ void cnc_init(void)
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     //initializes all systems
     mcu_init();            //mcu
+    mcu_disable_global_isr();
     io_disable_steppers(); //disables steppers at start
     io_disable_probe();    //forces probe isr disabling
     serial_init();         //serial
@@ -84,6 +85,7 @@ void cnc_init(void)
 #if PID_CONTROLLERS > 0
     pid_init(); //pid
 #endif
+mcu_enable_global_isr();
 }
 
 void cnc_run(void)
@@ -511,15 +513,6 @@ bool cnc_reset(void)
 #endif
     protocol_send_string(MSG_STARTUP);
     serial_flush();
-
-    // uint8_t ok = cnc_unlock(false);
-
-    // if (ok)
-    // {
-    //     io_enable_steppers();
-    // }
-
-    // return (ok != 0);
 }
 
 void cnc_call_rt_command(uint8_t command)

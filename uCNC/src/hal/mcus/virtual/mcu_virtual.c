@@ -251,6 +251,8 @@ void ticksimul(void)
 {
 
 	static VIRTUAL_MAP initials = {0};
+	
+	if(global_isr_enabled) {
 
 	FILE *infile = fopen("inputs.txt", "r");
 	char inputs[255];
@@ -270,6 +272,10 @@ void ticksimul(void)
 	}
 
 	mcu_runtime++;
+	mcu_disable_global_isr();
+	cnc_scheduletasks(mcu_runtime);
+	mcu_enable_global_isr();
+}
 }
 
 uint32_t mcu_millis()
