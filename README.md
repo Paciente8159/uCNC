@@ -50,7 +50,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Unit Modes: G20, G21
   - Distance Modes: G90, G91
   - Plane Select Modes: G17, G18, G19
-  - Tool Length Offset Modes: G43 G49
+  - Tool Length Offset Modes: G43, G43.1*, G49
   - Cutter Compensation Modes: G40
   - Coordinate System Modes: G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3
   - Control Modes: G61, G61.1, G64
@@ -61,9 +61,16 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
   - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
-  _* also G10 L2 P28 and P30 to set homing coordinates_
-  _* also G10 L2 P0 to set the current coordinates system offset_
+* see notes
+
 ```
+NOTES:
+  * _also G10 L2 P28 and P30 to set homing coordinates_
+  * _also G10 L2 P0 to set the current coordinates system offset_
+  * _G59.1, G59.2 and G59.3 can be enabled in config_
+  * _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
+  * _M1 stop condition can be set in HAL file_
+  * _M6 additional tools can be defined in HAL file_
 
 TODO List of G-Codes in µCNC future releases:
   - extending the capabilities and functions of the new HAL config
@@ -83,7 +90,7 @@ TODO List of G-Codes in µCNC future releases:
   - 16 generic digital inputs
   - 16 generic digital outputs
 
-µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
+µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board, but this feature is experimental and it's advise to disable DSS when using it.
 
 ### Current µCNC supported hardware
 µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
