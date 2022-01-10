@@ -11,7 +11,7 @@
 ### Changed
   - added `G43.1` again for back compatibility with Grbl. Will work the same way has `G43` (#115)
   - added `G43` and `G43.1` violation check against MOTION group commands (#115)
-  - `M2`can be now cleared with `$X`or `$H` commands (#119)
+  - `M2`can be now cleared with `$X` or `$H` commands (#119)
   - modified DSS to force step ISR frequency to update on DSS change (#121)
   - removed DSS minimum step limitation to prevent DSS algorithm on/off oscillation resulting in a smoother motion (#121)
   - added configurable DSS cutoff frequency (#121)
