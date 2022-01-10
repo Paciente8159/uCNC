@@ -9,6 +9,9 @@
   - added `G43.1` again for back comaptibility with Grbl. Will work the same way has `G43` (#115)
   - added `G43` and `G43.1` violation check against MOTION group commands (#115)
   - `M2`can be now cleared with `$X`or `$H` commands (#119)
+  - modified DSS to force step ISR frequency to update on DSS change (#121)
+  - removed DSS minimum step limitation to prevent DSS algorithm on/off oscillation resulting in a smoother motion (#121)
+  - added configurable DSS cutoff frequency (#121)
   
 ### Fixed
   - fixed overrides bug due to commented code that disable negative accelerations when slowing motion. Also done slight step ISR modifications to DSS calculations. (#116)
@@ -475,6 +478,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.0
