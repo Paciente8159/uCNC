@@ -1573,7 +1573,6 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         if (resetparser)
         {
             cnc_stop();
-            parser_reset();
             protocol_send_feedback(MSG_FEEDBACK_8);
         }
     }
