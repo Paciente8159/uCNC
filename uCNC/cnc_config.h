@@ -201,13 +201,14 @@ extern "C"
 	 * Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
 	 */
 #define DSS_MAX_OVERSAMPLING 3
+#define DSS_CUTOFF_FREQ 500
 
-/**
+	/**
 	 * Modifies the bresenham algorithm to use a 16-version (experimental).
 	 * This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments. 	 * 
 	 */
 
-//#define BRESENHAM_16BIT
+// #define BRESENHAM_16BIT
 
 /**
 	 * Forces pin pooling for all limits and control pins (with or without interrupts)

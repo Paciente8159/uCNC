@@ -219,7 +219,7 @@ void itp_run(void)
     static float half_speed_change = 0;
     static bool initial_accel_negative = false;
     static float feed_convert = 0;
-    static bool is_initial_transition = true;
+    static bool const_speed = false;
 
     itp_segment_t *sgm = NULL;
 
@@ -286,7 +286,7 @@ void itp_run(void)
             //flags block for recalculation of speeds
             itp_needs_update = true;
             //in every new block speed update is needed
-            is_initial_transition = true;
+            const_speed = true;
 
             half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
             half_speed_change = fast_flt_div2(half_speed_change);
@@ -359,25 +359,29 @@ void itp_run(void)
             speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
             sgm->update_itp = true;
-            is_initial_transition = true;
+            const_speed = false;
         }
         else if (remaining_steps > deaccel_from)
         {
             //constant speed segment
             speed_change = 0;
             profile_steps_limit = deaccel_from;
-            sgm->update_itp = is_initial_transition ? true : false;
-            is_initial_transition = false;
+            sgm->update_itp = !const_speed;
+            if (!const_speed)
+            {
+                const_speed = true;
+            }
         }
         else
         {
             speed_change = -half_speed_change;
             profile_steps_limit = 0;
             sgm->update_itp = true;
-            is_initial_transition = true;
+            const_speed = false;
         }
 
         float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
+
         /*
         	common calculations for all three profiles (accel, constant and deaccel)
         */
@@ -394,9 +398,13 @@ void itp_run(void)
             current_speed = 0;
         }
 
-        float partial_distance = MIN((current_speed * INTEGRATOR_DELTA_T), remaining_steps);
-        //if traveled distance is less the one step fits at least one step
-        partial_distance = MAX(partial_distance, 1.0f);
+        float partial_distance = current_speed * INTEGRATOR_DELTA_T;
+
+        if (partial_distance < 1)
+        {
+            partial_distance = 1;
+        }
+
         //computes how many steps it will perform at this speed and frame window
         uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 
@@ -432,23 +440,26 @@ void itp_run(void)
 //This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
 //DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
-        uint32_t step_speed = (uint32_t)round(current_speed);
+        float dss_speed = current_speed;
         static uint8_t prev_dss = 0;
         uint8_t dss = 0;
-        uint32_t f_step_max = (uint32_t)g_settings.max_step_rate;
-        f_step_max >>= 2;
-        while (step_speed < f_step_max && dss < DSS_MAX_OVERSAMPLING && segm_steps > 1)
+        while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING)
         {
-            step_speed <<= 1;
+            dss_speed = fast_flt_mul2(dss_speed);
             dss++;
         }
 
+        if (dss != prev_dss)
+        {
+            sgm->update_itp = true;
+        }
         sgm->next_dss = dss - prev_dss;
         prev_dss = dss;
 
         //completes the segment information (step speed, steps) and updates the block
         sgm->remaining_steps = segm_steps << dss;
-        mcu_freq_to_clocks((float)step_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
+        dss_speed = MIN(dss_speed, g_settings.max_step_rate);
+        mcu_freq_to_clocks(dss_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
         current_speed = MIN(current_speed, g_settings.max_step_rate);

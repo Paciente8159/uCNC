@@ -842,7 +842,6 @@ extern "C"
 #define DIO101 -1
 #endif
 
-
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
 #endif
@@ -853,8 +852,8 @@ extern "C"
 #if CTRL_SCHED_CHECK > 7
 #error CTRL_SCHED_CHECK invalid value! Max is 7
 #endif
-#define CTRL_SCHED_CHECK_MASK ((1<<(CTRL_SCHED_CHECK+1))-1)
-#define CTRL_SCHED_CHECK_VAL (1<<(CTRL_SCHED_CHECK))
+#define CTRL_SCHED_CHECK_MASK ((1 << (CTRL_SCHED_CHECK + 1)) - 1)
+#define CTRL_SCHED_CHECK_VAL (1 << (CTRL_SCHED_CHECK))
 #endif
 
 #ifndef BRESENHAM_16BIT
@@ -865,6 +864,10 @@ typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (16 - (2 + DSS_MAX_OVERSAMPLING))
 #endif
 #define MAX_STEPS_PER_LINE (1 << MAX_STEPS_PER_LINE_BITS)
+
+#if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
+#error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
+#endif
 
 #ifdef __cplusplus
 }
