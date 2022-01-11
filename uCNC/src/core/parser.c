@@ -2355,6 +2355,7 @@ void parser_reset(void)
     parser_state.groups.units = G21;                                               //G21
     memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); //G92.2
     parser_parameters.tool_length_offset = 0;
+    parser_wco_counter = 0;
 }
 
 //loads parameters
