@@ -32,15 +32,24 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-//#define ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
 
-//commento to use console only
-#define COMPORT "\\\\.\\COM11"
-
-#ifndef COMPORT
-#define USECONSOLE
-#define COMPORT ""
+//uncomment to use sockets
+#define USESOCKETS
+#ifdef USESOCKETS
+#define DEFAULT_BUFLEN 127
+#define DEFAULT_PORT "34000"
 #endif
+
+//uncomment to use serial port
+//#define USESERIAL
+#ifdef USESERIAL
+#ifndef COMPORT
+#define COMPORT "\\\\.\\COM11"
+#endif
+#endif
+
+//#define USECONSOLE
 
 //defines a pointer to an unknow stucture that is defined in the mcu_virtual
 typedef struct virtual_map_t

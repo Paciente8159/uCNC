@@ -11,7 +11,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=-D__SIMUL__ -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_@@_
 CppCompiler=_@@_
-Linker=
+Linker=-lws2_32_@@_
 IsCpp=0
 Icon=
 ExeOutput=
@@ -582,6 +582,26 @@ BuildCmd=
 
 [Unit54]
 FileName=..\..\uCNC\src\core\utils.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit55]
+FileName=virtualsocket.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit56]
+FileName=virtualsocket.h
 CompileCpp=0
 Folder=
 Compile=1

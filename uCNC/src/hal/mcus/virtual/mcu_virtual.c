@@ -1,7 +1,6 @@
 /*
 	Name: mcu_virtual.c
-	Description: Simulates and MCU that runs on a PC. This is mainly used to test/simulate µCNC.
-		For now it's only working/tested on Windows.
+	Description: Simulates and MCU that runs on a Windows PC. This is mainly used to test/simulate µCNC.
 		Besides all the functions declared in the mcu.h it also implements the code responsible
 		for handling:
 			interpolator.h
@@ -29,7 +28,7 @@
 */
 
 #include "../../../cnc.h"
-#if (MCU == MCU_VIRTUAL)
+#if (MCU == MCU_VIRTUAL_WIN)
 #include <stdio.h>
 #include <conio.h>
 #include <string.h>
@@ -38,10 +37,14 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
+#include <windows.h>
+#include <stdio.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib") //Winsock Library
 
 #include "../../../interface/settings.h"
 #include "virtualtimer.h"
-#include "virtualserial.h"
 #include "../../../interface/serial.h"
 #include "../../../core/interpolator.h"
 #include "../../../core/io_control.h"
@@ -59,25 +62,536 @@
 #endif
 
 virtports_t virtualports;
-
 static VIRTUAL_MAP virtualmap;
 /**/
+
+/**
+ * Comunications can be done via sockets or serial port
+ * */
+HANDLE rxReady, rxThread;
+HANDLE txReady, txThread;
+HANDLE bufferMutex;
+char com_buffer[256];
+char mcu_tx_buffer[256];
+
+#ifdef USESOCKETS
+
+#define DEFAULT_PORT "34000"
+
+SOCKET ClientSocket = INVALID_SOCKET;
+
+DWORD WINAPI socketserver(LPVOID lpParam)
+{
+	WSADATA wsaData;
+	int iResult;
+
+	SOCKET ListenSocket = INVALID_SOCKET;
+
+	struct addrinfo *result = NULL;
+	struct addrinfo hints;
+
+	int iSendResult;
+	char recvbuf[256];
+	int recvbuflen = 256;
+
+	// Initialize Winsock
+	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (iResult != 0)
+	{
+		printf("WSAStartup failed with error: %d\n", iResult);
+		return 1;
+	}
+
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;
+	hints.ai_flags = AI_PASSIVE;
+
+	// Resolve the server address and port
+	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+	if (iResult != 0)
+	{
+		printf("getaddrinfo failed with error: %d\n", iResult);
+		WSACleanup();
+		return 1;
+	}
+
+	// Create a SOCKET for connecting to server
+	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	if (ListenSocket == INVALID_SOCKET)
+	{
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		freeaddrinfo(result);
+		WSACleanup();
+		return 1;
+	}
+
+	// Setup the TCP listening socket
+	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+	if (iResult == SOCKET_ERROR)
+	{
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		freeaddrinfo(result);
+		closesocket(ListenSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	freeaddrinfo(result);
+
+	iResult = listen(ListenSocket, SOMAXCONN);
+	if (iResult == SOCKET_ERROR)
+	{
+		printf("listen failed with error: %d\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	// Accept a client socket
+	ClientSocket = accept(ListenSocket, NULL, NULL);
+	if (ClientSocket == INVALID_SOCKET)
+	{
+		printf("accept failed with error: %d\n", WSAGetLastError());
+		closesocket(ListenSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	// No longer need server socket
+	closesocket(ListenSocket);
+	memset(recvbuf, 0, sizeof(recvbuf));
+	SetEvent(rxReady);
+	// Receive until the peer shuts down the connection
+	do
+	{
+
+		iResult = recv(ClientSocket, recvbuf, recvbuflen, 0);
+		if (iResult > 0)
+		{
+			recvbuflen = strlen(recvbuf);
+			for (int i = 0; i < recvbuflen; i++)
+			{
+				serial_rx_isr(recvbuf[i]);
+			}
+			memset(recvbuf, 0, sizeof(recvbuf));
+		}
+		else if (iResult == 0)
+			printf("Connection closing...\n");
+		else
+		{
+			printf("recv failed with error: %d\n", WSAGetLastError());
+			closesocket(ClientSocket);
+			WSACleanup();
+			return 1;
+		}
+
+	} while (iResult > 0);
+
+	// shutdown the connection since we're done
+	iResult = shutdown(ClientSocket, SD_SEND);
+	if (iResult == SOCKET_ERROR)
+	{
+		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		closesocket(ClientSocket);
+		WSACleanup();
+		return 1;
+	}
+
+	// cleanup
+	closesocket(ClientSocket);
+	WSACleanup();
+
+	return 0;
+}
+
+void socketclient(void)
+{
+	DWORD dwWaitResult;
+	char buffer[256];
+	int iSendResult;
+	int iResult;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+
+				iSendResult = send(ClientSocket, com_buffer, iResult, 0);
+				if (iSendResult == SOCKET_ERROR)
+				{
+					printf("send failed with error: %d\n", WSAGetLastError());
+					closesocket(ClientSocket);
+					WSACleanup();
+				}
+				memset(com_buffer, 0, 256);
+				ReleaseMutex(bufferMutex);
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Socket client thread error (%d)\n", GetLastError());
+			return 0;
+		}
+	}
+}
+
+#endif
+
+#ifdef USESERIAL
+volatile HANDLE hComm = NULL;
+unsigned char ComPortName[] = COMPORT;
+unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
+
+DWORD WINAPI virtualserialserver(LPVOID lpParam)
+{
+	DCB dcbSerialParams = {0};
+	COMMTIMEOUTS timeouts = {MAXDWORD, 0, 0, 0, 0};
+	hComm = NULL;
+	DWORD dwRes;
+	DWORD dwCommEvent;
+	DWORD dwStoredFlags;
+	DWORD dwOvRes;
+	BOOL fWaitingOnStat = FALSE;
+	OVERLAPPED osStatus = {0};
+
+	fprintf(stderr, "Opening serial port %s...", ComPortName);
+	hComm = CreateFileA(
+		ComPortName, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+		OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
+	if (hComm == INVALID_HANDLE_VALUE)
+	{
+		fprintf(stderr, "Error\n");
+		return 1;
+	}
+	else
+		fprintf(stderr, "OK\n");
+
+	// Set COM port timeout settings
+	if (!SetCommTimeouts(hComm, &timeouts))
+	{
+		fprintf(stderr, "Error setting timeouts\n");
+		CloseHandle(hComm);
+		return 1;
+	}
+
+	PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+
+	dwStoredFlags = EV_RXCHAR;
+	if (!SetCommMask(hComm, dwStoredFlags))
+	{
+		fprintf(stderr, "Error setting COM mask\n");
+		CloseHandle(hComm);
+		return 1;
+	}
+
+	osStatus.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (osStatus.hEvent == NULL)
+	{
+		fprintf(stderr, "Error setting COM event\n");
+		CloseHandle(hComm);
+		return 1;
+	}
+
+	for (;;)
+	{
+		// Issue a status event check if one hasn't been issued already.
+		if (!fWaitingOnStat)
+		{
+			if (!WaitCommEvent(hComm, &dwCommEvent, &osStatus))
+			{
+				if (GetLastError() == ERROR_IO_PENDING)
+					fWaitingOnStat = TRUE;
+				// The original text is: bWaitingOnStatusHandle = TRUE;
+				else
+					// Error in WaitCommEvent function; abort.
+					break;
+			}
+		}
+
+		SetEvent(rxReady);
+		// Check on overlapped operation.
+		// if (fWaitingOnStat)
+		// {
+		// Wait a little while for an event to occur.
+		dwRes = WaitForSingleObject(osStatus.hEvent, INFINITE);
+		switch (dwRes)
+		{
+		// Event occurred.
+		case WAIT_OBJECT_0:
+			if (!GetOverlappedResult(hComm, &osStatus, &dwOvRes, FALSE))
+			{
+				// An error occurred in the overlapped operation;
+				// call GetLastError to find out what it was
+				// and abort if it is fatal.
+				fprintf(stderr, "Error %d in COM event", GetLastError());
+				break;
+			}
+			else
+			{
+				// Status event is stored in the event flag
+				// specified in the original WaitCommEvent call.
+				// Deal with the status event as appropriate.
+				char recvbuf[256];
+				int recvbuflen = 256;
+				DWORD dwRead = 0;
+				switch (dwCommEvent)
+				{
+				case EV_RXCHAR:
+					do
+					{
+						if (ReadFile(hComm, &recvbuf, recvbuflen, &dwRead, &osStatus))
+						{
+							// Read a byte and process it.
+							recvbuflen = strlen(recvbuf);
+							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
+							for (int i = 0; i < recvbuflen; i++)
+							{
+								serial_rx_isr(recvbuf[i]);
+							}
+							memset(recvbuf, 0, sizeof(recvbuf));
+						}
+						else
+						{
+							// An error occurred when calling the ReadFile function.
+							fprintf(stderr, "Error %d reading COM", GetLastError());
+							break;
+						}
+
+					} while (dwRead);
+					break;
+				default:
+					break;
+				}
+			}
+
+			// Set fWaitingOnStat flag to indicate that a new
+			// WaitCommEvent is to be issued.
+			fWaitingOnStat = FALSE;
+			break;
+		}
+		// }
+	}
+
+	CloseHandle(osStatus.hEvent);
+}
+
+void virtualserialclient(void)
+{
+	DWORD dwWaitResult;
+	OVERLAPPED osWrite = {0};
+	char buffer[256];
+	int iSendResult;
+	int iResult;
+
+	DWORD dNoOfBytesWritten;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+		osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+				if (!WriteFile(hComm, com_buffer, iResult, &dNoOfBytesWritten, &osWrite))
+				{
+					if (GetLastError() != ERROR_IO_PENDING)
+					{
+						// WriteFile failed, but isn't delayed. Report error and abort.
+						fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+					}
+				}
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Serial client thread error (%d)\n", GetLastError());
+			return 0;
+		}
+
+		CloseHandle(osWrite.hEvent);
+		memset(com_buffer, 0, 256);
+		ReleaseMutex(bufferMutex);
+	}
+}
+
+#endif
+
+void com_init(void)
+{
+	DWORD rxThreadID;
+	DWORD txThreadID;
+	DWORD dwWaitResult;
+
+	PVOID txCallback;
+	PVOID rxCallback;
+
+#ifdef USESOCKETS
+	rxCallback = &socketserver;
+	txCallback = &socketclient;
+#elif defined(USESERIAL)
+	rxCallback = &virtualserialserver;
+	txCallback = &virtualserialclient;
+#endif
+
+	bufferMutex = CreateMutex(
+		NULL,  // default security attributes
+		FALSE, // initially not owned
+		NULL); // unnamed mutex
+
+	if (bufferMutex == NULL)
+	{
+		printf("CreateMutex error: %d\n", GetLastError());
+		return 1;
+	}
+
+	rxReady = CreateEvent(
+		NULL,				// default security attributes
+		FALSE,				// manual-reset event
+		FALSE,				// initial state is nonsignaled
+		TEXT("SocketReady") // object name
+	);
+
+	if (rxReady == NULL)
+	{
+		printf("CreateEvent failed (%d)\n", GetLastError());
+		return;
+	}
+
+	txReady = CreateEvent(
+		NULL,				// default security attributes
+		FALSE,				// manual-reset event
+		FALSE,				// initial state is nonsignaled
+		TEXT("SocketReady") // object name
+	);
+
+	if (txReady == NULL)
+	{
+		printf("CreateEvent failed (%d)\n", GetLastError());
+		return;
+	}
+
+	rxThread = CreateThread(
+		NULL,		  // default security attributes
+		0,			  // use default stack size
+		rxCallback,	  // thread function name
+		NULL,		  // argument to thread function
+		0,			  // use default creation flags
+		&rxThreadID); // returns the thread identifier
+
+	if (rxThread == NULL)
+	{
+		printf("CreateThread failed (%d)\n", GetLastError());
+		return;
+	}
+
+	dwWaitResult = WaitForSingleObject(
+		rxReady,   // event handle
+		INFINITE); // indefinite wait
+
+	switch (dwWaitResult)
+	{
+	// Event object was signaled
+	case WAIT_OBJECT_0:
+		printf("Connection started\n");
+		txThread = CreateThread(
+			NULL,		  // default security attributes
+			0,			  // use default stack size
+			txCallback,	  // thread function name
+			NULL,		  // argument to thread function
+			0,			  // use default creation flags
+			&txThreadID); // returns the thread identifier
+
+		if (txThread == NULL)
+		{
+			printf("CreateThread failed (%d)\n", GetLastError());
+			return;
+		}
+		break;
+
+	// An error occurred
+	default:
+		printf("Wait error (%d)\n", GetLastError());
+		return 0;
+	}
+}
+
+void com_send(char *buff, int len)
+{
+	DWORD dwWaitResult;
+	dwWaitResult = WaitForSingleObject(
+		bufferMutex, // handle to mutex
+		INFINITE);	 // no time-out interval
+
+	switch (dwWaitResult)
+	{
+	// The thread got ownership of the mutex
+	case WAIT_OBJECT_0:
+		memcpy(com_buffer, buff, len);
+		ReleaseMutex(bufferMutex);
+		break;
+
+	// The thread got ownership of an abandoned mutex
+	case WAIT_ABANDONED:
+		printf("Wait error (%d)\n", GetLastError());
+		return;
+	}
+
+	SetEvent(txReady);
+}
 
 //UART communication
 uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
 uint8_t g_mcu_buffertail;
 uint8_t g_mcu_buffercount;
-char *mcu_tx_buffer;
 volatile bool mcu_tx_ready;
 volatile bool mcu_tx_enabled;
-/*
-#ifdef __DEBUG__
-#define MAX(A,B) if(B>A) A=B
-volatile uint8_t g_mcu_perfCounterOffset = 0;
-volatile PERFORMANCE_METER mcu_performacecounters;
-#endif
-*/
+
 uint32_t _previnputs = 0;
 
 volatile bool global_isr_enabled = false;
@@ -108,7 +622,8 @@ pthread_t thread_step_id;
 
 void mcu_rx_isr(unsigned char c)
 {
-	if(c) {
+	if (c)
+	{
 		serial_rx_isr(c);
 	}
 }
@@ -119,49 +634,42 @@ void mcu_tx_isr(void)
 }
 
 //emulates uart RX
-void *comsimul(void)
-{
-#ifndef USECONSOLE
-
-//#ifndef ENABLE_SYNC_TX
-	virtualserial_open(&mcu_tx_isr, &mcu_rx_isr);
-//#else
-//	virtualserial_open(NULL, &mcu_rx_isr);
-//#endif
-
-#else
-	for (;;)
-	{
-		unsigned char c = getch();
-		if (c != 0)
-		{
-			uart_char = c;
-			while (!serial_rx_is_empty())
-			{
-			}
-			serial_rx_isr(c);
-			if (c == '\n' | c == '\r')
-			{
-			}
-		}
-	}
-#endif
-}
+// void *comsimul(void)
+// {
+// #ifdef USECOM
+// mcu_tx_ready = true;
+// virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
+// #else
+// 	for (;;)
+// 	{
+// 		unsigned char c = getch();
+// 		if (c != 0)
+// 		{
+// 			uart_char = c;
+// 			while (!serial_rx_is_empty())
+// 			{
+// 			}
+// 			serial_rx_isr(c);
+// 			if (c == '\n' | c == '\r')
+// 			{
+// 			}
+// 		}
+// 	}
+// #endif
+// }
 
 //emulates uart TX
-void *comoutsimul(void)
-{
-	for (;;)
-	{
-		if (mcu_tx_enabled)
-		{
-			mcu_tx_enabled = false;
-			//mcu_tx_ready = false;
-			serial_tx_isr();
-			//mcu_tx_ready = true;
-		}
-	}
-}
+//void *comoutsimul(void)
+//{
+//	for (;;)
+//	{
+//		if (mcu_tx_enabled)
+//		{
+//			mcu_tx_enabled = false;
+//			serial_tx_isr();
+//		}
+//	}
+//}
 
 //simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;
@@ -279,6 +787,7 @@ uint32_t mcu_millis()
 
 void mcu_init(void)
 {
+	com_init();
 	send_char = false;
 	virtualports = &virtualmap;
 	FILE *infile = fopen("inputs.txt", "r");
@@ -303,12 +812,10 @@ void mcu_init(void)
 	}
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
-	pthread_create(&thread_id, NULL, &comsimul, NULL);
-//#ifdef USECONSOLE
-	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
-//#endif
+	//#ifdef USECONSOLE
+	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
+	//#endif
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
-	mcu_tx_ready = true;
 	mcu_tx_enabled = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
@@ -356,20 +863,24 @@ void mcu_disable_tx_isr(void)
 
 void mcu_putc(char c)
 {
-#ifdef USECONSOLE
-	putchar(c);
-#else
+	static int buff_index = 0;
 	if (c != 0)
 	{
-		while (!mcu_tx_ready)
-			;
-			mcu_tx_ready = false;
-		virtualserial_putc(c, &mcu_tx_isr);
+		//		while (!mcu_tx_ready)
+		//			;
+		//		mcu_tx_ready = false;
+
+		mcu_tx_buffer[buff_index++] = c;
+		if (c == '\n')
+		{
+			mcu_tx_buffer[buff_index++] = 0;
+			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
+			buff_index = 0;
+		}
 		putchar(c);
-		
 	}
+	mcu_tx_ready = true;
 	mcu_tx_enabled = true;
-#endif
 }
 
 char mcu_getc(void)
@@ -526,59 +1037,6 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 void mcu_eeprom_flush()
 {
 }
-/*
-void mcu_eeprom_erase(uint16_t address)
-{
-	FILE* src = fopen("virtualeeprom", "rb+");
-	
-	if(!src)
-	{
-		FILE* dest = fopen("virtualeeprom", "wb");
-		fclose(dest);
-		src = fopen("virtualeeprom", "rb+");
-	}
-
-	fseek(src, address, SEEK_SET);	
-	putc(EOF, src);
-	
-	fflush(src);
-	fclose(src);
-}*/
-
-/*uint8_t mcu_eeprom_putc(uint16_t address, uint8_t value)
-{
-	FILE* src = fopen("virtualeeprom", "r");
-	FILE* dest = fopen("newvirtualeeprom", "w");
-	
-	for(int i = 0; i < address; i++)
-	{
-		if(src!=NULL)
-			putc(getc(src), dest);
-		else
-			putc(0, dest);
-	}
-	
-	if(src!=NULL)
-		getc(src);
-	putc(value, dest);
-	
-	for(int i = address + 1; i < 1024; i++)
-	{
-		if(src!=NULL)
-			putc(getc(src), dest);
-		else
-			putc(0, dest);
-	}
-	
-	if(src!=NULL)
-		fclose(src);
-	fflush(dest);
-	fclose(dest);
-	remove("virtualeeprom");
-	rename("newvirtualeeprom", "virtualeeprom");
-	
-	return value;
-}*/
 
 void mcu_startPerfCounter(void)
 {

@@ -50,7 +50,7 @@ extern "C"
 #endif
 #endif
 
-#if (MCU == MCU_VIRTUAL)
+#if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif
 
