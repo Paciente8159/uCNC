@@ -13,6 +13,9 @@
 ### Changed
   - on parser reset next status report will print WCO
 
+### Fixed
+  - clearing interpolator now also resets dss previous value and clears running segment pointer to prevent step contamination from canceled motions
+
 ## [1.3.4] - 2022-01-10
 µCNC version 1.3.4 adds a few improvements and also fixes some issues with inverse feedrate mode `G93` and realtime feed overrides.
 
