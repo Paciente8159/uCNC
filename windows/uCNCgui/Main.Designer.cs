@@ -1340,7 +1340,7 @@ partial class Main
             this.groupBox6.Controls.Add(this.label17);
             this.groupBox6.Location = new System.Drawing.Point(619, 12);
             this.groupBox6.Name = "groupBox6";
-            this.groupBox6.Size = new System.Drawing.Size(173, 525);
+            this.groupBox6.Size = new System.Drawing.Size(152, 525);
             this.groupBox6.TabIndex = 0;
             this.groupBox6.TabStop = false;
             this.groupBox6.Text = "groupBox1";
@@ -1691,9 +1691,9 @@ partial class Main
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.connectionStatus,
             this.connectionFreq});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 554);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 544);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(805, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(783, 22);
             this.statusStrip1.TabIndex = 1;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -1706,14 +1706,14 @@ partial class Main
             // connectionFreq
             // 
             this.connectionFreq.Name = "connectionFreq";
-            this.connectionFreq.Size = new System.Drawing.Size(132, 17);
-            this.connectionFreq.Text = "Update frequwncy: N/A";
+            this.connectionFreq.Size = new System.Drawing.Size(129, 17);
+            this.connectionFreq.Text = "Update frequency: N/A";
             // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(805, 576);
+            this.ClientSize = new System.Drawing.Size(783, 566);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.groupBox6);
             this.Controls.Add(this.groupBox3);
