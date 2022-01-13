@@ -14,6 +14,9 @@
   - on parser reset next status report will print WCO
   - modified dual endstop behavior when dual endstops option is not active
 
+### Fixed
+  - cnc delay will be executed without exit even if there is an fault condition in dotasks loop. On input debounce the delay could be shortcuted and a fault condition could be triggered without being real.
+
 ## [1.3.4] - 2022-01-10
 µCNC version 1.3.4 adds a few improvements and also fixes some issues with inverse feedrate mode `G93` and realtime feed overrides.
 
