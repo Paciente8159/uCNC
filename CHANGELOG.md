@@ -12,6 +12,7 @@
 
 ### Changed
   - on parser reset next status report will print WCO
+  - modified dual endstop behavior when dual endstops option is not active
 
 ### Fixed
   - clearing interpolator now also resets dss previous value and clears running segment pointer to prevent step contamination from canceled motions (#124)
