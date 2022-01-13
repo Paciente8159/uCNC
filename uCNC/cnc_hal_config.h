@@ -70,7 +70,7 @@ extern "C"
 */
 #define ENCODERS 0
 
-/**
+	/**
  * To use the encoder counter 2 definitions are needed
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
