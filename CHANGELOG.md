@@ -6,9 +6,9 @@
 # Changelog
 
 ### Added
-  - redesigned virtual MCU HAL (Windows OS only)
-  - virtual MCU HAL can be connected via sockets (default port 34000) (must be configured)
-  - virtual MCU HAL new GUI in C# that enables to interact with the IO (via named pipes)
+  - redesigned virtual MCU HAL (Windows OS only) (#122)
+  - virtual MCU HAL can be connected via sockets (default port 34000) (must be configured) (#122)
+  - virtual MCU HAL new GUI in C# that enables to interact with the IO (via named pipes) (#122)
 
 ### Changed
   - on parser reset next status report will print WCO
