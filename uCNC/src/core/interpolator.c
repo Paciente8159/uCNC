@@ -99,6 +99,12 @@ static planner_block_t *itp_cur_plan_block;
 static int32_t itp_rt_step_pos[STEPPER_COUNT];
 //flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
+#if DSS_MAX_OVERSAMPLING > 0
+//stores the previous dss setting used by the interpolator
+static uint8_t prev_dss;
+#endif
+//pointer to the segment being executed
+static itp_segment_t *itp_rt_sgm;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 volatile static uint8_t itp_step_lock;
 #endif
@@ -174,7 +180,11 @@ static void itp_sgm_clear(void)
 {
     itp_sgm_data_write = 0;
     itp_sgm_data_read = 0;
-
+    //resets the sgm pointer and stored dss
+    itp_rt_sgm = NULL;
+#if DSS_MAX_OVERSAMPLING > 0
+    prev_dss = 0;
+#endif
     memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
@@ -294,10 +304,8 @@ void itp_run(void)
 
         uint32_t remaining_steps = itp_cur_plan_block->total_steps;
 
-        __ATOMIC__
-        {
-            sgm = &itp_sgm_data[itp_sgm_data_write];
-        }
+        sgm = &itp_sgm_data[itp_sgm_data_write];
+
         //clear the data segment
         memset(sgm, 0, sizeof(itp_segment_t));
         sgm->block = &itp_blk_data[itp_blk_data_write];
@@ -441,7 +449,6 @@ void itp_run(void)
 //DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
         float dss_speed = current_speed;
-        static uint8_t prev_dss = 0;
         uint8_t dss = 0;
         while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING)
         {
@@ -544,12 +551,8 @@ void itp_stop_tools(void)
 void itp_clear(void)
 {
     itp_cur_plan_block = NULL;
-    __ATOMIC__
-    {
-        itp_sgm_data_write = 0;
-        itp_sgm_data_read = 0;
-    }
     itp_blk_clear();
+    itp_sgm_clear();
 }
 
 void itp_get_rt_position(int32_t *position)
@@ -721,7 +724,6 @@ void itp_step_isr(void)
 {
     static uint8_t stepbits = 0;
     static bool itp_busy = false;
-    static itp_segment_t *itp_rt_sgm = NULL; //pointer to the segment being executed
 
     if (!itp_busy) //prevents reentrancy
     {
