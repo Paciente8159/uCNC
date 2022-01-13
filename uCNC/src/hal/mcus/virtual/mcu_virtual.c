@@ -61,9 +61,108 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-virtports_t virtualports;
-static VIRTUAL_MAP virtualmap;
-/**/
+/**
+ * IO simulation and handling for external app
+ * */
+typedef struct virtual_map_t
+{
+	uint32_t outputs;
+	uint8_t pwm[16];
+	uint32_t inputs;
+	uint8_t analog[16];
+} VIRTUAL_MAP;
+
+static volatile VIRTUAL_MAP virtualmap;
+
+void ioserver(void)
+{
+	HANDLE hPipe;
+	TCHAR chBuf[sizeof(VIRTUAL_MAP)];
+	BOOL fSuccess = FALSE;
+	DWORD cbRead, cbToWrite, cbWritten, dwMode;
+	LPTSTR lpszPipename = TEXT("\\\\.\\pipe\\ucncio");
+
+	// Try to open a named pipe; wait for it, if necessary.
+
+	while (1)
+	{
+		BOOL fConnected = FALSE;
+
+		hPipe = CreateNamedPipe(
+			lpszPipename,				// pipe name
+			PIPE_ACCESS_DUPLEX,			// read/write access
+			PIPE_TYPE_MESSAGE |			// message type pipe
+				PIPE_READMODE_MESSAGE | // message-read mode
+				PIPE_WAIT,				// blocking mode
+			PIPE_UNLIMITED_INSTANCES,	// max. instances
+			sizeof(VIRTUAL_MAP),		// output buffer size
+			sizeof(VIRTUAL_MAP),		// input buffer size
+			0,							// client time-out
+			NULL);						// no template file
+
+		if (hPipe == INVALID_HANDLE_VALUE)
+		{
+			printf("CreateNamedPipe failed, GLE=%d.\n", GetLastError());
+			return -1;
+		}
+
+		// Wait for the client to connect; if it succeeds,
+		// the function returns a nonzero value. If the function
+		// returns zero, GetLastError returns ERROR_PIPE_CONNECTED.
+
+		fConnected = ConnectNamedPipe(hPipe, NULL) ? TRUE : (GetLastError() == ERROR_PIPE_CONNECTED);
+
+		if (fConnected)
+		{
+			// Send a message to the pipe server.
+
+			cbToWrite = sizeof(VIRTUAL_MAP);
+			char lpvMessage[sizeof(VIRTUAL_MAP)];
+			do
+			{
+				memcpy(lpvMessage, &virtualmap, sizeof(VIRTUAL_MAP));
+
+				fSuccess = WriteFile(
+					hPipe,		// pipe handle
+					lpvMessage, // message
+					cbToWrite,	// message length
+					&cbWritten, // bytes written
+					NULL);		// not overlapped
+
+				if (!fSuccess)
+				{
+					printf("WriteFile to pipe failed. GLE=%d\n", GetLastError());
+					break;
+				}
+
+				// Read from the pipe.
+
+				fSuccess = ReadFile(
+					hPipe,		// pipe handle
+					lpvMessage, // buffer to receive reply
+					cbToWrite,	// size of buffer
+					&cbRead,	// number of bytes read
+					NULL);		// not overlapped
+
+				if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
+					break;
+
+				VIRTUAL_MAP *ptr = &lpvMessage;
+				virtualmap.inputs = ptr->inputs;
+				memcpy(virtualmap.analog, ptr->analog, 16);
+			} while (fSuccess); // repeat loop if ERROR_MORE_DATA
+
+			if (!fSuccess)
+			{
+				printf("ReadFile from pipe failed. GLE=%d\n", GetLastError());
+			}
+		}
+
+		CloseHandle(hPipe);
+	}
+
+	return 0;
+}
 
 /**
  * Comunications can be done via sockets or serial port
@@ -73,6 +172,8 @@ HANDLE txReady, txThread;
 HANDLE bufferMutex;
 char com_buffer[256];
 char mcu_tx_buffer[256];
+volatile bool mcu_tx_empty;
+volatile bool mcu_tx_enabled;
 
 #ifdef USESOCKETS
 
@@ -566,13 +667,14 @@ void com_send(char *buff, int len)
 	dwWaitResult = WaitForSingleObject(
 		bufferMutex, // handle to mutex
 		INFINITE);	 // no time-out interval
-
+	mcu_tx_empty = false;
 	switch (dwWaitResult)
 	{
 	// The thread got ownership of the mutex
 	case WAIT_OBJECT_0:
 		memcpy(com_buffer, buff, len);
 		ReleaseMutex(bufferMutex);
+		mcu_tx_empty = true;
 		break;
 
 	// The thread got ownership of an abandoned mutex
@@ -589,8 +691,6 @@ uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
 uint8_t g_mcu_buffertail;
 uint8_t g_mcu_buffercount;
-volatile bool mcu_tx_ready;
-volatile bool mcu_tx_enabled;
 
 uint32_t _previnputs = 0;
 
@@ -615,6 +715,7 @@ volatile unsigned char uart_char;
 
 uint8_t pwms[16];
 
+pthread_t thread_io;
 pthread_t thread_id;
 pthread_t thread_idout;
 pthread_t thread_timer_id;
@@ -630,14 +731,14 @@ void mcu_rx_isr(unsigned char c)
 
 void mcu_tx_isr(void)
 {
-	mcu_tx_ready = true;
+	mcu_tx_empty = true;
 }
 
 //emulates uart RX
 // void *comsimul(void)
 // {
 // #ifdef USECOM
-// mcu_tx_ready = true;
+// mcu_tx_empty = true;
 // virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
 // #else
 // 	for (;;)
@@ -758,24 +859,24 @@ void *stepsimul(void)
 void ticksimul(void)
 {
 
-	static VIRTUAL_MAP initials = {0};
+	// static VIRTUAL_MAP initials = {0};
 
-	FILE *infile = fopen("inputs.txt", "r");
-	char inputs[255];
+	// FILE *infile = fopen("inputs.txt", "r");
+	// char inputs[255];
 
-	if (infile != NULL) //checks input file
-	{
-		fscanf(infile, "%lX", &(virtualports->inputs));
-		fclose(infile);
+	// if (infile != NULL) //checks input file
+	// {
+	// 	fscanf(infile, "%lX", &(virtualmap.inputs));
+	// 	fclose(infile);
 
-		uint32_t diff = virtualports->inputs ^ initials.inputs;
-		initials.inputs = virtualports->inputs;
+	// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
+	// 	initials.inputs = virtualmap.inputs;
 
-		if (diff)
-		{
-			isr_flags |= ISR_INPUT; //flags input isr
-		}
-	}
+	// 	if (diff)
+	// 	{
+	// 		isr_flags |= ISR_INPUT; //flags input isr
+	// 	}
+	// }
 
 	mcu_runtime++;
 }
@@ -789,36 +890,37 @@ void mcu_init(void)
 {
 	com_init();
 	send_char = false;
-	virtualports = &virtualmap;
-	FILE *infile = fopen("inputs.txt", "r");
-	if (infile != NULL)
-	{
-		fscanf(infile, "%lX", &(virtualports->inputs));
-		fclose(infile);
-	}
-	else
-	{
-		infile = fopen("inputs.txt", "w+");
-		if (infile != NULL)
-		{
-			fprintf(infile, "%lX", virtualports->inputs);
-			fflush(infile);
-			fclose(infile);
-		}
-		else
-		{
-			printf("Failed to open input file");
-		}
-	}
+	//	FILE *infile = fopen("inputs.txt", "r");
+	//	if (infile != NULL)
+	//	{
+	//		fscanf(infile, "%lX", &(virtualmap.inputs));
+	//		fclose(infile);
+	//	}
+	//	else
+	//	{
+	//		infile = fopen("inputs.txt", "w+");
+	//		if (infile != NULL)
+	//		{
+	//			fprintf(infile, "%lX", virtualmap.inputs);
+	//			fflush(infile);
+	//			fclose(infile);
+	//		}
+	//		else
+	//		{
+	//			printf("Failed to open input file");
+	//		}
+	//	}
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
 	//#ifdef USECONSOLE
 	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	//#endif
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
+	pthread_create(&thread_io, NULL, &ioserver, NULL);
 	mcu_tx_enabled = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
+	mcu_tx_empty = true;
 	mcu_enable_global_isr();
 }
 
@@ -830,20 +932,70 @@ void mcu_disable_probe_isr(void)
 {
 }
 
+uint8_t mcu_get_input(uint8_t pin)
+{
+	pin -= 52;
+	pin -= (pin > 13) ? 16 : 0;
+	return ((virtualmap.inputs & (1 << pin)) != 0);
+}
+
+/**
+ * gets the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_output(uint8_t pin)
+{
+	pin -= (pin > 19) ? 16 : 0;
+	return ((virtualmap.outputs & (1 << pin)) != 0);
+}
+
+/**
+ * sets the value of a digital output pin to logical 1
+ * can be defined either as a function or a macro call
+ * */
+void mcu_set_output(uint8_t pin)
+{
+	pin -= (pin > 19) ? 16 : 0;
+	virtualmap.outputs |= (1 << pin);
+}
+
+/**
+ * sets the value of a digital output pin to logical 0
+ * can be defined either as a function or a macro call
+ * */
+void mcu_clear_output(uint8_t pin)
+{
+	pin -= (pin > 19) ? 16 : 0;
+	virtualmap.outputs &= ~(1 << pin);
+}
+
+/**
+ * toggles the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
+void mcu_toggle_output(uint8_t pin)
+{
+	pin -= (pin > 19) ? 16 : 0;
+	virtualmap.outputs ^= (1 << pin);
+}
+
 uint8_t mcu_get_analog(uint8_t channel)
 {
-	return 0;
+	channel -= 66;
+	return virtualmap.analog[channel];
 }
 
 //Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
-	pwms[pwm] = value;
+	pwm -= 20;
+	virtualmap.pwm[pwm] = value;
 }
 
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	return pwms[pwm];
+	pwm -= 20;
+	return virtualmap.pwm[pwm];
 }
 
 //Communication functions
@@ -861,14 +1013,19 @@ void mcu_disable_tx_isr(void)
 	mcu_tx_enabled = false;
 }
 
+bool mcu_tx_ready(void)
+{
+	return mcu_tx_empty;
+}
+
 void mcu_putc(char c)
 {
 	static int buff_index = 0;
 	if (c != 0)
 	{
-		//		while (!mcu_tx_ready)
+		//		while (!mcu_tx_empty)
 		//			;
-		//		mcu_tx_ready = false;
+		//		mcu_tx_empty = false;
 
 		mcu_tx_buffer[buff_index++] = c;
 		if (c == '\n')
@@ -879,7 +1036,7 @@ void mcu_putc(char c)
 		}
 		putchar(c);
 	}
-	mcu_tx_ready = true;
+	mcu_tx_empty = true;
 	mcu_tx_enabled = true;
 }
 
