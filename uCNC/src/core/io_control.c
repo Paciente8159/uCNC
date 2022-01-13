@@ -144,35 +144,35 @@ void io_inputs_isr(void)
 uint8_t io_get_limits(void)
 {
     uint8_t value = 0;
-#if (LIMIT_X >= 0)
-#if (LIMIT_X2 >= 0)
+#if ((LIMIT_X >= 0) && (LIMITS_DUAL & LIMIT_X_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
-#else
+#elif (LIMIT_X >= 0)
     value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
 #endif
-#endif
-#if (LIMIT_Y >= 0)
-#if (LIMIT_Y2 >= 0)
+#if ((LIMIT_Y >= 0) && (LIMITS_DUAL & LIMIT_Y_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_Y)) ? (LIMIT_Y_MASK | LIMITS_LIMIT0_MASK) : 0);
-#else
+#elif (LIMIT_Y >= 0)
     value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
 #endif
-#endif
-#if (LIMIT_Z >= 0)
-#if (LIMIT_Z2 >= 0)
+#if ((LIMIT_Z >= 0) && (LIMITS_DUAL & LIMIT_Z_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_Z)) ? (LIMIT_Z_MASK | LIMITS_LIMIT0_MASK) : 0);
-#else
+#elif (LIMIT_Z >= 0)
     value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
 #endif
-#endif
-#if (LIMIT_X2 >= 0)
+#if ((LIMIT_X2 >= 0) && (LIMITS_DUAL & LIMIT_X_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_X2)) ? (LIMIT_X_MASK | LIMITS_LIMIT1_MASK) : 0);
+#elif (LIMIT_X2 >= 0)
+    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
 #endif
-#if (LIMIT_Y2 >= 0)
+#if ((LIMIT_Y2 >= 0) && (LIMITS_DUAL & LIMIT_Y_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_Y2)) ? (LIMIT_Y_MASK | LIMITS_LIMIT1_MASK) : 0);
+#elif (LIMIT_Y2 >= 0)
+    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
 #endif
-#if (LIMIT_Z2 >= 0)
+#if ((LIMIT_Z2 >= 0) && (LIMITS_DUAL & LIMIT_Z_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_Z2)) ? (LIMIT_Z_MASK | LIMITS_LIMIT1_MASK) : 0);
+#elif (LIMIT_Z2 >= 0)
+    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #if (LIMIT_A >= 0)
     value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
