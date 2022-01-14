@@ -276,7 +276,7 @@ void itp_run(void)
 #ifdef STEP_ISR_SKIP_MAIN
             itp_blk_data[itp_blk_data_write].main_stepper = itp_cur_plan_block->main_stepper;
 #endif
-            for (uint8_t i = STEPPER_COUNT; i != 0;)
+            for (uint8_t i = 0; i < STEPPER_COUNT; i++)
             {
                 i--;
                 sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
