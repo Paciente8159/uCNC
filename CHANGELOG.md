@@ -12,7 +12,8 @@
 
 ### Changed
   - on parser reset next status report will print WCO
-  - modified dual endstop behavior when dual endstops option is not active
+  - modified dual endstop behavior when dual endstops option is not active (#123)
+  - modified status report to yield better refresh rate (#125)
 
 ### Fixed
   - cnc delay will be executed without exit even if there is an fault condition in dotasks loop. On input debounce the delay could be shortcuted and a fault condition could be triggered without being real (#125)
