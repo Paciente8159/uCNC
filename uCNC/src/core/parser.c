@@ -285,9 +285,9 @@ void parser_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
     memset(&parser_parameters, 0, sizeof(parser_parameters_t));
-    memset(parser_last_pos, 0, sizefo(parser_last_pos))
+    memset(parser_last_pos, 0, sizeof(parser_last_pos));
 #endif
-        parser_parameters_load();
+    parser_parameters_load();
     parser_reset();
 }
 

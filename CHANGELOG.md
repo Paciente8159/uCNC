@@ -5,6 +5,10 @@
 
 # Changelog
 
+## [1.3.5] - Unreleased
+µCNC version 1.3.5 added major improvements to the virtual HAL. Although this HAL is only for testing purposes this in an invaluable tool for diagnostics.
+It also adds a couple of important fixes that affected step generation with Dynamic Step Spreading enabled and sporadic stack overflow errors caused by nested loops in the cnc delay function.
+
 ### Added
   - redesigned virtual MCU HAL (Windows OS only) (#122)
   - virtual MCU HAL can be connected via sockets (default port 34000) (must be configured) (#122)

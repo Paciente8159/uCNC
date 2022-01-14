@@ -78,7 +78,7 @@ TOOLDEF const tool_t *__rom__ const tools[] = {
 void tool_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-	tool_current = {};
+	tool_current = *(tool_t *)NULL;
 #endif
 
 	tool_change(g_settings.default_tool);
