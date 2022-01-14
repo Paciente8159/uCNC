@@ -27,7 +27,6 @@ extern "C"
 #include <stdint.h>
 #include <stdarg.h>
 
-	bool protocol_is_busy(void);
 	void protocol_send_ok(void);
 	void protocol_send_error(uint8_t error);
 	void protocol_send_alarm(int8_t alarm);
