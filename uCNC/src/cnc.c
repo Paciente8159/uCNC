@@ -42,6 +42,10 @@
 #define UNLOCK_LOCKED 1
 #define UNLOCK_OK 2
 
+#define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
+#define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
+#define RTCMD_SPINDLE_MASK (RT_CMD_SPINDLE_100 | RT_CMD_SPINDLE_INC_COARSE | RT_CMD_SPINDLE_DEC_COARSE | RT_CMD_SPINDLE_INC_FINE | RT_CMD_SPINDLE_DEC_FINE | RT_CMD_SPINDLE_TOGGLE)
+#define RTCMD_COOLANT_MASK (RT_CMD_COOL_FLD_TOGGLE | RT_CMD_COOL_MST_TOGGLE)
 typedef struct
 {
     //uint8_t system_state;		//signals if CNC is system_state and gcode can run
@@ -503,6 +507,7 @@ bool cnc_reset(void)
 
 void cnc_call_rt_command(uint8_t command)
 {
+    uint8_t tools_cmd;
     //executes the realtime commands
     //only reset command is executed right away
     //control commands affect the exec_state directly (Abort, hold, safety door, cycle_start)
@@ -536,54 +541,28 @@ void cnc_call_rt_command(uint8_t command)
             SETFLAG(cnc_state.exec_state, EXEC_HOLD);
         }
         break;
-    case CMD_CODE_FEED_100:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_100);
-        break;
-    case CMD_CODE_FEED_INC_COARSE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_COARSE);
-        break;
-    case CMD_CODE_FEED_DEC_COARSE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_COARSE);
-        break;
-    case CMD_CODE_FEED_INC_FINE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_FINE);
-        break;
-    case CMD_CODE_FEED_DEC_FINE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_FINE);
-        break;
-    case CMD_CODE_RAPIDFEED_100:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_100);
-        break;
-    case CMD_CODE_RAPIDFEED_OVR1:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR1);
-        break;
-    case CMD_CODE_RAPIDFEED_OVR2:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR2);
-        break;
-    case CMD_CODE_SPINDLE_100:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_100);
-        break;
-    case CMD_CODE_SPINDLE_INC_COARSE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_COARSE);
-        break;
-    case CMD_CODE_SPINDLE_DEC_COARSE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_COARSE);
-        break;
-    case CMD_CODE_SPINDLE_INC_FINE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_FINE);
-        break;
-    case CMD_CODE_SPINDLE_DEC_FINE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_FINE);
-        break;
-    case CMD_CODE_SPINDLE_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_TOGGLE);
-        break;
-    case CMD_CODE_COOL_FLD_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_FLD_TOGGLE);
-        break;
-    case CMD_CODE_COOL_MST_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_MST_TOGGLE);
-        break;
+    default:
+        if (command >= CMD_CODE_FEED_100 && command <= CMD_CODE_RAPIDFEED_OVR2)
+        {
+            cnc_state.feed_ovr_cmd = (1 << (command - CMD_CODE_FEED_100));
+            break;
+        }
+
+        tools_cmd = cnc_state.tool_ovr_cmd;
+
+        if (command >= CMD_CODE_SPINDLE_100 && command <= CMD_CODE_SPINDLE_TOGGLE)
+        {
+            tools_cmd &= RTCMD_COOLANT_MASK;
+            tools_cmd |= (1 << (command - CMD_CODE_SPINDLE_100));
+        }
+
+        if (command >= CMD_CODE_COOL_FLD_TOGGLE && command <= CMD_CODE_COOL_MST_TOGGLE)
+        {
+            tools_cmd &= RTCMD_SPINDLE_MASK;
+            tools_cmd |= (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
+        }
+
+        cnc_state.tool_ovr_cmd = tools_cmd;
     }
 }
 
@@ -599,27 +578,28 @@ void cnc_exec_rt_commands(void)
     bool update_tools = false;
 
     //executes feeds override rt commands
-    uint8_t cmd_mask = 0x04;
     uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
-    cnc_state.rt_cmd = RT_CMD_CLEAR;
-    if (command & RT_CMD_RESET)
+    if (command)
     {
-        cnc_alarm(EXEC_ALARM_SOFTRESET);
-        return;
-    }
+        cnc_state.rt_cmd = RT_CMD_CLEAR;
+        if (command & RT_CMD_RESET)
+        {
+            cnc_alarm(EXEC_ALARM_SOFTRESET);
+            return;
+        }
 
-    if (command & RT_CMD_CYCLE_START)
-    {
-        cnc_clear_exec_state(EXEC_HOLD);
+        if (command & RT_CMD_CYCLE_START)
+        {
+            cnc_clear_exec_state(EXEC_HOLD);
+        }
     }
 
     //executes feeds override rt commands
-    cmd_mask = 0x80;
-    command = cnc_state.feed_ovr_cmd;      //copies realtime flags states
-    cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
-    while (command)
+    command = cnc_state.feed_ovr_cmd; //copies realtime flags states
+    if (command)
     {
-        switch (command & cmd_mask)
+        cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+        switch (command & RTCMD_NORMAL_MASK)
         {
         case RT_CMD_FEED_100:
             planner_feed_ovr_reset();
@@ -636,6 +616,10 @@ void cnc_exec_rt_commands(void)
         case RT_CMD_FEED_DEC_FINE:
             planner_feed_ovr_inc(-FEED_OVR_FINE);
             break;
+        }
+
+        switch (command & RTCMD_RAPID_MASK)
+        {
         case RT_CMD_RAPIDFEED_100:
             planner_rapid_feed_ovr_reset();
             break;
@@ -646,19 +630,15 @@ void cnc_exec_rt_commands(void)
             planner_rapid_feed_ovr(RAPID_FEED_OVR2);
             break;
         }
-
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
     }
 
     //executes tools override rt commands
-    cmd_mask = 0x80;
-    command = cnc_state.tool_ovr_cmd;      //copies realtime flags states
-    cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
-    while (command)
+    command = cnc_state.tool_ovr_cmd; //copies realtime flags states
+    if (command)
     {
+        cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
         update_tools = true;
-        switch (command & cmd_mask)
+        switch (command & RTCMD_SPINDLE_MASK)
         {
 #ifdef USE_SPINDLE
         case RT_CMD_SPINDLE_100:
@@ -690,6 +670,10 @@ void cnc_exec_rt_commands(void)
             }
             break;
 #endif
+        }
+
+        switch (command & RTCMD_COOLANT_MASK)
+        {
 #ifdef USE_COOLANT
         case RT_CMD_COOL_FLD_TOGGLE:
 #ifdef COOLANT_MIST
@@ -697,12 +681,12 @@ void cnc_exec_rt_commands(void)
 #endif
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                if (cmd_mask == RT_CMD_COOL_FLD_TOGGLE)
+                if (command == RT_CMD_COOL_FLD_TOGGLE)
                 {
                     planner_coolant_ovr_toggle(COOLANT_MASK);
                 }
 #ifdef COOLANT_MIST
-                if (cmd_mask == RT_CMD_COOL_MST_TOGGLE)
+                if (command == RT_CMD_COOL_MST_TOGGLE)
                 {
                     planner_coolant_ovr_toggle(MIST_MASK);
                 }
@@ -712,23 +696,20 @@ void cnc_exec_rt_commands(void)
 #endif
         }
 
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
-    }
-
-    if (update_tools)
-    {
-        itp_update();
-        if (planner_buffer_is_empty())
+        if (update_tools)
         {
-            motion_data_t block = {0};
+            itp_update();
+            if (planner_buffer_is_empty())
+            {
+                motion_data_t block = {0};
 #ifdef USE_SPINDLE
 #ifdef USE_COOLANT
-            block.coolant = planner_get_previous_coolant();
+                block.coolant = planner_get_previous_coolant();
 #endif
-            block.spindle = planner_get_previous_spindle_speed();
+                block.spindle = planner_get_previous_spindle_speed();
 #endif
-            mc_update_tools(&block);
+                mc_update_tools(&block);
+            }
         }
     }
 }
