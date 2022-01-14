@@ -150,6 +150,7 @@ void ioserver(void)
 				VIRTUAL_MAP *ptr = &lpvMessage;
 				virtualmap.inputs = ptr->inputs;
 				memcpy(virtualmap.analog, ptr->analog, 16);
+				
 			} while (fSuccess); // repeat loop if ERROR_MORE_DATA
 
 			if (!fSuccess)
@@ -879,6 +880,7 @@ void ticksimul(void)
 	// }
 
 	mcu_runtime++;
+	cnc_scheduletasks();
 }
 
 uint32_t mcu_millis()
