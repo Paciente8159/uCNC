@@ -36,7 +36,7 @@ jobs:
  
     # This is the platform GitHub will use to run our workflow, we
     # pick Windows for no particular reason.
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
  
     # This is the list of steps this job will run.
     steps:
@@ -60,4 +60,3 @@ jobs:
       # in the build matrix.
       - name: Compile Sketch
         run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./uCNC
-        
