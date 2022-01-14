@@ -278,7 +278,6 @@ void itp_run(void)
 #endif
             for (uint8_t i = 0; i < STEPPER_COUNT; i++)
             {
-                i--;
                 sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
                 itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
                 itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
