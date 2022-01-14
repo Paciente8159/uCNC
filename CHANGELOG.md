@@ -5,7 +5,7 @@
 
 # Changelog
 
-## [1.3.5] - Unreleased
+## [1.3.5] - 2022-01-14
 µCNC version 1.3.5 added major improvements to the virtual HAL. Although this HAL is only for testing purposes this in an invaluable tool for diagnostics.
 It also adds a couple of important fixes that affected step generation with Dynamic Step Spreading enabled and sporadic stack overflow errors caused by nested loops in the cnc delay function.
 
@@ -504,6 +504,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4
 [1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2
