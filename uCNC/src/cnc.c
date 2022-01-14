@@ -58,6 +58,7 @@ static cnc_state_t cnc_state;
 static void cnc_check_fault_systems(void);
 static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
+static void cnc_io_dotasks(void);
 static bool cnc_reset(void);
 static bool cnc_exec_cmd(void);
 
@@ -163,21 +164,15 @@ bool cnc_exec_cmd(void)
 bool cnc_dotasks(void)
 {
     static bool lock_itp = false;
-    //run all mcu_internal tasks
-    mcu_dotasks();
+
+    //run io basic tasks
+    cnc_io_dotasks();
 
     //let µCNC finnish startup/reset code
     if (cnc_state.loop_state == LOOP_STARTUP_RESET)
     {
-        return true;
+        return false;
     }
-
-#if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
-    io_limits_isr();
-#endif
-#if ((CONTROLEN_MASK ^ CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
-    io_controls_isr();
-#endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
 
@@ -476,8 +471,10 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks())
-        ;
+    while ((mcu_millis() - t_start) < miliseconds)
+    {
+        cnc_io_dotasks();
+    }
 }
 
 bool cnc_reset(void)
@@ -611,29 +608,17 @@ void cnc_exec_rt_commands(void)
 
     //executes feeds override rt commands
     uint8_t cmd_mask = 0x04;
-    uint8_t command = cnc_state.rt_cmd;            //copies realtime flags states
-    CLEARFLAG(cnc_state.rt_cmd, ~(RT_CMD_REPORT)); //clears all command flags except report request
-    while (command)
+    uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
+    cnc_state.rt_cmd = RT_CMD_CLEAR;
+    if (command & RT_CMD_RESET)
     {
-        switch (command & cmd_mask)
-        {
-        case RT_CMD_RESET:
-            cnc_alarm(EXEC_ALARM_SOFTRESET);
-            return;
-        case RT_CMD_REPORT:
-            if (!protocol_is_busy() && cnc_state.loop_state)
-            {
-                protocol_send_status();
-                CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
-            }
-            break;
-        case RT_CMD_CYCLE_START:
-            cnc_clear_exec_state(EXEC_HOLD);
-            break;
-        }
+        cnc_alarm(EXEC_ALARM_SOFTRESET);
+        return;
+    }
 
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
+    if (command & RT_CMD_CYCLE_START)
+    {
+        cnc_clear_exec_state(EXEC_HOLD);
     }
 
     //executes feeds override rt commands
@@ -867,4 +852,23 @@ bool cnc_check_interlocking(void)
     }
 
     return true;
+}
+
+void cnc_io_dotasks(void)
+{
+    //run internal mcu tasks (USB and communications)
+    mcu_dotasks();
+
+    //checks inputs and triggers ISR checks if enforced soft polling
+#if defined(FORCE_SOFT_POLLING)
+    io_limits_isr();
+    io_controls_isr();
+#endif
+
+    if (cnc_state.loop_state > LOOP_RUNNING_FIRST_RUN && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
+    {
+        //if a report request is sent, clear the respective flag
+        CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+        protocol_send_status();
+    }
 }

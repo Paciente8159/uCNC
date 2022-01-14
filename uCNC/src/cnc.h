@@ -27,9 +27,9 @@ extern "C"
 //rt_cmd
 #define RT_CMD_CLEAR 0
 
-#define RT_CMD_REPORT 1
+#define RT_CMD_RESET 1
 #define RT_CMD_CYCLE_START 2
-#define RT_CMD_RESET 4
+#define RT_CMD_REPORT 4
 
 //feed_ovr_cmd
 #define RT_CMD_FEED_100 1
