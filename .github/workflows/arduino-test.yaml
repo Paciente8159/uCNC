@@ -20,6 +20,7 @@ jobs:
         # The matrix will produce one job for each configuration
         # parameter of type arduino-platform, in this case a
         # total of 2.
+        buildoptions: ["ENABLE_BACKLASH_COMPENSATION", "ENABLE_LINACT_PLANNER", "ENABLE_DUAL_DRIVE_AXIS"]
         # arduino-platform: ["arduino:samd", "arduino:avr"]
         arduino-platform: ["arduino:avr"]
         # This is usually optional but we need to statically define the
@@ -60,4 +61,4 @@ jobs:
       # Finally, we compile the sketch, using the FQBN that was set
       # in the build matrix.
       - name: Compile Sketch
-        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} ./uCNC
+        run: arduino-cli compile --fqbn ${{ matrix.fqbn }} --build-property build.extra_flags=-D${{ matrix.buildoptions }} ./uCNC
