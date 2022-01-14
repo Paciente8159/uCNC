@@ -17,6 +17,7 @@
 
 ### Fixed
   - cnc delay will be executed without exit even if there is an fault condition in dotasks loop. On input debounce the delay could be shortcuted and a fault condition could be triggered without being real (#125)
+  - removed deprecated preprocessor condition that was causing delay on motion restart even with laser mode active
 
 ### Fixed
   - clearing interpolator now also resets dss previous value and clears running segment pointer to prevent step contamination from canceled motions (#124)

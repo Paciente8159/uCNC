@@ -431,35 +431,27 @@ void cnc_clear_exec_state(uint8_t statemask)
 #ifdef USE_SPINDLE
         itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-#ifdef LASER_MODE
         if (!g_settings.laser_mode)
         {
-#endif
             if (!planner_buffer_is_empty())
             {
                 cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
             }
-#ifdef LASER_MODE
         }
-#endif
 #endif
 #endif
 #ifdef USE_COOLANT
         //updated the coolant pins
         tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
-#ifdef LASER_MODE
         if (!g_settings.laser_mode)
         {
-#endif
             if (!planner_buffer_is_empty())
             {
 
                 cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
             }
-#ifdef LASER_MODE
         }
-#endif
 #endif
 #endif
         CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
