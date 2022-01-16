@@ -5,6 +5,12 @@
 
 # Changelog
 
+## [1.3.6] - 2022-01-16
+µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
+
+### Fixed
+  - modified interpolator to update the the tool inside the ISR call (not only when speed changed). The ISR was modified to carry segment information to the next generated step without before segment evaluation (#127)
+
 ## [1.3.5] - 2022-01-14
 µCNC version 1.3.5 added major improvements to the virtual HAL. Although this HAL is only for testing purposes this in an invaluable tool for diagnostics.
 It also adds a couple of important fixes that affected step generation with Dynamic Step Spreading enabled and sporadic stack overflow errors caused by nested loops in the cnc delay function.
@@ -504,6 +510,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
 [1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4
 [1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
