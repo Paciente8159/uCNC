@@ -41,6 +41,7 @@
 //Itp update flags
 #define ITP_NOUPDATE 0
 #define ITP_UPDATE_ISR 1
+#define ITP_UPDATE_TOOL 2
 
 //contains data of the block being executed by the pulse routine
 //this block has the necessary data to execute the Bresenham line algorithm
@@ -80,7 +81,7 @@ typedef struct pulse_sgm_
     int16_t spindle;
 #endif
     float feed;
-    bool update_itp;
+    uint8_t update_itp;
 } itp_segment_t;
 
 //circular buffers
@@ -102,6 +103,7 @@ static bool itp_needs_update;
 #if DSS_MAX_OVERSAMPLING > 0
 //stores the previous dss setting used by the interpolator
 static uint8_t prev_dss;
+static int16_t prev_spindle;
 #endif
 //pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
@@ -185,6 +187,7 @@ static void itp_sgm_clear(void)
 #if DSS_MAX_OVERSAMPLING > 0
     prev_dss = 0;
 #endif
+	prev_spindle = 0;
     memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
@@ -365,7 +368,7 @@ void itp_run(void)
             */
             speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
-            sgm->update_itp = true;
+            sgm->update_itp = ITP_UPDATE_ISR;
             const_speed = false;
         }
         else if (remaining_steps > deaccel_from)
@@ -373,7 +376,7 @@ void itp_run(void)
             //constant speed segment
             speed_change = 0;
             profile_steps_limit = deaccel_from;
-            sgm->update_itp = !const_speed;
+            sgm->update_itp = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
             if (!const_speed)
             {
                 const_speed = true;
@@ -383,7 +386,7 @@ void itp_run(void)
         {
             speed_change = -half_speed_change;
             profile_steps_limit = 0;
-            sgm->update_itp = true;
+            sgm->update_itp = ITP_UPDATE_ISR;
             const_speed = false;
         }
 
@@ -457,7 +460,7 @@ void itp_run(void)
 
         if (dss != prev_dss)
         {
-            sgm->update_itp = true;
+            sgm->update_itp = ITP_UPDATE_ISR;
         }
         sgm->next_dss = dss - prev_dss;
         prev_dss = dss;
@@ -475,9 +478,17 @@ void itp_run(void)
         sgm->feed = current_speed * feed_convert;
 #ifdef USE_SPINDLE
         float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
-        sgm->spindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
+        int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
+
+        if (prev_spindle != newspindle)
+        {
+            prev_spindle = newspindle;
+            sgm->update_itp |= ITP_UPDATE_TOOL;
+        }
+
+        sgm->spindle = newspindle;
 #endif
-        remaining_steps -= segm_steps;
+            remaining_steps -= segm_steps;
 
         if (remaining_steps == accel_until) //resets float additions error
         {
@@ -726,6 +737,33 @@ void itp_step_isr(void)
 
     if (!itp_busy) //prevents reentrancy
     {
+        if (itp_rt_sgm != NULL)
+        {
+            if (itp_rt_sgm->update_itp)
+            {
+                if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
+                {
+                    mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+                }
+
+#ifdef USE_SPINDLE
+                if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
+                {
+                    tool_set_speed(itp_rt_sgm->spindle);
+                }
+#endif
+                itp_rt_sgm->update_itp = ITP_NOUPDATE;
+            }
+
+            //no step remaining discards current segment
+            if (!itp_rt_sgm->remaining_steps)
+            {
+                itp_rt_sgm->block = NULL;
+                itp_rt_sgm = NULL;
+                itp_sgm_buffer_read();
+            }
+        }
+
         //sets step bits
         io_toggle_steps(stepbits);
         stepbits = 0;
@@ -798,19 +836,6 @@ void itp_step_isr(void)
 #endif
                     //set dir pins for current
                     io_set_dirs(itp_rt_sgm->block->dirbits);
-                }
-
-                if (itp_rt_sgm->update_itp)
-                {
-                    if (itp_rt_sgm->update_itp)
-                    {
-                        mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
-                    }
-
-#ifdef USE_SPINDLE
-                    tool_set_speed(itp_rt_sgm->spindle);
-#endif
-                    itp_rt_sgm->update_itp = ITP_NOUPDATE;
                 }
             }
             else
@@ -1121,14 +1146,6 @@ void itp_step_isr(void)
 
         mcu_disable_global_isr(); //lock isr before clearin busy flag
         itp_busy = false;
-
-        //no step remaining discards current segment
-        if (!itp_rt_sgm->remaining_steps)
-        {
-            itp_rt_sgm->block = NULL;
-            itp_rt_sgm = NULL;
-            itp_sgm_buffer_read();
-        }
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
         stepbits &= ~itp_step_lock;
