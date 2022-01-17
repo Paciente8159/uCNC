@@ -51,7 +51,7 @@ extern "C"
                 int16_t spindle;
                 uint16_t dwell;
                 uint8_t motion_mode;
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
                 uint8_t coolant;
 #endif
                 bool update_tools;

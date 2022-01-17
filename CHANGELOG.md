@@ -5,6 +5,12 @@
 
 # Changelog
 
+### Changed
+  - removed deprecated options USE_SPINDLE and USE_COOLANT
+
+### Fixed
+  - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled
+
 ## [1.3.6] - 2022-01-16
 µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
 

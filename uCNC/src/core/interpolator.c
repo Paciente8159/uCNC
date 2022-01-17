@@ -77,7 +77,7 @@ typedef struct pulse_sgm_
 #if (DSS_MAX_OVERSAMPLING != 0)
     int8_t next_dss;
 #endif
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     int16_t spindle;
 #endif
     float feed;
@@ -187,7 +187,7 @@ static void itp_sgm_clear(void)
 #if DSS_MAX_OVERSAMPLING > 0
     prev_dss = 0;
 #endif
-	prev_spindle = 0;
+    prev_spindle = 0;
     memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
@@ -476,7 +476,7 @@ void itp_run(void)
 #endif
 
         sgm->feed = current_speed * feed_convert;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
         float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
         int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
@@ -488,7 +488,7 @@ void itp_run(void)
 
         sgm->spindle = newspindle;
 #endif
-            remaining_steps -= segm_steps;
+        remaining_steps -= segm_steps;
 
         if (remaining_steps == accel_until) //resets float additions error
         {
@@ -512,7 +512,7 @@ void itp_run(void)
         //finally write the segment
         itp_sgm_buffer_write();
     }
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
     //updated the coolant pins
     tool_set_coolant(planner_get_coolant());
 #endif
@@ -543,7 +543,7 @@ void itp_stop(void)
     }
     io_set_steps(g_settings.step_invert_mask);
     io_set_dirs(g_settings.dir_invert_mask);
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     if (g_settings.laser_mode)
     {
         tool_set_speed(0);
@@ -692,14 +692,14 @@ uint8_t itp_sync(void)
 }
 
 //sync spindle in a stopped motion
-uint8_t itp_sync_spindle(void)
+void itp_sync_spindle(void)
 {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     tool_set_speed(planner_get_spindle_speed(0));
 #endif
 }
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 uint16_t itp_get_rt_spindle(void)
 {
     float spindle = (float)tool_get_speed();
@@ -746,7 +746,7 @@ void itp_step_isr(void)
                     mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
                 }
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
                 if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
                 {
                     tool_set_speed(itp_rt_sgm->spindle);
@@ -1176,7 +1176,7 @@ void itp_step_isr(void)
 //         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
 //         itp_sgm_data[itp_sgm_data_write].feed = 0;
 //         itp_sgm_data[itp_sgm_data_write].update_itp = type;
-// #ifdef USE_SPINDLE
+// #if TOOL_COUNT > 0
 //         if (g_settings.laser_mode)
 //         {
 //             itp_sgm_data[itp_sgm_data_write].spindle = 0;
