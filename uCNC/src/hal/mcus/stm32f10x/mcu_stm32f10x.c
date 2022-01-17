@@ -1078,8 +1078,6 @@ static void mcu_eeprom_erase(uint16_t address)
 	FLASH->CR = 0;
 }
 
-extern void protocol_send_error(uint8_t error);
-
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 	uint16_t offset = mcu_access_flash_page(address);
