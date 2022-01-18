@@ -157,100 +157,16 @@
 #define NUMBER_ISFLOAT 0x40
 #define NUMBER_ISNEGATIVE 0x80
 
-//33bytes in total
-typedef struct
-{
-    //1byte
-    uint8_t motion : 5;
-    uint8_t coord_system : 3;
-    //1byte
-    uint8_t nonmodal : 4; //reset to 0 in every line (non persistent)
-    uint8_t plane : 2;
-    uint8_t path_mode : 2;
-    //1byte
-    uint8_t cutter_radius_compensation : 2;
-    uint8_t distance_mode : 1;
-    uint8_t feedrate_mode : 1;
-    uint8_t units : 1;
-    uint8_t tlo_mode : 1;
-    uint8_t return_mode : 1;
-    uint8_t feed_speed_override : 1;
-    //1byte
-#if TOOL_COUNT > 1
-    uint8_t tool_change : 5;
-#else
-    uint8_t tool_change : 1;
-#endif
-    uint8_t stopping : 3;
-#ifdef USE_SPINDLE
-    uint8_t spindle_turning : 2;
-#else
-    uint8_t : 2; //unused
-#endif
-#ifdef USE_COOLANT
-    uint8_t coolant : 2;
-#else
-    uint8_t : 2; //unused
-#endif
-    uint8_t : 4; //unused
-} parser_groups_t;
-
-typedef struct
-{
-    float tool_length_offset;
-    uint8_t coord_system_index;
-    float coord_system_offset[AXIS_COUNT];
-    float g92_offset[AXIS_COUNT];
-    float last_probe_position[AXIS_COUNT];
-    uint8_t last_probe_ok;
-} parser_parameters_t;
-
-typedef struct
-{
-    float xyzabc[AXIS_COUNT];
-    float ijk[3];
-    float d;
-    float f;
-    float p;
-    float r;
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-    uint32_t n;
-#endif
-#ifdef USE_SPINDLE
-    int16_t s;
-#endif
-    int8_t t;
-    uint8_t l;
-} parser_words_t;
-
-typedef struct
-{
-    uint16_t groups;
-    uint16_t words;
-    bool group_0_1_useaxis;
-} parser_cmd_explicit_t;
-
-typedef struct
-{
-    parser_groups_t groups;
-    float feedrate;
-#if TOOL_COUNT > 0
-    uint8_t tool_index;
-#endif
-#ifdef USE_SPINDLE
-    int16_t spindle;
-#endif
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-    uint32_t line;
-#endif
-} parser_state_t;
-
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+parser_extender_t *parser_extensions;
+#endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
@@ -263,7 +179,6 @@ FORCEINLINE static uint8_t parser_letter_word(unsigned char c, float value, uint
 static uint8_t parse_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
@@ -770,6 +685,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
             break;
         }
 
+#ifdef ENABLE_PARSER_EXTENSIONS
+        if (error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS)
+        {
+            if (parser_extensions != NULL)
+            {
+                if (parser_extensions->parse_word != NULL)
+                {
+                    error = parser_extensions->parse_word(word, code, mantissa, value, new_state, words, cmd, parser_extensions->next);
+                }
+            }
+        }
+#endif
+
         if (error)
         {
             parser_discard_command();
@@ -1003,6 +931,15 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         return STATUS_INVALID_TOOL;
     }
 
+#ifdef ENABLE_PARSER_EXTENSIONS
+    // checks if an extended command was called with any other command at the same time
+    //exetension commands can only be processed individually
+    if (cmd->group_extended != 0 && cmd->groups != 0)
+    {
+        return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+    }
+#endif
+
     return STATUS_OK;
 }
 
@@ -1012,7 +949,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		Follows the RS274NGC v3 - 3.8 Order of Execution
 	All coordinates are converted to machine absolute coordinates before sent to the motion controller
 */
-static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
     float target[AXIS_COUNT];
     //plane selection
@@ -1033,6 +970,19 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
         new_state->groups.stopping = 0;
     }
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+    if (cmd->group_extended != 0)
+    {
+        if (parser_extensions != NULL)
+        {
+            if (parser_extensions->execute != NULL)
+            {
+                return parser_extensions->execute(new_state, words, cmd, parser_extensions->next);
+            }
+        }
+    }
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     block_data.line = words->n;
@@ -1888,7 +1838,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         }
         else
         {
-            cmd->group_0_1_useaxis = true;
+            cmd->group_0_1_useaxis = 1;
         }
 
         new_group |= GCODE_GROUP_MOTION;
@@ -1997,7 +1947,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         {
             return STATUS_GCODE_MODAL_GROUP_VIOLATION;
         }
-        cmd->group_0_1_useaxis = true;
+        cmd->group_0_1_useaxis = 1;
     case 4:
     case 53:
 
@@ -2384,3 +2334,18 @@ void parser_sync_position(void)
 {
     mc_get_position(parser_last_pos);
 }
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+void parser_register_extender(parser_extender_t *new_extender)
+{
+    parser_extender_t *ptr = parser_extensions;
+
+    while (ptr != NULL)
+    {
+        ptr = ptr->next;
+    }
+
+    ptr = new_extender;
+    ptr->next = NULL;
+}
+#endif

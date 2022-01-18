@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Added
+  - parser can be extended to in a modular way to include additional gcode commands
+
 ### Changed
   - all headers are now included via cnc.h (#128)
 
