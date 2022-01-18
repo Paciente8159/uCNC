@@ -55,6 +55,8 @@ static void cnc_io_dotasks(void);
 static bool cnc_reset(void);
 static bool cnc_exec_cmd(void);
 
+extern void modules_init(void);
+
 void cnc_init(void)
 {
     //initializes cnc state
@@ -70,14 +72,10 @@ void cnc_init(void)
     settings_init();       //settings
     itp_init();            //interpolator
     planner_init();        //motion planner
-    mc_init();             //motion control
-    parser_init();         //parser
 #if TOOL_COUNT > 0
     tool_init();
 #endif
-#if PID_CONTROLLERS > 0
-    pid_init(); //pid
-#endif
+    modules_init();
 }
 
 void cnc_run(void)

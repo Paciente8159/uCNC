@@ -6,7 +6,8 @@
 # Changelog
 
 ### Added
-  - parser can be extended to in a modular way to include additional gcode commands
+  - parser can be extended to in a modular way to include additional gcode commands (#130)
+  - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
 
 ### Changed
   - all headers are now included via cnc.h (#128)

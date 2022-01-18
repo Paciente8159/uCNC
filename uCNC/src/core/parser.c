@@ -28,57 +28,6 @@
 #include <string.h>
 #include <float.h>
 
-//group masks
-#define GCODE_GROUP_MOTION 0x0001
-#define GCODE_GROUP_PLANE 0x0002
-#define GCODE_GROUP_DISTANCE 0x0004
-#define GCODE_GROUP_FEEDRATE 0x0008
-#define GCODE_GROUP_UNITS 0x0010
-#define GCODE_GROUP_CUTTERRAD 0x0020
-#define GCODE_GROUP_TOOLLENGTH 0x0040
-#define GCODE_GROUP_RETURNMODE 0x0080
-#define GCODE_GROUP_COORDSYS 0x0100
-#define GCODE_GROUP_PATH 0x0200
-#define GCODE_GROUP_STOPPING 0x0400
-#define GCODE_GROUP_TOOLCHANGE 0x0800
-#define GCODE_GROUP_SPINDLE 0x1000
-#define GCODE_GROUP_COOLANT 0x2000
-#define GCODE_GROUP_ENABLEOVER 0x4000
-#define GCODE_GROUP_NONMODAL 0x8000
-
-//word masks
-#define GCODE_WORD_X 0x0001
-#define GCODE_WORD_Y 0x0002
-#define GCODE_WORD_Z 0x0004
-#define GCODE_WORD_A 0x0008
-#define GCODE_WORD_B 0x0010
-#define GCODE_WORD_C 0x0020
-#define GCODE_WORD_D 0x0040
-#define GCODE_WORD_F 0x0080
-#define GCODE_WORD_I 0x0100 //matches X axis bit
-#define GCODE_WORD_J 0x0200 //matches Y axis bit
-#define GCODE_WORD_K 0x0400 //matches Z axis bit
-#define GCODE_WORD_L 0x0800
-#define GCODE_WORD_P 0x1000
-#define GCODE_WORD_R 0x2000
-#define GCODE_WORD_S 0x4000
-#define GCODE_WORD_T 0x8000
-//H and Q are related to unsupported commands
-
-// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
-// #define GCODE_WORDS_EXTENDED
-// #endif
-
-#define GCODE_JOG_INVALID_WORDS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_D | GCODE_WORD_L | GCODE_WORD_P | GCODE_WORD_R | GCODE_WORD_T | GCODE_WORD_S)
-#define GCODE_ALL_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z | GCODE_WORD_A | GCODE_WORD_B | GCODE_WORD_C)
-#define GCODE_XYPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Y)
-#define GCODE_XZPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Z)
-#define GCODE_YZPLANE_AXIS (GCODE_WORD_Y | GCODE_WORD_Z)
-#define GCODE_IJPLANE_AXIS (GCODE_XYPLANE_AXIS << 8)
-#define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
-#define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
-#define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
-
 #define G0 0
 #define G1 1
 #define G2 2
@@ -182,6 +131,9 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
+
+//tells the compiler that this function exists and the linker will resolve later
+extern void m42_register(void);
 
 /*
 	Initializes the gcode parser
@@ -691,12 +643,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
         {
             if (ptr->parse_word != NULL)
             {
-                error = ptr->parse_word(word, code, mantissa, value, new_state, words, cmd);
-            }
-
-            if ((error != STATUS_GCODE_UNSUPPORTED_COMMAND && error != STATUS_GCODE_UNUSED_WORDS))
-            {
-                break;
+                error = ptr->parse_word(word, code, error, value, new_state, words, cmd);
             }
 
             ptr = ptr->next;
@@ -854,7 +801,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         case G80: //G80 and
             if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
             {
-
                 return STATUS_GCODE_AXIS_WORDS_EXIST;
             }
 
@@ -2356,14 +2302,14 @@ void parser_sync_position(void)
 #ifdef ENABLE_PARSER_EXTENSIONS
 void parser_register_extender(parser_extender_t *new_extender)
 {
-    parser_extender_t *ptr = parser_extensions;
+    parser_extender_t **ptr = &parser_extensions;
 
-    while (ptr != NULL)
+    while (*ptr != NULL)
     {
-        ptr = ptr->next;
+        *ptr = (*ptr)->next;
     }
 
-    ptr = new_extender;
-    ptr->next = NULL;
+    *ptr = new_extender;
+    (*ptr)->next = NULL;
 }
 #endif
