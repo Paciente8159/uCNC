@@ -621,7 +621,9 @@ void protocol_send_cnc_settings(void)
         protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
     }
 #endif
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 #ifdef ENABLE_SETTING_EXTRA_CMDS
