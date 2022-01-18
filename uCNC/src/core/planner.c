@@ -27,18 +27,14 @@ typedef struct
 {
     uint8_t feed_override;
     uint8_t rapid_feed_override;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     uint8_t spindle_override;
-#endif
-#ifdef USE_COOLANT
     uint8_t coolant_override;
 #endif
 } planner_overrides_t;
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 static int16_t planner_spindle;
-#endif
-#ifdef USE_COOLANT
 static uint8_t planner_coolant;
 #endif
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
@@ -81,10 +77,8 @@ void planner_add_line(motion_data_t *block_data)
     planner_data[planner_data_write].main_stepper = block_data->main_stepper;
     planner_data[planner_data_write].feed_override = block_data->feed_override;
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
-#endif
-#ifdef USE_COOLANT
     planner_coolant = planner_data[planner_data_write].coolant = block_data->coolant;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -311,10 +305,8 @@ void planner_init(void)
     planner_buffer_clear();
     planner_feed_ovr_reset();
     planner_rapid_feed_ovr_reset();
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     planner_spindle_ovr_reset();
-#endif
-#ifdef USE_COOLANT
     planner_coolant_ovr_reset();
 #endif
 }
@@ -323,10 +315,8 @@ void planner_clear(void)
 {
     //clears all motions stored in the buffer
     planner_buffer_clear();
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     planner_spindle = 0;
-#endif
-#ifdef USE_COOLANT
     planner_coolant = 0;
 #endif
 }
@@ -428,7 +418,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
     return MIN(junction_speed_sqr, target_speed_sqr);
 }
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 int16_t planner_get_spindle_speed(float scale)
 {
     float spindle = (!planner_data_blocks) ? planner_spindle : planner_data[planner_data_read].spindle;
@@ -461,9 +451,7 @@ float planner_get_previous_spindle_speed(void)
 {
     return planner_spindle;
 }
-#endif
 
-#ifdef USE_COOLANT
 uint8_t planner_get_coolant(void)
 {
     uint8_t coolant = (!planner_data_blocks) ? planner_coolant : planner_data[planner_data_read].coolant;
@@ -546,10 +534,8 @@ static void planner_recalculate(void)
 
 void planner_sync_tools(motion_data_t *block_data)
 {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     planner_spindle = block_data->spindle;
-#endif
-#ifdef USE_COOLANT
     planner_coolant = block_data->coolant;
 #endif
 }
@@ -599,7 +585,8 @@ void planner_rapid_feed_ovr_reset(void)
         itp_update();
     }
 }
-#ifdef USE_SPINDLE
+
+#if TOOL_COUNT > 0
 void planner_spindle_ovr_inc(uint8_t value)
 {
     uint8_t ovr_val = planner_overrides.spindle_override;
@@ -619,9 +606,7 @@ void planner_spindle_ovr_reset(void)
     planner_overrides.spindle_override = 100;
     planner_ovr_counter = 0;
 }
-#endif
 
-#ifdef USE_COOLANT
 uint8_t planner_coolant_ovr_toggle(uint8_t value)
 {
     planner_overrides.coolant_override ^= value;
@@ -641,7 +626,7 @@ bool planner_get_overflows(uint8_t *overflows)
     {
         overflows[0] = planner_overrides.feed_override;
         overflows[1] = planner_overrides.rapid_feed_override;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
         overflows[2] = planner_overrides.spindle_override;
 #else
         overflows[2] = 0;

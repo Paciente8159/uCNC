@@ -10,6 +10,10 @@
   - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
 
 ### Changed
+  - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
+
+### Fixed
+  - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled (#129)
   - all headers are now included via cnc.h (#128)
 
 ## [1.3.6] - 2022-01-16
