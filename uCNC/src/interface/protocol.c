@@ -97,7 +97,7 @@ static uint8_t protocol_get_tools(void)
 
     parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     if (modalgroups[8] != 5)
     {
         coolant |= ((modalgroups[8] == 3) ? 4 : 8);
@@ -170,7 +170,7 @@ void protocol_send_status(void)
     kinematics_apply_forward(steppos, axis);
     kinematics_apply_reverse_transform(axis);
     float feed = itp_get_rt_feed(); //convert from mm/s to mm/m
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     uint16_t spindle = itp_get_rt_spindle();
 #endif
     uint8_t controls = io_get_controls();
@@ -257,13 +257,13 @@ void protocol_send_status(void)
     serial_print_str(MSG_STATUS_MPOS);
     serial_print_fltarr(axis, AXIS_COUNT);
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     serial_print_str(MSG_STATUS_FS);
 #else
     serial_print_str(MSG_STATUS_F);
 #endif
     serial_print_fltunits(feed);
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     serial_putc(',');
     serial_print_int(spindle);
 #endif

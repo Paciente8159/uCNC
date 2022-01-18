@@ -76,15 +76,17 @@ TOOLDEF const tool_t *__rom__ const tools[] = {
 
 void tool_init(void)
 {
+#if TOOL_COUNT > 0
 #ifdef FORCE_GLOBALS_TO_0
-	tool_current = *(tool_t *)NULL;
+	memset(&tool_current, 0, sizeof(tool_t));
 #endif
-
 	tool_change(g_settings.default_tool);
+#endif
 }
 
 void tool_change(uint8_t tool)
 {
+#if TOOL_COUNT > 0
 	tool_stop();
 	if (tool_current.shutdown_code)
 	{
@@ -181,11 +183,12 @@ void tool_change(uint8_t tool)
 	{
 		tool_current.startup_code();
 	}
+#endif
 }
 
 void tool_set_speed(int16_t value)
 {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 	if (tool_current.set_speed)
 	{
 		tool_current.set_speed((uint8_t)(MIN(ABS(value), 0xff)), (value < 0));
@@ -195,7 +198,7 @@ void tool_set_speed(int16_t value)
 
 uint8_t tool_get_speed()
 {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 	if (tool_current.get_speed)
 	{
 		return tool_current.get_speed();
@@ -206,7 +209,7 @@ uint8_t tool_get_speed()
 
 void tool_set_coolant(uint8_t value)
 {
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
 	if (tool_current.set_coolant)
 	{
 		tool_current.set_coolant(value);
@@ -216,13 +219,15 @@ void tool_set_coolant(uint8_t value)
 
 void tool_stop()
 {
+#if TOOL_COUNT > 0
 	tool_set_speed(0);
 	tool_set_coolant(0);
+#endif
 }
 
 uint8_t tool_pid_update(void)
 {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
 	if (tool_current.pid_controller)
 	{
 		return tool_current.pid_controller();

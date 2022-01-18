@@ -175,24 +175,20 @@ typedef struct
     uint8_t tlo_mode : 1;
     uint8_t return_mode : 1;
     uint8_t feed_speed_override : 1;
-    //1byte
-#if TOOL_COUNT > 1
-    uint8_t tool_change : 5;
-#else
-    uint8_t tool_change : 1;
-#endif
+    //2byte or 1byte
     uint8_t stopping : 3;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT == 1
+    uint8_t tool_change : 1;
     uint8_t spindle_turning : 2;
-#else
-    uint8_t : 2; //unused
-#endif
-#ifdef USE_COOLANT
     uint8_t coolant : 2;
-#else
-    uint8_t : 2; //unused
-#endif
+#elif TOOL_COUNT > 1
+    uint8_t tool_change : 5;
+    uint8_t spindle_turning : 2;
+    uint8_t coolant : 2;
     uint8_t : 4; //unused
+#else
+    uint8_t : 5; //unused
+#endif
 } parser_groups_t;
 
 typedef struct
@@ -216,7 +212,7 @@ typedef struct
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     uint32_t n;
 #endif
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     int16_t s;
 #endif
     int8_t t;
@@ -236,8 +232,6 @@ typedef struct
     float feedrate;
 #if TOOL_COUNT > 0
     uint8_t tool_index;
-#endif
-#ifdef USE_SPINDLE
     int16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -330,26 +324,18 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
     modalgroups[5] = ((parser_state.groups.tlo_mode == G49) ? 49 : 43);
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
     *spindle = (uint16_t)ABS(parser_state.spindle);
-#else
-    modalgroups[8] = 5;
-#endif
-#ifdef USE_COOLANT
     *coolant = parser_state.groups.coolant;
     modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
-#else
-
-    modalgroups[9] = 9;
-#endif
-    modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
-#if TOOL_COUNT > 0
     modalgroups[11] = parser_state.tool_index;
 #else
+    modalgroups[8] = 5;
+    modalgroups[9] = 9;
     modalgroups[11] = 0;
 #endif
-
+    modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
     *feed = (uint16_t)parser_state.feedrate;
 }
 
@@ -987,22 +973,17 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 //RS274NGC v3 - 3.7 Other Input Codes
 //Words S and T must be positive
-#ifdef USE_SPINDLE
-    if (words->s < 0)
+#if TOOL_COUNT > 0
+    if (words->s < 0 || words->t < 0)
     {
         return STATUS_NEGATIVE_VALUE;
     }
-#endif
 
-    if (words->t < 0)
-    {
-        return STATUS_NEGATIVE_VALUE;
-    }
     if (words->t > TOOL_COUNT)
     {
         return STATUS_INVALID_TOOL;
     }
-
+#endif
     return STATUS_OK;
 }
 
@@ -1053,15 +1034,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     }
 
 //4. set spindle speed
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     if (CHECKFLAG(cmd->words, GCODE_WORD_S))
     {
         new_state->spindle = words->s;
         block_data.update_tools = (parser_state.spindle != new_state->spindle);
     }
-#endif
-//5. select tool
-#if TOOL_COUNT > 0
+
+    //5. select tool
     if (CHECKFLAG(cmd->words, GCODE_WORD_T))
     {
         if (new_state->tool_index != words->t)
@@ -1078,10 +1058,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         tool_change(words->t);
         new_state->tool_index = new_state->groups.tool_change;
     }
-#endif
 
-//7. spindle on/off
-#ifdef USE_SPINDLE
+    //7. spindle on/off
     switch (new_state->groups.spindle_turning)
     {
     case M3:
@@ -1106,9 +1084,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
         }
     }
-#endif
-//8. coolant on/off
-#ifdef USE_COOLANT
+    //8. coolant on/off
     if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
     {
         block_data.update_tools = true;
@@ -2064,7 +2040,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_group |= GCODE_GROUP_STOPPING;
         new_state->groups.stopping = code + 1;
         break;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     case 3:
     case 4:
     case 5:
@@ -2072,11 +2048,9 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         code = (code == 5) ? M5 : code - 2;
         new_state->groups.spindle_turning = code;
         break;
-#endif
     case 6:
         new_group |= GCODE_GROUP_TOOLCHANGE;
         break;
-#ifdef USE_COOLANT
 #if COOLANT_MIST >= 0
     case 7:
 #endif
@@ -2217,7 +2191,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         cmd->words |= GCODE_WORD_R;
         words->r = value;
         break;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     case 'S':
         cmd->words |= GCODE_WORD_S;
         if (value < 0)
@@ -2226,7 +2200,6 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         }
         words->s = (uint16_t)trunc(value);
         break;
-#endif
     case 'T':
         cmd->words |= GCODE_WORD_T;
         if (mantissa)
@@ -2242,10 +2215,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->t = (uint8_t)trunc(value);
         break;
     case 'H':
-//special case for G43
-//is valid if preceded from a G43/G49
-//it get's converted to a Z word with tool length
-#if TOOL_COUNT > 0
+        //special case for G43
+        //is valid if preceded from a G43/G49
+        //it get's converted to a Z word with tool length
         if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
         {
             if (mantissa)
@@ -2263,6 +2235,11 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
             words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
         }
 #else
+    case 'S':
+        //ignores
+        break;
+    case 'T':
+    case 'H':
         return STATUS_GCODE_UNUSED_WORDS;
 #endif
         break;
@@ -2330,17 +2307,11 @@ void parser_reset(void)
     parser_state.groups.feedrate_mode = G94;              //G94
     parser_state.groups.tlo_mode = G49;                   //G49
     parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
-#ifdef USE_COOLANT
-    parser_state.groups.coolant = M9; //M9
-#endif
-#ifdef USE_SPINDLE
-    parser_state.groups.spindle_turning = M5; //M5
-#endif
 #if TOOL_COUNT > 0
+    parser_state.groups.coolant = M9;         //M9
+    parser_state.groups.spindle_turning = M5; //M5
     parser_state.groups.tool_change = 1;
     parser_state.tool_index = g_settings.default_tool;
-#else
-    parser_state.groups.tool_change = 0;
 #endif
     parser_state.groups.motion = G1;                                               //G1
     parser_state.groups.units = G21;                                               //G21

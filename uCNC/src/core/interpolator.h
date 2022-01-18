@@ -41,9 +41,11 @@ extern "C"
 	void itp_reset_rt_position(void);
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
-	uint8_t itp_sync_spindle(void);
-#ifdef USE_SPINDLE
+	void itp_sync_spindle(void);
+#if TOOL_COUNT > 0
 	uint16_t itp_get_rt_spindle(void);
+#else
+#define itp_get_rt_spindle() (0);
 #endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 	void itp_lock_stepper(uint8_t lockmask);

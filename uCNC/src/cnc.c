@@ -421,19 +421,7 @@ void cnc_clear_exec_state(uint8_t statemask)
     {
         SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
         CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
-#ifdef USE_SPINDLE
-        itp_sync_spindle();
-#if (DELAY_ON_RESUME_SPINDLE > 0)
-        if (!g_settings.laser_mode)
-        {
-            if (!planner_buffer_is_empty())
-            {
-                cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
-            }
-        }
-#endif
-#endif
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
         //updated the coolant pins
         tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
@@ -443,6 +431,16 @@ void cnc_clear_exec_state(uint8_t statemask)
             {
 
                 cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+            }
+        }
+#endif
+        itp_sync_spindle();
+#if (DELAY_ON_RESUME_SPINDLE > 0)
+        if (!g_settings.laser_mode)
+        {
+            if (!planner_buffer_is_empty())
+            {
+                cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
             }
         }
 #endif
@@ -629,7 +627,7 @@ void cnc_exec_rt_commands(void)
         update_tools = true;
         switch (command & RTCMD_SPINDLE_MASK)
         {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
         case RT_CMD_SPINDLE_100:
             planner_spindle_ovr_reset();
             break;
@@ -648,14 +646,12 @@ void cnc_exec_rt_commands(void)
         case RT_CMD_SPINDLE_TOGGLE:
             if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
             {
-//toogle state
-#ifdef USE_SPINDLE
+                //toogle state
                 if (tool_get_speed())
                 {
                     update_tools = false;
                     tool_set_speed(0);
                 }
-#endif
             }
             break;
 #endif
@@ -663,7 +659,7 @@ void cnc_exec_rt_commands(void)
 
         switch (command & RTCMD_COOLANT_MASK)
         {
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
         case RT_CMD_COOL_FLD_TOGGLE:
 #ifdef COOLANT_MIST
         case RT_CMD_COOL_MST_TOGGLE:
@@ -691,10 +687,8 @@ void cnc_exec_rt_commands(void)
             if (planner_buffer_is_empty())
             {
                 motion_data_t block = {0};
-#ifdef USE_SPINDLE
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
                 block.coolant = planner_get_previous_coolant();
-#endif
                 block.spindle = planner_get_previous_spindle_speed();
 #endif
                 mc_update_tools(&block);

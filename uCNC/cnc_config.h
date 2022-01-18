@@ -91,31 +91,16 @@ extern "C"
 #endif
 
 #if TOOL_COUNT > 0
-/*
-	Enables the spindle
-	Uncomment to enable. Pinout configurations are set in the cnc_hal_config.h
-*/
-#define USE_SPINDLE
-#ifdef USE_SPINDLE
-/*
-	Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
-	This is used by spindle to ensure spindle gets up to speed in motions
-*/
+//Number of seconds of delay before motions restart after releasing from a hold or after setting a new spindle speed
+//This is used by spindle to ensure spindle gets up to speed in motions
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 //minimum output if the value of S is other then 0
 #define PWM_MIN_OUTPUT 0
-#endif
-
-/*
-	Define a coolant flood and mist pin
-*/
-#define USE_COOLANT
-#ifdef USE_COOLANT
+//define coolant delay at restart
 #define DELAY_ON_RESUME_COOLANT 1
 //uncomment to make M7 act as M8
 //#define M7_SAME_AS_M8
-#endif
 #endif
 
 /*
