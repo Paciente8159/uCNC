@@ -18,8 +18,6 @@
 */
 
 #include "../../../cnc.h"
-#include "../../../core/io_control.h"
-#include "../tool_helper.h"
 
 /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0

@@ -18,10 +18,6 @@
 
 #include <math.h>
 #include "../cnc.h"
-#include "grbl_interface.h"
-#include "settings.h"
-#include "../core/io_control.h"
-#include "serial.h"
 
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 static uint8_t serial_rx_read;

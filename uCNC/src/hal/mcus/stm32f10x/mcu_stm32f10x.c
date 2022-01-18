@@ -22,14 +22,10 @@
 #if (MCU == MCU_STM32F10X)
 #include "core_cm3.h"
 #include "mcumap_stm32f10x.h"
-#include "../../../interface/serial.h"
-#include "../../../core/interpolator.h"
-#include "../../../core/io_control.h"
 
 #ifdef USB_VCP
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
-
 #endif
 
 /**
@@ -174,7 +170,7 @@ void mcu_timer_isr(void)
 		resetstep = !resetstep;
 	}
 	TIMER_REG->SR = 0;
-	
+
 	mcu_enable_global_isr();
 }
 
@@ -186,7 +182,7 @@ void mcu_timer_isr(void)
 #if (ALL_EXTIBITMASK != 0)
 static void mcu_input_isr(void)
 {
-	
+
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{
@@ -1081,8 +1077,6 @@ static void mcu_eeprom_erase(uint16_t address)
 		; // wait while busy
 	FLASH->CR = 0;
 }
-
-extern void protocol_send_error(uint8_t error);
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {

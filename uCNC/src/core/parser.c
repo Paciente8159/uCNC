@@ -22,15 +22,6 @@
 */
 
 #include "../cnc.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "../interface/serial.h"
-#include "../interface/protocol.h"
-#include "planner.h"
-#include "motion_control.h"
-#include "io_control.h"
-#include "interpolator.h"
-#include "parser.h"
 
 #include <stdio.h>
 #include <math.h>

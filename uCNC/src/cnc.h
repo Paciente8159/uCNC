@@ -121,6 +121,19 @@ extern "C"
 #include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
 //initializes core utilities (like fast math functions)
 #include "core/utils.h"
+#include "interface/defaults.h"
+#include "interface/grbl_interface.h"
+#include "interface/settings.h"
+#include "interface/serial.h"
+#include "interface/protocol.h"
+#include "modules/encoder.h"
+#include "modules/pid_controller.h"
+#include "core/io_control.h"
+#include "core/io_control.h"
+#include "core/parser.h"
+#include "core/motion_control.h"
+#include "core/planner.h"
+#include "core/interpolator.h"
 
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)

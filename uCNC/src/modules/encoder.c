@@ -17,7 +17,6 @@
 */
 
 #include "../cnc.h"
-#include "encoder.h"
 
 #if ENCODERS > 0
 #ifndef ENC0_PULSE

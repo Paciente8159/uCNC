@@ -17,17 +17,12 @@
 	See the	GNU General Public License for more details.
 */
 
+#include "../cnc.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
-#include "../cnc.h"
-#include "interpolator.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "planner.h"
-#include "io_control.h"
 
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
@@ -187,7 +182,7 @@ static void itp_sgm_clear(void)
 #if DSS_MAX_OVERSAMPLING > 0
     prev_dss = 0;
 #endif
-	prev_spindle = 0;
+    prev_spindle = 0;
     memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
@@ -488,7 +483,7 @@ void itp_run(void)
 
         sgm->spindle = newspindle;
 #endif
-            remaining_steps -= segm_steps;
+        remaining_steps -= segm_steps;
 
         if (remaining_steps == accel_until) //resets float additions error
         {
