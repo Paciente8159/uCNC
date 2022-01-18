@@ -17,17 +17,12 @@
 	See the	GNU General Public License for more details.
 */
 
+#include "../cnc.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <math.h>
 #include <float.h>
-#include "../cnc.h"
-#include "interpolator.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "planner.h"
-#include "io_control.h"
 
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)

@@ -43,11 +43,7 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib") //Winsock Library
 
-#include "../../../interface/settings.h"
 #include "virtualtimer.h"
-#include "../../../interface/serial.h"
-#include "../../../core/interpolator.h"
-#include "../../../core/io_control.h"
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -150,7 +146,7 @@ void ioserver(void)
 				VIRTUAL_MAP *ptr = &lpvMessage;
 				virtualmap.inputs = ptr->inputs;
 				memcpy(virtualmap.analog, ptr->analog, 16);
-				
+
 			} while (fSuccess); // repeat loop if ERROR_MORE_DATA
 
 			if (!fSuccess)

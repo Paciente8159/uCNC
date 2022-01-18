@@ -16,16 +16,6 @@
 */
 
 #include "../cnc.h"
-#include "settings.h"
-#include "serial.h"
-#include "../core/interpolator.h"
-#include "../core/io_control.h"
-#include "../core/motion_control.h"
-#include "../core/parser.h"
-#include "../core/planner.h"
-#include "../modules/encoder.h"
-#include "protocol.h"
-#include "grbl_interface.h"
 
 #ifdef ECHO_CMD
 static bool protocol_busy;

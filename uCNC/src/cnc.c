@@ -21,17 +21,6 @@
 #include <string.h>
 #include <stdint.h>
 #include "cnc.h"
-#include "interface/settings.h"
-#include "interface/grbl_interface.h"
-#include "interface/serial.h"
-#include "interface/protocol.h"
-#include "core/parser.h"
-#include "core/motion_control.h"
-#include "core/planner.h"
-#include "core/interpolator.h"
-#include "core/io_control.h"
-#include "modules/encoder.h"
-#include "modules/pid_controller.h"
 
 #define LOOP_STARTUP_RESET 0
 #define LOOP_RUNNING_FIRST_RUN 1

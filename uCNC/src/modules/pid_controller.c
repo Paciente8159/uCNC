@@ -16,8 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "pid_controller.h"
-#include "../interface/settings.h"
+#include "../cnc.h"
 #include <stdint.h>
 
 #if (PID_CONTROLLERS > 0)

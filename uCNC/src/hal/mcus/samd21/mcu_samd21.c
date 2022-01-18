@@ -22,9 +22,6 @@
 #if (MCU == MCU_SAMD21)
 #include "core_cm0plus.h"
 #include "mcumap_samd21.h"
-#include "../../../interface/serial.h"
-#include "../../../core/interpolator.h"
-#include "../../../core/io_control.h"
 
 #include "sam.h"
 //#include "instance/nvmctrl.h"
@@ -48,7 +45,7 @@
 volatile bool samd21_global_isr_enabled;
 
 //setups internal timers (all will run @ 1Mhz on GCLK4)
-#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU/1000000))
+#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / 1000000))
 static void mcu_setup_clocks(void)
 {
         PM->CPUSEL.reg = 0;
@@ -104,7 +101,7 @@ static void mcu_setup_clocks(void)
         NVIC_EnableIRQ(EIC_IRQn);
         EIC->EVCTRL.reg = 0;
         EIC->INTFLAG.reg = SAMD21_EIC_MASK;
-        EIC->INTENSET.reg = SAMD21_EIC_MASK;  
+        EIC->INTENSET.reg = SAMD21_EIC_MASK;
 #endif
         //ADC clock
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;

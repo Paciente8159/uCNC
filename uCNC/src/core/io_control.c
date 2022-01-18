@@ -19,12 +19,6 @@
 */
 
 #include "../cnc.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "../modules/encoder.h"
-#include "io_control.h"
-#include "parser.h"
-#include "interpolator.h"
 
 static volatile uint8_t io_limits_homing_filter;
 #if PID_CONTROLLERS > 0

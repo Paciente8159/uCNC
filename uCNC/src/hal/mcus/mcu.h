@@ -25,7 +25,6 @@ extern "C"
 {
 #endif
 
-#include "../../cnc.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>

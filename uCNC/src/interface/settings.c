@@ -18,13 +18,6 @@
 */
 
 #include "../cnc.h"
-#include "defaults.h"
-#include "settings.h"
-#include "serial.h"
-#include "grbl_interface.h"
-#include "protocol.h"
-#include "../core/parser.h"
-#include "../modules/pid_controller.h"
 
 //if settings struct is changed this version should change too
 #define SETTINGS_VERSION "V04"
@@ -546,7 +539,8 @@ uint8_t settings_change(uint8_t setting, float value)
             g_settings.tool_length_offset[setting] = value;
         }
 #endif
-        else {
+        else
+        {
             return STATUS_INVALID_STATEMENT;
         }
         break;
