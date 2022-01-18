@@ -144,9 +144,10 @@ extern "C"
 //accepts the E word (currently is processed has A)
 //#define GCODE_ACCEPT_WORD_E
 
-/*
-	Report specific options
-*/
+// Uncomment to enable parser extentions
+// #define ENABLE_PARSER_EXTENSIONS
+
+// Report specific options
 #define STATUS_WCO_REPORT_MIN_FREQUENCY 30
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 

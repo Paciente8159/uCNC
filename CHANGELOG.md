@@ -5,6 +5,10 @@
 
 # Changelog
 
+### Added
+  - parser can be extended to in a modular way to include additional gcode commands (#130)
+  - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
+
 ### Changed
   - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
 

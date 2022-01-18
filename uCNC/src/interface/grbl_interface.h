@@ -94,6 +94,7 @@ extern "C"
 #define STATUS_SETTING_PROTECTED_FAIL 43
 #define STATUS_PROGRAM_ENDED 44
 #define STATUS_PROBE_SUCCESS 45
+#define STATUS_GOCDE_EXTENDED_UNSUPPORTED 254
 #define STATUS_CRITICAL_FAIL 255
 
 //special Grbl system commands return codes
