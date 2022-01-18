@@ -5,16 +5,20 @@
 
 # Changelog
 
+## [1.3.7] - 2022-01-18
+µCNC version 1.3.7 fixes a samll bug that prevented µCNC from sending status report with an alarm condition at startup.
+Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
+
 ### Added
   - parser can be extended to in a modular way to include additional gcode commands (#130)
   - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
 
 ### Changed
   - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
+  - all headers are now included via cnc.h (#128)
 
 ### Fixed
   - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled (#129)
-  - all headers are now included via cnc.h (#128)
   - fixed blocked status report on startup with alarm condition
 
 ## [1.3.6] - 2022-01-16
@@ -521,6 +525,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ## 0.01 - Pre-release version - 2020-01-23
 
 ### Initial release
+
+[1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
 [1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
 [1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4
