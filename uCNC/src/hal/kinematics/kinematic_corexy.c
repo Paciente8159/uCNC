@@ -20,8 +20,6 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_COREXY)
-#include "../../interface/settings.h"
-#include "../../core/motion_control.h"
 #include <stdio.h>
 #include <math.h>
 

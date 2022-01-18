@@ -22,71 +22,11 @@
 */
 
 #include "../cnc.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "../interface/serial.h"
-#include "../interface/protocol.h"
-#include "planner.h"
-#include "motion_control.h"
-#include "io_control.h"
-#include "interpolator.h"
-#include "parser.h"
 
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
 #include <float.h>
-
-//group masks
-#define GCODE_GROUP_MOTION 0x0001
-#define GCODE_GROUP_PLANE 0x0002
-#define GCODE_GROUP_DISTANCE 0x0004
-#define GCODE_GROUP_FEEDRATE 0x0008
-#define GCODE_GROUP_UNITS 0x0010
-#define GCODE_GROUP_CUTTERRAD 0x0020
-#define GCODE_GROUP_TOOLLENGTH 0x0040
-#define GCODE_GROUP_RETURNMODE 0x0080
-#define GCODE_GROUP_COORDSYS 0x0100
-#define GCODE_GROUP_PATH 0x0200
-#define GCODE_GROUP_STOPPING 0x0400
-#define GCODE_GROUP_TOOLCHANGE 0x0800
-#define GCODE_GROUP_SPINDLE 0x1000
-#define GCODE_GROUP_COOLANT 0x2000
-#define GCODE_GROUP_ENABLEOVER 0x4000
-#define GCODE_GROUP_NONMODAL 0x8000
-
-//word masks
-#define GCODE_WORD_X 0x0001
-#define GCODE_WORD_Y 0x0002
-#define GCODE_WORD_Z 0x0004
-#define GCODE_WORD_A 0x0008
-#define GCODE_WORD_B 0x0010
-#define GCODE_WORD_C 0x0020
-#define GCODE_WORD_D 0x0040
-#define GCODE_WORD_F 0x0080
-#define GCODE_WORD_I 0x0100 //matches X axis bit
-#define GCODE_WORD_J 0x0200 //matches Y axis bit
-#define GCODE_WORD_K 0x0400 //matches Z axis bit
-#define GCODE_WORD_L 0x0800
-#define GCODE_WORD_P 0x1000
-#define GCODE_WORD_R 0x2000
-#define GCODE_WORD_S 0x4000
-#define GCODE_WORD_T 0x8000
-//H and Q are related to unsupported commands
-
-// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
-// #define GCODE_WORDS_EXTENDED
-// #endif
-
-#define GCODE_JOG_INVALID_WORDS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_D | GCODE_WORD_L | GCODE_WORD_P | GCODE_WORD_R | GCODE_WORD_T | GCODE_WORD_S)
-#define GCODE_ALL_AXIS (GCODE_WORD_X | GCODE_WORD_Y | GCODE_WORD_Z | GCODE_WORD_A | GCODE_WORD_B | GCODE_WORD_C)
-#define GCODE_XYPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Y)
-#define GCODE_XZPLANE_AXIS (GCODE_WORD_X | GCODE_WORD_Z)
-#define GCODE_YZPLANE_AXIS (GCODE_WORD_Y | GCODE_WORD_Z)
-#define GCODE_IJPLANE_AXIS (GCODE_XYPLANE_AXIS << 8)
-#define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
-#define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
-#define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
 #define G0 0
 #define G1 1
@@ -166,100 +106,16 @@
 #define NUMBER_ISFLOAT 0x40
 #define NUMBER_ISNEGATIVE 0x80
 
-//33bytes in total
-typedef struct
-{
-    //1byte
-    uint8_t motion : 5;
-    uint8_t coord_system : 3;
-    //1byte
-    uint8_t nonmodal : 4; //reset to 0 in every line (non persistent)
-    uint8_t plane : 2;
-    uint8_t path_mode : 2;
-    //1byte
-    uint8_t cutter_radius_compensation : 2;
-    uint8_t distance_mode : 1;
-    uint8_t feedrate_mode : 1;
-    uint8_t units : 1;
-    uint8_t tlo_mode : 1;
-    uint8_t return_mode : 1;
-    uint8_t feed_speed_override : 1;
-    //1byte
-#if TOOL_COUNT > 1
-    uint8_t tool_change : 5;
-#else
-    uint8_t tool_change : 1;
-#endif
-    uint8_t stopping : 3;
-#ifdef USE_SPINDLE
-    uint8_t spindle_turning : 2;
-#else
-    uint8_t : 2; //unused
-#endif
-#ifdef USE_COOLANT
-    uint8_t coolant : 2;
-#else
-    uint8_t : 2; //unused
-#endif
-    uint8_t : 4; //unused
-} parser_groups_t;
-
-typedef struct
-{
-    float tool_length_offset;
-    uint8_t coord_system_index;
-    float coord_system_offset[AXIS_COUNT];
-    float g92_offset[AXIS_COUNT];
-    float last_probe_position[AXIS_COUNT];
-    uint8_t last_probe_ok;
-} parser_parameters_t;
-
-typedef struct
-{
-    float xyzabc[AXIS_COUNT];
-    float ijk[3];
-    float d;
-    float f;
-    float p;
-    float r;
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-    uint32_t n;
-#endif
-#ifdef USE_SPINDLE
-    int16_t s;
-#endif
-    int8_t t;
-    uint8_t l;
-} parser_words_t;
-
-typedef struct
-{
-    uint16_t groups;
-    uint16_t words;
-    bool group_0_1_useaxis;
-} parser_cmd_explicit_t;
-
-typedef struct
-{
-    parser_groups_t groups;
-    float feedrate;
-#if TOOL_COUNT > 0
-    uint8_t tool_index;
-#endif
-#ifdef USE_SPINDLE
-    int16_t spindle;
-#endif
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-    uint32_t line;
-#endif
-} parser_state_t;
-
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+parser_extender_t *parser_extensions;
+#endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
@@ -272,10 +128,12 @@ FORCEINLINE static uint8_t parser_letter_word(unsigned char c, float value, uint
 static uint8_t parse_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-FORCEINLINE static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
+
+//tells the compiler that this function exists and the linker will resolve later
+extern void m42_register(void);
 
 /*
 	Initializes the gcode parser
@@ -285,9 +143,9 @@ void parser_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
     memset(&parser_parameters, 0, sizeof(parser_parameters_t));
-    memset(parser_last_pos, 0, sizefo(parser_last_pos))
+    memset(parser_last_pos, 0, sizeof(parser_last_pos));
 #endif
-        parser_parameters_load();
+    parser_parameters_load();
     parser_reset();
 }
 
@@ -339,26 +197,18 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
     modalgroups[5] = ((parser_state.groups.tlo_mode == G49) ? 49 : 43);
     modalgroups[6] = parser_state.groups.coord_system + 54;
     modalgroups[7] = parser_state.groups.path_mode + 61;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
     *spindle = (uint16_t)ABS(parser_state.spindle);
-#else
-    modalgroups[8] = 5;
-#endif
-#ifdef USE_COOLANT
     *coolant = parser_state.groups.coolant;
     modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
-#else
-
-    modalgroups[9] = 9;
-#endif
-    modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
-#if TOOL_COUNT > 0
     modalgroups[11] = parser_state.tool_index;
 #else
+    modalgroups[8] = 5;
+    modalgroups[9] = 9;
     modalgroups[11] = 0;
 #endif
-
+    modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
     *feed = (uint16_t)parser_state.feedrate;
 }
 
@@ -779,6 +629,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
             break;
         }
 
+#ifdef ENABLE_PARSER_EXTENSIONS
+        parser_extender_t *ptr = parser_extensions;
+        while ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS) && (ptr != NULL))
+        {
+            if (ptr->parse_word != NULL)
+            {
+                error = ptr->parse_word(word, code, error, value, new_state, words, cmd);
+            }
+
+            ptr = ptr->next;
+        }
+#endif
+
         if (error)
         {
             parser_discard_command();
@@ -930,7 +793,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
         case G80: //G80 and
             if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
             {
-
                 return STATUS_GCODE_AXIS_WORDS_EXIST;
             }
 
@@ -996,21 +858,26 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 //RS274NGC v3 - 3.7 Other Input Codes
 //Words S and T must be positive
-#ifdef USE_SPINDLE
-    if (words->s < 0)
+#if TOOL_COUNT > 0
+    if (words->s < 0 || words->t < 0)
     {
         return STATUS_NEGATIVE_VALUE;
     }
-#endif
 
-    if (words->t < 0)
-    {
-        return STATUS_NEGATIVE_VALUE;
-    }
     if (words->t > TOOL_COUNT)
     {
         return STATUS_INVALID_TOOL;
     }
+#endif
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+    // checks if an extended command was called with any other command at the same time
+    //exetension commands can only be processed individually
+    if (cmd->group_extended != 0 && cmd->groups != 0)
+    {
+        return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+    }
+#endif
 
     return STATUS_OK;
 }
@@ -1021,7 +888,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		Follows the RS274NGC v3 - 3.8 Order of Execution
 	All coordinates are converted to machine absolute coordinates before sent to the motion controller
 */
-static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
     float target[AXIS_COUNT];
     //plane selection
@@ -1031,6 +898,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     uint8_t offset_b = 0;
     float radius;
     motion_data_t block_data = {0};
+    uint8_t error = 0;
 
     //stoping from previous command M2 or M30 command
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1042,6 +910,31 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 
         new_state->groups.stopping = 0;
     }
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+    parser_extender_t *ptr = parser_extensions;
+    while ((cmd->group_extended != 0) && (ptr != NULL))
+    {
+        error = STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+        if (ptr->parse_word != NULL)
+        {
+            error = ptr->execute(new_state, words, cmd);
+        }
+
+        //checks if function catched the extended code
+        if (error != STATUS_GOCDE_EXTENDED_UNSUPPORTED)
+        {
+            break;
+        }
+
+        ptr = ptr->next;
+    }
+
+    if ((cmd->group_extended != 0))
+    {
+        return error;
+    }
+#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     block_data.line = words->n;
@@ -1062,15 +955,14 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     }
 
 //4. set spindle speed
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     if (CHECKFLAG(cmd->words, GCODE_WORD_S))
     {
         new_state->spindle = words->s;
         block_data.update_tools = (parser_state.spindle != new_state->spindle);
     }
-#endif
-//5. select tool
-#if TOOL_COUNT > 0
+
+    //5. select tool
     if (CHECKFLAG(cmd->words, GCODE_WORD_T))
     {
         if (new_state->tool_index != words->t)
@@ -1087,10 +979,8 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
         tool_change(words->t);
         new_state->tool_index = new_state->groups.tool_change;
     }
-#endif
 
-//7. spindle on/off
-#ifdef USE_SPINDLE
+    //7. spindle on/off
     switch (new_state->groups.spindle_turning)
     {
     case M3:
@@ -1115,9 +1005,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
 #endif
         }
     }
-#endif
-//8. coolant on/off
-#ifdef USE_COOLANT
+    //8. coolant on/off
     if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
     {
         block_data.update_tools = true;
@@ -1292,7 +1180,7 @@ static uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *wo
     //if non-modal is executed
     uint8_t index = 255;
     uint16_t address = 0;
-    uint8_t error = 0;
+    error = 0;
     switch (new_state->groups.nonmodal)
     {
     case G10: //G10
@@ -1897,7 +1785,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         }
         else
         {
-            cmd->group_0_1_useaxis = true;
+            cmd->group_0_1_useaxis = 1;
         }
 
         new_group |= GCODE_GROUP_MOTION;
@@ -2006,7 +1894,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         {
             return STATUS_GCODE_MODAL_GROUP_VIOLATION;
         }
-        cmd->group_0_1_useaxis = true;
+        cmd->group_0_1_useaxis = 1;
     case 4:
     case 53:
 
@@ -2073,7 +1961,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_group |= GCODE_GROUP_STOPPING;
         new_state->groups.stopping = code + 1;
         break;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     case 3:
     case 4:
     case 5:
@@ -2081,11 +1969,9 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         code = (code == 5) ? M5 : code - 2;
         new_state->groups.spindle_turning = code;
         break;
-#endif
     case 6:
         new_group |= GCODE_GROUP_TOOLCHANGE;
         break;
-#ifdef USE_COOLANT
 #if COOLANT_MIST >= 0
     case 7:
 #endif
@@ -2226,7 +2112,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         cmd->words |= GCODE_WORD_R;
         words->r = value;
         break;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     case 'S':
         cmd->words |= GCODE_WORD_S;
         if (value < 0)
@@ -2235,7 +2121,6 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         }
         words->s = (uint16_t)trunc(value);
         break;
-#endif
     case 'T':
         cmd->words |= GCODE_WORD_T;
         if (mantissa)
@@ -2251,10 +2136,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->t = (uint8_t)trunc(value);
         break;
     case 'H':
-//special case for G43
-//is valid if preceded from a G43/G49
-//it get's converted to a Z word with tool length
-#if TOOL_COUNT > 0
+        //special case for G43
+        //is valid if preceded from a G43/G49
+        //it get's converted to a Z word with tool length
         if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
         {
             if (mantissa)
@@ -2272,6 +2156,11 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
             words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
         }
 #else
+    case 'S':
+        //ignores
+        break;
+    case 'T':
+    case 'H':
         return STATUS_GCODE_UNUSED_WORDS;
 #endif
         break;
@@ -2339,22 +2228,17 @@ void parser_reset(void)
     parser_state.groups.feedrate_mode = G94;              //G94
     parser_state.groups.tlo_mode = G49;                   //G49
     parser_state.groups.stopping = 0;                     //resets all stopping commands (M0,M1,M2,M30,M60)
-#ifdef USE_COOLANT
-    parser_state.groups.coolant = M9; //M9
-#endif
-#ifdef USE_SPINDLE
-    parser_state.groups.spindle_turning = M5; //M5
-#endif
 #if TOOL_COUNT > 0
+    parser_state.groups.coolant = M9;         //M9
+    parser_state.groups.spindle_turning = M5; //M5
     parser_state.groups.tool_change = 1;
     parser_state.tool_index = g_settings.default_tool;
-#else
-    parser_state.groups.tool_change = 0;
 #endif
     parser_state.groups.motion = G1;                                               //G1
     parser_state.groups.units = G21;                                               //G21
     memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); //G92.2
     parser_parameters.tool_length_offset = 0;
+    parser_wco_counter = 0;
 }
 
 //loads parameters
@@ -2392,3 +2276,18 @@ void parser_sync_position(void)
 {
     mc_get_position(parser_last_pos);
 }
+
+#ifdef ENABLE_PARSER_EXTENSIONS
+void parser_register_extender(parser_extender_t *new_extender)
+{
+    parser_extender_t **ptr = &parser_extensions;
+
+    while (*ptr != NULL)
+    {
+        *ptr = (*ptr)->next;
+    }
+
+    *ptr = new_extender;
+    (*ptr)->next = NULL;
+}
+#endif

@@ -18,9 +18,6 @@
 */
 
 #include "../../../cnc.h"
-#include "../../../core/io_control.h"
-#include "../../../interface/settings.h"
-#include "../tool_helper.h"
 
 #include <stdbool.h>
 

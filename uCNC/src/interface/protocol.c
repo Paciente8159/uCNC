@@ -16,23 +16,10 @@
 */
 
 #include "../cnc.h"
-#include "settings.h"
-#include "serial.h"
-#include "../core/interpolator.h"
-#include "../core/io_control.h"
-#include "../core/motion_control.h"
-#include "../core/parser.h"
-#include "../core/planner.h"
-#include "../modules/encoder.h"
-#include "protocol.h"
-#include "grbl_interface.h"
 
+#ifdef ECHO_CMD
 static bool protocol_busy;
-
-bool protocol_is_busy(void)
-{
-    return protocol_busy;
-}
+#endif
 
 static void procotol_send_newline(void)
 {
@@ -41,44 +28,64 @@ static void procotol_send_newline(void)
 
 void protocol_send_ok(void)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(MSG_OK);
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_error(uint8_t error)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(MSG_ERROR);
     serial_print_int(error);
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_alarm(int8_t alarm)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(MSG_ALARM);
     serial_print_int(alarm);
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_string(const unsigned char *__s)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(__s);
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_feedback(const unsigned char *__s)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(MSG_START);
     serial_print_str(__s);
     serial_print_str(MSG_END);
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 static uint8_t protocol_get_tools(void)
@@ -90,7 +97,7 @@ static uint8_t protocol_get_tools(void)
 
     parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     if (modalgroups[8] != 5)
     {
         coolant |= ((modalgroups[8] == 3) ? 4 : 8);
@@ -146,7 +153,16 @@ static void protocol_send_status_tail(void)
 
 void protocol_send_status(void)
 {
+#ifdef ECHO_CMD
+    if (protocol_busy)
+    {
+        return;
+    }
+#endif
+
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     float axis[MAX(AXIS_COUNT, 3)];
 
     uint32_t steppos[STEPPER_COUNT];
@@ -154,7 +170,7 @@ void protocol_send_status(void)
     kinematics_apply_forward(steppos, axis);
     kinematics_apply_reverse_transform(axis);
     float feed = itp_get_rt_feed(); //convert from mm/s to mm/m
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     uint16_t spindle = itp_get_rt_spindle();
 #endif
     uint8_t controls = io_get_controls();
@@ -241,13 +257,13 @@ void protocol_send_status(void)
     serial_print_str(MSG_STATUS_MPOS);
     serial_print_fltarr(axis, AXIS_COUNT);
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     serial_print_str(MSG_STATUS_FS);
 #else
     serial_print_str(MSG_STATUS_F);
 #endif
     serial_print_fltunits(feed);
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     serial_putc(',');
     serial_print_int(spindle);
 #endif
@@ -316,12 +332,16 @@ void protocol_send_status(void)
 
     serial_putc('>');
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_gcode_coordsys(void)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     float axis[MAX(AXIS_COUNT, 3)];
     uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
     for (uint8_t i = 0; i < coordlimit; i++)
@@ -372,13 +392,17 @@ void protocol_send_gcode_coordsys(void)
 #endif
     protocol_send_probe_result(parser_get_probe_result());
 
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_probe_result(uint8_t val)
 {
     float axis[MAX(AXIS_COUNT, 3)];
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     serial_print_str(__romstr__("[PRB:"));
     parser_get_coordsys(255, axis);
     serial_print_fltarr(axis, AXIS_COUNT);
@@ -386,7 +410,9 @@ void protocol_send_probe_result(uint8_t val)
     serial_putc('0' + val);
     serial_putc(']');
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
@@ -408,7 +434,9 @@ void protocol_send_gcode_modes(void)
     uint16_t spindle;
     uint8_t coolant;
 
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
     serial_print_str(__romstr__("[GC:"));
@@ -445,7 +473,9 @@ void protocol_send_gcode_modes(void)
 
     serial_putc(']');
     procotol_send_newline();
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
@@ -468,7 +498,9 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 
 void protocol_send_start_blocks(void)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     unsigned char c = 0;
     uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
     serial_print_str(__romstr__("$N0="));
@@ -501,12 +533,16 @@ void protocol_send_start_blocks(void)
             break;
         }
     }
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 
 void protocol_send_cnc_settings(void)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
 #ifdef EMULATE_GRBL_STARTUP
     // just adds this for compatibility
@@ -591,7 +627,9 @@ void protocol_send_cnc_settings(void)
 #ifdef ENABLE_SETTING_EXTRA_CMDS
 void protocol_send_pins_states(void)
 {
+#ifdef ECHO_CMD
     protocol_busy = true;
+#endif
     for (uint8_t i = 0; i < 98; i++)
     {
         int16_t val = io_get_pinvalue(i);
@@ -637,6 +675,8 @@ void protocol_send_pins_states(void)
     }
 #endif
 
+#ifdef ECHO_CMD
     protocol_busy = false;
+#endif
 }
 #endif

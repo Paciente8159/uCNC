@@ -20,9 +20,6 @@
 #include "../../cnc.h"
 
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
-#include "../../interface/settings.h"
-#include "../../interface/grbl_interface.h"
-#include "../../core/motion_control.h"
 #include <stdio.h>
 #include <math.h>
 

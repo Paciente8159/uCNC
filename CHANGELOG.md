@@ -8,7 +8,45 @@
 ### Added
   - added pid_stop action and alarm checking (safety stop) (#108)
   - added new interpolator functions to be used by the PID module (#108)
-  
+  - parser can be extended to in a modular way to include additional gcode commands (#130)
+  - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
+
+### Changed
+  - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
+
+### Fixed
+  - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled (#129)
+  - all headers are now included via cnc.h (#128)
+
+## [1.3.6] - 2022-01-16
+µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
+
+### Fixed
+  - modified interpolator to update the the tool inside the ISR call (not only when speed changed). The ISR was modified to carry segment information to the next generated step without before segment evaluation (#127)
+
+## [1.3.5] - 2022-01-14
+µCNC version 1.3.5 added major improvements to the virtual HAL. Although this HAL is only for testing purposes this in an invaluable tool for diagnostics.
+It also adds a couple of important fixes that affected step generation with Dynamic Step Spreading enabled and sporadic stack overflow errors caused by nested loops in the cnc delay function.
+
+### Added
+  - redesigned virtual MCU HAL (Windows OS only) (#122)
+  - virtual MCU HAL can be connected via sockets (default port 34000) (must be configured) (#122)
+  - virtual MCU HAL new GUI in C# that enables to interact with the IO (via named pipes) (#122)
+
+### Changed
+  - on parser reset next status report will print WCO
+  - modified dual endstop behavior when dual endstops option is not active (#123)
+  - modified status report to yield better refresh rate (#125)
+  - modified/simplified realtime commands (reduced code size) (#126)
+
+### Fixed
+  - cnc delay will be executed without exit even if there is an fault condition in dotasks loop. On input debounce the delay could be shortcuted and a fault condition could be triggered without being real (#125)
+  - removed deprecated preprocessor condition that was causing delay on motion restart even with laser mode active
+  - fixed some typos with option FORCE_GLOBALS_TO_0
+
+### Fixed
+  - clearing interpolator now also resets dss previous value and clears running segment pointer to prevent step contamination from canceled motions (#124)
+
 ## [1.3.4] - 2022-01-10
 µCNC version 1.3.4 adds a few improvements and also fixes some issues with inverse feedrate mode `G93` and realtime feed overrides.
 
@@ -492,7 +530,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ## 0.01 - Pre-release version - 2020-01-23
 
 ### Initial release
-
+[1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
+[1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4
 [1.3.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.2

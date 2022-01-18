@@ -16,13 +16,6 @@
 */
 
 #include "../cnc.h"
-#include "../interface/grbl_interface.h"
-#include "../interface/settings.h"
-#include "io_control.h"
-#include "parser.h"
-#include "planner.h"
-#include "interpolator.h"
-#include "motion_control.h"
 #include <math.h>
 #include <string.h>
 #include <float.h>

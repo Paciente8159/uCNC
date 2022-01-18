@@ -21,17 +21,6 @@
 #include <string.h>
 #include <stdint.h>
 #include "cnc.h"
-#include "interface/settings.h"
-#include "interface/grbl_interface.h"
-#include "interface/serial.h"
-#include "interface/protocol.h"
-#include "core/parser.h"
-#include "core/motion_control.h"
-#include "core/planner.h"
-#include "core/interpolator.h"
-#include "core/io_control.h"
-#include "modules/encoder.h"
-#include "modules/pid_controller.h"
 
 #define LOOP_STARTUP_RESET 0
 #define LOOP_RUNNING_FIRST_RUN 1
@@ -42,6 +31,10 @@
 #define UNLOCK_LOCKED 1
 #define UNLOCK_OK 2
 
+#define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
+#define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
+#define RTCMD_SPINDLE_MASK (RT_CMD_SPINDLE_100 | RT_CMD_SPINDLE_INC_COARSE | RT_CMD_SPINDLE_DEC_COARSE | RT_CMD_SPINDLE_INC_FINE | RT_CMD_SPINDLE_DEC_FINE | RT_CMD_SPINDLE_TOGGLE)
+#define RTCMD_COOLANT_MASK (RT_CMD_COOL_FLD_TOGGLE | RT_CMD_COOL_MST_TOGGLE)
 typedef struct
 {
     //uint8_t system_state;		//signals if CNC is system_state and gcode can run
@@ -58,8 +51,11 @@ static cnc_state_t cnc_state;
 static void cnc_check_fault_systems(void);
 static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
+static void cnc_io_dotasks(void);
 static bool cnc_reset(void);
 static bool cnc_exec_cmd(void);
+
+extern void modules_init(void);
 
 void cnc_init(void)
 {
@@ -69,7 +65,7 @@ void cnc_init(void)
 #endif
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     //initializes all systems
-    mcu_init();            //mcu
+    mcu_init(); //mcu
     mcu_disable_global_isr();
     io_disable_steppers(); //disables steppers at start
     io_disable_probe();    //forces probe isr disabling
@@ -77,15 +73,10 @@ void cnc_init(void)
     settings_init();       //settings
     itp_init();            //interpolator
     planner_init();        //motion planner
-    mc_init();             //motion control
-    parser_init();         //parser
 #if TOOL_COUNT > 0
     tool_init();
 #endif
-#if PID_CONTROLLERS > 0
-    pid_init(); //pid
-#endif
-mcu_enable_global_isr();
+    modules_init();
 }
 
 void cnc_run(void)
@@ -165,21 +156,15 @@ bool cnc_exec_cmd(void)
 bool cnc_dotasks(void)
 {
     static bool lock_itp = false;
-    //run all mcu_internal tasks
-    mcu_dotasks();
+
+    //run io basic tasks
+    cnc_io_dotasks();
 
     //let µCNC finnish startup/reset code
     if (cnc_state.loop_state == LOOP_STARTUP_RESET)
     {
-        return true;
+        return false;
     }
-
-#if ((LIMITEN_MASK ^ LIMITISR_MASK) || defined(FORCE_SOFT_POLLING))
-    io_limits_isr();
-#endif
-#if ((CONTROLEN_MASK ^ CONTROLISR_MASK) || defined(FORCE_SOFT_POLLING))
-    io_controls_isr();
-#endif
 
     cnc_exec_rt_commands(); //executes all pending realtime commands
 
@@ -445,38 +430,28 @@ void cnc_clear_exec_state(uint8_t statemask)
     {
         SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
         CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
-#ifdef USE_SPINDLE
-        itp_sync_spindle();
-#if (DELAY_ON_RESUME_SPINDLE > 0)
-#ifdef LASER_MODE
-        if (!g_settings.laser_mode)
-        {
-#endif
-            if (!planner_buffer_is_empty())
-            {
-                cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
-            }
-#ifdef LASER_MODE
-        }
-#endif
-#endif
-#endif
-#ifdef USE_COOLANT
+#if TOOL_COUNT > 0
         //updated the coolant pins
         tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
-#ifdef LASER_MODE
         if (!g_settings.laser_mode)
         {
-#endif
             if (!planner_buffer_is_empty())
             {
 
                 cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
             }
-#ifdef LASER_MODE
         }
 #endif
+        itp_sync_spindle();
+#if (DELAY_ON_RESUME_SPINDLE > 0)
+        if (!g_settings.laser_mode)
+        {
+            if (!planner_buffer_is_empty())
+            {
+                cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+            }
+        }
 #endif
 #endif
         CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
@@ -488,8 +463,10 @@ void cnc_clear_exec_state(uint8_t statemask)
 void cnc_delay_ms(uint32_t miliseconds)
 {
     uint32_t t_start = mcu_millis();
-    while ((mcu_millis() - t_start) < miliseconds && cnc_dotasks())
-        ;
+    while ((mcu_millis() - t_start) < miliseconds)
+    {
+        cnc_io_dotasks();
+    }
 }
 
 bool cnc_reset(void)
@@ -517,6 +494,7 @@ bool cnc_reset(void)
 
 void cnc_call_rt_command(uint8_t command)
 {
+    uint8_t tools_cmd;
     //executes the realtime commands
     //only reset command is executed right away
     //control commands affect the exec_state directly (Abort, hold, safety door, cycle_start)
@@ -550,54 +528,28 @@ void cnc_call_rt_command(uint8_t command)
             SETFLAG(cnc_state.exec_state, EXEC_HOLD);
         }
         break;
-    case CMD_CODE_FEED_100:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_100);
-        break;
-    case CMD_CODE_FEED_INC_COARSE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_COARSE);
-        break;
-    case CMD_CODE_FEED_DEC_COARSE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_COARSE);
-        break;
-    case CMD_CODE_FEED_INC_FINE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_INC_FINE);
-        break;
-    case CMD_CODE_FEED_DEC_FINE:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_FEED_DEC_FINE);
-        break;
-    case CMD_CODE_RAPIDFEED_100:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_100);
-        break;
-    case CMD_CODE_RAPIDFEED_OVR1:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR1);
-        break;
-    case CMD_CODE_RAPIDFEED_OVR2:
-        SETFLAG(cnc_state.feed_ovr_cmd, RT_CMD_RAPIDFEED_OVR2);
-        break;
-    case CMD_CODE_SPINDLE_100:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_100);
-        break;
-    case CMD_CODE_SPINDLE_INC_COARSE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_COARSE);
-        break;
-    case CMD_CODE_SPINDLE_DEC_COARSE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_COARSE);
-        break;
-    case CMD_CODE_SPINDLE_INC_FINE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_INC_FINE);
-        break;
-    case CMD_CODE_SPINDLE_DEC_FINE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_DEC_FINE);
-        break;
-    case CMD_CODE_SPINDLE_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_SPINDLE_TOGGLE);
-        break;
-    case CMD_CODE_COOL_FLD_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_FLD_TOGGLE);
-        break;
-    case CMD_CODE_COOL_MST_TOGGLE:
-        SETFLAG(cnc_state.tool_ovr_cmd, RT_CMD_COOL_MST_TOGGLE);
-        break;
+    default:
+        if (command >= CMD_CODE_FEED_100 && command <= CMD_CODE_RAPIDFEED_OVR2)
+        {
+            cnc_state.feed_ovr_cmd = (1 << (command - CMD_CODE_FEED_100));
+            break;
+        }
+
+        tools_cmd = cnc_state.tool_ovr_cmd;
+
+        if (command >= CMD_CODE_SPINDLE_100 && command <= CMD_CODE_SPINDLE_TOGGLE)
+        {
+            tools_cmd &= RTCMD_COOLANT_MASK;
+            tools_cmd |= (1 << (command - CMD_CODE_SPINDLE_100));
+        }
+
+        if (command >= CMD_CODE_COOL_FLD_TOGGLE && command <= CMD_CODE_COOL_MST_TOGGLE)
+        {
+            tools_cmd &= RTCMD_SPINDLE_MASK;
+            tools_cmd |= (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
+        }
+
+        cnc_state.tool_ovr_cmd = tools_cmd;
     }
 }
 
@@ -613,39 +565,28 @@ void cnc_exec_rt_commands(void)
     bool update_tools = false;
 
     //executes feeds override rt commands
-    uint8_t cmd_mask = 0x04;
-    uint8_t command = cnc_state.rt_cmd;            //copies realtime flags states
-    CLEARFLAG(cnc_state.rt_cmd, ~(RT_CMD_REPORT)); //clears all command flags except report request
-    while (command)
+    uint8_t command = cnc_state.rt_cmd; //copies realtime flags states
+    if (command)
     {
-        switch (command & cmd_mask)
+        cnc_state.rt_cmd = RT_CMD_CLEAR;
+        if (command & RT_CMD_RESET)
         {
-        case RT_CMD_RESET:
             cnc_alarm(EXEC_ALARM_SOFTRESET);
             return;
-        case RT_CMD_REPORT:
-            if (!protocol_is_busy() && cnc_state.loop_state)
-            {
-                protocol_send_status();
-                CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT); //if a report request is sent, clear the respective flag
-            }
-            break;
-        case RT_CMD_CYCLE_START:
-            cnc_clear_exec_state(EXEC_HOLD);
-            break;
         }
 
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
+        if (command & RT_CMD_CYCLE_START)
+        {
+            cnc_clear_exec_state(EXEC_HOLD);
+        }
     }
 
     //executes feeds override rt commands
-    cmd_mask = 0x80;
-    command = cnc_state.feed_ovr_cmd;      //copies realtime flags states
-    cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
-    while (command)
+    command = cnc_state.feed_ovr_cmd; //copies realtime flags states
+    if (command)
     {
-        switch (command & cmd_mask)
+        cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; //clears command flags
+        switch (command & RTCMD_NORMAL_MASK)
         {
         case RT_CMD_FEED_100:
             planner_feed_ovr_reset();
@@ -662,6 +603,10 @@ void cnc_exec_rt_commands(void)
         case RT_CMD_FEED_DEC_FINE:
             planner_feed_ovr_inc(-FEED_OVR_FINE);
             break;
+        }
+
+        switch (command & RTCMD_RAPID_MASK)
+        {
         case RT_CMD_RAPIDFEED_100:
             planner_rapid_feed_ovr_reset();
             break;
@@ -672,21 +617,17 @@ void cnc_exec_rt_commands(void)
             planner_rapid_feed_ovr(RAPID_FEED_OVR2);
             break;
         }
-
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
     }
 
     //executes tools override rt commands
-    cmd_mask = 0x80;
-    command = cnc_state.tool_ovr_cmd;      //copies realtime flags states
-    cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
-    while (command)
+    command = cnc_state.tool_ovr_cmd; //copies realtime flags states
+    if (command)
     {
+        cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; //clears command flags
         update_tools = true;
-        switch (command & cmd_mask)
+        switch (command & RTCMD_SPINDLE_MASK)
         {
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
         case RT_CMD_SPINDLE_100:
             planner_spindle_ovr_reset();
             break;
@@ -705,30 +646,32 @@ void cnc_exec_rt_commands(void)
         case RT_CMD_SPINDLE_TOGGLE:
             if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) //only available if a TRUE hold is active
             {
-//toogle state
-#ifdef USE_SPINDLE
+                //toogle state
                 if (tool_get_speed())
                 {
                     update_tools = false;
                     tool_set_speed(0);
                 }
-#endif
             }
             break;
 #endif
-#ifdef USE_COOLANT
+        }
+
+        switch (command & RTCMD_COOLANT_MASK)
+        {
+#if TOOL_COUNT > 0
         case RT_CMD_COOL_FLD_TOGGLE:
 #ifdef COOLANT_MIST
         case RT_CMD_COOL_MST_TOGGLE:
 #endif
             if (!cnc_get_exec_state(EXEC_ALARM)) //if no alarm is active
             {
-                if (cmd_mask == RT_CMD_COOL_FLD_TOGGLE)
+                if (command == RT_CMD_COOL_FLD_TOGGLE)
                 {
                     planner_coolant_ovr_toggle(COOLANT_MASK);
                 }
 #ifdef COOLANT_MIST
-                if (cmd_mask == RT_CMD_COOL_MST_TOGGLE)
+                if (command == RT_CMD_COOL_MST_TOGGLE)
                 {
                     planner_coolant_ovr_toggle(MIST_MASK);
                 }
@@ -738,23 +681,18 @@ void cnc_exec_rt_commands(void)
 #endif
         }
 
-        CLEARFLAG(command, cmd_mask);
-        cmd_mask >>= 1;
-    }
-
-    if (update_tools)
-    {
-        itp_update();
-        if (planner_buffer_is_empty())
+        if (update_tools)
         {
-            motion_data_t block = {0};
-#ifdef USE_SPINDLE
-#ifdef USE_COOLANT
-            block.coolant = planner_get_previous_coolant();
+            itp_update();
+            if (planner_buffer_is_empty())
+            {
+                motion_data_t block = {0};
+#if TOOL_COUNT > 0
+                block.coolant = planner_get_previous_coolant();
+                block.spindle = planner_get_previous_spindle_speed();
 #endif
-            block.spindle = planner_get_previous_spindle_speed();
-#endif
-            mc_update_tools(&block);
+                mc_update_tools(&block);
+            }
         }
     }
 }
@@ -870,4 +808,23 @@ bool cnc_check_interlocking(void)
     }
 
     return true;
+}
+
+void cnc_io_dotasks(void)
+{
+    //run internal mcu tasks (USB and communications)
+    mcu_dotasks();
+
+    //checks inputs and triggers ISR checks if enforced soft polling
+#if defined(FORCE_SOFT_POLLING)
+    io_limits_isr();
+    io_controls_isr();
+#endif
+
+    if (cnc_state.loop_state > LOOP_RUNNING_FIRST_RUN && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
+    {
+        //if a report request is sent, clear the respective flag
+        CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+        protocol_send_status();
+    }
 }

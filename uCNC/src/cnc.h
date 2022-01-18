@@ -27,9 +27,9 @@ extern "C"
 //rt_cmd
 #define RT_CMD_CLEAR 0
 
-#define RT_CMD_REPORT 1
+#define RT_CMD_RESET 1
 #define RT_CMD_CYCLE_START 2
-#define RT_CMD_RESET 4
+#define RT_CMD_REPORT 4
 
 //feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -58,7 +58,7 @@ extern "C"
 #define EXEC_JOG 8												// Jogging in execution
 #define EXEC_HOMING 16											// Homing in execution
 #define EXEC_HALT 32											// Limit switch is active or position lost due to abrupt stop
-#define EXEC_HOMING_HIT (EXEC_HOMING|EXEC_HALT)					// Limit switch is active during a homing motion
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_HALT)				// Limit switch is active during a homing motion
 #define EXEC_DOOR 64											// Safety door open
 #define EXEC_KILL 128											// Emergency stop
 #define EXEC_ALARM (EXEC_HALT | EXEC_DOOR | EXEC_KILL)			// System alarms
@@ -123,6 +123,19 @@ extern "C"
 #include "cnc_hal_config_helper.h"
 //initializes core utilities (like fast math functions)
 #include "core/utils.h"
+#include "interface/defaults.h"
+#include "interface/grbl_interface.h"
+#include "interface/settings.h"
+#include "interface/serial.h"
+#include "interface/protocol.h"
+#include "modules/encoder.h"
+#include "modules/pid_controller.h"
+#include "core/io_control.h"
+#include "core/io_control.h"
+#include "core/parser.h"
+#include "core/motion_control.h"
+#include "core/planner.h"
+#include "core/interpolator.h"
 
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
@@ -133,6 +146,7 @@ extern "C"
 #define __limitname_helper__(x) LIMIT_##x##_MASK
 #define __limitname__(x) __limitname_helper__(x)
 
+#ifdef ENABLE_DUAL_DRIVE_AXIS
 #ifdef DUAL_DRIVE_AXIS0
 #define AXIS_DUAL0 __axisname__(DUAL_DRIVE_AXIS0)
 #define STEP_DUAL0 (1 << AXIS_DUAL0)
@@ -144,6 +158,16 @@ extern "C"
 #define STEP_DUAL1 (1 << AXIS_DUAL1)
 #define LIMIT_DUAL1 __limitname__(DUAL_DRIVE_AXIS1)
 #endif
+#endif
+
+#ifndef LIMIT_DUAL0
+#define LIMIT_DUAL0 0
+#endif
+#ifndef LIMIT_DUAL1
+#define LIMIT_DUAL1 0
+#endif
+
+#define LIMITS_DUAL (LIMIT_DUAL0 | LIMIT_DUAL1)
 
 #if (STEP0_MASK == STEP_DUAL0)
 #define STEP0_ITP_MASK (STEP0_MASK | 64)

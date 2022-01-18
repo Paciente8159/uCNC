@@ -31,9 +31,6 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_AVR)
-#include "../../../interface/serial.h"
-#include "../../../core/interpolator.h"
-#include "../../../core/io_control.h"
 
 #include <math.h>
 #include <inttypes.h>

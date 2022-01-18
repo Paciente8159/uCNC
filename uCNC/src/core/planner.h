@@ -25,8 +25,6 @@ extern "C"
 {
 #endif
 
-#include "../cnc.h"
-#include "motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -54,7 +52,7 @@ extern "C"
         float rapid_feed_sqr;
         float acceleration;
 
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
         int16_t spindle;
 #endif
 
@@ -79,11 +77,9 @@ extern "C"
     planner_block_t *planner_get_block(void);
     float planner_get_block_exit_speed_sqr(void);
     float planner_get_block_top_speed(float exit_speed_sqr);
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     int16_t planner_get_spindle_speed(float scale);
     float planner_get_previous_spindle_speed(void);
-#endif
-#ifdef USE_COOLANT
     uint8_t planner_get_coolant(void);
     uint8_t planner_get_previous_coolant(void);
 #endif
@@ -99,11 +95,9 @@ extern "C"
 
     void planner_rapid_feed_ovr_reset();
     void planner_rapid_feed_ovr(uint8_t value);
-#ifdef USE_SPINDLE
+#if TOOL_COUNT > 0
     void planner_spindle_ovr_reset(void);
     void planner_spindle_ovr_inc(uint8_t value);
-#endif
-#ifdef USE_COOLANT
     uint8_t planner_coolant_ovr_toggle(uint8_t value);
     void planner_coolant_ovr_reset(void);
 #endif

@@ -77,6 +77,9 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_VIRTUAL)
+#ifndef __linux__
+#define MCU MCU_VIRTUAL_WIN
+#endif
 #endif
 
 #ifndef BOARD

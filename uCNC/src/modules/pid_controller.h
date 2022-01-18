@@ -24,17 +24,119 @@ extern "C"
 {
 #endif
 
-#include "../cnc.h"
-#include <math.h>
+#if PID_CONTROLLERS > 0
+#ifndef PID0_DELTA
+#error "The PID0 error is not defined"
+#endif
+#ifndef PID0_OUTPUT
+#error "The PID0 output is not defined"
+#endif
+#ifndef PID0_FREQ_DIV
+#define PID0_FREQ_DIV 1
+#elif (PID0_FREQ_DIV < 1 || PID0_FREQ_DIV > 250)
+#error "The PID0 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 1
+#ifndef PID1_DELTA
+#error "The PID1 error is not defined"
+#endif
+#ifndef PID1_OUTPUT
+#error "The PID1 output is not defined"
+#endif
+#ifndef PID1_FREQ_DIV
+#define PID1_FREQ_DIV 1
+#elif (PID1_FREQ_DIV < 1 || PID1_FREQ_DIV > 250)
+#error "The PID1 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 2
+#ifndef PID2_DELTA
+#error "The PID2 error is not defined"
+#endif
+#ifndef PID2_OUTPUT
+#error "The PID2 output is not defined"
+#endif
+#ifndef PID2_FREQ_DIV
+#define PID2_FREQ_DIV 1
+#elif (PID2_FREQ_DIV < 1 || PID2_FREQ_DIV > 250)
+#error "The PID2 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 3
+#ifndef PID3_DELTA
+#error "The PID3 error is not defined"
+#endif
+#ifndef PID3_OUTPUT
+#error "The PID3 output is not defined"
+#endif
+#ifndef PID3_FREQ_DIV
+#define PID3_FREQ_DIV 1
+#elif (PID3_FREQ_DIV < 1 || PID3_FREQ_DIV > 250)
+#error "The PID3 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 4
+#ifndef PID4_DELTA
+#error "The PID4 error is not defined"
+#endif
+#ifndef PID4_OUTPUT
+#error "The PID4 output is not defined"
+#endif
+#ifndef PID4_FREQ_DIV
+#define PID4_FREQ_DIV 1
+#elif (PID4_FREQ_DIV < 1 || PID4_FREQ_DIV > 250)
+#error "The PID4 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 5
+#ifndef PID5_DELTA
+#error "The PID5 error is not defined"
+#endif
+#ifndef PID5_OUTPUT
+#error "The PID5 output is not defined"
+#endif
+#ifndef PID5_FREQ_DIV
+#define PID5_FREQ_DIV 1
+#elif (PID5_FREQ_DIV < 1 || PID5_FREQ_DIV > 250)
+#error "The PID5 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 6
+#ifndef PID6_DELTA
+#error "The PID6 error is not defined"
+#endif
+#ifndef PID6_OUTPUT
+#error "The PID6 output is not defined"
+#endif
+#ifndef PID6_FREQ_DIV
+#define PID6_FREQ_DIV 1
+#elif (PID6_FREQ_DIV < 1 || PID6_FREQ_DIV > 250)
+#error "The PID6 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
+#if PID_CONTROLLERS > 7
+#ifndef PID7_DELTA
+#error "The PID7 error is not defined"
+#endif
+#ifndef PID7_OUTPUT
+#error "The PID7 output is not defined"
+#endif
+#ifndef PID7_FREQ_DIV
+#define PID7_FREQ_DIV 1
+#elif (PID7_FREQ_DIV < 1 || PID7_FREQ_DIV > 250)
+#error "The PID7 sampling frequency devider value must be between 1 and 250"
+#endif
+#endif
 
 //These parameters adjust the PID to use integer math only and output limiting (usually to be used with PWM)
 #define PID_BITSHIFT_FACTOR 8
-#define PID_OUTPUT_MAX ((1<<PID_BITSHIFT_FACTOR)-1)
-#define PID_OUTPUT_MIN (-((1<<PID_BITSHIFT_FACTOR)-1))
+#define PID_OUTPUT_MAX ((1 << PID_BITSHIFT_FACTOR) - 1)
+#define PID_OUTPUT_MIN (-((1 << PID_BITSHIFT_FACTOR) - 1))
 
-void pid_init(void);
-void pid_update(void);
-void pid_stop(void);
+	void pid_init(void);
+	void pid_update(void);
+	void pid_stop(void);
 
 #ifdef __cplusplus
 }
