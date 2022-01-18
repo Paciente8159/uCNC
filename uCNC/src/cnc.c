@@ -808,7 +808,7 @@ bool cnc_check_interlocking(void)
     return true;
 }
 
-void cnc_io_dotasks(void)
+static void cnc_io_dotasks(void)
 {
     //run internal mcu tasks (USB and communications)
     mcu_dotasks();
@@ -819,7 +819,7 @@ void cnc_io_dotasks(void)
     io_controls_isr();
 #endif
 
-    if (cnc_state.loop_state > LOOP_RUNNING_FIRST_RUN && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
+    if (cnc_state.loop_state > LOOP_STARTUP_RESET && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
         //if a report request is sent, clear the respective flag
         CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
