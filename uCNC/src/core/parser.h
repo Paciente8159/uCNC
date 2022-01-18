@@ -102,24 +102,20 @@ extern "C"
 		uint8_t tlo_mode : 1;
 		uint8_t return_mode : 1;
 		uint8_t feed_speed_override : 1;
-		//1byte
-#if TOOL_COUNT > 1
-		uint8_t tool_change : 5;
-#else
-	uint8_t tool_change : 1;
-#endif
+		//2byte or 1byte
 		uint8_t stopping : 3;
-#ifdef USE_SPINDLE
+#if TOOL_COUNT == 1
+		uint8_t tool_change : 1;
 		uint8_t spindle_turning : 2;
-#else
-	uint8_t : 2; //unused
-#endif
-#ifdef USE_COOLANT
 		uint8_t coolant : 2;
+#elif TOOL_COUNT > 1
+	uint8_t tool_change : 5;
+	uint8_t spindle_turning : 2;
+	uint8_t coolant : 2;
+	uint8_t : 4; //unused
 #else
-	uint8_t : 2; //unused
+	uint8_t : 5; //unused
 #endif
-		uint8_t : 4; //unused
 	} parser_groups_t;
 
 	typedef struct
@@ -143,9 +139,7 @@ extern "C"
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t n;
 #endif
-#ifdef USE_SPINDLE
 		int16_t s;
-#endif
 		int8_t t;
 		uint8_t l;
 	} parser_words_t;
@@ -166,8 +160,6 @@ extern "C"
 		float feedrate;
 #if TOOL_COUNT > 0
 		uint8_t tool_index;
-#endif
-#ifdef USE_SPINDLE
 		int16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
