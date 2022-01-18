@@ -154,18 +154,18 @@ void planner_add_line(motion_data_t *block_data)
     }
 
     //converts to steps per second (st/s)
-    block_data->feed *= MIN_SEC_MULT;
+    float feed = block_data->feed * MIN_SEC_MULT;
     rapid_feed *= MIN_SEC_MULT;
     rapid_feed *= (float)block_data->total_steps;
     //converts to steps per second^2 (st/s^2)
     planner_data[planner_data_write].acceleration *= (float)block_data->total_steps;
 
-    if (block_data->feed > rapid_feed)
+    if (feed > rapid_feed)
     {
-        block_data->feed = rapid_feed;
+        feed = rapid_feed;
     }
 
-    planner_data[planner_data_write].feed_sqr = fast_flt_pow2(block_data->feed);
+    planner_data[planner_data_write].feed_sqr = fast_flt_pow2(feed);
     planner_data[planner_data_write].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
 
     //consider initial angle factor of 1 (90 degree angle corner or more)

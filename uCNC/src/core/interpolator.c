@@ -98,8 +98,8 @@ static bool itp_needs_update;
 #if DSS_MAX_OVERSAMPLING > 0
 //stores the previous dss setting used by the interpolator
 static uint8_t prev_dss;
-static int16_t prev_spindle;
 #endif
+static int16_t prev_spindle;
 //pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -293,7 +293,7 @@ void itp_run(void)
             //flags block for recalculation of speeds
             itp_needs_update = true;
             //in every new block speed update is needed
-            const_speed = true;
+            const_speed = false;
 
             half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
             half_speed_change = fast_flt_div2(half_speed_change);
