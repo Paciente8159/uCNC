@@ -5,6 +5,13 @@
 
 # Changelog
 
+### Changed
+  - force ISR update with every new block (#131)
+
+### Fixed
+  - fixed planner bug that modified motion control feed rate for segmented motion lines (affected only 16-bit bresenham mode) (#131)
+  - fixed compilation error with DSS disabled (#131)
+
 ## [1.3.7] - 2022-01-18
 µCNC version 1.3.7 fixes a samll bug that prevented µCNC from sending status report with an alarm condition at startup.
 Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
