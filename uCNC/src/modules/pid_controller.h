@@ -24,8 +24,6 @@ extern "C"
 {
 #endif
 
-#include "../cnc.h"
-
 #if PID_CONTROLLERS > 0
 #ifndef PID0_DELTA
 #error "The PID0 error is not defined"

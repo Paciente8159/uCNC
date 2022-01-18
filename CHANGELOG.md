@@ -6,7 +6,7 @@
 # Changelog
 
 ### Changed
-  - all headers are now included via cnc.h
+  - all headers are now included via cnc.h (#128)
 
 ## [1.3.6] - 2022-01-16
 µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
