@@ -160,7 +160,7 @@ extern "C"
 //#define GCODE_ACCEPT_WORD_E
 
 // Uncomment to enable parser extentions
-#define ENABLE_PARSER_EXTENSIONS
+// #define ENABLE_PARSER_EXTENSIONS
 
 // Report specific options
 #define STATUS_WCO_REPORT_MIN_FREQUENCY 30

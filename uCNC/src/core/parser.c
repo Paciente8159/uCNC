@@ -686,15 +686,20 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
         }
 
 #ifdef ENABLE_PARSER_EXTENSIONS
-        if (error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS)
+        parser_extender_t *ptr = parser_extensions;
+        while ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS) && (ptr != NULL))
         {
-            if (parser_extensions != NULL)
+            if (ptr->parse_word != NULL)
             {
-                if (parser_extensions->parse_word != NULL)
-                {
-                    error = parser_extensions->parse_word(word, code, mantissa, value, new_state, words, cmd, parser_extensions->next);
-                }
+                error = ptr->parse_word(word, code, mantissa, value, new_state, words, cmd);
             }
+
+            if ((error != STATUS_GCODE_UNSUPPORTED_COMMAND && error != STATUS_GCODE_UNUSED_WORDS))
+            {
+                break;
+            }
+
+            ptr = ptr->next;
         }
 #endif
 
@@ -959,6 +964,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     uint8_t offset_b = 0;
     float radius;
     motion_data_t block_data = {0};
+    uint8_t error = 0;
 
     //stoping from previous command M2 or M30 command
     if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -972,15 +978,27 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     }
 
 #ifdef ENABLE_PARSER_EXTENSIONS
-    if (cmd->group_extended != 0)
+    parser_extender_t *ptr = parser_extensions;
+    while ((cmd->group_extended != 0) && (ptr != NULL))
     {
-        if (parser_extensions != NULL)
+        error = STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+        if (ptr->parse_word != NULL)
         {
-            if (parser_extensions->execute != NULL)
-            {
-                return parser_extensions->execute(new_state, words, cmd, parser_extensions->next);
-            }
+            error = ptr->execute(new_state, words, cmd);
         }
+
+        //checks if function catched the extended code
+        if (error != STATUS_GOCDE_EXTENDED_UNSUPPORTED)
+        {
+            break;
+        }
+
+        ptr = ptr->next;
+    }
+
+    if ((cmd->group_extended != 0))
+    {
+        return error;
     }
 #endif
 
@@ -1233,7 +1251,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     //if non-modal is executed
     uint8_t index = 255;
     uint16_t address = 0;
-    uint8_t error = 0;
+    error = 0;
     switch (new_state->groups.nonmodal)
     {
     case G10: //G10

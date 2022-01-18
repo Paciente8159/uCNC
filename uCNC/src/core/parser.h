@@ -125,8 +125,8 @@ extern "C"
 	} parser_state_t;
 
 #ifdef ENABLE_PARSER_EXTENSIONS
-	typedef uint8_t (*parser_extender_callback)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *, void *);
-	typedef uint8_t (*parser_extender_exec_callback)(parser_state_t *, parser_words_t *, parser_cmd_explicit_t *, void *);
+	typedef uint8_t (*parser_extender_callback)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
+	typedef uint8_t (*parser_extender_exec_callback)(parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
 	typedef struct parser_extender_
 	{
 		parser_extender_callback parse_word;
