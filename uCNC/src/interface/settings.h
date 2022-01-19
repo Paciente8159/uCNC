@@ -61,6 +61,12 @@ extern "C"
                 float max_feed_rate[STEPPER_COUNT];
                 float acceleration[STEPPER_COUNT];
                 float max_distance[AXIS_COUNT];
+#if (KINEMATIC == KINEMATIC_DELTA)
+                float delta_arm_length;
+                float delta_efector_radius;
+                float delta_armbase_radius;
+                float delta_efector_height;
+#endif
 #if TOOL_COUNT > 0
                 uint8_t default_tool;
                 float tool_length_offset[TOOL_COUNT];

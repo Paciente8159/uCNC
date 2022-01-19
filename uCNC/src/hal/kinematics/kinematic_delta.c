@@ -1,11 +1,11 @@
 /*
-	Name: kinematic_cartesian.c
-	Description: Implements all kinematics math equations to translate the motion of a cartesian machine.
+	Name: kinematic_delta.c
+	Description: Implements all kinematics math equations to translate the motion of a delta machine.
 		Also implements the homing motion for this type of machine.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 26/09/2019
+	Date: 19/01/2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,21 +19,50 @@
 
 #include "../../cnc.h"
 
-#if (KINEMATIC == KINEMATIC_CARTESIAN)
+#if (KINEMATIC == KINEMATIC_DELTA)
 #include <stdio.h>
 #include <math.h>
 
+#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * M_PI / 180.0f));
+#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * M_PI / 180.0f));
+#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * M_PI / 180.0f));
+#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * M_PI / 180.0f));
+#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * M_PI / 180.0f));
+#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * M_PI / 180.0f));
+
+static float delta_arm_sqr;
+static float delta_base_height;
+static float delta_inv_x[3];
+static float delta_inv_y[3];
+
+void kinematics_init()
+{
+        float delta_triang_base = (g_settings.delta_armbase_radius - g_settings.delta_efector_radius);
+        delta_arm_sqr = g_settings.delta_arm_length * g_settings.delta_arm_length;
+        delta_inv_x[0] = delta_triang_base * STEPPER0_FACTX;
+        delta_inv_x[1] = delta_triang_base * STEPPER1_FACTX;
+        delta_inv_x[2] = delta_triang_base * STEPPER2_FACTX;
+        delta_inv_y[0] = delta_triang_base * STEPPER0_FACTY;
+        delta_inv_y[1] = delta_triang_base * STEPPER1_FACTY;
+        delta_inv_y[2] = delta_triang_base * STEPPER2_FACTY;
+        delta_base_height = sqrtf(delta_arm_sqr - delta_inv_x[0] * delta_inv_x[0] - delta_inv_y[0] * delta_inv_y[0]) + g_settings.delta_efector_height;
+}
+
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-#ifdef AXIS_X
-        steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * axis[AXIS_X]);
-#endif
-#ifdef AXIS_Y
-        steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
-#endif
-#ifdef AXIS_Z
-        steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * axis[AXIS_Z]);
-#endif
+        float x = delta_inv_x[0] - axis[AXIS_X];
+        float y = delta_inv_y[0] - axis[AXIS_Y];
+        float z = delta_base_height + axis[AXIS_Z];
+        float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
+        x = delta_inv_x[1] - axis[AXIS_X];
+        y = delta_inv_y[1] - axis[AXIS_Y];
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * steps_mm);
+        x = delta_inv_x[2] - axis[AXIS_X];
+        y = delta_inv_y[2] - axis[AXIS_Y];
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
 #ifdef AXIS_A
         steps[3] = (int32_t)lroundf(g_settings.step_per_mm[3] * axis[AXIS_A]);
 #endif
@@ -47,15 +76,12 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-#ifdef AXIS_X
         axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
-#endif
-#ifdef AXIS_Y
+
         axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
-#endif
-#ifdef AXIS_Z
+
         axis[AXIS_Z] = (((float)steps[2]) / g_settings.step_per_mm[2]);
-#endif
+
 #ifdef AXIS_A
         axis[AXIS_A] = (((float)steps[3]) / g_settings.step_per_mm[3]);
 #endif
@@ -120,33 +146,10 @@ uint8_t kinematics_home(void)
 
 void kinematics_apply_transform(float *axis)
 {
-        /*
-	Define your custom transform
-    */
-#ifdef ENABLE_SKEW_COMPENSATION
-        //apply correction skew factors that compensate for machine axis alignemnt
-        axis[AXIS_X] -= axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-        axis[AXIS_X] -= axis[AXIS_Z] * (g_settings.skew_xy_factor - g_settings.skew_xz_factor * g_settings.skew_yz_factor);
-        axis[AXIS_Y] -= axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
 }
 
 void kinematics_apply_reverse_transform(float *axis)
 {
-        /*
-	Define your custom transform inverse operation
-    */
-
-        //perform unskew of the coordinates
-#ifdef ENABLE_SKEW_COMPENSATION
-        axis[AXIS_X] += axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-        axis[AXIS_X] += axis[AXIS_Z] * g_settings.skew_xz_factor;
-        axis[AXIS_Y] += axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
 }
 
 #endif
