@@ -6,7 +6,7 @@
 # Changelog
 
 ## [1.3.7] - 2022-01-19
-µCNC version 1.3.7 fixes a samll bug that prevented µCNC from sending status report with an alarm condition at startup.
+µCNC version 1.3.7 fixes a small bug that prevented µCNC from sending status report with an alarm condition at startup and a couple of bugs with DSS and 16-bit bresenham mode.
 Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
 
 ### Added
