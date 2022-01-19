@@ -43,7 +43,11 @@ extern "C"
 #endif
 //defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
+#ifndef BRESENHAM_16BIT
 #define F_STEP_MAX 30000
+#else
+#define F_STEP_MAX 40000
+#endif
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 4
@@ -3548,7 +3552,7 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define _min(a,b) (((a) < (b)) ? (a) : (b))
+#define _min(a, b) (((a) < (b)) ? (a) : (b))
 #ifndef LOG2
 #define LOG2 0.3010299956639811952f
 #endif
@@ -3559,7 +3563,7 @@ extern "C"
 #define mcu_get_analog(diopin) (                        \
 	{                                                   \
 		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
-		ADCSRA = (0xC0 | ADC_PRESC);  \
+		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
 			;                                           \
 		ADCH;                                           \

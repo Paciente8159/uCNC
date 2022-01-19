@@ -5,13 +5,14 @@
 
 # Changelog
 
-## [1.3.7] - 2022-01-18
+## [1.3.7] - 2022-01-19
 µCNC version 1.3.7 fixes a samll bug that prevented µCNC from sending status report with an alarm condition at startup.
 Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
 
 ### Added
   - parser can be extended to in a modular way to include additional gcode commands (#130)
   - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
+  - force ISR update with every new block (#131)
 
 ### Changed
   - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
@@ -20,6 +21,8 @@ Besides that the parser was modified and can now be extended in a modular way, a
 ### Fixed
   - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled (#129)
   - fixed blocked status report on startup with alarm condition
+  - fixed planner bug that modified motion control feed rate for segmented motion lines (affected only 16-bit bresenham mode) (#131)
+  - fixed compilation error with DSS disabled (#131)
 
 ## [1.3.6] - 2022-01-16
 µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
