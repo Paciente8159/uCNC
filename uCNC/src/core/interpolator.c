@@ -102,7 +102,7 @@ static uint8_t prev_dss;
 static int16_t prev_spindle;
 //pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 volatile static uint8_t itp_step_lock;
 #endif
 
@@ -704,7 +704,7 @@ uint16_t itp_get_rt_spindle(void)
 }
 #endif
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 void itp_lock_stepper(uint8_t lockmask)
 {
     itp_step_lock = lockmask;
@@ -1142,7 +1142,7 @@ void itp_step_isr(void)
         mcu_disable_global_isr(); //lock isr before clearin busy flag
         itp_busy = false;
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
         stepbits &= ~itp_step_lock;
 #endif
     }

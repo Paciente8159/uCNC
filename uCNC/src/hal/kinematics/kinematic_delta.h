@@ -24,11 +24,15 @@ extern "C"
 {
 #endif
 
+#if AXIS_COUNT != 3
+#error "Delta axis count is different from 3"
+#endif
+
 //this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
 #define STEPPER_COUNT AXIS_COUNT
 
 #ifndef STEPPER0_ANGLE
-#define STEPPER0_ANGLE 30
+#define STEPPER0_ANGLE -90
 #endif
 #ifndef STEPPER1_ANGLE
 #define STEPPER1_ANGLE (STEPPER0_ANGLE + 120)

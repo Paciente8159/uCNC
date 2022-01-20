@@ -33,8 +33,8 @@ void io_limits_isr(void)
     {
         if (limits)
         {
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-            if (cnc_get_exec_state(EXEC_RUN) & cnc_get_exec_state(EXEC_HOMING))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+            if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING))
             {
 //if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE_AXIS0
@@ -57,9 +57,24 @@ void io_limits_isr(void)
                     }
                 }
 #endif
+#if (KINEMATIC == KINEMATIC_DELTA)
+                if ((limits & LIMITS_DELTA_MASK))
+                {
+                    if (limits != LIMITS_DELTA_MASK)
+                    {
+                        itp_lock_stepper(limits);
+                        return;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+#endif
             }
 #endif
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
             itp_lock_stepper(0); //unlocks axis
 #endif
             itp_stop();

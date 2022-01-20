@@ -52,16 +52,16 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
         float x = delta_x[0] - axis[AXIS_X];
         float y = delta_y[0] - axis[AXIS_Y];
-        float z = delta_base_height + axis[AXIS_Z];
-        float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        float z = axis[AXIS_Z] - delta_base_height;
+        float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
         x = delta_x[1] - axis[AXIS_X];
         y = delta_y[1] - axis[AXIS_Y];
-        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * steps_mm);
         x = delta_x[2] - axis[AXIS_X];
         y = delta_y[2] - axis[AXIS_Y];
-        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
 }
 
@@ -127,49 +127,11 @@ uint8_t kinematics_home(void)
 {
         uint8_t result = 0;
 
-#ifdef AXIS_Z
-        result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
+        result = mc_home_axis(AXIS_Z, LIMITS_DELTA_MASK);
         if (result != 0)
         {
                 return result;
         }
-#endif
-#ifdef AXIS_X
-        result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
-        if (result != 0)
-        {
-                return result;
-        }
-#endif
-#ifdef AXIS_Y
-        result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
-        if (result != 0)
-        {
-                return result;
-        }
-#endif
-
-#ifdef AXIS_A
-        result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
-        if (result != 0)
-        {
-                return result;
-        }
-#endif
-#ifdef AXIS_B
-        result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
-        if (result != 0)
-        {
-                return result;
-        }
-#endif
-#ifdef AXIS_C
-        result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
-        if (result != 0)
-        {
-                return result;
-        }
-#endif
 
         return STATUS_OK;
 }
