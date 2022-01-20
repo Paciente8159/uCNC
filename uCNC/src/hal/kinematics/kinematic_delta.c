@@ -32,65 +32,95 @@
 
 static float delta_arm_sqr;
 static float delta_base_height;
-static float delta_inv_x[3];
-static float delta_inv_y[3];
+static float delta_x[3];
+static float delta_y[3];
 
-void kinematics_init()
+void kinematics_init(void)
 {
         float delta_triang_base = (g_settings.delta_armbase_radius - g_settings.delta_efector_radius);
         delta_arm_sqr = g_settings.delta_arm_length * g_settings.delta_arm_length;
-        delta_inv_x[0] = delta_triang_base * STEPPER0_FACTX;
-        delta_inv_x[1] = delta_triang_base * STEPPER1_FACTX;
-        delta_inv_x[2] = delta_triang_base * STEPPER2_FACTX;
-        delta_inv_y[0] = delta_triang_base * STEPPER0_FACTY;
-        delta_inv_y[1] = delta_triang_base * STEPPER1_FACTY;
-        delta_inv_y[2] = delta_triang_base * STEPPER2_FACTY;
-        delta_base_height = sqrtf(delta_arm_sqr - delta_inv_x[0] * delta_inv_x[0] - delta_inv_y[0] * delta_inv_y[0]) + g_settings.delta_efector_height;
+        delta_x[0] = delta_triang_base * STEPPER0_FACTX;
+        delta_x[1] = delta_triang_base * STEPPER1_FACTX;
+        delta_x[2] = delta_triang_base * STEPPER2_FACTX;
+        delta_y[0] = delta_triang_base * STEPPER0_FACTY;
+        delta_y[1] = delta_triang_base * STEPPER1_FACTY;
+        delta_y[2] = delta_triang_base * STEPPER2_FACTY;
+        delta_base_height = sqrtf(delta_arm_sqr - delta_x[0] * delta_x[0] - delta_y[0] * delta_y[0]);
 }
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-        float x = delta_inv_x[0] - axis[AXIS_X];
-        float y = delta_inv_y[0] - axis[AXIS_Y];
+        float x = delta_x[0] - axis[AXIS_X];
+        float y = delta_y[0] - axis[AXIS_Y];
         float z = delta_base_height + axis[AXIS_Z];
         float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
         steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
-        x = delta_inv_x[1] - axis[AXIS_X];
-        y = delta_inv_y[1] - axis[AXIS_Y];
+        x = delta_x[1] - axis[AXIS_X];
+        y = delta_y[1] - axis[AXIS_Y];
         steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
         steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * steps_mm);
-        x = delta_inv_x[2] - axis[AXIS_X];
-        y = delta_inv_y[2] - axis[AXIS_Y];
+        x = delta_x[2] - axis[AXIS_X];
+        y = delta_y[2] - axis[AXIS_Y];
         steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
         steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
-#ifdef AXIS_A
-        steps[3] = (int32_t)lroundf(g_settings.step_per_mm[3] * axis[AXIS_A]);
-#endif
-#ifdef AXIS_B
-        steps[4] = (int32_t)lroundf(g_settings.step_per_mm[4] * axis[AXIS_B]);
-#endif
-#ifdef AXIS_C
-        steps[5] = (int32_t)lroundf(g_settings.step_per_mm[5] * axis[AXIS_C]);
-#endif
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-        axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
+        //using trialteration (similar to marlin)
+        float z0 = (steps[0] / g_settings.step_per_mm[0]);
+        float z1 = (steps[1] / g_settings.step_per_mm[1]);
+        float z2 = (steps[2] / g_settings.step_per_mm[2]);
+        float p01[3] = {delta_x[1] - delta_x[0], delta_y[1] - delta_y[0], z1 - z0};
 
-        axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
+        // Get the reciprocal of Magnitude of vector.
+        float d = (p01[0] * p01[0]) + (p01[1] * p01[1]) + (p01[2] * p01[2]);
+        d /= sqrtf(d);
 
-        axis[AXIS_Z] = (((float)steps[2]) / g_settings.step_per_mm[2]);
+        // Create unit vector by multiplying by the inverse of the magnitude.
+        float ex[3] = {p01[0] * inv_d, p01[1] * inv_d, p01[2] * inv_d};
 
-#ifdef AXIS_A
-        axis[AXIS_A] = (((float)steps[3]) / g_settings.step_per_mm[3]);
-#endif
-#ifdef AXIS_B
-        axis[AXIS_B] = (((float)steps[4]) / g_settings.step_per_mm[4]);
-#endif
-#ifdef AXIS_C
-        axis[AXIS_C] = (((float)steps[5]) / g_settings.step_per_mm[5]);
-#endif
+        // Get the vector from the origin of the new system to the third point.
+        float p02[3] = {delta_x[2] - delta_x[0], delta_y[2] - delta_y[0], z2 - z0};
+
+        // Use the dot product to find the component of this vector on the X axis.
+        float i = ex[0] * p02[0] + ex[1] * p02[1] + ex[2] * p02[2];
+
+        // Create a vector along the x axis that represents the x component of p02.
+        float iex[3] = {ex[0] * i, ex[1] * i, ex[2] * i};
+
+        // Subtract the X component from the original vector leaving only Y. We use the
+        // variable that will be the unit vector after we scale it.
+        float ey[3] = {p02[0] - iex[0], p02[1] - iex[1], p02[2] - iex[2]};
+
+        // The magnitude and the inverse of the magnitude of Y component
+        float j2 = (ey[0] * ey[0]) + (ey[1] * ey[1]) + (ey[2] * ey[2]);
+        float inv_j = 1.0f / sqrtf(j2);
+
+        // Convert to a unit vector
+        ey[0] *= inv_j;
+        ey[1] *= inv_j;
+        ey[2] *= inv_j;
+
+        // The cross product of the unit x and y is the unit z
+        // float[] ez = vectorCrossProd(ex, ey);
+        float ez[3] = {
+            ex[1] * ey[2] - ex[2] * ey[1],
+            ex[2] * ey[0] - ex[0] * ey[2],
+            ex[0] * ey[1] - ex[1] * ey[0]};
+
+        // We now have the d, i and j values defined in Wikipedia.
+        // Plug them into the equations defined in Wikipedia for Xnew, Ynew and Znew
+        float Xnew = d * 0.5;
+        float Ynew = (i*i + j2) * 0.5 - i * Xnew) * inv_j;
+        float Znew = sqrtf(delta_arm_sqr - (Xnew * Xnew + Ynew * Ynew));
+
+        // Start from the origin of the old coordinates and add vectors in the
+        // old coords that represent the Xnew, Ynew and Znew to find the point
+        // in the old system.
+        axis[0] = delta_x[0] + ex[0] * Xnew + ey[0] * Ynew - ez[0] * Znew;
+        axis[1] = delta_y[0] + ex[1] * Xnew + ey[1] * Ynew - ez[1] * Znew;
+        axis[2] = z0 + ex[2] * Xnew + ey[2] * Ynew - ez[2] * Znew;
 }
 
 uint8_t kinematics_home(void)

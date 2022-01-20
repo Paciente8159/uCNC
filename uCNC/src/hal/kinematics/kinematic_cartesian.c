@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <math.h>
 
+void kinematics_init(void)
+{
+}
+
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
 #ifdef AXIS_X

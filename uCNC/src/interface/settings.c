@@ -311,6 +311,12 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
         *(__ptr++) = value;
     }
 
+    kinematics_init();
+
+#if PID_CONTROLLERS > 0
+    pid_init();
+#endif
+
 //fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #ifdef DUAL_DRIVE_AXIS0
@@ -549,6 +555,8 @@ uint8_t settings_change(uint8_t setting, float value)
 #ifndef ENABLE_SETTING_EXTRA_CMDS
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
+
+    kinematics_init();
 
 #if PID_CONTROLLERS > 0
     pid_init();
