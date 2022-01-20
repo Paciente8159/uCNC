@@ -37,7 +37,7 @@ static float delta_y[3];
 
 void kinematics_init(void)
 {
-        float delta_triang_base = (g_settings.delta_armbase_radius - g_settings.delta_efector_radius);
+        float delta_triang_base = (g_settings.delta_armbase_radius /* - g_settings.delta_efector_radius*/);
         delta_arm_sqr = g_settings.delta_arm_length * g_settings.delta_arm_length;
         delta_x[0] = delta_triang_base * STEPPER0_FACTX;
         delta_x[1] = delta_triang_base * STEPPER1_FACTX;
@@ -74,8 +74,8 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
         float p01[3] = {delta_x[1] - delta_x[0], delta_y[1] - delta_y[0], z1 - z0};
 
         // Get the reciprocal of Magnitude of vector.
-        float d = (p01[0] * p01[0]) + (p01[1] * p01[1]) + (p01[2] * p01[2]);
-        d /= sqrtf(d);
+        float d2 = (p01[0] * p01[0]) + (p01[1] * p01[1]) + (p01[2] * p01[2]);
+        float inv_d = 1.0f / sqrtf(d2);
 
         // Create unit vector by multiplying by the inverse of the magnitude.
         float ex[3] = {p01[0] * inv_d, p01[1] * inv_d, p01[2] * inv_d};
@@ -111,8 +111,8 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
         // We now have the d, i and j values defined in Wikipedia.
         // Plug them into the equations defined in Wikipedia for Xnew, Ynew and Znew
-        float Xnew = d * 0.5;
-        float Ynew = (i*i + j2) * 0.5 - i * Xnew) * inv_j;
+        float Xnew = d2 * inv_d * 0.5;
+        float Ynew = ((i * i + j2) * 0.5 - i * Xnew) * inv_j;
         float Znew = sqrtf(delta_arm_sqr - (Xnew * Xnew + Ynew * Ynew));
 
         // Start from the origin of the old coordinates and add vectors in the
@@ -120,7 +120,7 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
         // in the old system.
         axis[0] = delta_x[0] + ex[0] * Xnew + ey[0] * Ynew - ez[0] * Znew;
         axis[1] = delta_y[0] + ex[1] * Xnew + ey[1] * Ynew - ez[1] * Znew;
-        axis[2] = z0 + ex[2] * Xnew + ey[2] * Ynew - ez[2] * Znew;
+        axis[2] = z0 + ex[2] * Xnew + ey[2] * Ynew - ez[2] * Znew + delta_base_height;
 }
 
 uint8_t kinematics_home(void)

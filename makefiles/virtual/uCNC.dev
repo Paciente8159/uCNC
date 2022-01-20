@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0100000001000000
-UnitCount=53
+UnitCount=55
 
 [VersionInfo]
 Major=1
@@ -561,7 +561,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit53]
-FileName=..\..\uCNC\src\core\parserextensions\m42.c
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -581,7 +581,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit54]
-FileName=..\..\uCNC\src\core\utils.h
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -591,7 +591,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit55]
-FileName=virtualsocket.c
+FileName=..\..\uCNC\src\modules_init.c
 CompileCpp=0
 Folder=
 Compile=1

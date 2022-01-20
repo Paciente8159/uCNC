@@ -63,7 +63,6 @@ extern "C"
                 float max_distance[AXIS_COUNT];
 #if (KINEMATIC == KINEMATIC_DELTA)
                 float delta_arm_length;
-                float delta_efector_radius;
                 float delta_armbase_radius;
                 float delta_efector_height;
 #endif

@@ -28,13 +28,13 @@ extern "C"
 #define STEPPER_COUNT AXIS_COUNT
 
 #ifndef STEPPER0_ANGLE
-#define STEPPER0_ANGLE -30
+#define STEPPER0_ANGLE 30
 #endif
 #ifndef STEPPER1_ANGLE
-#define STEPPER1_ANGLE STEPPER0_ANGLE + 120
+#define STEPPER1_ANGLE (STEPPER0_ANGLE + 120)
 #endif
 #ifndef STEPPER2_ANGLE
-#define STEPPER2_ANGLE STEPPER0_ANGLE - 120
+#define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
 #endif
 	/*
 	Enable Skew compensation

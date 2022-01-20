@@ -53,6 +53,13 @@ extern "C"
 #define CLAMP(a, b, c) (MAX(b, MIN(a, c)))
 #endif
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932385f
+#endif
+#ifndef M_COS_TAYLOR_1
+#define M_COS_TAYLOR_1 0.1666666666666666667f
+#endif
+
 #if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
 #define __UINT32_R0__ 0
 #define __UINT32_R1__ 1

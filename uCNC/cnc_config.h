@@ -186,7 +186,7 @@ extern "C"
 	 * The DSS algorithm allows to spread stepps by over sampling bresenham line algorithm at lower frequencies and reduce vibrations of the stepper motors
 	 * Value should range from 0 to 3. With a value o 0 the DSS will be disabled.
 	 */
-#define DSS_MAX_OVERSAMPLING 3
+#define DSS_MAX_OVERSAMPLING 0
 #define DSS_CUTOFF_FREQ 500
 
 	/**
@@ -194,7 +194,7 @@ extern "C"
 	 * This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments. 	 * 
 	 */
 
-// #define BRESENHAM_16BIT
+#define BRESENHAM_16BIT
 
 /**
 	 * Forces pin pooling for all limits and control pins (with or without interrupts)
@@ -208,9 +208,9 @@ extern "C"
 /*
 	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
 */
-// #define DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_LIMITS
-// #define DISABLE_PROBE
+#define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_LIMITS
+#define DISABLE_PROBE
 
 /**
 	 * Modifies the startup message to emulate Grbl (required by some programs so that uCNC is recognized a Grbl protocol controller device)
