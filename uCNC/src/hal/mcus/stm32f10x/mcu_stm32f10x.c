@@ -64,7 +64,7 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)((F_CPU >> 1) / 1000000UL) - 1;                                            \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
@@ -822,7 +822,7 @@ void mcu_usart_init(void)
 	RCC->COM_APB |= (COM_APBEN);
 	RCC->APB2ENR |= __indirect__(TX, APB2EN);
 	__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
-	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(TX, CROFF)) << 2));
+	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_OD_50MHZ << ((__indirect__(TX, CROFF)) << 2));
 	RCC->APB2ENR |= __indirect__(RX, APB2EN);
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
 	__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
@@ -832,7 +832,7 @@ void mcu_usart_init(void)
 	COM_USART->CR3 = 0;
 	COM_USART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 4) / ((float)BAUDRATE));
+	float baudrate = ((float)(F_CPU >> 5) / ((float)BAUDRATE));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -945,7 +945,7 @@ char mcu_getc(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	//up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 1) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -1004,7 +1004,7 @@ uint32_t mcu_millis()
 void mcu_tick_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = (((F_CPU >> 3) / 1000) - 1);
+	SysTick->LOAD = (((F_CPU >> 2) / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = 3; //Start SysTick (ABH clock/8)

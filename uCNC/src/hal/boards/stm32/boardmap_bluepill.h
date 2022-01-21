@@ -24,8 +24,8 @@ extern "C"
 {
 #endif
 
-#ifndef STM32F103x6
-#define STM32F103x6
+#ifndef STM32F103xB
+#define STM32F103xB
 #endif
 
 #ifndef STM32F10X_MD

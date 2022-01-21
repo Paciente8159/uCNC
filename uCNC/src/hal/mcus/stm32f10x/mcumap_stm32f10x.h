@@ -3311,6 +3311,7 @@ extern "C"
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U
 #define GPIO_OUTALT_PP_50MHZ 0xbU
+#define GPIO_OUTALT_OD_50MHZ 0xfU
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PUP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits
