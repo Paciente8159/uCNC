@@ -45,7 +45,7 @@ extern "C"
 #define COM_PORT 3
 
 //Setup step pins
-#define STEP0_BIT 4	 //assigns STEP0 pin
+#define STEP0_BIT 3	 //assigns STEP0 pin
 #define STEP0_PORT E //assigns STEP0 port
 #define STEP1_BIT 0	 //assigns STEP1 pin
 #define STEP1_PORT E //assigns STEP1 port
