@@ -39,6 +39,7 @@ extern "C"
 // #define ENABLE_SYNC_RX
 
 //uncomment to enable USB VCP instead of serial hardware (for MCU's with Hardware USB)
+//#define NO_USB_VCP
 #if !defined(USB_VCP) && !defined(NO_USB_VCP)
 #define USB_VCP
 #endif
