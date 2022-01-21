@@ -580,6 +580,7 @@ void settings_erase(uint16_t address, uint8_t size)
 
     //erase crc byte that is next to data
     mcu_eeprom_putc(address, EOL);
+    mcu_eeprom_flush();
 }
 
 bool settings_check_startup_gcode(uint16_t address)

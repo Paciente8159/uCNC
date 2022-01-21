@@ -28,8 +28,8 @@ extern "C"
 #define STM32F103xB
 #endif
 
-#ifndef STM32F10X_MD
-#define STM32F10X_MD
+#ifndef FLASH_SIZE
+#define FLASH_SIZE 0x10000
 #endif
 
 #ifndef F_CPU
