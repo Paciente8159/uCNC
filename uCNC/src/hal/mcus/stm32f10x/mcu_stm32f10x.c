@@ -64,7 +64,7 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)((F_CPU >> 1) / 1000000UL) - 1;                                            \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
@@ -278,8 +278,51 @@ void osSystickHandler(void)
 static void mcu_tick_init(void);
 static void mcu_usart_init(void);
 
+void mcu_setup_clocks()
+{
+	/* Reset the RCC clock configuration to the default reset state */
+	/* Set HSION bit */
+	RCC->CR |= (uint32_t)0x00000001;
+	/* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
+	RCC->CFGR &= (uint32_t)0xF8FF0000;
+	/* Reset HSEON, CSSON and PLLON bits */
+	RCC->CR &= (uint32_t)0xFEF6FFFF;
+	/* Reset HSEBYP bit */
+	RCC->CR &= (uint32_t)0xFFFBFFFF;
+	/* Disable all interrupts and clear pending bits */
+	RCC->CIR = 0x009F0000;
+	/* Enable HSE */
+	RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+	/* Wait till HSE is ready */
+	while (!(RCC->CR & RCC_CR_HSERDY))
+		;
+	/* Configure the Flash Latency cycles and enable prefetch buffer */
+	FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY_2;
+	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
+	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
+ * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
+ */
+	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
+						   RCC_CFGR_PPRE2_DIV2 |
+						   RCC_CFGR_PPRE1_DIV2 |
+						   RCC_CFGR_PLLSRC |
+						   RCC_CFGR_PLLMULL9);
+	/* Enable PLL */
+	RCC->CR |= RCC_CR_PLLON;
+	/* Wait till PLL is ready */
+	while (!(RCC->CR & RCC_CR_PLLRDY))
+		;
+	/* Select PLL as system clock source */
+	RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;
+	/* Wait till PLL is used as system clock source */
+	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
+		;
+}
+
 void mcu_init(void)
 {
+	//make sure both APB1 and APB2 are running at the same clock (36MHz)
+	mcu_setup_clocks();
 	stm32_global_isr_enabled = false;
 #if STEP0 >= 0
 	mcu_config_output(STEP0);
@@ -945,7 +988,7 @@ char mcu_getc(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	//up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 1) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -1004,7 +1047,7 @@ uint32_t mcu_millis()
 void mcu_tick_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = (((F_CPU >> 2) / 1000) - 1);
+	SysTick->LOAD = (((F_CPU >> 3) / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = 3; //Start SysTick (ABH clock/8)
