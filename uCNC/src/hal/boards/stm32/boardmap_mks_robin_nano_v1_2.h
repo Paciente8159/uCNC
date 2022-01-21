@@ -36,6 +36,11 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 
+#define NO_USB_VCP
+#ifdef USB_VCP
+#undef USB_VCP
+#endif
+
 //Setup COM pins
 #define COM_PORT 3
 
@@ -107,11 +112,6 @@ extern "C"
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
-#else
-#define USB_DM_BIT 11
-#define USB_DM_PORT A
-#define USB_DP_BIT 12
-#define USB_DP_PORT A
 #endif
 
 //Setup PWM

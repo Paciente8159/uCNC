@@ -66,7 +66,7 @@ extern "C"
 #include "stm32/boardmap_bluepill.h"
 #endif
 
-#if (BOARD == BOARDMAP_MKS_ROBIN_NANO_V12)
+#if (BOARD == BOARD_MKS_ROBIN_NANO_V12)
 #define MCU MCU_STM32F10X
 #include "stm32/boardmap_mks_robin_nano_v1_2.h"
 #endif
