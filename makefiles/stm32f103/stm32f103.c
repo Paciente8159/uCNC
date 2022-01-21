@@ -2,6 +2,7 @@
 typedef void (*const intfunc)(void);
 
 #define WEAK __attribute__((weak))
+extern unsigned long _svtor;
 extern unsigned long _etext;
 extern unsigned long _sidata;
 extern unsigned long _sdata;
@@ -86,7 +87,8 @@ void Reset_Handler(void)
 {
     /* Initialize data and bss */
     __Init_Data();
-    SCB->VTOR = 0x08000000;
+    unsigned long *pSrc = (unsigned long *)&_svtor;
+    SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
     //mcu_init does this
     // SystemInit();
     while (1)

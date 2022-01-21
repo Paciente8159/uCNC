@@ -28,6 +28,20 @@
 #include "../../../tinyusb/src/tusb.h"
 #endif
 
+#if (FLASH_BANK1_END <= 0x0801FFFFUL)
+#define FLASH_EEPROM (FLASH_BANK1_END - (0x400 - 1))
+#define FLASH_PAGE_MASK 0xFC00
+#define FLASH_PAGE_OFFSET_MASK 0x03FF
+#else
+#define FLASH_EEPROM (FLASH_BANK1_END - (0x800 - 1))
+#define FLASH_PAGE_MASK 0xF800
+#define FLASH_PAGE_OFFSET_MASK 0x07FF
+#endif
+
+static uint8_t stm32_flash_page[0x400];
+static uint16_t stm32_flash_current_page;
+static bool stm32_flash_modified;
+
 /**
 	 * The internal clock counter
 	 * Increments every millisecond
@@ -323,6 +337,7 @@ void mcu_init(void)
 {
 	//make sure both APB1 and APB2 are running at the same clock (36MHz)
 	mcu_setup_clocks();
+	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 #if STEP0 >= 0
 	mcu_config_output(STEP0);
@@ -1068,22 +1083,19 @@ void mcu_dotasks()
 #endif
 }
 
-static uint8_t stm32_flash_page[0x400];
-static uint16_t stm32_flash_current_page;
-static bool stm32_flash_modified;
 //checks if the current page is loaded to ram
 //if not loads it
 static uint16_t mcu_access_flash_page(uint16_t address)
 {
-	uint16_t address_page = address & 0xfc00;
-	uint16_t address_offset = address & 0x03ff;
+	uint16_t address_page = address & FLASH_PAGE_MASK;
+	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
 	if (stm32_flash_current_page != address_page)
 	{
 		stm32_flash_modified = false;
 		stm32_flash_current_page = address_page;
 		uint8_t counter = 255;
 		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
-		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_BASE + address_page));
+		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
 		while (counter--)
 		{
 			*ptr = *eeprom;
@@ -1114,7 +1126,7 @@ static void mcu_eeprom_erase(uint16_t address)
 	}
 	FLASH->CR = 0;			   // Ensure PG bit is low
 	FLASH->CR |= FLASH_CR_PER; // set the PER bit
-	FLASH->AR = (FLASH_BASE + address);
+	FLASH->AR = (FLASH_EEPROM + address);
 	FLASH->CR |= FLASH_CR_STRT; // set the start bit
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
@@ -1138,7 +1150,7 @@ void mcu_eeprom_flush()
 	if (stm32_flash_modified)
 	{
 		mcu_eeprom_erase(stm32_flash_current_page);
-		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_BASE + stm32_flash_current_page));
+		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
 		uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
 		uint16_t counter = 512;
 		while (counter--)
