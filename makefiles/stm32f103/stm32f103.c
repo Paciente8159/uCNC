@@ -66,7 +66,7 @@ void SystemInit(void)
  * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
  */
     RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-                           RCC_CFGR_PPRE2_DIV1 |
+                           RCC_CFGR_PPRE2_DIV2 |
                            RCC_CFGR_PPRE1_DIV2 |
                            RCC_CFGR_PLLSRC_HSE |
                            RCC_CFGR_PLLMULL9);
