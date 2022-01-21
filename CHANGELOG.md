@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Changed
+  - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
+
 ### Fixed
   - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
   - added clock configuration to mcu_init to set correct working speed (72MHz) when compiling via Arduino IDE. (#132)
