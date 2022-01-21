@@ -128,27 +128,7 @@ extern "C"
 #define PWM2_CHANNEL 4
 #define PWM2_TIMER 3
 
-//Setup generic IO Pins
-//Functionalities are set in cnc_hal_config.h file
-
 //spindle dir
-#define DOUT0_BIT 0
-#define DOUT0_PORT B
-
-//coolant and mist
-#define DOUT1_BIT 4
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
-#define DOUT2_PORT B
-
-//stepper enable
-#define DOUT3_BIT 15
-#define DOUT3_PORT A
-
-//led pin
-#define DOUT15_BIT 13
-#define DOUT15_PORT C
-
 //analog input
 #define ANALOG0_BIT 0
 #define ANALOG0_PORT C
