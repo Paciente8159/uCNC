@@ -51,7 +51,7 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 //if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
 #define ENABLE_SYNC_RX
@@ -948,7 +948,7 @@ extern "C"
 #define _sercompad(X, Y) (sercompad##X##_##Y)
 #define sercompad(X, Y) (_sercompad(X, Y))
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 #ifdef USB_DM
 #define USB_DM_PMUX (pinmux(USB_DM_PORT, USB_DM_BIT))
 #define USB_DM_PMUXVAL (pinmuxval(USB_DM_MUX))
@@ -2390,15 +2390,13 @@ extern "C"
 	})
 #define mcu_get_global_isr() ({ samd21_global_isr_enabled; })
 
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM->USART.INTFLAG.bit.DRE)
-#else
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 #define CFG_TUSB_MCU OPT_MCU_SAMD21
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
-#endif
 #endif
 
 #ifdef __cplusplus

@@ -3435,6 +3435,7 @@ extern "C"
 #endif
 
 //COM registers
+#if (INTERFACE == INTERFACE_USART)
 #ifndef COM_NUMBER
 #define COM_RX_vect USART_RX_vect
 #define COM_TX_vect USART_UDRE_vect
@@ -3456,6 +3457,7 @@ extern "C"
 #define RXCIE __rxciereg__(COM_NUMBER)
 #define UDRE __udrereg__(COM_NUMBER)
 #define RXC __rxcreg__(COM_NUMBER)
+#endif
 
 //Timer registers
 #ifndef ITP_TIMER

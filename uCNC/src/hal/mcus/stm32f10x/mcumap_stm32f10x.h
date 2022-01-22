@@ -51,7 +51,7 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 //if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
 #define ENABLE_SYNC_RX
@@ -3147,7 +3147,7 @@ extern "C"
 #endif
 
 //COM registers
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 //this MCU does not work well with both TX and RX interrupt
 //this forces the sync TX method to fix communication
 #define ENABLE_SYNC_TX
@@ -3176,10 +3176,6 @@ extern "C"
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
-#endif
-#elif (defined(USB_DP_PORT) && defined(USB_DP_BIT))
-#ifndef USB_VCP
-#define USB_VCP
 #endif
 #endif
 
@@ -3293,14 +3289,12 @@ extern "C"
 // #define mcu_enable_tx_isr()
 // #define mcu_disable_tx_isr()
 // #endif
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 #define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
-#else
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
-#endif
 #endif
 
 #define GPIO_RESET 0xfU

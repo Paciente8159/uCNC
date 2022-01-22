@@ -23,7 +23,7 @@
 #include "core_cm3.h"
 #include "mcumap_stm32f10x.h"
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -133,7 +133,7 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions 
  **/
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 void mcu_serial_isr(void)
 {
 	mcu_disable_global_isr();
@@ -882,7 +882,7 @@ static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
 
 void mcu_usart_init(void)
 {
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 	/*enables RCC clocks and GPIO*/
 	RCC->APB2ENR |= (RCC_APB2ENR_AFIOEN);
 	RCC->COM_APB |= (COM_APBEN);
@@ -921,7 +921,7 @@ void mcu_usart_init(void)
 	//this null char is needed to set TXE bit by the harware
 	COM_OUTREG = 0;
 #endif
-#else
+#elif (INTERFACE == INTERFACE_USB)
 	//configure USB as Virtual COM port
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
@@ -948,7 +948,7 @@ void mcu_putc(char c)
 #ifdef LED
 	mcu_toggle_output(LED);
 #endif
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 
 	if (c != 0)
 	{
@@ -961,8 +961,7 @@ void mcu_putc(char c)
 #ifndef ENABLE_SYNC_TX
 	COM_USART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#endif
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -979,14 +978,13 @@ char mcu_getc(void)
 #ifdef LED
 	mcu_toggle_output(LED);
 #endif
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_RX
 	while (!(COM_USART->SR & USART_SR_RXNE))
 		;
 #endif
 	return COM_INREG;
-#endif
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 	while (!tud_cdc_available())
 	{
 		tud_task();
@@ -1078,7 +1076,7 @@ void mcu_tick_init()
 
 void mcu_dotasks()
 {
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
 #endif
