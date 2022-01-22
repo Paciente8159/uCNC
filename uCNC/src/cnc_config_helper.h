@@ -842,6 +842,10 @@ extern "C"
 #define DIO101 -1
 #endif
 
+#if (INTERFACE < 0 || INTERFACE > 1)
+#error "undefined COM interface"
+#endif
+
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
 #endif

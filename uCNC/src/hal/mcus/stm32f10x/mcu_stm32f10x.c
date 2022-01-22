@@ -23,7 +23,7 @@
 #include "core_cm3.h"
 #include "mcumap_stm32f10x.h"
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -67,6 +67,29 @@ volatile bool stm32_global_isr_enabled;
 
 #define mcu_config_input(diopin)                                                                                        \
 	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_output_af(diopin, mode)                                                                            \
+	{                                                                                                                 \
+		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                           \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (mode << (__indirect__(diopin, CROFF) << 2U));        \
+	}
+
+#define mcu_config_input(diopin)                                                                                        \
+	{                                                                                                                   \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_input_af(diopin)                                                                                     \
+	{                                                                                                                   \
+		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                             \
 		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
@@ -133,7 +156,7 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions 
  **/
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 void mcu_serial_isr(void)
 {
 	mcu_disable_global_isr();
@@ -146,7 +169,7 @@ void mcu_serial_isr(void)
 #endif
 
 #ifndef ENABLE_SYNC_TX
-	if (COM_USART->SR & (USART_SR_TXE | USART_SR_TC))
+	if ((COM_USART->SR & USART_SR_TXE) && (COM_USART->CR1 & USART_CR1_TXEIE))
 	{
 		COM_USART->CR1 &= ~(USART_CR1_TXEIE);
 		serial_tx_isr();
@@ -154,7 +177,7 @@ void mcu_serial_isr(void)
 #endif
 	mcu_enable_global_isr();
 }
-#elif defined(USB_VCP)
+#elif (INTERFACE == INTERFACE_USB)
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -882,16 +905,14 @@ static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
 
 void mcu_usart_init(void)
 {
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 	/*enables RCC clocks and GPIO*/
-	RCC->APB2ENR |= (RCC_APB2ENR_AFIOEN);
+	mcu_config_output_af(TX, GPIO_OUTALT_PP_50MHZ);
+	mcu_config_input_af(RX);
+#ifdef COM_REMAP
+	__indirect__(diopin, GPIO)->__indirect__(diopin, MAPR) |= COM_REMAP;
+#endif
 	RCC->COM_APB |= (COM_APBEN);
-	RCC->APB2ENR |= __indirect__(TX, APB2EN);
-	__indirect__(TX, GPIO)->__indirect__(TX, CR) &= ~(GPIO_RESET << ((__indirect__(TX, CROFF)) << 2));
-	__indirect__(TX, GPIO)->__indirect__(TX, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(TX, CROFF)) << 2));
-	RCC->APB2ENR |= __indirect__(RX, APB2EN);
-	__indirect__(RX, GPIO)->__indirect__(RX, CR) &= ~(GPIO_RESET << ((__indirect__(RX, CROFF)) << 2));
-	__indirect__(RX, GPIO)->__indirect__(RX, CR) |= (GPIO_IN_FLOAT << ((__indirect__(RX, CROFF)) << 2));
 	/*setup UART*/
 	COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
 	COM_USART->CR2 = 0; //1 stop bit STOP=00
@@ -904,24 +925,16 @@ void mcu_usart_init(void)
 	brr <<= 4;
 	brr += (uint16_t)roundf(16.0f * baudrate);
 	COM_USART->BRR = brr;
-#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
+#ifndef ENABLE_SYNC_RX
+	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+#endif
+#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 	NVIC_SetPriority(COM_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE); // enable TE, RE
-#ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE); // enable TXEIE
-#endif
-#ifndef ENABLE_SYNC_RX
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-#endif
-	COM_USART->CR1 |= USART_CR1_UE; //Enable UART
-#ifdef ENABLE_SYNC_TX
-	//this null char is needed to set TXE bit by the harware
-	COM_OUTREG = 0;
-#endif
-#else
+	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#elif (INTERFACE == INTERFACE_USB)
 	//configure USB as Virtual COM port
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
@@ -948,21 +961,16 @@ void mcu_putc(char c)
 #ifdef LED
 	mcu_toggle_output(LED);
 #endif
-#ifdef COM_PORT
-
-	if (c != 0)
-	{
+#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_TX
-		while (!(COM_USART->SR & USART_SR_TXE))
-			;
+	while (!(COM_USART->SR & USART_SR_TC))
+		;
 #endif
-		COM_OUTREG = c;
-	}
+	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_USART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#endif
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -979,14 +987,13 @@ char mcu_getc(void)
 #ifdef LED
 	mcu_toggle_output(LED);
 #endif
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_RX
 	while (!(COM_USART->SR & USART_SR_RXNE))
 		;
 #endif
 	return COM_INREG;
-#endif
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 	while (!tud_cdc_available())
 	{
 		tud_task();
@@ -1078,7 +1085,7 @@ void mcu_tick_init()
 
 void mcu_dotasks()
 {
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
 #endif

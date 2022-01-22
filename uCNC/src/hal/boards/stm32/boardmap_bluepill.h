@@ -36,12 +36,6 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 
-//Setup COM pins (must match selected COM port)
-//Comment these to use USB virtual port
-#ifndef USB_VCP
-#define COM_PORT 1
-#endif
-
 //Setup step pins
 #define STEP0_BIT 0	 //assigns STEP0 pin
 #define STEP0_PORT A //assigns STEP0 port
@@ -109,12 +103,13 @@ extern "C"
 #define SAFETY_DOOR_ISR
 
 //On the STM32 always use sync TX UART (async doesn't work well)
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
+#define COM_PORT 1
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
-#else
+#elif (INTERFACE == INTERFACE_USB)
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12

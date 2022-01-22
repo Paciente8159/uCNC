@@ -51,7 +51,7 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 //if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
 #define ENABLE_SYNC_RX
@@ -3147,10 +3147,10 @@ extern "C"
 #endif
 
 //COM registers
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 //this MCU does not work well with both TX and RX interrupt
 //this forces the sync TX method to fix communication
-#define ENABLE_SYNC_TX
+// #define ENABLE_SYNC_TX
 #if (COM_PORT < 4)
 #define COM_USART __usart__(COM_PORT)
 #define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
@@ -3169,7 +3169,7 @@ extern "C"
 #else
 #define COM_USART __uart__(COM_PORT)
 #define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) & !defined(ENABLE_SYNC_RX))
+#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define mcu_serial_isr __helper__(UART, COM_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
@@ -3177,9 +3177,33 @@ extern "C"
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
 #endif
-#elif (defined(USB_DP_PORT) && defined(USB_DP_BIT))
-#ifndef USB_VCP
-#define USB_VCP
+
+//remmaping and pin checking
+// USART	TX	RX	APB	APB2ENR	REMAP
+// 1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
+// 1	B6	B7	APB2ENR	RCC_APB2ENR_USART1EN	1
+// 2	A2	A3	APB1ENR	RCC_APB1ENR_USART2EN	0
+// 2	D5	D6	APB1ENR	RCC_APB1ENR_USART2EN	1
+// 3	B10	B11	APB1ENR	RCC_APB1ENR_USART3EN	0
+// 3	C10	C11	APB1ENR	RCC_APB1ENR_USART3EN	1
+// 3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
+// 4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
+// 5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
+#if ((COM_PORT == 1) && (TX_BIT == 9) && (RX_BIT == 10) && (TX_PORT == A) && (RX_PORT == A))
+#elif ((COM_PORT == 1) && (TX_BIT == 6) && (RX_BIT == 7) && (TX_PORT == B) && (RX_PORT == B))
+#define COM_REMAP AFIO_MAPR_USART1_REMAP
+#elif ((COM_PORT == 2) && (TX_BIT == 2) && (RX_BIT == 3) && (TX_PORT == A) && (RX_PORT == A))
+#elif ((COM_PORT == 2) && (TX_BIT == 5) && (RX_BIT == 6) && (TX_PORT == D) && (RX_PORT == D))
+#define COM_REMAP AFIO_MAPR_USART2_REMAP
+#elif ((COM_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == B) && (RX_PORT == B))
+#elif ((COM_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#define COM_REMAP AFIO_MAPR_USART3_REMAP_PARTIALREMAP
+#elif ((COM_PORT == 3) && (TX_BIT == 8) && (RX_BIT == 9) && (TX_PORT == D) && (RX_PORT == D))
+#define COM_REMAP AFIO_MAPR_USART3_REMAP_FULLREMAP
+#elif ((COM_PORT == 4) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#elif ((COM_PORT == 5) && (TX_BIT == 12) && (RX_BIT == 2) && (TX_PORT == C) && (RX_PORT == D))
+#else
+#error "USART/UART pin configuration not supported"
 #endif
 #endif
 
@@ -3293,19 +3317,18 @@ extern "C"
 // #define mcu_enable_tx_isr()
 // #define mcu_disable_tx_isr()
 // #endif
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 #define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
-#else
-#ifdef USB_VCP
+#elif (INTERFACE == INTERFACE_USB)
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
-#endif
 #endif
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U
 #define GPIO_OUTALT_PP_50MHZ 0xbU
+#define GPIO_OUTALT_OD_50MHZ 0xfU
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PUP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits

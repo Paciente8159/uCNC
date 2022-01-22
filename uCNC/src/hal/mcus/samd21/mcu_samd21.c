@@ -37,7 +37,7 @@
 #define NVM_EEPROM_BASE (FLASH_ADDR + NVMCTRL_FLASH_SIZE - (NVM_EEPROM_ROWS * NVMCTRL_ROW_SIZE))
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -206,7 +206,7 @@ void mcu_timer_isr(void)
         mcu_enable_global_isr();
 }
 
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
 void mcu_com_isr()
 {
         mcu_disable_global_isr();
@@ -231,7 +231,7 @@ void mcu_com_isr()
 
 void mcu_usart_init(void)
 {
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
         PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
         /* Setup GCLK SERCOMx to use GENCLK0 */
@@ -269,6 +269,9 @@ void mcu_usart_init(void)
         COM->USART.INTENSET.bit.RXC = 1; //enable recieved interrupt
         COM->USART.INTENSET.bit.ERROR = 1;
 #endif
+#ifndef ENABLE_SYNC_TX
+        COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+#endif
         NVIC_ClearPendingIRQ(COM_IRQ);
         NVIC_EnableIRQ(COM_IRQ);
         NVIC_SetPriority(COM_IRQ, 0);
@@ -279,7 +282,7 @@ void mcu_usart_init(void)
                 ;
 
 #endif
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
         PM->AHBMASK.reg |= PM_AHBMASK_USB;
 
         mcu_config_input(USB_DM);
@@ -306,7 +309,7 @@ void mcu_usart_init(void)
 #endif
 }
 
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
 void USB_Handler(void)
 {
         mcu_disable_global_isr();
@@ -928,7 +931,7 @@ void mcu_putc(char c)
 #ifdef LED
         mcu_toggle_output(LED);
 #endif
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
         if (c != 0)
         {
                 tud_cdc_write_char(c);
@@ -938,15 +941,12 @@ void mcu_putc(char c)
                 tud_cdc_write_flush();
         }
 #else
-#ifdef COM
-        if (c != 0)
-        {
+#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_TX
-                while (!mcu_tx_ready())
-                        ;
+        while (!mcu_tx_ready())
+                ;
 #endif
-                COM_OUTREG = c;
-        }
+        COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
         COM->USART.INTENSET.bit.DRE = 1; //enable recieved interrupt
 #endif
@@ -965,7 +965,7 @@ char mcu_getc(void)
 #ifdef LED
         mcu_toggle_output(LED);
 #endif
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
         while (!tud_cdc_available())
         {
                 tud_task();
@@ -973,7 +973,7 @@ char mcu_getc(void)
 
         return (unsigned char)tud_cdc_read_char();
 #else
-#ifdef COM
+#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_RX
         while (!mcu_rx_ready())
                 ;
@@ -1170,7 +1170,7 @@ uint32_t mcu_millis()
 	 * */
 void mcu_dotasks(void)
 {
-#ifdef USB_VCP
+#if (INTERFACE == INTERFACE_USB)
         tud_cdc_write_flush();
         tud_task(); // tinyusb device task
 #endif

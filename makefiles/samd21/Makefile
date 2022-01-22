@@ -88,6 +88,9 @@ BOARD ?= MZERO
 
 # float-abi
 
+#interface 0-USART 1-USB
+
+INTERFACE ?= 1
 
 # mcu
 MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
@@ -102,12 +105,8 @@ BUILD_OPTIONS ?=
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSAMD21 \
 -D__SAMD21E18A__ \
--DBOARD=BOARD_$(BOARD)
-
-# ifdef USE_USB
-# C_DEFS += -DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
-# -DUSB_VCP
-# endif
+-DBOARD=BOARD_$(BOARD) \
+-DINTERFACE=$(INTERFACE)
 
 # AS includes
 AS_INCLUDES = 
