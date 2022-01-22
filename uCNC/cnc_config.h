@@ -37,7 +37,7 @@ extern "C"
 #endif
 
 #ifndef INTERFACE
-#define INTERFACE INTERFACE_USB
+#define INTERFACE INTERFACE_USART
 #endif
 //uncomment to force enable synchronized TX/RX (used in USB VCP)
 //enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven (sync RX may cause problems with hardware USART)
@@ -49,7 +49,7 @@ extern "C"
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_BLUEPILL
+#define BOARD BOARD_UNO
 #endif
 
 /*
