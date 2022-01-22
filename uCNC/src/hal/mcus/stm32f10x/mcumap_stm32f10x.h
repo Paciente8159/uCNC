@@ -3169,7 +3169,7 @@ extern "C"
 #else
 #define COM_USART __uart__(COM_PORT)
 #define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) & !defined(ENABLE_SYNC_RX))
+#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define mcu_serial_isr __helper__(UART, COM_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
@@ -3300,6 +3300,7 @@ extern "C"
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U
 #define GPIO_OUTALT_PP_50MHZ 0xbU
+#define GPIO_OUTALT_OD_50MHZ 0xfU
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PUP 0x8U
 #define GPIO_IN_ANALOG 0 //not needed after reseting bits

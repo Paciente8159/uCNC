@@ -269,6 +269,9 @@ void mcu_usart_init(void)
         COM->USART.INTENSET.bit.RXC = 1; //enable recieved interrupt
         COM->USART.INTENSET.bit.ERROR = 1;
 #endif
+#ifndef ENABLE_SYNC_TX
+        COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+#endif
         NVIC_ClearPendingIRQ(COM_IRQ);
         NVIC_EnableIRQ(COM_IRQ);
         NVIC_SetPriority(COM_IRQ, 0);
@@ -939,14 +942,11 @@ void mcu_putc(char c)
         }
 #else
 #if (INTERFACE == INTERFACE_USART)
-        if (c != 0)
-        {
 #ifdef ENABLE_SYNC_TX
-                while (!mcu_tx_ready())
-                        ;
+        while (!mcu_tx_ready())
+                ;
 #endif
-                COM_OUTREG = c;
-        }
+        COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
         COM->USART.INTENSET.bit.DRE = 1; //enable recieved interrupt
 #endif

@@ -949,15 +949,11 @@ void mcu_putc(char c)
 	mcu_toggle_output(LED);
 #endif
 #if (INTERFACE == INTERFACE_USART)
-
-	if (c != 0)
-	{
 #ifdef ENABLE_SYNC_TX
-		while (!(COM_USART->SR & USART_SR_TXE))
-			;
+	while (!(COM_USART->SR & USART_SR_TXE))
+		;
 #endif
-		COM_OUTREG = c;
-	}
+	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_USART->CR1 |= (USART_CR1_TXEIE);
 #endif
