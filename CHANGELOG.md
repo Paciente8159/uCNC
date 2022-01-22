@@ -7,10 +7,13 @@
 
 ### Changed
   - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
+  - modified STM32 USART port configuration to check pin configurations and allow pin remapping (#134)
+  - serial flush is not non blocking (#134)
 
 ### Fixed
   - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
   - added clock configuration to mcu_init to set correct working speed (72MHz) when compiling via Arduino IDE. (#132)
+  - fixed STM32 USART preprocessor condition that would not enable IRQ with both ISR TX and RX (#134)
 
 ## [1.3.7] - 2022-01-19
 µCNC version 1.3.7 fixes a small bug that prevented µCNC from sending status report with an alarm condition at startup and a couple of bugs with DSS and 16-bit bresenham mode.
