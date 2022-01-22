@@ -154,7 +154,7 @@ void mcu_serial_isr(void)
 #endif
 	mcu_enable_global_isr();
 }
-#elif defined(USB_VCP)
+#elif (INTERFACE == INTERFACE_USB)
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
 	mcu_disable_global_isr();
