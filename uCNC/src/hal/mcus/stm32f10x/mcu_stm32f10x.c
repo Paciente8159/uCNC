@@ -323,6 +323,12 @@ void osSystickHandler(void)
 static void mcu_tick_init(void);
 static void mcu_usart_init(void);
 
+#if (INTERFACE == INTERFACE_USART)
+#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
+#else
+#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
+#endif
+
 void mcu_setup_clocks()
 {
 	/* Reset the RCC clock configuration to the default reset state */
@@ -348,7 +354,7 @@ void mcu_setup_clocks()
  * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
  */
 	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   RCC_CFGR_PPRE2_DIV2 |
+						   APB2_PRESCALER |
 						   RCC_CFGR_PPRE1_DIV2 |
 						   RCC_CFGR_PLLSRC |
 						   RCC_CFGR_PLLMULL9);

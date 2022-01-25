@@ -170,7 +170,7 @@ void WEAK DMA2_Channel2_IRQHandler(void);
 void WEAK DMA2_Channel3_IRQHandler(void);
 void WEAK DMA2_Channel4_5_IRQHandler(void);
 
-__attribute__((section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
+__attribute__((used, section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
     (intfunc)((unsigned long *)&_estack), /* The stack pointer after relocation */
     Reset_Handler,                        /* Reset Handler */
     NMI_Handler,                          /* NMI Handler */
