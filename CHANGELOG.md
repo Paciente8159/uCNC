@@ -15,6 +15,9 @@
   - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
   - added clock configuration to mcu_init to set correct working speed (72MHz) when compiling via Arduino IDE. (#132)
   - fixed STM32 USART preprocessor condition that would not enable IRQ with both ISR TX and RX (#134)
+  - fixed STM32 USB clock configuration caused by (#132) (#135)
+  - fixed ATMega2560 boards USART ISR. In these boards the COM must be explicitly defined  (#135)
+  - fixed STM32 pin masking configuration that cause configuration issues in PINs 10,11,14 and 15 of each port  (#135)
 
 ## [1.3.7] - 2022-01-19
 µCNC version 1.3.7 fixes a small bug that prevented µCNC from sending status report with an alarm condition at startup and a couple of bugs with DSS and 16-bit bresenham mode.
