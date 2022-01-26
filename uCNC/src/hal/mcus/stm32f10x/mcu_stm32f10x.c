@@ -370,6 +370,85 @@ void mcu_setup_clocks()
 		;
 }
 
+void mcu_usart_init(void)
+{
+#if (INTERFACE == INTERFACE_USART)
+	/*enables RCC clocks and GPIO*/
+	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_input_af(RX);
+#ifdef COM_REMAP
+	__indirect__(diopin, GPIO)->__indirect__(diopin, MAPR) |= COM_REMAP;
+#endif
+	RCC->COM_APB |= (COM_APBEN);
+	/*setup UART*/
+	COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
+	COM_USART->CR2 = 0; //1 stop bit STOP=00
+	COM_USART->CR3 = 0;
+	COM_USART->SR = 0;
+	// //115200 baudrate
+	float baudrate = ((float)(F_CPU >> 5) / ((float)BAUDRATE));
+	uint16_t brr = (uint16_t)baudrate;
+	baudrate -= brr;
+	brr <<= 4;
+	brr += (uint16_t)roundf(16.0f * baudrate);
+	COM_USART->BRR = brr;
+#ifndef ENABLE_SYNC_RX
+	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+#endif
+#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
+	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM_IRQ);
+	NVIC_EnableIRQ(COM_IRQ);
+#endif
+	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#elif (INTERFACE == INTERFACE_USB)
+	//configure USB as Virtual COM port
+	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
+	mcu_config_input(USB_DM);
+	mcu_config_input(USB_DP);
+	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
+	NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
+	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
+	NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
+	NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
+	NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
+	NVIC_SetPriority(USBWakeUp_IRQn, 10);
+	NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
+	NVIC_EnableIRQ(USBWakeUp_IRQn);
+
+	//Enable USB interrupts and enable usb
+	USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
+	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+	tusb_init();
+#endif
+}
+
+void mcu_putc(char c)
+{
+#ifdef LED
+	mcu_toggle_output(LED);
+#endif
+#if (INTERFACE == INTERFACE_USART)
+#ifdef ENABLE_SYNC_TX
+	while (!(COM_USART->SR & USART_SR_TC))
+		;
+#endif
+	COM_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM_USART->CR1 |= (USART_CR1_TXEIE);
+#endif
+#elif (INTERFACE == INTERFACE_USB)
+	if (c != 0)
+	{
+		tud_cdc_write_char(c);
+	}
+	if (c == '\r' || c == 0)
+	{
+		tud_cdc_write_flush();
+	}
+#endif
+}
+
 void mcu_init(void)
 {
 	//make sure both APB1 and APB2 are running at the same clock (36MHz)
@@ -908,85 +987,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #endif
 
 static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
-
-void mcu_usart_init(void)
-{
-#if (INTERFACE == INTERFACE_USART)
-	/*enables RCC clocks and GPIO*/
-	mcu_config_output_af(TX, GPIO_OUTALT_PP_50MHZ);
-	mcu_config_input_af(RX);
-#ifdef COM_REMAP
-	__indirect__(diopin, GPIO)->__indirect__(diopin, MAPR) |= COM_REMAP;
-#endif
-	RCC->COM_APB |= (COM_APBEN);
-	/*setup UART*/
-	COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; //1 stop bit STOP=00
-	COM_USART->CR3 = 0;
-	COM_USART->SR = 0;
-	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 5) / ((float)BAUDRATE));
-	uint16_t brr = (uint16_t)baudrate;
-	baudrate -= brr;
-	brr <<= 4;
-	brr += (uint16_t)roundf(16.0f * baudrate);
-	COM_USART->BRR = brr;
-#ifndef ENABLE_SYNC_RX
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-#endif
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-	NVIC_SetPriority(COM_IRQ, 3);
-	NVIC_ClearPendingIRQ(COM_IRQ);
-	NVIC_EnableIRQ(COM_IRQ);
-#endif
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
-#elif (INTERFACE == INTERFACE_USB)
-	//configure USB as Virtual COM port
-	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
-	mcu_config_input(USB_DM);
-	mcu_config_input(USB_DP);
-	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
-	NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
-	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-	NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
-	NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
-	NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-	NVIC_SetPriority(USBWakeUp_IRQn, 10);
-	NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
-	NVIC_EnableIRQ(USBWakeUp_IRQn);
-
-	//Enable USB interrupts and enable usb
-	USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
-	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
-	tusb_init();
-#endif
-}
-
-void mcu_putc(char c)
-{
-#ifdef LED
-	mcu_toggle_output(LED);
-#endif
-#if (INTERFACE == INTERFACE_USART)
-#ifdef ENABLE_SYNC_TX
-	while (!(COM_USART->SR & USART_SR_TC))
-		;
-#endif
-	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE);
-#endif
-#elif (INTERFACE == INTERFACE_USB)
-	if (c != 0)
-	{
-		tud_cdc_write_char(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tud_cdc_write_flush();
-	}
-#endif
-}
 
 char mcu_getc(void)
 {
