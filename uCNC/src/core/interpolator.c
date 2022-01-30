@@ -24,14 +24,14 @@
 #include <math.h>
 #include <float.h>
 
-#define F_INTEGRATOR 100
-#define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
-//the amount of motion precomputed and stored for the step generator is never less then
-//the size of the buffer x time window size
-//in this case the buffer never holds less then 50ms of motions
-
 //integrator calculates 10ms (minimum size) time frame windows
 #define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
+
+//sets the sample frequency for the Riemann sum integral
+#define F_INTEGRATOR 100
+#define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
+#define INTEGRATOR_DELTA_CONST_T (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE), ((float)(0xFFFF >> DSS_MAX_OVERSAMPLING) / (float)F_STEP_MAX)))
+#define F_INTEGRATOR_CONST (1.0f / INTEGRATOR_DELTA_CONST_T)
 
 //Itp update flags
 #define ITP_NOUPDATE 0
@@ -403,7 +403,7 @@ void itp_run(void)
             current_speed = 0;
         }
 
-        float partial_distance = current_speed * INTEGRATOR_DELTA_T;
+        float partial_distance = (const_speed) ? (current_speed * INTEGRATOR_DELTA_CONST_T) : (current_speed * INTEGRATOR_DELTA_T);
 
         if (partial_distance < 1)
         {

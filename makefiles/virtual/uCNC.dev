@@ -561,7 +561,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit53]
-FileName=..\..\uCNC\src\core\parserextensions\m42.c
+FileName=..\..\uCNC\src\modules_init.c
 CompileCpp=0
 Folder=
 Compile=1

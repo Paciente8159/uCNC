@@ -149,15 +149,14 @@ extern "C"
 		res.f;                               \
 	})
 //fast_flt_pow2 takes about 25 clock cycles on AVR instead of 144 if using normal pow or muliply by itself (x~5.5 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_pow2(x) (                       \
-	{                                            \
-		flt_t res;                               \
-		res.f = (x);                             \
-		if (!(res.b3 & 0x20))                    \
-			res.i = ((res.i << 1) - 0x3f7adaba); \
-		else                                     \
-			res.f = INFINITY;                    \
-		((!res.sign) ? res.f : 0);               \
+#define fast_flt_pow2(x) (                   \
+	{                                        \
+		flt_t res;                           \
+		res.f = (x);                         \
+		res.i = ((res.i << 1) - 0x3f7adaba); \
+		if (res.sign)                        \
+			res.i = 0;                       \
+		res.f;                               \
 	})
 //mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
