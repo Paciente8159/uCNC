@@ -65,13 +65,13 @@ void cnc_init(void)
 #endif
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     //initializes all systems
-    mcu_init();            //mcu
-    io_disable_steppers(); //disables steppers at start
-    io_disable_probe();    //forces probe isr disabling
-    serial_init();         //serial
-    settings_init();       //settings
-    itp_init();            //interpolator
-    planner_init();        //motion planner
+    mcu_init();                                         //mcu
+    io_enable_steppers(!g_settings.step_enable_invert); //disables steppers at start
+    io_disable_probe();                                 //forces probe isr disabling
+    serial_init();                                      //serial
+    settings_init();                                    //settings
+    itp_init();                                         //interpolator
+    planner_init();                                     //motion planner
 #if TOOL_COUNT > 0
     tool_init();
 #endif
@@ -100,7 +100,7 @@ void cnc_run(void)
         }
         if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
-            io_disable_steppers();
+            io_enable_steppers(!g_settings.step_enable_invert);
             cnc_check_fault_systems();
             break;
         }
@@ -341,7 +341,7 @@ uint8_t cnc_unlock(bool force)
 
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-        io_enable_steppers();
+        io_enable_steppers(g_settings.step_enable_invert);
         parser_reset();
 
         if (cnc_state.loop_state < LOOP_RUNNING)

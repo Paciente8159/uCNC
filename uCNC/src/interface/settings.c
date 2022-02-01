@@ -406,7 +406,7 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.dir_invert_mask = value8;
         break;
     case 4:
-        g_settings.step_enable_invert = value1;
+        g_settings.step_enable_invert = value8;
         break;
     case 5:
         g_settings.limits_invert_mask = value8;
