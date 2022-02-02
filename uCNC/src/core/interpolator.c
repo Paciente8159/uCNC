@@ -24,12 +24,12 @@
 #include <math.h>
 #include <float.h>
 
-//integrator calculates 10ms (minimum size) time frame windows
 #define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
 
 //sets the sample frequency for the Riemann sum integral
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
+//determines the size of the maximum riemann sample that can be performed taking in acount the maximum allowable step rate
 #define INTEGRATOR_DELTA_CONST_T (MIN((1.0f / INTERPOLATOR_BUFFER_SIZE), ((float)(0xFFFF >> DSS_MAX_OVERSAMPLING) / (float)F_STEP_MAX)))
 #define F_INTEGRATOR_CONST (1.0f / INTEGRATOR_DELTA_CONST_T)
 
@@ -223,11 +223,14 @@ void itp_run(void)
     //conversion vars
     static uint32_t accel_until = 0;
     static uint32_t deaccel_from = 0;
-    static float junction_speed_sqr = 0;
-    static float half_speed_change = 0;
-    static bool initial_accel_negative = false;
+    static float top_speed = 0;
+    static float exit_speed = 0;
     static float feed_convert = 0;
-    static bool const_speed = false;
+    static uint16_t accel_jumps = 0;
+    static uint16_t deaccel_jumps = 0;
+    float profile_steps_limit = 0;
+    float partial_distance = 0;
+    float avg_speed = 0;
 
     itp_segment_t *sgm = NULL;
 
@@ -293,10 +296,6 @@ void itp_run(void)
             //flags block for recalculation of speeds
             itp_needs_update = true;
             //in every new block speed update is needed
-            const_speed = false;
-
-            half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
-            half_speed_change = fast_flt_div2(half_speed_change);
         }
 
         uint32_t remaining_steps = itp_cur_plan_block->total_steps;
@@ -319,124 +318,117 @@ void itp_run(void)
         {
             itp_needs_update = false;
             float exit_speed_sqr = planner_get_block_exit_speed_sqr();
-            junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
+            float junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
+            float accel_inv = 1.0f / itp_cur_plan_block->acceleration;
+            top_speed = fast_flt_sqrt(junction_speed_sqr);
+            exit_speed = fast_flt_sqrt(exit_speed_sqr);
 
             accel_until = remaining_steps;
             deaccel_from = 0;
             if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
             {
-                float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
-                accel_dist = fast_flt_div2(accel_dist);
-                accel_until -= floorf(accel_dist);
-                initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
-            }
-
-            //if entry speed already a junction speed updates it.
-            if (accel_until == remaining_steps)
-            {
-                itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+                float d = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * accel_inv;
+                d = fast_flt_div2(d);
+                accel_until -= truncf(d);
+                float entry_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
+                float t = ABS(top_speed - entry_speed);
+                t *= accel_inv * F_INTEGRATOR;
+                accel_jumps = (uint16_t)truncf(t);
             }
 
             if (junction_speed_sqr > exit_speed_sqr)
             {
-                float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) / itp_cur_plan_block->acceleration;
-                deaccel_dist = fast_flt_div2(deaccel_dist);
-                deaccel_from = floorf(deaccel_dist);
+                float d = (junction_speed_sqr - exit_speed_sqr) * accel_inv;
+                d = fast_flt_div2(d);
+                deaccel_from = floorf(d);
+                exit_speed = fast_flt_sqrt(exit_speed_sqr);
+                float t = (top_speed - exit_speed);
+                t *= accel_inv * F_INTEGRATOR;
+                deaccel_jumps = (uint16_t)truncf(t);
             }
-        }
-
-        float speed_change;
-        float profile_steps_limit;
-        //acceleration profile
-        if (remaining_steps > accel_until)
-        {
-            /*
-            	computes the traveled distance within a fixed amount of time
-            	this time is the reverse integrator frequency (INTEGRATOR_DELTA_T)
-            	for constant acceleration or deceleration the traveled distance will be equal
-            	to the same distance traveled at a constant speed given that
-            	constant_speed = 0.5 * (final_speed - initial_speed) + initial_speed
-
-            	where
-
-            	(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
-            */
-            speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
-            profile_steps_limit = accel_until;
-            sgm->update_itp = ITP_UPDATE_ISR;
-            const_speed = false;
-        }
-        else if (remaining_steps > deaccel_from)
-        {
-            //constant speed segment
-            speed_change = 0;
-            profile_steps_limit = deaccel_from;
-            sgm->update_itp = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
-            if (!const_speed)
-            {
-                const_speed = true;
-            }
-        }
-        else
-        {
-            speed_change = -half_speed_change;
-            profile_steps_limit = 0;
-            sgm->update_itp = ITP_UPDATE_ISR;
-            const_speed = false;
         }
 
         float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
+        float prev_speed = current_speed;
+        sgm->update_itp = ITP_UPDATE_ISR;
 
-        /*
-        	common calculations for all three profiles (accel, constant and deaccel)
-        */
-        current_speed += speed_change;
-
-        if (current_speed <= 0)
+        do
         {
-            if (cnc_get_exec_state(EXEC_HOLD))
+            //acceleration profile
+            if (remaining_steps > accel_until)
             {
-                return;
+
+                // computes the traveled distance within a fixed amount of time
+                // this time is the reverse integrator frequency (t > INTEGRATOR_DELTA_T)
+                // for constant acceleration or deceleration the traveled distance will be equal
+                // to the same distance traveled at a constant average speed given that
+                // avg_speed = 0.5 * (final_speed + initial_speed)
+                // where
+                // final_speed = initial_speed + acceleration * t;
+                // the travelled speed at interval t is aprox. given by
+                // final_distance = initial_distance + avg_speed * t
+
+                if ((accel_jumps > 1))
+                {
+                    float delta_speed = prev_speed;
+                    current_speed += (current_speed < top_speed) ? (INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration) : (-INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration);
+                    avg_speed = fast_flt_div2(current_speed + delta_speed);
+                    partial_distance += avg_speed * INTEGRATOR_DELTA_T;
+                    accel_jumps--;
+                }
+                else
+                {
+                    // if the number of jumps required are less than 1 just jumps to the final distance and applies the same principle
+                    // in practice this translates to a Riemann sample with t < INTEGRATOR_DELTA_T
+
+                    current_speed = top_speed;
+                    partial_distance = remaining_steps - accel_until;
+                }
+
+                profile_steps_limit = accel_until;
             }
+            else if (remaining_steps > deaccel_from)
+            {
+                //constant speed segment
+                if (remaining_steps != accel_until)
+                {
+                    sgm->update_itp = ITP_NOUPDATE;
+                }
 
-            //speed can't be negative
-            current_speed = 0;
-        }
+                partial_distance += top_speed * INTEGRATOR_DELTA_CONST_T;
+                profile_steps_limit = deaccel_from;
+            }
+            else
+            {
+                if ((deaccel_jumps > 1))
+                {
+                    float delta_speed = current_speed;
+                    current_speed -= INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+                    avg_speed = fast_flt_div2(current_speed + delta_speed);
+                    partial_distance += avg_speed * INTEGRATOR_DELTA_T;
+                    deaccel_jumps--;
+                }
+                else
+                {
+                    // if the number of jumps required are less than 1 just jumps to the final distance and applies the same principle
+                    // in practice this translates to a Riemann sample with t < INTEGRATOR_DELTA_T
 
-        float partial_distance = (const_speed) ? (current_speed * INTEGRATOR_DELTA_CONST_T) : (current_speed * INTEGRATOR_DELTA_T);
+                    current_speed = exit_speed;
+                    partial_distance = remaining_steps;
+                }
 
-        if (partial_distance < 1)
-        {
-            partial_distance = 1;
-        }
+                profile_steps_limit = 0;
+            }
+        } while (partial_distance < 1);
 
         //computes how many steps it will perform at this speed and frame window
-        uint16_t segm_steps = (uint16_t)floorf(partial_distance);
+        uint16_t segm_steps = (uint16_t)roundf(partial_distance);
+        avg_speed = fast_flt_div2(current_speed + prev_speed);
 
         //if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))
         {
             segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
-        }
-
-        if (speed_change)
-        {
-            float new_speed_sqr = itp_cur_plan_block->acceleration * segm_steps;
-            new_speed_sqr = fast_flt_mul2(new_speed_sqr);
-            if (speed_change > 0)
-            {
-                //calculates the final speed at the end of this position
-                new_speed_sqr += itp_cur_plan_block->entry_feed_sqr;
-            }
-            else
-            {
-                //calculates the final speed at the end of this position
-                new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - new_speed_sqr;
-                new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
-            }
-            current_speed = (fast_flt_sqrt(new_speed_sqr) + fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr));
-            current_speed = fast_flt_div2(current_speed);
-            itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
         }
 
 //The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
@@ -445,7 +437,7 @@ void itp_run(void)
 //This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
 //DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
-        float dss_speed = current_speed;
+        float dss_speed = avg_speed;
         uint8_t dss = 0;
         while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING)
         {
@@ -466,14 +458,14 @@ void itp_run(void)
         mcu_freq_to_clocks(dss_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #else
         sgm->remaining_steps = segm_steps;
-        current_speed = MIN(current_speed, g_settings.max_step_rate);
-        mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
+        avg_speed = MIN(avg_speed, g_settings.max_step_rate);
+        mcu_freq_to_clocks(avg_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
 
-        sgm->feed = current_speed * feed_convert;
+        sgm->feed = avg_speed * feed_convert;
 #if TOOL_COUNT > 0
-        float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
-        int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
+        float top_speed_inv = 1 / top_speed;
+        int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
         if (prev_spindle != newspindle)
         {
@@ -487,9 +479,12 @@ void itp_run(void)
 
         if (remaining_steps == accel_until) //resets float additions error
         {
-            itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
+            //fixes rounding errors
+            current_speed = top_speed;
+            profile_steps_limit = deaccel_from;
         }
 
+        itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
         itp_cur_plan_block->total_steps = remaining_steps;
 
         if (itp_cur_plan_block->total_steps == 0)
