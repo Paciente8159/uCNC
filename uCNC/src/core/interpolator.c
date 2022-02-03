@@ -447,8 +447,8 @@ void itp_run(void)
 
 #ifdef ENABLE_S_CURVE_ACCELERATION
                     float prev_accel = current_accel;
-                    float accel_delta = (INTEGRATOR_DELTA_T * jerk_accel);
-                    if ((current_speed < fast_flt_div2(top_speed + entry_speed)))
+                    float accel_delta = (INTEGRATOR_DELTA_T * jerk_deaccel);
+                    if ((current_speed < fast_flt_div2(top_speed + exit_speed)))
                     {
                         accel_delta = -accel_delta;
                     }
@@ -460,7 +460,7 @@ void itp_run(void)
 #else
                     float speed_delta = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
 #endif
-                    current_speed -= INTEGRATOR_DELTA_T * speed_delta;
+                    current_speed -= speed_delta;
                     avg_speed = fast_flt_div2(current_speed + prev_speed);
                     partial_distance += avg_speed * INTEGRATOR_DELTA_T;
                     deaccel_jumps--;
@@ -539,6 +539,9 @@ void itp_run(void)
             //fixes rounding errors
             current_speed = top_speed;
             profile_steps_limit = deaccel_from;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+            current_accel = 0;
+#endif
         }
 
         itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
