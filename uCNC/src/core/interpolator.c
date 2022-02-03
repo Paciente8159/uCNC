@@ -231,6 +231,12 @@ void itp_run(void)
     float profile_steps_limit = 0;
     float partial_distance = 0;
     float avg_speed = 0;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+    static float current_accel = 0;
+    static float entry_speed = 0;
+    static float jerk_accel = 0;
+    static float jerk_deaccel = 0;
+#endif
 
     itp_segment_t *sgm = NULL;
 
@@ -325,15 +331,26 @@ void itp_run(void)
 
             accel_until = remaining_steps;
             deaccel_from = 0;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+            current_accel = 0;
+#endif
+
             if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
             {
                 float d = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * accel_inv;
                 d = fast_flt_div2(d);
                 accel_until -= truncf(d);
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                entry_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
+#else
                 float entry_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
+#endif
                 float t = ABS(top_speed - entry_speed);
-                t *= accel_inv * F_INTEGRATOR;
-                accel_jumps = (uint16_t)truncf(t);
+                t *= accel_inv;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                jerk_accel = fast_flt_mul4(itp_cur_plan_block->acceleration / t);
+#endif
+                accel_jumps = (uint16_t)truncf(t * F_INTEGRATOR);
             }
 
             if (junction_speed_sqr > exit_speed_sqr)
@@ -343,13 +360,16 @@ void itp_run(void)
                 deaccel_from = floorf(d);
                 exit_speed = fast_flt_sqrt(exit_speed_sqr);
                 float t = (top_speed - exit_speed);
-                t *= accel_inv * F_INTEGRATOR;
-                deaccel_jumps = (uint16_t)truncf(t);
+                t *= accel_inv;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                jerk_deaccel = fast_flt_mul4(itp_cur_plan_block->acceleration / t);
+#endif
+                deaccel_jumps = (uint16_t)truncf(t * F_INTEGRATOR);
             }
         }
 
         float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
-        float prev_speed = current_speed;
+        float initial_speed = current_speed;
         sgm->update_itp = ITP_UPDATE_ISR;
 
         do
@@ -370,9 +390,30 @@ void itp_run(void)
 
                 if ((accel_jumps > 1))
                 {
-                    float delta_speed = prev_speed;
-                    current_speed += (current_speed < top_speed) ? (INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration) : (-INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration);
-                    avg_speed = fast_flt_div2(current_speed + delta_speed);
+                    float prev_speed = current_speed;
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                    float prev_accel = current_accel;
+                    float accel_delta = (INTEGRATOR_DELTA_T * jerk_accel);
+                    if ((entry_speed < top_speed) && (current_speed > fast_flt_div2(top_speed + entry_speed)))
+                    {
+                        accel_delta = -accel_delta;
+                    }
+
+                    if ((entry_speed > top_speed) && (current_speed < fast_flt_div2(top_speed + entry_speed)))
+                    {
+                        accel_delta = -accel_delta;
+                    }
+                    current_accel += accel_delta;
+                    //calcs the next average acceleration based on the jerk
+                    float avg_accel = fast_flt_div2(current_accel + prev_accel);
+                    //determines the acceleration profile (first half - convex, second half - concave)
+                    float speed_delta = INTEGRATOR_DELTA_T * avg_accel;
+#else
+                    float speed_delta = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+#endif
+
+                    current_speed += (current_speed < top_speed) ? (speed_delta) : (-speed_delta);
+                    avg_speed = fast_flt_div2(current_speed + prev_speed);
                     partial_distance += avg_speed * INTEGRATOR_DELTA_T;
                     accel_jumps--;
                 }
@@ -402,9 +443,25 @@ void itp_run(void)
             {
                 if ((deaccel_jumps > 1))
                 {
-                    float delta_speed = current_speed;
-                    current_speed -= INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
-                    avg_speed = fast_flt_div2(current_speed + delta_speed);
+                    float prev_speed = current_speed;
+
+#ifdef ENABLE_S_CURVE_ACCELERATION
+                    float prev_accel = current_accel;
+                    float accel_delta = (INTEGRATOR_DELTA_T * jerk_accel);
+                    if ((current_speed < fast_flt_div2(top_speed + entry_speed)))
+                    {
+                        accel_delta = -accel_delta;
+                    }
+                    current_accel += accel_delta;
+                    //calcs the next average acceleration based on the jerk
+                    float avg_accel = fast_flt_div2(current_accel + prev_accel);
+                    //determines the acceleration profile (first half - convex, second half - concave)
+                    float speed_delta = INTEGRATOR_DELTA_T * avg_accel;
+#else
+                    float speed_delta = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
+#endif
+                    current_speed -= INTEGRATOR_DELTA_T * speed_delta;
+                    avg_speed = fast_flt_div2(current_speed + prev_speed);
                     partial_distance += avg_speed * INTEGRATOR_DELTA_T;
                     deaccel_jumps--;
                 }
@@ -423,7 +480,7 @@ void itp_run(void)
 
         //computes how many steps it will perform at this speed and frame window
         uint16_t segm_steps = (uint16_t)roundf(partial_distance);
-        avg_speed = fast_flt_div2(current_speed + prev_speed);
+        avg_speed = fast_flt_div2(current_speed + initial_speed);
 
         //if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))

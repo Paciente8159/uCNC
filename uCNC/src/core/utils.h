@@ -65,7 +65,7 @@ extern "C"
 #define __UINT32_R3__ 0
 #endif
 
-#if (defined(ENABLE_FAST_MATH) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
 	typedef union
 	{
 		float f;
@@ -89,6 +89,9 @@ extern "C"
 			int32_t sign : 1;
 		};
 	} flt_t;
+#endif
+
+#if (defined(ENABLE_FAST_MATH) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
 //performs direct float manipulation and bit shifting. At the very end spectrum of the float (to infinity and to 0) makes aproximation either to 0 or infinity
 //div2 takes about 13 clock cycles on AVR instead of 144 if multiply by 0.5f (x11 faster)
 //div4 takes about 9 clock cycles on AVR instead of 144 if multiply by 0.25f (x16 faster)
@@ -173,6 +176,29 @@ extern "C"
 #ifndef fast_int_mul10
 #define fast_int_mul10(x) (x * 10)
 #endif
+#endif
+
+#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#define flt_2_fix(x) (               \
+	{                                \
+		flt_t res;                   \
+		res.f = (x);                 \
+		if ((res.b3 & 0x7f) != 0x7f) \
+			res.i += 0x04000000;     \
+		(uint32_t) roundf(res.f);    \
+	})
+
+#define fix_2_flt(x) (               \
+	{                                \
+		flt_t res;                   \
+		res.f = (float)(x);          \
+		if ((res.b3 & 0x7f) != 0x7f) \
+			res.i -= 0x04000000;     \
+		res.f;                       \
+	})
+#else
+#define flt_2_fix(x) ((uint32_t)(x * 256))
+#define fix_2_flt(x) ((float)(x) / 256.0f)
 #endif
 
 #define MM_INCH_MULT 0.0393700787401574803f
