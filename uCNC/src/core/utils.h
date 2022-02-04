@@ -50,48 +50,18 @@ extern "C"
 #endif
 
 #ifndef CLAMP
-#define CLAMP(a, b, c) (MAX(b, MIN(a, c)))
+#define CLAMP(a, b, c) (MAX(a, MIN(b, c)))
 #endif
 
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-#define __UINT32_R0__ 0
-#define __UINT32_R1__ 1
-#define __UINT32_R2__ 2
-#define __UINT32_R3__ 3
-#else
-#define __UINT32_R0__ 3
-#define __UINT32_R1__ 2
-#define __UINT32_R2__ 1
-#define __UINT32_R3__ 0
-#endif
-
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#if (__SIZEOF_FLOAT__ == 4)
 	typedef union
 	{
 		float f;
 		int32_t i;
-		struct
-		{
-			uint16_t w0;
-			int16_t w1;
-		};
-		struct
-		{
-			uint8_t b0;
-			uint8_t b1;
-			uint8_t b2;
-			int8_t b3;
-		};
-		struct
-		{
-			int32_t mant : 23;
-			int32_t expn : 8;
-			int32_t sign : 1;
-		};
 	} flt_t;
 #endif
 
-#if (defined(ENABLE_FAST_MATH) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
+#if (defined(ENABLE_FAST_MATH) && __SIZEOF_FLOAT__ == 4)
 //performs direct float manipulation and bit shifting. At the very end spectrum of the float (to infinity and to 0) makes aproximation either to 0 or infinity
 //div2 takes about 13 clock cycles on AVR instead of 144 if multiply by 0.5f (x11 faster)
 //div4 takes about 9 clock cycles on AVR instead of 144 if multiply by 0.25f (x16 faster)
@@ -101,7 +71,7 @@ extern "C"
 	{                            \
 		flt_t res;               \
 		res.f = (x);             \
-		if (res.w1 & 0x7f80)     \
+		if (res.i & 0x7f800000)  \
 			res.i -= 0x00800000; \
 		else                     \
 			res.i = 0;           \
@@ -111,27 +81,27 @@ extern "C"
 	{                            \
 		flt_t res;               \
 		res.f = (x);             \
-		if (res.b3 & 0x7f)       \
+		if (res.i & 0x7f000000)  \
 			res.i -= 0x01000000; \
 		else                     \
 			res.i = 0;           \
 		res.f;                   \
 	})
-#define fast_flt_mul2(x) (               \
-	{                                    \
-		flt_t res;                       \
-		res.f = (x);                     \
-		if ((res.w1 & 0x7f80) != 0x7f80) \
-			res.i += 0x00800000;         \
-		res.f;                           \
+#define fast_flt_mul2(x) (                      \
+	{                                           \
+		flt_t res;                              \
+		res.f = (x);                            \
+		if ((res.i & 0x7f800000) != 0x7f800000) \
+			res.i += 0x00800000;                \
+		res.f;                                  \
 	})
-#define fast_flt_mul4(x) (           \
-	{                                \
-		flt_t res;                   \
-		res.f = (x);                 \
-		if ((res.b3 & 0x7f) != 0x7f) \
-			res.i += 0x01000000;     \
-		res.f;                       \
+#define fast_flt_mul4(x) (                      \
+	{                                           \
+		flt_t res;                              \
+		res.f = (x);                            \
+		if ((res.i & 0x7f000000) != 0x7f000000) \
+			res.i += 0x01000000;                \
+		res.f;                                  \
 	})
 //Quake III based fast sqrt calculation
 //fast_flt_sqrt takes about 19 clock cycles on AVR instead of +/-482 if using normal sqrt (x25 faster). The error of this shortcut should be under 4~5%.
@@ -157,7 +127,7 @@ extern "C"
 		flt_t res;                           \
 		res.f = (x);                         \
 		res.i = ((res.i << 1) - 0x3f7adaba); \
-		if (res.sign)                        \
+		if (res.i < 0)                       \
 			res.i = 0;                       \
 		res.f;                               \
 	})
@@ -178,23 +148,23 @@ extern "C"
 #endif
 #endif
 
-#if (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ && __SIZEOF_FLOAT__ == 4)
-#define flt_2_fix(x) (               \
-	{                                \
-		flt_t res;                   \
-		res.f = (x);                 \
-		if ((res.b3 & 0x7f) != 0x7f) \
-			res.i += 0x04000000;     \
-		(uint32_t) roundf(res.f);    \
+#if (__SIZEOF_FLOAT__ == 4)
+#define flt_2_fix(x) (                           \
+	{                                            \
+		flt_t res;                               \
+		res.f = (x);                             \
+		if ((res.b3 & 0x7f000000) != 0x7f000000) \
+			res.i += 0x04000000;                 \
+		(int32_t) roundf(res.f);                 \
 	})
 
-#define fix_2_flt(x) (               \
-	{                                \
-		flt_t res;                   \
-		res.f = (float)(x);          \
-		if ((res.b3 & 0x7f) != 0x7f) \
-			res.i -= 0x04000000;     \
-		res.f;                       \
+#define fix_2_flt(x) (                           \
+	{                                            \
+		flt_t res;                               \
+		res.f = (float)(x);                      \
+		if ((res.b3 & 0x7f000000) != 0x7f000000) \
+			res.i -= 0x04000000;                 \
+		res.f;                                   \
 	})
 #else
 #define flt_2_fix(x) ((uint32_t)(x * 256))
