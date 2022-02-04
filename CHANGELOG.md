@@ -5,6 +5,9 @@
 
 # Changelog
 
+### Added
+  - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
+
 ### Changed
   - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
   - removed USB_VCP and COM macros and replaced by new configuration option INTERFACE (#134)
