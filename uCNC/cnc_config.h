@@ -201,7 +201,7 @@ extern "C"
  * Performs motions with variable acceleration (trapezoidal speed profile with roundend speed transition between accel/deaccel and constant speed)
  * instead of constant acceleration (trapezoizal speed profile)
  * */
-#define ENABLE_S_CURVE_ACCELERATION
+// #define ENABLE_S_CURVE_ACCELERATION
 
 /**
 	 * Forces pin pooling for all limits and control pins (with or without interrupts)
