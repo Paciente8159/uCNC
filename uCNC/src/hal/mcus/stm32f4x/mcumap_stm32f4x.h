@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_STM32F40x_H
-#define MCUMAP_STM32F40x_H
+#ifndef MCUMAP_STM32F4x_H
+#define MCUMAP_STM32F4x_H
 
 #ifdef __cplusplus
 extern "C"

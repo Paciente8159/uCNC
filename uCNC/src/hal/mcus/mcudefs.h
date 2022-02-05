@@ -36,10 +36,17 @@ extern "C"
 #endif
 #endif
 
-#if (MCU == MCU_STM32F10X)
-#include "stm32f10x/mcumap_stm32f10x.h"
+#if (MCU == MCU_STM32F1X)
+#include "stm32f10x/mcumap_stm32f1x.h"
 #ifndef CFG_TUSB_MCU
 #define CFG_TUSB_MCU OPT_MCU_STM32F1
+#endif
+#endif
+
+#if (MCU == MCU_STM32F4X)
+#include "stm32f10x/mcumap_stm32f4x.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_STM32F4
 #endif
 #endif
 

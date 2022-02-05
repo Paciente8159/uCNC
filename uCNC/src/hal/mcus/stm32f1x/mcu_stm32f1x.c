@@ -1,7 +1,7 @@
 /*
 	Name: mcu_stm32f10x.h
 	Description: Contains all the function declarations necessary to interact with the MCU.
-        This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
+		This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -19,9 +19,9 @@
 
 #include "../../../cnc.h"
 
-#if (MCU == MCU_STM32F10X)
+#if (MCU == MCU_STM32F1X)
 #include "core_cm3.h"
-#include "mcumap_stm32f10x.h"
+#include "mcumap_stm32f1x.h"
 
 #if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
@@ -31,7 +31,7 @@
 #ifndef FLASH_SIZE
 #error "Device FLASH size undefined"
 #endif
-//set the FLASH EEPROM SIZE
+// set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
 
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
@@ -51,10 +51,10 @@ static uint16_t stm32_flash_current_page;
 static bool stm32_flash_modified;
 
 /**
-	 * The internal clock counter
-	 * Increments every millisecond
-	 * Can count up to almost 50 days
-	 **/
+ * The internal clock counter
+ * Increments every millisecond
+ * Can count up to almost 50 days
+ **/
 static volatile uint32_t mcu_runtime_ms;
 volatile bool stm32_global_isr_enabled;
 
@@ -154,7 +154,7 @@ volatile bool stm32_global_isr_enabled;
 
 /**
  * The isr functions
- * The respective IRQHandler will execute these functions 
+ * The respective IRQHandler will execute these functions
  **/
 #if (INTERFACE == INTERFACE_USART)
 void mcu_serial_isr(void)
@@ -314,7 +314,7 @@ void osSystickHandler(void)
 }
 
 /**
-	 * 
+ *
  * Initializes the mcu:
  *   1. Configures all IO
  *   2. Configures UART/USB
@@ -351,8 +351,8 @@ void mcu_setup_clocks()
 	FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY_2;
 	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
 	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
- * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
- */
+	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
+	 */
 	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
 						   APB2_PRESCALER |
 						   RCC_CFGR_PPRE1_DIV2 |
@@ -381,8 +381,8 @@ void mcu_usart_init(void)
 #endif
 	RCC->COM_APB |= (COM_APBEN);
 	/*setup UART*/
-	COM_USART->CR1 = 0; //8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; //1 stop bit STOP=00
+	COM_USART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM_USART->CR2 = 0; // 1 stop bit STOP=00
 	COM_USART->CR3 = 0;
 	COM_USART->SR = 0;
 	// //115200 baudrate
@@ -402,7 +402,7 @@ void mcu_usart_init(void)
 #endif
 	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #elif (INTERFACE == INTERFACE_USB)
-	//configure USB as Virtual COM port
+	// configure USB as Virtual COM port
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
@@ -416,7 +416,7 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
 	NVIC_EnableIRQ(USBWakeUp_IRQn);
 
-	//Enable USB interrupts and enable usb
+	// Enable USB interrupts and enable usb
 	USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 	tusb_init();
@@ -451,7 +451,7 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-	//make sure both APB1 and APB2 are running at the same clock (36MHz)
+	// make sure both APB1 and APB2 are running at the same clock (36MHz)
 	mcu_setup_clocks();
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
@@ -966,14 +966,14 @@ void mcu_disable_probe_isr(void)
 }
 #endif
 
-//Analog input
+// Analog input
 #ifndef mcu_get_analog
 uint8_t mcu_get_analog(uint8_t channel)
 {
 }
 #endif
 
-//PWM
+// PWM
 #ifndef mcu_set_pwm
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
@@ -1009,21 +1009,21 @@ char mcu_getc(void)
 #endif
 }
 
-//ISR
-//enables all interrupts on the mcu. Must be called to enable all IRS functions
+// ISR
+// enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr
 #error "mcu_enable_global_isr undefined"
 #endif
-//disables all ISR functions
+// disables all ISR functions
 #ifndef mcu_disable_global_isr
 #error "mcu_disable_global_isr undefined"
 #endif
 
-//Timers
-//convert step rate to clock cycles
+// Timers
+// convert step rate to clock cycles
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	//up and down counter (generates half the step rate at each event)
+	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
@@ -1036,7 +1036,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
-//starts a constant rate pulse at a given frequency.
+// starts a constant rate pulse at a given frequency.
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	RCC->TIMER_ENREG |= TIMER_APB;
@@ -1052,10 +1052,10 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	NVIC_EnableIRQ(TIMER_IRQ);
 
 	TIMER_REG->DIER |= 1;
-	TIMER_REG->CR1 |= 1; //enable timer upcounter no preload
+	TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
 }
 
-//modifies the pulse frequency
+// modifies the pulse frequency
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	TIMER_REG->ARR = ticks;
@@ -1063,7 +1063,7 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	TIMER_REG->EGR |= 0x01;
 }
 
-//stops the pulse
+// stops the pulse
 void mcu_stop_itp_isr(void)
 {
 	TIMER_REG->CR1 &= ~0x1;
@@ -1072,8 +1072,8 @@ void mcu_stop_itp_isr(void)
 	NVIC_DisableIRQ(TIMER_IRQ);
 }
 
-//Custom delay function
-//gets the mcu running time in ms
+// Custom delay function
+// gets the mcu running time in ms
 uint32_t mcu_millis()
 {
 	uint32_t val = mcu_runtime_ms;
@@ -1086,7 +1086,7 @@ void mcu_tick_init()
 	SysTick->LOAD = (((F_CPU >> 3) / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
-	SysTick->CTRL = 3; //Start SysTick (ABH clock/8)
+	SysTick->CTRL = 3; // Start SysTick (ABH clock/8)
 }
 
 void mcu_dotasks()
@@ -1104,8 +1104,8 @@ void mcu_dotasks()
 #endif
 }
 
-//checks if the current page is loaded to ram
-//if not loads it
+// checks if the current page is loaded to ram
+// if not loads it
 static uint16_t mcu_access_flash_page(uint16_t address)
 {
 	uint16_t address_page = address & FLASH_PAGE_MASK;
@@ -1128,7 +1128,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 	return address_offset;
 }
 
-//Non volatile memory
+// Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 	uint16_t offset = mcu_access_flash_page(address);
@@ -1139,7 +1139,7 @@ static void mcu_eeprom_erase(uint16_t address)
 {
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
-	//unlock flash if locked
+	// unlock flash if locked
 	if (FLASH->CR & FLASH_CR_LOCK)
 	{
 		FLASH->KEYR = 0x45670123;

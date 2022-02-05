@@ -45,7 +45,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 ######################################
 # C sources
 C_SOURCES =  \
-stm32f103.c \
+stm32f1x.c \
 main.c \
 $(call rwildcard,../../uCNC,*.c)
 
@@ -149,7 +149,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = stm32f103.ld
+LDSCRIPT = stm32f1x.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 
