@@ -1,4 +1,4 @@
-#include "stm32f1xx.h"
+#include "stm32f4xx.h"
 typedef void (*const intfunc)(void);
 
 #define WEAK __attribute__((weak))
@@ -55,6 +55,7 @@ void Reset_Handler(void)
 }
 
 void WEAK NMI_Handler(void);
+void WEAK HardFault_Handler(void);
 void WEAK MemManage_Handler(void);
 void WEAK BusFault_Handler(void);
 void WEAK UsageFault_Handler(void);

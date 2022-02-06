@@ -7,6 +7,7 @@ int main(void)
 
     for (;;)
     {
-        cnc_run();
+        //cnc_run();
+        mcu_output_toggle(DOUT15);
     }
 }

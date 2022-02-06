@@ -49,7 +49,7 @@ extern "C"
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_BLACKPILL
 #endif
 
 /*

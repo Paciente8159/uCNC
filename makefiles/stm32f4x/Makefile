@@ -83,8 +83,8 @@ BIN = $(CP) -O binary -S
 # CFLAGS
 #######################################
 # cpu
-CPU = -mcpu=cortex-m3
-BOARD ?= BLUEPILL
+CPU = -mcpu=cortex-m4
+BOARD ?= BLACKPILL
 
 # fpu
 # NONE for Cortex-M0/M0+/M3

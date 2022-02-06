@@ -58,98 +58,84 @@ static bool stm32_flash_modified;
 static volatile uint32_t mcu_runtime_ms;
 volatile bool stm32_global_isr_enabled;
 
-#define mcu_config_output(diopin)                                                                                           \
-	{                                                                                                                       \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));       \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
+#define mcu_config_output(diopin)                                                                              \
+	{                                                                                                          \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                          \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << (__indirect__(diopin, BIT))); /*reset dir*/       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_OUTPUT << (__indirect__(diopin, BIT))); /*output mode*/     \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x2U << (__indirect__(diopin, BIT)));	   /*high speed mode*/ \
 	}
 
-#define mcu_config_input(diopin)                                                                                        \
-	{                                                                                                                   \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+#define mcu_config_input(diopin)                                                                                             \
+	{                                                                                                                        \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                        \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << (__indirect__(diopin, BIT))); /*reset dir (defaults to input)*/ \
 	}
 
-#define mcu_config_output_af(diopin, mode)                                                                            \
-	{                                                                                                                 \
-		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                           \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                 \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (mode << (__indirect__(diopin, CROFF) << 2U));        \
+#define mcu_config_af(diopin)                                                                                  \
+	{                                                                                                          \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                          \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << (__indirect__(diopin, BIT))); /*reset dir*/       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << (__indirect__(diopin, BIT)));	   /*af mode*/         \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x2U << (__indirect__(diopin, BIT)));	   /*high speed mode*/ \
 	}
 
-#define mcu_config_input(diopin)                                                                                        \
-	{                                                                                                                   \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
-	}
-
-#define mcu_config_input_af(diopin)                                                                                     \
-	{                                                                                                                   \
-		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                             \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
-	}
-
-#define mcu_config_pullup(diopin) (                                                                                   \
-	{                                                                                                                 \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
-		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
+#define mcu_config_pullup(diopin) (                                                           \
+	{                                                                                         \
+		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << (__indirect__(diopin, BIT)));    \
+		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << (__indirect__(diopin, BIT))); \
 	})
 
-#define mcu_config_pwm(diopin) (                                                                                                 \
-	{                                                                                                                            \
-		RCC->APB2ENR |= 0x1U;                                                                                                    \
-		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
-		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
-		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
-		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
-		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
-		__indirect__(diopin, ENOUTPUT);                                                                                          \
+#define mcu_config_pwm(diopin) (                                                                               \
+	{                                                                                                          \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                          \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << (__indirect__(diopin, BIT))); /*reset dir*/       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << (__indirect__(diopin, BIT)));	   /*af mode*/         \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x2U << (__indirect__(diopin, BIT)));	   /*high speed mode*/ \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                 \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                 \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;            \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                           \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);               \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));              \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                       \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                            \
+		__indirect__(diopin, ENOUTPUT);                                                                        \
 	})
 
-#define mcu_config_input_isr(diopin) (                                                                          \
-	{                                                                                                           \
-		RCC->APB2ENR |= 0x1U;                                                                                   \
-		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
-		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
-		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
-		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
-		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
-		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
-		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
-		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
+#define mcu_config_input_isr(diopin) (                                                                            \
+	{                                                                                                             \
+		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                            \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                            \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                             \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                           \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                          \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                                \
 	})
 
-#define mcu_config_analog(diopin) (                                                                                     \
-	{                                                                                                                   \
-		RCC->CFGR &= ~(RCC_CFGR_ADCPRE);                                                                                \
-		RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;                                                                              \
-		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN | __indirect__(diopin, APB2EN) | 0x1U);                                     \
-		ADC1->SQR1 = 1; /*one conversion*/                                                                              \
-		ADC1->SMPR1 = 0x00ffffff & 0x36DB6DB6;                                                                          \
-		ADC1->SMPR2 = 0x36DB6DB6;                                                                                       \
-		ADC1->CR2 &= ~ADC_CR2_CONT; /*single conversion mode*/                                                          \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
-		ADC1->CR2 |= ADC_CR2_ADON;	 /*enable adc*/                                                                     \
-		ADC1->CR2 |= ADC_CR2_RSTCAL; /*reset calibration*/                                                              \
-		while (ADC1->CR2 & ADC_CR2_RSTCAL)                                                                              \
-			;                                                                                                           \
-		ADC1->CR2 |= ADC_CR2_CAL; /*start calibration*/                                                                 \
-		while (ADC1->CR2 & ADC_CR2_CAL)                                                                                 \
-			;                                                                                                           \
-		ADC1->CR2 |= (ADC_CR2_EXTSEL | ADC_CR2_EXTTRIG); /*external start trigger software*/                            \
+#if defined(ADC1_COMMON)
+#define ADC_COMMON ADC1_COMMON
+#elif defined(ADC12_COMMON)
+#define ADC_COMMON ADC12_COMMON
+#elif defined(ADC123_COMMON)
+#define ADC_COMMON ADC123_COMMON
+#endif
+
+#define mcu_config_analog(diopin) (                                                                                            \
+	{                                                                                                                          \
+		ADC_COMMON->CCR &= ~(ADC_CCR_ADCPRE);                                                                                  \
+		ADC_COMMON->CCR |= (ADC_CCR_ADCPRE_0 | ADC_CCR_ADCPRE_1);                                                              \
+		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN | __indirect__(diopin, APB2EN) | 0x1U);                                            \
+		ADC1->SQR1 = 1; /*one conversion*/                                                                                     \
+		ADC1->SMPR1 = 0x00ffffff & 0x36DB6DB6;                                                                                 \
+		ADC1->SMPR2 = 0x36DB6DB6;                                                                                              \
+		ADC1->CR2 &= ~ADC_CR2_CONT;														   /*single conversion mode*/          \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << (__indirect__(diopin, BIT))); /*reset dir*/                       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << (__indirect__(diopin, BIT))); /*analog mode*/                     \
+		ADC1->CR2 |= ADC_CR2_ADON;														   /*enable adc*/                      \
+		ADC1->CR2 |= (ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1);								   /*external start trigger software*/ \
 	})
 
 /**
@@ -178,27 +164,19 @@ void mcu_serial_isr(void)
 	mcu_enable_global_isr();
 }
 #elif (INTERFACE == INTERFACE_USB)
-void USB_HP_CAN1_TX_IRQHandler(void)
+void OTG_FS_WKUP_IRQn(void)
 {
 	mcu_disable_global_isr();
 	tud_int_handler(0);
 	mcu_enable_global_isr();
 }
 
-void USB_LP_CAN1_RX0_IRQHandler(void)
+void OTG_FS_IRQn(void)
 {
 	mcu_disable_global_isr();
 	tud_int_handler(0);
 	mcu_enable_global_isr();
 }
-
-void USBWakeUp_IRQHandler(void)
-{
-	mcu_disable_global_isr();
-	tud_int_handler(0);
-	mcu_enable_global_isr();
-}
-
 #endif
 
 void mcu_timer_isr(void)
@@ -331,51 +309,119 @@ static void mcu_usart_init(void);
 
 void mcu_setup_clocks()
 {
-	/* Reset the RCC clock configuration to the default reset state */
-	/* Set HSION bit */
-	RCC->CR |= (uint32_t)0x00000001;
-	/* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
-	RCC->CFGR &= (uint32_t)0xF8FF0000;
-	/* Reset HSEON, CSSON and PLLON bits */
-	RCC->CR &= (uint32_t)0xFEF6FFFF;
-	/* Reset HSEBYP bit */
-	RCC->CR &= (uint32_t)0xFFFBFFFF;
-	/* Disable all interrupts and clear pending bits */
-	RCC->CIR = 0x009F0000;
-	/* Enable HSE */
-	RCC->CR |= ((uint32_t)RCC_CR_HSEON);
-	/* Wait till HSE is ready */
-	while (!(RCC->CR & RCC_CR_HSERDY))
+	uint32_t PLL_P = 4;
+
+	/* Enable HSE (CR: bit 16) */
+	RCC->CR |= (1 << 16);
+	/* Wait till HSE is ready (CR: bit 17) */
+	while (!(RCC->CR & (1 << 17)))
 		;
-	/* Configure the Flash Latency cycles and enable prefetch buffer */
-	FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY_2;
-	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
-	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
-	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
+
+	/* set voltage scale to 1 for max frequency */
+	/* first enable power interface clock (APB1ENR:bit 28) */
+	RCC->APB1ENR |= (1 << 28);
+
+	/* then set voltage scale to 1 for max frequency (PWR_CR:bit 14)
+	 * (0) scale 2 for fCLK <= 144 Mhz
+	 * (1) scale 1 for 144 Mhz < fCLK <= 168 Mhz
 	 */
-	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   APB2_PRESCALER |
-						   RCC_CFGR_PPRE1_DIV2 |
-						   RCC_CFGR_PLLSRC |
-						   RCC_CFGR_PLLMULL9);
-	/* Enable PLL */
-	RCC->CR |= RCC_CR_PLLON;
-	/* Wait till PLL is ready */
-	while (!(RCC->CR & RCC_CR_PLLRDY))
+	PWR->CR |= (1 << 14);
+
+	/* set AHB prescaler to /1 (CFGR:bits 7:4) */
+	RCC->CFGR |= (0 << 4);
+	/* set ABP low speed prescaler to /4 (APB1) (CFGR:bits 12:10) */
+	RCC->CFGR |= (5 << 10);
+	/* set ABP high speed prescaper to /2 (ABP2) (CFGR:bits 15:13) */
+	RCC->CFGR |= (4 << 13);
+
+	/* Set M, N, P and Q PLL dividers
+	 * PLLCFGR: bits 5:0 (M), 14:6 (N), 17:16 (P), 27:24 (Q)
+	 * Set PLL source to HSE, PLLCFGR: bit 22, 1:HSE, 0:HSI
+	 */
+	RCC->PLLCFGR = PLL_M | (PLL_N << 6) | (((PLL_P >> 1) - 1) << 16) |
+				   (PLL_Q << 24) | (1 << 22);
+	/* Enable the main PLL (CR: bit 24) */
+	RCC->CR |= (1 << 24);
+	/* Wait till the main PLL is ready (CR: bit 25) */
+	while (!(RCC->CR & (1 << 25)))
 		;
-	/* Select PLL as system clock source */
-	RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;
-	/* Wait till PLL is used as system clock source */
-	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
+	/* Configure Flash
+	 * prefetch enable (ACR:bit 8)
+	 * instruction cache enable (ACR:bit 9)
+	 * data cache enable (ACR:bit 10)
+	 * set latency to 2 wait states (ARC:bits 2:0)
+	 *   see Table 10 on page 80 in RM0090
+	 */
+	FLASH->ACR = (1 << 8) | (1 << 9) | (1 << 10) | (2 << 0);
+
+	/* Select the main PLL as system clock source, (CFGR:bits 1:0)
+	 * 0b00 - HSI
+	 * 0b01 - HSE
+	 * 0b10 - PLL
+	 */
+	RCC->CFGR &= ~(3U << 0);
+	RCC->CFGR |= (2 << 0);
+	/* Wait till the main PLL is used as system clock source (CFGR:bits 3:2) */
+	while (!(RCC->CFGR & (2 << 2)))
 		;
+
+	// /* Reset the RCC clock configuration to the default reset state */
+	// /* Set HSION bit */
+	// RCC->CR |= (uint32_t)0x00000001;
+	// /* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
+	// RCC->CFGR &= (uint32_t)0xFFE00000;
+	// // resets all PLL
+	// RCC->PLLCFGR = 0;
+	// /* Reset HSEBYP, HSEON, CSSON and PLLON bits */
+	// RCC->CR &= (uint32_t)0xEAF2FFFF;
+	// /* Disable all interrupts and clear pending bits */
+	// RCC->CIR = 0x009F0000;
+	// /* Enable HSE */
+	// RCC->CR |= ((uint32_t)RCC_CR_HSEON);
+	// /* Wait till HSE is ready */
+	// while (!(RCC->CR & RCC_CR_HSERDY))
+	// 	;
+	// /* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
+	// /* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
+	//  * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
+	//  */
+	// RCC->CFGR |= (uint32_t)(RCC_CFGR_HPRE_DIV1 |
+	// 						APB2_PRESCALER |
+	// 						RCC_CFGR_PPRE1_DIV2);
+
+	// // Main PLL clock can be configured by the following formula:
+	// // choose HSI or HSE as the source:
+	// // fVCO = source_clock * (N / M)
+	// // Main PLL = fVCO / P
+	// // PLL48CLK = fVCO / Q
+	// // to make it simple just set M = external crystal
+	// // then all others are a fixed value to simplify making
+	// // fVCO = 336
+	// // Main PLL = fVCO / P = 336/4 = 84MHz
+	// // PLL48CLK = fVCO / Q = 336/7 = 48MHz
+	// // to run at other speeds different configuration must be applied but the limit for fast AHB is 180Mhz, APB is 90Mhz and slow APB is 45Mhz
+
+	// RCC->PLLCFGR |= (EXTERNAL_XTAL_MHZ << RCC_PLLCFGR_PLLM_Pos) | (336 << RCC_PLLCFGR_PLLN_Pos) | (0x01 << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (0x07 << RCC_PLLCFGR_PLLQ_Pos);
+	// /* Enable PLL */
+	// RCC->CR |= RCC_CR_PLLON;
+	// /* Wait till PLL is ready */
+	// while (!(RCC->CR & RCC_CR_PLLRDY))
+	// 	;
+	// FLASH->ACR = (FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_LATENCY_2WS);
+	// /* Select PLL as system clock source */
+	// RCC->CFGR &= ~RCC_CFGR_SW;
+	// RCC->CFGR |= RCC_CFGR_SW_PLL;
+	// /* Wait till PLL is used as system clock source */
+	// while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
+	// 	;
 }
 
 void mcu_usart_init(void)
 {
 #if (INTERFACE == INTERFACE_USART)
 	/*enables RCC clocks and GPIO*/
-	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_input_af(RX);
+	mcu_config_af(TX);
+	mcu_config_af(RX);
 #ifdef COM_REMAP
 	__indirect__(diopin, GPIO)->__indirect__(diopin, MAPR) |= COM_REMAP;
 #endif
@@ -406,19 +452,18 @@ void mcu_usart_init(void)
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
-	NVIC_SetPriority(USB_HP_CAN1_TX_IRQn, 10);
-	NVIC_ClearPendingIRQ(USB_HP_CAN1_TX_IRQn);
-	NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
-	NVIC_SetPriority(USB_LP_CAN1_RX0_IRQn, 10);
-	NVIC_ClearPendingIRQ(USB_LP_CAN1_RX0_IRQn);
-	NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
-	NVIC_SetPriority(USBWakeUp_IRQn, 10);
-	NVIC_ClearPendingIRQ(USBWakeUp_IRQn);
-	NVIC_EnableIRQ(USBWakeUp_IRQn);
+
+	NVIC_SetPriority(OTG_FS_WKUP_IRQn, 10);
+	NVIC_ClearPendingIRQ(OTG_FS_WKUP_IRQn);
+	NVIC_EnableIRQ(OTG_FS_WKUP_IRQn);
+
+	NVIC_SetPriority(67 /*OTG_FS_IRQn*/, 10);
+	NVIC_ClearPendingIRQ(67 /*OTG_FS_IRQn*/);
+	NVIC_EnableIRQ(67 /*OTG_FS_IRQn*/);
 
 	// Enable USB interrupts and enable usb
-	USB->CNTR |= (USB_CNTR_WKUPM | USB_CNTR_SOFM | USB_CNTR_ESOFM | USB_CNTR_CTRM);
-	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
+	USB_OTG_FS->GOTGINT = 0xFFFFFFFF;
+	RCC->AHB2ENR |= RCC_AHB2LPENR_OTGFSLPEN;
 	tusb_init();
 #endif
 }
@@ -1137,21 +1182,21 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 
 static void mcu_eeprom_erase(uint16_t address)
 {
-	while (FLASH->SR & FLASH_SR_BSY)
-		; // wait while busy
-	// unlock flash if locked
-	if (FLASH->CR & FLASH_CR_LOCK)
-	{
-		FLASH->KEYR = 0x45670123;
-		FLASH->KEYR = 0xCDEF89AB;
-	}
-	FLASH->CR = 0;			   // Ensure PG bit is low
-	FLASH->CR |= FLASH_CR_PER; // set the PER bit
-	FLASH->AR = (FLASH_EEPROM + address);
-	FLASH->CR |= FLASH_CR_STRT; // set the start bit
-	while (FLASH->SR & FLASH_SR_BSY)
-		; // wait while busy
-	FLASH->CR = 0;
+	// while (FLASH->SR & FLASH_SR_BSY)
+	// 	; // wait while busy
+	// // unlock flash if locked
+	// if (FLASH->CR & FLASH_CR_LOCK)
+	// {
+	// 	FLASH->KEYR = 0x45670123;
+	// 	FLASH->KEYR = 0xCDEF89AB;
+	// }
+	// FLASH->CR = 0;			   // Ensure PG bit is low
+	// FLASH->CR |= FLASH_CR_PER; // set the PER bit
+	// FLASH->AR = (FLASH_EEPROM + address);
+	// FLASH->CR |= FLASH_CR_STRT; // set the start bit
+	// while (FLASH->SR & FLASH_SR_BSY)
+	// 	; // wait while busy
+	// FLASH->CR = 0;
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -1168,41 +1213,41 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
-	if (stm32_flash_modified)
-	{
-		mcu_eeprom_erase(stm32_flash_current_page);
-		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
-		uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-		uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 1);
-		while (counter--)
-		{
-			while (FLASH->SR & FLASH_SR_BSY)
-				; // wait while busy
-			mcu_disable_global_isr();
-			// unlock flash if locked
-			if (FLASH->CR & FLASH_CR_LOCK)
-			{
-				FLASH->KEYR = 0x45670123;
-				FLASH->KEYR = 0xCDEF89AB;
-			}
-			FLASH->CR = 0;
-			FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
-			*eeprom = *ptr;
-			while (FLASH->SR & FLASH_SR_BSY)
-				; // wait while busy
-			mcu_enable_global_isr();
-			if (FLASH->SR & FLASH_SR_PGERR)
-				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
-			if (FLASH->SR & FLASH_SR_WRPRTERR)
-				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
-			FLASH->CR = 0;				 // Ensure PG bit is low
-			FLASH->SR = 0;
-			eeprom++;
-			ptr++;
-		}
-		stm32_flash_modified = false;
-		// Restore interrupt flag state.*/
-	}
+	// if (stm32_flash_modified)
+	// {
+	// 	mcu_eeprom_erase(stm32_flash_current_page);
+	// 	volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
+	// 	uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
+	// 	uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 1);
+	// 	while (counter--)
+	// 	{
+	// 		while (FLASH->SR & FLASH_SR_BSY)
+	// 			; // wait while busy
+	// 		mcu_disable_global_isr();
+	// 		// unlock flash if locked
+	// 		if (FLASH->CR & FLASH_CR_LOCK)
+	// 		{
+	// 			FLASH->KEYR = 0x45670123;
+	// 			FLASH->KEYR = 0xCDEF89AB;
+	// 		}
+	// 		FLASH->CR = 0;
+	// 		FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
+	// 		*eeprom = *ptr;
+	// 		while (FLASH->SR & FLASH_SR_BSY)
+	// 			; // wait while busy
+	// 		mcu_enable_global_isr();
+	// 		if (FLASH->SR & (FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR))
+	// 			protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
+	// 		if (FLASH->SR & FLASH_SR_WRPERR)
+	// 			protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
+	// 		FLASH->CR = 0;				 // Ensure PG bit is low
+	// 		FLASH->SR = 0;
+	// 		eeprom++;
+	// 		ptr++;
+	// 	}
+	// 	stm32_flash_modified = false;
+	// 	// Restore interrupt flag state.*/
+	// }
 }
 
 #endif

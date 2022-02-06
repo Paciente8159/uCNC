@@ -65,13 +65,6 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
-#define mcu_config_input(diopin)                                                                                        \
-	{                                                                                                                   \
-		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
-		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
-	}
-
 #define mcu_config_output_af(diopin, mode)                                                                            \
 	{                                                                                                                 \
 		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                           \
