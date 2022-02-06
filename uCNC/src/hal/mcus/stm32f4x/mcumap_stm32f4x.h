@@ -2303,19 +2303,6 @@ extern "C"
 #endif
 #endif
 
-/*#define UCSRB __ucsrbreg__(COM_NUMBER)
-#define UCSRA __ucsrareg__(COM_NUMBER)
-#define UDRIE __udriereg__(COM_NUMBER)
-#define U2X __u2xreg__(COM_NUMBER)
-#define UBRRH __ubrrhreg__(COM_NUMBER)
-#define UBRRL __ubrrlreg__(COM_NUMBER)
-#define RXEN __rxenreg__(COM_NUMBER)
-#define TXEN __txenreg__(COM_NUMBER)
-#define RXCIE __rxciereg__(COM_NUMBER)
-#define UDRE __udrereg__(COM_NUMBER)
-#define RXC __rxcreg__(COM_NUMBER)
-*/
-
 // Timer registers
 #ifndef ITP_TIMER
 #define ITP_TIMER 2

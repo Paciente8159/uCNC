@@ -394,9 +394,23 @@ void mcu_usart_init(void)
 	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #elif (INTERFACE == INTERFACE_USB)
 	// configure USB as Virtual COM port
-	RCC->AHB2ENR &= ~RCC_AHB2ENR_OTGFSEN;
+	RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+	USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+	USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
+	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
+	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
+	mcu_config_af(USB_DP);
+	mcu_config_af(USB_DM);
+	GPIOA->MODER &= ~(GPIO_RESET << (10 << 1)); /*USB ID*/
+	GPIOA->MODER |= (GPIO_AF << (10 << 1));		/*af mode*/
+	GPIOA->PUPDR &= ~(GPIO_RESET << (10 << 1)); // pullup
+	GPIOA->PUPDR |= (GPIO_IN_PULLUP << (10 << 1));
+	GPIOA->OTYPER |= (1 << 10); // open drain
+	GPIOA->OSPEEDR &= ~(GPIO_RESET << (10 << 1));
+	GPIOA->OSPEEDR |= (0x02 << (10 << 1));						  // high-speed
+	GPIOA->AFR[1] |= (GPIO_AFRH_AFSEL10_1 | GPIO_AFRH_AFSEL10_3); // GPIO_AF10_OTG_FS
 
 	NVIC_SetPriority(OTG_FS_WKUP_IRQn, 10);
 	NVIC_ClearPendingIRQ(OTG_FS_WKUP_IRQn);
@@ -408,7 +422,6 @@ void mcu_usart_init(void)
 
 	// Enable USB interrupts and enable usb
 	USB_OTG_FS->GOTGINT = 0xFFFFFFFF;
-	RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
 	tusb_init();
 #endif
 }

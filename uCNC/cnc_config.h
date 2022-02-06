@@ -37,7 +37,7 @@ extern "C"
 #endif
 
 #ifndef INTERFACE
-#define INTERFACE INTERFACE_USART
+#define INTERFACE INTERFACE_USB
 #endif
 //uncomment to force enable synchronized TX/RX (used in USB VCP)
 //enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven (sync RX may cause problems with hardware USART)
@@ -209,7 +209,7 @@ extern "C"
 /*
 	Disable/enable all control, limits or/and probing input pins. This helps to reduce code size if features are not needed
 */
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 // #define DISABLE_ALL_LIMITS
 // #define DISABLE_PROBE
 
