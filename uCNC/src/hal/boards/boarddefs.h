@@ -91,7 +91,7 @@ extern "C"
 #error Undefined board
 #endif
 
-	//#include "../mcus/mcudefs.h" //configures the MCU for the selected board
+#include "../mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus
 }

@@ -112,7 +112,6 @@ extern "C"
 // board and mcu configurations
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
 // machine kinematics configurations
-#include "hal/mcus/mcudefs.h"			  //configures the board IO and service interrupts
 #include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
 // fill remaining configurations
 #include "cnc_config_helper.h"
