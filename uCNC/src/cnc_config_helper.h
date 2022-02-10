@@ -841,6 +841,62 @@ extern "C"
 #endif
 #define DIO101 -1
 #endif
+#ifndef SERVO0
+#define SERVO0 -1
+#ifdef DIO102
+#undef DIO102
+#endif
+#define DIO102 -1
+#endif
+#ifndef SERVO1
+#define SERVO1 -1
+#ifdef DIO103
+#undef DIO103
+#endif
+#define DIO103 -1
+#endif
+#ifndef SERVO2
+#define SERVO2 -1
+#ifdef DIO104
+#undef DIO104
+#endif
+#define DIO104 -1
+#endif
+#ifndef SERVO3
+#define SERVO3 -1
+#ifdef DIO105
+#undef DIO105
+#endif
+#define DIO105 -1
+#endif
+#ifndef SERVO4
+#define SERVO4 -1
+#ifdef DIO106
+#undef DIO106
+#endif
+#define DIO106 -1
+#endif
+#ifndef SERVO5
+#define SERVO5 -1
+#ifdef DIO107
+#undef DIO107
+#endif
+#define DIO107 -1
+#endif
+#ifndef SERVO6
+#define SERVO6 -1
+#ifdef DIO108
+#undef DIO108
+#endif
+#define DIO108 -1
+#endif
+#ifndef SERVO7
+#define SERVO7 -1
+#ifdef DIO109
+#undef DIO109
+#endif
+#define DIO109 -1
+#endif
 
 #if (INTERFACE < 0 || INTERFACE > 1)
 #error "undefined COM interface"

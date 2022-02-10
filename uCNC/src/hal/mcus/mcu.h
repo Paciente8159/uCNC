@@ -1,7 +1,7 @@
 /*
 	Name: mcu.h
 	Description: Contains all the function declarations necessary to interact with the MCU.
-        This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
+		This provides an intenterface between the µCNC and the MCU unit used to power the µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -28,6 +28,16 @@ extern "C"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+
+#define MCU_CALLBACK __attribute__((weak))
+
+	/*Callbacks*/
+
+	MCU_CALLBACK void mcu_step_cb(void);
+	MCU_CALLBACK void mcu_step_reset_cb(void);
+	MCU_CALLBACK void mcu_serialrx_cb(char c);
+	MCU_CALLBACK void mcu_serialtx_cb();
+	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 
 /*IO functions*/
 
@@ -122,17 +132,34 @@ extern "C"
 #endif
 
 /**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#define SERVO0_UCNC_INTERNAL_PIN 102
+#ifndef mcu_set_pwm
+	void mcu_set_servo(uint8_t servo, uint8_t value);
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_pwm
+	uint8_t mcu_get_servo(uint8_t servo);
+#endif
+
+/**
  * checks if the serial hardware of the MCU is ready do send the next char
  * */
 #ifndef mcu_tx_ready
-	bool mcu_tx_ready(void); //Start async send
+	bool mcu_tx_ready(void); // Start async send
 #endif
 
 /**
  * checks if the serial hardware of the MCU has a new char ready to be read
  * */
 #ifndef mcu_rx_ready
-	bool mcu_rx_ready(void); //Stop async send
+	bool mcu_rx_ready(void); // Stop async send
 #endif
 
 /**
@@ -151,7 +178,7 @@ extern "C"
 	char mcu_getc(void);
 #endif
 
-//ISR
+// ISR
 /**
  * enables global interrupts on the MCU
  * can be defined either as a function or a macro call
@@ -176,7 +203,7 @@ extern "C"
 	bool mcu_get_global_isr(void);
 #endif
 
-	//Step interpolator
+	// Step interpolator
 	/**
 	 * convert step rate to clock cycles
 	 * */
@@ -204,6 +231,12 @@ extern "C"
 	uint32_t mcu_millis();
 
 	/**
+	 * provides a delay in us (micro seconds)
+	 * the maximum allowed delay is 255 us
+	 * */
+	// void mcu_delay_us(uint8_t delay);
+
+	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
 	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
@@ -212,7 +245,7 @@ extern "C"
 	 * */
 	void mcu_dotasks(void);
 
-	//Non volatile memory
+	// Non volatile memory
 	/**
 	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
 	 * */

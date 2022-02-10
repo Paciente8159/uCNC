@@ -1,31 +1,31 @@
 /*
-	Name: mcu_avr.c
-	Description: Implements mcu interface on AVR.
-		Besides all the functions declared in the mcu.h it also implements the code responsible
-		for handling:
-			interpolator.h
-				void itp_step_isr();
-				void itp_step_reset_isr();
-			serial.h
-				void serial_rx_isr(unsinged char c);
-				char serial_tx_isr();
-			trigger_control.h
-				void io_limits_isr();
-				void io_controls_isr();
+        Name: mcu_avr.c
+        Description: Implements mcu interface on AVR.
+                Besides all the functions declared in the mcu.h it also implements the code responsible
+                for handling:
+                        interpolator.h
+                                void itp_step_isr();
+                                void itp_step_reset_isr();
+                        serial.h
+                                void serial_rx_isr(unsinged char c);
+                                char serial_tx_isr();
+                        trigger_control.h
+                                void io_limits_isr();
+                                void io_controls_isr();
                 void io_probe_isr(uint8_t probe);
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 01/11/2019
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 01/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+        See the	GNU General Public License for more details.
 */
 
 #include "../../../cnc.h"
@@ -56,12 +56,133 @@
 #define BAUDRATE 115200
 #endif
 
-//gets the mcu running time in ms
+// define the mcu internal servo variables
+#if SERVOS_MASK > 0
+static uint8_t mcu_servos[8];
+#endif
+
+static FORCEINLINE void mcu_clear_servos()
+{
+        // disables the interrupt of OCIEB (leaves only OCIEA)
+        RTC_TIMSK = (1 << RTC_OCIEA);
+        RTC_TIFR = (1 << 2);
+#if SERVO0 >= 0
+        mcu_clear_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+        mcu_clear_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+        mcu_clear_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+        mcu_clear_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+        mcu_clear_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+        mcu_clear_output(SERVO5);
+#endif
+#if SERVO6 >= 0
+        mcu_clear_output(SERVO6);
+#endif
+#if SERVO7 >= 0
+        mcu_clear_output(SERVO7);
+#endif;
+}
+
+// gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
 ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
+#if SERVOS_MASK > 0
+        static uint8_t ms_servo_counter = 0;
+        uint8_t servo_mux = ms_servo_counter;
+
+        // counts to 20 and reloads
+        // every even millisecond sets output (will be active at least 1ms)
+        if (!(servo_mux & 0x01))
+        {
+                mcu_clear_servos();
+                switch (servo_mux >> 1)
+                {
+#if SERVO0 >= 0
+                case 0:
+                        mcu_set_output(SERVO0);
+                        break;
+#endif
+#if SERVO1 >= 0
+                case 1:
+                        mcu_set_output(SERVO1);
+                        break;
+#endif
+#if SERVO2 >= 0
+                case 2:
+                        mcu_set_output(SERVO2);
+                        break;
+#endif
+#if SERVO3 >= 0
+                case 3:
+                        mcu_set_output(SERVO3);
+                        break;
+#endif
+#if SERVO4 >= 0
+                case 4:
+                        mcu_set_output(SERVO4);
+                        break;
+#endif
+#if SERVO5 >= 0
+                case 5:
+                        mcu_set_output(SERVO5);
+                        break;
+#endif
+#if SERVO6 >= 0
+                case 6:
+                        mcu_set_output(SERVO6);
+                        break;
+#endif
+#if SERVO7 >= 0
+                case 7:
+                        mcu_set_output(SERVO7);
+                        break;
+#endif
+                }
+        }
+        else // every odd millisecond loads OCRB and enables interrupt
+        {
+                RTC_OCRB = mcu_servos[(servo_mux >> 1)];
+                if (RTC_OCRB)
+                {
+                        if (RTC_OCRB != RTC_OCRA)
+                        {
+                                RTC_TIFR = 7;
+                                RTC_TIMSK |= (1 << RTC_OCIEB);
+                                if (RTC_OCRB < RTC_TCNT)
+                                {
+                                        mcu_clear_servos();
+                                }
+                        }
+                }
+                else
+                {
+                        mcu_clear_servos();
+                }
+        }
+        servo_mux++;
+        ms_servo_counter = (servo_mux != 20) ? servo_mux : 0;
+
+#endif
+        mcu_toggle_output(DOUT0);
         mcu_runtime_ms++;
         cnc_scheduletasks();
+}
+
+// naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
+ISR(RTC_COMPB_vect, ISR_NAKED)
+{
+        mcu_clear_servos();
+        reti();
 }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
@@ -355,14 +476,14 @@ static void mcu_start_rtc();
 
 void mcu_init(void)
 {
-        //disable WDT
+        // disable WDT
         wdt_reset();
         MCUSR &= ~(1 << WDRF);
         WDTCSR |= (1 << WDCE) | (1 << WDE);
         WDTCSR = 0x00;
 
-        //configure all pins
-        //autogenerated
+        // configure all pins
+        // autogenerated
 #if STEP0 >= 0
         mcu_config_output(STEP0);
 #endif
@@ -519,6 +640,34 @@ void mcu_init(void)
 #if DOUT15 >= 0
         mcu_config_output(DOUT15);
 #endif
+#if SERVO0 >= 0
+        mcu_config_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+        mcu_config_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+        mcu_config_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+        mcu_config_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+        mcu_config_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+        mcu_config_output(SERVO5);
+#endif
+#if SERVO6 >= 0
+        mcu_config_output(SERVO6);
+#endif
+#if SERVO7 >= 0
+        mcu_config_output(SERVO7);
+#endif
+#if TX >= 0
+        mcu_config_output(TX);
+#endif
+
 #if LIMIT_X >= 0
         mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
@@ -813,15 +962,12 @@ void mcu_init(void)
         mcu_config_pullup(DIN15);
 #endif
 #endif
-#if TX >= 0
-        mcu_config_output(TX);
-#endif
 #if RX >= 0
         mcu_config_output(RX);
 #endif
 
-        //Set COM port
-        // Set baud rate
+        // Set COM port
+        //  Set baud rate
         uint16_t UBRR_value;
 #if BAUDRATE < 57600
         UBRR_value = ((F_CPU / (8L * BAUDRATE)) - 1) / 2;
@@ -836,7 +982,7 @@ void mcu_init(void)
         // enable rx, tx, and interrupt on complete reception of a byte and UDR empty
         UCSRB |= (1 << RXEN | 1 << TXEN | 1 << RXCIE);
 
-//enable interrupts on pin changes
+// enable interrupts on pin changes
 #ifndef USE_INPUTS_POOLING_ONLY
 #if ((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
         SETBIT(PCICR, PCIE0);
@@ -857,13 +1003,37 @@ void mcu_init(void)
 
         mcu_start_rtc();
 
-        //disable probe isr
+        // disable probe isr
         mcu_disable_probe_isr();
-        //enable interrupts
+        // enable interrupts
         mcu_enable_global_isr();
 }
 
-//IO functions
+// IO functions
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+        uint8_t scaled = (uint8_t)(((uint16_t)(value * RTC_OCRA)) >> 8);
+        mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
+#endif
+}
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+        uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+        if ((1U << offset) & SERVOS_MASK)
+        {
+                return mcu_servos[offset];
+        }
+#endif
+        return 0;
+}
+
 void mcu_putc(char c)
 {
 #ifdef ENABLE_SYNC_TX
@@ -883,7 +1053,7 @@ char mcu_getc(void)
         return COM_INREG;
 }
 
-//RealTime
+// RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
         if (frequency < F_STEP_MIN)
@@ -921,44 +1091,45 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
         *ticks = floorf((clockcounter / frequency)) - 1;
 }
 /*
-	initializes the pulse ISR
-	In Arduino this is done in TIMER1
-	The frequency range is from 4Hz to F_PULSE
+        initializes the pulse ISR
+        In Arduino this is done in TIMER1
+        The frequency range is from 4Hz to F_PULSE
 */
 void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
-        //stops timer
+        // stops timer
         ITP_TCCRB = 0;
-        //CTC mode
+        // CTC mode
         ITP_TCCRA = 0;
-        //resets counter
+        // resets counter
         ITP_TCNT = 0;
-        //set step clock
+        // set step clock
         ITP_OCRA = clocks_speed;
-        //sets OCR0B to half
-        //this will allways fire step_reset between pulses
+        // sets OCR0B to half
+        // this will allways fire step_reset between pulses
         ITP_OCRB = ITP_OCRA >> 1;
-        ITP_TIFR = 0;
+        // clears interrupt flags by writing 1's
+        ITP_TIFR = 7;
         // enable timer interrupts on both match registers
         ITP_TIMSK |= (1 << ITP_OCIEB) | (1 << ITP_OCIEA);
 
-        //start timer in CTC mode with the correct prescaler
+        // start timer in CTC mode with the correct prescaler
         ITP_TCCRB = (uint8_t)prescaller;
 }
 
 // se implementar amass deixo de necessitar de prescaler
 void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
-        //stops timer
-        //ITP_TCCRB = 0;
+        // stops timer
+        // ITP_TCCRB = 0;
         ITP_OCRB = clocks_speed >> 1;
         ITP_OCRA = clocks_speed;
-        //sets OCR0B to half
-        //this will allways fire step_reset between pulses
+        // sets OCR0B to half
+        // this will allways fire step_reset between pulses
 
-        //reset timer
-        //ITP_TCNT = 0;
-        //start timer in CTC mode with the correct prescaler
+        // reset timer
+        // ITP_TCNT = 0;
+        // start timer in CTC mode with the correct prescaler
         ITP_TCCRB = (uint8_t)prescaller;
 }
 
@@ -968,7 +1139,7 @@ void mcu_stop_itp_isr(void)
         ITP_TIMSK &= ~((1 << ITP_OCIEB) | (1 << ITP_OCIEA));
 }
 
-//gets the mcu running time in ms
+// gets the mcu running time in ms
 uint32_t mcu_millis()
 {
         uint32_t val = mcu_runtime_ms;
@@ -982,19 +1153,20 @@ void mcu_start_rtc()
 #else
         uint8_t clocks = ((F_CPU / 1000) >> 8) - 1;
 #endif
-        //stops timer
+        // stops timer
         RTC_TCCRB = 0;
-        //CTC mode
         RTC_TCCRA = 0;
-        //resets counter
+        // resets counter
         RTC_TCNT = 0;
-        //set step clock
+        // set step clock
         RTC_OCRA = clocks;
+        // CTC mode
         RTC_TCCRA |= 2;
-        RTC_TIFR = 0;
+        // clears interrupt flags by writing 1's
+        RTC_TIFR = 7;
         // enable timer interrupts on both match registers
         RTC_TIMSK |= (1 << RTC_OCIEA);
-//start timer in CTC mode with the correct prescaler
+// start timer in CTC mode with the correct prescaler
 #if (F_CPU <= 16000000UL)
 #if (RTC_TIMER != 2)
         RTC_TCCRB |= 3;
@@ -1013,7 +1185,7 @@ void mcu_start_rtc()
 void mcu_dotasks()
 {
 #ifdef ENABLE_SYNC_RX
-        //read any char that is received
+        // read any char that is received
         while (CHECKBIT(UCSRA, RXC))
         {
                 unsigned char c = mcu_getc();
@@ -1022,7 +1194,7 @@ void mcu_dotasks()
 #endif
 }
 
-//This was copied from grbl
+// This was copied from grbl
 #ifndef EEPE
 #define EEPE EEWE   //!< EEPROM program/write enable.
 #define EEMPE EEMWE //!< EEPROM master program/write enable.
@@ -1075,7 +1247,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
                 {
                         // Now we know that some bits need to be programmed to '0' also.
                         EEDR = value;                                        // Set EEPROM data register.
-                        EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); //Erase+Write mode.
+                        EECR = ((1 << EEMPE) | (0 << EEPM1) | (0 << EEPM0)); // Erase+Write mode.
                         EECR |= (1 << EEPE);                                 // Start Erase+Write operation.
                 }
                 else
@@ -1107,6 +1279,6 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 
 void mcu_eeprom_flush()
 {
-        //do nothing
+        // do nothing
 }
 #endif
