@@ -1,21 +1,21 @@
 /*
-	Name: io_control.c
-	Description: The input control unit for µCNC.
+    Name: io_control.c
+    Description: The input control unit for µCNC.
         This is responsible to check all limit switches (both hardware and software), control switches,
         and probe.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/12/2019
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 07/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -25,8 +25,12 @@ static volatile uint8_t io_limits_homing_filter;
 static volatile uint8_t io_spindle_speed;
 #endif
 
-void io_limits_isr(void)
+void mcu_limits_changed_cb(void)
 {
+#ifdef DISABLE_ALL_LIMITS
+    return;
+#endif
+
     uint8_t limits = io_get_limits();
 
     if (g_settings.hard_limits_enabled)
@@ -36,22 +40,22 @@ void io_limits_isr(void)
 #ifdef ENABLE_DUAL_DRIVE_AXIS
             if (cnc_get_exec_state(EXEC_RUN) & cnc_get_exec_state(EXEC_HOMING))
             {
-//if homing and dual drive axis are enabled
+// if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE_AXIS0
-                if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) //the limit triggered matches the first dual drive axis
+                if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) // the limit triggered matches the first dual drive axis
                 {
                     itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
 
-                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
-                        return; //exits and doesn't trip the alarm
+                        return; // exits and doesn't trip the alarm
                     }
                 }
 #endif
 #ifdef DUAL_DRIVE_AXIS1
-                if (limits & LIMIT_DUAL1 & io_limits_homing_filter) //the limit triggered matches the second dual drive axis
+                if (limits & LIMIT_DUAL1 & io_limits_homing_filter) // the limit triggered matches the second dual drive axis
                 {
-                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) //but not both
+                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
                         itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
                     }
@@ -60,7 +64,7 @@ void io_limits_isr(void)
             }
 #endif
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-            itp_lock_stepper(0); //unlocks axis
+            itp_lock_stepper(0); // unlocks axis
 #endif
             itp_stop();
             cnc_set_exec_state(EXEC_HALT);
@@ -68,21 +72,24 @@ void io_limits_isr(void)
     }
 }
 
-void io_controls_isr(void)
+void mcu_controls_changed_cb(void)
 {
+#ifdef DISABLE_ALL_CONTROLS
+    return;
+#endif
     uint8_t controls = io_get_controls();
 
 #if (ESTOP >= 0)
     if (CHECKFLAG(controls, ESTOP_MASK))
     {
         cnc_set_exec_state(EXEC_KILL);
-        return; //forces exit
+        return; // forces exit
     }
 #endif
 #if (SAFETY_DOOR >= 0)
     if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
     {
-        //safety door activates hold simultaneously to start the controlled stop
+        // safety door activates hold simultaneously to start the controlled stop
         cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
     }
 #endif
@@ -100,11 +107,14 @@ void io_controls_isr(void)
 #endif
 }
 
-void io_probe_isr(void)
+void mcu_probe_changed_cb(void)
 {
-    //on hit enables hold (directly)
+#ifdef DISABLE_PROBE
+    return;
+#endif
+    // on hit enables hold (directly)
     cnc_set_exec_state(EXEC_HOLD);
-    //stores rt position
+    // stores rt position
     parser_sync_probe();
 }
 
@@ -128,7 +138,7 @@ bool io_check_boundaries(float *axis)
     return true;
 }
 
-void io_inputs_isr(void)
+void mcu_inputs_changed_cb(void)
 {
 #if ENCODERS > 0
     encoders_update();
@@ -137,6 +147,9 @@ void io_inputs_isr(void)
 
 uint8_t io_get_limits(void)
 {
+#ifdef DISABLE_ALL_LIMITS
+    return 0;
+#endif
     uint8_t value = 0;
 #if ((LIMIT_X >= 0) && (LIMITS_DUAL & LIMIT_X_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
     value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
@@ -183,6 +196,9 @@ uint8_t io_get_limits(void)
 
 uint8_t io_get_controls(void)
 {
+#ifdef DISABLE_ALL_CONTROLS
+    return 0;
+#endif
     uint8_t value = 0;
 #if (ESTOP >= 0)
     value |= ((mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
@@ -220,6 +236,9 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
+#ifdef DISABLE_PROBE
+    return false;
+#endif
 #if (PROBE >= 0)
     bool probe = (mcu_get_input(PROBE) != 0);
     return (!g_settings.probe_invert_mask) ? probe : !probe;
@@ -233,7 +252,7 @@ void io_set_homing_limits_filter(uint8_t filter_mask)
     io_limits_homing_filter = filter_mask;
 }
 
-//outputs
+// outputs
 void io_set_steps(uint8_t mask)
 {
 #if (STEPPER_COUNT > 0 && (STEP0 >= 0))

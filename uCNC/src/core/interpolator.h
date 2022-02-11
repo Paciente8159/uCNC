@@ -32,8 +32,6 @@ extern "C"
 	void itp_init(void);
 	void itp_run(void);
 	void itp_update(void);
-	void itp_step_isr(void);
-	void itp_step_reset_isr(void);
 	void itp_stop(void);
 	void itp_stop_tools(void);
 	void itp_clear(void);

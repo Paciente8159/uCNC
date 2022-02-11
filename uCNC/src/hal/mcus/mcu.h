@@ -31,13 +31,19 @@ extern "C"
 
 #define MCU_CALLBACK __attribute__((weak))
 
-	/*Callbacks*/
+	// weak callbacks
+	// these callbacks are implemented on µCNC core code
+	// these weak callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_CALLBACK void mcu_serialrx_cb(char c);
-	MCU_CALLBACK void mcu_serialtx_cb();
+	MCU_CALLBACK void mcu_com_rx_cb(unsigned char c);
+	MCU_CALLBACK void mcu_com_tx_cb();
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
+	MCU_CALLBACK void mcu_controls_changed_cb(void);
+	MCU_CALLBACK void mcu_limits_changed_cb(void);
+	MCU_CALLBACK void mcu_probe_changed_cb(void);
+	MCU_CALLBACK void mcu_inputs_changed_cb(void);
 
 /*IO functions*/
 
@@ -234,14 +240,16 @@ extern "C"
 	 * provides a delay in us (micro seconds)
 	 * the maximum allowed delay is 255 us
 	 * */
-	// void mcu_delay_us(uint8_t delay);
+#ifndef mcu_delay_us
+	void mcu_delay_us(uint8_t delay);
+#endif
 
 	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
 	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
-	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
+	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
+	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
 	 * */
 	void mcu_dotasks(void);
 

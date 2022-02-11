@@ -1,20 +1,20 @@
 /*
-	Name: interpolator.c
-	Description: Implementation of a linear acceleration interpolator for µCNC.
-		The linear acceleration interpolator generates step profiles with constant acceleration.
+    Name: interpolator.c
+    Description: Implementation of a linear acceleration interpolator for µCNC.
+        The linear acceleration interpolator generates step profiles with constant acceleration.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 13/10/2019
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 13/10/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -26,20 +26,20 @@
 
 #define F_INTEGRATOR 100
 #define INTEGRATOR_DELTA_T (1.0f / F_INTEGRATOR)
-//the amount of motion precomputed and stored for the step generator is never less then
-//the size of the buffer x time window size
-//in this case the buffer never holds less then 50ms of motions
+// the amount of motion precomputed and stored for the step generator is never less then
+// the size of the buffer x time window size
+// in this case the buffer never holds less then 50ms of motions
 
-//integrator calculates 10ms (minimum size) time frame windows
-#define INTERPOLATOR_BUFFER_SIZE 5 //number of windows in the buffer
+// integrator calculates 10ms (minimum size) time frame windows
+#define INTERPOLATOR_BUFFER_SIZE 5 // number of windows in the buffer
 
-//Itp update flags
+// Itp update flags
 #define ITP_NOUPDATE 0
 #define ITP_UPDATE_ISR 1
 #define ITP_UPDATE_TOOL 2
 
-//contains data of the block being executed by the pulse routine
-//this block has the necessary data to execute the Bresenham line algorithm
+// contains data of the block being executed by the pulse routine
+// this block has the necessary data to execute the Bresenham line algorithm
 typedef struct itp_blk_
 {
 #ifdef STEP_ISR_SKIP_MAIN
@@ -60,9 +60,9 @@ typedef struct itp_blk_
 #endif
 } itp_block_t;
 
-//contains data of the block segment being executed by the pulse and integrator routines
-//the segment is a fragment of the motion defined in the block
-//this also contains the acceleration/deacceleration info
+// contains data of the block segment being executed by the pulse and integrator routines
+// the segment is a fragment of the motion defined in the block
+// this also contains the acceleration/deacceleration info
 typedef struct pulse_sgm_
 {
     itp_block_t *block;
@@ -79,28 +79,28 @@ typedef struct pulse_sgm_
     uint8_t update_itp;
 } itp_segment_t;
 
-//circular buffers
-//creates new type PULSE_BLOCK_BUFFER
+// circular buffers
+// creates new type PULSE_BLOCK_BUFFER
 static itp_block_t itp_blk_data[INTERPOLATOR_BUFFER_SIZE];
 static uint8_t itp_blk_data_write;
 
 static itp_segment_t itp_sgm_data[INTERPOLATOR_BUFFER_SIZE];
 static volatile uint8_t itp_sgm_data_write;
 static volatile uint8_t itp_sgm_data_read;
-//static buffer_t itp_sgm_buffer;
+// static buffer_t itp_sgm_buffer;
 
 static planner_block_t *itp_cur_plan_block;
 
-//keeps track of the machine realtime position
+// keeps track of the machine realtime position
 static int32_t itp_rt_step_pos[STEPPER_COUNT];
-//flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
+// flag to force the interpolator to recalc entry and exit limit position of acceleration/deacceleration curves
 static bool itp_needs_update;
 #if DSS_MAX_OVERSAMPLING > 0
-//stores the previous dss setting used by the interpolator
+// stores the previous dss setting used by the interpolator
 static uint8_t prev_dss;
 #endif
 static int16_t prev_spindle;
-//pointer to the segment being executed
+// pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 volatile static uint8_t itp_step_lock;
@@ -113,10 +113,10 @@ FORCEINLINE static bool itp_sgm_is_empty(void);
 FORCEINLINE static void itp_sgm_clear(void);
 FORCEINLINE static void itp_blk_buffer_write(void);
 static void itp_blk_clear(void);
-//FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
+// FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
 
 /*
-	Interpolator segment buffer functions
+    Interpolator segment buffer functions
 */
 static void itp_sgm_buffer_read(void)
 {
@@ -177,7 +177,7 @@ static void itp_sgm_clear(void)
 {
     itp_sgm_data_write = 0;
     itp_sgm_data_read = 0;
-    //resets the sgm pointer and stored dss
+    // resets the sgm pointer and stored dss
     itp_rt_sgm = NULL;
 #if DSS_MAX_OVERSAMPLING > 0
     prev_dss = 0;
@@ -188,7 +188,7 @@ static void itp_sgm_clear(void)
 
 static void itp_blk_buffer_write(void)
 {
-    //curcular always. No need to control override
+    // curcular always. No need to control override
     if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
     {
         itp_blk_data_write = 0;
@@ -202,25 +202,25 @@ static void itp_blk_clear(void)
 }
 
 /*
-	Interpolator functions
+    Interpolator functions
 */
-//declares functions called by the stepper ISR
+// declares functions called by the stepper ISR
 void itp_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-    //resets buffers
+    // resets buffers
     memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
 #endif
     itp_cur_plan_block = NULL;
     itp_needs_update = false;
-    //initialize circular buffers
+    // initialize circular buffers
     itp_blk_clear();
     itp_sgm_clear();
 }
 
 void itp_run(void)
 {
-    //conversion vars
+    // conversion vars
     static uint32_t accel_until = 0;
     static uint32_t deaccel_from = 0;
     static float junction_speed_sqr = 0;
@@ -231,33 +231,33 @@ void itp_run(void)
 
     itp_segment_t *sgm = NULL;
 
-    //creates segments and fills the buffer
+    // creates segments and fills the buffer
     while (!itp_sgm_is_full())
     {
         if (cnc_get_exec_state(EXEC_ALARM))
         {
-            //on any active alarm exits
+            // on any active alarm exits
             return;
         }
 
-        //no planner blocks has beed processed or last planner block was fully processed
+        // no planner blocks has beed processed or last planner block was fully processed
         if (itp_cur_plan_block == NULL)
         {
-            //planner is empty or interpolator block buffer full. Nothing to be done
-            //itp block will never be full if itp segment is not full
+            // planner is empty or interpolator block buffer full. Nothing to be done
+            // itp block will never be full if itp segment is not full
             if (planner_buffer_is_empty() /* || itp_blk_is_full()*/)
             {
                 break;
             }
-            //get the first block in the planner
+            // get the first block in the planner
             itp_cur_plan_block = planner_get_block();
-            //clear the data block
+            // clear the data block
             memset(&itp_blk_data[itp_blk_data_write], 0, sizeof(itp_block_t));
 #ifdef GCODE_PROCESS_LINE_NUMBERS
             itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
 
-//overwrites previous values
+// overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
@@ -290,9 +290,9 @@ void itp_run(void)
             sqr_step_speed *= fast_flt_pow2(total_step_inv);
             feed_convert *= fast_flt_sqrt(sqr_step_speed);
 
-            //flags block for recalculation of speeds
+            // flags block for recalculation of speeds
             itp_needs_update = true;
-            //in every new block speed update is needed
+            // in every new block speed update is needed
             const_speed = false;
 
             half_speed_change = INTEGRATOR_DELTA_T * itp_cur_plan_block->acceleration;
@@ -303,19 +303,19 @@ void itp_run(void)
 
         sgm = &itp_sgm_data[itp_sgm_data_write];
 
-        //clear the data segment
+        // clear the data segment
         memset(sgm, 0, sizeof(itp_segment_t));
         sgm->block = &itp_blk_data[itp_blk_data_write];
 
-        //if an hold is active forces to deaccelerate
+        // if an hold is active forces to deaccelerate
         if (cnc_get_exec_state(EXEC_HOLD))
         {
-            //forces deacceleration by overriding the profile juntion points
+            // forces deacceleration by overriding the profile juntion points
             accel_until = remaining_steps;
             deaccel_from = remaining_steps;
             itp_needs_update = true;
         }
-        else if (itp_needs_update) //forces recalculation of acceleration and deacceleration profiles
+        else if (itp_needs_update) // forces recalculation of acceleration and deacceleration profiles
         {
             itp_needs_update = false;
             float exit_speed_sqr = planner_get_block_exit_speed_sqr();
@@ -331,7 +331,7 @@ void itp_run(void)
                 initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
             }
 
-            //if entry speed already a junction speed updates it.
+            // if entry speed already a junction speed updates it.
             if (accel_until == remaining_steps)
             {
                 itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
@@ -347,19 +347,19 @@ void itp_run(void)
 
         float speed_change;
         float profile_steps_limit;
-        //acceleration profile
+        // acceleration profile
         if (remaining_steps > accel_until)
         {
             /*
-            	computes the traveled distance within a fixed amount of time
-            	this time is the reverse integrator frequency (INTEGRATOR_DELTA_T)
-            	for constant acceleration or deceleration the traveled distance will be equal
-            	to the same distance traveled at a constant speed given that
-            	constant_speed = 0.5 * (final_speed - initial_speed) + initial_speed
+                computes the traveled distance within a fixed amount of time
+                this time is the reverse integrator frequency (INTEGRATOR_DELTA_T)
+                for constant acceleration or deceleration the traveled distance will be equal
+                to the same distance traveled at a constant speed given that
+                constant_speed = 0.5 * (final_speed - initial_speed) + initial_speed
 
-            	where
+                where
 
-            	(final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
+                (final_speed - initial_speed) = acceleration * INTEGRATOR_DELTA_T;
             */
             speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
             profile_steps_limit = accel_until;
@@ -368,7 +368,7 @@ void itp_run(void)
         }
         else if (remaining_steps > deaccel_from)
         {
-            //constant speed segment
+            // constant speed segment
             speed_change = 0;
             profile_steps_limit = deaccel_from;
             sgm->update_itp = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
@@ -388,7 +388,7 @@ void itp_run(void)
         float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
 
         /*
-        	common calculations for all three profiles (accel, constant and deaccel)
+            common calculations for all three profiles (accel, constant and deaccel)
         */
         current_speed += speed_change;
 
@@ -399,7 +399,7 @@ void itp_run(void)
                 return;
             }
 
-            //speed can't be negative
+            // speed can't be negative
             current_speed = 0;
         }
 
@@ -410,10 +410,10 @@ void itp_run(void)
             partial_distance = 1;
         }
 
-        //computes how many steps it will perform at this speed and frame window
+        // computes how many steps it will perform at this speed and frame window
         uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 
-        //if computed steps exceed the remaining steps for the motion shortens the distance
+        // if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))
         {
             segm_steps = (uint16_t)(remaining_steps - profile_steps_limit);
@@ -425,25 +425,25 @@ void itp_run(void)
             new_speed_sqr = fast_flt_mul2(new_speed_sqr);
             if (speed_change > 0)
             {
-                //calculates the final speed at the end of this position
+                // calculates the final speed at the end of this position
                 new_speed_sqr += itp_cur_plan_block->entry_feed_sqr;
             }
             else
             {
-                //calculates the final speed at the end of this position
+                // calculates the final speed at the end of this position
                 new_speed_sqr = itp_cur_plan_block->entry_feed_sqr - new_speed_sqr;
-                new_speed_sqr = MAX(new_speed_sqr, 0); //avoids rounding errors since speed is always positive
+                new_speed_sqr = MAX(new_speed_sqr, 0); // avoids rounding errors since speed is always positive
             }
             current_speed = (fast_flt_sqrt(new_speed_sqr) + fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr));
             current_speed = fast_flt_div2(current_speed);
             itp_cur_plan_block->entry_feed_sqr = new_speed_sqr;
         }
 
-//The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
-//This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
-//This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
-//This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
-//DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
+// The DSS (Dynamic Step Spread) algorithm reduces stepper vibration by spreading step distribution at lower speads.
+// This is done by oversampling the Bresenham line algorithm by multiple factors of 2.
+// This way stepping actions fire in different moments in order to reduce vibration caused by the stepper internal mechanics.
+// This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
+// DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
         float dss_speed = current_speed;
         uint8_t dss = 0;
@@ -460,7 +460,7 @@ void itp_run(void)
         sgm->next_dss = dss - prev_dss;
         prev_dss = dss;
 
-        //completes the segment information (step speed, steps) and updates the block
+        // completes the segment information (step speed, steps) and updates the block
         sgm->remaining_steps = segm_steps << dss;
         dss_speed = MIN(dss_speed, g_settings.max_step_rate);
         mcu_freq_to_clocks(dss_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
@@ -485,7 +485,7 @@ void itp_run(void)
 #endif
         remaining_steps -= segm_steps;
 
-        if (remaining_steps == accel_until) //resets float additions error
+        if (remaining_steps == accel_until) // resets float additions error
         {
             itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
         }
@@ -496,26 +496,26 @@ void itp_run(void)
         {
             itp_blk_buffer_write();
             itp_cur_plan_block = NULL;
-            planner_discard_block(); //discards planner block
+            planner_discard_block(); // discards planner block
 #if (DSS_MAX_OVERSAMPLING != 0)
             prev_dss = 0;
 #endif
-            //accel_profile = 0; //no updates necessary to planner
-            //break;
+            // accel_profile = 0; //no updates necessary to planner
+            // break;
         }
 
-        //finally write the segment
+        // finally write the segment
         itp_sgm_buffer_write();
     }
 #if TOOL_COUNT > 0
-    //updated the coolant pins
+    // updated the coolant pins
     tool_set_coolant(planner_get_coolant());
 #endif
 
-    //starts the step isr if is stopped and there are segments to execute
-    if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) //exec state is not hold or alarm and not already running
+    // starts the step isr if is stopped and there are segments to execute
+    if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
     {
-        cnc_set_exec_state(EXEC_RUN); //flags that it started running
+        cnc_set_exec_state(EXEC_RUN); // flags that it started running
         __ATOMIC__
         {
             mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
@@ -525,7 +525,7 @@ void itp_run(void)
 
 void itp_update(void)
 {
-    //flags executing block for update
+    // flags executing block for update
     itp_needs_update = true;
 }
 
@@ -667,8 +667,8 @@ float itp_get_rt_feed(void)
     return feed;
 }
 
-//flushes all motions from all systems (planner or interpolator)
-//used to make a sync motion
+// flushes all motions from all systems (planner or interpolator)
+// used to make a sync motion
 uint8_t itp_sync(void)
 {
     while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || cnc_get_exec_state(EXEC_RUN))
@@ -686,7 +686,7 @@ uint8_t itp_sync(void)
     return STATUS_OK;
 }
 
-//sync spindle in a stopped motion
+// sync spindle in a stopped motion
 void itp_sync_spindle(void)
 {
 #if TOOL_COUNT > 0
@@ -718,19 +718,19 @@ uint32_t itp_get_rt_line_number(void)
 }
 #endif
 
-//always fires after pulse
-void itp_step_reset_isr(void)
+// always fires after pulse
+void mcu_step_reset_cb(void)
 {
-    //always resets all stepper pins
+    // always resets all stepper pins
     io_set_steps(g_settings.step_invert_mask);
 }
 
-void itp_step_isr(void)
+void mcu_step_cb(void)
 {
     static uint8_t stepbits = 0;
     static bool itp_busy = false;
 
-    if (!itp_busy) //prevents reentrancy
+    if (!itp_busy) // prevents reentrancy
     {
         if (itp_rt_sgm != NULL)
         {
@@ -750,7 +750,7 @@ void itp_step_isr(void)
                 itp_rt_sgm->update_itp = ITP_NOUPDATE;
             }
 
-            //no step remaining discards current segment
+            // no step remaining discards current segment
             if (!itp_rt_sgm->remaining_steps)
             {
                 itp_rt_sgm->block = NULL;
@@ -759,17 +759,17 @@ void itp_step_isr(void)
             }
         }
 
-        //sets step bits
+        // sets step bits
         io_toggle_steps(stepbits);
         stepbits = 0;
 
-        //if buffer empty loads one
+        // if buffer empty loads one
         if (itp_rt_sgm == NULL)
         {
-            //if buffer is not empty
+            // if buffer is not empty
             if (!itp_sgm_is_empty())
             {
-                //loads a new segment
+                // loads a new segment
                 itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
                 cnc_set_exec_state(EXEC_RUN);
                 if (itp_rt_sgm->block != NULL)
@@ -778,7 +778,7 @@ void itp_step_isr(void)
                     if (itp_rt_sgm->next_dss != 0)
                     {
 #ifdef STEP_ISR_SKIP_MAIN
-                        itp_rt_sgm->block->main_stepper = 255; //disables direct step increment to force step calculation
+                        itp_rt_sgm->block->main_stepper = 255; // disables direct step increment to force step calculation
 #endif
                         uint8_t dss;
                         if (itp_rt_sgm->next_dss > 0)
@@ -829,14 +829,14 @@ void itp_step_isr(void)
                         }
                     }
 #endif
-                    //set dir pins for current
+                    // set dir pins for current
                     io_set_dirs(itp_rt_sgm->block->dirbits);
                 }
             }
             else
             {
-                cnc_clear_exec_state(EXEC_RUN); //this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-                itp_stop();                     //the buffer is empty. The ISR can stop
+                cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+                itp_stop();                     // the buffer is empty. The ISR can stop
                 return;
             }
         }
@@ -844,13 +844,13 @@ void itp_step_isr(void)
         itp_busy = true;
         mcu_enable_global_isr();
 
-        //is steps remaining starts calc next step bits
+        // is steps remaining starts calc next step bits
         if (itp_rt_sgm->remaining_steps)
         {
             bool dostep = false;
             if (itp_rt_sgm->block != NULL)
             {
-//prepares the next step bits mask
+// prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
                 dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
@@ -1135,11 +1135,11 @@ void itp_step_isr(void)
 #endif
             }
 
-            //no step remaining discards current segment
+            // no step remaining discards current segment
             --itp_rt_sgm->remaining_steps;
         }
 
-        mcu_disable_global_isr(); //lock isr before clearin busy flag
+        mcu_disable_global_isr(); // lock isr before clearin busy flag
         itp_busy = false;
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS

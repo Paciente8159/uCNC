@@ -33,6 +33,7 @@ extern "C"
 */
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
+#include <util/delay_basic.h>
 
 /*
 	AVR Defaults
@@ -3723,6 +3724,8 @@ extern "C"
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
 #define mcu_get_global_isr() ({ (SREG && 0x80); })
+
+#define mcu_delay_us _delay_loop_1
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))

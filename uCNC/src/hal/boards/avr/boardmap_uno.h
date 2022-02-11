@@ -118,8 +118,8 @@ extern "C"
 	//  #define ANALOG0_PORT C
 	//  #define ANALOG0_CHANNEL 4
 
-#define SERVO0_BIT 4
-#define SERVO0_PORT C
+// #define SERVO0_BIT 4
+// #define SERVO0_PORT C
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0

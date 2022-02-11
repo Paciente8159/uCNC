@@ -4,15 +4,15 @@
                 Besides all the functions declared in the mcu.h it also implements the code responsible
                 for handling:
                         interpolator.h
-                                void itp_step_isr();
-                                void itp_step_reset_isr();
+                                void mcu_step_cb();
+                                void mcu_step_reset_cb();
                         serial.h
-                                void serial_rx_isr(unsinged char c);
-                                char serial_tx_isr();
+                                void mcu_com_rx_cb(unsinged char c);
+                                char mcu_com_tx_cb();
                         trigger_control.h
-                                void io_limits_isr();
-                                void io_controls_isr();
-                void io_probe_isr(uint8_t probe);
+                                void mcu_limits_changed_cb();
+                                void mcu_controls_changed_cb();
+                void mcu_probe_changed_cb(uint8_t probe);
 
         Copyright: Copyright (c) João Martins
         Author: João Martins
@@ -98,14 +98,14 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
 #if SERVOS_MASK > 0
         static uint8_t ms_servo_counter = 0;
-        uint8_t servo_mux = ms_servo_counter;
-
+        uint8_t servo_counter = ms_servo_counter;
+        uint8_t servo_mux = servo_counter >> 1;
         // counts to 20 and reloads
         // every even millisecond sets output (will be active at least 1ms)
-        if (!(servo_mux & 0x01))
+        if (!(servo_counter & 0x01))
         {
                 mcu_clear_servos();
-                switch (servo_mux >> 1)
+                switch (servo_mux)
                 {
 #if SERVO0 >= 0
                 case 0:
@@ -149,33 +149,38 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 #endif
                 }
         }
-        else // every odd millisecond loads OCRB and enables interrupt
+        else if ((SERVOS_MASK & (1U << servo_mux))) // every odd millisecond loads OCRB and enables interrupt
         {
-                RTC_OCRB = mcu_servos[(servo_mux >> 1)];
+                RTC_OCRB = mcu_servos[servo_mux];
                 if (RTC_OCRB)
                 {
                         if (RTC_OCRB != RTC_OCRA)
                         {
                                 RTC_TIFR = 7;
                                 RTC_TIMSK |= (1 << RTC_OCIEB);
-                                if (RTC_OCRB < RTC_TCNT)
-                                {
-                                        mcu_clear_servos();
-                                }
+                                // the next code might be needed if the servo shows inconsistencies
+                                // it should be fast enought to live without it but need testing
+                                //  if (RTC_OCRB < RTC_TCNT)
+                                //  {
+                                //          mcu_clear_servos();
+                                //  }
                         }
                 }
                 else
                 {
+                        // clear servos right away
                         mcu_clear_servos();
                 }
         }
-        servo_mux++;
-        ms_servo_counter = (servo_mux != 20) ? servo_mux : 0;
+
+        servo_counter++;
+        ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-        mcu_toggle_output(DOUT0);
-        mcu_runtime_ms++;
-        cnc_scheduletasks();
+        uint32_t millis = mcu_runtime_ms;
+        millis++;
+        mcu_runtime_ms = millis;
+        mcu_rtc_cb(millis);
 }
 
 // naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
@@ -187,12 +192,12 @@ ISR(RTC_COMPB_vect, ISR_NAKED)
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
 {
-        itp_step_isr();
+        mcu_step_cb();
 }
 
 ISR(ITP_COMPB_vect, ISR_BLOCK)
 {
-        itp_step_reset_isr();
+        mcu_step_reset_cb();
 }
 
 #ifndef USE_INPUTS_POOLING_ONLY
@@ -201,16 +206,16 @@ ISR(ITP_COMPB_vect, ISR_BLOCK)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTA_LIMITS_MASK == 1)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTA_CONTROLS_MASK == 1)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRA == 1)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK == 1)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -218,16 +223,16 @@ ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTA_LIMITS_MASK == 4)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTA_CONTROLS_MASK == 4)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRA == 4)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK == 4)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -235,16 +240,16 @@ ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTA_LIMITS_MASK == 16)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTA_CONTROLS_MASK == 16)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRA == 16)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK == 16)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -252,16 +257,16 @@ ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTA_LIMITS_MASK == 64)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTA_CONTROLS_MASK == 64)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRA == 64)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTA_DIN_IO_MASK == 64)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -269,16 +274,16 @@ ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTB_LIMITS_MASK == 1)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTB_CONTROLS_MASK == 1)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRB == 1)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK == 1)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -286,16 +291,16 @@ ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTB_LIMITS_MASK == 4)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTB_CONTROLS_MASK == 4)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRB == 4)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK == 4)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -303,16 +308,16 @@ ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTB_LIMITS_MASK == 16)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTB_CONTROLS_MASK == 16)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRB == 16)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK == 16)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -320,16 +325,16 @@ ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 {
 #if (PCINTB_LIMITS_MASK == 64)
-        io_limits_isr();
+        mcu_limits_changed_cb();
 #endif
 #if (PCINTB_CONTROLS_MASK == 64)
-        io_controls_isr();
+        mcu_controls_changed_cb();
 #endif
 #if (PROBE_ISRB == 64)
-        io_probe_isr();
+        mcu_probe_changed_cb();
 #endif
 #if (PCINTB_DIN_IO_MASK == 64)
-        io_inputs_isr();
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -345,27 +350,27 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT0_LIMITS_MASK != 0)
         if (diff & PCINT0_LIMITS_MASK)
         {
-                io_limits_isr();
+                mcu_limits_changed_cb();
         }
 #endif
 #if (PCINT0_CONTROLS_MASK != 0)
         if (diff & PCINT0_CONTROLS_MASK)
         {
-                io_controls_isr();
+                mcu_controls_changed_cb();
         }
 #endif
 
 #if (PROBE_ISR0 != 0)
         if (CHECKBIT(diff, PROBE_BIT))
         {
-                io_probe_isr();
+                mcu_probe_changed_cb();
         }
 #endif
 
 #if (PCINT0_DIN_IO_MASK != 0)
         if (diff & PCINT0_DIN_IO_MASK)
         {
-                io_inputs_isr();
+                mcu_inputs_changed_cb();
         }
 #endif
 }
@@ -382,27 +387,27 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT1_LIMITS_MASK != 0)
         if (diff & PCINT1_LIMITS_MASK)
         {
-                io_limits_isr();
+                mcu_limits_changed_cb();
         }
 #endif
 #if (PCINT1_CONTROLS_MASK != 0)
         if (diff & PCINT1_CONTROLS_MASK)
         {
-                io_controls_isr();
+                mcu_controls_changed_cb();
         }
 #endif
 
 #if (PROBE_ISR1 != 0)
         if (CHECKBIT(diff, PROBE_BIT))
         {
-                io_probe_isr();
+                mcu_probe_changed_cb();
         }
 #endif
 
 #if (PCINT1_DIN_IO_MASK != 0)
         if (diff & PCINT1_DIN_IO_MASK)
         {
-                io_inputs_isr();
+                mcu_inputs_changed_cb();
         }
 #endif
 }
@@ -419,27 +424,27 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT2_LIMITS_MASK != 0)
         if (diff & PCINT2_LIMITS_MASK)
         {
-                io_limits_isr();
+                mcu_limits_changed_cb();
         }
 #endif
 #if (PCINT2_CONTROLS_MASK != 0)
         if (diff & PCINT2_CONTROLS_MASK)
         {
-                io_controls_isr();
+                mcu_controls_changed_cb();
         }
 #endif
 
 #if (PROBE_ISR2 != 0)
         if (CHECKBIT(diff, PROBE_BIT))
         {
-                io_probe_isr();
+                mcu_probe_changed_cb();
         }
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
         if (diff & PCINT2_DIN_IO_MASK)
         {
-                io_inputs_isr();
+                mcu_inputs_changed_cb();
         }
 #endif
 }
@@ -449,13 +454,13 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 
 ISR(COM_RX_vect, ISR_BLOCK)
 {
-        serial_rx_isr(COM_INREG);
+        mcu_com_rx_cb(COM_INREG);
 }
 #ifndef ENABLE_SYNC_TX
 ISR(COM_TX_vect, ISR_BLOCK)
 {
         CLEARBIT(UCSRB, UDRIE);
-        serial_tx_isr();
+        mcu_com_tx_cb();
 }
 #endif
 
@@ -1189,7 +1194,7 @@ void mcu_dotasks()
         while (CHECKBIT(UCSRA, RXC))
         {
                 unsigned char c = mcu_getc();
-                serial_rx_isr(c);
+                mcu_com_rx_cb(c);
         }
 #endif
 }
