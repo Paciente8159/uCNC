@@ -350,7 +350,9 @@ static FORCEINLINE void mcu_clear_servos()
 #endif;
 }
 
-#define SERVO_RESOLUTION (F_CPU >> 8)
+// timers are running from GCLCK4 @1MHz
+// servo will have prescaller of /4
+#define SERVO_RESOLUTION (1000000 >> 2)
 void servo_timer_init()
 {
 #if (SERVO_TIMER < 3)
@@ -359,7 +361,7 @@ void servo_timer_init()
         while (SERVO_REG->SYNCBUSY.bit.SWRST)
                 ;
         // enable the timer in the APB
-        SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x6; // maximum prescaller /256
+        SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
         SERVO_REG->WAVE.bit.WAVEGEN = 1;               // match compare
         while (SERVO_REG->SYNCBUSY.bit.WAVE)
                 ;
@@ -369,7 +371,7 @@ void servo_timer_init()
         while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
         // enable the timer in the APB
-        SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x6; // maximum prescaller /256
+        SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
         SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;              // match compare
         while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
@@ -384,6 +386,7 @@ void servo_start_timeout(uint8_t val)
 
 #if (SERVO_TIMER < 3)
         SERVO_REG->CC[0].reg = val;
+        SERVO_REG->COUNT.reg = 0;
         while (SERVO_REG->SYNCBUSY.bit.CC0)
                 ;
         SERVO_REG->INTENSET.bit.MC0 = 1;
@@ -392,6 +395,7 @@ void servo_start_timeout(uint8_t val)
                 ;
 #else
         SERVO_REG->COUNT16.CC[0].reg = val;
+        SERVO_REG->COUNT16.COUNT.reg = 0;
         while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
         SERVO_REG->COUNT16.INTENSET.bit.MC0 = 1;
