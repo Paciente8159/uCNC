@@ -76,7 +76,6 @@ void cnc_init(void)
     tool_init();
 #endif
     modules_init();
-    mcu_set_servo(SERVO0, 127);
 }
 
 void cnc_run(void)

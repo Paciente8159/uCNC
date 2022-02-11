@@ -352,7 +352,8 @@ static FORCEINLINE void mcu_clear_servos()
 
 // timers are running from GCLCK4 @1MHz
 // servo will have prescaller of /4
-#define SERVO_RESOLUTION (1000000 >> 2)
+// this will yield a freq of 250KHz or 250 count per ms
+#define SERVO_RESOLUTION (250)
 void servo_timer_init()
 {
 #if (SERVO_TIMER < 3)
