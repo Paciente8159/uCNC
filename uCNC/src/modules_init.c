@@ -1,7 +1,7 @@
 /*
 	Name: modules_init.c
 	Description: User modules startup code.
-                 This is the file to edit and add all user modules
+				 This is the file to edit and add all user modules
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -19,7 +19,7 @@
 
 #include "cnc.h"
 
-//this is the place to declare all parser extension registration calls
+// this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_EXTENSIONS
 extern void m42_register(void);
 #endif
@@ -27,13 +27,16 @@ extern void m42_register(void);
 void modules_init(void)
 {
 
-	//initializes PID module
+	// initializes PID module
 #if PID_CONTROLLERS > 0
-	pid_init(); //pid
+	pid_init(); // pid
 #endif
 
-//initializes parser extension modules
+// initializes parser extension modules
 #ifdef ENABLE_PARSER_EXTENSIONS
 	m42_register();
+#if SERVOS_MASK > 0
+	m10_register();
+#endif
 #endif
 }

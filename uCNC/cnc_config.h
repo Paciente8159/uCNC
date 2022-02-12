@@ -49,7 +49,7 @@ extern "C"
 	Check boardss.h for list of available/supported boards
 */
 #ifndef BOARD
-#define BOARD BOARD_MZERO
+#define BOARD BOARD_UNO
 #endif
 
 /*
@@ -146,7 +146,7 @@ extern "C"
 //#define GCODE_ACCEPT_WORD_E
 
 // Uncomment to enable parser extentions
-// #define ENABLE_PARSER_EXTENSIONS
+#define ENABLE_PARSER_EXTENSIONS
 
 // Report specific options
 #define STATUS_WCO_REPORT_MIN_FREQUENCY 30
@@ -219,14 +219,17 @@ extern "C"
 #define EMULATE_GRBL_STARTUP
 
 /**
- * Enables aditional grbl-type commands for settings (this allows settings to only be stored in EEPROM/Flash explicitly on special command)
+ * Enables aditional grbl-type commands
+ * For settings allows settings to only be stored in EEPROM/Flash explicitly on special command
  * This makes that all $<setting-id>=<setting-value> commands are only performed in SRAM and not stored directly to EEPROM/Flash
  * A few commands are added:
  * $SS - Settings store - records settings from SRAM to EEPROM/Flash
  * $SL - Settings load - Loads settings from EEPROM/Flash to SRAM
  * $SR - Settings reset - Reloads the default value settings from ROM to SRAM
+ *
+ * For pin diagnostics enables command $P
  */
-//#define ENABLE_SETTING_EXTRA_CMDS
+//#define ENABLE_EXTRA_SYSTEM_CMDS
 
 /**
  * Compilation specific options

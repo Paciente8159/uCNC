@@ -493,409 +493,409 @@ extern "C"
 #endif
 #ifndef LIMIT_X
 #define LIMIT_X -1
-#ifdef DIO52
-#undef DIO52
-#endif
-#define DIO52 -1
-#endif
-#ifndef LIMIT_Y
-#define LIMIT_Y -1
-#ifdef DIO53
-#undef DIO53
-#endif
-#define DIO53 -1
-#endif
-#ifndef LIMIT_Z
-#define LIMIT_Z -1
-#ifdef DIO54
-#undef DIO54
-#endif
-#define DIO54 -1
-#endif
-#ifndef LIMIT_X2
-#define LIMIT_X2 -1
-#ifdef DIO55
-#undef DIO55
-#endif
-#define DIO55 -1
-#endif
-#ifndef LIMIT_Y2
-#define LIMIT_Y2 -1
-#ifdef DIO56
-#undef DIO56
-#endif
-#define DIO56 -1
-#endif
-#ifndef LIMIT_Z2
-#define LIMIT_Z2 -1
-#ifdef DIO57
-#undef DIO57
-#endif
-#define DIO57 -1
-#endif
-#ifndef LIMIT_A
-#define LIMIT_A -1
-#ifdef DIO58
-#undef DIO58
-#endif
-#define DIO58 -1
-#endif
-#ifndef LIMIT_B
-#define LIMIT_B -1
-#ifdef DIO59
-#undef DIO59
-#endif
-#define DIO59 -1
-#endif
-#ifndef LIMIT_C
-#define LIMIT_C -1
-#ifdef DIO60
-#undef DIO60
-#endif
-#define DIO60 -1
-#endif
-#ifndef PROBE
-#define PROBE -1
-#ifdef DIO61
-#undef DIO61
-#endif
-#define DIO61 -1
-#endif
-#ifndef ESTOP
-#define ESTOP -1
-#ifdef DIO62
-#undef DIO62
-#endif
-#define DIO62 -1
-#endif
-#ifndef SAFETY_DOOR
-#define SAFETY_DOOR -1
-#ifdef DIO63
-#undef DIO63
-#endif
-#define DIO63 -1
-#endif
-#ifndef FHOLD
-#define FHOLD -1
-#ifdef DIO64
-#undef DIO64
-#endif
-#define DIO64 -1
-#endif
-#ifndef CS_RES
-#define CS_RES -1
-#ifdef DIO65
-#undef DIO65
-#endif
-#define DIO65 -1
-#endif
-#ifndef ANALOG0
-#define ANALOG0 -1
-#ifdef DIO66
-#undef DIO66
-#endif
-#define DIO66 -1
-#endif
-#ifndef ANALOG1
-#define ANALOG1 -1
-#ifdef DIO67
-#undef DIO67
-#endif
-#define DIO67 -1
-#endif
-#ifndef ANALOG2
-#define ANALOG2 -1
-#ifdef DIO68
-#undef DIO68
-#endif
-#define DIO68 -1
-#endif
-#ifndef ANALOG3
-#define ANALOG3 -1
-#ifdef DIO69
-#undef DIO69
-#endif
-#define DIO69 -1
-#endif
-#ifndef ANALOG4
-#define ANALOG4 -1
-#ifdef DIO70
-#undef DIO70
-#endif
-#define DIO70 -1
-#endif
-#ifndef ANALOG5
-#define ANALOG5 -1
-#ifdef DIO71
-#undef DIO71
-#endif
-#define DIO71 -1
-#endif
-#ifndef ANALOG6
-#define ANALOG6 -1
-#ifdef DIO72
-#undef DIO72
-#endif
-#define DIO72 -1
-#endif
-#ifndef ANALOG7
-#define ANALOG7 -1
-#ifdef DIO73
-#undef DIO73
-#endif
-#define DIO73 -1
-#endif
-#ifndef ANALOG8
-#define ANALOG8 -1
-#ifdef DIO74
-#undef DIO74
-#endif
-#define DIO74 -1
-#endif
-#ifndef ANALOG9
-#define ANALOG9 -1
-#ifdef DIO75
-#undef DIO75
-#endif
-#define DIO75 -1
-#endif
-#ifndef ANALOG10
-#define ANALOG10 -1
-#ifdef DIO76
-#undef DIO76
-#endif
-#define DIO76 -1
-#endif
-#ifndef ANALOG11
-#define ANALOG11 -1
-#ifdef DIO77
-#undef DIO77
-#endif
-#define DIO77 -1
-#endif
-#ifndef ANALOG12
-#define ANALOG12 -1
-#ifdef DIO78
-#undef DIO78
-#endif
-#define DIO78 -1
-#endif
-#ifndef ANALOG13
-#define ANALOG13 -1
-#ifdef DIO79
-#undef DIO79
-#endif
-#define DIO79 -1
-#endif
-#ifndef ANALOG14
-#define ANALOG14 -1
-#ifdef DIO80
-#undef DIO80
-#endif
-#define DIO80 -1
-#endif
-#ifndef ANALOG15
-#define ANALOG15 -1
-#ifdef DIO81
-#undef DIO81
-#endif
-#define DIO81 -1
-#endif
-#ifndef DIN0
-#define DIN0 -1
-#ifdef DIO82
-#undef DIO82
-#endif
-#define DIO82 -1
-#endif
-#ifndef DIN1
-#define DIN1 -1
-#ifdef DIO83
-#undef DIO83
-#endif
-#define DIO83 -1
-#endif
-#ifndef DIN2
-#define DIN2 -1
-#ifdef DIO84
-#undef DIO84
-#endif
-#define DIO84 -1
-#endif
-#ifndef DIN3
-#define DIN3 -1
-#ifdef DIO85
-#undef DIO85
-#endif
-#define DIO85 -1
-#endif
-#ifndef DIN4
-#define DIN4 -1
-#ifdef DIO86
-#undef DIO86
-#endif
-#define DIO86 -1
-#endif
-#ifndef DIN5
-#define DIN5 -1
-#ifdef DIO87
-#undef DIO87
-#endif
-#define DIO87 -1
-#endif
-#ifndef DIN6
-#define DIN6 -1
-#ifdef DIO88
-#undef DIO88
-#endif
-#define DIO88 -1
-#endif
-#ifndef DIN7
-#define DIN7 -1
-#ifdef DIO89
-#undef DIO89
-#endif
-#define DIO89 -1
-#endif
-#ifndef DIN8
-#define DIN8 -1
-#ifdef DIO90
-#undef DIO90
-#endif
-#define DIO90 -1
-#endif
-#ifndef DIN9
-#define DIN9 -1
-#ifdef DIO91
-#undef DIO91
-#endif
-#define DIO91 -1
-#endif
-#ifndef DIN10
-#define DIN10 -1
-#ifdef DIO92
-#undef DIO92
-#endif
-#define DIO92 -1
-#endif
-#ifndef DIN11
-#define DIN11 -1
-#ifdef DIO93
-#undef DIO93
-#endif
-#define DIO93 -1
-#endif
-#ifndef DIN12
-#define DIN12 -1
-#ifdef DIO94
-#undef DIO94
-#endif
-#define DIO94 -1
-#endif
-#ifndef DIN13
-#define DIN13 -1
-#ifdef DIO95
-#undef DIO95
-#endif
-#define DIO95 -1
-#endif
-#ifndef DIN14
-#define DIN14 -1
-#ifdef DIO96
-#undef DIO96
-#endif
-#define DIO96 -1
-#endif
-#ifndef DIN15
-#define DIN15 -1
-#ifdef DIO97
-#undef DIO97
-#endif
-#define DIO97 -1
-#endif
-#ifndef TX
-#define TX -1
-#ifdef DIO98
-#undef DIO98
-#endif
-#define DIO98 -1
-#endif
-#ifndef RX
-#define RX -1
-#ifdef DIO99
-#undef DIO99
-#endif
-#define DIO99 -1
-#endif
-#ifndef USB_DM
-#define USB_DM -1
 #ifdef DIO100
 #undef DIO100
 #endif
 #define DIO100 -1
 #endif
-#ifndef USB_DP
-#define USB_DP -1
+#ifndef LIMIT_Y
+#define LIMIT_Y -1
 #ifdef DIO101
 #undef DIO101
 #endif
 #define DIO101 -1
 #endif
-#ifndef SERVO0
-#define SERVO0 -1
+#ifndef LIMIT_Z
+#define LIMIT_Z -1
 #ifdef DIO102
 #undef DIO102
 #endif
 #define DIO102 -1
 #endif
-#ifndef SERVO1
-#define SERVO1 -1
+#ifndef LIMIT_X2
+#define LIMIT_X2 -1
 #ifdef DIO103
 #undef DIO103
 #endif
 #define DIO103 -1
 #endif
-#ifndef SERVO2
-#define SERVO2 -1
+#ifndef LIMIT_Y2
+#define LIMIT_Y2 -1
 #ifdef DIO104
 #undef DIO104
 #endif
 #define DIO104 -1
 #endif
-#ifndef SERVO3
-#define SERVO3 -1
+#ifndef LIMIT_Z2
+#define LIMIT_Z2 -1
 #ifdef DIO105
 #undef DIO105
 #endif
 #define DIO105 -1
 #endif
-#ifndef SERVO4
-#define SERVO4 -1
+#ifndef LIMIT_A
+#define LIMIT_A -1
 #ifdef DIO106
 #undef DIO106
 #endif
 #define DIO106 -1
 #endif
-#ifndef SERVO5
-#define SERVO5 -1
+#ifndef LIMIT_B
+#define LIMIT_B -1
 #ifdef DIO107
 #undef DIO107
 #endif
 #define DIO107 -1
 #endif
-#ifndef SERVO6
-#define SERVO6 -1
+#ifndef LIMIT_C
+#define LIMIT_C -1
 #ifdef DIO108
 #undef DIO108
 #endif
 #define DIO108 -1
 #endif
-#ifndef SERVO7
-#define SERVO7 -1
+#ifndef PROBE
+#define PROBE -1
 #ifdef DIO109
 #undef DIO109
 #endif
 #define DIO109 -1
+#endif
+#ifndef ESTOP
+#define ESTOP -1
+#ifdef DIO110
+#undef DIO110
+#endif
+#define DIO110 -1
+#endif
+#ifndef SAFETY_DOOR
+#define SAFETY_DOOR -1
+#ifdef DIO111
+#undef DIO111
+#endif
+#define DIO111 -1
+#endif
+#ifndef FHOLD
+#define FHOLD -1
+#ifdef DIO112
+#undef DIO112
+#endif
+#define DIO112 -1
+#endif
+#ifndef CS_RES
+#define CS_RES -1
+#ifdef DIO113
+#undef DIO113
+#endif
+#define DIO113 -1
+#endif
+#ifndef ANALOG0
+#define ANALOG0 -1
+#ifdef DIO114
+#undef DIO114
+#endif
+#define DIO114 -1
+#endif
+#ifndef ANALOG1
+#define ANALOG1 -1
+#ifdef DIO115
+#undef DIO115
+#endif
+#define DIO115 -1
+#endif
+#ifndef ANALOG2
+#define ANALOG2 -1
+#ifdef DIO116
+#undef DIO116
+#endif
+#define DIO116 -1
+#endif
+#ifndef ANALOG3
+#define ANALOG3 -1
+#ifdef DIO117
+#undef DIO117
+#endif
+#define DIO117 -1
+#endif
+#ifndef ANALOG4
+#define ANALOG4 -1
+#ifdef DIO118
+#undef DIO118
+#endif
+#define DIO118 -1
+#endif
+#ifndef ANALOG5
+#define ANALOG5 -1
+#ifdef DIO119
+#undef DIO119
+#endif
+#define DIO119 -1
+#endif
+#ifndef ANALOG6
+#define ANALOG6 -1
+#ifdef DIO120
+#undef DIO120
+#endif
+#define DIO120 -1
+#endif
+#ifndef ANALOG7
+#define ANALOG7 -1
+#ifdef DIO121
+#undef DIO121
+#endif
+#define DIO121 -1
+#endif
+#ifndef ANALOG8
+#define ANALOG8 -1
+#ifdef DIO122
+#undef DIO122
+#endif
+#define DIO122 -1
+#endif
+#ifndef ANALOG9
+#define ANALOG9 -1
+#ifdef DIO123
+#undef DIO123
+#endif
+#define DIO123 -1
+#endif
+#ifndef ANALOG10
+#define ANALOG10 -1
+#ifdef DIO124
+#undef DIO124
+#endif
+#define DIO124 -1
+#endif
+#ifndef ANALOG11
+#define ANALOG11 -1
+#ifdef DIO125
+#undef DIO125
+#endif
+#define DIO125 -1
+#endif
+#ifndef ANALOG12
+#define ANALOG12 -1
+#ifdef DIO126
+#undef DIO126
+#endif
+#define DIO126 -1
+#endif
+#ifndef ANALOG13
+#define ANALOG13 -1
+#ifdef DIO127
+#undef DIO127
+#endif
+#define DIO127 -1
+#endif
+#ifndef ANALOG14
+#define ANALOG14 -1
+#ifdef DIO128
+#undef DIO128
+#endif
+#define DIO128 -1
+#endif
+#ifndef ANALOG15
+#define ANALOG15 -1
+#ifdef DIO129
+#undef DIO129
+#endif
+#define DIO129 -1
+#endif
+#ifndef DIN0
+#define DIN0 -1
+#ifdef DIO130
+#undef DIO130
+#endif
+#define DIO130 -1
+#endif
+#ifndef DIN1
+#define DIN1 -1
+#ifdef DIO131
+#undef DIO131
+#endif
+#define DIO131 -1
+#endif
+#ifndef DIN2
+#define DIN2 -1
+#ifdef DIO132
+#undef DIO132
+#endif
+#define DIO132 -1
+#endif
+#ifndef DIN3
+#define DIN3 -1
+#ifdef DIO133
+#undef DIO133
+#endif
+#define DIO133 -1
+#endif
+#ifndef DIN4
+#define DIN4 -1
+#ifdef DIO134
+#undef DIO134
+#endif
+#define DIO134 -1
+#endif
+#ifndef DIN5
+#define DIN5 -1
+#ifdef DIO135
+#undef DIO135
+#endif
+#define DIO135 -1
+#endif
+#ifndef DIN6
+#define DIN6 -1
+#ifdef DIO136
+#undef DIO136
+#endif
+#define DIO136 -1
+#endif
+#ifndef DIN7
+#define DIN7 -1
+#ifdef DIO137
+#undef DIO137
+#endif
+#define DIO137 -1
+#endif
+#ifndef DIN8
+#define DIN8 -1
+#ifdef DIO138
+#undef DIO138
+#endif
+#define DIO138 -1
+#endif
+#ifndef DIN9
+#define DIN9 -1
+#ifdef DIO139
+#undef DIO139
+#endif
+#define DIO139 -1
+#endif
+#ifndef DIN10
+#define DIN10 -1
+#ifdef DIO140
+#undef DIO140
+#endif
+#define DIO140 -1
+#endif
+#ifndef DIN11
+#define DIN11 -1
+#ifdef DIO141
+#undef DIO141
+#endif
+#define DIO141 -1
+#endif
+#ifndef DIN12
+#define DIN12 -1
+#ifdef DIO142
+#undef DIO142
+#endif
+#define DIO142 -1
+#endif
+#ifndef DIN13
+#define DIN13 -1
+#ifdef DIO143
+#undef DIO143
+#endif
+#define DIO143 -1
+#endif
+#ifndef DIN14
+#define DIN14 -1
+#ifdef DIO144
+#undef DIO144
+#endif
+#define DIO144 -1
+#endif
+#ifndef DIN15
+#define DIN15 -1
+#ifdef DIO145
+#undef DIO145
+#endif
+#define DIO145 -1
+#endif
+#ifndef TX
+#define TX -1
+#ifdef DIO200
+#undef DIO200
+#endif
+#define DIO200 -1
+#endif
+#ifndef RX
+#define RX -1
+#ifdef DIO201
+#undef DIO201
+#endif
+#define DIO201 -1
+#endif
+#ifndef USB_DM
+#define USB_DM -1
+#ifdef DIO202
+#undef DIO202
+#endif
+#define DIO202 -1
+#endif
+#ifndef USB_DP
+#define USB_DP -1
+#ifdef DIO203
+#undef DIO203
+#endif
+#define DIO203 -1
+#endif
+#ifndef SERVO0
+#define SERVO0 -1
+#ifdef DIO52
+#undef DIO52
+#endif
+#define DIO52 -1
+#endif
+#ifndef SERVO1
+#define SERVO1 -1
+#ifdef DIO53
+#undef DIO53
+#endif
+#define DIO53 -1
+#endif
+#ifndef SERVO2
+#define SERVO2 -1
+#ifdef DIO54
+#undef DIO54
+#endif
+#define DIO54 -1
+#endif
+#ifndef SERVO3
+#define SERVO3 -1
+#ifdef DIO55
+#undef DIO55
+#endif
+#define DIO55 -1
+#endif
+#ifndef SERVO4
+#define SERVO4 -1
+#ifdef DIO56
+#undef DIO56
+#endif
+#define DIO56 -1
+#endif
+#ifndef SERVO5
+#define SERVO5 -1
+#ifdef DIO57
+#undef DIO57
+#endif
+#define DIO57 -1
+#endif
+#ifndef SERVO6
+#define SERVO6 -1
+#ifdef DIO58
+#undef DIO58
+#endif
+#define DIO58 -1
+#endif
+#ifndef SERVO7
+#define SERVO7 -1
+#ifdef DIO59
+#undef DIO59
+#endif
+#define DIO59 -1
 #endif
 
 #if (INTERFACE < 0 || INTERFACE > 1)

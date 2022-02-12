@@ -538,6 +538,46 @@ void io_set_pwm(uint8_t pin, uint8_t value)
         mcu_set_pwm(PWM15, value);
         break;
 #endif
+#if (SERVO0 >= 0)
+    case SERVO0:
+        mcu_set_servo(SERVO0, value);
+        break;
+#endif
+#if (SERVO1 >= 0)
+    case SERVO1:
+        mcu_set_servo(SERVO1, value);
+        break;
+#endif
+#if (SERVO2 >= 0)
+    case SERVO2:
+        mcu_set_servo(SERVO2, value);
+        break;
+#endif
+#if (SERVO3 >= 0)
+    case SERVO3:
+        mcu_set_servo(SERVO3, value);
+        break;
+#endif
+#if (SERVO4 >= 0)
+    case SERVO4:
+        mcu_set_servo(SERVO4, value);
+        break;
+#endif
+#if (SERVO5 >= 0)
+    case SERVO5:
+        mcu_set_servo(SERVO5, value);
+        break;
+#endif
+#if (SERVO6 >= 0)
+    case SERVO6:
+        mcu_set_servo(SERVO6, value);
+        break;
+#endif
+#if (SERVO7 >= 0)
+    case SERVO7:
+        mcu_set_servo(SERVO7, value);
+        break;
+#endif
     }
 }
 
@@ -837,396 +877,428 @@ int16_t io_get_pinvalue(uint8_t pin)
     switch (pin)
     {
 #if STEP0 >= 0
-    case 0:
+    case STEP0:
         return (mcu_get_output(STEP0) != 0);
 #endif
 #if STEP1 >= 0
-    case 1:
+    case STEP1:
         return (mcu_get_output(STEP1) != 0);
 #endif
 #if STEP2 >= 0
-    case 2:
+    case STEP2:
         return (mcu_get_output(STEP2) != 0);
 #endif
 #if STEP3 >= 0
-    case 3:
+    case STEP3:
         return (mcu_get_output(STEP3) != 0);
 #endif
 #if STEP4 >= 0
-    case 4:
+    case STEP4:
         return (mcu_get_output(STEP4) != 0);
 #endif
 #if STEP5 >= 0
-    case 5:
+    case STEP5:
         return (mcu_get_output(STEP5) != 0);
 #endif
 #if STEP6 >= 0
-    case 6:
+    case STEP6:
         return (mcu_get_output(STEP6) != 0);
 #endif
 #if STEP7 >= 0
-    case 7:
+    case STEP7:
         return (mcu_get_output(STEP7) != 0);
 #endif
 #if DIR0 >= 0
-    case 8:
+    case DIR0:
         return (mcu_get_output(DIR0) != 0);
 #endif
 #if DIR1 >= 0
-    case 9:
+    case DIR1:
         return (mcu_get_output(DIR1) != 0);
 #endif
 #if DIR2 >= 0
-    case 10:
+    case DIR2:
         return (mcu_get_output(DIR2) != 0);
 #endif
 #if DIR3 >= 0
-    case 11:
+    case DIR3:
         return (mcu_get_output(DIR3) != 0);
 #endif
 #if DIR4 >= 0
-    case 12:
+    case DIR4:
         return (mcu_get_output(DIR4) != 0);
 #endif
 #if DIR5 >= 0
-    case 13:
+    case DIR5:
         return (mcu_get_output(DIR5) != 0);
 #endif
 #if STEP0_EN >= 0
-    case 14:
+    case STEP0_EN:
         return (mcu_get_output(STEP0_EN) != 0);
 #endif
 #if STEP1_EN >= 0
-    case 15:
+    case STEP1_EN:
         return (mcu_get_output(STEP1_EN) != 0);
 #endif
 #if STEP2_EN >= 0
-    case 16:
+    case STEP2_EN:
         return (mcu_get_output(STEP2_EN) != 0);
 #endif
 #if STEP3_EN >= 0
-    case 17:
+    case STEP3_EN:
         return (mcu_get_output(STEP3_EN) != 0);
 #endif
 #if STEP4_EN >= 0
-    case 18:
+    case STEP4_EN:
         return (mcu_get_output(STEP4_EN) != 0);
 #endif
 #if STEP5_EN >= 0
-    case 19:
+    case STEP5_EN:
         return (mcu_get_output(STEP5_EN) != 0);
 #endif
 #if PWM0 >= 0
-    case 20:
+    case PWM0:
         return mcu_get_pwm(PWM0);
 #endif
 #if PWM1 >= 0
-    case 21:
+    case PWM1:
         return mcu_get_pwm(PWM1);
 #endif
 #if PWM2 >= 0
-    case 22:
+    case PWM2:
         return mcu_get_pwm(PWM2);
 #endif
 #if PWM3 >= 0
-    case 23:
+    case PWM3:
         return mcu_get_pwm(PWM3);
 #endif
 #if PWM4 >= 0
-    case 24:
+    case PWM4:
         return mcu_get_pwm(PWM4);
 #endif
 #if PWM5 >= 0
-    case 25:
+    case PWM5:
         return mcu_get_pwm(PWM5);
 #endif
 #if PWM6 >= 0
-    case 26:
+    case PWM6:
         return mcu_get_pwm(PWM6);
 #endif
 #if PWM7 >= 0
-    case 27:
+    case PWM7:
         return mcu_get_pwm(PWM7);
 #endif
 #if PWM8 >= 0
-    case 28:
+    case PWM8:
         return mcu_get_pwm(PWM8);
 #endif
 #if PWM9 >= 0
-    case 29:
+    case PWM9:
         return mcu_get_pwm(PWM9);
 #endif
 #if PWM10 >= 0
-    case 30:
+    case PWM10:
         return mcu_get_pwm(PWM10);
 #endif
 #if PWM11 >= 0
-    case 31:
+    case PWM11:
         return mcu_get_pwm(PWM11);
 #endif
 #if PWM12 >= 0
-    case 32:
+    case PWM12:
         return mcu_get_pwm(PWM12);
 #endif
 #if PWM13 >= 0
-    case 33:
+    case PWM13:
         return mcu_get_pwm(PWM13);
 #endif
 #if PWM14 >= 0
-    case 34:
+    case PWM14:
         return mcu_get_pwm(PWM14);
 #endif
 #if PWM15 >= 0
-    case 35:
+    case PWM15:
         return mcu_get_pwm(PWM15);
 #endif
 #if DOUT0 >= 0
-    case 36:
+    case DOUT0:
         return (mcu_get_output(DOUT0) != 0);
 #endif
 #if DOUT1 >= 0
-    case 37:
+    case DOUT1:
         return (mcu_get_output(DOUT1) != 0);
 #endif
 #if DOUT2 >= 0
-    case 38:
+    case DOUT2:
         return (mcu_get_output(DOUT2) != 0);
 #endif
 #if DOUT3 >= 0
-    case 39:
+    case DOUT3:
         return (mcu_get_output(DOUT3) != 0);
 #endif
 #if DOUT4 >= 0
-    case 40:
+    case DOUT4:
         return (mcu_get_output(DOUT4) != 0);
 #endif
 #if DOUT5 >= 0
-    case 41:
+    case DOUT5:
         return (mcu_get_output(DOUT5) != 0);
 #endif
 #if DOUT6 >= 0
-    case 42:
+    case DOUT6:
         return (mcu_get_output(DOUT6) != 0);
 #endif
 #if DOUT7 >= 0
-    case 43:
+    case DOUT7:
         return (mcu_get_output(DOUT7) != 0);
 #endif
 #if DOUT8 >= 0
-    case 44:
+    case DOUT8:
         return (mcu_get_output(DOUT8) != 0);
 #endif
 #if DOUT9 >= 0
-    case 45:
+    case DOUT9:
         return (mcu_get_output(DOUT9) != 0);
 #endif
 #if DOUT10 >= 0
-    case 46:
+    case DOUT10:
         return (mcu_get_output(DOUT10) != 0);
 #endif
 #if DOUT11 >= 0
-    case 47:
+    case DOUT11:
         return (mcu_get_output(DOUT11) != 0);
 #endif
 #if DOUT12 >= 0
-    case 48:
+    case DOUT12:
         return (mcu_get_output(DOUT12) != 0);
 #endif
 #if DOUT13 >= 0
-    case 49:
+    case DOUT13:
         return (mcu_get_output(DOUT13) != 0);
 #endif
 #if DOUT14 >= 0
-    case 50:
+    case DOUT14:
         return (mcu_get_output(DOUT14) != 0);
 #endif
 #if DOUT15 >= 0
-    case 51:
+    case DOUT15:
         return (mcu_get_output(DOUT15) != 0);
 #endif
 #if LIMIT_X >= 0
-    case 52:
+    case LIMIT_X:
         return (mcu_get_input(LIMIT_X) != 0);
 #endif
 #if LIMIT_Y >= 0
-    case 53:
+    case LIMIT_Y:
         return (mcu_get_input(LIMIT_Y) != 0);
 #endif
 #if LIMIT_Z >= 0
-    case 54:
+    case LIMIT_Z:
         return (mcu_get_input(LIMIT_Z) != 0);
 #endif
 #if LIMIT_X2 >= 0
-    case 55:
+    case LIMIT_X2:
         return (mcu_get_input(LIMIT_X2) != 0);
 #endif
 #if LIMIT_Y2 >= 0
-    case 56:
+    case LIMIT_Y2:
         return (mcu_get_input(LIMIT_Y2) != 0);
 #endif
 #if LIMIT_Z2 >= 0
-    case 57:
+    case LIMIT_Z2:
         return (mcu_get_input(LIMIT_Z2) != 0);
 #endif
 #if LIMIT_A >= 0
-    case 58:
+    case LIMIT_A:
         return (mcu_get_input(LIMIT_A) != 0);
 #endif
 #if LIMIT_B >= 0
-    case 59:
+    case LIMIT_B:
         return (mcu_get_input(LIMIT_B) != 0);
 #endif
 #if LIMIT_C >= 0
-    case 60:
+    case LIMIT_C:
         return (mcu_get_input(LIMIT_C) != 0);
 #endif
 #if PROBE >= 0
-    case 61:
+    case PROBE:
         return (mcu_get_input(PROBE) != 0);
 #endif
 #if ESTOP >= 0
-    case 62:
+    case ESTOP:
         return (mcu_get_input(ESTOP) != 0);
 #endif
 #if SAFETY_DOOR >= 0
-    case 63:
+    case SAFETY_DOOR:
         return (mcu_get_input(SAFETY_DOOR) != 0);
 #endif
 #if FHOLD >= 0
-    case 64:
+    case FHOLD:
         return (mcu_get_input(FHOLD) != 0);
 #endif
 #if CS_RES >= 0
-    case 65:
+    case CS_RES:
         return (mcu_get_input(CS_RES) != 0);
 #endif
 #if ANALOG0 >= 0
-    case 66:
+    case ANALOG0:
         return mcu_get_analog(ANALOG0);
 #endif
 #if ANALOG1 >= 0
-    case 67:
+    case ANALOG1:
         return mcu_get_analog(ANALOG1);
 #endif
 #if ANALOG2 >= 0
-    case 68:
+    case ANALOG2:
         return mcu_get_analog(ANALOG2);
 #endif
 #if ANALOG3 >= 0
-    case 69:
+    case ANALOG3:
         return mcu_get_analog(ANALOG3);
 #endif
 #if ANALOG4 >= 0
-    case 70:
+    case ANALOG4:
         return mcu_get_analog(ANALOG4);
 #endif
 #if ANALOG5 >= 0
-    case 71:
+    case ANALOG5:
         return mcu_get_analog(ANALOG5);
 #endif
 #if ANALOG6 >= 0
-    case 72:
+    case ANALOG6:
         return mcu_get_analog(ANALOG6);
 #endif
 #if ANALOG7 >= 0
-    case 73:
+    case ANALOG7:
         return mcu_get_analog(ANALOG7);
 #endif
 #if ANALOG8 >= 0
-    case 74:
+    case ANALOG8:
         return mcu_get_analog(ANALOG8);
 #endif
 #if ANALOG9 >= 0
-    case 75:
+    case ANALOG9:
         return mcu_get_analog(ANALOG9);
 #endif
 #if ANALOG10 >= 0
-    case 76:
+    case ANALOG10:
         return mcu_get_analog(ANALOG10);
 #endif
 #if ANALOG11 >= 0
-    case 77:
+    case ANALOG11:
         return mcu_get_analog(ANALOG11);
 #endif
 #if ANALOG12 >= 0
-    case 78:
+    case ANALOG12:
         return mcu_get_analog(ANALOG12);
 #endif
 #if ANALOG13 >= 0
-    case 79:
+    case ANALOG13:
         return mcu_get_analog(ANALOG13);
 #endif
 #if ANALOG14 >= 0
-    case 80:
+    case ANALOG14:
         return mcu_get_analog(ANALOG14);
 #endif
 #if ANALOG15 >= 0
-    case 81:
+    case ANALOG15:
         return mcu_get_analog(ANALOG15);
 #endif
 #if DIN0 >= 0
-    case 82:
+    case DIN0:
         return (mcu_get_input(DIN0) != 0);
 #endif
 #if DIN1 >= 0
-    case 83:
+    case DIN1:
         return (mcu_get_input(DIN1) != 0);
 #endif
 #if DIN2 >= 0
-    case 84:
+    case DIN2:
         return (mcu_get_input(DIN2) != 0);
 #endif
 #if DIN3 >= 0
-    case 85:
+    case DIN3:
         return (mcu_get_input(DIN3) != 0);
 #endif
 #if DIN4 >= 0
-    case 86:
+    case DIN4:
         return (mcu_get_input(DIN4) != 0);
 #endif
 #if DIN5 >= 0
-    case 87:
+    case DIN5:
         return (mcu_get_input(DIN5) != 0);
 #endif
 #if DIN6 >= 0
-    case 88:
+    case DIN6:
         return (mcu_get_input(DIN6) != 0);
 #endif
 #if DIN7 >= 0
-    case 89:
+    case DIN7:
         return (mcu_get_input(DIN7) != 0);
 #endif
 #if DIN8 >= 0
-    case 90:
+    case DIN8:
         return (mcu_get_input(DIN8) != 0);
 #endif
 #if DIN9 >= 0
-    case 91:
+    case DIN9:
         return (mcu_get_input(DIN9) != 0);
 #endif
 #if DIN10 >= 0
-    case 92:
+    case DIN10:
         return (mcu_get_input(DIN10) != 0);
 #endif
 #if DIN11 >= 0
-    case 93:
+    case DIN11:
         return (mcu_get_input(DIN11) != 0);
 #endif
 #if DIN12 >= 0
-    case 94:
+    case DIN12:
         return (mcu_get_input(DIN12) != 0);
 #endif
 #if DIN13 >= 0
-    case 95:
+    case DIN13:
         return (mcu_get_input(DIN13) != 0);
 #endif
 #if DIN14 >= 0
-    case 96:
+    case DIN14:
         return (mcu_get_input(DIN14) != 0);
 #endif
 #if DIN15 >= 0
-    case 97:
+    case DIN15:
         return (mcu_get_input(DIN15) != 0);
+#endif
+#if SERVO0 >= 0
+    case SERVO0:
+        return mcu_get_servo(SERVO0);
+#endif
+#if SERVO1 >= 0
+    case SERVO1:
+        return mcu_get_servo(SERVO1);
+#endif
+#if SERVO2 >= 0
+    case SERVO2:
+        return mcu_get_servo(SERVO2);
+#endif
+#if SERVO3 >= 0
+    case SERVO3:
+        return mcu_get_servo(SERVO3);
+#endif
+#if SERVO4 >= 0
+    case SERVO4:
+        return mcu_get_servo(SERVO4);
+#endif
+#if SERVO5 >= 0
+    case SERVO5:
+        return mcu_get_servo(SERVO5);
+#endif
+#if SERVO6 >= 0
+    case SERVO6:
+        return mcu_get_servo(SERVO6);
+#endif
+#if SERVO7 >= 0
+    case SERVO7:
+        return mcu_get_servo(SERVO7);
 #endif
     }
     return -1;
