@@ -5,6 +5,9 @@
 
 # Changelog
 
+## [1.3.8] - 2022-02-12
+µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
+
 ### Changed
   - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
   - removed USB_VCP and COM macros and replaced by new configuration option INTERFACE (#134)
@@ -543,6 +546,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
 [1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
 [1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
 [1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
