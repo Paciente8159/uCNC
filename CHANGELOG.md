@@ -20,6 +20,7 @@
   - removed USB_VCP and COM macros and replaced by new configuration option INTERFACE (#134)
   - modified STM32 USART port configuration to check pin configurations and allow pin remapping (#134)
   - serial flush is non blocking (#134)
+  - step enable setting ($4) implemented (#136)
 
 ### Fixed
   - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
