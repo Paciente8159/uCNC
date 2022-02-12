@@ -5,6 +5,13 @@
 
 # Changelog
 
+### Added
+  - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
+
+### Changed
+
+### Fixed
+
 ## [1.3.8] - 2022-02-12
 µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
 

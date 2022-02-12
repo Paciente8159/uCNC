@@ -481,7 +481,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 #if TOOL_COUNT > 0
     case 40:
-        g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
+        g_settings.default_tool = CLAMP(0, value8, TOOL_COUNT);
         break;
 #endif
     default:
