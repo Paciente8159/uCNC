@@ -25,10 +25,10 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * The HAL config file is were the IO pins are "connected" to
- * alias name to be used inside µCNC 
- * 
+ * alias name to be used inside µCNC
+ *
  */
 
 /*
@@ -43,7 +43,7 @@ extern "C"
 */
 //#define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-//defines the first dual drive capable step output
+// defines the first dual drive capable step output
 //#define DUAL_DRIVE_AXIS0 X
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
@@ -53,11 +53,11 @@ extern "C"
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
 
-	//declare the tool to be used
+	// declare the tool to be used
 	extern const tool_t __rom__ spindle1;
-//extern const tool_t __rom__ laser1;
+// extern const tool_t __rom__ laser1;
 
-//assign the tools from 1 to 16
+// assign the tools from 1 to 16
 #define TOOL1 spindle1
 	//#define TOOL2 laser1
 
@@ -71,45 +71,61 @@ extern "C"
 #define ENCODERS 0
 
 	/**
- * To use the encoder counter 2 definitions are needed
- * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
- * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
- * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
- * */
+	 * To use the encoder counter 2 definitions are needed
+	 * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
+	 * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
+	 * Defined encoders must match the number of encoders and numeral defined above.
+	 * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+	 * */
 	//#define ENC0_PULSE DIN0
 	//#define ENC0_DIR DIN8
 
 /*
 	Sets the number of PID controllers to be used
 */
-#define PID_CONTROLLERS 0
+#define PID_CONTROLLERS 1
 
 	/**
- * To use the PID controller 2 definitions are needed
- * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
- * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
- * 
- * For example
- * 
- * #define PID0_DELTA() (my_setpoint - mcu_get_analog(ANA0))
- * #define PID0_OUTPUT(X) (mcu_set_pwm(PWM0, X))
- * 
- * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
- * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
- * 
- * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
- * 
- * */
-	//here is an example on how to add an PID controller to the spindle
-	//this exemple assumes that the spindle speed is feedback via an analog pin
-	//reference to io_get_spindle defined in io_control
-	// 	extern uint8_t io_get_spindle(void);
-	// #define SPINDLE_SPEED ANALOG0
-	// #define PID0_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
-	// #define PID0_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
-	// //optional
-	// #define PID0_FREQ_DIV 50
+	 * To use PID you need to set the number o PID controllers.
+	 * PID0 is hardwired to run the tool PID (defined or not). That being said if you need a PID for any other purpose other than the tool the number of PID controllers
+	 * to be enabled must be greater then 1.
+	 *
+	 * µCNC will run each PID in a timed slot inside the rtc timer scheduler like this.
+	 * Let's say you have enabled 3 PID controllers. At each RTC call of the scheduller it will run the current PID controller in a ring loop
+	 *
+	 * |--RTC+0--|--RTC+1--|--RTC+2--|--RTC+3--|--RTC+4--|--RTC+5--|--RTC+6--|..etc..
+	 * |--PID 0--|--PID 1--|--PID 2--|--PID 0--|--PID 1--|--PID 2--|--PID 0--|..etc..
+	 *
+	 * REMEMBER PID0 is hardwired to the tool PID. If the tool PID is not defined for the current tool it will simply do nothing.
+	 *
+	 *
+	 * To use the PID controller 3 definitions are needed
+	 * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
+	 * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
+	 * PIDx_STOP() -> runs this function on any halt or emergency stop of the machine
+	 *
+	 * For example
+	 *
+	 * #define PID1_DELTA() (my_setpoint - mcu_get_analog(ANA0))
+	 * #define PID1_OUTPUT(X) (mcu_set_pwm(PWM0, X))
+	 * #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+	 *
+	 * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
+	 * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
+	 *
+	 * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
+	 *
+	 * */
+	// here is an example on how to add an PID controller to the spindle
+	// this exemple assumes that the spindle speed is feedback via an analog pin
+	// reference to io_get_spindle defined in io_control
+	//  	extern uint8_t io_get_spindle(void);
+	//  #define SPINDLE_SPEED ANALOG0
+	//  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
+	//  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
+	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+	//  //optional
+	//  #define PID1_FREQ_DIV 50
 
 #ifdef __cplusplus
 }

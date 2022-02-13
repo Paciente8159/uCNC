@@ -48,12 +48,12 @@ extern "C"
 #ifdef PID0_OUTPUT
 #error "The PID0 is reserved for the tool PID"
 #else
-#define PID0_OUTPUT(X) (tool_pid_update());
+#define PID0_OUTPUT(X) tool_pid_update()
 #endif
 #ifdef PID0_STOP
 #error "The PID0 is reserved for the tool PID"
 #else
-#define PID0_STOP() tool_stop();
+#define PID0_STOP() tool_stop()
 #endif
 #ifndef PID0_FREQ_DIV
 #define PID0_FREQ_DIV 1
