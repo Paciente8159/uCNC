@@ -230,8 +230,6 @@ void cnc_scheduletasks(uint32_t millis)
             {
                 io_controls_isr();
             }
-            pid_update();
-            tool_pid_update();
         }
 #endif
 #ifdef LED
