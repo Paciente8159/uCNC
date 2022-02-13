@@ -1,19 +1,19 @@
 /*
-	Name: pid_controller.c
-	Description: PID controller for µCNC.
+    Name: pid_controller.c
+    Description: PID controller for µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/03/2021
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 07/03/2021
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -194,23 +194,23 @@ void pid_stop()
 #endif
 }
 
-//PID ISR should run once every millisecond
-//sampling rate is 1000/(log2*(Nº of PID controllers))
-//a single PID controller can run at 1000Hz
-//all 8 PID will run at a max freq of 125Hz
-//this precomputes the PID factors to save computation cycles
+// PID ISR should run once every millisecond
+// sampling rate is 1000/(log2*(Nº of PID controllers))
+// a single PID controller can run at 1000Hz
+// all 8 PID will run at a max freq of 125Hz
+// this precomputes the PID factors to save computation cycles
 void pid_init(void)
 {
 #if (PID_CONTROLLERS > 0)
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        //error gains must be between 0% and 100% (0 and 1)
+        // error gains must be between 0% and 100% (0 and 1)
         uint32_t k = (uint32_t)(g_settings.pid_gain[i][0] * (float)ERROR_MAX);
-        kp[i] = (uint16_t)CLAMP(k, 0, KP_MAX);
+        kp[i] = (uint16_t)CLAMP(0, k, KP_MAX);
         k = (uint32_t)((g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
-        ki[i] = (uint16_t)CLAMP(k, 0, KI_MAX);
+        ki[i] = (uint16_t)CLAMP(0, k, KI_MAX);
         k = (uint32_t)((g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
-        kd[i] = (uint32_t)CLAMP(k, 0, KD_MAX);
+        kd[i] = (uint32_t)CLAMP(0, k, KD_MAX);
     }
 #endif
 }
@@ -224,29 +224,29 @@ void pid_update(void)
     {
         if (!pid_freqdiv[current_pid])
         {
-            //keeps all math in 32bit
-            //9bits
+            // keeps all math in 32bit
+            // 9bits
             int32_t error = pid_get_error(current_pid);
-            CLAMP(error, -ERROR_MAX, ERROR_MAX);
+            CLAMP(-ERROR_MAX, error, ERROR_MAX);
             int32_t output = 0;
             if (kp[current_pid])
             {
-                //max 16bits
+                // max 16bits
                 output = kp[current_pid] * error;
             }
 
             if (ki[current_pid])
             {
                 int32_t sum = cumulative_delta[current_pid] + error;
-                sum = CLAMP(sum, -ERROR_SUM_MAX, ERROR_SUM_MAX);
+                sum = CLAMP(-ERROR_SUM_MAX, sum, ERROR_SUM_MAX);
                 cumulative_delta[current_pid] = (int32_t)sum;
-                //max 31bits
+                // max 31bits
                 output += ki[current_pid] * cumulative_delta[current_pid];
             }
 
             if (kd[current_pid])
             {
-                //max 26bits
+                // max 26bits
                 int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
                 last_error[current_pid] = error;
                 output += rateerror;
@@ -256,8 +256,8 @@ void pid_update(void)
             output = (!isneg) ? output : -output;
             output >>= PID_BITSHIFT_FACTOR;
             output = (!isneg) ? output : -output;
-            //9bits
-            output = CLAMP(output, PID_OUTPUT_MIN, PID_OUTPUT_MAX);
+            // 9bits
+            output = CLAMP(PID_OUTPUT_MIN, output, PID_OUTPUT_MAX);
             pid_set_output(current_pid, (int16_t)output);
         }
 
@@ -267,7 +267,7 @@ void pid_update(void)
         }
     }
 
-    //restart
+    // restart
     if (++current_pid >= PID_CONTROLLERS)
     {
         current_pid = 0;
