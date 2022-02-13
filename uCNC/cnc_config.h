@@ -24,6 +24,9 @@ extern "C"
 {
 #endif
 
+#define INTERFACE_USART 0
+#define INTERFACE_USB 1
+
 /*
 	Serial COM
 	Defines the serial COM baud rate
@@ -33,15 +36,13 @@ extern "C"
 #define BAUDRATE 115200
 #endif
 
+#ifndef INTERFACE
+#define INTERFACE INTERFACE_USART
+#endif
 //uncomment to force enable synchronized TX/RX (used in USB VCP)
 //enable these options to perform comunications in the mcu tasks function call instead of being interrupt driven (sync RX may cause problems with hardware USART)
 // #define ENABLE_SYNC_TX
 // #define ENABLE_SYNC_RX
-
-//uncomment to enable USB VCP instead of serial hardware (for MCU's with Hardware USB)
-#if !defined(USB_VCP) && !defined(NO_USB_VCP)
-#define USB_VCP
-#endif
 
 /*
 	Choose the board
@@ -194,7 +195,13 @@ extern "C"
 	 * This uses less memory, faster ISR stepping, but increases motion and planner calculations since line segments are divided into smaller segments. 	 * 
 	 */
 
-// #define BRESENHAM_16BIT
+	// #define BRESENHAM_16BIT
+
+	/**
+ * Performs motions with variable acceleration (trapezoidal speed profile with roundend speed transition between accel/deaccel and constant speed)
+ * instead of constant acceleration (trapezoizal speed profile)
+ * */
+// #define ENABLE_S_CURVE_ACCELERATION
 
 /**
 	 * Forces pin pooling for all limits and control pins (with or without interrupts)
@@ -239,7 +246,7 @@ extern "C"
 	//EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of required cpu cycles needed for a few math operations (mainly on 8-bit processors)
 	//This will affect the feed rate precision in about ~5%. Output binary will be bigger.
 	//No fast math macros are and shoud be used in functions that calculate coordinates to avoid positional errors except multiply and divide by powers of 2 macros
-	//#define ENABLE_FAST_MATH
+	// #define ENABLE_FAST_MATH
 
 #ifdef __cplusplus
 }

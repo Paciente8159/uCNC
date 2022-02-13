@@ -865,13 +865,10 @@ void mcu_init(void)
 //IO functions
 void mcu_putc(char c)
 {
-        if (c != 0)
-        {
 #ifdef ENABLE_SYNC_TX
-                loop_until_bit_is_set(UCSRA, UDRE);
+        loop_until_bit_is_set(UCSRA, UDRE);
 #endif
-                COM_OUTREG = c;
-        }
+        COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
         SETBIT(UCSRB, UDRIE);
 #endif

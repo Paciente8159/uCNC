@@ -1,25 +1,25 @@
 /*
-	Name: settings.c
-	Description: µCNC runtime settings. These functions store settings and other parameters
-		in non-volatile memory.
+    Name: settings.c
+    Description: µCNC runtime settings. These functions store settings and other parameters
+        in non-volatile memory.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 26/09/2019
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 26/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
 
-//if settings struct is changed this version should change too
+// if settings struct is changed this version should change too
 #define SETTINGS_VERSION "V05"
 
 settings_t g_settings;
@@ -272,7 +272,7 @@ const settings_t __rom__ default_settings =
         .spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
         .debounce_ms = DEFAULT_DEBOUNCE_MS};
 
-//static uint8_t settings_crc;
+// static uint8_t settings_crc;
 
 void settings_init(void)
 {
@@ -285,7 +285,7 @@ void settings_init(void)
         {
             if (g_settings.version[i] != version[i])
             {
-                error = 1; //just set an error
+                error = 1; // just set an error
                 break;
             }
         }
@@ -311,7 +311,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
         *(__ptr++) = value;
     }
 
-//fix step invert mask to match mirror step pins
+// fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #ifdef DUAL_DRIVE_AXIS0
     g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
@@ -331,7 +331,7 @@ void settings_reset(void)
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
-//fix step invert mask to match mirror step pins
+// fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #ifdef DUAL_DRIVE_AXIS0
     g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
@@ -348,14 +348,14 @@ void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
     uint8_t temp_step_inv_mask = g_settings.step_invert_mask;
-    g_settings.step_invert_mask &= 63; //sets cloned axis to 0
+    g_settings.step_invert_mask &= 63; // sets cloned axis to 0
 #endif
 
     while (size)
     {
         if (cnc_get_exec_state(EXEC_RUN))
         {
-            cnc_dotasks(); //updates buffer before cycling
+            cnc_dotasks(); // updates buffer before cycling
         }
 
         size--;
@@ -367,7 +367,7 @@ void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
     mcu_eeprom_flush();
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-    g_settings.step_invert_mask = temp_step_inv_mask; //restores setting
+    g_settings.step_invert_mask = temp_step_inv_mask; // restores setting
 #endif
 }
 
@@ -406,7 +406,7 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.dir_invert_mask = value8;
         break;
     case 4:
-        g_settings.step_enable_invert = value1;
+        g_settings.step_enable_invert = value8;
         break;
     case 5:
         g_settings.limits_invert_mask = value8;
@@ -481,7 +481,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 #if TOOL_COUNT > 0
     case 80:
-        g_settings.default_tool = CLAMP(value8, 0, TOOL_COUNT);
+        g_settings.default_tool = CLAMP(0, value8, TOOL_COUNT);
         break;
 #endif
     default:
@@ -518,13 +518,13 @@ uint8_t settings_change(uint8_t setting, float value)
         }
 #endif
 #if PID_CONTROLLERS > 0
-        //kp ki and kd 0 -> 41, 42, 43
-        //kp ki and kd 1 -> 45, 46, 47, etc...
+        // kp ki and kd 0 -> 41, 42, 43
+        // kp ki and kd 1 -> 45, 46, 47, etc...
         else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
         {
             uint8_t k = (setting & 0x03);
             uint8_t pid = (setting >> 2) - 10;
-            //3 is invalid index
+            // 3 is invalid index
             if (k == 0x03)
             {
                 return STATUS_INVALID_STATEMENT;
@@ -554,7 +554,7 @@ uint8_t settings_change(uint8_t setting, float value)
     pid_init();
 #endif
 
-//fix step invert mask to match mirror step pins
+// fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #ifdef DUAL_DRIVE_AXIS0
     g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
@@ -572,24 +572,25 @@ void settings_erase(uint16_t address, uint8_t size)
     {
         if (cnc_get_exec_state(EXEC_RUN))
         {
-            cnc_dotasks(); //updates buffer before cycling
+            cnc_dotasks(); // updates buffer before cycling
         }
         mcu_eeprom_putc(address++, EOL);
         size--;
     }
 
-    //erase crc byte that is next to data
+    // erase crc byte that is next to data
     mcu_eeprom_putc(address, EOL);
+    mcu_eeprom_flush();
 }
 
 bool settings_check_startup_gcode(uint16_t address)
 {
-    uint8_t size = (RX_BUFFER_SIZE - 1); //defined in serial.h
+    uint8_t size = (RX_BUFFER_SIZE - 1); // defined in serial.h
     uint8_t crc = 0;
     unsigned char c;
     uint16_t cmd_address = address;
 
-    //pre-checks command valid crc
+    // pre-checks command valid crc
     do
     {
         c = mcu_eeprom_getc(cmd_address++);

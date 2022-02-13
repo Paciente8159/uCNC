@@ -8,15 +8,48 @@
 ### Added
   - added pid_stop action and alarm checking (safety stop) (#108)
   - added new interpolator functions to be used by the PID module (#108)
+  - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
+
+### Changed
+
+### Fixed
+
+## [1.3.8] - 2022-02-12
+µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
+
+### Changed
+  - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
+  - removed USB_VCP and COM macros and replaced by new configuration option INTERFACE (#134)
+  - modified STM32 USART port configuration to check pin configurations and allow pin remapping (#134)
+  - serial flush is non blocking (#134)
+  - step enable setting ($4) implemented (#136)
+
+### Fixed
+  - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
+  - added clock configuration to mcu_init to set correct working speed (72MHz) when compiling via Arduino IDE. (#132)
+  - fixed STM32 USART preprocessor condition that would not enable IRQ with both ISR TX and RX (#134)
+  - fixed STM32 USB clock configuration caused by (#132) (#135)
+  - fixed ATMega2560 boards USART ISR. In these boards the COM must be explicitly defined  (#135)
+  - fixed STM32 pin masking configuration that cause configuration issues in PINs 10,11,14 and 15 of each port  (#135)
+
+## [1.3.7] - 2022-01-19
+µCNC version 1.3.7 fixes a small bug that prevented µCNC from sending status report with an alarm condition at startup and a couple of bugs with DSS and 16-bit bresenham mode.
+Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
+
+### Added
   - parser can be extended to in a modular way to include additional gcode commands (#130)
   - added example custom M42 (partial implementation of Marlin M42) (set pin state) (#130)
+  - force ISR update with every new block (#131)
 
 ### Changed
   - removed deprecated options USE_SPINDLE and USE_COOLANT (#129)
+  - all headers are now included via cnc.h (#128)
 
 ### Fixed
   - fixed tool initialization with FORCE_GLOBALS_TO_0 enabled (#129)
-  - all headers are now included via cnc.h (#128)
+  - fixed blocked status report on startup with alarm condition
+  - fixed planner bug that modified motion control feed rate for segmented motion lines (affected only 16-bit bresenham mode) (#131)
+  - fixed compilation error with DSS disabled (#131)
 
 ## [1.3.6] - 2022-01-16
 µCNC version 1.3.6 fixes a bug that prevented the tool PWM from being correctly updated. This caused issues (artifacts) on laser engraving.
@@ -530,6 +563,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 ## 0.01 - Pre-release version - 2020-01-23
 
 ### Initial release
+
+[1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
+[1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
 [1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
 [1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.4

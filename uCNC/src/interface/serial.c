@@ -330,10 +330,9 @@ void serial_print_fltarr(float *arr, uint8_t count)
 void serial_flush(void)
 {
 #ifndef ENABLE_SYNC_TX
-    while (serial_tx_write != serial_tx_read)
+    if (serial_tx_write != serial_tx_read && mcu_tx_ready())
     {
-        mcu_putc(0);
-        cnc_dotasks();
+        serial_tx_isr();
     }
 #endif
 }

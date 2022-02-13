@@ -24,22 +24,16 @@ extern "C"
 {
 #endif
 
-#ifndef STM32F103x6
-#define STM32F103x6
+#ifndef STM32F103xB
+#define STM32F103xB
 #endif
 
-#ifndef STM32F10X_MD
-#define STM32F10X_MD
+#ifndef FLASH_SIZE
+#define FLASH_SIZE 0x10000
 #endif
 
 #ifndef F_CPU
 #define F_CPU 72000000UL
-#endif
-
-//Setup COM pins (must match selected COM port)
-//Comment these to use USB virtual port
-#ifndef USB_VCP
-#define COM_PORT 1
 #endif
 
 //Setup step pins
@@ -109,12 +103,13 @@ extern "C"
 #define SAFETY_DOOR_ISR
 
 //On the STM32 always use sync TX UART (async doesn't work well)
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
+#define COM_PORT 1
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
-#else
+#elif (INTERFACE == INTERFACE_USB)
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12

@@ -70,7 +70,7 @@ static uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser
             }
             else
             {
-                io_set_pwm(words->p, (uint8_t)CLAMP(words->s, 0, 255));
+                io_set_pwm(words->p, (uint8_t)CLAMP(0, words->s, 255));
             }
         }
 
