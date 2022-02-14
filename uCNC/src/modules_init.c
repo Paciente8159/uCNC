@@ -35,8 +35,8 @@ void modules_init(void)
 // initializes parser extension modules
 #ifdef ENABLE_PARSER_EXTENSIONS
 	m42_register();
+#endif
 #if SERVOS_MASK > 0
 	m10_register();
-#endif
 #endif
 }

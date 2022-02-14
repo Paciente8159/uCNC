@@ -1395,6 +1395,21 @@ uint32_t mcu_millis()
         return c;
 }
 
+void mcu_delay_us(uint8_t delay)
+{
+        uint32_t loops;
+        if (!delay)
+        {
+                return;
+        }
+        else
+        {
+                loops = (delay * (F_CPU / 1000000) / 6) - 2;
+        }
+        while (loops--)
+                asm("nop");
+}
+
 /**
  * runs all internal tasks of the MCU.
  * for the moment these are:

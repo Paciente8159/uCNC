@@ -563,6 +563,14 @@ void mcu_usart_init(void)
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 	tusb_init();
 #endif
+
+	// initialize debugger clock (used by us delay)
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
 }
 
 void mcu_putc(char c)
@@ -1220,6 +1228,15 @@ void mcu_rtc_init()
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = 3; // Start SysTick (ABH clock/8)
+}
+
+void mcu_delay_us(uint8_t delay)
+{
+	uint32_t startTick = DWT->CYCCNT,
+			 delayTicks = startTick + delay * (F_CPU / 1000000);
+
+	while (DWT->CYCCNT < delayTicks)
+		;
 }
 
 void mcu_dotasks()
