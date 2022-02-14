@@ -225,6 +225,7 @@ void tool_stop()
 #endif
 }
 
+#if PID_CONTROLLERS > 0
 void tool_pid_update(int16_t value)
 {
 #if TOOL_COUNT > 0
@@ -245,3 +246,4 @@ int16_t tool_pid_error(void)
 #endif
 	return 0;
 }
+#endif

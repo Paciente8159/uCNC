@@ -83,7 +83,7 @@ extern "C"
 /*
 	Sets the number of PID controllers to be used
 */
-#define PID_CONTROLLERS 1
+#define PID_CONTROLLERS 0
 
 	/**
 	 * To use PID you need to set the number o PID controllers.

@@ -77,6 +77,7 @@ uint8_t spindle1_get_speed(void)
 #endif
 }
 
+#if PID_CONTROLLERS > 0
 void spindle1_pid_update(int16_t value)
 {
 #if SPINDLE_PWM >= 0
@@ -97,12 +98,15 @@ int16_t spindle1_pid_error(void)
     return 0;
 #endif
 }
+#endif
 
 const tool_t __rom__ spindle1 = {
     .startup_code = NULL,
     .shutdown_code = NULL,
     .set_speed = &spindle1_set_speed,
     .set_coolant = &spindle1_set_coolant,
-    .get_speed = &spindle1_get_speed,
+#if PID_CONTROLLERS > 0
     .pid_update = &spindle1_pid_update,
-    .pid_error = &spindle1_pid_error};
+    .pid_error = &spindle1_pid_error,
+#endif
+    .get_speed = &spindle1_get_speed};

@@ -206,10 +206,12 @@ void cnc_scheduletasks(uint32_t millis)
         running = true;
         mcu_enable_global_isr();
 
+#if PID_CONTROLLERS > 0
         if (!cnc_get_exec_state(EXEC_ALARM))
         {
             pid_update();
         }
+#endif
 
 // checks any limit or control input state change (every 16ms)
 #if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
