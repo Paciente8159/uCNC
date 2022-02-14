@@ -182,7 +182,9 @@ extern "C"
 #define LOG2 0.3010299956639811952f
 #endif
 
+#ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
+#endif
 
 	static FORCEINLINE uint8_t __atomic_in(void)
 	{
