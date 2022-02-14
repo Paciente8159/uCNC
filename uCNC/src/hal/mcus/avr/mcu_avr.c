@@ -59,7 +59,6 @@
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
 static uint8_t mcu_servos[8];
-#endif
 
 static FORCEINLINE void mcu_clear_servos()
 {
@@ -91,6 +90,14 @@ static FORCEINLINE void mcu_clear_servos()
         mcu_clear_output(SERVO7);
 #endif;
 }
+
+// naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
+ISR(RTC_COMPB_vect, ISR_NAKED)
+{
+        mcu_clear_servos();
+        reti();
+}
+#endif
 
 // gets the mcu running time in ms
 static volatile uint32_t mcu_runtime_ms;
@@ -181,13 +188,6 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
         millis++;
         mcu_runtime_ms = millis;
         mcu_rtc_cb(millis);
-}
-
-// naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
-ISR(RTC_COMPB_vect, ISR_NAKED)
-{
-        mcu_clear_servos();
-        reti();
 }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
