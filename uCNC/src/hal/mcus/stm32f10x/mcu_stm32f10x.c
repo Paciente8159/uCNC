@@ -308,8 +308,7 @@ void osSystickHandler(void)
 #endif
 {
 	mcu_disable_global_isr();
-	mcu_runtime_ms++;
-	cnc_scheduletasks();
+	cnc_scheduletasks(++mcu_runtime_ms);
 	mcu_enable_global_isr();
 }
 

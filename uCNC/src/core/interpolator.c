@@ -634,6 +634,14 @@ void itp_get_rt_position(int32_t *position)
     memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 }
 
+int32_t itp_get_rt_position_index(int8_t index)
+{
+    __ATOMIC__
+    {
+        return itp_rt_step_pos[index];
+    }
+}
+
 void itp_reset_rt_position(void)
 {
     if (g_settings.homing_enabled)
@@ -770,6 +778,11 @@ uint16_t itp_get_rt_spindle(void)
     spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
 
     return (uint16_t)roundf(spindle);
+}
+
+uint8_t itp_get_rt_spindle_pwm(void)
+{
+    return tool_get_speed();
 }
 #endif
 

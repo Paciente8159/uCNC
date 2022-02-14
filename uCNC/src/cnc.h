@@ -119,6 +119,8 @@ extern "C"
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 //final HAL configurations
 #include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
+//fill remaining HAL configurations
+#include "cnc_hal_config_helper.h"
 //initializes core utilities (like fast math functions)
 #include "core/utils.h"
 #include "interface/defaults.h"
@@ -223,7 +225,7 @@ extern "C"
 	void cnc_run(void);
 	//do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
-	void cnc_scheduletasks(void);
+	void cnc_scheduletasks(uint32_t millis);
 	void cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm();
