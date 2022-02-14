@@ -757,47 +757,67 @@ void io_set_output(uint8_t pin, bool state)
     }
 }
 
-void io_disable_steppers(void)
+void io_enable_steppers(uint8_t mask)
 {
 #if (STEP0_EN >= 0)
-    mcu_set_output(STEP0_EN);
+    if (mask & 0x01)
+    {
+        mcu_set_output(STEP0_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP0_EN);
+    }
 #endif
 #if (STEP1_EN >= 0)
-    mcu_set_output(STEP1_EN);
+    if (mask & 0x02)
+    {
+        mcu_set_output(STEP1_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP1_EN);
+    }
 #endif
 #if (STEP2_EN >= 0)
-    mcu_set_output(STEP2_EN);
+    if (mask & 0x04)
+    {
+        mcu_set_output(STEP2_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP2_EN);
+    }
 #endif
 #if (STEP3_EN >= 0)
-    mcu_set_output(STEP3_EN);
+    if (mask & 0x08)
+    {
+        mcu_set_output(STEP3_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP3_EN);
+    }
 #endif
 #if (STEP4_EN >= 0)
-    mcu_set_output(STEP4_EN);
+    if (mask & 0x10)
+    {
+        mcu_set_output(STEP4_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP4_EN);
+    }
 #endif
 #if (STEP5_EN >= 0)
-    mcu_set_output(STEP5_EN);
-#endif
-}
-
-void io_enable_steppers(void)
-{
-#if (STEP0_EN >= 0)
-    mcu_clear_output(STEP0_EN);
-#endif
-#if (STEP1_EN >= 0)
-    mcu_clear_output(STEP1_EN);
-#endif
-#if (STEP2_EN >= 0)
-    mcu_clear_output(STEP2_EN);
-#endif
-#if (STEP3_EN >= 0)
-    mcu_clear_output(STEP3_EN);
-#endif
-#if (STEP4_EN >= 0)
-    mcu_clear_output(STEP4_EN);
-#endif
-#if (STEP5_EN >= 0)
-    mcu_clear_output(STEP5_EN);
+    if (mask & 0x20)
+    {
+        mcu_set_output(STEP5_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP5_EN);
+    }
 #endif
 }
 

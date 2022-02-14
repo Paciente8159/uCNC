@@ -93,10 +93,10 @@ extern "C"
 #define TX_BIT 1
 #define RX_PORT D
 #define TX_PORT D
-// only uncomment this if other port other then 0 is used
-//#define COM_NUMBER 0
+	// only uncomment this if other port other then 0 is used
+	//#define COM_NUMBER 0
 
-// Setup PWM
+	// Setup PWM
 #define PWM0_BIT 3	// assigns PWM0 pin
 #define PWM0_PORT B // assigns PWM0 pin
 #define PWM0_OCR A

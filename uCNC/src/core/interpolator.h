@@ -36,12 +36,14 @@ extern "C"
 	void itp_stop_tools(void);
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
+	int32_t itp_get_rt_position_index(int8_t index);
 	void itp_reset_rt_position(void);
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
 #if TOOL_COUNT > 0
 	uint16_t itp_get_rt_spindle(void);
+	uint8_t itp_get_rt_spindle_value(void);
 #else
 #define itp_get_rt_spindle() (0);
 #endif

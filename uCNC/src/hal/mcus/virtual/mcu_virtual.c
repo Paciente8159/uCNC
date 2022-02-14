@@ -856,27 +856,33 @@ void *stepsimul(void)
 void ticksimul(void)
 {
 
-	// static VIRTUAL_MAP initials = {0};
+	static VIRTUAL_MAP initials = {0};
 
-	// FILE *infile = fopen("inputs.txt", "r");
-	// char inputs[255];
+	if (global_isr_enabled)
+	{
 
-	// if (infile != NULL) //checks input file
-	// {
-	// 	fscanf(infile, "%lX", &(virtualmap.inputs));
-	// 	fclose(infile);
+		// FILE *infile = fopen("inputs.txt", "r");
+		// char inputs[255];
 
-	// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
-	// 	initials.inputs = virtualmap.inputs;
+		// if (infile != NULL) //checks input file
+		// {
+		// 	fscanf(infile, "%lX", &(virtualmap.inputs));
+		// 	fclose(infile);
 
-	// 	if (diff)
-	// 	{
-	// 		isr_flags |= ISR_INPUT; //flags input isr
-	// 	}
-	// }
+		// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
+		// 	initials.inputs = virtualmap.inputs;
 
-	mcu_runtime++;
-	cnc_scheduletasks();
+		// 	if (diff)
+		// 	{
+		// 		isr_flags |= ISR_INPUT; //flags input isr
+		// 	}
+		// }
+
+		mcu_runtime++;
+		mcu_disable_global_isr();
+		cnc_scheduletasks(mcu_runtime);
+		mcu_enable_global_isr();
+	}
 }
 
 uint32_t mcu_millis()

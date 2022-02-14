@@ -213,8 +213,7 @@ extern "C"
 	void io_set_pwm(uint8_t pin, uint8_t value);
 	void io_set_output(uint8_t pin, bool state);
 
-	void io_enable_steppers(void);
-	void io_disable_steppers(void);
+	void io_enable_steppers(uint8_t mask);
 
 	int16_t io_get_pinvalue(uint8_t pin);
 

@@ -578,11 +578,20 @@ void protocol_send_cnc_settings(void)
 #endif
 #endif
 
+#if PID_CONTROLLERS > 0
+    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
+    {
+        protocol_send_gcode_setting_line_flt(40 + 4 * i, g_settings.pid_gain[i][0]);
+        protocol_send_gcode_setting_line_flt(41 + 4 * i, g_settings.pid_gain[i][1]);
+        protocol_send_gcode_setting_line_flt(42 + 4 * i, g_settings.pid_gain[i][2]);
+    }
+#endif
+
 #if TOOL_COUNT > 0
-    protocol_send_gcode_setting_line_int(40, g_settings.default_tool);
+    protocol_send_gcode_setting_line_int(80, g_settings.default_tool);
     for (uint8_t i = 0; i < TOOL_COUNT; i++)
     {
-        protocol_send_gcode_setting_line_flt(41 + i, g_settings.tool_length_offset[i]);
+        protocol_send_gcode_setting_line_flt(81 + i, g_settings.tool_length_offset[i]);
     }
 #endif
 
@@ -610,15 +619,6 @@ void protocol_send_cnc_settings(void)
     for (uint8_t i = 0; i < STEPPER_COUNT; i++)
     {
         protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
-    }
-#endif
-
-#if PID_CONTROLLERS > 0
-    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
-    {
-        protocol_send_gcode_setting_line_flt(150 + 4 * i, g_settings.pid_gain[i][0]);
-        protocol_send_gcode_setting_line_flt(151 + 4 * i, g_settings.pid_gain[i][1]);
-        protocol_send_gcode_setting_line_flt(152 + 4 * i, g_settings.pid_gain[i][2]);
     }
 #endif
 #ifdef ECHO_CMD

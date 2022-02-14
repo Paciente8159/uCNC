@@ -65,13 +65,13 @@ void cnc_init(void)
 #endif
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     // initializes all systems
-    mcu_init();            // mcu
-    io_disable_steppers(); // disables steppers at start
-    io_disable_probe();    // forces probe isr disabling
-    serial_init();         // serial
-    settings_init();       // settings
-    itp_init();            // interpolator
-    planner_init();        // motion planner
+    mcu_init();                                         // mcu
+    io_enable_steppers(!g_settings.step_enable_invert); // disables steppers at start
+    io_disable_probe();                                 // forces probe isr disabling
+    serial_init();                                      // serial
+    settings_init();                                    // settings
+    itp_init();                                         // interpolator
+    planner_init();                                     // motion planner
 #if TOOL_COUNT > 0
     tool_init();
 #endif
@@ -100,7 +100,7 @@ void cnc_run(void)
         }
         if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
-            io_disable_steppers();
+            io_enable_steppers(!g_settings.step_enable_invert);
             cnc_check_fault_systems();
             break;
         }
@@ -205,6 +205,14 @@ void mcu_rtc_cb(uint32_t millis)
     {
         running = true;
         mcu_enable_global_isr();
+
+#if PID_CONTROLLERS > 0
+        if (!cnc_get_exec_state(EXEC_ALARM))
+        {
+            pid_update();
+        }
+#endif
+
 // checks any limit or control input state change (every 16ms)
 #if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
         uint8_t mls = (uint8_t)(0xff & millis);
@@ -224,8 +232,6 @@ void mcu_rtc_cb(uint32_t millis)
             {
                 mcu_controls_changed_cb();
             }
-            pid_update();
-            tool_pid_update();
         }
 #endif
 #ifdef LED
@@ -300,6 +306,10 @@ void cnc_stop(void)
     itp_stop();
     // stop tools
     itp_stop_tools();
+
+#if PID_CONTROLLERS > 0
+    pid_stop();
+#endif
 }
 
 uint8_t cnc_unlock(bool force)
@@ -341,7 +351,7 @@ uint8_t cnc_unlock(bool force)
 
         io_set_steps(g_settings.step_invert_mask);
         io_set_dirs(g_settings.dir_invert_mask);
-        io_enable_steppers();
+        io_enable_steppers(g_settings.step_enable_invert);
         parser_reset();
 
         if (cnc_state.loop_state < LOOP_RUNNING)
@@ -479,15 +489,6 @@ bool cnc_reset(void)
 #endif
     protocol_send_string(MSG_STARTUP);
     serial_flush();
-
-    // uint8_t ok = cnc_unlock(false);
-
-    // if (ok)
-    // {
-    //     io_enable_steppers();
-    // }
-
-    // return (ok != 0);
 }
 
 void cnc_call_rt_command(uint8_t command)
