@@ -81,4 +81,5 @@ const tool_t __rom__ laser1 = {
     .set_speed = &laser1_set_speed,
     .set_coolant = NULL,
     .get_speed = &laser1_get_speed,
-    .pid_controller = NULL};
+    .pid_update = NULL,
+    .pid_error = NULL};

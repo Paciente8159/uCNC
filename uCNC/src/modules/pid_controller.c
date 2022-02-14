@@ -18,21 +18,21 @@
 
 #include "../cnc.h"
 #include <stdint.h>
+#include <math.h>
 
 #if (PID_CONTROLLERS > 0)
-static int32_t cumulative_delta[PID_CONTROLLERS];
-static int32_t last_error[PID_CONTROLLERS];
-static uint16_t kp[PID_CONTROLLERS];
-static uint16_t ki[PID_CONTROLLERS];
-static uint32_t kd[PID_CONTROLLERS];
+static float cumulative_delta[PID_CONTROLLERS];
+static float last_error[PID_CONTROLLERS];
+static float ki[PID_CONTROLLERS];
+static float kd[PID_CONTROLLERS];
 static uint8_t pid_freqdiv[PID_CONTROLLERS];
 
-#define GAIN_FLT_TO_INT (1 << PID_BITSHIFT_FACTOR)
-#define ERROR_MAX (GAIN_FLT_TO_INT - 1)
-#define KP_MAX (GAIN_FLT_TO_INT - 1)
-#define KI_MAX (((GAIN_FLT_TO_INT << 1) >> PID_DIVISIONS) - 1)
-#define KD_MAX ((GAIN_FLT_TO_INT << 10) - 1)
-#define ERROR_SUM_MAX (1 << (31 - PID_BITSHIFT_FACTOR - PID_DIVISIONS))
+// #define GAIN_FLT_TO_INT (1 << PID_BITSHIFT_FACTOR)
+// #define ERROR_MAX (GAIN_FLT_TO_INT - 1)
+// #define KP_MAX (GAIN_FLT_TO_INT - 1)
+// #define KI_MAX (((GAIN_FLT_TO_INT << 1) >> PID_DIVISIONS) - 1)
+// #define KD_MAX ((GAIN_FLT_TO_INT << 10) - 1)
+// #define ERROR_SUM_MAX (1 << (31 - PID_BITSHIFT_FACTOR - PID_DIVISIONS))
 
 #endif
 
@@ -205,12 +205,8 @@ void pid_init(void)
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
         // error gains must be between 0% and 100% (0 and 1)
-        uint32_t k = (uint32_t)(g_settings.pid_gain[i][0] * (float)ERROR_MAX);
-        kp[i] = (uint16_t)CLAMP(0, k, KP_MAX);
-        k = (uint32_t)((g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
-        ki[i] = (uint16_t)CLAMP(0, k, KI_MAX);
-        k = (uint32_t)((g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i))) * (float)ERROR_MAX);
-        kd[i] = (uint32_t)CLAMP(0, k, KD_MAX);
+        ki[i] = (g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
+        kd[i] = (g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
     }
 #endif
 }
@@ -224,41 +220,31 @@ void pid_update(void)
     {
         if (!pid_freqdiv[current_pid])
         {
-            // keeps all math in 32bit
-            // 9bits
-            int32_t error = pid_get_error(current_pid);
-            CLAMP(-ERROR_MAX, error, ERROR_MAX);
-            int32_t output = 0;
-            if (kp[current_pid])
+            float error = (float)pid_get_error(current_pid);
+            float output = 0;
+            float pidkp = g_settings.pid_gain[current_pid][0];
+            float pidki = ki[current_pid];
+            float pidkd = kd[current_pid];
+            if (pidkp)
             {
-                // max 16bits
-                output = kp[current_pid] * error;
+                output = pidkp * error;
             }
 
-            if (ki[current_pid])
+            if (pidki)
             {
-                int32_t sum = cumulative_delta[current_pid] + error;
-                sum = CLAMP(-ERROR_SUM_MAX, sum, ERROR_SUM_MAX);
-                cumulative_delta[current_pid] = (int32_t)sum;
-                // max 31bits
-                output += ki[current_pid] * cumulative_delta[current_pid];
+                float sum = cumulative_delta[current_pid] + error;
+                cumulative_delta[current_pid] = sum;
+                output += (pidki * sum);
             }
 
-            if (kd[current_pid])
+            if (pidkd)
             {
-                // max 26bits
-                int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
+                float rateerror = (error - last_error[current_pid]) * pidkd;
                 last_error[current_pid] = error;
                 output += rateerror;
             }
 
-            bool isneg = (output < 0) ? true : false;
-            output = (!isneg) ? output : -output;
-            output >>= PID_BITSHIFT_FACTOR;
-            output = (!isneg) ? output : -output;
-            // 9bits
-            output = CLAMP(PID_OUTPUT_MIN, output, PID_OUTPUT_MAX);
-            pid_set_output(current_pid, (int16_t)output);
+            pid_set_output(current_pid, (int16_t)roundf(output));
         }
 
         if (++pid_freqdiv[current_pid] >= pid_get_freqdiv(current_pid))

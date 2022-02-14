@@ -30,12 +30,15 @@
 #define SPINDLE_DIR DOUT0
 #define COOLANT_FLOOD DOUT1
 #define COOLANT_MIST DOUT2
+#define SPINDLE_FEEDBACK ANALOG0
+
+static uint8_t spindle1_speed;
 
 void spindle1_set_speed(uint8_t value, bool invert)
 {
-// easy macro to execute the same code as below
-// SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
-
+    // easy macro to execute the same code as below
+    // SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
+    spindle1_speed = value;
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if SPINDLE_DIR >= 0
     if (SPINDLE_DIR > 0)
@@ -68,7 +71,28 @@ void spindle1_set_coolant(uint8_t value)
 uint8_t spindle1_get_speed(void)
 {
 #if SPINDLE_PWM >= 0
-    return mcu_get_pwm(SPINDLE_PWM);
+    return spindle1_speed;
+#else
+    return 0;
+#endif
+}
+
+void spindle1_pid_update(int16_t value)
+{
+#if SPINDLE_PWM >= 0
+    if (spindle1_speed != 0)
+    {
+        uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
+        mcu_set_pwm(SPINDLE_PWM, newval);
+    }
+#endif
+}
+
+int16_t spindle1_pid_error(void)
+{
+#if SPINDLE_FEEDBACK >= 0 && SPINDLE_PWM >= 0
+    uint8_t reader = mcu_get_analog(ANALOG0);
+    return (spindle1_speed - reader);
 #else
     return 0;
 #endif
@@ -80,4 +104,5 @@ const tool_t __rom__ spindle1 = {
     .set_speed = &spindle1_set_speed,
     .set_coolant = &spindle1_set_coolant,
     .get_speed = &spindle1_get_speed,
-    .pid_controller = NULL};
+    .pid_update = &spindle1_pid_update,
+    .pid_error = &spindle1_pid_error};

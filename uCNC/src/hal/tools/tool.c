@@ -1,7 +1,7 @@
 /*
 	Name: tool.c
 	Description: The tool unit for µCNC.
-        This is responsible to define and manage tools.
+		This is responsible to define and manage tools.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -22,7 +22,7 @@
 
 static tool_t tool_current;
 
-//this variable is not used but forces the compiler to compile the selected tools compilation units
+// this variable is not used but forces the compiler to compile the selected tools compilation units
 TOOLDEF const tool_t *__rom__ const tools[] = {
 #ifdef TOOL1
 	&TOOL1,
@@ -225,12 +225,22 @@ void tool_stop()
 #endif
 }
 
-uint8_t tool_pid_update(void)
+void tool_pid_update(int16_t value)
 {
 #if TOOL_COUNT > 0
-	if (tool_current.pid_controller)
+	if (tool_current.pid_update)
 	{
-		return tool_current.pid_controller();
+		tool_current.pid_update(value);
+	}
+#endif
+}
+
+int16_t tool_pid_error(void)
+{
+#if TOOL_COUNT > 0
+	if (tool_current.pid_error)
+	{
+		return tool_current.pid_error();
 	}
 #endif
 	return 0;
