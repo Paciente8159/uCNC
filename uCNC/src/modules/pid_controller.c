@@ -1,31 +1,39 @@
 /*
-	Name: pid_controller.c
-	Description: PID controller for µCNC.
+    Name: pid_controller.c
+    Description: PID controller for µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/03/2021
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 07/03/2021
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
 #include <stdint.h>
+#include <math.h>
 
 #if (PID_CONTROLLERS > 0)
-static int32_t cumulative_delta[PID_CONTROLLERS];
-static int32_t last_error[PID_CONTROLLERS];
-static int32_t kp[PID_CONTROLLERS];
-static int32_t ki[PID_CONTROLLERS];
-static int32_t kd[PID_CONTROLLERS];
+static float cumulative_delta[PID_CONTROLLERS];
+static float last_error[PID_CONTROLLERS];
+static float ki[PID_CONTROLLERS];
+static float kd[PID_CONTROLLERS];
 static uint8_t pid_freqdiv[PID_CONTROLLERS];
+
+// #define GAIN_FLT_TO_INT (1 << PID_BITSHIFT_FACTOR)
+// #define ERROR_MAX (GAIN_FLT_TO_INT - 1)
+// #define KP_MAX (GAIN_FLT_TO_INT - 1)
+// #define KI_MAX (((GAIN_FLT_TO_INT << 1) >> PID_DIVISIONS) - 1)
+// #define KD_MAX ((GAIN_FLT_TO_INT << 10) - 1)
+// #define ERROR_SUM_MAX (1 << (31 - PID_BITSHIFT_FACTOR - PID_DIVISIONS))
+
 #endif
 
 static int32_t pid_get_freqdiv(uint8_t i)
@@ -157,17 +165,48 @@ static int32_t pid_set_output(uint8_t i, int16_t val)
     }
 }
 
-//PID ISR should run once every millisecond
-//this is equal to a 125Hz sampling rate (for 8 PID controllers)
-//this precomputes the PID factors to save computation cycles
+void pid_stop()
+{
+
+#if (PID_CONTROLLERS > 0)
+    PID0_STOP();
+#endif
+#if (PID_CONTROLLERS > 1)
+    PID1_STOP();
+#endif
+#if (PID_CONTROLLERS > 2)
+    PID2_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 3)
+    PID3_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 4)
+    PID4_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 5)
+    PID5_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 6)
+    PID6_STOP(val);
+#endif
+#if (PID_CONTROLLERS > 7)
+    PID7_STOP(val);
+#endif
+}
+
+// PID ISR should run once every millisecond
+// sampling rate is 1000/(log2*(Nº of PID controllers))
+// a single PID controller can run at 1000Hz
+// all 8 PID will run at a max freq of 125Hz
+// this precomputes the PID factors to save computation cycles
 void pid_init(void)
 {
 #if (PID_CONTROLLERS > 0)
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
-        kp[i] = (int32_t)(g_settings.pid_gain[i][0] * (float)(1 << PID_BITSHIFT_FACTOR));
-        ki[i] = (int32_t)((g_settings.pid_gain[i][1] * (float)(1 << PID_BITSHIFT_FACTOR)) / (125.0f / (float)pid_get_freqdiv(i)));
-        kd[i] = (int32_t)((g_settings.pid_gain[i][2] * (float)(1 << PID_BITSHIFT_FACTOR)) * (125.0f / (float)pid_get_freqdiv(i)));
+        // error gains must be between 0% and 100% (0 and 1)
+        ki[i] = (g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
+        kd[i] = (g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
     }
 #endif
 }
@@ -181,34 +220,31 @@ void pid_update(void)
     {
         if (!pid_freqdiv[current_pid])
         {
-            int32_t error = pid_get_error(current_pid);
-            int64_t output = 0;
-            if (kp[current_pid])
+            float error = (float)pid_get_error(current_pid);
+            float output = 0;
+            float pidkp = g_settings.pid_gain[current_pid][0];
+            float pidki = ki[current_pid];
+            float pidkd = kd[current_pid];
+            if (pidkp)
             {
-                output = kp[current_pid] * error;
+                output = pidkp * error;
             }
 
-            if (ki[current_pid])
+            if (pidki)
             {
-                int64_t sum = cumulative_delta[current_pid] + error;
-                sum = MIN(sum, 0x7FFFFFFF);
-                cumulative_delta[current_pid] = (int32_t)MAX(sum, -0x7FFFFFFF);
-
-                output += ki[current_pid] * cumulative_delta[current_pid];
+                float sum = cumulative_delta[current_pid] + error;
+                cumulative_delta[current_pid] = sum;
+                output += (pidki * sum);
             }
 
-            if (kd[current_pid])
+            if (pidkd)
             {
-                int32_t rateerror = (error - last_error[current_pid]) * kd[current_pid];
+                float rateerror = (error - last_error[current_pid]) * pidkd;
+                last_error[current_pid] = error;
                 output += rateerror;
             }
 
-            last_error[current_pid] = error;
-            output >>= PID_BITSHIFT_FACTOR;
-            output = MIN(output, PID_OUTPUT_MAX);
-            output = MAX(output, PID_OUTPUT_MIN);
-            uint8_t pid_result = (uint8_t)output;
-            pid_set_output(current_pid, pid_result);
+            pid_set_output(current_pid, (int16_t)roundf(output));
         }
 
         if (++pid_freqdiv[current_pid] >= pid_get_freqdiv(current_pid))
@@ -217,7 +253,8 @@ void pid_update(void)
         }
     }
 
-    if (++current_pid >= 8)
+    // restart
+    if (++current_pid >= PID_CONTROLLERS)
     {
         current_pid = 0;
     }

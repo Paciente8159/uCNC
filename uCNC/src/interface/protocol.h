@@ -38,7 +38,7 @@ extern "C"
 	void protocol_send_gcode_modes(void);
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
-#ifdef ENABLE_SETTING_EXTRA_CMDS
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
 #endif
 
