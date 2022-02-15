@@ -2251,7 +2251,7 @@ extern "C"
 #define COM_USART __usart__(COM_PORT)
 #define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define mcu_serial_isr __helper__(USART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(USART, COM_PORT, _IRQHandler)
 #endif
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
@@ -2266,7 +2266,7 @@ extern "C"
 #define COM_USART __uart__(COM_PORT)
 #define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define mcu_serial_isr __helper__(UART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(UART, COM_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
@@ -2298,7 +2298,7 @@ extern "C"
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
 #endif
-#define mcu_timer_isr __helper__(TIM, ITP_TIMER, _IRQHandler)
+#define MCU_ITP_ISR __helper__(TIM, ITP_TIMER, _IRQHandler)
 #define TIMER_REG __helper__(TIM, ITP_TIMER, )
 #if (ITP_TIMER == 1 || (ITP_TIMER >= 8 & ITP_TIMER <= 11))
 #define TIMER_ENREG APB2ENR
@@ -2310,6 +2310,23 @@ extern "C"
 #define TIMER_RESETREG APB1RSTR
 #define TIMER_APB __helper__(RCC_APB1ENR_TIM, ITP_TIMER, EN)
 #define TIMER_IRQ __helper__(TIM, ITP_TIMER, _IRQn)
+#endif
+
+#ifndef SERVO_TIMER
+#define SERVO_TIMER 3
+#endif
+#define MCU_SERVO_ISR __helper__(TIM, SERVO_TIMER, _IRQHandler)
+#define SERVO_TIMER_REG __helper__(TIM, SERVO_TIMER, )
+#if (SERVO_TIMER == 1 || (SERVO_TIMER >= 8 & SERVO_TIMER <= 11))
+#define SERVO_TIMER_ENREG APB2ENR
+#define SERVO_TIMER_RESETREG APB1RSTR
+#define SERVO_TIMER_APB __helper__(RCC_APB2ENR_TIM, SERVO_TIMER, EN)
+#define SERVO_TIMER_IRQ __helper__(TIM, SERVO_TIMER, _UP_IRQn)
+#else
+#define SERVO_TIMER_ENREG APB1ENR
+#define SERVO_TIMER_RESETREG APB1RSTR
+#define SERVO_TIMER_APB __helper__(RCC_APB1ENR_TIM, SERVO_TIMER, EN)
+#define SERVO_TIMER_IRQ __helper__(TIM, SERVO_TIMER, _IRQn)
 #endif
 
 #define __indirect__ex__(X, Y) DIO##X##_##Y

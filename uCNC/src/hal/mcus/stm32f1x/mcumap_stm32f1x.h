@@ -3354,7 +3354,7 @@ extern "C"
 #define COM_USART __usart__(COM_PORT)
 #define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define mcu_serial_isr __helper__(USART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(USART, COM_PORT, _IRQHandler)
 #endif
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
@@ -3369,7 +3369,7 @@ extern "C"
 #define COM_USART __uart__(COM_PORT)
 #define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define mcu_serial_isr __helper__(UART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(UART, COM_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)

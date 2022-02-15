@@ -150,7 +150,7 @@ volatile bool stm32_global_isr_enabled;
  * The respective IRQHandler will execute these functions
  **/
 #if (INTERFACE == INTERFACE_USART)
-void mcu_serial_isr(void)
+void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
 #ifndef ENABLE_SYNC_RX
@@ -754,6 +754,30 @@ void mcu_init(void)
 #if DOUT15 >= 0
 	mcu_config_output(DOUT15);
 #endif
+#if SERVO0 >= 0
+	mcu_config_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+	mcu_config_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+	mcu_config_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+	mcu_config_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+	mcu_config_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+	mcu_config_output(SERVO5);
+#endif
+#if SERVO6 >= 0
+	mcu_config_output(SERVO6);
+#endif
+#if SERVO7 >= 0
+	mcu_config_output(SERVO7);
+#endif
 #if LIMIT_X >= 0
 	mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
@@ -1059,30 +1083,6 @@ void mcu_init(void)
 #endif
 #if USB_DP >= 0
 	mcu_config_input(USB_DP);
-#endif
-#if SERVO0 >= 0
-	mcu_config_output(SERVO0);
-#endif
-#if SERVO1 >= 0
-	mcu_config_output(SERVO1);
-#endif
-#if SERVO2 >= 0
-	mcu_config_output(SERVO2);
-#endif
-#if SERVO3 >= 0
-	mcu_config_output(SERVO3);
-#endif
-#if SERVO4 >= 0
-	mcu_config_output(SERVO4);
-#endif
-#if SERVO5 >= 0
-	mcu_config_output(SERVO5);
-#endif
-#if SERVO6 >= 0
-	mcu_config_output(SERVO6);
-#endif
-#if SERVO7 >= 0
-	mcu_config_output(SERVO7);
 #endif
 
 	mcu_usart_init();
