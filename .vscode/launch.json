@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "launch",
             "cwd": "${workspaceRoot}",
-            "target": "${workspaceRoot}/makefiles/stm32f103/build/uCNC.elf",
+            "target": "${workspaceRoot}/makefiles/stm32f4x/build/uCNC.elf",
             "gdbpath": "arm-none-eabi-gdb",
             "autorun": [
                 "target extended-remote localhost:3333",

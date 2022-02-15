@@ -304,8 +304,6 @@ static void mcu_usart_init(void);
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
 #endif
 
-extern uint32_t SystemCoreClock;
-
 #if (F_CPU == 84000000)
 #define PLLN 336
 #define PLLP 1
@@ -366,7 +364,7 @@ void mcu_setup_clocks()
 	while ((RCC->CFGR & RCC_CFGR_SW) != (0x02UL << RCC_CFGR_SW_Pos))
 		;
 
-	SystemCoreClock = F_CPU;
+	SystemCoreClockUpdate();
 }
 
 void mcu_usart_init(void)
@@ -463,6 +461,13 @@ void mcu_putc(char c)
 		tud_cdc_write_flush();
 	}
 #endif
+}
+
+void OTG_FS_Handler(void)
+{
+	mcu_disable_global_isr();
+	tud_int_handler(0);
+	mcu_enable_global_isr();
 }
 
 void mcu_init(void)

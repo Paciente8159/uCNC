@@ -47,6 +47,7 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 C_SOURCES =  \
 stm32f4x.c \
 main.c \
+drivers/system_stm32f4xx.c \
 $(call rwildcard,../../uCNC,*.c)
 
 # ifdef USE_USB
