@@ -268,7 +268,7 @@ Version 1.2.4 is a minor revision and improves a couple of functionalities.
 The following things were changed:
 
 ### Added
-  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_SETTING_EXTRA_CMDS in cnc_config.h active by default) (#70)
+  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_EXTRA_SYSTEM_CMDS in cnc_config.h active by default) (#70)
 
     This set of new commands allow a more granular control over the settings stored in EEPROM/Flash to prevent wearing.
     When enabled all grbl $x=val are only changed in SRAM. To set them in non volatile memory a save command must be issued.

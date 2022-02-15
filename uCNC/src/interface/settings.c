@@ -327,7 +327,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 void settings_reset(void)
 {
     rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
-#ifndef ENABLE_SETTING_EXTRA_CMDS
+#ifndef ENABLE_EXTRA_SYSTEM_CMDS
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
@@ -546,7 +546,7 @@ uint8_t settings_change(uint8_t setting, float value)
         break;
     }
 
-#ifndef ENABLE_SETTING_EXTRA_CMDS
+#ifndef ENABLE_EXTRA_SYSTEM_CMDS
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 

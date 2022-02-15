@@ -195,7 +195,7 @@ bool cnc_dotasks(void)
 }
 
 // this function is executed every millisecond
-void cnc_scheduletasks(uint32_t millis)
+void mcu_rtc_cb(uint32_t millis)
 {
     static bool running = false;
     static uint8_t last_limits = 0;
@@ -215,22 +215,22 @@ void cnc_scheduletasks(uint32_t millis)
 
 // checks any limit or control input state change (every 16ms)
 #if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
-        uint8_t millis = (uint8_t)(0xff & mcu_millis());
-        if ((millis & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
+        uint8_t mls = (uint8_t)(0xff & millis);
+        if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
         {
             uint8_t inputs = io_get_limits();
             uint8_t diff = (inputs ^ last_limits) & inputs;
             last_limits = inputs;
             if (diff != 0)
             {
-                io_limits_isr();
+                mcu_limits_changed_cb();
             }
             inputs = io_get_controls();
             diff = (inputs ^ last_controls) & inputs;
             last_controls = inputs;
             if (diff != 0)
             {
-                io_controls_isr();
+                mcu_controls_changed_cb();
             }
         }
 #endif
@@ -816,8 +816,8 @@ static void cnc_io_dotasks(void)
 
     // checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
-    io_limits_isr();
-    io_controls_isr();
+    mcu_limits_changed_cb();
+    mcu_controls_changed_cb();
 #endif
 
     if (cnc_state.loop_state > LOOP_STARTUP_RESET && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))

@@ -1,18 +1,18 @@
 /*
-	Name: protocol.h
-	Description: µCNC implementation of a Grbl compatible send-response protocol
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 19/09/2019
+    Name: protocol.h
+    Description: µCNC implementation of a Grbl compatible send-response protocol
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 19/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -169,7 +169,7 @@ void protocol_send_status(void)
     itp_get_rt_position(steppos);
     kinematics_apply_forward(steppos, axis);
     kinematics_apply_reverse_transform(axis);
-    float feed = itp_get_rt_feed(); //convert from mm/s to mm/m
+    float feed = itp_get_rt_feed(); // convert from mm/s to mm/m
 #if TOOL_COUNT > 0
     uint16_t spindle = itp_get_rt_spindle();
 #endif
@@ -626,40 +626,55 @@ void protocol_send_cnc_settings(void)
 #endif
 }
 
-#ifdef ENABLE_SETTING_EXTRA_CMDS
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
 void protocol_send_pins_states(void)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
 #endif
-    for (uint8_t i = 0; i < 98; i++)
+    for (uint8_t i = 0; i < 146; i++)
     {
         int16_t val = io_get_pinvalue(i);
         if (val >= 0)
         {
-            if (i < 20)
+            if (i < 100)
             {
-                serial_print_str(__romstr__("[SO:"));
+                if (i <= 20)
+                {
+                    serial_print_str(__romstr__("[SO:"));
+                }
+                else if (i < 36)
+                {
+                    serial_print_str(__romstr__("[P:"));
+                }
+                else if (i < 52)
+                {
+                    serial_print_str(__romstr__("[O:"));
+                }
+                else if (i < 60)
+                {
+                    serial_print_str(__romstr__("[SV:"));
+                }
+                else
+                {
+                    i = 100; // jumps to inputs
+                }
             }
-            else if (i < 36)
+
+            if (i >= 100)
             {
-                serial_print_str(__romstr__("[P:"));
-            }
-            else if (i < 52)
-            {
-                serial_print_str(__romstr__("[O:"));
-            }
-            else if (i < 66)
-            {
-                serial_print_str(__romstr__("[SI:"));
-            }
-            else if (i < 82)
-            {
-                serial_print_str(__romstr__("[A:"));
-            }
-            else
-            {
-                serial_print_str(__romstr__("[I:"));
+                if (i < 114)
+                {
+                    serial_print_str(__romstr__("[SI:"));
+                }
+                if (i < 130)
+                {
+                    serial_print_str(__romstr__("[A:"));
+                }
+                else
+                {
+                    serial_print_str(__romstr__("[I:"));
+                }
             }
             serial_print_int(i);
             serial_putc(':');
