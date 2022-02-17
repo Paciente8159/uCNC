@@ -160,9 +160,9 @@ extern "C"
 #define ANALOG0_PORT B
 #define ANALOG0_CHANNEL 9
 
-// servo pin
-#define SERVO0_BIT 8
-#define SERVO0_PORT B
+	// servo pin
+	// #define SERVO0_BIT 8
+	// #define SERVO0_PORT B
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// On STM32F1x cores this will default to Timer 2

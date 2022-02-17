@@ -58,7 +58,7 @@ extern "C"
    * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_BLACKPILL
 #endif
 
   /**
@@ -292,7 +292,7 @@ extern "C"
    * helps to reduce code size if features are not needed
    * */
 
-  // #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
   // #define DISABLE_ALL_LIMITS
   // #define DISABLE_PROBE
 

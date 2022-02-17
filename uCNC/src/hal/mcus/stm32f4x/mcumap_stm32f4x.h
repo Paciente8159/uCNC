@@ -1468,6 +1468,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM0_TIMER >= 1) && (PWM0_TIMER <= 2)
+#define PWM0_AF 0x01
+#elif (PWM0_TIMER >= 3) && (PWM0_TIMER <= 5)
+#define PWM0_AF 0x02
+#else
+#define PWM0_AF 0x03
+#endif
 #define PWM0_CCR __ccr__(PWM0_CHANNEL)
 #define DIO20_TIMER PWM0_TIMER
 #define DIO20_CHANNEL PWM0_CHANNEL
@@ -1480,6 +1487,7 @@ extern "C"
 #define DIO20_CCMREG PWM0_CCMREG
 #define DIO20_CCR PWM0_CCR
 #define DIO20_ENOUTPUT PWM0_ENOUTPUT
+#define DIO20_AF PWM0_AF
 #endif
 #if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
 #if (PWM1_TIMER == 1 || (PWM1_TIMER >= 8 & PWM1_TIMER <= 11))
@@ -1512,6 +1520,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM1_TIMER >= 1) && (PWM1_TIMER <= 2)
+#define PWM1_AF 0x01
+#elif (PWM1_TIMER >= 3) && (PWM1_TIMER <= 5)
+#define PWM1_AF 0x02
+#else
+#define PWM1_AF 0x03
+#endif
 #define PWM1_CCR __ccr__(PWM1_CHANNEL)
 #define DIO21_TIMER PWM1_TIMER
 #define DIO21_CHANNEL PWM1_CHANNEL
@@ -1524,6 +1539,7 @@ extern "C"
 #define DIO21_CCMREG PWM1_CCMREG
 #define DIO21_CCR PWM1_CCR
 #define DIO21_ENOUTPUT PWM1_ENOUTPUT
+#define DIO21_AF PWM1_AF
 #endif
 #if (defined(PWM2_CHANNEL) && defined(PWM2_TIMER) && defined(PWM2))
 #if (PWM2_TIMER == 1 || (PWM2_TIMER >= 8 & PWM2_TIMER <= 11))
@@ -1556,6 +1572,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM2_TIMER >= 1) && (PWM2_TIMER <= 2)
+#define PWM2_AF 0x01
+#elif (PWM2_TIMER >= 3) && (PWM2_TIMER <= 5)
+#define PWM2_AF 0x02
+#else
+#define PWM2_AF 0x03
+#endif
 #define PWM2_CCR __ccr__(PWM2_CHANNEL)
 #define DIO22_TIMER PWM2_TIMER
 #define DIO22_CHANNEL PWM2_CHANNEL
@@ -1568,6 +1591,7 @@ extern "C"
 #define DIO22_CCMREG PWM2_CCMREG
 #define DIO22_CCR PWM2_CCR
 #define DIO22_ENOUTPUT PWM2_ENOUTPUT
+#define DIO22_AF PWM2_AF
 #endif
 #if (defined(PWM3_CHANNEL) && defined(PWM3_TIMER) && defined(PWM3))
 #if (PWM3_TIMER == 1 || (PWM3_TIMER >= 8 & PWM3_TIMER <= 11))
@@ -1600,6 +1624,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM3_TIMER >= 1) && (PWM3_TIMER <= 2)
+#define PWM3_AF 0x01
+#elif (PWM3_TIMER >= 3) && (PWM3_TIMER <= 5)
+#define PWM3_AF 0x02
+#else
+#define PWM3_AF 0x03
+#endif
 #define PWM3_CCR __ccr__(PWM3_CHANNEL)
 #define DIO23_TIMER PWM3_TIMER
 #define DIO23_CHANNEL PWM3_CHANNEL
@@ -1612,6 +1643,7 @@ extern "C"
 #define DIO23_CCMREG PWM3_CCMREG
 #define DIO23_CCR PWM3_CCR
 #define DIO23_ENOUTPUT PWM3_ENOUTPUT
+#define DIO23_AF PWM3_AF
 #endif
 #if (defined(PWM4_CHANNEL) && defined(PWM4_TIMER) && defined(PWM4))
 #if (PWM4_TIMER == 1 || (PWM4_TIMER >= 8 & PWM4_TIMER <= 11))
@@ -1644,6 +1676,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM4_TIMER >= 1) && (PWM4_TIMER <= 2)
+#define PWM4_AF 0x01
+#elif (PWM4_TIMER >= 3) && (PWM4_TIMER <= 5)
+#define PWM4_AF 0x02
+#else
+#define PWM4_AF 0x03
+#endif
 #define PWM4_CCR __ccr__(PWM4_CHANNEL)
 #define DIO24_TIMER PWM4_TIMER
 #define DIO24_CHANNEL PWM4_CHANNEL
@@ -1656,6 +1695,7 @@ extern "C"
 #define DIO24_CCMREG PWM4_CCMREG
 #define DIO24_CCR PWM4_CCR
 #define DIO24_ENOUTPUT PWM4_ENOUTPUT
+#define DIO24_AF PWM4_AF
 #endif
 #if (defined(PWM5_CHANNEL) && defined(PWM5_TIMER) && defined(PWM5))
 #if (PWM5_TIMER == 1 || (PWM5_TIMER >= 8 & PWM5_TIMER <= 11))
@@ -1688,6 +1728,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM5_TIMER >= 1) && (PWM5_TIMER <= 2)
+#define PWM5_AF 0x01
+#elif (PWM5_TIMER >= 3) && (PWM5_TIMER <= 5)
+#define PWM5_AF 0x02
+#else
+#define PWM5_AF 0x03
+#endif
 #define PWM5_CCR __ccr__(PWM5_CHANNEL)
 #define DIO25_TIMER PWM5_TIMER
 #define DIO25_CHANNEL PWM5_CHANNEL
@@ -1700,6 +1747,7 @@ extern "C"
 #define DIO25_CCMREG PWM5_CCMREG
 #define DIO25_CCR PWM5_CCR
 #define DIO25_ENOUTPUT PWM5_ENOUTPUT
+#define DIO25_AF PWM5_AF
 #endif
 #if (defined(PWM6_CHANNEL) && defined(PWM6_TIMER) && defined(PWM6))
 #if (PWM6_TIMER == 1 || (PWM6_TIMER >= 8 & PWM6_TIMER <= 11))
@@ -1732,6 +1780,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM6_TIMER >= 1) && (PWM6_TIMER <= 2)
+#define PWM6_AF 0x01
+#elif (PWM6_TIMER >= 3) && (PWM6_TIMER <= 5)
+#define PWM6_AF 0x02
+#else
+#define PWM6_AF 0x03
+#endif
 #define PWM6_CCR __ccr__(PWM6_CHANNEL)
 #define DIO26_TIMER PWM6_TIMER
 #define DIO26_CHANNEL PWM6_CHANNEL
@@ -1744,6 +1799,7 @@ extern "C"
 #define DIO26_CCMREG PWM6_CCMREG
 #define DIO26_CCR PWM6_CCR
 #define DIO26_ENOUTPUT PWM6_ENOUTPUT
+#define DIO26_AF PWM6_AF
 #endif
 #if (defined(PWM7_CHANNEL) && defined(PWM7_TIMER) && defined(PWM7))
 #if (PWM7_TIMER == 1 || (PWM7_TIMER >= 8 & PWM7_TIMER <= 11))
@@ -1776,6 +1832,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM7_TIMER >= 1) && (PWM7_TIMER <= 2)
+#define PWM7_AF 0x01
+#elif (PWM7_TIMER >= 3) && (PWM7_TIMER <= 5)
+#define PWM7_AF 0x02
+#else
+#define PWM7_AF 0x03
+#endif
 #define PWM7_CCR __ccr__(PWM7_CHANNEL)
 #define DIO27_TIMER PWM7_TIMER
 #define DIO27_CHANNEL PWM7_CHANNEL
@@ -1788,6 +1851,7 @@ extern "C"
 #define DIO27_CCMREG PWM7_CCMREG
 #define DIO27_CCR PWM7_CCR
 #define DIO27_ENOUTPUT PWM7_ENOUTPUT
+#define DIO27_AF PWM7_AF
 #endif
 #if (defined(PWM8_CHANNEL) && defined(PWM8_TIMER) && defined(PWM8))
 #if (PWM8_TIMER == 1 || (PWM8_TIMER >= 8 & PWM8_TIMER <= 11))
@@ -1820,6 +1884,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM8_TIMER >= 1) && (PWM8_TIMER <= 2)
+#define PWM8_AF 0x01
+#elif (PWM8_TIMER >= 3) && (PWM8_TIMER <= 5)
+#define PWM8_AF 0x02
+#else
+#define PWM8_AF 0x03
+#endif
 #define PWM8_CCR __ccr__(PWM8_CHANNEL)
 #define DIO28_TIMER PWM8_TIMER
 #define DIO28_CHANNEL PWM8_CHANNEL
@@ -1832,6 +1903,7 @@ extern "C"
 #define DIO28_CCMREG PWM8_CCMREG
 #define DIO28_CCR PWM8_CCR
 #define DIO28_ENOUTPUT PWM8_ENOUTPUT
+#define DIO28_AF PWM8_AF
 #endif
 #if (defined(PWM9_CHANNEL) && defined(PWM9_TIMER) && defined(PWM9))
 #if (PWM9_TIMER == 1 || (PWM9_TIMER >= 8 & PWM9_TIMER <= 11))
@@ -1864,6 +1936,13 @@ extern "C"
 	{                 \
 	}
 #endif
+#if (PWM9_TIMER >= 1) && (PWM9_TIMER <= 2)
+#define PWM9_AF 0x01
+#elif (PWM9_TIMER >= 3) && (PWM9_TIMER <= 5)
+#define PWM9_AF 0x02
+#else
+#define PWM9_AF 0x03
+#endif
 #define PWM9_CCR __ccr__(PWM9_CHANNEL)
 #define DIO29_TIMER PWM9_TIMER
 #define DIO29_CHANNEL PWM9_CHANNEL
@@ -1876,6 +1955,7 @@ extern "C"
 #define DIO29_CCMREG PWM9_CCMREG
 #define DIO29_CCR PWM9_CCR
 #define DIO29_ENOUTPUT PWM9_ENOUTPUT
+#define DIO29_AF PWM9_AF
 #endif
 #if (defined(PWM10_CHANNEL) && defined(PWM10_TIMER) && defined(PWM10))
 #if (PWM10_TIMER == 1 || (PWM10_TIMER >= 8 & PWM10_TIMER <= 11))
@@ -1908,6 +1988,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM10_TIMER >= 1) && (PWM10_TIMER <= 2)
+#define PWM10_AF 0x01
+#elif (PWM10_TIMER >= 3) && (PWM10_TIMER <= 5)
+#define PWM10_AF 0x02
+#else
+#define PWM10_AF 0x03
+#endif
 #define PWM10_CCR __ccr__(PWM10_CHANNEL)
 #define DIO30_TIMER PWM10_TIMER
 #define DIO30_CHANNEL PWM10_CHANNEL
@@ -1920,6 +2007,7 @@ extern "C"
 #define DIO30_CCMREG PWM10_CCMREG
 #define DIO30_CCR PWM10_CCR
 #define DIO30_ENOUTPUT PWM10_ENOUTPUT
+#define DIO30_AF PWM10_AF
 #endif
 #if (defined(PWM11_CHANNEL) && defined(PWM11_TIMER) && defined(PWM11))
 #if (PWM11_TIMER == 1 || (PWM11_TIMER >= 8 & PWM11_TIMER <= 11))
@@ -1952,6 +2040,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM11_TIMER >= 1) && (PWM11_TIMER <= 2)
+#define PWM11_AF 0x01
+#elif (PWM11_TIMER >= 3) && (PWM11_TIMER <= 5)
+#define PWM11_AF 0x02
+#else
+#define PWM11_AF 0x03
+#endif
 #define PWM11_CCR __ccr__(PWM11_CHANNEL)
 #define DIO31_TIMER PWM11_TIMER
 #define DIO31_CHANNEL PWM11_CHANNEL
@@ -1964,6 +2059,7 @@ extern "C"
 #define DIO31_CCMREG PWM11_CCMREG
 #define DIO31_CCR PWM11_CCR
 #define DIO31_ENOUTPUT PWM11_ENOUTPUT
+#define DIO31_AF PWM11_AF
 #endif
 #if (defined(PWM12_CHANNEL) && defined(PWM12_TIMER) && defined(PWM12))
 #if (PWM12_TIMER == 1 || (PWM12_TIMER >= 8 & PWM12_TIMER <= 11))
@@ -1996,6 +2092,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM12_TIMER >= 1) && (PWM12_TIMER <= 2)
+#define PWM12_AF 0x01
+#elif (PWM12_TIMER >= 3) && (PWM12_TIMER <= 5)
+#define PWM12_AF 0x02
+#else
+#define PWM12_AF 0x03
+#endif
 #define PWM12_CCR __ccr__(PWM12_CHANNEL)
 #define DIO32_TIMER PWM12_TIMER
 #define DIO32_CHANNEL PWM12_CHANNEL
@@ -2008,6 +2111,7 @@ extern "C"
 #define DIO32_CCMREG PWM12_CCMREG
 #define DIO32_CCR PWM12_CCR
 #define DIO32_ENOUTPUT PWM12_ENOUTPUT
+#define DIO32_AF PWM12_AF
 #endif
 #if (defined(PWM13_CHANNEL) && defined(PWM13_TIMER) && defined(PWM13))
 #if (PWM13_TIMER == 1 || (PWM13_TIMER >= 8 & PWM13_TIMER <= 11))
@@ -2040,6 +2144,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM13_TIMER >= 1) && (PWM13_TIMER <= 2)
+#define PWM13_AF 0x01
+#elif (PWM13_TIMER >= 3) && (PWM13_TIMER <= 5)
+#define PWM13_AF 0x02
+#else
+#define PWM13_AF 0x03
+#endif
 #define PWM13_CCR __ccr__(PWM13_CHANNEL)
 #define DIO33_TIMER PWM13_TIMER
 #define DIO33_CHANNEL PWM13_CHANNEL
@@ -2052,6 +2163,7 @@ extern "C"
 #define DIO33_CCMREG PWM13_CCMREG
 #define DIO33_CCR PWM13_CCR
 #define DIO33_ENOUTPUT PWM13_ENOUTPUT
+#define DIO33_AF PWM13_AF
 #endif
 #if (defined(PWM14_CHANNEL) && defined(PWM14_TIMER) && defined(PWM14))
 #if (PWM14_TIMER == 1 || (PWM14_TIMER >= 8 & PWM14_TIMER <= 11))
@@ -2084,6 +2196,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM14_TIMER >= 1) && (PWM14_TIMER <= 2)
+#define PWM14_AF 0x01
+#elif (PWM14_TIMER >= 3) && (PWM14_TIMER <= 5)
+#define PWM14_AF 0x02
+#else
+#define PWM14_AF 0x03
+#endif
 #define PWM14_CCR __ccr__(PWM14_CHANNEL)
 #define DIO34_TIMER PWM14_TIMER
 #define DIO34_CHANNEL PWM14_CHANNEL
@@ -2096,6 +2215,7 @@ extern "C"
 #define DIO34_CCMREG PWM14_CCMREG
 #define DIO34_CCR PWM14_CCR
 #define DIO34_ENOUTPUT PWM14_ENOUTPUT
+#define DIO34_AF PWM14_AF
 #endif
 #if (defined(PWM15_CHANNEL) && defined(PWM15_TIMER) && defined(PWM15))
 #if (PWM15_TIMER == 1 || (PWM15_TIMER >= 8 & PWM15_TIMER <= 11))
@@ -2128,6 +2248,13 @@ extern "C"
 	{                  \
 	}
 #endif
+#if (PWM15_TIMER >= 1) && (PWM15_TIMER <= 2)
+#define PWM15_AF 0x01
+#elif (PWM15_TIMER >= 3) && (PWM15_TIMER <= 5)
+#define PWM15_AF 0x02
+#else
+#define PWM15_AF 0x03
+#endif
 #define PWM15_CCR __ccr__(PWM15_CHANNEL)
 #define DIO35_TIMER PWM15_TIMER
 #define DIO35_CHANNEL PWM15_CHANNEL
@@ -2140,6 +2267,7 @@ extern "C"
 #define DIO35_CCMREG PWM15_CCMREG
 #define DIO35_CCR PWM15_CCR
 #define DIO35_ENOUTPUT PWM15_ENOUTPUT
+#define DIO35_AF PWM15_AF
 #endif
 
 /**********************************************
@@ -2354,13 +2482,11 @@ extern "C"
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT)))
-#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BSRR = ((1U << 16) << __indirect__(diopin, BIT)))
+#define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1UL << __indirect__(diopin, BIT)))
+#define mcu_clear_output(diopin) (__indirect__(diopin, GPIO)->BSRR = ((1UL << 16) << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (TOGGLEBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
-#define mcu_set_pwm(diopin, pwmvalue)                                                                                                           \
-	{                                                                                                                                           \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((((uint32_t)__indirect__(diopin, TIMREG)->ARR) * pwmvalue) / 255); \
-	}
+#define mcu_set_pwm(diopin, pwmvalue) ({ __indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = (uint16_t)((__indirect__(diopin, TIMREG)->ARR * pwmvalue) / 255); })
+
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin) (                    \

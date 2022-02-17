@@ -3695,7 +3695,6 @@ extern "C"
 			}                                                                                \
 		})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
-#define mcu_set_pwm(diopin, pwmvalue)
 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
 #ifndef LOG2

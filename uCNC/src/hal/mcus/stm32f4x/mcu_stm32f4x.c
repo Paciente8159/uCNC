@@ -89,20 +89,23 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
 	})
 
-#define mcu_config_pwm(diopin) (                                                                                \
-	{                                                                                                           \
-		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                           \
-		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/ \
-		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/   \
-		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                  \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                  \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;             \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                            \
-		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                \
-		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));               \
-		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                        \
-		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                             \
-		__indirect__(diopin, ENOUTPUT);                                                                         \
+#define mcu_config_pwm(diopin) (                                                                                                                                    \
+	{                                                                                                                                                               \
+		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
+		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                                     \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                                       \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                                   \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                                                      \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                                                                 \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                                                   \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                                                            \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                                                                 \
+		__indirect__(diopin, ENOUTPUT);                                                                                                                             \
 	})
 
 #define mcu_config_input_isr(diopin) (                                                                            \

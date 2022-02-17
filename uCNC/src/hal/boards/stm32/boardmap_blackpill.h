@@ -72,10 +72,10 @@ extern "C"
 #define LIMIT_Z_PULLUP
 #define LIMIT_A_PULLUP
 // Enable limits switch interrupt
-#define LIMIT_X_ISR
-#define LIMIT_Y_ISR
-#define LIMIT_Z_ISR
-#define LIMIT_A_ISR
+// #define LIMIT_X_ISR
+// #define LIMIT_Y_ISR
+// #define LIMIT_Z_ISR
+// #define LIMIT_A_ISR
 
 // Setup control input pins
 #define ESTOP_BIT 5
@@ -155,10 +155,10 @@ extern "C"
 #define STEP0_EN_BIT 15
 #define STEP0_EN_PORT A
 
-// analog input
-#define ANALOG0_BIT 1
-#define ANALOG0_PORT B
-#define ANALOG0_CHANNEL 9
+	// analog input
+	// #define ANALOG0_BIT 1
+	// #define ANALOG0_PORT B
+	// #define ANALOG0_CHANNEL 9
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	//#define ITP_TIMER 2
