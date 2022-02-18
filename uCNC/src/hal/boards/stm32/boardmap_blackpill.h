@@ -84,8 +84,8 @@ extern "C"
 #define FHOLD_PORT B
 #define CS_RES_BIT 7
 #define CS_RES_PORT B
-#define SAFETY_DOOR_BIT 8
-#define SAFETY_DOOR_PORT B
+// #define SAFETY_DOOR_BIT 8
+// #define SAFETY_DOOR_PORT B
 // Setup probe pin
 #define PROBE_BIT 9
 #define PROBE_PORT B
@@ -161,8 +161,17 @@ extern "C"
 	// #define ANALOG0_PORT B
 	// #define ANALOG0_CHANNEL 9
 
+	// servo pin
+#define SERVO0_BIT 8
+#define SERVO0_PORT B
+
 	// Setup the Step Timer used has the heartbeat for µCNC
 	//#define ITP_TIMER 2
+
+	// Setup the Timer to be used exclusively by servos in µCNC.
+	// If no servos are configured then the timer is free for other functions (like PWM) (even if defined in the board)
+	// On STM32F1x cores this will default to Timer 3
+	//#define SERVO_TIMER 3
 
 #ifdef __cplusplus
 }

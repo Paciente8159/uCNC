@@ -186,7 +186,7 @@ extern "C"
    * Uncomment to enable parser extentions
    * */
 
-// #define ENABLE_PARSER_EXTENSIONS
+#define ENABLE_PARSER_EXTENSIONS
 
 /**
  * Report specific options
