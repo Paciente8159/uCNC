@@ -548,21 +548,26 @@ void mcu_usart_init(void)
 	mcu_config_input(USB_DP);
 	mcu_config_af(USB_DP, GPIO_OTG_FS);
 	mcu_config_af(USB_DM, GPIO_OTG_FS);
-	// GPIOA->MODER &= ~(GPIO_RESET << (10 << 1)); /*USB ID*/
-	// GPIOA->MODER |= (GPIO_AF << (10 << 1));		/*af mode*/
-	// GPIOA->PUPDR &= ~(GPIO_RESET << (10 << 1)); // pullup
-	// GPIOA->PUPDR |= (GPIO_IN_PULLUP << (10 << 1));
-	// GPIOA->OTYPER |= (1 << 10); // open drain
-	// GPIOA->OSPEEDR &= ~(GPIO_RESET << (10 << 1));
-	// GPIOA->OSPEEDR |= (0x02 << (10 << 1));						  // high-speed
-	// GPIOA->AFR[1] |= (GPIO_AFRH_AFSEL10_1 | GPIO_AFRH_AFSEL10_3); // GPIO_OTG_FS
+	RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
+
+	// configure ID pin
+	GPIOA->MODER &= ~(GPIO_RESET << (10 << 1)); /*USB ID*/
+	GPIOA->MODER |= (GPIO_AF << (10 << 1));		/*af mode*/
+	GPIOA->PUPDR &= ~(GPIO_RESET << (10 << 1)); // pullup
+	GPIOA->PUPDR |= (GPIO_IN_PULLUP << (10 << 1));
+	GPIOA->OTYPER |= (1 << 10); // open drain
+	GPIOA->OSPEEDR &= ~(GPIO_RESET << (10 << 1));
+	GPIOA->OSPEEDR |= (0x02 << (10 << 1));						  // high-speed
+	GPIOA->AFR[1] |= (GPIO_AFRH_AFSEL10_1 | GPIO_AFRH_AFSEL10_3); // GPIO_OTG_FS
+
+	// GPIOA->MODER &= ~(GPIO_RESET << (9 << 1)); /*USB VBUS*/
 
 	/* Disable all interrupts. */
 	USB_OTG_FS->GINTMSK = 0U;
 
 	// /* Clear any pending interrupts */
 	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
-	USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM;
+	// USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM;
 	/* Enable interrupts matching to the Device mode ONLY */
 	// USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_USBRST |
 	// 					   USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT |
@@ -578,8 +583,6 @@ void mcu_usart_init(void)
 	USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
 	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
 	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
-
-	RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
 
 	tusb_init();
 #endif

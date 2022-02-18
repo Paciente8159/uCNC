@@ -110,6 +110,7 @@ extern "C"
 #define RX_BIT 10
 #define RX_PORT A
 #elif (INTERFACE == INTERFACE_USB)
+// PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
