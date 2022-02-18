@@ -41,7 +41,7 @@ extern "C"
 
 #if (BOARD == BOARD_UNO)
 #define MCU MCU_AVR
-//reduces RAM usage a bit to prevent hardware resets
+// reduces RAM usage a bit to prevent hardware resets
 #define PLANNER_BUFFER_SIZE 14
 #include "avr/boardmap_uno.h"
 #endif
@@ -62,8 +62,13 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_BLUEPILL)
-#define MCU MCU_STM32F10X
+#define MCU MCU_STM32F1X
 #include "stm32/boardmap_bluepill.h"
+#endif
+
+#if (BOARD == BOARD_BLACKPILL)
+#define MCU MCU_STM32F4X
+#include "stm32/boardmap_blackpill.h"
 #endif
 
 #if (BOARD == BOARD_MZERO)

@@ -89,8 +89,8 @@ void Reset_Handler(void)
     __Init_Data();
     unsigned long *pSrc = (unsigned long *)&_svtor;
     SCB->VTOR = ((unsigned long)pSrc & SCB_VTOR_TBLOFF_Msk);
-    //mcu_init does this
-    // SystemInit();
+    // mcu_init does this
+    //  SystemInit();
     while (1)
     {
         main();

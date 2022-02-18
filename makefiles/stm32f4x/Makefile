@@ -45,8 +45,9 @@ rwildcard=$(wildcard $1$2) $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2))
 ######################################
 # C sources
 C_SOURCES =  \
-stm32f103.c \
+stm32f4x.c \
 main.c \
+drivers/system_stm32f4xx.c \
 $(call rwildcard,../../uCNC,*.c)
 
 # ifdef USE_USB
@@ -83,8 +84,8 @@ BIN = $(CP) -O binary -S
 # CFLAGS
 #######################################
 # cpu
-CPU = -mcpu=cortex-m3
-BOARD ?= BLUEPILL
+CPU = -mcpu=cortex-m4
+BOARD ?= BLACKPILL
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
@@ -106,7 +107,7 @@ AS_DEFS =
 BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
--DSTM32F103xB \
+-DSTM32F401xC \
 -DBOARD=BOARD_$(BOARD) \
 -DINTERFACE=$(INTERFACE)
 
@@ -149,7 +150,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = stm32f103.ld
+LDSCRIPT = stm32f4x.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 
