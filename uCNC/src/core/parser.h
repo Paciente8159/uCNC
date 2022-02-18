@@ -149,9 +149,7 @@ extern "C"
 		uint16_t groups;
 		uint16_t words;
 		uint8_t group_0_1_useaxis : 1;
-#ifdef ENABLE_PARSER_EXTENSIONS
 		uint16_t group_extended : 15;
-#endif
 	} parser_cmd_explicit_t;
 
 	typedef struct
