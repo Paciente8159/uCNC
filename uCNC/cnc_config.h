@@ -58,7 +58,7 @@ extern "C"
    * */
 
 #ifndef BOARD
-#define BOARD BOARD_BLACKPILL
+#define BOARD BOARD_UNO
 #endif
 
   /**
@@ -186,7 +186,7 @@ extern "C"
    * Uncomment to enable parser extentions
    * */
 
-#define ENABLE_PARSER_EXTENSIONS
+// #define ENABLE_PARSER_EXTENSIONS
 
 /**
  * Report specific options
