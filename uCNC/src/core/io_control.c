@@ -218,6 +218,10 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
+    if (!io_deploy_probe_cb)
+    {
+        io_deploy_probe_cb();
+    }
 #ifndef FORCE_SOFT_POLLING
 #if (PROBE >= 0)
     mcu_enable_probe_isr();
@@ -232,6 +236,10 @@ void io_disable_probe(void)
     mcu_disable_probe_isr();
 #endif
 #endif
+    if (!io_stow_probe_cb)
+    {
+        io_stow_probe_cb();
+    }
 }
 
 bool io_get_probe(void)
