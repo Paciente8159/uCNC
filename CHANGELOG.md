@@ -10,12 +10,14 @@
   - added new interpolator functions to be used by the PID module (#108)
   - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
   - added new SERVO pin type that ouputs a 50Hz type PWM. Up to 8 SERVO pins can be configured (#138)
+  - added M10 mcode (set servo pin value) to core parser (#141)
   - partial implementation supporting STM32F4 core. Lacks Flash EEPROM and analog pin reading is untested. (#139)
   - experimental delta kinematics added to HAL
 
 ### Changed
 
 ### Fixed
+  - fixed spelling on the README file (#140)
 
 ## [1.3.8] - 2022-02-12
 µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
