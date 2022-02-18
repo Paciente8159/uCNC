@@ -2451,49 +2451,6 @@ extern "C"
 #define DIO129_CHANNEL ANALOG15_CHANNEL
 #endif
 
-#ifdef SERVO0
-#define SERVO0_MASK (1U << 0)
-#else
-#define SERVO0_MASK 0
-#endif
-#ifdef SERVO1
-#define SERVO1_MASK (1U << 1)
-#else
-#define SERVO1_MASK 0
-#endif
-#ifdef SERVO2
-#define SERVO2_MASK (1U << 2)
-#else
-#define SERVO2_MASK 0
-#endif
-#ifdef SERVO3
-#define SERVO3_MASK (1U << 3)
-#else
-#define SERVO3_MASK 0
-#endif
-#ifdef SERVO4
-#define SERVO4_MASK (1U << 4)
-#else
-#define SERVO4_MASK 0
-#endif
-#ifdef SERVO5
-#define SERVO5_MASK (1U << 5)
-#else
-#define SERVO5_MASK 0
-#endif
-#ifdef SERVO6
-#define SERVO6_MASK (1U << 6)
-#else
-#define SERVO6_MASK 0
-#endif
-#ifdef SERVO7
-#define SERVO7_MASK (1U << 7)
-#else
-#define SERVO7_MASK 0
-#endif
-
-#define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK | SERVO6_MASK | SERVO7_MASK)
-
 // COM registers
 #if (INTERFACE == INTERFACE_USART)
 // this MCU does not work well with both TX and RX interrupt

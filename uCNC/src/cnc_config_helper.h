@@ -898,6 +898,49 @@ extern "C"
 #define DIO59 -1
 #endif
 
+#if SERVO0 >= 0
+#define SERVO0_MASK (1U << 0)
+#else
+#define SERVO0_MASK 0
+#endif
+#if SERVO1 >= 0
+#define SERVO1_MASK (1U << 1)
+#else
+#define SERVO1_MASK 0
+#endif
+#if SERVO2 >= 0
+#define SERVO2_MASK (1U << 2)
+#else
+#define SERVO2_MASK 0
+#endif
+#if SERVO3 >= 0
+#define SERVO3_MASK (1U << 3)
+#else
+#define SERVO3_MASK 0
+#endif
+#if SERVO4 >= 0
+#define SERVO4_MASK (1U << 4)
+#else
+#define SERVO4_MASK 0
+#endif
+#if SERVO5 >= 0
+#define SERVO5_MASK (1U << 5)
+#else
+#define SERVO5_MASK 0
+#endif
+#if SERVO6 >= 0
+#define SERVO6_MASK (1U << 6)
+#else
+#define SERVO6_MASK 0
+#endif
+#if SERVO7 >= 0
+#define SERVO7_MASK (1U << 7)
+#else
+#define SERVO7_MASK 0
+#endif
+
+#define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK | SERVO6_MASK | SERVO7_MASK)
+
 #if (INTERFACE < 0 || INTERFACE > 1)
 #error "undefined COM interface"
 #endif
