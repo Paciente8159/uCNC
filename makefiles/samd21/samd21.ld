@@ -21,7 +21,7 @@ SECTIONS
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
-    . = ALIGN(0x2000);
+    . = ALIGN(4);
     _svtor = .;
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);

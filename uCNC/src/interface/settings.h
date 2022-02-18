@@ -35,7 +35,7 @@ extern "C"
                 //step delay not used
                 uint8_t step_invert_mask;
                 uint8_t dir_invert_mask;
-                bool step_enable_invert;
+                uint8_t step_enable_invert;
                 uint8_t limits_invert_mask;
                 bool probe_invert_mask;
                 uint8_t status_report_mask;

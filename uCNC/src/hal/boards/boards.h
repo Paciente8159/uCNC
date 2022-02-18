@@ -29,7 +29,7 @@ extern "C"
 #define BOARD_RAMPS14 3
 #define BOARD_MKS_DLC 4
 #define BOARD_BLUEPILL 10
-#define BOARD_MKS_ROBIN_NANO_V12 11
+#define BOARD_BLACKPILL 11
 #define BOARD_MZERO 20
 #define BOARD_ZERO 21
 #define BOARD_VIRTUAL 99

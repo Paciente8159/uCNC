@@ -15,20 +15,30 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
    - Independent kinematics. Another dimension of the HAL is the possibility of defining how the translation between machine coordinates and the motions is translated back and forth. This should theoretically allow µCNC to be easily adaptable to several types of machines like cartesian, coreXY, deltas and others. µCNC supports up to 6 axis.
    - As of version 1.2.0 the addition of a HAL config that allow the user to build link inputs and outputs of the controller to specific functions or modules (like using a generic input has an encoder input or a PWM output has a servo controller with a PID module)
    - As of version 1.3.0 a new dimension to the HAL was added. The tool HAL. This allow to add multiple tools that can perform different task with µCNC.
-3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the hole wheel at least :-P). For that reason µCNC (tries) to use the exact same protocol has Grbl. This allows it to easily integrate with Grbl ecosystem.
+   - As of version 1.4.0 a special kind of PIN type dedicated to servo motors control was added µCNC.
+3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the whole wheel at least :-P). For that reason µCNC (tries) to use the exact same protocol has Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 ## Supporting the project
-µCNC is a completely free software. It took me a considerable amount of hours and effort to develop and debug so any help is appreciated. Building docs, testing and debugging, whatever. Also if you really like it and want help me keep the project running, you can help me to buy more equipment. Recently I have saved some extra money and bought a laser engraver. This hardware was fundamental to develop and testing version 1.2.0. Currently this machine is being used to work on other projects and is running µCNC smoothly. Or you may just want to simply buy me a coffee or two for those extra long nights putting out code ;-)
+µCNC is a completely free software. It took me a considerable amount of hours and effort to develop and debug so any help is appreciated. Building docs, testing and debugging, whatever. Also if you really like it and want help me keep the project running, you can help me to buy more equipment. Recently I have saved some extra money and bought a laser engraver. This hardware was fundamental to develop and testing version 1.2.0 and beyond. Currently this machine is being used to work on other projects and is running µCNC smoothly. Or you may just want to simply buy me a coffee or two for those extra long nights putting out code ;-)
 
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
-µCNC current major version is v1.3. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.4. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+Version 1.4 added a couple of new features.
+
+  - added support for STM32F4 MCU and the Blackpill boards.
+  - new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
+  - initial (still in development) support for delta kinematics.
+
 Version 1.3 added a couple of new features.
 
   - added support for SAMD21 MCU and the Arduino Zero/M0 boards.
   - new HAL for tool change and management.
   - modified file structure and modified tinyUSB source code files to allow compiling and loading the firmware with Arduino IDE.
+  - gcode parser is extendable via modules
+  - PID module initial implementation
+  - encoder/counter module implemented
 
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
@@ -39,7 +49,7 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
-µCNC v1.3.3 added additional Gcode support.
+µCNC v1.4.0 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
@@ -59,7 +69,10 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
-  - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
+  - Outside the RS274NGC scope
+    - Servo Control: M10*
+    - General Pin Control: M42*
+    - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
 * see notes
 
@@ -71,9 +84,10 @@ NOTES:
   * _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
   * _M1 stop condition can be set in HAL file_
   * _M6 additional tools can be defined in HAL file_
+  * _M10 only active if servo motors are configured_
+  * _M42 configurable via options file. Provides a way to set any kind of output, PWM or Servo PIN_
 
 TODO List of G-Codes in µCNC future releases:
-  - extending the capabilities and functions of the new HAL config
 
 ### µCNC capabilities
 µCNC currently supports up to (depending on the MCU/board capabilities):
@@ -89,6 +103,7 @@ TODO List of G-Codes in µCNC future releases:
   - 16 analog inputs
   - 16 generic digital inputs
   - 16 generic digital outputs
+  - 8 servo control outputs (50Hz)
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board, but this feature is experimental and it's advise to disable DSS when using it.
 
@@ -98,8 +113,9 @@ TODO List of G-Codes in µCNC future releases:
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
   - AVR (Arduino UNO/MEGA)
-  - SAMD21 (Arduino Zero/M0) - v1.3.x
   - STM32F1 (Bluepill) - v1.1.x
+  - SAMD21 (Arduino Zero/M0) - v1.3.x
+  - STM32F1 (Blackpill) - v1.4.x
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
@@ -111,7 +127,6 @@ These changes are:
 
 Future versions are in plan for:
   - Add more hardware configurations (ESP32 integration will start soon)
-  - Further development of modules (encoder, etc...)
 
 ### Building µCNC
 For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.

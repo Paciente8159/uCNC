@@ -1,8 +1,8 @@
 /*
 	Name: io_control.h
 	Description: The input control unit for µCNC.
-        This is responsible to check all limit switches (both hardware and software), control switches,
-        and probe.
+		This is responsible to check all limit switches (both hardware and software), control switches,
+		and probe.
 
 		TODO:
 			-implement generic inputs
@@ -194,13 +194,7 @@ extern "C"
 #define CONTROLEN_MASK (CONTROLEN_ESTOP | CONTROLEN_SAFETY_DOOR | CONTROLEN_FHOLD | CONTROLEN_CS_RES)
 #define CONTROLISR_MASK (CONTROLISR_ESTOP | CONTROLISR_SAFETY_DOOR | CONTROLISR_FHOLD | CONTROLISR_CS_RES)
 
-	//ISR
-	void io_limits_isr(void);
-	void io_controls_isr(void);
-	void io_probe_isr(void);
-	void io_inputs_isr(void);
-
-	//inputs
+	// inputs
 	bool io_check_boundaries(float *axis);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_controls(void);
@@ -211,7 +205,7 @@ extern "C"
 
 	uint8_t io_get_analog(uint8_t pin);
 
-	//outputs
+	// outputs
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
@@ -219,8 +213,7 @@ extern "C"
 	void io_set_pwm(uint8_t pin, uint8_t value);
 	void io_set_output(uint8_t pin, bool state);
 
-	void io_enable_steppers(void);
-	void io_disable_steppers(void);
+	void io_enable_steppers(uint8_t mask);
 
 	int16_t io_get_pinvalue(uint8_t pin);
 

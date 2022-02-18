@@ -5,6 +5,38 @@
 
 # Changelog
 
+### Added
+  - added pid_stop action and alarm checking (safety stop) (#108)
+  - added new interpolator functions to be used by the PID module (#108)
+  - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
+  - added new SERVO pin type that ouputs a 50Hz type PWM. Up to 8 SERVO pins can be configured (#138)
+  - added M10 mcode (set servo pin value) to core parser (#141)
+  - partial implementation supporting STM32F4 core. Lacks Flash EEPROM and analog pin reading is untested. (#139)
+  - experimental delta kinematics added to HAL
+
+### Changed
+
+### Fixed
+  - fixed spelling on the README file (#140)
+
+## [1.3.8] - 2022-02-12
+µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
+
+### Changed
+  - modified STM32 file to be flash offset agnostic (Reset vectors and Flash EEPROM) (#133)
+  - removed USB_VCP and COM macros and replaced by new configuration option INTERFACE (#134)
+  - modified STM32 USART port configuration to check pin configurations and allow pin remapping (#134)
+  - serial flush is non blocking (#134)
+  - step enable setting ($4) implemented (#136)
+
+### Fixed
+  - fixed baudrate issue for USART (other than 1) by making APB1 and APB2 working frequency match (#132)
+  - added clock configuration to mcu_init to set correct working speed (72MHz) when compiling via Arduino IDE. (#132)
+  - fixed STM32 USART preprocessor condition that would not enable IRQ with both ISR TX and RX (#134)
+  - fixed STM32 USB clock configuration caused by (#132) (#135)
+  - fixed ATMega2560 boards USART ISR. In these boards the COM must be explicitly defined  (#135)
+  - fixed STM32 pin masking configuration that cause configuration issues in PINs 10,11,14 and 15 of each port  (#135)
+
 ## [1.3.7] - 2022-01-19
 µCNC version 1.3.7 fixes a small bug that prevented µCNC from sending status report with an alarm condition at startup and a couple of bugs with DSS and 16-bit bresenham mode.
 Besides that the parser was modified and can now be extended in a modular way, allowing custom gcode to be parsed and executed.
@@ -80,6 +112,14 @@ Encoders are also working in uni and bidirectional mode. Each encoder position i
   - added configurable default loading tool and tools offset (#109)
 
 ### Changed
+  - modified/fixed PID controller to output positive/negative variation result (#108)
+  - added CLAMP macro to utils.h (#108)
+  - variable PID frequency depending on the number of PID defined. Frequency is now 1000/log2(Total PID's) in Hz (#108)
+  - optimized memory sizes for Kp, Kd and Ki gains (#108)
+  - PID math executes in 32bit integer math only (#108)
+  - modified scheduletasks and added isr locking to SAMD21 and STM32 (#108)
+  - moved some definitions to a new cnc_hal_config_helper.h file that is available via cnc.h (#108)
+  - hardwired tool pid to PID0 controller (#108)
   - modified encoder module to allow it work has a unidirectional encoder (simple counter) (#107)
   - added reset calls for motors encoders (#107)
   - moved encoder and PID definitions to cnc_hal_config.h (#107)
@@ -233,7 +273,7 @@ Version 1.2.4 is a minor revision and improves a couple of functionalities.
 The following things were changed:
 
 ### Added
-  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_SETTING_EXTRA_CMDS in cnc_config.h active by default) (#70)
+  - new set of settings commands to control EEPROM/Flash storing (optional build setting ENABLE_EXTRA_SYSTEM_CMDS in cnc_config.h active by default) (#70)
 
     This set of new commands allow a more granular control over the settings stored in EEPROM/Flash to prevent wearing.
     When enabled all grbl $x=val are only changed in SRAM. To set them in non volatile memory a save command must be issued.
@@ -529,6 +569,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
 [1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
 [1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
 [1.3.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.5

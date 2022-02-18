@@ -48,6 +48,9 @@ extern "C"
 #define BOARD_DEVICE_RHPORT_NUM 0
 #endif
 
+// force Full speed mode
+#define BOARD_DEVICE_RHPORT_SPEED OPT_MODE_FULL_SPEED
+
 // RHPort max operational speed can defined by board.mk
 // Default to Highspeed for MCU with internal HighSpeed PHY (can be port specific), otherwise FullSpeed
 #ifndef BOARD_DEVICE_RHPORT_SPEED

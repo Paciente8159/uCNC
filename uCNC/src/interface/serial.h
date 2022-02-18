@@ -28,14 +28,14 @@ extern "C"
 #include <stdint.h>
 #include <stdarg.h>
 
-#define EOL 0x00 //end of line char
-#define OVF 0x2A //overflow char
+#define EOL 0x00 // end of line char
+#define OVF 0x2A // overflow char
 #define SAFEMARGIN 2
-#define RX_BUFFER_SIZE (128 + SAFEMARGIN) //buffer sizes
+#define RX_BUFFER_SIZE (128 + SAFEMARGIN) // buffer sizes
 #ifndef ECHO_CMD
-#define TX_BUFFER_SIZE (112 + SAFEMARGIN) //buffer sizes
+#define TX_BUFFER_SIZE (112 + SAFEMARGIN) // buffer sizes
 #else
-#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) //buffer sizes
+#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) // buffer sizes
 #endif
 
 #define SERIAL_UART 0
@@ -61,10 +61,6 @@ extern "C"
 	void serial_print_intarr(uint16_t *arr, uint8_t count);
 	void serial_print_fltarr(float *arr, uint8_t count);
 	void serial_flush(void);
-
-	//ISR
-	void serial_rx_isr(unsigned char c);
-	void serial_tx_isr(void);
 
 #ifdef __cplusplus
 }

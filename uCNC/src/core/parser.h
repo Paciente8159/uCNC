@@ -1,11 +1,11 @@
 /*
 	Name: parser.h
 	Description: Parses Grbl system commands and RS274NGC (GCode) commands
-        The RS274NGC parser tries to follow the standard document version 3 as close as possible.
-        The parsing is done in 3 steps:
-            - Tockenization; Converts the command string to a structure with GCode parameters
-            - Validation; Validates the command by checking all the parameters (part 3.5 - 3.7 of the document)
-            - Execution; Executes the command by the orther set in part 3.8 of the document.
+		The RS274NGC parser tries to follow the standard document version 3 as close as possible.
+		The parsing is done in 3 steps:
+			- Tockenization; Converts the command string to a structure with GCode parameters
+			- Validation; Validates the command by checking all the parameters (part 3.5 - 3.7 of the document)
+			- Execution; Executes the command by the orther set in part 3.8 of the document.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -33,7 +33,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-//group masks
+// group masks
 #define GCODE_GROUP_MOTION 0x0001
 #define GCODE_GROUP_PLANE 0x0002
 #define GCODE_GROUP_DISTANCE 0x0004
@@ -51,7 +51,7 @@ extern "C"
 #define GCODE_GROUP_ENABLEOVER 0x4000
 #define GCODE_GROUP_NONMODAL 0x8000
 
-//word masks
+// word masks
 #define GCODE_WORD_X 0x0001
 #define GCODE_WORD_Y 0x0002
 #define GCODE_WORD_Z 0x0004
@@ -60,15 +60,15 @@ extern "C"
 #define GCODE_WORD_C 0x0020
 #define GCODE_WORD_D 0x0040
 #define GCODE_WORD_F 0x0080
-#define GCODE_WORD_I 0x0100 //matches X axis bit
-#define GCODE_WORD_J 0x0200 //matches Y axis bit
-#define GCODE_WORD_K 0x0400 //matches Z axis bit
+#define GCODE_WORD_I 0x0100 // matches X axis bit
+#define GCODE_WORD_J 0x0200 // matches Y axis bit
+#define GCODE_WORD_K 0x0400 // matches Z axis bit
 #define GCODE_WORD_L 0x0800
 #define GCODE_WORD_P 0x1000
 #define GCODE_WORD_R 0x2000
 #define GCODE_WORD_S 0x4000
 #define GCODE_WORD_T 0x8000
-	//H and Q are related to unsupported commands
+	// H and Q are related to unsupported commands
 
 	// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
 	// #define GCODE_WORDS_EXTENDED
@@ -84,17 +84,17 @@ extern "C"
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
 
-	//33bytes in total
+	// 33bytes in total
 	typedef struct
 	{
-		//1byte
+		// 1byte
 		uint8_t motion : 5;
 		uint8_t coord_system : 3;
-		//1byte
-		uint8_t nonmodal : 4; //reset to 0 in every line (non persistent)
+		// 1byte
+		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;
 		uint8_t path_mode : 2;
-		//1byte
+		// 1byte
 		uint8_t cutter_radius_compensation : 2;
 		uint8_t distance_mode : 1;
 		uint8_t feedrate_mode : 1;
@@ -102,7 +102,7 @@ extern "C"
 		uint8_t tlo_mode : 1;
 		uint8_t return_mode : 1;
 		uint8_t feed_speed_override : 1;
-		//2byte or 1byte
+		// 2byte or 1byte
 		uint8_t stopping : 3;
 #if TOOL_COUNT == 1
 		uint8_t tool_change : 1;
@@ -112,9 +112,9 @@ extern "C"
 	uint8_t tool_change : 5;
 	uint8_t spindle_turning : 2;
 	uint8_t coolant : 2;
-	uint8_t : 4; //unused
+	uint8_t : 4; // unused
 #else
-	uint8_t : 5; //unused
+	uint8_t : 5; // unused
 #endif
 	} parser_groups_t;
 
@@ -149,9 +149,7 @@ extern "C"
 		uint16_t groups;
 		uint16_t words;
 		uint8_t group_0_1_useaxis : 1;
-#ifdef ENABLE_PARSER_EXTENSIONS
-		uint8_t group_extended : 7;
-#endif
+		uint16_t group_extended : 15;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -193,7 +191,7 @@ extern "C"
 	void parser_sync_position(void);
 	void parser_reset(void);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-//parser extender functions
+// parser extender functions
 #ifdef ENABLE_PARSER_EXTENSIONS
 	void parser_register_extender(parser_extender_t *new_extender);
 #endif
