@@ -89,6 +89,7 @@
 #define M9 0
 #define M48 1
 #define M49 0
+#define M10 1010
 
 #define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)   // parser parameters array size
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
@@ -870,14 +871,12 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
     }
 #endif
 
-#ifdef ENABLE_PARSER_EXTENSIONS
     // checks if an extended command was called with any other command at the same time
     // exetension commands can only be processed individually
     if (cmd->group_extended != 0 && cmd->groups != 0)
     {
         return STATUS_GCODE_MODAL_GROUP_VIOLATION;
     }
-#endif
 
     return STATUS_OK;
 }
@@ -910,6 +909,23 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
         new_state->groups.stopping = 0;
     }
+
+#if SERVOS_MASK != 0
+    if (cmd->group_extended == M10)
+    {
+        if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
+        {
+            return STATUS_GCODE_VALUE_WORD_MISSING;
+        }
+
+        if (words->p < 8)
+        {
+            io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+        }
+
+        return STATUS_OK;
+    }
+#endif
 
 #ifdef ENABLE_PARSER_EXTENSIONS
     parser_extender_t *ptr = parser_extensions;
@@ -1996,6 +2012,17 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         new_group |= GCODE_GROUP_ENABLEOVER;
         new_state->groups.feed_speed_override = (code == 48) ? M48 : M49;
         break;
+#if SERVOS_MASK != 0
+    case 10:
+        if (cmd->group_extended != 0)
+        {
+            // there is a collision of custom gcode commands (only one per line can be processed)
+            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+        }
+        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
+        cmd->group_extended = M10;
+        return STATUS_OK;
+#endif
     default:
         return STATUS_GCODE_UNSUPPORTED_COMMAND;
     }
