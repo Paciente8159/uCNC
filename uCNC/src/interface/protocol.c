@@ -667,7 +667,7 @@ void protocol_send_pins_states(void)
                 {
                     serial_print_str(__romstr__("[SI:"));
                 }
-                if (i < 130)
+                else if (i < 130)
                 {
                     serial_print_str(__romstr__("[A:"));
                 }

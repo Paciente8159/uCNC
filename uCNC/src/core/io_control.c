@@ -1290,35 +1290,35 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if SERVO0 >= 0
     case SERVO0:
-        return mcu_get_servo(SERVO0);
+        return (uint8_t)mcu_get_servo(SERVO0);
 #endif
 #if SERVO1 >= 0
     case SERVO1:
-        return mcu_get_servo(SERVO1);
+        return (uint8_t)mcu_get_servo(SERVO1);
 #endif
 #if SERVO2 >= 0
     case SERVO2:
-        return mcu_get_servo(SERVO2);
+        return (uint8_t)mcu_get_servo(SERVO2);
 #endif
 #if SERVO3 >= 0
     case SERVO3:
-        return mcu_get_servo(SERVO3);
+        return (uint8_t)mcu_get_servo(SERVO3);
 #endif
 #if SERVO4 >= 0
     case SERVO4:
-        return mcu_get_servo(SERVO4);
+        return (uint8_t)mcu_get_servo(SERVO4);
 #endif
 #if SERVO5 >= 0
     case SERVO5:
-        return mcu_get_servo(SERVO5);
+        return (uint8_t)mcu_get_servo(SERVO5);
 #endif
 #if SERVO6 >= 0
     case SERVO6:
-        return mcu_get_servo(SERVO6);
+        return (uint8_t)mcu_get_servo(SERVO6);
 #endif
 #if SERVO7 >= 0
     case SERVO7:
-        return mcu_get_servo(SERVO7);
+        return (uint8_t)mcu_get_servo(SERVO7);
 #endif
     }
     return -1;
