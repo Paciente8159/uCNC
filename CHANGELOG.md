@@ -12,7 +12,8 @@
   - added new SERVO pin type that ouputs a 50Hz type PWM. Up to 8 SERVO pins can be configured (#138)
   - added M10 mcode (set servo pin value) to core parser (#141)
   - partial implementation supporting STM32F4 core. Lacks Flash EEPROM and analog pin reading is untested. (#139)
-  - experimental delta kinematics added to HAL
+  - experimental delta kinematics added to HAL (#142)
+  - new probe deploy/stow hookable callbacks for probing motion (#143)
 
 ### Changed
 
