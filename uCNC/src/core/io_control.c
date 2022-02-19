@@ -218,7 +218,7 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-    if (!io_deploy_probe_cb)
+    if (io_deploy_probe_cb)
     {
         io_deploy_probe_cb();
     }
@@ -236,7 +236,7 @@ void io_disable_probe(void)
     mcu_disable_probe_isr();
 #endif
 #endif
-    if (!io_stow_probe_cb)
+    if (io_stow_probe_cb)
     {
         io_stow_probe_cb();
     }
