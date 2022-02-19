@@ -63,8 +63,8 @@ static uint8_t mcu_servos[8];
 static FORCEINLINE void mcu_clear_servos()
 {
         // disables the interrupt of OCIEB (leaves only OCIEA)
-        RTC_TIMSK = (1 << RTC_OCIEA);
-        RTC_TIFR = (1 << 2);
+        RTC_TIMSK = (1U << RTC_OCIEA);
+        RTC_TIFR = (1U << 2);
 #if SERVO0 >= 0
         mcu_clear_output(SERVO0);
 #endif
@@ -92,10 +92,9 @@ static FORCEINLINE void mcu_clear_servos()
 }
 
 // naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
-ISR(RTC_COMPB_vect, ISR_NAKED)
+ISR(RTC_COMPB_vect, ISR_NOBLOCK)
 {
         mcu_clear_servos();
-        reti();
 }
 #endif
 
