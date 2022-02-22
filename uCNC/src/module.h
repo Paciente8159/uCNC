@@ -51,8 +51,8 @@ extern "C"
 
     // definitions to create overridable default handlers for functions void-void hooks
     // the resulting handles is named mod_<hookname>_hook and can be placed inside any point in the core code
-    // for example DECL_HOOK(do_stuff) will create a function declaration equivalent to void __attribute__((weak)) mod_do_stuff_hook(void)
-    // mod_do_stuff_hook can then be placed inside the core code to run on that place
+    // for example DECL_HOOK(do_stuff) will create a function declaration equivalent to void mod_do_stuff_hook(void)
+    // mod_do_stuff_hook can then be placed inside the core code to run the hook code
 
 #define DECL_HOOK(hook)                    \
     typedef void (*hook##_delegate)(void); \
@@ -109,7 +109,7 @@ extern "C"
     EVENT(itp_reset_rt_position_delegate)
     itp_reset_rt_position_event;
     // declares the handler hook to be called inside the parser core
-    void __attribute__((weak)) mod_itp_reset_rt_position_hook(float *origin);
+    void mod_itp_reset_rt_position_hook(float *origin);
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
