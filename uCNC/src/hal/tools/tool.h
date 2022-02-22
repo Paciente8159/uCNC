@@ -44,10 +44,8 @@ extern "C"
 		tool_spindle_func set_speed;   /*sets the speed/power of the tool*/
 		tool_coolant_func set_coolant; /*enables/disables the coolant*/
 		tool_func get_speed;		   /*gets the tool speed/power*/
-#if PID_CONTROLLERS > 0
-		tool_pid_upd_func pid_update; /*runs de PID update code needed to keep the tool at the desired speed/power*/
-		tool_pid_err_func pid_error;  /*runs de PID update code needed to keep the tool at the desired speed/power*/
-#endif
+		tool_pid_upd_func pid_update;  /*runs de PID update code needed to keep the tool at the desired speed/power*/
+		tool_pid_err_func pid_error;   /*runs de PID update code needed to keep the tool at the desired speed/power*/
 	} tool_t;
 
 	void tool_init(void);
@@ -56,10 +54,8 @@ extern "C"
 	void tool_set_coolant(uint8_t value);
 	uint8_t tool_get_speed(void);
 	void tool_stop(void);
-#if PID_CONTROLLERS > 0
 	void tool_pid_update(int16_t value);
 	int16_t tool_pid_error(void);
-#endif
 
 #ifdef __cplusplus
 }

@@ -55,8 +55,6 @@ static void cnc_io_dotasks(void);
 static bool cnc_reset(void);
 static bool cnc_exec_cmd(void);
 
-extern void modules_init(void);
-
 void cnc_init(void)
 {
     // initializes cnc state
@@ -75,7 +73,7 @@ void cnc_init(void)
 #if TOOL_COUNT > 0
     tool_init();
 #endif
-    modules_init();
+    mod_init();
 }
 
 void cnc_run(void)
@@ -206,10 +204,10 @@ void mcu_rtc_cb(uint32_t millis)
         running = true;
         mcu_enable_global_isr();
 
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_SCHEDULER_LOOP_MODULES
         if (!cnc_get_exec_state(EXEC_ALARM))
         {
-            pid_update();
+            mod_rtc_tick_hook();
         }
 #endif
 

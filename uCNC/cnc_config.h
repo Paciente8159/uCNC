@@ -183,10 +183,12 @@ extern "C"
   //#define GCODE_ACCEPT_WORD_E
 
   /**
-   * Uncomment to enable parser extentions
+   * Uncomment to enable module extentions
    * */
 
-// #define ENABLE_PARSER_EXTENSIONS
+#define ENABLE_PARSER_MODULES
+// #define ENABLE_SCHEDULER_LOOP_MODULES
+// #define ENABLE_IO_MODULES
 
 /**
  * Report specific options

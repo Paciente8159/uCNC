@@ -211,7 +211,7 @@ void pid_init(void)
 #endif
 }
 
-void pid_update(void)
+void FORCEINLINE pid_update(void)
 {
 #if (PID_CONTROLLERS > 0)
 
@@ -261,3 +261,11 @@ void pid_update(void)
 
 #endif
 }
+
+#if (PID_CONTROLLERS > 0)
+// overrides the default mod_rtc_tick_hook
+void mod_rtc_tick_hook(void)
+{
+    pid_update();
+}
+#endif

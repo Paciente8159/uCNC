@@ -1,19 +1,19 @@
 /*
-	Name: encoder.c
-	Description: Encoder module for µCNC.
+    Name: encoder.c
+    Description: Encoder module for µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/03/2021
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 07/03/2021
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -161,7 +161,8 @@ static FORCEINLINE uint8_t read_encoder_dirs(void)
     return value;
 }
 
-void encoders_update(void)
+// overrides the mod_input_change_hook
+void mod_input_change_hook(void)
 {
     static uint8_t last_pulse = 0;
     uint8_t dir = read_encoder_dirs();
@@ -169,7 +170,7 @@ void encoders_update(void)
     uint8_t diff = last_pulse ^ pulse;
     last_pulse = pulse;
 
-//checks if pulse pin changed state and is logical 1
+// checks if pulse pin changed state and is logical 1
 #if ENCODERS > 0
     if ((diff & ENC0_MASK & pulse))
     {

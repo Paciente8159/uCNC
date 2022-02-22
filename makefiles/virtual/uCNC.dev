@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-D__SIMUL__ -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_@@_
+Compiler=-D__SIMUL__ -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
 CppCompiler=_@@_
 Linker=-lws2_32_@@_
 IsCpp=0
@@ -28,8 +28,8 @@ Folders=
 IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
-CompilerSettings=000000e0a0100000001000000
-UnitCount=53
+CompilerSettings=000000e0a0000000001000000
+UnitCount=55
 
 [VersionInfo]
 Major=1
@@ -561,7 +561,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit53]
-FileName=..\..\uCNC\src\modules_init.c
+FileName=..\..\uCNC\src\module.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -581,7 +581,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit54]
-FileName=..\..\uCNC\src\core\utils.h
+FileName=..\..\uCNC\src\module.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -591,7 +591,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit55]
-FileName=virtualsocket.c
+FileName=..\..\uCNC\src\modules\parser_m42.c
 CompileCpp=0
 Folder=
 Compile=1

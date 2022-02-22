@@ -138,11 +138,9 @@ bool io_check_boundaries(float *axis)
     return true;
 }
 
-void mcu_inputs_changed_cb(void)
+// can be hooked
+void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
-#if ENCODERS > 0
-    encoders_update();
-#endif
 }
 
 uint8_t io_get_limits(void)

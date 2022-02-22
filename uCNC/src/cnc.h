@@ -123,6 +123,7 @@ extern "C"
 #include "cnc_hal_config_helper.h"
 // initializes core utilities (like fast math functions)
 #include "core/utils.h"
+// extension modules
 #include "interface/defaults.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
@@ -136,6 +137,8 @@ extern "C"
 #include "core/motion_control.h"
 #include "core/planner.h"
 #include "core/interpolator.h"
+#include "module.h"
+
 
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
