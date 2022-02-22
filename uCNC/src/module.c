@@ -19,11 +19,10 @@
 
 #include "cnc.h"
 
-#define MODULE_CALLBACK __attribute__((weak))
-
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
-uint8_t MODULE_CALLBACK mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+// overridable handler
+uint8_t __attribute__((weak)) mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	EVENT_TYPE(gcode_parse_delegate) *ptr = gcode_parse_event;
 	while ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS) && (ptr != NULL))
@@ -39,7 +38,8 @@ uint8_t MODULE_CALLBACK mod_gcode_parse_hook(unsigned char word, uint8_t code, u
 	return error;
 }
 
-uint8_t MODULE_CALLBACK mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+// overridable handler
+uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	EVENT_TYPE(gcode_exec_delegate) *ptr = gcode_exec_event;
 	uint8_t error = STATUS_GOCDE_EXTENDED_UNSUPPORTED;
@@ -63,18 +63,6 @@ uint8_t MODULE_CALLBACK mod_gcode_exec_hook(parser_state_t *new_state, parser_wo
 	{
 		return error;
 	}
-}
-#endif
-
-#ifdef ENABLE_SCHEDULER_LOOP_MODULES
-void MODULE_CALLBACK mod_rtc_tick_hook(void)
-{
-}
-#endif
-
-#ifdef ENABLE_IO_MODULES
-void MODULE_CALLBACK mod_input_change_hook(void)
-{
 }
 #endif
 

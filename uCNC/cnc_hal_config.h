@@ -65,6 +65,7 @@ extern "C"
 #define LED DOUT15
 #endif
 
+#ifdef ENABLE_IO_MODULES
 /*
 	Sets the number of encoders to be used (max of 8)
 */
@@ -79,7 +80,9 @@ extern "C"
 	 * */
 	//#define ENC0_PULSE DIN0
 	//#define ENC0_DIR DIN8
+#endif
 
+#ifdef ENABLE_SCHEDULER_LOOP_MODULES
 /*
 	Sets the number of PID controllers to be used
 */
@@ -126,6 +129,7 @@ extern "C"
 	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
 	//  //optional
 	//  #define PID1_FREQ_DIV 50
+#endif
 
 #ifdef __cplusplus
 }

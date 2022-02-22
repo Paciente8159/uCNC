@@ -24,6 +24,14 @@ extern "C"
 {
 #endif
 
+#ifndef ENCODERS
+#define ENCODERS 0
+#endif
+
+#ifndef PID_CONTROLLERS
+#define PID_CONTROLLERS 0
+#endif
+
 #if PID_CONTROLLERS > 0
 /*PID controllers*/
 #if PID_CONTROLLERS == 1

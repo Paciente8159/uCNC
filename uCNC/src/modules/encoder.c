@@ -161,8 +161,10 @@ static FORCEINLINE uint8_t read_encoder_dirs(void)
     return value;
 }
 
-// overrides the mod_input_change_hook
-void mod_input_change_hook(void)
+// overrides the mcu_input_change_cb
+// this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
+#if ENCODERS > 0
+void mcu_inputs_changed_cb(void)
 {
     static uint8_t last_pulse = 0;
     uint8_t dir = read_encoder_dirs();
@@ -220,6 +222,7 @@ void mod_input_change_hook(void)
     }
 #endif
 }
+#endif
 
 int32_t encoder_get_position(uint8_t i)
 {

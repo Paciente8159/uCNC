@@ -186,9 +186,9 @@ extern "C"
    * Uncomment to enable module extentions
    * */
 
-#define ENABLE_PARSER_MODULES
+// #define ENABLE_PARSER_MODULES
 // #define ENABLE_SCHEDULER_LOOP_MODULES
-// #define ENABLE_IO_MODULES
+#define ENABLE_IO_MODULES
 
 /**
  * Report specific options
@@ -318,7 +318,7 @@ extern "C"
    * For pin diagnostics enables command $P
    * */
 
-  //#define ENABLE_EXTRA_SYSTEM_CMDS
+#define ENABLE_EXTRA_SYSTEM_CMDS
 
   /**
    * Compilation specific options

@@ -28,12 +28,13 @@ extern "C"
 #include "../cnc_config.h"
 #include "core/parser.h"
 
-#define EVENT(delegate)              \
-    typedef struct delegate##_event_ \
-    {                                \
-        delegate fptr;               \
-        struct delegate##_ *next     \
-    } delegate##_event_t;            \
+// definitions to create events and event listeners
+#define EVENT(delegate)                 \
+    typedef struct delegate##_event_    \
+    {                                   \
+        delegate fptr;                  \
+        struct delegate##_event_ *next; \
+    } delegate##_event_t;               \
     delegate##_event_t *
 #define EVENT_TYPE(delegate) delegate##_event_t
 #define CREATE_LISTENER(delegate, handler) __attribute__((used)) delegate##_event_t delegate##_##handler = {&handler, NULL}
@@ -48,33 +49,63 @@ extern "C"
     (*p)->next = NULL;                              \
 })
 
+// definitions to create overridable default handlers for functions void-void hooks
+// the resulting handles is named mod_<hookname>_hook and can be placed inside any point in the core code
+#define DECL_DEFAULT_HANDLER(hook)         \
+    typedef void (*hook##_delegate)(void); \
+    EVENT(hook##_delegate)                 \
+    hook##_event;                          \
+    void __attribute__((weak)) mod_##hook##_hook(void)
+#define DEFAULT_HANDLER(hook) ({                     \
+    EVENT_TYPE(hook##_delegate) *ptr = hook##_event; \
+    while (ptr != NULL)                              \
+    {                                                \
+        if (ptr->fptr != NULL)                       \
+        {                                            \
+            ptr->fptr();                             \
+        }                                            \
+        ptr = ptr->next;                             \
+    }                                                \
+})
+
 #ifdef ENABLE_PARSER_MODULES
     // defines a delegate function for the gcode parser handler
     typedef uint8_t (*gcode_parse_delegate)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
     // creates an event for the gcode_parse
     EVENT(gcode_parse_delegate)
     gcode_parse_event;
+    // declares the handler hook to be called inside the parser core
     uint8_t mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 
-    // defines a callback for the gcode exec handler
+    // defines a delegate function for the gcode exec handler
     typedef uint8_t (*gcode_exec_delegate)(parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
     // creates an event for the gcode_exec
     EVENT(gcode_exec_delegate)
     gcode_exec_event;
+    // declares the handler hook to be called inside the parser core
     uint8_t mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 #endif
 
 #ifdef ENABLE_SCHEDULER_LOOP_MODULES
-    typedef void (*rtc_tick_delegate)(void);
-    EVENT(rtc_tick_delegate)
-    rtc_tick_event;
-    void mod_rtc_tick_hook(void);
+    // generates a default delegate, event and handler for rtc_tick
+    // the only thing left is to include de call to the handler (mod_rtc_tick_hook) inside the cnc core
+    DECL_DEFAULT_HANDLER(rtc_tick)
+    {
+        DEFAULT_HANDLER(rtc_tick);
+    }
 #endif
 
 #ifdef ENABLE_IO_MODULES
-    void mod_input_change_hook(void);
-    void mod_probe_enable_hook(void);
-    void mod_probe_disable_hook(void);
+    DECL_DEFAULT_HANDLER(input_change)
+    {
+        DEFAULT_HANDLER(input_change);
+    }
+    DECL_DEFAULT_HANDLER(probe_enable)
+    {
+    }
+    DECL_DEFAULT_HANDLER(probe_disable)
+    {
+    }
 #endif
 
     void mod_init(void);
