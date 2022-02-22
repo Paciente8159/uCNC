@@ -65,24 +65,26 @@ extern "C"
 #define LED DOUT15
 #endif
 
-#ifdef ENABLE_IO_MODULES
+// these modules must be enabled to use encoders
+#if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES)
 /*
 	Sets the number of encoders to be used (max of 8)
 */
 #define ENCODERS 0
 
-	/**
-	 * To use the encoder counter 2 definitions are needed
-	 * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
-	 * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
-	 * Defined encoders must match the number of encoders and numeral defined above.
-	 * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
-	 * */
-	//#define ENC0_PULSE DIN0
-	//#define ENC0_DIR DIN8
+/**
+ * To use the encoder counter 2 definitions are needed
+ * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
+ * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
+ * Defined encoders must match the number of encoders and numeral defined above.
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * */
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
 #endif
 
-#ifdef ENABLE_SCHEDULER_LOOP_MODULES
+// these modules must be enabled to use pid
+#if defined(ENABLE_MAIN_LOOP_MODULES) && defined(ENABLE_SETTINGS_MODULES)
 /*
 	Sets the number of PID controllers to be used
 */

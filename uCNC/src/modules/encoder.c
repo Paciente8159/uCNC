@@ -252,3 +252,50 @@ void encoders_reset_position(void)
     }
 #endif
 }
+
+#if ENCODERS > 0
+// overrides the default mod_cnc_reset_hook
+// may be modified in the future
+void mod_cnc_reset_hook(void)
+{
+    encoders_reset_position();
+}
+#endif
+
+#if ENCODERS > 0
+// overrides the default mod_itp_reset_rt_position_hook
+// may be modified in the future
+void mod_itp_reset_rt_position_hook(float *origin)
+{
+#if STEPPER_COUNT > 0
+#ifdef STEP0_ENCODER
+    encoder_reset_position(STEP0_ENCODER, origin[0]);
+#endif
+#endif
+#if STEPPER_COUNT > 1
+#ifdef STEP1_ENCODER
+    encoder_reset_position(STEP1_ENCODER, origin[1]);
+#endif
+#endif
+#if STEPPER_COUNT > 2
+#ifdef STEP2_ENCODER
+    encoder_reset_position(STEP2_ENCODER, origin[2]);
+#endif
+#endif
+#if STEPPER_COUNT > 3
+#ifdef STEP3_ENCODER
+    encoder_reset_position(STEP3_ENCODER, origin[3]);
+#endif
+#endif
+#if STEPPER_COUNT > 4
+#ifdef STEP4_ENCODER
+    encoder_reset_position(STEP4_ENCODER, origin[4]);
+#endif
+#endif
+#if STEPPER_COUNT > 5
+#ifdef STEP5_ENCODER
+    encoder_reset_position(STEP5_ENCODER, origin[5]);
+#endif
+#endif
+}
+#endif

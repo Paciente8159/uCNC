@@ -66,6 +66,71 @@ uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, par
 }
 #endif
 
+#ifdef ENABLE_INTERPOLATOR_MODULES
+
+// declares the handler hook to be called inside the parser core
+void __attribute__((weak)) mod_itp_reset_rt_position_hook(float *origin)
+{
+	EVENT_TYPE(itp_reset_rt_position_delegate) *ptr = itp_reset_rt_position_event;
+	while (ptr != NULL)
+	{
+		if (ptr->fptr != NULL)
+		{
+			ptr->fptr(origin);
+		}
+		ptr = ptr->next;
+	}
+}
+#endif
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+// mod_cnc_reset_hook
+WEAK_HOOK(cnc_reset)
+{
+	DEFAULT_HANDLER(cnc_reset);
+}
+
+// mod_rtc_tick_hook
+WEAK_HOOK(rtc_tick)
+{
+	DEFAULT_HANDLER(rtc_tick);
+}
+
+// mod_cnc_dotasks_hook
+WEAK_HOOK(cnc_dotasks)
+{
+	DEFAULT_HANDLER(cnc_dotasks);
+}
+
+// mod_cnc_stop_hook
+WEAK_HOOK(cnc_stop)
+{
+	DEFAULT_HANDLER(cnc_stop);
+}
+
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+// mod_settings_change_hook
+WEAK_HOOK(settings_change)
+{
+	DEFAULT_HANDLER(settings_change);
+}
+#endif
+
+#ifdef ENABLE_IO_MODULES
+WEAK_HOOK(input_change)
+{
+	DEFAULT_HANDLER(input_change);
+}
+WEAK_HOOK(probe_enable)
+{
+}
+WEAK_HOOK(probe_disable)
+{
+}
+#endif
+
 void mod_init(void)
 {
 	// initializes PID module

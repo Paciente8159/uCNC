@@ -58,7 +58,7 @@ extern "C"
    * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_GRBL
 #endif
 
   /**
@@ -183,12 +183,13 @@ extern "C"
   //#define GCODE_ACCEPT_WORD_E
 
   /**
-   * Uncomment to enable module extentions
+   * Uncomment to enable module extensions
    * */
-
+// #define ENABLE_MAIN_LOOP_MODULES
+// #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
-// #define ENABLE_SCHEDULER_LOOP_MODULES
-#define ENABLE_IO_MODULES
+// #define ENABLE_INTERPOLATOR_MODULES
+// #define ENABLE_SETTINGS_MODULES
 
 /**
  * Report specific options
@@ -318,7 +319,7 @@ extern "C"
    * For pin diagnostics enables command $P
    * */
 
-#define ENABLE_EXTRA_SYSTEM_CMDS
+  // #define ENABLE_EXTRA_SYSTEM_CMDS
 
   /**
    * Compilation specific options

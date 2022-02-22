@@ -189,6 +189,10 @@ bool cnc_dotasks(void)
         lock_itp = false;
     }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_dotasks_hook();
+#endif
+
     return !cnc_get_exec_state(EXEC_KILL);
 }
 
@@ -204,7 +208,7 @@ void mcu_rtc_cb(uint32_t millis)
         running = true;
         mcu_enable_global_isr();
 
-#ifdef ENABLE_SCHEDULER_LOOP_MODULES
+#ifdef ENABLE_MAIN_LOOP_MODULES
         if (!cnc_get_exec_state(EXEC_ALARM))
         {
             mod_rtc_tick_hook();
@@ -305,8 +309,8 @@ void cnc_stop(void)
     // stop tools
     itp_stop_tools();
 
-#if PID_CONTROLLERS > 0
-    pid_stop();
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_dotasks_hook();
 #endif
 }
 
@@ -482,8 +486,8 @@ bool cnc_reset(void)
     planner_clear();
     mc_init();
     parser_init();
-#if ENCODERS > 0
-    encoders_reset_position();
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_reset_hook();
 #endif
     protocol_send_string(MSG_STARTUP);
     serial_flush();

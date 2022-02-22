@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#define BOARD_UNO 1
+#define BOARD_GRBL 1
 #define BOARD_RAMBO14 2
 #define BOARD_RAMPS14 3
 #define BOARD_MKS_DLC 4

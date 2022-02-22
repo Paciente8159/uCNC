@@ -1,5 +1,5 @@
 /*
-	Name: boardmap_uno.h
+	Name: boardmap_grbl.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_GRBL_H
-#define MCUMAP_GRBL_H
+#ifndef BOARDMAP_GRBL_H
+#define BOARDMAP_GRBL_H
 
 #ifdef __cplusplus
 extern "C"
@@ -113,14 +113,21 @@ extern "C"
 #define DOUT1_BIT 3
 #define DOUT1_PORT C
 
-	// spindle speed sensor
-	//  #define ANALOG0_BIT 4
-	//  #define ANALOG0_PORT C
-	//  #define ANALOG0_CHANNEL 4
+// spindle speed sensor
+//  #define ANALOG0_BIT 4
+//  #define ANALOG0_PORT C
+//  #define ANALOG0_CHANNEL 4
 
 // servo type signal pin
 //  #define SERVO0_BIT 4
 //  #define SERVO0_PORT C
+
+// encoders
+// #define DIN0_BIT 0
+// #define DIN0_PORT C
+// #define DIN0_ISR 1
+// #define DIN8_BIT 1
+// #define DIN8_PORT C
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0

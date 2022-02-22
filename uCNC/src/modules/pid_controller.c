@@ -165,7 +165,7 @@ static int32_t pid_set_output(uint8_t i, int16_t val)
     }
 }
 
-void pid_stop()
+void FORCEINLINE pid_stop()
 {
 
 #if (PID_CONTROLLERS > 0)
@@ -193,6 +193,15 @@ void pid_stop()
     PID7_STOP(val);
 #endif
 }
+
+// this overrides the module handler since no other module is using it
+// may be modified in the future
+#if (PID_CONTROLLERS > 0)
+void mod_cnc_stop_hook(void)
+{
+    pid_stop();
+}
+#endif
 
 // PID ISR should run once every millisecond
 // sampling rate is 1000/(log2*(Nº of PID controllers))
@@ -264,8 +273,18 @@ void FORCEINLINE pid_update(void)
 
 #if (PID_CONTROLLERS > 0)
 // overrides the default mod_rtc_tick_hook
+// may be modified in the future
 void mod_rtc_tick_hook(void)
 {
     pid_update();
+}
+#endif
+
+#if (PID_CONTROLLERS > 0)
+// overrides the default mod_rtc_tick_hook
+// may be modified in the future
+void mod_settings_change_hook(void)
+{
+    pid_init();
 }
 #endif
