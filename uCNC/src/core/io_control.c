@@ -153,10 +153,12 @@ bool io_check_boundaries(float *axis)
     return true;
 }
 
-void mcu_inputs_changed_cb(void)
+// overridable
+// for now if encoders are enabled this will be override by the encoder call
+void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
-#if ENCODERS > 0
-    encoders_update();
+#ifdef ENABLE_IO_MODULES
+    void mod_input_change_hook(void);
 #endif
 }
 
@@ -233,6 +235,9 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
+#ifdef ENABLE_IO_MODULES
+    mod_probe_enable_hook();
+#endif
 #ifndef FORCE_SOFT_POLLING
 #if (PROBE >= 0)
     mcu_enable_probe_isr();
@@ -246,6 +251,9 @@ void io_disable_probe(void)
 #if (PROBE >= 0)
     mcu_disable_probe_isr();
 #endif
+#endif
+#ifdef ENABLE_IO_MODULES
+    mod_probe_disable_hook();
 #endif
 }
 
@@ -1305,35 +1313,35 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if SERVO0 >= 0
     case SERVO0:
-        return mcu_get_servo(SERVO0);
+        return (uint8_t)mcu_get_servo(SERVO0);
 #endif
 #if SERVO1 >= 0
     case SERVO1:
-        return mcu_get_servo(SERVO1);
+        return (uint8_t)mcu_get_servo(SERVO1);
 #endif
 #if SERVO2 >= 0
     case SERVO2:
-        return mcu_get_servo(SERVO2);
+        return (uint8_t)mcu_get_servo(SERVO2);
 #endif
 #if SERVO3 >= 0
     case SERVO3:
-        return mcu_get_servo(SERVO3);
+        return (uint8_t)mcu_get_servo(SERVO3);
 #endif
 #if SERVO4 >= 0
     case SERVO4:
-        return mcu_get_servo(SERVO4);
+        return (uint8_t)mcu_get_servo(SERVO4);
 #endif
 #if SERVO5 >= 0
     case SERVO5:
-        return mcu_get_servo(SERVO5);
+        return (uint8_t)mcu_get_servo(SERVO5);
 #endif
 #if SERVO6 >= 0
     case SERVO6:
-        return mcu_get_servo(SERVO6);
+        return (uint8_t)mcu_get_servo(SERVO6);
 #endif
 #if SERVO7 >= 0
     case SERVO7:
-        return mcu_get_servo(SERVO7);
+        return (uint8_t)mcu_get_servo(SERVO7);
 #endif
     }
     return -1;

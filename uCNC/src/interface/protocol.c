@@ -673,7 +673,7 @@ void protocol_send_pins_states(void)
                 {
                     serial_print_str(__romstr__("[SI:"));
                 }
-                if (i < 130)
+                else if (i < 130)
                 {
                     serial_print_str(__romstr__("[A:"));
                 }
@@ -689,13 +689,8 @@ void protocol_send_pins_states(void)
         }
     }
 
-#if ENCODERS > 0
-    for (uint8_t i = 0; i < ENCODERS; i++)
-    {
-        serial_print_str(__romstr__("[EC:"));
-        serial_print_int(encoder_get_position(i));
-        serial_print_str(MSG_END);
-    }
+#ifdef ENABLE_PROTOCOL_MODULES
+    mod_send_pins_states_hook();
 #endif
 
 #ifdef ECHO_CMD

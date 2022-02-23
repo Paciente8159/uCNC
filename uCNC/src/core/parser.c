@@ -114,10 +114,6 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
-#ifdef ENABLE_PARSER_EXTENSIONS
-parser_extender_t *parser_extensions;
-#endif
-
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
 static uint8_t parser_get_float(float *value);
@@ -630,16 +626,10 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
             break;
         }
 
-#ifdef ENABLE_PARSER_EXTENSIONS
-        parser_extender_t *ptr = parser_extensions;
-        while ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS) && (ptr != NULL))
+#ifdef ENABLE_PARSER_MODULES
+        if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
         {
-            if (ptr->parse_word != NULL)
-            {
-                error = ptr->parse_word(word, code, error, value, new_state, words, cmd);
-            }
-
-            ptr = ptr->next;
+            error = mod_gcode_parse_hook(word, code, error, value, new_state, words, cmd);
         }
 #endif
 
@@ -927,28 +917,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     }
 #endif
 
-#ifdef ENABLE_PARSER_EXTENSIONS
-    parser_extender_t *ptr = parser_extensions;
-    while ((cmd->group_extended != 0) && (ptr != NULL))
-    {
-        error = STATUS_GOCDE_EXTENDED_UNSUPPORTED;
-        if (ptr->parse_word != NULL)
-        {
-            error = ptr->execute(new_state, words, cmd);
-        }
-
-        // checks if function catched the extended code
-        if (error != STATUS_GOCDE_EXTENDED_UNSUPPORTED)
-        {
-            break;
-        }
-
-        ptr = ptr->next;
-    }
-
+#ifdef ENABLE_PARSER_MODULES
     if ((cmd->group_extended != 0))
     {
-        return error;
+        return mod_gcode_exec_hook(new_state, words, cmd);
     }
 #endif
 
@@ -2303,18 +2275,3 @@ void parser_sync_position(void)
 {
     mc_get_position(parser_last_pos);
 }
-
-#ifdef ENABLE_PARSER_EXTENSIONS
-void parser_register_extender(parser_extender_t *new_extender)
-{
-    parser_extender_t **ptr = &parser_extensions;
-
-    while (*ptr != NULL)
-    {
-        *ptr = (*ptr)->next;
-    }
-
-    *ptr = new_extender;
-    (*ptr)->next = NULL;
-}
-#endif

@@ -564,9 +564,8 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 
     kinematics_init();
-
-#if PID_CONTROLLERS > 0
-    pid_init();
+#ifdef ENABLE_SETTINGS_MODULES
+    mod_settings_change_hook();
 #endif
 
 // fix step invert mask to match mirror step pins

@@ -29,11 +29,11 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MCU_CALLBACK __attribute__((weak))
+#define MCU_CALLBACK extern
 
-	// weak callbacks
-	// these callbacks are implemented on µCNC core code
-	// these weak callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
+	// the extern is not necessary
+	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
+	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);

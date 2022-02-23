@@ -34,8 +34,7 @@ extern "C"
 #error Undefined board
 #endif
 
-#if (BOARD)
-#else
+#if (!BOARD)
 #error Invalid board configuration
 #endif
 

@@ -12,8 +12,8 @@
 			trigger_control.h
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
-				
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 01/11/2019
 
@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib") //Winsock Library
+#pragma comment(lib, "ws2_32.lib") // Winsock Library
 
 #include "virtualtimer.h"
 
@@ -469,7 +469,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
 							for (int i = 0; i < recvbuflen; i++)
 							{
-								serial_rx_isr(recvbuf[i]);
+								mcu_com_rx_cb(recvbuf[i]);
 							}
 							memset(recvbuf, 0, sizeof(recvbuf));
 						}
@@ -683,7 +683,7 @@ void com_send(char *buff, int len)
 	SetEvent(txReady);
 }
 
-//UART communication
+// UART communication
 uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
 uint8_t g_mcu_buffertail;
@@ -722,7 +722,7 @@ void mcu_rx_isr(unsigned char c)
 {
 	if (c)
 	{
-		serial_rx_isr(c);
+		mcu_com_rx_cb(c);
 	}
 }
 
@@ -731,33 +731,33 @@ void mcu_tx_isr(void)
 	mcu_tx_empty = true;
 }
 
-//emulates uart RX
-// void *comsimul(void)
-// {
-// #ifdef USECOM
-// mcu_tx_empty = true;
-// virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
-// #else
-// 	for (;;)
-// 	{
-// 		unsigned char c = getch();
-// 		if (c != 0)
-// 		{
-// 			uart_char = c;
-// 			while (!serial_rx_is_empty())
-// 			{
-// 			}
-// 			serial_rx_isr(c);
-// 			if (c == '\n' | c == '\r')
-// 			{
-// 			}
-// 		}
-// 	}
-// #endif
-// }
+// emulates uart RX
+//  void *comsimul(void)
+//  {
+//  #ifdef USECOM
+//  mcu_tx_empty = true;
+//  virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
+//  #else
+//  	for (;;)
+//  	{
+//  		unsigned char c = getch();
+//  		if (c != 0)
+//  		{
+//  			uart_char = c;
+//  			while (!serial_rx_is_empty())
+//  			{
+//  			}
+//  			serial_rx_isr(c);
+//  			if (c == '\n' | c == '\r')
+//  			{
+//  			}
+//  		}
+//  	}
+//  #endif
+//  }
 
-//emulates uart TX
-//void *comoutsimul(void)
+// emulates uart TX
+// void *comoutsimul(void)
 //{
 //	for (;;)
 //	{
@@ -767,9 +767,9 @@ void mcu_tx_isr(void)
 //			serial_tx_isr();
 //		}
 //	}
-//}
+// }
 
-//simulates internal clock (1Kz limited by windows timer)
+// simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;
 
 void *stepsimul(void)
@@ -808,12 +808,12 @@ void *stepsimul(void)
 
 			if (tick_counter == pulse_interval)
 			{
-				isr_flags |= ISR_PULSE; //flags step isr
+				isr_flags |= ISR_PULSE; // flags step isr
 			}
 
 			if (tick_counter >= resetpulse_interval)
 			{
-				isr_flags |= ISR_PULSERESET; //flags step isr
+				isr_flags |= ISR_PULSERESET; // flags step isr
 				tick_counter = 0;
 			}
 
@@ -824,9 +824,9 @@ void *stepsimul(void)
 
 				if (isr_flags & ISR_INPUT)
 				{
-					//serial_rx_isr(uart_char);
-					io_limits_isr();
-					io_controls_isr();
+					// serial_rx_isr(uart_char);
+					mcu_limits_changed_cb();
+					mcu_controls_changed_cb();
 					isr_flags &= ~ISR_INPUT;
 				}
 
@@ -834,13 +834,13 @@ void *stepsimul(void)
 				{
 					if (isr_flags & ISR_PULSE)
 					{
-						itp_step_isr();
+						mcu_step_cb();
 						isr_flags &= ~ISR_PULSE;
 					}
 
 					if (isr_flags & ISR_PULSERESET)
 					{
-						itp_step_reset_isr();
+						mcu_step_reset_cb();
 						isr_flags &= ~ISR_PULSERESET;
 					}
 				}
@@ -880,7 +880,7 @@ void ticksimul(void)
 
 		mcu_runtime++;
 		mcu_disable_global_isr();
-		cnc_scheduletasks(mcu_runtime);
+		mcu_rtc_cb(mcu_runtime);
 		mcu_enable_global_isr();
 	}
 }
@@ -928,7 +928,7 @@ void mcu_init(void)
 	mcu_enable_global_isr();
 }
 
-//IO functions
+// IO functions
 void mcu_enable_probe_isr(void)
 {
 }
@@ -989,7 +989,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 	return virtualmap.analog[channel];
 }
 
-//Outputs
+// Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
 	pwm -= 20;
@@ -1002,12 +1002,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 	return virtualmap.pwm[pwm];
 }
 
-//Communication functions
-//sends a packet
+// Communication functions
+// sends a packet
 void mcu_enable_tx_isr(void)
 {
 #ifndef USECONSOLE
-	serial_tx_isr();
+	mcu_com_tx_cb();
 #endif
 	mcu_tx_enabled = true;
 }
@@ -1078,7 +1078,7 @@ void mcu_bufferClear(void)
 	g_mcu_bufferhead = 0;
 }
 
-//RealTime
+// RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 {
 	if (frequency < F_STEP_MIN)
@@ -1090,12 +1090,12 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 	*tick_reps = 1;
 }
 
-//enables all interrupts on the mcu. Must be called to enable all IRS functions
+// enables all interrupts on the mcu. Must be called to enable all IRS functions
 void mcu_enable_global_isr(void)
 {
 	global_isr_enabled = true;
 }
-//disables all ISR functions
+// disables all ISR functions
 void mcu_disable_global_isr(void)
 {
 	global_isr_enabled = false;
@@ -1106,7 +1106,7 @@ bool mcu_get_global_isr(void)
 	return global_isr_enabled;
 }
 
-//starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
+// starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	resetpulse_interval = clocks_speed;
@@ -1123,7 +1123,7 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
-//stops the pulse
+// stops the pulse
 void mcu_stop_itp_isr(void)
 {
 	pulse_enabled = false;

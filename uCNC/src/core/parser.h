@@ -165,18 +165,6 @@ extern "C"
 #endif
 	} parser_state_t;
 
-#ifdef ENABLE_PARSER_EXTENSIONS
-	typedef uint8_t (*parser_extender_callback)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
-	typedef uint8_t (*parser_extender_exec_callback)(parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
-	typedef struct parser_extender_
-	{
-		parser_extender_callback parse_word;
-		parser_extender_exec_callback execute;
-		struct parser_extender_ *next;
-	} parser_extender_t;
-
-#endif
-
 	void parser_init(void);
 	uint8_t parser_read_command(void);
 	void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant);
@@ -191,10 +179,6 @@ extern "C"
 	void parser_sync_position(void);
 	void parser_reset(void);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-// parser extender functions
-#ifdef ENABLE_PARSER_EXTENSIONS
-	void parser_register_extender(parser_extender_t *new_extender);
-#endif
 
 #ifdef __cplusplus
 }

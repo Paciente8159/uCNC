@@ -55,8 +55,6 @@ static void cnc_io_dotasks(void);
 static bool cnc_reset(void);
 static bool cnc_exec_cmd(void);
 
-extern void modules_init(void);
-
 void cnc_init(void)
 {
     // initializes cnc state
@@ -75,7 +73,7 @@ void cnc_init(void)
 #if TOOL_COUNT > 0
     tool_init();
 #endif
-    modules_init();
+    mod_init();
 }
 
 void cnc_run(void)
@@ -191,6 +189,10 @@ bool cnc_dotasks(void)
         lock_itp = false;
     }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_dotasks_hook();
+#endif
+
     return !cnc_get_exec_state(EXEC_KILL);
 }
 
@@ -206,10 +208,10 @@ void mcu_rtc_cb(uint32_t millis)
         running = true;
         mcu_enable_global_isr();
 
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_MAIN_LOOP_MODULES
         if (!cnc_get_exec_state(EXEC_ALARM))
         {
-            pid_update();
+            mod_rtc_tick_hook();
         }
 #endif
 
@@ -313,8 +315,8 @@ void cnc_stop(void)
     // stop tools
     itp_stop_tools();
 
-#if PID_CONTROLLERS > 0
-    pid_stop();
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_dotasks_hook();
 #endif
 }
 
@@ -490,8 +492,8 @@ bool cnc_reset(void)
     planner_clear();
     mc_init();
     parser_init();
-#if ENCODERS > 0
-    encoders_reset_position();
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_reset_hook();
 #endif
     protocol_send_string(MSG_STARTUP);
     serial_flush();

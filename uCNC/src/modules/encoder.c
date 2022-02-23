@@ -1,22 +1,24 @@
 /*
-	Name: encoder.c
-	Description: Encoder module for µCNC.
+    Name: encoder.c
+    Description: Encoder module for µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 07/03/2021
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 07/03/2021
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
+
+#if ENCODERS > 0
 
 #if ENCODERS > 0
 #ifndef ENC0_PULSE
@@ -161,7 +163,9 @@ static FORCEINLINE uint8_t read_encoder_dirs(void)
     return value;
 }
 
-void encoders_update(void)
+// overrides the mcu_input_change_cb
+// this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
+void mcu_inputs_changed_cb(void)
 {
     static uint8_t last_pulse = 0;
     uint8_t dir = read_encoder_dirs();
@@ -169,7 +173,7 @@ void encoders_update(void)
     uint8_t diff = last_pulse ^ pulse;
     last_pulse = pulse;
 
-//checks if pulse pin changed state and is logical 1
+// checks if pulse pin changed state and is logical 1
 #if ENCODERS > 0
     if ((diff & ENC0_MASK & pulse))
     {
@@ -228,6 +232,16 @@ int32_t encoder_get_position(uint8_t i)
     }
 }
 
+void mod_send_pins_states_hook(void)
+{
+    for (uint8_t i = 0; i < ENCODERS; i++)
+    {
+        serial_print_str(__romstr__("[EC:"));
+        serial_print_int(encoder_get_position(i));
+        serial_print_str(MSG_END);
+    }
+}
+
 void encoder_reset_position(uint8_t i, int32_t position)
 {
     __ATOMIC__
@@ -238,7 +252,6 @@ void encoder_reset_position(uint8_t i, int32_t position)
 
 void encoders_reset_position(void)
 {
-#if ENCODERS > 0
     __ATOMIC__
     {
         for (uint8_t i = 0; i < ENCODERS; i++)
@@ -246,5 +259,49 @@ void encoders_reset_position(void)
             encoders_pos[i] = 0;
         }
     }
+}
+
+// overrides the default mod_cnc_reset_hook
+// may be modified in the future
+void mod_cnc_reset_hook(void)
+{
+    encoders_reset_position();
+}
+
+// overrides the default mod_itp_reset_rt_position_hook
+// may be modified in the future
+void mod_itp_reset_rt_position_hook(float *origin)
+{
+#if STEPPER_COUNT > 0
+#ifdef STEP0_ENCODER
+    encoder_reset_position(STEP0_ENCODER, origin[0]);
+#endif
+#endif
+#if STEPPER_COUNT > 1
+#ifdef STEP1_ENCODER
+    encoder_reset_position(STEP1_ENCODER, origin[1]);
+#endif
+#endif
+#if STEPPER_COUNT > 2
+#ifdef STEP2_ENCODER
+    encoder_reset_position(STEP2_ENCODER, origin[2]);
+#endif
+#endif
+#if STEPPER_COUNT > 3
+#ifdef STEP3_ENCODER
+    encoder_reset_position(STEP3_ENCODER, origin[3]);
+#endif
+#endif
+#if STEPPER_COUNT > 4
+#ifdef STEP4_ENCODER
+    encoder_reset_position(STEP4_ENCODER, origin[4]);
+#endif
+#endif
+#if STEPPER_COUNT > 5
+#ifdef STEP5_ENCODER
+    encoder_reset_position(STEP5_ENCODER, origin[5]);
+#endif
 #endif
 }
+
+#endif

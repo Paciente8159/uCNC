@@ -20,23 +20,20 @@
 #include "../cnc.h"
 #include <stdbool.h>
 
-#ifdef ENABLE_PARSER_EXTENSIONS
+#ifdef ENABLE_PARSER_MODULES
 // this ID must be unique for each code
 #define M42 1042
 
-static uint8_t m42_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-static uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-parser_extender_t m42_extender = {&m42_parse, &m42_exec, NULL};
+uint8_t m42_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 
-void m42_register(void)
-{
-    parser_register_extender(&m42_extender);
-}
+CREATE_LISTENER(gcode_parse_delegate, m42_parse);
+CREATE_LISTENER(gcode_exec_delegate, m42_exec);
 
 // this just parses and acceps the code
-static uint8_t m42_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m42_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
-    if (c == 'M' && word == 42)
+    if (word == 'M' && code == 42)
     {
         if (cmd->group_extended != 0)
         {
@@ -53,7 +50,7 @@ static uint8_t m42_parse(unsigned char c, uint8_t word, uint8_t error, float val
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-static uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
     if (cmd->group_extended == M42)
     {

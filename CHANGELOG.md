@@ -12,9 +12,12 @@
   - added new SERVO pin type that ouputs a 50Hz type PWM. Up to 8 SERVO pins can be configured (#138)
   - added M10 mcode (set servo pin value) to core parser (#141)
   - partial implementation supporting STM32F4 core. Lacks Flash EEPROM and analog pin reading is untested. (#139)
-  - experimental delta kinematics added to HAL
+  - experimental delta kinematics added to HAL (#142)
+  - new probe deploy/stow hookable callbacks for probing motion (#143)
 
 ### Changed
+  - redesigned µCNC modules for quick prototyping based on C# delegates, events and listeners. This allows adding hooks along the core code that call on modules sub-routines (#144)
+  - redesigned/simplified tool declaration in cnc_hal_config (#145)
 
 ### Fixed
   - fixed spelling on the README file (#140)

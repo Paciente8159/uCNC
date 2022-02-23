@@ -53,10 +53,6 @@ extern "C"
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
 
-	// declare the tool to be used
-	extern const tool_t __rom__ spindle1;
-// extern const tool_t __rom__ laser1;
-
 // assign the tools from 1 to 16
 #define TOOL1 spindle1
 	//#define TOOL2 laser1
@@ -65,21 +61,26 @@ extern "C"
 #define LED DOUT15
 #endif
 
+// these modules must be enabled to use encoders
+#if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES) && (defined(ENABLE_PROTOCOL_MODULES) || !defined(ENABLE_EXTRA_SYSTEM_CMDS))
 /*
 	Sets the number of encoders to be used (max of 8)
 */
 #define ENCODERS 0
 
-	/**
-	 * To use the encoder counter 2 definitions are needed
-	 * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
-	 * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
-	 * Defined encoders must match the number of encoders and numeral defined above.
-	 * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
-	 * */
-	//#define ENC0_PULSE DIN0
-	//#define ENC0_DIR DIN8
+/**
+ * To use the encoder counter 2 definitions are needed
+ * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
+ * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
+ * Defined encoders must match the number of encoders and numeral defined above.
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * */
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
+#endif
 
+// these modules must be enabled to use pid
+#if defined(ENABLE_MAIN_LOOP_MODULES) && defined(ENABLE_SETTINGS_MODULES)
 /*
 	Sets the number of PID controllers to be used
 */
@@ -126,6 +127,7 @@ extern "C"
 	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
 	//  //optional
 	//  #define PID1_FREQ_DIV 50
+#endif
 
 #ifdef __cplusplus
 }
