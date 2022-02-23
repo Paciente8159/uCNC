@@ -181,6 +181,12 @@ extern "C"
 #ifndef LOG2
 #define LOG2 0.3010299956639811952f
 #endif
+#ifndef M_PI
+#define M_PI 3.1415926535897932385f
+#endif
+#ifndef M_COS_TAYLOR_1
+#define M_COS_TAYLOR_1 0.1666666666666666667f
+#endif
 
 #ifndef FORCEINLINE
 #define FORCEINLINE __attribute__((always_inline)) inline
