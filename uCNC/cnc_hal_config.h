@@ -53,10 +53,6 @@ extern "C"
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
 
-	// declare the tool to be used
-	extern const tool_t __rom__ spindle1;
-// extern const tool_t __rom__ laser1;
-
 // assign the tools from 1 to 16
 #define TOOL1 spindle1
 	//#define TOOL2 laser1
