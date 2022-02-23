@@ -16,6 +16,7 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
    - As of version 1.2.0 the addition of a HAL config that allow the user to build link inputs and outputs of the controller to specific functions or modules (like using a generic input has an encoder input or a PWM output has a servo controller with a PID module)
    - As of version 1.3.0 a new dimension to the HAL was added. The tool HAL. This allow to add multiple tools that can perform different task with µCNC.
    - As of version 1.4.0 a special kind of PIN type dedicated to servo motors control was added µCNC.
+   - As of version 1.4.0 a new module extension system was introduced. It's now possible to add hooks in the core code and attach multiple listeners to execute aditional code further expanding µCNC original capabilities. Modules can be enabled and disabled in the config file to enable feature on per need basis.
 3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the whole wheel at least :-P). For that reason µCNC (tries) to use the exact same protocol has Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 ## Supporting the project
@@ -30,6 +31,8 @@ Version 1.4 added a couple of new features.
   - added support for STM32F4 MCU and the Blackpill boards.
   - new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
   - initial (still in development) support for delta kinematics.
+  - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside de core code by creating and adding code hooks that can then call and execute multiple listeners
+  - added optional variable acceleration step generation (S-Curve speed profile)
 
 Version 1.3 added a couple of new features.
 
@@ -85,7 +88,7 @@ NOTES:
   * _M1 stop condition can be set in HAL file_
   * _M6 additional tools can be defined in HAL file_
   * _M10 only active if servo motors are configured_
-  * _M42 configurable via options file. Provides a way to set any kind of output, PWM or Servo PIN_
+  * _M42 configurable via aditional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
 
 TODO List of G-Codes in µCNC future releases:
 
