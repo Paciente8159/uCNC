@@ -492,6 +492,7 @@ bool cnc_reset(void)
     planner_clear();
     mc_init();
     parser_init();
+    kinematics_init();
 #ifdef ENABLE_MAIN_LOOP_MODULES
     mod_cnc_reset_hook();
 #endif
