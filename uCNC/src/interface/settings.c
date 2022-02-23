@@ -491,9 +491,9 @@ uint8_t settings_change(uint8_t setting, float value)
     case 107:
         g_settings.delta_armbase_radius = value;
         break;
-    case 108:
-        g_settings.delta_efector_height = value;
-        break;
+        // case 108:
+        //     g_settings.delta_efector_height = value;
+        //     break;
 #endif
     default:
         if (setting >= 100 && setting < (100 + STEPPER_COUNT))
