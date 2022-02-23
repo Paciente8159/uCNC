@@ -21,6 +21,12 @@
 #include <math.h>
 
 #if (PID_CONTROLLERS > 0)
+
+// These parameters adjust the PID to use integer math only and output limiting (usually to be used with PWM)
+#define PID_BITSHIFT_FACTOR 8
+#define PID_OUTPUT_MAX ((1 << PID_BITSHIFT_FACTOR) - 1)
+#define PID_OUTPUT_MIN (-((1 << PID_BITSHIFT_FACTOR) - 1))
+
 static float cumulative_delta[PID_CONTROLLERS];
 static float last_error[PID_CONTROLLERS];
 static float ki[PID_CONTROLLERS];
@@ -33,8 +39,6 @@ static uint8_t pid_freqdiv[PID_CONTROLLERS];
 // #define KI_MAX (((GAIN_FLT_TO_INT << 1) >> PID_DIVISIONS) - 1)
 // #define KD_MAX ((GAIN_FLT_TO_INT << 10) - 1)
 // #define ERROR_SUM_MAX (1 << (31 - PID_BITSHIFT_FACTOR - PID_DIVISIONS))
-
-#endif
 
 static int32_t pid_get_freqdiv(uint8_t i)
 {
@@ -196,12 +200,10 @@ void FORCEINLINE pid_stop()
 
 // this overrides the module handler since no other module is using it
 // may be modified in the future
-#if (PID_CONTROLLERS > 0)
 void mod_cnc_stop_hook(void)
 {
     pid_stop();
 }
-#endif
 
 // PID ISR should run once every millisecond
 // sampling rate is 1000/(log2*(Nº of PID controllers))
@@ -210,20 +212,16 @@ void mod_cnc_stop_hook(void)
 // this precomputes the PID factors to save computation cycles
 void pid_init(void)
 {
-#if (PID_CONTROLLERS > 0)
     for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
     {
         // error gains must be between 0% and 100% (0 and 1)
         ki[i] = (g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
         kd[i] = (g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
     }
-#endif
 }
 
 void FORCEINLINE pid_update(void)
 {
-#if (PID_CONTROLLERS > 0)
-
     static uint8_t current_pid = 0;
     if (current_pid < PID_CONTROLLERS)
     {
@@ -267,24 +265,20 @@ void FORCEINLINE pid_update(void)
     {
         current_pid = 0;
     }
-
-#endif
 }
 
-#if (PID_CONTROLLERS > 0)
 // overrides the default mod_rtc_tick_hook
 // may be modified in the future
 void mod_rtc_tick_hook(void)
 {
     pid_update();
 }
-#endif
 
-#if (PID_CONTROLLERS > 0)
 // overrides the default mod_rtc_tick_hook
 // may be modified in the future
 void mod_settings_change_hook(void)
 {
     pid_init();
 }
+
 #endif

@@ -66,7 +66,7 @@ extern "C"
 #endif
 
 // these modules must be enabled to use encoders
-#if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES)
+#if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES) && (defined(ENABLE_PROTOCOL_MODULES) || !defined(ENABLE_EXTRA_SYSTEM_CMDS))
 /*
 	Sets the number of encoders to be used (max of 8)
 */

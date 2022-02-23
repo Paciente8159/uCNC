@@ -117,6 +117,11 @@ extern "C"
     DECL_HOOK(settings_change);
 #endif
 
+#ifdef ENABLE_PROTOCOL_MODULES
+    // mod_send_pins_states_hook
+    DECL_HOOK(send_pins_states);
+#endif
+
 #ifdef ENABLE_IO_MODULES
     DECL_HOOK(input_change);
     DECL_HOOK(probe_enable);

@@ -122,23 +122,20 @@ extern "C"
 // fill remaining HAL configurations
 #include "cnc_hal_config_helper.h"
 // initializes core utilities (like fast math functions)
-#include "core/utils.h"
+#include "utils.h"
 // extension modules
+#include "module.h"
 #include "interface/defaults.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
 #include "interface/serial.h"
 #include "interface/protocol.h"
-#include "modules/encoder.h"
-#include "modules/pid_controller.h"
 #include "core/io_control.h"
 #include "core/io_control.h"
 #include "core/parser.h"
 #include "core/motion_control.h"
 #include "core/planner.h"
 #include "core/interpolator.h"
-#include "module.h"
-
 
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)

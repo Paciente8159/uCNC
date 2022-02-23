@@ -123,6 +123,16 @@ WEAK_HOOK(settings_change)
 }
 #endif
 
+#ifdef ENABLE_PROTOCOL_MODULES
+// mod_send_pins_states_hook
+WEAK_HOOK(send_pins_states)
+{
+	// for now only encoder module uses this hook and overrides it
+	// it actually overrides the mcu callback to be faster
+	// DEFAULT_HANDLER(input_change);
+}
+#endif
+
 #ifdef ENABLE_IO_MODULES
 // mod_input_change_hook
 WEAK_HOOK(input_change)
@@ -145,6 +155,10 @@ WEAK_HOOK(probe_disable)
 }
 #endif
 
+#if PID_CONTROLLERS > 0
+extern void pid_init(void);
+#endif
+
 void mod_init(void)
 {
 	// initializes PID module
@@ -152,7 +166,7 @@ void mod_init(void)
 	pid_init(); // pid
 #endif
 
-// initializes parser extension modules
+// add listeners here
 #ifdef ENABLE_PARSER_MODULES
 	ADD_LISTENER(gcode_parse_delegate, m42_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m42_exec, gcode_exec_event);

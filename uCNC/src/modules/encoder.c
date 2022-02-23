@@ -19,6 +19,8 @@
 #include "../cnc.h"
 
 #if ENCODERS > 0
+
+#if ENCODERS > 0
 #ifndef ENC0_PULSE
 #error "The ENC0 pulse pin is not defined"
 #endif
@@ -163,7 +165,6 @@ static FORCEINLINE uint8_t read_encoder_dirs(void)
 
 // overrides the mcu_input_change_cb
 // this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
-#if ENCODERS > 0
 void mcu_inputs_changed_cb(void)
 {
     static uint8_t last_pulse = 0;
@@ -222,13 +223,22 @@ void mcu_inputs_changed_cb(void)
     }
 #endif
 }
-#endif
 
 int32_t encoder_get_position(uint8_t i)
 {
     __ATOMIC__
     {
         return encoders_pos[i];
+    }
+}
+
+void mod_send_pins_states_hook(void)
+{
+    for (uint8_t i = 0; i < ENCODERS; i++)
+    {
+        serial_print_str(__romstr__("[EC:"));
+        serial_print_int(encoder_get_position(i));
+        serial_print_str(MSG_END);
     }
 }
 
@@ -242,7 +252,6 @@ void encoder_reset_position(uint8_t i, int32_t position)
 
 void encoders_reset_position(void)
 {
-#if ENCODERS > 0
     __ATOMIC__
     {
         for (uint8_t i = 0; i < ENCODERS; i++)
@@ -250,19 +259,15 @@ void encoders_reset_position(void)
             encoders_pos[i] = 0;
         }
     }
-#endif
 }
 
-#if ENCODERS > 0
 // overrides the default mod_cnc_reset_hook
 // may be modified in the future
 void mod_cnc_reset_hook(void)
 {
     encoders_reset_position();
 }
-#endif
 
-#if ENCODERS > 0
 // overrides the default mod_itp_reset_rt_position_hook
 // may be modified in the future
 void mod_itp_reset_rt_position_hook(float *origin)
@@ -298,4 +303,5 @@ void mod_itp_reset_rt_position_hook(float *origin)
 #endif
 #endif
 }
+
 #endif
