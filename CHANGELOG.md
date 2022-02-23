@@ -16,6 +16,7 @@
   - new probe deploy/stow hookable callbacks for probing motion (#143)
 
 ### Changed
+  - redesigned µCNC modules for quick prototyping based on C# delegates, events and listeners. This allows adding hooks along the core code that call on modules sub-routines.
 
 ### Fixed
   - fixed spelling on the README file (#140)

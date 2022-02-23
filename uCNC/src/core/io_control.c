@@ -138,10 +138,12 @@ bool io_check_boundaries(float *axis)
     return true;
 }
 
-void mcu_inputs_changed_cb(void)
+// overridable
+// for now if encoders are enabled this will be override by the encoder call
+void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
-#if ENCODERS > 0
-    encoders_update();
+#ifdef ENABLE_IO_MODULES
+    void mod_input_change_hook(void);
 #endif
 }
 
@@ -218,10 +220,9 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-    if (io_deploy_probe_cb)
-    {
-        io_deploy_probe_cb();
-    }
+#ifdef ENABLE_IO_MODULES
+    mod_probe_enable_hook();
+#endif
 #ifndef FORCE_SOFT_POLLING
 #if (PROBE >= 0)
     mcu_enable_probe_isr();
@@ -236,10 +237,9 @@ void io_disable_probe(void)
     mcu_disable_probe_isr();
 #endif
 #endif
-    if (io_stow_probe_cb)
-    {
-        io_stow_probe_cb();
-    }
+#ifdef ENABLE_IO_MODULES
+    mod_probe_disable_hook();
+#endif
 }
 
 bool io_get_probe(void)

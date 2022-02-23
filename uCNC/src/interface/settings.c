@@ -550,8 +550,8 @@ uint8_t settings_change(uint8_t setting, float value)
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
-#if PID_CONTROLLERS > 0
-    pid_init();
+#ifdef ENABLE_SETTINGS_MODULES
+    mod_settings_change_hook();
 #endif
 
 // fix step invert mask to match mirror step pins

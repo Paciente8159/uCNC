@@ -200,8 +200,6 @@ extern "C"
 	uint8_t io_get_controls(void);
 	void io_enable_probe(void);
 	void io_disable_probe(void);
-	__attribute__((weak)) void io_deploy_probe_cb(void);
-	__attribute__((weak)) void io_stow_probe_cb(void);
 	bool io_get_probe(void);
 	void io_set_homing_limits_filter(uint8_t filter_mask);
 
