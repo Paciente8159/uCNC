@@ -118,7 +118,7 @@ It can run on:
   - AVR (Arduino UNO/MEGA)
   - STM32F1 (Bluepill) - v1.1.x
   - SAMD21 (Arduino Zero/M0) - v1.3.x
-  - STM32F1 (Blackpill) - v1.4.x
+  - STM32F4 (Blackpill) - v1.4.x
   - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
