@@ -1,6 +1,6 @@
 /*
-	Name: kinematic_cartesian_xyz.c
-	Description: Implements all kinematics math equations to translate the motion of a cartesian XYZ machine.
+	Name: kinematic_cartesian.c
+	Description: Implements all kinematics math equations to translate the motion of a cartesian machine.
 		Also implements the homing motion for this type of machine.
 
 	Copyright: Copyright (c) João Martins
@@ -22,6 +22,10 @@
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
 #include <stdio.h>
 #include <math.h>
+
+void kinematics_init(void)
+{
+}
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {

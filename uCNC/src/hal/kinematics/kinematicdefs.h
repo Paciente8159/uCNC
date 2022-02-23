@@ -61,6 +61,8 @@ extern "C"
 #include "kinematic_cartesian.h"
 #elif (KINEMATIC == KINEMATIC_COREXY)
 #include "kinematic_corexy.h"
+#elif (KINEMATIC == KINEMATIC_DELTA)
+#include "kinematic_delta.h"
 #else
 #error Kinematics not implemented
 #endif

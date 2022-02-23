@@ -27,6 +27,8 @@ extern "C"
 
 #include <stdint.h>
 
+	void kinematics_init(void);
+
 	/*
 	Converts from machine absolute coordinates to step position.
 	This is done after computing position relative to the active coordinate system

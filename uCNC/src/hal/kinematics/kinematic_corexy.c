@@ -23,6 +23,10 @@
 #include <stdio.h>
 #include <math.h>
 
+void kinematics_init(void)
+{
+}
+
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
     steps[0] = (int32_t)lroundf(g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));

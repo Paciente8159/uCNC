@@ -20,13 +20,6 @@
 #include <string.h>
 #include <float.h>
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385f
-#endif
-#ifndef M_COS_TAYLOR_1
-#define M_COS_TAYLOR_1 0.1666666666666666667f
-#endif
-
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 // static float mc_prev_target_dir[AXIS_COUNT];

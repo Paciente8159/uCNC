@@ -47,7 +47,7 @@ extern "C"
 #else
 #define itp_get_rt_spindle() (0);
 #endif
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS

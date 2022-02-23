@@ -484,6 +484,17 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.default_tool = CLAMP(0, value8, TOOL_COUNT);
         break;
 #endif
+#if (KINEMATIC == KINEMATIC_DELTA)
+    case 106:
+        g_settings.delta_arm_length = value;
+        break;
+    case 107:
+        g_settings.delta_armbase_radius = value;
+        break;
+        // case 108:
+        //     g_settings.delta_efector_height = value;
+        //     break;
+#endif
     default:
         if (setting >= 100 && setting < (100 + STEPPER_COUNT))
         {
