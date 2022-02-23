@@ -87,25 +87,29 @@ void __attribute__((weak)) mod_itp_reset_rt_position_hook(float *origin)
 // mod_cnc_reset_hook
 WEAK_HOOK(cnc_reset)
 {
-	DEFAULT_HANDLER(cnc_reset);
+	// for now only encoder module uses this hook and overrides it
+	// DEFAULT_HANDLER(cnc_reset);
 }
 
 // mod_rtc_tick_hook
 WEAK_HOOK(rtc_tick)
 {
-	DEFAULT_HANDLER(rtc_tick);
+	// for now only pid module uses this hook and overrides it
+	// DEFAULT_HANDLER(rtc_tick);
 }
 
 // mod_cnc_dotasks_hook
 WEAK_HOOK(cnc_dotasks)
 {
-	DEFAULT_HANDLER(cnc_dotasks);
+	// for now this is not used
+	//  DEFAULT_HANDLER(cnc_dotasks);
 }
 
 // mod_cnc_stop_hook
 WEAK_HOOK(cnc_stop)
 {
-	DEFAULT_HANDLER(cnc_stop);
+	// for now only pid module uses this hook and overrides it
+	// DEFAULT_HANDLER(cnc_stop);
 }
 
 #endif
@@ -114,20 +118,30 @@ WEAK_HOOK(cnc_stop)
 // mod_settings_change_hook
 WEAK_HOOK(settings_change)
 {
-	DEFAULT_HANDLER(settings_change);
+	// for now only pid module uses this hook and overrides it
+	// DEFAULT_HANDLER(settings_change);
 }
 #endif
 
 #ifdef ENABLE_IO_MODULES
+// mod_input_change_hook
 WEAK_HOOK(input_change)
 {
-	DEFAULT_HANDLER(input_change);
+	// for now only encoder module uses this hook and overrides it
+	// it actually overrides the mcu callback to be faster
+	// DEFAULT_HANDLER(input_change);
 }
+
+// mod_probe_enable_hook
 WEAK_HOOK(probe_enable)
 {
+	// for now this is not used
 }
+
+// mod_probe_disable_hook
 WEAK_HOOK(probe_disable)
 {
+	// for now this is not used
 }
 #endif
 

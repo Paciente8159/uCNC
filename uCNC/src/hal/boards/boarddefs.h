@@ -34,16 +34,15 @@ extern "C"
 #error Undefined board
 #endif
 
-#if (BOARD)
-#else
+#if (!BOARD)
 #error Invalid board configuration
 #endif
 
-#if (BOARD == BOARD_GRBL)
+#if (BOARD == BOARD_UNO)
 #define MCU MCU_AVR
 // reduces RAM usage a bit to prevent hardware resets
 #define PLANNER_BUFFER_SIZE 14
-#include "avr/boardmap_grbl.h"
+#include "avr/boardmap_uno.h"
 #endif
 
 #if (BOARD == BOARD_MKS_DLC)

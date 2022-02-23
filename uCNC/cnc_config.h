@@ -58,7 +58,7 @@ extern "C"
    * */
 
 #ifndef BOARD
-#define BOARD BOARD_GRBL
+#define BOARD BOARD_UNO
 #endif
 
   /**

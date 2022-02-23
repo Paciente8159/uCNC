@@ -1,5 +1,5 @@
 /*
-	Name: boardmap_grbl.h
+	Name: boardmap_uno.h
 	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
 
 	Copyright: Copyright (c) João Martins
