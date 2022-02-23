@@ -20,7 +20,58 @@
 #include "../../cnc.h"
 #include <stdlib.h>
 
+#define DECL_TOOL(tool) extern const tool_t __rom__ tool;
+
 static tool_t tool_current;
+
+#ifdef TOOL1
+DECL_TOOL(TOOL1);
+#endif
+#ifdef TOOL2
+DECL_TOOL(TOOL2);
+#endif
+#ifdef TOOL3
+DECL_TOOL(TOOL3);
+#endif
+#ifdef TOOL4
+DECL_TOOL(TOOL4);
+#endif
+#ifdef TOOL5
+DECL_TOOL(TOOL5);
+#endif
+#ifdef TOOL6
+DECL_TOOL(TOOL6);
+#endif
+#ifdef TOOL7
+DECL_TOOL(TOOL7);
+#endif
+#ifdef TOOL8
+DECL_TOOL(TOOL8);
+#endif
+#ifdef TOOL9
+DECL_TOOL(TOOL9);
+#endif
+#ifdef TOOL10
+DECL_TOOL(TOOL10);
+#endif
+#ifdef TOOL11
+DECL_TOOL(TOOL11);
+#endif
+#ifdef TOOL12
+DECL_TOOL(TOOL12);
+#endif
+#ifdef TOOL13
+DECL_TOOL(TOOL13);
+#endif
+#ifdef TOOL14
+DECL_TOOL(TOOL14);
+#endif
+#ifdef TOOL15
+DECL_TOOL(TOOL15);
+#endif
+#ifdef TOOL16
+DECL_TOOL(TOOL16);
+#endif
 
 // this variable is not used but forces the compiler to compile the selected tools compilation units
 TOOLDEF const tool_t *__rom__ const tools[] = {
