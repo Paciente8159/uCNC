@@ -29,10 +29,11 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 Version 1.4 added a couple of new features.
 
   - added support for STM32F4 MCU and the Blackpill boards.
-  - new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
+  - new servo PIN type that generates a 50Hz with TOn - 0.5ms~2.5ms needed to control servo type motors.
   - initial (still in development) support for delta kinematics.
   - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside de core code by creating and adding code hooks that can then call and execute multiple listeners
   - added optional variable acceleration step generation (S-Curve speed profile)
+  - added module for bltouch probe
 
 Version 1.3 added a couple of new features.
 
@@ -106,7 +107,7 @@ TODO List of G-Codes in µCNC future releases:
   - 16 analog inputs
   - 16 generic digital inputs
   - 16 generic digital outputs
-  - 8 servo control outputs (50Hz)
+  - 6 servo control outputs (50Hz)
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board, but this feature is experimental and it's advise to disable DSS when using it.
 
