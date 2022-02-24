@@ -235,7 +235,7 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-#ifdef ENABLE_IO_MODULES
+#ifdef ENABLE_MOTION_MODULES
     mod_probe_enable_hook();
 #endif
 #ifndef FORCE_SOFT_POLLING
@@ -252,7 +252,7 @@ void io_disable_probe(void)
     mcu_disable_probe_isr();
 #endif
 #endif
-#ifdef ENABLE_IO_MODULES
+#ifdef ENABLE_MOTION_MODULES
     mod_probe_disable_hook();
 #endif
 }
@@ -589,16 +589,6 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 #if (SERVO5 >= 0)
     case SERVO5:
         mcu_set_servo(SERVO5, value);
-        break;
-#endif
-#if (SERVO6 >= 0)
-    case SERVO6:
-        mcu_set_servo(SERVO6, value);
-        break;
-#endif
-#if (SERVO7 >= 0)
-    case SERVO7:
-        mcu_set_servo(SERVO7, value);
         break;
 #endif
     }
@@ -1334,14 +1324,6 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if SERVO5 >= 0
     case SERVO5:
         return (uint8_t)mcu_get_servo(SERVO5);
-#endif
-#if SERVO6 >= 0
-    case SERVO6:
-        return (uint8_t)mcu_get_servo(SERVO6);
-#endif
-#if SERVO7 >= 0
-    case SERVO7:
-        return (uint8_t)mcu_get_servo(SERVO7);
 #endif
     }
     return -1;

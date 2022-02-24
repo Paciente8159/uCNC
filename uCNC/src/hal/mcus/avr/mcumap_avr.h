@@ -1380,30 +1380,6 @@ extern "C"
 #define DIO57_INREG (__inreg__(SERVO5_PORT))
 #define DIO57_DIRREG (__dirreg__(SERVO5_PORT))
 #endif
-#if (defined(SERVO6_PORT) && defined(SERVO6_BIT))
-#define DIO58 58
-#define SERVO6 58
-#define DIO58_PORT (SERVO6_PORT)
-#define DIO58_BIT (SERVO6_BIT)
-#define SERVO6_OUTREG (__outreg__(SERVO6_PORT))
-#define SERVO6_INREG (__inreg__(SERVO6_PORT))
-#define SERVO6_DIRREG (__dirreg__(SERVO6_PORT))
-#define DIO58_OUTREG (__outreg__(SERVO6_PORT))
-#define DIO58_INREG (__inreg__(SERVO6_PORT))
-#define DIO58_DIRREG (__dirreg__(SERVO6_PORT))
-#endif
-#if (defined(SERVO7_PORT) && defined(SERVO7_BIT))
-#define DIO59 59
-#define SERVO7 59
-#define DIO59_PORT (SERVO7_PORT)
-#define DIO59_BIT (SERVO7_BIT)
-#define SERVO7_OUTREG (__outreg__(SERVO7_PORT))
-#define SERVO7_INREG (__inreg__(SERVO7_PORT))
-#define SERVO7_DIRREG (__dirreg__(SERVO7_PORT))
-#define DIO59_OUTREG (__outreg__(SERVO7_PORT))
-#define DIO59_INREG (__inreg__(SERVO7_PORT))
-#define DIO59_DIRREG (__dirreg__(SERVO7_PORT))
-#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))

@@ -141,7 +141,9 @@ WEAK_HOOK(input_change)
 	// it actually overrides the mcu callback to be faster
 	// DEFAULT_HANDLER(input_change);
 }
+#endif
 
+#ifdef ENABLE_MOTION_MODULES
 // mod_probe_enable_hook
 WEAK_HOOK(probe_enable)
 {

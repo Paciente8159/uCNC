@@ -2136,44 +2136,6 @@ extern "C"
 #define DIO57_CR SERVO5_CR
 #define DIO57_CROFF SERVO5_CROFF
 #endif
-#if (defined(SERVO6_PORT) && defined(SERVO6_BIT))
-#define SERVO6 58
-#define SERVO6_APB2EN (__rccapb2gpioen__(SERVO6_PORT))
-#define SERVO6_GPIO (__gpio__(SERVO6_PORT))
-#if (SERVO6_BIT < 8)
-#define SERVO6_CROFF SERVO6_BIT
-#define SERVO6_CR CRL
-#else
-#define SERVO6_CROFF (SERVO6_BIT & 0x07)
-#define SERVO6_CR CRH
-#endif
-#define DIO58 58
-#define DIO58_PORT SERVO6_PORT
-#define DIO58_BIT SERVO6_BIT
-#define DIO58_APB2EN SERVO6_APB2EN
-#define DIO58_GPIO SERVO6_GPIO
-#define DIO58_CR SERVO6_CR
-#define DIO58_CROFF SERVO6_CROFF
-#endif
-#if (defined(SERVO7_PORT) && defined(SERVO7_BIT))
-#define SERVO7 59
-#define SERVO7_APB2EN (__rccapb2gpioen__(SERVO7_PORT))
-#define SERVO7_GPIO (__gpio__(SERVO7_PORT))
-#if (SERVO7_BIT < 8)
-#define SERVO7_CROFF SERVO7_BIT
-#define SERVO7_CR CRL
-#else
-#define SERVO7_CROFF (SERVO7_BIT & 0x07)
-#define SERVO7_CR CRH
-#endif
-#define DIO59 59
-#define DIO59_PORT SERVO7_PORT
-#define DIO59_BIT SERVO7_BIT
-#define DIO59_APB2EN SERVO7_APB2EN
-#define DIO59_GPIO SERVO7_GPIO
-#define DIO59_CR SERVO7_CR
-#define DIO59_CROFF SERVO7_CROFF
-#endif
 
 /**********************************************
  *	ISR on change inputs

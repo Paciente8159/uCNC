@@ -58,7 +58,8 @@
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
-static uint8_t mcu_servos[8];
+static uint8_t mcu_servos[6];
+static uint8_t mcu_servos_loops[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
@@ -83,12 +84,6 @@ static FORCEINLINE void mcu_clear_servos()
 #if SERVO5 >= 0
         mcu_clear_output(SERVO5);
 #endif
-#if SERVO6 >= 0
-        mcu_clear_output(SERVO6);
-#endif
-#if SERVO7 >= 0
-        mcu_clear_output(SERVO7);
-#endif;
 }
 
 // naked ISR to reduce impact since doen't need to change any register (just an interrupt mask and pin outputs)
@@ -104,81 +99,67 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 {
 #if SERVOS_MASK > 0
         static uint8_t ms_servo_counter = 0;
+        static uint8_t servo_loops;
         uint8_t servo_counter = ms_servo_counter;
-        uint8_t servo_mux = servo_counter >> 1;
-        // counts to 20 and reloads
-        // every even millisecond sets output (will be active at least 1ms)
-        if (!(servo_counter & 0x01))
+
+        switch (servo_counter)
         {
-                mcu_clear_servos();
-                switch (servo_mux)
-                {
 #if SERVO0 >= 0
-                case 0:
-                        mcu_set_output(SERVO0);
-                        break;
+        case SERVO0_FRAME:
+                RTC_OCRB = mcu_servos[0];
+                servo_loops = mcu_servos_loops[0];
+                mcu_set_output(SERVO0);
+                break;
 #endif
 #if SERVO1 >= 0
-                case 1:
-                        mcu_set_output(SERVO1);
-                        break;
+        case SERVO1_FRAME:
+                RTC_OCRB = mcu_servos[1];
+                servo_loops = mcu_servos_loops[1];
+                mcu_set_output(SERVO1);
+                break;
 #endif
 #if SERVO2 >= 0
-                case 2:
-                        mcu_set_output(SERVO2);
-                        break;
+        case SERVO2_FRAME:
+                RTC_OCRB = mcu_servos[2];
+                servo_loops = mcu_servos_loops[2];
+                mcu_set_output(SERVO2);
+                break;
 #endif
 #if SERVO3 >= 0
-                case 3:
-                        mcu_set_output(SERVO3);
-                        break;
+        case SERVO3_FRAME:
+                RTC_OCRB = mcu_servos[3];
+                servo_loops = mcu_servos_loops[3];
+                mcu_set_output(SERVO3);
+                break;
 #endif
 #if SERVO4 >= 0
-                case 4:
-                        mcu_set_output(SERVO4);
-                        break;
+        case SERVO4_FRAME:
+                RTC_OCRB = mcu_servos[4];
+                servo_loops = mcu_servos_loops[4];
+                mcu_set_output(SERVO4);
+                break;
 #endif
 #if SERVO5 >= 0
-                case 5:
-                        mcu_set_output(SERVO5);
-                        break;
+        case SERVO5_FRAME:
+                RTC_OCRB = mcu_servos[5];
+                servo_loops = mcu_servos_loops[5];
+                mcu_set_output(SERVO5);
+                break;
 #endif
-#if SERVO6 >= 0
-                case 6:
-                        mcu_set_output(SERVO6);
-                        break;
-#endif
-#if SERVO7 >= 0
-                case 7:
-                        mcu_set_output(SERVO7);
-                        break;
-#endif
-                }
         }
-        else if ((SERVOS_MASK & (1U << servo_mux))) // every odd millisecond loads OCRB and enables interrupt
+
+        if (!servo_loops--)
         {
-                RTC_OCRB = mcu_servos[servo_mux];
-                if (RTC_OCRB)
+                if (!RTC_OCRB)
                 {
-                        if (RTC_OCRB != RTC_OCRA)
-                        {
-                                RTC_TIFR = 7;
-                                RTC_TIMSK |= (1 << RTC_OCIEB);
-                                // the next code might be needed if the servo shows inconsistencies
-                                // it should be fast enought to live without it but need testing
-                                //  if (RTC_OCRB < RTC_TCNT)
-                                //  {
-                                //          mcu_clear_servos();
-                                //  }
-                        }
+                        mcu_clear_servos();
                 }
                 else
                 {
-                        // clear servos right away
-                        mcu_clear_servos();
+                        RTC_TIFR = 7;
+                        RTC_TIMSK |= (1 << RTC_OCIEB);
                 }
         }
-
         servo_counter++;
         ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
@@ -662,12 +643,6 @@ void mcu_init(void)
 #if SERVO5 >= 0
         mcu_config_output(SERVO5);
 #endif
-#if SERVO6 >= 0
-        mcu_config_output(SERVO6);
-#endif
-#if SERVO7 >= 0
-        mcu_config_output(SERVO7);
-#endif
 #if TX >= 0
         mcu_config_output(TX);
 #endif
@@ -1007,6 +982,11 @@ void mcu_init(void)
 
         mcu_start_rtc();
 
+#if SERVOS_MASK > 0
+        uint8_t i = (RTC_OCRA >> 1);
+        memset(mcu_servos, i, 6);
+#endif
+
         // disable probe isr
         mcu_disable_probe_isr();
         // enable interrupts
@@ -1017,7 +997,26 @@ void mcu_init(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-        uint8_t scaled = (uint8_t)(((uint16_t)(value * RTC_OCRA)) >> 8);
+        uint8_t scaled = RTC_OCRA;
+        if (value < 64)
+        {
+                mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 0;
+                scaled >>= 1;
+                scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6) + scaled;
+        }
+        else if (value < 192)
+        {
+                value -= 64;
+                mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 1;
+                scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 7);
+        }
+        else
+        {
+                value -= 192;
+                mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 2;
+                scaled >>= 1;
+                scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6);
+        }
         mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
 #endif
 }

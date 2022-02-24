@@ -197,7 +197,7 @@ void USBWakeUp_IRQHandler(void)
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
 
-static uint8_t mcu_servos[8];
+static uint8_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
@@ -219,12 +219,6 @@ static FORCEINLINE void mcu_clear_servos()
 #if SERVO5 >= 0
 	mcu_clear_output(SERVO5);
 #endif
-#if SERVO6 >= 0
-	mcu_clear_output(SERVO6);
-#endif
-#if SERVO7 >= 0
-	mcu_clear_output(SERVO7);
-#endif;
 }
 
 // starts a constant rate pulse at a given frequency.
@@ -241,7 +235,7 @@ void servo_timer_init(void)
 
 void servo_start_timeout(uint8_t val)
 {
-	SERVO_TIMER_REG->ARR = val;
+	SERVO_TIMER_REG->ARR = (val << 1) + 125;
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
 	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
@@ -373,70 +367,47 @@ void osSystickHandler(void)
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;
-	uint8_t servo_mux = servo_counter >> 1;
 
-	// counts to 20 and reloads
-	// every even millisecond sets output (will be active at least 1ms)
-	if (!(servo_counter & 0x01))
+	switch (servo_counter)
 	{
-		mcu_clear_servos();
-		switch (servo_mux)
-		{
 #if SERVO0 >= 0
-		case 0:
-			mcu_set_output(SERVO0);
-			break;
+	case SERVO0_FRAME:
+		servo_start_timeout(mcu_servos[0]);
+		mcu_set_output(SERVO0);
+		break;
 #endif
 #if SERVO1 >= 0
-		case 1:
-			mcu_set_output(SERVO1);
-			break;
+	case SERVO1_FRAME:
+		mcu_set_output(SERVO1);
+		servo_start_timeout(mcu_servos[1]);
+		break;
 #endif
 #if SERVO2 >= 0
-		case 2:
-			mcu_set_output(SERVO2);
-			break;
+	case SERVO2_FRAME:
+		mcu_set_output(SERVO2);
+		servo_start_timeout(mcu_servos[2]);
+		break;
 #endif
 #if SERVO3 >= 0
-		case 3:
-			mcu_set_output(SERVO3);
-			break;
+	case SERVO3_FRAME:
+		mcu_set_output(SERVO3);
+		servo_start_timeout(mcu_servos[3]);
+		break;
 #endif
 #if SERVO4 >= 0
-		case 4:
-			mcu_set_output(SERVO4);
-			break;
+	case SERVO4_FRAME:
+		mcu_set_output(SERVO4);
+		servo_start_timeout(mcu_servos[4]);
+		break;
 #endif
 #if SERVO5 >= 0
-		case 5:
-			mcu_set_output(SERVO5);
-			break;
+	case SERVO5_FRAME:
+		mcu_set_output(SERVO5);
+		servo_start_timeout(mcu_servos[5]);
+		break;
 #endif
-#if SERVO6 >= 0
-		case 6:
-			mcu_set_output(SERVO6);
-			break;
-#endif
-#if SERVO7 >= 0
-		case 7:
-			mcu_set_output(SERVO7);
-			break;
-#endif
-		}
 	}
-	else if ((SERVOS_MASK & (1U << servo_mux))) // every odd millisecond loads OCRB and enables interrupt
-	{
 
-		if (mcu_servos[servo_mux])
-		{
-			servo_start_timeout(mcu_servos[servo_mux]);
-		}
-		else
-		{
-			// clear servos right away
-			mcu_clear_servos();
-		}
-	}
 	servo_counter++;
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
@@ -771,12 +742,6 @@ void mcu_init(void)
 #endif
 #if SERVO5 >= 0
 	mcu_config_output(SERVO5);
-#endif
-#if SERVO6 >= 0
-	mcu_config_output(SERVO6);
-#endif
-#if SERVO7 >= 0
-	mcu_config_output(SERVO7);
 #endif
 #if LIMIT_X >= 0
 	mcu_config_input(LIMIT_X);
