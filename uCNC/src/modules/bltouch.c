@@ -20,6 +20,10 @@
 
 #if ENABLE_BLTOUCH_PROBE
 
+#ifndef BLTOUCH_PROBE_SERVO
+#define BLTOUCH_PROBE_SERVO SERVO0
+#endif
+
 #define BLTOUCH_DELAY 500
 // tunned values with scope
 #define BLTOUCH_DEPLOY (23)             // 10º

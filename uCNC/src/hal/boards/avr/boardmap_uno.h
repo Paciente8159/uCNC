@@ -118,9 +118,9 @@ extern "C"
 	//  #define ANALOG0_PORT C
 	//  #define ANALOG0_CHANNEL 4
 
-	// servo type signal pin
-#define SERVO0_BIT 4
-#define SERVO0_PORT C
+// 	// servo type signal pin
+// #define SERVO0_BIT 4
+// #define SERVO0_PORT C
 
 // // encoders
 // #define DIN0_BIT 0
