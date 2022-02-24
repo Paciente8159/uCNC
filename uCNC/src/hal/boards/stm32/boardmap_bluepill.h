@@ -160,7 +160,7 @@ extern "C"
 	// #define ANALOG0_PORT B
 	// #define ANALOG0_CHANNEL 9
 
-	// servo pin
+	// // servo pin
 	// #define SERVO0_BIT 8
 	// #define SERVO0_PORT B
 

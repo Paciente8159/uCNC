@@ -123,8 +123,14 @@ extern "C"
 #endif
 
 #ifdef ENABLE_IO_MODULES
+    // mod_input_change_hook
     DECL_HOOK(input_change);
+#endif
+
+#ifdef ENABLE_MOTION_MODULES
+    // mod_probe_enable_hook
     DECL_HOOK(probe_enable);
+    // mod_probe_disable_hook
     DECL_HOOK(probe_disable);
 #endif
 

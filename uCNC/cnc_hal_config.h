@@ -129,6 +129,14 @@ extern "C"
 	//  #define PID1_FREQ_DIV 50
 #endif
 
+#if defined(ENABLE_MOTION_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES)
+// uncomment to enable BLTOUCH PROBE
+#define ENABLE_BLTOUCH_PROBE
+// BLTOUCH uses SERVO0 pin of µCNC by default
+// the servo pin can be changed here
+// #define BLTOUCH_PROBE_SERVO SERVO0
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -134,9 +134,9 @@ extern "C"
 //  #define ANALOG0_PORT A
 //  #define ANALOG0_CHANNEL 5
 
-// servo output
-#define SERVO0_BIT 5
-#define SERVO0_PORT A
+// // servo output
+// #define SERVO0_BIT 5
+// #define SERVO0_PORT A
 
 // coolant
 #define DOUT1_BIT 4

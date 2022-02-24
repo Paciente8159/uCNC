@@ -1167,26 +1167,6 @@ extern "C"
 #define DIO57_AHB1EN SERVO5_AHB1EN
 #define DIO57_GPIO SERVO5_GPIO
 #endif
-#if (defined(SERVO6_PORT) && defined(SERVO6_BIT))
-#define SERVO6 58
-#define SERVO6_AHB1EN (__rccgpioen__(SERVO6_PORT))
-#define SERVO6_GPIO (__gpio__(SERVO6_PORT))
-#define DIO58 58
-#define DIO58_PORT SERVO6_PORT
-#define DIO58_BIT SERVO6_BIT
-#define DIO58_AHB1EN SERVO6_AHB1EN
-#define DIO58_GPIO SERVO6_GPIO
-#endif
-#if (defined(SERVO7_PORT) && defined(SERVO7_BIT))
-#define SERVO7 59
-#define SERVO7_AHB1EN (__rccgpioen__(SERVO7_PORT))
-#define SERVO7_GPIO (__gpio__(SERVO7_PORT))
-#define DIO59 59
-#define DIO59_PORT SERVO7_PORT
-#define DIO59_BIT SERVO7_BIT
-#define DIO59_AHB1EN SERVO7_AHB1EN
-#define DIO59_GPIO SERVO7_GPIO
-#endif
 
 /**********************************************
  *	ISR on change inputs

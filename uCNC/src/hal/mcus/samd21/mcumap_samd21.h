@@ -939,22 +939,6 @@ extern "C"
 #define DIO57_BIT SERVO5_BIT
 #define DIO57_GPIO SERVO5_GPIO
 #endif
-#if (defined(SERVO6_PORT) && defined(SERVO6_BIT))
-#define SERVO6 58
-#define SERVO6_GPIO (PORTREG(SERVO6_PORT))
-#define DIO58 58
-#define DIO58_PORT SERVO6_PORT
-#define DIO58_BIT SERVO6_BIT
-#define DIO58_GPIO SERVO6_GPIO
-#endif
-#if (defined(SERVO7_PORT) && defined(SERVO7_BIT))
-#define SERVO7 59
-#define SERVO7_GPIO (PORTREG(SERVO7_PORT))
-#define DIO59 59
-#define DIO59_PORT SERVO7_PORT
-#define DIO59_BIT SERVO7_BIT
-#define DIO59_GPIO SERVO7_GPIO
-#endif
 
 #define __pinmuxevenodd0 PMUXE
 #define __pinmuxevenodd2 PMUXE
