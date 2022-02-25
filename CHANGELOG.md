@@ -5,6 +5,9 @@
 
 # Changelog
 
+## [1.4.0-alpha] - 2022-02-25
+µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's. The features are:
+
 ### Added
   - added pid_stop action and alarm checking (safety stop) (#108)
   - added new interpolator functions to be used by the PID module (#108)
@@ -573,6 +576,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-alpha
 [1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
 [1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
 [1.3.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.6
