@@ -12,7 +12,7 @@
   - added pid_stop action and alarm checking (safety stop) (#108)
   - added new interpolator functions to be used by the PID module (#108)
   - added S-Curve acceleration by modifying the Riemann sum interpolator to scan acceleration in fixed sample frames. (#137)
-  - added new SERVO pin type that ouputs a 50Hz type PWM. Up to 6 SERVO pins can be configured (#138) (#146)
+  - added new SERVO pin type that outputs a 50Hz type PWM. Up to 6 SERVO pins can be configured (#138) (#146)
   - added M10 mcode (set servo pin value) to core parser (#141)
   - partial implementation supporting STM32F4 core. Lacks Flash EEPROM and analog pin reading is untested. (#139)
   - experimental delta kinematics added to HAL (#142)
