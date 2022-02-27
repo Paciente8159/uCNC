@@ -66,7 +66,7 @@ extern "C"
 #ifndef PID0_FREQ_DIV
 #define PID0_FREQ_DIV 1
 #elif (PID0_FREQ_DIV < 1 || PID0_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID0 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID0 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 1
@@ -82,7 +82,7 @@ extern "C"
 #ifndef PID1_FREQ_DIV
 #define PID1_FREQ_DIV 1
 #elif (PID1_FREQ_DIV < 1 || PID1_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID1 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID1 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 2
@@ -98,7 +98,7 @@ extern "C"
 #ifndef PID2_FREQ_DIV
 #define PID2_FREQ_DIV 1
 #elif (PID2_FREQ_DIV < 1 || PID2_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID2 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID2 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 3
@@ -114,7 +114,7 @@ extern "C"
 #ifndef PID3_FREQ_DIV
 #define PID3_FREQ_DIV 1
 #elif (PID3_FREQ_DIV < 1 || PID3_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID3 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID3 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 4
@@ -130,7 +130,7 @@ extern "C"
 #ifndef PID4_FREQ_DIV
 #define PID4_FREQ_DIV 1
 #elif (PID4_FREQ_DIV < 1 || PID4_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID4 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID4 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 5
@@ -146,7 +146,7 @@ extern "C"
 #ifndef PID5_FREQ_DIV
 #define PID5_FREQ_DIV 1
 #elif (PID5_FREQ_DIV < 1 || PID5_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID5 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID5 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 6
@@ -162,7 +162,7 @@ extern "C"
 #ifndef PID6_FREQ_DIV
 #define PID6_FREQ_DIV 1
 #elif (PID6_FREQ_DIV < 1 || PID6_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID6 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID6 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 #if PID_CONTROLLERS > 7
@@ -178,7 +178,7 @@ extern "C"
 #ifndef PID7_FREQ_DIV
 #define PID7_FREQ_DIV 1
 #elif (PID7_FREQ_DIV < 1 || PID7_FREQ_DIV > PID_SAMP_FREQ)
-#error "The PID7 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID"s)"
+#error "The PID7 sampling frequency devider value must be between 1 and MAX SAMPLE RATE = 1000/log2(Total PID's)"
 #endif
 #endif
 

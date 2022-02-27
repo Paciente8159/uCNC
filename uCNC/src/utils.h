@@ -198,7 +198,7 @@ extern "C"
 		return 1;
 	}
 
-	static FORCEINLINE uint8_t __atomic_out(bool s)
+	static FORCEINLINE void __atomic_out(bool s)
 	{
 		if (s)
 		{
@@ -206,7 +206,7 @@ extern "C"
 		}
 	}
 
-	static FORCEINLINE uint8_t __atomic_out_on()
+	static FORCEINLINE void __atomic_out_on()
 	{
 		mcu_enable_global_isr();
 	}
