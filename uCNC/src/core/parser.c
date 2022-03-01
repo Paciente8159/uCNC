@@ -140,6 +140,9 @@ void parser_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     memset(&parser_state, 0, sizeof(parser_state_t));
     memset(&parser_parameters, 0, sizeof(parser_parameters_t));
+    parser_wco_counter = 0;
+    memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+    memset(rt_probe_step_pos, 0, sizeof(rt_probe_step_pos));
 #endif
     memset(parser_last_pos, 0, sizeof(parser_last_pos));
     parser_parameters_load();

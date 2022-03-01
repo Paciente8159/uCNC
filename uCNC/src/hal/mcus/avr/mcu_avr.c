@@ -180,7 +180,7 @@ ISR(ITP_COMPB_vect, ISR_BLOCK)
         mcu_step_reset_cb();
 }
 
-#ifndef USE_INPUTS_POOLING_ONLY
+#ifndef FORCE_SOFT_POLLING
 
 #if (PCINTA_MASK == 1)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
@@ -449,12 +449,13 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x)                                               \
-        {                                                               \
-                SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));  \
-                __indirect__(x, TMRAREG) = __indirect__(x, MODE);       \
-                __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER); \
-                __indirect__(x, OCRREG) = 0;                            \
+#define mcu_config_pwm(x)                                                 \
+        {                                                                 \
+                SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));    \
+                __indirect__(x, TMRAREG) |= __indirect__(x, MODE);        \
+                __indirect__(x, TMRAREG) |= __indirect__(x, ENABLE_MASK); \
+                __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);   \
+                __indirect__(x, OCRREG) = 0;                              \
         }
 
 static void mcu_start_rtc();
@@ -949,10 +950,10 @@ void mcu_init(void)
         //  Set baud rate
         uint16_t UBRR_value;
 #if BAUDRATE < 57600
-        UBRR_value = ((F_CPU / (8L * BAUDRATE)) - 1) / 2;
+        UBRR_value = (F_CPU / (16UL * BAUDRATE)) - 1;
         UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
 #else
-        UBRR_value = ((F_CPU / (4L * BAUDRATE)) - 1) / 2;
+        UBRR_value = (F_CPU / (8UL * BAUDRATE)) - 1;
         UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
 #endif
         UBRRH = UBRR_value >> 8;
@@ -962,7 +963,7 @@ void mcu_init(void)
         UCSRB |= (1 << RXEN | 1 << TXEN | 1 << RXCIE);
 
 // enable interrupts on pin changes
-#ifndef USE_INPUTS_POOLING_ONLY
+#ifndef FORCE_SOFT_POLLING
 #if ((PCINT0_LIMITS_MASK | PCINT0_CONTROLS_MASK | PROBE_ISR0) != 0)
         SETBIT(PCICR, PCIE0);
 #else

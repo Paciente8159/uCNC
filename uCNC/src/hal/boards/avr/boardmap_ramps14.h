@@ -92,7 +92,7 @@ extern "C"
 // Setup PWM
 #define PWM0_BIT 5	// assigns PWM0 pin
 #define PWM0_PORT H // assigns PWM0 pin
-#define PWM0_OCR C
+#define PWM0_CHANNEL C
 #define PWM0_TIMER 4
 
 // Setup generic IO Pins
@@ -103,6 +103,8 @@ extern "C"
 #define DOUT1_PORT B
 #define DOUT2_BIT 3
 #define DOUT2_PORT C*/
+#define DOUT15_BIT 7
+#define DOUT15_PORT B
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 7

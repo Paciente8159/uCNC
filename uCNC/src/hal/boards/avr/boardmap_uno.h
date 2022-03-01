@@ -99,7 +99,7 @@ extern "C"
 	// Setup PWM
 #define PWM0_BIT 3	// assigns PWM0 pin
 #define PWM0_PORT B // assigns PWM0 pin
-#define PWM0_OCR A
+#define PWM0_CHANNEL A
 #define PWM0_TIMER 2
 
 // Setup generic IO Pins
