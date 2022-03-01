@@ -3041,11 +3041,11 @@ extern "C"
 #define PWMENMASKC 0x08
 #define pwmenmask(x) PWMENMASK##x
 #define __pwmenmask__(x) pwmenmask(x)
-#if (defined(PWM0_OCR) && defined(PWM0_TIMER) && defined(PWM0))
-#define PWM0_OCRREG (__ocrreg__(PWM0_TIMER, PWM0_OCR))
+#if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
+#define PWM0_OCRREG (__ocrreg__(PWM0_TIMER, PWM0_CHANNEL))
 #define PWM0_TMRAREG (__tmrareg__(PWM0_TIMER))
 #define PWM0_TMRBREG (__tmrbreg__(PWM0_TIMER))
-#define PWM0_ENABLE_MASK __pwmenmask__(PWM0_OCR)
+#define PWM0_ENABLE_MASK __pwmenmask__(PWM0_CHANNEL)
 #if (PWM0_TIMER == 2)
 #define PWM0_PRESCALLER 0x04
 #elif (PWM0_TIMER == 0)
@@ -3058,7 +3058,7 @@ extern "C"
 #else
 #define PWM0_MODE 0x01
 #endif
-#define DIO20_OCR PWM0_OCR
+#define DIO20_CHANNEL PWM0_CHANNEL
 #define DIO20_TIMER PWM0_TIMER
 #define DIO20_OCRREG PWM0_OCRREG
 #define DIO20_TMRAREG PWM0_TMRAREG
@@ -3067,11 +3067,11 @@ extern "C"
 #define DIO20_MODE PWM0_MODE
 #define DIO20_PRESCALLER PWM0_PRESCALLER
 #endif
-#if (defined(PWM1_OCR) && defined(PWM1_TIMER) && defined(PWM1))
-#define PWM1_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_OCR))
+#if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
+#define PWM1_OCRREG (__ocrreg__(PWM1_TIMER, PWM1_CHANNEL))
 #define PWM1_TMRAREG (__tmrareg__(PWM1_TIMER))
 #define PWM1_TMRBREG (__tmrbreg__(PWM1_TIMER))
-#define PWM1_ENABLE_MASK __pwmenmask__(PWM1_OCR)
+#define PWM1_ENABLE_MASK __pwmenmask__(PWM1_CHANNEL)
 #if (PWM1_TIMER == 2)
 #define PWM1_PRESCALLER 0x04
 #elif (PWM1_TIMER == 0)
@@ -3084,7 +3084,7 @@ extern "C"
 #else
 #define PWM1_MODE 0x01
 #endif
-#define DIO21_OCR PWM1_OCR
+#define DIO21_CHANNEL PWM1_CHANNEL
 #define DIO21_TIMER PWM1_TIMER
 #define DIO21_OCRREG PWM1_OCRREG
 #define DIO21_TMRAREG PWM1_TMRAREG
@@ -3093,11 +3093,11 @@ extern "C"
 #define DIO21_MODE PWM1_MODE
 #define DIO21_PRESCALLER PWM1_PRESCALLER
 #endif
-#if (defined(PWM2_OCR) && defined(PWM2_TIMER) && defined(PWM2))
-#define PWM2_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_OCR))
+#if (defined(PWM2_CHANNEL) && defined(PWM2_TIMER) && defined(PWM2))
+#define PWM2_OCRREG (__ocrreg__(PWM2_TIMER, PWM2_CHANNEL))
 #define PWM2_TMRAREG (__tmrareg__(PWM2_TIMER))
 #define PWM2_TMRBREG (__tmrbreg__(PWM2_TIMER))
-#define PWM2_ENABLE_MASK __pwmenmask__(PWM2_OCR)
+#define PWM2_ENABLE_MASK __pwmenmask__(PWM2_CHANNEL)
 #if (PWM2_TIMER == 2)
 #define PWM2_PRESCALLER 0x04
 #elif (PWM2_TIMER == 0)
@@ -3110,7 +3110,7 @@ extern "C"
 #else
 #define PWM2_MODE 0x01
 #endif
-#define DIO22_OCR PWM2_OCR
+#define DIO22_CHANNEL PWM2_CHANNEL
 #define DIO22_TIMER PWM2_TIMER
 #define DIO22_OCRREG PWM2_OCRREG
 #define DIO22_TMRAREG PWM2_TMRAREG
@@ -3119,11 +3119,11 @@ extern "C"
 #define DIO22_MODE PWM2_MODE
 #define DIO22_PRESCALLER PWM2_PRESCALLER
 #endif
-#if (defined(PWM3_OCR) && defined(PWM3_TIMER) && defined(PWM3))
-#define PWM3_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_OCR))
+#if (defined(PWM3_CHANNEL) && defined(PWM3_TIMER) && defined(PWM3))
+#define PWM3_OCRREG (__ocrreg__(PWM3_TIMER, PWM3_CHANNEL))
 #define PWM3_TMRAREG (__tmrareg__(PWM3_TIMER))
 #define PWM3_TMRBREG (__tmrbreg__(PWM3_TIMER))
-#define PWM3_ENABLE_MASK __pwmenmask__(PWM3_OCR)
+#define PWM3_ENABLE_MASK __pwmenmask__(PWM3_CHANNEL)
 #if (PWM3_TIMER == 2)
 #define PWM3_PRESCALLER 0x04
 #elif (PWM3_TIMER == 0)
@@ -3136,7 +3136,7 @@ extern "C"
 #else
 #define PWM3_MODE 0x01
 #endif
-#define DIO23_OCR PWM3_OCR
+#define DIO23_CHANNEL PWM3_CHANNEL
 #define DIO23_TIMER PWM3_TIMER
 #define DIO23_OCRREG PWM3_OCRREG
 #define DIO23_TMRAREG PWM3_TMRAREG
@@ -3145,11 +3145,11 @@ extern "C"
 #define DIO23_MODE PWM3_MODE
 #define DIO23_PRESCALLER PWM3_PRESCALLER
 #endif
-#if (defined(PWM4_OCR) && defined(PWM4_TIMER) && defined(PWM4))
-#define PWM4_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_OCR))
+#if (defined(PWM4_CHANNEL) && defined(PWM4_TIMER) && defined(PWM4))
+#define PWM4_OCRREG (__ocrreg__(PWM4_TIMER, PWM4_CHANNEL))
 #define PWM4_TMRAREG (__tmrareg__(PWM4_TIMER))
 #define PWM4_TMRBREG (__tmrbreg__(PWM4_TIMER))
-#define PWM4_ENABLE_MASK __pwmenmask__(PWM4_OCR)
+#define PWM4_ENABLE_MASK __pwmenmask__(PWM4_CHANNEL)
 #if (PWM4_TIMER == 2)
 #define PWM4_PRESCALLER 0x04
 #elif (PWM4_TIMER == 0)
@@ -3162,7 +3162,7 @@ extern "C"
 #else
 #define PWM4_MODE 0x01
 #endif
-#define DIO24_OCR PWM4_OCR
+#define DIO24_CHANNEL PWM4_CHANNEL
 #define DIO24_TIMER PWM4_TIMER
 #define DIO24_OCRREG PWM4_OCRREG
 #define DIO24_TMRAREG PWM4_TMRAREG
@@ -3171,11 +3171,11 @@ extern "C"
 #define DIO24_MODE PWM4_MODE
 #define DIO24_PRESCALLER PWM4_PRESCALLER
 #endif
-#if (defined(PWM5_OCR) && defined(PWM5_TIMER) && defined(PWM5))
-#define PWM5_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_OCR))
+#if (defined(PWM5_CHANNEL) && defined(PWM5_TIMER) && defined(PWM5))
+#define PWM5_OCRREG (__ocrreg__(PWM5_TIMER, PWM5_CHANNEL))
 #define PWM5_TMRAREG (__tmrareg__(PWM5_TIMER))
 #define PWM5_TMRBREG (__tmrbreg__(PWM5_TIMER))
-#define PWM5_ENABLE_MASK __pwmenmask__(PWM5_OCR)
+#define PWM5_ENABLE_MASK __pwmenmask__(PWM5_CHANNEL)
 #if (PWM5_TIMER == 2)
 #define PWM5_PRESCALLER 0x04
 #elif (PWM5_TIMER == 0)
@@ -3188,7 +3188,7 @@ extern "C"
 #else
 #define PWM5_MODE 0x01
 #endif
-#define DIO25_OCR PWM5_OCR
+#define DIO25_CHANNEL PWM5_CHANNEL
 #define DIO25_TIMER PWM5_TIMER
 #define DIO25_OCRREG PWM5_OCRREG
 #define DIO25_TMRAREG PWM5_TMRAREG
@@ -3197,11 +3197,11 @@ extern "C"
 #define DIO25_MODE PWM5_MODE
 #define DIO25_PRESCALLER PWM5_PRESCALLER
 #endif
-#if (defined(PWM6_OCR) && defined(PWM6_TIMER) && defined(PWM6))
-#define PWM6_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_OCR))
+#if (defined(PWM6_CHANNEL) && defined(PWM6_TIMER) && defined(PWM6))
+#define PWM6_OCRREG (__ocrreg__(PWM6_TIMER, PWM6_CHANNEL))
 #define PWM6_TMRAREG (__tmrareg__(PWM6_TIMER))
 #define PWM6_TMRBREG (__tmrbreg__(PWM6_TIMER))
-#define PWM6_ENABLE_MASK __pwmenmask__(PWM6_OCR)
+#define PWM6_ENABLE_MASK __pwmenmask__(PWM6_CHANNEL)
 #if (PWM6_TIMER == 2)
 #define PWM6_PRESCALLER 0x04
 #elif (PWM6_TIMER == 0)
@@ -3214,7 +3214,7 @@ extern "C"
 #else
 #define PWM6_MODE 0x01
 #endif
-#define DIO26_OCR PWM6_OCR
+#define DIO26_CHANNEL PWM6_CHANNEL
 #define DIO26_TIMER PWM6_TIMER
 #define DIO26_OCRREG PWM6_OCRREG
 #define DIO26_TMRAREG PWM6_TMRAREG
@@ -3223,11 +3223,11 @@ extern "C"
 #define DIO26_MODE PWM6_MODE
 #define DIO26_PRESCALLER PWM6_PRESCALLER
 #endif
-#if (defined(PWM7_OCR) && defined(PWM7_TIMER) && defined(PWM7))
-#define PWM7_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_OCR))
+#if (defined(PWM7_CHANNEL) && defined(PWM7_TIMER) && defined(PWM7))
+#define PWM7_OCRREG (__ocrreg__(PWM7_TIMER, PWM7_CHANNEL))
 #define PWM7_TMRAREG (__tmrareg__(PWM7_TIMER))
 #define PWM7_TMRBREG (__tmrbreg__(PWM7_TIMER))
-#define PWM7_ENABLE_MASK __pwmenmask__(PWM7_OCR)
+#define PWM7_ENABLE_MASK __pwmenmask__(PWM7_CHANNEL)
 #if (PWM7_TIMER == 2)
 #define PWM7_PRESCALLER 0x04
 #elif (PWM7_TIMER == 0)
@@ -3240,7 +3240,7 @@ extern "C"
 #else
 #define PWM7_MODE 0x01
 #endif
-#define DIO27_OCR PWM7_OCR
+#define DIO27_CHANNEL PWM7_CHANNEL
 #define DIO27_TIMER PWM7_TIMER
 #define DIO27_OCRREG PWM7_OCRREG
 #define DIO27_TMRAREG PWM7_TMRAREG
@@ -3249,11 +3249,11 @@ extern "C"
 #define DIO27_MODE PWM7_MODE
 #define DIO27_PRESCALLER PWM7_PRESCALLER
 #endif
-#if (defined(PWM8_OCR) && defined(PWM8_TIMER) && defined(PWM8))
-#define PWM8_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_OCR))
+#if (defined(PWM8_CHANNEL) && defined(PWM8_TIMER) && defined(PWM8))
+#define PWM8_OCRREG (__ocrreg__(PWM8_TIMER, PWM8_CHANNEL))
 #define PWM8_TMRAREG (__tmrareg__(PWM8_TIMER))
 #define PWM8_TMRBREG (__tmrbreg__(PWM8_TIMER))
-#define PWM8_ENABLE_MASK __pwmenmask__(PWM8_OCR)
+#define PWM8_ENABLE_MASK __pwmenmask__(PWM8_CHANNEL)
 #if (PWM8_TIMER == 2)
 #define PWM8_PRESCALLER 0x04
 #elif (PWM8_TIMER == 0)
@@ -3266,7 +3266,7 @@ extern "C"
 #else
 #define PWM8_MODE 0x01
 #endif
-#define DIO28_OCR PWM8_OCR
+#define DIO28_CHANNEL PWM8_CHANNEL
 #define DIO28_TIMER PWM8_TIMER
 #define DIO28_OCRREG PWM8_OCRREG
 #define DIO28_TMRAREG PWM8_TMRAREG
@@ -3275,11 +3275,11 @@ extern "C"
 #define DIO28_MODE PWM8_MODE
 #define DIO28_PRESCALLER PWM8_PRESCALLER
 #endif
-#if (defined(PWM9_OCR) && defined(PWM9_TIMER) && defined(PWM9))
-#define PWM9_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_OCR))
+#if (defined(PWM9_CHANNEL) && defined(PWM9_TIMER) && defined(PWM9))
+#define PWM9_OCRREG (__ocrreg__(PWM9_TIMER, PWM9_CHANNEL))
 #define PWM9_TMRAREG (__tmrareg__(PWM9_TIMER))
 #define PWM9_TMRBREG (__tmrbreg__(PWM9_TIMER))
-#define PWM9_ENABLE_MASK __pwmenmask__(PWM9_OCR)
+#define PWM9_ENABLE_MASK __pwmenmask__(PWM9_CHANNEL)
 #if (PWM9_TIMER == 2)
 #define PWM9_PRESCALLER 0x04
 #elif (PWM9_TIMER == 0)
@@ -3292,7 +3292,7 @@ extern "C"
 #else
 #define PWM9_MODE 0x01
 #endif
-#define DIO29_OCR PWM9_OCR
+#define DIO29_CHANNEL PWM9_CHANNEL
 #define DIO29_TIMER PWM9_TIMER
 #define DIO29_OCRREG PWM9_OCRREG
 #define DIO29_TMRAREG PWM9_TMRAREG
@@ -3301,11 +3301,11 @@ extern "C"
 #define DIO29_MODE PWM9_MODE
 #define DIO29_PRESCALLER PWM9_PRESCALLER
 #endif
-#if (defined(PWM10_OCR) && defined(PWM10_TIMER) && defined(PWM10))
-#define PWM10_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_OCR))
+#if (defined(PWM10_CHANNEL) && defined(PWM10_TIMER) && defined(PWM10))
+#define PWM10_OCRREG (__ocrreg__(PWM10_TIMER, PWM10_CHANNEL))
 #define PWM10_TMRAREG (__tmrareg__(PWM10_TIMER))
 #define PWM10_TMRBREG (__tmrbreg__(PWM10_TIMER))
-#define PWM10_ENABLE_MASK __pwmenmask__(PWM10_OCR)
+#define PWM10_ENABLE_MASK __pwmenmask__(PWM10_CHANNEL)
 #if (PWM10_TIMER == 2)
 #define PWM10_PRESCALLER 0x04
 #elif (PWM10_TIMER == 0)
@@ -3318,7 +3318,7 @@ extern "C"
 #else
 #define PWM10_MODE 0x01
 #endif
-#define DIO30_OCR PWM10_OCR
+#define DIO30_CHANNEL PWM10_CHANNEL
 #define DIO30_TIMER PWM10_TIMER
 #define DIO30_OCRREG PWM10_OCRREG
 #define DIO30_TMRAREG PWM10_TMRAREG
@@ -3327,11 +3327,11 @@ extern "C"
 #define DIO30_MODE PWM10_MODE
 #define DIO30_PRESCALLER PWM10_PRESCALLER
 #endif
-#if (defined(PWM11_OCR) && defined(PWM11_TIMER) && defined(PWM11))
-#define PWM11_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_OCR))
+#if (defined(PWM11_CHANNEL) && defined(PWM11_TIMER) && defined(PWM11))
+#define PWM11_OCRREG (__ocrreg__(PWM11_TIMER, PWM11_CHANNEL))
 #define PWM11_TMRAREG (__tmrareg__(PWM11_TIMER))
 #define PWM11_TMRBREG (__tmrbreg__(PWM11_TIMER))
-#define PWM11_ENABLE_MASK __pwmenmask__(PWM11_OCR)
+#define PWM11_ENABLE_MASK __pwmenmask__(PWM11_CHANNEL)
 #if (PWM11_TIMER == 2)
 #define PWM11_PRESCALLER 0x04
 #elif (PWM11_TIMER == 0)
@@ -3344,7 +3344,7 @@ extern "C"
 #else
 #define PWM11_MODE 0x01
 #endif
-#define DIO31_OCR PWM11_OCR
+#define DIO31_CHANNEL PWM11_CHANNEL
 #define DIO31_TIMER PWM11_TIMER
 #define DIO31_OCRREG PWM11_OCRREG
 #define DIO31_TMRAREG PWM11_TMRAREG
@@ -3353,11 +3353,11 @@ extern "C"
 #define DIO31_MODE PWM11_MODE
 #define DIO31_PRESCALLER PWM11_PRESCALLER
 #endif
-#if (defined(PWM12_OCR) && defined(PWM12_TIMER) && defined(PWM12))
-#define PWM12_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_OCR))
+#if (defined(PWM12_CHANNEL) && defined(PWM12_TIMER) && defined(PWM12))
+#define PWM12_OCRREG (__ocrreg__(PWM12_TIMER, PWM12_CHANNEL))
 #define PWM12_TMRAREG (__tmrareg__(PWM12_TIMER))
 #define PWM12_TMRBREG (__tmrbreg__(PWM12_TIMER))
-#define PWM12_ENABLE_MASK __pwmenmask__(PWM12_OCR)
+#define PWM12_ENABLE_MASK __pwmenmask__(PWM12_CHANNEL)
 #if (PWM12_TIMER == 2)
 #define PWM12_PRESCALLER 0x04
 #elif (PWM12_TIMER == 0)
@@ -3370,7 +3370,7 @@ extern "C"
 #else
 #define PWM12_MODE 0x01
 #endif
-#define DIO32_OCR PWM12_OCR
+#define DIO32_CHANNEL PWM12_CHANNEL
 #define DIO32_TIMER PWM12_TIMER
 #define DIO32_OCRREG PWM12_OCRREG
 #define DIO32_TMRAREG PWM12_TMRAREG
@@ -3379,11 +3379,11 @@ extern "C"
 #define DIO32_MODE PWM12_MODE
 #define DIO32_PRESCALLER PWM12_PRESCALLER
 #endif
-#if (defined(PWM13_OCR) && defined(PWM13_TIMER) && defined(PWM13))
-#define PWM13_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_OCR))
+#if (defined(PWM13_CHANNEL) && defined(PWM13_TIMER) && defined(PWM13))
+#define PWM13_OCRREG (__ocrreg__(PWM13_TIMER, PWM13_CHANNEL))
 #define PWM13_TMRAREG (__tmrareg__(PWM13_TIMER))
 #define PWM13_TMRBREG (__tmrbreg__(PWM13_TIMER))
-#define PWM13_ENABLE_MASK __pwmenmask__(PWM13_OCR)
+#define PWM13_ENABLE_MASK __pwmenmask__(PWM13_CHANNEL)
 #if (PWM13_TIMER == 2)
 #define PWM13_PRESCALLER 0x04
 #elif (PWM13_TIMER == 0)
@@ -3396,7 +3396,7 @@ extern "C"
 #else
 #define PWM13_MODE 0x01
 #endif
-#define DIO33_OCR PWM13_OCR
+#define DIO33_CHANNEL PWM13_CHANNEL
 #define DIO33_TIMER PWM13_TIMER
 #define DIO33_OCRREG PWM13_OCRREG
 #define DIO33_TMRAREG PWM13_TMRAREG
@@ -3405,11 +3405,11 @@ extern "C"
 #define DIO33_MODE PWM13_MODE
 #define DIO33_PRESCALLER PWM13_PRESCALLER
 #endif
-#if (defined(PWM14_OCR) && defined(PWM14_TIMER) && defined(PWM14))
-#define PWM14_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_OCR))
+#if (defined(PWM14_CHANNEL) && defined(PWM14_TIMER) && defined(PWM14))
+#define PWM14_OCRREG (__ocrreg__(PWM14_TIMER, PWM14_CHANNEL))
 #define PWM14_TMRAREG (__tmrareg__(PWM14_TIMER))
 #define PWM14_TMRBREG (__tmrbreg__(PWM14_TIMER))
-#define PWM14_ENABLE_MASK __pwmenmask__(PWM14_OCR)
+#define PWM14_ENABLE_MASK __pwmenmask__(PWM14_CHANNEL)
 #if (PWM14_TIMER == 2)
 #define PWM14_PRESCALLER 0x04
 #elif (PWM14_TIMER == 0)
@@ -3422,7 +3422,7 @@ extern "C"
 #else
 #define PWM14_MODE 0x01
 #endif
-#define DIO34_OCR PWM14_OCR
+#define DIO34_CHANNEL PWM14_CHANNEL
 #define DIO34_TIMER PWM14_TIMER
 #define DIO34_OCRREG PWM14_OCRREG
 #define DIO34_TMRAREG PWM14_TMRAREG
@@ -3431,11 +3431,11 @@ extern "C"
 #define DIO34_MODE PWM14_MODE
 #define DIO34_PRESCALLER PWM14_PRESCALLER
 #endif
-#if (defined(PWM15_OCR) && defined(PWM15_TIMER) && defined(PWM15))
-#define PWM15_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_OCR))
+#if (defined(PWM15_CHANNEL) && defined(PWM15_TIMER) && defined(PWM15))
+#define PWM15_OCRREG (__ocrreg__(PWM15_TIMER, PWM15_CHANNEL))
 #define PWM15_TMRAREG (__tmrareg__(PWM15_TIMER))
 #define PWM15_TMRBREG (__tmrbreg__(PWM15_TIMER))
-#define PWM15_ENABLE_MASK __pwmenmask__(PWM15_OCR)
+#define PWM15_ENABLE_MASK __pwmenmask__(PWM15_CHANNEL)
 #if (PWM15_TIMER == 2)
 #define PWM15_PRESCALLER 0x04
 #elif (PWM15_TIMER == 0)
@@ -3448,7 +3448,7 @@ extern "C"
 #else
 #define PWM15_MODE 0x01
 #endif
-#define DIO35_OCR PWM15_OCR
+#define DIO35_CHANNEL PWM15_CHANNEL
 #define DIO35_TIMER PWM15_TIMER
 #define DIO35_OCRREG PWM15_OCRREG
 #define DIO35_TMRAREG PWM15_TMRAREG

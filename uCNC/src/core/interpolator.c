@@ -210,6 +210,12 @@ void itp_init(void)
 #ifdef FORCE_GLOBALS_TO_0
     // resets buffers
     memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
+    memset(itp_blk_data, 0, sizeof(itp_blk_data));
+    memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
+    itp_rt_sgm = NULL;
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+    itp_step_lock = 0;
+#endif
 #endif
     itp_cur_plan_block = NULL;
     itp_needs_update = false;

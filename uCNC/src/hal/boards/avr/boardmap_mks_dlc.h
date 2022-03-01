@@ -51,9 +51,9 @@ extern "C"
 #define LIMIT_Z_BIT 4  // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
 #define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
-	/*#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
-#define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-#define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin*/
+					   /*#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
+				   #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
+				   #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin*/
 
 #define LIMIT_Y_BIT 2  // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B // assigns LIMIT_Y port
@@ -99,7 +99,7 @@ extern "C"
 // Setup PWM
 #define PWM0_BIT 3	// assigns PWM0 pin
 #define PWM0_PORT B // assigns PWM0 pin
-#define PWM0_OCR A
+#define PWM0_CHANNEL A
 #define PWM0_TIMER 2
 
 // Setup generic IO Pins

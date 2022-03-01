@@ -31,6 +31,9 @@ void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     memset(mc_last_step_pos, 0, sizeof(mc_last_step_pos));
+#ifdef ENABLE_BACKLASH_COMPENSATION
+    mc_last_dirbits = 0;
+#endif
 #endif
     mc_checkmode = false;
     mc_sync_position();

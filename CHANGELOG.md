@@ -5,6 +5,19 @@
 
 # Changelog
 
+## [1.4.0-beta] - unreleased
+
+### Added
+
+### Changed
+  - renamed PWM OCR to PWM CHANNEL and all boardmaps for AVR (#147)
+  - modified UBRR calculation for AVR (match datasheet) (#147)
+
+### Fixed
+  - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
+  - fixed PWM config macro (was unstable on Mega boards) (#147)
+
+
 ## [1.4.0-alpha] - 2022-02-25
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's. The features are:
 
