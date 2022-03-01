@@ -3614,19 +3614,17 @@ extern "C"
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue)                                                        \
-	(                                                                                        \
-		{                                                                                    \
-			__indirect__(diopin, OCRREG) = pwmvalue;                                         \
-			if (pwmvalue != 0)                                                               \
-			{                                                                                \
-				SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-			}                                                                                \
-			else                                                                             \
-			{                                                                                \
-				CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-			}                                                                                \
-		})
+#define mcu_set_pwm(diopin, pwmvalue) ({                                             \
+	__indirect__(diopin, OCRREG) = pwmvalue;                                         \
+	if (pwmvalue != 0)                                                               \
+	{                                                                                \
+		SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
+	}                                                                                \
+	else                                                                             \
+	{                                                                                \
+		CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
+	}                                                                                \
+})
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
