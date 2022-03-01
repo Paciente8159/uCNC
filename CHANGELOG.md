@@ -5,6 +5,19 @@
 
 # Changelog
 
+## [1.4.0-beta] - unreleased
+
+### Added
+
+### Changed
+  - renamed PWM OCR to PWM CHANNEL and all boardmaps for AVR (#147)
+  - modified UBRR calculation for AVR (match datasheet) (#147)
+
+### Fixed
+  - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
+  - fixed PWM config macro (was unstable on Mega boards) (#147)
+
+
 ## [1.4.0-alpha] - 2022-02-25
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's. The features are:
 
@@ -22,13 +35,9 @@
 ### Changed
   - redesigned µCNC modules for quick prototyping based on C# delegates, events and listeners. This allows adding hooks along the core code that call on modules sub-routines (#144)
   - redesigned/simplified tool declaration in cnc_hal_config (#145)
-  - renamed PWM OCR to PWM CHANNEL and all boardmaps for AVR (#147)
-  - modified UBRR calculation for AVR (match datasheet) (#147)
 
 ### Fixed
   - fixed spelling on the README file (#140)
-  - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
-  - fixed PWM config macro (was unstable on Mega boards) (#147)
 
 ## [1.3.8] - 2022-02-12
 µCNC version 1.3.8 fixes a few bugs for STM32F1 mcus regarding pin configuration, some serial port issues and Flash EEPROM emulation on that same chip. For AVR a configuration fix was added for boards with ATMEGA2560 that prevented correct communication.
