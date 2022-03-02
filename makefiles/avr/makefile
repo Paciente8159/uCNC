@@ -111,7 +111,7 @@ C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) -w $(OPT) -gdwarf-2 -flto -fuse-linker-plugin -Wl,--gc-sections,--relax
 
-CFLAGS = $(MCU) -DF_CPU=$(FREQ) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -Wextra -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -flto -fno-fat-lto-objects
+CFLAGS = $(MCU) -DF_CPU=$(FREQ) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -Wextra -w -std=gnu99 -ffunction-sections -fdata-sections -mcall-prologues -mrelax -flto -fno-fat-lto-objects -fno-tree-scev-cprop
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g3 -ggdb3 -gdwarf-2
@@ -138,6 +138,10 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS)
 	$(CC) $(OBJECTS) $(ASFLAGS) -o $@
 	$(SZ) -C --mcu=$(CPU) $@
+
+#  $(BUILD_DIR)/$(TARGET).elf: $(C_SOURCES)
+# 	$(CC) -fwhole-program $(CFLAGS) $(ASFLAGS) $^ -o $@
+# 	$(SZ) -C --mcu=$(CPU) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
