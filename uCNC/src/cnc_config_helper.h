@@ -948,7 +948,7 @@ extern "C"
 typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (16 - (2 + DSS_MAX_OVERSAMPLING))
 #endif
-#define MAX_STEPS_PER_LINE (1 << MAX_STEPS_PER_LINE_BITS)
+#define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)
 
 #if DSS_CUTOFF_FREQ > (F_STEP_MAX >> 3)
 #error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"

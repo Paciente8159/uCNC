@@ -19,6 +19,8 @@
 
 #include "../../cnc.h"
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define DECL_TOOL(tool) extern const tool_t __rom__ tool;
 
@@ -242,7 +244,7 @@ void tool_set_speed(int16_t value)
 #if TOOL_COUNT > 0
 	if (tool_current.set_speed)
 	{
-		tool_current.set_speed((uint8_t)(MIN(ABS(value), 0xff)), (value < 0));
+		tool_current.set_speed((uint8_t)(MIN(((uint8_t)ABS(value)), 0xff)), (value < 0));
 	}
 #endif
 }

@@ -31,7 +31,8 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-	typedef uint8_t (*tool_func)(void);
+	typedef void (*tool_func)(void);
+	typedef uint8_t (*tool_func_getspeed)(void);
 	typedef void (*tool_spindle_func)(uint8_t, bool);
 	typedef void (*tool_coolant_func)(uint8_t);
 	typedef int16_t (*tool_pid_err_func)(void);
@@ -43,7 +44,7 @@ extern "C"
 		tool_func shutdown_code;	   /*runs any custom code before the tool is unloaded*/
 		tool_spindle_func set_speed;   /*sets the speed/power of the tool*/
 		tool_coolant_func set_coolant; /*enables/disables the coolant*/
-		tool_func get_speed;		   /*gets the tool speed/power*/
+		tool_func_getspeed get_speed;  /*gets the tool speed/power*/
 		tool_pid_upd_func pid_update;  /*runs de PID update code needed to keep the tool at the desired speed/power*/
 		tool_pid_err_func pid_error;   /*runs de PID update code needed to keep the tool at the desired speed/power*/
 	} tool_t;
