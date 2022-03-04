@@ -1341,7 +1341,7 @@ extern "C"
 #define PWM0_PMUXVAL (pinmuxval(PWM0_MUX))
 #if (PWM0_TIMER < 3)
 #define PWM0_TMR __helper__(TCC, PWM0_TIMER, )
-#define PWM0_CONFIG (                         \
+#define PWM0_CONFIG                           \
 	{                                         \
 		PWM0_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM0_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1356,11 +1356,11 @@ extern "C"
 		PWM0_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM0_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM0_DUTYCYCLE (PWM0_TMR->CC[PWM0_CHANNEL].bit.CC)
 #else
 #define PWM0_TMR __helper__(TC, PWM0_TIMER, )
-#define PWM0_CONFIG (                                \
+#define PWM0_CONFIG                                  \
 	{                                                \
 		PWM0_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM0_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1376,7 +1376,7 @@ extern "C"
 		PWM0_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM0_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM0_DUTYCYCLE (PWM0_TMR->COUNT8.CC[PWM0_CHANNEL].reg)
 #endif
 #define DIO20_PMUX PWM0_PMUX
@@ -1391,7 +1391,7 @@ extern "C"
 #define PWM1_PMUXVAL (pinmuxval(PWM1_MUX))
 #if (PWM1_TIMER < 3)
 #define PWM1_TMR __helper__(TCC, PWM1_TIMER, )
-#define PWM1_CONFIG (                         \
+#define PWM1_CONFIG                           \
 	{                                         \
 		PWM1_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM1_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1406,11 +1406,11 @@ extern "C"
 		PWM1_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM1_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM1_DUTYCYCLE (PWM1_TMR->CC[PWM1_CHANNEL].bit.CC)
 #else
 #define PWM1_TMR __helper__(TC, PWM1_TIMER, )
-#define PWM1_CONFIG (                                \
+#define PWM1_CONFIG                                  \
 	{                                                \
 		PWM1_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM1_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1426,7 +1426,7 @@ extern "C"
 		PWM1_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM1_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM1_DUTYCYCLE (PWM1_TMR->COUNT8.CC[PWM1_CHANNEL].reg)
 #endif
 #define DIO21_PMUX PWM1_PMUX
@@ -1441,7 +1441,7 @@ extern "C"
 #define PWM2_PMUXVAL (pinmuxval(PWM2_MUX))
 #if (PWM2_TIMER < 3)
 #define PWM2_TMR __helper__(TCC, PWM2_TIMER, )
-#define PWM2_CONFIG (                         \
+#define PWM2_CONFIG                           \
 	{                                         \
 		PWM2_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM2_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1456,11 +1456,11 @@ extern "C"
 		PWM2_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM2_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM2_DUTYCYCLE (PWM2_TMR->CC[PWM2_CHANNEL].bit.CC)
 #else
 #define PWM2_TMR __helper__(TC, PWM2_TIMER, )
-#define PWM2_CONFIG (                                \
+#define PWM2_CONFIG                                  \
 	{                                                \
 		PWM2_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM2_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1476,7 +1476,7 @@ extern "C"
 		PWM2_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM2_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM2_DUTYCYCLE (PWM2_TMR->COUNT8.CC[PWM2_CHANNEL].reg)
 #endif
 #define DIO22_PMUX PWM2_PMUX
@@ -1491,7 +1491,7 @@ extern "C"
 #define PWM3_PMUXVAL (pinmuxval(PWM3_MUX))
 #if (PWM3_TIMER < 3)
 #define PWM3_TMR __helper__(TCC, PWM3_TIMER, )
-#define PWM3_CONFIG (                         \
+#define PWM3_CONFIG                           \
 	{                                         \
 		PWM3_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM3_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1506,11 +1506,11 @@ extern "C"
 		PWM3_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM3_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM3_DUTYCYCLE (PWM3_TMR->CC[PWM3_CHANNEL].bit.CC)
 #else
 #define PWM3_TMR __helper__(TC, PWM3_TIMER, )
-#define PWM3_CONFIG (                                \
+#define PWM3_CONFIG                                  \
 	{                                                \
 		PWM3_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM3_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1526,7 +1526,7 @@ extern "C"
 		PWM3_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM3_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM3_DUTYCYCLE (PWM3_TMR->COUNT8.CC[PWM3_CHANNEL].reg)
 #endif
 #define DIO23_PMUX PWM3_PMUX
@@ -1541,7 +1541,7 @@ extern "C"
 #define PWM4_PMUXVAL (pinmuxval(PWM4_MUX))
 #if (PWM4_TIMER < 3)
 #define PWM4_TMR __helper__(TCC, PWM4_TIMER, )
-#define PWM4_CONFIG (                         \
+#define PWM4_CONFIG                           \
 	{                                         \
 		PWM4_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM4_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1556,11 +1556,11 @@ extern "C"
 		PWM4_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM4_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM4_DUTYCYCLE (PWM4_TMR->CC[PWM4_CHANNEL].bit.CC)
 #else
 #define PWM4_TMR __helper__(TC, PWM4_TIMER, )
-#define PWM4_CONFIG (                                \
+#define PWM4_CONFIG                                  \
 	{                                                \
 		PWM4_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM4_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1576,7 +1576,7 @@ extern "C"
 		PWM4_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM4_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM4_DUTYCYCLE (PWM4_TMR->COUNT8.CC[PWM4_CHANNEL].reg)
 #endif
 #define DIO24_PMUX PWM4_PMUX
@@ -1591,7 +1591,7 @@ extern "C"
 #define PWM5_PMUXVAL (pinmuxval(PWM5_MUX))
 #if (PWM5_TIMER < 3)
 #define PWM5_TMR __helper__(TCC, PWM5_TIMER, )
-#define PWM5_CONFIG (                         \
+#define PWM5_CONFIG                           \
 	{                                         \
 		PWM5_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM5_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1606,11 +1606,11 @@ extern "C"
 		PWM5_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM5_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM5_DUTYCYCLE (PWM5_TMR->CC[PWM5_CHANNEL].bit.CC)
 #else
 #define PWM5_TMR __helper__(TC, PWM5_TIMER, )
-#define PWM5_CONFIG (                                \
+#define PWM5_CONFIG                                  \
 	{                                                \
 		PWM5_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM5_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1626,7 +1626,7 @@ extern "C"
 		PWM5_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM5_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM5_DUTYCYCLE (PWM5_TMR->COUNT8.CC[PWM5_CHANNEL].reg)
 #endif
 #define DIO25_PMUX PWM5_PMUX
@@ -1641,7 +1641,7 @@ extern "C"
 #define PWM6_PMUXVAL (pinmuxval(PWM6_MUX))
 #if (PWM6_TIMER < 3)
 #define PWM6_TMR __helper__(TCC, PWM6_TIMER, )
-#define PWM6_CONFIG (                         \
+#define PWM6_CONFIG                           \
 	{                                         \
 		PWM6_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM6_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1656,11 +1656,11 @@ extern "C"
 		PWM6_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM6_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM6_DUTYCYCLE (PWM6_TMR->CC[PWM6_CHANNEL].bit.CC)
 #else
 #define PWM6_TMR __helper__(TC, PWM6_TIMER, )
-#define PWM6_CONFIG (                                \
+#define PWM6_CONFIG                                  \
 	{                                                \
 		PWM6_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM6_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1676,7 +1676,7 @@ extern "C"
 		PWM6_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM6_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM6_DUTYCYCLE (PWM6_TMR->COUNT8.CC[PWM6_CHANNEL].reg)
 #endif
 #define DIO26_PMUX PWM6_PMUX
@@ -1691,7 +1691,7 @@ extern "C"
 #define PWM7_PMUXVAL (pinmuxval(PWM7_MUX))
 #if (PWM7_TIMER < 3)
 #define PWM7_TMR __helper__(TCC, PWM7_TIMER, )
-#define PWM7_CONFIG (                         \
+#define PWM7_CONFIG                           \
 	{                                         \
 		PWM7_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM7_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1706,11 +1706,11 @@ extern "C"
 		PWM7_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM7_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM7_DUTYCYCLE (PWM7_TMR->CC[PWM7_CHANNEL].bit.CC)
 #else
 #define PWM7_TMR __helper__(TC, PWM7_TIMER, )
-#define PWM7_CONFIG (                                \
+#define PWM7_CONFIG                                  \
 	{                                                \
 		PWM7_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM7_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1726,7 +1726,7 @@ extern "C"
 		PWM7_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM7_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM7_DUTYCYCLE (PWM7_TMR->COUNT8.CC[PWM7_CHANNEL].reg)
 #endif
 #define DIO27_PMUX PWM7_PMUX
@@ -1741,7 +1741,7 @@ extern "C"
 #define PWM8_PMUXVAL (pinmuxval(PWM8_MUX))
 #if (PWM8_TIMER < 3)
 #define PWM8_TMR __helper__(TCC, PWM8_TIMER, )
-#define PWM8_CONFIG (                         \
+#define PWM8_CONFIG                           \
 	{                                         \
 		PWM8_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM8_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1756,11 +1756,11 @@ extern "C"
 		PWM8_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM8_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM8_DUTYCYCLE (PWM8_TMR->CC[PWM8_CHANNEL].bit.CC)
 #else
 #define PWM8_TMR __helper__(TC, PWM8_TIMER, )
-#define PWM8_CONFIG (                                \
+#define PWM8_CONFIG                                  \
 	{                                                \
 		PWM8_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM8_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1776,7 +1776,7 @@ extern "C"
 		PWM8_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM8_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM8_DUTYCYCLE (PWM8_TMR->COUNT8.CC[PWM8_CHANNEL].reg)
 #endif
 #define DIO28_PMUX PWM8_PMUX
@@ -1791,7 +1791,7 @@ extern "C"
 #define PWM9_PMUXVAL (pinmuxval(PWM9_MUX))
 #if (PWM9_TIMER < 3)
 #define PWM9_TMR __helper__(TCC, PWM9_TIMER, )
-#define PWM9_CONFIG (                         \
+#define PWM9_CONFIG                           \
 	{                                         \
 		PWM9_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM9_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1806,11 +1806,11 @@ extern "C"
 		PWM9_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM9_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                 \
-	})
+	}
 #define PWM9_DUTYCYCLE (PWM9_TMR->CC[PWM9_CHANNEL].bit.CC)
 #else
 #define PWM9_TMR __helper__(TC, PWM9_TIMER, )
-#define PWM9_CONFIG (                                \
+#define PWM9_CONFIG                                  \
 	{                                                \
 		PWM9_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM9_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1826,7 +1826,7 @@ extern "C"
 		PWM9_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM9_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                        \
-	})
+	}
 #define PWM9_DUTYCYCLE (PWM9_TMR->COUNT8.CC[PWM9_CHANNEL].reg)
 #endif
 #define DIO29_PMUX PWM9_PMUX
@@ -1841,7 +1841,7 @@ extern "C"
 #define PWM10_PMUXVAL (pinmuxval(PWM10_MUX))
 #if (PWM10_TIMER < 3)
 #define PWM10_TMR __helper__(TCC, PWM10_TIMER, )
-#define PWM10_CONFIG (                         \
+#define PWM10_CONFIG                           \
 	{                                          \
 		PWM10_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM10_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1856,11 +1856,11 @@ extern "C"
 		PWM10_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM10_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM10_DUTYCYCLE (PWM10_TMR->CC[PWM10_CHANNEL].bit.CC)
 #else
 #define PWM10_TMR __helper__(TC, PWM10_TIMER, )
-#define PWM10_CONFIG (                                \
+#define PWM10_CONFIG                                  \
 	{                                                 \
 		PWM10_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM10_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1876,7 +1876,7 @@ extern "C"
 		PWM10_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM10_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM10_DUTYCYCLE (PWM10_TMR->COUNT8.CC[PWM10_CHANNEL].reg)
 #endif
 #define DIO30_PMUX PWM10_PMUX
@@ -1891,7 +1891,7 @@ extern "C"
 #define PWM11_PMUXVAL (pinmuxval(PWM11_MUX))
 #if (PWM11_TIMER < 3)
 #define PWM11_TMR __helper__(TCC, PWM11_TIMER, )
-#define PWM11_CONFIG (                         \
+#define PWM11_CONFIG                           \
 	{                                          \
 		PWM11_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM11_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1906,11 +1906,11 @@ extern "C"
 		PWM11_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM11_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM11_DUTYCYCLE (PWM11_TMR->CC[PWM11_CHANNEL].bit.CC)
 #else
 #define PWM11_TMR __helper__(TC, PWM11_TIMER, )
-#define PWM11_CONFIG (                                \
+#define PWM11_CONFIG                                  \
 	{                                                 \
 		PWM11_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM11_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1926,7 +1926,7 @@ extern "C"
 		PWM11_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM11_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM11_DUTYCYCLE (PWM11_TMR->COUNT8.CC[PWM11_CHANNEL].reg)
 #endif
 #define DIO31_PMUX PWM11_PMUX
@@ -1941,7 +1941,7 @@ extern "C"
 #define PWM12_PMUXVAL (pinmuxval(PWM12_MUX))
 #if (PWM12_TIMER < 3)
 #define PWM12_TMR __helper__(TCC, PWM12_TIMER, )
-#define PWM12_CONFIG (                         \
+#define PWM12_CONFIG                           \
 	{                                          \
 		PWM12_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM12_TMR->SYNCBUSY.bit.SWRST)  \
@@ -1956,11 +1956,11 @@ extern "C"
 		PWM12_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM12_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM12_DUTYCYCLE (PWM12_TMR->CC[PWM12_CHANNEL].bit.CC)
 #else
 #define PWM12_TMR __helper__(TC, PWM12_TIMER, )
-#define PWM12_CONFIG (                                \
+#define PWM12_CONFIG                                  \
 	{                                                 \
 		PWM12_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM12_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -1976,7 +1976,7 @@ extern "C"
 		PWM12_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM12_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM12_DUTYCYCLE (PWM12_TMR->COUNT8.CC[PWM12_CHANNEL].reg)
 #endif
 #define DIO32_PMUX PWM12_PMUX
@@ -1991,7 +1991,7 @@ extern "C"
 #define PWM13_PMUXVAL (pinmuxval(PWM13_MUX))
 #if (PWM13_TIMER < 3)
 #define PWM13_TMR __helper__(TCC, PWM13_TIMER, )
-#define PWM13_CONFIG (                         \
+#define PWM13_CONFIG                           \
 	{                                          \
 		PWM13_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM13_TMR->SYNCBUSY.bit.SWRST)  \
@@ -2006,11 +2006,11 @@ extern "C"
 		PWM13_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM13_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM13_DUTYCYCLE (PWM13_TMR->CC[PWM13_CHANNEL].bit.CC)
 #else
 #define PWM13_TMR __helper__(TC, PWM13_TIMER, )
-#define PWM13_CONFIG (                                \
+#define PWM13_CONFIG                                  \
 	{                                                 \
 		PWM13_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM13_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -2026,7 +2026,7 @@ extern "C"
 		PWM13_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM13_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM13_DUTYCYCLE (PWM13_TMR->COUNT8.CC[PWM13_CHANNEL].reg)
 #endif
 #define DIO33_PMUX PWM13_PMUX
@@ -2041,7 +2041,7 @@ extern "C"
 #define PWM14_PMUXVAL (pinmuxval(PWM14_MUX))
 #if (PWM14_TIMER < 3)
 #define PWM14_TMR __helper__(TCC, PWM14_TIMER, )
-#define PWM14_CONFIG (                         \
+#define PWM14_CONFIG                           \
 	{                                          \
 		PWM14_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM14_TMR->SYNCBUSY.bit.SWRST)  \
@@ -2056,11 +2056,11 @@ extern "C"
 		PWM14_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM14_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM14_DUTYCYCLE (PWM14_TMR->CC[PWM14_CHANNEL].bit.CC)
 #else
 #define PWM14_TMR __helper__(TC, PWM14_TIMER, )
-#define PWM14_CONFIG (                                \
+#define PWM14_CONFIG                                  \
 	{                                                 \
 		PWM14_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM14_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -2076,7 +2076,7 @@ extern "C"
 		PWM14_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM14_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM14_DUTYCYCLE (PWM14_TMR->COUNT8.CC[PWM14_CHANNEL].reg)
 #endif
 #define DIO34_PMUX PWM14_PMUX
@@ -2091,7 +2091,7 @@ extern "C"
 #define PWM15_PMUXVAL (pinmuxval(PWM15_MUX))
 #if (PWM15_TIMER < 3)
 #define PWM15_TMR __helper__(TCC, PWM15_TIMER, )
-#define PWM15_CONFIG (                         \
+#define PWM15_CONFIG                           \
 	{                                          \
 		PWM15_TMR->CTRLA.bit.SWRST = 1;        \
 		while (PWM15_TMR->SYNCBUSY.bit.SWRST)  \
@@ -2106,11 +2106,11 @@ extern "C"
 		PWM15_TMR->CTRLA.bit.ENABLE = 1;       \
 		while (PWM15_TMR->SYNCBUSY.bit.ENABLE) \
 			;                                  \
-	})
+	}
 #define PWM15_DUTYCYCLE (PWM15_TMR->CC[PWM15_CHANNEL].bit.CC)
 #else
 #define PWM15_TMR __helper__(TC, PWM15_TIMER, )
-#define PWM15_CONFIG (                                \
+#define PWM15_CONFIG                                  \
 	{                                                 \
 		PWM15_TMR->COUNT8.CTRLA.bit.SWRST = 1;        \
 		while (PWM15_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
@@ -2126,7 +2126,7 @@ extern "C"
 		PWM15_TMR->COUNT8.CTRLA.bit.ENABLE = 1;       \
 		while (PWM15_TMR->COUNT8.STATUS.bit.SYNCBUSY) \
 			;                                         \
-	})
+	}
 #define PWM15_DUTYCYCLE (PWM15_TMR->COUNT8.CC[PWM15_CHANNEL].reg)
 #endif
 #define DIO35_PMUX PWM15_PMUX
@@ -2364,44 +2364,44 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y))
 #endif
 
-#define mcu_config_output(diopin) (                                            \
+#define mcu_config_output(diopin)                                              \
 	{                                                                          \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
 		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;  \
-	})
-#define mcu_config_input(diopin) (                                                   \
+	}
+#define mcu_config_input(diopin)                                                     \
 	{                                                                                \
 		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 1); \
-	})
-#define mcu_config_pullup(diopin) (                                                  \
+	}
+#define mcu_config_pullup(diopin)                                                    \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 2); \
 		SETBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT));       \
-	})
-#define mcu_config_analog(diopin) (                                                  \
+	}
+#define mcu_config_analog(diopin)                                                    \
 	{                                                                                \
 		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
 		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-	})
-#define mcu_config_altfunc(diopin) (                                                 \
+	}
+#define mcu_config_altfunc(diopin)                                                   \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-	})
+	}
 
 #define mcu_config_input_isr(diopin) (mcu_config_altfunc(diopin))
 
-#define mcu_config_pwm(diopin) (                                                     \
+#define mcu_config_pwm(diopin)                                                       \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));       \
 		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
 		(__indirect__(diopin, CONFIG));                                              \
-	})
+	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT)))
@@ -2409,9 +2409,12 @@ extern "C"
 #define mcu_clear_output(diopin) (__indirect__(diopin, GPIO).OUTCLR.reg = (1UL << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) (__indirect__(diopin, GPIO).OUTTGL.reg = (1UL << __indirect__(diopin, BIT)))
 
-#define mcu_set_pwm(diopin, pwmvalue) ({ (__indirect__(diopin, DUTYCYCLE)) = pwmvalue; })
+#define mcu_set_pwm(diopin, pwmvalue)                 \
+	{                                                 \
+		(__indirect__(diopin, DUTYCYCLE)) = pwmvalue; \
+	}
 
-#define mcu_get_analog(diopin) (                                     \
+#define mcu_get_analog(diopin)                                       \
 	{                                                                \
 		while (ADC->STATUS.bit.SYNCBUSY)                             \
 			ADC->INTFLAG.reg = ADC_INTFLAG_RESRDY;                   \
@@ -2425,7 +2428,7 @@ extern "C"
 		while (!(ADC->INTFLAG.bit.RESRDY))                           \
 			;                                                        \
 		ADC->RESULT.reg;                                             \
-	})
+	}
 	/*
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 #ifdef PROBE
@@ -2439,17 +2442,17 @@ extern "C"
 #endif
 */
 	extern volatile bool samd21_global_isr_enabled;
-#define mcu_enable_global_isr() (         \
+#define mcu_enable_global_isr()           \
 	{                                     \
 		__enable_irq();                   \
 		samd21_global_isr_enabled = true; \
-	})
-#define mcu_disable_global_isr() (         \
+	}
+#define mcu_disable_global_isr()           \
 	{                                      \
 		samd21_global_isr_enabled = false; \
 		__disable_irq();                   \
-	})
-#define mcu_get_global_isr() ({ samd21_global_isr_enabled; })
+	}
+#define mcu_get_global_isr() samd21_global_isr_enabled
 
 #if (INTERFACE == INTERFACE_USART)
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)

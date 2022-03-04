@@ -2482,9 +2482,15 @@ extern "C"
 #define PWM0_CCMREG CCMR1
 #endif
 #if (PWM0_TIMER == 1)
-#define PWM0_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM0_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM0_TIMER == 8)
-#define PWM0_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM0_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM0_ENOUTPUT \
 	{                 \
@@ -2526,9 +2532,15 @@ extern "C"
 #define PWM1_CCMREG CCMR1
 #endif
 #if (PWM1_TIMER == 1)
-#define PWM1_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM1_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM1_TIMER == 8)
-#define PWM1_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM1_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM1_ENOUTPUT \
 	{                 \
@@ -2570,9 +2582,15 @@ extern "C"
 #define PWM2_CCMREG CCMR1
 #endif
 #if (PWM2_TIMER == 1)
-#define PWM2_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM2_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM2_TIMER == 8)
-#define PWM2_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM2_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM2_ENOUTPUT \
 	{                 \
@@ -2614,9 +2632,15 @@ extern "C"
 #define PWM3_CCMREG CCMR1
 #endif
 #if (PWM3_TIMER == 1)
-#define PWM3_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM3_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM3_TIMER == 8)
-#define PWM3_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM3_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM3_ENOUTPUT \
 	{                 \
@@ -2658,9 +2682,15 @@ extern "C"
 #define PWM4_CCMREG CCMR1
 #endif
 #if (PWM4_TIMER == 1)
-#define PWM4_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM4_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM4_TIMER == 8)
-#define PWM4_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM4_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM4_ENOUTPUT \
 	{                 \
@@ -2702,9 +2732,15 @@ extern "C"
 #define PWM5_CCMREG CCMR1
 #endif
 #if (PWM5_TIMER == 1)
-#define PWM5_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM5_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM5_TIMER == 8)
-#define PWM5_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM5_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM5_ENOUTPUT \
 	{                 \
@@ -2746,9 +2782,15 @@ extern "C"
 #define PWM6_CCMREG CCMR1
 #endif
 #if (PWM6_TIMER == 1)
-#define PWM6_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM6_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM6_TIMER == 8)
-#define PWM6_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM6_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM6_ENOUTPUT \
 	{                 \
@@ -2790,9 +2832,15 @@ extern "C"
 #define PWM7_CCMREG CCMR1
 #endif
 #if (PWM7_TIMER == 1)
-#define PWM7_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM7_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM7_TIMER == 8)
-#define PWM7_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM7_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM7_ENOUTPUT \
 	{                 \
@@ -2834,9 +2882,15 @@ extern "C"
 #define PWM8_CCMREG CCMR1
 #endif
 #if (PWM8_TIMER == 1)
-#define PWM8_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM8_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM8_TIMER == 8)
-#define PWM8_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM8_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM8_ENOUTPUT \
 	{                 \
@@ -2878,9 +2932,15 @@ extern "C"
 #define PWM9_CCMREG CCMR1
 #endif
 #if (PWM9_TIMER == 1)
-#define PWM9_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM9_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM9_TIMER == 8)
-#define PWM9_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM9_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM9_ENOUTPUT \
 	{                 \
@@ -2922,9 +2982,15 @@ extern "C"
 #define PWM10_CCMREG CCMR1
 #endif
 #if (PWM10_TIMER == 1)
-#define PWM10_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM10_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM10_TIMER == 8)
-#define PWM10_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM10_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM10_ENOUTPUT \
 	{                  \
@@ -2966,9 +3032,15 @@ extern "C"
 #define PWM11_CCMREG CCMR1
 #endif
 #if (PWM11_TIMER == 1)
-#define PWM11_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM11_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM11_TIMER == 8)
-#define PWM11_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM11_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM11_ENOUTPUT \
 	{                  \
@@ -3010,9 +3082,15 @@ extern "C"
 #define PWM12_CCMREG CCMR1
 #endif
 #if (PWM12_TIMER == 1)
-#define PWM12_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM12_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM12_TIMER == 8)
-#define PWM12_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM12_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM12_ENOUTPUT \
 	{                  \
@@ -3054,9 +3132,15 @@ extern "C"
 #define PWM13_CCMREG CCMR1
 #endif
 #if (PWM13_TIMER == 1)
-#define PWM13_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM13_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM13_TIMER == 8)
-#define PWM13_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM13_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM13_ENOUTPUT \
 	{                  \
@@ -3098,9 +3182,15 @@ extern "C"
 #define PWM14_CCMREG CCMR1
 #endif
 #if (PWM14_TIMER == 1)
-#define PWM14_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM14_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM14_TIMER == 8)
-#define PWM14_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM14_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM14_ENOUTPUT \
 	{                  \
@@ -3142,9 +3232,15 @@ extern "C"
 #define PWM15_CCMREG CCMR1
 #endif
 #if (PWM15_TIMER == 1)
-#define PWM15_ENOUTPUT ({ TIM1->BDTR |= (1 << 15); })
+#define PWM15_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
 #elif (PWM15_TIMER == 8)
-#define PWM15_ENOUTPUT ({ TIM8->BDTR |= (1 << 15); })
+#define PWM15_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
 #define PWM15_ENOUTPUT \
 	{                  \
@@ -3407,7 +3503,7 @@ extern "C"
 	}
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
-#define mcu_get_analog(diopin) (                    \
+#define mcu_get_analog(diopin)                      \
 	{                                               \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
@@ -3416,7 +3512,7 @@ extern "C"
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOS;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
-	})
+	}
 #ifdef PROBE
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
@@ -3428,17 +3524,17 @@ extern "C"
 #endif
 
 	extern volatile bool stm32_global_isr_enabled;
-#define mcu_enable_global_isr() (        \
+#define mcu_enable_global_isr()          \
 	{                                    \
 		__enable_irq();                  \
 		stm32_global_isr_enabled = true; \
-	})
-#define mcu_disable_global_isr() (        \
+	}
+#define mcu_disable_global_isr()          \
 	{                                     \
 		stm32_global_isr_enabled = false; \
 		__disable_irq();                  \
-	})
-#define mcu_get_global_isr() ({ stm32_global_isr_enabled; })
+	}
+#define mcu_get_global_isr() stm32_global_isr_enabled
 
 // #ifdef COM_PORT
 // #ifndef ENABLE_SYNC_TX

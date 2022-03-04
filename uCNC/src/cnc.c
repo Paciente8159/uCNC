@@ -52,7 +52,7 @@ static void cnc_check_fault_systems(void);
 static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
-static bool cnc_reset(void);
+static void cnc_reset(void);
 static bool cnc_exec_cmd(void);
 
 void cnc_init(void)
@@ -358,7 +358,6 @@ uint8_t cnc_unlock(bool force)
         // signals stepper enable pins
 
         io_set_steps(g_settings.step_invert_mask);
-        io_set_dirs(g_settings.dir_invert_mask);
         io_enable_steppers(g_settings.step_enable_invert);
         parser_reset();
 
@@ -393,6 +392,7 @@ void cnc_set_exec_state(uint8_t statemask)
 
 void cnc_clear_exec_state(uint8_t statemask)
 {
+#ifndef DISABLE_ALL_CONTROLS
     uint8_t controls = io_get_controls();
 
 #if (ESTOP >= 0)
@@ -412,6 +412,7 @@ void cnc_clear_exec_state(uint8_t statemask)
     {
         CLEARFLAG(statemask, EXEC_HOLD);
     }
+#endif
 #endif
 
     // has a pending (not cleared by user) alarm
@@ -476,7 +477,7 @@ void cnc_delay_ms(uint32_t miliseconds)
     }
 }
 
-bool cnc_reset(void)
+void cnc_reset(void)
 {
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     // resets all realtime command flags

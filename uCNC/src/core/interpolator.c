@@ -277,7 +277,7 @@ void itp_run(void)
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
-            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
+            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits ^ g_settings.dir_invert_mask;
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
@@ -642,7 +642,7 @@ void itp_run(void)
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
-            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
+            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits ^ g_settings.dir_invert_mask;
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
@@ -917,7 +917,6 @@ void itp_stop(void)
         cnc_set_exec_state(EXEC_HALT);
     }
     io_set_steps(g_settings.step_invert_mask);
-    io_set_dirs(g_settings.dir_invert_mask);
 #if TOOL_COUNT > 0
     if (g_settings.laser_mode)
     {
@@ -951,6 +950,8 @@ int32_t itp_get_rt_position_index(int8_t index)
     {
         return itp_rt_step_pos[index];
     }
+
+    return 0;
 }
 
 void itp_reset_rt_position(void)

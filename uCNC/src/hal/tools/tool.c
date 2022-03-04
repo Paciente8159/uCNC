@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DECL_TOOL(tool) extern const tool_t __rom__ tool;
+#define DECL_TOOL(tool) extern const tool_t __rom__ tool
 
 static tool_t tool_current;
 

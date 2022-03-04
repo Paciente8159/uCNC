@@ -75,11 +75,11 @@ void planner_add_line(motion_data_t *block_data)
     memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
     planner_data[planner_data_write].dirbits = block_data->dirbits;
     planner_data[planner_data_write].main_stepper = block_data->main_stepper;
-    planner_data[planner_data_write].feed_override = block_data->feed_override;
+    planner_data[planner_data_write].flags_u.flags_t.feed_override = block_data->feed_override;
 
 #if TOOL_COUNT > 0
     planner_spindle = planner_data[planner_data_write].spindle = block_data->spindle;
-    planner_coolant = planner_data[planner_data_write].coolant = block_data->coolant;
+    planner_coolant = planner_data[planner_data_write].flags_u.flags_t.coolant = block_data->coolant;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
     planner_data[planner_data_write].line = block_data->line;
@@ -338,7 +338,7 @@ float planner_get_block_exit_speed_sqr(void)
     float exit_speed_sqr = planner_data[next].entry_feed_sqr;
     float rapid_feed_sqr = planner_data[next].rapid_feed_sqr;
 
-    if (planner_data[next].feed_override)
+    if (planner_data[next].flags_u.flags_t.feed_override)
     {
         if (planner_overrides.feed_override != 100)
         {
@@ -398,7 +398,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 
     float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
     float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
-    if (planner_data[planner_data_read].feed_override)
+    if (planner_data[planner_data_read].flags_u.flags_t.feed_override)
     {
         if (planner_overrides.feed_override != 100)
         {
@@ -435,7 +435,7 @@ int16_t planner_get_spindle_speed(float scale)
             spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
         }
 
-        if (planner_data[planner_data_read].feed_override && planner_overrides.spindle_override != 100)
+        if (planner_data[planner_data_read].flags_u.flags_t.feed_override && planner_overrides.spindle_override != 100)
         {
             spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;
         }
@@ -446,16 +446,18 @@ int16_t planner_get_spindle_speed(float scale)
 
         return (!neg) ? pwm : -pwm;
     }
+
+    return 0;
 }
 
 float planner_get_previous_spindle_speed(void)
 {
-    return planner_spindle;
+    return (float)planner_spindle;
 }
 
 uint8_t planner_get_coolant(void)
 {
-    uint8_t coolant = (!planner_data_blocks) ? planner_coolant : planner_data[planner_data_read].coolant;
+    uint8_t coolant = (!planner_data_blocks) ? planner_coolant : planner_data[planner_data_read].flags_u.flags_t.coolant;
 
     coolant ^= planner_overrides.coolant_override;
 
@@ -484,7 +486,7 @@ static void planner_recalculate(void)
     // optimizes entry speeds given the current exit speed (backward pass)
     uint8_t next = planner_buffer_next(block);
 
-    while (!planner_data[block].optimal && block != first)
+    while (!planner_data[block].flags_u.flags_t.optimal && block != first)
     {
         float speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
         if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
@@ -518,7 +520,7 @@ static void planner_recalculate(void)
                 // lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
                 // optimization achieved for this movement
                 planner_data[next].entry_feed_sqr = MIN(planner_data[next].entry_max_feed_sqr, speedchange);
-                planner_data[next].optimal = true;
+                planner_data[next].flags_u.flags_t.optimal = true;
             }
         }
 

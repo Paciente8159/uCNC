@@ -298,7 +298,7 @@ static uint8_t parser_grbl_command(void)
 
     serial_getc(); // eat $
     unsigned char c = serial_getc();
-    uint16_t block_address;
+    uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
     uint8_t error = STATUS_OK;
     switch (c)
     {
@@ -1170,7 +1170,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
     // if non-modal is executed
     uint8_t index = 255;
-    uint16_t address = 0;
     error = 0;
     switch (new_state->groups.nonmodal)
     {
@@ -1179,16 +1178,14 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
         switch (index)
         {
         case 28:
-            address = G28ADDRESS;
             index = G28HOME;
             break;
         case 30:
-            address = G30ADDRESS;
+
             index = G30HOME;
             break;
         default:
             index--;
-            address = SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET);
             break;
         }
         break;
@@ -1618,7 +1615,9 @@ static uint8_t parser_get_float(float *value)
 */
 static uint8_t parser_get_comment(void)
 {
+#ifdef PROCESS_COMMENTS
     uint8_t msg_parser = 0;
+#endif
     for (;;)
     {
         unsigned char c = serial_peek();
@@ -2013,8 +2012,6 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
-    uint16_t new_group = cmd->groups;
-
     switch (c)
     {
     case 'N':
@@ -2249,8 +2246,6 @@ void parser_reset(void)
 // also checks all other coordinate systems and homing positions
 void parser_parameters_load(void)
 {
-    const uint8_t size = PARSER_PARAM_SIZE;
-
     // loads G92
     if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
     {

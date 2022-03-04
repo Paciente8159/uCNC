@@ -884,6 +884,19 @@ extern "C"
 #define DIO57 -1
 #endif
 
+// if the pins are undefined turn on option
+#if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))
+#define DISABLE_ALL_CONTROLS
+#endif
+
+#if (LIMIT_X < 0 && LIMIT_X2 < 0 && LIMIT_Y < 0 && LIMIT_Y2 < 0 && LIMIT_Z < 0 && LIMIT_Z2 < 0 && LIMIT_A < 0 && LIMIT_B < 0 && LIMIT_C < 0 && !defined(DISABLE_ALL_LIMITS))
+#define DISABLE_ALL_LIMITS
+#endif
+
+#if (PROBE < 0 && !defined(DISABLE_PROBE))
+#define DISABLE_PROBE
+#endif
+
 #if SERVO0 >= 0
 #define SERVO0_MASK (1U << 0)
 #define SERVO0_FRAME 0

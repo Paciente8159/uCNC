@@ -66,6 +66,7 @@ const uint8_t __rom__ crc7_table[256] =
 static uint8_t crc7(uint8_t c, uint8_t crc)
 {
     uint8_t i = 8;
+    crc ^= c;
     for (;;)
     {
         if (crc & 0x80)
@@ -74,7 +75,7 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
         }
         if (!--i)
         {
-            return (crc);
+            return crc;
         }
         crc <<= 1;
     }
@@ -481,7 +482,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 #if TOOL_COUNT > 0
     case 80:
-        g_settings.default_tool = CLAMP(0, value8, TOOL_COUNT);
+        g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
         break;
 #endif
 #if (KINEMATIC == KINEMATIC_DELTA)

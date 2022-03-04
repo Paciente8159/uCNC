@@ -64,7 +64,7 @@ void protocol_send_alarm(int8_t alarm)
 #endif
 }
 
-void protocol_send_string(const unsigned char *__s)
+void protocol_send_string(const char *__s)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
@@ -75,7 +75,7 @@ void protocol_send_string(const unsigned char *__s)
 #endif
 }
 
-void protocol_send_feedback(const unsigned char *__s)
+void protocol_send_feedback(const char *__s)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
@@ -165,7 +165,7 @@ void protocol_send_status(void)
 #endif
     float axis[MAX(AXIS_COUNT, 3)];
 
-    uint32_t steppos[STEPPER_COUNT];
+    int32_t steppos[STEPPER_COUNT];
     itp_get_rt_position(steppos);
     kinematics_apply_forward(steppos, axis);
     kinematics_apply_reverse_transform(axis);

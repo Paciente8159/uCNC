@@ -40,10 +40,10 @@ extern "C"
 #endif
 
 #ifndef MAX
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MAX(a, b) (((a) >= (b)) ? (a) : (b))
 #endif
 #ifndef MIN
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MIN(a, b) (((a) <= (b)) ? (a) : (b))
 #endif
 #ifndef CLAMP
 #define CLAMP(a, b, c) (MIN((c), MAX((a), (b))))
@@ -70,7 +70,7 @@ extern "C"
 // div4 takes about 9 clock cycles on AVR instead of 144 if multiply by 0.25f (x16 faster)
 // mul2 takes about 11 clock cycles on AVR instead of 144 if multiply by 0.25f (x13 faster)
 // mul4 takes about 7 clock cycles on AVR instead of 144 if multiply by 0.25f (x20 faster)
-#define fast_flt_div2(x) (       \
+#define fast_flt_div2(x)         \
 	{                            \
 		flt_t res;               \
 		res.f = (x);             \
@@ -79,8 +79,8 @@ extern "C"
 		else                     \
 			res.i = 0;           \
 		res.f;                   \
-	})
-#define fast_flt_div4(x) (       \
+	}
+#define fast_flt_div4(x)         \
 	{                            \
 		flt_t res;               \
 		res.f = (x);             \
@@ -89,43 +89,43 @@ extern "C"
 		else                     \
 			res.i = 0;           \
 		res.f;                   \
-	})
-#define fast_flt_mul2(x) (                      \
+	}
+#define fast_flt_mul2(x)                        \
 	{                                           \
 		flt_t res;                              \
 		res.f = (x);                            \
 		if ((res.i & 0x7f800000) != 0x7f800000) \
 			res.i += 0x00800000;                \
 		res.f;                                  \
-	})
-#define fast_flt_mul4(x) (                      \
+	}
+#define fast_flt_mul4(x)                        \
 	{                                           \
 		flt_t res;                              \
 		res.f = (x);                            \
 		if ((res.i & 0x7f000000) != 0x7f000000) \
 			res.i += 0x01000000;                \
 		res.f;                                  \
-	})
+	}
 // Quake III based fast sqrt calculation
 // fast_flt_sqrt takes about 19 clock cycles on AVR instead of +/-482 if using normal sqrt (x25 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_sqrt(x) (                       \
+#define fast_flt_sqrt(x)                         \
 	{                                            \
 		flt_t res;                               \
 		res.f = (x);                             \
 		if (res.i)                               \
 			res.i = (0x1fbeecc0 + (res.i >> 1)); \
 		res.f;                                   \
-	})
+	}
 // fast_flt_invsqrt takes about 18 clock cycles on AVR instead of +/-960 if using normal 1/sqrt (x53 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_invsqrt(x) (                \
+#define fast_flt_invsqrt(x)                  \
 	{                                        \
 		flt_t res;                           \
 		res.f = (x);                         \
 		res.i = (0x5f3759df - (res.i >> 1)); \
 		res.f;                               \
-	})
+	}
 // fast_flt_pow2 takes about 25 clock cycles on AVR instead of 144 if using normal pow or muliply by itself (x~5.5 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_pow2(x) (                   \
+#define fast_flt_pow2(x)                     \
 	{                                        \
 		flt_t res;                           \
 		res.f = (x);                         \
@@ -133,7 +133,7 @@ extern "C"
 		if (res.i < 0)                       \
 			res.i = 0;                       \
 		res.f;                               \
-	})
+	}
 // mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
@@ -152,23 +152,23 @@ extern "C"
 #endif
 
 #if (__SIZEOF_FLOAT__ == 4)
-#define flt_2_fix(x) (                           \
+#define flt_2_fix(x)                             \
 	{                                            \
 		flt_t res;                               \
 		res.f = (x);                             \
 		if ((res.b3 & 0x7f000000) != 0x7f000000) \
 			res.i += 0x04000000;                 \
 		(int32_t) roundf(res.f);                 \
-	})
+	}
 
-#define fix_2_flt(x) (                           \
+#define fix_2_flt(x)                             \
 	{                                            \
 		flt_t res;                               \
 		res.f = (float)(x);                      \
 		if ((res.b3 & 0x7f000000) != 0x7f000000) \
 			res.i -= 0x04000000;                 \
 		res.f;                                   \
-	})
+	}
 #else
 #define flt_2_fix(x) ((uint32_t)(x * 256))
 #define fix_2_flt(x) ((float)(x) / 256.0f)
@@ -198,9 +198,9 @@ extern "C"
 		return 1;
 	}
 
-	static FORCEINLINE void __atomic_out(bool s)
+	static FORCEINLINE void __atomic_out(uint8_t *s)
 	{
-		if (s)
+		if (*s != 0)
 		{
 			mcu_enable_global_isr();
 		}
@@ -211,8 +211,8 @@ extern "C"
 		mcu_enable_global_isr();
 	}
 
-#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
-#define __ATOMIC_FORCEON__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 0, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
 
 #ifdef __cplusplus
 }

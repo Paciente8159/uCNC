@@ -3614,18 +3614,19 @@ extern "C"
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue) ({                                             \
-	__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
-	if (pwmvalue != 0)                                                               \
-	{                                                                                \
-		SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-	}                                                                                \
-	else                                                                             \
-	{                                                                                \
-		CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT));           \
-	}                                                                                \
-})
+#define mcu_set_pwm(diopin, pwmvalue)                                                    \
+	{                                                                                    \
+		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
+		if (pwmvalue != 0)                                                               \
+		{                                                                                \
+			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
+		}                                                                                \
+		else                                                                             \
+		{                                                                                \
+			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
+			CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT));           \
+		}                                                                                \
+	}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
@@ -3636,14 +3637,14 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin) (                        \
+#define mcu_get_analog(diopin)                          \
 	{                                                   \
 		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
 			;                                           \
 		ADCH;                                           \
-	})
+	}
 
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
@@ -3655,7 +3656,7 @@ extern "C"
 
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
-#define mcu_get_global_isr() ({ (SREG && 0x80); })
+#define mcu_get_global_isr() (SREG & 0x80)
 
 #define mcu_delay_us _delay_loop_1
 
