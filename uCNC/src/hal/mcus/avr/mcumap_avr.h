@@ -3598,10 +3598,11 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #ifndef BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1 << (y)))	/* Check bit y in byte x*/
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y))) /* Toggle bit y in byte x*/
+#define BYTE_OPS
+#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
 #define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
@@ -3613,7 +3614,8 @@ extern "C"
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
+#define mcu_toggle_output(diopin) (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
+
 #define mcu_set_pwm(diopin, pwmvalue)                                                    \
 	{                                                                                    \
 		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
@@ -3624,7 +3626,6 @@ extern "C"
 		else                                                                             \
 		{                                                                                \
 			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-			CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT));           \
 		}                                                                                \
 	}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))

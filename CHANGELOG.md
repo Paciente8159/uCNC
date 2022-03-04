@@ -17,6 +17,12 @@
   - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
   - fixed PWM config macro (was unstable on Mega boards) (#147)
   - fixed set PWM macro for AVR (cause issues on Mega boards)
+  - fixed several C99/GNU99 compliance warnings
+  - fixed dir mask implementation ($2)
+  - fixed settings crc calculation (without lookup table)
+  - fixed output pin toggle macro for AVR
+  - fixed AVR RX pin setup
+  - fixed BYTE_OPS redefinition 
 
 
 ## [1.4.0-alpha] - 2022-02-25

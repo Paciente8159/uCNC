@@ -943,7 +943,8 @@ void mcu_init(void)
 #endif
 #endif
 #if RX >= 0
-        mcu_config_output(RX);
+        mcu_config_input(RX);
+        mcu_config_pullup(RX);
 #endif
 
         // Set COM port

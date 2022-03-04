@@ -28,10 +28,11 @@ extern "C"
 #include <stdbool.h>
 
 #ifndef BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1 << (y)))	/* Check bit y in byte x*/
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y))) /* Toggle bit y in byte x*/
+#define BYTE_OPS
+#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
 #define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
