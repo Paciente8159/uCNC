@@ -3598,10 +3598,11 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #ifndef BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1 << (y)))	/* Set bit y in byte x*/
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1 << (y)))	/* Check bit y in byte x*/
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y))) /* Toggle bit y in byte x*/
+#define BYTE_OPS
+#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
 #define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
@@ -3613,19 +3614,20 @@ extern "C"
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
-#define mcu_toggle_output(diopin) SETBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue) ({                                             \
-	__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
-	if (pwmvalue != 0)                                                               \
-	{                                                                                \
-		SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-	}                                                                                \
-	else                                                                             \
-	{                                                                                \
-		CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT));           \
-	}                                                                                \
-})
+#define mcu_toggle_output(diopin) (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
+
+#define mcu_set_pwm(diopin, pwmvalue)                                                    \
+	{                                                                                    \
+		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
+		if (pwmvalue != 0)                                                               \
+		{                                                                                \
+			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
+		}                                                                                \
+		else                                                                             \
+		{                                                                                \
+			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
+		}                                                                                \
+	}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
 #define _min(a, b) (((a) < (b)) ? (a) : (b))
@@ -3636,14 +3638,14 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin) (                        \
+#define mcu_get_analog(diopin)                          \
 	{                                                   \
 		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
 			;                                           \
 		ADCH;                                           \
-	})
+	}
 
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() (SETFLAG(PROBE_ISRREG, PROBE_ISR_MASK))
@@ -3655,7 +3657,7 @@ extern "C"
 
 #define mcu_enable_global_isr sei
 #define mcu_disable_global_isr cli
-#define mcu_get_global_isr() ({ (SREG && 0x80); })
+#define mcu_get_global_isr() (SREG & 0x80)
 
 #define mcu_delay_us _delay_loop_1
 

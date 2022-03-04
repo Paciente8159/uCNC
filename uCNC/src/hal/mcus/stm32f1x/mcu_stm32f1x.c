@@ -88,14 +88,14 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
-#define mcu_config_pullup(diopin) (                                                                                   \
+#define mcu_config_pullup(diopin)                                                                                     \
 	{                                                                                                                 \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
 		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
-	})
+	}
 
-#define mcu_config_pwm(diopin) (                                                                                                 \
+#define mcu_config_pwm(diopin)                                                                                                   \
 	{                                                                                                                            \
 		RCC->APB2ENR |= 0x1U;                                                                                                    \
 		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
@@ -110,9 +110,9 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
 		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
 		__indirect__(diopin, ENOUTPUT);                                                                                          \
-	})
+	}
 
-#define mcu_config_input_isr(diopin) (                                                                          \
+#define mcu_config_input_isr(diopin)                                                                            \
 	{                                                                                                           \
 		RCC->APB2ENR |= 0x1U;                                                                                   \
 		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
@@ -123,9 +123,9 @@ volatile bool stm32_global_isr_enabled;
 		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
 		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
 		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
-	})
+	}
 
-#define mcu_config_analog(diopin) (                                                                                     \
+#define mcu_config_analog(diopin)                                                                                       \
 	{                                                                                                                   \
 		RCC->CFGR &= ~(RCC_CFGR_ADCPRE);                                                                                \
 		RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;                                                                              \
@@ -143,7 +143,7 @@ volatile bool stm32_global_isr_enabled;
 		while (ADC1->CR2 & ADC_CR2_CAL)                                                                                 \
 			;                                                                                                           \
 		ADC1->CR2 |= (ADC_CR2_EXTSEL | ADC_CR2_EXTTRIG); /*external start trigger software*/                            \
-	})
+	}
 
 /**
  * The isr functions

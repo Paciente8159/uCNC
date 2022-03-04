@@ -63,8 +63,8 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
     for (uint8_t i = STEPPER_COUNT; i != 0;)
     {
         i--;
-        int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
-        steps = ABS(steps);
+        int32_t s = step_new_pos[i] - mc_last_step_pos[i];
+        uint32_t steps = (uint32_t)ABS(s);
         block_data->steps[i] = (step_t)steps;
 
         block_data->full_steps += steps;
@@ -179,7 +179,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
     // calculates the amount of stepper motion for this motion
 
     uint32_t max_steps = 0;
-    block_data->dirbits = 0;
     block_data->main_stepper = 255;
     for (uint8_t i = STEPPER_COUNT; i != 0;)
     {
@@ -191,7 +190,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
         }
 
         steps = ABS(steps);
-        if (max_steps < steps)
+        if (max_steps < (uint32_t)steps)
         {
             max_steps = steps;
             block_data->main_stepper = i;
@@ -334,7 +333,6 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     float diameter = fast_flt_mul2(radius);
     uint16_t segment_count = floor(fabs(radiusangle) / sqrt(g_settings.arc_tolerance * (diameter - g_settings.arc_tolerance)));
     float arc_per_sgm = (segment_count != 0) ? arc_angle / segment_count : arc_angle;
-    float dist_sgm = 0;
 
     // for all other axis finds the linear motion distance
     float increment[AXIS_COUNT];

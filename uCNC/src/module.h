@@ -38,16 +38,17 @@ extern "C"
     delegate##_event_t *
 #define EVENT_TYPE(delegate) delegate##_event_t
 #define CREATE_LISTENER(delegate, handler) __attribute__((used)) delegate##_event_t delegate##_##handler = {&handler, NULL}
-#define ADD_LISTENER(delegate, handler, event) ({   \
-    extern delegate##_event_t delegate##_##handler; \
-    delegate##_event_t **p = &event;                \
-    while ((*p) != NULL)                            \
-    {                                               \
-        (*p) = (*p)->next;                          \
-    }                                               \
-    (*p) = &delegate##_##handler;                   \
-    (*p)->next = NULL;                              \
-})
+#define ADD_LISTENER(delegate, handler, event)          \
+    {                                                   \
+        extern delegate##_event_t delegate##_##handler; \
+        delegate##_event_t **p = &event;                \
+        while ((*p) != NULL)                            \
+        {                                               \
+            (*p) = (*p)->next;                          \
+        }                                               \
+        (*p) = &delegate##_##handler;                   \
+        (*p)->next = NULL;                              \
+    }
 
     // definitions to create overridable default handlers for functions void-void hooks
     // the resulting handles is named mod_<hookname>_hook and can be placed inside any point in the core code
@@ -60,17 +61,18 @@ extern "C"
     hook##_event;                          \
     void mod_##hook##_hook(void)
 #define WEAK_HOOK(hook) void __attribute__((weak)) mod_##hook##_hook(void)
-#define DEFAULT_HANDLER(hook) ({                     \
-    EVENT_TYPE(hook##_delegate) *ptr = hook##_event; \
-    while (ptr != NULL)                              \
-    {                                                \
-        if (ptr->fptr != NULL)                       \
-        {                                            \
-            ptr->fptr();                             \
-        }                                            \
-        ptr = ptr->next;                             \
-    }                                                \
-})
+#define DEFAULT_HANDLER(hook)                            \
+    {                                                    \
+        EVENT_TYPE(hook##_delegate) *ptr = hook##_event; \
+        while (ptr != NULL)                              \
+        {                                                \
+            if (ptr->fptr != NULL)                       \
+            {                                            \
+                ptr->fptr();                             \
+            }                                            \
+            ptr = ptr->next;                             \
+        }                                                \
+    }
 
 #ifdef ENABLE_PARSER_MODULES
     // defines a delegate function for the gcode parser handler

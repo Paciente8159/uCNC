@@ -48,13 +48,13 @@ extern "C"
 	unsigned char serial_getc(void);
 	void serial_ungetc(void);
 	unsigned char serial_peek(void);
-	void serial_inject_cmd(const unsigned char *__s);
+	void serial_inject_cmd(const char *__s);
 	void serial_restore_line(void);
 	void serial_rx_clear(void);
 	void serial_select(uint8_t source);
 
 	void serial_putc(unsigned char c);
-	void serial_print_str(const unsigned char *__s);
+	void serial_print_str(const char *__s);
 	void serial_print_int(int32_t num);
 	void serial_print_flt(float num);
 	void serial_print_fltunits(float num);

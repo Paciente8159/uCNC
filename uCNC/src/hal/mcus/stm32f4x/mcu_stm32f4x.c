@@ -83,13 +83,13 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));										/*output mode*/ \
 	}
 
-#define mcu_config_pullup(diopin) (                                                                  \
+#define mcu_config_pullup(diopin)                                                                    \
 	{                                                                                                \
 		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
 		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
-	})
+	}
 
-#define mcu_config_pwm(diopin) (                                                                                                                                    \
+#define mcu_config_pwm(diopin)                                                                                                                                      \
 	{                                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
 		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
@@ -106,9 +106,9 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                                                            \
 		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                                                                 \
 		__indirect__(diopin, ENOUTPUT);                                                                                                                             \
-	})
+	}
 
-#define mcu_config_input_isr(diopin) (                                                                            \
+#define mcu_config_input_isr(diopin)                                                                              \
 	{                                                                                                             \
 		RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;                                                                     \
 		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
@@ -119,7 +119,7 @@ volatile bool stm32_global_isr_enabled;
 		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                           \
 		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                          \
 		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                                \
-	})
+	}
 
 #if defined(ADC1_COMMON)
 #define ADC_COMMON ADC1_COMMON
@@ -129,7 +129,7 @@ volatile bool stm32_global_isr_enabled;
 #define ADC_COMMON ADC123_COMMON
 #endif
 
-#define mcu_config_analog(diopin) (                                                                                                   \
+#define mcu_config_analog(diopin)                                                                                                     \
 	{                                                                                                                                 \
 		ADC_COMMON->CCR &= ~(ADC_CCR_ADCPRE);                                                                                         \
 		ADC_COMMON->CCR |= (ADC_CCR_ADCPRE_0 | ADC_CCR_ADCPRE_1);                                                                     \
@@ -143,7 +143,7 @@ volatile bool stm32_global_isr_enabled;
 		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << ((__indirect__(diopin, BIT)) << 1)); /*analog mode*/                     \
 		ADC1->CR2 |= ADC_CR2_ADON;																  /*enable adc*/                      \
 		ADC1->CR2 |= (ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1);										  /*external start trigger software*/ \
-	})
+	}
 
 /**
  * The isr functions

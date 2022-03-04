@@ -91,7 +91,7 @@ void mcu_controls_changed_cb(void)
 {
 #ifdef DISABLE_ALL_CONTROLS
     return;
-#endif
+#else
     uint8_t controls = io_get_controls();
 
 #if (ESTOP >= 0)
@@ -119,6 +119,7 @@ void mcu_controls_changed_cb(void)
     {
         cnc_call_rt_command(CMD_CODE_CYCLE_START);
     }
+#endif
 #endif
 }
 
@@ -903,6 +904,8 @@ uint8_t io_get_analog(uint8_t pin)
         return mcu_get_analog(ANALOG15);
 #endif
     }
+
+    return 0;
 }
 
 int16_t io_get_pinvalue(uint8_t pin)

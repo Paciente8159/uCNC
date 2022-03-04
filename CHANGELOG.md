@@ -16,8 +16,13 @@
 ### Fixed
   - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
   - fixed PWM config macro (was unstable on Mega boards) (#147)
-  - fixed set PWM macro for AVR (cause issues on Mega boards)
-
+  - fixed set PWM macro for AVR (cause issues on Mega boards) (#148)
+  - fixed several C99/GNU99 compliance warnings (#148)
+  - fixed dir mask implementation ($2) (#148)
+  - fixed settings crc calculation (without lookup table) (#148)
+  - fixed output pin toggle macro for AVR (#148)
+  - fixed AVR RX pin setup (#148)
+  - fixed BYTE_OPS redefinition (#148)
 
 ## [1.4.0-alpha] - 2022-02-25
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's. The features are:

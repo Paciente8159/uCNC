@@ -449,13 +449,14 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x) ({                                     \
-        SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
-        CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
-        __indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
-        __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);  \
-        __indirect__(x, OCRREG) = 0;                             \
-})
+#define mcu_config_pwm(x)                                                \
+        {                                                                \
+                SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
+                CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
+                __indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
+                __indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);  \
+                __indirect__(x, OCRREG) = 0;                             \
+        }
 
 static void mcu_start_rtc();
 
@@ -942,7 +943,8 @@ void mcu_init(void)
 #endif
 #endif
 #if RX >= 0
-        mcu_config_output(RX);
+        mcu_config_input(RX);
+        mcu_config_pullup(RX);
 #endif
 
         // Set COM port
