@@ -18,6 +18,7 @@
 */
 
 #include "cnc.h"
+#include "modules/softuart.h"
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
