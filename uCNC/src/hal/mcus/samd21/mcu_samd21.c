@@ -621,6 +621,24 @@ void mcu_init(void)
 #if PWM15 >= 0
         mcu_config_pwm(PWM15);
 #endif
+#if SERVO0 >= 0
+        mcu_config_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+        mcu_config_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+        mcu_config_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+        mcu_config_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+        mcu_config_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+        mcu_config_output(SERVO5);
+#endif
 #if DOUT0 >= 0
         mcu_config_output(DOUT0);
 #endif
@@ -669,23 +687,53 @@ void mcu_init(void)
 #if DOUT15 >= 0
         mcu_config_output(DOUT15);
 #endif
-#if SERVO0 >= 0
-        mcu_config_output(SERVO0);
+#if DOUT16 >= 0
+        mcu_config_output(DOUT16);
 #endif
-#if SERVO1 >= 0
-        mcu_config_output(SERVO1);
+#if DOUT17 >= 0
+        mcu_config_output(DOUT17);
 #endif
-#if SERVO2 >= 0
-        mcu_config_output(SERVO2);
+#if DOUT18 >= 0
+        mcu_config_output(DOUT18);
 #endif
-#if SERVO3 >= 0
-        mcu_config_output(SERVO3);
+#if DOUT19 >= 0
+        mcu_config_output(DOUT19);
 #endif
-#if SERVO4 >= 0
-        mcu_config_output(SERVO4);
+#if DOUT20 >= 0
+        mcu_config_output(DOUT20);
 #endif
-#if SERVO5 >= 0
-        mcu_config_output(SERVO5);
+#if DOUT21 >= 0
+        mcu_config_output(DOUT21);
+#endif
+#if DOUT22 >= 0
+        mcu_config_output(DOUT22);
+#endif
+#if DOUT23 >= 0
+        mcu_config_output(DOUT23);
+#endif
+#if DOUT24 >= 0
+        mcu_config_output(DOUT24);
+#endif
+#if DOUT25 >= 0
+        mcu_config_output(DOUT25);
+#endif
+#if DOUT26 >= 0
+        mcu_config_output(DOUT26);
+#endif
+#if DOUT27 >= 0
+        mcu_config_output(DOUT27);
+#endif
+#if DOUT28 >= 0
+        mcu_config_output(DOUT28);
+#endif
+#if DOUT29 >= 0
+        mcu_config_output(DOUT29);
+#endif
+#if DOUT30 >= 0
+        mcu_config_output(DOUT30);
+#endif
+#if DOUT31 >= 0
+        mcu_config_output(DOUT31);
 #endif
 #if LIMIT_X >= 0
         mcu_config_input(LIMIT_X);
@@ -814,67 +862,67 @@ void mcu_init(void)
 #endif
 #endif
 #if ANALOG0 >= 0
-        mcu_config_analog(ANALOG0);
+        mcu_config_input(ANALOG0);
         mcu_get_analog(ANALOG0);
 #endif
 #if ANALOG1 >= 0
-        mcu_config_analog(ANALOG1);
+        mcu_config_input(ANALOG1);
         mcu_get_analog(ANALOG1);
 #endif
 #if ANALOG2 >= 0
-        mcu_config_analog(ANALOG2);
+        mcu_config_input(ANALOG2);
         mcu_get_analog(ANALOG2);
 #endif
 #if ANALOG3 >= 0
-        mcu_config_analog(ANALOG3);
+        mcu_config_input(ANALOG3);
         mcu_get_analog(ANALOG3);
 #endif
 #if ANALOG4 >= 0
-        mcu_config_analog(ANALOG4);
+        mcu_config_input(ANALOG4);
         mcu_get_analog(ANALOG4);
 #endif
 #if ANALOG5 >= 0
-        mcu_config_analog(ANALOG5);
+        mcu_config_input(ANALOG5);
         mcu_get_analog(ANALOG5);
 #endif
 #if ANALOG6 >= 0
-        mcu_config_analog(ANALOG6);
+        mcu_config_input(ANALOG6);
         mcu_get_analog(ANALOG6);
 #endif
 #if ANALOG7 >= 0
-        mcu_config_analog(ANALOG7);
+        mcu_config_input(ANALOG7);
         mcu_get_analog(ANALOG7);
 #endif
 #if ANALOG8 >= 0
-        mcu_config_analog(ANALOG8);
+        mcu_config_input(ANALOG8);
         mcu_get_analog(ANALOG8);
 #endif
 #if ANALOG9 >= 0
-        mcu_config_analog(ANALOG9);
+        mcu_config_input(ANALOG9);
         mcu_get_analog(ANALOG9);
 #endif
 #if ANALOG10 >= 0
-        mcu_config_analog(ANALOG10);
+        mcu_config_input(ANALOG10);
         mcu_get_analog(ANALOG10);
 #endif
 #if ANALOG11 >= 0
-        mcu_config_analog(ANALOG11);
+        mcu_config_input(ANALOG11);
         mcu_get_analog(ANALOG11);
 #endif
 #if ANALOG12 >= 0
-        mcu_config_analog(ANALOG12);
+        mcu_config_input(ANALOG12);
         mcu_get_analog(ANALOG12);
 #endif
 #if ANALOG13 >= 0
-        mcu_config_analog(ANALOG13);
+        mcu_config_input(ANALOG13);
         mcu_get_analog(ANALOG13);
 #endif
 #if ANALOG14 >= 0
-        mcu_config_analog(ANALOG14);
+        mcu_config_input(ANALOG14);
         mcu_get_analog(ANALOG14);
 #endif
 #if ANALOG15 >= 0
-        mcu_config_analog(ANALOG15);
+        mcu_config_input(ANALOG15);
         mcu_get_analog(ANALOG15);
 #endif
 #if DIN0 >= 0
@@ -997,18 +1045,136 @@ void mcu_init(void)
         mcu_config_pullup(DIN15);
 #endif
 #endif
+#if DIN16 >= 0
+        mcu_config_input(DIN16);
+#ifdef DIN16_PULLUP
+        mcu_config_pullup(DIN16);
+#endif
+#endif
+#if DIN17 >= 0
+        mcu_config_input(DIN17);
+#ifdef DIN17_PULLUP
+        mcu_config_pullup(DIN17);
+#endif
+#endif
+#if DIN18 >= 0
+        mcu_config_input(DIN18);
+#ifdef DIN18_PULLUP
+        mcu_config_pullup(DIN18);
+#endif
+#endif
+#if DIN19 >= 0
+        mcu_config_input(DIN19);
+#ifdef DIN19_PULLUP
+        mcu_config_pullup(DIN19);
+#endif
+#endif
+#if DIN20 >= 0
+        mcu_config_input(DIN20);
+#ifdef DIN20_PULLUP
+        mcu_config_pullup(DIN20);
+#endif
+#endif
+#if DIN21 >= 0
+        mcu_config_input(DIN21);
+#ifdef DIN21_PULLUP
+        mcu_config_pullup(DIN21);
+#endif
+#endif
+#if DIN22 >= 0
+        mcu_config_input(DIN22);
+#ifdef DIN22_PULLUP
+        mcu_config_pullup(DIN22);
+#endif
+#endif
+#if DIN23 >= 0
+        mcu_config_input(DIN23);
+#ifdef DIN23_PULLUP
+        mcu_config_pullup(DIN23);
+#endif
+#endif
+#if DIN24 >= 0
+        mcu_config_input(DIN24);
+#ifdef DIN24_PULLUP
+        mcu_config_pullup(DIN24);
+#endif
+#endif
+#if DIN25 >= 0
+        mcu_config_input(DIN25);
+#ifdef DIN25_PULLUP
+        mcu_config_pullup(DIN25);
+#endif
+#endif
+#if DIN26 >= 0
+        mcu_config_input(DIN26);
+#ifdef DIN26_PULLUP
+        mcu_config_pullup(DIN26);
+#endif
+#endif
+#if DIN27 >= 0
+        mcu_config_input(DIN27);
+#ifdef DIN27_PULLUP
+        mcu_config_pullup(DIN27);
+#endif
+#endif
+#if DIN28 >= 0
+        mcu_config_input(DIN28);
+#ifdef DIN28_PULLUP
+        mcu_config_pullup(DIN28);
+#endif
+#endif
+#if DIN29 >= 0
+        mcu_config_input(DIN29);
+#ifdef DIN29_PULLUP
+        mcu_config_pullup(DIN29);
+#endif
+#endif
+#if DIN30 >= 0
+        mcu_config_input(DIN30);
+#ifdef DIN30_PULLUP
+        mcu_config_pullup(DIN30);
+#endif
+#endif
+#if DIN31 >= 0
+        mcu_config_input(DIN31);
+#ifdef DIN31_PULLUP
+        mcu_config_pullup(DIN31);
+#endif
+#endif
 #if TX >= 0
         mcu_config_output(TX);
 #endif
 #if RX >= 0
         mcu_config_input(RX);
+#ifdef RX_PULLUP
+        mcu_config_pullup(RX);
+#endif
 #endif
 #if USB_DM >= 0
         mcu_config_input(USB_DM);
+#ifdef USB_DM_PULLUP
+        mcu_config_pullup(USB_DM);
+#endif
 #endif
 #if USB_DP >= 0
         mcu_config_input(USB_DP);
+#ifdef USB_DP_PULLUP
+        mcu_config_pullup(USB_DP);
 #endif
+#endif
+#if SPI_CLK >= 0
+        mcu_config_output(SPI_CLK);
+#endif
+#if SPI_SDI >= 0
+        mcu_config_input(SPI_SDI);
+#ifdef SPI_SDI_PULLUP
+        mcu_config_pullup(SPI_SDI);
+#endif
+#endif
+#if SPI_SDO >= 0
+        mcu_config_output(SPI_SDO);
+#endif
+
         mcu_usart_init();
         mcu_rtc_init();
 #if SERVOS_MASK > 0

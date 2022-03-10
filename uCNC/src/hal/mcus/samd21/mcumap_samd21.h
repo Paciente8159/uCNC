@@ -363,133 +363,309 @@ extern "C"
 #define DIO35_BIT PWM15_BIT
 #define DIO35_GPIO PWM15_GPIO
 #endif
-#if (defined(DOUT0_PORT) && defined(DOUT0_BIT))
-#define DOUT0 36
-#define DOUT0_GPIO (PORTREG(DOUT0_PORT))
+#if (defined(SERVO0_PORT) && defined(SERVO0_BIT))
+#define SERVO0 36
+#define SERVO0_GPIO (PORTREG(SERVO0_PORT))
 #define DIO36 36
-#define DIO36_PORT DOUT0_PORT
-#define DIO36_BIT DOUT0_BIT
-#define DIO36_GPIO DOUT0_GPIO
+#define DIO36_PORT SERVO0_PORT
+#define DIO36_BIT SERVO0_BIT
+#define DIO36_GPIO SERVO0_GPIO
+#endif
+#if (defined(SERVO1_PORT) && defined(SERVO1_BIT))
+#define SERVO1 37
+#define SERVO1_GPIO (PORTREG(SERVO1_PORT))
+#define DIO37 37
+#define DIO37_PORT SERVO1_PORT
+#define DIO37_BIT SERVO1_BIT
+#define DIO37_GPIO SERVO1_GPIO
+#endif
+#if (defined(SERVO2_PORT) && defined(SERVO2_BIT))
+#define SERVO2 38
+#define SERVO2_GPIO (PORTREG(SERVO2_PORT))
+#define DIO38 38
+#define DIO38_PORT SERVO2_PORT
+#define DIO38_BIT SERVO2_BIT
+#define DIO38_GPIO SERVO2_GPIO
+#endif
+#if (defined(SERVO3_PORT) && defined(SERVO3_BIT))
+#define SERVO3 39
+#define SERVO3_GPIO (PORTREG(SERVO3_PORT))
+#define DIO39 39
+#define DIO39_PORT SERVO3_PORT
+#define DIO39_BIT SERVO3_BIT
+#define DIO39_GPIO SERVO3_GPIO
+#endif
+#if (defined(SERVO4_PORT) && defined(SERVO4_BIT))
+#define SERVO4 40
+#define SERVO4_GPIO (PORTREG(SERVO4_PORT))
+#define DIO40 40
+#define DIO40_PORT SERVO4_PORT
+#define DIO40_BIT SERVO4_BIT
+#define DIO40_GPIO SERVO4_GPIO
+#endif
+#if (defined(SERVO5_PORT) && defined(SERVO5_BIT))
+#define SERVO5 41
+#define SERVO5_GPIO (PORTREG(SERVO5_PORT))
+#define DIO41 41
+#define DIO41_PORT SERVO5_PORT
+#define DIO41_BIT SERVO5_BIT
+#define DIO41_GPIO SERVO5_GPIO
+#endif
+#if (defined(DOUT0_PORT) && defined(DOUT0_BIT))
+#define DOUT0 42
+#define DOUT0_GPIO (PORTREG(DOUT0_PORT))
+#define DIO42 42
+#define DIO42_PORT DOUT0_PORT
+#define DIO42_BIT DOUT0_BIT
+#define DIO42_GPIO DOUT0_GPIO
 #endif
 #if (defined(DOUT1_PORT) && defined(DOUT1_BIT))
-#define DOUT1 37
+#define DOUT1 43
 #define DOUT1_GPIO (PORTREG(DOUT1_PORT))
-#define DIO37 37
-#define DIO37_PORT DOUT1_PORT
-#define DIO37_BIT DOUT1_BIT
-#define DIO37_GPIO DOUT1_GPIO
+#define DIO43 43
+#define DIO43_PORT DOUT1_PORT
+#define DIO43_BIT DOUT1_BIT
+#define DIO43_GPIO DOUT1_GPIO
 #endif
 #if (defined(DOUT2_PORT) && defined(DOUT2_BIT))
-#define DOUT2 38
+#define DOUT2 44
 #define DOUT2_GPIO (PORTREG(DOUT2_PORT))
-#define DIO38 38
-#define DIO38_PORT DOUT2_PORT
-#define DIO38_BIT DOUT2_BIT
-#define DIO38_GPIO DOUT2_GPIO
+#define DIO44 44
+#define DIO44_PORT DOUT2_PORT
+#define DIO44_BIT DOUT2_BIT
+#define DIO44_GPIO DOUT2_GPIO
 #endif
 #if (defined(DOUT3_PORT) && defined(DOUT3_BIT))
-#define DOUT3 39
+#define DOUT3 45
 #define DOUT3_GPIO (PORTREG(DOUT3_PORT))
-#define DIO39 39
-#define DIO39_PORT DOUT3_PORT
-#define DIO39_BIT DOUT3_BIT
-#define DIO39_GPIO DOUT3_GPIO
+#define DIO45 45
+#define DIO45_PORT DOUT3_PORT
+#define DIO45_BIT DOUT3_BIT
+#define DIO45_GPIO DOUT3_GPIO
 #endif
 #if (defined(DOUT4_PORT) && defined(DOUT4_BIT))
-#define DOUT4 40
+#define DOUT4 46
 #define DOUT4_GPIO (PORTREG(DOUT4_PORT))
-#define DIO40 40
-#define DIO40_PORT DOUT4_PORT
-#define DIO40_BIT DOUT4_BIT
-#define DIO40_GPIO DOUT4_GPIO
+#define DIO46 46
+#define DIO46_PORT DOUT4_PORT
+#define DIO46_BIT DOUT4_BIT
+#define DIO46_GPIO DOUT4_GPIO
 #endif
 #if (defined(DOUT5_PORT) && defined(DOUT5_BIT))
-#define DOUT5 41
+#define DOUT5 47
 #define DOUT5_GPIO (PORTREG(DOUT5_PORT))
-#define DIO41 41
-#define DIO41_PORT DOUT5_PORT
-#define DIO41_BIT DOUT5_BIT
-#define DIO41_GPIO DOUT5_GPIO
+#define DIO47 47
+#define DIO47_PORT DOUT5_PORT
+#define DIO47_BIT DOUT5_BIT
+#define DIO47_GPIO DOUT5_GPIO
 #endif
 #if (defined(DOUT6_PORT) && defined(DOUT6_BIT))
-#define DOUT6 42
+#define DOUT6 48
 #define DOUT6_GPIO (PORTREG(DOUT6_PORT))
-#define DIO42 42
-#define DIO42_PORT DOUT6_PORT
-#define DIO42_BIT DOUT6_BIT
-#define DIO42_GPIO DOUT6_GPIO
+#define DIO48 48
+#define DIO48_PORT DOUT6_PORT
+#define DIO48_BIT DOUT6_BIT
+#define DIO48_GPIO DOUT6_GPIO
 #endif
 #if (defined(DOUT7_PORT) && defined(DOUT7_BIT))
-#define DOUT7 43
+#define DOUT7 49
 #define DOUT7_GPIO (PORTREG(DOUT7_PORT))
-#define DIO43 43
-#define DIO43_PORT DOUT7_PORT
-#define DIO43_BIT DOUT7_BIT
-#define DIO43_GPIO DOUT7_GPIO
+#define DIO49 49
+#define DIO49_PORT DOUT7_PORT
+#define DIO49_BIT DOUT7_BIT
+#define DIO49_GPIO DOUT7_GPIO
 #endif
 #if (defined(DOUT8_PORT) && defined(DOUT8_BIT))
-#define DOUT8 44
+#define DOUT8 50
 #define DOUT8_GPIO (PORTREG(DOUT8_PORT))
-#define DIO44 44
-#define DIO44_PORT DOUT8_PORT
-#define DIO44_BIT DOUT8_BIT
-#define DIO44_GPIO DOUT8_GPIO
+#define DIO50 50
+#define DIO50_PORT DOUT8_PORT
+#define DIO50_BIT DOUT8_BIT
+#define DIO50_GPIO DOUT8_GPIO
 #endif
 #if (defined(DOUT9_PORT) && defined(DOUT9_BIT))
-#define DOUT9 45
+#define DOUT9 51
 #define DOUT9_GPIO (PORTREG(DOUT9_PORT))
-#define DIO45 45
-#define DIO45_PORT DOUT9_PORT
-#define DIO45_BIT DOUT9_BIT
-#define DIO45_GPIO DOUT9_GPIO
+#define DIO51 51
+#define DIO51_PORT DOUT9_PORT
+#define DIO51_BIT DOUT9_BIT
+#define DIO51_GPIO DOUT9_GPIO
 #endif
 #if (defined(DOUT10_PORT) && defined(DOUT10_BIT))
-#define DOUT10 46
+#define DOUT10 52
 #define DOUT10_GPIO (PORTREG(DOUT10_PORT))
-#define DIO46 46
-#define DIO46_PORT DOUT10_PORT
-#define DIO46_BIT DOUT10_BIT
-#define DIO46_GPIO DOUT10_GPIO
+#define DIO52 52
+#define DIO52_PORT DOUT10_PORT
+#define DIO52_BIT DOUT10_BIT
+#define DIO52_GPIO DOUT10_GPIO
 #endif
 #if (defined(DOUT11_PORT) && defined(DOUT11_BIT))
-#define DOUT11 47
+#define DOUT11 53
 #define DOUT11_GPIO (PORTREG(DOUT11_PORT))
-#define DIO47 47
-#define DIO47_PORT DOUT11_PORT
-#define DIO47_BIT DOUT11_BIT
-#define DIO47_GPIO DOUT11_GPIO
+#define DIO53 53
+#define DIO53_PORT DOUT11_PORT
+#define DIO53_BIT DOUT11_BIT
+#define DIO53_GPIO DOUT11_GPIO
 #endif
 #if (defined(DOUT12_PORT) && defined(DOUT12_BIT))
-#define DOUT12 48
+#define DOUT12 54
 #define DOUT12_GPIO (PORTREG(DOUT12_PORT))
-#define DIO48 48
-#define DIO48_PORT DOUT12_PORT
-#define DIO48_BIT DOUT12_BIT
-#define DIO48_GPIO DOUT12_GPIO
+#define DIO54 54
+#define DIO54_PORT DOUT12_PORT
+#define DIO54_BIT DOUT12_BIT
+#define DIO54_GPIO DOUT12_GPIO
 #endif
 #if (defined(DOUT13_PORT) && defined(DOUT13_BIT))
-#define DOUT13 49
+#define DOUT13 55
 #define DOUT13_GPIO (PORTREG(DOUT13_PORT))
-#define DIO49 49
-#define DIO49_PORT DOUT13_PORT
-#define DIO49_BIT DOUT13_BIT
-#define DIO49_GPIO DOUT13_GPIO
+#define DIO55 55
+#define DIO55_PORT DOUT13_PORT
+#define DIO55_BIT DOUT13_BIT
+#define DIO55_GPIO DOUT13_GPIO
 #endif
 #if (defined(DOUT14_PORT) && defined(DOUT14_BIT))
-#define DOUT14 50
+#define DOUT14 56
 #define DOUT14_GPIO (PORTREG(DOUT14_PORT))
-#define DIO50 50
-#define DIO50_PORT DOUT14_PORT
-#define DIO50_BIT DOUT14_BIT
-#define DIO50_GPIO DOUT14_GPIO
+#define DIO56 56
+#define DIO56_PORT DOUT14_PORT
+#define DIO56_BIT DOUT14_BIT
+#define DIO56_GPIO DOUT14_GPIO
 #endif
 #if (defined(DOUT15_PORT) && defined(DOUT15_BIT))
-#define DOUT15 51
+#define DOUT15 57
 #define DOUT15_GPIO (PORTREG(DOUT15_PORT))
-#define DIO51 51
-#define DIO51_PORT DOUT15_PORT
-#define DIO51_BIT DOUT15_BIT
-#define DIO51_GPIO DOUT15_GPIO
+#define DIO57 57
+#define DIO57_PORT DOUT15_PORT
+#define DIO57_BIT DOUT15_BIT
+#define DIO57_GPIO DOUT15_GPIO
+#endif
+#if (defined(DOUT16_PORT) && defined(DOUT16_BIT))
+#define DOUT16 58
+#define DOUT16_GPIO (PORTREG(DOUT16_PORT))
+#define DIO58 58
+#define DIO58_PORT DOUT16_PORT
+#define DIO58_BIT DOUT16_BIT
+#define DIO58_GPIO DOUT16_GPIO
+#endif
+#if (defined(DOUT17_PORT) && defined(DOUT17_BIT))
+#define DOUT17 59
+#define DOUT17_GPIO (PORTREG(DOUT17_PORT))
+#define DIO59 59
+#define DIO59_PORT DOUT17_PORT
+#define DIO59_BIT DOUT17_BIT
+#define DIO59_GPIO DOUT17_GPIO
+#endif
+#if (defined(DOUT18_PORT) && defined(DOUT18_BIT))
+#define DOUT18 60
+#define DOUT18_GPIO (PORTREG(DOUT18_PORT))
+#define DIO60 60
+#define DIO60_PORT DOUT18_PORT
+#define DIO60_BIT DOUT18_BIT
+#define DIO60_GPIO DOUT18_GPIO
+#endif
+#if (defined(DOUT19_PORT) && defined(DOUT19_BIT))
+#define DOUT19 61
+#define DOUT19_GPIO (PORTREG(DOUT19_PORT))
+#define DIO61 61
+#define DIO61_PORT DOUT19_PORT
+#define DIO61_BIT DOUT19_BIT
+#define DIO61_GPIO DOUT19_GPIO
+#endif
+#if (defined(DOUT20_PORT) && defined(DOUT20_BIT))
+#define DOUT20 62
+#define DOUT20_GPIO (PORTREG(DOUT20_PORT))
+#define DIO62 62
+#define DIO62_PORT DOUT20_PORT
+#define DIO62_BIT DOUT20_BIT
+#define DIO62_GPIO DOUT20_GPIO
+#endif
+#if (defined(DOUT21_PORT) && defined(DOUT21_BIT))
+#define DOUT21 63
+#define DOUT21_GPIO (PORTREG(DOUT21_PORT))
+#define DIO63 63
+#define DIO63_PORT DOUT21_PORT
+#define DIO63_BIT DOUT21_BIT
+#define DIO63_GPIO DOUT21_GPIO
+#endif
+#if (defined(DOUT22_PORT) && defined(DOUT22_BIT))
+#define DOUT22 64
+#define DOUT22_GPIO (PORTREG(DOUT22_PORT))
+#define DIO64 64
+#define DIO64_PORT DOUT22_PORT
+#define DIO64_BIT DOUT22_BIT
+#define DIO64_GPIO DOUT22_GPIO
+#endif
+#if (defined(DOUT23_PORT) && defined(DOUT23_BIT))
+#define DOUT23 65
+#define DOUT23_GPIO (PORTREG(DOUT23_PORT))
+#define DIO65 65
+#define DIO65_PORT DOUT23_PORT
+#define DIO65_BIT DOUT23_BIT
+#define DIO65_GPIO DOUT23_GPIO
+#endif
+#if (defined(DOUT24_PORT) && defined(DOUT24_BIT))
+#define DOUT24 66
+#define DOUT24_GPIO (PORTREG(DOUT24_PORT))
+#define DIO66 66
+#define DIO66_PORT DOUT24_PORT
+#define DIO66_BIT DOUT24_BIT
+#define DIO66_GPIO DOUT24_GPIO
+#endif
+#if (defined(DOUT25_PORT) && defined(DOUT25_BIT))
+#define DOUT25 67
+#define DOUT25_GPIO (PORTREG(DOUT25_PORT))
+#define DIO67 67
+#define DIO67_PORT DOUT25_PORT
+#define DIO67_BIT DOUT25_BIT
+#define DIO67_GPIO DOUT25_GPIO
+#endif
+#if (defined(DOUT26_PORT) && defined(DOUT26_BIT))
+#define DOUT26 68
+#define DOUT26_GPIO (PORTREG(DOUT26_PORT))
+#define DIO68 68
+#define DIO68_PORT DOUT26_PORT
+#define DIO68_BIT DOUT26_BIT
+#define DIO68_GPIO DOUT26_GPIO
+#endif
+#if (defined(DOUT27_PORT) && defined(DOUT27_BIT))
+#define DOUT27 69
+#define DOUT27_GPIO (PORTREG(DOUT27_PORT))
+#define DIO69 69
+#define DIO69_PORT DOUT27_PORT
+#define DIO69_BIT DOUT27_BIT
+#define DIO69_GPIO DOUT27_GPIO
+#endif
+#if (defined(DOUT28_PORT) && defined(DOUT28_BIT))
+#define DOUT28 70
+#define DOUT28_GPIO (PORTREG(DOUT28_PORT))
+#define DIO70 70
+#define DIO70_PORT DOUT28_PORT
+#define DIO70_BIT DOUT28_BIT
+#define DIO70_GPIO DOUT28_GPIO
+#endif
+#if (defined(DOUT29_PORT) && defined(DOUT29_BIT))
+#define DOUT29 71
+#define DOUT29_GPIO (PORTREG(DOUT29_PORT))
+#define DIO71 71
+#define DIO71_PORT DOUT29_PORT
+#define DIO71_BIT DOUT29_BIT
+#define DIO71_GPIO DOUT29_GPIO
+#endif
+#if (defined(DOUT30_PORT) && defined(DOUT30_BIT))
+#define DOUT30 72
+#define DOUT30_GPIO (PORTREG(DOUT30_PORT))
+#define DIO72 72
+#define DIO72_PORT DOUT30_PORT
+#define DIO72_BIT DOUT30_BIT
+#define DIO72_GPIO DOUT30_GPIO
+#endif
+#if (defined(DOUT31_PORT) && defined(DOUT31_BIT))
+#define DOUT31 73
+#define DOUT31_GPIO (PORTREG(DOUT31_PORT))
+#define DIO73 73
+#define DIO73_PORT DOUT31_PORT
+#define DIO73_BIT DOUT31_BIT
+#define DIO73_GPIO DOUT31_GPIO
 #endif
 #if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
 #define LIMIT_X 100
@@ -859,6 +1035,134 @@ extern "C"
 #define DIO145_BIT DIN15_BIT
 #define DIO145_GPIO DIN15_GPIO
 #endif
+#if (defined(DIN16_PORT) && defined(DIN16_BIT))
+#define DIN16 146
+#define DIN16_GPIO (PORTREG(DIN16_PORT))
+#define DIO146 146
+#define DIO146_PORT DIN16_PORT
+#define DIO146_BIT DIN16_BIT
+#define DIO146_GPIO DIN16_GPIO
+#endif
+#if (defined(DIN17_PORT) && defined(DIN17_BIT))
+#define DIN17 147
+#define DIN17_GPIO (PORTREG(DIN17_PORT))
+#define DIO147 147
+#define DIO147_PORT DIN17_PORT
+#define DIO147_BIT DIN17_BIT
+#define DIO147_GPIO DIN17_GPIO
+#endif
+#if (defined(DIN18_PORT) && defined(DIN18_BIT))
+#define DIN18 148
+#define DIN18_GPIO (PORTREG(DIN18_PORT))
+#define DIO148 148
+#define DIO148_PORT DIN18_PORT
+#define DIO148_BIT DIN18_BIT
+#define DIO148_GPIO DIN18_GPIO
+#endif
+#if (defined(DIN19_PORT) && defined(DIN19_BIT))
+#define DIN19 149
+#define DIN19_GPIO (PORTREG(DIN19_PORT))
+#define DIO149 149
+#define DIO149_PORT DIN19_PORT
+#define DIO149_BIT DIN19_BIT
+#define DIO149_GPIO DIN19_GPIO
+#endif
+#if (defined(DIN20_PORT) && defined(DIN20_BIT))
+#define DIN20 150
+#define DIN20_GPIO (PORTREG(DIN20_PORT))
+#define DIO150 150
+#define DIO150_PORT DIN20_PORT
+#define DIO150_BIT DIN20_BIT
+#define DIO150_GPIO DIN20_GPIO
+#endif
+#if (defined(DIN21_PORT) && defined(DIN21_BIT))
+#define DIN21 151
+#define DIN21_GPIO (PORTREG(DIN21_PORT))
+#define DIO151 151
+#define DIO151_PORT DIN21_PORT
+#define DIO151_BIT DIN21_BIT
+#define DIO151_GPIO DIN21_GPIO
+#endif
+#if (defined(DIN22_PORT) && defined(DIN22_BIT))
+#define DIN22 152
+#define DIN22_GPIO (PORTREG(DIN22_PORT))
+#define DIO152 152
+#define DIO152_PORT DIN22_PORT
+#define DIO152_BIT DIN22_BIT
+#define DIO152_GPIO DIN22_GPIO
+#endif
+#if (defined(DIN23_PORT) && defined(DIN23_BIT))
+#define DIN23 153
+#define DIN23_GPIO (PORTREG(DIN23_PORT))
+#define DIO153 153
+#define DIO153_PORT DIN23_PORT
+#define DIO153_BIT DIN23_BIT
+#define DIO153_GPIO DIN23_GPIO
+#endif
+#if (defined(DIN24_PORT) && defined(DIN24_BIT))
+#define DIN24 154
+#define DIN24_GPIO (PORTREG(DIN24_PORT))
+#define DIO154 154
+#define DIO154_PORT DIN24_PORT
+#define DIO154_BIT DIN24_BIT
+#define DIO154_GPIO DIN24_GPIO
+#endif
+#if (defined(DIN25_PORT) && defined(DIN25_BIT))
+#define DIN25 155
+#define DIN25_GPIO (PORTREG(DIN25_PORT))
+#define DIO155 155
+#define DIO155_PORT DIN25_PORT
+#define DIO155_BIT DIN25_BIT
+#define DIO155_GPIO DIN25_GPIO
+#endif
+#if (defined(DIN26_PORT) && defined(DIN26_BIT))
+#define DIN26 156
+#define DIN26_GPIO (PORTREG(DIN26_PORT))
+#define DIO156 156
+#define DIO156_PORT DIN26_PORT
+#define DIO156_BIT DIN26_BIT
+#define DIO156_GPIO DIN26_GPIO
+#endif
+#if (defined(DIN27_PORT) && defined(DIN27_BIT))
+#define DIN27 157
+#define DIN27_GPIO (PORTREG(DIN27_PORT))
+#define DIO157 157
+#define DIO157_PORT DIN27_PORT
+#define DIO157_BIT DIN27_BIT
+#define DIO157_GPIO DIN27_GPIO
+#endif
+#if (defined(DIN28_PORT) && defined(DIN28_BIT))
+#define DIN28 158
+#define DIN28_GPIO (PORTREG(DIN28_PORT))
+#define DIO158 158
+#define DIO158_PORT DIN28_PORT
+#define DIO158_BIT DIN28_BIT
+#define DIO158_GPIO DIN28_GPIO
+#endif
+#if (defined(DIN29_PORT) && defined(DIN29_BIT))
+#define DIN29 159
+#define DIN29_GPIO (PORTREG(DIN29_PORT))
+#define DIO159 159
+#define DIO159_PORT DIN29_PORT
+#define DIO159_BIT DIN29_BIT
+#define DIO159_GPIO DIN29_GPIO
+#endif
+#if (defined(DIN30_PORT) && defined(DIN30_BIT))
+#define DIN30 160
+#define DIN30_GPIO (PORTREG(DIN30_PORT))
+#define DIO160 160
+#define DIO160_PORT DIN30_PORT
+#define DIO160_BIT DIN30_BIT
+#define DIO160_GPIO DIN30_GPIO
+#endif
+#if (defined(DIN31_PORT) && defined(DIN31_BIT))
+#define DIN31 161
+#define DIN31_GPIO (PORTREG(DIN31_PORT))
+#define DIO161 161
+#define DIO161_PORT DIN31_PORT
+#define DIO161_BIT DIN31_BIT
+#define DIO161_GPIO DIN31_GPIO
+#endif
 #if (defined(TX_PORT) && defined(TX_BIT))
 #define TX 200
 #define TX_GPIO (PORTREG(TX_PORT))
@@ -891,53 +1195,29 @@ extern "C"
 #define DIO203_BIT USB_DP_BIT
 #define DIO203_GPIO USB_DP_GPIO
 #endif
-#if (defined(SERVO0_PORT) && defined(SERVO0_BIT))
-#define SERVO0 52
-#define SERVO0_GPIO (PORTREG(SERVO0_PORT))
-#define DIO52 52
-#define DIO52_PORT SERVO0_PORT
-#define DIO52_BIT SERVO0_BIT
-#define DIO52_GPIO SERVO0_GPIO
+#if (defined(SPI_CLK_PORT) && defined(SPI_CLK_BIT))
+#define SPI_CLK 204
+#define SPI_CLK_GPIO (PORTREG(SPI_CLK_PORT))
+#define DIO204 204
+#define DIO204_PORT SPI_CLK_PORT
+#define DIO204_BIT SPI_CLK_BIT
+#define DIO204_GPIO SPI_CLK_GPIO
 #endif
-#if (defined(SERVO1_PORT) && defined(SERVO1_BIT))
-#define SERVO1 53
-#define SERVO1_GPIO (PORTREG(SERVO1_PORT))
-#define DIO53 53
-#define DIO53_PORT SERVO1_PORT
-#define DIO53_BIT SERVO1_BIT
-#define DIO53_GPIO SERVO1_GPIO
+#if (defined(SPI_SDI_PORT) && defined(SPI_SDI_BIT))
+#define SPI_SDI 205
+#define SPI_SDI_GPIO (PORTREG(SPI_SDI_PORT))
+#define DIO205 205
+#define DIO205_PORT SPI_SDI_PORT
+#define DIO205_BIT SPI_SDI_BIT
+#define DIO205_GPIO SPI_SDI_GPIO
 #endif
-#if (defined(SERVO2_PORT) && defined(SERVO2_BIT))
-#define SERVO2 54
-#define SERVO2_GPIO (PORTREG(SERVO2_PORT))
-#define DIO54 54
-#define DIO54_PORT SERVO2_PORT
-#define DIO54_BIT SERVO2_BIT
-#define DIO54_GPIO SERVO2_GPIO
-#endif
-#if (defined(SERVO3_PORT) && defined(SERVO3_BIT))
-#define SERVO3 55
-#define SERVO3_GPIO (PORTREG(SERVO3_PORT))
-#define DIO55 55
-#define DIO55_PORT SERVO3_PORT
-#define DIO55_BIT SERVO3_BIT
-#define DIO55_GPIO SERVO3_GPIO
-#endif
-#if (defined(SERVO4_PORT) && defined(SERVO4_BIT))
-#define SERVO4 56
-#define SERVO4_GPIO (PORTREG(SERVO4_PORT))
-#define DIO56 56
-#define DIO56_PORT SERVO4_PORT
-#define DIO56_BIT SERVO4_BIT
-#define DIO56_GPIO SERVO4_GPIO
-#endif
-#if (defined(SERVO5_PORT) && defined(SERVO5_BIT))
-#define SERVO5 57
-#define SERVO5_GPIO (PORTREG(SERVO5_PORT))
-#define DIO57 57
-#define DIO57_PORT SERVO5_PORT
-#define DIO57_BIT SERVO5_BIT
-#define DIO57_GPIO SERVO5_GPIO
+#if (defined(SPI_SDO_PORT) && defined(SPI_SDO_BIT))
+#define SPI_SDO 206
+#define SPI_SDO_GPIO (PORTREG(SPI_SDO_PORT))
+#define DIO206 206
+#define DIO206_PORT SPI_SDO_PORT
+#define DIO206_BIT SPI_SDO_BIT
+#define DIO206_GPIO SPI_SDO_GPIO
 #endif
 
 #define __pinmuxevenodd0 PMUXE
@@ -1039,7 +1319,7 @@ extern "C"
 /*ISR inputs*/
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define LIMIT_X_ISRBIT (LIMIT_X_BIT & 0x0F)
-#define LIMIT_X_ISRMASK (1 << (LIMIT_X_BIT & 0x0F))
+#define LIMIT_X_ISRMASK (1U << (LIMIT_X_BIT & 0x0F))
 #define LIMIT_X_PMUXVAL 0
 #define LIMIT_X_PMUX (pinmux(LIMIT_X_PORT, LIMIT_X_BIT))
 #define DIO100_ISRBIT LIMIT_X_ISRBIT
@@ -1052,7 +1332,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
 #define LIMIT_Y_ISRBIT (LIMIT_Y_BIT & 0x0F)
-#define LIMIT_Y_ISRMASK (1 << (LIMIT_Y_BIT & 0x0F))
+#define LIMIT_Y_ISRMASK (1U << (LIMIT_Y_BIT & 0x0F))
 #define LIMIT_Y_PMUXVAL 0
 #define LIMIT_Y_PMUX (pinmux(LIMIT_Y_PORT, LIMIT_Y_BIT))
 #define DIO101_ISRBIT LIMIT_Y_ISRBIT
@@ -1065,7 +1345,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
 #define LIMIT_Z_ISRBIT (LIMIT_Z_BIT & 0x0F)
-#define LIMIT_Z_ISRMASK (1 << (LIMIT_Z_BIT & 0x0F))
+#define LIMIT_Z_ISRMASK (1U << (LIMIT_Z_BIT & 0x0F))
 #define LIMIT_Z_PMUXVAL 0
 #define LIMIT_Z_PMUX (pinmux(LIMIT_Z_PORT, LIMIT_Z_BIT))
 #define DIO102_ISRBIT LIMIT_Z_ISRBIT
@@ -1078,7 +1358,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
 #define LIMIT_X2_ISRBIT (LIMIT_X2_BIT & 0x0F)
-#define LIMIT_X2_ISRMASK (1 << (LIMIT_X2_BIT & 0x0F))
+#define LIMIT_X2_ISRMASK (1U << (LIMIT_X2_BIT & 0x0F))
 #define LIMIT_X2_PMUXVAL 0
 #define LIMIT_X2_PMUX (pinmux(LIMIT_X2_PORT, LIMIT_X2_BIT))
 #define DIO103_ISRBIT LIMIT_X2_ISRBIT
@@ -1091,7 +1371,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
 #define LIMIT_Y2_ISRBIT (LIMIT_Y2_BIT & 0x0F)
-#define LIMIT_Y2_ISRMASK (1 << (LIMIT_Y2_BIT & 0x0F))
+#define LIMIT_Y2_ISRMASK (1U << (LIMIT_Y2_BIT & 0x0F))
 #define LIMIT_Y2_PMUXVAL 0
 #define LIMIT_Y2_PMUX (pinmux(LIMIT_Y2_PORT, LIMIT_Y2_BIT))
 #define DIO104_ISRBIT LIMIT_Y2_ISRBIT
@@ -1104,7 +1384,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
 #define LIMIT_Z2_ISRBIT (LIMIT_Z2_BIT & 0x0F)
-#define LIMIT_Z2_ISRMASK (1 << (LIMIT_Z2_BIT & 0x0F))
+#define LIMIT_Z2_ISRMASK (1U << (LIMIT_Z2_BIT & 0x0F))
 #define LIMIT_Z2_PMUXVAL 0
 #define LIMIT_Z2_PMUX (pinmux(LIMIT_Z2_PORT, LIMIT_Z2_BIT))
 #define DIO105_ISRBIT LIMIT_Z2_ISRBIT
@@ -1117,7 +1397,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
 #define LIMIT_A_ISRBIT (LIMIT_A_BIT & 0x0F)
-#define LIMIT_A_ISRMASK (1 << (LIMIT_A_BIT & 0x0F))
+#define LIMIT_A_ISRMASK (1U << (LIMIT_A_BIT & 0x0F))
 #define LIMIT_A_PMUXVAL 0
 #define LIMIT_A_PMUX (pinmux(LIMIT_A_PORT, LIMIT_A_BIT))
 #define DIO106_ISRBIT LIMIT_A_ISRBIT
@@ -1130,7 +1410,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
 #define LIMIT_B_ISRBIT (LIMIT_B_BIT & 0x0F)
-#define LIMIT_B_ISRMASK (1 << (LIMIT_B_BIT & 0x0F))
+#define LIMIT_B_ISRMASK (1U << (LIMIT_B_BIT & 0x0F))
 #define LIMIT_B_PMUXVAL 0
 #define LIMIT_B_PMUX (pinmux(LIMIT_B_PORT, LIMIT_B_BIT))
 #define DIO107_ISRBIT LIMIT_B_ISRBIT
@@ -1143,7 +1423,7 @@ extern "C"
 #endif
 #if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
 #define LIMIT_C_ISRBIT (LIMIT_C_BIT & 0x0F)
-#define LIMIT_C_ISRMASK (1 << (LIMIT_C_BIT & 0x0F))
+#define LIMIT_C_ISRMASK (1U << (LIMIT_C_BIT & 0x0F))
 #define LIMIT_C_PMUXVAL 0
 #define LIMIT_C_PMUX (pinmux(LIMIT_C_PORT, LIMIT_C_BIT))
 #define DIO108_ISRBIT LIMIT_C_ISRBIT
@@ -1156,7 +1436,7 @@ extern "C"
 #endif
 #if (defined(PROBE_ISR) && defined(PROBE))
 #define PROBE_ISRBIT (PROBE_BIT & 0x0F)
-#define PROBE_ISRMASK (1 << (PROBE_BIT & 0x0F))
+#define PROBE_ISRMASK (1U << (PROBE_BIT & 0x0F))
 #define PROBE_PMUXVAL 0
 #define PROBE_PMUX (pinmux(PROBE_PORT, PROBE_BIT))
 #define DIO109_ISRBIT PROBE_ISRBIT
@@ -1169,7 +1449,7 @@ extern "C"
 #endif
 #if (defined(ESTOP_ISR) && defined(ESTOP))
 #define ESTOP_ISRBIT (ESTOP_BIT & 0x0F)
-#define ESTOP_ISRMASK (1 << (ESTOP_BIT & 0x0F))
+#define ESTOP_ISRMASK (1U << (ESTOP_BIT & 0x0F))
 #define ESTOP_PMUXVAL 0
 #define ESTOP_PMUX (pinmux(ESTOP_PORT, ESTOP_BIT))
 #define DIO110_ISRBIT ESTOP_ISRBIT
@@ -1182,7 +1462,7 @@ extern "C"
 #endif
 #if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
 #define SAFETY_DOOR_ISRBIT (SAFETY_DOOR_BIT & 0x0F)
-#define SAFETY_DOOR_ISRMASK (1 << (SAFETY_DOOR_BIT & 0x0F))
+#define SAFETY_DOOR_ISRMASK (1U << (SAFETY_DOOR_BIT & 0x0F))
 #define SAFETY_DOOR_PMUXVAL 0
 #define SAFETY_DOOR_PMUX (pinmux(SAFETY_DOOR_PORT, SAFETY_DOOR_BIT))
 #define DIO111_ISRBIT SAFETY_DOOR_ISRBIT
@@ -1195,7 +1475,7 @@ extern "C"
 #endif
 #if (defined(FHOLD_ISR) && defined(FHOLD))
 #define FHOLD_ISRBIT (FHOLD_BIT & 0x0F)
-#define FHOLD_ISRMASK (1 << (FHOLD_BIT & 0x0F))
+#define FHOLD_ISRMASK (1U << (FHOLD_BIT & 0x0F))
 #define FHOLD_PMUXVAL 0
 #define FHOLD_PMUX (pinmux(FHOLD_PORT, FHOLD_BIT))
 #define DIO112_ISRBIT FHOLD_ISRBIT
@@ -1208,7 +1488,7 @@ extern "C"
 #endif
 #if (defined(CS_RES_ISR) && defined(CS_RES))
 #define CS_RES_ISRBIT (CS_RES_BIT & 0x0F)
-#define CS_RES_ISRMASK (1 << (CS_RES_BIT & 0x0F))
+#define CS_RES_ISRMASK (1U << (CS_RES_BIT & 0x0F))
 #define CS_RES_PMUXVAL 0
 #define CS_RES_PMUX (pinmux(CS_RES_PORT, CS_RES_BIT))
 #define DIO113_ISRBIT CS_RES_ISRBIT
@@ -1221,7 +1501,7 @@ extern "C"
 #endif
 #if (defined(DIN0_ISR) && defined(DIN0))
 #define DIN0_ISRBIT (DIN0_BIT & 0x0F)
-#define DIN0_ISRMASK (1 << (DIN0_BIT & 0x0F))
+#define DIN0_ISRMASK (1U << (DIN0_BIT & 0x0F))
 #define DIN0_PMUXVAL 0
 #define DIN0_PMUX (pinmux(DIN0_PORT, DIN0_BIT))
 #define DIO130_ISRBIT DIN0_ISRBIT
@@ -1234,7 +1514,7 @@ extern "C"
 #endif
 #if (defined(DIN1_ISR) && defined(DIN1))
 #define DIN1_ISRBIT (DIN1_BIT & 0x0F)
-#define DIN1_ISRMASK (1 << (DIN1_BIT & 0x0F))
+#define DIN1_ISRMASK (1U << (DIN1_BIT & 0x0F))
 #define DIN1_PMUXVAL 0
 #define DIN1_PMUX (pinmux(DIN1_PORT, DIN1_BIT))
 #define DIO131_ISRBIT DIN1_ISRBIT
@@ -1247,7 +1527,7 @@ extern "C"
 #endif
 #if (defined(DIN2_ISR) && defined(DIN2))
 #define DIN2_ISRBIT (DIN2_BIT & 0x0F)
-#define DIN2_ISRMASK (1 << (DIN2_BIT & 0x0F))
+#define DIN2_ISRMASK (1U << (DIN2_BIT & 0x0F))
 #define DIN2_PMUXVAL 0
 #define DIN2_PMUX (pinmux(DIN2_PORT, DIN2_BIT))
 #define DIO132_ISRBIT DIN2_ISRBIT
@@ -1260,7 +1540,7 @@ extern "C"
 #endif
 #if (defined(DIN3_ISR) && defined(DIN3))
 #define DIN3_ISRBIT (DIN3_BIT & 0x0F)
-#define DIN3_ISRMASK (1 << (DIN3_BIT & 0x0F))
+#define DIN3_ISRMASK (1U << (DIN3_BIT & 0x0F))
 #define DIN3_PMUXVAL 0
 #define DIN3_PMUX (pinmux(DIN3_PORT, DIN3_BIT))
 #define DIO133_ISRBIT DIN3_ISRBIT
@@ -1273,7 +1553,7 @@ extern "C"
 #endif
 #if (defined(DIN4_ISR) && defined(DIN4))
 #define DIN4_ISRBIT (DIN4_BIT & 0x0F)
-#define DIN4_ISRMASK (1 << (DIN4_BIT & 0x0F))
+#define DIN4_ISRMASK (1U << (DIN4_BIT & 0x0F))
 #define DIN4_PMUXVAL 0
 #define DIN4_PMUX (pinmux(DIN4_PORT, DIN4_BIT))
 #define DIO134_ISRBIT DIN4_ISRBIT
@@ -1286,7 +1566,7 @@ extern "C"
 #endif
 #if (defined(DIN5_ISR) && defined(DIN5))
 #define DIN5_ISRBIT (DIN5_BIT & 0x0F)
-#define DIN5_ISRMASK (1 << (DIN5_BIT & 0x0F))
+#define DIN5_ISRMASK (1U << (DIN5_BIT & 0x0F))
 #define DIN5_PMUXVAL 0
 #define DIN5_PMUX (pinmux(DIN5_PORT, DIN5_BIT))
 #define DIO135_ISRBIT DIN5_ISRBIT
@@ -1299,7 +1579,7 @@ extern "C"
 #endif
 #if (defined(DIN6_ISR) && defined(DIN6))
 #define DIN6_ISRBIT (DIN6_BIT & 0x0F)
-#define DIN6_ISRMASK (1 << (DIN6_BIT & 0x0F))
+#define DIN6_ISRMASK (1U << (DIN6_BIT & 0x0F))
 #define DIN6_PMUXVAL 0
 #define DIN6_PMUX (pinmux(DIN6_PORT, DIN6_BIT))
 #define DIO136_ISRBIT DIN6_ISRBIT
@@ -1312,7 +1592,7 @@ extern "C"
 #endif
 #if (defined(DIN7_ISR) && defined(DIN7))
 #define DIN7_ISRBIT (DIN7_BIT & 0x0F)
-#define DIN7_ISRMASK (1 << (DIN7_BIT & 0x0F))
+#define DIN7_ISRMASK (1U << (DIN7_BIT & 0x0F))
 #define DIN7_PMUXVAL 0
 #define DIN7_PMUX (pinmux(DIN7_PORT, DIN7_BIT))
 #define DIO137_ISRBIT DIN7_ISRBIT
