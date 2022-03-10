@@ -95,9 +95,10 @@ TODO List of G-Codes in µCNC future releases:
 
 ### µCNC capabilities
 µCNC currently supports up to (depending on the MCU/board capabilities):
+```
   - 6 independent axis 
-  - 8* stepper step/dir drivers (6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis)
-  - 9* limit switches (6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops) (interrupt driven)
+  - 8* stepper step/dir drivers
+  - 9* limit switches (interrupt driven)
   - 1 probe switch (interrupt driven)
   - 1 feed hold input (interrupt driven)
   - 1 cycle start/resume input (interrupt driven)
@@ -105,9 +106,19 @@ TODO List of G-Codes in µCNC future releases:
   - 1 door open switch (interrupt driven)
   - 16 pwm outputs
   - 16 analog inputs
-  - 16 generic digital inputs
-  - 16 generic digital outputs
-  - 6 servo control outputs (50Hz)
+  - 32* generic digital inputs 
+  - 32* generic digital outputs
+  - 8 servo control outputs (50Hz-PPM)
+
+* see notes
+
+```
+
+NOTES:
+  * _6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis_
+  * _6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops_
+  * _Generic inputs support interrupts on the first 8 pins. Prior to version 1.4 the number of generic inputs was limited to 16._
+  * _Prior to version 1.4 the number of generic outputs  was limited to 16._
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board, but this feature is experimental and it's advise to disable DSS when using it.
 

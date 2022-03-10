@@ -12,6 +12,8 @@
 ### Changed
   - renamed PWM OCR to PWM CHANNEL and all boardmaps for AVR (#147)
   - modified UBRR calculation for AVR (match datasheet) (#147)
+  - expanded generic input and output IO from 16 to 32 (#149)
+  - added SPI pins definitions (SPI not implemented) (#149)
 
 ### Fixed
   - added missing globals to init functions with FORCE_GLOBALS_TO_0 enabled (#147)
@@ -23,6 +25,7 @@
   - fixed output pin toggle macro for AVR (#148)
   - fixed AVR RX pin setup (#148)
   - fixed BYTE_OPS redefinition (#148)
+  - fixed preprocessing checking for servo function definitions (#149)
 
 ## [1.4.0-alpha] - 2022-02-25
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's. The features are:
