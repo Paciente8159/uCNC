@@ -5,7 +5,9 @@
 
 # Changelog
 
-## [1.4.0-beta] - unreleased
+## [1.4.0-beta] - 2022-03-15
+µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
+Beta release fixes several issues detected in the alpha version. It also expans the generic pins capabilities for future expansions.
 
 ### Added
   - Output steps count on $P command print (#150)
@@ -599,6 +601,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta
 [1.4.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-alpha
 [1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
 [1.3.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.7
