@@ -689,6 +689,12 @@ void protocol_send_pins_states(void)
         }
     }
 
+    int32_t steps[STEPPER_COUNT];
+    itp_get_rt_position(steps);
+    serial_print_str(__romstr__("[STEPS:"));
+    serial_print_intarr(steps, STEPPER_COUNT);
+    serial_print_str(MSG_END);
+
 #ifdef ENABLE_PROTOCOL_MODULES
     mod_send_pins_states_hook();
 #endif

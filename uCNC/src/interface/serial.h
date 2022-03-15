@@ -58,7 +58,7 @@ extern "C"
 	void serial_print_int(int32_t num);
 	void serial_print_flt(float num);
 	void serial_print_fltunits(float num);
-	void serial_print_intarr(uint16_t *arr, uint8_t count);
+	void serial_print_intarr(int32_t *arr, uint8_t count);
 	void serial_print_fltarr(float *arr, uint8_t count);
 	void serial_flush(void);
 
