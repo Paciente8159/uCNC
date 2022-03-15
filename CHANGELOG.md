@@ -8,6 +8,7 @@
 ## [1.4.0-beta] - unreleased
 
 ### Added
+  - Output steps count on $P command print
 
 ### Changed
   - renamed PWM OCR to PWM CHANNEL and all boardmaps for AVR (#147)

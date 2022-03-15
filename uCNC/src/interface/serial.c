@@ -288,7 +288,7 @@ void serial_print_fltunits(float num)
     serial_print_flt(num);
 }
 
-void serial_print_intarr(uint16_t *arr, uint8_t count)
+void serial_print_intarr(int32_t *arr, uint8_t count)
 {
     do
     {
