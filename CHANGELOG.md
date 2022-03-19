@@ -5,6 +5,13 @@
 
 # Changelog
 
+## [1.4.0-beta2] - Unrelased
+µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
+Beta2 adds a subset of canned cycles G codes to µCNC.
+
+### Added
+  - Added canned cycles G81, G82, G83, G85, G86 and G89 to parser (enabled via config file)
+
 ## [1.4.0-beta] - 2022-03-15
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
 Beta release fixes several issues detected in the alpha version. It also expans the generic pins capabilities for future expansions.
