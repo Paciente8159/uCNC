@@ -68,6 +68,12 @@ extern "C"
 #define GCODE_WORD_R 0x2000
 #define GCODE_WORD_S 0x4000
 #define GCODE_WORD_T 0x8000
+
+#ifdef ENABLE_CANNED_CYCLES
+// only used in G83 can overlap D word
+#define GCODE_WORD_Q GCODE_WORD_D
+#endif
+
 	// H and Q are related to unsupported commands
 
 	// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
@@ -136,12 +142,12 @@ extern "C"
 		float f;
 		float p;
 		float r;
-#ifdef GCODE_PROCESS_LINE_NUMBERS
-		uint32_t n;
-#endif
 		int16_t s;
 		int8_t t;
 		uint8_t l;
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+		uint32_t n;
+#endif
 	} parser_words_t;
 
 	typedef struct

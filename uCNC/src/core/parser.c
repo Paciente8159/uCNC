@@ -37,6 +37,15 @@
 #define G38_4 6
 #define G38_5 7
 #define G80 8
+#define G81 9
+#define G82 10
+#define G83 11
+#define G84 12
+#define G85 13
+#define G86 14
+#define G87 15
+#define G88 16
+#define G89 17
 #define G17 0
 #define G18 1
 #define G19 2
@@ -128,6 +137,9 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 static uint8_t parser_grbl_command(void);
 FORCEINLINE static uint8_t parser_gcode_command(void);
 static void parser_discard_command(void);
+#ifdef ENABLE_CANNED_CYCLES
+uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+#endif
 
 // tells the compiler that this function exists and the linker will resolve later
 extern void m42_register(void);
@@ -791,8 +803,34 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
             }
 
             break;
-        default: // G81..G89 canned cycles (not implemented yet)
+#ifdef ENABLE_CANNED_CYCLES
+        default: // G81..G89 canned cycles (partially implemented)
+            // It is an error if:
+            // X, Y, and Z words are all missing during a canned cycle,
+            if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
+            {
+                return STATUS_GCODE_NO_AXIS_WORDS;
+            }
+
+            // a P number is required and a negative P number is used
+            if (new_state->groups.motion == G82 || new_state->groups.motion == G86 || new_state->groups.motion == G88 || new_state->groups.motion == G89)
+            {
+                if (!CHECKFLAG(cmd->words, GCODE_WORD_P))
+                {
+                    return STATUS_GCODE_CANNED_CYCLE_MISSING_P;
+                }
+            }
+
+            if (new_state->groups.motion == G83)
+            {
+                if (!CHECKFLAG(cmd->words, GCODE_WORD_Q))
+                {
+                    return STATUS_GCODE_CANNED_CYCLE_MISSING_Q;
+                }
+            }
+
             break;
+#endif
         }
 
         // group 5 - feed rate mode
@@ -819,6 +857,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
             }
         }
     }
+
     // group 2 - plane selection (nothing to be checked)
     // group 3 - distance mode (nothing to be checked)
 
@@ -1207,7 +1246,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     // check from were to read the previous values for the target array
     if (index == 255)
     {
-
         switch (new_state->groups.nonmodal)
         {
         case G53:
@@ -1298,8 +1336,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
     float x, y;
     // 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
+    // G80 does no motion
+    // G81 to G89 is executed in a separate function and uses G53,G0,G1 and G4 has building blocks
     // only if any target word was used
-    // incomplete (canned cycles not supported)
     if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
     {
         uint8_t probe_flags;
@@ -1491,8 +1530,12 @@ static uint8_t parser_gcode_command(void)
         return result;
     }
 
-    // executes command
+// executes command
+#ifdef ENABLE_CANNED_CYCLES
+    result = parser_exec_command_block(&next_state, &words, &cmd);
+#else
     result = parser_exec_command(&next_state, &words, &cmd);
+#endif
     if (result != STATUS_OK)
     {
         return result;
@@ -1745,7 +1788,17 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 2:
     case 3:
     case 80:
-
+#ifdef ENABLE_CANNED_CYCLES
+    case 81:
+    case 82:
+    case 83:
+    case 84:
+    case 85:
+    case 86:
+    case 87:
+    case 88:
+    case 89:
+#endif
         switch (mantissa)
         {
         case 255:
@@ -1765,7 +1818,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
         default:
             return STATUS_GCODE_UNSUPPORTED_COMMAND;
         }
-        if (code == 80)
+        if (code >= 80)
         {
             code -= 72;
         }
@@ -2061,6 +2114,14 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->xyzabc[AXIS_C] = value;
         break;
 #endif
+#ifdef ENABLE_CANNED_CYCLES
+    // treats Q like D since they cannot cooexist
+    case 'Q':
+        if (value < 0)
+        {
+            return STATUS_NEGATIVE_VALUE;
+        }
+#endif
     case 'D':
         cmd->words |= GCODE_WORD_D;
         words->d = value;
@@ -2273,3 +2334,328 @@ void parser_sync_position(void)
 {
     mc_get_position(parser_last_pos);
 }
+
+#ifdef ENABLE_CANNED_CYCLES
+
+static uint8_t sticky_mask;
+static float sticky_r;
+static float sticky_new;
+static float sticky_old;
+
+uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+{
+    // not a canned cycle (run single command)
+    if (new_state->groups.nonmodal != 0 || !CHECKFLAG(cmd->words, GCODE_ALL_AXIS) || new_state->groups.motion <= 8)
+    {
+        sticky_mask = 0;
+        return parser_exec_command(new_state, words, cmd);
+    }
+
+    if (new_state->groups.feedrate_mode == G93)
+    {
+        return STATUS_GCODE_CANNED_CYCLE_INVALID_FEEDMODE;
+    }
+
+    if (new_state->groups.cutter_radius_compensation != G40)
+    {
+        return STATUS_GCODE_CANNED_CYCLE_INVALID_RADIUSCOMPMODE;
+    }
+
+    if (new_state->feedrate == 0 && !CHECKFLAG(cmd->words, GCODE_WORD_F))
+    {
+        return STATUS_FEED_NOT_SET;
+    }
+
+    if (new_state->groups.motion == G86 && (new_state->spindle == 0 || new_state->groups.spindle_turning == M5))
+    {
+        return STATUS_SPINDLE_STOPPED;
+    }
+
+    // store previous clearence
+    uint8_t plane_axis = AXIS_Z;
+    uint8_t plane_mask = GCODE_XYPLANE_AXIS;
+    switch (new_state->groups.plane)
+    {
+    case G18:
+        plane_axis = AXIS_Y;
+        plane_mask = GCODE_XZPLANE_AXIS;
+        break;
+    case G19:
+        plane_axis = AXIS_X;
+        plane_mask = GCODE_YZPLANE_AXIS;
+        break;
+    }
+
+    uint8_t mask = sticky_mask;
+    // load previous retract distance
+    float r = sticky_r;
+    // load previous 'Z' position (may not be Z. depends on active plane)
+    float old_z = sticky_old;
+    float new_z = sticky_new;
+
+    // check if all necessary arguments are present (first call)
+    if (!mask)
+    {
+        old_z = parser_last_pos[plane_axis];
+        mask = (uint8_t)(0x07 & cmd->words);
+    }
+
+    // adds explicit arguments
+    if (CHECKFLAG(cmd->words, GCODE_WORD_R))
+    {
+        mask |= 0x8;
+        r = words->r;
+
+        // converts retract position to machine coordinates
+        if ((new_state->groups.nonmodal != G53) && (new_state->groups.distance_mode == G90))
+        {
+            if ((new_state->groups.distance_mode == G90))
+            {
+                r += parser_parameters.coord_system_offset[plane_axis] + parser_parameters.g92_offset[plane_axis];
+#ifdef AXIS_TOOL
+                if (CHECKFLAG(plane_axis, (1 << AXIS_TOOL)))
+                {
+                    r += parser_parameters.tool_length_offset;
+                }
+#endif
+            }
+        }
+        else if ((new_state->groups.distance_mode == G91))
+        {
+            r += old_z;
+        }
+    }
+
+    // set new sticky 'Z' or retrieves it
+    if (CHECKFLAG(cmd->words, (1U << plane_axis)))
+    {
+        new_z = words->xyzabc[plane_axis];
+        // converts retract position to machine coordinates
+        if ((new_state->groups.nonmodal != G53) && (new_state->groups.distance_mode == G90))
+        {
+            if ((new_state->groups.distance_mode == G90))
+            {
+                new_z += parser_parameters.coord_system_offset[plane_axis] + parser_parameters.g92_offset[plane_axis];
+#ifdef AXIS_TOOL
+                if (CHECKFLAG(plane_axis, (1 << AXIS_TOOL)))
+                {
+                    new_z += parser_parameters.tool_length_offset;
+                }
+#endif
+            }
+        }
+        else if ((new_state->groups.distance_mode == G91))
+        {
+            new_z += old_z;
+        }
+    }
+
+    // stores arguments back
+    sticky_mask = mask;
+    sticky_r = r;
+    sticky_old = old_z;
+    sticky_new = new_z;
+
+    // Do preliminary motion for canned cycles
+    parser_state_t canned_state = {0};
+    parser_words_t canned_words = {0};
+    parser_cmd_explicit_t canned_cmd = {0};
+
+    memcpy(&canned_state, new_state, sizeof(parser_state_t));
+    memcpy(&canned_words, words, sizeof(parser_words_t));
+    memcpy(&canned_cmd, cmd, sizeof(parser_cmd_explicit_t));
+
+    // calculate retract position in absolute coordinates
+    float new_r = r;
+
+    // preliminary motion starts by checking the programmed distance in the working axis and the clearence
+    // if distance in inferior to clearence retract to safe distance
+    float clearance = new_r;
+    // with absolute mode active
+    if (!new_state->groups.distance_mode)
+    {
+        // relative lift to safe position
+        clearance -= old_z;
+    }
+    else // with relative mode active
+    {
+        clearance = r;
+    }
+
+    if (new_state->groups.return_mode == G98)
+    {
+        r = MAX(r, old_z);
+    }
+
+    uint8_t error = STATUS_OK;
+    // retract if needed
+    canned_state.groups.motion = G0;
+
+    if (clearance > 0)
+    {
+        // force machine coordinates
+        canned_state.groups.nonmodal = G53;
+        canned_words.xyzabc[plane_axis] = r;
+        // mask axis motion
+        canned_cmd.words &= ~GCODE_ALL_AXIS;
+        canned_cmd.words |= (1U << plane_axis);
+        error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+        if (error)
+        {
+            return error;
+        }
+
+        // reset values
+        canned_words.xyzabc[plane_axis] = words->xyzabc[plane_axis];
+        // restores nonmodal
+        canned_state.groups.nonmodal = new_state->groups.nonmodal;
+        canned_cmd.words = cmd->words;
+    }
+
+    // transverse motion parallel to plane
+    if (CHECKFLAG(cmd->words, plane_mask))
+    {
+        canned_cmd.words &= ~GCODE_ALL_AXIS;
+        canned_cmd.words |= plane_mask;
+        error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+        if (error)
+        {
+            return error;
+        }
+        canned_cmd.words = cmd->words;
+    }
+
+    // transverse motion to R distance
+    if (clearance < 0)
+    {
+        // force machine coordinates
+        canned_state.groups.nonmodal = G53;
+        canned_words.xyzabc[plane_axis] = r;
+        // mask axis motion
+        canned_cmd.words &= ~GCODE_ALL_AXIS;
+        canned_cmd.words |= (1U << plane_axis);
+        error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+        if (error)
+        {
+            return error;
+        }
+
+        // reset values
+        canned_words.xyzabc[plane_axis] = words->xyzabc[plane_axis];
+        // restores nonmodal
+        canned_state.groups.nonmodal = new_state->groups.nonmodal;
+        canned_cmd.words = cmd->words;
+    }
+
+    float loops = 1;
+
+    if (CHECKFLAG(cmd->words, GCODE_WORD_L))
+    {
+        loops = words->l;
+    }
+
+    // do the canned cycle motion
+    for (uint8_t l = 0; l < loops; l++)
+    {
+        float current_z = r;
+        switch (new_state->groups.motion)
+        {
+        case G81:
+        case G82:
+        case G83:
+        case G85:
+        case G86:
+        case G89:
+            // drill
+            do
+            {
+                canned_cmd.words &= ~GCODE_ALL_AXIS;
+                canned_cmd.words |= (1U << plane_axis);
+                if (new_state->groups.motion == G83)
+                {
+                    canned_cmd.words &= ~GCODE_ALL_AXIS;
+                    canned_cmd.words |= (1U << plane_axis);
+                    canned_state.groups.motion = G0;
+                    canned_words.xyzabc[plane_axis] = MIN(current_z + words->d * 0.5f, r);
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    current_z -= words->d;
+                    current_z = MAX(current_z, new_z);
+                }
+                else
+                {
+                    current_z = new_z;
+                }
+                canned_words.xyzabc[plane_axis] = current_z;
+                canned_state.groups.motion = G1;
+                canned_state.groups.nonmodal = new_state->groups.nonmodal;
+                error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                if (error)
+                {
+                    return error;
+                }
+
+                // retract
+                canned_words.xyzabc[plane_axis] = r;
+                if (new_state->groups.motion == G82 || new_state->groups.motion == G89)
+                {
+                    canned_state.groups.nonmodal = G4;
+                    canned_words.p = words->p;
+                }
+
+                if (new_state->groups.motion == G86)
+                {
+                    // stops spindle
+                    canned_state.groups.motion = G80;
+                    canned_state.groups.spindle_turning = M5;
+                    // force spindle update
+                    canned_cmd.groups |= GCODE_GROUP_SPINDLE;
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    // restore
+                    canned_cmd.groups = cmd->groups;
+                }
+
+                // mask axis motion
+                canned_cmd.words &= ~GCODE_ALL_AXIS;
+                canned_cmd.words |= (1U << plane_axis);
+                canned_state.groups.motion = G0;
+                if (new_state->groups.motion == G85 || new_state->groups.motion == G89)
+                {
+                    canned_state.groups.motion = G1;
+                }
+                error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                if (error)
+                {
+                    return error;
+                }
+
+                if (new_state->groups.motion == G86)
+                {
+                    // stops spindle
+                    canned_state.groups.motion = G80;
+                    canned_state.groups.spindle_turning = new_state->groups.spindle_turning;
+                    // force spindle update
+                    canned_cmd.groups |= GCODE_GROUP_SPINDLE;
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    // restore
+                    canned_cmd.groups = cmd->groups;
+                }
+            } while (current_z > new_z);
+            break;
+        }
+    }
+
+    return error;
+}
+#endif

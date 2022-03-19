@@ -53,13 +53,13 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
-µCNC v1.4.0 added additional Gcode support.
+µCNC v1.4.0-beta2 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
-List of Supported G-Codes since µCNC 1.3.0:
+List of Supported G-Codes since µCNC 1.4.0:
   - Non-Modal Commands: G4, G10*, G28, G30, G53, G92, G92.1, G92.2, G92.3
-  - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80
+  - Motion Modes: G0, G1, G2, G3, G38.2, G38.3, G38.4, G38.5, G80, G81*, G82*, G83*, G85*, G86*, G89*
   - Feed Rate Modes: G93, G94
   - Unit Modes: G20, G21
   - Distance Modes: G90, G91
@@ -84,6 +84,7 @@ List of Supported G-Codes since µCNC 1.3.0:
 NOTES:
   * _also G10 L2 P28 and P30 to set homing coordinates_
   * _also G10 L2 P0 to set the current coordinates system offset_
+  * _G81*, G82*, G83*, G85*, G86*, G89* optional enabled via config file_
   * _G59.1, G59.2 and G59.3 can be enabled in config_
   * _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
   * _M1 stop condition can be set in HAL file_
