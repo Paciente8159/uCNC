@@ -804,7 +804,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
             break;
 #ifdef ENABLE_CANNED_CYCLES
-        default: // G81..G89 canned cycles (not implemented yet)
+        default: // G81..G89 canned cycles (partially implemented)
             // It is an error if:
             // X, Y, and Z words are all missing during a canned cycle,
             if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
@@ -1336,8 +1336,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
     float x, y;
     // 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
+    // G80 does no motion
+    // G81 to G89 is executed in a separate function and uses G53,G0,G1 and G4 has building blocks
     // only if any target word was used
-    // incomplete (canned cycles not supported)
     if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
     {
         uint8_t probe_flags;
