@@ -180,7 +180,7 @@ extern "C"
    * Enables RS274NGC canned cycles
    * */
 
-#define ENABLE_CANNED_CYCLES
+  // #define ENABLE_CANNED_CYCLES
 
   /**
    * accepts the E word (currently is processed has A)
