@@ -821,6 +821,14 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
                 }
             }
 
+            if (new_state->groups.motion == G83)
+            {
+                if (!CHECKFLAG(cmd->words, GCODE_WORD_Q))
+                {
+                    return STATUS_GCODE_CANNED_CYCLE_MISSING_Q;
+                }
+            }
+
             break;
 #endif
         }
@@ -2548,77 +2556,101 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
     // do the canned cycle motion
     for (uint8_t l = 0; l < loops; l++)
     {
+        float current_z = r;
         switch (new_state->groups.motion)
         {
         case G81:
         case G82:
+        case G83:
         case G85:
         case G86:
+        case G89:
             // drill
-            canned_cmd.words &= ~GCODE_ALL_AXIS;
-            canned_cmd.words |= (1U << plane_axis);
-            canned_words.xyzabc[plane_axis] = new_z;
-            canned_state.groups.motion = G1;
-            canned_state.groups.nonmodal = new_state->groups.nonmodal;
-            error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
-            if (error)
+            do
             {
-                return error;
-            }
-
-            // retract
-            canned_words.xyzabc[plane_axis] = r;
-            if (new_state->groups.motion == G82)
-            {
-                canned_state.groups.nonmodal = G4;
-                canned_words.p = words->p;
-            }
-
-            if (new_state->groups.motion == G86)
-            {
-                // stops spindle
-                canned_state.groups.motion = G80;
-                canned_state.groups.spindle_turning = M5;
-                // force spindle update
-                canned_cmd.groups |= GCODE_GROUP_SPINDLE;
-                error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
-                if (error)
+                canned_cmd.words &= ~GCODE_ALL_AXIS;
+                canned_cmd.words |= (1U << plane_axis);
+                if (new_state->groups.motion == G83)
                 {
-                    return error;
+                    canned_cmd.words &= ~GCODE_ALL_AXIS;
+                    canned_cmd.words |= (1U << plane_axis);
+                    canned_state.groups.motion = G0;
+                    canned_words.xyzabc[plane_axis] = MIN(current_z + words->d * 0.5f, r);
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    current_z -= words->d;
+                    current_z = MAX(current_z, new_z);
                 }
-                // restore
-                canned_cmd.groups = cmd->groups;
-            }
-
-            // mask axis motion
-            canned_cmd.words &= ~GCODE_ALL_AXIS;
-            canned_cmd.words |= (1U << plane_axis);
-            canned_state.groups.motion = G0;
-            if (new_state->groups.motion == G85)
-            {
+                else
+                {
+                    current_z = new_z;
+                }
+                canned_words.xyzabc[plane_axis] = current_z;
                 canned_state.groups.motion = G1;
-            }
-            error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
-            if (error)
-            {
-                return error;
-            }
-
-            if (new_state->groups.motion == G86)
-            {
-                // stops spindle
-                canned_state.groups.motion = G80;
-                canned_state.groups.spindle_turning = new_state->groups.spindle_turning;
-                // force spindle update
-                canned_cmd.groups |= GCODE_GROUP_SPINDLE;
+                canned_state.groups.nonmodal = new_state->groups.nonmodal;
                 error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
                 if (error)
                 {
                     return error;
                 }
-                // restore
-                canned_cmd.groups = cmd->groups;
-            }
+
+                // retract
+                canned_words.xyzabc[plane_axis] = r;
+                if (new_state->groups.motion == G82 || new_state->groups.motion == G89)
+                {
+                    canned_state.groups.nonmodal = G4;
+                    canned_words.p = words->p;
+                }
+
+                if (new_state->groups.motion == G86)
+                {
+                    // stops spindle
+                    canned_state.groups.motion = G80;
+                    canned_state.groups.spindle_turning = M5;
+                    // force spindle update
+                    canned_cmd.groups |= GCODE_GROUP_SPINDLE;
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    // restore
+                    canned_cmd.groups = cmd->groups;
+                }
+
+                // mask axis motion
+                canned_cmd.words &= ~GCODE_ALL_AXIS;
+                canned_cmd.words |= (1U << plane_axis);
+                canned_state.groups.motion = G0;
+                if (new_state->groups.motion == G85 || new_state->groups.motion == G89)
+                {
+                    canned_state.groups.motion = G1;
+                }
+                error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                if (error)
+                {
+                    return error;
+                }
+
+                if (new_state->groups.motion == G86)
+                {
+                    // stops spindle
+                    canned_state.groups.motion = G80;
+                    canned_state.groups.spindle_turning = new_state->groups.spindle_turning;
+                    // force spindle update
+                    canned_cmd.groups |= GCODE_GROUP_SPINDLE;
+                    error = parser_exec_command(&canned_state, &canned_words, &canned_cmd);
+                    if (error)
+                    {
+                        return error;
+                    }
+                    // restore
+                    canned_cmd.groups = cmd->groups;
+                }
+            } while (current_z > new_z);
             break;
         }
     }

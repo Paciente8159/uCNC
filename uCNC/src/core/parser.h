@@ -145,9 +145,6 @@ extern "C"
 		int16_t s;
 		int8_t t;
 		uint8_t l;
-#ifdef ENABLE_CANNED_CYCLES
-		float q;
-#endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t n;
 #endif
