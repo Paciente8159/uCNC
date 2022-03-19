@@ -11,6 +11,7 @@ Beta2 adds a subset of canned cycles G codes to µCNC.
 
 ### Added
   - Added canned cycles G81, G82, G83, G85, G86 and G89 to parser (enabled via config file) (#151)
+  - Added softuart (bit-banging) module (#152)
 
 ## [1.4.0-beta] - 2022-03-15
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
