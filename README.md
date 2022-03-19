@@ -53,7 +53,7 @@ These include:
   - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
-µCNC v1.4.0 added additional Gcode support.
+µCNC v1.4.0-beta2 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
