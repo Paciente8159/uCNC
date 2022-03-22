@@ -277,7 +277,7 @@ void itp_run(void)
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
-            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits ^ g_settings.dir_invert_mask;
+            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
@@ -642,7 +642,7 @@ void itp_run(void)
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
-            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits ^ g_settings.dir_invert_mask;
+            itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;

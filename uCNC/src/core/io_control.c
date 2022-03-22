@@ -416,6 +416,7 @@ void io_toggle_steps(uint8_t mask)
 
 void io_set_dirs(uint8_t mask)
 {
+    mask ^= g_settings.dir_invert_mask;
 #if (STEPPER_COUNT > 0 && (DIR0 >= 0))
     if (mask & DIR0_MASK)
     {
