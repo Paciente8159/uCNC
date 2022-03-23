@@ -64,7 +64,7 @@ void cnc_init(void)
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     // initializes all systems
     mcu_init();                                         // mcu
-    io_enable_steppers(!g_settings.step_enable_invert); // disables steppers at start
+    io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
     io_disable_probe();                                 // forces probe isr disabling
     serial_init();                                      // serial
     settings_init();                                    // settings
@@ -98,7 +98,7 @@ void cnc_run(void)
         }
         if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
         {
-            io_enable_steppers(!g_settings.step_enable_invert);
+            io_enable_steppers(~g_settings.step_enable_invert);
             cnc_check_fault_systems();
             break;
         }
