@@ -4,7 +4,7 @@
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 03-06-2022
+    Date: 06-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -53,7 +53,8 @@ char softuart_getc(const softuart_port_t *port_ptr)
     mcu_disable_global_isr();
     softuart_port_t port;
     rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
-    while (port.rx())
+    uint32_t ms = mcu_millis() + SOFTUART_TIMEOUT;
+    while (port.rx() && ms < mcu_millis())
         ;
     mcu_delay_us(port.baud + (port.baud >> 1));
     char val = 0;

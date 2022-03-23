@@ -18,7 +18,6 @@
 */
 
 #include "cnc.h"
-#include "modules/softuart.h"
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
@@ -161,6 +160,9 @@ WEAK_HOOK(probe_disable)
 #if PID_CONTROLLERS > 0
 extern void pid_init(void);
 #endif
+#ifdef ENABLE_TMC_DRIVERS
+extern void tmcdrivers_init(void);
+#endif
 
 void mod_init(void)
 {
@@ -173,5 +175,13 @@ void mod_init(void)
 #ifdef ENABLE_PARSER_MODULES
 	ADD_LISTENER(gcode_parse_delegate, m42_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m42_exec, gcode_exec_event);
+#endif
+
+#ifdef ENABLE_TMC_DRIVERS
+	tmcdrivers_init();
+#ifdef ENABLE_PARSER_MODULES
+	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);
+#endif
 #endif
 }

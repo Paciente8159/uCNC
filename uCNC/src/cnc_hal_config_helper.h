@@ -182,6 +182,10 @@ extern "C"
 #endif
 #endif
 
+#if defined(STEPPER0_HAS_TMC) || defined(STEPPER1_HAS_TMC) || defined(STEPPER2_HAS_TMC) || defined(STEPPER3_HAS_TMC) || defined(STEPPER4_HAS_TMC) || defined(STEPPER5_HAS_TMC) || defined(STEPPER6_HAS_TMC) || defined(STEPPER7_HAS_TMC)
+#define ENABLE_TMC_DRIVERS
+#endif
+
 #ifdef __cplusplus
 }
 #endif

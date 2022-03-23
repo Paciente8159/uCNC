@@ -121,6 +121,18 @@ extern "C"
 	// Timer 0 is set by default
 	//#define RTC_TIMER 0
 
+// TMC0 UART
+#define DOUT29_BIT 1
+#define DOUT29_PORT G
+#define DIN29_BIT 1
+#define DIN29_PORT K
+
+// TMC1 UART
+#define DOUT30_BIT 15
+#define DOUT30_PORT F
+#define DIN30_BIT 2
+#define DIN30_PORT K
+
 #ifdef __cplusplus
 }
 #endif

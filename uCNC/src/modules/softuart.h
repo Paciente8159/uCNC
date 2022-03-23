@@ -4,7 +4,7 @@
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 03-06-2022
+    Date: 06-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ extern "C"
     } softuart_port_t;
 
 #define SOFTBAUD(x) (1000000 / x)
+#define SOFTUART_TIMEOUT 1000
 #define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                \
     void NAME##_tx(bool state)                            \
     {                                                     \
