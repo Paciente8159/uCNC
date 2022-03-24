@@ -37,7 +37,7 @@ extern "C"
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
 	int32_t itp_get_rt_position_index(int8_t index);
-	void itp_reset_rt_position(void);
+	void itp_reset_rt_position(float *origin);
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);

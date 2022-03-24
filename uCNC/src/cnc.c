@@ -265,34 +265,6 @@ void cnc_home(void)
         return;
     }
 
-    // unlocks the machine to go to offset
-    cnc_unlock(true);
-
-    float target[AXIS_COUNT];
-    motion_data_t block_data = {0};
-    mc_get_position(target);
-
-#if (KINEMATIC != KINEMATIC_DELTA)
-    for (uint8_t i = AXIS_COUNT; i != 0;)
-    {
-        i--;
-
-        target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
-    }
-#else
-    // pull of only on the Z axis
-    target[AXIS_Z] += ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? -g_settings.homing_offset : g_settings.homing_offset);
-#endif
-
-    block_data.feed = g_settings.homing_fast_feed_rate;
-    block_data.spindle = 0;
-    block_data.dwell = 0;
-    // starts offset and waits to finnish
-    mc_line(target, &block_data);
-    itp_sync();
-
-    // reset position
-    itp_reset_rt_position();
     // sync's the motion control with the real time position
     mc_sync_position();
 }
