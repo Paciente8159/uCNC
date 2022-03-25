@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * M_PI / 180.0f));
-#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * M_PI / 180.0f));
-#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * M_PI / 180.0f));
-#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * M_PI / 180.0f));
-#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * M_PI / 180.0f));
-#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * M_PI / 180.0f));
+#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * DEG_RAD_MULT));
+#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * DEG_RAD_MULT));
+#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * DEG_RAD_MULT));
+#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * DEG_RAD_MULT));
+#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * DEG_RAD_MULT));
+#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * DEG_RAD_MULT));
 
 static float delta_arm_sqr;
 static float delta_base_height;
@@ -50,18 +50,18 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-        float x = delta_x[0] - axis[AXIS_X];
-        float y = delta_y[0] - axis[AXIS_Y];
-        float z = delta_base_height - axis[AXIS_Z];
-        float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        float x = axis[AXIS_X] - delta_x[0];
+        float y = axis[AXIS_Y] - delta_y[0];
+        float z = axis[AXIS_Z] - delta_base_height;
+        float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
         x = delta_x[1] - axis[AXIS_X];
         y = delta_y[1] - axis[AXIS_Y];
-        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * steps_mm);
         x = delta_x[2] - axis[AXIS_X];
         y = delta_y[2] - axis[AXIS_Y];
-        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) - z;
+        steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
 }
 
@@ -154,8 +154,8 @@ uint8_t kinematics_home(void)
 
         if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
         {
-                target[AXIS_X] = 0.5f * g_settings.max_distance[AXIS_X];
-                target[AXIS_Y] = 0.5f * g_settings.max_distance[AXIS_Y];
+                target[AXIS_X] = 0;
+                target[AXIS_Y] = 0;
                 target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
         }
         else

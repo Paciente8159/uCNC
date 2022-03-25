@@ -503,6 +503,9 @@ void itp_run(void)
             avg_speed = initial_speed;
         }
 
+        // prevents stall by forcing a minimal step speed (depends on mcu)
+        avg_speed = MAX(avg_speed, F_STEP_MIN);
+
         // if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))
         {

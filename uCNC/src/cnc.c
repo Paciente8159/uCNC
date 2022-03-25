@@ -463,9 +463,9 @@ void cnc_reset(void)
     serial_rx_clear();
     itp_clear();
     planner_clear();
+    kinematics_init();
     mc_init();
     parser_init();
-    kinematics_init();
 #ifdef ENABLE_MAIN_LOOP_MODULES
     mod_cnc_reset_hook();
 #endif

@@ -175,6 +175,7 @@ extern "C"
 #define fix_2_flt(x) ((float)(x) / 256.0f)
 #endif
 
+#define DEG_RAD_MULT 0.0174532925199432958f
 #define MM_INCH_MULT 0.0393700787401574803f
 #define INCH_MM_MULT 25.4f
 #define MIN_SEC_MULT 0.0166666666666666667f
