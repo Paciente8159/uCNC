@@ -1,20 +1,20 @@
 /*
-	Name: kinematic_delta.c
-	Description: Implements all kinematics math equations to translate the motion of a delta machine.
-		Also implements the homing motion for this type of machine.
+        Name: kinematic_delta.c
+        Description: Implements all kinematics math equations to translate the motion of a delta machine.
+                Also implements the homing motion for this type of machine.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 19/01/2022
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 19/01/2022
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+        See the	GNU General Public License for more details.
 */
 
 #include "../../cnc.h"
@@ -23,12 +23,12 @@
 #include <stdio.h>
 #include <math.h>
 
-#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * M_PI / 180.0f));
-#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * M_PI / 180.0f));
-#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * M_PI / 180.0f));
-#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * M_PI / 180.0f));
-#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * M_PI / 180.0f));
-#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * M_PI / 180.0f));
+#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * DEG_RAD_MULT));
+#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * DEG_RAD_MULT));
+#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * DEG_RAD_MULT));
+#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * DEG_RAD_MULT));
+#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * DEG_RAD_MULT));
+#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * DEG_RAD_MULT));
 
 static float delta_arm_sqr;
 static float delta_base_height;
@@ -50,8 +50,8 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-        float x = delta_x[0] - axis[AXIS_X];
-        float y = delta_y[0] - axis[AXIS_Y];
+        float x = axis[AXIS_X] - delta_x[0];
+        float y = axis[AXIS_Y] - delta_y[0];
         float z = axis[AXIS_Z] - delta_base_height;
         float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
@@ -67,7 +67,7 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-        //using trialteration (similar to marlin)
+        // using trialteration (similar to marlin)
         float z0 = (steps[0] / g_settings.step_per_mm[0]);
         float z1 = (steps[1] / g_settings.step_per_mm[1]);
         float z2 = (steps[2] / g_settings.step_per_mm[2]);
@@ -132,6 +132,39 @@ uint8_t kinematics_home(void)
         {
                 return result;
         }
+
+        // unlocks the machine to go to offset
+        cnc_unlock(true);
+        cnc_set_exec_state(EXEC_HOMING);
+        float target[AXIS_COUNT];
+        motion_data_t block_data = {0};
+        mc_get_position(target);
+
+        // pull of only on the Z axis
+        target[AXIS_Z] += ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? -g_settings.homing_offset : g_settings.homing_offset);
+
+        block_data.feed = g_settings.homing_fast_feed_rate;
+        block_data.spindle = 0;
+        block_data.dwell = 0;
+        // starts offset and waits to finnish
+        mc_line(target, &block_data);
+        itp_sync();
+
+        cnc_clear_exec_state(EXEC_HOMING);
+
+        if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
+        {
+                target[AXIS_X] = 0;
+                target[AXIS_Y] = 0;
+                target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
+        }
+        else
+        {
+                memset(target, 0, sizeof(target));
+        }
+
+        // reset position
+        itp_reset_rt_position(&target);
 
         return STATUS_OK;
 }

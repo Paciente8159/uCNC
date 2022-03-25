@@ -103,7 +103,7 @@ static int16_t prev_spindle;
 // pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
-volatile static uint8_t itp_step_lock;
+static volatile uint8_t itp_step_lock;
 #endif
 
 static void itp_sgm_buffer_read(void);
@@ -502,6 +502,9 @@ void itp_run(void)
             // prevents slow exits
             avg_speed = initial_speed;
         }
+
+        // prevents stall by forcing a minimal step speed (depends on mcu)
+        avg_speed = MAX(avg_speed, F_STEP_MIN);
 
         // if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))
@@ -954,30 +957,16 @@ int32_t itp_get_rt_position_index(int8_t index)
     return 0;
 }
 
-void itp_reset_rt_position(void)
+void itp_reset_rt_position(float *origin)
 {
-    float origin[AXIS_COUNT];
     if (g_settings.homing_enabled)
     {
-        for (uint8_t i = AXIS_COUNT; i != 0;)
-        {
-            i--;
-            if (g_settings.homing_dir_invert_mask & (1 << i))
-            {
-                origin[i] = g_settings.max_distance[i];
-            }
-            else
-            {
-                origin[i] = 0;
-            }
-        }
-
         kinematics_apply_inverse(origin, itp_rt_step_pos);
     }
     else
     {
         memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
-        memset(origin, 0, sizeof(origin));
+        memset(origin, 0, (sizeof(float) * AXIS_COUNT));
     }
 
 #ifdef ENABLE_INTERPOLATOR_MODULES

@@ -32,7 +32,7 @@ extern "C"
 #define STEPPER_COUNT AXIS_COUNT
 
 #ifndef STEPPER0_ANGLE
-#define STEPPER0_ANGLE -90
+#define STEPPER0_ANGLE 30
 #endif
 #ifndef STEPPER1_ANGLE
 #define STEPPER1_ANGLE (STEPPER0_ANGLE + 120)
@@ -40,6 +40,12 @@ extern "C"
 #ifndef STEPPER2_ANGLE
 #define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
 #endif
+
+// the maximum size of the computed segments that are sent to the planner
+// this forces linear motions in the delta to treated has an arc motion to
+// cope with the non linear kinematic motion of the towers
+#define DELTA_MOTION_SEGMENT_SIZE 1.0f
+#define DELTA_MOTION_SEGMENT_FACTOR (1.0f / DELTA_MOTION_SEGMENT_SIZE)
 	/*
 	Enable Skew compensation
 */
