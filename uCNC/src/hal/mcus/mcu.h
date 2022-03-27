@@ -48,6 +48,22 @@ extern "C"
 /*IO functions*/
 
 /**
+ * config a pin in input mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_input
+	void mcu_config_input(uint8_t pin);
+#endif
+
+/**
+ * config a pin in output mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_output
+	void mcu_config_output(uint8_t pin);
+#endif
+
+/**
  * get the value of a digital input pin
  * can be defined either as a function or a macro call
  * */

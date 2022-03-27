@@ -20,7 +20,7 @@
 #include "softuart.h"
 #include "tmc/tmcdriver.h"
 
-#define TMC_UARTBAUD 9600
+#define TMC_UARTBAUD 100000
 
 // driver communications declarations
 // UART
@@ -30,13 +30,13 @@
 #define _TMC_STEPPER_DECL(TYPE, CHANNEL) TMC##TYPE##_STEPPER_DECL(CHANNEL)
 #define TMC_STEPPER_DECL(TYPE, CHANNEL) _TMC_STEPPER_DECL(TYPE, CHANNEL)
 
-// driver communications init
-// UART
-#define TMC1_STEPPER_INIT(CHANNEL) softuart_init(&tmc##CHANNEL##_uart)
-// SPI
-#define TMC2_STEPPER_INIT(CHANNEL) softspi_init(&tmc##CHANNEL##_spi)
-#define _TMC_STEPPER_INIT(TYPE, CHANNEL) TMC##TYPE##_STEPPER_INIT(CHANNEL)
-#define TMC_STEPPER_INIT(TYPE, CHANNEL) _TMC_STEPPER_INIT(TYPE, CHANNEL)
+// // driver communications init
+// // UART
+// #define TMC1_STEPPER_INIT(CHANNEL) softuart_init(&tmc##CHANNEL##_uart)
+// // SPI
+// #define TMC2_STEPPER_INIT(CHANNEL) softspi_init(&tmc##CHANNEL##_spi)
+// #define _TMC_STEPPER_INIT(TYPE, CHANNEL) TMC##TYPE##_STEPPER_INIT(CHANNEL)
+// #define TMC_STEPPER_INIT(TYPE, CHANNEL) _TMC_STEPPER_INIT(TYPE, CHANNEL)
 
 // driver communications read/write
 // UART
@@ -76,7 +76,6 @@ TMC_STEPPER_RW(STEPPER0_TMC_INTERFACE, 0);
 void tmcdrivers_init(void)
 {
 #ifdef STEPPER0_HAS_TMC
-    TMC_STEPPER_INIT(STEPPER0_TMC_INTERFACE, 0);
     tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
     tmc_init(&tmc0_driver);
     tmc_set_current(&tmc0_driver, STEPPER0_CURRENT_MA, STEPPER0_RSENSE, STEPPER0_HOLD_MULT);
@@ -186,52 +185,49 @@ uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
         }
 
 #ifdef STEPPER0_HAS_TMC
+        tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
         if (CHECKFLAG(cmd->words, GCODE_WORD_X))
         {
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
             tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[0]);
         }
-#endif
-#ifdef STEPPER1_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
         {
-            tmc_set_microstep(&tmc1_driver, (uint8_t)words->xyzabc[1]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[1]);
         }
-#endif
-#ifdef STEPPER2_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
         {
-            tmc_set_microstep(&tmc2_driver, (uint8_t)words->xyzabc[2]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[2]);
         }
-#endif
-#ifdef STEPPER3_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_A))
         {
-            tmc_set_microstep(&tmc3_driver, (uint8_t)words->xyzabc[3]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[3]);
         }
-#endif
-#ifdef STEPPER4_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_B))
         {
-            tmc_set_microstep(&tmc4_driver, (uint8_t)words->xyzabc[4]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[4]);
         }
-#endif
-#ifdef STEPPER5_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_C))
         {
-            tmc_set_microstep(&tmc5_driver, (uint8_t)words->xyzabc[5]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[5]);
         }
-#endif
-#ifdef STEPPER6_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_I))
         {
-            tmc_set_microstep(&tmc6_driver, (uint8_t)words->ijk[0]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->ijk[0]);
         }
-#endif
-#ifdef STEPPER7_HAS_TMC
         if (CHECKFLAG(cmd->words, GCODE_WORD_J))
         {
-            tmc_set_microstep(&tmc7_driver, (uint8_t)words->ijk[1]);
+            tmc_set_microstep(&tmc0_driver, (uint8_t)words->ijk[1]);
+        }
+        if (CHECKFLAG(cmd->words, GCODE_WORD_P))
+        {
+            uint32_t reg = (uint32_t)words->p;
+            serial_print_str(__romstr__("[TMCREG:"));
+            serial_print_int(reg);
+            serial_putc(',');
+            reg = tmc_read_register(&tmc0_driver, (uint8_t)words->p);
+            serial_print_int(reg);
+            serial_putc(']');
+            serial_print_str(MSG_EOL);
         }
 #endif
         return STATUS_OK;

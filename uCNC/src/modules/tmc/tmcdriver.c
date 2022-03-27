@@ -51,6 +51,7 @@ uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
     }
 
     uint8_t data[8];
+    uint8_t crc = 0;
     uint32_t result = 0;
     switch (driver->type)
     {
@@ -66,6 +67,11 @@ uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
         data[2] = address & 0x7F;
         data[3] = tmc_crc8(data, 3);
         driver->rw(data, 4, 8);
+        crc = tmc_crc8(data, 7);
+        if (crc != data[7])
+        {
+            return 0;
+        }
         result = data[3];
         result <<= 8;
         result |= data[4];
@@ -138,12 +144,10 @@ uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val)
 
 void tmc_init(tmc_driver_t *driver)
 {
-    if (!(driver->init))
+    if (driver->init)
     {
-        return;
+        driver->init();
     }
-
-    driver->init();
 
     // disable pdn
     uint32_t gconf = tmc_read_register(driver, GCONF);
@@ -182,6 +186,7 @@ void tmc_set_current(tmc_driver_t *driver, float current, float rsense, float ih
     }
 
     uint32_t iholdrun = tmc_read_register(driver, IHOLD_IRUN);
+
     // rms current
     iholdrun &= ~(0x1F1FUL);
     iholdrun |= (currentsense & 0x1FUL);
@@ -275,6 +280,7 @@ uint8_t tmc_get_stepinterpol(tmc_driver_t *driver)
 void tmc_set_stepinterpol(tmc_driver_t *driver, uint8_t enable)
 {
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
     if (enable)
     {
         chopconf |= (1UL << 28);

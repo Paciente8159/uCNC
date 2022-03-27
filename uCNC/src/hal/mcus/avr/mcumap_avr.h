@@ -4053,6 +4053,8 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
+#define mcu_config_output(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))

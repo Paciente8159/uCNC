@@ -37,22 +37,26 @@ extern "C"
 
 #define SOFTBAUD(x) (1000000 / x)
 #define SOFTUART_TIMEOUT 1000
-#define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                \
-    void NAME##_tx(bool state)                            \
-    {                                                     \
-        if (state)                                        \
-        {                                                 \
-            mcu_set_output(TXPIN);                        \
-        }                                                 \
-        else                                              \
-        {                                                 \
-            mcu_clear_output(TXPIN);                      \
-        }                                                 \
-    }                                                     \
-    bool NAME##_rx(void) { return mcu_get_input(RXPIN); } \
-    const softuart_port_t __rom__ NAME = {.baud = (1000000 / BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
+#define SOFTUART(NAME, BAUD, TXPIN, RXPIN) \
+    void NAME##_tx(bool state)             \
+    {                                      \
+        mcu_config_output(TXPIN);          \
+        if (state)                         \
+        {                                  \
+            mcu_set_output(TXPIN);         \
+        }                                  \
+        else                               \
+        {                                  \
+            mcu_clear_output(TXPIN);       \
+        }                                  \
+    }                                      \
+    bool NAME##_rx(void)                   \
+    {                                      \
+        mcu_config_input(TXPIN);           \
+        return mcu_get_input(RXPIN);       \
+    }                                      \
+    const softuart_port_t __rom__ NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-    void softuart_init(const softuart_port_t *port_ptr);
     void softuart_putc(const softuart_port_t *port_ptr, char c);
     char softuart_getc(const softuart_port_t *port_ptr);
 

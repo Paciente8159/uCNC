@@ -444,8 +444,6 @@ ISR(COM_TX_vect, ISR_BLOCK)
 }
 #endif
 
-#define mcu_config_output(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
-#define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 

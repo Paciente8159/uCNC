@@ -59,20 +59,6 @@ static bool stm32_flash_modified;
 static volatile uint32_t mcu_runtime_ms;
 volatile bool stm32_global_isr_enabled;
 
-#define mcu_config_output(diopin)                                                                                 \
-	{                                                                                                             \
-		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                             \
-		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/   \
-		__indirect__(diopin, GPIO)->MODER |= (GPIO_OUTPUT << ((__indirect__(diopin, BIT)) << 1)); /*output mode*/ \
-		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
-	}
-
-#define mcu_config_input(diopin)                                                                                                    \
-	{                                                                                                                               \
-		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                               \
-		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir (defaults to input)*/ \
-	}
-
 #define mcu_config_af(diopin, afrval)                                                                                                               \
 	{                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                               \

@@ -2987,6 +2987,20 @@ extern "C"
 #define TOGGLEFLAG(x, y) ((x) ^= (y))
 #endif
 
+#define mcu_config_input(diopin)                                                                                                    \
+	{                                                                                                                               \
+		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                               \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir (defaults to input)*/ \
+	}
+
+#define mcu_config_output(diopin)                                                                                 \
+	{                                                                                                             \
+		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                             \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/   \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_OUTPUT << ((__indirect__(diopin, BIT)) << 1)); /*output mode*/ \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
+	}
+
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1UL << __indirect__(diopin, BIT)))
