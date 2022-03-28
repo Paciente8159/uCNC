@@ -26,13 +26,14 @@ extern "C"
 
 #include <stdint.h>
 
+#define TMC_READ_ERROR 0xFFFFFFFFUL
 #define GCONF 0x00
 #define IHOLD_IRUN 0x10
 #define CHOPCONF 0x6C
 #define TPWMTHRS 0X13
 #define DRV_STATUS 0x6F
 
-    typedef void (*tmc_rw)(uint8_t*, uint8_t, uint8_t);
+    typedef void (*tmc_rw)(uint8_t *, uint8_t, uint8_t);
     typedef void (*tmc_startup)(void);
 
     typedef struct

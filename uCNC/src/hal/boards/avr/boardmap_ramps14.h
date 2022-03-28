@@ -122,18 +122,18 @@ extern "C"
 	//#define RTC_TIMER 0
 
 // TMC0 UART
-#define DIN28_BIT 1
-#define DIN28_PORT G
-#define DIN28_PULLUP
-#define DIN29_BIT 1
-#define DIN29_PORT K
-#define DIN29_PULLUP
+#define DOUT24_BIT 1
+#define DOUT24_PORT G
+#define DIN24_BIT 1
+#define DIN24_PORT K
+#define DIN24_PULLUP
 
 // TMC1 UART
-#define DOUT30_BIT 15
-#define DOUT30_PORT F
-#define DIN30_BIT 2
-#define DIN30_PORT K
+#define DOUT25_BIT 15
+#define DOUT25_PORT F
+#define DIN25_BIT 2
+#define DIN25_PORT K
+#define DIN25_PULLUP
 
 #ifdef __cplusplus
 }

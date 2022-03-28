@@ -182,6 +182,10 @@ void mod_init(void)
 #ifdef ENABLE_PARSER_MODULES
 	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);
+	ADD_LISTENER(gcode_parse_delegate, m906_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m906_exec, gcode_exec_event);
+	ADD_LISTENER(gcode_parse_delegate, m920_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m920_exec, gcode_exec_event);
 #endif
 #endif
 }

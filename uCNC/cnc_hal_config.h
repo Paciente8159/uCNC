@@ -154,13 +154,13 @@ extern "C"
 #define STEPPER0_TMC_INTERFACE TMC_UART
 #if (STEPPER0_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#define STEPPER0_UART_TX DIN28
-#define STEPPER0_UART_RX DIN29
+#define STEPPER0_UART_TX DOUT24
+#define STEPPER0_UART_RX DIN24
 #elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
-#define STEPPER0_UART_DO DOUT10
-#define STEPPER0_UART_DI DIN10
-#define STEPPER0_UART_CLK DOUT11
-#define STEPPER0_UART_CS DOUT12
+#define STEPPER0_UART_DO DOUT21
+#define STEPPER0_UART_DI DIN21
+#define STEPPER0_UART_CLK DOUT20
+#define STEPPER0_UART_CS DOUT24
 #endif
 // basic parameters
 #define STEPPER0_CURRENT_MA 800
@@ -173,107 +173,170 @@ extern "C"
 // uncomment to enable trinamic driver
 //#define STEPPER1_HAS_TMC
 #ifdef STEPPER1_HAS_TMC
-// choose the driver type
-#define STEPPER1_TMC_DRIVER 2208
+#define STEPPER1_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER1_TMC_INTERFACE TMC_UART
+#if (STEPPER1_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER1_UART_TX DOUT10
-//#define STEPPER1_UART_RX DIN10
+#define STEPPER1_UART_TX DOUT25
+#define STEPPER1_UART_RX DIN25
+#elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
+#define STEPPER1_UART_DO DOUT21
+#define STEPPER1_UART_DI DIN21
+#define STEPPER1_UART_CLK DOUT20
+#define STEPPER1_UART_CS DOUT25
+#endif
 // basic parameters
 #define STEPPER1_CURRENT_MA 800
 #define STEPPER1_MICROSTEP 16
 #define STEPPER1_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER1_STEALTHCHOP_EN
+#define STEPPER1_HOLD_MULT 0.7
+#define STEPPER1_STEALTHCHOP_THERSHOLD 0
+#define STEPPER1_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER2_HAS_TMC
 #ifdef STEPPER2_HAS_TMC
-// choose the driver type
-#define STEPPER2_TMC_DRIVER 2208
+#define STEPPER2_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER2_TMC_INTERFACE TMC_UART
+#if (STEPPER2_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER2_UART_TX DOUT10
-//#define STEPPER2_UART_RX DIN10
+#define STEPPER2_UART_TX DOUT26
+#define STEPPER2_UART_RX DIN26
+#elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
+#define STEPPER2_UART_DO DOUT21
+#define STEPPER2_UART_DI DIN21
+#define STEPPER2_UART_CLK DOUT20
+#define STEPPER2_UART_CS DOUT26
+#endif
 // basic parameters
 #define STEPPER2_CURRENT_MA 800
 #define STEPPER2_MICROSTEP 16
 #define STEPPER2_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER2_STEALTHCHOP_EN
+#define STEPPER2_HOLD_MULT 0.7
+#define STEPPER2_STEALTHCHOP_THERSHOLD 0
+#define STEPPER2_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER3_HAS_TMC
 #ifdef STEPPER3_HAS_TMC
-// choose the driver type
-#define STEPPER3_TMC_DRIVER 2208
+#define STEPPER3_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER3_TMC_INTERFACE TMC_UART
+#if (STEPPER3_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER3_UART_TX DOUT10
-//#define STEPPER3_UART_RX DIN10
+#define STEPPER3_UART_TX DOUT27
+#define STEPPER3_UART_RX DIN27
+#elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
+#define STEPPER3_UART_DO DOUT21
+#define STEPPER3_UART_DI DIN21
+#define STEPPER3_UART_CLK DOUT20
+#define STEPPER3_UART_CS DOUT27
+#endif
 // basic parameters
 #define STEPPER3_CURRENT_MA 800
 #define STEPPER3_MICROSTEP 16
 #define STEPPER3_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER3_STEALTHCHOP_EN
+#define STEPPER3_HOLD_MULT 0.7
+#define STEPPER3_STEALTHCHOP_THERSHOLD 0
+#define STEPPER3_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER4_HAS_TMC
 #ifdef STEPPER4_HAS_TMC
-// choose the driver type
-#define STEPPER4_TMC_DRIVER 2208
+#define STEPPER4_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER4_TMC_INTERFACE TMC_UART
+#if (STEPPER4_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER4_UART_TX DOUT10
-//#define STEPPER4_UART_RX DIN10
+#define STEPPER4_UART_TX DOUT28
+#define STEPPER4_UART_RX DIN28
+#elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
+#define STEPPER4_UART_DO DOUT21
+#define STEPPER4_UART_DI DIN21
+#define STEPPER4_UART_CLK DOUT20
+#define STEPPER4_UART_CS DOUT28
+#endif
 // basic parameters
 #define STEPPER4_CURRENT_MA 800
 #define STEPPER4_MICROSTEP 16
 #define STEPPER4_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER4_STEALTHCHOP_EN
+#define STEPPER4_HOLD_MULT 0.7
+#define STEPPER4_STEALTHCHOP_THERSHOLD 0
+#define STEPPER4_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER5_HAS_TMC
 #ifdef STEPPER5_HAS_TMC
-// choose the driver type
-#define STEPPER5_TMC_DRIVER 2208
+#define STEPPER5_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER5_TMC_INTERFACE TMC_UART
+#if (STEPPER5_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER5_UART_TX DOUT10
-//#define STEPPER5_UART_RX DIN10
+#define STEPPER5_UART_TX DOUT29
+#define STEPPER5_UART_RX DIN29
+#elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
+#define STEPPER5_UART_DO DOUT21
+#define STEPPER5_UART_DI DIN21
+#define STEPPER5_UART_CLK DOUT20
+#define STEPPER5_UART_CS DOUT29
+#endif
 // basic parameters
 #define STEPPER5_CURRENT_MA 800
 #define STEPPER5_MICROSTEP 16
 #define STEPPER5_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER5_STEALTHCHOP_EN
+#define STEPPER5_HOLD_MULT 0.7
+#define STEPPER5_STEALTHCHOP_THERSHOLD 0
+#define STEPPER5_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER6_HAS_TMC
 #ifdef STEPPER6_HAS_TMC
-// choose the driver type
-#define STEPPER6_TMC_DRIVER 2208
+#define STEPPER6_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER6_TMC_INTERFACE TMC_UART
+#if (STEPPER6_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER6_UART_TX DOUT10
-//#define STEPPER6_UART_RX DIN10
+#define STEPPER6_UART_TX DOUT30
+#define STEPPER6_UART_RX DIN30
+#elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
+#define STEPPER6_UART_DO DOUT21
+#define STEPPER6_UART_DI DIN21
+#define STEPPER6_UART_CLK DOUT20
+#define STEPPER6_UART_CS DOUT30
+#endif
 // basic parameters
 #define STEPPER6_CURRENT_MA 800
 #define STEPPER6_MICROSTEP 16
 #define STEPPER6_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER6_STEALTHCHOP_EN
+#define STEPPER6_HOLD_MULT 0.7
+#define STEPPER6_STEALTHCHOP_THERSHOLD 0
+#define STEPPER6_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER7_HAS_TMC
 #ifdef STEPPER7_HAS_TMC
-// choose the driver type
-#define STEPPER7_TMC_DRIVER 2208
+#define STEPPER7_DRIVER_TYPE 2208
+// choose the interface type
+#define STEPPER7_TMC_INTERFACE TMC_UART
+#if (STEPPER7_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-//#define STEPPER7_UART_TX DOUT10
-//#define STEPPER7_UART_RX DIN10
+#define STEPPER7_UART_TX DOUT31
+#define STEPPER7_UART_RX DIN31
+#elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
+#define STEPPER7_UART_DO DOUT21
+#define STEPPER7_UART_DI DIN21
+#define STEPPER7_UART_CLK DOUT20
+#define STEPPER7_UART_CS DOUT31
+#endif
 // basic parameters
 #define STEPPER7_CURRENT_MA 800
 #define STEPPER7_MICROSTEP 16
 #define STEPPER7_RSENSE 0.11
-// enable stealth shop
-//#define STEPPER7_STEALTHCHOP_EN
+#define STEPPER7_HOLD_MULT 0.7
+#define STEPPER7_STEALTHCHOP_THERSHOLD 0
+#define STEPPER7_ENABLE_INTERPLATION true
 #endif
 
 #ifdef __cplusplus

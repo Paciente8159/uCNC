@@ -68,9 +68,9 @@ uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
         data[3] = tmc_crc8(data, 3);
         driver->rw(data, 4, 8);
         crc = tmc_crc8(data, 7);
-        if (crc != data[7])
+        if (crc != data[7] || (data[0] & 0x0F) != 0x05)
         {
-            return 0;
+            return TMC_READ_ERROR;
         }
         result = data[3];
         result <<= 8;
@@ -151,6 +151,10 @@ void tmc_init(tmc_driver_t *driver)
 
     // disable pdn
     uint32_t gconf = tmc_read_register(driver, GCONF);
+    if (gconf == TMC_READ_ERROR)
+    {
+        return;
+    }
     gconf |= (1UL << 6);
     tmc_write_register(driver, GCONF, gconf);
 }
@@ -158,9 +162,18 @@ void tmc_init(tmc_driver_t *driver)
 float tmc_get_current(tmc_driver_t *driver, float rsense)
 {
     uint32_t iholdrun = tmc_read_register(driver, IHOLD_IRUN);
-    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
-    uint8_t irun = ((iholdrun >> 8) & 0x1F);
+    if (iholdrun == TMC_READ_ERROR)
+    {
+        return -1.0f;
+    }
 
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return -1.0f;
+    }
+
+    uint8_t irun = ((iholdrun >> 8) & 0x1F);
     return (float)(irun + 1) / 32.0 * ((chopconf & (1UL << 17)) ? 0.180 : 0.325) / (rsense + 0.02) / 1.41421 * 1000;
 }
 
@@ -169,6 +182,11 @@ void tmc_set_current(tmc_driver_t *driver, float current, float rsense, float ih
     uint8_t currentsense = 32.0 * 1.41421 * current / 1000.0 * (rsense + 0.02) / 0.325 - 1;
     // If Current Scale is too low, turn on high sensitivity R_sense and calculate again
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
 
     if (currentsense < 16)
     {
@@ -199,6 +217,12 @@ void tmc_set_current(tmc_driver_t *driver, float current, float rsense, float ih
 int32_t tmc_get_microstep(tmc_driver_t *driver)
 {
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return -1L;
+    }
+
     uint8_t ms = (uint8_t)((chopconf >> 24) & 0x0F);
 
     switch (ms)
@@ -228,7 +252,16 @@ int32_t tmc_get_microstep(tmc_driver_t *driver)
 void tmc_set_microstep(tmc_driver_t *driver, uint16_t ms)
 {
     uint32_t gconf = tmc_read_register(driver, GCONF);
+    if (gconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
 
     chopconf &= ~(0xFUL << 24);
 
@@ -281,6 +314,11 @@ void tmc_set_stepinterpol(tmc_driver_t *driver, uint8_t enable)
 {
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
 
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
     if (enable)
     {
         chopconf |= (1UL << 28);
@@ -301,7 +339,16 @@ uint32_t tmc_get_stealthshop(tmc_driver_t *driver)
 void tmc_set_stealthshop(tmc_driver_t *driver, uint32_t value)
 {
     uint32_t gconf = tmc_read_register(driver, GCONF);
+    if (gconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
     uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
 
     if (!value)
     {

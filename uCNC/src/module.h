@@ -41,13 +41,21 @@ extern "C"
 #define ADD_LISTENER(delegate, handler, event)          \
     {                                                   \
         extern delegate##_event_t delegate##_##handler; \
-        delegate##_event_t **p = &event;                \
-        while ((*p) != NULL)                            \
+        if (event == NULL)                              \
         {                                               \
-            (*p) = (*p)->next;                          \
+            event = &delegate##_##handler;              \
+            event->next = NULL;                         \
         }                                               \
-        (*p) = &delegate##_##handler;                   \
-        (*p)->next = NULL;                              \
+        else                                            \
+        {                                               \
+            delegate##_event_t *p = event;              \
+            while (p->next != NULL)                     \
+            {                                           \
+                p = p->next;                            \
+            }                                           \
+            p->next = &delegate##_##handler;            \
+            p->next->next = NULL;                       \
+        }                                               \
     }
 
     // definitions to create overridable default handlers for functions void-void hooks

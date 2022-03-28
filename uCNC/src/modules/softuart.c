@@ -50,8 +50,13 @@ char softuart_getc(const softuart_port_t *port_ptr)
     softuart_port_t port;
     rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
     uint32_t ms = mcu_millis() + SOFTUART_TIMEOUT;
-    while (port.rx() && ms > mcu_millis())
-        ;
+    while (port.rx())
+    {
+        if (ms < mcu_millis())
+        {
+            return 0xFF;
+        }
+    }
 
     mcu_disable_global_isr();
     mcu_delay_us((port.baud >> 2));

@@ -182,6 +182,119 @@ extern "C"
 #endif
 #endif
 
+#ifdef STEPPER0_HAS_TMC
+#if (STEPPER0_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER0_UART_TX < 0 || STEPPER0_UART_RX < 0)
+#undef STEPPER0_HAS_TMC
+#error "Stepper 0 undefined UART pins"
+#endif
+#elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER0_UART_DO < 0 || STEPPER0_UART_DI < 0 || STEPPER0_UART_CLK < 0 || STEPPER0_UART_CS < 0)
+#undef STEPPER0_HAS_TMC
+#error "Stepper 0 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER1_HAS_TMC
+#if (STEPPER1_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER1_UART_TX < 0 || STEPPER1_UART_RX < 0)
+#undef STEPPER1_HAS_TMC
+#error "Stepper 1 undefined UART pins"
+#endif
+#elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER1_UART_DO < 0 || STEPPER1_UART_DI < 0 || STEPPER1_UART_CLK < 0 || STEPPER1_UART_CS < 0)
+#undef STEPPER1_HAS_TMC
+#error "Stepper 1 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER2_HAS_TMC
+#if (STEPPER2_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER2_UART_TX < 0 || STEPPER2_UART_RX < 0)
+#undef STEPPER2_HAS_TMC
+#error "Stepper 2 undefined UART pins"
+#endif
+#elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER2_UART_DO < 0 || STEPPER2_UART_DI < 0 || STEPPER2_UART_CLK < 0 || STEPPER2_UART_CS < 0)
+#undef STEPPER2_HAS_TMC
+#error "Stepper 2 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER3_HAS_TMC
+#if (STEPPER3_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER3_UART_TX < 0 || STEPPER3_UART_RX < 0)
+#undef STEPPER3_HAS_TMC
+#error "Stepper 3 undefined UART pins"
+#endif
+#elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER3_UART_DO < 0 || STEPPER3_UART_DI < 0 || STEPPER3_UART_CLK < 0 || STEPPER3_UART_CS < 0)
+#undef STEPPER3_HAS_TMC
+#error "Stepper 3 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER4_HAS_TMC
+#if (STEPPER4_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER4_UART_TX < 0 || STEPPER4_UART_RX < 0)
+#undef STEPPER4_HAS_TMC
+#error "Stepper 4 undefined UART pins"
+#endif
+#elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER4_UART_DO < 0 || STEPPER4_UART_DI < 0 || STEPPER4_UART_CLK < 0 || STEPPER4_UART_CS < 0)
+#undef STEPPER4_HAS_TMC
+#error "Stepper 4 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER5_HAS_TMC
+#if (STEPPER5_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER5_UART_TX < 0 || STEPPER5_UART_RX < 0)
+#undef STEPPER5_HAS_TMC
+#error "Stepper 5 undefined UART pins"
+#endif
+#elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER5_UART_DO < 0 || STEPPER5_UART_DI < 0 || STEPPER5_UART_CLK < 0 || STEPPER5_UART_CS < 0)
+#undef STEPPER5_HAS_TMC
+#error "Stepper 5 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER6_HAS_TMC
+#if (STEPPER6_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER6_UART_TX < 0 || STEPPER6_UART_RX < 0)
+#undef STEPPER6_HAS_TMC
+#error "Stepper 6 undefined UART pins"
+#endif
+#elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER6_UART_DO < 0 || STEPPER6_UART_DI < 0 || STEPPER6_UART_CLK < 0 || STEPPER6_UART_CS < 0)
+#undef STEPPER6_HAS_TMC
+#error "Stepper 6 undefined SPI pins"
+#endif
+#endif
+#endif
+#ifdef STEPPER7_HAS_TMC
+#if (STEPPER7_TMC_INTERFACE == TMC_UART)
+// if driver uses uart set pins
+#if (STEPPER7_UART_TX < 0 || STEPPER7_UART_RX < 0)
+#undef STEPPER7_HAS_TMC
+#error "Stepper 7 undefined UART pins"
+#endif
+#elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
+#if (STEPPER7_UART_DO < 0 || STEPPER7_UART_DI < 0 || STEPPER7_UART_CLK < 0 || STEPPER7_UART_CS < 0)
+#undef STEPPER7_HAS_TMC
+#error "Stepper 7 undefined SPI pins"
+#endif
+#endif
+#endif
+
 #if defined(STEPPER0_HAS_TMC) || defined(STEPPER1_HAS_TMC) || defined(STEPPER2_HAS_TMC) || defined(STEPPER3_HAS_TMC) || defined(STEPPER4_HAS_TMC) || defined(STEPPER5_HAS_TMC) || defined(STEPPER6_HAS_TMC) || defined(STEPPER7_HAS_TMC)
 #define ENABLE_TMC_DRIVERS
 #endif
