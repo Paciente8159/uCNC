@@ -129,7 +129,7 @@ extern "C"
 #define DIN24_PULLUP
 
 // TMC1 UART
-#define DOUT25_BIT 15
+#define DOUT25_BIT 5
 #define DOUT25_PORT F
 #define DIN25_BIT 2
 #define DIN25_PORT K
