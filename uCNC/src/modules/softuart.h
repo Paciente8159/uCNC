@@ -36,11 +36,10 @@ extern "C"
     } softuart_port_t;
 
 #define SOFTBAUD(x) (1000000 / x)
-#define SOFTUART_TIMEOUT 20
+#define SOFTUART_TIMEOUT 20000
 #define SOFTUART(NAME, BAUD, TXPIN, RXPIN) \
     void NAME##_tx(bool state)             \
     {                                      \
-        mcu_config_output(TXPIN);          \
         if (state)                         \
         {                                  \
             mcu_set_output(TXPIN);         \
@@ -52,7 +51,6 @@ extern "C"
     }                                      \
     bool NAME##_rx(void)                   \
     {                                      \
-        mcu_config_input(TXPIN);           \
         return mcu_get_input(RXPIN);       \
     }                                      \
     const softuart_port_t __rom__ NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};

@@ -59,10 +59,7 @@ uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, par
 		ptr = ptr->next;
 	}
 
-	if ((cmd->group_extended != 0))
-	{
-		return error;
-	}
+	return error;
 }
 #endif
 
@@ -88,28 +85,28 @@ void __attribute__((weak)) mod_itp_reset_rt_position_hook(float *origin)
 WEAK_HOOK(cnc_reset)
 {
 	// for now only encoder module uses this hook and overrides it
-	// DEFAULT_HANDLER(cnc_reset);
+	DEFAULT_HANDLER(cnc_reset);
 }
 
 // mod_rtc_tick_hook
 WEAK_HOOK(rtc_tick)
 {
 	// for now only pid module uses this hook and overrides it
-	// DEFAULT_HANDLER(rtc_tick);
+	DEFAULT_HANDLER(rtc_tick);
 }
 
 // mod_cnc_dotasks_hook
 WEAK_HOOK(cnc_dotasks)
 {
 	// for now this is not used
-	//  DEFAULT_HANDLER(cnc_dotasks);
+	DEFAULT_HANDLER(cnc_dotasks);
 }
 
 // mod_cnc_stop_hook
 WEAK_HOOK(cnc_stop)
 {
 	// for now only pid module uses this hook and overrides it
-	// DEFAULT_HANDLER(cnc_stop);
+	DEFAULT_HANDLER(cnc_stop);
 }
 
 #endif
@@ -119,7 +116,7 @@ WEAK_HOOK(cnc_stop)
 WEAK_HOOK(settings_change)
 {
 	// for now only pid module uses this hook and overrides it
-	// DEFAULT_HANDLER(settings_change);
+	DEFAULT_HANDLER(settings_change);
 }
 #endif
 
@@ -129,7 +126,7 @@ WEAK_HOOK(send_pins_states)
 {
 	// for now only encoder module uses this hook and overrides it
 	// it actually overrides the mcu callback to be faster
-	// DEFAULT_HANDLER(input_change);
+	DEFAULT_HANDLER(input_change);
 }
 #endif
 
@@ -139,7 +136,7 @@ WEAK_HOOK(input_change)
 {
 	// for now only encoder module uses this hook and overrides it
 	// it actually overrides the mcu callback to be faster
-	// DEFAULT_HANDLER(input_change);
+	DEFAULT_HANDLER(input_change);
 }
 #endif
 
@@ -148,12 +145,14 @@ WEAK_HOOK(input_change)
 WEAK_HOOK(probe_enable)
 {
 	// for now this is not used
+	DEFAULT_HANDLER(probe_enable);
 }
 
 // mod_probe_disable_hook
 WEAK_HOOK(probe_disable)
 {
 	// for now this is not used
+	DEFAULT_HANDLER(probe_disable);
 }
 #endif
 
@@ -177,8 +176,13 @@ void mod_init(void)
 	ADD_LISTENER(gcode_exec_delegate, m42_exec, gcode_exec_event);
 #endif
 
+#if ENCODERS > 0
+	ADD_LISTENER(cnc_reset_delegate, encoders_reset_position, cnc_reset_event);
+#endif
+
 #ifdef ENABLE_TMC_DRIVERS
 	tmcdrivers_init();
+	ADD_LISTENER(cnc_reset_delegate, tmcdrivers_init, cnc_reset_event);
 #ifdef ENABLE_PARSER_MODULES
 	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);

@@ -24,26 +24,28 @@ extern "C"
 {
 #endif
 
+#include "mega_ide_pins.h"
+
 #define PCINT0_PORT B
 #define PCINT1_PORT J
 #define PCINT2_PORT K
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 3	 // assigns STEP2 pin
-#define STEP2_PORT L // assigns STEP2 port
-#define STEP1_BIT 6	 // assigns STEP1 pin
-#define STEP1_PORT F // assigns STEP1 port
-#define STEP0_BIT 0	 // assigns STEP0 pin
-#define STEP0_PORT F // assigns STEP0 port
+#define STEP2_BIT 3				// assigns STEP2 pin
+#define STEP2_PORT L			// assigns STEP2 port
+#define STEP1_BIT 6				// assigns STEP1 pin
+#define STEP1_PORT F			// assigns STEP1 port
+#define STEP0_BIT PIN_BIT(A0)	// assigns STEP0 pin
+#define STEP0_PORT PIN_PORT(A0) // assigns STEP0 port
 
 // Setup dir pins
-#define DIR2_BIT 1	// assigns DIR2 pin
-#define DIR2_PORT L // assigns DIR2 port
-#define DIR1_BIT 7	// assigns DIR1 pin
-#define DIR1_PORT F // assigns DIR1 port
-#define DIR0_BIT 1	// assigns DIR0 pin
-#define DIR0_PORT F // assigns DIR0 port
+#define DIR2_BIT 1			   // assigns DIR2 pin
+#define DIR2_PORT L			   // assigns DIR2 port
+#define DIR1_BIT 7			   // assigns DIR1 pin
+#define DIR1_PORT F			   // assigns DIR1 port
+#define DIR0_BIT PIN_BIT(A1)   // assigns DIR0 pin
+#define DIR0_PORT PIN_PORT(A1) // assigns DIR0 port
 
 // Setup limit pins
 #define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin

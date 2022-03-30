@@ -20,7 +20,7 @@
 #include "softuart.h"
 #include "tmc/tmcdriver.h"
 
-#define TMC_UARTBAUD 100000
+#define TMC_UARTBAUD 38400
 
 // driver communications declarations
 // UART
@@ -35,14 +35,21 @@
 #define TMC1_STEPPER_RW(CHANNEL)                                             \
     static void tmc##CHANNEL##_rw(uint8_t *data, uint8_t wlen, uint8_t rlen) \
     {                                                                        \
+        mcu_disable_global_isr();                                            \
+        mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
+        mcu_set_output(STEPPER##CHANNEL##_UART_TX);                          \
         for (uint8_t i = 0; i < wlen; i++)                                   \
         {                                                                    \
             softuart_putc(&tmc##CHANNEL##_uart, data[i]);                    \
         }                                                                    \
+        mcu_config_input(STEPPER##CHANNEL##_UART_TX);                        \
         for (uint8_t i = 0; i < rlen; i++)                                   \
         {                                                                    \
             data[i] = softuart_getc(&tmc##CHANNEL##_uart);                   \
         }                                                                    \
+        mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
+        mcu_enable_global_isr();                                             \
+        cnc_delay_ms(10);                                                    \
     }
 // SPI
 #define TMC2_STEPPER_RW(CHANNEL)                                             \
@@ -100,7 +107,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc0_driver);
     tmc_set_current(&tmc0_driver, STEPPER0_CURRENT_MA, STEPPER0_RSENSE, STEPPER0_HOLD_MULT);
     tmc_set_microstep(&tmc0_driver, STEPPER0_MICROSTEP);
-    tmc_set_stealthshop(&tmc0_driver, STEPPER0_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc0_driver, STEPPER0_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc0_driver, STEPPER0_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER1_HAS_TMC
@@ -108,7 +115,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc1_driver);
     tmc_set_current(&tmc1_driver, STEPPER1_CURRENT_MA, STEPPER1_RSENSE, STEPPER1_HOLD_MULT);
     tmc_set_microstep(&tmc1_driver, STEPPER1_MICROSTEP);
-    tmc_set_stealthshop(&tmc1_driver, STEPPER1_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc1_driver, STEPPER1_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc1_driver, STEPPER1_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER2_HAS_TMC
@@ -116,7 +123,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc2_driver);
     tmc_set_current(&tmc2_driver, STEPPER2_CURRENT_MA, STEPPER2_RSENSE, STEPPER2_HOLD_MULT);
     tmc_set_microstep(&tmc2_driver, STEPPER2_MICROSTEP);
-    tmc_set_stealthshop(&tmc2_driver, STEPPER2_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc2_driver, STEPPER2_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc2_driver, STEPPER2_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER3_HAS_TMC
@@ -124,7 +131,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc3_driver);
     tmc_set_current(&tmc3_driver, STEPPER3_CURRENT_MA, STEPPER3_RSENSE, STEPPER3_HOLD_MULT);
     tmc_set_microstep(&tmc3_driver, STEPPER3_MICROSTEP);
-    tmc_set_stealthshop(&tmc3_driver, STEPPER3_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc3_driver, STEPPER3_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc3_driver, STEPPER3_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER4_HAS_TMC
@@ -132,7 +139,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc4_driver);
     tmc_set_current(&tmc4_driver, STEPPER4_CURRENT_MA, STEPPER4_RSENSE, STEPPER4_HOLD_MULT);
     tmc_set_microstep(&tmc4_driver, STEPPER4_MICROSTEP);
-    tmc_set_stealthshop(&tmc4_driver, STEPPER4_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc4_driver, STEPPER4_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc4_driver, STEPPER4_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER5_HAS_TMC
@@ -140,7 +147,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc5_driver);
     tmc_set_current(&tmc5_driver, STEPPER5_CURRENT_MA, STEPPER5_RSENSE, STEPPER5_HOLD_MULT);
     tmc_set_microstep(&tmc5_driver, STEPPER5_MICROSTEP);
-    tmc_set_stealthshop(&tmc5_driver, STEPPER5_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc5_driver, STEPPER5_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc5_driver, STEPPER5_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER6_HAS_TMC
@@ -148,7 +155,7 @@ void tmcdrivers_init(void)
     tmc_init(&tmc6_driver);
     tmc_set_current(&tmc6_driver, STEPPER6_CURRENT_MA, STEPPER6_RSENSE, STEPPER6_HOLD_MULT);
     tmc_set_microstep(&tmc6_driver, STEPPER6_MICROSTEP);
-    tmc_set_stealthshop(&tmc6_driver, STEPPER6_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc6_driver, STEPPER6_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc6_driver, STEPPER6_ENABLE_INTERPLATION);
 #endif
 #ifdef STEPPER7_HAS_TMC
@@ -156,10 +163,12 @@ void tmcdrivers_init(void)
     tmc_init(&tmc7_driver);
     tmc_set_current(&tmc7_driver, STEPPER7_CURRENT_MA, STEPPER7_RSENSE, STEPPER7_HOLD_MULT);
     tmc_set_microstep(&tmc7_driver, STEPPER7_MICROSTEP);
-    tmc_set_stealthshop(&tmc7_driver, STEPPER7_STEALTHCHOP_THERSHOLD);
+    tmc_set_stealthchop(&tmc7_driver, STEPPER7_STEALTHCHOP_THERSHOLD);
     tmc_set_stepinterpol(&tmc7_driver, STEPPER7_ENABLE_INTERPLATION);
 #endif
 }
+
+CREATE_LISTENER(cnc_reset_delegate, tmcdrivers_init);
 
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES) && defined(ENABLE_TMC_DRIVERS)
@@ -543,6 +552,11 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER0_HAS_TMC
             tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
+            if (CHECKFLAG(cmd->words, GCODE_WORD_R))
+            {
+                reg = (uint32_t)words->r;
+                tmc_write_register(&tmc0_driver, (uint8_t)words->xyzabc[0], reg);
+            }
             reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
 #else
             reg = 0xFFFFFFFFUL;
