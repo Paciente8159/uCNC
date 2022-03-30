@@ -147,7 +147,7 @@ extern "C"
 #define TMC_SPI 2
 
 // uncomment to enable trinamic driver
-#define STEPPER0_HAS_TMC
+//#define STEPPER0_HAS_TMC
 #ifdef STEPPER0_HAS_TMC
 #define STEPPER0_DRIVER_TYPE 2208
 // choose the interface type
@@ -171,7 +171,7 @@ extern "C"
 #define STEPPER0_ENABLE_INTERPLATION true
 #endif
 // uncomment to enable trinamic driver
-#define STEPPER1_HAS_TMC
+//#define STEPPER1_HAS_TMC
 #ifdef STEPPER1_HAS_TMC
 #define STEPPER1_DRIVER_TYPE 2208
 // choose the interface type
