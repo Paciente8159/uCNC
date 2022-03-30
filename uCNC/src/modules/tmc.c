@@ -542,6 +542,18 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             return STATUS_TMC_CMD_MISSING_ARGS;
         }
 
+        int8_t wordreg = -1;
+        uint16_t wordval = 0;
+        if (CHECKFLAG(cmd->words, GCODE_WORD_L))
+        {
+            wordreg = (int8_t)words->l;
+            if (wordreg > 1 || wordreg < 0)
+            {
+                return STATUS_INVALID_STATEMENT;
+            }
+            wordval = words->s;
+        }
+
         uint32_t reg;
 
         if (CHECKFLAG(cmd->words, GCODE_WORD_X))
@@ -552,9 +564,20 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER0_HAS_TMC
             tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            if (CHECKFLAG(cmd->words, GCODE_WORD_R))
+            if (wordreg >= 0)
             {
-                reg = (uint32_t)words->r;
+                reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
                 tmc_write_register(&tmc0_driver, (uint8_t)words->xyzabc[0], reg);
             }
             reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
@@ -574,6 +597,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER1_HAS_TMC
             tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc1_driver, (uint8_t)words->xyzabc[1], reg);
+            }
             reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -591,6 +630,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER2_HAS_TMC
             tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc2_driver, (uint8_t)words->xyzabc[2], reg);
+            }
             reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -608,6 +663,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER3_HAS_TMC
             tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc3_driver, (uint8_t)words->xyzabc[3], reg);
+            }
             reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -625,6 +696,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER4_HAS_TMC
             tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc4_driver, (uint8_t)words->xyzabc[4], reg);
+            }
             reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -642,6 +729,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER5_HAS_TMC
             tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc5_driver, (uint8_t)words->xyzabc[5], reg);
+            }
             reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -659,6 +762,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER6_HAS_TMC
             tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc6_driver, (uint8_t)words->ijk[0], reg);
+            }
             reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
 #else
             reg = 0xFFFFFFFFUL;
@@ -676,6 +795,22 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
             serial_putc(',');
 #ifdef STEPPER7_HAS_TMC
             tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
+            if (wordreg >= 0)
+            {
+                reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
+                switch (wordreg)
+                {
+                case 0:
+                    reg &= 0xFFFF0000;
+                    reg |= (((uint32_t)wordval));
+                    break;
+                case 1:
+                    reg &= 0x0000FFFF;
+                    reg |= (((uint32_t)wordval) << 16);
+                    break;
+                }
+                tmc_write_register(&tmc7_driver, (uint8_t)words->ijk[1], reg);
+            }
             reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
 #else
             reg = 0xFFFFFFFFUL;

@@ -45,7 +45,7 @@ char softuart_getc(const softuart_port_t *port_ptr)
 {
     softuart_port_t port;
     rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
-    uint16_t ms = SOFTUART_TIMEOUT;
+    uint16_t ms = SOFTUART_TIMEOUT * 1000;
     while (port.rx())
     {
         mcu_delay_us(1);

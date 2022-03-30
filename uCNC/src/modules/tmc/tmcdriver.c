@@ -84,13 +84,7 @@ uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
         {
             return TMC_READ_ERROR;
         }
-        result = data[3];
-        result <<= 8;
-        result |= data[4];
-        result <<= 8;
-        result |= data[5];
-        result <<= 8;
-        result |= data[6];
+        result = ((uint32_t)data[3] << 24) | ((uint32_t)data[4] << 16) | (data[5] << 8) | data[6];
         break;
     case 2130:
         data[0] = address & 0x7F;
@@ -127,13 +121,10 @@ uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val)
         data[0] = 0x05;
         data[1] = driver->slave;
         data[2] = address | 0x80;
-        data[6] = (uint8_t)(val & 0xFF);
-        val >>= 8;
-        data[5] = (uint8_t)(val & 0xFF);
-        val >>= 8;
-        data[4] = (uint8_t)(val & 0xFF);
-        val >>= 8;
-        data[3] = (uint8_t)(val & 0xFF);
+        data[3] = (val >> 24) & 0xFF;
+        data[4] = (val >> 16) & 0xFF;
+        data[5] = (val >> 8) & 0xFF;
+        data[6] = (val)&0xFF;
         data[7] = tmc_crc8(data, 7);
         driver->rw(data, 8, 0);
         break;
@@ -162,7 +153,7 @@ void tmc_init(tmc_driver_t *driver)
     }
 
     // set initial state (spread cycle on, internal vref external resistor, shaft fwd, disable pdn, microstep from mstep, normal operation)
-    tmc_write_register(driver, GCONF, ((uint32_t)0x25));
+    tmc_write_register(driver, GCONF, ((uint32_t)0xC5));
 }
 
 float tmc_get_current(tmc_driver_t *driver, float rsense)
@@ -303,18 +294,18 @@ void tmc_set_microstep(tmc_driver_t *driver, int16_t ms)
     default:
         if (ms < 0)
         {
-            gconf &= ~(((uint32_t)1) << 7);
+            gconf &= ~((uint32_t)0xC0);
             tmc_write_register(driver, GCONF, gconf);
             return;
         }
         break;
     }
 
+    gconf |= ((uint32_t)0xC0);
+    gconf &= 0xFF;
+    tmc_write_register(driver, GCONF, gconf);
     chopconf |= (((uint32_t)ms) << 24);
     tmc_write_register(driver, CHOPCONF, chopconf);
-    gconf |= (((uint32_t)1) << 7);
-    gconf &= 0x1F;
-    tmc_write_register(driver, GCONF, gconf);
 }
 
 uint8_t tmc_get_stepinterpol(tmc_driver_t *driver)
@@ -372,9 +363,9 @@ void tmc_set_stealthchop(tmc_driver_t *driver, uint32_t value)
         gconf &= ~((uint32_t)0x04);
     }
 
-    tmc_write_register(driver, TPWMTHRS, value);
-    gconf &= 0x1F;
+    gconf &= 0xFF;
     tmc_write_register(driver, GCONF, gconf);
+    tmc_write_register(driver, TPWMTHRS, value);
 }
 
 uint32_t tmc_get_status(tmc_driver_t *driver)

@@ -36,7 +36,7 @@ extern "C"
     } softuart_port_t;
 
 #define SOFTBAUD(x) (1000000 / x)
-#define SOFTUART_TIMEOUT 20000
+#define SOFTUART_TIMEOUT 20
 #define SOFTUART(NAME, BAUD, TXPIN, RXPIN) \
     void NAME##_tx(bool state)             \
     {                                      \
