@@ -109,7 +109,7 @@ TODO List of G-Codes in µCNC future releases:
   - 16 analog inputs
   - 32* generic digital inputs 
   - 32* generic digital outputs
-  - 8 servo control outputs (50Hz-PPM)
+  - 6 servo control outputs (50Hz-PPM)
 
 * see notes
 

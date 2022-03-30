@@ -12,6 +12,10 @@ Beta2 adds a subset of canned cycles G codes to µCNC.
 ### Added
   - Added canned cycles G81, G82, G83, G85, G86 and G89 to parser (enabled via config file) (#151)
   - Added softuart (bit-banging) module (#152)
+  - Added TMC drivers integration. UART drivers are supported. SPI drivers are not tested. (#155)
+
+### Fixed
+  - Fixed module ADDLISTENER macro. When adding multiple listeners to the same event only the last one was being called. (#155)
 
 ### Changed
   - modified homing (each kinematic has a fully custom homing motion and coordinate set) (#154)

@@ -4,7 +4,7 @@
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 03-06-2022
+    Date: 06-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,22 +36,25 @@ extern "C"
     } softuart_port_t;
 
 #define SOFTBAUD(x) (1000000 / x)
-#define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                \
-    void NAME##_tx(bool state)                            \
-    {                                                     \
-        if (state)                                        \
-        {                                                 \
-            mcu_set_output(TXPIN);                        \
-        }                                                 \
-        else                                              \
-        {                                                 \
-            mcu_clear_output(TXPIN);                      \
-        }                                                 \
-    }                                                     \
-    bool NAME##_rx(void) { return mcu_get_input(RXPIN); } \
-    const softuart_port_t __rom__ NAME = {.baud = (1000000 / BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
+#define SOFTUART_TIMEOUT 20
+#define SOFTUART(NAME, BAUD, TXPIN, RXPIN) \
+    void NAME##_tx(bool state)             \
+    {                                      \
+        if (state)                         \
+        {                                  \
+            mcu_set_output(TXPIN);         \
+        }                                  \
+        else                               \
+        {                                  \
+            mcu_clear_output(TXPIN);       \
+        }                                  \
+    }                                      \
+    bool NAME##_rx(void)                   \
+    {                                      \
+        return mcu_get_input(RXPIN);       \
+    }                                      \
+    const softuart_port_t __rom__ NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-    void softuart_init(const softuart_port_t *port_ptr);
     void softuart_putc(const softuart_port_t *port_ptr, char c);
     char softuart_getc(const softuart_port_t *port_ptr);
 

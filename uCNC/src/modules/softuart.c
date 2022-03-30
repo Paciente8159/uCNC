@@ -4,7 +4,7 @@
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 03-06-2022
+    Date: 06-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -17,23 +17,16 @@
 */
 #include "softuart.h"
 
-void softuart_init(const softuart_port_t *port_ptr)
-{
-    softuart_port_t port;
-    rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
-    port.tx(true);
-}
-
 void softuart_putc(const softuart_port_t *port_ptr, char c)
 {
-    mcu_disable_global_isr();
     softuart_port_t port;
     rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
     port.tx(false);
     mcu_delay_us(port.baud);
-    for (uint8_t bits = 0U; bits < 8U; bits++)
+    uint8_t bits = 8;
+    do
     {
-        if (c & (1U << bits))
+        if (c & 0x01)
         {
             port.tx(true);
         }
@@ -41,32 +34,39 @@ void softuart_putc(const softuart_port_t *port_ptr, char c)
         {
             port.tx(false);
         }
+        c >>= 1;
         mcu_delay_us(port.baud);
-    }
+    } while (--bits);
     port.tx(true);
-    mcu_delay_us(port.baud >> 1);
-    mcu_enable_global_isr();
+    mcu_delay_us(port.baud);
 }
 
 char softuart_getc(const softuart_port_t *port_ptr)
 {
-    mcu_disable_global_isr();
     softuart_port_t port;
     rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
+    uint16_t ms = SOFTUART_TIMEOUT * 1000;
     while (port.rx())
-        ;
-    mcu_delay_us(port.baud + (port.baud >> 1));
-    char val = 0;
-    for (uint8_t bits = 0U; bits < 8U; bits++)
     {
-        bool state = port.rx();
-        if (state)
+        mcu_delay_us(1);
+        if (!ms--)
         {
-            val = val | (1U << bits);
+            return 0xFF;
         }
-        mcu_delay_us(port.baud);
     }
     mcu_delay_us((port.baud >> 1));
-    mcu_enable_global_isr();
+    char val = 0;
+    uint8_t bits = 8;
+    uint8_t mask = 0x01;
+    do
+    {
+        mcu_delay_us(port.baud);
+        if (port.rx())
+        {
+            val |= mask;
+        }
+        mask <<= 1;
+    } while (--bits);
+    mcu_delay_us((port.baud >> 1));
     return val;
 }
