@@ -34,6 +34,7 @@ Version 1.4 added a couple of new features.
   - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside de core code by creating and adding code hooks that can then call and execute multiple listeners
   - added optional variable acceleration step generation (S-Curve speed profile)
   - added module for bltouch probe
+  - added initial support for Trinamic drivers. For now only TMC drivers with UART are available. TMC2208 as been tested with success.
 
 Version 1.3 added a couple of new features.
 
@@ -91,6 +92,8 @@ NOTES:
   * _M6 additional tools can be defined in HAL file_
   * _M10 only active if servo motors are configured_
   * _M42 configurable via aditional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
+
+Other custom G/M codes are available via additional modules and enabling option ENABLE_PARSER_MODULES in the cnc_config.h file.
 
 TODO List of G-Codes in µCNC future releases:
 
