@@ -30,6 +30,10 @@ extern "C"
 
 // SAME AS GRBL for test purposes
 // Setup step pins
+#define STEP4_BIT 4	 // assigns STEP4 pin
+#define STEP4_PORT C // assigns STEP4 port
+#define STEP3_BIT 3	 // assigns STEP3 pin
+#define STEP3_PORT C // assigns STEP3 port
 #define STEP2_BIT 2	 // assigns STEP2 pin
 #define STEP2_PORT C // assigns STEP2 port
 #define STEP1_BIT 1	 // assigns STEP1 pin
@@ -38,6 +42,10 @@ extern "C"
 #define STEP0_PORT C // assigns STEP0 port
 
 // Setup dir pins
+#define DIR4_BIT 7	// assigns DIR4 pin
+#define DIR4_PORT L // assigns DIR4 port
+#define DIR3_BIT 6	// assigns DIR3 pin
+#define DIR3_PORT L // assigns DIR3 port
 #define DIR2_BIT 2	// assigns DIR2 pin
 #define DIR2_PORT L // assigns DIR2 port
 #define DIR1_BIT 1	// assigns DIR1 pin
@@ -66,16 +74,16 @@ extern "C"
 #define PROBE_PORT C
 #define PROBE_ISR 1
 
-// Setup control input pins
-#define ESTOP_BIT 0
-#define FHOLD_BIT 1
-#define CS_RES_BIT 2
-#define ESTOP_PORT C
-#define FHOLD_PORT C
-#define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
+// // Setup control input pins
+// #define ESTOP_BIT 0
+// #define FHOLD_BIT 1
+// #define CS_RES_BIT 2
+// #define ESTOP_PORT C
+// #define FHOLD_PORT C
+// #define CS_RES_PORT C
+// #define ESTOP_ISR 1
+// #define FHOLD_ISR 1
+// #define CS_RES_ISR 1
 
 // Active controls switch weak pull-ups
 //#define ESTOP_PULLUP
@@ -111,6 +119,10 @@ extern "C"
 #define STEP1_EN_PORT A
 #define STEP2_EN_BIT 5
 #define STEP2_EN_PORT A
+#define STEP3_EN_BIT 4
+#define STEP3_EN_PORT A
+#define STEP4_EN_BIT 3
+#define STEP4_EN_PORT A
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
@@ -118,6 +130,58 @@ extern "C"
 	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 	// Timer 0 is set by default
 	//#define RTC_TIMER 0
+
+// blink led
+#define DOUT31_BIT 7
+#define DOUT31_PORT B
+
+// STEP0 MICROSTEP
+#define DOUT23_BIT 1
+#define DOUT23_PORT G
+#define DOUT15_BIT 0
+#define DOUT15_PORT G
+
+// STEP1 MICROSTEP
+#define DOUT24_BIT 7
+#define DOUT24_PORT K
+#define DOUT16_BIT 2
+#define DOUT16_PORT G
+
+// STEP2 MICROSTEP
+#define DOUT25_BIT 6
+#define DOUT25_PORT K
+#define DOUT17_BIT 5
+#define DOUT17_PORT K
+
+// STEP3 MICROSTEP
+#define DOUT26_BIT 3
+#define DOUT26_PORT K
+#define DOUT18_BIT 4
+#define DOUT18_PORT K
+
+// STEP4 MICROSTEP
+#define DOUT27_BIT 1
+#define DOUT27_PORT K
+#define DOUT19_BIT 2
+#define DOUT19_PORT K
+
+// stepper current digital potenciometer
+#define DOUT12_BIT 7
+#define DOUT12_PORT D
+#define DOUT13_BIT 2
+#define DOUT13_PORT B
+#define DOUT14_BIT 1
+#define DOUT14_PORT B
+#define DIN13_BIT 3
+#define DIN13_PORT B
+
+	// specific rambo settings
+#define STEPPER_CURR_DIGIPOT
+#define STEPPER0_HAS_MSTEP
+#define STEPPER1_HAS_MSTEP
+#define STEPPER2_HAS_MSTEP
+#define STEPPER3_HAS_MSTEP
+#define STEPPER4_HAS_MSTEP
 
 #ifdef __cplusplus
 }

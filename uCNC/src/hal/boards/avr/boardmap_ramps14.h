@@ -30,22 +30,29 @@ extern "C"
 #define PCINT1_PORT J
 #define PCINT2_PORT K
 
-// SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 3				// assigns STEP2 pin
-#define STEP2_PORT L			// assigns STEP2 port
-#define STEP1_BIT 6				// assigns STEP1 pin
-#define STEP1_PORT F			// assigns STEP1 port
-#define STEP0_BIT PIN_BIT(A0)	// assigns STEP0 pin
-#define STEP0_PORT PIN_PORT(A0) // assigns STEP0 port
+#define STEP4_BIT 1	 // assigns STEP4 pin
+#define STEP4_PORT C // assigns STEP4 port
+#define STEP3_BIT 4	 // assigns STEP3 pin
+#define STEP3_PORT A // assigns STEP3 port
+#define STEP2_BIT 3	 // assigns STEP2 pin
+#define STEP2_PORT L // assigns STEP2 port
+#define STEP1_BIT 6	 // assigns STEP1 pin
+#define STEP1_PORT F // assigns STEP1 port
+#define STEP0_BIT 0	 // assigns STEP0 pin
+#define STEP0_PORT F // assigns STEP0 port
 
 // Setup dir pins
-#define DIR2_BIT 1			   // assigns DIR2 pin
-#define DIR2_PORT L			   // assigns DIR2 port
-#define DIR1_BIT 7			   // assigns DIR1 pin
-#define DIR1_PORT F			   // assigns DIR1 port
-#define DIR0_BIT PIN_BIT(A1)   // assigns DIR0 pin
-#define DIR0_PORT PIN_PORT(A1) // assigns DIR0 port
+#define DIR4_BIT 3	// assigns DIR2 pin
+#define DIR4_PORT C // assigns DIR2 port
+#define DIR3_BIT 6	// assigns DIR2 pin
+#define DIR3_PORT A // assigns DIR2 port
+#define DIR2_BIT 1	// assigns DIR2 pin
+#define DIR2_PORT L // assigns DIR2 port
+#define DIR1_BIT 7	// assigns DIR1 pin
+#define DIR1_PORT F // assigns DIR1 port
+#define DIR0_BIT 1	// assigns DIR0 pin
+#define DIR0_PORT F // assigns DIR0 port
 
 // Setup limit pins
 #define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin
@@ -99,14 +106,10 @@ extern "C"
 
 // Setup generic IO Pins
 // Functionalities are set in config.h file
-/*#define DOUT0_BIT 5
-#define DOUT0_PORT B
-#define DOUT1_BIT 0
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
-#define DOUT2_PORT C*/
-#define DOUT15_BIT 7
-#define DOUT15_PORT B
+
+// blink led
+#define DOUT31_BIT 7
+#define DOUT31_PORT B
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 7
@@ -115,6 +118,10 @@ extern "C"
 #define STEP1_EN_PORT F
 #define STEP2_EN_BIT 0
 #define STEP2_EN_PORT K
+#define STEP3_EN_BIT 2
+#define STEP3_EN_PORT A
+#define STEP4_EN_BIT 7
+#define STEP4_EN_PORT C
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
@@ -124,18 +131,39 @@ extern "C"
 	//#define RTC_TIMER 0
 
 // TMC0 UART
-#define DOUT24_BIT 1
-#define DOUT24_PORT G
-#define DIN24_BIT 1
+#define DOUT23_BIT 1
+#define DOUT23_PORT G
+#define DIN23_BIT 1
+#define DIN23_PORT K
+#define DIN23_PULLUP
+
+// TMC1 UART
+#define DOUT24_BIT 5
+#define DOUT24_PORT F
+#define DIN24_BIT 2
 #define DIN24_PORT K
 #define DIN24_PULLUP
 
-// TMC1 UART
-#define DOUT25_BIT 5
-#define DOUT25_PORT F
-#define DIN25_BIT 2
+// TMC2 UART
+#define DOUT25_BIT 7
+#define DOUT25_PORT L
+#define DIN25_BIT 3
 #define DIN25_PORT K
 #define DIN25_PULLUP
+
+// TMC3 UART
+#define DOUT26_BIT 5
+#define DOUT26_PORT L
+#define DIN26_BIT 4
+#define DIN26_PORT K
+#define DIN26_PULLUP
+
+	// // TMC4 UART
+	// #define DOUT27_BIT 3
+	// #define DOUT27_PORT F
+	// #define DIN27_BIT 4
+	// #define DIN27_PORT F
+	// #define DIN27_PULLUP
 
 #ifdef __cplusplus
 }

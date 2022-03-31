@@ -300,6 +300,10 @@ extern "C"
 #define ENABLE_MAIN_LOOP_MODULES
 #endif
 
+#if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
+#define ENABLE_DIGITAL_MSTEP
+#endif
+
 #ifdef __cplusplus
 }
 #endif

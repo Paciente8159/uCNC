@@ -125,10 +125,6 @@ extern "C"
 #define DOUT0_BIT 17
 #define DOUT0_PORT A
 
-	// teste led pin
-#define DOUT15_BIT 17
-#define DOUT15_PORT A
-
 // analog input
 //  #define ANALOG0_BIT 5
 //  #define ANALOG0_PORT A
