@@ -1212,6 +1212,12 @@ typedef uint16_t step_t;
 #error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
 #endif
 
+#ifdef ENABLE_S_CURVE_ACCELERATION
+#ifdef USE_LEGACY_STEP_INTERPOLATOR
+#undef USE_LEGACY_STEP_INTERPOLATOR
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
