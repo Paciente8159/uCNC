@@ -2,11 +2,12 @@
 <img src="https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true">
 </p>
 
-
 # µCNC
+
 µCNC - Universal CNC firmware for microcontrollers
 
 ## About µCNC
+
 Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://linuxcnc.org/), µCNC started to take shape in the second half of 2019 in an attempt to come out with a G-Code interpreter/controller software/firmware that is both compact and powerful as Grbl and flexible and modular as LinuxCNC, with the following goals in mind:
 
 1. µCNC is written in C (GNU99 compliant). This gives the advantage of being supported for a large number of CPU/MCU and compilers available.
@@ -20,40 +21,43 @@ Heavily inspired by the by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](h
 3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the whole wheel at least :-P). For that reason µCNC (tries) to use the exact same protocol has Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 ## Supporting the project
+
 µCNC is a completely free software. It took me a considerable amount of hours and effort to develop and debug so any help is appreciated. Building docs, testing and debugging, whatever. Also if you really like it and want help me keep the project running, you can help me to buy more equipment. Recently I have saved some extra money and bought a laser engraver. This hardware was fundamental to develop and testing version 1.2.0 and beyond. Currently this machine is being used to work on other projects and is running µCNC smoothly. Or you may just want to simply buy me a coffee or two for those extra long nights putting out code ;-)
 
 [![paypal](https://www.paypalobjects.com/webstatic/en_US/i/buttons/PP_logo_h_100x26.png)](https://www.paypal.me/paciente8159)
 
 ## Current µCNC status
+
 µCNC current major version is v1.4. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 Version 1.4 added a couple of new features.
 
-  - added support for STM32F4 MCU and the Blackpill boards.
-  - new servo PIN type that generates a 50Hz with TOn - 0.5ms~2.5ms needed to control servo type motors.
-  - initial (still in development) support for delta kinematics.
-  - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside de core code by creating and adding code hooks that can then call and execute multiple listeners
-  - added optional variable acceleration step generation (S-Curve speed profile)
-  - added module for bltouch probe
-  - added initial support for Trinamic drivers. For now only TMC drivers with UART are available. TMC2208 as been tested with success.
+- added support for STM32F4 MCU and the Blackpill boards.
+- new servo PIN type that generates a 50Hz with TOn - 0.5ms~2.5ms needed to control servo type motors.
+- initial (still in development) support for delta kinematics.
+- new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside de core code by creating and adding code hooks that can then call and execute multiple listeners
+- added optional variable acceleration step generation (S-Curve speed profile)
+- added module for bltouch probe
+- added initial support for Trinamic drivers. For now only TMC drivers with UART are available. TMC2208 as been tested with success.
 
 Version 1.3 added a couple of new features.
 
-  - added support for SAMD21 MCU and the Arduino Zero/M0 boards.
-  - new HAL for tool change and management.
-  - modified file structure and modified tinyUSB source code files to allow compiling and loading the firmware with Arduino IDE.
-  - gcode parser is extendable via modules
-  - PID module initial implementation
-  - encoder/counter module implemented
+- added support for SAMD21 MCU and the Arduino Zero/M0 boards.
+- new HAL for tool change and management.
+- modified file structure and modified tinyUSB source code files to allow compiling and loading the firmware with Arduino IDE.
+- gcode parser is extendable via modules
+- PID module initial implementation
+- encoder/counter module implemented
 
 Version 1.2 added lot of new features needed for the future hardware/features support and some important bug fixes.
 These include:
 
-  - the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
-  - the addition off new PID and encoder modules to be used by the new HAL config, powered by an internal RTC clock.
-  - integration [tinyUSB](https://github.com/hathach/tinyusb), a complete USB stack frame that simplifies the creation of HAL code for new MCU.
-  - the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
+- the new HAL configuration file that introduces a more flexible way to modify the HAL and give customization power of LinuxCNC.
+- the addition off new PID and encoder modules to be used by the new HAL config, powered by an internal RTC clock.
+- integration [tinyUSB](https://github.com/hathach/tinyusb), a complete USB stack frame that simplifies the creation of HAL code for new MCU.
+- the addition of an option for a 16bit version of the bresenham line algorithm that can improve step rate for weak 8bit processors or for specific applications like laser engraving.
 
 ### G-Codes support
+
 µCNC v1.4.0-beta2 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
@@ -82,25 +86,29 @@ List of Supported G-Codes since µCNC 1.4.0:
 * see notes
 
 ```
+
 NOTES:
-  * _also G10 L2 P28 and P30 to set homing coordinates_
-  * _also G10 L2 P0 to set the current coordinates system offset_
-  * _G81*, G82*, G83*, G85*, G86*, G89* optional enabled via config file_
-  * _G59.1, G59.2 and G59.3 can be enabled in config_
-  * _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
-  * _M1 stop condition can be set in HAL file_
-  * _M6 additional tools can be defined in HAL file_
-  * _M10 only active if servo motors are configured_
-  * _M42 configurable via aditional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
+
+- _also G10 L2 P28 and P30 to set homing coordinates_
+- _also G10 L2 P0 to set the current coordinates system offset_
+- _G81*, G82*, G83*, G85*, G86*, G89* optional enabled via config file_
+- _G59.1, G59.2 and G59.3 can be enabled in config_
+- _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
+- _M1 stop condition can be set in HAL file_
+- _M6 additional tools can be defined in HAL file_
+- _M10 only active if servo motors are configured_
+- _M42 configurable via aditional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
 
 Other custom G/M codes are available via additional modules and enabling option ENABLE_PARSER_MODULES in the cnc_config.h file.
 
 TODO List of G-Codes in µCNC future releases:
 
 ### µCNC capabilities
+
 µCNC currently supports up to (depending on the MCU/board capabilities):
+
 ```
-  - 6 independent axis 
+  - 6 independent axis
   - 8* stepper step/dir drivers
   - 9* limit switches (interrupt driven)
   - 1 probe switch (interrupt driven)
@@ -110,7 +118,7 @@ TODO List of G-Codes in µCNC future releases:
   - 1 door open switch (interrupt driven)
   - 16 pwm outputs
   - 16 analog inputs
-  - 32* generic digital inputs 
+  - 32* generic digital inputs
   - 32* generic digital outputs
   - 6 servo control outputs (50Hz-PPM)
 
@@ -119,34 +127,41 @@ TODO List of G-Codes in µCNC future releases:
 ```
 
 NOTES:
-  * _6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis_
-  * _6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops_
-  * _Generic inputs support interrupts on the first 8 pins. Prior to version 1.4 the number of generic inputs was limited to 16._
-  * _Prior to version 1.4 the number of generic outputs  was limited to 16._
+
+- _6 steppers + 2 extra that can be configured to mirror 2 of the other 6 for dual drive axis_
+- _6 limit switch (one per axis) plus 3 optional second axis X, Y or Z support dual endstops_
+- _Generic inputs support interrupts on the first 8 pins. Prior to version 1.4 the number of generic inputs was limited to 16._
+- _Prior to version 1.4 the number of generic outputs was limited to 16._
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board, but this feature is experimental and it's advise to disable DSS when using it.
 
 ### Current µCNC supported hardware
-µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
+
+µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like MKS Gen L). Other MCU's have and will be integrated in µCNC:
 
 I used several UNO emulators but debugging was not easy. So a kind of virtual board (Windows PC) was created to test µCNC core code independently.
 It can run on:
-  - AVR (Arduino UNO/MEGA)
-  - STM32F1 (Bluepill) - v1.1.x
-  - SAMD21 (Arduino Zero/M0) - v1.3.x
-  - STM32F4 (Blackpill) - v1.4.x
-  - Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
+
+- AVR (Arduino UNO/MEGA)
+- STM32F1 (Bluepill) - v1.1.x
+- SAMD21 (Arduino Zero/M0) - v1.3.x
+- STM32F4 (Blackpill) - v1.4.x
+- Windows PC (used for simulation only - ISR on Windows doesn't allow to use it a real alternative)
 
 ### µCNC roadmap
+
 A couple were introduced with version 1.2.0 of µCNC to prepare for future and easier expansions.
 These changes are:
-  - Add some extra functionalities like tool speed encoding, positional encoders, etc...
-  - Change the files path structure to be more organic and well organized
-  - Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb), opening the possibilities and speed development for new MCU's
+
+- Add some extra functionalities like tool speed encoding, positional encoders, etc...
+- Change the files path structure to be more organic and well organized
+- Move all USB stack related functionalities to a third-party library called [tinyUSB](https://github.com/hathach/tinyusb), opening the possibilities and speed development for new MCU's
 
 Future versions are in plan for:
-  - Add more hardware configurations (ESP32 integration will start soon)
+
+- Add more hardware configurations (ESP32 integration will start soon)
 
 ### Building µCNC
+
 For building µCNC go ahead to the [makefiles](https://github.com/Paciente8159/uCNC/blob/master/makefiles) folder of the target MCU and follow the instructions specific to your device.
 Version 1.3.0 restructured the project so that it can easily be opened, configured, compiled and loaded via Arduino IDE environment. Just go to the [uCNC](https://github.com/Paciente8159/uCNC/blob/master/uCNC) folder and open uCNC.ino. See how to build the project for your board in the [wiki](https://github.com/Paciente8159/uCNC/wiki).

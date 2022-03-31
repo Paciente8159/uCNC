@@ -18,6 +18,8 @@
 */
 
 #include "cnc.h"
+#include "modules/softspi.h"
+#include "modules/softuart.h"
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
@@ -156,17 +158,65 @@ WEAK_HOOK(probe_disable)
 }
 #endif
 
-#if PID_CONTROLLERS > 0
-extern void pid_init(void);
+static void softspi_ss_init()
+{
+	// initialize slave select pins
+#ifdef STEPPER_CURR_DIGIPOT
+	mcu_set_output(STEPPER_DIGIPOT_SS);
 #endif
-#ifdef ENABLE_TMC_DRIVERS
-extern void tmcdrivers_init(void);
+
+#ifdef STEPPER0_SPI_CS
+	mcu_set_output(STEPPER0_SPI_CS);
 #endif
+#ifdef STEPPER1_SPI_CS
+	mcu_set_output(STEPPER1_SPI_CS);
+#endif
+#ifdef STEPPER2_SPI_CS
+	mcu_set_output(STEPPER2_SPI_CS);
+#endif
+#ifdef STEPPER3_SPI_CS
+	mcu_set_output(STEPPER3_SPI_CS);
+#endif
+#ifdef STEPPER4_SPI_CS
+	mcu_set_output(STEPPER4_SPI_CS);
+#endif
+#ifdef STEPPER5_SPI_CS
+	mcu_set_output(STEPPER5_SPI_CS);
+#endif
+#ifdef STEPPER6_SPI_CS
+	mcu_set_output(STEPPER6_SPI_CS);
+#endif
+#ifdef STEPPER7_SPI_CS
+	mcu_set_output(STEPPER7_SPI_CS);
+#endif
+}
 
 void mod_init(void)
 {
+	softspi_ss_init();
+
+// MStep selectors via digital pins
+#ifdef ENABLE_DIGITAL_MSTEP
+	extern void digimstep_init(void);
+	digimstep_init();
+#ifdef ENABLE_PARSER_MODULES
+	ADD_LISTENER(gcode_parse_delegate, m351_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m351_exec, gcode_exec_event);
+#endif
+#endif
+
+#ifdef STEPPER_CURR_DIGIPOT
+	extern void digipot_spi_init(void);
+	digipot_spi_init();
+#ifdef ENABLE_PARSER_MODULES
+	ADD_LISTENER(gcode_parse_delegate, m907_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m907_exec, gcode_exec_event);
+#endif
+#endif
+
 	// initializes PID module
 #if PID_CONTROLLERS > 0
+	extern void pid_init(void);
 	pid_init(); // pid
 #endif
 
@@ -181,6 +231,7 @@ void mod_init(void)
 #endif
 
 #ifdef ENABLE_TMC_DRIVERS
+	extern void tmcdrivers_init(void);
 	tmcdrivers_init();
 	ADD_LISTENER(cnc_reset_delegate, tmcdrivers_init, cnc_reset_event);
 #ifdef ENABLE_PARSER_MODULES

@@ -2065,6 +2065,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
+    uint16_t new_words = cmd->words;
     switch (c)
     {
     case 'N':
@@ -2077,19 +2078,19 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         break;
 #ifdef AXIS_X
     case 'X':
-        cmd->words |= GCODE_WORD_X;
+        new_words |= GCODE_WORD_X;
         words->xyzabc[AXIS_X] = value;
         break;
 #endif
 #ifdef AXIS_Y
     case 'Y':
-        cmd->words |= GCODE_WORD_Y;
+        new_words |= GCODE_WORD_Y;
         words->xyzabc[AXIS_Y] = value;
         break;
 #endif
 #ifdef AXIS_Z
     case 'Z':
-        cmd->words |= GCODE_WORD_Z;
+        new_words |= GCODE_WORD_Z;
         words->xyzabc[AXIS_Z] = value;
         break;
 #endif
@@ -2098,19 +2099,19 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #ifdef GCODE_ACCEPT_WORD_E
     case 'E':
 #endif
-        cmd->words |= GCODE_WORD_A;
+        new_words |= GCODE_WORD_A;
         words->xyzabc[AXIS_A] = value;
         break;
 #endif
 #ifdef AXIS_B
     case 'B':
-        cmd->words |= GCODE_WORD_B;
+        new_words |= GCODE_WORD_B;
         words->xyzabc[AXIS_B] = value;
         break;
 #endif
 #ifdef AXIS_C
     case 'C':
-        cmd->words |= GCODE_WORD_C;
+        new_words |= GCODE_WORD_C;
         words->xyzabc[AXIS_C] = value;
         break;
 #endif
@@ -2123,33 +2124,33 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         }
 #endif
     case 'D':
-        cmd->words |= GCODE_WORD_D;
+        new_words |= GCODE_WORD_D;
         words->d = value;
         break;
     case 'F':
-        cmd->words |= GCODE_WORD_F;
+        new_words |= GCODE_WORD_F;
         words->f = value;
         break;
 #ifdef AXIS_X
     case 'I':
-        cmd->words |= GCODE_WORD_I;
+        new_words |= GCODE_WORD_I;
         words->ijk[AXIS_X] = value;
         break;
 #endif
 #ifdef AXIS_Y
     case 'J':
-        cmd->words |= GCODE_WORD_J;
+        new_words |= GCODE_WORD_J;
         words->ijk[AXIS_Y] = value;
         break;
 #endif
 #ifdef AXIS_Z
     case 'K':
-        cmd->words |= GCODE_WORD_K;
+        new_words |= GCODE_WORD_K;
         words->ijk[AXIS_Z] = value;
         break;
 #endif
     case 'L':
-        cmd->words |= GCODE_WORD_L;
+        new_words |= GCODE_WORD_L;
 
         if (mantissa)
         {
@@ -2159,7 +2160,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->l = (uint8_t)truncf(value);
         break;
     case 'P':
-        cmd->words |= GCODE_WORD_P;
+        new_words |= GCODE_WORD_P;
 
         if (value < 0)
         {
@@ -2169,12 +2170,12 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->p = value;
         break;
     case 'R':
-        cmd->words |= GCODE_WORD_R;
+        new_words |= GCODE_WORD_R;
         words->r = value;
         break;
 #if TOOL_COUNT > 0
     case 'S':
-        cmd->words |= GCODE_WORD_S;
+        new_words |= GCODE_WORD_S;
         if (value < 0)
         {
             return STATUS_NEGATIVE_VALUE;
@@ -2182,7 +2183,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->s = (uint16_t)trunc(value);
         break;
     case 'T':
-        cmd->words |= GCODE_WORD_T;
+        new_words |= GCODE_WORD_T;
         if (mantissa)
         {
             return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
@@ -2212,7 +2213,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
                 return STATUS_INVALID_TOOL;
             }
             index--;
-            cmd->words |= GCODE_WORD_Z;
+            new_words |= GCODE_WORD_Z;
             words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
         }
 #else
@@ -2237,6 +2238,13 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         }
         return STATUS_INVALID_STATEMENT;
     }
+
+    if (new_words == cmd->words)
+    {
+        return STATUS_GCODE_WORD_REPEATED;
+    }
+
+    cmd->words = new_words;
 
     return STATUS_OK;
 }

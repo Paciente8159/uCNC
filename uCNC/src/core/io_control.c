@@ -682,6 +682,86 @@ void io_set_output(uint8_t pin, bool state)
             mcu_set_output(DOUT15);
             break;
 #endif
+#if (DOUT16 >= 0)
+        case DOUT16:
+            mcu_set_output(DOUT16);
+            break;
+#endif
+#if (DOUT17 >= 0)
+        case DOUT17:
+            mcu_set_output(DOUT17);
+            break;
+#endif
+#if (DOUT18 >= 0)
+        case DOUT18:
+            mcu_set_output(DOUT18);
+            break;
+#endif
+#if (DOUT19 >= 0)
+        case DOUT19:
+            mcu_set_output(DOUT19);
+            break;
+#endif
+#if (DOUT20 >= 0)
+        case DOUT20:
+            mcu_set_output(DOUT20);
+            break;
+#endif
+#if (DOUT21 >= 0)
+        case DOUT21:
+            mcu_set_output(DOUT21);
+            break;
+#endif
+#if (DOUT22 >= 0)
+        case DOUT22:
+            mcu_set_output(DOUT22);
+            break;
+#endif
+#if (DOUT23 >= 0)
+        case DOUT23:
+            mcu_set_output(DOUT23);
+            break;
+#endif
+#if (DOUT24 >= 0)
+        case DOUT24:
+            mcu_set_output(DOUT24);
+            break;
+#endif
+#if (DOUT25 >= 0)
+        case DOUT25:
+            mcu_set_output(DOUT25);
+            break;
+#endif
+#if (DOUT26 >= 0)
+        case DOUT26:
+            mcu_set_output(DOUT26);
+            break;
+#endif
+#if (DOUT27 >= 0)
+        case DOUT27:
+            mcu_set_output(DOUT27);
+            break;
+#endif
+#if (DOUT28 >= 0)
+        case DOUT28:
+            mcu_set_output(DOUT28);
+            break;
+#endif
+#if (DOUT29 >= 0)
+        case DOUT29:
+            mcu_set_output(DOUT29);
+            break;
+#endif
+#if (DOUT30 >= 0)
+        case DOUT30:
+            mcu_set_output(DOUT30);
+            break;
+#endif
+#if (DOUT31 >= 0)
+        case DOUT31:
+            mcu_set_output(DOUT31);
+            break;
+#endif
         }
     }
     else
@@ -766,6 +846,86 @@ void io_set_output(uint8_t pin, bool state)
 #if (DOUT15 >= 0)
         case DOUT15:
             mcu_clear_output(DOUT15);
+            break;
+#endif
+#if (DOUT16 >= 0)
+        case DOUT16:
+            mcu_clear_output(DOUT16);
+            break;
+#endif
+#if (DOUT17 >= 0)
+        case DOUT17:
+            mcu_clear_output(DOUT17);
+            break;
+#endif
+#if (DOUT18 >= 0)
+        case DOUT18:
+            mcu_clear_output(DOUT18);
+            break;
+#endif
+#if (DOUT19 >= 0)
+        case DOUT19:
+            mcu_clear_output(DOUT19);
+            break;
+#endif
+#if (DOUT20 >= 0)
+        case DOUT20:
+            mcu_clear_output(DOUT20);
+            break;
+#endif
+#if (DOUT21 >= 0)
+        case DOUT21:
+            mcu_clear_output(DOUT21);
+            break;
+#endif
+#if (DOUT22 >= 0)
+        case DOUT22:
+            mcu_clear_output(DOUT22);
+            break;
+#endif
+#if (DOUT23 >= 0)
+        case DOUT23:
+            mcu_clear_output(DOUT23);
+            break;
+#endif
+#if (DOUT24 >= 0)
+        case DOUT24:
+            mcu_clear_output(DOUT24);
+            break;
+#endif
+#if (DOUT25 >= 0)
+        case DOUT25:
+            mcu_clear_output(DOUT25);
+            break;
+#endif
+#if (DOUT26 >= 0)
+        case DOUT26:
+            mcu_clear_output(DOUT26);
+            break;
+#endif
+#if (DOUT27 >= 0)
+        case DOUT27:
+            mcu_clear_output(DOUT27);
+            break;
+#endif
+#if (DOUT28 >= 0)
+        case DOUT28:
+            mcu_clear_output(DOUT28);
+            break;
+#endif
+#if (DOUT29 >= 0)
+        case DOUT29:
+            mcu_clear_output(DOUT29);
+            break;
+#endif
+#if (DOUT30 >= 0)
+        case DOUT30:
+            mcu_clear_output(DOUT30);
+            break;
+#endif
+#if (DOUT31 >= 0)
+        case DOUT31:
+            mcu_clear_output(DOUT31);
             break;
 #endif
         }
@@ -1121,6 +1281,70 @@ int16_t io_get_pinvalue(uint8_t pin)
     case DOUT15:
         return (mcu_get_output(DOUT15) != 0);
 #endif
+#if (DOUT16 >= 0)
+    case DOUT16:
+        return (mcu_get_output(DOUT16) != 0);
+#endif
+#if (DOUT17 >= 0)
+    case DOUT17:
+        return (mcu_get_output(DOUT17) != 0);
+#endif
+#if (DOUT18 >= 0)
+    case DOUT18:
+        return (mcu_get_output(DOUT18) != 0);
+#endif
+#if (DOUT19 >= 0)
+    case DOUT19:
+        return (mcu_get_output(DOUT19) != 0);
+#endif
+#if (DOUT20 >= 0)
+    case DOUT20:
+        return (mcu_get_output(DOUT20) != 0);
+#endif
+#if (DOUT21 >= 0)
+    case DOUT21:
+        return (mcu_get_output(DOUT21) != 0);
+#endif
+#if (DOUT22 >= 0)
+    case DOUT22:
+        return (mcu_get_output(DOUT22) != 0);
+#endif
+#if (DOUT23 >= 0)
+    case DOUT23:
+        return (mcu_get_output(DOUT23) != 0);
+#endif
+#if (DOUT24 >= 0)
+    case DOUT24:
+        return (mcu_get_output(DOUT24) != 0);
+#endif
+#if (DOUT25 >= 0)
+    case DOUT25:
+        return (mcu_get_output(DOUT25) != 0);
+#endif
+#if (DOUT26 >= 0)
+    case DOUT26:
+        return (mcu_get_output(DOUT26) != 0);
+#endif
+#if (DOUT27 >= 0)
+    case DOUT27:
+        return (mcu_get_output(DOUT27) != 0);
+#endif
+#if (DOUT28 >= 0)
+    case DOUT28:
+        return (mcu_get_output(DOUT28) != 0);
+#endif
+#if (DOUT29 >= 0)
+    case DOUT29:
+        return (mcu_get_output(DOUT29) != 0);
+#endif
+#if (DOUT30 >= 0)
+    case DOUT30:
+        return (mcu_get_output(DOUT30) != 0);
+#endif
+#if (DOUT31 >= 0)
+    case DOUT31:
+        return (mcu_get_output(DOUT31) != 0);
+#endif
 #if LIMIT_X >= 0
     case LIMIT_X:
         return (mcu_get_input(LIMIT_X) != 0);
@@ -1304,6 +1528,70 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if DIN15 >= 0
     case DIN15:
         return (mcu_get_input(DIN15) != 0);
+#endif
+#if DIN16 >= 0
+    case DIN16:
+        return (mcu_get_input(DIN16) != 0);
+#endif
+#if DIN17 >= 0
+    case DIN17:
+        return (mcu_get_input(DIN17) != 0);
+#endif
+#if DIN18 >= 0
+    case DIN18:
+        return (mcu_get_input(DIN18) != 0);
+#endif
+#if DIN19 >= 0
+    case DIN19:
+        return (mcu_get_input(DIN19) != 0);
+#endif
+#if DIN20 >= 0
+    case DIN20:
+        return (mcu_get_input(DIN20) != 0);
+#endif
+#if DIN21 >= 0
+    case DIN21:
+        return (mcu_get_input(DIN21) != 0);
+#endif
+#if DIN22 >= 0
+    case DIN22:
+        return (mcu_get_input(DIN22) != 0);
+#endif
+#if DIN23 >= 0
+    case DIN23:
+        return (mcu_get_input(DIN23) != 0);
+#endif
+#if DIN24 >= 0
+    case DIN24:
+        return (mcu_get_input(DIN24) != 0);
+#endif
+#if DIN25 >= 0
+    case DIN25:
+        return (mcu_get_input(DIN25) != 0);
+#endif
+#if DIN26 >= 0
+    case DIN26:
+        return (mcu_get_input(DIN26) != 0);
+#endif
+#if DIN27 >= 0
+    case DIN27:
+        return (mcu_get_input(DIN27) != 0);
+#endif
+#if DIN28 >= 0
+    case DIN28:
+        return (mcu_get_input(DIN28) != 0);
+#endif
+#if DIN29 >= 0
+    case DIN29:
+        return (mcu_get_input(DIN29) != 0);
+#endif
+#if DIN30 >= 0
+    case DIN30:
+        return (mcu_get_input(DIN30) != 0);
+#endif
+#if DIN31 >= 0
+    case DIN31:
+        return (mcu_get_input(DIN31) != 0);
 #endif
 #if SERVO0 >= 0
     case SERVO0:
