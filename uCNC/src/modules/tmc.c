@@ -20,6 +20,8 @@
 #include "softuart.h"
 #include "tmc/tmcdriver.h"
 
+#ifdef ENABLE_TMC_DRIVERS
+
 #define TMC_UARTBAUD 38400
 
 // driver communications declarations
@@ -171,7 +173,7 @@ void tmcdrivers_init(void)
 CREATE_LISTENER(cnc_reset_delegate, tmcdrivers_init);
 
 /*custom gcode commands*/
-#if defined(ENABLE_PARSER_MODULES) && defined(ENABLE_TMC_DRIVERS)
+#if defined(ENABLE_PARSER_MODULES)
 // this ID must be unique for each code
 #define M350 1350
 // this ID must be unique for each code
@@ -826,4 +828,5 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
     return STATUS_GOCDE_EXTENDED_UNSUPPORTED;
 }
 
+#endif
 #endif
