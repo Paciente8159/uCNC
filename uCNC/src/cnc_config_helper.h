@@ -1218,6 +1218,13 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#if (KINEMATIC == KINEMATIC_DELTA)
+#if (MCU == MCU_AVR && BOARD != BOARD_UNO && BOARD != BOARD_MKS_DLC)
+#define PLANNER_BUFFER_SIZE 40
+#define INTERPOLATOR_FREQ 1
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
