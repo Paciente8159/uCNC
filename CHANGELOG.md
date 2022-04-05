@@ -6,7 +6,19 @@
 
 # Changelog
 
-## [1.4.0-beta2] - Unrelased
+## [1.4.0-rc] - Unrelased
+
+µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles and more.
+
+### Added
+
+### Changed
+
+### Fixed
+
+- fixed random angle error calculation between planner line segments that cause random speed drops (#158)
+
+## [1.4.0-beta2] - 2022-04-01
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
 Beta2 adds a subset of canned cycles G codes to µCNC.

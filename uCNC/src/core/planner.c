@@ -186,6 +186,8 @@ void planner_add_line(motion_data_t *block_data)
     {
         cos_theta = 0;
     }
+    
+    cos_theta = CLAMP(0, cos_theta, 1.0f);
 
     // if more than one move stored cals juntion speeds and recalculates speed profiles
     if (cos_theta != 0 && !CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_EXACT_STOP | MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
