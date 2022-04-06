@@ -648,7 +648,7 @@ void itp_run(void)
 
 // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-            itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
+            itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->flags_u.flags_t.backlash_comp;
 #endif
             itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
