@@ -31,19 +31,19 @@
 #define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 
-static bool previous_lase_mode;
+static bool previous_laser_mode;
 
 void laser1_startup_code(void)
 {
     // force laser mode
-    previous_lase_mode = g_settings.laser_mode;
+    previous_laser_mode = g_settings.laser_mode;
     g_settings.laser_mode = 1;
 }
 
 void laser1_shutdown_code(void)
 {
     // restore laser mode
-    g_settings.laser_mode = previous_lase_mode;
+    g_settings.laser_mode = previous_laser_mode;
 }
 
 void laser1_set_speed(uint8_t value, bool invert)
