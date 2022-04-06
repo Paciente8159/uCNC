@@ -209,6 +209,7 @@ extern "C"
    *  (defined in the specified kinematics_xxx.h file)
    * */
 
+// #define ENABLE_SKEW_COMPENSATION
 #ifdef ENABLE_SKEW_COMPENSATION
 // uncomment to correct only in the xy axis
 //#define SKEW_COMPENSATION_XY_ONLY
@@ -274,9 +275,9 @@ extern "C"
 
   /**
    * Enables legacy step interpolation generator (prior to version 1.4)
-   * This runs a variable time window Riemman sum integrator. S-Curve
-   * acceleration will have no effect
-   * code size will also be reduced
+   * This runs a variable time window Riemman sum integrator (better performance).
+   * S-Curve acceleration will disable this option
+   * This produces option outputs code smaller size
    * */
 
 #define USE_LEGACY_STEP_INTERPOLATOR
@@ -333,10 +334,11 @@ extern "C"
    * */
 
   /**
-   * ensure all variables are set to 0 at start up
+   * forces all global variables are set to 0 at start up
+   * this shoud not be necessary since the linker usually performs this task
    * */
 
-  //#define FORCE_GLOBALS_TO_0
+  // #define FORCE_GLOBALS_TO_0
 
   /**
    * saves a little program memory bytes but much more slow CRC check

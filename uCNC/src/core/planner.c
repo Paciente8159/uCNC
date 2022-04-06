@@ -88,7 +88,7 @@ void planner_add_line(motion_data_t *block_data)
 #ifdef ENABLE_BACKLASH_COMPENSATION
     if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
     {
-        planner_data[planner_data_write].backlash_comp = true;
+        planner_data[planner_data_write].flags_u.flags_t.backlash_comp = true;
     }
 #endif
 
@@ -186,7 +186,7 @@ void planner_add_line(motion_data_t *block_data)
     {
         cos_theta = 0;
     }
-    
+
     cos_theta = CLAMP(0, cos_theta, 1.0f);
 
     // if more than one move stored cals juntion speeds and recalculates speed profiles

@@ -17,6 +17,7 @@
 ### Fixed
 
 - fixed random angle error calculation between planner line segments that cause random speed drops (#158)
+- fixed compilation errors for main config file options (#159)
 
 ## [1.4.0-beta2] - 2022-04-01
 
