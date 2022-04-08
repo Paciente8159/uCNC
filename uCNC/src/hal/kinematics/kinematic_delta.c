@@ -164,7 +164,7 @@ uint8_t kinematics_home(void)
         }
 
         // reset position
-        itp_reset_rt_position(&target);
+        itp_reset_rt_position(target);
 
         return STATUS_OK;
 }
