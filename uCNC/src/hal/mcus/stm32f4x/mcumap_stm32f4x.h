@@ -32,7 +32,7 @@ extern "C"
 		MCU specific definitions and replacements
 	*/
 
-#include "stm32f4xx.h"
+#include <stm32f4xx.h>
 #include <stdbool.h>
 
 // defines the frequency of the mcu
@@ -3062,6 +3062,8 @@ extern "C"
 #define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
 #elif (INTERFACE == INTERFACE_USB)
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif

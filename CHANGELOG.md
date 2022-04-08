@@ -12,9 +12,12 @@
 
 ### Added
 
+- added platformIO.ini file the µCNC project (#161)
+
 ### Changed
 
-- improved subsegment planner computations by skipping junction speed calculations after initial calculation for first subsegment (#160) 
+- improved subsegment planner computations by skipping junction speed calculations after initial calculation for first subsegment (#160)
+- optimized the MKS DLC boardmap file to reuse UNO boardmap
 
 ### Fixed
 
