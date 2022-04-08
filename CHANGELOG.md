@@ -14,10 +14,13 @@
 
 ### Changed
 
+- improved subsegment planner computations by skipping junction speed calculations after initial calculation for first subsegment (#160) 
+
 ### Fixed
 
 - fixed random angle error calculation between planner line segments that cause random speed drops (#158)
 - fixed compilation errors for main config file options (#159)
+- fixed unit vector calculation in motion control line function (#160) 
 
 ## [1.4.0-beta2] - 2022-04-01
 
