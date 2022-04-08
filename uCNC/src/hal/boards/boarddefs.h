@@ -47,6 +47,7 @@ extern "C"
 
 #if (BOARD == BOARD_MKS_DLC)
 #define MCU MCU_AVR
+#define PLANNER_BUFFER_SIZE 14
 #include "avr/boardmap_mks_dlc.h"
 #endif
 
