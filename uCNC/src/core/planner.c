@@ -111,12 +111,21 @@ void planner_add_line(motion_data_t *block_data)
     float dir_vect[STEPPER_COUNT];
     memset(dir_vect, 0, sizeof(dir_vect));
 #else
-    for (uint8_t i = AXIS_COUNT; i != 0;)
+
+    if (!block_data->is_subsegment)
     {
-        i--;
-        cos_theta += block_data->dir_vect[i] * last_dir_vect[i];
-        last_dir_vect[i] = block_data->dir_vect[i];
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            cos_theta += block_data->dir_vect[i] * last_dir_vect[i];
+            last_dir_vect[i] = block_data->dir_vect[i];
+        }
     }
+    else
+    {
+        cos_theta = 1;
+    }
+
 #endif
 
     for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -192,32 +201,39 @@ void planner_add_line(motion_data_t *block_data)
     // if more than one move stored cals juntion speeds and recalculates speed profiles
     if (cos_theta != 0 && !CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_EXACT_STOP | MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
     {
-        // calculates the junction angle with previous
-        if (cos_theta > 0)
+        if (!block_data->is_subsegment)
         {
-            // uses the half angle identity conversion to convert from cos(theta) to tan(theta/2) where:
-            //	tan(theta/2) = sqrt((1-cos(theta)/(1+cos(theta))
-            // to simplify the calculations it multiplies by sqrt((1+cos(theta)/(1+cos(theta))
-            // transforming the equation to sqrt((1^2-cos(theta)^2))/(1+cos(theta))
-            // this way the output will be between 0<tan(theta/2)<inf
-            // but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
-            // all angles greater than 1 that can be excluded
-            angle_factor = 1.0f / (1.0f + cos_theta);
-            cos_theta = (1.0f - fast_flt_pow2(cos_theta));
-            angle_factor *= fast_flt_sqrt(cos_theta);
+            // calculates the junction angle with previous
+            if (cos_theta > 0)
+            {
+                // uses the half angle identity conversion to convert from cos(theta) to tan(theta/2) where:
+                //	tan(theta/2) = sqrt((1-cos(theta)/(1+cos(theta))
+                // to simplify the calculations it multiplies by sqrt((1+cos(theta)/(1+cos(theta))
+                // transforming the equation to sqrt((1^2-cos(theta)^2))/(1+cos(theta))
+                // this way the output will be between 0<tan(theta/2)<inf
+                // but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
+                // all angles greater than 1 that can be excluded
+                angle_factor = 1.0f / (1.0f + cos_theta);
+                cos_theta = (1.0f - fast_flt_pow2(cos_theta));
+                angle_factor *= fast_flt_sqrt(cos_theta);
+            }
+
+            // sets the maximum allowed speed at junction (if angle doesn't force a full stop)
+            float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : g_settings.g64_angle_factor);
+            angle_factor = CLAMP(0, angle_factor - factor, 1);
+
+            if (angle_factor < 1.0f)
+            {
+                float junc_feed_sqr = (1 - angle_factor);
+                junc_feed_sqr = fast_flt_pow2(junc_feed_sqr);
+                junc_feed_sqr *= planner_data[prev].feed_sqr;
+                // the maximum feed is the minimal feed between the previous feed given the angle and the current feed
+                planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, junc_feed_sqr);
+            }
         }
-
-        // sets the maximum allowed speed at junction (if angle doesn't force a full stop)
-        float factor = ((!CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_CONTINUOUS)) ? 0 : g_settings.g64_angle_factor);
-        angle_factor = CLAMP(0, angle_factor - factor, 1);
-
-        if (angle_factor < 1.0f)
+        else
         {
-            float junc_feed_sqr = (1 - angle_factor);
-            junc_feed_sqr = fast_flt_pow2(junc_feed_sqr);
-            junc_feed_sqr *= planner_data[prev].feed_sqr;
-            // the maximum feed is the minimal feed between the previous feed given the angle and the current feed
-            planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, junc_feed_sqr);
+            planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, planner_data[prev].feed_sqr);
         }
 
         // forces reaclculation with the new block
