@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.0-rc] - Unrelased
+## [1.4.0-rc] - 2022-04-09
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles and more.
 
@@ -733,6 +733,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-rc
+[1.4.0-beta2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta2
 [1.4.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta
 [1.4.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-alpha
 [1.3.8]: https://github.com/Paciente8159/uCNC/releases/tag/v1.3.8
