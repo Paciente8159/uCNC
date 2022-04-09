@@ -26,6 +26,7 @@
 #include "sam.h"
 //#include "instance/nvmctrl.h"
 #include <string.h>
+#include <math.h>
 
 // Non volatile memory
 // SAMD devices page size never exceeds 1024 bytes
@@ -1739,7 +1740,7 @@ void mcu_eeprom_flush(void)
                         remaining -= (remaining > NVM_ROW_SIZE) ? NVM_ROW_SIZE : remaining;
                 }
 
-                NVMCTRL->CTRLB.bit.CACHEDIS = 1;
+                NVMCTRL->CTRLB.bit.CACHEDIS = cache;
                 NVMCTRL->CTRLB.bit.RWS = 0x01;
         }
 
