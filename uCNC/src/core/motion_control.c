@@ -175,7 +175,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
     }
 
     // check travel limits (soft limits)
-    if (!io_check_boundaries(target))
+    if (!kinematics_check_boundaries(target))
     {
         if (cnc_get_exec_state(EXEC_JOG))
         {

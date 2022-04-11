@@ -29,46 +29,18 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-#ifdef AXIS_X
-        steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * axis[AXIS_X]);
-#endif
-#ifdef AXIS_Y
-        steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * axis[AXIS_Y]);
-#endif
-#ifdef AXIS_Z
-        steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * axis[AXIS_Z]);
-#endif
-#ifdef AXIS_A
-        steps[3] = (int32_t)lroundf(g_settings.step_per_mm[3] * axis[AXIS_A]);
-#endif
-#ifdef AXIS_B
-        steps[4] = (int32_t)lroundf(g_settings.step_per_mm[4] * axis[AXIS_B]);
-#endif
-#ifdef AXIS_C
-        steps[5] = (int32_t)lroundf(g_settings.step_per_mm[5] * axis[AXIS_C]);
-#endif
+        for (uint8_t i = 0; i < AXIS_COUNT; i++)
+        {
+                steps[i] = (int32_t)lroundf(g_settings.step_per_mm[i] * axis[i]);
+        }
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-#ifdef AXIS_X
-        axis[AXIS_X] = (((float)steps[0]) / g_settings.step_per_mm[0]);
-#endif
-#ifdef AXIS_Y
-        axis[AXIS_Y] = (((float)steps[1]) / g_settings.step_per_mm[1]);
-#endif
-#ifdef AXIS_Z
-        axis[AXIS_Z] = (((float)steps[2]) / g_settings.step_per_mm[2]);
-#endif
-#ifdef AXIS_A
-        axis[AXIS_A] = (((float)steps[3]) / g_settings.step_per_mm[3]);
-#endif
-#ifdef AXIS_B
-        axis[AXIS_B] = (((float)steps[4]) / g_settings.step_per_mm[4]);
-#endif
-#ifdef AXIS_C
-        axis[AXIS_C] = (((float)steps[5]) / g_settings.step_per_mm[5]);
-#endif
+        for (uint8_t i = 0; i < AXIS_COUNT; i++)
+        {
+                axis[i] = (((float)steps[i]) / g_settings.step_per_mm[i]);
+        }
 }
 
 uint8_t kinematics_home(void)
@@ -127,9 +99,8 @@ uint8_t kinematics_home(void)
         motion_data_t block_data = {0};
         mc_get_position(target);
 
-        for (uint8_t i = AXIS_COUNT; i != 0;)
+        for (uint8_t i = 0; i < AXIS_COUNT; i++)
         {
-                i--;
                 target[i] += ((g_settings.homing_dir_invert_mask & (1 << i)) ? -g_settings.homing_offset : g_settings.homing_offset);
         }
 
@@ -140,11 +111,7 @@ uint8_t kinematics_home(void)
         mc_line(target, &block_data);
         itp_sync();
 
-        for (uint8_t i = AXIS_COUNT; i != 0;)
-        {
-                i--;
-                target[i] += (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
-        }
+        memset(target, 0, sizeof(target));
 
         // reset position
         itp_reset_rt_position(target);
@@ -181,6 +148,26 @@ void kinematics_apply_reverse_transform(float *axis)
         axis[AXIS_Y] += axis[AXIS_Z] * g_settings.skew_yz_factor;
 #endif
 #endif
+}
+
+bool kinematics_check_boundaries(float *axis)
+{
+        if (!g_settings.soft_limits_enabled)
+        {
+                return true;
+        }
+
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+                i--;
+                float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
+                if (value > g_settings.max_distance[i] || value < 0)
+                {
+                        return false;
+                }
+        }
+
+        return true;
 }
 
 #endif

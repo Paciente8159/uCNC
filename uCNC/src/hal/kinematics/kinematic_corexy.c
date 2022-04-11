@@ -29,16 +29,28 @@ void kinematics_init(void)
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-    steps[0] = (int32_t)lroundf(g_settings.step_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
-    steps[1] = (int32_t)lroundf(g_settings.step_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
-    steps[2] = (int32_t)lroundf(g_settings.step_mm[2] * axis[AXIS_Z]);
+    steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * (axis[AXIS_X] + axis[AXIS_Y]));
+    steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * (axis[AXIS_X] - axis[AXIS_Y]));
+
+#if AXIS_COUNT > 2
+    for (uint8_t i = 2; i < AXIS_COUNT; i++)
+    {
+        steps[i] = (int32_t)lroundf(g_settings.step_per_mm[i] * axis[i]);
+    }
+#endif
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-    axis[AXIS_X] = (float)(step_mm_inv[0] * 0.5f * (float)(steps[0] + steps[1]));
-    axis[AXIS_Y] = (float)(step_mm_inv[1] * 0.5f * (float)(steps[0] - steps[1]));
-    axis[AXIS_Z] = (float)(step_mm_inv[2] * steps[2]);
+    axis[AXIS_X] = (float)(0.5f * (float)(steps[0] + steps[1]) / g_settings.step_per_mm[0]);
+    axis[AXIS_Y] = (float)(0.5f * (float)(steps[0] - steps[1]) / g_settings.step_per_mm[1]);
+
+#if AXIS_COUNT > 2
+    for (uint8_t i = 2; i < AXIS_COUNT; i++)
+    {
+        axis[i] = (((float)steps[i]) / g_settings.step_per_mm[i]);
+    }
+#endif
 }
 
 uint8_t kinematics_home(void)
@@ -110,11 +122,7 @@ uint8_t kinematics_home(void)
     mc_line(target, &block_data);
     itp_sync();
 
-    for (uint8_t i = AXIS_COUNT; i != 0;)
-    {
-        i--;
-        target[i] += (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
-    }
+    memset(target, 0, sizeof(target));
 
     // reset position
     itp_reset_rt_position(target);
@@ -134,6 +142,26 @@ void kinematics_apply_reverse_transform(float *axis)
     /*
     Define your custom transform inverse operation
     */
+}
+
+bool kinematics_check_boundaries(float *axis)
+{
+    if (!g_settings.soft_limits_enabled)
+    {
+        return true;
+    }
+
+    for (uint8_t i = AXIS_COUNT; i != 0;)
+    {
+        i--;
+        float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? -axis[i] : axis[i];
+        if (value > g_settings.max_distance[i] || value < 0)
+        {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 #endif

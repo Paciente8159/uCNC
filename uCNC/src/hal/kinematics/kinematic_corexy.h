@@ -24,10 +24,12 @@ extern "C"
 {
 #endif
 
-//define kynematics
+// define kynematics
 
-//this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
+// this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
+#ifndef STEPPER_COUNT
 #define STEPPER_COUNT AXIS_COUNT
+#endif
 
 #ifdef __cplusplus
 }

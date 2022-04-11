@@ -195,7 +195,6 @@ extern "C"
 #define CONTROLISR_MASK (CONTROLISR_ESTOP | CONTROLISR_SAFETY_DOOR | CONTROLISR_FHOLD | CONTROLISR_CS_RES)
 
 	// inputs
-	bool io_check_boundaries(float *axis);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_controls(void);
 	void io_enable_probe(void);
