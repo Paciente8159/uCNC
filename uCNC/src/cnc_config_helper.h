@@ -1185,8 +1185,14 @@ extern "C"
 #error "undefined COM interface"
 #endif
 
+#ifdef BRESENHAM_16BIT
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
+#endif
+#else
+#if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 5)
+#error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 5
+#endif
 #endif
 
 #ifndef CTRL_SCHED_CHECK
