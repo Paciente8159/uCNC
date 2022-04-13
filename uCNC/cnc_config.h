@@ -298,6 +298,13 @@ extern "C"
 
 #define CTRL_SCHED_CHECK 4
 
+/**
+ * Uncomment to invert Emergency stop button
+ * */
+#ifndef INVERT_EMERGENCY_STOP
+// #define INVERT_EMERGENCY_STOP
+#endif
+
   /**
    * Disable/enable all control, limits or/and probing input pins. This
    * helps to reduce code size if features are not needed

@@ -65,30 +65,10 @@ extern "C"
 #define LIMIT_Y_ISR 1  // assigns LIMIT_Y ISR
 #define LIMIT_X_ISR -6 // assigns LIMIT_X ISR
 
-// Active limits switch weak pull-ups
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-
 // Setup probe pin
 #define PROBE_BIT 2
 #define PROBE_PORT D
 #define PROBE_ISR -3
-
-// Setup control input pins
-/*#define ESTOP_BIT 0
-#define FHOLD_BIT 1
-#define CS_RES_BIT 2
-#define ESTOP_PORT C
-#define FHOLD_PORT C
-#define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
-*/
-// Active controls switch weak pull-ups
-//#define ESTOP_PULLUP
-//#define FHOLD_PULLUP
 
 // Setup com pins
 #define RX_BIT 0
