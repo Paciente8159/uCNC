@@ -9,6 +9,7 @@
 ## [1.4.0] - Unreleased
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles, Linear delta robot kinematics and more.
+
 A special thank you note to Alexandros Angelidis (bastardazzo) for the time and testing of the delta kinematics HAL.
 
 ### Added
