@@ -6,6 +6,24 @@
 
 # Changelog
 
+## [1.4.0] - Unreleased
+
+µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles, Linear delta robot kinematics and more.
+A special thank you note to Alexandros Angelidis (bastardazzo) for the time and testing of the delta kinematics HAL.
+
+### Added
+
+- added inventables x-controller board
+- added emergency stop logic invert option on main config file
+
+### Changed
+
+- moved pin pullup configuration to HAL config file
+
+### Fixed
+
+- fixed tmc soft uart input pins
+
 ## [1.4.0-rc] - 2022-04-09
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles and more.
