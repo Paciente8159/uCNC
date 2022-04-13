@@ -13,16 +13,16 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 
 ### Added
 
-- added inventables x-controller board
-- added emergency stop logic invert option on main config file
+- added inventables x-controller board (#163)
+- added emergency stop logic invert option on main config file (#163)
 
 ### Changed
 
-- moved pin pullup configuration to HAL config file
+- moved pin pullup configuration to HAL config file (#163)
 
 ### Fixed
 
-- fixed tmc soft uart input pins
+- fixed tmc soft uart input pins (#163)
 
 ## [1.4.0-rc] - 2022-04-09
 
