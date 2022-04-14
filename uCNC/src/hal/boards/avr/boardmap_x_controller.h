@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "X CONTROLLER"
+#endif
+
 #include "boardmap_uno.h"
 
 // free FHOLD and CS RES pins

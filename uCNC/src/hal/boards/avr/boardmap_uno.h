@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "Arduino UNO"
+#endif
+
 // reduces RAM usage a bit to prevent hardware resets
 #define PLANNER_BUFFER_SIZE 14
 

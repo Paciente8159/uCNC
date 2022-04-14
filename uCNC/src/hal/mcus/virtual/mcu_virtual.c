@@ -37,13 +37,11 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
-#include <windows.h>
 #include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
-
-#include "virtualtimer.h"
+#include <windows.h>
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -56,6 +54,79 @@
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
+
+/*timers*/
+int start_timer(int, void (*)(void));
+void stop_timer(void);
+void startCycleCounter(void);
+unsigned long stopCycleCounter(void);
+unsigned long getCPUFreq(void);
+unsigned long getTickCounter(void);
+
+HANDLE win_timer;
+void (*timer_func_handler_pntr)(void);
+unsigned long perf_start;
+
+VOID CALLBACK timer_sig_handler(PVOID, BOOLEAN);
+
+int start_timer(int mSec, void (*timer_func_handler)(void))
+{
+	timer_func_handler_pntr = timer_func_handler;
+
+	if (CreateTimerQueueTimer(&win_timer, NULL, (WAITORTIMERCALLBACK)timer_sig_handler, NULL, mSec, mSec, WT_EXECUTEINTIMERTHREAD) == 0)
+	{
+		printf("\nCreateTimerQueueTimer() error\n");
+		return (1);
+	}
+
+	return (0);
+}
+
+VOID CALLBACK timer_sig_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	timer_func_handler_pntr();
+}
+
+void stop_timer(void)
+{
+	DeleteTimerQueueTimer(NULL, win_timer, NULL);
+	CloseHandle(win_timer);
+}
+
+void startCycleCounter(void)
+{
+	if (getCPUFreq() == 0)
+	{
+		return;
+	}
+
+	perf_start = getTickCounter();
+}
+
+unsigned long stopCycleCounter(void)
+{
+	return (getTickCounter() - perf_start);
+}
+
+unsigned long getCPUFreq(void)
+{
+	LARGE_INTEGER perf_counter;
+
+	if (!QueryPerformanceFrequency(&perf_counter))
+	{
+		printf("QueryPerformanceFrequency failed!\n");
+		return 0;
+	}
+
+	return perf_counter.QuadPart;
+}
+
+unsigned long getTickCounter(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return perf_counter.QuadPart;
+}
 
 /**
  * IO simulation and handling for external app
@@ -559,6 +630,85 @@ void virtualserialclient(void)
 
 #endif
 
+#ifdef USECONSOLE
+
+DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
+{
+	WSADATA wsaData;
+	int iResult;
+
+	SOCKET ListenSocket = INVALID_SOCKET;
+
+	struct addrinfo *result = NULL;
+	struct addrinfo hints;
+
+	int iSendResult;
+	char recvbuf[256];
+	int recvbuflen = 256;
+
+	memset(recvbuf, 0, sizeof(recvbuf));
+	SetEvent(rxReady);
+	// Receive until the peer shuts down the connection
+	do
+	{
+		unsigned char c = getchar();
+		mcu_com_rx_cb(c);
+
+	} while (1);
+
+	return 0;
+}
+
+void virtualconsoleclient(void)
+{
+	DWORD dwWaitResult;
+	int iResult;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+				/*for (int k = 0; k < iResult; k++)
+				{
+					putchar(com_buffer[k]);
+				}*/
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Serial client thread error (%d)\n", GetLastError());
+			return 0;
+		}
+
+		memset(com_buffer, 0, 256);
+		ReleaseMutex(bufferMutex);
+	}
+}
+#endif
+
 void com_init(void)
 {
 	DWORD rxThreadID;
@@ -574,6 +724,9 @@ void com_init(void)
 #elif defined(USESERIAL)
 	rxCallback = &virtualserialserver;
 	txCallback = &virtualserialclient;
+#elif defined(USECONSOLE)
+	rxCallback = &virtualconsoleserver;
+	txCallback = &virtualconsoleclient;
 #endif
 
 	bufferMutex = CreateMutex(

@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "RAMPS 1.4"
+#endif
+
 #include "mega_ide_pins.h"
 
 #define PCINT0_PORT B

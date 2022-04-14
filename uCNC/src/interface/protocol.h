@@ -41,6 +41,9 @@ extern "C"
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
 #endif
+#ifdef ENABLE_SYSTEM_INFO
+	void protocol_send_cnc_info(void);
+#endif
 
 #ifdef __cplusplus
 }

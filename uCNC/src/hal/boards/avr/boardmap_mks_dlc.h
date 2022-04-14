@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "MKS DLC"
+#endif
+
 #include "boardmap_uno.h"
 
 // disables control pins
