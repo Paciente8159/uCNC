@@ -21,6 +21,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 ### Changed
 
 - moved pin pullup configuration to HAL config file (#163)
+- modified DSS for 32bit bresenham to allow bigger division factors (allowing lower end speeds) (#165)
 
 ### Fixed
 
