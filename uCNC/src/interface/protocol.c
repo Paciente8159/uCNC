@@ -704,3 +704,119 @@ void protocol_send_pins_states(void)
 #endif
 }
 #endif
+
+#ifdef ENABLE_SYSTEM_INFO
+#define __STRGIFY__(s) #s
+#define STRGIFY(s) __STRGIFY__(s)
+
+#if (KINEMATIC == KINEMATIC_CARTESIAN)
+#define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
+#elif (KINEMATIC == KINEMATIC_COREXY)
+#define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
+#elif (KINEMATIC == KINEMATIC_DELTA)
+#define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
+#else
+#define KINEMATIC_INFO ""
+#endif
+#define TOOLS_INFO "T" STRGIFY(TOOL_COUNT) ","
+
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+#define LINES_INFO "N,"
+#else
+#define LINES_INFO ""
+#endif
+
+#ifdef BRESENHAM_16BIT
+#define BRESENHAM_INFO "16B,"
+#else
+#define BRESENHAM_INFO ""
+#endif
+
+#ifdef ENABLE_S_CURVE_ACCELERATION
+#define DYNACCEL_INFO "S,"
+#else
+#define DYNACCEL_INFO ""
+#endif
+
+#ifndef USE_LEGACY_STEP_INTERPOLATOR
+#define ACCELALG_INFO "NI,"
+#else
+#define ACCELALG_INFO ""
+#endif
+
+#ifdef DISABLE_ALL_CONTROLS
+#define CONTROLS_INFO "DC,"
+#else
+#define CONTROLS_INFO ""
+#endif
+
+#ifdef DISABLE_ALL_LIMITS
+#define LIMITS_INFO "DL,"
+#else
+#define LIMITS_INFO ""
+#endif
+
+#ifdef DISABLE_PROBE
+#define PROBE_INFO "DP,"
+#else
+#define PROBE_INFO ""
+#endif
+
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#define EXTRACMD_INFO "XC,"
+#else
+#define EXTRACMD_INFO ""
+#endif
+
+#ifdef ENABLE_FAST_MATH
+#define FASTMATH_INFO "F,"
+#else
+#define FASTMATH_INFO ""
+#endif
+
+#ifdef ENABLE_LINACT_PLANNER
+#define LINPLAN_INFO "LP,"
+#else
+#define LINPLAN_INFO ""
+#endif
+
+#ifdef ENABLE_SKEW_COMPENSATION
+#ifdef SKEW_COMPENSATION_XY_ONLY
+#define SKEW_INFO "SKXY,"
+#else
+#define SKEW_INFO "SK,"
+#endif
+#else
+#define SKEW_INFO ""
+#endif
+
+#define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
+#define PLANNER_INFO             \
+    STRGIFY(PLANNER_BUFFER_SIZE) \
+    ","
+#if (INTERFACE == INTERFACE_USB)
+#define SERIAL_INFO "U" STRGIFY(RX_BUFFER_SIZE)
+#else
+#define SERIAL_INFO STRGIFY(RX_BUFFER_CAPACITY)
+#endif
+
+#ifndef BOARD_NAME
+#define BOARD_NAME "Generic board"
+#endif
+
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO PLANNER_INFO SERIAL_INFO "]")
+
+#define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]")
+
+void protocol_send_cnc_info(void)
+{
+#ifdef ECHO_CMD
+    protocol_busy = true;
+#endif
+    serial_print_str(VER_INFO);
+    serial_print_str(OPT_INFO);
+#ifdef ECHO_CMD
+    protocol_busy = false;
+#endif
+}
+#endif

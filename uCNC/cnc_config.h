@@ -61,6 +61,11 @@ extern "C"
 #define BOARD BOARD_UNO
 #endif
 
+// optional name to override default board name build info (if option enabled)
+#ifndef BOARD_NAME
+//#define BOARD_NAME "My custom board"
+#endif
+
   /**
    * Kinematic
    *
@@ -325,6 +330,14 @@ extern "C"
    * */
 
 #define EMULATE_GRBL_STARTUP
+
+  /**
+   *
+   * Enables $I Grbl info command on µCNC.
+   *
+   * */
+
+#define ENABLE_SYSTEM_INFO
 
   /**
    * Enables aditional grbl-type commands

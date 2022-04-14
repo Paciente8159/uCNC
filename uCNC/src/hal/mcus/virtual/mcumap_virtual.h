@@ -42,15 +42,14 @@
 #endif
 
 //uncomment to use serial port
-#define USESERIAL
+//#define USESERIAL
 #ifdef USESERIAL
 #ifndef COMPORT
 #define COMPORT "\\\\.\\COM11"
 #endif
 #endif
 
-//#define USECONSOLE
-
+#define USECONSOLE
 
 //joints step/dir pins
 #define STEP0 0

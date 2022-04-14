@@ -105,7 +105,7 @@ extern "C"
         // Assumes that no structure being saved is bigger than 255 bytes
         uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
         void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size);
-        void settings_reset(void);
+        void settings_reset(bool erase_startup_blocks);
         uint8_t settings_change(uint8_t setting, float value);
         void settings_erase(uint16_t address, uint8_t size);
         bool settings_check_startup_gcode(uint16_t address);

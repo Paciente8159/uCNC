@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "STM32 Blackpill"
+#endif
+
 #ifndef STM32F401xC
 #define STM32F401xC
 #endif
