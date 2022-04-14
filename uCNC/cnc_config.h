@@ -236,7 +236,7 @@ extern "C"
    * If the type of machine need backlash compensation configure here
    * */
 
-  //#define ENABLE_BACKLASH_COMPENSATION
+  // #define ENABLE_BACKLASH_COMPENSATION
 
   /**
    * Uncomment these to enable step ISR calculation strategies (uses more

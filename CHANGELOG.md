@@ -29,6 +29,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 - fixed missing feedback message after settings reset command $RST ($164)
 - invalid eeprom reset and $RST=\* now also clears N0 and N1 blocks as expected ($164)
 - forced control pin checking to prevent undesired motion unlock while control pin state still active ($164)
+- fixed tool length offset setting index
 
 ## [1.4.0-rc] - 2022-04-09
 
