@@ -799,9 +799,9 @@ static void cnc_io_dotasks(void)
     // checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
     mcu_limits_changed_cb();
-    mcu_controls_changed_cb();
 #endif
-
+    mcu_controls_changed_cb();
+    
     if (cnc_state.loop_state > LOOP_STARTUP_RESET && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
         // if a report request is sent, clear the respective flag
