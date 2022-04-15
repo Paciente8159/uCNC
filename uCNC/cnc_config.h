@@ -80,7 +80,7 @@ extern "C"
 #endif
 
 #ifndef KINEMATIC
-#define KINEMATIC KINEMATIC_DELTA
+#define KINEMATIC KINEMATIC_CARTESIAN
 #endif
 
   /**
@@ -219,7 +219,7 @@ extern "C"
    * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
    * */
 
-#define SET_ORIGIN_AT_HOME_POS
+  // #define SET_ORIGIN_AT_HOME_POS
 
   /**
    * If the type of machine supports skew and needs skew correction

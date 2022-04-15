@@ -6,17 +6,18 @@
 
 # Changelog
 
-## [1.4.0] - Unreleased
+## [1.4.0] - 2022-04-15
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles, Linear delta robot kinematics and more.
 
-A special thank you note to Alexandros Angelidis (bastardazzo) for the time and testing of the delta kinematics HAL.
+A special thank you note to Alexandros Angelidis (bastardazzo) for all the time and testing of the delta kinematics HAL.
 
 ### Added
 
 - added inventables x-controller board (#163)
 - added emergency stop logic invert option on main config file (#163)
 - added build info command $I (optional via config file) ($164)
+- added option to make homing has the machine origin (#162)
 
 ### Changed
 
@@ -31,6 +32,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 - forced control pin checking to prevent undesired motion unlock while control pin state still active ($164)
 - fixed tool length offset setting index
 - fixed rounding error when printing float numbers close to the next integer value (#166)
+- fixed homing when soft limits are enabled (#162)
 
 ## [1.4.0-rc] - 2022-04-09
 
@@ -39,7 +41,6 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 ### Added
 
 - added platformIO.ini file the µCNC project (#161)
-- added option to make homing has the machine origin (#162)
 
 ### Changed
 
@@ -51,7 +52,6 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 - fixed random angle error calculation between planner line segments that cause random speed drops (#158)
 - fixed compilation errors for main config file options (#159)
 - fixed unit vector calculation in motion control line function (#160)
-- fixed homing when soft limits are enabled (#162)
 
 ## [1.4.0-beta2] - 2022-04-01
 
