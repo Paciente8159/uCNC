@@ -38,6 +38,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 ### Added
 
 - added platformIO.ini file the µCNC project (#161)
+- added option to make homing has the machine origin (#162)
 
 ### Changed
 
@@ -49,6 +50,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for the time and 
 - fixed random angle error calculation between planner line segments that cause random speed drops (#158)
 - fixed compilation errors for main config file options (#159)
 - fixed unit vector calculation in motion control line function (#160)
+- fixed homing when soft limits are enabled (#162)
 
 ## [1.4.0-beta2] - 2022-04-01
 
@@ -758,6 +760,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0
 [1.4.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-rc
 [1.4.0-beta2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta2
 [1.4.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta

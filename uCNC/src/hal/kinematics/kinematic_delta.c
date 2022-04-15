@@ -32,12 +32,13 @@
 
 static float delta_arm_sqr;
 static float delta_base_height;
+static float delta_base_max_travel;
 static float delta_x[3];
 static float delta_y[3];
 
 void kinematics_init(void)
 {
-        float delta_triang_base = (g_settings.delta_armbase_radius /* - g_settings.delta_efector_radius*/);
+        float delta_triang_base = g_settings.delta_armbase_radius;
         delta_arm_sqr = g_settings.delta_arm_length * g_settings.delta_arm_length;
         delta_x[0] = delta_triang_base * STEPPER0_FACTX;
         delta_x[1] = delta_triang_base * STEPPER1_FACTX;
@@ -46,6 +47,11 @@ void kinematics_init(void)
         delta_y[1] = delta_triang_base * STEPPER1_FACTY;
         delta_y[2] = delta_triang_base * STEPPER2_FACTY;
         delta_base_height = sqrtf(delta_arm_sqr - delta_x[0] * delta_x[0] - delta_y[0] * delta_y[0]);
+        float min_travel = (g_settings.delta_arm_length * cos(DELTA_ARM_MIN_ANGLE * DEG_RAD_MULT)) - delta_triang_base;
+        float max_travel = (g_settings.delta_arm_length * cos(DELTA_ARM_MAX_ANGLE * DEG_RAD_MULT)) - delta_triang_base;
+        min_travel = ABS(min_travel);
+        max_travel = ABS(max_travel);
+        delta_base_max_travel = MIN(min_travel, max_travel);
 }
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
@@ -63,6 +69,13 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
         y = delta_y[2] - axis[AXIS_Y];
         steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
         steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
+
+#if AXIS_COUNT > 3
+        for (uint8_t i = 3; i < AXIS_COUNT; i++)
+        {
+                steps[i] = (int32_t)lroundf(g_settings.step_mm[i] * axis[i]);
+        }
+#endif
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
@@ -121,6 +134,13 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
         axis[0] = delta_x[0] + ex[0] * Xnew + ey[0] * Ynew - ez[0] * Znew;
         axis[1] = delta_y[0] + ex[1] * Xnew + ey[1] * Ynew - ez[1] * Znew;
         axis[2] = z0 + ex[2] * Xnew + ey[2] * Ynew - ez[2] * Znew + delta_base_height;
+
+#if AXIS_COUNT > 3
+        for (uint8_t i = 3; i < AXIS_COUNT; i++)
+        {
+                axis[i] = (((float)steps[i]) / g_settings.step_per_mm[i]);
+        }
+#endif
 }
 
 uint8_t kinematics_home(void)
@@ -132,6 +152,28 @@ uint8_t kinematics_home(void)
         {
                 return result;
         }
+
+#ifdef AXIS_A
+        result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
+        if (result != 0)
+        {
+                return result;
+        }
+#endif
+#ifdef AXIS_B
+        result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
+        if (result != 0)
+        {
+                return result;
+        }
+#endif
+#ifdef AXIS_C
+        result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
+        if (result != 0)
+        {
+                return result;
+        }
+#endif
 
         // unlocks the machine to go to offset
         cnc_unlock(true);
@@ -152,16 +194,13 @@ uint8_t kinematics_home(void)
 
         cnc_clear_exec_state(EXEC_HOMING);
 
+        memset(target, 0, sizeof(target));
+#ifndef SET_ORIGIN_AT_HOME_POS
         if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
         {
-                target[AXIS_X] = 0;
-                target[AXIS_Y] = 0;
                 target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
         }
-        else
-        {
-                memset(target, 0, sizeof(target));
-        }
+#endif
 
         // reset position
         itp_reset_rt_position(target);
@@ -175,6 +214,38 @@ void kinematics_apply_transform(float *axis)
 
 void kinematics_apply_reverse_transform(float *axis)
 {
+}
+
+bool kinematics_check_boundaries(float *axis)
+{
+        if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
+        {
+                return true;
+        }
+
+        if (axis[AXIS_X] < -delta_base_max_travel || axis[AXIS_X] > delta_base_max_travel)
+        {
+                return false;
+        }
+
+        if (axis[AXIS_Y] < -delta_base_max_travel || axis[AXIS_Y] > delta_base_max_travel)
+        {
+                return false;
+        }
+
+#ifdef SET_ORIGIN_AT_HOME_POS
+        if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)
+        {
+                return false;
+        }
+#else
+        if (axis[AXIS_Z] > g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] < 0)
+        {
+                return false;
+        }
+#endif
+
+        return true;
 }
 
 #endif

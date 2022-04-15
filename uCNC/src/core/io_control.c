@@ -134,26 +134,6 @@ void mcu_probe_changed_cb(void)
     parser_sync_probe();
 }
 
-bool io_check_boundaries(float *axis)
-{
-    if (!g_settings.soft_limits_enabled)
-    {
-        return true;
-    }
-
-    for (uint8_t i = AXIS_COUNT; i != 0;)
-    {
-        i--;
-        float value = (axis[i] < 0) ? -axis[i] : axis[i];
-        if (value > g_settings.max_distance[i])
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 // overridable
 // for now if encoders are enabled this will be override by the encoder call
 void __attribute__((weak)) mcu_inputs_changed_cb(void)

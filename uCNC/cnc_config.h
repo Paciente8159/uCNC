@@ -210,6 +210,18 @@ extern "C"
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 
   /**
+   *
+   * Enable this option to set home has your machine origin.
+   * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
+   * In practice $23 sets if the machine homes towards the orgin (default) or away from the origin (inverted)
+   * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
+   * By enabling this option after homing the machine will set the homing position has it's origin.
+   * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
+   * */
+
+#define SET_ORIGIN_AT_HOME_POS
+
+  /**
    * If the type of machine supports skew and needs skew correction
    *  (defined in the specified kinematics_xxx.h file)
    * */
