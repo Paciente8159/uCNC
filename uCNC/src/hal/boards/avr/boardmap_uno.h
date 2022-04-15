@@ -1,6 +1,6 @@
 /*
 	Name: boardmap_uno.h
-	Description: Contains all MCU and PIN definitions for Arduino UNO to run µCNC.
+	Description: Contains all MCU and PIN definitions for Arduino UNO similar to Grbl 1.1+ to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -16,13 +16,20 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_GRBL_H
-#define BOARDMAP_GRBL_H
+#ifndef BOARDMAP_UNO_H
+#define BOARDMAP_UNO_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+#ifndef BOARD_NAME
+#define BOARD_NAME "Arduino UNO"
+#endif
+
+// reduces RAM usage a bit to prevent hardware resets
+#define PLANNER_BUFFER_SIZE 14
 
 #define PCINT0_PORT B
 #define PCINT1_PORT C
@@ -63,11 +70,6 @@ extern "C"
 #define LIMIT_X_PORT B // assigns LIMIT_X port
 #define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
 
-// Active limits switch weak pull-ups
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-
 // Setup probe pin
 #define PROBE_BIT 5
 #define PROBE_PORT C
@@ -83,10 +85,6 @@ extern "C"
 #define ESTOP_ISR 1
 #define FHOLD_ISR 1
 #define CS_RES_ISR 1
-
-// Active controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
 
 // Setup com pins
 #define RX_BIT 0

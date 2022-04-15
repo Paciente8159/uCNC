@@ -24,6 +24,10 @@ extern "C"
 {
 #endif
 
+#ifndef BOARD_NAME
+#define BOARD_NAME "Arduino Zero"
+#endif
+
 #ifndef SAMD21
 #define SAMD21
 #endif
@@ -56,11 +60,6 @@ extern "C"
 #define LIMIT_Z_BIT 19 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT A // assigns LIMIT_Z port
 
-// Enable limits switch weak pull-ups
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-
 // Enable limits switch interrupt
 #define LIMIT_X_ISR
 #define LIMIT_Y_ISR
@@ -77,11 +76,6 @@ extern "C"
 // Setup probe pin
 #define PROBE_BIT 2
 #define PROBE_PORT B
-
-// Enable controls switch weak pull-ups
-#define ESTOP_PULLUP
-#define FHOLD_PULLUP
-#define CS_RES_PULLUP
 
 // Enable controls switch interrupt
 // REMOVED - LIMIT_Y AND ESTOP SHARE THE SAME EXTIE(2)

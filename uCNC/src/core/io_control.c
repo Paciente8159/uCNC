@@ -199,7 +199,11 @@ uint8_t io_get_controls(void)
 #endif
     uint8_t value = 0;
 #if (ESTOP >= 0)
+#ifndef INVERT_EMERGENCY_STOP
     value |= ((mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ESTOP)) ? ESTOP_MASK : 0);
+#endif
 #endif
 #if (SAFETY_DOOR >= 0)
     value |= ((mcu_get_input(SAFETY_DOOR)) ? SAFETY_DOOR_MASK : 0);
@@ -1367,7 +1371,11 @@ int16_t io_get_pinvalue(uint8_t pin)
 #endif
 #if ESTOP >= 0
     case ESTOP:
+#ifndef INVERT_EMERGENCY_STOP
         return (mcu_get_input(ESTOP) != 0);
+#else
+        return (mcu_get_input(ESTOP) == 0);
+#endif
 #endif
 #if SAFETY_DOOR >= 0
     case SAFETY_DOOR:

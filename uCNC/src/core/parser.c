@@ -378,6 +378,10 @@ static uint8_t parser_grbl_command(void)
         return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_PINS_STATES : STATUS_INVALID_STATEMENT;
         break;
 #endif
+#ifdef ENABLE_SYSTEM_INFO
+    case 'I':
+        return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_INFO : STATUS_INVALID_STATEMENT;
+#endif
     case EOL:
         return GRBL_HELP;
     }
@@ -396,17 +400,17 @@ static uint8_t parser_grbl_command(void)
         switch (c)
         {
         case '$':
-            settings_reset();
+            settings_reset(false);
             settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-            break;
+            return GRBL_SEND_SETTINGS_RESET;
         case '#':
             parser_parameters_reset();
-            break;
+            return GRBL_SEND_SETTINGS_RESET;
         case '*':
-            settings_reset();
+            settings_reset(true);
             settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
             parser_parameters_reset();
-            break;
+            return GRBL_SEND_SETTINGS_RESET;
         default:
             return STATUS_INVALID_STATEMENT;
         }
@@ -426,7 +430,7 @@ static uint8_t parser_grbl_command(void)
             settings_init();
             return GRBL_SETTINGS_LOADED;
         case 'R':
-            settings_reset();
+            settings_reset(false);
             return GRBL_SETTINGS_DEFAULT;
         default:
             return STATUS_INVALID_STATEMENT;
@@ -562,6 +566,11 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
         break;
     case GRBL_PINS_STATES:
         protocol_send_pins_states();
+        break;
+#endif
+#ifdef ENABLE_SYSTEM_INFO
+    case GRBL_SEND_SYSTEM_INFO:
+        protocol_send_cnc_info();
         break;
 #endif
     default:

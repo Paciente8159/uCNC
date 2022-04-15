@@ -31,7 +31,7 @@
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
-                "task": "Pre-Debug (uno)"
+                "task": "Pre-Debug"
             }
         },
         {

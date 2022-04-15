@@ -61,6 +61,11 @@ extern "C"
 #define BOARD BOARD_UNO
 #endif
 
+// optional name to override default board name build info (if option enabled)
+#ifndef BOARD_NAME
+//#define BOARD_NAME "My custom board"
+#endif
+
   /**
    * Kinematic
    *
@@ -243,7 +248,7 @@ extern "C"
    * If the type of machine need backlash compensation configure here
    * */
 
-  //#define ENABLE_BACKLASH_COMPENSATION
+  // #define ENABLE_BACKLASH_COMPENSATION
 
   /**
    * Uncomment these to enable step ISR calculation strategies (uses more
@@ -310,6 +315,13 @@ extern "C"
 
 #define CTRL_SCHED_CHECK 4
 
+/**
+ * Uncomment to invert Emergency stop button
+ * */
+#ifndef INVERT_EMERGENCY_STOP
+// #define INVERT_EMERGENCY_STOP
+#endif
+
   /**
    * Disable/enable all control, limits or/and probing input pins. This
    * helps to reduce code size if features are not needed
@@ -330,6 +342,14 @@ extern "C"
    * */
 
 #define EMULATE_GRBL_STARTUP
+
+  /**
+   *
+   * Enables $I Grbl info command on µCNC.
+   *
+   * */
+
+  // #define ENABLE_SYSTEM_INFO
 
   /**
    * Enables aditional grbl-type commands

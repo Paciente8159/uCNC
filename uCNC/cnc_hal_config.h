@@ -26,10 +26,37 @@ extern "C"
 
 /**
  *
- * The HAL config file is were the IO pins are "connected" to
- * alias name to be used inside µCNC
+ * The HAL config file is were the advanced HAL settings are defined µCNC.
+ * These settings include Pin functions, Tools, Modules, etc
  *
  */
+
+/**
+ * Pins weak pullup resistors
+ * */
+
+// Uncomment to enable weak pull up resistors for limit switch
+// If the pin is not defined in the board this will be ignored
+#define LIMIT_X_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_Z_PULLUP
+#define LIMIT_X2_PULLUP
+#define LIMIT_Y2_PULLUP
+#define LIMIT_Z2_PULLUP
+#define LIMIT_A_PULLUP
+#define LIMIT_B_PULLUP
+#define LIMIT_C_PULLUP
+
+// Uncomment to enable weak pull up resistor for probe
+// If the pin is not defined in the board this will be ignored
+// #define PROBE_PULLUP
+
+// Uncomment to enable weak pull up resistors for control pins
+// If the pin is not defined in the board this will be ignored
+#define ESTOP_PULLUP
+#define SAFETY_DOOR_PULLUP
+#define FHOLD_PULLUP
+#define CS_RES_PULLUP
 
 /*
 	Uncomment this feature to enable tool length compensation
@@ -48,7 +75,7 @@ extern "C"
 //#define DUAL_DRIVE_AXIS1 Y
 #endif
 
-	/**
+/*
 	Tool definition
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
@@ -155,7 +182,7 @@ extern "C"
 #if (STEPPER0_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER0_UART_TX DOUT23
-#define STEPPER0_UART_RX DIN24
+#define STEPPER0_UART_RX DIN23
 #elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
 #define STEPPER0_SPI_DO DOUT13
 #define STEPPER0_SPI_DI DIN13
@@ -179,7 +206,7 @@ extern "C"
 #if (STEPPER1_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER1_UART_TX DOUT24
-#define STEPPER1_UART_RX DIN25
+#define STEPPER1_UART_RX DIN24
 #elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
 #define STEPPER1_SPI_DO DOUT13
 #define STEPPER1_SPI_DI DIN13
@@ -203,7 +230,7 @@ extern "C"
 #if (STEPPER2_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER2_UART_TX DOUT25
-#define STEPPER2_UART_RX DIN26
+#define STEPPER2_UART_RX DIN25
 #elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
 #define STEPPER2_SPI_DO DOUT13
 #define STEPPER2_SPI_DI DIN13
@@ -227,7 +254,7 @@ extern "C"
 #if (STEPPER3_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER3_UART_TX DOUT26
-#define STEPPER3_UART_RX DIN27
+#define STEPPER3_UART_RX DIN26
 #elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
 #define STEPPER3_SPI_DO DOUT13
 #define STEPPER3_SPI_DI DIN13
@@ -251,7 +278,7 @@ extern "C"
 #if (STEPPER4_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER4_UART_TX DOUT27
-#define STEPPER4_UART_RX DIN28
+#define STEPPER4_UART_RX DIN27
 #elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
 #define STEPPER4_SPI_DO DOUT13
 #define STEPPER4_SPI_DI DIN13
@@ -275,7 +302,7 @@ extern "C"
 #if (STEPPER5_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER5_UART_TX DOUT28
-#define STEPPER5_UART_RX DIN29
+#define STEPPER5_UART_RX DIN28
 #elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
 #define STEPPER5_SPI_DO DOUT13
 #define STEPPER5_SPI_DI DIN13
@@ -299,7 +326,7 @@ extern "C"
 #if (STEPPER6_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER6_UART_TX DOUT29
-#define STEPPER6_UART_RX DIN30
+#define STEPPER6_UART_RX DIN29
 #elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
 #define STEPPER6_SPI_DO DOUT13
 #define STEPPER6_SPI_DI DIN13
@@ -323,7 +350,7 @@ extern "C"
 #if (STEPPER7_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
 #define STEPPER7_UART_TX DOUT30
-#define STEPPER7_UART_RX DIN31
+#define STEPPER7_UART_RX DIN30
 #elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
 #define STEPPER7_SPI_DO DOUT13
 #define STEPPER7_SPI_DI DIN13

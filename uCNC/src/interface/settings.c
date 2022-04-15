@@ -294,7 +294,7 @@ void settings_init(void)
 
     if (error)
     {
-        settings_reset();
+        settings_reset(true);
         protocol_send_error(STATUS_SETTING_READ_FAIL);
         protocol_send_cnc_settings();
     }
@@ -325,11 +325,18 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
     return (crc ^ mcu_eeprom_getc(address));
 }
 
-void settings_reset(void)
+void settings_reset(bool erase_startup_blocks)
 {
     rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 #ifndef ENABLE_EXTRA_SYSTEM_CMDS
     settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+    if (erase_startup_blocks)
+    {
+        mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET, 0);
+        mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET + 1, 0);
+        mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET, 0);
+        mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET + 1, 0);
+    }
 #endif
 
 // fix step invert mask to match mirror step pins
@@ -416,7 +423,7 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.probe_invert_mask = value1;
         break;
     case 7:
-        g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
+        g_settings.control_invert_mask = (value8 & CONTROLS_MASK & ~ESTOP_MASK);
         break;
     case 10:
         g_settings.status_report_mask = value8;
@@ -547,7 +554,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #if TOOL_COUNT > 0
         else if (setting > 80 && setting <= (80 + TOOL_COUNT))
         {
-            setting -= 80;
+            setting -= 81;
             g_settings.tool_length_offset[setting] = value;
         }
 #endif
