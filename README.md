@@ -32,10 +32,9 @@ Version 1.4 added a couple of new features.
 
   - added support for STM32F4 MCU and the Blackpill boards.
   - new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
-  - initial (still in development) support for delta kinematics.
+  - support for delta kinematics.
   - new modular extension system based on events, delegates and listeners. It's now possible to inject code anywhere inside the core code by creating and adding code hooks that can then call and execute multiple listeners
   - added optional variable acceleration step generation (S-Curve speed profile)
-  - added support for a subset of canned cycle codes
   - added Trinamic drivers basic support. For now only TMC drivers with UART are available. TMC2208 as been tested with success.
   - added support for a subset of canned cycles (G8x), enabled via config file
   - added module for BLtouch probe
