@@ -170,7 +170,7 @@ void ioserver(void)
 		if (hPipe == INVALID_HANDLE_VALUE)
 		{
 			printf("CreateNamedPipe failed, GLE=%d.\n", GetLastError());
-			return -1;
+			return;
 		}
 
 		// Wait for the client to connect; if it succeeds,
@@ -229,7 +229,7 @@ void ioserver(void)
 		CloseHandle(hPipe);
 	}
 
-	return 0;
+	return;
 }
 
 /**
