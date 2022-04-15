@@ -13,6 +13,7 @@
 ### Added
 
 - added platformIO.ini file the µCNC project (#161)
+- added option to make homing has the machine origin (#162)
 
 ### Changed
 
@@ -23,7 +24,8 @@
 
 - fixed random angle error calculation between planner line segments that cause random speed drops (#158)
 - fixed compilation errors for main config file options (#159)
-- fixed unit vector calculation in motion control line function (#160) 
+- fixed unit vector calculation in motion control line function (#160)
+- fixed homing when soft limits are enabled (#162)
 
 ## [1.4.0-beta2] - 2022-04-01
 

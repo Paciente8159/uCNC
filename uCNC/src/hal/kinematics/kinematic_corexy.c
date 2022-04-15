@@ -101,10 +101,9 @@ uint8_t kinematics_home(void)
     }
 #endif
 
-    // unlocks the machine to go to offset
-    cnc_clear_exec_state(EXEC_HOMING);
     cnc_unlock(true);
-
+    // flags homing clear by the unlock
+    cnc_set_exec_state(EXEC_HOMING);
     float target[AXIS_COUNT];
     motion_data_t block_data = {0};
     mc_get_position(target);
@@ -122,7 +121,18 @@ uint8_t kinematics_home(void)
     mc_line(target, &block_data);
     itp_sync();
 
+    // unlocks the machine to go to offset
+    cnc_clear_exec_state(EXEC_HOMING);
+
+#ifdef SET_ORIGIN_AT_HOME_POS
     memset(target, 0, sizeof(target));
+#else
+    for (uint8_t i = AXIS_COUNT; i != 0;)
+    {
+        i--;
+        target[i] = (!(g_settings.homing_dir_invert_mask & (1 << i)) ? 0 : g_settings.max_distance[i]);
+    }
+#endif
 
     // reset position
     itp_reset_rt_position(target);
@@ -146,7 +156,7 @@ void kinematics_apply_reverse_transform(float *axis)
 
 bool kinematics_check_boundaries(float *axis)
 {
-    if (!g_settings.soft_limits_enabled)
+    if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
     {
         return true;
     }
@@ -154,7 +164,11 @@ bool kinematics_check_boundaries(float *axis)
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
         i--;
+#ifdef SET_ORIGIN_AT_HOME_POS
         float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? -axis[i] : axis[i];
+#else
+        float value = axis[i];
+#endif
         if (value > g_settings.max_distance[i] || value < 0)
         {
             return false;

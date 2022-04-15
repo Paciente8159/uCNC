@@ -194,16 +194,13 @@ uint8_t kinematics_home(void)
 
         cnc_clear_exec_state(EXEC_HOMING);
 
+        memset(target, 0, sizeof(target));
+#ifndef SET_ORIGIN_AT_HOME_POS
         if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
         {
-                target[AXIS_X] = 0;
-                target[AXIS_Y] = 0;
                 target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
         }
-        else
-        {
-                memset(target, 0, sizeof(target));
-        }
+#endif
 
         // reset position
         itp_reset_rt_position(target);
@@ -221,7 +218,7 @@ void kinematics_apply_reverse_transform(float *axis)
 
 bool kinematics_check_boundaries(float *axis)
 {
-        if (!g_settings.soft_limits_enabled)
+        if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
         {
                 return true;
         }
@@ -236,10 +233,17 @@ bool kinematics_check_boundaries(float *axis)
                 return false;
         }
 
-        if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || value > 0)
+#ifdef SET_ORIGIN_AT_HOME_POS
+        if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)
         {
                 return false;
         }
+#else
+        if (axis[AXIS_Z] > g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] < 0)
+        {
+                return false;
+        }
+#endif
 
         return true;
 }
