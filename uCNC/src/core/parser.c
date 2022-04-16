@@ -189,6 +189,10 @@ uint8_t parser_read_command(void)
         {
             return STATUS_SYSTEM_GC_LOCK;
         }
+        error = parser_gcode_command();
+        itp_sync();
+        cnc_clear_exec_state(EXEC_JOG);
+        return error;
     }
     else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
     {

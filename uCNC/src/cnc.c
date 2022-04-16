@@ -504,7 +504,7 @@ void cnc_call_rt_command(uint8_t command)
         SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
         break;
     case CMD_CODE_JOG_CANCEL:
-        if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG))
+        if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
         {
             SETFLAG(cnc_state.exec_state, EXEC_HOLD);
         }
@@ -801,7 +801,7 @@ static void cnc_io_dotasks(void)
     mcu_limits_changed_cb();
 #endif
     mcu_controls_changed_cb();
-    
+
     if (cnc_state.loop_state > LOOP_STARTUP_RESET && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
         // if a report request is sent, clear the respective flag
