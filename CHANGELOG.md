@@ -33,6 +33,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for all the time 
 - fixed tool length offset setting index
 - fixed rounding error when printing float numbers close to the next integer value (#166)
 - fixed homing when soft limits are enabled (#162)
+- fixed sticking jog command (#167)
 
 ## [1.4.0-rc] - 2022-04-09
 
