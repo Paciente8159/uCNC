@@ -1168,8 +1168,8 @@ void mcu_step_cb(void)
             }
             else
             {
-                cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-                itp_stop();                     // the buffer is empty. The ISR can stop
+                cnc_clear_exec_state(EXEC_RUN | EXEC_JOG); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+                itp_stop();                                // the buffer is empty. The ISR can stop
                 return;
             }
         }
