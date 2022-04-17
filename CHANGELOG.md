@@ -6,9 +6,9 @@
 
 # Changelog
 
-## [1.4.1] - Unreleased
+## [1.4.1] - 2022-04-17
 
-µCNC version 1.4.1 has some bug fixes from the previous version
+µCNC version 1.4.1 has an important bug fix regarding laser mode and M3 tool mode
 
 ### Added
 
@@ -18,7 +18,7 @@
 
 ### Fixed
 
-- fixed laser not turning on with laser mode enabled and after new feed motion command is issued without S word update and M3 active (#168)
+- fixed laser not turning on with laser mode enabled and after new feed motion command is issued without S word update and M3 active and the machine starts from an Idle state (#168)
 
 
 ## [1.4.0] - 2022-04-15
@@ -777,6 +777,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.1
 [1.4.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0
 [1.4.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-rc
 [1.4.0-beta2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-beta2
