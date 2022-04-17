@@ -759,8 +759,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
     {
         switch (new_state->groups.motion)
         {
-        case G0:    // G0
-        case G1:    // G1
+#ifndef IGNORE_G0_G1_MISSING_AXIS_WORDS
+        case G0: // G0
+        case G1: // G1
+#endif
         case G38_2: // G38.2
         case G38_3: // G38.3
         case G38_4: // G38.4
