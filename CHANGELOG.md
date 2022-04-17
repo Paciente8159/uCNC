@@ -15,7 +15,7 @@
 
 ### Changed
 
-- added option to accept G0 and G1 without explicit axis words to target
+- added option to accept G0 and G1 without explicit axis words to target (#169)
 
 ### Fixed
 
