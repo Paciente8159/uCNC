@@ -349,7 +349,7 @@ extern "C"
    *
    * */
 
-  // #define ENABLE_SYSTEM_INFO
+#define ENABLE_SYSTEM_INFO
 
   /**
    * Enables aditional grbl-type commands

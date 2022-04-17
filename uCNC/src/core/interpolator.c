@@ -553,7 +553,7 @@ void itp_run(void)
         float top_speed_inv = 1 / top_speed;
         int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
-        if (prev_spindle != newspindle)
+        if ((prev_spindle != newspindle) || (g_settings.laser_mode && ITP_UPDATE_ISR))
         {
             prev_spindle = newspindle;
             sgm->update_itp |= ITP_UPDATE_TOOL;
@@ -862,7 +862,7 @@ void itp_run(void)
         float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
         int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
-        if (prev_spindle != newspindle)
+        if ((prev_spindle != newspindle) || (g_settings.laser_mode && ITP_UPDATE_ISR))
         {
             prev_spindle = newspindle;
             sgm->update_itp |= ITP_UPDATE_TOOL;
