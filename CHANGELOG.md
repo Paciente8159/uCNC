@@ -6,6 +6,21 @@
 
 # Changelog
 
+## [1.4.1] - Unreleased
+
+µCNC version 1.4.1 has some bug fixes from the previous version
+
+### Added
+
+
+### Changed
+
+
+### Fixed
+
+- fixed laser not turning on with laser mode enabled and after new feed motion command is issued without S word update and M3 active (#168)
+
+
 ## [1.4.0] - 2022-04-15
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's, Trinamic drivers, canned cycles, Linear delta robot kinematics and more.

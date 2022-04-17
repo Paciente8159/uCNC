@@ -540,6 +540,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
 							for (int i = 0; i < recvbuflen; i++)
 							{
+								putchar(recvbuf[i]);
 								mcu_com_rx_cb(recvbuf[i]);
 							}
 							memset(recvbuf, 0, sizeof(recvbuf));
