@@ -6,6 +6,20 @@
 
 # Changelog
 
+## [1.4.2] - Unreleased
+
+µCNC version 1.4.2 has the following changes
+
+### Added
+
+
+### Changed
+
+- added option to accept G0 and G1 without explicit axis words to target
+
+### Fixed
+
+
 ## [1.4.1] - 2022-04-17
 
 µCNC version 1.4.1 has an important bug fix regarding laser mode and M3 tool mode
