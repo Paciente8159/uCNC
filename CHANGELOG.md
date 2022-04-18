@@ -16,8 +16,11 @@
 ### Changed
 
 - added option to accept G0 and G1 without explicit axis words to target (#169)
+- implemented Grbl report status mask (#170)
 
 ### Fixed
+
+- fixed parser wrong coordinates after coordinate offset command changes axis followed by a motion command with implicit target coordinates modified by the previous command, resulting in unexpected motion path (#170)
 
 
 ## [1.4.1] - 2022-04-17

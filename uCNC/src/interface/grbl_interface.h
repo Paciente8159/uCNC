@@ -186,6 +186,7 @@ extern "C"
 #define MSG_STATUS_CHECK __romstr__("Check")
 
 #define MSG_STATUS_MPOS __romstr__("|MPos:")
+#define MSG_STATUS_WPOS __romstr__("|WPos:")
 #define MSG_STATUS_FS __romstr__("|FS:")
 #define MSG_STATUS_F __romstr__("|F:")
 #define MSG_STATUS_WCO __romstr__("|WCO:")
@@ -193,6 +194,7 @@ extern "C"
 #define MSG_STATUS_TOOL __romstr__("|A:")
 #define MSG_STATUS_LINE __romstr__("|Ln:")
 #define MSG_STATUS_PIN __romstr__("|Pn:")
+#define MSG_STATUS_BUF __romstr__("|Buf:")
 
 	//#define MSG_INT "%d"
 	//#define MSG_FLT "%0.3f"

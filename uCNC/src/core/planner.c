@@ -659,3 +659,8 @@ bool planner_get_overflows(uint8_t *overflows)
     planner_ovr_counter--;
     return false;
 }
+
+uint8_t planner_get_buffer_freeblocks()
+{
+    return PLANNER_BUFFER_SIZE - planner_data_blocks;
+}

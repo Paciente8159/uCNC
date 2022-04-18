@@ -105,6 +105,8 @@ extern "C"
 
     bool planner_get_overflows(uint8_t *overflows);
 
+    uint8_t planner_get_buffer_freeblocks();
+
 #ifdef __cplusplus
 }
 #endif

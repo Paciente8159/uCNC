@@ -62,6 +62,7 @@ extern "C"
 	void serial_print_intarr(int32_t *arr, uint8_t count);
 	void serial_print_fltarr(float *arr, uint8_t count);
 	void serial_flush(void);
+	uint8_t serial_get_rx_freebytes(void);
 
 #ifdef __cplusplus
 }

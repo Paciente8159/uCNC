@@ -254,7 +254,16 @@ void protocol_send_status(void)
         }
     }
 
-    serial_print_str(MSG_STATUS_MPOS);
+    if ((g_settings.status_report_mask & 1))
+    {
+        serial_print_str(MSG_STATUS_MPOS);
+    }
+    else
+    {
+        serial_print_str(MSG_STATUS_WPOS);
+        parser_machine_to_work(axis);
+    }
+
     serial_print_fltarr(axis, AXIS_COUNT);
 
 #if TOOL_COUNT > 0
@@ -329,6 +338,14 @@ void protocol_send_status(void)
     }
 
     protocol_send_status_tail();
+
+    if ((g_settings.status_report_mask & 2))
+    {
+        serial_print_str(MSG_STATUS_BUF);
+        serial_print_int((uint32_t)planner_get_buffer_freeblocks());
+        serial_putc(',');
+        serial_print_int((uint32_t)serial_get_rx_freebytes());
+    }
 
     serial_putc('>');
     procotol_send_newline();

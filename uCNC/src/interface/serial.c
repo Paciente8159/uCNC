@@ -22,7 +22,7 @@
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 static uint8_t serial_rx_read;
 static volatile uint8_t serial_rx_write;
-static volatile uint8_t serial_rx_overflow;
+static volatile uint8_t serial_rx_freebytes;
 #ifndef ENABLE_SYNC_TX
 static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
 static volatile uint8_t serial_tx_read;
@@ -32,14 +32,10 @@ static uint8_t serial_tx_write;
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
 
-// static void serial_rx_clear();
-
 void serial_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-    serial_rx_write = 0;
-    serial_rx_read = 0;
-    memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
+    serial_rx_clear();
 
 #ifndef ENABLE_SYNC_TX
     serial_tx_read = 0;
@@ -54,7 +50,7 @@ bool serial_rx_is_empty(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-        return (serial_rx_write == serial_rx_read);
+        return (serial_rx_freebytes == RX_BUFFER_CAPACITY);
     case SERIAL_N0:
     case SERIAL_N1:
         return false;
@@ -69,7 +65,7 @@ unsigned char serial_getc(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-        while (serial_rx_write == serial_rx_read)
+        while (serial_rx_freebytes == RX_BUFFER_CAPACITY)
         {
             cnc_dotasks();
         }
@@ -79,6 +75,8 @@ unsigned char serial_getc(void)
         {
             serial_rx_read = 0;
         }
+
+        serial_rx_freebytes++;
 
         switch (c)
         {
@@ -117,6 +115,8 @@ void serial_ungetc(void)
     {
         serial_rx_read = RX_BUFFER_SIZE - 1;
     }
+
+    serial_rx_freebytes--;
 }
 
 void serial_select(uint8_t source)
@@ -141,7 +141,7 @@ unsigned char serial_peek(void)
     switch (serial_read_select)
     {
     case SERIAL_UART:
-        while (serial_rx_write == serial_rx_read)
+        while (serial_rx_freebytes == RX_BUFFER_CAPACITY)
         {
             cnc_dotasks();
         }
@@ -358,7 +358,11 @@ void mcu_com_rx_cb(unsigned char c)
             cnc_call_rt_command((uint8_t)c);
             return;
         default:
-            if (serial_rx_overflow)
+            if (serial_rx_freebytes)
+            {
+                serial_rx_freebytes--;
+            }
+            else
             {
                 c = OVF;
             }
@@ -367,10 +371,6 @@ void mcu_com_rx_cb(unsigned char c)
             if (++write == RX_BUFFER_SIZE)
             {
                 write = 0;
-            }
-            if (write == serial_rx_read)
-            {
-                serial_rx_overflow++;
             }
 
             serial_rx_write = write;
@@ -406,6 +406,11 @@ void serial_rx_clear(void)
 {
     serial_rx_write = 0;
     serial_rx_read = 0;
-    serial_rx_overflow = 0;
-    serial_rx_buffer[0] = EOL;
+    serial_rx_freebytes = RX_BUFFER_CAPACITY;
+    memset(serial_rx_buffer, EOL, sizeof(serial_rx_buffer));
+}
+
+uint8_t serial_get_rx_freebytes(void)
+{
+    return serial_rx_freebytes;
 }
