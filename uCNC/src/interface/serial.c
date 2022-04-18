@@ -186,8 +186,11 @@ void serial_putc(unsigned char c)
     }
     while (write == serial_tx_read)
     {
+        cnc_status_report_lock = true;
         cnc_dotasks();
     } // while buffer is full
+
+    cnc_status_report_lock = false;
 
     serial_tx_buffer[serial_tx_write] = c;
     serial_tx_write = write;

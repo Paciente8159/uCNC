@@ -23,13 +23,12 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING_FIRST_RUN 1
-#define LOOP_RUNNING 2
-#define LOOP_ERROR_RESET 3
+#define LOOP_RUNNING 1
+#define LOOP_ERROR_RESET 2
 
-#define UNLOCK_ERROR 0
+#define UNLOCK_OK 0
 #define UNLOCK_LOCKED 1
-#define UNLOCK_OK 2
+#define UNLOCK_ERROR 2
 
 #define RTCMD_NORMAL_MASK (RT_CMD_FEED_100 | RT_CMD_FEED_INC_COARSE | RT_CMD_FEED_DEC_COARSE | RT_CMD_FEED_INC_FINE | RT_CMD_FEED_DEC_FINE)
 #define RTCMD_RAPID_MASK (RT_CMD_RAPIDFEED_100 | RT_CMD_RAPIDFEED_OVR1 | RT_CMD_RAPIDFEED_OVR2)
@@ -47,6 +46,7 @@ typedef struct
 } cnc_state_t;
 
 static cnc_state_t cnc_state;
+bool cnc_status_report_lock;
 
 static void cnc_check_fault_systems(void);
 static bool cnc_check_interlocking(void);
@@ -54,12 +54,14 @@ static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
 static bool cnc_exec_cmd(void);
+static void cnc_run_startup_blocks(void);
 
 void cnc_init(void)
 {
     // initializes cnc state
 #ifdef FORCE_GLOBALS_TO_0
     memset(&cnc_state, 0, sizeof(cnc_state_t));
+    cnc_status_report_lock = false;
 #endif
     cnc_state.loop_state = LOOP_STARTUP_RESET;
     // initializes all systems
@@ -78,14 +80,15 @@ void cnc_init(void)
 
 void cnc_run(void)
 {
+    // enters loop reset
     cnc_reset();
 
-    cnc_state.loop_state = LOOP_RUNNING_FIRST_RUN;
-    serial_select(SERIAL_UART);
-
     // tries to reset. If fails jumps to error
-    while (cnc_unlock(false))
+    while (cnc_unlock(false) != UNLOCK_ERROR)
     {
+        serial_select(SERIAL_UART);
+        cnc_state.loop_state = LOOP_RUNNING;
+
         do
         {
         } while (cnc_exec_cmd());
@@ -115,7 +118,15 @@ void cnc_run(void)
             }
         }
         cnc_dotasks();
-    } while (io_get_controls() & ESTOP_MASK);
+        if (io_get_controls() & ESTOP_MASK)
+        {
+            cnc_state.loop_state = LOOP_STARTUP_RESET;
+        }
+        else
+        {
+            break;
+        }
+    } while (1);
 }
 
 bool cnc_exec_cmd(void)
@@ -143,8 +154,6 @@ bool cnc_exec_cmd(void)
         {
             protocol_send_error(error);
         }
-
-        cnc_state.loop_state = LOOP_RUNNING;
     }
 
     return cnc_dotasks();
@@ -267,6 +276,7 @@ void cnc_home(void)
 
     // sync's the motion control with the real time position
     mc_sync_position();
+    cnc_run_startup_blocks();
 }
 
 void cnc_alarm(int8_t code)
@@ -333,19 +343,11 @@ uint8_t cnc_unlock(bool force)
         io_enable_steppers(g_settings.step_enable_invert);
         parser_reset();
 
-        if (cnc_state.loop_state < LOOP_RUNNING)
+        // hard reset
+        // if homing not enabled run startup blocks
+        if (cnc_state.loop_state == LOOP_STARTUP_RESET && !g_settings.homing_enabled)
         {
-            serial_select(SERIAL_N0);
-            if (!cnc_exec_cmd())
-            {
-                return UNLOCK_ERROR;
-            }
-            serial_select(SERIAL_N1);
-            if (!cnc_exec_cmd())
-            {
-                return UNLOCK_ERROR;
-            }
-            serial_select(SERIAL_UART);
+            cnc_run_startup_blocks();
         }
     }
 
@@ -451,7 +453,6 @@ void cnc_delay_ms(uint32_t miliseconds)
 
 void cnc_reset(void)
 {
-    cnc_state.loop_state = LOOP_STARTUP_RESET;
     // resets all realtime command flags
     cnc_state.rt_cmd = RT_CMD_CLEAR;
     cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
@@ -802,10 +803,24 @@ static void cnc_io_dotasks(void)
 #endif
     mcu_controls_changed_cb();
 
-    if (cnc_state.loop_state > LOOP_STARTUP_RESET && CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
+    if (cnc_status_report_lock)
+    {
+        return;
+    }
+
+    if (CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
         // if a report request is sent, clear the respective flag
         CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
         protocol_send_status();
     }
+}
+
+void cnc_run_startup_blocks(void)
+{
+    serial_select(SERIAL_N0);
+    cnc_exec_cmd();
+    serial_select(SERIAL_N1);
+    cnc_exec_cmd();
+    serial_select(SERIAL_UART);
 }

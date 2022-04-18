@@ -149,11 +149,11 @@ extern "C"
 #ifndef EMULATE_GRBL_STARTUP
 #define MSG_STARTUP_START "uCNC "
 #define MSG_STARTUP_END " ['$' for help]"
+#define MSG_STARTUP __romstr__(STR_EOL MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
 #else
-#define MSG_STARTUP_START "Grbl "
-#define MSG_STARTUP_END " ['$' for uCNC help]"
+#define MSG_STARTUP __romstr__(STR_EOL "Grbl 1.1h ['$' for help]" STR_EOL)
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
+
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
 
 // Non query feedback messages

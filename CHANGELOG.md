@@ -17,6 +17,8 @@
 
 - added option to accept G0 and G1 without explicit axis words to target (#169)
 - implemented Grbl report status mask (#170)
+- full Grbl welcome message emulation to fix recognition by PC softwares (#170)
+- modified startup blocks execution to match Grbl behavior (#170)
 
 ### Fixed
 
