@@ -21,6 +21,7 @@
 ### Fixed
 
 - fixed parser wrong coordinates after coordinate offset command changes axis followed by a motion command with implicit target coordinates modified by the previous command, resulting in unexpected motion path (#170)
+- forces run state flag during dwell (reported idle state) (#170)
 
 
 ## [1.4.1] - 2022-04-17
