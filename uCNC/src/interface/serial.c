@@ -186,8 +186,11 @@ void serial_putc(unsigned char c)
     }
     while (write == serial_tx_read)
     {
+        cnc_status_report_lock = true;
         cnc_dotasks();
     } // while buffer is full
+
+    cnc_status_report_lock = false;
 
     serial_tx_buffer[serial_tx_write] = c;
     serial_tx_write = write;
@@ -408,4 +411,15 @@ void serial_rx_clear(void)
     serial_rx_read = 0;
     serial_rx_overflow = 0;
     serial_rx_buffer[0] = EOL;
+}
+
+uint8_t serial_get_rx_freebytes(void)
+{
+    uint16_t buf = serial_rx_write;
+    if (serial_rx_read > buf)
+    {
+        buf += RX_BUFFER_SIZE;
+    }
+
+    return (uint8_t)(RX_BUFFER_CAPACITY - (buf - serial_rx_read));
 }

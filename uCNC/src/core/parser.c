@@ -1466,15 +1466,15 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
             return error;
         }
+
+        // saves position
+        memcpy(parser_last_pos, target, sizeof(parser_last_pos));
     }
 
     if (error)
     {
         return error;
     }
-
-    // saves position
-    memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 
     // stop (M0, M1, M2, M30, M60) (not implemented yet).
     bool hold = false;
@@ -2682,3 +2682,18 @@ uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *wor
     return error;
 }
 #endif
+
+void parser_machine_to_work(float *axis)
+{
+    for (uint8_t i = 0; i < AXIS_COUNT; i++)
+    {
+        axis[i] -= (parser_parameters.g92_offset[i] + parser_parameters.coord_system_offset[i]);
+    }
+
+#ifdef AXIS_TOOL
+    if (parser_state.groups.tlo_mode != G49)
+    {
+        axis[AXIS_TOOL] -= parser_parameters.tool_length_offset;
+    }
+#endif
+}

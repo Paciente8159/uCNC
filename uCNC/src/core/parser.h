@@ -184,6 +184,7 @@ extern "C"
 	void parser_parameters_save(void);
 	void parser_sync_position(void);
 	void parser_reset(void);
+	void parser_machine_to_work(float *axis);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 
 #ifdef __cplusplus

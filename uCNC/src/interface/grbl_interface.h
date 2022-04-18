@@ -149,11 +149,11 @@ extern "C"
 #ifndef EMULATE_GRBL_STARTUP
 #define MSG_STARTUP_START "uCNC "
 #define MSG_STARTUP_END " ['$' for help]"
+#define MSG_STARTUP __romstr__(STR_EOL MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
 #else
-#define MSG_STARTUP_START "Grbl "
-#define MSG_STARTUP_END " ['$' for uCNC help]"
+#define MSG_STARTUP __romstr__(STR_EOL "Grbl 1.1h ['$' for help]" STR_EOL)
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
+
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
 
 // Non query feedback messages
@@ -186,6 +186,7 @@ extern "C"
 #define MSG_STATUS_CHECK __romstr__("Check")
 
 #define MSG_STATUS_MPOS __romstr__("|MPos:")
+#define MSG_STATUS_WPOS __romstr__("|WPos:")
 #define MSG_STATUS_FS __romstr__("|FS:")
 #define MSG_STATUS_F __romstr__("|F:")
 #define MSG_STATUS_WCO __romstr__("|WCO:")
@@ -193,6 +194,7 @@ extern "C"
 #define MSG_STATUS_TOOL __romstr__("|A:")
 #define MSG_STATUS_LINE __romstr__("|Ln:")
 #define MSG_STATUS_PIN __romstr__("|Pn:")
+#define MSG_STATUS_BUF __romstr__("|Buf:")
 
 	//#define MSG_INT "%d"
 	//#define MSG_FLT "%0.3f"
