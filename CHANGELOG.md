@@ -6,9 +6,9 @@
 
 # Changelog
 
-## [1.4.2] - Unreleased
+## [1.4.2] - 2022-04-19
 
-µCNC version 1.4.2 has the following changes
+µCNC version 1.4.2 makes some changes to improve compatibility with Grbl software and patches some issues from the previous versions.
 
 ### Added
 
