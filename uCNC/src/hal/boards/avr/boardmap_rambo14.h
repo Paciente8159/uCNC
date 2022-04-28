@@ -57,21 +57,25 @@ extern "C"
 #define DIR0_BIT 0	// assigns DIR0 pin
 #define DIR0_PORT L // assigns DIR0 port
 
-// Setup limit pins
-#define LIMIT_Z_BIT 4  // assigns LIMIT_Z pin
-#define LIMIT_Y_BIT 5  // assigns LIMIT_Y pin
-#define LIMIT_X_BIT 6  // assigns LIMIT_X pin
-#define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_X_PORT B // assigns LIMIT_X port
-#define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
-#define LIMIT_Y_ISR 0  // assigns LIMIT_Y ISR
-#define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
+	// Setup limit pins
+
+#define LIMIT_X_BIT 6	// assigns LIMIT_X pin
+#define LIMIT_X_PORT B	// assigns LIMIT_X port
+#define LIMIT_X_ISR 0	// assigns LIMIT_X ISR
+#define LIMIT_X2_BIT 2	// assigns LIMIT_X pin
+#define LIMIT_X2_PORT A // assigns LIMIT_X port
+#define LIMIT_Y_BIT 5	// assigns LIMIT_Y pin
+#define LIMIT_Y_PORT B	// assigns LIMIT_Y port
+#define LIMIT_Y_ISR 0	// assigns LIMIT_Y ISR
+#define LIMIT_Y2_BIT 1	// assigns LIMIT_Y pin
+#define LIMIT_Y2_PORT A // assigns LIMIT_Y port
+#define LIMIT_Z_BIT 4	// assigns LIMIT_Z pin
+#define LIMIT_Z_PORT B	// assigns LIMIT_Z port
+#define LIMIT_Z_ISR 0	// assigns LIMIT_Z ISR
 
 // Setup probe pin
-#define PROBE_BIT 5
+#define PROBE_BIT 7
 #define PROBE_PORT C
-#define PROBE_ISR 1
 
 // Setup com pins
 #define RX_BIT 0
