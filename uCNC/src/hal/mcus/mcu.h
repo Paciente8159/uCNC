@@ -157,7 +157,7 @@ extern "C"
  * sets the pwm for a servo (50Hz with tON between 1~2ms)
  * can be defined either as a function or a macro call
  * */
-#define SERVO0_UCNC_INTERNAL_PIN 36
+#define SERVO0_UCNC_INTERNAL_PIN 40
 #ifndef mcu_set_servo
 	void mcu_set_servo(uint8_t servo, uint8_t value);
 #endif
