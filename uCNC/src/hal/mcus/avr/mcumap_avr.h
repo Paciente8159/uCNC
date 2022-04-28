@@ -1043,6 +1043,18 @@ extern "C"
 #define DIO77_INREG (__inreg__(DOUT31_PORT))
 #define DIO77_DIRREG (__dirreg__(DOUT31_PORT))
 #endif
+#if (defined(LIMIT_X_PORT) && defined(LIMIT_X_BIT))
+#define DIO100 100
+#define LIMIT_X 100
+#define DIO100_PORT (LIMIT_X_PORT)
+#define DIO100_BIT (LIMIT_X_BIT)
+#define LIMIT_X_OUTREG (__outreg__(LIMIT_X_PORT))
+#define LIMIT_X_INREG (__inreg__(LIMIT_X_PORT))
+#define LIMIT_X_DIRREG (__dirreg__(LIMIT_X_PORT))
+#define DIO100_OUTREG (__outreg__(LIMIT_X_PORT))
+#define DIO100_INREG (__inreg__(LIMIT_X_PORT))
+#define DIO100_DIRREG (__dirreg__(LIMIT_X_PORT))
+#endif
 #if (defined(LIMIT_Y_PORT) && defined(LIMIT_Y_BIT))
 #define DIO101 101
 #define LIMIT_Y 101

@@ -8,18 +8,18 @@
 
 ## [1.4.3] - Unreleased
 
-µCNC version 1.4.2 makes some changes to improve compatibility with Grbl software and patches some issues from the previous versions.
+µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
 
 ### Added
 
 
 ### Changed
 
-- dual axis is now more easy to configure and more flexible. Shadow register can be wired to unused steppers.
+- dual axis is now more easy to configure and more flexible. Shadow register can be wired to unused steppers (#175)
 
 ### Fixed
 
-- fixed missing stepper 6 and 7 DIR and EN pins from HAL
+- fixed missing stepper 6 and 7 DIR and EN pins from HAL (#175)
 
 ## [1.4.2] - 2022-04-19
 

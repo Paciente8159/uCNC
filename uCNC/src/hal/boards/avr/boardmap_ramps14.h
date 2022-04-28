@@ -35,39 +35,46 @@ extern "C"
 #define PCINT2_PORT K
 
 // Setup step pins
-#define STEP4_BIT 1	 // assigns STEP4 pin
-#define STEP4_PORT C // assigns STEP4 port
-#define STEP3_BIT 4	 // assigns STEP3 pin
-#define STEP3_PORT A // assigns STEP3 port
-#define STEP2_BIT 3	 // assigns STEP2 pin
-#define STEP2_PORT L // assigns STEP2 port
-#define STEP1_BIT 6	 // assigns STEP1 pin
-#define STEP1_PORT F // assigns STEP1 port
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT F // assigns STEP0 port
+#define STEP1_BIT 6	 // assigns STEP1 pin
+#define STEP1_PORT F // assigns STEP1 port
+#define STEP2_BIT 3	 // assigns STEP2 pin
+#define STEP2_PORT L // assigns STEP2 port
+#define STEP3_BIT 4	 // assigns STEP3 pin
+#define STEP3_PORT A // assigns STEP3 port
+#define STEP4_BIT 1	 // assigns STEP4 pin
+#define STEP4_PORT C // assigns STEP4 port
 
 // Setup dir pins
-#define DIR4_BIT 3	// assigns DIR2 pin
-#define DIR4_PORT C // assigns DIR2 port
-#define DIR3_BIT 6	// assigns DIR2 pin
-#define DIR3_PORT A // assigns DIR2 port
-#define DIR2_BIT 1	// assigns DIR2 pin
-#define DIR2_PORT L // assigns DIR2 port
-#define DIR1_BIT 7	// assigns DIR1 pin
-#define DIR1_PORT F // assigns DIR1 port
 #define DIR0_BIT 1	// assigns DIR0 pin
 #define DIR0_PORT F // assigns DIR0 port
+#define DIR1_BIT 7	// assigns DIR1 pin
+#define DIR1_PORT F // assigns DIR1 port
+#define DIR2_BIT 1	// assigns DIR2 pin
+#define DIR2_PORT L // assigns DIR2 port
+#define DIR3_BIT 6	// assigns DIR2 pin
+#define DIR3_PORT A // assigns DIR2 port
+#define DIR4_BIT 3	// assigns DIR2 pin
+#define DIR4_PORT C // assigns DIR2 port
 
-// Setup limit pins
-#define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin
-#define LIMIT_Y_BIT 1  // assigns LIMIT_Y pin
-#define LIMIT_X_BIT 5  // assigns LIMIT_X pin
-#define LIMIT_Z_PORT D // assigns LIMIT_Z port
-#define LIMIT_Y_PORT J // assigns LIMIT_Y port
-#define LIMIT_X_PORT E // assigns LIMIT_X port
-#define LIMIT_Z_ISR -4 // assigns LIMIT_Z ISR
-#define LIMIT_Y_ISR 1  // assigns LIMIT_Y ISR
-#define LIMIT_X_ISR -6 // assigns LIMIT_X ISR
+	// Setup limit pins
+
+#define LIMIT_X_BIT 5	// assigns LIMIT_X pin
+#define LIMIT_X_PORT E	// assigns LIMIT_X port
+#define LIMIT_X_ISR -6	// assigns LIMIT_X ISR
+#define LIMIT_X2_BIT 4	// assigns LIMIT_X2 pin
+#define LIMIT_X2_PORT E // assigns LIMIT_X2 port
+#define LIMIT_X2_ISR -5 // assigns LIMIT_X2 ISR
+#define LIMIT_Y_BIT 1	// assigns LIMIT_Y pin
+#define LIMIT_Y_PORT J	// assigns LIMIT_Y port
+#define LIMIT_Y_ISR 1	// assigns LIMIT_Y ISR
+#define LIMIT_Y2_BIT 0	// assigns LIMIT_Y2 pin
+#define LIMIT_Y2_PORT J // assigns LIMIT_Y2 port
+#define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR
+#define LIMIT_Z_BIT 3	// assigns LIMIT_Z pin
+#define LIMIT_Z_PORT D	// assigns LIMIT_Z port
+#define LIMIT_Z_ISR -4	// assigns LIMIT_Z ISR
 
 // Setup probe pin
 #define PROBE_BIT 2
