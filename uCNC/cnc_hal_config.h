@@ -32,6 +32,22 @@ extern "C"
  */
 
 /**
+ * Limit switch pins
+ * */
+
+// Uncomment to disable limit switch
+// If the pin is not defined in the board this will be ignored
+// #define LIMIT_X_DISABLE
+// #define LIMIT_Y_DISABLE
+// #define LIMIT_Z_DISABLE
+// #define LIMIT_X2_DISABLE
+// #define LIMIT_Y2_DISABLE
+// #define LIMIT_Z2_DISABLE
+// #define LIMIT_A_DISABLE
+// #define LIMIT_B_DISABLE
+// #define LIMIT_C_DISABLE
+
+/**
  * Pins weak pullup resistors
  * */
 
@@ -68,11 +84,19 @@ extern "C"
 /*
 	Uncomment this feature to enable up to 2 dual drive axis
 */
-//#define ENABLE_DUAL_DRIVE_AXIS
+// #define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-// defines the first dual drive capable step output
-//#define DUAL_DRIVE_AXIS0 X
-//#define DUAL_DRIVE_AXIS1 Y
+// defines the first dual drive capable axis
+// #define DUAL_DRIVE0_AXIS X
+// by default this will be rewired to STEPPER6 (if available on the board)
+// this can be uncommented to re-wire to an available (unused stepper other then 6)
+// #define DUAL_DRIVE0_STEPPER 6
+
+// defines the first second drive capable axis
+// #define DUAL_DRIVE1_AXIS Y
+// by default this will be rewired to STEPPER7 (if available on the board)
+// this can be uncommented to re-wire to an available (unused stepper other then 7)
+// #define DUAL_DRIVE1_STEPPER 7
 #endif
 
 /*

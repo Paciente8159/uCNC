@@ -512,10 +512,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     uint8_t limits_flags;
 
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
+#ifdef DUAL_DRIVE0_AXIS
     axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64 | 128); // if dual limit pins
 #endif
-#ifdef DUAL_DRIVE_AXIS1
+#ifdef DUAL_DRIVE1_AXIS
     axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64 | 128); // if dual limit pins
 #endif
 #endif

@@ -41,10 +41,10 @@ void mcu_limits_changed_cb(void)
             if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING))
             {
 // if homing and dual drive axis are enabled
-#ifdef DUAL_DRIVE_AXIS0
+#ifdef DUAL_DRIVE0_AXIS
                 if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) // the limit triggered matches the first dual drive axis
                 {
-                    itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP6_MASK : STEP_DUAL0);
+                    itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL0_MASK : STEP_DUAL0);
 
                     if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
@@ -52,12 +52,12 @@ void mcu_limits_changed_cb(void)
                     }
                 }
 #endif
-#ifdef DUAL_DRIVE_AXIS1
+#ifdef DUAL_DRIVE1_AXIS
                 if (limits & LIMIT_DUAL1 & io_limits_homing_filter) // the limit triggered matches the second dual drive axis
                 {
                     if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
-                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP7_MASK : STEP_DUAL1);
+                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
                     }
                 }
 #endif
@@ -263,7 +263,7 @@ void io_set_homing_limits_filter(uint8_t filter_mask)
 // outputs
 void io_set_steps(uint8_t mask)
 {
-#if (STEPPER_COUNT > 0 && (STEP0 >= 0))
+#if (STEP0 >= 0)
     if (mask & STEP0_MASK)
     {
         mcu_set_output(STEP0);
@@ -274,7 +274,7 @@ void io_set_steps(uint8_t mask)
     }
 
 #endif
-#if (STEPPER_COUNT > 1 && (STEP1 >= 0))
+#if (STEP1 >= 0)
     if (mask & STEP1_MASK)
     {
         mcu_set_output(STEP1);
@@ -284,7 +284,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP1);
     }
 #endif
-#if (STEPPER_COUNT > 2 && (STEP2 >= 0))
+#if (STEP2 >= 0)
     if (mask & STEP2_MASK)
     {
         mcu_set_output(STEP2);
@@ -294,7 +294,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP2);
     }
 #endif
-#if (STEPPER_COUNT > 3 && (STEP3 >= 0))
+#if (STEP3 >= 0)
     if (mask & STEP3_MASK)
     {
         mcu_set_output(STEP3);
@@ -304,7 +304,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP3);
     }
 #endif
-#if (STEPPER_COUNT > 4 && (STEP4 >= 0))
+#if (STEP4 >= 0)
     if (mask & STEP4_MASK)
     {
         mcu_set_output(STEP4);
@@ -314,7 +314,7 @@ void io_set_steps(uint8_t mask)
         mcu_clear_output(STEP4);
     }
 #endif
-#if (STEPPER_COUNT > 5 && (STEP5 >= 0))
+#if (STEP5 >= 0)
     if (mask & STEP5_MASK)
     {
         mcu_set_output(STEP5);
@@ -348,37 +348,37 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
-#if (STEPPER_COUNT > 0 && (STEP0 >= 0))
+#if (STEP0 >= 0)
     if (mask & STEP0_MASK)
     {
         mcu_toggle_output(STEP0);
     }
 #endif
-#if (STEPPER_COUNT > 1 && (STEP1 >= 0))
+#if (STEP1 >= 0)
     if (mask & STEP1_MASK)
     {
         mcu_toggle_output(STEP1);
     }
 #endif
-#if (STEPPER_COUNT > 2 && (STEP2 >= 0))
+#if (STEP2 >= 0)
     if (mask & STEP2_MASK)
     {
         mcu_toggle_output(STEP2);
     }
 #endif
-#if (STEPPER_COUNT > 3 && (STEP3 >= 0))
+#if (STEP3 >= 0)
     if (mask & STEP3_MASK)
     {
         mcu_toggle_output(STEP3);
     }
 #endif
-#if (STEPPER_COUNT > 4 && (STEP4 >= 0))
+#if (STEP4 >= 0)
     if (mask & STEP4_MASK)
     {
         mcu_toggle_output(STEP4);
     }
 #endif
-#if (STEPPER_COUNT > 5 && (STEP5 >= 0))
+#if (STEP5 >= 0)
     if (mask & STEP5_MASK)
     {
         mcu_toggle_output(STEP5);
@@ -401,7 +401,7 @@ void io_toggle_steps(uint8_t mask)
 void io_set_dirs(uint8_t mask)
 {
     mask ^= g_settings.dir_invert_mask;
-#if (STEPPER_COUNT > 0 && (DIR0 >= 0))
+#if (DIR0 >= 0)
     if (mask & DIR0_MASK)
     {
         mcu_set_output(DIR0);
@@ -411,7 +411,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR0);
     }
 #endif
-#if (STEPPER_COUNT > 1 && (DIR1 >= 0))
+#if (DIR1 >= 0)
     if (mask & DIR1_MASK)
     {
         mcu_set_output(DIR1);
@@ -421,7 +421,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR1);
     }
 #endif
-#if (STEPPER_COUNT > 2 && (DIR2 >= 0))
+#if (DIR2 >= 0)
     if (mask & DIR2_MASK)
     {
         mcu_set_output(DIR2);
@@ -431,7 +431,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR2);
     }
 #endif
-#if (STEPPER_COUNT > 3 && (DIR3 >= 0))
+#if (DIR3 >= 0)
     if (mask & DIR3_MASK)
     {
         mcu_set_output(DIR3);
@@ -441,7 +441,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR3);
     }
 #endif
-#if (STEPPER_COUNT > 4 && (DIR4 >= 0))
+#if (DIR4 >= 0)
     if (mask & DIR4_MASK)
     {
         mcu_set_output(DIR4);
@@ -451,7 +451,7 @@ void io_set_dirs(uint8_t mask)
         mcu_clear_output(DIR4);
     }
 #endif
-#if (STEPPER_COUNT > 5 && (DIR5 >= 0))
+#if (DIR5 >= 0)
     if (mask & DIR5_MASK)
     {
         mcu_set_output(DIR5);
@@ -459,6 +459,26 @@ void io_set_dirs(uint8_t mask)
     else
     {
         mcu_clear_output(DIR5);
+    }
+#endif
+#if (DIR6 >= 0)
+    if (mask & DIR6_MASK)
+    {
+        mcu_set_output(DIR6);
+    }
+    else
+    {
+        mcu_clear_output(DIR6);
+    }
+#endif
+#if (DIR7 >= 0)
+    if (mask & DIR7_MASK)
+    {
+        mcu_set_output(DIR7);
+    }
+    else
+    {
+        mcu_clear_output(DIR7);
     }
 #endif
 }
@@ -978,6 +998,26 @@ void io_enable_steppers(uint8_t mask)
         mcu_clear_output(STEP5_EN);
     }
 #endif
+#if (STEP6_EN >= 0)
+    if (mask & 0x40)
+    {
+        mcu_set_output(STEP6_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP6_EN);
+    }
+#endif
+#if (STEP7_EN >= 0)
+    if (mask & 0x80)
+    {
+        mcu_set_output(STEP7_EN);
+    }
+    else
+    {
+        mcu_clear_output(STEP7_EN);
+    }
+#endif
 }
 
 uint8_t io_get_analog(uint8_t pin)
@@ -1113,6 +1153,14 @@ int16_t io_get_pinvalue(uint8_t pin)
     case DIR5:
         return (mcu_get_output(DIR5) != 0);
 #endif
+#if DIR6 >= 0
+    case DIR6:
+        return (mcu_get_output(DIR6) != 0);
+#endif
+#if DIR7 >= 0
+    case DIR7:
+        return (mcu_get_output(DIR7) != 0);
+#endif
 #if STEP0_EN >= 0
     case STEP0_EN:
         return (mcu_get_output(STEP0_EN) != 0);
@@ -1136,6 +1184,14 @@ int16_t io_get_pinvalue(uint8_t pin)
 #if STEP5_EN >= 0
     case STEP5_EN:
         return (mcu_get_output(STEP5_EN) != 0);
+#endif
+#if STEP6_EN >= 0
+    case STEP6_EN:
+        return (mcu_get_output(STEP6_EN) != 0);
+#endif
+#if STEP7_EN >= 0
+    case STEP7_EN:
+        return (mcu_get_output(STEP7_EN) != 0);
 #endif
 #if PWM0 >= 0
     case PWM0:

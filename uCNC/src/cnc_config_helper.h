@@ -75,55 +75,6 @@ extern "C"
 #endif
 #endif
 
-#if STEPPER_COUNT < 1
-#ifdef STEP0
-#undef STEP0
-#endif
-#ifdef DIR0
-#undef DIR0
-#endif
-#endif
-#if STEPPER_COUNT < 2
-#ifdef STEP1
-#undef STEP1
-#endif
-#ifdef DIR1
-#undef DIR1
-#endif
-#endif
-#if STEPPER_COUNT < 3
-#ifdef STEP2
-#undef STEP2
-#endif
-#ifdef DIR2
-#undef DIR2
-#endif
-#endif
-#if STEPPER_COUNT < 4
-#ifdef STEP3
-#undef STEP3
-#endif
-#ifdef DIR3
-#undef DIR3
-#endif
-#endif
-#if STEPPER_COUNT < 5
-#ifdef STEP4
-#undef STEP4
-#endif
-#ifdef DIR4
-#undef DIR4
-#endif
-#endif
-#if STEPPER_COUNT < 6
-#ifdef STEP5
-#undef STEP5
-#endif
-#ifdef DIR5
-#undef DIR5
-#endif
-#endif
-
 /**
  * sets all undefined pins
  **/
@@ -225,425 +176,453 @@ extern "C"
 #endif
 #define DIO13 -1
 #endif
-#ifndef STEP0_EN
-#define STEP0_EN -1
+#ifndef DIR6
+#define DIR6 -1
 #ifdef DIO14
 #undef DIO14
 #endif
 #define DIO14 -1
 #endif
-#ifndef STEP1_EN
-#define STEP1_EN -1
+#ifndef DIR7
+#define DIR7 -1
 #ifdef DIO15
 #undef DIO15
 #endif
 #define DIO15 -1
 #endif
-#ifndef STEP2_EN
-#define STEP2_EN -1
+#ifndef STEP0_EN
+#define STEP0_EN -1
 #ifdef DIO16
 #undef DIO16
 #endif
 #define DIO16 -1
 #endif
-#ifndef STEP3_EN
-#define STEP3_EN -1
+#ifndef STEP1_EN
+#define STEP1_EN -1
 #ifdef DIO17
 #undef DIO17
 #endif
 #define DIO17 -1
 #endif
-#ifndef STEP4_EN
-#define STEP4_EN -1
+#ifndef STEP2_EN
+#define STEP2_EN -1
 #ifdef DIO18
 #undef DIO18
 #endif
 #define DIO18 -1
 #endif
-#ifndef STEP5_EN
-#define STEP5_EN -1
+#ifndef STEP3_EN
+#define STEP3_EN -1
 #ifdef DIO19
 #undef DIO19
 #endif
 #define DIO19 -1
 #endif
-#ifndef PWM0
-#define PWM0 -1
+#ifndef STEP4_EN
+#define STEP4_EN -1
 #ifdef DIO20
 #undef DIO20
 #endif
 #define DIO20 -1
 #endif
-#ifndef PWM1
-#define PWM1 -1
+#ifndef STEP5_EN
+#define STEP5_EN -1
 #ifdef DIO21
 #undef DIO21
 #endif
 #define DIO21 -1
 #endif
-#ifndef PWM2
-#define PWM2 -1
+#ifndef STEP6_EN
+#define STEP6_EN -1
 #ifdef DIO22
 #undef DIO22
 #endif
 #define DIO22 -1
 #endif
-#ifndef PWM3
-#define PWM3 -1
+#ifndef STEP7_EN
+#define STEP7_EN -1
 #ifdef DIO23
 #undef DIO23
 #endif
 #define DIO23 -1
 #endif
-#ifndef PWM4
-#define PWM4 -1
+#ifndef PWM0
+#define PWM0 -1
 #ifdef DIO24
 #undef DIO24
 #endif
 #define DIO24 -1
 #endif
-#ifndef PWM5
-#define PWM5 -1
+#ifndef PWM1
+#define PWM1 -1
 #ifdef DIO25
 #undef DIO25
 #endif
 #define DIO25 -1
 #endif
-#ifndef PWM6
-#define PWM6 -1
+#ifndef PWM2
+#define PWM2 -1
 #ifdef DIO26
 #undef DIO26
 #endif
 #define DIO26 -1
 #endif
-#ifndef PWM7
-#define PWM7 -1
+#ifndef PWM3
+#define PWM3 -1
 #ifdef DIO27
 #undef DIO27
 #endif
 #define DIO27 -1
 #endif
-#ifndef PWM8
-#define PWM8 -1
+#ifndef PWM4
+#define PWM4 -1
 #ifdef DIO28
 #undef DIO28
 #endif
 #define DIO28 -1
 #endif
-#ifndef PWM9
-#define PWM9 -1
+#ifndef PWM5
+#define PWM5 -1
 #ifdef DIO29
 #undef DIO29
 #endif
 #define DIO29 -1
 #endif
-#ifndef PWM10
-#define PWM10 -1
+#ifndef PWM6
+#define PWM6 -1
 #ifdef DIO30
 #undef DIO30
 #endif
 #define DIO30 -1
 #endif
-#ifndef PWM11
-#define PWM11 -1
+#ifndef PWM7
+#define PWM7 -1
 #ifdef DIO31
 #undef DIO31
 #endif
 #define DIO31 -1
 #endif
-#ifndef PWM12
-#define PWM12 -1
+#ifndef PWM8
+#define PWM8 -1
 #ifdef DIO32
 #undef DIO32
 #endif
 #define DIO32 -1
 #endif
-#ifndef PWM13
-#define PWM13 -1
+#ifndef PWM9
+#define PWM9 -1
 #ifdef DIO33
 #undef DIO33
 #endif
 #define DIO33 -1
 #endif
-#ifndef PWM14
-#define PWM14 -1
+#ifndef PWM10
+#define PWM10 -1
 #ifdef DIO34
 #undef DIO34
 #endif
 #define DIO34 -1
 #endif
-#ifndef PWM15
-#define PWM15 -1
+#ifndef PWM11
+#define PWM11 -1
 #ifdef DIO35
 #undef DIO35
 #endif
 #define DIO35 -1
 #endif
-#ifndef SERVO0
-#define SERVO0 -1
+#ifndef PWM12
+#define PWM12 -1
 #ifdef DIO36
 #undef DIO36
 #endif
 #define DIO36 -1
 #endif
-#ifndef SERVO1
-#define SERVO1 -1
+#ifndef PWM13
+#define PWM13 -1
 #ifdef DIO37
 #undef DIO37
 #endif
 #define DIO37 -1
 #endif
-#ifndef SERVO2
-#define SERVO2 -1
+#ifndef PWM14
+#define PWM14 -1
 #ifdef DIO38
 #undef DIO38
 #endif
 #define DIO38 -1
 #endif
-#ifndef SERVO3
-#define SERVO3 -1
+#ifndef PWM15
+#define PWM15 -1
 #ifdef DIO39
 #undef DIO39
 #endif
 #define DIO39 -1
 #endif
-#ifndef SERVO4
-#define SERVO4 -1
+#ifndef SERVO0
+#define SERVO0 -1
 #ifdef DIO40
 #undef DIO40
 #endif
 #define DIO40 -1
 #endif
-#ifndef SERVO5
-#define SERVO5 -1
+#ifndef SERVO1
+#define SERVO1 -1
 #ifdef DIO41
 #undef DIO41
 #endif
 #define DIO41 -1
 #endif
-#ifndef DOUT0
-#define DOUT0 -1
+#ifndef SERVO2
+#define SERVO2 -1
 #ifdef DIO42
 #undef DIO42
 #endif
 #define DIO42 -1
 #endif
-#ifndef DOUT1
-#define DOUT1 -1
+#ifndef SERVO3
+#define SERVO3 -1
 #ifdef DIO43
 #undef DIO43
 #endif
 #define DIO43 -1
 #endif
-#ifndef DOUT2
-#define DOUT2 -1
+#ifndef SERVO4
+#define SERVO4 -1
 #ifdef DIO44
 #undef DIO44
 #endif
 #define DIO44 -1
 #endif
-#ifndef DOUT3
-#define DOUT3 -1
+#ifndef SERVO5
+#define SERVO5 -1
 #ifdef DIO45
 #undef DIO45
 #endif
 #define DIO45 -1
 #endif
-#ifndef DOUT4
-#define DOUT4 -1
+#ifndef DOUT0
+#define DOUT0 -1
 #ifdef DIO46
 #undef DIO46
 #endif
 #define DIO46 -1
 #endif
-#ifndef DOUT5
-#define DOUT5 -1
+#ifndef DOUT1
+#define DOUT1 -1
 #ifdef DIO47
 #undef DIO47
 #endif
 #define DIO47 -1
 #endif
-#ifndef DOUT6
-#define DOUT6 -1
+#ifndef DOUT2
+#define DOUT2 -1
 #ifdef DIO48
 #undef DIO48
 #endif
 #define DIO48 -1
 #endif
-#ifndef DOUT7
-#define DOUT7 -1
+#ifndef DOUT3
+#define DOUT3 -1
 #ifdef DIO49
 #undef DIO49
 #endif
 #define DIO49 -1
 #endif
-#ifndef DOUT8
-#define DOUT8 -1
+#ifndef DOUT4
+#define DOUT4 -1
 #ifdef DIO50
 #undef DIO50
 #endif
 #define DIO50 -1
 #endif
-#ifndef DOUT9
-#define DOUT9 -1
+#ifndef DOUT5
+#define DOUT5 -1
 #ifdef DIO51
 #undef DIO51
 #endif
 #define DIO51 -1
 #endif
-#ifndef DOUT10
-#define DOUT10 -1
+#ifndef DOUT6
+#define DOUT6 -1
 #ifdef DIO52
 #undef DIO52
 #endif
 #define DIO52 -1
 #endif
-#ifndef DOUT11
-#define DOUT11 -1
+#ifndef DOUT7
+#define DOUT7 -1
 #ifdef DIO53
 #undef DIO53
 #endif
 #define DIO53 -1
 #endif
-#ifndef DOUT12
-#define DOUT12 -1
+#ifndef DOUT8
+#define DOUT8 -1
 #ifdef DIO54
 #undef DIO54
 #endif
 #define DIO54 -1
 #endif
-#ifndef DOUT13
-#define DOUT13 -1
+#ifndef DOUT9
+#define DOUT9 -1
 #ifdef DIO55
 #undef DIO55
 #endif
 #define DIO55 -1
 #endif
-#ifndef DOUT14
-#define DOUT14 -1
+#ifndef DOUT10
+#define DOUT10 -1
 #ifdef DIO56
 #undef DIO56
 #endif
 #define DIO56 -1
 #endif
-#ifndef DOUT15
-#define DOUT15 -1
+#ifndef DOUT11
+#define DOUT11 -1
 #ifdef DIO57
 #undef DIO57
 #endif
 #define DIO57 -1
 #endif
-#ifndef DOUT16
-#define DOUT16 -1
+#ifndef DOUT12
+#define DOUT12 -1
 #ifdef DIO58
 #undef DIO58
 #endif
 #define DIO58 -1
 #endif
-#ifndef DOUT17
-#define DOUT17 -1
+#ifndef DOUT13
+#define DOUT13 -1
 #ifdef DIO59
 #undef DIO59
 #endif
 #define DIO59 -1
 #endif
-#ifndef DOUT18
-#define DOUT18 -1
+#ifndef DOUT14
+#define DOUT14 -1
 #ifdef DIO60
 #undef DIO60
 #endif
 #define DIO60 -1
 #endif
-#ifndef DOUT19
-#define DOUT19 -1
+#ifndef DOUT15
+#define DOUT15 -1
 #ifdef DIO61
 #undef DIO61
 #endif
 #define DIO61 -1
 #endif
-#ifndef DOUT20
-#define DOUT20 -1
+#ifndef DOUT16
+#define DOUT16 -1
 #ifdef DIO62
 #undef DIO62
 #endif
 #define DIO62 -1
 #endif
-#ifndef DOUT21
-#define DOUT21 -1
+#ifndef DOUT17
+#define DOUT17 -1
 #ifdef DIO63
 #undef DIO63
 #endif
 #define DIO63 -1
 #endif
-#ifndef DOUT22
-#define DOUT22 -1
+#ifndef DOUT18
+#define DOUT18 -1
 #ifdef DIO64
 #undef DIO64
 #endif
 #define DIO64 -1
 #endif
-#ifndef DOUT23
-#define DOUT23 -1
+#ifndef DOUT19
+#define DOUT19 -1
 #ifdef DIO65
 #undef DIO65
 #endif
 #define DIO65 -1
 #endif
-#ifndef DOUT24
-#define DOUT24 -1
+#ifndef DOUT20
+#define DOUT20 -1
 #ifdef DIO66
 #undef DIO66
 #endif
 #define DIO66 -1
 #endif
-#ifndef DOUT25
-#define DOUT25 -1
+#ifndef DOUT21
+#define DOUT21 -1
 #ifdef DIO67
 #undef DIO67
 #endif
 #define DIO67 -1
 #endif
-#ifndef DOUT26
-#define DOUT26 -1
+#ifndef DOUT22
+#define DOUT22 -1
 #ifdef DIO68
 #undef DIO68
 #endif
 #define DIO68 -1
 #endif
-#ifndef DOUT27
-#define DOUT27 -1
+#ifndef DOUT23
+#define DOUT23 -1
 #ifdef DIO69
 #undef DIO69
 #endif
 #define DIO69 -1
 #endif
-#ifndef DOUT28
-#define DOUT28 -1
+#ifndef DOUT24
+#define DOUT24 -1
 #ifdef DIO70
 #undef DIO70
 #endif
 #define DIO70 -1
 #endif
-#ifndef DOUT29
-#define DOUT29 -1
+#ifndef DOUT25
+#define DOUT25 -1
 #ifdef DIO71
 #undef DIO71
 #endif
 #define DIO71 -1
 #endif
-#ifndef DOUT30
-#define DOUT30 -1
+#ifndef DOUT26
+#define DOUT26 -1
 #ifdef DIO72
 #undef DIO72
 #endif
 #define DIO72 -1
 #endif
-#ifndef DOUT31
-#define DOUT31 -1
+#ifndef DOUT27
+#define DOUT27 -1
 #ifdef DIO73
 #undef DIO73
 #endif
 #define DIO73 -1
+#endif
+#ifndef DOUT28
+#define DOUT28 -1
+#ifdef DIO74
+#undef DIO74
+#endif
+#define DIO74 -1
+#endif
+#ifndef DOUT29
+#define DOUT29 -1
+#ifdef DIO75
+#undef DIO75
+#endif
+#define DIO75 -1
+#endif
+#ifndef DOUT30
+#define DOUT30 -1
+#ifdef DIO76
+#undef DIO76
+#endif
+#define DIO76 -1
+#endif
+#ifndef DOUT31
+#define DOUT31 -1
+#ifdef DIO77
+#undef DIO77
+#endif
+#define DIO77 -1
 #endif
 #ifndef LIMIT_X
 #define LIMIT_X -1

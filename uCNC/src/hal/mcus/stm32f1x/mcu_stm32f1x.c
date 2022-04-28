@@ -597,6 +597,12 @@ void mcu_init(void)
 #if DIR5 >= 0
 	mcu_config_output(DIR5);
 #endif
+#if DIR6 >= 0
+	mcu_config_output(DIR6);
+#endif
+#if DIR7 >= 0
+	mcu_config_output(DIR7);
+#endif
 #if STEP0_EN >= 0
 	mcu_config_output(STEP0_EN);
 #endif
@@ -614,6 +620,12 @@ void mcu_init(void)
 #endif
 #if STEP5_EN >= 0
 	mcu_config_output(STEP5_EN);
+#endif
+#if STEP6_EN >= 0
+	mcu_config_output(STEP6_EN);
+#endif
+#if STEP7_EN >= 0
+	mcu_config_output(STEP7_EN);
 #endif
 #if PWM0 >= 0
 	mcu_config_pwm(PWM0);

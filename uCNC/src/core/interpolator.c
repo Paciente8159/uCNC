@@ -282,7 +282,16 @@ void itp_run(void)
 #ifdef ENABLE_BACKLASH_COMPENSATION
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
 #endif
+
             itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
+#ifdef ENABLE_DUAL_DRIVE_AXIS
+#ifdef DUAL_DRIVE0_AXIS
+            itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL0) ? STEP_DUAL0_MASK : 0;
+#endif
+#ifdef DUAL_DRIVE1_AXIS
+            itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
+#endif
+#endif
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
@@ -651,6 +660,14 @@ void itp_run(void)
             itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->flags_u.flags_t.backlash_comp;
 #endif
             itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
+#ifdef ENABLE_DUAL_DRIVE_AXIS
+#ifdef DUAL_DRIVE0_AXIS
+            itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL0) ? STEP_DUAL0_MASK : 0;
+#endif
+#ifdef DUAL_DRIVE1_AXIS
+            itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
+#endif
+#endif
             itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
 
             float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;

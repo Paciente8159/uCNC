@@ -24,6 +24,52 @@ extern "C"
 {
 #endif
 
+#ifdef LIMIT_X_DISABLE
+#ifdef LIMIT_X
+#undef LIMIT_X
+#endif
+#endif
+#ifdef LIMIT_X2_DISABLE
+#ifdef LIMIT_X2
+#undef LIMIT_X2
+#endif
+#endif
+#ifdef LIMIT_Y_DISABLE
+#ifdef LIMIT_Y
+#undef LIMIT_Y
+#endif
+#endif
+#ifdef LIMIT_Y2_DISABLE
+#ifdef LIMIT_Y2
+#undef LIMIT_Y2
+#endif
+#endif
+#ifdef LIMIT_Z_DISABLE
+#ifdef LIMIT_Z
+#undef LIMIT_Z
+#endif
+#endif
+#ifdef LIMIT_Z2_DISABLE
+#ifdef LIMIT_Z2
+#undef LIMIT_Z2
+#endif
+#endif
+#ifdef LIMIT_A_DISABLE
+#ifdef LIMIT_A
+#undef LIMIT_A
+#endif
+#endif
+#ifdef LIMIT_B_DISABLE
+#ifdef LIMIT_B
+#undef LIMIT_B
+#endif
+#endif
+#ifdef LIMIT_C_DISABLE
+#ifdef LIMIT_C
+#undef LIMIT_C
+#endif
+#endif
+
 #ifndef ENCODERS
 #define ENCODERS 0
 #endif
@@ -302,6 +348,185 @@ extern "C"
 
 #if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
 #define ENABLE_DIGITAL_MSTEP
+#endif
+
+#define __stepname_helper__(x) STEP##x##_MASK
+#define __stepname__(x) __stepname_helper__(x)
+
+#define __axisname_helper__(x) AXIS_##x
+#define __axisname__(x) __axisname_helper__(x)
+
+#define __limitname_helper__(x) LIMIT_##x##_MASK
+#define __limitname__(x) __limitname_helper__(x)
+
+#ifdef ENABLE_DUAL_DRIVE_AXIS
+
+#ifndef DUAL_DRIVE0_STEPPER
+#define DUAL_DRIVE0_STEPPER 6
+#endif
+#ifndef DUAL_DRIVE1_STEPPER
+#define DUAL_DRIVE1_STEPPER 7
+#endif
+
+#if (!defined(DUAL_DRIVE0_AXIS) && !defined(DUAL_DRIVE1_AXIS))
+#error "Enabling dual axis drive requires to configure at least one axis with dual drive"
+#endif
+
+#if (STEPPER_COUNT > 0 && (DUAL_DRIVE0_STEPPER == 0 || DUAL_DRIVE1_STEPPER == 0))
+#error "Stepper  0 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+#if (STEPPER_COUNT > 1 && (DUAL_DRIVE0_STEPPER == 1 || DUAL_DRIVE1_STEPPER == 1))
+#error "Stepper  1 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+#if (STEPPER_COUNT > 2 && (DUAL_DRIVE0_STEPPER == 2 || DUAL_DRIVE1_STEPPER == 2))
+#error "Stepper  2 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+#if (STEPPER_COUNT > 3 && (DUAL_DRIVE0_STEPPER == 3 || DUAL_DRIVE1_STEPPER == 3))
+#error "Stepper  3 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+#if (STEPPER_COUNT > 4 && (DUAL_DRIVE0_STEPPER == 4 || DUAL_DRIVE1_STEPPER == 4))
+#error "Stepper  4 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+#if (STEPPER_COUNT > 5 && (DUAL_DRIVE0_STEPPER == 5 || DUAL_DRIVE1_STEPPER == 5))
+#error "Stepper  5 cannot be used as a axis drive and a dual axis drive at the same time"
+#endif
+
+// dual axis0
+#ifdef DUAL_DRIVE0_AXIS
+#define AXIS_DUAL0 __axisname__(DUAL_DRIVE0_AXIS)
+#define STEP_DUAL0 (1 << AXIS_DUAL0)
+#define LIMIT_DUAL0 __limitname__(DUAL_DRIVE0_AXIS)
+#define STEP_DUAL0_MASK (1 << DUAL_DRIVE0_STEPPER)
+#endif
+
+// dual axis1
+#ifdef DUAL_DRIVE1_AXIS
+#define AXIS_DUAL1 __axisname__(DUAL_DRIVE1_AXIS)
+#define STEP_DUAL1 (1 << AXIS_DUAL1)
+#define LIMIT_DUAL1 __limitname__(DUAL_DRIVE1_AXIS)
+#define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
+#endif
+#endif
+
+#ifndef LIMIT_DUAL0
+#define LIMIT_DUAL0 0
+#endif
+#ifndef LIMIT_DUAL1
+#define LIMIT_DUAL1 0
+#endif
+
+#define LIMITS_DUAL (LIMIT_DUAL0 | LIMIT_DUAL1)
+
+#if (STEP0_MASK == STEP_DUAL0)
+#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL0_MASK)
+#elif (STEP0_MASK == STEP_DUAL1)
+#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP0_ITP_MASK STEP0_MASK
+#endif
+#if (STEP1_MASK == STEP_DUAL0)
+#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL0_MASK)
+#elif (STEP1_MASK == STEP_DUAL1)
+#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP1_ITP_MASK STEP0_MASK
+#endif
+#if (STEP2_MASK == STEP_DUAL0)
+#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL0_MASK)
+#elif (STEP2_MASK == STEP_DUAL1)
+#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP2_ITP_MASK STEP0_MASK
+#endif
+#if (STEP3_MASK == STEP_DUAL0)
+#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL0_MASK)
+#elif (STEP3_MASK == STEP_DUAL1)
+#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP3_ITP_MASK STEP0_MASK
+#endif
+#if (STEP4_MASK == STEP_DUAL0)
+#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL0_MASK)
+#elif (STEP4_MASK == STEP_DUAL1)
+#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP4_ITP_MASK STEP0_MASK
+#endif
+#if (STEP5_MASK == STEP_DUAL0)
+#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL0_MASK)
+#elif (STEP5_MASK == STEP_DUAL1)
+#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL1_MASK)
+#else
+#define STEP5_ITP_MASK STEP0_MASK
+#endif
+
+#ifndef STEP_DUAL0
+#define STEP_DUAL0 -1
+#endif
+
+#ifndef STEP_DUAL1
+#define STEP_DUAL1 -1
+#endif
+
+#if (STEPPER_COUNT < 1 && DUAL_DRIVE0_STEPPER != 0 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 0)
+#ifdef STEP0
+#undef STEP0
+#define STEP0 -1
+#endif
+#ifdef DIR0
+#undef DIR0
+#define DIR0 -1
+#endif
+#endif
+#if (STEPPER_COUNT < 2 && DUAL_DRIVE0_STEPPER != 1 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 1)
+#ifdef STEP1
+#undef STEP1
+#define STEP1 -1
+#endif
+#ifdef DIR1
+#undef DIR1
+#define DIR1 -1
+#endif
+#endif
+#if (STEPPER_COUNT < 3 && DUAL_DRIVE0_STEPPER != 2 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 2)
+#ifdef STEP2
+#undef STEP2
+#define STEP2 -1
+#endif
+#ifdef DIR2
+#undef DIR2
+#define DIR2 -1
+#endif
+#endif
+#if (STEPPER_COUNT < 4 && DUAL_DRIVE0_STEPPER != 3 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 3)
+#ifdef STEP3
+#undef STEP3
+#define STEP3 -1
+#endif
+#ifdef DIR3
+#undef DIR3
+#define DIR3 -1
+#endif
+#endif
+#if (STEPPER_COUNT < 5 && DUAL_DRIVE0_STEPPER != 4 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 4)
+#ifdef STEP4
+#undef STEP4
+#define STEP4 -1
+#endif
+#ifdef DIR4
+#undef DIR4
+#define DIR4 -1
+#endif
+#endif
+#if (STEPPER_COUNT < 6 && DUAL_DRIVE0_STEPPER != 5 && STEPDUAL_DRIVE1_STEPPER_DUAL1 != 5)
+#ifdef STEP5
+#undef STEP5
+#define STEP5 -1
+#endif
+#ifdef DIR5
+#undef DIR5
+#define DIR5 -1
+#endif
 #endif
 
 #ifdef __cplusplus

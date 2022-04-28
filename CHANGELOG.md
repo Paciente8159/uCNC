@@ -6,6 +6,21 @@
 
 # Changelog
 
+## [1.4.3] - Unreleased
+
+µCNC version 1.4.2 makes some changes to improve compatibility with Grbl software and patches some issues from the previous versions.
+
+### Added
+
+
+### Changed
+
+- dual axis is now more easy to configure and more flexible. Shadow register can be wired to unused steppers.
+
+### Fixed
+
+- fixed missing stepper 6 and 7 DIR and EN pins from HAL
+
 ## [1.4.2] - 2022-04-19
 
 µCNC version 1.4.2 makes some changes to improve compatibility with Grbl software and patches some issues from the previous versions.
@@ -797,6 +812,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.3
+[1.4.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.2
 [1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.1
 [1.4.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0
 [1.4.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-rc
