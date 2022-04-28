@@ -27,46 +27,55 @@ extern "C"
 #ifdef LIMIT_X_DISABLE
 #ifdef LIMIT_X
 #undef LIMIT_X
+#define LIMIT_X -1
 #endif
 #endif
 #ifdef LIMIT_X2_DISABLE
 #ifdef LIMIT_X2
 #undef LIMIT_X2
+#define LIMIT_X2 -1
 #endif
 #endif
 #ifdef LIMIT_Y_DISABLE
 #ifdef LIMIT_Y
 #undef LIMIT_Y
+#define LIMIT_Y -1
 #endif
 #endif
 #ifdef LIMIT_Y2_DISABLE
 #ifdef LIMIT_Y2
 #undef LIMIT_Y2
+#define LIMIT_Y2 -1
 #endif
 #endif
 #ifdef LIMIT_Z_DISABLE
 #ifdef LIMIT_Z
 #undef LIMIT_Z
+#define LIMIT_Z -1
 #endif
 #endif
 #ifdef LIMIT_Z2_DISABLE
 #ifdef LIMIT_Z2
 #undef LIMIT_Z2
+#define LIMIT_Z2 -1
 #endif
 #endif
 #ifdef LIMIT_A_DISABLE
 #ifdef LIMIT_A
 #undef LIMIT_A
+#define LIMIT_A -1
 #endif
 #endif
 #ifdef LIMIT_B_DISABLE
 #ifdef LIMIT_B
 #undef LIMIT_B
+#define LIMIT_B -1
 #endif
 #endif
 #ifdef LIMIT_C_DISABLE
 #ifdef LIMIT_C
 #undef LIMIT_C
+#define LIMIT_C -1
 #endif
 #endif
 
