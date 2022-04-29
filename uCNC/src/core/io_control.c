@@ -55,9 +55,11 @@ void mcu_limits_changed_cb(void)
 #ifdef DUAL_DRIVE1_AXIS
                 if (limits & LIMIT_DUAL1 & io_limits_homing_filter) // the limit triggered matches the second dual drive axis
                 {
+                	itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
+                	
                     if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
-                        itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
+                        return; // exits and doesn't trip the alarm
                     }
                 }
 #endif
