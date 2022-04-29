@@ -200,7 +200,6 @@ extern "C"
 	void io_enable_probe(void);
 	void io_disable_probe(void);
 	bool io_get_probe(void);
-	void io_set_homing_limits_filter(uint8_t filter_mask);
 
 	uint8_t io_get_analog(uint8_t pin);
 

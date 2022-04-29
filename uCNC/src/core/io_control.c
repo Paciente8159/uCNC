@@ -20,7 +20,6 @@
 
 #include "../cnc.h"
 
-static volatile uint8_t io_limits_homing_filter;
 #if PID_CONTROLLERS > 0
 static volatile uint8_t io_spindle_speed;
 #endif
@@ -42,7 +41,7 @@ void mcu_limits_changed_cb(void)
             {
 // if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE0_AXIS
-                if ((limits & (LIMIT_DUAL0 | LIMITS_DUAL_MASK) & io_limits_homing_filter)) // the limit triggered matches the first dual drive axis
+                if (limits & LIMIT_DUAL0) // the limit triggered matches the first dual drive axis
                 {
                     itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL0_MASK : STEP_DUAL0);
 
@@ -53,10 +52,10 @@ void mcu_limits_changed_cb(void)
                 }
 #endif
 #ifdef DUAL_DRIVE1_AXIS
-                if (limits & LIMIT_DUAL1 & io_limits_homing_filter) // the limit triggered matches the second dual drive axis
+                if (limits & LIMIT_DUAL1) // the limit triggered matches the second dual drive axis
                 {
-                	itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
-                	
+                    itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
+
                     if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
                     {
                         return; // exits and doesn't trip the alarm
@@ -255,11 +254,6 @@ bool io_get_probe(void)
 #else
     return false;
 #endif
-}
-
-void io_set_homing_limits_filter(uint8_t filter_mask)
-{
-    io_limits_homing_filter = filter_mask;
 }
 
 // outputs

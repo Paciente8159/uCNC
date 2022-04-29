@@ -530,8 +530,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return STATUS_CRITICAL_FAIL;
     }
 
-    io_set_homing_limits_filter(axis_limit);
-
     float max_home_dist;
     max_home_dist = -g_settings.max_distance[axis] * 1.5f;
 
@@ -598,7 +596,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     // unlocks the machine for next motion (this will clear the EXEC_HALT flag
     // temporary inverts the limit mask to trigger ISR on switch release
     g_settings.limits_invert_mask ^= axis_limit;
-    // io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
+
     cnc_unlock(true);
     // flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
