@@ -633,7 +633,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
-#if PROBE >= 0
+#if !(PROBE < 0)
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
     io_enable_probe();
     mc_line(target, block_data);

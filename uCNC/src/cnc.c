@@ -245,7 +245,7 @@ void mcu_rtc_cb(uint32_t millis)
             }
         }
 #endif
-#ifdef LED
+#if !(LED < 0)
         // this blinks aprox. once every 1024ms
         if ((millis & 0x200))
         {
@@ -369,19 +369,19 @@ void cnc_clear_exec_state(uint8_t statemask)
 #ifndef DISABLE_ALL_CONTROLS
     uint8_t controls = io_get_controls();
 
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
     if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
     {
         CLEARFLAG(statemask, EXEC_KILL);
     }
 #endif
-#if (SAFETY_DOOR >= 0)
+#if !(SAFETY_DOOR < 0)
     if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) // can't clear the door flag if SAFETY_DOOR is active
     {
         CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
     }
 #endif
-#if (FHOLD >= 0)
+#if !(FHOLD < 0)
     if (CHECKFLAG(controls, FHOLD_MASK)) // can't clear the hold flag if FHOLD is active
     {
         CLEARFLAG(statemask, EXEC_HOLD);
@@ -685,13 +685,13 @@ void cnc_check_fault_systems(void)
 #ifdef CONTROLS_MASK
     inputs = io_get_controls();
 #endif
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
     if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
     {
         protocol_send_feedback(MSG_FEEDBACK_12);
     }
 #endif
-#if (SAFETY_DOOR >= 0)
+#if !(SAFETY_DOOR < 0)
     if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
     {
         protocol_send_feedback(MSG_FEEDBACK_6);
@@ -728,7 +728,7 @@ bool cnc_check_interlocking(void)
     // if kill leave
     if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
     {
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
         // the emergency stop is pressed.
         if (io_get_controls() & ESTOP_MASK)
         {

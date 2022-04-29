@@ -2449,7 +2449,7 @@ extern "C"
 #endif
 
 /*Analog*/
-#if ANALOG0 >= 0
+#if !(ANALOG0 < 0)
 #ifdef ANALOG0_CHANNEL
 #define ANALOG0_PMUXVAL 1
 #define ANALOG0_PMUX (pinmux(ANALOG0_PORT, ANALOG0_BIT))
@@ -2460,7 +2460,7 @@ extern "C"
 #else
 #error "ANALOG0_CHANNEL not defined"
 #endif
-#if ANALOG1 >= 0
+#if !(ANALOG1 < 0)
 #ifdef ANALOG1_CHANNEL
 #define ANALOG1_PMUXVAL 1
 #define ANALOG1_PMUX (pinmux(ANALOG1_PORT, ANALOG1_BIT))
@@ -2471,7 +2471,7 @@ extern "C"
 #else
 #error "ANALOG1_CHANNEL not defined"
 #endif
-#if ANALOG2 >= 0
+#if !(ANALOG2 < 0)
 #ifdef ANALOG2_CHANNEL
 #define ANALOG2_PMUXVAL 1
 #define ANALOG2_PMUX (pinmux(ANALOG2_PORT, ANALOG2_BIT))
@@ -2482,7 +2482,7 @@ extern "C"
 #else
 #error "ANALOG2_CHANNEL not defined"
 #endif
-#if ANALOG3 >= 0
+#if !(ANALOG3 < 0)
 #ifdef ANALOG3_CHANNEL
 #define ANALOG3_PMUXVAL 1
 #define ANALOG3_PMUX (pinmux(ANALOG3_PORT, ANALOG3_BIT))
@@ -2493,7 +2493,7 @@ extern "C"
 #else
 #error "ANALOG3_CHANNEL not defined"
 #endif
-#if ANALOG4 >= 0
+#if !(ANALOG4 < 0)
 #ifdef ANALOG4_CHANNEL
 #define ANALOG4_PMUXVAL 1
 #define ANALOG4_PMUX (pinmux(ANALOG4_PORT, ANALOG4_BIT))
@@ -2504,7 +2504,7 @@ extern "C"
 #else
 #error "ANALOG4_CHANNEL not defined"
 #endif
-#if ANALOG5 >= 0
+#if !(ANALOG5 < 0)
 #ifdef ANALOG5_CHANNEL
 #define ANALOG5_PMUXVAL 1
 #define ANALOG5_PMUX (pinmux(ANALOG5_PORT, ANALOG5_BIT))
@@ -2515,7 +2515,7 @@ extern "C"
 #else
 #error "ANALOG5_CHANNEL not defined"
 #endif
-#if ANALOG6 >= 0
+#if !(ANALOG6 < 0)
 #ifdef ANALOG6_CHANNEL
 #define ANALOG6_PMUXVAL 1
 #define ANALOG6_PMUX (pinmux(ANALOG6_PORT, ANALOG6_BIT))
@@ -2526,7 +2526,7 @@ extern "C"
 #else
 #error "ANALOG6_CHANNEL not defined"
 #endif
-#if ANALOG7 >= 0
+#if !(ANALOG7 < 0)
 #ifdef ANALOG7_CHANNEL
 #define ANALOG7_PMUXVAL 1
 #define ANALOG7_PMUX (pinmux(ANALOG7_PORT, ANALOG7_BIT))
@@ -2537,7 +2537,7 @@ extern "C"
 #else
 #error "ANALOG7_CHANNEL not defined"
 #endif
-#if ANALOG8 >= 0
+#if !(ANALOG8 < 0)
 #ifdef ANALOG8_CHANNEL
 #define ANALOG8_PMUXVAL 1
 #define ANALOG8_PMUX (pinmux(ANALOG8_PORT, ANALOG8_BIT))
@@ -2548,7 +2548,7 @@ extern "C"
 #else
 #error "ANALOG8_CHANNEL not defined"
 #endif
-#if ANALOG9 >= 0
+#if !(ANALOG9 < 0)
 #ifdef ANALOG9_CHANNEL
 #define ANALOG9_PMUXVAL 1
 #define ANALOG9_PMUX (pinmux(ANALOG9_PORT, ANALOG9_BIT))
@@ -2559,7 +2559,7 @@ extern "C"
 #else
 #error "ANALOG9_CHANNEL not defined"
 #endif
-#if ANALOG10 >= 0
+#if !(ANALOG10 < 0)
 #ifdef ANALOG10_CHANNEL
 #define ANALOG10_PMUXVAL 1
 #define ANALOG10_PMUX (pinmux(ANALOG10_PORT, ANALOG10_BIT))
@@ -2570,7 +2570,7 @@ extern "C"
 #else
 #error "ANALOG10_CHANNEL not defined"
 #endif
-#if ANALOG11 >= 0
+#if !(ANALOG11 < 0)
 #ifdef ANALOG11_CHANNEL
 #define ANALOG11_PMUXVAL 1
 #define ANALOG11_PMUX (pinmux(ANALOG11_PORT, ANALOG11_BIT))
@@ -2581,7 +2581,7 @@ extern "C"
 #else
 #error "ANALOG11_CHANNEL not defined"
 #endif
-#if ANALOG12 >= 0
+#if !(ANALOG12 < 0)
 #ifdef ANALOG12_CHANNEL
 #define ANALOG12_PMUXVAL 1
 #define ANALOG12_PMUX (pinmux(ANALOG12_PORT, ANALOG12_BIT))
@@ -2592,7 +2592,7 @@ extern "C"
 #else
 #error "ANALOG12_CHANNEL not defined"
 #endif
-#if ANALOG13 >= 0
+#if !(ANALOG13 < 0)
 #ifdef ANALOG13_CHANNEL
 #define ANALOG13_PMUXVAL 1
 #define ANALOG13_PMUX (pinmux(ANALOG13_PORT, ANALOG13_BIT))
@@ -2603,7 +2603,7 @@ extern "C"
 #else
 #error "ANALOG13_CHANNEL not defined"
 #endif
-#if ANALOG14 >= 0
+#if !(ANALOG14 < 0)
 #ifdef ANALOG14_CHANNEL
 #define ANALOG14_PMUXVAL 1
 #define ANALOG14_PMUX (pinmux(ANALOG14_PORT, ANALOG14_BIT))
@@ -2614,7 +2614,7 @@ extern "C"
 #else
 #error "ANALOG14_CHANNEL not defined"
 #endif
-#if ANALOG15 >= 0
+#if !(ANALOG15 < 0)
 #ifdef ANALOG15_CHANNEL
 #define ANALOG15_PMUXVAL 1
 #define ANALOG15_PMUX (pinmux(ANALOG15_PORT, ANALOG15_BIT))

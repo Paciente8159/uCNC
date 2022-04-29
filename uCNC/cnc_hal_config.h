@@ -108,9 +108,7 @@ extern "C"
 #define TOOL1 spindle1
 	//#define TOOL2 laser1
 
-#if DOUT31 >= 0
 #define LED DOUT31
-#endif
 
 // these modules must be enabled to use encoders
 #if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES) && (defined(ENABLE_PROTOCOL_MODULES) || !defined(ENABLE_EXTRA_SYSTEM_CMDS))

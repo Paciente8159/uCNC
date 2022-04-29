@@ -25,32 +25,35 @@
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug",
-            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/uno/firmware.elf",
-            "projectEnvName": "uno",
-            "toolchainBinDir": "C:/gcc-avr8/bin",
+            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/zeroUSB/firmware.elf",
+            "projectEnvName": "zeroUSB",
+            "toolchainBinDir": "C:/Users/JCEM/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
             "internalConsoleOptions": "openOnSessionStart",
+            "svdPath": "C:/Users/JCEM/.platformio/platforms/atmelsam/misc/svd/ATSAMD21G18A.svd",
             "preLaunchTask": {
                 "type": "PlatformIO",
-                "task": "Pre-Debug"
+                "task": "Pre-Debug (zeroUSB)"
             }
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (skip Pre-Debug)",
-            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/uno/firmware.elf",
-            "projectEnvName": "uno",
-            "toolchainBinDir": "C:/gcc-avr8/bin",
-            "internalConsoleOptions": "openOnSessionStart"
+            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/zeroUSB/firmware.elf",
+            "projectEnvName": "zeroUSB",
+            "toolchainBinDir": "C:/Users/JCEM/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
+            "internalConsoleOptions": "openOnSessionStart",
+            "svdPath": "C:/Users/JCEM/.platformio/platforms/atmelsam/misc/svd/ATSAMD21G18A.svd"
         },
         {
             "type": "platformio-debug",
             "request": "launch",
             "name": "PIO Debug (without uploading)",
-            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/uno/firmware.elf",
-            "projectEnvName": "uno",
-            "toolchainBinDir": "C:/gcc-avr8/bin",
+            "executable": "c:/Users/JCEM/Documents/GitHub/uCNC/.pio/build/zeroUSB/firmware.elf",
+            "projectEnvName": "zeroUSB",
+            "toolchainBinDir": "C:/Users/JCEM/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin",
             "internalConsoleOptions": "openOnSessionStart",
+            "svdPath": "C:/Users/JCEM/.platformio/platforms/atmelsam/misc/svd/ATSAMD21G18A.svd",
             "loadMode": "manual"
         }
     ]
