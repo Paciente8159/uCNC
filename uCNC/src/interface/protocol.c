@@ -172,7 +172,7 @@ void protocol_send_status(void)
     uint16_t spindle = itp_get_rt_spindle();
 #endif
     uint8_t controls = io_get_controls();
-    uint8_t limits = io_get_limits();
+    uint8_t limits = io_get_limits() | io_get_limits_dual();
     bool probe = io_get_probe();
     uint8_t state = cnc_get_exec_state(0xFF);
     uint8_t filter = 0x80;

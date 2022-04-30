@@ -1,10 +1,10 @@
 /*
-	Name: boards.h
-	Description: Defines the available board types.
+	Name: boardmap_uno.h
+	Description: Contains all MCU and PIN definitions for MKS Gen L v1 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 07/02/2020
+	Date: 30-04-2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -12,29 +12,23 @@
 	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
 	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDS_H
-#define BOARDS_H
+#ifndef BOARDMAP_MKS_GEN_L_V1_H
+#define BOARDMAP_MKS_GEN_L_V1_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define BOARD_UNO 1
-#define BOARD_RAMBO14 2
-#define BOARD_RAMPS14 3
-#define BOARD_MKS_DLC 4
-#define BOARD_X_CONTROLLER 5
-#define BOARD_MKS_GEN_L_V1 6
-#define BOARD_BLUEPILL 10
-#define BOARD_BLACKPILL 11
-#define BOARD_MZERO 20
-#define BOARD_ZERO 21
-#define BOARD_VIRTUAL 99
+#ifndef BOARD_NAME
+#define BOARD_NAME "MKS GEN L V1"
+#endif
+
+#include "boardmap_ramps14.h"
 
 #ifdef __cplusplus
 }

@@ -31,43 +31,47 @@ void mcu_limits_changed_cb(void)
 #endif
 
     uint8_t limits = io_get_limits();
+    uint8_t limits_dual = io_get_limits_dual();
+
+    uint8_t limit_combined = limits | limits_dual;
 
     if (g_settings.hard_limits_enabled)
     {
-        if (limits)
+        if (limit_combined)
         {
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
             if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING))
             {
 // if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE0_AXIS
-                if (limits & LIMIT_DUAL0) // the limit triggered matches the first dual drive axis
+                if (limit_combined & LIMIT_DUAL0) // the limit triggered matches the first dual drive axis
                 {
-                    itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL0_MASK : STEP_DUAL0);
+                    // lock the stepper accodring to the blocked
+                    itp_lock_stepper((limits_dual & LIMIT_DUAL0) ? STEP_DUAL0_MASK : STEP_DUAL0);
 
-                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
+                    if (limits != limits_dual) // but not both
                     {
                         return; // exits and doesn't trip the alarm
                     }
                 }
 #endif
 #ifdef DUAL_DRIVE1_AXIS
-                if (limits & LIMIT_DUAL1) // the limit triggered matches the second dual drive axis
+                if (limit_combined & LIMIT_DUAL1) // the limit triggered matches the second dual drive axis
                 {
-                    itp_lock_stepper((limits & LIMITS_LIMIT1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
+                    itp_lock_stepper((limits_dual & LIMIT_DUAL1) ? STEP_DUAL1_MASK : STEP_DUAL1);
 
-                    if ((limits & LIMITS_DUAL_MASK) != LIMITS_DUAL_MASK) // but not both
+                    if (limits != limits_dual) // but not both
                     {
                         return; // exits and doesn't trip the alarm
                     }
                 }
 #endif
 #if (KINEMATIC == KINEMATIC_DELTA)
-                if ((limits & LIMITS_DELTA_MASK))
+                if ((limit_combined & LIMITS_DELTA_MASK))
                 {
-                    if (limits != LIMITS_DELTA_MASK)
+                    if (limit_combined != LIMITS_DELTA_MASK)
                     {
-                        itp_lock_stepper(limits);
+                        itp_lock_stepper(limit_combined);
                         return;
                     }
                 }
@@ -150,35 +154,14 @@ uint8_t io_get_limits(void)
     return 0;
 #endif
     uint8_t value = 0;
-#if (!(LIMIT_X < 0) && (LIMITS_DUAL & LIMIT_X_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_X)) ? (LIMIT_X_MASK | LIMITS_LIMIT0_MASK) : 0);
-#elif !(LIMIT_X < 0)
+#if !(LIMIT_X < 0)
     value |= ((mcu_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
 #endif
-#if (!(LIMIT_Y < 0) && (LIMITS_DUAL & LIMIT_Y_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_Y)) ? (LIMIT_Y_MASK | LIMITS_LIMIT0_MASK) : 0);
-#elif !(LIMIT_Y < 0)
+#if !(LIMIT_Y < 0)
     value |= ((mcu_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
 #endif
-#if (!(LIMIT_Z < 0) && (LIMITS_DUAL & LIMIT_Z_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_Z)) ? (LIMIT_Z_MASK | LIMITS_LIMIT0_MASK) : 0);
-#elif !(LIMIT_Z < 0)
+#if !(LIMIT_Z < 0)
     value |= ((mcu_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
-#endif
-#if (!(LIMIT_X2 < 0) && (LIMITS_DUAL & LIMIT_X_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_X2)) ? (LIMIT_X_MASK | LIMITS_LIMIT1_MASK) : 0);
-#elif !(LIMIT_X2 < 0)
-    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
-#endif
-#if (!(LIMIT_Y2 < 0) && (LIMITS_DUAL & LIMIT_Y_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_Y2)) ? (LIMIT_Y_MASK | LIMITS_LIMIT1_MASK) : 0);
-#elif !(LIMIT_Y2 < 0)
-    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
-#endif
-#if (!(LIMIT_Z2 < 0) && (LIMITS_DUAL & LIMIT_Z_MASK) && defined(ENABLE_DUAL_DRIVE_AXIS))
-    value |= ((mcu_get_input(LIMIT_Z2)) ? (LIMIT_Z_MASK | LIMITS_LIMIT1_MASK) : 0);
-#elif !(LIMIT_Z2 < 0)
-    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #if !(LIMIT_A < 0)
     value |= ((mcu_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
@@ -190,6 +173,25 @@ uint8_t io_get_limits(void)
     value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
 #endif
 
+    return (value ^ g_settings.limits_invert_mask);
+}
+
+uint8_t io_get_limits_dual(void)
+{
+#if (defined(DISABLE_ALL_LIMITS) || defined(DISABLE_DUAL_LIMITS))
+    return 0;
+#endif
+
+    uint8_t value = 0;
+#if !(LIMIT_X2 < 0)
+    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
+#endif
+#if !(LIMIT_Y2 < 0)
+    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
+#endif
+#if !(LIMIT_Z2 < 0)
+    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
+#endif
     return (value ^ g_settings.limits_invert_mask);
 }
 

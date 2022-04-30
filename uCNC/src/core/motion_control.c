@@ -511,15 +511,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     motion_data_t block_data;
     uint8_t limits_flags;
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE0_AXIS
-    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64 | 128); // if dual limit pins
-#endif
-#ifdef DUAL_DRIVE1_AXIS
-    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64 | 128); // if dual limit pins
-#endif
-#endif
-
     cnc_unlock(true);
 
     // if HOLD or ALARM are still active or any limit switch is not cleared fails to home
@@ -568,7 +559,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits();
+    limits_flags = io_get_limits() | io_get_limits_dual();
 
     // the wrong switch was activated bails
     if (!CHECKFLAG(limits_flags, axis_limit))
@@ -617,7 +608,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits();
+    limits_flags = io_get_limits() | io_get_limits_dual();
 
     if (CHECKFLAG(limits_flags, axis_limit))
     {

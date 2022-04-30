@@ -1632,6 +1632,10 @@ extern "C"
 #define DISABLE_ALL_LIMITS
 #endif
 
+#if (LIMIT_X2 < 0 && LIMIT_Y2 < 0 && LIMIT_Z2)
+#define DISABLE_DUAL_LIMITS
+#endif
+
 #if (PROBE < 0 && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE
 #endif

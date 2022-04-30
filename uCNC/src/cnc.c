@@ -210,6 +210,9 @@ void mcu_rtc_cb(uint32_t millis)
 {
     static bool running = false;
     static uint8_t last_limits = 0;
+#ifndef DISABLE_DUAL_LIMITS
+    static uint8_t last_limits_dual = 0;
+#endif
     static uint8_t last_controls = 0;
 
     if (!running)
@@ -236,6 +239,18 @@ void mcu_rtc_cb(uint32_t millis)
             {
                 mcu_limits_changed_cb();
             }
+#ifndef DISABLE_DUAL_LIMITS
+            else
+            {
+                inputs = io_get_limits_dual();
+                diff = (inputs ^ last_limits_dual) & inputs;
+                last_limits_dual = inputs;
+                if (diff != 0)
+                {
+                    mcu_limits_changed_cb();
+                }
+            }
+#endif
             inputs = io_get_controls();
             diff = (inputs ^ last_controls) & inputs;
             last_controls = inputs;
@@ -397,7 +412,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 
     uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
-    limits = io_get_limits(); // can't clear the EXEC_HALT is any limit is triggered
+    limits = io_get_limits() | io_get_limits_dual(); // can't clear the EXEC_HALT is any limit is triggered
 #endif
     if (g_settings.hard_limits_enabled) // if hardlimits are enabled and limits are triggered
     {
@@ -700,7 +715,7 @@ void cnc_check_fault_systems(void)
 #if (LIMITS_MASK != 0)
     if (g_settings.hard_limits_enabled) // fault on limits
     {
-        inputs = io_get_limits();
+        inputs = io_get_limits() | io_get_limits_dual();
         if (CHECKFLAG(inputs, LIMITS_MASK))
         {
             protocol_send_feedback(MSG_FEEDBACK_7);
@@ -755,7 +770,7 @@ bool cnc_check_interlocking(void)
 
     if (CHECKFLAG(cnc_state.exec_state, EXEC_HALT) && CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
     {
-        if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && io_get_limits()) // if a motion is being performed allow trigger the limit switch alarm
+        if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && (io_get_limits() | io_get_limits_dual())) // if a motion is being performed allow trigger the limit switch alarm
         {
             cnc_alarm(EXEC_ALARM_HARD_LIMIT);
         }
