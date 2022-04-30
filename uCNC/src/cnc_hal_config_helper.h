@@ -1773,6 +1773,9 @@ typedef uint16_t step_t;
 #endif
 
 #if (KINEMATIC == KINEMATIC_DELTA)
+#ifdef ENABLE_DUAL_DRIVE_AXIS
+#error "Delta does not support dual drive axis"
+#endif
 #if ((LIMIT_X < 0) && (LIMIT_X2 < 0))
 #error "Delta requires at least one X axis endstop"
 #endif
