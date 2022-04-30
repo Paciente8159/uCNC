@@ -22,6 +22,7 @@
 
 - fixed missing stepper 6 and 7 DIR and EN pins from HAL (#175)
 - redesigned axis dual endstop trigger with limits inverted (#175)
+- wrong limit switch trigger during home with dual axis enabled was not being detected (#175)
 
 ## [1.4.2] - 2022-04-19
 
