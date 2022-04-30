@@ -12,6 +12,7 @@
 
 ### Added
 
+- MKS GEN L V1 boardmap based on ramps 1.4 (#175)
 
 ### Changed
 

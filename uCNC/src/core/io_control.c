@@ -24,6 +24,8 @@
 static volatile uint8_t io_spindle_speed;
 #endif
 
+static uint8_t io_lock_limits_mask;
+
 void mcu_limits_changed_cb(void)
 {
 #ifdef DISABLE_ALL_LIMITS
@@ -40,7 +42,7 @@ void mcu_limits_changed_cb(void)
         if (limit_combined)
         {
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
-            if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING))
+            if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
             {
 // if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE0_AXIS
@@ -148,6 +150,11 @@ void __attribute__((weak)) mcu_inputs_changed_cb(void)
 #endif
 }
 
+void io_lock_limits(uint8_t limitmask)
+{
+    io_lock_limits_mask = limitmask;
+}
+
 uint8_t io_get_limits(void)
 {
 #ifdef DISABLE_ALL_LIMITS
@@ -173,7 +180,7 @@ uint8_t io_get_limits(void)
     value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
 #endif
 
-    return (value ^ g_settings.limits_invert_mask);
+    return (value ^ (g_settings.limits_invert_mask & LIMIT_INV_MASK));
 }
 
 uint8_t io_get_limits_dual(void)
@@ -192,7 +199,7 @@ uint8_t io_get_limits_dual(void)
 #if !(LIMIT_Z2 < 0)
     value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
-    return (value ^ g_settings.limits_invert_mask);
+    return (value ^ (g_settings.limits_invert_mask & LIMIT_DUAL_INV_MASK));
 }
 
 uint8_t io_get_controls(void)

@@ -281,6 +281,8 @@ void cnc_home(void)
 {
     cnc_set_exec_state(EXEC_HOMING);
     uint8_t error = kinematics_home();
+    // unlock expected limits
+    io_lock_limits(0);
     if (error)
     {
         // disables homing and reenables alarm messages

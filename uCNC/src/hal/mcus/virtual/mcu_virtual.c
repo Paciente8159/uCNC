@@ -1092,7 +1092,7 @@ void mcu_disable_probe_isr(void)
 
 uint8_t mcu_get_input(uint8_t pin)
 {
-	pin -= 52;
+	pin -= 100;
 	pin -= (pin > 13) ? 16 : 0;
 	return ((virtualmap.inputs & (1 << pin)) != 0);
 }

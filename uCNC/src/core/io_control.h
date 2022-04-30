@@ -34,6 +34,7 @@ extern "C"
 #include <stdint.h>
 
 	// inputs
+	void io_lock_limits(uint8_t limitmask);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_limits_dual(void);
 	uint8_t io_get_controls(void);

@@ -513,6 +513,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
     cnc_unlock(true);
 
+    // locks limits to accept axis limit mask only or else throw error
+    io_lock_limits(axis_limit);
     // if HOLD or ALARM are still active or any limit switch is not cleared fails to home
     mcu_limits_changed_cb();
     if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
@@ -595,6 +597,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
     if (itp_sync() != STATUS_OK)
     {
+        // restores limits mask
+        g_settings.limits_invert_mask ^= axis_limit;
         return STATUS_CRITICAL_FAIL;
     }
 

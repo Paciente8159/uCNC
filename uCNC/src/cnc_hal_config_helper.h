@@ -1636,6 +1636,56 @@ extern "C"
 #define DISABLE_DUAL_LIMITS
 #endif
 
+#if (LIMIT_X < 0)
+#define LIMIT_X_INV_MASK 0
+#else
+#define LIMIT_X_INV_MASK 1
+#endif
+#if (LIMIT_Y < 0)
+#define LIMIT_Y_INV_MASK 0
+#else
+#define LIMIT_Y_INV_MASK 2
+#endif
+#if (LIMIT_Z < 0)
+#define LIMIT_Z_INV_MASK 0
+#else
+#define LIMIT_Z_INV_MASK 4
+#endif
+#if (LIMIT_A < 0)
+#define LIMIT_A_INV_MASK 0
+#else
+#define LIMIT_A_INV_MASK 8
+#endif
+#if (LIMIT_B < 0)
+#define LIMIT_B_INV_MASK 0
+#else
+#define LIMIT_B_INV_MASK 16
+#endif
+#if (LIMIT_C < 0)
+#define LIMIT_C_INV_MASK 0
+#else
+#define LIMIT_C_INV_MASK 32
+#endif
+
+#if (LIMIT_X2 < 0)
+#define LIMIT_X2_INV_MASK 0
+#else
+#define LIMIT_X2_INV_MASK 1
+#endif
+#if (LIMIT_Y2 < 0)
+#define LIMIT_Y2_INV_MASK 0
+#else
+#define LIMIT_Y2_INV_MASK 2
+#endif
+#if (LIMIT_Z2 < 0)
+#define LIMIT_Z2_INV_MASK 0
+#else
+#define LIMIT_Z2_INV_MASK 4
+#endif
+
+#define LIMIT_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
+#define LIMIT_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+
 #if (PROBE < 0 && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE
 #endif
