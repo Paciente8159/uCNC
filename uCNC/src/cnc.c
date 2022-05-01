@@ -315,7 +315,7 @@ void cnc_stop(void)
     itp_stop_tools();
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-    mod_cnc_dotasks_hook();
+    mod_cnc_stop_hook();
 #endif
 }
 
