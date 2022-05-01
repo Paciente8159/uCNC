@@ -1,10 +1,10 @@
 /*
-	Name: cnc_build.h
-	Description: Compile time configurations for µCNC.
+	Name: boardmap_uno.h
+	Description: Contains all MCU and PIN definitions for MKS Gen L v1 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 30/01/2020
+	Date: 30-04-2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,18 +16,19 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef CNC_BUILD_H
-#define CNC_BUILD_H
+#ifndef BOARDMAP_MKS_GEN_L_V1_H
+#define BOARDMAP_MKS_GEN_L_V1_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define CNC_MAJOR_MINOR_VERSION "1.4."
-#define CNC_PATCH_VERSION "3"
+#ifndef BOARD_NAME
+#define BOARD_NAME "MKS GEN L V1"
+#endif
 
-#define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
+#include "boardmap_ramps14.h"
 
 #ifdef __cplusplus
 }

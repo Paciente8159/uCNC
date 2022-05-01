@@ -153,21 +153,21 @@ uint8_t kinematics_home(void)
                 return result;
         }
 
-#ifdef AXIS_A
+#if (defined(AXIS_A) && !(LIMIT_A < 0))
         result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
         if (result != 0)
         {
                 return result;
         }
 #endif
-#ifdef AXIS_B
+#if (defined(AXIS_B) && !(LIMIT_B < 0))
         result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
         if (result != 0)
         {
                 return result;
         }
 #endif
-#ifdef AXIS_C
+#if (defined(AXIS_C) && !(LIMIT_C < 0))
         result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
         if (result != 0)
         {

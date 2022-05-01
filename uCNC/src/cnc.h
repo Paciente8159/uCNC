@@ -81,9 +81,6 @@ extern "C"
 #define LIMIT_C_MASK 32
 
 #define LIMITS_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK | LIMIT_A_MASK | LIMIT_B_MASK | LIMIT_C_MASK)
-#define LIMITS_LIMIT0_MASK 64
-#define LIMITS_LIMIT1_MASK 128
-#define LIMITS_DUAL_MASK (LIMITS_LIMIT0_MASK | LIMITS_LIMIT1_MASK)
 #define LIMITS_DELTA_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK)
 
 #define STEP0_MASK 1
@@ -101,6 +98,8 @@ extern "C"
 #define DIR3_MASK 8
 #define DIR4_MASK 16
 #define DIR5_MASK 32
+#define DIR6_MASK 64
+#define DIR7_MASK 128
 
 #include "cnc_build.h"
 // make the needed includes (do not change the order)
@@ -114,13 +113,11 @@ extern "C"
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
 // machine kinematics configurations
 #include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
-// fill remaining configurations
-#include "cnc_config_helper.h"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
 #include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
-// fill remaining HAL configurations
+// fill remaining HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
 // initializes core utilities (like fast math functions)
 #include "utils.h"
@@ -137,81 +134,6 @@ extern "C"
 #include "core/motion_control.h"
 #include "core/planner.h"
 #include "core/interpolator.h"
-
-#define __stepname_helper__(x) STEP##x##_MASK
-#define __stepname__(x) __stepname_helper__(x)
-
-#define __axisname_helper__(x) AXIS_##x
-#define __axisname__(x) __axisname_helper__(x)
-
-#define __limitname_helper__(x) LIMIT_##x##_MASK
-#define __limitname__(x) __limitname_helper__(x)
-
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-#define AXIS_DUAL0 __axisname__(DUAL_DRIVE_AXIS0)
-#define STEP_DUAL0 (1 << AXIS_DUAL0)
-#define LIMIT_DUAL0 __limitname__(DUAL_DRIVE_AXIS0)
-#endif
-
-#ifdef DUAL_DRIVE_AXIS1
-#define AXIS_DUAL1 __axisname__(DUAL_DRIVE_AXIS1)
-#define STEP_DUAL1 (1 << AXIS_DUAL1)
-#define LIMIT_DUAL1 __limitname__(DUAL_DRIVE_AXIS1)
-#endif
-#endif
-
-#ifndef LIMIT_DUAL0
-#define LIMIT_DUAL0 0
-#endif
-#ifndef LIMIT_DUAL1
-#define LIMIT_DUAL1 0
-#endif
-
-#define LIMITS_DUAL (LIMIT_DUAL0 | LIMIT_DUAL1)
-
-#if (STEP0_MASK == STEP_DUAL0)
-#define STEP0_ITP_MASK (STEP0_MASK | 64)
-#elif (STEP0_MASK == STEP_DUAL1)
-#define STEP0_ITP_MASK (STEP0_MASK | 128)
-#else
-#define STEP0_ITP_MASK STEP0_MASK
-#endif
-#if (STEP1_MASK == STEP_DUAL0)
-#define STEP1_ITP_MASK (STEP1_MASK | 64)
-#elif (STEP1_MASK == STEP_DUAL1)
-#define STEP1_ITP_MASK (STEP1_MASK | 128)
-#else
-#define STEP1_ITP_MASK STEP1_MASK
-#endif
-#if (STEP2_MASK == STEP_DUAL0)
-#define STEP2_ITP_MASK (STEP2_MASK | 64)
-#elif (STEP2_MASK == STEP_DUAL1)
-#define STEP2_ITP_MASK (STEP2_MASK | 128)
-#else
-#define STEP2_ITP_MASK STEP2_MASK
-#endif
-#if (STEP3_MASK == STEP_DUAL0)
-#define STEP3_ITP_MASK (STEP3_MASK | 64)
-#elif (STEP3_MASK == STEP_DUAL1)
-#define STEP3_ITP_MASK (STEP3_MASK | 128)
-#else
-#define STEP3_ITP_MASK STEP3_MASK
-#endif
-#if (STEP4_MASK == STEP_DUAL0)
-#define STEP4_ITP_MASK (STEP4_MASK | 64)
-#elif (STEP4_MASK == STEP_DUAL1)
-#define STEP4_ITP_MASK (STEP4_MASK | 128)
-#else
-#define STEP4_ITP_MASK STEP4_MASK
-#endif
-#if (STEP5_MASK == STEP_DUAL0)
-#define STEP5_ITP_MASK (STEP5_MASK | 64)
-#elif (STEP5_MASK == STEP_DUAL1)
-#define STEP5_ITP_MASK (STEP5_MASK | 128)
-#else
-#define STEP5_ITP_MASK STEP5_MASK
-#endif
 
 	/**
 	 *

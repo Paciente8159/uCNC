@@ -52,11 +52,8 @@ void laser1_set_speed(uint8_t value, bool invert)
 // SET_LASER(LASER_PWM, value, invert);
 
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if LASER_PWM >= 0
-    if (LASER_PWM > 0)
-    {
-        mcu_set_pwm(LASER_PWM, value);
-    }
+#if !(LASER_PWM < 0)
+    mcu_set_pwm(LASER_PWM, value);
 #endif
 }
 
@@ -68,7 +65,7 @@ void laser1_set_coolant(uint8_t value)
 
 uint8_t laser1_get_speed(void)
 {
-#if LASER_PWM >= 0
+#if !(LASER_PWM < 0)
     return mcu_get_pwm(LASER_PWM);
 #else
     return 0;

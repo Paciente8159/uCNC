@@ -210,6 +210,9 @@ void mcu_rtc_cb(uint32_t millis)
 {
     static bool running = false;
     static uint8_t last_limits = 0;
+#ifndef DISABLE_DUAL_LIMITS
+    static uint8_t last_limits_dual = 0;
+#endif
     static uint8_t last_controls = 0;
 
     if (!running)
@@ -236,6 +239,18 @@ void mcu_rtc_cb(uint32_t millis)
             {
                 mcu_limits_changed_cb();
             }
+#ifndef DISABLE_DUAL_LIMITS
+            else
+            {
+                inputs = io_get_limits_dual();
+                diff = (inputs ^ last_limits_dual) & inputs;
+                last_limits_dual = inputs;
+                if (diff != 0)
+                {
+                    mcu_limits_changed_cb();
+                }
+            }
+#endif
             inputs = io_get_controls();
             diff = (inputs ^ last_controls) & inputs;
             last_controls = inputs;
@@ -245,7 +260,7 @@ void mcu_rtc_cb(uint32_t millis)
             }
         }
 #endif
-#ifdef LED
+#if !(LED < 0)
         // this blinks aprox. once every 1024ms
         if ((millis & 0x200))
         {
@@ -266,6 +281,8 @@ void cnc_home(void)
 {
     cnc_set_exec_state(EXEC_HOMING);
     uint8_t error = kinematics_home();
+    // unlock expected limits
+    io_lock_limits(0);
     if (error)
     {
         // disables homing and reenables alarm messages
@@ -369,19 +386,19 @@ void cnc_clear_exec_state(uint8_t statemask)
 #ifndef DISABLE_ALL_CONTROLS
     uint8_t controls = io_get_controls();
 
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
     if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
     {
         CLEARFLAG(statemask, EXEC_KILL);
     }
 #endif
-#if (SAFETY_DOOR >= 0)
+#if !(SAFETY_DOOR < 0)
     if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) // can't clear the door flag if SAFETY_DOOR is active
     {
         CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
     }
 #endif
-#if (FHOLD >= 0)
+#if !(FHOLD < 0)
     if (CHECKFLAG(controls, FHOLD_MASK)) // can't clear the hold flag if FHOLD is active
     {
         CLEARFLAG(statemask, EXEC_HOLD);
@@ -397,7 +414,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 
     uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
-    limits = io_get_limits(); // can't clear the EXEC_HALT is any limit is triggered
+    limits = io_get_limits() | io_get_limits_dual(); // can't clear the EXEC_HALT is any limit is triggered
 #endif
     if (g_settings.hard_limits_enabled) // if hardlimits are enabled and limits are triggered
     {
@@ -685,13 +702,13 @@ void cnc_check_fault_systems(void)
 #ifdef CONTROLS_MASK
     inputs = io_get_controls();
 #endif
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
     if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
     {
         protocol_send_feedback(MSG_FEEDBACK_12);
     }
 #endif
-#if (SAFETY_DOOR >= 0)
+#if !(SAFETY_DOOR < 0)
     if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
     {
         protocol_send_feedback(MSG_FEEDBACK_6);
@@ -700,7 +717,7 @@ void cnc_check_fault_systems(void)
 #if (LIMITS_MASK != 0)
     if (g_settings.hard_limits_enabled) // fault on limits
     {
-        inputs = io_get_limits();
+        inputs = io_get_limits() | io_get_limits_dual();
         if (CHECKFLAG(inputs, LIMITS_MASK))
         {
             protocol_send_feedback(MSG_FEEDBACK_7);
@@ -728,7 +745,7 @@ bool cnc_check_interlocking(void)
     // if kill leave
     if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
     {
-#if (ESTOP >= 0)
+#if !(ESTOP < 0)
         // the emergency stop is pressed.
         if (io_get_controls() & ESTOP_MASK)
         {
@@ -755,7 +772,7 @@ bool cnc_check_interlocking(void)
 
     if (CHECKFLAG(cnc_state.exec_state, EXEC_HALT) && CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
     {
-        if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && io_get_limits()) // if a motion is being performed allow trigger the limit switch alarm
+        if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && (io_get_limits() | io_get_limits_dual())) // if a motion is being performed allow trigger the limit switch alarm
         {
             cnc_alarm(EXEC_ALARM_HARD_LIMIT);
         }

@@ -2030,7 +2030,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
     case 6:
         new_group |= GCODE_GROUP_TOOLCHANGE;
         break;
-#if COOLANT_MIST >= 0
+#if !(COOLANT_MIST < 0)
     case 7:
 #endif
 #ifdef M7_SAME_AS_M8
@@ -2038,7 +2038,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 #endif
     case 8:
         cmd->groups |= GCODE_GROUP_COOLANT; // word overlapping allowed
-#if COOLANT_MIST >= 0
+#if !(COOLANT_MIST < 0)
         new_state->groups.coolant |= ((code == 8) ? M8 : M7);
 #else
         new_state->groups.coolant |= M8;

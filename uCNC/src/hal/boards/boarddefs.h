@@ -63,6 +63,11 @@ extern "C"
 #include "avr/boardmap_ramps14.h"
 #endif
 
+#if (BOARD == BOARD_MKS_GEN_L_V1)
+#define MCU MCU_AVR
+#include "avr/boardmap_mks_gen_l_v1.h"
+#endif
+
 #if (BOARD == BOARD_BLUEPILL)
 #define MCU MCU_STM32F1X
 #include "stm32/boardmap_bluepill.h"

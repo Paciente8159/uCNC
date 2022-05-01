@@ -57,21 +57,21 @@ uint8_t kinematics_home(void)
 {
     uint8_t result = 0;
 
-#ifdef AXIS_Z
+#if (defined(AXIS_Z) && (!(LIMIT_Z < 0) || !(LIMIT_Z2 < 0)))
     result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
     if (result != 0)
     {
         return result;
     }
 #endif
-#ifdef AXIS_X
+#if (defined(AXIS_X) && (!(LIMIT_X < 0) || !(LIMIT_X2 < 0)))
     result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
     if (result != 0)
     {
         return result;
     }
 #endif
-#ifdef AXIS_Y
+#if (defined(AXIS_Y) && (!(LIMIT_Y < 0) || !(LIMIT_Y2 < 0)))
     result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
     if (result != 0)
     {
@@ -79,21 +79,21 @@ uint8_t kinematics_home(void)
     }
 #endif
 
-#ifdef AXIS_A
+#if (defined(AXIS_A) && !(LIMIT_A < 0))
     result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
     if (result != 0)
     {
         return result;
     }
 #endif
-#ifdef AXIS_B
+#if (defined(AXIS_B) && !(LIMIT_B < 0))
     result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
     if (result != 0)
     {
         return result;
     }
 #endif
-#ifdef AXIS_C
+#if (defined(AXIS_C) && !(LIMIT_C < 0))
     result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
     if (result != 0)
     {

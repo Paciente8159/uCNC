@@ -40,25 +40,19 @@ void spindle1_set_speed(uint8_t value, bool invert)
     // SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
     spindle1_speed = value;
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if SPINDLE_DIR >= 0
-    if (SPINDLE_DIR > 0)
+#if !(SPINDLE_DIR < 0)
+    if (!invert)
     {
-        if (!invert)
-        {
-            mcu_clear_output(SPINDLE_DIR);
-        }
-        else
-        {
-            mcu_set_output(SPINDLE_DIR);
-        }
+        mcu_clear_output(SPINDLE_DIR);
+    }
+    else
+    {
+        mcu_set_output(SPINDLE_DIR);
     }
 #endif
 
-#if SPINDLE_PWM >= 0
-    if (SPINDLE_PWM > 0)
-    {
-        mcu_set_pwm(SPINDLE_PWM, value);
-    }
+#if !(SPINDLE_PWM < 0)
+    mcu_set_pwm(SPINDLE_PWM, value);
 #endif
 }
 
@@ -70,7 +64,7 @@ void spindle1_set_coolant(uint8_t value)
 
 uint8_t spindle1_get_speed(void)
 {
-#if SPINDLE_PWM >= 0
+#if !(SPINDLE_PWM < 0)
     return spindle1_speed;
 #else
     return 0;
@@ -80,7 +74,7 @@ uint8_t spindle1_get_speed(void)
 #if PID_CONTROLLERS > 0
 void spindle1_pid_update(int16_t value)
 {
-#if SPINDLE_PWM >= 0
+#if !(SPINDLE_PWM < 0)
     if (spindle1_speed != 0)
     {
         uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
@@ -91,7 +85,7 @@ void spindle1_pid_update(int16_t value)
 
 int16_t spindle1_pid_error(void)
 {
-#if SPINDLE_FEEDBACK >= 0 && SPINDLE_PWM >= 0
+#if (!(SPINDLE_FEEDBACK < 0) && !(SPINDLE_PWM < 0))
     uint8_t reader = mcu_get_analog(ANALOG0);
     return (spindle1_speed - reader);
 #else

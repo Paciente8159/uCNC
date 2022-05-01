@@ -314,11 +314,11 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 
 // fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
+#ifdef DUAL_DRIVE0_AXIS
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? STEP_DUAL0_MASK : 0;
 #endif
-#ifdef DUAL_DRIVE_AXIS1
-    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
+#ifdef DUAL_DRIVE1_AXIS
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
 #endif
 
@@ -341,11 +341,11 @@ void settings_reset(bool erase_startup_blocks)
 
 // fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
+#ifdef DUAL_DRIVE0_AXIS
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? STEP_DUAL0_MASK : 0;
 #endif
-#ifdef DUAL_DRIVE_AXIS1
-    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
+#ifdef DUAL_DRIVE1_AXIS
+    g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
 #endif
 }
@@ -575,10 +575,10 @@ uint8_t settings_change(uint8_t setting, float value)
 
 // fix step invert mask to match mirror step pins
 #ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
+#ifdef DUAL_DRIVE0_AXIS
     g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL0) ? 64 : 0;
 #endif
-#ifdef DUAL_DRIVE_AXIS1
+#ifdef DUAL_DRIVE1_AXIS
     g_settings.step_invert_mask |= (g_settings.step_invert_mask & STEP_DUAL1) ? 128 : 0;
 #endif
 #endif

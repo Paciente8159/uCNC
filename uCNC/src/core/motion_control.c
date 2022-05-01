@@ -511,17 +511,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     motion_data_t block_data;
     uint8_t limits_flags;
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64 | 128); // if dual limit pins
-#endif
-#ifdef DUAL_DRIVE_AXIS1
-    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64 | 128); // if dual limit pins
-#endif
-#endif
-
     cnc_unlock(true);
 
+    // locks limits to accept axis limit mask only or else throw error
+    io_lock_limits(axis_limit);
     // if HOLD or ALARM are still active or any limit switch is not cleared fails to home
     mcu_limits_changed_cb();
     if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
@@ -529,8 +522,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
         return STATUS_CRITICAL_FAIL;
     }
-
-    io_set_homing_limits_filter(axis_limit);
 
     float max_home_dist;
     max_home_dist = -g_settings.max_distance[axis] * 1.5f;
@@ -570,7 +561,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits();
+    limits_flags = io_get_limits() | io_get_limits_dual();
 
     // the wrong switch was activated bails
     if (!CHECKFLAG(limits_flags, axis_limit))
@@ -598,7 +589,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     // unlocks the machine for next motion (this will clear the EXEC_HALT flag
     // temporary inverts the limit mask to trigger ISR on switch release
     g_settings.limits_invert_mask ^= axis_limit;
-    // io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
+
     cnc_unlock(true);
     // flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
@@ -606,6 +597,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
     if (itp_sync() != STATUS_OK)
     {
+        // restores limits mask
+        g_settings.limits_invert_mask ^= axis_limit;
         return STATUS_CRITICAL_FAIL;
     }
 
@@ -619,7 +612,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits();
+    limits_flags = io_get_limits() | io_get_limits_dual();
 
     if (CHECKFLAG(limits_flags, axis_limit))
     {
@@ -633,7 +626,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
-#if PROBE >= 0
+#if !(PROBE < 0)
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
     io_enable_probe();
     mc_line(target, block_data);

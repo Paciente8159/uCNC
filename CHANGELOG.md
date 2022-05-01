@@ -6,6 +6,24 @@
 
 # Changelog
 
+## [1.4.3] - Unreleased
+
+µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
+
+### Added
+
+- MKS GEN L V1 boardmap based on ramps 1.4 (#175)
+
+### Changed
+
+- dual axis is now more easy to configure and more flexible. Shadow register can be wired to unused steppers (#175)
+
+### Fixed
+
+- fixed missing stepper 6 and 7 DIR and EN pins from HAL (#175)
+- redesigned axis dual endstop trigger with limits inverted (#175)
+- wrong limit switch trigger during home with dual axis enabled was not being detected (#175)
+
 ## [1.4.2] - 2022-04-19
 
 µCNC version 1.4.2 makes some changes to improve compatibility with Grbl software and patches some issues from the previous versions.
@@ -797,6 +815,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.3
+[1.4.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.2
 [1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.1
 [1.4.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0
 [1.4.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.0-rc
