@@ -135,7 +135,7 @@
 #define LIMIT_Z 102
 #define LIMIT_X2 103
 #define LIMIT_Y2 104
-//#define LIMIT_Z2 105
+#define LIMIT_Z2 105
 //#define LIMIT_A 106
 //#define LIMIT_B 107
 //#define LIMIT_C 108

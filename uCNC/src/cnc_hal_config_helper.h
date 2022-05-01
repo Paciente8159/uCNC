@@ -452,7 +452,7 @@ extern "C"
 #ifdef DUAL_DRIVE0_AXIS
 #define AXIS_DUAL0 __axisname__(DUAL_DRIVE0_AXIS)
 #define STEP_DUAL0 (1 << AXIS_DUAL0)
-#define LIMIT_DUAL0 __limitname__(DUAL_DRIVE0_AXIS)
+#define LIMIT_DUAL0_MASK (1 << AXIS_DUAL0)
 #define STEP_DUAL0_MASK (1 << DUAL_DRIVE0_STEPPER)
 #endif
 
@@ -460,19 +460,19 @@ extern "C"
 #ifdef DUAL_DRIVE1_AXIS
 #define AXIS_DUAL1 __axisname__(DUAL_DRIVE1_AXIS)
 #define STEP_DUAL1 (1 << AXIS_DUAL1)
-#define LIMIT_DUAL1 __limitname__(DUAL_DRIVE1_AXIS)
+#define LIMIT_DUAL1_MASK (1 << AXIS_DUAL0)
 #define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
 #endif
 #endif
 
-#ifndef LIMIT_DUAL0
-#define LIMIT_DUAL0 0
+#ifndef LIMIT_DUAL0_MASK
+#define LIMIT_DUAL0_MASK 0
 #endif
-#ifndef LIMIT_DUAL1
-#define LIMIT_DUAL1 0
+#ifndef LIMIT_DUAL1_MASK
+#define LIMIT_DUAL1_MASK 0
 #endif
 
-#define LIMITS_DUAL (LIMIT_DUAL0 | LIMIT_DUAL1)
+#define LIMITS_DUAL_MASK (LIMIT_DUAL0_MASK | LIMIT_DUAL1_MASK)
 
 #if (STEP0_MASK == STEP_DUAL0)
 #define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL0_MASK)

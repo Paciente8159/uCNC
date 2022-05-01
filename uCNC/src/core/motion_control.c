@@ -561,7 +561,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits() | io_get_limits_dual();
+    limits_flags = io_get_limits();
 
     // the wrong switch was activated bails
     if (!CHECKFLAG(limits_flags, axis_limit))
@@ -612,7 +612,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     planner_clear();
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-    limits_flags = io_get_limits() | io_get_limits_dual();
+    limits_flags = io_get_limits();
 
     if (CHECKFLAG(limits_flags, axis_limit))
     {
