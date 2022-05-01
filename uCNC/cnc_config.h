@@ -214,6 +214,11 @@ extern "C"
 #define STATUS_WCO_REPORT_MIN_FREQUENCY 30
 #define STATUS_OVR_REPORT_MIN_FREQUENCY STATUS_WCO_REPORT_MIN_FREQUENCY - 1
 
+// enables automatic status report sending
+// this value sets the millisecond interval of the reports
+// values bellow 100ms have no effect
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
+
   /**
    *
    * Enable this option to set home has your machine origin.
