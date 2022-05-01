@@ -305,15 +305,25 @@ void parser_update_probe_pos(void)
 
 static uint8_t parser_grbl_command(void)
 {
+    serial_getc(); // eat $
+    unsigned char c = serial_getc();
+
     // if not IDLE
     if (cnc_get_exec_state(EXEC_RUN))
     {
-        parser_discard_command();
-        return STATUS_IDLE_ERROR;
+        switch (c)
+        {
+        case '#':
+        case 'G':
+        case 'P':
+        case 'I':
+            break;
+        default:
+            parser_discard_command();
+            return STATUS_IDLE_ERROR;
+        }
     }
 
-    serial_getc(); // eat $
-    unsigned char c = serial_getc();
     uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
     uint8_t error = STATUS_OK;
     switch (c)
