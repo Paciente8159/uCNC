@@ -25,7 +25,7 @@
 - fixed missing stepper 6 and 7 DIR and EN pins from HAL (#175)
 - redesigned axis dual endstop trigger with limits inverted (#175)
 - wrong limit switch trigger during home with dual axis enabled was not being detected (#175)
-- redesigned axis dual limit switch detection. Non dual drive axis limits are combined to detect colisions in min and max
+- redesigned axis dual limit switch detection. Non dual drive axis limits are combined to detect colisions in min and max (#180)
 
 ## [1.4.2] - 2022-04-19
 
