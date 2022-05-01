@@ -811,6 +811,10 @@ bool cnc_check_interlocking(void)
 
 static void cnc_io_dotasks(void)
 {
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+    static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
+#endif
+
     // run internal mcu tasks (USB and communications)
     mcu_dotasks();
 
@@ -824,6 +828,15 @@ static void cnc_io_dotasks(void)
     {
         return;
     }
+
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+    uint32_t current_time = mcu_millis();
+    if (next_auto_report < current_time)
+    {
+        next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
+        SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+    }
+#endif
 
     if (CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
     {
