@@ -1,5 +1,5 @@
 /*
-    Name: spindle.c
+    Name: spindle_pwm.c
     Description: Defines a spindle tool using PWM0-speed and DOUT0-dir for µCNC.
                  Defines a coolant output using DOUT1 and DOUT2.
 
@@ -32,75 +32,86 @@
 #define COOLANT_MIST DOUT2
 #define SPINDLE_FEEDBACK ANALOG0
 
-static uint8_t spindle1_speed;
+static uint8_t spindle_pwm_speed;
 
-void spindle1_set_speed(uint8_t value, bool invert)
+void spindle_pwm_set_speed(uint8_t value, bool invert)
 {
-    // easy macro to execute the same code as below
-    // SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
-    spindle1_speed = value;
+  // easy macro to execute the same code as below
+  // SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
+  spindle_pwm_speed = value;
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if !(SPINDLE_DIR < 0)
+#if SPINDLE_DIR >= 0
+  if (SPINDLE_DIR > 0)
+  {
     if (!invert)
     {
-        mcu_clear_output(SPINDLE_DIR);
+      mcu_clear_output(SPINDLE_DIR);
     }
     else
     {
-        mcu_set_output(SPINDLE_DIR);
+      mcu_set_output(SPINDLE_DIR);
     }
+  }
 #endif
 
-#if !(SPINDLE_PWM < 0)
+#if SPINDLE_PWM >= 0
+  if (SPINDLE_PWM > 0)
+  {
     mcu_set_pwm(SPINDLE_PWM, value);
+  }
+#endif
+
+#if !(SPINDLE_PWM < 0)
+  mcu_set_pwm(SPINDLE_PWM, value);
 #endif
 }
 
-void spindle1_set_coolant(uint8_t value)
+void spindle_pwm_set_coolant(uint8_t value)
 {
-    // easy macro
-    SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+  // easy macro
+  SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
 }
 
-uint8_t spindle1_get_speed(void)
+uint8_t spindle_pwm_get_speed(void)
 {
-#if !(SPINDLE_PWM < 0)
-    return spindle1_speed;
+#if SPINDLE_PWM >= 0
+  return spindle_pwm_speed;
 #else
-    return 0;
+  return 0;
 #endif
 }
 
 #if PID_CONTROLLERS > 0
-void spindle1_pid_update(int16_t value)
+void spindle_pwm_pid_update(int16_t value)
 {
+
 #if !(SPINDLE_PWM < 0)
-    if (spindle1_speed != 0)
-    {
-        uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
-        mcu_set_pwm(SPINDLE_PWM, newval);
-    }
+  if (spindle_pwm_speed != 0)
+  {
+    uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
+    mcu_set_pwm(SPINDLE_PWM, newval);
+  }
 #endif
 }
 
-int16_t spindle1_pid_error(void)
+int16_t spindle_pwm_pid_error(void)
 {
 #if (!(SPINDLE_FEEDBACK < 0) && !(SPINDLE_PWM < 0))
-    uint8_t reader = mcu_get_analog(ANALOG0);
-    return (spindle1_speed - reader);
+  uint8_t reader = mcu_get_analog(ANALOG0);
+  return (spindle_pwm_speed - reader);
 #else
-    return 0;
+  return 0;
 #endif
 }
 #endif
 
-const tool_t __rom__ spindle1 = {
+const tool_t __rom__ spindle_pwm = {
     .startup_code = NULL,
     .shutdown_code = NULL,
-    .set_speed = &spindle1_set_speed,
-    .set_coolant = &spindle1_set_coolant,
+    .set_speed = &spindle_pwm_set_speed,
+    .set_coolant = &spindle_pwm_set_coolant,
 #if PID_CONTROLLERS > 0
-    .pid_update = &spindle1_pid_update,
-    .pid_error = &spindle1_pid_error,
+    .pid_update = &spindle_pwm_pid_update,
+    .pid_error = &spindle_pwm_pid_error,
 #endif
-    .get_speed = &spindle1_get_speed};
+    .get_speed = &spindle_pwm_get_speed};
