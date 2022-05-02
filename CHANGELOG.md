@@ -11,7 +11,7 @@
 µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
 
 ## Contributors
-@jimsynz - relay controlled relay spindle tool
+[@jimsynz](https://github.com/jimsynz) - relay controlled relay spindle tool
 
 ### Added
 
