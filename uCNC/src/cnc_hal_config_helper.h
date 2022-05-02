@@ -136,7 +136,7 @@ extern "C"
 #endif
 
 #if PID_CONTROLLERS > 0
-	 /*PID controllers*/
+	/*PID controllers*/
 #if PID_CONTROLLERS == 1
 #define PID_DIVISIONS 0
 #elif PID_CONTROLLERS == 2
@@ -1623,10 +1623,33 @@ extern "C"
 #define DIO206 -1
 #endif
 
- // if the pins are undefined turn on option
+	// if the pins are undefined turn on option
 #if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))
 #define DISABLE_ALL_CONTROLS
 #endif
+
+#if (ESTOP < 0)
+#define ESTOP_INV_MASK 0
+#else
+#define ESTOP_INV_MASK 1
+#endif
+#if (SAFETY_DOOR < 0)
+#define SAFETY_DOOR_INV_MASK 0
+#else
+#define SAFETY_DOOR_INV_MASK 2
+#endif
+#if (FHOLD < 0)
+#define FHOLD_INV_MASK 0
+#else
+#define FHOLD_INV_MASK 4
+#endif
+#if (CS_RES < 0)
+#define CS_RES_INV_MASK 0
+#else
+#define CS_RES_INV_MASK 8
+#endif
+
+#define CONTROLS_INV_MASK (ESTOP_INV_MASK | SAFETY_DOOR_INV_MASK | FHOLD_INV_MASK | CS_RES_INV_MASK)
 
 #if (LIMIT_X < 0 && LIMIT_X2 < 0 && LIMIT_Y < 0 && LIMIT_Y2 < 0 && LIMIT_Z < 0 && LIMIT_Z2 < 0 && LIMIT_A < 0 && LIMIT_B < 0 && LIMIT_C < 0 && !defined(DISABLE_ALL_LIMITS))
 #define DISABLE_ALL_LIMITS
@@ -1679,8 +1702,8 @@ extern "C"
 #define LIMIT_Z2_INV_MASK 4
 #endif
 
-#define LIMIT_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
-#define LIMIT_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+#define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
+#define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
 #if (PROBE < 0 && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE
@@ -1753,7 +1776,7 @@ extern "C"
 	typedef uint32_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (32 - (2 + DSS_MAX_OVERSAMPLING))
 #else
-	typedef uint16_t step_t;
+typedef uint16_t step_t;
 #define MAX_STEPS_PER_LINE_BITS (16 - (2 + DSS_MAX_OVERSAMPLING))
 #endif
 #define MAX_STEPS_PER_LINE (1UL << MAX_STEPS_PER_LINE_BITS)

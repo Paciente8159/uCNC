@@ -201,7 +201,7 @@ uint8_t io_get_limits(void)
 #endif
 #endif
 
-    return (value ^ (g_settings.limits_invert_mask & LIMIT_INV_MASK));
+    return (value ^ (g_settings.limits_invert_mask & LIMITS_INV_MASK));
 }
 
 uint8_t io_get_limits_dual(void)
@@ -252,7 +252,7 @@ uint8_t io_get_controls(void)
     value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
 #endif
 
-    return (value ^ g_settings.control_invert_mask);
+    return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 }
 
 void io_enable_probe(void)
