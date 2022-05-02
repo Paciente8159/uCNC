@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.3] - Unreleased
+## [1.4.3] - 2022-05-02
 
 µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
 
