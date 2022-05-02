@@ -423,7 +423,7 @@ uint8_t settings_change(uint8_t setting, float value)
         g_settings.probe_invert_mask = value1;
         break;
     case 7:
-        g_settings.control_invert_mask = (value8 & CONTROLS_MASK & ~ESTOP_MASK);
+        g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
         break;
     case 10:
         g_settings.status_report_mask = value8;
