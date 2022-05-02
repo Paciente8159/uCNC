@@ -33,9 +33,13 @@ void mcu_limits_changed_cb(void)
 #endif
 
     uint8_t limits = io_get_limits();
-    uint8_t limits_dual = io_get_limits_dual();
 
+#if (LIMITS_DUAL_MASK != 0)
+    uint8_t limits_dual = io_get_limits_dual();
     uint8_t limit_combined = limits | limits_dual;
+#else
+    uint8_t limit_combined = limits;
+#endif
 
     if (g_settings.hard_limits_enabled)
     {
@@ -44,7 +48,7 @@ void mcu_limits_changed_cb(void)
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
             if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
             {
-// if homing and dual drive axis are enabled
+                // if homing and dual drive axis are enabled
 #ifdef DUAL_DRIVE0_AXIS
                 if (limit_combined & LIMIT_DUAL0_MASK) // the limit triggered matches the first dual drive axis
                 {
@@ -202,10 +206,9 @@ uint8_t io_get_limits(void)
 
 uint8_t io_get_limits_dual(void)
 {
-#if (defined(DISABLE_ALL_LIMITS) || defined(DISABLE_DUAL_LIMITS))
+#if (defined(DISABLE_ALL_LIMITS) || (LIMITS_DUAL_MASK == 0))
     return 0;
-#endif
-
+#else
     uint8_t value = 0;
 #if !(LIMIT_X2 < 0)
 #if (LIMITS_DUAL_MASK & LIMIT_X_MASK)
@@ -223,6 +226,7 @@ uint8_t io_get_limits_dual(void)
 #endif
 #endif
     return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK));
+#endif
 }
 
 uint8_t io_get_controls(void)

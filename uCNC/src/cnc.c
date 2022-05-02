@@ -210,7 +210,7 @@ void mcu_rtc_cb(uint32_t millis)
 {
     static bool running = false;
     static uint8_t last_limits = 0;
-#ifndef DISABLE_DUAL_LIMITS
+#if (LIMITS_DUAL_MASK != 0)
     static uint8_t last_limits_dual = 0;
 #endif
     static uint8_t last_controls = 0;
@@ -227,7 +227,7 @@ void mcu_rtc_cb(uint32_t millis)
         }
 #endif
 
-// checks any limit or control input state change (every 16ms)
+        // checks any limit or control input state change (every 16ms)
 #if !defined(FORCE_SOFT_POLLING) && CONTROLS_SCHEDULE_CHECK >= 0
         uint8_t mls = (uint8_t)(0xff & millis);
         if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
@@ -239,7 +239,7 @@ void mcu_rtc_cb(uint32_t millis)
             {
                 mcu_limits_changed_cb();
             }
-#ifndef DISABLE_DUAL_LIMITS
+#if (LIMITS_DUAL_MASK != 0)
             else
             {
                 inputs = io_get_limits_dual();
