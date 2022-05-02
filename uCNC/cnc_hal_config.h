@@ -105,8 +105,8 @@ extern "C"
 */
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle1
-	//#define TOOL2 laser1
+#define TOOL1 spindle_pwm
+  //#define TOOL2 laser1
 
 #define LED DOUT31
 
@@ -135,7 +135,7 @@ extern "C"
 */
 #define PID_CONTROLLERS 0
 
-	/**
+  /**
 	 * To use PID you need to set the number o PID controllers.
 	 * PID0 is hardwired to run the tool PID (defined or not). That being said if you need a PID for any other purpose other than the tool the number of PID controllers
 	 * to be enabled must be greater then 1.
@@ -166,16 +166,16 @@ extern "C"
 	 * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
 	 *
 	 * */
-	// here is an example on how to add an PID controller to the spindle
-	// this exemple assumes that the spindle speed is feedback via an analog pin
-	// reference to io_get_spindle defined in io_control
-	//  	extern uint8_t io_get_spindle(void);
-	//  #define SPINDLE_SPEED ANALOG0
-	//  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
-	//  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
-	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
-	//  //optional
-	//  #define PID1_FREQ_DIV 50
+  // here is an example on how to add an PID controller to the spindle
+  // this exemple assumes that the spindle speed is feedback via an analog pin
+  // reference to io_get_spindle defined in io_control
+  //  	extern uint8_t io_get_spindle(void);
+  //  #define SPINDLE_SPEED ANALOG0
+  //  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
+  //  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
+  //  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+  //  //optional
+  //  #define PID1_FREQ_DIV 50
 #endif
 
 #if defined(ENABLE_MOTION_MODULES)
@@ -388,7 +388,7 @@ extern "C"
 #define STEPPER7_ENABLE_INTERPLATION true
 #endif
 
-	/**
+  /**
 	 *
 	 *
 	 * Microstepping pins controlled via MCU (like in RAMBO board)
@@ -450,7 +450,7 @@ extern "C"
 #define STEPPER7_MSTEP1 DOUT22
 #endif
 
-	/**
+  /**
 	 *
 	 *
 	 * Stepper current set via SPI digital potenciometer (like in RAMBO board)
