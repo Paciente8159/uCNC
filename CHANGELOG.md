@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.3] - 2022-05-02
+## [1.4.3] - Unreleased
 
 µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
 
@@ -23,6 +23,7 @@
 
 - dual axis is now more easy to configure and more flexible. Shadow register can be wired to unused steppers (#175)
 - it's now possible to send some system commands (information commands) without being in the idle state (#178)
+- partially reverted #163 to allow ESTOP invert via $7 also (#182)
 
 ### Fixed
 
