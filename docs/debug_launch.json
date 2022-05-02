@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "GDB",
+            "type": "gdb",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "target": "${workspaceRoot}/makefiles/stm32f1x/build/uCNC.elf",
+            "gdbpath": "arm-none-eabi-gdb",
+            "autorun": [
+                "target extended-remote localhost:3333",
+                "load",
+                "monitor reset init"
+            ]
+        }
+    ]
+}

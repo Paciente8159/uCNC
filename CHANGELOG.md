@@ -10,10 +10,14 @@
 
 µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
 
+## Contributors
+@jimsynz - relay controlled relay spindle tool
+
 ### Added
 
 - MKS GEN L V1 boardmap based on ramps 1.4 (#175)
 - auto status report option to send periodic status info without ? required (#179)
+- added relay controlled spindle tool to tools (#176)
 
 ### Changed
 

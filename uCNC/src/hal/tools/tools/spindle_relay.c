@@ -41,20 +41,32 @@ static uint8_t spindle_speed;
 void spindle_relay_set_speed(uint8_t value, bool invert)
 {
 
-  if (value == 0)
+  if (!value)
   {
+#if !(SPINDLE_FWD_EN < 0)
     mcu_clear_output(SPINDLE_FWD_EN);
-#if SPINDLE_FWD_EN != SPINDLE_REV_EN
+#endif
+#if !(SPINDLE_REV_EN < 0)
     mcu_clear_output(SPINDLE_REV_EN);
 #endif
   }
   else if (invert)
   {
+#if !(SPINDLE_FWD_EN < 0)
+    mcu_clear_output(SPINDLE_FWD_EN);
+#endif
+#if !(SPINDLE_REV_EN < 0)
     mcu_set_output(SPINDLE_REV_EN);
+#endif
   }
   else
   {
+#if !(SPINDLE_REV_EN < 0)
+    mcu_clear_output(SPINDLE_REV_EN);
+#endif
+#if !(SPINDLE_FWD_EN < 0)
     mcu_set_output(SPINDLE_FWD_EN);
+#endif
   }
 
   spindle_speed = value;
@@ -77,4 +89,8 @@ const tool_t __rom__ spindle_relay = {
     .shutdown_code = NULL,
     .set_speed = &spindle_relay_set_speed,
     .set_coolant = &spindle_relay_set_coolant,
+#if PID_CONTROLLERS > 0
+    .pid_update = NULL,
+    .pid_error = NULL,
+#endif
     .get_speed = &spindle_relay_get_speed};
