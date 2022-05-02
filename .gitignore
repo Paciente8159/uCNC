@@ -74,7 +74,7 @@ virtualeeprom
 *.cfg
 windows/uCNCgui/obj/Debug/net6.0-windows/uCNCgui.assets.cache
 windows/uCNCgui/obj/Debug/net6.0-windows/uCNCgui.GeneratedMSBuildEditorConfig.editorconfig
-.vscode
+.vscode/
 
 #PlatformIO
 .pio
