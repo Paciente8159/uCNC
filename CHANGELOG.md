@@ -18,6 +18,7 @@
 - MKS GEN L V1 boardmap based on ramps 1.4 (#175)
 - auto status report option to send periodic status info without ? required (#179)
 - added relay controlled spindle tool to tools (#176)
+- added filter to control pins invert setting to prevent inverting undefined pins and activate it (#183)
 
 ### Changed
 
