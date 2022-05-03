@@ -44,7 +44,7 @@ uint8_t __attribute__((weak)) mod_gcode_parse_hook(unsigned char word, uint8_t c
 uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	EVENT_TYPE(gcode_exec_delegate) *ptr = gcode_exec_event;
-	uint8_t error = STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+	uint8_t error = STATUS_GCODE_EXTENDED_UNSUPPORTED;
 	while ((cmd->group_extended != 0) && (ptr != NULL))
 	{
 		if (ptr->fptr != NULL)
@@ -53,7 +53,7 @@ uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, par
 		}
 
 		// checks if function catched the extended code
-		if (error != STATUS_GOCDE_EXTENDED_UNSUPPORTED)
+		if (error != STATUS_GCODE_EXTENDED_UNSUPPORTED)
 		{
 			break;
 		}

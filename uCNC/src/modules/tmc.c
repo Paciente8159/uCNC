@@ -352,7 +352,7 @@ uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
         return STATUS_OK;
     }
 
-    return STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
 // this just parses and acceps the code
@@ -512,7 +512,7 @@ uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
         return STATUS_OK;
     }
 
-    return STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
 // this just parses and acceps the code
@@ -825,7 +825,7 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
         return STATUS_OK;
     }
 
-    return STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
 #endif

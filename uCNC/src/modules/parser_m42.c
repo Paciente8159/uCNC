@@ -79,7 +79,7 @@ uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_ex
         return STATUS_OK;
     }
 
-    return STATUS_GOCDE_EXTENDED_UNSUPPORTED;
+    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
 #endif
