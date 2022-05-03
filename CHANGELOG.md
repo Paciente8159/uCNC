@@ -15,6 +15,8 @@
 
 ### Added
 
+- added support for stall detection in TMC2209 drivers. Added equivalent Marlin M914 to modify sensitivity (#185)
+
 ### Changed
 
 ### Fixed
