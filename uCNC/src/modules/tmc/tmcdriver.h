@@ -31,6 +31,9 @@ extern "C"
 #define IHOLD_IRUN 0x10
 #define CHOPCONF 0x6C
 #define TPWMTHRS 0X13
+#define TCOOLTHRS 0x14
+#define SGTHRS 0x40
+#define SG_RESULT 0x41
 #define DRV_STATUS 0x6F
 
     typedef void (*tmc_rw)(uint8_t *, uint8_t, uint8_t);
@@ -57,6 +60,8 @@ extern "C"
     void tmc_set_stepinterpol(tmc_driver_t *driver, uint8_t enable);
     uint32_t tmc_get_stealthshop(tmc_driver_t *driver);
     void tmc_set_stealthchop(tmc_driver_t *driver, uint32_t value);
+    int32_t tmc_get_stallguard(tmc_driver_t *driver);
+    void tmc_set_stallguard(tmc_driver_t *driver, int16_t value);
     uint32_t tmc_get_status(tmc_driver_t *driver);
     uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address);
     uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val);

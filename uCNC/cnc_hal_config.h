@@ -106,7 +106,7 @@ extern "C"
 
 // assign the tools from 1 to 16
 #define TOOL1 spindle_pwm
-  //#define TOOL2 laser1
+	//#define TOOL2 laser1
 
 #define LED DOUT31
 
@@ -135,7 +135,7 @@ extern "C"
 */
 #define PID_CONTROLLERS 0
 
-  /**
+	/**
 	 * To use PID you need to set the number o PID controllers.
 	 * PID0 is hardwired to run the tool PID (defined or not). That being said if you need a PID for any other purpose other than the tool the number of PID controllers
 	 * to be enabled must be greater then 1.
@@ -166,16 +166,16 @@ extern "C"
 	 * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
 	 *
 	 * */
-  // here is an example on how to add an PID controller to the spindle
-  // this exemple assumes that the spindle speed is feedback via an analog pin
-  // reference to io_get_spindle defined in io_control
-  //  	extern uint8_t io_get_spindle(void);
-  //  #define SPINDLE_SPEED ANALOG0
-  //  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
-  //  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
-  //  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
-  //  //optional
-  //  #define PID1_FREQ_DIV 50
+	// here is an example on how to add an PID controller to the spindle
+	// this exemple assumes that the spindle speed is feedback via an analog pin
+	// reference to io_get_spindle defined in io_control
+	//  	extern uint8_t io_get_spindle(void);
+	//  #define SPINDLE_SPEED ANALOG0
+	//  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
+	//  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
+	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+	//  //optional
+	//  #define PID1_FREQ_DIV 50
 #endif
 
 #if defined(ENABLE_MOTION_MODULES)
@@ -218,6 +218,9 @@ extern "C"
 #define STEPPER0_HOLD_MULT 0.7
 #define STEPPER0_STEALTHCHOP_THERSHOLD 0
 #define STEPPER0_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER0_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER1_HAS_TMC
@@ -242,6 +245,9 @@ extern "C"
 #define STEPPER1_HOLD_MULT 0.7
 #define STEPPER1_STEALTHCHOP_THERSHOLD 0
 #define STEPPER1_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER1_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER2_HAS_TMC
@@ -266,6 +272,9 @@ extern "C"
 #define STEPPER2_HOLD_MULT 0.7
 #define STEPPER2_STEALTHCHOP_THERSHOLD 0
 #define STEPPER2_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER2_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER3_HAS_TMC
@@ -290,6 +299,9 @@ extern "C"
 #define STEPPER3_HOLD_MULT 0.7
 #define STEPPER3_STEALTHCHOP_THERSHOLD 0
 #define STEPPER3_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER3_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER4_HAS_TMC
@@ -314,6 +326,9 @@ extern "C"
 #define STEPPER4_HOLD_MULT 0.7
 #define STEPPER4_STEALTHCHOP_THERSHOLD 0
 #define STEPPER4_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER4_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER5_HAS_TMC
@@ -338,6 +353,9 @@ extern "C"
 #define STEPPER5_HOLD_MULT 0.7
 #define STEPPER5_STEALTHCHOP_THERSHOLD 0
 #define STEPPER5_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER5_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER6_HAS_TMC
@@ -362,6 +380,9 @@ extern "C"
 #define STEPPER6_HOLD_MULT 0.7
 #define STEPPER6_STEALTHCHOP_THERSHOLD 0
 #define STEPPER6_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER6_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER7_HAS_TMC
@@ -386,9 +407,12 @@ extern "C"
 #define STEPPER7_HOLD_MULT 0.7
 #define STEPPER7_STEALTHCHOP_THERSHOLD 0
 #define STEPPER7_ENABLE_INTERPLATION true
+// this value must be set between 0 and 255 for TMC2209
+// if driver does not support stallGuard this will be ignored
+#define STEPPER7_STALL_SENSITIVITY 10
 #endif
 
-  /**
+	/**
 	 *
 	 *
 	 * Microstepping pins controlled via MCU (like in RAMBO board)
@@ -450,7 +474,7 @@ extern "C"
 #define STEPPER7_MSTEP1 DOUT22
 #endif
 
-  /**
+	/**
 	 *
 	 *
 	 * Stepper current set via SPI digital potenciometer (like in RAMBO board)

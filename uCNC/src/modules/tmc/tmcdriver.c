@@ -372,3 +372,23 @@ uint32_t tmc_get_status(tmc_driver_t *driver)
 {
     return tmc_read_register(driver, DRV_STATUS);
 }
+
+int32_t tmc_get_stallguard(tmc_driver_t *driver)
+{
+    if (driver->type == 2209)
+    {
+        return tmc_read_register(driver, SGTHRS);
+    }
+
+    return 0;
+}
+
+void tmc_set_stallguard(tmc_driver_t *driver, int16_t value)
+{
+    if (driver->type == 2209)
+    {
+        value = (value > 255) ? 255 : value;
+        value = (value < 0) ? 0 : value;
+        tmc_write_register(driver, SGTHRS, value);
+    }
+}
