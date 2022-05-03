@@ -6,6 +6,22 @@
 
 # Changelog
 
+## [1.4.4] - Unreleased
+
+µCNC version 1.4.4 changes are
+
+## Contributors
+[@jimsynz](https://github.com/jimsynz)
+
+### Added
+
+### Changed
+
+### Fixed
+
+- fixed typo in error constant name (#184)
+
+
 ## [1.4.3] - 2022-05-02
 
 µCNC version 1.4.3 fixes some bugs and added improvements to dual axis motion systems.
