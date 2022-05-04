@@ -1315,6 +1315,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
                 target[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
             }
         }
+#ifdef AXIS_TOOL
+        if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+        {
+            target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+        }
+#endif
         settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&target[0], PARSER_PARAM_SIZE);
         if (index == parser_parameters.coord_system_index)
         {

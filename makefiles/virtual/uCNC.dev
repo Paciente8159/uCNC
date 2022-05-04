@@ -371,16 +371,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit36]
-FileName=..\..\uCNC\src\hal\tools\tools\spindle.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit37]
 FileName=..\..\uCNC\src\core\interpolator.c
 CompileCpp=0
 Folder=
@@ -390,7 +380,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit38]
+[Unit37]
 FileName=..\..\uCNC\src\core\interpolator.h
 CompileCpp=0
 Folder=
@@ -400,8 +390,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit39]
+[Unit38]
 FileName=..\..\uCNC\src\core\io_control.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit39]
+FileName=..\..\uCNC\src\core\io_control.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -431,16 +431,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit42]
-FileName=..\..\uCNC\src\core\motion_control.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit43]
 FileName=..\..\uCNC\src\core\parser.c
 CompileCpp=0
 Folder=
@@ -450,8 +440,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit43]
+FileName=..\..\uCNC\src\core\parser.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
 [Unit40]
-FileName=..\..\uCNC\src\core\io_control.h
+FileName=..\..\uCNC\src\core\motion_control.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -461,7 +461,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit41]
-FileName=..\..\uCNC\src\core\motion_control.c
+FileName=..\..\uCNC\src\core\motion_control.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -481,16 +481,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit44]
-FileName=..\..\uCNC\src\core\parser.h
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit45]
 FileName=..\..\uCNC\src\core\planner.c
 CompileCpp=0
 Folder=
@@ -500,7 +490,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit46]
+[Unit45]
 FileName=..\..\uCNC\src\core\planner.h
 CompileCpp=0
 Folder=
@@ -510,7 +500,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit47]
+[Unit46]
 FileName=..\..\uCNC\src\module.c
 CompileCpp=0
 Folder=
@@ -520,8 +510,8 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit49]
-FileName=..\..\uCNC\src\modules\parser_m42.c
+[Unit47]
+FileName=..\..\uCNC\src\module.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -530,7 +520,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit50]
+[Unit49]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.c
 CompileCpp=0
 Folder=
@@ -540,8 +530,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit51]
+[Unit50]
 FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit51]
+FileName=..\..\uCNC\src\hal\tools\tools\spindle_pwm.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -571,7 +571,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit48]
-FileName=..\..\uCNC\src\module.h
+FileName=..\..\uCNC\src\modules\parser_m42.c
 CompileCpp=0
 Folder=
 Compile=1
