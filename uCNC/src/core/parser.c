@@ -733,7 +733,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
                 return STATUS_GCODE_VALUE_WORD_MISSING;
             }
             // L is not 2
-            if (words->l != 2)
+            if (words->l != 2 && words->l != 20)
             {
                 return STATUS_GCODE_UNSUPPORTED_COMMAND;
             }
@@ -1307,6 +1307,20 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     // stores G10 L2 command in the right address
     if (index <= G30HOME)
     {
+        if (words->l == 20)
+        {
+            for (uint8_t i = AXIS_COUNT; i != 0;)
+            {
+                i--;
+                target[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
+            }
+        }
+#ifdef AXIS_TOOL
+        if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+        {
+            target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+        }
+#endif
         settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&target[0], PARSER_PARAM_SIZE);
         if (index == parser_parameters.coord_system_index)
         {
