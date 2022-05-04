@@ -1149,11 +1149,15 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 // 13. cutter radius compensation on or off (G40, G41, G42) (not implemented yet)
 // 14. cutter length compensation on or off (G43.1, G49)
 #ifdef AXIS_TOOL
-    if ((new_state->groups.tlo_mode == G43) && CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
+    if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLLENGTH))
     {
-        parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
-        CLEARFLAG(cmd->words, GCODE_WORD_Z);
-        words->xyzabc[AXIS_TOOL] = 0; // resets parameter so it it doen't do anything else
+        parser_parameters.tool_length_offset = 0;
+        if (new_state->groups.tlo_mode == G43)
+        {
+            parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
+            CLEARFLAG(cmd->words, GCODE_WORD_Z);
+            words->xyzabc[AXIS_TOOL] = 0; // resets parameter so it it doen't do anything else
+        }
         parser_wco_counter = 0;
     }
 #endif
