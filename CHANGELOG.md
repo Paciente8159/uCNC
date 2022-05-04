@@ -16,6 +16,7 @@
 ### Added
 
 - added support for stall detection in TMC2209 drivers. Added equivalent Marlin M914 to modify sensitivity (#185)
+- added support for G10 L20 (change coordinate system relative to current position)
 
 ### Changed
 
@@ -23,6 +24,7 @@
 ### Fixed
 
 - fixed typo in error constant name (#184)
+- fixed G49 was not reseting TLO (#188)
 
 
 ## [1.4.3] - 2022-05-02
