@@ -1,8 +1,8 @@
 /*
 	Name: mcumap_virtual.h
 	Description: Contains all MCU and PIN definitions for a PC to run µCNC.
-	
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 01/11/2019
 
@@ -21,8 +21,12 @@
 
 #include <stdint.h>
 #define F_CPU 1000000
+#ifndef F_STEP_MAX
 #define F_STEP_MAX 40000
+#endif
+#ifndef F_STEP_MIN
 #define F_STEP_MIN 1
+#endif
 #define __rom__
 #define __romstr__
 #define __romarr__ const char
@@ -34,14 +38,14 @@
 
 #define ENABLE_SYNC_TX
 
-//uncomment to use sockets
+// uncomment to use sockets
 //#define USESOCKETS
 #ifdef USESOCKETS
 #define DEFAULT_BUFLEN 127
 #define DEFAULT_PORT "34000"
 #endif
 
-//uncomment to use serial port
+// uncomment to use serial port
 #define USESERIAL
 #ifdef USESERIAL
 #ifndef COMPORT
@@ -51,7 +55,7 @@
 
 //#define USECONSOLE
 
-//joints step/dir pins
+// joints step/dir pins
 #define STEP0 0
 #define STEP1 1
 #define STEP2 2
@@ -200,7 +204,7 @@
 #define SPI_SDI 205
 #define SPI_SDO 206
 
-//just to compile
+// just to compile
 #define mcu_rx_ready() true
 
 #endif
