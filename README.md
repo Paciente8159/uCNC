@@ -85,7 +85,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Coolant Control: M7, M8, M9
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
-  - Valid Non-Command Words: A, B, C, F, I, J, K, L, N, P, R, S, T, X, Y, Z
+  - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
   - Outside the RS274NGC scope
     - Servo Control: M10*
     - General Pin Control: M42*
