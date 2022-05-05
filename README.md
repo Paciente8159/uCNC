@@ -89,8 +89,8 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Outside the RS274NGC scope
     - Servo Control: M10*
     - General Pin Control: M42*
-    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 920* (set/get register)
-    - Ditital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
+    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
+    - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
     - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
 * see notes
@@ -102,7 +102,7 @@ NOTES:
 - _also G10 L2 P28 and P30 to set homing coordinates_
 - _also G10 L2 P0 to set the current coordinates system offset_
 - _G59.1, G59.2 and G59.3 can be enabled in config_
-- _G43.1 was kept to be back compatible with Grbl but will work the same way as G43_
+- _G43.1 was kept to be back compatible with Grbl using Z word to set the offset_
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
@@ -154,7 +154,7 @@ It can run on:
 - AVR (Arduino UNO/MEGA)
 - STM32F1 (Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
-- STM32F4 (Blackpill) - v1.4.x
+- STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC roadmap
