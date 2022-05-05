@@ -45,8 +45,12 @@ extern "C"
 #define EXTERNAL_XTAL_MHZ 25
 #endif
 // defines the maximum and minimum step rates
+#ifndef F_STEP_MAX
 #define F_STEP_MAX 100000
+#endif
+#ifndef F_STEP_MIN
 #define F_STEP_MIN 4
+#endif
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__

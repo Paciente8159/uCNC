@@ -20,6 +20,7 @@
 
 ### Changed
 
+- overridable F_STEP_MAX and F_STEP_MIN (#190)
 
 ### Fixed
 
