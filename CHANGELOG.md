@@ -17,6 +17,7 @@
 
 - added support for stall detection in TMC2209 drivers. Added equivalent Marlin M914 to modify sensitivity (#185)
 - added support for G10 L20 (change coordinate system relative to current position) (#189)
+- added example for BESC spindle (#191)
 
 ### Changed
 
