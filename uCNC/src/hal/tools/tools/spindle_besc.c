@@ -26,10 +26,11 @@
 
 // Spindle enable pins.  You can set these to the same pin if required.
 #define SPINDLE_SERVO SERVO0
+#define SPINDLE_POWER_RELAY DOUT0
 
 // Uncomment below if you want the coolant pins enabled.
-#define COOLANT_MIST_EN DOUT0
-#define COOLANT_FLOOD_EN DOUT1
+#define COOLANT_MIST_EN DOUT1
+#define COOLANT_FLOOD_EN DOUT2
 
 #define THROTTLE_DOWN 50
 #define THROTTLE_NEUTRAL 127
@@ -40,15 +41,25 @@ static uint8_t spindle_speed;
 void spindle_besc_startup()
 {
 
-  // do whatever routine you need to do here to arm the ESC
+// do whatever routine you need to do here to arm the ESC
+#if !(SPINDLE_POWER_RELAY < 0)
 #if !(SPINDLE_SERVO < 0)
   mcu_set_servo(SPINDLE_SERVO, THROTTLE_NEUTRAL);
 #endif
-  cnc_delay_ms(2000);
+  mcu_set_output(SPINDLE_POWER_RELAY);
+  cnc_delay_ms(1000);
 #if !(SPINDLE_SERVO < 0)
   mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
 #endif
   cnc_delay_ms(2000);
+#endif
+}
+
+void spindle_besc_shutdown()
+{
+#if !(SPINDLE_POWER_RELAY < 0)
+  mcu_clear_output(SPINDLE_POWER_RELAY);
+#endif
 }
 
 void spindle_besc_set_speed(uint8_t value, bool invert)
@@ -82,7 +93,7 @@ uint8_t spindle_besc_get_speed(void)
 
 const tool_t __rom__ spindle_besc = {
     .startup_code = &spindle_besc_startup,
-    .shutdown_code = NULL,
+    .shutdown_code = &spindle_besc_shutdown,
     .set_speed = &spindle_besc_set_speed,
     .set_coolant = &spindle_besc_set_coolant,
 #if PID_CONTROLLERS > 0
