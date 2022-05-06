@@ -109,6 +109,7 @@ void mcu_controls_changed_cb(void)
     if (CHECKFLAG(controls, ESTOP_MASK))
     {
         cnc_set_exec_state(EXEC_KILL);
+        cnc_stop();
         return; // forces exit
     }
 #endif
