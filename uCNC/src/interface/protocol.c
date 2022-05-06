@@ -653,29 +653,30 @@ void protocol_send_pins_states(void)
 #ifdef ECHO_CMD
     protocol_busy = true;
 #endif
-    for (uint8_t i = 0; i < 146; i++)
+    for (uint8_t i = 0; i < 161; i++)
     {
         int16_t val = io_get_pinvalue(i);
         if (val >= 0)
         {
             if (i < 100)
             {
-                if (i <= 20)
+                if (i < 24)
                 {
                     serial_print_str(__romstr__("[SO:"));
                 }
-                else if (i < 36)
+                else if (i < 40)
                 {
                     serial_print_str(__romstr__("[P:"));
                 }
-                else if (i < 52)
-                {
-                    serial_print_str(__romstr__("[O:"));
-                }
-                else if (i < 60)
+                else if (i < 46)
                 {
                     serial_print_str(__romstr__("[SV:"));
                 }
+                else if (i < 78)
+                {
+                    serial_print_str(__romstr__("[O:"));
+                }
+
                 else
                 {
                     i = 100; // jumps to inputs

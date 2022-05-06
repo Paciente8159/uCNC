@@ -156,6 +156,15 @@ extern "C"
 	// #define DIN27_PORT F
 	// #define DIN27_PULLUP
 
+#define SERVO0_BIT 5
+#define SERVO0_PORT G
+#define SERVO1_BIT 3
+#define SERVO1_PORT E
+#define SERVO2_BIT 3
+#define SERVO2_PORT H
+#define SERVO3_BIT 5
+#define SERVO3_PORT B
+
 #ifdef __cplusplus
 }
 #endif

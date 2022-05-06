@@ -24,6 +24,10 @@
 - overridable F_STEP_MAX and F_STEP_MIN (#190)
 - removed kinematic transformations filter from JOG motions to prevent inpredictable motions after forced motion systems sync (#195)
 - modified Grbl compatible startup message (#196)
+- updated M42 to reflect current HAL IO convention (#197)
+- added servo pins configurations to RAMPS boardmap (pins D4, D5, D6 and D11) (#197)
+- updated $P report to reflect current HAL IO convention (#198)
+- improved BESC spindle control with added default values for throttle down, neutral and full positions (#200)
 
 ### Fixed
 
@@ -851,6 +855,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.3
 [1.4.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.2
 [1.4.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.1
