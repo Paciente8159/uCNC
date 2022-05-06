@@ -23,6 +23,7 @@
 
 - overridable F_STEP_MAX and F_STEP_MIN (#190)
 - removed kinematic transformations filter from JOG motions to prevent inpredictable motions after forced motion systems sync (#195)
+- modified Grbl compatible startup message (#196)
 
 ### Fixed
 
