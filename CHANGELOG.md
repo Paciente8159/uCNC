@@ -27,7 +27,7 @@
 
 - fixed typo in error constant name (#184)
 - fixed G49 was not reseting TLO (#188)
-
+- fixed motion systems unsync after recovering from Emergency Stop (#193)
 
 ## [1.4.3] - 2022-05-02
 
