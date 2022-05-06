@@ -49,6 +49,11 @@ uint8_t m42_parse(unsigned char word, uint8_t code, uint8_t error, float value, 
     return error;
 }
 
+// if all conventions changes this must be updated
+#define PWM0_ID 24
+#define DOUT0_ID 46
+#define DOUT31_ID 71
+
 // this actually performs 2 steps in 1 (validation and execution)
 uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
@@ -59,9 +64,9 @@ uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_ex
             return STATUS_GCODE_VALUE_WORD_MISSING;
         }
 
-        if (words->p >= 20 && words->p <= 51)
+        if (words->p >= PWM0_ID && words->p <= DOUT31_ID)
         {
-            if (words->p >= 36)
+            if (words->p >= DOUT0_ID)
             {
                 io_set_output(words->p, (words->s != 0));
             }
@@ -69,11 +74,6 @@ uint8_t m42_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_ex
             {
                 io_set_pwm(words->p, (uint8_t)CLAMP(0, words->s, 255));
             }
-        }
-
-        if (words->p >= 102)
-        {
-            io_set_pwm(words->p, (uint8_t)CLAMP(words->s, 0, 255));
         }
 
         return STATUS_OK;

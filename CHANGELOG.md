@@ -24,6 +24,8 @@
 - overridable F_STEP_MAX and F_STEP_MIN (#190)
 - removed kinematic transformations filter from JOG motions to prevent inpredictable motions after forced motion systems sync (#195)
 - modified Grbl compatible startup message (#196)
+- updated M42 to reflect current HAL IO convention (#197)
+- added servo pins configurations to RAMPS boardmap (pins D4, D5, D6 and D11) (#197)
 
 ### Fixed
 
