@@ -27,9 +27,9 @@
 
 - fixed typo in error constant name (#184)
 - fixed G49 was not reseting TLO (#188)
-- fixed motion systems unsync after recovering from Emergency Stop (#193)
-- Emergency Stop press was not stopping tool as expected (#192)
-
+- fixed motion systems unsync after recovering from emergency stop (#193)
+- emergency stop press was not stopping tool as expected (#192)
+- position read from motion control was not reversing user geometry transformations (#195)
 
 ## [1.4.3] - 2022-05-02
 

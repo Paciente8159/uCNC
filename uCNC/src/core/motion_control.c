@@ -675,6 +675,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 void mc_get_position(float *target)
 {
     memcpy(target, mc_last_target, sizeof(mc_last_target));
+    kinematics_apply_reverse_transform(target);
 }
 
 void mc_sync_position(void)
