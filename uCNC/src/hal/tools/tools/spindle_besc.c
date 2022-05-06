@@ -31,6 +31,10 @@
 #define COOLANT_MIST_EN DOUT0
 #define COOLANT_FLOOD_EN DOUT1
 
+#define THROTTLE_DOWN 50
+#define THROTTLE_NEUTRAL 127
+#define THROTTLE_FULL 255
+
 static uint8_t spindle_speed;
 
 void spindle_besc_startup()
@@ -38,11 +42,11 @@ void spindle_besc_startup()
 
   // do whatever routine you need to do here to arm the ESC
 #if !(SPINDLE_SERVO < 0)
-  mcu_set_servo(SPINDLE_SERVO, 127);
+  mcu_set_servo(SPINDLE_SERVO, THROTTLE_NEUTRAL);
 #endif
   cnc_delay_ms(2000);
 #if !(SPINDLE_SERVO < 0)
-  mcu_set_servo(SPINDLE_SERVO, 0);
+  mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
 #endif
   cnc_delay_ms(2000);
 }
@@ -53,13 +57,13 @@ void spindle_besc_set_speed(uint8_t value, bool invert)
   if (!value || invert)
   {
 #if !(SPINDLE_SERVO < 0)
-    mcu_set_servo(SPINDLE_SERVO, 0);
+    mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
 #endif
   }
   else
   {
 #if !(SPINDLE_SERVO < 0)
-    mcu_set_servo(SPINDLE_SERVO, value);
+    mcu_set_servo(SPINDLE_SERVO, CLAMP(THROTTLE_DOWN, value, THROTTLE_FULL));
 #endif
   }
 
