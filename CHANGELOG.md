@@ -27,6 +27,7 @@
 
 - fixed typo in error constant name (#184)
 - fixed G49 was not reseting TLO (#188)
+- Emergency Stop press was not stopping tool as expected (#192)
 
 
 ## [1.4.3] - 2022-05-02
