@@ -28,6 +28,7 @@
 - added servo pins configurations to RAMPS boardmap (pins D4, D5, D6 and D11) (#197)
 - updated $P report to reflect current HAL IO convention (#198)
 - improved BESC spindle control with added default values for throttle down, neutral and full positions (#200)
+- improved BESC value range calculation (#202)
 
 ### Fixed
 
