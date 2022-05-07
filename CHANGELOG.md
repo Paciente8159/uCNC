@@ -29,6 +29,7 @@
 - updated $P report to reflect current HAL IO convention (#198)
 - improved BESC spindle control with added default values for throttle down, neutral and full positions (#200)
 - improved BESC value range calculation (#202)
+- modified tool speed feedback. Each tool reports speed directly and can customize the way the speed is reported (#203)
 
 ### Fixed
 
