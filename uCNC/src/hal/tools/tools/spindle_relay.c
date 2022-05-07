@@ -79,7 +79,7 @@ void spindle_relay_set_coolant(uint8_t value)
 #endif
 }
 
-uint8_t spindle_relay_get_speed(void)
+uint16_t spindle_relay_get_speed(void)
 {
   return spindle_speed;
 }

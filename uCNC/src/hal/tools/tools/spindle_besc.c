@@ -89,7 +89,7 @@ void spindle_besc_set_coolant(uint8_t value)
   SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
 }
 
-uint8_t spindle_besc_get_speed(void)
+uint16_t spindle_besc_get_speed(void)
 {
   return spindle_speed;
 }
