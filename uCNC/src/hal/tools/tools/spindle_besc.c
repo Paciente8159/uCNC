@@ -35,6 +35,7 @@
 #define THROTTLE_DOWN 50
 #define THROTTLE_NEUTRAL 127
 #define THROTTLE_FULL 255
+#define THROTTLE_RANGE (THROTTLE_FULL - THROTTLE_DOWN)
 
 static uint8_t spindle_speed;
 
@@ -74,7 +75,9 @@ void spindle_besc_set_speed(uint8_t value, bool invert)
   else
   {
 #if !(SPINDLE_SERVO < 0)
-    mcu_set_servo(SPINDLE_SERVO, CLAMP(THROTTLE_DOWN, value, THROTTLE_FULL));
+    uint16_t scale = value * THROTTLE_RANGE;
+    uint8_t new_val = (0xFF & (scale >> 8)) + THROTTLE_DOWN;
+    mcu_set_servo(SPINDLE_SERVO, new_val);
 #endif
   }
 

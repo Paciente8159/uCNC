@@ -105,7 +105,7 @@ extern "C"
 */
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
+#define TOOL1 spindle_besc
 	//#define TOOL2 laser1
 
 #define LED DOUT31
