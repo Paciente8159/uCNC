@@ -41,12 +41,6 @@ extern "C"
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
-#if TOOL_COUNT > 0
-	uint16_t itp_get_rt_spindle(void);
-	uint8_t itp_get_rt_spindle_value(void);
-#else
-#define itp_get_rt_spindle() (0);
-#endif
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
