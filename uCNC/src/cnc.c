@@ -283,6 +283,7 @@ void cnc_home(void)
     uint8_t error = kinematics_home();
     // unlock expected limits
     io_lock_limits(0);
+    io_invert_limits(0);
     if (error)
     {
         // disables homing and reenables alarm messages
