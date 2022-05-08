@@ -1307,24 +1307,44 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
     // stores G10 L2 command in the right address
     if (index <= G30HOME)
     {
-        if (words->l == 20)
+        float coords[AXIS_COUNT];
+        if (index == parser_parameters.coord_system_index)
         {
-            for (uint8_t i = AXIS_COUNT; i != 0;)
+            memcpy(coords, parser_parameters.coord_system_offset, sizeof(coords));
+        }
+        else
+        {
+            settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&coords, PARSER_PARAM_SIZE);
+        }
+
+        for (uint8_t i = AXIS_COUNT; i != 0;)
+        {
+            i--;
+            if (CHECKFLAG(cmd->words, (1 << i)))
             {
-                i--;
-                target[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
+                if (words->l == 20)
+                {
+                    coords[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
+                }
+                else
+                {
+                    coords[i] = target[i];
+                }
             }
         }
 #ifdef AXIS_TOOL
-        if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+        if (words->l == 20)
         {
-            target[AXIS_TOOL] += parser_parameters.tool_length_offset;
+            if (CHECKFLAG(cmd->words, (1 << AXIS_TOOL)))
+            {
+                coords[AXIS_TOOL] += parser_parameters.tool_length_offset;
+            }
         }
 #endif
-        settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&target[0], PARSER_PARAM_SIZE);
+        settings_save(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)coords, PARSER_PARAM_SIZE);
         if (index == parser_parameters.coord_system_index)
         {
-            memcpy(parser_parameters.coord_system_offset, target, sizeof(parser_parameters.coord_system_offset));
+            memcpy(parser_parameters.coord_system_offset, coords, sizeof(parser_parameters.coord_system_offset));
         }
         parser_wco_counter = 0;
     }

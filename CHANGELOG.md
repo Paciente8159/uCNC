@@ -39,6 +39,7 @@
 - emergency stop press was not stopping tool as expected (#192)
 - position read from motion control was not reversing user geometry transformations (#195)
 - AVR DIN0-7 pins ISR was not enabled (#201)
+- fixed error were coordinates would be forgotten/override if applying multiple G10 commands for different axis (ex. G10L20X0 and G10L20Y0) (#204)
 
 ## [1.4.3] - 2022-05-02
 
