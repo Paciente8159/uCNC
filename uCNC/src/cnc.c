@@ -279,8 +279,6 @@ void mcu_rtc_cb(uint32_t millis)
 
 void cnc_home(void)
 {
-    io_invert_limits(0);
-    io_lock_limits(0);
     cnc_set_exec_state(EXEC_HOMING);
     uint8_t error = kinematics_home();
     // unlock expected limits

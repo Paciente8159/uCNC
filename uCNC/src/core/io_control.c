@@ -192,6 +192,10 @@ uint8_t io_get_limits(void)
     value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
 #endif
 
+    uint8_t inv = g_settings.limits_invert_mask;
+    uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
+
+#if LIMITS_DUAL_INV_MASK != 0
     uint8_t value2 = 0;
 
 #if !(LIMIT_X2 < 0)
@@ -210,18 +214,20 @@ uint8_t io_get_limits(void)
 // #endif
 #endif
 
-    uint8_t inv = g_settings.limits_invert_mask;
+    result |= (value2 ^ (inv & LIMITS_DUAL_INV_MASK));
 
-    uint8_t result = ((value ^ (inv & LIMITS_INV_MASK)) | (value2 ^ (inv & LIMITS_DUAL_INV_MASK)));
+#endif
 
     if (cnc_get_exec_state(EXEC_HOMING))
     {
         result ^= io_invert_limits_mask;
     }
+#if LIMITS_DUAL_INV_MASK
     else
     {
         result |= io_get_limits_dual();
     }
+#endif
 
     return result;
 }
