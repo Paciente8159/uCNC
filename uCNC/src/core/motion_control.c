@@ -588,7 +588,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     block_data.steps[axis] = max_home_dist;
     // unlocks the machine for next motion (this will clear the EXEC_HALT flag
     // temporary inverts the limit mask to trigger ISR on switch release
-    g_settings.limits_invert_mask ^= axis_limit;
+    io_invert_limits(axis_limit);
 
     cnc_unlock(true);
     // flags homing clear by the unlock
@@ -598,13 +598,13 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     if (itp_sync() != STATUS_OK)
     {
         // restores limits mask
-        g_settings.limits_invert_mask ^= axis_limit;
+        io_invert_limits(0);
         return STATUS_CRITICAL_FAIL;
     }
 
     cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
     // resets limit mask
-    g_settings.limits_invert_mask ^= axis_limit;
+    io_invert_limits(0);
     // stops, flushes buffers and clears the hold if active
     cnc_stop();
     // clearing the interpolator unlockes any locked stepper
