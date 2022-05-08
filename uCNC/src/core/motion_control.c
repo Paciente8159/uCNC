@@ -598,7 +598,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     if (itp_sync() != STATUS_OK)
     {
         // restores limits mask
-        io_invert_limits(0);
         return STATUS_CRITICAL_FAIL;
     }
 
