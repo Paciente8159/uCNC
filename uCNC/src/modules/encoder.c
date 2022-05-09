@@ -234,6 +234,8 @@ int32_t encoder_get_position(uint8_t i)
     return 0;
 }
 
+#ifdef ENABLE_PROTOCOL_MODULES
+
 void encoder_print_values(void)
 {
     for (uint8_t i = 0; i < ENCODERS; i++)
@@ -245,6 +247,8 @@ void encoder_print_values(void)
 }
 
 CREATE_LISTENER(send_pins_states_delegate, encoder_print_values);
+
+#endif
 
 void encoder_reset_position(uint8_t i, int32_t position)
 {
