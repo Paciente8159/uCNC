@@ -199,22 +199,22 @@ uint8_t io_get_limits(void)
     uint8_t value2 = 0;
 
 #if !(LIMIT_X2 < 0)
-    // #if !(LIMITS_DUAL_MASK & LIMIT_X_MASK)
+#if !(LIMITS_DUAL_MASK & LIMIT_X_MASK)
     value2 |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
-// #endif
+#endif
 #endif
 #if !(LIMIT_Y2 < 0)
-    // #if !(LIMITS_DUAL_MASK & LIMIT_Y_MASK)
+#if !(LIMITS_DUAL_MASK & LIMIT_Y_MASK)
     value2 |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
-// #endif
+#endif
 #endif
 #if !(LIMIT_Z2 < 0)
-    // #if !(LIMITS_DUAL_MASK & LIMIT_Z_MASK)
+#if !(LIMITS_DUAL_MASK & LIMIT_Z_MASK)
     value2 |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
-// #endif
+#endif
 #endif
 
-    result |= (value2 ^ (inv & LIMITS_DUAL_INV_MASK));
+    result |= (value2 ^ (inv & LIMITS_DUAL_INV_MASK & ~LIMITS_DUAL_MASK));
 
 #endif
 
@@ -253,7 +253,8 @@ uint8_t io_get_limits_dual(void)
     value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
-    return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK));
+    uint8_t inv = io_invert_limits_mask & LIMITS_DUAL_MASK;
+    return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK) ^ inv);
 #endif
 }
 
