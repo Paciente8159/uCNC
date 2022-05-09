@@ -479,7 +479,7 @@ void itp_run(void)
                     current_speed -= INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
 #endif
                     // prevents negative or zero speeds
-                    float min_exit_speed = INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
+                    float min_exit_speed = 2 * INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
                     bool flushsteps = false;
                     if (current_speed < min_exit_speed)
                     {
