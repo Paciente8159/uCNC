@@ -824,6 +824,10 @@ static void cnc_io_dotasks(void)
     mcu_limits_changed_cb();
 #endif
     mcu_controls_changed_cb();
+#if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
+    // extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
+    mcu_inputs_changed_cb();
+#endif
 
     if (cnc_status_report_lock)
     {
