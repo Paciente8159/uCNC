@@ -1044,21 +1044,6 @@ void itp_sync_spindle(void)
 #endif
 }
 
-#if TOOL_COUNT > 0
-uint16_t itp_get_rt_spindle(void)
-{
-    float spindle = (float)tool_get_speed();
-    spindle *= g_settings.spindle_max_rpm * UINT8_MAX_INV;
-
-    return (uint16_t)roundf(spindle);
-}
-
-uint8_t itp_get_rt_spindle_pwm(void)
-{
-    return tool_get_speed();
-}
-#endif
-
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 void itp_lock_stepper(uint8_t lockmask)
 {

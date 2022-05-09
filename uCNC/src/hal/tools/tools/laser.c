@@ -20,6 +20,7 @@
 #include "../../../cnc.h"
 
 #include <stdbool.h>
+#include <math.h>
 
 /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
@@ -33,20 +34,20 @@
 
 static bool previous_laser_mode;
 
-void laser1_startup_code(void)
+void laser_startup_code(void)
 {
     // force laser mode
     previous_laser_mode = g_settings.laser_mode;
     g_settings.laser_mode = 1;
 }
 
-void laser1_shutdown_code(void)
+void laser_shutdown_code(void)
 {
     // restore laser mode
     g_settings.laser_mode = previous_laser_mode;
 }
 
-void laser1_set_speed(uint8_t value, bool invert)
+void laser_set_speed(uint8_t value, bool invert)
 {
 // easy macro to execute the same code as below
 // SET_LASER(LASER_PWM, value, invert);
@@ -57,28 +58,29 @@ void laser1_set_speed(uint8_t value, bool invert)
 #endif
 }
 
-void laser1_set_coolant(uint8_t value)
+void laser_set_coolant(uint8_t value)
 {
     // easy macro
     SET_COOLANT(COOLANT_FLOOD, -1, value);
 }
 
-uint8_t laser1_get_speed(void)
+uint16_t laser_get_speed(void)
 {
 #if !(LASER_PWM < 0)
-    return mcu_get_pwm(LASER_PWM);
+    float laser = (float)mcu_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+    return (uint16_t)roundf(laser);
 #else
     return 0;
 #endif
 }
 
-const tool_t __rom__ laser1 = {
-    .startup_code = &laser1_startup_code,
-    .shutdown_code = &laser1_shutdown_code,
-    .set_speed = &laser1_set_speed,
+const tool_t __rom__ laser = {
+    .startup_code = &laser_startup_code,
+    .shutdown_code = &laser_shutdown_code,
+    .set_speed = &laser_set_speed,
     .set_coolant = NULL,
 #if PID_CONTROLLERS > 0
     .pid_update = NULL,
     .pid_error = NULL,
 #endif
-    .get_speed = &laser1_get_speed};
+    .get_speed = &laser_get_speed};

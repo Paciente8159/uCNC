@@ -169,7 +169,9 @@ void protocol_send_status(void)
     kinematics_apply_reverse_transform(axis);
     float feed = itp_get_rt_feed(); // convert from mm/s to mm/m
 #if TOOL_COUNT > 0
-    uint16_t spindle = itp_get_rt_spindle();
+    uint16_t spindle = tool_get_speed();
+#else
+    uint16_t spindle = 0;
 #endif
     uint8_t controls = io_get_controls();
     uint8_t limits = io_get_limits();

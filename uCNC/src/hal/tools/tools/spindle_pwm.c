@@ -19,6 +19,8 @@
 
 #include "../../../cnc.h"
 
+#include <math.h>
+
 /**
  * This configures a simple spindle control with a pwm assigned to PWM0 and dir invert assigned to DOUT0
  * This spindle also has a coolant pin assigned to DOUT1
@@ -72,10 +74,11 @@ void spindle_pwm_set_coolant(uint8_t value)
   SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
 }
 
-uint8_t spindle_pwm_get_speed(void)
+uint16_t spindle_pwm_get_speed(void)
 {
 #if SPINDLE_PWM >= 0
-  return spindle_pwm_speed;
+  float spindle = (float)mcu_get_pwm(SPINDLE_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+  return (uint16_t)roundf(spindle);
 #else
   return 0;
 #endif

@@ -28,6 +28,8 @@
 - added servo pins configurations to RAMPS boardmap (pins D4, D5, D6 and D11) (#197)
 - updated $P report to reflect current HAL IO convention (#198)
 - improved BESC spindle control with added default values for throttle down, neutral and full positions (#200)
+- improved BESC value range calculation (#202)
+- modified tool speed feedback. Each tool reports speed directly and can customize the way the speed is reported (#203)
 
 ### Fixed
 
@@ -36,6 +38,10 @@
 - fixed motion systems unsync after recovering from emergency stop (#193)
 - emergency stop press was not stopping tool as expected (#192)
 - position read from motion control was not reversing user geometry transformations (#195)
+- AVR DIN0-7 pins ISR was not enabled (#201)
+- fixed error were coordinates would be forgotten/override if applying multiple G10 commands for different axis (ex. G10L20X0 and G10L20Y0) (#204)
+- fixed logic error when both limits switches are active for an axis (not dual-drive) and are inverted, trigger would only happen if both were pressed (#205)
+- fixed logic ORING of signals when homing leading to incorrect trigger when self-squaring cause by #205 (#207)
 
 ## [1.4.3] - 2022-05-02
 

@@ -32,7 +32,7 @@ extern "C"
 #include <stdint.h>
 
 	typedef void (*tool_func)(void);
-	typedef uint8_t (*tool_func_getspeed)(void);
+	typedef uint16_t (*tool_func_getspeed)(void);
 	typedef void (*tool_spindle_func)(uint8_t, bool);
 	typedef void (*tool_coolant_func)(uint8_t);
 	typedef int16_t (*tool_pid_err_func)(void);
@@ -53,7 +53,7 @@ extern "C"
 	void tool_change(uint8_t tool);
 	void tool_set_speed(int16_t value);
 	void tool_set_coolant(uint8_t value);
-	uint8_t tool_get_speed(void);
+	uint16_t tool_get_speed(void);
 	void tool_stop(void);
 	void tool_pid_update(int16_t value);
 	int16_t tool_pid_error(void);

@@ -249,7 +249,7 @@ void tool_set_speed(int16_t value)
 #endif
 }
 
-uint8_t tool_get_speed()
+uint16_t tool_get_speed()
 {
 #if TOOL_COUNT > 0
 	if (tool_current.get_speed)

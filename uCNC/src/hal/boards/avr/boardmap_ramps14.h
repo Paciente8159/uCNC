@@ -28,6 +28,8 @@ extern "C"
 #define BOARD_NAME "RAMPS 1.4"
 #endif
 
+#define AVR6
+
 #include "mega_ide_pins.h"
 
 #define PCINT0_PORT B

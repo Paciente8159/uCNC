@@ -25,6 +25,7 @@ static volatile uint8_t io_spindle_speed;
 #endif
 
 static uint8_t io_lock_limits_mask;
+static uint8_t io_invert_limits_mask;
 
 void mcu_limits_changed_cb(void)
 {
@@ -160,6 +161,11 @@ void io_lock_limits(uint8_t limitmask)
     io_lock_limits_mask = limitmask;
 }
 
+void io_invert_limits(uint8_t limitmask)
+{
+    io_invert_limits_mask = limitmask;
+}
+
 uint8_t io_get_limits(void)
 {
 #ifdef DISABLE_ALL_LIMITS
@@ -186,23 +192,44 @@ uint8_t io_get_limits(void)
     value |= ((mcu_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
 #endif
 
+    uint8_t inv = g_settings.limits_invert_mask;
+    uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
+
+#if LIMITS_DUAL_INV_MASK != 0
+    uint8_t value2 = 0;
+
 #if !(LIMIT_X2 < 0)
 #if !(LIMITS_DUAL_MASK & LIMIT_X_MASK)
-    value |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
+    value2 |= ((mcu_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
 #endif
 #endif
 #if !(LIMIT_Y2 < 0)
 #if !(LIMITS_DUAL_MASK & LIMIT_Y_MASK)
-    value |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
+    value2 |= ((mcu_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
 #endif
 #endif
 #if !(LIMIT_Z2 < 0)
 #if !(LIMITS_DUAL_MASK & LIMIT_Z_MASK)
-    value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
+    value2 |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
 
-    return (value ^ (g_settings.limits_invert_mask & LIMITS_INV_MASK));
+    result |= (value2 ^ (inv & LIMITS_DUAL_INV_MASK & ~LIMITS_DUAL_MASK));
+
+#endif
+
+    if (cnc_get_exec_state(EXEC_HOMING))
+    {
+        result ^= io_invert_limits_mask;
+    }
+#if LIMITS_DUAL_INV_MASK
+    else
+    {
+        result |= io_get_limits_dual();
+    }
+#endif
+
+    return result;
 }
 
 uint8_t io_get_limits_dual(void)
@@ -226,7 +253,8 @@ uint8_t io_get_limits_dual(void)
     value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
-    return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK));
+    uint8_t inv = io_invert_limits_mask & LIMITS_DUAL_MASK;
+    return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK) ^ inv);
 #endif
 }
 
