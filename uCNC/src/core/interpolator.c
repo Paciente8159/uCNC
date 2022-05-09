@@ -456,6 +456,8 @@ void itp_run(void)
 
                 partial_distance += top_speed * INTERPOLATOR_DELTA_CONST_T;
                 profile_steps_limit = deaccel_from;
+                current_speed = top_speed;
+                initial_speed = top_speed;
             }
             else
             {
@@ -477,15 +479,18 @@ void itp_run(void)
                     current_speed -= INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
 #endif
                     // prevents negative or zero speeds
-                    if (current_speed < 0)
+                    float min_exit_speed = 2 * INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
+                    bool flushsteps = false;
+                    if (current_speed < min_exit_speed)
                     {
-                        current_speed = 0;
+                        current_speed = min_exit_speed * remaining_steps;
+                        flushsteps = true;
                     }
                     avg_speed = fast_flt_div2(current_speed + initial_speed);
                     partial_distance += avg_speed * INTERPOLATOR_DELTA_T;
                     deaccel_jumps--;
                     // speed reached 0. just flush remaining steps
-                    if (current_speed == 0)
+                    if (flushsteps)
                     {
                         deaccel_jumps = 0;
                         partial_distance = remaining_steps;
@@ -507,18 +512,17 @@ void itp_run(void)
             segm_steps = (uint16_t)roundf(partial_distance);
         } while (segm_steps == 0);
 
-        if (current_speed != 0)
-        {
-            avg_speed = fast_flt_div2(current_speed + initial_speed);
-        }
-        else
-        {
-            // prevents slow exits
-            avg_speed = initial_speed;
-        }
-
-        // prevents stall by forcing a minimal step speed (depends on mcu)
-        avg_speed = MAX(avg_speed, F_STEP_MIN);
+        avg_speed = fast_flt_div2(current_speed + initial_speed);
+        //        float min_exit_speed = INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
+        //        if (current_speed > min_exit_speed)
+        //        {
+        //            avg_speed = fast_flt_div2(current_speed + initial_speed);
+        //        }
+        //        else
+        //        {
+        //            // prevents slow exits
+        //            avg_speed = fast_flt_div2(min_exit_speed);
+        //        }
 
         // if computed steps exceed the remaining steps for the motion shortens the distance
         if (segm_steps > (remaining_steps - profile_steps_limit))
