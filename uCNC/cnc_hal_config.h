@@ -110,22 +110,31 @@ extern "C"
 
 #define LED DOUT31
 
-// these modules must be enabled to use encoders
-#if defined(ENABLE_IO_MODULES) && defined(ENABLE_INTERPOLATOR_MODULES) && defined(ENABLE_MAIN_LOOP_MODULES) && (defined(ENABLE_PROTOCOL_MODULES) || !defined(ENABLE_EXTRA_SYSTEM_CMDS))
 /*
 	Sets the number of encoders to be used (max of 8)
 */
 #define ENCODERS 0
-
 /**
  * To use the encoder counter 2 definitions are needed
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
  * Defined encoders must match the number of encoders and numeral defined above.
  * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ *
+ * It's also possible to assing an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
+ * #define STEP0_ENCODER 0 //assigns encoder 0 to stepper 0
+ *
+ * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
+ *
+ * For encoders to work as STEP encoders ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES must be enabled
  * */
-// #define ENC0_PULSE DIN0
-// #define ENC0_DIR DIN8
+#if ENCODERS > 0
+// Counter mode
+#define ENC0_PULSE DIN0
+#define ENC0_DIR DIN0
+// Encoder mode
+//  #define ENC1_PULSE DIN1
+//  #define ENC1_DIR DIN8
 #endif
 
 // these modules must be enabled to use pid

@@ -131,6 +131,17 @@ extern "C"
 #define ENCODERS 0
 #endif
 
+#if ENCODERS > 0
+#if (defined(STEP0_ENCODER) || defined(STEP1_ENCODER) || defined(STEP2_ENCODER) || defined(STEP3_ENCODER) || defined(STEP4_ENCODER) || defined(STEP5_ENCODER))
+#if (!defined(ENABLE_INTERPOLATOR_MODULES) || !defined(ENABLE_MAIN_LOOP_MODULES))
+#error "Stepper encoders require ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES to be enabled"
+#endif
+#endif
+#if defined(ENABLE_IO_MODULES)
+#warning "Encoder module is enable. Generic input change event will not be available"
+#endif
+#endif
+
 #ifndef PID_CONTROLLERS
 #define PID_CONTROLLERS 0
 #endif

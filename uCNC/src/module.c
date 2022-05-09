@@ -128,7 +128,7 @@ WEAK_HOOK(send_pins_states)
 {
 	// for now only encoder module uses this hook and overrides it
 	// it actually overrides the mcu callback to be faster
-	DEFAULT_HANDLER(input_change);
+	DEFAULT_HANDLER(send_pins_states);
 }
 #endif
 
@@ -227,7 +227,15 @@ void mod_init(void)
 #endif
 
 #if ENCODERS > 0
+#ifdef ENABLE_INTERPOLATOR_MODULES
+	ADD_LISTENER(itp_reset_rt_position_delegate, encoders_itp_reset_rt_position, itp_reset_rt_position_event);
+#endif
+#ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_LISTENER(cnc_reset_delegate, encoders_reset_position, cnc_reset_event);
+#endif
+#ifdef ENABLE_PROTOCOL_MODULES
+	ADD_LISTENER(send_pins_states_delegate, encoder_print_values, send_pins_states_event);
+#endif
 #endif
 
 #ifdef ENABLE_TMC_DRIVERS
