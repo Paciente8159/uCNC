@@ -29,7 +29,12 @@ extern "C"
 #endif
 
 // reduces RAM usage a bit to prevent hardware resets
+#ifndef PLANNER_BUFFER_SIZE
 #define PLANNER_BUFFER_SIZE 14
+#endif
+#ifndef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 128
+#endif
 
 #define PCINT0_PORT B
 #define PCINT1_PORT C

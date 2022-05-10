@@ -30,6 +30,13 @@ extern "C"
 
 #define AVR6
 
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 30
+#endif
+#ifndef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 256
+#endif
+
 #define PCINT0_PORT B
 #define PCINT1_PORT J
 #define PCINT2_PORT K

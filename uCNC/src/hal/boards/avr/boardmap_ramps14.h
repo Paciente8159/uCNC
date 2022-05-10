@@ -30,6 +30,13 @@ extern "C"
 
 #define AVR6
 
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 30
+#endif
+#ifndef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 256
+#endif
+
 #include "mega_ide_pins.h"
 
 #define PCINT0_PORT B

@@ -40,9 +40,11 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 
-#define NO_USB_VCP
-#ifdef USB_VCP
-#undef USB_VCP
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 30
+#endif
+#ifndef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 256
 #endif
 
 // Setup COM pins

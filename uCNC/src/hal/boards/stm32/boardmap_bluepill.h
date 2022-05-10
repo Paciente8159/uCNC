@@ -40,6 +40,13 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 30
+#endif
+#ifndef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 256
+#endif
+
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port
