@@ -46,11 +46,11 @@ void mcu_limits_changed_cb(void)
     {
         if (limit_combined)
         {
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
             if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
             {
                 // if homing and dual drive axis are enabled
-#ifdef DUAL_DRIVE0_AXIS
+#ifdef DUAL_DRIVE0_ENABLE_SELFSQUARING
                 if (limit_combined & LIMIT_DUAL0_MASK) // the limit triggered matches the first dual drive axis
                 {
                     // lock the stepper accodring to the blocked
@@ -62,7 +62,7 @@ void mcu_limits_changed_cb(void)
                     }
                 }
 #endif
-#ifdef DUAL_DRIVE1_AXIS
+#ifdef DUAL_DRIVE1_ENABLE_SELFSQUARING
                 if (limit_combined & LIMIT_DUAL1_MASK) // the limit triggered matches the second dual drive axis
                 {
                     itp_lock_stepper((limits_dual & LIMIT_DUAL1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
@@ -90,7 +90,7 @@ void mcu_limits_changed_cb(void)
             }
 #endif
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
             itp_lock_stepper(0); // unlocks axis
 #endif
             itp_stop();
