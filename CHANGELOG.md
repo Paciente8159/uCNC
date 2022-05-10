@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.4] - Unreleased
+## [1.4.4] - 2022-05-10
 
 µCNC version 1.4.4 changes are:
 
