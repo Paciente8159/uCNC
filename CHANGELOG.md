@@ -30,6 +30,8 @@
 - improved BESC spindle control with added default values for throttle down, neutral and full positions (#200)
 - improved BESC value range calculation (#202)
 - modified tool speed feedback. Each tool reports speed directly and can customize the way the speed is reported (#203)
+- simplified Encoder module. Can be enabled without extra modules
+- added BESC RPM counter based on Encoder module 
 
 ### Fixed
 

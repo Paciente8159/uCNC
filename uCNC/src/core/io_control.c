@@ -152,7 +152,7 @@ void mcu_probe_changed_cb(void)
 void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-    void mod_input_change_hook(void);
+    mod_input_change_hook(void);
 #endif
 }
 

@@ -37,6 +37,11 @@
 #define THROTTLE_FULL 255
 #define THROTTLE_RANGE (THROTTLE_FULL - THROTTLE_DOWN)
 
+// #define HAS_RPM_COUNTER
+#ifdef HAS_RPM_COUNTER
+#define RPM_ENCODER 0
+#endif
+
 static uint8_t spindle_speed;
 
 void spindle_besc_startup()
@@ -91,7 +96,42 @@ void spindle_besc_set_coolant(uint8_t value)
 
 uint16_t spindle_besc_get_speed(void)
 {
+
+  // this show how to use an encoder (in this case encoder 0) configured as a counter
+  // to take real RPM readings of the spindle
+  // the reading is updated every 5 seconds
+
+#if (defined(HAS_RPM_COUNTER) && (ENCODERS > RPM_ENCODER))
+  extern int32_t encoder_get_position(uint8_t i);
+  extern void encoder_reset_position(uint8_t i, int32_t position);
+  static uint32_t last_time = 0;
+  static uint16_t lastrpm = 0;
+  uint16_t rpm = lastrpm;
+
+  uint32_t elapsed = (mcu_millis() - last_time);
+  int32_t read = encoder_get_position(0);
+
+  // updates speed read every 5s
+  if (read > 0)
+  {
+    float timefact = 60000.f / (float)elapsed;
+    float newrpm = timefact * (float)read;
+    last_time = mcu_millis();
+    encoder_reset_position(0, 0);
+    rpm = (uint16_t)newrpm;
+    lastrpm = rpm;
+  }
+  else if (elapsed > 60000)
+  {
+    last_time = mcu_millis();
+    rpm = 0;
+    lastrpm = 0;
+  }
+
+  return rpm;
+#else
   return spindle_speed;
+#endif
 }
 
 const tool_t __rom__ spindle_besc = {

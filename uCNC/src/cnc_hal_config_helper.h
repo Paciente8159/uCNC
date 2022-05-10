@@ -131,6 +131,17 @@ extern "C"
 #define ENCODERS 0
 #endif
 
+#if ENCODERS > 0
+#if (defined(STEP0_ENCODER) || defined(STEP1_ENCODER) || defined(STEP2_ENCODER) || defined(STEP3_ENCODER) || defined(STEP4_ENCODER) || defined(STEP5_ENCODER))
+#if (!defined(ENABLE_INTERPOLATOR_MODULES) || !defined(ENABLE_MAIN_LOOP_MODULES))
+#error "Stepper encoders require ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES to be enabled"
+#endif
+#endif
+#if defined(ENABLE_IO_MODULES)
+#warning "Encoder module is enable. Generic input change event will not be available"
+#endif
+#endif
+
 #ifndef PID_CONTROLLERS
 #define PID_CONTROLLERS 0
 #endif
@@ -1704,6 +1715,49 @@ extern "C"
 
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
+
+#if (DIN0 < 0)
+#define DIN0_MASK 0
+#else
+#define DIN0_MASK 1
+#endif
+#if (DIN1 < 0)
+#define DIN1_MASK 0
+#else
+#define DIN1_MASK 2
+#endif
+#if (DIN2 < 0)
+#define DIN2_MASK 0
+#else
+#define DIN2_MASK 4
+#endif
+#if (DIN3 < 0)
+#define DIN3_MASK 0
+#else
+#define DIN3_MASK 8
+#endif
+#if (DIN4 < 0)
+#define DIN4_MASK 0
+#else
+#define DIN4_MASK 16
+#endif
+#if (DIN5 < 0)
+#define DIN5_MASK 0
+#else
+#define DIN5_MASK 32
+#endif
+#if (DIN6 < 0)
+#define DIN6_MASK 0
+#else
+#define DIN6_MASK 64
+#endif
+#if (DIN7 < 0)
+#define DIN7_MASK 0
+#else
+#define DIN7_MASK 128
+#endif
+
+#define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
 
 #if (PROBE < 0 && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE

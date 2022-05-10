@@ -167,6 +167,11 @@ extern "C"
 #define SERVO3_BIT 5
 #define SERVO3_PORT B
 
+	// SERVO3 pin supports ISR and can be used as an encoder/counter
+	//  #define DIN0_BIT 5
+	//  #define DIN0_PORT B
+	//  #define DIN0_ISR 0
+
 #ifdef __cplusplus
 }
 #endif

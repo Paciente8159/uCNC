@@ -230,9 +230,13 @@ int32_t encoder_get_position(uint8_t i)
     {
         return encoders_pos[i];
     }
+
+    return 0;
 }
 
-void mod_send_pins_states_hook(void)
+#ifdef ENABLE_PROTOCOL_MODULES
+
+void encoder_print_values(void)
 {
     for (uint8_t i = 0; i < ENCODERS; i++)
     {
@@ -241,6 +245,10 @@ void mod_send_pins_states_hook(void)
         serial_print_str(MSG_END);
     }
 }
+
+CREATE_LISTENER(send_pins_states_delegate, encoder_print_values);
+
+#endif
 
 void encoder_reset_position(uint8_t i, int32_t position)
 {
@@ -261,16 +269,13 @@ void encoders_reset_position(void)
     }
 }
 
-// overrides the default mod_cnc_reset_hook
-// may be modified in the future
-void mod_cnc_reset_hook(void)
-{
-    encoders_reset_position();
-}
+#ifdef ENABLE_MAIN_LOOP_MODULES
+CREATE_LISTENER(cnc_reset_delegate, encoders_reset_position);
+#endif
 
 // overrides the default mod_itp_reset_rt_position_hook
 // may be modified in the future
-void mod_itp_reset_rt_position_hook(float *origin)
+void encoders_itp_reset_rt_position(float *origin)
 {
 #if STEPPER_COUNT > 0
 #ifdef STEP0_ENCODER
@@ -303,5 +308,9 @@ void mod_itp_reset_rt_position_hook(float *origin)
 #endif
 #endif
 }
+
+#ifdef ENABLE_INTERPOLATOR_MODULES
+CREATE_LISTENER(itp_reset_rt_position_delegate, encoders_itp_reset_rt_position);
+#endif
 
 #endif
