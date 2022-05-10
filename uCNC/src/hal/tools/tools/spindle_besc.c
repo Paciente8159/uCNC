@@ -107,19 +107,25 @@ uint16_t spindle_besc_get_speed(void)
   static uint32_t last_time = 0;
   static uint16_t lastrpm = 0;
   uint16_t rpm = lastrpm;
-  uint32_t current_time = mcu_millis();
 
-  uint32_t elapsed = (current_time - last_time);
+  uint32_t elapsed = (mcu_millis() - last_time);
+  int32_t read = encoder_get_position(0);
 
   // updates speed read every 5s
-  if (elapsed > 5000)
+  if (read > 0)
   {
     float timefact = 60000.f / (float)elapsed;
-    float newrpm = timefact * (float)encoder_get_position(0);
-    last_time = current_time;
+    float newrpm = timefact * (float)read;
+    last_time = mcu_millis();
     encoder_reset_position(0, 0);
     rpm = (uint16_t)newrpm;
     lastrpm = rpm;
+  }
+  else if (elapsed > 60000)
+  {
+    last_time = mcu_millis();
+    rpm = 0;
+    lastrpm = 0;
   }
 
   return rpm;
