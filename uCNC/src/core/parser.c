@@ -1378,9 +1378,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
             settings_load(G30ADDRESS, (uint8_t *)&target, PARSER_PARAM_SIZE);
         }
         error = mc_line((float *)&target, &block_data);
-        {
-            return error;
-        }
+        // saves position
+        memcpy(parser_last_pos, target, sizeof(parser_last_pos));
         break;
     case G92: // G92
         for (uint8_t i = AXIS_COUNT; i != 0;)
