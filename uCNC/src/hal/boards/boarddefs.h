@@ -63,6 +63,11 @@ extern "C"
 #include "avr/boardmap_ramps14.h"
 #endif
 
+#if (BOARD == BOARD_RAMPS14_MIRROR)
+#define MCU MCU_AVR
+#include "avr/boardmap_ramps14_mirror.h"
+#endif
+
 #if (BOARD == BOARD_MKS_GEN_L_V1)
 #define MCU MCU_AVR
 #include "avr/boardmap_mks_gen_l_v1.h"

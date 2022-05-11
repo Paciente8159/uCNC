@@ -113,7 +113,7 @@ extern "C"
 /*
 	Sets the number of encoders to be used (max of 8)
 */
-#define ENCODERS 0
+#define ENCODERS 3
 /**
  * To use the encoder counter 2 definitions are needed
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
@@ -129,12 +129,21 @@ extern "C"
  * For encoders to work as STEP encoders ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES must be enabled
  * */
 #if ENCODERS > 0
-// Counter mode
+	// Counter mode
+	// #define ENC0_PULSE DIN0
+	// #define ENC0_DIR DIN0
+	// Encoder mode
 #define ENC0_PULSE DIN0
-#define ENC0_DIR DIN0
-// Encoder mode
-//  #define ENC1_PULSE DIN1
-//  #define ENC1_DIR DIN8
+#define ENC0_DIR DIN8
+#define STEP0_ENCODER 0
+
+#define ENC1_PULSE DIN1
+#define ENC1_DIR DIN9
+#define STEP1_ENCODER 1
+
+#define ENC2_PULSE DIN2
+#define ENC2_DIR DIN10
+#define STEP2_ENCODER 2
 #endif
 
 // these modules must be enabled to use pid
