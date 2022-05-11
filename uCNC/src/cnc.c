@@ -232,32 +232,8 @@ void mcu_rtc_cb(uint32_t millis)
         uint8_t mls = (uint8_t)(0xff & millis);
         if ((mls & CTRL_SCHED_CHECK_MASK) == CTRL_SCHED_CHECK_VAL)
         {
-            uint8_t inputs = io_get_limits();
-            uint8_t diff = (inputs ^ last_limits) & inputs;
-            last_limits = inputs;
-            if (diff != 0)
-            {
-                mcu_limits_changed_cb();
-            }
-#if (LIMITS_DUAL_MASK != 0)
-            else
-            {
-                inputs = io_get_limits_dual();
-                diff = (inputs ^ last_limits_dual) & inputs;
-                last_limits_dual = inputs;
-                if (diff != 0)
-                {
-                    mcu_limits_changed_cb();
-                }
-            }
-#endif
-            inputs = io_get_controls();
-            diff = (inputs ^ last_controls) & inputs;
-            last_controls = inputs;
-            if (diff != 0)
-            {
-                mcu_controls_changed_cb();
-            }
+            mcu_limits_changed_cb();
+            mcu_controls_changed_cb();
         }
 #endif
 #if !(LED < 0)
@@ -823,8 +799,8 @@ static void cnc_io_dotasks(void)
     // checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
     mcu_limits_changed_cb();
-#endif
     mcu_controls_changed_cb();
+#endif
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
     // extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
     mcu_inputs_changed_cb();
