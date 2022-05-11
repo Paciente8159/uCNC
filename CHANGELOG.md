@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.4] - 2022-05-10
+## [1.4.4] - 2022-05-11
 
 µCNC version 1.4.4 changes are:
 
@@ -44,6 +44,7 @@
 - fixed error were coordinates would be forgotten/override if applying multiple G10 commands for different axis (ex. G10L20X0 and G10L20Y0) (#204)
 - fixed logic error when both limits switches are active for an axis (not dual-drive) and are inverted, trigger would only happen if both were pressed (#205)
 - fixed logic ORING of signals when homing leading to incorrect trigger when self-squaring cause by #205 (#207)
+- fixed G28-G30 not updating parser position leading to intermediate travel on next command (#211)
 
 ## [1.4.3] - 2022-05-02
 
