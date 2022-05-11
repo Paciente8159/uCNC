@@ -217,7 +217,7 @@ extern "C"
 // enables automatic status report sending
 // this value sets the millisecond interval of the reports
 // values bellow 100ms have no effect
-#define STATUS_AUTOMATIC_REPORT_INTERVAL 100
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
 
   /**
    *
