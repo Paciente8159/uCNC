@@ -137,28 +137,60 @@ static FORCEINLINE uint8_t read_encoder_dirs(void)
 {
     uint8_t value = 0;
 #if ENCODERS > 0
+#ifndef ENC0_INVERT
     value |= ((mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 1
+#ifndef ENC1_INVERT
     value |= ((mcu_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC1_DIR)) ? ENC2_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 2
+#ifndef ENC2_INVERT
     value |= ((mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 3
+#ifndef ENC3_INVERT
     value |= ((mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 4
+#ifndef ENC4_INVERT
     value |= ((mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 5
+#ifndef ENC5_INVERT
     value |= ((mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 6
+#ifndef ENC6_INVERT
     value |= ((mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
+#endif
 #endif
 #if ENCODERS > 7
+#ifndef ENC7_INVERT
     value |= ((mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
+#else
+    value |= ((!mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
+#endif
 #endif
     return value;
 }

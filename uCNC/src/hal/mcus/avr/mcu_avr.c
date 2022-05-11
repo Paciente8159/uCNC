@@ -357,7 +357,6 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 
 #if (PCINT1_DIN_IO_MASK != 0)
         mcu_inputs_changed_cb();
-
 #endif
 }
 #endif
@@ -1117,6 +1116,9 @@ void mcu_init(void)
         SETBIT(PCICR, PCIE2);
 #else
         CLEARBIT(PCICR, PCIE2);
+#endif
+#if (EIMSK_VAL != 0)
+        EIMSK = EIMSK_VAL;
 #endif
 #endif
 
