@@ -183,7 +183,7 @@ void mcu_probe_changed_cb(void)
 
 // overridable
 // for now if encoders are enabled this will be override by the encoder call
-void __attribute__((weak, weakref)) mcu_inputs_changed_cb(void)
+void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
     mod_input_change_hook();

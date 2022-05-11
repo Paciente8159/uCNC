@@ -322,11 +322,6 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT0_MASK != 0)
 ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
-        static uint8_t prev_value = 0;
-        uint8_t value = PCINT0_INREG;
-        uint8_t diff = prev_value ^ value;
-        prev_value = value;
-
 #if (PCINT0_LIMITS_MASK != 0)
         mcu_limits_changed_cb();
 #endif

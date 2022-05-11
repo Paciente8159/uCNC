@@ -209,11 +209,6 @@ bool cnc_dotasks(void)
 void mcu_rtc_cb(uint32_t millis)
 {
     static bool running = false;
-    static uint8_t last_limits = 0;
-#if (LIMITS_DUAL_MASK != 0)
-    static uint8_t last_limits_dual = 0;
-#endif
-    static uint8_t last_controls = 0;
 
     if (!running)
     {
