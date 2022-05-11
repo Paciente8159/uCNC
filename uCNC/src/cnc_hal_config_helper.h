@@ -471,7 +471,7 @@ extern "C"
 #ifdef DUAL_DRIVE1_AXIS
 #define AXIS_DUAL1 __axisname__(DUAL_DRIVE1_AXIS)
 #define STEP_DUAL1 (1 << AXIS_DUAL1)
-#define LIMIT_DUAL1_MASK (1 << AXIS_DUAL0)
+#define LIMIT_DUAL1_MASK (1 << AXIS_DUAL1)
 #define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
 #endif
 #endif
