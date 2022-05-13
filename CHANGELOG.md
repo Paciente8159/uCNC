@@ -20,6 +20,7 @@
 - modified encoder to make it and independent module. This work a bit like a core functionality and not a module. (#213)
 - stepper encoders now report directly the position via the interpolator (#213)
 - added example of mirror RAMPS board (with encoders) (#213)
+- redesigned limit/control/inputs switch logic. All logic is now performed inside the respective mcu callbacks (#212)
 
 ### Fixed
 
