@@ -153,6 +153,7 @@ uint8_t kinematics_home(void)
                 return result;
         }
 
+#ifndef DISABLE_A_HOMING
 #if (defined(AXIS_A) && !(LIMIT_A < 0))
         result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
         if (result != 0)
@@ -160,6 +161,9 @@ uint8_t kinematics_home(void)
                 return result;
         }
 #endif
+#endif
+
+#ifndef DISABLE_B_HOMING
 #if (defined(AXIS_B) && !(LIMIT_B < 0))
         result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
         if (result != 0)
@@ -167,12 +171,16 @@ uint8_t kinematics_home(void)
                 return result;
         }
 #endif
+#endif
+
+#ifndef DISABLE_C_HOMING
 #if (defined(AXIS_C) && !(LIMIT_C < 0))
         result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
         if (result != 0)
         {
                 return result;
         }
+#endif
 #endif
 
         // unlocks the machine to go to offset

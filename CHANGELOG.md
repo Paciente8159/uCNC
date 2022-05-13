@@ -6,6 +6,26 @@
 
 # Changelog
 
+## [1.4.5] - Unreleased
+
+µCNC version 1.4.5 changes are:
+
+### Added
+
+
+### Changed
+
+- option to enable self-squaring and dual-drive axis is now independent (#208)
+- option to disable homing on each individual axis (#209)
+- modified encoder to make it and independent module. This work a bit like a core functionality and not a module. (#213)
+- stepper encoders now report directly the position via the interpolator (#213)
+- added example of mirror RAMPS board (with encoders) (#213)
+- redesigned limit/control/inputs switch logic. All logic is now performed inside the respective mcu callbacks (#212)
+
+### Fixed
+
+- EIMSK not being set on AVR MCU making external Interrupt pins not to trigger (#213)
+
 ## [1.4.4] - 2022-05-11
 
 µCNC version 1.4.4 changes are:

@@ -133,9 +133,6 @@ extern "C"
 
 #if ENCODERS > 0
 #if (defined(STEP0_ENCODER) || defined(STEP1_ENCODER) || defined(STEP2_ENCODER) || defined(STEP3_ENCODER) || defined(STEP4_ENCODER) || defined(STEP5_ENCODER))
-#if (!defined(ENABLE_INTERPOLATOR_MODULES) || !defined(ENABLE_MAIN_LOOP_MODULES))
-#error "Stepper encoders require ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES to be enabled"
-#endif
 #endif
 #if defined(ENABLE_IO_MODULES)
 #warning "Encoder module is enable. Generic input change event will not be available"
@@ -463,7 +460,9 @@ extern "C"
 #ifdef DUAL_DRIVE0_AXIS
 #define AXIS_DUAL0 __axisname__(DUAL_DRIVE0_AXIS)
 #define STEP_DUAL0 (1 << AXIS_DUAL0)
+#ifdef DUAL_DRIVE0_ENABLE_SELFSQUARING
 #define LIMIT_DUAL0_MASK (1 << AXIS_DUAL0)
+#endif
 #define STEP_DUAL0_MASK (1 << DUAL_DRIVE0_STEPPER)
 #endif
 
@@ -471,7 +470,9 @@ extern "C"
 #ifdef DUAL_DRIVE1_AXIS
 #define AXIS_DUAL1 __axisname__(DUAL_DRIVE1_AXIS)
 #define STEP_DUAL1 (1 << AXIS_DUAL1)
+#ifdef DUAL_DRIVE1_ENABLE_SELFSQUARING
 #define LIMIT_DUAL1_MASK (1 << AXIS_DUAL1)
+#endif
 #define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
 #endif
 #endif

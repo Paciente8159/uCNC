@@ -29,28 +29,39 @@ static uint8_t io_invert_limits_mask;
 
 void mcu_limits_changed_cb(void)
 {
-#ifdef DISABLE_ALL_LIMITS
-    return;
-#endif
-
-    uint8_t limits = io_get_limits();
-
-#if (LIMITS_DUAL_MASK != 0)
-    uint8_t limits_dual = io_get_limits_dual();
-    uint8_t limit_combined = limits | limits_dual;
-#else
-    uint8_t limit_combined = limits;
-#endif
+#ifndef DISABLE_ALL_LIMITS
 
     if (g_settings.hard_limits_enabled)
     {
+        static uint8_t prev_limits = 0;
+        uint8_t limits = io_get_limits();
+
+#if (LIMITS_DUAL_MASK != 0)
+        static uint8_t prev_limits_dual = 0;
+        uint8_t limits_dual = io_get_limits_dual();
+        uint8_t limit_combined = limits | limits_dual;
+
+        if (!(limits ^ prev_limits) && !(limits_dual ^ prev_limits_dual))
+        {
+            return;
+        }
+        prev_limits = limits;
+        prev_limits_dual = limits_dual;
+#else
+        if (!(limits ^ prev_limits))
+        {
+            return;
+        }
+        prev_limits = limits;
+        uint8_t limit_combined = limits;
+#endif
         if (limit_combined)
         {
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
             if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
             {
                 // if homing and dual drive axis are enabled
-#ifdef DUAL_DRIVE0_AXIS
+#ifdef DUAL_DRIVE0_ENABLE_SELFSQUARING
                 if (limit_combined & LIMIT_DUAL0_MASK) // the limit triggered matches the first dual drive axis
                 {
                     // lock the stepper accodring to the blocked
@@ -62,7 +73,7 @@ void mcu_limits_changed_cb(void)
                     }
                 }
 #endif
-#ifdef DUAL_DRIVE1_AXIS
+#ifdef DUAL_DRIVE1_ENABLE_SELFSQUARING
                 if (limit_combined & LIMIT_DUAL1_MASK) // the limit triggered matches the second dual drive axis
                 {
                     itp_lock_stepper((limits_dual & LIMIT_DUAL1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
@@ -90,13 +101,15 @@ void mcu_limits_changed_cb(void)
             }
 #endif
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
             itp_lock_stepper(0); // unlocks axis
 #endif
             itp_stop();
             cnc_set_exec_state(EXEC_HALT);
         }
     }
+
+#endif
 }
 
 void mcu_controls_changed_cb(void)
@@ -104,7 +117,15 @@ void mcu_controls_changed_cb(void)
 #ifdef DISABLE_ALL_CONTROLS
     return;
 #else
+    static uint8_t prev_controls = 0;
     uint8_t controls = io_get_controls();
+
+    if (!(prev_controls ^ controls))
+    {
+        return;
+    }
+
+    prev_controls = controls;
 
 #if !(ESTOP < 0)
     if (CHECKFLAG(controls, ESTOP_MASK))
@@ -141,10 +162,23 @@ void mcu_probe_changed_cb(void)
 #ifdef DISABLE_PROBE
     return;
 #endif
+
+#if !(PROBE < 0)
+    static bool prev_probe = false;
+    bool probe = io_get_probe();
+
+    if (prev_probe == probe)
+    {
+        return;
+    }
+
+    prev_probe = probe;
+
     // on hit enables hold (directly)
     cnc_set_exec_state(EXEC_HOLD);
     // stores rt position
     parser_sync_probe();
+#endif
 }
 
 // overridable

@@ -74,16 +74,27 @@ extern "C"
 #define FHOLD_PULLUP
 #define CS_RES_PULLUP
 
-/*
-	Uncomment this feature to enable tool length compensation
-*/
+/**
+ * Uncomment this feature to enable tool length compensation
+ */
 #if (!defined(AXIS_TOOL) && defined(AXIS_Z))
 #define AXIS_TOOL AXIS_Z
 #endif
 
-	/*
-		Uncomment this feature to enable up to 2 dual drive axis
-	*/
+/**
+ * Uncomment to disable axis homing
+ * Theses settings have no effect on the DELTA kinematic (on X,Y,Z axis)
+ */
+// #define DISABLE_X_HOMING
+// #define DISABLE_Y_HOMING
+// #define DISABLE_Z_HOMING
+// #define DISABLE_A_HOMING
+// #define DISABLE_B_HOMING
+// #define DISABLE_C_HOMING
+
+/**
+ * Uncomment this feature to enable up to 2 dual drive axis
+ */
 //#define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 // defines the first dual drive capable axis
@@ -91,12 +102,14 @@ extern "C"
 // by default this will be rewired to STEPPER6 (if available on the board)
 // this can be uncommented to re-wire to an available (unused stepper other then 6)
 // #define DUAL_DRIVE0_STEPPER 6
+//  #define DUAL_DRIVE0_ENABLE_SELFSQUARING
 
 // defines the first second drive capable axis
-// #define DUAL_DRIVE1_AXIS Y
+//#define DUAL_DRIVE1_AXIS Y
 // by default this will be rewired to STEPPER7 (if available on the board)
 // this can be uncommented to re-wire to an available (unused stepper other then 7)
 // #define DUAL_DRIVE1_STEPPER 7
+// #define DUAL_DRIVE1_ENABLE_SELFSQUARING
 #endif
 
 /*
@@ -108,6 +121,7 @@ extern "C"
 #define TOOL1 spindle_pwm
 	//#define TOOL2 laser1
 
+// Assigns an output to an blinking led (1Hz rate)
 #define LED DOUT31
 
 /*
@@ -130,11 +144,21 @@ extern "C"
  * */
 #if ENCODERS > 0
 // Counter mode
-#define ENC0_PULSE DIN0
-#define ENC0_DIR DIN0
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN0
+
 // Encoder mode
-//  #define ENC1_PULSE DIN1
-//  #define ENC1_DIR DIN8
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
+// #define STEP0_ENCODER 0
+
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
+// #define STEP1_ENCODER 1
+
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
+// #define STEP2_ENCODER 2
 #endif
 
 // these modules must be enabled to use pid
