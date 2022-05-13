@@ -457,6 +457,9 @@ void cnc_reset(void)
     mc_init();
     parser_init();
     mc_sync_position();
+#if ENCODERS > 0
+    encoders_reset_position();
+#endif
 #ifdef ENABLE_MAIN_LOOP_MODULES
     mod_cnc_reset_hook();
 #endif

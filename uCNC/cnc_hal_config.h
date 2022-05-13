@@ -130,11 +130,21 @@ extern "C"
  * */
 #if ENCODERS > 0
 // Counter mode
-#define ENC0_PULSE DIN0
-#define ENC0_DIR DIN0
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN0
+
 // Encoder mode
-//  #define ENC1_PULSE DIN1
-//  #define ENC1_DIR DIN8
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
+// #define STEP0_ENCODER 0
+
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
+// #define STEP1_ENCODER 1
+
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
+// #define STEP2_ENCODER 2
 #endif
 
 // these modules must be enabled to use pid
