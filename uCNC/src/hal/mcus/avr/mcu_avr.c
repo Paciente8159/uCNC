@@ -322,36 +322,19 @@ ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT0_MASK != 0)
 ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 {
-        static uint8_t prev_value = 0;
-        uint8_t value = PCINT0_INREG;
-        uint8_t diff = prev_value ^ value;
-        prev_value = value;
-
 #if (PCINT0_LIMITS_MASK != 0)
-        if (diff & PCINT0_LIMITS_MASK)
-        {
-                mcu_limits_changed_cb();
-        }
+        mcu_limits_changed_cb();
 #endif
 #if (PCINT0_CONTROLS_MASK != 0)
-        if (diff & PCINT0_CONTROLS_MASK)
-        {
-                mcu_controls_changed_cb();
-        }
+        mcu_controls_changed_cb();
 #endif
 
 #if (PROBE_ISR0 != 0)
-        if (CHECKBIT(diff, PROBE_BIT))
-        {
-                mcu_probe_changed_cb();
-        }
+        mcu_probe_changed_cb();
 #endif
 
 #if (PCINT0_DIN_IO_MASK != 0)
-        if (diff & PCINT0_DIN_IO_MASK)
-        {
-                mcu_inputs_changed_cb();
-        }
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -359,36 +342,21 @@ ISR(PCINT0_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT1_MASK != 0)
 ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 {
-        static uint8_t prev_value = 0;
-        uint8_t value = PCINT1_INREG;
-        uint8_t diff = prev_value ^ value;
-        prev_value = value;
-
 #if (PCINT1_LIMITS_MASK != 0)
-        if (diff & PCINT1_LIMITS_MASK)
-        {
-                mcu_limits_changed_cb();
-        }
+        mcu_limits_changed_cb();
 #endif
 #if (PCINT1_CONTROLS_MASK != 0)
-        if (diff & PCINT1_CONTROLS_MASK)
-        {
-                mcu_controls_changed_cb();
-        }
+        mcu_controls_changed_cb();
+
 #endif
 
 #if (PROBE_ISR1 != 0)
-        if (CHECKBIT(diff, PROBE_BIT))
-        {
-                mcu_probe_changed_cb();
-        }
+        mcu_probe_changed_cb();
+
 #endif
 
 #if (PCINT1_DIN_IO_MASK != 0)
-        if (diff & PCINT1_DIN_IO_MASK)
-        {
-                mcu_inputs_changed_cb();
-        }
+        mcu_inputs_changed_cb();
 #endif
 }
 #endif
@@ -396,36 +364,23 @@ ISR(PCINT1_vect, ISR_BLOCK) // input pin on change service routine
 #if (PCINT2_MASK != 0)
 ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 {
-        static uint8_t prev_value = 0;
-        uint8_t value = PCINT2_INREG;
-        uint8_t diff = prev_value ^ value;
-        prev_value = value;
-
 #if (PCINT2_LIMITS_MASK != 0)
-        if (diff & PCINT2_LIMITS_MASK)
-        {
-                mcu_limits_changed_cb();
-        }
+        mcu_limits_changed_cb();
+
 #endif
 #if (PCINT2_CONTROLS_MASK != 0)
-        if (diff & PCINT2_CONTROLS_MASK)
-        {
-                mcu_controls_changed_cb();
-        }
+        mcu_controls_changed_cb();
+
 #endif
 
 #if (PROBE_ISR2 != 0)
-        if (CHECKBIT(diff, PROBE_BIT))
-        {
-                mcu_probe_changed_cb();
-        }
+        mcu_probe_changed_cb();
+
 #endif
 
 #if (PCINT2_DIN_IO_MASK != 0)
-        if (diff & PCINT2_DIN_IO_MASK)
-        {
-                mcu_inputs_changed_cb();
-        }
+        mcu_inputs_changed_cb();
+
 #endif
 }
 #endif
@@ -1161,6 +1116,9 @@ void mcu_init(void)
         SETBIT(PCICR, PCIE2);
 #else
         CLEARBIT(PCICR, PCIE2);
+#endif
+#if (EIMSK_VAL != 0)
+        EIMSK = EIMSK_VAL;
 #endif
 #endif
 

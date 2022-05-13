@@ -36,6 +36,9 @@ extern "C"
 #define BOARD_ZERO 21
 #define BOARD_VIRTUAL 99
 
+// special purpose board
+#define BOARD_RAMPS14_MIRROR 200
+
 #ifdef __cplusplus
 }
 #endif

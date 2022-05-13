@@ -972,6 +972,27 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
     memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+
+#if ENCODERS > 0
+#if (defined(STEP0_ENCODER) && STEPPER_COUNT > 0)
+    itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
+#endif
+#if (defined(STEP1_ENCODER) && STEPPER_COUNT > 1)
+    itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
+#endif
+#if (defined(STEP2_ENCODER) && STEPPER_COUNT > 2)
+    itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
+#endif
+#if (defined(STEP3_ENCODER) && STEPPER_COUNT > 3)
+    itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
+#endif
+#if (defined(STEP4_ENCODER) && STEPPER_COUNT > 4)
+    itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
+#endif
+#if (defined(STEP5_ENCODER) && STEPPER_COUNT > 5)
+    itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
+#endif
+#endif
 }
 
 int32_t itp_get_rt_position_index(int8_t index)
@@ -996,8 +1017,8 @@ void itp_reset_rt_position(float *origin)
         memset(origin, 0, (sizeof(float) * AXIS_COUNT));
     }
 
-#ifdef ENABLE_INTERPOLATOR_MODULES
-    mod_itp_reset_rt_position_hook(origin);
+#if ENCODERS > 0
+    encoders_itp_reset_rt_position(origin);
 #endif
 }
 
