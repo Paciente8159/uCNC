@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.4.5] - Unreleased
+
+µCNC version 1.4.5 changes are:
+
+### Added
+
+
+### Changed
+
+- option to disable homing on each individual axis (#209)
+
+### Fixed
+
 ## [1.4.4] - 2022-05-11
 
 µCNC version 1.4.4 changes are:

@@ -74,17 +74,28 @@ extern "C"
 #define FHOLD_PULLUP
 #define CS_RES_PULLUP
 
-/*
-	Uncomment this feature to enable tool length compensation
-*/
+/**
+ * Uncomment this feature to enable tool length compensation
+ */
 #if (!defined(AXIS_TOOL) && defined(AXIS_Z))
 #define AXIS_TOOL AXIS_Z
 #endif
 
-	/*
-		Uncomment this feature to enable up to 2 dual drive axis
-	*/
-// #define ENABLE_DUAL_DRIVE_AXIS
+/**
+ * Uncomment to disable axis homing
+ * Theses settings have no effect on the DELTA kinematic (on X,Y,Z axis)
+ */
+// #define DISABLE_X_HOMING
+// #define DISABLE_Y_HOMING
+// #define DISABLE_Z_HOMING
+// #define DISABLE_A_HOMING
+// #define DISABLE_B_HOMING
+// #define DISABLE_C_HOMING
+
+/**
+ * Uncomment this feature to enable up to 2 dual drive axis
+ */
+//#define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 // defines the first dual drive capable axis
 // #define DUAL_DRIVE0_AXIS X
@@ -110,6 +121,7 @@ extern "C"
 #define TOOL1 spindle_pwm
 	//#define TOOL2 laser1
 
+// Assigns an output to an blinking led (1Hz rate)
 #define LED DOUT31
 
 /*
