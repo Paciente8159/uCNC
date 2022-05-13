@@ -256,7 +256,7 @@ void MCU_ITP_ISR(void)
 #if (ALL_EXTIBITMASK != 0)
 static void mcu_input_isr(void)
 {
-
+	mcu_disable_global_isr();
 #if (LIMITS_EXTIBITMASK != 0)
 	if (EXTI->PR & LIMITS_EXTIBITMASK)
 	{

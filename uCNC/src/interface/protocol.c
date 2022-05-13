@@ -713,6 +713,10 @@ void protocol_send_pins_states(void)
     serial_print_intarr(steps, STEPPER_COUNT);
     serial_print_str(MSG_END);
 
+#if ENCODERS > 0
+    encoder_print_values();
+#endif
+
 #ifdef ENABLE_PROTOCOL_MODULES
     mod_send_pins_states_hook();
 #endif
