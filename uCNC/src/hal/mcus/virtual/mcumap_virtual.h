@@ -140,9 +140,9 @@
 #define LIMIT_X2 103
 #define LIMIT_Y2 104
 #define LIMIT_Z2 105
-//#define LIMIT_A 106
-//#define LIMIT_B 107
-//#define LIMIT_C 108
+#define LIMIT_A 106
+#define LIMIT_B 107
+#define LIMIT_C 108
 #define PROBE 109
 #define ESTOP 110
 #define SAFETY_DOOR 111

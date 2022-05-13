@@ -105,7 +105,7 @@ extern "C"
 //  #define DUAL_DRIVE0_ENABLE_SELFSQUARING
 
 // defines the first second drive capable axis
-#define DUAL_DRIVE1_AXIS Y
+//#define DUAL_DRIVE1_AXIS Y
 // by default this will be rewired to STEPPER7 (if available on the board)
 // this can be uncommented to re-wire to an available (unused stepper other then 7)
 // #define DUAL_DRIVE1_STEPPER 7

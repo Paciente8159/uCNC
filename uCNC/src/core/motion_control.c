@@ -518,7 +518,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     io_invert_limits(0);
     // if HOLD or ALARM are still active or any limit switch is not cleared fails to home
     mcu_limits_changed_cb();
-    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
+    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
     {
         cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
         return STATUS_CRITICAL_FAIL;
