@@ -1911,7 +1911,7 @@ extern "C"
 #endif
 #if (LIMIT_X_ISR == -5)
 #undef LIMIT_X_ISRREG
-#define LIMIT_X_ISRREG EICRA
+#define LIMIT_X_ISRREG EICRB
 #define LIMIT_X_ISRB 1
 #define LIMIT_X_EIMSK 16
 #endif
@@ -1973,7 +1973,7 @@ extern "C"
 #endif
 #if (LIMIT_Y_ISR == -5)
 #undef LIMIT_Y_ISRREG
-#define LIMIT_Y_ISRREG EICRA
+#define LIMIT_Y_ISRREG EICRB
 #define LIMIT_Y_ISRB 1
 #define LIMIT_Y_EIMSK 16
 #endif
@@ -2035,7 +2035,7 @@ extern "C"
 #endif
 #if (LIMIT_Z_ISR == -5)
 #undef LIMIT_Z_ISRREG
-#define LIMIT_Z_ISRREG EICRA
+#define LIMIT_Z_ISRREG EICRB
 #define LIMIT_Z_ISRB 1
 #define LIMIT_Z_EIMSK 16
 #endif
@@ -2097,7 +2097,7 @@ extern "C"
 #endif
 #if (LIMIT_X2_ISR == -5)
 #undef LIMIT_X2_ISRREG
-#define LIMIT_X2_ISRREG EICRA
+#define LIMIT_X2_ISRREG EICRB
 #define LIMIT_X2_ISRB 1
 #define LIMIT_X2_EIMSK 16
 #endif
@@ -2159,7 +2159,7 @@ extern "C"
 #endif
 #if (LIMIT_Y2_ISR == -5)
 #undef LIMIT_Y2_ISRREG
-#define LIMIT_Y2_ISRREG EICRA
+#define LIMIT_Y2_ISRREG EICRB
 #define LIMIT_Y2_ISRB 1
 #define LIMIT_Y2_EIMSK 16
 #endif
@@ -2221,7 +2221,7 @@ extern "C"
 #endif
 #if (LIMIT_Z2_ISR == -5)
 #undef LIMIT_Z2_ISRREG
-#define LIMIT_Z2_ISRREG EICRA
+#define LIMIT_Z2_ISRREG EICRB
 #define LIMIT_Z2_ISRB 1
 #define LIMIT_Z2_EIMSK 16
 #endif
@@ -2283,7 +2283,7 @@ extern "C"
 #endif
 #if (LIMIT_A_ISR == -5)
 #undef LIMIT_A_ISRREG
-#define LIMIT_A_ISRREG EICRA
+#define LIMIT_A_ISRREG EICRB
 #define LIMIT_A_ISRB 1
 #define LIMIT_A_EIMSK 16
 #endif
@@ -2345,7 +2345,7 @@ extern "C"
 #endif
 #if (LIMIT_B_ISR == -5)
 #undef LIMIT_B_ISRREG
-#define LIMIT_B_ISRREG EICRA
+#define LIMIT_B_ISRREG EICRB
 #define LIMIT_B_ISRB 1
 #define LIMIT_B_EIMSK 16
 #endif
@@ -2407,7 +2407,7 @@ extern "C"
 #endif
 #if (LIMIT_C_ISR == -5)
 #undef LIMIT_C_ISRREG
-#define LIMIT_C_ISRREG EICRA
+#define LIMIT_C_ISRREG EICRB
 #define LIMIT_C_ISRB 1
 #define LIMIT_C_EIMSK 16
 #endif
@@ -2469,7 +2469,7 @@ extern "C"
 #endif
 #if (PROBE_ISR == -5)
 #undef PROBE_ISRREG
-#define PROBE_ISRREG EICRA
+#define PROBE_ISRREG EICRB
 #define PROBE_ISRB 1
 #define PROBE_EIMSK 16
 #endif
@@ -2531,7 +2531,7 @@ extern "C"
 #endif
 #if (ESTOP_ISR == -5)
 #undef ESTOP_ISRREG
-#define ESTOP_ISRREG EICRA
+#define ESTOP_ISRREG EICRB
 #define ESTOP_ISRB 1
 #define ESTOP_EIMSK 16
 #endif
@@ -2593,7 +2593,7 @@ extern "C"
 #endif
 #if (SAFETY_DOOR_ISR == -5)
 #undef SAFETY_DOOR_ISRREG
-#define SAFETY_DOOR_ISRREG EICRA
+#define SAFETY_DOOR_ISRREG EICRB
 #define SAFETY_DOOR_ISRB 1
 #define SAFETY_DOOR_EIMSK 16
 #endif
@@ -2655,7 +2655,7 @@ extern "C"
 #endif
 #if (FHOLD_ISR == -5)
 #undef FHOLD_ISRREG
-#define FHOLD_ISRREG EICRA
+#define FHOLD_ISRREG EICRB
 #define FHOLD_ISRB 1
 #define FHOLD_EIMSK 16
 #endif
@@ -2717,7 +2717,7 @@ extern "C"
 #endif
 #if (CS_RES_ISR == -5)
 #undef CS_RES_ISRREG
-#define CS_RES_ISRREG EICRA
+#define CS_RES_ISRREG EICRB
 #define CS_RES_ISRB 1
 #define CS_RES_EIMSK 16
 #endif
@@ -2779,7 +2779,7 @@ extern "C"
 #endif
 #if (DIN0_ISR == -5)
 #undef DIN0_ISRREG
-#define DIN0_ISRREG EICRA
+#define DIN0_ISRREG EICRB
 #define DIN0_ISRB 1
 #define DIN0_EIMSK 16
 #endif
@@ -2841,7 +2841,7 @@ extern "C"
 #endif
 #if (DIN1_ISR == -5)
 #undef DIN1_ISRREG
-#define DIN1_ISRREG EICRA
+#define DIN1_ISRREG EICRB
 #define DIN1_ISRB 1
 #define DIN1_EIMSK 16
 #endif
@@ -2903,7 +2903,7 @@ extern "C"
 #endif
 #if (DIN2_ISR == -5)
 #undef DIN2_ISRREG
-#define DIN2_ISRREG EICRA
+#define DIN2_ISRREG EICRB
 #define DIN2_ISRB 1
 #define DIN2_EIMSK 16
 #endif
@@ -2965,7 +2965,7 @@ extern "C"
 #endif
 #if (DIN3_ISR == -5)
 #undef DIN3_ISRREG
-#define DIN3_ISRREG EICRA
+#define DIN3_ISRREG EICRB
 #define DIN3_ISRB 1
 #define DIN3_EIMSK 16
 #endif
@@ -3027,7 +3027,7 @@ extern "C"
 #endif
 #if (DIN4_ISR == -5)
 #undef DIN4_ISRREG
-#define DIN4_ISRREG EICRA
+#define DIN4_ISRREG EICRB
 #define DIN4_ISRB 1
 #define DIN4_EIMSK 16
 #endif
@@ -3089,7 +3089,7 @@ extern "C"
 #endif
 #if (DIN5_ISR == -5)
 #undef DIN5_ISRREG
-#define DIN5_ISRREG EICRA
+#define DIN5_ISRREG EICRB
 #define DIN5_ISRB 1
 #define DIN5_EIMSK 16
 #endif
@@ -3151,7 +3151,7 @@ extern "C"
 #endif
 #if (DIN6_ISR == -5)
 #undef DIN6_ISRREG
-#define DIN6_ISRREG EICRA
+#define DIN6_ISRREG EICRB
 #define DIN6_ISRB 1
 #define DIN6_EIMSK 16
 #endif
@@ -3213,7 +3213,7 @@ extern "C"
 #endif
 #if (DIN7_ISR == -5)
 #undef DIN7_ISRREG
-#define DIN7_ISRREG EICRA
+#define DIN7_ISRREG EICRB
 #define DIN7_ISRB 1
 #define DIN7_EIMSK 16
 #endif

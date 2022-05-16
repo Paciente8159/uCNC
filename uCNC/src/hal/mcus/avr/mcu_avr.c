@@ -182,138 +182,138 @@ ISR(ITP_COMPB_vect, ISR_BLOCK)
 
 #ifndef FORCE_SOFT_POLLING
 
-#if (PCINTA_MASK == 1)
+#if (PCINTA_MASK & 1)
 ISR(INT0_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTA_LIMITS_MASK == 1)
+#if (PCINTA_LIMITS_MASK & 1)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTA_CONTROLS_MASK == 1)
+#if (PCINTA_CONTROLS_MASK & 1)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRA == 1)
+#if (PROBE_ISRA & 1)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTA_DIN_IO_MASK == 1)
+#if (PCINTA_DIN_IO_MASK & 1)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTA_MASK == 4)
+#if (PCINTA_MASK & 4)
 ISR(INT1_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTA_LIMITS_MASK == 4)
+#if (PCINTA_LIMITS_MASK & 4)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTA_CONTROLS_MASK == 4)
+#if (PCINTA_CONTROLS_MASK & 4)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRA == 4)
+#if (PROBE_ISRA & 4)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTA_DIN_IO_MASK == 4)
+#if (PCINTA_DIN_IO_MASK & 4)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTA_MASK == 16)
+#if (PCINTA_MASK & 16)
 ISR(INT2_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTA_LIMITS_MASK == 16)
+#if (PCINTA_LIMITS_MASK & 16)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTA_CONTROLS_MASK == 16)
+#if (PCINTA_CONTROLS_MASK & 16)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRA == 16)
+#if (PROBE_ISRA & 16)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTA_DIN_IO_MASK == 16)
+#if (PCINTA_DIN_IO_MASK & 16)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTA_MASK == 64)
+#if (PCINTA_MASK & 64)
 ISR(INT3_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTA_LIMITS_MASK == 64)
+#if (PCINTA_LIMITS_MASK & 64)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTA_CONTROLS_MASK == 64)
+#if (PCINTA_CONTROLS_MASK & 64)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRA == 64)
+#if (PROBE_ISRA & 64)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTA_DIN_IO_MASK == 64)
+#if (PCINTA_DIN_IO_MASK & 64)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTB_MASK == 1)
+#if (PCINTB_MASK & 1)
 ISR(INT4_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTB_LIMITS_MASK == 1)
+#if (PCINTB_LIMITS_MASK & 1)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTB_CONTROLS_MASK == 1)
+#if (PCINTB_CONTROLS_MASK & 1)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRB == 1)
+#if (PROBE_ISRB & 1)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTB_DIN_IO_MASK == 1)
+#if (PCINTB_DIN_IO_MASK & 1)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTB_MASK == 4)
+#if (PCINTB_MASK & 4)
 ISR(INT5_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTB_LIMITS_MASK == 4)
+#if (PCINTB_LIMITS_MASK & 4)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTB_CONTROLS_MASK == 4)
+#if (PCINTB_CONTROLS_MASK & 4)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRB == 4)
+#if (PROBE_ISRB & 4)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTB_DIN_IO_MASK == 4)
+#if (PCINTB_DIN_IO_MASK & 4)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTB_MASK == 16)
+#if (PCINTB_MASK & 16)
 ISR(INT6_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTB_LIMITS_MASK == 16)
+#if (PCINTB_LIMITS_MASK & 16)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTB_CONTROLS_MASK == 16)
+#if (PCINTB_CONTROLS_MASK & 16)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRB == 16)
+#if (PROBE_ISRB & 16)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTB_DIN_IO_MASK == 16)
+#if (PCINTB_DIN_IO_MASK & 16)
         mcu_inputs_changed_cb();
 #endif
 }
 #endif
-#if (PCINTB_MASK == 64)
+#if (PCINTB_MASK & 64)
 ISR(INT7_vect, ISR_BLOCK) // input pin on change service routine
 {
-#if (PCINTB_LIMITS_MASK == 64)
+#if (PCINTB_LIMITS_MASK & 64)
         mcu_limits_changed_cb();
 #endif
-#if (PCINTB_CONTROLS_MASK == 64)
+#if (PCINTB_CONTROLS_MASK & 64)
         mcu_controls_changed_cb();
 #endif
-#if (PROBE_ISRB == 64)
+#if (PROBE_ISRB & 64)
         mcu_probe_changed_cb();
 #endif
-#if (PCINTB_DIN_IO_MASK == 64)
+#if (PCINTB_DIN_IO_MASK & 64)
         mcu_inputs_changed_cb();
 #endif
 }
