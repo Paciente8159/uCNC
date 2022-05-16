@@ -25,6 +25,7 @@
 ### Fixed
 
 - EIMSK not being set on AVR MCU making external Interrupt pins not to trigger (#213)
+- fixed ISR mask evaluation that prevented the correct ISR to catch the call leading to fault reset (introduced with #213) (#214)
 
 ## [1.4.4] - 2022-05-11
 
