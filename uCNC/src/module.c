@@ -185,7 +185,7 @@ void mod_init(void)
 	LOAD_MODULE(tmcdriver);
 #endif
 
-	mod_load_modules();
+	load_modules();
 }
 
 void load_modules(void)
