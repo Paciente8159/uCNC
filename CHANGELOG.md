@@ -6,9 +6,10 @@
 
 # Changelog
 
-## [1.4.5] - Unreleased
+## [1.4.5] - 2022-05-17
 
-µCNC version 1.4.5 changes are:
+µCNC version 1.4.5 changes are listed below.
+Next release will will have some extensive changes in µCNC modules to make it more easy to add an use modules in a need only basis.
 
 ### Added
 
@@ -885,6 +886,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.3
 [1.4.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.2

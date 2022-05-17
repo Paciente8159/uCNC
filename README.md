@@ -11,6 +11,8 @@
 By default and as a safety measure µCNC control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), as well as limit switches and probe, are held high by the microcontroller input weak-pull up resistors. If left unconnected or connected to normally opened switches these inputs will be in an active/triggered state and the controller may lock all motions.
 There are a few ways you can reconfigure µCNC to enable normal operation [here](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#%C2%B5cnc-wiring).
 
+Also beware that the main branch contain the latest changes, including bug fixes and some intermediate changes. Some of theses changes are very extent and can come with issues and although new PR are tested they might have unexpected errors or behavior. If you find and issue please report. Also prefer the latest release version over the maste branch.
+
 ## About µCNC
 
 Heavily inspired by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://linuxcnc.org/), µCNC started to take shape in the second half of 2019, in an attempt to come out with a G-Code interpreter/controller software/firmware that is both compact and powerful as Grbl and flexible and modular as LinuxCNC, with the following goals in mind:
