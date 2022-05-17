@@ -134,7 +134,6 @@ extern "C"
 #include "core/motion_control.h"
 #include "core/planner.h"
 #include "core/interpolator.h"
-#include "modules/encoder.h"
 
 	/**
 	 *

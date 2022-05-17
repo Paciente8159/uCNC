@@ -18,8 +18,11 @@
 */
 
 #include "cnc.h"
-#include "modules/softspi.h"
-#include "modules/softuart.h"
+#include "modules/tmcdriver.h"
+#include "modules/digimstep.h"
+#include "modules/digipot.h"
+#include "modules/encoder.h"
+#include "modules/pid.h"
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
@@ -158,97 +161,25 @@ WEAK_HOOK(probe_disable)
 }
 #endif
 
-static void softspi_ss_init()
-{
-	// initialize slave select pins
-#ifdef STEPPER_CURR_DIGIPOT
-	mcu_set_output(STEPPER_DIGIPOT_SS);
-#endif
-
-#ifdef STEPPER0_SPI_CS
-	mcu_set_output(STEPPER0_SPI_CS);
-#endif
-#ifdef STEPPER1_SPI_CS
-	mcu_set_output(STEPPER1_SPI_CS);
-#endif
-#ifdef STEPPER2_SPI_CS
-	mcu_set_output(STEPPER2_SPI_CS);
-#endif
-#ifdef STEPPER3_SPI_CS
-	mcu_set_output(STEPPER3_SPI_CS);
-#endif
-#ifdef STEPPER4_SPI_CS
-	mcu_set_output(STEPPER4_SPI_CS);
-#endif
-#ifdef STEPPER5_SPI_CS
-	mcu_set_output(STEPPER5_SPI_CS);
-#endif
-#ifdef STEPPER6_SPI_CS
-	mcu_set_output(STEPPER6_SPI_CS);
-#endif
-#ifdef STEPPER7_SPI_CS
-	mcu_set_output(STEPPER7_SPI_CS);
-#endif
-}
-
 void mod_init(void)
 {
-	softspi_ss_init();
-
-// MStep selectors via digital pins
 #ifdef ENABLE_DIGITAL_MSTEP
-	extern void digimstep_init(void);
-	digimstep_init();
-#ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m351_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m351_exec, gcode_exec_event);
-#endif
+	LOAD_MODULE(digimstep);
 #endif
 
 #ifdef STEPPER_CURR_DIGIPOT
-	extern void digipot_spi_init(void);
-	digipot_spi_init();
-#ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m907_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m907_exec, gcode_exec_event);
-#endif
+	LOAD_MODULE(digipot);
 #endif
 
-	// initializes PID module
 #if PID_CONTROLLERS > 0
-	extern void pid_init(void);
-	pid_init(); // pid
-#endif
-
-// add listeners here
-#ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m42_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m42_exec, gcode_exec_event);
+	LOAD_MODULE(pid);
 #endif
 
 #if ENCODERS > 0
-#ifdef ENABLE_INTERPOLATOR_MODULES
-	ADD_LISTENER(itp_reset_rt_position_delegate, encoders_itp_reset_rt_position, itp_reset_rt_position_event);
-#endif
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_LISTENER(cnc_reset_delegate, encoders_reset_position, cnc_reset_event);
-#endif
-#ifdef ENABLE_PROTOCOL_MODULES
-	ADD_LISTENER(send_pins_states_delegate, encoder_print_values, send_pins_states_event);
-#endif
+	LOAD_MODULE(encoder);
 #endif
 
 #ifdef ENABLE_TMC_DRIVERS
-	extern void tmcdrivers_init(void);
-	tmcdrivers_init();
-	ADD_LISTENER(cnc_reset_delegate, tmcdrivers_init, cnc_reset_event);
-#ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m906_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m906_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m920_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m920_exec, gcode_exec_event);
-#endif
+	LOAD_MODULE(tmcdriver);
 #endif
 }

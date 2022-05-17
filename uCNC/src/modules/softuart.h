@@ -53,10 +53,10 @@ extern "C"
     {                                      \
         return mcu_get_input(RXPIN);       \
     }                                      \
-    const softuart_port_t __rom__ NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
+    __attribute__((used)) softuart_port_t NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-    void softuart_putc(const softuart_port_t *port_ptr, char c);
-    char softuart_getc(const softuart_port_t *port_ptr);
+    void softuart_putc(softuart_port_t *port, char c);
+    char softuart_getc(softuart_port_t *port);
 
 #ifdef __cplusplus
 }

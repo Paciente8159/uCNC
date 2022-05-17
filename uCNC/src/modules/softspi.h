@@ -63,9 +63,9 @@ extern "C"
         }                                                     \
     }                                                         \
     bool NAME##_miso(void) { return mcu_get_input(MISOPIN); } \
-    const softspi_port_t __rom__ NAME = {.spimode = MODE, .delay = SPIXMITDELAY, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
+    __attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .delay = SPIXMITDELAY, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
 
-    uint8_t softspi_xmit(const softspi_port_t *port_ptr, uint8_t c);
+    uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 
 #ifdef __cplusplus
 }

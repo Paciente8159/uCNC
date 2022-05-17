@@ -28,6 +28,9 @@ extern "C"
 #include "../cnc_config.h"
 #include "core/parser.h"
 
+#define DECL_MODULE(modulename) void modulename##_init(void)
+#define LOAD_MODULE(modulename) modulename##_init()
+
 // definitions to create events and event listeners
 #define EVENT(delegate)                 \
     typedef struct delegate##_event_    \

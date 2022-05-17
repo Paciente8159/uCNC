@@ -1,5 +1,5 @@
 /*
-    Name: tmcdriver.h
+    Name: tmc.h
     Description: Minimalistic generic driver library for Trinamic stepper drivers.
 
     Copyright: Copyright (c) João Martins
@@ -16,8 +16,8 @@
     See the	GNU General Public License for more details.
 */
 
-#ifndef TMCDRIVER_H
-#define TMCDRIVER_H
+#ifndef TMC_H
+#define TMC_H
 
 #ifdef __cplusplus
 extern "C"
