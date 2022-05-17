@@ -11,9 +11,11 @@
 
 ### Added
 
+- added software I2C (bit-banging)
 
 ### Changed
 
+- module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository
 
 ### Fixed
 

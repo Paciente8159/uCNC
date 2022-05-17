@@ -2,7 +2,7 @@
 
 int main(void)
 {
-    //initializes all systems
+    // initializes all systems
     cnc_init();
 
     for (;;)

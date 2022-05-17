@@ -161,6 +161,8 @@ WEAK_HOOK(probe_disable)
 }
 #endif
 
+static FORCEINLINE void load_modules(void);
+
 void mod_init(void)
 {
 #ifdef ENABLE_DIGITAL_MSTEP
@@ -182,4 +184,11 @@ void mod_init(void)
 #ifdef ENABLE_TMC_DRIVERS
 	LOAD_MODULE(tmcdriver);
 #endif
+
+	mod_load_modules();
+}
+
+void load_modules(void)
+{
+	// PLACE YOUR MODULES HERE
 }
