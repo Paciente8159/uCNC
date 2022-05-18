@@ -123,6 +123,8 @@ extern "C"
 #include "utils.h"
 // extension modules
 #include "module.h"
+#include "modules/encoder.h"
+#include "modules/pid.h"
 #include "interface/defaults.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
