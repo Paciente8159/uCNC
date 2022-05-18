@@ -22,48 +22,6 @@
 #ifdef STEPPER_CURR_DIGIPOT
 SOFTSPI(digipotspi, 0, STEPPER_DIGIPOT_DO, STEPPER_DIGIPOT_DI, STEPPER_DIGIPOT_CLK)
 
-void digipot_spi_init(void)
-{
-    // Digipot for stepper motors
-#ifdef STEPPER_CURR_DIGIPOT
-    mcu_clear_output(STEPPER_DIGIPOT_SS);
-#if STEPPER0_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_VALUE);
-#endif
-#if STEPPER1_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_VALUE);
-#endif
-#if STEPPER2_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_VALUE);
-#endif
-#if STEPPER3_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_VALUE);
-#endif
-#if STEPPER4_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_VALUE);
-#endif
-#if STEPPER5_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_VALUE);
-#endif
-#if STEPPER6_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_VALUE);
-#endif
-#if STEPPER7_DIGIPOT_CHANNEL > 0
-    softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
-    softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_VALUE);
-#endif
-
-    mcu_set_output(STEPPER_DIGIPOT_SS);
-#endif
-}
-
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES)
 
@@ -79,99 +37,161 @@ CREATE_LISTENER(gcode_exec_delegate, m907_exec);
 // this just parses and acceps the code
 uint8_t m907_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
-    if (word == 'M' && value == 907.0f)
-    {
-        if (cmd->group_extended != 0)
+        if (word == 'M' && value == 907.0f)
         {
-            // there is a collision of custom gcode commands (only one per line can be processed)
-            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+                if (cmd->group_extended != 0)
+                {
+                        // there is a collision of custom gcode commands (only one per line can be processed)
+                        return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+                }
+                // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
+                cmd->group_extended = M907;
+                return STATUS_OK;
         }
-        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-        cmd->group_extended = M907;
-        return STATUS_OK;
-    }
 
-    // if this is not catched by this parser, just send back the error so other extenders can process it
-    return error;
+        // if this is not catched by this parser, just send back the error so other extenders can process it
+        return error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
 uint8_t m907_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
-    if (cmd->group_extended == M907)
-    {
-        itp_sync();
-        if (!cmd->words)
+        if (cmd->group_extended == M907)
         {
-            return STATUS_GCODE_NO_AXIS_WORDS;
-        }
+                itp_sync();
+                if (!cmd->words)
+                {
+                        return STATUS_GCODE_NO_AXIS_WORDS;
+                }
 
-        mcu_clear_output(STEPPER_DIGIPOT_SS);
+                mcu_clear_output(STEPPER_DIGIPOT_SS);
 
-        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
-        {
+                if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+                {
 #if STEPPER0_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[0]);
+                        softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[0]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+                {
 #if STEPPER1_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[1]);
+                        softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[1]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+                {
 #if STEPPER2_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[2]);
+                        softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[2]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+                {
 #if STEPPER3_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[3]);
+                        softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[3]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+                {
 #if STEPPER4_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[4]);
+                        softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[4]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+                {
 #if STEPPER5_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[5]);
+                        softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->xyzabc[5]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_I))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+                {
 #if STEPPER6_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->ijk[0]);
+                        softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->ijk[0]);
 #endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_J))
-        {
+                }
+                if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+                {
 #if STEPPER7_DIGIPOT_CHANNEL > 0
-            softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
-            softspi_xmit(&digipotspi, (uint8_t)words->ijk[1]);
+                        softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
+                        softspi_xmit(&digipotspi, (uint8_t)words->ijk[1]);
 #endif
+                }
+
+                mcu_set_output(STEPPER_DIGIPOT_SS);
+
+                return STATUS_OK;
         }
 
-        mcu_set_output(STEPPER_DIGIPOT_SS);
-
-        return STATUS_OK;
-    }
-
-    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+        return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
 #endif
+
+void digipot_config(void)
+{
+        // Digipot for stepper motors
+#ifdef STEPPER_CURR_DIGIPOT
+        mcu_clear_output(STEPPER_DIGIPOT_SS);
+#if STEPPER0_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_VALUE);
+#endif
+#if STEPPER1_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_VALUE);
+#endif
+#if STEPPER2_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER2_DIGIPOT_VALUE);
+#endif
+#if STEPPER3_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER3_DIGIPOT_VALUE);
+#endif
+#if STEPPER4_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER4_DIGIPOT_VALUE);
+#endif
+#if STEPPER5_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER5_DIGIPOT_VALUE);
+#endif
+#if STEPPER6_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_VALUE);
+#endif
+#if STEPPER7_DIGIPOT_CHANNEL > 0
+        softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
+        softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_VALUE);
+#endif
+        mcu_set_output(STEPPER_DIGIPOT_SS);
+#endif
+}
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+CREATE_LISTENER(cnc_reset_delegate, digipot_config);
+#endif
+
+DECL_MODULE(digipot)
+{
+        // initialize slave select pins
+#ifdef STEPPER_CURR_DIGIPOT
+        mcu_set_output(STEPPER_DIGIPOT_SS);
+#endif
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+        ADD_LISTENER(cnc_reset_delegate, digipot_config, cnc_reset_event);
+#endif
+#ifdef ENABLE_PARSER_MODULES
+        ADD_LISTENER(gcode_parse_delegate, m907_parse, gcode_parse_event);
+        ADD_LISTENER(gcode_exec_delegate, m907_exec, gcode_exec_event);
+#endif
+}
+
 #endif

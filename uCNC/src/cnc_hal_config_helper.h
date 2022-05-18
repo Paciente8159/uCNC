@@ -408,11 +408,19 @@ extern "C"
 
 #if defined(STEPPER0_HAS_TMC) || defined(STEPPER1_HAS_TMC) || defined(STEPPER2_HAS_TMC) || defined(STEPPER3_HAS_TMC) || defined(STEPPER4_HAS_TMC) || defined(STEPPER5_HAS_TMC) || defined(STEPPER6_HAS_TMC) || defined(STEPPER7_HAS_TMC)
 #define ENABLE_TMC_DRIVERS
+#ifndef ENABLE_MAIN_LOOP_MODULES
 #define ENABLE_MAIN_LOOP_MODULES
+#endif
 #endif
 
 #if defined(STEPPER0_HAS_MSTEP) || defined(STEPPER1_HAS_MSTEP) || defined(STEPPER2_HAS_MSTEP) || defined(STEPPER3_HAS_MSTEP) || defined(STEPPER4_HAS_MSTEP) || defined(STEPPER5_HAS_MSTEP) || defined(STEPPER6_HAS_MSTEP) || defined(STEPPER7_HAS_MSTEP)
 #define ENABLE_DIGITAL_MSTEP
+#endif
+
+#ifdef STEPPER_CURR_DIGIPOT
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#endif
 #endif
 
 #define __stepname_helper__(x) STEP##x##_MASK

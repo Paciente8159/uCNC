@@ -17,6 +17,7 @@
 */
 
 #include "../cnc.h"
+#include "encoder.h"
 
 #if ENCODERS > 0
 
@@ -328,6 +329,19 @@ void encoders_itp_reset_rt_position(float *origin)
 #ifdef STEP5_ENCODER
     encoder_reset_position(STEP5_ENCODER, origin[5]);
 #endif
+#endif
+}
+
+DECL_MODULE(encoder)
+{
+#ifdef ENABLE_INTERPOLATOR_MODULES
+    ADD_LISTENER(itp_reset_rt_position_delegate, encoders_itp_reset_rt_position, itp_reset_rt_position_event);
+#endif
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    ADD_LISTENER(cnc_reset_delegate, encoders_reset_position, cnc_reset_event);
+#endif
+#ifdef ENABLE_PROTOCOL_MODULES
+    ADD_LISTENER(send_pins_states_delegate, encoder_print_values, send_pins_states_event);
 #endif
 }
 

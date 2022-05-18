@@ -17,38 +17,36 @@
 */
 #include "softspi.h"
 
-uint8_t softspi_xmit(const softspi_port_t *port_ptr, uint8_t c)
+uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 {
     mcu_disable_global_isr();
-    softspi_port_t port;
-    rom_memcpy(&port, port_ptr, sizeof(softspi_port_t));
     bool clk = false;
-    if ((port.spimode & 0x2))
+    if ((port->spimode & 0x2))
     {
         clk = true;
     }
 
-    port.clk(clk);
+    port->clk(clk);
 
     uint8_t counter = 8;
     do
     {
-        mcu_delay_us(port.delay);
+        mcu_delay_us(port->delay);
         if (c & 0x80)
         {
-            port.mosi(true);
+            port->mosi(true);
         }
         else
         {
-            port.mosi(false);
+            port->mosi(false);
         }
         clk = !clk;
-        port.clk(clk);
+        port->clk(clk);
         c <<= 1;
-        mcu_delay_us(port.delay);
-        c |= port.miso() ? 1 : 0;
+        mcu_delay_us(port->delay);
+        c |= port->miso() ? 1 : 0;
         clk = !clk;
-        port.clk(clk);
+        port->clk(clk);
     } while (--counter);
     mcu_enable_global_isr();
 

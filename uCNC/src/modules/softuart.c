@@ -17,56 +17,56 @@
 */
 #include "softuart.h"
 
-void softuart_putc(const softuart_port_t *port_ptr, char c)
+void softuart_putc(softuart_port_t *port, char c)
 {
-    softuart_port_t port;
-    rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
-    port.tx(false);
-    mcu_delay_us(port.baud);
+    mcu_disable_global_isr();
+    port->tx(false);
+    mcu_delay_us(port->baud);
     uint8_t bits = 8;
     do
     {
         if (c & 0x01)
         {
-            port.tx(true);
+            port->tx(true);
         }
         else
         {
-            port.tx(false);
+            port->tx(false);
         }
         c >>= 1;
-        mcu_delay_us(port.baud);
+        mcu_delay_us(port->baud);
     } while (--bits);
-    port.tx(true);
-    mcu_delay_us(port.baud);
+    port->tx(true);
+    mcu_delay_us(port->baud);
 }
 
-char softuart_getc(const softuart_port_t *port_ptr)
+char softuart_getc(softuart_port_t *port)
 {
-    softuart_port_t port;
-    rom_memcpy(&port, port_ptr, sizeof(softuart_port_t));
+    mcu_disable_global_isr();
     uint16_t ms = SOFTUART_TIMEOUT * 1000;
-    while (port.rx())
+    while (port->rx())
     {
         mcu_delay_us(1);
         if (!ms--)
         {
+            mcu_enable_global_isr();
             return 0xFF;
         }
     }
-    mcu_delay_us((port.baud >> 1));
+    mcu_delay_us((port->baud >> 1));
     char val = 0;
     uint8_t bits = 8;
     uint8_t mask = 0x01;
     do
     {
-        mcu_delay_us(port.baud);
-        if (port.rx())
+        mcu_delay_us(port->baud);
+        if (port->rx())
         {
             val |= mask;
         }
         mask <<= 1;
     } while (--bits);
-    mcu_delay_us((port.baud >> 1));
+    mcu_delay_us((port->baud >> 1));
+    mcu_enable_global_isr();
     return val;
 }

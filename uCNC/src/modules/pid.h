@@ -1,6 +1,6 @@
 /*
-    Name: encoder.h
-    Description: An encoder module for for µCNC.
+    Name: pid.h
+    Description: PID controller for µCNC.
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
@@ -16,22 +16,15 @@
     See the	GNU General Public License for more details.
 */
 
-#ifndef ENCODER_H
-#define ENCODER_H
+#ifndef PID_H
+#define PID_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include <stdint.h>
-
-    void encoder_init(void);
-    int32_t encoder_get_position(uint8_t i);
-    void encoder_print_values(void);
-    void encoder_reset_position(uint8_t i, int32_t position);
-    void encoders_reset_position(void);
-    void encoders_itp_reset_rt_position(float *origin);
+    void pid_init(void);
 
 #ifdef __cplusplus
 }

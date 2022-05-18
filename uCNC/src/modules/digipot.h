@@ -1,10 +1,10 @@
 /*
-    Name: encoder.h
-    Description: An encoder module for for µCNC.
+    Name: digipot.h
+    Description: Digital potenciometer module for µCNC.
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 07/03/2021
+    Date: 31-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,22 +16,15 @@
     See the	GNU General Public License for more details.
 */
 
-#ifndef ENCODER_H
-#define ENCODER_H
+#ifndef DIGIPOT_H
+#define DIGIPOT_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include <stdint.h>
-
-    void encoder_init(void);
-    int32_t encoder_get_position(uint8_t i);
-    void encoder_print_values(void);
-    void encoder_reset_position(uint8_t i, int32_t position);
-    void encoders_reset_position(void);
-    void encoders_itp_reset_rt_position(float *origin);
+    void digipot_init(void);
 
 #ifdef __cplusplus
 }

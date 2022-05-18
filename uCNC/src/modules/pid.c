@@ -1,5 +1,5 @@
 /*
-    Name: pid_controller.c
+    Name: pid.c
     Description: PID controller for µCNC.
 
     Copyright: Copyright (c) João Martins
@@ -205,21 +205,6 @@ void mod_cnc_stop_hook(void)
     pid_stop();
 }
 
-// PID ISR should run once every millisecond
-// sampling rate is 1000/(log2*(Nº of PID controllers))
-// a single PID controller can run at 1000Hz
-// all 8 PID will run at a max freq of 125Hz
-// this precomputes the PID factors to save computation cycles
-void pid_init(void)
-{
-    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
-    {
-        // error gains must be between 0% and 100% (0 and 1)
-        ki[i] = (g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
-        kd[i] = (g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
-    }
-}
-
 void FORCEINLINE pid_update(void)
 {
     static uint8_t current_pid = 0;
@@ -279,6 +264,21 @@ void mod_rtc_tick_hook(void)
 void mod_settings_change_hook(void)
 {
     pid_init();
+}
+
+// PID ISR should run once every millisecond
+// sampling rate is 1000/(log2*(Nº of PID controllers))
+// a single PID controller can run at 1000Hz
+// all 8 PID will run at a max freq of 125Hz
+// this precomputes the PID factors to save computation cycles
+DECL_MODULE(pid)
+{
+    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
+    {
+        // error gains must be between 0% and 100% (0 and 1)
+        ki[i] = (g_settings.pid_gain[i][1] / (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
+        kd[i] = (g_settings.pid_gain[i][2] * (PID_SAMP_FREQ / (float)pid_get_freqdiv(i)));
+    }
 }
 
 #endif

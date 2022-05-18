@@ -172,6 +172,12 @@ extern "C"
 	//  #define DIN0_PORT B
 	//  #define DIN0_ISR 0
 
+// software I2C
+#define DIN20_BIT 1
+#define DIN20_PORT D
+#define DIN21_BIT 0
+#define DIN21_PORT D
+
 #ifdef __cplusplus
 }
 #endif

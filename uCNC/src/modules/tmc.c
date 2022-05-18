@@ -1,10 +1,10 @@
 /*
     Name: tmc.c
-    Description: TMC driver support µCNC.
+    Description: Minimalistic generic driver library for Trinamic stepper drivers.
 
     Copyright: Copyright (c) João Martins
     Author: João Martins
-    Date: 20-03-2022
+    Date: 21-03-2022
 
     µCNC is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,983 +16,379 @@
     See the	GNU General Public License for more details.
 */
 
-#include "../cnc.h"
-#include "softuart.h"
-#include "tmc/tmcdriver.h"
+#include "tmc.h"
 
-#ifdef ENABLE_TMC_DRIVERS
-
-#define TMC_UARTBAUD 38400
-
-// driver communications declarations
-// UART
-#define TMC1_STEPPER_DECL(CHANNEL) SOFTUART(tmc##CHANNEL##_uart, TMC_UARTBAUD, STEPPER##CHANNEL##_UART_TX, STEPPER##CHANNEL##_UART_TX)
-// SPI
-#define TMC2_STEPPER_DECL(CHANNEL) SOFTSPI(tmc##CHANNEL_spi)
-#define _TMC_STEPPER_DECL(TYPE, CHANNEL) TMC##TYPE##_STEPPER_DECL(CHANNEL)
-#define TMC_STEPPER_DECL(TYPE, CHANNEL) _TMC_STEPPER_DECL(TYPE, CHANNEL)
-
-// driver communications read/write
-// UART
-#define TMC1_STEPPER_RW(CHANNEL)                                             \
-    static void tmc##CHANNEL##_rw(uint8_t *data, uint8_t wlen, uint8_t rlen) \
-    {                                                                        \
-        mcu_disable_global_isr();                                            \
-        mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
-        mcu_set_output(STEPPER##CHANNEL##_UART_TX);                          \
-        for (uint8_t i = 0; i < wlen; i++)                                   \
-        {                                                                    \
-            softuart_putc(&tmc##CHANNEL##_uart, data[i]);                    \
-        }                                                                    \
-        mcu_config_input(STEPPER##CHANNEL##_UART_TX);                        \
-        for (uint8_t i = 0; i < rlen; i++)                                   \
-        {                                                                    \
-            data[i] = softuart_getc(&tmc##CHANNEL##_uart);                   \
-        }                                                                    \
-        mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
-        mcu_enable_global_isr();                                             \
-        cnc_delay_ms(10);                                                    \
-    }
-// SPI
-#define TMC2_STEPPER_RW(CHANNEL)                                             \
-    static void tmc##CHANNEL##_rw(uint8_t *data, uint8_t wlen, uint8_t rlen) \
-    {                                                                        \
-        mcu_clear_output(STEPPER##CHANNEL##_SPI_CS);                         \
-        for (uint8_t i = 0; i < wlen; i++)                                   \
-        {                                                                    \
-            data[i] = softspi_xmit(&tmc##CHANNEL##_uart, data[i]);           \
-        }                                                                    \
-        mcu_set_output(STEPPER##CHANNEL##_SPI_CS);                           \
-    }
-#define _TMC_STEPPER_RW(TYPE, CHANNEL) TMC##TYPE##_STEPPER_RW(CHANNEL)
-#define TMC_STEPPER_RW(TYPE, CHANNEL) _TMC_STEPPER_RW(TYPE, CHANNEL)
-
-#ifdef STEPPER0_HAS_TMC
-TMC_STEPPER_DECL(STEPPER0_TMC_INTERFACE, 0);
-TMC_STEPPER_RW(STEPPER0_TMC_INTERFACE, 0);
-#endif
-#ifdef STEPPER1_HAS_TMC
-TMC_STEPPER_DECL(STEPPER1_TMC_INTERFACE, 1);
-TMC_STEPPER_RW(STEPPER1_TMC_INTERFACE, 1);
-#endif
-#ifdef STEPPER2_HAS_TMC
-TMC_STEPPER_DECL(STEPPER2_TMC_INTERFACE, 2);
-TMC_STEPPER_RW(STEPPER2_TMC_INTERFACE, 2);
-#endif
-#ifdef STEPPER3_HAS_TMC
-TMC_STEPPER_DECL(STEPPER3_TMC_INTERFACE, 3);
-TMC_STEPPER_RW(STEPPER3_TMC_INTERFACE, 3);
-#endif
-#ifdef STEPPER4_HAS_TMC
-TMC_STEPPER_DECL(STEPPER4_TMC_INTERFACE, 4);
-TMC_STEPPER_RW(STEPPER4_TMC_INTERFACE, 4);
-#endif
-#ifdef STEPPER5_HAS_TMC
-TMC_STEPPER_DECL(STEPPER5_TMC_INTERFACE, 5);
-TMC_STEPPER_RW(STEPPER5_TMC_INTERFACE, 5);
-#endif
-#ifdef STEPPER6_HAS_TMC
-TMC_STEPPER_DECL(STEPPER6_TMC_INTERFACE, 6);
-TMC_STEPPER_RW(STEPPER6_TMC_INTERFACE, 6);
-#endif
-#ifdef STEPPER7_HAS_TMC
-TMC_STEPPER_DECL(STEPPER7_TMC_INTERFACE, 7);
-TMC_STEPPER_RW(STEPPER7_TMC_INTERFACE, 7);
-#endif
-
-#define TMC_STEPPER_PORT(PORT) &tmc##PORT
-
-void tmcdrivers_init(void)
+uint8_t tmc_crc8(uint8_t *data, uint8_t len)
 {
-#ifdef STEPPER0_HAS_TMC
-    tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-    tmc_init(&tmc0_driver);
-    tmc_set_current(&tmc0_driver, STEPPER0_CURRENT_MA, STEPPER0_RSENSE, STEPPER0_HOLD_MULT);
-    tmc_set_microstep(&tmc0_driver, STEPPER0_MICROSTEP);
-    tmc_set_stealthchop(&tmc0_driver, STEPPER0_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc0_driver, STEPPER0_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER1_HAS_TMC
-    tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-    tmc_init(&tmc1_driver);
-    tmc_set_current(&tmc1_driver, STEPPER1_CURRENT_MA, STEPPER1_RSENSE, STEPPER1_HOLD_MULT);
-    tmc_set_microstep(&tmc1_driver, STEPPER1_MICROSTEP);
-    tmc_set_stealthchop(&tmc1_driver, STEPPER1_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc1_driver, STEPPER1_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER2_HAS_TMC
-    tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-    tmc_init(&tmc2_driver);
-    tmc_set_current(&tmc2_driver, STEPPER2_CURRENT_MA, STEPPER2_RSENSE, STEPPER2_HOLD_MULT);
-    tmc_set_microstep(&tmc2_driver, STEPPER2_MICROSTEP);
-    tmc_set_stealthchop(&tmc2_driver, STEPPER2_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc2_driver, STEPPER2_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER3_HAS_TMC
-    tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-    tmc_init(&tmc3_driver);
-    tmc_set_current(&tmc3_driver, STEPPER3_CURRENT_MA, STEPPER3_RSENSE, STEPPER3_HOLD_MULT);
-    tmc_set_microstep(&tmc3_driver, STEPPER3_MICROSTEP);
-    tmc_set_stealthchop(&tmc3_driver, STEPPER3_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc3_driver, STEPPER3_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER4_HAS_TMC
-    tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-    tmc_init(&tmc4_driver);
-    tmc_set_current(&tmc4_driver, STEPPER4_CURRENT_MA, STEPPER4_RSENSE, STEPPER4_HOLD_MULT);
-    tmc_set_microstep(&tmc4_driver, STEPPER4_MICROSTEP);
-    tmc_set_stealthchop(&tmc4_driver, STEPPER4_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc4_driver, STEPPER4_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER5_HAS_TMC
-    tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-    tmc_init(&tmc5_driver);
-    tmc_set_current(&tmc5_driver, STEPPER5_CURRENT_MA, STEPPER5_RSENSE, STEPPER5_HOLD_MULT);
-    tmc_set_microstep(&tmc5_driver, STEPPER5_MICROSTEP);
-    tmc_set_stealthchop(&tmc5_driver, STEPPER5_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc5_driver, STEPPER5_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER6_HAS_TMC
-    tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-    tmc_init(&tmc6_driver);
-    tmc_set_current(&tmc6_driver, STEPPER6_CURRENT_MA, STEPPER6_RSENSE, STEPPER6_HOLD_MULT);
-    tmc_set_microstep(&tmc6_driver, STEPPER6_MICROSTEP);
-    tmc_set_stealthchop(&tmc6_driver, STEPPER6_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc6_driver, STEPPER6_ENABLE_INTERPLATION);
-#endif
-#ifdef STEPPER7_HAS_TMC
-    tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-    tmc_init(&tmc7_driver);
-    tmc_set_current(&tmc7_driver, STEPPER7_CURRENT_MA, STEPPER7_RSENSE, STEPPER7_HOLD_MULT);
-    tmc_set_microstep(&tmc7_driver, STEPPER7_MICROSTEP);
-    tmc_set_stealthchop(&tmc7_driver, STEPPER7_STEALTHCHOP_THERSHOLD);
-    tmc_set_stepinterpol(&tmc7_driver, STEPPER7_ENABLE_INTERPLATION);
-#endif
+    int i, j;
+    uint8_t crc = 0; // CRC located in last byte of message
+    uint8_t currentByte;
+    for (i = 0; i < len; i++)
+    {                          // Execute for all bytes of a message
+        currentByte = data[i]; // Retrieve a byte to be sent from Array
+        for (j = 0; j < 8; j++)
+        {
+            if ((crc >> 7) ^ (currentByte & 0x01)) // update CRC based result of XOR operation
+            {
+                crc = (crc << 1) ^ 0x07;
+            }
+            else
+            {
+                crc = (crc << 1);
+            }
+            currentByte = currentByte >> 1;
+        } // for CRC bit
+    }     // for message byte
+
+    return crc;
 }
 
-CREATE_LISTENER(cnc_reset_delegate, tmcdrivers_init);
-
-/*custom gcode commands*/
-#if defined(ENABLE_PARSER_MODULES)
-// this ID must be unique for each code
-#define M350 1350
-// this ID must be unique for each code
-#define M906 1906
-// this ID must be unique for each code
-#define M914 1914
-// this ID must be unique for each code
-#define M920 1920
-
-uint8_t m350_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m906_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m914_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m920_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-
-CREATE_LISTENER(gcode_parse_delegate, m350_parse);
-CREATE_LISTENER(gcode_exec_delegate, m350_exec);
-CREATE_LISTENER(gcode_parse_delegate, m906_parse);
-CREATE_LISTENER(gcode_exec_delegate, m906_exec);
-CREATE_LISTENER(gcode_parse_delegate, m914_parse);
-CREATE_LISTENER(gcode_exec_delegate, m914_exec);
-CREATE_LISTENER(gcode_parse_delegate, m920_parse);
-CREATE_LISTENER(gcode_exec_delegate, m920_exec);
-
-// this just parses and acceps the code
-uint8_t m350_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
 {
-    if (word == 'M' && value == 350)
+    if (!(driver->rw))
     {
-        if (cmd->group_extended != 0)
-        {
-            // there is a collision of custom gcode commands (only one per line can be processed)
-            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
-        }
-        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-        cmd->group_extended = M350;
-        return STATUS_OK;
+        return 0;
     }
 
-    // if this is not catched by this parser, just send back the error so other extenders can process it
-    return error;
-}
-
-// this actually performs 2 steps in 1 (validation and execution)
-uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
-{
-    if (cmd->group_extended == M350)
+    uint8_t data[8];
+    uint8_t crc = 0;
+    uint32_t result = 0;
+    switch (driver->type)
     {
-        itp_sync();
-        if (!cmd->words)
+    case 2202:
+    case 2208:
+    case 2225:
+        driver->slave = 0;
+    case 2209:
+    case 2226:
+        /* code */
+        data[0] = 0x05;
+        data[1] = driver->slave;
+        data[2] = address & 0x7F;
+        data[3] = tmc_crc8(data, 3);
+        driver->rw(data, 4, 8);
+        crc = tmc_crc8(data, 7);
+        if (data[0] != 0x05)
         {
-            int32_t val = -1;
-            // if no additional args then print the
-            serial_print_str(__romstr__("[MICROSTEPS:"));
-            val = -1;
-            serial_putc('X');
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            val = tmc_get_microstep(&tmc0_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Y');
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            val = tmc_get_microstep(&tmc1_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Z');
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            val = tmc_get_microstep(&tmc2_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('A');
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            val = tmc_get_microstep(&tmc3_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('B');
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            val = tmc_get_microstep(&tmc4_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('C');
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            val = tmc_get_microstep(&tmc5_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('I');
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            val = tmc_get_microstep(&tmc6_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('J');
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            val = tmc_get_microstep(&tmc7_driver);
-#endif
-            serial_print_flt(val);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
+            return TMC_READ_ERROR;
         }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+        if (data[1] != 0xFF)
         {
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            tmc_set_microstep(&tmc0_driver, (uint8_t)words->xyzabc[0]);
-#endif
+            return TMC_READ_ERROR;
         }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+        if (data[2] != address)
         {
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            tmc_set_microstep(&tmc1_driver, (uint8_t)words->xyzabc[1]);
-#endif
+            return TMC_READ_ERROR;
         }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+        if (crc != data[7])
         {
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            tmc_set_microstep(&tmc2_driver, (uint8_t)words->xyzabc[2]);
-#endif
+            return TMC_READ_ERROR;
         }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            tmc_set_microstep(&tmc3_driver, (uint8_t)words->xyzabc[3]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            tmc_set_microstep(&tmc4_driver, (uint8_t)words->xyzabc[4]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            tmc_set_microstep(&tmc5_driver, (uint8_t)words->xyzabc[5]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_I))
-        {
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            tmc_set_microstep(&tmc6_driver, (uint8_t)words->ijk[0]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_J))
-        {
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            tmc_set_microstep(&tmc7_driver, (uint8_t)words->ijk[1]);
-#endif
-        }
-
-        return STATUS_OK;
+        result = ((uint32_t)data[3] << 24) | ((uint32_t)data[4] << 16) | (data[5] << 8) | data[6];
+        break;
+    case 2130:
+        data[0] = address & 0x7F;
+        data[1] = 0;
+        data[2] = 0;
+        data[3] = 0;
+        data[4] = 0;
+        driver->rw(data, 5, 5);
+    default:
+        return 0;
     }
 
-    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+    return result;
 }
 
-// this just parses and acceps the code
-uint8_t m906_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val)
 {
-    if (word == 'M' && value == 906.0f)
+    if (!(driver->rw))
     {
-        if (cmd->group_extended != 0)
-        {
-            // there is a collision of custom gcode commands (only one per line can be processed)
-            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
-        }
-        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-        cmd->group_extended = M906;
-        return STATUS_OK;
+        return 0;
     }
 
-    // if this is not catched by this parser, just send back the error so other extenders can process it
-    return error;
+    uint8_t data[8];
+    uint32_t result = 0;
+    switch (driver->type)
+    {
+    case 2202:
+    case 2208:
+    case 2225:
+        driver->slave = 0;
+    case 2209:
+    case 2226:
+        /* code */
+        data[0] = 0x05;
+        data[1] = driver->slave;
+        data[2] = address | 0x80;
+        data[3] = (val >> 24) & 0xFF;
+        data[4] = (val >> 16) & 0xFF;
+        data[5] = (val >> 8) & 0xFF;
+        data[6] = (val)&0xFF;
+        data[7] = tmc_crc8(data, 7);
+        driver->rw(data, 8, 0);
+        break;
+    case 2130:
+        data[0] = address | 0x80;
+        data[4] = (uint8_t)(val & 0xFF);
+        val >>= 8;
+        data[3] = (uint8_t)(val & 0xFF);
+        val >>= 8;
+        data[2] = (uint8_t)(val & 0xFF);
+        val >>= 8;
+        data[1] = (uint8_t)(val & 0xFF);
+        driver->rw(data, 5, 5);
+    default:
+        return 0;
+    }
+
+    return result;
 }
 
-// this actually performs 2 steps in 1 (validation and execution)
-uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+void tmc_init(tmc_driver_t *driver)
 {
-    if (cmd->group_extended == M906)
+    if (driver->init)
     {
-        itp_sync();
-        if (!cmd->words)
-        {
-            float val;
-            // if no additional args then print the
-            serial_print_str(__romstr__("[STEPPER CURRENT:"));
-            val = -1;
-            serial_putc('X');
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            val = tmc_get_current(&tmc0_driver, STEPPER0_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Y');
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            val = tmc_get_current(&tmc1_driver, STEPPER1_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Z');
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            val = tmc_get_current(&tmc2_driver, STEPPER2_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('A');
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            val = tmc_get_current(&tmc3_driver, STEPPER3_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('B');
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            val = tmc_get_current(&tmc4_driver, STEPPER4_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('C');
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            val = tmc_get_current(&tmc5_driver, STEPPER5_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('I');
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            val = tmc_get_current(&tmc6_driver, STEPPER6_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('J');
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            val = tmc_get_current(&tmc7_driver, STEPPER7_RSENSE);
-#endif
-            serial_print_flt(val);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
-        {
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            tmc_set_current(&tmc0_driver, (uint8_t)words->xyzabc[0], STEPPER0_RSENSE, STEPPER0_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
-        {
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            tmc_set_current(&tmc1_driver, (uint8_t)words->xyzabc[1], STEPPER1_RSENSE, STEPPER1_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
-        {
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            tmc_set_current(&tmc2_driver, (uint8_t)words->xyzabc[2], STEPPER2_RSENSE, STEPPER2_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            tmc_set_current(&tmc3_driver, (uint8_t)words->xyzabc[3], STEPPER3_RSENSE, STEPPER3_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            tmc_set_current(&tmc4_driver, (uint8_t)words->xyzabc[4], STEPPER4_RSENSE, STEPPER4_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            tmc_set_current(&tmc5_driver, (uint8_t)words->xyzabc[5], STEPPER5_RSENSE, STEPPER5_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_I))
-        {
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            tmc_set_current(&tmc6_driver, (uint8_t)words->ijk[0], STEPPER6_RSENSE, STEPPER6_HOLD_MULT);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_J))
-        {
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            tmc_set_current(&tmc7_driver, (uint8_t)words->ijk[1], STEPPER7_RSENSE, STEPPER7_HOLD_MULT);
-#endif
-        }
-
-        return STATUS_OK;
+        driver->init();
     }
 
-    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+    // set initial state (spread cycle on, internal vref external resistor, shaft fwd, disable pdn, microstep from mstep, normal operation)
+    tmc_write_register(driver, GCONF, ((uint32_t)0xC5));
 }
 
-// this just parses and acceps the code
-uint8_t m914_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+float tmc_get_current(tmc_driver_t *driver, float rsense)
 {
-    if (word == 'M' && value == 914.0f)
+    uint32_t iholdrun = tmc_read_register(driver, IHOLD_IRUN);
+    if (iholdrun == TMC_READ_ERROR)
     {
-        if (cmd->group_extended != 0)
-        {
-            // there is a collision of custom gcode commands (only one per line can be processed)
-            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
-        }
-        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-        cmd->group_extended = M914;
-        return STATUS_OK;
+        return -1.0f;
     }
 
-    // if this is not catched by this parser, just send back the error so other extenders can process it
-    return error;
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return -1.0f;
+    }
+
+    uint8_t irun = ((iholdrun >> 8) & 0x1F);
+    return (float)(irun + 1) / 32.0 * ((chopconf & (1UL << 17)) ? 0.180 : 0.325) / (rsense + 0.02) / 1.41421 * 1000;
 }
 
-// this actually performs 2 steps in 1 (validation and execution)
-uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+void tmc_set_current(tmc_driver_t *driver, float current, float rsense, float ihold_mul)
 {
-    if (cmd->group_extended == M914)
+    uint8_t currentsense = 32.0 * 1.41421 * current / 1000.0 * (rsense + 0.02) / 0.325 - 1;
+    // If Current Scale is too low, turn on high sensitivity R_sense and calculate again
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
+    if (chopconf == TMC_READ_ERROR)
     {
-        itp_sync();
-        if (!cmd->words)
-        {
-            int32_t val;
-            // if no additional args then print the
-            serial_print_str(__romstr__("[STEPPER STALL SENSITIVITY:"));
-            val = -1;
-            serial_putc('X');
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            val = tmc_get_stallguard(&tmc0_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Y');
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            val = tmc_get_stallguard(&tmc1_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('Z');
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            val = tmc_get_stallguard(&tmc2_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('A');
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            val = tmc_get_stallguard(&tmc3_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('B');
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            val = tmc_get_stallguard(&tmc4_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('C');
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            val = tmc_get_stallguard(&tmc5_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('I');
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            val = tmc_get_stallguard(&tmc6_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(',');
-            val = -1;
-            serial_putc('J');
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            val = tmc_get_stallguard(&tmc7_driver);
-#endif
-            serial_print_int(val);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
-        {
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            tmc_set_stallguard(&tmc0_driver, (uint8_t)words->xyzabc[0]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
-        {
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            tmc_set_stallguard(&tmc1_driver, (uint8_t)words->xyzabc[1]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
-        {
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            tmc_set_stallguard(&tmc2_driver, (uint8_t)words->xyzabc[2]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            tmc_set_stallguard(&tmc3_driver, (uint8_t)words->xyzabc[3]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            tmc_set_stallguard(&tmc4_driver, (uint8_t)words->xyzabc[4]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            tmc_set_stallguard(&tmc5_driver, (uint8_t)words->xyzabc[5]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_I))
-        {
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            tmc_set_stallguard(&tmc6_driver, (uint8_t)words->ijk[0]);
-#endif
-        }
-        if (CHECKFLAG(cmd->words, GCODE_WORD_J))
-        {
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            tmc_set_stallguard(&tmc7_driver, (uint8_t)words->ijk[1]);
-#endif
-        }
-
-        return STATUS_OK;
+        return;
     }
 
-    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+    if (currentsense < 16)
+    {
+        // enable vsense
+        chopconf |= (((uint32_t)1) << 17);
+        tmc_write_register(driver, CHOPCONF, chopconf);
+        currentsense = 32.0 * 1.41421 * current / 1000.0 * (rsense + 0.02) / 0.180 - 1;
+    }
+    else if (chopconf & (((uint32_t)1) << 17)) // check if VSENSE is enabled
+    {                                          // If CS >= 16, turn off high_sense_r if it's currently ON
+        // disable vsense
+        //  enable vsense
+        chopconf &= ~(((uint32_t)1) << 17);
+        tmc_write_register(driver, CHOPCONF, chopconf);
+    }
+
+    uint32_t iholdrun = 0;
+
+    // rms current
+    iholdrun = (currentsense & 0x1F);
+    iholdrun <<= 8;
+    // hold current
+    currentsense = (uint8_t)(currentsense * ihold_mul);
+    iholdrun |= (currentsense & 0x1F);
+    tmc_write_register(driver, IHOLD_IRUN, iholdrun);
 }
 
-// this just parses and acceps the code
-uint8_t m920_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+int32_t tmc_get_microstep(tmc_driver_t *driver)
 {
-    if (word == 'M' && value == 920.0f)
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
+    if (chopconf == TMC_READ_ERROR)
     {
-        if (cmd->group_extended != 0)
-        {
-            // there is a collision of custom gcode commands (only one per line can be processed)
-            return STATUS_GCODE_MODAL_GROUP_VIOLATION;
-        }
-        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-        cmd->group_extended = M920;
-        return STATUS_OK;
+        return -1;
     }
 
-    // if this is not catched by this parser, just send back the error so other extenders can process it
-    return error;
+    uint8_t ms = (uint8_t)((chopconf >> 24) & 0x0F);
+
+    switch (ms)
+    {
+    case 0:
+        return 256;
+    case 1:
+        return 128;
+    case 2:
+        return 64;
+    case 3:
+        return 32;
+    case 4:
+        return 16;
+    case 5:
+        return 8;
+    case 6:
+        return 4;
+    case 7:
+        return 2;
+    case 8:
+        return 0;
+    }
+    return -1;
 }
 
-// this actually performs 2 steps in 1 (validation and execution)
-uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+void tmc_set_microstep(tmc_driver_t *driver, int16_t ms)
 {
-    if (cmd->group_extended == M920)
+    uint32_t gconf = tmc_read_register(driver, GCONF);
+    if (gconf == TMC_READ_ERROR)
     {
-        if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS | GCODE_IJK_AXIS))
-        {
-            return STATUS_TMC_CMD_MISSING_ARGS;
-        }
-
-        int8_t wordreg = -1;
-        uint16_t wordval = 0;
-        if (CHECKFLAG(cmd->words, GCODE_WORD_L))
-        {
-            wordreg = (int8_t)words->l;
-            if (wordreg > 1 || wordreg < 0)
-            {
-                return STATUS_INVALID_STATEMENT;
-            }
-            wordval = words->s;
-        }
-
-        uint32_t reg;
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_X))
-        {
-            serial_print_str(__romstr__("[TMCREG X:"));
-            reg = (uint32_t)words->xyzabc[0];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER0_HAS_TMC
-            tmc_driver_t tmc0_driver = {.type = STEPPER0_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc0_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc0_driver, (uint8_t)words->xyzabc[0], reg);
-            }
-            reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
-        {
-            serial_print_str(__romstr__("[TMCREG Y:"));
-            reg = (uint32_t)words->xyzabc[1];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER1_HAS_TMC
-            tmc_driver_t tmc1_driver = {.type = STEPPER1_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc1_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc1_driver, (uint8_t)words->xyzabc[1], reg);
-            }
-            reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
-        {
-            serial_print_str(__romstr__("[TMCREG Z:"));
-            reg = (uint32_t)words->xyzabc[2];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER2_HAS_TMC
-            tmc_driver_t tmc2_driver = {.type = STEPPER2_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc2_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc2_driver, (uint8_t)words->xyzabc[2], reg);
-            }
-            reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_A))
-        {
-            serial_print_str(__romstr__("[TMCREG A:"));
-            reg = (uint32_t)words->xyzabc[3];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER3_HAS_TMC
-            tmc_driver_t tmc3_driver = {.type = STEPPER3_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc3_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc3_driver, (uint8_t)words->xyzabc[3], reg);
-            }
-            reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_B))
-        {
-            serial_print_str(__romstr__("[TMCREG B:"));
-            reg = (uint32_t)words->xyzabc[4];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER4_HAS_TMC
-            tmc_driver_t tmc4_driver = {.type = STEPPER4_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc4_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc4_driver, (uint8_t)words->xyzabc[4], reg);
-            }
-            reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_C))
-        {
-            serial_print_str(__romstr__("[TMCREG C:"));
-            reg = (uint32_t)words->xyzabc[5];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER5_HAS_TMC
-            tmc_driver_t tmc5_driver = {.type = STEPPER5_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc5_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc5_driver, (uint8_t)words->xyzabc[5], reg);
-            }
-            reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_I))
-        {
-            serial_print_str(__romstr__("[TMCREG I:"));
-            reg = (uint32_t)words->ijk[0];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER6_HAS_TMC
-            tmc_driver_t tmc6_driver = {.type = STEPPER6_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc6_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc6_driver, (uint8_t)words->ijk[0], reg);
-            }
-            reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        if (CHECKFLAG(cmd->words, GCODE_WORD_J))
-        {
-            serial_print_str(__romstr__("[TMCREG J:"));
-            reg = (uint32_t)words->ijk[1];
-            serial_print_int(reg);
-            serial_putc(',');
-#ifdef STEPPER7_HAS_TMC
-            tmc_driver_t tmc7_driver = {.type = STEPPER7_DRIVER_TYPE, .slave = 0, .init = NULL, .rw = &tmc7_rw};
-            if (wordreg >= 0)
-            {
-                reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
-                switch (wordreg)
-                {
-                case 0:
-                    reg &= 0xFFFF0000;
-                    reg |= (((uint32_t)wordval));
-                    break;
-                case 1:
-                    reg &= 0x0000FFFF;
-                    reg |= (((uint32_t)wordval) << 16);
-                    break;
-                }
-                tmc_write_register(&tmc7_driver, (uint8_t)words->ijk[1], reg);
-            }
-            reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
-#else
-            reg = 0xFFFFFFFFUL;
-#endif
-            serial_print_int(reg);
-            serial_putc(']');
-            serial_print_str(MSG_EOL);
-        }
-
-        return STATUS_OK;
+        return;
     }
 
-    return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
+    chopconf &= ~(((uint32_t)0xF) << 24);
+
+    switch (ms)
+    {
+    case 256:
+        ms = 0;
+        break;
+    case 128:
+        ms = 1;
+        break;
+    case 64:
+        ms = 2;
+        break;
+    case 32:
+        ms = 3;
+        break;
+    case 16:
+        ms = 4;
+        break;
+    case 8:
+        ms = 5;
+        break;
+    case 4:
+        ms = 6;
+        break;
+    case 2:
+        ms = 7;
+        break;
+    case 0:
+        ms = 8;
+        break;
+    default:
+        if (ms < 0)
+        {
+            gconf &= ~((uint32_t)0xC0);
+            tmc_write_register(driver, GCONF, gconf);
+            return;
+        }
+        break;
+    }
+
+    gconf |= ((uint32_t)0xC0);
+    gconf &= 0xFF;
+    tmc_write_register(driver, GCONF, gconf);
+    chopconf |= (((uint32_t)ms) << 24);
+    tmc_write_register(driver, CHOPCONF, chopconf);
 }
 
-#endif
-#endif
+uint8_t tmc_get_stepinterpol(tmc_driver_t *driver)
+{
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    return (chopconf & (((uint32_t)1) << 28)) ? 1 : 0;
+}
+
+void tmc_set_stepinterpol(tmc_driver_t *driver, uint8_t enable)
+{
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
+    if (enable)
+    {
+        chopconf |= (((uint32_t)1) << 28);
+    }
+    else
+    {
+        chopconf &= ~(((uint32_t)1) << 28);
+    }
+
+    tmc_write_register(driver, CHOPCONF, chopconf);
+}
+
+uint32_t tmc_get_stealthshop(tmc_driver_t *driver)
+{
+    return tmc_read_register(driver, TPWMTHRS);
+}
+
+void tmc_set_stealthchop(tmc_driver_t *driver, uint32_t value)
+{
+    uint32_t gconf = tmc_read_register(driver, GCONF);
+    if (gconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
+    uint32_t chopconf = tmc_read_register(driver, CHOPCONF);
+    if (chopconf == TMC_READ_ERROR)
+    {
+        return;
+    }
+
+    if (!value)
+    {
+        gconf |= ((uint32_t)0x04);
+    }
+    else
+    {
+        gconf &= ~((uint32_t)0x04);
+    }
+
+    gconf &= 0xFF;
+    tmc_write_register(driver, GCONF, gconf);
+    tmc_write_register(driver, TPWMTHRS, value);
+}
+
+uint32_t tmc_get_status(tmc_driver_t *driver)
+{
+    return tmc_read_register(driver, DRV_STATUS);
+}
+
+int32_t tmc_get_stallguard(tmc_driver_t *driver)
+{
+    if (driver->type == 2209)
+    {
+        return tmc_read_register(driver, SGTHRS);
+    }
+
+    return 0;
+}
+
+void tmc_set_stallguard(tmc_driver_t *driver, int16_t value)
+{
+    if (driver->type == 2209)
+    {
+        value = (value > 255) ? 255 : value;
+        value = (value < 0) ? 0 : value;
+        tmc_write_register(driver, SGTHRS, value);
+    }
+}

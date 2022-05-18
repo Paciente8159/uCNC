@@ -6,6 +6,20 @@
 
 # Changelog
 
+## [1.4.6] - Unreleased
+
+
+### Added
+
+- added software I2C (bit-banging)
+
+### Changed
+
+- module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository
+
+### Fixed
+
+
 ## [1.4.5] - 2022-05-17
 
 µCNC version 1.4.5 changes are listed below.
@@ -886,6 +900,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.4
 [1.4.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.3
