@@ -26,6 +26,15 @@ extern "C"
 
 #include <stdint.h>
 
+#define ENC0 0
+#define ENC1 1
+#define ENC2 2
+#define ENC3 3
+#define ENC4 4
+#define ENC5 5
+#define ENC6 6
+#define ENC7 7
+
     void encoder_init(void);
     int32_t encoder_get_position(uint8_t i);
     void encoder_print_values(void);

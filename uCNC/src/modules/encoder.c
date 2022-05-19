@@ -17,94 +17,13 @@
 */
 
 #include "../cnc.h"
-#include "encoder.h"
 
 #if ENCODERS > 0
 
-#if ENCODERS > 0
-#if (ENC0_PULSE < 0)
-#error "The ENC0 pulse pin is not defined"
-#endif
-#if (ENC0_DIR < 0)
-#error "The ENC0 dir pin is not defined"
-#endif
-#define ENC0 0
-#define ENC0_MASK (1 << 0)
-#endif
-#if ENCODERS > 1
-#if (ENC1_PULSE < 0)
-#error "The ENC1 pulse pin is not defined"
-#endif
-#if (ENC1_DIR < 0)
-#error "The ENC1 dir pin is not defined"
-#endif
-#define ENC1 1
-#define ENC1_MASK (1 << 1)
-#endif
-#if ENCODERS > 2
-#if (ENC2_PULSE < 0)
-#error "The ENC2 pulse pin is not defined"
-#endif
-#if (ENC2_DIR < 0)
-#error "The ENC2 dir pin is not defined"
-#endif
-#define ENC2 2
-#define ENC2_MASK (1 << 2)
-#endif
-#if ENCODERS > 3
-#if (ENC3_PULSE < 0)
-#error "The ENC3 pulse pin is not defined"
-#endif
-#if (ENC3_DIR < 0)
-#error "The ENC3 dir pin is not defined"
-#endif
-#define ENC3 3
-#define ENC3_MASK (1 << 3)
-#endif
-#if ENCODERS > 4
-#if (ENC4_PULSE < 0)
-#error "The ENC4 pulse pin is not defined"
-#endif
-#if (ENC4_DIR < 0)
-#error "The ENC4 dir pin is not defined"
-#endif
-#define ENC4 4
-#define ENC4_MASK (1 << 4)
-#endif
-#if ENCODERS > 5
-#if (ENC5_PULSE < 0)
-#error "The ENC5 pulse pin is not defined"
-#endif
-#if (ENC5_DIR < 0)
-#error "The ENC5 dir pin is not defined"
-#endif
-#define ENC5 5
-#define ENC5_MASK (1 << 5)
-#endif
-#if ENCODERS > 6
-#if (ENC6_PULSE < 0)
-#error "The ENC6 pulse pin is not defined"
-#endif
-#if (ENC6_DIR < 0)
-#error "The ENC6 dir pin is not defined"
-#endif
-#define ENC6 6
-#define ENC6_MASK (1 << 6)
-#endif
-#if ENCODERS > 7
-#if (ENC7_PULSE < 0)
-#error "The ENC7 pulse pin is not defined"
-#endif
-#if (ENC7_DIR < 0)
-#error "The ENC7 dir pin is not defined"
-#endif
-#define ENC7 7
-#define ENC7_MASK (1 << 7)
-#endif
-
+static uint8_t encoder_last_pulse = 0;
 static int32_t encoders_pos[ENCODERS];
 
-static FORCEINLINE uint8_t read_encoder_pulses(void)
+static FORCEINLINE uint8_t encoder_read_pulses(void)
 {
     uint8_t value = 0;
 #if ENCODERS > 0
@@ -131,126 +50,96 @@ static FORCEINLINE uint8_t read_encoder_pulses(void)
 #if ENCODERS > 7
     value |= ((mcu_get_input(ENC7_PULSE)) ? ENC7_MASK : 0);
 #endif
-    return value;
+    return value ^ g_settings.encoders_pulse_invert_mask;
 }
 
-static FORCEINLINE uint8_t read_encoder_dirs(void)
+static FORCEINLINE uint8_t encoder_read_dirs(void)
 {
     uint8_t value = 0;
 #if ENCODERS > 0
-#ifndef ENC0_INVERT
     value |= ((mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 1
-#ifndef ENC1_INVERT
     value |= ((mcu_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC1_DIR)) ? ENC2_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 2
-#ifndef ENC2_INVERT
     value |= ((mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 3
-#ifndef ENC3_INVERT
     value |= ((mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 4
-#ifndef ENC4_INVERT
     value |= ((mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 5
-#ifndef ENC5_INVERT
     value |= ((mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 6
-#ifndef ENC6_INVERT
     value |= ((mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
-#endif
 #endif
 #if ENCODERS > 7
-#ifndef ENC7_INVERT
     value |= ((mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
-#else
-    value |= ((!mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
 #endif
-#endif
-    return value;
+    return value ^ g_settings.encoders_dir_invert_mask;
 }
 
 // overrides the mcu_input_change_cb
 // this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
 void mcu_inputs_changed_cb(void)
 {
-    static uint8_t last_pulse = 0;
-    uint8_t dir = read_encoder_dirs();
-    uint8_t pulse = read_encoder_pulses();
-    uint8_t diff = last_pulse ^ pulse;
-    last_pulse = pulse;
+    uint8_t dir = encoder_read_dirs();
+    uint8_t pulse = encoder_read_pulses();
+    uint8_t diff = encoder_last_pulse ^ pulse;
+    encoder_last_pulse = pulse;
+
+    // leave only those active
+    diff &= pulse;
 
 // checks if pulse pin changed state and is logical 1
 #if ENCODERS > 0
-    if ((diff & ENC0_MASK & pulse))
+    if ((diff & ENC0_MASK))
     {
-        encoders_pos[0] += (dir && ENC0_MASK) ? 1 : -1;
+        encoders_pos[0] += (dir & ENC0_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 1
-    if ((diff & ENC1_MASK & pulse))
+    if ((diff & ENC1_MASK))
     {
         encoders_pos[1] += (dir & ENC1_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 2
-    if ((diff & ENC2_MASK & pulse))
+    if ((diff & ENC2_MASK))
     {
         encoders_pos[2] += (dir & ENC2_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 3
-    if ((diff & ENC3_MASK & pulse))
+    if ((diff & ENC3_MASK))
     {
         encoders_pos[3] += (dir & ENC3_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 4
-    if ((diff & ENC4_MASK & pulse))
+    if ((diff & ENC4_MASK))
     {
         encoders_pos[4] += (dir & ENC4_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 5
-    if ((diff & ENC5_MASK & pulse))
+    if ((diff & ENC5_MASK))
     {
         encoders_pos[5] += (dir & ENC5_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 6
-    if ((diff & ENC6_MASK & pulse))
+    if ((diff & ENC6_MASK))
     {
         encoders_pos[6] += (dir & ENC6_MASK) ? 1 : -1;
     }
 #endif
 #if ENCODERS > 7
-    if ((diff & ENC7_MASK & pulse))
+    if ((diff & ENC7_MASK))
     {
         encoders_pos[7] += (dir & ENC7_MASK) ? 1 : -1;
     }
@@ -287,11 +176,16 @@ void encoder_reset_position(uint8_t i, int32_t position)
 
 void encoders_reset_position(void)
 {
+    encoder_last_pulse = encoder_read_pulses();
+
     __ATOMIC__
     {
         for (uint8_t i = 0; i < ENCODERS; i++)
         {
-            encoders_pos[i] = 0;
+            if ((~STEPPERS_ENCODERS_MASK) & (1 << i))
+            {
+                encoders_pos[i] = 0;
+            }
         }
     }
 }
@@ -334,15 +228,7 @@ void encoders_itp_reset_rt_position(float *origin)
 
 DECL_MODULE(encoder)
 {
-#ifdef ENABLE_INTERPOLATOR_MODULES
-    ADD_LISTENER(itp_reset_rt_position_delegate, encoders_itp_reset_rt_position, itp_reset_rt_position_event);
-#endif
-#ifdef ENABLE_MAIN_LOOP_MODULES
-    ADD_LISTENER(cnc_reset_delegate, encoders_reset_position, cnc_reset_event);
-#endif
-#ifdef ENABLE_PROTOCOL_MODULES
-    ADD_LISTENER(send_pins_states_delegate, encoder_print_values, send_pins_states_event);
-#endif
+    encoders_reset_position();
 }
 
 #endif

@@ -81,6 +81,10 @@ extern "C"
 #endif
 #endif
                 uint8_t laser_mode;
+#if ENCODERS > 0
+                uint8_t encoders_pulse_invert_mask;
+                uint8_t encoders_dir_invert_mask;
+#endif
 #if PID_CONTROLLERS > 0
                 float pid_gain[PID_CONTROLLERS][3];
 #endif

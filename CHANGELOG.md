@@ -11,11 +11,15 @@
 
 ### Added
 
-- added software I2C (bit-banging)
+- added software I2C (bit-banging) (#215)
+- removed encoders dependency of modules. Stepper encoders and regular encoders reset is now independent (#216)
+- encoders counting pulse and direction can be inverted via setting $8 and $9 (#216)
 
 ### Changed
 
-- module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository
+- module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository (#215)
+- encoders initial state aquired at startup to prevent initial noise counts (#216)
+- fixed dir mask detection for ENC0 and ENC1 (#216)
 
 ### Fixed
 

@@ -572,6 +572,10 @@ void protocol_send_cnc_settings(void)
     protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
     protocol_send_gcode_setting_line_int(6, g_settings.probe_invert_mask);
     protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
+#if ENCODERS > 0
+    protocol_send_gcode_setting_line_int(8, g_settings.encoders_pulse_invert_mask);
+    protocol_send_gcode_setting_line_int(9, g_settings.encoders_dir_invert_mask);
+#endif
     protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
     protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
     protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
