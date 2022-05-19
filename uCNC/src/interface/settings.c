@@ -429,12 +429,14 @@ uint8_t settings_change(uint8_t setting, float value)
     case 7:
         g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
         break;
+#if ENCODERS > 0
     case 8:
         g_settings.encoders_pulse_invert_mask = value8;
         break;
     case 9:
         g_settings.encoders_dir_invert_mask = value8;
         break;
+#endif
     case 10:
         g_settings.status_report_mask = value8;
         break;
