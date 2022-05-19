@@ -56,19 +56,19 @@ extern "C"
                 float homing_offset;
                 float spindle_max_rpm;
                 float spindle_min_rpm;
-
+                uint8_t laser_mode;
                 float step_per_mm[STEPPER_COUNT];
                 float max_feed_rate[STEPPER_COUNT];
                 float acceleration[STEPPER_COUNT];
                 float max_distance[AXIS_COUNT];
+#if TOOL_COUNT > 0
+                uint8_t default_tool;
+                float tool_length_offset[TOOL_COUNT];
+#endif
 #if (KINEMATIC == KINEMATIC_DELTA)
                 float delta_arm_length;
                 float delta_armbase_radius;
                 // float delta_efector_height;
-#endif
-#if TOOL_COUNT > 0
-                uint8_t default_tool;
-                float tool_length_offset[TOOL_COUNT];
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
                 uint16_t backlash_steps[STEPPER_COUNT];
@@ -80,7 +80,6 @@ extern "C"
                 float skew_yz_factor;
 #endif
 #endif
-                uint8_t laser_mode;
 #if ENCODERS > 0
                 uint8_t encoders_pulse_invert_mask;
                 uint8_t encoders_dir_invert_mask;
