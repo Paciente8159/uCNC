@@ -161,6 +161,10 @@ const settings_t __rom__ default_settings =
 #endif
 #endif
         .laser_mode = 0,
+#if ENCODERS > 0
+        .encoders_pulse_invert_mask = 0,
+        .encoders_dir_invert_mask = 0,
+#endif
 #if PID_CONTROLLERS > 0
         .pid_gain[0][0] = 0,
         .pid_gain[0][1] = 0,
@@ -424,6 +428,12 @@ uint8_t settings_change(uint8_t setting, float value)
         break;
     case 7:
         g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
+        break;
+    case 8:
+        g_settings.encoders_pulse_invert_mask = value8;
+        break;
+    case 9:
+        g_settings.encoders_dir_invert_mask = value8;
         break;
     case 10:
         g_settings.status_report_mask = value8;

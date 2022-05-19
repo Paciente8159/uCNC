@@ -132,11 +132,120 @@ extern "C"
 #endif
 
 #if ENCODERS > 0
-#if (defined(STEP0_ENCODER) || defined(STEP1_ENCODER) || defined(STEP2_ENCODER) || defined(STEP3_ENCODER) || defined(STEP4_ENCODER) || defined(STEP5_ENCODER))
+
+#if ENCODERS > 0
+#if (ENC0_PULSE < 0)
+#error "The ENC0 pulse pin is not defined"
 #endif
+#if (ENC0_DIR < 0)
+#error "The ENC0 dir pin is not defined"
+#endif
+#define ENC0_MASK (1 << ENC0)
+#endif
+#if ENCODERS > 1
+#if (ENC1_PULSE < 0)
+#error "The ENC1 pulse pin is not defined"
+#endif
+#if (ENC1_DIR < 0)
+#error "The ENC1 dir pin is not defined"
+#endif
+#define ENC1_MASK (1 << ENC1)
+#endif
+#if ENCODERS > 2
+#if (ENC2_PULSE < 0)
+#error "The ENC2 pulse pin is not defined"
+#endif
+#if (ENC2_DIR < 0)
+#error "The ENC2 dir pin is not defined"
+#endif
+#define ENC2_MASK (1 << ENC2)
+#endif
+#if ENCODERS > 3
+#if (ENC3_PULSE < 0)
+#error "The ENC3 pulse pin is not defined"
+#endif
+#if (ENC3_DIR < 0)
+#error "The ENC3 dir pin is not defined"
+#endif
+#define ENC3_MASK (1 << ENC3)
+#endif
+#if ENCODERS > 4
+#if (ENC4_PULSE < 0)
+#error "The ENC4 pulse pin is not defined"
+#endif
+#if (ENC4_DIR < 0)
+#error "The ENC4 dir pin is not defined"
+#endif
+#define ENC4_MASK (1 << ENC4)
+#endif
+#if ENCODERS > 5
+#if (ENC5_PULSE < 0)
+#error "The ENC5 pulse pin is not defined"
+#endif
+#if (ENC5_DIR < 0)
+#error "The ENC5 dir pin is not defined"
+#endif
+#define ENC5_MASK (1 << ENC5)
+#endif
+#if ENCODERS > 6
+#if (ENC6_PULSE < 0)
+#error "The ENC6 pulse pin is not defined"
+#endif
+#if (ENC6_DIR < 0)
+#error "The ENC6 dir pin is not defined"
+#endif
+#define ENC6_MASK (1 << ENC6)
+#endif
+#if ENCODERS > 7
+#if (ENC7_PULSE < 0)
+#error "The ENC7 pulse pin is not defined"
+#endif
+#if (ENC7_DIR < 0)
+#error "The ENC7 dir pin is not defined"
+#endif
+#define ENC7_MASK (1 << ENC7)
+#endif
+
+#ifdef STEP0_ENCODER
+#define STEP0_ENCODER_MASK (1 << STEP0_ENCODER)
+#else
+#define STEP0_ENCODER_MASK 0
+#endif
+#ifdef STEP1_ENCODER
+#define STEP1_ENCODER_MASK (1 << STEP1_ENCODER)
+#else
+#define STEP1_ENCODER_MASK 0
+#endif
+#ifdef STEP2_ENCODER
+#define STEP2_ENCODER_MASK (1 << STEP2_ENCODER)
+#else
+#define STEP2_ENCODER_MASK 0
+#endif
+#ifdef STEP3_ENCODER
+#define STEP3_ENCODER_MASK (1 << STEP3_ENCODER)
+#else
+#define STEP3_ENCODER_MASK 0
+#endif
+#ifdef STEP4_ENCODER
+#define STEP4_ENCODER_MASK (1 << STEP4_ENCODER)
+#else
+#define STEP4_ENCODER_MASK 0
+#endif
+#ifdef STEP5_ENCODER
+#define STEP5_ENCODER_MASK (1 << STEP5_ENCODER)
+#else
+#define STEP5_ENCODER_MASK 0
+#endif
+
+#define STEPPERS_ENCODERS_MASK (STEP0_ENCODER_MASK | STEP1_ENCODER_MASK | STEP2_ENCODER_MASK | STEP3_ENCODER_MASK | STEP4_ENCODER_MASK | STEP5_ENCODER_MASK)
+
 #if defined(ENABLE_IO_MODULES)
 #warning "Encoder module is enable. Generic input change event will not be available"
 #endif
+#endif
+
+#ifndef STEPPERS_ENCODERS_MASK
+#define STEPPERS_ENCODERS_MASK 0
 #endif
 
 #ifndef PID_CONTROLLERS

@@ -973,7 +973,7 @@ void itp_get_rt_position(int32_t *position)
 {
     memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 
-#if ENCODERS > 0
+#if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && STEPPER_COUNT > 0)
     itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
 #endif
@@ -1017,7 +1017,7 @@ void itp_reset_rt_position(float *origin)
         memset(origin, 0, (sizeof(float) * AXIS_COUNT));
     }
 
-#if ENCODERS > 0
+#if STEPPERS_ENCODERS_MASK != 0
     encoders_itp_reset_rt_position(origin);
 #endif
 }

@@ -136,37 +136,45 @@ extern "C"
  * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
  *
  * It's also possible to assing an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
- * #define STEP0_ENCODER 0 //assigns encoder 0 to stepper 0
+ * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
  *
  * For encoders to work as STEP encoders ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES must be enabled
+ *
+ * Encoders counting direction can be inverted via mask setting $8
  * */
 #if ENCODERS > 0
-// Counter mode
-// #define ENC0_PULSE DIN0
-// #define ENC0_DIR DIN0
+#include "src/modules/encoder.h"
 
-// Encoder mode
-// #define ENC0_PULSE DIN0
-// #define ENC0_DIR DIN8
-// #define STEP0_ENCODER 0
+	// Counter mode
+	// #define ENC0_PULSE DIN0
+	// #define ENC0_DIR DIN0
 
-// #define ENC1_PULSE DIN1
-// #define ENC1_DIR DIN9
-// #define STEP1_ENCODER 1
+	// Encoder mode
+	// #define ENC0_PULSE DIN0
+	// #define ENC0_DIR DIN8
 
-// #define ENC2_PULSE DIN2
-// #define ENC2_DIR DIN10
-// #define STEP2_ENCODER 2
+	// #define ENC1_PULSE DIN1
+	// #define ENC1_DIR DIN9
+
+	// #define ENC2_PULSE DIN2
+	// #define ENC2_DIR DIN10
+
+	// Assign encoders to steppers
+	// #define STEP0_ENCODER ENC0
+	// #define STEP1_ENCODER ENC1
+	// #define STEP2_ENCODER ENC2
+
 #endif
 
-// these modules must be enabled to use pid
-#if defined(ENABLE_MAIN_LOOP_MODULES) && defined(ENABLE_SETTINGS_MODULES)
 /*
 	Sets the number of PID controllers to be used
 */
 #define PID_CONTROLLERS 0
+
+#if PID_CONTROLLERS > 0
+#include "src/modules/pid.h"
 
 	/**
 	 * To use PID you need to set the number o PID controllers.
@@ -209,14 +217,6 @@ extern "C"
 	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
 	//  //optional
 	//  #define PID1_FREQ_DIV 50
-#endif
-
-#if defined(ENABLE_MOTION_MODULES)
-// uncomment to enable BLTOUCH PROBE
-#define ENABLE_BLTOUCH_PROBE
-// BLTOUCH uses SERVO0 pin of µCNC by default
-// the servo pin can be changed here
-// #define BLTOUCH_PROBE_SERVO SERVO0
 #endif
 
 /**
