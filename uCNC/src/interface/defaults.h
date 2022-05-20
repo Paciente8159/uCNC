@@ -24,40 +24,19 @@ extern "C"
 {
 #endif
 
-//default step per mm
-#define DEFAULT_0_STEP_PER_MM 200
-#define DEFAULT_1_STEP_PER_MM 200
-#define DEFAULT_2_STEP_PER_MM 200
-#define DEFAULT_3_STEP_PER_MM 200
-#define DEFAULT_4_STEP_PER_MM 200
-#define DEFAULT_5_STEP_PER_MM 200
-//default feed in mm/m
-#define DEFAULT_0_MAX_FEED 500
-#define DEFAULT_1_MAX_FEED 500
-#define DEFAULT_2_MAX_FEED 500
-#define DEFAULT_3_MAX_FEED 500
-#define DEFAULT_4_MAX_FEED 500
-#define DEFAULT_5_MAX_FEED 500
-//default acceleration in mm/s^2
-#define DEFAULT_0_ACCEL 10
-#define DEFAULT_1_ACCEL 10
-#define DEFAULT_2_ACCEL 10
-#define DEFAULT_3_ACCEL 10
-#define DEFAULT_4_ACCEL 10
-#define DEFAULT_5_ACCEL 10
+// default step per mm
+#define DEFAULT_STEP_PER_MM 200
+// default feed in mm/m
+#define DEFAULT_MAX_FEED 500
+// default acceleration in mm/s^2
+#define DEFAULT_ACCEL 10
+// default max distance traveled by each axis in mm
+#define DEFAULT_MAX_DIST 200
 
 #define DEFAULT_HOMING_DIR_INV_MASK 0
 #define DEFAULT_HOMING_SLOW 10
 #define DEFAULT_HOMING_FAST 50
 #define DEFAULT_HOMING_OFFSET 2
-
-//default max distance traveled by each axis in mm
-#define DEFAULT_X_MAX_DIST 200
-#define DEFAULT_Y_MAX_DIST 200
-#define DEFAULT_Z_MAX_DIST 200
-#define DEFAULT_A_MAX_DIST 200
-#define DEFAULT_B_MAX_DIST 200
-#define DEFAULT_C_MAX_DIST 200
 
 #define DEFAULT_STEP_INV_MASK 0
 #define DEFAULT_STEP_ENA_INV 0
@@ -76,8 +55,6 @@ extern "C"
 
 #define DEFAULT_STARTUP_TOOL 1
 
-#define DEFAULT_MAX_STEP_RATE 30000
-
 #define DEFAULT_SPINDLE_MAX_RPM 1000
 #define DEFAULT_SPINDLE_MIN_RPM 0
 
@@ -87,6 +64,30 @@ extern "C"
 #define DEFAULT_SOFT_LIMITS_ENABLED 0
 
 #define DEFAULT_DEBOUNCE_MS 250
+
+#define DEFAULT_DELTA_ARM_LENGTH 230
+#define DEFAULT_DELTA_BASE_RADIUS 115
+
+#define DEFAULT_PID ({0, 0, 0})
+
+#define DEFAULT_ARRAY_0(y) {}
+#define DEFAULT_ARRAY_1(y) {y}
+#define DEFAULT_ARRAY_2(y) {y, y}
+#define DEFAULT_ARRAY_3(y) {y, y, y}
+#define DEFAULT_ARRAY_4(y) {y, y, y, y}
+#define DEFAULT_ARRAY_5(y) {y, y, y, y, y}
+#define DEFAULT_ARRAY_6(y) {y, y, y, y, y, y}
+#define DEFAULT_ARRAY_7(y) {y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_8(y) {y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_9(y) {y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_10(y) {y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_11(y) {y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_12(y) {y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_13(y) {y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_14(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_15(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define _DEFAULT_ARRAY(x, y) DEFAULT_ARRAY_##x(y)
+#define DEFAULT_ARRAY(x, y) _DEFAULT_ARRAY(x, y)
 
 #ifdef __cplusplus
 }

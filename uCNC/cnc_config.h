@@ -394,6 +394,14 @@ extern "C"
 #define CRC_WITHOUT_LOOKUP_TABLE
 
   /**
+   * This uses RAM only settings
+   * Storing is disabled and the defaults will be loaded at each powerup
+   * This is usefull if you don't have EEPROM/FLASH storage or the devide read/write maximum cycle count is low to prevent damage
+   * */
+  // #define RAM_ONLY_SETTINGS
+
+
+  /**
    * EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of
    * required cpu cycles needed for a few math operations (mainly on 8-bit
    * processors) This will affect the feed rate precision in about ~5%. Output
