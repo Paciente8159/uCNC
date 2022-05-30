@@ -185,6 +185,10 @@ bool cnc_dotasks(void)
         return !cnc_get_exec_state(EXEC_KILL);
     }
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    mod_cnc_dotasks_hook();
+#endif
+
     // check security interlocking for any problem
     if (!cnc_check_interlocking())
     {
@@ -197,10 +201,6 @@ bool cnc_dotasks(void)
         itp_run();
         lock_itp = false;
     }
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-    mod_cnc_dotasks_hook();
-#endif
 
     return !cnc_get_exec_state(EXEC_KILL);
 }
