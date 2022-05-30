@@ -21,6 +21,7 @@
 - module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository (#215)
 - encoders initial state aquired at startup to prevent initial noise counts (#216)
 - fixed dir mask detection for ENC0 and ENC1 (#216)
+- moved the mod_cnc_dotasks_hook callback to allow it to work even if hold is active (#218)
 
 ### Fixed
 
