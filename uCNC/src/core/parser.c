@@ -1026,7 +1026,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
         }
     }
 
-    // 6. M6 change tool (not implemented yet)
+    // 6. M6 change tool
     if (CHECKFLAG(cmd->groups, GCODE_GROUP_TOOLCHANGE))
     {
         itp_sync();
@@ -2177,14 +2177,12 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
         words->xyzabc[AXIS_C] = value;
         break;
 #endif
-#ifdef ENABLE_CANNED_CYCLES
     // treats Q like D since they cannot cooexist
     case 'Q':
         if (value < 0)
         {
             return STATUS_NEGATIVE_VALUE;
         }
-#endif
     case 'D':
         new_words |= GCODE_WORD_D;
         words->d = value;
