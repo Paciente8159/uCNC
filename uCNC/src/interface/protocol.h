@@ -31,15 +31,18 @@ extern "C"
 	void protocol_send_error(uint8_t error);
 	void protocol_send_alarm(int8_t alarm);
 	void protocol_send_status(void);
-	void protocol_send_string(const unsigned char *__s);
-	void protocol_send_feedback(const unsigned char *__s);
+	void protocol_send_string(const char *__s);
+	void protocol_send_feedback(const char *__s);
 	void protocol_send_probe_result(uint8_t val);
 	void protocol_send_gcode_coordsys(void);
 	void protocol_send_gcode_modes(void);
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
-#ifdef ENABLE_SETTING_EXTRA_CMDS
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
+#endif
+#ifdef ENABLE_SYSTEM_INFO
+	void protocol_send_cnc_info(void);
 #endif
 
 #ifdef __cplusplus

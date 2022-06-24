@@ -1,18 +1,18 @@
 /*
-	Name: motion_control.c
-	Description: Contains the building blocks for performing motions/actions in µCNC
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 19/11/2019
+    Name: motion_control.c
+    Description: Contains the building blocks for performing motions/actions in µCNC
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 19/11/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -20,16 +20,10 @@
 #include <string.h>
 #include <float.h>
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932385f
-#endif
-#ifndef M_COS_TAYLOR_1
-#define M_COS_TAYLOR_1 0.1666666666666666667f
-#endif
-
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
-//static float mc_prev_target_dir[AXIS_COUNT];
+static float mc_last_target[AXIS_COUNT];
+// static float mc_prev_target_dir[AXIS_COUNT];
 #ifdef ENABLE_BACKLASH_COMPENSATION
 static uint8_t mc_last_dirbits;
 #endif
@@ -38,6 +32,10 @@ void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
     memset(mc_last_step_pos, 0, sizeof(mc_last_step_pos));
+    memset(mc_last_target, 0, sizeof(mc_last_target));
+#ifdef ENABLE_BACKLASH_COMPENSATION
+    mc_last_dirbits = 0;
+#endif
 #endif
     mc_checkmode = false;
     mc_sync_position();
@@ -58,43 +56,64 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 {
     int32_t step_new_pos[STEPPER_COUNT];
 
-    //applies the inverse kinematic to get next position in steps
+    // applies the inverse kinematic to get next position in steps
     kinematics_apply_inverse(target, step_new_pos);
 
-    //resets accumulator vars of the block
+    // resets accumulator vars of the block
     block_data->full_steps = 0;
     block_data->total_steps = 0;
+#if KINEMATIC == KINEMATIC_DELTA
+    block_data->dirbits = 0;
+#endif
     for (uint8_t i = STEPPER_COUNT; i != 0;)
     {
         i--;
-        int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
-        steps = ABS(steps);
+        int32_t s = step_new_pos[i] - mc_last_step_pos[i];
+        uint32_t steps = (uint32_t)ABS(s);
         block_data->steps[i] = (step_t)steps;
+
+#if KINEMATIC == KINEMATIC_DELTA
+        // with the delta dir bits need to be rechecked
+        if (s < 0)
+        {
+            block_data->dirbits |= (1 << i);
+        }
+#endif
 
         block_data->full_steps += steps;
         if (block_data->total_steps < steps)
         {
             block_data->total_steps = steps;
+#if KINEMATIC == KINEMATIC_DELTA
+            // with the delta main stepper need to be rechecked
+            block_data->main_stepper = i;
+#endif
         }
     }
 
-    //stores current step target position
+    // no significant motion will take place. don't send any thing to the planner
+    if (!(block_data->total_steps))
+    {
+        return STATUS_OK;
+    }
+
+    // stores current step target position
     memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
     if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
 #ifdef ENABLE_BACKLASH_COMPENSATION
-        //checks if any of the linear actuators there is a shift in direction
+        // checks if any of the linear actuators there is a shift in direction
         uint8_t inverted_steps = mc_last_dirbits ^ block_data->dirbits;
         if (inverted_steps)
         {
             motion_data_t backlash_block_data = {0};
             memcpy(&backlash_block_data, block_data, sizeof(motion_data_t));
             memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
-            //resets accumulator vars
+            // resets accumulator vars
             backlash_block_data.total_steps = 0;
             backlash_block_data.full_steps = 0;
-            backlash_block_data.feed = FLT_MAX; //max feedrate possible (same as rapid move)
+            backlash_block_data.feed = FLT_MAX; // max feedrate possible (same as rapid move)
 
             SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
 
@@ -114,7 +133,7 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
             }
 
             planner_add_line(&backlash_block_data);
-            //dwell should only execute on the first request
+            // dwell should only execute on the first request
             block_data->dwell = 0;
 
             while (planner_buffer_is_full())
@@ -130,7 +149,7 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 #endif
 
         planner_add_line(block_data);
-        //dwell should only execute on the first request
+        // dwell should only execute on the first request
         block_data->dwell = 0;
     }
 
@@ -147,18 +166,16 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 uint8_t mc_line(float *target, motion_data_t *block_data)
 {
     float prev_target[AXIS_COUNT];
-    block_data->dirbits = 0; //reset dirbits (this prevents odd behaviour generated by long arcs)
+    block_data->dirbits = 0; // reset dirbits (this prevents odd behaviour generated by long arcs)
 
-    //stores last target and new target
-
-    //In jog/homming mode no kinematics modifications is applied to prevent unwanted axis movements
-    if (!cnc_get_exec_state(EXEC_JOG | EXEC_HOMING))
+    // In homming mode no kinematics modifications is applied to prevent unwanted axis movements
+    if (!cnc_get_exec_state(EXEC_HOMING))
     {
         kinematics_apply_transform(target);
     }
 
-    //check travel limits (soft limits)
-    if (!io_check_boundaries(target))
+    // check travel limits (soft limits)
+    if (!kinematics_check_boundaries(target))
     {
         if (cnc_get_exec_state(EXEC_JOG))
         {
@@ -178,12 +195,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
     uint8_t error = STATUS_OK;
     int32_t step_new_pos[STEPPER_COUNT];
-    //converts transformed target to stepper position
+    // converts transformed target to stepper position
     kinematics_apply_inverse(target, step_new_pos);
-    //calculates the amount of stepper motion for this motion
-
+    // calculates the amount of stepper motion for this motion
     uint32_t max_steps = 0;
-    block_data->dirbits = 0;
     block_data->main_stepper = 255;
     for (uint8_t i = STEPPER_COUNT; i != 0;)
     {
@@ -195,27 +210,27 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
         }
 
         steps = ABS(steps);
-        if (max_steps < steps)
+        if (max_steps < (uint32_t)steps)
         {
             max_steps = steps;
             block_data->main_stepper = i;
         }
     }
 
-    //no significant motion will take place. don't send any thing to the planner
+    // no significant motion will take place. don't send any thing to the planner
     if (!max_steps)
     {
         return STATUS_OK;
     }
 
-    //checks the amount of steps that this motion translates to
-    //if the amount of steps is higher than the limit for the 16bit bresenham algorithm
-    //splits the line into smaller segments
+    // checks the amount of steps that this motion translates to
+    // if the amount of steps is higher than the limit for the 16bit bresenham algorithm
+    // splits the line into smaller segments
 
-    //gets the previous machine position (transformed to calculate the direction vector and travelled distance)
-    kinematics_apply_forward(mc_last_step_pos, prev_target);
+    // gets the previous machine position (transformed to calculate the direction vector and travelled distance)
+    memcpy(prev_target, mc_last_target, sizeof(mc_last_target));
 
-    //calculates the aproximation of the inverted travelled distance
+    // calculates the aproximation of the inverted travelled distance
     float inv_dist = 0;
     float motion_segment[AXIS_COUNT];
     for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -226,9 +241,14 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
         inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
     }
 
+#if (KINEMATIC == KINEMATIC_DELTA)
+    float line_dist = fast_flt_sqrt(inv_dist);
+    inv_dist = 1.0f / line_dist;
+#else
     inv_dist = fast_flt_invsqrt(inv_dist);
+#endif
 
-    //calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
+    // calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
 #ifndef ENABLE_LINACT_PLANNER
     for (uint8_t i = AXIS_COUNT; i != 0;)
     {
@@ -237,14 +257,15 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
     }
 #endif
 
-    //calculated the total motion execution time @ the given rate
+    // calculated the total motion execution time @ the given rate
     float feed = block_data->feed;
     float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
     block_data->feed = (float)max_steps * inv_delta;
 
-    //this contains a motion. Any tool update will be done here
+    // this contains a motion. Any tool update will be done here
     block_data->update_tools = false;
     uint32_t line_segments = 1;
+#if (KINEMATIC != KINEMATIC_DELTA)
     if (max_steps > MAX_STEPS_PER_LINE)
     {
         line_segments += (max_steps >> MAX_STEPS_PER_LINE_BITS);
@@ -255,6 +276,15 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
             motion_segment[i] *= m_inv;
         }
     }
+#else
+    line_segments = (uint32_t)ceilf(line_dist * DELTA_MOTION_SEGMENT_FACTOR);
+    float m_inv = 1.0f / (float)line_segments;
+    for (uint8_t i = AXIS_COUNT; i != 0;)
+    {
+        i--;
+        motion_segment[i] *= m_inv;
+    }
+#endif
 
     while (line_segments--)
     {
@@ -289,18 +319,22 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
                 break;
             }
         }
+        block_data->is_subsegment = true;
     }
 
+    // stores the new position for the next motion
+    memcpy(mc_last_target, target, sizeof(mc_last_target));
     block_data->feed = feed;
+    block_data->is_subsegment = false;
     return error;
 }
 
-//applies an algorithm similar to grbl with slight changes
+// applies an algorithm similar to grbl with slight changes
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data)
 {
     float mc_position[AXIS_COUNT];
 
-    //copy motion control last position
+    // copy motion control last position
     mc_get_position(mc_position);
 
     float ptcenter_a = mc_position[axis_0] + center_offset_a;
@@ -311,9 +345,9 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
     float pt1_a = target[axis_0] - ptcenter_a; // Radius vector from center to current location
     float pt1_b = target[axis_1] - ptcenter_b;
 
-    //dot product between vect_a and vect_b
+    // dot product between vect_a and vect_b
     float dotprod = pt0_a * pt1_a + pt0_b * pt1_b;
-    //determinant
+    // determinant
     float det = pt0_a * pt1_b - pt0_b * pt1_a;
     float arc_angle = atan2(det, dotprod);
 
@@ -332,15 +366,14 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
         }
     }
 
-    //uses as temporary vars
+    // uses as temporary vars
     float radiusangle = radius * arc_angle;
     radiusangle = fast_flt_div2(radiusangle);
     float diameter = fast_flt_mul2(radius);
     uint16_t segment_count = floor(fabs(radiusangle) / sqrt(g_settings.arc_tolerance * (diameter - g_settings.arc_tolerance)));
     float arc_per_sgm = (segment_count != 0) ? arc_angle / segment_count : arc_angle;
-    float dist_sgm = 0;
 
-    //for all other axis finds the linear motion distance
+    // for all other axis finds the linear motion distance
     float increment[AXIS_COUNT];
 
     for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -354,13 +387,13 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 
     if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED))
     {
-        //split the required time to complete the motion with the number of segments
+        // split the required time to complete the motion with the number of segments
         block_data->feed *= segment_count;
     }
 
-    //calculates an aproximation to sine and cosine of the angle segment
-    //improves the error for the cosine by calculating an extra term of the taylor series at the expence of an extra multiplication and addition
-    //applies arc correction has grbl does
+    // calculates an aproximation to sine and cosine of the angle segment
+    // improves the error for the cosine by calculating an extra term of the taylor series at the expence of an extra multiplication and addition
+    // applies arc correction has grbl does
     float arc_per_sgm_sqr = arc_per_sgm * arc_per_sgm;
     float cos_per_sgm = 1 - M_COS_TAYLOR_1 * arc_per_sgm_sqr;
     float sin_per_sgm = arc_per_sgm * cos_per_sgm;
@@ -385,11 +418,11 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
             // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
             float angle = i * arc_per_sgm;
             float precise_cos = cos(angle);
-            //calculates sine using sine and cosine relation equation
+            // calculates sine using sine and cosine relation equation
             //	sin(x)^2 + cos(x)^2 = 1
             //
-            //this is executes in about 50% the time of a sin function
-            //https://www.nongnu.org/avr-libc/user-manual/benchmarks.html
+            // this is executes in about 50% the time of a sin function
+            // https://www.nongnu.org/avr-libc/user-manual/benchmarks.html
             float precise_sin = sqrt(1 - precise_cos * precise_cos);
             if (angle >= 0)
             {
@@ -432,7 +465,11 @@ uint8_t mc_dwell(motion_data_t *block_data)
     if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
     {
         mc_update_tools(block_data);
+        // restores/forces run flag
+        cnc_set_exec_state(EXEC_RUN);
         cnc_delay_ms(block_data->dwell);
+        // clear forced run flag to allow next motions
+        cnc_clear_exec_state(EXEC_RUN);
     }
 
     return STATUS_OK;
@@ -459,7 +496,7 @@ uint8_t mc_update_tools(motion_data_t *block_data)
         {
             return STATUS_CRITICAL_FAIL;
         }
-        //synchronizes the tools
+        // synchronizes the tools
         planner_sync_tools(block_data);
         itp_sync_spindle();
     }
@@ -474,41 +511,33 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     motion_data_t block_data;
     uint8_t limits_flags;
 
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-    axis_limit |= (axis != AXIS_DUAL0) ? 0 : (64 | 128); //if dual limit pins
-#endif
-#ifdef DUAL_DRIVE_AXIS1
-    axis_limit |= (axis != AXIS_DUAL1) ? 0 : (64 | 128); //if dual limit pins
-#endif
-#endif
-
     cnc_unlock(true);
 
-    //if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-    io_limits_isr();
-    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) /*|| CHECKFLAG(io_get_limits(), LIMITS_MASK)*/)
+    // locks limits to accept axis limit mask only or else throw error
+    io_lock_limits(axis_limit);
+    io_invert_limits(0);
+    // if HOLD or ALARM are still active or any limit switch is not cleared fails to home
+    mcu_limits_changed_cb();
+    if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
     {
         cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
         return STATUS_CRITICAL_FAIL;
     }
 
-    io_set_homing_limits_filter(axis_limit);
-
     float max_home_dist;
     max_home_dist = -g_settings.max_distance[axis] * 1.5f;
 
-    //checks homing dir
+    // checks homing dir
     if (g_settings.homing_dir_invert_mask & axis_mask)
     {
         max_home_dist = -max_home_dist;
     }
 
-    //sync's the motion control with the real time position
+    // sync's the motion control with the real time position
     mc_sync_position();
     mc_get_position(target);
     target[axis] += max_home_dist;
-    //initializes planner block data
+    // initializes planner block data
     block_data.total_steps = ABS(max_home_dist);
     memset(block_data.steps, 0, sizeof(block_data.steps));
     block_data.steps[axis] = max_home_dist;
@@ -518,7 +547,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
     cnc_unlock(true);
-    //re-flags homing clear by the unlock
+    // re-flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
     mc_line(target, &block_data);
 
@@ -527,15 +556,15 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return STATUS_CRITICAL_FAIL;
     }
 
-    //flushes buffers
+    // flushes buffers
     itp_stop();
     itp_clear();
     planner_clear();
 
-    cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+    cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
     limits_flags = io_get_limits();
 
-    //the wrong switch was activated bails
+    // the wrong switch was activated bails
     if (!CHECKFLAG(limits_flags, axis_limit))
     {
         cnc_set_exec_state(EXEC_HALT);
@@ -543,10 +572,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
         return STATUS_CRITICAL_FAIL;
     }
 
-    //back off from switch at lower speed
+    // back off from switch at lower speed
     max_home_dist = g_settings.homing_offset * 5.0f;
 
-    //sync's the motion control with the real time position
+    // sync's the motion control with the real time position
     mc_sync_position();
     mc_get_position(target);
     if (g_settings.homing_dir_invert_mask & axis_mask)
@@ -558,29 +587,31 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
     block_data.feed = g_settings.homing_slow_feed_rate;
     block_data.total_steps = ABS(max_home_dist);
     block_data.steps[axis] = max_home_dist;
-    //unlocks the machine for next motion (this will clear the EXEC_HALT flag
-    //temporary inverts the limit mask to trigger ISR on switch release
-    g_settings.limits_invert_mask ^= axis_limit;
-    //io_set_homing_limits_filter(LIMITS_DUAL_MASK);//if axis pin goes off triggers
+    // unlocks the machine for next motion (this will clear the EXEC_HALT flag
+    // temporary inverts the limit mask to trigger ISR on switch release
+    io_invert_limits(axis_limit);
+
     cnc_unlock(true);
-    mc_line(target, &block_data);
-    //flags homing clear by the unlock
+    // flags homing clear by the unlock
     cnc_set_exec_state(EXEC_HOMING);
+    mc_line(target, &block_data);
+
     if (itp_sync() != STATUS_OK)
     {
+        // restores limits mask
         return STATUS_CRITICAL_FAIL;
     }
 
-    cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
-    //resets limit mask
-    g_settings.limits_invert_mask ^= axis_limit;
-    //stops, flushes buffers and clears the hold if active
+    cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
+    // resets limit mask
+    io_invert_limits(0);
+    // stops, flushes buffers and clears the hold if active
     cnc_stop();
-    //clearing the interpolator unlockes any locked stepper
+    // clearing the interpolator unlockes any locked stepper
     itp_clear();
     planner_clear();
 
-    cnc_delay_ms(g_settings.debounce_ms); //adds a delay before reading io pin (debounce)
+    cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
     limits_flags = io_get_limits();
 
     if (CHECKFLAG(limits_flags, axis_limit))
@@ -595,7 +626,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
-#if PROBE >= 0
+#if !(PROBE < 0)
     uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
     io_enable_probe();
     mc_line(target, block_data);
@@ -610,7 +641,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 #if (defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK != PROBEISR_MASK))
         if (io_get_probe() ^ (flags & 0x01))
         {
-            io_probe_isr();
+            mcu_probe_changed_cb();
             break;
         }
 #endif
@@ -621,10 +652,10 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
     itp_clear();
     planner_clear();
     parser_update_probe_pos();
-    //sync the position of the motion control
+    // sync the position of the motion control
     mc_sync_position();
-    cnc_clear_exec_state(~prev_state | ~EXEC_HOLD); //restores HOLD previous state
-    cnc_delay_ms(g_settings.debounce_ms);           //adds a delay before reading io pin (debounce)
+    cnc_clear_exec_state(~prev_state | ~EXEC_HOLD); // restores HOLD previous state
+    cnc_delay_ms(g_settings.debounce_ms);           // adds a delay before reading io pin (debounce)
     bool probe_ok = io_get_probe();
     probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? !probe_ok : probe_ok;
     if (!probe_ok)
@@ -643,12 +674,13 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 void mc_get_position(float *target)
 {
-    kinematics_apply_forward(mc_last_step_pos, target);
+    memcpy(target, mc_last_target, sizeof(mc_last_target));
     kinematics_apply_reverse_transform(target);
 }
 
 void mc_sync_position(void)
 {
     itp_get_rt_position(mc_last_step_pos);
+    kinematics_apply_forward(mc_last_step_pos, mc_last_target);
     parser_sync_position();
 }

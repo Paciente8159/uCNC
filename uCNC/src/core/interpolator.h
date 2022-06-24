@@ -32,22 +32,16 @@ extern "C"
 	void itp_init(void);
 	void itp_run(void);
 	void itp_update(void);
-	void itp_step_isr(void);
-	void itp_step_reset_isr(void);
 	void itp_stop(void);
 	void itp_stop_tools(void);
 	void itp_clear(void);
 	void itp_get_rt_position(int32_t *position);
-	void itp_reset_rt_position(void);
+	int32_t itp_get_rt_position_index(int8_t index);
+	void itp_reset_rt_position(float *origin);
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
-#if TOOL_COUNT > 0
-	uint16_t itp_get_rt_spindle(void);
-#else
-#define itp_get_rt_spindle() (0);
-#endif
-#ifdef ENABLE_DUAL_DRIVE_AXIS
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS

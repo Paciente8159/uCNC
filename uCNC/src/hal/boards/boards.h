@@ -28,10 +28,16 @@ extern "C"
 #define BOARD_RAMBO14 2
 #define BOARD_RAMPS14 3
 #define BOARD_MKS_DLC 4
+#define BOARD_X_CONTROLLER 5
+#define BOARD_MKS_GEN_L_V1 6
 #define BOARD_BLUEPILL 10
+#define BOARD_BLACKPILL 11
 #define BOARD_MZERO 20
 #define BOARD_ZERO 21
 #define BOARD_VIRTUAL 99
+
+// special purpose board
+#define BOARD_RAMPS14_MIRROR 200
 
 #ifdef __cplusplus
 }

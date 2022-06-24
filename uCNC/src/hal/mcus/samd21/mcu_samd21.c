@@ -1,20 +1,20 @@
 /*
-	Name: mcu_samd21.h
-	Description: Contains all the function declarations necessary to interact with the MCU.
+        Name: mcu_samd21.h
+        Description: Contains all the function declarations necessary to interact with the MCU.
         This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 09-08-2021
+        Copyright: Copyright (c) João Martins
+        Author: João Martins
+        Date: 09-08-2021
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+        µCNC is free software: you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation, either version 3 of the License, or
+        (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+        µCNC is distributed WITHOUT ANY WARRANTY;
+        Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+        See the	GNU General Public License for more details.
 */
 
 #include "../../../cnc.h"
@@ -26,10 +26,11 @@
 #include "sam.h"
 //#include "instance/nvmctrl.h"
 #include <string.h>
+#include <math.h>
 
-//Non volatile memory
-//SAMD devices page size never exceeds 1024 bytes
-#define NVM_EEPROM_SIZE 0x400 //1Kb of emulated EEPROM is enough
+// Non volatile memory
+// SAMD devices page size never exceeds 1024 bytes
+#define NVM_EEPROM_SIZE 0x400 // 1Kb of emulated EEPROM is enough
 #define NVM_PAGE_SIZE NVMCTRL_PAGE_SIZE
 #define NVM_ROW_PAGES NVMCTRL_ROW_PAGES
 #define NVM_ROW_SIZE NVMCTRL_ROW_SIZE
@@ -44,7 +45,7 @@
 
 volatile bool samd21_global_isr_enabled;
 
-//setups internal timers (all will run @ 1Mhz on GCLK4)
+// setups internal timers (all will run @ 1Mhz on GCLK4)
 #define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / 1000000))
 static void mcu_setup_clocks(void)
 {
@@ -103,23 +104,23 @@ static void mcu_setup_clocks(void)
         EIC->INTFLAG.reg = SAMD21_EIC_MASK;
         EIC->INTENSET.reg = SAMD21_EIC_MASK;
 #endif
-        //ADC clock
+        // ADC clock
         GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK4 | GCLK_CLKCTRL_ID_ADC;
         /* Wait for the write to complete. */
         while (GCLK->STATUS.bit.SYNCBUSY)
                 ;
 
-        //adc reset
+        // adc reset
         ADC->CTRLA.bit.SWRST = 1;
         while (ADC->STATUS.bit.SYNCBUSY)
                 ;
-        //set resolution
+        // set resolution
         ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
         ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
         while (ADC->STATUS.bit.SYNCBUSY)
                 ;
 
-        //set ref voltage
+        // set ref voltage
         ADC->INPUTCTRL.bit.GAIN = ADC_INPUTCTRL_GAIN_DIV2_Val;
         ADC->REFCTRL.bit.REFSEL = ADC_REFCTRL_REFSEL_INTVCC1_Val;
         /* Wait for bus synchronization. */
@@ -137,7 +138,7 @@ static void mcu_setup_clocks(void)
         /* Write the calibration data. */
         ADC->CALIB.reg = ADC_CALIB_BIAS_CAL(bias) | ADC_CALIB_LINEARITY_CAL(linearity);
         ADC->AVGCTRL.reg = ADC_AVGCTRL_SAMPLENUM_1;
-        ADC->INPUTCTRL.bit.MUXNEG = 0x18; //select internal ground
+        ADC->INPUTCTRL.bit.MUXNEG = 0x18; // select internal ground
         ADC->CTRLA.bit.ENABLE = 1;
         while (ADC->STATUS.bit.SYNCBUSY)
                 ;
@@ -155,25 +156,25 @@ void EIC_Handler(void)
 #if (LIMITS_EICMASK != 0)
         if (EIC->INTFLAG.reg & LIMITS_EICMASK)
         {
-                io_limits_isr();
+                mcu_limits_changed_cb();
         }
 #endif
 #if (CONTROLS_EICMASK != 0)
         if (EIC->INTFLAG.reg & CONTROLS_EICMASK)
         {
-                io_controls_isr();
+                mcu_controls_changed_cb();
         }
 #endif
 #if (PROBE_EICMASK != 0)
         if (EIC->INTFLAG.reg & PROBE_EICMASK && mcu_probe_isr_enabled)
         {
-                io_probe_isr();
+                mcu_probe_changed_cb();
         }
 #endif
 #if (DIN_IO_EICMASK != 0)
         if (EIC->INTFLAG.reg & DIN_IO_EICMASK)
         {
-                io_inputs_isr();
+                mcu_inputs_changed_cb();
         }
 #endif
 
@@ -182,7 +183,7 @@ void EIC_Handler(void)
 }
 #endif
 
-void mcu_timer_isr(void)
+void MCU_ITP_ISR(void)
 {
         mcu_disable_global_isr();
         static bool resetstep = false;
@@ -197,9 +198,9 @@ void mcu_timer_isr(void)
                 ITP_REG->COUNT16.INTFLAG.bit.MC0 = 1;
 #endif
                 if (!resetstep)
-                        itp_step_isr();
+                        mcu_step_cb();
                 else
-                        itp_step_reset_isr();
+                        mcu_step_reset_cb();
                 resetstep = !resetstep;
         }
 
@@ -215,14 +216,14 @@ void mcu_com_isr()
         {
                 COM->USART.INTFLAG.bit.RXC = 1;
                 unsigned char c = (0xff & COM_INREG);
-                serial_rx_isr(c);
+                mcu_com_rx_cb(c);
         }
 #endif
 #ifndef ENABLE_SYNC_TX
         if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
         {
                 COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-                serial_tx_isr();
+                mcu_com_tx_cb();
         }
 #endif
         mcu_enable_global_isr();
@@ -246,13 +247,13 @@ void mcu_usart_init(void)
                 ;
 
         COM->USART.CTRLA.bit.MODE = 1;
-        COM->USART.CTRLA.bit.SAMPR = 0;         //16x sample rate
-        COM->USART.CTRLA.bit.FORM = 0;          //no parity
-        COM->USART.CTRLA.bit.DORD = 1;          //LSB first
+        COM->USART.CTRLA.bit.SAMPR = 0;         // 16x sample rate
+        COM->USART.CTRLA.bit.FORM = 0;          // no parity
+        COM->USART.CTRLA.bit.DORD = 1;          // LSB first
         COM->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
         COM->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-        COM->USART.CTRLB.bit.SBMODE = 0;        //one stop bit
-        COM->USART.CTRLB.bit.CHSIZE = 0;        //8 bits
+        COM->USART.CTRLB.bit.SBMODE = 0;        // one stop bit
+        COM->USART.CTRLB.bit.CHSIZE = 0;        // 8 bits
         COM->USART.CTRLB.bit.RXEN = 1;          // enable receiver
         COM->USART.CTRLB.bit.TXEN = 1;          // enable transmitter
 
@@ -266,7 +267,7 @@ void mcu_usart_init(void)
         mcu_config_altfunc(RX);
 
 #ifndef ENABLE_SYNC_RX
-        COM->USART.INTENSET.bit.RXC = 1; //enable recieved interrupt
+        COM->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
         COM->USART.INTENSET.bit.ERROR = 1;
 #endif
 #ifndef ENABLE_SYNC_TX
@@ -276,7 +277,7 @@ void mcu_usart_init(void)
         NVIC_EnableIRQ(COM_IRQ);
         NVIC_SetPriority(COM_IRQ, 0);
 
-        //enable COM
+        // enable COM
         COM->USART.CTRLA.bit.ENABLE = 1;
         while (COM->USART.SYNCBUSY.bit.ENABLE)
                 ;
@@ -302,7 +303,7 @@ void mcu_usart_init(void)
         USB->DEVICE.CTRLA.bit.ENABLE = 1;
         USB->DEVICE.CTRLA.bit.MODE = 0;
         USB->DEVICE.CTRLB.bit.SPDCONF = 0; //.reg &= ~USB_DEVICE_CTRLB_SPDCONF_Msk;
-        //USB->DEVICE.CTRLB.reg |= USB_DEVICE_CTRLB_SPDCONF_FS;
+        // USB->DEVICE.CTRLB.reg |= USB_DEVICE_CTRLB_SPDCONF_FS;
         while (USB->DEVICE.SYNCBUSY.bit.SWRST)
                 ;
         tusb_init();
@@ -318,11 +319,115 @@ void USB_Handler(void)
 }
 #endif
 
+#if SERVOS_MASK > 0
+
+static uint16_t mcu_servos[6];
+
+static FORCEINLINE void mcu_clear_servos()
+{
+#if SERVO0 >= 0
+        mcu_clear_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+        mcu_clear_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+        mcu_clear_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+        mcu_clear_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+        mcu_clear_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+        mcu_clear_output(SERVO5);
+#endif
+}
+
+// timers are running from GCLCK4 @1MHz
+// servo will have prescaller of /4
+// this will yield a freq of 250KHz or 250 count per ms
+// in theory servo resolution should be 250
+// but 245 gives a closer result
+#define SERVO_RESOLUTION (245)
+void servo_timer_init()
+{
+#if (SERVO_TIMER < 3)
+        // reset timer
+        SERVO_REG->CTRLA.bit.SWRST = 1;
+        while (SERVO_REG->SYNCBUSY.bit.SWRST)
+                ;
+        // enable the timer in the APB
+        SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
+        SERVO_REG->WAVE.bit.WAVEGEN = 1;               // match compare
+        while (SERVO_REG->SYNCBUSY.bit.WAVE)
+                ;
+#else
+        // reset timer
+        SERVO_REG->COUNT16.CTRLA.bit.SWRST = 1;
+        while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                ;
+        // enable the timer in the APB
+        SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
+        SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;              // match compare
+        while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                ;
+#endif
+}
+
+void servo_start_timeout(uint8_t val)
+{
+        NVIC_SetPriority(SERVO_IRQ, 10);
+        NVIC_ClearPendingIRQ(SERVO_IRQ);
+        NVIC_EnableIRQ(SERVO_IRQ);
+
+#if (SERVO_TIMER < 3)
+        SERVO_REG->CC[0].reg = (val << 1) + 125 - 4;
+        SERVO_REG->COUNT.reg = 0;
+        while (SERVO_REG->SYNCBUSY.bit.CC0)
+                ;
+        SERVO_REG->INTENSET.bit.MC0 = 1;
+        SERVO_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+        while (SERVO_REG->SYNCBUSY.bit.ENABLE)
+                ;
+#else
+        SERVO_REG->COUNT16.CC[0].reg = (val << 1) + 125 - 4;
+        SERVO_REG->COUNT16.COUNT.reg = 0;
+        while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                ;
+        SERVO_REG->COUNT16.INTENSET.bit.MC0 = 1;
+        SERVO_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+        while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
+                ;
+#endif
+}
+
+void MCU_SERVO_ISR(void)
+{
+        mcu_enable_global_isr();
+#if (SERVO_TIMER < 3)
+        if (SERVO_REG->INTFLAG.bit.MC0)
+        {
+                SERVO_REG->INTFLAG.bit.MC0 = 1;
+#else
+        if (SERVO_REG->COUNT16.INTFLAG.bit.MC0)
+        {
+                SERVO_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+#endif
+                mcu_clear_servos();
+                NVIC_DisableIRQ(SERVO_IRQ);
+                SERVO_REG->COUNT16.INTENCLR.bit.MC0 = 1;
+                SERVO_REG->COUNT16.CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+        }
+}
+#endif
+
 /**
-	 * The internal clock counter
-	 * Increments every millisecond
-	 * Can count up to almost 50 days
-	 **/
+ * The internal clock counter
+ * Increments every millisecond
+ * Can count up to almost 50 days
+ **/
 static volatile uint32_t mcu_runtime_ms;
 
 #ifndef ARDUINO_ARCH_SAMD
@@ -332,189 +437,318 @@ void sysTickHook(void)
 #endif
 {
         mcu_disable_global_isr();
-        mcu_runtime_ms++;
-        cnc_scheduletasks();
+        // counts to 20 and reloads
+#if SERVOS_MASK > 0
+        static uint8_t ms_servo_counter = 0;
+        uint8_t servo_counter = ms_servo_counter;
+
+        switch (servo_counter)
+        {
+#if SERVO0 >= 0
+        case SERVO0_FRAME:
+                servo_start_timeout(mcu_servos[0]);
+                mcu_set_output(SERVO0);
+                break;
+#endif
+#if SERVO1 >= 0
+        case SERVO1_FRAME:
+                mcu_set_output(SERVO1);
+                servo_start_timeout(mcu_servos[1]);
+                break;
+#endif
+#if SERVO2 >= 0
+        case SERVO2_FRAME:
+                mcu_set_output(SERVO2);
+                servo_start_timeout(mcu_servos[2]);
+                break;
+#endif
+#if SERVO3 >= 0
+        case SERVO3_FRAME:
+                mcu_set_output(SERVO3);
+                servo_start_timeout(mcu_servos[3]);
+                break;
+#endif
+#if SERVO4 >= 0
+        case SERVO4_FRAME:
+                mcu_set_output(SERVO4);
+                servo_start_timeout(mcu_servos[4]);
+                break;
+#endif
+#if SERVO5 >= 0
+        case SERVO5_FRAME:
+                mcu_set_output(SERVO5);
+                servo_start_timeout(mcu_servos[5]);
+                break;
+#endif
+        }
+
+        servo_counter++;
+        ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
+
+#endif
+        uint32_t millis = mcu_runtime_ms;
+        millis++;
+        mcu_runtime_ms = millis;
+        mcu_rtc_cb(millis);
         mcu_enable_global_isr();
 }
 
-void mcu_tick_init()
+void mcu_rtc_init()
 {
         SysTick->CTRL = 0;
-        SysTick->LOAD = ((F_CPU / 1000) - 1);
+        SysTick->LOAD = ((F_CPU / 1024) - 1);
         SysTick->VAL = 0;
         NVIC_SetPriority(SysTick_IRQn, 10);
         SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 }
 
 /**
-	 * initializes the mcu
-	 * this function needs to:
-	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
-	 *   - configure all interrupts
-	 *   - configure uart or usb
-	 *   - start the internal RTC
-	 * */
+ * initializes the mcu
+ * this function needs to:
+ *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+ *   - configure all interrupts
+ *   - configure uart or usb
+ *   - start the internal RTC
+ * */
 void mcu_init(void)
 {
         samd21_global_isr_enabled = false;
         mcu_setup_clocks();
-#if STEP0 >= 0
+#if !(STEP0 < 0)
         mcu_config_output(STEP0);
 #endif
-#if STEP1 >= 0
+#if !(STEP1 < 0)
         mcu_config_output(STEP1);
 #endif
-#if STEP2 >= 0
+#if !(STEP2 < 0)
         mcu_config_output(STEP2);
 #endif
-#if STEP3 >= 0
+#if !(STEP3 < 0)
         mcu_config_output(STEP3);
 #endif
-#if STEP4 >= 0
+#if !(STEP4 < 0)
         mcu_config_output(STEP4);
 #endif
-#if STEP5 >= 0
+#if !(STEP5 < 0)
         mcu_config_output(STEP5);
 #endif
-#if STEP6 >= 0
+#if !(STEP6 < 0)
         mcu_config_output(STEP6);
 #endif
-#if STEP7 >= 0
+#if !(STEP7 < 0)
         mcu_config_output(STEP7);
 #endif
-#if DIR0 >= 0
+#if !(DIR0 < 0)
         mcu_config_output(DIR0);
 #endif
-#if DIR1 >= 0
+#if !(DIR1 < 0)
         mcu_config_output(DIR1);
 #endif
-#if DIR2 >= 0
+#if !(DIR2 < 0)
         mcu_config_output(DIR2);
 #endif
-#if DIR3 >= 0
+#if !(DIR3 < 0)
         mcu_config_output(DIR3);
 #endif
-#if DIR4 >= 0
+#if !(DIR4 < 0)
         mcu_config_output(DIR4);
 #endif
-#if DIR5 >= 0
+#if !(DIR5 < 0)
         mcu_config_output(DIR5);
 #endif
-#if STEP0_EN >= 0
+#if !(DIR6 < 0)
+        mcu_config_output(DIR6);
+#endif
+#if !(DIR7 < 0)
+        mcu_config_output(DIR7);
+#endif
+#if !(STEP0_EN < 0)
         mcu_config_output(STEP0_EN);
 #endif
-#if STEP1_EN >= 0
+#if !(STEP1_EN < 0)
         mcu_config_output(STEP1_EN);
 #endif
-#if STEP2_EN >= 0
+#if !(STEP2_EN < 0)
         mcu_config_output(STEP2_EN);
 #endif
-#if STEP3_EN >= 0
+#if !(STEP3_EN < 0)
         mcu_config_output(STEP3_EN);
 #endif
-#if STEP4_EN >= 0
+#if !(STEP4_EN < 0)
         mcu_config_output(STEP4_EN);
 #endif
-#if STEP5_EN >= 0
+#if !(STEP5_EN < 0)
         mcu_config_output(STEP5_EN);
 #endif
-#if PWM0 >= 0
+#if !(STEP6_EN < 0)
+        mcu_config_output(STEP6_EN);
+#endif
+#if !(STEP7_EN < 0)
+        mcu_config_output(STEP7_EN);
+#endif
+#if !(PWM0 < 0)
         mcu_config_pwm(PWM0);
 #endif
-#if PWM1 >= 0
+#if !(PWM1 < 0)
         mcu_config_pwm(PWM1);
 #endif
-#if PWM2 >= 0
+#if !(PWM2 < 0)
         mcu_config_pwm(PWM2);
 #endif
-#if PWM3 >= 0
+#if !(PWM3 < 0)
         mcu_config_pwm(PWM3);
 #endif
-#if PWM4 >= 0
+#if !(PWM4 < 0)
         mcu_config_pwm(PWM4);
 #endif
-#if PWM5 >= 0
+#if !(PWM5 < 0)
         mcu_config_pwm(PWM5);
 #endif
-#if PWM6 >= 0
+#if !(PWM6 < 0)
         mcu_config_pwm(PWM6);
 #endif
-#if PWM7 >= 0
+#if !(PWM7 < 0)
         mcu_config_pwm(PWM7);
 #endif
-#if PWM8 >= 0
+#if !(PWM8 < 0)
         mcu_config_pwm(PWM8);
 #endif
-#if PWM9 >= 0
+#if !(PWM9 < 0)
         mcu_config_pwm(PWM9);
 #endif
-#if PWM10 >= 0
+#if !(PWM10 < 0)
         mcu_config_pwm(PWM10);
 #endif
-#if PWM11 >= 0
+#if !(PWM11 < 0)
         mcu_config_pwm(PWM11);
 #endif
-#if PWM12 >= 0
+#if !(PWM12 < 0)
         mcu_config_pwm(PWM12);
 #endif
-#if PWM13 >= 0
+#if !(PWM13 < 0)
         mcu_config_pwm(PWM13);
 #endif
-#if PWM14 >= 0
+#if !(PWM14 < 0)
         mcu_config_pwm(PWM14);
 #endif
-#if PWM15 >= 0
+#if !(PWM15 < 0)
         mcu_config_pwm(PWM15);
 #endif
-#if DOUT0 >= 0
+#if !(SERVO0 < 0)
+        mcu_config_output(SERVO0);
+#endif
+#if !(SERVO1 < 0)
+        mcu_config_output(SERVO1);
+#endif
+#if !(SERVO2 < 0)
+        mcu_config_output(SERVO2);
+#endif
+#if !(SERVO3 < 0)
+        mcu_config_output(SERVO3);
+#endif
+#if !(SERVO4 < 0)
+        mcu_config_output(SERVO4);
+#endif
+#if !(SERVO5 < 0)
+        mcu_config_output(SERVO5);
+#endif
+#if !(DOUT0 < 0)
         mcu_config_output(DOUT0);
 #endif
-#if DOUT1 >= 0
+#if !(DOUT1 < 0)
         mcu_config_output(DOUT1);
 #endif
-#if DOUT2 >= 0
+#if !(DOUT2 < 0)
         mcu_config_output(DOUT2);
 #endif
-#if DOUT3 >= 0
+#if !(DOUT3 < 0)
         mcu_config_output(DOUT3);
 #endif
-#if DOUT4 >= 0
+#if !(DOUT4 < 0)
         mcu_config_output(DOUT4);
 #endif
-#if DOUT5 >= 0
+#if !(DOUT5 < 0)
         mcu_config_output(DOUT5);
 #endif
-#if DOUT6 >= 0
+#if !(DOUT6 < 0)
         mcu_config_output(DOUT6);
 #endif
-#if DOUT7 >= 0
+#if !(DOUT7 < 0)
         mcu_config_output(DOUT7);
 #endif
-#if DOUT8 >= 0
+#if !(DOUT8 < 0)
         mcu_config_output(DOUT8);
 #endif
-#if DOUT9 >= 0
+#if !(DOUT9 < 0)
         mcu_config_output(DOUT9);
 #endif
-#if DOUT10 >= 0
+#if !(DOUT10 < 0)
         mcu_config_output(DOUT10);
 #endif
-#if DOUT11 >= 0
+#if !(DOUT11 < 0)
         mcu_config_output(DOUT11);
 #endif
-#if DOUT12 >= 0
+#if !(DOUT12 < 0)
         mcu_config_output(DOUT12);
 #endif
-#if DOUT13 >= 0
+#if !(DOUT13 < 0)
         mcu_config_output(DOUT13);
 #endif
-#if DOUT14 >= 0
+#if !(DOUT14 < 0)
         mcu_config_output(DOUT14);
 #endif
-#if DOUT15 >= 0
+#if !(DOUT15 < 0)
         mcu_config_output(DOUT15);
 #endif
-#if LIMIT_X >= 0
+#if !(DOUT16 < 0)
+        mcu_config_output(DOUT16);
+#endif
+#if !(DOUT17 < 0)
+        mcu_config_output(DOUT17);
+#endif
+#if !(DOUT18 < 0)
+        mcu_config_output(DOUT18);
+#endif
+#if !(DOUT19 < 0)
+        mcu_config_output(DOUT19);
+#endif
+#if !(DOUT20 < 0)
+        mcu_config_output(DOUT20);
+#endif
+#if !(DOUT21 < 0)
+        mcu_config_output(DOUT21);
+#endif
+#if !(DOUT22 < 0)
+        mcu_config_output(DOUT22);
+#endif
+#if !(DOUT23 < 0)
+        mcu_config_output(DOUT23);
+#endif
+#if !(DOUT24 < 0)
+        mcu_config_output(DOUT24);
+#endif
+#if !(DOUT25 < 0)
+        mcu_config_output(DOUT25);
+#endif
+#if !(DOUT26 < 0)
+        mcu_config_output(DOUT26);
+#endif
+#if !(DOUT27 < 0)
+        mcu_config_output(DOUT27);
+#endif
+#if !(DOUT28 < 0)
+        mcu_config_output(DOUT28);
+#endif
+#if !(DOUT29 < 0)
+        mcu_config_output(DOUT29);
+#endif
+#if !(DOUT30 < 0)
+        mcu_config_output(DOUT30);
+#endif
+#if !(DOUT31 < 0)
+        mcu_config_output(DOUT31);
+#endif
+#if !(LIMIT_X < 0)
         mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
         mcu_config_pullup(LIMIT_X);
@@ -523,7 +757,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_X);
 #endif
 #endif
-#if LIMIT_Y >= 0
+#if !(LIMIT_Y < 0)
         mcu_config_input(LIMIT_Y);
 #ifdef LIMIT_Y_PULLUP
         mcu_config_pullup(LIMIT_Y);
@@ -532,7 +766,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_Y);
 #endif
 #endif
-#if LIMIT_Z >= 0
+#if !(LIMIT_Z < 0)
         mcu_config_input(LIMIT_Z);
 #ifdef LIMIT_Z_PULLUP
         mcu_config_pullup(LIMIT_Z);
@@ -541,7 +775,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_Z);
 #endif
 #endif
-#if LIMIT_X2 >= 0
+#if !(LIMIT_X2 < 0)
         mcu_config_input(LIMIT_X2);
 #ifdef LIMIT_X2_PULLUP
         mcu_config_pullup(LIMIT_X2);
@@ -550,7 +784,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_X2);
 #endif
 #endif
-#if LIMIT_Y2 >= 0
+#if !(LIMIT_Y2 < 0)
         mcu_config_input(LIMIT_Y2);
 #ifdef LIMIT_Y2_PULLUP
         mcu_config_pullup(LIMIT_Y2);
@@ -559,7 +793,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_Y2);
 #endif
 #endif
-#if LIMIT_Z2 >= 0
+#if !(LIMIT_Z2 < 0)
         mcu_config_input(LIMIT_Z2);
 #ifdef LIMIT_Z2_PULLUP
         mcu_config_pullup(LIMIT_Z2);
@@ -568,7 +802,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_Z2);
 #endif
 #endif
-#if LIMIT_A >= 0
+#if !(LIMIT_A < 0)
         mcu_config_input(LIMIT_A);
 #ifdef LIMIT_A_PULLUP
         mcu_config_pullup(LIMIT_A);
@@ -577,7 +811,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_A);
 #endif
 #endif
-#if LIMIT_B >= 0
+#if !(LIMIT_B < 0)
         mcu_config_input(LIMIT_B);
 #ifdef LIMIT_B_PULLUP
         mcu_config_pullup(LIMIT_B);
@@ -586,7 +820,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_B);
 #endif
 #endif
-#if LIMIT_C >= 0
+#if !(LIMIT_C < 0)
         mcu_config_input(LIMIT_C);
 #ifdef LIMIT_C_PULLUP
         mcu_config_pullup(LIMIT_C);
@@ -595,7 +829,7 @@ void mcu_init(void)
         mcu_config_input_isr(LIMIT_C);
 #endif
 #endif
-#if PROBE >= 0
+#if !(PROBE < 0)
         mcu_config_input(PROBE);
 #ifdef PROBE_PULLUP
         mcu_config_pullup(PROBE);
@@ -604,7 +838,7 @@ void mcu_init(void)
         mcu_config_input_isr(PROBE);
 #endif
 #endif
-#if ESTOP >= 0
+#if !(ESTOP < 0)
         mcu_config_input(ESTOP);
 #ifdef ESTOP_PULLUP
         mcu_config_pullup(ESTOP);
@@ -613,7 +847,7 @@ void mcu_init(void)
         mcu_config_input_isr(ESTOP);
 #endif
 #endif
-#if SAFETY_DOOR >= 0
+#if !(SAFETY_DOOR < 0)
         mcu_config_input(SAFETY_DOOR);
 #ifdef SAFETY_DOOR_PULLUP
         mcu_config_pullup(SAFETY_DOOR);
@@ -622,7 +856,7 @@ void mcu_init(void)
         mcu_config_input_isr(SAFETY_DOOR);
 #endif
 #endif
-#if FHOLD >= 0
+#if !(FHOLD < 0)
         mcu_config_input(FHOLD);
 #ifdef FHOLD_PULLUP
         mcu_config_pullup(FHOLD);
@@ -631,7 +865,7 @@ void mcu_init(void)
         mcu_config_input_isr(FHOLD);
 #endif
 #endif
-#if CS_RES >= 0
+#if !(CS_RES < 0)
         mcu_config_input(CS_RES);
 #ifdef CS_RES_PULLUP
         mcu_config_pullup(CS_RES);
@@ -640,71 +874,71 @@ void mcu_init(void)
         mcu_config_input_isr(CS_RES);
 #endif
 #endif
-#if ANALOG0 >= 0
-        mcu_config_analog(ANALOG0);
+#if !(ANALOG0 < 0)
+        mcu_config_input(ANALOG0);
         mcu_get_analog(ANALOG0);
 #endif
-#if ANALOG1 >= 0
-        mcu_config_analog(ANALOG1);
+#if !(ANALOG1 < 0)
+        mcu_config_input(ANALOG1);
         mcu_get_analog(ANALOG1);
 #endif
-#if ANALOG2 >= 0
-        mcu_config_analog(ANALOG2);
+#if !(ANALOG2 < 0)
+        mcu_config_input(ANALOG2);
         mcu_get_analog(ANALOG2);
 #endif
-#if ANALOG3 >= 0
-        mcu_config_analog(ANALOG3);
+#if !(ANALOG3 < 0)
+        mcu_config_input(ANALOG3);
         mcu_get_analog(ANALOG3);
 #endif
-#if ANALOG4 >= 0
-        mcu_config_analog(ANALOG4);
+#if !(ANALOG4 < 0)
+        mcu_config_input(ANALOG4);
         mcu_get_analog(ANALOG4);
 #endif
-#if ANALOG5 >= 0
-        mcu_config_analog(ANALOG5);
+#if !(ANALOG5 < 0)
+        mcu_config_input(ANALOG5);
         mcu_get_analog(ANALOG5);
 #endif
-#if ANALOG6 >= 0
-        mcu_config_analog(ANALOG6);
+#if !(ANALOG6 < 0)
+        mcu_config_input(ANALOG6);
         mcu_get_analog(ANALOG6);
 #endif
-#if ANALOG7 >= 0
-        mcu_config_analog(ANALOG7);
+#if !(ANALOG7 < 0)
+        mcu_config_input(ANALOG7);
         mcu_get_analog(ANALOG7);
 #endif
-#if ANALOG8 >= 0
-        mcu_config_analog(ANALOG8);
+#if !(ANALOG8 < 0)
+        mcu_config_input(ANALOG8);
         mcu_get_analog(ANALOG8);
 #endif
-#if ANALOG9 >= 0
-        mcu_config_analog(ANALOG9);
+#if !(ANALOG9 < 0)
+        mcu_config_input(ANALOG9);
         mcu_get_analog(ANALOG9);
 #endif
-#if ANALOG10 >= 0
-        mcu_config_analog(ANALOG10);
+#if !(ANALOG10 < 0)
+        mcu_config_input(ANALOG10);
         mcu_get_analog(ANALOG10);
 #endif
-#if ANALOG11 >= 0
-        mcu_config_analog(ANALOG11);
+#if !(ANALOG11 < 0)
+        mcu_config_input(ANALOG11);
         mcu_get_analog(ANALOG11);
 #endif
-#if ANALOG12 >= 0
-        mcu_config_analog(ANALOG12);
+#if !(ANALOG12 < 0)
+        mcu_config_input(ANALOG12);
         mcu_get_analog(ANALOG12);
 #endif
-#if ANALOG13 >= 0
-        mcu_config_analog(ANALOG13);
+#if !(ANALOG13 < 0)
+        mcu_config_input(ANALOG13);
         mcu_get_analog(ANALOG13);
 #endif
-#if ANALOG14 >= 0
-        mcu_config_analog(ANALOG14);
+#if !(ANALOG14 < 0)
+        mcu_config_input(ANALOG14);
         mcu_get_analog(ANALOG14);
 #endif
-#if ANALOG15 >= 0
-        mcu_config_analog(ANALOG15);
+#if !(ANALOG15 < 0)
+        mcu_config_input(ANALOG15);
         mcu_get_analog(ANALOG15);
 #endif
-#if DIN0 >= 0
+#if !(DIN0 < 0)
         mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
         mcu_config_pullup(DIN0);
@@ -713,7 +947,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN0);
 #endif
 #endif
-#if DIN1 >= 0
+#if !(DIN1 < 0)
         mcu_config_input(DIN1);
 #ifdef DIN1_PULLUP
         mcu_config_pullup(DIN1);
@@ -722,7 +956,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN1);
 #endif
 #endif
-#if DIN2 >= 0
+#if !(DIN2 < 0)
         mcu_config_input(DIN2);
 #ifdef DIN2_PULLUP
         mcu_config_pullup(DIN2);
@@ -731,7 +965,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN2);
 #endif
 #endif
-#if DIN3 >= 0
+#if !(DIN3 < 0)
         mcu_config_input(DIN3);
 #ifdef DIN3_PULLUP
         mcu_config_pullup(DIN3);
@@ -740,7 +974,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN3);
 #endif
 #endif
-#if DIN4 >= 0
+#if !(DIN4 < 0)
         mcu_config_input(DIN4);
 #ifdef DIN4_PULLUP
         mcu_config_pullup(DIN4);
@@ -749,7 +983,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN4);
 #endif
 #endif
-#if DIN5 >= 0
+#if !(DIN5 < 0)
         mcu_config_input(DIN5);
 #ifdef DIN5_PULLUP
         mcu_config_pullup(DIN5);
@@ -758,7 +992,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN5);
 #endif
 #endif
-#if DIN6 >= 0
+#if !(DIN6 < 0)
         mcu_config_input(DIN6);
 #ifdef DIN6_PULLUP
         mcu_config_pullup(DIN6);
@@ -767,7 +1001,7 @@ void mcu_init(void)
         mcu_config_input_isr(DIN6);
 #endif
 #endif
-#if DIN7 >= 0
+#if !(DIN7 < 0)
         mcu_config_input(DIN7);
 #ifdef DIN7_PULLUP
         mcu_config_pullup(DIN7);
@@ -776,72 +1010,219 @@ void mcu_init(void)
         mcu_config_input_isr(DIN7);
 #endif
 #endif
-#if DIN8 >= 0
+#if !(DIN8 < 0)
         mcu_config_input(DIN8);
 #ifdef DIN8_PULLUP
         mcu_config_pullup(DIN8);
 #endif
 #endif
-#if DIN9 >= 0
+#if !(DIN9 < 0)
         mcu_config_input(DIN9);
 #ifdef DIN9_PULLUP
         mcu_config_pullup(DIN9);
 #endif
 #endif
-#if DIN10 >= 0
+#if !(DIN10 < 0)
         mcu_config_input(DIN10);
 #ifdef DIN10_PULLUP
         mcu_config_pullup(DIN10);
 #endif
 #endif
-#if DIN11 >= 0
+#if !(DIN11 < 0)
         mcu_config_input(DIN11);
 #ifdef DIN11_PULLUP
         mcu_config_pullup(DIN11);
 #endif
 #endif
-#if DIN12 >= 0
+#if !(DIN12 < 0)
         mcu_config_input(DIN12);
 #ifdef DIN12_PULLUP
         mcu_config_pullup(DIN12);
 #endif
 #endif
-#if DIN13 >= 0
+#if !(DIN13 < 0)
         mcu_config_input(DIN13);
 #ifdef DIN13_PULLUP
         mcu_config_pullup(DIN13);
 #endif
 #endif
-#if DIN14 >= 0
+#if !(DIN14 < 0)
         mcu_config_input(DIN14);
 #ifdef DIN14_PULLUP
         mcu_config_pullup(DIN14);
 #endif
 #endif
-#if DIN15 >= 0
+#if !(DIN15 < 0)
         mcu_config_input(DIN15);
 #ifdef DIN15_PULLUP
         mcu_config_pullup(DIN15);
 #endif
 #endif
-#if TX >= 0
+#if !(DIN16 < 0)
+        mcu_config_input(DIN16);
+#ifdef DIN16_PULLUP
+        mcu_config_pullup(DIN16);
+#endif
+#endif
+#if !(DIN17 < 0)
+        mcu_config_input(DIN17);
+#ifdef DIN17_PULLUP
+        mcu_config_pullup(DIN17);
+#endif
+#endif
+#if !(DIN18 < 0)
+        mcu_config_input(DIN18);
+#ifdef DIN18_PULLUP
+        mcu_config_pullup(DIN18);
+#endif
+#endif
+#if !(DIN19 < 0)
+        mcu_config_input(DIN19);
+#ifdef DIN19_PULLUP
+        mcu_config_pullup(DIN19);
+#endif
+#endif
+#if !(DIN20 < 0)
+        mcu_config_input(DIN20);
+#ifdef DIN20_PULLUP
+        mcu_config_pullup(DIN20);
+#endif
+#endif
+#if !(DIN21 < 0)
+        mcu_config_input(DIN21);
+#ifdef DIN21_PULLUP
+        mcu_config_pullup(DIN21);
+#endif
+#endif
+#if !(DIN22 < 0)
+        mcu_config_input(DIN22);
+#ifdef DIN22_PULLUP
+        mcu_config_pullup(DIN22);
+#endif
+#endif
+#if !(DIN23 < 0)
+        mcu_config_input(DIN23);
+#ifdef DIN23_PULLUP
+        mcu_config_pullup(DIN23);
+#endif
+#endif
+#if !(DIN24 < 0)
+        mcu_config_input(DIN24);
+#ifdef DIN24_PULLUP
+        mcu_config_pullup(DIN24);
+#endif
+#endif
+#if !(DIN25 < 0)
+        mcu_config_input(DIN25);
+#ifdef DIN25_PULLUP
+        mcu_config_pullup(DIN25);
+#endif
+#endif
+#if !(DIN26 < 0)
+        mcu_config_input(DIN26);
+#ifdef DIN26_PULLUP
+        mcu_config_pullup(DIN26);
+#endif
+#endif
+#if !(DIN27 < 0)
+        mcu_config_input(DIN27);
+#ifdef DIN27_PULLUP
+        mcu_config_pullup(DIN27);
+#endif
+#endif
+#if !(DIN28 < 0)
+        mcu_config_input(DIN28);
+#ifdef DIN28_PULLUP
+        mcu_config_pullup(DIN28);
+#endif
+#endif
+#if !(DIN29 < 0)
+        mcu_config_input(DIN29);
+#ifdef DIN29_PULLUP
+        mcu_config_pullup(DIN29);
+#endif
+#endif
+#if !(DIN30 < 0)
+        mcu_config_input(DIN30);
+#ifdef DIN30_PULLUP
+        mcu_config_pullup(DIN30);
+#endif
+#endif
+#if !(DIN31 < 0)
+        mcu_config_input(DIN31);
+#ifdef DIN31_PULLUP
+        mcu_config_pullup(DIN31);
+#endif
+#endif
+#if !(TX < 0)
         mcu_config_output(TX);
 #endif
-#if RX >= 0
+#if !(RX < 0)
         mcu_config_input(RX);
+#ifdef RX_PULLUP
+        mcu_config_pullup(RX);
 #endif
-#if USB_DM >= 0
+#endif
+#if !(USB_DM < 0)
         mcu_config_input(USB_DM);
+#ifdef USB_DM_PULLUP
+        mcu_config_pullup(USB_DM);
 #endif
-#if USB_DP >= 0
+#endif
+#if !(USB_DP < 0)
         mcu_config_input(USB_DP);
+#ifdef USB_DP_PULLUP
+        mcu_config_pullup(USB_DP);
 #endif
+#endif
+#if !(SPI_CLK < 0)
+        mcu_config_output(SPI_CLK);
+#endif
+#if !(SPI_SDI < 0)
+        mcu_config_input(SPI_SDI);
+#ifdef SPI_SDI_PULLUP
+        mcu_config_pullup(SPI_SDI);
+#endif
+#endif
+#if !(SPI_SDO < 0)
+        mcu_config_output(SPI_SDO);
+#endif
+
         mcu_usart_init();
-        mcu_tick_init();
+        mcu_rtc_init();
+#if SERVOS_MASK > 0
+        servo_timer_init();
+#endif
         mcu_enable_global_isr();
 }
 
 /*IO functions*/
+// IO functions
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+        uint8_t scaled = (uint8_t)(((uint16_t)(value * SERVO_RESOLUTION)) >> 8);
+        mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
+#endif
+}
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+        uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+        uint8_t unscaled = (uint8_t)((((uint16_t)mcu_servos[offset] << 8)) / SERVO_RESOLUTION);
+
+        if ((1U << offset) & SERVOS_MASK)
+        {
+                return unscaled;
+        }
+#endif
+        return 0;
+}
 
 /**
  * enables the pin probe mcu isr on change
@@ -908,7 +1289,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 bool mcu_tx_ready(void)
 {
         return false;
-} //Start async send
+} // Start async send
 #endif
 
 /**
@@ -918,7 +1299,7 @@ bool mcu_tx_ready(void)
 bool mcu_rx_ready(void)
 {
         return false;
-} //Stop async send
+} // Stop async send
 #endif
 
 /**
@@ -928,7 +1309,7 @@ bool mcu_rx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#ifdef LED
+#if !(LED < 0)
         mcu_toggle_output(LED);
 #endif
 #if (INTERFACE == INTERFACE_USB)
@@ -948,7 +1329,7 @@ void mcu_putc(char c)
 #endif
         COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-        COM->USART.INTENSET.bit.DRE = 1; //enable recieved interrupt
+        COM->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #endif
 #endif
 #endif
@@ -962,7 +1343,7 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#ifdef LED
+#if !(LED < 0)
         mcu_toggle_output(LED);
 #endif
 #if (INTERFACE == INTERFACE_USB)
@@ -984,7 +1365,7 @@ char mcu_getc(void)
 }
 #endif
 
-//ISR
+// ISR
 /**
  * enables global interrupts on the MCU
  * can be defined either as a function or a macro call
@@ -1005,10 +1386,10 @@ void mcu_disable_global_isr(void)
 }
 #endif
 
-//Step interpolator
+// Step interpolator
 /**
-	 * convert step rate to clock cycles
-	 * */
+ * convert step rate to clock cycles
+ * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
         if (frequency < F_STEP_MIN)
@@ -1053,17 +1434,17 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 }
 
 /**
-	 * starts the timer interrupt that generates the step pulses for the interpolator
-	 * */
+ * starts the timer interrupt that generates the step pulses for the interpolator
+ * */
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 #if (ITP_TIMER < 3)
-        //reset timer
+        // reset timer
         ITP_REG->CTRLA.bit.SWRST = 1;
         while (ITP_REG->SYNCBUSY.bit.SWRST)
                 ;
-        //enable the timer in the APB
-        ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+        // enable the timer in the APB
+        ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
         ITP_REG->WAVE.bit.WAVEGEN = 1;                      // match compare
         while (ITP_REG->SYNCBUSY.bit.WAVE)
                 ;
@@ -1076,16 +1457,16 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
         NVIC_EnableIRQ(ITP_IRQ);
 
         ITP_REG->INTENSET.bit.MC0 = 1;
-        ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+        ITP_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
         while (ITP_REG->SYNCBUSY.bit.ENABLE)
                 ;
 #else
-        //reset timer
+        // reset timer
         ITP_REG->COUNT16.CTRLA.bit.SWRST = 1;
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
-        //enable the timer in the APB
-        ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+        // enable the timer in the APB
+        ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
         ITP_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;                     // match compare
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
@@ -1097,49 +1478,49 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
         NVIC_EnableIRQ(ITP_IRQ);
 
         ITP_REG->COUNT16.INTENSET.bit.MC0 = 1;
-        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
 #endif
 }
 
 /**
-	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
-	 * */
+ * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+ * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 #if (ITP_TIMER < 3)
-        ITP_REG->CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+        ITP_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
         while (ITP_REG->SYNCBUSY.bit.ENABLE)
                 ;
-        ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+        ITP_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
         ITP_REG->CC[0].bit.CC = ticks;
         while (ITP_REG->SYNCBUSY.bit.CC0)
                 ;
-        ITP_REG->CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+        ITP_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
         while (ITP_REG->SYNCBUSY.bit.ENABLE)
                 ;
 #else
-        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 0; // disable timer and also write protection
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
-        ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; //normal counter
+        ITP_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
         ITP_REG->COUNT16.CC[0].bit.CC = ticks;
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
-        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; //enable timer and also write protection
+        ITP_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
         while (ITP_REG->COUNT16.STATUS.bit.SYNCBUSY)
                 ;
 #endif
 }
 
 /**
-	 * stops the timer interrupt that generates the step pulses for the interpolator
-	 * */
+ * stops the timer interrupt that generates the step pulses for the interpolator
+ * */
 void mcu_stop_itp_isr(void)
 {
 #if (ITP_TIMER < 3)
-        ITP_REG->CTRLA.bit.ENABLE = 0; //disable timer and also write protection
+        ITP_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
         while (ITP_REG->SYNCBUSY.bit.ENABLE)
                 ;
 #else
@@ -1152,22 +1533,37 @@ void mcu_stop_itp_isr(void)
 }
 
 /**
-	 * gets the MCU running time in milliseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
+ * gets the MCU running time in milliseconds.
+ * the time counting is controled by the internal RTC
+ * */
 uint32_t mcu_millis()
 {
         uint32_t c = mcu_runtime_ms;
         return c;
 }
 
+void mcu_delay_us(uint8_t delay)
+{
+        uint32_t loops;
+        if (!delay)
+        {
+                return;
+        }
+        else
+        {
+                loops = (delay * (F_CPU / 1000000) / 6) - 2;
+        }
+        while (loops--)
+                asm("nop");
+}
+
 /**
-	 * runs all internal tasks of the MCU.
-	 * for the moment these are:
-	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
-	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
-	 * */
+ * runs all internal tasks of the MCU.
+ * for the moment these are:
+ *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+ *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
+ *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
+ * */
 void mcu_dotasks(void)
 {
 #if (INTERFACE == INTERFACE_USB)
@@ -1178,12 +1574,12 @@ void mcu_dotasks(void)
         while (mcu_rx_ready())
         {
                 unsigned char c = mcu_getc();
-                serial_rx_isr(c);
+                mcu_com_rx_cb(c);
         }
 #endif
 }
 
-static uint8_t samd21_eeprom_sram[NVM_EEPROM_SIZE]; //1kb max
+static uint8_t samd21_eeprom_sram[NVM_EEPROM_SIZE]; // 1kb max
 static bool samd21_flash_modified = false;
 static bool samd21_eeprom_loaded = false;
 
@@ -1249,7 +1645,7 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
                 i += 2;
         }
 
-        //Execute "WP" Write Page
+        // Execute "WP" Write Page
         NVMCTRL->ADDR.reg = (uintptr_t)&NVM_MEMORY[destination_address / 4];
         NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_WP;
         while (!NVMCTRL->INTFLAG.bit.READY)
@@ -1259,11 +1655,11 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
 }
 
 /**
-	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
-	 * */
+ * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+ * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-        address &= (NVM_EEPROM_SIZE - 1); //keep within 1Kb address range
+        address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
 
         if (!samd21_eeprom_loaded)
         {
@@ -1274,8 +1670,8 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 }
 
 /**
-	 * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
-	 * */
+ * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+ * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 
@@ -1295,8 +1691,8 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 }
 
 /**
-	 * flushes all recorded registers into the eeprom.
-	 * */
+ * flushes all recorded registers into the eeprom.
+ * */
 void mcu_eeprom_flush(void)
 {
         if (samd21_flash_modified)
@@ -1305,7 +1701,7 @@ void mcu_eeprom_flush(void)
                 uint8_t cache = NVMCTRL->CTRLB.bit.CACHEDIS;
                 NVMCTRL->CTRLB.bit.CACHEDIS = 1;
 
-                //update rows
+                // update rows
                 uint32_t eeprom_offset = 0;
                 uint32_t remaining = NVM_EEPROM_SIZE;
                 while (remaining)
@@ -1333,14 +1729,14 @@ void mcu_eeprom_flush(void)
 
                         if (modified)
                         {
-                                //set the flash address to erase/write half-word (datasheet 22.8.8)
+                                // set the flash address to erase/write half-word (datasheet 22.8.8)
                                 NVMCTRL->ADDR.reg = (uintptr_t)&NVM_MEMORY[(NVM_EEPROM_BASE + eeprom_offset) / 4];
                                 while (!NVMCTRL->INTFLAG.bit.READY)
                                         ;
 
                                 NVMCTRL->STATUS.reg |= NVMCTRL_STATUS_MASK;
 
-                                //erase region for writing
+                                // erase region for writing
                                 NVMCTRL->CTRLA.reg = NVMCTRL_CTRLA_CMDEX_KEY | NVMCTRL_CTRLA_CMD_ER;
                                 while (!NVMCTRL->INTFLAG.bit.READY)
                                         ;
@@ -1356,7 +1752,7 @@ void mcu_eeprom_flush(void)
                         remaining -= (remaining > NVM_ROW_SIZE) ? NVM_ROW_SIZE : remaining;
                 }
 
-                NVMCTRL->CTRLB.bit.CACHEDIS = 1;
+                NVMCTRL->CTRLB.bit.CACHEDIS = cache;
                 NVMCTRL->CTRLB.bit.RWS = 0x01;
         }
 

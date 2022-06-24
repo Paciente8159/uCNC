@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-//Defines Grbl realtime ascii codes
+// Defines Grbl realtime ascii codes
 #define CMD_CODE_RESET 0x18
 #define CMD_CODE_FEED_HOLD 0x21
 #define CMD_CODE_REPORT 0x3F
@@ -86,7 +86,7 @@ extern "C"
 #define STATUS_GCODE_UNUSED_WORDS 36		   //
 #define STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR 37 //
 #define STATUS_GCODE_MAX_VALUE_EXCEEDED 38	   //
-//additional codes
+// additional codes
 #define STATUS_BAD_COMMENT_FORMAT 39
 #define STATUS_INVALID_TOOL 40
 #define STATUS_FEED_NOT_SET 41
@@ -94,11 +94,17 @@ extern "C"
 #define STATUS_SETTING_PROTECTED_FAIL 43
 #define STATUS_PROGRAM_ENDED 44
 #define STATUS_PROBE_SUCCESS 45
-#define STATUS_GOCDE_EXTENDED_UNSUPPORTED 254
+#define STATUS_GCODE_CANNED_CYCLE_MISSING_P 46
+#define STATUS_GCODE_CANNED_CYCLE_MISSING_Q 47
+#define STATUS_GCODE_CANNED_CYCLE_INVALID_FEEDMODE 48
+#define STATUS_GCODE_CANNED_CYCLE_INVALID_RADIUSCOMPMODE 49
+#define STATUS_SPINDLE_STOPPED 50
+#define STATUS_TMC_CMD_MISSING_ARGS 51
+#define STATUS_GCODE_EXTENDED_UNSUPPORTED 254
 #define STATUS_CRITICAL_FAIL 255
 
-//special Grbl system commands return codes
-//These are not error codes but codes to print requested reports after parsing a grbl command
+// special Grbl system commands return codes
+// These are not error codes but codes to print requested reports after parsing a grbl command
 #define GRBL_SYSTEM_CMD 128
 #define GRBL_SEND_SYSTEM_SETTINGS (GRBL_SYSTEM_CMD + 0)
 #define GRBL_SEND_COORD_SYSTEM (GRBL_SYSTEM_CMD + 1)
@@ -110,11 +116,12 @@ extern "C"
 #define GRBL_HOME (GRBL_SYSTEM_CMD + 7)
 #define GRBL_HELP (GRBL_SYSTEM_CMD + 8)
 #define GRBL_JOG_CMD (GRBL_SYSTEM_CMD + 9)
-//extra commands
+// extra commands
 #define GRBL_SETTINGS_SAVED (GRBL_SYSTEM_CMD + 10)
 #define GRBL_SETTINGS_LOADED (GRBL_SYSTEM_CMD + 11)
 #define GRBL_SETTINGS_DEFAULT (GRBL_SYSTEM_CMD + 12)
 #define GRBL_PINS_STATES (GRBL_SYSTEM_CMD + 13)
+#define GRBL_SEND_SYSTEM_INFO (GRBL_SYSTEM_CMD + 14)
 
 #define EXEC_ALARM_SOFTRESET -2
 #define EXEC_ALARM_EMERGENCY_STOP -1
@@ -132,7 +139,7 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11
 
-//formated messages
+// formated messages
 #define STR_EOL "\r\n"
 #define MSG_EOL __romstr__(STR_EOL)
 #define MSG_OK __romstr__("ok")
@@ -144,12 +151,12 @@ extern "C"
 #define MSG_STARTUP_END " ['$' for help]"
 #else
 #define MSG_STARTUP_START "Grbl "
-#define MSG_STARTUP_END " ['$' for uCNC help]"
+#define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
 #endif
-#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_VERSION MSG_STARTUP_END STR_EOL)
+#define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END STR_EOL)
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
 
-//Non query feedback messages
+// Non query feedback messages
 #define MSG_START __romstr__("[MSG:")
 #define MSG_END __romstr__("]" STR_EOL)
 #define MSG_FEEDBACK_1 __romstr__("Reset to continue")
@@ -179,6 +186,7 @@ extern "C"
 #define MSG_STATUS_CHECK __romstr__("Check")
 
 #define MSG_STATUS_MPOS __romstr__("|MPos:")
+#define MSG_STATUS_WPOS __romstr__("|WPos:")
 #define MSG_STATUS_FS __romstr__("|FS:")
 #define MSG_STATUS_F __romstr__("|F:")
 #define MSG_STATUS_WCO __romstr__("|WCO:")
@@ -186,6 +194,7 @@ extern "C"
 #define MSG_STATUS_TOOL __romstr__("|A:")
 #define MSG_STATUS_LINE __romstr__("|Ln:")
 #define MSG_STATUS_PIN __romstr__("|Pn:")
+#define MSG_STATUS_BUF __romstr__("|Buf:")
 
 	//#define MSG_INT "%d"
 	//#define MSG_FLT "%0.3f"

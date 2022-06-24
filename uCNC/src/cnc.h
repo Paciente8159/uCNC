@@ -24,14 +24,14 @@ extern "C"
 {
 #endif
 
-//rt_cmd
+// rt_cmd
 #define RT_CMD_CLEAR 0
 
 #define RT_CMD_RESET 1
 #define RT_CMD_CYCLE_START 2
 #define RT_CMD_REPORT 4
 
-//feed_ovr_cmd
+// feed_ovr_cmd
 #define RT_CMD_FEED_100 1
 #define RT_CMD_FEED_INC_COARSE 2
 #define RT_CMD_FEED_DEC_COARSE 4
@@ -40,7 +40,7 @@ extern "C"
 #define RT_CMD_RAPIDFEED_100 32
 #define RT_CMD_RAPIDFEED_OVR1 64
 #define RT_CMD_RAPIDFEED_OVR2 128
-//tool_ovr_cmd
+// tool_ovr_cmd
 #define RT_CMD_SPINDLE_100 1
 #define RT_CMD_SPINDLE_INC_COARSE 2
 #define RT_CMD_SPINDLE_DEC_COARSE 4
@@ -50,7 +50,7 @@ extern "C"
 #define RT_CMD_COOL_FLD_TOGGLE 64
 #define RT_CMD_COOL_MST_TOGGLE 128
 
-//current cnc states (multiple can be active/overlapped at the same time)
+// current cnc states (multiple can be active/overlapped at the same time)
 #define EXEC_IDLE 0												// All flags cleared
 #define EXEC_RUN 1												// Motions are being executed
 #define EXEC_RESUMING 2											// Motions are being resumed from a hold
@@ -65,7 +65,7 @@ extern "C"
 #define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255										// All states
 
-//creates a set of helper masks used to configure the controller
+// creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1
 #define SAFETY_DOOR_MASK 2
 #define FHOLD_MASK 4
@@ -81,9 +81,7 @@ extern "C"
 #define LIMIT_C_MASK 32
 
 #define LIMITS_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK | LIMIT_A_MASK | LIMIT_B_MASK | LIMIT_C_MASK)
-#define LIMITS_LIMIT0_MASK 64
-#define LIMITS_LIMIT1_MASK 128
-#define LIMITS_DUAL_MASK (LIMITS_LIMIT0_MASK | LIMITS_LIMIT1_MASK)
+#define LIMITS_DELTA_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK)
 
 #define STEP0_MASK 1
 #define STEP1_MASK 2
@@ -100,34 +98,36 @@ extern "C"
 #define DIR3_MASK 8
 #define DIR4_MASK 16
 #define DIR5_MASK 32
+#define DIR6_MASK 64
+#define DIR7_MASK 128
 
 #include "cnc_build.h"
-//make the needed includes (do not change the order)
-//include lists of available option
+// make the needed includes (do not change the order)
+// include lists of available option
 #include "hal/boards/boards.h"
 #include "hal/mcus/mcus.h"
 #include "hal/kinematics/kinematics.h"
-//user configurations
+// user configurations
 #include "../cnc_config.h"
-//board and mcu configurations
+// board and mcu configurations
 #include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
-//machine kinematics configurations
+// machine kinematics configurations
 #include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
-//fill remaining configurations
-#include "cnc_config_helper.h"
-//machine tools configurations
+// machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
-//final HAL configurations
+// final HAL configurations
 #include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
-//initializes core utilities (like fast math functions)
-#include "core/utils.h"
+// fill remaining HAL configurations and sanity checks
+#include "cnc_hal_config_helper.h"
+// initializes core utilities (like fast math functions)
+#include "utils.h"
+// extension modules
+#include "module.h"
 #include "interface/defaults.h"
 #include "interface/grbl_interface.h"
 #include "interface/settings.h"
 #include "interface/serial.h"
 #include "interface/protocol.h"
-#include "modules/encoder.h"
-#include "modules/pid_controller.h"
 #include "core/io_control.h"
 #include "core/io_control.h"
 #include "core/parser.h"
@@ -135,95 +135,21 @@ extern "C"
 #include "core/planner.h"
 #include "core/interpolator.h"
 
-#define __stepname_helper__(x) STEP##x##_MASK
-#define __stepname__(x) __stepname_helper__(x)
-
-#define __axisname_helper__(x) AXIS_##x
-#define __axisname__(x) __axisname_helper__(x)
-
-#define __limitname_helper__(x) LIMIT_##x##_MASK
-#define __limitname__(x) __limitname_helper__(x)
-
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE_AXIS0
-#define AXIS_DUAL0 __axisname__(DUAL_DRIVE_AXIS0)
-#define STEP_DUAL0 (1 << AXIS_DUAL0)
-#define LIMIT_DUAL0 __limitname__(DUAL_DRIVE_AXIS0)
-#endif
-
-#ifdef DUAL_DRIVE_AXIS1
-#define AXIS_DUAL1 __axisname__(DUAL_DRIVE_AXIS1)
-#define STEP_DUAL1 (1 << AXIS_DUAL1)
-#define LIMIT_DUAL1 __limitname__(DUAL_DRIVE_AXIS1)
-#endif
-#endif
-
-#ifndef LIMIT_DUAL0
-#define LIMIT_DUAL0 0
-#endif
-#ifndef LIMIT_DUAL1
-#define LIMIT_DUAL1 0
-#endif
-
-#define LIMITS_DUAL (LIMIT_DUAL0 | LIMIT_DUAL1)
-
-#if (STEP0_MASK == STEP_DUAL0)
-#define STEP0_ITP_MASK (STEP0_MASK | 64)
-#elif (STEP0_MASK == STEP_DUAL1)
-#define STEP0_ITP_MASK (STEP0_MASK | 128)
-#else
-#define STEP0_ITP_MASK STEP0_MASK
-#endif
-#if (STEP1_MASK == STEP_DUAL0)
-#define STEP1_ITP_MASK (STEP1_MASK | 64)
-#elif (STEP1_MASK == STEP_DUAL1)
-#define STEP1_ITP_MASK (STEP1_MASK | 128)
-#else
-#define STEP1_ITP_MASK STEP1_MASK
-#endif
-#if (STEP2_MASK == STEP_DUAL0)
-#define STEP2_ITP_MASK (STEP2_MASK | 64)
-#elif (STEP2_MASK == STEP_DUAL1)
-#define STEP2_ITP_MASK (STEP2_MASK | 128)
-#else
-#define STEP2_ITP_MASK STEP2_MASK
-#endif
-#if (STEP3_MASK == STEP_DUAL0)
-#define STEP3_ITP_MASK (STEP3_MASK | 64)
-#elif (STEP3_MASK == STEP_DUAL1)
-#define STEP3_ITP_MASK (STEP3_MASK | 128)
-#else
-#define STEP3_ITP_MASK STEP3_MASK
-#endif
-#if (STEP4_MASK == STEP_DUAL0)
-#define STEP4_ITP_MASK (STEP4_MASK | 64)
-#elif (STEP4_MASK == STEP_DUAL1)
-#define STEP4_ITP_MASK (STEP4_MASK | 128)
-#else
-#define STEP4_ITP_MASK STEP4_MASK
-#endif
-#if (STEP5_MASK == STEP_DUAL0)
-#define STEP5_ITP_MASK (STEP5_MASK | 64)
-#elif (STEP5_MASK == STEP_DUAL1)
-#define STEP5_ITP_MASK (STEP5_MASK | 128)
-#else
-#define STEP5_ITP_MASK STEP5_MASK
-#endif
-
 	/**
- * 
- * From this point on the CNC controller HAL is defined
- * 
- **/
+	 *
+	 * From this point on the CNC controller HAL is defined
+	 *
+	 **/
 
 #include <stdbool.h>
 #include <stdint.h>
 
+	extern bool cnc_status_report_lock;
+
 	void cnc_init(void);
 	void cnc_run(void);
-	//do events returns true if all OK and false if an ABORT alarm is reached
+	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
-	void cnc_scheduletasks(void);
 	void cnc_home(void);
 	void cnc_alarm(int8_t code);
 	bool cnc_has_alarm();

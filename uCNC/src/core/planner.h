@@ -1,20 +1,20 @@
 /*
-	Name: planner.h
-	Description: Chain planner for linear motions and acceleration/deacceleration profiles.
+    Name: planner.h
+    Description: Chain planner for linear motions and acceleration/deacceleration profiles.
         It uses a similar algorithm to Grbl.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 24/09/2019
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 24/09/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #ifndef PLANNER_H
@@ -29,14 +29,14 @@ extern "C"
 #include <stdbool.h>
 
 #ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 15
+#define PLANNER_BUFFER_SIZE 30
 #endif
 
-#define PLANNER_MOTION_EXACT_PATH 32 //default (not used)
+#define PLANNER_MOTION_EXACT_PATH 32 // default (not used)
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
-    typedef struct
+    typedef struct planner_block_
     {
 #ifdef GCODE_PROCESS_LINE_NUMBERS
         uint32_t line;
@@ -57,17 +57,18 @@ extern "C"
 #endif
 
         uint8_t action;
-        union
+        union flags_u_
         {
-            struct
+            struct flags_t_
             {
                 uint8_t coolant : 2;
                 uint8_t optimal : 1;
                 uint8_t feed_override : 1;
                 uint8_t backlash_comp : 1;
-            };
+            } flags_t;
             uint8_t flags;
-        };
+        } flags_u;
+
     } planner_block_t;
 
     void planner_init(void);
@@ -89,7 +90,7 @@ extern "C"
     void planner_add_digital_output(uint8_t output, uint8_t value);
     void planner_sync_tools(motion_data_t *block_data);
 
-    //overrides
+    // overrides
     void planner_feed_ovr_reset(void);
     void planner_feed_ovr_inc(uint8_t value);
 
@@ -103,6 +104,8 @@ extern "C"
 #endif
 
     bool planner_get_overflows(uint8_t *overflows);
+
+    uint8_t planner_get_buffer_freeblocks();
 
 #ifdef __cplusplus
 }

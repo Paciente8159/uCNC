@@ -12,8 +12,8 @@
 			trigger_control.h
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
-				
-	Copyright: Copyright (c) João Martins 
+
+	Copyright: Copyright (c) João Martins
 	Author: João Martins
 	Date: 01/11/2019
 
@@ -37,13 +37,11 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
-#include <windows.h>
 #include <stdio.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib") //Winsock Library
-
-#include "virtualtimer.h"
+#pragma comment(lib, "ws2_32.lib") // Winsock Library
+#include <windows.h>
 
 #ifndef F_CPU
 #define F_CPU 16000000UL
@@ -56,6 +54,79 @@
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
+
+/*timers*/
+int start_timer(int, void (*)(void));
+void stop_timer(void);
+void startCycleCounter(void);
+unsigned long stopCycleCounter(void);
+unsigned long getCPUFreq(void);
+unsigned long getTickCounter(void);
+
+HANDLE win_timer;
+void (*timer_func_handler_pntr)(void);
+unsigned long perf_start;
+
+VOID CALLBACK timer_sig_handler(PVOID, BOOLEAN);
+
+int start_timer(int mSec, void (*timer_func_handler)(void))
+{
+	timer_func_handler_pntr = timer_func_handler;
+
+	if (CreateTimerQueueTimer(&win_timer, NULL, (WAITORTIMERCALLBACK)timer_sig_handler, NULL, mSec, mSec, WT_EXECUTEINTIMERTHREAD) == 0)
+	{
+		printf("\nCreateTimerQueueTimer() error\n");
+		return (1);
+	}
+
+	return (0);
+}
+
+VOID CALLBACK timer_sig_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	timer_func_handler_pntr();
+}
+
+void stop_timer(void)
+{
+	DeleteTimerQueueTimer(NULL, win_timer, NULL);
+	CloseHandle(win_timer);
+}
+
+void startCycleCounter(void)
+{
+	if (getCPUFreq() == 0)
+	{
+		return;
+	}
+
+	perf_start = getTickCounter();
+}
+
+unsigned long stopCycleCounter(void)
+{
+	return (getTickCounter() - perf_start);
+}
+
+unsigned long getCPUFreq(void)
+{
+	LARGE_INTEGER perf_counter;
+
+	if (!QueryPerformanceFrequency(&perf_counter))
+	{
+		printf("QueryPerformanceFrequency failed!\n");
+		return 0;
+	}
+
+	return perf_counter.QuadPart;
+}
+
+unsigned long getTickCounter(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return perf_counter.QuadPart;
+}
 
 /**
  * IO simulation and handling for external app
@@ -99,7 +170,7 @@ void ioserver(void)
 		if (hPipe == INVALID_HANDLE_VALUE)
 		{
 			printf("CreateNamedPipe failed, GLE=%d.\n", GetLastError());
-			return -1;
+			return;
 		}
 
 		// Wait for the client to connect; if it succeeds,
@@ -158,7 +229,7 @@ void ioserver(void)
 		CloseHandle(hPipe);
 	}
 
-	return 0;
+	return;
 }
 
 /**
@@ -469,7 +540,8 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
 							for (int i = 0; i < recvbuflen; i++)
 							{
-								serial_rx_isr(recvbuf[i]);
+								putchar(recvbuf[i]);
+								mcu_com_rx_cb(recvbuf[i]);
 							}
 							memset(recvbuf, 0, sizeof(recvbuf));
 						}
@@ -559,6 +631,85 @@ void virtualserialclient(void)
 
 #endif
 
+#ifdef USECONSOLE
+
+DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
+{
+	WSADATA wsaData;
+	int iResult;
+
+	SOCKET ListenSocket = INVALID_SOCKET;
+
+	struct addrinfo *result = NULL;
+	struct addrinfo hints;
+
+	int iSendResult;
+	char recvbuf[256];
+	int recvbuflen = 256;
+
+	memset(recvbuf, 0, sizeof(recvbuf));
+	SetEvent(rxReady);
+	// Receive until the peer shuts down the connection
+	do
+	{
+		unsigned char c = getchar();
+		mcu_com_rx_cb(c);
+
+	} while (1);
+
+	return 0;
+}
+
+void virtualconsoleclient(void)
+{
+	DWORD dwWaitResult;
+	int iResult;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+				/*for (int k = 0; k < iResult; k++)
+				{
+					putchar(com_buffer[k]);
+				}*/
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Serial client thread error (%d)\n", GetLastError());
+			return 0;
+		}
+
+		memset(com_buffer, 0, 256);
+		ReleaseMutex(bufferMutex);
+	}
+}
+#endif
+
 void com_init(void)
 {
 	DWORD rxThreadID;
@@ -574,6 +725,9 @@ void com_init(void)
 #elif defined(USESERIAL)
 	rxCallback = &virtualserialserver;
 	txCallback = &virtualserialclient;
+#elif defined(USECONSOLE)
+	rxCallback = &virtualconsoleserver;
+	txCallback = &virtualconsoleclient;
 #endif
 
 	bufferMutex = CreateMutex(
@@ -683,7 +837,7 @@ void com_send(char *buff, int len)
 	SetEvent(txReady);
 }
 
-//UART communication
+// UART communication
 uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
 uint8_t g_mcu_buffertail;
@@ -722,7 +876,7 @@ void mcu_rx_isr(unsigned char c)
 {
 	if (c)
 	{
-		serial_rx_isr(c);
+		mcu_com_rx_cb(c);
 	}
 }
 
@@ -731,33 +885,33 @@ void mcu_tx_isr(void)
 	mcu_tx_empty = true;
 }
 
-//emulates uart RX
-// void *comsimul(void)
-// {
-// #ifdef USECOM
-// mcu_tx_empty = true;
-// virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
-// #else
-// 	for (;;)
-// 	{
-// 		unsigned char c = getch();
-// 		if (c != 0)
-// 		{
-// 			uart_char = c;
-// 			while (!serial_rx_is_empty())
-// 			{
-// 			}
-// 			serial_rx_isr(c);
-// 			if (c == '\n' | c == '\r')
-// 			{
-// 			}
-// 		}
-// 	}
-// #endif
-// }
+// emulates uart RX
+//  void *comsimul(void)
+//  {
+//  #ifdef USECOM
+//  mcu_tx_empty = true;
+//  virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
+//  #else
+//  	for (;;)
+//  	{
+//  		unsigned char c = getch();
+//  		if (c != 0)
+//  		{
+//  			uart_char = c;
+//  			while (!serial_rx_is_empty())
+//  			{
+//  			}
+//  			serial_rx_isr(c);
+//  			if (c == '\n' | c == '\r')
+//  			{
+//  			}
+//  		}
+//  	}
+//  #endif
+//  }
 
-//emulates uart TX
-//void *comoutsimul(void)
+// emulates uart TX
+// void *comoutsimul(void)
 //{
 //	for (;;)
 //	{
@@ -767,9 +921,9 @@ void mcu_tx_isr(void)
 //			serial_tx_isr();
 //		}
 //	}
-//}
+// }
 
-//simulates internal clock (1Kz limited by windows timer)
+// simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;
 
 void *stepsimul(void)
@@ -808,12 +962,12 @@ void *stepsimul(void)
 
 			if (tick_counter == pulse_interval)
 			{
-				isr_flags |= ISR_PULSE; //flags step isr
+				isr_flags |= ISR_PULSE; // flags step isr
 			}
 
 			if (tick_counter >= resetpulse_interval)
 			{
-				isr_flags |= ISR_PULSERESET; //flags step isr
+				isr_flags |= ISR_PULSERESET; // flags step isr
 				tick_counter = 0;
 			}
 
@@ -824,9 +978,9 @@ void *stepsimul(void)
 
 				if (isr_flags & ISR_INPUT)
 				{
-					//serial_rx_isr(uart_char);
-					io_limits_isr();
-					io_controls_isr();
+					// serial_rx_isr(uart_char);
+					mcu_limits_changed_cb();
+					mcu_controls_changed_cb();
 					isr_flags &= ~ISR_INPUT;
 				}
 
@@ -834,13 +988,13 @@ void *stepsimul(void)
 				{
 					if (isr_flags & ISR_PULSE)
 					{
-						itp_step_isr();
+						mcu_step_cb();
 						isr_flags &= ~ISR_PULSE;
 					}
 
 					if (isr_flags & ISR_PULSERESET)
 					{
-						itp_step_reset_isr();
+						mcu_step_reset_cb();
 						isr_flags &= ~ISR_PULSERESET;
 					}
 				}
@@ -856,27 +1010,33 @@ void *stepsimul(void)
 void ticksimul(void)
 {
 
-	// static VIRTUAL_MAP initials = {0};
+	static VIRTUAL_MAP initials = {0};
 
-	// FILE *infile = fopen("inputs.txt", "r");
-	// char inputs[255];
+	if (global_isr_enabled)
+	{
 
-	// if (infile != NULL) //checks input file
-	// {
-	// 	fscanf(infile, "%lX", &(virtualmap.inputs));
-	// 	fclose(infile);
+		// FILE *infile = fopen("inputs.txt", "r");
+		// char inputs[255];
 
-	// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
-	// 	initials.inputs = virtualmap.inputs;
+		// if (infile != NULL) //checks input file
+		// {
+		// 	fscanf(infile, "%lX", &(virtualmap.inputs));
+		// 	fclose(infile);
 
-	// 	if (diff)
-	// 	{
-	// 		isr_flags |= ISR_INPUT; //flags input isr
-	// 	}
-	// }
+		// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
+		// 	initials.inputs = virtualmap.inputs;
 
-	mcu_runtime++;
-	cnc_scheduletasks();
+		// 	if (diff)
+		// 	{
+		// 		isr_flags |= ISR_INPUT; //flags input isr
+		// 	}
+		// }
+
+		mcu_runtime++;
+		mcu_disable_global_isr();
+		mcu_rtc_cb(mcu_runtime);
+		mcu_enable_global_isr();
+	}
 }
 
 uint32_t mcu_millis()
@@ -922,7 +1082,7 @@ void mcu_init(void)
 	mcu_enable_global_isr();
 }
 
-//IO functions
+// IO functions
 void mcu_enable_probe_isr(void)
 {
 }
@@ -932,7 +1092,7 @@ void mcu_disable_probe_isr(void)
 
 uint8_t mcu_get_input(uint8_t pin)
 {
-	pin -= 52;
+	pin -= 100;
 	pin -= (pin > 13) ? 16 : 0;
 	return ((virtualmap.inputs & (1 << pin)) != 0);
 }
@@ -983,7 +1143,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 	return virtualmap.analog[channel];
 }
 
-//Outputs
+// Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
 	pwm -= 20;
@@ -996,12 +1156,12 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 	return virtualmap.pwm[pwm];
 }
 
-//Communication functions
-//sends a packet
+// Communication functions
+// sends a packet
 void mcu_enable_tx_isr(void)
 {
 #ifndef USECONSOLE
-	serial_tx_isr();
+	mcu_com_tx_cb();
 #endif
 	mcu_tx_enabled = true;
 }
@@ -1072,7 +1232,7 @@ void mcu_bufferClear(void)
 	g_mcu_bufferhead = 0;
 }
 
-//RealTime
+// RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 {
 	if (frequency < F_STEP_MIN)
@@ -1084,12 +1244,12 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 	*tick_reps = 1;
 }
 
-//enables all interrupts on the mcu. Must be called to enable all IRS functions
+// enables all interrupts on the mcu. Must be called to enable all IRS functions
 void mcu_enable_global_isr(void)
 {
 	global_isr_enabled = true;
 }
-//disables all ISR functions
+// disables all ISR functions
 void mcu_disable_global_isr(void)
 {
 	global_isr_enabled = false;
@@ -1100,7 +1260,7 @@ bool mcu_get_global_isr(void)
 	return global_isr_enabled;
 }
 
-//starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
+// starts a constant rate pulse at a given frequency. This triggers to ISR handles with an offset of MIN_PULSE_WIDTH useconds
 void mcu_start_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 {
 	resetpulse_interval = clocks_speed;
@@ -1117,7 +1277,7 @@ void mcu_change_itp_isr(uint16_t clocks_speed, uint16_t prescaller)
 	(*pulse_counter_ptr) = 0;
 	pulse_enabled = true;
 }
-//stops the pulse
+// stops the pulse
 void mcu_stop_itp_isr(void)
 {
 	pulse_enabled = false;

@@ -1,18 +1,16 @@
 /*
-	Name: protocol.h
-	Description: µCNC implementation of a Grbl compatible send-response protocol
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 19/09/2019
-
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
-
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    Name: protocol.c
+    Description: µCNC implementation of a Grbl compatible send-response protocol
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 19/09/2019
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include "../cnc.h"
@@ -64,7 +62,7 @@ void protocol_send_alarm(int8_t alarm)
 #endif
 }
 
-void protocol_send_string(const unsigned char *__s)
+void protocol_send_string(const char *__s)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
@@ -75,7 +73,7 @@ void protocol_send_string(const unsigned char *__s)
 #endif
 }
 
-void protocol_send_feedback(const unsigned char *__s)
+void protocol_send_feedback(const char *__s)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
@@ -165,13 +163,15 @@ void protocol_send_status(void)
 #endif
     float axis[MAX(AXIS_COUNT, 3)];
 
-    uint32_t steppos[STEPPER_COUNT];
+    int32_t steppos[STEPPER_COUNT];
     itp_get_rt_position(steppos);
     kinematics_apply_forward(steppos, axis);
     kinematics_apply_reverse_transform(axis);
-    float feed = itp_get_rt_feed(); //convert from mm/s to mm/m
+    float feed = itp_get_rt_feed(); // convert from mm/s to mm/m
 #if TOOL_COUNT > 0
-    uint16_t spindle = itp_get_rt_spindle();
+    uint16_t spindle = tool_get_speed();
+#else
+    uint16_t spindle = 0;
 #endif
     uint8_t controls = io_get_controls();
     uint8_t limits = io_get_limits();
@@ -254,7 +254,16 @@ void protocol_send_status(void)
         }
     }
 
-    serial_print_str(MSG_STATUS_MPOS);
+    if ((g_settings.status_report_mask & 1))
+    {
+        serial_print_str(MSG_STATUS_MPOS);
+    }
+    else
+    {
+        serial_print_str(MSG_STATUS_WPOS);
+        parser_machine_to_work(axis);
+    }
+
     serial_print_fltarr(axis, AXIS_COUNT);
 
 #if TOOL_COUNT > 0
@@ -329,6 +338,14 @@ void protocol_send_status(void)
     }
 
     protocol_send_status_tail();
+
+    if ((g_settings.status_report_mask & 2))
+    {
+        serial_print_str(MSG_STATUS_BUF);
+        serial_print_int((uint32_t)planner_get_buffer_freeblocks());
+        serial_putc(',');
+        serial_print_int((uint32_t)serial_get_rx_freebytes());
+    }
 
     serial_putc('>');
     procotol_send_newline();
@@ -555,6 +572,10 @@ void protocol_send_cnc_settings(void)
     protocol_send_gcode_setting_line_int(5, g_settings.limits_invert_mask);
     protocol_send_gcode_setting_line_int(6, g_settings.probe_invert_mask);
     protocol_send_gcode_setting_line_int(7, g_settings.control_invert_mask);
+#if ENCODERS > 0
+    protocol_send_gcode_setting_line_int(8, g_settings.encoders_pulse_invert_mask);
+    protocol_send_gcode_setting_line_int(9, g_settings.encoders_dir_invert_mask);
+#endif
     protocol_send_gcode_setting_line_int(10, g_settings.status_report_mask);
     protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
     protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
@@ -578,11 +599,20 @@ void protocol_send_cnc_settings(void)
 #endif
 #endif
 
+#if PID_CONTROLLERS > 0
+    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
+    {
+        protocol_send_gcode_setting_line_flt(40 + 4 * i, g_settings.pid_gain[i][0]);
+        protocol_send_gcode_setting_line_flt(41 + 4 * i, g_settings.pid_gain[i][1]);
+        protocol_send_gcode_setting_line_flt(42 + 4 * i, g_settings.pid_gain[i][2]);
+    }
+#endif
+
 #if TOOL_COUNT > 0
-    protocol_send_gcode_setting_line_int(40, g_settings.default_tool);
+    protocol_send_gcode_setting_line_int(80, g_settings.default_tool);
     for (uint8_t i = 0; i < TOOL_COUNT; i++)
     {
-        protocol_send_gcode_setting_line_flt(41 + i, g_settings.tool_length_offset[i]);
+        protocol_send_gcode_setting_line_flt(81 + i, g_settings.tool_length_offset[i]);
     }
 #endif
 
@@ -590,6 +620,12 @@ void protocol_send_cnc_settings(void)
     {
         protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
     }
+
+#if (KINEMATIC == KINEMATIC_DELTA)
+    protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
+    protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
+    // protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
+#endif
 
     for (uint8_t i = 0; i < STEPPER_COUNT; i++)
     {
@@ -612,54 +648,61 @@ void protocol_send_cnc_settings(void)
         protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
     }
 #endif
-
-#if PID_CONTROLLERS > 0
-    for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
-    {
-        protocol_send_gcode_setting_line_flt(150 + 4 * i, g_settings.pid_gain[i][0]);
-        protocol_send_gcode_setting_line_flt(151 + 4 * i, g_settings.pid_gain[i][1]);
-        protocol_send_gcode_setting_line_flt(152 + 4 * i, g_settings.pid_gain[i][2]);
-    }
-#endif
 #ifdef ECHO_CMD
     protocol_busy = false;
 #endif
 }
 
-#ifdef ENABLE_SETTING_EXTRA_CMDS
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
 void protocol_send_pins_states(void)
 {
 #ifdef ECHO_CMD
     protocol_busy = true;
 #endif
-    for (uint8_t i = 0; i < 98; i++)
+    for (uint8_t i = 0; i < 161; i++)
     {
         int16_t val = io_get_pinvalue(i);
         if (val >= 0)
         {
-            if (i < 20)
+            if (i < 100)
             {
-                serial_print_str(__romstr__("[SO:"));
+                if (i < 24)
+                {
+                    serial_print_str(__romstr__("[SO:"));
+                }
+                else if (i < 40)
+                {
+                    serial_print_str(__romstr__("[P:"));
+                }
+                else if (i < 46)
+                {
+                    serial_print_str(__romstr__("[SV:"));
+                }
+                else if (i < 78)
+                {
+                    serial_print_str(__romstr__("[O:"));
+                }
+
+                else
+                {
+                    i = 100; // jumps to inputs
+                }
             }
-            else if (i < 36)
+
+            if (i >= 100)
             {
-                serial_print_str(__romstr__("[P:"));
-            }
-            else if (i < 52)
-            {
-                serial_print_str(__romstr__("[O:"));
-            }
-            else if (i < 66)
-            {
-                serial_print_str(__romstr__("[SI:"));
-            }
-            else if (i < 82)
-            {
-                serial_print_str(__romstr__("[A:"));
-            }
-            else
-            {
-                serial_print_str(__romstr__("[I:"));
+                if (i < 114)
+                {
+                    serial_print_str(__romstr__("[SI:"));
+                }
+                else if (i < 130)
+                {
+                    serial_print_str(__romstr__("[A:"));
+                }
+                else
+                {
+                    serial_print_str(__romstr__("[I:"));
+                }
             }
             serial_print_int(i);
             serial_putc(':');
@@ -668,15 +711,141 @@ void protocol_send_pins_states(void)
         }
     }
 
+    int32_t steps[STEPPER_COUNT];
+    itp_get_rt_position(steps);
+    serial_print_str(__romstr__("[STEPS:"));
+    serial_print_intarr(steps, STEPPER_COUNT);
+    serial_print_str(MSG_END);
+
 #if ENCODERS > 0
-    for (uint8_t i = 0; i < ENCODERS; i++)
-    {
-        serial_print_str(__romstr__("[EC:"));
-        serial_print_int(encoder_get_position(i));
-        serial_print_str(MSG_END);
-    }
+    encoder_print_values();
 #endif
 
+#ifdef ENABLE_PROTOCOL_MODULES
+    mod_send_pins_states_hook();
+#endif
+
+#ifdef ECHO_CMD
+    protocol_busy = false;
+#endif
+}
+#endif
+
+#ifdef ENABLE_SYSTEM_INFO
+#define __STRGIFY__(s) #s
+#define STRGIFY(s) __STRGIFY__(s)
+
+#if (KINEMATIC == KINEMATIC_CARTESIAN)
+#define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
+#elif (KINEMATIC == KINEMATIC_COREXY)
+#define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
+#elif (KINEMATIC == KINEMATIC_DELTA)
+#define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
+#else
+#define KINEMATIC_INFO ""
+#endif
+#define TOOLS_INFO "T" STRGIFY(TOOL_COUNT) ","
+
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+#define LINES_INFO "N,"
+#else
+#define LINES_INFO ""
+#endif
+
+#ifdef BRESENHAM_16BIT
+#define BRESENHAM_INFO "16B,"
+#else
+#define BRESENHAM_INFO ""
+#endif
+
+#ifdef ENABLE_S_CURVE_ACCELERATION
+#define DYNACCEL_INFO "S,"
+#else
+#define DYNACCEL_INFO ""
+#endif
+
+#ifndef USE_LEGACY_STEP_INTERPOLATOR
+#define ACCELALG_INFO "NI,"
+#else
+#define ACCELALG_INFO ""
+#endif
+
+#ifdef INVERT_EMERGENCY_STOP
+#define INVESTOP_INFO "IE,"
+#else
+#define INVESTOP_INFO ""
+#endif
+
+#ifdef DISABLE_ALL_CONTROLS
+#define CONTROLS_INFO "DC,"
+#else
+#define CONTROLS_INFO ""
+#endif
+
+#ifdef DISABLE_ALL_LIMITS
+#define LIMITS_INFO "DL,"
+#else
+#define LIMITS_INFO ""
+#endif
+
+#ifdef DISABLE_PROBE
+#define PROBE_INFO "DP,"
+#else
+#define PROBE_INFO ""
+#endif
+
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+#define EXTRACMD_INFO "XC,"
+#else
+#define EXTRACMD_INFO ""
+#endif
+
+#ifdef ENABLE_FAST_MATH
+#define FASTMATH_INFO "F,"
+#else
+#define FASTMATH_INFO ""
+#endif
+
+#ifdef ENABLE_LINACT_PLANNER
+#define LINPLAN_INFO "LP,"
+#else
+#define LINPLAN_INFO ""
+#endif
+
+#ifdef ENABLE_SKEW_COMPENSATION
+#ifdef SKEW_COMPENSATION_XY_ONLY
+#define SKEW_INFO "SKXY,"
+#else
+#define SKEW_INFO "SK,"
+#endif
+#else
+#define SKEW_INFO ""
+#endif
+
+#define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
+#define PLANNER_INFO             \
+    STRGIFY(PLANNER_BUFFER_SIZE) \
+    ","
+#if (INTERFACE == INTERFACE_USB)
+#define SERIAL_INFO "U" STRGIFY(RX_BUFFER_CAPACITY)
+#else
+#define SERIAL_INFO STRGIFY(RX_BUFFER_CAPACITY)
+#endif
+
+#ifndef BOARD_NAME
+#define BOARD_NAME "Generic board"
+#endif
+
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO PLANNER_INFO SERIAL_INFO "]" STR_EOL)
+#define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
+
+void protocol_send_cnc_info(void)
+{
+#ifdef ECHO_CMD
+    protocol_busy = true;
+#endif
+    serial_print_str(VER_INFO);
+    serial_print_str(OPT_INFO);
 #ifdef ECHO_CMD
     protocol_busy = false;
 #endif

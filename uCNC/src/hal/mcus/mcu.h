@@ -1,7 +1,7 @@
 /*
 	Name: mcu.h
 	Description: Contains all the function declarations necessary to interact with the MCU.
-        This provides a opac intenterface between the µCNC and the MCU unit used to power the µCNC.
+		This provides an intenterface between the µCNC and the MCU unit used to power the µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -29,7 +29,39 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MCU_CALLBACK extern
+
+	// the extern is not necessary
+	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
+	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
+
+	MCU_CALLBACK void mcu_step_cb(void);
+	MCU_CALLBACK void mcu_step_reset_cb(void);
+	MCU_CALLBACK void mcu_com_rx_cb(unsigned char c);
+	MCU_CALLBACK void mcu_com_tx_cb();
+	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
+	MCU_CALLBACK void mcu_controls_changed_cb(void);
+	MCU_CALLBACK void mcu_limits_changed_cb(void);
+	MCU_CALLBACK void mcu_probe_changed_cb(void);
+	MCU_CALLBACK void mcu_inputs_changed_cb(void);
+
 /*IO functions*/
+
+/**
+ * config a pin in input mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_input
+	void mcu_config_input(uint8_t pin);
+#endif
+
+/**
+ * config a pin in output mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_output
+	void mcu_config_output(uint8_t pin);
+#endif
 
 /**
  * get the value of a digital input pin
@@ -122,17 +154,34 @@ extern "C"
 #endif
 
 /**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#define SERVO0_UCNC_INTERNAL_PIN 40
+#ifndef mcu_set_servo
+	void mcu_set_servo(uint8_t servo, uint8_t value);
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_servo
+	uint8_t mcu_get_servo(uint8_t servo);
+#endif
+
+/**
  * checks if the serial hardware of the MCU is ready do send the next char
  * */
 #ifndef mcu_tx_ready
-	bool mcu_tx_ready(void); //Start async send
+	bool mcu_tx_ready(void); // Start async send
 #endif
 
 /**
  * checks if the serial hardware of the MCU has a new char ready to be read
  * */
 #ifndef mcu_rx_ready
-	bool mcu_rx_ready(void); //Stop async send
+	bool mcu_rx_ready(void); // Stop async send
 #endif
 
 /**
@@ -151,7 +200,7 @@ extern "C"
 	char mcu_getc(void);
 #endif
 
-//ISR
+// ISR
 /**
  * enables global interrupts on the MCU
  * can be defined either as a function or a macro call
@@ -176,7 +225,7 @@ extern "C"
 	bool mcu_get_global_isr(void);
 #endif
 
-	//Step interpolator
+	// Step interpolator
 	/**
 	 * convert step rate to clock cycles
 	 * */
@@ -204,15 +253,23 @@ extern "C"
 	uint32_t mcu_millis();
 
 	/**
+	 * provides a delay in us (micro seconds)
+	 * the maximum allowed delay is 255 us
+	 * */
+#ifndef mcu_delay_us
+	void mcu_delay_us(uint8_t delay);
+#endif
+
+	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
 	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
-	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
-	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
+	 *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
+	 *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
 	 * */
 	void mcu_dotasks(void);
 
-	//Non volatile memory
+	// Non volatile memory
 	/**
 	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
 	 * */

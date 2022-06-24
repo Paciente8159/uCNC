@@ -28,14 +28,15 @@ extern "C"
 #include <stdint.h>
 #include <stdarg.h>
 
-#define EOL 0x00 //end of line char
-#define OVF 0x2A //overflow char
+#define EOL 0x00 // end of line char
+#define OVF 0x2A // overflow char
 #define SAFEMARGIN 2
-#define RX_BUFFER_SIZE (128 + SAFEMARGIN) //buffer sizes
+#define RX_BUFFER_CAPACITY 128
+#define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
 #ifndef ECHO_CMD
-#define TX_BUFFER_SIZE (112 + SAFEMARGIN) //buffer sizes
+#define TX_BUFFER_SIZE (112 + SAFEMARGIN) // buffer sizes
 #else
-#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) //buffer sizes
+#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) // buffer sizes
 #endif
 
 #define SERIAL_UART 0
@@ -48,23 +49,20 @@ extern "C"
 	unsigned char serial_getc(void);
 	void serial_ungetc(void);
 	unsigned char serial_peek(void);
-	void serial_inject_cmd(const unsigned char *__s);
+	void serial_inject_cmd(const char *__s);
 	void serial_restore_line(void);
 	void serial_rx_clear(void);
 	void serial_select(uint8_t source);
 
 	void serial_putc(unsigned char c);
-	void serial_print_str(const unsigned char *__s);
+	void serial_print_str(const char *__s);
 	void serial_print_int(int32_t num);
 	void serial_print_flt(float num);
 	void serial_print_fltunits(float num);
-	void serial_print_intarr(uint16_t *arr, uint8_t count);
+	void serial_print_intarr(int32_t *arr, uint8_t count);
 	void serial_print_fltarr(float *arr, uint8_t count);
 	void serial_flush(void);
-
-	//ISR
-	void serial_rx_isr(unsigned char c);
-	void serial_tx_isr(void);
+	uint8_t serial_get_rx_freebytes(void);
 
 #ifdef __cplusplus
 }

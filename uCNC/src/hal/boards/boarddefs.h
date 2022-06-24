@@ -34,16 +34,18 @@ extern "C"
 #error Undefined board
 #endif
 
-#if (BOARD)
-#else
+#if (!BOARD)
 #error Invalid board configuration
 #endif
 
 #if (BOARD == BOARD_UNO)
 #define MCU MCU_AVR
-//reduces RAM usage a bit to prevent hardware resets
-#define PLANNER_BUFFER_SIZE 14
 #include "avr/boardmap_uno.h"
+#endif
+
+#if (BOARD == BOARD_X_CONTROLLER)
+#define MCU MCU_AVR
+#include "avr/boardmap_x_controller.h"
 #endif
 
 #if (BOARD == BOARD_MKS_DLC)
@@ -61,9 +63,24 @@ extern "C"
 #include "avr/boardmap_ramps14.h"
 #endif
 
+#if (BOARD == BOARD_RAMPS14_MIRROR)
+#define MCU MCU_AVR
+#include "avr/boardmap_ramps14_mirror.h"
+#endif
+
+#if (BOARD == BOARD_MKS_GEN_L_V1)
+#define MCU MCU_AVR
+#include "avr/boardmap_mks_gen_l_v1.h"
+#endif
+
 #if (BOARD == BOARD_BLUEPILL)
-#define MCU MCU_STM32F10X
+#define MCU MCU_STM32F1X
 #include "stm32/boardmap_bluepill.h"
+#endif
+
+#if (BOARD == BOARD_BLACKPILL)
+#define MCU MCU_STM32F4X
+#include "stm32/boardmap_blackpill.h"
 #endif
 
 #if (BOARD == BOARD_MZERO)

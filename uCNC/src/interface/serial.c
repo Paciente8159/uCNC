@@ -1,19 +1,19 @@
 /*
-	Name: serial.c
-	Description: Serial communication basic read/write functions µCNC.
+    Name: serial.c
+    Description: Serial communication basic read/write functions µCNC.
 
-	Copyright: Copyright (c) João Martins
-	Author: João Martins
-	Date: 30/12/2019
+    Copyright: Copyright (c) João Martins
+    Author: João Martins
+    Date: 30/12/2019
 
-	µCNC is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+    µCNC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-	µCNC is distributed WITHOUT ANY WARRANTY;
-	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-	See the	GNU General Public License for more details.
+    µCNC is distributed WITHOUT ANY WARRANTY;
+    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+    See the	GNU General Public License for more details.
 */
 
 #include <math.h>
@@ -32,7 +32,7 @@ static uint8_t serial_tx_write;
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
 
-//static void serial_rx_clear();
+// static void serial_rx_clear();
 
 void serial_init(void)
 {
@@ -166,13 +166,13 @@ unsigned char serial_peek(void)
     return EOL;
 }
 
-void serial_inject_cmd(const unsigned char *__s)
+void serial_inject_cmd(const char *__s)
 {
-    unsigned char c = rom_strptr(__s++);
+    unsigned char c = (unsigned char)rom_strptr(__s++);
     do
     {
-        serial_rx_isr(c);
-        c = rom_strptr(__s++);
+        mcu_com_rx_cb(c);
+        c = (unsigned char)rom_strptr(__s++);
     } while (c != 0);
 }
 
@@ -186,8 +186,11 @@ void serial_putc(unsigned char c)
     }
     while (write == serial_tx_read)
     {
+        cnc_status_report_lock = true;
         cnc_dotasks();
-    } //while buffer is full
+    } // while buffer is full
+
+    cnc_status_report_lock = false;
 
     serial_tx_buffer[serial_tx_write] = c;
     serial_tx_write = write;
@@ -204,13 +207,13 @@ void serial_putc(unsigned char c)
 #endif
 }
 
-void serial_print_str(const unsigned char *__s)
+void serial_print_str(const char *__s)
 {
-    unsigned char c = rom_strptr(__s++);
+    unsigned char c = (unsigned char)rom_strptr(__s++);
     do
     {
         serial_putc(c);
-        c = rom_strptr(__s++);
+        c = (unsigned char)rom_strptr(__s++);
     } while (c != 0);
 }
 
@@ -253,14 +256,19 @@ void serial_print_flt(float num)
         num = -num;
     }
 
-    uint32_t digits = (uint32_t)floorf(num);
-    serial_print_int(digits);
+    uint32_t interger = (uint32_t)floorf(num);
+    num -= interger;
+    uint32_t mult = (!g_settings.report_inches) ? 1000 : 10000;
+    num *= mult;
+    uint32_t digits = (uint32_t)roundf(num);
+    if (digits == mult)
+    {
+        interger++;
+        digits = 0;
+    }
+
+    serial_print_int(interger);
     serial_putc('.');
-    num -= digits;
-
-    num *= (!g_settings.report_inches) ? 1000 : 10000;
-    digits = (uint32_t)roundf(num);
-
     if (g_settings.report_inches)
     {
         if (digits < 1000)
@@ -288,7 +296,7 @@ void serial_print_fltunits(float num)
     serial_print_flt(num);
 }
 
-void serial_print_intarr(uint16_t *arr, uint8_t count)
+void serial_print_intarr(int32_t *arr, uint8_t count)
 {
     do
     {
@@ -332,18 +340,18 @@ void serial_flush(void)
 #ifndef ENABLE_SYNC_TX
     if (serial_tx_write != serial_tx_read && mcu_tx_ready())
     {
-        serial_tx_isr();
+        mcu_com_tx_cb();
     }
 #endif
 }
 
-//ISR
-//New char handle strategy
-//All ascii will be sent to buffer and processed later (including comments)
-void serial_rx_isr(unsigned char c)
+// ISR
+// New char handle strategy
+// All ascii will be sent to buffer and processed later (including comments)
+void mcu_com_rx_cb(unsigned char c)
 {
     uint8_t write;
-    if (c < ((unsigned char)'~')) //ascii (except CMD_CODE_CYCLE_START and DEL)
+    if (c < ((unsigned char)'~')) // ascii (except CMD_CODE_CYCLE_START and DEL)
     {
         switch (c)
         {
@@ -372,13 +380,13 @@ void serial_rx_isr(unsigned char c)
             break;
         }
     }
-    else //extended ascii (plus CMD_CODE_CYCLE_START and DEL)
+    else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
     {
         cnc_call_rt_command((uint8_t)c);
     }
 }
 
-void serial_tx_isr(void)
+void mcu_com_tx_cb(void)
 {
 #ifndef ENABLE_SYNC_TX
     uint8_t read = serial_tx_read;
@@ -403,4 +411,15 @@ void serial_rx_clear(void)
     serial_rx_read = 0;
     serial_rx_overflow = 0;
     serial_rx_buffer[0] = EOL;
+}
+
+uint8_t serial_get_rx_freebytes(void)
+{
+    uint16_t buf = serial_rx_write;
+    if (serial_rx_read > buf)
+    {
+        buf += RX_BUFFER_SIZE;
+    }
+
+    return (uint8_t)(RX_BUFFER_CAPACITY - (buf - serial_rx_read));
 }

@@ -1,7 +1,7 @@
 /*
 	Name: tool.c
 	Description: The tool unit for µCNC.
-        This is responsible to define and manage tools.
+		This is responsible to define and manage tools.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -19,10 +19,63 @@
 
 #include "../../cnc.h"
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#define DECL_TOOL(tool) extern const tool_t __rom__ tool
 
 static tool_t tool_current;
 
-//this variable is not used but forces the compiler to compile the selected tools compilation units
+#ifdef TOOL1
+DECL_TOOL(TOOL1);
+#endif
+#ifdef TOOL2
+DECL_TOOL(TOOL2);
+#endif
+#ifdef TOOL3
+DECL_TOOL(TOOL3);
+#endif
+#ifdef TOOL4
+DECL_TOOL(TOOL4);
+#endif
+#ifdef TOOL5
+DECL_TOOL(TOOL5);
+#endif
+#ifdef TOOL6
+DECL_TOOL(TOOL6);
+#endif
+#ifdef TOOL7
+DECL_TOOL(TOOL7);
+#endif
+#ifdef TOOL8
+DECL_TOOL(TOOL8);
+#endif
+#ifdef TOOL9
+DECL_TOOL(TOOL9);
+#endif
+#ifdef TOOL10
+DECL_TOOL(TOOL10);
+#endif
+#ifdef TOOL11
+DECL_TOOL(TOOL11);
+#endif
+#ifdef TOOL12
+DECL_TOOL(TOOL12);
+#endif
+#ifdef TOOL13
+DECL_TOOL(TOOL13);
+#endif
+#ifdef TOOL14
+DECL_TOOL(TOOL14);
+#endif
+#ifdef TOOL15
+DECL_TOOL(TOOL15);
+#endif
+#ifdef TOOL16
+DECL_TOOL(TOOL16);
+#endif
+
+// this variable is not used but forces the compiler to compile the selected tools compilation units
 TOOLDEF const tool_t *__rom__ const tools[] = {
 #ifdef TOOL1
 	&TOOL1,
@@ -191,12 +244,12 @@ void tool_set_speed(int16_t value)
 #if TOOL_COUNT > 0
 	if (tool_current.set_speed)
 	{
-		tool_current.set_speed((uint8_t)(MIN(ABS(value), 0xff)), (value < 0));
+		tool_current.set_speed((uint8_t)(MIN(((uint8_t)ABS(value)), 0xff)), (value < 0));
 	}
 #endif
 }
 
-uint8_t tool_get_speed()
+uint16_t tool_get_speed()
 {
 #if TOOL_COUNT > 0
 	if (tool_current.get_speed)
@@ -225,13 +278,25 @@ void tool_stop()
 #endif
 }
 
-uint8_t tool_pid_update(void)
+#if PID_CONTROLLERS > 0
+void tool_pid_update(int16_t value)
 {
 #if TOOL_COUNT > 0
-	if (tool_current.pid_controller)
+	if (tool_current.pid_update)
 	{
-		return tool_current.pid_controller();
+		tool_current.pid_update(value);
+	}
+#endif
+}
+
+int16_t tool_pid_error(void)
+{
+#if TOOL_COUNT > 0
+	if (tool_current.pid_error)
+	{
+		return tool_current.pid_error();
 	}
 #endif
 	return 0;
 }
+#endif
