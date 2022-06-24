@@ -34,6 +34,8 @@ extern "C"
 #define BOARD_BLACKPILL 11
 #define BOARD_MZERO 20
 #define BOARD_ZERO 21
+#define BOARD_RE_ARM 30
+#define BOARD_WEMOS_D1 40
 #define BOARD_VIRTUAL 99
 
 // special purpose board

@@ -20,12 +20,42 @@
 
 #if (MCU == MCU_ESP8266)
 
-#include "Arduino.h"
-#include <string.h>
-
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <c_types.h>
+#include "ets_sys.h"
+#include "os_type.h"
+#include "gpio.h"
+#include "eagle_soc.h"
+#include "uart_register.h"
+#include "osapi.h"
+
+#define UART_PARITY_EN (BIT(1))
+#define UART_PARITY_EN_M 0x00000001
+#define UART_PARITY_EN_S 1
+#define UART_PARITY (BIT(0))
+#define UART_PARITY_M 0x00000001
+#define UART_PARITY_S 0
+
+static volatile bool esp8266_global_isr_enabled;
+static volatile uint32_t mcu_runtime_ms;
+uint8_t esp8266_pwm[16];
+
+char esp8266_tx_buffer[TX_BUFFER_SIZE - 2];
+char esp8266_rx_buffer[RX_BUFFER_SIZE];
+char *tx_ptr;
+void esp8266_wifi_init(void);
+void esp8266_wifi_read(void (*read_callback)(unsigned char));
+void esp8266_wifi_write(char *buff, uint8_t len);
+void esp8266_uart_init(int baud);
+char esp8266_uart_read(void);
+void esp8266_uart_write(char c);
+bool esp8266_uart_rx_ready(void);
+bool esp8266_uart_tx_ready(void);
+void esp8266_uart_flush(void);
+
+ETSTimer esp8266_rtc_timer;
 
 IRAM_ATTR void mcu_din_isr(void)
 {
@@ -47,6 +77,231 @@ IRAM_ATTR void mcu_controls_isr(void)
 	io_controls_isr();
 }
 
+IRAM_ATTR void mcu_rtc_isr(void *arg)
+{
+	static uint8_t pwm_counter = 0;
+	mcu_runtime_ms++;
+	// software PWM
+	if (++pwm_counter)
+	{
+#if !(PWM0 < 0)
+		if (pwm_counter > esp8266_pwm[0])
+		{
+			mcu_clear_output(PWM0);
+		}
+#endif
+#if !(PWM1 < 0)
+		if (pwm_counter > esp8266_pwm[1])
+		{
+			mcu_clear_output(PWM1);
+		}
+#endif
+#if !(PWM2 < 0)
+		if (pwm_counter > esp8266_pwm[2])
+		{
+			mcu_clear_output(PWM2);
+		}
+#endif
+#if !(PWM3 < 0)
+		if (pwm_counter > esp8266_pwm[3])
+		{
+			mcu_clear_output(PWM3);
+		}
+#endif
+#if !(PWM4 < 0)
+		if (pwm_counter > esp8266_pwm[4])
+		{
+			mcu_clear_output(PWM4);
+		}
+#endif
+#if !(PWM5 < 0)
+		if (pwm_counter > esp8266_pwm[5])
+		{
+			mcu_clear_output(PWM5);
+		}
+#endif
+#if !(PWM6 < 0)
+		if (pwm_counter > esp8266_pwm[6])
+		{
+			mcu_clear_output(PWM6);
+		}
+#endif
+#if !(PWM7 < 0)
+		if (pwm_counter > esp8266_pwm[7])
+		{
+			mcu_clear_output(PWM7);
+		}
+#endif
+#if !(PWM8 < 0)
+		if (pwm_counter > esp8266_pwm[8])
+		{
+			mcu_clear_output(PWM8);
+		}
+#endif
+#if !(PWM9 < 0)
+		if (pwm_counter > esp8266_pwm[9])
+		{
+			mcu_clear_output(PWM9);
+		}
+#endif
+#if !(PWM10 < 0)
+		if (pwm_counter > esp8266_pwm[10])
+		{
+			mcu_clear_output(PWM10);
+		}
+#endif
+#if !(PWM11 < 0)
+		if (pwm_counter > esp8266_pwm[11])
+		{
+			mcu_clear_output(PWM11);
+		}
+#endif
+#if !(PWM12 < 0)
+		if (pwm_counter > esp8266_pwm[12])
+		{
+			mcu_clear_output(PWM12);
+		}
+#endif
+#if !(PWM13 < 0)
+		if (pwm_counter > esp8266_pwm[13])
+		{
+			mcu_clear_output(PWM13);
+		}
+#endif
+#if !(PWM14 < 0)
+		if (pwm_counter > esp8266_pwm[14])
+		{
+			mcu_clear_output(PWM14);
+		}
+#endif
+#if !(PWM15 < 0)
+		if (pwm_counter > esp8266_pwm[15])
+		{
+			mcu_clear_output(PWM15);
+		}
+#endif
+	}
+	else
+	{
+#if !(PWM0 < 0)
+		mcu_set_output(PWM0);
+#endif
+#if !(PWM1 < 0)
+		mcu_set_output(PWM1);
+#endif
+#if !(PWM2 < 0)
+		mcu_set_output(PWM2);
+#endif
+#if !(PWM3 < 0)
+		mcu_set_output(PWM3);
+#endif
+#if !(PWM4 < 0)
+		mcu_set_output(PWM4);
+#endif
+#if !(PWM5 < 0)
+		mcu_set_output(PWM5);
+#endif
+#if !(PWM6 < 0)
+		mcu_set_output(PWM6);
+#endif
+#if !(PWM7 < 0)
+		mcu_set_output(PWM7);
+#endif
+#if !(PWM8 < 0)
+		mcu_set_output(PWM8);
+#endif
+#if !(PWM9 < 0)
+		mcu_set_output(PWM9);
+#endif
+#if !(PWM10 < 0)
+		mcu_set_output(PWM10);
+#endif
+#if !(PWM11 < 0)
+		mcu_set_output(PWM11);
+#endif
+#if !(PWM12 < 0)
+		mcu_set_output(PWM12);
+#endif
+#if !(PWM13 < 0)
+		mcu_set_output(PWM13);
+#endif
+#if !(PWM14 < 0)
+		mcu_set_output(PWM14);
+#endif
+#if !(PWM15 < 0)
+		mcu_set_output(PWM15);
+#endif
+	}
+
+	mcu_rtc_cb(mcu_runtime_ms);
+}
+
+IRAM_ATTR void mcu_itp_isr(void)
+{
+	mcu_disable_global_isr();
+	static bool resetstep = false;
+	if (!resetstep)
+		mcu_step_cb();
+	else
+		mcu_step_reset_cb();
+	resetstep = !resetstep;
+	mcu_enable_global_isr();
+}
+
+// static void mcu_uart_isr(void *arg)
+// {
+// 	/*ATTENTION:*/
+// 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
+// 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
+// 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
+// 	if ((READ_PERI_REG(UART_INT_ST(0)) & UART_FRM_ERR_INT_ST))
+// 	{
+// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_FRM_ERR_INT_CLR);
+// 	}
+// 	else if ((READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)))
+// 	{
+// 		// disable ISR
+// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
+// 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
+// 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
+// 		unsigned char c = 0;
+
+// 		for (uint8_t i = 0; i < fifo_len; i++)
+// 		{
+// 			c = READ_PERI_REG(UART_FIFO(0)) & 0xFF;
+// 			mcu_com_rx_cb(c);
+// 		}
+
+// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_FULL_INT_CLR | UART_RXFIFO_TOUT_INT_CLR);
+// 		// reenable ISR
+// 		SET_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
+// 	}
+// 	else if (UART_TXFIFO_EMPTY_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_TXFIFO_EMPTY_INT_ST))
+// 	{
+// 		/* to output uart data from uart buffer directly in empty interrupt handler*/
+// 		/*instead of processing in system event, in order not to wait for current task/function to quit */
+// 		/*ATTENTION:*/
+// 		/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
+// 		/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
+// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_TXFIFO_EMPTY_INT_ENA);
+// 		mcu_com_tx_cb();
+// 		// system_os_post(uart_recvTaskPrio, 1, 0);
+// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_TXFIFO_EMPTY_INT_CLR);
+// 	}
+// 	else if (UART_RXFIFO_OVF_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_RXFIFO_OVF_INT_ST))
+// 	{
+// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_OVF_INT_CLR);
+// 	}
+// }
+
+void mcu_usart_init(void)
+{
+#if (INTERFACE == INTERFACE_USART)
+	esp8266_uart_init(BAUDRATE);
+#elif (INTERFACE == INTERFACE_WIFI)
+	esp8266_wifi_init();
+#endif
+}
 /**
  * initializes the mcu
  * this function needs to:
@@ -99,6 +354,12 @@ void mcu_init(void)
 #if DIR5 >= 0
 	mcu_config_output(DIR5);
 #endif
+#if DIR6 >= 0
+	mcu_config_output(DIR6);
+#endif
+#if DIR7 >= 0
+	mcu_config_output(DIR7);
+#endif
 #if STEP0_EN >= 0
 	mcu_config_output(STEP0_EN);
 #endif
@@ -116,6 +377,12 @@ void mcu_init(void)
 #endif
 #if STEP5_EN >= 0
 	mcu_config_output(STEP5_EN);
+#endif
+#if STEP6_EN >= 0
+	mcu_config_output(STEP6_EN);
+#endif
+#if STEP7_EN >= 0
+	mcu_config_output(STEP7_EN);
 #endif
 #if PWM0 >= 0
 	mcu_config_pwm(PWM0);
@@ -165,6 +432,24 @@ void mcu_init(void)
 #if PWM15 >= 0
 	mcu_config_pwm(PWM15);
 #endif
+#if SERVO0 >= 0
+	mcu_config_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+	mcu_config_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+	mcu_config_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+	mcu_config_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+	mcu_config_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+	mcu_config_output(SERVO5);
+#endif
 #if DOUT0 >= 0
 	mcu_config_output(DOUT0);
 #endif
@@ -212,6 +497,54 @@ void mcu_init(void)
 #endif
 #if DOUT15 >= 0
 	mcu_config_output(DOUT15);
+#endif
+#if DOUT16 >= 0
+	mcu_config_output(DOUT16);
+#endif
+#if DOUT17 >= 0
+	mcu_config_output(DOUT17);
+#endif
+#if DOUT18 >= 0
+	mcu_config_output(DOUT18);
+#endif
+#if DOUT19 >= 0
+	mcu_config_output(DOUT19);
+#endif
+#if DOUT20 >= 0
+	mcu_config_output(DOUT20);
+#endif
+#if DOUT21 >= 0
+	mcu_config_output(DOUT21);
+#endif
+#if DOUT22 >= 0
+	mcu_config_output(DOUT22);
+#endif
+#if DOUT23 >= 0
+	mcu_config_output(DOUT23);
+#endif
+#if DOUT24 >= 0
+	mcu_config_output(DOUT24);
+#endif
+#if DOUT25 >= 0
+	mcu_config_output(DOUT25);
+#endif
+#if DOUT26 >= 0
+	mcu_config_output(DOUT26);
+#endif
+#if DOUT27 >= 0
+	mcu_config_output(DOUT27);
+#endif
+#if DOUT28 >= 0
+	mcu_config_output(DOUT28);
+#endif
+#if DOUT29 >= 0
+	mcu_config_output(DOUT29);
+#endif
+#if DOUT30 >= 0
+	mcu_config_output(DOUT30);
+#endif
+#if DOUT31 >= 0
+	mcu_config_output(DOUT31);
 #endif
 #if LIMIT_X >= 0
 	mcu_config_input(LIMIT_X);
@@ -507,12 +840,145 @@ void mcu_init(void)
 	mcu_config_pullup(DIN15);
 #endif
 #endif
+#if DIN16 >= 0
+	mcu_config_input(DIN16);
+#ifdef DIN16_PULLUP
+	mcu_config_pullup(DIN16);
+#endif
+#endif
+#if DIN17 >= 0
+	mcu_config_input(DIN17);
+#ifdef DIN17_PULLUP
+	mcu_config_pullup(DIN17);
+#endif
+#endif
+#if DIN18 >= 0
+	mcu_config_input(DIN18);
+#ifdef DIN18_PULLUP
+	mcu_config_pullup(DIN18);
+#endif
+#endif
+#if DIN19 >= 0
+	mcu_config_input(DIN19);
+#ifdef DIN19_PULLUP
+	mcu_config_pullup(DIN19);
+#endif
+#endif
+#if DIN20 >= 0
+	mcu_config_input(DIN20);
+#ifdef DIN20_PULLUP
+	mcu_config_pullup(DIN20);
+#endif
+#endif
+#if DIN21 >= 0
+	mcu_config_input(DIN21);
+#ifdef DIN21_PULLUP
+	mcu_config_pullup(DIN21);
+#endif
+#endif
+#if DIN22 >= 0
+	mcu_config_input(DIN22);
+#ifdef DIN22_PULLUP
+	mcu_config_pullup(DIN22);
+#endif
+#endif
+#if DIN23 >= 0
+	mcu_config_input(DIN23);
+#ifdef DIN23_PULLUP
+	mcu_config_pullup(DIN23);
+#endif
+#endif
+#if DIN24 >= 0
+	mcu_config_input(DIN24);
+#ifdef DIN24_PULLUP
+	mcu_config_pullup(DIN24);
+#endif
+#endif
+#if DIN25 >= 0
+	mcu_config_input(DIN25);
+#ifdef DIN25_PULLUP
+	mcu_config_pullup(DIN25);
+#endif
+#endif
+#if DIN26 >= 0
+	mcu_config_input(DIN26);
+#ifdef DIN26_PULLUP
+	mcu_config_pullup(DIN26);
+#endif
+#endif
+#if DIN27 >= 0
+	mcu_config_input(DIN27);
+#ifdef DIN27_PULLUP
+	mcu_config_pullup(DIN27);
+#endif
+#endif
+#if DIN28 >= 0
+	mcu_config_input(DIN28);
+#ifdef DIN28_PULLUP
+	mcu_config_pullup(DIN28);
+#endif
+#endif
+#if DIN29 >= 0
+	mcu_config_input(DIN29);
+#ifdef DIN29_PULLUP
+	mcu_config_pullup(DIN29);
+#endif
+#endif
+#if DIN30 >= 0
+	mcu_config_input(DIN30);
+#ifdef DIN30_PULLUP
+	mcu_config_pullup(DIN30);
+#endif
+#endif
+#if DIN31 >= 0
+	mcu_config_input(DIN31);
+#ifdef DIN31_PULLUP
+	mcu_config_pullup(DIN31);
+#endif
+#endif
 #if TX >= 0
 	mcu_config_output(TX);
 #endif
 #if RX >= 0
-	mcu_config_output(RX);
+	mcu_config_input(RX);
+#ifdef RX_PULLUP
+	mcu_config_pullup(RX);
 #endif
+#endif
+#if USB_DM >= 0
+	mcu_config_input(USB_DM);
+#ifdef USB_DM_PULLUP
+	mcu_config_pullup(USB_DM);
+#endif
+#endif
+#if USB_DP >= 0
+	mcu_config_input(USB_DP);
+#ifdef USB_DP_PULLUP
+	mcu_config_pullup(USB_DP);
+#endif
+#endif
+#if SPI_CLK >= 0
+	mcu_config_output(SPI_CLK);
+#endif
+#if SPI_SDI >= 0
+	mcu_config_input(SPI_SDI);
+#ifdef SPI_SDI_PULLUP
+	mcu_config_pullup(SPI_SDI);
+#endif
+#endif
+#if SPI_SDO >= 0
+	mcu_config_output(SPI_SDO);
+#endif
+
+	tx_ptr = esp8266_tx_buffer;
+	mcu_usart_init();
+
+	// init rtc
+	os_timer_setfn(&esp8266_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
+	os_timer_arm(&esp8266_rtc_timer, 1, true);
+
+	// init timer1
+	timer1_isr_init();
 }
 
 /**
@@ -520,7 +986,9 @@ void mcu_init(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_enable_probe_isr
-void mcu_enable_probe_isr(void);
+void mcu_enable_probe_isr(void)
+{
+}
 #endif
 
 /**
@@ -528,7 +996,9 @@ void mcu_enable_probe_isr(void);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_disable_probe_isr
-void mcu_disable_probe_isr(void);
+void mcu_disable_probe_isr(void)
+{
+}
 #endif
 
 /**
@@ -536,7 +1006,10 @@ void mcu_disable_probe_isr(void);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel);
+uint8_t mcu_get_analog(uint8_t channel)
+{
+	return 0;
+}
 #endif
 
 /**
@@ -544,7 +1017,9 @@ uint8_t mcu_get_analog(uint8_t channel);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_set_pwm
-void mcu_set_pwm(uint8_t pwm, uint8_t value);
+void mcu_set_pwm(uint8_t pwm, uint8_t value)
+{
+}
 #endif
 
 /**
@@ -552,21 +1027,30 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_pwm
-uint8_t mcu_get_pwm(uint8_t pwm);
+uint8_t mcu_get_pwm(uint8_t pwm)
+{
+	return 0;
+}
 #endif
 
 /**
  * checks if the serial hardware of the MCU is ready do send the next char
  * */
 #ifndef mcu_tx_ready
-bool mcu_tx_ready(void); // Start async send
+bool mcu_tx_ready(void)
+{
+	return esp8266_uart_tx_ready();
+}
 #endif
 
 /**
  * checks if the serial hardware of the MCU has a new char ready to be read
  * */
 #ifndef mcu_rx_ready
-bool mcu_rx_ready(void); // Stop async send
+bool mcu_rx_ready(void)
+{
+	return esp8266_uart_rx_ready();
+}
 #endif
 
 /**
@@ -574,7 +1058,36 @@ bool mcu_rx_ready(void); // Stop async send
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
-void mcu_putc(char c);
+
+void mcu_putc(char c)
+{
+#if !(LED < 0)
+	mcu_toggle_output(LED);
+#endif
+#if (INTERFACE == INTERFACE_USART)
+#ifdef ENABLE_SYNC_TX
+	while (!mcu_tx_ready())
+		;
+#endif
+	esp8266_uart_write(c);
+#elif (INTERFACE == INTERFACE_WIFI)
+	if (c != 0)
+	{
+		*tx_ptr = c;
+		tx_ptr++;
+		tx_ptr = 0;
+	}
+	if (c == '\r' || c == 0)
+	{
+		*tx_ptr = c;
+		tx_ptr++;
+		tx_ptr = 0;
+		uint8_t len = strlen(esp8266_tx_buffer);
+		esp8266_wifi_write(esp8266_tx_buffer, len);
+		tx_ptr = esp8266_tx_buffer;
+	}
+#endif
+}
 #endif
 
 /**
@@ -582,7 +1095,21 @@ void mcu_putc(char c);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_getc
-char mcu_getc(void);
+char mcu_getc(void)
+{
+#if !(LED < 0)
+	mcu_toggle_output(LED);
+#endif
+#if (INTERFACE == INTERFACE_USART)
+#ifdef ENABLE_SYNC_RX
+	while (!mcu_rx_ready())
+		;
+#endif
+	return esp8266_uart_read();
+#elif (INTERFACE == INTERFACE_WIFI)
+#endif
+	return 0;
+}
 #endif
 
 // ISR
@@ -591,7 +1118,11 @@ char mcu_getc(void);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_enable_global_isr
-void mcu_enable_global_isr(void);
+void mcu_enable_global_isr(void)
+{
+	//ets_intr_unlock();
+	esp8266_global_isr_enabled = true;
+}
 #endif
 
 /**
@@ -599,7 +1130,11 @@ void mcu_enable_global_isr(void);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_disable_global_isr
-void mcu_disable_global_isr(void);
+void mcu_disable_global_isr(void)
+{
+	esp8266_global_isr_enabled = false;
+	//ets_intr_lock();
+}
 #endif
 
 /**
@@ -607,35 +1142,71 @@ void mcu_disable_global_isr(void);
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_global_isr
-bool mcu_get_global_isr(void);
+bool mcu_get_global_isr(void)
+{
+	return esp8266_global_isr_enabled;
+}
 #endif
 
 // Step interpolator
 /**
  * convert step rate to clock cycles
  * */
-void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
+{
+	// up and down counter (generates half the step rate at each event)
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 5) / frequency);
+	while (totalticks > 0xFFFF)
+	{
+		totalticks = 0xFFFF;
+	}
+
+	*ticks = (uint16_t)totalticks;
+}
 
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
-void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller);
+void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
+	timer1_attachInterrupt(mcu_itp_isr);
+	timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
+	timer1_write(ticks);
+}
 
 /**
  * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
  * */
-void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller);
+void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
+{
+	timer1_write(ticks);
+}
 
 /**
  * stops the timer interrupt that generates the step pulses for the interpolator
  * */
-void mcu_stop_itp_isr(void);
+void mcu_stop_itp_isr(void)
+{
+	timer1_disable();
+	timer1_detachInterrupt();
+}
 
 /**
  * gets the MCU running time in milliseconds.
  * the time counting is controled by the internal RTC
  * */
-uint32_t mcu_millis();
+uint32_t mcu_millis()
+{
+	return mcu_runtime_ms;
+}
+
+#ifndef mcu_delay_us
+	void mcu_delay_us(uint8_t delay)
+	{
+		uint32_t time = system_get_time() + delay;
+		while(time>system_get_time());
+	}
+#endif
 
 /**
  * runs all internal tasks of the MCU.
@@ -644,22 +1215,48 @@ uint32_t mcu_millis();
  *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
  *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
  * */
-void mcu_dotasks(void);
+void mcu_dotasks(void)
+{
+	// reset WDT
+	system_soft_wdt_feed();
+
+#if (INTERFACE == INTERFACE_USART)
+#ifdef ENABLE_SYNC_TX
+	esp8266_uart_flush();
+#endif
+#ifdef ENABLE_SYNC_RX
+	while (mcu_rx_ready())
+	{
+		unsigned char c = mcu_getc();
+		mcu_com_rx_cb(c);
+	}
+#endif
+#elif (INTERFACE == INTERFACE_WIFI)
+	esp8266_wifi_read(mcu_com_rx_cb);
+#endif
+}
 
 // Non volatile memory
 /**
  * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
  * */
-uint8_t mcu_eeprom_getc(uint16_t address);
+uint8_t mcu_eeprom_getc(uint16_t address)
+{
+	return 0;
+}
 
 /**
  * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
  * */
-void mcu_eeprom_putc(uint16_t address, uint8_t value);
+void mcu_eeprom_putc(uint16_t address, uint8_t value)
+{
+}
 
 /**
  * flushes all recorded registers into the eeprom.
  * */
-void mcu_eeprom_flush(void);
+void mcu_eeprom_flush(void)
+{
+}
 
 #endif
