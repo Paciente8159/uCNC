@@ -51,12 +51,14 @@ extern "C"
 //#define ESTOP_ISR
 
 // Setup com pins
+#if (INTERFACE == INTERFACE_USART)
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PORT D
 #define TX_PORT D
-    // only uncomment this if other port other then 0 is used
-    //#define COM_PORT 0
+// only uncomment this if other port other then 0 is used
+// #define COM_PORT 0
+#endif
 
     // Setup PWM
 #define PWM0_BIT 2  // assigns PWM0 pin
@@ -70,14 +72,6 @@ extern "C"
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 0
 #define STEP0_EN_PORT D
-
-    // Setup the Step Timer used has the heartbeat for µCNC
-    // Timer 1 is used by default
-    //#define ITP_TIMER 1
-
-    // Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-    // Timer 0 is set by default
-    //#define RTC_TIMER 0
 
 #ifdef __cplusplus
 }

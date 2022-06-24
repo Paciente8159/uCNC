@@ -4,7 +4,7 @@
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 04-02-2022
+	Date: 05-02-2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -42,18 +42,12 @@ static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 uint8_t esp8266_pwm[16];
 
-char esp8266_tx_buffer[TX_BUFFER_SIZE - 2];
-char esp8266_rx_buffer[RX_BUFFER_SIZE];
-char *tx_ptr;
-void esp8266_wifi_init(void);
-void esp8266_wifi_read(void (*read_callback)(unsigned char));
-void esp8266_wifi_write(char *buff, uint8_t len);
-void esp8266_uart_init(int baud);
-char esp8266_uart_read(void);
-void esp8266_uart_write(char c);
-bool esp8266_uart_rx_ready(void);
-bool esp8266_uart_tx_ready(void);
-void esp8266_uart_flush(void);
+void esp8266_com_init(int baud);
+char esp8266_com_read(void);
+void esp8266_com_write(char c);
+bool esp8266_com_rx_ready(void);
+bool esp8266_com_tx_ready(void);
+void esp8266_com_flush(void);
 
 ETSTimer esp8266_rtc_timer;
 
@@ -296,11 +290,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_USART)
-	esp8266_uart_init(BAUDRATE);
-#elif (INTERFACE == INTERFACE_WIFI)
-	esp8266_wifi_init();
-#endif
+	esp8266_com_init(BAUDRATE);
 }
 /**
  * initializes the mcu
@@ -970,7 +960,6 @@ void mcu_init(void)
 	mcu_config_output(SPI_SDO);
 #endif
 
-	tx_ptr = esp8266_tx_buffer;
 	mcu_usart_init();
 
 	// init rtc
@@ -1039,7 +1028,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-	return esp8266_uart_tx_ready();
+	return esp8266_com_tx_ready();
 }
 #endif
 
@@ -1049,7 +1038,7 @@ bool mcu_tx_ready(void)
 #ifndef mcu_rx_ready
 bool mcu_rx_ready(void)
 {
-	return esp8266_uart_rx_ready();
+	return esp8266_com_rx_ready();
 }
 #endif
 
@@ -1064,29 +1053,11 @@ void mcu_putc(char c)
 #if !(LED < 0)
 	mcu_toggle_output(LED);
 #endif
-#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
 		;
 #endif
-	esp8266_uart_write(c);
-#elif (INTERFACE == INTERFACE_WIFI)
-	if (c != 0)
-	{
-		*tx_ptr = c;
-		tx_ptr++;
-		tx_ptr = 0;
-	}
-	if (c == '\r' || c == 0)
-	{
-		*tx_ptr = c;
-		tx_ptr++;
-		tx_ptr = 0;
-		uint8_t len = strlen(esp8266_tx_buffer);
-		esp8266_wifi_write(esp8266_tx_buffer, len);
-		tx_ptr = esp8266_tx_buffer;
-	}
-#endif
+	esp8266_com_write(c);
 }
 #endif
 
@@ -1100,15 +1071,11 @@ char mcu_getc(void)
 #if !(LED < 0)
 	mcu_toggle_output(LED);
 #endif
-#if (INTERFACE == INTERFACE_USART)
 #ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())
 		;
 #endif
-	return esp8266_uart_read();
-#elif (INTERFACE == INTERFACE_WIFI)
-#endif
-	return 0;
+	return esp8266_com_read();
 }
 #endif
 
@@ -1120,7 +1087,7 @@ char mcu_getc(void)
 #ifndef mcu_enable_global_isr
 void mcu_enable_global_isr(void)
 {
-	//ets_intr_unlock();
+	// ets_intr_unlock();
 	esp8266_global_isr_enabled = true;
 }
 #endif
@@ -1133,7 +1100,7 @@ void mcu_enable_global_isr(void)
 void mcu_disable_global_isr(void)
 {
 	esp8266_global_isr_enabled = false;
-	//ets_intr_lock();
+	// ets_intr_lock();
 }
 #endif
 
@@ -1201,11 +1168,12 @@ uint32_t mcu_millis()
 }
 
 #ifndef mcu_delay_us
-	void mcu_delay_us(uint8_t delay)
-	{
-		uint32_t time = system_get_time() + delay;
-		while(time>system_get_time());
-	}
+void mcu_delay_us(uint8_t delay)
+{
+	uint32_t time = system_get_time() + delay;
+	while (time > system_get_time())
+		;
+}
 #endif
 
 /**
@@ -1220,9 +1188,8 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 
-#if (INTERFACE == INTERFACE_USART)
-#ifdef ENABLE_SYNC_TX
-	esp8266_uart_flush();
+#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
+	esp8266_com_flush();
 #endif
 #ifdef ENABLE_SYNC_RX
 	while (mcu_rx_ready())
@@ -1230,9 +1197,6 @@ void mcu_dotasks(void)
 		unsigned char c = mcu_getc();
 		mcu_com_rx_cb(c);
 	}
-#endif
-#elif (INTERFACE == INTERFACE_WIFI)
-	esp8266_wifi_read(mcu_com_rx_cb);
 #endif
 }
 

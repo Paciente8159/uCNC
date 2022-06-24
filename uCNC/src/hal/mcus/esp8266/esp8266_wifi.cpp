@@ -1,5 +1,24 @@
-//#include "Arduino.h"
+/*
+Name: esp8266_wifi.cpp
+Description: Contains all Arduino ESP8266 C++ to C functions used by WiFi in µCNC.
+
+Copyright: Copyright (c) João Martins
+Author: João Martins
+Date: 24-06-2022
+
+µCNC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version. Please see <http://www.gnu.org/licenses/>
+
+µCNC is distributed WITHOUT ANY WARRANTY;
+Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the	GNU General Public License for more details.
+*/
+
 #include "../../../../cnc_config.h"
+
+#if (INTERFACE == INTERFACE_WIFI)
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Hash.h>
@@ -7,12 +26,11 @@
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
 #include <WiFiManager.h>
-#include <string.h>
 #include <stdint.h>
-#include <stdio.h>
+#include <stdbool.h>
 
-#ifndef WIFI_BUFFER
-#define WIFI_BUFFER 128
+#ifndef WIFI_BUFFER_SIZE
+#define WIFI_BUFFER_SIZE 255
 #endif
 
 #ifndef WIFI_PORT
@@ -36,100 +54,144 @@ const char *update_password = WIFI_PASS;
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
 WiFiManager wifiManager;
+typedef struct wifi_rxbuffer_
+{
+	char buffer[WIFI_BUFFER_SIZE];
+	uint8_t len;
+	uint8_t current;
+} wifi_rxbuffer_t;
+
+static wifi_rxbuffer_t wifi_rx_buffer;
+static wifi_rxbuffer_t wifi_tx_buffer;
+
+bool esp8266_wifi_clientok(void)
+{
+	if (server.hasClient())
+	{
+		if (serverClient && serverClient.connected())
+		{
+			serverClient.stop();
+		}
+		serverClient = server.available();
+#ifdef WIFI_DEBUG
+		Serial.println("[MSG: New client accepted]");
+#endif
+		serverClient.write("[MSG: New client connected]\r\n");
+		return false;
+	}
+	else if (serverClient && serverClient.connected())
+	{
+		return true;
+	}
+
+	return false;
+}
 
 extern "C"
 {
-        void esp8266_wifi_init(void)
-        {
+	void esp8266_com_init(void)
+	{
 #ifdef WIFI_DEBUG
-                Serial.begin(115200);
-                wifiManager.setDebugOutput(true);
+		Serial.setRxBufferSize(1024);
+		Serial.begin(115200);
+		wifiManager.setDebugOutput(true);
 #else
-                wifiManager.setDebugOutput(false);
+		wifiManager.setDebugOutput(false);
 #endif
-                wifiManager.autoConnect("ESP8266");
+		wifiManager.autoConnect("ESP8266");
 #ifdef WIFI_DEBUG
-                Serial.println("[MSG: WiFi manager up]");
+		Serial.println("[MSG: WiFi manager up]");
+		Serial.println("[MSG: Setup page @ 192.168.4.1]");
 #endif
-#ifdef WIFI_DEBUG
-                Serial.println("[MSG: Setup page @ 192.168.4.1]");
-#endif
-                server.setNoDelay(true);
-                httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-                httpServer.begin();
-                WiFi.setSleepMode(WIFI_NONE_SLEEP);
+		server.begin();
+		server.setNoDelay(true);
+		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
+		httpServer.begin();
+		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
-#ifdef WIFI_DEBUG
-                Serial.println("[MSG: WiFi server us up]");
-#endif
-        }
+		memset(wifi_rx_buffer.buffer, 0, WIFI_BUFFER_SIZE);
+		wifi_rx_buffer.len = 0;
+		wifi_rx_buffer.current = 0;
 
-        void esp8266_wifi_read(void (*read_callback)(unsigned char))
-        {
-                if (server.hasClient())
-                {
-#ifdef WIFI_DEBUG
-                        Serial.println("[MSG: client waiting]");
-#endif
-                        if (serverClient && serverClient.connected())
-                        {
-#ifdef WIFI_DEBUG
-                                Serial.println("[MSG: kill old client]");
-#endif
-                                serverClient.stop();
-                        }
+		memset(wifi_tx_buffer.buffer, 0, WIFI_BUFFER_SIZE);
+		wifi_tx_buffer.len = 0;
+		wifi_tx_buffer.current = 0;
+	}
 
-#ifdef WIFI_DEBUG
-                        Serial.println("[MSG: client started]");
-#endif
-                }
-                else if (serverClient && serverClient.connected())
-                {
-                        size_t rxlen = serverClient.available();
-                        if (rxlen > 0)
-                        {
-#ifdef WIFI_DEBUG
-                                Serial.println("[MSG: client has data]");
-#endif
-                                uint8_t sbuf[rxlen];
-                                serverClient.readBytes(sbuf, rxlen);
-                                for (uint8_t i = 0; i < rxlen; i++)
-                                {
-                                        if (read_callback)
-                                        {
-                                                read_callback((unsigned char)sbuf[i]);
-                                        }
-                                        yield();
-                                }
-                        }
-                }
-        }
+	char esp8266_com_read(void)
+	{
+		if (wifi_rx_buffer.len != 0 && wifi_rx_buffer.len > wifi_rx_buffer.current)
+		{
+			return wifi_rx_buffer.buffer[wifi_rx_buffer.current++];
+		}
 
-        void esp8266_wifi_write(char *buff, uint8_t len)
-        {
-                if (server.hasClient())
-                {
-#ifdef WIFI_DEBUG
-                        Serial.println("[MSG: client waiting]");
-#endif
-                        if (serverClient && serverClient.connected())
-                        {
-#ifdef WIFI_DEBUG
-                                Serial.println("[MSG: kill old client]");
-#endif
-                                serverClient.stop();
-                        }
+		if (esp8266_wifi_clientok())
+		{
+			size_t rxlen = serverClient.available();
+			if (rxlen > 0)
+			{
+				serverClient.readBytes(wifi_rx_buffer.buffer, rxlen);
+				wifi_rx_buffer.len = rxlen;
+				wifi_rx_buffer.current = 1;
+				return wifi_rx_buffer.buffer[0];
+			}
+		}
 
-#ifdef WIFI_DEBUG
-                        Serial.println("[MSG: client started]");
-#endif
-                }
-                else if (serverClient && serverClient.connected())
-                {
-#ifdef WIFI_DEBUG
-                        Serial.println("[MSG: sent data to client]");
-#endif
-                        serverClient.write(buff, (size_t)len);
-                }
-        }
+		return 0;
+	}
+
+	void esp8266_com_write(char c)
+	{
+		if (esp8266_wifi_clientok())
+		{
+			wifi_tx_buffer.buffer[wifi_tx_buffer.len] = c;
+			wifi_tx_buffer.len++;
+			if (c == '\n')
+			{
+				serverClient.write(wifi_tx_buffer.buffer, (size_t)wifi_tx_buffer.len);
+				memset(wifi_tx_buffer.buffer, 0, WIFI_BUFFER_SIZE);
+				wifi_tx_buffer.len = 0;
+			}
+		}
+	}
+
+	bool esp8266_com_rx_ready(void)
+	{
+		if (wifi_rx_buffer.len != 0 && wifi_rx_buffer.len > wifi_rx_buffer.current)
+		{
+			return true;
+		}
+
+		if (esp8266_wifi_clientok())
+		{
+			return (serverClient.available() != 0);
+		}
+
+		return false;
+	}
+
+	bool esp8266_com_tx_ready(void)
+	{
+		if (esp8266_wifi_clientok())
+		{
+			if (wifi_tx_buffer.len < WIFI_BUFFER_SIZE)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void esp8266_com_flush(void)
+	{
+		if (esp8266_wifi_clientok())
+		{
+			serverClient.flush();
+		}
+
+		httpServer.handleClient();
+	}
 }
+
+#endif

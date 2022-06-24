@@ -1,19 +1,19 @@
 /*
-    Name: mcumap_esp8266.h
-    Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
+	Name: mcumap_esp8266.h
+	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
 
-    Copyright: Copyright (c) João Martins
-    Author: João Martins
-    Date: 04-02-2020
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 05-02-2022
 
-    µCNC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-    µCNC is distributed WITHOUT ANY WARRANTY;
-    Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the	GNU General Public License for more details.
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #ifndef MCUMAP_ESP8266_H
@@ -27,15 +27,15 @@ extern "C"
 #include <Arduino.h>
 
 /*
-    Generates all the interface definitions.
-    This creates a middle HAL layer between the board IO pins and the AVR funtionalities
+	Generates all the interface definitions.
+	This creates a middle HAL layer between the board IO pins and the AVR funtionalities
 */
 /*
-    MCU specific definitions and replacements
+	MCU specific definitions and replacements
 */
 
 /*
-    ESP8266 Defaults
+	ESP8266 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -1085,14 +1085,12 @@ extern "C"
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
-#define ENABLE_SYNC_RX
-#define ENABLE_SYNC_TX
-#define mcu_tx_ready esp8266_uart_tx_ready
-#define mcu_rx_ready esp8266_uart_rx_ready
-#elif (INTERFACE == INTERFACE_WIFI)
-#define ENABLE_SYNC_TX
-#define ENABLE_SYNC_RX
 #endif
+
+#define ENABLE_SYNC_RX
+#define ENABLE_SYNC_TX
+#define mcu_tx_ready esp8266_com_tx_ready
+#define mcu_rx_ready esp8266_com_rx_ready
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
@@ -1112,7 +1110,7 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-    extern uint8_t esp8266_pwm[16];
+	extern uint8_t esp8266_pwm[16];
 #define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = Y)
 #define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
