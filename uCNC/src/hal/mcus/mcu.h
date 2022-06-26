@@ -29,7 +29,7 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MCU_CALLBACK extern
+#define MCU_CALLBACK
 
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units

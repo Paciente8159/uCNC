@@ -40,7 +40,6 @@
 
 static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
-uint8_t esp8266_pwm[16];
 
 void esp8266_com_init(int baud);
 char esp8266_com_read(void);
@@ -51,32 +50,12 @@ void esp8266_com_flush(void);
 
 ETSTimer esp8266_rtc_timer;
 
-IRAM_ATTR void mcu_din_isr(void)
-{
-	io_inputs_isr();
-}
-
-IRAM_ATTR void mcu_probe_isr(void)
-{
-	io_probe_isr();
-}
-
-IRAM_ATTR void mcu_limits_isr(void)
-{
-	io_limits_isr();
-}
-
-IRAM_ATTR void mcu_controls_isr(void)
-{
-	io_controls_isr();
-}
-
-IRAM_ATTR void mcu_rtc_isr(void *arg)
+uint8_t esp8266_pwm[16];
+static IRAM_ATTR void mcu_gen_pwm(void)
 {
 	static uint8_t pwm_counter = 0;
-	mcu_runtime_ms++;
 	// software PWM
-	if (++pwm_counter)
+	if (++pwm_counter < 127)
 	{
 #if !(PWM0 < 0)
 		if (pwm_counter > esp8266_pwm[0])
@@ -177,69 +156,163 @@ IRAM_ATTR void mcu_rtc_isr(void *arg)
 	}
 	else
 	{
+		pwm_counter = 0;
 #if !(PWM0 < 0)
-		mcu_set_output(PWM0);
+		if (esp8266_pwm[0])
+		{
+			mcu_set_output(PWM0);
+		}
 #endif
 #if !(PWM1 < 0)
-		mcu_set_output(PWM1);
+		if (esp8266_pwm[1])
+		{
+			mcu_set_output(PWM1);
+		}
 #endif
 #if !(PWM2 < 0)
-		mcu_set_output(PWM2);
+		if (esp8266_pwm[2])
+		{
+			mcu_set_output(PWM2);
+		}
 #endif
 #if !(PWM3 < 0)
-		mcu_set_output(PWM3);
+		if (esp8266_pwm[3])
+		{
+			mcu_set_output(PWM3);
+		}
 #endif
 #if !(PWM4 < 0)
-		mcu_set_output(PWM4);
+		if (esp8266_pwm[4])
+		{
+			mcu_set_output(PWM4);
+		}
 #endif
 #if !(PWM5 < 0)
-		mcu_set_output(PWM5);
+		if (esp8266_pwm[5])
+		{
+			mcu_set_output(PWM5);
+		}
 #endif
 #if !(PWM6 < 0)
-		mcu_set_output(PWM6);
+		if (esp8266_pwm[6])
+		{
+			mcu_set_output(PWM6);
+		}
 #endif
 #if !(PWM7 < 0)
-		mcu_set_output(PWM7);
+		if (esp8266_pwm[7])
+		{
+			mcu_set_output(PWM7);
+		}
 #endif
 #if !(PWM8 < 0)
-		mcu_set_output(PWM8);
+		if (esp8266_pwm[8])
+		{
+			mcu_set_output(PWM8);
+		}
 #endif
 #if !(PWM9 < 0)
-		mcu_set_output(PWM9);
+		if (esp8266_pwm[9])
+		{
+			mcu_set_output(PWM9);
+		}
 #endif
 #if !(PWM10 < 0)
-		mcu_set_output(PWM10);
+		if (esp8266_pwm[10])
+		{
+			mcu_set_output(PWM10);
+		}
 #endif
 #if !(PWM11 < 0)
-		mcu_set_output(PWM11);
+		if (esp8266_pwm[11])
+		{
+			mcu_set_output(PWM11);
+		}
 #endif
 #if !(PWM12 < 0)
-		mcu_set_output(PWM12);
+		if (esp8266_pwm[12])
+		{
+			mcu_set_output(PWM12);
+		}
 #endif
 #if !(PWM13 < 0)
-		mcu_set_output(PWM13);
+		if (esp8266_pwm[13])
+		{
+			mcu_set_output(PWM13);
+		}
 #endif
 #if !(PWM14 < 0)
-		mcu_set_output(PWM14);
+		if (esp8266_pwm[14])
+		{
+			mcu_set_output(PWM14);
+		}
 #endif
 #if !(PWM15 < 0)
-		mcu_set_output(PWM15);
+		if (esp8266_pwm[15])
+		{
+			mcu_set_output(PWM15);
+		}
 #endif
 	}
+}
 
+static uint32_t mcu_step_counter;
+static uint32_t mcu_step_reload;
+static IRAM_ATTR void mcu_gen_step(void)
+{
+	if (mcu_step_reload)
+	{
+		if (!--mcu_step_counter)
+		{
+			static bool resetstep = false;
+			if (!resetstep)
+				mcu_step_cb();
+			else
+				mcu_step_reset_cb();
+			resetstep = !resetstep;
+			mcu_step_counter = mcu_step_reload;
+		}
+	}
+}
+
+IRAM_ATTR void mcu_din_isr(void)
+{
+	io_inputs_isr();
+}
+
+IRAM_ATTR void mcu_probe_isr(void)
+{
+	io_probe_isr();
+}
+
+IRAM_ATTR void mcu_limits_isr(void)
+{
+	io_limits_isr();
+}
+
+IRAM_ATTR void mcu_controls_isr(void)
+{
+	io_controls_isr();
+}
+
+IRAM_ATTR void mcu_rtc_isr(void *arg)
+{
+	mcu_runtime_ms++;
 	mcu_rtc_cb(mcu_runtime_ms);
 }
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	mcu_disable_global_isr();
-	static bool resetstep = false;
-	if (!resetstep)
-		mcu_step_cb();
-	else
-		mcu_step_reset_cb();
-	resetstep = !resetstep;
-	mcu_enable_global_isr();
+	// mcu_disable_global_isr();
+	// static bool resetstep = false;
+	// if (!resetstep)
+	// 	mcu_step_cb();
+	// else
+	// 	mcu_step_reset_cb();
+	// resetstep = !resetstep;
+	// mcu_enable_global_isr();
+	mcu_gen_step();
+	mcu_gen_pwm();
 }
 
 // static void mcu_uart_isr(void *arg)
@@ -968,6 +1041,13 @@ void mcu_init(void)
 
 	// init timer1
 	timer1_isr_init();
+	timer1_attachInterrupt(mcu_itp_isr);
+	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
+	timer1_write(625);
+
+// #ifndef RAM_ONLY_SETTINGS
+// 	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
+// #endif
 }
 
 /**
@@ -1122,10 +1202,12 @@ bool mcu_get_global_isr(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 5) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
+	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
-		totalticks = 0xFFFF;
+		*prescaller++;
+		totalticks >>= 1;
 	}
 
 	*ticks = (uint16_t)totalticks;
@@ -1136,9 +1218,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
  * */
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	timer1_attachInterrupt(mcu_itp_isr);
-	timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
-	timer1_write(ticks);
+	mcu_step_reload = (((uint32_t)ticks) << prescaller);
+	mcu_step_counter = mcu_step_reload;
 }
 
 /**
@@ -1146,7 +1227,8 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	timer1_write(ticks);
+	mcu_step_reload = (((uint32_t)ticks) << prescaller);
+	mcu_step_counter = mcu_step_reload;
 }
 
 /**
@@ -1154,8 +1236,7 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	timer1_disable();
-	timer1_detachInterrupt();
+	mcu_step_reload = 0;
 }
 
 /**
@@ -1206,7 +1287,11 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+// #ifndef RAM_ONLY_SETTINGS
+// 	return esp8266_eeprom_read(address);
+// #else
 	return 0;
+// #endif
 }
 
 /**
@@ -1214,6 +1299,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+// #ifndef RAM_ONLY_SETTINGS
+// 	esp8266_eeprom_read(address, value);
+// #endif
 }
 
 /**
@@ -1221,6 +1309,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
  * */
 void mcu_eeprom_flush(void)
 {
+// #ifndef RAM_ONLY_SETTINGS
+// 	esp8266_eeprom_flush();
+// #endif
 }
 
 #endif
