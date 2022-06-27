@@ -89,11 +89,11 @@ bool esp8266_wifi_clientok(void)
 
 extern "C"
 {
-	void esp8266_com_init(void)
+	void esp8266_com_init(int baud)
 	{
 #ifdef WIFI_DEBUG
 		Serial.setRxBufferSize(1024);
-		Serial.begin(115200);
+		Serial.begin(baud);
 		wifiManager.setDebugOutput(true);
 #else
 		wifiManager.setDebugOutput(false);

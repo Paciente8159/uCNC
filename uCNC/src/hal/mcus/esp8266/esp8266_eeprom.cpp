@@ -11,9 +11,9 @@ extern "C"
 		EEPROM.begin(size);
 	}
 
-	void esp8266_eeprom_read(uint16_t address)
+	uint8_t esp8266_eeprom_read(uint16_t address)
 	{
-		EEPROM.read(address);
+		return EEPROM.read(address);
 	}
 
 	void esp8266_eeprom_write(uint16_t address, uint8_t value)
@@ -23,7 +23,10 @@ extern "C"
 
 	void esp8266_eeprom_flush(void)
 	{
-		EEPROM.commit();
+		if (!EEPROM.commit())
+		{
+			Serial.println("[MSG: EEPROM write error]");
+		}
 	}
 }
 

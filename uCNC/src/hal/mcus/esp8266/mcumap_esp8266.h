@@ -43,7 +43,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 100000
+#define F_STEP_MAX 64000
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -1081,7 +1081,7 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
@@ -1111,7 +1111,7 @@ extern "C"
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
 	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F&(Y >> 1)))
+#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
 #define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 

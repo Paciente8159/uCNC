@@ -48,6 +48,13 @@ bool esp8266_com_rx_ready(void);
 bool esp8266_com_tx_ready(void);
 void esp8266_com_flush(void);
 
+#ifndef RAM_ONLY_SETTINGS
+void esp8266_eeprom_init(int size);
+uint8_t esp8266_eeprom_read(uint16_t address);
+void esp8266_eeprom_write(uint16_t address, uint8_t value);
+void esp8266_eeprom_flush(void);
+#endif
+
 ETSTimer esp8266_rtc_timer;
 
 uint8_t esp8266_pwm[16];
@@ -361,7 +368,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 // 	}
 // }
 
-void mcu_usart_init(void)
+static void mcu_usart_init(void)
 {
 	esp8266_com_init(BAUDRATE);
 }
@@ -1045,9 +1052,9 @@ void mcu_init(void)
 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
 	timer1_write(625);
 
-// #ifndef RAM_ONLY_SETTINGS
-// 	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
-// #endif
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
+#endif
 }
 
 /**
@@ -1287,11 +1294,11 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-// #ifndef RAM_ONLY_SETTINGS
-// 	return esp8266_eeprom_read(address);
-// #else
+#ifndef RAM_ONLY_SETTINGS
+	return esp8266_eeprom_read(address);
+#else
 	return 0;
-// #endif
+#endif
 }
 
 /**
@@ -1299,9 +1306,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-// #ifndef RAM_ONLY_SETTINGS
-// 	esp8266_eeprom_read(address, value);
-// #endif
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_write(address, value);
+#endif
 }
 
 /**
@@ -1309,9 +1316,9 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
  * */
 void mcu_eeprom_flush(void)
 {
-// #ifndef RAM_ONLY_SETTINGS
-// 	esp8266_eeprom_flush();
-// #endif
+#ifndef RAM_ONLY_SETTINGS
+	esp8266_eeprom_flush();
+#endif
 }
 
 #endif
