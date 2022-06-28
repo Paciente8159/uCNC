@@ -1,20 +1,20 @@
 /*
-    Name: spindle_relay.c
-    Description: Defines a spindle tool using DOUT to enable a digital pin for µCNC.
-                 Defines a coolant output using DOUT1.
+	Name: spindle_relay.c
+	Description: Defines a spindle tool using DOUT to enable a digital pin for µCNC.
+				 Defines a coolant output using DOUT1.
 
-    Copyright: Copyright (c) João Martins
-    Author: James Harton
-    Date: 1/5/2022
+	Copyright: Copyright (c) João Martins
+	Author: James Harton
+	Date: 1/5/2022
 
-    µCNC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-    µCNC is distributed WITHOUT ANY WARRANTY;
-    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the	GNU General Public License for more details.
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #include "../../../cnc.h"
@@ -41,56 +41,56 @@ static uint8_t spindle_speed;
 void spindle_relay_set_speed(uint8_t value, bool invert)
 {
 
-  if (!value)
-  {
+	if (!value)
+	{
 #if !(SPINDLE_FWD_EN < 0)
-    mcu_clear_output(SPINDLE_FWD_EN);
+		mcu_clear_output(SPINDLE_FWD_EN);
 #endif
 #if !(SPINDLE_REV_EN < 0)
-    mcu_clear_output(SPINDLE_REV_EN);
+		mcu_clear_output(SPINDLE_REV_EN);
 #endif
-  }
-  else if (invert)
-  {
+	}
+	else if (invert)
+	{
 #if !(SPINDLE_FWD_EN < 0)
-    mcu_clear_output(SPINDLE_FWD_EN);
+		mcu_clear_output(SPINDLE_FWD_EN);
 #endif
 #if !(SPINDLE_REV_EN < 0)
-    mcu_set_output(SPINDLE_REV_EN);
+		mcu_set_output(SPINDLE_REV_EN);
 #endif
-  }
-  else
-  {
+	}
+	else
+	{
 #if !(SPINDLE_REV_EN < 0)
-    mcu_clear_output(SPINDLE_REV_EN);
+		mcu_clear_output(SPINDLE_REV_EN);
 #endif
 #if !(SPINDLE_FWD_EN < 0)
-    mcu_set_output(SPINDLE_FWD_EN);
+		mcu_set_output(SPINDLE_FWD_EN);
 #endif
-  }
+	}
 
-  spindle_speed = value;
+	spindle_speed = value;
 }
 
 void spindle_relay_set_coolant(uint8_t value)
 {
 #ifdef ENABLE_COOLANT
-  SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
+	SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
 #endif
 }
 
 uint16_t spindle_relay_get_speed(void)
 {
-  return spindle_speed;
+	return spindle_speed;
 }
 
 const tool_t __rom__ spindle_relay = {
-    .startup_code = NULL,
-    .shutdown_code = NULL,
-    .set_speed = &spindle_relay_set_speed,
-    .set_coolant = &spindle_relay_set_coolant,
+	.startup_code = NULL,
+	.shutdown_code = NULL,
+	.set_speed = &spindle_relay_set_speed,
+	.set_coolant = &spindle_relay_set_coolant,
 #if PID_CONTROLLERS > 0
-    .pid_update = NULL,
-    .pid_error = NULL,
+	.pid_update = NULL,
+	.pid_error = NULL,
 #endif
-    .get_speed = &spindle_relay_get_speed};
+	.get_speed = &spindle_relay_get_speed};

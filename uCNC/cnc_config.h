@@ -92,6 +92,12 @@ extern "C"
 #define COORD_SYS_COUNT 6
 
 	/**
+	 * Uncomment to enable G92 storring on non volatile memory
+	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
+	 * */
+	// #define G92_STORE_NONVOLATILE
+
+	/**
 	 * Number of segments of an arc computed with aprox. of sin/cos math
 	 * operation before performing a full calculation
 	 * */
@@ -375,7 +381,7 @@ extern "C"
 	 * For pin diagnostics enables command $P
 	 * */
 
-// #define ENABLE_EXTRA_SYSTEM_CMDS
+	// #define ENABLE_EXTRA_SYSTEM_CMDS
 
 	/**
 	 * Compilation specific options

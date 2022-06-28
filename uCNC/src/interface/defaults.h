@@ -70,22 +70,69 @@ extern "C"
 
 #define DEFAULT_PID ({0, 0, 0})
 
-#define DEFAULT_ARRAY_0(y) {}
-#define DEFAULT_ARRAY_1(y) {y}
-#define DEFAULT_ARRAY_2(y) {y, y}
-#define DEFAULT_ARRAY_3(y) {y, y, y}
-#define DEFAULT_ARRAY_4(y) {y, y, y, y}
-#define DEFAULT_ARRAY_5(y) {y, y, y, y, y}
-#define DEFAULT_ARRAY_6(y) {y, y, y, y, y, y}
-#define DEFAULT_ARRAY_7(y) {y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_8(y) {y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_9(y) {y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_10(y) {y, y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_11(y) {y, y, y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_12(y) {y, y, y, y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_13(y) {y, y, y, y, y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_14(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y}
-#define DEFAULT_ARRAY_15(y) {y, y, y, y, y, y, y, y, y, y, y, y, y, y, y}
+#define DEFAULT_ARRAY_0(y) \
+	{                      \
+	}
+#define DEFAULT_ARRAY_1(y) \
+	{                      \
+		y                  \
+	}
+#define DEFAULT_ARRAY_2(y) \
+	{                      \
+		y, y               \
+	}
+#define DEFAULT_ARRAY_3(y) \
+	{                      \
+		y, y, y            \
+	}
+#define DEFAULT_ARRAY_4(y) \
+	{                      \
+		y, y, y, y         \
+	}
+#define DEFAULT_ARRAY_5(y) \
+	{                      \
+		y, y, y, y, y      \
+	}
+#define DEFAULT_ARRAY_6(y) \
+	{                      \
+		y, y, y, y, y, y   \
+	}
+#define DEFAULT_ARRAY_7(y)  \
+	{                       \
+		y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_8(y)     \
+	{                          \
+		y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_9(y)        \
+	{                             \
+		y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_10(y)          \
+	{                                \
+		y, y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_11(y)             \
+	{                                   \
+		y, y, y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_12(y)                \
+	{                                      \
+		y, y, y, y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_13(y)                   \
+	{                                         \
+		y, y, y, y, y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_14(y)                      \
+	{                                            \
+		y, y, y, y, y, y, y, y, y, y, y, y, y, y \
+	}
+#define DEFAULT_ARRAY_15(y)                         \
+	{                                               \
+		y, y, y, y, y, y, y, y, y, y, y, y, y, y, y \
+	}
 #define _DEFAULT_ARRAY(x, y) DEFAULT_ARRAY_##x(y)
 #define DEFAULT_ARRAY(x, y) _DEFAULT_ARRAY(x, y)
 

@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -28,82 +28,83 @@
 #define _TUSB_OSAL_H_
 
 #ifdef __cplusplus
- extern "C" {
+extern "C"
+{
 #endif
 
-/** \addtogroup group_osal
- *  @{ */
+	/** \addtogroup group_osal
+	 *  @{ */
 
 #include "../common/tusb_common.h"
 
 // Return immediately
-#define OSAL_TIMEOUT_NOTIMEOUT     (0)
+#define OSAL_TIMEOUT_NOTIMEOUT (0)
 // Default timeout
-#define OSAL_TIMEOUT_NORMAL        (10)
+#define OSAL_TIMEOUT_NORMAL (10)
 // Wait forever
-#define OSAL_TIMEOUT_WAIT_FOREVER  (UINT32_MAX)
+#define OSAL_TIMEOUT_WAIT_FOREVER (UINT32_MAX)
 
-#define OSAL_TIMEOUT_CONTROL_XFER  OSAL_TIMEOUT_WAIT_FOREVER
+#define OSAL_TIMEOUT_CONTROL_XFER OSAL_TIMEOUT_WAIT_FOREVER
 
-typedef void (*osal_task_func_t)( void * );
+	typedef void (*osal_task_func_t)(void *);
 
 #if CFG_TUSB_OS == OPT_OS_NONE
-  #include "osal_none.h"
+#include "osal_none.h"
 #elif CFG_TUSB_OS == OPT_OS_FREERTOS
-  #include "osal_freertos.h"
+#include "osal_freertos.h"
 #elif CFG_TUSB_OS == OPT_OS_MYNEWT
-  #include "osal_mynewt.h"
+#include "osal_mynewt.h"
 #elif CFG_TUSB_OS == OPT_OS_PICO
-  #include "osal_pico.h"
+#include "osal_pico.h"
 #elif CFG_TUSB_OS == OPT_OS_RTTHREAD
-  #include "osal_rtthread.h"
+#include "osal_rtthread.h"
 #elif CFG_TUSB_OS == OPT_OS_CUSTOM
-  #include "tusb_os_custom.h" // implemented by application
+#include "tusb_os_custom.h" // implemented by application
 #else
-  #error OS is not supported yet
+#error OS is not supported yet
 #endif
 
-//--------------------------------------------------------------------+
-// OSAL Porting API
-//--------------------------------------------------------------------+
+	//--------------------------------------------------------------------+
+	// OSAL Porting API
+	//--------------------------------------------------------------------+
 
 #if __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wredundant-decls"
 #endif
-//------------- Semaphore -------------//
-static inline osal_semaphore_t osal_semaphore_create(osal_semaphore_def_t* semdef);
-static inline bool osal_semaphore_post(osal_semaphore_t sem_hdl, bool in_isr);
-static inline bool osal_semaphore_wait(osal_semaphore_t sem_hdl, uint32_t msec);
+	//------------- Semaphore -------------//
+	static inline osal_semaphore_t osal_semaphore_create(osal_semaphore_def_t *semdef);
+	static inline bool osal_semaphore_post(osal_semaphore_t sem_hdl, bool in_isr);
+	static inline bool osal_semaphore_wait(osal_semaphore_t sem_hdl, uint32_t msec);
 
-static inline void osal_semaphore_reset(osal_semaphore_t sem_hdl); // TODO removed
+	static inline void osal_semaphore_reset(osal_semaphore_t sem_hdl); // TODO removed
 
-//------------- Mutex -------------//
-static inline osal_mutex_t osal_mutex_create(osal_mutex_def_t* mdef);
-static inline bool osal_mutex_lock (osal_mutex_t sem_hdl, uint32_t msec);
-static inline bool osal_mutex_unlock(osal_mutex_t mutex_hdl);
+	//------------- Mutex -------------//
+	static inline osal_mutex_t osal_mutex_create(osal_mutex_def_t *mdef);
+	static inline bool osal_mutex_lock(osal_mutex_t sem_hdl, uint32_t msec);
+	static inline bool osal_mutex_unlock(osal_mutex_t mutex_hdl);
 
-//------------- Queue -------------//
-static inline osal_queue_t osal_queue_create(osal_queue_def_t* qdef);
-static inline bool osal_queue_receive(osal_queue_t qhdl, void* data);
-static inline bool osal_queue_send(osal_queue_t qhdl, void const * data, bool in_isr);
-static inline bool osal_queue_empty(osal_queue_t qhdl);
+	//------------- Queue -------------//
+	static inline osal_queue_t osal_queue_create(osal_queue_def_t *qdef);
+	static inline bool osal_queue_receive(osal_queue_t qhdl, void *data);
+	static inline bool osal_queue_send(osal_queue_t qhdl, void const *data, bool in_isr);
+	static inline bool osal_queue_empty(osal_queue_t qhdl);
 #if __GNUC__
 #pragma GCC diagnostic pop
 #endif
 
-#if 0  // TODO remove subtask related macros later
+#if 0 // TODO remove subtask related macros later
 // Sub Task
 #define OSAL_SUBTASK_BEGIN
-#define OSAL_SUBTASK_END                    return TUSB_ERROR_NONE;
+#define OSAL_SUBTASK_END return TUSB_ERROR_NONE;
 
-#define STASK_RETURN(_error)                return _error;
-#define STASK_INVOKE(_subtask, _status)     (_status) = _subtask
-#define STASK_ASSERT(_cond)                 TU_VERIFY(_cond, TUSB_ERROR_OSAL_TASK_FAILED)
+#define STASK_RETURN(_error) return _error;
+#define STASK_INVOKE(_subtask, _status) (_status) = _subtask
+#define STASK_ASSERT(_cond) TU_VERIFY(_cond, TUSB_ERROR_OSAL_TASK_FAILED)
 #endif
 
 #ifdef __cplusplus
- }
+}
 #endif
 
 /** @} */

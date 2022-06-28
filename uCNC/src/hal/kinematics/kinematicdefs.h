@@ -36,7 +36,7 @@ extern "C"
 #ifndef AXIS_COUNT
 #define AXIS_COUNT 3
 #endif
-//defines the axis word and the internal µCNC coordinate index
+// defines the axis word and the internal µCNC coordinate index
 #if (AXIS_COUNT > 0)
 #define AXIS_X 0
 #endif
@@ -56,7 +56,7 @@ extern "C"
 #define AXIS_C 5
 #endif
 
-//define kynematics
+// define kynematics
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
 #include "kinematic_cartesian.h"
 #elif (KINEMATIC == KINEMATIC_COREXY)

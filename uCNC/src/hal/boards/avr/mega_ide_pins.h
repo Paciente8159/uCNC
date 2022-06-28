@@ -1,19 +1,19 @@
 /*
-    Name: ide_mega_pins.h
-    Description: Helper that converts IDE pins to µCNC pins.
+	Name: ide_mega_pins.h
+	Description: Helper that converts IDE pins to µCNC pins.
 
-    Copyright: Copyright (c) João Martins
-    Author: João Martins
-    Date: 29/03/2022
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 29/03/2022
 
-    µCNC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-    µCNC is distributed WITHOUT ANY WARRANTY;
-    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the	GNU General Public License for more details.
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #ifndef MEGA_IDE_PINS_H
