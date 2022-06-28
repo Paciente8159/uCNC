@@ -104,12 +104,14 @@
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
 #define G28HOME COORD_SYS_COUNT							 // G28 index
 #define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
+#define G92OFFSET COORD_SYS_COUNT + 2 // G92 index
 
-#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET								// 1st coordinate system offset eeprom address (G54)
-#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME))	// G28 coordinate offset eeprom address
-#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME))	// G28 coordinate offset eeprom address
+#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
+#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
+#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
+#ifdef G92_STORE_NONVOLATILE
 #define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
+#endif
 
 #define NUMBER_UNDEF 0
 #define NUMBER_OK 0x20
@@ -267,8 +269,11 @@ void parser_parameters_reset(void)
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
 	}
 
-	// erase G92
+// erase G92
+#ifdef G92_STORE_NONVOLATILE
 	settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
+	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+#endif
 }
 
 bool parser_get_wco(float *axis)
@@ -1388,7 +1393,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			parser_parameters.g92_offset[i] = -(target[i] - parser_last_pos[i] - parser_parameters.g92_offset[i]);
 		}
 		memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
-		// settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
+#ifdef G92_STORE_NONVOLATILE
+		settings_save(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset[0], PARSER_PARAM_SIZE);
+#endif
 		parser_wco_counter = 0;
 		break;
 	case G53:
@@ -2375,12 +2382,18 @@ void parser_reset(void)
 // also checks all other coordinate systems and homing positions
 void parser_parameters_load(void)
 {
-	// loads G92
+// loads G92
+#ifdef G92_STORE_NONVOLATILE
 	if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
 	{
 		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
 		settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
 	}
+	memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
+#else
+	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
+	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+#endif
 
 	for (uint8_t i = 1; i < G92OFFSET; i++)
 	{

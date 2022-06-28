@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.6] - Unreleased
+## [1.4.6] - 2022-06-28
 
 
 ### Added
@@ -15,6 +15,7 @@
 - removed encoders dependency of modules. Stepper encoders and regular encoders reset is now independent (#216)
 - encoders counting pulse and direction can be inverted via setting $8 and $9 (#216)
 - modified settings initialization code. Added option to hase settings on RAM only (volatile) (#217)
+- added option to store G92 offset in non volatile memory to prevent undesired wear (#221)
 
 ### Changed
 
