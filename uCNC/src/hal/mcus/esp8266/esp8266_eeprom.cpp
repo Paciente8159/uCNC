@@ -1,5 +1,5 @@
 #include "../../../../cnc_config.h"
-
+#ifdef ESP8266
 #ifndef RAM_ONLY_SETTINGS
 #include <Arduino.h>
 #include <EEPROM.h>
@@ -30,4 +30,5 @@ extern "C"
 	}
 }
 
+#endif
 #endif

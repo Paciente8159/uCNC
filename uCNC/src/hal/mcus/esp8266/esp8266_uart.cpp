@@ -17,6 +17,7 @@
 */
 
 #include "../../../../cnc_config.h"
+#ifdef ESP8266
 #include <Arduino.h>
 #include <stdbool.h>
 
@@ -55,4 +56,5 @@ extern "C"
 	}
 }
 
+#endif
 #endif

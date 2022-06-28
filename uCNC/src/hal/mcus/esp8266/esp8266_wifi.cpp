@@ -17,7 +17,7 @@ See the	GNU General Public License for more details.
 */
 
 #include "../../../../cnc_config.h"
-
+#ifdef ESP8266
 #if (INTERFACE == INTERFACE_WIFI)
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
@@ -194,4 +194,5 @@ extern "C"
 	}
 }
 
+#endif
 #endif
