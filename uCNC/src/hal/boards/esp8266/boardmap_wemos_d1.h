@@ -51,7 +51,7 @@ extern "C"
 //#define ESTOP_ISR
 
 // Setup com pins
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PORT D

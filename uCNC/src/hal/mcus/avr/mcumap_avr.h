@@ -4243,7 +4243,7 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifndef COM_NUMBER
 #define COM_RX_vect USART_RX_vect
 #define COM_TX_vect USART_UDRE_vect

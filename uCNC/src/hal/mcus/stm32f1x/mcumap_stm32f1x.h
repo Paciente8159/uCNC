@@ -4106,7 +4106,7 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
@@ -4307,7 +4307,7 @@ extern "C"
 // #define mcu_enable_tx_isr()
 // #define mcu_disable_tx_isr()
 // #endif
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
 #elif (INTERFACE == INTERFACE_USB)

@@ -1089,8 +1089,6 @@ extern "C"
 
 #define ENABLE_SYNC_RX
 #define ENABLE_SYNC_TX
-#define mcu_tx_ready esp8266_com_tx_ready
-#define mcu_rx_ready esp8266_com_rx_ready
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)

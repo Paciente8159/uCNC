@@ -135,7 +135,7 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions
  **/
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
@@ -402,7 +402,7 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
 #else
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
@@ -473,7 +473,7 @@ void mcu_clocks_init()
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 	/*enables RCC clocks and GPIO*/
 	RCC->COM_APB |= (COM_APBEN);
 	mcu_config_af(TX, GPIO_AF_USART);
@@ -550,7 +550,7 @@ void mcu_putc(char c)
 #if !(LED < 0)
 	mcu_toggle_output(LED);
 #endif
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
 	while (!(COM_USART->SR & USART_SR_TC))
 		;
@@ -1339,7 +1339,7 @@ char mcu_getc(void)
 #if !(LED < 0)
 	mcu_toggle_output(LED);
 #endif
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
 	while (!(COM_USART->SR & USART_SR_RXNE))
 		;

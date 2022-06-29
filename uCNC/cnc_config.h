@@ -25,9 +25,8 @@ extern "C"
 {
 #endif
 
-#define INTERFACE_USART 0
+#define INTERFACE_UART 0
 #define INTERFACE_USB 1
-#define INTERFACE_WIFI 2
 
 	/**
 	 * Serial COM
@@ -40,7 +39,11 @@ extern "C"
 #endif
 
 #ifndef INTERFACE
-#define INTERFACE INTERFACE_USART
+#define INTERFACE INTERFACE_UART
+#endif
+
+#ifndef ENABLE_WIFI
+#define ENABLE_WIFI
 #endif
 
 	/**

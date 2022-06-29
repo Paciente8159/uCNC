@@ -18,7 +18,7 @@ See the	GNU General Public License for more details.
 
 #include "../../../../cnc_config.h"
 #ifdef ESP8266
-#if (INTERFACE == INTERFACE_WIFI)
+#ifdef ENABLE_WIFI
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <Hash.h>
@@ -64,13 +64,19 @@ typedef struct wifi_rxbuffer_
 static wifi_rxbuffer_t wifi_rx_buffer;
 static wifi_rxbuffer_t wifi_tx_buffer;
 
-bool esp8266_wifi_clientok(void)
+extern "C"
+{
+	bool esp8266_wifi_clientok(void)
 {
 	if (server.hasClient())
 	{
 		if (serverClient && serverClient.connected())
 		{
 			serverClient.stop();
+			//flushes serial
+			while(Serial.available()){
+				Serial.read();
+			}
 		}
 		serverClient = server.available();
 #ifdef WIFI_DEBUG
@@ -87,9 +93,7 @@ bool esp8266_wifi_clientok(void)
 	return false;
 }
 
-extern "C"
-{
-	void esp8266_com_init(int baud)
+	void esp8266_wifi_init(int baud)
 	{
 #ifdef WIFI_DEBUG
 		Serial.setRxBufferSize(1024);
@@ -118,7 +122,7 @@ extern "C"
 		wifi_tx_buffer.current = 0;
 	}
 
-	char esp8266_com_read(void)
+	char esp8266_wifi_read(void)
 	{
 		if (wifi_rx_buffer.len != 0 && wifi_rx_buffer.len > wifi_rx_buffer.current)
 		{
@@ -140,7 +144,7 @@ extern "C"
 		return 0;
 	}
 
-	void esp8266_com_write(char c)
+	void esp8266_wifi_write(char c)
 	{
 		if (esp8266_wifi_clientok())
 		{
@@ -155,7 +159,7 @@ extern "C"
 		}
 	}
 
-	bool esp8266_com_rx_ready(void)
+	bool esp8266_wifi_rx_ready(void)
 	{
 		if (wifi_rx_buffer.len != 0 && wifi_rx_buffer.len > wifi_rx_buffer.current)
 		{
@@ -170,7 +174,7 @@ extern "C"
 		return false;
 	}
 
-	bool esp8266_com_tx_ready(void)
+	bool esp8266_wifi_tx_ready(void)
 	{
 		if (esp8266_wifi_clientok())
 		{
@@ -183,7 +187,7 @@ extern "C"
 		return false;
 	}
 
-	void esp8266_com_flush(void)
+	void esp8266_wifi_flush(void)
 	{
 		if (esp8266_wifi_clientok())
 		{

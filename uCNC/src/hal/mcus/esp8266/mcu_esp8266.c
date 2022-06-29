@@ -41,12 +41,22 @@
 static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void esp8266_com_init(int baud);
-char esp8266_com_read(void);
-void esp8266_com_write(char c);
-bool esp8266_com_rx_ready(void);
-bool esp8266_com_tx_ready(void);
-void esp8266_com_flush(void);
+void esp8266_uart_init(int baud);
+char esp8266_uart_read(void);
+void esp8266_uart_write(char c);
+bool esp8266_uart_rx_ready(void);
+bool esp8266_uart_tx_ready(void);
+void esp8266_uart_flush(void);
+
+#ifdef ENABLE_WIFI
+void esp8266_wifi_init(int baud);
+char esp8266_wifi_read(void);
+void esp8266_wifi_write(char c);
+bool esp8266_wifi_rx_ready(void);
+bool esp8266_wifi_tx_ready(void);
+void esp8266_wifi_flush(void);
+bool esp8266_wifi_clientok(void);
+#endif
 
 #ifndef RAM_ONLY_SETTINGS
 void esp8266_eeprom_init(int size);
@@ -370,7 +380,10 @@ IRAM_ATTR void mcu_itp_isr(void)
 
 static void mcu_usart_init(void)
 {
-	esp8266_com_init(BAUDRATE);
+	esp8266_uart_init(BAUDRATE);
+#ifdef ENABLE_WIFI
+	esp8266_wifi_init(BAUDRATE);
+#endif
 }
 /**
  * initializes the mcu
@@ -1115,7 +1128,18 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-	return esp8266_com_tx_ready();
+#ifdef ENABLE_WIFI
+	if (esp8266_wifi_clientok())
+	{
+		return (esp8266_uart_tx_ready() && esp8266_wifi_tx_ready());
+	}
+	else
+	{
+		return esp8266_uart_tx_ready();
+	}
+#else
+	return esp8266_uart_tx_ready();
+#endif
 }
 #endif
 
@@ -1125,7 +1149,18 @@ bool mcu_tx_ready(void)
 #ifndef mcu_rx_ready
 bool mcu_rx_ready(void)
 {
-	return esp8266_com_rx_ready();
+#ifdef ENABLE_WIFI
+	if (esp8266_wifi_clientok())
+	{
+		return (esp8266_wifi_rx_ready());
+	}
+	else
+	{
+		return (esp8266_uart_rx_ready());
+	}
+#else
+	return esp8266_uart_rx_ready();
+#endif
 }
 #endif
 
@@ -1144,7 +1179,10 @@ void mcu_putc(char c)
 	while (!mcu_tx_ready())
 		;
 #endif
-	esp8266_com_write(c);
+	esp8266_uart_write(c);
+#ifdef ENABLE_WIFI
+	esp8266_wifi_write(c);
+#endif
 }
 #endif
 
@@ -1162,7 +1200,19 @@ char mcu_getc(void)
 	while (!mcu_rx_ready())
 		;
 #endif
-	return esp8266_com_read();
+
+#ifdef ENABLE_WIFI
+	if (esp8266_wifi_clientok())
+	{
+		return esp8266_wifi_read();
+	}
+	else
+	{
+		return esp8266_uart_read();
+	}
+#else
+	return esp8266_uart_read();
+#endif
 }
 #endif
 
@@ -1213,7 +1263,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*prescaller = 0;
 	while (totalticks > 0xFFFF)
 	{
-		*prescaller++;
+		(*prescaller)+=1;
 		totalticks >>= 1;
 	}
 
@@ -1277,7 +1327,7 @@ void mcu_dotasks(void)
 	system_soft_wdt_feed();
 
 #if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
-	esp8266_com_flush();
+	esp8266_uart_flush();
 #endif
 #ifdef ENABLE_SYNC_RX
 	while (mcu_rx_ready())
