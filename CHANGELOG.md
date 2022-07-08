@@ -6,8 +6,19 @@
 
 # Changelog
 
-## [1.4.6] - 2022-06-28
+## [1.4.7] - Unreleased
 
+### Added
+
+
+### Changed
+
+
+### Fixed
+
+- fixed compilation error on STM32F1 if probe pin is not defined
+
+## [1.4.6] - 2022-06-28
 
 ### Added
 
