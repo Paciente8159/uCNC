@@ -69,9 +69,9 @@ extern "C"
 {
 #endif
 
-	//--------------------------------------------------------------------+
-	// TU_VERIFY Helper
-	//--------------------------------------------------------------------+
+  //--------------------------------------------------------------------+
+  // TU_VERIFY Helper
+  //--------------------------------------------------------------------+
 
 #if CFG_TUSB_DEBUG
 #include <stdio.h>
@@ -79,37 +79,37 @@ extern "C"
 #define _MESS_FAILED() tu_printf("%s %d: ASSERT FAILED\r\n", __func__, __LINE__)
 #else
 #define _MESS_ERR(_err) \
-	do                  \
-	{                   \
-	} while (0)
+  do                    \
+  {                     \
+  } while (0)
 #define _MESS_FAILED() \
-	do                 \
-	{                  \
-	} while (0)
+  do                   \
+  {                    \
+  } while (0)
 #endif
 
-// Halt CPU (breakpoint) when hitting error, only apply for Cortex M3, M4, M7
-#if defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__)
-#define TU_BREAKPOINT()                                                                                        \
-	do                                                                                                         \
-	{                                                                                                          \
-		volatile uint32_t *ARM_CM_DHCSR = ((volatile uint32_t *)0xE000EDF0UL); /* Cortex M CoreDebug->DHCSR */ \
-		if ((*ARM_CM_DHCSR) & 1UL)                                                                             \
-			__asm("BKPT #0\n"); /* Only halt mcu if debugger is attached */                                    \
-	} while (0)
+// Halt CPU (breakpoint) when hitting error, only apply for Cortex M3, M4, M7, M33
+#if defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__)
+#define TU_BREAKPOINT()                                                                                    \
+  do                                                                                                       \
+  {                                                                                                        \
+    volatile uint32_t *ARM_CM_DHCSR = ((volatile uint32_t *)0xE000EDF0UL); /* Cortex M CoreDebug->DHCSR */ \
+    if ((*ARM_CM_DHCSR) & 1UL)                                                                             \
+      __asm("BKPT #0\n"); /* Only halt mcu if debugger is attached */                                      \
+  } while (0)
 
 #elif defined(__riscv)
-#define TU_BREAKPOINT()    \
-	do                     \
-	{                      \
-		__asm("ebreak\n"); \
-	} while (0)
+#define TU_BREAKPOINT() \
+  do                    \
+  {                     \
+    __asm("ebreak\n");  \
+  } while (0)
 
 #else
 #define TU_BREAKPOINT() \
-	do                  \
-	{                   \
-	} while (0)
+  do                    \
+  {                     \
+  } while (0)
 #endif
 
 /*------------------------------------------------------------------*/
@@ -122,14 +122,14 @@ extern "C"
 
 /*------------- Generator for TU_VERIFY and TU_VERIFY_HDLR -------------*/
 #define TU_VERIFY_DEFINE(_cond, _handler, _ret) \
-	do                                          \
-	{                                           \
-		if (!(_cond))                           \
-		{                                       \
-			_handler;                           \
-			return _ret;                        \
-		}                                       \
-	} while (0)
+  do                                            \
+  {                                             \
+    if (!(_cond))                               \
+    {                                           \
+      _handler;                                 \
+      return _ret;                              \
+    }                                           \
+  } while (0)
 
 /*------------------------------------------------------------------*/
 /* TU_VERIFY
@@ -168,28 +168,28 @@ extern "C"
 
 /*------------- Generator for TU_VERIFY_ERR and TU_VERIFY_ERR_HDLR -------------*/
 #define TU_VERIFY_ERR_DEF2(_error, _handler) \
-	do                                       \
-	{                                        \
-		uint32_t _err = (uint32_t)(_error);  \
-		if (0 != _err)                       \
-		{                                    \
-			_MESS_ERR(_err);                 \
-			_handler;                        \
-			return _err;                     \
-		}                                    \
-	} while (0)
+  do                                         \
+  {                                          \
+    uint32_t _err = (uint32_t)(_error);      \
+    if (0 != _err)                           \
+    {                                        \
+      _MESS_ERR(_err);                       \
+      _handler;                              \
+      return _err;                           \
+    }                                        \
+  } while (0)
 
 #define TU_VERIFY_ERR_DEF3(_error, _handler, _ret) \
-	do                                             \
-	{                                              \
-		uint32_t _err = (uint32_t)(_error);        \
-		if (0 != _err)                             \
-		{                                          \
-			_MESS_ERR(_err);                       \
-			_handler;                              \
-			return _ret;                           \
-		}                                          \
-	} while (0)
+  do                                               \
+  {                                                \
+    uint32_t _err = (uint32_t)(_error);            \
+    if (0 != _err)                                 \
+    {                                              \
+      _MESS_ERR(_err);                             \
+      _handler;                                    \
+      return _ret;                                 \
+    }                                              \
+  } while (0)
 
 /*------------------------------------------------------------------*/
 /* ASSERT Error
@@ -202,9 +202,9 @@ extern "C"
 #define TU_ASSERT_ERR(...) GET_3RD_ARG(__VA_ARGS__, ASSERT_ERR_2ARGS, ASSERT_ERR_1ARGS, UNUSED)(__VA_ARGS__)
 #endif
 
-	/*------------------------------------------------------------------*/
-	/* ASSERT HDLR
-	 *------------------------------------------------------------------*/
+  /*------------------------------------------------------------------*/
+  /* ASSERT HDLR
+   *------------------------------------------------------------------*/
 
 #ifdef __cplusplus
 }

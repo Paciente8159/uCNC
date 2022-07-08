@@ -1,12 +1,13 @@
 #include "src/cnc.h"
 
-int main(void)
+void setup()
 {
-    // initializes all systems
-    cnc_init();
+	// put your setup code here, to run once:
+	cnc_init();
+}
 
-    for (;;)
-    {
-        cnc_run();
-    }
+void loop()
+{
+	// put your main code here, to run repeatedly:
+	cnc_run();
 }

@@ -93,6 +93,11 @@ extern "C"
 #include "samd21/boardmap_zero.h"
 #endif
 
+#if (BOARD == BOARD_RE_ARM)
+#define MCU MCU_LPC176X
+#include "lpc176x/boardmap_re_arm.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #ifndef __linux__
 #define MCU MCU_VIRTUAL_WIN

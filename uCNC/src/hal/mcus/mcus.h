@@ -29,6 +29,7 @@ extern "C"
 #define MCU_STM32F1X 10
 #define MCU_STM32F4X 11
 #define MCU_SAMD21 20
+#define MCU_LPC176X 30
 #define MCU_VIRTUAL_WIN 99
 
 #ifdef __cplusplus

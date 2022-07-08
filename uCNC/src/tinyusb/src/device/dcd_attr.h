@@ -75,7 +75,7 @@
 
 //------------- Microchip -------------//
 #elif TU_CHECK_MCU(OPT_MCU_SAMD21, OPT_MCU_SAMD51, OPT_MCU_SAME5X) || \
-	TU_CHECK_MCU(OPT_MCU_SAMD11, OPT_MCU_SAML21, OPT_MCU_SAML22)
+    TU_CHECK_MCU(OPT_MCU_SAMD11, OPT_MCU_SAML21, OPT_MCU_SAML22)
 #define DCD_ATTR_ENDPOINT_MAX 8
 
 #elif TU_CHECK_MCU(OPT_MCU_SAMG)
@@ -86,13 +86,17 @@
 #define DCD_ATTR_ENDPOINT_MAX 10
 #define DCD_ATTR_ENDPOINT_EXCLUSIVE_NUMBER
 
+#elif TU_CHECK_MCU(OPT_MCU_PIC32MZ)
+#define DCD_ATTR_ENDPOINT_MAX 8
+#define DCD_ATTR_ENDPOINT_EXCLUSIVE_NUMBER
+
 //------------- ST -------------//
 #elif TU_CHECK_MCU(OPT_MCU_STM32F0)
 #define DCD_ATTR_ENDPOINT_MAX 8
 
 #elif TU_CHECK_MCU(OPT_MCU_STM32F1)
 #if defined(STM32F105x8) || defined(STM32F105xB) || defined(STM32F105xC) || \
-	defined(STM32F107xB) || defined(STM32F107xC)
+    defined(STM32F107xB) || defined(STM32F107xC)
 #define DCD_ATTR_ENDPOINT_MAX 4
 #define DCD_ATTR_DWC2_STM32
 #else
@@ -129,10 +133,10 @@
 
 #elif TU_CHECK_MCU(OPT_MCU_STM32L4)
 #if defined(STM32L475xx) || defined(STM32L476xx) ||                         \
-	defined(STM32L485xx) || defined(STM32L486xx) || defined(STM32L496xx) || \
-	defined(STM32L4A6xx) || defined(STM32L4P5xx) || defined(STM32L4Q5xx) || \
-	defined(STM32L4R5xx) || defined(STM32L4R7xx) || defined(STM32L4R9xx) || \
-	defined(STM32L4S5xx) || defined(STM32L4S7xx) || defined(STM32L4S9xx)
+    defined(STM32L485xx) || defined(STM32L486xx) || defined(STM32L496xx) || \
+    defined(STM32L4A6xx) || defined(STM32L4P5xx) || defined(STM32L4Q5xx) || \
+    defined(STM32L4R5xx) || defined(STM32L4R7xx) || defined(STM32L4R9xx) || \
+    defined(STM32L4S5xx) || defined(STM32L4S7xx) || defined(STM32L4S9xx)
 #define DCD_ATTR_ENDPOINT_MAX 6
 #define DCD_ATTR_DWC2_STM32
 #else
@@ -190,12 +194,23 @@
 #define DCD_ATTR_ENDPOINT_MAX 4
 
 //------------- Broadcom -------------//
-#elif TU_CHECK_MCU(OPT_MCU_BCM2711)
+#elif TU_CHECK_MCU(OPT_MCU_BCM2711, OPT_MCU_BCM2835, OPT_MCU_BCM2837)
 #define DCD_ATTR_ENDPOINT_MAX 8
 
 //------------- Broadcom -------------//
 #elif TU_CHECK_MCU(OPT_MCU_XMC4000)
 #define DCD_ATTR_ENDPOINT_MAX 8
+
+//------------- BridgeTek -------------//
+#elif TU_CHECK_MCU(OPT_MCU_FT90X)
+#define DCD_ATTR_ENDPOINT_MAX 8
+
+#elif TU_CHECK_MCU(OPT_MCU_FT93X)
+#define DCD_ATTR_ENDPOINT_MAX 16
+
+//------------ Allwinner -------------//
+#elif TU_CHECK_MCU(OPT_MCU_F1C100S)
+#define DCD_ATTR_ENDPOINT_MAX 4
 
 #else
 #warning "DCD_ATTR_ENDPOINT_MAX is not defined for this MCU, default to 8"

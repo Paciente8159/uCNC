@@ -72,21 +72,21 @@ extern "C"
 #include "tusb_verify.h"
 #include "tusb_types.h"
 
-#include "tusb_error.h"	  // TODO remove
+#include "tusb_error.h"   // TODO remove
 #include "tusb_timeout.h" // TODO remove
 
-	//--------------------------------------------------------------------+
-	// Internal Helper used by Host and Device Stack
-	//--------------------------------------------------------------------+
+  //--------------------------------------------------------------------+
+  // Internal Helper used by Host and Device Stack
+  //--------------------------------------------------------------------+
 
-	// Check if endpoint descriptor is valid per USB specs
-	bool tu_edpt_validate(tusb_desc_endpoint_t const *desc_ep, tusb_speed_t speed);
+  // Check if endpoint descriptor is valid per USB specs
+  bool tu_edpt_validate(tusb_desc_endpoint_t const *desc_ep, tusb_speed_t speed);
 
-	// Bind all endpoint of a interface descriptor to class driver
-	void tu_edpt_bind_driver(uint8_t ep2drv[][2], tusb_desc_interface_t const *p_desc, uint16_t desc_len, uint8_t driver_id);
+  // Bind all endpoint of a interface descriptor to class driver
+  void tu_edpt_bind_driver(uint8_t ep2drv[][2], tusb_desc_interface_t const *p_desc, uint16_t desc_len, uint8_t driver_id);
 
-	// Calculate total length of n interfaces (depending on IAD)
-	uint16_t tu_desc_get_interface_total_len(tusb_desc_interface_t const *desc_itf, uint8_t itf_count, uint16_t max_len);
+  // Calculate total length of n interfaces (depending on IAD)
+  uint16_t tu_desc_get_interface_total_len(tusb_desc_interface_t const *desc_itf, uint8_t itf_count, uint16_t max_len);
 
 //--------------------------------------------------------------------+
 // Internal Inline Functions
@@ -96,111 +96,111 @@ extern "C"
 #define tu_memclr(buffer, size) memset((buffer), 0, (size))
 #define tu_varclr(_var) tu_memclr(_var, sizeof(*(_var)))
 
-	//------------- Bytes -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_u32(uint8_t b3, uint8_t b2, uint8_t b1, uint8_t b0)
-	{
-		return (((uint32_t)b3) << 24) | (((uint32_t)b2) << 16) | (((uint32_t)b1) << 8) | b0;
-	}
+  //------------- Bytes -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_u32(uint8_t b3, uint8_t b2, uint8_t b1, uint8_t b0)
+  {
+    return (((uint32_t)b3) << 24) | (((uint32_t)b2) << 16) | (((uint32_t)b1) << 8) | b0;
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u16(uint8_t high, uint8_t low)
-	{
-		return (uint16_t)((((uint16_t)high) << 8) | low);
-	}
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u16(uint8_t high, uint8_t low)
+  {
+    return (uint16_t)((((uint16_t)high) << 8) | low);
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte3(uint32_t ui32) { return TU_U32_BYTE3(ui32); }
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte2(uint32_t ui32) { return TU_U32_BYTE2(ui32); }
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte1(uint32_t ui32) { return TU_U32_BYTE1(ui32); }
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte0(uint32_t ui32) { return TU_U32_BYTE0(ui32); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte3(uint32_t ui32) { return TU_U32_BYTE3(ui32); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte2(uint32_t ui32) { return TU_U32_BYTE2(ui32); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte1(uint32_t ui32) { return TU_U32_BYTE1(ui32); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u32_byte0(uint32_t ui32) { return TU_U32_BYTE0(ui32); }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u32_high16(uint32_t ui32) { return (uint16_t)(ui32 >> 16); }
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u32_low16(uint32_t ui32) { return (uint16_t)(ui32 & 0x0000ffffu); }
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u32_high16(uint32_t ui32) { return (uint16_t)(ui32 >> 16); }
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_u32_low16(uint32_t ui32) { return (uint16_t)(ui32 & 0x0000ffffu); }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u16_high(uint16_t ui16) { return TU_U16_HIGH(ui16); }
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u16_low(uint16_t ui16) { return TU_U16_LOW(ui16); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u16_high(uint16_t ui16) { return TU_U16_HIGH(ui16); }
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_u16_low(uint16_t ui16) { return TU_U16_LOW(ui16); }
 
-	//------------- Bits -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_bit_set(uint32_t value, uint8_t pos) { return value | TU_BIT(pos); }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_bit_clear(uint32_t value, uint8_t pos) { return value & (~TU_BIT(pos)); }
-	TU_ATTR_ALWAYS_INLINE static inline bool tu_bit_test(uint32_t value, uint8_t pos) { return (value & TU_BIT(pos)) ? true : false; }
+  //------------- Bits -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_bit_set(uint32_t value, uint8_t pos) { return value | TU_BIT(pos); }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_bit_clear(uint32_t value, uint8_t pos) { return value & (~TU_BIT(pos)); }
+  TU_ATTR_ALWAYS_INLINE static inline bool tu_bit_test(uint32_t value, uint8_t pos) { return (value & TU_BIT(pos)) ? true : false; }
 
-	//------------- Min -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_min8(uint8_t x, uint8_t y) { return (x < y) ? x : y; }
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_min16(uint16_t x, uint16_t y) { return (x < y) ? x : y; }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_min32(uint32_t x, uint32_t y) { return (x < y) ? x : y; }
+  //------------- Min -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_min8(uint8_t x, uint8_t y) { return (x < y) ? x : y; }
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_min16(uint16_t x, uint16_t y) { return (x < y) ? x : y; }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_min32(uint32_t x, uint32_t y) { return (x < y) ? x : y; }
 
-	//------------- Max -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_max8(uint8_t x, uint8_t y) { return (x > y) ? x : y; }
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_max16(uint16_t x, uint16_t y) { return (x > y) ? x : y; }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_max32(uint32_t x, uint32_t y) { return (x > y) ? x : y; }
+  //------------- Max -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint8_t tu_max8(uint8_t x, uint8_t y) { return (x > y) ? x : y; }
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_max16(uint16_t x, uint16_t y) { return (x > y) ? x : y; }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_max32(uint32_t x, uint32_t y) { return (x > y) ? x : y; }
 
-	//------------- Align -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align(uint32_t value, uint32_t alignment)
-	{
-		return value & ((uint32_t) ~(alignment - 1));
-	}
+  //------------- Align -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align(uint32_t value, uint32_t alignment)
+  {
+    return value & ((uint32_t) ~(alignment - 1));
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align16(uint32_t value) { return (value & 0xFFFFFFF0UL); }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align32(uint32_t value) { return (value & 0xFFFFFFE0UL); }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align4k(uint32_t value) { return (value & 0xFFFFF000UL); }
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_offset4k(uint32_t value) { return (value & 0xFFFUL); }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align16(uint32_t value) { return (value & 0xFFFFFFF0UL); }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align32(uint32_t value) { return (value & 0xFFFFFFE0UL); }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_align4k(uint32_t value) { return (value & 0xFFFFF000UL); }
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_offset4k(uint32_t value) { return (value & 0xFFFUL); }
 
-	//------------- Mathematics -------------//
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_div_ceil(uint32_t v, uint32_t d) { return (v + d - 1) / d; }
+  //------------- Mathematics -------------//
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_div_ceil(uint32_t v, uint32_t d) { return (v + d - 1) / d; }
 
-	/// inclusive range checking TODO remove
-	TU_ATTR_ALWAYS_INLINE static inline bool tu_within(uint32_t lower, uint32_t value, uint32_t upper)
-	{
-		return (lower <= value) && (value <= upper);
-	}
+  /// inclusive range checking TODO remove
+  TU_ATTR_ALWAYS_INLINE static inline bool tu_within(uint32_t lower, uint32_t value, uint32_t upper)
+  {
+    return (lower <= value) && (value <= upper);
+  }
 
-	// log2 of a value is its MSB's position
-	// TODO use clz TODO remove
-	static inline uint8_t tu_log2(uint32_t value)
-	{
-		uint8_t result = 0;
-		while (value >>= 1)
-		{
-			result++;
-		}
-		return result;
-	}
+  // log2 of a value is its MSB's position
+  // TODO use clz TODO remove
+  static inline uint8_t tu_log2(uint32_t value)
+  {
+    uint8_t result = 0;
+    while (value >>= 1)
+    {
+      result++;
+    }
+    return result;
+  }
 
 //------------- Unaligned Access -------------//
 #if TUP_ARCH_STRICT_ALIGN
 
-	// Rely on compiler to generate correct code for unaligned access
-	typedef struct
-	{
-		uint16_t val;
-	} TU_ATTR_PACKED tu_unaligned_uint16_t;
-	typedef struct
-	{
-		uint32_t val;
-	} TU_ATTR_PACKED tu_unaligned_uint32_t;
+  // Rely on compiler to generate correct code for unaligned access
+  typedef struct
+  {
+    uint16_t val;
+  } TU_ATTR_PACKED tu_unaligned_uint16_t;
+  typedef struct
+  {
+    uint32_t val;
+  } TU_ATTR_PACKED tu_unaligned_uint32_t;
 
-	TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_unaligned_read32(const void *mem)
-	{
-		tu_unaligned_uint32_t const *ua32 = (tu_unaligned_uint32_t const *)mem;
-		return ua32->val;
-	}
+  TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_unaligned_read32(const void *mem)
+  {
+    tu_unaligned_uint32_t const *ua32 = (tu_unaligned_uint32_t const *)mem;
+    return ua32->val;
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write32(void *mem, uint32_t value)
-	{
-		tu_unaligned_uint32_t *ua32 = (tu_unaligned_uint32_t *)mem;
-		ua32->val = value;
-	}
+  TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write32(void *mem, uint32_t value)
+  {
+    tu_unaligned_uint32_t *ua32 = (tu_unaligned_uint32_t *)mem;
+    ua32->val = value;
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_unaligned_read16(const void *mem)
-	{
-		tu_unaligned_uint16_t const *ua16 = (tu_unaligned_uint16_t const *)mem;
-		return ua16->val;
-	}
+  TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_unaligned_read16(const void *mem)
+  {
+    tu_unaligned_uint16_t const *ua16 = (tu_unaligned_uint16_t const *)mem;
+    return ua16->val;
+  }
 
-	TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_t value)
-	{
-		tu_unaligned_uint16_t *ua16 = (tu_unaligned_uint16_t *)mem;
-		ua16->val = value;
-	}
+  TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_t value)
+  {
+    tu_unaligned_uint16_t *ua16 = (tu_unaligned_uint16_t *)mem;
+    ua16->val = value;
+  }
 
 #elif TUP_MCU_STRICT_ALIGN
 
@@ -210,30 +210,30 @@ extern "C"
 // TODO Big Endian may need minor changes
 TU_ATTR_ALWAYS_INLINE static inline uint32_t tu_unaligned_read32(const void *mem)
 {
-	volatile uint8_t const *buf8 = (uint8_t const *)mem;
-	return tu_u32(buf8[3], buf8[2], buf8[1], buf8[0]);
+  volatile uint8_t const *buf8 = (uint8_t const *)mem;
+  return tu_u32(buf8[3], buf8[2], buf8[1], buf8[0]);
 }
 
 TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write32(void *mem, uint32_t value)
 {
-	volatile uint8_t *buf8 = (uint8_t *)mem;
-	buf8[0] = tu_u32_byte0(value);
-	buf8[1] = tu_u32_byte1(value);
-	buf8[2] = tu_u32_byte2(value);
-	buf8[3] = tu_u32_byte3(value);
+  volatile uint8_t *buf8 = (uint8_t *)mem;
+  buf8[0] = tu_u32_byte0(value);
+  buf8[1] = tu_u32_byte1(value);
+  buf8[2] = tu_u32_byte2(value);
+  buf8[3] = tu_u32_byte3(value);
 }
 
 TU_ATTR_ALWAYS_INLINE static inline uint16_t tu_unaligned_read16(const void *mem)
 {
-	volatile uint8_t const *buf8 = (uint8_t const *)mem;
-	return tu_u16(buf8[1], buf8[0]);
+  volatile uint8_t const *buf8 = (uint8_t const *)mem;
+  return tu_u16(buf8[1], buf8[0]);
 }
 
 TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_t value)
 {
-	volatile uint8_t *buf8 = (uint8_t *)mem;
-	buf8[0] = tu_u16_low(value);
-	buf8[1] = tu_u16_high(value);
+  volatile uint8_t *buf8 = (uint8_t *)mem;
+  buf8[0] = tu_u16_low(value);
+  buf8[1] = tu_u16_high(value);
 }
 
 #else
@@ -263,7 +263,7 @@ TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_
 #define TU_BIN8(d) ((uint8_t)_B8__(0x##d##UL))
 #define TU_BIN16(dmsb, dlsb) (((uint16_t)TU_BIN8(dmsb) << 8) + TU_BIN8(dlsb))
 #define TU_BIN32(dmsb, db2, db3, dlsb) \
-	(((uint32_t)TU_BIN8(dmsb) << 24) + ((uint32_t)TU_BIN8(db2) << 16) + ((uint32_t)TU_BIN8(db3) << 8) + TU_BIN8(dlsb))
+  (((uint32_t)TU_BIN8(dmsb) << 24) + ((uint32_t)TU_BIN8(db2) << 16) + ((uint32_t)TU_BIN8(db3) << 8) + TU_BIN8(dlsb))
 #endif
 
 //--------------------------------------------------------------------+
@@ -277,20 +277,20 @@ TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_
 // 3 : print info
 #if CFG_TUSB_DEBUG
 
-	void tu_print_mem(void const *buf, uint32_t count, uint8_t indent);
+  void tu_print_mem(void const *buf, uint32_t count, uint8_t indent);
 
 #ifdef CFG_TUSB_DEBUG_PRINTF
-	extern int CFG_TUSB_DEBUG_PRINTF(const char *format, ...);
+  extern int CFG_TUSB_DEBUG_PRINTF(const char *format, ...);
 #define tu_printf CFG_TUSB_DEBUG_PRINTF
 #else
 #define tu_printf printf
 #endif
 
-	static inline void tu_print_var(uint8_t const *buf, uint32_t bufsize)
-	{
-		for (uint32_t i = 0; i < bufsize; i++)
-			tu_printf("%02X ", buf[i]);
-	}
+  static inline void tu_print_var(uint8_t const *buf, uint32_t bufsize)
+  {
+    for (uint32_t i = 0; i < bufsize; i++)
+      tu_printf("%02X ", buf[i]);
+  }
 
 // Log with Level
 #define TU_LOG(n, ...) TU_XSTRCAT(TU_LOG, n)(__VA_ARGS__)
@@ -326,33 +326,33 @@ TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_
 #define TU_LOG3_HEX TU_LOG1_HEX
 #endif
 
-	typedef struct
-	{
-		uint32_t key;
-		const char *data;
-	} tu_lookup_entry_t;
+  typedef struct
+  {
+    uint32_t key;
+    const char *data;
+  } tu_lookup_entry_t;
 
-	typedef struct
-	{
-		uint16_t count;
-		tu_lookup_entry_t const *items;
-	} tu_lookup_table_t;
+  typedef struct
+  {
+    uint16_t count;
+    tu_lookup_entry_t const *items;
+  } tu_lookup_table_t;
 
-	static inline const char *tu_lookup_find(tu_lookup_table_t const *p_table, uint32_t key)
-	{
-		static char not_found[11];
+  static inline const char *tu_lookup_find(tu_lookup_table_t const *p_table, uint32_t key)
+  {
+    static char not_found[11];
 
-		for (uint16_t i = 0; i < p_table->count; i++)
-		{
-			if (p_table->items[i].key == key)
-				return p_table->items[i].data;
-		}
+    for (uint16_t i = 0; i < p_table->count; i++)
+    {
+      if (p_table->items[i].key == key)
+        return p_table->items[i].data;
+    }
 
-		// not found return the key value in hex
-		sprintf(not_found, "0x%08lX", (unsigned long)key);
+    // not found return the key value in hex
+    sprintf(not_found, "0x%08lX", (unsigned long)key);
 
-		return not_found;
-	}
+    return not_found;
+  }
 
 #endif // CFG_TUSB_DEBUG
 
@@ -366,7 +366,7 @@ TU_ATTR_ALWAYS_INLINE static inline void tu_unaligned_write16(void *mem, uint16_
 #define TU_LOG_FAILED()
 #endif
 
-	// TODO replace all TU_LOGn with TU_LOG(n)
+  // TODO replace all TU_LOGn with TU_LOG(n)
 
 #define TU_LOG0(...)
 #define TU_LOG0_MEM(...)

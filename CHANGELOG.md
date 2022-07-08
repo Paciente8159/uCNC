@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.5.beta] - Unreleased
+
+### Added
+
+- added support for NXP LPC176x core (lacks EEPROM and analog)
+- updated tinyUSB to version 0.13.0
+
+### Changed
+
+
+### Fixed
+
+
 ## [1.4.7] - Unreleased
 
 ### Added
