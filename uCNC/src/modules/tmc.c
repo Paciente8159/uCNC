@@ -63,6 +63,7 @@ uint32_t tmc_read_register(tmc_driver_t *driver, uint8_t address)
 		switch (driver->type)
 		{
 		case 2209:
+		case 2226:
 			return (address == SGTHRS) ? driver->reg.sgthrs_coolconf : TMC_READ_ERROR;
 		case 2130:
 			return (address == COOLCONF) ? driver->reg.sgthrs_coolconf : TMC_READ_ERROR;
@@ -152,6 +153,7 @@ uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val)
 		switch (driver->type)
 		{
 		case 2209:
+		case 2226:
 			if (driver->reg.sgthrs_coolconf == val)
 			{
 				return val;
@@ -493,6 +495,7 @@ int32_t tmc_get_stallguard(tmc_driver_t *driver)
 	switch (driver->type)
 	{
 	case 2209:
+	case 2226:
 		return (driver->reg.sgthrs_coolconf & 0xFF);
 	case 2130:
 		return (driver->reg.sgthrs_coolconf & (1UL << 22)) ? -((driver->reg.sgthrs_coolconf >> 16) & 0x7F) : ((driver->reg.sgthrs_coolconf >> 16) & 0x7F);
@@ -508,6 +511,7 @@ void tmc_set_stallguard(tmc_driver_t *driver, int32_t value)
 	switch (driver->type)
 	{
 	case 2209:
+	case 2226:
 		tmc_write_register(driver, SGTHRS, (uint32_t)value);
 		break;
 	case 2130:
