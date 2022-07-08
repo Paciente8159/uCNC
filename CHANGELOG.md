@@ -10,16 +10,16 @@
 
 ### Added
 
-- added Marlin M913 command to TMC driver module
+- added Marlin M913 command to TMC driver module (#226)
 
 ### Changed
 
-- modified TMC driver to include shadow registers of write only
+- modified TMC driver to include shadow registers of write only (#226)
 
 ### Fixed
 
-- fixed compilation error on STM32F1 if probe pin is not defined
-- fixed TMC M914 extension command initialization
+- fixed compilation error on STM32F1 if probe pin is not defined (#225)
+- fixed TMC M914 extension command initialization (#226)
 
 ## [1.4.6] - 2022-06-28
 
