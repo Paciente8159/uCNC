@@ -1140,16 +1140,8 @@ DECL_MODULE(tmcdriver)
 	ADD_LISTENER(gcode_exec_delegate, m906_exec, gcode_exec_event);
 	ADD_LISTENER(gcode_parse_delegate, m913_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m913_exec, gcode_exec_event);
-	switch (STEPPER2_DRIVER_TYPE)
-	{
-	case 2209:
-	case 2226:
-	case 2130:
-		ADD_LISTENER(gcode_parse_delegate, m914_parse, gcode_parse_event);
-		ADD_LISTENER(gcode_exec_delegate, m914_exec, gcode_exec_event);
-		break;
-	}
-
+	ADD_LISTENER(gcode_parse_delegate, m914_parse, gcode_parse_event);
+	ADD_LISTENER(gcode_exec_delegate, m914_exec, gcode_exec_event);
 	ADD_LISTENER(gcode_parse_delegate, m920_parse, gcode_parse_event);
 	ADD_LISTENER(gcode_exec_delegate, m920_exec, gcode_exec_event);
 #endif
