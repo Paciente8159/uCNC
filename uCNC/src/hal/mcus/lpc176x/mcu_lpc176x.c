@@ -160,7 +160,7 @@ void MCU_SERVO_ISR(void)
 
 #endif
 
-void MCU_RTC_ISR(void)
+void SysTick_Callback(void)
 {
 	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
@@ -216,7 +216,7 @@ void MCU_RTC_ISR(void)
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
+	// TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
 	mcu_enable_global_isr();
 }
 
@@ -362,32 +362,24 @@ void mcu_usart_init(void)
 
 void mcu_rtc_init()
 {
-	// SysTick->CTRL = 0;
-	// SysTick->LOAD = ((F_CPU / 1000) - 1);
-	// SysTick->VAL = 0;
-	// NVIC_SetPriority(SysTick_IRQn, 10);
-	// SysTick->CTRL = 3;
+	// TIM_Cmd(RTC_TIMER_REG, DISABLE);
+	// TIM_TIMERCFG_Type tmrconfig;
+	// TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
+	// TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
+	// TIM_MATCHCFG_Type tmrmatch;
+	// tmrmatch.MatchChannel = RTC_TIMER;
+	// tmrmatch.IntOnMatch = ENABLE;
+	// tmrmatch.StopOnMatch = DISABLE;
+	// tmrmatch.ResetOnMatch = ENABLE;
+	// tmrmatch.MatchValue = 1000;
+	// TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
+	// NVIC_SetPriority(RTC_TIMER_IRQ, 1);
+	// NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
+	// NVIC_EnableIRQ(RTC_TIMER_IRQ);
 
-	// SYSTICK_InternalInit(1);
-	// SYSTICK_ClearCounterFlag();
-	// NVIC_SetPriority(SysTick_IRQn, 10);
-	// SYSTICK_IntCmd(ENABLE);
-	TIM_Cmd(RTC_TIMER_REG, DISABLE);
-	TIM_TIMERCFG_Type tmrconfig;
-	TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
-	TIM_Init(RTC_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-	TIM_MATCHCFG_Type tmrmatch;
-	tmrmatch.MatchChannel = RTC_TIMER;
-	tmrmatch.IntOnMatch = ENABLE;
-	tmrmatch.StopOnMatch = DISABLE;
-	tmrmatch.ResetOnMatch = ENABLE;
-	tmrmatch.MatchValue = 1000;
-	TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
-	NVIC_SetPriority(RTC_TIMER_IRQ, 1);
-	NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
-	NVIC_EnableIRQ(RTC_TIMER_IRQ);
+	// TIM_Cmd(RTC_TIMER_REG, ENABLE);
 
-	TIM_Cmd(RTC_TIMER_REG, ENABLE);
+	// Systick is initialized by the framework
 }
 
 /*IO functions*/
@@ -1318,11 +1310,14 @@ uint32_t mcu_millis()
  * provides a delay in us (micro seconds)
  * the maximum allowed delay is 255 us
  * */
-void lpc176x_delay_us(uint32_t delay);
+#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
 #ifndef mcu_delay_us
 void mcu_delay_us(uint8_t delay)
 {
-	lpc176x_delay_us(delay);
+	// lpc176x_delay_us(delay);
+	uint32_t target = mcu_micros;
+	while (target > mcu_micros)
+		;
 }
 #endif
 

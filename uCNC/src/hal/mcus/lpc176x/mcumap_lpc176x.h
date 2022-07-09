@@ -3247,6 +3247,14 @@ extern "C"
 #define RTC_INT_FLAG __helper__(TIM_MR, RTC_TIMER, _INT)
 #define RTC_TIMER_IRQ __helper__(TIMER, RTC_TIMER, _IRQn)
 
+#ifndef SERVO_TIMER
+#define SERVO_TIMER 2
+#endif
+#define SERVO_TIMER_REG __helper__(LPC_TIM, SERVO_TIMER, )
+#define MCU_SERVO_ISR __helper__(TIMER, SERVO_TIMER, _IRQHandler)
+#define SERVO_INT_FLAG __helper__(TIM_MR, SERVO_TIMER, _INT)
+#define SERVO_TIMER_IRQ __helper__(TIMER, SERVO_TIMER, _IRQn)
+
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
