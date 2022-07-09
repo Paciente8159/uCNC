@@ -67,33 +67,27 @@ volatile bool lpc_global_isr_enabled;
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
 	}
 
-/*
-// #define mcu_config_pwm(diopin)                                                                                                                         \
-//     {                                                                                                                                                  \
-//         LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << (0x1F & (__indirect__(diopin, BIT) << 1)));                           \
-//         LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) |= (__indirect__(diopin, PINSEL) << (0x1F & (__indirect__(diopin, BIT) << 1))); \
-//         LPC_PWM1->TCR = (1 << 0) | (1 << 2);                                                                                                           \
-//         LPC_PWM1->MCR = (1 << 1);                                                                                                                      \
-//         LPC_PWM1->MR0 = 255;                                                                                                                           \
-//         LPC_PWM1->LER = (1 << 0) | PWM_LER;                                                                                                            \
-//         LPC_PWM1->PCR = PWM_ENA & 0x0FE0;                                                                                                              \
-//     }
-*/
-
-#define mcu_config_pwm(diopin)                                                                                                            \
-	{                                                                                                                                     \
-		PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_NORMAL}; \
-		PINSEL_ConfigPin(&pwm);                                                                                                           \
-		PWM_TIMERCFG_Type pwmtmr;                                                                                                         \
-		PWM_ConfigStructInit(PWM_MODE_TIMER, &pwmtmr);                                                                                    \
-		pwmtmr.PrescaleValue = 4;                                                                                                         \
-		PWM_Init(LPC_PWM1, PWM_MODE_TIMER, &pwmtmr);                                                                                      \
-		PWM_MATCHCFG_Type pwmconf = {__indirect__(diopin, CHANNEL), DISABLE, DISABLE, ENABLE};                                            \
-		PWM_ConfigMatch(LPC_PWM1, &pwmconf);                                                                                              \
-		PWM_ResetCounter(LPC_PWM1);                                                                                                       \
-		LPC_PWM1->MR0 = 255;                                                                                                              \
-		mcu_set_pwm(diopin, 0);                                                                                                           \
-		PWM_Cmd(LPC_PWM1, ENABLE);                                                                                                        \
+#define mcu_config_pwm(diopin)                                                                                                                                   \
+	{                                                                                                                                                            \
+		mcu_config_output(diopin);                                                                                                                               \
+		CLKPWR_ConfigPPWR(CLKPWR_PCONP_PCPWM1, ENABLE);                                                                                                          \
+		CLKPWR_SetPCLKDiv(CLKPWR_PCLKSEL_PWM1, CLKPWR_PCLKSEL_CCLK_DIV_4);                                                                                       \
+		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                                                                                                    \
+		LPC_PWM1->TCR = 0;                                                                                                                                       \
+		LPC_PWM1->CTCR = 0;                                                                                                                                      \
+		LPC_PWM1->MCR = 0;                                                                                                                                       \
+		LPC_PWM1->CCR = 0;                                                                                                                                       \
+		LPC_PWM1->PCR &= 0xFF00;                                                                                                                                 \
+		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL));                                                                                    \
+		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));                                                                                           \
+		LPC_PWM1->PR = (CLKPWR_GetPCLK(CLKPWR_PCLKSEL_PWM1) / (255 * 1000)) - 1;                                                                                 \
+		LPC_PWM1->MCR = (1UL << 1);                                                                                                                              \
+		LPC_PWM1->MR0 = 255;                                                                                                                                     \
+		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                                                                                                                 \
+		mcu_config_output(diopin);                                                                                                                               \
+		PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL}; \
+		PINSEL_ConfigPin(&pwm);                                                                                                                                  \
+		mcu_set_pwm(diopin, 0);                                                                                                                                  \
 	}
 
 #define CLOCK_SETUP 1
