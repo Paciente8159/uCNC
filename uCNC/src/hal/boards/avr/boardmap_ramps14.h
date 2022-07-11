@@ -158,14 +158,14 @@ extern "C"
 	// #define DIN27_PORT F
 	// #define DIN27_PULLUP
 
-#define SERVO0_BIT 5
-#define SERVO0_PORT G
-#define SERVO1_BIT 3
-#define SERVO1_PORT E
-#define SERVO2_BIT 3
-#define SERVO2_PORT H
 #define SERVO3_BIT 5
-#define SERVO3_PORT B
+#define SERVO3_PORT G
+#define SERVO2_BIT 3
+#define SERVO2_PORT E
+#define SERVO1_BIT 3
+#define SERVO1_PORT H
+#define SERVO0_BIT 5
+#define SERVO0_PORT B
 
 	// SERVO3 pin supports ISR and can be used as an encoder/counter
 	//  #define DIN0_BIT 5
