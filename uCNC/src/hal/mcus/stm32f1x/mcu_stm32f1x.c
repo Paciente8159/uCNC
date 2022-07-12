@@ -22,6 +22,7 @@
 #if (MCU == MCU_STM32F1X)
 #include "core_cm3.h"
 #include "mcumap_stm32f1x.h"
+#include <math.h>
 
 #if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"

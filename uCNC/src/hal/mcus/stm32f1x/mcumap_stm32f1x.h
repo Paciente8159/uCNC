@@ -4110,26 +4110,26 @@ extern "C"
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
-#if (COM_PORT < 4)
-#define COM_USART __usart__(COM_PORT)
-#define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
+#if (UART_PORT < 4)
+#define COM_USART __usart__(UART_PORT)
+#define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_SERIAL_ISR __helper__(USART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
 #endif
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
-#if (COM_PORT == 1)
+#if (UART_PORT == 1)
 #define COM_APB APB2ENR
-#define COM_APBEN __helper__(RCC_APB2ENR_USART, COM_PORT, EN)
+#define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
 #else
 #define COM_APB APB1ENR
-#define COM_APBEN __helper__(RCC_APB1ENR_USART, COM_PORT, EN)
+#define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
 #else
-#define COM_USART __uart__(COM_PORT)
-#define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
+#define COM_USART __uart__(UART_PORT)
+#define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_SERIAL_ISR __helper__(UART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
@@ -4148,36 +4148,23 @@ extern "C"
 //  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((COM_PORT == 1) && (TX_BIT == 9) && (RX_BIT == 10) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((COM_PORT == 1) && (TX_BIT == 6) && (RX_BIT == 7) && (TX_PORT == B) && (RX_PORT == B))
+#if ((UART_PORT == 1) && (TX_BIT == 9) && (RX_BIT == 10) && (TX_PORT == A) && (RX_PORT == A))
+#elif ((UART_PORT == 1) && (TX_BIT == 6) && (RX_BIT == 7) && (TX_PORT == B) && (RX_PORT == B))
 #define COM_REMAP AFIO_MAPR_USART1_REMAP
-#elif ((COM_PORT == 2) && (TX_BIT == 2) && (RX_BIT == 3) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((COM_PORT == 2) && (TX_BIT == 5) && (RX_BIT == 6) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 2) && (TX_BIT == 2) && (RX_BIT == 3) && (TX_PORT == A) && (RX_PORT == A))
+#elif ((UART_PORT == 2) && (TX_BIT == 5) && (RX_BIT == 6) && (TX_PORT == D) && (RX_PORT == D))
 #define COM_REMAP AFIO_MAPR_USART2_REMAP
-#elif ((COM_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == B) && (RX_PORT == B))
-#elif ((COM_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == B) && (RX_PORT == B))
+#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_PARTIALREMAP
-#elif ((COM_PORT == 3) && (TX_BIT == 8) && (RX_BIT == 9) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 3) && (TX_BIT == 8) && (RX_BIT == 9) && (TX_PORT == D) && (RX_PORT == D))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_FULLREMAP
-#elif ((COM_PORT == 4) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
-#elif ((COM_PORT == 5) && (TX_BIT == 12) && (RX_BIT == 2) && (TX_PORT == C) && (RX_PORT == D))
+#elif ((UART_PORT == 4) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#elif ((UART_PORT == 5) && (TX_BIT == 12) && (RX_BIT == 2) && (TX_PORT == C) && (RX_PORT == D))
 #else
 #error "USART/UART pin configuration not supported"
 #endif
 #endif
-
-/*#define UCSRB __ucsrbreg__(COM_NUMBER)
-#define UCSRA __ucsrareg__(COM_NUMBER)
-#define UDRIE __udriereg__(COM_NUMBER)
-#define U2X __u2xreg__(COM_NUMBER)
-#define UBRRH __ubrrhreg__(COM_NUMBER)
-#define UBRRL __ubrrlreg__(COM_NUMBER)
-#define RXEN __rxenreg__(COM_NUMBER)
-#define TXEN __txenreg__(COM_NUMBER)
-#define RXCIE __rxciereg__(COM_NUMBER)
-#define UDRE __udrereg__(COM_NUMBER)
-#define RXC __rxcreg__(COM_NUMBER)
-*/
 
 // Timer registers
 #ifndef ITP_TIMER
@@ -4295,7 +4282,7 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-// #ifdef COM_PORT
+// #ifdef UART_PORT
 // #ifndef ENABLE_SYNC_TX
 // #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
 // #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))

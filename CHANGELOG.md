@@ -15,11 +15,13 @@
 ### Changed
 
 - modified TMC driver to include shadow registers of write only (#226)
+- modified/unified UART port definitions for all architectures
 
 ### Fixed
 
 - fixed compilation error on STM32F1 if probe pin is not defined (#225)
 - fixed TMC M914 extension command initialization (#226)
+- fixed UART Arduino library conflict compilation error on PIO
 
 ## [1.4.6] - 2022-06-28
 
