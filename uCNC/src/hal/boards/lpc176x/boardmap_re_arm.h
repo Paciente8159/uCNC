@@ -104,8 +104,8 @@ extern "C"
 // Functionalities are set in config.h file
 
 // // blink led
-#define DOUT31_BIT 28
-#define DOUT31_PORT 4
+// #define DOUT31_BIT 28
+// #define DOUT31_PORT 4
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 10
@@ -120,66 +120,20 @@ extern "C"
 #define STEP4_EN_PORT 4
 
 	// Setup the Step Timer used has the heartbeat for µCNC
-	// Timer 1 is used by default
+	// Timer 0 is used by default
 	//#define ITP_TIMER 0
-	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-	// Timer 0 is set by default
-	//#define RTC_TIMER 1
+	// Setup the SERVO Timer used by µCNC
+	// Timer 1 is set by default
+	//#define SERVO_TIMER 1
 
-	// // TMC0 UART
-	// #define DOUT23_BIT 1
-	// #define DOUT23_PORT G
-	// #define DIN23_BIT 1
-	// #define DIN23_PORT K
-	// #define DIN23_PULLUP
-
-	// // TMC1 UART
-	// #define DOUT24_BIT 5
-	// #define DOUT24_PORT F
-	// #define DIN24_BIT 2
-	// #define DIN24_PORT K
-	// #define DIN24_PULLUP
-
-	// // TMC2 UART
-	// #define DOUT25_BIT 7
-	// #define DOUT25_PORT L
-	// #define DIN25_BIT 3
-	// #define DIN25_PORT K
-	// #define DIN25_PULLUP
-
-	// // TMC3 UART
-	// #define DOUT26_BIT 5
-	// #define DOUT26_PORT L
-	// #define DIN26_BIT 4
-	// #define DIN26_PORT K
-	// #define DIN26_PULLUP
-
-	// 	// // TMC4 UART
-	// 	// #define DOUT27_BIT 3
-	// 	// #define DOUT27_PORT F
-	// 	// #define DIN27_BIT 4
-	// 	// #define DIN27_PORT F
-	// 	// #define DIN27_PULLUP
-
-	// #define SERVO0_BIT 5
-	// #define SERVO0_PORT G
-	// #define SERVO1_BIT 3
-	// #define SERVO1_PORT E
-	// #define SERVO2_BIT 3
-	// #define SERVO2_PORT H
-	// #define SERVO3_BIT 5
-	// #define SERVO3_PORT B
-
-	// 	// SERVO3 pin supports ISR and can be used as an encoder/counter
-	// 	//  #define DIN0_BIT 5
-	// 	//  #define DIN0_PORT B
-	// 	//  #define DIN0_ISR 0
-
-	// // software I2C
-	// #define DIN20_BIT 1
-	// #define DIN20_PORT D
-	// #define DIN21_BIT 0
-	// #define DIN21_PORT D
+	#define SERVO3_BIT 18
+	#define SERVO3_PORT 1
+	#define SERVO2_BIT 19
+	#define SERVO2_PORT 1
+	#define SERVO1_BIT 21
+	#define SERVO1_PORT 1
+	#define SERVO0_BIT 20
+	#define SERVO0_PORT 1
 
 #ifdef __cplusplus
 }

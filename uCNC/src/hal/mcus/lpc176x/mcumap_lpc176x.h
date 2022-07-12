@@ -3239,16 +3239,10 @@ extern "C"
 #define ITP_INT_FLAG __helper__(TIM_MR, ITP_TIMER, _INT)
 #define ITP_TIMER_IRQ __helper__(TIMER, ITP_TIMER, _IRQn)
 
-#ifndef RTC_TIMER
-#define RTC_TIMER 1
-#endif
-#define RTC_TIMER_REG __helper__(LPC_TIM, RTC_TIMER, )
-#define MCU_RTC_ISR __helper__(TIMER, RTC_TIMER, _IRQHandler)
-#define RTC_INT_FLAG __helper__(TIM_MR, RTC_TIMER, _INT)
-#define RTC_TIMER_IRQ __helper__(TIMER, RTC_TIMER, _IRQn)
+#define MCU_RTC_ISR SysTick_Handler
 
 #ifndef SERVO_TIMER
-#define SERVO_TIMER 2
+#define SERVO_TIMER 1
 #endif
 #define SERVO_TIMER_REG __helper__(LPC_TIM, SERVO_TIMER, )
 #define MCU_SERVO_ISR __helper__(TIMER, SERVO_TIMER, _IRQHandler)

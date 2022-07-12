@@ -90,20 +90,6 @@ volatile bool lpc_global_isr_enabled;
 		mcu_set_pwm(diopin, 0);                                                                                                                                  \
 	}
 
-// #define CLOCK_SETUP 1
-// #define SCS_Val 0x00000020
-// #define CLKSRCSEL_Val 0x00000001
-// #define PLL0_SETUP 1
-// #define PLL0CFG_Val 0x00050063
-// #define PLL1_SETUP 1
-// #define PLL1CFG_Val 0x00000023
-// #define CCLKCFG_Val 0x00000003
-// #define USBCLKCFG_Val 0x00000000
-// #define PCLKSEL0_Val 0x00000000
-// #define PCLKSEL1_Val 0x00000000
-// #define PCONP_Val 0x042887DE
-// #define CLKOUTCFG_Val 0x00000000
-
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
 
@@ -131,36 +117,44 @@ static FORCEINLINE void mcu_clear_servos()
 #endif
 }
 
-void servo_start_timeout(uint8_t val)
+void servo_timer_init(void)
 {
-	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
+    TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 	TIM_TIMERCFG_Type tmrconfig;
 	TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
 	TIM_Init(SERVO_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-	TIM_MATCHCFG_Type tmrmatch;
-	tmrmatch.MatchChannel = SERVO_TIMER;
-	tmrmatch.IntOnMatch = ENABLE;
-	tmrmatch.StopOnMatch = ENABLE;
-	tmrmatch.ResetOnMatch = ENABLE;
-	tmrmatch.MatchValue = (val << 1) + 125;
-	TIM_ConfigMatch(SERVO_TIMER_REG, &tmrmatch);
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
 	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
+}
+
+void servo_start_timeout(uint8_t val)
+{
+	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
+	TIM_MATCHCFG_Type tmrmatch;
+	tmrmatch.MatchChannel = SERVO_TIMER;
+	tmrmatch.IntOnMatch = ENABLE;
+	tmrmatch.StopOnMatch = DISABLE;
+	tmrmatch.ResetOnMatch = ENABLE;
+	tmrmatch.MatchValue = ((uint32_t)((float)val * 7.875f)) + 500;
+	TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
+	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
+	TIM_ConfigMatch(SERVO_TIMER_REG, &tmrmatch);
 
 	TIM_Cmd(SERVO_TIMER_REG, ENABLE);
 }
 
 void MCU_SERVO_ISR(void)
 {
-	mcu_enable_global_isr();
 	mcu_clear_servos();
 	TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
+	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
+	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 }
 
 #endif
 
-void SysTick_Callback(void)
+void MCU_RTC_ISR(void)
 {
 	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
@@ -216,7 +210,7 @@ void SysTick_Callback(void)
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	// TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
+	//TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
 	mcu_enable_global_isr();
 }
 
@@ -373,10 +367,9 @@ void mcu_rtc_init()
 	// tmrmatch.ResetOnMatch = ENABLE;
 	// tmrmatch.MatchValue = 1000;
 	// TIM_ConfigMatch(RTC_TIMER_REG, &tmrmatch);
-	// NVIC_SetPriority(RTC_TIMER_IRQ, 1);
+	// NVIC_SetPriority(RTC_TIMER_IRQ, 10);
 	// NVIC_ClearPendingIRQ(RTC_TIMER_IRQ);
 	// NVIC_EnableIRQ(RTC_TIMER_IRQ);
-
 	// TIM_Cmd(RTC_TIMER_REG, ENABLE);
 
 	// Systick is initialized by the framework
@@ -1125,10 +1118,10 @@ uint8_t mcu_get_pwm(uint8_t pwm)
  * sets the pwm for a servo (50Hz with tON between 1~2ms)
  * can be defined either as a function or a macro call
  * */
-#define SERVO0_UCNC_INTERNAL_PIN 40
 #ifndef mcu_set_servo
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
+	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
 }
 #endif
 
@@ -1139,7 +1132,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 #ifndef mcu_get_servo
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	return 0;
+	return mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN];
 }
 #endif
 
