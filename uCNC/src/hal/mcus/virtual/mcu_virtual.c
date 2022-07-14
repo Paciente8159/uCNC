@@ -47,13 +47,16 @@
 #define WIN_INTERFACE 0
 #endif
 
+#define _str(x) #x
+#define str(x) _str(x)
+
 // uncomment to use sockets
 #if (WIN_INTERFACE == 1)
 #define USESOCKETS
 #ifdef USESOCKETS
 #define DEFAULT_BUFLEN 127
 #ifndef SOCKET_PORT
-#define SOCKET_PORT "34000"
+#define SOCKET_PORT 34000
 #endif
 #endif
 #elif (WIN_INTERFACE == 0)
@@ -63,8 +66,6 @@
 #ifndef WIN_COM_NAME
 #define WIN_COM_NAME COM1
 #endif
-#define _str(x) #x
-#define str(x) _str(x)
 #endif
 #elif (WIN_INTERFACE == 2)
 #define USECONSOLE
@@ -330,7 +331,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	hints.ai_flags = AI_PASSIVE;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(NULL, SOCKET_PORT, &hints, &result);
+	iResult = getaddrinfo(NULL, str(SOCKET_PORT), &hints, &result);
 	if (iResult != 0)
 	{
 		printf("getaddrinfo failed with error: %d\n", iResult);
@@ -342,7 +343,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET)
 	{
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		printf("socket failed with error: %d\n", (int)WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
 		return 1;
@@ -352,7 +353,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		printf("bind failed with error: %d\n", (int)WSAGetLastError());
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
@@ -364,7 +365,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = listen(ListenSocket, SOMAXCONN);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("listen failed with error: %d\n", WSAGetLastError());
+		printf("listen failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -374,7 +375,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	ClientSocket = accept(ListenSocket, NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET)
 	{
-		printf("accept failed with error: %d\n", WSAGetLastError());
+		printf("accept failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -402,7 +403,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 			printf("Connection closing...\n");
 		else
 		{
-			printf("recv failed with error: %d\n", WSAGetLastError());
+			printf("recv failed with error: %d\n", (int)WSAGetLastError());
 			closesocket(ClientSocket);
 			WSACleanup();
 			return 1;
@@ -414,7 +415,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = shutdown(ClientSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		printf("shutdown failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ClientSocket);
 		WSACleanup();
 		return 1;
@@ -457,7 +458,7 @@ void socketclient(void)
 				iSendResult = send(ClientSocket, com_buffer, iResult, 0);
 				if (iSendResult == SOCKET_ERROR)
 				{
-					printf("send failed with error: %d\n", WSAGetLastError());
+					printf("send failed with error: %d\n", (int)WSAGetLastError());
 					closesocket(ClientSocket);
 					WSACleanup();
 				}
@@ -467,7 +468,7 @@ void socketclient(void)
 
 			// The thread got ownership of an abandoned mutex
 			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", GetLastError());
+				printf("Wait error (%d)\n", (int)GetLastError());
 				return;
 			}
 
@@ -475,8 +476,8 @@ void socketclient(void)
 
 		// An error occurred
 		default:
-			printf("Socket client thread error (%d)\n", GetLastError());
-			return 0;
+			printf("Socket client thread error (%d)\n", (int)GetLastError());
+			return;
 		}
 	}
 }
@@ -569,7 +570,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 				// An error occurred in the overlapped operation;
 				// call GetLastError to find out what it was
 				// and abort if it is fatal.
-				fprintf(stderr, "Error %d in COM event", GetLastError());
+				fprintf(stderr, "Error %d in COM event", (int)GetLastError());
 				break;
 			}
 			else
@@ -600,7 +601,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 						else
 						{
 							// An error occurred when calling the ReadFile function.
-							fprintf(stderr, "Error %d reading COM", GetLastError());
+							fprintf(stderr, "Error %d reading COM", (int)GetLastError());
 							break;
 						}
 
