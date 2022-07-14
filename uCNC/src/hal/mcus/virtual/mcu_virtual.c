@@ -43,6 +43,34 @@
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
 #include <windows.h>
 
+#ifndef WIN_INTERFACE
+#define WIN_INTERFACE 0
+#endif
+
+#define _str(x) #x
+#define str(x) _str(x)
+
+// uncomment to use sockets
+#if (WIN_INTERFACE == 1)
+#define USESOCKETS
+#ifdef USESOCKETS
+#define DEFAULT_BUFLEN 127
+#ifndef SOCKET_PORT
+#define SOCKET_PORT 34000
+#endif
+#endif
+#elif (WIN_INTERFACE == 0)
+// uncomment to use serial port
+#define USESERIAL
+#ifdef USESERIAL
+#ifndef WIN_COM_NAME
+#define WIN_COM_NAME COM1
+#endif
+#endif
+#elif (WIN_INTERFACE == 2)
+#define USECONSOLE
+#endif
+
 #ifndef F_CPU
 #define F_CPU 16000000UL
 #endif
@@ -54,6 +82,14 @@
 #ifndef COM_BUFFER_SIZE
 #define COM_BUFFER_SIZE 50
 #endif
+
+extern void mod_input_change_hook(void);
+void mcu_inputs_changed_cb(void)
+{
+#ifdef ENABLE_IO_MODULES
+	mod_input_change_hook();
+#endif
+}
 
 /*timers*/
 int start_timer(int, void (*)(void));
@@ -133,15 +169,18 @@ unsigned long getTickCounter(void)
  * */
 typedef struct virtual_map_t
 {
+	uint32_t special_outputs;
 	uint32_t outputs;
 	uint8_t pwm[16];
+	uint8_t servos[6];
+	uint32_t special_inputs;
 	uint32_t inputs;
 	uint8_t analog[16];
 } VIRTUAL_MAP;
 
 static volatile VIRTUAL_MAP virtualmap;
 
-void ioserver(void)
+void ioserver(void *args)
 {
 	HANDLE hPipe;
 	TCHAR chBuf[sizeof(VIRTUAL_MAP)];
@@ -215,7 +254,23 @@ void ioserver(void)
 					break;
 
 				VIRTUAL_MAP *ptr = &lpvMessage;
-				virtualmap.inputs = ptr->inputs;
+				if (virtualmap.special_inputs != ptr->special_inputs)
+				{
+					uint32_t diff = virtualmap.special_inputs ^ ptr->special_inputs;
+					virtualmap.special_inputs = ptr->special_inputs;
+
+					if (diff & 0x1FFUL)
+						mcu_limits_changed_cb();
+					if (diff & 0x200UL)
+						mcu_probe_changed_cb();
+					if (diff & 0x3C00UL)
+						mcu_controls_changed_cb();
+				}
+				if (virtualmap.inputs != ptr->inputs)
+				{
+					virtualmap.inputs = ptr->inputs;
+					mcu_inputs_changed_cb();
+				}
 				memcpy(virtualmap.analog, ptr->analog, 16);
 
 			} while (fSuccess); // repeat loop if ERROR_MORE_DATA
@@ -244,8 +299,6 @@ volatile bool mcu_tx_empty;
 volatile bool mcu_tx_enabled;
 
 #ifdef USESOCKETS
-
-#define DEFAULT_PORT "34000"
 
 SOCKET ClientSocket = INVALID_SOCKET;
 
@@ -278,7 +331,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	hints.ai_flags = AI_PASSIVE;
 
 	// Resolve the server address and port
-	iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result);
+	iResult = getaddrinfo(NULL, str(SOCKET_PORT), &hints, &result);
 	if (iResult != 0)
 	{
 		printf("getaddrinfo failed with error: %d\n", iResult);
@@ -290,7 +343,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET)
 	{
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		printf("socket failed with error: %d\n", (int)WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
 		return 1;
@@ -300,7 +353,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		printf("bind failed with error: %d\n", (int)WSAGetLastError());
 		freeaddrinfo(result);
 		closesocket(ListenSocket);
 		WSACleanup();
@@ -312,7 +365,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = listen(ListenSocket, SOMAXCONN);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("listen failed with error: %d\n", WSAGetLastError());
+		printf("listen failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -322,7 +375,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	ClientSocket = accept(ListenSocket, NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET)
 	{
-		printf("accept failed with error: %d\n", WSAGetLastError());
+		printf("accept failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ListenSocket);
 		WSACleanup();
 		return 1;
@@ -342,7 +395,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 			recvbuflen = strlen(recvbuf);
 			for (int i = 0; i < recvbuflen; i++)
 			{
-				serial_rx_isr(recvbuf[i]);
+				mcu_com_rx_cb(recvbuf[i]);
 			}
 			memset(recvbuf, 0, sizeof(recvbuf));
 		}
@@ -350,7 +403,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 			printf("Connection closing...\n");
 		else
 		{
-			printf("recv failed with error: %d\n", WSAGetLastError());
+			printf("recv failed with error: %d\n", (int)WSAGetLastError());
 			closesocket(ClientSocket);
 			WSACleanup();
 			return 1;
@@ -362,7 +415,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	iResult = shutdown(ClientSocket, SD_SEND);
 	if (iResult == SOCKET_ERROR)
 	{
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
+		printf("shutdown failed with error: %d\n", (int)WSAGetLastError());
 		closesocket(ClientSocket);
 		WSACleanup();
 		return 1;
@@ -405,7 +458,7 @@ void socketclient(void)
 				iSendResult = send(ClientSocket, com_buffer, iResult, 0);
 				if (iSendResult == SOCKET_ERROR)
 				{
-					printf("send failed with error: %d\n", WSAGetLastError());
+					printf("send failed with error: %d\n", (int)WSAGetLastError());
 					closesocket(ClientSocket);
 					WSACleanup();
 				}
@@ -415,7 +468,7 @@ void socketclient(void)
 
 			// The thread got ownership of an abandoned mutex
 			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", GetLastError());
+				printf("Wait error (%d)\n", (int)GetLastError());
 				return;
 			}
 
@@ -423,8 +476,8 @@ void socketclient(void)
 
 		// An error occurred
 		default:
-			printf("Socket client thread error (%d)\n", GetLastError());
-			return 0;
+			printf("Socket client thread error (%d)\n", (int)GetLastError());
+			return;
 		}
 	}
 }
@@ -433,8 +486,8 @@ void socketclient(void)
 
 #ifdef USESERIAL
 volatile HANDLE hComm = NULL;
-unsigned char ComPortName[] = COMPORT;
-unsigned char ComParams[] = "baud=115200 parity=N data=8 stop=1";
+unsigned char ComPortName[] = "\\\\.\\" str(WIN_COM_NAME);
+unsigned char ComParams[] = "baud=" str(BAUDRATE) " parity=N data=8 stop=1";
 
 DWORD WINAPI virtualserialserver(LPVOID lpParam)
 {
@@ -517,7 +570,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 				// An error occurred in the overlapped operation;
 				// call GetLastError to find out what it was
 				// and abort if it is fatal.
-				fprintf(stderr, "Error %d in COM event", GetLastError());
+				fprintf(stderr, "Error %d in COM event", (int)GetLastError());
 				break;
 			}
 			else
@@ -548,7 +601,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 						else
 						{
 							// An error occurred when calling the ReadFile function.
-							fprintf(stderr, "Error %d reading COM", GetLastError());
+							fprintf(stderr, "Error %d reading COM", (int)GetLastError());
 							break;
 						}
 
@@ -604,14 +657,14 @@ void virtualserialclient(void)
 					if (GetLastError() != ERROR_IO_PENDING)
 					{
 						// WriteFile failed, but isn't delayed. Report error and abort.
-						fprintf(stderr, "Error %d in Writing to Serial Port", GetLastError());
+						fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
 					}
 				}
 				break;
 
 			// The thread got ownership of an abandoned mutex
 			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", GetLastError());
+				printf("Wait error (%d)\n", (int)GetLastError());
 				return;
 			}
 
@@ -619,8 +672,8 @@ void virtualserialclient(void)
 
 		// An error occurred
 		default:
-			printf("Serial client thread error (%d)\n", GetLastError());
-			return 0;
+			printf("Serial client thread error (%d)\n", (int)GetLastError());
+			return;
 		}
 
 		CloseHandle(osWrite.hEvent);
@@ -692,7 +745,7 @@ void virtualconsoleclient(void)
 
 			// The thread got ownership of an abandoned mutex
 			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", GetLastError());
+				printf("Wait error (%d)\n", (int)GetLastError());
 				return;
 			}
 
@@ -700,7 +753,7 @@ void virtualconsoleclient(void)
 
 		// An error occurred
 		default:
-			printf("Serial client thread error (%d)\n", GetLastError());
+			printf("Serial client thread error (%d)\n", (int)GetLastError());
 			return 0;
 		}
 
@@ -737,8 +790,8 @@ void com_init(void)
 
 	if (bufferMutex == NULL)
 	{
-		printf("CreateMutex error: %d\n", GetLastError());
-		return 1;
+		printf("CreateMutex error: %d\n", (int)GetLastError());
+		return;
 	}
 
 	rxReady = CreateEvent(
@@ -800,14 +853,14 @@ void com_init(void)
 
 		if (txThread == NULL)
 		{
-			printf("CreateThread failed (%d)\n", GetLastError());
+			printf("CreateThread failed (%d)\n", (int)GetLastError());
 			return;
 		}
 		break;
 
 	// An error occurred
 	default:
-		printf("Wait error (%d)\n", GetLastError());
+		printf("Wait error (%d)\n", (int)GetLastError());
 		return 0;
 	}
 }
@@ -830,7 +883,7 @@ void com_send(char *buff, int len)
 
 	// The thread got ownership of an abandoned mutex
 	case WAIT_ABANDONED:
-		printf("Wait error (%d)\n", GetLastError());
+		printf("Wait error (%d)\n", (int)GetLastError());
 		return;
 	}
 
@@ -926,7 +979,7 @@ void mcu_tx_isr(void)
 // simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;
 
-void *stepsimul(void)
+void *stepsimul(void *args)
 {
 	static uint16_t tick_counter = 0;
 	static uint16_t timer_counter = 0;
@@ -1046,6 +1099,10 @@ uint32_t mcu_millis()
 
 void mcu_init(void)
 {
+	virtualmap.special_outputs = 0;
+	virtualmap.special_inputs = 0;
+	virtualmap.inputs = 0;
+	virtualmap.outputs = 0;
 	com_init();
 	send_char = false;
 	//	FILE *infile = fopen("inputs.txt", "r");
@@ -1090,11 +1147,45 @@ void mcu_disable_probe_isr(void)
 {
 }
 
+uint8_t mcu_get_pin_offset(uint8_t pin)
+{
+	if (pin >= STEP0 && pin <= STEP7_EN)
+	{
+		return pin;
+	}
+	else if (pin >= DOUT0 && pin <= DOUT31)
+	{
+		return pin - DOUT0;
+	}
+	if (pin >= LIMIT_X && pin <= CS_RES)
+	{
+		return pin - LIMIT_X;
+	}
+	else if (pin >= DIN0 && pin <= DIN31)
+	{
+		return pin - DIN0;
+	}
+
+	return -1;
+}
+
 uint8_t mcu_get_input(uint8_t pin)
 {
-	pin -= 100;
-	pin -= (pin > 13) ? 16 : 0;
-	return ((virtualmap.inputs & (1 << pin)) != 0);
+	uint8_t offset = mcu_get_pin_offset(pin);
+	if (offset > 31)
+	{
+		return 0;
+	}
+	if (pin >= DIN0)
+	{
+		return (virtualmap.inputs & (1 << offset)) ? 1 : 0;
+	}
+	else
+	{
+		return (virtualmap.special_inputs & (1 << offset)) ? 1 : 0;
+	}
+
+	return 0;
 }
 
 /**
@@ -1103,8 +1194,22 @@ uint8_t mcu_get_input(uint8_t pin)
  * */
 uint8_t mcu_get_output(uint8_t pin)
 {
-	pin -= (pin > 19) ? 16 : 0;
-	return ((virtualmap.outputs & (1 << pin)) != 0);
+	uint8_t offset = mcu_get_pin_offset(pin);
+	if (offset > 31)
+	{
+		return 0;
+	}
+
+	if (pin >= DOUT0)
+	{
+		return (virtualmap.outputs & (1 << offset)) ? 1 : 0;
+	}
+	else
+	{
+		return (virtualmap.special_outputs & (1 << offset)) ? 1 : 0;
+	}
+
+	return 0;
 }
 
 /**
@@ -1113,8 +1218,20 @@ uint8_t mcu_get_output(uint8_t pin)
  * */
 void mcu_set_output(uint8_t pin)
 {
-	pin -= (pin > 19) ? 16 : 0;
-	virtualmap.outputs |= (1 << pin);
+	uint8_t offset = mcu_get_pin_offset(pin);
+	if (offset > 31)
+	{
+		return;
+	}
+
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs |= (1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs |= (1UL << offset);
+	}
 }
 
 /**
@@ -1123,8 +1240,20 @@ void mcu_set_output(uint8_t pin)
  * */
 void mcu_clear_output(uint8_t pin)
 {
-	pin -= (pin > 19) ? 16 : 0;
-	virtualmap.outputs &= ~(1 << pin);
+	uint8_t offset = mcu_get_pin_offset(pin);
+	if (offset > 31)
+	{
+		return;
+	}
+
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs &= ~(1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs &= ~(1UL << offset);
+	}
 }
 
 /**
@@ -1133,27 +1262,51 @@ void mcu_clear_output(uint8_t pin)
  * */
 void mcu_toggle_output(uint8_t pin)
 {
-	pin -= (pin > 19) ? 16 : 0;
-	virtualmap.outputs ^= (1 << pin);
+	uint8_t offset = mcu_get_pin_offset(pin);
+	if (offset > 31)
+	{
+		return;
+	}
+
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs ^= (1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs ^= (1UL << offset);
+	}
 }
 
 uint8_t mcu_get_analog(uint8_t channel)
 {
-	channel -= 66;
+	channel -= ANALOG0;
 	return virtualmap.analog[channel];
 }
 
 // Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
-	pwm -= 20;
+	pwm -= PWM0;
 	virtualmap.pwm[pwm] = value;
 }
 
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	pwm -= 20;
+	pwm -= PWM0;
 	return virtualmap.pwm[pwm];
+}
+
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+	servo -= SERVO0;
+	virtualmap.servos[value] = value;
+}
+
+uint8_t mcu_get_servo(uint8_t servo)
+{
+	servo -= SERVO0;
+	return virtualmap.servos[servo];
 }
 
 // Communication functions
@@ -1291,6 +1444,17 @@ void mcu_printfp(const char *__fmt, ...)
 	va_start(__ap, __fmt);
 	vprintf(newfmt, __ap);
 	va_end(__ap);
+}
+
+void mcu_delay_us(uint8_t delay)
+{
+	unsigned long start = getTickCounter();
+	double elapsed = 0;
+	do
+	{
+		elapsed = ((double)(getTickCounter()) - (double)(start)) / (double)(getCPUFreq());
+		elapsed *= 1000000;
+	} while (elapsed < delay);
 }
 
 void mcu_loadDummyPayload(const char *__fmt, ...)
