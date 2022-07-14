@@ -170,9 +170,9 @@ unsigned long getTickCounter(void)
 typedef struct virtual_map_t
 {
 	uint32_t special_outputs;
+	uint32_t outputs;
 	uint8_t pwm[16];
 	uint8_t servos[6];
-	uint32_t outputs;
 	uint32_t special_inputs;
 	uint32_t inputs;
 	uint8_t analog[16];
@@ -1099,6 +1099,10 @@ uint32_t mcu_millis()
 
 void mcu_init(void)
 {
+	virtualmap.special_outputs = 0;
+	virtualmap.special_inputs = 0;
+	virtualmap.inputs = 0;
+	virtualmap.outputs = 0;
 	com_init();
 	send_char = false;
 	//	FILE *infile = fopen("inputs.txt", "r");
@@ -1126,8 +1130,8 @@ void mcu_init(void)
 	//#ifdef USECONSOLE
 	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	//#endif
-	pthread_create(&thread_step_id, NULL, stepsimul, NULL);
-	pthread_create(&thread_io, NULL, ioserver, NULL);
+	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
+	pthread_create(&thread_io, NULL, &ioserver, NULL);
 	mcu_tx_enabled = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
@@ -1145,21 +1149,21 @@ void mcu_disable_probe_isr(void)
 
 uint8_t mcu_get_pin_offset(uint8_t pin)
 {
-	if (pin >= 0 && pin <= 27)
+	if (pin >= STEP0 && pin <= STEP7_EN)
 	{
 		return pin;
 	}
-	else if (pin >= 46 && pin <= 77)
+	else if (pin >= DOUT0 && pin <= DOUT31)
 	{
-		return pin - 46;
+		return pin - DOUT0;
 	}
-	if (pin >= 100 && pin <= 113)
+	if (pin >= LIMIT_X && pin <= CS_RES)
 	{
-		return pin - 100;
+		return pin - LIMIT_X;
 	}
-	else if (pin >= 130 && pin <= 161)
+	else if (pin >= DIN0 && pin <= DIN31)
 	{
-		return pin - 130;
+		return pin - DIN0;
 	}
 
 	return -1;
@@ -1172,7 +1176,16 @@ uint8_t mcu_get_input(uint8_t pin)
 	{
 		return 0;
 	}
-	return (pin >= 130) ? ((virtualmap.inputs & (1 << offset)) != 0) : ((virtualmap.special_inputs & (1 << offset)) != 0);
+	if (pin >= DIN0)
+	{
+		return (virtualmap.inputs & (1 << offset)) ? 1 : 0;
+	}
+	else
+	{
+		return (virtualmap.special_inputs & (1 << offset)) ? 1 : 0;
+	}
+
+	return 0;
 }
 
 /**
@@ -1186,7 +1199,17 @@ uint8_t mcu_get_output(uint8_t pin)
 	{
 		return 0;
 	}
-	return (pin >= 46) ? ((virtualmap.outputs & (1 << offset)) != 0) : ((virtualmap.special_outputs & (1 << offset)) != 0);
+
+	if (pin >= DOUT0)
+	{
+		return (virtualmap.outputs & (1 << offset)) ? 1 : 0;
+	}
+	else
+	{
+		return (virtualmap.special_outputs & (1 << offset)) ? 1 : 0;
+	}
+
+	return 0;
 }
 
 /**
@@ -1201,7 +1224,14 @@ void mcu_set_output(uint8_t pin)
 		return;
 	}
 
-	(pin >= 46) ? (virtualmap.outputs |= (1 << offset)) : (virtualmap.special_outputs |= (1 << offset));
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs |= (1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs |= (1UL << offset);
+	}
 }
 
 /**
@@ -1216,7 +1246,14 @@ void mcu_clear_output(uint8_t pin)
 		return;
 	}
 
-	(pin >= 46) ? (virtualmap.outputs &= ~(1UL << offset)) : (virtualmap.special_outputs &= ~(1UL << offset));
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs &= ~(1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs &= ~(1UL << offset);
+	}
 }
 
 /**
@@ -1231,37 +1268,44 @@ void mcu_toggle_output(uint8_t pin)
 		return;
 	}
 
-	(pin >= 46) ? (virtualmap.outputs ^= ~(1UL << offset)) : (virtualmap.special_outputs ^= ~(1UL << offset));
+	if (pin >= DOUT0)
+	{
+		virtualmap.outputs ^= (1UL << offset);
+	}
+	else
+	{
+		virtualmap.special_outputs ^= (1UL << offset);
+	}
 }
 
 uint8_t mcu_get_analog(uint8_t channel)
 {
-	channel -= 66;
+	channel -= ANALOG0;
 	return virtualmap.analog[channel];
 }
 
 // Outputs
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
-	pwm -= 24;
+	pwm -= PWM0;
 	virtualmap.pwm[pwm] = value;
 }
 
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	pwm -= 24;
+	pwm -= PWM0;
 	return virtualmap.pwm[pwm];
 }
 
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
-	servo -= 40;
+	servo -= SERVO0;
 	virtualmap.servos[value] = value;
 }
 
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	servo -= 40;
+	servo -= SERVO0;
 	return virtualmap.servos[servo];
 }
 
