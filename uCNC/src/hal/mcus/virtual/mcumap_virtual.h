@@ -38,23 +38,6 @@
 
 #define ENABLE_SYNC_TX
 
-// uncomment to use sockets
-//#define USESOCKETS
-#ifdef USESOCKETS
-#define DEFAULT_BUFLEN 127
-#define DEFAULT_PORT "34000"
-#endif
-
-// uncomment to use serial port
-#define USESERIAL
-#ifdef USESERIAL
-#ifndef COMPORT
-#define COMPORT "\\\\.\\COM11"
-#endif
-#endif
-
-//#define USECONSOLE
-
 // joints step/dir pins
 #define STEP0 0
 #define STEP1 1
