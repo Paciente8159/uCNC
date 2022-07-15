@@ -1269,8 +1269,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
-
 char mcu_getc(void)
 {
 #if !(LED < 0)
