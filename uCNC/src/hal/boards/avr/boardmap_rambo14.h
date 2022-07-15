@@ -85,7 +85,7 @@ extern "C"
 #define RX_PORT E
 #define TX_PORT E
 // only uncomment this if other port other then 0 is used
-#define COM_NUMBER 0
+#define UART_PORT 0
 
 // Setup PWM
 #define PWM0_BIT 6	// assigns PWM0 pin

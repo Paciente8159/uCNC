@@ -36,7 +36,6 @@ extern "C"
 #define STEP0_BIT 14 // assigns STEP0 pin
 #define STEP2_BIT 8	 // assigns STEP2 pin
 
-
 #ifdef __cplusplus
 }
 #endif

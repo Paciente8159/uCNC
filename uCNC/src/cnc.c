@@ -484,9 +484,11 @@ void cnc_call_rt_command(uint8_t command)
 	case CMD_CODE_FEED_HOLD:
 		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
 		break;
+#if STATUS_AUTOMATIC_REPORT_INTERVAL < 100
 	case CMD_CODE_REPORT:
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
 		break;
+#endif
 	case CMD_CODE_CYCLE_START:
 		// prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
 		if (!CHECKFLAG(cnc_state.exec_state, EXEC_RESUMING))
