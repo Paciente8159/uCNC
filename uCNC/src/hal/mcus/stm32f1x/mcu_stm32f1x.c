@@ -22,6 +22,7 @@
 #if (MCU == MCU_STM32F1X)
 #include "core_cm3.h"
 #include "mcumap_stm32f1x.h"
+#include <math.h>
 
 #if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
@@ -1222,6 +1223,26 @@ void mcu_init(void)
 	mcu_enable_global_isr();
 }
 
+/**
+ * enables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_probe_isr
+void mcu_enable_probe_isr(void)
+{
+}
+#endif
+
+/**
+ * disables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_probe_isr
+void mcu_disable_probe_isr(void)
+{
+}
+#endif
+
 /*IO functions*/
 // IO functions
 void mcu_set_servo(uint8_t servo, uint8_t value)
@@ -1247,8 +1268,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 #endif
 	return 0;
 }
-
-static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
 
 char mcu_getc(void)
 {

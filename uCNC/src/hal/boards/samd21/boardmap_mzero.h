@@ -84,18 +84,13 @@ extern "C"
 //  #define CS_RES_ISR
 
 // On the STM32 always use sync TX UART (async doesn't work well)
-#if (INTERFACE == INTERFACE_UART)
-#define COM_PORT 1
+#if (INTERFACE == INTERFACE_USART)
 #define TX_BIT 10
 #define TX_PORT A
-#define TX_MUX D
-#define TX_PAD 2
 #define RX_BIT 11
 #define RX_PORT A
-#define RX_MUX D
-#define RX_PAD 3
-// set COM number. By default COM0 if not set. Arduino IDE already uses SERCOM0 and SERCOM1
-#define COM_NUMBER 2
+// set COM number. By default SERCOM2 if not set. Arduino IDE already uses SERCOM0 and SERCOM1
+// #define UART_PORT 2
 #elif (INTERFACE == INTERFACE_USB)
 #define USB_DM_BIT 24
 #define USB_DM_PORT A

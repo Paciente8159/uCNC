@@ -95,9 +95,8 @@ extern "C"
 #define CS_RES_ISR
 #define SAFETY_DOOR_ISR
 
-// On the STM32 always use sync TX UART (async doesn't work well)
-#if (INTERFACE == INTERFACE_UART)
-#define COM_PORT 1
+#if (INTERFACE == INTERFACE_USART)
+#define UART_PORT 1
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10

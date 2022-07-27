@@ -2926,26 +2926,26 @@ extern "C"
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
-#if (COM_PORT < 4 || COM_PORT == 6)
-#define COM_USART __usart__(COM_PORT)
-#define COM_IRQ __helper__(USART, COM_PORT, _IRQn)
+#if (UART_PORT < 4 || UART_PORT == 6)
+#define COM_USART __usart__(UART_PORT)
+#define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_SERIAL_ISR __helper__(USART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
 #endif
 #define COM_OUTREG (COM_USART)->DR
 #define COM_INREG (COM_USART)->DR
-#if (COM_PORT == 1 || COM_PORT == 6)
+#if (UART_PORT == 1 || UART_PORT == 6)
 #define COM_APB APB2ENR
-#define COM_APBEN __helper__(RCC_APB2ENR_USART, COM_PORT, EN)
+#define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
 #else
 #define COM_APB APB1ENR
-#define COM_APBEN __helper__(RCC_APB1ENR_USART, COM_PORT, EN)
+#define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
 #else
-#define COM_USART __uart__(COM_PORT)
-#define COM_IRQ __helper__(UART, COM_PORT, _IRQn)
+#define COM_USART __uart__(UART_PORT)
+#define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_SERIAL_ISR __helper__(UART, COM_PORT, _IRQHandler)
+#define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
 #endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
@@ -2964,7 +2964,7 @@ extern "C"
 //  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((COM_PORT >= 1) && (COM_PORT <= 3))
+#if ((UART_PORT >= 1) && (UART_PORT <= 3))
 #define GPIO_AF_USART 0x07
 #else
 #define GPIO_AF_USART 0x08
@@ -3090,7 +3090,7 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-// #ifdef COM_PORT
+// #ifdef UART_PORT
 // #ifndef ENABLE_SYNC_TX
 // #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
 // #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))

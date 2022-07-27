@@ -355,9 +355,12 @@ void mcu_com_rx_cb(unsigned char c)
 	{
 		switch (c)
 		{
+		case CMD_CODE_REPORT:
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+			return;
+#endif
 		case CMD_CODE_RESET:
 		case CMD_CODE_FEED_HOLD:
-		case CMD_CODE_REPORT:
 			cnc_call_rt_command((uint8_t)c);
 			return;
 		default:
@@ -377,7 +380,7 @@ void mcu_com_rx_cb(unsigned char c)
 			}
 
 			serial_rx_write = write;
-			break;
+			return;
 		}
 	}
 	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)

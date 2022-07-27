@@ -4243,28 +4243,28 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
-#ifndef COM_NUMBER
+#if (INTERFACE == INTERFACE_USART)
+#ifndef UART_PORT
 #define COM_RX_vect USART_RX_vect
 #define COM_TX_vect USART_UDRE_vect
-#define COM_NUMBER 0
+#define UART_PORT 0
 #else
-#define COM_RX_vect __comrxvect__(COM_NUMBER)
-#define COM_TX_vect __comtxvect__(COM_NUMBER)
+#define COM_RX_vect __comrxvect__(UART_PORT)
+#define COM_TX_vect __comtxvect__(UART_PORT)
 #endif
-#define COM_OUTREG __udrreg__(COM_NUMBER)
-#define COM_INREG __udrreg__(COM_NUMBER)
-#define UCSRB __ucsrbreg__(COM_NUMBER)
-#define UCSRA __ucsrareg__(COM_NUMBER)
-#define UDRIE __udriereg__(COM_NUMBER)
-#define U2X __u2xreg__(COM_NUMBER)
-#define UBRRH __ubrrhreg__(COM_NUMBER)
-#define UBRRL __ubrrlreg__(COM_NUMBER)
-#define RXEN __rxenreg__(COM_NUMBER)
-#define TXEN __txenreg__(COM_NUMBER)
-#define RXCIE __rxciereg__(COM_NUMBER)
-#define UDRE __udrereg__(COM_NUMBER)
-#define RXC __rxcreg__(COM_NUMBER)
+#define COM_OUTREG __udrreg__(UART_PORT)
+#define COM_INREG __udrreg__(UART_PORT)
+#define UCSRB __ucsrbreg__(UART_PORT)
+#define UCSRA __ucsrareg__(UART_PORT)
+#define UDRIE __udriereg__(UART_PORT)
+#define U2X __u2xreg__(UART_PORT)
+#define UBRRH __ubrrhreg__(UART_PORT)
+#define UBRRL __ubrrlreg__(UART_PORT)
+#define RXEN __rxenreg__(UART_PORT)
+#define TXEN __txenreg__(UART_PORT)
+#define RXCIE __rxciereg__(UART_PORT)
+#define UDRE __udrereg__(UART_PORT)
+#define RXC __rxcreg__(UART_PORT)
 #endif
 
 // Timer registers
