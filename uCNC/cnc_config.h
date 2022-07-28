@@ -43,7 +43,7 @@ extern "C"
 #endif
 
 #ifndef ENABLE_WIFI
-// #define ENsABLE_WIFI
+// #define ENABLE_WIFI
 #endif
 
 	/**
