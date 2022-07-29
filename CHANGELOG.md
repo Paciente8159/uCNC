@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.4.7] - Unreleased
+## [1.4.7] - 2022-07-29
 
 ### Added
 
