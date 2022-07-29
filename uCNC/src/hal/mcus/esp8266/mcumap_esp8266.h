@@ -58,6 +58,25 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+#ifndef MCU_CALLBACK
+#define MCU_CALLBACK IRAM_ATTR
+#endif
+
+#ifdef ENABLE_RX_SYNC
+#define MCU_RX_CALLBACK ICACHE_FLASH_ATTR
+#endif
+
+#ifdef ENABLE_TX_SYNC
+#define MCU_TX_CALLBACK ICACHE_FLASH_ATTR
+#endif
+
+#define MCU_IO_CALLBACK ICACHE_FLASH_ATTR
+
+#ifdef RX_BUFFER_CAPACITY
+#define RX_BUFFER_CAPACITY 255
+#endif
+
+
 #define __SIZEOF_FLOAT__ 4
 
 // used by the parser

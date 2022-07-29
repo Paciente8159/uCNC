@@ -84,7 +84,7 @@
 #endif
 
 extern void mod_input_change_hook(void);
-void mcu_inputs_changed_cb(void)
+MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
 	mod_input_change_hook();

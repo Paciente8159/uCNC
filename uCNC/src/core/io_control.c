@@ -27,7 +27,7 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
-void mcu_limits_changed_cb(void)
+MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 #ifndef DISABLE_ALL_LIMITS
 
@@ -112,7 +112,7 @@ void mcu_limits_changed_cb(void)
 #endif
 }
 
-void mcu_controls_changed_cb(void)
+MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 {
 #ifdef DISABLE_ALL_CONTROLS
 	return;
@@ -157,7 +157,7 @@ void mcu_controls_changed_cb(void)
 #endif
 }
 
-void mcu_probe_changed_cb(void)
+MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
 #ifdef DISABLE_PROBE
 	return;
@@ -183,7 +183,7 @@ void mcu_probe_changed_cb(void)
 
 // overridable
 // for now if encoders are enabled this will be override by the encoder call
-void __attribute__((weak)) mcu_inputs_changed_cb(void)
+MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
 	mod_input_change_hook();
