@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.5.beta] - Unreleased
+## [1.5.beta] - 2022-07-29
 
 ### Added
 
