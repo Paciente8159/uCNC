@@ -6,10 +6,11 @@
 
 # Changelog
 
-## [1.4.7] - Unreleased
+## [1.5.b] - Unreleased
 
 ### Added
 
+- added core support for ESP8266 with limitied functionalities (#222)
 - added Marlin M913 command to TMC driver module (#226)
 
 ### Changed
@@ -19,6 +20,7 @@
 - minor optimization with auto-report enabled (#230)
 - split platformio files for each board family (#231)
 - updated virtual HAL for Windows (#232)
+- configurable RX serial buffer size (#222)
 
 ### Fixed
 
@@ -926,7 +928,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
+[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.b
 [1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.4
