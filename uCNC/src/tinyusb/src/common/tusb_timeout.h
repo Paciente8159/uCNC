@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -35,15 +35,13 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-	typedef struct
-	{
-		uint32_t start;
-		uint32_t interval;
-	} tu_timeout_t;
+typedef struct {
+  uint32_t start;
+  uint32_t interval;
+}tu_timeout_t;
 
 #if 0
 
@@ -74,7 +72,7 @@ static inline void tu_timeout_restart(tu_timeout_t* tt)
 #endif
 
 #ifdef __cplusplus
-}
+ }
 #endif
 
 #endif /* _TUSB_TIMEOUT_H_ */

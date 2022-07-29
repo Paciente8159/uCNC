@@ -6,15 +6,17 @@
 
 # Changelog
 
-## [1.5.b] - Unreleased
+## [1.5.beta] - Unreleased
 
 ### Added
 
-- added core support for ESP8266 with limitied functionalities (#222)
+- added core support for ESP8266 with limitied functionalities (lacks analog and input ISR) (#222)
+- added support for NXP LPC176x core (lacks EEPROM and analog) (#227)
 
 ### Changed
 
 - configurable RX serial buffer size (#222)
+- updated tinyUSB to version 0.13.0 (#227)
 
 ### Fixed
 
@@ -938,7 +940,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.b
+[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
 [1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5

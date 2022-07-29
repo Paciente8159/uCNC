@@ -725,6 +725,10 @@ void protocol_send_pins_states(void)
 	mod_send_pins_states_hook();
 #endif
 
+	serial_print_str(__romstr__("[RUNTIME:"));
+	serial_print_int(mcu_millis());
+	serial_print_str(MSG_END);
+
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
