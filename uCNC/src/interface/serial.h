@@ -31,7 +31,7 @@ extern "C"
 #define EOL 0x00 // end of line char
 #define OVF 0x2A // overflow char
 #define SAFEMARGIN 2
-#ifdef RX_BUFFER_CAPACITY
+#ifndef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 128
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
