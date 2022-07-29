@@ -1303,14 +1303,156 @@ extern "C"
 #define _pinmuxval(X) (pinmuxval_##X)
 #define pinmuxval(X) (_pinmuxval(X))
 
-#define sercompad_RX_0 (0x0U)
-#define sercompad_RX_1 (0x1U)
-#define sercompad_RX_2 (0x2U)
-#define sercompad_RX_3 (0x3U)
-#define sercompad_TX_0 (0x2U)
-#define sercompad_TX_2 (0x1U)
-#define _sercompad(X, Y) (sercompad##X##_##Y)
-#define sercompad(X, Y) (_sercompad(X, Y))
+// #define sercompad_RX_0 (0x0U)
+// #define sercompad_RX_1 (0x1U)
+// #define sercompad_RX_2 (0x2U)
+// #define sercompad_RX_3 (0x3U)
+// #define sercompad_TX_0 (0x2U)
+// #define sercompad_TX_2 (0x1U)
+// #define _sercompad(X, Y) (sercompad##X##_##Y)
+// #define sercompad(X, Y) (_sercompad(X, Y))
+
+#define SERCOMPADRX_0_A8 0
+#define SERCOMPADRX_0_A9 1
+#define SERCOMPADRX_0_A10 2
+#define SERCOMPADRX_0_A11 3
+#define SERCOMPADRX_1_A16 0
+#define SERCOMPADRX_1_A17 1
+#define SERCOMPADRX_1_A18 2
+#define SERCOMPADRX_1_A19 3
+#define SERCOMPADRX_2_A12 0
+#define SERCOMPADRX_2_A13 1
+#define SERCOMPADRX_2_A14 2
+#define SERCOMPADRX_2_A15 3
+#define SERCOMPADRX_3_A22 0
+#define SERCOMPADRX_3_A23 1
+#define SERCOMPADRX_3_A24 2
+#define SERCOMPADRX_3_A25 3
+#define SERCOMPADRX_5_A20 2
+#define SERCOMPADRX_5_A21 3
+
+#define SERCOMPADTX_0_A8 0
+#define SERCOMPADTX_0_A10 2
+#define SERCOMPADTX_1_A16 0
+#define SERCOMPADTX_1_A18 2
+#define SERCOMPADTX_2_A12 0
+#define SERCOMPADTX_2_A14 2
+#define SERCOMPADTX_3_A22 0
+#define SERCOMPADTX_3_A24 2
+#define SERCOMPADTX_5_A20 2
+
+//SERCOMPAD_ALT
+#define SERCOMPADRX_0_A4 0x0U
+#define SERCOMPADRX_0_A5 0x1U
+#define SERCOMPADRX_0_A6 0x2U
+#define SERCOMPADRX_0_A7 0x3U
+#define SERCOMPADRX_1_A0 0x0U
+#define SERCOMPADRX_1_A1 0x1U
+#define SERCOMPADRX_1_B30 0x2U
+#define SERCOMPADRX_1_A31 0x3U
+#define SERCOMPADRX_2_A8 0x0U
+#define SERCOMPADRX_2_A9 0x1U
+#define SERCOMPADRX_2_A10 0x2U
+#define SERCOMPADRX_2_A11 0x3U
+#define SERCOMPADRX_3_A16 0x0U
+#define SERCOMPADRX_3_A17 0x1U
+#define SERCOMPADRX_3_A18 0x2U
+#define SERCOMPADRX_3_A19 0x3U
+#define SERCOMPADRX_3_A20 0x2U
+#define SERCOMPADRX_3_A21 0x3U
+#define SERCOMPADRX_4_B8 0x0U
+#define SERCOMPADRX_4_B9 0x1U
+#define SERCOMPADRX_4_A10 0x2U
+#define SERCOMPADRX_4_A11 0x3U
+#define SERCOMPADRX_4_A12 0x0U
+#define SERCOMPADRX_4_A13 0x1U
+#define SERCOMPADRX_4_A14 0x2U
+#define SERCOMPADRX_4_A15 0x3U
+#define SERCOMPADRX_5_A22 0x0U
+#define SERCOMPADRX_5_A23 0x1U
+#define SERCOMPADRX_5_A24 0x2U
+#define SERCOMPADRX_5_A25 0x3U
+#define SERCOMPADRX_5_B2 0x0U
+#define SERCOMPADRX_5_B3 0x1U
+#define SERCOMPADRX_5_B22 0x2U
+#define SERCOMPADRX_5_B23 0x3U
+
+#define SERCOMPADTX_0_A4 0x2U
+#define SERCOMPADTX_0_A6 0x1U
+#define SERCOMPADTX_1_A0 0x2U
+#define SERCOMPADTX_1_B30 0x1U
+#define SERCOMPADTX_2_A8 0x2U
+#define SERCOMPADTX_2_A10 0x1U
+#define SERCOMPADTX_3_A16 0x2U
+#define SERCOMPADTX_3_A18 0x1U
+#define SERCOMPADTX_3_A20 0x1U
+#define SERCOMPADTX_4_B8 0x2U
+#define SERCOMPADTX_4_A10 0x1U
+#define SERCOMPADTX_4_A12 0x2U
+#define SERCOMPADTX_4_A14 0x1U
+#define SERCOMPADTX_5_A22 0x2U
+#define SERCOMPADTX_5_A24 0x1U
+#define SERCOMPADTX_5_B2 0x2U
+#define SERCOMPADTX_5_B22 0x1U
+
+#define _sercompad(W, X, Y, Z) (SERCOMPAD##W##X##_##Y##Z)
+#define sercompad(W, X, Y, Z) (_sercompad(W, X, Y, Z))
+
+#define SERCOMMUX_0_A8 0x2U
+#define SERCOMMUX_0_A9 0x2U
+#define SERCOMMUX_0_A10 0x2U
+#define SERCOMMUX_0_A11 0x2U
+#define SERCOMMUX_1_A16 0x2U
+#define SERCOMMUX_1_A17 0x2U
+#define SERCOMMUX_1_A18 0x2U
+#define SERCOMMUX_1_A19 0x2U
+#define SERCOMMUX_2_A12 0x2U
+#define SERCOMMUX_2_A13 0x2U
+#define SERCOMMUX_2_A14 0x2U
+#define SERCOMMUX_2_A15 0x2U
+#define SERCOMMUX_3_A22 0x2U
+#define SERCOMMUX_3_A23 0x2U
+#define SERCOMMUX_3_A24 0x2U
+#define SERCOMMUX_3_A25 0x2U
+#define SERCOMMUX_5_A20 0x2U 
+#define SERCOMMUX_5_A21 0x2U
+//SERCOMMUX_ALT
+#define SERCOMMUX_0_A4 0x3U
+#define SERCOMMUX_0_A5 0x3U
+#define SERCOMMUX_0_A6 0x3U
+#define SERCOMMUX_0_A7 0x3U
+#define SERCOMMUX_1_A0 0x3U
+#define SERCOMMUX_1_A1 0x3U
+#define SERCOMMUX_1_B30 0x3U
+#define SERCOMMUX_1_A31 0x3U
+#define SERCOMMUX_2_A8 0x3U
+#define SERCOMMUX_2_A9 0x3U
+#define SERCOMMUX_2_A10 0x3U
+#define SERCOMMUX_2_A11 0x3U
+#define SERCOMMUX_3_A16 0x3U
+#define SERCOMMUX_3_A17 0x3U
+#define SERCOMMUX_3_A18 0x3U
+#define SERCOMMUX_3_A19 0x3U
+#define SERCOMMUX_3_A20 0x3U
+#define SERCOMMUX_3_A21 0x3U
+#define SERCOMMUX_4_B8 0x3U
+#define SERCOMMUX_4_B9 0x3U
+#define SERCOMMUX_4_A10 0x3U
+#define SERCOMMUX_4_A11 0x3U
+#define SERCOMMUX_4_A12 0x3U
+#define SERCOMMUX_4_A13 0x3U
+#define SERCOMMUX_4_A14 0x3U
+#define SERCOMMUX_4_A15 0x3U
+#define SERCOMMUX_5_A22 0x3U
+#define SERCOMMUX_5_A23 0x3U
+#define SERCOMMUX_5_A24 0x3U
+#define SERCOMMUX_5_A25 0x3U
+#define SERCOMMUX_5_B2 0x3U
+#define SERCOMMUX_5_B3 0x3U
+#define SERCOMMUX_5_B22 0x3U
+#define SERCOMMUX_5_B23 0x3U
+#define _sercommux_pin(X, Y, Z) (SERCOMMUX_##X##_##Y##Z)
+#define sercommux_pin(X, Y, Z) (_sercommux_pin(X, Y, Z))
 
 #if (INTERFACE == INTERFACE_USB)
 #ifdef USB_DM
@@ -1326,30 +1468,32 @@ extern "C"
 #define DIO203_PMUXVAL USB_DP_PMUXVAL
 #endif
 #else
+// Arduino already uses SERCOM0 and SERCOM 1
+#ifndef UART_PORT
+#define UART_PORT 2
+#endif
+
 #ifdef TX
 #define TX_PMUX (pinmux(TX_PORT, TX_BIT))
-#define TX_PMUXVAL (pinmuxval(TX_MUX))
+#define TX_PMUXVAL (sercommux_pin(UART_PORT, TX_PORT, TX_BIT))
 #define DIO200_PMUX TX_PMUX
 #define DIO200_PMUXVAL TX_PMUXVAL
 #endif
 #ifdef RX
 #define RX_PMUX (pinmux(RX_PORT, RX_BIT))
-#define RX_PMUXVAL (pinmuxval(RX_MUX))
+#define RX_PMUXVAL (sercommux_pin(UART_PORT, RX_PORT, RX_BIT))
 #define DIO201_PMUX RX_PMUX
 #define DIO201_PMUXVAL RX_PMUXVAL
 #endif
-#ifndef COM_NUMBER
-#define COM_NUMBER 0
-#endif
-#define COM __helper__(SERCOM, COM_NUMBER, )
-#define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM, COM_NUMBER, )
-#define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM, COM_NUMBER, _CORE)
-#define COM_IRQ __helper__(SERCOM, COM_NUMBER, _IRQn)
-#define mcu_com_isr __helper__(SERCOM, COM_NUMBER, _Handler)
+#define COM __helper__(SERCOM, UART_PORT, )
+#define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM, UART_PORT, )
+#define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM, UART_PORT, _CORE)
+#define COM_IRQ __helper__(SERCOM, UART_PORT, _IRQn)
+#define mcu_com_isr __helper__(SERCOM, UART_PORT, _Handler)
 #define COM_OUTREG (COM->USART.DATA.reg)
 #define COM_INREG (COM->USART.DATA.reg)
-#define COM_TX_PAD sercompad(_TX, TX_PAD)
-#define COM_RX_PAD sercompad(_RX, RX_PAD)
+#define COM_TX_PAD sercompad(TX_, UART_PORT, TX_PORT, TX_BIT)
+#define COM_RX_PAD sercompad(RX_, UART_PORT, RX_PORT, RX_BIT)
 #endif
 
 /*ISR inputs*/
@@ -2770,7 +2914,7 @@ extern "C"
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM->USART.INTFLAG.bit.DRE)
 #elif (INTERFACE == INTERFACE_USB)

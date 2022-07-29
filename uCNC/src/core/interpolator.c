@@ -1080,13 +1080,13 @@ uint32_t itp_get_rt_line_number(void)
 #endif
 
 // always fires after pulse
-void mcu_step_reset_cb(void)
+MCU_CALLBACK void mcu_step_reset_cb(void)
 {
 	// always resets all stepper pins
 	io_set_steps(g_settings.step_invert_mask);
 }
 
-void mcu_step_cb(void)
+MCU_CALLBACK void mcu_step_cb(void)
 {
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;

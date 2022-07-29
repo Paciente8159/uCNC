@@ -207,7 +207,7 @@ void MCU_ITP_ISR(void)
 	mcu_enable_global_isr();
 }
 
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 void mcu_com_isr()
 {
 	mcu_disable_global_isr();
@@ -232,7 +232,7 @@ void mcu_com_isr()
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 	PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
 	/* Setup GCLK SERCOMx to use GENCLK0 */
@@ -1322,7 +1322,7 @@ void mcu_putc(char c)
 		tud_cdc_write_flush();
 	}
 #else
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
 		;
@@ -1354,7 +1354,7 @@ char mcu_getc(void)
 
 	return (unsigned char)tud_cdc_read_char();
 #else
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())
 		;

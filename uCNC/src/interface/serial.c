@@ -348,16 +348,19 @@ void serial_flush(void)
 // ISR
 // New char handle strategy
 // All ascii will be sent to buffer and processed later (including comments)
-void mcu_com_rx_cb(unsigned char c)
+MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 {
 	uint8_t write;
 	if (c < ((unsigned char)'~')) // ascii (except CMD_CODE_CYCLE_START and DEL)
 	{
 		switch (c)
 		{
+		case CMD_CODE_REPORT:
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+			return;
+#endif
 		case CMD_CODE_RESET:
 		case CMD_CODE_FEED_HOLD:
-		case CMD_CODE_REPORT:
 			cnc_call_rt_command((uint8_t)c);
 			return;
 		default:
@@ -377,7 +380,7 @@ void mcu_com_rx_cb(unsigned char c)
 			}
 
 			serial_rx_write = write;
-			break;
+			return;
 		}
 	}
 	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
@@ -386,7 +389,7 @@ void mcu_com_rx_cb(unsigned char c)
 	}
 }
 
-void mcu_com_tx_cb(void)
+MCU_TX_CALLBACK void mcu_com_tx_cb(void)
 {
 #ifndef ENABLE_SYNC_TX
 	uint8_t read = serial_tx_read;

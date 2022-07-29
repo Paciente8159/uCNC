@@ -10,26 +10,35 @@
 
 ### Added
 
-- added support for NXP LPC176x core (lacks EEPROM and analog)
-- updated tinyUSB to version 0.13.0
+- added core support for ESP8266 with limitied functionalities (lacks analog and input ISR) (#222)
+- added support for NXP LPC176x core (lacks EEPROM and analog) (#227)
 
 ### Changed
 
+- configurable RX serial buffer size (#222)
+- updated tinyUSB to version 0.13.0 (#227)
 
 ### Fixed
 
-
-## [1.4.7] - Unreleased
+## [1.4.7] - 2022-07-29
 
 ### Added
 
+- added Marlin M913 command to TMC driver module (#226)
 
 ### Changed
 
+- modified TMC driver to include shadow registers of write only (#226)
+- modified/unified UART port definitions for all architectures (#230)
+- minor optimization with auto-report enabled (#230)
+- split platformio files for each board family (#231)
+- updated virtual HAL for Windows (#232)
 
 ### Fixed
 
-- fixed compilation error on STM32F1 if probe pin is not defined
+- fixed compilation error on STM32F1 if probe pin is not defined (#225)
+- fixed TMC M914 extension command initialization (#226)
+- fixed UART Arduino library conflict compilation error on PIO
 
 ## [1.4.6] - 2022-06-28
 
@@ -931,6 +940,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
+[1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5
 [1.4.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.4

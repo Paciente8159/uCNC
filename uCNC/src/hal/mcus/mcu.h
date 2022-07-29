@@ -29,7 +29,21 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define MCU_CALLBACK extern
+#ifndef MCU_CALLBACK
+#define MCU_CALLBACK
+#endif
+
+#ifndef MCU_TX_CALLBACK
+#define MCU_TX_CALLBACK MCU_CALLBACK
+#endif
+
+#ifndef MCU_RX_CALLBACK
+#define MCU_RX_CALLBACK MCU_CALLBACK
+#endif
+
+#ifndef MCU_IO_CALLBACK
+#define MCU_IO_CALLBACK MCU_CALLBACK
+#endif
 
 	// the extern is not necessary
 	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
@@ -37,13 +51,13 @@ extern "C"
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_CALLBACK void mcu_com_rx_cb(unsigned char c);
-	MCU_CALLBACK void mcu_com_tx_cb();
+	MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c);
+	MCU_TX_CALLBACK void mcu_com_tx_cb();
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
-	MCU_CALLBACK void mcu_controls_changed_cb(void);
-	MCU_CALLBACK void mcu_limits_changed_cb(void);
-	MCU_CALLBACK void mcu_probe_changed_cb(void);
-	MCU_CALLBACK void mcu_inputs_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
 
 /*IO functions*/
 

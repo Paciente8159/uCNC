@@ -98,6 +98,11 @@ extern "C"
 #include "lpc176x/boardmap_re_arm.h"
 #endif
 
+#if (BOARD == BOARD_WEMOS_D1)
+#define MCU MCU_ESP8266
+#include "esp8266/boardmap_wemos_d1.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #ifndef __linux__
 #define MCU MCU_VIRTUAL_WIN

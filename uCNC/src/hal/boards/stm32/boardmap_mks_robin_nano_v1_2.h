@@ -46,7 +46,7 @@ extern "C"
 #endif
 
 // Setup COM pins
-#define COM_PORT 3
+#define UART_PORT 3
 
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
@@ -105,12 +105,14 @@ extern "C"
 #define PROBE_PORT A
 #define PROBE_ISR
 
-// On the STM32 always use sync TX UART (async doesn't work well)
-#ifdef COM_PORT
+#if (INTERFACE == INTERFACE_USART)
+#define UART_PORT 3
 #define TX_BIT 10
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
+#else
+#error "This board uses an external USB<->Serial converter"
 #endif
 
 // Setup PWM
