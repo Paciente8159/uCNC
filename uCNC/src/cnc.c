@@ -206,7 +206,7 @@ bool cnc_dotasks(void)
 }
 
 // this function is executed every millisecond
-void mcu_rtc_cb(uint32_t millis)
+MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
 	static bool running = false;
 

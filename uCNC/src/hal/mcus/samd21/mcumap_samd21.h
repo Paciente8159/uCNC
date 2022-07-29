@@ -2914,7 +2914,7 @@ extern "C"
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_USART)
+#if (INTERFACE == INTERFACE_UART)
 #define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM->USART.INTFLAG.bit.DRE)
 #elif (INTERFACE == INTERFACE_USB)

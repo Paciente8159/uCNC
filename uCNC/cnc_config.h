@@ -25,7 +25,7 @@ extern "C"
 {
 #endif
 
-#define INTERFACE_USART 0
+#define INTERFACE_UART 0
 #define INTERFACE_USB 1
 
 	/**
@@ -39,7 +39,11 @@ extern "C"
 #endif
 
 #ifndef INTERFACE
-#define INTERFACE INTERFACE_USART
+#define INTERFACE INTERFACE_UART
+#endif
+
+#ifndef ENABLE_WIFI
+// #define ENABLE_WIFI
 #endif
 
 	/**
@@ -94,7 +98,7 @@ extern "C"
 	 * Uncomment to enable G92 storring on non volatile memory
 	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
 	 * */
-// #define G92_STORE_NONVOLATILE
+	// #define G92_STORE_NONVOLATILE
 
 	/**
 	 * Number of segments of an arc computed with aprox. of sin/cos math
@@ -416,6 +420,27 @@ extern "C"
 	 * */
 
 	// #define ENABLE_FAST_MATH
+
+/**
+ *
+ * HAL offsets
+ *
+ * */
+#ifndef PWM_PINS_OFFSET
+#define PWM_PINS_OFFSET 24
+#endif
+#ifndef SERVO_PINS_OFFSET
+#define SERVO_PINS_OFFSET 40
+#endif
+#ifndef DOUT_PINS_OFFSET
+#define DOUT_PINS_OFFSET 46
+#endif
+#ifndef ANALOG_PINS_OFFSET
+#define ANALOG_PINS_OFFSET 114
+#endif
+#ifndef DIN_PINS_OFFSET
+#define DIN_PINS_OFFSET 130
+#endif
 
 #ifdef __cplusplus
 }

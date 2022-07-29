@@ -6,6 +6,18 @@
 
 # Changelog
 
+## [1.5.b] - Unreleased
+
+### Added
+
+- added core support for ESP8266 with limitied functionalities (#222)
+
+### Changed
+
+- configurable RX serial buffer size (#222)
+
+### Fixed
+
 ## [1.4.7] - 2022-07-29
 
 ### Added
@@ -926,6 +938,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.b
 [1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5
