@@ -158,6 +158,8 @@ It can run on:
 - STM32F1 (Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
+- ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
+- NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developer) 
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC roadmap
