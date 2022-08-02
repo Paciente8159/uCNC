@@ -104,7 +104,7 @@
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
 #define G28HOME COORD_SYS_COUNT							 // G28 index
 #define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2 // G92 index
+#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
 
 #define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
@@ -128,7 +128,6 @@ static float parser_last_pos[AXIS_COUNT];
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
 static uint8_t parser_get_float(float *value);
-FORCEINLINE static uint8_t parser_eat_next_char(unsigned char c);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -181,6 +180,13 @@ uint8_t parser_read_command(void)
 		}
 		else
 		{
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+			if (error == STATUS_INVALID_STATEMENT)
+			{
+				error = mod_grbl_cmd_hook(error);
+			}
+#endif
 			return error;
 		}
 	}
@@ -334,21 +340,24 @@ static uint8_t parser_grbl_command(void)
 	switch (c)
 	{
 	case '$':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_SETTINGS : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_SEND_SYSTEM_SETTINGS : STATUS_INVALID_STATEMENT;
 	case '#':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_COORD_SYSTEM : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_SEND_COORD_SYSTEM : STATUS_INVALID_STATEMENT;
 	case 'H':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_HOME : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_HOME : STATUS_INVALID_STATEMENT;
 	case 'X':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_UNLOCK : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_UNLOCK : STATUS_INVALID_STATEMENT;
 	case 'G':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_PARSER_MODES : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_SEND_PARSER_MODES : STATUS_INVALID_STATEMENT;
 	case 'C':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_TOGGLE_CHECKMODE : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_TOGGLE_CHECKMODE : STATUS_INVALID_STATEMENT;
 	case 'J':
-		if (parser_eat_next_char('='))
+		if (serial_getc() != '=')
 		{
-			return STATUS_INVALID_JOG_COMMAND;
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+#endif
+			return STATUS_INVALID_STATEMENT;
 		}
 		if (cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 		{
@@ -363,29 +372,48 @@ static uint8_t parser_grbl_command(void)
 		case '0':
 		case '1':
 			block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
-			if (parser_eat_next_char('='))
+			if (serial_getc() != '=')
 			{
+#ifdef ENABLE_PARSER_MODULES
+				serial_ungetc();
+				serial_ungetc();
+#endif
 				return STATUS_INVALID_STATEMENT;
 			}
 			break;
 		case EOL:
 			return GRBL_SEND_STARTUP_BLOCKS;
 		default:
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+#endif
 			return STATUS_INVALID_STATEMENT;
 		}
 		c = 'N';
 		break;
 	case 'R':
-		if (parser_eat_next_char('S'))
+		if (serial_getc() != 'S')
 		{
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+#endif
 			return STATUS_INVALID_STATEMENT;
 		}
-		if (parser_eat_next_char('T'))
+		if (serial_getc() != 'T')
 		{
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+			serial_ungetc();
+#endif
 			return STATUS_INVALID_STATEMENT;
 		}
-		if (parser_eat_next_char('='))
+		if (serial_getc() != '=')
 		{
+#ifdef ENABLE_PARSER_MODULES
+			serial_ungetc();
+			serial_ungetc();
+			serial_ungetc();
+#endif
 			return STATUS_INVALID_STATEMENT;
 		}
 		break;
@@ -394,12 +422,11 @@ static uint8_t parser_grbl_command(void)
 		// new settings command
 		break;
 	case 'P':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_PINS_STATES : STATUS_INVALID_STATEMENT;
-		break;
+		return (serial_getc() == EOL) ? GRBL_PINS_STATES : STATUS_INVALID_STATEMENT;
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case 'I':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_INFO : STATUS_INVALID_STATEMENT;
+		return (serial_getc() == EOL) ? GRBL_SEND_SYSTEM_INFO : STATUS_INVALID_STATEMENT;
 #endif
 	case EOL:
 		return GRBL_HELP;
@@ -412,7 +439,7 @@ static uint8_t parser_grbl_command(void)
 	{
 	case 'R':
 		c = serial_getc();
-		if (parser_eat_next_char(EOL) != STATUS_OK)
+		if (serial_getc() != EOL)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
@@ -436,7 +463,7 @@ static uint8_t parser_grbl_command(void)
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	case 'S':
 		c = serial_getc();
-		if (parser_eat_next_char(EOL) != STATUS_OK)
+		if (serial_getc() != EOL)
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
@@ -493,7 +520,7 @@ static uint8_t parser_grbl_command(void)
 
 			setting_num = (uint8_t)val;
 			// eat '='
-			if (parser_eat_next_char('='))
+			if (serial_getc() != '=')
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -504,7 +531,7 @@ static uint8_t parser_grbl_command(void)
 				return STATUS_BAD_NUMBER_FORMAT;
 			}
 
-			if (parser_eat_next_char(EOL))
+			if (serial_getc() != EOL)
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
@@ -1781,11 +1808,6 @@ static uint8_t parser_get_comment(void)
 	}
 
 	return STATUS_BAD_COMMENT_FORMAT; // never reached here
-}
-
-static uint8_t parser_eat_next_char(unsigned char c)
-{
-	return ((serial_getc() == c) ? STATUS_OK : STATUS_INVALID_STATEMENT);
 }
 
 static uint8_t parser_get_token(unsigned char *word, float *value)

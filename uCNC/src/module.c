@@ -26,6 +26,24 @@
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
+
+// overridable handler
+uint8_t __attribute__((weak)) mod_grbl_cmd_hook(uint8_t error)
+{
+	EVENT_TYPE(grbl_cmd_delegate) *ptr = grbl_cmd_event;
+	while ((error == STATUS_INVALID_STATEMENT) && (ptr != NULL))
+	{
+		if (ptr->fptr != NULL)
+		{
+			error = ptr->fptr(error);
+		}
+
+		ptr = ptr->next;
+	}
+
+	return error;
+}
+
 // overridable handler
 uint8_t __attribute__((weak)) mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {

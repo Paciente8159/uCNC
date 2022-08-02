@@ -88,6 +88,14 @@ extern "C"
 	}
 
 #ifdef ENABLE_PARSER_MODULES
+	// defines a delegate function for the grbl cmd handler
+	typedef uint8_t (*grbl_cmd_delegate)(uint8_t);
+	// creates an event for the grbl_cmd
+	EVENT(grbl_cmd_delegate)
+	grbl_cmd_event;
+	// declares the handler hook to be called inside the parser core
+	uint8_t mod_grbl_cmd_hook(uint8_t error);
+
 	// defines a delegate function for the gcode parser handler
 	typedef uint8_t (*gcode_parse_delegate)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
 	// creates an event for the gcode_parse
@@ -120,7 +128,7 @@ extern "C"
 #ifdef ENABLE_INTERPOLATOR_MODULES
 	// defines a delegate function for the gcode parser handler
 	typedef void (*itp_reset_rt_position_delegate)(float *);
-	// creates an event for the gcode_parse
+	// creates an event for the itp_reset_rt_position
 	EVENT(itp_reset_rt_position_delegate)
 	itp_reset_rt_position_event;
 	// declares the handler hook to be called inside the parser core
