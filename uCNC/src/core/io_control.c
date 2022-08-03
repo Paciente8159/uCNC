@@ -186,7 +186,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-	mod_input_change_hook();
+	mod_input_change_hook(NULL);
 #endif
 }
 

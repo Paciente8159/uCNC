@@ -27,6 +27,11 @@ extern "C"
 
 #include "../cnc_config.h"
 #include "core/parser.h"
+#include <stdint.h>
+#include <stdbool.h>
+
+#define EVENT_CONTINUE false
+#define EVENT_HANDLED true
 
 #define DECL_MODULE(modulename) void modulename##_init(void)
 #define LOAD_MODULE(modulename)          \
@@ -68,41 +73,52 @@ extern "C"
 	// for example DECL_HOOK(do_stuff) will create a function declaration equivalent to void mod_do_stuff_hook(void)
 	// mod_do_stuff_hook can then be placed inside the core code to run the hook code
 
-#define DECL_HOOK(hook)                    \
-	typedef void (*hook##_delegate)(void); \
-	EVENT(hook##_delegate)                 \
-	hook##_event;                          \
-	void mod_##hook##_hook(void)
-#define WEAK_HOOK(hook) void __attribute__((weak)) mod_##hook##_hook(void)
-#define DEFAULT_HANDLER(hook)                            \
-	{                                                    \
-		EVENT_TYPE(hook##_delegate) *ptr = hook##_event; \
-		while (ptr != NULL)                              \
-		{                                                \
-			if (ptr->fptr != NULL)                       \
-			{                                            \
-				ptr->fptr();                             \
-			}                                            \
-			ptr = ptr->next;                             \
-		}                                                \
+#define DECL_HOOK(hook)                                 \
+	typedef uint8_t (*hook##_delegate)(void *, bool *); \
+	EVENT(hook##_delegate)                              \
+	hook##_event;                                       \
+	uint8_t mod_##hook##_hook(void *args)
+#define WEAK_HOOK(hook) uint8_t __attribute__((weak)) mod_##hook##_hook(void *args)
+#define DEFAULT_HANDLER(hook)                              \
+	{                                                      \
+		EVENT_TYPE(hook##_delegate) *ptr = hook##_event;   \
+		bool handled = EVENT_CONTINUE;                     \
+		uint8_t result = 0;                                \
+		while (ptr != NULL && (handled == EVENT_CONTINUE)) \
+		{                                                  \
+			if (ptr->fptr != NULL)                         \
+			{                                              \
+				result = ptr->fptr(args, &handled);        \
+			}                                              \
+			ptr = ptr->next;                               \
+		}                                                  \
+                                                           \
+		return result;                                     \
 	}
 
 #ifdef ENABLE_PARSER_MODULES
-	// defines a delegate function for the gcode parser handler
-	typedef uint8_t (*gcode_parse_delegate)(unsigned char, uint8_t, uint8_t, float, parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
-	// creates an event for the gcode_parse
-	EVENT(gcode_parse_delegate)
-	gcode_parse_event;
-	// declares the handler hook to be called inside the parser core
-	uint8_t mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+	// generates a default delegate, event and handler hook
+	typedef struct gcode_parse_arg_
+	{
+		unsigned char word;
+		uint8_t code;
+		uint8_t error;
+		float value;
+		parser_state_t *new_state;
+		parser_words_t *words;
+		parser_cmd_explicit_t *cmd;
+	} gcode_parse_arg_t;
+	// mod_gcode_parse_hook
+	DECL_HOOK(gcode_parse);
 
-	// defines a delegate function for the gcode exec handler
-	typedef uint8_t (*gcode_exec_delegate)(parser_state_t *, parser_words_t *, parser_cmd_explicit_t *);
-	// creates an event for the gcode_exec
-	EVENT(gcode_exec_delegate)
-	gcode_exec_event;
-	// declares the handler hook to be called inside the parser core
-	uint8_t mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+	typedef struct gcode_exec_arg_
+	{
+		parser_state_t *new_state;
+		parser_words_t *words;
+		parser_cmd_explicit_t *cmd;
+	} gcode_exec_arg_t;
+	// mod_gcode_exec_hook
+	DECL_HOOK(gcode_exec);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -118,13 +134,8 @@ extern "C"
 #endif
 
 #ifdef ENABLE_INTERPOLATOR_MODULES
-	// defines a delegate function for the gcode parser handler
-	typedef void (*itp_reset_rt_position_delegate)(float *);
-	// creates an event for the gcode_parse
-	EVENT(itp_reset_rt_position_delegate)
-	itp_reset_rt_position_event;
-	// declares the handler hook to be called inside the parser core
-	void mod_itp_reset_rt_position_hook(float *origin);
+	// mod_gcode_exec_hook
+	DECL_HOOK(itp_reset_rt_position);
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES

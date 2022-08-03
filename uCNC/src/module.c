@@ -26,62 +26,24 @@
 
 // this is the place to declare all parser extension registration calls
 #ifdef ENABLE_PARSER_MODULES
-// overridable handler
-uint8_t __attribute__((weak)) mod_gcode_parse_hook(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+// mod_gcode_parse_hook
+WEAK_HOOK(gcode_parse)
 {
-	EVENT_TYPE(gcode_parse_delegate) *ptr = gcode_parse_event;
-	while ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS) && (ptr != NULL))
-	{
-		if (ptr->fptr != NULL)
-		{
-			error = ptr->fptr(word, code, error, value, new_state, words, cmd);
-		}
-
-		ptr = ptr->next;
-	}
-
-	return error;
+	DEFAULT_HANDLER(gcode_parse);
 }
 
-// overridable handler
-uint8_t __attribute__((weak)) mod_gcode_exec_hook(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+// mod_gcode_exec_hook
+WEAK_HOOK(gcode_exec)
 {
-	EVENT_TYPE(gcode_exec_delegate) *ptr = gcode_exec_event;
-	uint8_t error = STATUS_GCODE_EXTENDED_UNSUPPORTED;
-	while ((cmd->group_extended != 0) && (ptr != NULL))
-	{
-		if (ptr->fptr != NULL)
-		{
-			error = ptr->fptr(new_state, words, cmd);
-		}
-
-		// checks if function catched the extended code
-		if (error != STATUS_GCODE_EXTENDED_UNSUPPORTED)
-		{
-			break;
-		}
-
-		ptr = ptr->next;
-	}
-
-	return error;
+	DEFAULT_HANDLER(gcode_exec);
 }
 #endif
 
 #ifdef ENABLE_INTERPOLATOR_MODULES
-
-// declares the handler hook to be called inside the parser core
-void __attribute__((weak)) mod_itp_reset_rt_position_hook(float *origin)
+// mod_itp_reset_rt_position_hook
+WEAK_HOOK(itp_reset_rt_position)
 {
-	EVENT_TYPE(itp_reset_rt_position_delegate) *ptr = itp_reset_rt_position_event;
-	while (ptr != NULL)
-	{
-		if (ptr->fptr != NULL)
-		{
-			ptr->fptr(origin);
-		}
-		ptr = ptr->next;
-	}
+	DEFAULT_HANDLER(itp_reset_rt_position);
 }
 #endif
 
