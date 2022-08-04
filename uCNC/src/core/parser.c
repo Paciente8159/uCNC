@@ -669,8 +669,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
 		{
-			gcode_parse_arg_t args = {word, code, error, value, new_state, words, cmd};
-			uint8_t newerror = mod_gcode_parse_hook(&args);
+			gcode_parse_args_t args = {word, code, error, value, new_state, words, cmd};
+			uint8_t newerror = EVENT_INVOKE(gcode_parse, &args);
 			// is extended command
 			if (cmd->group_extended != 0)
 			{
@@ -995,8 +995,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef ENABLE_PARSER_MODULES
 	if ((cmd->group_extended != 0))
 	{
-		gcode_exec_arg_t args = {new_state, words, cmd};
-		return mod_gcode_exec_hook(&args);
+		gcode_exec_args_t args = {new_state, words, cmd};
+		return EVENT_INVOKE(gcode_exe, &args);
 	}
 #endif
 

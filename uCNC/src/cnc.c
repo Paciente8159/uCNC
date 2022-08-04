@@ -186,7 +186,7 @@ bool cnc_dotasks(void)
 	}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_dotasks_hook(NULL);
+	EVENT_INVOKE(cnc_dotasks, NULL);
 #endif
 
 	// check security interlocking for any problem
@@ -218,7 +218,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		if (!cnc_get_exec_state(EXEC_ALARM))
 		{
-			mod_rtc_tick_hook(NULL);
+			EVENT_INVOKE(rtc_tick, NULL);
 		}
 #endif
 
@@ -287,7 +287,7 @@ void cnc_stop(void)
 	itp_stop_tools();
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_stop_hook(NULL);
+	EVENT_INVOKE(cnc_stop, NULL);
 #endif
 }
 
@@ -461,7 +461,7 @@ void cnc_reset(void)
 	encoders_reset_position();
 #endif
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_reset_hook(NULL);
+	EVENT_INVOKE(cnc_reset, NULL);
 #endif
 	protocol_send_string(MSG_STARTUP);
 	serial_flush();

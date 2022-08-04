@@ -186,7 +186,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-	mod_input_change_hook(NULL);
+	EVENT_INVOKE(input_change, NULL);
 #endif
 }
 
@@ -321,7 +321,7 @@ uint8_t io_get_controls(void)
 void io_enable_probe(void)
 {
 #ifdef ENABLE_MOTION_MODULES
-	mod_probe_enable_hook();
+	EVENT_INVOKE(probe_enable, NULL);
 #endif
 #ifndef FORCE_SOFT_POLLING
 #if !(PROBE < 0)
@@ -338,7 +338,7 @@ void io_disable_probe(void)
 #endif
 #endif
 #ifdef ENABLE_MOTION_MODULES
-	mod_probe_disable_hook();
+	EVENT_INVOKE(probe_disable, NULL);
 #endif
 }
 

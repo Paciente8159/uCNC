@@ -722,7 +722,7 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_PROTOCOL_MODULES
-	mod_send_pins_states_hook();
+	EVENT_INVOKE(send_pins_states, NULL);
 #endif
 
 	serial_print_str(__romstr__("[RUNTIME:"));

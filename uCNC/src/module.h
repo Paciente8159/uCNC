@@ -30,6 +30,8 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+#define UCNC_MODULE_VERSION_1_5_0_PLUS
+
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
 
@@ -47,6 +49,7 @@ extern "C"
 	} delegate##_event_t;               \
 	delegate##_event_t *
 #define EVENT_TYPE(delegate) delegate##_event_t
+#define EVENT_INVOKE(event, args) mod_##event##_hook(args)
 #define CREATE_LISTENER(delegate, handler) __attribute__((used)) delegate##_event_t delegate##_##handler = {&handler, NULL}
 #define ADD_LISTENER(delegate, handler, event)          \
 	{                                                   \
@@ -98,7 +101,7 @@ extern "C"
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
-	typedef struct gcode_parse_arg_
+	typedef struct gcode_parse_args_
 	{
 		unsigned char word;
 		uint8_t code;
@@ -107,16 +110,16 @@ extern "C"
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
-	} gcode_parse_arg_t;
+	} gcode_parse_args_t;
 	// mod_gcode_parse_hook
 	DECL_HOOK(gcode_parse);
 
-	typedef struct gcode_exec_arg_
+	typedef struct gcode_exec_args_
 	{
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
-	} gcode_exec_arg_t;
+	} gcode_exec_args_t;
 	// mod_gcode_exec_hook
 	DECL_HOOK(gcode_exec);
 #endif

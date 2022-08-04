@@ -83,11 +83,11 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-extern void mod_input_change_hook(void);
+//extern void mod_input_change_hook(void);
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-	mod_input_change_hook();
+	EVENT_INVOKE(input_change, NULL);
 #endif
 }
 

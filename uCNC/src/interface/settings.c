@@ -443,7 +443,7 @@ uint8_t settings_change(uint8_t setting, float value)
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
-	mod_settings_change_hook(NULL);
+	EVENT_INVOKE(settings_change, NULL);
 #endif
 
 	return result;
