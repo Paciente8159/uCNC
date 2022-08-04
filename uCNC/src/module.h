@@ -137,7 +137,7 @@ extern "C"
 #endif
 
 #ifdef ENABLE_INTERPOLATOR_MODULES
-	// mod_gcode_exec_hook
+	// mod_itp_reset_rt_position_hook
 	DECL_HOOK(itp_reset_rt_position);
 #endif
 
