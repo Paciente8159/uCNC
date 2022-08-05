@@ -30,9 +30,6 @@ extern "C"
 
 #define UCNC_MODULE_VERSION_1_5_0_PLUS
 
-#define EVENT_CONTINUE false
-#define EVENT_HANDLED true
-
 #define DECL_MODULE(name) void name##_init(void)
 #define LOAD_MODULE(name)          \
 	extern void name##_init(void); \
@@ -49,7 +46,7 @@ extern "C"
 // #define EVENT_TYPE(name) name##_delegate_event_t
 #define EVENT_INVOKE(name, args) event_##name##_handler(args)
 #define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, NULL}
-#define ADD_EVENT_LISTENER(name, handler)                    \
+#define ADD_EVENT_LISTENER(name, handler)                         \
 	{                                                             \
 		extern name##_delegate_event_t name##_delegate_##handler; \
 		if (name##_event == NULL)                                 \
@@ -74,27 +71,27 @@ extern "C"
 	// for example DECL_EVENT_HANDLER(<event name>) will create a function declaration equivalent to uint8_t event_<event name>_handler(void* args)
 	// event_<event name>_handler can then be placed inside the core code to run the hook code
 
-#define DECL_EVENT_HANDLER(name)                                 \
+#define DECL_EVENT_HANDLER(name)                        \
 	typedef uint8_t (*name##_delegate)(void *, bool *); \
-	EVENT(name)                              \
+	EVENT(name)                                         \
 	name##_event;                                       \
 	uint8_t event_##name##_handler(void *args)
 #define WEAK_EVENT_HANDLER(name) uint8_t __attribute__((weak)) event_##name##_handler(void *args)
-#define DEFAULT_EVENT_HANDLER(name)                              \
-	{                                                      \
-		name##_delegate_event_t *ptr = name##_event;   \
-		bool handled = false;                     \
-		uint8_t result = 0;                                \
-		while (ptr != NULL && !handled) \
-		{                                                  \
-			if (ptr->fptr != NULL)                         \
-			{                                              \
-				result = ptr->fptr(args, &handled);        \
-			}                                              \
-			ptr = ptr->next;                               \
-		}                                                  \
-                                                           \
-		return result;                                     \
+#define DEFAULT_EVENT_HANDLER(name)                  \
+	{                                                \
+		name##_delegate_event_t *ptr = name##_event; \
+		bool handled = false;                        \
+		uint8_t result = 0;                          \
+		while (ptr != NULL && !handled)              \
+		{                                            \
+			if (ptr->fptr != NULL)                   \
+			{                                        \
+				result = ptr->fptr(args, &handled);  \
+			}                                        \
+			ptr = ptr->next;                         \
+		}                                            \
+                                                     \
+		return result;                               \
 	}
 
 	void mod_init(void);
