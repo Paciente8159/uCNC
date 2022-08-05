@@ -34,8 +34,10 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define EXTENDED_MCODE(X) (1000 + X)
-#define EXTENDED_GCODE(X) (0 + X)
+#define EXTENDED_GCODE_BASE 0
+#define EXTENDED_MCODE_BASE 1000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001

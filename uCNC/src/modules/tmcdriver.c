@@ -188,15 +188,15 @@ CREATE_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES)
 // this ID must be unique for each code
-#define M350 1350
+#define M350 EXTENDED_MCODE(350)
 // this ID must be unique for each code
-#define M906 1906
+#define M906 EXTENDED_MCODE(906)
 // this ID must be unique for each code
-#define M913 1913
+#define M913 EXTENDED_MCODE(913)
 // this ID must be unique for each code
-#define M914 1914
+#define M914 EXTENDED_MCODE(914)
 // this ID must be unique for each code
-#define M920 1920
+#define M920 EXTENDED_MCODE(920)
 
 uint8_t m350_parse(void* args, bool* handled);
 uint8_t m350_exec(void* args, bool* handled);

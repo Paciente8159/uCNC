@@ -26,7 +26,7 @@ SOFTSPI(digipotspi, 0, STEPPER_DIGIPOT_DO, STEPPER_DIGIPOT_DI, STEPPER_DIGIPOT_C
 #if defined(ENABLE_PARSER_MODULES)
 
 // this ID must be unique for each code
-#define M907 1907
+#define M907 EXTENDED_MCODE(907)
 
 uint8_t m907_parse(void *args, bool *handled);
 uint8_t m907_exec(void *args, bool *handled);

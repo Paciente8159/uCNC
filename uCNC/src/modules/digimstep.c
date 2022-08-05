@@ -23,7 +23,7 @@
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES)
 // this ID must be unique for each code
-#define M351 1351
+#define M351 EXTENDED_MCODE(351)
 
 uint8_t m351_parse(void *args, bool* handled);
 uint8_t m351_exec(void *args, bool* handled);
