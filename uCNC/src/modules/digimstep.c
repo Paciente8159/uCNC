@@ -25,38 +25,44 @@
 // this ID must be unique for each code
 #define M351 1351
 
-uint8_t m351_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m351_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+uint8_t m351_parse(void *args, bool *handled);
+uint8_t m351_exec(void *args, bool *handled);
 
 CREATE_LISTENER(gcode_parse_delegate, m351_parse);
 CREATE_LISTENER(gcode_exec_delegate, m351_exec);
 
 // this just parses and acceps the code
-uint8_t m351_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m351_parse(void *args, bool *handled)
 {
-	if (word == 'M' && value == 351.0f)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 351.0f)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M351;
+		ptr->cmd->group_extended = M351;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m351_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m351_exec(void *args, bool *handled)
 {
-	if (cmd->group_extended == M351)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M351)
 	{
+		*handled = true;
 		itp_sync();
-		if (!cmd->words)
+		if (!ptr->cmd->words)
 		{
 			int32_t val = -1;
 			// if no additional args then print the
@@ -152,76 +158,76 @@ uint8_t m351_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #ifdef STEPPER0_MSTEP0
-			io_set_output(STEPPER0_MSTEP0, ((uint8_t)words->xyzabc[0] & 0x01));
+			io_set_output(STEPPER0_MSTEP0, ((uint8_t)ptr->words->xyzabc[0] & 0x01));
 #endif
 #ifdef STEPPER0_MSTEP1
-			io_set_output(STEPPER0_MSTEP1, ((uint8_t)words->xyzabc[0] & 0x02));
+			io_set_output(STEPPER0_MSTEP1, ((uint8_t)ptr->words->xyzabc[0] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #ifdef STEPPER1_MSTEP0
-			io_set_output(STEPPER1_MSTEP0, ((uint8_t)words->xyzabc[1] & 0x01));
+			io_set_output(STEPPER1_MSTEP0, ((uint8_t)ptr->words->xyzabc[1] & 0x01));
 #endif
 #ifdef STEPPER1_MSTEP1
-			io_set_output(STEPPER1_MSTEP1, ((uint8_t)words->xyzabc[1] & 0x02));
+			io_set_output(STEPPER1_MSTEP1, ((uint8_t)ptr->words->xyzabc[1] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #ifdef STEPPER2_MSTEP0
-			io_set_output(STEPPER2_MSTEP0, (((uint8_t)words->xyzabc[2]) & 0x01));
+			io_set_output(STEPPER2_MSTEP0, (((uint8_t)ptr->words->xyzabc[2]) & 0x01));
 #endif
 #ifdef STEPPER2_MSTEP1
-			io_set_output(STEPPER2_MSTEP1, (((uint8_t)words->xyzabc[2]) & 0x02));
+			io_set_output(STEPPER2_MSTEP1, (((uint8_t)ptr->words->xyzabc[2]) & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #ifdef STEPPER3_MSTEP0
-			io_set_output(STEPPER3_MSTEP0, ((uint8_t)words->xyzabc[3] & 0x01));
+			io_set_output(STEPPER3_MSTEP0, ((uint8_t)ptr->words->xyzabc[3] & 0x01));
 #endif
 #ifdef STEPPER3_MSTEP1
-			io_set_output(STEPPER3_MSTEP1, ((uint8_t)words->xyzabc[3] & 0x02));
+			io_set_output(STEPPER3_MSTEP1, ((uint8_t)ptr->words->xyzabc[3] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #ifdef STEPPER4_MSTEP0
-			io_set_output(STEPPER4_MSTEP0, ((uint8_t)words->xyzabc[4] & 0x01));
+			io_set_output(STEPPER4_MSTEP0, ((uint8_t)ptr->words->xyzabc[4] & 0x01));
 #endif
 #ifdef STEPPER4_MSTEP1
-			io_set_output(STEPPER4_MSTEP1, ((uint8_t)words->xyzabc[4] & 0x02));
+			io_set_output(STEPPER4_MSTEP1, ((uint8_t)ptr->words->xyzabc[4] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #ifdef STEPPER5_MSTEP0
-			io_set_output(STEPPER5_MSTEP0, ((uint8_t)words->xyzabc[5] & 0x01));
+			io_set_output(STEPPER5_MSTEP0, ((uint8_t)ptr->words->xyzabc[5] & 0x01));
 #endif
 #ifdef STEPPER5_MSTEP1
-			io_set_output(STEPPER5_MSTEP1, ((uint8_t)words->xyzabc[5] & 0x02));
+			io_set_output(STEPPER5_MSTEP1, ((uint8_t)ptr->words->xyzabc[5] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #ifdef STEPPER6_MSTEP0
-			io_set_output(STEPPER6_MSTEP0, ((uint8_t)words->ijk[0] & 0x01));
+			io_set_output(STEPPER6_MSTEP0, ((uint8_t)ptr->words->ijk[0] & 0x01));
 #endif
 #ifdef STEPPER6_MSTEP1
-			io_set_output(STEPPER6_MSTEP1, ((uint8_t)words->ijk[0] & 0x02));
+			io_set_output(STEPPER6_MSTEP1, ((uint8_t)ptr->words->ijk[0] & 0x02));
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #ifdef STEPPER7_MSTEP0
-			io_set_output(STEPPER7_MSTEP0, ((uint8_t)words->ijk[1] & 0x01));
+			io_set_output(STEPPER7_MSTEP0, ((uint8_t)ptr->words->ijk[1] & 0x01));
 #endif
 #ifdef STEPPER7_MSTEP1
-			io_set_output(STEPPER7_MSTEP1, ((uint8_t)words->ijk[1] & 0x02));
+			io_set_output(STEPPER7_MSTEP1, ((uint8_t)ptr->words->ijk[1] & 0x02));
 #endif
 		}
 
