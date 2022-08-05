@@ -35,56 +35,56 @@ extern "C"
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
 
-#define DECL_MODULE(modulename) void modulename##_init(void)
-#define LOAD_MODULE(modulename)          \
-	extern void modulename##_init(void); \
-	modulename##_init()
+#define DECL_MODULE(name) void name##_init(void)
+#define LOAD_MODULE(name)          \
+	extern void name##_init(void); \
+	name##_init()
 
 // definitions to create events and event listeners
-#define EVENT(delegate)                 \
-	typedef struct delegate##_event_    \
-	{                                   \
-		delegate fptr;                  \
-		struct delegate##_event_ *next; \
-	} delegate##_event_t;               \
-	delegate##_event_t *
-#define EVENT_TYPE(delegate) delegate##_event_t
-#define EVENT_INVOKE(event, args) mod_##event##_hook(args)
-#define CREATE_LISTENER(delegate, handler) __attribute__((used)) delegate##_event_t delegate##_##handler = {&handler, NULL}
-#define ADD_LISTENER(delegate, handler, event)          \
-	{                                                   \
-		extern delegate##_event_t delegate##_##handler; \
-		if (event == NULL)                              \
-		{                                               \
-			event = &delegate##_##handler;              \
-			event->next = NULL;                         \
-		}                                               \
-		else                                            \
-		{                                               \
-			delegate##_event_t *p = event;              \
-			while (p->next != NULL)                     \
-			{                                           \
-				p = p->next;                            \
-			}                                           \
-			p->next = &delegate##_##handler;            \
-			p->next->next = NULL;                       \
-		}                                               \
+#define EVENT(name)                          \
+	typedef struct name##_delegate_event_    \
+	{                                        \
+		name##_delegate fptr;                \
+		struct name##_delegate_event_ *next; \
+	} name##_delegate_event_t;               \
+	name##_delegate_event_t *
+// #define EVENT_TYPE(name) name##_delegate_event_t
+#define EVENT_INVOKE(name, args) event_##name##_handler(args)
+#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, NULL}
+#define ADD_EVENT_LISTENER(name, handler)                    \
+	{                                                             \
+		extern name##_delegate_event_t name##_delegate_##handler; \
+		if (name##_event == NULL)                                 \
+		{                                                         \
+			name##_event = &name##_delegate_##handler;            \
+			name##_event->next = NULL;                            \
+		}                                                         \
+		else                                                      \
+		{                                                         \
+			name##_delegate_event_t *p = name##_event;            \
+			while (p->next != NULL)                               \
+			{                                                     \
+				p = p->next;                                      \
+			}                                                     \
+			p->next = &name##_delegate_##handler;                 \
+			p->next->next = NULL;                                 \
+		}                                                         \
 	}
 
 	// definitions to create overridable default handlers for functions void-void hooks
 	// the resulting handles is named mod_<hookname>_hook and can be placed inside any point in the core code
-	// for example DECL_HOOK(do_stuff) will create a function declaration equivalent to void mod_do_stuff_hook(void)
+	// for example DECL_EVENT_HANDLER(do_stuff) will create a function declaration equivalent to void mod_do_stuff_hook(void)
 	// mod_do_stuff_hook can then be placed inside the core code to run the hook code
 
-#define DECL_HOOK(hook)                                 \
-	typedef uint8_t (*hook##_delegate)(void *, bool *); \
-	EVENT(hook##_delegate)                              \
-	hook##_event;                                       \
-	uint8_t mod_##hook##_hook(void *args)
-#define WEAK_HOOK(hook) uint8_t __attribute__((weak)) mod_##hook##_hook(void *args)
-#define DEFAULT_HANDLER(hook)                              \
+#define DECL_EVENT_HANDLER(name)                                 \
+	typedef uint8_t (*name##_delegate)(void *, bool *); \
+	EVENT(name)                              \
+	name##_event;                                       \
+	uint8_t event_##name##_handler(void *args)
+#define WEAK_EVENT_HANDLER(name) uint8_t __attribute__((weak)) event_##name##_handler(void *args)
+#define DEFAULT_EVENT_HANDLER(name)                              \
 	{                                                      \
-		EVENT_TYPE(hook##_delegate) *ptr = hook##_event;   \
+		name##_delegate_event_t *ptr = name##_event;   \
 		bool handled = EVENT_CONTINUE;                     \
 		uint8_t result = 0;                                \
 		while (ptr != NULL && (handled == EVENT_CONTINUE)) \
@@ -112,7 +112,7 @@ extern "C"
 		parser_cmd_explicit_t *cmd;
 	} gcode_parse_args_t;
 	// mod_gcode_parse_hook
-	DECL_HOOK(gcode_parse);
+	DECL_EVENT_HANDLER(gcode_parse);
 
 	typedef struct gcode_exec_args_
 	{
@@ -121,46 +121,46 @@ extern "C"
 		parser_cmd_explicit_t *cmd;
 	} gcode_exec_args_t;
 	// mod_gcode_exec_hook
-	DECL_HOOK(gcode_exec);
+	DECL_EVENT_HANDLER(gcode_exec);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// generates a default delegate, event and handler hook
 	// mod_cnc_reset_hook
-	DECL_HOOK(cnc_reset);
+	DECL_EVENT_HANDLER(cnc_reset);
 	// mod_rtc_tick_hook
-	DECL_HOOK(rtc_tick);
+	DECL_EVENT_HANDLER(rtc_tick);
 	// mod_cnc_dotasks_hook
-	DECL_HOOK(cnc_dotasks);
+	DECL_EVENT_HANDLER(cnc_dotasks);
 	// mod_cnc_stop_hook
-	DECL_HOOK(cnc_stop);
+	DECL_EVENT_HANDLER(cnc_stop);
 #endif
 
 #ifdef ENABLE_INTERPOLATOR_MODULES
 	// mod_itp_reset_rt_position_hook
-	DECL_HOOK(itp_reset_rt_position);
+	DECL_EVENT_HANDLER(itp_reset_rt_position);
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
 	// mod_settings_change_hook
-	DECL_HOOK(settings_change);
+	DECL_EVENT_HANDLER(settings_change);
 #endif
 
 #ifdef ENABLE_PROTOCOL_MODULES
 	// mod_send_pins_states_hook
-	DECL_HOOK(send_pins_states);
+	DECL_EVENT_HANDLER(send_pins_states);
 #endif
 
 #ifdef ENABLE_IO_MODULES
 	// mod_input_change_hook
-	DECL_HOOK(input_change);
+	DECL_EVENT_HANDLER(input_change);
 #endif
 
 #ifdef ENABLE_MOTION_MODULES
 	// mod_probe_enable_hook
-	DECL_HOOK(probe_enable);
+	DECL_EVENT_HANDLER(probe_enable);
 	// mod_probe_disable_hook
-	DECL_HOOK(probe_disable);
+	DECL_EVENT_HANDLER(probe_disable);
 #endif
 
 	void mod_init(void);

@@ -31,8 +31,8 @@ SOFTSPI(digipotspi, 0, STEPPER_DIGIPOT_DO, STEPPER_DIGIPOT_DI, STEPPER_DIGIPOT_C
 uint8_t m907_parse(void *args, bool *handled);
 uint8_t m907_exec(void *args, bool *handled);
 
-CREATE_LISTENER(gcode_parse_delegate, m907_parse);
-CREATE_LISTENER(gcode_exec_delegate, m907_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m907_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m907_exec);
 
 // this just parses and acceps the code
 uint8_t m907_parse(void *args, bool *handled)
@@ -56,7 +56,7 @@ uint8_t m907_parse(void *args, bool *handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m907_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m907_exec(void* args, bool* handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
@@ -77,7 +77,7 @@ uint8_t m907_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			softspi_xmit(&digipotspi, (uint8_t)ptr->words->xyzabc[0]);
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #if STEPPER1_DIGIPOT_CHANNEL > 0
 			softspi_xmit(&digipotspi, STEPPER1_DIGIPOT_CHANNEL);
@@ -112,7 +112,7 @@ uint8_t m907_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			softspi_xmit(&digipotspi, (uint8_t)ptr->words->xyzabc[5]);
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #if STEPPER6_DIGIPOT_CHANNEL > 0
 			softspi_xmit(&digipotspi, STEPPER6_DIGIPOT_CHANNEL);
@@ -181,7 +181,7 @@ uint8_t digipot_config(void *args, bool *handled)
 }
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-CREATE_LISTENER(cnc_reset_delegate, digipot_config);
+CREATE_EVENT_LISTENER(cnc_reset, digipot_config);
 #endif
 
 DECL_MODULE(digipot)
@@ -192,11 +192,11 @@ DECL_MODULE(digipot)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_LISTENER(cnc_reset_delegate, digipot_config, cnc_reset_event);
+	ADD_EVENT_LISTENER(cnc_reset, digipot_config);
 #endif
 #ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m907_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m907_exec, gcode_exec_event);
+	ADD_EVENT_LISTENER(gcode_parse, m907_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m907_exec);
 #endif
 }
 

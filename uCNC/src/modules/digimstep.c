@@ -28,8 +28,8 @@
 uint8_t m351_parse(void *args, bool *handled);
 uint8_t m351_exec(void *args, bool *handled);
 
-CREATE_LISTENER(gcode_parse_delegate, m351_parse);
-CREATE_LISTENER(gcode_exec_delegate, m351_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m351_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m351_exec);
 
 // this just parses and acceps the code
 uint8_t m351_parse(void *args, bool *handled)
@@ -291,8 +291,8 @@ DECL_MODULE(digimstep)
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m351_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m351_exec, gcode_exec_event);
+	ADD_EVENT_LISTENER(gcode_parse, m351_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m351_exec);
 #endif
 }
 #endif

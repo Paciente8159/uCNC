@@ -996,7 +996,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if ((cmd->group_extended != 0))
 	{
 		gcode_exec_args_t args = {new_state, words, cmd};
-		return EVENT_INVOKE(gcode_exe, &args);
+		return EVENT_INVOKE(gcode_exec, &args);
 	}
 #endif
 

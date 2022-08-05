@@ -182,7 +182,7 @@ uint8_t tmcdriver_config_handler(void* args, bool*handler) {
 }
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-CREATE_LISTENER(cnc_reset_delegate, tmcdriver_config_handler);
+CREATE_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 #endif
 
 /*custom gcode commands*/
@@ -209,16 +209,16 @@ uint8_t m914_exec(void* args, bool* handled);
 uint8_t m920_parse(void* args, bool* handled);
 uint8_t m920_exec(void* args, bool* handled);
 
-CREATE_LISTENER(gcode_parse_delegate, m350_parse);
-CREATE_LISTENER(gcode_exec_delegate, m350_exec);
-CREATE_LISTENER(gcode_parse_delegate, m906_parse);
-CREATE_LISTENER(gcode_exec_delegate, m906_exec);
-CREATE_LISTENER(gcode_parse_delegate, m913_parse);
-CREATE_LISTENER(gcode_exec_delegate, m913_exec);
-CREATE_LISTENER(gcode_parse_delegate, m914_parse);
-CREATE_LISTENER(gcode_exec_delegate, m914_exec);
-CREATE_LISTENER(gcode_parse_delegate, m920_parse);
-CREATE_LISTENER(gcode_exec_delegate, m920_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m350_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m350_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m906_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m906_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m913_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m913_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m914_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m914_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m920_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m920_exec);
 
 // this just parses and acceps the code
 uint8_t m350_parse(void* args, bool* handled)
@@ -244,6 +244,8 @@ uint8_t m350_parse(void* args, bool* handled)
 // this actually performs 2 steps in 1 (validation and execution)
 uint8_t m350_exec(void* args, bool* handled)
 {
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
 	if (ptr->cmd->group_extended == M350)
 	{
 		*handled = true;
@@ -362,7 +364,7 @@ uint8_t m350_exec(void* args, bool* handled)
 #endif
 		}
 
-		tmcdriver_config(NULL, false);
+		tmcdriver_config();
 
 		return STATUS_OK;
 	}
@@ -1171,19 +1173,19 @@ DECL_MODULE(tmcdriver)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_LISTENER(cnc_reset_delegate, tmcdriver_config_handler, cnc_reset_event);
+	ADD_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 #endif
 #ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m906_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m906_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m913_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m913_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m914_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m914_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m920_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m920_exec, gcode_exec_event);
+	ADD_EVENT_LISTENER(gcode_parse, m350_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m350_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m906_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m906_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m913_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m913_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m914_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m914_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m920_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m920_exec);
 #endif
 
 #ifdef STEPPER0_HAS_TMC
