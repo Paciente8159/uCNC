@@ -38,8 +38,14 @@ You can expand µCNC using via modules. The available modules are at the [µCNC-
 
 ## Current µCNC status
 
-µCNC current major version is v1.4. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
-Version 1.4 added a couple of new features.
+µCNC current major version is v1.5. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+Version 1.5 added a couple of new features.
+
+- added support for ESP8266 MCU and the WeMos D1 boards.
+- added support for LPC176x MCU and the Re-Arm boards.
+- full revision of the modular extension system based on events, delegates and listeners. All events share the same function declaration format. It's now easier to create add new events and handlers to the core code.
+
+Version 1.4 added the following new features.
 
 - added support for STM32F4 MCU and the Blackpill boards.
 - new servo PIN type that generates a 50Hz with TOn - 1~2ms needed to control servo type motors.
@@ -50,7 +56,7 @@ Version 1.4 added a couple of new features.
 - added support for a subset of canned cycles (G8x), enabled via config file
 - added module for BLtouch probe
 
-Version 1.3 added a couple of new features.
+Version 1.3 added the following new features.
 
 - added support for SAMD21 MCU and the Arduino Zero/M0 boards.
 - new HAL for tool change and management.
@@ -69,7 +75,6 @@ These include:
 
 ### G-Codes support
 
-µCNC v1.4.0-beta2 added additional Gcode support.
 µCNC for now supports most of the RS274NGC v3:
 
 ```
@@ -92,7 +97,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Outside the RS274NGC scope
     - Servo Control: M10*
     - General Pin Control: M42*
-    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
+    - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
     - Valid Non-Command Words: E (used by 3D printing firmwares like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
