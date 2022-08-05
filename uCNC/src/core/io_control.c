@@ -27,6 +27,16 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
+#ifdef ENABLE_IO_MODULES
+// event_input_change_handler
+WEAK_EVENT_HANDLER(input_change)
+{
+	// for now only encoder module uses this hook and overrides it
+	// it actually overrides the mcu callback to be faster
+	DEFAULT_EVENT_HANDLER(input_change);
+}
+#endif
+
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 #ifndef DISABLE_ALL_LIMITS

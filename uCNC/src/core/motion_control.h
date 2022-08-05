@@ -24,6 +24,7 @@ extern "C"
 {
 #endif
 
+#include "../module.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -78,6 +79,13 @@ extern "C"
 
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
+
+#ifdef ENABLE_MOTION_MODULES
+	// event_probe_enable_handler
+	DECL_EVENT_HANDLER(probe_enable);
+	// event_probe_disable_handler
+	DECL_EVENT_HANDLER(probe_disable);
+#endif
 
 #ifdef __cplusplus
 }

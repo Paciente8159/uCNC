@@ -30,8 +30,9 @@ extern "C"
 {
 #endif
 
-#include <stdbool.h>
+#include "../module.h"
 #include <stdint.h>
+#include <stdbool.h>
 
 	// inputs
 	void io_lock_limits(uint8_t limitmask);
@@ -56,6 +57,11 @@ extern "C"
 	void io_enable_steppers(uint8_t mask);
 
 	int16_t io_get_pinvalue(uint8_t pin);
+
+#ifdef ENABLE_IO_MODULES
+	// event_input_change_handler
+	DECL_EVENT_HANDLER(input_change);
+#endif
 
 #ifdef __cplusplus
 }

@@ -162,6 +162,15 @@ const settings_t __rom__ default_settings =
 #endif
 };
 
+#ifdef ENABLE_SETTINGS_MODULES
+// event_settings_change_handler
+WEAK_EVENT_HANDLER(settings_change)
+{
+	// for now only pid module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(settings_change);
+}
+#endif
+
 void settings_init(void)
 {
 	const char version[3] = SETTINGS_VERSION;

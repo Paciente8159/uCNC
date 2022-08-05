@@ -25,20 +25,21 @@
 // this ID must be unique for each code
 #define M351 1351
 
-uint8_t m351_parse(void *args, bool *handled);
-uint8_t m351_exec(void *args, bool *handled);
+uint8_t m351_parse(void *args, bool* handled);
+uint8_t m351_exec(void *args, bool* handled);
 
 CREATE_EVENT_LISTENER(gcode_parse, m351_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m351_exec);
 
 // this just parses and acceps the code
-uint8_t m351_parse(void *args, bool *handled)
+uint8_t m351_parse(void *args, bool* handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
 	if (ptr->word == 'M' && ptr->value == 351.0f)
 	{
 		*handled = true;
+
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
@@ -54,13 +55,14 @@ uint8_t m351_parse(void *args, bool *handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m351_exec(void *args, bool *handled)
+uint8_t m351_exec(void *args, bool* handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
 	if (ptr->cmd->group_extended == M351)
 	{
 		*handled = true;
+
 		itp_sync();
 		if (!ptr->cmd->words)
 		{

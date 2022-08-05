@@ -198,9 +198,9 @@ void FORCEINLINE pid_stop()
 #endif
 }
 
-// this overrides the module handler since no other module is using it
+// this overrides the event handler since no other module is using it
 // may be modified in the future
-void mod_cnc_stop_hook(void)
+void event_cnc_stop_handler(void)
 {
 	pid_stop();
 }
@@ -252,16 +252,16 @@ void FORCEINLINE pid_update(void)
 	}
 }
 
-// overrides the default mod_rtc_tick_hook
+// overrides the default event_rtc_tick_handler
 // may be modified in the future
-void mod_rtc_tick_hook(void)
+void event_rtc_tick_handler(void)
 {
 	pid_update();
 }
 
-// overrides the default mod_rtc_tick_hook
+// overrides the default event_rtc_tick_handler
 // may be modified in the future
-void mod_settings_change_hook(void)
+void event_settings_change_handler(void)
 {
 	pid_init();
 }

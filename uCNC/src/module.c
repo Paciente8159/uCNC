@@ -24,106 +24,16 @@
 #include "modules/encoder.h"
 #include "modules/pid.h"
 
-// this is the place to declare all parser extension registration calls
-#ifdef ENABLE_PARSER_MODULES
-// mod_gcode_parse_hook
-WEAK_EVENT_HANDLER(gcode_parse)
+/**
+ * 
+ * this is the place to declare all parser extension registration calls
+ * Example: LOAD_MODULE(m42);
+ * 
+ **/
+static FORCEINLINE void load_modules(void)
 {
-	DEFAULT_EVENT_HANDLER(gcode_parse);
+	// PLACE YOUR MODULES HERE
 }
-
-// mod_gcode_exec_hook
-WEAK_EVENT_HANDLER(gcode_exec)
-{
-	DEFAULT_EVENT_HANDLER(gcode_exec);
-}
-#endif
-
-#ifdef ENABLE_INTERPOLATOR_MODULES
-// mod_itp_reset_rt_position_hook
-WEAK_EVENT_HANDLER(itp_reset_rt_position)
-{
-	DEFAULT_EVENT_HANDLER(itp_reset_rt_position);
-}
-#endif
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-// mod_cnc_reset_hook
-WEAK_EVENT_HANDLER(cnc_reset)
-{
-	// for now only encoder module uses this hook and overrides it
-	DEFAULT_EVENT_HANDLER(cnc_reset);
-}
-
-// mod_rtc_tick_hook
-WEAK_EVENT_HANDLER(rtc_tick)
-{
-	// for now only pid module uses this hook and overrides it
-	DEFAULT_EVENT_HANDLER(rtc_tick);
-}
-
-// mod_cnc_dotasks_hook
-WEAK_EVENT_HANDLER(cnc_dotasks)
-{
-	// for now this is not used
-	DEFAULT_EVENT_HANDLER(cnc_dotasks);
-}
-
-// mod_cnc_stop_hook
-WEAK_EVENT_HANDLER(cnc_stop)
-{
-	// for now only pid module uses this hook and overrides it
-	DEFAULT_EVENT_HANDLER(cnc_stop);
-}
-
-#endif
-
-#ifdef ENABLE_SETTINGS_MODULES
-// mod_settings_change_hook
-WEAK_EVENT_HANDLER(settings_change)
-{
-	// for now only pid module uses this hook and overrides it
-	DEFAULT_EVENT_HANDLER(settings_change);
-}
-#endif
-
-#ifdef ENABLE_PROTOCOL_MODULES
-// mod_send_pins_states_hook
-WEAK_EVENT_HANDLER(send_pins_states)
-{
-	// for now only encoder module uses this hook and overrides it
-	// it actually overrides the mcu callback to be faster
-	DEFAULT_EVENT_HANDLER(send_pins_states);
-}
-#endif
-
-#ifdef ENABLE_IO_MODULES
-// mod_input_change_hook
-WEAK_EVENT_HANDLER(input_change)
-{
-	// for now only encoder module uses this hook and overrides it
-	// it actually overrides the mcu callback to be faster
-	DEFAULT_EVENT_HANDLER(input_change);
-}
-#endif
-
-#ifdef ENABLE_MOTION_MODULES
-// mod_probe_enable_hook
-WEAK_EVENT_HANDLER(probe_enable)
-{
-	// for now this is not used
-	DEFAULT_EVENT_HANDLER(probe_enable);
-}
-
-// mod_probe_disable_hook
-WEAK_EVENT_HANDLER(probe_disable)
-{
-	// for now this is not used
-	DEFAULT_EVENT_HANDLER(probe_disable);
-}
-#endif
-
-static FORCEINLINE void load_modules(void);
 
 void mod_init(void)
 {
@@ -148,9 +58,4 @@ void mod_init(void)
 #endif
 
 	load_modules();
-}
-
-void load_modules(void)
-{
-	// PLACE YOUR MODULES HERE
 }

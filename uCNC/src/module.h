@@ -25,8 +25,6 @@ extern "C"
 {
 #endif
 
-#include "../cnc_config.h"
-#include "core/parser.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -71,10 +69,10 @@ extern "C"
 		}                                                         \
 	}
 
-	// definitions to create overridable default handlers for functions void-void hooks
-	// the resulting handles is named mod_<hookname>_hook and can be placed inside any point in the core code
-	// for example DECL_EVENT_HANDLER(do_stuff) will create a function declaration equivalent to void mod_do_stuff_hook(void)
-	// mod_do_stuff_hook can then be placed inside the core code to run the hook code
+	// definitions to create overridable default handlers for functions with a declaration like uint8_t (*function)(void *, bool *);
+	// the resulting handles is named event_<event name>_handler and can be placed inside any point in the core code
+	// for example DECL_EVENT_HANDLER(<event name>) will create a function declaration equivalent to uint8_t event_<event name>_handler(void* args)
+	// event_<event name>_handler can then be placed inside the core code to run the hook code
 
 #define DECL_EVENT_HANDLER(name)                                 \
 	typedef uint8_t (*name##_delegate)(void *, bool *); \
@@ -85,9 +83,9 @@ extern "C"
 #define DEFAULT_EVENT_HANDLER(name)                              \
 	{                                                      \
 		name##_delegate_event_t *ptr = name##_event;   \
-		bool handled = EVENT_CONTINUE;                     \
+		bool handled = false;                     \
 		uint8_t result = 0;                                \
-		while (ptr != NULL && (handled == EVENT_CONTINUE)) \
+		while (ptr != NULL && !handled) \
 		{                                                  \
 			if (ptr->fptr != NULL)                         \
 			{                                              \
@@ -98,70 +96,6 @@ extern "C"
                                                            \
 		return result;                                     \
 	}
-
-#ifdef ENABLE_PARSER_MODULES
-	// generates a default delegate, event and handler hook
-	typedef struct gcode_parse_args_
-	{
-		unsigned char word;
-		uint8_t code;
-		uint8_t error;
-		float value;
-		parser_state_t *new_state;
-		parser_words_t *words;
-		parser_cmd_explicit_t *cmd;
-	} gcode_parse_args_t;
-	// mod_gcode_parse_hook
-	DECL_EVENT_HANDLER(gcode_parse);
-
-	typedef struct gcode_exec_args_
-	{
-		parser_state_t *new_state;
-		parser_words_t *words;
-		parser_cmd_explicit_t *cmd;
-	} gcode_exec_args_t;
-	// mod_gcode_exec_hook
-	DECL_EVENT_HANDLER(gcode_exec);
-#endif
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	// generates a default delegate, event and handler hook
-	// mod_cnc_reset_hook
-	DECL_EVENT_HANDLER(cnc_reset);
-	// mod_rtc_tick_hook
-	DECL_EVENT_HANDLER(rtc_tick);
-	// mod_cnc_dotasks_hook
-	DECL_EVENT_HANDLER(cnc_dotasks);
-	// mod_cnc_stop_hook
-	DECL_EVENT_HANDLER(cnc_stop);
-#endif
-
-#ifdef ENABLE_INTERPOLATOR_MODULES
-	// mod_itp_reset_rt_position_hook
-	DECL_EVENT_HANDLER(itp_reset_rt_position);
-#endif
-
-#ifdef ENABLE_SETTINGS_MODULES
-	// mod_settings_change_hook
-	DECL_EVENT_HANDLER(settings_change);
-#endif
-
-#ifdef ENABLE_PROTOCOL_MODULES
-	// mod_send_pins_states_hook
-	DECL_EVENT_HANDLER(send_pins_states);
-#endif
-
-#ifdef ENABLE_IO_MODULES
-	// mod_input_change_hook
-	DECL_EVENT_HANDLER(input_change);
-#endif
-
-#ifdef ENABLE_MOTION_MODULES
-	// mod_probe_enable_hook
-	DECL_EVENT_HANDLER(probe_enable);
-	// mod_probe_disable_hook
-	DECL_EVENT_HANDLER(probe_disable);
-#endif
 
 	void mod_init(void);
 

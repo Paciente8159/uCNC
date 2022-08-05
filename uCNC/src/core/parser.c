@@ -143,6 +143,20 @@ static void parser_discard_command(void);
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 #endif
 
+#ifdef ENABLE_PARSER_MODULES
+// event_gcode_parse_handler
+WEAK_EVENT_HANDLER(gcode_parse)
+{
+	DEFAULT_EVENT_HANDLER(gcode_parse);
+}
+
+// event_gcode_exec_handler
+WEAK_EVENT_HANDLER(gcode_exec)
+{
+	DEFAULT_EVENT_HANDLER(gcode_exec);
+}
+#endif
+
 /*
 	Initializes the gcode parser
 */

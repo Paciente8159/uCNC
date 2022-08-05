@@ -227,6 +227,8 @@ uint8_t m350_parse(void* args, bool* handled)
 
 	if (ptr->word == 'M' && ptr->value == 350)
 	{
+		*handled = true;
+		
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
@@ -380,6 +382,7 @@ uint8_t m906_parse(void* args, bool* handled)
 	if (ptr->word == 'M' && ptr->value == 906.0f)
 	{
 		*handled = true;
+		
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)

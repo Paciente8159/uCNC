@@ -62,6 +62,8 @@ uint8_t m907_exec(void* args, bool* handled)
 
 	if (ptr->cmd->group_extended == M907)
 	{
+		*handled = true;
+		
 		itp_sync();
 		if (!ptr->cmd->words)
 		{

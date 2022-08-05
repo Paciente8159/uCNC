@@ -56,6 +56,36 @@ static void cnc_reset(void);
 static bool cnc_exec_cmd(void);
 static void cnc_run_startup_blocks(void);
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+// event_cnc_reset_handler
+WEAK_EVENT_HANDLER(cnc_reset)
+{
+	// for now only encoder module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(cnc_reset);
+}
+
+// event_rtc_tick_handler
+WEAK_EVENT_HANDLER(rtc_tick)
+{
+	// for now only pid module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(rtc_tick);
+}
+
+// event_cnc_dotasks_handler
+WEAK_EVENT_HANDLER(cnc_dotasks)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(cnc_dotasks);
+}
+
+// event_cnc_stop_handler
+WEAK_EVENT_HANDLER(cnc_stop)
+{
+	// for now only pid module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(cnc_stop);
+}
+#endif
+
 void cnc_init(void)
 {
 	// initializes cnc state
