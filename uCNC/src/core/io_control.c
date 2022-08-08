@@ -27,6 +27,31 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
+#ifdef ENABLE_IO_MODULES
+// event_input_change_handler
+WEAK_EVENT_HANDLER(input_change)
+{
+	// for now only encoder module uses this hook and overrides it
+	// it actually overrides the mcu callback to be faster
+	DEFAULT_EVENT_HANDLER(input_change);
+}
+
+// event_probe_enable_handler
+WEAK_EVENT_HANDLER(probe_enable)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(probe_enable);
+}
+
+// event_probe_disable_handler
+WEAK_EVENT_HANDLER(probe_disable)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(probe_disable);
+}
+
+#endif
+
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 #ifndef DISABLE_ALL_LIMITS
@@ -186,7 +211,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-	mod_input_change_hook();
+	EVENT_INVOKE(input_change, NULL);
 #endif
 }
 
@@ -321,7 +346,7 @@ uint8_t io_get_controls(void)
 void io_enable_probe(void)
 {
 #ifdef ENABLE_MOTION_MODULES
-	mod_probe_enable_hook();
+	EVENT_INVOKE(probe_enable, NULL);
 #endif
 #ifndef FORCE_SOFT_POLLING
 #if !(PROBE < 0)
@@ -338,7 +363,7 @@ void io_disable_probe(void)
 #endif
 #endif
 #ifdef ENABLE_MOTION_MODULES
-	mod_probe_disable_hook();
+	EVENT_INVOKE(probe_disable, NULL);
 #endif
 }
 

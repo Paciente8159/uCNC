@@ -19,6 +19,16 @@
 static bool protocol_busy;
 #endif
 
+#ifdef ENABLE_PROTOCOL_MODULES
+// event_send_pins_states_handler
+WEAK_EVENT_HANDLER(send_pins_states)
+{
+	// for now only encoder module uses this hook and overrides it
+	// it actually overrides the mcu callback to be faster
+	DEFAULT_EVENT_HANDLER(send_pins_states);
+}
+#endif
+
 static void procotol_send_newline(void)
 {
 	serial_print_str(MSG_EOL);
@@ -722,7 +732,7 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_PROTOCOL_MODULES
-	mod_send_pins_states_hook();
+	EVENT_INVOKE(send_pins_states, NULL);
 #endif
 
 	serial_print_str(__romstr__("[RUNTIME:"));

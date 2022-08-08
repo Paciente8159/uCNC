@@ -6,6 +6,20 @@
 
 # Changelog
 
+## [1.5.beta2] - Unreleased
+
+### Added
+
+### Changed
+
+- refactored event/delegate macros now with a single function declaration/signature. Adding new events for extensions is easier (#234)
+
+### Fixed
+
+- fixed some extended MCodes definitions
+
+# Changelog
+
 ## [1.5.beta] - 2022-07-29
 
 ### Added

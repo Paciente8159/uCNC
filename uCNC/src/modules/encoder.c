@@ -190,8 +190,6 @@ void encoders_reset_position(void)
 	}
 }
 
-// overrides the default mod_itp_reset_rt_position_hook
-// may be modified in the future
 void encoders_itp_reset_rt_position(float *origin)
 {
 #if STEPPER_COUNT > 0

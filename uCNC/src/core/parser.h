@@ -29,12 +29,15 @@ extern "C"
 {
 #endif
 
-#include <stdlib.h>
+#include "../module.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-#define EXTENDED_MCODE(X) (1000 + X)
-#define EXTENDED_GCODE(X) (0 + X)
+#define EXTENDED_GCODE_BASE 0
+#define EXTENDED_MCODE_BASE 1000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -189,6 +192,31 @@ extern "C"
 	void parser_reset(void);
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+
+#ifdef ENABLE_PARSER_MODULES
+	// generates a default delegate, event and handler hook
+	typedef struct gcode_parse_args_
+	{
+		unsigned char word;
+		uint8_t code;
+		uint8_t error;
+		float value;
+		parser_state_t *new_state;
+		parser_words_t *words;
+		parser_cmd_explicit_t *cmd;
+	} gcode_parse_args_t;
+	// event_gcode_parse_handler
+	DECL_EVENT_HANDLER(gcode_parse);
+
+	typedef struct gcode_exec_args_
+	{
+		parser_state_t *new_state;
+		parser_words_t *words;
+		parser_cmd_explicit_t *cmd;
+	} gcode_exec_args_t;
+	// event_gcode_exec_handler
+	DECL_EVENT_HANDLER(gcode_exec);
+#endif
 
 #ifdef __cplusplus
 }

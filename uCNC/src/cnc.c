@@ -56,6 +56,36 @@ static void cnc_reset(void);
 static bool cnc_exec_cmd(void);
 static void cnc_run_startup_blocks(void);
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+// event_cnc_reset_handler
+WEAK_EVENT_HANDLER(cnc_reset)
+{
+	// for now only encoder module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(cnc_reset);
+}
+
+// event_rtc_tick_handler
+WEAK_EVENT_HANDLER(rtc_tick)
+{
+	// for now only pid module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(rtc_tick);
+}
+
+// event_cnc_dotasks_handler
+WEAK_EVENT_HANDLER(cnc_dotasks)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(cnc_dotasks);
+}
+
+// event_cnc_stop_handler
+WEAK_EVENT_HANDLER(cnc_stop)
+{
+	// for now only pid module uses this hook and overrides it
+	DEFAULT_EVENT_HANDLER(cnc_stop);
+}
+#endif
+
 void cnc_init(void)
 {
 	// initializes cnc state
@@ -186,7 +216,7 @@ bool cnc_dotasks(void)
 	}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_dotasks_hook();
+	EVENT_INVOKE(cnc_dotasks, NULL);
 #endif
 
 	// check security interlocking for any problem
@@ -218,7 +248,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		if (!cnc_get_exec_state(EXEC_ALARM))
 		{
-			mod_rtc_tick_hook();
+			EVENT_INVOKE(rtc_tick, NULL);
 		}
 #endif
 
@@ -287,7 +317,7 @@ void cnc_stop(void)
 	itp_stop_tools();
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_stop_hook();
+	EVENT_INVOKE(cnc_stop, NULL);
 #endif
 }
 
@@ -461,7 +491,7 @@ void cnc_reset(void)
 	encoders_reset_position();
 #endif
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	mod_cnc_reset_hook();
+	EVENT_INVOKE(cnc_reset, NULL);
 #endif
 	protocol_send_string(MSG_STARTUP);
 	serial_flush();

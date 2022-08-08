@@ -23,8 +23,9 @@ extern "C"
 {
 #endif
 
-#include <stdbool.h>
+#include "../module.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdarg.h>
 
 	void protocol_send_ok(void);
@@ -43,6 +44,11 @@ extern "C"
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	void protocol_send_cnc_info(void);
+#endif
+
+#ifdef ENABLE_PROTOCOL_MODULES
+	// event_send_pins_states_handler
+	DECL_EVENT_HANDLER(send_pins_states);
 #endif
 
 #ifdef __cplusplus
