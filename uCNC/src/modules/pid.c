@@ -200,7 +200,7 @@ void FORCEINLINE pid_stop()
 
 // this overrides the event handler since no other module is using it
 // may be modified in the future
-void event_cnc_stop_handler(void)
+OVERRIDE_EVENT_HANDLER(cnc_stop)
 {
 	pid_stop();
 }
@@ -254,14 +254,14 @@ void FORCEINLINE pid_update(void)
 
 // overrides the default event_rtc_tick_handler
 // may be modified in the future
-void event_rtc_tick_handler(void)
+OVERRIDE_EVENT_HANDLER(rtc_tick)
 {
 	pid_update();
 }
 
 // overrides the default event_rtc_tick_handler
 // may be modified in the future
-void event_settings_change_handler(void)
+OVERRIDE_EVENT_HANDLER(settings_change)
 {
 	pid_init();
 }

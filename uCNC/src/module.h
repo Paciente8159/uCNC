@@ -77,6 +77,7 @@ extern "C"
 	name##_event;                                       \
 	uint8_t event_##name##_handler(void *args)
 #define WEAK_EVENT_HANDLER(name) uint8_t __attribute__((weak)) event_##name##_handler(void *args)
+#define OVERRIDE_EVENT_HANDLER(name) uint8_t event_##name##_handler(void *args)
 #define DEFAULT_EVENT_HANDLER(name)                  \
 	{                                                \
 		name##_delegate_event_t *ptr = name##_event; \
