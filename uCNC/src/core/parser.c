@@ -104,7 +104,7 @@
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
 #define G28HOME COORD_SYS_COUNT							 // G28 index
 #define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2 // G92 index
+#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
 
 #define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
 #define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
@@ -143,8 +143,19 @@ static void parser_discard_command(void);
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 #endif
 
-// tells the compiler that this function exists and the linker will resolve later
-extern void m42_register(void);
+#ifdef ENABLE_PARSER_MODULES
+// event_gcode_parse_handler
+WEAK_EVENT_HANDLER(gcode_parse)
+{
+	DEFAULT_EVENT_HANDLER(gcode_parse);
+}
+
+// event_gcode_exec_handler
+WEAK_EVENT_HANDLER(gcode_exec)
+{
+	DEFAULT_EVENT_HANDLER(gcode_exec);
+}
+#endif
 
 /*
 	Initializes the gcode parser
@@ -672,7 +683,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
 		{
-			error = mod_gcode_parse_hook(word, code, error, value, new_state, words, cmd);
+			gcode_parse_args_t args = {word, code, error, value, new_state, words, cmd};
+			uint8_t newerror = EVENT_INVOKE(gcode_parse, &args);
+			// is extended command
+			if (cmd->group_extended != 0)
+			{
+				error = newerror;
+			}
 		}
 #endif
 
@@ -992,7 +1009,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef ENABLE_PARSER_MODULES
 	if ((cmd->group_extended != 0))
 	{
-		return mod_gcode_exec_hook(new_state, words, cmd);
+		gcode_exec_args_t args = {new_state, words, cmd};
+		return EVENT_INVOKE(gcode_exec, &args);
 	}
 #endif
 

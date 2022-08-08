@@ -176,71 +176,84 @@ void tmcdriver_config(void)
 #endif
 }
 
+uint8_t tmcdriver_config_handler(void* args, bool*handler) {
+	tmcdriver_config();
+	return 0;
+}
+
 #ifdef ENABLE_MAIN_LOOP_MODULES
-CREATE_LISTENER(cnc_reset_delegate, tmcdriver_config);
+CREATE_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 #endif
 
 /*custom gcode commands*/
 #if defined(ENABLE_PARSER_MODULES)
 // this ID must be unique for each code
-#define M350 1350
+#define M350 EXTENDED_MCODE(350)
 // this ID must be unique for each code
-#define M906 1906
+#define M906 EXTENDED_MCODE(906)
 // this ID must be unique for each code
-#define M913 1913
+#define M913 EXTENDED_MCODE(913)
 // this ID must be unique for each code
-#define M914 1914
+#define M914 EXTENDED_MCODE(914)
 // this ID must be unique for each code
-#define M920 1920
+#define M920 EXTENDED_MCODE(920)
 
-uint8_t m350_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m906_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m913_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m913_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m914_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m920_parse(unsigned char c, uint8_t word, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+uint8_t m350_parse(void* args, bool* handled);
+uint8_t m350_exec(void* args, bool* handled);
+uint8_t m906_parse(void* args, bool* handled);
+uint8_t m906_exec(void* args, bool* handled);
+uint8_t m913_parse(void* args, bool* handled);
+uint8_t m913_exec(void* args, bool* handled);
+uint8_t m914_parse(void* args, bool* handled);
+uint8_t m914_exec(void* args, bool* handled);
+uint8_t m920_parse(void* args, bool* handled);
+uint8_t m920_exec(void* args, bool* handled);
 
-CREATE_LISTENER(gcode_parse_delegate, m350_parse);
-CREATE_LISTENER(gcode_exec_delegate, m350_exec);
-CREATE_LISTENER(gcode_parse_delegate, m906_parse);
-CREATE_LISTENER(gcode_exec_delegate, m906_exec);
-CREATE_LISTENER(gcode_parse_delegate, m913_parse);
-CREATE_LISTENER(gcode_exec_delegate, m913_exec);
-CREATE_LISTENER(gcode_parse_delegate, m914_parse);
-CREATE_LISTENER(gcode_exec_delegate, m914_exec);
-CREATE_LISTENER(gcode_parse_delegate, m920_parse);
-CREATE_LISTENER(gcode_exec_delegate, m920_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m350_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m350_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m906_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m906_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m913_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m913_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m914_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m914_exec);
+CREATE_EVENT_LISTENER(gcode_parse, m920_parse);
+CREATE_EVENT_LISTENER(gcode_exec, m920_exec);
 
 // this just parses and acceps the code
-uint8_t m350_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m350_parse(void* args, bool* handled)
 {
-	if (word == 'M' && value == 350)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 350)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+		
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M350;
+		ptr->cmd->group_extended = M350;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m350_exec(void* args, bool* handled)
 {
-	if (cmd->group_extended == M350)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M350)
 	{
+		*handled = true;
+
 		itp_sync();
-		if (!cmd->words)
+		if (!ptr->cmd->words)
 		{
 			int32_t val = 0;
 			// if no additional args then print the
@@ -304,52 +317,52 @@ uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #ifdef STEPPER0_HAS_TMC
-			tmc0_settings.mstep = (uint8_t)words->xyzabc[0];
+			tmc0_settings.mstep = (uint8_t)ptr->words->xyzabc[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #ifdef STEPPER1_HAS_TMC
-			tmc1_settings.mstep = (uint8_t)words->xyzabc[1];
+			tmc1_settings.mstep = (uint8_t)ptr->words->xyzabc[1];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #ifdef STEPPER2_HAS_TMC
-			tmc2_settings.mstep = (uint8_t)words->xyzabc[2];
+			tmc2_settings.mstep = (uint8_t)ptr->words->xyzabc[2];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #ifdef STEPPER3_HAS_TMC
-			tmc3_settings.mstep = (uint8_t)words->xyzabc[3];
+			tmc3_settings.mstep = (uint8_t)ptr->words->xyzabc[3];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #ifdef STEPPER4_HAS_TMC
-			tmc4_settings.mstep = (uint8_t)words->xyzabc[4];
+			tmc4_settings.mstep = (uint8_t)ptr->words->xyzabc[4];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #ifdef STEPPER5_HAS_TMC
-			tmc5_settings.mstep = (uint8_t)words->xyzabc[5];
+			tmc5_settings.mstep = (uint8_t)ptr->words->xyzabc[5];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #ifdef STEPPER6_HAS_TMC
-			tmc6_settings.mstep = (uint8_t)words->ijk[0];
+			tmc6_settings.mstep = (uint8_t)ptr->words->ijk[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #ifdef STEPPER7_HAS_TMC
-			tmc7_settings.mstep = (uint8_t)words->ijk[1];
+			tmc7_settings.mstep = (uint8_t)ptr->words->ijk[1];
 #endif
 		}
 
@@ -362,31 +375,39 @@ uint8_t m350_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 }
 
 // this just parses and acceps the code
-uint8_t m906_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m906_parse(void* args, bool* handled)
 {
-	if (word == 'M' && value == 906.0f)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 906.0f)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+		
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M906;
+		ptr->cmd->group_extended = M906;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m906_exec(void* args, bool* handled)
 {
-	if (cmd->group_extended == M906)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M906)
 	{
+		*handled = true;
+
 		itp_sync();
-		if (!cmd->words)
+		if (!ptr->cmd->words)
 		{
 			float val;
 			// if no additional args then print the
@@ -450,52 +471,52 @@ uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #ifdef STEPPER0_HAS_TMC
-			tmc0_settings.rms_current = words->xyzabc[0];
+			tmc0_settings.rms_current = ptr->words->xyzabc[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #ifdef STEPPER1_HAS_TMC
-			tmc1_settings.rms_current = words->xyzabc[1];
+			tmc1_settings.rms_current = ptr->words->xyzabc[1];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #ifdef STEPPER2_HAS_TMC
-			tmc2_settings.rms_current = words->xyzabc[2];
+			tmc2_settings.rms_current = ptr->words->xyzabc[2];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #ifdef STEPPER3_HAS_TMC
-			tmc3_settings.rms_current = words->xyzabc[3];
+			tmc3_settings.rms_current = ptr->words->xyzabc[3];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #ifdef STEPPER4_HAS_TMC
-			tmc4_settings.rms_current = words->xyzabc[4];
+			tmc4_settings.rms_current = ptr->words->xyzabc[4];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #ifdef STEPPER5_HAS_TMC
-			tmc5_settings.rms_current = words->xyzabc[5];
+			tmc5_settings.rms_current = ptr->words->xyzabc[5];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #ifdef STEPPER6_HAS_TMC
-			tmc6_settings.rms_current = words->ijk[0];
+			tmc6_settings.rms_current = ptr->words->ijk[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #ifdef STEPPER7_HAS_TMC
-			tmc7_settings.rms_current = words->ijk[1];
+			tmc7_settings.rms_current = ptr->words->ijk[1];
 #endif
 		}
 
@@ -507,31 +528,39 @@ uint8_t m906_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 }
 
 // this just parses and acceps the code
-uint8_t m913_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m913_parse(void* args, bool* handled)
 {
-	if (word == 'M' && value == 913.0f)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 913.0f)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M913;
+		ptr->cmd->group_extended = M913;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m913_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m913_exec(void* args, bool* handled)
 {
-	if (cmd->group_extended == M913)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M913)
 	{
+		*handled = true;
+
 		itp_sync();
-		if (!cmd->words)
+		if (!ptr->cmd->words)
 		{
 			int32_t val;
 			// if no additional args then print the
@@ -595,52 +624,52 @@ uint8_t m913_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #ifdef STEPPER0_HAS_TMC
-			tmc0_settings.stealthchop_threshold = (uint32_t)words->xyzabc[0];
+			tmc0_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #ifdef STEPPER1_HAS_TMC
-			tmc1_settings.stealthchop_threshold = (uint32_t)words->xyzabc[1];
+			tmc1_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[1];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #ifdef STEPPER2_HAS_TMC
-			tmc2_settings.stealthchop_threshold = (uint32_t)words->xyzabc[2];
+			tmc2_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[2];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #ifdef STEPPER3_HAS_TMC
-			tmc3_settings.stealthchop_threshold = (uint32_t)words->xyzabc[3];
+			tmc3_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[3];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #ifdef STEPPER4_HAS_TMC
-			tmc4_settings.stealthchop_threshold = (uint32_t)words->xyzabc[4];
+			tmc4_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[4];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #ifdef STEPPER5_HAS_TMC
-			tmc5_settings.stealthchop_threshold = (uint32_t)words->xyzabc[5];
+			tmc5_settings.stealthchop_threshold = (uint32_t)ptr->words->xyzabc[5];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #ifdef STEPPER6_HAS_TMC
-			tmc6_settings.stealthchop_threshold = (uint32_t)words->ijk[0];
+			tmc6_settings.stealthchop_threshold = (uint32_t)ptr->words->ijk[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #ifdef STEPPER7_HAS_TMC
-			tmc7_settings.stealthchop_threshold = (uint32_t)words->ijk[1];
+			tmc7_settings.stealthchop_threshold = (uint32_t)ptr->words->ijk[1];
 #endif
 		}
 
@@ -652,31 +681,39 @@ uint8_t m913_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 }
 
 // this just parses and acceps the code
-uint8_t m914_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m914_parse(void* args, bool* handled)
 {
-	if (word == 'M' && value == 914.0f)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 914.0f)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M914;
+		ptr->cmd->group_extended = M914;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m914_exec(void* args, bool* handled)
 {
-	if (cmd->group_extended == M914)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M914)
 	{
+		*handled = true;
+
 		itp_sync();
-		if (!cmd->words)
+		if (!ptr->cmd->words)
 		{
 			int32_t val;
 			// if no additional args then print the
@@ -740,52 +777,52 @@ uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #ifdef STEPPER0_HAS_TMC
-			tmc0_settings.stallguard_threshold = (int32_t)words->xyzabc[0];
+			tmc0_settings.stallguard_threshold = (int32_t)ptr->words->xyzabc[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #ifdef STEPPER1_HAS_TMC
-			tmc1_settings.stallguard_threshold = (int16_t)words->xyzabc[1];
+			tmc1_settings.stallguard_threshold = (int16_t)ptr->words->xyzabc[1];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #ifdef STEPPER2_HAS_TMC
-			tmc2_settings.stallguard_threshold = (int16_t)words->xyzabc[2];
+			tmc2_settings.stallguard_threshold = (int16_t)ptr->words->xyzabc[2];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #ifdef STEPPER3_HAS_TMC
-			tmc3_settings.stallguard_threshold = (int16_t)words->xyzabc[3];
+			tmc3_settings.stallguard_threshold = (int16_t)ptr->words->xyzabc[3];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #ifdef STEPPER4_HAS_TMC
-			tmc4_settings.stallguard_threshold = (int16_t)words->xyzabc[4];
+			tmc4_settings.stallguard_threshold = (int16_t)ptr->words->xyzabc[4];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #ifdef STEPPER5_HAS_TMC
-			tmc5_settings.stallguard_threshold = (int16_t)words->xyzabc[5];
+			tmc5_settings.stallguard_threshold = (int16_t)ptr->words->xyzabc[5];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #ifdef STEPPER6_HAS_TMC
-			tmc6_settings.stallguard_threshold = (int16_t)words->ijk[0];
+			tmc6_settings.stallguard_threshold = (int16_t)ptr->words->ijk[0];
 #endif
 		}
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #ifdef STEPPER7_HAS_TMC
-			tmc7_settings.stallguard_threshold = (int16_t)words->ijk[1];
+			tmc7_settings.stallguard_threshold = (int16_t)ptr->words->ijk[1];
 #endif
 		}
 
@@ -797,58 +834,66 @@ uint8_t m914_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 }
 
 // this just parses and acceps the code
-uint8_t m920_parse(unsigned char word, uint8_t code, uint8_t error, float value, parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m920_parse(void* args, bool* handled)
 {
-	if (word == 'M' && value == 920.0f)
+	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+
+	if (ptr->word == 'M' && ptr->value == 920.0f)
 	{
-		if (cmd->group_extended != 0)
+		*handled = true;
+
+		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		cmd->group_extended = M920;
+		ptr->cmd->group_extended = M920;
 		return STATUS_OK;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return error;
+	return ptr->error;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
+uint8_t m920_exec(void* args, bool* handled)
 {
-	if (cmd->group_extended == M920)
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+
+	if (ptr->cmd->group_extended == M920)
 	{
-		if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS | GCODE_IJK_AXIS))
+		*handled = true;
+
+		if (!CHECKFLAG(ptr->cmd->words, GCODE_ALL_AXIS | GCODE_IJK_AXIS))
 		{
 			return STATUS_TMC_CMD_MISSING_ARGS;
 		}
 
 		int8_t wordreg = -1;
 		uint16_t wordval = 0;
-		if (CHECKFLAG(cmd->words, GCODE_WORD_L))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_L))
 		{
-			wordreg = (int8_t)words->l;
+			wordreg = (int8_t)ptr->words->l;
 			if (wordreg > 1 || wordreg < 0)
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
-			wordval = words->s;
+			wordval = ptr->words->s;
 		}
 
 		uint32_t reg;
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 			serial_print_str(__romstr__("[TMCREG X:"));
-			reg = (uint32_t)words->xyzabc[0];
+			reg = (uint32_t)ptr->words->xyzabc[0];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER0_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
+				reg = tmc_read_register(&tmc0_driver, (uint8_t)ptr->words->xyzabc[0]);
 				switch (wordreg)
 				{
 				case 0:
@@ -860,9 +905,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc0_driver, (uint8_t)words->xyzabc[0], reg);
+				tmc_write_register(&tmc0_driver, (uint8_t)ptr->words->xyzabc[0], reg);
 			}
-			reg = tmc_read_register(&tmc0_driver, (uint8_t)words->xyzabc[0]);
+			reg = tmc_read_register(&tmc0_driver, (uint8_t)ptr->words->xyzabc[0]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -871,16 +916,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Y))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 			serial_print_str(__romstr__("[TMCREG Y:"));
-			reg = (uint32_t)words->xyzabc[1];
+			reg = (uint32_t)ptr->words->xyzabc[1];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER1_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
+				reg = tmc_read_register(&tmc1_driver, (uint8_t)ptr->words->xyzabc[1]);
 				switch (wordreg)
 				{
 				case 0:
@@ -892,9 +937,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc1_driver, (uint8_t)words->xyzabc[1], reg);
+				tmc_write_register(&tmc1_driver, (uint8_t)ptr->words->xyzabc[1], reg);
 			}
-			reg = tmc_read_register(&tmc1_driver, (uint8_t)words->xyzabc[1]);
+			reg = tmc_read_register(&tmc1_driver, (uint8_t)ptr->words->xyzabc[1]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -903,16 +948,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_Z))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 			serial_print_str(__romstr__("[TMCREG Z:"));
-			reg = (uint32_t)words->xyzabc[2];
+			reg = (uint32_t)ptr->words->xyzabc[2];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER2_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
+				reg = tmc_read_register(&tmc2_driver, (uint8_t)ptr->words->xyzabc[2]);
 				switch (wordreg)
 				{
 				case 0:
@@ -924,9 +969,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc2_driver, (uint8_t)words->xyzabc[2], reg);
+				tmc_write_register(&tmc2_driver, (uint8_t)ptr->words->xyzabc[2], reg);
 			}
-			reg = tmc_read_register(&tmc2_driver, (uint8_t)words->xyzabc[2]);
+			reg = tmc_read_register(&tmc2_driver, (uint8_t)ptr->words->xyzabc[2]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -935,16 +980,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_A))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 			serial_print_str(__romstr__("[TMCREG A:"));
-			reg = (uint32_t)words->xyzabc[3];
+			reg = (uint32_t)ptr->words->xyzabc[3];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER3_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
+				reg = tmc_read_register(&tmc3_driver, (uint8_t)ptr->words->xyzabc[3]);
 				switch (wordreg)
 				{
 				case 0:
@@ -956,9 +1001,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc3_driver, (uint8_t)words->xyzabc[3], reg);
+				tmc_write_register(&tmc3_driver, (uint8_t)ptr->words->xyzabc[3], reg);
 			}
-			reg = tmc_read_register(&tmc3_driver, (uint8_t)words->xyzabc[3]);
+			reg = tmc_read_register(&tmc3_driver, (uint8_t)ptr->words->xyzabc[3]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -967,16 +1012,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_B))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 			serial_print_str(__romstr__("[TMCREG B:"));
-			reg = (uint32_t)words->xyzabc[4];
+			reg = (uint32_t)ptr->words->xyzabc[4];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER4_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
+				reg = tmc_read_register(&tmc4_driver, (uint8_t)ptr->words->xyzabc[4]);
 				switch (wordreg)
 				{
 				case 0:
@@ -988,9 +1033,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc4_driver, (uint8_t)words->xyzabc[4], reg);
+				tmc_write_register(&tmc4_driver, (uint8_t)ptr->words->xyzabc[4], reg);
 			}
-			reg = tmc_read_register(&tmc4_driver, (uint8_t)words->xyzabc[4]);
+			reg = tmc_read_register(&tmc4_driver, (uint8_t)ptr->words->xyzabc[4]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -999,16 +1044,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_C))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 			serial_print_str(__romstr__("[TMCREG C:"));
-			reg = (uint32_t)words->xyzabc[5];
+			reg = (uint32_t)ptr->words->xyzabc[5];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER5_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
+				reg = tmc_read_register(&tmc5_driver, (uint8_t)ptr->words->xyzabc[5]);
 				switch (wordreg)
 				{
 				case 0:
@@ -1020,9 +1065,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc5_driver, (uint8_t)words->xyzabc[5], reg);
+				tmc_write_register(&tmc5_driver, (uint8_t)ptr->words->xyzabc[5], reg);
 			}
-			reg = tmc_read_register(&tmc5_driver, (uint8_t)words->xyzabc[5]);
+			reg = tmc_read_register(&tmc5_driver, (uint8_t)ptr->words->xyzabc[5]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -1031,16 +1076,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_I))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 			serial_print_str(__romstr__("[TMCREG I:"));
-			reg = (uint32_t)words->ijk[0];
+			reg = (uint32_t)ptr->words->ijk[0];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER6_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
+				reg = tmc_read_register(&tmc6_driver, (uint8_t)ptr->words->ijk[0]);
 				switch (wordreg)
 				{
 				case 0:
@@ -1052,9 +1097,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc6_driver, (uint8_t)words->ijk[0], reg);
+				tmc_write_register(&tmc6_driver, (uint8_t)ptr->words->ijk[0], reg);
 			}
-			reg = tmc_read_register(&tmc6_driver, (uint8_t)words->ijk[0]);
+			reg = tmc_read_register(&tmc6_driver, (uint8_t)ptr->words->ijk[0]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -1063,16 +1108,16 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 			serial_print_str(MSG_EOL);
 		}
 
-		if (CHECKFLAG(cmd->words, GCODE_WORD_J))
+		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 			serial_print_str(__romstr__("[TMCREG J:"));
-			reg = (uint32_t)words->ijk[1];
+			reg = (uint32_t)ptr->words->ijk[1];
 			serial_print_int(reg);
 			serial_putc(',');
 #ifdef STEPPER7_HAS_TMC
 			if (wordreg >= 0)
 			{
-				reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
+				reg = tmc_read_register(&tmc7_driver, (uint8_t)ptr->words->ijk[1]);
 				switch (wordreg)
 				{
 				case 0:
@@ -1084,9 +1129,9 @@ uint8_t m920_exec(parser_state_t *new_state, parser_words_t *words, parser_cmd_e
 					reg |= (((uint32_t)wordval) << 16);
 					break;
 				}
-				tmc_write_register(&tmc7_driver, (uint8_t)words->ijk[1], reg);
+				tmc_write_register(&tmc7_driver, (uint8_t)ptr->words->ijk[1], reg);
 			}
-			reg = tmc_read_register(&tmc7_driver, (uint8_t)words->ijk[1]);
+			reg = tmc_read_register(&tmc7_driver, (uint8_t)ptr->words->ijk[1]);
 #else
 			reg = 0xFFFFFFFFUL;
 #endif
@@ -1131,19 +1176,19 @@ DECL_MODULE(tmcdriver)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_LISTENER(cnc_reset_delegate, tmcdriver_config, cnc_reset_event);
+	ADD_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 #endif
 #ifdef ENABLE_PARSER_MODULES
-	ADD_LISTENER(gcode_parse_delegate, m350_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m350_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m906_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m906_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m913_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m913_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m914_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m914_exec, gcode_exec_event);
-	ADD_LISTENER(gcode_parse_delegate, m920_parse, gcode_parse_event);
-	ADD_LISTENER(gcode_exec_delegate, m920_exec, gcode_exec_event);
+	ADD_EVENT_LISTENER(gcode_parse, m350_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m350_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m906_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m906_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m913_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m913_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m914_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m914_exec);
+	ADD_EVENT_LISTENER(gcode_parse, m920_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m920_exec);
 #endif
 
 #ifdef STEPPER0_HAS_TMC

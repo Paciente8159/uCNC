@@ -162,6 +162,18 @@ extern "C"
 	void cnc_clear_exec_state(uint8_t statemask);
 	void cnc_call_rt_command(uint8_t command);
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	// generates a default delegate, event and handler hook
+	// event_cnc_reset_handler
+	DECL_EVENT_HANDLER(cnc_reset);
+	// event_rtc_tick_handler
+	DECL_EVENT_HANDLER(rtc_tick);
+	// event_cnc_dotasks_handler
+	DECL_EVENT_HANDLER(cnc_dotasks);
+	// event_cnc_stop_handler
+	DECL_EVENT_HANDLER(cnc_stop);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

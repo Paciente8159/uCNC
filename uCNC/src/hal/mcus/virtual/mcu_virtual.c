@@ -83,11 +83,10 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-extern void mod_input_change_hook(void);
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 #ifdef ENABLE_IO_MODULES
-	mod_input_change_hook();
+	EVENT_INVOKE(input_change, NULL);
 #endif
 }
 
@@ -1169,6 +1168,10 @@ uint8_t mcu_get_pin_offset(uint8_t pin)
 	return -1;
 }
 
+void mcu_config_input(uint8_t pin)
+{
+}
+
 uint8_t mcu_get_input(uint8_t pin)
 {
 	uint8_t offset = mcu_get_pin_offset(pin);
@@ -1186,6 +1189,10 @@ uint8_t mcu_get_input(uint8_t pin)
 	}
 
 	return 0;
+}
+
+void mcu_config_output(uint8_t pin)
+{
 }
 
 /**

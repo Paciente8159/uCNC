@@ -25,6 +25,7 @@ extern "C"
 {
 #endif
 
+#include "../module.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -113,6 +114,11 @@ extern "C"
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
+
+#ifdef ENABLE_SETTINGS_MODULES
+	// event_settings_change_handler
+	DECL_EVENT_HANDLER(settings_change);
+#endif
 
 #ifdef __cplusplus
 }

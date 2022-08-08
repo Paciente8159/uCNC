@@ -140,7 +140,7 @@ extern "C"
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
  *
- * For encoders to work as STEP encoders ENABLE_INTERPOLATOR_MODULES and ENABLE_MAIN_LOOP_MODULES must be enabled
+ * For encoders to work as STEP encoders ENABLE_MAIN_LOOP_MODULES must be enabled
  *
  * Encoders counting direction can be inverted via mask setting $8
  * */
