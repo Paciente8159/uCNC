@@ -35,6 +35,21 @@ WEAK_EVENT_HANDLER(input_change)
 	// it actually overrides the mcu callback to be faster
 	DEFAULT_EVENT_HANDLER(input_change);
 }
+
+// event_probe_enable_handler
+WEAK_EVENT_HANDLER(probe_enable)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(probe_enable);
+}
+
+// event_probe_disable_handler
+WEAK_EVENT_HANDLER(probe_disable)
+{
+	// for now this is not used
+	DEFAULT_EVENT_HANDLER(probe_disable);
+}
+
 #endif
 
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)

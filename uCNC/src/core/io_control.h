@@ -61,6 +61,10 @@ extern "C"
 #ifdef ENABLE_IO_MODULES
 	// event_input_change_handler
 	DECL_EVENT_HANDLER(input_change);
+	// event_probe_enable_handler
+	DECL_EVENT_HANDLER(probe_enable);
+	// event_probe_disable_handler
+	DECL_EVENT_HANDLER(probe_disable);
 #endif
 
 #ifdef __cplusplus

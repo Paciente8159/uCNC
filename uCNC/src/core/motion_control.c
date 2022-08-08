@@ -28,22 +28,6 @@ static float mc_last_target[AXIS_COUNT];
 static uint8_t mc_last_dirbits;
 #endif
 
-#ifdef ENABLE_MOTION_MODULES
-// event_probe_enable_handler
-WEAK_EVENT_HANDLER(probe_enable)
-{
-	// for now this is not used
-	DEFAULT_EVENT_HANDLER(probe_enable);
-}
-
-// event_probe_disable_handler
-WEAK_EVENT_HANDLER(probe_disable)
-{
-	// for now this is not used
-	DEFAULT_EVENT_HANDLER(probe_disable);
-}
-#endif
-
 void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
