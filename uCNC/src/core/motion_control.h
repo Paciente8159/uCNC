@@ -24,7 +24,6 @@ extern "C"
 {
 #endif
 
-#include "../module.h"
 #include <stdint.h>
 #include <stdbool.h>
 
