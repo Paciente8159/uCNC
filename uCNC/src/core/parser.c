@@ -195,6 +195,10 @@ uint8_t parser_read_command(void)
 				return parse_grbl_exec_code(error);
 			}
 		}
+		else
+		{
+			return error;
+		}
 	}
 
 	if (error == GRBL_JOG_CMD)
@@ -537,10 +541,10 @@ static uint8_t parser_grbl_command(void)
 
 #ifdef ENABLE_PARSER_MODULES
 	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len};
-	error = EVENT_INVOKE(grbl_cmd, &args);
-	if (error < GRBL_SYSTEM_CMD)
+	uint8_t newerror = EVENT_INVOKE(grbl_cmd, &args);
+	if (newerror >= GRBL_SYSTEM_CMD)
 	{
-		error = STATUS_INVALID_STATEMENT;
+		error = newerror;
 	}
 #endif
 
