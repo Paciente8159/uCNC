@@ -1,5 +1,5 @@
 #include "../../../../cnc_config.h"
-#ifdef ESP8266
+#ifdef ESP32
 #ifndef RAM_ONLY_SETTINGS
 #include <Arduino.h>
 #include <EEPROM.h>

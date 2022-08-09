@@ -19,7 +19,8 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_ESP32)
-
+#include "esp_timer.h"
+#include "esp_task_wdt.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -251,110 +252,48 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	}
 }
 
-static uint32_t mcu_step_counter;
-static uint32_t mcu_step_reload;
-static IRAM_ATTR void mcu_gen_step(void)
-{
-	if (mcu_step_reload)
-	{
-		if (!--mcu_step_counter)
-		{
-			static bool resetstep = false;
-			if (!resetstep)
-				mcu_step_cb();
-			else
-				mcu_step_reset_cb();
-			resetstep = !resetstep;
-			mcu_step_counter = mcu_step_reload;
-		}
-	}
-}
-
 IRAM_ATTR void mcu_din_isr(void)
 {
-	io_inputs_isr();
+	mcu_inputs_changed_cb();
 }
 
 IRAM_ATTR void mcu_probe_isr(void)
 {
-	io_probe_isr();
+	mcu_probe_changed_cb();
 }
 
 IRAM_ATTR void mcu_limits_isr(void)
 {
-	io_limits_isr();
+	mcu_limits_changed_cb();
 }
 
 IRAM_ATTR void mcu_controls_isr(void)
 {
-	io_controls_isr();
+	mcu_controls_changed_cb();
 }
 
-IRAM_ATTR void mcu_rtc_isr(void *arg)
+IRAM_ATTR void mcu_rtc_isr(void)
 {
-	mcu_runtime_ms++;
-	mcu_rtc_cb(mcu_runtime_ms);
+	static uint8_t rtc_counter = 0;
+	mcu_gen_pwm();
+	rtc_counter++;
+	if (rtc_counter == 128)
+	{
+		mcu_runtime_ms++;
+		mcu_rtc_cb(mcu_runtime_ms);
+		rtc_counter = 0;
+	}
 }
 
 IRAM_ATTR void mcu_itp_isr(void)
 {
-	// mcu_disable_global_isr();
-	// static bool resetstep = false;
-	// if (!resetstep)
-	// 	mcu_step_cb();
-	// else
-	// 	mcu_step_reset_cb();
-	// resetstep = !resetstep;
-	// mcu_enable_global_isr();
-	mcu_gen_step();
-	mcu_gen_pwm();
+	static bool resetstep = false;
+	if (!resetstep)
+		mcu_step_cb();
+	else
+		mcu_step_reset_cb();
+	resetstep = !resetstep;
 }
-
-// static void mcu_uart_isr(void *arg)
-// {
-// 	/*ATTENTION:*/
-// 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
-// 	if ((READ_PERI_REG(UART_INT_ST(0)) & UART_FRM_ERR_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_FRM_ERR_INT_CLR);
-// 	}
-// 	else if ((READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)))
-// 	{
-// 		// disable ISR
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
-// 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		unsigned char c = 0;
-
-// 		for (uint8_t i = 0; i < fifo_len; i++)
-// 		{
-// 			c = READ_PERI_REG(UART_FIFO(0)) & 0xFF;
-// 			mcu_com_rx_cb(c);
-// 		}
-
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_FULL_INT_CLR | UART_RXFIFO_TOUT_INT_CLR);
-// 		// reenable ISR
-// 		SET_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 	}
-// 	else if (UART_TXFIFO_EMPTY_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_TXFIFO_EMPTY_INT_ST))
-// 	{
-// 		/* to output uart data from uart buffer directly in empty interrupt handler*/
-// 		/*instead of processing in system event, in order not to wait for current task/function to quit */
-// 		/*ATTENTION:*/
-// 		/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 		/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_TXFIFO_EMPTY_INT_ENA);
-// 		mcu_com_tx_cb();
-// 		// system_os_post(uart_recvTaskPrio, 1, 0);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_TXFIFO_EMPTY_INT_CLR);
-// 	}
-// 	else if (UART_RXFIFO_OVF_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_RXFIFO_OVF_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_OVF_INT_CLR);
-// 	}
-// }
 
 static void mcu_usart_init(void)
 {
@@ -1030,17 +969,16 @@ void mcu_init(void)
 
 	mcu_usart_init();
 
-	// init rtc
-	os_timer_setfn(&esp32_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
-	os_timer_arm(&esp32_rtc_timer, 1, true);
+	// initialize rtc timer
+	uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
+	esp32_rtc_timer = timerBegin(RTC_TIMER, timerdiv, true);
+	timerAttachInterrupt(esp32_rtc_timer, &mcu_rtc_isr, true);
+	timerAlarmWrite(esp32_rtc_timer, 1, true);
+	timerAlarmEnable(esp32_rtc_timer);
 
-	esp32_step_timer = timerBegin(ITP_TIMER, F_CPU / F_STEP_MAX, true);
-
-	// init timer1
-	timer1_isr_init();
-	timer1_attachInterrupt(mcu_itp_isr);
-	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write(625);
+	// initialize stepper timer
+	timerdiv = (uint16_t)(getApbFrequency() / (F_STEP_MAX << 1));
+	esp32_step_timer = timerBegin(ITP_TIMER, timerdiv, true);
 
 #ifndef RAM_ONLY_SETTINGS
 	esp32_eeprom_init(1024); // 1K Emulated EEPROM
@@ -1201,11 +1139,11 @@ bool mcu_get_global_isr(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
-	*prescaller = 0;
+	uint32_t totalticks = (uint32_t)((float)F_STEP_MAX / frequency);
+	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
-		(*prescaller) += 1;
+		(*prescaller) <<= 1;
 		totalticks >>= 1;
 	}
 
@@ -1218,8 +1156,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	timerAttachInterrupt(esp32_step_timer, &mcu_itp_isr, true);
-	timerAlarmWrite(esp32_step_timer, ticks, true);
-	timerAlarmEnable(esp32_step_timer); //Just Enable
+	timerAlarmWrite(esp32_step_timer, (uint32_t)ticks*(uint32_t)prescaller, true);
+	timerAlarmEnable(esp32_step_timer); // Just Enable
 }
 
 /**
@@ -1228,7 +1166,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	timerAlarmDisable(esp32_step_timer);
-	timerWrite(esp32_step_timer, ticks);
+	timerWrite(esp32_step_timer, (uint32_t)ticks*(uint32_t)prescaller);
 	timerAlarmEnable(esp32_step_timer);
 }
 
@@ -1252,8 +1190,8 @@ uint32_t mcu_millis()
 #ifndef mcu_delay_us
 void mcu_delay_us(uint8_t delay)
 {
-	uint32_t time = system_get_time() + delay;
-	while (time > system_get_time())
+	int64_t time = esp_timer_get_time() + delay;
+	while (time > esp_timer_get_time())
 		;
 }
 #endif

@@ -1,6 +1,6 @@
 /*
-	Name: mcumap_esp8266.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
+	Name: mcumap_esp32.h
+	Description: Contains all MCU and PIN definitions for Arduino ESP32 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -35,7 +35,7 @@ extern "C"
 */
 
 /*
-	ESP8266 Defaults
+	ESP32 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -43,7 +43,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 100000
+#define F_STEP_MAX 100000UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -84,7 +84,7 @@ extern "C"
 // overrides utils.h definition to implement this method with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 
-// PINNAMES for ESP8266
+// PINNAMES for ESP32
 #define PERIPHS_IO_MUX_GPIO0 (PERIPHS_IO_MUX + 0x34)
 #define PERIPHS_IO_MUX_GPIO1 (PERIPHS_IO_MUX + 0x18)
 #define PERIPHS_IO_MUX_GPIO2 (PERIPHS_IO_MUX + 0x38)
@@ -1135,9 +1135,9 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
+	extern uint8_t esp32_pwm[16];
+#define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
+#define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #ifdef __cplusplus
