@@ -371,7 +371,7 @@ extern "C"
 #define ENABLE_SYSTEM_INFO
 
 	/**
-	 * Enables aditional grbl-type commands
+	 * Enables aditional core grbl system commands
 	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
 	 * on special command This makes that all $<setting-id>=<setting-value>
 	 * commands are only performed in SRAM and not stored directly to

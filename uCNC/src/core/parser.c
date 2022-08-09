@@ -128,7 +128,6 @@ static float parser_last_pos[AXIS_COUNT];
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static uint8_t parser_get_comment(void);
 static uint8_t parser_get_float(float *value);
-FORCEINLINE static uint8_t parser_eat_next_char(unsigned char c);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -154,6 +153,12 @@ WEAK_EVENT_HANDLER(gcode_parse)
 WEAK_EVENT_HANDLER(gcode_exec)
 {
 	DEFAULT_EVENT_HANDLER(gcode_exec);
+}
+
+// event_grbl_cmd_handler
+WEAK_EVENT_HANDLER(grbl_cmd)
+{
+	DEFAULT_EVENT_HANDLER(grbl_cmd);
 }
 #endif
 
@@ -323,6 +328,8 @@ static uint8_t parser_grbl_command(void)
 {
 	serial_getc(); // eat $
 	unsigned char c = serial_getc();
+	unsigned char grbl_cmd_str[32];
+	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
 	if (cnc_get_exec_state(EXEC_RUN))
@@ -340,190 +347,206 @@ static uint8_t parser_grbl_command(void)
 		}
 	}
 
-	uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
-	uint8_t error = STATUS_OK;
-	switch (c)
+	while ((c >= 'A' && c <= 'Z'))
 	{
-	case '$':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_SETTINGS : STATUS_INVALID_STATEMENT;
-	case '#':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_COORD_SYSTEM : STATUS_INVALID_STATEMENT;
-	case 'H':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_HOME : STATUS_INVALID_STATEMENT;
-	case 'X':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_UNLOCK : STATUS_INVALID_STATEMENT;
-	case 'G':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_PARSER_MODES : STATUS_INVALID_STATEMENT;
-	case 'C':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_TOGGLE_CHECKMODE : STATUS_INVALID_STATEMENT;
-	case 'J':
-		if (parser_eat_next_char('='))
-		{
-			return STATUS_INVALID_JOG_COMMAND;
-		}
-		if (cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
-		{
-			return STATUS_IDLE_ERROR;
-		}
-		cnc_set_exec_state(EXEC_JOG);
-		return GRBL_JOG_CMD;
-	case 'N':
+		grbl_cmd_str[grbl_cmd_len++] = c;
 		c = serial_getc();
-		switch (c)
-		{
-		case '0':
-		case '1':
-			block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
-			if (parser_eat_next_char('='))
-			{
-				return STATUS_INVALID_STATEMENT;
-			}
-			break;
-		case EOL:
-			return GRBL_SEND_STARTUP_BLOCKS;
-		default:
-			return STATUS_INVALID_STATEMENT;
-		}
-		c = 'N';
-		break;
-	case 'R':
-		if (parser_eat_next_char('S'))
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		if (parser_eat_next_char('T'))
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		if (parser_eat_next_char('='))
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		break;
-#ifdef ENABLE_EXTRA_SYSTEM_CMDS
-	case 'S':
-		// new settings command
-		break;
-	case 'P':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_PINS_STATES : STATUS_INVALID_STATEMENT;
-		break;
-#endif
-#ifdef ENABLE_SYSTEM_INFO
-	case 'I':
-		return (parser_eat_next_char(EOL) == STATUS_OK) ? GRBL_SEND_SYSTEM_INFO : STATUS_INVALID_STATEMENT;
-#endif
-	case EOL:
-		return GRBL_HELP;
 	}
+
+	grbl_cmd_str[grbl_cmd_len] = 0;
+
+	uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
+	uint8_t error = STATUS_INVALID_STATEMENT;
 
 	parser_state_t next_state = {0};
 	parser_words_t words = {0};
 	parser_cmd_explicit_t cmd = {0};
-	switch (c)
+
+	switch (grbl_cmd_len)
 	{
-	case 'R':
-		c = serial_getc();
-		if (parser_eat_next_char(EOL) != STATUS_OK)
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
+	case 0:
 		switch (c)
 		{
 		case '$':
-			settings_reset(false);
-			settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			return GRBL_SEND_SETTINGS_RESET;
+			if (serial_getc() != EOL)
+			{
+				return STATUS_INVALID_STATEMENT;
+			}
+			return GRBL_SEND_SYSTEM_SETTINGS;
 		case '#':
-			parser_parameters_reset();
-			return GRBL_SEND_SETTINGS_RESET;
-		case '*':
-			settings_reset(true);
-			settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			parser_parameters_reset();
-			return GRBL_SEND_SETTINGS_RESET;
+			if (serial_getc() != EOL)
+			{
+				return STATUS_INVALID_STATEMENT;
+			}
+			return GRBL_SEND_COORD_SYSTEM;
+		case EOL:
+			return GRBL_HELP;
 		default:
+			if (c >= '0' && c <= '9') // settings
+			{
+				float val = 0;
+				uint8_t setting_num = 0;
+				serial_ungetc();
+				error = parser_get_float(&val);
+				if (!error)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+
+				if ((error & NUMBER_ISFLOAT) || val > 255 || val < 0)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+
+				setting_num = (uint8_t)val;
+				// eat '='
+				if (serial_getc() != '=')
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+
+				val = 0;
+				if (!parser_get_float(&val))
+				{
+					return STATUS_BAD_NUMBER_FORMAT;
+				}
+
+				if (serial_getc() != EOL)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+
+				return settings_change(setting_num, val);
+			}
 			return STATUS_INVALID_STATEMENT;
 		}
+		break;
+	case 1:
+		if (c != EOL && grbl_cmd_str[0] != 'J' && grbl_cmd_str[0] != 'N')
+		{
+			return STATUS_INVALID_STATEMENT;
+		}
+		switch (grbl_cmd_str[0])
+		{
+		case 'H':
+			return GRBL_HOME;
+		case 'X':
+			return GRBL_UNLOCK;
+		case 'G':
+			return GRBL_SEND_PARSER_MODES;
+		case 'C':
+			return GRBL_TOGGLE_CHECKMODE;
+		case 'N':
+			switch (c)
+			{
+			case '0':
+			case '1':
+				block_address = (!(c - '0') ? STARTUP_BLOCK0_ADDRESS_OFFSET : STARTUP_BLOCK1_ADDRESS_OFFSET);
+				if (serial_getc() != '=')
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+
+				error = parser_fetch_command(&next_state, &words, &cmd);
+				if (error)
+				{
+					return error;
+				}
+				error = parser_validate_command(&next_state, &words, &cmd);
+				if (error)
+				{
+					return error;
+				}
+				// everything ok reverts string and saves it
+				do
+				{
+					serial_ungetc();
+				} while (serial_peek() != '=');
+				serial_getc();
+				settings_save_startup_gcode(block_address);
+				return STATUS_OK;
+			case EOL:
+				return GRBL_SEND_STARTUP_BLOCKS;
+			}
+			return STATUS_INVALID_STATEMENT;
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
-	case 'S':
-		c = serial_getc();
-		if (parser_eat_next_char(EOL) != STATUS_OK)
-		{
-			return STATUS_INVALID_STATEMENT;
-		}
-		switch (c)
-		{
-		case 'S':
-			settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			return GRBL_SETTINGS_SAVED;
-		case 'L':
-			settings_init();
-			return GRBL_SETTINGS_LOADED;
-		case 'R':
-			settings_reset(false);
-			return GRBL_SETTINGS_DEFAULT;
-		default:
-			return STATUS_INVALID_STATEMENT;
-		}
+		case 'P':
+			return GRBL_PINS_STATES;
 #endif
-	case 'N':
-		error = parser_fetch_command(&next_state, &words, &cmd);
-		if (error)
-		{
-			return error;
+#ifdef ENABLE_SYSTEM_INFO
+		case 'I':
+			return GRBL_SEND_SYSTEM_INFO;
+#endif
+		case 'J':
+			if (c != '=')
+			{
+				break;
+			}
+			if (cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
+			{
+				return STATUS_IDLE_ERROR;
+			}
+			cnc_set_exec_state(EXEC_JOG);
+			return GRBL_JOG_CMD;
 		}
-		error = parser_validate_command(&next_state, &words, &cmd);
-		if (error)
-		{
-			return error;
-		}
-		// everything ok reverts string and saves it
-		do
-		{
-			serial_ungetc();
-		} while (serial_peek() != '=');
-		serial_getc();
-		settings_save_startup_gcode(block_address);
 		break;
 	default:
-		if (c >= '0' && c <= '9') // settings
+		switch (grbl_cmd_str[0])
 		{
-			float val = 0;
-			uint8_t setting_num = 0;
-			serial_ungetc();
-			error = parser_get_float(&val);
-			if (!error)
+		case 'R':
+			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
-				return STATUS_INVALID_STATEMENT;
+				switch (serial_getc())
+				{
+				case '$':
+					settings_reset(false);
+					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					return GRBL_SEND_SETTINGS_RESET;
+				case '#':
+					parser_parameters_reset();
+					return GRBL_SEND_SETTINGS_RESET;
+				case '*':
+					settings_reset(true);
+					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					parser_parameters_reset();
+					return GRBL_SEND_SETTINGS_RESET;
+				default:
+					return STATUS_INVALID_STATEMENT;
+				}
 			}
-
-			if ((error & NUMBER_ISFLOAT) || val > 255 || val < 0)
+			break;
+#ifdef ENABLE_EXTRA_SYSTEM_CMDS
+		case 'S':
+			// new settings command
+			if (c == EOL && grbl_cmd_len == 2)
 			{
-				return STATUS_INVALID_STATEMENT;
+				switch (grbl_cmd_str[1])
+				{
+				case 'S':
+					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					return GRBL_SETTINGS_SAVED;
+				case 'L':
+					settings_init();
+					return GRBL_SETTINGS_LOADED;
+				case 'R':
+					settings_reset(false);
+					return GRBL_SETTINGS_DEFAULT;
+				}
 			}
-
-			setting_num = (uint8_t)val;
-			// eat '='
-			if (parser_eat_next_char('='))
-			{
-				return STATUS_INVALID_STATEMENT;
-			}
-
-			val = 0;
-			if (!parser_get_float(&val))
-			{
-				return STATUS_BAD_NUMBER_FORMAT;
-			}
-
-			if (parser_eat_next_char(EOL))
-			{
-				return STATUS_INVALID_STATEMENT;
-			}
-
-			return settings_change(setting_num, val);
+			break;
+#endif
 		}
-		return STATUS_INVALID_STATEMENT;
+		break;
 	}
+
+#ifdef ENABLE_PARSER_MODULES
+	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len};
+	uint8_t newerror = EVENT_INVOKE(grbl_cmd, &args);
+	if (newerror >= GRBL_SYSTEM_CMD)
+	{
+		error = newerror;
+	}
+#endif
 
 	return error;
 }
@@ -601,6 +624,10 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
 		protocol_send_cnc_info();
+		break;
+#endif
+#ifdef ENABLE_PARSER_MODULES
+	case GRBL_SYSTEM_CMD_EXTENDED:
 		break;
 #endif
 	default:
@@ -1799,11 +1826,6 @@ static uint8_t parser_get_comment(void)
 	}
 
 	return STATUS_BAD_COMMENT_FORMAT; // never reached here
-}
-
-static uint8_t parser_eat_next_char(unsigned char c)
-{
-	return ((serial_getc() == c) ? STATUS_OK : STATUS_INVALID_STATEMENT);
 }
 
 static uint8_t parser_get_token(unsigned char *word, float *value)

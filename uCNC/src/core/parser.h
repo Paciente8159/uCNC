@@ -216,6 +216,14 @@ extern "C"
 	} gcode_exec_args_t;
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);
+
+	// event_grbl_cmd_handler
+	typedef struct grbl_cmd_args_
+	{
+		unsigned char *cmd;
+		uint8_t len;
+	} grbl_cmd_args_t;
+	DECL_EVENT_HANDLER(grbl_cmd);
 #endif
 
 #ifdef __cplusplus
