@@ -71,6 +71,13 @@ extern "C"
 #endif
 #endif
 
+#if (MCU == MCU_ESP32)
+#include "esp32/mcumap_esp32.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_NONE
+#endif
+#endif
+
 #if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif

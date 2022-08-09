@@ -31,6 +31,7 @@ extern "C"
 #define MCU_SAMD21 20
 #define MCU_LPC176X 30
 #define MCU_ESP8266 40
+#define MCU_ESP32 50
 #define MCU_VIRTUAL_WIN 99
 
 #ifdef __cplusplus
