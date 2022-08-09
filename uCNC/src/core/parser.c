@@ -626,6 +626,10 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		protocol_send_cnc_info();
 		break;
 #endif
+#ifdef ENABLE_PARSER_MODULES
+	case GRBL_SYSTEM_CMD_EXTENDED:
+		break;
+#endif
 	default:
 		return code;
 	}
