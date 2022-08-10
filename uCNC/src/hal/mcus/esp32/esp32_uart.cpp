@@ -1,6 +1,6 @@
 /*
 	Name: esp32_uart.cpp
-	Description: Contains all Arduino ESP8266 C++ to C functions used by UART in µCNC.
+	Description: Contains all Arduino ESP32 C++ to C functions used by UART in µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -24,10 +24,16 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef ENABLE_BLUETOOTH
+#include "BluetoothSerial.h"
+BluetoothSerial SerialBT;
+#endif
+
 #ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
 #include <WiFiManager.h>
+#include <HTTPUpdateServer.h>
 
 #ifndef WIFI_PORT
 #define WIFI_PORT 23
@@ -42,21 +48,21 @@
 #endif
 
 WebServer httpServer(80);
-// HTTPUpdateServer httpUpdater;
-// const char *update_path = "/firmware";
-// const char *update_username = WIFI_USER;
-// const char *update_password = WIFI_PASS;
+HTTPUpdateServer httpUpdater;
+const char *update_path = "/firmware";
+const char *update_username = WIFI_USER;
+const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
 WiFiManager wifiManager;
 #endif
 
-#ifndef ESP8266_BUFFER_SIZE
-#define ESP8266_BUFFER_SIZE 255
+#ifndef ESP32_BUFFER_SIZE
+#define ESP32_BUFFER_SIZE 255
 #endif
 
-static char esp32_tx_buffer[ESP8266_BUFFER_SIZE];
+static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
 static uint8_t esp32_tx_buffer_counter;
 
 extern "C"
@@ -99,7 +105,7 @@ extern "C"
 #endif
 		wifiManager.setConfigPortalBlocking(false);
 		wifiManager.setConfigPortalTimeout(30);
-		if (!wifiManager.autoConnect("ESP8266"))
+		if (!wifiManager.autoConnect("ESP32"))
 		{
 			Serial.println("[MSG: WiFi manager up]");
 			Serial.println("[MSG: Setup page @ 192.168.4.1]");
@@ -107,9 +113,13 @@ extern "C"
 
 		server.begin();
 		server.setNoDelay(true);
-		// httpUpdater.setup(&httpServer, update_path, update_username, update_password);
+		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 		httpServer.begin();
-		// WiFi.setSleepMode(WIFI_NONE_SLEEP);
+		WiFi.setSleep(WIFI_PS_NONE);
+#endif
+#ifdef ENABLE_BLUETOOTH
+		SerialBT.begin("ESP32");
+		Serial.println("[Bluetooth Started! Ready to pair...]");
 #endif
 		esp32_tx_buffer_counter = 0;
 	}
@@ -125,12 +135,43 @@ extern "C"
 			serverClient.flush();
 		}
 #endif
+#ifdef ENABLE_BLUETOOTH
+		if (SerialBT.hasClient())
+		{
+			SerialBT.println(esp32_tx_buffer);
+			Serial.flush();
+		}
+#endif
 		esp32_tx_buffer_counter = 0;
 	}
 
 	unsigned char esp32_uart_read(void)
 	{
-		return (unsigned char)Serial.read();
+		if (Serial.available() > 0)
+		{
+			return (unsigned char)Serial.read();
+		}
+
+#ifdef ENABLE_WIFI
+		wifiManager.process();
+		httpServer.handleClient();
+		if (esp32_wifi_clientok())
+		{
+			if (serverClient.available() > 0)
+			{
+				return (unsigned char)serverClient.read();
+			}
+		}
+#endif
+
+#ifdef ENABLE_BLUETOOTH
+		if (SerialBT.hasClient())
+		{
+			return mcu_com_rx_cb(unsigned char) SerialBT.read();
+		}
+#endif
+
+		return (unsigned char)0;
 	}
 
 	void esp32_uart_write(char c)
@@ -146,7 +187,7 @@ extern "C"
 			}
 			break;
 		default:
-			if (esp32_tx_buffer_counter >= (ESP8266_BUFFER_SIZE - 1))
+			if (esp32_tx_buffer_counter >= (ESP32_BUFFER_SIZE - 1))
 			{
 				esp32_tx_buffer[esp32_tx_buffer_counter] = 0;
 				esp32_uart_flush();
@@ -166,12 +207,17 @@ extern "C"
 			wifiready = (serverClient.available() > 0);
 		}
 #endif
-		return ((Serial.available() > 0) || wifiready);
+
+		bool btready = false;
+#ifdef ENABLE_BLUETOOTH
+		btready = (SerialBT.available() > 0);
+#endif
+		return ((Serial.available() > 0) || wifiready || btready);
 	}
 
 	bool esp32_uart_tx_ready(void)
 	{
-		return (esp32_tx_buffer_counter != ESP8266_BUFFER_SIZE);
+		return (esp32_tx_buffer_counter != ESP32_BUFFER_SIZE);
 	}
 
 	void esp32_uart_process(void)
@@ -181,6 +227,7 @@ extern "C"
 			esp_task_wdt_reset();
 			mcu_com_rx_cb((unsigned char)Serial.read());
 		}
+
 #ifdef ENABLE_WIFI
 		wifiManager.process();
 		httpServer.handleClient();
@@ -190,6 +237,17 @@ extern "C"
 			{
 				esp_task_wdt_reset();
 				mcu_com_rx_cb((unsigned char)serverClient.read());
+			}
+		}
+#endif
+
+#ifdef ENABLE_BLUETOOTH
+		if (SerialBT.hasClient())
+		{
+			while (SerialBT.available() > 0)
+			{
+				esp_task_wdt_reset();
+				mcu_com_rx_cb((unsigned char)SerialBT.read());
 			}
 		}
 #endif

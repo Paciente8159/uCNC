@@ -10,6 +10,8 @@
 
 ### Added
 
+- Added core support for ESP32 with limitied functionalities (lacks analog and input ISR)
+
 ### Changed
 
 - refactored event/delegate macros now with a single function declaration/signature. Adding new events for extensions is easier (#234)

@@ -276,7 +276,6 @@ IRAM_ATTR void mcu_controls_isr(void)
 IRAM_ATTR void mcu_rtc_isr(void *arg)
 {
 	static uint8_t rtc_counter = 0;
-	timer_spinlock_take(RTC_TIMER_TG);
 
 	mcu_gen_pwm();
 	rtc_counter++;
@@ -291,13 +290,11 @@ IRAM_ATTR void mcu_rtc_isr(void *arg)
 	/* After the alarm has been triggered
 	  we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
-	timer_spinlock_give(RTC_TIMER_TG);
 }
 
 IRAM_ATTR void mcu_itp_isr(void *arg)
 {
 	static bool resetstep = false;
-	timer_spinlock_take(ITP_TIMER_TG);
 
 	if (!resetstep)
 		mcu_step_cb();
@@ -309,7 +306,6 @@ IRAM_ATTR void mcu_itp_isr(void *arg)
 	/* After the alarm has been triggered
 	  we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_spinlock_give(ITP_TIMER_TG);
 }
 
 static void mcu_usart_init(void)
