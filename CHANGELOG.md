@@ -10,7 +10,7 @@
 
 ### Added
 
-- Added core support for ESP32 with limitied functionalities (lacks analog and input ISR)
+- Added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
 
 ### Changed
 
