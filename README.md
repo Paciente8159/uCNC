@@ -42,6 +42,7 @@ You can expand µCNC using via modules. The available modules are at the [µCNC-
 Version 1.5 added a couple of new features.
 
 - added support for ESP8266 MCU and the WeMos D1 boards.
+- added support for ESP32 MCU's and the WeMos D1 R32 boards.
 - added support for LPC176x MCU and the Re-Arm boards.
 - full revision of the modular extension system based on events, delegates and listeners. All events share the same function declaration format. It's now easier to create add new events and handlers to the core code.
 
@@ -164,6 +165,7 @@ It can run on:
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
+- ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth, lacks analog and input isr)
 - NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developed) 
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
@@ -178,7 +180,7 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add more MCU HAL (ESP32 and RP2040 may be implemented in a near future)
+- Add more MCU HAL (RP2040 may be implemented in a near future)
 - Add support for graphical LCD
 - Add more GCode features and hardware modules
 - Add additional kinematics

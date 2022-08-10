@@ -103,6 +103,11 @@ extern "C"
 #include "esp8266/boardmap_wemos_d1.h"
 #endif
 
+#if (BOARD == BOARD_WEMOS_D1_R32)
+#define MCU MCU_ESP32
+#include "esp32/boardmap_wemos_d1_r32.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #ifndef __linux__
 #define MCU MCU_VIRTUAL_WIN
