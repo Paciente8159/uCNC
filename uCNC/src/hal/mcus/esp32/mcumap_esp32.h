@@ -76,7 +76,6 @@ extern "C"
 #define RX_BUFFER_CAPACITY 255
 #endif
 
-
 #define __SIZEOF_FLOAT__ 4
 
 // used by the parser
@@ -1109,10 +1108,15 @@ extern "C"
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
 #endif
+#define RTC_TIMER_TG (RTC_TIMER & 0x01)
+#define RTC_TIMER_IDX ((RTC_TIMER >> 1) & 0x01)
 
 #ifndef ITP_TIMER
 #define ITP_TIMER 1
 #endif
+#define ITP_TIMER_TG (ITP_TIMER & 0x01)
+#define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
+
 
 #define ENABLE_SYNC_RX
 #define ENABLE_SYNC_TX

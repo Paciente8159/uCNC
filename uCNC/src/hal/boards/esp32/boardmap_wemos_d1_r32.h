@@ -98,6 +98,10 @@ extern "C"
 #define DOUT0_BIT 18
 #define DOUT0_PORT D
 
+// led
+#define DOUT31_BIT 2
+#define DOUT31_PORT D
+
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 12
 #define STEP0_EN_PORT D

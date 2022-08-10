@@ -21,6 +21,7 @@
 #if (MCU == MCU_ESP32)
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
+#include <driver/timer.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -272,9 +273,11 @@ IRAM_ATTR void mcu_controls_isr(void)
 	mcu_controls_changed_cb();
 }
 
-IRAM_ATTR void mcu_rtc_isr(void)
+IRAM_ATTR void mcu_rtc_isr(void *arg)
 {
 	static uint8_t rtc_counter = 0;
+	timer_spinlock_take(RTC_TIMER_TG);
+
 	mcu_gen_pwm();
 	rtc_counter++;
 	if (rtc_counter == 128)
@@ -283,16 +286,30 @@ IRAM_ATTR void mcu_rtc_isr(void)
 		mcu_rtc_cb(mcu_runtime_ms);
 		rtc_counter = 0;
 	}
+
+	timer_group_clr_intr_status_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
+	/* After the alarm has been triggered
+	  we need enable it again, so it is triggered the next time */
+	timer_group_enable_alarm_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
+	timer_spinlock_give(RTC_TIMER_TG);
 }
 
-IRAM_ATTR void mcu_itp_isr(void)
+IRAM_ATTR void mcu_itp_isr(void *arg)
 {
 	static bool resetstep = false;
+	timer_spinlock_take(ITP_TIMER_TG);
+
 	if (!resetstep)
 		mcu_step_cb();
 	else
 		mcu_step_reset_cb();
 	resetstep = !resetstep;
+
+	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	/* After the alarm has been triggered
+	  we need enable it again, so it is triggered the next time */
+	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_spinlock_give(ITP_TIMER_TG);
 }
 
 static void mcu_usart_init(void)
@@ -970,7 +987,28 @@ void mcu_init(void)
 	mcu_usart_init();
 
 	// initialize rtc timer
-	uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
+	/* Select and initialize basic parameters of the timer */
+	timer_config_t config = {
+		.divider = 5,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(RTC_TIMER_TG, RTC_TIMER_IDX, &config);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(RTC_TIMER_TG, RTC_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(RTC_TIMER_TG, RTC_TIMER_IDX, (uint64_t)125);
+	timer_enable_intr(RTC_TIMER_TG, RTC_TIMER_IDX);
+	timer_isr_register(RTC_TIMER_TG, RTC_TIMER_IDX, mcu_rtc_isr, NULL, 0, NULL);
+
+	timer_start(RTC_TIMER_TG, RTC_TIMER_IDX);
+
+	/*uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
 	esp32_rtc_timer = timerBegin(RTC_TIMER, timerdiv, true);
 	timerAttachInterrupt(esp32_rtc_timer, &mcu_rtc_isr, true);
 	timerAlarmWrite(esp32_rtc_timer, 1, true);
@@ -978,11 +1016,13 @@ void mcu_init(void)
 
 	// initialize stepper timer
 	timerdiv = (uint16_t)(getApbFrequency() / (F_STEP_MAX << 1));
-	esp32_step_timer = timerBegin(ITP_TIMER, timerdiv, true);
+	esp32_step_timer = timerBegin(ITP_TIMER, timerdiv, true);*/
 
 #ifndef RAM_ONLY_SETTINGS
 	esp32_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
+
+	mcu_enable_global_isr();
 }
 
 /**
@@ -1139,7 +1179,7 @@ bool mcu_get_global_isr(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)F_STEP_MAX / frequency);
+	uint32_t totalticks = (uint32_t)(500000.0f / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -1155,9 +1195,28 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
  * */
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	timerAttachInterrupt(esp32_step_timer, &mcu_itp_isr, true);
-	timerAlarmWrite(esp32_step_timer, (uint32_t)ticks*(uint32_t)prescaller, true);
-	timerAlarmEnable(esp32_step_timer); // Just Enable
+	/*timerAttachInterrupt(esp32_step_timer, &mcu_itp_isr, true);
+	timerAlarmWrite(esp32_step_timer, (uint32_t)ticks * (uint32_t)prescaller, true);
+	timerAlarmEnable(esp32_step_timer); // Just Enable*/
+	timer_config_t config = {
+		.divider = 80,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &config);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
+
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 /**
@@ -1165,9 +1224,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	timerAlarmDisable(esp32_step_timer);
-	timerWrite(esp32_step_timer, (uint32_t)ticks*(uint32_t)prescaller);
-	timerAlarmEnable(esp32_step_timer);
+	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 /**
@@ -1175,7 +1234,9 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	timerAlarmDisable(esp32_step_timer);
+	// timerAlarmDisable(esp32_step_timer);
+	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 /**
