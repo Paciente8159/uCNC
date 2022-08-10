@@ -139,7 +139,7 @@ extern "C"
 		if (SerialBT.hasClient())
 		{
 			SerialBT.println(esp32_tx_buffer);
-			Serial.flush();
+			SerialBT.flush();
 		}
 #endif
 		esp32_tx_buffer_counter = 0;
@@ -153,8 +153,6 @@ extern "C"
 		}
 
 #ifdef ENABLE_WIFI
-		wifiManager.process();
-		httpServer.handleClient();
 		if (esp32_wifi_clientok())
 		{
 			if (serverClient.available() > 0)
@@ -167,7 +165,7 @@ extern "C"
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
-			return mcu_com_rx_cb(unsigned char) SerialBT.read();
+			return (unsigned char)SerialBT.read();
 		}
 #endif
 
