@@ -1129,6 +1129,11 @@ void mcu_init(void)
 	memset(mcu_servos, i, 6);
 #endif
 
+#ifdef MCU_HAS_SPI
+	// enable SPI, set as master, and clock to fosc/128
+	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPI_PRESC;
+#endif
+
 	// disable probe isr
 	mcu_disable_probe_isr();
 	// enable interrupts
@@ -1426,4 +1431,19 @@ void mcu_eeprom_flush()
 {
 	// do nothing
 }
+#endif
+
+#ifdef MCU_HAS_SPI
+#ifndef mcu_spi_xmit
+uint8_t mcu_spi_xmit(uint8_t data)
+{
+	// transmit dummy byte
+	SPDR = data;
+	// Wait for reception complete
+	while (!(SPSR & (1 << SPIF)))
+		;
+	// return Data Register
+	return SPDR;
+}
+#endif
 #endif

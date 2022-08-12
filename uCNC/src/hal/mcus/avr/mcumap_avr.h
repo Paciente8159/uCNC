@@ -4267,6 +4267,17 @@ extern "C"
 #define RXC __rxcreg__(UART_PORT)
 #endif
 
+//SPI
+#if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#define MCU_HAS_SPI
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_PRESC
+#define SPI_PRESC 0
+#endif
+#endif
+
 // Timer registers
 #ifndef ITP_TIMER
 #define ITP_TIMER 1
@@ -4407,6 +4418,14 @@ extern "C"
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))
+
+#define mcu_spi_xmit(X)               \
+	{                                 \
+		SPDR = X;                     \
+		while (!(SPSR & (1 << SPIF))) \
+			;                         \
+		SPDR;                         \
+	}
 
 #ifdef __cplusplus
 }

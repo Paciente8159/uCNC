@@ -299,6 +299,12 @@ extern "C"
 	 * */
 	void mcu_eeprom_flush(void);
 
+#ifdef MCU_HAS_SPI
+#ifndef mcu_spi_xmit
+	uint8_t mcu_spi_xmit(uint8_t data);
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif
