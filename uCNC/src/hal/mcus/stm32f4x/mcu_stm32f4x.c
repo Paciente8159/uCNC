@@ -1241,6 +1241,19 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+#if MCU_HAS_SPI
+	mcu_config_af(SPI_SDI, SPI_AFIO);
+	mcu_config_af(SPI_CLK, SPI_AFIO);
+	mcu_config_af(SPI_SDO, SPI_AFIO);
+	// initialize the SPI configuration register
+	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
+				   | SPI_CR1_SSI  // internal slave select
+				   | SPI_CR1_MSTR // SPI master mode
+				   | (SPI_SPEED << 3) | SPI_MODE;
+
+	SPI_REG->CR1 |= SPI_CR1_SPE;
+#endif
+
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }

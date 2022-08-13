@@ -2973,6 +2973,40 @@ extern "C"
 #define GPIO_OTG_FS 0x0A
 #endif
 
+#define SPI_SPEED_LOW 7
+#define SPI_SPEED_NORMAL 4
+#define SPI_SPEED_HIGH 0
+
+#if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
+#define MCU_HAS_SPI
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_SPEED
+#define SPI_SPEED SPI_SPEED_NORMAL
+#endif
+// remmaping and pin checking
+#if ((SPI_PORT == 3))
+#elif ((SPI_PORT == 1))
+#define SPI_AFIO 6
+#else
+#define SPI_AFIO 5
+#endif
+
+#define SPI_REG __helper__(SPI, SPI_PORT, )
+#if (SPI_PORT == 2 || SPI_PORT == 3)
+#define SPI_ENREG RCC->APB1ENR
+#define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#else
+#define SPI_ENREG RCC->APB2ENR
+#define SPI_ENVAL __helper__(RCC_APB2ENR_SPI, SPI_PORT, EN)
+#endif
+
+#endif
+
 // Timer registers
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
@@ -3066,6 +3100,17 @@ extern "C"
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOC;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
+	}
+
+#define mcu_spi_xmit(X)                                               \
+	{                                                                 \
+		SPI_REG->DR = X;                                              \
+		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
+			;                                                         \
+		uint8_t data = SPI_REG->DR;                                   \
+		while (SPI1->SR & SPI_SR_BSY)                                 \
+			;                                                         \
+		data;                                                         \
 	}
 #ifdef PROBE
 #ifdef PROBE_ISR

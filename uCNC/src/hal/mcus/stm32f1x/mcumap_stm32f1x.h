@@ -4209,7 +4209,6 @@ extern "C"
 #else
 #error "SPI pin configuration not supported"
 #endif
-#endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
 #if (SPI_PORT == 1)
@@ -4218,6 +4217,8 @@ extern "C"
 #else
 #define SPI_ENREG RCC->APB1ENR
 #define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#endif
+
 #endif
 
 // Timer registers
