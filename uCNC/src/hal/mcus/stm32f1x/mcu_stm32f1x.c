@@ -470,7 +470,7 @@ void mcu_usart_init(void)
 	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
 	mcu_config_input_af(RX);
 #ifdef COM_REMAP
-	__indirect__(diopin, GPIO)->__indirect__(diopin, MAPR) |= COM_REMAP;
+	AFIO->MAPR |= COM_REMAP;
 #endif
 	RCC->COM_APB |= (COM_APBEN);
 	/*setup UART*/
@@ -1223,10 +1223,13 @@ void mcu_init(void)
 	mcu_config_input_af(SPI_SDI);
 	mcu_config_output_af(SPI_CLK, GPIO_OUTALT_PP_50MHZ);
 	mcu_config_output_af(SPI_SDO, GPIO_OUTALT_PP_50MHZ);
+#ifdef SPI_REMAP
+	AFIO->MAPR |= SPI_REMAP;
+#endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM					  // software slave management enabled
-				   | SPI_CR1_SSI				  // internal slave select
-				   | SPI_CR1_MSTR				  // SPI master mode
+	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
+				   | SPI_CR1_SSI  // internal slave select
+				   | SPI_CR1_MSTR // SPI master mode
 				   | (SPI_SPEED << 3) | SPI_MODE;
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
