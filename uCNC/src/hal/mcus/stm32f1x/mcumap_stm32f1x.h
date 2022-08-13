@@ -68,6 +68,8 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
+#define __iopin_ex__(port, bit) port##bit
+#define __iopin__(port, bit) __iopin_ex__(port, bit)
 
 // STM32 internal register names
 #define __gpio__(X) (__helper__(GPIO, X, ))
@@ -4107,6 +4109,9 @@ extern "C"
 
 // COM registers
 #if (INTERFACE == INTERFACE_UART)
+#ifndef UART_PORT
+#define UART_PORT 1
+#endif
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
@@ -4137,6 +4142,9 @@ extern "C"
 #define COM_INREG (COM_USART)->DR
 #endif
 
+#define UART_TX_PIN __iopin__(TX_PORT, TX_BIT)
+#define UART_RX_PIN __iopin__(RX_PORT, RX_BIT)
+
 // remmaping and pin checking
 //  USART	TX	RX	APB	APB2ENR	REMAP
 //  1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
@@ -4148,22 +4156,68 @@ extern "C"
 //  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((UART_PORT == 1) && (TX_BIT == 9) && (RX_BIT == 10) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((UART_PORT == 1) && (TX_BIT == 6) && (RX_BIT == 7) && (TX_PORT == B) && (RX_PORT == B))
+#if ((UART_PORT == 1) && (UART_TX_PIN == A9) && (UART_RX_PIN == A10))
+#elif ((UART_PORT == 1) && (UART_TX_PIN == B6) && (UART_RX_PIN == B7))
 #define COM_REMAP AFIO_MAPR_USART1_REMAP
-#elif ((UART_PORT == 2) && (TX_BIT == 2) && (RX_BIT == 3) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((UART_PORT == 2) && (TX_BIT == 5) && (RX_BIT == 6) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 2) && (UART_TX_PIN == A2) && (UART_RX_PIN == A3))
+#elif ((UART_PORT == 2) && (UART_TX_PIN == D5) && (UART_RX_PIN == D6))
 #define COM_REMAP AFIO_MAPR_USART2_REMAP
-#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == B) && (RX_PORT == B))
-#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == B10) && (UART_RX_PIN == B11))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == C10) && (UART_RX_PIN == C11))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_PARTIALREMAP
-#elif ((UART_PORT == 3) && (TX_BIT == 8) && (RX_BIT == 9) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == D8) && (UART_RX_PIN == D9))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_FULLREMAP
-#elif ((UART_PORT == 4) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
-#elif ((UART_PORT == 5) && (TX_BIT == 12) && (RX_BIT == 2) && (TX_PORT == C) && (RX_PORT == D))
+#elif ((UART_PORT == 4) && (UART_TX_PIN == C10) && (UART_RX_PIN == C11))
+#elif ((UART_PORT == 5) && (UART_TX_PIN == C12) && (UART_RX_PIN == D2))
 #else
 #error "USART/UART pin configuration not supported"
 #endif
+#endif
+
+#define SPI_SPEED_LOW 7
+#define SPI_SPEED_NORMAL 4
+#define SPI_SPEED_HIGH 0
+
+#if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
+#define MCU_HAS_SPI
+#define SPI_CLK_PIN __iopin__(TX_PORT, TX_BIT)
+#define SPI_SDO_PIN __iopin__(RX_PORT, RX_BIT)
+#define SPI_SDI_PIN __iopin__(RX_PORT, RX_BIT)
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_SPEED
+#define SPI_SPEED SPI_SPEED_NORMAL
+#endif
+// remmaping and pin checking
+//  SPI	CLK	SDI	SDO	REMAP
+//  1	A5	A6	A7	0
+//  1	B3	B4	B5	1
+//  2	B13	B14	B15	NOREMAP
+//  3	B3	B4	B5	0
+//  3	C10	C11	C12	1
+#if ((SPI_PORT == 1) && (SPI_CLK_PIN == A5) && (SPI_SDI_PIN == A6) && (SPI_SDO_PIN == A7))
+#elif ((SPI_PORT == 1) && (SPI_CLK_PIN == B3) && (SPI_SDI_PIN == B4) && (SPI_SDO_PIN == B5))
+#define SPI_REMAP AFIO_MAPR_SPI1_REMAP
+#elif ((SPI_PORT == 2) && (SPI_CLK_PIN == B13) && (SPI_SDI_PIN == B14) && (SPI_SDO_PIN == B15))
+#elif ((SPI_PORT == 3) && (SPI_CLK_PIN == B3) && (SPI_SDI_PIN == B4) && (SPI_SDO_PIN == B5))
+#elif ((SPI_PORT == 3) && (SPI_CLK_PIN == C10) && (SPI_SDI_PIN == C11) && (SPI_SDO_PIN == C12))
+#define COM_REMAP AFIO_MAPR_SPI3_REMAP
+#else
+#error "SPI pin configuration not supported"
+#endif
+#endif
+
+#define SPI_REG __helper__(SPI, SPI_PORT, )
+#if (SPI_PORT == 1)
+#define SPI_ENREG RCC->APB2ENR
+#define SPI_ENVAL RCC_APB2ENR_SPI1EN
+#else
+#define SPI_ENREG RCC->APB1ENR
+#define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
 #endif
 
 // Timer registers
@@ -4259,6 +4313,18 @@ extern "C"
 		ADC1->SR &= ~ADC_SR_EOS;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
 	}
+
+#define mcu_spi_xmit(X)                                               \
+	{                                                                 \
+		SPI_REG->DR = X;                                              \
+		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
+			;                                                         \
+		uint8_t data = SPI_REG->DR;                                   \
+		while (SPI1->SR & SPI_SR_BSY)                                 \
+			;                                                         \
+		data;                                                         \
+	}
+
 #ifdef PROBE
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)
