@@ -48,17 +48,39 @@ FORCEINLINE static uint16_t crc16(uint8_t *data, uint8_t len)
 
 void send_request(modbus_request_t request, softuart_port_t *port)
 {
-	uint8_t* data = (uint8_t *)&request;
+	uint8_t *data = (uint8_t *)&request;
 	uint8_t len = !request.datalen ? 8 : (8 + 1 + request.datalen);
 	request.crc = crc16(data, len);
 
-	while(len--){
+	while (len--)
+	{
 		softuart_putc(port, data);
 		data++;
 	}
 
-	softuart_putc(port, ((uint8_t*)request.crc)[0]);
-	softuart_putc(port, ((uint8_t*)request.crc)[1]);
+	softuart_putc(port, ((uint8_t *)request.crc)[0]);
+	softuart_putc(port, ((uint8_t *)request.crc)[1]);
+}
 
-	softuart_getc
+bool read_response(modbus_response_t *response, softuart_port_t *port)
+{
+	int16_t c = 0;
+	uint8_t len;
+	uint8_t *data = response;
+	do
+	{
+		c = softuart_getc(port);
+		*data = (uint8_t)(0xFF & softuart_getc(port));
+		data++;
+		len++;
+	} while (c >= 0);
+
+	if (len < 6)
+	{
+		return false;
+	}
+
+	data-=2;
+	response->crc = *((uint16_t*)data);
+	return true;
 }

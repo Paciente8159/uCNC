@@ -40,7 +40,7 @@ void softuart_putc(softuart_port_t *port, char c)
 	mcu_delay_us(port->baud);
 }
 
-char softuart_getc(softuart_port_t *port)
+int16_t softuart_getc(softuart_port_t *port)
 {
 	mcu_disable_global_isr();
 	uint16_t ms = SOFTUART_TIMEOUT * 1000;
@@ -50,11 +50,11 @@ char softuart_getc(softuart_port_t *port)
 		if (!ms--)
 		{
 			mcu_enable_global_isr();
-			return 0xFF;
+			return -1;
 		}
 	}
 	mcu_delay_us((port->baud >> 1));
-	char val = 0;
+	unsigned char val = 0;
 	uint8_t bits = 8;
 	uint8_t mask = 0x01;
 	do
@@ -68,5 +68,5 @@ char softuart_getc(softuart_port_t *port)
 	} while (--bits);
 	mcu_delay_us((port->baud >> 1));
 	mcu_enable_global_isr();
-	return val;
+	return (int16_t)val;
 }
