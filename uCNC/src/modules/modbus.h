@@ -41,13 +41,12 @@ extern "C"
 #define MODBUS_PRESET_MULTIPLE_REGISTERS 0x10
 #define MODBUS_READ_WRITE_MULTIPLE_REGISTERS 0x017
 
-
 typedef struct modbus_request
 {
 	uint8_t address;
 	uint8_t fcode;
-	uint16_t startaddress;
-	uint16_t value;
+	uint8_t startaddress[2];
+	uint8_t value[2];
 	uint8_t datalen;
 	uint8_t data[MODBUS_DATA_MAX_LEN];
 	uint16_t crc;
