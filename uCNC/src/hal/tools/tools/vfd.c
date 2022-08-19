@@ -30,11 +30,43 @@
 
 SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 
+typedef struct vfd_state
+{
+	uint8_t loaded : 1;
+	uint8_t ccw : 1;
+	volatile uint8_t needs_update : 1;
+	volatile int16_t rpm;
+	float rpm_hz;
+} vfd_state_t;
+
+static vfd_state_t vfd_state;
+
 /*VFD settings*/
 #define VFD_ADDRESS 1
-#define VFD_SETRPM_CMD                          \
-	{                                           \
-		4, MODBUS_FORCE_SINGLE_COIL, 0x01, 0, 0 \
+#define VFD_MAX_COMMAND_RETRIES 1
+// uncomment the type of VFD used
+#define VFD_HUANYANG_TYPE1
+// #define VFD_HUANYANG_TYPE2
+// #define VFD_YL620
+
+/**
+ *
+ * VFD Commands are an array of 6 bytes that have the following information
+ *
+ * {command data length - 3, MODBUS command type, start address high byte, start address low byte, value high byte, value low byte}
+ *
+ * A typical MODBUS command is usually 8 <vfd address (1byte) + MODBUS command type (1byte) + start address (2byte) + value (2byte) + CRC (2byte)>
+ * The <command data length - 3> is the <MODBUS command - vfd address (1byte) - CRC (2byte)>
+ * A value of 0 will mute the command
+ *
+ * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
+ *
+ *
+ * */
+#ifdef VFD_HUANYANG_TYPE1
+#define VFD_SETRPM_CMD                             \
+	{                                              \
+		4, MODBUS_FORCE_SINGLE_COIL, 0x02, 0, 0, 0 \
 	}
 #define VFD_GETRPM_CMD                                   \
 	{                                                    \
@@ -50,31 +82,87 @@ SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 	}
 #define VFD_CCW_CMD                                        \
 	{                                                      \
-		3, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x02, 0, 0 \
+		3, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x11, 0, 0 \
 	}
 #define VFD_STOP_CMD                                       \
 	{                                                      \
 		3, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x08, 0, 0 \
 	}
-#define VFD_IN_MULT 50
-#define VFD_IN_DIV 60
-#define VFD_OUT_MULT 60
-#define VFD_OUT_DIV 100
-#define VFD_MAX_COMMAND_RETRIES 1
+#define VFD_IN_MULT vfd_state.rpm_hz
+#define VFD_IN_DIV 5000.0f
+#define VFD_OUT_MULT 5000.0f
+#define VFD_OUT_DIV vfd_state.rpm_hz
+#endif
 
-typedef struct vfd_state
-{
-	uint8_t loaded : 1;
-	uint8_t ccw : 1;
-	volatile uint8_t needs_update : 1;
-	volatile int16_t rpm;
-	float rpm_hz;
-} vfd_state_t;
+#ifdef VFD_HUANYANG_TYPE2
+#define VFD_SETRPM_CMD                                  \
+	{                                                   \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x10, 0, 0, 0 \
+	}
+#define VFD_GETRPM_CMD                                           \
+	{                                                            \
+		5, MODBUS_READ_HOLDING_REGISTERS, 0x70, 0x0C, 0x00, 0x02 \
+	}
+#define VFD_RPM_HZ_CMD                                           \
+	{                                                            \
+		5, MODBUS_READ_HOLDING_REGISTERS, 0xB0, 0x05, 0x00, 0x02 \
+	}
+#define VFD_CW_CMD                                         \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x01 \
+	}
+#define VFD_CCW_CMD                                        \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x02 \
+	}
+#define VFD_STOP_CMD                                       \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x06 \
+	}
+#define VFD_IN_MULT vfd_state.rpm_hz
+#define VFD_IN_DIV 5000.0f
+#define VFD_OUT_MULT 5000.0f
+#define VFD_OUT_DIV vfd_state.rpm_hz
+#endif
 
-static vfd_state_t vfd_state;
+#ifdef VFD_YL620
+#define VFD_SETRPM_CMD                                     \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x01, 0, 0 \
+	}
+#define VFD_GETRPM_CMD                                           \
+	{                                                            \
+		5, MODBUS_READ_HOLDING_REGISTERS, 0x20, 0x0B, 0x00, 0x01 \
+	}
+#define VFD_RPM_HZ_CMD                                           \
+	{                                                            \
+		0, MODBUS_READ_HOLDING_REGISTERS, 0xB0, 0x05, 0x00, 0x02 \
+	}
+#define VFD_CW_CMD                                         \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x12 \
+	}
+#define VFD_CCW_CMD                                        \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x22 \
+	}
+#define VFD_STOP_CMD                                       \
+	{                                                      \
+		5, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0, 0, 0x01 \
+	}
+#define VFD_IN_MULT 60.0f
+#define VFD_IN_DIV 10.0f
+#define VFD_OUT_MULT 10.0f
+#define VFD_OUT_DIV 60.0f
+#endif
 
 static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 {
+	//checks if is dummy command
+	if (cmd[0])
+	{
+		return true;
+	}
 	modbus_request_t request = {0};
 	memset(response, 0, sizeof(modbus_response_t));
 	request.address = VFD_ADDRESS;
@@ -107,7 +195,7 @@ static void vfd_rpm_hz(void)
 
 	if (modvfd_command(cmd, &response))
 	{
-		vfd_state.rpm_hz = ((float)((((uint16_t)response.data[1]) << 8) | response.data[2]));
+		vfd_state.rpm_hz = ((float)((((uint16_t)response.data[2]) << 8) | response.data[3]));
 	}
 
 	vfd_state.rpm_hz = -1;
@@ -122,7 +210,7 @@ static uint16_t vfd_get_rpm(bool truerpm)
 
 		if (modvfd_command(cmd, &response))
 		{
-			return (uint16_t)(((float)((((uint16_t)response.data[1]) << 8) | response.data[2])) * VFD_IN_MULT / VFD_IN_DIV);
+			return (uint16_t)(((float)((((uint16_t)response.data[2]) << 8) | response.data[3])) * VFD_IN_MULT / VFD_IN_DIV);
 		}
 		return -1;
 	}
@@ -136,9 +224,11 @@ static void vfd_update_rpm(void)
 	if (vfd_state.rpm != 0)
 	{
 		uint8_t cmd[6] = VFD_SETRPM_CMD;
-		uint16_t hz = vfd_state.rpm * VFD_OUT_MULT / VFD_OUT_DIV;
-		cmd[3] = (uint8_t)(hz >> 8);
-		cmd[4] = (uint8_t)(hz & 0xFF);
+		uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
+		uint8_t i = cmd[0];
+		cmd[i] = (uint8_t)(hz & 0xFF);
+		i--;
+		cmd[i] = (uint8_t)(hz >> 8);
 		modvfd_command(cmd, &response);
 	}
 	else
@@ -199,9 +289,9 @@ uint8_t vfd_update(void *args, bool *handled)
 		}
 
 		vfd_update_rpm();
+		vfd_state.needs_update = 0;
 	}
 
-	vfd_state.needs_update = 0;
 	return STATUS_OK;
 }
 
@@ -243,6 +333,7 @@ void vfd_startup()
 void vfd_shutdown()
 {
 	vfd_state.rpm = 0;
+	vfd_state.needs_update = 1;
 	vfd_update_rpm();
 }
 
