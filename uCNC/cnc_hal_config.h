@@ -119,7 +119,9 @@ extern "C"
 
 // assign the tools from 1 to 16
 #define TOOL1 spindle_pwm
-	//#define TOOL2 laser1
+	// #define TOOL2 laser
+	//#define TOOL3 spindle_besc
+	//#define TOOL4 spindle_relay
 
 // Assigns an output to an blinking led (1Hz rate)
 #define LED DOUT31

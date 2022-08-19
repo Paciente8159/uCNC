@@ -31,6 +31,8 @@
 // give names to the pins (easier to identify)
 #define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
+// this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
+#define PWM_MIN_VALUE 5
 
 static bool previous_laser_mode;
 
@@ -47,15 +49,22 @@ void laser_shutdown_code(void)
 	g_settings.laser_mode = previous_laser_mode;
 }
 
-void laser_set_speed(uint8_t value, bool invert)
+void laser_set_speed(int16_t value)
 {
 // easy macro to execute the same code as below
 // SET_LASER(LASER_PWM, value, invert);
 
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if !(LASER_PWM < 0)
-	mcu_set_pwm(LASER_PWM, value);
+	mcu_set_pwm(LASER_PWM, (uint8_t)ABS(value));
 #endif
+}
+
+int16_t laser_range_speed(float value)
+{
+	// converts core tool speed to laser power (PWM)
+	value = (255.0f - PWM_MIN_VALUE) * (value / g_settings.spindle_max_rpm);
+	return ((int16_t)value + PWM_MIN_VALUE);
 }
 
 void laser_set_coolant(uint8_t value)
@@ -77,10 +86,11 @@ uint16_t laser_get_speed(void)
 const tool_t __rom__ laser = {
 	.startup_code = &laser_startup_code,
 	.shutdown_code = &laser_shutdown_code,
-	.set_speed = &laser_set_speed,
-	.set_coolant = NULL,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.get_speed = &laser_get_speed};
+	.range_speed = &laser_range_speed,
+	.get_speed = &laser_get_speed,
+	.set_speed = &laser_set_speed,
+	.set_coolant = NULL};

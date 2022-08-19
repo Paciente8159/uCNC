@@ -132,8 +132,6 @@ extern "C"
 
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
-// minimum output if the value of S is other then 0
-#define PWM_MIN_OUTPUT 0
 // define coolant delay at restart
 #define DELAY_ON_RESUME_COOLANT 1
 // uncomment to make M7 act as M8

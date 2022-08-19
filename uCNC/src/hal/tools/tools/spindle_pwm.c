@@ -36,35 +36,25 @@
 
 static uint8_t spindle_pwm_speed;
 
-void spindle_pwm_set_speed(uint8_t value, bool invert)
+void spindle_pwm_set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
 	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
-	spindle_pwm_speed = value;
+	spindle_pwm_speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if SPINDLE_DIR >= 0
-	if (SPINDLE_DIR > 0)
+#if !(SPINDLE_DIR < 0)
+	if ((value <= 0))
 	{
-		if (!invert)
-		{
-			mcu_clear_output(SPINDLE_DIR);
-		}
-		else
-		{
-			mcu_set_output(SPINDLE_DIR);
-		}
+		mcu_clear_output(SPINDLE_DIR);
 	}
-#endif
-
-#if SPINDLE_PWM >= 0
-	if (SPINDLE_PWM > 0)
+	else
 	{
-		mcu_set_pwm(SPINDLE_PWM, value);
+		mcu_set_output(SPINDLE_DIR);
 	}
 #endif
 
 #if !(SPINDLE_PWM < 0)
-	mcu_set_pwm(SPINDLE_PWM, value);
+	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
 }
 
@@ -72,6 +62,12 @@ void spindle_pwm_set_coolant(uint8_t value)
 {
 	// easy macro
 	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+}
+
+int16_t spindle_pwm_range_speed(float value)
+{
+	value = (255.0f) * (value / g_settings.spindle_max_rpm);
+	return ((int16_t)value);
 }
 
 uint16_t spindle_pwm_get_speed(void)
@@ -111,10 +107,11 @@ int16_t spindle_pwm_pid_error(void)
 const tool_t __rom__ spindle_pwm = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-	.set_speed = &spindle_pwm_set_speed,
-	.set_coolant = &spindle_pwm_set_coolant,
 #if PID_CONTROLLERS > 0
 	.pid_update = &spindle_pwm_pid_update,
 	.pid_error = &spindle_pwm_pid_error,
 #endif
-	.get_speed = &spindle_pwm_get_speed};
+	.range_speed = &spindle_pwm_range_speed,
+	.get_speed = &spindle_pwm_get_speed,
+	.set_speed = &spindle_pwm_set_speed,
+	.set_coolant = &spindle_pwm_set_coolant};

@@ -55,8 +55,8 @@ extern "C"
 		float homing_slow_feed_rate;
 		// debouncing not used
 		float homing_offset;
-		float spindle_max_rpm;
-		float spindle_min_rpm;
+		int16_t spindle_max_rpm;
+		int16_t spindle_min_rpm;
 		uint8_t laser_mode;
 		float step_per_mm[STEPPER_COUNT];
 		float max_feed_rate[STEPPER_COUNT];

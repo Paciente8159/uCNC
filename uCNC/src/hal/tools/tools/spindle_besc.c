@@ -68,10 +68,21 @@ void spindle_besc_shutdown()
 #endif
 }
 
-void spindle_besc_set_speed(uint8_t value, bool invert)
+int16_t spindle_besc_range_speed(float value)
+{
+	if (value == 0)
+	{
+		return 0;
+	}
+
+	value = (THROTTLE_RANGE) * (value / g_settings.spindle_max_rpm) + THROTTLE_DOWN;
+	return ((int16_t)value);
+}
+
+void spindle_besc_set_speed(int16_t value)
 {
 
-	if (!value || invert)
+	if ((value <= 0))
 	{
 #if !(SPINDLE_SERVO < 0)
 		mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
@@ -80,13 +91,11 @@ void spindle_besc_set_speed(uint8_t value, bool invert)
 	else
 	{
 #if !(SPINDLE_SERVO < 0)
-		uint16_t scale = value * THROTTLE_RANGE;
-		uint8_t new_val = (0xFF & (scale >> 8)) + THROTTLE_DOWN;
-		mcu_set_servo(SPINDLE_SERVO, new_val);
+		mcu_set_servo(SPINDLE_SERVO, (uint8_t)value);
 #endif
 	}
 
-	spindle_speed = (invert) ? 0 : value;
+	spindle_speed = (value <= 0) ? 0 : value;
 }
 
 void spindle_besc_set_coolant(uint8_t value)
@@ -137,10 +146,11 @@ uint16_t spindle_besc_get_speed(void)
 const tool_t __rom__ spindle_besc = {
 	.startup_code = &spindle_besc_startup,
 	.shutdown_code = &spindle_besc_shutdown,
-	.set_speed = &spindle_besc_set_speed,
-	.set_coolant = &spindle_besc_set_coolant,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.get_speed = &spindle_besc_get_speed};
+	.range_speed = &spindle_besc_range_speed,
+	.get_speed = &spindle_besc_get_speed,
+	.set_speed = &spindle_besc_set_speed,
+	.set_coolant = &spindle_besc_set_coolant};
