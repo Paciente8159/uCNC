@@ -18,7 +18,6 @@
 
 #include "../cnc.h"
 #include "modbus.h"
-#include "softuart.h"
 #include <stdint.h>
 
 #define MODBUS_UARTBAUD 38400
@@ -26,7 +25,7 @@
 FORCEINLINE static uint16_t crc16(uint8_t *data, uint8_t len)
 {
 	uint16_t crc = 0xFFFF;
-	uint_fast8_t pos, i;
+	uint8_t pos;
 
 	for (pos = 0; pos < len; pos++)
 	{
@@ -54,7 +53,7 @@ void send_request(modbus_request_t request, softuart_port_t *port)
 
 	while (len--)
 	{
-		softuart_putc(port, data);
+		softuart_putc(port, *data);
 		data++;
 	}
 
@@ -66,7 +65,7 @@ bool read_response(modbus_response_t *response, softuart_port_t *port)
 {
 	int16_t c = 0;
 	uint8_t len;
-	uint8_t *data = response;
+	uint8_t *data = (uint8_t*)response;
 	do
 	{
 		c = softuart_getc(port);

@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include "../cnc.h"
+#include "softuart.h"
 #include <stdint.h>
 
 #ifndef MODBUS_DATA_MAX_LEN

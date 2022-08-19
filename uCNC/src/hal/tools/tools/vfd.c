@@ -18,12 +18,13 @@
 */
 
 #include "../../../cnc.h"
-#include "../../../modules/softuart.h"
 #include "../../../modules/modbus.h"
-static uint8_t spindle_speed;
 
-#define VFD_TX_PIN DOUT31
-#define VFD_RX_PIN DIN31
+#define COOLANT_FLOOD DOUT1
+#define COOLANT_MIST DOUT2
+
+#define VFD_TX_PIN DOUT26
+#define VFD_RX_PIN DIN26
 #define VFD_BAUDRATE 9600
 #define VFD_RETRY_DELAY_MS 100
 
@@ -31,8 +32,6 @@ SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 
 /*VFD settings*/
 #define VFD_ADDRESS 1
-#define VFD_RPM_HZ 60
-#define VFD_RUNSTOP_CMD 8192
 #define VFD_SETRPM_CMD                          \
 	{                                           \
 		4, MODBUS_FORCE_SINGLE_COIL, 0x01, 0, 0 \
@@ -65,10 +64,10 @@ SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 
 typedef struct vfd_state
 {
-	uint8_t connected : 1;
+	uint8_t loaded : 1;
 	uint8_t ccw : 1;
-	uint8_t needs_update : 1;
-	float rpm;
+	volatile uint8_t needs_update : 1;
+	volatile int16_t rpm;
 	float rpm_hz;
 } vfd_state_t;
 
@@ -90,53 +89,63 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 	while (retries--)
 	{
 		send_request(request, &vfd_uart);
-		if (read_response(&response, &vfd_uart))
+		if (read_response(response, &vfd_uart))
 		{
 			return true;
 		}
-		protocol_send_error(__romstr__("Communication with VFD failed!"));
+		protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
 		cnc_delay_ms(VFD_RETRY_DELAY_MS);
 	}
+
+	return false;
 }
 
 static void vfd_rpm_hz(void)
 {
 	modbus_response_t response = {0};
-	uint8_t *cmd = VFD_RPM_HZ_CMD;
+	uint8_t cmd[6] = VFD_RPM_HZ_CMD;
 
 	if (modvfd_command(cmd, &response))
 	{
 		vfd_state.rpm_hz = ((float)((((uint16_t)response.data[1]) << 8) | response.data[2]));
 	}
+
+	vfd_state.rpm_hz = -1;
 }
 
-static void vfd_get_rpm(bool truerpm)
+static uint16_t vfd_get_rpm(bool truerpm)
 {
 	if (truerpm)
 	{
 		modbus_response_t response = {0};
-		uint8_t *cmd = VFD_GETRPM_CMD;
+		uint8_t cmd[6] = VFD_GETRPM_CMD;
 
 		if (modvfd_command(cmd, &response))
 		{
-			return ((float)((((uint16_t)response.data[1]) << 8) | response.data[2])) * VFD_IN_MULT / VFD_IN_DIV;
+			return (uint16_t)(((float)((((uint16_t)response.data[1]) << 8) | response.data[2])) * VFD_IN_MULT / VFD_IN_DIV);
 		}
 		return -1;
 	}
 
-	return vfd_state.rpm;
+	return (uint16_t)vfd_state.rpm;
 }
 
 static void vfd_update_rpm(void)
 {
 	modbus_response_t response = {0};
-	uint8_t *cmd = VFD_STOP_CMD;
 	if (vfd_state.rpm != 0)
 	{
+		uint8_t cmd[6] = VFD_SETRPM_CMD;
 		uint16_t hz = vfd_state.rpm * VFD_OUT_MULT / VFD_OUT_DIV;
+		cmd[3] = (uint8_t)(hz >> 8);
+		cmd[4] = (uint8_t)(hz & 0xFF);
+		modvfd_command(cmd, &response);
 	}
-
-	modvfd_command(cmd, &response);
+	else
+	{
+		uint8_t cmd[6] = VFD_STOP_CMD;
+		modvfd_command(cmd, &response);
+	}
 }
 
 static void vfd_cw(void)
@@ -144,7 +153,7 @@ static void vfd_cw(void)
 	if (vfd_state.ccw)
 	{
 		modbus_response_t response = {0};
-		uint8_t *cmd = VFD_CW_CMD;
+		uint8_t cmd[6] = VFD_CW_CMD;
 
 		if (modvfd_command(cmd, &response))
 		{
@@ -158,7 +167,7 @@ static void vfd_ccw(void)
 	if (!vfd_state.ccw)
 	{
 		modbus_response_t response = {0};
-		uint8_t *cmd = VFD_CCW_CMD;
+		uint8_t cmd[6] = VFD_CCW_CMD;
 
 		if (modvfd_command(cmd, &response))
 		{
@@ -167,11 +176,68 @@ static void vfd_ccw(void)
 	}
 }
 
+/**
+ *
+ * Module callbacks
+ * Vfd update will not happen in the ISR due to the slow speed communication
+ * It will be signaled to be updated in the main loop
+ *
+ * */
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+uint8_t vfd_update(void *args, bool *handled)
+{
+	if (vfd_state.needs_update)
+	{
+		if (vfd_state.rpm < 0)
+		{
+			vfd_ccw();
+		}
+		else
+		{
+			vfd_cw();
+		}
+
+		vfd_update_rpm();
+	}
+
+	vfd_state.needs_update = 0;
+	return STATUS_OK;
+}
+
+CREATE_EVENT_LISTENER(cnc_dotasks, vfd_update);
+#endif
+
+DECL_MODULE(vfd)
+{
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	ADD_EVENT_LISTENER(cnc_dotasks, vfd_update);
+#else
+#warning "VFD tool requires ENABLE_MAIN_LOOP_MODULES option."
+#endif
+}
+
+/**
+ *
+ * Tool callbacks
+ *
+ * */
+
 void vfd_startup()
 {
-	vfd_rpm_hz();
+	if (!vfd_state.loaded)
+	{
+		vfd_rpm_hz();
+		// was able do communicate via modbus
+		if (vfd_state.rpm_hz >= 0)
+		{
+			vfd_init();
+			vfd_state.loaded = 1;
+		}
+	}
+
 	vfd_state.rpm = 0;
-	vfd_update_rpm();
+	vfd_state.needs_update = 1;
 }
 
 void vfd_shutdown()
@@ -180,77 +246,33 @@ void vfd_shutdown()
 	vfd_update_rpm();
 }
 
-void vfd_set_speed(uint8_t value, bool invert)
+void vfd_set_speed(int16_t value)
 {
-	if (!value)
+	if (vfd_state.rpm != value)
 	{
-		vfd_state.rpm = 0;
-		vfd_update_rpm();
+		vfd_state.rpm = value;
+		vfd_state.needs_update = 1;
 	}
-	else
-	{
-#if !(SPINDLE_SERVO < 0)
-		uint16_t scale = value * THROTTLE_RANGE;
-		uint8_t new_val = (0xFF & (scale >> 8)) + THROTTLE_DOWN;
-		mcu_set_servo(SPINDLE_SERVO, new_val);
-#endif
-	}
-
-	spindle_speed = (invert) ? 0 : value;
 }
 
 void vfd_set_coolant(uint8_t value)
 {
-	SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
+	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
 }
 
 uint16_t vfd_get_speed(void)
 {
-
-	// this show how to use an encoder (in this case encoder 0) configured as a counter
-	// to take real RPM readings of the spindle
-	// the reading is updated every 5 seconds
-
-#if (defined(HAS_RPM_COUNTER) && (ENCODERS > RPM_ENCODER))
-	extern int32_t encoder_get_position(uint8_t i);
-	extern void encoder_reset_position(uint8_t i, int32_t position);
-	static uint32_t last_time = 0;
-	static uint16_t lastrpm = 0;
-	uint16_t rpm = lastrpm;
-
-	uint32_t elapsed = (mcu_millis() - last_time);
-	int32_t read = encoder_get_position(0);
-
-	// updates speed read every 5s
-	if (read > 0)
-	{
-		float timefact = 60000.f / (float)elapsed;
-		float newrpm = timefact * (float)read;
-		last_time = mcu_millis();
-		encoder_reset_position(0, 0);
-		rpm = (uint16_t)newrpm;
-		lastrpm = rpm;
-	}
-	else if (elapsed > 60000)
-	{
-		last_time = mcu_millis();
-		rpm = 0;
-		lastrpm = 0;
-	}
-
-	return rpm;
-#else
-	return spindle_speed;
-#endif
+	return vfd_get_rpm(true);
 }
 
 const tool_t __rom__ vfd = {
 	.startup_code = &vfd_startup,
 	.shutdown_code = &vfd_shutdown,
-	.set_speed = &vfd_set_speed,
-	.set_coolant = &vfd_set_coolant,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.get_speed = &vfd_get_speed};
+	.range_speed = NULL,
+	.get_speed = &vfd_get_speed,
+	.set_speed = &vfd_set_speed,
+	.set_coolant = &vfd_set_coolant};
