@@ -36,12 +36,12 @@
 #define COOLANT_FLOOD_EN DOUT3
 #endif
 
-static uint8_t spindle_speed;
+static int16_t spindle_speed;
 
-void spindle_relay_set_speed(uint8_t value, bool invert)
+void spindle_relay_set_speed(int16_t value)
 {
 
-	if (!value)
+	if (value == 0)
 	{
 #if !(SPINDLE_FWD_EN < 0)
 		mcu_clear_output(SPINDLE_FWD_EN);
@@ -50,7 +50,7 @@ void spindle_relay_set_speed(uint8_t value, bool invert)
 		mcu_clear_output(SPINDLE_REV_EN);
 #endif
 	}
-	else if (invert)
+	else if (value < 0)
 	{
 #if !(SPINDLE_FWD_EN < 0)
 		mcu_clear_output(SPINDLE_FWD_EN);
@@ -68,8 +68,6 @@ void spindle_relay_set_speed(uint8_t value, bool invert)
 		mcu_set_output(SPINDLE_FWD_EN);
 #endif
 	}
-
-	spindle_speed = value;
 }
 
 void spindle_relay_set_coolant(uint8_t value)
@@ -81,16 +79,17 @@ void spindle_relay_set_coolant(uint8_t value)
 
 uint16_t spindle_relay_get_speed(void)
 {
-	return spindle_speed;
+	return ABS(spindle_speed);
 }
 
 const tool_t __rom__ spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-	.set_speed = &spindle_relay_set_speed,
-	.set_coolant = &spindle_relay_set_coolant,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.get_speed = &spindle_relay_get_speed};
+	.range_speed = NULL,
+	.get_speed = &spindle_relay_get_speed,
+	.set_speed = &spindle_relay_set_speed,
+	.set_coolant = &spindle_relay_set_coolant};

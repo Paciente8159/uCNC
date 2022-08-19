@@ -28,35 +28,37 @@ extern "C"
 #define TOOLDEF __attribute__((used))
 
 #include "tool_helper.h"
-#include <stdbool.h>
 #include <stdint.h>
 
 	typedef void (*tool_func)(void);
-	typedef uint16_t (*tool_func_getspeed)(void);
-	typedef void (*tool_spindle_func)(uint8_t, bool);
-	typedef void (*tool_coolant_func)(uint8_t);
 	typedef int16_t (*tool_pid_err_func)(void);
 	typedef void (*tool_pid_upd_func)(int16_t);
+	typedef int16_t (*tool_range_speed_func)(float);
+	typedef uint16_t (*tool_get_speed_func)(void);
+	typedef void (*tool_set_speed_func)(int16_t);
+	typedef void (*tool_coolant_func)(uint8_t);
 
 	typedef struct
 	{
-		tool_func startup_code;		   /*runs any custom code after the tool is loaded*/
-		tool_func shutdown_code;	   /*runs any custom code before the tool is unloaded*/
-		tool_spindle_func set_speed;   /*sets the speed/power of the tool*/
-		tool_coolant_func set_coolant; /*enables/disables the coolant*/
-		tool_func_getspeed get_speed;  /*gets the tool speed/power*/
-		tool_pid_upd_func pid_update;  /*runs de PID update code needed to keep the tool at the desired speed/power*/
-		tool_pid_err_func pid_error;   /*runs de PID update code needed to keep the tool at the desired speed/power*/
+		tool_func startup_code;			   /*runs any custom code after the tool is loaded*/
+		tool_func shutdown_code;		   /*runs any custom code before the tool is unloaded*/
+		tool_pid_upd_func pid_update;	   /*runs de PID update code needed to keep the tool at the desired speed/power*/
+		tool_pid_err_func pid_error;	   /*runs de PID update code needed to keep the tool at the desired speed/power*/
+		tool_range_speed_func range_speed; /*converts core speed to tool speed*/
+		tool_get_speed_func get_speed;	   /*gets the tool speed/power (converts from tool speed to core speed)*/
+		tool_set_speed_func set_speed;	   /*sets the speed/power of the tool*/
+		tool_coolant_func set_coolant;	   /*enables/disables the coolant*/
 	} tool_t;
 
 	void tool_init(void);
 	void tool_change(uint8_t tool);
-	void tool_set_speed(int16_t value);
-	void tool_set_coolant(uint8_t value);
-	uint16_t tool_get_speed(void);
-	void tool_stop(void);
 	void tool_pid_update(int16_t value);
 	int16_t tool_pid_error(void);
+	int16_t tool_range_speed(float value);
+	uint16_t tool_get_speed(void);
+	void tool_set_speed(int16_t value);
+	void tool_set_coolant(uint8_t value);
+	void tool_stop(void);
 
 #ifdef __cplusplus
 }

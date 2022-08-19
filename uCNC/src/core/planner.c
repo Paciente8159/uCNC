@@ -440,29 +440,26 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 #if TOOL_COUNT > 0
 int16_t planner_get_spindle_speed(float scale)
 {
-	float spindle = (!planner_data_blocks) ? planner_spindle : planner_data[planner_data_read].spindle;
-	int16_t pwm = 0;
+	int16_t spindle = (!planner_data_blocks) ? planner_spindle : planner_data[planner_data_read].spindle;
 
 	if (spindle != 0)
 	{
 		bool neg = (spindle < 0);
-		spindle = ABS(spindle);
+		float scaled_spindle = (float)ABS(spindle);
 
 		if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
 		{
-			spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
+			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
 
 		if (planner_data[planner_data_read].flags_u.flags_t.feed_override && planner_overrides.spindle_override != 100)
 		{
-			spindle = 0.01f * (float)planner_overrides.spindle_override * spindle;
+			scaled_spindle = 0.01f * (float)planner_overrides.spindle_override * scaled_spindle;
 		}
-		spindle = MIN(spindle, g_settings.spindle_max_rpm);
-		spindle = MAX(spindle, g_settings.spindle_min_rpm);
-		pwm = (uint8_t)truncf(255 * (spindle / g_settings.spindle_max_rpm));
-		pwm = MAX(pwm, PWM_MIN_OUTPUT);
+		scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
+		int16_t output = tool_range_speed(scaled_spindle);
 
-		return (!neg) ? pwm : -pwm;
+		return (!neg) ? output : -output;
 	}
 
 	return 0;
