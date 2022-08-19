@@ -40,27 +40,21 @@ void spindle_pwm_set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
 	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
-	spindle_pwm_speed = ABS(value);
+	spindle_pwm_speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if !(SPINDLE_PWM < 0)
-	if (SPINDLE_DIR > 0)
+#if !(SPINDLE_DIR < 0)
+	if ((value <= 0))
 	{
-		if ((value <= 0))
-		{
-			mcu_clear_output(SPINDLE_DIR);
-		}
-		else
-		{
-			mcu_set_output(SPINDLE_DIR);
-		}
+		mcu_clear_output(SPINDLE_DIR);
+	}
+	else
+	{
+		mcu_set_output(SPINDLE_DIR);
 	}
 #endif
 
 #if !(SPINDLE_PWM < 0)
-	if (SPINDLE_PWM > 0)
-	{
-		mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
-	}
+	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
 }
 
