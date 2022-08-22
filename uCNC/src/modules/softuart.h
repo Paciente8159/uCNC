@@ -55,7 +55,7 @@ extern "C"
 	}                                      \
 	__attribute__((used)) softuart_port_t NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-	void softuart_putc(softuart_port_t *port, char c);
+	void softuart_putc(softuart_port_t *port, uint8_t c);
 	int16_t softuart_getc(softuart_port_t *port);
 
 #ifdef __cplusplus

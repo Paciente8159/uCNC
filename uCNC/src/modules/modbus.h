@@ -38,7 +38,7 @@ extern "C"
 #define MODBUS_READ_INPUT_REGISTERS 0x04
 #define MODBUS_FORCE_SINGLE_COIL 0x05
 #define MODBUS_PRESET_SINGLE_REGISTER 0x06
-#define ODBUS_FORCE_MULTIPLE_COILS 0x0F
+#define MODBUS_FORCE_MULTIPLE_COILS 0x0F
 #define MODBUS_PRESET_MULTIPLE_REGISTERS 0x10
 #define MODBUS_READ_WRITE_MULTIPLE_REGISTERS 0x017
 
@@ -61,8 +61,8 @@ typedef struct modbus_response
 	uint16_t crc;
 } modbus_response_t;
 
-void send_request(modbus_request_t request, softuart_port_t *port);
-bool read_response(modbus_response_t *response, softuart_port_t *port);
+void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port);
+bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port);
 
 #ifdef __cplusplus
 }

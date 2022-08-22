@@ -17,7 +17,7 @@
 */
 #include "softuart.h"
 
-void softuart_putc(softuart_port_t *port, char c)
+void softuart_putc(softuart_port_t *port, uint8_t c)
 {
 	mcu_disable_global_isr();
 	port->tx(false);
