@@ -17,6 +17,7 @@
 - refactored event/delegate macros now with a single function declaration/signature. Adding new events for extensions is easier (#234)
 - modified grbl system command parser to enable command extensions via modules (#236)
 - modified tools to convert between core speed and tool speed to avoid range/precision compression losses
+- modified parser/planner to correctly calculate tool power output when minimal power is not 0 (example: laser minimal power output when S0) (#240)
 
 ### Fixed
 
