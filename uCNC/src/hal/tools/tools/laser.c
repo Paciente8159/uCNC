@@ -32,7 +32,7 @@
 #define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
-#define PWM_MIN_VALUE 5
+#define PWM_MIN_VALUE 2
 
 static bool previous_laser_mode;
 
