@@ -23,8 +23,6 @@
 #include <math.h>
 #include <float.h>
 
-
-
 typedef struct
 {
 	uint8_t feed_override;
@@ -74,7 +72,8 @@ void planner_add_line(motion_data_t *block_data)
 	memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
 	planner_data[planner_data_write].dirbits = block_data->dirbits;
 	planner_data[planner_data_write].main_stepper = block_data->main_stepper;
-	planner_data[planner_data_write].planner_flags.reg = block_data->motion_flags.reg & STATE_COPY_FLAG_MASK; //copies the motion flags relative to coolant spindle running and feed_override
+	planner_data[planner_data_write].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
+	planner_data[planner_data_write].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
 
 #if TOOL_COUNT > 0
 	planner_data[planner_data_write].spindle = block_data->spindle;
@@ -284,15 +283,14 @@ void planner_discard_block(void)
 	}
 
 	blocks--;
-
 #if TOOL_COUNT > 0
-	// planner is empty update tools with current planner values
-	if (!blocks)
+	if (blocks)
 	{
 		planner_state.spindle_speed = planner_data[index].spindle;
 		planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
 	}
 #endif
+
 	planner_data_blocks = blocks;
 	planner_data_read = index;
 }
@@ -464,24 +462,29 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 #if TOOL_COUNT > 0
 int16_t planner_get_spindle_speed(float scale)
 {
-	int16_t spindle = (!planner_data_blocks) ? planner_state.spindle_speed : planner_data[planner_data_read].spindle;
-
-	bool neg = (spindle < 0);
-	float scaled_spindle = (float)ABS(spindle);
-
-	if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
+	if (planner_state.state_flags.bit.spindle_running)
 	{
-		scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
+		int16_t spindle = planner_state.spindle_speed;
+
+		bool neg = (spindle < 0);
+		float scaled_spindle = (float)ABS(spindle);
+
+		if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
+		{
+			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
+		}
+
+		if (planner_data[planner_data_read].planner_flags.bit.feed_override && planner_state.spindle_speed_override != 100)
+		{
+			scaled_spindle = 0.01f * (float)planner_state.spindle_speed_override * scaled_spindle;
+		}
+		scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
+		int16_t output = tool_range_speed(scaled_spindle);
+
+		return (!neg) ? output : -output;
 	}
 
-	if (planner_data[planner_data_read].planner_flags.bit.feed_override && planner_state.spindle_speed_override != 100)
-	{
-		scaled_spindle = 0.01f * (float)planner_state.spindle_speed_override * scaled_spindle;
-	}
-	scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
-	int16_t output = tool_range_speed(scaled_spindle);
-
-	return (!neg) ? output : -output;
+	return 0;
 }
 
 float planner_get_previous_spindle_speed(void)
@@ -569,7 +572,8 @@ void planner_sync_tools(motion_data_t *block_data)
 {
 #if TOOL_COUNT > 0
 	planner_state.spindle_speed = block_data->spindle;
-	planner_state.state_flags.bit.coolant = block_data->motion_flags.bit.coolant;
+	planner_state.state_flags.reg &= ~STATE_COPY_FLAG_MASK;
+	planner_state.state_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK);
 #endif
 }
 

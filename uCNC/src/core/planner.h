@@ -36,7 +36,7 @@ extern "C"
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
-#define STATE_COPY_FLAG_MASK 0x3F
+#define STATE_COPY_FLAG_MASK 0x0F
 typedef union
 	{
 		uint8_t reg;

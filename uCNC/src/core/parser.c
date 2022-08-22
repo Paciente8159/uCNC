@@ -1087,18 +1087,16 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	}
 
 	// 7. spindle on/off
+	block_data.spindle = new_state->spindle;
 	switch (new_state->groups.spindle_turning)
 	{
-	case M3:
-		block_data.spindle = new_state->spindle;
-		block_data.motion_flags.bit.spindle_running = 1;
-		break;
 	case M4:
-		block_data.spindle = -new_state->spindle;
+		block_data.spindle = -block_data.spindle;
+		// continue
+	case M3:
 		block_data.motion_flags.bit.spindle_running = 1;
 		break;
 	case M5:
-		block_data.spindle = 0;
 		block_data.motion_flags.bit.spindle_running = 0;
 		break;
 	}
@@ -1417,6 +1415,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 		{
 			error = mc_line(target, &block_data);
+			update_tools = false;
 			if (error)
 			{
 				return error;
@@ -1570,6 +1569,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			return error;
 		}
 
+		// tool is updated in motion
+		update_tools = false;
 		// saves position
 		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 	}
