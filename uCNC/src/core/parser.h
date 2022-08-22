@@ -170,7 +170,7 @@ extern "C"
 		float feedrate;
 #if TOOL_COUNT > 0
 		uint8_t tool_index;
-		int16_t spindle;
+		uint16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t line;

@@ -1065,7 +1065,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S))
 	{
 		new_state->spindle = words->s;
-		update_tools = (parser_state.spindle != new_state->spindle);
 	}
 
 	// 5. select tool
@@ -1086,40 +1085,24 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		new_state->tool_index = new_state->groups.tool_change;
 	}
 
-	// 7. spindle on/off
+	// 7. spindle on/rev/off (M3/M4/M5)
 	block_data.spindle = new_state->spindle;
-	switch (new_state->groups.spindle_turning)
-	{
-	case M4:
-		block_data.spindle = -block_data.spindle;
-		// continue
-	case M3:
-		block_data.motion_flags.bit.spindle_running = 1;
-		break;
-	case M5:
-		block_data.motion_flags.bit.spindle_running = 0;
-		break;
-	}
+	block_data.motion_flags.bit.spindle_running = new_state->groups.spindle_turning;
+	update_tools = ((parser_state.spindle != new_state->spindle) | (parser_state.groups.spindle_turning != new_state->groups.spindle_turning));
 
 	// spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
-	if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
+	if (update_tools && !g_settings.laser_mode)
 	{
-		update_tools = true;
-		if (!g_settings.laser_mode)
-		{
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
-			block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+		block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #endif
-		}
 	}
+
 	// 8. coolant on/off
-	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
-	{
-		update_tools = true;
-	}
+	update_tools |= (parser_state.groups.coolant != new_state->groups.coolant);
 	block_data.motion_flags.bit.coolant = new_state->groups.coolant;
-// moving to planner
-// parser_update_coolant(new_state->groups.coolant);
+	// moving to planner
+	// parser_update_coolant(new_state->groups.coolant);
 #endif
 
 	// 9. overrides

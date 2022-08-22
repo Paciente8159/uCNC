@@ -36,7 +36,7 @@ extern "C"
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
-#define STATE_COPY_FLAG_MASK 0x0F
+#define STATE_COPY_FLAG_MASK 0x1F
 typedef union
 	{
 		uint8_t reg;
@@ -44,11 +44,11 @@ typedef union
 		{
 			uint8_t feed_override : 1;
 #if TOOL_COUNT > 0
-			uint8_t spindle_running : 1;
+			uint8_t spindle_running : 2;
 			uint8_t coolant : 2;
 			uint8_t coolant_override : 2;
 #else
-		uint8_t : 5; // unused
+		uint8_t : 6; // unused
 #endif
 			uint8_t optimal : 1;
 			uint8_t backlash_comp : 1;

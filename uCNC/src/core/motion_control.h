@@ -44,11 +44,11 @@ extern "C"
 		{
 			uint8_t feed_override : 1;
 #if TOOL_COUNT > 0
-			uint8_t spindle_running : 1;
+			uint8_t spindle_running : 2;
 			uint8_t coolant : 2;
 			uint8_t coolant_override : 2;
 #else
-		uint8_t : 5; // unused
+		uint8_t : 6; // unused
 #endif
 			uint8_t is_subsegment : 1;
 			
@@ -67,7 +67,7 @@ extern "C"
 		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
 		uint8_t main_stepper;
-		int16_t spindle;
+		uint16_t spindle;
 		uint16_t dwell;
 		uint8_t motion_mode;
 		motion_flags_t motion_flags;

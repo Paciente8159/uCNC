@@ -464,10 +464,8 @@ int16_t planner_get_spindle_speed(float scale)
 {
 	if (planner_state.state_flags.bit.spindle_running)
 	{
-		int16_t spindle = planner_state.spindle_speed;
-
-		bool neg = (spindle < 0);
-		float scaled_spindle = (float)ABS(spindle);
+		float scaled_spindle = (float)planner_state.spindle_speed;
+		bool neg = (planner_state.state_flags.bit.spindle_running == 2);
 
 		if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
 		{
