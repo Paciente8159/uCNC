@@ -36,6 +36,25 @@ extern "C"
 #define MOTIONCONTROL_PROBE_INVERT 1
 #define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
 
+	typedef union
+	{
+		/* data */
+		uint8_t reg;
+		struct
+		{
+			uint8_t feed_override : 1;
+#if TOOL_COUNT > 0
+			uint8_t spindle_running : 2;
+			uint8_t coolant : 2;
+			uint8_t coolant_override : 2;
+#else
+		uint8_t : 6; // unused
+#endif
+			uint8_t is_subsegment : 1;
+			
+		} bit;
+	} motion_flags_t;
+
 	typedef struct
 	{
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -48,15 +67,10 @@ extern "C"
 		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
 		uint8_t main_stepper;
-		int16_t spindle;
+		uint16_t spindle;
 		uint16_t dwell;
 		uint8_t motion_mode;
-#if TOOL_COUNT > 0
-		uint8_t coolant;
-#endif
-		bool update_tools;
-		bool feed_override;
-		bool is_subsegment;
+		motion_flags_t motion_flags;
 	} motion_data_t;
 
 	void mc_init(void);
