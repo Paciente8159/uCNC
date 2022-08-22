@@ -36,6 +36,25 @@ extern "C"
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
+#define STATE_COPY_FLAG_MASK 0x3F
+typedef union
+	{
+		uint8_t reg;
+		struct
+		{
+			uint8_t feed_override : 1;
+#if TOOL_COUNT > 0
+			uint8_t spindle_running : 1;
+			uint8_t coolant : 2;
+			uint8_t coolant_override : 2;
+#else
+		uint8_t : 5; // unused
+#endif
+			uint8_t optimal : 1;
+			uint8_t backlash_comp : 1;
+		} bit;
+	} planner_flags_t;
+
 	typedef struct planner_block_
 	{
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -55,20 +74,8 @@ extern "C"
 #if TOOL_COUNT > 0
 		int16_t spindle;
 #endif
-
 		uint8_t action;
-		union flags_u_
-		{
-			struct flags_t_
-			{
-				uint8_t coolant : 2;
-				uint8_t optimal : 1;
-				uint8_t feed_override : 1;
-				uint8_t backlash_comp : 1;
-			} flags_t;
-			uint8_t flags;
-		} flags_u;
-
+		planner_flags_t planner_flags;
 	} planner_block_t;
 
 	void planner_init(void);

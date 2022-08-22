@@ -695,7 +695,7 @@ void cnc_exec_rt_commands(void)
 			{
 				motion_data_t block = {0};
 #if TOOL_COUNT > 0
-				block.coolant = planner_get_previous_coolant();
+				block.motion_flags.bit.coolant = planner_get_previous_coolant();
 				block.spindle = planner_get_previous_spindle_speed();
 #endif
 				mc_update_tools(&block);

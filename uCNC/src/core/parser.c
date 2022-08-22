@@ -1004,6 +1004,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	float radius;
 	motion_data_t block_data = {0};
 	uint8_t error = 0;
+	bool update_tools = false;
 
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
@@ -1064,7 +1065,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S))
 	{
 		new_state->spindle = words->s;
-		block_data.update_tools = (parser_state.spindle != new_state->spindle);
+		update_tools = (parser_state.spindle != new_state->spindle);
 	}
 
 	// 5. select tool
@@ -1090,19 +1091,22 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	{
 	case M3:
 		block_data.spindle = new_state->spindle;
+		block_data.motion_flags.bit.spindle_running = 1;
 		break;
 	case M4:
 		block_data.spindle = -new_state->spindle;
+		block_data.motion_flags.bit.spindle_running = 1;
 		break;
 	case M5:
 		block_data.spindle = 0;
+		block_data.motion_flags.bit.spindle_running = 0;
 		break;
 	}
 
 	// spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S) || CHECKFLAG(cmd->groups, GCODE_GROUP_SPINDLE))
 	{
-		block_data.update_tools = true;
+		update_tools = true;
 		if (!g_settings.laser_mode)
 		{
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
@@ -1113,15 +1117,15 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	// 8. coolant on/off
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COOLANT))
 	{
-		block_data.update_tools = true;
+		update_tools = true;
 	}
-	block_data.coolant = new_state->groups.coolant;
+	block_data.motion_flags.bit.coolant = new_state->groups.coolant;
 // moving to planner
 // parser_update_coolant(new_state->groups.coolant);
 #endif
 
 	// 9. overrides
-	block_data.feed_override = (bool)new_state->groups.feed_speed_override;
+	block_data.motion_flags.bit.feed_override = new_state->groups.feed_speed_override ? 1 : 0;
 
 	// 10. dwell
 	if (new_state->groups.nonmodal == G4)
@@ -1608,7 +1612,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	// if reached here the execution was not intersected
 	// send a spindle and coolant update if needed
-	if (block_data.update_tools)
+	if (update_tools)
 	{
 		return mc_update_tools(&block_data);
 	}
