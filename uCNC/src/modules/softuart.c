@@ -38,6 +38,7 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 	} while (--bits);
 	port->tx(true);
 	mcu_delay_us(port->baud);
+	mcu_enable_global_isr();
 }
 
 int16_t softuart_getc(softuart_port_t *port)
