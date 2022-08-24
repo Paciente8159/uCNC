@@ -47,7 +47,7 @@ static vfd_state_t vfd_state;
 
 /*VFD settings*/
 #define VFD_ADDRESS 1
-#define VFD_MAX_COMMAND_RETRIES 1
+#define VFD_MAX_COMMAND_RETRIES 2
 
 // uncomment the right type of VFD used
 #define VFD_HUANYANG_TYPE1
@@ -337,6 +337,8 @@ DECL_MODULE(vfd)
 
 void vfd_startup()
 {
+	vfd_uart.tx(true);
+	cnc_delay_ms(200);
 	if (!vfd_state.loaded)
 	{
 		vfd_init();
