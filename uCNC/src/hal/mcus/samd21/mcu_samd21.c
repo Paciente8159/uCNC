@@ -1542,7 +1542,7 @@ uint32_t mcu_millis()
 	return c;
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	uint32_t loops;
 	if (!delay)
