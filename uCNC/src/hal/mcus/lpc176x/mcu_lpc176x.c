@@ -32,6 +32,9 @@
 #include "lpc17xx_timer.h"
 #include "lpc17xx_systick.h"
 #include "lpc17xx_pwm.h"
+#if MCU_HAS_SPI
+#include "lpc17xx_spi.h"
+#endif
 #include "system_LPC17xx.h"
 
 #if (INTERFACE == INTERFACE_USB)
@@ -119,7 +122,7 @@ static FORCEINLINE void mcu_clear_servos()
 
 void servo_timer_init(void)
 {
-    TIM_Cmd(SERVO_TIMER_REG, DISABLE);
+	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
 	TIM_TIMERCFG_Type tmrconfig;
 	TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
 	TIM_Init(SERVO_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
@@ -210,7 +213,7 @@ void MCU_RTC_ISR(void)
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	//TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
+	// TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
 	mcu_enable_global_isr();
 }
 
@@ -1057,6 +1060,14 @@ void mcu_init(void)
 	mcu_rtc_init();
 #if SERVOS_MASK > 0
 	servo_timer_init();
+#endif
+#if MCU_HAS_SPI
+	SPI_CFG_Type spi_config = {0};
+	SPI_ConfigStructInit(&spi_config);
+	spi_config.CPHA = (SPI_MODE & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
+	spi_config.CPHA = (SPI_MODE & 0x02) ? SPI_CPOL_HI : SPI_CPOL_LO;
+	spi_config.ClockRate = SPI_FREQ;
+	SPI_Init(LPC_SPI, &spi_config);
 #endif
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();

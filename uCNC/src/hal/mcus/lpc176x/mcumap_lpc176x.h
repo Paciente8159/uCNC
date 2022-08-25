@@ -3231,6 +3231,17 @@ extern "C"
 
 #endif
 
+//SPI
+#if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#define MCU_HAS_SPI
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
+#endif
+#endif
+
 #ifndef ITP_TIMER
 #define ITP_TIMER 0
 #endif
@@ -3291,6 +3302,13 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
+
+#define mcu_spi_xmit(X)               \
+	{                                 \
+		LPC_SPI->SPDR = X;                     \
+		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)); \
+		LPC_SPI->SPDR;                         \
+	}
 
 #ifdef __cplusplus
 }
