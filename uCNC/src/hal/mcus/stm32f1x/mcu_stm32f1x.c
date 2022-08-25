@@ -1258,8 +1258,8 @@ void mcu_init(void)
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 	// set max freq
 	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = I2C_SPEEDRANGE + 1;
-	I2C_REG->CCR |= ((uint16_t)((F_CPU >> 1) * ((I2C_FREQ >> 1) + 1000000.0) / ((I2C_FREQ * 500000.0))) & 0x0FFF);
+	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
+	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
 	// initialize the SPI configuration register
 	I2C_REG->CR1 |= I2C_CR1_PE;
 #endif
@@ -1544,40 +1544,44 @@ void mcu_eeprom_flush()
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
-	uint8_t ack_status = 0x08;
-
+	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
+	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
 	{
 		// init
-		I2C_REG->CR1 |= (I2C_CR1_START);
-		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
+		I2C_REG->CR1 |= I2C_CR1_START;
+		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
 			;
-		if ((TWSR & 0xF8) != ack_status)
+		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
+			I2C_REG->CR1 |= I2C_CR1_STOP;
+			while ((I2C_REG->CR1 & I2C_CR1_STOP))
+				;
 			return 0;
 		}
-		ack_status = (data & 0x01) ? 0x40 : 0x18;
-	}
-	else
-	{
-		ack_status = (data & 0x01) ? 0x50 : 0x28;
 	}
 
-	TWDR = data;
-	TWCR = (1 << TWINT) | (1 << TWEN);
-	while ((TWCR & (1 << TWINT)) == 0)
+	I2C_REG->DR = data;
+	while (!(I2C_REG->SR1 & status))
 		;
-
-	if ((TWSR & 0xF8) != ack_status)
+	// read SR2 to clear ADDR
+	if (send_start)
 	{
+		status = I2C_REG->SR2;
+	}
+
+	if (I2C_REG->SR1 & I2C_SR1_AF)
+	{
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
+			;
 		return 0;
 	}
 
 	if (send_stop)
 	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
 			;
 	}
 
@@ -1589,17 +1593,24 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
 	uint8_t c = 0;
-	uint8_t ack_status = (!with_ack) ? 0x58 : 0x50;
 
-	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
-	while ((TWCR & (1 << TWINT)) == 0)
+	if (!with_ack)
+	{
+		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+	}
+	else
+	{
+		I2C_REG->CR1 |= I2C_CR1_ACK;
+	}
+	
+	while (!(I2C_REG->SR1 & I2C_SR1_RxNE));
 		;
-	c = TWDR;
+	c = I2C_REG->DR;
 
 	if (send_stop)
 	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
 			;
 	}
 

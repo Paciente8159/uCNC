@@ -172,13 +172,12 @@ extern "C"
 	//  #define DIN0_PORT B
 	//  #define DIN0_ISR 0
 
-// harware I2C
+// hardware I2C
 #define I2C_SCL_BIT 0
 #define I2C_SCL_PORT D
 #define I2C_SDA_BIT 1
 #define I2C_SDA_PORT D
-#define I2C_FREQ 100000UL
-//software I2C
+// software I2C
 // #define DIN21_BIT 0
 // #define DIN21_PORT D
 // #define DIN20_BIT 1
