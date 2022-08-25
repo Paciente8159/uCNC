@@ -1461,45 +1461,44 @@ uint8_t mcu_spi_xmit(uint8_t data)
 	return SPDR;
 }
 #endif
+#endif
 
 #ifdef MCU_HAS_I2C
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
-	uint8_t ack_status = 0x08;
-
 	if (send_start)
 	{
 		// init
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
-			;
-		if ((TWSR & 0xF8) != ack_status)
+		while(!(TWCR&(1<<TWINT)));
+		if ((TWSR & 0xF8) != 0x08)
 		{
 			return 0;
 		}
-		ack_status = (data & 0x01) ? 0x40 : 0x18;
-	}
-	else
-	{
-		ack_status = (data & 0x01) ? 0x50 : 0x28;
 	}
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	while ((TWCR & (1 << TWINT)) == 0)
-		;
+	while(!(TWCR&(1<<TWINT)));
 
-	if ((TWSR & 0xF8) != ack_status)
+	switch (TWSR & 0xF8)
 	{
+	case 0x18:
+	case 0x28:
+	case 0x40:
+	case 0x50:
+		break;
+	default:
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while(TWCR&(1<<TWSTO));
 		return 0;
 	}
 
 	if (send_stop)
 	{
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
-			;
+		while(TWCR&(1<<TWSTO));
 	}
 
 	return 1;
@@ -1510,22 +1509,18 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
 	uint8_t c = 0;
-	uint8_t ack_status = (!with_ack) ? 0x58 : 0x50;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
-	while ((TWCR & (1 << TWINT)) == 0)
-		;
+	while(!(TWCR&(1<<TWINT)));
 	c = TWDR;
 
 	if (send_stop)
 	{
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWINT)) == 0)
-			;
+		while(TWCR&(1<<TWSTO));
 	}
 
 	return c;
 }
-#endif
 #endif
 #endif

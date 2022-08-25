@@ -1496,6 +1496,24 @@ extern "C"
 #define COM_RX_PAD sercompad(RX_, UART_PORT, RX_PORT, RX_BIT)
 #endif
 
+#if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
+#define MCU_HAS_SPI
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_SPEED
+#define SPI_SPEED SPI_SPEED_NORMAL
+#endif
+
+#define SPICOM __helper__(SERCOM, SPI_PORT, )
+#define PM_APBCMASK_SPICOM __helper__(PM_APBCMASK_SERCOM, SPI_PORT, )
+#define GCLK_CLKCTRL_ID_SPICOM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI_PORT, _CORE)
+#define SPI_DATA (SPICOM->SPI.DATA.reg)
+#endif
+
 /*ISR inputs*/
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define LIMIT_X_ISRBIT (LIMIT_X_BIT & 0x0F)

@@ -70,7 +70,7 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 	ack = !port->get_sda();
 	port->scl(false);
 
-	if (send_stop)
+	if (send_stop || !ack)
 	{
 		softi2c_stop(port);
 	}
@@ -119,8 +119,6 @@ uint8_t softi2c_write_byte(softi2c_port_t *port, uint8_t address, uint8_t c)
 		if (softi2c_write(port, c, false, true))
 			return 1;
 	}
-
-	softi2c_stop(port); // make sure to impose a stop if NAK'd
 	return 0;
 }
 
@@ -144,8 +142,6 @@ uint8_t softi2c_write_reg(softi2c_port_t *port, uint8_t address, uint8_t reg, ui
 			return softi2c_write(port, c, false, true);
 		}
 	}
-
-	softi2c_stop(port); // make sure to impose a stop if NAK'd
 	return 0;
 }
 
@@ -163,6 +159,5 @@ uint8_t softi2c_read_reg(softi2c_port_t *port, uint8_t address, uint8_t reg)
 		}
 	}
 
-	softi2c_stop(port); // make sure to impose a stop if NAK'd
 	return 0;
 }

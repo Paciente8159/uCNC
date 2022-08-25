@@ -1193,6 +1193,40 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+#ifdef MCU_HAS_SPI
+PM->APBCMASK.reg |= PM_APBCMASK_SPICOM;
+
+	/* Setup GCLK SERCOMx to use GENCLK0 */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_SPICOM;
+	while (GCLK->STATUS.bit.SYNCBUSY)
+		;
+
+	// Start the Software Reset
+	SPICOM->SPI.CTRLA.bit.SWRST = 1;
+
+	while (SPICOM->SPI.SYNCBUSY.bit.SWRST)
+		;
+
+	SPICOM->SPI.CTRLA.bit.MODE = 1;
+	SPICOM->SPI.CTRLA.bit.SAMPR = 0;			// 16x sample rate
+	SPICOM->SPI.CTRLA.bit.FORM = 0;			// no parity
+	SPICOM->SPI.CTRLA.bit.DORD = 1;			// LSB first
+	SPICOM->SPI.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
+	SPICOM->SPI.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
+	SPICOM->SPI.CTRLB.bit.SBMODE = 0;		// one stop bit
+	SPICOM->SPI.CTRLB.bit.CHSIZE = 0;		// 8 bits
+	SPICOM->SPI.CTRLB.bit.RXEN = 1;			// enable receiver
+	SPICOM->SPI.CTRLB.bit.TXEN = 1;			// enable transmitter
+
+	while (COM->USART.SYNCBUSY.bit.CTRLB)
+		;
+
+	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
+
+	COM->USART.BAUD.reg = baud;
+	mcu_config_altfunc(TX);
+	mcu_config_altfunc(RX);
+#endif
 	mcu_enable_global_isr();
 }
 
