@@ -4396,13 +4396,18 @@ extern "C"
 #define mcu_disable_global_isr cli
 #define mcu_get_global_isr() (SREG & 0x80)
 
-#define mcu_delay_us(x)                       \
-	{                                         \
-		uint8_t delay_loop = x;               \
-		while (delay_loop--)                  \
-		{                                     \
-			_delay_loop_1(F_CPU / 4000000UL); \
-		}                                     \
+#define US_DELAY_TICK (F_CPU / 3000000UL)
+#define US_DELAY_TICK2 (F_CPU / 4000000UL)
+#define mcu_delay_us(x)                            \
+	{                                              \
+		if (x <= 85)                               \
+		{                                          \
+			_delay_loop_1((uint8_t)(x * US_DELAY_TICK - 1));   \
+		}                                          \
+		else                                       \
+		{                                          \
+			_delay_loop_2((uint16_t)(x * US_DELAY_TICK2 - 6)); \
+		}                                          \
 	}
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))

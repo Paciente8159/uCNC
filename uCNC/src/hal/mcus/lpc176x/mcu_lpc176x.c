@@ -1305,7 +1305,7 @@ uint32_t mcu_millis()
  * */
 #define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
 #ifndef mcu_delay_us
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	// lpc176x_delay_us(delay);
 	uint32_t target = mcu_micros;
