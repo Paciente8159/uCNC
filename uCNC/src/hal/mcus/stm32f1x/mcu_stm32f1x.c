@@ -1213,13 +1213,24 @@ void mcu_init(void)
 #if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
 #endif
+#if !(I2C_SCL < 0)
+	mcu_config_input(I2C_SCL);
+	mcu_config_pullup(I2C_SCL);
+#endif
+#if !(I2C_SDA < 0)
+	mcu_config_input(I2C_SDA);
+	mcu_config_pullup(I2C_SDA);
+#endif
 
 	mcu_usart_init();
 	mcu_rtc_init();
+
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+
 #if MCU_HAS_SPI
+	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_input_af(SPI_SDI);
 	mcu_config_output_af(SPI_CLK, GPIO_OUTALT_PP_50MHZ);
 	mcu_config_output_af(SPI_SDO, GPIO_OUTALT_PP_50MHZ);
@@ -1234,6 +1245,25 @@ void mcu_init(void)
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
+
+#if MCU_HAS_I2C
+	RCC->APB1ENR |= I2C_APBEN;
+	mcu_config_output_af(I2C_SCL, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_output_af(I2C_SDA, GPIO_OUTALT_OD_50MHZ);
+#ifdef SPI_REMAP
+	AFIO->MAPR |= I2C_REMAP;
+#endif
+	// reset I2C
+	I2C_REG->CR1 |= I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	// set max freq
+	I2C_REG->CR2 |= I2C_SPEEDRANGE;
+	I2C_REG->TRISE = I2C_SPEEDRANGE + 1;
+	I2C_REG->CCR |= ((uint16_t)((F_CPU >> 1) * ((I2C_FREQ >> 1) + 1000000.0) / ((I2C_FREQ * 500000.0))) & 0x0FFF);
+	// initialize the SPI configuration register
+	I2C_REG->CR1 |= I2C_CR1_PE;
+#endif
+
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }
@@ -1509,5 +1539,73 @@ void mcu_eeprom_flush()
 		// Restore interrupt flag state.*/
 	}
 }
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	uint8_t ack_status = 0x08;
+
+	if (send_start)
+	{
+		// init
+		I2C_REG->CR1 |= (I2C_CR1_START);
+		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+		if ((TWSR & 0xF8) != ack_status)
+		{
+			return 0;
+		}
+		ack_status = (data & 0x01) ? 0x40 : 0x18;
+	}
+	else
+	{
+		ack_status = (data & 0x01) ? 0x50 : 0x28;
+	}
+
+	TWDR = data;
+	TWCR = (1 << TWINT) | (1 << TWEN);
+	while ((TWCR & (1 << TWINT)) == 0)
+		;
+
+	if ((TWSR & 0xF8) != ack_status)
+	{
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+	uint8_t ack_status = (!with_ack) ? 0x58 : 0x50;
+
+	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
+	while ((TWCR & (1 << TWINT)) == 0)
+		;
+	c = TWDR;
+
+	if (send_stop)
+	{
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+	}
+
+	return c;
+}
+#endif
+#endif
 
 #endif

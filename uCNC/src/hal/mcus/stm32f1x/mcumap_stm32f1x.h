@@ -2883,6 +2883,44 @@ extern "C"
 #define DIO206_CR SPI_SDO_CR
 #define DIO206_CROFF SPI_SDO_CROFF
 #endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 207
+#define I2C_SCL_APB2EN (__rccapb2gpioen__(I2C_SCL_PORT))
+#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#if (I2C_SCL_BIT < 8)
+#define I2C_SCL_CROFF I2C_SCL_BIT
+#define I2C_SCL_CR CRL
+#else
+#define I2C_SCL_CROFF (I2C_SCL_BIT & 0x07)
+#define I2C_SCL_CR CRH
+#endif
+#define DIO207 207
+#define DIO207_PORT I2C_SCL_PORT
+#define DIO207_BIT I2C_SCL_BIT
+#define DIO207_APB2EN I2C_SCL_APB2EN
+#define DIO207_GPIO I2C_SCL_GPIO
+#define DIO207_CR I2C_SCL_CR
+#define DIO207_CROFF I2C_SCL_CROFF
+#endif
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define I2C_SDA 208
+#define I2C_SDA_APB2EN (__rccapb2gpioen__(I2C_SDA_PORT))
+#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#if (I2C_SDA_BIT < 8)
+#define I2C_SDA_CROFF I2C_SDA_BIT
+#define I2C_SDA_CR CRL
+#else
+#define I2C_SDA_CROFF (I2C_SDA_BIT & 0x07)
+#define I2C_SDA_CR CRH
+#endif
+#define DIO208 208
+#define DIO208_PORT I2C_SDA_PORT
+#define DIO208_BIT I2C_SDA_BIT
+#define DIO208_APB2EN I2C_SDA_APB2EN
+#define DIO208_GPIO I2C_SDA_GPIO
+#define DIO208_CR I2C_SDA_CR
+#define DIO208_CROFF I2C_SDA_CROFF
+#endif
 
 /**********************************************
  *	ISR on change inputs
@@ -4180,9 +4218,9 @@ extern "C"
 
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
 #define MCU_HAS_SPI
-#define SPI_CLK_PIN __iopin__(TX_PORT, TX_BIT)
-#define SPI_SDO_PIN __iopin__(RX_PORT, RX_BIT)
-#define SPI_SDI_PIN __iopin__(RX_PORT, RX_BIT)
+#define SPI_CLK_PIN __iopin__(SPI_CLK_PORT, SPI_CLK_BIT)
+#define SPI_SDO_PIN __iopin__(SPI_SDO_PORT, SPI_SDO_BIT)
+#define SPI_SDI_PIN __iopin__(SPI_SDI_PORT, SPI_SDI_BIT)
 #ifndef SPI_PORT
 #define SPI_PORT 1
 #endif
@@ -4219,6 +4257,47 @@ extern "C"
 #define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
 #endif
 
+#endif
+
+//I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#define I2C_SCL_PIN __iopin__(I2C_SCL_PORT, I2C_SCL_BIT)
+#define I2C_SDA_PIN __iopin__(I2C_SDA_PORT, I2C_SDA_BIT)
+#ifndef I2C_PORT
+#define I2C_PORT 1
+#endif
+
+#define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
+#define I2C_REG __helper__(I2C, I2C_PORT, )
+#define I2C_SPEEDRANGE ((F_CPU >> 1) / 1000000UL)
+
+#if ((I2C_PORT == 1) && (I2C_SCL_PORT == B6) && (I2C_SDA_PORT == B7))
+#elif ((I2C_PORT == 1) && (I2C_SCL_PORT == B8) && (I2C_SDA_PORT == B9))
+#define I2C_REMAP AFIO_MAPR_I2C1_REMAP
+#elif ((I2C_PORT == 2) && (I2C_SCL_PORT == B10) && (I2C_SDA_PORT == B11))
+#else
+#error "I2C pin configuration not supported"
+#endif
+
+#ifndef I2C_FREQ
+#define I2C_FREQ 400000UL
+#endif
+
+//I2C freq
+#if (I2C_FREQ < 5000UL)
+#define I2C_PRESC 3
+#define I2C_DIV (F_CPU/(I2C_FREQ<<6))
+#elif (I2C_FREQ < 20000UL)
+#define I2C_PRESC 2
+#define I2C_DIV (F_CPU/(I2C_FREQ<<4))
+#elif (I2C_FREQ < 80000UL)
+#define I2C_PRESC 1
+#define I2C_DIV (F_CPU/(I2C_FREQ<<2))
+#else
+#define I2C_PRESC 0
+#define I2C_DIV (F_CPU/I2C_FREQ)
+#endif
 #endif
 
 // Timer registers

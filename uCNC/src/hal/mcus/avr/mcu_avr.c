@@ -1080,6 +1080,12 @@ void mcu_init(void)
 #if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
 #endif
+#if !(I2C_SCL < 0)
+	mcu_config_input(I2C_SCL);
+#endif
+#if !(I2C_SDA < 0)
+	mcu_config_input(I2C_SDA);
+#endif
 
 	// Set COM port
 	//  Set baud rate
