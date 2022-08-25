@@ -1018,6 +1018,10 @@ void mcu_init(void)
 	esp32_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
 
+#ifdef MCU_HAS_SPI
+	esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
+#endif
+
 	mcu_enable_global_isr();
 }
 

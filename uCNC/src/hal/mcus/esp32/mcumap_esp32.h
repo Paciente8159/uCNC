@@ -958,6 +958,9 @@ extern "C"
 #endif
 #endif
 
+#define ENABLE_SYNC_RX
+#define ENABLE_SYNC_TX
+
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
 #endif
@@ -970,9 +973,16 @@ extern "C"
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
 
-
-#define ENABLE_SYNC_RX
-#define ENABLE_SYNC_TX
+// SPI
+#if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#define MCU_HAS_SPI
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
+#endif
+#endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
@@ -996,6 +1006,8 @@ extern "C"
 #define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+
+#define mcu_spi_xmit(X) esp32_spi_xmit(X)
 
 #ifdef __cplusplus
 }

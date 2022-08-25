@@ -6,11 +6,11 @@
 #include "esp_peri.h"
 extern "C"
 {
-	void esp8266_spi_init(void)
+	void esp8266_spi_init(uint32_t freq, uint8_t mode)
 	{
 		SPI.begin();
-		SPI.setFrequency(SPI_FREQ);
-		SPI.setDataMode(SPI_MODE);
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
 	}
 }
 

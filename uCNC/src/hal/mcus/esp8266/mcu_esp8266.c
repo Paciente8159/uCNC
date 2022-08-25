@@ -1056,6 +1056,9 @@ void mcu_init(void)
 #ifndef RAM_ONLY_SETTINGS
 	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
+#ifdef MCU_HAS_SPI
+	esp8266_spi_init(SPI_FREQ, SPI_MODE);
+#endif
 }
 
 /**
