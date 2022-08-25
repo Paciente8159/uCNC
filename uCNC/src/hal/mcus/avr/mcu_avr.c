@@ -1131,7 +1131,8 @@ void mcu_init(void)
 
 #ifdef MCU_HAS_SPI
 	// enable SPI, set as master, and clock to fosc/128
-	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPI_PRESC;
+	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
+	SPSR |= SPSR_VAL;
 #endif
 
 	// disable probe isr
