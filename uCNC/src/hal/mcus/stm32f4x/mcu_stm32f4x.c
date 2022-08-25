@@ -1235,6 +1235,14 @@ void mcu_init(void)
 #if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
 #endif
+#if !(I2C_SCL < 0)
+	mcu_config_input(I2C_SCL);
+	mcu_config_pullup(I2C_SCL);
+#endif
+#if !(I2C_SDA < 0)
+	mcu_config_input(I2C_SDA);
+	mcu_config_pullup(I2C_SDA);
+#endif
 
 	mcu_usart_init();
 	mcu_rtc_init();
@@ -1242,6 +1250,7 @@ void mcu_init(void)
 	servo_timer_init();
 #endif
 #if MCU_HAS_SPI
+	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_af(SPI_SDI, SPI_AFIO);
 	mcu_config_af(SPI_CLK, SPI_AFIO);
 	mcu_config_af(SPI_SDO, SPI_AFIO);
@@ -1252,6 +1261,20 @@ void mcu_init(void)
 				   | (SPI_SPEED << 3) | SPI_MODE;
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
+#endif
+#if MCU_HAS_I2C
+	RCC->APB1ENR |= I2C_APBEN;
+	mcu_config_af(I2C_SCL, I2C_AFIO);
+	mcu_config_af(I2C_SDA, I2C_AFIO);
+	// reset I2C
+	I2C_REG->CR1 |= I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	// set max freq
+	I2C_REG->CR2 |= I2C_SPEEDRANGE;
+	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
+	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	// initialize the SPI configuration register
+	I2C_REG->CR1 |= I2C_CR1_PE;
 #endif
 
 	mcu_disable_probe_isr();
@@ -1564,4 +1587,84 @@ void mcu_eeprom_flush()
 	// }
 }
 
+#endif
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
+	I2C_REG->SR1 &= ~I2C_SR1_AF;
+	if (send_start)
+	{
+		// init
+		I2C_REG->CR1 |= I2C_CR1_START;
+		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
+			;
+		if (I2C_REG->SR1 & I2C_SR1_AF)
+		{
+			I2C_REG->CR1 |= I2C_CR1_STOP;
+			while ((I2C_REG->CR1 & I2C_CR1_STOP))
+				;
+			return 0;
+		}
+	}
+
+	I2C_REG->DR = data;
+	while (!(I2C_REG->SR1 & status))
+		;
+	// read SR2 to clear ADDR
+	if (send_start)
+	{
+		status = I2C_REG->SR2;
+	}
+
+	if (I2C_REG->SR1 & I2C_SR1_AF)
+	{
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
+			;
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
+			;
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+
+	if (!with_ack)
+	{
+		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+	}
+	else
+	{
+		I2C_REG->CR1 |= I2C_CR1_ACK;
+	}
+
+	while (!(I2C_REG->SR1 & I2C_SR1_RxNE))
+		;
+	;
+	c = I2C_REG->DR;
+
+	if (send_stop)
+	{
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
+			;
+	}
+
+	return c;
+}
+#endif
 #endif

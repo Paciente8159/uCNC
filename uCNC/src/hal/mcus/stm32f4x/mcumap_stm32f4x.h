@@ -1561,6 +1561,27 @@ extern "C"
 #define DIO206_AHB1EN SPI_SDO_AHB1EN
 #define DIO206_GPIO SPI_SDO_GPIO
 #endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 207
+#define I2C_SCL_AHB1EN (__rccgpioen__(I2C_SCL_PORT))
+#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#define DIO207 207
+#define DIO207_PORT I2C_SCL_PORT
+#define DIO207_BIT I2C_SCL_BIT
+#define DIO207_AHB1EN I2C_SCL_AHB1EN
+#define DIO207_GPIO I2C_SCL_GPIO
+#endif
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define I2C_SDA 208
+#define I2C_SDA_AHB1EN (__rccgpioen__(I2C_SDA_PORT))
+#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#define DIO208 208
+#define DIO208_PORT I2C_SDA_PORT
+#define DIO208_BIT I2C_SDA_BIT
+#define DIO208_AHB1EN I2C_SDA_AHB1EN
+#define DIO208_GPIO I2C_SDA_GPIO
+#endif
+
 
 /**********************************************
  *	ISR on change inputs
@@ -3005,6 +3026,24 @@ extern "C"
 #define SPI_ENVAL __helper__(RCC_APB2ENR_SPI, SPI_PORT, EN)
 #endif
 
+#endif
+
+//I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+
+#ifndef I2C_PORT
+#define I2C_PORT 1
+#endif
+
+#define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
+#define I2C_REG __helper__(I2C, I2C_PORT, )
+#define I2C_SPEEDRANGE ((F_CPU >> 1) / 1000000UL)
+#define I2C_AFIO 4
+
+#ifndef I2C_FREQ
+#define I2C_FREQ 400000UL
+#endif
 #endif
 
 // Timer registers
