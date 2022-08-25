@@ -305,6 +305,16 @@ extern "C"
 #endif
 #endif
 
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+	uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
+#endif
+
+#ifndef mcu_i2c_read
+	uint8_t mcu_i2c_read(bool ack, bool stop);
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif

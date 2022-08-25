@@ -1135,6 +1135,14 @@ void mcu_init(void)
 	SPSR |= SPSR_VAL;
 #endif
 
+#ifdef MCU_HAS_I2C
+	// set freq
+	TWSR = I2C_PRESC;
+	TWBR = (uint8_t)I2C_DIV & 0xFF;
+	// enable TWI
+	TWCR = (1 << TWEN);
+#endif
+
 	// disable probe isr
 	mcu_disable_probe_isr();
 	// enable interrupts
@@ -1446,5 +1454,72 @@ uint8_t mcu_spi_xmit(uint8_t data)
 	// return Data Register
 	return SPDR;
 }
+#endif
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	uint8_t ack_status = 0x08;
+
+	if (send_start)
+	{
+		// init
+		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+		if ((TWSR & 0xF8) != ack_status)
+		{
+			return 0;
+		}
+		ack_status = (data & 0x01) ? 0x40 : 0x18;
+	}
+	else
+	{
+		ack_status = (data & 0x01) ? 0x50 : 0x28;
+	}
+
+	TWDR = data;
+	TWCR = (1 << TWINT) | (1 << TWEN);
+	while ((TWCR & (1 << TWINT)) == 0)
+		;
+
+	if ((TWSR & 0xF8) != ack_status)
+	{
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+	uint8_t ack_status = (!with_ack) ? 0x58 : 0x50;
+
+	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
+	while ((TWCR & (1 << TWINT)) == 0)
+		;
+	c = TWDR;
+
+	if (send_stop)
+	{
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWINT)) == 0)
+			;
+	}
+
+	return c;
+}
+#endif
 #endif
 #endif

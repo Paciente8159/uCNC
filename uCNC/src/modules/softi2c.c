@@ -29,6 +29,15 @@ static void softi2c_stop(softi2c_port_t *port)
 
 uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_write(c, send_start, send_stop);
+#else
+		return 0;
+#endif
+	}
+
 	uint8_t ack = 0;
 
 	if (send_start)
@@ -69,8 +78,17 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 	return ack;
 }
 
-uint8_t softi2c_read(softi2c_port_t *port, bool ack, bool send_stop)
+uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_read(with_ack, send_stop);
+#else
+		return 0;
+#endif
+	}
+
 	uint8_t c = 0;
 	uint8_t i = 8;
 	do
@@ -79,7 +97,7 @@ uint8_t softi2c_read(softi2c_port_t *port, bool ack, bool send_stop)
 		c |= (uint8_t)port->get_sda();
 	} while (!--i);
 
-	port->sda(!ack);
+	port->sda(!with_ack);
 	mcu_delay_us(port->delay);
 	port->scl(true);
 	mcu_delay_us(port->delay);

@@ -19,6 +19,15 @@
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_SPI
+		return mcu_spi_xmit(c);
+#else
+		return 0;
+#endif
+	}
+
 	mcu_disable_global_isr();
 	bool clk = false;
 	if ((port->spimode & 0x2))
