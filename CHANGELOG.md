@@ -18,6 +18,7 @@
 - modified grbl system command parser to enable command extensions via modules (#236)
 - modified tools to convert between core speed and tool speed to avoid range/precision compression losses
 - modified parser/planner to correctly calculate tool power output when minimal power is not 0 (example: laser minimal power output when S0) (#240)
+- better µs delay for all paltforms (now accepts 16bit value as argument) and better precision for AVR (#241)
 
 ### Fixed
 
