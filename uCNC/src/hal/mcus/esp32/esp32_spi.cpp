@@ -3,7 +3,6 @@
 #ifdef MCU_HAS_SPI
 #include <Arduino.h>
 #include <SPI.h>
-#include "esp_peri.h"
 extern "C"
 {
 	void esp32_spi_init(uint32_t freq, uint8_t mode, int8_t clk, int8_t sdi, int8_t sdo)

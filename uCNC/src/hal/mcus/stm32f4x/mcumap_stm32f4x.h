@@ -3118,6 +3118,78 @@ extern "C"
 		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
 	}
 
+	#define mcu_config_af(diopin, afrval)                                                                                                               \
+	{                                                                                                                                               \
+		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                               \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                     \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                       \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                   \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= (afrval << ((__indirect__(diopin, BIT) & 0x07) << 2)); /*af mode*/     \
+		__indirect__(diopin, GPIO)->OSPEEDR |= (0x03 << ((__indirect__(diopin, BIT)) << 1));										/*output mode*/ \
+	}
+
+#define mcu_config_pullup(diopin)                                                                    \
+	{                                                                                                \
+		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
+		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
+	}
+
+#define mcu_config_pwm(diopin)                                                                                                                                      \
+	{                                                                                                                                                               \
+		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
+		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                                     \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_AF << ((__indirect__(diopin, BIT)) << 1));	  /*af mode*/                                                       \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                                   \
+		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                                                      \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                                                                 \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                                                   \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                                                            \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                                                                 \
+		__indirect__(diopin, ENOUTPUT);                                                                                                                             \
+	}
+
+#define mcu_config_input_isr(diopin)                                                                              \
+	{                                                                                                             \
+		RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;                                                                     \
+		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		SYSCFG->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                            \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                            \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                             \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                           \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                          \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                                \
+	}
+
+#if defined(ADC1_COMMON)
+#define ADC_COMMON ADC1_COMMON
+#elif defined(ADC12_COMMON)
+#define ADC_COMMON ADC12_COMMON
+#elif defined(ADC123_COMMON)
+#define ADC_COMMON ADC123_COMMON
+#endif
+
+#define mcu_config_analog(diopin)                                                                                                     \
+	{                                                                                                                                 \
+		ADC_COMMON->CCR &= ~(ADC_CCR_ADCPRE);                                                                                         \
+		ADC_COMMON->CCR |= (ADC_CCR_ADCPRE_0 | ADC_CCR_ADCPRE_1);                                                                     \
+		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN);                                                                                         \
+		RCC->AHB1ENR |= (__indirect__(diopin, AHB1EN));                                                                               \
+		ADC1->SQR1 = 1; /*one conversion*/                                                                                            \
+		ADC1->SMPR1 = 0x00ffffff & 0x36DB6DB6;                                                                                        \
+		ADC1->SMPR2 = 0x36DB6DB6;                                                                                                     \
+		ADC1->CR2 &= ~ADC_CR2_CONT;																  /*single conversion mode*/          \
+		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                       \
+		__indirect__(diopin, GPIO)->MODER |= (GPIO_ANALOG << ((__indirect__(diopin, BIT)) << 1)); /*analog mode*/                     \
+		ADC1->CR2 |= ADC_CR2_ADON;																  /*enable adc*/                      \
+		ADC1->CR2 |= (ADC_CR2_EXTEN_0 | ADC_CR2_EXTEN_1);										  /*external start trigger software*/ \
+	}
+
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1UL << __indirect__(diopin, BIT)))

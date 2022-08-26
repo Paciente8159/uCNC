@@ -33,6 +33,17 @@ extern "C"
 */
 #include "LPC17xx.h"
 #include <stdbool.h>
+#include "core_cm3.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <math.h>
+#include "lpc_types.h"
+#include "lpc17xx_pinsel.h"
+#include "lpc17xx_uart.h"
+#include "lpc17xx_clkpwr.h"
+#include "lpc17xx_timer.h"
+#include "lpc17xx_systick.h"
+#include "lpc17xx_pwm.h"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -3240,6 +3251,9 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+
+#include "lpc17xx_spi.h"
+
 #endif
 
 #ifndef ITP_TIMER
@@ -3266,6 +3280,44 @@ extern "C"
 
 #define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
 #define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_analog(X) mcu_config_input(X)
+#define mcu_config_input_isr(diopin)                                                   \
+	{                                                                                  \
+		SETBIT(LPC_GPIOINT->__indirect__(diopin, RISEREG), __indirect__(diopin, BIT)); \
+		SETBIT(LPC_GPIOINT->__indirect__(diopin, FALLREG), __indirect__(diopin, BIT)); \
+		NVIC_SetPriority(EINT3_IRQn, 5);                                               \
+		NVIC_ClearPendingIRQ(EINT3_IRQn);                                              \
+		NVIC_EnableIRQ(EINT3_IRQn);                                                    \
+	}
+
+#define mcu_config_pullup(diopin)                                                                                             \
+	{                                                                                                                         \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
+	}
+
+#define mcu_config_pwm(diopin)                                                                                                                                   \
+	{                                                                                                                                                            \
+		mcu_config_output(diopin);                                                                                                                               \
+		CLKPWR_ConfigPPWR(CLKPWR_PCONP_PCPWM1, ENABLE);                                                                                                          \
+		CLKPWR_SetPCLKDiv(CLKPWR_PCLKSEL_PWM1, CLKPWR_PCLKSEL_CCLK_DIV_4);                                                                                       \
+		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                                                                                                    \
+		LPC_PWM1->TCR = 0;                                                                                                                                       \
+		LPC_PWM1->CTCR = 0;                                                                                                                                      \
+		LPC_PWM1->MCR = 0;                                                                                                                                       \
+		LPC_PWM1->CCR = 0;                                                                                                                                       \
+		LPC_PWM1->PCR &= 0xFF00;                                                                                                                                 \
+		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL));                                                                                    \
+		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));                                                                                           \
+		LPC_PWM1->PR = (CLKPWR_GetPCLK(CLKPWR_PCLKSEL_PWM1) / (255 * 1000)) - 1;                                                                                 \
+		LPC_PWM1->MCR = (1UL << 1);                                                                                                                              \
+		LPC_PWM1->MR0 = 255;                                                                                                                                     \
+		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                                                                                                                 \
+		mcu_config_output(diopin);                                                                                                                               \
+		PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL}; \
+		PINSEL_ConfigPin(&pwm);                                                                                                                                  \
+		mcu_set_pwm(diopin, 0);                                                                                                                                  \
+	}
+
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIOREG)->FIOSET = (1 << __indirect__(diopin, BIT)))

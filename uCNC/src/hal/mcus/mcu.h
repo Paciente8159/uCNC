@@ -117,6 +117,13 @@ extern "C"
 	void mcu_toggle_output(uint8_t pin);
 #endif
 
+/**
+ * 
+ * This is used has by the generic mcu functions has generic (overridable) IO initializer
+ * 
+ * */
+	void mcu_io_init(void);
+
 	/**
 	 * initializes the mcu
 	 * this function needs to:

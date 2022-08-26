@@ -31,6 +31,18 @@ extern "C"
 /*
 	MCU specific definitions and replacements
 */
+#include <math.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <avr/io.h>
+#include <avr/wdt.h>
+#include <avr/eeprom.h>
+#include <avr/cpufunc.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #include <util/delay_basic.h>
@@ -4428,11 +4440,24 @@ extern "C"
 
 #define mcu_config_output(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_analog(x) mcu_config_input(x)
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_toggle_output(diopin) (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
+
+#define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
+#define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
+
+#define mcu_config_pwm(x)                                        \
+	{                                                            \
+		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
+		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
+		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
+		__indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);  \
+		__indirect__(x, OCRREG) = 0;                             \
+	}
 
 #define mcu_set_pwm(diopin, pwmvalue)                                                    \
 	{                                                                                    \
