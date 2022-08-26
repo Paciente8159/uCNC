@@ -65,6 +65,12 @@ extern "C"
 	DECL_EVENT_HANDLER(probe_enable);
 	// event_probe_disable_handler
 	DECL_EVENT_HANDLER(probe_disable);
+	// event_io_set_steps_handler
+	DECL_EVENT_HANDLER(io_set_steps);
+	// event_io_toggle_steps_handler
+	DECL_EVENT_HANDLER(io_toggle_steps);
+	// event_io_set_dirs_handler
+	DECL_EVENT_HANDLER(io_set_dirs);
 #endif
 
 #ifdef __cplusplus
