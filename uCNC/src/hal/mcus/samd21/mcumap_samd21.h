@@ -1255,6 +1255,22 @@ extern "C"
 #define DIO206_BIT SPI_SDO_BIT
 #define DIO206_GPIO SPI_SDO_GPIO
 #endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 207
+#define I2C_SCL_GPIO (PORTREG(I2C_SCL_PORT))
+#define DIO207 207
+#define DIO207_PORT I2C_SCL_PORT
+#define DIO207_BIT I2C_SCL_BIT
+#define DIO207_GPIO I2C_SCL_GPIO
+#endif
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define I2C_SDA 208
+#define I2C_SDA_GPIO (PORTREG(I2C_SDA_PORT))
+#define DIO208 208
+#define DIO208_PORT I2C_SDA_PORT
+#define DIO208_BIT I2C_SDA_BIT
+#define DIO208_GPIO I2C_SDA_GPIO
+#endif
 
 #define __pinmuxevenodd0 PMUXE
 #define __pinmuxevenodd2 PMUXE
@@ -1303,14 +1319,14 @@ extern "C"
 #define _pinmuxval(X) (pinmuxval_##X)
 #define pinmuxval(X) (_pinmuxval(X))
 
-// #define sercompad_RX_0 (0x0U)
-// #define sercompad_RX_1 (0x1U)
-// #define sercompad_RX_2 (0x2U)
-// #define sercompad_RX_3 (0x3U)
-// #define sercompad_TX_0 (0x2U)
-// #define sercompad_TX_2 (0x1U)
-// #define _sercompad(X, Y) (sercompad##X##_##Y)
-// #define sercompad(X, Y) (_sercompad(X, Y))
+	// #define sercompad_RX_0 (0x0U)
+	// #define sercompad_RX_1 (0x1U)
+	// #define sercompad_RX_2 (0x2U)
+	// #define sercompad_RX_3 (0x3U)
+	// #define sercompad_TX_0 (0x2U)
+	// #define sercompad_TX_2 (0x1U)
+	// #define _sercompad(X, Y) (sercompad##X##_##Y)
+	// #define sercompad(X, Y) (_sercompad(X, Y))
 
 #define SERCOMPADRX_0_A8 0
 #define SERCOMPADRX_0_A9 1
@@ -1341,7 +1357,7 @@ extern "C"
 #define SERCOMPADTX_3_A24 2
 #define SERCOMPADTX_5_A20 2
 
-//SERCOMPAD_ALT
+// SERCOMPAD_ALT
 #define SERCOMPADRX_0_A4 0x0U
 #define SERCOMPADRX_0_A5 0x1U
 #define SERCOMPADRX_0_A6 0x2U
@@ -1414,9 +1430,9 @@ extern "C"
 #define SERCOMMUX_3_A23 0x2U
 #define SERCOMMUX_3_A24 0x2U
 #define SERCOMMUX_3_A25 0x2U
-#define SERCOMMUX_5_A20 0x2U 
+#define SERCOMMUX_5_A20 0x2U
 #define SERCOMMUX_5_A21 0x2U
-//SERCOMMUX_ALT
+// SERCOMMUX_ALT
 #define SERCOMMUX_0_A4 0x3U
 #define SERCOMMUX_0_A5 0x3U
 #define SERCOMMUX_0_A6 0x3U
@@ -1504,14 +1520,34 @@ extern "C"
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
-#ifndef SPI_SPEED
-#define SPI_SPEED SPI_SPEED_NORMAL
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
 #endif
 
 #define SPICOM __helper__(SERCOM, SPI_PORT, )
 #define PM_APBCMASK_SPICOM __helper__(PM_APBCMASK_SERCOM, SPI_PORT, )
 #define GCLK_CLKCTRL_ID_SPICOM __helper__(GCLK_CLKCTRL_ID_SERCOM, SPI_PORT, _CORE)
 #define SPI_DATA (SPICOM->SPI.DATA.reg)
+#define OUTPAD 0
+#define INPAD 3
+
+#define SPI_CLK_PMUX (pinmux(SPI_CLK_PORT, SPI_CLK_BIT))
+#define SPI_CLK_PMUXVAL (sercommux_pin(SPI_PORT, SPI_CLK_PORT, SPI_CLK_BIT))
+#define SPI_SDO_PMUX (pinmux(SPI_SDO_PORT, SPI_SDO_BIT))
+#define SPI_SDO_PMUXVAL (sercommux_pin(SPI_PORT, SPI_SDO_PORT, SPI_SDO_BIT))
+#define SPI_SDI_PMUX (pinmux(SPI_SDI_PORT, SPI_SDI_BIT))
+#define SPI_SDI_PMUXVAL (sercommux_pin(SPI_PORT, SPI_SDI_PORT, SPI_SDI_BIT))
+
+#define DIO204_PMUX SPI_CLK_PMUX
+#define DIO204_PMUXVAL SPI_CLK_PMUXVAL
+#define DIO205_PMUX SPI_CLK_PMUX
+#define DIO205_PMUXVAL SPI_CLK_PMUXVAL
+#define DIO206_PMUX SPI_CLK_PMUX
+#define DIO206_PMUXVAL SPI_CLK_PMUXVAL
+
+#if (SPI_PORT != 1 && SPI_PORT != 3)
+#error "SPI PORT is not valid (SERCOM 1 or 3 only)"
+#endif
 #endif
 
 /*ISR inputs*/
@@ -2941,6 +2977,18 @@ extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
+#endif
+
+#ifdef MCU_HAS_SPI
+#define mcu_spi_xmit(X)                          \
+	{                                            \
+		while (SPICOM->SPI.INTFLAG.bit.DRE == 0) \
+			;                                    \
+		SPICOM->SPI.DATA.reg = X;                \
+		while (SPICOM->SPI.INTFLAG.bit.RXC == 0) \
+			;                                    \
+		SPICOM->SPI.DATA.reg;                    \
+	}
 #endif
 
 #ifdef __cplusplus
