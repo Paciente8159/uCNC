@@ -22,6 +22,9 @@
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include <driver/timer.h>
+#ifdef MCU_HAS_I2C
+#include <driver/i2c.h>
+#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -1022,6 +1025,20 @@ void mcu_init(void)
 	esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
 #endif
 
+#ifdef MCU_HAS_I2C
+	i2c_config_t conf = {
+		.mode = I2C_MODE_MASTER,
+		.sda_io_num = I2C_SDA_BIT, // select GPIO specific to your project
+		.sda_pullup_en = GPIO_PULLUP_ENABLE,
+		.scl_io_num = I2C_SCL_BIT, // select GPIO specific to your project
+		.scl_pullup_en = GPIO_PULLUP_ENABLE,
+		.master.clk_speed = I2C_FREQ, // select frequency specific to your project
+		.clk_flags = 0,				  // you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here
+	};
+	i2c_param_config((i2c_port_t)I2C_PORT, &conf);
+	i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
+#endif
+
 	mcu_enable_global_isr();
 }
 
@@ -1303,5 +1320,86 @@ void mcu_eeprom_flush(void)
 	esp32_eeprom_flush();
 #endif
 }
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+i2c_cmd_handle_t esp32_i2c_cmd;
+uint8_t esp32_i2c_cmd_buff[I2C_LINK_RECOMMENDED_SIZE(1)];
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	esp_err_t ret = ESP_FAIL;
+
+	if (send_start)
+	{
+		// init
+		if (esp32_i2c_cmd != NULL)
+		{
+			i2c_cmd_link_delete_static(esp32_i2c_cmd);
+		}
+		memset(esp32_i2c_cmd_buff, 0, I2C_LINK_RECOMMENDED_SIZE(1));
+		esp32_i2c_cmd = i2c_cmd_link_create_static(esp32_i2c_cmd_buff, I2C_LINK_RECOMMENDED_SIZE(1));
+		ret = i2c_master_start(esp32_i2c_cmd);
+		if (ret != ESP_OK)
+		{
+			return 0;
+		}
+	}
+
+	ret = i2c_master_write_byte(esp32_i2c_cmd, data, true);
+	if (ret != ESP_OK)
+	{
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		ret = i2c_master_stop(esp32_i2c_cmd);
+		if (ret != ESP_OK)
+		{
+			return 0;
+		}
+
+		ret = i2c_master_cmd_begin(I2C_PORT, esp32_i2c_cmd, 100);
+		if (ret != ESP_OK)
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+	esp_err_t ret = ESP_FAIL;
+
+	ret = i2c_master_read_byte(esp32_i2c_cmd, &c, (!with_ack) ? I2C_MASTER_ACK : I2C_MASTER_NACK);
+	if (ret != ESP_OK)
+	{
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		ret = i2c_master_stop(esp32_i2c_cmd);
+		if (ret != ESP_OK)
+		{
+			return 0;
+		}
+
+		ret = i2c_master_cmd_begin(I2C_PORT, esp32_i2c_cmd, 100);
+		if (ret != ESP_OK)
+		{
+			return 0;
+		}
+	}
+
+	return c;
+}
+#endif
+#endif
 
 #endif
