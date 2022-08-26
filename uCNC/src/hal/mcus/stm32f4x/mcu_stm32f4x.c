@@ -847,8 +847,6 @@ void mcu_eeprom_flush()
 	// }
 }
 
-#endif
-
 #ifdef MCU_HAS_I2C
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
@@ -927,4 +925,6 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return c;
 }
 #endif
+#endif
+
 #endif
