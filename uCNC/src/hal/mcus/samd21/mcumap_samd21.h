@@ -2893,13 +2893,6 @@ extern "C"
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 2); \
 		SETBIT(__indirect__(diopin, GPIO).OUT.reg, __indirect__(diopin, BIT));       \
 	}
-#define mcu_config_analog(diopin)                                                    \
-	{                                                                                \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
-		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-	}
 #define mcu_config_altfunc(diopin)                                                   \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
@@ -2942,6 +2935,15 @@ extern "C"
 		while (!(ADC->INTFLAG.bit.RESRDY))                           \
 			;                                                        \
 		ADC->RESULT.reg;                                             \
+	}
+
+#define mcu_config_analog(diopin)                                                    \
+	{                                                                                \
+		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
+		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
+		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
+		mcu_get_analog(diopin);                                                      \
 	}
 	/*
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))

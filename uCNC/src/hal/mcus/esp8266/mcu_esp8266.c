@@ -26,10 +26,14 @@
 #include <c_types.h>
 #include "ets_sys.h"
 #include "os_type.h"
+#include "c_types.h"
 #include "gpio.h"
 #include "eagle_soc.h"
 #include "uart_register.h"
 #include "osapi.h"
+#ifdef MCU_HAS_I2C
+#include "twi.h"
+#endif
 
 #define UART_PARITY_EN (BIT(1))
 #define UART_PARITY_EN_M 0x00000001
@@ -383,241 +387,241 @@ static void mcu_usart_init(void)
  * */
 void mcu_init(void)
 {
-#if STEP0 >= 0
+#if !(STEP0 < 0)
 	mcu_config_output(STEP0);
 #endif
-#if STEP1 >= 0
+#if !(STEP1 < 0)
 	mcu_config_output(STEP1);
 #endif
-#if STEP2 >= 0
+#if !(STEP2 < 0)
 	mcu_config_output(STEP2);
 #endif
-#if STEP3 >= 0
+#if !(STEP3 < 0)
 	mcu_config_output(STEP3);
 #endif
-#if STEP4 >= 0
+#if !(STEP4 < 0)
 	mcu_config_output(STEP4);
 #endif
-#if STEP5 >= 0
+#if !(STEP5 < 0)
 	mcu_config_output(STEP5);
 #endif
-#if STEP6 >= 0
+#if !(STEP6 < 0)
 	mcu_config_output(STEP6);
 #endif
-#if STEP7 >= 0
+#if !(STEP7 < 0)
 	mcu_config_output(STEP7);
 #endif
-#if DIR0 >= 0
+#if !(DIR0 < 0)
 	mcu_config_output(DIR0);
 #endif
-#if DIR1 >= 0
+#if !(DIR1 < 0)
 	mcu_config_output(DIR1);
 #endif
-#if DIR2 >= 0
+#if !(DIR2 < 0)
 	mcu_config_output(DIR2);
 #endif
-#if DIR3 >= 0
+#if !(DIR3 < 0)
 	mcu_config_output(DIR3);
 #endif
-#if DIR4 >= 0
+#if !(DIR4 < 0)
 	mcu_config_output(DIR4);
 #endif
-#if DIR5 >= 0
+#if !(DIR5 < 0)
 	mcu_config_output(DIR5);
 #endif
-#if DIR6 >= 0
+#if !(DIR6 < 0)
 	mcu_config_output(DIR6);
 #endif
-#if DIR7 >= 0
+#if !(DIR7 < 0)
 	mcu_config_output(DIR7);
 #endif
-#if STEP0_EN >= 0
+#if !(STEP0_EN < 0)
 	mcu_config_output(STEP0_EN);
 #endif
-#if STEP1_EN >= 0
+#if !(STEP1_EN < 0)
 	mcu_config_output(STEP1_EN);
 #endif
-#if STEP2_EN >= 0
+#if !(STEP2_EN < 0)
 	mcu_config_output(STEP2_EN);
 #endif
-#if STEP3_EN >= 0
+#if !(STEP3_EN < 0)
 	mcu_config_output(STEP3_EN);
 #endif
-#if STEP4_EN >= 0
+#if !(STEP4_EN < 0)
 	mcu_config_output(STEP4_EN);
 #endif
-#if STEP5_EN >= 0
+#if !(STEP5_EN < 0)
 	mcu_config_output(STEP5_EN);
 #endif
-#if STEP6_EN >= 0
+#if !(STEP6_EN < 0)
 	mcu_config_output(STEP6_EN);
 #endif
-#if STEP7_EN >= 0
+#if !(STEP7_EN < 0)
 	mcu_config_output(STEP7_EN);
 #endif
-#if PWM0 >= 0
+#if !(PWM0 < 0)
 	mcu_config_pwm(PWM0);
 #endif
-#if PWM1 >= 0
+#if !(PWM1 < 0)
 	mcu_config_pwm(PWM1);
 #endif
-#if PWM2 >= 0
+#if !(PWM2 < 0)
 	mcu_config_pwm(PWM2);
 #endif
-#if PWM3 >= 0
+#if !(PWM3 < 0)
 	mcu_config_pwm(PWM3);
 #endif
-#if PWM4 >= 0
+#if !(PWM4 < 0)
 	mcu_config_pwm(PWM4);
 #endif
-#if PWM5 >= 0
+#if !(PWM5 < 0)
 	mcu_config_pwm(PWM5);
 #endif
-#if PWM6 >= 0
+#if !(PWM6 < 0)
 	mcu_config_pwm(PWM6);
 #endif
-#if PWM7 >= 0
+#if !(PWM7 < 0)
 	mcu_config_pwm(PWM7);
 #endif
-#if PWM8 >= 0
+#if !(PWM8 < 0)
 	mcu_config_pwm(PWM8);
 #endif
-#if PWM9 >= 0
+#if !(PWM9 < 0)
 	mcu_config_pwm(PWM9);
 #endif
-#if PWM10 >= 0
+#if !(PWM10 < 0)
 	mcu_config_pwm(PWM10);
 #endif
-#if PWM11 >= 0
+#if !(PWM11 < 0)
 	mcu_config_pwm(PWM11);
 #endif
-#if PWM12 >= 0
+#if !(PWM12 < 0)
 	mcu_config_pwm(PWM12);
 #endif
-#if PWM13 >= 0
+#if !(PWM13 < 0)
 	mcu_config_pwm(PWM13);
 #endif
-#if PWM14 >= 0
+#if !(PWM14 < 0)
 	mcu_config_pwm(PWM14);
 #endif
-#if PWM15 >= 0
+#if !(PWM15 < 0)
 	mcu_config_pwm(PWM15);
 #endif
-#if SERVO0 >= 0
+#if !(SERVO0 < 0)
 	mcu_config_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if !(SERVO1 < 0)
 	mcu_config_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if !(SERVO2 < 0)
 	mcu_config_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if !(SERVO3 < 0)
 	mcu_config_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if !(SERVO4 < 0)
 	mcu_config_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if !(SERVO5 < 0)
 	mcu_config_output(SERVO5);
 #endif
-#if DOUT0 >= 0
+#if !(DOUT0 < 0)
 	mcu_config_output(DOUT0);
 #endif
-#if DOUT1 >= 0
+#if !(DOUT1 < 0)
 	mcu_config_output(DOUT1);
 #endif
-#if DOUT2 >= 0
+#if !(DOUT2 < 0)
 	mcu_config_output(DOUT2);
 #endif
-#if DOUT3 >= 0
+#if !(DOUT3 < 0)
 	mcu_config_output(DOUT3);
 #endif
-#if DOUT4 >= 0
+#if !(DOUT4 < 0)
 	mcu_config_output(DOUT4);
 #endif
-#if DOUT5 >= 0
+#if !(DOUT5 < 0)
 	mcu_config_output(DOUT5);
 #endif
-#if DOUT6 >= 0
+#if !(DOUT6 < 0)
 	mcu_config_output(DOUT6);
 #endif
-#if DOUT7 >= 0
+#if !(DOUT7 < 0)
 	mcu_config_output(DOUT7);
 #endif
-#if DOUT8 >= 0
+#if !(DOUT8 < 0)
 	mcu_config_output(DOUT8);
 #endif
-#if DOUT9 >= 0
+#if !(DOUT9 < 0)
 	mcu_config_output(DOUT9);
 #endif
-#if DOUT10 >= 0
+#if !(DOUT10 < 0)
 	mcu_config_output(DOUT10);
 #endif
-#if DOUT11 >= 0
+#if !(DOUT11 < 0)
 	mcu_config_output(DOUT11);
 #endif
-#if DOUT12 >= 0
+#if !(DOUT12 < 0)
 	mcu_config_output(DOUT12);
 #endif
-#if DOUT13 >= 0
+#if !(DOUT13 < 0)
 	mcu_config_output(DOUT13);
 #endif
-#if DOUT14 >= 0
+#if !(DOUT14 < 0)
 	mcu_config_output(DOUT14);
 #endif
-#if DOUT15 >= 0
+#if !(DOUT15 < 0)
 	mcu_config_output(DOUT15);
 #endif
-#if DOUT16 >= 0
+#if !(DOUT16 < 0)
 	mcu_config_output(DOUT16);
 #endif
-#if DOUT17 >= 0
+#if !(DOUT17 < 0)
 	mcu_config_output(DOUT17);
 #endif
-#if DOUT18 >= 0
+#if !(DOUT18 < 0)
 	mcu_config_output(DOUT18);
 #endif
-#if DOUT19 >= 0
+#if !(DOUT19 < 0)
 	mcu_config_output(DOUT19);
 #endif
-#if DOUT20 >= 0
+#if !(DOUT20 < 0)
 	mcu_config_output(DOUT20);
 #endif
-#if DOUT21 >= 0
+#if !(DOUT21 < 0)
 	mcu_config_output(DOUT21);
 #endif
-#if DOUT22 >= 0
+#if !(DOUT22 < 0)
 	mcu_config_output(DOUT22);
 #endif
-#if DOUT23 >= 0
+#if !(DOUT23 < 0)
 	mcu_config_output(DOUT23);
 #endif
-#if DOUT24 >= 0
+#if !(DOUT24 < 0)
 	mcu_config_output(DOUT24);
 #endif
-#if DOUT25 >= 0
+#if !(DOUT25 < 0)
 	mcu_config_output(DOUT25);
 #endif
-#if DOUT26 >= 0
+#if !(DOUT26 < 0)
 	mcu_config_output(DOUT26);
 #endif
-#if DOUT27 >= 0
+#if !(DOUT27 < 0)
 	mcu_config_output(DOUT27);
 #endif
-#if DOUT28 >= 0
+#if !(DOUT28 < 0)
 	mcu_config_output(DOUT28);
 #endif
-#if DOUT29 >= 0
+#if !(DOUT29 < 0)
 	mcu_config_output(DOUT29);
 #endif
-#if DOUT30 >= 0
+#if !(DOUT30 < 0)
 	mcu_config_output(DOUT30);
 #endif
-#if DOUT31 >= 0
+#if !(DOUT31 < 0)
 	mcu_config_output(DOUT31);
 #endif
-#if LIMIT_X >= 0
+#if !(LIMIT_X < 0)
 	mcu_config_input(LIMIT_X);
 #ifdef LIMIT_X_PULLUP
 	mcu_config_pullup(LIMIT_X);
@@ -626,7 +630,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_X);
 #endif
 #endif
-#if LIMIT_Y >= 0
+#if !(LIMIT_Y < 0)
 	mcu_config_input(LIMIT_Y);
 #ifdef LIMIT_Y_PULLUP
 	mcu_config_pullup(LIMIT_Y);
@@ -635,7 +639,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_Y);
 #endif
 #endif
-#if LIMIT_Z >= 0
+#if !(LIMIT_Z < 0)
 	mcu_config_input(LIMIT_Z);
 #ifdef LIMIT_Z_PULLUP
 	mcu_config_pullup(LIMIT_Z);
@@ -644,7 +648,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_Z);
 #endif
 #endif
-#if LIMIT_X2 >= 0
+#if !(LIMIT_X2 < 0)
 	mcu_config_input(LIMIT_X2);
 #ifdef LIMIT_X2_PULLUP
 	mcu_config_pullup(LIMIT_X2);
@@ -653,7 +657,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_X2);
 #endif
 #endif
-#if LIMIT_Y2 >= 0
+#if !(LIMIT_Y2 < 0)
 	mcu_config_input(LIMIT_Y2);
 #ifdef LIMIT_Y2_PULLUP
 	mcu_config_pullup(LIMIT_Y2);
@@ -662,7 +666,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_Y2);
 #endif
 #endif
-#if LIMIT_Z2 >= 0
+#if !(LIMIT_Z2 < 0)
 	mcu_config_input(LIMIT_Z2);
 #ifdef LIMIT_Z2_PULLUP
 	mcu_config_pullup(LIMIT_Z2);
@@ -671,7 +675,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_Z2);
 #endif
 #endif
-#if LIMIT_A >= 0
+#if !(LIMIT_A < 0)
 	mcu_config_input(LIMIT_A);
 #ifdef LIMIT_A_PULLUP
 	mcu_config_pullup(LIMIT_A);
@@ -680,7 +684,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_A);
 #endif
 #endif
-#if LIMIT_B >= 0
+#if !(LIMIT_B < 0)
 	mcu_config_input(LIMIT_B);
 #ifdef LIMIT_B_PULLUP
 	mcu_config_pullup(LIMIT_B);
@@ -689,7 +693,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_B);
 #endif
 #endif
-#if LIMIT_C >= 0
+#if !(LIMIT_C < 0)
 	mcu_config_input(LIMIT_C);
 #ifdef LIMIT_C_PULLUP
 	mcu_config_pullup(LIMIT_C);
@@ -698,7 +702,7 @@ void mcu_init(void)
 	mcu_config_input_isr(LIMIT_C);
 #endif
 #endif
-#if PROBE >= 0
+#if !(PROBE < 0)
 	mcu_config_input(PROBE);
 #ifdef PROBE_PULLUP
 	mcu_config_pullup(PROBE);
@@ -707,7 +711,7 @@ void mcu_init(void)
 	mcu_config_input_isr(PROBE);
 #endif
 #endif
-#if ESTOP >= 0
+#if !(ESTOP < 0)
 	mcu_config_input(ESTOP);
 #ifdef ESTOP_PULLUP
 	mcu_config_pullup(ESTOP);
@@ -716,7 +720,7 @@ void mcu_init(void)
 	mcu_config_input_isr(ESTOP);
 #endif
 #endif
-#if SAFETY_DOOR >= 0
+#if !(SAFETY_DOOR < 0)
 	mcu_config_input(SAFETY_DOOR);
 #ifdef SAFETY_DOOR_PULLUP
 	mcu_config_pullup(SAFETY_DOOR);
@@ -725,7 +729,7 @@ void mcu_init(void)
 	mcu_config_input_isr(SAFETY_DOOR);
 #endif
 #endif
-#if FHOLD >= 0
+#if !(FHOLD < 0)
 	mcu_config_input(FHOLD);
 #ifdef FHOLD_PULLUP
 	mcu_config_pullup(FHOLD);
@@ -734,7 +738,7 @@ void mcu_init(void)
 	mcu_config_input_isr(FHOLD);
 #endif
 #endif
-#if CS_RES >= 0
+#if !(CS_RES < 0)
 	mcu_config_input(CS_RES);
 #ifdef CS_RES_PULLUP
 	mcu_config_pullup(CS_RES);
@@ -743,55 +747,55 @@ void mcu_init(void)
 	mcu_config_input_isr(CS_RES);
 #endif
 #endif
-#if ANALOG0 >= 0
-	mcu_config_input(ANALOG0);
+#if !(ANALOG0 < 0)
+	mcu_config_analog(ANALOG0);
 #endif
-#if ANALOG1 >= 0
-	mcu_config_input(ANALOG1);
+#if !(ANALOG1 < 0)
+	mcu_config_analog(ANALOG1);
 #endif
-#if ANALOG2 >= 0
-	mcu_config_input(ANALOG2);
+#if !(ANALOG2 < 0)
+	mcu_config_analog(ANALOG2);
 #endif
-#if ANALOG3 >= 0
-	mcu_config_input(ANALOG3);
+#if !(ANALOG3 < 0)
+	mcu_config_analog(ANALOG3);
 #endif
-#if ANALOG4 >= 0
-	mcu_config_input(ANALOG4);
+#if !(ANALOG4 < 0)
+	mcu_config_analog(ANALOG4);
 #endif
-#if ANALOG5 >= 0
-	mcu_config_input(ANALOG5);
+#if !(ANALOG5 < 0)
+	mcu_config_analog(ANALOG5);
 #endif
-#if ANALOG6 >= 0
-	mcu_config_input(ANALOG6);
+#if !(ANALOG6 < 0)
+	mcu_config_analog(ANALOG6);
 #endif
-#if ANALOG7 >= 0
-	mcu_config_input(ANALOG7);
+#if !(ANALOG7 < 0)
+	mcu_config_analog(ANALOG7);
 #endif
-#if ANALOG8 >= 0
-	mcu_config_input(ANALOG8);
+#if !(ANALOG8 < 0)
+	mcu_config_analog(ANALOG8);
 #endif
-#if ANALOG9 >= 0
-	mcu_config_input(ANALOG9);
+#if !(ANALOG9 < 0)
+	mcu_config_analog(ANALOG9);
 #endif
-#if ANALOG10 >= 0
-	mcu_config_input(ANALOG10);
+#if !(ANALOG10 < 0)
+	mcu_config_analog(ANALOG10);
 #endif
-#if ANALOG11 >= 0
-	mcu_config_input(ANALOG11);
+#if !(ANALOG11 < 0)
+	mcu_config_analog(ANALOG11);
 #endif
-#if ANALOG12 >= 0
-	mcu_config_input(ANALOG12);
+#if !(ANALOG12 < 0)
+	mcu_config_analog(ANALOG12);
 #endif
-#if ANALOG13 >= 0
-	mcu_config_input(ANALOG13);
+#if !(ANALOG13 < 0)
+	mcu_config_analog(ANALOG13);
 #endif
-#if ANALOG14 >= 0
-	mcu_config_input(ANALOG14);
+#if !(ANALOG14 < 0)
+	mcu_config_analog(ANALOG14);
 #endif
-#if ANALOG15 >= 0
-	mcu_config_input(ANALOG15);
+#if !(ANALOG15 < 0)
+	mcu_config_analog(ANALOG15);
 #endif
-#if DIN0 >= 0
+#if !(DIN0 < 0)
 	mcu_config_input(DIN0);
 #ifdef DIN0_PULLUP
 	mcu_config_pullup(DIN0);
@@ -800,7 +804,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN0);
 #endif
 #endif
-#if DIN1 >= 0
+#if !(DIN1 < 0)
 	mcu_config_input(DIN1);
 #ifdef DIN1_PULLUP
 	mcu_config_pullup(DIN1);
@@ -809,7 +813,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN1);
 #endif
 #endif
-#if DIN2 >= 0
+#if !(DIN2 < 0)
 	mcu_config_input(DIN2);
 #ifdef DIN2_PULLUP
 	mcu_config_pullup(DIN2);
@@ -818,7 +822,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN2);
 #endif
 #endif
-#if DIN3 >= 0
+#if !(DIN3 < 0)
 	mcu_config_input(DIN3);
 #ifdef DIN3_PULLUP
 	mcu_config_pullup(DIN3);
@@ -827,7 +831,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN3);
 #endif
 #endif
-#if DIN4 >= 0
+#if !(DIN4 < 0)
 	mcu_config_input(DIN4);
 #ifdef DIN4_PULLUP
 	mcu_config_pullup(DIN4);
@@ -836,7 +840,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN4);
 #endif
 #endif
-#if DIN5 >= 0
+#if !(DIN5 < 0)
 	mcu_config_input(DIN5);
 #ifdef DIN5_PULLUP
 	mcu_config_pullup(DIN5);
@@ -845,7 +849,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN5);
 #endif
 #endif
-#if DIN6 >= 0
+#if !(DIN6 < 0)
 	mcu_config_input(DIN6);
 #ifdef DIN6_PULLUP
 	mcu_config_pullup(DIN6);
@@ -854,7 +858,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN6);
 #endif
 #endif
-#if DIN7 >= 0
+#if !(DIN7 < 0)
 	mcu_config_input(DIN7);
 #ifdef DIN7_PULLUP
 	mcu_config_pullup(DIN7);
@@ -863,7 +867,7 @@ void mcu_init(void)
 	mcu_config_input_isr(DIN7);
 #endif
 #endif
-#if DIN8 >= 0
+#if !(DIN8 < 0)
 	mcu_config_input(DIN8);
 #ifdef DIN8_PULLUP
 	mcu_config_pullup(DIN8);
@@ -1007,38 +1011,46 @@ void mcu_init(void)
 	mcu_config_pullup(DIN31);
 #endif
 #endif
-#if TX >= 0
+#if !(TX < 0)
 	mcu_config_output(TX);
 #endif
-#if RX >= 0
+#if !(RX < 0)
 	mcu_config_input(RX);
 #ifdef RX_PULLUP
 	mcu_config_pullup(RX);
 #endif
 #endif
-#if USB_DM >= 0
+#if !(USB_DM < 0)
 	mcu_config_input(USB_DM);
 #ifdef USB_DM_PULLUP
 	mcu_config_pullup(USB_DM);
 #endif
 #endif
-#if USB_DP >= 0
+#if !(USB_DP < 0)
 	mcu_config_input(USB_DP);
 #ifdef USB_DP_PULLUP
 	mcu_config_pullup(USB_DP);
 #endif
 #endif
-#if SPI_CLK >= 0
+#if !(SPI_CLK < 0)
 	mcu_config_output(SPI_CLK);
 #endif
-#if SPI_SDI >= 0
+#if !(SPI_SDI < 0)
 	mcu_config_input(SPI_SDI);
 #ifdef SPI_SDI_PULLUP
 	mcu_config_pullup(SPI_SDI);
 #endif
 #endif
-#if SPI_SDO >= 0
+#if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
+#endif
+#if !(I2C_SCL < 0)
+	mcu_config_input(I2C_SCL);
+	mcu_config_pullup(I2C_SCL);
+#endif
+#if !(I2C_SDA < 0)
+	mcu_config_input(I2C_SDA);
+	mcu_config_pullup(I2C_SDA);
 #endif
 
 	mcu_usart_init();
@@ -1058,6 +1070,11 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_SPI
 	esp8266_spi_init(SPI_FREQ, SPI_MODE);
+#endif
+
+#ifdef MCU_HAS_I2C
+	i2c_master_gpio_init();
+	i2c_master_init();
 #endif
 }
 
@@ -1316,5 +1333,62 @@ void mcu_eeprom_flush(void)
 	esp8266_eeprom_flush();
 #endif
 }
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	if (send_start)
+	{
+		// init
+		i2c_master_start();
+		if (!i2c_master_checkAck())
+		{
+			i2c_master_stop();
+			return 0;
+		}
+	}
+
+	i2c_master_writeByte(data);
+
+	if (!i2c_master_checkAck())
+	{
+		i2c_master_stop();
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		i2c_master_stop();
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+
+	if (with_nack)
+	{
+		i2c_master_send_ack();
+	}
+	else
+	{
+		i2c_master_send_nack();
+	}
+	c = i2c_master_readByte();
+
+	if (send_stop)
+	{
+		i2c_master_stop();
+	}
+
+	return c;
+}
+#endif
+#endif
 
 #endif

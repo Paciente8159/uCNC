@@ -875,68 +875,52 @@ void mcu_init(void)
 #endif
 #endif
 #if !(ANALOG0 < 0)
-	mcu_config_input(ANALOG0);
-	mcu_get_analog(ANALOG0);
+	mcu_config_analog(ANALOG0);
 #endif
 #if !(ANALOG1 < 0)
-	mcu_config_input(ANALOG1);
-	mcu_get_analog(ANALOG1);
+	mcu_config_analog(ANALOG1);
 #endif
 #if !(ANALOG2 < 0)
-	mcu_config_input(ANALOG2);
-	mcu_get_analog(ANALOG2);
+	mcu_config_analog(ANALOG2);
 #endif
 #if !(ANALOG3 < 0)
-	mcu_config_input(ANALOG3);
-	mcu_get_analog(ANALOG3);
+	mcu_config_analog(ANALOG3);
 #endif
 #if !(ANALOG4 < 0)
-	mcu_config_input(ANALOG4);
-	mcu_get_analog(ANALOG4);
+	mcu_config_analog(ANALOG4);
 #endif
 #if !(ANALOG5 < 0)
-	mcu_config_input(ANALOG5);
-	mcu_get_analog(ANALOG5);
+	mcu_config_analog(ANALOG5);
 #endif
 #if !(ANALOG6 < 0)
-	mcu_config_input(ANALOG6);
-	mcu_get_analog(ANALOG6);
+	mcu_config_analog(ANALOG6);
 #endif
 #if !(ANALOG7 < 0)
-	mcu_config_input(ANALOG7);
-	mcu_get_analog(ANALOG7);
+	mcu_config_analog(ANALOG7);
 #endif
 #if !(ANALOG8 < 0)
-	mcu_config_input(ANALOG8);
-	mcu_get_analog(ANALOG8);
+	mcu_config_analog(ANALOG8);
 #endif
 #if !(ANALOG9 < 0)
-	mcu_config_input(ANALOG9);
-	mcu_get_analog(ANALOG9);
+	mcu_config_analog(ANALOG9);
 #endif
 #if !(ANALOG10 < 0)
-	mcu_config_input(ANALOG10);
-	mcu_get_analog(ANALOG10);
+	mcu_config_analog(ANALOG10);
 #endif
 #if !(ANALOG11 < 0)
-	mcu_config_input(ANALOG11);
-	mcu_get_analog(ANALOG11);
+	mcu_config_analog(ANALOG11);
 #endif
 #if !(ANALOG12 < 0)
-	mcu_config_input(ANALOG12);
-	mcu_get_analog(ANALOG12);
+	mcu_config_analog(ANALOG12);
 #endif
 #if !(ANALOG13 < 0)
-	mcu_config_input(ANALOG13);
-	mcu_get_analog(ANALOG13);
+	mcu_config_analog(ANALOG13);
 #endif
 #if !(ANALOG14 < 0)
-	mcu_config_input(ANALOG14);
-	mcu_get_analog(ANALOG14);
+	mcu_config_analog(ANALOG14);
 #endif
 #if !(ANALOG15 < 0)
-	mcu_config_input(ANALOG15);
-	mcu_get_analog(ANALOG15);
+	mcu_config_analog(ANALOG15);
 #endif
 #if !(DIN0 < 0)
 	mcu_config_input(DIN0);
@@ -1016,139 +1000,139 @@ void mcu_init(void)
 	mcu_config_pullup(DIN8);
 #endif
 #endif
-#if !(DIN9 < 0)
+#if DIN9 >= 0
 	mcu_config_input(DIN9);
 #ifdef DIN9_PULLUP
 	mcu_config_pullup(DIN9);
 #endif
 #endif
-#if !(DIN10 < 0)
+#if DIN10 >= 0
 	mcu_config_input(DIN10);
 #ifdef DIN10_PULLUP
 	mcu_config_pullup(DIN10);
 #endif
 #endif
-#if !(DIN11 < 0)
+#if DIN11 >= 0
 	mcu_config_input(DIN11);
 #ifdef DIN11_PULLUP
 	mcu_config_pullup(DIN11);
 #endif
 #endif
-#if !(DIN12 < 0)
+#if DIN12 >= 0
 	mcu_config_input(DIN12);
 #ifdef DIN12_PULLUP
 	mcu_config_pullup(DIN12);
 #endif
 #endif
-#if !(DIN13 < 0)
+#if DIN13 >= 0
 	mcu_config_input(DIN13);
 #ifdef DIN13_PULLUP
 	mcu_config_pullup(DIN13);
 #endif
 #endif
-#if !(DIN14 < 0)
+#if DIN14 >= 0
 	mcu_config_input(DIN14);
 #ifdef DIN14_PULLUP
 	mcu_config_pullup(DIN14);
 #endif
 #endif
-#if !(DIN15 < 0)
+#if DIN15 >= 0
 	mcu_config_input(DIN15);
 #ifdef DIN15_PULLUP
 	mcu_config_pullup(DIN15);
 #endif
 #endif
-#if !(DIN16 < 0)
+#if DIN16 >= 0
 	mcu_config_input(DIN16);
 #ifdef DIN16_PULLUP
 	mcu_config_pullup(DIN16);
 #endif
 #endif
-#if !(DIN17 < 0)
+#if DIN17 >= 0
 	mcu_config_input(DIN17);
 #ifdef DIN17_PULLUP
 	mcu_config_pullup(DIN17);
 #endif
 #endif
-#if !(DIN18 < 0)
+#if DIN18 >= 0
 	mcu_config_input(DIN18);
 #ifdef DIN18_PULLUP
 	mcu_config_pullup(DIN18);
 #endif
 #endif
-#if !(DIN19 < 0)
+#if DIN19 >= 0
 	mcu_config_input(DIN19);
 #ifdef DIN19_PULLUP
 	mcu_config_pullup(DIN19);
 #endif
 #endif
-#if !(DIN20 < 0)
+#if DIN20 >= 0
 	mcu_config_input(DIN20);
 #ifdef DIN20_PULLUP
 	mcu_config_pullup(DIN20);
 #endif
 #endif
-#if !(DIN21 < 0)
+#if DIN21 >= 0
 	mcu_config_input(DIN21);
 #ifdef DIN21_PULLUP
 	mcu_config_pullup(DIN21);
 #endif
 #endif
-#if !(DIN22 < 0)
+#if DIN22 >= 0
 	mcu_config_input(DIN22);
 #ifdef DIN22_PULLUP
 	mcu_config_pullup(DIN22);
 #endif
 #endif
-#if !(DIN23 < 0)
+#if DIN23 >= 0
 	mcu_config_input(DIN23);
 #ifdef DIN23_PULLUP
 	mcu_config_pullup(DIN23);
 #endif
 #endif
-#if !(DIN24 < 0)
+#if DIN24 >= 0
 	mcu_config_input(DIN24);
 #ifdef DIN24_PULLUP
 	mcu_config_pullup(DIN24);
 #endif
 #endif
-#if !(DIN25 < 0)
+#if DIN25 >= 0
 	mcu_config_input(DIN25);
 #ifdef DIN25_PULLUP
 	mcu_config_pullup(DIN25);
 #endif
 #endif
-#if !(DIN26 < 0)
+#if DIN26 >= 0
 	mcu_config_input(DIN26);
 #ifdef DIN26_PULLUP
 	mcu_config_pullup(DIN26);
 #endif
 #endif
-#if !(DIN27 < 0)
+#if DIN27 >= 0
 	mcu_config_input(DIN27);
 #ifdef DIN27_PULLUP
 	mcu_config_pullup(DIN27);
 #endif
 #endif
-#if !(DIN28 < 0)
+#if DIN28 >= 0
 	mcu_config_input(DIN28);
 #ifdef DIN28_PULLUP
 	mcu_config_pullup(DIN28);
 #endif
 #endif
-#if !(DIN29 < 0)
+#if DIN29 >= 0
 	mcu_config_input(DIN29);
 #ifdef DIN29_PULLUP
 	mcu_config_pullup(DIN29);
 #endif
 #endif
-#if !(DIN30 < 0)
+#if DIN30 >= 0
 	mcu_config_input(DIN30);
 #ifdef DIN30_PULLUP
 	mcu_config_pullup(DIN30);
 #endif
 #endif
-#if !(DIN31 < 0)
+#if DIN31 >= 0
 	mcu_config_input(DIN31);
 #ifdef DIN31_PULLUP
 	mcu_config_pullup(DIN31);
@@ -1187,6 +1171,14 @@ void mcu_init(void)
 #if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
 #endif
+#if !(I2C_SCL < 0)
+	mcu_config_input(I2C_SCL);
+	mcu_config_pullup(I2C_SCL);
+#endif
+#if !(I2C_SDA < 0)
+	mcu_config_input(I2C_SDA);
+	mcu_config_pullup(I2C_SDA);
+#endif
 
 	mcu_usart_init();
 	mcu_rtc_init();
@@ -1211,14 +1203,14 @@ void mcu_init(void)
 	SPICOM->SPI.CTRLA.bit.DWORD = 0;					 // MSB
 	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
-	SPICOM->SPI.CTRLA.bit.FORM = 0;			 
-	SPICOM->SPI.CTRLA.bit.DIPO = INPAD;			 
+	SPICOM->SPI.CTRLA.bit.FORM = 0;
+	SPICOM->SPI.CTRLA.bit.DIPO = INPAD;
 	SPICOM->SPI.CTRLA.bit.DOPO = OUTPAD;
-	
+
 	SPICOM->SPI.CTRLB.bit.RXEN = 1;
 	SPICOM->SPI.CTRLB.bit.CHSIZE = 0;
 
-	SPICOM->SPI.BAUD.reg = ((F_CPU>>1)/SPI_FREQ) - 1;
+	SPICOM->SPI.BAUD.reg = ((F_CPU >> 1) / SPI_FREQ) - 1;
 
 	mcu_config_altfunc(SPI_CLK);
 	mcu_config_altfunc(SPI_SDO);
