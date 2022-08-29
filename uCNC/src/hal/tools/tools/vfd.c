@@ -75,9 +75,10 @@ static vfd_state_t vfd_state;
 	{                                                             \
 		8, 8, MODBUS_READ_INPUT_REGISTERS, 0x03, 0x01, 0x00, 0x00 \
 	}
+// sets fixed freq 400.00Hz -> 40000
 #define VFD_RPM_HZ_CMD                                        \
 	{                                                         \
-		8, 8, MODBUS_READ_COIL_STATUS, 0x03, 0x90, 0x00, 0x00 \
+		8, 8, MODBUS_READ_COIL_STATUS, 0x03, 0x05, 0x00, 0x00 \
 	}
 #define VFD_CW_CMD                                                  \
 	{                                                               \
@@ -91,10 +92,10 @@ static vfd_state_t vfd_state;
 	{                                                               \
 		6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x08, 0x00, 0x00 \
 	}
-#define VFD_IN_MULT vfd_state.rpm_hz
-#define VFD_IN_DIV 5000.0f
-#define VFD_OUT_MULT 5000.0f
-#define VFD_OUT_DIV vfd_state.rpm_hz
+#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_DIV vfd_state.rpm_hz
+#define VFD_OUT_MULT vfd_state.rpm_hz
+#define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
 #ifdef VFD_HUANYANG_TYPE2
@@ -164,6 +165,7 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 	// checks if is dummy command
 	if (!cmd[0])
 	{
+		memcpy(&response, &cmd[1], cmd[1]);
 		return true;
 	}
 	modbus_request_t request = {0};
@@ -338,7 +340,7 @@ DECL_MODULE(vfd)
 void vfd_startup()
 {
 	vfd_uart.tx(true);
-	cnc_delay_ms(200);
+	cnc_delay_ms(100);
 	if (!vfd_state.loaded)
 	{
 		vfd_init();
@@ -348,6 +350,7 @@ void vfd_startup()
 	if (!vfd_state.connected)
 	{
 		vfd_rpm_hz();
+		// serial_print_int((int32_t)vfd_state.rpm_hz);
 		// was able do communicate via modbus
 		if (vfd_state.rpm_hz >= 0)
 		{

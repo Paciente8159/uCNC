@@ -69,8 +69,9 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 		data++;
 	}
 
-	softuart_putc(port, (request.crc >> 8));
 	softuart_putc(port, (request.crc & 0xFF));
+	softuart_putc(port, (request.crc >> 8));
+	
 }
 
 bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port)
