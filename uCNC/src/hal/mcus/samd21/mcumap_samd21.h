@@ -1540,14 +1540,46 @@ extern "C"
 
 #define DIO204_PMUX SPI_CLK_PMUX
 #define DIO204_PMUXVAL SPI_CLK_PMUXVAL
-#define DIO205_PMUX SPI_CLK_PMUX
-#define DIO205_PMUXVAL SPI_CLK_PMUXVAL
-#define DIO206_PMUX SPI_CLK_PMUX
-#define DIO206_PMUXVAL SPI_CLK_PMUXVAL
+#define DIO205_PMUX SPI_SDI_PMUX
+#define DIO205_PMUXVAL SPI_SDI_PMUXVAL
+#define DIO206_PMUX SPI_SDO_PMUX
+#define DIO206_PMUXVAL SPI_SDO_PMUXVAL
 
 #if (SPI_PORT != 1 && SPI_PORT != 3)
 #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
 #endif
+#endif
+
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#ifndef I2C_PORT
+#define I2C_PORT 1
+#endif
+#ifndef I2C_FREQ
+#define I2C_FREQ 400000UL
+#endif
+
+#define I2CCOM __helper__(SERCOM, I2C_PORT, )
+#define PM_APBCMASK_I2CCOM __helper__(PM_APBCMASK_SERCOM, I2C_PORT, )
+#define GCLK_CLKCTRL_ID_I2CCOM __helper__(GCLK_CLKCTRL_ID_SERCOM, I2C_PORT, _CORE)
+#define I2C_DATA (I2CCOM->SPI.DATA.reg)
+// #define OUTPAD 0
+// #define INPAD 3
+
+#define I2C_SCL_PMUX (pinmux(I2C_SCL_PORT, I2C_SCL_BIT))
+#define I2C_SCL_PMUXVAL (sercommux_pin(I2C_PORT, I2C_SCL_PORT, I2C_SCL_BIT))
+#define I2C_SDA_PMUX (pinmux(SPI_SDO_PORT, I2C_SDA_BIT))
+#define I2C_SDA_PMUXVAL (sercommux_pin(I2C_PORT, I2C_SDA_PORT, I2C_SDA_BIT))
+
+
+#define DIO206_PMUX I2C_SCL_PMUX
+#define DIO206_PMUXVAL I2C_SCL_PMUXVAL
+#define DIO207_PMUX I2C_SDA_PMUX
+#define DIO207_PMUXVAL I2C_SDA_PMUXVAL
+
+// #if (I2C_PORT != 1 && I2C_PORT != 3)
+// #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
+// #endif
 #endif
 
 /*ISR inputs*/
