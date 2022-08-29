@@ -318,7 +318,7 @@ extern "C"
 #endif
 
 #ifndef mcu_i2c_read
-	uint8_t mcu_i2c_read(bool ack, bool stop);
+	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
 #endif
 #endif
 

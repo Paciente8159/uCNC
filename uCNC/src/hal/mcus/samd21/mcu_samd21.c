@@ -583,11 +583,11 @@ void mcu_init(void)
 		;
 
 	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
-  while (I2CCOM->I2CM.bit.SYNCBUSY);
+	while (I2CCOM->I2CM.bit.SYNCBUSY)
+		;
 
-	mcu_config_altfunc(I2C_CLK);
-	mcu_config_altfunc(I2C_SDO);
-	mcu_config_altfunc(I2C_SDI);
+	mcu_config_altfunc(I2C_SCL);
+	mcu_config_altfunc(I2C_SDA);
 
 	I2CCOM->I2C.CTRLA.bit.ENABLE = 1;
 	while (I2CCOM->I2C.SYNCBUSY.bit.SWRST)
@@ -1159,5 +1159,66 @@ void mcu_eeprom_flush(void)
 
 	samd21_flash_modified = false;
 }
+
+#ifdef MCU_HAS_I2C
+/**
+ * https://www.eevblog.com/forum/microcontrollers/i2c-atmel/
+ * */
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	if (send_start)
+	{
+		I2CCOM->I2CM.ADDR.reg = data;
+	}
+	else
+	{
+		I2CCOM->I2CM.DATA.reg = data;
+	}
+
+	while (0 == (I2C_I2CCOMSERCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
+		;
+
+	if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+		return 0;
+	}
+
+	if (stop)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	if (with_ack)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
+	}
+	else
+	{
+		I2CCOM->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
+	}
+
+	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
+		;
+
+	uint8_t data = I2CCOM->I2CM.DATA.reg;
+
+	if (stop)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+	}
+
+	return c;
+}
+#endif
+#endif
 
 #endif
