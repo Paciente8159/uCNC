@@ -1373,7 +1373,7 @@ void mcu_rtc_init()
 void mcu_delay_us(uint16_t delay)
 {
 	uint32_t startTick = DWT->CYCCNT,
-			 delayTicks = startTick + delay * (F_CPU / 1000000);
+			 delayTicks = startTick + delay * (F_CPU / 1000000UL);
 
 	while (DWT->CYCCNT < delayTicks)
 		;
