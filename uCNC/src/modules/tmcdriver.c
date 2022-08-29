@@ -25,12 +25,13 @@
 #ifdef ENABLE_TMC_DRIVERS
 
 #define TMC_UARTBAUD 38400
+#define TMC_UART_TIMEOUT 100
 
 // driver communications declarations
 // UART
 #define TMC1_STEPPER_DECL(CHANNEL) SOFTUART(tmc##CHANNEL##_uart, TMC_UARTBAUD, STEPPER##CHANNEL##_UART_TX, STEPPER##CHANNEL##_UART_RX)
 // SPI
-#define TMC2_STEPPER_DECL(CHANNEL) SOFTSPI(tmc##CHANNEL_spi,1000000UL, 0, STEPPER##CHANNEL##_SPI_DO, STEPPER##CHANNEL##_SPI_DI, STEPPER##CHANNEL##_SPI_CLK)
+#define TMC2_STEPPER_DECL(CHANNEL) SOFTSPI(tmc##CHANNEL_spi, 1000000UL, 0, STEPPER##CHANNEL##_SPI_DO, STEPPER##CHANNEL##_SPI_DI, STEPPER##CHANNEL##_SPI_CLK)
 #define _TMC_STEPPER_DECL(TYPE, CHANNEL) TMC##TYPE##_STEPPER_DECL(CHANNEL)
 #define TMC_STEPPER_DECL(TYPE, CHANNEL) _TMC_STEPPER_DECL(TYPE, CHANNEL)
 
@@ -49,7 +50,7 @@
 		mcu_config_input(STEPPER##CHANNEL##_UART_TX);                        \
 		for (uint8_t i = 0; i < rlen; i++)                                   \
 		{                                                                    \
-			data[i] = softuart_getc(&tmc##CHANNEL##_uart);                   \
+			data[i] = softuart_getc(&tmc##CHANNEL##_uart, TMC_UART_TIMEOUT); \
 		}                                                                    \
 		mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
 		mcu_enable_global_isr();                                             \
@@ -176,7 +177,8 @@ void tmcdriver_config(void)
 #endif
 }
 
-uint8_t tmcdriver_config_handler(void* args, bool*handler) {
+uint8_t tmcdriver_config_handler(void *args, bool *handler)
+{
 	tmcdriver_config();
 	return 0;
 }
@@ -198,16 +200,16 @@ CREATE_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
 // this ID must be unique for each code
 #define M920 EXTENDED_MCODE(920)
 
-uint8_t m350_parse(void* args, bool* handled);
-uint8_t m350_exec(void* args, bool* handled);
-uint8_t m906_parse(void* args, bool* handled);
-uint8_t m906_exec(void* args, bool* handled);
-uint8_t m913_parse(void* args, bool* handled);
-uint8_t m913_exec(void* args, bool* handled);
-uint8_t m914_parse(void* args, bool* handled);
-uint8_t m914_exec(void* args, bool* handled);
-uint8_t m920_parse(void* args, bool* handled);
-uint8_t m920_exec(void* args, bool* handled);
+uint8_t m350_parse(void *args, bool *handled);
+uint8_t m350_exec(void *args, bool *handled);
+uint8_t m906_parse(void *args, bool *handled);
+uint8_t m906_exec(void *args, bool *handled);
+uint8_t m913_parse(void *args, bool *handled);
+uint8_t m913_exec(void *args, bool *handled);
+uint8_t m914_parse(void *args, bool *handled);
+uint8_t m914_exec(void *args, bool *handled);
+uint8_t m920_parse(void *args, bool *handled);
+uint8_t m920_exec(void *args, bool *handled);
 
 CREATE_EVENT_LISTENER(gcode_parse, m350_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m350_exec);
@@ -221,14 +223,14 @@ CREATE_EVENT_LISTENER(gcode_parse, m920_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m920_exec);
 
 // this just parses and acceps the code
-uint8_t m350_parse(void* args, bool* handled)
+uint8_t m350_parse(void *args, bool *handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
 	if (ptr->word == 'M' && ptr->value == 350)
 	{
 		*handled = true;
-		
+
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
@@ -244,7 +246,7 @@ uint8_t m350_parse(void* args, bool* handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m350_exec(void* args, bool* handled)
+uint8_t m350_exec(void *args, bool *handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
@@ -375,14 +377,14 @@ uint8_t m350_exec(void* args, bool* handled)
 }
 
 // this just parses and acceps the code
-uint8_t m906_parse(void* args, bool* handled)
+uint8_t m906_parse(void *args, bool *handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
 	if (ptr->word == 'M' && ptr->value == 906.0f)
 	{
 		*handled = true;
-		
+
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
@@ -398,7 +400,7 @@ uint8_t m906_parse(void* args, bool* handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m906_exec(void* args, bool* handled)
+uint8_t m906_exec(void *args, bool *handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
@@ -528,7 +530,7 @@ uint8_t m906_exec(void* args, bool* handled)
 }
 
 // this just parses and acceps the code
-uint8_t m913_parse(void* args, bool* handled)
+uint8_t m913_parse(void *args, bool *handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
@@ -551,7 +553,7 @@ uint8_t m913_parse(void* args, bool* handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m913_exec(void* args, bool* handled)
+uint8_t m913_exec(void *args, bool *handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
@@ -681,7 +683,7 @@ uint8_t m913_exec(void* args, bool* handled)
 }
 
 // this just parses and acceps the code
-uint8_t m914_parse(void* args, bool* handled)
+uint8_t m914_parse(void *args, bool *handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
@@ -704,7 +706,7 @@ uint8_t m914_parse(void* args, bool* handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m914_exec(void* args, bool* handled)
+uint8_t m914_exec(void *args, bool *handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
@@ -834,7 +836,7 @@ uint8_t m914_exec(void* args, bool* handled)
 }
 
 // this just parses and acceps the code
-uint8_t m920_parse(void* args, bool* handled)
+uint8_t m920_parse(void *args, bool *handled)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
@@ -857,7 +859,7 @@ uint8_t m920_parse(void* args, bool* handled)
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m920_exec(void* args, bool* handled)
+uint8_t m920_exec(void *args, bool *handled)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 

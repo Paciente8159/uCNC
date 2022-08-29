@@ -59,7 +59,7 @@ extern "C"
 	__attribute__((used)) softuart_port_t NAME = {.wait = &NAME##_wait, .waithalf = &NAME##_waithalf, .tx = &NAME##_tx, .rx = &NAME##_rx};
 
 	void softuart_putc(softuart_port_t *port, uint8_t c);
-	int16_t softuart_getc(softuart_port_t *port);
+	int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout);
 
 #ifdef __cplusplus
 }

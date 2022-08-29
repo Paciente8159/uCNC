@@ -41,14 +41,14 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 	mcu_enable_global_isr();
 }
 
-int16_t softuart_getc(softuart_port_t *port)
+int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
 	mcu_disable_global_isr();
-	uint16_t ms = SOFTUART_TIMEOUT * 1000;
+	ms_timeout *= 1000;
 	while (port->rx())
 	{
 		mcu_delay_us(1);
-		if (!ms--)
+		if (!ms_timeout--)
 		{
 			mcu_enable_global_isr();
 			return -1;
