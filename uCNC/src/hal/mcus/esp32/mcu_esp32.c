@@ -1245,7 +1245,7 @@ uint32_t mcu_millis()
 }
 
 #ifndef mcu_delay_us
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	int64_t time = esp_timer_get_time() + delay;
 	while (time > esp_timer_get_time())

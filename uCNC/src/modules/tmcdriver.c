@@ -25,12 +25,13 @@
 #ifdef ENABLE_TMC_DRIVERS
 
 #define TMC_UARTBAUD 38400
+#define TMC_UART_TIMEOUT 100
 
 // driver communications declarations
 // UART
-#define TMC1_STEPPER_DECL(CHANNEL) SOFTUART(tmc##CHANNEL##_uart, TMC_UARTBAUD, STEPPER##CHANNEL##_UART_TX, STEPPER##CHANNEL##_UART_TX)
+#define TMC1_STEPPER_DECL(CHANNEL) SOFTUART(tmc##CHANNEL##_uart, TMC_UARTBAUD, STEPPER##CHANNEL##_UART_TX, STEPPER##CHANNEL##_UART_RX)
 // SPI
-#define TMC2_STEPPER_DECL(CHANNEL) SOFTSPI(tmc##CHANNEL_spi)
+#define TMC2_STEPPER_DECL(CHANNEL) SOFTSPI(tmc##CHANNEL_spi, 1000000UL, 0, STEPPER##CHANNEL##_SPI_DO, STEPPER##CHANNEL##_SPI_DI, STEPPER##CHANNEL##_SPI_CLK)
 #define _TMC_STEPPER_DECL(TYPE, CHANNEL) TMC##TYPE##_STEPPER_DECL(CHANNEL)
 #define TMC_STEPPER_DECL(TYPE, CHANNEL) _TMC_STEPPER_DECL(TYPE, CHANNEL)
 
@@ -49,7 +50,7 @@
 		mcu_config_input(STEPPER##CHANNEL##_UART_TX);                        \
 		for (uint8_t i = 0; i < rlen; i++)                                   \
 		{                                                                    \
-			data[i] = (uint8_t)(0xFF & softuart_getc(&tmc##CHANNEL##_uart)); \
+			data[i] = softuart_getc(&tmc##CHANNEL##_uart, TMC_UART_TIMEOUT); \
 		}                                                                    \
 		mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
 		mcu_enable_global_isr();                                             \

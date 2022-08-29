@@ -1061,7 +1061,7 @@ uint8_t itp_sync(void)
 void itp_sync_spindle(void)
 {
 #if TOOL_COUNT > 0
-	tool_set_speed(planner_get_spindle_speed(0));
+	tool_set_speed(planner_get_spindle_speed(1));
 #endif
 }
 

@@ -30,33 +30,36 @@ extern "C"
 
 	typedef struct softuart_port_
 	{
-		const uint8_t baud;
+		void (*wait)(void);
+		void (*waithalf)(void);
 		void (*tx)(bool);
 		bool (*rx)(void);
 	} softuart_port_t;
 
 #define SOFTBAUD(x) (1000000 / x)
 #define SOFTUART_TIMEOUT 20
-#define SOFTUART(NAME, BAUD, TXPIN, RXPIN) \
-	void NAME##_tx(bool state)             \
-	{                                      \
-		if (state)                         \
-		{                                  \
-			mcu_set_output(TXPIN);         \
-		}                                  \
-		else                               \
-		{                                  \
-			mcu_clear_output(TXPIN);       \
-		}                                  \
-	}                                      \
-	bool NAME##_rx(void)                   \
-	{                                      \
-		return mcu_get_input(RXPIN);       \
-	}                                      \
-	__attribute__((used)) softuart_port_t NAME = {.baud = SOFTBAUD(BAUD), .tx = &NAME##_tx, .rx = &NAME##_rx};
+#define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                              \
+	void NAME##_tx(bool state)                                          \
+	{                                                                   \
+		if (state)                                                      \
+		{                                                               \
+			mcu_set_output(TXPIN);                                      \
+		}                                                               \
+		else                                                            \
+		{                                                               \
+			mcu_clear_output(TXPIN);                                    \
+		}                                                               \
+	}                                                                   \
+	bool NAME##_rx(void)                                                \
+	{                                                                   \
+		return mcu_get_input(RXPIN);                                    \
+	}                                                                   \
+	void NAME##_wait(void) { mcu_delay_us((SOFTBAUD(BAUD))); }          \
+	void NAME##_waithalf(void) { mcu_delay_us((SOFTBAUD(BAUD)) >> 1); } \
+	__attribute__((used)) softuart_port_t NAME = {.wait = &NAME##_wait, .waithalf = &NAME##_waithalf, .tx = &NAME##_tx, .rx = &NAME##_rx};
 
 	void softuart_putc(softuart_port_t *port, uint8_t c);
-	int16_t softuart_getc(softuart_port_t *port);
+	int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout);
 
 #ifdef __cplusplus
 }

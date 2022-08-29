@@ -1259,7 +1259,7 @@ uint32_t mcu_millis()
 }
 
 #ifndef mcu_delay_us
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	uint32_t time = system_get_time() + delay;
 	while (time > system_get_time())

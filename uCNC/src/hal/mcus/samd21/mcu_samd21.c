@@ -1542,7 +1542,7 @@ uint32_t mcu_millis()
 	return c;
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	uint32_t loops;
 	if (!delay)
@@ -1551,7 +1551,7 @@ void mcu_delay_us(uint8_t delay)
 	}
 	else
 	{
-		loops = (delay * (F_CPU / 1000000) / 6) - 2;
+		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
 	}
 	while (loops--)
 		asm("nop");

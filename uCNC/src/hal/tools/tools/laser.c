@@ -32,7 +32,7 @@
 #define LASER_PWM PWM0
 #define COOLANT_FLOOD DOUT1
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
-#define PWM_MIN_VALUE 5
+#define PWM_MIN_VALUE 2
 
 static bool previous_laser_mode;
 
@@ -63,8 +63,8 @@ void laser_set_speed(int16_t value)
 int16_t laser_range_speed(float value)
 {
 	// converts core tool speed to laser power (PWM)
-	value = (255.0f - PWM_MIN_VALUE) * (value / g_settings.spindle_max_rpm);
-	return ((int16_t)value + PWM_MIN_VALUE);
+	value = PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (value / g_settings.spindle_max_rpm));
+	return (int16_t)value;
 }
 
 void laser_set_coolant(uint8_t value)
