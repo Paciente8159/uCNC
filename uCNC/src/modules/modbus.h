@@ -62,7 +62,7 @@ typedef struct modbus_response
 } modbus_response_t;
 
 void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port);
-bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port);
+bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port, uint32_t ms_timeout);
 
 #ifdef __cplusplus
 }

@@ -106,13 +106,19 @@ extern "C"
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
 #define USB_DP_PORT A
-#define STEP4_BIT 3	   // assigns STEP4 pin
-#define STEP4_PORT A   // assigns STEP4 port
-#define DIR4_BIT 7	   // assigns DIR4 pin
-#define DIR4_PORT A	   // assigns DIR4 port
-#define LIMIT_B_BIT 11 // assigns LIMIT_A pin
-#define LIMIT_B_PORT B // assigns LIMIT_A port
-#define LIMIT_B_ISR
+// #define STEP4_BIT 3	   // assigns STEP4 pin
+// #define STEP4_PORT A   // assigns STEP4 port
+// #define DIR4_BIT 7	   // assigns DIR4 pin
+// #define DIR4_PORT A	   // assigns DIR4 port
+// #define LIMIT_B_BIT 11 // assigns LIMIT_A pin
+// #define LIMIT_B_PORT B // assigns LIMIT_A port
+// #define LIMIT_B_ISR
+
+#define DOUT27_BIT 9
+#define DOUT27_PORT A
+#define DIN27_BIT 10
+#define DIN27_PORT A
+#define DIN27_PULLUP
 #endif
 
 // Setup PWM

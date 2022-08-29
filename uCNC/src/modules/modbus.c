@@ -74,7 +74,7 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 	
 }
 
-bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port)
+bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port, uint32_t ms_timeout)
 {
 	int16_t c = 0;
 	uint8_t *data = (uint8_t *)response;
@@ -86,7 +86,7 @@ bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *po
 
 	do
 	{
-		c = softuart_getc(port);
+		c = softuart_getc(port, ms_timeout);
 		*data = (uint8_t)(0xFF & c);
 		data++;
 		count++;
