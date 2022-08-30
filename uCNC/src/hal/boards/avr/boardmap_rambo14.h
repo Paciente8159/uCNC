@@ -125,61 +125,63 @@ extern "C"
 #define DOUT31_BIT 7
 #define DOUT31_PORT B
 
+// STEP0 MICROSTEP
 #ifndef STEPPER0_HAS_MSTEP
 #define STEPPER0_HAS_MSTEP
 #endif
-// STEP0 MICROSTEP
 #define DOUT23_BIT 1
 #define DOUT23_PORT G
-#define DOUT15_BIT 0
-#define DOUT15_PORT G
+#define DOUT12_BIT 0
+#define DOUT12_PORT G
 
 // STEP1 MICROSTEP
+#ifndef STEPPER1_HAS_MSTEP
+#define STEPPER1_HAS_MSTEP
+#endif
 #define DOUT24_BIT 7
 #define DOUT24_PORT K
-#define DOUT16_BIT 2
-#define DOUT16_PORT G
+#define DOUT13_BIT 2
+#define DOUT13_PORT G
 
 // STEP2 MICROSTEP
+#ifndef STEPPER2_HAS_MSTEP
+#define STEPPER2_HAS_MSTEP
+#endif
 #define DOUT25_BIT 6
 #define DOUT25_PORT K
-#define DOUT17_BIT 5
-#define DOUT17_PORT K
+#define DOUT14_BIT 5
+#define DOUT14_PORT K
 
 // STEP3 MICROSTEP
+#ifndef STEPPER3_HAS_MSTEP
+#define STEPPER3_HAS_MSTEP
+#endif
 #define DOUT26_BIT 3
 #define DOUT26_PORT K
-#define DOUT18_BIT 4
-#define DOUT18_PORT K
+#define DOUT15_BIT 4
+#define DOUT15_PORT K
 
 // STEP4 MICROSTEP
+#ifndef STEPPER4_HAS_MSTEP
+#define STEPPER4_HAS_MSTEP
+#endif
 #define DOUT27_BIT 1
 #define DOUT27_PORT K
-#define DOUT19_BIT 2
-#define DOUT19_PORT K
+#define DOUT16_BIT 2
+#define DOUT16_PORT K
 
 // stepper current digital potenciometer
 #ifndef STEPPER_CURR_DIGIPOT
 #define STEPPER_CURR_DIGIPOT
 #endif
-#define DOUT12_BIT 7
-#define DOUT12_PORT D
-#define DOUT13_BIT 2
-#define DOUT13_PORT B
-#define DOUT14_BIT 1
-#define DOUT14_PORT B
-#define DIN13_BIT 3
-#define DIN13_PORT B
-
-// specific rambo settings
-#ifndef STEPPER_CURR_DIGIPOT
-#define STEPPER_CURR_DIGIPOT
-#endif
-#define STEPPER0_HAS_MSTEP
-#define STEPPER1_HAS_MSTEP
-#define STEPPER2_HAS_MSTEP
-#define STEPPER3_HAS_MSTEP
-#define STEPPER4_HAS_MSTEP
+#define DOUT11_BIT 7
+#define DOUT11_PORT D
+#define DOUT29_BIT 2
+#define DOUT29_PORT B
+#define DOUT30_BIT 1
+#define DOUT30_PORT B
+#define DIN29_BIT 3
+#define DIN29_PORT B
 
 #ifdef __cplusplus
 }

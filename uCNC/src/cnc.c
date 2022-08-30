@@ -261,17 +261,12 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 			mcu_controls_changed_cb();
 		}
 #endif
-#if !(LED < 0)
+#if !(ACTIVITY_LED < 0)
 		// this blinks aprox. once every 1024ms
-		if ((millis & 0x200))
+		if (!(millis & (0x200-1)))
 		{
-			io_set_output(LED, true);
+			mcu_toggle_output(ACTIVITY_LED);
 		}
-		else
-		{
-			io_set_output(LED, false);
-		}
-
 #endif
 		mcu_disable_global_isr();
 		running = false;
