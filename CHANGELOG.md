@@ -23,6 +23,7 @@
 ### Fixed
 
 - fixed some extended MCodes definitions
+- fixed event multiple declarations warnings introduced by (#234) (#243)
 
 # Changelog
 
