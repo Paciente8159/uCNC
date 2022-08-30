@@ -108,8 +108,8 @@ extern "C"
 #define DOUT0_PORT B
 
 // coolant
-#define DOUT1_BIT 3
-#define DOUT1_PORT C
+#define DOUT2_BIT 3
+#define DOUT2_PORT C
 
 	// // spindle speed sensor
 	//  #define ANALOG0_BIT 4

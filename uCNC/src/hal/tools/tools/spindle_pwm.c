@@ -28,10 +28,22 @@
  * */
 
 // give names to the pins (easier to identify)
+#ifndef SPINDLE_PWM
 #define SPINDLE_PWM PWM0
+#endif
+#ifndef SPINDLE_DIR
 #define SPINDLE_DIR DOUT0
-#define COOLANT_FLOOD DOUT1
-#define COOLANT_MIST DOUT2
+#endif
+
+#ifdef ENABLE_COOLANT
+#ifndef COOLANT_FLOOD
+#define COOLANT_FLOOD DOUT2
+#endif
+#ifndef COOLANT_MIST
+#define COOLANT_MIST DOUT3
+#endif
+#endif
+
 #define SPINDLE_FEEDBACK ANALOG0
 
 static uint8_t spindle_pwm_speed;
@@ -60,8 +72,10 @@ void spindle_pwm_set_speed(int16_t value)
 
 void spindle_pwm_set_coolant(uint8_t value)
 {
-	// easy macro
+// easy macro
+#ifdef ENABLE_COOLANT
 	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+#endif
 }
 
 int16_t spindle_pwm_range_speed(float value)
