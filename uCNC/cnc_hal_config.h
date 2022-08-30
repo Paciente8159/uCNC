@@ -124,7 +124,7 @@ extern "C"
 	//#define TOOL4 spindle_relay
 
 // Assigns an output to an blinking led (1Hz rate)
-#define LED DOUT31
+#define ACTIVITY_LED DOUT31
 
 /*
 	Sets the number of encoders to be used (max of 8)

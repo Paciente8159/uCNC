@@ -547,8 +547,8 @@ void mcu_usart_init(void)
 
 void mcu_putc(char c)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
@@ -1336,8 +1336,8 @@ static uint8_t mcu_tx_buffer[TX_BUFFER_SIZE];
 
 char mcu_getc(void)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
