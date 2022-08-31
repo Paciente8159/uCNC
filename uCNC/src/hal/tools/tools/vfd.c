@@ -36,11 +36,14 @@
 #if !(VFD_TX_PIN < 0) && !(VFD_RX_PIN < 0)
 SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 
+#define VFD_STOPPED 0
+#define VFD_RUN_CW 2
+#define VFD_RUN_CCW 3
 typedef struct vfd_state
 {
 	uint8_t loaded : 1;
 	uint8_t connected : 1;
-	uint8_t ccw : 1;
+	uint8_t running : 2;
 	volatile uint8_t needs_update : 1;
 	volatile int16_t rpm;
 	float rpm_hz;
@@ -229,56 +232,65 @@ static uint16_t vfd_get_rpm(bool truerpm)
 static bool vfd_update_rpm(void)
 {
 	modbus_response_t response = {0};
-	if (vfd_state.rpm != 0)
+	uint8_t cmd[7] = VFD_SETRPM_CMD;
+	uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
+	// cmd starts at index 1 not at 0
+	uint8_t i = cmd[0] - 4 + 1;
+	cmd[i] = (uint8_t)(hz >> 8);
+	i++;
+	cmd[i] = (uint8_t)(hz & 0xFF);
+	return modvfd_command(cmd, &response);
+}
+
+static bool vfd_stop(void)
+{
+	modbus_response_t response = {0};
+	uint8_t cmd[7] = VFD_STOP_CMD;
+
+	if (!modvfd_command(cmd, &response))
 	{
-		uint8_t cmd[7] = VFD_SETRPM_CMD;
-		uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
-		// cmd starts at index 1 not at 0
-		uint8_t i = cmd[0] - 4 + 1;
-		cmd[i] = (uint8_t)(hz >> 8);
-		i++;
-		cmd[i] = (uint8_t)(hz & 0xFF);
-		return modvfd_command(cmd, &response);
+		return false;
 	}
-	else
-	{
-		uint8_t cmd[7] = VFD_STOP_CMD;
-		return modvfd_command(cmd, &response);
-	}
+
+	vfd_state.running = VFD_STOPPED;
+
+	return true;
 }
 
 static bool vfd_cw(void)
 {
-	if (vfd_state.ccw)
+	if (vfd_state.running != VFD_RUN_CW)
 	{
 		modbus_response_t response = {0};
 		uint8_t cmd[7] = VFD_CW_CMD;
 
-		if (modvfd_command(cmd, &response))
+		if (!modvfd_command(cmd, &response))
 		{
-			vfd_state.ccw = 0;
-			return true;
+			return false;
 		}
+
+		vfd_state.running = VFD_RUN_CW;
 	}
 
-	return false;
+	return true;
 }
 
 static bool vfd_ccw(void)
 {
-	if (!vfd_state.ccw)
+	if (vfd_state.running != VFD_RUN_CCW)
 	{
 		modbus_response_t response = {0};
 		uint8_t cmd[7] = VFD_CCW_CMD;
 
-		if (modvfd_command(cmd, &response))
+		if (!modvfd_command(cmd, &response))
 		{
-			vfd_state.ccw = 1;
-			return true;
+			return false;
 		}
+
+		vfd_state.running = VFD_RUN_CCW;
 	}
 
-	return false;
+	return true;
 }
 
 static bool vfd_connect(void)
@@ -298,62 +310,44 @@ static bool vfd_connect(void)
 	return true;
 }
 
-/**
- *
- * Module callbacks
- * Vfd update will not happen in the ISR due to the slow speed communication
- * It will be signaled to be updated in the main loop
- *
- * */
-
-#ifdef ENABLE_MAIN_LOOP_MODULES
-uint8_t vfd_update(void *args, bool *handled)
+uint8_t vfd_update(void)
 {
-	if (!vfd_connect())
+	while (!vfd_connect())
 	{
-		return STATUS_VFD_COMMUNICATION_FAILED;
+		cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
 	}
 
-	if (vfd_state.needs_update)
+	if (vfd_state.rpm == 0)
+	{
+		while (!vfd_stop())
+		{
+			cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
+		}
+	}
+	else
 	{
 		if (vfd_state.rpm < 0)
 		{
-			if (!vfd_ccw())
+			while (!vfd_ccw())
 			{
-				return STATUS_VFD_COMMUNICATION_FAILED;
+				cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
 			}
 		}
 		else
 		{
-			if (!vfd_cw())
+			while (!vfd_cw())
 			{
-				return STATUS_VFD_COMMUNICATION_FAILED;
+				cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
 			}
 		}
 
-		cnc_delay_ms(100);
-
-		if (!vfd_update_rpm())
+		while (!vfd_update_rpm())
 		{
-			return STATUS_VFD_COMMUNICATION_FAILED;
+			cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
 		}
-
-		vfd_state.needs_update = 0;
 	}
 
 	return STATUS_OK;
-}
-
-CREATE_EVENT_LISTENER(cnc_dotasks, vfd_update);
-#endif
-
-DECL_MODULE(vfd)
-{
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_EVENT_LISTENER(cnc_dotasks, vfd_update);
-#else
-#warning "VFD tool requires ENABLE_MAIN_LOOP_MODULES option."
-#endif
 }
 
 /**
@@ -364,35 +358,24 @@ DECL_MODULE(vfd)
 
 void vfd_startup()
 {
+	// initialize soft uart tx
 	vfd_uart.tx(true);
-	cnc_delay_ms(200);
-	if (!vfd_state.loaded)
-	{
-		vfd_init();
-		vfd_state.loaded = 1;
-	}
-
-	vfd_connect();
-
+	// cnc_delay_ms(200);
 	vfd_state.rpm = 0;
-	vfd_state.needs_update = 1;
+	vfd_update();
 }
 
 void vfd_shutdown()
 {
 	vfd_state.rpm = 0;
-	vfd_state.needs_update = 1;
+	vfd_stop();
 	vfd_state.connected = 0;
-	vfd_update_rpm();
 }
 
 void vfd_set_speed(int16_t value)
 {
-	if (vfd_state.rpm != value)
-	{
-		vfd_state.rpm = value;
-		vfd_state.needs_update = 1;
-	}
+	vfd_state.rpm = value;
+	vfd_update();
 }
 
 void vfd_set_coolant(uint8_t value)

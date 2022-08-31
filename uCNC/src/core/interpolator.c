@@ -563,16 +563,19 @@ void itp_run(void)
 
 		sgm->feed = avg_speed * feed_convert;
 #if TOOL_COUNT > 0
-		float top_speed_inv = 1 / top_speed;
-		int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
-
-		if ((prev_spindle != newspindle) || (g_settings.laser_mode && ITP_UPDATE_ISR))
+		if (g_settings.laser_mode)
 		{
-			prev_spindle = newspindle;
-			sgm->update_itp |= ITP_UPDATE_TOOL;
-		}
+			float top_speed_inv = 1 / top_speed;
+			int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
-		sgm->spindle = newspindle;
+			if ((prev_spindle != newspindle))
+			{
+				prev_spindle = newspindle;
+				sgm->update_itp |= ITP_UPDATE_TOOL;
+			}
+
+			sgm->spindle = newspindle;
+		}
 #endif
 		remaining_steps -= segm_steps;
 
@@ -880,16 +883,20 @@ void itp_run(void)
 
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
-		float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
-		int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
-
-		if ((prev_spindle != newspindle) || (g_settings.laser_mode && ITP_UPDATE_ISR))
+		// calculates dynamic laser power
+		if (g_settings.laser_mode)
 		{
-			prev_spindle = newspindle;
-			sgm->update_itp |= ITP_UPDATE_TOOL;
-		}
+			float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
+			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
-		sgm->spindle = newspindle;
+			if ((prev_spindle != newspindle))
+			{
+				prev_spindle = newspindle;
+				sgm->update_itp |= ITP_UPDATE_TOOL;
+			}
+
+			sgm->spindle = newspindle;
+		}
 #endif
 		remaining_steps -= segm_steps;
 
