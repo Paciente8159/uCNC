@@ -544,11 +544,12 @@ void io_toggle_steps(uint8_t mask)
 
 void io_set_dirs(uint8_t mask)
 {
+	mask ^= g_settings.dir_invert_mask;
+
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(io_set_dirs, &mask);
 #endif
 
-	mask ^= g_settings.dir_invert_mask;
 #if !(DIR0 < 0)
 	if (mask & DIR0_MASK)
 	{
