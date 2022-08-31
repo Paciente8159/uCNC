@@ -25,7 +25,7 @@
 #define COOLANT_FLOOD DOUT1
 #define COOLANT_MIST DOUT2
 
-#define GET_SPINDLE_TRUE_RPM false
+#define GET_SPINDLE_TRUE_RPM true
 
 #define VFD_TX_PIN DOUT27
 #define VFD_RX_PIN DIN27
@@ -208,7 +208,7 @@ static uint16_t vfd_get_rpm(bool truerpm)
 {
 	if (!vfd_state.loaded)
 	{
-		return -1;
+		return 0;
 	}
 
 	if (truerpm)
@@ -220,7 +220,7 @@ static uint16_t vfd_get_rpm(bool truerpm)
 		{
 			return (uint16_t)(((float)((((uint16_t)response.data[2]) << 8) | response.data[3])) * VFD_IN_MULT / VFD_IN_DIV);
 		}
-		return -1;
+		return 0;
 	}
 
 	return (uint16_t)vfd_state.rpm;
@@ -233,7 +233,8 @@ static bool vfd_update_rpm(void)
 	{
 		uint8_t cmd[7] = VFD_SETRPM_CMD;
 		uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
-		uint8_t i = cmd[0] - 4;
+		// cmd starts at index 1 not at 0
+		uint8_t i = cmd[0] - 4 + 1;
 		cmd[i] = (uint8_t)(hz >> 8);
 		i++;
 		cmd[i] = (uint8_t)(hz & 0xFF);
@@ -246,7 +247,7 @@ static bool vfd_update_rpm(void)
 	}
 }
 
-static void vfd_cw(void)
+static bool vfd_cw(void)
 {
 	if (vfd_state.ccw)
 	{
@@ -256,11 +257,14 @@ static void vfd_cw(void)
 		if (modvfd_command(cmd, &response))
 		{
 			vfd_state.ccw = 0;
+			return true;
 		}
 	}
+
+	return false;
 }
 
-static void vfd_ccw(void)
+static bool vfd_ccw(void)
 {
 	if (!vfd_state.ccw)
 	{
@@ -270,8 +274,28 @@ static void vfd_ccw(void)
 		if (modvfd_command(cmd, &response))
 		{
 			vfd_state.ccw = 1;
+			return true;
 		}
 	}
+
+	return false;
+}
+
+static bool vfd_connect(void)
+{
+	if (!vfd_state.connected)
+	{
+		vfd_state.rpm_hz = vfd_rpm_hz();
+		// was able do communicate via modbus
+		if (vfd_state.rpm_hz < 0)
+		{
+			protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
+			return false;
+		}
+	}
+
+	vfd_state.connected = 1;
+	return true;
 }
 
 /**
@@ -285,37 +309,32 @@ static void vfd_ccw(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 uint8_t vfd_update(void *args, bool *handled)
 {
-	if (!vfd_state.connected)
+	if (!vfd_connect())
 	{
-		vfd_state.rpm_hz = vfd_rpm_hz();
-		// was able do communicate via modbus
-		if (vfd_state.rpm_hz >= 0)
-		{
-			vfd_state.connected = 1;
-		}
-		else
-		{
-			protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
-			return STATUS_VFD_COMMUNICATION_FAILED;
-		}
+		return STATUS_VFD_COMMUNICATION_FAILED;
 	}
 
 	if (vfd_state.needs_update)
 	{
 		if (vfd_state.rpm < 0)
 		{
-			vfd_ccw();
+			if (!vfd_ccw())
+			{
+				return STATUS_VFD_COMMUNICATION_FAILED;
+			}
 		}
 		else
 		{
-			vfd_cw();
+			if (!vfd_cw())
+			{
+				return STATUS_VFD_COMMUNICATION_FAILED;
+			}
 		}
 
 		cnc_delay_ms(100);
 
 		if (!vfd_update_rpm())
 		{
-			protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
 			return STATUS_VFD_COMMUNICATION_FAILED;
 		}
 
@@ -353,16 +372,7 @@ void vfd_startup()
 		vfd_state.loaded = 1;
 	}
 
-	if (!vfd_state.connected)
-	{
-		vfd_rpm_hz();
-		serial_print_int((int32_t)vfd_state.rpm_hz);
-		// was able do communicate via modbus
-		if (vfd_state.rpm_hz >= 0)
-		{
-			vfd_state.connected = 1;
-		}
-	}
+	vfd_connect();
 
 	vfd_state.rpm = 0;
 	vfd_state.needs_update = 1;
