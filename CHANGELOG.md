@@ -11,6 +11,7 @@
 ### Added
 
 - Added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
+- Added new io_control events to allow expansion IO modules 
 
 ### Changed
 
