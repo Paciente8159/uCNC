@@ -536,6 +536,11 @@ void mcu_init(void)
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_af(I2C_SCL, I2C_AFIO);
 	mcu_config_af(I2C_SDA, I2C_AFIO);
+	mcu_config_pullup(I2C_SCL);
+	mcu_config_pullup(I2C_SDA);
+	//set opendrain
+	mcu_config_opendrain(I2C_SCL);
+	mcu_config_opendrain(I2C_SDA);
 	// reset I2C
 	I2C_REG->CR1 |= I2C_CR1_SWRST;
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
@@ -732,8 +737,7 @@ uint32_t mcu_millis()
 
 void mcu_delay_us(uint8_t delay)
 {
-	uint32_t startTick = DWT->CYCCNT,
-			 delayTicks = startTick + delay * (F_CPU / 1000000);
+	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000);
 
 	while (DWT->CYCCNT < delayTicks)
 		;

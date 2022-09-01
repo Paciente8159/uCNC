@@ -1582,7 +1582,6 @@ extern "C"
 #define DIO208_GPIO I2C_SDA_GPIO
 #endif
 
-
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -3028,7 +3027,7 @@ extern "C"
 
 #endif
 
-//I2C
+// I2C
 #if (defined(I2C_SCL) && defined(I2C_SDA))
 #define MCU_HAS_I2C
 
@@ -3042,7 +3041,7 @@ extern "C"
 #define I2C_AFIO 4
 
 #ifndef I2C_FREQ
-#define I2C_FREQ 400000UL
+#define I2C_FREQ 100000UL
 #endif
 #endif
 
@@ -3118,7 +3117,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->OSPEEDR |= (0x02 << ((__indirect__(diopin, BIT)) << 1));	  /*output mode*/ \
 	}
 
-	#define mcu_config_af(diopin, afrval)                                                                                                               \
+#define mcu_config_af(diopin, afrval)                                                                                                               \
 	{                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                               \
 		__indirect__(diopin, GPIO)->MODER &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1)); /*reset dir*/                                     \
@@ -3132,6 +3131,11 @@ extern "C"
 	{                                                                                                \
 		__indirect__(diopin, GPIO)->PUPDR &= ~(GPIO_RESET << ((__indirect__(diopin, BIT)) << 1));    \
 		__indirect__(diopin, GPIO)->PUPDR |= (GPIO_IN_PULLUP << ((__indirect__(diopin, BIT)) << 1)); \
+	}
+
+#define mcu_config_opendrain(diopin)                                                \
+	{                                                                               \
+		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
 	}
 
 #define mcu_config_pwm(diopin)                                                                                                                                      \

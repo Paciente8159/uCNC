@@ -4281,7 +4281,7 @@ extern "C"
 #endif
 
 #ifndef I2C_FREQ
-#define I2C_FREQ 400000UL
+#define I2C_FREQ 100000UL
 #endif
 
 // I2C freq
