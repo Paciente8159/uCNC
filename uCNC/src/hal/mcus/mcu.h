@@ -274,6 +274,10 @@ extern "C"
 	void mcu_delay_us(uint16_t delay);
 #endif
 
+#ifndef mcu_nop
+#define mcu_nop() asm volatile ("nop\n\t")
+#endif
+
 	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:
