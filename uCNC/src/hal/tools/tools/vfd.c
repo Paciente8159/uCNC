@@ -129,10 +129,10 @@ static vfd_state_t vfd_state;
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x06 \
 	}
-#define VFD_IN_MULT vfd_state.rpm_hz
-#define VFD_IN_DIV 5000.0f
-#define VFD_OUT_MULT 5000.0f
-#define VFD_OUT_DIV vfd_state.rpm_hz
+#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_DIV vfd_state.rpm_hz
+#define VFD_OUT_MULT vfd_state.rpm_hz
+#define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
 #ifdef VFD_YL620
