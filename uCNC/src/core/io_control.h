@@ -65,12 +65,21 @@ extern "C"
 	DECL_EVENT_HANDLER(probe_enable);
 	// event_probe_disable_handler
 	DECL_EVENT_HANDLER(probe_disable);
-	// event_io_set_steps_handler
-	DECL_EVENT_HANDLER(io_set_steps);
-	// event_io_toggle_steps_handler
-	DECL_EVENT_HANDLER(io_toggle_steps);
-	// event_io_set_dirs_handler
-	DECL_EVENT_HANDLER(io_set_dirs);
+	// event_set_steps_handler
+	DECL_EVENT_HANDLER(set_steps);
+	// event_toggle_steps_handler
+	DECL_EVENT_HANDLER(toggle_steps);
+	// event_set_dirs_handler
+	DECL_EVENT_HANDLER(set_dirs);
+	// event_enable_steppers_handler
+	DECL_EVENT_HANDLER(enable_steppers);
+	typedef struct set_output_args_
+	{
+		uint8_t pin;
+		bool state;
+	} set_output_args_t;
+	// event_set_output_handler
+	DECL_EVENT_HANDLER(set_output);
 #endif
 
 #ifdef __cplusplus

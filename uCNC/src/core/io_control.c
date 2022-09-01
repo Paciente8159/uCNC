@@ -751,6 +751,11 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
+
+#ifdef ENABLE_IO_MODULES
+	set_output_args_t output_arg = {.pin = pin, .state = state};
+	EVENT_INVOKE(set_output, &output_arg);
+#endif
 	if (state)
 	{
 		switch (pin)
@@ -1087,6 +1092,10 @@ void io_set_output(uint8_t pin, bool state)
 
 void io_enable_steppers(uint8_t mask)
 {
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(enable_steppers, &mask);
+#endif
+
 #if !(STEP0_EN < 0)
 	if (mask & 0x01)
 	{
