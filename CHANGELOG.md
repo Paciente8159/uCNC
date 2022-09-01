@@ -10,8 +10,9 @@
 
 ### Added
 
-- Added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
-- Added new io_control events to allow expansion IO modules 
+- added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
+- added new io_control events to allow expansion IO modules (#247)
+- added mcu_nop generic macro (#248)
 
 ### Changed
 
@@ -26,6 +27,7 @@
 - fixed some extended MCodes definitions
 - fixed event multiple declarations warnings introduced by (#234) (#243)
 - fixed M4 laser mode power output with no motion introduced with #240 (#246)
+- fixed AVR pin redefinition warnings (#248)
 
 # Changelog
 
