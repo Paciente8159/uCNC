@@ -33,7 +33,7 @@ extern "C"
 */
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
-#include <util/delay_basic.h>
+#include <util/delay.h>
 
 /*
 	AVR Defaults
@@ -4398,17 +4398,7 @@ extern "C"
 
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
-#define mcu_delay_us(x)                            \
-	{                                              \
-		if (x <= 85)                               \
-		{                                          \
-			_delay_loop_1((uint8_t)(x * US_DELAY_TICK - 1));   \
-		}                                          \
-		else                                       \
-		{                                          \
-			_delay_loop_2((uint16_t)(x * US_DELAY_TICK2 - 6)); \
-		}                                          \
-	}
+#define mcu_delay_us(x) _delay_us(x)
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))

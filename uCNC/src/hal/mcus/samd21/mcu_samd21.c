@@ -1551,7 +1551,7 @@ void mcu_delay_us(uint16_t delay)
 	}
 	else
 	{
-		loops = (delay * (F_CPU / 1000000) / 6) - 2;
+		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
 	}
 	while (loops--)
 		asm("nop");

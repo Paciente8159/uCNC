@@ -1241,6 +1241,16 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
+
+	// use debugger timer to generate µs delay
+	// initialize debugger clock (used by us delay)
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
+
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }
@@ -1424,6 +1434,13 @@ uint32_t mcu_millis()
 {
 	uint32_t val = mcu_runtime_ms;
 	return val;
+}
+
+void mcu_delay_us(uint16_t delay)
+{
+	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
+	while (DWT->CYCCNT < delayTicks)
+		;
 }
 
 void mcu_rtc_init()

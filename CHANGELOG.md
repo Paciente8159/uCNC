@@ -20,11 +20,14 @@
 - modified grbl system command parser to enable command extensions via modules (#236)
 - modified tools to convert between core speed and tool speed to avoid range/precision compression losses
 - modified parser/planner to correctly calculate tool power output when minimal power is not 0 (example: laser minimal power output when S0) (#240)
-- better µs delay for all platforms (now accepts 16bit value as argument) and better precision for AVR (#241)
+- better µs delay for all platforms (now accepts 16bit value as argument) and better precision for AVR (#241)(#242)
+- adapted bit-banging emulated protocols to fixed duration µs delays and software UART customizable timeout by interface (#242)
 
 ### Fixed
 
 - fixed some extended MCodes definitions
+- fixed SPI initialization in TMC driver (#242)
+- fixed missing mcu_delay_us function on STM32F4 (#242)
 - fixed event multiple declarations warnings introduced by (#234) (#243)
 - fixed M4 laser mode power output with no motion introduced with #240 (#246)
 - fixed AVR pin redefinition warnings (#248)
