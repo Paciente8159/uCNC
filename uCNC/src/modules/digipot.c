@@ -20,6 +20,7 @@
 #include "softspi.h"
 
 #ifdef STEPPER_CURR_DIGIPOT
+
 SOFTSPI(digipotspi, 1000000UL, 0, STEPPER_DIGIPOT_DO, STEPPER_DIGIPOT_DI, STEPPER_DIGIPOT_CLK)
 
 /*custom gcode commands*/
@@ -70,7 +71,7 @@ uint8_t m907_exec(void* args, bool* handled)
 			return STATUS_GCODE_NO_AXIS_WORDS;
 		}
 
-		mcu_clear_output(STEPPER_DIGIPOT_SS);
+		mcu_clear_output(STEPPER_DIGIPOT_CS);
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
@@ -129,7 +130,7 @@ uint8_t m907_exec(void* args, bool* handled)
 #endif
 		}
 
-		mcu_set_output(STEPPER_DIGIPOT_SS);
+		mcu_set_output(STEPPER_DIGIPOT_CS);
 
 		return STATUS_OK;
 	}
@@ -143,7 +144,7 @@ uint8_t digipot_config(void *args, bool *handled)
 {
 	// Digipot for stepper motors
 #ifdef STEPPER_CURR_DIGIPOT
-	mcu_clear_output(STEPPER_DIGIPOT_SS);
+	mcu_clear_output(STEPPER_DIGIPOT_CS);
 #if STEPPER0_DIGIPOT_CHANNEL > 0
 	softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_CHANNEL);
 	softspi_xmit(&digipotspi, STEPPER0_DIGIPOT_VALUE);
@@ -176,7 +177,7 @@ uint8_t digipot_config(void *args, bool *handled)
 	softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_CHANNEL);
 	softspi_xmit(&digipotspi, STEPPER7_DIGIPOT_VALUE);
 #endif
-	mcu_set_output(STEPPER_DIGIPOT_SS);
+	mcu_set_output(STEPPER_DIGIPOT_CS);
 #endif
 
 	return 0;
@@ -190,7 +191,7 @@ DECL_MODULE(digipot)
 {
 	// initialize slave select pins
 #ifdef STEPPER_CURR_DIGIPOT
-	mcu_set_output(STEPPER_DIGIPOT_SS);
+	mcu_set_output(STEPPER_DIGIPOT_CS);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES

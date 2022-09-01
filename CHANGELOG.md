@@ -10,7 +10,9 @@
 
 ### Added
 
-- Added core support for ESP32 with limited functionalities (lacks analog and input ISR) (#237)
+- added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
+- added new io_control events to allow expansion IO modules (#247)
+- added mcu_nop generic macro (#248)
 
 ### Changed
 
@@ -26,6 +28,9 @@
 - fixed some extended MCodes definitions
 - fixed SPI initialization in TMC driver (#242)
 - fixed missing mcu_delay_us function on STM32F4 (#242)
+- fixed event multiple declarations warnings introduced by (#234) (#243)
+- fixed M4 laser mode power output with no motion introduced with #240 (#246)
+- fixed AVR pin redefinition warnings (#248)
 
 # Changelog
 

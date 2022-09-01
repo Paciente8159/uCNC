@@ -25,12 +25,21 @@
  * */
 
 // Spindle enable pins.  You can set these to the same pin if required.
+#ifndef SPINDLE_SERVO
 #define SPINDLE_SERVO SERVO0
+#endif
+#ifndef SPINDLE_POWER_RELAY
 #define SPINDLE_POWER_RELAY DOUT0
+#endif
 
-// Uncomment below if you want the coolant pins enabled.
-#define COOLANT_MIST_EN DOUT1
-#define COOLANT_FLOOD_EN DOUT2
+#ifdef ENABLE_COOLANT
+#ifndef COOLANT_FLOOD
+#define COOLANT_FLOOD DOUT2
+#endif
+#ifndef COOLANT_MIST
+#define COOLANT_MIST DOUT3
+#endif
+#endif
 
 #define THROTTLE_DOWN 50
 #define THROTTLE_NEUTRAL 127
@@ -100,7 +109,9 @@ void spindle_besc_set_speed(int16_t value)
 
 void spindle_besc_set_coolant(uint8_t value)
 {
-	SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
+#ifdef ENABLE_COOLANT
+	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+#endif
 }
 
 uint16_t spindle_besc_get_speed(void)

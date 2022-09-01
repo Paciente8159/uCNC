@@ -130,6 +130,9 @@ extern "C"
 	 * ensure spindle gets up to speed in motions
 	 * */
 
+// Enable or disable coolant
+// #define ENABLE_COOLANT
+
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 // define coolant delay at restart

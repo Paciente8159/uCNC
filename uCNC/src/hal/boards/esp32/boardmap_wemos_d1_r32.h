@@ -78,7 +78,7 @@ extern "C"
 #define DOUT0_BIT 18
 
 // coolant
-#define DOUT0_BIT 18
+#define DOUT2_BIT 18
 
 // led
 #define DOUT31_BIT 2
