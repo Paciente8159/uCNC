@@ -24,6 +24,7 @@
 
 - fixed some extended MCodes definitions
 - fixed event multiple declarations warnings introduced by (#234) (#243)
+- fixed M4 laser mode power output with no motion introduced with #240 (#246)
 
 # Changelog
 
