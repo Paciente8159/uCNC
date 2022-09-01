@@ -567,30 +567,30 @@ void mcu_init(void)
 	// Start the Software Reset
 	I2CCOM->I2CM.CTRLA.bit.SWRST = 1;
 
-	while (I2CCOM->I2C.SYNCBUSY.bit.SWRST)
+	while (I2CCOM->I2CM.SYNCBUSY.bit.SWRST)
 		;
 
 	I2CCOM->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
-	while (I2CCOM->I2CM.bit.SYNCBUSY)
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
 	I2CCOM->I2CM.BAUD.reg = SERCOM_I2CM_BAUD_BAUD(F_CPU / I2C_FREQ);
-	while (I2CCOM->I2CM.bit.SYNCBUSY)
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
 	I2CCOM->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_ENABLE | SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(3);
-	while (I2CCOM->I2CM.bit.SYNCBUSY)
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
 	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
-	while (I2CCOM->I2CM.bit.SYNCBUSY)
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
 	mcu_config_altfunc(I2C_SCL);
 	mcu_config_altfunc(I2C_SDA);
 
-	I2CCOM->I2C.CTRLA.bit.ENABLE = 1;
-	while (I2CCOM->I2C.SYNCBUSY.bit.SWRST)
+	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
 #endif
@@ -1176,7 +1176,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2CCOM->I2CM.DATA.reg = data;
 	}
 
-	while (0 == (I2C_I2CCOMSERCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
+	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
 		;
 
 	if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
@@ -1185,7 +1185,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		return 0;
 	}
 
-	if (stop)
+	if (send_stop)
 	{
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 	}
@@ -1211,12 +1211,12 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 
 	uint8_t data = I2CCOM->I2CM.DATA.reg;
 
-	if (stop)
+	if (send_stop)
 	{
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 	}
 
-	return c;
+	return data;
 }
 #endif
 #endif

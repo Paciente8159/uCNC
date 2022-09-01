@@ -839,6 +839,16 @@ extern "C"
 #define DIO206 206
 #define DIO206_BIT SPI_SDO_BIT
 #endif
+#if(defined(I2C_SCL_BIT))
+#define I2C_SCL 207
+#define DIO207 207
+#define DIO207_BIT I2C_SCL_BIT
+#endif
+#if(defined(I2C_SDA_BIT))
+#define I2C_SDA 208
+#define DIO208 208
+#define DIO208_BIT I2C_SDA_BIT
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))

@@ -397,6 +397,14 @@ void mcu_clocks_init()
 		;
 
 	SystemCoreClockUpdate();
+
+	// initialize debugger clock (used by us delay)
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
 }
 
 void mcu_usart_init(void)
@@ -511,7 +519,7 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
-#if MCU_HAS_SPI
+#ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_af(SPI_SDI, SPI_AFIO);
 	mcu_config_af(SPI_CLK, SPI_AFIO);
@@ -524,7 +532,7 @@ void mcu_init(void)
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
-#if MCU_HAS_I2C
+#ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_af(I2C_SCL, I2C_AFIO);
 	mcu_config_af(I2C_SDA, I2C_AFIO);
@@ -722,6 +730,15 @@ uint32_t mcu_millis()
 	return val;
 }
 
+void mcu_delay_us(uint8_t delay)
+{
+	uint32_t startTick = DWT->CYCCNT,
+			 delayTicks = startTick + delay * (F_CPU / 1000000);
+
+	while (DWT->CYCCNT < delayTicks)
+		;
+}
+
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
@@ -910,7 +927,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
-	while (!(I2C_REG->SR1 & I2C_SR1_RxNE))
+	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
 		;
 	;
 	c = I2C_REG->DR;

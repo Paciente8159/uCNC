@@ -491,7 +491,7 @@ void mcu_init(void)
 	servo_timer_init();
 #endif
 
-#if MCU_HAS_SPI
+#ifdef MCU_HAS_SPI
 	SPI_ENREG |= SPI_ENVAL;
 	mcu_config_input_af(SPI_SDI);
 	mcu_config_output_af(SPI_CLK, GPIO_OUTALT_PP_50MHZ);
@@ -508,7 +508,7 @@ void mcu_init(void)
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 
-#if MCU_HAS_I2C
+#ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
 	mcu_config_output_af(I2C_SCL, GPIO_OUTALT_OD_50MHZ);
 	mcu_config_output_af(I2C_SDA, GPIO_OUTALT_OD_50MHZ);
@@ -865,7 +865,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
-	while (!(I2C_REG->SR1 & I2C_SR1_RxNE))
+	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
 		;
 	;
 	c = I2C_REG->DR;

@@ -756,7 +756,6 @@ void mcu_eeprom_flush()
 {
 	// do nothing
 }
-#endif
 
 #ifdef MCU_HAS_SPI
 #ifndef mcu_spi_xmit
@@ -839,4 +838,6 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return c;
 }
 #endif
+#endif
+
 #endif

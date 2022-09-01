@@ -982,16 +982,17 @@ extern "C"
 #endif
 #endif
 
-// I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
-#define MCU_HAS_I2C
-#ifndef I2C_PORT
-#define I2C_PORT 0
-#endif
-#ifndef I2C_FREQ
-#define I2C_FREQ 1000000UL
-#endif
-#endif
+// Hardware I2C not supported
+
+// #if (defined(I2C_SCL) && defined(I2C_SDA))
+// #define MCU_HAS_I2C
+// #ifndef I2C_PORT
+// #define I2C_PORT 0
+// #endif
+// #ifndef I2C_FREQ
+// #define I2C_FREQ 1000000UL
+// #endif
+// #endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)

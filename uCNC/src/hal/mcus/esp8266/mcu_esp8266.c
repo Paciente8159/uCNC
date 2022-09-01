@@ -669,61 +669,61 @@ void mcu_eeprom_flush(void)
 #endif
 }
 
-#ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
-{
-	if (send_start)
-	{
-		// init
-		i2c_master_start();
-		if (!i2c_master_checkAck())
-		{
-			i2c_master_stop();
-			return 0;
-		}
-	}
+// #ifdef MCU_HAS_I2C
+// #ifndef mcu_i2c_write
+// uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+// {
+// 	if (send_start)
+// 	{
+// 		// init
+// 		i2c_master_start();
+// 		if (!i2c_master_checkAck())
+// 		{
+// 			i2c_master_stop();
+// 			return 0;
+// 		}
+// 	}
 
-	i2c_master_writeByte(data);
+// 	i2c_master_writeByte(data);
 
-	if (!i2c_master_checkAck())
-	{
-		i2c_master_stop();
-		return 0;
-	}
+// 	if (!i2c_master_checkAck())
+// 	{
+// 		i2c_master_stop();
+// 		return 0;
+// 	}
 
-	if (send_stop)
-	{
-		i2c_master_stop();
-	}
+// 	if (send_stop)
+// 	{
+// 		i2c_master_stop();
+// 	}
 
-	return 1;
-}
-#endif
+// 	return 1;
+// }
+// #endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
-{
-	uint8_t c = 0;
+// #ifndef mcu_i2c_read
+// uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+// {
+// 	uint8_t c = 0;
 
-	if (with_nack)
-	{
-		i2c_master_send_ack();
-	}
-	else
-	{
-		i2c_master_send_nack();
-	}
-	c = i2c_master_readByte();
+// 	if (with_ack)
+// 	{
+// 		i2c_master_send_ack();
+// 	}
+// 	else
+// 	{
+// 		i2c_master_send_nack();
+// 	}
+// 	c = i2c_master_readByte();
 
-	if (send_stop)
-	{
-		i2c_master_stop();
-	}
+// 	if (send_stop)
+// 	{
+// 		i2c_master_stop();
+// 	}
 
-	return c;
-}
-#endif
-#endif
+// 	return c;
+// }
+// #endif
+// #endif
 
 #endif
