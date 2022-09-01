@@ -39,15 +39,43 @@ WEAK_EVENT_HANDLER(input_change)
 // event_probe_enable_handler
 WEAK_EVENT_HANDLER(probe_enable)
 {
-	// for now this is not used
 	DEFAULT_EVENT_HANDLER(probe_enable);
 }
 
 // event_probe_disable_handler
 WEAK_EVENT_HANDLER(probe_disable)
 {
-	// for now this is not used
 	DEFAULT_EVENT_HANDLER(probe_disable);
+}
+
+// event_set_steps_handler
+WEAK_EVENT_HANDLER(set_steps)
+{
+	DEFAULT_EVENT_HANDLER(set_steps);
+}
+
+// event_toggle_steps_handler
+WEAK_EVENT_HANDLER(toggle_steps)
+{
+	DEFAULT_EVENT_HANDLER(toggle_steps);
+}
+
+// event_set_dirs_handler
+WEAK_EVENT_HANDLER(set_dirs)
+{
+	DEFAULT_EVENT_HANDLER(set_dirs);
+}
+
+// event_enable_steppers_handler
+WEAK_EVENT_HANDLER(enable_steppers)
+{
+	DEFAULT_EVENT_HANDLER(enable_steppers);
+}
+
+// event_set_output_handler
+WEAK_EVENT_HANDLER(set_output)
+{
+	DEFAULT_EVENT_HANDLER(set_output);
 }
 
 #endif
@@ -383,6 +411,10 @@ bool io_get_probe(void)
 // outputs
 void io_set_steps(uint8_t mask)
 {
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(set_steps, &mask);
+#endif
+
 #if !(STEP0 < 0)
 	if (mask & STEP0_MASK)
 	{
@@ -468,6 +500,10 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(toggle_steps, &mask);
+#endif
+
 #if !(STEP0 < 0)
 	if (mask & STEP0_MASK)
 	{
@@ -521,6 +557,11 @@ void io_toggle_steps(uint8_t mask)
 void io_set_dirs(uint8_t mask)
 {
 	mask ^= g_settings.dir_invert_mask;
+
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(set_dirs, &mask);
+#endif
+
 #if !(DIR0 < 0)
 	if (mask & DIR0_MASK)
 	{
@@ -722,6 +763,10 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
+#ifdef ENABLE_IO_MODULES
+	set_output_args_t output_arg = {.pin = pin, .state = state};
+	EVENT_INVOKE(set_output, &output_arg);
+#endif
 	if (state)
 	{
 		switch (pin)
@@ -1058,6 +1103,10 @@ void io_set_output(uint8_t pin, bool state)
 
 void io_enable_steppers(uint8_t mask)
 {
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(enable_steppers, &mask);
+#endif
+
 #if !(STEP0_EN < 0)
 	if (mask & 0x01)
 	{
