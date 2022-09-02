@@ -42,7 +42,7 @@ extern "C"
 		name##_delegate fptr;                \
 		struct name##_delegate_event_ *next; \
 	} name##_delegate_event_t;               \
-	name##_delegate_event_t *
+	extern name##_delegate_event_t *
 // #define EVENT_TYPE(name) name##_delegate_event_t
 #define EVENT_INVOKE(name, args) event_##name##_handler(args)
 #define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, NULL}
@@ -76,7 +76,9 @@ extern "C"
 	EVENT(name)                                         \
 	name##_event;                                       \
 	uint8_t event_##name##_handler(void *args)
-#define WEAK_EVENT_HANDLER(name) uint8_t __attribute__((weak)) event_##name##_handler(void *args)
+#define WEAK_EVENT_HANDLER(name)           \
+	name##_delegate_event_t *name##_event; \
+	uint8_t __attribute__((weak)) event_##name##_handler(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) uint8_t event_##name##_handler(void *args)
 #define DEFAULT_EVENT_HANDLER(name)                  \
 	{                                                \

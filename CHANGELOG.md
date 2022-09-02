@@ -6,20 +6,32 @@
 
 # Changelog
 
-## [1.5.beta2] - Unreleased
+## [1.5.rc] - 2022-09-02
 
 ### Added
 
-- Added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
+- added core support for ESP32 with limited functionalities (lacks analog and input ISR) (#237)
+- added new io_control events to allow expansion IO modules (#247)
+- added mcu_nop generic macro (#248)
+- added tool HAL for VFD controlled tools and modbus core module (#239)
 
 ### Changed
 
 - refactored event/delegate macros now with a single function declaration/signature. Adding new events for extensions is easier (#234)
-- modified grbl system command parser to enable command extensions via modules (#236)
+- modified GRBL system command parser to enable command extensions via modules (#236)
+- modified tools to convert between core speed and tool speed to avoid range/precision compression losses
+- modified parser/planner to correctly calculate tool power output when minimal power is not 0 (example: laser minimal power output when S0) (#240)
+- better µs delay for all platforms (now accepts 16bit value as argument) and better precision for AVR (#241)(#242)
+- adapted bit-banging emulated protocols to fixed duration µs delays and software UART customizable timeout by interface (#242)
 
 ### Fixed
 
 - fixed some extended MCodes definitions
+- fixed SPI initialization in TMC driver (#242)
+- fixed missing mcu_delay_us function on STM32F4 (#242)
+- fixed event multiple declarations warnings introduced by (#234) (#243)
+- fixed M4 laser mode power output with no motion introduced with #240 (#246)
+- fixed AVR pin redefinition warnings (#248)
 
 # Changelog
 
@@ -27,7 +39,7 @@
 
 ### Added
 
-- added core support for ESP8266 with limitied functionalities (lacks analog and input ISR) (#222)
+- added core support for ESP8266 with limited functionalities (lacks analog and input ISR) (#222)
 - added support for NXP LPC176x core (lacks EEPROM and analog) (#227)
 
 ### Changed
@@ -64,13 +76,13 @@
 - added software I2C (bit-banging) (#215)
 - removed encoders dependency of modules. Stepper encoders and regular encoders reset is now independent (#216)
 - encoders counting pulse and direction can be inverted via setting $8 and $9 (#216)
-- modified settings initialization code. Added option to hase settings on RAM only (volatile) (#217)
+- modified settings initialization code. Added option to store settings on RAM only (volatile) (#217)
 - added option to store G92 offset in non volatile memory to prevent undesired wear (#221)
 
 ### Changed
 
 - module system complete restructure. Core complementary modules kept in the core code. Remaining modules pulled to a different repository (#215)
-- encoders initial state aquired at startup to prevent initial noise counts (#216)
+- encoders initial state acquired at startup to prevent initial noise counts (#216)
 - fixed dir mask detection for ENC0 and ENC1 (#216)
 - moved the mod_cnc_dotasks_hook callback to allow it to work even if hold is active (#218)
 
@@ -115,7 +127,7 @@ Next release will will have some extensive changes in µCNC modules to make it m
 ### Changed
 
 - overridable F_STEP_MAX and F_STEP_MIN (#190)
-- removed kinematic transformations filter from JOG motions to prevent inpredictable motions after forced motion systems sync (#195)
+- removed kinematic transformations filter from JOG motions to prevent unpredictable motions after forced motion systems sync (#195)
 - modified Grbl compatible startup message (#196)
 - updated M42 to reflect current HAL IO convention (#197)
 - added servo pins configurations to RAMPS boardmap (pins D4, D5, D6 and D11) (#197)
@@ -129,14 +141,14 @@ Next release will will have some extensive changes in µCNC modules to make it m
 ### Fixed
 
 - fixed typo in error constant name (#184)
-- fixed G49 was not reseting TLO (#188)
+- fixed G49 was not resetting TLO (#188)
 - fixed motion systems unsync after recovering from emergency stop (#193)
 - emergency stop press was not stopping tool as expected (#192)
 - position read from motion control was not reversing user geometry transformations (#195)
 - AVR DIN0-7 pins ISR was not enabled (#201)
 - fixed error were coordinates would be forgotten/override if applying multiple G10 commands for different axis (ex. G10L20X0 and G10L20Y0) (#204)
 - fixed logic error when both limits switches are active for an axis (not dual-drive) and are inverted, trigger would only happen if both were pressed (#205)
-- fixed logic ORING of signals when homing leading to incorrect trigger when self-squaring cause by #205 (#207)
+- fixed logic ORIGIN of signals when homing leading to incorrect trigger when self-squaring cause by #205 (#207)
 - fixed G28-G30 not updating parser position leading to intermediate travel on next command (#211)
 
 ## [1.4.3] - 2022-05-02
@@ -164,7 +176,7 @@ Next release will will have some extensive changes in µCNC modules to make it m
 - fixed missing stepper 6 and 7 DIR and EN pins from HAL (#175)
 - redesigned axis dual endstop trigger with limits inverted (#175)
 - wrong limit switch trigger during home with dual axis enabled was not being detected (#175)
-- redesigned axis dual limit switch detection. Non dual drive axis limits are combined to detect colisions in min and max (#180)
+- redesigned axis dual limit switch detection. Non dual drive axis limits are combined to detect collisions in min and max (#180)
 
 ## [1.4.2] - 2022-04-19
 
@@ -223,7 +235,7 @@ A special thank you note to Alexandros Angelidis (bastardazzo) for all the time 
 
 - fixed tmc soft uart input pins (#163)
 - fixed missing feedback message after settings reset command $RST ($164)
-- invalid eeprom reset and $RST=\* now also clears N0 and N1 blocks as expected ($164)
+- invalid EEPROM reset and $RST=\* now also clears N0 and N1 blocks as expected ($164)
 - forced control pin checking to prevent undesired motion unlock while control pin state still active ($164)
 - fixed tool length offset setting index
 - fixed rounding error when printing float numbers close to the next integer value (#166)
@@ -261,7 +273,7 @@ It also adds Trinamic driver support as well as RAMBO board hardware improvement
 - added softuart (bit-banging) module (#152)
 - added TMC drivers integration. UART drivers are supported. SPI drivers are not tested. Optional M350, M906 and M920 commands available. (#155)
 - added digital MSTEP pin support (RAMBO board and similar). Optional M351 command available. (#156)
-- added digital potentiometer for stepper current regulationvia SPI driver support (RAMBO board and similar). Optional M907 command available. (#156)
+- added digital potentiometer for stepper current regulation via SPI driver support (RAMBO board and similar). Optional M907 command available. (#156)
 - added softspi (bit-banging) module (#156)
 
 ### Changed
@@ -283,7 +295,7 @@ It also adds Trinamic driver support as well as RAMBO board hardware improvement
 ## [1.4.0-beta] - 2022-03-15
 
 µCNC version 1.4.0 packs lots of new features as well as the initial support for SMT32F4 core MCU's.
-Beta release fixes several issues detected in the alpha version. It also expans the generic pins capabilities for future expansions.
+Beta release fixes several issues detected in the alpha version. It also expands the generic pins capabilities for future expansions.
 
 ### Added
 
@@ -435,7 +447,7 @@ It also adds a couple of important fixes that affected step generation with Dyna
 
 ## [1.3.3] - 2022-01-07
 
-µCNC version 1.3.3 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+µCNC version 1.3.3 aims to addressed several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
 It also removes `G43.1` (non compliant RS274NGC command) and replaces it with the `G43` compliant version. It still accepts the `Z` word. For tool lengths the `H` word should be used.
 Tool lengths can be set and stored in settings `$41=<Tool1 offset>..$42=<Tool2 offset>...etc`. Also the default tool loaded at start/reset is stored via setting `$40`.
 Encoders are also working in uni and bidirectional mode. Each encoder position is also reported by command `$P` available via `config.h`
@@ -480,7 +492,7 @@ Encoders are also working in uni and bidirectional mode. Each encoder position i
 
 ## [1.3.2] - 2022-01-05
 
-µCNC version 1.3.2 aims to addresse several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
+µCNC version 1.3.2 aims to addressed several critical bug fixes in the gcode parsing (some of them introduced in the current major release):
 
 ### Changed
 
@@ -525,7 +537,7 @@ Encoders are also working in uni and bidirectional mode. Each encoder position i
 
 - added tool PID to cnc scheduled tasks (#95)
 - fixed encoder module missing dir function and pulse previous state not being stored (#94)
-- fixed input/limits/control ISR reentrancy in SAMD21 and STM32 (#94)
+- fixed input/limits/control ISR reentrance in SAMD21 and STM32 (#94)
 - call missing encoder update on input isr callback (#94)
 - return argument on get_encoder_pos (#94)
 
@@ -563,9 +575,9 @@ RC adds/fixes the following issue:
 ### Changed
 
 - modified some NVIC IRQ and global interrupt enable and disable inside ISR code in STM32 and SAMD21 (#75)
-- modified RTC to prevent reentrancy inside ISR code in STM32 and SAMD21 (#75)
+- modified RTC to prevent reentrance inside ISR code in STM32 and SAMD21 (#75)
 - modified planner buffer size in AVR size to prevent memory errors (#77)
-- planner and interpolator block and segment buffer slots are cleaned before writting data to prevent errors from previous data. (#77)
+- planner and interpolator block and segment buffer slots are cleaned before writing data to prevent errors from previous data. (#77)
 - step ISR optimizations (for main stepper and idle steppers) are now optional. (#77)
 - new AVR make file (#82)
 - modified/simplified parser G90/G91 (absolute/relative coordinates) (#83)
@@ -575,11 +587,11 @@ RC adds/fixes the following issue:
 ### Fixed
 
 - fixed issue with active CS_RES input that caused resume condition (delay) without active hold present (#75)
-- fixed SAMD21 PWM frequency configuration (now is aprox 976Hz like AVR) (#78)
+- fixed SAMD21 PWM frequency configuration (now is aprox. 976Hz like AVR) (#78)
 - real line number (N word) processing was not being read (#81)
 - fixed welcome message not being sent after soft reset (#79)
 - fixed step generation ISR random problems (stop working). This was caused by problems in the segment buffer read write. Solved by adding atomic lock blocks to the code (#85)
-- G28 and G30 now perform in whatever coordinate mode before travelling home (RS274NGC compliant) (#83)
+- G28 and G30 now perform in whatever coordinate mode before traveling home (RS274NGC compliant) (#83)
 
 ## [1.3.b2] - 2021-12-14
 
@@ -666,7 +678,7 @@ The following things were changed:
 
 ### Fixed
 
-- fixed flash eeprom reading that caused SMT32F1 to hang with USB virtual COM port. SMT32F1 default value for errased flash is 0xFF and not 0x00. This caused the startup blocks to read a sequence of 0xFF chars. This was fixed by filtering the accepted values to standard asccii only. Both serial versions of SMT32F1 and AVR were not affected. (#65)
+- fixed flash eeprom reading that caused SMT32F1 to hang with USB virtual COM port. SMT32F1 default value for erased flash is 0xFF and not 0x00. This caused the startup blocks to read a sequence of 0xFF chars. This was fixed by filtering the accepted values to standard ASCII only. Both serial versions of SMT32F1 and AVR were not affected. (#65)
 
 ## [1.2.1] - 2021-08-06
 
@@ -684,7 +696,7 @@ The following things were changed:
 - all hard/soft limit alarms cause the firmware to lock until software reset is issued as described by Grbl (#63)
 - readapted homing and probing to the new interlocking logic (#63)
 - startup code improvements (#62)
-- modified µCNC to execute synchronous motions at motion control level. This reduces the pipeline travelling of the code at the expense of additional restart delay that is neglectable (#59)
+- modified µCNC to execute synchronous motions at motion control level. This reduces the pipeline traveling of the code at the expense of additional restart delay that is neglectable (#59)
 - dropped the Abort status in favor of the Alarm status to be more Grbl compliant (#59)
 - blocked status reports during startup blocks to prevent startup block ill-formated strings that were causing the interface software to correctly recognize the responses (#59)
 
@@ -957,7 +969,8 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.5.b]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
+[1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
+[1.5.beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
 [1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
 [1.4.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.6
 [1.4.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.5

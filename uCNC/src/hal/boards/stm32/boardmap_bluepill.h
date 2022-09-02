@@ -106,13 +106,19 @@ extern "C"
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
 #define USB_DP_PORT A
-#define STEP4_BIT 3	   // assigns STEP4 pin
-#define STEP4_PORT A   // assigns STEP4 port
-#define DIR4_BIT 7	   // assigns DIR4 pin
-#define DIR4_PORT A	   // assigns DIR4 port
-#define LIMIT_B_BIT 11 // assigns LIMIT_A pin
-#define LIMIT_B_PORT B // assigns LIMIT_A port
-#define LIMIT_B_ISR
+// #define STEP4_BIT 3	   // assigns STEP4 pin
+// #define STEP4_PORT A   // assigns STEP4 port
+// #define DIR4_BIT 7	   // assigns DIR4 pin
+// #define DIR4_PORT A	   // assigns DIR4 port
+// #define LIMIT_B_BIT 11 // assigns LIMIT_A pin
+// #define LIMIT_B_PORT B // assigns LIMIT_A port
+// #define LIMIT_B_ISR
+
+#define DOUT27_BIT 9
+#define DOUT27_PORT A
+#define DIN27_BIT 10
+#define DIN27_PORT A
+#define DIN27_PULLUP
 #endif
 
 // Setup PWM
@@ -129,14 +135,10 @@ extern "C"
 #define DOUT0_PORT B
 
 // coolant and mist
-#define DOUT1_BIT 4
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
+#define DOUT2_BIT 4
 #define DOUT2_PORT B
-
-// stepper enable
-#define DOUT3_BIT 15
-#define DOUT3_PORT A
+#define DOUT3_BIT 3
+#define DOUT3_PORT B
 
 // led pin
 #define DOUT31_BIT 13

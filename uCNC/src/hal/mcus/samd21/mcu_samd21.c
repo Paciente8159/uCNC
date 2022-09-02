@@ -710,8 +710,8 @@ bool mcu_rx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_USB)
 	if (c != 0)
@@ -744,8 +744,8 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_USB)
 	while (!tud_cdc_available())
@@ -943,7 +943,7 @@ uint32_t mcu_millis()
 	return c;
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	uint32_t loops;
 	if (!delay)
@@ -952,7 +952,7 @@ void mcu_delay_us(uint8_t delay)
 	}
 	else
 	{
-		loops = (delay * (F_CPU / 1000000) / 6) - 2;
+		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
 	}
 	while (loops--)
 		asm("nop");

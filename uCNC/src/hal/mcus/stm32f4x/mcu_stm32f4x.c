@@ -483,8 +483,8 @@ void mcu_usart_init(void)
 
 void mcu_putc(char c)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
@@ -645,8 +645,8 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 
 char mcu_getc(void)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
@@ -735,10 +735,9 @@ uint32_t mcu_millis()
 	return val;
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
-	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000);
-
+	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
 	while (DWT->CYCCNT < delayTicks)
 		;
 }

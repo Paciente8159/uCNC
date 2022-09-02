@@ -493,8 +493,8 @@ bool mcu_rx_ready(void)
 
 void mcu_putc(char c)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
@@ -512,8 +512,8 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())
@@ -614,7 +614,7 @@ uint32_t mcu_millis()
 }
 
 #ifndef mcu_delay_us
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	uint32_t time = system_get_time() + delay;
 	while (time > system_get_time())

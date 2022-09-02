@@ -278,7 +278,11 @@ extern "C"
 	 * the maximum allowed delay is 255 us
 	 * */
 #ifndef mcu_delay_us
-	void mcu_delay_us(uint8_t delay);
+	void mcu_delay_us(uint16_t delay);
+#endif
+
+#ifndef mcu_nop
+#define mcu_nop() asm volatile ("nop\n\t")
 #endif
 
 	/**

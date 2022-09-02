@@ -124,8 +124,8 @@ extern "C"
 // #define SERVO0_PORT A
 
 // coolant
-#define DOUT1_BIT 4
-#define DOUT1_PORT A
+#define DOUT2_BIT 4
+#define DOUT2_PORT A
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP0_EN_BIT 6

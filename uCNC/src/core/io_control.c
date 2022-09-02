@@ -48,22 +48,34 @@ WEAK_EVENT_HANDLER(probe_disable)
 	DEFAULT_EVENT_HANDLER(probe_disable);
 }
 
-// event_io_set_steps_handler
-WEAK_EVENT_HANDLER(io_set_steps)
+// event_set_steps_handler
+WEAK_EVENT_HANDLER(set_steps)
 {
-	DEFAULT_EVENT_HANDLER(io_set_steps);
+	DEFAULT_EVENT_HANDLER(set_steps);
 }
 
-// event_io_toggle_steps_handler
-WEAK_EVENT_HANDLER(io_toggle_steps)
+// event_toggle_steps_handler
+WEAK_EVENT_HANDLER(toggle_steps)
 {
-	DEFAULT_EVENT_HANDLER(io_toggle_steps);
+	DEFAULT_EVENT_HANDLER(toggle_steps);
 }
 
-// event_io_set_dirs_handler
-WEAK_EVENT_HANDLER(io_set_dirs)
+// event_set_dirs_handler
+WEAK_EVENT_HANDLER(set_dirs)
 {
-	DEFAULT_EVENT_HANDLER(io_set_dirs);
+	DEFAULT_EVENT_HANDLER(set_dirs);
+}
+
+// event_enable_steppers_handler
+WEAK_EVENT_HANDLER(enable_steppers)
+{
+	DEFAULT_EVENT_HANDLER(enable_steppers);
+}
+
+// event_set_output_handler
+WEAK_EVENT_HANDLER(set_output)
+{
+	DEFAULT_EVENT_HANDLER(set_output);
 }
 
 #endif
@@ -400,7 +412,7 @@ bool io_get_probe(void)
 void io_set_steps(uint8_t mask)
 {
 #ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(io_set_steps, &mask);
+	EVENT_INVOKE(set_steps, &mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -489,7 +501,7 @@ void io_set_steps(uint8_t mask)
 void io_toggle_steps(uint8_t mask)
 {
 #ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(io_toggle_steps, &mask);
+	EVENT_INVOKE(toggle_steps, &mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -547,7 +559,7 @@ void io_set_dirs(uint8_t mask)
 	mask ^= g_settings.dir_invert_mask;
 
 #ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(io_set_dirs, &mask);
+	EVENT_INVOKE(set_dirs, &mask);
 #endif
 
 #if !(DIR0 < 0)
@@ -751,7 +763,6 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
-
 #ifdef ENABLE_IO_MODULES
 	set_output_args_t output_arg = {.pin = pin, .state = state};
 	EVENT_INVOKE(set_output, &output_arg);

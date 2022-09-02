@@ -244,7 +244,7 @@ void tool_set_speed(int16_t value)
 #if TOOL_COUNT > 0
 	if (tool_current.set_speed)
 	{
-		tool_current.set_speed((uint8_t)(MIN(((uint8_t)ABS(value)), 0xff)), (value < 0));
+		tool_current.set_speed(value);
 	}
 #endif
 }
@@ -258,6 +258,18 @@ uint16_t tool_get_speed()
 	}
 #endif
 	return 0;
+}
+
+int16_t tool_range_speed(float value)
+{
+	//input value will always be positive
+#if TOOL_COUNT > 0
+	if (tool_current.range_speed)
+	{
+		return tool_current.range_speed(value);
+	}
+#endif
+	return value;
 }
 
 void tool_set_coolant(uint8_t value)

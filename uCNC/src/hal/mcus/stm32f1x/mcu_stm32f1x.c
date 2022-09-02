@@ -453,8 +453,8 @@ void mcu_usart_init(void)
 
 void mcu_putc(char c)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
@@ -578,8 +578,8 @@ uint8_t mcu_get_servo(uint8_t servo)
 
 char mcu_getc(void)
 {
-#if !(LED < 0)
-	mcu_toggle_output(LED);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
@@ -677,10 +677,9 @@ void mcu_rtc_init()
 	SysTick->CTRL = 3; // Start SysTick (ABH clock/8)
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
-	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000);
-
+	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
 	while (DWT->CYCCNT < delayTicks)
 		;
 }

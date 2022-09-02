@@ -261,17 +261,12 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 			mcu_controls_changed_cb();
 		}
 #endif
-#if !(LED < 0)
+#if !(ACTIVITY_LED < 0)
 		// this blinks aprox. once every 1024ms
-		if ((millis & 0x200))
+		if (!(millis & (0x200-1)))
 		{
-			io_set_output(LED, true);
+			mcu_toggle_output(ACTIVITY_LED);
 		}
-		else
-		{
-			io_set_output(LED, false);
-		}
-
 #endif
 		mcu_disable_global_isr();
 		running = false;
@@ -695,7 +690,7 @@ void cnc_exec_rt_commands(void)
 			{
 				motion_data_t block = {0};
 #if TOOL_COUNT > 0
-				block.coolant = planner_get_previous_coolant();
+				block.motion_flags.bit.coolant = planner_get_previous_coolant();
 				block.spindle = planner_get_previous_spindle_speed();
 #endif
 				mc_update_tools(&block);

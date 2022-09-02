@@ -21,7 +21,7 @@
 #include "defaults.h"
 
 // if settings struct is changed this version should change too
-#define SETTINGS_VERSION "V05"
+#define SETTINGS_VERSION "V06"
 
 settings_t g_settings;
 
@@ -256,9 +256,10 @@ void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
 uint8_t settings_change(uint8_t setting, float value)
 {
 	uint8_t result = 0;
-	uint8_t value8 = (uint8_t)value;
-	uint16_t value16 = (uint16_t)value;
-	bool value1 = (value != 0);
+	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
+	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
+	
+	bool value1 = (value8 != 0);
 
 	if (value < 0)
 	{
@@ -348,10 +349,10 @@ uint8_t settings_change(uint8_t setting, float value)
 		g_settings.homing_offset = value;
 		break;
 	case 30:
-		g_settings.spindle_max_rpm = value;
+		g_settings.spindle_max_rpm = value16;
 		break;
 	case 31:
-		g_settings.spindle_min_rpm = value;
+		g_settings.spindle_min_rpm = value16;
 		break;
 	case 32:
 		g_settings.laser_mode = value8;

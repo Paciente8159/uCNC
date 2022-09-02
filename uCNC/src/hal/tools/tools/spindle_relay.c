@@ -26,71 +26,76 @@
  * */
 
 // Spindle enable pins.  You can set these to the same pin if required.
-#define SPINDLE_FWD_EN DOUT0
-#define SPINDLE_REV_EN DOUT1
-
-// Uncomment below if you want the coolant pins enabled.
-// #define ENABLE_COOLANT
-#ifdef ENABLE_COOLANT
-#define COOLANT_MIST_EN DOUT2
-#define COOLANT_FLOOD_EN DOUT3
+#ifndef SPINDLE_FWD
+#define SPINDLE_FWD DOUT0
+#endif
+#ifndef SPINDLE_REV
+#define SPINDLE_REV DOUT1
 #endif
 
-static uint8_t spindle_speed;
+#ifdef ENABLE_COOLANT
+#ifndef COOLANT_FLOOD
+#define COOLANT_FLOOD DOUT2
+#endif
+#ifndef COOLANT_MIST
+#define COOLANT_MIST DOUT3
+#endif
+#endif
 
-void spindle_relay_set_speed(uint8_t value, bool invert)
+static int16_t spindle_speed;
+
+void spindle_relay_set_speed(int16_t value)
 {
 
-	if (!value)
+	if (value == 0)
 	{
-#if !(SPINDLE_FWD_EN < 0)
-		mcu_clear_output(SPINDLE_FWD_EN);
+#if !(SPINDLE_FWD < 0)
+		mcu_clear_output(SPINDLE_FWD);
 #endif
-#if !(SPINDLE_REV_EN < 0)
-		mcu_clear_output(SPINDLE_REV_EN);
+#if !(SPINDLE_REV < 0)
+		mcu_clear_output(SPINDLE_REV);
 #endif
 	}
-	else if (invert)
+	else if (value < 0)
 	{
-#if !(SPINDLE_FWD_EN < 0)
-		mcu_clear_output(SPINDLE_FWD_EN);
+#if !(SPINDLE_FWD < 0)
+		mcu_clear_output(SPINDLE_FWD);
 #endif
-#if !(SPINDLE_REV_EN < 0)
-		mcu_set_output(SPINDLE_REV_EN);
+#if !(SPINDLE_REV < 0)
+		mcu_set_output(SPINDLE_REV);
 #endif
 	}
 	else
 	{
-#if !(SPINDLE_REV_EN < 0)
-		mcu_clear_output(SPINDLE_REV_EN);
+#if !(SPINDLE_REV < 0)
+		mcu_clear_output(SPINDLE_REV);
 #endif
-#if !(SPINDLE_FWD_EN < 0)
-		mcu_set_output(SPINDLE_FWD_EN);
+#if !(SPINDLE_FWD < 0)
+		mcu_set_output(SPINDLE_FWD);
 #endif
 	}
-
-	spindle_speed = value;
 }
 
 void spindle_relay_set_coolant(uint8_t value)
 {
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD_EN, COOLANT_MIST_EN, value);
+	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
 #endif
 }
 
 uint16_t spindle_relay_get_speed(void)
 {
-	return spindle_speed;
+	return ABS(spindle_speed);
 }
 
 const tool_t __rom__ spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-	.set_speed = &spindle_relay_set_speed,
-	.set_coolant = &spindle_relay_set_coolant,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.get_speed = &spindle_relay_get_speed};
+	.range_speed = NULL,
+	.get_speed = &spindle_relay_get_speed,
+	.set_speed = &spindle_relay_set_speed,
+	.set_coolant = &spindle_relay_set_coolant};

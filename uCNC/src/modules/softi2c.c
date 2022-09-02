@@ -20,11 +20,11 @@
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
-	mcu_delay_us(port->delay);
+	port->wait();
 	port->scl(true);
-	mcu_delay_us(port->delay);
+	port->wait();
 	port->sda(true);
-	mcu_delay_us(port->delay);
+	port->wait();
 }
 
 uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
@@ -45,28 +45,28 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 		// init
 		port->sda(true);
 		port->scl(true);
-		mcu_delay_us(port->delay);
+		port->wait();
 		port->sda(false);
-		mcu_delay_us(port->delay);
+		port->wait();
 		port->scl(false);
-		mcu_delay_us(port->delay);
+		port->wait();
 	}
 
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		port->sda((c & 0x80));
-		mcu_delay_us(port->delay);
+		port->wait();
 		port->scl(true);
-		mcu_delay_us(port->delay);
+		port->wait();
 		port->scl(false); // write the most-significant bit
 		c <<= 1;
 	}
 
 	// read ack
 	port->sda(true);
-	mcu_delay_us(port->delay);
+	port->wait();
 	port->scl(true);
-	mcu_delay_us(port->delay);
+	port->wait();
 	ack = !port->get_sda();
 	port->scl(false);
 
@@ -98,9 +98,9 @@ uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	} while (!--i);
 
 	port->sda(!with_ack);
-	mcu_delay_us(port->delay);
+	port->wait();
 	port->scl(true);
-	mcu_delay_us(port->delay);
+	port->wait();
 	port->scl(false);
 
 	if (send_stop)

@@ -263,7 +263,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	block_data->feed = (float)max_steps * inv_delta;
 
 	// this contains a motion. Any tool update will be done here
-	block_data->update_tools = false;
 	uint32_t line_segments = 1;
 #if (KINEMATIC != KINEMATIC_DELTA)
 	if (max_steps > MAX_STEPS_PER_LINE)
@@ -319,13 +318,13 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 				break;
 			}
 		}
-		block_data->is_subsegment = true;
+		block_data->motion_flags.bit.is_subsegment = 1;
 	}
 
 	// stores the new position for the next motion
 	memcpy(mc_last_target, target, sizeof(mc_last_target));
 	block_data->feed = feed;
-	block_data->is_subsegment = false;
+	block_data->motion_flags.bit.is_subsegment = 0;
 	return error;
 }
 
@@ -464,7 +463,6 @@ uint8_t mc_dwell(motion_data_t *block_data)
 {
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
-		mc_update_tools(block_data);
 		// restores/forces run flag
 		cnc_set_exec_state(EXEC_RUN);
 		cnc_delay_ms(block_data->dwell);

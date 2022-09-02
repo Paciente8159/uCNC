@@ -1453,7 +1453,7 @@ void mcu_printfp(const char *__fmt, ...)
 	va_end(__ap);
 }
 
-void mcu_delay_us(uint8_t delay)
+void mcu_delay_us(uint16_t delay)
 {
 	unsigned long start = getTickCounter();
 	double elapsed = 0;

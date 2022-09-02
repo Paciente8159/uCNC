@@ -40,7 +40,7 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 	uint8_t counter = 8;
 	do
 	{
-		mcu_delay_us(port->delay);
+		port->wait();
 		if (c & 0x80)
 		{
 			port->mosi(true);
@@ -52,7 +52,7 @@ uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 		clk = !clk;
 		port->clk(clk);
 		c <<= 1;
-		mcu_delay_us(port->delay);
+		port->wait();
 		c |= port->miso() ? 1 : 0;
 		clk = !clk;
 		port->clk(clk);
