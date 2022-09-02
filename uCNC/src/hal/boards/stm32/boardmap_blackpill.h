@@ -130,14 +130,10 @@ extern "C"
 #define DOUT0_PORT B
 
 // coolant and mist
-#define DOUT1_BIT 4
-#define DOUT1_PORT B
-#define DOUT2_BIT 3
+#define DOUT2_BIT 4
 #define DOUT2_PORT B
-
-// stepper enable
-#define DOUT3_BIT 15
-#define DOUT3_PORT A
+#define DOUT3_BIT 3
+#define DOUT3_PORT B
 
 // led pin
 #define DOUT31_BIT 13

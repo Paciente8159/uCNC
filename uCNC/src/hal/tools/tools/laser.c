@@ -29,8 +29,20 @@
  * */
 
 // give names to the pins (easier to identify)
+#ifndef LASER_PWM
 #define LASER_PWM PWM0
-#define COOLANT_FLOOD DOUT1
+#endif
+
+// #define ENABLE_COOLANT
+#ifdef ENABLE_COOLANT
+#ifndef COOLANT_FLOOD
+#define COOLANT_FLOOD DOUT2
+#endif
+#ifndef COOLANT_MIST
+#define COOLANT_MIST DOUT3
+#endif
+#endif
+
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
 #define PWM_MIN_VALUE 2
 
@@ -69,8 +81,10 @@ int16_t laser_range_speed(float value)
 
 void laser_set_coolant(uint8_t value)
 {
-	// easy macro
-	SET_COOLANT(COOLANT_FLOOD, -1, value);
+// easy macro
+#ifdef ENABLE_COOLANT
+	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+#endif
 }
 
 uint16_t laser_get_speed(void)

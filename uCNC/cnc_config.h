@@ -126,6 +126,11 @@ extern "C"
 #if TOOL_COUNT > 0
 
 /**
+ * Enable or disable coolant
+ * */
+// #define ENABLE_COOLANT
+
+/**
  * On speed change waits for the tool to reach the designated speed
  * The maximum error is a value between 0-0% and 100-100%
  * 0% error will only continue if the tool reaches the exact programed speed

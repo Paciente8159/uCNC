@@ -124,39 +124,39 @@ extern "C"
 	//#define RTC_TIMER 0
 
 // TMC0 UART
-#define DOUT23_BIT 1
-#define DOUT23_PORT G
-#define DIN23_BIT 1
+#define DOUT20_BIT 1
+#define DOUT20_PORT G
+#define DIN20_BIT 1
+#define DIN20_PORT K
+#define DIN20_PULLUP
+
+// TMC1 UART
+#define DOUT21_BIT 5
+#define DOUT21_PORT F
+#define DIN21_BIT 2
+#define DIN21_PORT K
+#define DIN21_PULLUP
+
+// TMC2 UART
+#define DOUT22_BIT 7
+#define DOUT22_PORT L
+#define DIN22_BIT 3
+#define DIN22_PORT K
+#define DIN22_PULLUP
+
+// TMC3 UART
+#define DOUT23_BIT 5
+#define DOUT23_PORT L
+#define DIN23_BIT 4
 #define DIN23_PORT K
 #define DIN23_PULLUP
 
-// TMC1 UART
-#define DOUT24_BIT 5
-#define DOUT24_PORT F
-#define DIN24_BIT 2
-#define DIN24_PORT K
-#define DIN24_PULLUP
-
-// TMC2 UART
-#define DOUT25_BIT 7
-#define DOUT25_PORT L
-#define DIN25_BIT 3
-#define DIN25_PORT K
-#define DIN25_PULLUP
-
-// TMC3 UART
-#define DOUT26_BIT 5
-#define DOUT26_PORT L
-#define DIN26_BIT 4
-#define DIN26_PORT K
-#define DIN26_PULLUP
-
 	// // TMC4 UART
-	// #define DOUT27_BIT 3
-	// #define DOUT27_PORT F
-	// #define DIN27_BIT 4
-	// #define DIN27_PORT F
-	// #define DIN27_PULLUP
+	// #define DOUT24_BIT 3
+	// #define DOUT24_PORT F
+	// #define DIN24_BIT 4
+	// #define DIN24_PORT F
+	// #define DIN24_PULLUP
 
 #define SERVO3_BIT 5
 #define SERVO3_PORT G
@@ -173,10 +173,10 @@ extern "C"
 	//  #define DIN0_ISR 0
 
 // software I2C
-#define DIN20_BIT 1
-#define DIN20_PORT D
-#define DIN21_BIT 0
-#define DIN21_PORT D
+// #define DIN22_BIT 1
+// #define DIN22_PORT D
+// #define DIN21_BIT 0
+// #define DIN21_PORT D
 
 #ifdef __cplusplus
 }
