@@ -555,22 +555,22 @@ extern "C"
 #endif
 
 #if (STEPPER_COUNT > 0 && (DUAL_DRIVE0_STEPPER == 0 || DUAL_DRIVE1_STEPPER == 0))
-#error "Stepper  0 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 0 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 #if (STEPPER_COUNT > 1 && (DUAL_DRIVE0_STEPPER == 1 || DUAL_DRIVE1_STEPPER == 1))
-#error "Stepper  1 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 1 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 #if (STEPPER_COUNT > 2 && (DUAL_DRIVE0_STEPPER == 2 || DUAL_DRIVE1_STEPPER == 2))
-#error "Stepper  2 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 2 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 #if (STEPPER_COUNT > 3 && (DUAL_DRIVE0_STEPPER == 3 || DUAL_DRIVE1_STEPPER == 3))
-#error "Stepper  3 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 3 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 #if (STEPPER_COUNT > 4 && (DUAL_DRIVE0_STEPPER == 4 || DUAL_DRIVE1_STEPPER == 4))
-#error "Stepper  4 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 4 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 #if (STEPPER_COUNT > 5 && (DUAL_DRIVE0_STEPPER == 5 || DUAL_DRIVE1_STEPPER == 5))
-#error "Stepper  5 cannot be used as a axis drive and a dual axis drive at the same time"
+#error "Stepper 5 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 
 // dual axis0
@@ -1980,6 +1980,85 @@ typedef uint16_t step_t;
 #define PLANNER_BUFFER_SIZE 40
 #define INTERPOLATOR_FREQ 1
 #endif
+#endif
+
+// some sanity checks
+#if (COORD_SYS_COUNT < 1 || COORD_SYS_COUNT > 9)
+#error "Invalid config option COORD_SYS_COUNT must be set between 1 and 9"
+#endif
+
+#if (N_ARC_CORRECTION < 1 || N_ARC_CORRECTION > 100)
+#error "Invalid config option N_ARC_CORRECTION must be set between 1 and 100"
+#endif
+
+#if (TOOL_COUNT < 0 || TOOL_COUNT > 16)
+#error "Invalid config option TOOL_COUNT must be set between 0 and 16"
+#endif
+
+#ifdef TOOL_WAIT_FOR_SPEED_MAX_ERROR
+#if (TOOL_WAIT_FOR_SPEED_MAX_ERROR < 0 || TOOL_WAIT_FOR_SPEED_MAX_ERROR > 100)
+#error "Invalid config option TOOL_WAIT_FOR_SPEED_MAX_ERROR must be set between 0 and 100"
+#endif
+#endif
+
+#if (DELAY_ON_RESUME_SPINDLE < 0 || DELAY_ON_RESUME_SPINDLE > 60)
+#error "Invalid config option DELAY_ON_RESUME_SPINDLE must be set between 0 and 60"
+#endif
+
+#if (DELAY_ON_SPINDLE_SPEED_CHANGE < 0 || DELAY_ON_SPINDLE_SPEED_CHANGE > 60)
+#error "Invalid config option DELAY_ON_SPINDLE_SPEED_CHANGE must be set between 0 and 60"
+#endif
+
+#if (DELAY_ON_RESUME_COOLANT < 0 || DELAY_ON_RESUME_COOLANT > 60)
+#error "Invalid config option DELAY_ON_RESUME_COOLANT must be set between 0 and 60"
+#endif
+
+#if (FEED_OVR_MAX < 100 || FEED_OVR_MAX > 250)
+#error "Invalid config option FEED_OVR_MAX must be set between 100 and 250"
+#endif
+
+#if (FEED_OVR_MIN < 1 || FEED_OVR_MIN > 20)
+#error "Invalid config option FEED_OVR_MIN must be set between 1 and 20"
+#endif
+
+#if (FEED_OVR_COARSE < 5 || FEED_OVR_COARSE > FEED_OVR_MIN)
+#error "Invalid config option FEED_OVR_COARSE must be set between 5 and FEED_OVR_MIN"
+#endif
+
+#if (FEED_OVR_FINE < 1 || FEED_OVR_FINE > FEED_OVR_COARSE)
+#error "Invalid config option FEED_OVR_FINE must be set between 1 and FEED_OVR_COARSE"
+#endif
+
+#if (RAPID_FEED_OVR1 < 25 || RAPID_FEED_OVR1 > 90)
+#error "Invalid config option RAPID_FEED_OVR1 must be set between 25 and 90"
+#endif
+
+#if (RAPID_FEED_OVR2 < 10 || RAPID_FEED_OVR2 > RAPID_FEED_OVR1)
+#error "Invalid config option RAPID_FEED_OVR2 must be set between 10 and RAPID_FEED_OVR1"
+#endif
+
+#if (SPINDLE_OVR_MAX < 100 || SPINDLE_OVR_MAX > 250)
+#error "Invalid config option SPINDLE_OVR_MAX must be set between 100 and 250"
+#endif
+
+#if (SPINDLE_OVR_MIN < 1 || SPINDLE_OVR_MIN > 20)
+#error "Invalid config option SPINDLE_OVR_MIN must be set between 1 and 20"
+#endif
+
+#if (SPINDLE_OVR_COARSE < 5 || SPINDLE_OVR_COARSE > SPINDLE_OVR_MIN)
+#error "Invalid config option SPINDLE_OVR_COARSE must be set between 5 and SPINDLE_OVR_MIN"
+#endif
+
+#if (SPINDLE_OVR_FINE < 1 || SPINDLE_OVR_FINE > SPINDLE_OVR_COARSE)
+#error "Invalid config option SPINDLE_OVR_FINE must be set between 1 and SPINDLE_OVR_COARSE"
+#endif
+
+#if (STATUS_WCO_REPORT_MIN_FREQUENCY < 10 || STATUS_WCO_REPORT_MIN_FREQUENCY > 100)
+#error "Invalid config option STATUS_WCO_REPORT_MIN_FREQUENCY must be set between 10 and 100"
+#endif
+
+#if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 || STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
+#error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
 
 #ifdef __cplusplus

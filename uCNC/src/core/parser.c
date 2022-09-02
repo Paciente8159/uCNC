@@ -1093,8 +1093,21 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	// spindle speed or direction was changed (force a safety dwell to let the spindle change speed and continue)
 	if (update_tools && !g_settings.laser_mode)
 	{
+		mc_update_tools(&block_data);
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
 		block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+#endif
+#if (defined(TOOL_WAIT_FOR_SPEED) && (TOOL_WAIT_FOR_SPEED_MAX_ERROR != 100))
+		float tool_speed_error = 0;
+		float set_speed = (new_state->groups.spindle_turning) ? new_state->spindle : 0;
+		do
+		{
+			tool_speed_error = ABS((float)tool_get_speed() - set_speed) / set_speed;
+			if (!cnc_dotasks())
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
+		} while (tool_speed_error > ((float)TOOL_WAIT_FOR_SPEED_MAX_ERROR * 0.01f));
 #endif
 	}
 

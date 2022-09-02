@@ -48,7 +48,7 @@ extern "C"
 
 	/**
 	 * uncomment to force enable synchronized TX/RX (used in USB VCP)
-	 * enable these options to perform comunications in the mcu tasks function
+	 * enable these options to perform communications in the mcu tasks function
 	 * call instead of being interrupt driven (sync RX may cause problems with
 	 * hardware USART)
 	 * */
@@ -58,7 +58,7 @@ extern "C"
 
 	/**
 	 * Choose the board
-	 * Check boardss.h for list of available/supported boards
+	 * Check boards.h for list of available/supported boards
 	 * */
 
 #ifndef BOARD
@@ -95,7 +95,7 @@ extern "C"
 #define COORD_SYS_COUNT 6
 
 	/**
-	 * Uncomment to enable G92 storring on non volatile memory
+	 * Uncomment to enable G92 storing on non volatile memory
 	 * If disabled G92 will be stored in RAM only. Soft-reset will not erase stored value.
 	 * */
 	// #define G92_STORE_NONVOLATILE
@@ -108,7 +108,7 @@ extern "C"
 #define N_ARC_CORRECTION 16
 
 	/**
-	 * Echo recieved commands.
+	 * Echo received commands.
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
@@ -124,15 +124,30 @@ extern "C"
 #endif
 
 #if TOOL_COUNT > 0
-	/**
+
+/**
+ * Enable or disable coolant
+ * */
+// #define ENABLE_COOLANT
+
+/**
+ * On speed change waits for the tool to reach the designated speed
+ * The maximum error is a value between 0-0% and 100-100%
+ * 0% error will only continue if the tool reaches the exact programed speed
+ * 100% will continue regardless of the current value 
+ * This will be ignored on laser mode
+ * */
+// #define TOOL_WAIT_FOR_SPEED
+#ifdef TOOL_WAIT_FOR_SPEED
+#define TOOL_WAIT_FOR_SPEED_MAX_ERROR 5
+#endif
+
+/**
 	 * Number of seconds of delay before motions restart after releasing from a
 	 * hold or after setting a new spindle speed This is used by spindle to
 	 * ensure spindle gets up to speed in motions
+	 * This will be ignored on laser mode
 	 * */
-
-// Enable or disable coolant
-// #define ENABLE_COOLANT
-
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 // define coolant delay at restart
@@ -233,7 +248,7 @@ extern "C"
 	 *
 	 * Enable this option to set home has your machine origin.
 	 * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
-	 * In practice $23 sets if the machine homes towards the orgin (default) or away from the origin (inverted)
+	 * In practice $23 sets if the machine homes towards the origin (default) or away from the origin (inverted)
 	 * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
 	 * By enabling this option after homing the machine will set the homing position has it's origin.
 	 * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
@@ -284,7 +299,7 @@ extern "C"
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic
 	 * Step Spread) algorithm (Similar to Grbl AMASS). The DSS algorithm allows
-	 * to spread stepps by over sampling bresenham line algorithm at lower
+	 * to spread steps by over sampling bresenham line algorithm at lower
 	 * frequencies and reduce vibrations of the stepper motors Value should range
 	 * from 0 to 3. With a value o 0 the DSS will be disabled.
 	 * */
@@ -303,8 +318,8 @@ extern "C"
 
 	/**
 	 * Performs motions with variable acceleration (trapezoidal speed profile
-	 * with roundend speed transition between accel/deaccel and constant speed)
-	 * instead of constant acceleration (trapezoizal speed profile)
+	 * with rounded speed transition between accel/deaccel and constant speed)
+	 * instead of constant acceleration (trapezoidal speed profile)
 	 *
 	 * */
 
@@ -372,7 +387,7 @@ extern "C"
 #define ENABLE_SYSTEM_INFO
 
 	/**
-	 * Enables aditional core grbl system commands
+	 * Enables additional core grbl system commands
 	 * For settings allows settings to only be stored in EEPROM/Flash explicitly
 	 * on special command This makes that all $<setting-id>=<setting-value>
 	 * commands are only performed in SRAM and not stored directly to
@@ -392,7 +407,7 @@ extern "C"
 
 	/**
 	 * forces all global variables are set to 0 at start up
-	 * this shoud not be necessary since the linker usually performs this task
+	 * this should not be necessary since the linker usually performs this task
 	 * */
 
 	// #define FORCE_GLOBALS_TO_0
@@ -405,8 +420,8 @@ extern "C"
 
 	/**
 	 * This uses RAM only settings
-	 * Storing is disabled and the defaults will be loaded at each powerup
-	 * This is usefull if you don't have EEPROM/FLASH storage or the devide read/write maximum cycle count is low to prevent damage
+	 * Storing is disabled and the defaults will be loaded at each power up
+	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * */
 	// #define RAM_ONLY_SETTINGS
 
@@ -414,7 +429,7 @@ extern "C"
 	 * EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of
 	 * required cpu cycles needed for a few math operations (mainly on 8-bit
 	 * processors) This will affect the feed rate precision in about ~5%. Output
-	 * binary will be bigger. No fast math macros are and shoud be used in
+	 * binary will be bigger. No fast math macros are and should be used in
 	 * functions that calculate coordinates to avoid positional errors except
 	 * multiply and divide by powers of 2 macros
 	 * */
