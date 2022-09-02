@@ -6,18 +6,19 @@
 
 # Changelog
 
-## [1.5.beta2] - Unreleased
+## [1.5.rc] - Unreleased
 
 ### Added
 
-- added core support for ESP32 with limitied functionalities (lacks analog and input ISR) (#237)
+- added core support for ESP32 with limited functionalities (lacks analog and input ISR) (#237)
 - added new io_control events to allow expansion IO modules (#247)
 - added mcu_nop generic macro (#248)
+- added tool HAL for VFD controlled tools and modbus core module (#239)
 
 ### Changed
 
 - refactored event/delegate macros now with a single function declaration/signature. Adding new events for extensions is easier (#234)
-- modified grbl system command parser to enable command extensions via modules (#236)
+- modified GRBL system command parser to enable command extensions via modules (#236)
 - modified tools to convert between core speed and tool speed to avoid range/precision compression losses
 - modified parser/planner to correctly calculate tool power output when minimal power is not 0 (example: laser minimal power output when S0) (#240)
 - better µs delay for all platforms (now accepts 16bit value as argument) and better precision for AVR (#241)(#242)
