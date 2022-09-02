@@ -356,8 +356,17 @@ void mcu_init(void)
 	spi_config.CPHA = (SPI_MODE & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
 	spi_config.CPHA = (SPI_MODE & 0x02) ? SPI_CPOL_HI : SPI_CPOL_LO;
 	spi_config.ClockRate = SPI_FREQ;
-	SPI_Init(LPC_SPI, &spi_config);
+	SPI_Init(SPI_REG, &spi_config);
 #endif
+#ifdef MCU_HAS_I2C
+	PINSEL_CFG_Type scl = {I2C_SCL_PORT, I2C_SCL_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&scl);
+	PINSEL_CFG_Type sda = {I2C_SDA_PORT, I2C_SDA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&sda);
+	I2C_Init(I2C_REG, I2C_FREQ);
+	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
+#endif
+
 	mcu_disable_probe_isr();
 	mcu_enable_global_isr();
 }
@@ -601,6 +610,7 @@ uint32_t mcu_millis()
 
 /**
  * provides a delay in us (micro seconds)
+ * the maximum allowed delay is 255 us
  * */
 #define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
 #ifndef mcu_delay_us
@@ -660,5 +670,114 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 void mcu_eeprom_flush(void)
 {
 }
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	if (send_start)
+	{
+		// Reset STA, STO, SI
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC | I2C_I2CONCLR_STOC | I2C_I2CONCLR_STAC;
+		// Enter to Master Transmitter mode
+		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
+		// Wait for complete
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+			;
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+		if ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK) != 0x08)
+		{
+			/* Make sure start bit is not active */
+			if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
+			{
+				I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+			}
+
+			I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+			return 0;
+		}
+	}
+
+	/* Make sure start bit is not active */
+	if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
+	{
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+	}
+	I2C_REG->I2DAT = data & I2C_I2DAT_BITMASK;
+	I2C_REG->I2CONSET = I2C_I2CONSET_AA;
+	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+	// Wait for complete
+	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+		;
+
+	switch ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK))
+	{
+	case 0x18:
+	case 0x28:
+	case 0x40:
+	case 0x50:
+		break;
+	default:
+		/* Make sure start bit is not active */
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+		}
+
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+		return 0;
+	}
+
+	if (send_stop)
+	{
+		/* Make sure start bit is not active */
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+		}
+
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+	}
+
+	return 1;
+}
+#endif
+
+#ifndef mcu_i2c_read
+uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+{
+	uint8_t c = 0;
+
+	if (with_ack)
+	{
+		I2C_REG->I2CONSET = I2C_I2CONSET_AA;
+	}
+	else
+	{
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_AAC;
+	}
+
+	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
+	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+
+	if (send_stop)
+	{
+		/* Make sure start bit is not active */
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
+		}
+
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+	}
+
+	return c;
+}
+#endif
+#endif
 
 #endif

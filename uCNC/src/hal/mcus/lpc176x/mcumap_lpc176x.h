@@ -2745,6 +2745,42 @@ extern "C"
 #define DIO206_PINHALF SPI_SDO_PINHALF
 #define DIO206_PINCON SPI_SDO_PINCON
 #endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 207
+#define I2C_SCL_MBED_PIN __mbedpin__(I2C_SCL_PORT, I2C_SCL_BIT)
+#define I2C_SCL_GPIOREG __gpioreg__(I2C_SCL_PORT)
+#if (I2C_SCL_BIT < 16)
+#define I2C_SCL_PINHALF L
+#else
+#define I2C_SCL_PINHALF H
+#endif
+#define I2C_SCL_PINCON __pincon__(I2C_SCL_PORT, I2C_SCL_PINHALF)
+#define DIO207 207
+#define DIO207_MBED_PIN I2C_SCL_MBED_PIN
+#define DIO207_PORT I2C_SCL_PORT
+#define DIO207_BIT I2C_SCL_BIT
+#define DIO207_GPIOREG I2C_SCL_GPIOREG
+#define DIO207_PINHALF I2C_SCL_PINHALF
+#define DIO207_PINCON I2C_SCL_PINCON
+#endif
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define I2C_SDA 208
+#define I2C_SDA_MBED_PIN __mbedpin__(I2C_SDA_PORT, I2C_SDA_BIT)
+#define I2C_SDA_GPIOREG __gpioreg__(I2C_SDA_PORT)
+#if (I2C_SDA_BIT < 16)
+#define I2C_SDA_PINHALF L
+#else
+#define I2C_SDA_PINHALF H
+#endif
+#define I2C_SDA_PINCON __pincon__(I2C_SDA_PORT, I2C_SDA_PINHALF)
+#define DIO208 208
+#define DIO208_MBED_PIN I2C_SDA_MBED_PIN
+#define DIO208_PORT I2C_SDA_PORT
+#define DIO208_BIT I2C_SDA_BIT
+#define DIO208_GPIOREG I2C_SDA_GPIOREG
+#define DIO208_PINHALF I2C_SDA_PINHALF
+#define DIO208_PINCON I2C_SDA_PINCON
+#endif
 
 /**********************************************
  *	ISR on change inputs
@@ -3242,7 +3278,7 @@ extern "C"
 
 #endif
 
-//SPI
+// SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
 #ifndef SPI_MODE
@@ -3252,8 +3288,40 @@ extern "C"
 #define SPI_FREQ 1000000UL
 #endif
 
+// only one exists
+#define SPI_REG LPC_SPI
+
 #include "lpc17xx_spi.h"
 
+#endif
+
+// I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#ifndef I2C_PORT
+#define I2C_PORT 0
+#endif
+#ifndef I2C_FREQ
+#define I2C_FREQ 100000UL
+#endif
+
+#define I2C_REG __helper__(LPC_I2C, I2C_PORT, )
+#define I2C_PCLK __helper__(CLKPWR_PCLKSEL_I2C, I2C_PORT, )
+#define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
+
+#include "lpc17xx_i2c.h"
+
+#if ((I2C_SCL_MBED_PIN == P0_28) && (I2C_SDA_MBED_PIN == P0_27) && (I2C_PORT == 0))
+#define I2C_ALT_FUNC 1
+#elif ((I2C_SCL_MBED_PIN == P0_1) && (I2C_SDA_MBED_PIN == P0_0) && (I2C_PORT == 1))
+#define I2C_ALT_FUNC 3
+#elif ((I2C_SCL_MBED_PIN == P0_20) && (I2C_SDA_MBED_PIN == P0_19) && (I2C_PORT == 1))
+#define I2C_ALT_FUNC 3
+#elif ((I2C_SCL_MBED_PIN == P0_11) && (I2C_SDA_MBED_PIN == P0_10) && (I2C_PORT == 2))
+#define I2C_ALT_FUNC 2
+#else
+#error "I2C pin configuration not supported"
+#endif
 #endif
 
 #ifndef ITP_TIMER
@@ -3279,6 +3347,13 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_output_od(diopin)                                                                                            \
+	{                                                                                                                           \
+		mcu_config_output(diopin);                                                                                              \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (0x10 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
+		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));                 \
+	}
+
 #define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_input_isr(diopin)                                                   \
@@ -3349,17 +3424,18 @@ extern "C"
 #define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
 #elif (INTERFACE == INTERFACE_USB)
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
 
-#define mcu_spi_xmit(X)               \
-	{                                 \
-		LPC_SPI->SPDR = X;                     \
-		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)); \
-		LPC_SPI->SPDR;                         \
+#define mcu_spi_xmit(X)                          \
+	{                                            \
+		LPC_SPI->SPDR = X;                       \
+		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)) \
+			;                                    \
+		LPC_SPI->SPDR;                           \
 	}
 
 #ifdef __cplusplus

@@ -126,14 +126,26 @@ extern "C"
 	// Timer 1 is set by default
 	//#define SERVO_TIMER 1
 
-	#define SERVO3_BIT 18
-	#define SERVO3_PORT 1
-	#define SERVO2_BIT 19
-	#define SERVO2_PORT 1
-	#define SERVO1_BIT 21
-	#define SERVO1_PORT 1
-	#define SERVO0_BIT 20
-	#define SERVO0_PORT 1
+#define SERVO3_BIT 18
+#define SERVO3_PORT 1
+#define SERVO2_BIT 19
+#define SERVO2_PORT 1
+#define SERVO1_BIT 21
+#define SERVO1_PORT 1
+#define SERVO0_BIT 20
+#define SERVO0_PORT 1
+
+	// hardware I2C
+	 #define I2C_SCL_BIT 1
+	 #define I2C_SCL_PORT 0
+	 #define I2C_SDA_BIT 0
+	 #define I2C_SDA_PORT 0
+	 #define I2C_PORT 1
+	// software I2C
+// #define DIN30_BIT 1
+// #define DIN30_PORT 0
+// #define DIN31_BIT 0
+// #define DIN31_PORT 0
 
 #ifdef __cplusplus
 }
