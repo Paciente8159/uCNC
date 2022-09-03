@@ -2883,43 +2883,62 @@ extern "C"
 #define DIO206_CR SPI_SDO_CR
 #define DIO206_CROFF SPI_SDO_CROFF
 #endif
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_APB2EN (__rccapb2gpioen__(SPI_CS_PORT))
+#define SPI_CS_GPIO (__gpio__(SPI_CS_PORT))
+#if (SPI_CS_BIT < 8)
+#define SPI_CS_CROFF SPI_CS_BIT
+#define SPI_CS_CR CRL
+#else
+#define SPI_CS_CROFF (SPI_CS_BIT&0x07)
+#define SPI_CS_CR CRH
+#endif
+#define DIO207 207
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_APB2EN SPI_CS_APB2EN
+#define DIO207_GPIO SPI_CS_GPIO
+#define DIO207_CR SPI_CS_CR
+#define DIO207_CROFF SPI_CS_CROFF
+#endif
 #if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 207
+#define I2C_SCL 208
 #define I2C_SCL_APB2EN (__rccapb2gpioen__(I2C_SCL_PORT))
 #define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
 #if (I2C_SCL_BIT < 8)
 #define I2C_SCL_CROFF I2C_SCL_BIT
 #define I2C_SCL_CR CRL
 #else
-#define I2C_SCL_CROFF (I2C_SCL_BIT & 0x07)
+#define I2C_SCL_CROFF (I2C_SCL_BIT&0x07)
 #define I2C_SCL_CR CRH
 #endif
-#define DIO207 207
-#define DIO207_PORT I2C_SCL_PORT
-#define DIO207_BIT I2C_SCL_BIT
-#define DIO207_APB2EN I2C_SCL_APB2EN
-#define DIO207_GPIO I2C_SCL_GPIO
-#define DIO207_CR I2C_SCL_CR
-#define DIO207_CROFF I2C_SCL_CROFF
+#define DIO208 208
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_APB2EN I2C_SCL_APB2EN
+#define DIO208_GPIO I2C_SCL_GPIO
+#define DIO208_CR I2C_SCL_CR
+#define DIO208_CROFF I2C_SCL_CROFF
 #endif
 #if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 208
+#define I2C_SDA 209
 #define I2C_SDA_APB2EN (__rccapb2gpioen__(I2C_SDA_PORT))
 #define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
 #if (I2C_SDA_BIT < 8)
 #define I2C_SDA_CROFF I2C_SDA_BIT
 #define I2C_SDA_CR CRL
 #else
-#define I2C_SDA_CROFF (I2C_SDA_BIT & 0x07)
+#define I2C_SDA_CROFF (I2C_SDA_BIT&0x07)
 #define I2C_SDA_CR CRH
 #endif
-#define DIO208 208
-#define DIO208_PORT I2C_SDA_PORT
-#define DIO208_BIT I2C_SDA_BIT
-#define DIO208_APB2EN I2C_SDA_APB2EN
-#define DIO208_GPIO I2C_SDA_GPIO
-#define DIO208_CR I2C_SDA_CR
-#define DIO208_CROFF I2C_SDA_CROFF
+#define DIO209 209
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_APB2EN I2C_SDA_APB2EN
+#define DIO209_GPIO I2C_SDA_GPIO
+#define DIO209_CR I2C_SDA_CR
+#define DIO209_CROFF I2C_SDA_CROFF
 #endif
 
 /**********************************************

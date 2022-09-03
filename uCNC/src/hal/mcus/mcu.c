@@ -677,6 +677,9 @@ void __attribute__((weak)) mcu_io_init(void)
 #if !(SPI_SDO < 0)
 	mcu_config_output(SPI_SDO);
 #endif
+#if !(SPI_CS < 0)
+	mcu_config_output(SPI_CS);
+#endif
 #if !(I2C_SCL < 0)
 	mcu_config_input(I2C_SCL);
 	mcu_config_pullup(I2C_SCL);

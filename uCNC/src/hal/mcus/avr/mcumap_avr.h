@@ -1883,29 +1883,41 @@ extern "C"
 #define DIO206_INREG (__inreg__(SPI_SDO_PORT))
 #define DIO206_DIRREG (__dirreg__(SPI_SDO_PORT))
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#if(defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
 #define DIO207 207
-#define I2C_SCL 207
-#define DIO207_PORT (I2C_SCL_PORT)
-#define DIO207_BIT (I2C_SCL_BIT)
+#define SPI_CS 207
+#define DIO207_PORT (SPI_CS_PORT)
+#define DIO207_BIT (SPI_CS_BIT)
+#define SPI_CS_OUTREG (__outreg__(SPI_CS_PORT))
+#define SPI_CS_INREG (__inreg__(SPI_CS_PORT))
+#define SPI_CS_DIRREG (__dirreg__(SPI_CS_PORT))
+#define DIO207_OUTREG (__outreg__(SPI_CS_PORT))
+#define DIO207_INREG (__inreg__(SPI_CS_PORT))
+#define DIO207_DIRREG (__dirreg__(SPI_CS_PORT))
+#endif
+#if(defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define DIO208 208
+#define I2C_SCL 208
+#define DIO208_PORT (I2C_SCL_PORT)
+#define DIO208_BIT (I2C_SCL_BIT)
 #define I2C_SCL_OUTREG (__outreg__(I2C_SCL_PORT))
 #define I2C_SCL_INREG (__inreg__(I2C_SCL_PORT))
 #define I2C_SCL_DIRREG (__dirreg__(I2C_SCL_PORT))
-#define DIO207_OUTREG (__outreg__(I2C_SCL_PORT))
-#define DIO207_INREG (__inreg__(I2C_SCL_PORT))
-#define DIO207_DIRREG (__dirreg__(I2C_SCL_PORT))
+#define DIO208_OUTREG (__outreg__(I2C_SCL_PORT))
+#define DIO208_INREG (__inreg__(I2C_SCL_PORT))
+#define DIO208_DIRREG (__dirreg__(I2C_SCL_PORT))
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define DIO208 208
-#define I2C_SDA 208
-#define DIO208_PORT (I2C_SDA_PORT)
-#define DIO208_BIT (I2C_SDA_BIT)
+#if(defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define DIO209 209
+#define I2C_SDA 209
+#define DIO209_PORT (I2C_SDA_PORT)
+#define DIO209_BIT (I2C_SDA_BIT)
 #define I2C_SDA_OUTREG (__outreg__(I2C_SDA_PORT))
 #define I2C_SDA_INREG (__inreg__(I2C_SDA_PORT))
 #define I2C_SDA_DIRREG (__dirreg__(I2C_SDA_PORT))
-#define DIO208_OUTREG (__outreg__(I2C_SDA_PORT))
-#define DIO208_INREG (__inreg__(I2C_SDA_PORT))
-#define DIO208_DIRREG (__dirreg__(I2C_SDA_PORT))
+#define DIO209_OUTREG (__outreg__(I2C_SDA_PORT))
+#define DIO209_INREG (__inreg__(I2C_SDA_PORT))
+#define DIO209_DIRREG (__dirreg__(I2C_SDA_PORT))
 #endif
 
 // ISR on change inputs

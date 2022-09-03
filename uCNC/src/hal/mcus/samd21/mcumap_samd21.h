@@ -1255,21 +1255,29 @@ extern "C"
 #define DIO206_BIT SPI_SDO_BIT
 #define DIO206_GPIO SPI_SDO_GPIO
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 207
-#define I2C_SCL_GPIO (PORTREG(I2C_SCL_PORT))
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_GPIO (PORTREG(SPI_CS_PORT))
 #define DIO207 207
-#define DIO207_PORT I2C_SCL_PORT
-#define DIO207_BIT I2C_SCL_BIT
-#define DIO207_GPIO I2C_SCL_GPIO
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_GPIO SPI_CS_GPIO
+#endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 208
+#define I2C_SCL_GPIO (PORTREG(I2C_SCL_PORT))
+#define DIO208 208
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_GPIO I2C_SCL_GPIO
 #endif
 #if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 208
+#define I2C_SDA 209
 #define I2C_SDA_GPIO (PORTREG(I2C_SDA_PORT))
-#define DIO208 208
-#define DIO208_PORT I2C_SDA_PORT
-#define DIO208_BIT I2C_SDA_BIT
-#define DIO208_GPIO I2C_SDA_GPIO
+#define DIO209 209
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_GPIO I2C_SDA_GPIO
 #endif
 
 #define __pinmuxevenodd0 PMUXE

@@ -839,15 +839,20 @@ extern "C"
 #define SPI_SDO 206
 #define DIO206_BIT (SPI_SDO_BIT)
 #endif
-#if(defined(I2C_SCL_BIT))
+#if(defined(SPI_CS_BIT))
 #define DIO207 207
-#define I2C_SCL 207
-#define DIO207_BIT (I2C_SCL_BIT)
+#define SPI_CS 207
+#define DIO207_BIT (SPI_CS_BIT)
+#endif
+#if(defined(I2C_SCL_BIT))
+#define DIO208 208
+#define I2C_SCL 208
+#define DIO208_BIT (I2C_SCL_BIT)
 #endif
 #if(defined(I2C_SDA_BIT))
-#define DIO208 208
-#define I2C_SDA 208
-#define DIO208_BIT (I2C_SDA_BIT)
+#define DIO209 209
+#define I2C_SDA 209
+#define DIO209_BIT (I2C_SDA_BIT)
 #endif
 
 // ISR on change inputs
