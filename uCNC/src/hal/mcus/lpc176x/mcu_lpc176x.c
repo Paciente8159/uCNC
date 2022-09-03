@@ -364,7 +364,7 @@ void mcu_init(void)
 	PINSEL_CFG_Type sda = {I2C_SDA_PORT, I2C_SDA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
 	PINSEL_ConfigPin(&sda);
 	I2C_Init(I2C_REG, I2C_FREQ);
-	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
+	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
 #endif
 
 	mcu_disable_probe_isr();
@@ -677,8 +677,6 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	if (send_start)
 	{
-		// Reset STA, STO, SI
-		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC | I2C_I2CONCLR_STOC | I2C_I2CONCLR_STAC;
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
@@ -687,26 +685,20 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
 		if ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK) != 0x08)
 		{
-			/* Make sure start bit is not active */
-			if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
-			{
-				I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
-			}
-
-			I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+			// Wait for complete
+			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+				;
 			return 0;
 		}
 	}
 
+	// Reset STA, STO, SI
+	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC | I2C_I2CONCLR_STOC | I2C_I2CONCLR_STAC;
+
 	/* Make sure start bit is not active */
-	if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
-	{
-		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
-	}
 	I2C_REG->I2DAT = data & I2C_I2DAT_BITMASK;
-	I2C_REG->I2CONSET = I2C_I2CONSET_AA;
-	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 	// Wait for complete
 	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
 		;
@@ -720,26 +712,22 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		break;
 	default:
 		/* Make sure start bit is not active */
-		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
-		{
-			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
-		}
-
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+		// Wait for complete
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+			;
 		return 0;
 	}
 
 	if (send_stop)
 	{
 		/* Make sure start bit is not active */
-		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
-		{
-			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
-		}
-
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+		// Wait for complete
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+			;
 	}
 
 	return 1;
@@ -760,19 +748,22 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_AAC;
 	}
 
-	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
 	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+
+	// Wait for complete
+	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+		;
+
+	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
 
 	if (send_stop)
 	{
 		/* Make sure start bit is not active */
-		if (I2C_REG->I2CONSET & I2C_I2CONSET_STA)
-		{
-			I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
-		}
-
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO | I2C_I2CONSET_AA;
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+		// Wait for complete
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+			;
 	}
 
 	return c;
