@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.5.0] - Unreleased
+
+### Added
+
+- added Hardware I2C and SPI capabilities to several MCU (only ESP8266 and ESP32 not supported for now) that are integrated and used via software libraries (#249)
+
+### Changed
+
+- ARM mcu share the same µs delay function calculated from SysTick clock (no loops or coredebug clocks used) (#249)
+- software SPI/UART libraries use atomic operations macros (#249)
+
+### Fixed
+
 ## [1.5.rc] - 2022-09-02
 
 ### Added
@@ -969,6 +982,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
 [1.5.beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
 [1.4.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.4.7
