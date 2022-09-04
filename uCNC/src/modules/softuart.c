@@ -19,55 +19,59 @@
 
 void softuart_putc(softuart_port_t *port, uint8_t c)
 {
-	mcu_disable_global_isr();
-	port->tx(false);
-	port->wait();
-	uint8_t bits = 8;
-	do
+	__ATOMIC_FORCEON__
 	{
-		if (c & 0x01)
-		{
-			port->tx(true);
-		}
-		else
-		{
-			port->tx(false);
-		}
-		c >>= 1;
+		port->tx(false);
 		port->wait();
-	} while (--bits);
-	port->tx(true);
-	port->wait();
-	mcu_enable_global_isr();
+		uint8_t bits = 8;
+		do
+		{
+			if (c & 0x01)
+			{
+				port->tx(true);
+			}
+			else
+			{
+				port->tx(false);
+			}
+			c >>= 1;
+			port->wait();
+		} while (--bits);
+		port->tx(true);
+		port->wait();
+	}
 }
 
 int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
-	mcu_disable_global_isr();
-	ms_timeout *= 1000;
-	while (port->rx())
-	{
-		mcu_delay_us(1);
-		if (!ms_timeout--)
-		{
-			mcu_enable_global_isr();
-			return -1;
-		}
-	}
-	port->waithalf();
 	unsigned char val = 0;
-	uint8_t bits = 8;
-	uint8_t mask = 0x01;
-	do
+
+	__ATOMIC_FORCEON__
 	{
-		port->wait();
-		if (port->rx())
+		ms_timeout *= 1000;
+		while (port->rx())
 		{
-			val |= mask;
+			mcu_delay_us(1);
+			if (!ms_timeout--)
+			{
+				return -1;
+			}
 		}
-		mask <<= 1;
-	} while (--bits);
-	port->waithalf();
-	mcu_enable_global_isr();
+		port->waithalf();
+
+		uint8_t bits = 8;
+		uint8_t mask = 0x01;
+		do
+		{
+			port->wait();
+			if (port->rx())
+			{
+				val |= mask;
+			}
+			mask <<= 1;
+		} while (--bits);
+		port->waithalf();
+	}
+
 	return (int16_t)val;
 }

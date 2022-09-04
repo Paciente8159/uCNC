@@ -3023,14 +3023,14 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)                          \
-	{                                            \
+	({                                            \
 		while (SPICOM->SPI.INTFLAG.bit.DRE == 0) \
 			;                                    \
 		SPICOM->SPI.DATA.reg = X;                \
 		while (SPICOM->SPI.INTFLAG.bit.RXC == 0) \
 			;                                    \
 		SPICOM->SPI.DATA.reg;                    \
-	}
+	})
 #endif
 
 #ifdef __cplusplus

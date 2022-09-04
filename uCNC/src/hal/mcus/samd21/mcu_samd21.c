@@ -496,7 +496,7 @@ void sysTickHook(void)
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1024) - 1);
+	SysTick->LOAD = ((F_CPU / 1000) - 1);
 	SysTick->VAL = 0;
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
@@ -535,7 +535,7 @@ void mcu_init(void)
 		;
 
 	SPICOM->SPI.CTRLA.bit.MODE = 3;
-	SPICOM->SPI.CTRLA.bit.DWORD = 0;					 // MSB
+	SPICOM->SPI.CTRLA.bit.DORD = 0;					 // MSB
 	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
@@ -943,20 +943,31 @@ uint32_t mcu_millis()
 	return c;
 }
 
+// void mcu_delay_us(uint16_t delay)
+// {
+// 	uint32_t loops;
+// 	if (!delay)
+// 	{
+// 		return;
+// 	}
+// 	else
+// 	{
+// 		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
+// 	}
+// 	while (loops--)
+// 		asm("nop");
+// }
+
+#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
+#ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
-	uint32_t loops;
-	if (!delay)
-	{
-		return;
-	}
-	else
-	{
-		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
-	}
-	while (loops--)
-		asm("nop");
+	// lpc176x_delay_us(delay);
+	uint32_t target = mcu_micros + delay;
+	while (target > mcu_micros)
+		;
 }
+#endif
 
 /**
  * runs all internal tasks of the MCU.

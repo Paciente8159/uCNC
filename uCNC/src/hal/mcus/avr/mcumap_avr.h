@@ -4322,7 +4322,7 @@ extern "C"
 #define SPI_MODE 0
 #endif
 #ifndef SPI_FREQ
-#define SPI_FREQ F_CPU/4
+#define SPI_FREQ 1000000UL
 #endif
 //sets the prescaler that is closer to the desired frequency
 #define SPI_DIV (F_CPU/SPI_FREQ)
@@ -4523,12 +4523,12 @@ extern "C"
 
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)               \
-	{                                 \
+	({                                 \
 		SPDR = X;                     \
 		while (!(SPSR & (1 << SPIF))) \
 			;                         \
 		SPDR;                         \
-	}
+	})
 #endif
 
 #ifdef __cplusplus
