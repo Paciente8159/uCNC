@@ -183,7 +183,7 @@ extern "C"
 		}
 	}
 
-	static FORCEINLINE void __atomic_out_on()
+	static FORCEINLINE void __atomic_out_on(uint8_t *s)
 	{
 		mcu_enable_global_isr();
 	}
