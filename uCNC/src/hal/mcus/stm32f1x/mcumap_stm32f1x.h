@@ -68,6 +68,8 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
+#define __iopin_ex__(port, bit) port##bit
+#define __iopin__(port, bit) __iopin_ex__(port, bit)
 
 // STM32 internal register names
 #define __gpio__(X) (__helper__(GPIO, X, ))
@@ -2881,6 +2883,63 @@ extern "C"
 #define DIO206_CR SPI_SDO_CR
 #define DIO206_CROFF SPI_SDO_CROFF
 #endif
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_APB2EN (__rccapb2gpioen__(SPI_CS_PORT))
+#define SPI_CS_GPIO (__gpio__(SPI_CS_PORT))
+#if (SPI_CS_BIT < 8)
+#define SPI_CS_CROFF SPI_CS_BIT
+#define SPI_CS_CR CRL
+#else
+#define SPI_CS_CROFF (SPI_CS_BIT&0x07)
+#define SPI_CS_CR CRH
+#endif
+#define DIO207 207
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_APB2EN SPI_CS_APB2EN
+#define DIO207_GPIO SPI_CS_GPIO
+#define DIO207_CR SPI_CS_CR
+#define DIO207_CROFF SPI_CS_CROFF
+#endif
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define I2C_SCL 208
+#define I2C_SCL_APB2EN (__rccapb2gpioen__(I2C_SCL_PORT))
+#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#if (I2C_SCL_BIT < 8)
+#define I2C_SCL_CROFF I2C_SCL_BIT
+#define I2C_SCL_CR CRL
+#else
+#define I2C_SCL_CROFF (I2C_SCL_BIT&0x07)
+#define I2C_SCL_CR CRH
+#endif
+#define DIO208 208
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_APB2EN I2C_SCL_APB2EN
+#define DIO208_GPIO I2C_SCL_GPIO
+#define DIO208_CR I2C_SCL_CR
+#define DIO208_CROFF I2C_SCL_CROFF
+#endif
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define I2C_SDA 209
+#define I2C_SDA_APB2EN (__rccapb2gpioen__(I2C_SDA_PORT))
+#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#if (I2C_SDA_BIT < 8)
+#define I2C_SDA_CROFF I2C_SDA_BIT
+#define I2C_SDA_CR CRL
+#else
+#define I2C_SDA_CROFF (I2C_SDA_BIT&0x07)
+#define I2C_SDA_CR CRH
+#endif
+#define DIO209 209
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_APB2EN I2C_SDA_APB2EN
+#define DIO209_GPIO I2C_SDA_GPIO
+#define DIO209_CR I2C_SDA_CR
+#define DIO209_CROFF I2C_SDA_CROFF
+#endif
 
 /**********************************************
  *	ISR on change inputs
@@ -4107,6 +4166,9 @@ extern "C"
 
 // COM registers
 #if (INTERFACE == INTERFACE_UART)
+#ifndef UART_PORT
+#define UART_PORT 1
+#endif
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
@@ -4137,6 +4199,9 @@ extern "C"
 #define COM_INREG (COM_USART)->DR
 #endif
 
+#define UART_TX_PIN __iopin__(TX_PORT, TX_BIT)
+#define UART_RX_PIN __iopin__(RX_PORT, RX_BIT)
+
 // remmaping and pin checking
 //  USART	TX	RX	APB	APB2ENR	REMAP
 //  1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
@@ -4148,21 +4213,109 @@ extern "C"
 //  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
-#if ((UART_PORT == 1) && (TX_BIT == 9) && (RX_BIT == 10) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((UART_PORT == 1) && (TX_BIT == 6) && (RX_BIT == 7) && (TX_PORT == B) && (RX_PORT == B))
+#if ((UART_PORT == 1) && (UART_TX_PIN == A9) && (UART_RX_PIN == A10))
+#elif ((UART_PORT == 1) && (UART_TX_PIN == B6) && (UART_RX_PIN == B7))
 #define COM_REMAP AFIO_MAPR_USART1_REMAP
-#elif ((UART_PORT == 2) && (TX_BIT == 2) && (RX_BIT == 3) && (TX_PORT == A) && (RX_PORT == A))
-#elif ((UART_PORT == 2) && (TX_BIT == 5) && (RX_BIT == 6) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 2) && (UART_TX_PIN == A2) && (UART_RX_PIN == A3))
+#elif ((UART_PORT == 2) && (UART_TX_PIN == D5) && (UART_RX_PIN == D6))
 #define COM_REMAP AFIO_MAPR_USART2_REMAP
-#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == B) && (RX_PORT == B))
-#elif ((UART_PORT == 3) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == B10) && (UART_RX_PIN == B11))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == C10) && (UART_RX_PIN == C11))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_PARTIALREMAP
-#elif ((UART_PORT == 3) && (TX_BIT == 8) && (RX_BIT == 9) && (TX_PORT == D) && (RX_PORT == D))
+#elif ((UART_PORT == 3) && (UART_TX_PIN == D8) && (UART_RX_PIN == D9))
 #define COM_REMAP AFIO_MAPR_USART3_REMAP_FULLREMAP
-#elif ((UART_PORT == 4) && (TX_BIT == 10) && (RX_BIT == 11) && (TX_PORT == C) && (RX_PORT == C))
-#elif ((UART_PORT == 5) && (TX_BIT == 12) && (RX_BIT == 2) && (TX_PORT == C) && (RX_PORT == D))
+#elif ((UART_PORT == 4) && (UART_TX_PIN == C10) && (UART_RX_PIN == C11))
+#elif ((UART_PORT == 5) && (UART_TX_PIN == C12) && (UART_RX_PIN == D2))
 #else
 #error "USART/UART pin configuration not supported"
+#endif
+#endif
+
+#define SPI_SPEED_LOW 7
+#define SPI_SPEED_NORMAL 4
+#define SPI_SPEED_HIGH 0
+
+#if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
+#define MCU_HAS_SPI
+#define SPI_CLK_PIN __iopin__(SPI_CLK_PORT, SPI_CLK_BIT)
+#define SPI_SDO_PIN __iopin__(SPI_SDO_PORT, SPI_SDO_BIT)
+#define SPI_SDI_PIN __iopin__(SPI_SDI_PORT, SPI_SDI_BIT)
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_SPEED
+#define SPI_SPEED SPI_SPEED_NORMAL
+#endif
+// remmaping and pin checking
+//  SPI	CLK	SDI	SDO	REMAP
+//  1	A5	A6	A7	0
+//  1	B3	B4	B5	1
+//  2	B13	B14	B15	NOREMAP
+//  3	B3	B4	B5	0
+//  3	C10	C11	C12	1
+#if ((SPI_PORT == 1) && (SPI_CLK_PIN == A5) && (SPI_SDI_PIN == A6) && (SPI_SDO_PIN == A7))
+#elif ((SPI_PORT == 1) && (SPI_CLK_PIN == B3) && (SPI_SDI_PIN == B4) && (SPI_SDO_PIN == B5))
+#define SPI_REMAP AFIO_MAPR_SPI1_REMAP
+#elif ((SPI_PORT == 2) && (SPI_CLK_PIN == B13) && (SPI_SDI_PIN == B14) && (SPI_SDO_PIN == B15))
+#elif ((SPI_PORT == 3) && (SPI_CLK_PIN == B3) && (SPI_SDI_PIN == B4) && (SPI_SDO_PIN == B5))
+#elif ((SPI_PORT == 3) && (SPI_CLK_PIN == C10) && (SPI_SDI_PIN == C11) && (SPI_SDO_PIN == C12))
+#define COM_REMAP AFIO_MAPR_SPI3_REMAP
+#else
+#error "SPI pin configuration not supported"
+#endif
+
+#define SPI_REG __helper__(SPI, SPI_PORT, )
+#if (SPI_PORT == 1)
+#define SPI_ENREG RCC->APB2ENR
+#define SPI_ENVAL RCC_APB2ENR_SPI1EN
+#else
+#define SPI_ENREG RCC->APB1ENR
+#define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#endif
+
+#endif
+
+// I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#define I2C_SCL_PIN __iopin__(I2C_SCL_PORT, I2C_SCL_BIT)
+#define I2C_SDA_PIN __iopin__(I2C_SDA_PORT, I2C_SDA_BIT)
+#ifndef I2C_PORT
+#define I2C_PORT 1
+#endif
+
+#define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
+#define I2C_REG __helper__(I2C, I2C_PORT, )
+#define I2C_SPEEDRANGE ((F_CPU >> 1) / 1000000UL)
+
+#if ((I2C_PORT == 1) && (I2C_SCL_PORT == B6) && (I2C_SDA_PORT == B7))
+#elif ((I2C_PORT == 1) && (I2C_SCL_PORT == B8) && (I2C_SDA_PORT == B9))
+#define I2C_REMAP AFIO_MAPR_I2C1_REMAP
+#elif ((I2C_PORT == 2) && (I2C_SCL_PORT == B10) && (I2C_SDA_PORT == B11))
+#else
+#error "I2C pin configuration not supported"
+#endif
+
+#ifndef I2C_FREQ
+#define I2C_FREQ 100000UL
+#endif
+
+// I2C freq
+#if (I2C_FREQ < 5000UL)
+#define I2C_PRESC 3
+#define I2C_DIV (F_CPU / (I2C_FREQ << 6))
+#elif (I2C_FREQ < 20000UL)
+#define I2C_PRESC 2
+#define I2C_DIV (F_CPU / (I2C_FREQ << 4))
+#elif (I2C_FREQ < 80000UL)
+#define I2C_PRESC 1
+#define I2C_DIV (F_CPU / (I2C_FREQ << 2))
+#else
+#define I2C_PRESC 0
+#define I2C_DIV (F_CPU / I2C_FREQ)
 #endif
 #endif
 
@@ -4238,6 +4391,79 @@ extern "C"
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUT_PP_50MHZ << (__indirect__(diopin, CROFF) << 2U)); \
 	}
 
+#define mcu_config_output_af(diopin, mode)                                                                            \
+	{                                                                                                                 \
+		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                           \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (mode << (__indirect__(diopin, CROFF) << 2U));        \
+	}
+
+#define mcu_config_input_af(diopin)                                                                                     \
+	{                                                                                                                   \
+		RCC->APB2ENR |= RCC_APB2ENR_AFIOEN;                                                                             \
+		RCC->APB2ENR |= __indirect__(diopin, APB2EN);                                                                   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U));   \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_FLOAT << (__indirect__(diopin, CROFF) << 2U)); \
+	}
+
+#define mcu_config_pullup(diopin)                                                                                     \
+	{                                                                                                                 \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_IN_PUP << (__indirect__(diopin, CROFF) << 2U)); \
+		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
+	}
+
+#define mcu_config_pwm(diopin)                                                                                                   \
+	{                                                                                                                            \
+		RCC->APB2ENR |= 0x1U;                                                                                                    \
+		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
+		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
+		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
+		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
+		__indirect__(diopin, TIMREG)->BDTR |= (1 << 15);                                                                         \
+		__indirect__(diopin, TIMREG)->CR1 |= 0x01U;                                                                              \
+		__indirect__(diopin, ENOUTPUT);                                                                                          \
+	}
+
+#define mcu_config_input_isr(diopin)                                                                            \
+	{                                                                                                           \
+		RCC->APB2ENR |= 0x1U;                                                                                   \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] &= ~(0xF << (((__indirect__(diopin, BIT)) & 0x03) << 2)); \
+		AFIO->EXTICR[(__indirect__(diopin, EXTIREG))] |= (__indirect__(diopin, EXTIVAL));                       \
+		SETBIT(EXTI->RTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->FTSR, __indirect__(diopin, BIT));                                                          \
+		SETBIT(EXTI->IMR, __indirect__(diopin, BIT));                                                           \
+		NVIC_SetPriority(__indirect__(diopin, IRQ), 5);                                                         \
+		NVIC_ClearPendingIRQ(__indirect__(diopin, IRQ));                                                        \
+		NVIC_EnableIRQ(__indirect__(diopin, IRQ));                                                              \
+	}
+
+#define mcu_config_analog(diopin)                                                                                       \
+	{                                                                                                                   \
+		RCC->CFGR &= ~(RCC_CFGR_ADCPRE);                                                                                \
+		RCC->CFGR |= RCC_CFGR_ADCPRE_DIV8;                                                                              \
+		RCC->APB2ENR |= (RCC_APB2ENR_ADC1EN | __indirect__(diopin, APB2EN) | 0x1U);                                     \
+		ADC1->SQR1 = 1; /*one conversion*/                                                                              \
+		ADC1->SMPR1 = 0x00ffffff & 0x36DB6DB6;                                                                          \
+		ADC1->SMPR2 = 0x36DB6DB6;                                                                                       \
+		ADC1->CR2 &= ~ADC_CR2_CONT; /*single conversion mode*/                                                          \
+		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U)); \
+		ADC1->CR2 |= ADC_CR2_ADON;	 /*enable adc*/                                                                     \
+		ADC1->CR2 |= ADC_CR2_RSTCAL; /*reset calibration*/                                                              \
+		while (ADC1->CR2 & ADC_CR2_RSTCAL)                                                                              \
+			;                                                                                                           \
+		ADC1->CR2 |= ADC_CR2_CAL; /*start calibration*/                                                                 \
+		while (ADC1->CR2 & ADC_CR2_CAL)                                                                                 \
+			;                                                                                                           \
+		ADC1->CR2 |= (ADC_CR2_EXTSEL | ADC_CR2_EXTTRIG); /*external start trigger software*/                            \
+	}
+
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->IDR, __indirect__(diopin, BIT)))
 #define mcu_get_output(diopin) (CHECKBIT(__indirect__(diopin, GPIO)->ODR, __indirect__(diopin, BIT)))
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT)))
@@ -4259,6 +4485,18 @@ extern "C"
 		ADC1->SR &= ~ADC_SR_EOS;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
 	}
+
+#define mcu_spi_xmit(X)                                               \
+	({                                                                 \
+		SPI_REG->DR = X;                                              \
+		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
+			;                                                         \
+		uint8_t data = SPI_REG->DR;                                   \
+		while (SPI1->SR & SPI_SR_BSY)                                 \
+			;                                                         \
+		data;                                                         \
+	})
+
 #ifdef PROBE
 #ifdef PROBE_ISR
 #define mcu_enable_probe_isr() SETBIT(EXTI->IMR, PROBE_BIT)

@@ -31,6 +31,18 @@ extern "C"
 /*
 	MCU specific definitions and replacements
 */
+#include <math.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <avr/io.h>
+#include <avr/wdt.h>
+#include <avr/eeprom.h>
+#include <avr/cpufunc.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -1870,6 +1882,42 @@ extern "C"
 #define DIO206_OUTREG (__outreg__(SPI_SDO_PORT))
 #define DIO206_INREG (__inreg__(SPI_SDO_PORT))
 #define DIO206_DIRREG (__dirreg__(SPI_SDO_PORT))
+#endif
+#if(defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define DIO207 207
+#define SPI_CS 207
+#define DIO207_PORT (SPI_CS_PORT)
+#define DIO207_BIT (SPI_CS_BIT)
+#define SPI_CS_OUTREG (__outreg__(SPI_CS_PORT))
+#define SPI_CS_INREG (__inreg__(SPI_CS_PORT))
+#define SPI_CS_DIRREG (__dirreg__(SPI_CS_PORT))
+#define DIO207_OUTREG (__outreg__(SPI_CS_PORT))
+#define DIO207_INREG (__inreg__(SPI_CS_PORT))
+#define DIO207_DIRREG (__dirreg__(SPI_CS_PORT))
+#endif
+#if(defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#define DIO208 208
+#define I2C_SCL 208
+#define DIO208_PORT (I2C_SCL_PORT)
+#define DIO208_BIT (I2C_SCL_BIT)
+#define I2C_SCL_OUTREG (__outreg__(I2C_SCL_PORT))
+#define I2C_SCL_INREG (__inreg__(I2C_SCL_PORT))
+#define I2C_SCL_DIRREG (__dirreg__(I2C_SCL_PORT))
+#define DIO208_OUTREG (__outreg__(I2C_SCL_PORT))
+#define DIO208_INREG (__inreg__(I2C_SCL_PORT))
+#define DIO208_DIRREG (__dirreg__(I2C_SCL_PORT))
+#endif
+#if(defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#define DIO209 209
+#define I2C_SDA 209
+#define DIO209_PORT (I2C_SDA_PORT)
+#define DIO209_BIT (I2C_SDA_BIT)
+#define I2C_SDA_OUTREG (__outreg__(I2C_SDA_PORT))
+#define I2C_SDA_INREG (__inreg__(I2C_SDA_PORT))
+#define I2C_SDA_DIRREG (__dirreg__(I2C_SDA_PORT))
+#define DIO209_OUTREG (__outreg__(I2C_SDA_PORT))
+#define DIO209_INREG (__inreg__(I2C_SDA_PORT))
+#define DIO209_DIRREG (__dirreg__(I2C_SDA_PORT))
 #endif
 
 // ISR on change inputs
@@ -4267,6 +4315,63 @@ extern "C"
 #define RXC __rxcreg__(UART_PORT)
 #endif
 
+//SPI
+#if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#define MCU_HAS_SPI
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
+#endif
+//sets the prescaler that is closer to the desired frequency
+#define SPI_DIV (F_CPU/SPI_FREQ)
+#if (SPI_DIV<3)
+#define SPCR_VAL 0
+#define SPSR_VAL 1
+#elif (SPI_DIV<6)
+#define SPCR_VAL 0
+#define SPSR_VAL 0
+#elif (SPI_DIV<12)
+#define SPCR_VAL 1
+#define SPSR_VAL 1
+#elif (SPI_DIV<24)
+#define SPCR_VAL 1
+#define SPSR_VAL 0
+#elif (SPI_DIV<48)
+#define SPCR_VAL 2
+#define SPSR_VAL 1
+#elif (SPI_DIV<96)
+#define SPCR_VAL 2
+#define SPSR_VAL 0
+#else
+#define SPCR_VAL 3
+#define SPSR_VAL 0
+#endif
+#endif
+
+//I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#ifndef I2C_FREQ
+#define I2C_FREQ 400000UL
+#endif
+//I2C freq
+#if (I2C_FREQ < 5000UL)
+#define I2C_PRESC 3
+#define I2C_DIV (F_CPU/(I2C_FREQ<<6))
+#elif (I2C_FREQ < 20000UL)
+#define I2C_PRESC 2
+#define I2C_DIV (F_CPU/(I2C_FREQ<<4))
+#elif (I2C_FREQ < 80000UL)
+#define I2C_PRESC 1
+#define I2C_DIV (F_CPU/(I2C_FREQ<<2))
+#else
+#define I2C_PRESC 0
+#define I2C_DIV (F_CPU/I2C_FREQ)
+#endif
+#endif
+
 // Timer registers
 #ifndef ITP_TIMER
 #define ITP_TIMER 1
@@ -4347,11 +4452,24 @@ extern "C"
 
 #define mcu_config_output(x) SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
 #define mcu_config_input(x) CLEARBIT(__indirect__(x, DIRREG), __indirect__(x, BIT))
+#define mcu_config_analog(x) mcu_config_input(x)
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, INREG), __indirect__(diopin, BIT))
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_set_output(diopin) SETBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_clear_output(diopin) CLEARBIT(__indirect__(diopin, OUTREG), __indirect__(diopin, BIT))
 #define mcu_toggle_output(diopin) (__indirect__(diopin, INREG) = (1U << __indirect__(diopin, BIT)))
+
+#define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
+#define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
+
+#define mcu_config_pwm(x)                                        \
+	{                                                            \
+		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
+		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
+		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
+		__indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);  \
+		__indirect__(x, OCRREG) = 0;                             \
+	}
 
 #define mcu_set_pwm(diopin, pwmvalue)                                                    \
 	{                                                                                    \
@@ -4402,6 +4520,16 @@ extern "C"
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))
+
+#ifdef MCU_HAS_SPI
+#define mcu_spi_xmit(X)               \
+	({                                 \
+		SPDR = X;                     \
+		while (!(SPSR & (1 << SPIF))) \
+			;                         \
+		SPDR;                         \
+	})
+#endif
 
 #ifdef __cplusplus
 }

@@ -839,6 +839,21 @@ extern "C"
 #define DIO206 206
 #define DIO206_BIT SPI_SDO_BIT
 #endif
+#if(defined(SPI_CS_BIT))
+#define DIO207 207
+#define SPI_CS 207
+#define DIO207_BIT (SPI_CS_BIT)
+#endif
+#if(defined(I2C_SCL_BIT))
+#define DIO208 208
+#define I2C_SCL 208
+#define DIO208_BIT (I2C_SCL_BIT)
+#endif
+#if(defined(I2C_SDA_BIT))
+#define DIO209 209
+#define I2C_SDA 209
+#define DIO209_BIT (I2C_SDA_BIT)
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -958,6 +973,9 @@ extern "C"
 #endif
 #endif
 
+#define ENABLE_SYNC_RX
+#define ENABLE_SYNC_TX
+
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
 #endif
@@ -970,9 +988,27 @@ extern "C"
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
 
+// SPI
+#if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
+#define MCU_HAS_SPI
+#ifndef SPI_MODE
+#define SPI_MODE 0
+#endif
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
+#endif
+#endif
 
-#define ENABLE_SYNC_RX
-#define ENABLE_SYNC_TX
+// I2C
+#if (defined(I2C_SCL) && defined(I2C_SDA))
+#define MCU_HAS_I2C
+#ifndef I2C_PORT
+#define I2C_PORT 0
+#endif
+#ifndef I2C_FREQ
+#define I2C_FREQ 1000000UL
+#endif
+#endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
@@ -983,6 +1019,7 @@ extern "C"
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_pwm(X) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
+#define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
@@ -996,6 +1033,8 @@ extern "C"
 #define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+
+#define mcu_spi_xmit(X) esp32_spi_xmit(X)
 
 #ifdef __cplusplus
 }

@@ -19,36 +19,46 @@
 
 uint8_t softspi_xmit(softspi_port_t *port, uint8_t c)
 {
-	mcu_disable_global_isr();
-	bool clk = false;
-	if ((port->spimode & 0x2))
+	if (!port)
 	{
-		clk = true;
+#ifdef MCU_HAS_SPI
+		return mcu_spi_xmit(c);
+#else
+		return 0;
+#endif
 	}
 
-	port->clk(clk);
-
-	uint8_t counter = 8;
-	do
+	__ATOMIC_FORCEON__
 	{
-		port->wait();
-		if (c & 0x80)
-		{
-			port->mosi(true);
-		}
-		else
-		{
-			port->mosi(false);
-		}
-		clk = !clk;
+		bool clk = (bool)(port->spimode & 0x2);
+		bool on_down = (bool)(port->spimode & 0x1);
+
 		port->clk(clk);
-		c <<= 1;
-		port->wait();
-		c |= port->miso() ? 1 : 0;
-		clk = !clk;
-		port->clk(clk);
-	} while (--counter);
-	mcu_enable_global_isr();
+
+		uint8_t counter = 8;
+		do
+		{
+			if (on_down)
+			{
+				clk = !clk;
+				port->clk(clk);
+			}
+			port->mosi((bool)(c & 0x80));
+			c <<= 1;
+			//sample
+			port->wait();
+			clk = !clk;
+			port->clk(clk);
+			c |= port->miso();
+
+			port->wait();
+			if (!on_down)
+			{
+				clk = !clk;
+				port->clk(clk);
+			}
+		} while (--counter);
+	}
 
 	return c;
 }

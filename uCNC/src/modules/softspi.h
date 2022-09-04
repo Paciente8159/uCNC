@@ -37,7 +37,7 @@ extern "C"
 		bool (*miso)(void);
 	} softspi_port_t;
 
-#define SPIXMITDELAY(FREQ) ((1000000UL / FREQ) - 1)
+#define SPIXMITDELAY(FREQ) MIN(0,((1000000UL / FREQ) - 1))
 
 #define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)        \
 	void NAME##_clk(bool state)                                    \

@@ -1751,6 +1751,27 @@ extern "C"
 #endif
 #define DIO206 -1
 #endif
+#ifndef SPI_CS
+#define SPI_CS -1
+#ifdef DIO207
+#undef DIO207
+#endif
+#define DIO207 -1
+#endif
+#ifndef I2C_SCL
+#define I2C_SCL -1
+#ifdef DIO208
+#undef DIO208
+#endif
+#define DIO208 -1
+#endif
+#ifndef I2C_SDA
+#define I2C_SDA -1
+#ifdef DIO209
+#undef DIO209
+#endif
+#define DIO209 -1
+#endif
 
 	// if the pins are undefined turn on option
 #if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))

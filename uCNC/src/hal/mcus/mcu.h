@@ -117,6 +117,13 @@ extern "C"
 	void mcu_toggle_output(uint8_t pin);
 #endif
 
+/**
+ * 
+ * This is used has by the generic mcu functions has generic (overridable) IO initializer
+ * 
+ * */
+	void mcu_io_init(void);
+
 	/**
 	 * initializes the mcu
 	 * this function needs to:
@@ -302,6 +309,22 @@ extern "C"
 	 * flushes all recorded registers into the eeprom.
 	 * */
 	void mcu_eeprom_flush(void);
+
+#ifdef MCU_HAS_SPI
+#ifndef mcu_spi_xmit
+	uint8_t mcu_spi_xmit(uint8_t data);
+#endif
+#endif
+
+#ifdef MCU_HAS_I2C
+#ifndef mcu_i2c_write
+	uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
+#endif
+
+#ifndef mcu_i2c_read
+	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
+#endif
+#endif
 
 #ifdef __cplusplus
 }

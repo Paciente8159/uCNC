@@ -69,8 +69,8 @@ extern "C"
 	void NAME##_wait(void) { mcu_delay_us((1000000UL / FREQ)); } \
 	softi2c_port_t NAME = {.wait = &NAME##_wait, .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda};
 
-	uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool start, bool stop);
-	uint8_t softi2c_read(softi2c_port_t *port, bool ack, bool stop);
+	uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop);
+	uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop);
 	uint8_t softi2c_write_byte(softi2c_port_t *port, uint8_t address, uint8_t c);
 	uint8_t softi2c_read_byte(softi2c_port_t *port, uint8_t address);
 	uint8_t softi2c_write_reg(softi2c_port_t *port, uint8_t address, uint8_t reg, uint8_t c);
