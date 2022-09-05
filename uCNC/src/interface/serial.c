@@ -204,6 +204,9 @@ void serial_putc(unsigned char c)
 		cnc_dotasks();
 	}
 	mcu_putc(c);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
+#endif
 #endif
 }
 
@@ -405,6 +408,9 @@ MCU_TX_CALLBACK void mcu_com_tx_cb(void)
 	}
 	serial_tx_read = read;
 	mcu_putc(c);
+#if !(ACTIVITY_LED < 0)
+	mcu_toggle_output(ACTIVITY_LED);
+#endif
 #endif
 }
 

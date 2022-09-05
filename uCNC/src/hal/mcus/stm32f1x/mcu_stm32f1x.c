@@ -455,9 +455,6 @@ void mcu_usart_init(void)
 
 void mcu_putc(char c)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
 	while (!(COM_USART->SR & USART_SR_TC))
@@ -581,9 +578,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 
 char mcu_getc(void)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
 	while (!(COM_USART->SR & USART_SR_RXNE))
