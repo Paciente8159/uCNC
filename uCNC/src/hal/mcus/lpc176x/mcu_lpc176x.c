@@ -471,9 +471,6 @@ bool mcu_rx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
@@ -503,9 +500,6 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #if (INTERFACE == INTERFACE_UART)
 #ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())

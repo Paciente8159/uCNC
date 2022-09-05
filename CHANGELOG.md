@@ -16,6 +16,7 @@
 
 - ARM mcu share the same µs delay function calculated from SysTick clock (no loops or coredebug clocks used) (#249)
 - software SPI/UART libraries use atomic operations macros (#249)
+- moved activity led code to core (#250)
 
 ### Fixed
 

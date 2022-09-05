@@ -511,9 +511,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 
 void mcu_putc(char c)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #ifdef ENABLE_SYNC_TX
 	loop_until_bit_is_set(UCSRA, UDRE);
 #endif
@@ -525,9 +522,6 @@ void mcu_putc(char c)
 
 char mcu_getc(void)
 {
-#if !(ACTIVITY_LED < 0)
-	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #ifdef ENABLE_SYNC_RX
 	loop_until_bit_is_set(UCSRA, RXC);
 #endif
