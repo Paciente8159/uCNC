@@ -62,11 +62,38 @@ WiFiManager wifiManager;
 static char esp8266_tx_buffer[ESP8266_BUFFER_SIZE];
 static uint8_t esp8266_tx_buffer_counter;
 
+extern "C" void cnc_delay_ms(uint32_t miliseconds);
+
 extern "C"
 {
 	bool esp8266_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
+		static bool connected = false;
+		static bool process_busy = false;
+
+		if (WiFi.status() != WL_CONNECTED)
+		{
+			connected = false;
+			if (process_busy)
+			{
+				return false;
+			}
+			process_busy = true;
+			Serial.println("[MSG:Disconnected from WiFi]");
+			cnc_delay_ms(100);
+			process_busy = false;
+			return false;
+		}
+
+		if (!connected)
+		{
+			connected = true;
+			Serial.println("[MSG: WiFi AP connected]");
+			Serial.print("[MSG: Board IP @ ");
+			Serial.println(WiFi.localIP());
+		}
+
 		if (server.hasClient())
 		{
 			if (serverClient)
@@ -95,6 +122,7 @@ extern "C"
 	{
 		Serial.begin(baud);
 #ifdef ENABLE_WIFI
+		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 #ifdef WIFI_DEBUG
 		wifiManager.setDebugOutput(true);
 #else
@@ -112,7 +140,6 @@ extern "C"
 		server.setNoDelay(true);
 		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 		httpServer.begin();
-		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 #endif
 		esp8266_tx_buffer_counter = 0;
 	}
