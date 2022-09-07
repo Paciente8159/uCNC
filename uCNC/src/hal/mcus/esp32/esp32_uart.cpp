@@ -65,11 +65,38 @@ WiFiManager wifiManager;
 static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
 static uint8_t esp32_tx_buffer_counter;
 
+extern "C" void cnc_delay_ms(uint32_t miliseconds);
+
 extern "C"
 {
 	bool esp32_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
+		static bool connected = false;
+		static bool process_busy = false;
+
+		if (WiFi.status() != WL_CONNECTED)
+		{
+			connected = false;
+			if (process_busy)
+			{
+				return false;
+			}
+			process_busy = true;
+			Serial.println("[MSG:Disconnected from WiFi]");
+			cnc_delay_ms(100);
+			process_busy = false;
+			return false;
+		}
+
+		if (!connected)
+		{
+			connected = true;
+			Serial.println("[MSG: WiFi AP connected]");
+			Serial.print("[MSG: Board IP @ ");
+			Serial.println(WiFi.localIP());
+		}
+
 		if (server.hasClient())
 		{
 			if (serverClient)
@@ -98,6 +125,7 @@ extern "C"
 	{
 		Serial.begin(baud);
 #ifdef ENABLE_WIFI
+		WiFi.setSleep(WIFI_PS_NONE);
 #ifdef WIFI_DEBUG
 		wifiManager.setDebugOutput(true);
 #else
@@ -110,12 +138,10 @@ extern "C"
 			Serial.println("[MSG: WiFi manager up]");
 			Serial.println("[MSG: Setup page @ 192.168.4.1]");
 		}
-
 		server.begin();
 		server.setNoDelay(true);
 		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 		httpServer.begin();
-		WiFi.setSleep(WIFI_PS_NONE);
 #endif
 #ifdef ENABLE_BLUETOOTH
 		SerialBT.begin("ESP32");
@@ -226,19 +252,6 @@ extern "C"
 			mcu_com_rx_cb((unsigned char)Serial.read());
 		}
 
-#ifdef ENABLE_WIFI
-		wifiManager.process();
-		httpServer.handleClient();
-		if (esp32_wifi_clientok())
-		{
-			while (serverClient.available() > 0)
-			{
-				esp_task_wdt_reset();
-				mcu_com_rx_cb((unsigned char)serverClient.read());
-			}
-		}
-#endif
-
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
@@ -246,6 +259,21 @@ extern "C"
 			{
 				esp_task_wdt_reset();
 				mcu_com_rx_cb((unsigned char)SerialBT.read());
+			}
+		}
+#endif
+
+#ifdef ENABLE_WIFI
+
+		wifiManager.process();
+		httpServer.handleClient();
+
+		if (esp32_wifi_clientok())
+		{
+			while (serverClient.available() > 0)
+			{
+				esp_task_wdt_reset();
+				mcu_com_rx_cb((unsigned char)serverClient.read());
 			}
 		}
 #endif
