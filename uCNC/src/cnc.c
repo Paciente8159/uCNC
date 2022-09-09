@@ -215,10 +215,6 @@ bool cnc_dotasks(void)
 		return !cnc_get_exec_state(EXEC_KILL);
 	}
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_dotasks, NULL);
-#endif
-
 	// check security interlocking for any problem
 	if (!cnc_check_interlocking())
 	{
@@ -228,6 +224,10 @@ bool cnc_dotasks(void)
 	if (!lock_itp)
 	{
 		lock_itp = true;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		EVENT_INVOKE(cnc_dotasks, NULL);
+#endif
+
 		itp_run();
 		lock_itp = false;
 	}
@@ -263,7 +263,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 #endif
 #if !(ACTIVITY_LED < 0)
 		// this blinks aprox. once every 1024ms
-		if (!(millis & (0x200-1)))
+		if (!(millis & (0x200 - 1)))
 		{
 			mcu_toggle_output(ACTIVITY_LED);
 		}
