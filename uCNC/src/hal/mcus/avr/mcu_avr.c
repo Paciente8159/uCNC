@@ -770,6 +770,54 @@ uint8_t mcu_spi_xmit(uint8_t data)
 	return SPDR;
 }
 #endif
+
+void mcu_spi_config(uint8_t mode, uint32_t frequency)
+{
+	mode = CLAMP(0, mode, 4);
+	// disable SPI
+	uint8_t div = (uint8_t)(F_CPU / frequency);
+	uint8_t spsr, spcr;
+	if (div < 2)
+	{
+		spcr = 0;
+		spsr = 1;
+	}
+	else if (div < 4)
+	{
+		spcr = 0;
+		spsr = 0;
+	}
+	else if (div < 8)
+	{
+		spcr = 1;
+		spsr = 1;
+	}
+	else if (div < 16)
+	{
+		spcr = 1;
+		spsr = 0;
+	}
+	else if (div < 32)
+	{
+		spcr = 2;
+		spsr = 1;
+	}
+	else if (div < 64)
+	{
+		spcr = 2;
+		spsr = 0;
+	}
+	else
+	{
+		spcr = 3;
+		spsr = 0;
+	}
+
+	//clear speed and mode
+	SPCR &= ~0x4F;
+	SPCR = (1 << SPE) | (mode << 2) | spcr;
+	SPSR |= spsr;
+}
 #endif
 
 #ifdef MCU_HAS_I2C

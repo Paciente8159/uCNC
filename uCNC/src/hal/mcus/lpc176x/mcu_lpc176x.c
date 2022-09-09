@@ -665,6 +665,20 @@ void mcu_eeprom_flush(void)
 {
 }
 
+#if MCU_HAS_SPI
+void mcu_spi_config(uint8_t mode, uint32_t frequency){
+	mode = CLAMP(0, mode, 4);
+	SPI_DeInit(SPI_REG);
+	SPI_CFG_Type spi_config = {0};
+	SPI_ConfigStructInit(&spi_config);
+	spi_config.CPHA = (mode & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
+	spi_config.CPHA = (mode & 0x02) ? SPI_CPOL_HI : SPI_CPOL_LO;
+	spi_config.ClockRate = frequency;
+	SPI_Init(SPI_REG, &spi_config);
+}
+	
+#endif
+
 #ifdef MCU_HAS_I2C
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)

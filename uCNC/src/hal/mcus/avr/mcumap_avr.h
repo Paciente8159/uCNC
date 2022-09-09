@@ -4326,22 +4326,22 @@ extern "C"
 #endif
 //sets the prescaler that is closer to the desired frequency
 #define SPI_DIV (F_CPU/SPI_FREQ)
-#if (SPI_DIV<3)
+#if (SPI_DIV<2)
 #define SPCR_VAL 0
 #define SPSR_VAL 1
-#elif (SPI_DIV<6)
+#elif (SPI_DIV<4)
 #define SPCR_VAL 0
 #define SPSR_VAL 0
-#elif (SPI_DIV<12)
+#elif (SPI_DIV<8)
 #define SPCR_VAL 1
 #define SPSR_VAL 1
-#elif (SPI_DIV<24)
+#elif (SPI_DIV<16)
 #define SPCR_VAL 1
 #define SPSR_VAL 0
-#elif (SPI_DIV<48)
+#elif (SPI_DIV<32)
 #define SPCR_VAL 2
 #define SPSR_VAL 1
-#elif (SPI_DIV<96)
+#elif (SPI_DIV<64)
 #define SPCR_VAL 2
 #define SPSR_VAL 0
 #else

@@ -502,9 +502,9 @@ void mcu_init(void)
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
 				   | SPI_CR1_SSI  // internal slave select
-				   | SPI_CR1_MSTR // SPI master mode
-				   | (SPI_SPEED << 3) | SPI_MODE;
-
+				   | SPI_CR1_MSTR; // SPI master mode
+				//    | (SPI_SPEED << 3) | SPI_MODE;
+	mcu_spi_config(SPI_MODE, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
 
@@ -807,6 +807,55 @@ void mcu_eeprom_flush()
 		// Restore interrupt flag state.*/
 	}
 }
+
+#ifdef MCU_HAS_SPI
+void mcu_spi_config(uint8_t mode, uint32_t frequency)
+{
+	mode = CLAMP(0, mode, 4);
+	uint8_t div = (uint8_t)(F_CPU / frequency);
+	uint8_t speed;
+	if (div < 2)
+	{
+		speed = 0;
+	}
+	else if (div < 4)
+	{
+		speed = 1;
+	}
+	else if (div < 8)
+	{
+		speed = 2;
+	}
+	else if (div < 16)
+	{
+		speed = 3;
+	}
+	else if (div < 32)
+	{
+		speed = 4;
+	}
+	else if (div < 64)
+	{
+		speed = 5;
+	}
+	else if (div < 128)
+	{
+		speed = 6;
+	}
+	else
+	{
+		speed = 7;
+	}
+
+	// disable SPI
+	SPI_REG->CR1 &= SPI_CR1_SPE;
+	//clear speed and mode
+	SPI_REG->CR1 &= 0x3B;
+	SPI_REG->CR1 |= (speed << 3) | mode;
+	//enable SPI
+	SPI_REG->CR1 |= SPI_CR1_SPE;
+}
+#endif
 
 #ifdef MCU_HAS_I2C
 #ifndef mcu_i2c_write
