@@ -4231,10 +4231,6 @@ extern "C"
 #endif
 #endif
 
-#define SPI_SPEED_LOW 7
-#define SPI_SPEED_NORMAL 4
-#define SPI_SPEED_HIGH 0
-
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
 #define MCU_HAS_SPI
 #define SPI_CLK_PIN __iopin__(SPI_CLK_PORT, SPI_CLK_BIT)
@@ -4246,8 +4242,8 @@ extern "C"
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
-#ifndef SPI_SPEED
-#define SPI_SPEED SPI_SPEED_NORMAL
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
 #endif
 // remmaping and pin checking
 //  SPI	CLK	SDI	SDO	REMAP

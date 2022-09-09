@@ -3003,10 +3003,6 @@ extern "C"
 #define GPIO_OTG_FS 0x0A
 #endif
 
-#define SPI_SPEED_LOW 7
-#define SPI_SPEED_NORMAL 4
-#define SPI_SPEED_HIGH 0
-
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
 #define MCU_HAS_SPI
 #ifndef SPI_PORT
@@ -3015,8 +3011,8 @@ extern "C"
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
-#ifndef SPI_SPEED
-#define SPI_SPEED SPI_SPEED_NORMAL
+#ifndef SPI_FREQ
+#define SPI_FREQ 1000000UL
 #endif
 // remmaping and pin checking
 #if ((SPI_PORT == 3))

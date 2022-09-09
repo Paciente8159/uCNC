@@ -1035,6 +1035,7 @@ extern "C"
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #define mcu_spi_xmit(X) esp32_spi_xmit(X)
+#define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
 
 #ifdef __cplusplus
 }

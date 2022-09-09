@@ -12,6 +12,12 @@ extern "C"
 		SPI.setDataMode(mode);
 	}
 
+	void esp32_spi_config(uint8_t mode, uint32_t freq)
+	{
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
+
 	uint8_t esp32_spi_xmit(uint8_t data)
 	{
 		return SPI.transfer(data);

@@ -552,7 +552,7 @@ void mcu_init(void)
 	mcu_config_altfunc(SPI_SDI);
 
 	SPICOM->SPI.CTRLA.bit.ENABLE = 1;
-	while (SPICOM->SPI.SYNCBUSY.bit.SWRST)
+	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
 		;
 
 #endif
@@ -1164,6 +1164,24 @@ void mcu_eeprom_flush(void)
 
 	samd21_flash_modified = false;
 }
+
+#ifdef MCU_HAS_SPI
+void mcu_spi_config(uint8_t mode, uint32_t frequency)
+{
+	mode = CLAMP(0, mode, 4);
+	frequency = ((F_CPU >> 1) / frequency) - 1;
+	SPICOM->SPI.CTRLA.bit.ENABLE = 0;
+	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
+		;
+	SPICOM->SPI.CTRLA.bit.CPHA = mode & 0x01;		 // MODE
+	SPICOM->SPI.CTRLA.bit.CPOL = (mode >> 1) & 0x01; // MODE
+	SPICOM->SPI.BAUD.reg = frequency;
+
+	SPICOM->SPI.CTRLA.bit.ENABLE = 1;
+	while (SPICOM->SPI.SYNCBUSY.bit.ENABLE)
+		;
+}
+#endif
 
 #ifdef MCU_HAS_I2C
 /**

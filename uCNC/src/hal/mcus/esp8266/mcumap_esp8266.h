@@ -1034,6 +1034,8 @@ extern "C"
 		(uint8_t)(SPI1W0 & 0xff); \
 	}
 
+#define mcu_spi_config(X, Y) esp8266_spi_config(X, Y)
+
 #ifdef __cplusplus
 }
 #endif

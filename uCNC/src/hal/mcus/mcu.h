@@ -117,11 +117,11 @@ extern "C"
 	void mcu_toggle_output(uint8_t pin);
 #endif
 
-/**
- * 
- * This is used has by the generic mcu functions has generic (overridable) IO initializer
- * 
- * */
+	/**
+	 *
+	 * This is used has by the generic mcu functions has generic (overridable) IO initializer
+	 *
+	 * */
 	void mcu_io_init(void);
 
 	/**
@@ -282,7 +282,7 @@ extern "C"
 #endif
 
 #ifndef mcu_nop
-#define mcu_nop() asm volatile ("nop\n\t")
+#define mcu_nop() asm volatile("nop\n\t")
 #endif
 
 	/**
@@ -314,11 +314,15 @@ extern "C"
 #ifndef mcu_spi_xmit
 	uint8_t mcu_spi_xmit(uint8_t data);
 #endif
+
+#ifndef mcu_spi_config
+	void mcu_spi_config(uint8_t mode, uint32_t frequency);
+#endif
 #endif
 
 #ifdef MCU_HAS_I2C
 #ifndef mcu_i2c_write
-	uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
+		uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
 #endif
 
 #ifndef mcu_i2c_read

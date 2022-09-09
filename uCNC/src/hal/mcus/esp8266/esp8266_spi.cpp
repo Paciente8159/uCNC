@@ -12,6 +12,12 @@ extern "C"
 		SPI.setFrequency(freq);
 		SPI.setDataMode(mode);
 	}
+
+	void esp8266_spi_config(uint8_t mode, uint32_t freq)
+	{
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
 }
 
 #endif
