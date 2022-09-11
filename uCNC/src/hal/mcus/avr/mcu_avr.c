@@ -447,8 +447,8 @@ void mcu_init(void)
 
 #ifdef MCU_HAS_SPI
 	// enable SPI, set as master, and clock to fosc/128
-	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 	SPSR |= SPSR_VAL;
+	SPCR = (1 << SPE) | (1 << MSTR) | (SPI_MODE << 2) | SPCR_VAL;
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -814,9 +814,9 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	}
 
 	//clear speed and mode
-	SPCR &= ~0x4F;
-	SPCR = (1 << SPE) | (mode << 2) | spcr;
+	SPCR = 0;
 	SPSR |= spsr;
+	SPCR = (1 << SPE) | (1 << MSTR) | (mode << 2) | spcr;
 }
 #endif
 
