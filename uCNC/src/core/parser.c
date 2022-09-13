@@ -347,8 +347,13 @@ static uint8_t parser_grbl_command(void)
 		}
 	}
 
-	while ((c >= 'A' && c <= 'Z'))
+	while ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
 	{
+		// toupper
+		if (c >= 'a' && c <= 'z')
+		{
+			c -= 32;
+		}
 		grbl_cmd_str[grbl_cmd_len++] = c;
 		c = serial_getc();
 	}

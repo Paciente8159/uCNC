@@ -2,42 +2,58 @@
 
 Addon modules for µCNC - Universal CNC firmware for microcontrollers
 
-## About I2C LCD for µCNC
+## About SD Card for µCNC
 
-I2C LCD allows to add an I2C LCD module to µCNC that display some basic info about the current machine position and limits state.
+SD Card allows to add an SD/MMC card support to µCNC via hardware/software SPI.
 It requires any 2 µCNC generic digital input pins of the board. It uses software I2C so no dedicated I2C hardware is required.
 
-## Adding I2C LCD to µCNC
+## Adding SD Card to µCNC
 
 To use the and I2C LCD follow these steps:
 
-1. Copy the the `I2C_LCD` directory and place it inside the `src/modules/` directory of µCNC
-2. Open `i2c_lcd.c` and define the number of rows and column of your LCD display. The default is 16x2
+1. Copy the the `SD_Card` directory and place it inside the `src/modules/` directory of µCNC
+2. If needed you may redifine some IO pin and SPI options. By default this module tries to use the hardware SPI port if available and if not the software SPI pins. Please refer to [PINOUTS.md](https://github.com/Paciente8159/uCNC/blob/master/PINOUTS.md) to check the default pin associations.
+To redefine the IO pins and if software or hardware SPI can is used open `cnc_config.h` and add the needed configurations
 
 ```
-#ifndef LCD_ROWS
-#define LCD_ROWS 2
-#endif
-#ifndef LCD_COLUMNS
-#define LCD_COLUMNS 16
-#endif
-```
-
-3. Also on `i2c_lcd.c` choose 2 free generic input pins. By default pins `DIN20` and `DIN21` are used but you can configure or use other pins from your board.
-
-```
-#ifndef LCD_I2C_SCL
-#define LCD_I2C_SCL DIN21
-#endif
-#ifndef LCD_I2C_SDA
-#define LCD_I2C_SDA DIN20
-#endif
+// uncomment this to force software SPI even if hardware version is available
+// #define SD_CARD_USE_SW_SPI
+// uncomment to set the ouput pin used for the software SPI clock line
+// #define SD_SPI_CLK DOUT30
+// uncomment to set the ouput pin used for the software SPI serial data out
+// #define SD_SPI_SDO DOUT29
+// uncomment to set the input pin used for the software SPI serial data in
+// #define SD_SPI_SDI DIN29
+// uncomment to set the ouput pin used for the software SPI chip select
+// #define SD_SPI_CS SPI_CS
+// uncomment to set the input pin used to detect the card presence (this is an optional pin)
+// #define SD_CARD_DETECT_PIN DIN19
 ```
 
 4. Then you need load the module inside µCNC. Open `src/module.c` and at the bottom of the file add the following lines inside the function `load_modules()`
 
 ```
-LOAD_MODULE(i2c_lcd);
+LOAD_MODULE(sd_card);
 ```
 
-5. The last step is to enable `ENABLE_MAIN_LOOP_MODULES` inside `cnc_config.h`
+5. The last step is to enable `ENABLE_MAIN_LOOP_MODULES` and `ENABLE_PARSER_MODULES` inside `cnc_config.h`
+
+## Using SD Card on µCNC
+
+SD Card module adds a few system commands that allows you to navigate and execute files inside the SD/MMC card.
+
+* ```$mount``` - mounts the sd card. After mounting you will be at the root of the file system.
+* ```$ls``` - list all files and directories in the current directory.
+* ```$cd <directory name>``` - changes the directory.
+* ```$lpr <file name>``` - outputs the file content.
+* ```$run <number of loops (optional)> <file name>``` - runs the code inside the file. The number of loops is an optional argument. If not defined or set to 0 the file will run one single time. If set to -1 it will run (almost) indefinitely. Examples:
+
+Run the file one time
+```
+$run myfile.gcode
+```
+
+Run the file 10 times
+```
+$run 10 myfile.gcode
+```

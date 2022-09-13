@@ -37,7 +37,9 @@
 #define MMCSD_MAX_BUFFER_SIZE 512
 #endif
 
+#ifndef SD_CARD_USE_SW_SPI
 #define SD_CARD_USE_HW_SPI
+#endif
 
 #if (!defined(SD_CARD_USE_HW_SPI) || !defined(MCU_HAS_SPI))
 #ifndef SD_SPI_CLK
@@ -148,7 +150,7 @@ bool mmcsd_response(uint8_t *result, uint16_t len, bool wait_token)
 	return true;
 }
 
-bool mmcsd_message(uint8_t *buff, uint16_t count, uint8_t token)
+bool mmcsd_message(const uint8_t *buff, uint16_t count, uint8_t token)
 {
 	mcu_clear_output(SD_SPI_CS);
 
@@ -314,8 +316,6 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count)
 		return RES_WRPRT;
 	}
 
-	uint8_t result = RES_OK;
-
 	if (count == 1)
 	{
 		// write cmd
@@ -334,7 +334,7 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count)
 
 		if (mmcsd_command(25, sector, 0xFF) && !mmcsd_message(buff, count, 0xFC))
 		{
-			result = RES_ERROR;
+			return RES_ERROR;
 		}
 	}
 

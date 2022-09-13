@@ -212,12 +212,10 @@ void serial_putc(unsigned char c)
 
 void serial_print_str(const char *__s)
 {
-	unsigned char c = (unsigned char)rom_strptr(__s++);
-	do
+	while(*__s)
 	{
-		serial_putc(c);
-		c = (unsigned char)rom_strptr(__s++);
-	} while (c != 0);
+		serial_putc(*__s++);
+	}
 }
 
 void serial_print_int(int32_t num)
