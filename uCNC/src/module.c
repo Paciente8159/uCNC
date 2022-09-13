@@ -33,7 +33,6 @@
 static FORCEINLINE void load_modules(void)
 {
 	// PLACE YOUR MODULES HERE
-	LOAD_MODULE(sd_card);
 }
 
 void mod_init(void)

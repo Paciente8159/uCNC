@@ -227,9 +227,9 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-#define ENABLE_MAIN_LOOP_MODULES
+// #define ENABLE_MAIN_LOOP_MODULES
 // #define ENABLE_IO_MODULES
-#define ENABLE_PARSER_MODULES
+// #define ENABLE_PARSER_MODULES
 // #define ENABLE_SETTINGS_MODULES
 // #define ENABLE_PROTOCOL_MODULES
 
