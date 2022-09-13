@@ -17,17 +17,27 @@
 */
 #include "softi2c.h"
 
+static uint8_t softi2c_clock_stretch(softi2c_port_t *port)
+{
+	uint8_t timeout = 3;
+	while (!port->get_scl() && timeout--)
+	{
+		port->wait();
+	}
+
+	return timeout;
+}
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
 	port->wait();
 	port->scl(true);
-	port->wait();
+	softi2c_clock_stretch(port);
 	port->sda(true);
 	port->wait();
 }
 
-uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
+static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
 {
 	if (!port)
 	{
@@ -45,7 +55,9 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 		// init
 		port->sda(true);
 		port->scl(true);
-		port->wait();
+		if(!softi2c_clock_stretch(port)){
+			return 0;
+		}
 		port->sda(false);
 		port->wait();
 		port->scl(false);
@@ -66,7 +78,7 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 	port->sda(true);
 	port->wait();
 	port->scl(true);
-	port->wait();
+	softi2c_clock_stretch(port);
 	ack = !port->get_sda();
 	port->scl(false);
 
@@ -78,7 +90,7 @@ uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool sen
 	return ack;
 }
 
-uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
+static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 {
 	if (!port)
 	{
@@ -111,51 +123,41 @@ uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	return c;
 }
 
-uint8_t softi2c_write_byte(softi2c_port_t *port, uint8_t address, uint8_t c)
+uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
 {
-	if (softi2c_write(port, (address << 1), true, false)) // start, send address, write
+	if (len)
 	{
-		// send data, stop
-		if (softi2c_write(port, c, false, true))
-			return 1;
-	}
-	return 0;
-}
-
-uint8_t softi2c_read_byte(softi2c_port_t *port, uint8_t address)
-{
-	if (softi2c_write(port, (address << 1) | 0x01, true, false)) // start, send address, read
-	{
-		return softi2c_read(port, false, true);
-	}
-
-	return 0; // return zero if NAK'd
-}
-
-uint8_t softi2c_write_reg(softi2c_port_t *port, uint8_t address, uint8_t reg, uint8_t c)
-{
-	if (softi2c_write(port, address << 1, true, false)) // start, send address, write
-	{
-		// send data, stop
-		if (softi2c_write(port, reg, false, false))
+		len--;
+		if (softi2c_write(port, address << 1, true, false)) // start, send address, write
 		{
-			return softi2c_write(port, c, false, true);
+			// send data, stop
+			for (uint8_t i = 0; i < len; i++)
+			{
+				if (!softi2c_write(port, data[i], false, false))
+				{
+					return 0;
+				}
+			}
+
+			return softi2c_write(port, data[len], false, true);
 		}
 	}
 	return 0;
 }
 
-uint8_t softi2c_read_reg(softi2c_port_t *port, uint8_t address, uint8_t reg)
+uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
 {
-	if (softi2c_write(port, address << 1, true, false)) // start, send address, write
+	if (len)
 	{
-		// send data, stop
-		if (softi2c_write(port, reg, false, false))
+		len--;
+		if (softi2c_write(port, (address << 1) | 0x01, true, false)) // start, send address, write
 		{
-			if (softi2c_write(port, (address << 1) | 0x01, true, false)) // start, send address, read
+			for (uint8_t i = 0; i < len; i++)
 			{
-				return softi2c_read(port, false, true);
+				data[i] = softi2c_read(port, true, false);
 			}
+
+			data[len] = softi2c_read(port, false, true);
 		}
 	}
 

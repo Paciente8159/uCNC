@@ -180,8 +180,10 @@ extern "C"
 // software I2C
 // #define DIN30_BIT 0
 // #define DIN30_PORT D
+// #define DIN30_PULLUP
 // #define DIN31_BIT 1
 // #define DIN31_PORT D
+// #define DIN31_PULLUP
 
 // hardware SPI
 #define SPI_SDO_BIT 2
@@ -194,12 +196,12 @@ extern "C"
 #define SPI_CS_PORT B
 #define SPI_FREQ 100000UL
 //software SPI
-#define DOUT29_BIT 2
-#define DOUT29_PORT B
-#define DIN29_BIT 3
-#define DIN29_PORT B
-#define DOUT30_BIT 1
-#define DOUT30_PORT B
+// #define DOUT29_BIT 2
+// #define DOUT29_PORT B
+// #define DIN29_BIT 3
+// #define DIN29_PORT B
+// #define DOUT30_BIT 1
+// #define DOUT30_PORT B
 //sd card detect
 #define DIN19_BIT 0
 #define DIN19_PORT L
