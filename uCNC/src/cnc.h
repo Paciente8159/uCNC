@@ -172,6 +172,8 @@ extern "C"
 	DECL_EVENT_HANDLER(cnc_dotasks);
 	// event_cnc_stop_handler
 	DECL_EVENT_HANDLER(cnc_stop);
+	// event_cnc_exec_cmd_error_handler
+	DECL_EVENT_HANDLER(cnc_exec_cmd_error);
 #endif
 
 #ifdef __cplusplus

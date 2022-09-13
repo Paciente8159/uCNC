@@ -31,7 +31,7 @@ WEAK_EVENT_HANDLER(send_pins_states)
 
 static void procotol_send_newline(void)
 {
-	serial_print_str(MSG_EOL);
+	protocol_send_string(MSG_EOL);
 }
 
 void protocol_send_ok(void)
@@ -39,7 +39,7 @@ void protocol_send_ok(void)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(MSG_OK);
+	protocol_send_string(MSG_OK);
 	procotol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
@@ -51,7 +51,7 @@ void protocol_send_error(uint8_t error)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(MSG_ERROR);
+	protocol_send_string(MSG_ERROR);
 	serial_print_int(error);
 	procotol_send_newline();
 #ifdef ECHO_CMD
@@ -64,7 +64,7 @@ void protocol_send_alarm(int8_t alarm)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(MSG_ALARM);
+	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
 	procotol_send_newline();
 #ifdef ECHO_CMD
@@ -77,7 +77,12 @@ void protocol_send_string(const char *__s)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(__s);
+	unsigned char c = (unsigned char)rom_strptr(__s++);
+	do
+	{
+		serial_putc(c);
+		c = (unsigned char)rom_strptr(__s++);
+	} while (c != 0);
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -88,9 +93,9 @@ void protocol_send_feedback(const char *__s)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(MSG_START);
-	serial_print_str(__s);
-	serial_print_str(MSG_END);
+	protocol_send_string(MSG_START);
+	protocol_send_string(__s);
+	protocol_send_string(MSG_END);
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -119,7 +124,7 @@ static void protocol_send_status_tail(void)
 	float axis[MAX(AXIS_COUNT, 3)];
 	if (parser_get_wco(axis))
 	{
-		serial_print_str(MSG_STATUS_WCO);
+		protocol_send_string(MSG_STATUS_WCO);
 		serial_print_fltarr(axis, AXIS_COUNT);
 		return;
 	}
@@ -127,7 +132,7 @@ static void protocol_send_status_tail(void)
 	uint8_t ovr[3];
 	if (planner_get_overflows(ovr))
 	{
-		serial_print_str(MSG_STATUS_OVR);
+		protocol_send_string(MSG_STATUS_OVR);
 		serial_print_int(ovr[0]);
 		serial_putc(',');
 		serial_print_int(ovr[1]);
@@ -136,7 +141,7 @@ static void protocol_send_status_tail(void)
 		uint8_t tools = protocol_get_tools();
 		if (tools)
 		{
-			serial_print_str(MSG_STATUS_TOOL);
+			protocol_send_string(MSG_STATUS_TOOL);
 			if (CHECKFLAG(tools, 4))
 			{
 				serial_putc('S');
@@ -198,18 +203,18 @@ void protocol_send_status(void)
 	serial_putc('<');
 	if (cnc_has_alarm())
 	{
-		serial_print_str(MSG_STATUS_ALARM);
+		protocol_send_string(MSG_STATUS_ALARM);
 	}
 	else if (mc_get_checkmode())
 	{
-		serial_print_str(MSG_STATUS_CHECK);
+		protocol_send_string(MSG_STATUS_CHECK);
 	}
 	else
 	{
 		switch (state)
 		{
 		case EXEC_DOOR:
-			serial_print_str(MSG_STATUS_DOOR);
+			protocol_send_string(MSG_STATUS_DOOR);
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
 
@@ -235,10 +240,10 @@ void protocol_send_status(void)
 			}
 			break;
 		case EXEC_HALT:
-			serial_print_str(MSG_STATUS_ALARM);
+			protocol_send_string(MSG_STATUS_ALARM);
 			break;
 		case EXEC_HOLD:
-			serial_print_str(MSG_STATUS_HOLD);
+			protocol_send_string(MSG_STATUS_HOLD);
 			if (cnc_get_exec_state(EXEC_RUN))
 			{
 				serial_putc('1');
@@ -249,37 +254,37 @@ void protocol_send_status(void)
 			}
 			break;
 		case EXEC_HOMING:
-			serial_print_str(MSG_STATUS_HOME);
+			protocol_send_string(MSG_STATUS_HOME);
 			break;
 		case EXEC_JOG:
-			serial_print_str(MSG_STATUS_JOG);
+			protocol_send_string(MSG_STATUS_JOG);
 			break;
 		case EXEC_RESUMING:
 		case EXEC_RUN:
-			serial_print_str(MSG_STATUS_RUN);
+			protocol_send_string(MSG_STATUS_RUN);
 			break;
 		default:
-			serial_print_str(MSG_STATUS_IDLE);
+			protocol_send_string(MSG_STATUS_IDLE);
 			break;
 		}
 	}
 
 	if ((g_settings.status_report_mask & 1))
 	{
-		serial_print_str(MSG_STATUS_MPOS);
+		protocol_send_string(MSG_STATUS_MPOS);
 	}
 	else
 	{
-		serial_print_str(MSG_STATUS_WPOS);
+		protocol_send_string(MSG_STATUS_WPOS);
 		parser_machine_to_work(axis);
 	}
 
 	serial_print_fltarr(axis, AXIS_COUNT);
 
 #if TOOL_COUNT > 0
-	serial_print_str(MSG_STATUS_FS);
+	protocol_send_string(MSG_STATUS_FS);
 #else
-	serial_print_str(MSG_STATUS_F);
+	protocol_send_string(MSG_STATUS_F);
 #endif
 	serial_print_fltunits(feed);
 #if TOOL_COUNT > 0
@@ -288,13 +293,13 @@ void protocol_send_status(void)
 #endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-	serial_print_str(MSG_STATUS_LINE);
+	protocol_send_string(MSG_STATUS_LINE);
 	serial_print_int(itp_get_rt_line_number());
 #endif
 
 	if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
 	{
-		serial_print_str(MSG_STATUS_PIN);
+		protocol_send_string(MSG_STATUS_PIN);
 
 		if (CHECKFLAG(controls, ESTOP_MASK))
 		{
@@ -351,7 +356,7 @@ void protocol_send_status(void)
 
 	if ((g_settings.status_report_mask & 2))
 	{
-		serial_print_str(MSG_STATUS_BUF);
+		protocol_send_string(MSG_STATUS_BUF);
 		serial_print_int((uint32_t)planner_get_buffer_freeblocks());
 		serial_putc(',');
 		serial_print_int((uint32_t)serial_get_rx_freebytes());
@@ -374,7 +379,7 @@ void protocol_send_gcode_coordsys(void)
 	for (uint8_t i = 0; i < coordlimit; i++)
 	{
 		parser_get_coordsys(i, axis);
-		serial_print_str(__romstr__("[G"));
+		protocol_send_string(__romstr__("[G"));
 		serial_print_int(i + 54);
 		serial_putc(':');
 		serial_print_fltarr(axis, AXIS_COUNT);
@@ -392,26 +397,26 @@ void protocol_send_gcode_coordsys(void)
 		procotol_send_newline();
 	}
 
-	serial_print_str(__romstr__("[G28:"));
+	protocol_send_string(__romstr__("[G28:"));
 	parser_get_coordsys(28, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
 	procotol_send_newline();
 
-	serial_print_str(__romstr__("[G30:"));
+	protocol_send_string(__romstr__("[G30:"));
 	parser_get_coordsys(30, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
 	procotol_send_newline();
 
-	serial_print_str(__romstr__("[G92:"));
+	protocol_send_string(__romstr__("[G92:"));
 	parser_get_coordsys(92, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
 	procotol_send_newline();
 
 #ifdef AXIS_TOOL
-	serial_print_str(__romstr__("[TLO:"));
+	protocol_send_string(__romstr__("[TLO:"));
 	parser_get_coordsys(254, axis);
 	serial_print_flt(axis[0]);
 	serial_putc(']');
@@ -430,7 +435,7 @@ void protocol_send_probe_result(uint8_t val)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(__romstr__("[PRB:"));
+	protocol_send_string(__romstr__("[PRB:"));
 	parser_get_coordsys(255, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(':');
@@ -466,7 +471,7 @@ void protocol_send_gcode_modes(void)
 #endif
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
-	serial_print_str(__romstr__("[GC:"));
+	protocol_send_string(__romstr__("[GC:"));
 
 	for (uint8_t i = 0; i < 7; i++)
 	{
@@ -530,7 +535,7 @@ void protocol_send_start_blocks(void)
 #endif
 	unsigned char c = 0;
 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
-	serial_print_str(__romstr__("$N0="));
+	protocol_send_string(__romstr__("$N0="));
 	for (;;)
 	{
 		settings_load(address++, &c, 1);
@@ -546,7 +551,7 @@ void protocol_send_start_blocks(void)
 	}
 
 	address = STARTUP_BLOCK1_ADDRESS_OFFSET;
-	serial_print_str(__romstr__("$N1="));
+	protocol_send_string(__romstr__("$N1="));
 	for (;;)
 	{
 		settings_load(address++, &c, 1);
@@ -678,19 +683,19 @@ void protocol_send_pins_states(void)
 			{
 				if (i < 24)
 				{
-					serial_print_str(__romstr__("[SO:"));
+					protocol_send_string(__romstr__("[SO:"));
 				}
 				else if (i < 40)
 				{
-					serial_print_str(__romstr__("[P:"));
+					protocol_send_string(__romstr__("[P:"));
 				}
 				else if (i < 46)
 				{
-					serial_print_str(__romstr__("[SV:"));
+					protocol_send_string(__romstr__("[SV:"));
 				}
 				else if (i < 78)
 				{
-					serial_print_str(__romstr__("[O:"));
+					protocol_send_string(__romstr__("[O:"));
 				}
 
 				else
@@ -703,29 +708,29 @@ void protocol_send_pins_states(void)
 			{
 				if (i < 114)
 				{
-					serial_print_str(__romstr__("[SI:"));
+					protocol_send_string(__romstr__("[SI:"));
 				}
 				else if (i < 130)
 				{
-					serial_print_str(__romstr__("[A:"));
+					protocol_send_string(__romstr__("[A:"));
 				}
 				else
 				{
-					serial_print_str(__romstr__("[I:"));
+					protocol_send_string(__romstr__("[I:"));
 				}
 			}
 			serial_print_int(i);
 			serial_putc(':');
 			serial_print_int(val);
-			serial_print_str(MSG_END);
+			protocol_send_string(MSG_END);
 		}
 	}
 
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
-	serial_print_str(__romstr__("[STEPS:"));
+	protocol_send_string(__romstr__("[STEPS:"));
 	serial_print_intarr(steps, STEPPER_COUNT);
-	serial_print_str(MSG_END);
+	protocol_send_string(MSG_END);
 
 #if ENCODERS > 0
 	encoder_print_values();
@@ -735,9 +740,9 @@ void protocol_send_pins_states(void)
 	EVENT_INVOKE(send_pins_states, NULL);
 #endif
 
-	serial_print_str(__romstr__("[RUNTIME:"));
+	protocol_send_string(__romstr__("[RUNTIME:"));
 	serial_print_int(mcu_millis());
-	serial_print_str(MSG_END);
+	protocol_send_string(MSG_END);
 
 #ifdef ECHO_CMD
 	protocol_busy = false;
@@ -858,8 +863,8 @@ void protocol_send_cnc_info(void)
 #ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
-	serial_print_str(VER_INFO);
-	serial_print_str(OPT_INFO);
+	protocol_send_string(VER_INFO);
+	protocol_send_string(OPT_INFO);
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif

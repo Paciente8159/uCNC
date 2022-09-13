@@ -160,9 +160,9 @@ void encoder_print_values(void)
 {
 	for (uint8_t i = 0; i < ENCODERS; i++)
 	{
-		serial_print_str(__romstr__("[EC:"));
+		protocol_send_string(__romstr__("[EC:"));
 		serial_print_int(encoder_get_position(i));
-		serial_print_str(MSG_END);
+		protocol_send_string(MSG_END);
 	}
 }
 

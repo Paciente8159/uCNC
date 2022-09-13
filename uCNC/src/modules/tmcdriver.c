@@ -259,7 +259,7 @@ uint8_t m350_exec(void *args, bool *handled)
 		{
 			int32_t val = 0;
 			// if no additional args then print the
-			serial_print_str(__romstr__("[MICROSTEPS:"));
+			protocol_send_string(__romstr__("[MICROSTEPS:"));
 			val = 0;
 			serial_putc('X');
 #ifdef STEPPER0_HAS_TMC
@@ -316,7 +316,7 @@ uint8_t m350_exec(void *args, bool *handled)
 #endif
 			serial_print_flt(val);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
@@ -413,7 +413,7 @@ uint8_t m906_exec(void *args, bool *handled)
 		{
 			float val;
 			// if no additional args then print the
-			serial_print_str(__romstr__("[STEPPER CURRENT:"));
+			protocol_send_string(__romstr__("[STEPPER CURRENT:"));
 			val = -1;
 			serial_putc('X');
 #ifdef STEPPER0_HAS_TMC
@@ -470,7 +470,7 @@ uint8_t m906_exec(void *args, bool *handled)
 #endif
 			serial_print_flt(val);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
@@ -566,7 +566,7 @@ uint8_t m913_exec(void *args, bool *handled)
 		{
 			int32_t val;
 			// if no additional args then print the
-			serial_print_str(__romstr__("[STEPPER HYBRID THRESHOLD:"));
+			protocol_send_string(__romstr__("[STEPPER HYBRID THRESHOLD:"));
 			val = -1;
 			serial_putc('X');
 #ifdef STEPPER0_HAS_TMC
@@ -623,7 +623,7 @@ uint8_t m913_exec(void *args, bool *handled)
 #endif
 			serial_print_int(val);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
@@ -719,7 +719,7 @@ uint8_t m914_exec(void *args, bool *handled)
 		{
 			int32_t val;
 			// if no additional args then print the
-			serial_print_str(__romstr__("[STEPPER STALL SENSITIVITY:"));
+			protocol_send_string(__romstr__("[STEPPER STALL SENSITIVITY:"));
 			val = -255;
 			serial_putc('X');
 #ifdef STEPPER0_HAS_TMC
@@ -776,7 +776,7 @@ uint8_t m914_exec(void *args, bool *handled)
 #endif
 			serial_print_int(val);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
@@ -888,7 +888,7 @@ uint8_t m920_exec(void *args, bool *handled)
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
-			serial_print_str(__romstr__("[TMCREG X:"));
+			protocol_send_string(__romstr__("[TMCREG X:"));
 			reg = (uint32_t)ptr->words->xyzabc[0];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -915,12 +915,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
-			serial_print_str(__romstr__("[TMCREG Y:"));
+			protocol_send_string(__romstr__("[TMCREG Y:"));
 			reg = (uint32_t)ptr->words->xyzabc[1];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -947,12 +947,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
-			serial_print_str(__romstr__("[TMCREG Z:"));
+			protocol_send_string(__romstr__("[TMCREG Z:"));
 			reg = (uint32_t)ptr->words->xyzabc[2];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -979,12 +979,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
-			serial_print_str(__romstr__("[TMCREG A:"));
+			protocol_send_string(__romstr__("[TMCREG A:"));
 			reg = (uint32_t)ptr->words->xyzabc[3];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -1011,12 +1011,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
-			serial_print_str(__romstr__("[TMCREG B:"));
+			protocol_send_string(__romstr__("[TMCREG B:"));
 			reg = (uint32_t)ptr->words->xyzabc[4];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -1043,12 +1043,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
-			serial_print_str(__romstr__("[TMCREG C:"));
+			protocol_send_string(__romstr__("[TMCREG C:"));
 			reg = (uint32_t)ptr->words->xyzabc[5];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -1075,12 +1075,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
-			serial_print_str(__romstr__("[TMCREG I:"));
+			protocol_send_string(__romstr__("[TMCREG I:"));
 			reg = (uint32_t)ptr->words->ijk[0];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -1107,12 +1107,12 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
-			serial_print_str(__romstr__("[TMCREG J:"));
+			protocol_send_string(__romstr__("[TMCREG J:"));
 			reg = (uint32_t)ptr->words->ijk[1];
 			serial_print_int(reg);
 			serial_putc(',');
@@ -1139,7 +1139,7 @@ uint8_t m920_exec(void *args, bool *handled)
 #endif
 			serial_print_int(reg);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		return STATUS_OK;

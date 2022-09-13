@@ -68,7 +68,7 @@ uint8_t m351_exec(void *args, bool* handled)
 		{
 			int32_t val = -1;
 			// if no additional args then print the
-			serial_print_str(__romstr__("[MSTEPS:"));
+			protocol_send_string(__romstr__("[MSTEPS:"));
 			val = -1;
 			serial_putc('X');
 #ifdef STEPPER0_MSTEP0
@@ -157,7 +157,7 @@ uint8_t m351_exec(void *args, bool* handled)
 #endif
 			serial_print_flt(val);
 			serial_putc(']');
-			serial_print_str(MSG_EOL);
+			protocol_send_string(MSG_EOL);
 		}
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
