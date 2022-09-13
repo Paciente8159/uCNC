@@ -60,29 +60,31 @@ static void cnc_run_startup_blocks(void);
 // event_cnc_reset_handler
 WEAK_EVENT_HANDLER(cnc_reset)
 {
-	// for now only encoder module uses this hook and overrides it
 	DEFAULT_EVENT_HANDLER(cnc_reset);
 }
 
 // event_rtc_tick_handler
 WEAK_EVENT_HANDLER(rtc_tick)
 {
-	// for now only pid module uses this hook and overrides it
 	DEFAULT_EVENT_HANDLER(rtc_tick);
 }
 
 // event_cnc_dotasks_handler
 WEAK_EVENT_HANDLER(cnc_dotasks)
 {
-	// for now this is not used
 	DEFAULT_EVENT_HANDLER(cnc_dotasks);
 }
 
 // event_cnc_stop_handler
 WEAK_EVENT_HANDLER(cnc_stop)
 {
-	// for now only pid module uses this hook and overrides it
 	DEFAULT_EVENT_HANDLER(cnc_stop);
+}
+
+// event_cnc_exec_cmd_error_handler
+WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
+{
+	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
 }
 #endif
 
@@ -183,6 +185,7 @@ bool cnc_exec_cmd(void)
 		else
 		{
 			protocol_send_error(error);
+			EVENT_INVOKE(cnc_exec_cmd_error, &error);
 		}
 	}
 

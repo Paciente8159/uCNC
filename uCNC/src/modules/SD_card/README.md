@@ -16,6 +16,8 @@ To use the and I2C LCD follow these steps:
 To redefine the IO pins and if software or hardware SPI can is used open `cnc_config.h` and add the needed configurations
 
 ```
+// By default the file execution stops if a GCode line has an error. This option makes the code execution continue even if an error occurs
+// #define SD_CONTINUE_ON_GCODE_ERROR
 // uncomment this to force software SPI even if hardware version is available
 // #define SD_CARD_USE_SW_SPI
 // uncomment to set the ouput pin used for the software SPI clock line

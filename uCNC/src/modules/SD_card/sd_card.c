@@ -35,6 +35,10 @@
 #define SD_CARD_DETECT_PIN DIN19
 #endif
 
+#ifndef SD_CONTINUE_ON_GCODE_ERROR
+#define SD_STOP_ON_GCODE_ERROR
+#endif
+
 #ifndef MAX_PATH_LEN
 #define MAX_PATH_LEN 255
 #endif
@@ -199,8 +203,6 @@ void sd_card_file_run(void)
 		file++;
 	}
 
-	serial_print_str(file);
-
 	if (f_open(&fp, file, FA_READ) == FR_OK)
 	{
 		file_runs = (runs != 0) ? runs : 1;
@@ -214,6 +216,20 @@ void sd_card_file_run(void)
 	protocol_send_feedback(__romstr__("Error running file"));
 }
 
+#ifdef SD_STOP_ON_GCODE_ERROR
+// uint8_t sd_card_stop_onerror(void *args, bool *handled)
+OVERRIDE_EVENT_HANDLER(cnc_exec_cmd_error)
+{
+	file_runs = 0;
+	f_close(&fp);
+	serial_rx_clear();
+	// *handled = true;
+	return STATUS_OK;
+}
+
+// CREATE_EVENT_LISTENER(cnc_exec_cmd_error, sd_card_stop_onerror);
+#endif
+
 /**
  * Handles SD card in the main loop
  * */
@@ -223,7 +239,8 @@ uint8_t sd_card_loop(void *args, bool *handled)
 	if (mcu_get_input(SD_CARD_DETECT_PIN) && sd_card_mounted)
 	{
 		protocol_send_feedback(__romstr__("SD card removed"));
-		if(sd_card_mounted == SD_MOUNTED){
+		if (sd_card_mounted == SD_MOUNTED)
+		{
 			f_unmount("");
 		}
 		sd_card_mounted = SD_UNDETECTED;
@@ -285,7 +302,7 @@ uint8_t sd_card_cmd_parser(void *args, bool *handled)
 {
 	grbl_cmd_args_t *cmd = args;
 
-	strupr((char*)cmd->cmd);
+	strupr((char *)cmd->cmd);
 
 	if (!strcmp("MNT", (char *)(cmd->cmd)))
 	{
@@ -338,6 +355,9 @@ DECL_MODULE(sd_card)
 
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(grbl_cmd, sd_card_cmd_parser);
+#ifdef SD_STOP_ON_GCODE_ERROR
+// ADD_EVENT_LISTENER(cnc_exec_cmd_error, sd_card_stop_onerror);
+#endif
 #else
 #warning "Parser extensions are not enabled. SD card commands will not work."
 #endif
