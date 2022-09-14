@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: 'request: new feature'
+labels: ''
 assignees: ''
 
 ---
@@ -17,7 +17,7 @@ A clear and concise description of what the feature is:
 **Describe the solution you'd like**
 A clear and concise description of you would like to achieve and who it should work.
 
-**Describe your target machine harware**
+**Describe your target machine hardware**
 A clear and concise description of your target machine hardware (mechanics, electronics, etc..).
 
 **Additional context**
