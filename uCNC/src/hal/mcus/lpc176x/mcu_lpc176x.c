@@ -350,7 +350,7 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
-#if MCU_HAS_SPI
+#ifdef MCU_HAS_SPI
 	SPI_CFG_Type spi_config = {0};
 	SPI_ConfigStructInit(&spi_config);
 	spi_config.CPHA = (SPI_MODE & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
@@ -665,7 +665,7 @@ void mcu_eeprom_flush(void)
 {
 }
 
-#if MCU_HAS_SPI
+#ifdef MCU_HAS_SPI
 void mcu_spi_config(uint8_t mode, uint32_t frequency){
 	mode = CLAMP(0, mode, 4);
 	SPI_DeInit(SPI_REG);

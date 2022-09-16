@@ -2745,8 +2745,26 @@ extern "C"
 #define DIO206_PINHALF SPI_SDO_PINHALF
 #define DIO206_PINCON SPI_SDO_PINCON
 #endif
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_MBED_PIN __mbedpin__(SPI_CS_PORT, SPI_CS_BIT)
+#define SPI_CS_GPIOREG __gpioreg__(SPI_CS_PORT)
+#if (SPI_CS_BIT < 16)
+#define SPI_CS_PINHALF L
+#else
+#define SPI_CS_PINHALF H
+#endif
+#define SPI_CS_PINCON __pincon__(SPI_CS_PORT, SPI_CS_PINHALF)
+#define DIO207 207
+#define DIO207_MBED_PIN SPI_CS_MBED_PIN
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_GPIOREG SPI_CS_GPIOREG
+#define DIO207_PINHALF SPI_CS_PINHALF
+#define DIO207_PINCON SPI_CS_PINCON
+#endif
 #if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 207
+#define I2C_SCL 208
 #define I2C_SCL_MBED_PIN __mbedpin__(I2C_SCL_PORT, I2C_SCL_BIT)
 #define I2C_SCL_GPIOREG __gpioreg__(I2C_SCL_PORT)
 #if (I2C_SCL_BIT < 16)
@@ -2755,16 +2773,16 @@ extern "C"
 #define I2C_SCL_PINHALF H
 #endif
 #define I2C_SCL_PINCON __pincon__(I2C_SCL_PORT, I2C_SCL_PINHALF)
-#define DIO207 207
-#define DIO207_MBED_PIN I2C_SCL_MBED_PIN
-#define DIO207_PORT I2C_SCL_PORT
-#define DIO207_BIT I2C_SCL_BIT
-#define DIO207_GPIOREG I2C_SCL_GPIOREG
-#define DIO207_PINHALF I2C_SCL_PINHALF
-#define DIO207_PINCON I2C_SCL_PINCON
+#define DIO208 208
+#define DIO208_MBED_PIN I2C_SCL_MBED_PIN
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_GPIOREG I2C_SCL_GPIOREG
+#define DIO208_PINHALF I2C_SCL_PINHALF
+#define DIO208_PINCON I2C_SCL_PINCON
 #endif
 #if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 208
+#define I2C_SDA 209
 #define I2C_SDA_MBED_PIN __mbedpin__(I2C_SDA_PORT, I2C_SDA_BIT)
 #define I2C_SDA_GPIOREG __gpioreg__(I2C_SDA_PORT)
 #if (I2C_SDA_BIT < 16)
@@ -2773,13 +2791,13 @@ extern "C"
 #define I2C_SDA_PINHALF H
 #endif
 #define I2C_SDA_PINCON __pincon__(I2C_SDA_PORT, I2C_SDA_PINHALF)
-#define DIO208 208
-#define DIO208_MBED_PIN I2C_SDA_MBED_PIN
-#define DIO208_PORT I2C_SDA_PORT
-#define DIO208_BIT I2C_SDA_BIT
-#define DIO208_GPIOREG I2C_SDA_GPIOREG
-#define DIO208_PINHALF I2C_SDA_PINHALF
-#define DIO208_PINCON I2C_SDA_PINCON
+#define DIO209 209
+#define DIO209_MBED_PIN I2C_SDA_MBED_PIN
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_GPIOREG I2C_SDA_GPIOREG
+#define DIO209_PINHALF I2C_SDA_PINHALF
+#define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
 /**********************************************
@@ -3431,12 +3449,12 @@ extern "C"
 #endif
 
 #define mcu_spi_xmit(X)                          \
-	{                                            \
+	({                                            \
 		LPC_SPI->SPDR = X;                       \
 		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)) \
 			;                                    \
 		LPC_SPI->SPDR;                           \
-	}
+	})
 
 #ifdef __cplusplus
 }
