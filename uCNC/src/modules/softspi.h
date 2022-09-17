@@ -31,41 +31,41 @@ extern "C"
 	typedef struct softspi_port_
 	{
 		uint8_t spimode;
-		void (*wait)(void);
+		uint8_t spidelay;
 		void (*clk)(bool);
 		void (*mosi)(bool);
 		bool (*miso)(void);
 	} softspi_port_t;
 
-#define SPIXMITDELAY(FREQ) MIN(0,((1000000UL / FREQ) - 1))
+#define SPI_DELAY(FREQ) MAX(0, ((5000000UL / FREQ) - 1))
 
-#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)        \
-	void NAME##_clk(bool state)                                    \
-	{                                                              \
-		if (state)                                                 \
-		{                                                          \
-			mcu_set_output(CLKPIN);                                \
-		}                                                          \
-		else                                                       \
-		{                                                          \
-			mcu_clear_output(CLKPIN);                              \
-		}                                                          \
-	}                                                              \
-	void NAME##_mosi(bool state)                                   \
-	{                                                              \
-		if (state)                                                 \
-		{                                                          \
-			mcu_set_output(MOSIPIN);                               \
-		}                                                          \
-		else                                                       \
-		{                                                          \
-			mcu_clear_output(MOSIPIN);                             \
-		}                                                          \
-	}                                                              \
-	bool NAME##_miso(void) { return mcu_get_input(MISOPIN); }      \
-	void NAME##_wait(void) { mcu_delay_us((SPIXMITDELAY(FREQ))); } \
-	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .wait = &NAME##_wait, .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
+#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)   \
+	void NAME##_clk(bool state)                               \
+	{                                                         \
+		if (state)                                            \
+		{                                                     \
+			mcu_set_output(CLKPIN);                           \
+		}                                                     \
+		else                                                  \
+		{                                                     \
+			mcu_clear_output(CLKPIN);                         \
+		}                                                     \
+	}                                                         \
+	void NAME##_mosi(bool state)                              \
+	{                                                         \
+		if (state)                                            \
+		{                                                     \
+			mcu_set_output(MOSIPIN);                          \
+		}                                                     \
+		else                                                  \
+		{                                                     \
+			mcu_clear_output(MOSIPIN);                        \
+		}                                                     \
+	}                                                         \
+	bool NAME##_miso(void) { return mcu_get_input(MISOPIN); } \
+	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spidelay = SPI_DELAY(FREQ), .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
 
+	void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency);
 	uint8_t softspi_xmit(softspi_port_t *port, uint8_t c);
 
 #ifdef __cplusplus

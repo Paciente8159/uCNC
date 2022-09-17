@@ -36,7 +36,7 @@ extern "C"
 		bool (*rx)(void);
 	} softuart_port_t;
 
-#define SOFTBAUD(x) (1000000 / x)
+#define UART_DELAY(x) (5000000UL / x)
 #define SOFTUART_TIMEOUT 20
 #define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                              \
 	void NAME##_tx(bool state)                                          \
@@ -54,8 +54,8 @@ extern "C"
 	{                                                                   \
 		return mcu_get_input(RXPIN);                                    \
 	}                                                                   \
-	void NAME##_wait(void) { mcu_delay_us((SOFTBAUD(BAUD))); }          \
-	void NAME##_waithalf(void) { mcu_delay_us((SOFTBAUD(BAUD)) >> 1); } \
+	void NAME##_wait(void) { mcu_delay_us((UART_DELAY(BAUD))); }          \
+	void NAME##_waithalf(void) { mcu_delay_us((UART_DELAY(BAUD)) >> 1); } \
 	__attribute__((used)) softuart_port_t NAME = {.wait = &NAME##_wait, .waithalf = &NAME##_waithalf, .tx = &NAME##_tx, .rx = &NAME##_rx};
 
 	void softuart_putc(softuart_port_t *port, uint8_t c);
