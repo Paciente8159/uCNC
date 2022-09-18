@@ -2745,8 +2745,26 @@ extern "C"
 #define DIO206_PINHALF SPI_SDO_PINHALF
 #define DIO206_PINCON SPI_SDO_PINCON
 #endif
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_MBED_PIN __mbedpin__(SPI_CS_PORT, SPI_CS_BIT)
+#define SPI_CS_GPIOREG __gpioreg__(SPI_CS_PORT)
+#if (SPI_CS_BIT < 16)
+#define SPI_CS_PINHALF L
+#else
+#define SPI_CS_PINHALF H
+#endif
+#define SPI_CS_PINCON __pincon__(SPI_CS_PORT, SPI_CS_PINHALF)
+#define DIO207 207
+#define DIO207_MBED_PIN SPI_CS_MBED_PIN
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_GPIOREG SPI_CS_GPIOREG
+#define DIO207_PINHALF SPI_CS_PINHALF
+#define DIO207_PINCON SPI_CS_PINCON
+#endif
 #if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 207
+#define I2C_SCL 208
 #define I2C_SCL_MBED_PIN __mbedpin__(I2C_SCL_PORT, I2C_SCL_BIT)
 #define I2C_SCL_GPIOREG __gpioreg__(I2C_SCL_PORT)
 #if (I2C_SCL_BIT < 16)
@@ -2755,16 +2773,16 @@ extern "C"
 #define I2C_SCL_PINHALF H
 #endif
 #define I2C_SCL_PINCON __pincon__(I2C_SCL_PORT, I2C_SCL_PINHALF)
-#define DIO207 207
-#define DIO207_MBED_PIN I2C_SCL_MBED_PIN
-#define DIO207_PORT I2C_SCL_PORT
-#define DIO207_BIT I2C_SCL_BIT
-#define DIO207_GPIOREG I2C_SCL_GPIOREG
-#define DIO207_PINHALF I2C_SCL_PINHALF
-#define DIO207_PINCON I2C_SCL_PINCON
+#define DIO208 208
+#define DIO208_MBED_PIN I2C_SCL_MBED_PIN
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_GPIOREG I2C_SCL_GPIOREG
+#define DIO208_PINHALF I2C_SCL_PINHALF
+#define DIO208_PINCON I2C_SCL_PINCON
 #endif
 #if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 208
+#define I2C_SDA 209
 #define I2C_SDA_MBED_PIN __mbedpin__(I2C_SDA_PORT, I2C_SDA_BIT)
 #define I2C_SDA_GPIOREG __gpioreg__(I2C_SDA_PORT)
 #if (I2C_SDA_BIT < 16)
@@ -2773,13 +2791,13 @@ extern "C"
 #define I2C_SDA_PINHALF H
 #endif
 #define I2C_SDA_PINCON __pincon__(I2C_SDA_PORT, I2C_SDA_PINHALF)
-#define DIO208 208
-#define DIO208_MBED_PIN I2C_SDA_MBED_PIN
-#define DIO208_PORT I2C_SDA_PORT
-#define DIO208_BIT I2C_SDA_BIT
-#define DIO208_GPIOREG I2C_SDA_GPIOREG
-#define DIO208_PINHALF I2C_SDA_PINHALF
-#define DIO208_PINCON I2C_SDA_PINCON
+#define DIO209 209
+#define DIO209_MBED_PIN I2C_SDA_MBED_PIN
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_GPIOREG I2C_SDA_GPIOREG
+#define DIO209_PINHALF I2C_SDA_PINHALF
+#define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
 /**********************************************
@@ -3287,11 +3305,33 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
 
-// only one exists
-#define SPI_REG LPC_SPI
+#define SPI_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 2) / X), 254)
 
-#include "lpc17xx_spi.h"
+#define SPI_REG __helper__(LPC_SSP, SPI_PORT, )
+#define SPI_PCONP __helper__(CLKPWR_PCONP_PCSSP, SPI_PORT, )
+#if (SPI_PORT == 0)
+#define SPI_PCLKSEL_REG PCLKSEL1
+#define SPI_PCLKSEL_MASK (3 << 20)
+#else
+#define SPI_PCLKSEL_REG PCLKSEL0
+#define SPI_PCLKSEL_MASK (3 << 10)
+#endif
+
+#include "lpc17xx_ssp.h"
+
+#if ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_18) && (SPI_SDI_MBED_PIN == P0_17) && (SPI_CLK_MBED_PIN == P0_15))
+#define SPI_ALT_FUNC 2
+#elif ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_24) && (SPI_SDI_MBED_PIN == P0_23) && (SPI_CLK_MBED_PIN == P0_20))
+#define SPI_ALT_FUNC 3
+#elif ((SPI_PORT == 1) && (SPI_SDO_MBED_PIN == P0_9) && (SPI_SDI_MBED_PIN == P0_8) && (SPI_CLK_MBED_PIN == P0_7))
+#define SPI_ALT_FUNC 2
+#else
+#error "SPI pin configuration not supported"
+#endif
 
 #endif
 
@@ -3347,11 +3387,12 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
-#define mcu_config_output_od(diopin)                                                                                            \
-	{                                                                                                                           \
-		mcu_config_output(diopin);                                                                                              \
-		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (0x10 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
-		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));                 \
+#define mcu_config_output_od(diopin)                                                                                          \
+	{                                                                                                                         \
+		mcu_config_output(diopin);                                                                                            \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (2 << ((__indirect__(diopin, BIT) & 0x0F) << 1));  \
+		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
 #define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
@@ -3367,31 +3408,39 @@ extern "C"
 
 #define mcu_config_pullup(diopin)                                                                                             \
 	{                                                                                                                         \
-		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
 
-#define mcu_config_pwm(diopin)                                                                                                                                   \
-	{                                                                                                                                                            \
-		mcu_config_output(diopin);                                                                                                                               \
-		CLKPWR_ConfigPPWR(CLKPWR_PCONP_PCPWM1, ENABLE);                                                                                                          \
-		CLKPWR_SetPCLKDiv(CLKPWR_PCLKSEL_PWM1, CLKPWR_PCLKSEL_CCLK_DIV_4);                                                                                       \
-		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                                                                                                    \
-		LPC_PWM1->TCR = 0;                                                                                                                                       \
-		LPC_PWM1->CTCR = 0;                                                                                                                                      \
-		LPC_PWM1->MCR = 0;                                                                                                                                       \
-		LPC_PWM1->CCR = 0;                                                                                                                                       \
-		LPC_PWM1->PCR &= 0xFF00;                                                                                                                                 \
-		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL));                                                                                    \
-		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));                                                                                           \
-		LPC_PWM1->PR = (CLKPWR_GetPCLK(CLKPWR_PCLKSEL_PWM1) / (255 * 1000)) - 1;                                                                                 \
-		LPC_PWM1->MCR = (1UL << 1);                                                                                                                              \
-		LPC_PWM1->MR0 = 255;                                                                                                                                     \
-		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                                                                                                                 \
-		mcu_config_output(diopin);                                                                                                                               \
-		PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL}; \
-		PINSEL_ConfigPin(&pwm);                                                                                                                                  \
-		mcu_set_pwm(diopin, 0);                                                                                                                                  \
+#define mcu_config_af(diopin, mode)                                                                                            \
+	{                                                                                                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1));   \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) |= (mode << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
+
+#define mcu_config_pwm(diopin)                                                \
+	{                                                                         \
+		mcu_config_output(diopin);                                            \
+		LPC_SC->PCONP |= CLKPWR_PCONP_PCPWM1;                                 \
+		LPC_SC->PCLKSEL0 &= ~(3 << 12); /* div clock by 4 */                  \
+		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                 \
+		LPC_PWM1->TCR = 0;                                                    \
+		LPC_PWM1->CTCR = 0;                                                   \
+		LPC_PWM1->MCR = 0;                                                    \
+		LPC_PWM1->CCR = 0;                                                    \
+		LPC_PWM1->PCR &= 0xFF00;                                              \
+		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
+		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
+		LPC_PWM1->PR = ((F_CPU >> 2) / 255000) - 1;                             \
+		LPC_PWM1->MCR = (1UL << 1);                                           \
+		LPC_PWM1->MR0 = 255;                                                  \
+		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
+		mcu_config_output(diopin);                                            \
+		mcu_config_af(diopin, (__indirect__(diopin, FUNC)));                  \
+		mcu_set_pwm(diopin, 0);                                               \
+	}
+
+	// PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
+	// PINSEL_ConfigPin(&pwm);
 
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
 #define mcu_get_output(diopin) CHECKBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
@@ -3424,19 +3473,19 @@ extern "C"
 #define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
 #elif (INTERFACE == INTERFACE_USB)
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
 
-#define mcu_spi_xmit(X)                          \
-	{                                            \
-		LPC_SPI->SPDR = X;                       \
-		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)) \
-			;                                    \
-		LPC_SPI->SPDR;                           \
-	}
+#define mcu_spi_xmit(X)                     \
+	({                                      \
+		SPI_REG->DR = X;                    \
+		while (!(SPI_REG->SR & SSP_SR_RNE)) \
+			;                               \
+		SPI_REG->DR;                        \
+	})
 
 #ifdef __cplusplus
 }

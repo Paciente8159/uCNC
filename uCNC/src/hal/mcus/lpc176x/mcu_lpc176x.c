@@ -350,13 +350,21 @@ void mcu_init(void)
 #if SERVOS_MASK > 0
 	servo_timer_init();
 #endif
-#if MCU_HAS_SPI
-	SPI_CFG_Type spi_config = {0};
-	SPI_ConfigStructInit(&spi_config);
-	spi_config.CPHA = (SPI_MODE & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
-	spi_config.CPHA = (SPI_MODE & 0x02) ? SPI_CPOL_HI : SPI_CPOL_LO;
-	spi_config.ClockRate = SPI_FREQ;
-	SPI_Init(SPI_REG, &spi_config);
+#ifdef MCU_HAS_SPI
+	mcu_config_af(SPI_CLK, SPI_ALT_FUNC);
+	mcu_config_af(SPI_SDO, SPI_ALT_FUNC);
+	mcu_config_af(SPI_SDI, SPI_ALT_FUNC);
+	mcu_config_af(SPI_CS, SPI_ALT_FUNC);
+	LPC_SC->PCONP |= SPI_PCONP;
+	LPC_SC->SPI_PCLKSEL_REG &= SPI_PCLKSEL_MASK; // div clock by 4
+	uint8_t div = SPI_COUNTER_DIV(SPI_FREQ);
+	div += (div&0x01) ? 1 : 0;
+	SPI_REG->CPSR = div;	 // internal divider
+	SPI_REG->CR0 |= SPI_MODE << 6;				 // clock phase
+	SPI_REG->CR0 |= 7 << 0;						 // 8 bits
+	SPI_REG->CR1 |= 1 << 1;						 // enable SSP*/
+
+
 #endif
 #ifdef MCU_HAS_I2C
 	PINSEL_CFG_Type scl = {I2C_SCL_PORT, I2C_SCL_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
@@ -665,18 +673,18 @@ void mcu_eeprom_flush(void)
 {
 }
 
-#if MCU_HAS_SPI
-void mcu_spi_config(uint8_t mode, uint32_t frequency){
-	mode = CLAMP(0, mode, 4);
-	SPI_DeInit(SPI_REG);
-	SPI_CFG_Type spi_config = {0};
-	SPI_ConfigStructInit(&spi_config);
-	spi_config.CPHA = (mode & 0x01) ? SPI_CPHA_SECOND : SPI_CPHA_FIRST;
-	spi_config.CPHA = (mode & 0x02) ? SPI_CPOL_HI : SPI_CPOL_LO;
-	spi_config.ClockRate = frequency;
-	SPI_Init(SPI_REG, &spi_config);
+#ifdef MCU_HAS_SPI
+void mcu_spi_config(uint8_t mode, uint32_t frequency)
+{
+	uint8_t div = SPI_COUNTER_DIV(frequency);
+	div += (div&0x01) ? 1 : 0;
+	mode = CLAMP(0, mode, 3);
+	SPI_REG->CR1 &= ~(1 << 1);						 // disable SSP
+	SPI_REG->CPSR = div;			 // internal divider
+	SPI_REG->CR0 |= mode << 6;				 // clock phase
+	SPI_REG->CR1 |= 1 << 1;						 // enable SSP
 }
-	
+
 #endif
 
 #ifdef MCU_HAS_I2C

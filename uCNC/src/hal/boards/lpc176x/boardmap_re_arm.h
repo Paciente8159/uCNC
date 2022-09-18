@@ -28,6 +28,10 @@ extern "C"
 #define BOARD_NAME "RAMPS 1.4 RE-ARM"
 #endif
 
+#ifndef F_CPU
+#define F_CPU 100000000UL
+#endif
+
 // Setup step pins
 #define STEP0_BIT 1	 // assigns STEP0 pin
 #define STEP0_PORT 2 // assigns STEP0 port
@@ -135,17 +139,48 @@ extern "C"
 #define SERVO0_BIT 20
 #define SERVO0_PORT 1
 
-	// hardware I2C
-	 #define I2C_SCL_BIT 1
-	 #define I2C_SCL_PORT 0
-	 #define I2C_SDA_BIT 0
-	 #define I2C_SDA_PORT 0
-	 #define I2C_PORT 1
-	// software I2C
+// hardware I2C
+#define I2C_SCL_BIT 1
+#define I2C_SCL_PORT 0
+#define I2C_SDA_BIT 0
+#define I2C_SDA_PORT 0
+#define I2C_PORT 1
+// software I2C
 // #define DIN30_BIT 1
 // #define DIN30_PORT 0
 // #define DIN31_BIT 0
 // #define DIN31_PORT 0
+
+// hardware SPI
+#define SPI_SDO_BIT 18
+#define SPI_SDO_PORT 0
+#define SPI_SDI_BIT 17
+#define SPI_SDI_PORT 0
+#define SPI_CLK_BIT 15
+#define SPI_CLK_PORT 0
+#define SPI_CS_BIT 16
+#define SPI_CS_PORT 0
+#define SPI_PORT 0
+// #define SPI_FREQ 100000UL
+// software SPI
+// #define DOUT29_BIT 9
+// #define DOUT29_PORT 0
+// #define DIN29_BIT 8
+// #define DIN29_PORT 0
+// #define DOUT30_BIT 7
+// #define DOUT30_PORT 0
+// sd card detect
+// #define DIN19_BIT 0
+// #define DIN19_PORT L
+// #define DIN19_PULLUP
+
+// mapping for reprap full discount display
+#define DOUT8_BIT 15
+#define DOUT8_PORT 0
+#define DOUT9_BIT 18
+#define DOUT9_PORT 0
+#define DOUT10_BIT 16
+#define DOUT10_PORT 0
 
 #ifdef __cplusplus
 }
