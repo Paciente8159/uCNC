@@ -443,7 +443,7 @@ void mcu_usart_init(void)
 #endif
 
 	// µs counting is now done via Systick
-	
+
 	// initialize debugger clock (used by us delay)
 	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	// {
@@ -479,7 +479,9 @@ void mcu_putc(char c)
 void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (36MHz)
+#ifndef FRAMEWORK_CLOCKS_INIT
 	mcu_clocks_init();
+#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
@@ -500,10 +502,10 @@ void mcu_init(void)
 	AFIO->MAPR |= SPI_REMAP;
 #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
-				   | SPI_CR1_SSI  // internal slave select
+	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
+				   | SPI_CR1_SSI   // internal slave select
 				   | SPI_CR1_MSTR; // SPI master mode
-				//    | (SPI_SPEED << 3) | SPI_MODE;
+								   //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
@@ -849,10 +851,10 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 	// disable SPI
 	SPI_REG->CR1 &= SPI_CR1_SPE;
-	//clear speed and mode
+	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
 	SPI_REG->CR1 |= (speed << 3) | mode;
-	//enable SPI
+	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
 #endif
