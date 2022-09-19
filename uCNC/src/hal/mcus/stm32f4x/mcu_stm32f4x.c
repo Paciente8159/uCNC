@@ -336,6 +336,7 @@ static void mcu_usart_init(void);
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
 #endif
 
+#ifndef FRAMEWORK_CLOCKS_INIT
 #if (F_CPU == 84000000)
 #define PLLN 336
 #define PLLP 1
@@ -409,6 +410,8 @@ void mcu_clocks_init()
 	// 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	// }
 }
+
+#endif
 
 void mcu_usart_init(void)
 {
