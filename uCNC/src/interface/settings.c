@@ -166,8 +166,25 @@ const settings_t __rom__ default_settings =
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
 {
-	// for now only pid module uses this hook and overrides it
 	DEFAULT_EVENT_HANDLER(settings_change);
+}
+
+// event_settings_load_handler
+WEAK_EVENT_HANDLER(settings_load)
+{
+	DEFAULT_EVENT_HANDLER(settings_load);
+}
+
+// event_settings_save_handler
+WEAK_EVENT_HANDLER(settings_save)
+{
+	DEFAULT_EVENT_HANDLER(settings_save);
+}
+
+// event_settings_erase_handler
+WEAK_EVENT_HANDLER(settings_erase)
+{
+	DEFAULT_EVENT_HANDLER(settings_erase);
 }
 #endif
 
@@ -198,6 +215,14 @@ void settings_init(void)
 
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
+#ifdef ENABLE_SETTINGS_MODULES
+	settings_args_t args = {.address = address, .data = __ptr, .size = size};
+	if (EVENT_INVOKE(settings_load, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	{
+		return 0;
+	}
+	// if unable to get settings from external memory tries to get from internal EEPROM
+#endif
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
@@ -220,7 +245,7 @@ void settings_reset(bool erase_startup_blocks)
 	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
 
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
-	settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
 		mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET, 0);
@@ -231,8 +256,16 @@ void settings_reset(bool erase_startup_blocks)
 #endif
 }
 
-void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size)
+void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
+#ifdef ENABLE_SETTINGS_MODULES
+	settings_args_t args = {.address = address, .data = __ptr, .size = size};
+	if (EVENT_INVOKE(settings_save, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	{
+		return;
+	}
+#endif
+
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
@@ -258,7 +291,7 @@ uint8_t settings_change(uint8_t setting, float value)
 	uint8_t result = 0;
 	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
 	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
-	
+
 	bool value1 = (value8 != 0);
 
 	if (value < 0)
@@ -449,7 +482,7 @@ uint8_t settings_change(uint8_t setting, float value)
 	}
 
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
-	settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
 #ifdef ENABLE_SETTINGS_MODULES
@@ -461,6 +494,14 @@ uint8_t settings_change(uint8_t setting, float value)
 
 void settings_erase(uint16_t address, uint8_t size)
 {
+
+#ifdef ENABLE_SETTINGS_MODULES
+	settings_args_t args = {.address = address, .data = NULL, .size = size};
+	if (EVENT_INVOKE(settings_erase, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	{
+		return;
+	}
+#endif
 #ifndef RAM_ONLY_SETTINGS
 	while (size)
 	{

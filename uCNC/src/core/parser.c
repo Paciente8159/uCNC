@@ -505,14 +505,14 @@ static uint8_t parser_grbl_command(void)
 				{
 				case '$':
 					settings_reset(false);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 					return GRBL_SEND_SETTINGS_RESET;
 				case '#':
 					parser_parameters_reset();
 					return GRBL_SEND_SETTINGS_RESET;
 				case '*':
 					settings_reset(true);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 					parser_parameters_reset();
 					return GRBL_SEND_SETTINGS_RESET;
 				default:
@@ -528,7 +528,7 @@ static uint8_t parser_grbl_command(void)
 				switch (grbl_cmd_str[1])
 				{
 				case 'S':
-					settings_save(SETTINGS_ADDRESS_OFFSET, (const uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 					return GRBL_SETTINGS_SAVED;
 				case 'L':
 					settings_init();
