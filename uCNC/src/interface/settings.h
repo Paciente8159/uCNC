@@ -108,7 +108,7 @@ extern "C"
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
 	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
-	void settings_save(uint16_t address, const uint8_t *__ptr, uint8_t size);
+	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
 	void settings_reset(bool erase_startup_blocks);
 	uint8_t settings_change(uint8_t setting, float value);
 	void settings_erase(uint16_t address, uint8_t size);
@@ -118,6 +118,18 @@ extern "C"
 #ifdef ENABLE_SETTINGS_MODULES
 	// event_settings_change_handler
 	DECL_EVENT_HANDLER(settings_change);
+	typedef struct settings_args_
+	{
+		uint16_t address;
+		uint8_t *data;
+		uint8_t size;
+	} settings_args_t;
+	// event_settings_load_handler
+	DECL_EVENT_HANDLER(settings_load);
+	// event_settings_save_handler
+	DECL_EVENT_HANDLER(settings_save);
+	// event_settings_erase_handler
+	DECL_EVENT_HANDLER(settings_erase);
 #endif
 
 #ifdef __cplusplus
