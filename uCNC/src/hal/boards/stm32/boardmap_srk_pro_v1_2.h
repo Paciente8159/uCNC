@@ -205,6 +205,20 @@ extern "C"
 #define DIN25_PORT D
 #define DIN25_PULLUP
 
+//software SPI for card access
+#define SPI_SDO_BIT 5
+#define SPI_SDO_PORT B
+#define SPI_SDI_BIT 6
+#define SPI_SDI_PORT A
+#define SPI_CLK_BIT 5
+#define SPI_CLK_PORT A
+#define SPI_CS_BIT 4
+#define SPI_CS_PORT A
+#define SPI_PORT 1
+//SD detect pin
+#define DIN19_BIT 11
+#define DIN19_PORT B
+
 #ifdef __cplusplus
 }
 #endif

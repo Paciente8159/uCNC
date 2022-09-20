@@ -84,7 +84,7 @@ extern "C"
 #endif
 
 #if (BOARD == BOARD_MKS_ROBIN_NANO_V1_2)
-#define MCU MCU_STM32F4X
+#define MCU MCU_STM32F1X
 #include "stm32/boardmap_mks_robin_nano_v1_2.h"
 #endif
 

@@ -3213,7 +3213,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	{                                               \
+	({                                               \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -3221,7 +3221,7 @@ extern "C"
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOC;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
-	}
+	})
 
 #define mcu_spi_xmit(X)                                               \
 	({                                                                 \
