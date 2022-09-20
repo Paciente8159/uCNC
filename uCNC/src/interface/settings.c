@@ -260,7 +260,10 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	EVENT_INVOKE(settings_save, &args);
+	if (EVENT_INVOKE(settings_save, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	{
+		return;
+	}
 #endif
 
 #ifndef RAM_ONLY_SETTINGS
@@ -494,7 +497,10 @@ void settings_erase(uint16_t address, uint8_t size)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = NULL, .size = size};
-	EVENT_INVOKE(settings_erase, &args);
+	if (EVENT_INVOKE(settings_erase, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	{
+		return;
+	}
 #endif
 #ifndef RAM_ONLY_SETTINGS
 	while (size)
