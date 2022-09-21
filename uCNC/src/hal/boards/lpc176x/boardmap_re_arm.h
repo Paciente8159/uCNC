@@ -86,7 +86,7 @@ extern "C"
 #define RX_PORT 0
 #define TX_PORT 0
 // only uncomment this if other port other then 0 is used
-//#define COM_NUMBER 0
+//#define UART_PORT 0
 #elif (INTERFACE == INTERFACE_USB)
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 30
@@ -152,15 +152,15 @@ extern "C"
 // #define DIN31_PORT 0
 
 // hardware SPI
-#define SPI_SDO_BIT 18
+#define SPI_SDO_BIT 9
 #define SPI_SDO_PORT 0
-#define SPI_SDI_BIT 17
+#define SPI_SDI_BIT 8
 #define SPI_SDI_PORT 0
-#define SPI_CLK_BIT 15
+#define SPI_CLK_BIT 7
 #define SPI_CLK_PORT 0
-#define SPI_CS_BIT 16
+#define SPI_CS_BIT 6
 #define SPI_CS_PORT 0
-#define SPI_PORT 0
+#define SPI_PORT 1
 // #define SPI_FREQ 100000UL
 // software SPI
 // #define DOUT29_BIT 9

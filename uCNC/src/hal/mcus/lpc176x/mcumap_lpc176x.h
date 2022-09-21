@@ -3244,55 +3244,42 @@ extern "C"
 
 // COM registers
 #if (INTERFACE == INTERFACE_UART)
-#ifndef COM_NUMBER
-#define COM_NUMBER 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
-#define COM_PCONP0 3
-#define COM_PCONP1 4
-#define COM_PCONP2 24
-#define COM_PCONP3 25
-#define __com_pconp__(X) COM_PCONP##X
-#define __compconp__(X) __com_pconp__(X)
+#define UART_PCONP __helper__(CLKPWR_PCONP_PCUART, UART_PORT, )
+
+#if ((UART_PORT == 0) && (TX_MBED_PIN == P0_2) && (RX_MBED_PIN == P0_3))
+#define UART_ALT_FUNC 1
+#define UART_PCLKSEL_REG PCLKSEL0
+#define UART_PCLKSEL_MASK (3 << 6)
+#elif ((UART_PORT == 1) && (TX_MBED_PIN == P2_0) && (RX_MBED_PIN == P2_1))
+#define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL0
+#define UART_PCLKSEL_MASK (3 << 8)
+#elif ((UART_PORT == 2) && (TX_MBED_PIN == P0_10) && (RX_MBED_PIN == P0_11))
+#define UART_ALT_FUNC 1
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 16)
+#elif ((UART_PORT == 3) && (TX_MBED_PIN == P0_0) && (RX_MBED_PIN == P0_1))
+#define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 18)
+#else
+#error "UART pin configuration not supported"
+#endif
 
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM_USART __helper__(LPC_UART, COM_NUMBER, )
-#define COM_IRQ __helper__(UART, COM_NUMBER, _IRQn)
-#define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, COM_NUMBER, )
+#define COM_USART __helper__(LPC_UART, UART_PORT, )
+#define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
+#define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART_PORT, )
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_COM_ISR __helper__(UART, COM_NUMBER, _IRQHandler)
+#define MCU_COM_ISR __helper__(UART, UART_PORT, _IRQHandler)
 #endif
 
 #define COM_OUTREG (COM_USART)->THR
 #define COM_INREG (COM_USART)->RBR
-
-#if (COM_NUMBER == 1 || COM_NUMBER == 2)
-#if (TX_PORT == 2)
-#define TX_ALT_FUNC 2
-#endif
-#if (RX_PORT == 2)
-#define RX_ALT_FUNC 2
-#endif
-#endif
-#if (COM_NUMBER == 3)
-#if (TX_PORT == 0)
-#define TX_ALT_FUNC 2
-#else
-#define TX_ALT_FUNC 3
-#endif
-#if (RX_PORT == 0)
-#define RX_ALT_FUNC 2
-#else
-#define RX_ALT_FUNC 3
-#endif
-#endif
-
-#ifndef TX_ALT_FUNC
-#define TX_ALT_FUNC 1
-#endif
-#ifndef RX_ALT_FUNC
-#define RX_ALT_FUNC 1
-#endif
 
 #endif
 
@@ -3309,7 +3296,7 @@ extern "C"
 #define SPI_PORT 1
 #endif
 
-#define SPI_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 2) / X), 254)
+#define SPI_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 3) / X), 254)
 
 #define SPI_REG __helper__(LPC_SSP, SPI_PORT, )
 #define SPI_PCONP __helper__(CLKPWR_PCONP_PCSSP, SPI_PORT, )
@@ -3371,6 +3358,13 @@ extern "C"
 #define MCU_ITP_ISR __helper__(TIMER, ITP_TIMER, _IRQHandler)
 #define ITP_INT_FLAG __helper__(TIM_MR, ITP_TIMER, _INT)
 #define ITP_TIMER_IRQ __helper__(TIMER, ITP_TIMER, _IRQn)
+#define ITP_PCONP __helper__(CLKPWR_PCONP_PCTIM, ITP_TIMER, )
+#if (ITP_TIMER < 2)
+#define ITP_PCLKSEL_REG PCLKSEL0
+#else
+#define ITP_PCLKSEL_REG PCLKSEL1
+#endif
+#define ITP_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
 
 #define MCU_RTC_ISR SysTick_Handler
 
@@ -3430,7 +3424,7 @@ extern "C"
 		LPC_PWM1->PCR &= 0xFF00;                                              \
 		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
 		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
-		LPC_PWM1->PR = ((F_CPU >> 2) / 255000) - 1;                             \
+		LPC_PWM1->PR = ((F_CPU >> 2) / 255000) - 1;                           \
 		LPC_PWM1->MCR = (1UL << 1);                                           \
 		LPC_PWM1->MR0 = 255;                                                  \
 		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
