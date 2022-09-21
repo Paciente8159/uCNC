@@ -37,7 +37,7 @@ volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
-
+#define SERVO_MIN 64
 static uint8_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
@@ -62,46 +62,8 @@ static FORCEINLINE void mcu_clear_servos()
 #endif
 }
 
-void servo_timer_init(void)
+static FORCEINLINE void mcu_set_servos()
 {
-	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
-	TIM_TIMERCFG_Type tmrconfig;
-	TIM_ConfigStructInit(TIM_TIMER_MODE, &tmrconfig);
-	TIM_Init(SERVO_TIMER_REG, TIM_TIMER_MODE, &tmrconfig);
-	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
-}
-
-void servo_start_timeout(uint8_t val)
-{
-	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
-	TIM_MATCHCFG_Type tmrmatch;
-	tmrmatch.MatchChannel = SERVO_TIMER;
-	tmrmatch.IntOnMatch = ENABLE;
-	tmrmatch.StopOnMatch = DISABLE;
-	tmrmatch.ResetOnMatch = ENABLE;
-	tmrmatch.MatchValue = ((uint32_t)((float)val * 7.875f)) + 500;
-	TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	TIM_ConfigMatch(SERVO_TIMER_REG, &tmrmatch);
-
-	TIM_Cmd(SERVO_TIMER_REG, ENABLE);
-}
-
-void MCU_SERVO_ISR(void)
-{
-	mcu_clear_servos();
-	TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	TIM_Cmd(SERVO_TIMER_REG, DISABLE);
-}
-
-#endif
-
-void MCU_RTC_ISR(void)
-{
-	mcu_disable_global_isr();
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
 	uint8_t servo_counter = ms_servo_counter;
@@ -109,53 +71,107 @@ void MCU_RTC_ISR(void)
 	switch (servo_counter)
 	{
 #if SERVO0 >= 0
-	case SERVO0_FRAME:
-		servo_start_timeout(mcu_servos[0]);
+	case 0:
 		mcu_set_output(SERVO0);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[0]);
+
 		break;
 #endif
 #if SERVO1 >= 0
-	case SERVO1_FRAME:
+	case 1:
 		mcu_set_output(SERVO1);
-		servo_start_timeout(mcu_servos[1]);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[1]);
 		break;
 #endif
 #if SERVO2 >= 0
-	case SERVO2_FRAME:
+	case 2:
 		mcu_set_output(SERVO2);
-		servo_start_timeout(mcu_servos[2]);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[2]);
 		break;
 #endif
 #if SERVO3 >= 0
-	case SERVO3_FRAME:
+	case 3:
 		mcu_set_output(SERVO3);
-		servo_start_timeout(mcu_servos[3]);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[3]);
 		break;
 #endif
 #if SERVO4 >= 0
-	case SERVO4_FRAME:
+	case 4:
 		mcu_set_output(SERVO4);
-		servo_start_timeout(mcu_servos[4]);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[4]);
 		break;
 #endif
 #if SERVO5 >= 0
-	case SERVO5_FRAME:
+	case 5:
 		mcu_set_output(SERVO5);
-		servo_start_timeout(mcu_servos[5]);
+		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[5]);
 		break;
 #endif
 	}
 
 	servo_counter++;
-	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
+	ms_servo_counter = (servo_counter != 6) ? servo_counter : 0;
+#endif
+}
+
+void servo_timer_init(void)
+{
+	LPC_SC->PCONP |= SERVO_PCONP;
+	LPC_SC->SERVO_PCLKSEL_REG &= ~SERVO_PCLKSEL_VAL; // system clk/4
+
+	SERVO_TIMER_REG->CTCR = 0;
+	SERVO_TIMER_REG->CCR &= ~0x03;
+	SERVO_TIMER_REG->TC = 0;
+	SERVO_TIMER_REG->PC = 0;
+	SERVO_TIMER_REG->PR = 0;
+	SERVO_TIMER_REG->TCR |= TIM_RESET;	// Reset Counter
+	SERVO_TIMER_REG->TCR &= ~TIM_RESET; // release reset
+	SERVO_TIMER_REG->EMR = 0;
+
+	SERVO_TIMER_REG->PR = ((F_CPU >> 2) / 127500) - 1; // for 1us
+	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
+
+	SERVO_TIMER_REG->MR1 = SERVO_MIN;	 // minimum value for servo setup
+	SERVO_TIMER_REG->MR0 = 425;	 // reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B; // Interrupt on MC0 and MC1 and reset on MC0
+
+	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
+	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
+	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
+
+	SERVO_TIMER_REG->TCR |= TIM_ENABLE;
+}
+
+void MCU_SERVO_ISR(void)
+{
+	mcu_disable_global_isr();
+	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR1_INT))
+	{
+		mcu_clear_servos();
+		SETBIT(SERVO_TIMER_REG->IR, TIM_MR1_INT);
+	}
+
+	if (CHECKBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT))
+	{
+		mcu_set_servos();
+		SETBIT(SERVO_TIMER_REG->IR, TIM_MR0_INT);
+	}
+	mcu_enable_global_isr();
+	// mcu_clear_servos();
+	// TIM_ClearIntPending(SERVO_TIMER_REG, SERVO_INT_FLAG);
+	// NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
+	// TIM_Cmd(SERVO_TIMER_REG, DISABLE);
+}
 
 #endif
 
+void MCU_RTC_ISR(void)
+{
+	mcu_disable_global_isr();
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
-	// TIM_ClearIntPending(RTC_TIMER_REG, RTC_INT_FLAG);
 	mcu_enable_global_isr();
 }
 

@@ -3375,6 +3375,13 @@ extern "C"
 #define MCU_SERVO_ISR __helper__(TIMER, SERVO_TIMER, _IRQHandler)
 #define SERVO_INT_FLAG __helper__(TIM_MR, SERVO_TIMER, _INT)
 #define SERVO_TIMER_IRQ __helper__(TIMER, SERVO_TIMER, _IRQn)
+#define SERVO_PCONP __helper__(CLKPWR_PCONP_PCTIM, SERVO_TIMER, )
+#if (SERVO_TIMER < 2)
+#define SERVO_PCLKSEL_REG PCLKSEL0
+#else
+#define SERVO_PCLKSEL_REG PCLKSEL1
+#endif
+#define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
