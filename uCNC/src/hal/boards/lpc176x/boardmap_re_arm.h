@@ -139,6 +139,16 @@ extern "C"
 #define SERVO0_BIT 20
 #define SERVO0_PORT 1
 
+#define ANALOG0_BIT 23
+#define ANALOG0_PORT 0
+#define ANALOG0_CHANNEL 0
+#define ANALOG1_BIT 24
+#define ANALOG1_PORT 0
+#define ANALOG1_CHANNEL 1
+#define ANALOG2_BIT 25
+#define ANALOG2_PORT 0
+#define ANALOG2_CHANNEL 2
+
 // hardware I2C
 #define I2C_SCL_BIT 1
 #define I2C_SCL_PORT 0
