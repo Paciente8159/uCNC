@@ -69,29 +69,30 @@ void planner_add_line(motion_data_t *block_data)
 	static float last_dir_vect[AXIS_COUNT];
 #endif
 	// clear the planner block
-	memset(&planner_data[planner_data_write], 0, sizeof(planner_block_t));
-	planner_data[planner_data_write].dirbits = block_data->dirbits;
-	planner_data[planner_data_write].main_stepper = block_data->main_stepper;
-	planner_data[planner_data_write].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
-	planner_data[planner_data_write].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
+	uint8_t index = planner_data_write;
+	memset(&planner_data[index], 0, sizeof(planner_block_t));
+	planner_data[index].dirbits = block_data->dirbits;
+	planner_data[index].main_stepper = block_data->main_stepper;
+	planner_data[index].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
+	planner_data[index].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
 
 #if TOOL_COUNT > 0
-	planner_data[planner_data_write].spindle = block_data->spindle;
+	planner_data[index].spindle = block_data->spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
-	planner_data[planner_data_write].line = block_data->line;
+	planner_data[index].line = block_data->line;
 
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
 	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
 	{
-		planner_data[planner_data_write].flags_u.flags_t.backlash_comp = true;
+		planner_data[index].flags_u.flags_t.backlash_comp = true;
 	}
 #endif
 
-	memcpy(planner_data[planner_data_write].steps, block_data->steps, sizeof(planner_data[planner_data_write].steps));
-	planner_data[planner_data_write].total_steps = block_data->total_steps;
+	memcpy(planner_data[index].steps, block_data->steps, sizeof(planner_data[index].steps));
+	planner_data[index].total_steps = block_data->total_steps;
 
 	// calculates the normalized vector with the amount of motion in any linear actuator
 	// also calculates the maximum feedrate and acceleration for each linear actuator
@@ -103,7 +104,7 @@ void planner_add_line(motion_data_t *block_data)
 #endif
 	float cos_theta = 0;
 	float rapid_feed = FLT_MAX;
-	planner_data[planner_data_write].acceleration = FLT_MAX;
+	planner_data[index].acceleration = FLT_MAX;
 
 #ifdef ENABLE_LINACT_PLANNER
 	float dir_vect[STEPPER_COUNT];
@@ -129,10 +130,10 @@ void planner_add_line(motion_data_t *block_data)
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
 	{
 		i--;
-		if (planner_data[planner_data_write].steps[i] != 0)
+		if (planner_data[index].steps[i] != 0)
 		{
 #ifdef ENABLE_LINACT_PLANNER
-			dir_vect[i] = inv_total_steps * (float)planner_data[planner_data_write].steps[i];
+			dir_vect[i] = inv_total_steps * (float)planner_data[index].steps[i];
 
 			if (!planner_buffer_is_empty())
 			{
@@ -148,11 +149,11 @@ void planner_add_line(motion_data_t *block_data)
 			last_dir_vect[i] = dir_vect[i];
 #endif
 			// calculate (per linear actuator) the minimum inverted time of travel (1/min) an acceleration (1/s^2)
-			float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[planner_data_write].steps[i];
+			float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[index].steps[i];
 			float stepper_feed = g_settings.max_feed_rate[i] * step_ratio;
 			rapid_feed = MIN(rapid_feed, stepper_feed);
 			float stepper_accel = g_settings.acceleration[i] * step_ratio;
-			planner_data[planner_data_write].acceleration = MIN(planner_data[planner_data_write].acceleration, stepper_accel);
+			planner_data[index].acceleration = MIN(planner_data[index].acceleration, stepper_accel);
 		}
 		else
 		{
@@ -165,15 +166,15 @@ void planner_add_line(motion_data_t *block_data)
 	rapid_feed *= MIN_SEC_MULT;
 	rapid_feed *= (float)block_data->total_steps;
 	// converts to steps per second^2 (st/s^2)
-	planner_data[planner_data_write].acceleration *= (float)block_data->total_steps;
+	planner_data[index].acceleration *= (float)block_data->total_steps;
 
 	if (feed > rapid_feed)
 	{
 		feed = rapid_feed;
 	}
 
-	planner_data[planner_data_write].feed_sqr = fast_flt_pow2(feed);
-	planner_data[planner_data_write].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
+	planner_data[index].feed_sqr = fast_flt_pow2(feed);
+	planner_data[index].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
 
 	// consider initial angle factor of 1 (90 degree angle corner or more)
 	float angle_factor = 1.0f;
@@ -181,9 +182,9 @@ void planner_add_line(motion_data_t *block_data)
 
 	if (!planner_buffer_is_empty())
 	{
-		prev = planner_buffer_prev(planner_data_write); // BUFFER_PTR(planner_buffer, prev_index);
+		prev = planner_buffer_prev(index); // BUFFER_PTR(planner_buffer, prev_index);
 #ifdef ENABLE_LINACT_COLD_START
-		if ((planner_data[prev].dirbits ^ planner_data[planner_data_write].dirbits))
+		if ((planner_data[prev].dirbits ^ planner_data[index].dirbits))
 		{
 			cos_theta = 0;
 		}
@@ -226,12 +227,12 @@ void planner_add_line(motion_data_t *block_data)
 				junc_feed_sqr = fast_flt_pow2(junc_feed_sqr);
 				junc_feed_sqr *= planner_data[prev].feed_sqr;
 				// the maximum feed is the minimal feed between the previous feed given the angle and the current feed
-				planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, junc_feed_sqr);
+				planner_data[index].entry_max_feed_sqr = MIN(planner_data[index].feed_sqr, junc_feed_sqr);
 			}
 		}
 		else
 		{
-			planner_data[planner_data_write].entry_max_feed_sqr = MIN(planner_data[planner_data_write].feed_sqr, planner_data[prev].feed_sqr);
+			planner_data[index].entry_max_feed_sqr = MIN(planner_data[index].feed_sqr, planner_data[prev].feed_sqr);
 		}
 
 		// forces reaclculation with the new block
@@ -249,9 +250,10 @@ void planner_add_line(motion_data_t *block_data)
 static void planner_add_block(void)
 {
 	uint8_t index = planner_data_write;
+	uint8_t blocks = planner_data_blocks;
 #if TOOL_COUNT > 0
 	// planner is empty update tools with current planner values
-	if (!planner_data_blocks)
+	if (!blocks)
 	{
 		planner_state.spindle_speed = planner_data[index].spindle;
 		planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
@@ -264,7 +266,8 @@ static void planner_add_block(void)
 	}
 
 	planner_data_write = index;
-	planner_data_blocks++;
+	blocks++;
+	planner_data_blocks = blocks;
 }
 
 void planner_discard_block(void)
@@ -415,30 +418,31 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	v_max^2 = (v_exit^2 + 2 * acceleration * distance + v_entry)/2
 	*/
 	// calculates the difference between the entry speed and the exit speed
-	float speed_delta = exit_speed_sqr - planner_data[planner_data_read].entry_feed_sqr;
+	uint8_t index = planner_data_read;
+	float speed_delta = exit_speed_sqr - planner_data[index].entry_feed_sqr;
 	// caclculates the speed increase/decrease for the given distance
-	float junction_speed_sqr = planner_data[planner_data_read].acceleration * (float)(planner_data[planner_data_read].total_steps);
+	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].total_steps);
 	junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
 	// if there is enough space to accelerate computes the junction speed
 	if (junction_speed_sqr >= speed_delta)
 	{
-		junction_speed_sqr += exit_speed_sqr + planner_data[planner_data_read].entry_feed_sqr;
+		junction_speed_sqr += exit_speed_sqr + planner_data[index].entry_feed_sqr;
 		junction_speed_sqr = fast_flt_div2(junction_speed_sqr);
 	}
-	else if (exit_speed_sqr > planner_data[planner_data_read].entry_feed_sqr)
+	else if (exit_speed_sqr > planner_data[index].entry_feed_sqr)
 	{
 		// will never reach the desired exit speed even accelerating all the way
-		junction_speed_sqr += planner_data[planner_data_read].entry_feed_sqr;
+		junction_speed_sqr += planner_data[index].entry_feed_sqr;
 	}
 	else
 	{
 		// will overshoot the desired exit speed even deaccelerating all the way
-		junction_speed_sqr = planner_data[planner_data_read].entry_feed_sqr;
+		junction_speed_sqr = planner_data[index].entry_feed_sqr;
 	}
 
-	float rapid_feed_sqr = planner_data[planner_data_read].rapid_feed_sqr;
-	float target_speed_sqr = planner_data[planner_data_read].feed_sqr;
-	if (planner_data[planner_data_read].planner_flags.bit.feed_override)
+	float rapid_feed_sqr = planner_data[index].rapid_feed_sqr;
+	float target_speed_sqr = planner_data[index].feed_sqr;
+	if (planner_data[index].planner_flags.bit.feed_override)
 	{
 		if (planner_state.feed_override != 100)
 		{
@@ -515,42 +519,38 @@ static void planner_recalculate(void)
 		return;
 	}
 	// optimizes entry speeds given the current exit speed (backward pass)
-	uint8_t next = planner_buffer_next(block);
+	uint8_t next = block;
+	float speedchange;
 
 	while (!planner_data[block].planner_flags.bit.optimal && block != first)
 	{
-		float speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
-		if (planner_data[block].entry_feed_sqr != planner_data[block].entry_max_feed_sqr)
-		{
-			speedchange = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
-			speedchange += (block != last) ? planner_data[next].entry_max_feed_sqr : 0;
-			planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
-		}
-		else
+		if ((planner_data[block].entry_feed_sqr >= planner_data[block].entry_max_feed_sqr) || planner_data[block].planner_flags.bit.optimal)
 		{
 			// found optimal
 			break;
 		}
+		speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
+		speedchange += (block != last) ? planner_data[next].entry_feed_sqr : 0;
+		planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
 
 		next = block;
 		block = planner_buffer_prev(block);
 	}
 
-	next = planner_buffer_next(block);
 	// optimizes exit speeds (forward pass)
 	while (block != last)
 	{
 		// next block is moving at a faster speed
 		if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
 		{
-			float speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
+			speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
 			// check if the next block entry speed can be achieved
 			speedchange += planner_data[block].entry_feed_sqr;
 			if (speedchange < planner_data[next].entry_feed_sqr)
 			{
 				// lowers next entry speed (aka exit speed) to the maximum reachable speed from current block
 				// optimization achieved for this movement
-				planner_data[next].entry_feed_sqr = MIN(planner_data[next].entry_max_feed_sqr, speedchange);
+				planner_data[next].entry_feed_sqr = speedchange;
 				planner_data[next].planner_flags.bit.optimal = true;
 			}
 		}
