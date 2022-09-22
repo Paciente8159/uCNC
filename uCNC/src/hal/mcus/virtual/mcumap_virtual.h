@@ -189,5 +189,6 @@
 
 // just to compile
 #define mcu_rx_ready() true
+#define mcu_nop()
 
 #endif

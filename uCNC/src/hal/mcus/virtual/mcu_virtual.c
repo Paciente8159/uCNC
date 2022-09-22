@@ -1490,8 +1490,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 		if (!fseek(fp, address, SEEK_SET))
 		{
 			c = getc(fp);
-			fclose(fp);
 		}
+		
+		fclose(fp);
 	}
 
 	return c;
