@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.5.0] - Unreleased
+## [1.5.0] - 22-09-2022
 
 ### Added
 
@@ -28,6 +28,7 @@
 
 - prevented dotask event lock reentrancy (#252)
 - better delay functions for generic usage (including SPI, I2C and UART software libraries) (#264)
+- fixed planner deacceleration calculations to prevent that caused noticeable abrupt stops with fast short motions (image rastering) (#275)
 
 ## [1.5.rc] - 2022-09-02
 
