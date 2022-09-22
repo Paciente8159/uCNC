@@ -11,14 +11,23 @@
 ### Added
 
 - added Hardware I2C and SPI capabilities to several MCU (only ESP8266 and ESP32 not supported for now) that are integrated and used via software libraries (#249)
+- added speed config function to MCU and soft SPI (#253)
+- added events to support SD card module (#254)
+- added LPC176x analog input support (#273)
 
 ### Changed
 
 - ARM mcu share the same µs delay function calculated from SysTick clock (no loops or coredebug clocks used) (#249)
 - software SPI/UART libraries use atomic operations macros (#249)
 - moved activity led code to core (#250)
+- better WiFi detect on ESP32 (#251)
+- rewritten software I2C (#255)
+- migrate LPC176x critical code to bare metal with serveral enhancements for ITP and SERVO ISR (#273)
 
 ### Fixed
+
+- prevented dotask event lock reentrancy (#252)
+- better delay functions for generic usage (including SPI, I2C and UART software libraries) (#264)
 
 ## [1.5.rc] - 2022-09-02
 
