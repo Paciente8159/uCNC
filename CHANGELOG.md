@@ -6,6 +6,12 @@
 
 # Changelog
 
+## [1.5.1] - 22-09-2022
+
+### Fixed
+
+- dwell is being executed ahead of time (async) (#276)
+
 ## [1.5.0] - 22-09-2022
 
 ### Added
@@ -993,6 +999,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
 [1.5.beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta
