@@ -1997,10 +1997,6 @@ typedef uint16_t step_t;
 #if ((LIMIT_Z < 0) && (LIMIT_Z2 < 0))
 #error "Delta requires at least one Z axis endstop"
 #endif
-#if (MCU == MCU_AVR && BOARD != BOARD_UNO && BOARD != BOARD_MKS_DLC)
-#define PLANNER_BUFFER_SIZE 40
-#define INTERPOLATOR_FREQ 1
-#endif
 #endif
 
 // some sanity checks
