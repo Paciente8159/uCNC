@@ -2891,7 +2891,7 @@ extern "C"
 #define SPI_CS_CROFF SPI_CS_BIT
 #define SPI_CS_CR CRL
 #else
-#define SPI_CS_CROFF (SPI_CS_BIT&0x07)
+#define SPI_CS_CROFF (SPI_CS_BIT & 0x07)
 #define SPI_CS_CR CRH
 #endif
 #define DIO207 207
@@ -2910,7 +2910,7 @@ extern "C"
 #define I2C_SCL_CROFF I2C_SCL_BIT
 #define I2C_SCL_CR CRL
 #else
-#define I2C_SCL_CROFF (I2C_SCL_BIT&0x07)
+#define I2C_SCL_CROFF (I2C_SCL_BIT & 0x07)
 #define I2C_SCL_CR CRH
 #endif
 #define DIO208 208
@@ -2929,7 +2929,7 @@ extern "C"
 #define I2C_SDA_CROFF I2C_SDA_BIT
 #define I2C_SDA_CR CRL
 #else
-#define I2C_SDA_CROFF (I2C_SDA_BIT&0x07)
+#define I2C_SDA_CROFF (I2C_SDA_BIT & 0x07)
 #define I2C_SDA_CR CRH
 #endif
 #define DIO209 209
@@ -4410,7 +4410,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->BSRR = (1U << __indirect__(diopin, BIT));                                         \
 	}
 
-#define mcu_config_pwm(diopin)                                                                                                   \
+#define mcu_config_pwm(diopin, freq)                                                                                             \
 	{                                                                                                                            \
 		RCC->APB2ENR |= 0x1U;                                                                                                    \
 		__indirect__(diopin, ENREG) |= __indirect__(diopin, APBEN);                                                              \
@@ -4418,7 +4418,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                              \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                    \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
@@ -4483,7 +4483,7 @@ extern "C"
 	}
 
 #define mcu_spi_xmit(X)                                               \
-	({                                                                 \
+	({                                                                \
 		SPI_REG->DR = X;                                              \
 		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
 			;                                                         \
