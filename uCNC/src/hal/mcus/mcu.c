@@ -93,52 +93,52 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_output(STEP7_EN);
 #endif
 #if !(PWM0 < 0)
-	mcu_config_pwm(PWM0);
+	mcu_config_pwm(PWM0, 1000);
 #endif
 #if !(PWM1 < 0)
-	mcu_config_pwm(PWM1);
+	mcu_config_pwm(PWM1, 1000);
 #endif
 #if !(PWM2 < 0)
-	mcu_config_pwm(PWM2);
+	mcu_config_pwm(PWM2, 1000);
 #endif
 #if !(PWM3 < 0)
-	mcu_config_pwm(PWM3);
+	mcu_config_pwm(PWM3, 1000);
 #endif
 #if !(PWM4 < 0)
-	mcu_config_pwm(PWM4);
+	mcu_config_pwm(PWM4, 1000);
 #endif
 #if !(PWM5 < 0)
-	mcu_config_pwm(PWM5);
+	mcu_config_pwm(PWM5, 1000);
 #endif
 #if !(PWM6 < 0)
-	mcu_config_pwm(PWM6);
+	mcu_config_pwm(PWM6, 1000);
 #endif
 #if !(PWM7 < 0)
-	mcu_config_pwm(PWM7);
+	mcu_config_pwm(PWM7, 1000);
 #endif
 #if !(PWM8 < 0)
-	mcu_config_pwm(PWM8);
+	mcu_config_pwm(PWM8, 1000);
 #endif
 #if !(PWM9 < 0)
-	mcu_config_pwm(PWM9);
+	mcu_config_pwm(PWM9, 1000);
 #endif
 #if !(PWM10 < 0)
-	mcu_config_pwm(PWM10);
+	mcu_config_pwm(PWM10, 1000);
 #endif
 #if !(PWM11 < 0)
-	mcu_config_pwm(PWM11);
+	mcu_config_pwm(PWM11, 1000);
 #endif
 #if !(PWM12 < 0)
-	mcu_config_pwm(PWM12);
+	mcu_config_pwm(PWM12, 1000);
 #endif
 #if !(PWM13 < 0)
-	mcu_config_pwm(PWM13);
+	mcu_config_pwm(PWM13, 1000);
 #endif
 #if !(PWM14 < 0)
-	mcu_config_pwm(PWM14);
+	mcu_config_pwm(PWM14, 1000);
 #endif
 #if !(PWM15 < 0)
-	mcu_config_pwm(PWM15);
+	mcu_config_pwm(PWM15, 1000);
 #endif
 #if !(SERVO0 < 0)
 	mcu_config_output(SERVO0);
