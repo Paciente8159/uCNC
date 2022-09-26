@@ -3144,7 +3144,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
 	}
 
-#define mcu_config_pwm(diopin)                                                                                                                                      \
+#define mcu_config_pwm(diopin, freq)                                                                                                                                      \
 	{                                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
 		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
@@ -3154,7 +3154,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                                                      \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / __indirect__(diopin, FREQ)) - 1;                                                                 \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                 \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                                                   \

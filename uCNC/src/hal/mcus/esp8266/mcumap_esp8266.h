@@ -1006,7 +1006,7 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
