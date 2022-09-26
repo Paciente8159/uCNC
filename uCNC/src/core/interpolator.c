@@ -1049,7 +1049,7 @@ float itp_get_rt_feed(void)
 // used to make a sync motion
 uint8_t itp_sync(void)
 {
-	while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || cnc_get_exec_state(EXEC_RUN))
+	while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || (itp_rt_sgm != NULL))
 	{
 		if (!cnc_dotasks())
 		{
