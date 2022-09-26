@@ -565,7 +565,7 @@ void itp_run(void)
 #if TOOL_COUNT > 0
 		if (g_settings.laser_mode)
 		{
-			float top_speed_inv = 1 / top_speed;
+			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
@@ -886,7 +886,7 @@ void itp_run(void)
 		// calculates dynamic laser power
 		if (g_settings.laser_mode)
 		{
-			float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
+			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
