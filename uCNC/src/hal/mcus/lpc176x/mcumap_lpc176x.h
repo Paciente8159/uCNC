@@ -3704,7 +3704,7 @@ extern "C"
 		NVIC_EnableIRQ(EINT3_IRQn);                                                    \
 	}
 
-#define mcu_config_pwm(diopin)                                                \
+#define mcu_config_pwm(diopin, freq)                                          \
 	{                                                                         \
 		mcu_config_output(diopin);                                            \
 		LPC_SC->PCONP |= CLKPWR_PCONP_PCPWM1;                                 \
@@ -3717,7 +3717,7 @@ extern "C"
 		LPC_PWM1->PCR &= 0xFF00;                                              \
 		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
 		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
-		LPC_PWM1->PR = ((F_CPU >> 2) / 255000) - 1;                           \
+		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                      \
 		LPC_PWM1->MCR = (1UL << 1);                                           \
 		LPC_PWM1->MR0 = 255;                                                  \
 		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
