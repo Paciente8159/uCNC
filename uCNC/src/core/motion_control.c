@@ -28,6 +28,14 @@ static float mc_last_target[AXIS_COUNT];
 static uint8_t mc_last_dirbits;
 #endif
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+// event_mc_line_segment_handler
+WEAK_EVENT_HANDLER(mc_line_segment)
+{
+	DEFAULT_EVENT_HANDLER(mc_line_segment);
+}
+#endif
+
 void mc_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
@@ -146,6 +154,11 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 
 			mc_last_dirbits = block_data->dirbits;
 		}
+#endif
+
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		// event_mc_line_segment_handler
+		EVENT_INVOKE(mc_line_segment, block_data);
 #endif
 
 		planner_add_line(block_data);
