@@ -463,15 +463,8 @@ uint8_t mc_dwell(motion_data_t *block_data)
 {
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
-		// restores/forces run flag
-		cnc_set_exec_state(EXEC_RUN);
-		if (itp_sync() != STATUS_OK)
-		{
-			return STATUS_CRITICAL_FAIL;
-		}
+		mc_update_tools(block_data);
 		cnc_delay_ms(block_data->dwell);
-		// clear forced run flag to allow next motions
-		cnc_clear_exec_state(EXEC_RUN);
 	}
 
 	return STATUS_OK;
