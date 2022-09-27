@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.5.2] - Unreleased
+
+### Added
+
+- configurable PWM frequency (#286)
+
+### Fixed
+
+- fixed no command response after a tool command without motion (#284)
+- fixed incorrect laser power factor scaling with M4 (#282)
+- $P servo report values for AVR (#283)
+- fixed tool update with dwell to reach programmed speed
+
 ## [1.5.1] - 23-09-2022
 
 ### Fixed
