@@ -59,8 +59,10 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 	// applies the inverse kinematic to get next position in steps
 	kinematics_apply_inverse(target, step_new_pos);
 
-	// resets accumulator vars of the block
+// resets accumulator vars of the block
+#ifdef ENABLE_LINACT_PLANNER
 	block_data->full_steps = 0;
+#endif
 	block_data->total_steps = 0;
 #if KINEMATIC == KINEMATIC_DELTA
 	block_data->dirbits = 0;
@@ -80,7 +82,9 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 		}
 #endif
 
+#ifdef ENABLE_LINACT_PLANNER
 		block_data->full_steps += steps;
+#endif
 		if (block_data->total_steps < steps)
 		{
 			block_data->total_steps = steps;
@@ -112,7 +116,9 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 			memset(backlash_block_data.steps, 0, sizeof(backlash_block_data.steps));
 			// resets accumulator vars
 			backlash_block_data.total_steps = 0;
+#ifdef ENABLE_LINACT_PLANNER
 			backlash_block_data.full_steps = 0;
+#endif
 			backlash_block_data.feed = FLT_MAX; // max feedrate possible (same as rapid move)
 
 			SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
@@ -123,7 +129,9 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 				if (inverted_steps & (1 << i))
 				{
 					backlash_block_data.steps[i] = g_settings.backlash_steps[i];
+#ifdef ENABLE_LINACT_PLANNER
 					backlash_block_data.full_steps += backlash_block_data.steps[i];
+#endif
 					if (backlash_block_data.total_steps < backlash_block_data.steps[i])
 					{
 						backlash_block_data.total_steps = backlash_block_data.steps[i];
