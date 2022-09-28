@@ -126,7 +126,7 @@ static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
 static unsigned char parser_get_next_preprocessed(bool peek);
-FORCEINLINE static uint8_t parser_get_comment(void);
+FORCEINLINE static void parser_get_comment(unsigned char start_char);
 static uint8_t parser_get_float(float *value);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -1776,8 +1776,11 @@ static uint8_t parser_get_float(float *value)
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
 */
-static uint8_t parser_get_comment(void)
+#define COMMENT_OK 1
+#define COMMENT_NOTOK 2
+static void parser_get_comment(unsigned char start_char)
 {
+	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
 #endif
@@ -1788,50 +1791,57 @@ static uint8_t parser_get_comment(void)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
 		case ')': // OK
+			if (start_char == '(')
+			{
+				comment_end = COMMENT_OK;
+			}
+			break;
+		case EOL: // error under RS274NGC is starts with '(' (it's ignored)
+			comment_end = COMMENT_OK;
+			break;
+		case OVF:
+			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
+			return;
+		}
+
+#ifdef PROCESS_COMMENTS
+		switch (msg_parser)
+		{
+		case 0:
+			msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
+			break;
+		case 1:
+			msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
+			break;
+		case 2:
+			msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
+			break;
+		case 3:
+			msg_parser = (c == ',') ? 4 : 0xFF;
+			protocol_send_string(MSG_START);
+			break;
+		case 4:
+			serial_putc(c);
+			break;
+		}
+#endif
+
+		if (c != EOL)
+		{
 			serial_getc();
+		}
+
+		if (comment_end)
+		{
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
 				protocol_send_string(MSG_END);
 			}
 #endif
-			return STATUS_OK;
-		case EOL: // error under RS274NGC
-			return STATUS_BAD_COMMENT_FORMAT;
-		case OVF:
-			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
-			return STATUS_OVERFLOW;
-		case ' ':
-			break;
-#ifdef PROCESS_COMMENTS
-		default:
-			switch (msg_parser)
-			{
-			case 0:
-				msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
-				break;
-			case 1:
-				msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
-				break;
-			case 2:
-				msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
-				break;
-			case 3:
-				msg_parser = (c == ',') ? 4 : 0xFF;
-				protocol_send_string(MSG_START);
-				break;
-			case 4:
-				serial_putc(c);
-				break;
-			}
-			break;
-#endif
+			return;
 		}
-
-		serial_getc();
 	}
-
-	return STATUS_BAD_COMMENT_FORMAT; // never reached here
 }
 
 static uint8_t parser_get_token(unsigned char *word, float *value)
@@ -2366,12 +2376,12 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 {
 	unsigned char c = serial_peek();
 
-	while (c == ' ' || c == '(')
+	while (c == ' ' || c == '(' || c == ';')
 	{
 		serial_getc();
-		if (c == '(')
+		if (c != ' ')
 		{
-			parser_get_comment();
+			parser_get_comment(c);
 		}
 		c = serial_peek();
 	}
