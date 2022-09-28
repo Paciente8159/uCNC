@@ -57,6 +57,7 @@ extern "C"
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
 
 /*IO functions*/
 
