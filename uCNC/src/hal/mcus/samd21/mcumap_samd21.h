@@ -2899,6 +2899,19 @@ extern "C"
 #define SERVO_IRQ __helper__(TC, SERVO_TIMER, _IRQn)
 #endif
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#if (ONESHOT_TIMER < 3)
+#define MCU_ONESHOT_ISR __helper__(TCC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TCC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TCC, ONESHOT_TIMER, _IRQn)
+#else
+#define MCU_ONESHOT_ISR __helper__(TC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TC, ONESHOT_TIMER, _IRQn)
+#endif
+#endif
+
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
