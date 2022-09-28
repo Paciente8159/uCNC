@@ -57,7 +57,6 @@ extern "C"
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
-	MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
 
 /*IO functions*/
 
@@ -502,6 +501,24 @@ extern "C"
 #define MCU_DELAY_CYCLE_X(LOOPS) _MCU_DELAY_CYCLE_X(LOOPS)
 
 #define mcu_delay_100ns() MCU_DELAY_CYCLE_X(MCU_100NS_LOOPS)
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+typedef void (*mcu_timeout_delgate)(void);
+extern mcu_timeout_delgate mcu_timeout_cb;
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout();
+#endif
+#endif
 
 	/**
 	 * runs all internal tasks of the MCU.
