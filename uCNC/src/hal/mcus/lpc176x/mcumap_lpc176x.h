@@ -3658,6 +3658,21 @@ extern "C"
 #endif
 #define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_TIMER_REG __helper__(LPC_TIM, ONESHOT_TIMER, )
+#define MCU_ONESHOT_ISR __helper__(TIMER, ONESHOT_TIMER, _IRQHandler)
+#define ONESHOT_INT_FLAG __helper__(TIM_MR, ONESHOT_TIMER, _INT)
+#define ONESHOT_TIMER_IRQ __helper__(TIMER, ONESHOT_TIMER, _IRQn)
+#define ONESHOT_PCONP __helper__(CLKPWR_PCONP_PCTIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER < 2)
+#define ONESHOT_PCLKSEL_REG PCLKSEL0
+#else
+#define ONESHOT_PCLKSEL_REG PCLKSEL1
+#endif
+#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#endif
+
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
@@ -3772,6 +3787,10 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 			;                               \
 		SPI_REG->DR;                        \
 	})
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)
+#endif
 
 #ifdef __cplusplus
 }
