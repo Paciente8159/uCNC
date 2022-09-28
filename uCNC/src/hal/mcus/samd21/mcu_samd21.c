@@ -1267,7 +1267,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	mcu_timeout_cb = fp;
 	uint16_t ticks;
 	uint16_t prescaller;
-	mcu_freq_to_clocks((1000000.0f / (float)timeout), &ticks, &prescaller);
+	mcu_freq_to_clocks((2000000.0f / (float)timeout), &ticks, &prescaller);
 
 #if (ONESHOT_TIMER < 3)
 	// reset timer
