@@ -62,6 +62,25 @@ void esp8266_eeprom_flush(void);
 
 ETSTimer esp8266_rtc_timer;
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+static uint32_t esp8266_oneshot_counter;
+static uint32_t esp8266_oneshot_reload;
+static IRAM_ATTR void mcu_gen_oneshot(void)
+{
+	if (esp8266_oneshot_counter)
+	{
+		esp8266_oneshot_counter--;
+		if (!esp8266_oneshot_counter)
+		{
+			if (mcu_timeout_cb)
+			{
+				mcu_timeout_cb();
+			}
+		}
+	}
+}
+#endif
+
 uint8_t esp8266_pwm[16];
 static IRAM_ATTR void mcu_gen_pwm(void)
 {
@@ -719,5 +738,32 @@ void mcu_eeprom_flush(void)
 // }
 // #endif
 // #endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+static IRAM_ATTR void mcu_gen_pwm(void)
+
+/**
+ * configures a single shot timeout in us
+ * */
+
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+	oneshot_counter
+		oneshot_run = true;
+}
+#endif
+#endif
 
 #endif
