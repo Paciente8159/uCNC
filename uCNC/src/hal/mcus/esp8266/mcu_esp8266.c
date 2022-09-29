@@ -344,6 +344,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 	// mcu_enable_global_isr();
 	mcu_gen_step();
 	mcu_gen_pwm();
+	mcu_gen_oneshot();
 }
 
 // static void mcu_uart_isr(void *arg)
@@ -751,6 +752,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
+	esp8266_oneshot_reload = (128000UL/timeout);
 }
 #endif
 
@@ -760,8 +762,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 #ifndef mcu_start_timeout
 void mcu_start_timeout()
 {
-	oneshot_counter
-		oneshot_run = true;
+	oneshot_counter = esp8266_oneshot_reload;
 }
 #endif
 #endif
