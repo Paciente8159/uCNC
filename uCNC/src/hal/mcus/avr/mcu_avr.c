@@ -542,31 +542,31 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*prescaller = (1 << 3); // CTC mode
 
 #if (ITP_TIMER == 2)
-	if (clocks <= 0xFFFF)
+	if (clocks <= ((1UL << 16) - 1))
 	{
 		*prescaller |= 1;
 	}
-	else if (clocks <= (0xFFFF << 3))
+	else if (clocks <= ((1UL << 19) - 1))
 	{
 		clocks >>= 3;
 		*prescaller |= 2;
 	}
-	else if (clocks <= (0xFFFF << 5))
+	else if (clocks <= ((1UL << 21) - 1))
 	{
 		clocks >>= 5;
 		*prescaller |= 3;
 	}
-	else if (clocks <= (0xFFFF << 6))
+	else if (clocks <= ((1UL << 22) - 1))
 	{
 		clocks >>= 6;
 		*prescaller |= 4;
 	}
-	else if (clocks <= (0xFFFF << 7))
+	else if (clocks <= ((1UL << 23) - 1))
 	{
 		clocks >>= 7;
 		*prescaller |= 5;
 	}
-	else if (clocks <= (0xFFFF << 8))
+	else if (clocks <= ((1UL << 24) - 1))
 	{
 		clocks >>= 8;
 		*prescaller |= 6;
@@ -577,21 +577,21 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 		*prescaller |= 7;
 	}
 #else
-	if (clocks <= 0xFFFF)
+	if (clocks <= ((1UL << 16) - 1))
 	{
 		*prescaller |= 1;
 	}
-	else if (clocks <= (0xFFFF << 3))
+	else if (clocks <= ((1UL << 19) - 1))
 	{
 		clocks >>= 3;
 		*prescaller |= 2;
 	}
-	else if (clocks <= (0xFFFF << 6))
+	else if (clocks <= ((1UL << 22) - 1))
 	{
 		clocks >>= 6;
 		*prescaller |= 3;
 	}
-	else if (clocks <= (0xFFFF << 8))
+	else if (clocks <= ((1UL << 24) - 1))
 	{
 		clocks >>= 8;
 		*prescaller |= 4;
@@ -602,8 +602,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 		*prescaller |= 5;
 	}
 #endif
-
-	*ticks = ((uint16_t)(clocks & 0xFFFF)) - 1;
+	clocks--;
+	*ticks = (uint16_t)MIN(clocks, 0xFFFF);
 }
 /*
 		initializes the pulse ISR
@@ -953,31 +953,31 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	mcu_timeout_cb = fp;
 
 #if (ONESHOT_TIMER == 2)
-	if (clocks <= 0xFF)
+	if (clocks <= ((1UL << 8) - 1))
 	{
 		pres |= 1;
 	}
-	else if (clocks <= (0xFF << 3))
+	else if (clocks <= ((1UL << 11) - 1))
 	{
 		clocks >>= 3;
 		pres |= 2;
 	}
-	else if (clocks <= (0xFF << 5))
+	else if (clocks <= ((1UL << 13) - 1))
 	{
 		clocks >>= 5;
 		pres |= 3;
 	}
-	else if (clocks <= (0xFF << 6))
+	else if (clocks <= ((1UL << 14) - 1))
 	{
 		clocks >>= 6;
 		pres |= 4;
 	}
-	else if (clocks <= (0xFF << 7))
+	else if (clocks <= ((1UL << 15) - 1))
 	{
 		clocks >>= 7;
 		pres |= 5;
 	}
-	else if (clocks <= (0xFF << 8))
+	else if (clocks <= ((1UL << 16) - 1))
 	{
 		clocks >>= 8;
 		pres |= 6;
@@ -988,21 +988,21 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		pres |= 7;
 	}
 #else
-	if (clocks <= 0xFF)
+	if (clocks <= ((1UL << 8) - 1))
 	{
 		pres |= 1;
 	}
-	else if (clocks <= (0xFF << 3))
+	else if (clocks <= ((1UL << 11) - 1))
 	{
 		clocks >>= 3;
 		pres |= 2;
 	}
-	else if (clocks <= (0xFF << 6))
+	else if (clocks <= ((1UL << 14) - 1))
 	{
 		clocks >>= 6;
 		pres |= 3;
 	}
-	else if (clocks <= (0xFF << 8))
+	else if (clocks <= ((1UL << 16) - 1))
 	{
 		clocks >>= 8;
 		pres |= 4;
