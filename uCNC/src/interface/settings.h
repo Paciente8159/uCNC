@@ -72,7 +72,7 @@ extern "C"
 		// float delta_efector_height;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		uint16_t backlash_steps[STEPPER_COUNT];
+		uint16_t backlash_steps[AXIS_TO_STEPPERS];
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		float skew_xy_factor;

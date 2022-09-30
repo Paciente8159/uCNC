@@ -532,6 +532,53 @@ extern "C"
 #endif
 #endif
 
+/*laser ppi*/
+#if (TOOL_COUNT < 1)
+#undef ENABLE_LASER_PPI
+#endif
+#ifdef ENABLE_LASER_PPI
+#ifndef MCU_HAS_ONESHOT_TIMER
+#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+#ifdef BRESENHAM_16BIT
+#undef BRESENHAM_16BIT
+#warning "BRESENHAM_16BIT was disabled for Laser PPI mode"
+#endif
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for Laser PPI mode"
+#endif
+#if (STEPPER_COUNT == 1)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 2
+#define LASER_PPI STEP1
+#elif (STEPPER_COUNT == 2)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 3
+#define LASER_PPI STEP2
+#elif (STEPPER_COUNT == 3)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 4
+#define LASER_PPI STEP3
+#elif (STEPPER_COUNT == 4)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 5
+#define LASER_PPI STEP4
+#elif (STEPPER_COUNT == 5)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 6
+#define LASER_PPI STEP5
+#elif (STEPPER_COUNT == 6)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 7
+#define LASER_PPI STEP6
+#endif
+// #ifdef STEP_ISR_SKIP_MAIN
+// #undef STEP_ISR_SKIP_MAIN
+// #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
+// #endif
+#endif
+
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
 

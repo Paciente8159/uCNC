@@ -420,33 +420,28 @@ uint8_t settings_change(uint8_t setting, float value)
 		//     break;
 #endif
 	default:
-		if (setting >= 100 && setting < (100 + STEPPER_COUNT))
+		if (setting >= 100 && setting < (100 + AXIS_TO_STEPPERS))
 		{
 			setting -= 100;
 			g_settings.step_per_mm[setting] = value;
 		}
-		else if (setting >= 110 && setting < (110 + STEPPER_COUNT))
+		else if (setting >= 110 && setting < (110 + AXIS_TO_STEPPERS))
 		{
 			setting -= 110;
 			g_settings.max_feed_rate[setting] = value;
 		}
-		else if (setting >= 120 && setting < (120 + STEPPER_COUNT))
+		else if (setting >= 120 && setting < (120 + AXIS_TO_STEPPERS))
 		{
 			setting -= 120;
 			g_settings.acceleration[setting] = value;
 		}
-		else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-		{
-			setting -= 130;
-			g_settings.max_distance[setting] = value;
-		}
-		else if (setting >= 130 && setting < (130 + AXIS_COUNT))
+		else if (setting >= 130 && setting < (130 + AXIS_TO_STEPPERS))
 		{
 			setting -= 130;
 			g_settings.max_distance[setting] = value;
 		}
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		else if (setting >= 140 && setting < (140 + STEPPER_COUNT))
+		else if (setting >= 140 && setting < (140 + AXIS_TO_STEPPERS))
 		{
 			setting -= 140;
 			g_settings.backlash_steps[setting] = value16;

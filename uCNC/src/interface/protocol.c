@@ -178,7 +178,7 @@ void protocol_send_status(void)
 #endif
 	float axis[MAX(AXIS_COUNT, 3)];
 
-	int32_t steppos[STEPPER_COUNT];
+	int32_t steppos[AXIS_TO_STEPPERS];
 	itp_get_rt_position(steppos);
 	kinematics_apply_forward(steppos, axis);
 	kinematics_apply_reverse_transform(axis);
@@ -631,7 +631,7 @@ void protocol_send_cnc_settings(void)
 	}
 #endif
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
 	}
@@ -642,12 +642,12 @@ void protocol_send_cnc_settings(void)
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
 #endif
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(110 + i, g_settings.max_feed_rate[i]);
 	}
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(120 + i, g_settings.acceleration[i]);
 	}
@@ -658,7 +658,7 @@ void protocol_send_cnc_settings(void)
 	}
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
 	{
 		protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
 	}
@@ -729,7 +729,7 @@ void protocol_send_pins_states(void)
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
 	protocol_send_string(__romstr__("[STEPS:"));
-	serial_print_intarr(steps, STEPPER_COUNT);
+	serial_print_intarr(steps, AXIS_TO_STEPPERS);
 	protocol_send_string(MSG_END);
 
 #if ENCODERS > 0

@@ -25,6 +25,16 @@ extern "C"
 {
 #endif
 
+// this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
+// laser PPI requires an additional stepper
+#ifndef AXIS_TO_STEPPERS
+#define AXIS_TO_STEPPERS AXIS_COUNT
+#endif
+
+#ifndef STEPPER_COUNT
+#define STEPPER_COUNT AXIS_TO_STEPPERS
+#endif
+
 #include <stdint.h>
 
 	void kinematics_init(void);

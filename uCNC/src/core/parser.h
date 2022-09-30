@@ -80,6 +80,8 @@ extern "C"
 #define GCODE_WORD_Q GCODE_WORD_D
 #endif
 
+#define GCODE_WORD_TOOL (1 << AXIS_TOOL)
+
 	// H and Q are related to unsupported commands
 
 	// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
@@ -95,6 +97,9 @@ extern "C"
 #define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
+
+#define LASER_PWM_MODE 1
+#define LASER_PPI_MODE 2
 
 	// 33bytes in total
 	typedef struct
@@ -171,6 +176,9 @@ extern "C"
 #if TOOL_COUNT > 0
 		uint8_t tool_index;
 		uint16_t spindle;
+#ifdef ENABLE_LASER_PPI
+		uint16_t ppi_us_width;
+#endif
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t line;

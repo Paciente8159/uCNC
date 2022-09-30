@@ -207,6 +207,8 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
+// #define ONESHOT_TIMER 5
+
 #ifdef __cplusplus
 }
 #endif

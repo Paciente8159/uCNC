@@ -114,4 +114,4 @@ const tool_t __rom__ laser = {
 	.range_speed = &laser_range_speed,
 	.get_speed = &laser_get_speed,
 	.set_speed = &laser_set_speed,
-	.set_coolant = NULL};
+	.set_coolant = &laser_set_coolant};

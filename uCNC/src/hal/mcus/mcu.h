@@ -505,7 +505,7 @@ extern "C"
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 typedef void (*mcu_timeout_delgate)(void);
-extern mcu_timeout_delgate mcu_timeout_cb;
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 /**
  * configures a single shot timeout in us
  * */

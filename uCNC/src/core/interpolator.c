@@ -981,22 +981,22 @@ void itp_get_rt_position(int32_t *position)
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 
 #if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && STEPPER_COUNT > 0)
+#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
 	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
 #endif
-#if (defined(STEP1_ENCODER) && STEPPER_COUNT > 1)
+#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
 	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
 #endif
-#if (defined(STEP2_ENCODER) && STEPPER_COUNT > 2)
+#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
 	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
 #endif
-#if (defined(STEP3_ENCODER) && STEPPER_COUNT > 3)
+#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
 	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
 #endif
-#if (defined(STEP4_ENCODER) && STEPPER_COUNT > 4)
+#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
 	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
 #endif
-#if (defined(STEP5_ENCODER) && STEPPER_COUNT > 5)
+#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
 	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
 #endif
 #endif
@@ -1089,8 +1089,17 @@ uint32_t itp_get_rt_line_number(void)
 // always fires after pulse
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
+#ifdef ENABLE_LASER_PPI
+	uint8_t mask = g_settings.step_invert_mask;
+	if (g_settings.laser_mode & LASER_PPI_MODE)
+	{
+		mask |= (mcu_get_output(LASER_PPI)) ? (1 << (STEPPER_COUNT - 1)) : 0;
+	}
+	io_set_steps(mask);
+#else
 	// always resets all stepper pins
 	io_set_steps(g_settings.step_invert_mask);
+#endif
 }
 
 MCU_CALLBACK void mcu_step_cb(void)
@@ -1129,6 +1138,12 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 		// sets step bits
 		io_toggle_steps(stepbits);
+#ifdef ENABLE_LASER_PPI
+		if (g_settings.laser_mode & LASER_PPI_MODE)
+		{
+			mcu_start_timeout();
+		}
+#endif
 		stepbits = 0;
 
 		// if buffer empty loads one

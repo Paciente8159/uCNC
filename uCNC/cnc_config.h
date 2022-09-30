@@ -80,7 +80,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 3
+#define AXIS_COUNT 2
 #endif
 
 #ifndef KINEMATIC
@@ -156,10 +156,11 @@ extern "C"
 //#define M7_SAME_AS_M8
 #endif
 
-	/**
-	 * Feed overrides increments and percentage ranges
-	 * */
+// Uncomment to enable laser PPI feature
+// Laser PPI requires the MCU to support ONESHOT timeout
+#define ENABLE_LASER_PPI
 
+// Feed overrides increments and percentage ranges
 #define FEED_OVR_MAX 200
 #define FEED_OVR_MIN 10
 #define FEED_OVR_COARSE 10

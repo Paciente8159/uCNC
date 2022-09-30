@@ -52,13 +52,8 @@ bool mc_toogle_checkmode(void)
 	return mc_checkmode;
 }
 
-static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
+static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 {
-	int32_t step_new_pos[STEPPER_COUNT];
-
-	// applies the inverse kinematic to get next position in steps
-	kinematics_apply_inverse(target, step_new_pos);
-
 // resets accumulator vars of the block
 #ifdef ENABLE_LINACT_PLANNER
 	block_data->full_steps = 0;
@@ -140,10 +135,6 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 				}
 			}
 
-			planner_add_line(&backlash_block_data);
-			// dwell should only execute on the first request
-			block_data->dwell = 0;
-
 			while (planner_buffer_is_full())
 			{
 				if (!cnc_dotasks())
@@ -152,9 +143,20 @@ static uint8_t mc_line_segment(float *target, motion_data_t *block_data)
 				}
 			}
 
+			planner_add_line(&backlash_block_data);
+			// dwell should only execute on the first request
+			block_data->dwell = 0;
 			mc_last_dirbits = block_data->dirbits;
 		}
 #endif
+
+		while (planner_buffer_is_full())
+		{
+			if (!cnc_dotasks())
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
+		}
 
 		planner_add_line(block_data);
 		// dwell should only execute on the first request
@@ -208,7 +210,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// calculates the amount of stepper motion for this motion
 	uint32_t max_steps = 0;
 	block_data->main_stepper = 255;
-	for (uint8_t i = STEPPER_COUNT; i != 0;)
+	for (uint8_t i = AXIS_TO_STEPPERS; i != 0;)
 	{
 		i--;
 		int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
@@ -249,7 +251,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if ((KINEMATIC == KINEMATIC_DELTA) || defined(ENABLE_LASER_PPI))
 	float line_dist = fast_flt_sqrt(inv_dist);
 	inv_dist = 1.0f / line_dist;
 #else
@@ -263,6 +265,12 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		i--;
 		block_data->dir_vect[i] *= inv_dist;
 	}
+#endif
+
+#ifdef ENABLE_LASER_PPI
+	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
+	step_new_pos[STEPPER_COUNT - 1] = g_settings.step_per_mm[STEPPER_COUNT - 1] * line_dist;
+	max_steps = MAX(max_steps, step_new_pos[STEPPER_COUNT - 1]);
 #endif
 
 	// calculated the total motion execution time @ the given rate
@@ -293,42 +301,33 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 #endif
 
-	while (line_segments--)
+	while (--line_segments)
 	{
-		while (planner_buffer_is_full())
-		{
-			if (!cnc_dotasks())
-			{
-				block_data->feed = feed;
-				return STATUS_CRITICAL_FAIL;
-			}
-		}
-
-		if (line_segments)
-		{
-			for (uint8_t i = AXIS_COUNT; i != 0;)
-			{
-				i--;
-				prev_target[i] += motion_segment[i];
-			}
-
-			error = mc_line_segment(prev_target, block_data);
-			if (error)
-			{
-				break;
-			}
-		}
-		else
-		{
-			error = mc_line_segment(target, block_data);
-			if (error)
-			{
-				break;
-			}
-		}
 		block_data->motion_flags.bit.is_subsegment = 1;
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			prev_target[i] += motion_segment[i];
+		}
+
+		kinematics_apply_inverse(prev_target, step_new_pos);
+		error = mc_line_segment(step_new_pos, block_data);
+		if (error)
+		{
+			memcpy(target, prev_target, sizeof(prev_target));
+			return error;
+		}
 	}
 
+	if (error == STATUS_OK)
+	{
+		if (block_data->motion_flags.bit.is_subsegment)
+		{
+			kinematics_apply_inverse(target, step_new_pos);
+		}
+
+		error = mc_line_segment(step_new_pos, block_data);
+	}
 	// stores the new position for the next motion
 	memcpy(mc_last_target, target, sizeof(mc_last_target));
 	block_data->feed = feed;
