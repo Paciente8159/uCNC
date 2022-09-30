@@ -563,7 +563,7 @@ void itp_run(void)
 
 		sgm->feed = avg_speed * feed_convert;
 #if TOOL_COUNT > 0
-		if (g_settings.laser_mode)
+		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
@@ -884,7 +884,7 @@ void itp_run(void)
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 		// calculates dynamic laser power
-		if (g_settings.laser_mode)
+		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
@@ -1090,9 +1090,11 @@ uint32_t itp_get_rt_line_number(void)
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
 #ifdef ENABLE_LASER_PPI
+	// prevent the step reset to change the laser PPI output
 	uint8_t mask = g_settings.step_invert_mask;
 	if (g_settings.laser_mode & LASER_PPI_MODE)
 	{
+		mask &= ~(1 << (STEPPER_COUNT - 1));
 		mask |= (mcu_get_output(LASER_PPI)) ? (1 << (STEPPER_COUNT - 1)) : 0;
 	}
 	io_set_steps(mask);
@@ -1109,29 +1111,30 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 	if (!itp_busy) // prevents reentrancy
 	{
-		if (itp_rt_sgm != NULL)
+		itp_segment_t *itp_sgm = itp_rt_sgm;
+		if (itp_sgm != NULL)
 		{
-			if (itp_rt_sgm->update_itp)
+			if (itp_sgm->update_itp)
 			{
-				if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
+				if (itp_sgm->update_itp & ITP_UPDATE_ISR)
 				{
-					mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
+					mcu_change_itp_isr(itp_sgm->timer_counter, itp_sgm->timer_prescaller);
 				}
 
 #if TOOL_COUNT > 0
-				if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
+				if (itp_sgm->update_itp & ITP_UPDATE_TOOL)
 				{
-					tool_set_speed(itp_rt_sgm->spindle);
+					tool_set_speed(itp_sgm->spindle);
 				}
 #endif
-				itp_rt_sgm->update_itp = ITP_NOUPDATE;
+				itp_sgm->update_itp = ITP_NOUPDATE;
 			}
 
 			// no step remaining discards current segment
-			if (!itp_rt_sgm->remaining_steps)
+			if (!itp_sgm->remaining_steps)
 			{
-				itp_rt_sgm->block = NULL;
-				itp_rt_sgm = NULL;
+				itp_sgm->block = NULL;
+				itp_sgm = NULL;
 				itp_sgm_buffer_read();
 			}
 		}
@@ -1147,73 +1150,74 @@ MCU_CALLBACK void mcu_step_cb(void)
 		stepbits = 0;
 
 		// if buffer empty loads one
-		if (itp_rt_sgm == NULL)
+		if (itp_sgm == NULL)
 		{
 			// if buffer is not empty
 			if (!itp_sgm_is_empty())
 			{
 				// loads a new segment
-				itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
+				itp_sgm = &itp_sgm_data[itp_sgm_data_read];
+				itp_rt_sgm = itp_sgm;
 				cnc_set_exec_state(EXEC_RUN);
-				if (itp_rt_sgm->block != NULL)
+				if (itp_sgm->block != NULL)
 				{
 #if (DSS_MAX_OVERSAMPLING != 0)
-					if (itp_rt_sgm->next_dss != 0)
+					if (itp_sgm->next_dss != 0)
 					{
 #ifdef STEP_ISR_SKIP_MAIN
-						itp_rt_sgm->block->main_stepper = 255; // disables direct step increment to force step calculation
+						itp_sgm->block->main_stepper = 255; // disables direct step increment to force step calculation
 #endif
 						uint8_t dss;
-						if (itp_rt_sgm->next_dss > 0)
+						if (itp_sgm->next_dss > 0)
 						{
-							dss = itp_rt_sgm->next_dss;
-							itp_rt_sgm->block->total_steps <<= dss;
+							dss = itp_sgm->next_dss;
+							itp_sgm->block->total_steps <<= dss;
 #if (STEPPER_COUNT > 0)
-							itp_rt_sgm->block->errors[0] <<= dss;
+							itp_sgm->block->errors[0] <<= dss;
 #endif
 #if (STEPPER_COUNT > 1)
-							itp_rt_sgm->block->errors[1] <<= dss;
+							itp_sgm->block->errors[1] <<= dss;
 #endif
 #if (STEPPER_COUNT > 2)
-							itp_rt_sgm->block->errors[2] <<= dss;
+							itp_sgm->block->errors[2] <<= dss;
 #endif
 #if (STEPPER_COUNT > 3)
-							itp_rt_sgm->block->errors[3] <<= dss;
+							itp_sgm->block->errors[3] <<= dss;
 #endif
 #if (STEPPER_COUNT > 4)
-							itp_rt_sgm->block->errors[4] <<= dss;
+							itp_sgm->block->errors[4] <<= dss;
 #endif
 #if (STEPPER_COUNT > 5)
-							itp_rt_sgm->block->errors[5] <<= dss;
+							itp_sgm->block->errors[5] <<= dss;
 #endif
 						}
 						else
 						{
-							dss = -itp_rt_sgm->next_dss;
-							itp_rt_sgm->block->total_steps >>= dss;
+							dss = -itp_sgm->next_dss;
+							itp_sgm->block->total_steps >>= dss;
 #if (STEPPER_COUNT > 0)
-							itp_rt_sgm->block->errors[0] >>= dss;
+							itp_sgm->block->errors[0] >>= dss;
 #endif
 #if (STEPPER_COUNT > 1)
-							itp_rt_sgm->block->errors[1] >>= dss;
+							itp_sgm->block->errors[1] >>= dss;
 #endif
 #if (STEPPER_COUNT > 2)
-							itp_rt_sgm->block->errors[2] >>= dss;
+							itp_sgm->block->errors[2] >>= dss;
 #endif
 #if (STEPPER_COUNT > 3)
-							itp_rt_sgm->block->errors[3] >>= dss;
+							itp_sgm->block->errors[3] >>= dss;
 #endif
 #if (STEPPER_COUNT > 4)
-							itp_rt_sgm->block->errors[4] >>= dss;
+							itp_sgm->block->errors[4] >>= dss;
 #endif
 #if (STEPPER_COUNT > 5)
-							itp_rt_sgm->block->errors[5] >>= dss;
+							itp_sgm->block->errors[5] >>= dss;
 #endif
 						}
 					}
 #endif
 					// set dir pins for current
-					io_set_dirs(itp_rt_sgm->block->dirbits);
+					io_set_dirs(itp_sgm->block->dirbits);
 				}
 			}
 			else
@@ -1228,16 +1232,16 @@ MCU_CALLBACK void mcu_step_cb(void)
 		mcu_enable_global_isr();
 
 		// is steps remaining starts calc next step bits
-		if (itp_rt_sgm->remaining_steps)
+		if (itp_sgm->remaining_steps)
 		{
 			bool dostep = false;
-			if (itp_rt_sgm->block != NULL)
+			if (itp_sgm->block != NULL)
 			{
 // prepares the next step bits mask
 #if (STEPPER_COUNT > 0)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 0)
+				if (itp_sgm->block->main_stepper == 0)
 				{
 					dostep = true;
 				}
@@ -1245,13 +1249,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP0_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
-						if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[0] += itp_sgm->block->steps[0];
+						if (itp_sgm->block->errors[0] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[0] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1265,10 +1269,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP0_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR0_MASK)
+						if (itp_sgm->block->dirbits & DIR0_MASK)
 						{
 							itp_rt_step_pos[0]--;
 						}
@@ -1284,7 +1288,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (STEPPER_COUNT > 1)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 1)
+				if (itp_sgm->block->main_stepper == 1)
 				{
 					dostep = true;
 				}
@@ -1292,13 +1296,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP1_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
-						if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[1] += itp_sgm->block->steps[1];
+						if (itp_sgm->block->errors[1] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[1] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1312,10 +1316,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP1_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR1_MASK)
+						if (itp_sgm->block->dirbits & DIR1_MASK)
 						{
 							itp_rt_step_pos[1]--;
 						}
@@ -1331,7 +1335,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (STEPPER_COUNT > 2)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 2)
+				if (itp_sgm->block->main_stepper == 2)
 				{
 					dostep = true;
 				}
@@ -1339,13 +1343,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP2_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
-						if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[2] += itp_sgm->block->steps[2];
+						if (itp_sgm->block->errors[2] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[2] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1359,10 +1363,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP2_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR2_MASK)
+						if (itp_sgm->block->dirbits & DIR2_MASK)
 						{
 							itp_rt_step_pos[2]--;
 						}
@@ -1378,7 +1382,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (STEPPER_COUNT > 3)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 3)
+				if (itp_sgm->block->main_stepper == 3)
 				{
 					dostep = true;
 				}
@@ -1386,13 +1390,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP3_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
-						if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[3] += itp_sgm->block->steps[3];
+						if (itp_sgm->block->errors[3] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[3] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1406,10 +1410,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP3_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR3_MASK)
+						if (itp_sgm->block->dirbits & DIR3_MASK)
 						{
 							itp_rt_step_pos[3]--;
 						}
@@ -1425,7 +1429,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (STEPPER_COUNT > 4)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 4)
+				if (itp_sgm->block->main_stepper == 4)
 				{
 					dostep = true;
 				}
@@ -1433,13 +1437,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP4_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
-						if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[4] += itp_sgm->block->steps[4];
+						if (itp_sgm->block->errors[4] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[4] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1453,10 +1457,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP4_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR4_MASK)
+						if (itp_sgm->block->dirbits & DIR4_MASK)
 						{
 							itp_rt_step_pos[4]--;
 						}
@@ -1472,7 +1476,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if (STEPPER_COUNT > 5)
 				dostep = false;
 #ifdef STEP_ISR_SKIP_MAIN
-				if (itp_rt_sgm->block->main_stepper == 5)
+				if (itp_sgm->block->main_stepper == 5)
 				{
 					dostep = true;
 				}
@@ -1480,13 +1484,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-					if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
+					if (!(itp_sgm->block->idle_axis & STEP5_MASK))
 					{
 #endif
-						itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
-						if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
+						itp_sgm->block->errors[5] += itp_sgm->block->steps[5];
+						if (itp_sgm->block->errors[5] > itp_sgm->block->total_steps)
 						{
-							itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
+							itp_sgm->block->errors[5] -= itp_sgm->block->total_steps;
 							dostep = true;
 						}
 #ifdef STEP_ISR_SKIP_IDLE
@@ -1500,10 +1504,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 				{
 					stepbits |= STEP5_ITP_MASK;
 #ifdef ENABLE_BACKLASH_COMPENSATION
-					if (!itp_rt_sgm->block->backlash_comp)
+					if (!itp_sgm->block->backlash_comp)
 					{
 #endif
-						if (itp_rt_sgm->block->dirbits & DIR5_MASK)
+						if (itp_sgm->block->dirbits & DIR5_MASK)
 						{
 							itp_rt_step_pos[5]--;
 						}
@@ -1519,7 +1523,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 
 			// no step remaining discards current segment
-			--itp_rt_sgm->remaining_steps;
+			--itp_sgm->remaining_steps;
 		}
 
 		mcu_disable_global_isr(); // lock isr before clearin busy flag
