@@ -208,6 +208,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// converts transformed target to stepper position
 	kinematics_apply_inverse(target, step_new_pos);
 	// calculates the amount of stepper motion for this motion
+
 	uint32_t max_steps = 0;
 	block_data->main_stepper = 255;
 	for (uint8_t i = AXIS_TO_STEPPERS; i != 0;)
@@ -269,7 +270,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_LASER_PPI
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
-	step_new_pos[STEPPER_COUNT - 1] = g_settings.step_per_mm[STEPPER_COUNT - 1] * line_dist;
+	float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
+	float laser_pulses_per_mm = (g_settings.laser_mode & LASER_PPI_MODE) ? (MM_INCH_MULT * g_settings.step_per_mm[STEPPER_COUNT - 1] * laser_ppi_scale) : 0;
+	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm * line_dist;
 	max_steps = MAX(max_steps, step_new_pos[STEPPER_COUNT - 1]);
 #endif
 

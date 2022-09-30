@@ -59,7 +59,7 @@ void laser_startup_code(void)
 	mcu_config_pwm(LASER_PWM, LASER_FREQ);
 #endif
 	previous_laser_mode = g_settings.laser_mode;
-	g_settings.laser_mode = 1;
+	g_settings.laser_mode = LASER_PWM_MODE;
 }
 
 void laser_shutdown_code(void)
