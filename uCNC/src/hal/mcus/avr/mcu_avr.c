@@ -953,31 +953,31 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	mcu_timeout_cb = fp;
 
 #if (ONESHOT_TIMER == 2)
-	if (clocks <= 0xFFFF)
+	if (clocks <= 0xFF)
 	{
 		pres |= 1;
 	}
-	else if (clocks <= (0xFFFF << 3))
+	else if (clocks <= (0xFF << 3))
 	{
 		clocks >>= 3;
 		pres |= 2;
 	}
-	else if (clocks <= (0xFFFF << 5))
+	else if (clocks <= (0xFF << 5))
 	{
 		clocks >>= 5;
 		pres |= 3;
 	}
-	else if (clocks <= (0xFFFF << 6))
+	else if (clocks <= (0xFF << 6))
 	{
 		clocks >>= 6;
 		pres |= 4;
 	}
-	else if (clocks <= (0xFFFF << 7))
+	else if (clocks <= (0xFF << 7))
 	{
 		clocks >>= 7;
 		pres |= 5;
 	}
-	else if (clocks <= (0xFFFF << 8))
+	else if (clocks <= (0xFF << 8))
 	{
 		clocks >>= 8;
 		pres |= 6;
@@ -988,21 +988,21 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 		pres |= 7;
 	}
 #else
-	if (clocks <= 0xFFFF)
+	if (clocks <= 0xFF)
 	{
 		pres |= 1;
 	}
-	else if (clocks <= (0xFFFF << 3))
+	else if (clocks <= (0xFF << 3))
 	{
 		clocks >>= 3;
 		pres |= 2;
 	}
-	else if (clocks <= (0xFFFF << 6))
+	else if (clocks <= (0xFF << 6))
 	{
 		clocks >>= 6;
 		pres |= 3;
 	}
-	else if (clocks <= (0xFFFF << 8))
+	else if (clocks <= (0xFF << 8))
 	{
 		clocks >>= 8;
 		pres |= 4;
@@ -1021,7 +1021,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	// resets counter
 	ONESHOT_TCNT = 0;
 	// set step clock
-	ONESHOT_OCRA = ((uint16_t)(clocks & 0xFFFF)) - 1;
+	ONESHOT_OCRA = ((uint8_t)(clocks & 0xFF)) - 1;
 	// clears interrupt flags by writing 1's
 	ONESHOT_TIFR = 0x7;
 	// start timer in CTC mode with the correct prescaler

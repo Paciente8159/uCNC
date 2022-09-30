@@ -577,6 +577,8 @@ extern "C"
 // #undef STEP_ISR_SKIP_MAIN
 // #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
 // #endif
+#else
+#define LASER_PPI -1
 #endif
 
 #define __stepname_helper__(x) STEP##x##_MASK
