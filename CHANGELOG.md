@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.5.2] - Unreleased
+## [1.5.2] - 01-10-2022
 
 ### Added
 
@@ -1012,6 +1012,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
 [1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
