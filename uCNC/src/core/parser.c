@@ -131,10 +131,7 @@ static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 #ifdef ENABLE_LASER_PPI
 // turn laser off callback
-MCU_CALLBACK void laser_ppi_turnoff_cb(void)
-{
-	mcu_clear_output(LASER_PPI);
-}
+extern MCU_CALLBACK void laser_ppi_turnoff_cb(void);
 #endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
@@ -1073,21 +1070,23 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #endif
 #ifdef ENABLE_LASER_PPI
 		case M126:
-			if (words->p != 0)
+			g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+			switch ((((uint8_t)words->p) & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
 			{
+			case 1:
 				g_settings.laser_mode |= LASER_PPI_MODE;
-			}
-			else
-			{
-				g_settings.laser_mode &= ~LASER_PPI_MODE;
+				break;
+			case 2:
+				g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
+				break;
 			}
 			break;
 		case M127:
 			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p;
 			break;
 		case M128:
-			new_state->ppi_us_width = (uint16_t)words->p;
-			mcu_config_timeout(&laser_ppi_turnoff_cb, new_state->ppi_us_width);
+			g_itp_laser_ppi_uswidth = (uint16_t)words->p;
+			mcu_config_timeout(&laser_ppi_turnoff_cb, (uint16_t)words->p);
 			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (1000000.0f / g_settings.max_step_rate)));
 			break;
 #endif
@@ -2488,7 +2487,7 @@ void parser_reset(void)
 #ifdef ENABLE_LASER_PPI
 	g_settings.step_per_mm[STEPPER_COUNT - 1] = 600;
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
-	parser_state.ppi_us_width = 1500;
+	g_itp_laser_ppi_uswidth = 1500;
 	mcu_config_timeout(&laser_ppi_turnoff_cb, 1500);
 	g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (1500.0f + (1000000.0f / g_settings.max_step_rate)));
 #endif

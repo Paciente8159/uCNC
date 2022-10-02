@@ -270,9 +270,14 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_LASER_PPI
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
-	float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
-	float laser_pulses_per_mm = (g_settings.laser_mode & LASER_PPI_MODE) ? (MM_INCH_MULT * g_settings.step_per_mm[STEPPER_COUNT - 1] * laser_ppi_scale) : 0;
-	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm * line_dist;
+	float laser_pulses_per_mm = MM_INCH_MULT * g_settings.step_per_mm[STEPPER_COUNT - 1];
+	// modify PPI settings according o the S value
+	if (g_settings.laser_mode & LASER_PPI_MODE)
+	{
+		float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
+		laser_pulses_per_mm *= laser_ppi_scale;
+	}
+	step_new_pos[STEPPER_COUNT - 1] = (block_data->spindle != 0) ? laser_pulses_per_mm * line_dist : 0;
 	max_steps = MAX(max_steps, step_new_pos[STEPPER_COUNT - 1]);
 #endif
 

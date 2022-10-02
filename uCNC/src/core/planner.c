@@ -63,11 +63,9 @@ FORCEINLINE static void planner_buffer_clear(void);
 */
 void planner_add_line(motion_data_t *block_data)
 {
-#ifdef ENABLE_LINACT_PLANNER
+
 	static float last_dir_vect[STEPPER_COUNT];
-#else
-	static float last_dir_vect[AXIS_COUNT];
-#endif
+
 	// clear the planner block
 	uint8_t index = planner_data_write;
 	memset(&planner_data[index], 0, sizeof(planner_block_t));
@@ -464,7 +462,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 }
 
 #if TOOL_COUNT > 0
-int16_t planner_get_spindle_speed(float scale)
+float planner_get_spindle_speed(float scale)
 {
 	if (planner_state.state_flags.bit.spindle_running)
 	{
@@ -480,8 +478,7 @@ int16_t planner_get_spindle_speed(float scale)
 		{
 			scaled_spindle = 0.01f * (float)planner_state.spindle_speed_override * scaled_spindle;
 		}
-		scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
-		int16_t output = tool_range_speed(scaled_spindle);
+		float output = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
 
 		return (!neg) ? output : -output;
 	}

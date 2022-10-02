@@ -266,6 +266,7 @@ int16_t tool_range_speed(float value)
 #if TOOL_COUNT > 0
 	if (tool_current.range_speed)
 	{
+		value = ABS(value);
 		return tool_current.range_speed(value);
 	}
 #endif
