@@ -903,10 +903,19 @@ void itp_run(void)
 		}
 
 #ifdef ENABLE_LASER_PPI
-		if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+		if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
 		{
-			float new_s = planner_get_spindle_speed(1);
-			int16_t newspindle = (int16_t)ABS(new_s);
+			int16_t newspindle;
+			if(g_settings.laser_mode & LASER_PPI_VARPOWER_MODE){
+				float new_s = planner_get_spindle_speed(1);
+				newspindle = (int16_t)ABS(new_s);
+				sgm->spindle = (int16_t)((float)g_itp_laser_ppi_uswidth * newspindle / g_settings.spindle_max_rpm);
+			}
+			else{
+				newspindle = g_itp_laser_ppi_uswidth;
+				sgm->spindle = newspindle;
+			}
+			
 
 			if ((prev_spindle != (int16_t)newspindle) && newspindle)
 			{
@@ -914,7 +923,7 @@ void itp_run(void)
 				sgm->update_itp |= ITP_UPDATE_TOOL;
 			}
 
-			sgm->spindle = (int16_t)((float)g_itp_laser_ppi_uswidth * newspindle / g_settings.spindle_max_rpm);
+			
 		}
 #endif
 #endif
@@ -1174,7 +1183,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
 				{
 #ifdef ENABLE_LASER_PPI
-					if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+					if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 					{
 						new_laser_ppi = itp_rt_sgm->spindle;
 					}

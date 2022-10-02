@@ -1071,7 +1071,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef ENABLE_LASER_PPI
 		case M126:
 			g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-			switch ((((uint8_t)words->p) & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
+			switch ((((uint8_t)words->p)))
 			{
 			case 1:
 				g_settings.laser_mode |= LASER_PPI_MODE;
