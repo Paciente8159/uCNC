@@ -3677,7 +3677,11 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
-#define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_output(diopin)                                                                                            \
+	{                                                                                                                        \
+		SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                            \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_output_od(diopin)                                                                                          \
 	{                                                                                                                         \
 		mcu_config_output(diopin);                                                                                            \
@@ -3686,7 +3690,11 @@ extern "C"
 		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
-#define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_input(diopin)                                                                                             \
+	{                                                                                                                        \
+		CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_pullup(diopin)                                                                                             \
 	{                                                                                                                         \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
@@ -3732,7 +3740,7 @@ extern "C"
 		LPC_PWM1->PCR &= 0xFF00;                                              \
 		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
 		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
-		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                      \
+		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                            \
 		LPC_PWM1->MCR = (1UL << 1);                                           \
 		LPC_PWM1->MR0 = 255;                                                  \
 		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \

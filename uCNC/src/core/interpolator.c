@@ -906,24 +906,23 @@ void itp_run(void)
 		if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
 		{
 			int16_t newspindle;
-			if(g_settings.laser_mode & LASER_PPI_VARPOWER_MODE){
+			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			{
 				float new_s = planner_get_spindle_speed(1);
 				newspindle = (int16_t)ABS(new_s);
 				sgm->spindle = (int16_t)((float)g_itp_laser_ppi_uswidth * newspindle / g_settings.spindle_max_rpm);
 			}
-			else{
+			else
+			{
 				newspindle = g_itp_laser_ppi_uswidth;
 				sgm->spindle = newspindle;
 			}
-			
 
 			if ((prev_spindle != (int16_t)newspindle) && newspindle)
 			{
 				prev_spindle = (int16_t)newspindle;
 				sgm->update_itp |= ITP_UPDATE_TOOL;
 			}
-
-			
 		}
 #endif
 #endif
@@ -1136,21 +1135,8 @@ MCU_CALLBACK void mcu_step_reset_cb(void)
 {
 #ifdef ENABLE_LASER_PPI
 	// prevent the step reset to change the laser PPI output
-	// uint8_t mask = g_settings.step_invert_mask;
-	// if (g_settings.laser_mode & (LASER_PPI_MODE| LASER_PPI_VARPOWER_MODE))
-	// {
-
-	// 	mask &= ~(1 << (STEPPER_COUNT - 1));
-	// 	mask |= (mcu_get_output(LASER_PPI)) ? (1 << (STEPPER_COUNT - 1)) : 0;
-
-	// 	if (!(g_settings.step_invert_mask & (1 << (STEPPER_COUNT - 1))))
-	// 	{
-	// 		mask ^= (1 << (STEPPER_COUNT - 1));
-	// 	}
-	// }
-	// io_set_steps(mask);
 	uint8_t mask = g_settings.step_invert_mask;
-	if (g_settings.laser_mode & (LASER_PPI_MODE| LASER_PPI_VARPOWER_MODE))
+	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
 		mask &= ~(1 << (STEPPER_COUNT - 1));
 		mask |= (mcu_get_output(LASER_PPI)) ? (1 << (STEPPER_COUNT - 1)) : 0;
@@ -1209,7 +1195,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 
 		// sets step bits
-		io_toggle_steps(stepbits);
 #ifdef ENABLE_LASER_PPI
 		if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 		{
@@ -1224,6 +1209,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 		}
 #endif
+		io_toggle_steps(stepbits);
 		stepbits = 0;
 
 		// if buffer empty loads one
