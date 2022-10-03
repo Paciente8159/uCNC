@@ -1083,12 +1083,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			break;
 		case M127:
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p;
+			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p * MM_INCH_MULT;
+			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (2000000.0f / g_settings.max_step_rate)))/g_settings.step_per_mm[STEPPER_COUNT - 1];
 			break;
 		case M128:
 			new_state->ppi_us_width = (uint16_t)words->p;
 			mcu_config_timeout(&laser_ppi_turnoff_cb, new_state->ppi_us_width);
-			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (1000000.0f / g_settings.max_step_rate)));
+			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (2000000.0f / g_settings.max_step_rate)))/g_settings.step_per_mm[STEPPER_COUNT - 1];
 			break;
 #endif
 		default:
@@ -2486,11 +2487,11 @@ void parser_reset(void)
 	parser_state.groups.tool_change = 1;
 	parser_state.tool_index = g_settings.default_tool;
 #ifdef ENABLE_LASER_PPI
-	g_settings.step_per_mm[STEPPER_COUNT - 1] = 600;
+	g_settings.step_per_mm[STEPPER_COUNT - 1] = 600 * MM_INCH_MULT;
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 	parser_state.ppi_us_width = 1500;
 	mcu_config_timeout(&laser_ppi_turnoff_cb, 1500);
-	g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (1500.0f + (1000000.0f / g_settings.max_step_rate)));
+	g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (1500.0f + (2000000.0f / g_settings.max_step_rate))) / (600 * MM_INCH_MULT);
 #endif
 #endif
 	parser_state.groups.motion = G1;											   // G1
