@@ -19,13 +19,19 @@
 static bool protocol_busy;
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-// event_send_pins_states_handler
-WEAK_EVENT_HANDLER(send_pins_states)
+#ifdef ENABLE_IO_MODULES
+// event_protocol_send_pins_states_handler
+WEAK_EVENT_HANDLER(protocol_send_pins_states)
 {
-	// for now only encoder module uses this hook and overrides it
-	// it actually overrides the mcu callback to be faster
-	DEFAULT_EVENT_HANDLER(send_pins_states);
+	DEFAULT_EVENT_HANDLER(protocol_send_pins_states);
+}
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+// event_protocol_send_cnc_settings_handler
+WEAK_EVENT_HANDLER(protocol_send_cnc_settings)
+{
+	DEFAULT_EVENT_HANDLER(protocol_send_cnc_settings);
 }
 #endif
 
@@ -663,6 +669,10 @@ void protocol_send_cnc_settings(void)
 		protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
 	}
 #endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
+#endif
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -736,8 +746,8 @@ void protocol_send_pins_states(void)
 	encoder_print_values();
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-	EVENT_INVOKE(send_pins_states, NULL);
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(protocol_send_pins_states, NULL);
 #endif
 
 	protocol_send_string(__romstr__("[RUNTIME:"));

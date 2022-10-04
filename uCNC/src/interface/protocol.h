@@ -46,9 +46,14 @@ extern "C"
 	void protocol_send_cnc_info(void);
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-	// event_send_pins_states_handler
-	DECL_EVENT_HANDLER(send_pins_states);
+#ifdef ENABLE_IO_MODULES
+	// event_protocol_send_pins_states_handler
+	DECL_EVENT_HANDLER(protocol_send_pins_states);
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	// event_protocol_send_cnc_settings_handler
+	DECL_EVENT_HANDLER(protocol_send_cnc_settings);
 #endif
 
 #ifdef __cplusplus

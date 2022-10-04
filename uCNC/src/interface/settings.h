@@ -102,6 +102,15 @@ extern "C"
 #ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
 #define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 #endif
+#ifndef MODULES_SETTINGS_ADDRESS_OFFSET
+#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#endif
+
+#ifndef ENABLE_PARSER_MODULES
+typedef uint8_t setting_offset_t;
+#else
+typedef uint16_t setting_offset_t;
+#endif
 
 	extern settings_t g_settings;
 
@@ -110,13 +119,19 @@ extern "C"
 	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
 	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
 	void settings_reset(bool erase_startup_blocks);
-	uint8_t settings_change(uint8_t setting, float value);
+	uint8_t settings_change(setting_offset_t id, float value);
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
-
 #ifdef ENABLE_SETTINGS_MODULES
+	uint16_t settings_register_external_setting(uint8_t size);
+
 	// event_settings_change_handler
+	typedef struct setting_args_
+	{
+		uint16_t id;
+		float value;
+	} setting_args_t;
 	DECL_EVENT_HANDLER(settings_change);
 	typedef struct settings_args_
 	{
