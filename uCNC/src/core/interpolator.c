@@ -909,8 +909,10 @@ void itp_run(void)
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
 				float new_s = planner_get_spindle_speed(1);
-				newspindle = (int16_t)ABS(new_s);
-				sgm->spindle = (int16_t)((float)g_itp_laser_ppi_uswidth * newspindle / g_settings.spindle_max_rpm);
+				new_s /= (float)g_settings.spindle_max_rpm;
+				new_s = (g_settings.laser_mode & LASER_PPI_MODE) ? (new_s * LASER_PPI_MIXED_MODE_RANGE + (1 - LASER_PPI_MIXED_MODE_RANGE)) : new_s;
+				newspindle = (int16_t)((float)g_itp_laser_ppi_uswidth * new_s);
+				sgm->spindle = newspindle;
 			}
 			else
 			{

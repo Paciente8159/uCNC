@@ -159,6 +159,10 @@ extern "C"
 // Uncomment to enable laser PPI feature
 // Laser PPI requires the MCU to support ONESHOT timeout
 #define ENABLE_LASER_PPI
+// Uncomment to defines the dynamic range in PPI mixed mode (defauls to 0.5f)
+// This value should be set between 1 and 0
+// The range will be set between 100% and LASER_PPI_MIXED_MODE_RANGE*100%
+// #define LASER_PPI_MIXED_MODE_RANGE 0.5f
 
 // Feed overrides increments and percentage ranges
 #define FEED_OVR_MAX 200
@@ -194,7 +198,7 @@ extern "C"
 /**
  * accept G0 and G1 without explicit target
  * */
-// #define IGNORE_G0_G1_MISSING_AXIS_WORDS
+#define IGNORE_G0_G1_MISSING_AXIS_WORDS
 
 /**
  * processes and displays the currently executing gcode numbered line

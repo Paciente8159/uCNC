@@ -537,6 +537,12 @@ extern "C"
 #undef ENABLE_LASER_PPI
 #endif
 #ifdef ENABLE_LASER_PPI
+#ifndef LASER_PPI_MIXED_MODE_RANGE
+#define LASER_PPI_MIXED_MODE_RANGE 0.5f
+#endif
+#if ((LASER_PPI_MIXED_MODE_RANGE < 0) || (LASER_PPI_MIXED_MODE_RANGE > 1))
+#error "Laser PPI Mixed mode range must be a float value from 0 to 1"
+#endif
 #ifndef MCU_HAS_ONESHOT_TIMER
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
