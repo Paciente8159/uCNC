@@ -741,6 +741,9 @@ void itp_run(void)
 				float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) / itp_cur_plan_block->acceleration;
 				accel_dist = fast_flt_div2(accel_dist);
 				accel_until -= floorf(accel_dist);
+#ifdef ENABLE_PLANNER_ACCEL_NONOPTIMAL
+				accel_until = MIN(accel_until, remaining_steps);
+#endif
 				initial_accel_negative = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
 			}
 
@@ -899,11 +902,12 @@ void itp_run(void)
 		}
 #endif
 		remaining_steps -= segm_steps;
-
+#ifndef ENABLE_PLANNER_ACCEL_NONOPTIMAL
 		if (remaining_steps == accel_until) // resets float additions error
 		{
 			itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
 		}
+#endif
 
 		itp_cur_plan_block->total_steps = remaining_steps;
 

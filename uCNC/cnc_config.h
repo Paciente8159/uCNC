@@ -290,16 +290,23 @@ extern "C"
 	 * This will make the planner not perform the forward pass to adjust entry speeds.
 	 * The adjustment of the next planner block is made on the fly when the block is loaded.
 	 * */
-	// #define ENABLE_PLANNER_SPEED_OVERSHOOT
+	//  #define ENABLE_PLANNER_SPEED_OVERSHOOT
+
+	/**
+	 * By enabling this option the planner will junction speed based on accel only if need
+	 * meaning that the junction speed will only be the maximum value between current and exit speed
+	 * This will eliminate ramp up and down completly and over-simplify calculations
+	 * */
+	// #define ENABLE_PLANNER_ACCEL_NONOPTIMAL
 
 	/**
 	 * By enabling this option the planner will only perform acceleration if the exit speed is higher
-	 * then the current speed and the distance travelled is lower then a give threshold
+	 * then the current speed and the distance travelled is lower then a give threshold (in steps)
 	 * This will prevent sucessive ramp up and down speed profiles a produce more continuous speed motions
 	 * */
 	// #define ENABLE_PLANNER_NOACCEL_ON_SLOWER_EXIT
 	#ifdef ENABLE_PLANNER_NOACCEL_ON_SLOWER_EXIT
-	#define ENABLE_PLANNER_NOACCEL_MAX_SETP_DISTANCE 5
+	#define ENABLE_PLANNER_NOACCEL_MAX_STEP_DISTANCE 200
 	#endif
 
 	/**
