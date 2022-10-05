@@ -1188,7 +1188,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 {
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
+#ifdef ENABLE_LASER_PPI
 	static uint16_t new_laser_ppi = 0;
+#endif
 
 	if (!itp_busy) // prevents reentrancy
 	{

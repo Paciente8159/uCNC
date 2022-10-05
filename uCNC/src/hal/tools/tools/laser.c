@@ -1,5 +1,5 @@
 /*
-	Name: lase1.c
+	Name: laser.c
 	Description: Defines a laser tool using PWM0 for µCNC.
 				 Defines a coolant output using DOUT1 (can be used for air assist).
 

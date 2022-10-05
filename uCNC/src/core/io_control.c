@@ -415,7 +415,7 @@ void io_set_steps(uint8_t mask)
 	EVENT_INVOKE(set_steps, &mask);
 #endif
 
-#if !(STEP0 < 0)
+#if (!(STEP0 < 0) && (AXIS_TO_STEPPERS >= 1))
 	if (mask & STEP0_MASK)
 	{
 		mcu_set_output(STEP0);
@@ -426,7 +426,7 @@ void io_set_steps(uint8_t mask)
 	}
 
 #endif
-#if !(STEP1 < 0)
+#if (!(STEP1 < 0) && (AXIS_TO_STEPPERS >= 2))
 	if (mask & STEP1_MASK)
 	{
 		mcu_set_output(STEP1);
@@ -436,7 +436,7 @@ void io_set_steps(uint8_t mask)
 		mcu_clear_output(STEP1);
 	}
 #endif
-#if !(STEP2 < 0)
+#if (!(STEP2 < 0) && (AXIS_TO_STEPPERS >= 3))
 	if (mask & STEP2_MASK)
 	{
 		mcu_set_output(STEP2);
@@ -446,7 +446,7 @@ void io_set_steps(uint8_t mask)
 		mcu_clear_output(STEP2);
 	}
 #endif
-#if !(STEP3 < 0)
+#if (!(STEP3 < 0) && (AXIS_TO_STEPPERS >= 4))
 	if (mask & STEP3_MASK)
 	{
 		mcu_set_output(STEP3);
@@ -456,7 +456,7 @@ void io_set_steps(uint8_t mask)
 		mcu_clear_output(STEP3);
 	}
 #endif
-#if !(STEP4 < 0)
+#if (!(STEP4 < 0) && (AXIS_TO_STEPPERS >= 5))
 	if (mask & STEP4_MASK)
 	{
 		mcu_set_output(STEP4);
@@ -466,7 +466,7 @@ void io_set_steps(uint8_t mask)
 		mcu_clear_output(STEP4);
 	}
 #endif
-#if !(STEP5 < 0)
+#if (!(STEP5 < 0) && (AXIS_TO_STEPPERS >= 6))
 	if (mask & STEP5_MASK)
 	{
 		mcu_set_output(STEP5);
@@ -1266,27 +1266,27 @@ int16_t io_get_pinvalue(uint8_t pin)
 {
 	switch (pin)
 	{
-#if !(STEP0 < 0)
+#if (!(STEP0 < 0) && (AXIS_TO_STEPPERS >= 1))
 	case STEP0:
 		return (mcu_get_output(STEP0) != 0);
 #endif
-#if !(STEP1 < 0)
+#if (!(STEP1 < 0) && (AXIS_TO_STEPPERS >= 2))
 	case STEP1:
 		return (mcu_get_output(STEP1) != 0);
 #endif
-#if !(STEP2 < 0)
+#if (!(STEP2 < 0) && (AXIS_TO_STEPPERS >= 3))
 	case STEP2:
 		return (mcu_get_output(STEP2) != 0);
 #endif
-#if !(STEP3 < 0)
+#if (!(STEP3 < 0) && (AXIS_TO_STEPPERS >= 4))
 	case STEP3:
 		return (mcu_get_output(STEP3) != 0);
 #endif
-#if !(STEP4 < 0)
+#if (!(STEP4 < 0) && (AXIS_TO_STEPPERS >= 5))
 	case STEP4:
 		return (mcu_get_output(STEP4) != 0);
 #endif
-#if !(STEP5 < 0)
+#if (!(STEP5 < 0) && (AXIS_TO_STEPPERS >= 6))
 	case STEP5:
 		return (mcu_get_output(STEP5) != 0);
 #endif

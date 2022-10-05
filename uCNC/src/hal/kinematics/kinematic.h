@@ -35,6 +35,13 @@ extern "C"
 #define STEPPER_COUNT AXIS_TO_STEPPERS
 #endif
 
+#define KINEMATIC_HOMING_ERROR_X 1
+#define KINEMATIC_HOMING_ERROR_Y 2
+#define KINEMATIC_HOMING_ERROR_Z 4
+#define KINEMATIC_HOMING_ERROR_A 8
+#define KINEMATIC_HOMING_ERROR_B 16
+#define KINEMATIC_HOMING_ERROR_C 32
+
 #include <stdint.h>
 
 	void kinematics_init(void);
