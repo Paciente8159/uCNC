@@ -1602,7 +1602,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	}
 
-	if (hold)
+	if (hold && !mc_get_checkmode())
 	{
 		mc_pause();
 		if (resetparser)
