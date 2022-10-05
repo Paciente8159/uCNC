@@ -33,6 +33,10 @@
 #define LASER_PWM PWM0
 #endif
 
+#ifndef LASER_FREQ
+#define LASER_FREQ 8000
+#endif
+
 // #define ENABLE_COOLANT
 #ifdef ENABLE_COOLANT
 #ifndef COOLANT_FLOOD
@@ -50,7 +54,10 @@ static bool previous_laser_mode;
 
 void laser_startup_code(void)
 {
-	// force laser mode
+// force laser mode
+#if !(LASER_PWM < 0)
+	mcu_config_pwm(LASER_PWM, LASER_FREQ);
+#endif
 	previous_laser_mode = g_settings.laser_mode;
 	g_settings.laser_mode = 1;
 }

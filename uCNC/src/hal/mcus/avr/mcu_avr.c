@@ -42,6 +42,7 @@
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
+static uint8_t mcu_servos_val[6];
 static uint8_t mcu_servos[6];
 static uint8_t mcu_servos_loops[6];
 
@@ -470,6 +471,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
 	uint8_t scaled = RTC_OCRA;
+	mcu_servos_val[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
 	if (value < 64)
 	{
 		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 0;
@@ -503,7 +505,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
 	if ((1U << offset) & SERVOS_MASK)
 	{
-		return mcu_servos[offset];
+		return mcu_servos_val[offset];
 	}
 #endif
 	return 0;

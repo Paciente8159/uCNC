@@ -159,6 +159,14 @@ extern "C"
 #endif
 
 /**
+ * configs the pwm pin and output frequency
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pwm
+	void mcu_config_pwm(uint8_t pin, uint16_t freq);
+#endif
+
+/**
  * sets the pwm value of a built-in pwm pin
  * can be defined either as a function or a macro call
  * */

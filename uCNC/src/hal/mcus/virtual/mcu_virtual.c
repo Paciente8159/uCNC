@@ -1172,6 +1172,10 @@ void mcu_config_input(uint8_t pin)
 {
 }
 
+void mcu_config_pwm(uint8_t pin, uint16_t freq)
+{
+}
+
 uint8_t mcu_get_input(uint8_t pin)
 {
 	uint8_t offset = mcu_get_pin_offset(pin);
@@ -1491,7 +1495,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 		{
 			c = getc(fp);
 		}
-		
+
 		fclose(fp);
 	}
 
