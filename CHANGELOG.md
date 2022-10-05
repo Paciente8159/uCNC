@@ -6,6 +6,21 @@
 
 # Changelog
 
+## [1.5.3] - Unreleased
+
+### Added
+
+- added support for comments with ';' char (#291)
+- added support for S word clustering format used by Smoothieware (#289)
+
+### Changed
+
+- added optimizations to motion control to reduce some redundant operations (#292)
+
+### Fixed
+
+- fixed M2/M30 hold with check mode enabled caused program to stall (#297)
+
 ## [1.5.2] - 01-10-2022
 
 ### Added
@@ -1012,6 +1027,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
 [1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
 [1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
