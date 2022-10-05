@@ -100,6 +100,7 @@ extern "C"
 
 #define LASER_PWM_MODE 1
 #define LASER_PPI_MODE 2
+#define LASER_PPI_VARPOWER_MODE 4
 
 	// 33bytes in total
 	typedef struct
@@ -176,9 +177,6 @@ extern "C"
 #if TOOL_COUNT > 0
 		uint8_t tool_index;
 		uint16_t spindle;
-#ifdef ENABLE_LASER_PPI
-		uint16_t ppi_us_width;
-#endif
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t line;

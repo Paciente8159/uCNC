@@ -80,7 +80,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 2
+#define AXIS_COUNT 3
 #endif
 
 #ifndef KINEMATIC
@@ -158,7 +158,7 @@ extern "C"
 
 // Uncomment to enable laser PPI feature
 // Laser PPI requires the MCU to support ONESHOT timeout
-#define ENABLE_LASER_PPI
+// #define ENABLE_LASER_PPI
 
 // Feed overrides increments and percentage ranges
 #define FEED_OVR_MAX 200
@@ -194,7 +194,7 @@ extern "C"
 /**
  * accept G0 and G1 without explicit target
  * */
-// #define IGNORE_G0_G1_MISSING_AXIS_WORDS
+#define IGNORE_G0_G1_MISSING_AXIS_WORDS
 
 /**
  * processes and displays the currently executing gcode numbered line

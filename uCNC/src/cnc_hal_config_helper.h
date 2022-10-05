@@ -540,10 +540,10 @@ extern "C"
 #ifndef MCU_HAS_ONESHOT_TIMER
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
 #endif
-#ifdef BRESENHAM_16BIT
-#undef BRESENHAM_16BIT
-#warning "BRESENHAM_16BIT was disabled for Laser PPI mode"
-#endif
+// #ifdef BRESENHAM_16BIT
+// #undef BRESENHAM_16BIT
+// #warning "BRESENHAM_16BIT was disabled for Laser PPI mode"
+// #endif
 #ifdef ENABLE_LINACT_PLANNER
 #undef ENABLE_LINACT_PLANNER
 #warning "ENABLE_LINACT_PLANNER was disabled for Laser PPI mode"

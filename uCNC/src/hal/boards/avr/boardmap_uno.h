@@ -37,8 +37,10 @@ extern "C"
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 4	 // assigns STEP2 pin
-#define STEP2_PORT D // assigns STEP2 port
+#define STEP2_BIT 3	 // assigns STEP2 pin
+#define STEP2_PORT B // assigns STEP2 port
+// #define STEP2_BIT 4	 // assigns STEP2 pin
+// #define STEP2_PORT D // assigns STEP2 port
 #define STEP1_BIT 3	 // assigns STEP1 pin
 #define STEP1_PORT D // assigns STEP1 port
 #define STEP0_BIT 2	 // assigns STEP0 pin
@@ -95,10 +97,10 @@ extern "C"
 	//#define UART_PORT 0
 
 	// Setup PWM
-#define PWM0_BIT 3	// assigns PWM0 pin
-#define PWM0_PORT B // assigns PWM0 pin
-#define PWM0_CHANNEL A
-#define PWM0_TIMER 2
+// #define PWM0_BIT 3	// assigns PWM0 pin
+// #define PWM0_PORT B // assigns PWM0 pin
+// #define PWM0_CHANNEL A
+// #define PWM0_TIMER 2
 
 // Setup generic IO Pins
 // Functionalities are set in cnc_hal_config.h file
