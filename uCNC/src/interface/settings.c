@@ -108,6 +108,11 @@ const settings_t __rom__ default_settings =
 		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
 		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
 		.laser_mode = 0,
+#ifdef ENABLE_LASER_PPI
+		.laser_ppi_uswidth = 1500,
+		.laser_ppi_mixmode_ppi = 0.25,
+		.laser_ppi_mixmode_uswidth = 0.75,
+#endif
 		.step_per_mm = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_STEP_PER_MM),
 		.max_feed_rate = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_MAX_FEED),
 		.acceleration = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_ACCEL),
@@ -390,6 +395,17 @@ uint8_t settings_change(uint8_t setting, float value)
 	case 32:
 		g_settings.laser_mode = value8;
 		break;
+#ifdef ENABLE_LASER_PPI
+	case 33:
+		g_settings.laser_ppi_uswidth = value16;
+		break;
+	case 34:
+		g_settings.laser_ppi_mixmode_ppi = value;
+		break;
+	case 35:
+		g_settings.laser_ppi_mixmode_uswidth = value;
+		break;
+#endif
 #ifdef ENABLE_SKEW_COMPENSATION
 	case 37:
 		g_settings.skew_xy_factor = value;

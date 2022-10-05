@@ -576,6 +576,36 @@ void itp_run(void)
 
 			sgm->spindle = newspindle;
 		}
+#ifdef ENABLE_LASER_PPI
+		if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		{
+			int16_t newspindle;
+			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			{
+				float new_s = ABS(planner_get_spindle_speed(1));
+				new_s /= (float)g_settings.spindle_max_rpm;
+				if (g_settings.laser_mode & LASER_PPI_MODE)
+				{
+					float blend = g_settings.laser_ppi_mixmode_uswidth;
+					new_s = (new_s * blend) + (1.0f - blend);
+				}
+
+				newspindle = (int16_t)((float)g_settings.laser_ppi_uswidth * new_s);
+				sgm->spindle = newspindle;
+			}
+			else
+			{
+				newspindle = g_settings.laser_ppi_uswidth;
+				sgm->spindle = newspindle;
+			}
+
+			if ((prev_spindle != (int16_t)newspindle) && newspindle)
+			{
+				prev_spindle = (int16_t)newspindle;
+				sgm->update_itp |= ITP_UPDATE_TOOL;
+			}
+		}
+#endif
 #endif
 		remaining_steps -= segm_steps;
 
@@ -908,15 +938,20 @@ void itp_run(void)
 			int16_t newspindle;
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
-				float new_s = planner_get_spindle_speed(1);
+				float new_s = ABS(planner_get_spindle_speed(1));
 				new_s /= (float)g_settings.spindle_max_rpm;
-				new_s = (g_settings.laser_mode & LASER_PPI_MODE) ? (new_s * LASER_PPI_MIXED_MODE_RANGE + (1 - LASER_PPI_MIXED_MODE_RANGE)) : new_s;
-				newspindle = (int16_t)((float)g_itp_laser_ppi_uswidth * new_s);
+				if (g_settings.laser_mode & LASER_PPI_MODE)
+				{
+					float blend = g_settings.laser_ppi_mixmode_uswidth;
+					new_s = (new_s * blend) + (1.0f - blend);
+				}
+
+				newspindle = (int16_t)((float)g_settings.laser_ppi_uswidth * new_s);
 				sgm->spindle = newspindle;
 			}
 			else
 			{
-				newspindle = g_itp_laser_ppi_uswidth;
+				newspindle = g_settings.laser_ppi_uswidth;
 				sgm->spindle = newspindle;
 			}
 
@@ -1117,7 +1152,6 @@ uint32_t itp_get_rt_line_number(void)
 #endif
 
 #ifdef ENABLE_LASER_PPI
-uint16_t g_itp_laser_ppi_uswidth;
 // turn laser off callback
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {

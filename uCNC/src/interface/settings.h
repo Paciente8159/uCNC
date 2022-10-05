@@ -58,6 +58,11 @@ extern "C"
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
 		uint8_t laser_mode;
+#ifdef ENABLE_LASER_PPI
+		uint16_t laser_ppi_uswidth;
+		float laser_ppi_mixmode_ppi;
+		float laser_ppi_mixmode_uswidth;
+#endif
 		float step_per_mm[STEPPER_COUNT];
 		float max_feed_rate[STEPPER_COUNT];
 		float acceleration[STEPPER_COUNT];

@@ -48,10 +48,6 @@ extern "C"
 	uint32_t itp_get_rt_line_number(void);
 #endif
 
-#ifdef ENABLE_LASER_PPI
-extern uint16_t g_itp_laser_ppi_uswidth;
-#endif
-
 #ifdef __cplusplus
 }
 #endif
