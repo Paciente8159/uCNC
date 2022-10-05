@@ -127,7 +127,6 @@ static float parser_last_pos[AXIS_COUNT];
 
 static unsigned char parser_get_next_preprocessed(bool peek);
 FORCEINLINE static void parser_get_comment(unsigned char start_char);
-static uint8_t parser_get_float(float *value);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -155,10 +154,22 @@ WEAK_EVENT_HANDLER(gcode_exec)
 	DEFAULT_EVENT_HANDLER(gcode_exec);
 }
 
+// event_gcode_exec_handler
+WEAK_EVENT_HANDLER(gcode_exec_modifier)
+{
+	DEFAULT_EVENT_HANDLER(gcode_exec_modifier);
+}
+
 // event_grbl_cmd_handler
 WEAK_EVENT_HANDLER(grbl_cmd)
 {
 	DEFAULT_EVENT_HANDLER(grbl_cmd);
+}
+
+// event_parse_token_handler
+WEAK_EVENT_HANDLER(parse_token)
+{
+	DEFAULT_EVENT_HANDLER(parse_token);
 }
 #endif
 
@@ -1011,6 +1022,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	uint8_t error = 0;
 	bool update_tools = false;
 
+#ifdef ENABLE_PARSER_MODULES
+	gcode_exec_args_t args = {new_state, words, cmd};
+	EVENT_INVOKE(gcode_exec_modifier, &args);
+#endif
+
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
 	{
@@ -1032,7 +1048,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 		if (words->p < 6)
 		{
-			io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+			io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(0, (uint8_t)trunc(words->s), 255));
 		}
 
 		return STATUS_OK;
@@ -1042,7 +1058,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef ENABLE_PARSER_MODULES
 	if ((cmd->group_extended != 0))
 	{
-		gcode_exec_args_t args = {new_state, words, cmd};
 		return EVENT_INVOKE(gcode_exec, &args);
 	}
 #endif
@@ -1069,7 +1084,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #if TOOL_COUNT > 0
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S))
 	{
-		new_state->spindle = words->s;
+		new_state->spindle = (uint16_t)trunc(words->s);
 	}
 
 	// 5. select tool
@@ -1676,7 +1691,7 @@ static uint8_t parser_gcode_command(void)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
-static uint8_t parser_get_float(float *value)
+uint8_t parser_get_float(float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;
@@ -1849,7 +1864,7 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 	unsigned char c = serial_getc();
 
 	// if other char starts tokenization
-	if (c > 'Z')
+	if (c >= 'a' && c <= 'z')
 	{
 		c -= 32; // uppercase
 	}
@@ -1865,16 +1880,23 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 #ifdef ECHO_CMD
 		serial_putc(c);
 #endif
-		if (c < 'A' || c > 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized char
 		{
-			return STATUS_EXPECTED_COMMAND_LETTER;
-		}
+			if (!parser_get_float(value))
+			{
+				return STATUS_BAD_NUMBER_FORMAT;
+			}
 
-		if (!parser_get_float(value))
-		{
-			return STATUS_BAD_NUMBER_FORMAT;
+			return STATUS_OK;
 		}
-		break;
+// event_parse_token_handler
+#ifdef ENABLE_PARSER_MODULES
+		if (EVENT_INVOKE(parse_token, word))
+		{
+			return STATUS_OK;
+		}
+#endif
+		return STATUS_EXPECTED_COMMAND_LETTER;
 	}
 
 	return STATUS_OK;
@@ -2303,7 +2325,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		{
 			return STATUS_NEGATIVE_VALUE;
 		}
-		words->s = (uint16_t)trunc(value);
+		words->s = value;
 		break;
 	case 'T':
 		new_words |= GCODE_WORD_T;
