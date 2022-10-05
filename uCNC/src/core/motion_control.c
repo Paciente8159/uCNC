@@ -264,9 +264,18 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
 	block_data->feed = (float)max_steps * inv_delta;
 
+#if ((KINEMATIC == KINEMATIC_DELTA) || defined(BRESENHAM_16BIT))
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
-#if (KINEMATIC != KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_DELTA)
+	line_segments = (uint32_t)ceilf(line_dist * DELTA_MOTION_SEGMENT_FACTOR);
+	float m_inv = 1.0f / (float)line_segments;
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		motion_segment[i] *= m_inv;
+	}
+#else
 	if (max_steps > MAX_STEPS_PER_LINE)
 	{
 		line_segments += (max_steps >> MAX_STEPS_PER_LINE_BITS);
@@ -276,14 +285,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 			i--;
 			motion_segment[i] *= m_inv;
 		}
-	}
-#else
-	line_segments = (uint32_t)ceilf(line_dist * DELTA_MOTION_SEGMENT_FACTOR);
-	float m_inv = 1.0f / (float)line_segments;
-	for (uint8_t i = AXIS_COUNT; i != 0;)
-	{
-		i--;
-		motion_segment[i] *= m_inv;
 	}
 #endif
 
@@ -300,20 +301,18 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		error = mc_line_segment(step_new_pos, block_data);
 		if (error)
 		{
-			memcpy(target, prev_target, sizeof(target));
+			memcpy(target, prev_target, sizeof(prev_target));
+			block_data->feed = feed;
 			return error;
 		}
 	}
 
-	if (error == STATUS_OK)
+	if (block_data->motion_flags.bit.is_subsegment)
 	{
-		if (block_data->motion_flags.bit.is_subsegment)
-		{
-			kinematics_apply_inverse(target, step_new_pos);
-		}
-
-		error = mc_line_segment(step_new_pos, block_data);
+		kinematics_apply_inverse(target, step_new_pos);
 	}
+#endif
+	error = mc_line_segment(step_new_pos, block_data);
 	// stores the new position for the next motion
 	memcpy(mc_last_target, target, sizeof(mc_last_target));
 	block_data->feed = feed;
