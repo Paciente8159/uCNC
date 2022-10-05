@@ -193,7 +193,7 @@ extern "C"
 /**
  * accept G0 and G1 without explicit target
  * */
-// #define IGNORE_G0_G1_MISSING_AXIS_WORDS
+#define IGNORE_G0_G1_MISSING_AXIS_WORDS
 
 /**
  * processes and displays the currently executing gcode numbered line

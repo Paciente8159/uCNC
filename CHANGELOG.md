@@ -6,6 +6,19 @@
 
 # Changelog
 
+## [1.5.2] - 01-10-2022
+
+### Added
+
+- configurable PWM frequency (#286)
+
+### Fixed
+
+- fixed no command response after a tool command without motion (#284)
+- fixed incorrect laser power factor scaling with M4 (#282)
+- $P servo report values for AVR (#283)
+- fixed tool update with dwell to reach programmed speed
+
 ## [1.5.1] - 23-09-2022
 
 ### Fixed
@@ -999,6 +1012,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
 [1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc

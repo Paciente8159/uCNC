@@ -63,7 +63,9 @@ extern "C"
 		step_t steps[STEPPER_COUNT];
 		float dir_vect[AXIS_COUNT];
 		uint8_t dirbits;
+		#ifdef ENABLE_LINACT_PLANNER
 		uint32_t full_steps; // number of steps of all linear actuators
+		#endif
 		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
 		uint8_t main_stepper;
