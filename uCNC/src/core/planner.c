@@ -63,7 +63,6 @@ FORCEINLINE static void planner_buffer_clear(void);
 */
 void planner_add_line(motion_data_t *block_data)
 {
-
 	static float last_dir_vect[STEPPER_COUNT];
 
 	// clear the planner block
