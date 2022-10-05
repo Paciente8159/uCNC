@@ -741,9 +741,6 @@ void mcu_eeprom_flush(void)
 // #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
-
-static IRAM_ATTR void mcu_gen_pwm(void)
-
 /**
  * configures a single shot timeout in us
  * */
@@ -762,7 +759,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 #ifndef mcu_start_timeout
 void mcu_start_timeout()
 {
-	oneshot_counter = esp8266_oneshot_reload;
+	esp8266_oneshot_counter = esp8266_oneshot_reload;
 }
 #endif
 #endif
