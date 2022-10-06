@@ -1155,33 +1155,19 @@ uint32_t itp_get_rt_line_number(void)
 // turn laser off callback
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
-	if (!(g_settings.step_invert_mask & (1 << (STEPPER_COUNT - 1))))
-	{
-		mcu_clear_output(LASER_PPI);
-	}
-	else
-	{
-		mcu_set_output(LASER_PPI);
-	}
+#ifndef INVERT_LASER_PPI_LOGIC
+	mcu_clear_output(LASER_PPI);
+#else
+	mcu_set_output(LASER_PPI);
+#endif
 }
 #endif
 
 // always fires after pulse
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
-#ifdef ENABLE_LASER_PPI
-	// prevent the step reset to change the laser PPI output
-	uint8_t mask = g_settings.step_invert_mask;
-	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
-	{
-		mask &= ~(1 << (STEPPER_COUNT - 1));
-		mask |= (mcu_get_output(LASER_PPI)) ? (1 << (STEPPER_COUNT - 1)) : 0;
-	}
-	io_set_steps(mask);
-#else
 	// always resets all stepper pins
 	io_set_steps(g_settings.step_invert_mask);
-#endif
 }
 
 MCU_CALLBACK void mcu_step_cb(void)
@@ -1236,7 +1222,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef ENABLE_LASER_PPI
 		if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 		{
-			if (stepbits & (1 << (STEPPER_COUNT - 1)))
+			if (stepbits & LASER_PPI_MASK)
 			{
 				if (new_laser_ppi)
 				{
@@ -1244,6 +1230,11 @@ MCU_CALLBACK void mcu_step_cb(void)
 					new_laser_ppi = 0;
 				}
 				mcu_start_timeout();
+#ifndef INVERT_LASER_PPI_LOGIC
+				mcu_set_output(LASER_PPI);
+#else
+				mcu_clear_output(LASER_PPI);
+#endif
 			}
 		}
 #endif

@@ -37,12 +37,24 @@ static void laser_ppi_startup_code(void)
 // force laser mode
 #if !(LASER_PPI < 0)
 	mcu_config_output(LASER_PPI);
+#ifndef INVERT_LASER_PPI_LOGIC
+	mcu_clear_output(LASER_PPI);
+#else
+	mcu_set_output(LASER_PPI);
+#endif
 #endif
 	g_settings.laser_mode |= LASER_PPI_MODE;
 }
 
 static void laser_ppi_shutdown_code(void)
 {
+#if !(LASER_PPI < 0)
+#ifndef INVERT_LASER_PPI_LOGIC
+	mcu_clear_output(LASER_PPI);
+#else
+	mcu_set_output(LASER_PPI);
+#endif
+#endif
 	// restore laser mode
 	g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
 }

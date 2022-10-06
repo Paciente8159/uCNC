@@ -139,8 +139,7 @@ extern "C"
 	// Timer 0 is set by default
 	//#define RTC_TIMER 0
 
-	// #define ONESHOT_TIMER 2
-	// #define STEP2 PWM0
+	#define ONESHOT_TIMER 2
 
 #ifdef __cplusplus
 }
