@@ -554,22 +554,22 @@ extern "C"
 #error "Enabling dual axis drive requires to configure at least one axis with dual drive"
 #endif
 
-#if (STEPPER_COUNT > 0 && (DUAL_DRIVE0_STEPPER == 0 || DUAL_DRIVE1_STEPPER == 0))
+#if (STEPPER_COUNT > 0 && (DUAL_DRIVE0_STEPPER == 0 || DUAL_DRIVE1_STEPPER == 0 || DUAL_DRIVE2_STEPPER == 0 || DUAL_DRIVE3_STEPPER == 0))
 #error "Stepper 0 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
-#if (STEPPER_COUNT > 1 && (DUAL_DRIVE0_STEPPER == 1 || DUAL_DRIVE1_STEPPER == 1))
+#if (STEPPER_COUNT > 1 && (DUAL_DRIVE0_STEPPER == 1 || DUAL_DRIVE1_STEPPER == 1 || DUAL_DRIVE2_STEPPER == 1 || DUAL_DRIVE3_STEPPER == 1))
 #error "Stepper 1 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
-#if (STEPPER_COUNT > 2 && (DUAL_DRIVE0_STEPPER == 2 || DUAL_DRIVE1_STEPPER == 2))
+#if (STEPPER_COUNT > 2 && (DUAL_DRIVE0_STEPPER == 2 || DUAL_DRIVE1_STEPPER == 2 || DUAL_DRIVE2_STEPPER == 2 || DUAL_DRIVE3_STEPPER == 2))
 #error "Stepper 2 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
-#if (STEPPER_COUNT > 3 && (DUAL_DRIVE0_STEPPER == 3 || DUAL_DRIVE1_STEPPER == 3))
+#if (STEPPER_COUNT > 3 && (DUAL_DRIVE0_STEPPER == 3 || DUAL_DRIVE1_STEPPER == 3 || DUAL_DRIVE2_STEPPER == 3 || DUAL_DRIVE3_STEPPER == 3))
 #error "Stepper 3 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
-#if (STEPPER_COUNT > 4 && (DUAL_DRIVE0_STEPPER == 4 || DUAL_DRIVE1_STEPPER == 4))
+#if (STEPPER_COUNT > 4 && (DUAL_DRIVE0_STEPPER == 4 || DUAL_DRIVE1_STEPPER == 4 || DUAL_DRIVE2_STEPPER == 4 || DUAL_DRIVE3_STEPPER == 4))
 #error "Stepper 4 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
-#if (STEPPER_COUNT > 5 && (DUAL_DRIVE0_STEPPER == 5 || DUAL_DRIVE1_STEPPER == 5))
+#if (STEPPER_COUNT > 5 && (DUAL_DRIVE0_STEPPER == 5 || DUAL_DRIVE1_STEPPER == 5 || DUAL_DRIVE2_STEPPER == 5 || DUAL_DRIVE3_STEPPER == 5))
 #error "Stepper 5 cannot be used as a axis drive and a dual axis drive at the same time"
 #endif
 
@@ -592,6 +592,23 @@ extern "C"
 #endif
 #define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
 #endif
+
+//axis2 and 3 are only replicating axis (no self-squaring)
+
+// dual axis2
+#ifdef DUAL_DRIVE2_AXIS
+#define AXIS_DUAL2 __axisname__(DUAL_DRIVE2_AXIS)
+#define STEP_DUAL2 (1 << AXIS_DUAL2)
+#define STEP_DUAL2_MASK (1 << DUAL_DRIVE2_STEPPER)
+#endif
+
+// dual axis3
+#ifdef DUAL_DRIVE3_AXIS
+#define AXIS_DUAL3 __axisname__(DUAL_DRIVE3_AXIS)
+#define STEP_DUAL3 (1 << AXIS_DUAL3)
+#define STEP_DUAL3_MASK (1 << DUAL_DRIVE3_STEPPER)
+#endif
+
 #endif
 
 #ifndef LIMIT_DUAL0_MASK
@@ -607,6 +624,10 @@ extern "C"
 #define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL0_MASK)
 #elif (STEP0_MASK == STEP_DUAL1)
 #define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL1_MASK)
+#elif (STEP0_MASK == STEP_DUAL2)
+#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL2_MASK)
+#elif (STEP0_MASK == STEP_DUAL3)
+#define STEP0_ITP_MASK (STEP0_MASK | STEP_DUAL3_MASK)
 #else
 #define STEP0_ITP_MASK STEP0_MASK
 #endif
@@ -614,6 +635,10 @@ extern "C"
 #define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL0_MASK)
 #elif (STEP1_MASK == STEP_DUAL1)
 #define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL1_MASK)
+#elif (STEP1_MASK == STEP_DUAL2)
+#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL2_MASK)
+#elif (STEP1_MASK == STEP_DUAL3)
+#define STEP1_ITP_MASK (STEP1_MASK | STEP_DUAL3_MASK)
 #else
 #define STEP1_ITP_MASK STEP1_MASK
 #endif
@@ -621,6 +646,10 @@ extern "C"
 #define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL0_MASK)
 #elif (STEP2_MASK == STEP_DUAL1)
 #define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL1_MASK)
+#elif (STEP2_MASK == STEP_DUAL2)
+#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL2_MASK)
+#elif (STEP2_MASK == STEP_DUAL3)
+#define STEP2_ITP_MASK (STEP2_MASK | STEP_DUAL3_MASK)
 #else
 #define STEP2_ITP_MASK STEP2_MASK
 #endif
@@ -628,20 +657,21 @@ extern "C"
 #define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL0_MASK)
 #elif (STEP3_MASK == STEP_DUAL1)
 #define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL1_MASK)
+#elif (STEP3_MASK == STEP_DUAL2)
+#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL2_MASK)
+#elif (STEP3_MASK == STEP_DUAL3)
+#define STEP3_ITP_MASK (STEP3_MASK | STEP_DUAL3_MASK)
 #else
 #define STEP3_ITP_MASK STEP3_MASK
-#endif
-#if (STEP4_MASK == STEP_DUAL0)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL0_MASK)
-#elif (STEP4_MASK == STEP_DUAL1)
-#define STEP4_ITP_MASK (STEP4_MASK | STEP_DUAL1_MASK)
-#else
-#define STEP4_ITP_MASK STEP4_MASK
 #endif
 #if (STEP5_MASK == STEP_DUAL0)
 #define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL0_MASK)
 #elif (STEP5_MASK == STEP_DUAL1)
 #define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL1_MASK)
+#elif (STEP5_MASK == STEP_DUAL2)
+#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL2_MASK)
+#elif (STEP5_MASK == STEP_DUAL3)
+#define STEP5_ITP_MASK (STEP5_MASK | STEP_DUAL3_MASK)
 #else
 #define STEP5_ITP_MASK STEP5_MASK
 #endif
@@ -654,7 +684,15 @@ extern "C"
 #define STEP_DUAL1 -1
 #endif
 
-#if (STEPPER_COUNT < 1 && DUAL_DRIVE0_STEPPER != 0 && DUAL_DRIVE1_STEPPER != 0)
+#ifndef STEP_DUAL2
+#define STEP_DUAL2 -1
+#endif
+
+#ifndef STEP_DUAL3
+#define STEP_DUAL3 -1
+#endif
+
+#if (STEPPER_COUNT < 1 && DUAL_DRIVE0_STEPPER != 0 && DUAL_DRIVE1_STEPPER != 0 && DUAL_DRIVE2_STEPPER != 0 && DUAL_DRIVE3_STEPPER != 0)
 #ifdef STEP0
 #undef STEP0
 #endif
@@ -662,7 +700,7 @@ extern "C"
 #undef DIR0
 #endif
 #endif
-#if (STEPPER_COUNT < 2 && DUAL_DRIVE0_STEPPER != 1 && DUAL_DRIVE1_STEPPER != 1)
+#if (STEPPER_COUNT < 2 && DUAL_DRIVE0_STEPPER != 1 && DUAL_DRIVE1_STEPPER != 1 && DUAL_DRIVE2_STEPPER != 1 && DUAL_DRIVE3_STEPPER != 1)
 #ifdef STEP1
 #undef STEP1
 #endif
@@ -670,7 +708,7 @@ extern "C"
 #undef DIR1
 #endif
 #endif
-#if (STEPPER_COUNT < 3 && DUAL_DRIVE0_STEPPER != 2 && DUAL_DRIVE1_STEPPER != 2)
+#if (STEPPER_COUNT < 3 && DUAL_DRIVE0_STEPPER != 2 && DUAL_DRIVE1_STEPPER != 2 && DUAL_DRIVE2_STEPPER != 2 && DUAL_DRIVE3_STEPPER != 2)
 #ifdef STEP2
 #undef STEP2
 #endif
@@ -678,7 +716,7 @@ extern "C"
 #undef DIR2
 #endif
 #endif
-#if (STEPPER_COUNT < 4 && DUAL_DRIVE0_STEPPER != 3 && DUAL_DRIVE1_STEPPER != 3)
+#if (STEPPER_COUNT < 4 && DUAL_DRIVE0_STEPPER != 3 && DUAL_DRIVE1_STEPPER != 3 && DUAL_DRIVE2_STEPPER != 3 && DUAL_DRIVE3_STEPPER != 3)
 #ifdef STEP3
 #undef STEP3
 #endif
@@ -686,7 +724,7 @@ extern "C"
 #undef DIR3
 #endif
 #endif
-#if (STEPPER_COUNT < 5 && DUAL_DRIVE0_STEPPER != 4 && DUAL_DRIVE1_STEPPER != 4)
+#if (STEPPER_COUNT < 5 && DUAL_DRIVE0_STEPPER != 4 && DUAL_DRIVE1_STEPPER != 4 && DUAL_DRIVE2_STEPPER != 4 && DUAL_DRIVE3_STEPPER != 4)
 #ifdef STEP4
 #undef STEP4
 #endif
@@ -694,7 +732,7 @@ extern "C"
 #undef DIR4
 #endif
 #endif
-#if (STEPPER_COUNT < 6 && DUAL_DRIVE0_STEPPER != 5 && DUAL_DRIVE1_STEPPER != 5)
+#if (STEPPER_COUNT < 6 && DUAL_DRIVE0_STEPPER != 5 && DUAL_DRIVE1_STEPPER != 5 && DUAL_DRIVE2_STEPPER != 5 && DUAL_DRIVE3_STEPPER != 5)
 #ifdef STEP5
 #undef STEP5
 #endif
@@ -702,7 +740,7 @@ extern "C"
 #undef DIR5
 #endif
 #endif
-#if (DUAL_DRIVE0_STEPPER != 6 && DUAL_DRIVE1_STEPPER != 6)
+#if (DUAL_DRIVE0_STEPPER != 6 && DUAL_DRIVE1_STEPPER != 6 && DUAL_DRIVE2_STEPPER != 6 && DUAL_DRIVE3_STEPPER != 6)
 #ifdef STEP6
 #undef STEP6
 #endif
@@ -710,7 +748,7 @@ extern "C"
 #undef DIR6
 #endif
 #endif
-#if (DUAL_DRIVE0_STEPPER != 7 && DUAL_DRIVE1_STEPPER != 7)
+#if (DUAL_DRIVE0_STEPPER != 7 && DUAL_DRIVE1_STEPPER != 7 && DUAL_DRIVE2_STEPPER != 7 && DUAL_DRIVE3_STEPPER != 7)
 #ifdef STEP7
 #undef STEP7
 #endif
