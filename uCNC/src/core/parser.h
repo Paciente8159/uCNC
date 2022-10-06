@@ -154,7 +154,7 @@ extern "C"
 		float f;
 		float p;
 		float r;
-		int16_t s;
+		float s;
 		int8_t t;
 		uint8_t l;
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -197,6 +197,7 @@ extern "C"
 	void parser_sync_position(void);
 	void parser_reset(void);
 	void parser_machine_to_work(float *axis);
+	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 
 #ifdef ENABLE_PARSER_MODULES
@@ -223,6 +224,9 @@ extern "C"
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);
 
+	// event_gcode_exec_modifier_handler
+	DECL_EVENT_HANDLER(gcode_exec_modifier);
+
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
@@ -230,6 +234,9 @@ extern "C"
 		uint8_t len;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
+
+	// event_parse_token_handler
+	DECL_EVENT_HANDLER(parse_token);
 #endif
 
 #ifdef __cplusplus

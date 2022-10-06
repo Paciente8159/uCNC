@@ -135,8 +135,7 @@ extern MCU_CALLBACK void laser_ppi_turnoff_cb(void);
 #endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
-FORCEINLINE static uint8_t parser_get_comment(void);
-static uint8_t parser_get_float(float *value);
+FORCEINLINE static void parser_get_comment(unsigned char start_char);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -164,10 +163,22 @@ WEAK_EVENT_HANDLER(gcode_exec)
 	DEFAULT_EVENT_HANDLER(gcode_exec);
 }
 
+// event_gcode_exec_handler
+WEAK_EVENT_HANDLER(gcode_exec_modifier)
+{
+	DEFAULT_EVENT_HANDLER(gcode_exec_modifier);
+}
+
 // event_grbl_cmd_handler
 WEAK_EVENT_HANDLER(grbl_cmd)
 {
 	DEFAULT_EVENT_HANDLER(grbl_cmd);
+}
+
+// event_parse_token_handler
+WEAK_EVENT_HANDLER(parse_token)
+{
+	DEFAULT_EVENT_HANDLER(parse_token);
 }
 #endif
 
@@ -1044,6 +1055,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	uint8_t error = 0;
 	bool update_tools = false;
 
+#ifdef ENABLE_PARSER_MODULES
+	gcode_exec_args_t args = {new_state, words, cmd};
+	EVENT_INVOKE(gcode_exec_modifier, &args);
+#endif
+
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
 	{
@@ -1131,7 +1147,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #if TOOL_COUNT > 0
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S))
 	{
-		new_state->spindle = words->s;
+		new_state->spindle = (uint16_t)trunc(words->s);
 	}
 
 	// 5. select tool
@@ -1664,7 +1680,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	}
 
-	if (hold)
+	if (hold && !mc_get_checkmode())
 	{
 		mc_pause();
 		if (resetparser)
@@ -1738,7 +1754,7 @@ static uint8_t parser_gcode_command(void)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
-static uint8_t parser_get_float(float *value)
+uint8_t parser_get_float(float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;
@@ -1838,8 +1854,11 @@ static uint8_t parser_get_float(float *value)
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
 */
-static uint8_t parser_get_comment(void)
+#define COMMENT_OK 1
+#define COMMENT_NOTOK 2
+static void parser_get_comment(unsigned char start_char)
 {
+	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
 #endif
@@ -1850,50 +1869,57 @@ static uint8_t parser_get_comment(void)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
 		case ')': // OK
+			if (start_char == '(')
+			{
+				comment_end = COMMENT_OK;
+			}
+			break;
+		case EOL: // error under RS274NGC is starts with '(' (it's ignored)
+			comment_end = COMMENT_OK;
+			break;
+		case OVF:
+			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
+			return;
+		}
+
+#ifdef PROCESS_COMMENTS
+		switch (msg_parser)
+		{
+		case 0:
+			msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
+			break;
+		case 1:
+			msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
+			break;
+		case 2:
+			msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
+			break;
+		case 3:
+			msg_parser = (c == ',') ? 4 : 0xFF;
+			protocol_send_string(MSG_START);
+			break;
+		case 4:
+			serial_putc(c);
+			break;
+		}
+#endif
+
+		if (c != EOL)
+		{
 			serial_getc();
+		}
+
+		if (comment_end)
+		{
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
 				protocol_send_string(MSG_END);
 			}
 #endif
-			return STATUS_OK;
-		case EOL: // error under RS274NGC
-			return STATUS_BAD_COMMENT_FORMAT;
-		case OVF:
-			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
-			return STATUS_OVERFLOW;
-		case ' ':
-			break;
-#ifdef PROCESS_COMMENTS
-		default:
-			switch (msg_parser)
-			{
-			case 0:
-				msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
-				break;
-			case 1:
-				msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
-				break;
-			case 2:
-				msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
-				break;
-			case 3:
-				msg_parser = (c == ',') ? 4 : 0xFF;
-				protocol_send_string(MSG_START);
-				break;
-			case 4:
-				serial_putc(c);
-				break;
-			}
-			break;
-#endif
+			return;
 		}
-
-		serial_getc();
 	}
-
-	return STATUS_BAD_COMMENT_FORMAT; // never reached here
 }
 
 static uint8_t parser_get_token(unsigned char *word, float *value)
@@ -1901,7 +1927,7 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 	unsigned char c = serial_getc();
 
 	// if other char starts tokenization
-	if (c > 'Z')
+	if (c >= 'a' && c <= 'z')
 	{
 		c -= 32; // uppercase
 	}
@@ -1917,16 +1943,23 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 #ifdef ECHO_CMD
 		serial_putc(c);
 #endif
-		if (c < 'A' || c > 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized char
 		{
-			return STATUS_EXPECTED_COMMAND_LETTER;
-		}
+			if (!parser_get_float(value))
+			{
+				return STATUS_BAD_NUMBER_FORMAT;
+			}
 
-		if (!parser_get_float(value))
-		{
-			return STATUS_BAD_NUMBER_FORMAT;
+			return STATUS_OK;
 		}
-		break;
+// event_parse_token_handler
+#ifdef ENABLE_PARSER_MODULES
+		if (EVENT_INVOKE(parse_token, word))
+		{
+			return STATUS_OK;
+		}
+#endif
+		return STATUS_EXPECTED_COMMAND_LETTER;
 	}
 
 	return STATUS_OK;
@@ -2369,7 +2402,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		{
 			return STATUS_NEGATIVE_VALUE;
 		}
-		words->s = (uint16_t)trunc(value);
+		words->s = value;
 		break;
 	case 'T':
 		new_words |= GCODE_WORD_T;
@@ -2444,12 +2477,12 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 {
 	unsigned char c = serial_peek();
 
-	while (c == ' ' || c == '(')
+	while (c == ' ' || c == '(' || c == ';')
 	{
 		serial_getc();
-		if (c == '(')
+		if (c != ' ')
 		{
-			parser_get_comment();
+			parser_get_comment(c);
 		}
 		c = serial_peek();
 	}
