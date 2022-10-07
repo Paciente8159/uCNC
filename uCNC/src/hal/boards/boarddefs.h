@@ -98,6 +98,11 @@ extern "C"
 #include "lpc176x/boardmap_re_arm.h"
 #endif
 
+#if (BOARD == BOARD_MKS_BASE13)
+#define MCU MCU_LPC176X
+#include "lpc176x/boardmap_mks_base13.h"
+#endif
+
 #if (BOARD == BOARD_WEMOS_D1)
 #define MCU MCU_ESP8266
 #include "esp8266/boardmap_wemos_d1.h"
