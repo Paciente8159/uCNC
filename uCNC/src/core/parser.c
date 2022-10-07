@@ -2526,12 +2526,12 @@ void parser_reset(void)
 	parser_state.groups.tool_change = 1;
 	parser_state.tool_index = g_settings.default_tool;
 #ifdef ENABLE_LASER_PPI
+	g_settings.step_per_mm[STEPPER_COUNT - 1] = 254 * MM_INCH_MULT;
+	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
+	g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / (254 * MM_INCH_MULT);
 	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
-		g_settings.step_per_mm[STEPPER_COUNT - 1] = 254 * MM_INCH_MULT;
-		g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 		mcu_config_timeout(&laser_ppi_turnoff_cb, g_settings.laser_ppi_uswidth);
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / (254 * MM_INCH_MULT);
 	}
 #endif
 #endif
