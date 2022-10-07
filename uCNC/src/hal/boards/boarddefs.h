@@ -103,6 +103,11 @@ extern "C"
 #include "lpc176x/boardmap_mks_base13.h"
 #endif
 
+#if (BOARD == BOARD_SKR_V14_TURBO)
+#define MCU MCU_LPC176X
+#include "lpc176x/boardmap_skr_v14_turbo.h"
+#endif
+
 #if (BOARD == BOARD_WEMOS_D1)
 #define MCU MCU_ESP8266
 #include "esp8266/boardmap_wemos_d1.h"
