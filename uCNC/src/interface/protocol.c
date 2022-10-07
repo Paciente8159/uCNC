@@ -607,9 +607,10 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
 	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
 #ifdef ENABLE_LASER_PPI
-	protocol_send_gcode_setting_line_int(33, g_settings.laser_ppi_uswidth);
-	protocol_send_gcode_setting_line_flt(34, g_settings.laser_ppi_mixmode_ppi);
-	protocol_send_gcode_setting_line_flt(35, g_settings.laser_ppi_mixmode_uswidth);
+	protocol_send_gcode_setting_line_int(33, g_settings.step_per_mm[STEPPER_COUNT - 1]);
+	protocol_send_gcode_setting_line_int(34, g_settings.laser_ppi_uswidth);
+	protocol_send_gcode_setting_line_flt(35, g_settings.laser_ppi_mixmode_ppi);
+	protocol_send_gcode_setting_line_flt(36, g_settings.laser_ppi_mixmode_uswidth);
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 	protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
