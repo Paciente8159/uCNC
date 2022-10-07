@@ -44,6 +44,7 @@ extern "C"
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	void protocol_send_cnc_info(void);
+	DECL_EVENT_HANDLER(protocol_send_cnc_info);
 #endif
 
 #ifdef ENABLE_PROTOCOL_MODULES
