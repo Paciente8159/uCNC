@@ -751,9 +751,6 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_SYSTEM_INFO
-#define __STRGIFY__(s) #s
-#define STRGIFY(s) __STRGIFY__(s)
-
 #if (KINEMATIC == KINEMATIC_CARTESIAN)
 #define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
 #elif (KINEMATIC == KINEMATIC_COREXY)
