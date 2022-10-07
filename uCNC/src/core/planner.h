@@ -86,7 +86,7 @@ typedef union
 	float planner_get_block_exit_speed_sqr(void);
 	float planner_get_block_top_speed(float exit_speed_sqr);
 #if TOOL_COUNT > 0
-	float planner_get_spindle_speed(float scale);
+	int16_t planner_get_spindle_speed(float scale);
 	float planner_get_previous_spindle_speed(void);
 	uint8_t planner_get_coolant(void);
 	uint8_t planner_get_previous_coolant(void);

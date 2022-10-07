@@ -109,7 +109,8 @@ const settings_t __rom__ default_settings =
 		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
 		.laser_mode = 0,
 #ifdef ENABLE_LASER_PPI
-		.laser_ppi_uswidth = 1500,
+		.laser_ppi = DEFAULT_LASER_PPI,
+		.laser_ppi_uswidth = DEFAULT_LASER_PPI_USWIDTH,
 		.laser_ppi_mixmode_ppi = 0.25,
 		.laser_ppi_mixmode_uswidth = 0.75,
 #endif

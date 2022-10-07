@@ -566,7 +566,7 @@ void itp_run(void)
 		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
-			int16_t newspindle = tool_range_speed(planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv)));
+			int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
 			{
@@ -577,12 +577,12 @@ void itp_run(void)
 			sgm->spindle = newspindle;
 		}
 #ifdef ENABLE_LASER_PPI
-		if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		else if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
 		{
 			int16_t newspindle;
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
-				float new_s = ABS(planner_get_spindle_speed(1));
+				float new_s = (float)ABS(planner_get_spindle_speed(1));
 				new_s /= (float)g_settings.spindle_max_rpm;
 				if (g_settings.laser_mode & LASER_PPI_MODE)
 				{
@@ -921,7 +921,7 @@ void itp_run(void)
 		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
 			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
-			int16_t newspindle = tool_range_speed(planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv)));
+			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
 			{
@@ -931,14 +931,13 @@ void itp_run(void)
 
 			sgm->spindle = newspindle;
 		}
-
 #ifdef ENABLE_LASER_PPI
-		if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		else if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
 		{
 			int16_t newspindle;
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
-				float new_s = ABS(planner_get_spindle_speed(1));
+				float new_s = (float)ABS(planner_get_spindle_speed(1));
 				new_s /= (float)g_settings.spindle_max_rpm;
 				if (g_settings.laser_mode & LASER_PPI_MODE)
 				{
@@ -1133,7 +1132,7 @@ uint8_t itp_sync(void)
 void itp_sync_spindle(void)
 {
 #if TOOL_COUNT > 0
-	tool_set_speed(tool_range_speed(planner_get_spindle_speed(0)));
+	tool_set_speed(planner_get_spindle_speed(0));
 #endif
 }
 

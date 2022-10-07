@@ -57,6 +57,7 @@ void laser_startup_code(void)
 // force laser mode
 #if !(LASER_PWM < 0)
 	mcu_config_pwm(LASER_PWM, LASER_FREQ);
+	mcu_set_pwm(LASER_PWM, 0);
 #endif
 	previous_laser_mode = g_settings.laser_mode;
 	g_settings.laser_mode = LASER_PWM_MODE;
@@ -79,11 +80,11 @@ void laser_set_speed(int16_t value)
 #endif
 }
 
-int16_t laser_range_speed(float value)
+int16_t laser_range_speed(int16_t value)
 {
 	// converts core tool speed to laser power (PWM)
-	value = PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (value / g_settings.spindle_max_rpm));
-	return (int16_t)value;
+	value = (int16_t)(PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
+	return value;
 }
 
 void laser_set_coolant(uint8_t value)

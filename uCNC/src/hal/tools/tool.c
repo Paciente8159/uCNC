@@ -260,7 +260,7 @@ uint16_t tool_get_speed()
 	return 0;
 }
 
-int16_t tool_range_speed(float value)
+int16_t tool_range_speed(int16_t value)
 {
 	//input value will always be positive
 #if TOOL_COUNT > 0

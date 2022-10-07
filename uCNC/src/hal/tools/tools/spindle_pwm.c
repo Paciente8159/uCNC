@@ -86,10 +86,10 @@ void spindle_pwm_set_coolant(uint8_t value)
 #endif
 }
 
-int16_t spindle_pwm_range_speed(float value)
+int16_t spindle_pwm_range_speed(int16_t value)
 {
-	value = (255.0f) * (value / g_settings.spindle_max_rpm);
-	return ((int16_t)value);
+	value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+	return value;
 }
 
 uint16_t spindle_pwm_get_speed(void)

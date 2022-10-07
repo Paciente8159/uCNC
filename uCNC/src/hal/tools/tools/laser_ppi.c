@@ -20,6 +20,7 @@
 #include "../../../cnc.h"
 
 #include <stdbool.h>
+#include <float.h>
 #include <math.h>
 
 // #define ENABLE_COOLANT
@@ -44,6 +45,7 @@ static void laser_ppi_startup_code(void)
 #endif
 #endif
 	g_settings.laser_mode |= LASER_PPI_MODE;
+	parser_config_ppi();
 }
 
 static void laser_ppi_shutdown_code(void)
@@ -57,6 +59,7 @@ static void laser_ppi_shutdown_code(void)
 #endif
 	// restore laser mode
 	g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+	parser_config_ppi();
 }
 
 static void laser_ppi_set_coolant(uint8_t value)
