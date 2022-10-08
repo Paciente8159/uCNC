@@ -888,7 +888,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->PR = ((F_CPU >> 2) / 1000000UL) - 1; // for 1us
 	ONESHOT_TIMER_REG->IR = 0xFFFFFFFF;
 
-	ONESHOT_TIMER_REG->MR0 = (1000000UL/timeout);
+	ONESHOT_TIMER_REG->MR0 = timeout;
 	ONESHOT_TIMER_REG->MCR = 0x07; // Interrupt reset and stop on MC0
 
 	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 1);
