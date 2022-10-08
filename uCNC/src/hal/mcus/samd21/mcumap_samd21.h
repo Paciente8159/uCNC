@@ -2979,7 +2979,7 @@ extern "C"
 				break;                                                               \
 			}                                                                        \
 		}                                                                            \
-		__indirect__(diopin, CONFIG)(presc);                                         \
+		__indirect__(diopin, CONFIG);                                                \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))

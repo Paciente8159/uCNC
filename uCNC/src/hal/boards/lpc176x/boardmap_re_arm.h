@@ -192,6 +192,8 @@ extern "C"
 #define DOUT10_BIT 16
 #define DOUT10_PORT 0
 
+#define ONESHOT_TIMER 2
+
 #ifdef __cplusplus
 }
 #endif

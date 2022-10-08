@@ -1265,9 +1265,8 @@ void MCU_ONESHOT_ISR(void)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	uint16_t ticks;
-	uint16_t prescaller;
-	mcu_freq_to_clocks((2000000.0f / (float)timeout), &ticks, &prescaller);
+	uint16_t ticks = (uint16_t)(timeout - 1);
+	uint16_t prescaller = 3; //div by 8 giving one tick per us
 
 #if (ONESHOT_TIMER < 3)
 	// reset timer
@@ -1283,7 +1282,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	while (ONESHOT_REG->SYNCBUSY.bit.CC0)
 		;
 
-	NVIC_SetPriority(ONESHOT_IRQ, 1);
+	NVIC_SetPriority(ONESHOT_IRQ, 3);
 	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
 	NVIC_EnableIRQ(ONESHOT_IRQ);
 #else

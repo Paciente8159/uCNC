@@ -25,6 +25,7 @@ extern "C"
 #endif
 
 #include <Arduino.h>
+#include <driver/timer.h>
 
 /*
 	Generates all the interface definitions.

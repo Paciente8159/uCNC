@@ -137,9 +137,9 @@ void servo_timer_init(void)
 void servo_start_timeout(uint8_t val)
 {
 	SERVO_TIMER_REG->ARR = (val << 1) + 125;
-	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
+	NVIC_SetPriority(MCU_SERVO_IRQ, 10);
+	NVIC_ClearPendingIRQ(MCU_SERVO_IRQ);
+	NVIC_EnableIRQ(MCU_SERVO_IRQ);
 	SERVO_TIMER_REG->DIER |= 1;
 	SERVO_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
 }
@@ -699,9 +699,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	TIMER_REG->EGR |= 0x01;
 	TIMER_REG->SR &= ~0x01;
 
-	NVIC_SetPriority(TIMER_IRQ, 1);
-	NVIC_ClearPendingIRQ(TIMER_IRQ);
-	NVIC_EnableIRQ(TIMER_IRQ);
+	NVIC_SetPriority(MCU_ITP_IRQ, 1);
+	NVIC_ClearPendingIRQ(MCU_ITP_IRQ);
+	NVIC_EnableIRQ(MCU_ITP_IRQ);
 
 	TIMER_REG->DIER |= 1;
 	TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
@@ -721,7 +721,7 @@ void mcu_stop_itp_isr(void)
 	TIMER_REG->CR1 &= ~0x1;
 	TIMER_REG->DIER &= ~0x1;
 	TIMER_REG->SR &= ~0x01;
-	NVIC_DisableIRQ(TIMER_IRQ);
+	NVIC_DisableIRQ(MCU_ITP_IRQ);
 }
 
 // Custom delay function
@@ -1020,7 +1020,7 @@ void MCU_ONESHOT_ISR(void)
 		}
 	}
 
-	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
 }
 
 /**
@@ -1053,9 +1053,9 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->SR = 0;
 	ONESHOT_TIMER_REG->CNT = 0;
 
-	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 1);
-	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
-	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
+	NVIC_SetPriority(MCU_ONESHOT_IRQ, 1);
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+	NVIC_EnableIRQ(MCU_ONESHOT_IRQ);
 
 	// ONESHOT_TIMER_REG->DIER |= 1;
 	// ONESHOT_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
