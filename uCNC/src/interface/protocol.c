@@ -852,7 +852,7 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO PLANNER_INFO SERIAL_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)
@@ -863,8 +863,8 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 	{
 		if (ptr->fptr != NULL)
 		{
-			serial_putc(',');
 			ptr->fptr(args, NULL);
+			serial_putc(',');
 		}
 		ptr = ptr->next;
 	}
@@ -880,7 +880,7 @@ void protocol_send_cnc_info(void)
 	protocol_send_string(VER_INFO);
 	protocol_send_string(OPT_INFO);
 	EVENT_INVOKE(protocol_send_cnc_info, NULL);
-	protocol_send_string(__romstr__("]" STR_EOL));
+	protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
