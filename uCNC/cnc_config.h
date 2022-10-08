@@ -120,7 +120,7 @@ extern "C"
 	 * */
 
 #ifndef TOOL_COUNT
-#define TOOL_COUNT 2
+#define TOOL_COUNT 1
 #endif
 
 #if TOOL_COUNT > 0
@@ -161,7 +161,7 @@ extern "C"
  * Uncomment to enable laser PPI feature
  * Laser PPI requires the MCU to support ONESHOT timeout
  * */
-#define ENABLE_LASER_PPI
+// #define ENABLE_LASER_PPI
 
 /**
  * Feed overrides increments and percentage ranges
@@ -369,7 +369,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS
