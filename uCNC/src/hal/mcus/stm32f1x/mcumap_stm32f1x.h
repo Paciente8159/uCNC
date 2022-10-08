@@ -4319,7 +4319,11 @@ extern "C"
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
 #endif
+#if (ITP_TIMER != 1 && ITP_TIMER != 8)
 #define MCU_ITP_ISR __helper__(TIM, ITP_TIMER, _IRQHandler)
+#else
+#define MCU_ITP_ISR __helper__(TIM, ITP_TIMER, _UP_IRQHandler)
+#endif
 #define ITP_TIMER_REG __helper__(TIM, ITP_TIMER, )
 #if (ITP_TIMER == 1 || (ITP_TIMER >= 8 & ITP_TIMER <= 11))
 #define ITP_TIMER_ENREG APB2ENR
@@ -4336,7 +4340,11 @@ extern "C"
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 3
 #endif
+#if (SERVO_TIMER != 1 && SERVO_TIMER != 8)
 #define MCU_SERVO_ISR __helper__(TIM, SERVO_TIMER, _IRQHandler)
+#else
+#define MCU_SERVO_ISR __helper__(TIM, SERVO_TIMER, _UP_IRQHandler)
+#endif
 #define SERVO_TIMER_REG __helper__(TIM, SERVO_TIMER, )
 #if (SERVO_TIMER == 1 || (SERVO_TIMER >= 8 & SERVO_TIMER <= 11))
 #define SERVO_TIMER_ENREG APB2ENR
@@ -4352,7 +4360,11 @@ extern "C"
 
 #ifdef ONESHOT_TIMER
 #define MCU_HAS_ONESHOT_TIMER
+#if (ONESHOT_TIMER != 1 && ONESHOT_TIMER != 8)
 #define MCU_ONESHOT_ISR __helper__(TIM, ONESHOT_TIMER, _IRQHandler)
+#else
+#define MCU_ONESHOT_ISR __helper__(TIM, ONESHOT_TIMER, _UP_IRQHandler)
+#endif
 #define ONESHOT_TIMER_REG __helper__(TIM, ONESHOT_TIMER, )
 #if (ONESHOT_TIMER == 1 || (ONESHOT_TIMER >= 8 & ONESHOT_TIMER <= 11))
 #define ONESHOT_TIMER_ENREG APB2ENR

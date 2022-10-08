@@ -144,6 +144,13 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
+#if (SERVO_TIMER != 6 && SERVO_TIMER != 7)
+	SERVO_TIMER_REG->CCER = 0;
+	SERVO_TIMER_REG->CCMR1 = 0;
+#if (SERVO_TIMER < 10)
+	SERVO_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	SERVO_TIMER_REG->SR &= ~0x01;
 }
 
@@ -630,6 +637,13 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->PSC = prescaller;
 	ITP_TIMER_REG->ARR = ticks;
 	ITP_TIMER_REG->EGR |= 0x01;
+#if (ITP_TIMER != 6 && ITP_TIMER != 7)
+	ITP_TIMER_REG->CCER = 0;
+	ITP_TIMER_REG->CCMR1 = 0;
+#if (ITP_TIMER < 10)
+	ITP_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	ITP_TIMER_REG->SR &= ~0x01;
 
 	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
@@ -985,8 +999,15 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->EGR |= 0x01;
 	ONESHOT_TIMER_REG->SR = 0;
 	ONESHOT_TIMER_REG->CNT = 0;
+#if (ONESHOT_TIMER != 6 && ONESHOT_TIMER != 7)
+	ONESHOT_TIMER_REG->CCER = 0;
+	ONESHOT_TIMER_REG->CCMR1 = 0;
+#if (ONESHOT_TIMER < 10)
+	ONESHOT_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 
-	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 1);
+	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 3);
 	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
 	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
 
