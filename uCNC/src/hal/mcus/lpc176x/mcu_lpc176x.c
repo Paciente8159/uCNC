@@ -891,7 +891,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	ONESHOT_TIMER_REG->MR0 = timeout;
 	ONESHOT_TIMER_REG->MCR = 0x07; // Interrupt reset and stop on MC0
 
-	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 1);
+	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 3);
 	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
 	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
 
