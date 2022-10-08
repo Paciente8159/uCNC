@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DWIN_INTERFACE=0 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
+Compiler=-DWIN_INTERFACE=2 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
 CppCompiler=_@@_
 Linker=-lws2_32_@@_
 IsCpp=0
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=69
+UnitCount=70
 
 [VersionInfo]
 Major=1
@@ -732,6 +732,26 @@ BuildCmd=
 
 [Unit69]
 FileName=..\..\uCNC\src\hal\tools\tools\vfd.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit70]
+FileName=..\..\uCNC\src\hal\mcus\mcu.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit71]
+FileName=..\..\uCNC\src\hal\tools\tools\laser_ppi.c
 CompileCpp=0
 Folder=
 Compile=1

@@ -976,6 +976,8 @@ extern "C"
 #define ENABLE_SYNC_RX
 #define ENABLE_SYNC_TX
 
+#define MCU_HAS_ONESHOT_TIMER
+
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI

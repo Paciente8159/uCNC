@@ -4404,6 +4404,22 @@ extern "C"
 #define RTC_OCIEB __ociebreg__(RTC_TIMER)
 #define RTC_OCIEA __ocieareg__(RTC_TIMER)
 
+// Timer registers
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_COMPB_vect __timerbvect__(ONESHOT_TIMER)
+#define ONESHOT_COMPA_vect __timeravect__(ONESHOT_TIMER)
+#define ONESHOT_TCNT __tcntreg__(ONESHOT_TIMER)
+#define ONESHOT_TCCRA __tmrareg__(ONESHOT_TIMER)
+#define ONESHOT_TCCRB __tmrbreg__(ONESHOT_TIMER)
+#define ONESHOT_OCRA __ocrreg__(ONESHOT_TIMER, A)
+#define ONESHOT_OCRB __ocrreg__(ONESHOT_TIMER, B)
+#define ONESHOT_TIFR __tifrreg__(ONESHOT_TIMER)
+#define ONESHOT_TIMSK __timskreg__(ONESHOT_TIMER)
+#define ONESHOT_OCIEB __ociebreg__(ONESHOT_TIMER)
+#define ONESHOT_OCIEA __ocieareg__(ONESHOT_TIMER)
+#endif
+
 	// Pin interrupts input register
 
 #define PCINT0_INREG __inreg__(PCINT0_PORT)
@@ -4562,6 +4578,13 @@ extern "C"
 			;                         \
 		SPDR;                         \
 	})
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() \
+	({ONESHOT_TCNT = 0;       \
+	ONESHOT_TIFR = 0x7;     \
+	ONESHOT_TIMSK |= (1 << ONESHOT_OCIEA); })
 #endif
 
 #ifdef __cplusplus

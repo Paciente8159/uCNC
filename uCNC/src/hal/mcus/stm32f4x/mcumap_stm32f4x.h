@@ -3086,6 +3086,23 @@ extern "C"
 #define SERVO_TIMER_IRQ __helper__(TIM, SERVO_TIMER, _IRQn)
 #endif
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define MCU_ONESHOT_ISR __helper__(TIM, ONESHOT_TIMER, _IRQHandler)
+#define ONESHOT_TIMER_REG __helper__(TIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER == 1 || (ONESHOT_TIMER >= 8 & ONESHOT_TIMER <= 11))
+#define ONESHOT_TIMER_ENREG APB2ENR
+#define ONESHOT_TIMER_RESETREG APB1RSTR
+#define ONESHOT_TIMER_APB __helper__(RCC_APB2ENR_TIM, ONESHOT_TIMER, EN)
+#define ONESHOT_TIMER_IRQ __helper__(TIM, ONESHOT_TIMER, _UP_IRQn)
+#else
+#define ONESHOT_TIMER_ENREG APB1ENR
+#define ONESHOT_TIMER_RESETREG APB1RSTR
+#define ONESHOT_TIMER_APB __helper__(RCC_APB1ENR_TIM, ONESHOT_TIMER, EN)
+#define ONESHOT_TIMER_IRQ __helper__(TIM, ONESHOT_TIMER, _IRQn)
+#endif
+#endif
+
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
@@ -3289,6 +3306,20 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define GPIO_IN_ANALOG 0 // not needed after reseting bits
 
 #define GPIO_IN_PULLUP 0x1U
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#define mcu_start_timeout()           \
+	({                                \
+		ONESHOT_TIMER_REG->SR = 0;    \
+		ONESHOT_TIMER_REG->CNT = 0;   \
+		ONESHOT_TIMER_REG->DIER |= 1; \
+		ONESHOT_TIMER_REG->CR1 |= 1;  \
+	})
+#endif
 
 #ifdef __cplusplus
 }

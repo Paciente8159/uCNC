@@ -187,8 +187,12 @@
 #define SPI_SDI 205
 #define SPI_SDO 206
 
+#define MCU_HAS_ONESHOT_TIMER
+
 // just to compile
 #define mcu_rx_ready() true
 #define mcu_nop()
+#define mcu_config_pullup(diopin)
+#define mcu_config_analog(diopin)
 
 #endif

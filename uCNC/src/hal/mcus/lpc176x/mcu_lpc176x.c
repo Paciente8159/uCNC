@@ -855,4 +855,59 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #endif
 #endif
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+	if(mcu_timeout_cb){
+		mcu_timeout_cb();
+	}
+
+	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	LPC_SC->PCONP |= ONESHOT_PCONP;
+	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_VAL; // system clk/4
+
+	ONESHOT_TIMER_REG->CTCR = 0;
+	ONESHOT_TIMER_REG->CCR &= ~0x03;
+	ONESHOT_TIMER_REG->TC = 0;
+	ONESHOT_TIMER_REG->PC = 0;
+	ONESHOT_TIMER_REG->PR = 0;
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
+	ONESHOT_TIMER_REG->EMR = 0;
+
+	ONESHOT_TIMER_REG->PR = ((F_CPU >> 2) / 1000000UL) - 1; // for 1us
+	ONESHOT_TIMER_REG->IR = 0xFFFFFFFF;
+
+	ONESHOT_TIMER_REG->MR0 = (1000000UL/timeout);
+	ONESHOT_TIMER_REG->MCR = 0x07; // Interrupt reset and stop on MC0
+
+	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 1);
+	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
+	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
+
+	// TIM_Cmd(ONESHOT_TIMER_REG, ENABLE);
+	// ONESHOT_TIMER_REG->TCR |= TIM_ENABLE;
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+}
+#endif
+#endif
+
 #endif

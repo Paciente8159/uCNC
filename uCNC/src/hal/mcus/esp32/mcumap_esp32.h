@@ -988,6 +988,12 @@ extern "C"
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_TIMER_TG (ONESHOT_TIMER & 0x01)
+#define ONESHOT_TIMER_IDX ((ONESHOT_TIMER >> 1) & 0x01)
+#endif
+
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
@@ -1036,6 +1042,10 @@ extern "C"
 
 #define mcu_spi_xmit(X) esp32_spi_xmit(X)
 #define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
+#endif
 
 #ifdef __cplusplus
 }

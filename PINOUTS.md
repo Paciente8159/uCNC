@@ -4,10 +4,10 @@ This wiring can be completely modified by the user.
 
 | **Generic**    | **Recommended assignment (not mandatory)**    |
 | ------   | ------    |
-| DOUT0   | SPINDLE_DIR or SPINDLE_FWD or SPINDLE_POWER_RELAY    |
-| DOUT1   | SPINDLE_REV   |
-| DOUT2   | COOLANT_FLOOD    |
-| DOUT3   | COOLANT_MIST    |
+| DOUT0   | SPINDLE_DIR or SPINDLE_FWD or SPINDLE_POWER_RELAY or LASER_PPI |
+| DOUT1   | SPINDLE_REV |
+| DOUT2   | COOLANT_FLOOD |
+| DOUT3   | COOLANT_MIST |
 | DOUT4   |     |
 | DOUT5   |     |
 | DOUT6   |     |
