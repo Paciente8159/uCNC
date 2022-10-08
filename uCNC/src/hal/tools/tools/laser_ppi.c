@@ -33,6 +33,8 @@
 #endif
 #endif
 
+#ifdef ENABLE_LASER_PPI
+
 static void laser_ppi_startup_code(void)
 {
 // force laser mode
@@ -86,3 +88,5 @@ const tool_t __rom__ laser_ppi = {
 	.get_speed = &laser_ppi_get_speed,
 	.set_speed = NULL,
 	.set_coolant = &laser_ppi_set_coolant};
+
+#endif

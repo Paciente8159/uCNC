@@ -97,6 +97,16 @@ extern "C"
 #define PWM0_CHANNEL C
 #define PWM0_TIMER 4
 
+#define PWM1_BIT 6	// assigns PWM0 pin
+#define PWM1_PORT H // assigns PWM0 pin
+#define PWM1_CHANNEL B
+#define PWM1_TIMER 2
+
+#define PWM2_BIT 4	// assigns PWM0 pin
+#define PWM2_PORT B // assigns PWM0 pin
+#define PWM2_CHANNEL A
+#define PWM2_TIMER 2
+
 // Setup generic IO Pins
 // Functionalities are set in config.h file
 
@@ -207,7 +217,7 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
-// #define ONESHOT_TIMER 5
+#define ONESHOT_TIMER 4
 
 #ifdef __cplusplus
 }

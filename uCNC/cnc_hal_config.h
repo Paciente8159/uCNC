@@ -118,14 +118,14 @@ extern "C"
 */
 
 #ifdef ENABLE_LASER_PPI
-#define LASER_PPI DOUT0
+#define LASER_PPI PWM0
 // Uncomment to invert the output login on the LASER_PPI pin
 // #define INVERT_LASER_PPI_LOGIC
 #endif
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
-	// #define TOOL2 laser
+#define TOOL1 laser_ppi
+#define TOOL2 laser
 	//#define TOOL3 spindle_besc
 	//#define TOOL4 spindle_relay
 
