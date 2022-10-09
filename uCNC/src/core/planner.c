@@ -63,11 +63,8 @@ FORCEINLINE static void planner_buffer_clear(void);
 */
 void planner_add_line(motion_data_t *block_data)
 {
-#ifdef ENABLE_LINACT_PLANNER
 	static float last_dir_vect[STEPPER_COUNT];
-#else
-	static float last_dir_vect[AXIS_COUNT];
-#endif
+
 	// clear the planner block
 	uint8_t index = planner_data_write;
 	memset(&planner_data[index], 0, sizeof(planner_block_t));

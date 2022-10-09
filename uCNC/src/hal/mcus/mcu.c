@@ -18,6 +18,10 @@
 
 #include "../../cnc.h"
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+#endif
+
 void __attribute__((weak)) mcu_io_init(void)
 {
 #if !(STEP0 < 0)

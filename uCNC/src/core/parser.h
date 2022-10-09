@@ -80,6 +80,8 @@ extern "C"
 #define GCODE_WORD_Q GCODE_WORD_D
 #endif
 
+#define GCODE_WORD_TOOL (1 << AXIS_TOOL)
+
 	// H and Q are related to unsupported commands
 
 	// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
@@ -95,6 +97,10 @@ extern "C"
 #define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
+
+#define LASER_PWM_MODE 1
+#define LASER_PPI_MODE 2
+#define LASER_PPI_VARPOWER_MODE 4
 
 	// 33bytes in total
 	typedef struct
@@ -193,6 +199,9 @@ extern "C"
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+#ifdef ENABLE_LASER_PPI
+	void parser_config_ppi(void);
+#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook

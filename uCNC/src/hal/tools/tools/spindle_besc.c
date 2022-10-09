@@ -77,15 +77,15 @@ void spindle_besc_shutdown()
 #endif
 }
 
-int16_t spindle_besc_range_speed(float value)
+int16_t spindle_besc_range_speed(int16_t value)
 {
 	if (value == 0)
 	{
 		return 0;
 	}
 
-	value = (THROTTLE_RANGE) * (value / g_settings.spindle_max_rpm) + THROTTLE_DOWN;
-	return ((int16_t)value);
+	value = (int16_t)((THROTTLE_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + THROTTLE_DOWN);
+	return value;
 }
 
 void spindle_besc_set_speed(int16_t value)

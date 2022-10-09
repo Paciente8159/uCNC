@@ -144,15 +144,22 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
+#if (SERVO_TIMER != 6 && SERVO_TIMER != 7)
+	SERVO_TIMER_REG->CCER = 0;
+	SERVO_TIMER_REG->CCMR1 = 0;
+#if (SERVO_TIMER < 10)
+	SERVO_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	SERVO_TIMER_REG->SR &= ~0x01;
 }
 
 void servo_start_timeout(uint8_t val)
 {
 	SERVO_TIMER_REG->ARR = (val << 1) + 125;
-	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
+	NVIC_SetPriority(MCU_SERVO_IRQ, 10);
+	NVIC_ClearPendingIRQ(MCU_SERVO_IRQ);
+	NVIC_EnableIRQ(MCU_SERVO_IRQ);
 	SERVO_TIMER_REG->DIER |= 1;
 	SERVO_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
 }
@@ -443,7 +450,7 @@ void mcu_usart_init(void)
 #endif
 
 	// µs counting is now done via Systick
-	
+
 	// initialize debugger clock (used by us delay)
 	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	// {
@@ -500,10 +507,10 @@ void mcu_init(void)
 	AFIO->MAPR |= SPI_REMAP;
 #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
-				   | SPI_CR1_SSI  // internal slave select
+	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
+				   | SPI_CR1_SSI   // internal slave select
 				   | SPI_CR1_MSTR; // SPI master mode
-				//    | (SPI_SPEED << 3) | SPI_MODE;
+								   //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
@@ -630,11 +637,18 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->PSC = prescaller;
 	ITP_TIMER_REG->ARR = ticks;
 	ITP_TIMER_REG->EGR |= 0x01;
+#if (ITP_TIMER != 6 && ITP_TIMER != 7)
+	ITP_TIMER_REG->CCER = 0;
+	ITP_TIMER_REG->CCMR1 = 0;
+#if (ITP_TIMER < 10)
+	ITP_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	ITP_TIMER_REG->SR &= ~0x01;
 
-	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
-	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
-	NVIC_EnableIRQ(ITP_TIMER_IRQ);
+	NVIC_SetPriority(MCU_ITP_IRQ, 1);
+	NVIC_ClearPendingIRQ(MCU_ITP_IRQ);
+	NVIC_EnableIRQ(MCU_ITP_IRQ);
 
 	ITP_TIMER_REG->DIER |= 1;
 	ITP_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
@@ -654,7 +668,7 @@ void mcu_stop_itp_isr(void)
 	ITP_TIMER_REG->CR1 &= ~0x1;
 	ITP_TIMER_REG->DIER &= ~0x1;
 	ITP_TIMER_REG->SR &= ~0x01;
-	NVIC_DisableIRQ(ITP_TIMER_IRQ);
+	NVIC_DisableIRQ(MCU_ITP_IRQ);
 }
 
 // Custom delay function
@@ -849,10 +863,10 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 	// disable SPI
 	SPI_REG->CR1 &= SPI_CR1_SPE;
-	//clear speed and mode
+	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
 	SPI_REG->CR1 |= (speed << 3) | mode;
-	//enable SPI
+	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
 #endif
@@ -933,6 +947,81 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+	if ((ONESHOT_TIMER_REG->SR & 1))
+	{
+		ONESHOT_TIMER_REG->DIER = 0;
+		ONESHOT_TIMER_REG->SR = 0;
+		ONESHOT_TIMER_REG->CR1 = 0;
+
+		if (mcu_timeout_cb)
+		{
+			mcu_timeout_cb();
+		}
+	}
+
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	// up and down counter (generates half the step rate at each event)
+	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+	uint32_t presc = 1;
+
+	mcu_timeout_cb = fp;
+
+	while (clocks > 0xFFFF)
+	{
+		presc <<= 1;
+		clocks >>= 1;
+	}
+
+	presc--;
+	clocks--;
+
+	RCC->ONESHOT_TIMER_ENREG |= ONESHOT_TIMER_APB;
+	ONESHOT_TIMER_REG->CR1 = 0;
+	ONESHOT_TIMER_REG->DIER = 0;
+	ONESHOT_TIMER_REG->PSC = presc;
+	ONESHOT_TIMER_REG->ARR = clocks;
+	ONESHOT_TIMER_REG->EGR |= 0x01;
+	ONESHOT_TIMER_REG->SR = 0;
+	ONESHOT_TIMER_REG->CNT = 0;
+#if (ONESHOT_TIMER != 6 && ONESHOT_TIMER != 7)
+	ONESHOT_TIMER_REG->CCER = 0;
+	ONESHOT_TIMER_REG->CCMR1 = 0;
+#if (ONESHOT_TIMER < 10)
+	ONESHOT_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
+
+	NVIC_SetPriority(MCU_ONESHOT_IRQ, 3);
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+	NVIC_EnableIRQ(MCU_ONESHOT_IRQ);
+
+	// ONESHOT_TIMER_REG->DIER |= 1;
+	// ONESHOT_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
 }
 #endif
 #endif

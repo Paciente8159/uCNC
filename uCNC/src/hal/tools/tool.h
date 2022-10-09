@@ -33,7 +33,7 @@ extern "C"
 	typedef void (*tool_func)(void);
 	typedef int16_t (*tool_pid_err_func)(void);
 	typedef void (*tool_pid_upd_func)(int16_t);
-	typedef int16_t (*tool_range_speed_func)(float);
+	typedef int16_t (*tool_range_speed_func)(int16_t);
 	typedef uint16_t (*tool_get_speed_func)(void);
 	typedef void (*tool_set_speed_func)(int16_t);
 	typedef void (*tool_coolant_func)(uint8_t);
@@ -54,7 +54,7 @@ extern "C"
 	void tool_change(uint8_t tool);
 	void tool_pid_update(int16_t value);
 	int16_t tool_pid_error(void);
-	int16_t tool_range_speed(float value);
+	int16_t tool_range_speed(int16_t value);
 	uint16_t tool_get_speed(void);
 	void tool_set_speed(int16_t value);
 	void tool_set_coolant(uint8_t value);

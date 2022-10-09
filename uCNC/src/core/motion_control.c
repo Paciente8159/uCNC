@@ -213,9 +213,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// converts transformed target to stepper position
 	kinematics_apply_inverse(target, step_new_pos);
 	// calculates the amount of stepper motion for this motion
+
 	uint32_t max_steps = 0;
 	block_data->main_stepper = 255;
-	for (uint8_t i = STEPPER_COUNT; i != 0;)
+	for (uint8_t i = AXIS_TO_STEPPERS; i != 0;)
 	{
 		i--;
 		int32_t steps = step_new_pos[i] - mc_last_step_pos[i];
@@ -256,7 +257,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if ((KINEMATIC == KINEMATIC_DELTA) || defined(ENABLE_LASER_PPI))
 	float line_dist = fast_flt_sqrt(inv_dist);
 	inv_dist = 1.0f / line_dist;
 #else
@@ -270,6 +271,31 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		i--;
 		block_data->dir_vect[i] *= inv_dist;
 	}
+#endif
+
+#ifdef ENABLE_LASER_PPI
+	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
+	float laser_pulses_per_mm = 0;
+	if (block_data->motion_flags.bit.spindle_running && block_data->spindle)
+	{
+		laser_pulses_per_mm = g_settings.step_per_mm[STEPPER_COUNT - 1];
+		// modify PPI settings according o the S value
+		if (g_settings.laser_mode & LASER_PPI_MODE)
+		{
+			float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
+			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			{
+				float blend = g_settings.laser_ppi_mixmode_ppi;
+				laser_ppi_scale = (laser_ppi_scale * blend) + (1.0f - blend);
+			}
+
+			laser_pulses_per_mm *= laser_ppi_scale;
+		}
+
+		laser_pulses_per_mm *= line_dist;
+	}
+	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm;
+	max_steps = MAX(max_steps, step_new_pos[STEPPER_COUNT - 1]);
 #endif
 
 	// calculated the total motion execution time @ the given rate
