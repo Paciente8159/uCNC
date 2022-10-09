@@ -336,6 +336,7 @@ static void mcu_usart_init(void);
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
 #endif
 
+#ifndef FRAMEWORK_CLOCKS_INIT
 #if (F_CPU == 84000000)
 #define PLLN 336
 #define PLLP 1
@@ -344,6 +345,7 @@ static void mcu_usart_init(void);
 #define PLLN 336
 #define PLLP 0
 #define PLLQ 7
+#else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
 
@@ -408,6 +410,8 @@ void mcu_clocks_init()
 	// 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	// }
 }
+
+#endif
 
 void mcu_usart_init(void)
 {
@@ -508,8 +512,10 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-	// make sure both APB1 and APB2 are running at the same clock (48MHz)
+// make sure both APB1 and APB2 are running at the same clock (48MHz)
+#ifndef FRAMEWORK_CLOCKS_INIT
 	mcu_clocks_init();
+#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
@@ -524,10 +530,10 @@ void mcu_init(void)
 	mcu_config_af(SPI_CLK, SPI_AFIO);
 	mcu_config_af(SPI_SDO, SPI_AFIO);
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
-				   | SPI_CR1_SSI  // internal slave select
+	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
+				   | SPI_CR1_SSI   // internal slave select
 				   | SPI_CR1_MSTR; // SPI master mode
-					//    | (SPI_SPEED << 3) | SPI_MODE;
+								   //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 
 	SPI_REG->CR1 |= SPI_CR1_SPE;
@@ -538,7 +544,7 @@ void mcu_init(void)
 	mcu_config_af(I2C_SDA, I2C_AFIO);
 	mcu_config_pullup(I2C_SCL);
 	mcu_config_pullup(I2C_SDA);
-	//set opendrain
+	// set opendrain
 	mcu_config_opendrain(I2C_SCL);
 	mcu_config_opendrain(I2C_SDA);
 	// reset I2C
@@ -916,10 +922,10 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 	// disable SPI
 	SPI_REG->CR1 &= SPI_CR1_SPE;
-	//clear speed and mode
+	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
 	SPI_REG->CR1 |= (speed << 3) | mode;
-	//enable SPI
+	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
 #endif

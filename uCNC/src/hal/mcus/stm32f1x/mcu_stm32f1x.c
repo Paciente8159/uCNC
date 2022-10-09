@@ -356,6 +356,7 @@ static void mcu_usart_init(void);
 #define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
 #endif
 
+#ifndef FRAMEWORK_CLOCKS_INIT
 void mcu_clocks_init()
 {
 	/* Reset the RCC clock configuration to the default reset state */
@@ -396,6 +397,7 @@ void mcu_clocks_init()
 	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
 		;
 }
+#endif
 
 void mcu_usart_init(void)
 {
@@ -486,7 +488,9 @@ void mcu_putc(char c)
 void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (36MHz)
+#ifndef FRAMEWORK_CLOCKS_INIT
 	mcu_clocks_init();
+#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
