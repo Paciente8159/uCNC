@@ -234,6 +234,8 @@ extern "C"
 #define DIN24_PORT 1
 #define DIN24_PULLUP
 
+#define ONESHOT_TIMER 2
+
 #ifdef __cplusplus
 }
 #endif
