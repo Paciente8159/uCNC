@@ -219,6 +219,8 @@ extern "C"
 #define DIN19_BIT 11
 #define DIN19_PORT B
 
+#define ONESHOT_TIMER 3
+
 #ifdef __cplusplus
 }
 #endif

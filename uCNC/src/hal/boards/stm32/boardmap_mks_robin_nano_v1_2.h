@@ -161,6 +161,8 @@ extern "C"
 #define DIN19_BIT 12
 #define DIN19_PORT D
 
+#define ONESHOT_TIMER 2
+
 #ifdef __cplusplus
 }
 #endif
