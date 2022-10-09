@@ -28,11 +28,6 @@ extern "C"
 #error "Delta kinematics expects at least 3 axis"
 #endif
 
-// this should match the number of linear actuators on the machines (do not change unless you know what you are doing)
-#ifndef STEPPER_COUNT
-#define STEPPER_COUNT AXIS_COUNT
-#endif
-
 #ifndef STEPPER0_ANGLE
 #define STEPPER0_ANGLE 30
 #endif

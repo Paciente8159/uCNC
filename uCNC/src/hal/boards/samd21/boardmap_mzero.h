@@ -134,6 +134,8 @@ extern "C"
 	// Setup the Step Timer used has the heartbeat for µCNC
 	//#define ITP_TIMER 5
 
+#define ONESHOT_TIMER 2
+
 #ifdef __cplusplus
 }
 #endif

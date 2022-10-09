@@ -166,6 +166,8 @@ extern "C"
 	// On STM32F1x cores this will default to Timer 3
 	//#define SERVO_TIMER 3
 
+#define ONESHOT_TIMER 1
+
 #ifdef __cplusplus
 }
 #endif

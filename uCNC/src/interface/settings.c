@@ -108,9 +108,15 @@ const settings_t __rom__ default_settings =
 		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
 		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
 		.laser_mode = 0,
-		.step_per_mm = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_STEP_PER_MM),
-		.max_feed_rate = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_MAX_FEED),
-		.acceleration = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_ACCEL),
+#ifdef ENABLE_LASER_PPI
+		.laser_ppi = DEFAULT_LASER_PPI,
+		.laser_ppi_uswidth = DEFAULT_LASER_PPI_USWIDTH,
+		.laser_ppi_mixmode_ppi = 0.25,
+		.laser_ppi_mixmode_uswidth = 0.75,
+#endif
+		.step_per_mm = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM),
+		.max_feed_rate = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_FEED),
+		.acceleration = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_ACCEL),
 		.max_distance = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_DIST),
 #if TOOL_COUNT > 0
 		.default_tool = DEFAULT_STARTUP_TOOL,
@@ -123,7 +129,7 @@ const settings_t __rom__ default_settings =
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		.backlash_steps = DEFAULT_ARRAY(STEPPER_COUNT, 0),
+		.backlash_steps = DEFAULT_ARRAY(AXIS_TO_STEPPERS, 0),
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		.skew_xy_factor = 0,
@@ -346,55 +352,69 @@ uint8_t settings_change(setting_offset_t id, float value)
 			g_settings.encoders_dir_invert_mask = value8;
 			break;
 #endif
-		case 10:
-			g_settings.status_report_mask = value8;
-			break;
-		case 11:
-			g_settings.g64_angle_factor = value;
-			break;
-		case 12:
-			g_settings.arc_tolerance = value;
-			break;
-		case 13:
-			g_settings.report_inches = value;
-			break;
-		case 20:
-			if (!g_settings.homing_enabled && value1)
-			{
-				return STATUS_SOFT_LIMIT_ERROR;
-			}
-			g_settings.soft_limits_enabled = value1;
-			break;
-		case 21:
-			g_settings.hard_limits_enabled = value1;
-			break;
-		case 22:
-			g_settings.homing_enabled = value1;
-			break;
-		case 23:
-			g_settings.homing_dir_invert_mask = value8;
-			break;
-		case 24:
-			g_settings.homing_slow_feed_rate = value;
-			break;
-		case 25:
-			g_settings.homing_fast_feed_rate = value;
-			break;
-		case 26:
-			g_settings.debounce_ms = value16;
-			break;
-		case 27:
-			g_settings.homing_offset = value;
-			break;
-		case 30:
-			g_settings.spindle_max_rpm = value16;
-			break;
-		case 31:
-			g_settings.spindle_min_rpm = value16;
-			break;
-		case 32:
-			g_settings.laser_mode = value8;
-			break;
+	case 10:
+		g_settings.status_report_mask = value8;
+		break;
+	case 11:
+		g_settings.g64_angle_factor = value;
+		break;
+	case 12:
+		g_settings.arc_tolerance = value;
+		break;
+	case 13:
+		g_settings.report_inches = value;
+		break;
+	case 20:
+		if (!g_settings.homing_enabled && value1)
+		{
+			return STATUS_SOFT_LIMIT_ERROR;
+		}
+		g_settings.soft_limits_enabled = value1;
+		break;
+	case 21:
+		g_settings.hard_limits_enabled = value1;
+		break;
+	case 22:
+		g_settings.homing_enabled = value1;
+		break;
+	case 23:
+		g_settings.homing_dir_invert_mask = value8;
+		break;
+	case 24:
+		g_settings.homing_slow_feed_rate = value;
+		break;
+	case 25:
+		g_settings.homing_fast_feed_rate = value;
+		break;
+	case 26:
+		g_settings.debounce_ms = value16;
+		break;
+	case 27:
+		g_settings.homing_offset = value;
+		break;
+	case 30:
+		g_settings.spindle_max_rpm = value16;
+		break;
+	case 31:
+		g_settings.spindle_min_rpm = value16;
+		break;
+	case 32:
+		g_settings.laser_mode = value8;
+		break;
+#ifdef ENABLE_LASER_PPI
+	case 33:
+		g_settings.step_per_mm[STEPPER_COUNT - 1] = value;
+		break;
+	case 34:
+		g_settings.laser_ppi_uswidth = value16;
+		break;
+	case 35:
+		g_settings.laser_ppi_mixmode_ppi = value;
+		break;
+	case 36:
+		g_settings.laser_ppi_mixmode_uswidth = value;
+		break;
+#endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		case 37:
 			g_settings.skew_xy_factor = value;
@@ -424,38 +444,33 @@ uint8_t settings_change(setting_offset_t id, float value)
 			//     g_settings.delta_efector_height = value;
 			//     break;
 #endif
-		default:
-			if (setting >= 100 && setting < (100 + STEPPER_COUNT))
-			{
-				setting -= 100;
-				g_settings.step_per_mm[setting] = value;
-			}
-			else if (setting >= 110 && setting < (110 + STEPPER_COUNT))
-			{
-				setting -= 110;
-				g_settings.max_feed_rate[setting] = value;
-			}
-			else if (setting >= 120 && setting < (120 + STEPPER_COUNT))
-			{
-				setting -= 120;
-				g_settings.acceleration[setting] = value;
-			}
-			else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-			{
-				setting -= 130;
-				g_settings.max_distance[setting] = value;
-			}
-			else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-			{
-				setting -= 130;
-				g_settings.max_distance[setting] = value;
-			}
+	default:
+		if (setting >= 100 && setting < (100 + AXIS_COUNT))
+		{
+			setting -= 100;
+			g_settings.step_per_mm[setting] = value;
+		}
+		else if (setting >= 110 && setting < (110 + AXIS_COUNT))
+		{
+			setting -= 110;
+			g_settings.max_feed_rate[setting] = value;
+		}
+		else if (setting >= 120 && setting < (120 + AXIS_COUNT))
+		{
+			setting -= 120;
+			g_settings.acceleration[setting] = value;
+		}
+		else if (setting >= 130 && setting < (130 + AXIS_COUNT))
+		{
+			setting -= 130;
+			g_settings.max_distance[setting] = value;
+		}
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			else if (setting >= 140 && setting < (140 + STEPPER_COUNT))
-			{
-				setting -= 140;
-				g_settings.backlash_steps[setting] = value16;
-			}
+		else if (setting >= 140 && setting < (140 + AXIS_TO_STEPPERS))
+		{
+			setting -= 140;
+			g_settings.backlash_steps[setting] = value16;
+		}
 #endif
 #if PID_CONTROLLERS > 0
 			// kp ki and kd 0 -> 41, 42, 43

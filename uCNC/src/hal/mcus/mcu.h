@@ -503,6 +503,24 @@ extern "C"
 
 #define mcu_delay_100ns() MCU_DELAY_CYCLE_X(MCU_100NS_LOOPS)
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+typedef void (*mcu_timeout_delgate)(void);
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout();
+#endif
+#endif
+
 	/**
 	 * runs all internal tasks of the MCU.
 	 * for the moment these are:

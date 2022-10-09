@@ -156,25 +156,31 @@ extern "C"
 //#define M7_SAME_AS_M8
 #endif
 
-	/**
-	 * Feed overrides increments and percentage ranges
-	 * */
 
+/**
+ * Uncomment to enable laser PPI feature
+ * Laser PPI requires the MCU to support ONESHOT timeout
+ * */
+// #define ENABLE_LASER_PPI
+
+/**
+ * Feed overrides increments and percentage ranges
+ * */
 #define FEED_OVR_MAX 200
 #define FEED_OVR_MIN 10
 #define FEED_OVR_COARSE 10
 #define FEED_OVR_FINE 1
 
-	/**
-	 * Rapid feed overrides percentages
-	 * */
+/**
+ * Rapid feed overrides percentages
+ * */
 
 #define RAPID_FEED_OVR1 50
 #define RAPID_FEED_OVR2 25
 
-	/**
-	 * Spindle speed overrides increments percentages and ranges
-	 * */
+/**
+ * Spindle speed overrides increments percentages and ranges
+ * */
 
 #define SPINDLE_OVR_MAX 200
 #define SPINDLE_OVR_MIN 10
@@ -193,7 +199,7 @@ extern "C"
 /**
  * accept G0 and G1 without explicit target
  * */
-// #define IGNORE_G0_G1_MISSING_AXIS_WORDS
+#define IGNORE_G0_G1_MISSING_AXIS_WORDS
 
 /**
  * processes and displays the currently executing gcode numbered line
@@ -230,6 +236,7 @@ extern "C"
 // #define ENABLE_MAIN_LOOP_MODULES
 // #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
+// #define ENABLE_MOTION_CONTROL_MODULES
 // #define ENABLE_SETTINGS_MODULES
 
 /**

@@ -45,7 +45,7 @@ extern "C"
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 4
 #endif
-//internal timers working frequency
+// internal timers working frequency
 #ifndef F_TIMERS
 #define F_TIMERS 8000000UL
 #endif
@@ -2899,6 +2899,19 @@ extern "C"
 #define SERVO_IRQ __helper__(TC, SERVO_TIMER, _IRQn)
 #endif
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#if (ONESHOT_TIMER < 3)
+#define MCU_ONESHOT_ISR __helper__(TCC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TCC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TCC, ONESHOT_TIMER, _IRQn)
+#else
+#define MCU_ONESHOT_ISR __helper__(TC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TC, ONESHOT_TIMER, _IRQn)
+#endif
+#endif
+
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
@@ -2925,12 +2938,12 @@ extern "C"
 #define mcu_config_output(diopin)                                              \
 	{                                                                          \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;  \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;  \
 	}
-#define mcu_config_input(diopin)                                                     \
-	{                                                                                \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 1); \
+#define mcu_config_input(diopin)                                                 \
+	{                                                                            \
+		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;    \
 	}
 #define mcu_config_pullup(diopin)                                                    \
 	{                                                                                \
@@ -2951,7 +2964,7 @@ extern "C"
 		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-		uint16_t div = ((F_TIMERS >> 8) / freq);                                    \
+		uint16_t div = ((F_TIMERS >> 8) / freq);                                     \
 		uint8_t presc = 0;                                                           \
 		while (div > 1)                                                              \
 		{                                                                            \
@@ -2966,7 +2979,7 @@ extern "C"
 				break;                                                               \
 			}                                                                        \
 		}                                                                            \
-		__indirect__(diopin, CONFIG)(presc);                                         \
+		__indirect__(diopin, CONFIG);                                                \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))

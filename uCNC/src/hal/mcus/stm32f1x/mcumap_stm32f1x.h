@@ -4319,35 +4319,118 @@ extern "C"
 #ifndef ITP_TIMER
 #define ITP_TIMER 2
 #endif
+#if (ITP_TIMER == 1 || ITP_TIMER == 8)
+#define MCU_ITP_ISR __helper__(TIM, ITP_TIMER, _UP_IRQHandler)
+#define MCU_ITP_IRQ __helper__(TIM, ITP_TIMER, _UP_IRQn)
+#elif (ITP_TIMER == 9)
+#define MCU_ITP_ISR TIM1_BRK_TIM9_IRQHandler
+#define MCU_ITP_IRQ TIM1_BRK_TIM9_IRQn
+#elif (ITP_TIMER == 10)
+#define MCU_ITP_ISR TIM1_UP_TIM10_IRQHandler
+#define MCU_ITP_IRQ TIM1_UP_TIM10_IRQn
+#elif (ITP_TIMER == 11)
+#define MCU_ITP_ISR TIM1_TRG_COM_TIM11_IRQHandler
+#define MCU_ITP_IRQ TIM1_TRG_COM_TIM11_IRQn
+#elif (ITP_TIMER == 12)
+#define MCU_ITP_ISR TIM8_BRK_TIM12_IRQHandler
+#define MCU_ITP_IRQ TIM8_BRK_TIM12_IRQn
+#elif (ITP_TIMER == 13)
+#define MCU_ITP_ISR TIM8_UP_TIM13_IRQHandler
+#define MCU_ITP_IRQ TIM8_UP_TIM13_IRQn
+#elif (ITP_TIMER == 14)
+#define MCU_ITP_ISR TIM8_TRG_COM_TIM14_IRQHandler
+#define MCU_ITP_IRQ TIM8_TRG_COM_TIM14_IRQn
+#else
 #define MCU_ITP_ISR __helper__(TIM, ITP_TIMER, _IRQHandler)
+#define MCU_ITP_IRQ __helper__(TIM, ITP_TIMER, _IRQn)
+#endif
 #define ITP_TIMER_REG __helper__(TIM, ITP_TIMER, )
 #if (ITP_TIMER == 1 || (ITP_TIMER >= 8 & ITP_TIMER <= 11))
 #define ITP_TIMER_ENREG APB2ENR
 #define ITP_TIMER_RESETREG APB1RSTR
 #define ITP_TIMER_APB __helper__(RCC_APB2ENR_TIM, ITP_TIMER, EN)
-#define ITP_TIMER_IRQ __helper__(TIM, ITP_TIMER, _UP_IRQn)
 #else
 #define ITP_TIMER_ENREG APB1ENR
 #define ITP_TIMER_RESETREG APB1RSTR
 #define ITP_TIMER_APB __helper__(RCC_APB1ENR_TIM, ITP_TIMER, EN)
-#define ITP_TIMER_IRQ __helper__(TIM, ITP_TIMER, _IRQn)
 #endif
 
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 3
 #endif
+#if (SERVO_TIMER == 1 || SERVO_TIMER == 8)
+#define MCU_SERVO_ISR __helper__(TIM, SERVO_TIMER, _UP_IRQHandler)
+#define MCU_SERVO_IRQ __helper__(TIM, SERVO_TIMER, _UP_IRQn)
+#elif (SERVO_TIMER == 9)
+#define MCU_SERVO_ISR TIM1_BRK_TIM9_IRQHandler
+#define MCU_SERVO_IRQ TIM1_BRK_TIM9_IRQn
+#elif (SERVO_TIMER == 10)
+#define MCU_SERVO_ISR TIM1_UP_TIM10_IRQHandler
+#define MCU_SERVO_IRQ TIM1_UP_TIM10_IRQn
+#elif (SERVO_TIMER == 11)
+#define MCU_SERVO_ISR TIM1_TRG_COM_TIM11_IRQHandler
+#define MCU_SERVO_IRQ TIM1_TRG_COM_TIM11_IRQn
+#elif (SERVO_TIMER == 12)
+#define MCU_SERVO_ISR TIM8_BRK_TIM12_IRQHandler
+#define MCU_SERVO_IRQ TIM8_BRK_TIM12_IRQn
+#elif (SERVO_TIMER == 13)
+#define MCU_SERVO_ISR TIM8_UP_TIM13_IRQHandler
+#define MCU_SERVO_IRQ TIM8_UP_TIM13_IRQn
+#elif (SERVO_TIMER == 14)
+#define MCU_SERVO_ISR TIM8_TRG_COM_TIM14_IRQHandler
+#define MCU_SERVO_IRQ TIM8_TRG_COM_TIM14_IRQn
+#else
 #define MCU_SERVO_ISR __helper__(TIM, SERVO_TIMER, _IRQHandler)
+#define MCU_SERVO_IRQ __helper__(TIM, SERVO_TIMER, _IRQn)
+#endif
 #define SERVO_TIMER_REG __helper__(TIM, SERVO_TIMER, )
 #if (SERVO_TIMER == 1 || (SERVO_TIMER >= 8 & SERVO_TIMER <= 11))
 #define SERVO_TIMER_ENREG APB2ENR
 #define SERVO_TIMER_RESETREG APB1RSTR
 #define SERVO_TIMER_APB __helper__(RCC_APB2ENR_TIM, SERVO_TIMER, EN)
-#define SERVO_TIMER_IRQ __helper__(TIM, SERVO_TIMER, _UP_IRQn)
 #else
 #define SERVO_TIMER_ENREG APB1ENR
 #define SERVO_TIMER_RESETREG APB1RSTR
 #define SERVO_TIMER_APB __helper__(RCC_APB1ENR_TIM, SERVO_TIMER, EN)
-#define SERVO_TIMER_IRQ __helper__(TIM, SERVO_TIMER, _IRQn)
+#endif
+
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#if (ONESHOT_TIMER == 1 || ONESHOT_TIMER == 8)
+#define MCU_ONESHOT_ISR __helper__(TIM, ONESHOT_TIMER, _UP_IRQHandler)
+#define MCU_ONESHOT_IRQ __helper__(TIM, ONESHOT_TIMER, _UP_IRQn)
+#elif (ONESHOT_TIMER == 9)
+#define MCU_ONESHOT_ISR TIM1_BRK_TIM9_IRQHandler
+#define MCU_ONESHOT_IRQ TIM1_BRK_TIM9_IRQn
+#elif (ONESHOT_TIMER == 10)
+#define MCU_ONESHOT_ISR TIM1_UP_TIM10_IRQHandler
+#define MCU_ONESHOT_IRQ TIM1_UP_TIM10_IRQn
+#elif (ONESHOT_TIMER == 11)
+#define MCU_ONESHOT_ISR TIM1_TRG_COM_TIM11_IRQHandler
+#define MCU_ONESHOT_IRQ TIM1_TRG_COM_TIM11_IRQn
+#elif (ONESHOT_TIMER == 12)
+#define MCU_ONESHOT_ISR TIM8_BRK_TIM12_IRQHandler
+#define MCU_ONESHOT_IRQ TIM8_BRK_TIM12_IRQn
+#elif (ONESHOT_TIMER == 13)
+#define MCU_ONESHOT_ISR TIM8_UP_TIM13_IRQHandler
+#define MCU_ONESHOT_IRQ TIM8_UP_TIM13_IRQn
+#elif (ONESHOT_TIMER == 14)
+#define MCU_ONESHOT_ISR TIM8_TRG_COM_TIM14_IRQHandler
+#define MCU_ONESHOT_IRQ TIM8_TRG_COM_TIM14_IRQn
+#else
+#define MCU_ONESHOT_ISR __helper__(TIM, ONESHOT_TIMER, _IRQHandler)
+#define MCU_ONESHOT_IRQ __helper__(TIM, ONESHOT_TIMER, _IRQn)
+#endif
+#define ONESHOT_TIMER_REG __helper__(TIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER == 1 || (ONESHOT_TIMER >= 8 & ONESHOT_TIMER <= 11))
+#define ONESHOT_TIMER_ENREG APB2ENR
+#define ONESHOT_TIMER_RESETREG APB1RSTR
+#define ONESHOT_TIMER_APB __helper__(RCC_APB2ENR_TIM, ONESHOT_TIMER, EN)
+#else
+#define ONESHOT_TIMER_ENREG APB1ENR
+#define ONESHOT_TIMER_RESETREG APB1RSTR
+#define ONESHOT_TIMER_APB __helper__(RCC_APB1ENR_TIM, ONESHOT_TIMER, EN)
+#endif
 #endif
 
 #define __indirect__ex__(X, Y) DIO##X##_##Y
@@ -4418,7 +4501,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                    \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                        \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                \
@@ -4472,7 +4555,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	{                                               \
+	({                                               \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -4480,7 +4563,7 @@ extern "C"
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOS;                    \
 		(0xFF & (ADC1->DR >> 4));                   \
-	}
+	})
 
 #define mcu_spi_xmit(X)                                               \
 	({                                                                \
@@ -4545,6 +4628,20 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define GPIO_IN_FLOAT 0x4U
 #define GPIO_IN_PUP 0x8U
 #define GPIO_IN_ANALOG 0 // not needed after reseting bits
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#define mcu_start_timeout()           \
+	({                                \
+		ONESHOT_TIMER_REG->SR = 0;    \
+		ONESHOT_TIMER_REG->CNT = 0;   \
+		ONESHOT_TIMER_REG->DIER |= 1; \
+		ONESHOT_TIMER_REG->CR1 |= 1;  \
+	})
+#endif
 
 #ifdef __cplusplus
 }

@@ -3658,11 +3658,30 @@ extern "C"
 #endif
 #define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_TIMER_REG __helper__(LPC_TIM, ONESHOT_TIMER, )
+#define MCU_ONESHOT_ISR __helper__(TIMER, ONESHOT_TIMER, _IRQHandler)
+#define ONESHOT_INT_FLAG __helper__(TIM_MR, ONESHOT_TIMER, _INT)
+#define ONESHOT_TIMER_IRQ __helper__(TIMER, ONESHOT_TIMER, _IRQn)
+#define ONESHOT_PCONP __helper__(CLKPWR_PCONP_PCTIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER < 2)
+#define ONESHOT_PCLKSEL_REG PCLKSEL0
+#else
+#define ONESHOT_PCLKSEL_REG PCLKSEL1
+#endif
+#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#endif
+
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
-#define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_output(diopin)                                                                                            \
+	{                                                                                                                        \
+		SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                            \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_output_od(diopin)                                                                                          \
 	{                                                                                                                         \
 		mcu_config_output(diopin);                                                                                            \
@@ -3671,7 +3690,11 @@ extern "C"
 		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
-#define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_input(diopin)                                                                                             \
+	{                                                                                                                        \
+		CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_pullup(diopin)                                                                                             \
 	{                                                                                                                         \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
@@ -3717,7 +3740,7 @@ extern "C"
 		LPC_PWM1->PCR &= 0xFF00;                                              \
 		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
 		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
-		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                      \
+		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                            \
 		LPC_PWM1->MCR = (1UL << 1);                                           \
 		LPC_PWM1->MR0 = 255;                                                  \
 		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
@@ -3772,6 +3795,10 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 			;                               \
 		SPI_REG->DR;                        \
 	})
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)
+#endif
 
 #ifdef __cplusplus
 }

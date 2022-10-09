@@ -40,6 +40,10 @@ extern "C"
 #define F_CPU 72000000UL
 #endif
 
+#ifndef FLASH_SIZE
+#define FLASH_SIZE 0x80000UL
+#endif
+
 #define NO_USB_VCP
 #ifdef USB_VCP
 #undef USB_VCP
@@ -143,6 +147,21 @@ extern "C"
 
 // Setup the Step Timer used has the heartbeat for µCNC
 #define ITP_TIMER 5
+
+//software SPI for card access
+#define DOUT29_BIT 2
+#define DOUT29_PORT D
+#define DIN29_BIT 8
+#define DIN29_PORT C
+#define DOUT30_BIT 12
+#define DOUT30_PORT C
+#define SPI_CS_BIT 11
+#define SPI_CS_PORT C
+//SD detect pin
+#define DIN19_BIT 12
+#define DIN19_PORT D
+
+#define ONESHOT_TIMER 2
 
 #ifdef __cplusplus
 }

@@ -1,10 +1,10 @@
 /*
-	Name: boardmap_re_arm.h
-	Description: Contains all MCU and PIN definitions for Re-Arm Panucatt to run µCNC.
+	Name: boardmap_mks_base13.h
+	Description: Contains all MCU and PIN definitions for MKS Base V1.3 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 17/06/2022
+	Date: 07/10/2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_RE_ARM_H
-#define BOARDMAP_RE_ARM_H
+#ifndef BOARDMAP_MKS_BASE13_H
+#define BOARDMAP_MKS_BASE13_H
 
 #ifdef __cplusplus
 extern "C"
@@ -25,7 +25,7 @@ extern "C"
 #endif
 
 #ifndef BOARD_NAME
-#define BOARD_NAME "RAMPS 1.4 RE-ARM"
+#define BOARD_NAME "MKS BASE v1.3"
 #endif
 
 #ifndef F_CPU
@@ -33,28 +33,40 @@ extern "C"
 #endif
 
 // Setup step pins
-#define STEP0_BIT 1	 // assigns STEP0 pin
+#define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT 2 // assigns STEP0 port
-#define STEP1_BIT 2	 // assigns STEP1 pin
+#define STEP1_BIT 1	 // assigns STEP1 pin
 #define STEP1_PORT 2 // assigns STEP1 port
-#define STEP2_BIT 3	 // assigns STEP2 pin
+#define STEP2_BIT 2	 // assigns STEP2 pin
 #define STEP2_PORT 2 // assigns STEP2 port
-#define STEP3_BIT 0	 // assigns STEP3 pin
+#define STEP3_BIT 3	 // assigns STEP3 pin
 #define STEP3_PORT 2 // assigns STEP3 port
 #define STEP4_BIT 8	 // assigns STEP4 pin
 #define STEP4_PORT 2 // assigns STEP4 port
 
 // Setup dir pins
-#define DIR0_BIT 11 // assigns DIR0 pin
+#define DIR0_BIT 5 // assigns DIR0 pin
 #define DIR0_PORT 0 // assigns DIR0 port
-#define DIR1_BIT 20 // assigns DIR1 pin
+#define DIR1_BIT 11 // assigns DIR1 pin
 #define DIR1_PORT 0 // assigns DIR1 port
-#define DIR2_BIT 22 // assigns DIR2 pin
+#define DIR2_BIT 20 // assigns DIR2 pin
 #define DIR2_PORT 0 // assigns DIR2 port
-#define DIR3_BIT 5	// assigns DIR2 pin
+#define DIR3_BIT 22	// assigns DIR2 pin
 #define DIR3_PORT 0 // assigns DIR2 port
 #define DIR4_BIT 13 // assigns DIR2 pin
 #define DIR4_PORT 2 // assigns DIR2 port
+
+// Stepper enable pin. For Grbl on Uno board a single pin is used
+#define STEP0_EN_BIT 4
+#define STEP0_EN_PORT 0
+#define STEP1_EN_BIT 10
+#define STEP1_EN_PORT 0
+#define STEP2_EN_BIT 19
+#define STEP2_EN_PORT 0
+#define STEP3_EN_BIT 21
+#define STEP3_EN_PORT 0
+#define STEP4_EN_BIT 29
+#define STEP4_EN_PORT 4
 
 	// Setup limit pins
 
@@ -70,12 +82,12 @@ extern "C"
 #define LIMIT_Y2_BIT 27 // assigns LIMIT_Y2 pin
 #define LIMIT_Y2_PORT 1 // assigns LIMIT_Y2 port
 // #define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR
-#define LIMIT_Z_BIT 29 // assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 28 // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT 1 // assigns LIMIT_Z port
 // #define LIMIT_Z_ISR -4	// assigns LIMIT_Z ISR
 
 // Setup probe pin
-#define PROBE_BIT 28
+#define PROBE_BIT 29
 #define PROBE_PORT 1
 // #define PROBE_ISR -3
 
@@ -108,20 +120,8 @@ extern "C"
 // Functionalities are set in config.h file
 
 // // blink led
-// #define DOUT31_BIT 28
-// #define DOUT31_PORT 4
-
-// Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEP0_EN_BIT 10
-#define STEP0_EN_PORT 0
-#define STEP1_EN_BIT 19
-#define STEP1_EN_PORT 0
-#define STEP2_EN_BIT 21
-#define STEP2_EN_PORT 0
-#define STEP3_EN_BIT 4
-#define STEP3_EN_PORT 0
-#define STEP4_EN_BIT 29
-#define STEP4_EN_PORT 4
+#define DOUT31_BIT 18
+#define DOUT31_PORT 1
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 0 is used by default
@@ -148,6 +148,9 @@ extern "C"
 #define ANALOG2_BIT 25
 #define ANALOG2_PORT 0
 #define ANALOG2_CHANNEL 2
+#define ANALOG3_BIT 26
+#define ANALOG3_PORT 0
+#define ANALOG3_CHANNEL 3
 
 // hardware I2C
 #define I2C_SCL_BIT 1

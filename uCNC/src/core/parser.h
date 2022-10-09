@@ -80,6 +80,8 @@ extern "C"
 #define GCODE_WORD_Q GCODE_WORD_D
 #endif
 
+#define GCODE_WORD_TOOL (1 << AXIS_TOOL)
+
 	// H and Q are related to unsupported commands
 
 	// #if (defined(AXIS_B) | defined(AXIS_C) | defined(GCODE_PROCESS_LINE_NUMBERS))
@@ -95,6 +97,10 @@ extern "C"
 #define GCODE_IKPLANE_AXIS (GCODE_XZPLANE_AXIS << 8)
 #define GCODE_JKPLANE_AXIS (GCODE_YZPLANE_AXIS << 8)
 #define GCODE_IJK_AXIS (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K)
+
+#define LASER_PWM_MODE 1
+#define LASER_PPI_MODE 2
+#define LASER_PPI_VARPOWER_MODE 4
 
 	// 33bytes in total
 	typedef struct
@@ -148,7 +154,7 @@ extern "C"
 		float f;
 		float p;
 		float r;
-		int16_t s;
+		float s;
 		int8_t t;
 		uint8_t l;
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -191,7 +197,11 @@ extern "C"
 	void parser_sync_position(void);
 	void parser_reset(void);
 	void parser_machine_to_work(float *axis);
+	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
+#ifdef ENABLE_LASER_PPI
+	void parser_config_ppi(void);
+#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
@@ -217,6 +227,9 @@ extern "C"
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);
 
+	// event_gcode_exec_modifier_handler
+	DECL_EVENT_HANDLER(gcode_exec_modifier);
+
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
@@ -224,6 +237,9 @@ extern "C"
 		uint8_t len;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
+
+	// event_parse_token_handler
+	DECL_EVENT_HANDLER(parse_token);
 #endif
 
 #ifdef __cplusplus
