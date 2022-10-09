@@ -159,6 +159,14 @@ extern "C"
 #endif
 
 /**
+ * configs the pwm pin and output frequency
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pwm
+	void mcu_config_pwm(uint8_t pin, uint16_t freq);
+#endif
+
+/**
  * sets the pwm value of a built-in pwm pin
  * can be defined either as a function or a macro call
  * */
@@ -494,6 +502,24 @@ extern "C"
 #define MCU_DELAY_CYCLE_X(LOOPS) _MCU_DELAY_CYCLE_X(LOOPS)
 
 #define mcu_delay_100ns() MCU_DELAY_CYCLE_X(MCU_100NS_LOOPS)
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+typedef void (*mcu_timeout_delgate)(void);
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout();
+#endif
+#endif
 
 	/**
 	 * runs all internal tasks of the MCU.

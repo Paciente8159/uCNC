@@ -1,19 +1,19 @@
 /*
-    Name: boardmap_wemos_d1.h
-    Description: Contains all MCU and PIN definitions for Arduino WeMos D1 to run µCNC.
+	Name: boardmap_wemos_d1.h
+	Description: Contains all MCU and PIN definitions for Arduino WeMos D1 to run µCNC.
 
-    Copyright: Copyright (c) João Martins
-    Author: João Martins
-    Date: 17/06/2022
+	Copyright: Copyright (c) João Martins
+	Author: João Martins
+	Date: 17/06/2022
 
-    µCNC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version. Please see <http://www.gnu.org/licenses/>
+	µCNC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version. Please see <http://www.gnu.org/licenses/>
 
-    µCNC is distributed WITHOUT ANY WARRANTY;
-    Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-    See the	GNU General Public License for more details.
+	µCNC is distributed WITHOUT ANY WARRANTY;
+	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+	See the	GNU General Public License for more details.
 */
 
 #ifndef BOARDMAP_WEMOS_D1_R32_H
@@ -30,8 +30,8 @@ extern "C"
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 17  // assigns STEP2 pin
-#define STEP1_BIT 25  // assigns STEP1 pin
+#define STEP2_BIT 17 // assigns STEP2 pin
+#define STEP1_BIT 25 // assigns STEP1 pin
 #define STEP0_BIT 26 // assigns STEP0 pin
 
 // Setup dir pins
@@ -70,8 +70,8 @@ extern "C"
 // #define COM_PORT 0
 #endif
 
-    // Setup PWM
-#define PWM0_BIT 23  // assigns PWM0 pin
+	// Setup PWM
+#define PWM0_BIT 23 // assigns PWM0 pin
 
 // Setup generic IO Pins
 // spindle dir
@@ -93,6 +93,8 @@ extern "C"
 	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 	// Timer 0 is set by default
 	//#define RTC_TIMER 0
+
+#define ONESHOT_TIMER 2
 
 #ifdef __cplusplus
 }

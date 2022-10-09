@@ -1146,6 +1146,37 @@ void mcu_disable_probe_isr(void)
 {
 }
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+uint32_t mcu_timeout;
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+HANDLE oneshot_handle;
+VOID CALLBACK oneshot_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	if(mcu_timeout_cb){
+		mcu_timeout_cb();
+	}
+}
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+	{
+		mcu_timeout_cb = fp;
+		mcu_timeout = timeout;
+	}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout(){
+		CreateTimerQueueTimer(&oneshot_handle, NULL, (WAITORTIMERCALLBACK)oneshot_handler, NULL, 0, mcu_timeout, WT_EXECUTEINTIMERTHREAD|WT_EXECUTEONLYONCE);
+	}
+#endif
+#endif
+
 uint8_t mcu_get_pin_offset(uint8_t pin)
 {
 	if (pin >= STEP0 && pin <= STEP7_EN)
@@ -1169,6 +1200,10 @@ uint8_t mcu_get_pin_offset(uint8_t pin)
 }
 
 void mcu_config_input(uint8_t pin)
+{
+}
+
+void mcu_config_pwm(uint8_t pin, uint16_t freq)
 {
 }
 
@@ -1490,8 +1525,9 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 		if (!fseek(fp, address, SEEK_SET))
 		{
 			c = getc(fp);
-			fclose(fp);
 		}
+
+		fclose(fp);
 	}
 
 	return c;

@@ -45,6 +45,11 @@ extern "C"
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 4
 #endif
+// internal timers working frequency
+#ifndef F_TIMERS
+#define F_TIMERS 8000000UL
+#endif
+
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
@@ -1571,14 +1576,13 @@ extern "C"
 #define PM_APBCMASK_I2CCOM __helper__(PM_APBCMASK_SERCOM, I2C_PORT, )
 #define GCLK_CLKCTRL_ID_I2CCOM __helper__(GCLK_CLKCTRL_ID_SERCOM, I2C_PORT, _CORE)
 #define I2C_DATA (I2CCOM->SPI.DATA.reg)
-// #define OUTPAD 0
-// #define INPAD 3
+	// #define OUTPAD 0
+	// #define INPAD 3
 
 #define I2C_SCL_PMUX (pinmux(I2C_SCL_PORT, I2C_SCL_BIT))
 #define I2C_SCL_PMUXVAL (sercommux_pin(I2C_PORT, I2C_SCL_PORT, I2C_SCL_BIT))
 #define I2C_SDA_PMUX (pinmux(I2C_SDA_PORT, I2C_SDA_BIT))
 #define I2C_SDA_PMUXVAL (sercommux_pin(I2C_PORT, I2C_SDA_PORT, I2C_SDA_BIT))
-
 
 #define DIO207_PMUX I2C_SCL_PMUX
 #define DIO207_PMUXVAL I2C_SCL_PMUXVAL
@@ -2895,6 +2899,19 @@ extern "C"
 #define SERVO_IRQ __helper__(TC, SERVO_TIMER, _IRQn)
 #endif
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#if (ONESHOT_TIMER < 3)
+#define MCU_ONESHOT_ISR __helper__(TCC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TCC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TCC, ONESHOT_TIMER, _IRQn)
+#else
+#define MCU_ONESHOT_ISR __helper__(TC, ONESHOT_TIMER, _Handler)
+#define ONESHOT_REG __helper__(TC, ONESHOT_TIMER, )
+#define ONESHOT_IRQ __helper__(TC, ONESHOT_TIMER, _IRQn)
+#endif
+#endif
+
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
@@ -2921,12 +2938,12 @@ extern "C"
 #define mcu_config_output(diopin)                                              \
 	{                                                                          \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
-		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;  \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;  \
 	}
-#define mcu_config_input(diopin)                                                     \
-	{                                                                                \
-		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));     \
-		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 1); \
+#define mcu_config_input(diopin)                                                 \
+	{                                                                            \
+		CLEARBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT)); \
+		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 2;    \
 	}
 #define mcu_config_pullup(diopin)                                                    \
 	{                                                                                \
@@ -2941,13 +2958,28 @@ extern "C"
 
 #define mcu_config_input_isr(diopin) (mcu_config_altfunc(diopin))
 
-#define mcu_config_pwm(diopin)                                                       \
+#define mcu_config_pwm(diopin, freq)                                                 \
 	{                                                                                \
 		SETBIT(__indirect__(diopin, GPIO).DIR.reg, __indirect__(diopin, BIT));       \
 		__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg = 0;        \
 		SETBIT(__indirect__(diopin, GPIO).PINCFG[__indirect__(diopin, BIT)].reg, 0); \
 		(__indirect__(diopin, PMUX)) = __indirect__(diopin, PMUXVAL);                \
-		(__indirect__(diopin, CONFIG));                                              \
+		uint16_t div = ((F_TIMERS >> 8) / freq);                                     \
+		uint8_t presc = 0;                                                           \
+		while (div > 1)                                                              \
+		{                                                                            \
+			div = ((div + 1) >> 1);                                                  \
+			presc++;                                                                 \
+			if (presc >= 4)                                                          \
+			{                                                                        \
+				div = ((div + 1) >> 1);                                              \
+			}                                                                        \
+			if (presc == 7)                                                          \
+			{                                                                        \
+				break;                                                               \
+			}                                                                        \
+		}                                                                            \
+		__indirect__(diopin, CONFIG);                                                \
 	}
 
 #define mcu_get_input(diopin) (CHECKBIT(__indirect__(diopin, GPIO).IN.reg, __indirect__(diopin, BIT)))
@@ -3023,7 +3055,7 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)                          \
-	({                                            \
+	({                                           \
 		while (SPICOM->SPI.INTFLAG.bit.DRE == 0) \
 			;                                    \
 		SPICOM->SPI.DATA.reg = X;                \

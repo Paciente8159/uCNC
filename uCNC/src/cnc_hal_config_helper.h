@@ -532,6 +532,58 @@ extern "C"
 #endif
 #endif
 
+/*laser ppi*/
+#if (TOOL_COUNT < 1)
+#undef ENABLE_LASER_PPI
+#endif
+#ifdef ENABLE_LASER_PPI
+#ifndef MCU_HAS_ONESHOT_TIMER
+#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+// #ifdef BRESENHAM_16BIT
+// #undef BRESENHAM_16BIT
+// #warning "BRESENHAM_16BIT was disabled for Laser PPI mode"
+// #endif
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for Laser PPI mode"
+#endif
+#if (STEPPER_COUNT == 1)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 2
+#define LASER_PPI_MASK STEP1_MASK
+#elif (STEPPER_COUNT == 2)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 3
+#define LASER_PPI_MASK STEP2_MASK
+#elif (STEPPER_COUNT == 3)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 4
+#define LASER_PPI_MASK STEP3_MASK
+#elif (STEPPER_COUNT == 4)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 5
+#define LASER_PPI_MASK STEP4_MASK
+#elif (STEPPER_COUNT == 5)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 6
+#define LASER_PPI_MASK STEP5_MASK
+#elif (STEPPER_COUNT == 6)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 7
+#define LASER_PPI_MASK STEP6_MASK
+#endif
+#ifndef LASER_PPI
+#define LASER_PPI -1
+#endif
+// #ifdef STEP_ISR_SKIP_MAIN
+// #undef STEP_ISR_SKIP_MAIN
+// #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
+// #endif
+#else
+#define LASER_PPI -1
+#endif
+
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
 
@@ -1996,10 +2048,6 @@ typedef uint16_t step_t;
 #endif
 #if ((LIMIT_Z < 0) && (LIMIT_Z2 < 0))
 #error "Delta requires at least one Z axis endstop"
-#endif
-#if (MCU == MCU_AVR && BOARD != BOARD_UNO && BOARD != BOARD_MKS_DLC)
-#define PLANNER_BUFFER_SIZE 40
-#define INTERPOLATOR_FREQ 1
 #endif
 #endif
 

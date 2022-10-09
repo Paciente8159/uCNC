@@ -563,9 +563,9 @@ void itp_run(void)
 
 		sgm->feed = avg_speed * feed_convert;
 #if TOOL_COUNT > 0
-		if (g_settings.laser_mode)
+		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
-			float top_speed_inv = 1 / top_speed;
+			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, avg_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
@@ -576,6 +576,36 @@ void itp_run(void)
 
 			sgm->spindle = newspindle;
 		}
+#ifdef ENABLE_LASER_PPI
+		else if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		{
+			int16_t newspindle;
+			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			{
+				float new_s = (float)ABS(planner_get_spindle_speed(1));
+				new_s /= (float)g_settings.spindle_max_rpm;
+				if (g_settings.laser_mode & LASER_PPI_MODE)
+				{
+					float blend = g_settings.laser_ppi_mixmode_uswidth;
+					new_s = (new_s * blend) + (1.0f - blend);
+				}
+
+				newspindle = (int16_t)((float)g_settings.laser_ppi_uswidth * new_s);
+				sgm->spindle = newspindle;
+			}
+			else
+			{
+				newspindle = g_settings.laser_ppi_uswidth;
+				sgm->spindle = newspindle;
+			}
+
+			if ((prev_spindle != (int16_t)newspindle) && newspindle)
+			{
+				prev_spindle = (int16_t)newspindle;
+				sgm->update_itp |= ITP_UPDATE_TOOL;
+			}
+		}
+#endif
 #endif
 		remaining_steps -= segm_steps;
 
@@ -689,7 +719,11 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
+#ifdef ENABLE_LASER_PPI
+				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
+#else
 				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
+#endif
 				itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
@@ -884,9 +918,9 @@ void itp_run(void)
 		sgm->feed = current_speed * feed_convert;
 #if TOOL_COUNT > 0
 		// calculates dynamic laser power
-		if (g_settings.laser_mode)
+		if (g_settings.laser_mode == LASER_PWM_MODE)
 		{
-			float top_speed_inv = fast_flt_invsqrt(junction_speed_sqr);
+			float top_speed_inv = fast_flt_invsqrt(itp_cur_plan_block->feed_sqr);
 			int16_t newspindle = planner_get_spindle_speed(MIN(1, current_speed * top_speed_inv));
 
 			if ((prev_spindle != newspindle))
@@ -897,6 +931,36 @@ void itp_run(void)
 
 			sgm->spindle = newspindle;
 		}
+#ifdef ENABLE_LASER_PPI
+		else if (g_settings.laser_mode & (LASER_PPI_VARPOWER_MODE | LASER_PPI_MODE))
+		{
+			int16_t newspindle;
+			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
+			{
+				float new_s = (float)ABS(planner_get_spindle_speed(1));
+				new_s /= (float)g_settings.spindle_max_rpm;
+				if (g_settings.laser_mode & LASER_PPI_MODE)
+				{
+					float blend = g_settings.laser_ppi_mixmode_uswidth;
+					new_s = (new_s * blend) + (1.0f - blend);
+				}
+
+				newspindle = (int16_t)((float)g_settings.laser_ppi_uswidth * new_s);
+				sgm->spindle = newspindle;
+			}
+			else
+			{
+				newspindle = g_settings.laser_ppi_uswidth;
+				sgm->spindle = newspindle;
+			}
+
+			if ((prev_spindle != (int16_t)newspindle) && newspindle)
+			{
+				prev_spindle = (int16_t)newspindle;
+				sgm->update_itp |= ITP_UPDATE_TOOL;
+			}
+		}
+#endif
 #endif
 		remaining_steps -= segm_steps;
 
@@ -981,22 +1045,22 @@ void itp_get_rt_position(int32_t *position)
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 
 #if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && STEPPER_COUNT > 0)
+#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
 	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
 #endif
-#if (defined(STEP1_ENCODER) && STEPPER_COUNT > 1)
+#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
 	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
 #endif
-#if (defined(STEP2_ENCODER) && STEPPER_COUNT > 2)
+#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
 	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
 #endif
-#if (defined(STEP3_ENCODER) && STEPPER_COUNT > 3)
+#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
 	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
 #endif
-#if (defined(STEP4_ENCODER) && STEPPER_COUNT > 4)
+#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
 	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
 #endif
-#if (defined(STEP5_ENCODER) && STEPPER_COUNT > 5)
+#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
 	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
 #endif
 #endif
@@ -1049,7 +1113,7 @@ float itp_get_rt_feed(void)
 // used to make a sync motion
 uint8_t itp_sync(void)
 {
-	while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || cnc_get_exec_state(EXEC_RUN))
+	while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || (itp_rt_sgm != NULL))
 	{
 		if (!cnc_dotasks())
 		{
@@ -1086,6 +1150,18 @@ uint32_t itp_get_rt_line_number(void)
 }
 #endif
 
+#ifdef ENABLE_LASER_PPI
+// turn laser off callback
+MCU_CALLBACK void laser_ppi_turnoff_cb(void)
+{
+#ifndef INVERT_LASER_PPI_LOGIC
+	mcu_clear_output(LASER_PPI);
+#else
+	mcu_set_output(LASER_PPI);
+#endif
+}
+#endif
+
 // always fires after pulse
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
@@ -1097,6 +1173,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 {
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
+#ifdef ENABLE_LASER_PPI
+	static uint16_t new_laser_ppi = 0;
+#endif
 
 	if (!itp_busy) // prevents reentrancy
 	{
@@ -1112,7 +1191,18 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if TOOL_COUNT > 0
 				if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
 				{
-					tool_set_speed(itp_rt_sgm->spindle);
+#ifdef ENABLE_LASER_PPI
+					if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+					{
+						new_laser_ppi = itp_rt_sgm->spindle;
+					}
+					else
+					{
+#endif
+						tool_set_speed(itp_rt_sgm->spindle);
+#ifdef ENABLE_LASER_PPI
+					}
+#endif
 				}
 #endif
 				itp_rt_sgm->update_itp = ITP_NOUPDATE;
@@ -1128,6 +1218,25 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 
 		// sets step bits
+#ifdef ENABLE_LASER_PPI
+		if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+		{
+			if (stepbits & LASER_PPI_MASK)
+			{
+				if (new_laser_ppi)
+				{
+					mcu_config_timeout(&laser_ppi_turnoff_cb, new_laser_ppi);
+					new_laser_ppi = 0;
+				}
+				mcu_start_timeout();
+#ifndef INVERT_LASER_PPI_LOGIC
+				mcu_set_output(LASER_PPI);
+#else
+				mcu_clear_output(LASER_PPI);
+#endif
+			}
+		}
+#endif
 		io_toggle_steps(stepbits);
 		stepbits = 0;
 

@@ -58,6 +58,12 @@ extern "C"
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
 		uint8_t laser_mode;
+#ifdef ENABLE_LASER_PPI
+		uint16_t laser_ppi;
+		uint16_t laser_ppi_uswidth;
+		float laser_ppi_mixmode_ppi;
+		float laser_ppi_mixmode_uswidth;
+#endif
 		float step_per_mm[STEPPER_COUNT];
 		float max_feed_rate[STEPPER_COUNT];
 		float acceleration[STEPPER_COUNT];
@@ -72,7 +78,7 @@ extern "C"
 		// float delta_efector_height;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		uint16_t backlash_steps[STEPPER_COUNT];
+		uint16_t backlash_steps[AXIS_TO_STEPPERS];
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		float skew_xy_factor;

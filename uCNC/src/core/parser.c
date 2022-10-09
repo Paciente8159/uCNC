@@ -99,6 +99,11 @@
 #define M48 1
 #define M49 0
 #define M10 1010
+#ifdef ENABLE_LASER_PPI
+#define M126 1126
+#define M127 1127
+#define M128 1128
+#endif
 
 #define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
@@ -124,10 +129,13 @@ static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
+#ifdef ENABLE_LASER_PPI
+// turn laser off callback
+extern MCU_CALLBACK void laser_ppi_turnoff_cb(void);
+#endif
 
 static unsigned char parser_get_next_preprocessed(bool peek);
-FORCEINLINE static uint8_t parser_get_comment(void);
-static uint8_t parser_get_float(float *value);
+FORCEINLINE static void parser_get_comment(unsigned char start_char);
 FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
@@ -155,10 +163,22 @@ WEAK_EVENT_HANDLER(gcode_exec)
 	DEFAULT_EVENT_HANDLER(gcode_exec);
 }
 
+// event_gcode_exec_handler
+WEAK_EVENT_HANDLER(gcode_exec_modifier)
+{
+	DEFAULT_EVENT_HANDLER(gcode_exec_modifier);
+}
+
 // event_grbl_cmd_handler
 WEAK_EVENT_HANDLER(grbl_cmd)
 {
 	DEFAULT_EVENT_HANDLER(grbl_cmd);
+}
+
+// event_parse_token_handler
+WEAK_EVENT_HANDLER(parse_token)
+{
+	DEFAULT_EVENT_HANDLER(parse_token);
 }
 #endif
 
@@ -983,10 +1003,39 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 #endif
 
 	// checks if an extended command was called with any other command at the same time
-	// exetension commands can only be processed individually
+	// extension commands can only be processed individually
 	if (cmd->group_extended != 0 && cmd->groups != 0)
 	{
 		return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+	}
+
+	if (cmd->group_extended)
+	{
+		switch (cmd->group_extended)
+		{
+#if (SERVOS_MASK != 0)
+		case M10:
+			if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
+			{
+				return STATUS_GCODE_VALUE_WORD_MISSING;
+			}
+			break;
+#endif
+#ifdef ENABLE_LASER_PPI
+		case M127:
+		case M128:
+			// prevents command execution if mode disabled
+			if (!(g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
+			{
+				return STATUS_LASER_PPI_MODE_DISABLED;
+			}
+		case M126:
+			if (CHECKFLAG(cmd->words, (GCODE_WORD_P)) != (GCODE_WORD_P))
+			{
+				return STATUS_GCODE_VALUE_WORD_MISSING;
+			}
+#endif
+		}
 	}
 
 	return STATUS_OK;
@@ -1011,6 +1060,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	uint8_t error = 0;
 	bool update_tools = false;
 
+#ifdef ENABLE_PARSER_MODULES
+	gcode_exec_args_t args = {new_state, words, cmd};
+	EVENT_INVOKE(gcode_exec_modifier, &args);
+#endif
+
 	// stoping from previous command M2 or M30 command
 	if (new_state->groups.stopping && !CHECKFLAG(cmd->groups, GCODE_GROUP_STOPPING))
 	{
@@ -1022,30 +1076,56 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		new_state->groups.stopping = 0;
 	}
 
-#if SERVOS_MASK != 0
-	if (cmd->group_extended == M10)
+	if (cmd->group_extended)
 	{
-		if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
+		itp_sync();
+		switch (cmd->group_extended)
 		{
-			return STATUS_GCODE_VALUE_WORD_MISSING;
-		}
-
-		if (words->p < 6)
-		{
-			io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+#if (SERVOS_MASK != 0)
+		case M10:
+			if (words->p < 6)
+			{
+				io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+			}
+			break;
+#endif
+#ifdef ENABLE_LASER_PPI
+		case M126:
+			g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+			switch ((((uint8_t)words->p)))
+			{
+			case 1:
+				g_settings.laser_mode |= LASER_PPI_MODE;
+				break;
+			case 2:
+				g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
+				break;
+			case 3:
+				g_settings.laser_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+				break;
+			}
+			parser_config_ppi();
+			break;
+		case M127:
+			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p * MM_INCH_MULT;
+			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / g_settings.step_per_mm[STEPPER_COUNT - 1];
+			break;
+		case M128:
+			g_settings.laser_ppi_uswidth = (uint16_t)words->p;
+			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (2000000.0f / g_settings.max_step_rate))) / g_settings.step_per_mm[STEPPER_COUNT - 1];
+			mcu_config_timeout(&laser_ppi_turnoff_cb, (uint16_t)words->p);
+			break;
+#endif
+		default:
+#ifdef ENABLE_PARSER_MODULES
+			gcode_exec_args_t args = {new_state, words, cmd};
+			return EVENT_INVOKE(gcode_exec, &args);
+#endif
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 
 		return STATUS_OK;
 	}
-#endif
-
-#ifdef ENABLE_PARSER_MODULES
-	if ((cmd->group_extended != 0))
-	{
-		gcode_exec_args_t args = {new_state, words, cmd};
-		return EVENT_INVOKE(gcode_exec, &args);
-	}
-#endif
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	block_data.line = words->n;
@@ -1069,7 +1149,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #if TOOL_COUNT > 0
 	if (CHECKFLAG(cmd->words, GCODE_WORD_S))
 	{
-		new_state->spindle = words->s;
+		new_state->spindle = (uint16_t)trunc(words->s);
 	}
 
 	// 5. select tool
@@ -1602,7 +1682,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	}
 
-	if (hold)
+	if (hold && !mc_get_checkmode())
 	{
 		mc_pause();
 		if (resetparser)
@@ -1676,7 +1756,7 @@ static uint8_t parser_gcode_command(void)
 	If the number is an integer the isinteger flag is set
 	The string pointer is also advanced to the next position
 */
-static uint8_t parser_get_float(float *value)
+uint8_t parser_get_float(float *value)
 {
 	uint32_t intval = 0;
 	uint8_t fpcount = 0;
@@ -1776,8 +1856,11 @@ static uint8_t parser_get_float(float *value)
 	To be compatible with Grbl it accepts bad format comments
 	On error returns false otherwise returns true
 */
-static uint8_t parser_get_comment(void)
+#define COMMENT_OK 1
+#define COMMENT_NOTOK 2
+static void parser_get_comment(unsigned char start_char)
 {
+	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
 	uint8_t msg_parser = 0;
 #endif
@@ -1788,50 +1871,57 @@ static uint8_t parser_get_comment(void)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
 		case ')': // OK
+			if (start_char == '(')
+			{
+				comment_end = COMMENT_OK;
+			}
+			break;
+		case EOL: // error under RS274NGC is starts with '(' (it's ignored)
+			comment_end = COMMENT_OK;
+			break;
+		case OVF:
+			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
+			return;
+		}
+
+#ifdef PROCESS_COMMENTS
+		switch (msg_parser)
+		{
+		case 0:
+			msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
+			break;
+		case 1:
+			msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
+			break;
+		case 2:
+			msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
+			break;
+		case 3:
+			msg_parser = (c == ',') ? 4 : 0xFF;
+			protocol_send_string(MSG_START);
+			break;
+		case 4:
+			serial_putc(c);
+			break;
+		}
+#endif
+
+		if (c != EOL)
+		{
 			serial_getc();
+		}
+
+		if (comment_end)
+		{
 #ifdef PROCESS_COMMENTS
 			if (msg_parser == 4)
 			{
 				protocol_send_string(MSG_END);
 			}
 #endif
-			return STATUS_OK;
-		case EOL: // error under RS274NGC
-			return STATUS_BAD_COMMENT_FORMAT;
-		case OVF:
-			// return ((c==')') ? true : false); //under RS274NGC (commented for Grbl compatibility)
-			return STATUS_OVERFLOW;
-		case ' ':
-			break;
-#ifdef PROCESS_COMMENTS
-		default:
-			switch (msg_parser)
-			{
-			case 0:
-				msg_parser = (c == 'M' | c == 'm') ? 1 : 0xFF;
-				break;
-			case 1:
-				msg_parser = (c == 'S' | c == 's') ? 2 : 0xFF;
-				break;
-			case 2:
-				msg_parser = (c == 'G' | c == 'g') ? 3 : 0xFF;
-				break;
-			case 3:
-				msg_parser = (c == ',') ? 4 : 0xFF;
-				protocol_send_string(MSG_START);
-				break;
-			case 4:
-				serial_putc(c);
-				break;
-			}
-			break;
-#endif
+			return;
 		}
-
-		serial_getc();
 	}
-
-	return STATUS_BAD_COMMENT_FORMAT; // never reached here
 }
 
 static uint8_t parser_get_token(unsigned char *word, float *value)
@@ -1839,7 +1929,7 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 	unsigned char c = serial_getc();
 
 	// if other char starts tokenization
-	if (c > 'Z')
+	if (c >= 'a' && c <= 'z')
 	{
 		c -= 32; // uppercase
 	}
@@ -1855,16 +1945,23 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 #ifdef ECHO_CMD
 		serial_putc(c);
 #endif
-		if (c < 'A' || c > 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized char
 		{
-			return STATUS_EXPECTED_COMMAND_LETTER;
-		}
+			if (!parser_get_float(value))
+			{
+				return STATUS_BAD_NUMBER_FORMAT;
+			}
 
-		if (!parser_get_float(value))
-		{
-			return STATUS_BAD_NUMBER_FORMAT;
+			return STATUS_OK;
 		}
-		break;
+// event_parse_token_handler
+#ifdef ENABLE_PARSER_MODULES
+		if (EVENT_INVOKE(parse_token, word))
+		{
+			return STATUS_OK;
+		}
+#endif
+		return STATUS_EXPECTED_COMMAND_LETTER;
 	}
 
 	return STATUS_OK;
@@ -2154,7 +2251,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_group |= GCODE_GROUP_ENABLEOVER;
 		new_state->groups.feed_speed_override = (code == 48) ? M48 : M49;
 		break;
-#if SERVOS_MASK != 0
+#if (SERVOS_MASK != 0)
 	case 10:
 		if (cmd->group_extended != 0)
 		{
@@ -2165,6 +2262,20 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		cmd->group_extended = M10;
 		return STATUS_OK;
 #endif
+#ifdef ENABLE_LASER_PPI
+	case 126:
+	case 127:
+	case 128:
+		if (cmd->group_extended != 0)
+		{
+			// there is a collision of custom gcode commands (only one per line can be processed)
+			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+		}
+		// tells the gcode validation and execution functions this is custom code(ID must be unique)
+		cmd->group_extended = EXTENDED_MCODE(code);
+		return STATUS_OK;
+#endif
+
 	default:
 		return STATUS_GCODE_UNSUPPORTED_COMMAND;
 	}
@@ -2293,7 +2404,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		{
 			return STATUS_NEGATIVE_VALUE;
 		}
-		words->s = (uint16_t)trunc(value);
+		words->s = value;
 		break;
 	case 'T':
 		new_words |= GCODE_WORD_T;
@@ -2326,8 +2437,10 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 				return STATUS_INVALID_TOOL;
 			}
 			index--;
-			new_words |= GCODE_WORD_Z;
-			words->xyzabc[AXIS_Z] = g_settings.tool_length_offset[index];
+#ifdef AXIS_TOOL
+			new_words |= GCODE_WORD_TOOL;
+			words->xyzabc[AXIS_TOOL] = g_settings.tool_length_offset[index];
+#endif
 		}
 #else
 	case 'S':
@@ -2366,12 +2479,12 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 {
 	unsigned char c = serial_peek();
 
-	while (c == ' ' || c == '(')
+	while (c == ' ' || c == '(' || c == ';')
 	{
 		serial_getc();
-		if (c == '(')
+		if (c != ' ')
 		{
-			parser_get_comment();
+			parser_get_comment(c);
 		}
 		c = serial_peek();
 	}
@@ -2414,6 +2527,9 @@ void parser_reset(void)
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 	parser_state.tool_index = g_settings.default_tool;
+#ifdef ENABLE_LASER_PPI
+	parser_config_ppi();
+#endif
 #endif
 	parser_state.groups.motion = G1;											   // G1
 	parser_state.groups.units = G21;											   // G21
@@ -2801,3 +2917,21 @@ void parser_machine_to_work(float *axis)
 	}
 #endif
 }
+
+#ifdef ENABLE_LASER_PPI
+void parser_config_ppi(void)
+{
+	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
+	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
+	{
+		g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
+		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / (g_settings.laser_ppi * MM_INCH_MULT);
+		mcu_config_timeout(&laser_ppi_turnoff_cb, g_settings.laser_ppi_uswidth);
+	}
+	else
+	{
+		g_settings.step_per_mm[STEPPER_COUNT - 1] = 0;
+		g_settings.max_feed_rate[STEPPER_COUNT - 1] = FLT_MAX;
+	}
+}
+#endif

@@ -183,6 +183,8 @@ extern "C"
 #define DIN29_BIT 3
 #define DIN29_PORT B
 
+#define ONESHOT_TIMER 2
+
 #ifdef __cplusplus
 }
 #endif

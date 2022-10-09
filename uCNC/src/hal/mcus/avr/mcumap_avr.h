@@ -1883,7 +1883,7 @@ extern "C"
 #define DIO206_INREG (__inreg__(SPI_SDO_PORT))
 #define DIO206_DIRREG (__dirreg__(SPI_SDO_PORT))
 #endif
-#if(defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
 #define DIO207 207
 #define SPI_CS 207
 #define DIO207_PORT (SPI_CS_PORT)
@@ -1895,7 +1895,7 @@ extern "C"
 #define DIO207_INREG (__inreg__(SPI_CS_PORT))
 #define DIO207_DIRREG (__dirreg__(SPI_CS_PORT))
 #endif
-#if(defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
 #define DIO208 208
 #define I2C_SCL 208
 #define DIO208_PORT (I2C_SCL_PORT)
@@ -1907,7 +1907,7 @@ extern "C"
 #define DIO208_INREG (__inreg__(I2C_SCL_PORT))
 #define DIO208_DIRREG (__dirreg__(I2C_SCL_PORT))
 #endif
-#if(defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
 #define DIO209 209
 #define I2C_SDA 209
 #define DIO209_PORT (I2C_SDA_PORT)
@@ -4315,7 +4315,7 @@ extern "C"
 #define RXC __rxcreg__(UART_PORT)
 #endif
 
-//SPI
+// SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
 #ifndef SPI_MODE
@@ -4324,24 +4324,24 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
-//sets the prescaler that is closer to the desired frequency
-#define SPI_DIV (F_CPU/SPI_FREQ)
-#if (SPI_DIV<2)
+// sets the prescaler that is closer to the desired frequency
+#define SPI_DIV (F_CPU / SPI_FREQ)
+#if (SPI_DIV < 2)
 #define SPCR_VAL 0
 #define SPSR_VAL 1
-#elif (SPI_DIV<4)
+#elif (SPI_DIV < 4)
 #define SPCR_VAL 0
 #define SPSR_VAL 0
-#elif (SPI_DIV<8)
+#elif (SPI_DIV < 8)
 #define SPCR_VAL 1
 #define SPSR_VAL 1
-#elif (SPI_DIV<16)
+#elif (SPI_DIV < 16)
 #define SPCR_VAL 1
 #define SPSR_VAL 0
-#elif (SPI_DIV<32)
+#elif (SPI_DIV < 32)
 #define SPCR_VAL 2
 #define SPSR_VAL 1
-#elif (SPI_DIV<64)
+#elif (SPI_DIV < 64)
 #define SPCR_VAL 2
 #define SPSR_VAL 0
 #else
@@ -4350,25 +4350,25 @@ extern "C"
 #endif
 #endif
 
-//I2C
+// I2C
 #if (defined(I2C_SCL) && defined(I2C_SDA))
 #define MCU_HAS_I2C
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
 #endif
-//I2C freq
+// I2C freq
 #if (I2C_FREQ < 5000UL)
 #define I2C_PRESC 3
-#define I2C_DIV (F_CPU/(I2C_FREQ<<6))
+#define I2C_DIV (F_CPU / (I2C_FREQ << 6))
 #elif (I2C_FREQ < 20000UL)
 #define I2C_PRESC 2
-#define I2C_DIV (F_CPU/(I2C_FREQ<<4))
+#define I2C_DIV (F_CPU / (I2C_FREQ << 4))
 #elif (I2C_FREQ < 80000UL)
 #define I2C_PRESC 1
-#define I2C_DIV (F_CPU/(I2C_FREQ<<2))
+#define I2C_DIV (F_CPU / (I2C_FREQ << 2))
 #else
 #define I2C_PRESC 0
-#define I2C_DIV (F_CPU/I2C_FREQ)
+#define I2C_DIV (F_CPU / I2C_FREQ)
 #endif
 #endif
 
@@ -4403,6 +4403,22 @@ extern "C"
 #define RTC_TIMSK __timskreg__(RTC_TIMER)
 #define RTC_OCIEB __ociebreg__(RTC_TIMER)
 #define RTC_OCIEA __ocieareg__(RTC_TIMER)
+
+// Timer registers
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_COMPB_vect __timerbvect__(ONESHOT_TIMER)
+#define ONESHOT_COMPA_vect __timeravect__(ONESHOT_TIMER)
+#define ONESHOT_TCNT __tcntreg__(ONESHOT_TIMER)
+#define ONESHOT_TCCRA __tmrareg__(ONESHOT_TIMER)
+#define ONESHOT_TCCRB __tmrbreg__(ONESHOT_TIMER)
+#define ONESHOT_OCRA __ocrreg__(ONESHOT_TIMER, A)
+#define ONESHOT_OCRB __ocrreg__(ONESHOT_TIMER, B)
+#define ONESHOT_TIFR __tifrreg__(ONESHOT_TIMER)
+#define ONESHOT_TIMSK __timskreg__(ONESHOT_TIMER)
+#define ONESHOT_OCIEB __ociebreg__(ONESHOT_TIMER)
+#define ONESHOT_OCIEA __ocieareg__(ONESHOT_TIMER)
+#endif
 
 	// Pin interrupts input register
 
@@ -4462,12 +4478,45 @@ extern "C"
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x)                                        \
+#define mcu_config_pwm(x, freq)                                  \
 	{                                                            \
 		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
 		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
 		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
-		__indirect__(x, TMRBREG) = __indirect__(x, PRESCALLER);  \
+		uint16_t div = (F_CPU >> 8) / freq;                      \
+		uint8_t pre = 1;                                         \
+		if (div > 1)                                             \
+		{                                                        \
+			div = ((div + 1) >> 3);                              \
+			pre++;                                               \
+		}                                                        \
+		if (__indirect__(x, TIMER) == 2)                         \
+		{                                                        \
+			if (div > 1)                                         \
+			{                                                    \
+				div = ((div + 1) >> 2);                          \
+				pre++;                                           \
+			}                                                    \
+			while (div > 1)                                      \
+			{                                                    \
+				div = ((div + 1) >> 1);                          \
+				pre++;                                           \
+			}                                                    \
+		}                                                        \
+		else                                                     \
+		{                                                        \
+			if (div > 1)                                         \
+			{                                                    \
+				div = ((div + 1) >> 3);                          \
+				pre++;                                           \
+			}                                                    \
+			while (div > 1)                                      \
+			{                                                    \
+				div = ((div + 1) >> 2);                          \
+				pre++;                                           \
+			}                                                    \
+		}                                                        \
+		__indirect__(x, TMRBREG) = pre;                          \
 		__indirect__(x, OCRREG) = 0;                             \
 	}
 
@@ -4523,12 +4572,19 @@ extern "C"
 
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)               \
-	({                                 \
+	({                                \
 		SPDR = X;                     \
 		while (!(SPSR & (1 << SPIF))) \
 			;                         \
 		SPDR;                         \
 	})
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() \
+	({ONESHOT_TCNT = 0;       \
+	ONESHOT_TIFR = 0x7;     \
+	ONESHOT_TIMSK |= (1 << ONESHOT_OCIEA); })
 #endif
 
 #ifdef __cplusplus

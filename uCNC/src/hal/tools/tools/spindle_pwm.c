@@ -48,6 +48,14 @@
 
 static uint8_t spindle_pwm_speed;
 
+void spindle_pwm_startup_code(void)
+{
+// force pwm mode
+#if !(SPINDLE_PWM < 0)
+	mcu_config_pwm(SPINDLE_PWM, 1000);
+#endif
+}
+
 void spindle_pwm_set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
@@ -78,10 +86,10 @@ void spindle_pwm_set_coolant(uint8_t value)
 #endif
 }
 
-int16_t spindle_pwm_range_speed(float value)
+int16_t spindle_pwm_range_speed(int16_t value)
 {
-	value = (255.0f) * (value / g_settings.spindle_max_rpm);
-	return ((int16_t)value);
+	value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+	return value;
 }
 
 uint16_t spindle_pwm_get_speed(void)
@@ -119,7 +127,7 @@ int16_t spindle_pwm_pid_error(void)
 #endif
 
 const tool_t __rom__ spindle_pwm = {
-	.startup_code = NULL,
+	.startup_code = &spindle_pwm_startup_code,
 	.shutdown_code = NULL,
 #if PID_CONTROLLERS > 0
 	.pid_update = &spindle_pwm_pid_update,

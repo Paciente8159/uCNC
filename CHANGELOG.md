@@ -6,19 +6,63 @@
 
 # Changelog
 
-## [1.5.0] - Unreleased
+## [1.5.3] - Unreleased
+
+### Added
+
+- added support for comments with ';' char (#291)
+- added support for S word clustering format used by Smoothieware (#289)
+
+### Changed
+
+- added optimizations to motion control to reduce some redundant operations (#292)
+
+### Fixed
+
+- fixed M2/M30 hold with check mode enabled caused program to stall (#297)
+
+## [1.5.2] - 01-10-2022
+
+### Added
+
+- configurable PWM frequency (#286)
+
+### Fixed
+
+- fixed no command response after a tool command without motion (#284)
+- fixed incorrect laser power factor scaling with M4 (#282)
+- $P servo report values for AVR (#283)
+- fixed tool update with dwell to reach programmed speed
+
+## [1.5.1] - 23-09-2022
+
+### Fixed
+
+- dwell is being executed ahead of time (async) (#276)
+
+## [1.5.0] - 22-09-2022
 
 ### Added
 
 - added Hardware I2C and SPI capabilities to several MCU (only ESP8266 and ESP32 not supported for now) that are integrated and used via software libraries (#249)
+- added speed config function to MCU and soft SPI (#253)
+- added events to support SD card module (#254)
+- added LPC176x analog input support (#273)
 
 ### Changed
 
 - ARM mcu share the same µs delay function calculated from SysTick clock (no loops or coredebug clocks used) (#249)
 - software SPI/UART libraries use atomic operations macros (#249)
 - moved activity led code to core (#250)
+- better WiFi detect on ESP32 (#251)
+- rewritten software I2C (#255)
+- migrate LPC176x critical code to bare metal with serveral enhancements for ITP and SERVO ISR (#273)
 
 ### Fixed
+
+- prevented dotask event lock reentrancy (#252)
+- better delay functions for generic usage (including SPI, I2C and UART software libraries) (#264)
+- fixed planner deacceleration calculations to prevent that caused noticeable abrupt stops with fast short motions (image rastering) (#275)
 
 ## [1.5.rc] - 2022-09-02
 
@@ -983,6 +1027,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
+[1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
+[1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
 [1.5.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.0
 [1.5.rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.rc
 [1.5.beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.beta

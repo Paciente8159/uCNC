@@ -24,6 +24,7 @@ extern "C"
 {
 #endif
 
+#include "../module.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -51,7 +52,6 @@ extern "C"
 		uint8_t : 6; // unused
 #endif
 			uint8_t is_subsegment : 1;
-			
 		} bit;
 	} motion_flags_t;
 
@@ -63,7 +63,9 @@ extern "C"
 		step_t steps[STEPPER_COUNT];
 		float dir_vect[AXIS_COUNT];
 		uint8_t dirbits;
+		#ifdef ENABLE_LINACT_PLANNER
 		uint32_t full_steps; // number of steps of all linear actuators
+		#endif
 		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
 		uint8_t main_stepper;
@@ -92,6 +94,11 @@ extern "C"
 
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
+
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	// event_mc_line_segment_handler
+	DECL_EVENT_HANDLER(mc_line_segment);
+#endif
 
 #ifdef __cplusplus
 }

@@ -55,64 +55,56 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
-	uint8_t result = 0;
-
-#ifndef DISABLE_Z_HOMING
+	#ifndef DISABLE_Z_HOMING
 #if (defined(AXIS_Z) && (!(LIMIT_Z < 0) || !(LIMIT_Z2 < 0)))
-	result = mc_home_axis(AXIS_Z, LIMIT_Z_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_Z, LIMIT_Z_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_Z;
 	}
 #endif
 #endif
 
 #ifndef DISABLE_X_HOMING
 #if (defined(AXIS_X) && (!(LIMIT_X < 0) || !(LIMIT_X2 < 0)))
-	result = mc_home_axis(AXIS_X, LIMIT_X_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_X, LIMIT_X_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_X;
 	}
 #endif
 #endif
 
 #ifndef DISABLE_Y_HOMING
 #if (defined(AXIS_Y) && (!(LIMIT_Y < 0) || !(LIMIT_Y2 < 0)))
-	result = mc_home_axis(AXIS_Y, LIMIT_Y_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_Y, LIMIT_Y_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_Y;
 	}
 #endif
 #endif
 
 #ifndef DISABLE_A_HOMING
 #if (defined(AXIS_A) && !(LIMIT_A < 0))
-	result = mc_home_axis(AXIS_A, LIMIT_A_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_A, LIMIT_A_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_A;
 	}
 #endif
 #endif
 
 #ifndef DISABLE_B_HOMING
 #if (defined(AXIS_B) && !(LIMIT_B < 0))
-	result = mc_home_axis(AXIS_B, LIMIT_B_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_B, LIMIT_B_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_B;
 	}
 #endif
 #endif
 
 #ifndef DISABLE_C_HOMING
 #if (defined(AXIS_C) && !(LIMIT_C < 0))
-	result = mc_home_axis(AXIS_C, LIMIT_C_MASK);
-	if (result != 0)
+	if (mc_home_axis(AXIS_C, LIMIT_C_MASK))
 	{
-		return result;
+		return KINEMATIC_HOMING_ERROR_C;
 	}
 #endif
 #endif

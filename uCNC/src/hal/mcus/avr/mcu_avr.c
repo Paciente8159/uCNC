@@ -42,6 +42,7 @@
 
 // define the mcu internal servo variables
 #if SERVOS_MASK > 0
+static uint8_t mcu_servos_val[6];
 static uint8_t mcu_servos[6];
 static uint8_t mcu_servos_loops[6];
 
@@ -470,6 +471,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
 	uint8_t scaled = RTC_OCRA;
+	mcu_servos_val[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
 	if (value < 64)
 	{
 		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 0;
@@ -503,7 +505,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
 	if ((1U << offset) & SERVOS_MASK)
 	{
-		return mcu_servos[offset];
+		return mcu_servos_val[offset];
 	}
 #endif
 	return 0;
@@ -536,34 +538,72 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	if (frequency > F_STEP_MAX)
 		frequency = F_STEP_MAX;
 
-	float clockcounter = F_CPU;
+	uint32_t clocks = (uint32_t)floorf((float)F_CPU / frequency);
+	*prescaller = (1 << 3); // CTC mode
 
-	if (frequency >= 245)
+#if (ITP_TIMER == 2)
+	if (clocks <= ((1UL << 16) - 1))
 	{
-		*prescaller = 9;
+		*prescaller |= 1;
 	}
-	else if (frequency >= 31)
+	else if (clocks <= ((1UL << 19) - 1))
 	{
-		*prescaller = 10;
-		clockcounter *= 0.125;
+		clocks >>= 3;
+		*prescaller |= 2;
 	}
-	else if (frequency >= 4)
+	else if (clocks <= ((1UL << 21) - 1))
 	{
-		*prescaller = 11;
-		clockcounter *= 0.015625;
+		clocks >>= 5;
+		*prescaller |= 3;
 	}
-	else if (frequency >= 1)
+	else if (clocks <= ((1UL << 22) - 1))
 	{
-		*prescaller = 12;
-		clockcounter *= 0.00390625;
+		clocks >>= 6;
+		*prescaller |= 4;
+	}
+	else if (clocks <= ((1UL << 23) - 1))
+	{
+		clocks >>= 7;
+		*prescaller |= 5;
+	}
+	else if (clocks <= ((1UL << 24) - 1))
+	{
+		clocks >>= 8;
+		*prescaller |= 6;
 	}
 	else
 	{
-		*prescaller = 13;
-		clockcounter *= 0.0009765625;
+		clocks >>= 10;
+		*prescaller |= 7;
 	}
-
-	*ticks = floorf((clockcounter / frequency)) - 1;
+#else
+	if (clocks <= ((1UL << 16) - 1))
+	{
+		*prescaller |= 1;
+	}
+	else if (clocks <= ((1UL << 19) - 1))
+	{
+		clocks >>= 3;
+		*prescaller |= 2;
+	}
+	else if (clocks <= ((1UL << 22) - 1))
+	{
+		clocks >>= 6;
+		*prescaller |= 3;
+	}
+	else if (clocks <= ((1UL << 24) - 1))
+	{
+		clocks >>= 8;
+		*prescaller |= 4;
+	}
+	else
+	{
+		clocks >>= 10;
+		*prescaller |= 5;
+	}
+#endif
+	clocks--;
+	*ticks = (uint16_t)MIN(clocks, 0xFFFF);
 }
 /*
 		initializes the pulse ISR
@@ -813,7 +853,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 		spsr = 0;
 	}
 
-	//clear speed and mode
+	// clear speed and mode
 	SPCR = 0;
 	SPSR |= spsr;
 	SPCR = (1 << SPE) | (1 << MSTR) | (mode << 2) | spcr;
@@ -884,6 +924,117 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+ISR(ONESHOT_COMPA_vect, ISR_NOBLOCK)
+{
+	// disable ISR
+	ONESHOT_TIMSK = 0;
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	uint32_t clocks = timeout * (F_CPU / 1000000UL);
+	uint8_t pres = (1 << 3); // CTC mode
+
+	mcu_timeout_cb = fp;
+
+#if (ONESHOT_TIMER == 2)
+	if (clocks <= ((1UL << 8) - 1))
+	{
+		pres |= 1;
+	}
+	else if (clocks <= ((1UL << 11) - 1))
+	{
+		clocks >>= 3;
+		pres |= 2;
+	}
+	else if (clocks <= ((1UL << 13) - 1))
+	{
+		clocks >>= 5;
+		pres |= 3;
+	}
+	else if (clocks <= ((1UL << 14) - 1))
+	{
+		clocks >>= 6;
+		pres |= 4;
+	}
+	else if (clocks <= ((1UL << 15) - 1))
+	{
+		clocks >>= 7;
+		pres |= 5;
+	}
+	else if (clocks <= ((1UL << 16) - 1))
+	{
+		clocks >>= 8;
+		pres |= 6;
+	}
+	else
+	{
+		clocks >>= 10;
+		pres |= 7;
+	}
+#else
+	if (clocks <= ((1UL << 8) - 1))
+	{
+		pres |= 1;
+	}
+	else if (clocks <= ((1UL << 11) - 1))
+	{
+		clocks >>= 3;
+		pres |= 2;
+	}
+	else if (clocks <= ((1UL << 14) - 1))
+	{
+		clocks >>= 6;
+		pres |= 3;
+	}
+	else if (clocks <= ((1UL << 16) - 1))
+	{
+		clocks >>= 8;
+		pres |= 4;
+	}
+	else
+	{
+		clocks >>= 10;
+		pres |= 5;
+	}
+#endif
+
+	// stops timer
+	ONESHOT_TCCRB = 0;
+	// CTC mode
+	ONESHOT_TCCRA = 0;
+	// resets counter
+	ONESHOT_TCNT = 0;
+	// set step clock
+	ONESHOT_OCRA = ((uint8_t)(clocks & 0xFF)) - 1;
+	// clears interrupt flags by writing 1's
+	ONESHOT_TIFR = 0x7;
+	// start timer in CTC mode with the correct prescaler
+	ONESHOT_TCCRB = pres;
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
 }
 #endif
 #endif

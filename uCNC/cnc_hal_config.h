@@ -117,11 +117,18 @@ extern "C"
 	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
 */
 
+#ifdef ENABLE_LASER_PPI
+#define LASER_PPI PWM0
+// Uncomment to invert the output login on the LASER_PPI pin
+// #define INVERT_LASER_PPI_LOGIC
+#endif
+
 // assign the tools from 1 to 16
 #define TOOL1 spindle_pwm
-	// #define TOOL2 laser
-	//#define TOOL3 spindle_besc
-	//#define TOOL4 spindle_relay
+// #define TOOL2 laser
+// #define TOOL3 laser_ppi
+// #define TOOL4 spindle_besc
+// #define TOOL5 spindle_relay
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -135,9 +142,9 @@ extern "C"
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
  * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
  *
- * It's also possible to assing an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
+ * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
  * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode

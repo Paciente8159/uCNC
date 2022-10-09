@@ -44,6 +44,7 @@ extern "C"
 #include "lpc17xx_timer.h"
 #include "lpc17xx_systick.h"
 #include "lpc17xx_pwm.h"
+#include "lpc17xx_adc.h"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
@@ -2745,8 +2746,26 @@ extern "C"
 #define DIO206_PINHALF SPI_SDO_PINHALF
 #define DIO206_PINCON SPI_SDO_PINCON
 #endif
+#if (defined(SPI_CS_PORT) && defined(SPI_CS_BIT))
+#define SPI_CS 207
+#define SPI_CS_MBED_PIN __mbedpin__(SPI_CS_PORT, SPI_CS_BIT)
+#define SPI_CS_GPIOREG __gpioreg__(SPI_CS_PORT)
+#if (SPI_CS_BIT < 16)
+#define SPI_CS_PINHALF L
+#else
+#define SPI_CS_PINHALF H
+#endif
+#define SPI_CS_PINCON __pincon__(SPI_CS_PORT, SPI_CS_PINHALF)
+#define DIO207 207
+#define DIO207_MBED_PIN SPI_CS_MBED_PIN
+#define DIO207_PORT SPI_CS_PORT
+#define DIO207_BIT SPI_CS_BIT
+#define DIO207_GPIOREG SPI_CS_GPIOREG
+#define DIO207_PINHALF SPI_CS_PINHALF
+#define DIO207_PINCON SPI_CS_PINCON
+#endif
 #if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 207
+#define I2C_SCL 208
 #define I2C_SCL_MBED_PIN __mbedpin__(I2C_SCL_PORT, I2C_SCL_BIT)
 #define I2C_SCL_GPIOREG __gpioreg__(I2C_SCL_PORT)
 #if (I2C_SCL_BIT < 16)
@@ -2755,16 +2774,16 @@ extern "C"
 #define I2C_SCL_PINHALF H
 #endif
 #define I2C_SCL_PINCON __pincon__(I2C_SCL_PORT, I2C_SCL_PINHALF)
-#define DIO207 207
-#define DIO207_MBED_PIN I2C_SCL_MBED_PIN
-#define DIO207_PORT I2C_SCL_PORT
-#define DIO207_BIT I2C_SCL_BIT
-#define DIO207_GPIOREG I2C_SCL_GPIOREG
-#define DIO207_PINHALF I2C_SCL_PINHALF
-#define DIO207_PINCON I2C_SCL_PINCON
+#define DIO208 208
+#define DIO208_MBED_PIN I2C_SCL_MBED_PIN
+#define DIO208_PORT I2C_SCL_PORT
+#define DIO208_BIT I2C_SCL_BIT
+#define DIO208_GPIOREG I2C_SCL_GPIOREG
+#define DIO208_PINHALF I2C_SCL_PINHALF
+#define DIO208_PINCON I2C_SCL_PINCON
 #endif
 #if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 208
+#define I2C_SDA 209
 #define I2C_SDA_MBED_PIN __mbedpin__(I2C_SDA_PORT, I2C_SDA_BIT)
 #define I2C_SDA_GPIOREG __gpioreg__(I2C_SDA_PORT)
 #if (I2C_SDA_BIT < 16)
@@ -2773,13 +2792,13 @@ extern "C"
 #define I2C_SDA_PINHALF H
 #endif
 #define I2C_SDA_PINCON __pincon__(I2C_SDA_PORT, I2C_SDA_PINHALF)
-#define DIO208 208
-#define DIO208_MBED_PIN I2C_SDA_MBED_PIN
-#define DIO208_PORT I2C_SDA_PORT
-#define DIO208_BIT I2C_SDA_BIT
-#define DIO208_GPIOREG I2C_SDA_GPIOREG
-#define DIO208_PINHALF I2C_SDA_PINHALF
-#define DIO208_PINCON I2C_SDA_PINCON
+#define DIO209 209
+#define DIO209_MBED_PIN I2C_SDA_MBED_PIN
+#define DIO209_PORT I2C_SDA_PORT
+#define DIO209_BIT I2C_SDA_BIT
+#define DIO209_GPIOREG I2C_SDA_GPIOREG
+#define DIO209_PINHALF I2C_SDA_PINHALF
+#define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
 /**********************************************
@@ -3224,57 +3243,318 @@ extern "C"
 #define PWM_LER ((1 << PWM0_CHANNEL) | (1 << PWM1_CHANNEL) | (1 << PWM2_CHANNEL) | (1 << PWM3_CHANNEL) | (1 << PWM4_CHANNEL) | (1 << PWM5_CHANNEL) | (1 << PWM6_CHANNEL) | (1 << PWM7_CHANNEL) | (1 << PWM8_CHANNEL) | (1 << PWM9_CHANNEL) | (1 << PWM10_CHANNEL) | (1 << PWM11_CHANNEL) | (1 << PWM12_CHANNEL) | (1 << PWM13_CHANNEL) | (1 << PWM14_CHANNEL) | (1 << PWM15_CHANNEL))
 #define PWM_ENA ((1 << (9 + PWM0_CHANNEL)) | (1 << (9 + PWM1_CHANNEL)) | (1 << (9 + PWM2_CHANNEL)) | (1 << (9 + PWM3_CHANNEL)) | (1 << (9 + PWM4_CHANNEL)) | (1 << (9 + PWM5_CHANNEL)) | (1 << (9 + PWM6_CHANNEL)) | (1 << (9 + PWM7_CHANNEL)) | (1 << (9 + PWM8_CHANNEL)) | (1 << (9 + PWM9_CHANNEL)) | (1 << (9 + PWM10_CHANNEL)) | (1 << (9 + PWM11_CHANNEL)) | (1 << (9 + PWM12_CHANNEL)) | (1 << (9 + PWM13_CHANNEL)) | (1 << (9 + PWM14_CHANNEL)) | (1 << (9 + PWM15_CHANNEL)))
 
+// Analog channel
+#if (defined(ANALOG0) && defined(ANALOG0_CHANNEL))
+#define ANALOG0_ADDR __helper__(ADDR, ANALOG0_CHANNEL, )
+#if (ANALOG0_CHANNEL < 4)
+#define ANALOG0_PINSEL 1
+#define ANALOG0_ALT_FUNC 1
+#elif (ANALOG0_CHANNEL > 5)
+#define ANALOG0_PINSEL 0
+#define ANALOG0_ALT_FUNC 2
+#else
+#define ANALOG0_PINSEL 3
+#define ANALOG0_ALT_FUNC 3
+#endif
+#define DIO114_PINSEL ANALOG0_PINSEL
+#define DIO114_ALT_FUNC ANALOG0_ALT_FUNC
+#define DIO114_CHANNEL ANALOG0_CHANNEL
+#define DIO114_ADDR ANALOG0_ADDR
+#endif
+#if (defined(ANALOG1) && defined(ANALOG1_CHANNEL))
+#define ANALOG1_ADDR __helper__(ADDR, ANALOG1_CHANNEL, )
+#if (ANALOG1_CHANNEL < 4)
+#define ANALOG1_PINSEL 1
+#define ANALOG1_ALT_FUNC 1
+#elif (ANALOG1_CHANNEL > 5)
+#define ANALOG1_PINSEL 0
+#define ANALOG1_ALT_FUNC 2
+#else
+#define ANALOG1_PINSEL 3
+#define ANALOG1_ALT_FUNC 3
+#endif
+#define DIO115_PINSEL ANALOG1_PINSEL
+#define DIO115_ALT_FUNC ANALOG1_ALT_FUNC
+#define DIO115_CHANNEL ANALOG1_CHANNEL
+#define DIO115_ADDR ANALOG1_ADDR
+#endif
+#if (defined(ANALOG2) && defined(ANALOG2_CHANNEL))
+#define ANALOG2_ADDR __helper__(ADDR, ANALOG2_CHANNEL, )
+#if (ANALOG2_CHANNEL < 4)
+#define ANALOG2_PINSEL 1
+#define ANALOG2_ALT_FUNC 1
+#elif (ANALOG2_CHANNEL > 5)
+#define ANALOG2_PINSEL 0
+#define ANALOG2_ALT_FUNC 2
+#else
+#define ANALOG2_PINSEL 3
+#define ANALOG2_ALT_FUNC 3
+#endif
+#define DIO116_PINSEL ANALOG2_PINSEL
+#define DIO116_ALT_FUNC ANALOG2_ALT_FUNC
+#define DIO116_CHANNEL ANALOG2_CHANNEL
+#define DIO116_ADDR ANALOG2_ADDR
+#endif
+#if (defined(ANALOG3) && defined(ANALOG3_CHANNEL))
+#define ANALOG3_ADDR __helper__(ADDR, ANALOG3_CHANNEL, )
+#if (ANALOG3_CHANNEL < 4)
+#define ANALOG3_PINSEL 1
+#define ANALOG3_ALT_FUNC 1
+#elif (ANALOG3_CHANNEL > 5)
+#define ANALOG3_PINSEL 0
+#define ANALOG3_ALT_FUNC 2
+#else
+#define ANALOG3_PINSEL 3
+#define ANALOG3_ALT_FUNC 3
+#endif
+#define DIO117_PINSEL ANALOG3_PINSEL
+#define DIO117_ALT_FUNC ANALOG3_ALT_FUNC
+#define DIO117_CHANNEL ANALOG3_CHANNEL
+#define DIO117_ADDR ANALOG3_ADDR
+#endif
+#if (defined(ANALOG4) && defined(ANALOG4_CHANNEL))
+#define ANALOG4_ADDR __helper__(ADDR, ANALOG4_CHANNEL, )
+#if (ANALOG4_CHANNEL < 4)
+#define ANALOG4_PINSEL 1
+#define ANALOG4_ALT_FUNC 1
+#elif (ANALOG4_CHANNEL > 5)
+#define ANALOG4_PINSEL 0
+#define ANALOG4_ALT_FUNC 2
+#else
+#define ANALOG4_PINSEL 3
+#define ANALOG4_ALT_FUNC 3
+#endif
+#define DIO118_PINSEL ANALOG4_PINSEL
+#define DIO118_ALT_FUNC ANALOG4_ALT_FUNC
+#define DIO118_CHANNEL ANALOG4_CHANNEL
+#define DIO118_ADDR ANALOG4_ADDR
+#endif
+#if (defined(ANALOG5) && defined(ANALOG5_CHANNEL))
+#define ANALOG5_ADDR __helper__(ADDR, ANALOG5_CHANNEL, )
+#if (ANALOG5_CHANNEL < 4)
+#define ANALOG5_PINSEL 1
+#define ANALOG5_ALT_FUNC 1
+#elif (ANALOG5_CHANNEL > 5)
+#define ANALOG5_PINSEL 0
+#define ANALOG5_ALT_FUNC 2
+#else
+#define ANALOG5_PINSEL 3
+#define ANALOG5_ALT_FUNC 3
+#endif
+#define DIO119_PINSEL ANALOG5_PINSEL
+#define DIO119_ALT_FUNC ANALOG5_ALT_FUNC
+#define DIO119_CHANNEL ANALOG5_CHANNEL
+#define DIO119_ADDR ANALOG5_ADDR
+#endif
+#if (defined(ANALOG6) && defined(ANALOG6_CHANNEL))
+#define ANALOG6_ADDR __helper__(ADDR, ANALOG6_CHANNEL, )
+#if (ANALOG6_CHANNEL < 4)
+#define ANALOG6_PINSEL 1
+#define ANALOG6_ALT_FUNC 1
+#elif (ANALOG6_CHANNEL > 5)
+#define ANALOG6_PINSEL 0
+#define ANALOG6_ALT_FUNC 2
+#else
+#define ANALOG6_PINSEL 3
+#define ANALOG6_ALT_FUNC 3
+#endif
+#define DIO120_PINSEL ANALOG6_PINSEL
+#define DIO120_ALT_FUNC ANALOG6_ALT_FUNC
+#define DIO120_CHANNEL ANALOG6_CHANNEL
+#define DIO120_ADDR ANALOG6_ADDR
+#endif
+#if (defined(ANALOG7) && defined(ANALOG7_CHANNEL))
+#define ANALOG7_ADDR __helper__(ADDR, ANALOG7_CHANNEL, )
+#if (ANALOG7_CHANNEL < 4)
+#define ANALOG7_PINSEL 1
+#define ANALOG7_ALT_FUNC 1
+#elif (ANALOG7_CHANNEL > 5)
+#define ANALOG7_PINSEL 0
+#define ANALOG7_ALT_FUNC 2
+#else
+#define ANALOG7_PINSEL 3
+#define ANALOG7_ALT_FUNC 3
+#endif
+#define DIO121_PINSEL ANALOG7_PINSEL
+#define DIO121_ALT_FUNC ANALOG7_ALT_FUNC
+#define DIO121_CHANNEL ANALOG7_CHANNEL
+#define DIO121_ADDR ANALOG7_ADDR
+#endif
+#if (defined(ANALOG8) && defined(ANALOG8_CHANNEL))
+#define ANALOG8_ADDR __helper__(ADDR, ANALOG8_CHANNEL, )
+#if (ANALOG8_CHANNEL < 4)
+#define ANALOG8_PINSEL 1
+#define ANALOG8_ALT_FUNC 1
+#elif (ANALOG8_CHANNEL > 5)
+#define ANALOG8_PINSEL 0
+#define ANALOG8_ALT_FUNC 2
+#else
+#define ANALOG8_PINSEL 3
+#define ANALOG8_ALT_FUNC 3
+#endif
+#define DIO122_PINSEL ANALOG8_PINSEL
+#define DIO122_ALT_FUNC ANALOG8_ALT_FUNC
+#define DIO122_CHANNEL ANALOG8_CHANNEL
+#define DIO122_ADDR ANALOG8_ADDR
+#endif
+#if (defined(ANALOG9) && defined(ANALOG9_CHANNEL))
+#define ANALOG9_ADDR __helper__(ADDR, ANALOG9_CHANNEL, )
+#if (ANALOG9_CHANNEL < 4)
+#define ANALOG9_PINSEL 1
+#define ANALOG9_ALT_FUNC 1
+#elif (ANALOG9_CHANNEL > 5)
+#define ANALOG9_PINSEL 0
+#define ANALOG9_ALT_FUNC 2
+#else
+#define ANALOG9_PINSEL 3
+#define ANALOG9_ALT_FUNC 3
+#endif
+#define DIO123_PINSEL ANALOG9_PINSEL
+#define DIO123_ALT_FUNC ANALOG9_ALT_FUNC
+#define DIO123_CHANNEL ANALOG9_CHANNEL
+#define DIO123_ADDR ANALOG9_ADDR
+#endif
+#if (defined(ANALOG10) && defined(ANALOG10_CHANNEL))
+#define ANALOG10_ADDR __helper__(ADDR, ANALOG10_CHANNEL, )
+#if (ANALOG10_CHANNEL < 4)
+#define ANALOG10_PINSEL 1
+#define ANALOG10_ALT_FUNC 1
+#elif (ANALOG10_CHANNEL > 5)
+#define ANALOG10_PINSEL 0
+#define ANALOG10_ALT_FUNC 2
+#else
+#define ANALOG10_PINSEL 3
+#define ANALOG10_ALT_FUNC 3
+#endif
+#define DIO124_PINSEL ANALOG10_PINSEL
+#define DIO124_ALT_FUNC ANALOG10_ALT_FUNC
+#define DIO124_CHANNEL ANALOG10_CHANNEL
+#define DIO124_ADDR ANALOG10_ADDR
+#endif
+#if (defined(ANALOG11) && defined(ANALOG11_CHANNEL))
+#define ANALOG11_ADDR __helper__(ADDR, ANALOG11_CHANNEL, )
+#if (ANALOG11_CHANNEL < 4)
+#define ANALOG11_PINSEL 1
+#define ANALOG11_ALT_FUNC 1
+#elif (ANALOG11_CHANNEL > 5)
+#define ANALOG11_PINSEL 0
+#define ANALOG11_ALT_FUNC 2
+#else
+#define ANALOG11_PINSEL 3
+#define ANALOG11_ALT_FUNC 3
+#endif
+#define DIO125_PINSEL ANALOG11_PINSEL
+#define DIO125_ALT_FUNC ANALOG11_ALT_FUNC
+#define DIO125_CHANNEL ANALOG11_CHANNEL
+#define DIO125_ADDR ANALOG11_ADDR
+#endif
+#if (defined(ANALOG12) && defined(ANALOG12_CHANNEL))
+#define ANALOG12_ADDR __helper__(ADDR, ANALOG12_CHANNEL, )
+#if (ANALOG12_CHANNEL < 4)
+#define ANALOG12_PINSEL 1
+#define ANALOG12_ALT_FUNC 1
+#elif (ANALOG12_CHANNEL > 5)
+#define ANALOG12_PINSEL 0
+#define ANALOG12_ALT_FUNC 2
+#else
+#define ANALOG12_PINSEL 3
+#define ANALOG12_ALT_FUNC 3
+#endif
+#define DIO126_PINSEL ANALOG12_PINSEL
+#define DIO126_ALT_FUNC ANALOG12_ALT_FUNC
+#define DIO126_CHANNEL ANALOG12_CHANNEL
+#define DIO126_ADDR ANALOG12_ADDR
+#endif
+#if (defined(ANALOG13) && defined(ANALOG13_CHANNEL))
+#define ANALOG13_ADDR __helper__(ADDR, ANALOG13_CHANNEL, )
+#if (ANALOG13_CHANNEL < 4)
+#define ANALOG13_PINSEL 1
+#define ANALOG13_ALT_FUNC 1
+#elif (ANALOG13_CHANNEL > 5)
+#define ANALOG13_PINSEL 0
+#define ANALOG13_ALT_FUNC 2
+#else
+#define ANALOG13_PINSEL 3
+#define ANALOG13_ALT_FUNC 3
+#endif
+#define DIO127_PINSEL ANALOG13_PINSEL
+#define DIO127_ALT_FUNC ANALOG13_ALT_FUNC
+#define DIO127_CHANNEL ANALOG13_CHANNEL
+#define DIO127_ADDR ANALOG13_ADDR
+#endif
+#if (defined(ANALOG14) && defined(ANALOG14_CHANNEL))
+#define ANALOG14_ADDR __helper__(ADDR, ANALOG14_CHANNEL, )
+#if (ANALOG14_CHANNEL < 4)
+#define ANALOG14_PINSEL 1
+#define ANALOG14_ALT_FUNC 1
+#elif (ANALOG14_CHANNEL > 5)
+#define ANALOG14_PINSEL 0
+#define ANALOG14_ALT_FUNC 2
+#else
+#define ANALOG14_PINSEL 3
+#define ANALOG14_ALT_FUNC 3
+#endif
+#define DIO128_PINSEL ANALOG14_PINSEL
+#define DIO128_ALT_FUNC ANALOG14_ALT_FUNC
+#define DIO128_CHANNEL ANALOG14_CHANNEL
+#define DIO128_ADDR ANALOG14_ADDR
+#endif
+#if (defined(ANALOG15) && defined(ANALOG15_CHANNEL))
+#define ANALOG15_ADDR __helper__(ADDR, ANALOG15_CHANNEL, )
+#if (ANALOG15_CHANNEL < 4)
+#define ANALOG15_PINSEL 1
+#define ANALOG15_ALT_FUNC 1
+#elif (ANALOG15_CHANNEL > 5)
+#define ANALOG15_PINSEL 0
+#define ANALOG15_ALT_FUNC 2
+#else
+#define ANALOG15_PINSEL 3
+#define ANALOG15_ALT_FUNC 3
+#endif
+#define DIO129_PINSEL ANALOG15_PINSEL
+#define DIO129_ALT_FUNC ANALOG15_ALT_FUNC
+#define DIO129_CHANNEL ANALOG15_CHANNEL
+#define DIO129_ADDR ANALOG15_ADDR
+#endif
+
 // COM registers
 #if (INTERFACE == INTERFACE_UART)
-#ifndef COM_NUMBER
-#define COM_NUMBER 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
-#define COM_PCONP0 3
-#define COM_PCONP1 4
-#define COM_PCONP2 24
-#define COM_PCONP3 25
-#define __com_pconp__(X) COM_PCONP##X
-#define __compconp__(X) __com_pconp__(X)
+#define UART_PCONP __helper__(CLKPWR_PCONP_PCUART, UART_PORT, )
+
+#if ((UART_PORT == 0) && (TX_MBED_PIN == P0_2) && (RX_MBED_PIN == P0_3))
+#define UART_ALT_FUNC 1
+#define UART_PCLKSEL_REG PCLKSEL0
+#define UART_PCLKSEL_MASK (3 << 6)
+#elif ((UART_PORT == 1) && (TX_MBED_PIN == P2_0) && (RX_MBED_PIN == P2_1))
+#define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL0
+#define UART_PCLKSEL_MASK (3 << 8)
+#elif ((UART_PORT == 2) && (TX_MBED_PIN == P0_10) && (RX_MBED_PIN == P0_11))
+#define UART_ALT_FUNC 1
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 16)
+#elif ((UART_PORT == 3) && (TX_MBED_PIN == P0_0) && (RX_MBED_PIN == P0_1))
+#define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 18)
+#else
+#error "UART pin configuration not supported"
+#endif
 
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM_USART __helper__(LPC_UART, COM_NUMBER, )
-#define COM_IRQ __helper__(UART, COM_NUMBER, _IRQn)
-#define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, COM_NUMBER, )
+#define COM_USART __helper__(LPC_UART, UART_PORT, )
+#define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
+#define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART_PORT, )
 #if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-#define MCU_COM_ISR __helper__(UART, COM_NUMBER, _IRQHandler)
+#define MCU_COM_ISR __helper__(UART, UART_PORT, _IRQHandler)
 #endif
 
 #define COM_OUTREG (COM_USART)->THR
 #define COM_INREG (COM_USART)->RBR
-
-#if (COM_NUMBER == 1 || COM_NUMBER == 2)
-#if (TX_PORT == 2)
-#define TX_ALT_FUNC 2
-#endif
-#if (RX_PORT == 2)
-#define RX_ALT_FUNC 2
-#endif
-#endif
-#if (COM_NUMBER == 3)
-#if (TX_PORT == 0)
-#define TX_ALT_FUNC 2
-#else
-#define TX_ALT_FUNC 3
-#endif
-#if (RX_PORT == 0)
-#define RX_ALT_FUNC 2
-#else
-#define RX_ALT_FUNC 3
-#endif
-#endif
-
-#ifndef TX_ALT_FUNC
-#define TX_ALT_FUNC 1
-#endif
-#ifndef RX_ALT_FUNC
-#define RX_ALT_FUNC 1
-#endif
 
 #endif
 
@@ -3287,11 +3567,33 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#ifndef SPI_PORT
+#define SPI_PORT 1
+#endif
 
-// only one exists
-#define SPI_REG LPC_SPI
+#define SPI_COUNTER_DIV(X) CLAMP(2, ((F_CPU >> 3) / X), 254)
 
-#include "lpc17xx_spi.h"
+#define SPI_REG __helper__(LPC_SSP, SPI_PORT, )
+#define SPI_PCONP __helper__(CLKPWR_PCONP_PCSSP, SPI_PORT, )
+#if (SPI_PORT == 0)
+#define SPI_PCLKSEL_REG PCLKSEL1
+#define SPI_PCLKSEL_MASK (3 << 20)
+#else
+#define SPI_PCLKSEL_REG PCLKSEL0
+#define SPI_PCLKSEL_MASK (3 << 10)
+#endif
+
+#include "lpc17xx_ssp.h"
+
+#if ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_18) && (SPI_SDI_MBED_PIN == P0_17) && (SPI_CLK_MBED_PIN == P0_15))
+#define SPI_ALT_FUNC 2
+#elif ((SPI_PORT == 0) && (SPI_SDO_MBED_PIN == P0_24) && (SPI_SDI_MBED_PIN == P0_23) && (SPI_CLK_MBED_PIN == P0_20))
+#define SPI_ALT_FUNC 3
+#elif ((SPI_PORT == 1) && (SPI_SDO_MBED_PIN == P0_9) && (SPI_SDI_MBED_PIN == P0_8) && (SPI_CLK_MBED_PIN == P0_7))
+#define SPI_ALT_FUNC 2
+#else
+#error "SPI pin configuration not supported"
+#endif
 
 #endif
 
@@ -3331,6 +3633,13 @@ extern "C"
 #define MCU_ITP_ISR __helper__(TIMER, ITP_TIMER, _IRQHandler)
 #define ITP_INT_FLAG __helper__(TIM_MR, ITP_TIMER, _INT)
 #define ITP_TIMER_IRQ __helper__(TIMER, ITP_TIMER, _IRQn)
+#define ITP_PCONP __helper__(CLKPWR_PCONP_PCTIM, ITP_TIMER, )
+#if (ITP_TIMER < 2)
+#define ITP_PCLKSEL_REG PCLKSEL0
+#else
+#define ITP_PCLKSEL_REG PCLKSEL1
+#endif
+#define ITP_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ITP_TIMER, ) & 0x1F))
 
 #define MCU_RTC_ISR SysTick_Handler
 
@@ -3341,21 +3650,74 @@ extern "C"
 #define MCU_SERVO_ISR __helper__(TIMER, SERVO_TIMER, _IRQHandler)
 #define SERVO_INT_FLAG __helper__(TIM_MR, SERVO_TIMER, _INT)
 #define SERVO_TIMER_IRQ __helper__(TIMER, SERVO_TIMER, _IRQn)
+#define SERVO_PCONP __helper__(CLKPWR_PCONP_PCTIM, SERVO_TIMER, )
+#if (SERVO_TIMER < 2)
+#define SERVO_PCLKSEL_REG PCLKSEL0
+#else
+#define SERVO_PCLKSEL_REG PCLKSEL1
+#endif
+#define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
+
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_TIMER_REG __helper__(LPC_TIM, ONESHOT_TIMER, )
+#define MCU_ONESHOT_ISR __helper__(TIMER, ONESHOT_TIMER, _IRQHandler)
+#define ONESHOT_INT_FLAG __helper__(TIM_MR, ONESHOT_TIMER, _INT)
+#define ONESHOT_TIMER_IRQ __helper__(TIMER, ONESHOT_TIMER, _IRQn)
+#define ONESHOT_PCONP __helper__(CLKPWR_PCONP_PCTIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER < 2)
+#define ONESHOT_PCLKSEL_REG PCLKSEL0
+#else
+#define ONESHOT_PCLKSEL_REG PCLKSEL1
+#endif
+#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#endif
 
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
-#define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
-#define mcu_config_output_od(diopin)                                                                                            \
-	{                                                                                                                           \
-		mcu_config_output(diopin);                                                                                              \
-		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (0x10 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
-		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));                 \
+#define mcu_config_output(diopin)                                                                                            \
+	{                                                                                                                        \
+		SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                            \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
+#define mcu_config_output_od(diopin)                                                                                          \
+	{                                                                                                                         \
+		mcu_config_output(diopin);                                                                                            \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (2 << ((__indirect__(diopin, BIT) & 0x0F) << 1));  \
+		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
-#define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
-#define mcu_config_analog(X) mcu_config_input(X)
+#define mcu_config_input(diopin)                                                                                             \
+	{                                                                                                                        \
+		CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
+#define mcu_config_pullup(diopin)                                                                                             \
+	{                                                                                                                         \
+		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
+
+#define mcu_config_af(diopin, mode)                                                                                            \
+	{                                                                                                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1));   \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) |= (mode << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
+
+#define mcu_config_analog(diopin)                                                           \
+	{                                                                                       \
+		mcu_config_input(diopin);                                                           \
+		mcu_config_af(diopin, __indirect__(diopin, ALT_FUNC));                              \
+		LPC_SC->PCONP |= CLKPWR_PCONP_PCAD;                                                 \
+		LPC_SC->PCLKSEL0 &= ~(3 << 24);                                                     \
+		LPC_ADC->ADCR &= ~(ADC_CR_START_MASK | ADC_CR_BURST | ADC_CR_PDN);                  \
+		LPC_ADC->ADCR |= ADC_CR_PDN;                                                        \
+		LPC_ADC->ADCR |= ADC_CR_CH_SEL(__indirect__(diopin, CHANNEL)) | ADC_CR_CLKDIV(255); \
+		LPC_ADC->ADCR |= ADC_CR_BURST;                                                      \
+	}
+
 #define mcu_config_input_isr(diopin)                                                   \
 	{                                                                                  \
 		SETBIT(LPC_GPIOINT->__indirect__(diopin, RISEREG), __indirect__(diopin, BIT)); \
@@ -3365,32 +3727,26 @@ extern "C"
 		NVIC_EnableIRQ(EINT3_IRQn);                                                    \
 	}
 
-#define mcu_config_pullup(diopin)                                                                                             \
-	{                                                                                                                         \
-		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << (0x1F & (__indirect__(diopin, BIT) << 1))); \
-	}
-
-#define mcu_config_pwm(diopin)                                                                                                                                   \
-	{                                                                                                                                                            \
-		mcu_config_output(diopin);                                                                                                                               \
-		CLKPWR_ConfigPPWR(CLKPWR_PCONP_PCPWM1, ENABLE);                                                                                                          \
-		CLKPWR_SetPCLKDiv(CLKPWR_PCLKSEL_PWM1, CLKPWR_PCLKSEL_CCLK_DIV_4);                                                                                       \
-		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                                                                                                    \
-		LPC_PWM1->TCR = 0;                                                                                                                                       \
-		LPC_PWM1->CTCR = 0;                                                                                                                                      \
-		LPC_PWM1->MCR = 0;                                                                                                                                       \
-		LPC_PWM1->CCR = 0;                                                                                                                                       \
-		LPC_PWM1->PCR &= 0xFF00;                                                                                                                                 \
-		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL));                                                                                    \
-		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));                                                                                           \
-		LPC_PWM1->PR = (CLKPWR_GetPCLK(CLKPWR_PCLKSEL_PWM1) / (255 * 1000)) - 1;                                                                                 \
-		LPC_PWM1->MCR = (1UL << 1);                                                                                                                              \
-		LPC_PWM1->MR0 = 255;                                                                                                                                     \
-		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                                                                                                                 \
-		mcu_config_output(diopin);                                                                                                                               \
-		PINSEL_CFG_Type pwm = {__indirect__(diopin, PORT), __indirect__(diopin, BIT), __indirect__(diopin, FUNC), PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL}; \
-		PINSEL_ConfigPin(&pwm);                                                                                                                                  \
-		mcu_set_pwm(diopin, 0);                                                                                                                                  \
+#define mcu_config_pwm(diopin, freq)                                          \
+	{                                                                         \
+		mcu_config_output(diopin);                                            \
+		LPC_SC->PCONP |= CLKPWR_PCONP_PCPWM1;                                 \
+		LPC_SC->PCLKSEL0 &= ~(3 << 12); /* div clock by 4 */                  \
+		LPC_PWM1->IR = 0xFF & PWM_IR_BITMASK;                                 \
+		LPC_PWM1->TCR = 0;                                                    \
+		LPC_PWM1->CTCR = 0;                                                   \
+		LPC_PWM1->MCR = 0;                                                    \
+		LPC_PWM1->CCR = 0;                                                    \
+		LPC_PWM1->PCR &= 0xFF00;                                              \
+		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
+		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
+		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                            \
+		LPC_PWM1->MCR = (1UL << 1);                                           \
+		LPC_PWM1->MR0 = 255;                                                  \
+		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
+		mcu_config_output(diopin);                                            \
+		mcu_config_af(diopin, (__indirect__(diopin, FUNC)));                  \
+		mcu_set_pwm(diopin, 0);                                               \
 	}
 
 #define mcu_get_input(diopin) CHECKBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
@@ -3405,7 +3761,9 @@ extern "C"
 		LPC_PWM1->TCR |= ((uint32_t)(1 << 1));                                                                             \
 		LPC_PWM1->TCR &= (~((uint32_t)(1 << 1))) & ((uint32_t)(0x0000000B));                                               \
 	}
-#define mcu_get_pwm(diopin) LPC_PWM1->__indirect__(diopin, MR)
+#define mcu_get_pwm(diopin) (uint8_t) LPC_PWM1->__indirect__(diopin, MR)
+
+#define mcu_get_analog(diopin) (uint8_t)(((LPC_ADC->__indirect__(diopin, ADDR)) & 0xFFF) >> 4)
 
 	extern volatile bool lpc_global_isr_enabled;
 #define mcu_enable_global_isr()        \
@@ -3424,19 +3782,23 @@ extern "C"
 #define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
 #elif (INTERFACE == INTERFACE_USB)
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #endif
 
-#define mcu_spi_xmit(X)                          \
-	{                                            \
-		LPC_SPI->SPDR = X;                       \
-		while (!(LPC_SPI->SPSR & SPI_SPSR_SPIF)) \
-			;                                    \
-		LPC_SPI->SPDR;                           \
-	}
+#define mcu_spi_xmit(X)                     \
+	({                                      \
+		SPI_REG->DR = X;                    \
+		while (!(SPI_REG->SR & SSP_SR_RNE)) \
+			;                               \
+		SPI_REG->DR;                        \
+	})
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)
+#endif
 
 #ifdef __cplusplus
 }

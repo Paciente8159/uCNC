@@ -45,8 +45,8 @@
 
 volatile bool samd21_global_isr_enabled;
 
-// setups internal timers (all will run @ 1Mhz on GCLK4)
-#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / 1000000))
+// setups internal timers (all will run @ 8Mhz on GCLK4)
+#define MAIN_CLOCK_DIV ((uint16_t)(F_CPU / F_TIMERS))
 static void mcu_setup_clocks(void)
 {
 	PM->CPUSEL.reg = 0;
@@ -59,7 +59,7 @@ static void mcu_setup_clocks(void)
 	PM->APBCMASK.reg |= (PM_APBCMASK_TCC0 | PM_APBCMASK_TCC1 | PM_APBCMASK_TCC2 | PM_APBCMASK_TC3 | PM_APBCMASK_TC4 | PM_APBCMASK_TC5 | PM_APBCMASK_TC6 | PM_APBCMASK_TC7);
 	PM->APBCMASK.reg |= PM_APBCMASK_ADC;
 
-	/* Configure GCLK4's divider - to run @ 1Mhz*/
+	/* Configure GCLK4's divider - to run @ 8Mhz*/
 	GCLK->GENDIV.reg = GCLK_GENDIV_ID(4) | GCLK_GENDIV_DIV(MAIN_CLOCK_DIV);
 
 	while (GCLK->STATUS.bit.SYNCBUSY)
@@ -350,7 +350,7 @@ static FORCEINLINE void mcu_clear_servos()
 // this will yield a freq of 250KHz or 250 count per ms
 // in theory servo resolution should be 250
 // but 245 gives a closer result
-#define SERVO_RESOLUTION (245)
+// #define SERVO_RESOLUTION (245)
 void servo_timer_init()
 {
 #if (SERVO_TIMER < 3)
@@ -359,7 +359,7 @@ void servo_timer_init()
 	while (SERVO_REG->SYNCBUSY.bit.SWRST)
 		;
 	// enable the timer in the APB
-	SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
+	SERVO_REG->CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
 	SERVO_REG->WAVE.bit.WAVEGEN = 1;			   // match compare
 	while (SERVO_REG->SYNCBUSY.bit.WAVE)
 		;
@@ -369,7 +369,7 @@ void servo_timer_init()
 	while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
 	// enable the timer in the APB
-	SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x2; // prescaller /4
+	SERVO_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)0x4; // prescaller /16
 	SERVO_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;			   // match compare
 	while (SERVO_REG->COUNT16.STATUS.bit.SYNCBUSY)
 		;
@@ -535,7 +535,7 @@ void mcu_init(void)
 		;
 
 	SPICOM->SPI.CTRLA.bit.MODE = 3;
-	SPICOM->SPI.CTRLA.bit.DORD = 0;					 // MSB
+	SPICOM->SPI.CTRLA.bit.DORD = 0;						 // MSB
 	SPICOM->SPI.CTRLA.bit.CPHA = SPI_MODE & 0x01;		 // MODE
 	SPICOM->SPI.CTRLA.bit.CPOL = (SPI_MODE >> 1) & 0x01; // MODE
 	SPICOM->SPI.CTRLA.bit.FORM = 0;
@@ -602,8 +602,7 @@ void mcu_init(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	uint8_t scaled = (uint8_t)(((uint16_t)(value * SERVO_RESOLUTION)) >> 8);
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
+	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = (((uint16_t)value) << 1);
 #endif
 }
 
@@ -615,7 +614,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
 	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
-	uint8_t unscaled = (uint8_t)((((uint16_t)mcu_servos[offset] << 8)) / SERVO_RESOLUTION);
+	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >> 1);
 
 	if ((1U << offset) & SERVOS_MASK)
 	{
@@ -792,40 +791,24 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	if (frequency > F_STEP_MAX)
 		frequency = F_STEP_MAX;
 
-	float clockcounter = 1000000;
-	frequency *= 2.0f;
+	uint32_t clocks = (uint32_t)((F_TIMERS >> 1) / frequency);
+	*prescaller = 0;
 
-	if (frequency >= 16)
+	while (clocks > 0xFFFF)
 	{
-		*prescaller = 0;
-	}
-	else if (frequency >= 8)
-	{
-		*prescaller = 1;
-		clockcounter *= 0.5;
-	}
-	else if (frequency >= 4)
-	{
-		*prescaller = 2;
-		clockcounter *= 0.25;
-	}
-	else if (frequency >= 2)
-	{
-		*prescaller = 3;
-		clockcounter *= 0.125;
-	}
-	else if (frequency >= 1)
-	{
-		*prescaller = 4;
-		clockcounter *= 0.0625;
-	}
-	else
-	{
-		*prescaller = 7;
-		clockcounter *= 0.0009765625;
+		clocks >>= 1;
+		*prescaller++;
+		if (*prescaller >= 4)
+		{
+			clocks >>= 1;
+		}
+		if (*prescaller == 7)
+		{
+			break;
+		}
 	}
 
-	*ticks = floorf((clockcounter / frequency)) - 1;
+	*ticks = ((uint16_t)clocks) - 1;
 }
 
 /**
@@ -1240,6 +1223,101 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return data;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+	while (ONESHOT_REG->SYNCBUSY.bit.ENABLE)
+		;
+	if (ONESHOT_REG->INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->INTFLAG.bit.MC0 = 1;
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 0;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	if (ONESHOT_REG->COUNT16.INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+#endif
+	}
+
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	uint16_t ticks = (uint16_t)(timeout - 1);
+	uint16_t prescaller = 3; //div by 8 giving one tick per us
+
+#if (ONESHOT_TIMER < 3)
+	// reset timer
+	ONESHOT_REG->CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->SYNCBUSY.bit.SWRST)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
+		;
+	ONESHOT_REG->CC[0].reg = ticks;
+	while (ONESHOT_REG->SYNCBUSY.bit.CC0)
+		;
+
+	NVIC_SetPriority(ONESHOT_IRQ, 3);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#else
+	// reset timer
+	ONESHOT_REG->COUNT16.CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	ONESHOT_REG->COUNT16.CC[0].reg = ticks;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	NVIC_SetPriority(ONESHOT_IRQ, 1);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#endif
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#endif
 }
 #endif
 #endif

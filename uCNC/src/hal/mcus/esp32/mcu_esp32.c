@@ -739,4 +739,54 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #endif
 #endif
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+IRAM_ATTR void mcu_oneshot_isr(void *arg)
+{
+	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
+
+	if(mcu_timeout_cb){
+		mcu_timeout_cb();
+	}
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	timer_config_t config = {
+		.divider = 80,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)(1000000UL / timeout));
+	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+}
+#endif
+#endif
+
 #endif
