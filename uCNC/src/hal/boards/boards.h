@@ -37,6 +37,8 @@ extern "C"
 #define BOARD_MZERO 20
 #define BOARD_ZERO 21
 #define BOARD_RE_ARM 30
+#define BOARD_MKS_BASE13 31
+#define BOARD_SKR_V14_TURBO 32
 #define BOARD_WEMOS_D1 40
 #define BOARD_WEMOS_D1_R32 50
 #define BOARD_VIRTUAL 99
