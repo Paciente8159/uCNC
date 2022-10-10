@@ -39,6 +39,7 @@ extern "C"
 	void protocol_send_gcode_modes(void);
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
+	void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
 #endif
@@ -47,9 +48,14 @@ extern "C"
 	DECL_EVENT_HANDLER(protocol_send_cnc_info);
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-	// event_send_pins_states_handler
-	DECL_EVENT_HANDLER(send_pins_states);
+#ifdef ENABLE_IO_MODULES
+	// event_protocol_send_pins_states_handler
+	DECL_EVENT_HANDLER(protocol_send_pins_states);
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	// event_protocol_send_cnc_settings_handler
+	DECL_EVENT_HANDLER(protocol_send_cnc_settings);
 #endif
 
 #ifdef __cplusplus

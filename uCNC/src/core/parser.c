@@ -410,20 +410,26 @@ static uint8_t parser_grbl_command(void)
 			if (c >= '0' && c <= '9') // settings
 			{
 				float val = 0;
-				uint8_t setting_num = 0;
+				setting_offset_t setting_num = 0;
 				serial_ungetc();
 				error = parser_get_float(&val);
 				if (!error)
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
-
+#ifndef ENABLE_SETTINGS_MODULES
 				if ((error & NUMBER_ISFLOAT) || val > 255 || val < 0)
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
+#else
+				if ((error & NUMBER_ISFLOAT) || val > 65535 || val < 0)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+#endif
 
-				setting_num = (uint8_t)val;
+				setting_num = (setting_offset_t)val;
 				// eat '='
 				if (serial_getc() != '=')
 				{

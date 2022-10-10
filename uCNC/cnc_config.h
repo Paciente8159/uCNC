@@ -238,7 +238,6 @@ extern "C"
 // #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
 // #define ENABLE_SETTINGS_MODULES
-// #define ENABLE_PROTOCOL_MODULES
 
 /**
  * Report specific options
