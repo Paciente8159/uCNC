@@ -100,6 +100,7 @@ List of Supported G-Codes since µCNC 1.3.0:
     - General Pin Control: M42*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
+	- Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
 * see notes

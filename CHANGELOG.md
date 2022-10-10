@@ -12,6 +12,12 @@
 
 - added support for comments with ';' char (#291)
 - added support for S word clustering format used by Smoothieware (#289)
+- added support for external module $ settings (#293)
+- added boardmaps for LPC176x boards SKR v1.4 Turbo and MKS Base V1.3 (#267)
+- added boardmaps for STM32F4 boards MKS Robin Nano v1.2 and SKR Pro v1.2 (#299)
+- added generic purpose ONESHOT timer (#295)(#301)
+- added laser PPI with PPI control, Pulse width control and mixed control modes (#295)
+- added extension modules $I info message modifier handler (#300)
 
 ### Changed
 
