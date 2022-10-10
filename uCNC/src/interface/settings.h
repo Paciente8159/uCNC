@@ -112,7 +112,7 @@ extern "C"
 #define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 #endif
 
-#ifndef ENABLE_PARSER_MODULES
+#ifndef ENABLE_SETTINGS_MODULES
 typedef uint8_t setting_offset_t;
 #else
 typedef uint16_t setting_offset_t;

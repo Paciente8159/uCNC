@@ -516,7 +516,7 @@ void protocol_send_gcode_modes(void)
 #endif
 }
 
-static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
+void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
 {
 	serial_putc('$');
 	serial_print_int(setting);

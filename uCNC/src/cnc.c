@@ -101,13 +101,13 @@ void cnc_init(void)
 	io_enable_steppers(~g_settings.step_enable_invert); // disables steppers at start
 	io_disable_probe();									// forces probe isr disabling
 	serial_init();										// serial
+	mod_init();											// modules
 	settings_init();									// settings
 	itp_init();											// interpolator
 	planner_init();										// motion planner
 #if TOOL_COUNT > 0
 	tool_init();
 #endif
-	mod_init();
 }
 
 void cnc_run(void)
