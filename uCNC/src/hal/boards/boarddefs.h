@@ -128,6 +128,16 @@ extern "C"
 #include "esp32/boardmap_wemos_d1_r32.h"
 #endif
 
+#if (BOARD == BOARD_MKS_TINYBEE)
+#define MCU MCU_ESP32
+#include "esp32/boardmap_mks_tinybee.h"
+#endif
+
+#if (BOARD == BOARD_MKS_DLC32)
+#define MCU MCU_ESP32
+#include "esp32/boardmap_mks_dlc32.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #ifndef __linux__
 #define MCU MCU_VIRTUAL_WIN
