@@ -161,6 +161,8 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 			mcu_clear_output(PWM15);
 		}
 #endif
+
+#ifdef IC74HC595_HAS_PWMS
 #if !(PWM0_IO_OFFSET < 0)
 		if (pwm_counter > esp32_pwm[0])
 		{
@@ -256,6 +258,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 		{
 			pwm_mask &= ~(1 << 15);
 		}
+#endif
 #endif
 	}
 	else
