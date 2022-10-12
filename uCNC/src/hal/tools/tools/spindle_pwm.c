@@ -75,6 +75,8 @@ void spindle_pwm_set_speed(int16_t value)
 
 #if !(SPINDLE_PWM < 0)
 	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
+#else
+	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
 }
 
@@ -105,14 +107,15 @@ uint16_t spindle_pwm_get_speed(void)
 #if PID_CONTROLLERS > 0
 void spindle_pwm_pid_update(int16_t value)
 {
-
-#if !(SPINDLE_PWM < 0)
 	if (spindle_pwm_speed != 0)
 	{
 		uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
+#if !(SPINDLE_PWM < 0)
 		mcu_set_pwm(SPINDLE_PWM, newval);
-	}
+#else
+	io_set_pwm(SPINDLE_PWM, newval);
 #endif
+	}
 }
 
 int16_t spindle_pwm_pid_error(void)

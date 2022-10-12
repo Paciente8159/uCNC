@@ -49,12 +49,16 @@ uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 
 void ic74hc595_shift_io_pins(void)
 {
+	mcu_clear_output(IC74HC595_LATCH);
 	for (uint8_t i = IC74HC595_COUNT; i != 0;)
 	{
 		i--;
-		for (uint8_t j = 0x80; j != 0; j >>= 1)
+		uint8_t pinbyte = ic74hc595_io_pins[i];
+		for (uint8_t j = 0; j < 8; j++)
 		{
-			if (ic74hc595_io_pins[i] & j)
+			ic74hc595_delay();
+			mcu_clear_output(IC74HC595_CLK);
+			if (pinbyte & 0x80)
 			{
 				mcu_set_output(IC74HC595_DATA);
 			}
@@ -62,16 +66,12 @@ void ic74hc595_shift_io_pins(void)
 			{
 				mcu_clear_output(IC74HC595_DATA);
 			}
-			ic74hc595_delay();
+			pinbyte <<= 1;
 			mcu_set_output(IC74HC595_CLK);
-			ic74hc595_delay();
-			mcu_clear_output(IC74HC595_CLK);
 		}
 	}
 	ic74hc595_delay();
 	mcu_set_output(IC74HC595_LATCH);
-	ic74hc595_delay();
-	mcu_clear_output(IC74HC595_LATCH);
 }
 
 FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
@@ -618,15 +618,9 @@ FORCEINLINE void ic74hc595_set_servos(uint8_t mask)
 	ic74hc595_shift_io_pins();
 }
 
-#ifdef IC74HC595_HAS_DOUTS
-FORCEINLINE void ic74hc595_set_output(int8_t pin, bool state)
+FORCEINLINE void ic74hc595_set_output(uint8_t pin, bool state)
 {
-	if (pin < 0)
-	{
-		uint8_t dout = -(pin + DOUT_PINS_OFFSET + 1);
-	}
-
-	switch (pin)
+	switch (pin - DOUT_PINS_OFFSET)
 	{
 #if !(DOUT0_IO_OFFSET < 0)
 	case 0:
@@ -1016,6 +1010,5 @@ FORCEINLINE void ic74hc595_set_output(int8_t pin, bool state)
 
 	ic74hc595_shift_io_pins();
 }
-#endif
 
 #endif

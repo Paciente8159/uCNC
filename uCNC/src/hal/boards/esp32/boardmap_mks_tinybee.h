@@ -55,6 +55,7 @@ extern "C"
 #define DOUT6_BIT 26
 // uses 3 x 74HS595
 #define IC74HC595_COUNT 3
+#define IC74HC595_DELAY_CYCLES 0
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1

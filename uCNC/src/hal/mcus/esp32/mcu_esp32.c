@@ -366,8 +366,8 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	if (pwm_mask_last != pwm_mask)
 	{
 		ic74hc595_set_pwms(pwm_mask);
+		pwm_mask_last = pwm_mask;
 	}
-	pwm_mask_last = pwm_mask;
 #endif
 }
 
@@ -538,6 +538,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 #ifndef mcu_set_pwm
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
+	esp32_pwm[pwm - PWM_PINS_OFFSET] = (0x7F & (value >> 1));
 }
 #endif
 
@@ -548,7 +549,7 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 #ifndef mcu_get_pwm
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	return 0;
+	return (esp32_pwm[pwm - PWM_PINS_OFFSET] << 1);
 }
 #endif
 

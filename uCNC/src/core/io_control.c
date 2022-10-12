@@ -504,9 +504,9 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
-// #ifdef ENABLE_IO_MODULES
-// 	EVENT_INVOKE(toggle_steps, &mask);
-// #endif
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(toggle_steps, &mask);
+	// #endif
 
 #ifdef IC74HC595_HAS_STEPS
 	ic74hc595_toggle_steps(mask);
@@ -566,9 +566,9 @@ void io_set_dirs(uint8_t mask)
 {
 	mask ^= g_settings.dir_invert_mask;
 
-// #ifdef ENABLE_IO_MODULES
-// 	EVENT_INVOKE(set_dirs, &mask);
-// #endif
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(set_dirs, &mask);
+	// #endif
 
 #ifdef IC74HC595_HAS_DIRS
 	ic74hc595_set_dirs(mask);
@@ -658,6 +658,14 @@ void io_set_dirs(uint8_t mask)
 
 void io_set_pwm(uint8_t pin, uint8_t value)
 {
+#if (defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS))
+	if (pin > 127)
+	{
+		pin = ~pin;
+		mcu_set_pwm(pin, value);
+		return;
+	}
+#endif
 	switch (pin)
 	{
 #if !(PWM0 < 0)
@@ -775,10 +783,18 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
-// #ifdef ENABLE_IO_MODULES
-// 	set_output_args_t output_arg = {.pin = pin, .state = state};
-// 	EVENT_INVOKE(set_output, &output_arg);
-// #endif
+	// #ifdef ENABLE_IO_MODULES
+	// 	set_output_args_t output_arg = {.pin = pin, .state = state};
+	// 	EVENT_INVOKE(set_output, &output_arg);
+	// #endif
+#ifdef IC74HC595_HAS_DOUTS
+	if (((int8_t)pin) < 0)
+	{
+		pin = -(((int8_t)pin) + 1);
+		ic74hc595_set_output(pin, state);
+		return;
+	}
+#endif
 	if (state)
 	{
 		switch (pin)

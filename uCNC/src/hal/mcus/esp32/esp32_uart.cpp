@@ -74,9 +74,11 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static bool connected = false;
 		static bool process_busy = false;
+		static uint32_t next_info = 0;
 
-		if (WiFi.status() != WL_CONNECTED)
+		if (WiFi.status() != WL_CONNECTED && next_info < mcu_millis())
 		{
+			next_info = mcu_millis() + 30000;
 			connected = false;
 			if (process_busy)
 			{
@@ -84,7 +86,6 @@ extern "C"
 			}
 			process_busy = true;
 			Serial.println("[MSG:Disconnected from WiFi]");
-			cnc_delay_ms(100);
 			process_busy = false;
 			return false;
 		}
