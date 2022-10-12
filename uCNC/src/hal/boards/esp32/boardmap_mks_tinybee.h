@@ -92,6 +92,9 @@ extern "C"
 #define SPI_SDI_BIT 19
 #define SPI_CS_BIT 5
 
+// include the IO expander
+#include "../../../modules/ic74hc595.h"
+
 #ifdef __cplusplus
 }
 #endif
