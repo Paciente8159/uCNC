@@ -36,6 +36,14 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+//needed by software delays
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #define ENABLE_SYNC_TX
 
 // joints step/dir pins

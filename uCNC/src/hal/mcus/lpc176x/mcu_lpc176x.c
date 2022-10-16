@@ -207,6 +207,13 @@ void mcu_clocks_init(void)
 	LPC_PINCON->PINMODE7 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE8 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE9 = 0xAAAAAAAA;
+
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= 0x1UL;
+	}
 }
 
 /**
@@ -682,21 +689,13 @@ uint32_t mcu_millis()
  * provides a delay in us (micro seconds)
  * the maximum allowed delay is 255 us
  * */
+#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
-	uint32_t now = SysTick->VAL;
-	uint32_t target = now + delay * (F_CPU / 1000000);
-	if (target > SysTick->LOAD)
-	{
-		target -= SysTick->LOAD;
-	}
-	else
-	{
-		now = 0;
-	}
-
-	while ((target > SysTick->VAL) || (now < SysTick->VAL))
+	// lpc176x_delay_us(delay);
+	uint32_t target = mcu_micros + delay;
+	while (target > mcu_micros)
 		;
 }
 #endif

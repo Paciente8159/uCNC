@@ -920,21 +920,28 @@ uint32_t mcu_millis()
 	return c;
 }
 
+// void mcu_delay_us(uint16_t delay)
+// {
+// 	uint32_t loops;
+// 	if (!delay)
+// 	{
+// 		return;
+// 	}
+// 	else
+// 	{
+// 		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
+// 	}
+// 	while (loops--)
+// 		asm("nop");
+// }
+
+#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
-	uint32_t now = SysTick->VAL;
-	uint32_t target = now + delay * (F_CPU / 1000000);
-	if (target > SysTick->LOAD)
-	{
-		target -= SysTick->LOAD;
-	}
-	else
-	{
-		now = 0;
-	}
-
-	while ((target > SysTick->VAL) || (now < SysTick->VAL))
+	// lpc176x_delay_us(delay);
+	uint32_t target = mcu_micros + delay;
+	while (target > mcu_micros)
 		;
 }
 #endif

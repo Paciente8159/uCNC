@@ -16,8 +16,6 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../../../cnc_config.h"
-#include "../mcu.h"
 #ifdef ESP8266
 #include <Arduino.h>
 #include "user_interface.h"
@@ -62,10 +60,10 @@ WiFiManager wifiManager;
 static char esp8266_tx_buffer[ESP8266_BUFFER_SIZE];
 static uint8_t esp8266_tx_buffer_counter;
 
-extern "C" void cnc_delay_ms(uint32_t miliseconds);
-
 extern "C"
 {
+#include "../../../cnc.h"
+
 	bool esp8266_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI

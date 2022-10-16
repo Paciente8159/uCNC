@@ -59,6 +59,30 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+// custom cycle counter
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		uint32_t t = X;         \
+		while (t > DWT->CYCCNT) \
+			;                   \
+	}
+
+	// needed by software delays
+	// #ifndef MCU_CLOCKS_PER_CYCLE
+	// #define MCU_CLOCKS_PER_CYCLE 1
+	// #endif
+	// #ifndef MCU_CYCLES_PER_LOOP
+	// #define MCU_CYCLES_PER_LOOP 7
+	// #endif
+	// #ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+	// #define MCU_CYCLES_PER_LOOP_OVERHEAD 6
+	// #endif
+
 #if (INTERFACE == INTERFACE_USB)
 // if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX
@@ -4555,7 +4579,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	({                                               \
+	({                                              \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -4589,8 +4613,8 @@ extern "C"
 	extern volatile bool stm32_global_isr_enabled;
 #define mcu_enable_global_isr()          \
 	{                                    \
-		__enable_irq();                  \
 		stm32_global_isr_enabled = true; \
+		__enable_irq();                  \
 	}
 #define mcu_disable_global_isr()          \
 	{                                     \

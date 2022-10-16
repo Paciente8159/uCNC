@@ -59,6 +59,17 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+//needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 6
+#endif
+
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
