@@ -50,6 +50,17 @@ extern "C"
 #define F_TIMERS 8000000UL
 #endif
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 5
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 13
+#endif
+
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__

@@ -58,6 +58,17 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
@@ -1037,6 +1048,9 @@ extern "C"
 	}
 
 #define mcu_spi_config(X, Y) esp8266_spi_config(X, Y)
+
+extern void esp8266_delay_us(uint16_t delay);
+#define mcu_delay_us(X) esp8266_delay_us(X)
 
 #ifdef __cplusplus
 }

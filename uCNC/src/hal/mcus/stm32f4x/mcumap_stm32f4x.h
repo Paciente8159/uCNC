@@ -61,6 +61,29 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+//needed by software delays
+
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		uint32_t t = X;         \
+		while (t > DWT->CYCCNT) \
+			;                   \
+	}
+
+// #ifndef MCU_CLOCKS_PER_CYCLE
+// #define MCU_CLOCKS_PER_CYCLE 1
+// #endif
+// #ifndef MCU_CYCLES_PER_LOOP
+// #define MCU_CYCLES_PER_LOOP 5
+// #endif
+// #ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+// #define MCU_CYCLES_PER_LOOP_OVERHEAD 13
+// #endif	
+
 #if (INTERFACE == INTERFACE_USB)
 // if USB VCP is used force RX sync also
 #define ENABLE_SYNC_TX

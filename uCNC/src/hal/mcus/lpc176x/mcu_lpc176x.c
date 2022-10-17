@@ -207,6 +207,13 @@ void mcu_clocks_init(void)
 	LPC_PINCON->PINMODE7 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE8 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE9 = 0xAAAAAAAA;
+
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= 0x1UL;
+	}
 }
 
 /**

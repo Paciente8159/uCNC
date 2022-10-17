@@ -627,14 +627,12 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
+void esp8266_delay_us(uint16_t delay)
 {
-	uint32_t time = system_get_time() + delay;
+	uint32_t time = system_get_time() + delay - 1;
 	while (time > system_get_time())
 		;
 }
-#endif
 
 /**
  * runs all internal tasks of the MCU.
