@@ -393,6 +393,15 @@ void mcu_clocks_init()
 	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
 	RCC->CFGR |= (APB1_PRESC | APB2_PRESC);
 #endif
+
+	// initialize debugger clock (used by us delay)
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
+	F
 }
 
 void mcu_usart_init(void)
@@ -446,16 +455,6 @@ void mcu_usart_init(void)
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 	tusb_init();
 #endif
-
-	// µs counting is now done via Systick
-
-	// initialize debugger clock (used by us delay)
-	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
-	{
-		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-		DWT->CYCCNT = 0;
-		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-	}
 }
 
 void mcu_putc(char c)
@@ -686,24 +685,6 @@ void mcu_rtc_init()
 	NVIC_SetPriority(SysTick_IRQn, 10);
 	SysTick->CTRL = 7; // Start SysTick (ABH)
 }
-
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
-// 	while (DWT->CYCCNT < delayTicks)
-// 		;
-// }
-
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
 
 void mcu_dotasks()
 {

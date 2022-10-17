@@ -732,24 +732,6 @@ uint32_t mcu_millis()
 	return val;
 }
 
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
-// 	while (DWT->CYCCNT < delayTicks)
-// 		;
-// }
-
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
-
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
