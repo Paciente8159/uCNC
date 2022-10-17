@@ -401,7 +401,6 @@ void mcu_clocks_init()
 		DWT->CYCCNT = 0;
 		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	}
-	F
 }
 
 void mcu_usart_init(void)
