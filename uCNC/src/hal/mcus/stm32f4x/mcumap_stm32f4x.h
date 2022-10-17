@@ -71,15 +71,16 @@ extern "C"
 #if (F_CPU > 90000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV4
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV2
+#define PERIPH_CLOCK (F_CPU>>2)
 #elif (F_CPU > 45000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV2
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV1
+#define PERIPH_CLOCK (F_CPU>>1)
 #else
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV1
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV1
+#define PERIPH_CLOCK F_CPU
 #endif
-
-#define PERIPH_CLOCK(X) (F_CPU >> ((RCC->CFGR & RCC_CFGR_PPRE##X##_Msk) >> RCC_CFGR_PPRE##X##_Pos))
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -1936,23 +1937,6 @@ extern "C"
 /**********************************************
  *	PWM pins
  **********************************************/
-#define PWM_TIMER1_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER2_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER3_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER4_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER5_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER6_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER7_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER8_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER9_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER10_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER11_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER12_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER13_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER14_CLOCKS PERIPH_CLOCK(1)
-#define _PWM_TIMER_CLOCKS(X) PWM_TIMER##X##_CLOCKS
-#define PWM_TIMER_CLOCKS(X) _PWM_TIMER_CLOCKS(X)
-
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
 #if (PWM0_TIMER == 1 || (PWM0_TIMER >= 8 & PWM0_TIMER <= 11))
 #define PWM0_ENREG RCC->APB2ENR
@@ -3074,7 +3058,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (PERIPH_CLOCK(1) / 1000000UL)
+#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
 #define I2C_AFIO 4
 
 #ifndef I2C_FREQ

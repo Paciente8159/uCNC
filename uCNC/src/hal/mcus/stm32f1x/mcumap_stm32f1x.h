@@ -68,11 +68,11 @@ extern "C"
 // APB1 cannot exceed 36MHz
 #if (F_CPU > 36000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV2
+#define PERIPH_CLOCK (F_CPU>>1)
 #else
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV1
+#define PERIPH_CLOCK F_CPU
 #endif
-
-#define PERIPH_CLOCK(X) (F_CPU >> ((RCC->CFGR & RCC_CFGR_PPRE##X##_Msk) >> RCC_CFGR_PPRE##X##_Pos))
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -3272,23 +3272,6 @@ extern "C"
 /**********************************************
  *	PWM pins
  **********************************************/
-#define PWM_TIMER1_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER2_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER3_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER4_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER5_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER6_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER7_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER8_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER9_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER10_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER11_CLOCKS PERIPH_CLOCK(2)
-#define PWM_TIMER12_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER13_CLOCKS PERIPH_CLOCK(1)
-#define PWM_TIMER14_CLOCKS PERIPH_CLOCK(1)
-#define _PWM_TIMER_CLOCKS(X) PWM_TIMER##X##_CLOCKS
-#define PWM_TIMER_CLOCKS(X) _PWM_TIMER_CLOCKS(X)
-
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
 #if (PWM0_TIMER == 1 || (PWM0_TIMER >= 8 & PWM0_TIMER <= 11))
 #define PWM0_ENREG RCC->APB2ENR
@@ -4311,7 +4294,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (PERIPH_CLOCK(1) / 1000000UL)
+#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
 
 #if ((I2C_PORT == 1) && (I2C_SCL_PORT == B6) && (I2C_SDA_PORT == B7))
 #elif ((I2C_PORT == 1) && (I2C_SCL_PORT == B8) && (I2C_SDA_PORT == B9))
@@ -4526,7 +4509,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(PWM_TIMER_CLOCKS(__indirect__(diopin, TIMER)) / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                        \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
