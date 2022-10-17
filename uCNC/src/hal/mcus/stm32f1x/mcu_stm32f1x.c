@@ -138,10 +138,16 @@ static FORCEINLINE void mcu_clear_servos()
 // starts a constant rate pulse at a given frequency.
 void servo_timer_init(void)
 {
+#if (SERVO_TIMER == 1 || SERVO_TIMER == 8 || SERVO_TIMER == 9 || SERVO_TIMER == 10 || SERVO_TIMER == 11)
+	uint32_t clocks = (uint32_t)PERIPH_CLOCK(2);
+#else
+	uint32_t clocks = (uint32_t)PERIPH_CLOCK(1);
+#endif
+
 	RCC->SERVO_TIMER_ENREG |= SERVO_TIMER_APB;
 	SERVO_TIMER_REG->CR1 = 0;
 	SERVO_TIMER_REG->DIER = 0;
-	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
+	SERVO_TIMER_REG->PSC = (clocks / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
 #if (SERVO_TIMER != 6 && SERVO_TIMER != 7)
@@ -350,12 +356,6 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#if (INTERFACE == INTERFACE_UART)
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
-#else
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
-#endif
-
 #ifndef FRAMEWORK_CLOCKS_INIT
 void mcu_clocks_init()
 {
@@ -382,8 +382,8 @@ void mcu_clocks_init()
 	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 	 */
 	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   APB2_PRESCALER |
-						   RCC_CFGR_PPRE1_DIV2 |
+						   RCC_CFGR_PPRE2_DIV1 |
+						   APB1_PRESC |
 						   RCC_CFGR_PLLSRC |
 						   RCC_CFGR_PLLMULL9);
 	/* Enable PLL */
@@ -415,7 +415,13 @@ void mcu_usart_init(void)
 	COM_USART->CR3 = 0;
 	COM_USART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 5) / ((float)BAUDRATE));
+
+#if (UART_PORT == 1) // APB2
+	uint32_t clocks = PERIPH_CLOCK(2);
+#else // APB1
+	uint32_t clocks = PERIPH_CLOCK(1);
+#endif
+	float baudrate = ((float)(clocks >> 4) / ((float)BAUDRATE));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -487,7 +493,6 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-	// make sure both APB1 and APB2 are running at the same clock (36MHz)
 #ifndef FRAMEWORK_CLOCKS_INIT
 	mcu_clocks_init();
 #endif
@@ -619,8 +624,13 @@ char mcu_getc(void)
 // convert step rate to clock cycles
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+// up and down counter (generates half the step rate at each event)
+#if (ITP_TIMER == 1 || ITP_TIMER == 8 || ITP_TIMER == 9 || ITP_TIMER == 10 || ITP_TIMER == 11)
+	uint32_t totalticks = (uint32_t)((float)PERIPH_CLOCK(2) / frequency);
+#else
+	uint32_t totalticks = (uint32_t)((float)PERIPH_CLOCK(1) / frequency);
+#endif
+	totalticks >>= 1;
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -830,7 +840,12 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(F_CPU / frequency);
+
+#if (SPI_PORT == 1)
+	uint8_t div = (uint8_t)(PERIPH_CLOCK(2) / frequency);
+#else
+	uint8_t div = (uint8_t)(PERIPH_CLOCK(1) / frequency);
+#endif
 	uint8_t speed;
 	if (div < 2)
 	{
@@ -980,8 +995,12 @@ void MCU_ONESHOT_ISR(void)
 #ifndef mcu_config_timeout
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
-	// up and down counter (generates half the step rate at each event)
-	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+// up and down counter (generates half the step rate at each event)
+#if (ONESHOT_TIMER == 1 || ONESHOT_TIMER == 8 || ONESHOT_TIMER == 9 || ONESHOT_TIMER == 10 || ONESHOT_TIMER == 11)
+	uint32_t clocks = (uint32_t)((PERIPH_CLOCK(2) / 1000000UL) * timeout);
+#else
+	uint32_t clocks = (uint32_t)((PERIPH_CLOCK(1) / 1000000UL) * timeout);
+#endif
 	uint32_t presc = 1;
 
 	mcu_timeout_cb = fp;
