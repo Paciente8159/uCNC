@@ -65,6 +65,17 @@ extern "C"
 #define ENABLE_SYNC_RX
 #endif
 
+// APB1 cannot exceed 36MHz
+#if (F_CPU > 36000000UL)
+#define APB1_PRESC RCC_CFGR_PPRE1_DIV2
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
+#define PERIPH_CLOCK (F_CPU>>1)
+#else
+#define APB1_PRESC RCC_CFGR_PPRE1_DIV1
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
+#define PERIPH_CLOCK F_CPU
+#endif
+
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
@@ -4285,7 +4296,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE ((F_CPU >> 1) / 1000000UL)
+#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
 
 #if ((I2C_PORT == 1) && (I2C_SCL_PORT == B6) && (I2C_SDA_PORT == B7))
 #elif ((I2C_PORT == 1) && (I2C_SCL_PORT == B8) && (I2C_SDA_PORT == B9))
@@ -4555,7 +4566,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	({                                               \
+	({                                              \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -4586,7 +4597,7 @@ extern "C"
 #endif
 #endif
 
-	extern volatile bool stm32_global_isr_enabled;
+extern volatile bool stm32_global_isr_enabled;
 #define mcu_enable_global_isr()          \
 	{                                    \
 		__enable_irq();                  \
