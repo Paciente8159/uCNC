@@ -23,6 +23,7 @@
 #include "core_cm4.h"
 #include "stm32f4xx.h"
 #include "mcumap_stm32f4x.h"
+#include <math.h>
 
 #if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
@@ -342,9 +343,10 @@ static void mcu_usart_init(void);
 #else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
-
+#endif
 void mcu_clocks_init()
 {
+#ifndef FRAMEWORK_CLOCKS_INIT
 	// enable power clock
 	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
 	// set voltage regulator scale 2
@@ -403,9 +405,12 @@ void mcu_clocks_init()
 	// 	DWT->CYCCNT = 0;
 	// 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	// }
-}
 
+#else
+	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
+	RCC->CFGR |= (APB2_PRESC | APB1_PRESC);
 #endif
+}
 
 void mcu_usart_init(void)
 {
@@ -419,7 +424,7 @@ void mcu_usart_init(void)
 	COM_USART->CR2 = 0; // 1 stop bit STOP=00
 	COM_USART->CR3 = 0;
 	COM_USART->SR = 0;
-	// //115200 baudrate
+// //115200 baudrate
 	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)(BAUDRATE)));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
@@ -506,10 +511,8 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-// make sure both APB1 and APB2 are running at the same clock (48MHz)
-#ifndef FRAMEWORK_CLOCKS_INIT
+	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
-#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();

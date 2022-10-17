@@ -68,9 +68,11 @@ extern "C"
 // APB1 cannot exceed 36MHz
 #if (F_CPU > 36000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV2
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
 #define PERIPH_CLOCK (F_CPU>>1)
 #else
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV1
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
 #define PERIPH_CLOCK F_CPU
 #endif
 

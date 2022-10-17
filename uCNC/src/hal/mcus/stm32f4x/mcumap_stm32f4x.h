@@ -70,12 +70,12 @@ extern "C"
 // APB1 cannot exceed 36MHz
 #if (F_CPU > 90000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV4
-#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
-#define PERIPH_CLOCK (F_CPU>>2)
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV4
+#define PERIPH_CLOCK (F_CPU >> 2)
 #elif (F_CPU > 45000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV2
-#define APB2_PRESC RCC_CFGR_PPRE2_DIV1
-#define PERIPH_CLOCK (F_CPU>>1)
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
+#define PERIPH_CLOCK (F_CPU >> 1)
 #else
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV1
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV1
@@ -3242,7 +3242,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
 	}
 
-#define mcu_config_pwm(diopin, freq)                                                                                                                                      \
+#define mcu_config_pwm(diopin, freq)                                                                                                                                \
 	{                                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
 		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
@@ -3252,7 +3252,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                                                      \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                 \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                                           \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                                                   \
@@ -3311,7 +3311,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	({                                               \
+	({                                              \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -3322,7 +3322,7 @@ extern "C"
 	})
 
 #define mcu_spi_xmit(X)                                               \
-	({                                                                 \
+	({                                                                \
 		SPI_REG->DR = X;                                              \
 		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
 			;                                                         \

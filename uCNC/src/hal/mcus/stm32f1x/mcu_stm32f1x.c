@@ -350,9 +350,9 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#ifndef FRAMEWORK_CLOCKS_INIT
 void mcu_clocks_init()
 {
+#ifndef FRAMEWORK_CLOCKS_INIT
 	/* Reset the RCC clock configuration to the default reset state */
 	/* Set HSION bit */
 	RCC->CR |= (uint32_t)0x00000001;
@@ -376,8 +376,7 @@ void mcu_clocks_init()
 	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 	 */
 	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   RCC_CFGR_PPRE2_DIV1 |
-						   APB1_PRESC |
+						   APB1_PRESC | APB2_PRESC |
 						   RCC_CFGR_PLLSRC |
 						   RCC_CFGR_PLLMULL9);
 	/* Enable PLL */
@@ -390,8 +389,11 @@ void mcu_clocks_init()
 	/* Wait till PLL is used as system clock source */
 	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
 		;
-}
+#else
+	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
+	RCC->CFGR |= (APB1_PRESC | APB2_PRESC);
 #endif
+}
 
 void mcu_usart_init(void)
 {
@@ -481,9 +483,7 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-#ifndef FRAMEWORK_CLOCKS_INIT
 	mcu_clocks_init();
-#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
