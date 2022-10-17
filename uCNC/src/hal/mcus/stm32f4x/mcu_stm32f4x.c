@@ -23,6 +23,7 @@
 #include "core_cm4.h"
 #include "stm32f4xx.h"
 #include "mcumap_stm32f4x.h"
+#include <math.h>
 
 #if (INTERFACE == INTERFACE_USB)
 #include "../../../tinyusb/tusb_config.h"
@@ -330,12 +331,6 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#if (INTERFACE == INTERFACE_UART)
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
-#else
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
-#endif
-
 #ifndef FRAMEWORK_CLOCKS_INIT
 #if (F_CPU == 84000000)
 #define PLLN 336
@@ -348,9 +343,10 @@ static void mcu_usart_init(void);
 #else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
-
+#endif
 void mcu_clocks_init()
 {
+#ifndef FRAMEWORK_CLOCKS_INIT
 	// enable power clock
 	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
 	// set voltage regulator scale 2
@@ -389,7 +385,7 @@ void mcu_clocks_init()
 	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
 	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 	 */
-	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESCALER | RCC_CFGR_PPRE1_DIV2));
+	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESC | APB1_PRESC));
 
 	/* Select PLL as system clock source */
 	CLEARFLAG(RCC->CFGR, RCC_CFGR_SW);
@@ -399,8 +395,10 @@ void mcu_clocks_init()
 		;
 
 	SystemCoreClockUpdate();
-
-	// µs counting is now done via Systick
+#else
+	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
+	RCC->CFGR |= (APB2_PRESC | APB1_PRESC);
+#endif
 
 	// // initialize debugger clock (used by us delay)
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
@@ -410,8 +408,6 @@ void mcu_clocks_init()
 		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	}
 }
-
-#endif
 
 void mcu_usart_init(void)
 {
@@ -426,7 +422,7 @@ void mcu_usart_init(void)
 	COM_USART->CR3 = 0;
 	COM_USART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 1) / ((float)(BAUDRATE * 8 * 2)));
+	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)(BAUDRATE)));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -512,10 +508,8 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-// make sure both APB1 and APB2 are running at the same clock (48MHz)
-#ifndef FRAMEWORK_CLOCKS_INIT
+	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
-#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
@@ -885,7 +879,8 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(F_CPU / frequency);
+	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+
 	uint8_t speed;
 	if (div < 2)
 	{
