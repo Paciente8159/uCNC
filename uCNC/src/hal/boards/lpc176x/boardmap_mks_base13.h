@@ -92,20 +92,18 @@ extern "C"
 // #define PROBE_ISR -3
 
 // Setup com pins
-#if (INTERFACE == INTERFACE_UART)
-#define RX_BIT 3
-#define TX_BIT 2
-#define RX_PORT 0
-#define TX_PORT 0
-// only uncomment this if other port other then 0 is used
-//#define UART_PORT 0
-#elif (INTERFACE == INTERFACE_USB)
+// #define RX_BIT 3
+// #define TX_BIT 2
+// #define RX_PORT 0
+// #define TX_PORT 0
+// // only uncomment this if other port other then 0 is used
+// //#define UART_PORT 0
+
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 30
 #define USB_DM_PORT 0
 #define USB_DP_BIT 29
 #define USB_DP_PORT 0
-#endif
 
 // // Setup PWM
 #define PWM0_BIT 5	// assigns PWM0 pin

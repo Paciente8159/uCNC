@@ -461,14 +461,9 @@ void mcu_usart_init(void)
 void mcu_putc(char c)
 {
 #ifdef MCU_HAS_UART
-#ifdef ENABLE_SYNC_TX
-	while (!(COM_UART->SR & USART_SR_TC))
+	while (!mcu_tx_ready())
 		;
-#endif
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM_UART->CR1 |= (USART_CR1_TXEIE);
-#endif
 #endif
 #ifdef MCU_HAS_USB
 	if (c != 0)
@@ -479,6 +474,15 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
+#endif
+}
+
+char mcu_getc(void)
+{
+#ifdef MCU_HAS_UART
+	return COM_INREG;
+#else
+	return 0;
 #endif
 }
 
@@ -579,15 +583,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	}
 #endif
 	return 0;
-}
-
-char mcu_getc(void)
-{
-#ifdef MCU_HAS_UART
-	return COM_INREG;
-#else
-	return 0;
-#endif
 }
 
 // ISR

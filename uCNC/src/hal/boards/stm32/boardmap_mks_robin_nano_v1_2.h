@@ -109,15 +109,11 @@ extern "C"
 #define PROBE_PORT A
 #define PROBE_ISR
 
-#if (INTERFACE == INTERFACE_USART)
 #define UART_PORT 3
 #define TX_BIT 10
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
-#else
-#error "This board uses an external USB<->Serial converter"
-#endif
 
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin
