@@ -464,7 +464,11 @@ void mcu_putc(char c)
 	while (!mcu_tx_ready())
 		;
 	COM_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
+#endif
+
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{

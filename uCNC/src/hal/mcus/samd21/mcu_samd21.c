@@ -38,7 +38,7 @@
 #define NVM_EEPROM_BASE (FLASH_ADDR + NVMCTRL_FLASH_SIZE - (NVM_EEPROM_ROWS * NVMCTRL_ROW_SIZE))
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -207,22 +207,20 @@ void MCU_ITP_ISR(void)
 	mcu_enable_global_isr();
 }
 
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 void mcu_com_isr()
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM->USART.INTFLAG.bit.RXC && COM->USART.INTENSET.bit.RXC)
+	if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 	{
-		COM->USART.INTFLAG.bit.RXC = 1;
+		COM_UART->USART.INTFLAG.bit.RXC = 1;
 		unsigned char c = (0xff & COM_INREG);
 		mcu_com_rx_cb(c);
 	}
-#endif
 #ifndef ENABLE_SYNC_TX
-	if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
+	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 	{
-		COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+		COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 		mcu_com_tx_cb();
 	}
 #endif
@@ -232,7 +230,7 @@ void mcu_com_isr()
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 	PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
 	/* Setup GCLK SERCOMx to use GENCLK0 */
@@ -241,49 +239,44 @@ void mcu_usart_init(void)
 		;
 
 	// Start the Software Reset
-	COM->USART.CTRLA.bit.SWRST = 1;
+	COM_UART->USART.CTRLA.bit.SWRST = 1;
 
-	while (COM->USART.SYNCBUSY.bit.SWRST)
+	while (COM_UART->USART.SYNCBUSY.bit.SWRST)
 		;
 
-	COM->USART.CTRLA.bit.MODE = 1;
-	COM->USART.CTRLA.bit.SAMPR = 0;			// 16x sample rate
-	COM->USART.CTRLA.bit.FORM = 0;			// no parity
-	COM->USART.CTRLA.bit.DORD = 1;			// LSB first
-	COM->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
-	COM->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM->USART.CTRLB.bit.SBMODE = 0;		// one stop bit
-	COM->USART.CTRLB.bit.CHSIZE = 0;		// 8 bits
-	COM->USART.CTRLB.bit.RXEN = 1;			// enable receiver
-	COM->USART.CTRLB.bit.TXEN = 1;			// enable transmitter
+	COM_UART->USART.CTRLA.bit.MODE = 1;
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
+	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
+	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
 
-	while (COM->USART.SYNCBUSY.bit.CTRLB)
+	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
 	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
 
-	COM->USART.BAUD.reg = baud;
+	COM_UART->USART.BAUD.reg = baud;
 	mcu_config_altfunc(TX);
 	mcu_config_altfunc(RX);
+	COM_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
+	COM_UART->USART.INTENSET.bit.ERROR = 1;
 
-#ifndef ENABLE_SYNC_RX
-	COM->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
-	COM->USART.INTENSET.bit.ERROR = 1;
-#endif
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-#endif
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	NVIC_SetPriority(COM_IRQ, 0);
 
-	// enable COM
-	COM->USART.CTRLA.bit.ENABLE = 1;
-	while (COM->USART.SYNCBUSY.bit.ENABLE)
+	// enable COM_UART
+	COM_UART->USART.CTRLA.bit.ENABLE = 1;
+	while (COM_UART->USART.SYNCBUSY.bit.ENABLE)
 		;
 
 #endif
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	PM->AHBMASK.reg |= PM_AHBMASK_USB;
 
 	mcu_config_input(USB_DM);
@@ -310,7 +303,7 @@ void mcu_usart_init(void)
 #endif
 }
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 void USB_Handler(void)
 {
 	mcu_disable_global_isr();
@@ -703,13 +696,23 @@ bool mcu_rx_ready(void)
 #endif
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a char either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_UART
+#ifdef ENABLE_SYNC_TX
+	while (!mcu_tx_ready())
+		;
+#endif
+	COM_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+#endif
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -718,43 +721,21 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
-#endif
 #endif
 }
 #endif
 
 /**
- * gets a char either via uart (hardware, software or USB virtual COM port)
+ * gets a char either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#if (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
-#endif
+#ifdef MCU_HAS_UART
 	return (char)(0xff & COM_INREG);
-#endif
+#else
+	return 0;
 #endif
 }
 #endif
@@ -955,14 +936,13 @@ void mcu_delay_us(uint16_t delay)
  * */
 void mcu_dotasks(void)
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
@@ -1266,7 +1246,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
 	uint16_t ticks = (uint16_t)(timeout - 1);
-	uint16_t prescaller = 3; //div by 8 giving one tick per us
+	uint16_t prescaller = 3; // div by 8 giving one tick per us
 
 #if (ONESHOT_TIMER < 3)
 	// reset timer

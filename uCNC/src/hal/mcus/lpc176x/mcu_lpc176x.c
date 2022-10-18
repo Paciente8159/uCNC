@@ -131,9 +131,9 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->PR = ((F_CPU >> 2) / 127500) - 1; // for 1us
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
-	SERVO_TIMER_REG->MR1 = SERVO_MIN;	 // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;	 // reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B; // Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
+	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
@@ -247,6 +247,15 @@ void MCU_COM_ISR(void)
 		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
 		mcu_com_rx_cb(c);
 	}
+
+#ifndef ENABLE_SYNC_TX
+	if (irqstatus == UART_IIR_INTID_THRE)
+	{
+		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
+		COM_UART->IER &= ~UART_IER_THREINT_EN;
+		mcu_com_tx_cb();
+	}
+#endif
 
 	mcu_enable_global_isr();
 }
@@ -544,7 +553,7 @@ void mcu_putc(char c)
 char mcu_getc(void)
 {
 #ifdef MCU_HAS_UART
-	return  (COM_INREG & UART_RBR_MASKBIT);
+	return (COM_INREG & UART_RBR_MASKBIT);
 #else
 	return 0;
 #endif
@@ -841,7 +850,8 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 
 void MCU_ONESHOT_ISR(void)
 {
-	if(mcu_timeout_cb){
+	if (mcu_timeout_cb)
+	{
 		mcu_timeout_cb();
 	}
 
