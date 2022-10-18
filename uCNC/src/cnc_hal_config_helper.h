@@ -2130,6 +2130,10 @@ typedef uint16_t step_t;
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
 
+#if (defined(MCU_HAS_USB) || defined(MCU_HAS_WIFI) || defined(MCU_HAS_BLUETOOTH))
+#define ENABLE_SYNC_TX
+#endif
+
 #ifdef __cplusplus
 }
 #endif
