@@ -68,7 +68,7 @@ void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
 #ifndef ENABLE_SYNC_RX
-	if (COM_USART->SR & USART_SR_RXNE)
+	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
 		mcu_com_rx_cb(c);
@@ -76,9 +76,9 @@ void MCU_SERIAL_ISR(void)
 #endif
 
 #ifndef ENABLE_SYNC_TX
-	if ((COM_USART->SR & USART_SR_TXE) && (COM_USART->CR1 & USART_CR1_TXEIE))
+	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 	{
-		COM_USART->CR1 &= ~(USART_CR1_TXEIE);
+		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 		mcu_com_tx_cb();
 	}
 #endif
@@ -439,22 +439,22 @@ void mcu_usart_init(void)
 #endif
 	RCC->COM_APB |= (COM_APBEN);
 	/*setup UART*/
-	COM_USART->CR1 = 0; // 8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; // 1 stop bit STOP=00
-	COM_USART->CR3 = 0;
-	COM_USART->SR = 0;
+	COM_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM_UART->CR3 = 0;
+	COM_UART->SR = 0;
 	// //115200 baudrate
 	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)BAUDRATE));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
 	brr += (uint16_t)roundf(16.0f * baudrate);
-	COM_USART->BRR = brr;
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	COM_UART->BRR = brr;
+	COM_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 	NVIC_SetPriority(COM_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
 }
 
@@ -462,12 +462,12 @@ void mcu_putc(char c)
 {
 #ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	while (!(COM_USART->SR & USART_SR_TC))
+	while (!(COM_UART->SR & USART_SR_TC))
 		;
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE);
+	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
 #endif
 #ifdef MCU_HAS_USB

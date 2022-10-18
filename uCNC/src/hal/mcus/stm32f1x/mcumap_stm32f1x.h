@@ -4198,11 +4198,11 @@ extern "C"
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
 #if (UART_PORT < 4)
-#define COM_USART __usart__(UART_PORT)
+#define COM_UART __usart__(UART_PORT)
 #define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
 #define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #if (UART_PORT == 1)
 #define COM_APB APB2ENR
 #define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
@@ -4211,13 +4211,13 @@ extern "C"
 #define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
 #else
-#define COM_USART __uart__(UART_PORT)
+#define COM_UART __uart__(UART_PORT)
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #endif
 
 #define UART_TX_PIN __iopin__(TX_PORT, TX_BIT)
@@ -4623,11 +4623,11 @@ extern "C"
 #if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
 	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM_USART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
-#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
 #elif defined(MCU_HAS_UART)
-#define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
-#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
+#define mcu_rx_ready() (COM_UART->SR & USART_SR_RXNE)
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
 #elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
