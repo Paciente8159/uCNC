@@ -22,7 +22,7 @@
 #if (MCU == MCU_LPC176X)
 #include "system_LPC17xx.h"
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -220,17 +220,17 @@ void mcu_clocks_init(void)
  * The isr functions
  * The respective IRQHandler will execute these functions
 //  **/
-#if (INTERFACE == INTERFACE_USART)
+#ifdef MCU_HAS_UART
 void MCU_COM_ISR(void)
 {
 	mcu_disable_global_isr();
-	uint32_t irqstatus = UART_GetIntId(COM_USART);
+	uint32_t irqstatus = UART_GetIntId(COM_UART);
 	irqstatus &= UART_IIR_INTID_MASK;
 
 	// Receive Line Status
 	if (irqstatus == UART_IIR_INTID_RLS)
 	{
-		uint32_t linestatus = UART_GetLineStatus(COM_USART);
+		uint32_t linestatus = UART_GetLineStatus(COM_UART);
 
 		// Receive Line Status
 		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
@@ -242,25 +242,16 @@ void MCU_COM_ISR(void)
 		}
 	}
 
-#ifndef ENABLE_SYNC_RX
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
 		mcu_com_rx_cb(c);
 	}
-#endif
 
-#ifndef ENABLE_SYNC_TX
-	if (irqstatus == UART_IIR_INTID_THRE)
-	{
-		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-		COM_USART->IER &= ~UART_IER_THREINT_EN;
-		mcu_com_tx_cb();
-	}
-#endif
 	mcu_enable_global_isr();
 }
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 void USB_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -271,33 +262,33 @@ void USB_IRQHandler(void)
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 	/*mcu_config_af(TX, UART_ALT_FUNC);
 	mcu_config_af(RX, UART_ALT_FUNC);
 	LPC_SC->PCONP |= UART_PCONP;
 	LPC_SC->UART_PCLKSEL_REG &= ~UART_PCLKSEL_MASK; // div clock by 4
 
-	COM_USART->FCR = UART_FCR_FIFO_EN | UART_FCR_RX_RS | UART_FCR_TX_RS; // Enable FIFO and reset Rx/Tx FIFO buffers
-	COM_USART->IER = 0;
-	COM_USART->ACR = 0;
-	COM_USART->LCR = 0;
-	COM_USART->TER = 0;
-	// COM_USART->FCR = 0;
+	COM_UART->FCR = UART_FCR_FIFO_EN | UART_FCR_RX_RS | UART_FCR_TX_RS; // Enable FIFO and reset Rx/Tx FIFO buffers
+	COM_UART->IER = 0;
+	COM_UART->ACR = 0;
+	COM_UART->LCR = 0;
+	COM_UART->TER = 0;
+	// COM_UART->FCR = 0;
 
-	COM_USART->LCR = UART_LCR_WLEN8 | UART_LCR_DLAB_EN;
+	COM_UART->LCR = UART_LCR_WLEN8 | UART_LCR_DLAB_EN;
 
 	uint32_t uartspeed = ((F_CPU >> 2) / (16 * BAUDRATE));
-	COM_USART->DLL = uartspeed & 0xFF;
-	COM_USART->DLM = (uartspeed >> 0x08) & 0xFF;
-	while ((COM_USART->LCR & UART_LCR_DLAB_EN))
+	COM_UART->DLL = uartspeed & 0xFF;
+	COM_UART->DLM = (uartspeed >> 0x08) & 0xFF;
+	while ((COM_UART->LCR & UART_LCR_DLAB_EN))
 		;
 
-	COM_USART->IER |= UART_IER_RLSINT_EN;
+	COM_UART->IER |= UART_IER_RLSINT_EN;
 	#ifndef ENABLE_SYNC_RX
-	COM_USART->IER |= UART_IER_RBRINT_EN;
+	COM_UART->IER |= UART_IER_RBRINT_EN;
 	#endif
 
-	COM_USART->TER |= UART_TER_TXEN;
+	COM_UART->TER |= UART_TER_TXEN;
 
 */
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -308,24 +299,21 @@ void mcu_usart_init(void)
 	CLKPWR_SetPCLKDiv(COM_PCLK, CLKPWR_PCLKSEL_CCLK_DIV_4);
 
 	UART_CFG_Type conf = {BAUDRATE, UART_PARITY_NONE, UART_DATABIT_8, UART_STOPBIT_1};
-	UART_Init(COM_USART, &conf);
+	UART_Init(COM_UART, &conf);
 
 	// Enable UART Transmit
-	UART_TxCmd(COM_USART, ENABLE);
+	UART_TxCmd(COM_UART, ENABLE);
 
 	// Configure Interrupts
-	UART_IntConfig(COM_USART, UART_INTCFG_RLS, ENABLE);
-#ifndef ENABLE_SYNC_RX
-	UART_IntConfig(COM_USART, UART_INTCFG_RBR, ENABLE);
-#endif
+	UART_IntConfig(COM_UART, UART_INTCFG_RLS, ENABLE);
+	UART_IntConfig(COM_UART, UART_INTCFG_RBR, ENABLE);
 
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 	NVIC_SetPriority(COM_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
 
-#elif (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	// // configure USB as Virtual COM port
 	LPC_PINCON->PINSEL1 &= ~((3 << 26) | (3 << 28)); /* P0.29 D+, P0.30 D- */
 	LPC_PINCON->PINSEL1 |= ((1 << 26) | (1 << 28));	 /* PINSEL1 26.27, 28.29  = 01 */
@@ -525,17 +513,17 @@ bool mcu_rx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
 		;
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	// UART_IntConfig(COM_USART, UART_INTCFG_THRE, ENABLE);
-	COM_USART->IER |= UART_IER_THREINT_EN;
+	COM_UART->IER |= UART_IER_THREINT_EN;
 #endif
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -555,19 +543,10 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
-#endif
-	return (COM_INREG & UART_RBR_MASKBIT);
-#elif (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
+#ifdef MCU_HAS_UART
+	return  (COM_INREG & UART_RBR_MASKBIT);
+#else
+	return 0;
 #endif
 }
 #endif
@@ -707,19 +686,15 @@ void mcu_delay_us(uint16_t delay)
  *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
  *   - if ENABLE_SYNC_TX is enabled check if com_tx_empty is false and run mcu_com_tx_cb
  * */
-void mcu_dotasks(void)
+void mcu_dotasks()
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
-	// lpc176x_uart_flush();
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
