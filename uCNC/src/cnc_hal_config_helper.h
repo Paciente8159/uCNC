@@ -1993,10 +1993,6 @@ extern "C"
 
 #define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK)
 
-#if (INTERFACE < 0 || INTERFACE > 1)
-#error "undefined COM interface"
-#endif
-
 #ifdef BRESENHAM_16BIT
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3

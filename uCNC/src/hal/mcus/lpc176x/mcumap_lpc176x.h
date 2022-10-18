@@ -112,16 +112,6 @@ typedef struct
 			;                   \
 	}
 
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
-#endif
-#ifndef ENABLE_SYNC_RX
-#define ENABLE_SYNC_RX
-#endif
-#endif
-
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)

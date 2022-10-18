@@ -4301,7 +4301,6 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_USART)
 #ifndef UART_PORT
 #define COM_RX_vect USART_RX_vect
 #define COM_TX_vect USART_UDRE_vect
@@ -4323,7 +4322,6 @@ extern "C"
 #define RXCIE __rxciereg__(UART_PORT)
 #define UDRE __udrereg__(UART_PORT)
 #define RXC __rxcreg__(UART_PORT)
-#endif
 
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))

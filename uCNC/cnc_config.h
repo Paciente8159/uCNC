@@ -25,9 +25,6 @@ extern "C"
 {
 #endif
 
-#define INTERFACE_UART 0
-#define INTERFACE_USB 1
-
 	/**
 	 * Serial COM
 	 * Defines the serial COM baud rate
@@ -36,10 +33,6 @@ extern "C"
 
 #ifndef BAUDRATE
 #define BAUDRATE 115200
-#endif
-
-#ifndef INTERFACE
-#define INTERFACE INTERFACE_UART
 #endif
 
 #ifndef ENABLE_WIFI
