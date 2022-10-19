@@ -67,13 +67,11 @@ volatile bool stm32_global_isr_enabled;
 void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
 	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
 		mcu_com_rx_cb(c);
 	}
-#endif
 
 #ifndef ENABLE_SYNC_TX
 	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))

@@ -692,8 +692,6 @@ void mcu_delay_us(uint16_t delay)
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
- *   - if ENABLE_SYNC_TX is enabled check if com_tx_empty is false and run mcu_com_tx_cb
  * */
 void mcu_dotasks()
 {

@@ -529,11 +529,8 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())
 		;
-#endif
-
 	return esp8266_uart_read();
 }
 #endif
@@ -638,8 +635,6 @@ void esp8266_delay_us(uint16_t delay)
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
- *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
  * */
 void mcu_dotasks(void)
 {

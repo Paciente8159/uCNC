@@ -40,16 +40,6 @@ extern "C"
 #endif
 
 	/**
-	 * uncomment to force enable synchronized TX/RX (used in USB VCP)
-	 * enable these options to perform communications in the mcu tasks function
-	 * call instead of being interrupt driven (sync RX may cause problems with
-	 * hardware USART)
-	 * */
-
-	//  #define ENABLE_SYNC_TX
-	//  #define ENABLE_SYNC_RX
-
-	/**
 	 * Choose the board
 	 * Check boards.h for list of available/supported boards
 	 * */

@@ -983,8 +983,9 @@ extern "C"
 #define COM_PORT 0
 #endif
 
-#define ENABLE_SYNC_RX
+#ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
+#endif
 
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
