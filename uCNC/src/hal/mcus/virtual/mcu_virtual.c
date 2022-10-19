@@ -1572,13 +1572,6 @@ uint16_t mcu_stopPerfCounter(void)
 
 void mcu_dotasks(void)
 {
-#ifdef ENABLE_SYNC_RX
-	while (mcu_read_available())
-	{
-		unsigned char c = mcu_getc();
-		serial_rx_isr(c);
-	}
-#endif
 }
 
 #endif

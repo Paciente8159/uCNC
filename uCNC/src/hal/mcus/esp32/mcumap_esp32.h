@@ -979,14 +979,13 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
-#if (INTERFACE == INTERFACE_UART)
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
-#endif
 
-#define ENABLE_SYNC_RX
+#ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
+#endif
 
 #ifndef RTC_TIMER
 #define RTC_TIMER 0

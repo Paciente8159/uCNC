@@ -72,28 +72,11 @@ extern "C"
 			;                   \
 	}
 
-	// needed by software delays
-	// #ifndef MCU_CLOCKS_PER_CYCLE
-	// #define MCU_CLOCKS_PER_CYCLE 1
-	// #endif
-	// #ifndef MCU_CYCLES_PER_LOOP
-	// #define MCU_CYCLES_PER_LOOP 7
-	// #endif
-	// #ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
-	// #define MCU_CYCLES_PER_LOOP_OVERHEAD 6
-	// #endif
-
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#define ENABLE_SYNC_TX
-#define ENABLE_SYNC_RX
-#endif
-
 // APB1 cannot exceed 36MHz
 #if (F_CPU > 36000000UL)
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV2
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV2
-#define PERIPH_CLOCK (F_CPU>>1)
+#define PERIPH_CLOCK (F_CPU >> 1)
 #else
 #define APB1_PRESC RCC_CFGR_PPRE1_DIV1
 #define APB2_PRESC RCC_CFGR_PPRE2_DIV2
@@ -2976,6 +2959,13 @@ extern "C"
 #define DIO209_CROFF I2C_SDA_CROFF
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -4200,7 +4190,7 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifndef UART_PORT
 #define UART_PORT 1
 #endif
@@ -4208,13 +4198,11 @@ extern "C"
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
 #if (UART_PORT < 4)
-#define COM_USART __usart__(UART_PORT)
+#define COM_UART __usart__(UART_PORT)
 #define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
-#endif
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #if (UART_PORT == 1)
 #define COM_APB APB2ENR
 #define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
@@ -4223,15 +4211,13 @@ extern "C"
 #define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
 #else
-#define COM_USART __uart__(UART_PORT)
+#define COM_UART __uart__(UART_PORT)
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #endif
 
 #define UART_TX_PIN __iopin__(TX_PORT, TX_BIT)
@@ -4621,7 +4607,7 @@ extern "C"
 #endif
 #endif
 
-extern volatile bool stm32_global_isr_enabled;
+	extern volatile bool stm32_global_isr_enabled;
 #define mcu_enable_global_isr()          \
 	{                                    \
 		stm32_global_isr_enabled = true; \
@@ -4634,22 +4620,15 @@ extern volatile bool stm32_global_isr_enabled;
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-// #ifdef UART_PORT
-// #ifndef ENABLE_SYNC_TX
-// #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
-// #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
-#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
-#elif (INTERFACE == INTERFACE_USB)
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (COM_UART->SR & USART_SR_RXNE)
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)

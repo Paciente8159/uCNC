@@ -112,16 +112,6 @@ typedef struct
 			;                   \
 	}
 
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
-#endif
-#ifndef ENABLE_SYNC_RX
-#define ENABLE_SYNC_RX
-#endif
-#endif
-
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
@@ -2846,6 +2836,13 @@ typedef struct
 #define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -3563,7 +3560,7 @@ typedef struct
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifndef UART_PORT
 #define UART_PORT 0
 #endif
@@ -3591,15 +3588,13 @@ typedef struct
 
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM_USART __helper__(LPC_UART, UART_PORT, )
+#define COM_UART __helper__(LPC_UART, UART_PORT, )
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART_PORT, )
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_COM_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#endif
 
-#define COM_OUTREG (COM_USART)->THR
-#define COM_INREG (COM_USART)->RBR
+#define COM_OUTREG (COM_UART)->THR
+#define COM_INREG (COM_UART)->RBR
 
 #endif
 
@@ -3823,10 +3818,15 @@ typedef struct
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
-#define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
-#elif (INTERFACE == INTERFACE_USB)
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)

@@ -51,14 +51,12 @@ extern "C"
 //#define ESTOP_ISR
 
 // Setup com pins
-#if (INTERFACE == INTERFACE_UART)
 #define RX_BIT 3
 #define TX_BIT 1
 #define RX_PORT D
 #define TX_PORT D
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
-#endif
 
     // Setup PWM
 #define PWM0_BIT 2  // assigns PWM0 pin

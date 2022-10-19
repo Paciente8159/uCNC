@@ -24,7 +24,7 @@
 #include "mcumap_stm32f1x.h"
 #include <math.h>
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -63,28 +63,28 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions
  **/
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM_USART->SR & USART_SR_RXNE)
+	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
 		mcu_com_rx_cb(c);
 	}
-#endif
 
 #ifndef ENABLE_SYNC_TX
-	if ((COM_USART->SR & USART_SR_TXE) && (COM_USART->CR1 & USART_CR1_TXEIE))
+	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 	{
-		COM_USART->CR1 &= ~(USART_CR1_TXEIE);
+		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 		mcu_com_tx_cb();
 	}
 #endif
 	mcu_enable_global_isr();
 }
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+
+#ifdef MCU_HAS_USB
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -105,7 +105,6 @@ void USBWakeUp_IRQHandler(void)
 	tud_int_handler(0);
 	mcu_enable_global_isr();
 }
-
 #endif
 
 // define the mcu internal servo variables
@@ -403,38 +402,12 @@ void mcu_clocks_init()
 	}
 }
 
+#include <stm32f1xx_hal_rcc.h>
+#include <stm32f1xx_hal_rcc_ex.h>
+#include <stm32f1xx_hal_flash.h>
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
-	/*enables RCC clocks and GPIO*/
-	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_input_af(RX);
-#ifdef COM_REMAP
-	AFIO->MAPR |= COM_REMAP;
-#endif
-	RCC->COM_APB |= (COM_APBEN);
-	/*setup UART*/
-	COM_USART->CR1 = 0; // 8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; // 1 stop bit STOP=00
-	COM_USART->CR3 = 0;
-	COM_USART->SR = 0;
-	// //115200 baudrate
-	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)BAUDRATE));
-	uint16_t brr = (uint16_t)baudrate;
-	baudrate -= brr;
-	brr <<= 4;
-	brr += (uint16_t)roundf(16.0f * baudrate);
-	COM_USART->BRR = brr;
-#ifndef ENABLE_SYNC_RX
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-#endif
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-	NVIC_SetPriority(COM_IRQ, 3);
-	NVIC_ClearPendingIRQ(COM_IRQ);
-	NVIC_EnableIRQ(COM_IRQ);
-#endif
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
-#elif (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	// configure USB as Virtual COM port
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
@@ -454,20 +427,47 @@ void mcu_usart_init(void)
 	RCC->APB1ENR |= RCC_APB1ENR_USBEN;
 	tusb_init();
 #endif
+
+#ifdef MCU_HAS_UART
+	/*enables RCC clocks and GPIO*/
+	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_input_af(RX);
+#ifdef COM_REMAP
+	AFIO->MAPR |= COM_REMAP;
+#endif
+	RCC->COM_APB |= (COM_APBEN);
+	/*setup UART*/
+	COM_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM_UART->CR3 = 0;
+	COM_UART->SR = 0;
+	// //115200 baudrate
+	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)BAUDRATE));
+	uint16_t brr = (uint16_t)baudrate;
+	baudrate -= brr;
+	brr <<= 4;
+	brr += (uint16_t)roundf(16.0f * baudrate);
+	COM_UART->BRR = brr;
+	COM_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM_IRQ);
+	NVIC_EnableIRQ(COM_IRQ);
+	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#endif
 }
 
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_TX
-	while (!(COM_USART->SR & USART_SR_TC))
+#ifdef MCU_HAS_UART
+	while (!mcu_tx_ready())
 		;
-#endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE);
+	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -476,6 +476,15 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
+#endif
+}
+
+char mcu_getc(void)
+{
+#ifdef MCU_HAS_UART
+	return COM_INREG;
+#else
+	return 0;
 #endif
 }
 
@@ -578,24 +587,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-char mcu_getc(void)
-{
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!(COM_USART->SR & USART_SR_RXNE))
-		;
-#endif
-	return COM_INREG;
-#elif (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
-#endif
-}
-
 // ISR
 // enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr
@@ -687,14 +678,13 @@ void mcu_rtc_init()
 
 void mcu_dotasks()
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
