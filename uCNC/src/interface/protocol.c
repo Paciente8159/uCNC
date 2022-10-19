@@ -864,11 +864,8 @@ void protocol_send_pins_states(void)
 #define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
-#if (INTERFACE == INTERFACE_USB)
-#define SERIAL_INFO "U" STRGIFY(RX_BUFFER_CAPACITY)
-#else
+
 #define SERIAL_INFO STRGIFY(RX_BUFFER_CAPACITY)
-#endif
 
 #ifndef BOARD_NAME
 #define BOARD_NAME "Generic board"
