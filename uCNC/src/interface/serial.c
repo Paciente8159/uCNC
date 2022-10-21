@@ -201,8 +201,10 @@ void serial_putc(unsigned char c)
 #else
 	while (!mcu_tx_ready())
 	{
+		cnc_status_report_lock = true;
 		cnc_dotasks();
 	}
+	cnc_status_report_lock = false;
 	mcu_putc(c);
 #if !(ACTIVITY_LED < 0)
 	mcu_toggle_output(ACTIVITY_LED);
