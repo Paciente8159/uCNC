@@ -22,16 +22,43 @@
 #include <math.h>
 #include <stdbool.h>
 
+// defines default coolant pins
+#ifndef COOLANT_FLOOD
 #define COOLANT_FLOOD DOUT1
+#endif
+#ifndef COOLANT_MIST
 #define COOLANT_MIST DOUT2
+#endif
 
-#define GET_SPINDLE_TRUE_RPM true
+// defines VFD report mode
+// if false returns programmed speed
+// if true return speed read from VFD
+#ifndef GET_SPINDLE_TRUE_RPM
+#define GET_SPINDLE_TRUE_RPM false
+#endif
 
+// defines default softuart pins and vfd communication settings
+#ifndef VFD_TX_PIN
 #define VFD_TX_PIN DOUT27
+#endif
+#ifndef VFD_RX_PIN
 #define VFD_RX_PIN DIN27
+#endif
+#ifndef VFD_BAUDRATE
 #define VFD_BAUDRATE 9600
+#endif
+#ifndef VFD_TIMEOUT
 #define VFD_TIMEOUT 100
-#define VFD_RETRY_DELAY_MS 10
+#endif
+#ifndef VFD_RETRY_DELAY_MS
+#define VFD_RETRY_DELAY_MS 100
+#endif
+
+// comment this to override vfd communication error safety hold
+// #define IGNORE_VFD_COM_ERRORS
+#ifndef IGNORE_VFD_COM_ERRORS
+#define VFD_HOLD_ON_ERROR
+#endif
 
 #if !(VFD_TX_PIN < 0) && !(VFD_RX_PIN < 0)
 SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
@@ -56,7 +83,7 @@ static vfd_state_t vfd_state;
 #define VFD_MAX_COMMAND_RETRIES 2
 
 // uncomment the right type of VFD used
-#define VFD_HUANYANG_TYPE1
+// #define VFD_HUANYANG_TYPE1
 // #define VFD_HUANYANG_TYPE2
 // #define VFD_YL620
 // #define VFD_POWTRAN8100
@@ -229,6 +256,12 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 	}
 
 	vfd_state.connected = 0;
+	protocol_send_string(MSG_START);
+	protocol_send_string(__romstr__("VFD COMMUNICATION FAILED"));
+	protocol_send_string(MSG_END);
+#ifdef VFD_HOLD_ON_ERROR
+	cnc_call_rt_command(CMD_CODE_FEED_HOLD);
+#endif
 	return false;
 }
 
@@ -350,7 +383,6 @@ static bool vfd_connect(void)
 		// was able do communicate via modbus
 		if (!vfd_state.rpm_hz)
 		{
-			protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
 			return false;
 		}
 	}
