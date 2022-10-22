@@ -67,15 +67,50 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
+#define     __IM     volatile const      /*! Defines 'read only' structure member permissions */
+#define     __IOM    volatile            /*! Defines 'read / write' structure member permissions */
+
+typedef struct
+{
+  __IOM uint32_t CTRL;                   /*!< Offset: 0x000 (R/W)  Control Register */
+  __IOM uint32_t CYCCNT;                 /*!< Offset: 0x004 (R/W)  Cycle Count Register */
+  __IOM uint32_t CPICNT;                 /*!< Offset: 0x008 (R/W)  CPI Count Register */
+  __IOM uint32_t EXCCNT;                 /*!< Offset: 0x00C (R/W)  Exception Overhead Count Register */
+  __IOM uint32_t SLEEPCNT;               /*!< Offset: 0x010 (R/W)  Sleep Count Register */
+  __IOM uint32_t LSUCNT;                 /*!< Offset: 0x014 (R/W)  LSU Count Register */
+  __IOM uint32_t FOLDCNT;                /*!< Offset: 0x018 (R/W)  Folded-instruction Count Register */
+  __IM  uint32_t PCSR;                   /*!< Offset: 0x01C (R/ )  Program Counter Sample Register */
+  __IOM uint32_t COMP0;                  /*!< Offset: 0x020 (R/W)  Comparator Register 0 */
+  __IOM uint32_t MASK0;                  /*!< Offset: 0x024 (R/W)  Mask Register 0 */
+  __IOM uint32_t FUNCTION0;              /*!< Offset: 0x028 (R/W)  Function Register 0 */
+        uint32_t RESERVED0[1U];
+  __IOM uint32_t COMP1;                  /*!< Offset: 0x030 (R/W)  Comparator Register 1 */
+  __IOM uint32_t MASK1;                  /*!< Offset: 0x034 (R/W)  Mask Register 1 */
+  __IOM uint32_t FUNCTION1;              /*!< Offset: 0x038 (R/W)  Function Register 1 */
+        uint32_t RESERVED1[1U];
+  __IOM uint32_t COMP2;                  /*!< Offset: 0x040 (R/W)  Comparator Register 2 */
+  __IOM uint32_t MASK2;                  /*!< Offset: 0x044 (R/W)  Mask Register 2 */
+  __IOM uint32_t FUNCTION2;              /*!< Offset: 0x048 (R/W)  Function Register 2 */
+        uint32_t RESERVED2[1U];
+  __IOM uint32_t COMP3;                  /*!< Offset: 0x050 (R/W)  Comparator Register 3 */
+  __IOM uint32_t MASK3;                  /*!< Offset: 0x054 (R/W)  Mask Register 3 */
+  __IOM uint32_t FUNCTION3;              /*!< Offset: 0x058 (R/W)  Function Register 3 */
+} DWT_Type;
+
+#define DWT_BASE            (0xE0001000UL)                            /*!< DWT Base Address */
+#define DWT                 ((DWT_Type       *)     DWT_BASE      )   /*!< DWT configuration struct */
+
+// custom cycle counter
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
 #endif
-#ifndef ENABLE_SYNC_RX
-#define ENABLE_SYNC_RX
-#endif
-#endif
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		uint32_t t = X;         \
+		while (t > DWT->CYCCNT) \
+			;                   \
+	}
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -2801,6 +2836,13 @@ extern "C"
 #define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -3518,7 +3560,7 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifndef UART_PORT
 #define UART_PORT 0
 #endif
@@ -3546,15 +3588,13 @@ extern "C"
 
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM_USART __helper__(LPC_UART, UART_PORT, )
+#define COM_UART __helper__(LPC_UART, UART_PORT, )
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART_PORT, )
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_COM_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#endif
 
-#define COM_OUTREG (COM_USART)->THR
-#define COM_INREG (COM_USART)->RBR
+#define COM_OUTREG (COM_UART)->THR
+#define COM_INREG (COM_UART)->RBR
 
 #endif
 
@@ -3778,10 +3818,15 @@ extern "C"
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
-#define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
-#elif (INTERFACE == INTERFACE_USB)
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)

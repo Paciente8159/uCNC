@@ -50,6 +50,17 @@ extern "C"
 #define F_TIMERS 8000000UL
 #endif
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 5
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 13
+#endif
+
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
@@ -59,12 +70,6 @@ extern "C"
 #define rom_strncpy strncpy
 #define rom_memcpy memcpy
 #define rom_read_byte *
-
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#define ENABLE_SYNC_TX
-#define ENABLE_SYNC_RX
-#endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -1285,6 +1290,13 @@ extern "C"
 #define DIO209_GPIO I2C_SDA_GPIO
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 #define __pinmuxevenodd0 PMUXE
 #define __pinmuxevenodd2 PMUXE
 #define __pinmuxevenodd4 PMUXE
@@ -1483,44 +1495,37 @@ extern "C"
 #define _sercommux_pin(X, Y, Z) (SERCOMMUX_##X##_##Y##Z)
 #define sercommux_pin(X, Y, Z) (_sercommux_pin(X, Y, Z))
 
-#if (INTERFACE == INTERFACE_USB)
-#ifdef USB_DM
+#ifdef MCU_HAS_USB
 #define USB_DM_PMUX (pinmux(USB_DM_PORT, USB_DM_BIT))
 #define USB_DM_PMUXVAL (pinmuxval(USB_DM_MUX))
 #define DIO202_PMUX USB_DM_PMUX
 #define DIO202_PMUXVAL USB_DM_PMUXVAL
-#endif
-#ifdef USB_DP
 #define USB_DP_PMUX (pinmux(USB_DP_PORT, USB_DP_BIT))
 #define USB_DP_PMUXVAL (pinmuxval(USB_DP_MUX))
 #define DIO203_PMUX USB_DP_PMUX
 #define DIO203_PMUXVAL USB_DP_PMUXVAL
 #endif
-#else
+
+#ifdef MCU_HAS_UART
 // Arduino already uses SERCOM0 and SERCOM 1
 #ifndef UART_PORT
 #define UART_PORT 2
 #endif
-
-#ifdef TX
 #define TX_PMUX (pinmux(TX_PORT, TX_BIT))
 #define TX_PMUXVAL (sercommux_pin(UART_PORT, TX_PORT, TX_BIT))
 #define DIO200_PMUX TX_PMUX
 #define DIO200_PMUXVAL TX_PMUXVAL
-#endif
-#ifdef RX
 #define RX_PMUX (pinmux(RX_PORT, RX_BIT))
 #define RX_PMUXVAL (sercommux_pin(UART_PORT, RX_PORT, RX_BIT))
 #define DIO201_PMUX RX_PMUX
 #define DIO201_PMUXVAL RX_PMUXVAL
-#endif
-#define COM __helper__(SERCOM, UART_PORT, )
+#define COM_UART __helper__(SERCOM, UART_PORT, )
 #define PM_APBCMASK_COM __helper__(PM_APBCMASK_SERCOM, UART_PORT, )
 #define GCLK_CLKCTRL_ID_COM __helper__(GCLK_CLKCTRL_ID_SERCOM, UART_PORT, _CORE)
 #define COM_IRQ __helper__(SERCOM, UART_PORT, _IRQn)
 #define mcu_com_isr __helper__(SERCOM, UART_PORT, _Handler)
-#define COM_OUTREG (COM->USART.DATA.reg)
-#define COM_INREG (COM->USART.DATA.reg)
+#define COM_OUTREG (COM_UART->USART.DATA.reg)
+#define COM_INREG (COM_UART->USART.DATA.reg)
 #define COM_TX_PAD sercompad(TX_, UART_PORT, TX_PORT, TX_BIT)
 #define COM_RX_PAD sercompad(RX_, UART_PORT, RX_PORT, RX_BIT)
 #endif
@@ -3042,11 +3047,15 @@ extern "C"
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (COM->USART.INTFLAG.bit.RXC)
-#define mcu_tx_ready() (COM->USART.INTFLAG.bit.DRE)
-#elif (INTERFACE == INTERFACE_USB)
-#define CFG_TUSB_MCU OPT_MCU_SAMD21
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (COM_UART->USART.INTFLAG.bit.RXC)
+#define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)

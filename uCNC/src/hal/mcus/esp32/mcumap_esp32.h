@@ -59,6 +59,17 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
@@ -968,14 +979,13 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
-#if (INTERFACE == INTERFACE_UART)
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
-#endif
 
-#define ENABLE_SYNC_RX
+#ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
+#endif
 
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
@@ -1054,6 +1064,9 @@ extern uint8_t esp32_spi_xmit(uint8_t data);
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
 #endif
+
+extern void esp32_delay_us(uint16_t delay);
+#define mcu_delay_us(X) esp32_delay_us(X)
 
 #ifdef __cplusplus
 }

@@ -61,10 +61,32 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#define ENABLE_SYNC_TX
-#define ENABLE_SYNC_RX
+//needed by software delays
+
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		uint32_t t = X;         \
+		while (t > DWT->CYCCNT) \
+			;                   \
+	}
+
+// APB1 cannot exceed 36MHz
+#if (F_CPU > 90000000UL)
+#define APB1_PRESC RCC_CFGR_PPRE1_DIV4
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV4
+#define PERIPH_CLOCK (F_CPU >> 2)
+#elif (F_CPU > 45000000UL)
+#define APB1_PRESC RCC_CFGR_PPRE1_DIV2
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
+#define PERIPH_CLOCK (F_CPU >> 1)
+#else
+#define APB1_PRESC RCC_CFGR_PPRE1_DIV1
+#define APB2_PRESC RCC_CFGR_PPRE2_DIV1
+#define PERIPH_CLOCK F_CPU
 #endif
 
 // Helper macros
@@ -1592,6 +1614,13 @@ extern "C"
 #define DIO209_GPIO I2C_SDA_GPIO
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -2952,18 +2981,16 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
 //  #define ENABLE_SYNC_TX
 #if (UART_PORT < 4 || UART_PORT == 6)
-#define COM_USART __usart__(UART_PORT)
+#define COM_UART __usart__(UART_PORT)
 #define COM_IRQ __helper__(USART, UART_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_SERIAL_ISR __helper__(USART, UART_PORT, _IRQHandler)
-#endif
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #if (UART_PORT == 1 || UART_PORT == 6)
 #define COM_APB APB2ENR
 #define COM_APBEN __helper__(RCC_APB2ENR_USART, UART_PORT, EN)
@@ -2972,15 +2999,13 @@ extern "C"
 #define COM_APBEN __helper__(RCC_APB1ENR_USART, UART_PORT, EN)
 #endif
 #else
-#define COM_USART __uart__(UART_PORT)
+#define COM_UART __uart__(UART_PORT)
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_SERIAL_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#endif
 #define COM_APB APB1ENR
 #define COM_APBEN __helper__(RCC_APB1ENR_, COM_UART, EN)
-#define COM_OUTREG (COM_USART)->DR
-#define COM_INREG (COM_USART)->DR
+#define COM_OUTREG (COM_UART)->DR
+#define COM_INREG (COM_UART)->DR
 #endif
 
 // remmaping and pin checking
@@ -2999,7 +3024,8 @@ extern "C"
 #else
 #define GPIO_AF_USART 0x08
 #endif
-#else
+#endif
+#ifdef MCU_HAS_USB
 #define GPIO_OTG_FS 0x0A
 #endif
 
@@ -3043,7 +3069,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE ((F_CPU >> 1) / 1000000UL)
+#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
 #define I2C_AFIO 4
 
 #ifndef I2C_FREQ
@@ -3227,7 +3253,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->OTYPER |= (1 << ((__indirect__(diopin, BIT)))); \
 	}
 
-#define mcu_config_pwm(diopin, freq)                                                                                                                                      \
+#define mcu_config_pwm(diopin, freq)                                                                                                                                \
 	{                                                                                                                                                               \
 		RCC->AHB1ENR |= __indirect__(diopin, AHB1EN);                                                                                                               \
 		PWM0_ENREG |= PWM0_APBEN;                                                                                                                                   \
@@ -3237,7 +3263,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
 		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                                                      \
-		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                 \
+		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                                           \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
 		__indirect__(diopin, TIMREG)->CCER |= (1U << ((__indirect__(diopin, CHANNEL) - 1) << 2));                                                                   \
@@ -3296,7 +3322,7 @@ extern "C"
 #define mcu_get_pwm(diopin) ((uint8_t)((((uint32_t)__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR)) * 255) / ((uint32_t)__indirect__(diopin, TIMREG)->ARR)))
 
 #define mcu_get_analog(diopin)                      \
-	({                                               \
+	({                                              \
 		ADC1->SQR3 = __indirect__(diopin, CHANNEL); \
 		ADC1->CR2 |= ADC_CR2_SWSTART;               \
 		ADC1->CR2 &= ~ADC_CR2_SWSTART;              \
@@ -3307,7 +3333,7 @@ extern "C"
 	})
 
 #define mcu_spi_xmit(X)                                               \
-	({                                                                 \
+	({                                                                \
 		SPI_REG->DR = X;                                              \
 		while (!(SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)) \
 			;                                                         \
@@ -3339,22 +3365,15 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-// #ifdef UART_PORT
-// #ifndef ENABLE_SYNC_TX
-// #define mcu_enable_tx_isr() (COM_USART->CR1 |= (USART_CR1_TXEIE))
-// #define mcu_disable_tx_isr() (COM_USART->CR1 &= ~(USART_CR1_TXEIE))
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
-// #else
-// #define mcu_enable_tx_isr()
-// #define mcu_disable_tx_isr()
-// #endif
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (COM_USART->SR & USART_SR_RXNE)
-#define mcu_tx_ready() (COM_USART->SR & USART_SR_TXE)
-#elif (INTERFACE == INTERFACE_USB)
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (COM_UART->SR & USART_SR_RXNE)
+#define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)

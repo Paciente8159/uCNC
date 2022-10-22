@@ -201,8 +201,10 @@ void serial_putc(unsigned char c)
 #else
 	while (!mcu_tx_ready())
 	{
+		cnc_status_report_lock = true;
 		cnc_dotasks();
 	}
+	cnc_status_report_lock = false;
 	mcu_putc(c);
 #if !(ACTIVITY_LED < 0)
 	mcu_toggle_output(ACTIVITY_LED);
@@ -212,10 +214,25 @@ void serial_putc(unsigned char c)
 
 void serial_print_str(const char *__s)
 {
-	while(*__s)
+	while (*__s)
 	{
 		serial_putc(*__s++);
 	}
+}
+
+void serial_print_bytes(const uint8_t *data, uint8_t count)
+{
+	do
+	{
+		serial_putc(' ');
+		uint8_t up = *data >> 4;
+		char c = (up > 9) ? ('a' + up - 10) : ('0' + up);
+		serial_putc(c);
+		up = *data & 0x0F;
+		c = (up > 9) ? ('a' + up - 10) : ('0' + up);
+		serial_putc(c);
+		data++;
+	} while (--count);
 }
 
 void serial_print_int(int32_t num)

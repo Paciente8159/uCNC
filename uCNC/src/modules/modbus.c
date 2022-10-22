@@ -63,6 +63,14 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 
 	request.crc = crc16(data, len);
 
+#ifdef ENABLE_MODBUS_VERBOSE
+	protocol_send_string(MSG_START);
+	protocol_send_string(__romstr__("MODBUS-OUT"));
+	serial_print_bytes((uint8_t *)&request, len);
+	serial_print_bytes((uint8_t *)&(request.crc), 2);
+	protocol_send_string(MSG_END);
+#endif
+
 	while (len--)
 	{
 		softuart_putc(port, *data);
@@ -71,7 +79,6 @@ void send_request(modbus_request_t request, uint8_t len, softuart_port_t *port)
 
 	softuart_putc(port, (request.crc & 0xFF));
 	softuart_putc(port, (request.crc >> 8));
-	
 }
 
 bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *port, uint32_t ms_timeout)
@@ -92,6 +99,12 @@ bool read_response(modbus_response_t *response, uint8_t len, softuart_port_t *po
 		count++;
 	} while ((c >= 0) && (count < len));
 
+#ifdef ENABLE_MODBUS_VERBOSE
+	protocol_send_string(MSG_START);
+	protocol_send_string(__romstr__("MODBUS-IN"));
+	serial_print_bytes((uint8_t *)response, count);
+	protocol_send_string(MSG_END);
+#endif
 	// minimum message length
 	if (count < 6)
 	{

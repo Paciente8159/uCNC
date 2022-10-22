@@ -597,11 +597,8 @@ void mcu_putc(char c)
 #ifndef mcu_getc
 char mcu_getc(void)
 {
-#ifdef ENABLE_SYNC_RX
 	while (!mcu_rx_ready())
 		;
-#endif
-
 	return esp32_uart_read();
 }
 #endif
@@ -718,21 +715,17 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
+void esp32_delay_us(uint16_t delay)
 {
-	int64_t time = esp_timer_get_time() + delay;
-	while (time > esp_timer_get_time())
+	uint32_t time = system_get_time() + delay - 1;
+	while (time > system_get_time())
 		;
 }
-#endif
 
 /**
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
- *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
  * */
 void mcu_dotasks(void)
 {

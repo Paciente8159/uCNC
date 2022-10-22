@@ -1993,10 +1993,6 @@ extern "C"
 
 #define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK)
 
-#if (INTERFACE < 0 || INTERFACE > 1)
-#error "undefined COM interface"
-#endif
-
 #ifdef BRESENHAM_16BIT
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
@@ -2128,6 +2124,10 @@ typedef uint16_t step_t;
 
 #if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 || STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
+#endif
+
+#if (defined(MCU_HAS_USB) || defined(MCU_HAS_WIFI) || defined(MCU_HAS_BLUETOOTH))
+#define ENABLE_SYNC_TX
 #endif
 
 #ifdef __cplusplus
