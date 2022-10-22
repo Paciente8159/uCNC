@@ -26,6 +26,7 @@
 - added optimizations to motion control to reduce some redundant operations (#292)
 - UART and USB can be used in parallel (#312)
 - improved VFD safety if communications fail setting the machine in HOLD state (#317)
+- completed Wemos D1 R32 pinout mapping (#318)
 
 ### Fixed
 
