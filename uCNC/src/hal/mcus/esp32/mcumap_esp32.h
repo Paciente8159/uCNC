@@ -979,10 +979,24 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+#ifdef ENABLE_WIFI
+#define MCU_HAS_WIFI
+#endif
+#ifdef ENABLE_BLUETOOTH
+#define MCU_HAS_BLUETOOTH
+#endif
+
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
 
+//force sync TX anyway
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
@@ -1051,8 +1065,15 @@ extern "C"
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
+#ifdef MCU_HAS_SPI
+extern void esp32_spi_config(uint8_t mode, uint32_t freq);
+extern uint8_t esp32_spi_xmit(uint8_t data);
 #define mcu_spi_xmit(X) esp32_spi_xmit(X)
 #define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
+#else
+#define mcu_spi_xmit(X) {}
+#define mcu_spi_config(X, Y) {}
+#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)

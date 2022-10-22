@@ -47,6 +47,10 @@ void esp32_eeprom_write(uint16_t address, uint8_t value);
 void esp32_eeprom_flush(void);
 #endif
 
+#ifdef MCU_HAS_SPI
+extern void esp32_spi_init(uint32_t freq, uint8_t mode, int8_t clk, int8_t sdi, int8_t sdo);
+#endif
+
 hw_timer_t *esp32_rtc_timer;
 hw_timer_t *esp32_step_timer;
 
@@ -54,6 +58,10 @@ uint8_t esp32_pwm[16];
 static IRAM_ATTR void mcu_gen_pwm(void)
 {
 	static uint8_t pwm_counter = 0;
+#ifdef IC74HC595_HAS_PWMS
+	static uint16_t pwm_mask_last = 0;
+	uint16_t pwm_mask = 0xFFFF;
+#endif
 	// software PWM
 	if (++pwm_counter < 127)
 	{
@@ -152,6 +160,105 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 		{
 			mcu_clear_output(PWM15);
 		}
+#endif
+
+#ifdef IC74HC595_HAS_PWMS
+#if !(PWM0_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[0])
+		{
+			pwm_mask &= ~(1 << 0);
+		}
+#endif
+#if !(PWM1_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[1])
+		{
+			pwm_mask &= ~(1 << 1);
+		}
+#endif
+#if !(PWM2_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[2])
+		{
+			pwm_mask &= ~(1 << 2);
+		}
+#endif
+#if !(PWM3_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[3])
+		{
+			pwm_mask &= ~(1 << 3);
+		}
+#endif
+#if !(PWM4_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[4])
+		{
+			pwm_mask &= ~(1 << 4);
+		}
+#endif
+#if !(PWM5_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[5])
+		{
+			pwm_mask &= ~(1 << 5);
+		}
+#endif
+#if !(PWM6_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[6])
+		{
+			pwm_mask &= ~(1 << 6);
+		}
+#endif
+#if !(PWM7_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[7])
+		{
+			pwm_mask &= ~(1 << 7);
+		}
+#endif
+#if !(PWM8_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[8])
+		{
+			pwm_mask &= ~(1 << 8);
+		}
+#endif
+#if !(PWM9_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[9])
+		{
+			pwm_mask &= ~(1 << 9);
+		}
+#endif
+#if !(PWM10_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[10])
+		{
+			pwm_mask &= ~(1 << 10);
+		}
+#endif
+#if !(PWM11_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[11])
+		{
+			pwm_mask &= ~(1 << 11);
+		}
+#endif
+#if !(PWM12_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[12])
+		{
+			pwm_mask &= ~(1 << 12);
+		}
+#endif
+#if !(PWM13_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[13])
+		{
+			pwm_mask &= ~(1 << 13);
+		}
+#endif
+#if !(PWM14_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[14])
+		{
+			pwm_mask &= ~(1 << 14);
+		}
+#endif
+#if !(PWM15_IO_OFFSET < 0)
+		if (pwm_counter > esp32_pwm[15])
+		{
+			pwm_mask &= ~(1 << 15);
+		}
+#endif
 #endif
 	}
 	else
@@ -254,6 +361,14 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 		}
 #endif
 	}
+
+#ifdef IC74HC595_HAS_PWMS
+	if (pwm_mask_last != pwm_mask)
+	{
+		ic74hc595_set_pwms(pwm_mask);
+		pwm_mask_last = pwm_mask;
+	}
+#endif
 }
 
 IRAM_ATTR void mcu_din_isr(void)
@@ -423,6 +538,7 @@ uint8_t mcu_get_analog(uint8_t channel)
 #ifndef mcu_set_pwm
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
+	esp32_pwm[pwm - PWM_PINS_OFFSET] = (0x7F & (value >> 1));
 }
 #endif
 
@@ -433,7 +549,7 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 #ifndef mcu_get_pwm
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	return 0;
+	return (esp32_pwm[pwm - PWM_PINS_OFFSET] << 1);
 }
 #endif
 
@@ -599,10 +715,11 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
+extern int64_t esp_system_get_time(void);
 void esp32_delay_us(uint16_t delay)
 {
-	uint32_t time = system_get_time() + delay - 1;
-	while (time > system_get_time())
+	int64_t time = esp_system_get_time() + delay - 1;
+	while (time > esp_system_get_time())
 		;
 }
 

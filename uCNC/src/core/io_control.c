@@ -48,35 +48,35 @@ WEAK_EVENT_HANDLER(probe_disable)
 	DEFAULT_EVENT_HANDLER(probe_disable);
 }
 
-// event_set_steps_handler
-WEAK_EVENT_HANDLER(set_steps)
-{
-	DEFAULT_EVENT_HANDLER(set_steps);
-}
+// // event_set_steps_handler
+// WEAK_EVENT_HANDLER(set_steps)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_steps);
+// }
 
-// event_toggle_steps_handler
-WEAK_EVENT_HANDLER(toggle_steps)
-{
-	DEFAULT_EVENT_HANDLER(toggle_steps);
-}
+// // event_toggle_steps_handler
+// WEAK_EVENT_HANDLER(toggle_steps)
+// {
+// 	DEFAULT_EVENT_HANDLER(toggle_steps);
+// }
 
-// event_set_dirs_handler
-WEAK_EVENT_HANDLER(set_dirs)
-{
-	DEFAULT_EVENT_HANDLER(set_dirs);
-}
+// // event_set_dirs_handler
+// WEAK_EVENT_HANDLER(set_dirs)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_dirs);
+// }
 
-// event_enable_steppers_handler
-WEAK_EVENT_HANDLER(enable_steppers)
-{
-	DEFAULT_EVENT_HANDLER(enable_steppers);
-}
+// // event_enable_steppers_handler
+// WEAK_EVENT_HANDLER(enable_steppers)
+// {
+// 	DEFAULT_EVENT_HANDLER(enable_steppers);
+// }
 
-// event_set_output_handler
-WEAK_EVENT_HANDLER(set_output)
-{
-	DEFAULT_EVENT_HANDLER(set_output);
-}
+// // event_set_output_handler
+// WEAK_EVENT_HANDLER(set_output)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_output);
+// }
 
 #endif
 
@@ -411,8 +411,12 @@ bool io_get_probe(void)
 // outputs
 void io_set_steps(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(set_steps, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(set_steps, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_set_steps(mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -500,8 +504,12 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(toggle_steps, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(toggle_steps, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_toggle_steps(mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -558,8 +566,12 @@ void io_set_dirs(uint8_t mask)
 {
 	mask ^= g_settings.dir_invert_mask;
 
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(set_dirs, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(set_dirs, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_DIRS
+	ic74hc595_set_dirs(mask);
 #endif
 
 #if !(DIR0 < 0)
@@ -646,6 +658,14 @@ void io_set_dirs(uint8_t mask)
 
 void io_set_pwm(uint8_t pin, uint8_t value)
 {
+#if (defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS))
+	if (pin > 127)
+	{
+		pin = ~pin;
+		mcu_set_pwm(pin, value);
+		return;
+	}
+#endif
 	switch (pin)
 	{
 #if !(PWM0 < 0)
@@ -763,9 +783,17 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
-#ifdef ENABLE_IO_MODULES
-	set_output_args_t output_arg = {.pin = pin, .state = state};
-	EVENT_INVOKE(set_output, &output_arg);
+	// #ifdef ENABLE_IO_MODULES
+	// 	set_output_args_t output_arg = {.pin = pin, .state = state};
+	// 	EVENT_INVOKE(set_output, &output_arg);
+	// #endif
+#ifdef IC74HC595_HAS_DOUTS
+	if (((int8_t)pin) < 0)
+	{
+		pin = -(((int8_t)pin) + 1);
+		ic74hc595_set_output(pin, state);
+		return;
+	}
 #endif
 	if (state)
 	{

@@ -58,6 +58,8 @@ void laser_startup_code(void)
 #if !(LASER_PWM < 0)
 	mcu_config_pwm(LASER_PWM, LASER_FREQ);
 	mcu_set_pwm(LASER_PWM, 0);
+#else
+	io_set_pwm(LASER_PWM, 0);
 #endif
 	previous_laser_mode = g_settings.laser_mode;
 	g_settings.laser_mode = LASER_PWM_MODE;
@@ -77,6 +79,8 @@ void laser_set_speed(int16_t value)
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if !(LASER_PWM < 0)
 	mcu_set_pwm(LASER_PWM, (uint8_t)ABS(value));
+#else
+	io_set_pwm(LASER_PWM, (uint8_t)ABS(value));
 #endif
 }
 

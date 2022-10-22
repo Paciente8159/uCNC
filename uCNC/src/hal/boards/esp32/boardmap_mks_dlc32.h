@@ -1,10 +1,10 @@
 /*
-	Name: boardmap_wemos_d1_r32.h
+	Name: boardmap_mks_dlc32.h
 	Description: Contains all MCU and PIN definitions for Arduino WeMos D1 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 17/06/2022
+	Date: 11/10/2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef BOARDMAP_WEMOS_D1_R32_H
-#define BOARDMAP_WEMOS_D1_R32_H
+#ifndef BOARDMAP_MKS_DLC32_H
+#define BOARDMAP_MKS_DLC32_H
 
 #ifdef __cplusplus
 extern "C"
@@ -25,42 +25,16 @@ extern "C"
 #endif
 
 #ifndef BOARD_NAME
-#define BOARD_NAME "WEMOS D1 R32"
+#define BOARD_NAME "MKS DLC32"
 #endif
 
-// SAME AS GRBL for test purposes
-// Setup step pins
-#define STEP2_BIT 17 // assigns STEP2 pin
-#define STEP1_BIT 25 // assigns STEP1 pin
-#define STEP0_BIT 26 // assigns STEP0 pin
-
-// Setup dir pins
-#define DIR2_BIT 14 // assigns DIR2 pin
-#define DIR1_BIT 27 // assigns DIR1 pin
-#define DIR0_BIT 16 // assigns DIR0 pin
-
-// Setup control input pins
-// #define ESTOP_BIT 2
-// #define ESTOP_ISR
-// #define ESTOP_PULLUP
-// #define FHOLD_BIT 4
-// #define FHOLD_ISR
-// #define FHOLD_PULLUP
-// #define CS_RES_BIT 35
-// #define CS_RES_ISR
-// #define CS_RES_PULLUP
-
 // Setup limit pins
-// #define LIMIT_Z_BIT 19	// assigns LIMIT_Z pin
+#define LIMIT_Z_BIT 34	// assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
-// #define LIMIT_Y_BIT 5	// assigns LIMIT_Y pin
+#define LIMIT_Y_BIT 35	// assigns LIMIT_Y pin
 // #define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
-// #define LIMIT_X_BIT 13	// assigns LIMIT_X pin
+#define LIMIT_X_BIT 36	// assigns LIMIT_X pin
 // #define LIMIT_X_ISR  	// assigns LIMIT_X ISR
-
-// Setup probe pin
-// #define PROBE_BIT 39
-// #define PROBE_ISR
 
 // Setup com pins
 #define RX_BIT 3
@@ -68,21 +42,22 @@ extern "C"
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
 
-	// Setup PWM
-#define PWM0_BIT 23 // assigns PWM0 pin
+#define PWM0_BIT 32
 
-// Setup generic IO Pins
-// spindle dir
-#define DOUT0_BIT 18
+// configure the 74HC595 modules
+#define DOUT4_BIT 21
+#define DOUT5_BIT 16
+#define DOUT6_BIT 17
+// uses 3 x 74HS595
+#define IC74HC595_COUNT 1
 
-// coolant
-#define DOUT2_BIT 18
-
-// led
-#define DOUT31_BIT 2
-
-// Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEP0_EN_BIT 12
+#define STEP0_EN_IO_OFFSET 0
+#define STEP0_IO_OFFSET 1
+#define DIR0_IO_OFFSET 2
+#define STEP1_IO_OFFSET 3
+#define DIR1_IO_OFFSET 4
+#define STEP2_IO_OFFSET 5
+#define DIR2_IO_OFFSET 6
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
@@ -93,6 +68,18 @@ extern "C"
 	//#define RTC_TIMER 0
 
 #define ONESHOT_TIMER 2
+
+#define SPI_CLK_BIT 14
+#define SPI_SDO_BIT 12
+#define SPI_SDI_BIT 13
+#define SPI_CS_BIT 15
+
+//software I2C
+#define DIN30_BIT 4
+#define DIN31_BIT 0
+
+// include the IO expander
+#include "../../../modules/ic74hc595.h"
 
 #ifdef __cplusplus
 }

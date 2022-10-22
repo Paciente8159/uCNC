@@ -41,6 +41,8 @@ extern "C"
 #define BOARD_SKR_V14_TURBO 32
 #define BOARD_WEMOS_D1 40
 #define BOARD_WEMOS_D1_R32 50
+#define BOARD_MKS_TINYBEE 51
+#define BOARD_MKS_DLC32 52
 #define BOARD_VIRTUAL 99
 
 // special purpose board
