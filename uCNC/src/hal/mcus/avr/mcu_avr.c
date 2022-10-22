@@ -524,9 +524,7 @@ void mcu_putc(char c)
 
 char mcu_getc(void)
 {
-#ifdef ENABLE_SYNC_RX
 	loop_until_bit_is_set(UCSRA, RXC);
-#endif
 	return COM_INREG;
 }
 
@@ -699,14 +697,6 @@ void mcu_start_rtc()
 
 void mcu_dotasks()
 {
-#ifdef ENABLE_SYNC_RX
-	// read any char that is received
-	while (CHECKBIT(UCSRA, RXC))
-	{
-		unsigned char c = mcu_getc();
-		mcu_com_rx_cb(c);
-	}
-#endif
 }
 
 // This was copied from grbl

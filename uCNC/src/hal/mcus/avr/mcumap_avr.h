@@ -45,7 +45,6 @@ extern "C"
 #include <avr/cpufunc.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>
 
 /*
 	AVR Defaults
@@ -77,6 +76,17 @@ extern "C"
 
 #define __BYTE_ORDER__ __ORDER_LITTLE_ENDIAN__
 #define __SIZEOF_FLOAT__ 4
+
+//needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 11
+#endif
 
 // used by the parser
 // this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
@@ -4291,7 +4301,6 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_USART)
 #ifndef UART_PORT
 #define COM_RX_vect USART_RX_vect
 #define COM_TX_vect USART_UDRE_vect
@@ -4313,7 +4322,6 @@ extern "C"
 #define RXCIE __rxciereg__(UART_PORT)
 #define UDRE __udrereg__(UART_PORT)
 #define RXC __rxcreg__(UART_PORT)
-#endif
 
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
@@ -4565,7 +4573,6 @@ extern "C"
 
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
-#define mcu_delay_us(x) _delay_us(x)
 
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
 #define mcu_rx_ready() (CHECKBIT(UCSRA, RX))

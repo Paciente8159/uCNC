@@ -59,6 +59,17 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #ifndef MCU_CALLBACK
 #define MCU_CALLBACK IRAM_ATTR
 #endif
@@ -968,14 +979,27 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
-#if (INTERFACE == INTERFACE_UART)
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+#ifdef ENABLE_WIFI
+#define MCU_HAS_WIFI
+#endif
+#ifdef ENABLE_BLUETOOTH
+#define MCU_HAS_BLUETOOTH
+#endif
+
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
-#endif
 
-#define ENABLE_SYNC_RX
+//force sync TX anyway
+#ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
+#endif
 
 #ifndef RTC_TIMER
 #define RTC_TIMER 0
@@ -1041,12 +1065,22 @@ extern "C"
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
+#ifdef MCU_HAS_SPI
+extern void esp32_spi_config(uint8_t mode, uint32_t freq);
+extern uint8_t esp32_spi_xmit(uint8_t data);
 #define mcu_spi_xmit(X) esp32_spi_xmit(X)
 #define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
+#else
+#define mcu_spi_xmit(X) {}
+#define mcu_spi_config(X, Y) {}
+#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
 #endif
+
+extern void esp32_delay_us(uint16_t delay);
+#define mcu_delay_us(X) esp32_delay_us(X)
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,5 @@
 #include "../../../../cnc_config.h"
 #ifdef ESP32
-#ifdef MCU_HAS_SPI
 #include <Arduino.h>
 #include <SPI.h>
 extern "C"
@@ -23,6 +22,4 @@ extern "C"
 		return SPI.transfer(data);
 	}
 }
-
-#endif
 #endif

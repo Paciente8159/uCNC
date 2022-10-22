@@ -37,44 +37,42 @@ extern "C"
 		bool (*get_scl)(void);
 	} softi2c_port_t;
 
-	#define I2C_DELAY(FREQ) MAX(0, ((2500000UL / FREQ) - 1))
-
-#define SOFTI2C(NAME, FREQ, SCLPIN, SDAPIN)                      \
-	void NAME##_scl(bool state)                                  \
-	{                                                            \
-		if (state)                                               \
-		{                                                        \
-			mcu_config_input(SCLPIN);                            \
-		}                                                        \
-		else                                                     \
-		{                                                        \
-			mcu_clear_output(SCLPIN);                            \
-			mcu_config_output(SCLPIN);                           \
-		}                                                        \
-	}                                                            \
-	void NAME##_sda(bool state)                                  \
-	{                                                            \
-		if (state)                                               \
-		{                                                        \
-			mcu_config_input(SDAPIN);                            \
-		}                                                        \
-		else                                                     \
-		{                                                        \
-			mcu_clear_output(SDAPIN);                            \
-			mcu_config_output(SDAPIN);                           \
-		}                                                        \
-	}                                                            \
-	bool NAME##_get_sda(void)                                    \
-	{                                                            \
-		mcu_config_input(SDAPIN);                                \
-		return mcu_get_input(SDAPIN);                            \
-	}                                                            \
-	bool NAME##_get_scl(void)                                    \
-	{                                                            \
-		mcu_config_input(SCLPIN);                                \
-		return mcu_get_input(SCLPIN);                            \
-	}                                                            \
-	void NAME##_wait(void) { uint16_t loops = I2C_DELAY(FREQ); while(loops--){mcu_delay_100ns();} } \
+#define SOFTI2C(NAME, FREQ, SCLPIN, SDAPIN)                    \
+	void NAME##_scl(bool state)                                \
+	{                                                          \
+		if (state)                                             \
+		{                                                      \
+			mcu_config_input(SCLPIN);                          \
+		}                                                      \
+		else                                                   \
+		{                                                      \
+			mcu_clear_output(SCLPIN);                          \
+			mcu_config_output(SCLPIN);                         \
+		}                                                      \
+	}                                                          \
+	void NAME##_sda(bool state)                                \
+	{                                                          \
+		if (state)                                             \
+		{                                                      \
+			mcu_config_input(SDAPIN);                          \
+		}                                                      \
+		else                                                   \
+		{                                                      \
+			mcu_clear_output(SDAPIN);                          \
+			mcu_config_output(SDAPIN);                         \
+		}                                                      \
+	}                                                          \
+	bool NAME##_get_sda(void)                                  \
+	{                                                          \
+		mcu_config_input(SDAPIN);                              \
+		return mcu_get_input(SDAPIN);                          \
+	}                                                          \
+	bool NAME##_get_scl(void)                                  \
+	{                                                          \
+		mcu_config_input(SCLPIN);                              \
+		return mcu_get_input(SCLPIN);                          \
+	}                                                          \
+	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / FREQ); } \
 	softi2c_port_t NAME = {.wait = &NAME##_wait, .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda, .get_scl = &NAME##_get_scl};
 
 	uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len);

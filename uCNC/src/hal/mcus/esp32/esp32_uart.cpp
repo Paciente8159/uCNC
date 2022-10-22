@@ -16,8 +16,6 @@
 	See the	GNU General Public License for more details.
 */
 
-#include "../../../../cnc_config.h"
-#include "../mcu.h"
 #ifdef ESP32
 #include <Arduino.h>
 #include "esp_task_wdt.h"
@@ -65,18 +63,20 @@ WiFiManager wifiManager;
 static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
 static uint8_t esp32_tx_buffer_counter;
 
-extern "C" void cnc_delay_ms(uint32_t miliseconds);
-
 extern "C"
 {
+	#include "../../../cnc.h"
+
 	bool esp32_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
 		static bool connected = false;
 		static bool process_busy = false;
+		static uint32_t next_info = 0;
 
-		if (WiFi.status() != WL_CONNECTED)
+		if (WiFi.status() != WL_CONNECTED && next_info < mcu_millis())
 		{
+			next_info = mcu_millis() + 30000;
 			connected = false;
 			if (process_busy)
 			{
@@ -84,7 +84,6 @@ extern "C"
 			}
 			process_busy = true;
 			Serial.println("[MSG:Disconnected from WiFi]");
-			cnc_delay_ms(100);
 			process_busy = false;
 			return false;
 		}
@@ -94,7 +93,8 @@ extern "C"
 			connected = true;
 			Serial.println("[MSG: WiFi AP connected]");
 			Serial.print("[MSG: Board IP @ ");
-			Serial.println(WiFi.localIP());
+			Serial.print(WiFi.localIP());
+			Serial.println("]");
 		}
 
 		if (server.hasClient())

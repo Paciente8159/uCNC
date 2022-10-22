@@ -116,18 +116,17 @@ extern "C"
 #define PROBE_PORT G
 #define PROBE_ISR
 
-#if (INTERFACE == INTERFACE_USART)
-#define UART_PORT 3
-#define TX_BIT 10
-#define TX_PORT B
-#define RX_BIT 11
-#define RX_PORT B
-#elif (INTERFACE == INTERFACE_USB)
+// #define UART_PORT 3
+// #define TX_BIT 10
+// #define TX_PORT B
+// #define RX_BIT 11
+// #define RX_PORT B
+
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
 #define USB_DP_PORT A
-#endif
+
 
 // Setup PWM
 #define PWM0_BIT 1	// assigns PWM0 pin

@@ -23,8 +23,9 @@
 #include "core_cm4.h"
 #include "stm32f4xx.h"
 #include "mcumap_stm32f4x.h"
+#include <math.h>
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -63,28 +64,28 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions
  **/
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM_USART->SR & USART_SR_RXNE)
+	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
 		mcu_com_rx_cb(c);
 	}
-#endif
 
 #ifndef ENABLE_SYNC_TX
-	if ((COM_USART->SR & USART_SR_TXE) && (COM_USART->CR1 & USART_CR1_TXEIE))
+	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 	{
-		COM_USART->CR1 &= ~(USART_CR1_TXEIE);
+		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 		mcu_com_tx_cb();
 	}
 #endif
 	mcu_enable_global_isr();
 }
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+
+#ifdef MCU_HAS_USB
 void OTG_FS_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -330,12 +331,6 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#if (INTERFACE == INTERFACE_UART)
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
-#else
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
-#endif
-
 #ifndef FRAMEWORK_CLOCKS_INIT
 #if (F_CPU == 84000000)
 #define PLLN 336
@@ -348,9 +343,10 @@ static void mcu_usart_init(void);
 #else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
-
+#endif
 void mcu_clocks_init()
 {
+#ifndef FRAMEWORK_CLOCKS_INIT
 	// enable power clock
 	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
 	// set voltage regulator scale 2
@@ -389,7 +385,7 @@ void mcu_clocks_init()
 	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
 	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 	 */
-	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESCALER | RCC_CFGR_PPRE1_DIV2));
+	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESC | APB1_PRESC));
 
 	/* Select PLL as system clock source */
 	CLEARFLAG(RCC->CFGR, RCC_CFGR_SW);
@@ -399,80 +395,37 @@ void mcu_clocks_init()
 		;
 
 	SystemCoreClockUpdate();
-
-	// µs counting is now done via Systick
+#else
+	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
+	RCC->CFGR |= (APB2_PRESC | APB1_PRESC);
+#endif
 
 	// // initialize debugger clock (used by us delay)
-	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
-	// {
-	// 	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	// 	DWT->CYCCNT = 0;
-	// 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-	// }
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
 }
-
-#endif
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
-	/*enables RCC clocks and GPIO*/
-	RCC->COM_APB |= (COM_APBEN);
-	mcu_config_af(TX, GPIO_AF_USART);
-	mcu_config_af(RX, GPIO_AF_USART);
-	/*setup UART*/
-	COM_USART->CR1 = 0; // 8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; // 1 stop bit STOP=00
-	COM_USART->CR3 = 0;
-	COM_USART->SR = 0;
-	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 1) / ((float)(BAUDRATE * 8 * 2)));
-	uint16_t brr = (uint16_t)baudrate;
-	baudrate -= brr;
-	brr <<= 4;
-	brr += (uint16_t)roundf(16.0f * baudrate);
-	COM_USART->BRR = brr;
-#ifndef ENABLE_SYNC_RX
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-#endif
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-	NVIC_SetPriority(COM_IRQ, 3);
-	NVIC_ClearPendingIRQ(COM_IRQ);
-	NVIC_EnableIRQ(COM_IRQ);
-#endif
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
-#elif (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	// configure USB as Virtual COM port
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
 	mcu_config_af(USB_DP, GPIO_OTG_FS);
 	mcu_config_af(USB_DM, GPIO_OTG_FS);
 	RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
-
-	// configure ID pin
-	GPIOA->MODER &= ~(GPIO_RESET << (10 << 1)); /*USB ID*/
-	GPIOA->MODER |= (GPIO_AF << (10 << 1));		/*af mode*/
-	GPIOA->PUPDR &= ~(GPIO_RESET << (10 << 1)); // pullup
-	GPIOA->PUPDR |= (GPIO_IN_PULLUP << (10 << 1));
-	GPIOA->OTYPER |= (1 << 10); // open drain
-	GPIOA->OSPEEDR &= ~(GPIO_RESET << (10 << 1));
-	GPIOA->OSPEEDR |= (0x02 << (10 << 1));						  // high-speed
-	GPIOA->AFR[1] |= (GPIO_AFRH_AFSEL10_1 | GPIO_AFRH_AFSEL10_3); // GPIO_OTG_FS
-
-	// GPIOA->MODER &= ~(GPIO_RESET << (9 << 1)); /*USB VBUS*/
-
 	/* Disable all interrupts. */
 	USB_OTG_FS->GINTMSK = 0U;
 
+	/* Operate as device only mode */
+	USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+
 	// /* Clear any pending interrupts */
 	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
-	// USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_RXFLVLM;
-	/* Enable interrupts matching to the Device mode ONLY */
-	// USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_USBRST |
-	// 					   USB_OTG_GINTMSK_ENUMDNEM | USB_OTG_GINTMSK_IEPINT |
-	// 					   USB_OTG_GINTMSK_OEPINT | USB_OTG_GINTMSK_IISOIXFRM |
-	// 					   USB_OTG_GINTMSK_PXFRM_IISOOXFRM | USB_OTG_GINTMSK_WUIM;
-
 	USB_OTG_FS->GINTMSK |= USB_OTG_GINTMSK_OTGINT;
 
 	NVIC_SetPriority(OTG_FS_IRQn, 10);
@@ -485,20 +438,45 @@ void mcu_usart_init(void)
 
 	tusb_init();
 #endif
+
+#ifdef MCU_HAS_UART
+	/*enables RCC clocks and GPIO*/
+	RCC->COM_APB |= (COM_APBEN);
+	mcu_config_af(TX, GPIO_AF_USART);
+	mcu_config_af(RX, GPIO_AF_USART);
+	/*setup UART*/
+	COM_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM_UART->CR3 = 0;
+	COM_UART->SR = 0;
+	// //115200 baudrate
+	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)(BAUDRATE)));
+	uint16_t brr = (uint16_t)baudrate;
+	baudrate -= brr;
+	brr <<= 4;
+	brr += (uint16_t)roundf(16.0f * baudrate);
+	COM_UART->BRR = brr;
+	COM_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM_IRQ);
+	NVIC_EnableIRQ(COM_IRQ);
+	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#endif
 }
 
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	while (!(COM_USART->SR & USART_SR_TC))
+	while (!(COM_UART->SR & USART_SR_TC))
 		;
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE);
+	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -512,10 +490,8 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-// make sure both APB1 and APB2 are running at the same clock (48MHz)
-#ifndef FRAMEWORK_CLOCKS_INIT
+	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
-#endif
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
 	mcu_io_init();
@@ -651,19 +627,10 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 
 char mcu_getc(void)
 {
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!(COM_USART->SR & USART_SR_RXNE))
-		;
-#endif
+#ifdef MCU_HAS_UART
 	return COM_INREG;
-#elif (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
+#else
+	return 0;
 #endif
 }
 
@@ -738,24 +705,6 @@ uint32_t mcu_millis()
 	return val;
 }
 
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
-// 	while (DWT->CYCCNT < delayTicks)
-// 		;
-// }
-
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
-
 void mcu_rtc_init()
 {
 	SysTick->CTRL = 0;
@@ -767,14 +716,13 @@ void mcu_rtc_init()
 
 void mcu_dotasks()
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
@@ -885,7 +833,8 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(F_CPU / frequency);
+	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+
 	uint8_t speed;
 	if (div < 2)
 	{

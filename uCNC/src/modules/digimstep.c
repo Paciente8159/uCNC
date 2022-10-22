@@ -72,88 +72,88 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = -1;
 			serial_putc('X');
 #ifdef STEPPER0_MSTEP0
-			val = mcu_get_input(STEPPER0_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER0_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER0_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER0_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Y');
 #ifdef STEPPER1_MSTEP0
-			val = mcu_get_input(STEPPER1_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER1_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER1_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER1_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Z');
 #ifdef STEPPER2_MSTEP0
-			val = mcu_get_input(STEPPER2_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER2_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER2_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER2_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('A');
 #ifdef STEPPER3_MSTEP0
-			val = mcu_get_input(STEPPER3_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER3_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER3_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER3_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('B');
 #ifdef STEPPER4_MSTEP0
-			val = mcu_get_input(STEPPER4_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER4_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER4_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER4_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('C');
 #ifdef STEPPER5_MSTEP0
-			val = mcu_get_input(STEPPER5_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER5_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER5_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER5_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('I');
 #ifdef STEPPER6_MSTEP0
-			val = mcu_get_input(STEPPER6_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER6_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER6_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER6_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('J');
 #ifdef STEPPER7_MSTEP0
-			val = mcu_get_input(STEPPER7_MSTEP0) ? 1 : 0;
+			val = mcu_get_output(STEPPER7_MSTEP0) ? 1 : 0;
 #endif
 #ifdef STEPPER7_MSTEP1
 			val = MAX(0, val);
-			val |= mcu_get_input(STEPPER7_MSTEP1) ? 2 : 0;
+			val |= mcu_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_flt(val);
 			serial_putc(']');

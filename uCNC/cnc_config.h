@@ -25,9 +25,6 @@ extern "C"
 {
 #endif
 
-#define INTERFACE_UART 0
-#define INTERFACE_USB 1
-
 	/**
 	 * Serial COM
 	 * Defines the serial COM baud rate
@@ -38,23 +35,9 @@ extern "C"
 #define BAUDRATE 115200
 #endif
 
-#ifndef INTERFACE
-#define INTERFACE INTERFACE_UART
-#endif
-
 #ifndef ENABLE_WIFI
 // #define ENABLE_WIFI
 #endif
-
-	/**
-	 * uncomment to force enable synchronized TX/RX (used in USB VCP)
-	 * enable these options to perform communications in the mcu tasks function
-	 * call instead of being interrupt driven (sync RX may cause problems with
-	 * hardware USART)
-	 * */
-
-	//  #define ENABLE_SYNC_TX
-	//  #define ENABLE_SYNC_RX
 
 	/**
 	 * Choose the board
