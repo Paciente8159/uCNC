@@ -6,20 +6,36 @@
 
 # Changelog
 
-## [1.5.3] - Unreleased
+## [1.5.3] - 22-10-2022
 
 ### Added
 
 - added support for comments with ';' char (#291)
 - added support for S word clustering format used by Smoothieware (#289)
+- added support for external module $ settings (#293)
+- added boardmaps for LPC176x boards SKR v1.4 Turbo and MKS Base V1.3 (#267)
+- added boardmaps for STM32F4 boards MKS Robin Nano v1.2 and SKR Pro v1.2 (#299)
+- added generic purpose ONESHOT timer (#295)(#301)
+- added laser PPI with PPI control, Pulse width control and mixed control modes (#295)
+- added extension modules $I info message modifier handler (#300)
+- added basic/partial support for Powtran 8100 VFD tool (#311)
+- Added boardmap for boards MKS DLC32 and MKS Tinybee including new core module for 74HC595 (shift-register) IO expander (#302)
 
 ### Changed
 
 - added optimizations to motion control to reduce some redundant operations (#292)
+- UART and USB can be used in parallel (#312)
+- improved VFD safety if communications fail setting the machine in HOLD state (#317)
+- completed Wemos D1 R32 pinout mapping (#318)
 
 ### Fixed
 
 - fixed M2/M30 hold with check mode enabled caused program to stall (#297)
+- fixed STM32 incorrect BAUDRATE config on other UART ports othern then UART1 (#309)
+- fixed ARM us delay that caused deadlocks in the MCU after disabling global interrupts (#309)
+- fixed RAMBO read MSTEPS ouput pin states via M351 (#309)
+- fixed protocol message contamination with status report when using synchronous TX mode (#314)
+- fixed soft UART and SPI causing communications to miss characters from host (#316)
 
 ## [1.5.2] - 01-10-2022
 
