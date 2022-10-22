@@ -979,10 +979,24 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+#ifdef ENABLE_WIFI
+#define MCU_HAS_WIFI
+#endif
+#ifdef ENABLE_BLUETOOTH
+#define MCU_HAS_BLUETOOTH
+#endif
+
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
 
+//force sync TX anyway
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif

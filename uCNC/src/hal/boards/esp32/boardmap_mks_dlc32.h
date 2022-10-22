@@ -28,11 +28,6 @@ extern "C"
 #define BOARD_NAME "MKS DLC32"
 #endif
 
-#ifdef INTERFACE
-#undef INTERFACE
-#endif
-#define INTERFACE INTERFACE_UART
-
 // Setup limit pins
 #define LIMIT_Z_BIT 34	// assigns LIMIT_Z pin
 // #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
@@ -42,12 +37,10 @@ extern "C"
 // #define LIMIT_X_ISR  	// assigns LIMIT_X ISR
 
 // Setup com pins
-#if (INTERFACE == INTERFACE_UART)
 #define RX_BIT 3
 #define TX_BIT 1
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
-#endif
 
 #define PWM0_BIT 32
 
