@@ -93,7 +93,8 @@ extern "C"
 			connected = true;
 			Serial.println("[MSG: WiFi AP connected]");
 			Serial.print("[MSG: Board IP @ ");
-			Serial.println(WiFi.localIP());
+			Serial.print(WiFi.localIP());
+			Serial.println("]");
 		}
 
 		if (server.hasClient())

@@ -71,13 +71,14 @@ extern "C"
 #define DIR3_IO_OFFSET 11
 #define STEP4_EN_IO_OFFSET 12
 #define STEP4_IO_OFFSET 13
-#define PWM0_IO_OFFSET 15
-#define PWM1_IO_OFFSET 16
-#define PWM2_IO_OFFSET 17
-#define PWM3_IO_OFFSET 18
-#define PWM4_IO_OFFSET 19
-#define DOUT0_IO_OFFSET 20
-#define DOUT2_IO_OFFSET 21
+#define DIR4_IO_OFFSET 14
+#define PWM0_IO_OFFSET 16
+#define PWM1_IO_OFFSET 17
+#define PWM2_IO_OFFSET 18
+#define PWM3_IO_OFFSET 19
+#define PWM4_IO_OFFSET 20
+#define DOUT0_IO_OFFSET 21
+#define DOUT2_IO_OFFSET 22
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
 	//#define ITP_TIMER 1

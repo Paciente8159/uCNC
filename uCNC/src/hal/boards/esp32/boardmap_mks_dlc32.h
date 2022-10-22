@@ -85,6 +85,9 @@ extern "C"
 #define DIN30_BIT 4
 #define DIN31_BIT 0
 
+// include the IO expander
+#include "../../../modules/ic74hc595.h"
+
 #ifdef __cplusplus
 }
 #endif

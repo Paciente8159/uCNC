@@ -715,10 +715,11 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
+extern int64_t esp_system_get_time(void);
 void esp32_delay_us(uint16_t delay)
 {
-	uint32_t time = system_get_time() + delay - 1;
-	while (time > system_get_time())
+	int64_t time = esp_system_get_time() + delay - 1;
+	while (time > esp_system_get_time())
 		;
 }
 

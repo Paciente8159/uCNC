@@ -42,7 +42,7 @@
 #define IC74HC595_DELAY_CYCLES 0
 #endif
 
-#define ic74hc595_delay() IC74HC595_DELAY(IC74HC595_DELAY_CYCLES)
+#define ic74hc595_delay() mcu_delay_cycles(IC74HC595_DELAY_CYCLES)
 
 #if (IC74HC595_COUNT != 0)
 uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
