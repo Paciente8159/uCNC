@@ -373,7 +373,7 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-#ifdef ENABLE_MOTION_MODULES
+#ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_enable, NULL);
 #endif
 #ifndef FORCE_SOFT_POLLING
@@ -390,7 +390,7 @@ void io_disable_probe(void)
 	mcu_disable_probe_isr();
 #endif
 #endif
-#ifdef ENABLE_MOTION_MODULES
+#ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_disable, NULL);
 #endif
 }
@@ -1131,8 +1131,12 @@ void io_set_output(uint8_t pin, bool state)
 
 void io_enable_steppers(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(enable_steppers, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(enable_steppers, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS_EN
+	ic74hc595_enable_steppers(mask);
 #endif
 
 #if !(STEP0_EN < 0)

@@ -402,9 +402,6 @@ void mcu_clocks_init()
 	}
 }
 
-#include <stm32f1xx_hal_rcc.h>
-#include <stm32f1xx_hal_rcc_ex.h>
-#include <stm32f1xx_hal_flash.h>
 void mcu_usart_init(void)
 {
 #ifdef MCU_HAS_USB

@@ -6,6 +6,14 @@
 
 # Changelog
 
+## [1.5.4] - 25-10-2022
+
+### Fixed
+
+- fixed stepper enable pins missing call with IC74HC595 module enabled (#320)
+- fixed compilation error with parser modules enabled (#320)
+- fixed probe IO modules enabling via option (#320)
+
 ## [1.5.3] - 22-10-2022
 
 ### Added
@@ -1043,6 +1051,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.4
 [1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
 [1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
 [1.5.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.1
