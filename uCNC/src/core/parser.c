@@ -1084,6 +1084,9 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	if (cmd->group_extended)
 	{
+#ifdef ENABLE_PARSER_MODULES
+		gcode_exec_args_t args = {new_state, words, cmd};
+#endif
 		itp_sync();
 		switch (cmd->group_extended)
 		{
@@ -1124,7 +1127,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #endif
 		default:
 #ifdef ENABLE_PARSER_MODULES
-			gcode_exec_args_t args = {new_state, words, cmd};
 			return EVENT_INVOKE(gcode_exec, &args);
 #endif
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
