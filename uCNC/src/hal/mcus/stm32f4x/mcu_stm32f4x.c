@@ -198,7 +198,7 @@ static void mcu_input_isr(void)
 		mcu_controls_changed_cb();
 	}
 #endif
-#if (PROBE_EXTIBITMASK & 0x01)
+#if (PROBE_EXTIBITMASK != 0)
 	if (EXTI->PR & PROBE_EXTIBITMASK)
 	{
 		mcu_probe_changed_cb();

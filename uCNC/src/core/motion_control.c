@@ -664,7 +664,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-#if (defined(FORCE_SOFT_POLLING) || (PROBEEN_MASK != PROBEISR_MASK))
+#if (defined(FORCE_SOFT_POLLING) || !defined(PROBE_ISR))
 		if (io_get_probe() ^ (flags & 0x01))
 		{
 			mcu_probe_changed_cb();
