@@ -53,26 +53,26 @@ extern "C"
 
 // Uncomment to enable weak pull up resistors for limit switch
 // If the pin is not defined in the board this will be ignored
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-#define LIMIT_X2_PULLUP
-#define LIMIT_Y2_PULLUP
-#define LIMIT_Z2_PULLUP
-#define LIMIT_A_PULLUP
-#define LIMIT_B_PULLUP
-#define LIMIT_C_PULLUP
+#define LIMIT_X_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_A_PULLUP_ENABLE
+#define LIMIT_B_PULLUP_ENABLE
+#define LIMIT_C_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistor for probe
 // If the pin is not defined in the board this will be ignored
-// #define PROBE_PULLUP
+// #define PROBE_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
-#define ESTOP_PULLUP
-#define SAFETY_DOOR_PULLUP
-#define FHOLD_PULLUP
-#define CS_RES_PULLUP
+#define ESTOP_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP_ENABLE
+#define FHOLD_PULLUP_ENABLE
+#define CS_RES_PULLUP_ENABLE
 
 /**
  * Uncomment this feature to enable tool length compensation
