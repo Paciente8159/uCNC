@@ -1,5 +1,5 @@
 /*
-		Name: kinematic_delta.c
+		Name: KINEMATIC_LINEAR_DELTA.c
 		Description: Implements all kinematics math equations to translate the motion of a delta machine.
 				Also implements the homing motion for this type of machine.
 
@@ -21,119 +21,126 @@
 
 #if (KINEMATIC == KINEMATIC_DELTA)
 #include <stdio.h>
+#include <stdint.h>
 #include <math.h>
 
-#define STEPPER0_FACTX (cos(STEPPER0_ANGLE * DEG_RAD_MULT));
-#define STEPPER0_FACTY (sin(STEPPER0_ANGLE * DEG_RAD_MULT));
-#define STEPPER1_FACTX (cos(STEPPER1_ANGLE * DEG_RAD_MULT));
-#define STEPPER1_FACTY (sin(STEPPER1_ANGLE * DEG_RAD_MULT));
-#define STEPPER2_FACTX (cos(STEPPER2_ANGLE * DEG_RAD_MULT));
-#define STEPPER2_FACTY (sin(STEPPER2_ANGLE * DEG_RAD_MULT));
+#define COS120 -0.5f
+#define SIN120 0.8660254037844386468f
+#define SQRT3 1.7320508075688772935f
+#define SIN30 0.5f
+#define TAN30 0.5773502691896257645f
+#define TAN60 1.7320508075688772935f
 
-static float delta_arm_sqr;
-static float delta_base_height;
-static float delta_base_max_travel;
-static float delta_x[3];
-static float delta_y[3];
+static float delta_half_f_tg30;
+static float delta_base_effector_radius_diff;
+static float steps_to_angle[3];
 
 void kinematics_init(void)
 {
-	float delta_triang_base = g_settings.delta_armbase_radius;
-	delta_arm_sqr = g_settings.delta_arm_length * g_settings.delta_arm_length;
-	delta_x[0] = delta_triang_base * STEPPER0_FACTX;
-	delta_x[1] = delta_triang_base * STEPPER1_FACTX;
-	delta_x[2] = delta_triang_base * STEPPER2_FACTX;
-	delta_y[0] = delta_triang_base * STEPPER0_FACTY;
-	delta_y[1] = delta_triang_base * STEPPER1_FACTY;
-	delta_y[2] = delta_triang_base * STEPPER2_FACTY;
-	delta_base_height = sqrtf(delta_arm_sqr - delta_x[0] * delta_x[0] - delta_y[0] * delta_y[0]);
-	float min_travel = (g_settings.delta_arm_length * cos(DELTA_ARM_MIN_ANGLE * DEG_RAD_MULT)) - delta_triang_base;
-	float max_travel = (g_settings.delta_arm_length * cos(DELTA_ARM_MAX_ANGLE * DEG_RAD_MULT)) - delta_triang_base;
-	min_travel = ABS(min_travel);
-	max_travel = ABS(max_travel);
-	delta_base_max_travel = MIN(min_travel, max_travel);
+	delta_half_f_tg30 = -0.5 * 0.57735 * g_settings.delta_effector_radius;
+	delta_base_effector_radius_diff = g_settings.delta_base_radius - g_settings.delta_effector_radius;
+	steps_to_angle[0] = 1.0f / g_settings.step_per_mm[0];
+	steps_to_angle[1] = 1.0f / g_settings.step_per_mm[1];
+	steps_to_angle[2] = 1.0f / g_settings.step_per_mm[2];
+}
+
+// inverse kinematics
+// helper functions, calculates angle theta1 (for YZ-pane)
+int8_t delta_calcAngleYZ(float x0, float y0, float z0, float *theta)
+{
+	float y1 = delta_half_f_tg30;							// f/2 * tg 30
+	y0 -= 0.5 * 0.57735 * g_settings.delta_effector_radius; // shift center to edge
+	// z = a + b*y
+	float a = (x0 * x0 + y0 * y0 + z0 * z0 + g_settings.delta_bicep_length * g_settings.delta_bicep_length - g_settings.delta_forearm_radius * g_settings.delta_forearm_radius - y1 * y1) / (2 * z0);
+	float b = (y1 - y0) / z0;
+	// discriminant
+	float d = -(a + b * y1) * (a + b * y1) + g_settings.delta_bicep_length * (b * b * g_settings.delta_bicep_length + g_settings.delta_bicep_length);
+	if (d < 0)
+		return -1;									  // non-existing point
+	float yj = (y1 - a * b - sqrtf(d)) / (b * b + 1); // choosing outer point
+	float zj = a + b * yj;
+	*theta = 180.0f * atanf(-zj / (y1 - yj)) / M_PI + ((yj > y1) ? 180.0f : 0.0f);
+	return 0;
 }
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
-	float x = axis[AXIS_X] - delta_x[0];
-	float y = axis[AXIS_Y] - delta_y[0];
-	float z = axis[AXIS_Z] - delta_base_height;
-	float steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
-	steps[0] = (int32_t)lroundf(g_settings.step_per_mm[0] * steps_mm);
-	x = delta_x[1] - axis[AXIS_X];
-	y = delta_y[1] - axis[AXIS_Y];
-	steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
-	steps[1] = (int32_t)lroundf(g_settings.step_per_mm[1] * steps_mm);
-	x = delta_x[2] - axis[AXIS_X];
-	y = delta_y[2] - axis[AXIS_Y];
-	steps_mm = sqrt(delta_arm_sqr - (x * x) - (y * y)) + z;
-	steps[2] = (int32_t)lroundf(g_settings.step_per_mm[2] * steps_mm);
-
+	float theta1, theta2, theta3;
 #if AXIS_COUNT > 3
 	for (uint8_t i = 3; i < AXIS_COUNT; i++)
 	{
 		steps[i] = (int32_t)lroundf(g_settings.step_mm[i] * axis[i]);
 	}
 #endif
+
+	if (!delta_calcAngleYZ(axis[AXIS_X], axis[AXIS_Y], axis[AXIS_Z], &theta1))
+	{
+		if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 + axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta2))
+		{
+			if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 - axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta3))
+			{
+				// converts angle to steps
+				steps[0] = g_settings.step_per_mm[0] * theta1;
+				steps[1] = g_settings.step_per_mm[1] * theta2;
+				steps[2] = g_settings.step_per_mm[2] * theta3;
+				return;
+			}
+		}
+	}
 }
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-	// using trialteration (similar to marlin)
-	float z0 = (steps[0] / g_settings.step_per_mm[0]);
-	float z1 = (steps[1] / g_settings.step_per_mm[1]);
-	float z2 = (steps[2] / g_settings.step_per_mm[2]);
-	float p01[3] = {delta_x[1] - delta_x[0], delta_y[1] - delta_y[0], z1 - z0};
+	float t = fast_flt_div2(delta_base_effector_radius_diff * TAN30);
 
-	// Get the reciprocal of Magnitude of vector.
-	float d2 = (p01[0] * p01[0]) + (p01[1] * p01[1]) + (p01[2] * p01[2]);
-	float inv_d = 1.0f / sqrtf(d2);
+	float theta1 = steps[0] * steps_to_angle[0] * DEG_RAD_MULT;
+	float theta2 = steps[1] * steps_to_angle[1] * DEG_RAD_MULT;
+	float theta3 = steps[2] * steps_to_angle[2] * DEG_RAD_MULT;
 
-	// Create unit vector by multiplying by the inverse of the magnitude.
-	float ex[3] = {p01[0] * inv_d, p01[1] * inv_d, p01[2] * inv_d};
+	float y1 = -(t + g_settings.delta_bicep_length * cos(theta1));
+	float z1 = -g_settings.delta_bicep_length * sin(theta1);
 
-	// Get the vector from the origin of the new system to the third point.
-	float p02[3] = {delta_x[2] - delta_x[0], delta_y[2] - delta_y[0], z2 - z0};
+	float y2 = (t + g_settings.delta_bicep_length * cos(theta2)) * SIN30;
+	float x2 = y2 * TAN60;
+	float z2 = -g_settings.delta_bicep_length * sin(theta2);
 
-	// Use the dot product to find the component of this vector on the X axis.
-	float i = ex[0] * p02[0] + ex[1] * p02[1] + ex[2] * p02[2];
+	float y3 = (t + g_settings.delta_bicep_length * cos(theta3)) * SIN30;
+	float x3 = -y3 * TAN60;
+	float z3 = -g_settings.delta_bicep_length * sin(theta3);
 
-	// Create a vector along the x axis that represents the x component of p02.
-	float iex[3] = {ex[0] * i, ex[1] * i, ex[2] * i};
+	float dnm = (y2 - y1) * x3 - (y3 - y1) * x2;
 
-	// Subtract the X component from the original vector leaving only Y. We use the
-	// variable that will be the unit vector after we scale it.
-	float ey[3] = {p02[0] - iex[0], p02[1] - iex[1], p02[2] - iex[2]};
+	float w1 = y1 * y1 + z1 * z1;
+	float w2 = x2 * x2 + y2 * y2 + z2 * z2;
+	float w3 = x3 * x3 + y3 * y3 + z3 * z3;
 
-	// The magnitude and the inverse of the magnitude of Y component
-	float j2 = (ey[0] * ey[0]) + (ey[1] * ey[1]) + (ey[2] * ey[2]);
-	float inv_j = 1.0f / sqrtf(j2);
+	// x = (a1*z + b1)/dnm
+	float a1 = (z2 - z1) * (y3 - y1) - (z3 - z1) * (y2 - y1);
+	float b1 = -fast_flt_div2((w2 - w1) * (y3 - y1) - (w3 - w1) * (y2 - y1));
 
-	// Convert to a unit vector
-	ey[0] *= inv_j;
-	ey[1] *= inv_j;
-	ey[2] *= inv_j;
+	// y = (a2*z + b2)/dnm;
+	float a2 = -(z2 - z1) * x3 + (z3 - z1) * x2;
+	float b2 = fast_flt_div2((w2 - w1) * x3 - (w3 - w1) * x2);
 
-	// The cross product of the unit x and y is the unit z
-	// float[] ez = vectorCrossProd(ex, ey);
-	float ez[3] = {
-		ex[1] * ey[2] - ex[2] * ey[1],
-		ex[2] * ey[0] - ex[0] * ey[2],
-		ex[0] * ey[1] - ex[1] * ey[0]};
+	// a*z^2 + b*z + c = 0
+	float a = a1 * a1 + a2 * a2 + dnm * dnm;
+	float b = fast_flt_mul2(a1 * b1 + a2 * (b2 - y1 * dnm) - z1 * dnm * dnm);
+	float c = (b2 - y1 * dnm) * (b2 - y1 * dnm) + b1 * b1 + dnm * dnm * (z1 * z1 - g_settings.delta_forearm_radius * g_settings.delta_forearm_radius);
 
-	// We now have the d, i and j values defined in Wikipedia.
-	// Plug them into the equations defined in Wikipedia for Xnew, Ynew and Znew
-	float Xnew = d2 * inv_d * 0.5;
-	float Ynew = ((i * i + j2) * 0.5 - i * Xnew) * inv_j;
-	float Znew = sqrtf(delta_arm_sqr - (Xnew * Xnew + Ynew * Ynew));
+	// discriminant
+	float d = b * b - (float)fast_flt_mul4(a * c);
+	if (d < 0)
+	{
+		axis[AXIS_X] = NAN;
+		axis[AXIS_Y] = NAN;
+		axis[AXIS_Z] = NAN;
+		return;
+	}
 
-	// Start from the origin of the old coordinates and add vectors in the
-	// old coords that represent the Xnew, Ynew and Znew to find the point
-	// in the old system.
-	axis[0] = delta_x[0] + ex[0] * Xnew + ey[0] * Ynew - ez[0] * Znew;
-	axis[1] = delta_y[0] + ex[1] * Xnew + ey[1] * Ynew - ez[1] * Znew;
-	axis[2] = z0 + ex[2] * Xnew + ey[2] * Ynew - ez[2] * Znew + delta_base_height;
+	float z = -(float)fast_flt_div2(b + sqrt(d)) / a;
+	axis[AXIS_X] = (a1 * z + b1) / dnm;
+	axis[AXIS_Y] = (a2 * z + b2) / dnm;
+	axis[AXIS_Z] = z;
 
 #if AXIS_COUNT > 3
 	for (uint8_t i = 3; i < AXIS_COUNT; i++)
@@ -154,7 +161,7 @@ uint8_t kinematics_home(void)
 #if (defined(AXIS_A) && !(LIMIT_A < 0))
 	if (mc_home_axis(AXIS_A, LIMIT_A_MASK))
 	{
-		return (KINEMATIC_HOMING_ERROR_X|KINEMATIC_HOMING_ERROR_Y|KINEMATIC_HOMING_ERROR_Z);
+		return (KINEMATIC_HOMING_ERROR_X | KINEMATIC_HOMING_ERROR_Y | KINEMATIC_HOMING_ERROR_Z);
 	}
 #endif
 #endif
@@ -220,7 +227,7 @@ void kinematics_apply_reverse_transform(float *axis)
 
 bool kinematics_check_boundaries(float *axis)
 {
-	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
+	/*if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
 		return true;
 	}
@@ -233,7 +240,7 @@ bool kinematics_check_boundaries(float *axis)
 	if (axis[AXIS_Y] < -delta_base_max_travel || axis[AXIS_Y] > delta_base_max_travel)
 	{
 		return false;
-	}
+	}*/
 
 #ifdef SET_ORIGIN_AT_HOME_POS
 	if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)

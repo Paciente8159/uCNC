@@ -511,7 +511,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit47]
-FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.c
+FileName=..\..\uCNC\src\hal\kinematics\KINEMATIC_LINEAR_DELTA.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -571,7 +571,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit48]
-FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.h
+FileName=..\..\uCNC\src\hal\kinematics\KINEMATIC_LINEAR_DELTA.h
 CompileCpp=0
 Folder=
 Compile=1

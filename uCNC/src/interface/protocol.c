@@ -648,7 +648,7 @@ void protocol_send_cnc_settings(void)
 		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
@@ -771,7 +771,7 @@ void protocol_send_pins_states(void)
 #define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
 #elif (KINEMATIC == KINEMATIC_COREXY)
 #define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_DELTA)
+#elif (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 #define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
 #else
 #define KINEMATIC_INFO ""

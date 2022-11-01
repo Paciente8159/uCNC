@@ -122,10 +122,15 @@ const settings_t __rom__ default_settings =
 		.default_tool = DEFAULT_STARTUP_TOOL,
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		.delta_arm_length = DEFAULT_DELTA_ARM_LENGTH,
 		.delta_armbase_radius = DEFAULT_DELTA_BASE_RADIUS,
 // float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		.delta_base_radius = 0,
+		.delta_effector_radius = 0,
+		.delta_bicep_length = 0,
+		.delta_forearm_radius = 0,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -172,7 +177,7 @@ const settings_t __rom__ default_settings =
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
 {
-	//custom handler
+	// custom handler
 	settings_change_delegate_event_t *ptr = settings_change_event;
 	bool handled = false;
 	uint8_t result = STATUS_INVALID_STATEMENT;
@@ -452,7 +457,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
 			break;
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		case 106:
 			g_settings.delta_arm_length = value;
 			break;
@@ -462,6 +467,19 @@ uint8_t settings_change(setting_offset_t id, float value)
 			// case 108:
 			//     g_settings.delta_efector_height = value;
 			//     break;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	case 106:
+		g_settings.delta_base_radius = value;
+		break;
+	case 107:
+		g_settings.delta_effector_radius = value;
+		break;
+	case 108:
+		g_settings.delta_bicep_length = value;
+		break;
+	case 109:
+		g_settings.delta_forearm_radius = value;
+		break;
 #endif
 		default:
 			if (setting >= 100 && setting < (100 + AXIS_COUNT))
