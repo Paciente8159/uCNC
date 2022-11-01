@@ -127,6 +127,51 @@ extern "C"
 #endif
 #endif
 
+#ifdef LIMIT_X_PULLUP_ENABLE
+#define LIMIT_X_PULLUP
+#endif
+#ifdef LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP
+#endif
+#ifdef LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP
+#endif
+#ifdef LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP
+#endif
+#ifdef LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP
+#endif
+#ifdef LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP
+#endif
+#ifdef LIMIT_A_PULLUP_ENABLE
+#define LIMIT_A_PULLUP
+#endif
+#ifdef LIMIT_B_PULLUP_ENABLE
+#define LIMIT_B_PULLUP
+#endif
+#ifdef LIMIT_C_PULLUP_ENABLE
+#define LIMIT_C_PULLUP
+#endif
+
+#ifdef PROBE_PULLUP_ENABLE
+#define PROBE_PULLUP
+#endif
+
+#ifdef ESTOP_PULLUP_ENABLE
+#define ESTOP_PULLUP
+#endif
+#ifdef SAFETY_DOOR_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP
+#endif
+#ifdef FHOLD_PULLUP_ENABLE
+#define FHOLD_PULLUP
+#endif
+#ifdef CS_RES_PULLUP_ENABLE
+#define CS_RES_PULLUP
+#endif
+
 #ifndef ENCODERS
 #define ENCODERS 0
 #endif
