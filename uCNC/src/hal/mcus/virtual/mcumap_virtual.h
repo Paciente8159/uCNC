@@ -205,5 +205,7 @@
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)
+#define mcu_delay_us(X) mcu_virtual_delay_us(X)
+#define asm __asm__
 
 #endif

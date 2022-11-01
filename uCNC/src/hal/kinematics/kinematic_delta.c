@@ -93,9 +93,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 {
 	float t = fast_flt_div2(delta_base_effector_radius_diff * TAN30);
 
-	float theta1 = steps[0] * steps_to_angle[0] * DEG_RAD_MULT;
-	float theta2 = steps[1] * steps_to_angle[1] * DEG_RAD_MULT;
-	float theta3 = steps[2] * steps_to_angle[2] * DEG_RAD_MULT;
+	float theta1 = (148.93f - steps[0] * steps_to_angle[0]) * DEG_RAD_MULT;
+	float theta2 = (148.93f - steps[1] * steps_to_angle[1]) * DEG_RAD_MULT;
+	float theta3 = (148.93f - steps[2] * steps_to_angle[2]) * DEG_RAD_MULT;
 
 	float y1 = -(t + g_settings.delta_bicep_length * cos(theta1));
 	float z1 = -g_settings.delta_bicep_length * sin(theta1);
@@ -131,9 +131,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 	float d = b * b - (float)fast_flt_mul4(a * c);
 	if (d < 0)
 	{
-		axis[AXIS_X] = NAN;
-		axis[AXIS_Y] = NAN;
-		axis[AXIS_Z] = NAN;
+		axis[AXIS_X] = 0;
+		axis[AXIS_Y] = 0;
+		axis[AXIS_Z] = 0;
 		return;
 	}
 
@@ -241,7 +241,7 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		return false;
 	}*/
-
+/*
 #ifdef SET_ORIGIN_AT_HOME_POS
 	if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)
 	{
@@ -253,7 +253,7 @@ bool kinematics_check_boundaries(float *axis)
 		return false;
 	}
 #endif
-
+*/
 	return true;
 }
 

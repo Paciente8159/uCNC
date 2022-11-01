@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=70
+UnitCount=72
 
 [VersionInfo]
 Major=1
@@ -511,7 +511,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit47]
-FileName=..\..\uCNC\src\hal\kinematics\KINEMATIC_LINEAR_DELTA.c
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_linear_delta.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -571,7 +571,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit48]
-FileName=..\..\uCNC\src\hal\kinematics\KINEMATIC_LINEAR_DELTA.h
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_linear_delta.h
 CompileCpp=0
 Folder=
 Compile=1
@@ -751,7 +751,17 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit71]
-FileName=..\..\uCNC\src\hal\tools\tools\laser_ppi.c
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit72]
+FileName=..\..\uCNC\src\hal\kinematics\kinematic_delta.h
 CompileCpp=0
 Folder=
 Compile=1

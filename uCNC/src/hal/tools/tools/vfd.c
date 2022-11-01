@@ -83,7 +83,7 @@ static vfd_state_t vfd_state;
 #define VFD_MAX_COMMAND_RETRIES 2
 
 // uncomment the right type of VFD used
-// #define VFD_HUANYANG_TYPE1
+ #define VFD_HUANYANG_TYPE1
 // #define VFD_HUANYANG_TYPE2
 // #define VFD_YL620
 // #define VFD_POWTRAN8100

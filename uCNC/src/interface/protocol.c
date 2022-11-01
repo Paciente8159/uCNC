@@ -652,6 +652,11 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.delta_base_radius);
+	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
+	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
+	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_radius);
 #endif
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
