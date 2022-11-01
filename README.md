@@ -29,6 +29,7 @@ Heavily inspired by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://l
 
 You can navigate the [project wiki](https://github.com/Paciente8159/uCNC/wiki) to find out more on how to use it.
 You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules)
+You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
 
 ## Supporting the project
 

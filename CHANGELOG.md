@@ -6,6 +6,17 @@
 
 # Changelog
 
+## [1.5.5] - 01-11-2022
+
+### Added
+
+- added dummy configuration override files tu support [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) (#325)
+
+### Fixed
+
+- fixed PROBE ISR issues on STM32 (#322)
+- removed deprecated config that prevented probe from working correctly if PROBE_ISR was not configured (#322)
+
 ## [1.5.4] - 25-10-2022
 
 ### Fixed
@@ -1051,6 +1062,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.5
 [1.5.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.4
 [1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
 [1.5.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.2
