@@ -107,7 +107,7 @@ static uint8_t prev_dss;
 static int16_t prev_spindle;
 // pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_LINEAR_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 static volatile uint8_t itp_step_lock;
 #endif
 
@@ -218,7 +218,7 @@ void itp_init(void)
 	memset(itp_blk_data, 0, sizeof(itp_blk_data));
 	memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 	itp_rt_sgm = NULL;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_LINEAR_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 	itp_step_lock = 0;
 #endif
 #endif
@@ -1078,15 +1078,15 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
-	if (g_settings.homing_enabled)
-	{
+	// if (g_settings.homing_enabled)
+	// {
 		kinematics_apply_inverse(origin, itp_rt_step_pos);
-	}
-	else
-	{
-		memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
-		memset(origin, 0, (sizeof(float) * AXIS_COUNT));
-	}
+	// }
+	// else
+	// {
+	// 	memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
+	// 	memset(origin, 0, (sizeof(float) * AXIS_COUNT));
+	// }
 
 #if STEPPERS_ENCODERS_MASK != 0
 	encoders_itp_reset_rt_position(origin);
@@ -1136,7 +1136,7 @@ void itp_sync_spindle(void)
 #endif
 }
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_LINEAR_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 void itp_lock_stepper(uint8_t lockmask)
 {
 	itp_step_lock = lockmask;
@@ -1619,7 +1619,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		mcu_disable_global_isr(); // lock isr before clearin busy flag
 		itp_busy = false;
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_LINEAR_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 		stepbits &= ~itp_step_lock;
 #endif
 	}

@@ -80,7 +80,7 @@ extern "C"
 		float delta_base_radius;
 		float delta_effector_radius;
 		float delta_bicep_length;
-		float delta_forearm_radius;
+		float delta_forearm_length;
 		// float delta_efector_height;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION

@@ -67,7 +67,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 	block_data->full_steps = 0;
 #endif
 	block_data->total_steps = 0;
-#if KINEMATIC == KINEMATIC_LINEAR_DELTA
+#if defined(IS_DELTA_KINEMATICS)
 	block_data->dirbits = 0;
 #endif
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -77,7 +77,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		uint32_t steps = (uint32_t)ABS(s);
 		block_data->steps[i] = (step_t)steps;
 
-#if KINEMATIC == KINEMATIC_LINEAR_DELTA
+#if defined(IS_DELTA_KINEMATICS)
 		// with the delta dir bits need to be rechecked
 		if (s < 0)
 		{
@@ -91,7 +91,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		if (block_data->total_steps < steps)
 		{
 			block_data->total_steps = steps;
-#if KINEMATIC == KINEMATIC_LINEAR_DELTA
+#if defined(IS_DELTA_KINEMATICS)
 			// with the delta main stepper need to be rechecked
 			block_data->main_stepper = i;
 #endif
@@ -257,7 +257,13 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
 	}
 
-#if ((KINEMATIC == KINEMATIC_LINEAR_DELTA) || defined(ENABLE_LASER_PPI))
+	// zero distance motion
+	if (inv_dist == 0)
+	{
+		return STATUS_OK;
+	}
+
+#if (defined(IS_DELTA_KINEMATICS) || defined(ENABLE_LASER_PPI))
 	float line_dist = fast_flt_sqrt(inv_dist);
 	inv_dist = 1.0f / line_dist;
 #else
@@ -303,10 +309,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
 	block_data->feed = (float)max_steps * inv_delta;
 
-#if ((KINEMATIC == KINEMATIC_LINEAR_DELTA) || defined(BRESENHAM_16BIT))
+#if (defined(IS_DELTA_KINEMATICS) || defined(BRESENHAM_16BIT))
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
-#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+#if (defined(IS_DELTA_KINEMATICS))
 	line_segments = (uint32_t)ceilf(line_dist * DELTA_MOTION_SEGMENT_FACTOR);
 	float m_inv = 1.0f / (float)line_segments;
 	for (uint8_t i = AXIS_COUNT; i != 0;)

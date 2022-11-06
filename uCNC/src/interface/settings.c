@@ -130,7 +130,7 @@ const settings_t __rom__ default_settings =
 		.delta_base_radius = 0,
 		.delta_effector_radius = 0,
 		.delta_bicep_length = 0,
-		.delta_forearm_radius = 0,
+		.delta_forearm_length = 0,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -478,7 +478,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 		g_settings.delta_bicep_length = value;
 		break;
 	case 109:
-		g_settings.delta_forearm_radius = value;
+		g_settings.delta_forearm_length = value;
 		break;
 #endif
 		default:
@@ -531,8 +531,11 @@ uint8_t settings_change(setting_offset_t id, float value)
 				g_settings.tool_length_offset[setting] = value;
 			}
 #endif
+	else{
+	
 			return STATUS_INVALID_STATEMENT;
 		}
+	}
 #ifdef ENABLE_SETTINGS_MODULES
 	}
 	else

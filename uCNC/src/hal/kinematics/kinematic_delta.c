@@ -28,17 +28,26 @@
 #define SIN120 0.8660254037844386468f
 #define SQRT3 1.7320508075688772935f
 #define SIN30 0.5f
-#define TAN30 0.5773502691896257645f
+#define HALF_TAN30 0.2886751345948128823f
 #define TAN60 1.7320508075688772935f
 
-static float delta_half_f_tg30;
-static float delta_base_effector_radius_diff;
+static float delta_base_half_f_tg30;
+static float delta_effector_half_f_tg30;
+static float delta_base_effector_half_f_tg30;
 static float steps_to_angle[3];
+
+static float delta_max_z(void)
+{
+	float radius = (g_settings.delta_base_radius - g_settings.delta_effector_radius);
+	float hyp = g_settings.delta_forearm_length + g_settings.delta_bicep_length;
+	return sqrt(hyp * hyp - radius * radius);
+}
 
 void kinematics_init(void)
 {
-	delta_half_f_tg30 = -0.5 * 0.57735 * g_settings.delta_effector_radius;
-	delta_base_effector_radius_diff = g_settings.delta_base_radius - g_settings.delta_effector_radius;
+	delta_base_half_f_tg30 = HALF_TAN30 * g_settings.delta_base_radius;
+	delta_effector_half_f_tg30 = HALF_TAN30 * g_settings.delta_effector_radius;
+	delta_base_effector_half_f_tg30 = HALF_TAN30 * (g_settings.delta_base_radius - g_settings.delta_effector_radius);
 	steps_to_angle[0] = 1.0f / g_settings.step_per_mm[0];
 	steps_to_angle[1] = 1.0f / g_settings.step_per_mm[1];
 	steps_to_angle[2] = 1.0f / g_settings.step_per_mm[2];
@@ -48,18 +57,26 @@ void kinematics_init(void)
 // helper functions, calculates angle theta1 (for YZ-pane)
 int8_t delta_calcAngleYZ(float x0, float y0, float z0, float *theta)
 {
-	float y1 = delta_half_f_tg30;							// f/2 * tg 30
-	y0 -= 0.5 * 0.57735 * g_settings.delta_effector_radius; // shift center to edge
+	float re = g_settings.delta_forearm_length;
+	float rf = g_settings.delta_bicep_length;
+	float y1 = -delta_base_half_f_tg30; // f/2 * tg 30
+	y0 -= delta_effector_half_f_tg30;  // shift center to edge
 	// z = a + b*y
-	float a = (x0 * x0 + y0 * y0 + z0 * z0 + g_settings.delta_bicep_length * g_settings.delta_bicep_length - g_settings.delta_forearm_radius * g_settings.delta_forearm_radius - y1 * y1) / (2 * z0);
+	float a = fast_flt_div2((x0 * x0 + y0 * y0 + z0 * z0 + rf * rf - re * re - y1 * y1)) / z0;
 	float b = (y1 - y0) / z0;
 	// discriminant
-	float d = -(a + b * y1) * (a + b * y1) + g_settings.delta_bicep_length * (b * b * g_settings.delta_bicep_length + g_settings.delta_bicep_length);
+	float d = -(a + b * y1) * (a + b * y1) + rf * (b * b * rf + rf);
 	if (d < 0)
-		return -1;									  // non-existing point
-	float yj = (y1 - a * b - sqrtf(d)) / (b * b + 1); // choosing outer point
+	{
+		*theta = 0;
+		return -1;
+	}
+	// non-existing point
+	float yj = (y1 - a * b - sqrt(d)) / (b * b + 1); // choosing outer point
 	float zj = a + b * yj;
-	*theta = 180.0f * atanf(-zj / (y1 - yj)) / M_PI + ((yj > y1) ? 180.0f : 0.0f);
+	//original code
+	*theta = 180.0f * atan(-zj / (y1 - yj)) * M_PI_INV + ((yj > y1) ? 180.0f : 0);
+	//*theta = 180.0f * atan2(-zj, (y1 - yj)) * M_PI_INV;
 	return 0;
 }
 
@@ -77,7 +94,7 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 	{
 		if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 + axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta2))
 		{
-			if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 - axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta3))
+			if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 - axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 + axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta3))
 			{
 				// converts angle to steps
 				steps[0] = g_settings.step_per_mm[0] * theta1;
@@ -91,22 +108,26 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 void kinematics_apply_forward(int32_t *steps, float *axis)
 {
-	float t = fast_flt_div2(delta_base_effector_radius_diff * TAN30);
+	float rf = g_settings.delta_bicep_length;
+	float re = g_settings.delta_forearm_length;
 
-	float theta1 = (148.93f - steps[0] * steps_to_angle[0]) * DEG_RAD_MULT;
-	float theta2 = (148.93f - steps[1] * steps_to_angle[1]) * DEG_RAD_MULT;
-	float theta3 = (148.93f - steps[2] * steps_to_angle[2]) * DEG_RAD_MULT;
+	float t = delta_base_effector_half_f_tg30;
+	// float dtr = pi / (float)180.0;
 
-	float y1 = -(t + g_settings.delta_bicep_length * cos(theta1));
-	float z1 = -g_settings.delta_bicep_length * sin(theta1);
+	float theta1 = (float)steps[0] * steps_to_angle[0] * DEG_RAD_MULT;
+	float theta2 = (float)steps[1] * steps_to_angle[1] * DEG_RAD_MULT;
+	float theta3 = (float)steps[2] * steps_to_angle[2] * DEG_RAD_MULT;
 
-	float y2 = (t + g_settings.delta_bicep_length * cos(theta2)) * SIN30;
+	float y1 = -(t + rf * cos(theta1));
+	float z1 = -rf * sin(theta1);
+
+	float y2 = (t + rf * cos(theta2)) * SIN30;
 	float x2 = y2 * TAN60;
-	float z2 = -g_settings.delta_bicep_length * sin(theta2);
+	float z2 = -rf * sin(theta2);
 
-	float y3 = (t + g_settings.delta_bicep_length * cos(theta3)) * SIN30;
+	float y3 = (t + rf * cos(theta3)) * SIN30;
 	float x3 = -y3 * TAN60;
-	float z3 = -g_settings.delta_bicep_length * sin(theta3);
+	float z3 = -rf * sin(theta3);
 
 	float dnm = (y2 - y1) * x3 - (y3 - y1) * x2;
 
@@ -124,23 +145,21 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 	// a*z^2 + b*z + c = 0
 	float a = a1 * a1 + a2 * a2 + dnm * dnm;
-	float b = fast_flt_mul2(a1 * b1 + a2 * (b2 - y1 * dnm) - z1 * dnm * dnm);
-	float c = (b2 - y1 * dnm) * (b2 - y1 * dnm) + b1 * b1 + dnm * dnm * (z1 * z1 - g_settings.delta_forearm_radius * g_settings.delta_forearm_radius);
+	float b = fast_flt_mul2((a1 * b1 + a2 * (b2 - y1 * dnm) - z1 * dnm * dnm));
+	float c = (b2 - y1 * dnm) * (b2 - y1 * dnm) + b1 * b1 + dnm * dnm * (z1 * z1 - re * re);
 
 	// discriminant
-	float d = b * b - (float)fast_flt_mul4(a * c);
+	float d = b * b - fast_flt_mul4((a * c));
 	if (d < 0)
 	{
-		axis[AXIS_X] = 0;
-		axis[AXIS_Y] = 0;
-		axis[AXIS_Z] = 0;
-		return;
+		memset(axis, 255, AXIS_COUNT * sizeof(float));
+		return; // non-existing point
 	}
 
-	float z = -(float)fast_flt_div2(b + sqrt(d)) / a;
-	axis[AXIS_X] = (a1 * z + b1) / dnm;
-	axis[AXIS_Y] = (a2 * z + b2) / dnm;
-	axis[AXIS_Z] = z;
+	float z0 = -fast_flt_div2((b + sqrt(d))) / a;
+	axis[AXIS_X] = (a1 * z0 + b1) / dnm;
+	axis[AXIS_Y] = (a2 * z0 + b2) / dnm;
+	axis[AXIS_Z] = z0;
 
 #if AXIS_COUNT > 3
 	for (uint8_t i = 3; i < AXIS_COUNT; i++)
@@ -241,19 +260,19 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		return false;
 	}*/
-/*
-#ifdef SET_ORIGIN_AT_HOME_POS
-	if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)
-	{
-		return false;
-	}
-#else
-	if (axis[AXIS_Z] > g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] < 0)
-	{
-		return false;
-	}
-#endif
-*/
+	/*
+	#ifdef SET_ORIGIN_AT_HOME_POS
+		if (axis[AXIS_Z] < -g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] > 0)
+		{
+			return false;
+		}
+	#else
+		if (axis[AXIS_Z] > g_settings.max_distance[AXIS_Z] || axis[AXIS_Z] < 0)
+		{
+			return false;
+		}
+	#endif
+	*/
 	return true;
 }
 
