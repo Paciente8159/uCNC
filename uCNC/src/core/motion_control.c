@@ -257,7 +257,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		inv_dist += fast_flt_pow2(block_data->dir_vect[i]);
 	}
 
-	// zero distance motion
+	// no motion. bail out.
 	if (inv_dist == 0)
 	{
 		return STATUS_OK;

@@ -531,11 +531,11 @@ uint8_t settings_change(setting_offset_t id, float value)
 				g_settings.tool_length_offset[setting] = value;
 			}
 #endif
-	else{
-	
-			return STATUS_INVALID_STATEMENT;
+			else
+			{
+				return STATUS_INVALID_STATEMENT;
+			}
 		}
-	}
 #ifdef ENABLE_SETTINGS_MODULES
 	}
 	else
