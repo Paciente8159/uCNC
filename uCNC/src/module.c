@@ -33,6 +33,9 @@
 static FORCEINLINE void load_modules(void)
 {
 	// PLACE YOUR MODULES HERE
+	#ifdef LOAD_MODULES_OVERRIDE
+	LOAD_MODULES_OVERRIDE();
+	#endif
 }
 
 void mod_init(void)
