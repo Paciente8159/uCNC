@@ -172,7 +172,7 @@ const settings_t __rom__ default_settings =
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
 {
-	//custom handler
+	// custom handler
 	settings_change_delegate_event_t *ptr = settings_change_event;
 	bool handled = false;
 	uint8_t result = STATUS_INVALID_STATEMENT;
@@ -513,7 +513,11 @@ uint8_t settings_change(setting_offset_t id, float value)
 				g_settings.tool_length_offset[setting] = value;
 			}
 #endif
-			return STATUS_INVALID_STATEMENT;
+			else
+			{
+				return STATUS_INVALID_STATEMENT;
+			}
+			return STATUS_OK;
 		}
 #ifdef ENABLE_SETTINGS_MODULES
 	}

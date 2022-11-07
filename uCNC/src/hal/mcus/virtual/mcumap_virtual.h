@@ -206,4 +206,11 @@
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)
 
+#define mcu_delay_cycles(X)
+extern void virtual_delay_us(uint16_t delay);
+#define mcu_delay_us(X) virtual_delay_us(X)
+
+#define asm __asm__
+#define VFD_HUANYANG_TYPE1
+
 #endif
