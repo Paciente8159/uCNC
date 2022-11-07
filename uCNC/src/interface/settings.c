@@ -318,7 +318,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 
 uint8_t settings_change(setting_offset_t id, float value)
 {
-	uint8_t result = 0;
+	uint8_t result = STATUS_OK;
 	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
 	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
 
