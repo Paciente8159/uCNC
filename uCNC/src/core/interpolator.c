@@ -1078,15 +1078,13 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
-	// if (g_settings.homing_enabled)
-	// {
-		kinematics_apply_inverse(origin, itp_rt_step_pos);
-	// }
-	// else
-	// {
-	// 	memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
-	// 	memset(origin, 0, (sizeof(float) * AXIS_COUNT));
-	// }
+	if (!g_settings.homing_enabled)
+	{
+		memset(origin, 0, (sizeof(float) * AXIS_COUNT));
+	}
+
+	//sync origin and steppers position
+	kinematics_apply_inverse(origin, itp_rt_step_pos);
 
 #if STEPPERS_ENCODERS_MASK != 0
 	encoders_itp_reset_rt_position(origin);

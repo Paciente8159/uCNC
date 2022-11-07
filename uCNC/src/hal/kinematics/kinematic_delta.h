@@ -4,7 +4,7 @@
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 06/02/2020
+	Date: 03/11/2022
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -28,16 +28,6 @@ extern "C"
 #error "Delta kinematics expects at least 3 axis"
 #endif
 
-#ifndef STEPPER0_ANGLE
-#define STEPPER0_ANGLE 30
-#endif
-#ifndef STEPPER1_ANGLE
-#define STEPPER1_ANGLE (STEPPER0_ANGLE + 120)
-#endif
-#ifndef STEPPER2_ANGLE
-#define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
-#endif
-
 // the maximum size of the computed segments that are sent to the planner
 // this forces linear motions in the delta to treated has an arc motion to
 // cope with the non linear kinematic motion of the towers
@@ -45,16 +35,6 @@ extern "C"
 #define DELTA_MOTION_SEGMENT_SIZE 1.0f
 #endif
 #define DELTA_MOTION_SEGMENT_FACTOR (1.0f / DELTA_MOTION_SEGMENT_SIZE)
-
-// minimum arm angle that is allowed for the delta (for software limits)
-#ifndef DELTA_ARM_MIN_ANGLE
-#define DELTA_ARM_MIN_ANGLE 20
-#endif
-
-// maximum angle (should not be bigger then 90º deg angle)
-#ifndef DELTA_ARM_MAX_ANGLE
-#define DELTA_ARM_MAX_ANGLE 89
-#endif
 
 	/*
 	Enable Skew compensation
