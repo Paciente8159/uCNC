@@ -41,6 +41,16 @@ static float delta_cuboid_z_min;
 static float delta_cuboid_z_max;
 static float delta_cuboid_z_home;
 
+static void delta_home_angle_to_steps(int32_t *steps)
+{
+	memset(steps, 0, AXIS_COUNT * sizeof(int32_t));
+
+	float angle = g_settings.delta_bicep_homing_angle;
+	steps[0] = roundf(angle * steps_per_angle[0]);
+	steps[1] = roundf(angle * steps_per_angle[1]);
+	steps[2] = roundf(angle * steps_per_angle[2]);
+}
+
 static void delta_calc_bounds(void)
 {
 	float maxx = -g_settings.delta_effector_radius - g_settings.delta_base_radius - g_settings.delta_forearm_length - g_settings.delta_bicep_length;
@@ -51,18 +61,22 @@ static void delta_calc_bounds(void)
 	float minz = -maxx;
 	float s = MAX(g_settings.step_per_mm[0], MAX(g_settings.step_per_mm[1], g_settings.step_per_mm[2]));
 	float axis[AXIS_COUNT];
-	int32_t steps[AXIS_COUNT];
+	int32_t steps[STEPPER_COUNT];
 	int32_t r[8][3];
 	float btf = g_settings.max_distance[AXIS_Z];
 
-	memset(axis, 0, AXIS_COUNT * sizeof(float));
-	memset(steps, 0, AXIS_COUNT * sizeof(uint32_t));
-
+	memset(axis, 0, sizeof(axis));
+	delta_home_angle_to_steps(steps);
 	kinematics_apply_forward(steps, axis);
-	delta_cuboid_z_home = axis[AXIS_Z];
+
+	float homez = axis[AXIS_Z];
+	// reset home offset
+	delta_cuboid_z_home = 0;
+
+	int32_t homing_angle = MIN(steps[0], MIN(steps[1], steps[2]));
 
 	// find extents
-	for (int32_t z = 0; z < s; ++z)
+	for (int32_t z = homing_angle; z < (s + homing_angle); ++z)
 	{
 		steps[0] = z;
 		steps[1] = z;
@@ -157,6 +171,9 @@ static void delta_calc_bounds(void)
 	delta_cuboid_xy = sum;
 	delta_cuboid_z_min = minz;
 	delta_cuboid_z_max = maxz;
+#ifdef DELTA_HOME_LIMITS_MAXZ
+	delta_cuboid_z_max = MAX(delta_cuboid_z_max, homez);
+#endif
 }
 
 void kinematics_init(void)
@@ -200,6 +217,8 @@ int8_t delta_calcAngleYZ(float x0, float y0, float z0, float *theta)
 void kinematics_apply_inverse(float *axis, int32_t *steps)
 {
 	float theta1, theta2, theta3;
+
+	float z_offset = axis[AXIS_Z] + delta_cuboid_z_home;
 #if AXIS_COUNT > 3
 	for (uint8_t i = 3; i < AXIS_COUNT; i++)
 	{
@@ -207,11 +226,11 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 	}
 #endif
 
-	if (!delta_calcAngleYZ(axis[AXIS_X], axis[AXIS_Y], axis[AXIS_Z], &theta1))
+	if (!delta_calcAngleYZ(axis[AXIS_X], axis[AXIS_Y], z_offset, &theta1))
 	{
-		if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 + axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta2))
+		if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 + axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 - axis[AXIS_X] * SIN120, z_offset, &theta2))
 		{
-			if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 - axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 + axis[AXIS_X] * SIN120, axis[AXIS_Z], &theta3))
+			if (!delta_calcAngleYZ(axis[AXIS_X] * COS120 - axis[AXIS_Y] * SIN120, axis[AXIS_Y] * COS120 + axis[AXIS_X] * SIN120, z_offset, &theta3))
 			{
 				// converts angle to steps
 				steps[0] = steps_per_angle[0] * theta1;
@@ -283,7 +302,7 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 	float z0 = -fast_flt_div2((b + sqrt(d))) / a;
 	axis[AXIS_X] = (a1 * z0 + b1) / dnm;
 	axis[AXIS_Y] = (a2 * z0 + b2) / dnm;
-	axis[AXIS_Z] = z0;
+	axis[AXIS_Z] = z0 - delta_cuboid_z_home;
 
 #if AXIS_COUNT > 3
 	for (uint8_t i = 3; i < AXIS_COUNT; i++)
@@ -334,12 +353,11 @@ uint8_t kinematics_home(void)
 	motion_data_t block_data = {0};
 
 	int32_t angle_steps[AXIS_COUNT];
-	memset(angle_steps, 0, sizeof(angle_steps));
-	float angle = g_settings.delta_bicep_homing_angle;
-	angle_steps[0] = roundf(angle * steps_per_angle[0]);
-	angle_steps[1] = roundf(angle * steps_per_angle[1]);
-	angle_steps[2] = roundf(angle * steps_per_angle[2]);
+	delta_home_angle_to_steps(angle_steps);
 	kinematics_apply_forward(angle_steps, target);
+	float homez = target[AXIS_Z] + ((g_settings.homing_dir_invert_mask) ? g_settings.homing_offset : -g_settings.homing_offset);
+
+	delta_cuboid_z_home = homez;
 
 	// sync systems (interpolator, motion control and parser - the latest is synched ny motion control)
 	itp_reset_rt_position(target);
@@ -376,6 +394,7 @@ bool kinematics_check_boundaries(float *axis)
 	}
 
 	float xy_limit = delta_cuboid_xy;
+	float z_offset = delta_cuboid_z_home;
 
 	if (axis[AXIS_X] < -xy_limit || axis[AXIS_X] > xy_limit)
 	{
@@ -387,7 +406,7 @@ bool kinematics_check_boundaries(float *axis)
 		return false;
 	}
 
-	if (axis[AXIS_Z] < delta_cuboid_z_min || axis[AXIS_Z] > delta_cuboid_z_max)
+	if (axis[AXIS_Z] < (delta_cuboid_z_min - z_offset) || axis[AXIS_Z] > (delta_cuboid_z_max - z_offset))
 	{
 		return false;
 	}
