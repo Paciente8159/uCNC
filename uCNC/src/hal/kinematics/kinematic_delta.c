@@ -178,6 +178,8 @@ static void delta_calc_bounds(void)
 
 void kinematics_init(void)
 {
+	//reset home offset
+	delta_cuboid_z_home = 0;
 	delta_base_half_f_tg30 = HALF_TAN30 * g_settings.delta_base_radius;
 	delta_effector_half_f_tg30 = HALF_TAN30 * g_settings.delta_effector_radius;
 	delta_base_effector_half_f_tg30 = HALF_TAN30 * (g_settings.delta_base_radius - g_settings.delta_effector_radius);
@@ -355,10 +357,6 @@ uint8_t kinematics_home(void)
 	int32_t angle_steps[AXIS_COUNT];
 	delta_home_angle_to_steps(angle_steps);
 	kinematics_apply_forward(angle_steps, target);
-	float homez = target[AXIS_Z] + ((g_settings.homing_dir_invert_mask) ? g_settings.homing_offset : -g_settings.homing_offset);
-
-	delta_cuboid_z_home = homez;
-
 	// sync systems (interpolator, motion control and parser - the latest is synched ny motion control)
 	itp_reset_rt_position(target);
 	mc_sync_position();
@@ -372,6 +370,13 @@ uint8_t kinematics_home(void)
 	// starts offset and waits to finnish
 	mc_line(target, &block_data);
 	itp_sync();
+
+	// add the internal offset to the kinematics
+	delta_cuboid_z_home = target[AXIS_Z];
+	// sync systems again to the origin (interpolator, motion control and parser - the latest is synched ny motion control)
+	memset(target, 0, sizeof(target));
+	itp_reset_rt_position(target);
+	mc_sync_position();
 
 	cnc_clear_exec_state(EXEC_HOMING);
 
