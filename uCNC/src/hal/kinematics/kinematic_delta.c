@@ -332,7 +332,18 @@ uint8_t kinematics_home(void)
 	cnc_set_exec_state(EXEC_HOMING);
 	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
-	mc_get_position(target);
+
+	int32_t angle_steps[AXIS_COUNT];
+	memset(angle_steps, 0, sizeof(angle_steps));
+	float angle = g_settings.delta_bicep_homing_angle;
+	angle_steps[0] = roundf(angle * steps_per_angle[0]);
+	angle_steps[1] = roundf(angle * steps_per_angle[1]);
+	angle_steps[2] = roundf(angle * steps_per_angle[2]);
+	kinematics_apply_forward(angle_steps, target);
+
+	// sync systems (interpolator, motion control and parser - the latest is synched ny motion control)
+	itp_reset_rt_position(target);
+	mc_sync_position();
 
 	// pull of only on the Z axis
 	target[AXIS_Z] += ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? -g_settings.homing_offset : g_settings.homing_offset);
@@ -345,17 +356,6 @@ uint8_t kinematics_home(void)
 	itp_sync();
 
 	cnc_clear_exec_state(EXEC_HOMING);
-
-	memset(target, 0, sizeof(target));
-#ifndef SET_ORIGIN_AT_HOME_POS
-	if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
-	{
-		target[AXIS_Z] = g_settings.max_distance[AXIS_Z];
-	}
-#endif
-
-	// reset position
-	itp_reset_rt_position(target);
 
 	return STATUS_OK;
 }

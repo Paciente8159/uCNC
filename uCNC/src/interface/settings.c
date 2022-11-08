@@ -123,14 +123,15 @@ const settings_t __rom__ default_settings =
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-		.delta_arm_length = DEFAULT_DELTA_ARM_LENGTH,
-		.delta_armbase_radius = DEFAULT_DELTA_BASE_RADIUS,
+		.delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH,
+		.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
 // float delta_efector_height;
 #elif (KINEMATIC == KINEMATIC_DELTA)
-		.delta_base_radius = 0,
-		.delta_effector_radius = 0,
-		.delta_bicep_length = 0,
-		.delta_forearm_length = 0,
+		.delta_base_radius = DEFAULT_DELTA_BASE_RADIUS,
+		.delta_effector_radius = DEFAULT_DELTA_EFFECTOR_RADIUS,
+		.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
+		.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
+		.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -479,6 +480,9 @@ uint8_t settings_change(setting_offset_t id, float value)
 		break;
 	case 109:
 		g_settings.delta_forearm_length = value;
+		break;
+	case 28:
+		g_settings.delta_bicep_homing_angle = value;
 		break;
 #endif
 		default:

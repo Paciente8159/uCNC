@@ -609,6 +609,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
 	protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
 	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
@@ -881,7 +884,7 @@ void protocol_send_pins_states(void)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 {
-	//custom handler
+	// custom handler
 	protocol_send_cnc_info_delegate_event_t *ptr = protocol_send_cnc_info_event;
 	while (ptr != NULL)
 	{
