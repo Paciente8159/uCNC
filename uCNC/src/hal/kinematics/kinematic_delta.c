@@ -54,22 +54,21 @@ static void delta_home_angle_to_steps(int32_t *steps)
 static void delta_calc_bounds(void)
 {
 	float maxx = -g_settings.delta_effector_radius - g_settings.delta_base_radius - g_settings.delta_forearm_length - g_settings.delta_bicep_length;
-	float maxy = maxx;
 	float maxz = maxx;
-	float minx = -maxx;
-	float miny = -maxx;
 	float minz = -maxx;
 	float s = MAX(g_settings.step_per_mm[0], MAX(g_settings.step_per_mm[1], g_settings.step_per_mm[2]));
 	float axis[AXIS_COUNT];
 	int32_t steps[STEPPER_COUNT];
-	int32_t r[8][3];
+	int32_t r[8][STEPPER_COUNT];
 	float btf = g_settings.max_distance[AXIS_Z];
 
 	memset(axis, 0, sizeof(axis));
 	delta_home_angle_to_steps(steps);
 	kinematics_apply_forward(steps, axis);
 
+#ifdef DELTA_HOME_LIMITS_MAXZ
 	float homez = axis[AXIS_Z];
+#endif
 	// reset home offset
 	delta_cuboid_z_home = 0;
 
@@ -113,35 +112,35 @@ static void delta_calc_bounds(void)
 		axis[AXIS_X] = sum;
 		axis[AXIS_Y] = sum;
 		axis[AXIS_Z] = middlez + sum;
-		kinematics_apply_inverse(axis, &r[0]);
+		kinematics_apply_inverse(axis, r[0]);
 		axis[AXIS_X] = sum;
 		axis[AXIS_Y] = -sum;
 		axis[AXIS_Z] = middlez + sum;
-		kinematics_apply_inverse(axis, &r[1]);
+		kinematics_apply_inverse(axis, r[1]);
 		axis[AXIS_X] = -sum;
 		axis[AXIS_Y] = -sum;
 		axis[AXIS_Z] = middlez + sum;
-		kinematics_apply_inverse(axis, &r[2]);
+		kinematics_apply_inverse(axis, r[2]);
 		axis[AXIS_X] = -sum;
 		axis[AXIS_Y] = sum;
 		axis[AXIS_Z] = middlez + sum;
-		kinematics_apply_inverse(axis, &r[3]);
+		kinematics_apply_inverse(axis, r[3]);
 		axis[AXIS_X] = sum;
 		axis[AXIS_Y] = sum;
 		axis[AXIS_Z] = middlez - sum;
-		kinematics_apply_inverse(axis, &r[4]);
+		kinematics_apply_inverse(axis, r[4]);
 		axis[AXIS_X] = sum;
 		axis[AXIS_Y] = -sum;
 		axis[AXIS_Z] = middlez - sum;
-		kinematics_apply_inverse(axis, &r[5]);
+		kinematics_apply_inverse(axis, r[5]);
 		axis[AXIS_X] = -sum;
 		axis[AXIS_Y] = -sum;
 		axis[AXIS_Z] = middlez - sum;
-		kinematics_apply_inverse(axis, &r[6]);
+		kinematics_apply_inverse(axis, r[6]);
 		axis[AXIS_X] = -sum;
 		axis[AXIS_Y] = sum;
 		axis[AXIS_Z] = middlez - sum;
-		kinematics_apply_inverse(axis, &r[7]);
+		kinematics_apply_inverse(axis, r[7]);
 		if (r[0][0] == INT32_MAX || r[1][0] == INT32_MAX || r[2][0] == INT32_MAX || r[3][0] == INT32_MAX ||
 			r[4][0] == INT32_MAX || r[5][0] == INT32_MAX || r[6][0] == INT32_MAX || r[7][0] == INT32_MAX)
 		{
@@ -178,7 +177,7 @@ static void delta_calc_bounds(void)
 
 void kinematics_init(void)
 {
-	//reset home offset
+	// reset home offset
 	delta_cuboid_z_home = 0;
 	delta_base_half_f_tg30 = HALF_TAN30 * g_settings.delta_base_radius;
 	delta_effector_half_f_tg30 = HALF_TAN30 * g_settings.delta_effector_radius;
