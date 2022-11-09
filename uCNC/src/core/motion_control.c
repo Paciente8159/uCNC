@@ -20,6 +20,15 @@
 #include <string.h>
 #include <float.h>
 
+// default segment length for non linear kinematics
+#ifdef KINEMATICS_MOTION_BY_SEGMENTS
+#ifndef KINEMATICS_MOTION_SEGMENT_SIZE
+#define KINEMATICS_MOTION_SEGMENT_SIZE 1.0f
+#endif
+#endif
+
+#define KINEMATICS_MOTION_SEGMENT_INV_SIZE (1.0f / KINEMATICS_MOTION_SEGMENT_SIZE)
+
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 static float mc_last_target[AXIS_COUNT];
@@ -67,7 +76,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 	block_data->full_steps = 0;
 #endif
 	block_data->total_steps = 0;
-#if defined(IS_DELTA_KINEMATICS)
+#if defined(KINEMATICS_MOTION_BY_SEGMENTS)
 	block_data->dirbits = 0;
 #endif
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -77,7 +86,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		uint32_t steps = (uint32_t)ABS(s);
 		block_data->steps[i] = (step_t)steps;
 
-#if defined(IS_DELTA_KINEMATICS)
+#if defined(KINEMATICS_MOTION_BY_SEGMENTS)
 		// with the delta dir bits need to be rechecked
 		if (s < 0)
 		{
@@ -91,7 +100,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		if (block_data->total_steps < steps)
 		{
 			block_data->total_steps = steps;
-#if defined(IS_DELTA_KINEMATICS)
+#if defined(KINEMATICS_MOTION_BY_SEGMENTS)
 			// with the delta main stepper need to be rechecked
 			block_data->main_stepper = i;
 #endif
@@ -263,21 +272,35 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-#if (defined(IS_DELTA_KINEMATICS) || defined(ENABLE_LASER_PPI))
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(ENABLE_LASER_PPI))
 	float line_dist = fast_flt_sqrt(inv_dist);
 	inv_dist = 1.0f / line_dist;
 #else
 	inv_dist = fast_flt_invsqrt(inv_dist);
 #endif
 
+	// feed values
+	float max_feed = FLT_MAX;
+	float max_accel = FLT_MAX;
+	float feed = block_data->feed;
 	// calculates max junction speed factor in (axis driven). Else the cos_theta is calculated in the planner (linear actuator driven)
 #ifndef ENABLE_LINACT_PLANNER
 	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{
 		i--;
-		block_data->dir_vect[i] *= inv_dist;
+		// calculates the normalized vector
+		float normal_vect = block_data->dir_vect[i] * inv_dist;
+		block_data->dir_vect[i] = normal_vect;
+		normal_vect = ABS(normal_vect);
+		// denormalize max feed rate for each axis
+		float denorm_param = g_settings.max_feed_rate[i] / normal_vect;
+		max_feed = MIN(max_feed, denorm_param);
+		denorm_param = g_settings.acceleration[i] / normal_vect;
+		max_accel = MIN(max_accel, denorm_param);
 	}
 #endif
+	max_feed *= inv_dist;
+	max_accel *= inv_dist;
 
 #ifdef ENABLE_LASER_PPI
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
@@ -305,15 +328,17 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #endif
 
 	// calculated the total motion execution time @ the given rate
-	float feed = block_data->feed;
 	float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
-	block_data->feed = (float)max_steps * inv_delta;
+	float msteps = (float)max_steps;
+	block_data->feed = msteps * inv_delta;
+	block_data->max_feed = msteps * max_feed;
+	block_data->max_accel = msteps * max_accel;
 
-#if (defined(IS_DELTA_KINEMATICS) || defined(BRESENHAM_16BIT))
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
-#if (defined(IS_DELTA_KINEMATICS))
-	line_segments = (uint32_t)ceilf(line_dist * DELTA_MOTION_SEGMENT_FACTOR);
+#ifdef KINEMATICS_MOTION_BY_SEGMENTS
+	line_segments = (uint32_t)ceilf(line_dist * KINEMATICS_MOTION_SEGMENT_INV_SIZE);
 	float m_inv = 1.0f / (float)line_segments;
 	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{

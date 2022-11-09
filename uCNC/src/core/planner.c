@@ -100,8 +100,6 @@ void planner_add_line(motion_data_t *block_data)
 	bool coldstart = false;
 #endif
 	float cos_theta = 0;
-	float rapid_feed = FLT_MAX;
-	planner_data[index].acceleration = FLT_MAX;
 
 #ifdef ENABLE_LINACT_PLANNER
 	float dir_vect[STEPPER_COUNT];
@@ -146,11 +144,11 @@ void planner_add_line(motion_data_t *block_data)
 			last_dir_vect[i] = dir_vect[i];
 #endif
 			// calculate (per linear actuator) the minimum inverted time of travel (1/min) an acceleration (1/s^2)
-			float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[index].steps[i];
+			/*float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[index].steps[i];
 			float stepper_feed = g_settings.max_feed_rate[i] * step_ratio;
 			rapid_feed = MIN(rapid_feed, stepper_feed);
 			float stepper_accel = g_settings.acceleration[i] * step_ratio;
-			planner_data[index].acceleration = MIN(planner_data[index].acceleration, stepper_accel);
+			planner_data[index].acceleration = MIN(planner_data[index].acceleration, stepper_accel);*/
 		}
 		else
 		{
@@ -160,10 +158,8 @@ void planner_add_line(motion_data_t *block_data)
 
 	// converts to steps per second (st/s)
 	float feed = block_data->feed * MIN_SEC_MULT;
-	rapid_feed *= MIN_SEC_MULT;
-	rapid_feed *= (float)block_data->total_steps;
-	// converts to steps per second^2 (st/s^2)
-	planner_data[index].acceleration *= (float)block_data->total_steps;
+	float rapid_feed = block_data->max_feed * MIN_SEC_MULT;
+	planner_data[index].acceleration = block_data->max_accel;
 
 	if (feed > rapid_feed)
 	{

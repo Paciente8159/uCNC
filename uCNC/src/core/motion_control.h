@@ -68,6 +68,8 @@ extern "C"
 		#endif
 		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
+		float max_feed;
+		float max_accel;
 		uint8_t main_stepper;
 		uint16_t spindle;
 		uint16_t dwell;

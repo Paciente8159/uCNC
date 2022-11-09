@@ -63,10 +63,8 @@ extern "C"
 #include "kinematic_corexy.h"
 #elif (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 #include "kinematic_linear_delta.h"
-#define IS_DELTA_KINEMATICS
 #elif (KINEMATIC == KINEMATIC_DELTA)
 #include "kinematic_delta.h"
-#define IS_DELTA_KINEMATICS
 #else
 #error Kinematics not implemented
 #endif

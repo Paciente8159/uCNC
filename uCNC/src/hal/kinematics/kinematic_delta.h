@@ -28,13 +28,16 @@ extern "C"
 #error "Delta kinematics expects at least 3 axis"
 #endif
 
+// kinematic motion is done by segments to cope with non linear kinematics motion
+#define KINEMATICS_MOTION_BY_SEGMENTS
+
 // the maximum size of the computed segments that are sent to the planner
 // this forces linear motions in the delta to treated has an arc motion to
 // cope with the non linear kinematic motion of the towers
-#ifndef DELTA_MOTION_SEGMENT_SIZE
-#define DELTA_MOTION_SEGMENT_SIZE 1.0f
+#ifndef KINEMATICS_MOTION_SEGMENT_SIZE
+#define KINEMATICS_MOTION_SEGMENT_SIZE 1.0f
 #endif
-#define DELTA_MOTION_SEGMENT_FACTOR (1.0f / DELTA_MOTION_SEGMENT_SIZE)
+
 
 	/*
 	Enable Skew compensation
