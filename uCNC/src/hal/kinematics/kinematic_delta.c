@@ -315,6 +315,17 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
+	// delta starts by invalidating the current position and considers it's at the far end of the homing position
+	float axis[AXIS_COUNT];
+	// reset home offset
+	delta_cuboid_z_home = 0;
+	// reset coordinates
+	memset(axis, 0, sizeof(axis));
+	// set z axis at the far end from the 
+	axis[AXIS_Z] = ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? delta_cuboid_z_min : delta_cuboid_z_max);
+	// sync interpolator to new position (motion homing syncs remaining systems)
+	itp_reset_rt_position(axis);
+
 	if (mc_home_axis(AXIS_Z, LIMITS_DELTA_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
@@ -394,6 +405,18 @@ bool kinematics_check_boundaries(float *axis)
 {
 	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
+		// modifies the homing seek position to not exceed the maximum distance that the maxine can run
+		if (cnc_get_exec_state(EXEC_HOMING))
+		{
+			if (g_settings.homing_dir_invert_mask & (1 << AXIS_Z))
+			{
+				axis[AXIS_Z] = MIN(axis[AXIS_Z], delta_cuboid_z_max);
+			}
+			else
+			{
+				axis[AXIS_Z] = MAX(axis[AXIS_Z], delta_cuboid_z_min);
+			}
+		}
 		return true;
 	}
 
