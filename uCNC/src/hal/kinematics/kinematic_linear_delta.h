@@ -38,6 +38,11 @@ extern "C"
 #define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
 #endif
 
+// kinematic motion is done by segments to cope with non linear kinematics motion
+#define KINEMATICS_MOTION_BY_SEGMENTS
+// kinematics homing
+#define IS_DELTA_KINEMATICS
+
 // the maximum size of the computed segments that are sent to the planner
 // this forces linear motions in the delta to treated has an arc motion to
 // cope with the non linear kinematic motion of the towers
