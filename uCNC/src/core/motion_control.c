@@ -611,8 +611,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	mc_get_position(target);
 	target[axis] += max_home_dist;
 	// initializes planner block data
-	memset(block_data.steps, 0, sizeof(block_data.steps));
-	block_data.steps[axis] = max_home_dist;
+	// memset(block_data.steps, 0, sizeof(block_data.steps));
+	// block_data.steps[axis] = max_home_dist;
 	block_data.feed = g_settings.homing_fast_feed_rate;
 	block_data.spindle = 0;
 	block_data.dwell = 0;
@@ -657,7 +657,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 	target[axis] += max_home_dist;
 	block_data.feed = g_settings.homing_slow_feed_rate;
-	block_data.steps[axis] = max_home_dist;
+	// block_data.steps[axis] = max_home_dist;
 	// unlocks the machine for next motion (this will clear the EXEC_HALT flag
 	// temporary inverts the limit mask to trigger ISR on switch release
 	io_invert_limits(axis_limit);
