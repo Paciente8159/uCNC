@@ -280,7 +280,7 @@ void itp_run(void)
 
 // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
+			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->planner_flags.bit.backlash_comp;
 #endif
 
 			itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
@@ -295,9 +295,7 @@ void itp_run(void)
 			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
-			float total_step_inv = 1.0f / (float)total_steps;
 			feed_convert = itp_cur_plan_block->feed_conversion;
-			float sqr_step_speed = 0;
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
@@ -308,6 +306,7 @@ void itp_run(void)
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
 #if !(defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+				float sqr_step_speed = 0;
 #ifdef ENABLE_LASER_PPI
 				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
 #else
@@ -712,9 +711,7 @@ void itp_run(void)
 			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
-			float total_step_inv = 1.0f / (float)total_steps;
 			feed_convert = itp_cur_plan_block->feed_conversion;
-			float sqr_step_speed = 0;
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
@@ -725,6 +722,7 @@ void itp_run(void)
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
 #if !(defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+				float sqr_step_speed = 0;
 #ifdef ENABLE_LASER_PPI
 				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
 #else

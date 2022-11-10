@@ -98,9 +98,6 @@ void planner_add_line(motion_data_t *block_data)
 	// also calculates the maximum feedrate and acceleration for each linear actuator
 #ifdef ENABLE_LINACT_PLANNER
 	float inv_total_steps = 1.0f / (float)(block_data->full_steps);
-#endif
-
-#ifdef ENABLE_LINACT_PLANNER
 	float dir_vect[STEPPER_COUNT];
 	memset(dir_vect, 0, sizeof(dir_vect));
 
