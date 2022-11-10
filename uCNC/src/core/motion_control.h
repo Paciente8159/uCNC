@@ -63,13 +63,16 @@ extern "C"
 		step_t steps[STEPPER_COUNT];
 		float dir_vect[AXIS_COUNT];
 		uint8_t dirbits;
-		#ifdef ENABLE_LINACT_PLANNER
+#ifdef ENABLE_LINACT_PLANNER
 		uint32_t full_steps; // number of steps of all linear actuators
-		#endif
-		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
+#endif
+		step_t total_steps; // the number of pulses needed to generate all steps (maximum of all linear actuators)
 		float feed;
 		float max_feed;
 		float max_accel;
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+		float feed_conversion;
+#endif
 		uint8_t main_stepper;
 		uint16_t spindle;
 		uint16_t dwell;

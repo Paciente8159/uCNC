@@ -327,36 +327,35 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	max_steps = MAX(max_steps, step_new_pos[STEPPER_COUNT - 1]);
 #endif
 
-	// calculated the total motion execution time @ the given rate
+	// calculated feed rate in steps per second
 	float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
-	float msteps = (float)max_steps;
-	block_data->feed = msteps * inv_delta;
-	block_data->max_feed = msteps * max_feed;
-	block_data->max_accel = msteps * max_accel;
+	float feed_convert_to_steps_per_sec = (float)max_steps * MIN_SEC_MULT;
+	block_data->feed = feed_convert_to_steps_per_sec * inv_delta;
+	block_data->max_feed = feed_convert_to_steps_per_sec * max_feed;
+	block_data->max_accel = feed_convert_to_steps_per_sec * max_accel;
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
+#endif
 
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
 #ifdef KINEMATICS_MOTION_BY_SEGMENTS
-	line_segments = (uint32_t)ceilf(line_dist * KINEMATICS_MOTION_SEGMENT_INV_SIZE);
+	line_segments = MAX((uint32_t)ceilf(line_dist * KINEMATICS_MOTION_SEGMENT_INV_SIZE), line_segments);
+#endif
+#ifdef BRESENHAM_16BIT
+	if (max_steps > MAX_STEPS_PER_LINE)
+	{
+		line_segments = MAX((max_steps >> MAX_STEPS_PER_LINE_BITS) + 1, line_segments);
+	}
+#endif
+
 	float m_inv = 1.0f / (float)line_segments;
 	for (uint8_t i = AXIS_COUNT; i != 0;)
 	{
 		i--;
 		motion_segment[i] *= m_inv;
 	}
-#else
-	if (max_steps > MAX_STEPS_PER_LINE)
-	{
-		line_segments += (max_steps >> MAX_STEPS_PER_LINE_BITS);
-		float m_inv = 1.0f / (float)line_segments;
-		for (uint8_t i = AXIS_COUNT; i != 0;)
-		{
-			i--;
-			motion_segment[i] *= m_inv;
-		}
-	}
-#endif
 
 	while (--line_segments)
 	{

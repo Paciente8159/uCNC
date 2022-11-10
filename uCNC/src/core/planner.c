@@ -73,6 +73,10 @@ void planner_add_line(motion_data_t *block_data)
 	planner_data[index].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
 	planner_data[index].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
 
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+	planner_data[index].feed_conversion = block_data->feed_conversion;
+#endif
+
 #if TOOL_COUNT > 0
 	planner_data[index].spindle = block_data->spindle;
 #endif
@@ -157,8 +161,8 @@ void planner_add_line(motion_data_t *block_data)
 	}
 
 	// converts to steps per second (st/s)
-	float feed = block_data->feed * MIN_SEC_MULT;
-	float rapid_feed = block_data->max_feed * MIN_SEC_MULT;
+	float feed = block_data->feed;
+	float rapid_feed = block_data->max_feed;
 	planner_data[index].acceleration = block_data->max_accel;
 
 	if (feed > rapid_feed)
