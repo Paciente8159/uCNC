@@ -706,7 +706,7 @@ void itp_run(void)
 
 // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->flags_u.flags_t.backlash_comp;
+			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->planner_flags.bit.backlash_comp;
 #endif
 			itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
 #ifdef ENABLE_DUAL_DRIVE_AXIS

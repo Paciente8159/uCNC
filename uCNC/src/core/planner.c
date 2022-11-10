@@ -88,7 +88,7 @@ void planner_add_line(motion_data_t *block_data)
 #ifdef ENABLE_BACKLASH_COMPENSATION
 	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
 	{
-		planner_data[index].flags_u.flags_t.backlash_comp = true;
+		planner_data[index].planner_flags.bit.backlash_comp = true;
 	}
 #endif
 
@@ -99,9 +99,6 @@ void planner_add_line(motion_data_t *block_data)
 	// also calculates the maximum feedrate and acceleration for each linear actuator
 #ifdef ENABLE_LINACT_PLANNER
 	float inv_total_steps = 1.0f / (float)(block_data->full_steps);
-#endif
-#ifdef ENABLE_LINACT_COLD_START
-	bool coldstart = false;
 #endif
 	float cos_theta = 0;
 
@@ -138,21 +135,16 @@ void planner_add_line(motion_data_t *block_data)
 			{
 				cos_theta += last_dir_vect[i] * dir_vect[i];
 #ifdef ENABLE_LINACT_COLD_START
-				if (last_dir_vect[i] == 0) // tests if actuator is starting from a full stop
+				if (last_dir_vect[i] == 0) // checks if actuator is starting from a full stop
 				{
-					coldstart = true;
+					// then forces a full start and stop motion
+					cos_theta = -100;
 				}
 #endif
 			}
 
 			last_dir_vect[i] = dir_vect[i];
 #endif
-			// calculate (per linear actuator) the minimum inverted time of travel (1/min) an acceleration (1/s^2)
-			/*float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[index].steps[i];
-			float stepper_feed = g_settings.max_feed_rate[i] * step_ratio;
-			rapid_feed = MIN(rapid_feed, stepper_feed);
-			float stepper_accel = g_settings.acceleration[i] * step_ratio;
-			planner_data[index].acceleration = MIN(planner_data[index].acceleration, stepper_accel);*/
 		}
 		else
 		{
