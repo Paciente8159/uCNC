@@ -292,7 +292,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		float normal_vect = dir_vect[i] * inv_dist;
 #ifndef ENABLE_LINACT_PLANNER
 		block_data->cos_theta += normal_vect * last_dir_vect[i];
-		last_dir_vect[i] = dir_vect[i];
+		last_dir_vect[i] = normal_vect;
 #endif
 		dir_vect[i] = normal_vect;
 		normal_vect = ABS(normal_vect);
@@ -335,10 +335,12 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #endif
 
 	// calculated feed rate in steps per second
-	float inv_delta = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
+	float step_feed = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
 	float feed_convert_to_steps_per_sec = (float)max_steps * MIN_SEC_MULT;
-	block_data->feed = feed_convert_to_steps_per_sec * inv_delta;
-	block_data->max_feed = feed_convert_to_steps_per_sec * max_feed;
+	step_feed *= feed_convert_to_steps_per_sec;
+	max_feed *= feed_convert_to_steps_per_sec;
+	block_data->feed = MIN(max_feed, step_feed);
+	block_data->max_feed = max_feed;
 	block_data->max_accel = feed_convert_to_steps_per_sec * max_accel;
 	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
 

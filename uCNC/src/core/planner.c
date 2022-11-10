@@ -72,13 +72,10 @@ void planner_add_line(motion_data_t *block_data)
 	float cos_theta = block_data->cos_theta;
 	memset(&planner_data[index], 0, sizeof(planner_block_t));
 	planner_data[index].dirbits = block_data->dirbits;
+	planner_data[index].feed_conversion = block_data->feed_conversion;
 	planner_data[index].main_stepper = block_data->main_stepper;
 	planner_data[index].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
 	planner_data[index].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
-
-#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
-	planner_data[index].feed_conversion = block_data->feed_conversion;
-#endif
 
 #if TOOL_COUNT > 0
 	planner_data[index].spindle = block_data->spindle;
@@ -136,18 +133,9 @@ void planner_add_line(motion_data_t *block_data)
 
 #endif
 
-	// converts to steps per second (st/s)
-	float feed = block_data->feed;
-	float rapid_feed = block_data->max_feed;
+	planner_data[index].feed_sqr = fast_flt_pow2(block_data->feed);
+	planner_data[index].rapid_feed_sqr = fast_flt_pow2(block_data->max_feed);
 	planner_data[index].acceleration = block_data->max_accel;
-
-	if (feed > rapid_feed)
-	{
-		feed = rapid_feed;
-	}
-
-	planner_data[index].feed_sqr = fast_flt_pow2(feed);
-	planner_data[index].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
 
 	// consider initial angle factor of 1 (90 degree angle corner or more)
 	float angle_factor = 1.0f;
