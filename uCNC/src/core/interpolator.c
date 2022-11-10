@@ -717,15 +717,12 @@ void itp_run(void)
 			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
 #endif
-			itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
+			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
+			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
-			float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
-#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
+			float total_step_inv = 1.0f / (float)total_steps;
 			feed_convert = itp_cur_plan_block->feed_conversion;
-#else
-			feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
 			float sqr_step_speed = 0;
-#endif
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
@@ -742,7 +739,7 @@ void itp_run(void)
 				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
 #endif
 #endif
-				itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!itp_cur_plan_block->steps[i])
@@ -765,7 +762,7 @@ void itp_run(void)
 			half_speed_change = fast_flt_div2(half_speed_change);
 		}
 
-		uint32_t remaining_steps = itp_cur_plan_block->total_steps;
+		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -988,9 +985,9 @@ void itp_run(void)
 			itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
 		}
 
-		itp_cur_plan_block->total_steps = remaining_steps;
+		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
-		if (itp_cur_plan_block->total_steps == 0)
+		if (remaining_steps == 0)
 		{
 			itp_blk_buffer_write();
 			itp_cur_plan_block = NULL;
