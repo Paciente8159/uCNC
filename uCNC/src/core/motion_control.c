@@ -371,7 +371,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		motion_segment[i] *= m_inv;
 	}
 
-	bool is_subsegment = true;
+	bool is_subsegment = false;
 	while (--line_segments)
 	{
 		for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -391,7 +391,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 		// after the first segment all following segments are inline
 		block_data->cos_theta = 1;
-		is_subsegment = false;
+		is_subsegment = true;
 	}
 
 	if (is_subsegment)
