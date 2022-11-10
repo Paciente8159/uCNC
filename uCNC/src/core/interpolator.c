@@ -314,7 +314,7 @@ void itp_run(void)
 				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
 #endif
 #endif
-				itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!itp_cur_plan_block->steps[i])
@@ -328,7 +328,7 @@ void itp_run(void)
 			itp_needs_update = true;
 		}
 
-		uint32_t remaining_steps = itp_cur_plan_block->total_steps;
+		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -624,9 +624,9 @@ void itp_run(void)
 		}
 
 		itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
-		itp_cur_plan_block->total_steps = remaining_steps;
+		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
-		if (itp_cur_plan_block->total_steps == 0)
+		if (remaining_steps == 0)
 		{
 			itp_blk_buffer_write();
 			itp_cur_plan_block = NULL;

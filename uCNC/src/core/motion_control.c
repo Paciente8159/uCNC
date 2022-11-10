@@ -334,14 +334,18 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 #endif
 
-	// calculated feed rate in steps per second
+	// calculated amount ot time @ the given feed rate
 	float step_feed = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
-	float feed_convert_to_steps_per_sec = (float)max_steps * MIN_SEC_MULT;
+	float feed_convert_to_steps_per_sec = (float)max_steps;
+	// convert accel already in steps/s
+	block_data->max_accel = feed_convert_to_steps_per_sec * max_accel;
+	// convert feed from steps/min to steps/s
+	feed_convert_to_steps_per_sec *= MIN_SEC_MULT;
 	step_feed *= feed_convert_to_steps_per_sec;
 	max_feed *= feed_convert_to_steps_per_sec;
 	block_data->feed = MIN(max_feed, step_feed);
 	block_data->max_feed = max_feed;
-	block_data->max_accel = feed_convert_to_steps_per_sec * max_accel;
+	
 	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
 
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
