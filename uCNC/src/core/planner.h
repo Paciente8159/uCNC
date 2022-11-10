@@ -62,11 +62,8 @@ typedef union
 #endif
 		uint8_t dirbits;
 		step_t steps[STEPPER_COUNT];
-		step_t total_steps;
 		uint8_t main_stepper;
-#if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
 		float feed_conversion;
-#endif
 		float entry_feed_sqr;
 		float entry_max_feed_sqr;
 		float feed_sqr;
