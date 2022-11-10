@@ -41,7 +41,7 @@ extern "C"
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(KINEMATICS_MOTION_BY_SEGMENTS))
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
