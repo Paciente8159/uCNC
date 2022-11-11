@@ -43,12 +43,12 @@ static float delta_cuboid_z_home;
 
 static void delta_home_angle_to_steps(int32_t *steps)
 {
-	memset(steps, 0, AXIS_COUNT * sizeof(int32_t));
+	memset(steps, 0, STEPPER_COUNT * sizeof(int32_t));
 
 	float angle = g_settings.delta_bicep_homing_angle;
-	steps[0] = roundf(angle * steps_per_angle[0]);
-	steps[1] = roundf(angle * steps_per_angle[1]);
-	steps[2] = roundf(angle * steps_per_angle[2]);
+	steps[0] = (int32_t)lroundf(angle * steps_per_angle[0]);
+	steps[1] = (int32_t)lroundf(angle * steps_per_angle[1]);
+	steps[2] = (int32_t)lroundf(angle * steps_per_angle[2]);
 }
 
 static void delta_calc_bounds(void)
@@ -60,22 +60,20 @@ static void delta_calc_bounds(void)
 	float axis[AXIS_COUNT];
 	int32_t steps[STEPPER_COUNT];
 	int32_t r[8][STEPPER_COUNT];
-	float btf = g_settings.max_distance[AXIS_Z];
+
+	// reset home offset
+	delta_cuboid_z_home = 0;
 
 	memset(axis, 0, sizeof(axis));
 	delta_home_angle_to_steps(steps);
 	kinematics_apply_forward(steps, axis);
 
-#ifdef DELTA_HOME_LIMITS_MAXZ
+#if (defined(SET_ORIGIN_AT_HOME_POS) || defined(DELTA_HOME_LIMITS_MAXZ))
 	float homez = axis[AXIS_Z];
 #endif
-	// reset home offset
-	delta_cuboid_z_home = 0;
-
-	int32_t homing_angle = MIN(steps[0], MIN(steps[1], steps[2]));
 
 	// find extents
-	for (int32_t z = homing_angle; z < (s + homing_angle); ++z)
+	for (int32_t z = 0; z < s; ++z)
 	{
 		steps[0] = z;
 		steps[1] = z;
@@ -89,10 +87,18 @@ static void delta_calc_bounds(void)
 				maxz = axis[2];
 		}
 	}
-	if (minz < -g_settings.max_distance[AXIS_Z])
-		minz = -btf;
-	if (maxz < -btf)
-		maxz = -btf;
+
+#ifdef DELTA_HOME_LIMITS_MAXZ
+	float btf = homez - g_settings.max_distance[AXIS_Z];
+	if (minz < btf)
+		minz = btf;
+	if (maxz < homez)
+		maxz = homez;
+#else
+	float btf = maxz - g_settings.max_distance[AXIS_Z];
+	if (minz < btf)
+		minz = btf;
+#endif
 
 	float middlez = (maxz + minz) * 0.5;
 	//  $('#output').append("<p>("+maxz+","+minz+","+middlez+")</p>");
@@ -170,8 +176,10 @@ static void delta_calc_bounds(void)
 	delta_cuboid_xy = sum;
 	delta_cuboid_z_min = minz;
 	delta_cuboid_z_max = maxz;
-#ifdef DELTA_HOME_LIMITS_MAXZ
-	delta_cuboid_z_max = MAX(delta_cuboid_z_max, homez);
+#ifdef SET_ORIGIN_AT_HOME_POS
+	delta_cuboid_z_home = homez;
+#else
+	delta_cuboid_z_home = minz;
 #endif
 }
 
@@ -321,7 +329,7 @@ uint8_t kinematics_home(void)
 	delta_cuboid_z_home = 0;
 	// reset coordinates
 	memset(axis, 0, sizeof(axis));
-	// set z axis at the far end from the 
+	// set z axis at the far end from the
 	axis[AXIS_Z] = ((g_settings.homing_dir_invert_mask & (1 << AXIS_Z)) ? delta_cuboid_z_min : delta_cuboid_z_max);
 	// sync interpolator to new position (motion homing syncs remaining systems)
 	itp_reset_rt_position(axis);
@@ -381,8 +389,13 @@ uint8_t kinematics_home(void)
 	mc_line(target, &block_data);
 	itp_sync();
 
-	// add the internal offset to the kinematics
+// add the internal offset to the kinematics
+#ifdef SET_ORIGIN_AT_HOME_POS
 	delta_cuboid_z_home = target[AXIS_Z];
+#else
+	delta_cuboid_z_home = delta_cuboid_z_min;
+#endif
+
 	// sync systems again to the origin (interpolator, motion control and parser - the latest is synched ny motion control)
 	memset(target, 0, sizeof(target));
 	itp_reset_rt_position(target);

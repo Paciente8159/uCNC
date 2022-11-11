@@ -132,7 +132,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 #ifdef ENABLE_LINACT_PLANNER
 			backlash_block_data.full_steps = 0;
 #endif
-			backlash_block_data.feed = FLT_MAX; // max feedrate possible (same as rapid move)
+			backlash_block_data.feed = backlash_block_data.max_feed; // max feedrate possible (same as rapid move)
 
 			SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
 			max_steps = 0;

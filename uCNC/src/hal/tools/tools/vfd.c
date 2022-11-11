@@ -306,7 +306,7 @@ static bool vfd_update_rpm(void)
 {
 	modbus_response_t response = {0};
 	uint8_t cmd[7] = VFD_SETRPM_CMD;
-	uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
+	uint16_t hz = (uint16_t)lroundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
 	// cmd starts at index 1 not at 0
 	uint8_t i = cmd[0] - 4 + 1;
 	cmd[i] = (uint8_t)(hz >> 8);

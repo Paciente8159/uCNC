@@ -512,7 +512,7 @@ void itp_run(void)
 			}
 
 			// computes how many steps it will perform at this speed and frame window
-			segm_steps = (uint16_t)roundf(partial_distance);
+			segm_steps = (uint16_t)lroundf(partial_distance);
 		} while (segm_steps == 0);
 
 		avg_speed = fast_flt_div2(current_speed + initial_speed);
