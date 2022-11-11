@@ -305,14 +305,6 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-#if !(defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
-				float sqr_step_speed = 0;
-#ifdef ENABLE_LASER_PPI
-				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
-#else
-				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
-#endif
-#endif
 				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
@@ -721,14 +713,6 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-#if !(defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))
-				float sqr_step_speed = 0;
-#ifdef ENABLE_LASER_PPI
-				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
-#else
-				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
-#endif
-#endif
 				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE

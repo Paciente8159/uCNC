@@ -325,6 +325,8 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		}
 
 		laser_pulses_per_mm *= line_dist;
+		// adjust max feed rate to ppi settings
+		max_feed = MIN(max_feed, g_settings.max_feed_rate[STEPPER_COUNT - 1] * inv_dist);
 	}
 	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm;
 	if (step_new_pos[STEPPER_COUNT - 1] > max_steps)
@@ -345,7 +347,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	max_feed *= feed_convert_to_steps_per_sec;
 	block_data->feed = MIN(max_feed, step_feed);
 	block_data->max_feed = max_feed;
-	
+
 	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
 
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS) || defined(BRESENHAM_16BIT))

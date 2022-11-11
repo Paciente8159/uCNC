@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-// define extra kynematics
+#define KINEMATIC_TYPE_STR "XY"
 
 #ifdef __cplusplus
 }

@@ -24,6 +24,8 @@ extern "C"
 {
 #endif
 
+#define KINEMATIC_TYPE_STR "LD"
+
 #if AXIS_COUNT < 3
 #error "Linear delta kinematics expects at least 3 axis"
 #endif
