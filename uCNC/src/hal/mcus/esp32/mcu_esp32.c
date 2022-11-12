@@ -660,30 +660,40 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
+static volatile bool mcu_itp_timer_running;
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	/*timerAttachInterrupt(esp32_step_timer, &mcu_itp_isr, true);
 	timerAlarmWrite(esp32_step_timer, (uint32_t)ticks * (uint32_t)prescaller, true);
 	timerAlarmEnable(esp32_step_timer); // Just Enable*/
-	timer_config_t config = {
-		.divider = 80,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
-	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &config);
 
-	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	if (!mcu_itp_timer_running)
+	{
+		timer_config_t config = {
+			.divider = 80,
+			.counter_dir = TIMER_COUNT_UP,
+			.counter_en = TIMER_PAUSE,
+			.alarm_en = TIMER_ALARM_EN,
+			.auto_reload = true,
+		}; // default clock source is APB
+		timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &config);
 
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
-	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
+		/* Timer's counter will initially start from value below.
+		   Also, if auto_reload is set, this value will be automatically reload on alarm */
+		timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
 
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+		/* Configure the alarm value and the interrupt on alarm. */
+		timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
+		timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+		timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
+
+		timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+		mcu_itp_timer_running = true;
+	}
+	else
+	{
+		mcu_change_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -691,9 +701,16 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	if (mcu_itp_timer_running)
+	{
+		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+		timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
+		timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	}
+	else
+	{
+		mcu_start_itp_isr(ticks, prescaller);
+	}
 }
 
 /**
@@ -701,9 +718,13 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	// timerAlarmDisable(esp32_step_timer);
-	timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	if (mcu_itp_timer_running)
+	{
+		// timerAlarmDisable(esp32_step_timer);
+		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
+		timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+		mcu_itp_timer_running = false;
+	}
 }
 
 /**
@@ -854,7 +875,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 IRAM_ATTR void mcu_oneshot_isr(void *arg)
 {
 	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
-	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 
 	if (mcu_timeout_cb)
 	{
