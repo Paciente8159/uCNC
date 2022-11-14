@@ -371,24 +371,27 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 #endif
 }
 
-IRAM_ATTR void mcu_din_isr(void)
+IRAM_ATTR void mcu_gpio_isr(void* type)
 {
-	mcu_inputs_changed_cb();
-}
-
-IRAM_ATTR void mcu_probe_isr(void)
-{
-	mcu_probe_changed_cb();
-}
-
-IRAM_ATTR void mcu_limits_isr(void)
-{
-	mcu_limits_changed_cb();
-}
-
-IRAM_ATTR void mcu_controls_isr(void)
-{
-	mcu_controls_changed_cb();
+	// read the address and not the pointer value because we are passing a literal integer
+	// reading the pointer value would try to read an invalid memory address
+	switch ((int)type)
+	{
+	case 0:
+		mcu_controls_changed_cb();
+		break;
+	case 1:
+		mcu_limits_changed_cb();
+		break;
+	case 2:
+		mcu_probe_changed_cb();
+		break;
+	case 3:
+		mcu_inputs_changed_cb();
+		break;
+	default:
+		break;
+	}
 }
 
 IRAM_ATTR void mcu_rtc_isr(void *arg)
@@ -440,6 +443,10 @@ static void mcu_usart_init(void)
  * */
 void mcu_init(void)
 {
+#if (defined(LIMIT_X_ISR) || defined(LIMIT_Y_ISR) || defined(LIMIT_Z_ISR) || defined(LIMIT_X2_ISR) || defined(LIMIT_Y2_ISR) || defined(LIMIT_Z2_ISR) || defined(LIMIT_A_ISR) || defined(LIMIT_B_ISR) || defined(LIMIT_C_ISR) || defined(PROBE_ISR) || defined(ESTOP_ISR) || defined(SAFETY_DOOR_ISR) || defined(FHOLD_ISR) || defined(CS_RES_ISR) || defined(DIN0_ISR) || defined(DIN1_ISR) || defined(DIN2_ISR) || defined(DIN3_ISR) || defined(DIN4_ISR) || defined(DIN5_ISR) || defined(DIN6_ISR) || defined(DIN7_ISR))
+	gpio_install_isr_service(0);
+#endif
+
 	mcu_io_init();
 	mcu_usart_init();
 

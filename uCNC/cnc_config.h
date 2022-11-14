@@ -333,7 +333,7 @@ extern "C"
 	/**
 	 * Runs a check for state change inside the scheduler. This is a failsafe
 	 * check to pin ISR checking The value sets the frequency of this safety
-	 * check that is executed every 2^(CONTROLS_SCHEDULE_CHECK) milliseconds. A
+	 * check that is executed every 2^(CTRL_SCHED_CHECK) milliseconds. A
 	 * negative value will disable this feature. The maximum is 7
 	 * */
 
