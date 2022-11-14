@@ -91,6 +91,10 @@ extern "C"
 
 #define ONESHOT_TIMER 2
 
+// #define ANALOG0_BIT 2
+// #define ANALOG0_CHANNEL 2
+// #define ANALOG0_ADC 2
+
 #ifdef __cplusplus
 }
 #endif

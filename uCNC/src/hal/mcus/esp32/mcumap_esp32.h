@@ -25,7 +25,9 @@ extern "C"
 #endif
 
 #include <Arduino.h>
-#include <driver/timer.h>
+#include "driver/timer.h"
+#include "driver/gpio.h"
+#include "driver/adc.h"
 
 /*
 	Generates all the interface definitions.
@@ -979,6 +981,107 @@ extern "C"
 #define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
 #endif
 
+#define __adc_channel_helper__(X, Y) ADC##X##_CHANNEL_##Y
+#define _adc_channel_helper_(X, Y) __adc_channel_helper__(X, Y)
+
+#ifdef ANALOG0
+#define ANALOG0_ADC_CHANNEL _adc_channel_helper_(ANALOG0_CHANNEL, ANALOG0_ADC)
+#define DIO114_CHANNEL ANALOG0_CHANNEL
+#define DIO114_ADC ANALOG0_ADC
+#define DIO114_ADC_CHANNEL ANALOG0_ADC_CHANNEL
+#endif
+#ifdef ANALOG1
+#define ANALOG1_ADC_CHANNEL _adc_channel_helper_(ANALOG1_CHANNEL, ANALOG1_ADC)
+#define DIO115_CHANNEL ANALOG1_CHANNEL
+#define DIO115_ADC ANALOG1_ADC
+#define DIO115_ADC_CHANNEL ANALOG1_ADC_CHANNEL
+#endif
+#ifdef ANALOG2
+#define ANALOG2_ADC_CHANNEL _adc_channel_helper_(ANALOG2_CHANNEL, ANALOG2_ADC)
+#define DIO116_CHANNEL ANALOG2_CHANNEL
+#define DIO116_ADC ANALOG2_ADC
+#define DIO116_ADC_CHANNEL ANALOG2_ADC_CHANNEL
+#endif
+#ifdef ANALOG3
+#define ANALOG3_ADC_CHANNEL _adc_channel_helper_(ANALOG3_CHANNEL, ANALOG3_ADC)
+#define DIO117_CHANNEL ANALOG3_CHANNEL
+#define DIO117_ADC ANALOG3_ADC
+#define DIO117_ADC_CHANNEL ANALOG3_ADC_CHANNEL
+#endif
+#ifdef ANALOG4
+#define ANALOG4_ADC_CHANNEL _adc_channel_helper_(ANALOG4_CHANNEL, ANALOG4_ADC)
+#define DIO118_CHANNEL ANALOG4_CHANNEL
+#define DIO118_ADC ANALOG4_ADC
+#define DIO118_ADC_CHANNEL ANALOG4_ADC_CHANNEL
+#endif
+#ifdef ANALOG5
+#define ANALOG5_ADC_CHANNEL _adc_channel_helper_(ANALOG5_CHANNEL, ANALOG5_ADC)
+#define DIO119_CHANNEL ANALOG5_CHANNEL
+#define DIO119_ADC ANALOG5_ADC
+#define DIO119_ADC_CHANNEL ANALOG5_ADC_CHANNEL
+#endif
+#ifdef ANALOG6
+#define ANALOG6_ADC_CHANNEL _adc_channel_helper_(ANALOG6_CHANNEL, ANALOG6_ADC)
+#define DIO120_CHANNEL ANALOG6_CHANNEL
+#define DIO120_ADC ANALOG6_ADC
+#define DIO120_ADC_CHANNEL ANALOG6_ADC_CHANNEL
+#endif
+#ifdef ANALOG7
+#define ANALOG7_ADC_CHANNEL _adc_channel_helper_(ANALOG7_CHANNEL, ANALOG7_ADC)
+#define DIO121_CHANNEL ANALOG7_CHANNEL
+#define DIO121_ADC ANALOG7_ADC
+#define DIO121_ADC_CHANNEL ANALOG7_ADC_CHANNEL
+#endif
+#ifdef ANALOG8
+#define ANALOG8_ADC_CHANNEL _adc_channel_helper_(ANALOG8_CHANNEL, ANALOG8_ADC)
+#define DIO122_CHANNEL ANALOG8_CHANNEL
+#define DIO122_ADC ANALOG8_ADC
+#define DIO122_ADC_CHANNEL ANALOG8_ADC_CHANNEL
+#endif
+#ifdef ANALOG9
+#define ANALOG9_ADC_CHANNEL _adc_channel_helper_(ANALOG9_CHANNEL, ANALOG9_ADC)
+#define DIO123_CHANNEL ANALOG9_CHANNEL
+#define DIO123_ADC ANALOG9_ADC
+#define DIO123_ADC_CHANNEL ANALOG9_ADC_CHANNEL
+#endif
+#ifdef ANALOG10
+#define ANALOG10_ADC_CHANNEL _adc_channel_helper_(ANALOG10_CHANNEL, ANALOG10_ADC)
+#define DIO124_CHANNEL ANALOG10_CHANNEL
+#define DIO124_ADC ANALOG10_ADC
+#define DIO124_ADC_CHANNEL ANALOG10_ADC_CHANNEL
+#endif
+#ifdef ANALOG11
+#define ANALOG11_ADC_CHANNEL _adc_channel_helper_(ANALOG11_CHANNEL, ANALOG11_ADC)
+#define DIO125_CHANNEL ANALOG11_CHANNEL
+#define DIO125_ADC ANALOG11_ADC
+#define DIO125_ADC_CHANNEL ANALOG11_ADC_CHANNEL
+#endif
+#ifdef ANALOG12
+#define ANALOG12_ADC_CHANNEL _adc_channel_helper_(ANALOG12_CHANNEL, ANALOG12_ADC)
+#define DIO126_CHANNEL ANALOG12_CHANNEL
+#define DIO126_ADC ANALOG12_ADC
+#define DIO126_ADC_CHANNEL ANALOG12_ADC_CHANNEL
+#endif
+#ifdef ANALOG13
+#define ANALOG13_ADC_CHANNEL _adc_channel_helper_(ANALOG13_CHANNEL, ANALOG13_ADC)
+#define DIO127_CHANNEL ANALOG13_CHANNEL
+#define DIO127_ADC ANALOG13_ADC
+#define DIO127_ADC_CHANNEL ANALOG13_ADC_CHANNEL
+#endif
+#ifdef ANALOG14
+#define ANALOG14_ADC_CHANNEL _adc_channel_helper_(ANALOG14_CHANNEL, ANALOG14_ADC)
+#define DIO128_CHANNEL ANALOG14_CHANNEL
+#define DIO128_ADC ANALOG14_ADC
+#define DIO128_ADC_CHANNEL ANALOG14_ADC_CHANNEL
+#endif
+#ifdef ANALOG15
+#define ANALOG15_ADC_CHANNEL _adc_channel_helper_(ANALOG15_CHANNEL, ANALOG15_ADC)
+#define DIO129_CHANNEL ANALOG15_CHANNEL
+#define DIO129_ADC ANALOG15_ADC
+#define DIO129_ADC_CHANNEL ANALOG15_ADC_CHANNEL
+#endif
+
+
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -996,7 +1099,7 @@ extern "C"
 #define COM_PORT 0
 #endif
 
-//force sync TX anyway
+// force sync TX anyway
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
@@ -1047,39 +1150,64 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
-#define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
-#define mcu_config_analog(X) mcu_config_input(X)
-#define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
+#define mcu_config_output(X)                                              \
+	{                                                                     \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
+		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
+	}
+#define mcu_config_pwm(X, freq) mcu_config_output(X)
+#define mcu_config_input(X)                                        \
+	{                                                              \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                \
+		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
+		gpio_pulldown_dis(__indirect__(X, BIT));                   \
+		gpio_pullup_dis(__indirect__(X, BIT));                     \
+	}
+#define mcu_config_analog(X)                                                  \
+	{                                                                         \
+		mcu_config_input(X);                                                  \
+		adc1_config_width(ADC_WIDTH_BIT_9);                                   \
+		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
+	}
+#define mcu_config_pullup(X)                                       \
+	{                                                              \
+		gpio_pad_select_gpio(__indirect__(X, BIT));                \
+		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
+		gpio_pulldown_dis(__indirect__(X, BIT));                   \
+		gpio_pullup_en(__indirect__(X, BIT));                      \
+	}
+#define mcu_config_input_isr(X) gpio_set_intr_type((__indirect__(X, BIT)), GPIO_INTR_ANYEDGE)
 
-#define mcu_get_input(X) digitalRead(__indirect__(X, BIT))
-#define mcu_get_output(X) digitalRead(__indirect__(X, BIT))
-#define mcu_set_output(X) digitalWrite(__indirect__(X, BIT), 1)
-#define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
-#define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
+#define mcu_get_input(X) gpio_get_level(__indirect__(X, BIT))
+#define mcu_get_output(X) gpio_get_level(__indirect__(X, BIT))
+#define mcu_set_output(X) gpio_set_level(__indirect__(X, BIT), 1)
+#define mcu_clear_output(X) gpio_set_level(__indirect__(X, BIT), 0)
+#define mcu_toggle_output(X) gpio_set_level(__indirect__(X, BIT), !gpio_get_level(__indirect__(X, BIT)))
 
 	extern uint8_t esp32_pwm[16];
 #define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
 
 #ifdef MCU_HAS_SPI
-extern void esp32_spi_config(uint8_t mode, uint32_t freq);
-extern uint8_t esp32_spi_xmit(uint8_t data);
+	extern void esp32_spi_config(uint8_t mode, uint32_t freq);
+	extern uint8_t esp32_spi_xmit(uint8_t data);
 #define mcu_spi_xmit(X) esp32_spi_xmit(X)
 #define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
 #else
-#define mcu_spi_xmit(X) {}
-#define mcu_spi_config(X, Y) {}
+#define mcu_spi_xmit(X) \
+	{                   \
+	}
+#define mcu_spi_config(X, Y) \
+	{                        \
+	}
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
 #endif
 
-extern void esp32_delay_us(uint16_t delay);
+	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
 #ifdef __cplusplus
