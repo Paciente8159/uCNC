@@ -51,7 +51,6 @@ void esp32_eeprom_flush(void);
 extern void esp32_spi_init(uint32_t freq, uint8_t mode, int8_t clk, int8_t sdi, int8_t sdo);
 #endif
 
-hw_timer_t *esp32_rtc_timer;
 hw_timer_t *esp32_step_timer;
 
 uint8_t esp32_pwm[16];
@@ -63,7 +62,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	uint16_t pwm_mask = 0xFFFF;
 #endif
 	// software PWM
-	if (++pwm_counter < 127)
+	if (++pwm_counter)
 	{
 #if !(PWM0 < 0)
 		if (pwm_counter > esp32_pwm[0])
@@ -263,7 +262,6 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	}
 	else
 	{
-		pwm_counter = 0;
 #if !(PWM0 < 0)
 		if (esp32_pwm[0])
 		{
@@ -371,7 +369,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 #endif
 }
 
-IRAM_ATTR void mcu_gpio_isr(void* type)
+IRAM_ATTR void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
 	// reading the pointer value would try to read an invalid memory address
@@ -394,23 +392,58 @@ IRAM_ATTR void mcu_gpio_isr(void* type)
 	}
 }
 
-IRAM_ATTR void mcu_rtc_isr(void *arg)
+IRAM_ATTR void mcu_pwm_isr(void *arg)
 {
 	static uint8_t rtc_counter = 0;
 
 	mcu_gen_pwm();
 	rtc_counter++;
-	if (rtc_counter == 128)
-	{
-		mcu_runtime_ms++;
-		mcu_rtc_cb(mcu_runtime_ms);
-		rtc_counter = 0;
-	}
 
 	timer_group_clr_intr_status_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
 	/* After the alarm has been triggered
 	  we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
+}
+
+void mcu_pwm_task(void *arg)
+{
+	// initialize rtc timer
+	/* Select and initialize basic parameters of the timer */
+	timer_config_t config = {
+		.divider = 2,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(RTC_TIMER_TG, RTC_TIMER_IDX, &config);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(RTC_TIMER_TG, RTC_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(RTC_TIMER_TG, RTC_TIMER_IDX, (uint64_t)157);
+	timer_enable_intr(RTC_TIMER_TG, RTC_TIMER_IDX);
+	timer_isr_register(RTC_TIMER_TG, RTC_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
+
+	timer_start(RTC_TIMER_TG, RTC_TIMER_IDX);
+
+	vTaskSuspend(NULL);
+	for (;;)
+	{
+	}
+}
+
+void mcu_rtc_task(void *arg)
+{
+	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+	for (;;)
+	{
+		mcu_runtime_ms++;
+		mcu_rtc_cb(mcu_runtime_ms);
+		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+	}
 }
 
 IRAM_ATTR void mcu_itp_isr(void *arg)
@@ -451,26 +484,8 @@ void mcu_init(void)
 	mcu_usart_init();
 
 	// initialize rtc timer
-	/* Select and initialize basic parameters of the timer */
-	timer_config_t config = {
-		.divider = 5,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
-	timer_init(RTC_TIMER_TG, RTC_TIMER_IDX, &config);
-
-	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(RTC_TIMER_TG, RTC_TIMER_IDX, 0x00000000ULL);
-
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(RTC_TIMER_TG, RTC_TIMER_IDX, (uint64_t)125);
-	timer_enable_intr(RTC_TIMER_TG, RTC_TIMER_IDX);
-	timer_isr_register(RTC_TIMER_TG, RTC_TIMER_IDX, mcu_rtc_isr, NULL, 0, NULL);
-
-	timer_start(RTC_TIMER_TG, RTC_TIMER_IDX);
+	xTaskCreate(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL);
+	xTaskCreatePinnedToCore(mcu_pwm_task, "pwmTask", 1024, NULL, 0, NULL, 0);
 
 	/*uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
 	esp32_rtc_timer = timerBegin(RTC_TIMER, timerdiv, true);

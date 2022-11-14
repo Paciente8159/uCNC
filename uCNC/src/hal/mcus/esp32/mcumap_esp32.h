@@ -1189,8 +1189,8 @@ extern void mcu_gpio_isr(void*);
 #define mcu_toggle_output(X) gpio_set_level(__indirect__(X, BIT), !gpio_get_level(__indirect__(X, BIT)))
 
 	extern uint8_t esp32_pwm[16];
-#define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET] << 1)
+#define mcu_set_pwm(X, Y) (esp32_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y))
+#define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
 
 #ifdef MCU_HAS_SPI

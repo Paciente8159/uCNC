@@ -63,9 +63,7 @@ extern "C"
 	// Timer 1 is used by default
 	//#define ITP_TIMER 1
 
-	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
 
