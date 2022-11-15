@@ -501,7 +501,7 @@ void mcu_init(void)
 	mcu_usart_init();
 
 	// initialize rtc timer
-	xTaskCreate(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL);
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 	// xTaskCreatePinnedToCore(mcu_pwm_task, "pwmTask", 1024, NULL, 0, NULL, 0);
 
 	/*uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
