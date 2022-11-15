@@ -62,39 +62,24 @@ WiFiManager wifiManager;
 
 static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
 static uint8_t esp32_tx_buffer_counter;
-
 extern "C"
 {
-	#include "../../../cnc.h"
+#include "../../../cnc.h"
 
 	bool esp32_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
-		static bool connected = false;
-		static bool process_busy = false;
 		static uint32_t next_info = 0;
 
-		if (WiFi.status() != WL_CONNECTED && next_info < mcu_millis())
+		if ((WiFi.status() != WL_CONNECTED))
 		{
-			next_info = mcu_millis() + 30000;
-			connected = false;
-			if (process_busy)
+			if (next_info > mcu_millis())
 			{
 				return false;
 			}
-			process_busy = true;
+			next_info = mcu_millis() + 30000;
 			Serial.println("[MSG:Disconnected from WiFi]");
-			process_busy = false;
 			return false;
-		}
-
-		if (!connected)
-		{
-			connected = true;
-			Serial.println("[MSG: WiFi AP connected]");
-			Serial.print("[MSG: Board IP @ ");
-			Serial.print(WiFi.localIP());
-			Serial.println("]");
 		}
 
 		if (server.hasClient())
@@ -132,11 +117,24 @@ extern "C"
 		wifiManager.setDebugOutput(false);
 #endif
 		wifiManager.setConfigPortalBlocking(false);
-		wifiManager.setConfigPortalTimeout(30);
-		if (!wifiManager.autoConnect("ESP32"))
+		wifiManager.setBreakAfterConfig(true);
+		wifiManager.setConfigPortalTimeout(120);
+		wifiManager.setWiFiAutoReconnect(true);
+		if (wifiManager.autoConnect("ESP32"))
+		{
+			Serial.println("[MSG: WiFi AP connected]");
+			Serial.print("[MSG: Board IP @ ");
+			Serial.print(WiFi.localIP());
+			Serial.println("]");
+		}
+		else
 		{
 			Serial.println("[MSG: WiFi manager up]");
-			Serial.println("[MSG: Setup page @ 192.168.4.1]");
+			Serial.print("[MSG: Setup page @ AP: ");
+			Serial.print(wifiManager.getConfigPortalSSID());
+			Serial.print(" - IP: ");
+			Serial.print(WiFi.softAPIP());
+			Serial.println("]");
 		}
 		server.begin();
 		server.setNoDelay(true);
