@@ -21,6 +21,7 @@
 #if (MCU == MCU_ESP32)
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
+#include "esp_ipc.h"
 #include <driver/timer.h>
 #ifdef MCU_HAS_I2C
 #include <driver/i2c.h>
@@ -28,6 +29,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 
 static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
@@ -53,109 +55,114 @@ extern void esp32_spi_init(uint32_t freq, uint8_t mode, int8_t clk, int8_t sdi, 
 
 hw_timer_t *esp32_step_timer;
 
+// pwm channels
 uint8_t esp32_pwm[16];
-static IRAM_ATTR void mcu_gen_pwm(void)
+// pwm resolution
+uint8_t esp32_pwm_res;
+IRAM_ATTR void mcu_pwm_isr(void *arg)
 {
 	static uint8_t pwm_counter = 0;
+	uint8_t resolution = esp32_pwm_res;
 #ifdef IC74HC595_HAS_PWMS
 	static uint16_t pwm_mask_last = 0;
 	uint16_t pwm_mask = 0xFFFF;
 #endif
 	// software PWM
-	if (++pwm_counter)
+	if ((++pwm_counter) >> resolution)
 	{
+		uint8_t pwm_ref = pwm_counter << resolution;
 #if !(PWM0 < 0)
-		if (pwm_counter > esp32_pwm[0])
+		if (pwm_ref > esp32_pwm[0])
 		{
 			mcu_clear_output(PWM0);
 		}
 #endif
 #if !(PWM1 < 0)
-		if (pwm_counter > esp32_pwm[1])
+		if (pwm_ref > esp32_pwm[1])
 		{
 			mcu_clear_output(PWM1);
 		}
 #endif
 #if !(PWM2 < 0)
-		if (pwm_counter > esp32_pwm[2])
+		if (pwm_ref > esp32_pwm[2])
 		{
 			mcu_clear_output(PWM2);
 		}
 #endif
 #if !(PWM3 < 0)
-		if (pwm_counter > esp32_pwm[3])
+		if (pwm_ref > esp32_pwm[3])
 		{
 			mcu_clear_output(PWM3);
 		}
 #endif
 #if !(PWM4 < 0)
-		if (pwm_counter > esp32_pwm[4])
+		if (pwm_ref > esp32_pwm[4])
 		{
 			mcu_clear_output(PWM4);
 		}
 #endif
 #if !(PWM5 < 0)
-		if (pwm_counter > esp32_pwm[5])
+		if (pwm_ref > esp32_pwm[5])
 		{
 			mcu_clear_output(PWM5);
 		}
 #endif
 #if !(PWM6 < 0)
-		if (pwm_counter > esp32_pwm[6])
+		if (pwm_ref > esp32_pwm[6])
 		{
 			mcu_clear_output(PWM6);
 		}
 #endif
 #if !(PWM7 < 0)
-		if (pwm_counter > esp32_pwm[7])
+		if (pwm_ref > esp32_pwm[7])
 		{
 			mcu_clear_output(PWM7);
 		}
 #endif
 #if !(PWM8 < 0)
-		if (pwm_counter > esp32_pwm[8])
+		if (pwm_ref > esp32_pwm[8])
 		{
 			mcu_clear_output(PWM8);
 		}
 #endif
 #if !(PWM9 < 0)
-		if (pwm_counter > esp32_pwm[9])
+		if (pwm_ref > esp32_pwm[9])
 		{
 			mcu_clear_output(PWM9);
 		}
 #endif
 #if !(PWM10 < 0)
-		if (pwm_counter > esp32_pwm[10])
+		if (pwm_ref > esp32_pwm[10])
 		{
 			mcu_clear_output(PWM10);
 		}
 #endif
 #if !(PWM11 < 0)
-		if (pwm_counter > esp32_pwm[11])
+		if (pwm_ref > esp32_pwm[11])
 		{
 			mcu_clear_output(PWM11);
 		}
 #endif
 #if !(PWM12 < 0)
-		if (pwm_counter > esp32_pwm[12])
+		if (pwm_ref > esp32_pwm[12])
 		{
 			mcu_clear_output(PWM12);
 		}
 #endif
 #if !(PWM13 < 0)
-		if (pwm_counter > esp32_pwm[13])
+		if (pwm_ref > esp32_pwm[13])
 		{
 			mcu_clear_output(PWM13);
 		}
 #endif
 #if !(PWM14 < 0)
-		if (pwm_counter > esp32_pwm[14])
+		if (pwm_ref > esp32_pwm[14])
 		{
 			mcu_clear_output(PWM14);
 		}
 #endif
 #if !(PWM15 < 0)
-		if (pwm_counter > esp32_pwm[15])
+		if (pwm_ref > esp32_pwm[15])
 		{
 			mcu_clear_output(PWM15);
 		}
@@ -163,97 +170,97 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 
 #ifdef IC74HC595_HAS_PWMS
 #if !(PWM0_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[0])
+		if (pwm_ref > esp32_pwm[0])
 		{
 			pwm_mask &= ~(1 << 0);
 		}
 #endif
 #if !(PWM1_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[1])
+		if (pwm_ref > esp32_pwm[1])
 		{
 			pwm_mask &= ~(1 << 1);
 		}
 #endif
 #if !(PWM2_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[2])
+		if (pwm_ref > esp32_pwm[2])
 		{
 			pwm_mask &= ~(1 << 2);
 		}
 #endif
 #if !(PWM3_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[3])
+		if (pwm_ref > esp32_pwm[3])
 		{
 			pwm_mask &= ~(1 << 3);
 		}
 #endif
 #if !(PWM4_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[4])
+		if (pwm_ref > esp32_pwm[4])
 		{
 			pwm_mask &= ~(1 << 4);
 		}
 #endif
 #if !(PWM5_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[5])
+		if (pwm_ref > esp32_pwm[5])
 		{
 			pwm_mask &= ~(1 << 5);
 		}
 #endif
 #if !(PWM6_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[6])
+		if (pwm_ref > esp32_pwm[6])
 		{
 			pwm_mask &= ~(1 << 6);
 		}
 #endif
 #if !(PWM7_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[7])
+		if (pwm_ref > esp32_pwm[7])
 		{
 			pwm_mask &= ~(1 << 7);
 		}
 #endif
 #if !(PWM8_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[8])
+		if (pwm_ref > esp32_pwm[8])
 		{
 			pwm_mask &= ~(1 << 8);
 		}
 #endif
 #if !(PWM9_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[9])
+		if (pwm_ref > esp32_pwm[9])
 		{
 			pwm_mask &= ~(1 << 9);
 		}
 #endif
 #if !(PWM10_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[10])
+		if (pwm_ref > esp32_pwm[10])
 		{
 			pwm_mask &= ~(1 << 10);
 		}
 #endif
 #if !(PWM11_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[11])
+		if (pwm_ref > esp32_pwm[11])
 		{
 			pwm_mask &= ~(1 << 11);
 		}
 #endif
 #if !(PWM12_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[12])
+		if (pwm_ref > esp32_pwm[12])
 		{
 			pwm_mask &= ~(1 << 12);
 		}
 #endif
 #if !(PWM13_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[13])
+		if (pwm_ref > esp32_pwm[13])
 		{
 			pwm_mask &= ~(1 << 13);
 		}
 #endif
 #if !(PWM14_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[14])
+		if (pwm_ref > esp32_pwm[14])
 		{
 			pwm_mask &= ~(1 << 14);
 		}
 #endif
 #if !(PWM15_IO_OFFSET < 0)
-		if (pwm_counter > esp32_pwm[15])
+		if (pwm_ref > esp32_pwm[15])
 		{
 			pwm_mask &= ~(1 << 15);
 		}
@@ -262,6 +269,7 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 	}
 	else
 	{
+		pwm_counter = 0;
 #if !(PWM0 < 0)
 		if (esp32_pwm[0])
 		{
@@ -367,6 +375,11 @@ static IRAM_ATTR void mcu_gen_pwm(void)
 		pwm_mask_last = pwm_mask;
 	}
 #endif
+
+	timer_group_clr_intr_status_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	/* After the alarm has been triggered
+	  we need enable it again, so it is triggered the next time */
+	timer_group_enable_alarm_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
 }
 
 IRAM_ATTR void mcu_gpio_isr(void *type)
@@ -392,20 +405,21 @@ IRAM_ATTR void mcu_gpio_isr(void *type)
 	}
 }
 
-IRAM_ATTR void mcu_pwm_isr(void *arg)
+void mcu_pwm_freq_config(uint16_t freq)
 {
-	static uint8_t rtc_counter = 0;
+	// keeps 8 bit resolution up to 1KHz
+	// reduces bit resolution for higher frequncies
 
-	mcu_gen_pwm();
-	rtc_counter++;
-
-	timer_group_clr_intr_status_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
-	/* After the alarm has been triggered
-	  we need enable it again, so it is triggered the next time */
-	timer_group_enable_alarm_in_isr(RTC_TIMER_TG, RTC_TIMER_IDX);
+	// determines the bit resolution (8 - esp32_pwm_res);
+	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.001f)), 0);
+	freq >>= res;
+	esp32_pwm_res = res;
+	// timer base frequency is APB clock/2
+	// it's then divided by 256
+	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)roundf((float)(getApbFrequency() >> 9) / (float)freq));
 }
 
-void mcu_pwm_task(void *arg)
+void mcu_pwm_init(void *arg)
 {
 	// initialize rtc timer
 	/* Select and initialize basic parameters of the timer */
@@ -416,23 +430,23 @@ void mcu_pwm_task(void *arg)
 		.alarm_en = TIMER_ALARM_EN,
 		.auto_reload = true,
 	}; // default clock source is APB
-	timer_init(RTC_TIMER_TG, RTC_TIMER_IDX, &config);
+	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &config);
 
 	/* Timer's counter will initially start from value below.
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(RTC_TIMER_TG, RTC_TIMER_IDX, 0x00000000ULL);
+	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
 
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(RTC_TIMER_TG, RTC_TIMER_IDX, (uint64_t)157);
-	timer_enable_intr(RTC_TIMER_TG, RTC_TIMER_IDX);
-	timer_isr_register(RTC_TIMER_TG, RTC_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
+	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
+	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
 
-	timer_start(RTC_TIMER_TG, RTC_TIMER_IDX);
+	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
 
-	vTaskSuspend(NULL);
-	for (;;)
-	{
-	}
+	// vTaskSuspend(NULL);
+	// for (;;)
+	// {
+	// }
 }
 
 void mcu_rtc_task(void *arg)
@@ -480,15 +494,18 @@ void mcu_init(void)
 	gpio_install_isr_service(0);
 #endif
 
+	// initialize pwm timer (core 0)
+	esp_ipc_call(0, mcu_pwm_init, NULL);
+
 	mcu_io_init();
 	mcu_usart_init();
 
 	// initialize rtc timer
 	xTaskCreate(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL);
-	xTaskCreatePinnedToCore(mcu_pwm_task, "pwmTask", 1024, NULL, 0, NULL, 0);
+	// xTaskCreatePinnedToCore(mcu_pwm_task, "pwmTask", 1024, NULL, 0, NULL, 0);
 
 	/*uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
-	esp32_rtc_timer = timerBegin(RTC_TIMER, timerdiv, true);
+	esp32_rtc_timer = timerBegin(PWM_TIMER, timerdiv, true);
 	timerAttachInterrupt(esp32_rtc_timer, &mcu_rtc_isr, true);
 	timerAlarmWrite(esp32_rtc_timer, 1, true);
 	timerAlarmEnable(esp32_rtc_timer);
@@ -560,7 +577,6 @@ uint8_t mcu_get_analog(uint8_t channel)
 #ifndef mcu_set_pwm
 void mcu_set_pwm(uint8_t pwm, uint8_t value)
 {
-	esp32_pwm[pwm - PWM_PINS_OFFSET] = (0x7F & (value >> 1));
 }
 #endif
 
@@ -571,7 +587,7 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 #ifndef mcu_get_pwm
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
-	return (esp32_pwm[pwm - PWM_PINS_OFFSET] << 1);
+	return 0;
 }
 #endif
 
