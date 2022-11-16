@@ -129,7 +129,7 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
-#ifdef ENABLE_SETTINGS_MODULES
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	uint16_t settings_register_external_setting(uint8_t size);
 
 	// event_settings_change_handler

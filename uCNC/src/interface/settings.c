@@ -614,7 +614,7 @@ void settings_save_startup_gcode(uint16_t address)
 #endif
 }
 
-#ifdef ENABLE_SETTINGS_MODULES
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 uint16_t settings_register_external_setting(uint8_t size)
 {
 	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;

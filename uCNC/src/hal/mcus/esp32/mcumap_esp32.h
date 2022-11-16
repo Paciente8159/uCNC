@@ -1220,6 +1220,10 @@ extern "C"
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
 
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
+
 #ifdef __cplusplus
 }
 #endif

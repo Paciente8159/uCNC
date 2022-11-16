@@ -123,6 +123,10 @@
 #define NUMBER_ISFLOAT 0x40
 #define NUMBER_ISNEGATIVE 0x80
 
+#ifndef GRBL_CMD_MAX_LEN
+#define GRBL_CMD_MAX_LEN 32
+#endif
+
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
@@ -348,7 +352,7 @@ static uint8_t parser_grbl_command(void)
 {
 	serial_getc(); // eat $
 	unsigned char c = serial_getc();
-	unsigned char grbl_cmd_str[32];
+	unsigned char grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
@@ -375,10 +379,14 @@ static uint8_t parser_grbl_command(void)
 			c -= 32;
 		}
 		grbl_cmd_str[grbl_cmd_len++] = c;
+		if (grbl_cmd_len >= GRBL_CMD_MAX_LEN)
+		{
+			return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+		}
 		c = serial_getc();
 	}
 
-	grbl_cmd_str[grbl_cmd_len] = 0;
+	grbl_cmd_str[grbl_cmd_len] = c;
 
 	uint16_t block_address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	uint8_t error = STATUS_INVALID_STATEMENT;
@@ -569,6 +577,13 @@ static uint8_t parser_grbl_command(void)
 		}
 		break;
 	}
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	if (mcu_custom_grbl_cmd(grbl_cmd_str, grbl_cmd_len) == STATUS_OK)
+	{
+		return STATUS_OK;
+	}
+#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len};

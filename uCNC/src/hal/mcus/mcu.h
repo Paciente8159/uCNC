@@ -475,6 +475,10 @@ extern "C"
 #endif
 #endif
 
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
