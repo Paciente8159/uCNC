@@ -609,6 +609,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
 	protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
 	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
@@ -648,10 +651,15 @@ void protocol_send_cnc_settings(void)
 		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.delta_base_radius);
+	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
+	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
+	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
 #endif
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
@@ -767,15 +775,10 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_SYSTEM_INFO
-#if (KINEMATIC == KINEMATIC_CARTESIAN)
-#define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_COREXY)
-#define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_DELTA)
-#define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
-#else
-#define KINEMATIC_INFO ""
+#ifndef KINEMATIC_TYPE_STR
+#define KINEMATIC_TYPE_STR "UK" /*undefined kynematic*/
 #endif
+#define KINEMATIC_INFO KINEMATIC_TYPE_STR STRGIFY(AXIS_COUNT) ","
 #define TOOLS_INFO "T" STRGIFY(TOOL_COUNT) ","
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -876,7 +879,7 @@ void protocol_send_pins_states(void)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 {
-	//custom handler
+	// custom handler
 	protocol_send_cnc_info_delegate_event_t *ptr = protocol_send_cnc_info_event;
 	while (ptr != NULL)
 	{

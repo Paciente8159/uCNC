@@ -205,6 +205,7 @@
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)
+#define asm __asm__
 
 #define mcu_delay_cycles(X)
 extern void virtual_delay_us(uint16_t delay);

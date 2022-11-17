@@ -63,12 +63,16 @@ FORCEINLINE static void planner_buffer_clear(void);
 */
 void planner_add_line(motion_data_t *block_data)
 {
+#ifdef ENABLE_LINACT_PLANNER
 	static float last_dir_vect[STEPPER_COUNT];
+#endif
 
 	// clear the planner block
 	uint8_t index = planner_data_write;
+	float cos_theta = block_data->cos_theta;
 	memset(&planner_data[index], 0, sizeof(planner_block_t));
 	planner_data[index].dirbits = block_data->dirbits;
+	planner_data[index].feed_conversion = block_data->feed_conversion;
 	planner_data[index].main_stepper = block_data->main_stepper;
 	planner_data[index].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
 	planner_data[index].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
@@ -84,73 +88,39 @@ void planner_add_line(motion_data_t *block_data)
 #ifdef ENABLE_BACKLASH_COMPENSATION
 	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
 	{
-		planner_data[index].flags_u.flags_t.backlash_comp = true;
+		planner_data[index].planner_flags.bit.backlash_comp = true;
 	}
 #endif
 
 	memcpy(planner_data[index].steps, block_data->steps, sizeof(planner_data[index].steps));
-	planner_data[index].total_steps = block_data->total_steps;
 
 	// calculates the normalized vector with the amount of motion in any linear actuator
 	// also calculates the maximum feedrate and acceleration for each linear actuator
 #ifdef ENABLE_LINACT_PLANNER
 	float inv_total_steps = 1.0f / (float)(block_data->full_steps);
-#endif
-#ifdef ENABLE_LINACT_COLD_START
-	bool coldstart = false;
-#endif
-	float cos_theta = 0;
-	float rapid_feed = FLT_MAX;
-	planner_data[index].acceleration = FLT_MAX;
-
-#ifdef ENABLE_LINACT_PLANNER
 	float dir_vect[STEPPER_COUNT];
 	memset(dir_vect, 0, sizeof(dir_vect));
-#else
-
-	if (!block_data->motion_flags.bit.is_subsegment)
-	{
-		for (uint8_t i = AXIS_COUNT; i != 0;)
-		{
-			i--;
-			cos_theta += block_data->dir_vect[i] * last_dir_vect[i];
-			last_dir_vect[i] = block_data->dir_vect[i];
-		}
-	}
-	else
-	{
-		cos_theta = 1;
-	}
-
-#endif
 
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
 	{
 		i--;
 		if (planner_data[index].steps[i] != 0)
 		{
-#ifdef ENABLE_LINACT_PLANNER
 			dir_vect[i] = inv_total_steps * (float)planner_data[index].steps[i];
 
 			if (!planner_buffer_is_empty())
 			{
 				cos_theta += last_dir_vect[i] * dir_vect[i];
 #ifdef ENABLE_LINACT_COLD_START
-				if (last_dir_vect[i] == 0) // tests if actuator is starting from a full stop
+				if (last_dir_vect[i] == 0) // checks if actuator is starting from a full stop
 				{
-					coldstart = true;
+					// then forces a full start and stop motion
+					cos_theta = -100;
 				}
 #endif
 			}
 
 			last_dir_vect[i] = dir_vect[i];
-#endif
-			// calculate (per linear actuator) the minimum inverted time of travel (1/min) an acceleration (1/s^2)
-			float step_ratio = g_settings.step_per_mm[i] / (float)planner_data[index].steps[i];
-			float stepper_feed = g_settings.max_feed_rate[i] * step_ratio;
-			rapid_feed = MIN(rapid_feed, stepper_feed);
-			float stepper_accel = g_settings.acceleration[i] * step_ratio;
-			planner_data[index].acceleration = MIN(planner_data[index].acceleration, stepper_accel);
 		}
 		else
 		{
@@ -158,20 +128,11 @@ void planner_add_line(motion_data_t *block_data)
 		}
 	}
 
-	// converts to steps per second (st/s)
-	float feed = block_data->feed * MIN_SEC_MULT;
-	rapid_feed *= MIN_SEC_MULT;
-	rapid_feed *= (float)block_data->total_steps;
-	// converts to steps per second^2 (st/s^2)
-	planner_data[index].acceleration *= (float)block_data->total_steps;
+#endif
 
-	if (feed > rapid_feed)
-	{
-		feed = rapid_feed;
-	}
-
-	planner_data[index].feed_sqr = fast_flt_pow2(feed);
-	planner_data[index].rapid_feed_sqr = fast_flt_pow2(rapid_feed);
+	planner_data[index].feed_sqr = fast_flt_pow2(block_data->feed);
+	planner_data[index].rapid_feed_sqr = fast_flt_pow2(block_data->max_feed);
+	planner_data[index].acceleration = block_data->max_accel;
 
 	// consider initial angle factor of 1 (90 degree angle corner or more)
 	float angle_factor = 1.0f;
@@ -197,7 +158,7 @@ void planner_add_line(motion_data_t *block_data)
 	// if more than one move stored cals juntion speeds and recalculates speed profiles
 	if (cos_theta != 0 && !CHECKFLAG(block_data->motion_mode, PLANNER_MOTION_EXACT_STOP | MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
 	{
-		if (!block_data->motion_flags.bit.is_subsegment)
+		if (cos_theta != 1.0f)
 		{
 			// calculates the junction angle with previous
 			if (cos_theta > 0)
@@ -418,7 +379,7 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	uint8_t index = planner_data_read;
 	float speed_delta = exit_speed_sqr - planner_data[index].entry_feed_sqr;
 	// caclculates the speed increase/decrease for the given distance
-	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].total_steps);
+	float junction_speed_sqr = planner_data[index].acceleration * (float)(planner_data[index].steps[planner_data[index].main_stepper]);
 	junction_speed_sqr = fast_flt_mul2(junction_speed_sqr);
 	// if there is enough space to accelerate computes the junction speed
 	if (junction_speed_sqr >= speed_delta)
@@ -526,7 +487,7 @@ static void planner_recalculate(void)
 			// found optimal
 			break;
 		}
-		speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
+		speedchange = ((float)(planner_data[block].steps[planner_data[block].main_stepper] << 1)) * planner_data[block].acceleration;
 		speedchange += (block != last) ? planner_data[next].entry_feed_sqr : 0;
 		planner_data[block].entry_feed_sqr = MIN(planner_data[block].entry_max_feed_sqr, speedchange);
 
@@ -540,7 +501,7 @@ static void planner_recalculate(void)
 		// next block is moving at a faster speed
 		if (planner_data[block].entry_feed_sqr < planner_data[next].entry_feed_sqr)
 		{
-			speedchange = ((float)(planner_data[block].total_steps << 1)) * planner_data[block].acceleration;
+			speedchange = ((float)(planner_data[block].steps[planner_data[block].main_stepper] << 1)) * planner_data[block].acceleration;
 			// check if the next block entry speed can be achieved
 			speedchange += planner_data[block].entry_feed_sqr;
 			if (speedchange < planner_data[next].entry_feed_sqr)

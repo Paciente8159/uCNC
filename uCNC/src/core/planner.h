@@ -62,9 +62,8 @@ typedef union
 #endif
 		uint8_t dirbits;
 		step_t steps[STEPPER_COUNT];
-		step_t total_steps;
 		uint8_t main_stepper;
-
+		float feed_conversion;
 		float entry_feed_sqr;
 		float entry_max_feed_sqr;
 		float feed_sqr;

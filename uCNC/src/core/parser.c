@@ -723,7 +723,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 		uint8_t code = (uint8_t)floorf(value);
 		// check mantissa
-		uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
+		uint8_t mantissa = (uint8_t)lroundf((value - code) * 100.0f);
 
 		switch (word)
 		{
@@ -1203,7 +1203,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	{
 		mc_update_tools(&block_data);
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
-		block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+		block_data.dwell = (uint16_t)lroundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #endif
 #if (defined(TOOL_WAIT_FOR_SPEED) && (TOOL_WAIT_FOR_SPEED_MAX_ERROR != 100))
 		float tool_speed_error = 0;
@@ -1233,7 +1233,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (new_state->groups.nonmodal == G4)
 	{
 		// calc dwell in milliseconds
-		block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p * 1000.f, 65535)));
+		block_data.dwell = MAX(block_data.dwell, (uint16_t)lroundf(MIN(words->p * 1000.0f, 65535)));
 		new_state->groups.nonmodal = 0;
 	}
 

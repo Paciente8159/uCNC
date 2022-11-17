@@ -161,6 +161,9 @@ extern "C"
 #ifndef M_PI
 #define M_PI 3.1415926535897932385f
 #endif
+#ifndef M_PI_INV
+#define M_PI_INV 0.3183098861837906715f
+#endif
 #ifndef M_COS_TAYLOR_1
 #define M_COS_TAYLOR_1 0.1666666666666666667f
 #endif
