@@ -235,6 +235,7 @@ extern "C"
 	{
 		unsigned char *cmd;
 		uint8_t len;
+		char next_char;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
 

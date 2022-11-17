@@ -476,7 +476,7 @@ extern "C"
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len);
+	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
 #endif
 
 #ifdef __cplusplus

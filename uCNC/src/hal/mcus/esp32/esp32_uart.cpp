@@ -23,15 +23,35 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifndef ESP32_BUFFER_SIZE
+#define ESP32_BUFFER_SIZE 255
+#endif
+
+#ifndef BT_ID_MAX_LEN
+#define BT_ID_MAX_LEN 32
+#endif
+
+#ifndef WIFI_SSID_MAX_LEN
+#define WIFI_SSID_MAX_LEN 32
+#endif
+
+#define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
+
+static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
+static uint8_t esp32_tx_buffer_counter;
+
 #ifdef ENABLE_BLUETOOTH
 #include "BluetoothSerial.h"
 BluetoothSerial SerialBT;
+
+uint8_t bt_on;
+uint16_t bt_settings_offset;
 #endif
 
 #ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
-// #include <HTTPUpdateServer.h>
+#include <HTTPUpdateServer.h>
 
 #ifndef WIFI_PORT
 #define WIFI_PORT 23
@@ -45,12 +65,8 @@ BluetoothSerial SerialBT;
 #define WIFI_PASS "pass"
 #endif
 
-#ifndef WIFI_SSID_MAX_LEN
-#define WIFI_SSID_MAX_LEN 32
-#endif
-
 WebServer httpServer(80);
-// HTTPUpdateServer httpUpdater;
+HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
@@ -60,6 +76,7 @@ WiFiClient serverClient;
 
 typedef struct
 {
+	uint8_t wifi_on;
 	uint8_t wifi_mode;
 	char ssid[WIFI_SSID_MAX_LEN];
 	char pass[WIFI_SSID_MAX_LEN];
@@ -69,38 +86,56 @@ uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
 #endif
 
-#ifndef ESP32_BUFFER_SIZE
-#define ESP32_BUFFER_SIZE 255
-#endif
-
-static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
-static uint8_t esp32_tx_buffer_counter;
 extern "C"
 {
 #include "../../../cnc.h"
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len)
+	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
-#ifdef ENABLE_WIFI
-		char arg[WIFI_SSID_MAX_LEN];
-		char has_arg = (grbl_cmd_str[grbl_cmd_len] == '=');
+		char arg[ARG_MAX_LEN];
+		char has_arg = (next_char == '=');
 		memset(arg, 0, sizeof(arg));
 		if (has_arg)
 		{
-			grbl_cmd_str[grbl_cmd_len] = 0;
 			char c = serial_getc();
 			uint8_t i = 0;
 			while (c)
 			{
 				arg[i++] = c;
-				if (i >= WIFI_SSID_MAX_LEN)
+				if (i >= ARG_MAX_LEN)
 				{
 					return STATUS_INVALID_STATEMENT;
 				}
 				c = serial_getc();
 			}
 		}
+
+#ifdef ENABLE_BLUETOOTH
+		if (!strncmp(grbl_cmd_str, "BTH", 3))
+		{
+			if (!strcmp(grbl_cmd_str, "BTHON"))
+			{
+				SerialBT.begin("ESP32");
+				Serial.println("[MGS: Bluetooth Started! Ready to pair...]");
+				bt_on = 1;
+				settings_save(bt_settings_offset, &bt_on, 1);
+
+				return STATUS_OK;
+			}
+
+			if (!strcmp(grbl_cmd_str, "BTHOFF"))
+			{
+				SerialBT.end();
+				Serial.println("[MGS: Bluetooth ended]");
+				bt_on = 0;
+				settings_save(bt_settings_offset, &bt_on, 1);
+
+				return STATUS_OK;
+			}
+		}
+#endif
+#ifdef ENABLE_WIFI
 
 		if (!strncmp(grbl_cmd_str, "WIFI", 4))
 		{
@@ -125,8 +160,16 @@ extern "C"
 					Serial.println("[MSG:Trying to connect to WiFi]");
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
 					Serial.println("[MSG:AP started]");
+					Serial.print("[MSG: SSID>");
+					Serial.print(WiFi.softAPSSID());
+					Serial.println("]");
+					Serial.print("[MSG: IP>");
+					Serial.print(WiFi.softAPIP());
+					Serial.println("]");
 					break;
 				}
+				wifi_settings.wifi_on = 1;
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 
 				return STATUS_OK;
 			}
@@ -134,6 +177,8 @@ extern "C"
 			if (!strcmp(grbl_cmd_str, "WIFIOFF"))
 			{
 				WiFi.disconnect();
+				wifi_settings.wifi_on = 0;
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				return STATUS_OK;
 			}
 
@@ -206,6 +251,21 @@ extern "C"
 						Serial.println("[MSG:Invalid value. STA+AP(1), STA(2), AP(3)]");
 					}
 				}
+				else
+				{
+					switch (wifi_settings.wifi_mode)
+					{
+					case 0:
+						Serial.println("[MSG: WiFi Mode> STA+AP]");
+						break;
+					case 1:
+						Serial.println("[MSG: WiFi Mode> STA]");
+						break;
+					case 2:
+						Serial.println("[MSG: WiFi Mode> AP]");
+						break;
+					}
+				}
 				return STATUS_OK;
 			}
 
@@ -234,6 +294,11 @@ extern "C"
 		static uint32_t next_info = 0;
 		static bool connected = false;
 
+		if (!wifi_settings.wifi_on)
+		{
+			return false;
+		}
+
 		if ((WiFi.status() != WL_CONNECTED))
 		{
 			connected = false;
@@ -253,7 +318,7 @@ extern "C"
 			Serial.print("[MSG: AP>");
 			Serial.print(WiFi.SSID());
 			Serial.println("]");
-			Serial.print("[MSG: PI>");
+			Serial.print("[MSG: IP>");
 			Serial.print(WiFi.localIP());
 			Serial.println("]");
 		}
@@ -287,24 +352,36 @@ extern "C"
 		Serial.begin(baud);
 #ifdef ENABLE_WIFI
 		WiFi.setSleep(WIFI_PS_NONE);
-		WiFi.begin();
-		server.begin();
-		server.setNoDelay(true); /*
-		 httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-		 httpServer.begin();*/
-
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-		Serial.println("offset");
-		Serial.println(wifi_settings_offset);
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			// settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
-			// memset(&wifi_settings, 0, sizeof(wifi_settings_t));
+			settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
+			memset(&wifi_settings, 0, sizeof(wifi_settings_t));
 		}
+
+		WiFi.begin();
+		if (!wifi_settings.wifi_on)
+		{
+			WiFi.disconnect();
+		}
+		server.begin();
+		server.setNoDelay(true);
+		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
+		httpServer.begin();
 #endif
 #ifdef ENABLE_BLUETOOTH
-		SerialBT.begin("ESP32");
-		Serial.println("[Bluetooth Started! Ready to pair...]");
+		bt_settings_offset = settings_register_external_setting(1);
+		if (settings_load(bt_settings_offset, &bt_on, 1))
+		{
+			settings_erase(bt_settings_offset, 1);
+			bt_on = 0;
+		}
+
+		if (bt_on)
+		{
+			SerialBT.begin(BOARD_NAME);
+			Serial.println("[Bluetooth Started! Ready to pair...]");
+		}
 #endif
 		esp32_tx_buffer_counter = 0;
 	}

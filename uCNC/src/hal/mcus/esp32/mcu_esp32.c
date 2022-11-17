@@ -498,6 +498,10 @@ void mcu_init(void)
 	esp_ipc_call(0, mcu_pwm_init, NULL);
 
 	mcu_io_init();
+	// starts EEPROM before UART to enable WiFi and BT settings
+#ifndef RAM_ONLY_SETTINGS
+	esp32_eeprom_init(1024); // 1K Emulated EEPROM
+#endif
 	mcu_usart_init();
 
 	// initialize rtc timer
@@ -513,10 +517,6 @@ void mcu_init(void)
 	// initialize stepper timer
 	timerdiv = (uint16_t)(getApbFrequency() / (F_STEP_MAX << 1));
 	esp32_step_timer = timerBegin(ITP_TIMER, timerdiv, true);*/
-
-#ifndef RAM_ONLY_SETTINGS
-	esp32_eeprom_init(1024); // 1K Emulated EEPROM
-#endif
 
 #ifdef MCU_HAS_SPI
 	esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
