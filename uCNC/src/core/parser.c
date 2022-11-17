@@ -580,7 +580,7 @@ static uint8_t parser_grbl_command(void)
 	}
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	if (mcu_custom_grbl_cmd(grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
+	if (mcu_custom_grbl_cmd((char*)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
 	{
 		return STATUS_OK;
 	}
