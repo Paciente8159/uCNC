@@ -19,14 +19,12 @@
 #ifdef ESP32
 #include <Arduino.h>
 #include "esp_task_wdt.h"
+#include "esp_ipc.h"
+#include "driver/uart.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include "../../../../cnc_config.h"
-
-#ifndef ESP32_BUFFER_SIZE
-#define ESP32_BUFFER_SIZE 255
-#endif
 
 #ifndef BT_ID_MAX_LEN
 #define BT_ID_MAX_LEN 32
@@ -37,9 +35,6 @@
 #endif
 
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
-
-static char esp32_tx_buffer[ESP32_BUFFER_SIZE];
-static uint8_t esp32_tx_buffer_counter;
 
 #ifdef ENABLE_BLUETOOTH
 #include "BluetoothSerial.h"
@@ -91,6 +86,9 @@ extern "C"
 {
 #include "../../../cnc.h"
 
+	static char esp32_tx_buffer[TX_BUFFER_SIZE + 2];
+	static uint8_t esp32_tx_buffer_counter;
+
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
@@ -118,7 +116,7 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[3], "ON"))
 			{
 				SerialBT.begin(BOARD_NAME);
-				Serial.println("[MGS:Bluetooth enabled]");
+				// Serial.println("[MGS:Bluetooth enabled]");
 				bt_on = 1;
 				settings_save(bt_settings_offset, &bt_on, 1);
 
@@ -128,7 +126,7 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[3], "OFF"))
 			{
 				SerialBT.end();
-				Serial.println("[MGS:Bluetooth disabled]");
+				// Serial.println("[MGS:Bluetooth disabled]");
 				bt_on = 0;
 				settings_save(bt_settings_offset, &bt_on, 1);
 
@@ -148,30 +146,30 @@ extern "C"
 				case 1:
 					WiFi.mode(WIFI_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					Serial.println("[MSG:Trying to connect to WiFi]");
+					// Serial.println("[MSG:Trying to connect to WiFi]");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					Serial.println("[MSG:AP started]");
+					// Serial.println("[MSG:AP started]");
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					Serial.println("[MSG:Trying to connect to WiFi]");
+					// Serial.println("[MSG:Trying to connect to WiFi]");
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					Serial.println("[MSG:AP started]");
-					Serial.print("[MSG: SSID>");
-					Serial.print(WiFi.softAPSSID());
-					Serial.println("]");
-					Serial.print("[MSG: IP>");
-					Serial.print(WiFi.softAPIP());
-					Serial.println("]");
+					// Serial.println("[MSG:AP started]");
+					// Serial.print("[MSG:SSID>");
+					// Serial.print(WiFi.softAPSSID());
+					// Serial.println("]");
+					// Serial.print("[MSG:IP>");
+					// Serial.print(WiFi.softAPIP());
+					// Serial.println("]");
 					break;
 				}
 				wifi_settings.wifi_on = 1;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				Serial.println("[MSG:WiFi settings saved]");
+				// Serial.println("[MSG:WiFi settings saved]");
 
 				return STATUS_OK;
 			}
@@ -181,7 +179,7 @@ extern "C"
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				Serial.println("[MSG:WiFi settings saved]");
+				// Serial.println("[MSG:WiFi settings saved]");
 				return STATUS_OK;
 			}
 
@@ -192,49 +190,49 @@ extern "C"
 					uint8_t len = strlen(arg);
 					if (len > WIFI_SSID_MAX_LEN)
 					{
-						Serial.println("[MSG:WiFi SSID is too long]");
+						// Serial.println("[MSG:WiFi SSID is too long]");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
 					strcpy(wifi_settings.ssid, arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-					Serial.println("[MSG:WiFi SSID modified]");
+					// Serial.println("[MSG:WiFi SSID modified]");
 				}
 				else
 				{
-					Serial.print("[MSG: SSID>");
-					Serial.print(wifi_settings.ssid);
-					Serial.println("]");
+					// Serial.print("[MSG:SSID>");
+					// Serial.print(wifi_settings.ssid);
+					// Serial.println("]");
 				}
 				return STATUS_OK;
 			}
 
 			if (!strcmp(&grbl_cmd_str[4], "SCAN"))
 			{
-				Serial.println("[MSG: Scanning Networks]");
+				// Serial.println("[MSG:Scanning Networks]");
 				int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
 				{
-					Serial.println("[MSG: Failed to scan!]");
+					// Serial.println("[MSG:Failed to scan!]");
 					while (true)
 						;
 				}
 
 				// print the list of networks seen:
-				Serial.print("[MSG: ");
-				Serial.print(numSsid);
-				Serial.println(" available networks]");
+				// Serial.print("[MSG:");
+				// Serial.print(numSsid);
+				// Serial.println(" available networks]");
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					Serial.print("[MSG: ");
-					Serial.print(netid);
-					Serial.print(") ");
-					Serial.print(WiFi.SSID(netid));
-					Serial.print("\tSignal: ");
-					Serial.print(WiFi.RSSI(netid));
-					Serial.print(" dBm");
-					Serial.println("]");
+					// Serial.print("[MSG:");
+					// Serial.print(netid);
+					// Serial.print(") ");
+					// Serial.print(WiFi.SSID(netid));
+					// Serial.print("\tSignal: ");
+					// Serial.print(WiFi.RSSI(netid));
+					// Serial.print(" dBm");
+					// Serial.println("]");
 				}
 				return STATUS_OK;
 			}
@@ -242,14 +240,14 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				Serial.println("[MSG:WiFi settings saved]");
+				// Serial.println("[MSG:WiFi settings saved]");
 			}
 
 			if (!strcmp(&grbl_cmd_str[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
 				memset(&wifi_settings, 0, sizeof(wifi_settings_t));
-				Serial.println("[MSG:WiFi settings deleted]");
+				// Serial.println("[MSG:WiFi settings deleted]");
 			}
 
 			if (!strcmp(&grbl_cmd_str[4], "MODE"))
@@ -263,20 +261,20 @@ extern "C"
 					}
 					else
 					{
-						Serial.println("[MSG:Invalid value. STA+AP(1), STA(2), AP(3)]");
+						// Serial.println("[MSG:Invalid value. STA+AP(1), STA(2), AP(3)]");
 					}
 				}
 
 				switch (wifi_settings.wifi_mode)
 				{
 				case 0:
-					Serial.println("[MSG: WiFi mode>STA+AP]");
+					// Serial.println("[MSG:WiFi mode>STA+AP]");
 					break;
 				case 1:
-					Serial.println("[MSG: WiFi mode>STA]");
+					// Serial.println("[MSG:WiFi mode>STA]");
 					break;
 				case 2:
-					Serial.println("[MSG: WiFi mode>AP]");
+					// Serial.println("[MSG:WiFi mode>AP]");
 					break;
 				}
 				return STATUS_OK;
@@ -287,11 +285,11 @@ extern "C"
 				uint8_t len = strlen(arg);
 				if (len > WIFI_SSID_MAX_LEN)
 				{
-					Serial.println("[MSG:WiFi pass is too long]");
+					// Serial.println("[MSG:WiFi pass is too long]");
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
 				strcpy(wifi_settings.pass, arg);
-				Serial.println("[MSG:WiFi password modified]");
+				// Serial.println("[MSG:WiFi password modified]");
 				return STATUS_OK;
 			}
 		}
@@ -319,20 +317,20 @@ extern "C"
 				return false;
 			}
 			next_info = mcu_millis() + 30000;
-			Serial.println("[MSG:Disconnected from WiFi]");
+			// Serial.println("[MSG:Disconnected from WiFi]");
 			return false;
 		}
 
 		if (!connected)
 		{
 			connected = true;
-			Serial.println("[MSG:Connected to WiFi]");
-			Serial.print("[MSG: AP>");
-			Serial.print(WiFi.SSID());
-			Serial.println("]");
-			Serial.print("[MSG: IP>");
-			Serial.print(WiFi.localIP());
-			Serial.println("]");
+			// Serial.println("[MSG:Connected to WiFi]");
+			// Serial.print("[MSG:AP>");
+			// Serial.print(WiFi.SSID());
+			// Serial.println("]");
+			// Serial.print("[MSG:IP>");
+			// Serial.print(WiFi.localIP());
+			// Serial.println("]");
 		}
 
 		if (server.hasClient())
@@ -345,7 +343,7 @@ extern "C"
 				}
 			}
 			serverClient = server.available();
-			serverClient.println("[MSG: New client connected]\r\n");
+			serverClient.println("[MSG:New client connected]");
 			return false;
 		}
 		else if (serverClient)
@@ -359,9 +357,28 @@ extern "C"
 		return false;
 	}
 
-	void esp32_uart_init(int baud)
+	void uart_events_core0(void *arg)
 	{
-		Serial.begin(baud);
+		uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+	}
+
+	void esp32_uart_init(void)
+	{
+
+		const uart_config_t uart_config = {
+			.baud_rate = BAUDRATE,
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.source_clk = UART_SCLK_APB};
+		// We won't use a buffer for sending data.
+		esp_ipc_call_blocking(0, uart_events_core0, NULL);
+		uart_param_config(COM_PORT, &uart_config);
+		uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+		////Serial.begin(BAUDRATE);
+		// esp_ipc_call_blocking(0, uart_core0_init, NULL);
 #ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
@@ -401,8 +418,11 @@ extern "C"
 
 	void esp32_uart_flush(void)
 	{
-		Serial.println(esp32_tx_buffer);
-		Serial.flush();
+		if (!esp32_tx_buffer_counter)
+		{
+			return;
+		}
+		uart_write_bytes(COM_PORT, esp32_tx_buffer, esp32_tx_buffer_counter);
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
@@ -449,30 +469,24 @@ extern "C"
 
 	void esp32_uart_write(char c)
 	{
-		switch (c)
+		if (esp32_tx_buffer_counter > TX_BUFFER_SIZE)
 		{
-		case '\n':
-		case '\r':
-			if (esp32_tx_buffer_counter)
-			{
-				esp32_tx_buffer[esp32_tx_buffer_counter] = 0;
-				esp32_uart_flush();
-			}
-			break;
-		default:
-			if (esp32_tx_buffer_counter >= (ESP32_BUFFER_SIZE - 1))
-			{
-				esp32_tx_buffer[esp32_tx_buffer_counter] = 0;
-				esp32_uart_flush();
-			}
+			esp32_tx_buffer[esp32_tx_buffer_counter++] = 0;
+			esp32_uart_flush();
+		}
 
-			esp32_tx_buffer[esp32_tx_buffer_counter++] = c;
-			break;
+		esp32_tx_buffer[esp32_tx_buffer_counter++] = c;
+		if (c == '\n')
+		{
+			esp32_uart_flush();
 		}
 	}
 
 	bool esp32_uart_rx_ready(void)
 	{
+		size_t available_chars = 0;
+		uart_get_buffered_data_len(COM_PORT, &available_chars);
+
 		bool wifiready = false;
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
@@ -485,20 +499,23 @@ extern "C"
 #ifdef ENABLE_BLUETOOTH
 		btready = (SerialBT.available() > 0);
 #endif
-		return ((Serial.available() > 0) || wifiready || btready);
+		return ((available_chars != 0) || wifiready || btready);
 	}
 
 	bool esp32_uart_tx_ready(void)
 	{
-		return (esp32_tx_buffer_counter != ESP32_BUFFER_SIZE);
+		return (esp32_tx_buffer_counter != TX_BUFFER_SIZE);
 	}
 
 	void esp32_uart_process(void)
 	{
-		while (Serial.available() > 0)
+		size_t available_chars = 0;
+		char data[RX_BUFFER_SIZE];
+		int rxBytes = uart_read_bytes(COM_PORT, data, RX_BUFFER_CAPACITY, 0);
+		for (int i = 0; i < rxBytes; i++)
 		{
 			esp_task_wdt_reset();
-			mcu_com_rx_cb((unsigned char)Serial.read());
+			mcu_com_rx_cb((unsigned char)data[i]);
 		}
 
 #ifdef ENABLE_BLUETOOTH
@@ -513,7 +530,7 @@ extern "C"
 #endif
 
 #ifdef ENABLE_WIFI
-		// httpServer.handleClient();
+		httpServer.handleClient();
 
 		if (esp32_wifi_clientok())
 		{

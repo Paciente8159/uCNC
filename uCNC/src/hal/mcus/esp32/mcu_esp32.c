@@ -34,7 +34,7 @@
 static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void esp32_uart_init(int baud);
+void esp32_uart_init(void);
 char esp32_uart_read(void);
 void esp32_uart_write(char c);
 bool esp32_uart_rx_ready(void);
@@ -476,10 +476,6 @@ IRAM_ATTR void mcu_itp_isr(void *arg)
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
-static void mcu_usart_init(void)
-{
-	esp32_uart_init(BAUDRATE);
-}
 /**
  * initializes the mcu
  * this function needs to:
@@ -495,14 +491,14 @@ void mcu_init(void)
 #endif
 
 	// initialize pwm timer (core 0)
-	esp_ipc_call(0, mcu_pwm_init, NULL);
+	esp_ipc_call_blocking(0, mcu_pwm_init, NULL);
 
 	mcu_io_init();
 	// starts EEPROM before UART to enable WiFi and BT settings
 #ifndef RAM_ONLY_SETTINGS
 	esp32_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
-	mcu_usart_init();
+	esp32_uart_init();
 
 	// initialize rtc timer
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
