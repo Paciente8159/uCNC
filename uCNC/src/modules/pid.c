@@ -236,7 +236,7 @@ void FORCEINLINE pid_update(void)
 				output += rateerror;
 			}
 
-			pid_set_output(current_pid, (int16_t)roundf(output));
+			pid_set_output(current_pid, (int16_t)lroundf(output));
 		}
 
 		if (++pid_freqdiv[current_pid] >= pid_get_freqdiv(current_pid))

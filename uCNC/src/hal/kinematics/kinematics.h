@@ -26,7 +26,8 @@ extern "C"
 
 #define KINEMATIC_CARTESIAN 1
 #define KINEMATIC_COREXY 2
-#define KINEMATIC_DELTA 3
+#define KINEMATIC_LINEAR_DELTA 3
+#define KINEMATIC_DELTA 4
 
 #ifdef __cplusplus
 }

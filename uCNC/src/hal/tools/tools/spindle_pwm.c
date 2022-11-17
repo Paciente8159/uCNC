@@ -98,7 +98,7 @@ uint16_t spindle_pwm_get_speed(void)
 {
 #if SPINDLE_PWM >= 0
 	float spindle = (float)mcu_get_pwm(SPINDLE_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)roundf(spindle);
+	return (uint16_t)lroundf(spindle);
 #else
 	return 0;
 #endif

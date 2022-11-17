@@ -72,10 +72,16 @@ extern "C"
 		uint8_t default_tool;
 		float tool_length_offset[TOOL_COUNT];
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		float delta_arm_length;
 		float delta_armbase_radius;
 		// float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		float delta_base_radius;
+		float delta_effector_radius;
+		float delta_bicep_length;
+		float delta_forearm_length;
+		float delta_bicep_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		uint16_t backlash_steps[AXIS_TO_STEPPERS];
@@ -129,7 +135,7 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
-#ifdef ENABLE_SETTINGS_MODULES
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	uint16_t settings_register_external_setting(uint8_t size);
 
 	// event_settings_change_handler

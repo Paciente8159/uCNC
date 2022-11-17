@@ -122,10 +122,16 @@ const settings_t __rom__ default_settings =
 		.default_tool = DEFAULT_STARTUP_TOOL,
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
-		.delta_arm_length = DEFAULT_DELTA_ARM_LENGTH,
-		.delta_armbase_radius = DEFAULT_DELTA_BASE_RADIUS,
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+		.delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH,
+		.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
 // float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		.delta_base_radius = DEFAULT_DELTA_BASE_RADIUS,
+		.delta_effector_radius = DEFAULT_DELTA_EFFECTOR_RADIUS,
+		.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
+		.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
+		.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -452,7 +458,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
 			break;
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		case 106:
 			g_settings.delta_arm_length = value;
 			break;
@@ -462,6 +468,22 @@ uint8_t settings_change(setting_offset_t id, float value)
 			// case 108:
 			//     g_settings.delta_efector_height = value;
 			//     break;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	case 106:
+		g_settings.delta_base_radius = value;
+		break;
+	case 107:
+		g_settings.delta_effector_radius = value;
+		break;
+	case 108:
+		g_settings.delta_bicep_length = value;
+		break;
+	case 109:
+		g_settings.delta_forearm_length = value;
+		break;
+	case 28:
+		g_settings.delta_bicep_homing_angle = value;
+		break;
 #endif
 		default:
 			if (setting >= 100 && setting < (100 + AXIS_COUNT))
@@ -614,7 +636,7 @@ void settings_save_startup_gcode(uint16_t address)
 #endif
 }
 
-#ifdef ENABLE_SETTINGS_MODULES
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 uint16_t settings_register_external_setting(uint8_t size)
 {
 	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;

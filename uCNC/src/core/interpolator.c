@@ -107,7 +107,7 @@ static uint8_t prev_dss;
 static int16_t prev_spindle;
 // pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 static volatile uint8_t itp_step_lock;
 #endif
 
@@ -218,7 +218,7 @@ void itp_init(void)
 	memset(itp_blk_data, 0, sizeof(itp_blk_data));
 	memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 	itp_rt_sgm = NULL;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 	itp_step_lock = 0;
 #endif
 #endif
@@ -280,7 +280,7 @@ void itp_run(void)
 
 // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->backlash_comp;
+			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->planner_flags.bit.backlash_comp;
 #endif
 
 			itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
@@ -292,11 +292,10 @@ void itp_run(void)
 			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
 #endif
-			itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
+			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
+			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
-			float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
-			feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
-			float sqr_step_speed = 0;
+			feed_convert = itp_cur_plan_block->feed_conversion;
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
@@ -306,8 +305,7 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
-				itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!itp_cur_plan_block->steps[i])
@@ -317,14 +315,11 @@ void itp_run(void)
 #endif
 			}
 
-			sqr_step_speed *= fast_flt_pow2(total_step_inv);
-			feed_convert *= fast_flt_sqrt(sqr_step_speed);
-
 			// flags block for recalculation of speeds
 			itp_needs_update = true;
 		}
 
-		uint32_t remaining_steps = itp_cur_plan_block->total_steps;
+		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -509,7 +504,7 @@ void itp_run(void)
 			}
 
 			// computes how many steps it will perform at this speed and frame window
-			segm_steps = (uint16_t)roundf(partial_distance);
+			segm_steps = (uint16_t)lroundf(partial_distance);
 		} while (segm_steps == 0);
 
 		avg_speed = fast_flt_div2(current_speed + initial_speed);
@@ -620,9 +615,9 @@ void itp_run(void)
 		}
 
 		itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
-		itp_cur_plan_block->total_steps = remaining_steps;
+		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
-		if (itp_cur_plan_block->total_steps == 0)
+		if (remaining_steps == 0)
 		{
 			itp_blk_buffer_write();
 			itp_cur_plan_block = NULL;
@@ -694,7 +689,7 @@ void itp_run(void)
 
 // overwrites previous values
 #ifdef ENABLE_BACKLASH_COMPENSATION
-			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->flags_u.flags_t.backlash_comp;
+			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->planner_flags.bit.backlash_comp;
 #endif
 			itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -705,11 +700,10 @@ void itp_run(void)
 			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
 #endif
-			itp_blk_data[itp_blk_data_write].total_steps = itp_cur_plan_block->total_steps << 1;
+			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
+			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
-			float total_step_inv = 1.0f / (float)itp_cur_plan_block->total_steps;
-			feed_convert = 60.f / (float)g_settings.step_per_mm[itp_cur_plan_block->main_stepper];
-			float sqr_step_speed = 0;
+			feed_convert = itp_cur_plan_block->feed_conversion;
 
 #ifdef STEP_ISR_SKIP_IDLE
 			itp_blk_data[itp_blk_data_write].idle_axis = 0;
@@ -719,12 +713,7 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
-#ifdef ENABLE_LASER_PPI
-				sqr_step_speed += (i != (STEPPER_COUNT - 1)) ? (fast_flt_pow2((float)itp_cur_plan_block->steps[i])) : 0;
-#else
-				sqr_step_speed += fast_flt_pow2((float)itp_cur_plan_block->steps[i]);
-#endif
-				itp_blk_data[itp_blk_data_write].errors[i] = itp_cur_plan_block->total_steps;
+				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!itp_cur_plan_block->steps[i])
@@ -733,9 +722,6 @@ void itp_run(void)
 				}
 #endif
 			}
-
-			sqr_step_speed *= fast_flt_pow2(total_step_inv);
-			feed_convert *= fast_flt_sqrt(sqr_step_speed);
 
 			// flags block for recalculation of speeds
 			itp_needs_update = true;
@@ -746,7 +732,7 @@ void itp_run(void)
 			half_speed_change = fast_flt_div2(half_speed_change);
 		}
 
-		uint32_t remaining_steps = itp_cur_plan_block->total_steps;
+		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 
 		sgm = &itp_sgm_data[itp_sgm_data_write];
 
@@ -969,9 +955,9 @@ void itp_run(void)
 			itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
 		}
 
-		itp_cur_plan_block->total_steps = remaining_steps;
+		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
 
-		if (itp_cur_plan_block->total_steps == 0)
+		if (remaining_steps == 0)
 		{
 			itp_blk_buffer_write();
 			itp_cur_plan_block = NULL;
@@ -1078,15 +1064,13 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
-	if (g_settings.homing_enabled)
+	if (!g_settings.homing_enabled)
 	{
-		kinematics_apply_inverse(origin, itp_rt_step_pos);
-	}
-	else
-	{
-		memset(itp_rt_step_pos, 0, sizeof(itp_rt_step_pos));
 		memset(origin, 0, (sizeof(float) * AXIS_COUNT));
 	}
+
+	// sync origin and steppers position
+	kinematics_apply_inverse(origin, itp_rt_step_pos);
 
 #if STEPPERS_ENCODERS_MASK != 0
 	encoders_itp_reset_rt_position(origin);
@@ -1136,7 +1120,7 @@ void itp_sync_spindle(void)
 #endif
 }
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 void itp_lock_stepper(uint8_t lockmask)
 {
 	itp_step_lock = lockmask;
@@ -1619,7 +1603,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		mcu_disable_global_isr(); // lock isr before clearin busy flag
 		itp_busy = false;
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 		stepbits &= ~itp_step_lock;
 #endif
 	}

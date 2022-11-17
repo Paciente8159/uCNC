@@ -157,7 +157,7 @@ NOTES:
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16-bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
 
-### Current µCNC supported hardware
+### µCNC current supported hardware
 
 µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
 
@@ -172,6 +172,16 @@ It can run on:
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth, lacks analog and input isr)
 - NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developed) 
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
+
+### µCNC current supported kinematics
+
+µCNC is designed to be support both linear and non-linear kinematics and can be extended to support other types of kineamtics.
+Currently µCNC supports the following kinematics:
+
+- Cartesian
+- CoreXY
+- Linear delta robot
+- Rotary delta robot
 
 ### µCNC roadmap
 

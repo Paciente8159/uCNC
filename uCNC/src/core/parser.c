@@ -123,6 +123,10 @@
 #define NUMBER_ISFLOAT 0x40
 #define NUMBER_ISNEGATIVE 0x80
 
+#ifndef GRBL_CMD_MAX_LEN
+#define GRBL_CMD_MAX_LEN 32
+#endif
+
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;
@@ -347,8 +351,8 @@ void parser_update_probe_pos(void)
 static uint8_t parser_grbl_command(void)
 {
 	serial_getc(); // eat $
-	unsigned char c = serial_getc();
-	unsigned char grbl_cmd_str[32];
+	unsigned char c = serial_peek();
+	unsigned char grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
@@ -367,16 +371,21 @@ static uint8_t parser_grbl_command(void)
 		}
 	}
 
-	while ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'))
+	do
 	{
+		c = serial_getc();
 		// toupper
 		if (c >= 'a' && c <= 'z')
 		{
 			c -= 32;
 		}
+
+		if (!(c >= 'A' && c <= 'Z'))
+		{
+			break;
+		}
 		grbl_cmd_str[grbl_cmd_len++] = c;
-		c = serial_getc();
-	}
+	} while ((grbl_cmd_len < GRBL_CMD_MAX_LEN));
 
 	grbl_cmd_str[grbl_cmd_len] = 0;
 
@@ -570,8 +579,15 @@ static uint8_t parser_grbl_command(void)
 		break;
 	}
 
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	if (mcu_custom_grbl_cmd((char*)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
+	{
+		return STATUS_OK;
+	}
+#endif
+
 #ifdef ENABLE_PARSER_MODULES
-	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len};
+	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len, c};
 	uint8_t newerror = EVENT_INVOKE(grbl_cmd, &args);
 	if (newerror >= GRBL_SYSTEM_CMD)
 	{
@@ -708,7 +724,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 		uint8_t code = (uint8_t)floorf(value);
 		// check mantissa
-		uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
+		uint8_t mantissa = (uint8_t)lroundf((value - code) * 100.0f);
 
 		switch (word)
 		{
@@ -1188,7 +1204,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	{
 		mc_update_tools(&block_data);
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
-		block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+		block_data.dwell = (uint16_t)lroundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #endif
 #if (defined(TOOL_WAIT_FOR_SPEED) && (TOOL_WAIT_FOR_SPEED_MAX_ERROR != 100))
 		float tool_speed_error = 0;
@@ -1218,7 +1234,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (new_state->groups.nonmodal == G4)
 	{
 		// calc dwell in milliseconds
-		block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p * 1000.f, 65535)));
+		block_data.dwell = MAX(block_data.dwell, (uint16_t)lroundf(MIN(words->p * 1000.0f, 65535)));
 		new_state->groups.nonmodal = 0;
 	}
 

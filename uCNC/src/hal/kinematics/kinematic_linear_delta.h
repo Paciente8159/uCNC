@@ -1,10 +1,10 @@
 /*
-	Name: kinematic_delta.h
+	Name: kinematic_linear_delta.h
 	Description: Custom kinematics definitions for delta machine
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 03/11/2022
+	Date: 06/02/2020
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,18 +16,28 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef KINEMATIC_DELTA_H
-#define KINEMATIC_DELTA_H
+#ifndef KINEMATIC_LINEAR_DELTA_H
+#define KINEMATIC_LINEAR_DELTA_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define KINEMATIC_TYPE_STR "D"
+#define KINEMATIC_TYPE_STR "LD"
 
 #if AXIS_COUNT < 3
-#error "Delta kinematics expects at least 3 axis"
+#error "Linear delta kinematics expects at least 3 axis"
+#endif
+
+#ifndef STEPPER0_ANGLE
+#define STEPPER0_ANGLE 30
+#endif
+#ifndef STEPPER1_ANGLE
+#define STEPPER1_ANGLE (STEPPER0_ANGLE + 120)
+#endif
+#ifndef STEPPER2_ANGLE
+#define STEPPER2_ANGLE (STEPPER0_ANGLE + 240)
 #endif
 
 // kinematic motion is done by segments to cope with non linear kinematics motion
@@ -42,6 +52,15 @@ extern "C"
 #define KINEMATICS_MOTION_SEGMENT_SIZE 1.0f
 #endif
 
+// minimum arm angle that is allowed for the delta (for software limits)
+#ifndef DELTA_ARM_MIN_ANGLE
+#define DELTA_ARM_MIN_ANGLE 20
+#endif
+
+// maximum angle (should not be bigger then 90º deg angle)
+#ifndef DELTA_ARM_MAX_ANGLE
+#define DELTA_ARM_MAX_ANGLE 89
+#endif
 
 	/*
 	Enable Skew compensation
