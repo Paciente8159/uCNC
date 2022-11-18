@@ -52,30 +52,32 @@ void ic74hc595_shift_io_pins(void)
 {
 	if (!ic74hc595_update_lock++)
 	{
-		mcu_clear_output(IC74HC595_LATCH);
-		for (uint8_t i = IC74HC595_COUNT; i != 0;)
+		do
 		{
-			i--;
-			uint8_t pinbyte = ic74hc595_io_pins[i];
-			for (uint8_t j = 0; j < 8; j++)
+			mcu_clear_output(IC74HC595_LATCH);
+			for (uint8_t i = IC74HC595_COUNT; i != 0;)
 			{
-				ic74hc595_delay();
-				mcu_clear_output(IC74HC595_CLK);
-				if (pinbyte & 0x80)
+				i--;
+				uint8_t pinbyte = ic74hc595_io_pins[i];
+				for (uint8_t j = 0; j < 8; j++)
 				{
-					mcu_set_output(IC74HC595_DATA);
+					ic74hc595_delay();
+					mcu_clear_output(IC74HC595_CLK);
+					if (pinbyte & 0x80)
+					{
+						mcu_set_output(IC74HC595_DATA);
+					}
+					else
+					{
+						mcu_clear_output(IC74HC595_DATA);
+					}
+					pinbyte <<= 1;
+					mcu_set_output(IC74HC595_CLK);
 				}
-				else
-				{
-					mcu_clear_output(IC74HC595_DATA);
-				}
-				pinbyte <<= 1;
-				mcu_set_output(IC74HC595_CLK);
 			}
-		}
-		ic74hc595_delay();
-		mcu_set_output(IC74HC595_LATCH);
-		ic74hc595_update_lock = 0;
+			ic74hc595_delay();
+			mcu_set_output(IC74HC595_LATCH);
+		} while (--ic74hc595_update_lock);
 	}
 }
 
