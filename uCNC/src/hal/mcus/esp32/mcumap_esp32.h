@@ -1124,6 +1124,9 @@ extern "C"
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
+#ifndef SPI_PORT
+#define SPI_PORT 0
+#endif
 #ifndef SPI_MODE
 #define SPI_MODE 0
 #endif
@@ -1199,6 +1202,7 @@ extern "C"
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
 
+/*
 #ifdef MCU_HAS_SPI
 	extern void esp32_spi_config(uint8_t mode, uint32_t freq);
 	extern uint8_t esp32_spi_xmit(uint8_t data);
@@ -1212,6 +1216,7 @@ extern "C"
 	{                        \
 	}
 #endif
+*/
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)

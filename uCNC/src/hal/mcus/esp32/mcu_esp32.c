@@ -27,6 +27,10 @@
 #ifdef MCU_HAS_I2C
 #include "driver/i2c.h"
 #endif
+#ifdef MCU_HAS_SPI
+#include "hal/spi_types.h"
+#include "driver/spi_master.h"
+#endif
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -482,7 +486,7 @@ void mcu_init(void)
 
 	// starts EEPROM before UART to enable WiFi and BT settings
 #ifndef RAM_ONLY_SETTINGS
-	esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
+	// esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
 	mcu_eeprom.size = 0;
@@ -553,7 +557,18 @@ void mcu_init(void)
 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
 
 #ifdef MCU_HAS_SPI
-	esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
+	// esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
+	spi_bus_config_t spiconf = {
+		.miso_io_num = SPI_SDI_BIT,
+		.mosi_io_num = SPI_SDO_BIT,
+		.sclk_io_num = SPI_CLK_BIT,
+		.quadwp_io_num = -1,
+		.quadhd_io_num = -1,
+		.max_transfer_sz = 32,
+	};
+	// Initialize the SPI bus
+	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_CH_AUTO);
+	mcu_spi_config(SPI_MODE, SPI_FREQ);
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -989,6 +1004,58 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 void mcu_start_timeout()
 {
 	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_SPI
+
+static spi_device_handle_t mcu_spi_handle;
+
+#ifndef mcu_spi_xmit
+uint8_t mcu_spi_xmit(uint8_t data)
+{
+	uint8_t rxdata = 0xFF;
+	spi_transaction_t spitran = {
+		.flags = 0,
+		.cmd = 0,
+		.addr = 0,
+		.length = 8, // Number of bits NOT number of bytes.
+		.rxlength = 8,
+		.tx_buffer = &data,
+		.rx_buffer = &rxdata};
+
+	spi_device_transmit(mcu_spi_handle, &spitran);
+
+	return rxdata;
+}
+#endif
+
+#ifndef mcu_spi_config
+void mcu_spi_config(uint8_t mode, uint32_t frequency)
+{
+	if (mcu_spi_handle)
+	{
+		spi_bus_remove_device(mcu_spi_handle);
+	}
+
+	spi_device_interface_config_t spiconfig = {
+		.command_bits = 0,
+		.address_bits = 0,
+		.dummy_bits = 0,
+		.mode = mode,
+		.duty_cycle_pos = 0,
+		.cs_ena_posttrans = 0,
+		.cs_ena_pretrans = 0,
+		.clock_speed_hz = frequency,
+		.input_delay_ns = 0,
+		.spics_io_num = -1,
+		.flags = 0,
+		.queue_size = 1,
+		.pre_cb = NULL,
+		.post_cb = NULL};
+
+	spi_bus_add_device(SPI_PORT, &spiconfig, &mcu_spi_handle);
 }
 #endif
 #endif

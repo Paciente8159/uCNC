@@ -87,6 +87,7 @@ extern "C"
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
+		char str[TX_BUFFER_SIZE];
 		char arg[ARG_MAX_LEN];
 		char has_arg = (next_char == '=');
 		memset(arg, 0, sizeof(arg));
@@ -111,7 +112,7 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[3], "ON"))
 			{
 				SerialBT.begin(BOARD_NAME);
-				// Serial.println("[MGS:Bluetooth enabled]");
+				protocol_send_feedback("Bluetooth enabled");
 				bt_on = 1;
 				settings_save(bt_settings_offset, &bt_on, 1);
 
@@ -121,7 +122,7 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[3], "OFF"))
 			{
 				SerialBT.end();
-				// Serial.println("[MGS:Bluetooth disabled]");
+				protocol_send_feedback("Bluetooth disabled");
 				bt_on = 0;
 				settings_save(bt_settings_offset, &bt_on, 1);
 
@@ -130,7 +131,6 @@ extern "C"
 		}
 #endif
 #ifdef ENABLE_WIFI
-
 		if (!strncmp(grbl_cmd_str, "WIFI", 4))
 		{
 			if (!strcmp(&grbl_cmd_str[4], "ON"))
@@ -141,30 +141,30 @@ extern "C"
 				case 1:
 					WiFi.mode(WIFI_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					// Serial.println("[MSG:Trying to connect to WiFi]");
+					protocol_send_feedback("Trying to connect to WiFi");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					// Serial.println("[MSG:AP started]");
+					protocol_send_feedback("AP started");
+					protocol_send_feedback("SSID>" BOARD_NAME);
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
 					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-					// Serial.println("[MSG:Trying to connect to WiFi]");
+					protocol_send_feedback("Trying to connect to WiFi");
 					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-					// Serial.println("[MSG:AP started]");
-					// Serial.print("[MSG:SSID>");
-					// Serial.print(WiFi.softAPSSID());
-					// Serial.println("]");
-					// Serial.print("[MSG:IP>");
-					// Serial.print(WiFi.softAPIP());
-					// Serial.println("]");
+					protocol_send_feedback("AP started");
+					protocol_send_feedback("SSID>" BOARD_NAME);
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
 					break;
 				}
 				wifi_settings.wifi_on = 1;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				// Serial.println("[MSG:WiFi settings saved]");
+				protocol_send_feedback("WiFi settings saved");
 
 				return STATUS_OK;
 			}
@@ -174,7 +174,7 @@ extern "C"
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				// Serial.println("[MSG:WiFi settings saved]");
+				protocol_send_feedback("WiFi settings saved");
 				return STATUS_OK;
 			}
 
@@ -185,18 +185,17 @@ extern "C"
 					uint8_t len = strlen(arg);
 					if (len > WIFI_SSID_MAX_LEN)
 					{
-						// Serial.println("[MSG:WiFi SSID is too long]");
+						protocol_send_feedback("WiFi SSID is too long");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
 					strcpy(wifi_settings.ssid, arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-					// Serial.println("[MSG:WiFi SSID modified]");
+					protocol_send_feedback("WiFi SSID modified");
 				}
 				else
 				{
-					// Serial.print("[MSG:SSID>");
-					// Serial.print(wifi_settings.ssid);
-					// Serial.println("]");
+					sprintf(str, "SSID>%s", wifi_settings.ssid);
+					protocol_send_feedback(str);
 				}
 				return STATUS_OK;
 			}
@@ -204,30 +203,24 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
+				protocol_send_feedback("Scanning Networks");
 				int numSsid = WiFi.scanNetworks();
 				if (numSsid == -1)
 				{
-					// Serial.println("[MSG:Failed to scan!]");
+					protocol_send_feedback("Failed to scan!");
 					while (true)
 						;
 				}
 
 				// print the list of networks seen:
-				// Serial.print("[MSG:");
-				// Serial.print(numSsid);
-				// Serial.println(" available networks]");
+				sprintf(str, "%d available networks", numSsid);
+				protocol_send_feedback(str);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					// Serial.print("[MSG:");
-					// Serial.print(netid);
-					// Serial.print(") ");
-					// Serial.print(WiFi.SSID(netid));
-					// Serial.print("\tSignal: ");
-					// Serial.print(WiFi.RSSI(netid));
-					// Serial.print(" dBm");
-					// Serial.println("]");
+					sprintf(str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
+					protocol_send_feedback(str);
 				}
 				return STATUS_OK;
 			}
@@ -235,14 +228,16 @@ extern "C"
 			if (!strcmp(&grbl_cmd_str[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				// Serial.println("[MSG:WiFi settings saved]");
+				protocol_send_feedback("WiFi settings saved");
+				return STATUS_OK;
 			}
 
 			if (!strcmp(&grbl_cmd_str[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
 				memset(&wifi_settings, 0, sizeof(wifi_settings_t));
-				// Serial.println("[MSG:WiFi settings deleted]");
+				protocol_send_feedback("WiFi settings deleted");
+				return STATUS_OK;
 			}
 
 			if (!strcmp(&grbl_cmd_str[4], "MODE"))
@@ -256,20 +251,20 @@ extern "C"
 					}
 					else
 					{
-						// Serial.println("[MSG:Invalid value. STA+AP(1), STA(2), AP(3)]");
+						protocol_send_feedback("Invalid value. STA+AP(1), STA(2), AP(3)");
 					}
 				}
 
 				switch (wifi_settings.wifi_mode)
 				{
 				case 0:
-					// Serial.println("[MSG:WiFi mode>STA+AP]");
+					protocol_send_feedback("WiFi mode>STA+AP");
 					break;
 				case 1:
-					// Serial.println("[MSG:WiFi mode>STA]");
+					protocol_send_feedback("WiFi mode>STA");
 					break;
 				case 2:
-					// Serial.println("[MSG:WiFi mode>AP]");
+					protocol_send_feedback("WiFi mode>AP");
 					break;
 				}
 				return STATUS_OK;
@@ -280,11 +275,11 @@ extern "C"
 				uint8_t len = strlen(arg);
 				if (len > WIFI_SSID_MAX_LEN)
 				{
-					// Serial.println("[MSG:WiFi pass is too long]");
+					protocol_send_feedback("WiFi pass is too long");
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
 				strcpy(wifi_settings.pass, arg);
-				// Serial.println("[MSG:WiFi password modified]");
+				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
 		}
@@ -298,6 +293,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
+		char str[TX_BUFFER_SIZE];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -312,20 +308,18 @@ extern "C"
 				return false;
 			}
 			next_info = mcu_millis() + 30000;
-			// Serial.println("[MSG:Disconnected from WiFi]");
+			protocol_send_feedback("Disconnected from WiFi");
 			return false;
 		}
 
 		if (!connected)
 		{
 			connected = true;
-			// Serial.println("[MSG:Connected to WiFi]");
-			// Serial.print("[MSG:AP>");
-			// Serial.print(WiFi.SSID());
-			// Serial.println("]");
-			// Serial.print("[MSG:IP>");
-			// Serial.print(WiFi.localIP());
-			// Serial.println("]");
+			protocol_send_feedback("Connected to WiFi");
+			sprintf(str, "SSID>%s", wifi_settings.ssid);
+			protocol_send_feedback(str);
+			sprintf(str, "IP>%s", WiFi.localIP().toString().c_str());
+			protocol_send_feedback(str);
 		}
 
 		if (server.hasClient())
@@ -390,7 +384,7 @@ extern "C"
 #endif
 	}
 
-	void esp32_wifi_bt_flush(char* buffer)
+	void esp32_wifi_bt_flush(char *buffer)
 	{
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
