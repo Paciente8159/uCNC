@@ -555,17 +555,21 @@ void mcu_init(void)
 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
 
 #ifdef MCU_HAS_SPI
-	// esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
 	spi_bus_config_t spiconf = {
 		.miso_io_num = SPI_SDI_BIT,
 		.mosi_io_num = SPI_SDO_BIT,
 		.sclk_io_num = SPI_CLK_BIT,
 		.quadwp_io_num = -1,
 		.quadhd_io_num = -1,
-		.max_transfer_sz = 32,
-	};
+		.data4_io_num = -1,
+		.data5_io_num = -1,
+		.data6_io_num = -1,
+		.data7_io_num = -1,
+		.max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
+		.flags = 0,
+		.intr_flags = 0};
 	// Initialize the SPI bus
-	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_CH_AUTO);
+	spi_bus_initialize(SPI_PORT, &spiconf, SPI_DMA_DISABLED);
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 #endif
 
@@ -1014,16 +1018,12 @@ static spi_device_handle_t mcu_spi_handle;
 uint8_t mcu_spi_xmit(uint8_t data)
 {
 	uint8_t rxdata = 0xFF;
-	spi_transaction_t spitran = {
-		.flags = 0,
-		.cmd = 0,
-		.addr = 0,
-		.length = 8, // Number of bits NOT number of bytes.
-		.rxlength = 8,
-		.tx_buffer = &data,
-		.rx_buffer = &rxdata};
+	spi_transaction_t spi_trans = {0};
+	spi_trans.length = 8; // Number of bits NOT number of bytes.
+	spi_trans.tx_buffer = &data;
+	spi_trans.rx_buffer = &rxdata;
 
-	spi_device_transmit(mcu_spi_handle, &spitran);
+	spi_device_transmit(mcu_spi_handle, &spi_trans);
 
 	return rxdata;
 }
@@ -1032,28 +1032,13 @@ uint8_t mcu_spi_xmit(uint8_t data)
 #ifndef mcu_spi_config
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
-	if (mcu_spi_handle)
-	{
-		spi_bus_remove_device(mcu_spi_handle);
-	}
+	spi_bus_remove_device(mcu_spi_handle);
+	spi_device_interface_config_t mcu_spi_conf = {0};
+	mcu_spi_conf.clock_speed_hz = frequency;
+	mcu_spi_conf.spics_io_num = -1;
+	mcu_spi_conf.queue_size = 1;
 
-	spi_device_interface_config_t spiconfig = {
-		.command_bits = 0,
-		.address_bits = 0,
-		.dummy_bits = 0,
-		.mode = mode,
-		.duty_cycle_pos = 0,
-		.cs_ena_posttrans = 0,
-		.cs_ena_pretrans = 0,
-		.clock_speed_hz = frequency,
-		.input_delay_ns = 0,
-		.spics_io_num = -1,
-		.flags = 0,
-		.queue_size = 1,
-		.pre_cb = NULL,
-		.post_cb = NULL};
-
-	spi_bus_add_device(SPI_PORT, &spiconfig, &mcu_spi_handle);
+	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
 }
 #endif
 #endif

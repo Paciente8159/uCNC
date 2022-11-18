@@ -1125,7 +1125,7 @@ extern "C"
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
 #ifndef SPI_PORT
-#define SPI_PORT 0
+#define SPI_PORT 2
 #endif
 #ifndef SPI_MODE
 #define SPI_MODE 0

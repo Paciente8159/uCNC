@@ -85,6 +85,9 @@ extern "C"
 #define SPI_SDI_BIT 19
 #define SPI_CS_BIT 5
 
+//sd card detect
+#define DIN19_BIT 34
+
 // include the IO expander
 #include "../../../modules/ic74hc595.h"
 
