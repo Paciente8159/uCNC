@@ -477,15 +477,6 @@ void mcu_putc(char c)
 #endif
 }
 
-char mcu_getc(void)
-{
-#ifdef MCU_HAS_UART
-	return COM_INREG;
-#else
-	return 0;
-#endif
-}
-
 void mcu_init(void)
 {
 	mcu_clocks_init();

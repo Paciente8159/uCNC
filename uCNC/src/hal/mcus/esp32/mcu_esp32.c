@@ -39,11 +39,9 @@
 static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-extern void esp32_wifi_bt_init(void);
-extern void esp32_wifi_bt_flush(char *buffer);
-extern unsigned char esp32_wifi_bt_read(void);
-extern bool esp32_wifi_bt_rx_ready(void);
-extern void esp32_wifi_bt_process(void);
+void esp32_wifi_bt_init(void);
+void esp32_wifi_bt_flush(char *buffer);
+void esp32_wifi_bt_process(void);
 
 #ifndef RAM_ONLY_SETTINGS
 #include <nvs.h>

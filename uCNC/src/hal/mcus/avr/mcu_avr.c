@@ -522,12 +522,6 @@ void mcu_putc(char c)
 #endif
 }
 
-char mcu_getc(void)
-{
-	loop_until_bit_is_set(UCSRA, RXC);
-	return COM_INREG;
-}
-
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {

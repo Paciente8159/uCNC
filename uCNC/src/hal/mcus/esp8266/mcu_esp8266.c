@@ -496,16 +496,6 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return esp8266_uart_rx_ready();
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
@@ -519,19 +509,6 @@ void mcu_putc(char c)
 #endif
 
 	esp8266_uart_write(c);
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-	while (!mcu_rx_ready())
-		;
-	return esp8266_uart_read();
 }
 #endif
 

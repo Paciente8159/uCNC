@@ -162,10 +162,9 @@ extern "C"
 					protocol_send_feedback(str);
 					break;
 				}
+
 				wifi_settings.wifi_on = 1;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback("WiFi settings saved");
-
 				return STATUS_OK;
 			}
 
@@ -174,7 +173,6 @@ extern "C"
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback("WiFi settings saved");
 				return STATUS_OK;
 			}
 
@@ -455,8 +453,6 @@ extern "C"
 #endif
 
 #ifdef ENABLE_WIFI
-		httpServer.handleClient();
-
 		if (esp32_wifi_clientok())
 		{
 			while (serverClient.available() > 0)
@@ -465,6 +461,8 @@ extern "C"
 				mcu_com_rx_cb((unsigned char)serverClient.read());
 			}
 		}
+
+		httpServer.handleClient();
 #endif
 	}
 }
