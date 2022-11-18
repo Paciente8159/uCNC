@@ -19,8 +19,6 @@
 #ifdef ESP32
 #include <Arduino.h>
 #include "esp_task_wdt.h"
-#include "esp_ipc.h"
-#include "driver/uart.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -85,9 +83,6 @@ wifi_settings_t wifi_settings;
 extern "C"
 {
 #include "../../../cnc.h"
-
-	static char esp32_tx_buffer[TX_BUFFER_SIZE + 2];
-	static uint8_t esp32_tx_buffer_counter;
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
@@ -357,28 +352,8 @@ extern "C"
 		return false;
 	}
 
-	void uart_events_core0(void *arg)
+	void esp32_wifi_bt_init(void)
 	{
-		uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
-	}
-
-	void esp32_uart_init(void)
-	{
-
-		const uart_config_t uart_config = {
-			.baud_rate = BAUDRATE,
-			.data_bits = UART_DATA_8_BITS,
-			.parity = UART_PARITY_DISABLE,
-			.stop_bits = UART_STOP_BITS_1,
-			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-			.source_clk = UART_SCLK_APB};
-		// We won't use a buffer for sending data.
-		esp_ipc_call_blocking(0, uart_events_core0, NULL);
-		uart_param_config(COM_PORT, &uart_config);
-		uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-
-		////Serial.begin(BAUDRATE);
-		// esp_ipc_call_blocking(0, uart_core0_init, NULL);
 #ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
@@ -413,40 +388,28 @@ extern "C"
 			SerialBT.begin(BOARD_NAME);
 		}
 #endif
-		esp32_tx_buffer_counter = 0;
 	}
 
-	void esp32_uart_flush(void)
+	void esp32_wifi_bt_flush(char* buffer)
 	{
-		if (!esp32_tx_buffer_counter)
-		{
-			return;
-		}
-		uart_write_bytes(COM_PORT, esp32_tx_buffer, esp32_tx_buffer_counter);
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			serverClient.println(esp32_tx_buffer);
+			serverClient.println(buffer);
 			serverClient.flush();
 		}
 #endif
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
-			SerialBT.println(esp32_tx_buffer);
+			SerialBT.println(buffer);
 			SerialBT.flush();
 		}
 #endif
-		esp32_tx_buffer_counter = 0;
 	}
 
-	unsigned char esp32_uart_read(void)
+	unsigned char esp32_wifi_bt_read(void)
 	{
-		if (Serial.available() > 0)
-		{
-			return (unsigned char)Serial.read();
-		}
-
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
@@ -467,26 +430,8 @@ extern "C"
 		return (unsigned char)0;
 	}
 
-	void esp32_uart_write(char c)
+	bool esp32_wifi_bt_rx_ready(void)
 	{
-		if (esp32_tx_buffer_counter > TX_BUFFER_SIZE)
-		{
-			esp32_tx_buffer[esp32_tx_buffer_counter++] = 0;
-			esp32_uart_flush();
-		}
-
-		esp32_tx_buffer[esp32_tx_buffer_counter++] = c;
-		if (c == '\n')
-		{
-			esp32_uart_flush();
-		}
-	}
-
-	bool esp32_uart_rx_ready(void)
-	{
-		size_t available_chars = 0;
-		uart_get_buffered_data_len(COM_PORT, &available_chars);
-
 		bool wifiready = false;
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
@@ -499,25 +444,11 @@ extern "C"
 #ifdef ENABLE_BLUETOOTH
 		btready = (SerialBT.available() > 0);
 #endif
-		return ((available_chars != 0) || wifiready || btready);
+		return (wifiready || btready);
 	}
 
-	bool esp32_uart_tx_ready(void)
+	void esp32_wifi_bt_process(void)
 	{
-		return (esp32_tx_buffer_counter != TX_BUFFER_SIZE);
-	}
-
-	void esp32_uart_process(void)
-	{
-		size_t available_chars = 0;
-		char data[RX_BUFFER_SIZE];
-		int rxBytes = uart_read_bytes(COM_PORT, data, RX_BUFFER_CAPACITY, 0);
-		for (int i = 0; i < rxBytes; i++)
-		{
-			esp_task_wdt_reset();
-			mcu_com_rx_cb((unsigned char)data[i]);
-		}
-
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{

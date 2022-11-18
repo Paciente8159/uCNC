@@ -22,9 +22,10 @@
 #include "esp_timer.h"
 #include "esp_task_wdt.h"
 #include "esp_ipc.h"
-#include <driver/timer.h>
+#include "driver/uart.h"
+#include "driver/timer.h"
 #ifdef MCU_HAS_I2C
-#include <driver/i2c.h>
+#include "driver/i2c.h"
 #endif
 #include <string.h>
 #include <stdbool.h>
@@ -34,19 +35,28 @@
 static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void esp32_uart_init(void);
-char esp32_uart_read(void);
-void esp32_uart_write(char c);
-bool esp32_uart_rx_ready(void);
-bool esp32_uart_tx_ready(void);
-void esp32_uart_flush(void);
-void esp32_uart_process(void);
+extern void esp32_wifi_bt_init(void);
+extern void esp32_wifi_bt_flush(char *buffer);
+extern unsigned char esp32_wifi_bt_read(void);
+extern bool esp32_wifi_bt_rx_ready(void);
+extern void esp32_wifi_bt_process(void);
 
 #ifndef RAM_ONLY_SETTINGS
-void esp32_eeprom_init(int size);
-uint8_t esp32_eeprom_read(uint16_t address);
-void esp32_eeprom_write(uint16_t address, uint8_t value);
-void esp32_eeprom_flush(void);
+#include <nvs.h>
+#include <esp_partition.h>
+// Non volatile memory
+#ifndef FLASH_EEPROM_SIZE
+#define FLASH_EEPROM_SIZE 1024
+#endif
+typedef struct
+{
+	nvs_handle_t nvs_handle;
+	size_t size;
+	bool dirty;
+	uint8_t data[FLASH_EEPROM_SIZE];
+} flash_eeprom_t;
+
+static flash_eeprom_t mcu_eeprom;
 #endif
 
 #ifdef MCU_HAS_SPI
@@ -419,34 +429,12 @@ void mcu_pwm_freq_config(uint16_t freq)
 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)roundf((float)(getApbFrequency() >> 9) / (float)freq));
 }
 
-void mcu_pwm_init(void *arg)
+void mcu_core0_tasks_init(void *arg)
 {
-	// initialize rtc timer
-	/* Select and initialize basic parameters of the timer */
-	timer_config_t config = {
-		.divider = 2,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
-	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &config);
-
-	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
-
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
-	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	// register PWM isr
 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
-
-	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
-
-	// vTaskSuspend(NULL);
-	// for (;;)
-	// {
-	// }
+	// install UART driver handler
+	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 }
 
 void mcu_rtc_task(void *arg)
@@ -490,36 +478,86 @@ void mcu_init(void)
 	gpio_install_isr_service(0);
 #endif
 
-	// initialize pwm timer (core 0)
-	esp_ipc_call_blocking(0, mcu_pwm_init, NULL);
-
 	mcu_io_init();
+
 	// starts EEPROM before UART to enable WiFi and BT settings
 #ifndef RAM_ONLY_SETTINGS
-	esp32_eeprom_init(1024); // 1K Emulated EEPROM
+	esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
+
+	// starts nvs
+	mcu_eeprom.size = 0;
+	memset(mcu_eeprom.data, 0, FLASH_EEPROM_SIZE);
+	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
+	{
+		// determines the maximum sector size of NVS that can be read/write
+		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
+		if (FLASH_EEPROM_SIZE > mcu_eeprom.size)
+		{
+			log_e("eeprom does not have enough space");
+			mcu_eeprom.size = 0;
+		}
+
+		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, &mcu_eeprom.size);
+	}
+	else
+	{
+		log_e("eeprom failed to open");
+	}
 #endif
-	esp32_uart_init();
 
-	// initialize rtc timer
+	// initialize UART
+	const uart_config_t uartconfig = {
+		.baud_rate = BAUDRATE,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+		.source_clk = UART_SCLK_APB};
+	// We won't use a buffer for sending data.
+	uart_param_config(COM_PORT, &uartconfig);
+	uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+	// initialize PWM timer
+	/* Select and initialize basic parameters of the timer */
+	timer_config_t pwmconfig = {
+		.divider = 2,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &pwmconfig);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
+	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
+
+	// inititialize ITP timer
+	timer_config_t itpconfig = {
+		.divider = 80,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+
+	// initialize rtc timer (currently on core 1)
 	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
-	// xTaskCreatePinnedToCore(mcu_pwm_task, "pwmTask", 1024, NULL, 0, NULL, 0);
 
-	/*uint16_t timerdiv = (uint16_t)(getApbFrequency() / 128000UL);
-	esp32_rtc_timer = timerBegin(PWM_TIMER, timerdiv, true);
-	timerAttachInterrupt(esp32_rtc_timer, &mcu_rtc_isr, true);
-	timerAlarmWrite(esp32_rtc_timer, 1, true);
-	timerAlarmEnable(esp32_rtc_timer);
-
-	// initialize stepper timer
-	timerdiv = (uint16_t)(getApbFrequency() / (F_STEP_MAX << 1));
-	esp32_step_timer = timerBegin(ITP_TIMER, timerdiv, true);*/
+	// launches isr tasks that will run on core 0
+	// currently it's running PWM and UART on core 0
+	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
 
 #ifdef MCU_HAS_SPI
 	esp32_spi_init(SPI_FREQ, SPI_MODE, SPI_CLK, SPI_SDI, SPI_SDO);
 #endif
 
 #ifdef MCU_HAS_I2C
-	i2c_config_t conf = {
+	i2c_config_t i2cconf = {
 		.mode = I2C_MODE_MASTER,
 		.sda_io_num = I2C_SDA_BIT, // select GPIO specific to your project
 		.sda_pullup_en = GPIO_PULLUP_ENABLE,
@@ -528,10 +566,13 @@ void mcu_init(void)
 		.master.clk_speed = I2C_FREQ, // select frequency specific to your project
 		.clk_flags = 0,				  // you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here
 	};
-	i2c_param_config((i2c_port_t)I2C_PORT, &conf);
+	i2c_param_config((i2c_port_t)I2C_PORT, &i2cconf);
 	i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
 #endif
 
+	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
+
+	esp32_wifi_bt_init();
 	mcu_enable_global_isr();
 }
 
@@ -587,23 +628,17 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
+/*UART*/
+static char mcu_tx_buffer[TX_BUFFER_SIZE + 2];
+static uint8_t mcu_tx_buffer_counter;
+
 /**
  * checks if the serial hardware of the MCU is ready do send the next char
  * */
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-	return esp32_uart_tx_ready();
-}
-#endif
-
-/**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return esp32_uart_rx_ready();
+	return (mcu_tx_buffer_counter < TX_BUFFER_SIZE);
 }
 #endif
 
@@ -615,25 +650,16 @@ bool mcu_rx_ready(void)
 
 void mcu_putc(char c)
 {
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
+	mcu_tx_buffer[mcu_tx_buffer_counter++] = c;
 
-	esp32_uart_write(c);
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-	while (!mcu_rx_ready())
-		;
-	return esp32_uart_read();
+	// autoflush if full
+	if ((mcu_tx_buffer_counter >= TX_BUFFER_SIZE) || (c == '\n'))
+	{
+		mcu_tx_buffer[mcu_tx_buffer_counter] = 0;
+		uart_write_bytes(COM_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+		esp32_wifi_bt_flush(mcu_tx_buffer);
+		mcu_tx_buffer_counter = 0;
+	}
 }
 #endif
 
@@ -697,21 +723,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 static volatile bool mcu_itp_timer_running;
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	/*timerAttachInterrupt(esp32_step_timer, &mcu_itp_isr, true);
-	timerAlarmWrite(esp32_step_timer, (uint32_t)ticks * (uint32_t)prescaller, true);
-	timerAlarmEnable(esp32_step_timer); // Just Enable*/
-
 	if (!mcu_itp_timer_running)
 	{
-		timer_config_t config = {
-			.divider = 80,
-			.counter_dir = TIMER_COUNT_UP,
-			.counter_en = TIMER_PAUSE,
-			.alarm_en = TIMER_ALARM_EN,
-			.auto_reload = true,
-		}; // default clock source is APB
-		timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &config);
-
 		/* Timer's counter will initially start from value below.
 		   Also, if auto_reload is set, this value will be automatically reload on alarm */
 		timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
@@ -787,7 +800,16 @@ void mcu_dotasks(void)
 {
 	// reset WDT
 	esp_task_wdt_reset();
-	esp32_uart_process();
+
+	// loop through received data
+	char rxdata[RX_BUFFER_SIZE];
+	int rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	for (int i = 0; i < rxlen; i++)
+	{
+		mcu_com_rx_cb((unsigned char)rxdata[i]);
+	}
+
+	esp32_wifi_bt_process();
 }
 
 // Non volatile memory
@@ -797,10 +819,14 @@ void mcu_dotasks(void)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS
-	return esp32_eeprom_read(address);
-#else
-	return 0;
+	// return esp32_eeprom_read(address);
+	size_t size = mcu_eeprom.size;
+	if (size)
+	{
+		return mcu_eeprom.data[address];
+	}
 #endif
+	return 0;
 }
 
 /**
@@ -809,7 +835,13 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 #ifndef RAM_ONLY_SETTINGS
-	esp32_eeprom_write(address, value);
+	// esp32_eeprom_write(address, value);
+	size_t size = mcu_eeprom.size;
+	if (size)
+	{
+		mcu_eeprom.dirty |= (mcu_eeprom.data[address] != value);
+		mcu_eeprom.data[address] = value;
+	}
 #endif
 }
 
@@ -819,7 +851,13 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 void mcu_eeprom_flush(void)
 {
 #ifndef RAM_ONLY_SETTINGS
-	esp32_eeprom_flush();
+	// esp32_eeprom_flush();
+	// esp32_eeprom_write(address, value);
+	if (mcu_eeprom.size && mcu_eeprom.dirty)
+	{
+		nvs_set_blob(mcu_eeprom.nvs_handle, "eeprom", mcu_eeprom.data, mcu_eeprom.size);
+		nvs_commit(mcu_eeprom.nvs_handle);
+	}
 #endif
 }
 
