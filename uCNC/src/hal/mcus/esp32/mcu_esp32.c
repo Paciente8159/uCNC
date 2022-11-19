@@ -69,6 +69,7 @@ hw_timer_t *esp32_step_timer;
 
 // pwm channels
 uint8_t esp32_pwm[16];
+uint16_t esp32_pwm_mask;
 // pwm resolution
 uint8_t esp32_pwm_res;
 IRAM_ATTR void mcu_pwm_isr(void *arg)
@@ -77,7 +78,7 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 	uint8_t resolution = esp32_pwm_res;
 #ifdef IC74HC595_HAS_PWMS
 	static uint16_t pwm_mask_last = 0;
-	uint16_t pwm_mask = 0xFFFF;
+	uint16_t pwm_mask = esp32_pwm_mask;
 #endif
 	// software PWM
 	if ((++pwm_counter) >> resolution)

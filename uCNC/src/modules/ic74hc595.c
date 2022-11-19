@@ -45,23 +45,27 @@
 #define ic74hc595_delay() mcu_delay_cycles(IC74HC595_DELAY_CYCLES)
 
 #if (IC74HC595_COUNT != 0)
-uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+static uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 static volatile uint8_t ic74hc595_update_lock;
 
 void ic74hc595_shift_io_pins(void)
 {
+	uint8_t pins[IC74HC595_COUNT];
 	if (!ic74hc595_update_lock++)
 	{
 		do
 		{
+			memcpy(pins, ic74hc595_io_pins, IC74HC595_COUNT);
 			mcu_clear_output(IC74HC595_LATCH);
 			for (uint8_t i = IC74HC595_COUNT; i != 0;)
 			{
 				i--;
-				uint8_t pinbyte = ic74hc595_io_pins[i];
+				uint8_t pinbyte = pins[i];
 				for (uint8_t j = 0; j < 8; j++)
 				{
+#if (IC74HC595_DELAY_CYCLES)
 					ic74hc595_delay();
+#endif
 					mcu_clear_output(IC74HC595_CLK);
 					if (pinbyte & 0x80)
 					{
@@ -75,7 +79,9 @@ void ic74hc595_shift_io_pins(void)
 					mcu_set_output(IC74HC595_CLK);
 				}
 			}
+#if (IC74HC595_DELAY_CYCLES)
 			ic74hc595_delay();
+#endif
 			mcu_set_output(IC74HC595_LATCH);
 		} while (--ic74hc595_update_lock);
 	}
