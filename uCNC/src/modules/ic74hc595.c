@@ -47,7 +47,6 @@
 #if (IC74HC595_COUNT != 0)
 static uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 static volatile uint8_t ic74hc595_update_lock;
-
 void ic74hc595_shift_io_pins(void)
 {
 	uint8_t pins[IC74HC595_COUNT];
@@ -60,14 +59,17 @@ void ic74hc595_shift_io_pins(void)
 			for (uint8_t i = IC74HC595_COUNT; i != 0;)
 			{
 				i--;
+#if (defined(IC74HC595_USE_HW_SPI) && defined(MCU_HAS_SPI))
+				mcu_spi_xmit(pins[i]);
+#else
 				uint8_t pinbyte = pins[i];
-				for (uint8_t j = 0; j < 8; j++)
+				for (uint8_t j = 0x80; j != 0; j >>= 1)
 				{
 #if (IC74HC595_DELAY_CYCLES)
 					ic74hc595_delay();
 #endif
 					mcu_clear_output(IC74HC595_CLK);
-					if (pinbyte & 0x80)
+					if (pinbyte & j)
 					{
 						mcu_set_output(IC74HC595_DATA);
 					}
@@ -75,9 +77,9 @@ void ic74hc595_shift_io_pins(void)
 					{
 						mcu_clear_output(IC74HC595_DATA);
 					}
-					pinbyte <<= 1;
 					mcu_set_output(IC74HC595_CLK);
 				}
+#endif
 			}
 #if (IC74HC595_DELAY_CYCLES)
 			ic74hc595_delay();

@@ -738,30 +738,6 @@ extern "C"
 #error "The maximum number of chained IC74HC595 is 7"
 #endif
 
-	// #define _IC74HC595_DELAY_CYCLES_0
-	// #define _IC74HC595_DELAY_CYCLES_1 mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_2 _IC74HC595_DELAY_CYCLES_1();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_3 _IC74HC595_DELAY_CYCLES_2();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_4 _IC74HC595_DELAY_CYCLES_3();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_5 _IC74HC595_DELAY_CYCLES_4();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_6 _IC74HC595_DELAY_CYCLES_5();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_7 _IC74HC595_DELAY_CYCLES_6();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_8 _IC74HC595_DELAY_CYCLES_7();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_9 _IC74HC595_DELAY_CYCLES_8();mcu_nop()
-	// #define _IC74HC595_DELAY_CYCLES_10 _IC74HC595_DELAY_CYCLES_9();mcu_nop()
-
-#define _IC74HC595_DELAY(X) \
-	{                       \
-		if (X)              \
-		{                   \
-			uint8_t t = X;  \
-			do              \
-			{               \
-			} while (--t);  \
-		}                   \
-	}
-#define IC74HC595_DELAY(X) _IC74HC595_DELAY(X)
-
 	void ic74hc595_set_steps(uint8_t mask);
 	void ic74hc595_toggle_steps(uint8_t mask);
 	void ic74hc595_set_dirs(uint8_t mask);
