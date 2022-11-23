@@ -48,7 +48,14 @@ extern "C"
 #define DOUT6_BIT 26
 // uses 3 x 74HS595
 #define IC74HC595_COUNT 3
-#define IC74HC595_DELAY_CYCLES 0
+// #define IC74HC595_DELAY_CYCLES 0
+
+//Use I2S to shift data in ESP32
+#define IC74HC595_CUSTOM_SHIFT_IO //Enables custom MCU data shift transmission. In ESP32 that is via I2S
+#define IC74HC595_I2S_WS 26
+#define IC74HC595_I2S_CLK 25
+#define IC74HC595_I2S_DATA 27
+// #define IC74HC595_I2S_PORT 0
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1

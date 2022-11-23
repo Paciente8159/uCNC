@@ -2522,6 +2522,17 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
+#ifndef IC74HC595_I2S_PORT
+#define IC74HC595_I2S_PORT 0
+#endif
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#ifdef IC74HC595_COUNT
+#undef IC74HC595_COUNT
+#endif
+#define IC74HC595_COUNT 4
+#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT,)
+#endif
+
 #define mcu_config_output(X)                                              \
 	{                                                                     \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                       \

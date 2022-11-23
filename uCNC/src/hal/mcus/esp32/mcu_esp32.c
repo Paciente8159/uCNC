@@ -24,6 +24,7 @@
 #include "esp_ipc.h"
 #include "driver/uart.h"
 #include "driver/timer.h"
+#include "soc/i2s_struct.h"
 #ifdef MCU_HAS_I2C
 #include "driver/i2c.h"
 #endif
@@ -61,12 +62,30 @@ typedef struct
 static flash_eeprom_t mcu_eeprom;
 #endif
 
-#ifdef MCU_HAS_SPI
-extern void esp32_spi_init(uint32_t freq, uint8_t mode, int8_t clk, int8_t sdi, int8_t sdo);
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#if IC74HC595_COUNT != 4
+#error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
+#endif
+#include "driver/i2s.h"
 #endif
 
 hw_timer_t *esp32_step_timer;
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+extern uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+static volatile uint8_t ic74hc595_update_lock;
+void ic74hc595_shift_io_pins(void)
+{
+	if (!ic74hc595_update_lock++)
+	{
+		do
+		{
+			uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
+			I2SREG.conf_single_data = data;
+		} while (--ic74hc595_update_lock);
+	}
+}
+#endif
 // pwm channels
 uint8_t esp32_pwm[16];
 uint16_t esp32_pwm_mask;
@@ -554,6 +573,7 @@ void mcu_init(void)
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
+	// mcu_core0_tasks_init(NULL);
 
 #ifdef MCU_HAS_SPI
 	spi_bus_config_t spiconf = {
@@ -586,6 +606,51 @@ void mcu_init(void)
 	};
 	i2c_param_config((i2c_port_t)I2C_PORT, &i2cconf);
 	i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);
+#endif
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	i2s_config_t i2s_config = {
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
+		.sample_rate = 156250UL,			   // 312500KHz * 32bit * 2 channels = 20MHz
+		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
+		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.dma_buf_count = 2,
+		.dma_buf_len = 8,
+		.use_apll = false,
+		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1 // Interrupt level 1
+	};
+
+	i2s_pin_config_t pin_config = {
+		.bck_io_num = IC74HC595_I2S_CLK,
+		.ws_io_num = IC74HC595_I2S_WS,
+		.data_out_num = IC74HC595_I2S_DATA,
+		.data_in_num = -1 // Not used
+	};
+
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, NULL);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
+	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
+	I2SREG.clkm_conf.clkm_div_num = 4; // reset value of 4
+	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
+	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+
+	//
+	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
+	I2SREG.conf_chan.tx_chan_mod = 3; //
+	I2SREG.sample_rate_conf.tx_bits_mod = 32;
+
+	I2SREG.conf_single_data = 0;
+
+	// Use normal clock format, (WS is aligned with the last bit)
+	I2SREG.conf.tx_msb_shift = 0;
+	I2SREG.conf.rx_msb_shift = 0;
+
+	// Disable TX interrupts
+	I2SREG.int_ena.out_eof = 0;
+	I2SREG.int_ena.out_dscr_err = 0;
+
 #endif
 
 	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
