@@ -28,6 +28,9 @@ extern "C"
 #include "driver/timer.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
+#ifndef IC74HC595_HAS_PWMS
+#include "driver/ledc.h"
+#endif
 
 /*
 	Generates all the interface definitions.
@@ -2451,6 +2454,201 @@ extern "C"
 #define DIO129_ADC_CHANNEL ANALOG15_ADC_CHANNEL
 #endif
 
+	/*PWM's*/
+
+#ifdef PWM0_CHANNEL
+#define PWM0_LEDCCHANNEL (PWM0_CHANNEL & 0x07)
+#if (PWM0_CHANNEL < 8)
+#define PWM0_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM0_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO24_CHANNEL PWM0_CHANNEL
+#define DIO24_TIMER PWM0_TIMER
+#define DIO24_LEDCCHANNEL PWM0_LEDCCHANNEL
+#define DIO24_SPEEDMODE PWM0_SPEEDMODE
+#endif
+#ifdef PWM1_CHANNEL
+#define PWM1_LEDCCHANNEL (PWM1_CHANNEL & 0x07)
+#if (PWM1_CHANNEL < 8)
+#define PWM1_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM1_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO25_CHANNEL PWM1_CHANNEL
+#define DIO25_TIMER PWM1_TIMER
+#define DIO25_LEDCCHANNEL PWM1_LEDCCHANNEL
+#define DIO25_SPEEDMODE PWM1_SPEEDMODE
+#endif
+#ifdef PWM2_CHANNEL
+#define PWM2_LEDCCHANNEL (PWM2_CHANNEL & 0x07)
+#if (PWM2_CHANNEL < 8)
+#define PWM2_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM2_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO26_CHANNEL PWM2_CHANNEL
+#define DIO26_TIMER PWM2_TIMER
+#define DIO26_LEDCCHANNEL PWM2_LEDCCHANNEL
+#define DIO26_SPEEDMODE PWM2_SPEEDMODE
+#endif
+#ifdef PWM3_CHANNEL
+#define PWM3_LEDCCHANNEL (PWM3_CHANNEL & 0x07)
+#if (PWM3_CHANNEL < 8)
+#define PWM3_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM3_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO27_CHANNEL PWM3_CHANNEL
+#define DIO27_TIMER PWM3_TIMER
+#define DIO27_LEDCCHANNEL PWM3_LEDCCHANNEL
+#define DIO27_SPEEDMODE PWM3_SPEEDMODE
+#endif
+#ifdef PWM4_CHANNEL
+#define PWM4_LEDCCHANNEL (PWM4_CHANNEL & 0x07)
+#if (PWM4_CHANNEL < 8)
+#define PWM4_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM4_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO28_CHANNEL PWM4_CHANNEL
+#define DIO28_TIMER PWM4_TIMER
+#define DIO28_LEDCCHANNEL PWM4_LEDCCHANNEL
+#define DIO28_SPEEDMODE PWM4_SPEEDMODE
+#endif
+#ifdef PWM5_CHANNEL
+#define PWM5_LEDCCHANNEL (PWM5_CHANNEL & 0x07)
+#if (PWM5_CHANNEL < 8)
+#define PWM5_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM5_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO29_CHANNEL PWM5_CHANNEL
+#define DIO29_TIMER PWM5_TIMER
+#define DIO29_LEDCCHANNEL PWM5_LEDCCHANNEL
+#define DIO29_SPEEDMODE PWM5_SPEEDMODE
+#endif
+#ifdef PWM6_CHANNEL
+#define PWM6_LEDCCHANNEL (PWM6_CHANNEL & 0x07)
+#if (PWM6_CHANNEL < 8)
+#define PWM6_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM6_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO30_CHANNEL PWM6_CHANNEL
+#define DIO30_TIMER PWM6_TIMER
+#define DIO30_LEDCCHANNEL PWM6_LEDCCHANNEL
+#define DIO30_SPEEDMODE PWM6_SPEEDMODE
+#endif
+#ifdef PWM7_CHANNEL
+#define PWM7_LEDCCHANNEL (PWM7_CHANNEL & 0x07)
+#if (PWM7_CHANNEL < 8)
+#define PWM7_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM7_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO31_CHANNEL PWM7_CHANNEL
+#define DIO31_TIMER PWM7_TIMER
+#define DIO31_LEDCCHANNEL PWM7_LEDCCHANNEL
+#define DIO31_SPEEDMODE PWM7_SPEEDMODE
+#endif
+#ifdef PWM8_CHANNEL
+#define PWM8_LEDCCHANNEL (PWM8_CHANNEL & 0x07)
+#if (PWM8_CHANNEL < 8)
+#define PWM8_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM8_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO32_CHANNEL PWM8_CHANNEL
+#define DIO32_TIMER PWM8_TIMER
+#define DIO32_LEDCCHANNEL PWM8_LEDCCHANNEL
+#define DIO32_SPEEDMODE PWM8_SPEEDMODE
+#endif
+#ifdef PWM9_CHANNEL
+#define PWM9_LEDCCHANNEL (PWM9_CHANNEL & 0x07)
+#if (PWM9_CHANNEL < 8)
+#define PWM9_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM9_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO33_CHANNEL PWM9_CHANNEL
+#define DIO33_TIMER PWM9_TIMER
+#define DIO33_LEDCCHANNEL PWM9_LEDCCHANNEL
+#define DIO33_SPEEDMODE PWM9_SPEEDMODE
+#endif
+#ifdef PWM10_CHANNEL
+#define PWM10_LEDCCHANNEL (PWM10_CHANNEL & 0x07)
+#if (PWM10_CHANNEL < 8)
+#define PWM10_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM10_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO34_CHANNEL PWM10_CHANNEL
+#define DIO34_TIMER PWM10_TIMER
+#define DIO34_LEDCCHANNEL PWM10_LEDCCHANNEL
+#define DIO34_SPEEDMODE PWM10_SPEEDMODE
+#endif
+#ifdef PWM11_CHANNEL
+#define PWM11_LEDCCHANNEL (PWM11_CHANNEL & 0x07)
+#if (PWM11_CHANNEL < 8)
+#define PWM11_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM11_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO35_CHANNEL PWM11_CHANNEL
+#define DIO35_TIMER PWM11_TIMER
+#define DIO35_LEDCCHANNEL PWM11_LEDCCHANNEL
+#define DIO35_SPEEDMODE PWM11_SPEEDMODE
+#endif
+#ifdef PWM12_CHANNEL
+#define PWM12_LEDCCHANNEL (PWM12_CHANNEL & 0x07)
+#if (PWM12_CHANNEL < 8)
+#define PWM12_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM12_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO36_CHANNEL PWM12_CHANNEL
+#define DIO36_TIMER PWM12_TIMER
+#define DIO36_LEDCCHANNEL PWM12_LEDCCHANNEL
+#define DIO36_SPEEDMODE PWM12_SPEEDMODE
+#endif
+#ifdef PWM13_CHANNEL
+#define PWM13_LEDCCHANNEL (PWM13_CHANNEL & 0x07)
+#if (PWM13_CHANNEL < 8)
+#define PWM13_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM13_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO37_CHANNEL PWM13_CHANNEL
+#define DIO37_TIMER PWM13_TIMER
+#define DIO37_LEDCCHANNEL PWM13_LEDCCHANNEL
+#define DIO37_SPEEDMODE PWM13_SPEEDMODE
+#endif
+#ifdef PWM14_CHANNEL
+#define PWM14_LEDCCHANNEL (PWM14_CHANNEL & 0x07)
+#if (PWM14_CHANNEL < 8)
+#define PWM14_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM14_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO38_CHANNEL PWM14_CHANNEL
+#define DIO38_TIMER PWM14_TIMER
+#define DIO38_LEDCCHANNEL PWM14_LEDCCHANNEL
+#define DIO38_SPEEDMODE PWM14_SPEEDMODE
+#endif
+#ifdef PWM15_CHANNEL
+#define PWM15_LEDCCHANNEL (PWM15_CHANNEL & 0x07)
+#if (PWM15_CHANNEL < 8)
+#define PWM15_SPEEDMODE LEDC_HIGH_SPEED_MODE
+#else
+#define PWM15_SPEEDMODE LEDC_LOW_SPEED_MODE
+#endif
+#define DIO39_CHANNEL PWM15_CHANNEL
+#define DIO39_TIMER PWM15_TIMER
+#define DIO39_LEDCCHANNEL PWM15_LEDCCHANNEL
+#define DIO39_SPEEDMODE PWM15_SPEEDMODE
+#endif
+
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -2530,20 +2728,13 @@ extern "C"
 #undef IC74HC595_COUNT
 #endif
 #define IC74HC595_COUNT 4
-#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT,)
+#define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
 #endif
 
 #define mcu_config_output(X)                                              \
 	{                                                                     \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
-	}
-
-	extern void mcu_pwm_freq_config(uint16_t freq);
-#define mcu_config_pwm(X, freq)    \
-	{                              \
-		mcu_config_output(X);      \
-		mcu_pwm_freq_config(freq); \
 	}
 #define mcu_config_input(X)                                        \
 	{                                                              \
@@ -2588,6 +2779,13 @@ extern "C"
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
+#ifdef IC74HC595_HAS_PWMS
+	extern void mcu_pwm_freq_config(uint16_t freq);
+#define mcu_config_pwm(X, freq)    \
+	{                              \
+		mcu_config_output(X);      \
+		mcu_pwm_freq_config(freq); \
+	}
 	extern uint8_t esp32_pwm[16];
 	extern uint16_t esp32_pwm_mask;
 #define mcu_set_pwm(X, Y)                                    \
@@ -2603,23 +2801,34 @@ extern "C"
 		esp32_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);         \
 	}
 #define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET])
-#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
+#else
+#define mcu_config_pwm(X, Y)                              \
+	{                                                     \
+		ledc_timer_config_t pwmtimer = {0};               \
+		pwmtimer.speed_mode = __indirect__(X, SPEEDMODE); \
+		pwmtimer.timer_num = __indirect__(X, TIMER);      \
+		pwmtimer.duty_resolution = LEDC_TIMER_8_BIT;      \
+		pwmtimer.freq_hz = Y;                             \
+		pwmtimer.clk_cfg = LEDC_AUTO_CLK;                 \
+		ledc_timer_config(&pwmtimer);                     \
+		ledc_channel_config_t pwm = {0};                  \
+		pwm.channel = __indirect__(X, CHANNEL);           \
+		pwm.duty = 0;                                     \
+		pwm.gpio_num = __indirect__(X, BIT);              \
+		pwm.hpoint = 0xFF;                                \
+		pwm.speed_mode = __indirect__(X, SPEEDMODE);      \
+		pwm.timer_sel = __indirect__(X, TIMER);           \
+		ledc_channel_config(&pwm);                        \
+	}
 
-	/*
-	#ifdef MCU_HAS_SPI
-		extern void esp32_spi_config(uint8_t mode, uint32_t freq);
-		extern uint8_t esp32_spi_xmit(uint8_t data);
-	#define mcu_spi_xmit(X) esp32_spi_xmit(X)
-	#define mcu_spi_config(X, Y) esp32_spi_config(X, Y)
-	#else
-	#define mcu_spi_xmit(X) \
-		{                   \
-		}
-	#define mcu_spi_config(X, Y) \
-		{                        \
-		}
-	#endif
-	*/
+#define mcu_set_pwm(X, Y)                                                           \
+	{                                                                               \
+		ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL), Y); \
+		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
+	}
+#define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
+#endif
+#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)

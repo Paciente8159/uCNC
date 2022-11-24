@@ -86,6 +86,8 @@ void ic74hc595_shift_io_pins(void)
 	}
 }
 #endif
+
+#ifdef IC74HC595_HAS_PWMS
 // pwm channels
 uint8_t esp32_pwm[16];
 uint16_t esp32_pwm_mask;
@@ -414,6 +416,8 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 	timer_group_enable_alarm_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
 }
 
+#endif
+
 IRAM_ATTR void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
@@ -437,10 +441,11 @@ IRAM_ATTR void mcu_gpio_isr(void *type)
 	}
 }
 
+#ifdef IC74HC595_HAS_PWMS
 void mcu_pwm_freq_config(uint16_t freq)
 {
 	// keeps 8 bit resolution up to 1KHz
-	// reduces bit resolution for higher frequncies
+	// reduces bit resolution for higher frequencies
 
 	// determines the bit resolution (8 - esp32_pwm_res);
 	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.001f)), 0);
@@ -450,11 +455,14 @@ void mcu_pwm_freq_config(uint16_t freq)
 	// it's then divided by 256
 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)roundf((float)(getApbFrequency() >> 9) / (float)freq));
 }
+#endif
 
 void mcu_core0_tasks_init(void *arg)
 {
+#ifdef IC74HC595_HAS_PWMS
 	// register PWM isr
 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
+#endif
 	// install UART driver handler
 	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 }
@@ -539,6 +547,7 @@ void mcu_init(void)
 	uart_param_config(COM_PORT, &uartconfig);
 	uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
+#ifdef IC74HC595_HAS_PWMS
 	// initialize PWM timer
 	/* Select and initialize basic parameters of the timer */
 	timer_config_t pwmconfig = {
@@ -556,6 +565,7 @@ void mcu_init(void)
 	/* Configure the alarm value and the interrupt on alarm. */
 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
 	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
+#endif
 
 	// inititialize ITP timer
 	timer_config_t itpconfig = {
@@ -572,8 +582,9 @@ void mcu_init(void)
 
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
+	// Arduino Bluetooth also runs on core 0
+	// Arduino WiFi ???
 	esp_ipc_call_blocking(0, mcu_core0_tasks_init, NULL);
-	// mcu_core0_tasks_init(NULL);
 
 #ifdef MCU_HAS_SPI
 	spi_bus_config_t spiconf = {

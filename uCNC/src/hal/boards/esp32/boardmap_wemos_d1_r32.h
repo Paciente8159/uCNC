@@ -70,6 +70,8 @@ extern "C"
 
 	// Setup PWM
 #define PWM0_BIT 23 // assigns PWM0 pin
+#define PWM0_TIMER 0
+#define PWM0_CHANNEL 0
 
 // Setup generic IO Pins
 // spindle dir
