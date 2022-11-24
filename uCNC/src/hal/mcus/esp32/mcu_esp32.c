@@ -445,23 +445,22 @@ void servo_reset(void *p)
 }
 void start_servo_timeout(uint8_t timeout)
 {
-	timer_config_t config = {
-		.divider = 80,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = false,
-	}; // default clock source is APB
+	timer_config_t config = {0};
+	config.divider = getApbFrequency() / 1000000UL; // 1us per count
+	config.counter_dir = TIMER_COUNT_UP;
+	config.counter_en = TIMER_PAUSE;
+	config.alarm_en = TIMER_ALARM_EN;
+	config.auto_reload = true;
 	timer_init(SERVO_TIMER_TG, SERVO_TIMER_IDX, &config);
 
-	uint32_t timer_div = 500 + ((2000 * timeout) >> 8);
+	uint64_t us_pulse = 500 + ((2000 * timeout) >> 8);
 
 	/* Timer's counter will initially start from value below.
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
 	timer_set_counter_value(SERVO_TIMER_TG, SERVO_TIMER_IDX, 0x00000000ULL);
 
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(SERVO_TIMER_TG, SERVO_TIMER_IDX, (uint64_t)(1000000UL / timer_div));
+	timer_set_alarm_value(SERVO_TIMER_TG, SERVO_TIMER_IDX, (uint64_t)us_pulse);
 	timer_enable_intr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_isr_register(SERVO_TIMER_TG, SERVO_TIMER_IDX, servo_reset, NULL, 0, NULL);
 	timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
@@ -530,80 +529,38 @@ void mcu_rtc_task(void *arg)
 		{
 #if SERVO0 >= 0
 		case SERVO0_FRAME:
-			if (mcu_servos[0])
-			{
-				mcu_set_output(SERVO0);
-				start_servo_timeout(mcu_servos[0]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO0);
-			}
+			mcu_set_output(SERVO0);
+			start_servo_timeout(mcu_servos[0]);
 			break;
 #endif
 #if SERVO1 >= 0
 		case SERVO1_FRAME:
-			if (mcu_servos[1])
-			{
-				mcu_set_output(SERVO1);
-				start_servo_timeout(mcu_servos[1]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO1);
-			}
+			mcu_set_output(SERVO1);
+			start_servo_timeout(mcu_servos[1]);
 			break;
 #endif
 #if SERVO2 >= 0
 		case SERVO2_FRAME:
-			if (mcu_servos[2])
-			{
-				mcu_set_output(SERVO2);
-				start_servo_timeout(mcu_servos[2]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO2);
-			}
+			mcu_set_output(SERVO2);
+			start_servo_timeout(mcu_servos[2]);
 			break;
 #endif
 #if SERVO3 >= 0
 		case SERVO3_FRAME:
-			if (mcu_servos[3])
-			{
-				mcu_set_output(SERVO3);
-				start_servo_timeout(mcu_servos[3]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO3);
-			}
+			mcu_set_output(SERVO3);
+			start_servo_timeout(mcu_servos[3]);
 			break;
 #endif
 #if SERVO4 >= 0
 		case SERVO4_FRAME:
-			if (mcu_servos[4])
-			{
-				mcu_set_output(SERVO4);
-				start_servo_timeout(mcu_servos[4]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO4);
-			}
+			mcu_set_output(SERVO4);
+			start_servo_timeout(mcu_servos[4]);
 			break;
 #endif
 #if SERVO5 >= 0
 		case SERVO5_FRAME:
-			if (mcu_servos[5])
-			{
-				mcu_set_output(SERVO5);
-				start_servo_timeout(mcu_servos[5]);
-			}
-			else
-			{
-				mcu_clear_output(SERVO5);
-			}
+			mcu_set_output(SERVO5);
+			start_servo_timeout(mcu_servos[5]);
 			break;
 #endif
 		}
@@ -708,17 +665,17 @@ void mcu_init(void)
 #endif
 
 	// inititialize ITP timer
-	timer_config_t itpconfig = {
-		.divider = 80,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
+	timer_config_t itpconfig = {0};
+	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
+	itpconfig.counter_dir = TIMER_COUNT_UP;
+	itpconfig.counter_en = TIMER_PAUSE;
+	itpconfig.alarm_en = TIMER_ALARM_EN;
+	itpconfig.auto_reload = true;
 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	// moved to core 0
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, 0 /*CONFIG_ARDUINO_RUNNING_CORE*/);
 
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
@@ -1196,13 +1153,12 @@ IRAM_ATTR void mcu_oneshot_isr(void *arg)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	timer_config_t config = {
-		.divider = 80,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
+	timer_config_t config = {0};
+	config.divider = getApbFrequency() / 1000000UL; // 1us per count
+	config.counter_dir = TIMER_COUNT_UP;
+	config.counter_en = TIMER_PAUSE;
+	config.alarm_en = TIMER_ALARM_EN;
+	config.auto_reload = true;
 	timer_init(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, &config);
 
 	/* Timer's counter will initially start from value below.
@@ -1210,7 +1166,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	timer_set_counter_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, 0x00000000ULL);
 
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)(1000000UL / timeout));
+	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
 	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
 }
