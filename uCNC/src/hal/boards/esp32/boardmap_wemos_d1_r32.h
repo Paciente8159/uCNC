@@ -95,6 +95,8 @@ extern "C"
 // #define ANALOG0_CHANNEL 2
 // #define ANALOG0_ADC 2
 
+#define SERVO0_BIT 32
+
 #ifdef __cplusplus
 }
 #endif

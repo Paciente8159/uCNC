@@ -418,6 +418,56 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 
 #endif
 
+#if SERVOS_MASK > 0
+static uint8_t mcu_servos[6];
+void servo_reset(void *p)
+{
+	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+#if SERVO0 >= 0
+	mcu_clear_output(SERVO0);
+#endif
+#if SERVO1 >= 0
+	mcu_clear_output(SERVO1);
+#endif
+#if SERVO2 >= 0
+	mcu_clear_output(SERVO2);
+#endif
+#if SERVO3 >= 0
+	mcu_clear_output(SERVO3);
+#endif
+#if SERVO4 >= 0
+	mcu_clear_output(SERVO4);
+#endif
+#if SERVO5 >= 0
+	mcu_clear_output(SERVO5);
+#endif
+}
+void start_servo_timeout(uint8_t timeout)
+{
+	timer_config_t config = {
+		.divider = 80,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = false,
+	}; // default clock source is APB
+	timer_init(SERVO_TIMER_TG, SERVO_TIMER_IDX, &config);
+
+	uint32_t timer_div = 500 + ((2000 * timeout) >> 8);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(SERVO_TIMER_TG, SERVO_TIMER_IDX, 0x00000000ULL);
+
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(SERVO_TIMER_TG, SERVO_TIMER_IDX, (uint64_t)(1000000UL / timer_div));
+	timer_enable_intr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+	timer_isr_register(SERVO_TIMER_TG, SERVO_TIMER_IDX, servo_reset, NULL, 0, NULL);
+	timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+}
+#endif
+
 IRAM_ATTR void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
@@ -470,8 +520,98 @@ void mcu_core0_tasks_init(void *arg)
 void mcu_rtc_task(void *arg)
 {
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+#if SERVOS_MASK > 0
+	uint8_t servo_counter = 0;
+#endif
 	for (;;)
 	{
+#if SERVOS_MASK > 0
+		switch (servo_counter)
+		{
+#if SERVO0 >= 0
+		case SERVO0_FRAME:
+			if (mcu_servos[0])
+			{
+				mcu_set_output(SERVO0);
+				start_servo_timeout(mcu_servos[0]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO0);
+			}
+			break;
+#endif
+#if SERVO1 >= 0
+		case SERVO1_FRAME:
+			if (mcu_servos[1])
+			{
+				mcu_set_output(SERVO1);
+				start_servo_timeout(mcu_servos[1]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO1);
+			}
+			break;
+#endif
+#if SERVO2 >= 0
+		case SERVO2_FRAME:
+			if (mcu_servos[2])
+			{
+				mcu_set_output(SERVO2);
+				start_servo_timeout(mcu_servos[2]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO2);
+			}
+			break;
+#endif
+#if SERVO3 >= 0
+		case SERVO3_FRAME:
+			if (mcu_servos[3])
+			{
+				mcu_set_output(SERVO3);
+				start_servo_timeout(mcu_servos[3]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO3);
+			}
+			break;
+#endif
+#if SERVO4 >= 0
+		case SERVO4_FRAME:
+			if (mcu_servos[4])
+			{
+				mcu_set_output(SERVO4);
+				start_servo_timeout(mcu_servos[4]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO4);
+			}
+			break;
+#endif
+#if SERVO5 >= 0
+		case SERVO5_FRAME:
+			if (mcu_servos[5])
+			{
+				mcu_set_output(SERVO5);
+				start_servo_timeout(mcu_servos[5]);
+			}
+			else
+			{
+				mcu_clear_output(SERVO5);
+			}
+			break;
+#endif
+		}
+
+		servo_counter++;
+		servo_counter = (servo_counter != 20) ? servo_counter : 0;
+
+#endif
 		mcu_runtime_ms++;
 		mcu_rtc_cb(mcu_runtime_ms);
 		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
@@ -1119,5 +1259,31 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 }
 #endif
 #endif
+
+/*IO functions*/
+// IO functions
+void mcu_set_servo(uint8_t servo, uint8_t value)
+{
+#if SERVOS_MASK > 0
+	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+#endif
+}
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+uint8_t mcu_get_servo(uint8_t servo)
+{
+#if SERVOS_MASK > 0
+	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+
+	if ((1U << offset) & SERVOS_MASK)
+	{
+		return mcu_servos[offset];
+	}
+#endif
+	return 0;
+}
 
 #endif

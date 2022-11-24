@@ -2677,6 +2677,12 @@ extern "C"
 #define PWM_TIMER_TG (PWM_TIMER & 0x01)
 #define PWM_TIMER_IDX ((PWM_TIMER >> 1) & 0x01)
 
+#ifndef SERVO_TIMER
+#define SERVO_TIMER 3
+#endif
+#define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
+#define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
+
 #ifndef ITP_TIMER
 #define ITP_TIMER 1
 #endif
@@ -2815,7 +2821,7 @@ extern "C"
 		pwm.channel = __indirect__(X, CHANNEL);           \
 		pwm.duty = 0;                                     \
 		pwm.gpio_num = __indirect__(X, BIT);              \
-		pwm.hpoint = 0xFF;                                \
+		pwm.hpoint = 0;                                   \
 		pwm.speed_mode = __indirect__(X, SPEEDMODE);      \
 		pwm.timer_sel = __indirect__(X, TIMER);           \
 		ledc_channel_config(&pwm);                        \
