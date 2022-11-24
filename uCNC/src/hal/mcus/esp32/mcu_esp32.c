@@ -420,7 +420,7 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 
 #if SERVOS_MASK > 0
 static uint8_t mcu_servos[6];
-void servo_reset(void *p)
+IRAM_ATTR void servo_reset(void *p)
 {
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
@@ -442,7 +442,11 @@ void servo_reset(void *p)
 #if SERVO5 >= 0
 	mcu_clear_output(SERVO5);
 #endif
+#ifdef IC74HC595_HAS_SERVOS
+	ic74hc595_set_servos(0);
+#endif
 }
+
 void start_servo_timeout(uint8_t timeout)
 {
 	timer_config_t config = {0};
@@ -453,7 +457,9 @@ void start_servo_timeout(uint8_t timeout)
 	config.auto_reload = true;
 	timer_init(SERVO_TIMER_TG, SERVO_TIMER_IDX, &config);
 
-	uint64_t us_pulse = 500 + ((2000 * timeout) >> 8);
+	// should be 500ms but this takes in account the execution code
+	// tunned with oscilloscope
+	uint64_t us_pulse = 470 + ((2000 * timeout) >> 8);
 
 	/* Timer's counter will initially start from value below.
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
@@ -521,6 +527,9 @@ void mcu_rtc_task(void *arg)
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
 #if SERVOS_MASK > 0
 	uint8_t servo_counter = 0;
+#ifdef IC74HC595_HAS_SERVOS
+	uint8_t servomask = 0;
+#endif
 #endif
 	for (;;)
 	{
@@ -531,39 +540,61 @@ void mcu_rtc_task(void *arg)
 		case SERVO0_FRAME:
 			mcu_set_output(SERVO0);
 			start_servo_timeout(mcu_servos[0]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO0_MASK;
+#endif
 			break;
 #endif
 #if SERVO1 >= 0
 		case SERVO1_FRAME:
 			mcu_set_output(SERVO1);
 			start_servo_timeout(mcu_servos[1]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO1_MASK;
+#endif
 			break;
 #endif
 #if SERVO2 >= 0
 		case SERVO2_FRAME:
 			mcu_set_output(SERVO2);
 			start_servo_timeout(mcu_servos[2]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO2_MASK;
+#endif
 			break;
 #endif
 #if SERVO3 >= 0
 		case SERVO3_FRAME:
 			mcu_set_output(SERVO3);
 			start_servo_timeout(mcu_servos[3]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO3_MASK;
+#endif
 			break;
 #endif
 #if SERVO4 >= 0
 		case SERVO4_FRAME:
 			mcu_set_output(SERVO4);
 			start_servo_timeout(mcu_servos[4]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO4_MASK;
+#endif
 			break;
 #endif
 #if SERVO5 >= 0
 		case SERVO5_FRAME:
 			mcu_set_output(SERVO5);
 			start_servo_timeout(mcu_servos[5]);
+#ifdef IC74HC595_HAS_SERVOS
+			servomask = SERVO5_MASK;
+#endif
 			break;
 #endif
 		}
+
+#ifdef IC74HC595_HAS_SERVOS
+		ic74hc595_set_servos(servomask);
+#endif
 
 		servo_counter++;
 		servo_counter = (servo_counter != 20) ? servo_counter : 0;
