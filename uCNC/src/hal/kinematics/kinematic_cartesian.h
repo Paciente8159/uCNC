@@ -24,6 +24,8 @@ extern "C"
 {
 #endif
 
+#define KINEMATIC_TYPE_STR "C"
+
 #ifdef __cplusplus
 }
 #endif

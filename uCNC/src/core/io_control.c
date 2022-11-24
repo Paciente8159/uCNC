@@ -110,7 +110,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #endif
 		if (limit_combined)
 		{
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
 			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
 			{
 				// if homing and dual drive axis are enabled
@@ -137,7 +137,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 					}
 				}
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (defined(IS_DELTA_KINEMATICS))
 				if ((limit_combined & LIMITS_DELTA_MASK))
 				{
 					if (limit_combined != LIMITS_DELTA_MASK)
@@ -154,7 +154,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			}
 #endif
 
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();

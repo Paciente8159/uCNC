@@ -72,10 +72,16 @@ extern "C"
 		uint8_t default_tool;
 		float tool_length_offset[TOOL_COUNT];
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		float delta_arm_length;
 		float delta_armbase_radius;
 		// float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		float delta_base_radius;
+		float delta_effector_radius;
+		float delta_bicep_length;
+		float delta_forearm_length;
+		float delta_bicep_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		uint16_t backlash_steps[AXIS_TO_STEPPERS];

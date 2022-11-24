@@ -708,7 +708,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 		uint8_t code = (uint8_t)floorf(value);
 		// check mantissa
-		uint8_t mantissa = (uint8_t)roundf((value - code) * 100.0f);
+		uint8_t mantissa = (uint8_t)lroundf((value - code) * 100.0f);
 
 		switch (word)
 		{
@@ -1117,12 +1117,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			break;
 		case M127:
 			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p * MM_INCH_MULT;
-			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / g_settings.step_per_mm[STEPPER_COUNT - 1];
+			parser_config_ppi();
 			break;
 		case M128:
 			g_settings.laser_ppi_uswidth = (uint16_t)words->p;
-			g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (words->p + (2000000.0f / g_settings.max_step_rate))) / g_settings.step_per_mm[STEPPER_COUNT - 1];
-			mcu_config_timeout(&laser_ppi_turnoff_cb, (uint16_t)words->p);
+			parser_config_ppi();
 			break;
 #endif
 		default:
@@ -1188,7 +1187,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	{
 		mc_update_tools(&block_data);
 #if (DELAY_ON_SPINDLE_SPEED_CHANGE > 0)
-		block_data.dwell = (uint16_t)roundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
+		block_data.dwell = (uint16_t)lroundf(DELAY_ON_SPINDLE_SPEED_CHANGE * 1000);
 #endif
 #if (defined(TOOL_WAIT_FOR_SPEED) && (TOOL_WAIT_FOR_SPEED_MAX_ERROR != 100))
 		float tool_speed_error = 0;
@@ -1218,7 +1217,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (new_state->groups.nonmodal == G4)
 	{
 		// calc dwell in milliseconds
-		block_data.dwell = MAX(block_data.dwell, (uint16_t)roundf(MIN(words->p * 1000.f, 65535)));
+		block_data.dwell = MAX(block_data.dwell, (uint16_t)lroundf(MIN(words->p * 1000.0f, 65535)));
 		new_state->groups.nonmodal = 0;
 	}
 
@@ -2932,8 +2931,12 @@ void parser_config_ppi(void)
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
 	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
-		g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth + (2000000.0f / g_settings.max_step_rate))) / (g_settings.laser_ppi * MM_INCH_MULT);
+		// if previously disabled, reload default value
+		if (!g_settings.step_per_mm[STEPPER_COUNT - 1])
+		{
+			g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
+		}
+		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth * g_settings.step_per_mm[STEPPER_COUNT - 1]));
 		mcu_config_timeout(&laser_ppi_turnoff_cb, g_settings.laser_ppi_uswidth);
 	}
 	else

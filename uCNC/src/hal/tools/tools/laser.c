@@ -103,7 +103,7 @@ uint16_t laser_get_speed(void)
 {
 #if !(LASER_PWM < 0)
 	float laser = (float)mcu_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)roundf(laser);
+	return (uint16_t)lroundf(laser);
 #else
 	return 0;
 #endif

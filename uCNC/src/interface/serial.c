@@ -278,7 +278,7 @@ void serial_print_flt(float num)
 	num -= interger;
 	uint32_t mult = (!g_settings.report_inches) ? 1000 : 10000;
 	num *= mult;
-	uint32_t digits = (uint32_t)roundf(num);
+	uint32_t digits = (uint32_t)lroundf(num);
 	if (digits == mult)
 	{
 		interger++;
