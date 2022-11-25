@@ -175,7 +175,7 @@ It can run on:
 
 ### µCNC current supported kinematics
 
-µCNC is designed to be support both linear and non-linear kinematics and can be extended to support other types of kineamtics.
+µCNC is designed to be support both linear and non-linear kinematics and can be extended to support other types of kinematics.
 Currently µCNC supports the following kinematics:
 
 - Cartesian
