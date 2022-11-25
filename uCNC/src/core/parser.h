@@ -38,6 +38,7 @@ extern "C"
 #define EXTENDED_MCODE_BASE 1000
 #define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
 #define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
+#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -166,8 +167,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
+		int16_t group_extended : 15;
 		uint8_t group_0_1_useaxis : 1;
-		uint16_t group_extended : 15;
 	} parser_cmd_explicit_t;
 
 	typedef struct
