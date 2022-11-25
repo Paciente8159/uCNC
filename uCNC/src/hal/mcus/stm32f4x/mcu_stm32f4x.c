@@ -625,15 +625,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
-char mcu_getc(void)
-{
-#ifdef MCU_HAS_UART
-	return COM_INREG;
-#else
-	return 0;
-#endif
-}
-
 // ISR
 // enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr

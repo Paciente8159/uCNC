@@ -46,32 +46,47 @@
 
 #if (IC74HC595_COUNT != 0)
 uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
-
-void ic74hc595_shift_io_pins(void)
+static volatile uint8_t ic74hc595_update_lock;
+void __attribute__((weak)) ic74hc595_shift_io_pins(void)
 {
-	mcu_clear_output(IC74HC595_LATCH);
-	for (uint8_t i = IC74HC595_COUNT; i != 0;)
+	uint8_t pins[IC74HC595_COUNT];
+	if (!ic74hc595_update_lock++)
 	{
-		i--;
-		uint8_t pinbyte = ic74hc595_io_pins[i];
-		for (uint8_t j = 0; j < 8; j++)
+		do
 		{
+			memcpy(pins, ic74hc595_io_pins, IC74HC595_COUNT);
+			mcu_clear_output(IC74HC595_LATCH);
+			for (uint8_t i = IC74HC595_COUNT; i != 0;)
+			{
+				i--;
+#if (defined(IC74HC595_USE_HW_SPI) && defined(MCU_HAS_SPI))
+				mcu_spi_xmit(pins[i]);
+#else
+				uint8_t pinbyte = pins[i];
+				for (uint8_t j = 0x80; j != 0; j >>= 1)
+				{
+#if (IC74HC595_DELAY_CYCLES)
+					ic74hc595_delay();
+#endif
+					mcu_clear_output(IC74HC595_CLK);
+					if (pinbyte & j)
+					{
+						mcu_set_output(IC74HC595_DATA);
+					}
+					else
+					{
+						mcu_clear_output(IC74HC595_DATA);
+					}
+					mcu_set_output(IC74HC595_CLK);
+				}
+#endif
+			}
+#if (IC74HC595_DELAY_CYCLES)
 			ic74hc595_delay();
-			mcu_clear_output(IC74HC595_CLK);
-			if (pinbyte & 0x80)
-			{
-				mcu_set_output(IC74HC595_DATA);
-			}
-			else
-			{
-				mcu_clear_output(IC74HC595_DATA);
-			}
-			pinbyte <<= 1;
-			mcu_set_output(IC74HC595_CLK);
-		}
+#endif
+			mcu_set_output(IC74HC595_LATCH);
+		} while (--ic74hc595_update_lock);
 	}
-	ic74hc595_delay();
-	mcu_set_output(IC74HC595_LATCH);
 }
 
 FORCEINLINE void ic74hc595_set_steps(uint8_t mask)

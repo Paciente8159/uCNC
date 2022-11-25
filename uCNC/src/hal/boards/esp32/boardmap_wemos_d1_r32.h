@@ -41,26 +41,26 @@ extern "C"
 
 // Setup control input pins
 #define ESTOP_BIT 2
-// #define ESTOP_ISR
+#define ESTOP_ISR
 #define ESTOP_PULLUP
 #define FHOLD_BIT 4
-// #define FHOLD_ISR
+#define FHOLD_ISR
 #define FHOLD_PULLUP
 #define CS_RES_BIT 36
-// #define CS_RES_ISR
+#define CS_RES_ISR
 #define CS_RES_PULLUP
 
 // Setup limit pins
 #define LIMIT_Z_BIT 19	// assigns LIMIT_Z pin
-// #define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
+#define LIMIT_Z_ISR		// assigns LIMIT_Z ISR
 #define LIMIT_Y_BIT 5	// assigns LIMIT_Y pin
-// #define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
+#define LIMIT_Y_ISR		// assigns LIMIT_Y ISR
 #define LIMIT_X_BIT 13	// assigns LIMIT_X pin
-// #define LIMIT_X_ISR  	// assigns LIMIT_X ISR
+#define LIMIT_X_ISR  	// assigns LIMIT_X ISR
 
 // Setup probe pin
 #define PROBE_BIT 39
-// #define PROBE_ISR
+#define PROBE_ISR
 
 // Setup com pins
 #define RX_BIT 3
@@ -70,6 +70,8 @@ extern "C"
 
 	// Setup PWM
 #define PWM0_BIT 23 // assigns PWM0 pin
+#define PWM0_TIMER 0
+#define PWM0_CHANNEL 0
 
 // Setup generic IO Pins
 // spindle dir
@@ -85,11 +87,15 @@ extern "C"
 	// Timer 1 is used by default
 	//#define ITP_TIMER 1
 
-	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
+
+// #define ANALOG0_BIT 2
+// #define ANALOG0_CHANNEL 2
+// #define ANALOG0_ADC 2
+
+// #define SERVO0_BIT 33
 
 #ifdef __cplusplus
 }

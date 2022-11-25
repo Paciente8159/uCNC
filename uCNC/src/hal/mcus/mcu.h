@@ -207,26 +207,11 @@ extern "C"
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-	bool mcu_rx_ready(void); // Stop async send
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
 	void mcu_putc(char c);
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-	char mcu_getc(void);
 #endif
 
 // ISR
@@ -473,6 +458,10 @@ extern "C"
 #ifndef mcu_i2c_read
 	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
 #endif
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
 #endif
 
 #ifdef __cplusplus

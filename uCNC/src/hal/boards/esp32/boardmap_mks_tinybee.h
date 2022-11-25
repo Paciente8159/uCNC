@@ -48,7 +48,14 @@ extern "C"
 #define DOUT6_BIT 26
 // uses 3 x 74HS595
 #define IC74HC595_COUNT 3
-#define IC74HC595_DELAY_CYCLES 0
+// #define IC74HC595_DELAY_CYCLES 0
+
+//Use I2S to shift data in ESP32
+#define IC74HC595_CUSTOM_SHIFT_IO //Enables custom MCU data shift transmission. In ESP32 that is via I2S
+#define IC74HC595_I2S_WS 26
+#define IC74HC595_I2S_CLK 25
+#define IC74HC595_I2S_DATA 27
+// #define IC74HC595_I2S_PORT 0
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1
@@ -76,9 +83,7 @@ extern "C"
 	// Timer 1 is used by default
 	//#define ITP_TIMER 1
 
-	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
-	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// RTC Timer on ESP32 is granteed by a FreeRTOS
 
 #define ONESHOT_TIMER 2
 
@@ -86,6 +91,9 @@ extern "C"
 #define SPI_SDO_BIT 23
 #define SPI_SDI_BIT 19
 #define SPI_CS_BIT 5
+
+//sd card detect
+#define DIN19_BIT 34
 
 // include the IO expander
 #include "../../../modules/ic74hc595.h"

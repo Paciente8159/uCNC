@@ -506,16 +506,6 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return true;
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
@@ -541,21 +531,6 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
-#endif
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-#ifdef MCU_HAS_UART
-	return (COM_INREG & UART_RBR_MASKBIT);
-#else
-	return 0;
 #endif
 }
 #endif
