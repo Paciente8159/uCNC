@@ -467,7 +467,7 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 
 void protocol_send_gcode_modes(void)
 {
-	uint8_t modalgroups[12];
+	uint8_t modalgroups[13];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -481,7 +481,7 @@ void protocol_send_gcode_modes(void)
 
 	for (uint8_t i = 0; i < 7; i++)
 	{
-		protocol_send_parser_modalstate('G', modalgroups[i], 0);
+		protocol_send_parser_modalstate('G', modalgroups[i], modalgroups[12]);
 	}
 
 	if (modalgroups[7] == 62)

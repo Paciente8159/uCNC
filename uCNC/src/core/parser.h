@@ -30,6 +30,7 @@ extern "C"
 #endif
 
 #include "../module.h"
+#include "motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
@@ -76,10 +77,9 @@ extern "C"
 #define GCODE_WORD_S 0x4000
 #define GCODE_WORD_T 0x8000
 
-#ifdef ENABLE_CANNED_CYCLES
-// only used in G83 can overlap D word
+// only used in canned cycles and splines for now
+// can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
-#endif
 
 #define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
@@ -103,12 +103,15 @@ extern "C"
 #define LASER_PPI_MODE 2
 #define LASER_PPI_VARPOWER_MODE 4
 
-	// 33bytes in total
+	// 34bytes in total
 	typedef struct
 	{
 		// 1byte
-		uint8_t motion : 5;
+		uint8_t motion;
+		// 1byte
+		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
+		uint8_t : 2; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;
@@ -224,6 +227,8 @@ extern "C"
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
+		float *target;
+		motion_data_t *block_data;
 	} gcode_exec_args_t;
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);
