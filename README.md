@@ -114,10 +114,10 @@ List of Supported G-Codes since µCNC 1.3.0:
     - Cubic and quadratic splines: G5/G5.1
     - Stepper enable/disable: M17/M18
     - General Pin Control: M42
-	- Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
-	- Enable/disable analog output pin synched/immediately: M67/M68
-	- Enable/disable a digital output that controls the PSU: M80/M81
-	- Smoothieware laser clustering mode modified gcode
+    - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
+    - Enable/disable analog output pin synched/immediately: M67/M68
+    - Enable/disable a digital output that controls the PSU: M80/M81
+    - Smoothieware laser clustering mode modified gcode
 
 * see notes
 
