@@ -28,81 +28,12 @@
 #include <string.h>
 #include <float.h>
 
-#define G0 0
-#define G1 1
-#define G2 2
-#define G3 3
-#define G38_2 4
-#define G38_3 5
-#define G38_4 6
-#define G38_5 7
-#define G80 8
-#define G81 9
-#define G82 10
-#define G83 11
-#define G84 12
-#define G85 13
-#define G86 14
-#define G87 15
-#define G88 16
-#define G89 17
-#define G17 0
-#define G18 1
-#define G19 2
-#define G90 0
-#define G91 1
-#define G93 0
-#define G94 1
-#define G20 0
-#define G21 1
-#define G40 0
-#define G41 1
-#define G42 2
-#define G43 0
-#define G49 1
-#define G98 0
-#define G99 1
-#define G54 0
-#define G55 1
-#define G56 2
-#define G57 3
-#define G58 4
-#define G59 5
-#define G59_1 6
-#define G59_2 7
-#define G59_3 8
-#define G61 0
-#define G61_1 1
-#define G64 3
-#define G4 1
-#define G10 2
-#define G28 3
-#define G30 4
-#define G53 6
-#define G92 10
-#define G92_1 11
-#define G92_2 12
-#define G92_3 13
-
-#define M0 1
-#define M1 2
-#define M2 3
-#define M30 4
-#define M60 5
-#define M3 1
-#define M4 2
-#define M5 0
-#define M6 0
-#define M7 MIST_MASK
-#define M8 COOLANT_MASK
-#define M9 0
-#define M48 1
-#define M49 0
-#define M10 1010
+// extended codes
+#define M10 EXTENDED_MCODE(10)
 #ifdef ENABLE_LASER_PPI
-#define M126 1126
-#define M127 1127
-#define M128 1128
+#define M126 EXTENDED_MCODE(126)
+#define M127 EXTENDED_MCODE(127)
+#define M128 EXTENDED_MCODE(128)
 #endif
 
 #define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
@@ -247,7 +178,8 @@ uint8_t parser_read_command(void)
 
 void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
 {
-	modalgroups[0] = (parser_state.groups.motion < 8) ? parser_state.groups.motion : (72 + parser_state.groups.motion);
+	modalgroups[0] = parser_state.groups.motion;
+	modalgroups[12] = parser_state.groups.motion_mantissa;
 	modalgroups[1] = parser_state.groups.plane + 17;
 	modalgroups[2] = parser_state.groups.distance_mode + 90;
 	modalgroups[3] = parser_state.groups.feedrate_mode + 93;
@@ -580,7 +512,7 @@ static uint8_t parser_grbl_command(void)
 	}
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	if (mcu_custom_grbl_cmd((char*)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
+	if (mcu_custom_grbl_cmd((char *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
 	{
 		return STATUS_OK;
 	}
@@ -724,7 +656,26 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 		uint8_t code = (uint8_t)floorf(value);
 		// check mantissa
-		uint8_t mantissa = (uint8_t)lroundf((value - code) * 100.0f);
+		uint8_t m = (uint8_t)lroundf(((value - code) * 100.0f));
+		uint8_t mantissa = 0;
+		switch (m)
+		{
+		case 50:
+			mantissa++;
+		case 40:
+			mantissa++;
+		case 30:
+			mantissa++;
+		case 20:
+			mantissa++;
+		case 10:
+			mantissa++;
+		case 0:
+			break;
+		default:
+			mantissa = 255;
+			break;
+		}
 
 		switch (word)
 		{
@@ -821,6 +772,17 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 	{
 		switch (new_state->groups.nonmodal)
 		{
+		case G4:
+			if (!(cmd->words & (GCODE_WORD_P)))
+			{
+				return STATUS_GCODE_VALUE_WORD_MISSING;
+			}
+			// P is not between 1 and N of coord systems
+			if (words->p < 0)
+			{
+				return STATUS_NEGATIVE_VALUE;
+			}
+			break;
 		case G10:
 			// G10
 			// if no P or L is present
@@ -836,11 +798,12 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			// P is not between 1 and N of coord systems
 			if (words->p != 28 && words->p != 30)
 			{
-				if (words->p > COORD_SYS_COUNT)
+				if (words->p < 0 || words->p > COORD_SYS_COUNT)
 				{
 					return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
 				}
 			}
+			break;
 		case G92:
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
@@ -860,7 +823,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 	// group 1 - motion (incomplete)
 	// TODO
-	// 81...89 Canned cycles
+	// subset of canned cycles
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_MOTION))
 	{
 		switch (new_state->groups.motion)
@@ -869,10 +832,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		case G0: // G0
 		case G1: // G1
 #endif
-		case G38_2: // G38.2
-		case G38_3: // G38.3
-		case G38_4: // G38.4
-		case G38_5: // G38.5
+		case G38: // G38.2, G38.3, G38.4, G38.5
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
@@ -948,6 +908,12 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				{
 					return STATUS_GCODE_CANNED_CYCLE_MISSING_Q;
 				}
+
+				// Q/D is negative
+				if (words->d < 0)
+				{
+					return STATUS_NEGATIVE_VALUE;
+				}
 			}
 
 			break;
@@ -955,7 +921,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if (new_state->groups.motion >= G1 && new_state->groups.motion <= G38_5)
+		if (new_state->groups.motion >= G1 && new_state->groups.motion <= G38)
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
@@ -1026,38 +992,37 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 	// checks if an extended command was called with any other command at the same time
 	// extension commands can only be processed individually
-	if (cmd->group_extended != 0 && cmd->groups != 0)
+	if (cmd->group_extended > 0 && cmd->groups != 0)
 	{
 		return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 	}
 
-	if (cmd->group_extended)
+	switch (cmd->group_extended)
 	{
-		switch (cmd->group_extended)
-		{
+	case 0: // no extended command
+		break;
 #if (SERVOS_MASK != 0)
-		case M10:
-			if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
-			{
-				return STATUS_GCODE_VALUE_WORD_MISSING;
-			}
-			break;
+	case M10:
+		if (CHECKFLAG(cmd->words, (GCODE_WORD_S | GCODE_WORD_P)) != (GCODE_WORD_S | GCODE_WORD_P))
+		{
+			return STATUS_GCODE_VALUE_WORD_MISSING;
+		}
+		break;
 #endif
 #ifdef ENABLE_LASER_PPI
-		case M127:
-		case M128:
-			// prevents command execution if mode disabled
-			if (!(g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
-			{
-				return STATUS_LASER_PPI_MODE_DISABLED;
-			}
-		case M126:
-			if (CHECKFLAG(cmd->words, (GCODE_WORD_P)) != (GCODE_WORD_P))
-			{
-				return STATUS_GCODE_VALUE_WORD_MISSING;
-			}
-#endif
+	case M127:
+	case M128:
+		// prevents command execution if mode disabled
+		if (!(g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
+		{
+			return STATUS_LASER_PPI_MODE_DISABLED;
 		}
+	case M126:
+		if (CHECKFLAG(cmd->words, (GCODE_WORD_P)) != (GCODE_WORD_P))
+		{
+			return STATUS_GCODE_VALUE_WORD_MISSING;
+		}
+#endif
 	}
 
 	return STATUS_OK;
@@ -1083,7 +1048,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	bool update_tools = false;
 
 #ifdef ENABLE_PARSER_MODULES
-	gcode_exec_args_t args = {new_state, words, cmd};
+	gcode_exec_args_t args = {new_state, words, cmd, target, &block_data};
 	EVENT_INVOKE(gcode_exec_modifier, &args);
 #endif
 
@@ -1098,11 +1063,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		new_state->groups.stopping = 0;
 	}
 
-	if (cmd->group_extended)
+	// standalone extended command
+	// extended commands with positive codes will run here
+	// a special case (negative extended command) is reserved for additional motion commands
+	if (cmd->group_extended > 0)
 	{
-#ifdef ENABLE_PARSER_MODULES
-		gcode_exec_args_t args = {new_state, words, cmd};
-#endif
 		itp_sync();
 		switch (cmd->group_extended)
 		{
@@ -1647,12 +1612,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
 			break;
-		case 4: // G38.2
-		case 5: // G38.3
-		case 6: // G38.4
-		case 7: // G38.5
-			probe_flags = (new_state->groups.motion > 5) ? 1 : 0;
-			probe_flags |= (new_state->groups.motion & 0x01) ? 2 : 0;
+		case G38: // G38.2
+				  // G38.3
+				  // G38.4
+				  // G38.5
+			probe_flags = (new_state->groups.motion_mantissa > 3) ? 1 : 0;
+			probe_flags |= (new_state->groups.motion_mantissa & 0x01) ? 2 : 0;
 
 			error = mc_probe(target, probe_flags, &block_data);
 			if (error == STATUS_PROBE_SUCCESS)
@@ -1671,6 +1636,14 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 
 			return error;
+#ifdef ENABLE_PARSER_MODULES
+		default: // other motion commands (derived from extended commands)
+			args.new_state = new_state;
+			args.words = words;
+			args.cmd = cmd;
+			error = EVENT_INVOKE(gcode_exec, &args);
+			break;
+#endif
 		}
 
 		// tool is updated in motion
@@ -2006,13 +1979,11 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		case 92:
 			break;
 		default:
-			return STATUS_GCODE_COMMAND_VALUE_NOT_INTEGER;
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 	}
-	else
-	{
-		mantissa = 255; // if code should not have mantissa set it to a undefined value
-	}
+
+	new_state->groups.motion_mantissa = mantissa;
 
 	switch (code)
 	{
@@ -2034,34 +2005,12 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 88:
 	case 89:
 #endif
-		switch (mantissa)
-		{
-		case 255:
-			break;
-		case 20:
-			code = 4;
-			break;
-		case 30:
-			code = 5;
-			break;
-		case 40:
-			code = 6;
-			break;
-		case 50:
-			code = 7;
-			break;
-		default:
-			return STATUS_GCODE_UNSUPPORTED_COMMAND;
-		}
-		if (code >= 80)
-		{
-			code -= 72;
-		}
-		else if (cmd->group_0_1_useaxis)
+		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
-		else
+
+		if (code != 80)
 		{
 			cmd->group_0_1_useaxis = 1;
 		}
@@ -2098,13 +2047,8 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_state->groups.cutter_radius_compensation = code - 40;
 		break;
 	case 43: // doesn't support G43 but G43.1 (takes Z coordinate input has offset)
-		switch (mantissa)
+		if (mantissa > 1)
 		{
-		case 255:
-		case 10:
-			// G43.1 same as G43
-			break;
-		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 	case 49:
@@ -2122,24 +2066,13 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 57:
 	case 58:
 	case 59:
-		new_group |= GCODE_GROUP_COORDSYS;
-		code -= 54;
-		switch (mantissa)
+		if (mantissa > 3)
 		{
-		case 255:
-			break;
-		case 10:
-			code += 1;
-			break;
-		case 20:
-			code += 2;
-			break;
-		case 30:
-			code += 3;
-			break;
-		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+
+		new_group |= GCODE_GROUP_COORDSYS;
+		code -= (54 - mantissa);
 
 		if (code > COORD_SYS_COUNT)
 		{
@@ -2149,25 +2082,23 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		break;
 	case 61:
 	case 64:
-		code -= 61;
-		switch (mantissa)
+		code -= (61 - mantissa);
+		if (mantissa > 1)
 		{
-		case 255:
-			break;
-		case 10:
-			code += 1;
-			break;
-		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 		new_group |= GCODE_GROUP_PATH;
 		new_state->groups.path_mode = code;
 		break;
 	// de following nonmodal colide with motion groupcodes
+	case 92:
+		if (mantissa > 3)
+		{
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		}
 	case 10:
 	case 28:
 	case 30:
-	case 92:
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2175,7 +2106,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		cmd->group_0_1_useaxis = 1;
 	case 4:
 	case 53:
-
 		// convert code within 4 bits without
 		// 4 = 1
 		// 10 = 2
@@ -2187,21 +2117,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		// 92.2 = 12
 		// 92.3 = 13
 		code = (uint8_t)floorf(code * 0.10001f);
-		switch (mantissa)
-		{
-		case 255:
-			break;
-		case 30:
-			code++;
-		case 20:
-			code++;
-		case 10:
-			code++;
-			break;
-		default:
-			return STATUS_GCODE_UNSUPPORTED_COMMAND;
-		}
-
+		code += mantissa;
 		new_group |= GCODE_GROUP_NONMODAL;
 		new_state->groups.nonmodal = code + 1;
 		break;
@@ -2276,7 +2192,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		break;
 #if (SERVOS_MASK != 0)
 	case 10:
-		if (cmd->group_extended != 0)
+		if (cmd->group_extended > 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2289,7 +2205,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 126:
 	case 127:
 	case 128:
-		if (cmd->group_extended != 0)
+		if (cmd->group_extended > 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2366,10 +2282,6 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #endif
 	// treats Q like D since they cannot cooexist
 	case 'Q':
-		if (value < 0)
-		{
-			return STATUS_NEGATIVE_VALUE;
-		}
 	case 'D':
 		new_words |= GCODE_WORD_D;
 		words->d = value;
@@ -2408,12 +2320,6 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		break;
 	case 'P':
 		new_words |= GCODE_WORD_P;
-
-		if (value < 0)
-		{
-			return STATUS_NEGATIVE_VALUE;
-		}
-
 		words->p = value;
 		break;
 	case 'R':
@@ -2611,7 +2517,7 @@ static float sticky_old;
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	// not a canned cycle (run single command)
-	if (new_state->groups.nonmodal != 0 || !CHECKFLAG(cmd->words, GCODE_ALL_AXIS) || new_state->groups.motion <= 8)
+	if (new_state->groups.nonmodal != 0 || !CHECKFLAG(cmd->words, GCODE_ALL_AXIS) || new_state->groups.motion < G81 || new_state->groups.motion > G89)
 	{
 		sticky_mask = 0;
 		return parser_exec_command(new_state, words, cmd);

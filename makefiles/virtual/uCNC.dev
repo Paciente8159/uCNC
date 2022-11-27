@@ -780,3 +780,13 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+[Unit74]
+FileName=..\..\uCNC\src\modules\G5\parser_g5.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+

@@ -30,14 +30,86 @@ extern "C"
 #endif
 
 #include "../module.h"
+#include "motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+
+#define G0 0
+#define G1 1
+#define G2 2
+#define G3 3
+// G38.2, G38.3, G38.4, G38.5
+// mantissa must also be checked
+#define G38 38
+#define G80 80
+#define G81 81
+#define G82 82
+#define G83 83
+#define G84 84
+#define G85 85
+#define G86 86
+#define G87 87
+#define G88 88
+#define G89 89
+#define G17 0
+#define G18 1
+#define G19 2
+#define G90 0
+#define G91 1
+#define G93 0
+#define G94 1
+#define G20 0
+#define G21 1
+#define G40 0
+#define G41 1
+#define G42 2
+#define G43 0
+#define G49 1
+#define G98 0
+#define G99 1
+#define G54 0
+#define G55 1
+#define G56 2
+#define G57 3
+#define G58 4
+#define G59 5
+#define G59_1 6
+#define G59_2 7
+#define G59_3 8
+#define G61 0
+#define G61_1 1
+#define G64 3
+#define G4 1
+#define G10 2
+#define G28 3
+#define G30 4
+#define G53 6
+#define G92 10
+#define G92_1 11
+#define G92_2 12
+#define G92_3 13
+
+#define M0 1
+#define M1 2
+#define M2 3
+#define M30 4
+#define M60 5
+#define M3 1
+#define M4 2
+#define M5 0
+#define M6 0
+#define M7 MIST_MASK
+#define M8 COOLANT_MASK
+#define M9 0
+#define M48 1
+#define M49 0
 
 #define EXTENDED_GCODE_BASE 0
 #define EXTENDED_MCODE_BASE 1000
 #define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
 #define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
+#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -75,10 +147,9 @@ extern "C"
 #define GCODE_WORD_S 0x4000
 #define GCODE_WORD_T 0x8000
 
-#ifdef ENABLE_CANNED_CYCLES
-// only used in G83 can overlap D word
+// only used in canned cycles and splines for now
+// can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
-#endif
 
 #define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
@@ -102,12 +173,15 @@ extern "C"
 #define LASER_PPI_MODE 2
 #define LASER_PPI_VARPOWER_MODE 4
 
-	// 33bytes in total
+	// 34bytes in total
 	typedef struct
 	{
 		// 1byte
-		uint8_t motion : 5;
+		uint8_t motion;
+		// 1byte
+		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
+		uint8_t : 2; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;
@@ -166,8 +240,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
+		int16_t group_extended : 15;
 		uint8_t group_0_1_useaxis : 1;
-		uint16_t group_extended : 15;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -223,6 +297,8 @@ extern "C"
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
+		float *target;
+		motion_data_t *block_data;
 	} gcode_exec_args_t;
 	// event_gcode_exec_handler
 	DECL_EVENT_HANDLER(gcode_exec);

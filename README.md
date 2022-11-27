@@ -33,6 +33,10 @@ You can expand µCNC using via modules. The available modules are at the [µCNC-
 
 You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
 
+You can also reach me at µCNC discord channel
+
+[![µCNC discord channel](https://github.com/Paciente8159/uCNC/blob/master/docs/discord-logo-blue.png)](https://discord.gg/KdtKq9THN9)
+
 ## Supporting the project
 
 µCNC is a completely free software. It took me a considerable amount of hours and effort to develop and debug so any help is appreciated. Building docs, testing and debugging, whatever. Also if you really like it and want help me keep the project running, you can help me to buy more equipment. Recently I have saved some extra money and bought a laser engraver. This hardware was fundamental to develop and testing version 1.2.0 and beyond. Currently this machine is being used to work on other projects and is running µCNC smoothly. Or you may just want to simply buy me a coffee or two for those extra long nights putting out code ;-)
@@ -98,13 +102,22 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+
   - Outside the RS274NGC scope
     - Servo Control: M10*
-    - General Pin Control: M42*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
 	- Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
+
+  - Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
+    - Cubic and quadratic splines: G5/G5.1
+    - Stepper enable/disable: M17/M18
+    - General Pin Control: M42
+	- Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
+	- Enable/disable analog output pin synched/immediately: M67/M68
+	- Enable/disable a digital output that controls the PSU: M80/M81
+	- Smoothieware laser clustering mode modified gcode
 
 * see notes
 
@@ -119,7 +132,6 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _M42 configurable via additional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
