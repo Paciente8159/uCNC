@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DWIN_INTERFACE=0 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
+Compiler=-DWIN_INTERFACE=2 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
 CppCompiler=_@@_
 Linker=-lws2_32_@@_
 IsCpp=0
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=74
+UnitCount=73
 
 [VersionInfo]
 Major=1

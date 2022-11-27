@@ -33,6 +33,10 @@ You can expand µCNC using via modules. The available modules are at the [µCNC-
 
 You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
 
+You can also reach me at µCNC discord channel
+
+[![µCNC discord channel](https://github.com/Paciente8159/uCNC/blob/master/docs/discord-logo-blue.png)](https://discord.gg/KdtKq9THN9)
+
 ## Supporting the project
 
 µCNC is a completely free software. It took me a considerable amount of hours and effort to develop and debug so any help is appreciated. Building docs, testing and debugging, whatever. Also if you really like it and want help me keep the project running, you can help me to buy more equipment. Recently I have saved some extra money and bought a laser engraver. This hardware was fundamental to develop and testing version 1.2.0 and beyond. Currently this machine is being used to work on other projects and is running µCNC smoothly. Or you may just want to simply buy me a coffee or two for those extra long nights putting out code ;-)
