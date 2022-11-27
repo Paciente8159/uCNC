@@ -102,13 +102,22 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+
   - Outside the RS274NGC scope
     - Servo Control: M10*
-    - General Pin Control: M42*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
 	- Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
+
+  - Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
+    - Cubic and quadratic splines: G5/G5.1
+    - Stepper enable/disable: M17/M18
+    - General Pin Control: M42
+	- Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
+	- Enable/disable analog output pin synched/immediately: M67/M68
+	- Enable/disable a digital output that controls the PSU: M80/M81
+	- Smoothieware laser clustering mode modified gcode
 
 * see notes
 
@@ -123,7 +132,6 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _M42 configurable via additional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
