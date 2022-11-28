@@ -6,6 +6,31 @@
 
 # Changelog
 
+## [1.5.6] - 28-11-2022
+
+### Added
+
+- new rotary delta kinematic support (#331)
+- added entry for modules loaded via web config tool (#328)
+- new parser module entry to allow creation of motion commands extensions (G5 and G5.1 are now available via external module) (#337)
+
+### Changed
+
+- migrated ESP32 from Arduino to ESP-IDF (except WiFi and Bluetooth libraries) (#334)(#335)
+- dropped Arduino WiFiManager library for ESP32. WiFi and Bluetooth are now controlled via 'Grbl' type commands and are both available (fixed crashing) (#334)(#335)
+- balanced ISR load on both cores of the ESP32 (#334)(#335)
+- faster IO performance on ESP32, for both direct GPIO and IO expansion via 74HC595 (via I2S, SPI or GPIO) (#334)(#335)
+- improved/fixed feed calculations and feedback, to support any type of linear/non-linear kinematics (#329)(#330)
+- full motion control, planner and interpolator review, reorganized and optimized (#330)
+- RAM optimizations (global and static variables reviewed, for both motion control and planner structures) (#329)
+
+### Fixed
+
+- fixed $ settings error for group settings (example steps per mm) (#327)
+- motion control prevent error on linear motion of distance 0 (#327)
+- fixed virtual simulator compilation errors (#327)
+- fixed some PIO build code that caused ESP32 to crash (#333)
+
 ## [1.5.5] - 01-11-2022
 
 ### Added
@@ -1062,6 +1087,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.6
 [1.5.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.5
 [1.5.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.4
 [1.5.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.3
