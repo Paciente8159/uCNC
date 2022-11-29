@@ -601,6 +601,11 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
+uint32_t mcu_micros()
+{
+	return (uint32_t)esp_system_get_time();
+}
+
 void esp8266_delay_us(uint16_t delay)
 {
 	uint32_t time = system_get_time() + delay - 1;

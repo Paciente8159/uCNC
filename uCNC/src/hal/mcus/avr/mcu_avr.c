@@ -653,6 +653,15 @@ uint32_t mcu_millis()
 	return val;
 }
 
+uint32_t mcu_micros()
+{
+	uint32_t rtc_elapsed = RTC_TCNT;
+	uint32_t ms = mcu_runtime_ms;
+
+	rtc_elapsed = ((rtc_elapsed * 1000) / RTC_OCRA) + (ms / 1000);
+	return rtc_elapsed;
+}
+
 void mcu_start_rtc()
 {
 #if (F_CPU <= 16000000UL)

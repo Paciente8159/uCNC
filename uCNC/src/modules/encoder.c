@@ -85,7 +85,11 @@ static FORCEINLINE uint8_t encoder_read_dirs(void)
 
 // overrides the mcu_input_change_cb
 // this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
+#ifdef ENCODERS_DIRECT_CALLBACK
 void mcu_inputs_changed_cb(void)
+#else
+void encoders_update(void)
+#endif
 {
 	uint8_t dir = encoder_read_dirs();
 	uint8_t pulse = encoder_read_pulses();

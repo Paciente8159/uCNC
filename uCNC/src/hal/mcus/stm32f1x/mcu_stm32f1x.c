@@ -652,8 +652,12 @@ void mcu_stop_itp_isr(void)
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
+}
+
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
 void mcu_rtc_init()

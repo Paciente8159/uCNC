@@ -238,6 +238,9 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 // for now if encoders are enabled this will be override by the encoder call
 MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
 {
+#if (!defined(ENCODERS_DIRECT_CALLBACK) && ENCODERS > 0)
+	encoders_update();
+#endif
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(input_change, NULL);
 #endif

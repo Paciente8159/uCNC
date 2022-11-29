@@ -652,7 +652,11 @@ uint32_t mcu_millis()
  * provides a delay in us (micro seconds)
  * the maximum allowed delay is 255 us
  * */
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+}
+
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {

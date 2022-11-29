@@ -266,6 +266,12 @@ extern "C"
 	 * */
 	uint32_t mcu_millis();
 
+	/**
+	 * gets the MCU running time in microseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
+	uint32_t mcu_micros();
+
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")
 #endif

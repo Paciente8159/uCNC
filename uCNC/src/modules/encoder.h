@@ -41,6 +41,7 @@ extern "C"
 	void encoder_reset_position(uint8_t i, int32_t position);
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
+	void encoders_update(void);
 
 #ifdef __cplusplus
 }
