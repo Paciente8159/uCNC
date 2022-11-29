@@ -29,7 +29,7 @@ extern "C"
 #endif
 
 // reduces RAM usage a bit to prevent hardware resets
-#define PLANNER_BUFFER_SIZE 13
+#define PLANNER_BUFFER_SIZE 14
 
 #define PCINT0_PORT B
 #define PCINT1_PORT C

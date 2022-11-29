@@ -73,7 +73,7 @@ typedef union
 #if TOOL_COUNT > 0
 		int16_t spindle;
 #endif
-		uint8_t action;
+		// uint8_t action;
 		planner_flags_t planner_flags;
 	} planner_block_t;
 
