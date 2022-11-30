@@ -74,8 +74,7 @@ void planner_add_line(motion_data_t *block_data)
 	planner_data[index].dirbits = block_data->dirbits;
 	planner_data[index].feed_conversion = block_data->feed_conversion;
 	planner_data[index].main_stepper = block_data->main_stepper;
-	planner_data[index].planner_flags.reg &= ~STATE_COPY_FLAG_MASK;
-	planner_data[index].planner_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK); // copies the motion flags relative to coolant spindle running and feed_override
+	planner_data[index].planner_flags.reg = block_data->motion_flags.reg; // copies the motion flags relative to coolant spindle running and feed_override
 
 #if TOOL_COUNT > 0
 	planner_data[index].spindle = block_data->spindle;
@@ -83,13 +82,6 @@ void planner_add_line(motion_data_t *block_data)
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	planner_data[index].line = block_data->line;
 
-#endif
-
-#ifdef ENABLE_BACKLASH_COMPENSATION
-	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION))
-	{
-		planner_data[index].planner_flags.bit.backlash_comp = true;
-	}
 #endif
 
 	memcpy(planner_data[index].steps, block_data->steps, sizeof(planner_data[index].steps));

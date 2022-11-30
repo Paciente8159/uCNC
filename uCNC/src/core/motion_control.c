@@ -135,6 +135,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 			backlash_block_data.feed = backlash_block_data.max_feed; // max feedrate possible (same as rapid move)
 
 			SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
+			backlash_block_data.motion_flags.bit.backlash_comp = 1;
 			max_steps = 0;
 			for (uint8_t i = STEPPER_COUNT; i != 0;)
 			{
