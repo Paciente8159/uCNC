@@ -42,6 +42,8 @@
 #define ITP_NOUPDATE 0
 #define ITP_UPDATE_ISR 1
 #define ITP_UPDATE_TOOL 2
+#define ITP_UPDATE (ITP_UPDATE_ISR | ITP_UPDATE_TOOL)
+#define ITP_SYNC_START 4
 
 // contains data of the block being executed by the pulse routine
 // this block has the necessary data to execute the Bresenham line algorithm
@@ -81,7 +83,7 @@ typedef struct pulse_sgm_
 	int16_t spindle;
 #endif
 	float feed;
-	uint8_t update_itp;
+	uint8_t flags;
 } itp_segment_t;
 
 // circular buffers
@@ -386,7 +388,7 @@ void itp_run(void)
 
 		float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
 		float initial_speed = current_speed;
-		sgm->update_itp = ITP_UPDATE_ISR;
+		sgm->flags = ITP_UPDATE_ISR;
 		uint16_t segm_steps = 0;
 		do
 		{
@@ -446,7 +448,7 @@ void itp_run(void)
 				// constant speed segment
 				if (remaining_steps != accel_until)
 				{
-					sgm->update_itp = ITP_NOUPDATE;
+					sgm->flags = ITP_NOUPDATE;
 				}
 
 				partial_distance += top_speed * INTERPOLATOR_DELTA_CONST_T;
@@ -541,7 +543,7 @@ void itp_run(void)
 
 		if (dss != prev_dss)
 		{
-			sgm->update_itp = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR;
 		}
 		sgm->next_dss = dss - prev_dss;
 		prev_dss = dss;
@@ -566,7 +568,7 @@ void itp_run(void)
 			if ((prev_spindle != newspindle))
 			{
 				prev_spindle = newspindle;
-				sgm->update_itp |= ITP_UPDATE_TOOL;
+				sgm->flags |= ITP_UPDATE_TOOL;
 			}
 
 			sgm->spindle = newspindle;
@@ -597,7 +599,7 @@ void itp_run(void)
 			if ((prev_spindle != (int16_t)newspindle) && newspindle)
 			{
 				prev_spindle = (int16_t)newspindle;
-				sgm->update_itp |= ITP_UPDATE_TOOL;
+				sgm->flags |= ITP_UPDATE_TOOL;
 			}
 		}
 #endif
@@ -616,6 +618,12 @@ void itp_run(void)
 
 		itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
 		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
+
+		// checks for synched motion
+		if (itp_cur_plan_block->planner_flags.bit.synched)
+		{
+			sgm->flags |= ITP_SYNC_START;
+		}
 
 		if (remaining_steps == 0)
 		{
@@ -638,7 +646,8 @@ void itp_run(void)
 #endif
 
 	// starts the step isr if is stopped and there are segments to execute
-	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
+	// check if the start is controlled by synched motion before start
+	if (!(itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC_START))
 	{
 		cnc_set_exec_state(EXEC_RUN); // flags that it started running
 		__ATOMIC__
@@ -794,7 +803,7 @@ void itp_run(void)
 			*/
 			speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
 			profile_steps_limit = accel_until;
-			sgm->update_itp = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR;
 			const_speed = false;
 		}
 		else if (remaining_steps > deaccel_from)
@@ -802,7 +811,7 @@ void itp_run(void)
 			// constant speed segment
 			speed_change = 0;
 			profile_steps_limit = deaccel_from;
-			sgm->update_itp = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
+			sgm->flags = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
 			if (!const_speed)
 			{
 				const_speed = true;
@@ -812,7 +821,7 @@ void itp_run(void)
 		{
 			speed_change = -half_speed_change;
 			profile_steps_limit = 0;
-			sgm->update_itp = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR;
 			const_speed = false;
 		}
 
@@ -886,7 +895,7 @@ void itp_run(void)
 
 		if (dss != prev_dss)
 		{
-			sgm->update_itp = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR;
 		}
 		sgm->next_dss = dss - prev_dss;
 		prev_dss = dss;
@@ -912,7 +921,7 @@ void itp_run(void)
 			if ((prev_spindle != newspindle))
 			{
 				prev_spindle = newspindle;
-				sgm->update_itp |= ITP_UPDATE_TOOL;
+				sgm->flags |= ITP_UPDATE_TOOL;
 			}
 
 			sgm->spindle = newspindle;
@@ -943,7 +952,7 @@ void itp_run(void)
 			if ((prev_spindle != (int16_t)newspindle) && newspindle)
 			{
 				prev_spindle = (int16_t)newspindle;
-				sgm->update_itp |= ITP_UPDATE_TOOL;
+				sgm->flags |= ITP_UPDATE_TOOL;
 			}
 		}
 #endif
@@ -956,6 +965,12 @@ void itp_run(void)
 		}
 
 		itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper] = remaining_steps;
+
+		// checks for synched motion
+		if (itp_cur_plan_block->planner_flags.bit.synched)
+		{
+			sgm->flags |= ITP_SYNC_START;
+		}
 
 		if (remaining_steps == 0)
 		{
@@ -980,10 +995,14 @@ void itp_run(void)
 	// starts the step isr if is stopped and there are segments to execute
 	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
 	{
-		cnc_set_exec_state(EXEC_RUN); // flags that it started running
-		__ATOMIC__
+		// check if the start is controlled by synched motion before start
+		if (!(itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC_START))
 		{
-			mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+			cnc_set_exec_state(EXEC_RUN); // flags that it started running
+			__ATOMIC__
+			{
+				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+			}
 		}
 	}
 }
@@ -1165,15 +1184,15 @@ MCU_CALLBACK void mcu_step_cb(void)
 	{
 		if (itp_rt_sgm != NULL)
 		{
-			if (itp_rt_sgm->update_itp)
+			if (itp_rt_sgm->flags)
 			{
-				if (itp_rt_sgm->update_itp & ITP_UPDATE_ISR)
+				if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
 				{
 					mcu_change_itp_isr(itp_rt_sgm->timer_counter, itp_rt_sgm->timer_prescaller);
 				}
 
 #if TOOL_COUNT > 0
-				if (itp_rt_sgm->update_itp & ITP_UPDATE_TOOL)
+				if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
 				{
 #ifdef ENABLE_LASER_PPI
 					if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
@@ -1189,7 +1208,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 				}
 #endif
-				itp_rt_sgm->update_itp = ITP_NOUPDATE;
+				itp_rt_sgm->flags = ITP_NOUPDATE;
 			}
 
 			// no step remaining discards current segment
@@ -1631,7 +1650,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 //         }
 //         itp_sgm_data[itp_sgm_data_write].remaining_steps = MAX(delay, 0);
 //         itp_sgm_data[itp_sgm_data_write].feed = 0;
-//         itp_sgm_data[itp_sgm_data_write].update_itp = type;
+//         itp_sgm_data[itp_sgm_data_write].flags = type;
 // #if TOOL_COUNT > 0
 //         if (g_settings.laser_mode)
 //         {

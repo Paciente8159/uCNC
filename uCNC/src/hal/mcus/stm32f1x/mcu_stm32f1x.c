@@ -591,9 +591,8 @@ uint8_t mcu_get_servo(uint8_t servo)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 1) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
 
-	totalticks >>= 1;
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -603,6 +602,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 	*prescaller--;
 	*ticks = (uint16_t)totalticks;
+}
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
 }
 
 // starts a constant rate pulse at a given frequency.

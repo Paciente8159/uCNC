@@ -37,21 +37,25 @@ extern "C"
 #define PLANNER_MOTION_CONTINUOUS 128
 
 #define STATE_COPY_FLAG_MASK 0x1F
-typedef union
+	typedef union
 	{
 		uint8_t reg;
 		struct
 		{
 			uint8_t feed_override : 1;
+			uint8_t optimal : 1;
+			uint8_t synched : 1;
 #if TOOL_COUNT > 0
 			uint8_t spindle_running : 2;
 			uint8_t coolant : 2;
-			uint8_t coolant_override : 2;
 #else
-		uint8_t : 6; // unused
+		uint8_t : 4; // unused
 #endif
-			uint8_t optimal : 1;
+#ifdef ENABLE_BACKLASH_COMPENSATION
 			uint8_t backlash_comp : 1;
+#else
+		uint8_t : 1; // unused
+#endif
 		} bit;
 	} planner_flags_t;
 

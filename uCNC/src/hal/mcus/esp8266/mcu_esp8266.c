@@ -566,6 +566,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+}
+
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
@@ -721,10 +726,10 @@ void mcu_eeprom_flush(void)
  * */
 
 #ifndef mcu_config_timeout
-	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	esp8266_oneshot_reload = (128000UL/timeout);
+	esp8266_oneshot_reload = (128000UL / timeout);
 }
 #endif
 

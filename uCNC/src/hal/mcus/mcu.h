@@ -241,9 +241,14 @@ extern "C"
 
 	// Step interpolator
 	/**
-	 * convert step rate to clock cycles
+	 * convert step rate/frequency to timer ticks and prescaller
 	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+
+	/**
+	 * convert timer ticks and prescaller to step rate/frequency
+	 * */
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
 
 	/**
 	 * starts the timer interrupt that generates the step pulses for the interpolator

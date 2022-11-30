@@ -597,6 +597,62 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	clocks--;
 	*ticks = (uint16_t)MIN(clocks, 0xFFFF);
 }
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	float freq;
+#if (ITP_TIMER == 2)
+	switch (prescaller & 0x07)
+	{
+	case 1:
+		freq = (float)F_CPU;
+		break;
+	case 2:
+		freq = (float)(F_CPU >> 3);
+		break;
+	case 3:
+		freq = (float)(F_CPU >> 5);
+		break;
+	case 4:
+		freq = (float)(F_CPU >> 6);
+		break;
+	case 5:
+		freq = (float)(F_CPU >> 7);
+		break;
+	case 6:
+		freq = (float)(F_CPU >> 8);
+		break;
+	case 7:
+		freq = (float)(F_CPU >> 10);
+		break;
+	default:
+		return 0;
+	}
+#else
+	switch (prescaller & 0x07)
+	{
+	case 1:
+		freq = (float)F_CPU;
+		break;
+	case 2:
+		freq = (float)(F_CPU >> 3);
+		break;
+	case 3:
+		freq = (float)(F_CPU >> 6);
+		break;
+	case 4:
+		freq = (float)(F_CPU >> 8);
+		break;
+	case 5:
+		freq = (float)(F_CPU >> 10);
+		break;
+	default:
+		return 0;
+	}
+#endif
+
+	return (freq / (float)(ticks + 1));
+}
 /*
 		initializes the pulse ISR
 		In Arduino this is done in TIMER1

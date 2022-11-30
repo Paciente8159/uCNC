@@ -452,11 +452,6 @@ float planner_get_previous_spindle_speed(void)
 	return (float)planner_state.spindle_speed;
 }
 
-uint8_t planner_get_coolant(void)
-{
-	return (planner_state.state_flags.bit.coolant ^ planner_state.state_flags.bit.coolant_override);
-}
-
 uint8_t planner_get_previous_coolant(void)
 {
 	return planner_state.state_flags.bit.coolant;
@@ -600,16 +595,23 @@ void planner_spindle_ovr_reset(void)
 	planner_ovr_counter = 0;
 }
 
+static uint8_t coolant_override;
+
+uint8_t planner_get_coolant(void)
+{
+	return (planner_state.state_flags.bit.coolant ^ coolant_override);
+}
+
 uint8_t planner_coolant_ovr_toggle(uint8_t value)
 {
-	planner_state.state_flags.bit.coolant_override ^= value;
-	return planner_state.state_flags.bit.coolant_override;
+	coolant_override ^= value;
+	return coolant_override;
 }
 
 void planner_coolant_ovr_reset(void)
 {
 	planner_state.state_flags.bit.coolant = 0;
-	planner_state.state_flags.bit.coolant_override = 0;
+	coolant_override = 0;
 }
 #endif
 
