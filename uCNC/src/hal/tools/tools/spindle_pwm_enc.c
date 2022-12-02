@@ -45,13 +45,24 @@
 #endif
 
 #ifndef SPINDLE_PWM_ENC_FEEDBACK
-#define SPINDLE_PWM_ENC_FEEDBACK ENC0
+#define SPINDLE_PWM_ENC_FEEDBACK DIN7
 #endif
 
+#define SPINDLE_PWM_ENC_BIT (SPINDLE_PWM_ENC_FEEDBACK - DIN_PINS_OFFSET)
+
 static uint8_t speed;
+static uint32_t prev_time;
+static uint32_t current_time;
 
 static void speed_encoder_read(uint8_t inputs, uint8_t diff)
 {
+	// rising edge of encoder
+	if (inputs & diff & (1 << SPINDLE_PWM_ENC_BIT))
+	{
+		uint32_t time = mcu_millis();
+		prev_time = current_time;
+		current_time = time;
+	}
 }
 
 static void startup_code(void)
@@ -110,7 +121,8 @@ static int16_t range_speed(int16_t value)
 static uint16_t get_speed(void)
 {
 #if SPINDLE_PWM_ENC >= 0
-	float spindle = (float)mcu_get_pwm(SPINDLE_PWM_ENC) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	uint32_t millis = current_time - prev_time;
+	float spindle = 60000.f / (float)millis;
 	return (uint16_t)lroundf(spindle);
 #else
 	return 0;
@@ -133,9 +145,11 @@ static void pid_update(int16_t value)
 
 static int16_t pid_error(void)
 {
-#if (!(SPINDLE_FEEDBACK < 0) && !(SPINDLE_PWM_ENC < 0))
-	uint8_t reader = mcu_get_analog(ANALOG0);
-	return (speed - reader);
+#if (!(SPINDLE_PWM_ENC_BIT < 0) && !(SPINDLE_PWM_ENC < 0))
+	uint32_t millis = current_time - prev_time;
+	float readout = 60000.f / (float)millis;
+	float pwm = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	return lroundf(speed - reader);
 #else
 	return 0;
 #endif
