@@ -1870,6 +1870,8 @@ extern "C"
 #define DIO209 -210
 #endif
 
+#define NOPIN -256
+
 	// if the pins are undefined turn on option
 #if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))
 #define DISABLE_ALL_CONTROLS
@@ -1952,46 +1954,47 @@ extern "C"
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
-#if (DIN0 < 0)
+#if ((DIN0 < 0) && defined(DIN0_ISR))
 #define DIN0_MASK 0
 #else
 #define DIN0_MASK 1
 #endif
-#if (DIN1 < 0)
+#if ((DIN1 < 0) && defined(DIN1_ISR))
 #define DIN1_MASK 0
 #else
 #define DIN1_MASK 2
 #endif
-#if (DIN2 < 0)
+#if ((DIN2 < 0) && defined(DIN2_ISR))
 #define DIN2_MASK 0
 #else
 #define DIN2_MASK 4
 #endif
-#if (DIN3 < 0)
+#if ((DIN3 < 0) && defined(DIN3_ISR))
 #define DIN3_MASK 0
 #else
 #define DIN3_MASK 8
 #endif
-#if (DIN4 < 0)
+#if ((DIN4 < 0) && defined(DIN4_ISR))
 #define DIN4_MASK 0
 #else
 #define DIN4_MASK 16
 #endif
-#if (DIN5 < 0)
+#if ((DIN5 < 0) && defined(DIN5_ISR))
 #define DIN5_MASK 0
 #else
 #define DIN5_MASK 32
 #endif
-#if (DIN6 < 0)
+#if ((DIN6 < 0) && defined(DIN6_ISR))
 #define DIN6_MASK 0
 #else
 #define DIN6_MASK 64
 #endif
-#if (DIN7 < 0)
+#if ((DIN7 < 0) && defined(DIN7_ISR))
 #define DIN7_MASK 0
 #else
 #define DIN7_MASK 128
 #endif
+
 
 #define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
 

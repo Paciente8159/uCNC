@@ -25,17 +25,14 @@
 
 // #define ENABLE_COOLANT
 #ifdef ENABLE_COOLANT
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT2
-#endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT3
+#ifndef LASER_PPI_AIR_ASSIST
+#define LASER_PPI_AIR_ASSIST DOUT2
 #endif
 #endif
 
 #ifdef ENABLE_LASER_PPI
 
-static void laser_ppi_startup_code(void)
+static void startup_code(void)
 {
 // force laser mode
 #if !(LASER_PPI < 0)
@@ -50,7 +47,7 @@ static void laser_ppi_startup_code(void)
 	parser_config_ppi();
 }
 
-static void laser_ppi_shutdown_code(void)
+static void shutdown_code(void)
 {
 #if !(LASER_PPI < 0)
 #ifndef INVERT_LASER_PPI_LOGIC
@@ -64,29 +61,29 @@ static void laser_ppi_shutdown_code(void)
 	parser_config_ppi();
 }
 
-static void laser_ppi_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
 // easy macro
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	SET_COOLANT(LASER_PPI_AIR_ASSIST, NOPIN, value);
 #endif
 }
 
-static uint16_t laser_ppi_get_speed(void)
+static uint16_t get_speed(void)
 {
 	return g_settings.step_per_mm[STEPPER_COUNT - 1];
 }
 
-const tool_t __rom__ laser_ppi = {
-	.startup_code = &laser_ppi_startup_code,
-	.shutdown_code = &laser_ppi_shutdown_code,
+const tool_t laser_ppi = {
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
 	.range_speed = NULL,
-	.get_speed = &laser_ppi_get_speed,
+	.get_speed = &get_speed,
 	.set_speed = NULL,
-	.set_coolant = &laser_ppi_set_coolant};
+	.set_coolant = &set_coolant};
 
 #endif

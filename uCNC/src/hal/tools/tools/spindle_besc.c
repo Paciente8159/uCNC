@@ -25,19 +25,19 @@
  * */
 
 // Spindle enable pins.  You can set these to the same pin if required.
-#ifndef SPINDLE_SERVO
-#define SPINDLE_SERVO SERVO0
+#ifndef SPINDLE_BESC_SERVO
+#define SPINDLE_BESC_SERVO SERVO0
 #endif
-#ifndef SPINDLE_POWER_RELAY
-#define SPINDLE_POWER_RELAY DOUT0
+#ifndef SPINDLE_BESC_POWER_RELAY
+#define SPINDLE_BESC_POWER_RELAY DOUT0
 #endif
 
 #ifdef ENABLE_COOLANT
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT2
+#ifndef SPINDLE_BESC_COOLANT_FLOOD
+#define SPINDLE_BESC_COOLANT_FLOOD DOUT2
 #endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT3
+#ifndef SPINDLE_BESC_COOLANT_MIST
+#define SPINDLE_BESC_COOLANT_MIST DOUT3
 #endif
 #endif
 
@@ -53,31 +53,30 @@
 
 static uint8_t spindle_speed;
 
-void spindle_besc_startup()
+static void startup_code(void)
 {
-
 // do whatever routine you need to do here to arm the ESC
-#if !(SPINDLE_POWER_RELAY < 0)
-#if !(SPINDLE_SERVO < 0)
-	mcu_set_servo(SPINDLE_SERVO, THROTTLE_NEUTRAL);
+#if !(SPINDLE_BESC_POWER_RELAY < 0)
+#if !(SPINDLE_BESC_SERVO < 0)
+	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_NEUTRAL);
 #endif
-	mcu_set_output(SPINDLE_POWER_RELAY);
+	mcu_set_output(SPINDLE_BESC_POWER_RELAY);
 	cnc_delay_ms(1000);
-#if !(SPINDLE_SERVO < 0)
-	mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
+#if !(SPINDLE_BESC_SERVO < 0)
+	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
 #endif
 	cnc_delay_ms(2000);
 #endif
 }
 
-void spindle_besc_shutdown()
+static void shutdown_code(void)
 {
-#if !(SPINDLE_POWER_RELAY < 0)
-	mcu_clear_output(SPINDLE_POWER_RELAY);
+#if !(SPINDLE_BESC_POWER_RELAY < 0)
+	mcu_clear_output(SPINDLE_BESC_POWER_RELAY);
 #endif
 }
 
-int16_t spindle_besc_range_speed(int16_t value)
+static int16_t range_speed(int16_t value)
 {
 	if (value == 0)
 	{
@@ -88,33 +87,33 @@ int16_t spindle_besc_range_speed(int16_t value)
 	return value;
 }
 
-void spindle_besc_set_speed(int16_t value)
+static void set_speed(int16_t value)
 {
 
 	if ((value <= 0))
 	{
-#if !(SPINDLE_SERVO < 0)
-		mcu_set_servo(SPINDLE_SERVO, THROTTLE_DOWN);
+#if !(SPINDLE_BESC_SERVO < 0)
+		mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
 #endif
 	}
 	else
 	{
-#if !(SPINDLE_SERVO < 0)
-		mcu_set_servo(SPINDLE_SERVO, (uint8_t)value);
+#if !(SPINDLE_BESC_SERVO < 0)
+		mcu_set_servo(SPINDLE_BESC_SERVO, (uint8_t)value);
 #endif
 	}
 
 	spindle_speed = (value <= 0) ? 0 : value;
 }
 
-void spindle_besc_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	SET_COOLANT(SPINDLE_BESC_COOLANT_FLOOD, SPINDLE_BESC_COOLANT_MIST, value);
 #endif
 }
 
-uint16_t spindle_besc_get_speed(void)
+static uint16_t get_speed(void)
 {
 
 	// this show how to use an encoder (in this case encoder 0) configured as a counter
@@ -154,14 +153,14 @@ uint16_t spindle_besc_get_speed(void)
 #endif
 }
 
-const tool_t __rom__ spindle_besc = {
-	.startup_code = &spindle_besc_startup,
-	.shutdown_code = &spindle_besc_shutdown,
+const tool_t spindle_besc = {
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.range_speed = &spindle_besc_range_speed,
-	.get_speed = &spindle_besc_get_speed,
-	.set_speed = &spindle_besc_set_speed,
-	.set_coolant = &spindle_besc_set_coolant};
+	.range_speed = &range_speed,
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};

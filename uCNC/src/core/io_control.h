@@ -34,6 +34,10 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+	// isr
+	typedef void (*inputs_changed_cb)(uint8_t, uint8_t);
+	extern inputs_changed_cb io_inputs_changed_cb;
+
 	// inputs
 	void io_lock_limits(uint8_t limitmask);
 	void io_invert_limits(uint8_t limitmask);

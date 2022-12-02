@@ -83,18 +83,9 @@ static FORCEINLINE uint8_t encoder_read_dirs(void)
 	return value ^ g_settings.encoders_dir_invert_mask;
 }
 
-// overrides the mcu_input_change_cb
-// this make a direct path from the interrupt to this call without passing through the µCNC module or the io_control units
-#ifdef ENCODERS_DIRECT_CALLBACK
-void mcu_inputs_changed_cb(void)
-#else
-void encoders_update(void)
-#endif
+void encoders_update(uint8_t pulse, uint8_t diff)
 {
 	uint8_t dir = encoder_read_dirs();
-	uint8_t pulse = encoder_read_pulses();
-	uint8_t diff = encoder_last_pulse ^ pulse;
-	encoder_last_pulse = pulse;
 
 	// leave only those active
 	diff &= pulse;
