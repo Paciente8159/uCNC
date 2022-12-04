@@ -234,7 +234,6 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 #endif
 }
 
-inputs_changed_cb io_inputs_changed_cb;
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 	static uint8_t prev_inputs = 0;
@@ -290,21 +289,21 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 #endif
 
+	inputs ^= g_settings.encoders_pulse_invert_mask;
 	diff = inputs ^ prev_inputs;
 
-	if (io_inputs_changed_cb)
+	if (diff)
 	{
-		io_inputs_changed_cb(inputs, diff);
-	}
 #if (!defined(ENCODERS_DIRECT_CALLBACK) && ENCODERS > 0)
-	encoders_update(inputs, diff);
+		encoders_update(inputs, diff);
 #endif
 #ifdef ENABLE_IO_MODULES
-	uint8_t args[] = {inputs, diff};
-	EVENT_INVOKE(input_change, args);
+		uint8_t args[] = {inputs, diff};
+		EVENT_INVOKE(input_change, args);
 #endif
 
-	prev_inputs = inputs;
+		prev_inputs = inputs;
+	}
 }
 
 void io_lock_limits(uint8_t limitmask)

@@ -166,6 +166,7 @@
 #define DIN5 135
 #define DIN6 136
 #define DIN7 137
+#define DIN7_ISR
 #define DIN8 138
 #define DIN9 139
 #define DIN10 140

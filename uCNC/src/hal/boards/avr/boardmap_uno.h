@@ -29,7 +29,7 @@ extern "C"
 #endif
 
 // reduces RAM usage a bit to prevent hardware resets
-#define PLANNER_BUFFER_SIZE 14
+#define PLANNER_BUFFER_SIZE 13
 
 #define PCINT0_PORT B
 #define PCINT1_PORT C
@@ -55,36 +55,36 @@ extern "C"
 #define DIR0_PORT D // assigns DIR0 port
 
 // Setup limit pins
-#define LIMIT_Z_BIT 4  // assigns LIMIT_Z pin
-#define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
-					   /*#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
-				   #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-				   #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin*/
+// #define LIMIT_Z_BIT 3  // assigns LIMIT_Z pin
+// #define LIMIT_Z_PORT B // assigns LIMIT_Z port
+// #define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
+// 					   /*#define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
+// 				   #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
+// 				   #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin*/
 
-#define LIMIT_Y_BIT 2  // assigns LIMIT_Y pin
-#define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_Y_ISR 0  // assigns LIMIT_Y ISR
+// #define LIMIT_Y_BIT 2  // assigns LIMIT_Y pin
+// #define LIMIT_Y_PORT B // assigns LIMIT_Y port
+// #define LIMIT_Y_ISR 0  // assigns LIMIT_Y ISR
 
-#define LIMIT_X_BIT 1  // assigns LIMIT_X pin
-#define LIMIT_X_PORT B // assigns LIMIT_X port
-#define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
+// #define LIMIT_X_BIT 1  // assigns LIMIT_X pin
+// #define LIMIT_X_PORT B // assigns LIMIT_X port
+// #define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
 
 // Setup probe pin
-#define PROBE_BIT 5
-#define PROBE_PORT C
-#define PROBE_ISR 1
+// #define PROBE_BIT 5
+// #define PROBE_PORT C
+// #define PROBE_ISR 1
 
 // Setup control input pins
-#define ESTOP_BIT 0
-#define FHOLD_BIT 1
-#define CS_RES_BIT 2
-#define ESTOP_PORT C
-#define FHOLD_PORT C
-#define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
+// #define ESTOP_BIT 0
+// #define FHOLD_BIT 1
+// #define CS_RES_BIT 2
+// #define ESTOP_PORT C
+// #define FHOLD_PORT C
+// #define CS_RES_PORT C
+// #define ESTOP_ISR 1
+// #define FHOLD_ISR 1
+// #define CS_RES_ISR 1
 
 // Setup com pins
 #define RX_BIT 0
@@ -95,10 +95,14 @@ extern "C"
 	//#define UART_PORT 0
 
 	// Setup PWM
-#define PWM0_BIT 3	// assigns PWM0 pin
-#define PWM0_PORT B // assigns PWM0 pin
-#define PWM0_CHANNEL A
-#define PWM0_TIMER 2
+// #define PWM0_BIT 3	// assigns PWM0 pin
+// #define PWM0_PORT B // assigns PWM0 pin
+// #define PWM0_CHANNEL A
+// #define PWM0_TIMER 2
+
+// Setup SERVO
+#define SERVO0_BIT 4
+#define SERVO_PORT B
 
 // Setup generic IO Pins
 // Functionalities are set in cnc_hal_config.h file
@@ -111,7 +115,13 @@ extern "C"
 #define DOUT2_BIT 3
 #define DOUT2_PORT C
 
-	// // spindle speed sensor
+	// spindle speed sensor (digital)
+	#define DIN7_BIT 2
+	#define DIN7_PORT B
+	#define DIN7_PULLUP
+	#define DIN7_ISR 0
+	
+	// spindle speed sensor (analog)
 	//  #define ANALOG0_BIT 4
 	//  #define ANALOG0_PORT C
 	//  #define ANALOG0_CHANNEL 4

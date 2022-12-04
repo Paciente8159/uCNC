@@ -83,12 +83,12 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
-{
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(input_change, NULL);
-#endif
-}
+//MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
+//{
+//#ifdef ENABLE_IO_MODULES
+//	EVENT_INVOKE(input_change, NULL);
+//#endif
+//}
 
 /*timers*/
 int start_timer(int, void (*)(void));
@@ -1572,6 +1572,9 @@ uint16_t mcu_stopPerfCounter(void)
 
 void mcu_dotasks(void)
 {
+}
+
+void mcu_config_input_isr(int pin){
 }
 
 #endif

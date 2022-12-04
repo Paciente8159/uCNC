@@ -44,7 +44,12 @@
 #endif
 #endif
 
-#define SPINDLE_FEEDBACK ANALOG0
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
+#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
+#ifndef ENABLE_ENCODER_RPM
+#error "TO use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
+#endif
+#endif
 
 static uint8_t speed;
 
@@ -96,11 +101,15 @@ static int16_t range_speed(int16_t value)
 
 static uint16_t get_speed(void)
 {
+#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
+	return encoder_get_rpm();
+#else
 #if SPINDLE_PWM >= 0
-	float spindle = (float)mcu_get_pwm(SPINDLE_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
 	return (uint16_t)lroundf(spindle);
 #else
 	return 0;
+#endif
 #endif
 }
 
@@ -113,7 +122,7 @@ static void pid_update(int16_t value)
 #if !(SPINDLE_PWM < 0)
 		mcu_set_pwm(SPINDLE_PWM, newval);
 #else
-	io_set_pwm(SPINDLE_PWM, newval);
+		io_set_pwm(SPINDLE_PWM, newval);
 #endif
 	}
 }

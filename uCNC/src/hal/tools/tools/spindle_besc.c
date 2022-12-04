@@ -46,12 +46,14 @@
 #define THROTTLE_FULL 255
 #define THROTTLE_RANGE (THROTTLE_FULL - THROTTLE_DOWN)
 
-// #define HAS_RPM_COUNTER
-#ifdef HAS_RPM_COUNTER
-#define RPM_ENCODER 0
+#define SPINDLE_BESC_HAS_RPM_ENCODER
+#ifdef SPINDLE_BESC_HAS_RPM_ENCODER
+#ifndef ENABLE_ENCODER_RPM
+#error "TO use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
+#endif
 #endif
 
-static uint8_t spindle_speed;
+static uint8_t speed;
 
 static void startup_code(void)
 {
@@ -103,7 +105,7 @@ static void set_speed(int16_t value)
 #endif
 	}
 
-	spindle_speed = (value <= 0) ? 0 : value;
+	speed = (value <= 0) ? 0 : value;
 }
 
 static void set_coolant(uint8_t value)
@@ -115,41 +117,15 @@ static void set_coolant(uint8_t value)
 
 static uint16_t get_speed(void)
 {
-
-	// this show how to use an encoder (in this case encoder 0) configured as a counter
-	// to take real RPM readings of the spindle
-	// the reading is updated every 5 seconds
-
-#if (defined(HAS_RPM_COUNTER) && (ENCODERS > RPM_ENCODER))
-	extern int32_t encoder_get_position(uint8_t i);
-	extern void encoder_reset_position(uint8_t i, int32_t position);
-	static uint32_t last_time = 0;
-	static uint16_t lastrpm = 0;
-	uint16_t rpm = lastrpm;
-
-	uint32_t elapsed = (mcu_millis() - last_time);
-	int32_t read = encoder_get_position(0);
-
-	// updates speed read every 5s
-	if (read > 0)
-	{
-		float timefact = 60000.f / (float)elapsed;
-		float newrpm = timefact * (float)read;
-		last_time = mcu_millis();
-		encoder_reset_position(0, 0);
-		rpm = (uint16_t)newrpm;
-		lastrpm = rpm;
-	}
-	else if (elapsed > 60000)
-	{
-		last_time = mcu_millis();
-		rpm = 0;
-		lastrpm = 0;
-	}
-
-	return rpm;
+#ifdef SPINDLE_BESC_HAS_RPM_ENCODER
+	return encoder_get_rpm();
 #else
-	return spindle_speed;
+#if SPINDLE_PWM >= 0
+	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	return (uint16_t)lroundf(spindle);
+#else
+	return 0;
+#endif
 #endif
 }
 

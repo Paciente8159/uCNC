@@ -112,10 +112,10 @@ extern "C"
 // #define DUAL_DRIVE1_ENABLE_SELFSQUARING
 #endif
 
-/*
-	Tool definition
-	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
-*/
+	/*
+		Tool definition
+		For any given tool the respective macro TOOLx (x from 1 to 16) must be created
+	*/
 
 #ifdef ENABLE_LASER_PPI
 #define LASER_PPI PWM0
@@ -124,7 +124,7 @@ extern "C"
 #endif
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
+#define TOOL1 spindle_besc
 // #define TOOL2 laser
 // #define TOOL3 laser_ppi
 // #define TOOL4 spindle_besc
@@ -136,7 +136,7 @@ extern "C"
 /*
 	Sets the number of encoders to be used (max of 8)
 */
-#define ENCODERS 0
+#define ENCODERS 1
 /**
  * To use the encoder counter 2 definitions are needed
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
@@ -156,25 +156,34 @@ extern "C"
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
 
-	// Counter mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN0
+// Counter mode
+#define ENC0_PULSE DIN7
+#define ENC0_DIR DIN7
 
-	// Encoder mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN8
+// Encoder mode
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
 
-	// #define ENC1_PULSE DIN1
-	// #define ENC1_DIR DIN9
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
 
-	// #define ENC2_PULSE DIN2
-	// #define ENC2_DIR DIN10
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
 
-	// Assign encoders to steppers
-	// #define STEP0_ENCODER ENC0
-	// #define STEP1_ENCODER ENC1
-	// #define STEP2_ENCODER ENC2
+// Assign encoders to steppers
+// #define STEP0_ENCODER ENC0
+// #define STEP1_ENCODER ENC1
+// #define STEP2_ENCODER ENC2
 
+// Assign an encoder has an RPM encoder
+#define ENABLE_ENCODER_RPM
+#ifdef ENABLE_ENCODER_RPM
+#define RPM_ENCODER ENC0
+// Optional set a second encoder pin has an encoder index
+// This assumes the index pulse occurs when pulse pin is also triggered
+// #define RPM_INDEX_INPUT DIN8
+#define RPM_PPR 120
+#endif
 #endif
 
 /*
@@ -229,9 +238,9 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * Software emulated communication interfaces
- * 
+ *
  * */
 #ifdef SOFT_SPI_ENABLED
 #ifndef SOFT_SPI_CLK

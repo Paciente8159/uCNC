@@ -250,6 +250,12 @@ extern "C"
 #endif
 #define ENC7_MASK (1 << ENC7)
 #endif
+#ifdef ENABLE_ENCODER_RPM
+#if (RPM_ENCODER < ENC0 || RPM_ENCODER > ENC7 || ENCODERS < ENCODERS)
+#error "The RPM encoder must be assign to one of the available encoders"
+#endif
+#define RPM_ENCODER_MASK (1 << RPM_ENCODER)
+#endif
 
 #ifdef STEP0_ENCODER
 #define STEP0_ENCODER_MASK (1 << STEP0_ENCODER)
@@ -284,9 +290,6 @@ extern "C"
 
 #define STEPPERS_ENCODERS_MASK (STEP0_ENCODER_MASK | STEP1_ENCODER_MASK | STEP2_ENCODER_MASK | STEP3_ENCODER_MASK | STEP4_ENCODER_MASK | STEP5_ENCODER_MASK)
 
-#if defined(ENABLE_IO_MODULES)
-#warning "Encoder module is enable. Generic input change event will not be available"
-#endif
 #endif
 
 #ifndef STEPPERS_ENCODERS_MASK
@@ -1994,7 +1997,6 @@ extern "C"
 #else
 #define DIN7_MASK 128
 #endif
-
 
 #define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
 

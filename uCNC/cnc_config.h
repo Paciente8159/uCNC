@@ -388,7 +388,7 @@ extern "C"
 	 * For pin diagnostics enables command $P
 	 * */
 
-	// #define ENABLE_EXTRA_SYSTEM_CMDS
+	#define ENABLE_EXTRA_SYSTEM_CMDS
 
 	/**
 	 * Compilation specific options
