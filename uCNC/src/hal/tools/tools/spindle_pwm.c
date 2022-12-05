@@ -44,10 +44,9 @@
 #endif
 #endif
 
-// #define SPINDLE_PWM_HAS_RPM_ENCODER
 #ifdef SPINDLE_PWM_HAS_RPM_ENCODER
 #ifndef ENABLE_ENCODER_RPM
-#error "TO use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
+#error "To use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
 #endif
 #endif
 

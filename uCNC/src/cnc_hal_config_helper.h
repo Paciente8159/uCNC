@@ -185,7 +185,7 @@ extern "C"
 #if (ENC0_DIR < 0)
 #error "The ENC0 dir pin is not defined"
 #endif
-#define ENC0_MASK (1 << ENC0)
+#define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
 #endif
 #if ENCODERS > 1
 #if (ENC1_PULSE < 0)
@@ -254,7 +254,9 @@ extern "C"
 #if (RPM_ENCODER < ENC0 || RPM_ENCODER > ENC7 || ENCODERS < ENCODERS)
 #error "The RPM encoder must be assign to one of the available encoders"
 #endif
-#define RPM_ENCODER_MASK (1 << RPM_ENCODER)
+#define __encoder_mask__(X) ENC##X##_MASK
+#define encoder_mask(X) __encoder_mask__(X)
+#define RPM_ENCODER_MASK encoder_mask(RPM_ENCODER)
 #endif
 
 #ifdef STEP0_ENCODER

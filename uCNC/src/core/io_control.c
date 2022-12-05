@@ -294,7 +294,7 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 
 	if (diff)
 	{
-#if (!defined(ENCODERS_DIRECT_CALLBACK) && ENCODERS > 0)
+#if (ENCODERS > 0)
 		encoders_update(inputs, diff);
 #endif
 #ifdef ENABLE_IO_MODULES

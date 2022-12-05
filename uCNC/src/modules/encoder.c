@@ -22,7 +22,7 @@
 
 static int32_t encoders_pos[ENCODERS];
 
-#ifdef RPM_ENCODER
+#ifdef ENABLE_ENCODER_RPM
 
 #ifndef ENCODER_RPM_MIN
 #define ENCODER_RPM_MIN 4
@@ -158,7 +158,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #ifdef RPM_INDEX_OUTPUT
 		if (mcu_get_input(RPM_INDEX_INPUT))
 #else
-		if (encoders_pos[RPM_ENCODER] > RPM_PPR)
+		if (encoders_pos[RPM_ENCODER] >= RPM_PPR)
 #endif
 		{
 			encoders_pos[RPM_ENCODER] = 0;

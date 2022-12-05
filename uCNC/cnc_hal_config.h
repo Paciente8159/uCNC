@@ -130,6 +130,14 @@ extern "C"
 // #define TOOL4 spindle_besc
 // #define TOOL5 spindle_relay
 
+// enable RPM encoder for spindle_pwm
+// depends on encoders (below)
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
+
+// enable RPM encoder for spindle_besc
+// depends on encoders (below)
+#define SPINDLE_BESC_HAS_RPM_ENCODER
+
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
@@ -160,7 +168,7 @@ extern "C"
 #define ENC0_PULSE DIN7
 #define ENC0_DIR DIN7
 
-// Encoder mode
+// // Encoder mode
 // #define ENC0_PULSE DIN0
 // #define ENC0_DIR DIN8
 
@@ -187,7 +195,7 @@ extern "C"
 // #define RPM_INDEX_INPUT DIN8
 
 // Resolution of the RPM encoder or Pulses Per Revolution
-#define RPM_PPR 120
+#define RPM_PPR 2
 #endif
 #endif
 
