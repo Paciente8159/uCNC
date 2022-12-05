@@ -21,19 +21,39 @@
 #if ENCODERS > 0
 
 static int32_t encoders_pos[ENCODERS];
+
 #ifdef RPM_ENCODER
+
+#ifndef ENCODER_RPM_MIN
+#define ENCODER_RPM_MIN 4
+#endif
+#ifndef RPM_PPR
+#define RPM_PPR 4
+#endif
+
+#define MAX_RPM_PULSE_INTERVAL (1000000UL * RPM_PPR / ENCODER_RPM_MIN)
+#define RPM_CONV_CONSTANT (60000000.f / (float)RPM_PPR)
+
 static volatile uint32_t prev_time;
 static volatile uint32_t current_time;
 
 uint16_t encoder_get_rpm(void)
 {
-	uint32_t time = current_time;
-	uint32_t micros = time - prev_time;
-	if (ABS(mcu_micros() - time) > 250000)
+	uint32_t elapsed, prev;
+
+	__ATOMIC__
+	{
+		elapsed = current_time;
+		prev = prev_time;
+	}
+
+	if (ABS(mcu_micros() - elapsed) > MAX_RPM_PULSE_INTERVAL)
 	{
 		return 0;
 	}
-	float spindle = 60000000.f / (float)ABS(micros);
+
+	elapsed -= prev;
+	float spindle = RPM_CONV_CONSTANT / (float)ABS(elapsed);
 	return (uint16_t)lroundf(spindle);
 }
 
