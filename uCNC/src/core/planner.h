@@ -67,6 +67,7 @@ extern "C"
 	bool planner_buffer_is_full(void);
 	bool planner_buffer_is_empty(void);
 	planner_block_t *planner_get_block(void);
+	planner_block_t *planner_get_last_block(void);
 	float planner_get_block_exit_speed_sqr(void);
 	float planner_get_block_top_speed(float exit_speed_sqr);
 #if TOOL_COUNT > 0

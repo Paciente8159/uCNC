@@ -35,10 +35,10 @@ static float tool_at_speed_tolerance;
 #define SYNC_RUNNING 2
 #define SYNC_EVAL 4
 
-volatile uint8_t synched_motion_status;
-volatile uint32_t spindle_index_counter;
-uint32_t steps_per_index;
-uint32_t motion_total_steps;
+static volatile uint8_t synched_motion_status;
+static volatile int32_t spindle_index_counter;
+static uint32_t steps_per_index;
+static uint32_t motion_total_steps;
 
 void spindle_index_cb_handler(void)
 {
@@ -46,10 +46,9 @@ void spindle_index_cb_handler(void)
 	{
 	case SYNC_READY:
 		itp_start(false);
-		spindle_index_counter = 0;
 		synched_motion_status = SYNC_RUNNING;
 		break;
-	default:
+	case SYNC_RUNNING:
 		spindle_index_counter++;
 		synched_motion_status |= SYNC_EVAL;
 		break;
@@ -127,48 +126,84 @@ uint8_t g33_exec(void *args, bool *handled)
 
 		encoder_attach_index_cb(&spindle_index_cb_handler);
 
+		// calculates travel distance
 		float prev_target[AXIS_COUNT];
 		mc_get_position(prev_target);
 		float line_dist = 0;
+		float dir_vect[AXIS_COUNT];
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
-			prev_target[i] = ptr->target[i] - prev_target[i];
+			dir_vect[i] = ptr->target[i] - prev_target[i];
+			line_dist += dir_vect[i] * dir_vect[i];
 		}
 
-		// apply any compensation transform to distance vector
-		kinematics_apply_transform(prev_target);
+		line_dist = sqrtf(line_dist);
 
-		// determines the travelled distance
+		// determines the direction vector of the motion
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
-			line_dist += fast_flt_pow2(prev_target[i]);
+			dir_vect[i] /= line_dist;
 		}
-
-		line_dist = fast_flt_sqrt(line_dist);
 
 		// calculates the feedrate based in the K factor and the programmed spindle RPM
 		// spindle is in Rev/min and K is in units(mm) per Rev Rev/min * mm/Rev = mm/min
 		float total_revs = line_dist / ptr->words->ijk[2];
-		ptr->block_data->feed = ptr->words->ijk[2] * ptr->block_data->spindle;
+		float feed = ptr->words->ijk[2] * ptr->block_data->spindle;
+		ptr->block_data->feed = feed;
 		ptr->block_data->motion_flags.bit.synched = 1;
 
-		// queue motion in planner
+		// convert feed to mm/s
+		feed *= MIN_SEC_MULT;
+
+		// calculates the needed distance to reach the desired feed
+		float needed_distance = feed * feed * 0.5f / ptr->block_data->max_accel;
+
+		// calculates the next number of complete rev in which the desired speed can be reached sychrounously to index pulse
+		float revs_to_sync = ceil(needed_distance / ptr->words->ijk[2]);
+
+		// with the needed revs reajusts the acceleration to meet the speecs
+		float distance_to_accel = ptr->words->ijk[2] * revs_to_sync;
+		float new_accel = feed * feed * 0.5f / distance_to_accel;
+
+		// given the feed and acceleration calculates how many extra full revs will be executed by the spindle before the motions sync
+		float elapsed_time = feed / new_accel;
+
+		// initialize the index counter (this number is always negative unless sync is imediate)
+		spindle_index_counter = (int32_t)(revs_to_sync - (ptr->block_data->spindle * MIN_SEC_MULT * elapsed_time));
+
+		// now queue the acceleration phase in the planner
+
+		// calculate the intermediate target where speeds sync
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			prev_target[i] += (dir_vect[i] * distance_to_accel);
+		}
+
+		// create a copy of the original block and adjust the accel
+		motion_data_t accel_block;
+		memcpy(&accel_block, ptr->block_data, sizeof(motion_data_t));
+		accel_block.max_accel = new_accel;
+
+		// queue motions in planner
+		if (mc_line(prev_target, &accel_block) != STATUS_OK)
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
+
 		if (mc_line(ptr->target, ptr->block_data) != STATUS_OK)
 		{
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		planner_block_t *thread = planner_get_block();
+		// retrieves the last block added to the planner that contains the info on the synched motion
+		planner_block_t *thread = planner_get_last_block();
 		motion_total_steps = thread->steps[thread->main_stepper];
 
 		// calculates the expected number of steps per revolution
-		steps_per_index = lroundf((float)motion_total_steps / total_revs);
-
-		// // calculates the number of steps needed to reach constant speed
-		// float junction_speed_sqr = planner_get_block_top_speed(0);
-		// float accel_dist = junction_speed_sqr / thread->acceleration;
+		steps_per_index = lroundf((float)motion_total_steps / (total_revs - revs_to_sync));
 
 		// wait for spindle to reach the desired speed
 		uint16_t programmed_speed = planner_get_spindle_speed(1);
@@ -201,32 +236,34 @@ uint8_t g33_exec(void *args, bool *handled)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-void spindle_sync_update_loop(void)
+uint8_t spindle_sync_update_loop(void* ptr, bool* handled)
 {
-	// if there is new data available (new index pulse fired)
-	if (synched_motion_status & SYNC_EVAL)
-	{
-		synched_motion_status &= ~SYNC_EVAL;
+	// // if there is new data available (new index pulse fired)
+	// if (synched_motion_status & SYNC_EVAL)
+	// {
+	// 	synched_motion_status &= ~SYNC_EVAL;
 
-		uint32_t ideal_position = encoder_get_position(RPM_ENCODER);
-		uint32_t course_position;
+	// 	uint32_t ideal_position = encoder_get_position(RPM_ENCODER);
+	// 	uint32_t course_position;
 
-		// gets the number of processed steps (steps still in the planner that were not sent to the interpolator)
-		planner_block_t *thread = planner_get_block();
-		uint32_t processed_steps = motion_total_steps - thread->steps[thread->main_stepper];
+	// 	// gets the number of processed steps (steps still in the planner that were not sent to the interpolator)
+	// 	planner_block_t *thread = planner_get_block();
+	// 	uint32_t processed_steps = motion_total_steps - thread->steps[thread->main_stepper];
 
-		// calculates the expected step position based on the index counter + the intermediate sync pulse position
-		__ATOMIC__
-		{
-			course_position = spindle_index_counter;
-		}
-		course_position *= steps_per_index;
-		ideal_position *= steps_per_index;
-		ideal_position /= RPM_PPR;
-		ideal_position += course_position;
+	// 	// calculates the expected step position based on the index counter + the intermediate sync pulse position
+	// 	__ATOMIC__
+	// 	{
+	// 		course_position = spindle_index_counter;
+	// 	}
+	// 	course_position *= steps_per_index;
+	// 	ideal_position *= steps_per_index;
+	// 	ideal_position /= RPM_PPR;
+	// 	ideal_position += course_position;
 
-		float error = ideal_position - processed_steps;
-	}
+	// 	float error = ideal_position - processed_steps;
+	// }
+
+	return STATUS_OK;
 }
 
 CREATE_EVENT_LISTENER(cnc_dotasks, spindle_sync_update_loop);

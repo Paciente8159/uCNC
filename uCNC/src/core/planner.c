@@ -320,6 +320,12 @@ planner_block_t *planner_get_block(void)
 	return &planner_data[planner_data_read];
 }
 
+planner_block_t *planner_get_last_block(void)
+{
+	uint8_t last = planner_buffer_prev(planner_data_write);
+	return &planner_data[last];
+}
+
 float planner_get_block_exit_speed_sqr(void)
 {
 	// only one block in the buffer (exit speed is 0)

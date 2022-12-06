@@ -46,7 +46,9 @@
 #define ITP_ACCEL 4
 #define ITP_CONST 8
 #define ITP_DEACCEL 16
-#define ITP_SYNC 32
+#define ITP_PRE_SYNC 32
+#define ITP_IN_SYNC 64
+#define ITP_SYNC (ITP_PRE_SYNC | ITP_IN_SYNC)
 
 // contains data of the block being executed by the pulse routine
 // this block has the necessary data to execute the Bresenham line algorithm
@@ -114,6 +116,10 @@ static int16_t prev_spindle;
 static itp_segment_t *itp_rt_sgm;
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 static volatile uint8_t itp_step_lock;
+#endif
+
+#ifdef ENABLE_RT_SYNC_MOTIONS
+volatile static uint32_t itp_sync_step_counter;
 #endif
 
 static void itp_sgm_buffer_read(void);
@@ -449,7 +455,7 @@ void itp_run(void)
 			else if (remaining_steps > deaccel_from)
 			{
 				// constant speed segment
-				sgm->flags = (remaining_steps == accel_until) ? (ITP_UPDATE_ISR|ITP_CONST) : ITP_CONST;
+				sgm->flags = (remaining_steps == accel_until) ? (ITP_UPDATE_ISR | ITP_CONST) : ITP_CONST;
 				partial_distance += top_speed * INTERPOLATOR_DELTA_CONST_T;
 				profile_steps_limit = deaccel_from;
 				current_speed = top_speed;
@@ -804,7 +810,7 @@ void itp_run(void)
 			// constant speed segment
 			speed_change = 0;
 			profile_steps_limit = deaccel_from;
-			sgm->flags = (!const_speed) ? (ITP_UPDATE_ISR|ITP_CONST) : ITP_CONST;
+			sgm->flags = (!const_speed) ? (ITP_UPDATE_ISR | ITP_CONST) : ITP_CONST;
 			if (!const_speed)
 			{
 				const_speed = true;
@@ -814,7 +820,7 @@ void itp_run(void)
 		{
 			speed_change = -half_speed_change;
 			profile_steps_limit = 0;
-			sgm->flags = ITP_UPDATE_ISR| ITP_DEACCEL;
+			sgm->flags = ITP_UPDATE_ISR | ITP_DEACCEL;
 			const_speed = false;
 		}
 
@@ -1223,7 +1229,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 #endif
 		io_toggle_steps(stepbits);
-		stepbits = 0;
 
 		// if buffer empty loads one
 		if (itp_rt_sgm == NULL)
@@ -1303,6 +1308,14 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 		}
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		if (stepbits && (itp_rt_sgm->flags & ITP_IN_SYNC))
+		{
+			itp_sync_step_counter++;
+		}
+#endif
+
+		stepbits = 0;
 		itp_busy = true;
 		mcu_enable_global_isr();
 
