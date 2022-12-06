@@ -35,6 +35,8 @@ extern "C"
 #define ENC6 6
 #define ENC7 7
 
+	typedef void (*encoder_index_cb)(void);
+
 	void encoder_init(void);
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
@@ -42,7 +44,8 @@ extern "C"
 	void encoders_reset_position(void);
 	void encoders_itp_reset_rt_position(float *origin);
 	void encoders_update(uint8_t pulse, uint8_t diff);
-	void encoder_rpm_index_cb(void);
+	void encoder_attach_index_cb(encoder_index_cb callback);
+	void encoder_dettach_index_cb(void);
 	uint16_t encoder_get_rpm(void);
 
 #ifdef __cplusplus

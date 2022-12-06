@@ -30,6 +30,32 @@ static float tool_at_speed_tolerance;
 #error "This module is not compatible with the current version of µCNC"
 #endif
 
+#define SYNC_DISABLED 0
+#define SYNC_READY 1
+#define SYNC_RUNNING 2
+#define SYNC_EVAL 4
+
+volatile uint8_t synched_motion_status;
+volatile uint32_t spindle_index_counter;
+uint32_t steps_per_index;
+uint32_t motion_total_steps;
+
+void spindle_index_cb_handler(void)
+{
+	switch (synched_motion_status)
+	{
+	case SYNC_READY:
+		itp_start(false);
+		spindle_index_counter = 0;
+		synched_motion_status = SYNC_RUNNING;
+		break;
+	default:
+		spindle_index_counter++;
+		synched_motion_status |= SYNC_EVAL;
+		break;
+	}
+}
+
 // this ID must be unique for each code
 #define G33 33
 
@@ -99,14 +125,33 @@ uint8_t g33_exec(void *args, bool *handled)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		// wait for spindle to reach the desired speed
-		uint16_t programmed_speed = planner_get_spindle_speed(1);
-		uint16_t at_speed_threshold = lroundf(tool_at_speed_tolerance * programmed_speed);
+		encoder_attach_index_cb(&spindle_index_cb_handler);
 
-		// wait for tool at speed
-		while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
-			;
+		float prev_target[AXIS_COUNT];
+		mc_get_position(prev_target);
+		float line_dist = 0;
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			prev_target[i] = ptr->target[i] - prev_target[i];
+		}
 
+		// apply any compensation transform to distance vector
+		kinematics_apply_transform(prev_target);
+
+		// determines the travelled distance
+		for (uint8_t i = AXIS_COUNT; i != 0;)
+		{
+			i--;
+			line_dist += fast_flt_pow2(prev_target[i]);
+		}
+
+		line_dist = fast_flt_sqrt(line_dist);
+
+		// calculates the feedrate based in the K factor and the programmed spindle RPM
+		// spindle is in Rev/min and K is in units(mm) per Rev Rev/min * mm/Rev = mm/min
+		float total_revs = line_dist / ptr->words->ijk[2];
+		ptr->block_data->feed = ptr->words->ijk[2] * ptr->block_data->spindle;
 		ptr->block_data->motion_flags.bit.synched = 1;
 
 		// queue motion in planner
@@ -115,15 +160,76 @@ uint8_t g33_exec(void *args, bool *handled)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		while (itp_sync() == STATUS_OK)
+		planner_block_t *thread = planner_get_block();
+		motion_total_steps = thread->steps[thread->main_stepper];
+
+		// calculates the expected number of steps per revolution
+		steps_per_index = lroundf((float)motion_total_steps / total_revs);
+
+		// // calculates the number of steps needed to reach constant speed
+		// float junction_speed_sqr = planner_get_block_top_speed(0);
+		// float accel_dist = junction_speed_sqr / thread->acceleration;
+
+		// wait for spindle to reach the desired speed
+		uint16_t programmed_speed = planner_get_spindle_speed(1);
+		uint16_t at_speed_threshold = lroundf(tool_at_speed_tolerance * programmed_speed);
+
+		// wait for tool at speed
+		while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
 		{
-			
+			if (cnc_dotasks() != STATUS_OK)
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
 		}
+
+		// flag the spindle index callback that it can start the threading motion
+		synched_motion_status = SYNC_READY;
+
+		// wait for the motion to end
+		if (itp_sync() != STATUS_OK)
+		{
+			return STATUS_CRITICAL_FAIL;
+		}
+
+		encoder_dettach_index_cb();
 	}
 
 	return STATUS_GCODE_EXTENDED_UNSUPPORTED;
 }
 
+#endif
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+void spindle_sync_update_loop(void)
+{
+	// if there is new data available (new index pulse fired)
+	if (synched_motion_status & SYNC_EVAL)
+	{
+		synched_motion_status &= ~SYNC_EVAL;
+
+		uint32_t ideal_position = encoder_get_position(RPM_ENCODER);
+		uint32_t course_position;
+
+		// gets the number of processed steps (steps still in the planner that were not sent to the interpolator)
+		planner_block_t *thread = planner_get_block();
+		uint32_t processed_steps = motion_total_steps - thread->steps[thread->main_stepper];
+
+		// calculates the expected step position based on the index counter + the intermediate sync pulse position
+		__ATOMIC__
+		{
+			course_position = spindle_index_counter;
+		}
+		course_position *= steps_per_index;
+		ideal_position *= steps_per_index;
+		ideal_position /= RPM_PPR;
+		ideal_position += course_position;
+
+		float error = ideal_position - processed_steps;
+	}
+}
+
+CREATE_EVENT_LISTENER(cnc_dotasks, spindle_sync_update_loop);
 #endif
 
 DECL_MODULE(g33)
@@ -137,7 +243,9 @@ DECL_MODULE(g33)
 #ifndef ENABLE_IO_MODULES
 #error "IO extensions are not enabled. G33 code extension will not work."
 #endif
-#ifndef ENABLE_MAIN_LOOP_MODULES
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	ADD_EVENT_LISTENER(cnc_dotasks, spindle_sync_update_loop);
+#else
 #error "Main loop extensions are not enabled. G33 code extension will not work."
 #endif
 }

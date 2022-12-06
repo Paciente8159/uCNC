@@ -43,7 +43,10 @@
 #define ITP_UPDATE_ISR 1
 #define ITP_UPDATE_TOOL 2
 #define ITP_UPDATE (ITP_UPDATE_ISR | ITP_UPDATE_TOOL)
-#define ITP_SYNC_START 4
+#define ITP_ACCEL 4
+#define ITP_CONST 8
+#define ITP_DEACCEL 16
+#define ITP_SYNC 32
 
 // contains data of the block being executed by the pulse routine
 // this block has the necessary data to execute the Bresenham line algorithm
@@ -388,7 +391,6 @@ void itp_run(void)
 
 		float current_speed = fast_flt_sqrt(itp_cur_plan_block->entry_feed_sqr);
 		float initial_speed = current_speed;
-		sgm->flags = ITP_UPDATE_ISR;
 		uint16_t segm_steps = 0;
 		do
 		{
@@ -442,15 +444,12 @@ void itp_run(void)
 				}
 
 				profile_steps_limit = accel_until;
+				sgm->flags = (ITP_UPDATE_ISR | ITP_ACCEL);
 			}
 			else if (remaining_steps > deaccel_from)
 			{
 				// constant speed segment
-				if (remaining_steps != accel_until)
-				{
-					sgm->flags = ITP_NOUPDATE;
-				}
-
+				sgm->flags = (remaining_steps == accel_until) ? (ITP_UPDATE_ISR|ITP_CONST) : ITP_CONST;
 				partial_distance += top_speed * INTERPOLATOR_DELTA_CONST_T;
 				profile_steps_limit = deaccel_from;
 				current_speed = top_speed;
@@ -500,6 +499,7 @@ void itp_run(void)
 
 					current_speed = exit_speed;
 					partial_distance = remaining_steps;
+					sgm->flags = (ITP_UPDATE_ISR | ITP_DEACCEL);
 				}
 
 				profile_steps_limit = 0;
@@ -622,7 +622,7 @@ void itp_run(void)
 		// checks for synched motion
 		if (itp_cur_plan_block->planner_flags.bit.synched)
 		{
-			sgm->flags |= ITP_SYNC_START;
+			sgm->flags |= ITP_SYNC;
 		}
 
 		if (remaining_steps == 0)
@@ -647,14 +647,7 @@ void itp_run(void)
 
 	// starts the step isr if is stopped and there are segments to execute
 	// check if the start is controlled by synched motion before start
-	if (!(itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC_START))
-	{
-		cnc_set_exec_state(EXEC_RUN); // flags that it started running
-		__ATOMIC__
-		{
-			mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
-		}
-	}
+	itp_start((itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC));
 }
 #else
 void itp_run(void)
@@ -803,7 +796,7 @@ void itp_run(void)
 			*/
 			speed_change = (!initial_accel_negative) ? half_speed_change : -half_speed_change;
 			profile_steps_limit = accel_until;
-			sgm->flags = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR | ITP_ACCEL;
 			const_speed = false;
 		}
 		else if (remaining_steps > deaccel_from)
@@ -811,7 +804,7 @@ void itp_run(void)
 			// constant speed segment
 			speed_change = 0;
 			profile_steps_limit = deaccel_from;
-			sgm->flags = (!const_speed) ? ITP_UPDATE_ISR : ITP_NOUPDATE;
+			sgm->flags = (!const_speed) ? (ITP_UPDATE_ISR|ITP_CONST) : ITP_CONST;
 			if (!const_speed)
 			{
 				const_speed = true;
@@ -821,7 +814,7 @@ void itp_run(void)
 		{
 			speed_change = -half_speed_change;
 			profile_steps_limit = 0;
-			sgm->flags = ITP_UPDATE_ISR;
+			sgm->flags = ITP_UPDATE_ISR| ITP_DEACCEL;
 			const_speed = false;
 		}
 
@@ -969,7 +962,7 @@ void itp_run(void)
 		// checks for synched motion
 		if (itp_cur_plan_block->planner_flags.bit.synched)
 		{
-			sgm->flags |= ITP_SYNC_START;
+			sgm->flags |= ITP_SYNC;
 		}
 
 		if (remaining_steps == 0)
@@ -993,18 +986,7 @@ void itp_run(void)
 #endif
 
 	// starts the step isr if is stopped and there are segments to execute
-	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
-	{
-		// check if the start is controlled by synched motion before start
-		if (!(itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC_START))
-		{
-			cnc_set_exec_state(EXEC_RUN); // flags that it started running
-			__ATOMIC__
-			{
-				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
-			}
-		}
-	}
+	itp_start((itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC));
 }
 #endif
 
@@ -1184,7 +1166,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 	{
 		if (itp_rt_sgm != NULL)
 		{
-			if (itp_rt_sgm->flags)
+			if (itp_rt_sgm->flags & ITP_UPDATE)
 			{
 				if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
 				{
@@ -1208,7 +1190,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 				}
 #endif
-				itp_rt_sgm->flags = ITP_NOUPDATE;
+				itp_rt_sgm->flags &= ~(ITP_UPDATE);
 			}
 
 			// no step remaining discards current segment
@@ -1664,3 +1646,22 @@ MCU_CALLBACK void mcu_step_cb(void)
 // #endif
 //         itp_sgm_buffer_write();
 //     }
+
+void itp_start(bool is_synched)
+{
+	// starts the step isr if is stopped and there are segments to execute
+	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
+	{
+		// check if the start is controlled by synched motion before start
+		if (!is_synched)
+		{
+			// clear any sync flag to allow continuous interpolation execution after first sync start
+			itp_sgm_data[itp_sgm_data_read].flags &= ~ITP_SYNC;
+			cnc_set_exec_state(EXEC_RUN); // flags that it started running
+			__ATOMIC__
+			{
+				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
+			}
+		}
+	}
+}

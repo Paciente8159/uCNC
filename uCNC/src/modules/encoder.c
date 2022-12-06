@@ -36,6 +36,17 @@ static int32_t encoders_pos[ENCODERS];
 
 static volatile uint32_t prev_time;
 static volatile uint32_t current_time;
+static encoder_index_cb rpm_index_cb;
+
+void encoder_attach_index_cb(encoder_index_cb callback)
+{
+	rpm_index_cb = callback;
+}
+
+void encoder_dettach_index_cb(void)
+{
+	rpm_index_cb = NULL;
+}
 
 uint16_t encoder_get_rpm(void)
 {
@@ -57,9 +68,6 @@ uint16_t encoder_get_rpm(void)
 	return (uint16_t)lroundf(spindle);
 }
 
-__attribute__((weak)) void encoder_rpm_index_cb(void)
-{
-}
 #endif
 
 static FORCEINLINE uint8_t encoder_read_dirs(void)
@@ -162,7 +170,10 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #endif
 		{
 			encoders_pos[RPM_ENCODER] = 0;
-			encoder_rpm_index_cb();
+			if (rpm_index_cb)
+			{
+				rpm_index_cb();
+			}
 		}
 	}
 #endif
