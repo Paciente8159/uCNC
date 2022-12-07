@@ -40,6 +40,7 @@ static volatile uint8_t synched_motion_status;
 static volatile int32_t spindle_index_counter;
 static uint32_t steps_per_index;
 static uint32_t motion_total_steps;
+static float rpm_to_stepfeed_constant;
 
 void spindle_index_cb_handler(void)
 {
@@ -50,8 +51,11 @@ void spindle_index_cb_handler(void)
 		synched_motion_status = SYNC_RUNNING;
 		break;
 	case SYNC_RUNNING:
+
 		spindle_index_counter++;
-		synched_motion_status |= SYNC_EVAL;
+		if(spindle_index_counter>=0){
+			synched_motion_status |= SYNC_EVAL;
+		}
 		break;
 	}
 }
@@ -125,7 +129,39 @@ uint8_t g33_exec(void *args, bool *handled)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		encoder_attach_index_cb(&spindle_index_cb_handler);
+		if (!ptr->block_data->motion_flags.bit.spindle_running)
+		{
+			return STATUS_SPINDLE_STOPPED;
+		}
+
+		// update tool
+		mc_update_tools(ptr->block_data);
+
+		// wait for spindle to reach the desired speed
+		uint16_t programmed_speed = ptr->block_data->spindle;
+		uint16_t at_speed_threshold = lroundf(tool_at_speed_tolerance * programmed_speed);
+
+		// wait for tool at speed
+		while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
+		{
+			if (!cnc_dotasks())
+			{
+				return STATUS_CRITICAL_FAIL;
+			}
+		}
+
+		float average_rpm = 0;
+		for (uint8_t i = 10; i != 0; i--)
+		{
+			while (!encoder_rpm_updated)
+			{
+				cnc_dotasks();
+			}
+
+			average_rpm += (float)encoder_get_rpm();
+		}
+
+		average_rpm *= 0.1f;
 
 		// calculates travel distance
 
@@ -182,10 +218,14 @@ uint8_t g33_exec(void *args, bool *handled)
 
 		motion_total_steps = total_steps;
 
+		// from this the factor to convert from RPM to step feed can be obtained
+		// step rate = rpm_to_stepfeed_constant * RPM
+		rpm_to_stepfeed_constant = ptr->words->ijk[2] * total_steps * MIN_SEC_MULT / line_dist;
+
 		// calculates the feedrate based in the K factor and the programmed spindle RPM
 		// spindle is in Rev/min and K is in units(mm) per Rev Rev/min * mm/Rev = mm/min
 		float total_revs = line_dist / ptr->words->ijk[2];
-		float feed = ptr->words->ijk[2] * ptr->block_data->spindle;
+		float feed = ptr->words->ijk[2] * average_rpm;
 		ptr->block_data->feed = feed;
 		ptr->block_data->motion_flags.bit.synched = 1;
 
@@ -206,7 +246,7 @@ uint8_t g33_exec(void *args, bool *handled)
 		float elapsed_time = feed / new_accel;
 
 		// initialize the index counter (this number is always negative unless sync distance is 0)
-		spindle_index_counter = (int32_t)lroundf(revs_to_sync - (ptr->block_data->spindle * MIN_SEC_MULT * elapsed_time));
+		spindle_index_counter = (int32_t)lroundf(revs_to_sync - (average_rpm * MIN_SEC_MULT * elapsed_time));
 
 		// calculates the expected number of steps per revolution
 		float steps_per_rev = (float)motion_total_steps / total_revs;
@@ -240,18 +280,8 @@ uint8_t g33_exec(void *args, bool *handled)
 			return STATUS_CRITICAL_FAIL;
 		}
 
-		// wait for spindle to reach the desired speed
-		uint16_t programmed_speed = planner_get_spindle_speed(1);
-		uint16_t at_speed_threshold = lroundf(tool_at_speed_tolerance * programmed_speed);
-
-		// wait for tool at speed
-		while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
-		{
-			if (cnc_dotasks() != STATUS_OK)
-			{
-				return STATUS_CRITICAL_FAIL;
-			}
-		}
+		// attach the index event callback
+		encoder_attach_index_cb(&spindle_index_cb_handler);
 
 		// flag the spindle index callback that it can start the threading motion
 		synched_motion_status = SYNC_READY;
@@ -274,28 +304,29 @@ uint8_t g33_exec(void *args, bool *handled)
 uint8_t spindle_sync_update_loop(void *ptr, bool *handled)
 {
 #ifndef RPM_SYNC_UPDATE_ON_INDEX_ONLY
-	if (encoder_rpm_updated)
+	if (encoder_rpm_updated && (synched_motion_status & SYNC_EVAL))
 	{
-		// clear update flag
-		encoder_rpm_updated = false;
+		// uint32_t index_counter;
+		// uint32_t rt_pulse_counter;
+		// __ATOMIC__
+		// {
+		// 	index_counter = spindle_index_counter;
+		// 	rt_pulse_counter = itp_sync_step_counter;
+		// }
 
-		uint32_t index_counter;
-		uint32_t rt_pulse_counter;
-		__ATOMIC__
-		{
-			index_counter = spindle_index_counter;
-			rt_pulse_counter = itp_sync_step_counter;
-		}
+		// // it's in accel phase (leave)
+		// if (index_counter < 0 && rt_pulse_counter < 0)
+		// {
+		// 	return STATUS_OK;
+		// }
 
-		// still in accel phase (leave)
-		if (index_counter < 0 && rt_pulse_counter < 0)
-		{
-			return STATUS_OK;
-		}
+		// // calculate the spindle position
+		// uint32_t spindle_pulse_counter = (encoder_get_position(RPM_ENCODER) * steps_per_index / RPM_PPR) + (index_counter * steps_per_index);
+		// int32_t error = spindle_pulse_counter - itp_sync_step_counter;
 
-		// calculate the spindle position
-		uint32_t spindle_pulse_counter = (encoder_get_position(RPM_ENCODER) * steps_per_index / RPM_PPR) + (index_counter * steps_per_index);
-		int32_t error = spindle_pulse_counter - itp_sync_step_counter;
+		float rpm = (float)encoder_get_rpm();
+		// this updates the interpolator right on the next step and the current motion in the planner
+		itp_update_feed(rpm * rpm_to_stepfeed_constant);
 	}
 #endif
 

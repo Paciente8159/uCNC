@@ -48,7 +48,6 @@
 #define ITP_DEACCEL 16
 #define ITP_SYNC 32
 
-
 // contains data of the block being executed by the pulse routine
 // this block has the necessary data to execute the Bresenham line algorithm
 typedef struct itp_blk_
@@ -119,6 +118,22 @@ static volatile uint8_t itp_step_lock;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 volatile int32_t itp_sync_step_counter;
+
+void itp_update_feed(float feed)
+{
+	planner_block_t *p = planner_get_block();
+	p->feed_sqr = feed * feed;
+	itp_needs_update = true;
+	uint16_t ticks, presc;
+	mcu_freq_to_clocks(feed, &ticks, &presc);
+	for (uint8_t i = 0; i < INTERPOLATOR_BUFFER_SIZE; i++)
+	{
+		itp_sgm_data[i].timer_counter = ticks;
+		itp_sgm_data[i].timer_prescaller = presc;
+		// mark for update
+		itp_sgm_data[i].flags |= ITP_UPDATE_ISR;
+	}
+}
 #endif
 
 static void itp_sgm_buffer_read(void);

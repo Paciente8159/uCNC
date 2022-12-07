@@ -57,6 +57,7 @@ uint16_t encoder_get_rpm(void)
 	{
 		elapsed = current_time;
 		prev = prev_time;
+		encoder_rpm_updated = false;
 	}
 
 	if (ABS(mcu_micros() - elapsed) > MAX_RPM_PULSE_INTERVAL)
