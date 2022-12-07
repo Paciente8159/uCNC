@@ -19,6 +19,7 @@
 #include "../../cnc.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include <float.h>
 
 #ifdef ENABLE_SETTINGS_MODULES
 static float tool_at_speed_tolerance;
@@ -154,10 +155,15 @@ uint8_t g33_exec(void *args, bool *handled)
 		line_dist = sqrtf(line_dist);
 
 		// determines the normalized direction vector
+		// and the maximum acceleration
+		float max_accel = FLT_MAX;
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
 			dir_vect[i] /= line_dist;
+			// denormalize max feed rate for each axis
+			float denorm_param = g_settings.acceleration[i] / ABS(dir_vect[i]);
+			max_accel = MIN(max_accel, denorm_param);
 		}
 
 		// calculates the total number of steps in the motion
@@ -187,7 +193,7 @@ uint8_t g33_exec(void *args, bool *handled)
 		feed *= MIN_SEC_MULT;
 
 		// calculates the needed distance to reach the desired feed
-		float needed_distance = feed * feed * 0.5f / ptr->block_data->max_accel;
+		float needed_distance = feed * feed * 0.5f / max_accel;
 
 		// calculates the next number of complete rev in which the desired speed can be reached in sync to index pulse
 		float revs_to_sync = ceilf(needed_distance / ptr->words->ijk[2]);
@@ -200,7 +206,7 @@ uint8_t g33_exec(void *args, bool *handled)
 		float elapsed_time = feed / new_accel;
 
 		// initialize the index counter (this number is always negative unless sync distance is 0)
-		spindle_index_counter = (int32_t)(revs_to_sync - (ptr->block_data->spindle * MIN_SEC_MULT * elapsed_time));
+		spindle_index_counter = (int32_t)lroundf(revs_to_sync - (ptr->block_data->spindle * MIN_SEC_MULT * elapsed_time));
 
 		// calculates the expected number of steps per revolution
 		float steps_per_rev = (float)motion_total_steps / total_revs;

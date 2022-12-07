@@ -49,7 +49,7 @@ extern "C"
 	uint32_t itp_get_rt_line_number(void);
 #endif
 #ifdef ENABLE_RT_SYNC_MOTIONS
-	extern volatile static int32_t itp_sync_step_counter;
+	extern volatile int32_t itp_sync_step_counter;
 #endif
 
 #ifdef __cplusplus

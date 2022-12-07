@@ -118,7 +118,7 @@ static volatile uint8_t itp_step_lock;
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-volatile static int32_t itp_sync_step_counter;
+volatile int32_t itp_sync_step_counter;
 #endif
 
 static void itp_sgm_buffer_read(void);

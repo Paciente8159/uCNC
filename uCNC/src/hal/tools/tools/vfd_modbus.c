@@ -430,7 +430,7 @@ uint8_t vfd_update(void)
  *
  * */
 
-void startup_code()
+static void startup_code()
 {
 	// initialize soft uart tx
 	vfd_uart.tx(true);
@@ -439,25 +439,27 @@ void startup_code()
 	vfd_update();
 }
 
-void shutdown_code()
+static void shutdown_code()
 {
 	vfd_state.rpm = 0;
 	vfd_stop();
 	vfd_state.connected = 0;
 }
 
-void set_speed(int16_t value)
+static void set_speed(int16_t value)
 {
 	vfd_state.rpm = value;
 	vfd_update();
 }
 
-void set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
+	#ifdef ENABLE_COOLANT
 	SET_COOLANT(VFD_COOLANT_FLOOD, VFD_COOLANT_MIST, value);
+	#endif
 }
 
-uint16_t get_speed(void)
+static uint16_t get_speed(void)
 {
 	return vfd_get_rpm(GET_SPINDLE_TRUE_RPM);
 }
