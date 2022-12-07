@@ -37,6 +37,7 @@ static int32_t encoders_pos[ENCODERS];
 static volatile uint32_t prev_time;
 static volatile uint32_t current_time;
 static encoder_index_cb rpm_index_cb;
+bool encoder_rpm_updated;
 
 void encoder_attach_index_cb(encoder_index_cb callback)
 {
@@ -160,6 +161,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #ifdef ENABLE_ENCODER_RPM
 	if ((diff & RPM_ENCODER_MASK))
 	{
+		encoder_rpm_updated = true;
 		uint32_t time = mcu_micros();
 		prev_time = current_time;
 		current_time = time;

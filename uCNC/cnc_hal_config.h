@@ -196,6 +196,10 @@ extern "C"
 
 // Resolution of the RPM encoder or Pulses Per Revolution
 #define RPM_PPR 2
+
+// uncomment to update tool sync on index pulse only
+// instead of updating in every PPR
+// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
 #endif
 #endif
 

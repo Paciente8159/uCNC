@@ -127,25 +127,54 @@ uint8_t g33_exec(void *args, bool *handled)
 		encoder_attach_index_cb(&spindle_index_cb_handler);
 
 		// calculates travel distance
+
+		// gets the starting point
 		float prev_target[AXIS_COUNT];
 		mc_get_position(prev_target);
+		kinematics_apply_transform(prev_target);
+		int32_t prev_step_pos[STEPPER_COUNT];
+		kinematics_apply_inverse(prev_target, prev_step_pos);
+
+		// gets the exit point (copies to prevent modifying target vector)
 		float line_dist = 0;
 		float dir_vect[AXIS_COUNT];
+		memcpy(dir_vect, ptr->target, sizeof(dir_vect));
+		kinematics_apply_transform(dir_vect);
+		int32_t next_step_pos[STEPPER_COUNT];
+		kinematics_apply_inverse(dir_vect, next_step_pos);
+
+		// calculates amount of motion vector
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
-			dir_vect[i] = ptr->target[i] - prev_target[i];
+			dir_vect[i] -= prev_target[i];
 			line_dist += dir_vect[i] * dir_vect[i];
 		}
 
 		line_dist = sqrtf(line_dist);
 
-		// determines the direction vector of the motion
+		// determines the normalized direction vector
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
 			dir_vect[i] /= line_dist;
 		}
+
+		// calculates the total number of steps in the motion
+		uint32_t total_steps = 0;
+		for (uint8_t i = AXIS_TO_STEPPERS; i != 0;)
+		{
+			i--;
+			int32_t steps = next_step_pos[i] - prev_step_pos[i];
+
+			steps = ABS(steps);
+			if (total_steps < (uint32_t)steps)
+			{
+				total_steps = steps;
+			}
+		}
+
+		motion_total_steps = total_steps;
 
 		// calculates the feedrate based in the K factor and the programmed spindle RPM
 		// spindle is in Rev/min and K is in units(mm) per Rev Rev/min * mm/Rev = mm/min
@@ -160,21 +189,28 @@ uint8_t g33_exec(void *args, bool *handled)
 		// calculates the needed distance to reach the desired feed
 		float needed_distance = feed * feed * 0.5f / ptr->block_data->max_accel;
 
-		// calculates the next number of complete rev in which the desired speed can be reached sychrounously to index pulse
-		float revs_to_sync = ceil(needed_distance / ptr->words->ijk[2]);
+		// calculates the next number of complete rev in which the desired speed can be reached in sync to index pulse
+		float revs_to_sync = ceilf(needed_distance / ptr->words->ijk[2]);
 
-		// with the needed revs reajusts the acceleration to meet the speecs
+		// with the needed revs readjusts the acceleration to meet the specs
 		float distance_to_accel = ptr->words->ijk[2] * revs_to_sync;
 		float new_accel = feed * feed * 0.5f / distance_to_accel;
 
 		// given the feed and acceleration calculates how many extra full revs will be executed by the spindle before the motions sync
 		float elapsed_time = feed / new_accel;
 
-		// initialize the index counter (this number is always negative unless sync is imediate)
+		// initialize the index counter (this number is always negative unless sync distance is 0)
 		spindle_index_counter = (int32_t)(revs_to_sync - (ptr->block_data->spindle * MIN_SEC_MULT * elapsed_time));
 
-		// now queue the acceleration phase in the planner
+		// calculates the expected number of steps per revolution
+		float steps_per_rev = (float)motion_total_steps / total_revs;
+		steps_per_index = lroundf(steps_per_rev);
 
+		// initializes the sync step counter (starts negative - the unsynched region)
+		// itp_sync_step_counter should reach 0 at the same time spindle_index_counter reaches 0 too
+		itp_sync_step_counter = -lroundf(steps_per_rev * revs_to_sync);
+
+		// now queue the acceleration phase in the planner
 		// calculate the intermediate target where speeds sync
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
@@ -197,13 +233,6 @@ uint8_t g33_exec(void *args, bool *handled)
 		{
 			return STATUS_CRITICAL_FAIL;
 		}
-
-		// retrieves the last block added to the planner that contains the info on the synched motion
-		planner_block_t *thread = planner_get_last_block();
-		motion_total_steps = thread->steps[thread->main_stepper];
-
-		// calculates the expected number of steps per revolution
-		steps_per_index = lroundf((float)motion_total_steps / (total_revs - revs_to_sync));
 
 		// wait for spindle to reach the desired speed
 		uint16_t programmed_speed = planner_get_spindle_speed(1);
@@ -236,32 +265,33 @@ uint8_t g33_exec(void *args, bool *handled)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-uint8_t spindle_sync_update_loop(void* ptr, bool* handled)
+uint8_t spindle_sync_update_loop(void *ptr, bool *handled)
 {
-	// // if there is new data available (new index pulse fired)
-	// if (synched_motion_status & SYNC_EVAL)
-	// {
-	// 	synched_motion_status &= ~SYNC_EVAL;
+#ifndef RPM_SYNC_UPDATE_ON_INDEX_ONLY
+	if (encoder_rpm_updated)
+	{
+		// clear update flag
+		encoder_rpm_updated = false;
 
-	// 	uint32_t ideal_position = encoder_get_position(RPM_ENCODER);
-	// 	uint32_t course_position;
+		uint32_t index_counter;
+		uint32_t rt_pulse_counter;
+		__ATOMIC__
+		{
+			index_counter = spindle_index_counter;
+			rt_pulse_counter = itp_sync_step_counter;
+		}
 
-	// 	// gets the number of processed steps (steps still in the planner that were not sent to the interpolator)
-	// 	planner_block_t *thread = planner_get_block();
-	// 	uint32_t processed_steps = motion_total_steps - thread->steps[thread->main_stepper];
+		// still in accel phase (leave)
+		if (index_counter < 0 && rt_pulse_counter < 0)
+		{
+			return STATUS_OK;
+		}
 
-	// 	// calculates the expected step position based on the index counter + the intermediate sync pulse position
-	// 	__ATOMIC__
-	// 	{
-	// 		course_position = spindle_index_counter;
-	// 	}
-	// 	course_position *= steps_per_index;
-	// 	ideal_position *= steps_per_index;
-	// 	ideal_position /= RPM_PPR;
-	// 	ideal_position += course_position;
-
-	// 	float error = ideal_position - processed_steps;
-	// }
+		// calculate the spindle position
+		uint32_t spindle_pulse_counter = (encoder_get_position(RPM_ENCODER) * steps_per_index / RPM_PPR) + (index_counter * steps_per_index);
+		int32_t error = spindle_pulse_counter - itp_sync_step_counter;
+	}
+#endif
 
 	return STATUS_OK;
 }
@@ -284,5 +314,8 @@ DECL_MODULE(g33)
 	ADD_EVENT_LISTENER(cnc_dotasks, spindle_sync_update_loop);
 #else
 #error "Main loop extensions are not enabled. G33 code extension will not work."
+#endif
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#error "ENABLE_RT_SYNC_MOTIONS must be enabled to allow realtime step counting in sync motions."
 #endif
 }

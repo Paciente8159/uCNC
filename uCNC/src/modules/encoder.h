@@ -47,6 +47,7 @@ extern "C"
 	void encoder_attach_index_cb(encoder_index_cb callback);
 	void encoder_dettach_index_cb(void);
 	uint16_t encoder_get_rpm(void);
+	extern bool encoder_rpm_updated;
 
 #ifdef __cplusplus
 }

@@ -46,9 +46,8 @@
 #define ITP_ACCEL 4
 #define ITP_CONST 8
 #define ITP_DEACCEL 16
-#define ITP_PRE_SYNC 32
-#define ITP_IN_SYNC 64
-#define ITP_SYNC (ITP_PRE_SYNC | ITP_IN_SYNC)
+#define ITP_SYNC 32
+
 
 // contains data of the block being executed by the pulse routine
 // this block has the necessary data to execute the Bresenham line algorithm
@@ -119,7 +118,7 @@ static volatile uint8_t itp_step_lock;
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-volatile static uint32_t itp_sync_step_counter;
+volatile static int32_t itp_sync_step_counter;
 #endif
 
 static void itp_sgm_buffer_read(void);
@@ -1309,7 +1308,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-		if (stepbits && (itp_rt_sgm->flags & ITP_IN_SYNC))
+		if (stepbits && (itp_rt_sgm->flags & ITP_SYNC))
 		{
 			itp_sync_step_counter++;
 		}
