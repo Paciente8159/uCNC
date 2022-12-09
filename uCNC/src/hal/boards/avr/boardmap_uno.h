@@ -102,7 +102,7 @@ extern "C"
 
 // Setup SERVO
 #define SERVO0_BIT 4
-#define SERVO_PORT B
+#define SERVO0_PORT B
 
 // Setup generic IO Pins
 // Functionalities are set in cnc_hal_config.h file

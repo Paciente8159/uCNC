@@ -21,14 +21,14 @@
 #include <stdbool.h>
 #include <float.h>
 
-#ifdef ENABLE_SETTINGS_MODULES
-static float tool_at_speed_tolerance;
-#endif
-
 #ifdef ENABLE_PARSER_MODULES
 
 #ifndef UCNC_MODULE_VERSION_1_5_0_PLUS
 #error "This module is not compatible with the current version of µCNC"
+#endif
+
+#ifndef TOOL_AT_SPEED_TOLERANCE
+#define TOOL_AT_SPEED_TOLERANCE 0.1f
 #endif
 
 #define SYNC_DISABLED 0
@@ -51,9 +51,9 @@ void spindle_index_cb_handler(void)
 		synched_motion_status = SYNC_RUNNING;
 		break;
 	case SYNC_RUNNING:
-
 		spindle_index_counter++;
-		if(spindle_index_counter>=0){
+		if (spindle_index_counter >= 0)
+		{
 			synched_motion_status |= SYNC_EVAL;
 		}
 		break;
@@ -139,7 +139,7 @@ uint8_t g33_exec(void *args, bool *handled)
 
 		// wait for spindle to reach the desired speed
 		uint16_t programmed_speed = ptr->block_data->spindle;
-		uint16_t at_speed_threshold = lroundf(tool_at_speed_tolerance * programmed_speed);
+		uint16_t at_speed_threshold = lroundf(TOOL_AT_SPEED_TOLERANCE * programmed_speed);
 
 		// wait for tool at speed
 		while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
@@ -293,6 +293,8 @@ uint8_t g33_exec(void *args, bool *handled)
 		}
 
 		encoder_dettach_index_cb();
+
+		return STATUS_OK;
 	}
 
 	return STATUS_GCODE_EXTENDED_UNSUPPORTED;

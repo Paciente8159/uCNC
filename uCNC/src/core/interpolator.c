@@ -1006,7 +1006,7 @@ void itp_run(void)
 #endif
 
 	// starts the step isr if is stopped and there are segments to execute
-	itp_start((itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC));
+	itp_start((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC));
 }
 #endif
 

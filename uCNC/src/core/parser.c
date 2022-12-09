@@ -2290,24 +2290,18 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		new_words |= GCODE_WORD_F;
 		words->f = value;
 		break;
-#ifdef AXIS_X
 	case 'I':
 		new_words |= GCODE_WORD_I;
-		words->ijk[AXIS_X] = value;
+		words->ijk[0] = value;
 		break;
-#endif
-#ifdef AXIS_Y
 	case 'J':
 		new_words |= GCODE_WORD_J;
-		words->ijk[AXIS_Y] = value;
+		words->ijk[1] = value;
 		break;
-#endif
-#ifdef AXIS_Z
 	case 'K':
 		new_words |= GCODE_WORD_K;
-		words->ijk[AXIS_Z] = value;
+		words->ijk[2] = value;
 		break;
-#endif
 	case 'L':
 		new_words |= GCODE_WORD_L;
 

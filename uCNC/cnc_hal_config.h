@@ -124,7 +124,7 @@ extern "C"
 #endif
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
+#define TOOL1 spindle_besc
 // #define TOOL2 laser
 // #define TOOL3 laser_ppi
 // #define TOOL4 spindle_besc
@@ -132,11 +132,11 @@ extern "C"
 
 // enable RPM encoder for spindle_pwm
 // depends on encoders (below)
-#define SPINDLE_PWM_HAS_RPM_ENCODER
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
 
 // enable RPM encoder for spindle_besc
 // depends on encoders (below)
-// #define SPINDLE_BESC_HAS_RPM_ENCODER
+#define SPINDLE_BESC_HAS_RPM_ENCODER
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -195,7 +195,7 @@ extern "C"
 // #define RPM_INDEX_INPUT DIN8
 
 // Resolution of the RPM encoder or Pulses Per Revolution
-#define RPM_PPR 2
+#define RPM_PPR 24
 
 // uncomment to update tool sync on index pulse only
 // instead of updating in every PPR
