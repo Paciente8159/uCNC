@@ -134,6 +134,19 @@ void itp_update_feed(float feed)
 		itp_sgm_data[i].flags |= ITP_UPDATE_ISR;
 	}
 }
+
+bool itp_sync_ready(void)
+{
+	__ATOMIC__
+	{
+		if (itp_rt_sgm)
+		{
+			return ((itp_rt_sgm->flags & (ITP_SYNC | ITP_CONST)) == (ITP_SYNC | ITP_CONST));
+		}
+	}
+
+	return false;
+}
 #endif
 
 static void itp_sgm_buffer_read(void);
@@ -274,7 +287,7 @@ void itp_run(void)
 	static float jerk_accel = 0;
 	static float jerk_deaccel = 0;
 #endif
-
+	bool start_is_synched = false;
 	itp_segment_t *sgm = NULL;
 
 	// creates segments and fills the buffer
@@ -342,6 +355,12 @@ void itp_run(void)
 
 			// flags block for recalculation of speeds
 			itp_needs_update = true;
+
+			// checks for synched motion
+			if (itp_cur_plan_block->planner_flags.bit.synched)
+			{
+				start_is_synched = true;
+			}
 		}
 
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
@@ -642,6 +661,8 @@ void itp_run(void)
 		// checks for synched motion
 		if (itp_cur_plan_block->planner_flags.bit.synched)
 		{
+			// prevents subsequent sync starts
+			itp_cur_plan_block->planner_flags.bit.synched = 0;
 			sgm->flags |= ITP_SYNC;
 		}
 
@@ -667,7 +688,7 @@ void itp_run(void)
 
 	// starts the step isr if is stopped and there are segments to execute
 	// check if the start is controlled by synched motion before start
-	itp_start((itp_sgm_data[itp_sgm_data_read].flags && ITP_SYNC));
+	itp_start(start_is_synched);
 }
 #else
 void itp_run(void)
@@ -682,6 +703,7 @@ void itp_run(void)
 	static bool const_speed = false;
 
 	itp_segment_t *sgm = NULL;
+	bool start_is_synched = false;
 
 	// creates segments and fills the buffer
 	while (!itp_sgm_is_full())
@@ -752,6 +774,12 @@ void itp_run(void)
 
 			half_speed_change = INTERPOLATOR_DELTA_T * itp_cur_plan_block->acceleration;
 			half_speed_change = fast_flt_div2(half_speed_change);
+
+			// checks for synched motion
+			if (itp_cur_plan_block->planner_flags.bit.synched)
+			{
+				start_is_synched = true;
+			}
 		}
 
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
@@ -1006,7 +1034,7 @@ void itp_run(void)
 #endif
 
 	// starts the step isr if is stopped and there are segments to execute
-	itp_start((itp_sgm_data[itp_sgm_data_read].flags & ITP_SYNC));
+	itp_start(start_is_synched);
 }
 #endif
 
@@ -1682,8 +1710,6 @@ void itp_start(bool is_synched)
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
 		{
-			// clear any sync flag to allow continuous interpolation execution after first sync start
-			itp_sgm_data[itp_sgm_data_read].flags &= ~ITP_SYNC;
 			cnc_set_exec_state(EXEC_RUN); // flags that it started running
 			__ATOMIC__
 			{

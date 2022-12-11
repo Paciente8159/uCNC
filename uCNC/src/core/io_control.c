@@ -289,7 +289,9 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 #endif
 
+#if (ENCODERS > 0)
 	inputs ^= g_settings.encoders_pulse_invert_mask;
+#endif
 	diff = inputs ^ prev_inputs;
 
 	if (diff)

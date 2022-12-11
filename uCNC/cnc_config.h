@@ -63,7 +63,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 1
+#define AXIS_COUNT 3
 #endif
 
 #ifndef KINEMATIC
@@ -217,7 +217,7 @@ extern "C"
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
 
-	#define ENABLE_RT_SYNC_MOTIONS
+	// #define ENABLE_RT_SYNC_MOTIONS
 
 	/**
 	 * Uncomment to enable module extensions
@@ -357,13 +357,13 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-#define DISABLE_ALL_LIMITS
+// #define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
-#define DISABLE_PROBE
+// #define DISABLE_PROBE
 #endif
 
 	/**
@@ -394,7 +394,7 @@ extern "C"
 	 * For pin diagnostics enables command $P
 	 * */
 
-	#define ENABLE_EXTRA_SYSTEM_CMDS
+	// #define ENABLE_EXTRA_SYSTEM_CMDS
 
 	/**
 	 * Compilation specific options

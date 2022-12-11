@@ -464,7 +464,7 @@ static void planner_recalculate(void)
 
 	// starts in the last added block
 	// calculates the maximum entry speed of the block so that it can do a full stop in the end
-	if (planner_data_blocks < 2)
+	if (planner_data_blocks < 1)
 	{
 		planner_data[block].entry_feed_sqr = 0;
 		return;

@@ -31,7 +31,7 @@ static int32_t encoders_pos[ENCODERS];
 #define RPM_PPR 4
 #endif
 
-#define MAX_RPM_PULSE_INTERVAL (1000000UL * RPM_PPR / ENCODER_RPM_MIN)
+#define MAX_RPM_PULSE_INTERVAL (1000000UL / (ENCODER_RPM_MIN * RPM_PPR))
 #define RPM_CONV_CONSTANT (60000000.f / (float)RPM_PPR)
 
 static volatile uint32_t prev_time;

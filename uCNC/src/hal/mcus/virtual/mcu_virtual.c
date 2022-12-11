@@ -1078,6 +1078,12 @@ void *stepsimul(void *args)
 	}
 }
 
+void rpmsimul(void)
+{
+	virtualmap.inputs ^= (1<<7);
+	mcu_inputs_changed_cb();
+}
+
 void ticksimul(void)
 {
 
@@ -1147,6 +1153,7 @@ void mcu_init(void)
 	//	}
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
+	start_timer(10, &rpmsimul);
 	//#ifdef USECONSOLE
 	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	//#endif

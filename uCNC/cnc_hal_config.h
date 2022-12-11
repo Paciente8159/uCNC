@@ -124,7 +124,7 @@ extern "C"
 #endif
 
 // assign the tools from 1 to 16
-#define TOOL1 spindle_besc
+#define TOOL1 spindle_pwm
 // #define TOOL2 laser
 // #define TOOL3 laser_ppi
 // #define TOOL4 spindle_besc
@@ -132,11 +132,11 @@ extern "C"
 
 // enable RPM encoder for spindle_pwm
 // depends on encoders (below)
-// #define SPINDLE_PWM_HAS_RPM_ENCODER
+//   #define SPINDLE_PWM_HAS_RPM_ENCODER
 
 // enable RPM encoder for spindle_besc
 // depends on encoders (below)
-#define SPINDLE_BESC_HAS_RPM_ENCODER
+// #define SPINDLE_BESC_HAS_RPM_ENCODER
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -144,7 +144,7 @@ extern "C"
 /*
 	Sets the number of encoders to be used (max of 8)
 */
-#define ENCODERS 1
+#define ENCODERS 0
 /**
  * To use the encoder counter 2 definitions are needed
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
@@ -165,8 +165,8 @@ extern "C"
 #include "src/modules/encoder.h"
 
 // Counter mode
-#define ENC0_PULSE DIN7
-#define ENC0_DIR DIN7
+// #define ENC0_PULSE DIN7
+// #define ENC0_DIR DIN7
 
 // // Encoder mode
 // #define ENC0_PULSE DIN0
@@ -184,7 +184,7 @@ extern "C"
 // #define STEP2_ENCODER ENC2
 
 // Assign an encoder has an RPM encoder
-#define ENABLE_ENCODER_RPM
+// #define ENABLE_ENCODER_RPM
 #ifdef ENABLE_ENCODER_RPM
 
 // Assign an encoder to work as the RPM encoder

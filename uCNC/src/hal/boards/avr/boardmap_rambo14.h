@@ -129,8 +129,8 @@ extern "C"
 #ifndef STEPPER0_HAS_MSTEP
 #define STEPPER0_HAS_MSTEP
 #endif
-#define DOUT23_BIT 1
-#define DOUT23_PORT G
+#define DOUT20_BIT 1
+#define DOUT20_PORT G
 #define DOUT12_BIT 0
 #define DOUT12_PORT G
 
@@ -138,8 +138,8 @@ extern "C"
 #ifndef STEPPER1_HAS_MSTEP
 #define STEPPER1_HAS_MSTEP
 #endif
-#define DOUT24_BIT 7
-#define DOUT24_PORT K
+#define DOUT21_BIT 7
+#define DOUT21_PORT K
 #define DOUT13_BIT 2
 #define DOUT13_PORT G
 
@@ -147,8 +147,8 @@ extern "C"
 #ifndef STEPPER2_HAS_MSTEP
 #define STEPPER2_HAS_MSTEP
 #endif
-#define DOUT25_BIT 6
-#define DOUT25_PORT K
+#define DOUT22_BIT 6
+#define DOUT22_PORT K
 #define DOUT14_BIT 5
 #define DOUT14_PORT K
 
@@ -156,8 +156,8 @@ extern "C"
 #ifndef STEPPER3_HAS_MSTEP
 #define STEPPER3_HAS_MSTEP
 #endif
-#define DOUT26_BIT 3
-#define DOUT26_PORT K
+#define DOUT23_BIT 3
+#define DOUT23_PORT K
 #define DOUT15_BIT 4
 #define DOUT15_PORT K
 
@@ -165,8 +165,8 @@ extern "C"
 #ifndef STEPPER4_HAS_MSTEP
 #define STEPPER4_HAS_MSTEP
 #endif
-#define DOUT27_BIT 1
-#define DOUT27_PORT K
+#define DOUT24_BIT 1
+#define DOUT24_PORT K
 #define DOUT16_BIT 2
 #define DOUT16_PORT K
 

@@ -51,6 +51,7 @@ extern "C"
 #ifdef ENABLE_RT_SYNC_MOTIONS
 	extern volatile int32_t itp_sync_step_counter;
 	void itp_update_feed(float feed);
+	bool itp_sync_ready(void);
 #endif
 
 #ifdef __cplusplus
