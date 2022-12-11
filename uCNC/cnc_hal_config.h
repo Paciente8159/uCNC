@@ -132,7 +132,7 @@ extern "C"
 
 // enable RPM encoder for spindle_pwm
 // depends on encoders (below)
-//   #define SPINDLE_PWM_HAS_RPM_ENCODER
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
 
 // enable RPM encoder for spindle_besc
 // depends on encoders (below)

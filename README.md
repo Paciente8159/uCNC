@@ -126,6 +126,7 @@ NOTES:
 
 Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
   - Cubic and quadratic splines: G5/G5.1
+  - Spindle synchronized motion: G33
   - Stepper enable/disable: M17/M18
   - General Pin Control: M42
   - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
