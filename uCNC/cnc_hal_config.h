@@ -112,10 +112,10 @@ extern "C"
 // #define DUAL_DRIVE1_ENABLE_SELFSQUARING
 #endif
 
-/*
-	Tool definition
-	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
-*/
+	/*
+		Tool definition
+		For any given tool the respective macro TOOLx (x from 1 to 16) must be created
+	*/
 
 #ifdef ENABLE_LASER_PPI
 #define LASER_PPI PWM0
@@ -129,6 +129,14 @@ extern "C"
 // #define TOOL3 laser_ppi
 // #define TOOL4 spindle_besc
 // #define TOOL5 spindle_relay
+
+// enable RPM encoder for spindle_pwm
+// depends on encoders (below)
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
+
+// enable RPM encoder for spindle_besc
+// depends on encoders (below)
+// #define SPINDLE_BESC_HAS_RPM_ENCODER
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -156,25 +164,43 @@ extern "C"
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
 
-	// Counter mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN0
+// Counter mode
+// #define ENC0_PULSE DIN7
+// #define ENC0_DIR DIN7
 
-	// Encoder mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN8
+// // Encoder mode
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
 
-	// #define ENC1_PULSE DIN1
-	// #define ENC1_DIR DIN9
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
 
-	// #define ENC2_PULSE DIN2
-	// #define ENC2_DIR DIN10
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
 
-	// Assign encoders to steppers
-	// #define STEP0_ENCODER ENC0
-	// #define STEP1_ENCODER ENC1
-	// #define STEP2_ENCODER ENC2
+// Assign encoders to steppers
+// #define STEP0_ENCODER ENC0
+// #define STEP1_ENCODER ENC1
+// #define STEP2_ENCODER ENC2
 
+// Assign an encoder has an RPM encoder
+// #define ENABLE_ENCODER_RPM
+#ifdef ENABLE_ENCODER_RPM
+
+// Assign an encoder to work as the RPM encoder
+#define RPM_ENCODER ENC0
+
+// Optional set a second encoder pin has an encoder index
+// This assumes the index pulse occurs when pulse pin is also triggered
+// #define RPM_INDEX_INPUT DIN8
+
+// Resolution of the RPM encoder or Pulses Per Revolution
+#define RPM_PPR 24
+
+// uncomment to update tool sync on index pulse only
+// instead of updating in every PPR
+// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
+#endif
 #endif
 
 /*
@@ -229,9 +255,9 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * Software emulated communication interfaces
- * 
+ *
  * */
 #ifdef SOFT_SPI_ENABLED
 #ifndef SOFT_SPI_CLK

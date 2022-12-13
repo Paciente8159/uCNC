@@ -83,12 +83,12 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
-{
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(input_change, NULL);
-#endif
-}
+//MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
+//{
+//#ifdef ENABLE_IO_MODULES
+//	EVENT_INVOKE(input_change, NULL);
+//#endif
+//}
 
 /*timers*/
 int start_timer(int, void (*)(void));
@@ -128,6 +128,8 @@ void stop_timer(void)
 	CloseHandle(win_timer);
 }
 
+double cyclesPerMicrosecond;
+double cyclesPerMillisecond;
 void startCycleCounter(void)
 {
 	if (getCPUFreq() == 0)
@@ -152,6 +154,9 @@ unsigned long getCPUFreq(void)
 		printf("QueryPerformanceFrequency failed!\n");
 		return 0;
 	}
+	
+	cyclesPerMicrosecond = (double)perf_counter.QuadPart/1000000.0;
+	cyclesPerMillisecond = (double)perf_counter.QuadPart/1000.0;
 
 	return perf_counter.QuadPart;
 }
@@ -161,6 +166,20 @@ unsigned long getTickCounter(void)
 	LARGE_INTEGER perf_counter;
 	QueryPerformanceCounter(&perf_counter);
 	return perf_counter.QuadPart;
+}
+
+uint32_t mcu_micros(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+}
+
+uint32_t mcu_millis(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
 }
 
 /**
@@ -1059,6 +1078,12 @@ void *stepsimul(void *args)
 	}
 }
 
+void rpmsimul(void)
+{
+	virtualmap.inputs ^= (1<<7);
+	mcu_inputs_changed_cb();
+}
+
 void ticksimul(void)
 {
 
@@ -1091,13 +1116,15 @@ void ticksimul(void)
 	}
 }
 
-uint32_t mcu_millis()
-{
-	return mcu_runtime;
-}
+//uint32_t mcu_millis()
+//{
+//	return mcu_runtime;
+//}
+
 
 void mcu_init(void)
 {
+	startCycleCounter();
 	virtualmap.special_outputs = 0;
 	virtualmap.special_inputs = 0;
 	virtualmap.inputs = 0;
@@ -1126,6 +1153,7 @@ void mcu_init(void)
 	//	}
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
+	start_timer(10, &rpmsimul);
 	//#ifdef USECONSOLE
 	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	//#endif
@@ -1572,6 +1600,9 @@ uint16_t mcu_stopPerfCounter(void)
 
 void mcu_dotasks(void)
 {
+}
+
+void mcu_config_input_isr(int pin){
 }
 
 #endif

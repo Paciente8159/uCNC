@@ -578,6 +578,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
+}
+
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
@@ -652,7 +657,11 @@ uint32_t mcu_millis()
  * provides a delay in us (micro seconds)
  * the maximum allowed delay is 255 us
  * */
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+}
+
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {

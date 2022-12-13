@@ -214,6 +214,12 @@ extern "C"
 	//#define GCODE_ACCEPT_WORD_E
 
 	/**
+	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
+	 * */
+
+	// #define ENABLE_RT_SYNC_MOTIONS
+
+	/**
 	 * Uncomment to enable module extensions
 	 * */
 // #define ENABLE_MAIN_LOOP_MODULES

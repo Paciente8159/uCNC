@@ -939,6 +939,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return (500000.0f / ((float)ticks * (float)prescaller));
+}
+
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
@@ -1006,6 +1011,11 @@ uint32_t mcu_millis()
 }
 
 extern int64_t esp_system_get_time(void);
+uint32_t mcu_micros()
+{
+	return (uint32_t)esp_system_get_time();
+}
+
 void esp32_delay_us(uint16_t delay)
 {
 	int64_t time = esp_system_get_time() + delay - 1;

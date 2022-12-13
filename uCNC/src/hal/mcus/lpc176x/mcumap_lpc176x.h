@@ -107,8 +107,7 @@ typedef struct
 #define mcu_delay_cycles(X)     \
 	{                           \
 		DWT->CYCCNT = 0;        \
-		uint32_t t = X;         \
-		while (t > DWT->CYCCNT) \
+		while (X > DWT->CYCCNT) \
 			;                   \
 	}
 

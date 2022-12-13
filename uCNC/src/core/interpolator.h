@@ -41,11 +41,17 @@ extern "C"
 	float itp_get_rt_feed(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
+	void itp_start(bool is_synched);
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(KINEMATICS_MOTION_BY_SEGMENTS))
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 	uint32_t itp_get_rt_line_number(void);
+#endif
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	extern volatile int32_t itp_sync_step_counter;
+	void itp_update_feed(float feed);
+	bool itp_sync_ready(void);
 #endif
 
 #ifdef __cplusplus

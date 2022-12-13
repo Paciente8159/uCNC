@@ -1,5 +1,5 @@
 /*
-	Name: vfd_huanyang.c
+	Name: vfd_modbus.c
 	Description: Defines a Huanyang VFD controlled tool for µCNC.
 				 Defines a coolant output using DOUT1.
 
@@ -23,11 +23,13 @@
 #include <stdbool.h>
 
 // defines default coolant pins
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT1
+#ifdef ENABLE_COOLANT
+#ifndef VFD_COOLANT_FLOOD
+#define VFD_COOLANT_FLOOD DOUT1
 #endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT2
+#ifndef VFD_COOLANT_MIST
+#define VFD_COOLANT_MIST DOUT2
+#endif
 #endif
 
 // defines VFD report mode
@@ -82,11 +84,16 @@ static vfd_state_t vfd_state;
 #define VFD_ADDRESS 8
 #define VFD_MAX_COMMAND_RETRIES 2
 
-// uncomment the right type of VFD used
- #define VFD_HUANYANG_TYPE1
-// #define VFD_HUANYANG_TYPE2
-// #define VFD_YL620
-// #define VFD_POWTRAN8100
+// choose the controller type
+// types available
+#define VFD_HUANYANG_TYPE1 1
+#define VFD_HUANYANG_TYPE2 2
+#define VFD_YL620 3
+#define VFD_POWTRAN8100 4
+
+#ifndef VFD_CONTROLLER
+#define VFD_CONTROLLER VFD_HUANYANG_TYPE1
+#endif
 
 /**
  *
@@ -100,7 +107,7 @@ static vfd_state_t vfd_state;
  * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
  *
  * */
-#ifdef VFD_HUANYANG_TYPE1
+#if (VFD_CONTROLLER == VFD_HUANYANG_TYPE1)
 #define VFD_SETRPM_CMD                                         \
 	{                                                          \
 		7, 6, MODBUS_FORCE_SINGLE_COIL, 0x02, 0x00, 0x00, 0x00 \
@@ -132,7 +139,7 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
-#ifdef VFD_HUANYANG_TYPE2
+#if (VFD_CONTROLLER == VFD_HUANYANG_TYPE2)
 #define VFD_SETRPM_CMD                                              \
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x10, 0x00, 0x00, 0x00 \
@@ -163,7 +170,7 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
-#ifdef VFD_YL620
+#if (VFD_CONTROLLER == VFD_YL620)
 #define VFD_SETRPM_CMD                                              \
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x01, 0x00, 0x00 \
@@ -194,7 +201,7 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV 60.0f
 #endif
 
-#ifdef VFD_POWTRAN8100
+#if (VFD_CONTROLLER == VFD_POWTRAN8100)
 #define VFD_SETRPM_CMD                                              \
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x00, 0x01, 0x00, 0x00 \
@@ -423,7 +430,7 @@ uint8_t vfd_update(void)
  *
  * */
 
-void vfd_startup()
+static void startup_code()
 {
 	// initialize soft uart tx
 	vfd_uart.tx(true);
@@ -432,39 +439,41 @@ void vfd_startup()
 	vfd_update();
 }
 
-void vfd_shutdown()
+static void shutdown_code()
 {
 	vfd_state.rpm = 0;
 	vfd_stop();
 	vfd_state.connected = 0;
 }
 
-void vfd_set_speed(int16_t value)
+static void set_speed(int16_t value)
 {
 	vfd_state.rpm = value;
 	vfd_update();
 }
 
-void vfd_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	#ifdef ENABLE_COOLANT
+	SET_COOLANT(VFD_COOLANT_FLOOD, VFD_COOLANT_MIST, value);
+	#endif
 }
 
-uint16_t vfd_get_speed(void)
+static uint16_t get_speed(void)
 {
 	return vfd_get_rpm(GET_SPINDLE_TRUE_RPM);
 }
 
-const tool_t __rom__ vfd = {
-	.startup_code = &vfd_startup,
-	.shutdown_code = &vfd_shutdown,
+const tool_t vfd_modbus = {
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
 	.range_speed = NULL,
-	.get_speed = &vfd_get_speed,
-	.set_speed = &vfd_set_speed,
-	.set_coolant = &vfd_set_coolant};
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};
 
 #endif

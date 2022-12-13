@@ -135,6 +135,7 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 			backlash_block_data.feed = backlash_block_data.max_feed; // max feedrate possible (same as rapid move)
 
 			SETFLAG(backlash_block_data.motion_mode, MOTIONCONTROL_MODE_BACKLASH_COMPENSATION);
+			backlash_block_data.motion_flags.bit.backlash_comp = 1;
 			max_steps = 0;
 			for (uint8_t i = STEPPER_COUNT; i != 0;)
 			{
@@ -340,7 +341,8 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	float step_feed = (!CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_INVERSEFEED) ? (block_data->feed * inv_dist) : block_data->feed);
 	float feed_convert_to_steps_per_sec = (float)max_steps;
 	// convert accel already in steps/s
-	block_data->max_accel = feed_convert_to_steps_per_sec * max_accel;
+	// use max accel if accel is not already set by previous calculations (for example synched motions)
+	block_data->max_accel = (!block_data->max_accel) ? (feed_convert_to_steps_per_sec * max_accel) : (block_data->max_accel * inv_dist * feed_convert_to_steps_per_sec);
 	// convert feed from steps/min to steps/s
 	feed_convert_to_steps_per_sec *= MIN_SEC_MULT;
 	step_feed *= feed_convert_to_steps_per_sec;

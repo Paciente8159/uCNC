@@ -234,13 +234,78 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 #endif
 }
 
-// overridable
-// for now if encoders are enabled this will be override by the encoder call
-MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
+MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(input_change, NULL);
+	static uint8_t prev_inputs = 0;
+	uint8_t inputs = 0;
+	uint8_t diff;
+
+#if (!(DIN0 < 0) && defined(DIN0_ISR))
+	if (mcu_get_input(DIN0))
+	{
+		inputs |= DIN0_MASK;
+	}
 #endif
+#if (!(DIN1 < 0) && defined(DIN1_ISR))
+	if (mcu_get_input(DIN1))
+	{
+		inputs |= DIN1_MASK;
+	}
+#endif
+#if (!(DIN2 < 0) && defined(DIN2_ISR))
+	if (mcu_get_input(DIN2))
+	{
+		inputs |= DIN2_MASK;
+	}
+#endif
+#if (!(DIN3 < 0) && defined(DIN3_ISR))
+	if (mcu_get_input(DIN3))
+	{
+		inputs |= DIN3_MASK;
+	}
+#endif
+#if (!(DIN4 < 0) && defined(DIN4_ISR))
+	if (mcu_get_input(DIN4))
+	{
+		inputs |= DIN4_MASK;
+	}
+#endif
+#if (!(DIN5 < 0) && defined(DIN5_ISR))
+	if (mcu_get_input(DIN5))
+	{
+		inputs |= DIN5_MASK;
+	}
+#endif
+#if (!(DIN6 < 0) && defined(DIN6_ISR))
+	if (mcu_get_input(DIN6))
+	{
+		inputs |= DIN6_MASK;
+	}
+#endif
+#if (!(DIN7 < 0) && defined(DIN7_ISR))
+	if (mcu_get_input(DIN7))
+	{
+		inputs |= DIN7_MASK;
+	}
+#endif
+
+#if (ENCODERS > 0)
+	inputs ^= g_settings.encoders_pulse_invert_mask;
+#endif
+	diff = inputs ^ prev_inputs;
+
+	if (diff)
+	{
+#if (ENCODERS > 0)
+		encoders_update(inputs, diff);
+#endif
+#ifdef ENABLE_IO_MODULES
+		uint8_t args[] = {inputs, diff};
+		EVENT_INVOKE(input_change, args);
+#endif
+
+		prev_inputs = inputs;
+	}
 }
 
 void io_lock_limits(uint8_t limitmask)

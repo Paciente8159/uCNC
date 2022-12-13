@@ -241,9 +241,14 @@ extern "C"
 
 	// Step interpolator
 	/**
-	 * convert step rate to clock cycles
+	 * convert step rate/frequency to timer ticks and prescaller
 	 * */
 	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+
+	/**
+	 * convert timer ticks and prescaller to step rate/frequency
+	 * */
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
 
 	/**
 	 * starts the timer interrupt that generates the step pulses for the interpolator
@@ -264,7 +269,13 @@ extern "C"
 	 * gets the MCU running time in milliseconds.
 	 * the time counting is controled by the internal RTC
 	 * */
-	uint32_t mcu_millis();
+	uint32_t mcu_millis(void);
+
+	/**
+	 * gets the MCU running time in microseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
+	uint32_t mcu_micros(void);
 
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")

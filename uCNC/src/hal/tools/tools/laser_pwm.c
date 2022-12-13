@@ -1,5 +1,5 @@
 /*
-	Name: laser.c
+	Name: laser_pwm.c
 	Description: Defines a laser tool using PWM0 for µCNC.
 				 Defines a coolant output using DOUT1 (can be used for air assist).
 
@@ -39,20 +39,17 @@
 
 // #define ENABLE_COOLANT
 #ifdef ENABLE_COOLANT
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT2
-#endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT3
+#ifndef LASER_PWM_AIR_ASSIST
+#define LASER_PWM_AIR_ASSIST DOUT2
 #endif
 #endif
 
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
 #define PWM_MIN_VALUE 2
 
-static bool previous_laser_mode;
+static bool previous_mode;
 
-void laser_startup_code(void)
+static void startup_code(void)
 {
 // force laser mode
 #if !(LASER_PWM < 0)
@@ -61,17 +58,17 @@ void laser_startup_code(void)
 #else
 	io_set_pwm(LASER_PWM, 0);
 #endif
-	previous_laser_mode = g_settings.laser_mode;
+	previous_mode = g_settings.laser_mode;
 	g_settings.laser_mode = LASER_PWM_MODE;
 }
 
-void laser_shutdown_code(void)
+static void shutdown_code(void)
 {
 	// restore laser mode
-	g_settings.laser_mode = previous_laser_mode;
+	g_settings.laser_mode = previous_mode;
 }
 
-void laser_set_speed(int16_t value)
+static void set_speed(int16_t value)
 {
 // easy macro to execute the same code as below
 // SET_LASER(LASER_PWM, value, invert);
@@ -84,22 +81,22 @@ void laser_set_speed(int16_t value)
 #endif
 }
 
-int16_t laser_range_speed(int16_t value)
+static int16_t range_speed(int16_t value)
 {
 	// converts core tool speed to laser power (PWM)
 	value = (int16_t)(PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
 	return value;
 }
 
-void laser_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
 // easy macro
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	SET_COOLANT(LASER_PWM_AIR_ASSIST, NOPIN, value);
 #endif
 }
 
-uint16_t laser_get_speed(void)
+static uint16_t get_speed(void)
 {
 #if !(LASER_PWM < 0)
 	float laser = (float)mcu_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
@@ -109,14 +106,14 @@ uint16_t laser_get_speed(void)
 #endif
 }
 
-const tool_t __rom__ laser = {
-	.startup_code = &laser_startup_code,
-	.shutdown_code = &laser_shutdown_code,
+const tool_t laser_pwm = {
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
-	.range_speed = &laser_range_speed,
-	.get_speed = &laser_get_speed,
-	.set_speed = &laser_set_speed,
-	.set_coolant = &laser_set_coolant};
+	.range_speed = &range_speed,
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};

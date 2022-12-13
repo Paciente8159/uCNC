@@ -652,6 +652,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
+}
+
 // starts a constant rate pulse at a given frequency.
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
@@ -692,8 +697,12 @@ void mcu_stop_itp_isr(void)
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
+}
+
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
 void mcu_rtc_init()
