@@ -305,9 +305,9 @@ void cnc_alarm(int8_t code)
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
 	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("LIMITS:"));
+	protocol_send_string(__romstr__("LIMITS>"));
 	serial_print_int(io_alarm_limits);
-	protocol_send_string(__romstr__("CONTROLS:"));
+	protocol_send_string(__romstr__(" CONTROLS>"));
 	serial_print_int(io_alarm_controls);
 	protocol_send_string(MSG_END);
 #endif
