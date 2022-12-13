@@ -38,7 +38,7 @@
 #define NVM_EEPROM_BASE (FLASH_ADDR + NVMCTRL_FLASH_SIZE - (NVM_EEPROM_ROWS * NVMCTRL_ROW_SIZE))
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -207,22 +207,20 @@ void MCU_ITP_ISR(void)
 	mcu_enable_global_isr();
 }
 
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 void mcu_com_isr()
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM->USART.INTFLAG.bit.RXC && COM->USART.INTENSET.bit.RXC)
+	if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 	{
-		COM->USART.INTFLAG.bit.RXC = 1;
+		COM_UART->USART.INTFLAG.bit.RXC = 1;
 		unsigned char c = (0xff & COM_INREG);
 		mcu_com_rx_cb(c);
 	}
-#endif
 #ifndef ENABLE_SYNC_TX
-	if (COM->USART.INTFLAG.bit.DRE && COM->USART.INTENSET.bit.DRE)
+	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 	{
-		COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+		COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
 		mcu_com_tx_cb();
 	}
 #endif
@@ -232,7 +230,7 @@ void mcu_com_isr()
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 	PM->APBCMASK.reg |= PM_APBCMASK_COM;
 
 	/* Setup GCLK SERCOMx to use GENCLK0 */
@@ -241,49 +239,44 @@ void mcu_usart_init(void)
 		;
 
 	// Start the Software Reset
-	COM->USART.CTRLA.bit.SWRST = 1;
+	COM_UART->USART.CTRLA.bit.SWRST = 1;
 
-	while (COM->USART.SYNCBUSY.bit.SWRST)
+	while (COM_UART->USART.SYNCBUSY.bit.SWRST)
 		;
 
-	COM->USART.CTRLA.bit.MODE = 1;
-	COM->USART.CTRLA.bit.SAMPR = 0;			// 16x sample rate
-	COM->USART.CTRLA.bit.FORM = 0;			// no parity
-	COM->USART.CTRLA.bit.DORD = 1;			// LSB first
-	COM->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
-	COM->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
-	COM->USART.CTRLB.bit.SBMODE = 0;		// one stop bit
-	COM->USART.CTRLB.bit.CHSIZE = 0;		// 8 bits
-	COM->USART.CTRLB.bit.RXEN = 1;			// enable receiver
-	COM->USART.CTRLB.bit.TXEN = 1;			// enable transmitter
+	COM_UART->USART.CTRLA.bit.MODE = 1;
+	COM_UART->USART.CTRLA.bit.SAMPR = 0;		 // 16x sample rate
+	COM_UART->USART.CTRLA.bit.FORM = 0;			 // no parity
+	COM_UART->USART.CTRLA.bit.DORD = 1;			 // LSB first
+	COM_UART->USART.CTRLA.bit.RXPO = COM_RX_PAD; // RX on PAD3
+	COM_UART->USART.CTRLA.bit.TXPO = COM_TX_PAD; // TX on PAD2
+	COM_UART->USART.CTRLB.bit.SBMODE = 0;		 // one stop bit
+	COM_UART->USART.CTRLB.bit.CHSIZE = 0;		 // 8 bits
+	COM_UART->USART.CTRLB.bit.RXEN = 1;			 // enable receiver
+	COM_UART->USART.CTRLB.bit.TXEN = 1;			 // enable transmitter
 
-	while (COM->USART.SYNCBUSY.bit.CTRLB)
+	while (COM_UART->USART.SYNCBUSY.bit.CTRLB)
 		;
 
 	uint16_t baud = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE) / (F_CPU >> 4))));
 
-	COM->USART.BAUD.reg = baud;
+	COM_UART->USART.BAUD.reg = baud;
 	mcu_config_altfunc(TX);
 	mcu_config_altfunc(RX);
+	COM_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
+	COM_UART->USART.INTENSET.bit.ERROR = 1;
 
-#ifndef ENABLE_SYNC_RX
-	COM->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
-	COM->USART.INTENSET.bit.ERROR = 1;
-#endif
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-#endif
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 	NVIC_SetPriority(COM_IRQ, 0);
 
-	// enable COM
-	COM->USART.CTRLA.bit.ENABLE = 1;
-	while (COM->USART.SYNCBUSY.bit.ENABLE)
+	// enable COM_UART
+	COM_UART->USART.CTRLA.bit.ENABLE = 1;
+	while (COM_UART->USART.SYNCBUSY.bit.ENABLE)
 		;
 
 #endif
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	PM->AHBMASK.reg |= PM_AHBMASK_USB;
 
 	mcu_config_input(USB_DM);
@@ -310,7 +303,7 @@ void mcu_usart_init(void)
 #endif
 }
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 void USB_Handler(void)
 {
 	mcu_disable_global_isr();
@@ -602,7 +595,7 @@ void mcu_init(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = (((uint16_t)value)<<1);
+	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = (((uint16_t)value) << 1);
 #endif
 }
 
@@ -614,7 +607,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
 	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
-	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >>1);
+	uint8_t unscaled = (uint8_t)(mcu_servos[offset] >> 1);
 
 	if ((1U << offset) & SERVOS_MASK)
 	{
@@ -693,23 +686,23 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return false;
-} // Stop async send
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a char either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_UART
+#ifdef ENABLE_SYNC_TX
+	while (!mcu_tx_ready())
+		;
+#endif
+	COM_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+#endif
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -718,43 +711,6 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
-#endif
-#endif
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-#if (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
-#else
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
-#endif
-	return (char)(0xff & COM_INREG);
-#endif
 #endif
 }
 #endif
@@ -792,6 +748,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 		frequency = F_STEP_MAX;
 
 	uint32_t clocks = (uint32_t)((F_TIMERS >> 1) / frequency);
+	*prescaller = 0;
 
 	while (clocks > 0xFFFF)
 	{
@@ -808,6 +765,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	}
 
 	*ticks = ((uint16_t)clocks) - 1;
+}
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)(F_TIMERS >> 1) / (float)(((uint32_t)ticks + 1) << prescaller));
 }
 
 /**
@@ -934,7 +896,11 @@ uint32_t mcu_millis()
 // 		asm("nop");
 // }
 
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+}
+
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
@@ -949,19 +915,16 @@ void mcu_delay_us(uint16_t delay)
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
- *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run mcu_com_tx_cb
  * */
 void mcu_dotasks(void)
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
@@ -1222,6 +1185,101 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return data;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 0; // disable timer and also write protection
+	while (ONESHOT_REG->SYNCBUSY.bit.ENABLE)
+		;
+	if (ONESHOT_REG->INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->INTFLAG.bit.MC0 = 1;
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 0;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 0;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	if (ONESHOT_REG->COUNT16.INTFLAG.bit.MC0)
+	{
+		ONESHOT_REG->COUNT16.INTFLAG.bit.MC0 = 1;
+#endif
+	}
+
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	uint16_t ticks = (uint16_t)(timeout - 1);
+	uint16_t prescaller = 3; // div by 8 giving one tick per us
+
+#if (ONESHOT_TIMER < 3)
+	// reset timer
+	ONESHOT_REG->CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->SYNCBUSY.bit.SWRST)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->WAVE.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->SYNCBUSY.bit.WAVE)
+		;
+	ONESHOT_REG->CC[0].reg = ticks;
+	while (ONESHOT_REG->SYNCBUSY.bit.CC0)
+		;
+
+	NVIC_SetPriority(ONESHOT_IRQ, 3);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#else
+	// reset timer
+	ONESHOT_REG->COUNT16.CTRLA.bit.SWRST = 1;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	// enable the timer in the APB
+	ONESHOT_REG->COUNT16.CTRLA.bit.PRESCALER = (uint8_t)prescaller; // normal counter
+	ONESHOT_REG->COUNT16.CTRLA.bit.WAVEGEN = 1;						// match compare
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	ONESHOT_REG->COUNT16.CC[0].reg = ticks;
+	while (ONESHOT_REG->COUNT16.STATUS.bit.SYNCBUSY)
+		;
+	NVIC_SetPriority(ONESHOT_IRQ, 1);
+	NVIC_ClearPendingIRQ(ONESHOT_IRQ);
+	NVIC_EnableIRQ(ONESHOT_IRQ);
+#endif
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+#if (ONESHOT_TIMER < 3)
+	ONESHOT_REG->INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#else
+	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 1;
+	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
+#endif
 }
 #endif
 #endif

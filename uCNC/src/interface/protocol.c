@@ -19,13 +19,19 @@
 static bool protocol_busy;
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-// event_send_pins_states_handler
-WEAK_EVENT_HANDLER(send_pins_states)
+#ifdef ENABLE_IO_MODULES
+// event_protocol_send_pins_states_handler
+WEAK_EVENT_HANDLER(protocol_send_pins_states)
 {
-	// for now only encoder module uses this hook and overrides it
-	// it actually overrides the mcu callback to be faster
-	DEFAULT_EVENT_HANDLER(send_pins_states);
+	DEFAULT_EVENT_HANDLER(protocol_send_pins_states);
+}
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+// event_protocol_send_cnc_settings_handler
+WEAK_EVENT_HANDLER(protocol_send_cnc_settings)
+{
+	DEFAULT_EVENT_HANDLER(protocol_send_cnc_settings);
 }
 #endif
 
@@ -178,7 +184,7 @@ void protocol_send_status(void)
 #endif
 	float axis[MAX(AXIS_COUNT, 3)];
 
-	int32_t steppos[STEPPER_COUNT];
+	int32_t steppos[AXIS_TO_STEPPERS];
 	itp_get_rt_position(steppos);
 	kinematics_apply_forward(steppos, axis);
 	kinematics_apply_reverse_transform(axis);
@@ -461,7 +467,7 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 
 void protocol_send_gcode_modes(void)
 {
-	uint8_t modalgroups[12];
+	uint8_t modalgroups[13];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -475,7 +481,7 @@ void protocol_send_gcode_modes(void)
 
 	for (uint8_t i = 0; i < 7; i++)
 	{
-		protocol_send_parser_modalstate('G', modalgroups[i], 0);
+		protocol_send_parser_modalstate('G', modalgroups[i], modalgroups[12]);
 	}
 
 	if (modalgroups[7] == 62)
@@ -510,7 +516,7 @@ void protocol_send_gcode_modes(void)
 #endif
 }
 
-static void protocol_send_gcode_setting_line_int(uint8_t setting, uint16_t value)
+void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
 {
 	serial_putc('$');
 	serial_print_int(setting);
@@ -603,9 +609,18 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(25, g_settings.homing_fast_feed_rate);
 	protocol_send_gcode_setting_line_int(26, g_settings.debounce_ms);
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
 	protocol_send_gcode_setting_line_int(32, g_settings.laser_mode);
+#ifdef ENABLE_LASER_PPI
+	protocol_send_gcode_setting_line_int(33, g_settings.laser_ppi);
+	protocol_send_gcode_setting_line_int(34, g_settings.laser_ppi_uswidth);
+	protocol_send_gcode_setting_line_flt(35, g_settings.laser_ppi_mixmode_ppi);
+	protocol_send_gcode_setting_line_flt(36, g_settings.laser_ppi_mixmode_uswidth);
+#endif
 #ifdef ENABLE_SKEW_COMPENSATION
 	protocol_send_gcode_setting_line_flt(37, g_settings.skew_xy_factor);
 #ifndef SKEW_COMPENSATION_XY_ONLY
@@ -631,23 +646,28 @@ void protocol_send_cnc_settings(void)
 	}
 #endif
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(100 + i, g_settings.step_per_mm[i]);
 	}
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 	protocol_send_gcode_setting_line_flt(106, g_settings.delta_arm_length);
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_armbase_radius);
 	// protocol_send_gcode_setting_line_int(108, g_settings.delta_efector_height);
+#elif (KINEMATIC == KINEMATIC_DELTA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.delta_base_radius);
+	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
+	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
+	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
 #endif
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(110 + i, g_settings.max_feed_rate[i]);
 	}
 
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(120 + i, g_settings.acceleration[i]);
 	}
@@ -658,10 +678,14 @@ void protocol_send_cnc_settings(void)
 	}
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+	for (uint8_t i = 0; i < AXIS_TO_STEPPERS; i++)
 	{
 		protocol_send_gcode_setting_line_int(140 + i, g_settings.backlash_steps[i]);
 	}
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
 #endif
 #ifdef ECHO_CMD
 	protocol_busy = false;
@@ -729,15 +753,15 @@ void protocol_send_pins_states(void)
 	int32_t steps[STEPPER_COUNT];
 	itp_get_rt_position(steps);
 	protocol_send_string(__romstr__("[STEPS:"));
-	serial_print_intarr(steps, STEPPER_COUNT);
+	serial_print_intarr(steps, AXIS_TO_STEPPERS);
 	protocol_send_string(MSG_END);
 
 #if ENCODERS > 0
 	encoder_print_values();
 #endif
 
-#ifdef ENABLE_PROTOCOL_MODULES
-	EVENT_INVOKE(send_pins_states, NULL);
+#ifdef ENABLE_IO_MODULES
+	EVENT_INVOKE(protocol_send_pins_states, NULL);
 #endif
 
 	protocol_send_string(__romstr__("[RUNTIME:"));
@@ -751,18 +775,10 @@ void protocol_send_pins_states(void)
 #endif
 
 #ifdef ENABLE_SYSTEM_INFO
-#define __STRGIFY__(s) #s
-#define STRGIFY(s) __STRGIFY__(s)
-
-#if (KINEMATIC == KINEMATIC_CARTESIAN)
-#define KINEMATIC_INFO "C" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_COREXY)
-#define KINEMATIC_INFO "XY" STRGIFY(AXIS_COUNT) ","
-#elif (KINEMATIC == KINEMATIC_DELTA)
-#define KINEMATIC_INFO "D" STRGIFY(AXIS_COUNT) ","
-#else
-#define KINEMATIC_INFO ""
+#ifndef KINEMATIC_TYPE_STR
+#define KINEMATIC_TYPE_STR "UK" /*undefined kynematic*/
 #endif
+#define KINEMATIC_INFO KINEMATIC_TYPE_STR STRGIFY(AXIS_COUNT) ","
 #define TOOLS_INFO "T" STRGIFY(TOOL_COUNT) ","
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -841,22 +857,42 @@ void protocol_send_pins_states(void)
 #define SKEW_INFO ""
 #endif
 
+#ifdef ENABLE_LASER_PPI
+#define PPI_INFO "PPI,"
+#else
+#define PPI_INFO ""
+#endif
+
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
 #define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
 	","
-#if (INTERFACE == INTERFACE_USB)
-#define SERIAL_INFO "U" STRGIFY(RX_BUFFER_CAPACITY)
-#else
+
 #define SERIAL_INFO STRGIFY(RX_BUFFER_CAPACITY)
-#endif
 
 #ifndef BOARD_NAME
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO PLANNER_INFO SERIAL_INFO "]" STR_EOL)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
+
+WEAK_EVENT_HANDLER(protocol_send_cnc_info)
+{
+	// custom handler
+	protocol_send_cnc_info_delegate_event_t *ptr = protocol_send_cnc_info_event;
+	while (ptr != NULL)
+	{
+		if (ptr->fptr != NULL)
+		{
+			ptr->fptr(args, NULL);
+			serial_putc(',');
+		}
+		ptr = ptr->next;
+	}
+
+	return 0;
+}
 
 void protocol_send_cnc_info(void)
 {
@@ -865,6 +901,8 @@ void protocol_send_cnc_info(void)
 #endif
 	protocol_send_string(VER_INFO);
 	protocol_send_string(OPT_INFO);
+	EVENT_INVOKE(protocol_send_cnc_info, NULL);
+	protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif

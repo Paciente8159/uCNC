@@ -31,101 +31,120 @@
 #ifndef SPINDLE_PWM
 #define SPINDLE_PWM PWM0
 #endif
-#ifndef SPINDLE_DIR
-#define SPINDLE_DIR DOUT0
+#ifndef SPINDLE_PWM_DIR
+#define SPINDLE_PWM_DIR DOUT0
 #endif
 
 #ifdef ENABLE_COOLANT
-#ifndef COOLANT_FLOOD
-#define COOLANT_FLOOD DOUT2
+#ifndef SPINDLE_PWM_COOLANT_FLOOD
+#define SPINDLE_PWM_COOLANT_FLOOD DOUT2
 #endif
-#ifndef COOLANT_MIST
-#define COOLANT_MIST DOUT3
+#ifndef SPINDLE_PWM_COOLANT_MIST
+#define SPINDLE_PWM_COOLANT_MIST DOUT3
 #endif
 #endif
 
-#define SPINDLE_FEEDBACK ANALOG0
+#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
+#ifndef ENABLE_ENCODER_RPM
+#error "To use RPM encoder you must enable ENABLE_ENCODER_RPM in the HAL"
+#endif
+#endif
 
-static uint8_t spindle_pwm_speed;
+static uint8_t speed;
 
-void spindle_pwm_set_speed(int16_t value)
+static void startup_code(void)
+{
+// force pwm mode
+#if !(SPINDLE_PWM < 0)
+	mcu_config_pwm(SPINDLE_PWM, 1000);
+#endif
+}
+
+static void set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
-	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_DIR, value, invert);
-	spindle_pwm_speed = (uint8_t)ABS(value);
+	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_PWM_DIR, value, invert);
+	speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if !(SPINDLE_DIR < 0)
+#if !(SPINDLE_PWM_DIR < 0)
 	if ((value <= 0))
 	{
-		mcu_clear_output(SPINDLE_DIR);
+		mcu_clear_output(SPINDLE_PWM_DIR);
 	}
 	else
 	{
-		mcu_set_output(SPINDLE_DIR);
+		mcu_set_output(SPINDLE_PWM_DIR);
 	}
 #endif
 
 #if !(SPINDLE_PWM < 0)
 	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
+#else
+	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
 }
 
-void spindle_pwm_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
 // easy macro
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	SET_COOLANT(SPINDLE_PWM_COOLANT_FLOOD, SPINDLE_PWM_COOLANT_MIST, value);
 #endif
 }
 
-int16_t spindle_pwm_range_speed(float value)
+static int16_t range_speed(int16_t value)
 {
-	value = (255.0f) * (value / g_settings.spindle_max_rpm);
-	return ((int16_t)value);
+	value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+	return value;
 }
 
-uint16_t spindle_pwm_get_speed(void)
+static uint16_t get_speed(void)
 {
+#ifdef SPINDLE_PWM_HAS_RPM_ENCODER
+	return encoder_get_rpm();
+#else
 #if SPINDLE_PWM >= 0
-	float spindle = (float)mcu_get_pwm(SPINDLE_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)roundf(spindle);
+	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	return (uint16_t)lroundf(spindle);
 #else
 	return 0;
+#endif
 #endif
 }
 
 #if PID_CONTROLLERS > 0
-void spindle_pwm_pid_update(int16_t value)
+static void pid_update(int16_t value)
 {
-
-#if !(SPINDLE_PWM < 0)
-	if (spindle_pwm_speed != 0)
+	if (speed != 0)
 	{
 		uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
+#if !(SPINDLE_PWM < 0)
 		mcu_set_pwm(SPINDLE_PWM, newval);
-	}
+#else
+		io_set_pwm(SPINDLE_PWM, newval);
 #endif
+	}
 }
 
-int16_t spindle_pwm_pid_error(void)
+static int16_t pid_error(void)
 {
 #if (!(SPINDLE_FEEDBACK < 0) && !(SPINDLE_PWM < 0))
 	uint8_t reader = mcu_get_analog(ANALOG0);
-	return (spindle_pwm_speed - reader);
+	return (speed - reader);
 #else
 	return 0;
 #endif
 }
 #endif
 
-const tool_t __rom__ spindle_pwm = {
-	.startup_code = NULL,
+const tool_t spindle_pwm = {
+	.startup_code = &startup_code,
 	.shutdown_code = NULL,
 #if PID_CONTROLLERS > 0
-	.pid_update = &spindle_pwm_pid_update,
-	.pid_error = &spindle_pwm_pid_error,
+	.pid_update = &pid_update,
+	.pid_error = &pid_error,
 #endif
-	.range_speed = &spindle_pwm_range_speed,
-	.get_speed = &spindle_pwm_get_speed,
-	.set_speed = &spindle_pwm_set_speed,
-	.set_coolant = &spindle_pwm_set_coolant};
+	.range_speed = &range_speed,
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};

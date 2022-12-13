@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DECL_TOOL(tool) extern const tool_t __rom__ tool
+#define DECL_TOOL(tool) extern const tool_t tool
 
 static tool_t tool_current;
 
@@ -75,58 +75,6 @@ DECL_TOOL(TOOL15);
 DECL_TOOL(TOOL16);
 #endif
 
-// this variable is not used but forces the compiler to compile the selected tools compilation units
-TOOLDEF const tool_t *__rom__ const tools[] = {
-#ifdef TOOL1
-	&TOOL1,
-#endif
-#ifdef TOOL2
-	&TOOL2,
-#endif
-#ifdef TOOL3
-	&TOOL3,
-#endif
-#ifdef TOOL4
-	&TOOL4,
-#endif
-#ifdef TOOL5
-	&TOOL5,
-#endif
-#ifdef TOOL6
-	&TOOL6,
-#endif
-#ifdef TOOL7
-	&TOOL7,
-#endif
-#ifdef TOOL8
-	&TOOL8,
-#endif
-#ifdef TOOL9
-	&TOOL9,
-#endif
-#ifdef TOOL10
-	&TOOL10,
-#endif
-#ifdef TOOL11
-	&TOOL11,
-#endif
-#ifdef TOOL12
-	&TOOL12,
-#endif
-#ifdef TOOL13
-	&TOOL13,
-#endif
-#ifdef TOOL14
-	&TOOL14,
-#endif
-#ifdef TOOL15
-	&TOOL15,
-#endif
-#ifdef TOOL16
-	&TOOL16,
-#endif
-};
-
 void tool_init(void)
 {
 #if TOOL_COUNT > 0
@@ -150,88 +98,89 @@ void tool_change(uint8_t tool)
 	{
 #ifdef TOOL1
 	case 1:
-		rom_memcpy(&tool_current, &TOOL1, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL1, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL2
 	case 2:
-		rom_memcpy(&tool_current, &TOOL2, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL2, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL3
 	case 3:
-		rom_memcpy(&tool_current, &TOOL3, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL3, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL4
 	case 4:
-		rom_memcpy(&tool_current, &TOOL4, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL4, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL5
 	case 5:
-		rom_memcpy(&tool_current, &TOOL5, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL5, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL6
 	case 6:
-		rom_memcpy(&tool_current, &TOOL6, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL6, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL7
 	case 7:
-		rom_memcpy(&tool_current, &TOOL7, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL7, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL8
 	case 8:
-		rom_memcpy(&tool_current, &TOOL8, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL8, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL9
 	case 9:
-		rom_memcpy(&tool_current, &TOOL9, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL9, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL10
 	case 10:
-		rom_memcpy(&tool_current, &TOOL10, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL10, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL11
 	case 11:
-		rom_memcpy(&tool_current, &TOOL11, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL11, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL12
 	case 12:
-		rom_memcpy(&tool_current, &TOOL12, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL12, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL13
 	case 13:
-		rom_memcpy(&tool_current, &TOOL13, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL13, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL14
 	case 14:
-		rom_memcpy(&tool_current, &TOOL14, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL14, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL15
 	case 15:
-		rom_memcpy(&tool_current, &TOOL15, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL15, sizeof(tool_t));
 		break;
 #endif
 #ifdef TOOL16
 	case 16:
-		rom_memcpy(&tool_current, &TOOL16, sizeof(tool_t));
+		memcpy(&tool_current, &TOOL16, sizeof(tool_t));
 		break;
 #endif
 	default:
 		memset(&tool_current, 0, sizeof(tool_t));
 		break;
 	}
+
 	if (tool_current.startup_code)
 	{
 		tool_current.startup_code();
@@ -260,12 +209,13 @@ uint16_t tool_get_speed()
 	return 0;
 }
 
-int16_t tool_range_speed(float value)
+int16_t tool_range_speed(int16_t value)
 {
-	//input value will always be positive
+	// input value will always be positive
 #if TOOL_COUNT > 0
 	if (tool_current.range_speed)
 	{
+		value = ABS(value);
 		return tool_current.range_speed(value);
 	}
 #endif
@@ -290,25 +240,27 @@ void tool_stop()
 #endif
 }
 
-#if PID_CONTROLLERS > 0
 void tool_pid_update(int16_t value)
 {
+#if PID_CONTROLLERS > 0
 #if TOOL_COUNT > 0
 	if (tool_current.pid_update)
 	{
 		tool_current.pid_update(value);
 	}
 #endif
+#endif
 }
 
 int16_t tool_pid_error(void)
 {
+#if PID_CONTROLLERS > 0
 #if TOOL_COUNT > 0
 	if (tool_current.pid_error)
 	{
 		return tool_current.pid_error();
 	}
 #endif
+#endif
 	return 0;
 }
-#endif

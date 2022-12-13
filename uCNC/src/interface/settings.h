@@ -58,6 +58,12 @@ extern "C"
 		int16_t spindle_max_rpm;
 		int16_t spindle_min_rpm;
 		uint8_t laser_mode;
+#ifdef ENABLE_LASER_PPI
+		uint16_t laser_ppi;
+		uint16_t laser_ppi_uswidth;
+		float laser_ppi_mixmode_ppi;
+		float laser_ppi_mixmode_uswidth;
+#endif
 		float step_per_mm[STEPPER_COUNT];
 		float max_feed_rate[STEPPER_COUNT];
 		float acceleration[STEPPER_COUNT];
@@ -66,13 +72,19 @@ extern "C"
 		uint8_t default_tool;
 		float tool_length_offset[TOOL_COUNT];
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
 		float delta_arm_length;
 		float delta_armbase_radius;
 		// float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		float delta_base_radius;
+		float delta_effector_radius;
+		float delta_bicep_length;
+		float delta_forearm_length;
+		float delta_bicep_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		uint16_t backlash_steps[STEPPER_COUNT];
+		uint16_t backlash_steps[AXIS_TO_STEPPERS];
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		float skew_xy_factor;
@@ -102,6 +114,15 @@ extern "C"
 #ifndef STARTUP_BLOCK1_ADDRESS_OFFSET
 #define STARTUP_BLOCK1_ADDRESS_OFFSET (STARTUP_BLOCK0_ADDRESS_OFFSET + RX_BUFFER_SIZE)
 #endif
+#ifndef MODULES_SETTINGS_ADDRESS_OFFSET
+#define MODULES_SETTINGS_ADDRESS_OFFSET (STARTUP_BLOCK1_ADDRESS_OFFSET + RX_BUFFER_SIZE)
+#endif
+
+#ifndef ENABLE_SETTINGS_MODULES
+typedef uint8_t setting_offset_t;
+#else
+typedef uint16_t setting_offset_t;
+#endif
 
 	extern settings_t g_settings;
 
@@ -110,13 +131,19 @@ extern "C"
 	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
 	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
 	void settings_reset(bool erase_startup_blocks);
-	uint8_t settings_change(uint8_t setting, float value);
+	uint8_t settings_change(setting_offset_t id, float value);
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+	uint16_t settings_register_external_setting(uint8_t size);
 
-#ifdef ENABLE_SETTINGS_MODULES
 	// event_settings_change_handler
+	typedef struct setting_args_
+	{
+		uint16_t id;
+		float value;
+	} setting_args_t;
 	DECL_EVENT_HANDLER(settings_change);
 	typedef struct settings_args_
 	{

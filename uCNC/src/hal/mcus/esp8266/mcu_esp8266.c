@@ -62,6 +62,25 @@ void esp8266_eeprom_flush(void);
 
 ETSTimer esp8266_rtc_timer;
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+static uint32_t esp8266_oneshot_counter;
+static uint32_t esp8266_oneshot_reload;
+static IRAM_ATTR void mcu_gen_oneshot(void)
+{
+	if (esp8266_oneshot_counter)
+	{
+		esp8266_oneshot_counter--;
+		if (!esp8266_oneshot_counter)
+		{
+			if (mcu_timeout_cb)
+			{
+				mcu_timeout_cb();
+			}
+		}
+	}
+}
+#endif
+
 uint8_t esp8266_pwm[16];
 static IRAM_ATTR void mcu_gen_pwm(void)
 {
@@ -325,6 +344,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 	// mcu_enable_global_isr();
 	mcu_gen_step();
 	mcu_gen_pwm();
+	mcu_gen_oneshot();
 }
 
 // static void mcu_uart_isr(void *arg)
@@ -476,16 +496,6 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return esp8266_uart_rx_ready();
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
@@ -499,22 +509,6 @@ void mcu_putc(char c)
 #endif
 
 	esp8266_uart_write(c);
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
-#endif
-
-	return esp8266_uart_read();
 }
 #endif
 
@@ -572,6 +566,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+}
+
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
@@ -607,21 +606,22 @@ uint32_t mcu_millis()
 	return mcu_runtime_ms;
 }
 
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
+uint32_t mcu_micros()
 {
-	uint32_t time = system_get_time() + delay;
+	return (uint32_t)esp_system_get_time();
+}
+
+void esp8266_delay_us(uint16_t delay)
+{
+	uint32_t time = system_get_time() + delay - 1;
 	while (time > system_get_time())
 		;
 }
-#endif
 
 /**
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the serial_rx_isr
- *   - if ENABLE_SYNC_TX is enabled check if serial_tx_empty is false and run serial_tx_isr
  * */
 void mcu_dotasks(void)
 {
@@ -719,5 +719,29 @@ void mcu_eeprom_flush(void)
 // }
 // #endif
 // #endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+/**
+ * configures a single shot timeout in us
+ * */
+
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	esp8266_oneshot_reload = (128000UL / timeout);
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
+	esp8266_oneshot_counter = esp8266_oneshot_reload;
+}
+#endif
+#endif
 
 #endif

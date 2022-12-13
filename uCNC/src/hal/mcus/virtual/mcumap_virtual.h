@@ -36,6 +36,17 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+//needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 0
+#endif
+
 #define ENABLE_SYNC_TX
 
 // joints step/dir pins
@@ -155,6 +166,7 @@
 #define DIN5 135
 #define DIN6 136
 #define DIN7 137
+#define DIN7_ISR
 #define DIN8 138
 #define DIN9 139
 #define DIN10 140
@@ -187,8 +199,20 @@
 #define SPI_SDI 205
 #define SPI_SDO 206
 
+#define MCU_HAS_ONESHOT_TIMER
+
 // just to compile
 #define mcu_rx_ready() true
 #define mcu_nop()
+#define mcu_config_pullup(diopin)
+#define mcu_config_analog(diopin)
+#define asm __asm__
+
+#define mcu_delay_cycles(X)
+extern void virtual_delay_us(uint16_t delay);
+#define mcu_delay_us(X) virtual_delay_us(X)
+
+#define asm __asm__
+#define VFD_HUANYANG_TYPE1
 
 #endif

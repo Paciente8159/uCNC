@@ -67,15 +67,49 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
-#if (INTERFACE == INTERFACE_USB)
-// if USB VCP is used force RX sync also
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
+#define     __IM     volatile const      /*! Defines 'read only' structure member permissions */
+#define     __IOM    volatile            /*! Defines 'read / write' structure member permissions */
+
+typedef struct
+{
+  __IOM uint32_t CTRL;                   /*!< Offset: 0x000 (R/W)  Control Register */
+  __IOM uint32_t CYCCNT;                 /*!< Offset: 0x004 (R/W)  Cycle Count Register */
+  __IOM uint32_t CPICNT;                 /*!< Offset: 0x008 (R/W)  CPI Count Register */
+  __IOM uint32_t EXCCNT;                 /*!< Offset: 0x00C (R/W)  Exception Overhead Count Register */
+  __IOM uint32_t SLEEPCNT;               /*!< Offset: 0x010 (R/W)  Sleep Count Register */
+  __IOM uint32_t LSUCNT;                 /*!< Offset: 0x014 (R/W)  LSU Count Register */
+  __IOM uint32_t FOLDCNT;                /*!< Offset: 0x018 (R/W)  Folded-instruction Count Register */
+  __IM  uint32_t PCSR;                   /*!< Offset: 0x01C (R/ )  Program Counter Sample Register */
+  __IOM uint32_t COMP0;                  /*!< Offset: 0x020 (R/W)  Comparator Register 0 */
+  __IOM uint32_t MASK0;                  /*!< Offset: 0x024 (R/W)  Mask Register 0 */
+  __IOM uint32_t FUNCTION0;              /*!< Offset: 0x028 (R/W)  Function Register 0 */
+        uint32_t RESERVED0[1U];
+  __IOM uint32_t COMP1;                  /*!< Offset: 0x030 (R/W)  Comparator Register 1 */
+  __IOM uint32_t MASK1;                  /*!< Offset: 0x034 (R/W)  Mask Register 1 */
+  __IOM uint32_t FUNCTION1;              /*!< Offset: 0x038 (R/W)  Function Register 1 */
+        uint32_t RESERVED1[1U];
+  __IOM uint32_t COMP2;                  /*!< Offset: 0x040 (R/W)  Comparator Register 2 */
+  __IOM uint32_t MASK2;                  /*!< Offset: 0x044 (R/W)  Mask Register 2 */
+  __IOM uint32_t FUNCTION2;              /*!< Offset: 0x048 (R/W)  Function Register 2 */
+        uint32_t RESERVED2[1U];
+  __IOM uint32_t COMP3;                  /*!< Offset: 0x050 (R/W)  Comparator Register 3 */
+  __IOM uint32_t MASK3;                  /*!< Offset: 0x054 (R/W)  Mask Register 3 */
+  __IOM uint32_t FUNCTION3;              /*!< Offset: 0x058 (R/W)  Function Register 3 */
+} DWT_Type;
+
+#define DWT_BASE            (0xE0001000UL)                            /*!< DWT Base Address */
+#define DWT                 ((DWT_Type       *)     DWT_BASE      )   /*!< DWT configuration struct */
+
+// custom cycle counter
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
 #endif
-#ifndef ENABLE_SYNC_RX
-#define ENABLE_SYNC_RX
-#endif
-#endif
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		while (X > DWT->CYCCNT) \
+			;                   \
+	}
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -2801,6 +2835,13 @@ extern "C"
 #define DIO209_PINCON I2C_SDA_PINCON
 #endif
 
+#if (defined(TX) && defined(RX))
+#define MCU_HAS_UART
+#endif
+#if (defined(USB_DP) && defined(USB_DM))
+#define MCU_HAS_USB
+#endif
+
 /**********************************************
  *	ISR on change inputs
  **********************************************/
@@ -3518,7 +3559,7 @@ extern "C"
 #endif
 
 // COM registers
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifndef UART_PORT
 #define UART_PORT 0
 #endif
@@ -3546,15 +3587,13 @@ extern "C"
 
 // this MCU does not work well with both TX and RX interrupt
 // this forces the sync TX method to fix communication
-#define COM_USART __helper__(LPC_UART, UART_PORT, )
+#define COM_UART __helper__(LPC_UART, UART_PORT, )
 #define COM_IRQ __helper__(UART, UART_PORT, _IRQn)
 #define COM_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART_PORT, )
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 #define MCU_COM_ISR __helper__(UART, UART_PORT, _IRQHandler)
-#endif
 
-#define COM_OUTREG (COM_USART)->THR
-#define COM_INREG (COM_USART)->RBR
+#define COM_OUTREG (COM_UART)->THR
+#define COM_INREG (COM_UART)->RBR
 
 #endif
 
@@ -3658,11 +3697,30 @@ extern "C"
 #endif
 #define SERVO_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, SERVO_TIMER, ) & 0x1F))
 
+#ifdef ONESHOT_TIMER
+#define MCU_HAS_ONESHOT_TIMER
+#define ONESHOT_TIMER_REG __helper__(LPC_TIM, ONESHOT_TIMER, )
+#define MCU_ONESHOT_ISR __helper__(TIMER, ONESHOT_TIMER, _IRQHandler)
+#define ONESHOT_INT_FLAG __helper__(TIM_MR, ONESHOT_TIMER, _INT)
+#define ONESHOT_TIMER_IRQ __helper__(TIMER, ONESHOT_TIMER, _IRQn)
+#define ONESHOT_PCONP __helper__(CLKPWR_PCONP_PCTIM, ONESHOT_TIMER, )
+#if (ONESHOT_TIMER < 2)
+#define ONESHOT_PCLKSEL_REG PCLKSEL0
+#else
+#define ONESHOT_PCLKSEL_REG PCLKSEL1
+#endif
+#define ONESHOT_PCLKSEL_VAL (1 << (__helper__(CLKPWR_PCLKSEL_TIMER, ONESHOT_TIMER, ) & 0x1F))
+#endif
+
 // Indirect macro access
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
-#define mcu_config_output(diopin) SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_output(diopin)                                                                                            \
+	{                                                                                                                        \
+		SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                            \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_output_od(diopin)                                                                                          \
 	{                                                                                                                         \
 		mcu_config_output(diopin);                                                                                            \
@@ -3671,7 +3729,11 @@ extern "C"
 		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
-#define mcu_config_input(diopin) CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT))
+#define mcu_config_input(diopin)                                                                                             \
+	{                                                                                                                        \
+		CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                          \
+		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
+	}
 #define mcu_config_pullup(diopin)                                                                                             \
 	{                                                                                                                         \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
@@ -3717,7 +3779,7 @@ extern "C"
 		LPC_PWM1->PCR &= 0xFF00;                                              \
 		LPC_PWM1->LER |= (1UL << 0) | (1UL << __indirect__(diopin, CHANNEL)); \
 		LPC_PWM1->PCR |= (1UL << (8 + __indirect__(diopin, CHANNEL)));        \
-		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                      \
+		LPC_PWM1->PR = ((F_CPU >> 10) / freq) - 1;                            \
 		LPC_PWM1->MCR = (1UL << 1);                                           \
 		LPC_PWM1->MR0 = 255;                                                  \
 		LPC_PWM1->TCR = (1UL << 3) | (1UL << 0);                              \
@@ -3755,10 +3817,15 @@ extern "C"
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
 
-#if (INTERFACE == INTERFACE_UART)
-#define mcu_rx_ready() (CHECKBIT(COM_USART->LSR, 0))
-#define mcu_tx_ready() (CHECKBIT(COM_USART->LSR, 5))
-#elif (INTERFACE == INTERFACE_USB)
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || tud_cdc_n_available(0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_UART)
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
@@ -3772,6 +3839,10 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 			;                               \
 		SPI_REG->DR;                        \
 	})
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+#define mcu_start_timeout() (ONESHOT_TIMER_REG->TCR |= TIM_ENABLE)
+#endif
 
 #ifdef __cplusplus
 }

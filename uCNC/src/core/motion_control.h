@@ -44,14 +44,19 @@ extern "C"
 		struct
 		{
 			uint8_t feed_override : 1;
+			uint8_t optimal : 1;
+			uint8_t synched : 1;
 #if TOOL_COUNT > 0
 			uint8_t spindle_running : 2;
 			uint8_t coolant : 2;
-			uint8_t coolant_override : 2;
 #else
-		uint8_t : 6; // unused
+		uint8_t : 4; // unused
 #endif
-			uint8_t is_subsegment : 1;
+#ifdef ENABLE_BACKLASH_COMPENSATION
+			uint8_t backlash_comp : 1;
+#else
+		uint8_t : 1; // unused
+#endif
 		} bit;
 	} motion_flags_t;
 
@@ -61,13 +66,15 @@ extern "C"
 		uint32_t line;
 #endif
 		step_t steps[STEPPER_COUNT];
-		float dir_vect[AXIS_COUNT];
 		uint8_t dirbits;
-		#ifdef ENABLE_LINACT_PLANNER
+#ifdef ENABLE_LINACT_PLANNER
 		uint32_t full_steps; // number of steps of all linear actuators
-		#endif
-		step_t total_steps;	 // the number of pulses needed to generate all steps (maximum of all linear actuators)
+#endif
 		float feed;
+		float max_feed;
+		float max_accel;
+		float feed_conversion;
+		float cos_theta; // angle between current and previous motion
 		uint8_t main_stepper;
 		uint16_t spindle;
 		uint16_t dwell;

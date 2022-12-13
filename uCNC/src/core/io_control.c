@@ -27,6 +27,11 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
+#ifdef ENABLE_IO_ALARM_DEBUG
+uint8_t io_alarm_limits;
+uint8_t io_alarm_controls;
+#endif
+
 #ifdef ENABLE_IO_MODULES
 // event_input_change_handler
 WEAK_EVENT_HANDLER(input_change)
@@ -48,35 +53,35 @@ WEAK_EVENT_HANDLER(probe_disable)
 	DEFAULT_EVENT_HANDLER(probe_disable);
 }
 
-// event_set_steps_handler
-WEAK_EVENT_HANDLER(set_steps)
-{
-	DEFAULT_EVENT_HANDLER(set_steps);
-}
+// // event_set_steps_handler
+// WEAK_EVENT_HANDLER(set_steps)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_steps);
+// }
 
-// event_toggle_steps_handler
-WEAK_EVENT_HANDLER(toggle_steps)
-{
-	DEFAULT_EVENT_HANDLER(toggle_steps);
-}
+// // event_toggle_steps_handler
+// WEAK_EVENT_HANDLER(toggle_steps)
+// {
+// 	DEFAULT_EVENT_HANDLER(toggle_steps);
+// }
 
-// event_set_dirs_handler
-WEAK_EVENT_HANDLER(set_dirs)
-{
-	DEFAULT_EVENT_HANDLER(set_dirs);
-}
+// // event_set_dirs_handler
+// WEAK_EVENT_HANDLER(set_dirs)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_dirs);
+// }
 
-// event_enable_steppers_handler
-WEAK_EVENT_HANDLER(enable_steppers)
-{
-	DEFAULT_EVENT_HANDLER(enable_steppers);
-}
+// // event_enable_steppers_handler
+// WEAK_EVENT_HANDLER(enable_steppers)
+// {
+// 	DEFAULT_EVENT_HANDLER(enable_steppers);
+// }
 
-// event_set_output_handler
-WEAK_EVENT_HANDLER(set_output)
-{
-	DEFAULT_EVENT_HANDLER(set_output);
-}
+// // event_set_output_handler
+// WEAK_EVENT_HANDLER(set_output)
+// {
+// 	DEFAULT_EVENT_HANDLER(set_output);
+// }
 
 #endif
 
@@ -110,7 +115,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #endif
 		if (limit_combined)
 		{
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
 			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
 			{
 				// if homing and dual drive axis are enabled
@@ -137,7 +142,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 					}
 				}
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (defined(IS_DELTA_KINEMATICS))
 				if ((limit_combined & LIMITS_DELTA_MASK))
 				{
 					if (limit_combined != LIMITS_DELTA_MASK)
@@ -154,11 +159,14 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			}
 #endif
 
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || (KINEMATIC == KINEMATIC_DELTA))
+#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
 			cnc_set_exec_state(EXEC_HALT);
+#ifdef ENABLE_IO_ALARM_DEBUG
+			io_alarm_limits = limits;
+#endif
 		}
 	}
 
@@ -185,6 +193,9 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	{
 		cnc_set_exec_state(EXEC_KILL);
 		cnc_stop();
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
 		return; // forces exit
 	}
 #endif
@@ -193,6 +204,9 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	{
 		// safety door activates hold simultaneously to start the controlled stop
 		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
 	}
 #endif
 #if !(FHOLD < 0)
@@ -234,13 +248,78 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 #endif
 }
 
-// overridable
-// for now if encoders are enabled this will be override by the encoder call
-MCU_IO_CALLBACK void __attribute__((weak)) mcu_inputs_changed_cb(void)
+MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(input_change, NULL);
+	static uint8_t prev_inputs = 0;
+	uint8_t inputs = 0;
+	uint8_t diff;
+
+#if (!(DIN0 < 0) && defined(DIN0_ISR))
+	if (mcu_get_input(DIN0))
+	{
+		inputs |= DIN0_MASK;
+	}
 #endif
+#if (!(DIN1 < 0) && defined(DIN1_ISR))
+	if (mcu_get_input(DIN1))
+	{
+		inputs |= DIN1_MASK;
+	}
+#endif
+#if (!(DIN2 < 0) && defined(DIN2_ISR))
+	if (mcu_get_input(DIN2))
+	{
+		inputs |= DIN2_MASK;
+	}
+#endif
+#if (!(DIN3 < 0) && defined(DIN3_ISR))
+	if (mcu_get_input(DIN3))
+	{
+		inputs |= DIN3_MASK;
+	}
+#endif
+#if (!(DIN4 < 0) && defined(DIN4_ISR))
+	if (mcu_get_input(DIN4))
+	{
+		inputs |= DIN4_MASK;
+	}
+#endif
+#if (!(DIN5 < 0) && defined(DIN5_ISR))
+	if (mcu_get_input(DIN5))
+	{
+		inputs |= DIN5_MASK;
+	}
+#endif
+#if (!(DIN6 < 0) && defined(DIN6_ISR))
+	if (mcu_get_input(DIN6))
+	{
+		inputs |= DIN6_MASK;
+	}
+#endif
+#if (!(DIN7 < 0) && defined(DIN7_ISR))
+	if (mcu_get_input(DIN7))
+	{
+		inputs |= DIN7_MASK;
+	}
+#endif
+
+#if (ENCODERS > 0)
+	inputs ^= g_settings.encoders_pulse_invert_mask;
+#endif
+	diff = inputs ^ prev_inputs;
+
+	if (diff)
+	{
+#if (ENCODERS > 0)
+		encoders_update(inputs, diff);
+#endif
+#ifdef ENABLE_IO_MODULES
+		uint8_t args[] = {inputs, diff};
+		EVENT_INVOKE(input_change, args);
+#endif
+
+		prev_inputs = inputs;
+	}
 }
 
 void io_lock_limits(uint8_t limitmask)
@@ -373,7 +452,7 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
-#ifdef ENABLE_MOTION_MODULES
+#ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_enable, NULL);
 #endif
 #ifndef FORCE_SOFT_POLLING
@@ -390,7 +469,7 @@ void io_disable_probe(void)
 	mcu_disable_probe_isr();
 #endif
 #endif
-#ifdef ENABLE_MOTION_MODULES
+#ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_disable, NULL);
 #endif
 }
@@ -411,8 +490,12 @@ bool io_get_probe(void)
 // outputs
 void io_set_steps(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(set_steps, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(set_steps, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_set_steps(mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -500,8 +583,12 @@ void io_set_steps(uint8_t mask)
 
 void io_toggle_steps(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(toggle_steps, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(toggle_steps, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_toggle_steps(mask);
 #endif
 
 #if !(STEP0 < 0)
@@ -558,8 +645,12 @@ void io_set_dirs(uint8_t mask)
 {
 	mask ^= g_settings.dir_invert_mask;
 
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(set_dirs, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(set_dirs, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_DIRS
+	ic74hc595_set_dirs(mask);
 #endif
 
 #if !(DIR0 < 0)
@@ -646,6 +737,14 @@ void io_set_dirs(uint8_t mask)
 
 void io_set_pwm(uint8_t pin, uint8_t value)
 {
+#if (defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS))
+	if (pin > 127)
+	{
+		pin = ~pin;
+		mcu_set_pwm(pin, value);
+		return;
+	}
+#endif
 	switch (pin)
 	{
 #if !(PWM0 < 0)
@@ -763,9 +862,17 @@ void io_set_pwm(uint8_t pin, uint8_t value)
 
 void io_set_output(uint8_t pin, bool state)
 {
-#ifdef ENABLE_IO_MODULES
-	set_output_args_t output_arg = {.pin = pin, .state = state};
-	EVENT_INVOKE(set_output, &output_arg);
+	// #ifdef ENABLE_IO_MODULES
+	// 	set_output_args_t output_arg = {.pin = pin, .state = state};
+	// 	EVENT_INVOKE(set_output, &output_arg);
+	// #endif
+#ifdef IC74HC595_HAS_DOUTS
+	if (((int8_t)pin) < 0)
+	{
+		pin = -(((int8_t)pin) + 1);
+		ic74hc595_set_output(pin, state);
+		return;
+	}
 #endif
 	if (state)
 	{
@@ -1103,8 +1210,12 @@ void io_set_output(uint8_t pin, bool state)
 
 void io_enable_steppers(uint8_t mask)
 {
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(enable_steppers, &mask);
+	// #ifdef ENABLE_IO_MODULES
+	// 	EVENT_INVOKE(enable_steppers, &mask);
+	// #endif
+
+#ifdef IC74HC595_HAS_STEPS_EN
+	ic74hc595_enable_steppers(mask);
 #endif
 
 #if !(STEP0_EN < 0)

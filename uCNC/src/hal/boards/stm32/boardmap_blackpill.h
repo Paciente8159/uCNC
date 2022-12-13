@@ -95,26 +95,17 @@ extern "C"
 #define CS_RES_ISR
 #define SAFETY_DOOR_ISR
 
-#if (INTERFACE == INTERFACE_USART)
 #define UART_PORT 1
 #define TX_BIT 9
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
-#elif (INTERFACE == INTERFACE_USB)
+
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
 #define USB_DP_BIT 12
 #define USB_DP_PORT A
-#define STEP4_BIT 3	   // assigns STEP4 pin
-#define STEP4_PORT A   // assigns STEP4 port
-#define DIR4_BIT 7	   // assigns DIR4 pin
-#define DIR4_PORT A	   // assigns DIR4 port
-#define LIMIT_B_BIT 11 // assigns LIMIT_A pin
-#define LIMIT_B_PORT B // assigns LIMIT_A port
-#define LIMIT_B_ISR
-#endif
 
 // Setup PWM
 #define PWM0_BIT 8	// assigns PWM0 pin
@@ -159,6 +150,8 @@ extern "C"
 	// If no servos are configured then the timer is free for other functions (like PWM) (even if defined in the board)
 	// On STM32F1x cores this will default to Timer 3
 	//#define SERVO_TIMER 3
+
+#define ONESHOT_TIMER 1
 
 #ifdef __cplusplus
 }

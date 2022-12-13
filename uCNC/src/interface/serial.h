@@ -58,6 +58,7 @@ extern "C"
 
 	void serial_putc(unsigned char c);
 	void serial_print_str(const char *__s);
+	void serial_print_bytes(const uint8_t *data, uint8_t count);
 	void serial_print_int(int32_t num);
 	void serial_print_flt(float num);
 	void serial_print_fltunits(float num);

@@ -26,6 +26,7 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <math.h>
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
@@ -124,14 +125,18 @@ extern "C"
 		res.f;                               \
 	})
 // fast_flt_pow2 takes about 25 clock cycles on AVR instead of 144 if using normal pow or muliply by itself (x~5.5 faster). The error of this shortcut should be under 4~5%.
-#define fast_flt_pow2(x)                     \
-	({                                       \
-		flt_t res;                           \
-		res.f = (x);                         \
-		res.i = ((res.i << 1) - 0x3f7adaba); \
-		if (res.i < 0)                       \
-			res.i = 0;                       \
-		res.f;                               \
+#define fast_flt_pow2(x)                         \
+	({                                           \
+		flt_t res;                               \
+		res.f = ABS((x));                        \
+		if (res.f != 0)                          \
+		{                                        \
+			res.i = ((res.i << 1) - 0x3f7adaba); \
+			if (res.i < 0)                       \
+				res.i = 0;                       \
+			res.f;                               \
+		}                                        \
+		0;                                       \
 	})
 // mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
@@ -160,6 +165,9 @@ extern "C"
 #endif
 #ifndef M_PI
 #define M_PI 3.1415926535897932385f
+#endif
+#ifndef M_PI_INV
+#define M_PI_INV 0.3183098861837906715f
 #endif
 #ifndef M_COS_TAYLOR_1
 #define M_COS_TAYLOR_1 0.1666666666666666667f
@@ -190,6 +198,9 @@ extern "C"
 
 #define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
 #define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+
+#define __STRGIFY__(s) #s
+#define STRGIFY(s) __STRGIFY__(s)
 
 #ifdef __cplusplus
 }

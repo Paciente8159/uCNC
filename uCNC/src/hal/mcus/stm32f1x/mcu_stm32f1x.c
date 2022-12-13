@@ -24,7 +24,7 @@
 #include "mcumap_stm32f1x.h"
 #include <math.h>
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -63,28 +63,28 @@ volatile bool stm32_global_isr_enabled;
  * The isr functions
  * The respective IRQHandler will execute these functions
  **/
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 void MCU_SERIAL_ISR(void)
 {
 	mcu_disable_global_isr();
-#ifndef ENABLE_SYNC_RX
-	if (COM_USART->SR & USART_SR_RXNE)
+	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
 		mcu_com_rx_cb(c);
 	}
-#endif
 
 #ifndef ENABLE_SYNC_TX
-	if ((COM_USART->SR & USART_SR_TXE) && (COM_USART->CR1 & USART_CR1_TXEIE))
+	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 	{
-		COM_USART->CR1 &= ~(USART_CR1_TXEIE);
+		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 		mcu_com_tx_cb();
 	}
 #endif
 	mcu_enable_global_isr();
 }
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+
+#ifdef MCU_HAS_USB
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -105,7 +105,6 @@ void USBWakeUp_IRQHandler(void)
 	tud_int_handler(0);
 	mcu_enable_global_isr();
 }
-
 #endif
 
 // define the mcu internal servo variables
@@ -144,15 +143,22 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
+#if (SERVO_TIMER != 6 && SERVO_TIMER != 7)
+	SERVO_TIMER_REG->CCER = 0;
+	SERVO_TIMER_REG->CCMR1 = 0;
+#if (SERVO_TIMER < 10)
+	SERVO_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	SERVO_TIMER_REG->SR &= ~0x01;
 }
 
 void servo_start_timeout(uint8_t val)
 {
 	SERVO_TIMER_REG->ARR = (val << 1) + 125;
-	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
-	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
-	NVIC_EnableIRQ(SERVO_TIMER_IRQ);
+	NVIC_SetPriority(MCU_SERVO_IRQ, 10);
+	NVIC_ClearPendingIRQ(MCU_SERVO_IRQ);
+	NVIC_EnableIRQ(MCU_SERVO_IRQ);
 	SERVO_TIMER_REG->DIER |= 1;
 	SERVO_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
 }
@@ -210,7 +216,7 @@ static void mcu_input_isr(void)
 		mcu_controls_changed_cb();
 	}
 #endif
-#if (PROBE_EXTIBITMASK & 0x01)
+#if (PROBE_EXTIBITMASK != 0)
 	if (EXTI->PR & PROBE_EXTIBITMASK)
 	{
 		mcu_probe_changed_cb();
@@ -343,14 +349,9 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#if (INTERFACE == INTERFACE_UART)
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV2
-#else
-#define APB2_PRESCALER RCC_CFGR_PPRE2_DIV1
-#endif
-
 void mcu_clocks_init()
 {
+#ifndef FRAMEWORK_CLOCKS_INIT
 	/* Reset the RCC clock configuration to the default reset state */
 	/* Set HSION bit */
 	RCC->CR |= (uint32_t)0x00000001;
@@ -374,8 +375,7 @@ void mcu_clocks_init()
 	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
 	 */
 	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   APB2_PRESCALER |
-						   RCC_CFGR_PPRE1_DIV2 |
+						   APB1_PRESC | APB2_PRESC |
 						   RCC_CFGR_PLLSRC |
 						   RCC_CFGR_PLLMULL9);
 	/* Enable PLL */
@@ -388,40 +388,23 @@ void mcu_clocks_init()
 	/* Wait till PLL is used as system clock source */
 	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
 		;
+#else
+	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
+	RCC->CFGR |= (APB1_PRESC | APB2_PRESC);
+#endif
+
+	// initialize debugger clock (used by us delay)
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+	}
 }
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
-	/*enables RCC clocks and GPIO*/
-	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_input_af(RX);
-#ifdef COM_REMAP
-	AFIO->MAPR |= COM_REMAP;
-#endif
-	RCC->COM_APB |= (COM_APBEN);
-	/*setup UART*/
-	COM_USART->CR1 = 0; // 8 bits No parity M=0 PCE=0
-	COM_USART->CR2 = 0; // 1 stop bit STOP=00
-	COM_USART->CR3 = 0;
-	COM_USART->SR = 0;
-	// //115200 baudrate
-	float baudrate = ((float)(F_CPU >> 5) / ((float)BAUDRATE));
-	uint16_t brr = (uint16_t)baudrate;
-	baudrate -= brr;
-	brr <<= 4;
-	brr += (uint16_t)roundf(16.0f * baudrate);
-	COM_USART->BRR = brr;
-#ifndef ENABLE_SYNC_RX
-	COM_USART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
-#endif
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
-	NVIC_SetPriority(COM_IRQ, 3);
-	NVIC_ClearPendingIRQ(COM_IRQ);
-	NVIC_EnableIRQ(COM_IRQ);
-#endif
-	COM_USART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
-#elif (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	// configure USB as Virtual COM port
 	RCC->APB1ENR &= ~RCC_APB1ENR_USBEN;
 	mcu_config_input(USB_DM);
@@ -442,29 +425,47 @@ void mcu_usart_init(void)
 	tusb_init();
 #endif
 
-	// µs counting is now done via Systick
-	
-	// initialize debugger clock (used by us delay)
-	// if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
-	// {
-	// 	CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-	// 	DWT->CYCCNT = 0;
-	// 	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-	// }
+#ifdef MCU_HAS_UART
+	/*enables RCC clocks and GPIO*/
+	mcu_config_output_af(TX, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_input_af(RX);
+#ifdef COM_REMAP
+	AFIO->MAPR |= COM_REMAP;
+#endif
+	RCC->COM_APB |= (COM_APBEN);
+	/*setup UART*/
+	COM_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM_UART->CR3 = 0;
+	COM_UART->SR = 0;
+	// //115200 baudrate
+	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)BAUDRATE));
+	uint16_t brr = (uint16_t)baudrate;
+	baudrate -= brr;
+	brr <<= 4;
+	brr += (uint16_t)roundf(16.0f * baudrate);
+	COM_UART->BRR = brr;
+	COM_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	NVIC_SetPriority(COM_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM_IRQ);
+	NVIC_EnableIRQ(COM_IRQ);
+	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#endif
 }
 
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	while (!(COM_USART->SR & USART_SR_TC))
+	while (!(COM_UART->SR & USART_SR_TC))
 		;
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	COM_USART->CR1 |= (USART_CR1_TXEIE);
+	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -478,7 +479,6 @@ void mcu_putc(char c)
 
 void mcu_init(void)
 {
-	// make sure both APB1 and APB2 are running at the same clock (36MHz)
 	mcu_clocks_init();
 	stm32_flash_current_page = -1;
 	stm32_global_isr_enabled = false;
@@ -500,10 +500,10 @@ void mcu_init(void)
 	AFIO->MAPR |= SPI_REMAP;
 #endif
 	// initialize the SPI configuration register
-	SPI_REG->CR1 = SPI_CR1_SSM	  // software slave management enabled
-				   | SPI_CR1_SSI  // internal slave select
+	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
+				   | SPI_CR1_SSI   // internal slave select
 				   | SPI_CR1_MSTR; // SPI master mode
-				//    | (SPI_SPEED << 3) | SPI_MODE;
+								   //    | (SPI_SPEED << 3) | SPI_MODE;
 	mcu_spi_config(SPI_MODE, SPI_FREQ);
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 #endif
@@ -576,24 +576,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-char mcu_getc(void)
-{
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!(COM_USART->SR & USART_SR_RXNE))
-		;
-#endif
-	return COM_INREG;
-#elif (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
-#endif
-}
-
 // ISR
 // enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr
@@ -610,6 +592,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -621,6 +604,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	*ticks = (uint16_t)totalticks;
 }
 
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
+}
+
 // starts a constant rate pulse at a given frequency.
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
@@ -630,11 +618,18 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	ITP_TIMER_REG->PSC = prescaller;
 	ITP_TIMER_REG->ARR = ticks;
 	ITP_TIMER_REG->EGR |= 0x01;
+#if (ITP_TIMER != 6 && ITP_TIMER != 7)
+	ITP_TIMER_REG->CCER = 0;
+	ITP_TIMER_REG->CCMR1 = 0;
+#if (ITP_TIMER < 10)
+	ITP_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
 	ITP_TIMER_REG->SR &= ~0x01;
 
-	NVIC_SetPriority(ITP_TIMER_IRQ, 1);
-	NVIC_ClearPendingIRQ(ITP_TIMER_IRQ);
-	NVIC_EnableIRQ(ITP_TIMER_IRQ);
+	NVIC_SetPriority(MCU_ITP_IRQ, 1);
+	NVIC_ClearPendingIRQ(MCU_ITP_IRQ);
+	NVIC_EnableIRQ(MCU_ITP_IRQ);
 
 	ITP_TIMER_REG->DIER |= 1;
 	ITP_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
@@ -654,15 +649,19 @@ void mcu_stop_itp_isr(void)
 	ITP_TIMER_REG->CR1 &= ~0x1;
 	ITP_TIMER_REG->DIER &= ~0x1;
 	ITP_TIMER_REG->SR &= ~0x01;
-	NVIC_DisableIRQ(ITP_TIMER_IRQ);
+	NVIC_DisableIRQ(MCU_ITP_IRQ);
 }
 
 // Custom delay function
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
+}
+
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
 void mcu_rtc_init()
@@ -674,34 +673,15 @@ void mcu_rtc_init()
 	SysTick->CTRL = 7; // Start SysTick (ABH)
 }
 
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t delayTicks = DWT->CYCCNT + delay * (F_CPU / 1000000UL);
-// 	while (DWT->CYCCNT < delayTicks)
-// 		;
-// }
-
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)))
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
-
 void mcu_dotasks()
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
@@ -812,7 +792,8 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(F_CPU / frequency);
+	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+
 	uint8_t speed;
 	if (div < 2)
 	{
@@ -849,10 +830,10 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 	// disable SPI
 	SPI_REG->CR1 &= SPI_CR1_SPE;
-	//clear speed and mode
+	// clear speed and mode
 	SPI_REG->CR1 &= 0x3B;
 	SPI_REG->CR1 |= (speed << 3) | mode;
-	//enable SPI
+	// enable SPI
 	SPI_REG->CR1 |= SPI_CR1_SPE;
 }
 #endif
@@ -933,6 +914,80 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+	if ((ONESHOT_TIMER_REG->SR & 1))
+	{
+		ONESHOT_TIMER_REG->DIER = 0;
+		ONESHOT_TIMER_REG->SR = 0;
+		ONESHOT_TIMER_REG->CR1 = 0;
+
+		if (mcu_timeout_cb)
+		{
+			mcu_timeout_cb();
+		}
+	}
+
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+	uint32_t presc = 1;
+
+	mcu_timeout_cb = fp;
+
+	while (clocks > 0xFFFF)
+	{
+		presc <<= 1;
+		clocks >>= 1;
+	}
+
+	presc--;
+	clocks--;
+
+	RCC->ONESHOT_TIMER_ENREG |= ONESHOT_TIMER_APB;
+	ONESHOT_TIMER_REG->CR1 = 0;
+	ONESHOT_TIMER_REG->DIER = 0;
+	ONESHOT_TIMER_REG->PSC = presc;
+	ONESHOT_TIMER_REG->ARR = clocks;
+	ONESHOT_TIMER_REG->EGR |= 0x01;
+	ONESHOT_TIMER_REG->SR = 0;
+	ONESHOT_TIMER_REG->CNT = 0;
+#if (ONESHOT_TIMER != 6 && ONESHOT_TIMER != 7)
+	ONESHOT_TIMER_REG->CCER = 0;
+	ONESHOT_TIMER_REG->CCMR1 = 0;
+#if (ONESHOT_TIMER < 10)
+	ONESHOT_TIMER_REG->CCMR2 = 0;
+#endif
+#endif
+
+	NVIC_SetPriority(MCU_ONESHOT_IRQ, 3);
+	NVIC_ClearPendingIRQ(MCU_ONESHOT_IRQ);
+	NVIC_EnableIRQ(MCU_ONESHOT_IRQ);
+
+	// ONESHOT_TIMER_REG->DIER |= 1;
+	// ONESHOT_TIMER_REG->CR1 |= 1; // enable timer upcounter no preload
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
 }
 #endif
 #endif

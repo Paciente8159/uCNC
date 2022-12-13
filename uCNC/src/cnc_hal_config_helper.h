@@ -127,6 +127,51 @@ extern "C"
 #endif
 #endif
 
+#ifdef LIMIT_X_PULLUP_ENABLE
+#define LIMIT_X_PULLUP
+#endif
+#ifdef LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP
+#endif
+#ifdef LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP
+#endif
+#ifdef LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP
+#endif
+#ifdef LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP
+#endif
+#ifdef LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP
+#endif
+#ifdef LIMIT_A_PULLUP_ENABLE
+#define LIMIT_A_PULLUP
+#endif
+#ifdef LIMIT_B_PULLUP_ENABLE
+#define LIMIT_B_PULLUP
+#endif
+#ifdef LIMIT_C_PULLUP_ENABLE
+#define LIMIT_C_PULLUP
+#endif
+
+#ifdef PROBE_PULLUP_ENABLE
+#define PROBE_PULLUP
+#endif
+
+#ifdef ESTOP_PULLUP_ENABLE
+#define ESTOP_PULLUP
+#endif
+#ifdef SAFETY_DOOR_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP
+#endif
+#ifdef FHOLD_PULLUP_ENABLE
+#define FHOLD_PULLUP
+#endif
+#ifdef CS_RES_PULLUP_ENABLE
+#define CS_RES_PULLUP
+#endif
+
 #ifndef ENCODERS
 #define ENCODERS 0
 #endif
@@ -140,7 +185,7 @@ extern "C"
 #if (ENC0_DIR < 0)
 #error "The ENC0 dir pin is not defined"
 #endif
-#define ENC0_MASK (1 << ENC0)
+#define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
 #endif
 #if ENCODERS > 1
 #if (ENC1_PULSE < 0)
@@ -205,6 +250,14 @@ extern "C"
 #endif
 #define ENC7_MASK (1 << ENC7)
 #endif
+#ifdef ENABLE_ENCODER_RPM
+#if (RPM_ENCODER < ENC0 || RPM_ENCODER > ENC7 || ENCODERS < ENCODERS)
+#error "The RPM encoder must be assign to one of the available encoders"
+#endif
+#define __encoder_mask__(X) ENC##X##_MASK
+#define encoder_mask(X) __encoder_mask__(X)
+#define RPM_ENCODER_MASK encoder_mask(RPM_ENCODER)
+#endif
 
 #ifdef STEP0_ENCODER
 #define STEP0_ENCODER_MASK (1 << STEP0_ENCODER)
@@ -239,9 +292,6 @@ extern "C"
 
 #define STEPPERS_ENCODERS_MASK (STEP0_ENCODER_MASK | STEP1_ENCODER_MASK | STEP2_ENCODER_MASK | STEP3_ENCODER_MASK | STEP4_ENCODER_MASK | STEP5_ENCODER_MASK)
 
-#if defined(ENABLE_IO_MODULES)
-#warning "Encoder module is enable. Generic input change event will not be available"
-#endif
 #endif
 
 #ifndef STEPPERS_ENCODERS_MASK
@@ -532,6 +582,58 @@ extern "C"
 #endif
 #endif
 
+/*laser ppi*/
+#if (TOOL_COUNT < 1)
+#undef ENABLE_LASER_PPI
+#endif
+#ifdef ENABLE_LASER_PPI
+#ifndef MCU_HAS_ONESHOT_TIMER
+#error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
+#endif
+// #ifdef BRESENHAM_16BIT
+// #undef BRESENHAM_16BIT
+// #warning "BRESENHAM_16BIT was disabled for Laser PPI mode"
+// #endif
+#ifdef ENABLE_LINACT_PLANNER
+#undef ENABLE_LINACT_PLANNER
+#warning "ENABLE_LINACT_PLANNER was disabled for Laser PPI mode"
+#endif
+#if (STEPPER_COUNT == 1)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 2
+#define LASER_PPI_MASK STEP1_MASK
+#elif (STEPPER_COUNT == 2)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 3
+#define LASER_PPI_MASK STEP2_MASK
+#elif (STEPPER_COUNT == 3)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 4
+#define LASER_PPI_MASK STEP3_MASK
+#elif (STEPPER_COUNT == 4)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 5
+#define LASER_PPI_MASK STEP4_MASK
+#elif (STEPPER_COUNT == 5)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 6
+#define LASER_PPI_MASK STEP5_MASK
+#elif (STEPPER_COUNT == 6)
+#undef STEPPER_COUNT
+#define STEPPER_COUNT 7
+#define LASER_PPI_MASK STEP6_MASK
+#endif
+#ifndef LASER_PPI
+#define LASER_PPI -1
+#endif
+// #ifdef STEP_ISR_SKIP_MAIN
+// #undef STEP_ISR_SKIP_MAIN
+// #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
+// #endif
+#else
+#define LASER_PPI -1
+#endif
+
 #define __stepname_helper__(x) STEP##x##_MASK
 #define __stepname__(x) __stepname_helper__(x)
 
@@ -768,1048 +870,1050 @@ extern "C"
 #define DIO0 -1
 #endif
 #ifndef STEP1
-#define STEP1 -1
+#define STEP1 -2
 #ifdef DIO1
 #undef DIO1
 #endif
-#define DIO1 -1
+#define DIO1 -2
 #endif
 #ifndef STEP2
-#define STEP2 -1
+#define STEP2 -3
 #ifdef DIO2
 #undef DIO2
 #endif
-#define DIO2 -1
+#define DIO2 -3
 #endif
 #ifndef STEP3
-#define STEP3 -1
+#define STEP3 -4
 #ifdef DIO3
 #undef DIO3
 #endif
-#define DIO3 -1
+#define DIO3 -4
 #endif
 #ifndef STEP4
-#define STEP4 -1
+#define STEP4 -5
 #ifdef DIO4
 #undef DIO4
 #endif
-#define DIO4 -1
+#define DIO4 -5
 #endif
 #ifndef STEP5
-#define STEP5 -1
+#define STEP5 -6
 #ifdef DIO5
 #undef DIO5
 #endif
-#define DIO5 -1
+#define DIO5 -6
 #endif
 #ifndef STEP6
-#define STEP6 -1
+#define STEP6 -7
 #ifdef DIO6
 #undef DIO6
 #endif
-#define DIO6 -1
+#define DIO6 -7
 #endif
 #ifndef STEP7
-#define STEP7 -1
+#define STEP7 -8
 #ifdef DIO7
 #undef DIO7
 #endif
-#define DIO7 -1
+#define DIO7 -8
 #endif
 #ifndef DIR0
-#define DIR0 -1
+#define DIR0 -9
 #ifdef DIO8
 #undef DIO8
 #endif
-#define DIO8 -1
+#define DIO8 -9
 #endif
 #ifndef DIR1
-#define DIR1 -1
+#define DIR1 -10
 #ifdef DIO9
 #undef DIO9
 #endif
-#define DIO9 -1
+#define DIO9 -10
 #endif
 #ifndef DIR2
-#define DIR2 -1
+#define DIR2 -11
 #ifdef DIO10
 #undef DIO10
 #endif
-#define DIO10 -1
+#define DIO10 -11
 #endif
 #ifndef DIR3
-#define DIR3 -1
+#define DIR3 -12
 #ifdef DIO11
 #undef DIO11
 #endif
-#define DIO11 -1
+#define DIO11 -12
 #endif
 #ifndef DIR4
-#define DIR4 -1
+#define DIR4 -13
 #ifdef DIO12
 #undef DIO12
 #endif
-#define DIO12 -1
+#define DIO12 -13
 #endif
 #ifndef DIR5
-#define DIR5 -1
+#define DIR5 -14
 #ifdef DIO13
 #undef DIO13
 #endif
-#define DIO13 -1
+#define DIO13 -14
 #endif
 #ifndef DIR6
-#define DIR6 -1
+#define DIR6 -15
 #ifdef DIO14
 #undef DIO14
 #endif
-#define DIO14 -1
+#define DIO14 -15
 #endif
 #ifndef DIR7
-#define DIR7 -1
+#define DIR7 -16
 #ifdef DIO15
 #undef DIO15
 #endif
-#define DIO15 -1
+#define DIO15 -16
 #endif
 #ifndef STEP0_EN
-#define STEP0_EN -1
+#define STEP0_EN -17
 #ifdef DIO16
 #undef DIO16
 #endif
-#define DIO16 -1
+#define DIO16 -17
 #endif
 #ifndef STEP1_EN
-#define STEP1_EN -1
+#define STEP1_EN -18
 #ifdef DIO17
 #undef DIO17
 #endif
-#define DIO17 -1
+#define DIO17 -18
 #endif
 #ifndef STEP2_EN
-#define STEP2_EN -1
+#define STEP2_EN -19
 #ifdef DIO18
 #undef DIO18
 #endif
-#define DIO18 -1
+#define DIO18 -19
 #endif
 #ifndef STEP3_EN
-#define STEP3_EN -1
+#define STEP3_EN -20
 #ifdef DIO19
 #undef DIO19
 #endif
-#define DIO19 -1
+#define DIO19 -20
 #endif
 #ifndef STEP4_EN
-#define STEP4_EN -1
+#define STEP4_EN -21
 #ifdef DIO20
 #undef DIO20
 #endif
-#define DIO20 -1
+#define DIO20 -21
 #endif
 #ifndef STEP5_EN
-#define STEP5_EN -1
+#define STEP5_EN -22
 #ifdef DIO21
 #undef DIO21
 #endif
-#define DIO21 -1
+#define DIO21 -22
 #endif
 #ifndef STEP6_EN
-#define STEP6_EN -1
+#define STEP6_EN -23
 #ifdef DIO22
 #undef DIO22
 #endif
-#define DIO22 -1
+#define DIO22 -23
 #endif
 #ifndef STEP7_EN
-#define STEP7_EN -1
+#define STEP7_EN -24
 #ifdef DIO23
 #undef DIO23
 #endif
-#define DIO23 -1
+#define DIO23 -24
 #endif
 #ifndef PWM0
-#define PWM0 -1
+#define PWM0 -25
 #ifdef DIO24
 #undef DIO24
 #endif
-#define DIO24 -1
+#define DIO24 -25
 #endif
 #ifndef PWM1
-#define PWM1 -1
+#define PWM1 -26
 #ifdef DIO25
 #undef DIO25
 #endif
-#define DIO25 -1
+#define DIO25 -26
 #endif
 #ifndef PWM2
-#define PWM2 -1
+#define PWM2 -27
 #ifdef DIO26
 #undef DIO26
 #endif
-#define DIO26 -1
+#define DIO26 -27
 #endif
 #ifndef PWM3
-#define PWM3 -1
+#define PWM3 -28
 #ifdef DIO27
 #undef DIO27
 #endif
-#define DIO27 -1
+#define DIO27 -28
 #endif
 #ifndef PWM4
-#define PWM4 -1
+#define PWM4 -29
 #ifdef DIO28
 #undef DIO28
 #endif
-#define DIO28 -1
+#define DIO28 -29
 #endif
 #ifndef PWM5
-#define PWM5 -1
+#define PWM5 -30
 #ifdef DIO29
 #undef DIO29
 #endif
-#define DIO29 -1
+#define DIO29 -30
 #endif
 #ifndef PWM6
-#define PWM6 -1
+#define PWM6 -31
 #ifdef DIO30
 #undef DIO30
 #endif
-#define DIO30 -1
+#define DIO30 -31
 #endif
 #ifndef PWM7
-#define PWM7 -1
+#define PWM7 -32
 #ifdef DIO31
 #undef DIO31
 #endif
-#define DIO31 -1
+#define DIO31 -32
 #endif
 #ifndef PWM8
-#define PWM8 -1
+#define PWM8 -33
 #ifdef DIO32
 #undef DIO32
 #endif
-#define DIO32 -1
+#define DIO32 -33
 #endif
 #ifndef PWM9
-#define PWM9 -1
+#define PWM9 -34
 #ifdef DIO33
 #undef DIO33
 #endif
-#define DIO33 -1
+#define DIO33 -34
 #endif
 #ifndef PWM10
-#define PWM10 -1
+#define PWM10 -35
 #ifdef DIO34
 #undef DIO34
 #endif
-#define DIO34 -1
+#define DIO34 -35
 #endif
 #ifndef PWM11
-#define PWM11 -1
+#define PWM11 -36
 #ifdef DIO35
 #undef DIO35
 #endif
-#define DIO35 -1
+#define DIO35 -36
 #endif
 #ifndef PWM12
-#define PWM12 -1
+#define PWM12 -37
 #ifdef DIO36
 #undef DIO36
 #endif
-#define DIO36 -1
+#define DIO36 -37
 #endif
 #ifndef PWM13
-#define PWM13 -1
+#define PWM13 -38
 #ifdef DIO37
 #undef DIO37
 #endif
-#define DIO37 -1
+#define DIO37 -38
 #endif
 #ifndef PWM14
-#define PWM14 -1
+#define PWM14 -39
 #ifdef DIO38
 #undef DIO38
 #endif
-#define DIO38 -1
+#define DIO38 -39
 #endif
 #ifndef PWM15
-#define PWM15 -1
+#define PWM15 -40
 #ifdef DIO39
 #undef DIO39
 #endif
-#define DIO39 -1
+#define DIO39 -40
 #endif
 #ifndef SERVO0
-#define SERVO0 -1
+#define SERVO0 -41
 #ifdef DIO40
 #undef DIO40
 #endif
-#define DIO40 -1
+#define DIO40 -41
 #endif
 #ifndef SERVO1
-#define SERVO1 -1
+#define SERVO1 -42
 #ifdef DIO41
 #undef DIO41
 #endif
-#define DIO41 -1
+#define DIO41 -42
 #endif
 #ifndef SERVO2
-#define SERVO2 -1
+#define SERVO2 -43
 #ifdef DIO42
 #undef DIO42
 #endif
-#define DIO42 -1
+#define DIO42 -43
 #endif
 #ifndef SERVO3
-#define SERVO3 -1
+#define SERVO3 -44
 #ifdef DIO43
 #undef DIO43
 #endif
-#define DIO43 -1
+#define DIO43 -44
 #endif
 #ifndef SERVO4
-#define SERVO4 -1
+#define SERVO4 -45
 #ifdef DIO44
 #undef DIO44
 #endif
-#define DIO44 -1
+#define DIO44 -45
 #endif
 #ifndef SERVO5
-#define SERVO5 -1
+#define SERVO5 -46
 #ifdef DIO45
 #undef DIO45
 #endif
-#define DIO45 -1
+#define DIO45 -46
 #endif
 #ifndef DOUT0
-#define DOUT0 -1
+#define DOUT0 -47
 #ifdef DIO46
 #undef DIO46
 #endif
-#define DIO46 -1
+#define DIO46 -47
 #endif
 #ifndef DOUT1
-#define DOUT1 -1
+#define DOUT1 -48
 #ifdef DIO47
 #undef DIO47
 #endif
-#define DIO47 -1
+#define DIO47 -48
 #endif
 #ifndef DOUT2
-#define DOUT2 -1
+#define DOUT2 -49
 #ifdef DIO48
 #undef DIO48
 #endif
-#define DIO48 -1
+#define DIO48 -49
 #endif
 #ifndef DOUT3
-#define DOUT3 -1
+#define DOUT3 -50
 #ifdef DIO49
 #undef DIO49
 #endif
-#define DIO49 -1
+#define DIO49 -50
 #endif
 #ifndef DOUT4
-#define DOUT4 -1
+#define DOUT4 -51
 #ifdef DIO50
 #undef DIO50
 #endif
-#define DIO50 -1
+#define DIO50 -51
 #endif
 #ifndef DOUT5
-#define DOUT5 -1
+#define DOUT5 -52
 #ifdef DIO51
 #undef DIO51
 #endif
-#define DIO51 -1
+#define DIO51 -52
 #endif
 #ifndef DOUT6
-#define DOUT6 -1
+#define DOUT6 -53
 #ifdef DIO52
 #undef DIO52
 #endif
-#define DIO52 -1
+#define DIO52 -53
 #endif
 #ifndef DOUT7
-#define DOUT7 -1
+#define DOUT7 -54
 #ifdef DIO53
 #undef DIO53
 #endif
-#define DIO53 -1
+#define DIO53 -54
 #endif
 #ifndef DOUT8
-#define DOUT8 -1
+#define DOUT8 -55
 #ifdef DIO54
 #undef DIO54
 #endif
-#define DIO54 -1
+#define DIO54 -55
 #endif
 #ifndef DOUT9
-#define DOUT9 -1
+#define DOUT9 -56
 #ifdef DIO55
 #undef DIO55
 #endif
-#define DIO55 -1
+#define DIO55 -56
 #endif
 #ifndef DOUT10
-#define DOUT10 -1
+#define DOUT10 -57
 #ifdef DIO56
 #undef DIO56
 #endif
-#define DIO56 -1
+#define DIO56 -57
 #endif
 #ifndef DOUT11
-#define DOUT11 -1
+#define DOUT11 -58
 #ifdef DIO57
 #undef DIO57
 #endif
-#define DIO57 -1
+#define DIO57 -58
 #endif
 #ifndef DOUT12
-#define DOUT12 -1
+#define DOUT12 -59
 #ifdef DIO58
 #undef DIO58
 #endif
-#define DIO58 -1
+#define DIO58 -59
 #endif
 #ifndef DOUT13
-#define DOUT13 -1
+#define DOUT13 -60
 #ifdef DIO59
 #undef DIO59
 #endif
-#define DIO59 -1
+#define DIO59 -60
 #endif
 #ifndef DOUT14
-#define DOUT14 -1
+#define DOUT14 -61
 #ifdef DIO60
 #undef DIO60
 #endif
-#define DIO60 -1
+#define DIO60 -61
 #endif
 #ifndef DOUT15
-#define DOUT15 -1
+#define DOUT15 -62
 #ifdef DIO61
 #undef DIO61
 #endif
-#define DIO61 -1
+#define DIO61 -62
 #endif
 #ifndef DOUT16
-#define DOUT16 -1
+#define DOUT16 -63
 #ifdef DIO62
 #undef DIO62
 #endif
-#define DIO62 -1
+#define DIO62 -63
 #endif
 #ifndef DOUT17
-#define DOUT17 -1
+#define DOUT17 -64
 #ifdef DIO63
 #undef DIO63
 #endif
-#define DIO63 -1
+#define DIO63 -64
 #endif
 #ifndef DOUT18
-#define DOUT18 -1
+#define DOUT18 -65
 #ifdef DIO64
 #undef DIO64
 #endif
-#define DIO64 -1
+#define DIO64 -65
 #endif
 #ifndef DOUT19
-#define DOUT19 -1
+#define DOUT19 -66
 #ifdef DIO65
 #undef DIO65
 #endif
-#define DIO65 -1
+#define DIO65 -66
 #endif
 #ifndef DOUT20
-#define DOUT20 -1
+#define DOUT20 -67
 #ifdef DIO66
 #undef DIO66
 #endif
-#define DIO66 -1
+#define DIO66 -67
 #endif
 #ifndef DOUT21
-#define DOUT21 -1
+#define DOUT21 -68
 #ifdef DIO67
 #undef DIO67
 #endif
-#define DIO67 -1
+#define DIO67 -68
 #endif
 #ifndef DOUT22
-#define DOUT22 -1
+#define DOUT22 -69
 #ifdef DIO68
 #undef DIO68
 #endif
-#define DIO68 -1
+#define DIO68 -69
 #endif
 #ifndef DOUT23
-#define DOUT23 -1
+#define DOUT23 -70
 #ifdef DIO69
 #undef DIO69
 #endif
-#define DIO69 -1
+#define DIO69 -70
 #endif
 #ifndef DOUT24
-#define DOUT24 -1
+#define DOUT24 -71
 #ifdef DIO70
 #undef DIO70
 #endif
-#define DIO70 -1
+#define DIO70 -71
 #endif
 #ifndef DOUT25
-#define DOUT25 -1
+#define DOUT25 -72
 #ifdef DIO71
 #undef DIO71
 #endif
-#define DIO71 -1
+#define DIO71 -72
 #endif
 #ifndef DOUT26
-#define DOUT26 -1
+#define DOUT26 -73
 #ifdef DIO72
 #undef DIO72
 #endif
-#define DIO72 -1
+#define DIO72 -73
 #endif
 #ifndef DOUT27
-#define DOUT27 -1
+#define DOUT27 -74
 #ifdef DIO73
 #undef DIO73
 #endif
-#define DIO73 -1
+#define DIO73 -74
 #endif
 #ifndef DOUT28
-#define DOUT28 -1
+#define DOUT28 -75
 #ifdef DIO74
 #undef DIO74
 #endif
-#define DIO74 -1
+#define DIO74 -75
 #endif
 #ifndef DOUT29
-#define DOUT29 -1
+#define DOUT29 -76
 #ifdef DIO75
 #undef DIO75
 #endif
-#define DIO75 -1
+#define DIO75 -76
 #endif
 #ifndef DOUT30
-#define DOUT30 -1
+#define DOUT30 -77
 #ifdef DIO76
 #undef DIO76
 #endif
-#define DIO76 -1
+#define DIO76 -77
 #endif
 #ifndef DOUT31
-#define DOUT31 -1
+#define DOUT31 -78
 #ifdef DIO77
 #undef DIO77
 #endif
-#define DIO77 -1
+#define DIO77 -78
 #endif
 #ifndef LIMIT_X
-#define LIMIT_X -1
+#define LIMIT_X -101
 #ifdef DIO100
 #undef DIO100
 #endif
-#define DIO100 -1
+#define DIO100 -101
 #endif
 #ifndef LIMIT_Y
-#define LIMIT_Y -1
+#define LIMIT_Y -102
 #ifdef DIO101
 #undef DIO101
 #endif
-#define DIO101 -1
+#define DIO101 -102
 #endif
 #ifndef LIMIT_Z
-#define LIMIT_Z -1
+#define LIMIT_Z -103
 #ifdef DIO102
 #undef DIO102
 #endif
-#define DIO102 -1
+#define DIO102 -103
 #endif
 #ifndef LIMIT_X2
-#define LIMIT_X2 -1
+#define LIMIT_X2 -104
 #ifdef DIO103
 #undef DIO103
 #endif
-#define DIO103 -1
+#define DIO103 -104
 #endif
 #ifndef LIMIT_Y2
-#define LIMIT_Y2 -1
+#define LIMIT_Y2 -105
 #ifdef DIO104
 #undef DIO104
 #endif
-#define DIO104 -1
+#define DIO104 -105
 #endif
 #ifndef LIMIT_Z2
-#define LIMIT_Z2 -1
+#define LIMIT_Z2 -106
 #ifdef DIO105
 #undef DIO105
 #endif
-#define DIO105 -1
+#define DIO105 -106
 #endif
 #ifndef LIMIT_A
-#define LIMIT_A -1
+#define LIMIT_A -107
 #ifdef DIO106
 #undef DIO106
 #endif
-#define DIO106 -1
+#define DIO106 -107
 #endif
 #ifndef LIMIT_B
-#define LIMIT_B -1
+#define LIMIT_B -108
 #ifdef DIO107
 #undef DIO107
 #endif
-#define DIO107 -1
+#define DIO107 -108
 #endif
 #ifndef LIMIT_C
-#define LIMIT_C -1
+#define LIMIT_C -109
 #ifdef DIO108
 #undef DIO108
 #endif
-#define DIO108 -1
+#define DIO108 -109
 #endif
 #ifndef PROBE
-#define PROBE -1
+#define PROBE -110
 #ifdef DIO109
 #undef DIO109
 #endif
-#define DIO109 -1
+#define DIO109 -110
 #endif
 #ifndef ESTOP
-#define ESTOP -1
+#define ESTOP -111
 #ifdef DIO110
 #undef DIO110
 #endif
-#define DIO110 -1
+#define DIO110 -111
 #endif
 #ifndef SAFETY_DOOR
-#define SAFETY_DOOR -1
+#define SAFETY_DOOR -112
 #ifdef DIO111
 #undef DIO111
 #endif
-#define DIO111 -1
+#define DIO111 -112
 #endif
 #ifndef FHOLD
-#define FHOLD -1
+#define FHOLD -113
 #ifdef DIO112
 #undef DIO112
 #endif
-#define DIO112 -1
+#define DIO112 -113
 #endif
 #ifndef CS_RES
-#define CS_RES -1
+#define CS_RES -114
 #ifdef DIO113
 #undef DIO113
 #endif
-#define DIO113 -1
+#define DIO113 -114
 #endif
 #ifndef ANALOG0
-#define ANALOG0 -1
+#define ANALOG0 -115
 #ifdef DIO114
 #undef DIO114
 #endif
-#define DIO114 -1
+#define DIO114 -115
 #endif
 #ifndef ANALOG1
-#define ANALOG1 -1
+#define ANALOG1 -116
 #ifdef DIO115
 #undef DIO115
 #endif
-#define DIO115 -1
+#define DIO115 -116
 #endif
 #ifndef ANALOG2
-#define ANALOG2 -1
+#define ANALOG2 -117
 #ifdef DIO116
 #undef DIO116
 #endif
-#define DIO116 -1
+#define DIO116 -117
 #endif
 #ifndef ANALOG3
-#define ANALOG3 -1
+#define ANALOG3 -118
 #ifdef DIO117
 #undef DIO117
 #endif
-#define DIO117 -1
+#define DIO117 -118
 #endif
 #ifndef ANALOG4
-#define ANALOG4 -1
+#define ANALOG4 -119
 #ifdef DIO118
 #undef DIO118
 #endif
-#define DIO118 -1
+#define DIO118 -119
 #endif
 #ifndef ANALOG5
-#define ANALOG5 -1
+#define ANALOG5 -120
 #ifdef DIO119
 #undef DIO119
 #endif
-#define DIO119 -1
+#define DIO119 -120
 #endif
 #ifndef ANALOG6
-#define ANALOG6 -1
+#define ANALOG6 -121
 #ifdef DIO120
 #undef DIO120
 #endif
-#define DIO120 -1
+#define DIO120 -121
 #endif
 #ifndef ANALOG7
-#define ANALOG7 -1
+#define ANALOG7 -122
 #ifdef DIO121
 #undef DIO121
 #endif
-#define DIO121 -1
+#define DIO121 -122
 #endif
 #ifndef ANALOG8
-#define ANALOG8 -1
+#define ANALOG8 -123
 #ifdef DIO122
 #undef DIO122
 #endif
-#define DIO122 -1
+#define DIO122 -123
 #endif
 #ifndef ANALOG9
-#define ANALOG9 -1
+#define ANALOG9 -124
 #ifdef DIO123
 #undef DIO123
 #endif
-#define DIO123 -1
+#define DIO123 -124
 #endif
 #ifndef ANALOG10
-#define ANALOG10 -1
+#define ANALOG10 -125
 #ifdef DIO124
 #undef DIO124
 #endif
-#define DIO124 -1
+#define DIO124 -125
 #endif
 #ifndef ANALOG11
-#define ANALOG11 -1
+#define ANALOG11 -126
 #ifdef DIO125
 #undef DIO125
 #endif
-#define DIO125 -1
+#define DIO125 -126
 #endif
 #ifndef ANALOG12
-#define ANALOG12 -1
+#define ANALOG12 -127
 #ifdef DIO126
 #undef DIO126
 #endif
-#define DIO126 -1
+#define DIO126 -127
 #endif
 #ifndef ANALOG13
-#define ANALOG13 -1
+#define ANALOG13 -128
 #ifdef DIO127
 #undef DIO127
 #endif
-#define DIO127 -1
+#define DIO127 -128
 #endif
 #ifndef ANALOG14
-#define ANALOG14 -1
+#define ANALOG14 -129
 #ifdef DIO128
 #undef DIO128
 #endif
-#define DIO128 -1
+#define DIO128 -129
 #endif
 #ifndef ANALOG15
-#define ANALOG15 -1
+#define ANALOG15 -130
 #ifdef DIO129
 #undef DIO129
 #endif
-#define DIO129 -1
+#define DIO129 -130
 #endif
 #ifndef DIN0
-#define DIN0 -1
+#define DIN0 -131
 #ifdef DIO130
 #undef DIO130
 #endif
-#define DIO130 -1
+#define DIO130 -131
 #endif
 #ifndef DIN1
-#define DIN1 -1
+#define DIN1 -132
 #ifdef DIO131
 #undef DIO131
 #endif
-#define DIO131 -1
+#define DIO131 -132
 #endif
 #ifndef DIN2
-#define DIN2 -1
+#define DIN2 -133
 #ifdef DIO132
 #undef DIO132
 #endif
-#define DIO132 -1
+#define DIO132 -133
 #endif
 #ifndef DIN3
-#define DIN3 -1
+#define DIN3 -134
 #ifdef DIO133
 #undef DIO133
 #endif
-#define DIO133 -1
+#define DIO133 -134
 #endif
 #ifndef DIN4
-#define DIN4 -1
+#define DIN4 -135
 #ifdef DIO134
 #undef DIO134
 #endif
-#define DIO134 -1
+#define DIO134 -135
 #endif
 #ifndef DIN5
-#define DIN5 -1
+#define DIN5 -136
 #ifdef DIO135
 #undef DIO135
 #endif
-#define DIO135 -1
+#define DIO135 -136
 #endif
 #ifndef DIN6
-#define DIN6 -1
+#define DIN6 -137
 #ifdef DIO136
 #undef DIO136
 #endif
-#define DIO136 -1
+#define DIO136 -137
 #endif
 #ifndef DIN7
-#define DIN7 -1
+#define DIN7 -138
 #ifdef DIO137
 #undef DIO137
 #endif
-#define DIO137 -1
+#define DIO137 -138
 #endif
 #ifndef DIN8
-#define DIN8 -1
+#define DIN8 -139
 #ifdef DIO138
 #undef DIO138
 #endif
-#define DIO138 -1
+#define DIO138 -139
 #endif
 #ifndef DIN9
-#define DIN9 -1
+#define DIN9 -140
 #ifdef DIO139
 #undef DIO139
 #endif
-#define DIO139 -1
+#define DIO139 -140
 #endif
 #ifndef DIN10
-#define DIN10 -1
+#define DIN10 -141
 #ifdef DIO140
 #undef DIO140
 #endif
-#define DIO140 -1
+#define DIO140 -141
 #endif
 #ifndef DIN11
-#define DIN11 -1
+#define DIN11 -142
 #ifdef DIO141
 #undef DIO141
 #endif
-#define DIO141 -1
+#define DIO141 -142
 #endif
 #ifndef DIN12
-#define DIN12 -1
+#define DIN12 -143
 #ifdef DIO142
 #undef DIO142
 #endif
-#define DIO142 -1
+#define DIO142 -143
 #endif
 #ifndef DIN13
-#define DIN13 -1
+#define DIN13 -144
 #ifdef DIO143
 #undef DIO143
 #endif
-#define DIO143 -1
+#define DIO143 -144
 #endif
 #ifndef DIN14
-#define DIN14 -1
+#define DIN14 -145
 #ifdef DIO144
 #undef DIO144
 #endif
-#define DIO144 -1
+#define DIO144 -145
 #endif
 #ifndef DIN15
-#define DIN15 -1
+#define DIN15 -146
 #ifdef DIO145
 #undef DIO145
 #endif
-#define DIO145 -1
+#define DIO145 -146
 #endif
 #ifndef DIN16
-#define DIN16 -1
+#define DIN16 -147
 #ifdef DIO146
 #undef DIO146
 #endif
-#define DIO146 -1
+#define DIO146 -147
 #endif
 #ifndef DIN17
-#define DIN17 -1
+#define DIN17 -148
 #ifdef DIO147
 #undef DIO147
 #endif
-#define DIO147 -1
+#define DIO147 -148
 #endif
 #ifndef DIN18
-#define DIN18 -1
+#define DIN18 -149
 #ifdef DIO148
 #undef DIO148
 #endif
-#define DIO148 -1
+#define DIO148 -149
 #endif
 #ifndef DIN19
-#define DIN19 -1
+#define DIN19 -150
 #ifdef DIO149
 #undef DIO149
 #endif
-#define DIO149 -1
+#define DIO149 -150
 #endif
 #ifndef DIN20
-#define DIN20 -1
+#define DIN20 -151
 #ifdef DIO150
 #undef DIO150
 #endif
-#define DIO150 -1
+#define DIO150 -151
 #endif
 #ifndef DIN21
-#define DIN21 -1
+#define DIN21 -152
 #ifdef DIO151
 #undef DIO151
 #endif
-#define DIO151 -1
+#define DIO151 -152
 #endif
 #ifndef DIN22
-#define DIN22 -1
+#define DIN22 -153
 #ifdef DIO152
 #undef DIO152
 #endif
-#define DIO152 -1
+#define DIO152 -153
 #endif
 #ifndef DIN23
-#define DIN23 -1
+#define DIN23 -154
 #ifdef DIO153
 #undef DIO153
 #endif
-#define DIO153 -1
+#define DIO153 -154
 #endif
 #ifndef DIN24
-#define DIN24 -1
+#define DIN24 -155
 #ifdef DIO154
 #undef DIO154
 #endif
-#define DIO154 -1
+#define DIO154 -155
 #endif
 #ifndef DIN25
-#define DIN25 -1
+#define DIN25 -156
 #ifdef DIO155
 #undef DIO155
 #endif
-#define DIO155 -1
+#define DIO155 -156
 #endif
 #ifndef DIN26
-#define DIN26 -1
+#define DIN26 -157
 #ifdef DIO156
 #undef DIO156
 #endif
-#define DIO156 -1
+#define DIO156 -157
 #endif
 #ifndef DIN27
-#define DIN27 -1
+#define DIN27 -158
 #ifdef DIO157
 #undef DIO157
 #endif
-#define DIO157 -1
+#define DIO157 -158
 #endif
 #ifndef DIN28
-#define DIN28 -1
+#define DIN28 -159
 #ifdef DIO158
 #undef DIO158
 #endif
-#define DIO158 -1
+#define DIO158 -159
 #endif
 #ifndef DIN29
-#define DIN29 -1
+#define DIN29 -160
 #ifdef DIO159
 #undef DIO159
 #endif
-#define DIO159 -1
+#define DIO159 -160
 #endif
 #ifndef DIN30
-#define DIN30 -1
+#define DIN30 -161
 #ifdef DIO160
 #undef DIO160
 #endif
-#define DIO160 -1
+#define DIO160 -161
 #endif
 #ifndef DIN31
-#define DIN31 -1
+#define DIN31 -162
 #ifdef DIO161
 #undef DIO161
 #endif
-#define DIO161 -1
+#define DIO161 -162
 #endif
 #ifndef TX
-#define TX -1
+#define TX -201
 #ifdef DIO200
 #undef DIO200
 #endif
-#define DIO200 -1
+#define DIO200 -201
 #endif
 #ifndef RX
-#define RX -1
+#define RX -202
 #ifdef DIO201
 #undef DIO201
 #endif
-#define DIO201 -1
+#define DIO201 -202
 #endif
 #ifndef USB_DM
-#define USB_DM -1
+#define USB_DM -203
 #ifdef DIO202
 #undef DIO202
 #endif
-#define DIO202 -1
+#define DIO202 -203
 #endif
 #ifndef USB_DP
-#define USB_DP -1
+#define USB_DP -204
 #ifdef DIO203
 #undef DIO203
 #endif
-#define DIO203 -1
+#define DIO203 -204
 #endif
 #ifndef SPI_CLK
-#define SPI_CLK -1
+#define SPI_CLK -205
 #ifdef DIO204
 #undef DIO204
 #endif
-#define DIO204 -1
+#define DIO204 -205
 #endif
 #ifndef SPI_SDI
-#define SPI_SDI -1
+#define SPI_SDI -206
 #ifdef DIO205
 #undef DIO205
 #endif
-#define DIO205 -1
+#define DIO205 -206
 #endif
 #ifndef SPI_SDO
-#define SPI_SDO -1
+#define SPI_SDO -207
 #ifdef DIO206
 #undef DIO206
 #endif
-#define DIO206 -1
+#define DIO206 -207
 #endif
 #ifndef SPI_CS
-#define SPI_CS -1
+#define SPI_CS -208
 #ifdef DIO207
 #undef DIO207
 #endif
-#define DIO207 -1
+#define DIO207 -208
 #endif
 #ifndef I2C_SCL
-#define I2C_SCL -1
+#define I2C_SCL -209
 #ifdef DIO208
 #undef DIO208
 #endif
-#define DIO208 -1
+#define DIO208 -209
 #endif
 #ifndef I2C_SDA
-#define I2C_SDA -1
+#define I2C_SDA -210
 #ifdef DIO209
 #undef DIO209
 #endif
-#define DIO209 -1
+#define DIO209 -210
 #endif
+
+#define NOPIN -256
 
 	// if the pins are undefined turn on option
 #if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))
@@ -1893,42 +1997,42 @@ extern "C"
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
-#if (DIN0 < 0)
+#if ((DIN0 < 0) && defined(DIN0_ISR))
 #define DIN0_MASK 0
 #else
 #define DIN0_MASK 1
 #endif
-#if (DIN1 < 0)
+#if ((DIN1 < 0) && defined(DIN1_ISR))
 #define DIN1_MASK 0
 #else
 #define DIN1_MASK 2
 #endif
-#if (DIN2 < 0)
+#if ((DIN2 < 0) && defined(DIN2_ISR))
 #define DIN2_MASK 0
 #else
 #define DIN2_MASK 4
 #endif
-#if (DIN3 < 0)
+#if ((DIN3 < 0) && defined(DIN3_ISR))
 #define DIN3_MASK 0
 #else
 #define DIN3_MASK 8
 #endif
-#if (DIN4 < 0)
+#if ((DIN4 < 0) && defined(DIN4_ISR))
 #define DIN4_MASK 0
 #else
 #define DIN4_MASK 16
 #endif
-#if (DIN5 < 0)
+#if ((DIN5 < 0) && defined(DIN5_ISR))
 #define DIN5_MASK 0
 #else
 #define DIN5_MASK 32
 #endif
-#if (DIN6 < 0)
+#if ((DIN6 < 0) && defined(DIN6_ISR))
 #define DIN6_MASK 0
 #else
 #define DIN6_MASK 64
 #endif
-#if (DIN7 < 0)
+#if ((DIN7 < 0) && defined(DIN7_ISR))
 #define DIN7_MASK 0
 #else
 #define DIN7_MASK 128
@@ -1979,10 +2083,6 @@ extern "C"
 
 #define SERVOS_MASK (SERVO0_MASK | SERVO1_MASK | SERVO2_MASK | SERVO3_MASK | SERVO4_MASK | SERVO5_MASK)
 
-#if (INTERFACE < 0 || INTERFACE > 1)
-#error "undefined COM interface"
-#endif
-
 #ifdef BRESENHAM_16BIT
 #if (DSS_MAX_OVERSAMPLING < 0 || DSS_MAX_OVERSAMPLING > 3)
 #error DSS_MAX_OVERSAMPLING invalid value! Should be set between 0 and 3
@@ -2022,7 +2122,7 @@ typedef uint16_t step_t;
 #endif
 #endif
 
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (defined(KINEMATICS_MOTION_BY_SEGMENTS))
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #error "Delta does not support dual drive axis"
 #endif
@@ -2114,6 +2214,10 @@ typedef uint16_t step_t;
 
 #if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 || STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
+#endif
+
+#if (defined(MCU_HAS_USB) || defined(MCU_HAS_WIFI) || defined(MCU_HAS_BLUETOOTH))
+#define ENABLE_SYNC_TX
 #endif
 
 #ifdef __cplusplus

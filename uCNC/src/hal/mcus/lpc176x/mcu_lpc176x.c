@@ -22,7 +22,7 @@
 #if (MCU == MCU_LPC176X)
 #include "system_LPC17xx.h"
 
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 #include "../../../tinyusb/tusb_config.h"
 #include "../../../tinyusb/src/tusb.h"
 #endif
@@ -131,9 +131,9 @@ void servo_timer_init(void)
 	SERVO_TIMER_REG->PR = ((F_CPU >> 2) / 127500) - 1; // for 1us
 	SERVO_TIMER_REG->IR = 0xFFFFFFFF;
 
-	SERVO_TIMER_REG->MR1 = SERVO_MIN;	 // minimum value for servo setup
-	SERVO_TIMER_REG->MR0 = 425;	 // reset @ every 3.333ms * 6 servos = 20ms->50Hz
-	SERVO_TIMER_REG->MCR = 0x0B; // Interrupt on MC0 and MC1 and reset on MC0
+	SERVO_TIMER_REG->MR1 = SERVO_MIN; // minimum value for servo setup
+	SERVO_TIMER_REG->MR0 = 425;		  // reset @ every 3.333ms * 6 servos = 20ms->50Hz
+	SERVO_TIMER_REG->MCR = 0x0B;	  // Interrupt on MC0 and MC1 and reset on MC0
 
 	NVIC_SetPriority(SERVO_TIMER_IRQ, 10);
 	NVIC_ClearPendingIRQ(SERVO_TIMER_IRQ);
@@ -207,23 +207,30 @@ void mcu_clocks_init(void)
 	LPC_PINCON->PINMODE7 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE8 = 0xAAAAAAAA;
 	LPC_PINCON->PINMODE9 = 0xAAAAAAAA;
+
+	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
+	{
+		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+		DWT->CYCCNT = 0;
+		DWT->CTRL |= 0x1UL;
+	}
 }
 
 /**
  * The isr functions
  * The respective IRQHandler will execute these functions
 //  **/
-#if (INTERFACE == INTERFACE_USART)
+#ifdef MCU_HAS_UART
 void MCU_COM_ISR(void)
 {
 	mcu_disable_global_isr();
-	uint32_t irqstatus = UART_GetIntId(COM_USART);
+	uint32_t irqstatus = UART_GetIntId(COM_UART);
 	irqstatus &= UART_IIR_INTID_MASK;
 
 	// Receive Line Status
 	if (irqstatus == UART_IIR_INTID_RLS)
 	{
-		uint32_t linestatus = UART_GetLineStatus(COM_USART);
+		uint32_t linestatus = UART_GetLineStatus(COM_UART);
 
 		// Receive Line Status
 		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
@@ -235,25 +242,25 @@ void MCU_COM_ISR(void)
 		}
 	}
 
-#ifndef ENABLE_SYNC_RX
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
 		mcu_com_rx_cb(c);
 	}
-#endif
 
 #ifndef ENABLE_SYNC_TX
 	if (irqstatus == UART_IIR_INTID_THRE)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-		COM_USART->IER &= ~UART_IER_THREINT_EN;
+		COM_UART->IER &= ~UART_IER_THREINT_EN;
 		mcu_com_tx_cb();
 	}
 #endif
+
 	mcu_enable_global_isr();
 }
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 void USB_IRQHandler(void)
 {
 	mcu_disable_global_isr();
@@ -264,33 +271,33 @@ void USB_IRQHandler(void)
 
 void mcu_usart_init(void)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 	/*mcu_config_af(TX, UART_ALT_FUNC);
 	mcu_config_af(RX, UART_ALT_FUNC);
 	LPC_SC->PCONP |= UART_PCONP;
 	LPC_SC->UART_PCLKSEL_REG &= ~UART_PCLKSEL_MASK; // div clock by 4
 
-	COM_USART->FCR = UART_FCR_FIFO_EN | UART_FCR_RX_RS | UART_FCR_TX_RS; // Enable FIFO and reset Rx/Tx FIFO buffers
-	COM_USART->IER = 0;
-	COM_USART->ACR = 0;
-	COM_USART->LCR = 0;
-	COM_USART->TER = 0;
-	// COM_USART->FCR = 0;
+	COM_UART->FCR = UART_FCR_FIFO_EN | UART_FCR_RX_RS | UART_FCR_TX_RS; // Enable FIFO and reset Rx/Tx FIFO buffers
+	COM_UART->IER = 0;
+	COM_UART->ACR = 0;
+	COM_UART->LCR = 0;
+	COM_UART->TER = 0;
+	// COM_UART->FCR = 0;
 
-	COM_USART->LCR = UART_LCR_WLEN8 | UART_LCR_DLAB_EN;
+	COM_UART->LCR = UART_LCR_WLEN8 | UART_LCR_DLAB_EN;
 
 	uint32_t uartspeed = ((F_CPU >> 2) / (16 * BAUDRATE));
-	COM_USART->DLL = uartspeed & 0xFF;
-	COM_USART->DLM = (uartspeed >> 0x08) & 0xFF;
-	while ((COM_USART->LCR & UART_LCR_DLAB_EN))
+	COM_UART->DLL = uartspeed & 0xFF;
+	COM_UART->DLM = (uartspeed >> 0x08) & 0xFF;
+	while ((COM_UART->LCR & UART_LCR_DLAB_EN))
 		;
 
-	COM_USART->IER |= UART_IER_RLSINT_EN;
+	COM_UART->IER |= UART_IER_RLSINT_EN;
 	#ifndef ENABLE_SYNC_RX
-	COM_USART->IER |= UART_IER_RBRINT_EN;
+	COM_UART->IER |= UART_IER_RBRINT_EN;
 	#endif
 
-	COM_USART->TER |= UART_TER_TXEN;
+	COM_UART->TER |= UART_TER_TXEN;
 
 */
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -301,24 +308,21 @@ void mcu_usart_init(void)
 	CLKPWR_SetPCLKDiv(COM_PCLK, CLKPWR_PCLKSEL_CCLK_DIV_4);
 
 	UART_CFG_Type conf = {BAUDRATE, UART_PARITY_NONE, UART_DATABIT_8, UART_STOPBIT_1};
-	UART_Init(COM_USART, &conf);
+	UART_Init(COM_UART, &conf);
 
 	// Enable UART Transmit
-	UART_TxCmd(COM_USART, ENABLE);
+	UART_TxCmd(COM_UART, ENABLE);
 
 	// Configure Interrupts
-	UART_IntConfig(COM_USART, UART_INTCFG_RLS, ENABLE);
-#ifndef ENABLE_SYNC_RX
-	UART_IntConfig(COM_USART, UART_INTCFG_RBR, ENABLE);
-#endif
+	UART_IntConfig(COM_UART, UART_INTCFG_RLS, ENABLE);
+	UART_IntConfig(COM_UART, UART_INTCFG_RBR, ENABLE);
 
-#if (!defined(ENABLE_SYNC_TX) || !defined(ENABLE_SYNC_RX))
 	NVIC_SetPriority(COM_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
 #endif
 
-#elif (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	// // configure USB as Virtual COM port
 	LPC_PINCON->PINSEL1 &= ~((3 << 26) | (3 << 28)); /* P0.29 D+, P0.30 D- */
 	LPC_PINCON->PINSEL1 |= ((1 << 26) | (1 << 28));	 /* PINSEL1 26.27, 28.29  = 01 */
@@ -502,33 +506,23 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * checks if the serial hardware of the MCU has a new char ready to be read
- * */
-#ifndef mcu_rx_ready
-bool mcu_rx_ready(void)
-{
-	return true;
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#if (INTERFACE == INTERFACE_UART)
+#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
 		;
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	// UART_IntConfig(COM_USART, UART_INTCFG_THRE, ENABLE);
-	COM_USART->IER |= UART_IER_THREINT_EN;
+	COM_UART->IER |= UART_IER_THREINT_EN;
 #endif
-#elif (INTERFACE == INTERFACE_USB)
+#endif
+#ifdef MCU_HAS_USB
 	if (c != 0)
 	{
 		tud_cdc_write_char(c);
@@ -537,30 +531,6 @@ void mcu_putc(char c)
 	{
 		tud_cdc_write_flush();
 	}
-#endif
-}
-#endif
-
-/**
- * gets a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_getc
-char mcu_getc(void)
-{
-#if (INTERFACE == INTERFACE_UART)
-#ifdef ENABLE_SYNC_RX
-	while (!mcu_rx_ready())
-		;
-#endif
-	return (COM_INREG & UART_RBR_MASKBIT);
-#elif (INTERFACE == INTERFACE_USB)
-	while (!tud_cdc_available())
-	{
-		tud_task();
-	}
-
-	return (unsigned char)tud_cdc_read_char();
 #endif
 }
 #endif
@@ -606,6 +576,11 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 	}
 
 	*ticks = (uint16_t)totalticks;
+}
+
+float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
+{
+	return (1000000.0f / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
@@ -682,7 +657,11 @@ uint32_t mcu_millis()
  * provides a delay in us (micro seconds)
  * the maximum allowed delay is 255 us
  * */
-#define mcu_micros ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (SystemCoreClock / 1000000)))
+uint32_t mcu_micros()
+{
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+}
+
 #ifndef mcu_delay_us
 void mcu_delay_us(uint16_t delay)
 {
@@ -697,22 +676,16 @@ void mcu_delay_us(uint16_t delay)
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
- *   - if ENABLE_SYNC_RX is enabled check if there are any chars in the rx transmitter (or the tinyUSB buffer) and read them to the mcu_com_rx_cb
- *   - if ENABLE_SYNC_TX is enabled check if com_tx_empty is false and run mcu_com_tx_cb
  * */
-void mcu_dotasks(void)
+void mcu_dotasks()
 {
-#if (INTERFACE == INTERFACE_USB)
+#ifdef MCU_HAS_USB
 	tud_cdc_write_flush();
 	tud_task(); // tinyusb device task
-#endif
-#if (defined(ENABLE_SYNC_TX) || defined(ENABLE_SYNC_RX))
-	// lpc176x_uart_flush();
-#endif
-#ifdef ENABLE_SYNC_RX
-	while (mcu_rx_ready())
+
+	while (tud_cdc_available())
 	{
-		unsigned char c = mcu_getc();
+		unsigned char c = (unsigned char)tud_cdc_read_char();
 		mcu_com_rx_cb(c);
 	}
 #endif
@@ -851,6 +824,62 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+
+void MCU_ONESHOT_ISR(void)
+{
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+
+	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
+}
+
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+{
+	mcu_timeout_cb = fp;
+	LPC_SC->PCONP |= ONESHOT_PCONP;
+	LPC_SC->ONESHOT_PCLKSEL_REG &= ~ONESHOT_PCLKSEL_VAL; // system clk/4
+
+	ONESHOT_TIMER_REG->CTCR = 0;
+	ONESHOT_TIMER_REG->CCR &= ~0x03;
+	ONESHOT_TIMER_REG->TC = 0;
+	ONESHOT_TIMER_REG->PC = 0;
+	ONESHOT_TIMER_REG->PR = 0;
+	ONESHOT_TIMER_REG->TCR |= TIM_RESET;  // Reset Counter
+	ONESHOT_TIMER_REG->TCR &= ~TIM_RESET; // release reset
+	ONESHOT_TIMER_REG->EMR = 0;
+
+	ONESHOT_TIMER_REG->PR = ((F_CPU >> 2) / 1000000UL) - 1; // for 1us
+	ONESHOT_TIMER_REG->IR = 0xFFFFFFFF;
+
+	ONESHOT_TIMER_REG->MR0 = timeout;
+	ONESHOT_TIMER_REG->MCR = 0x07; // Interrupt reset and stop on MC0
+
+	NVIC_SetPriority(ONESHOT_TIMER_IRQ, 3);
+	NVIC_ClearPendingIRQ(ONESHOT_TIMER_IRQ);
+	NVIC_EnableIRQ(ONESHOT_TIMER_IRQ);
+
+	// TIM_Cmd(ONESHOT_TIMER_REG, ENABLE);
+	// ONESHOT_TIMER_REG->TCR |= TIM_ENABLE;
+}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+void mcu_start_timeout()
+{
 }
 #endif
 #endif

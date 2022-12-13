@@ -28,7 +28,14 @@ Heavily inspired by [Grbl](https://github.com/gnea/grbl) and [LinuxCNC](http://l
 3. Compatible with already existing tools and software for Grbl. There is no point in trying to reinvent the wheel (the whole wheel at least :-P). For that reason µCNC uses protocol compatible with Grbl. This allows it to easily integrate with Grbl ecosystem.
 
 You can navigate the [project wiki](https://github.com/Paciente8159/uCNC/wiki) to find out more on how to use it.
-You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules)
+
+You can expand µCNC using via modules. The available modules are at the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
+
+You can now also use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the files needed to adapt µCNC to your board.
+
+You can also reach me at µCNC discord channel
+
+[![µCNC discord channel](https://github.com/Paciente8159/uCNC/blob/master/docs/discord-logo-blue.png)](https://discord.gg/KdtKq9THN9)
 
 ## Supporting the project
 
@@ -95,11 +102,12 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Spindle Control: M3, M4, M5
   - Tool Change: M6
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
+
   - Outside the RS274NGC scope
     - Servo Control: M10*
-    - General Pin Control: M42*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
+    - Laser PPI M126*(mode) M127*(PPI) and M128*(Pulse width)
     - Valid Non-Command Words: E (used by 3D printing firmware like [Marlin](https://github.com/MarlinFirmware/Marlin)) (currently not used)
 
 * see notes
@@ -115,7 +123,16 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _M42 configurable via additional module. Provides a way to set any kind of digital output, PWM or Servo PIN_
+
+Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
+  - Cubic and quadratic splines: G5/G5.1
+  - Spindle synchronized motion: G33
+  - Stepper enable/disable: M17/M18
+  - General Pin Control: M42
+  - Enable/disable digital output pin synched/immediately: M62/M63/M64/M65
+  - Enable/disable analog output pin synched/immediately: M67/M68
+  - Enable/disable a digital output that controls the PSU: M80/M81
+  - Smoothieware laser clustering mode modified gcode
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
@@ -153,7 +170,7 @@ NOTES:
 
 µCNC with a configuration similar to Grbl is be able to keep up to 30KHz step rate for a 3 axis machine on an Arduino Uno at 16Mhz. (the stated rate depends on the length of the segments too, since many short length segments don't allow full speed to be achieved). For this specific type of use (like in laser engraving) a 16-bit version of stepping algorithm is possible pushing the theoretical step rate limit to 40KHz on a single UNO board.
 
-### Current µCNC supported hardware
+### µCNC current supported hardware
 
 µCNC initial development was done both around Arduino UNO board just like GRBL. But µCNC can also be installed in other AVR boards like Arduino Mega (for Ramps), or similar boards (like Rambo). Other MCU's have and will be integrated in µCNC:
 
@@ -165,9 +182,19 @@ It can run on:
 - SAMD21 (Arduino Zero/M0) - v1.3.x
 - STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
-- ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth, lacks analog and input isr)
+- ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
 - NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developed) 
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
+
+### µCNC current supported kinematics
+
+µCNC is designed to be support both linear and non-linear kinematics and can be extended to support other types of kinematics.
+Currently µCNC supports the following kinematics:
+
+- Cartesian
+- CoreXY
+- Linear delta robot
+- Rotary delta robot
 
 ### µCNC roadmap
 

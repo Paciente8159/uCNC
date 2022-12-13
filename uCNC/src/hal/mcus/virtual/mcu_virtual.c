@@ -83,12 +83,12 @@
 #define COM_BUFFER_SIZE 50
 #endif
 
-MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
-{
-#ifdef ENABLE_IO_MODULES
-	EVENT_INVOKE(input_change, NULL);
-#endif
-}
+//MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
+//{
+//#ifdef ENABLE_IO_MODULES
+//	EVENT_INVOKE(input_change, NULL);
+//#endif
+//}
 
 /*timers*/
 int start_timer(int, void (*)(void));
@@ -128,6 +128,8 @@ void stop_timer(void)
 	CloseHandle(win_timer);
 }
 
+double cyclesPerMicrosecond;
+double cyclesPerMillisecond;
 void startCycleCounter(void)
 {
 	if (getCPUFreq() == 0)
@@ -152,6 +154,9 @@ unsigned long getCPUFreq(void)
 		printf("QueryPerformanceFrequency failed!\n");
 		return 0;
 	}
+	
+	cyclesPerMicrosecond = (double)perf_counter.QuadPart/1000000.0;
+	cyclesPerMillisecond = (double)perf_counter.QuadPart/1000.0;
 
 	return perf_counter.QuadPart;
 }
@@ -161,6 +166,20 @@ unsigned long getTickCounter(void)
 	LARGE_INTEGER perf_counter;
 	QueryPerformanceCounter(&perf_counter);
 	return perf_counter.QuadPart;
+}
+
+uint32_t mcu_micros(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return (uint32_t)(perf_counter.QuadPart / cyclesPerMicrosecond);
+}
+
+uint32_t mcu_millis(void)
+{
+	LARGE_INTEGER perf_counter;
+	QueryPerformanceCounter(&perf_counter);
+	return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
 }
 
 /**
@@ -1059,6 +1078,12 @@ void *stepsimul(void *args)
 	}
 }
 
+void rpmsimul(void)
+{
+	virtualmap.inputs ^= (1<<7);
+	mcu_inputs_changed_cb();
+}
+
 void ticksimul(void)
 {
 
@@ -1091,13 +1116,15 @@ void ticksimul(void)
 	}
 }
 
-uint32_t mcu_millis()
-{
-	return mcu_runtime;
-}
+//uint32_t mcu_millis()
+//{
+//	return mcu_runtime;
+//}
+
 
 void mcu_init(void)
 {
+	startCycleCounter();
 	virtualmap.special_outputs = 0;
 	virtualmap.special_inputs = 0;
 	virtualmap.inputs = 0;
@@ -1126,6 +1153,7 @@ void mcu_init(void)
 	//	}
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
+	start_timer(10, &rpmsimul);
 	//#ifdef USECONSOLE
 	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
 	//#endif
@@ -1145,6 +1173,37 @@ void mcu_enable_probe_isr(void)
 void mcu_disable_probe_isr(void)
 {
 }
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+uint32_t mcu_timeout;
+extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+HANDLE oneshot_handle;
+VOID CALLBACK oneshot_handler(PVOID lpParameter, BOOLEAN TimerOrWaitFired)
+{
+	if(mcu_timeout_cb){
+		mcu_timeout_cb();
+	}
+}
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
+	{
+		mcu_timeout_cb = fp;
+		mcu_timeout = timeout;
+	}
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout(){
+		CreateTimerQueueTimer(&oneshot_handle, NULL, (WAITORTIMERCALLBACK)oneshot_handler, NULL, 0, mcu_timeout, WT_EXECUTEINTIMERTHREAD|WT_EXECUTEONLYONCE);
+	}
+#endif
+#endif
 
 uint8_t mcu_get_pin_offset(uint8_t pin)
 {
@@ -1457,7 +1516,7 @@ void mcu_printfp(const char *__fmt, ...)
 	va_end(__ap);
 }
 
-void mcu_delay_us(uint16_t delay)
+void virtual_delay_us(uint16_t delay)
 {
 	unsigned long start = getTickCounter();
 	double elapsed = 0;
@@ -1541,13 +1600,9 @@ uint16_t mcu_stopPerfCounter(void)
 
 void mcu_dotasks(void)
 {
-#ifdef ENABLE_SYNC_RX
-	while (mcu_read_available())
-	{
-		unsigned char c = mcu_getc();
-		serial_rx_isr(c);
-	}
-#endif
+}
+
+void mcu_config_input_isr(int pin){
 }
 
 #endif

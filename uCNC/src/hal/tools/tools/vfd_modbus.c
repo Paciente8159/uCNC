@@ -1,5 +1,5 @@
 /*
-	Name: vfd_huanyang.c
+	Name: vfd_modbus.c
 	Description: Defines a Huanyang VFD controlled tool for µCNC.
 				 Defines a coolant output using DOUT1.
 
@@ -22,16 +22,45 @@
 #include <math.h>
 #include <stdbool.h>
 
-#define COOLANT_FLOOD DOUT1
-#define COOLANT_MIST DOUT2
+// defines default coolant pins
+#ifdef ENABLE_COOLANT
+#ifndef VFD_COOLANT_FLOOD
+#define VFD_COOLANT_FLOOD DOUT1
+#endif
+#ifndef VFD_COOLANT_MIST
+#define VFD_COOLANT_MIST DOUT2
+#endif
+#endif
 
-#define GET_SPINDLE_TRUE_RPM true
+// defines VFD report mode
+// if false returns programmed speed
+// if true return speed read from VFD
+#ifndef GET_SPINDLE_TRUE_RPM
+#define GET_SPINDLE_TRUE_RPM false
+#endif
 
+// defines default softuart pins and vfd communication settings
+#ifndef VFD_TX_PIN
 #define VFD_TX_PIN DOUT27
+#endif
+#ifndef VFD_RX_PIN
 #define VFD_RX_PIN DIN27
+#endif
+#ifndef VFD_BAUDRATE
 #define VFD_BAUDRATE 9600
+#endif
+#ifndef VFD_TIMEOUT
 #define VFD_TIMEOUT 100
+#endif
+#ifndef VFD_RETRY_DELAY_MS
 #define VFD_RETRY_DELAY_MS 100
+#endif
+
+// comment this to override vfd communication error safety hold
+// #define IGNORE_VFD_COM_ERRORS
+#ifndef IGNORE_VFD_COM_ERRORS
+#define VFD_HOLD_ON_ERROR
+#endif
 
 #if !(VFD_TX_PIN < 0) && !(VFD_RX_PIN < 0)
 SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
@@ -52,13 +81,19 @@ typedef struct vfd_state
 static vfd_state_t vfd_state;
 
 /*VFD settings*/
-#define VFD_ADDRESS 1
+#define VFD_ADDRESS 8
 #define VFD_MAX_COMMAND_RETRIES 2
 
-// uncomment the right type of VFD used
-#define VFD_HUANYANG_TYPE1
-// #define VFD_HUANYANG_TYPE2
-// #define VFD_YL620
+// choose the controller type
+// types available
+#define VFD_HUANYANG_TYPE1 1
+#define VFD_HUANYANG_TYPE2 2
+#define VFD_YL620 3
+#define VFD_POWTRAN8100 4
+
+#ifndef VFD_CONTROLLER
+#define VFD_CONTROLLER VFD_HUANYANG_TYPE1
+#endif
 
 /**
  *
@@ -72,7 +107,7 @@ static vfd_state_t vfd_state;
  * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
  *
  * */
-#ifdef VFD_HUANYANG_TYPE1
+#if (VFD_CONTROLLER == VFD_HUANYANG_TYPE1)
 #define VFD_SETRPM_CMD                                         \
 	{                                                          \
 		7, 6, MODBUS_FORCE_SINGLE_COIL, 0x02, 0x00, 0x00, 0x00 \
@@ -104,7 +139,7 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
-#ifdef VFD_HUANYANG_TYPE2
+#if (VFD_CONTROLLER == VFD_HUANYANG_TYPE2)
 #define VFD_SETRPM_CMD                                              \
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x10, 0x00, 0x00, 0x00 \
@@ -135,7 +170,7 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV g_settings.spindle_max_rpm
 #endif
 
-#ifdef VFD_YL620
+#if (VFD_CONTROLLER == VFD_YL620)
 #define VFD_SETRPM_CMD                                              \
 	{                                                               \
 		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x01, 0x00, 0x00 \
@@ -166,6 +201,41 @@ static vfd_state_t vfd_state;
 #define VFD_OUT_DIV 60.0f
 #endif
 
+#if (VFD_CONTROLLER == VFD_POWTRAN8100)
+#define VFD_SETRPM_CMD                                              \
+	{                                                               \
+		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x00, 0x01, 0x00, 0x00 \
+	}
+#define VFD_GETRPM_CMD                                              \
+	{                                                               \
+		8, 8, MODBUS_READ_HOLDING_REGISTERS, 0x00, 0x01, 0x00, 0x00 \
+	}
+#define VFD_RPM_HZ_CMD                                              \
+	{                                                               \
+		8, 7, MODBUS_READ_HOLDING_REGISTERS, 0x00, 0x0C, 0x00, 0x01 \
+	}
+#define VFD_RUN_CMD                                            \
+	{                                                          \
+		8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x00, 0xFF, 0x00 \
+	}
+#define VFD_CW_CMD                                             \
+	{                                                          \
+		8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x02, 0xFF, 0x00 \
+	}
+#define VFD_CCW_CMD                                            \
+	{                                                          \
+		8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x02, 0x00, 0x00 \
+	}
+#define VFD_STOP_CMD                                           \
+	{                                                          \
+		8, 8, MODBUS_FORCE_SINGLE_COIL, 0x00, 0x00, 0x00, 0x00 \
+	}
+#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_DIV vfd_state.rpm_hz
+#define VFD_OUT_MULT vfd_state.rpm_hz
+#define VFD_OUT_DIV g_settings.spindle_max_rpm
+#endif
+
 static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 {
 	// checks if is dummy command
@@ -187,10 +257,18 @@ static bool modvfd_command(uint8_t *cmd, modbus_response_t *response)
 		{
 			return true;
 		}
+#if (VFD_RETRY_DELAY_MS != 0)
 		cnc_delay_ms(VFD_RETRY_DELAY_MS);
+#endif
 	}
 
 	vfd_state.connected = 0;
+	protocol_send_string(MSG_START);
+	protocol_send_string(__romstr__("VFD COMMUNICATION FAILED"));
+	protocol_send_string(MSG_END);
+#ifdef VFD_HOLD_ON_ERROR
+	cnc_call_rt_command(CMD_CODE_FEED_HOLD);
+#endif
 	return false;
 }
 
@@ -198,13 +276,14 @@ static uint16_t vfd_rpm_hz(void)
 {
 	modbus_response_t response = {0};
 	uint8_t cmd[7] = VFD_RPM_HZ_CMD;
+	uint8_t data_len = cmd[1] - 4; // len-(addres+func if+crc)
 
 	if (modvfd_command(cmd, &response))
 	{
-		return ((float)((((uint16_t)response.data[2]) << 8) | response.data[3]));
+		return ((float)((((uint16_t)response.data[data_len - 2]) << 8) | response.data[data_len - 1]));
 	}
 
-	return -1;
+	return 0;
 }
 
 static uint16_t vfd_get_rpm(bool truerpm)
@@ -218,10 +297,11 @@ static uint16_t vfd_get_rpm(bool truerpm)
 	{
 		modbus_response_t response = {0};
 		uint8_t cmd[7] = VFD_GETRPM_CMD;
+		uint8_t data_len = cmd[1] - 4; // len-(addres+func if+crc)
 
 		if (modvfd_command(cmd, &response))
 		{
-			return (uint16_t)(((float)((((uint16_t)response.data[2]) << 8) | response.data[3])) * VFD_IN_MULT / VFD_IN_DIV);
+			return (uint16_t)(((float)((((uint16_t)response.data[data_len - 2]) << 8) | response.data[data_len - 1])) * VFD_IN_MULT / VFD_IN_DIV);
 		}
 		return 0;
 	}
@@ -233,13 +313,22 @@ static bool vfd_update_rpm(void)
 {
 	modbus_response_t response = {0};
 	uint8_t cmd[7] = VFD_SETRPM_CMD;
-	uint16_t hz = (uint16_t)roundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
+	uint16_t hz = (uint16_t)lroundf((float)ABS(vfd_state.rpm) * VFD_OUT_MULT / VFD_OUT_DIV);
 	// cmd starts at index 1 not at 0
 	uint8_t i = cmd[0] - 4 + 1;
 	cmd[i] = (uint8_t)(hz >> 8);
 	i++;
 	cmd[i] = (uint8_t)(hz & 0xFF);
+#ifndef VFD_RUN_CMD
 	return modvfd_command(cmd, &response);
+#else
+	if (!modvfd_command(cmd, &response))
+	{
+		return false;
+	}
+	uint8_t runcmd[7] = VFD_RUN_CMD;
+	return modvfd_command(runcmd, &response);
+#endif
 }
 
 static bool vfd_stop(void)
@@ -299,9 +388,8 @@ static bool vfd_connect(void)
 	{
 		vfd_state.rpm_hz = vfd_rpm_hz();
 		// was able do communicate via modbus
-		if (vfd_state.rpm_hz < 0)
+		if (!vfd_state.rpm_hz)
 		{
-			protocol_send_error(STATUS_VFD_COMMUNICATION_FAILED);
 			return false;
 		}
 	}
@@ -312,38 +400,24 @@ static bool vfd_connect(void)
 
 uint8_t vfd_update(void)
 {
-	while (!vfd_connect())
+	if (vfd_connect())
 	{
-		cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
-	}
-
-	if (vfd_state.rpm == 0)
-	{
-		while (!vfd_stop())
+		if (vfd_state.rpm == 0)
 		{
-			cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
-		}
-	}
-	else
-	{
-		if (vfd_state.rpm < 0)
-		{
-			while (!vfd_ccw())
-			{
-				cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
-			}
+			vfd_stop();
 		}
 		else
 		{
-			while (!vfd_cw())
+			if (vfd_state.rpm < 0)
 			{
-				cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
+				vfd_ccw();
 			}
-		}
+			else
+			{
+				vfd_cw();
+			}
 
-		while (!vfd_update_rpm())
-		{
-			cnc_delay_ms(2*VFD_RETRY_DELAY_MS);
+			vfd_update_rpm();
 		}
 	}
 
@@ -356,7 +430,7 @@ uint8_t vfd_update(void)
  *
  * */
 
-void vfd_startup()
+static void startup_code()
 {
 	// initialize soft uart tx
 	vfd_uart.tx(true);
@@ -365,39 +439,41 @@ void vfd_startup()
 	vfd_update();
 }
 
-void vfd_shutdown()
+static void shutdown_code()
 {
 	vfd_state.rpm = 0;
 	vfd_stop();
 	vfd_state.connected = 0;
 }
 
-void vfd_set_speed(int16_t value)
+static void set_speed(int16_t value)
 {
 	vfd_state.rpm = value;
 	vfd_update();
 }
 
-void vfd_set_coolant(uint8_t value)
+static void set_coolant(uint8_t value)
 {
-	SET_COOLANT(COOLANT_FLOOD, COOLANT_MIST, value);
+	#ifdef ENABLE_COOLANT
+	SET_COOLANT(VFD_COOLANT_FLOOD, VFD_COOLANT_MIST, value);
+	#endif
 }
 
-uint16_t vfd_get_speed(void)
+static uint16_t get_speed(void)
 {
 	return vfd_get_rpm(GET_SPINDLE_TRUE_RPM);
 }
 
-const tool_t __rom__ vfd = {
-	.startup_code = &vfd_startup,
-	.shutdown_code = &vfd_shutdown,
+const tool_t vfd_modbus = {
+	.startup_code = &startup_code,
+	.shutdown_code = &shutdown_code,
 #if PID_CONTROLLERS > 0
 	.pid_update = NULL,
 	.pid_error = NULL,
 #endif
 	.range_speed = NULL,
-	.get_speed = &vfd_get_speed,
-	.set_speed = &vfd_set_speed,
-	.set_coolant = &vfd_set_coolant};
+	.get_speed = &get_speed,
+	.set_speed = &set_speed,
+	.set_coolant = &set_coolant};
 
 #endif

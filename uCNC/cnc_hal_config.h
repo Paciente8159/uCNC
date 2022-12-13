@@ -53,26 +53,26 @@ extern "C"
 
 // Uncomment to enable weak pull up resistors for limit switch
 // If the pin is not defined in the board this will be ignored
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
-#define LIMIT_Z_PULLUP
-#define LIMIT_X2_PULLUP
-#define LIMIT_Y2_PULLUP
-#define LIMIT_Z2_PULLUP
-#define LIMIT_A_PULLUP
-#define LIMIT_B_PULLUP
-#define LIMIT_C_PULLUP
+#define LIMIT_X_PULLUP_ENABLE
+#define LIMIT_Y_PULLUP_ENABLE
+#define LIMIT_Z_PULLUP_ENABLE
+#define LIMIT_X2_PULLUP_ENABLE
+#define LIMIT_Y2_PULLUP_ENABLE
+#define LIMIT_Z2_PULLUP_ENABLE
+#define LIMIT_A_PULLUP_ENABLE
+#define LIMIT_B_PULLUP_ENABLE
+#define LIMIT_C_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistor for probe
 // If the pin is not defined in the board this will be ignored
-// #define PROBE_PULLUP
+// #define PROBE_PULLUP_ENABLE
 
 // Uncomment to enable weak pull up resistors for control pins
 // If the pin is not defined in the board this will be ignored
-#define ESTOP_PULLUP
-#define SAFETY_DOOR_PULLUP
-#define FHOLD_PULLUP
-#define CS_RES_PULLUP
+#define ESTOP_PULLUP_ENABLE
+#define SAFETY_DOOR_PULLUP_ENABLE
+#define FHOLD_PULLUP_ENABLE
+#define CS_RES_PULLUP_ENABLE
 
 /**
  * Uncomment this feature to enable tool length compensation
@@ -112,16 +112,31 @@ extern "C"
 // #define DUAL_DRIVE1_ENABLE_SELFSQUARING
 #endif
 
-/*
-	Tool definition
-	For any given tool the respective macro TOOLx (x from 1 to 16) must be created
-*/
+	/*
+		Tool definition
+		For any given tool the respective macro TOOLx (x from 1 to 16) must be created
+	*/
+
+#ifdef ENABLE_LASER_PPI
+#define LASER_PPI PWM0
+// Uncomment to invert the output login on the LASER_PPI pin
+// #define INVERT_LASER_PPI_LOGIC
+#endif
 
 // assign the tools from 1 to 16
 #define TOOL1 spindle_pwm
-	// #define TOOL2 laser
-	//#define TOOL3 spindle_besc
-	//#define TOOL4 spindle_relay
+// #define TOOL2 laser
+// #define TOOL3 laser_ppi
+// #define TOOL4 spindle_besc
+// #define TOOL5 spindle_relay
+
+// enable RPM encoder for spindle_pwm
+// depends on encoders (below)
+// #define SPINDLE_PWM_HAS_RPM_ENCODER
+
+// enable RPM encoder for spindle_besc
+// depends on encoders (below)
+// #define SPINDLE_BESC_HAS_RPM_ENCODER
 
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
@@ -135,9 +150,9 @@ extern "C"
  * ENCx_PULSE -> must be set to an input PIN with interrupt on change enabled capabilities
  * ENCx_DIR -> a regular input PIN that detects the direction of the encoding step
  * Defined encoders must match the number of encoders and numeral defined above.
- * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (exemple Set ENC0 and ENC2 but not ENC1)
+ * For example if ENCODERS is set to 2 it expects to find the definitions for ENC0 and ENC1. Number skipping is not allowed (example Set ENC0 and ENC2 but not ENC1)
  *
- * It's also possible to assing an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
+ * It's also possible to assign an encoder to a stepper motor by defining the STEPx_ENCODER and the encoder index like this
  * #define STEP0_ENCODER ENC0 //assigns encoder 0 to stepper 0
  *
  * The encoder can work as a simple counter (used in speed encoders) by setting the same HAL pin for both PULSE and DIR functions - Counter mode
@@ -149,25 +164,43 @@ extern "C"
 #if ENCODERS > 0
 #include "src/modules/encoder.h"
 
-	// Counter mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN0
+// Counter mode
+// #define ENC0_PULSE DIN7
+// #define ENC0_DIR DIN7
 
-	// Encoder mode
-	// #define ENC0_PULSE DIN0
-	// #define ENC0_DIR DIN8
+// // Encoder mode
+// #define ENC0_PULSE DIN0
+// #define ENC0_DIR DIN8
 
-	// #define ENC1_PULSE DIN1
-	// #define ENC1_DIR DIN9
+// #define ENC1_PULSE DIN1
+// #define ENC1_DIR DIN9
 
-	// #define ENC2_PULSE DIN2
-	// #define ENC2_DIR DIN10
+// #define ENC2_PULSE DIN2
+// #define ENC2_DIR DIN10
 
-	// Assign encoders to steppers
-	// #define STEP0_ENCODER ENC0
-	// #define STEP1_ENCODER ENC1
-	// #define STEP2_ENCODER ENC2
+// Assign encoders to steppers
+// #define STEP0_ENCODER ENC0
+// #define STEP1_ENCODER ENC1
+// #define STEP2_ENCODER ENC2
 
+// Assign an encoder has an RPM encoder
+// #define ENABLE_ENCODER_RPM
+#ifdef ENABLE_ENCODER_RPM
+
+// Assign an encoder to work as the RPM encoder
+#define RPM_ENCODER ENC0
+
+// Optional set a second encoder pin has an encoder index
+// This assumes the index pulse occurs when pulse pin is also triggered
+// #define RPM_INDEX_INPUT DIN8
+
+// Resolution of the RPM encoder or Pulses Per Revolution
+#define RPM_PPR 24
+
+// uncomment to update tool sync on index pulse only
+// instead of updating in every PPR
+// #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
+#endif
 #endif
 
 /*
@@ -222,9 +255,9 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * Software emulated communication interfaces
- * 
+ *
  * */
 #ifdef SOFT_SPI_ENABLED
 #ifndef SOFT_SPI_CLK

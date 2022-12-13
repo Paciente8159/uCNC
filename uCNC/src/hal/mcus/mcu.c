@@ -18,6 +18,23 @@
 
 #include "../../cnc.h"
 
+#ifdef MCU_HAS_ONESHOT_TIMER
+MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+#endif
+
+// most MCU can perform some sort of loop within 4 to 6 CPU cycles + a small function call overhead
+// the amount of cycles per loop and overhead can be tuned with a scope or by inspecting the produced asm
+// and adjusted in each MCU
+// by adding the noinline and the empty asm instruction prevents optimization from removing the code executing the loop
+// if used inside atomic operations can execute delays with good precision in any MCU
+__attribute__((noinline, optimize("O3"))) void mcu_delay_loop(uint16_t loops)
+{
+	do
+	{
+		asm volatile("");
+	} while (--loops);
+}
+
 void __attribute__((weak)) mcu_io_init(void)
 {
 #if !(STEP0 < 0)

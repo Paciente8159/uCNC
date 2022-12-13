@@ -108,22 +108,34 @@ const settings_t __rom__ default_settings =
 		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
 		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
 		.laser_mode = 0,
-		.step_per_mm = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_STEP_PER_MM),
-		.max_feed_rate = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_MAX_FEED),
-		.acceleration = DEFAULT_ARRAY(STEPPER_COUNT, DEFAULT_ACCEL),
+#ifdef ENABLE_LASER_PPI
+		.laser_ppi = DEFAULT_LASER_PPI,
+		.laser_ppi_uswidth = DEFAULT_LASER_PPI_USWIDTH,
+		.laser_ppi_mixmode_ppi = 0.25,
+		.laser_ppi_mixmode_uswidth = 0.75,
+#endif
+		.step_per_mm = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM),
+		.max_feed_rate = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_FEED),
+		.acceleration = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_ACCEL),
 		.max_distance = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_DIST),
 #if TOOL_COUNT > 0
 		.default_tool = DEFAULT_STARTUP_TOOL,
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
-		.delta_arm_length = DEFAULT_DELTA_ARM_LENGTH,
-		.delta_armbase_radius = DEFAULT_DELTA_BASE_RADIUS,
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+		.delta_arm_length = DEFAULT_LIN_DELTA_ARM_LENGTH,
+		.delta_armbase_radius = DEFAULT_LIN_DELTA_BASE_RADIUS,
 // float delta_efector_height;
+#elif (KINEMATIC == KINEMATIC_DELTA)
+		.delta_base_radius = DEFAULT_DELTA_BASE_RADIUS,
+		.delta_effector_radius = DEFAULT_DELTA_EFFECTOR_RADIUS,
+		.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
+		.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
+		.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		.backlash_steps = DEFAULT_ARRAY(STEPPER_COUNT, 0),
+		.backlash_steps = DEFAULT_ARRAY(AXIS_TO_STEPPERS, 0),
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
 		.skew_xy_factor = 0,
@@ -166,7 +178,20 @@ const settings_t __rom__ default_settings =
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
 {
-	DEFAULT_EVENT_HANDLER(settings_change);
+	// custom handler
+	settings_change_delegate_event_t *ptr = settings_change_event;
+	bool handled = false;
+	uint8_t result = STATUS_INVALID_STATEMENT;
+	while (ptr != NULL && !handled)
+	{
+		if (ptr->fptr != NULL)
+		{
+			result = ptr->fptr(args, &handled);
+		}
+		ptr = ptr->next;
+	}
+
+	return result;
 }
 
 // event_settings_load_handler
@@ -217,12 +242,18 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	if (EVENT_INVOKE(settings_load, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	uint8_t error = EVENT_INVOKE(settings_load, &args);
+	if (error)
 	{
-		return 0;
+		if (error == STATUS_EXTERNAL_SETTINGS_OK)
+		{
+			return STATUS_OK;
+		}
+		return error;
 	}
 	// if unable to get settings from external memory tries to get from internal EEPROM
 #endif
+
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
@@ -286,9 +317,9 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 #endif
 }
 
-uint8_t settings_change(uint8_t setting, float value)
+uint8_t settings_change(setting_offset_t id, float value)
 {
-	uint8_t result = 0;
+	uint8_t result = STATUS_OK;
 	uint16_t value16 = (uint16_t)CLAMP(0, value, INT16_MAX);
 	uint8_t value8 = (uint8_t)MIN(value16, UINT8_MAX);
 
@@ -299,194 +330,230 @@ uint8_t settings_change(uint8_t setting, float value)
 		return STATUS_NEGATIVE_VALUE;
 	}
 
-	switch (setting)
+#ifdef ENABLE_SETTINGS_MODULES
+	if (id < 256)
 	{
-	case 0:
-		value = 1000000.0f / value;
-		if (value > F_STEP_MAX)
+#endif
+		uint8_t setting = (uint8_t)id;
+		switch (setting)
 		{
-			return STATUS_MAX_STEP_RATE_EXCEEDED;
-		}
-		g_settings.max_step_rate = value;
-		break;
+		case 0:
+			value = 1000000.0f / value;
+			if (value > F_STEP_MAX)
+			{
+				return STATUS_MAX_STEP_RATE_EXCEEDED;
+			}
+			g_settings.max_step_rate = value;
+			break;
 #ifdef EMULATE_GRBL_STARTUP
-	// just adds this for compatibility
-	// this setting is not used
-	case 1:
-		break;
+		// just adds this for compatibility
+		// this setting is not used
+		case 1:
+			break;
 #endif
-	case 2:
-		g_settings.step_invert_mask = value8;
-		break;
-	case 3:
-		g_settings.dir_invert_mask = value8;
-		break;
-	case 4:
-		g_settings.step_enable_invert = value8;
-		break;
-	case 5:
-		g_settings.limits_invert_mask = value8;
-		break;
-	case 6:
-		g_settings.probe_invert_mask = value1;
-		break;
-	case 7:
-		g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
-		break;
+		case 2:
+			g_settings.step_invert_mask = value8;
+			break;
+		case 3:
+			g_settings.dir_invert_mask = value8;
+			break;
+		case 4:
+			g_settings.step_enable_invert = value8;
+			break;
+		case 5:
+			g_settings.limits_invert_mask = value8;
+			break;
+		case 6:
+			g_settings.probe_invert_mask = value1;
+			break;
+		case 7:
+			g_settings.control_invert_mask = (value8 & CONTROLS_MASK);
+			break;
 #if ENCODERS > 0
-	case 8:
-		g_settings.encoders_pulse_invert_mask = value8;
-		break;
-	case 9:
-		g_settings.encoders_dir_invert_mask = value8;
-		break;
+		case 8:
+			g_settings.encoders_pulse_invert_mask = value8;
+			break;
+		case 9:
+			g_settings.encoders_dir_invert_mask = value8;
+			break;
 #endif
-	case 10:
-		g_settings.status_report_mask = value8;
-		break;
-	case 11:
-		g_settings.g64_angle_factor = value;
-		break;
-	case 12:
-		g_settings.arc_tolerance = value;
-		break;
-	case 13:
-		g_settings.report_inches = value;
-		break;
-	case 20:
-		if (!g_settings.homing_enabled && value1)
-		{
-			return STATUS_SOFT_LIMIT_ERROR;
-		}
-		g_settings.soft_limits_enabled = value1;
-		break;
-	case 21:
-		g_settings.hard_limits_enabled = value1;
-		break;
-	case 22:
-		g_settings.homing_enabled = value1;
-		break;
-	case 23:
-		g_settings.homing_dir_invert_mask = value8;
-		break;
-	case 24:
-		g_settings.homing_slow_feed_rate = value;
-		break;
-	case 25:
-		g_settings.homing_fast_feed_rate = value;
-		break;
-	case 26:
-		g_settings.debounce_ms = value16;
-		break;
-	case 27:
-		g_settings.homing_offset = value;
-		break;
-	case 30:
-		g_settings.spindle_max_rpm = value16;
-		break;
-	case 31:
-		g_settings.spindle_min_rpm = value16;
-		break;
-	case 32:
-		g_settings.laser_mode = value8;
-		break;
+		case 10:
+			g_settings.status_report_mask = value8;
+			break;
+		case 11:
+			g_settings.g64_angle_factor = value;
+			break;
+		case 12:
+			g_settings.arc_tolerance = value;
+			break;
+		case 13:
+			g_settings.report_inches = value;
+			break;
+		case 20:
+			if (!g_settings.homing_enabled && value1)
+			{
+				return STATUS_SOFT_LIMIT_ERROR;
+			}
+			g_settings.soft_limits_enabled = value1;
+			break;
+		case 21:
+			g_settings.hard_limits_enabled = value1;
+			break;
+		case 22:
+			g_settings.homing_enabled = value1;
+			break;
+		case 23:
+			g_settings.homing_dir_invert_mask = value8;
+			break;
+		case 24:
+			g_settings.homing_slow_feed_rate = value;
+			break;
+		case 25:
+			g_settings.homing_fast_feed_rate = value;
+			break;
+		case 26:
+			g_settings.debounce_ms = value16;
+			break;
+		case 27:
+			g_settings.homing_offset = value;
+			break;
+		case 30:
+			g_settings.spindle_max_rpm = value16;
+			break;
+		case 31:
+			g_settings.spindle_min_rpm = value16;
+			break;
+		case 32:
+			g_settings.laser_mode = value8;
+			break;
+#ifdef ENABLE_LASER_PPI
+		case 33:
+			g_settings.step_per_mm[STEPPER_COUNT - 1] = value;
+			break;
+		case 34:
+			g_settings.laser_ppi_uswidth = value16;
+			break;
+		case 35:
+			g_settings.laser_ppi_mixmode_ppi = value;
+			break;
+		case 36:
+			g_settings.laser_ppi_mixmode_uswidth = value;
+			break;
+#endif
 #ifdef ENABLE_SKEW_COMPENSATION
-	case 37:
-		g_settings.skew_xy_factor = value;
-		break;
+		case 37:
+			g_settings.skew_xy_factor = value;
+			break;
 #ifndef SKEW_COMPENSATION_XY_ONLY
-	case 38:
-		g_settings.skew_xz_factor = value;
-		break;
-	case 39:
-		g_settings.skew_yz_factor = value;
-		break;
+		case 38:
+			g_settings.skew_xz_factor = value;
+			break;
+		case 39:
+			g_settings.skew_yz_factor = value;
+			break;
 #endif
 #endif
 #if TOOL_COUNT > 0
-	case 80:
-		g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
-		break;
+		case 80:
+			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
+			break;
 #endif
-#if (KINEMATIC == KINEMATIC_DELTA)
+#if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
+		case 106:
+			g_settings.delta_arm_length = value;
+			break;
+		case 107:
+			g_settings.delta_armbase_radius = value;
+			break;
+			// case 108:
+			//     g_settings.delta_efector_height = value;
+			//     break;
+#elif (KINEMATIC == KINEMATIC_DELTA)
 	case 106:
-		g_settings.delta_arm_length = value;
+		g_settings.delta_base_radius = value;
 		break;
 	case 107:
-		g_settings.delta_armbase_radius = value;
+		g_settings.delta_effector_radius = value;
 		break;
-		// case 108:
-		//     g_settings.delta_efector_height = value;
-		//     break;
+	case 108:
+		g_settings.delta_bicep_length = value;
+		break;
+	case 109:
+		g_settings.delta_forearm_length = value;
+		break;
+	case 28:
+		g_settings.delta_bicep_homing_angle = value;
+		break;
 #endif
-	default:
-		if (setting >= 100 && setting < (100 + STEPPER_COUNT))
-		{
-			setting -= 100;
-			g_settings.step_per_mm[setting] = value;
-		}
-		else if (setting >= 110 && setting < (110 + STEPPER_COUNT))
-		{
-			setting -= 110;
-			g_settings.max_feed_rate[setting] = value;
-		}
-		else if (setting >= 120 && setting < (120 + STEPPER_COUNT))
-		{
-			setting -= 120;
-			g_settings.acceleration[setting] = value;
-		}
-		else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-		{
-			setting -= 130;
-			g_settings.max_distance[setting] = value;
-		}
-		else if (setting >= 130 && setting < (130 + AXIS_COUNT))
-		{
-			setting -= 130;
-			g_settings.max_distance[setting] = value;
-		}
+		default:
+			if (setting >= 100 && setting < (100 + AXIS_COUNT))
+			{
+				setting -= 100;
+				g_settings.step_per_mm[setting] = value;
+			}
+			else if (setting >= 110 && setting < (110 + AXIS_COUNT))
+			{
+				setting -= 110;
+				g_settings.max_feed_rate[setting] = value;
+			}
+			else if (setting >= 120 && setting < (120 + AXIS_COUNT))
+			{
+				setting -= 120;
+				g_settings.acceleration[setting] = value;
+			}
+			else if (setting >= 130 && setting < (130 + AXIS_COUNT))
+			{
+				setting -= 130;
+				g_settings.max_distance[setting] = value;
+			}
 #ifdef ENABLE_BACKLASH_COMPENSATION
-		else if (setting >= 140 && setting < (140 + STEPPER_COUNT))
-		{
-			setting -= 140;
-			g_settings.backlash_steps[setting] = value16;
-		}
+			else if (setting >= 140 && setting < (140 + AXIS_TO_STEPPERS))
+			{
+				setting -= 140;
+				g_settings.backlash_steps[setting] = value16;
+			}
 #endif
 #if PID_CONTROLLERS > 0
-		// kp ki and kd 0 -> 41, 42, 43
-		// kp ki and kd 1 -> 45, 46, 47, etc...
-		else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
-		{
-			uint8_t k = (setting & 0x03);
-			uint8_t pid = (setting >> 2) - 10;
-			// 3 is invalid index
-			if (k == 0x03)
+			// kp ki and kd 0 -> 41, 42, 43
+			// kp ki and kd 1 -> 45, 46, 47, etc...
+			else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
+			{
+				uint8_t k = (setting & 0x03);
+				uint8_t pid = (setting >> 2) - 10;
+				// 3 is invalid index
+				if (k == 0x03)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+				g_settings.pid_gain[pid][k] = value;
+			}
+#endif
+#if TOOL_COUNT > 0
+			else if (setting > 80 && setting <= (80 + TOOL_COUNT))
+			{
+				setting -= 81;
+				g_settings.tool_length_offset[setting] = value;
+			}
+#endif
+			else
 			{
 				return STATUS_INVALID_STATEMENT;
 			}
-			g_settings.pid_gain[pid][k] = value;
 		}
-#endif
-#if TOOL_COUNT > 0
-		else if (setting > 80 && setting <= (80 + TOOL_COUNT))
-		{
-			setting -= 81;
-			g_settings.tool_length_offset[setting] = value;
-		}
-#endif
-		else
+#ifdef ENABLE_SETTINGS_MODULES
+	}
+	else
+	{
+		setting_args_t extended_setting = {.id = id, .value = value};
+		if (EVENT_INVOKE(settings_change, &extended_setting))
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
-		break;
 	}
-
-#if !defined(ENABLE_EXTRA_SYSTEM_CMDS) && !defined(RAM_ONLY_SETTINGS)
-	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
-#ifdef ENABLE_SETTINGS_MODULES
-	EVENT_INVOKE(settings_change, NULL);
+#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
+	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 #endif
 
 	return result;
@@ -568,3 +635,13 @@ void settings_save_startup_gcode(uint16_t address)
 	mcu_eeprom_putc(address, crc);
 #endif
 }
+
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
+uint16_t settings_register_external_setting(uint8_t size)
+{
+	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;
+	uint16_t new_offset = setting_offset;
+	setting_offset += size + 1; // include crc
+	return new_offset;
+}
+#endif

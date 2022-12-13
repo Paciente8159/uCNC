@@ -25,6 +25,7 @@ extern "C"
 {
 #endif
 
+#include "motion_control.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -37,23 +38,7 @@ extern "C"
 #define PLANNER_MOTION_CONTINUOUS 128
 
 #define STATE_COPY_FLAG_MASK 0x1F
-typedef union
-	{
-		uint8_t reg;
-		struct
-		{
-			uint8_t feed_override : 1;
-#if TOOL_COUNT > 0
-			uint8_t spindle_running : 2;
-			uint8_t coolant : 2;
-			uint8_t coolant_override : 2;
-#else
-		uint8_t : 6; // unused
-#endif
-			uint8_t optimal : 1;
-			uint8_t backlash_comp : 1;
-		} bit;
-	} planner_flags_t;
+	typedef motion_flags_t planner_flags_t;
 
 	typedef struct planner_block_
 	{
@@ -62,9 +47,8 @@ typedef union
 #endif
 		uint8_t dirbits;
 		step_t steps[STEPPER_COUNT];
-		step_t total_steps;
 		uint8_t main_stepper;
-
+		float feed_conversion;
 		float entry_feed_sqr;
 		float entry_max_feed_sqr;
 		float feed_sqr;
@@ -74,7 +58,7 @@ typedef union
 #if TOOL_COUNT > 0
 		int16_t spindle;
 #endif
-		uint8_t action;
+		// uint8_t action;
 		planner_flags_t planner_flags;
 	} planner_block_t;
 
@@ -83,6 +67,7 @@ typedef union
 	bool planner_buffer_is_full(void);
 	bool planner_buffer_is_empty(void);
 	planner_block_t *planner_get_block(void);
+	planner_block_t *planner_get_last_block(void);
 	float planner_get_block_exit_speed_sqr(void);
 	float planner_get_block_top_speed(float exit_speed_sqr);
 #if TOOL_COUNT > 0
