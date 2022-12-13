@@ -65,7 +65,7 @@ static void set_coolant(uint8_t value)
 {
 // easy macro
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(LASER_PPI_AIR_ASSIST, NOPIN, value);
+	SET_COOLANT(LASER_PPI_AIR_ASSIST, UNDEF_PIN, value);
 #endif
 }
 

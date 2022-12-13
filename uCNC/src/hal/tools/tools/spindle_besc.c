@@ -119,7 +119,7 @@ static uint16_t get_speed(void)
 #ifdef SPINDLE_BESC_HAS_RPM_ENCODER
 	return encoder_get_rpm();
 #else
-#if SPINDLE_PWM >= 0
+#if ASSERT_PIN(SPINDLE_PWM)
 	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
 	return (uint16_t)lroundf(spindle);
 #else

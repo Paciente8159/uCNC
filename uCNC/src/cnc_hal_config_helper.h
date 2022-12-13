@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-#define NOPIN 0
+#define UNDEF_PIN 0
 #define ASSERT_PIN(X) (X > 0)
 #define ASSERT_PIN_EXTENDER(X) (X >= 0)
 
@@ -183,73 +183,73 @@ extern "C"
 #if ENCODERS > 0
 
 #if ENCODERS > 0
-#if (ENC0_PULSE < 0)
+#if (!ASSERT_PIN(ENC0_PULSE))
 #error "The ENC0 pulse pin is not defined"
 #endif
-#if (ENC0_DIR < 0)
+#if (!ASSERT_PIN(ENC0_DIR))
 #error "The ENC0 dir pin is not defined"
 #endif
 #define ENC0_MASK (1 << (ENC0_PULSE - DIN_PINS_OFFSET))
 #endif
 #if ENCODERS > 1
-#if (ENC1_PULSE < 0)
+#if (!ASSERT_PIN(ENC1_PULSE))
 #error "The ENC1 pulse pin is not defined"
 #endif
-#if (ENC1_DIR < 0)
+#if (!ASSERT_PIN(ENC1_DIR))
 #error "The ENC1 dir pin is not defined"
 #endif
 #define ENC1_MASK (1 << ENC1)
 #endif
 #if ENCODERS > 2
-#if (ENC2_PULSE < 0)
+#if (!ASSERT_PIN(ENC2_PULSE))
 #error "The ENC2 pulse pin is not defined"
 #endif
-#if (ENC2_DIR < 0)
+#if (!ASSERT_PIN(ENC2_DIR))
 #error "The ENC2 dir pin is not defined"
 #endif
 #define ENC2_MASK (1 << ENC2)
 #endif
 #if ENCODERS > 3
-#if (ENC3_PULSE < 0)
+#if (!ASSERT_PIN(ENC3_PULSE))
 #error "The ENC3 pulse pin is not defined"
 #endif
-#if (ENC3_DIR < 0)
+#if (!ASSERT_PIN(ENC3_DIR))
 #error "The ENC3 dir pin is not defined"
 #endif
 #define ENC3_MASK (1 << ENC3)
 #endif
 #if ENCODERS > 4
-#if (ENC4_PULSE < 0)
+#if (!ASSERT_PIN(ENC4_PULSE))
 #error "The ENC4 pulse pin is not defined"
 #endif
-#if (ENC4_DIR < 0)
+#if (!ASSERT_PIN(ENC4_DIR))
 #error "The ENC4 dir pin is not defined"
 #endif
 #define ENC4_MASK (1 << ENC4)
 #endif
 #if ENCODERS > 5
-#if (ENC5_PULSE < 0)
+#if (!ASSERT_PIN(ENC5_PULSE))
 #error "The ENC5 pulse pin is not defined"
 #endif
-#if (ENC5_DIR < 0)
+#if (!ASSERT_PIN(ENC5_DIR))
 #error "The ENC5 dir pin is not defined"
 #endif
 #define ENC5_MASK (1 << ENC5)
 #endif
 #if ENCODERS > 6
-#if (ENC6_PULSE < 0)
+#if (!ASSERT_PIN(ENC6_PULSE))
 #error "The ENC6 pulse pin is not defined"
 #endif
-#if (ENC6_DIR < 0)
+#if (!ASSERT_PIN(ENC6_DIR))
 #error "The ENC6 dir pin is not defined"
 #endif
 #define ENC6_MASK (1 << ENC6)
 #endif
 #if ENCODERS > 7
-#if (ENC7_PULSE < 0)
+#if (!ASSERT_PIN(ENC7_PULSE))
 #error "The ENC7 pulse pin is not defined"
 #endif
-#if (ENC7_DIR < 0)
+#if (!ASSERT_PIN(ENC7_DIR))
 #error "The ENC7 dir pin is not defined"
 #endif
 #define ENC7_MASK (1 << ENC7)
@@ -459,12 +459,12 @@ extern "C"
 #ifdef STEPPER0_HAS_TMC
 #if (STEPPER0_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER0_UART_TX < 0 || STEPPER0_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER0_UART_TX) || !ASSERT_PIN(STEPPER0_UART_RX))
 #undef STEPPER0_HAS_TMC
 #error "Stepper 0 undefined UART pins"
 #endif
 #elif (STEPPER0_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER0_UART_DO < 0 || STEPPER0_UART_DI < 0 || STEPPER0_UART_CLK < 0 || STEPPER0_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER0_UART_DO) || !ASSERT_PIN(STEPPER0_UART_DI) || !ASSERT_PIN(STEPPER0_UART_CLK) || !ASSERT_PIN(STEPPER0_UART_CS))
 #undef STEPPER0_HAS_TMC
 #error "Stepper 0 undefined SPI pins"
 #endif
@@ -473,12 +473,12 @@ extern "C"
 #ifdef STEPPER1_HAS_TMC
 #if (STEPPER1_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER1_UART_TX < 0 || STEPPER1_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER1_UART_TX) || !ASSERT_PIN(STEPPER1_UART_RX))
 #undef STEPPER1_HAS_TMC
 #error "Stepper 1 undefined UART pins"
 #endif
 #elif (STEPPER1_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER1_UART_DO < 0 || STEPPER1_UART_DI < 0 || STEPPER1_UART_CLK < 0 || STEPPER1_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER1_UART_DO) || !ASSERT_PIN(STEPPER1_UART_DI) || !ASSERT_PIN(STEPPER1_UART_CLK) || !ASSERT_PIN(STEPPER1_UART_CS))
 #undef STEPPER1_HAS_TMC
 #error "Stepper 1 undefined SPI pins"
 #endif
@@ -487,12 +487,12 @@ extern "C"
 #ifdef STEPPER2_HAS_TMC
 #if (STEPPER2_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER2_UART_TX < 0 || STEPPER2_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER2_UART_TX) || !ASSERT_PIN(STEPPER2_UART_RX))
 #undef STEPPER2_HAS_TMC
 #error "Stepper 2 undefined UART pins"
 #endif
 #elif (STEPPER2_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER2_UART_DO < 0 || STEPPER2_UART_DI < 0 || STEPPER2_UART_CLK < 0 || STEPPER2_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER2_UART_DO) || !ASSERT_PIN(STEPPER2_UART_DI) || !ASSERT_PIN(STEPPER2_UART_CLK) || !ASSERT_PIN(STEPPER2_UART_CS))
 #undef STEPPER2_HAS_TMC
 #error "Stepper 2 undefined SPI pins"
 #endif
@@ -501,12 +501,12 @@ extern "C"
 #ifdef STEPPER3_HAS_TMC
 #if (STEPPER3_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER3_UART_TX < 0 || STEPPER3_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER3_UART_TX) || !ASSERT_PIN(STEPPER3_UART_RX))
 #undef STEPPER3_HAS_TMC
 #error "Stepper 3 undefined UART pins"
 #endif
 #elif (STEPPER3_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER3_UART_DO < 0 || STEPPER3_UART_DI < 0 || STEPPER3_UART_CLK < 0 || STEPPER3_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER3_UART_DO) || !ASSERT_PIN(STEPPER3_UART_DI) || !ASSERT_PIN(STEPPER3_UART_CLK) || !ASSERT_PIN(STEPPER3_UART_CS))
 #undef STEPPER3_HAS_TMC
 #error "Stepper 3 undefined SPI pins"
 #endif
@@ -515,12 +515,12 @@ extern "C"
 #ifdef STEPPER4_HAS_TMC
 #if (STEPPER4_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER4_UART_TX < 0 || STEPPER4_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER4_UART_TX) || !ASSERT_PIN(STEPPER4_UART_RX))
 #undef STEPPER4_HAS_TMC
 #error "Stepper 4 undefined UART pins"
 #endif
 #elif (STEPPER4_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER4_UART_DO < 0 || STEPPER4_UART_DI < 0 || STEPPER4_UART_CLK < 0 || STEPPER4_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER4_UART_DO) || !ASSERT_PIN(STEPPER4_UART_DI) || !ASSERT_PIN(STEPPER4_UART_CLK) || !ASSERT_PIN(STEPPER4_UART_CS))
 #undef STEPPER4_HAS_TMC
 #error "Stepper 4 undefined SPI pins"
 #endif
@@ -529,12 +529,12 @@ extern "C"
 #ifdef STEPPER5_HAS_TMC
 #if (STEPPER5_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER5_UART_TX < 0 || STEPPER5_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER5_UART_TX) || !ASSERT_PIN(STEPPER5_UART_RX))
 #undef STEPPER5_HAS_TMC
 #error "Stepper 5 undefined UART pins"
 #endif
 #elif (STEPPER5_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER5_UART_DO < 0 || STEPPER5_UART_DI < 0 || STEPPER5_UART_CLK < 0 || STEPPER5_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER5_UART_DO) || !ASSERT_PIN(STEPPER5_UART_DI) || !ASSERT_PIN(STEPPER5_UART_CLK) || !ASSERT_PIN(STEPPER5_UART_CS))
 #undef STEPPER5_HAS_TMC
 #error "Stepper 5 undefined SPI pins"
 #endif
@@ -543,12 +543,12 @@ extern "C"
 #ifdef STEPPER6_HAS_TMC
 #if (STEPPER6_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER6_UART_TX < 0 || STEPPER6_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER6_UART_TX) || !ASSERT_PIN(STEPPER6_UART_RX))
 #undef STEPPER6_HAS_TMC
 #error "Stepper 6 undefined UART pins"
 #endif
 #elif (STEPPER6_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER6_UART_DO < 0 || STEPPER6_UART_DI < 0 || STEPPER6_UART_CLK < 0 || STEPPER6_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER6_UART_DO) || !ASSERT_PIN(STEPPER6_UART_DI) || !ASSERT_PIN(STEPPER6_UART_CLK) || !ASSERT_PIN(STEPPER6_UART_CS))
 #undef STEPPER6_HAS_TMC
 #error "Stepper 6 undefined SPI pins"
 #endif
@@ -557,12 +557,12 @@ extern "C"
 #ifdef STEPPER7_HAS_TMC
 #if (STEPPER7_TMC_INTERFACE == TMC_UART)
 // if driver uses uart set pins
-#if (STEPPER7_UART_TX < 0 || STEPPER7_UART_RX < 0)
+#if (!ASSERT_PIN(STEPPER7_UART_TX) || !ASSERT_PIN(STEPPER7_UART_RX))
 #undef STEPPER7_HAS_TMC
 #error "Stepper 7 undefined UART pins"
 #endif
 #elif (STEPPER7_TMC_INTERFACE == TMC_SPI)
-#if (STEPPER7_UART_DO < 0 || STEPPER7_UART_DI < 0 || STEPPER7_UART_CLK < 0 || STEPPER7_UART_CS < 0)
+#if (!ASSERT_PIN(STEPPER7_UART_DO) || !ASSERT_PIN(STEPPER7_UART_DI) || !ASSERT_PIN(STEPPER7_UART_CLK) || !ASSERT_PIN(STEPPER7_UART_CS))
 #undef STEPPER7_HAS_TMC
 #error "Stepper 7 undefined SPI pins"
 #endif
@@ -867,1077 +867,1077 @@ extern "C"
  * final pin cleaning and configuration
  **/
 #ifndef STEP0
-#define STEP0 -1
+#define STEP0 UNDEF_PIN
 #ifdef DIO1
 #undef DIO1
 #endif
-#define DIO1 -1
+#define DIO1 UNDEF_PIN
 #endif
 #ifndef STEP1
-#define STEP1 -2
+#define STEP1 UNDEF_PIN
 #ifdef DIO2
 #undef DIO2
 #endif
-#define DIO2 -2
+#define DIO2 UNDEF_PIN
 #endif
 #ifndef STEP2
-#define STEP2 -3
+#define STEP2 UNDEF_PIN
 #ifdef DIO3
 #undef DIO3
 #endif
-#define DIO3 -3
+#define DIO3 UNDEF_PIN
 #endif
 #ifndef STEP3
-#define STEP3 -4
+#define STEP3 UNDEF_PIN
 #ifdef DIO4
 #undef DIO4
 #endif
-#define DIO4 -4
+#define DIO4 UNDEF_PIN
 #endif
 #ifndef STEP4
-#define STEP4 -5
+#define STEP4 UNDEF_PIN
 #ifdef DIO5
 #undef DIO5
 #endif
-#define DIO5 -5
+#define DIO5 UNDEF_PIN
 #endif
 #ifndef STEP5
-#define STEP5 -6
+#define STEP5 UNDEF_PIN
 #ifdef DIO6
 #undef DIO6
 #endif
-#define DIO6 -6
+#define DIO6 UNDEF_PIN
 #endif
 #ifndef STEP6
-#define STEP6 -7
+#define STEP6 UNDEF_PIN
 #ifdef DIO7
 #undef DIO7
 #endif
-#define DIO7 -7
+#define DIO7 UNDEF_PIN
 #endif
 #ifndef STEP7
-#define STEP7 -8
+#define STEP7 UNDEF_PIN
 #ifdef DIO8
 #undef DIO8
 #endif
-#define DIO8 -8
+#define DIO8 UNDEF_PIN
 #endif
 #ifndef DIR0
-#define DIR0 -9
+#define DIR0 UNDEF_PIN
 #ifdef DIO9
 #undef DIO9
 #endif
-#define DIO9 -9
+#define DIO9 UNDEF_PIN
 #endif
 #ifndef DIR1
-#define DIR1 -10
+#define DIR1 UNDEF_PIN
 #ifdef DIO10
 #undef DIO10
 #endif
-#define DIO10 -10
+#define DIO10 UNDEF_PIN
 #endif
 #ifndef DIR2
-#define DIR2 -11
+#define DIR2 UNDEF_PIN
 #ifdef DIO11
 #undef DIO11
 #endif
-#define DIO11 -11
+#define DIO11 UNDEF_PIN
 #endif
 #ifndef DIR3
-#define DIR3 -12
+#define DIR3 UNDEF_PIN
 #ifdef DIO12
 #undef DIO12
 #endif
-#define DIO12 -12
+#define DIO12 UNDEF_PIN
 #endif
 #ifndef DIR4
-#define DIR4 -13
+#define DIR4 UNDEF_PIN
 #ifdef DIO13
 #undef DIO13
 #endif
-#define DIO13 -13
+#define DIO13 UNDEF_PIN
 #endif
 #ifndef DIR5
-#define DIR5 -14
+#define DIR5 UNDEF_PIN
 #ifdef DIO14
 #undef DIO14
 #endif
-#define DIO14 -14
+#define DIO14 UNDEF_PIN
 #endif
 #ifndef DIR6
-#define DIR6 -15
+#define DIR6 UNDEF_PIN
 #ifdef DIO15
 #undef DIO15
 #endif
-#define DIO15 -15
+#define DIO15 UNDEF_PIN
 #endif
 #ifndef DIR7
-#define DIR7 -16
+#define DIR7 UNDEF_PIN
 #ifdef DIO16
 #undef DIO16
 #endif
-#define DIO16 -16
+#define DIO16 UNDEF_PIN
 #endif
 #ifndef STEP0_EN
-#define STEP0_EN -17
+#define STEP0_EN UNDEF_PIN
 #ifdef DIO17
 #undef DIO17
 #endif
-#define DIO17 -17
+#define DIO17 UNDEF_PIN
 #endif
 #ifndef STEP1_EN
-#define STEP1_EN -18
+#define STEP1_EN UNDEF_PIN
 #ifdef DIO18
 #undef DIO18
 #endif
-#define DIO18 -18
+#define DIO18 UNDEF_PIN
 #endif
 #ifndef STEP2_EN
-#define STEP2_EN -19
+#define STEP2_EN UNDEF_PIN
 #ifdef DIO19
 #undef DIO19
 #endif
-#define DIO19 -19
+#define DIO19 UNDEF_PIN
 #endif
 #ifndef STEP3_EN
-#define STEP3_EN -20
+#define STEP3_EN UNDEF_PIN
 #ifdef DIO20
 #undef DIO20
 #endif
-#define DIO20 -20
+#define DIO20 UNDEF_PIN
 #endif
 #ifndef STEP4_EN
-#define STEP4_EN -21
+#define STEP4_EN UNDEF_PIN
 #ifdef DIO21
 #undef DIO21
 #endif
-#define DIO21 -21
+#define DIO21 UNDEF_PIN
 #endif
 #ifndef STEP5_EN
-#define STEP5_EN -22
+#define STEP5_EN UNDEF_PIN
 #ifdef DIO22
 #undef DIO22
 #endif
-#define DIO22 -22
+#define DIO22 UNDEF_PIN
 #endif
 #ifndef STEP6_EN
-#define STEP6_EN -23
+#define STEP6_EN UNDEF_PIN
 #ifdef DIO23
 #undef DIO23
 #endif
-#define DIO23 -23
+#define DIO23 UNDEF_PIN
 #endif
 #ifndef STEP7_EN
-#define STEP7_EN -24
+#define STEP7_EN UNDEF_PIN
 #ifdef DIO24
 #undef DIO24
 #endif
-#define DIO24 -24
+#define DIO24 UNDEF_PIN
 #endif
 #ifndef PWM0
-#define PWM0 -25
+#define PWM0 UNDEF_PIN
 #ifdef DIO25
 #undef DIO25
 #endif
-#define DIO25 -25
+#define DIO25 UNDEF_PIN
 #endif
 #ifndef PWM1
-#define PWM1 -26
+#define PWM1 UNDEF_PIN
 #ifdef DIO26
 #undef DIO26
 #endif
-#define DIO26 -26
+#define DIO26 UNDEF_PIN
 #endif
 #ifndef PWM2
-#define PWM2 -27
+#define PWM2 UNDEF_PIN
 #ifdef DIO27
 #undef DIO27
 #endif
-#define DIO27 -27
+#define DIO27 UNDEF_PIN
 #endif
 #ifndef PWM3
-#define PWM3 -28
+#define PWM3 UNDEF_PIN
 #ifdef DIO28
 #undef DIO28
 #endif
-#define DIO28 -28
+#define DIO28 UNDEF_PIN
 #endif
 #ifndef PWM4
-#define PWM4 -29
+#define PWM4 UNDEF_PIN
 #ifdef DIO29
 #undef DIO29
 #endif
-#define DIO29 -29
+#define DIO29 UNDEF_PIN
 #endif
 #ifndef PWM5
-#define PWM5 -30
+#define PWM5 UNDEF_PIN
 #ifdef DIO30
 #undef DIO30
 #endif
-#define DIO30 -30
+#define DIO30 UNDEF_PIN
 #endif
 #ifndef PWM6
-#define PWM6 -31
+#define PWM6 UNDEF_PIN
 #ifdef DIO31
 #undef DIO31
 #endif
-#define DIO31 -31
+#define DIO31 UNDEF_PIN
 #endif
 #ifndef PWM7
-#define PWM7 -32
+#define PWM7 UNDEF_PIN
 #ifdef DIO32
 #undef DIO32
 #endif
-#define DIO32 -32
+#define DIO32 UNDEF_PIN
 #endif
 #ifndef PWM8
-#define PWM8 -33
+#define PWM8 UNDEF_PIN
 #ifdef DIO33
 #undef DIO33
 #endif
-#define DIO33 -33
+#define DIO33 UNDEF_PIN
 #endif
 #ifndef PWM9
-#define PWM9 -34
+#define PWM9 UNDEF_PIN
 #ifdef DIO34
 #undef DIO34
 #endif
-#define DIO34 -34
+#define DIO34 UNDEF_PIN
 #endif
 #ifndef PWM10
-#define PWM10 -35
+#define PWM10 UNDEF_PIN
 #ifdef DIO35
 #undef DIO35
 #endif
-#define DIO35 -35
+#define DIO35 UNDEF_PIN
 #endif
 #ifndef PWM11
-#define PWM11 -36
+#define PWM11 UNDEF_PIN
 #ifdef DIO36
 #undef DIO36
 #endif
-#define DIO36 -36
+#define DIO36 UNDEF_PIN
 #endif
 #ifndef PWM12
-#define PWM12 -37
+#define PWM12 UNDEF_PIN
 #ifdef DIO37
 #undef DIO37
 #endif
-#define DIO37 -37
+#define DIO37 UNDEF_PIN
 #endif
 #ifndef PWM13
-#define PWM13 -38
+#define PWM13 UNDEF_PIN
 #ifdef DIO38
 #undef DIO38
 #endif
-#define DIO38 -38
+#define DIO38 UNDEF_PIN
 #endif
 #ifndef PWM14
-#define PWM14 -39
+#define PWM14 UNDEF_PIN
 #ifdef DIO39
 #undef DIO39
 #endif
-#define DIO39 -39
+#define DIO39 UNDEF_PIN
 #endif
 #ifndef PWM15
-#define PWM15 -40
+#define PWM15 UNDEF_PIN
 #ifdef DIO40
 #undef DIO40
 #endif
-#define DIO40 -40
+#define DIO40 UNDEF_PIN
 #endif
 #ifndef SERVO0
-#define SERVO0 -41
+#define SERVO0 UNDEF_PIN
 #ifdef DIO41
 #undef DIO41
 #endif
-#define DIO41 -41
+#define DIO41 UNDEF_PIN
 #endif
 #ifndef SERVO1
-#define SERVO1 -42
+#define SERVO1 UNDEF_PIN
 #ifdef DIO42
 #undef DIO42
 #endif
-#define DIO42 -42
+#define DIO42 UNDEF_PIN
 #endif
 #ifndef SERVO2
-#define SERVO2 -43
+#define SERVO2 UNDEF_PIN
 #ifdef DIO43
 #undef DIO43
 #endif
-#define DIO43 -43
+#define DIO43 UNDEF_PIN
 #endif
 #ifndef SERVO3
-#define SERVO3 -44
+#define SERVO3 UNDEF_PIN
 #ifdef DIO44
 #undef DIO44
 #endif
-#define DIO44 -44
+#define DIO44 UNDEF_PIN
 #endif
 #ifndef SERVO4
-#define SERVO4 -45
+#define SERVO4 UNDEF_PIN
 #ifdef DIO45
 #undef DIO45
 #endif
-#define DIO45 -45
+#define DIO45 UNDEF_PIN
 #endif
 #ifndef SERVO5
-#define SERVO5 -46
+#define SERVO5 UNDEF_PIN
 #ifdef DIO46
 #undef DIO46
 #endif
-#define DIO46 -46
+#define DIO46 UNDEF_PIN
 #endif
 #ifndef DOUT0
-#define DOUT0 -47
+#define DOUT0 UNDEF_PIN
 #ifdef DIO47
 #undef DIO47
 #endif
-#define DIO47 -47
+#define DIO47 UNDEF_PIN
 #endif
 #ifndef DOUT1
-#define DOUT1 -48
+#define DOUT1 UNDEF_PIN
 #ifdef DIO48
 #undef DIO48
 #endif
-#define DIO48 -48
+#define DIO48 UNDEF_PIN
 #endif
 #ifndef DOUT2
-#define DOUT2 -49
+#define DOUT2 UNDEF_PIN
 #ifdef DIO49
 #undef DIO49
 #endif
-#define DIO49 -49
+#define DIO49 UNDEF_PIN
 #endif
 #ifndef DOUT3
-#define DOUT3 -50
+#define DOUT3 UNDEF_PIN
 #ifdef DIO50
 #undef DIO50
 #endif
-#define DIO50 -50
+#define DIO50 UNDEF_PIN
 #endif
 #ifndef DOUT4
-#define DOUT4 -51
+#define DOUT4 UNDEF_PIN
 #ifdef DIO51
 #undef DIO51
 #endif
-#define DIO51 -51
+#define DIO51 UNDEF_PIN
 #endif
 #ifndef DOUT5
-#define DOUT5 -52
+#define DOUT5 UNDEF_PIN
 #ifdef DIO52
 #undef DIO52
 #endif
-#define DIO52 -52
+#define DIO52 UNDEF_PIN
 #endif
 #ifndef DOUT6
-#define DOUT6 -53
+#define DOUT6 UNDEF_PIN
 #ifdef DIO53
 #undef DIO53
 #endif
-#define DIO53 -53
+#define DIO53 UNDEF_PIN
 #endif
 #ifndef DOUT7
-#define DOUT7 -54
+#define DOUT7 UNDEF_PIN
 #ifdef DIO54
 #undef DIO54
 #endif
-#define DIO54 -54
+#define DIO54 UNDEF_PIN
 #endif
 #ifndef DOUT8
-#define DOUT8 -55
+#define DOUT8 UNDEF_PIN
 #ifdef DIO55
 #undef DIO55
 #endif
-#define DIO55 -55
+#define DIO55 UNDEF_PIN
 #endif
 #ifndef DOUT9
-#define DOUT9 -56
+#define DOUT9 UNDEF_PIN
 #ifdef DIO56
 #undef DIO56
 #endif
-#define DIO56 -56
+#define DIO56 UNDEF_PIN
 #endif
 #ifndef DOUT10
-#define DOUT10 -57
+#define DOUT10 UNDEF_PIN
 #ifdef DIO57
 #undef DIO57
 #endif
-#define DIO57 -57
+#define DIO57 UNDEF_PIN
 #endif
 #ifndef DOUT11
-#define DOUT11 -58
+#define DOUT11 UNDEF_PIN
 #ifdef DIO58
 #undef DIO58
 #endif
-#define DIO58 -58
+#define DIO58 UNDEF_PIN
 #endif
 #ifndef DOUT12
-#define DOUT12 -59
+#define DOUT12 UNDEF_PIN
 #ifdef DIO59
 #undef DIO59
 #endif
-#define DIO59 -59
+#define DIO59 UNDEF_PIN
 #endif
 #ifndef DOUT13
-#define DOUT13 -60
+#define DOUT13 UNDEF_PIN
 #ifdef DIO60
 #undef DIO60
 #endif
-#define DIO60 -60
+#define DIO60 UNDEF_PIN
 #endif
 #ifndef DOUT14
-#define DOUT14 -61
+#define DOUT14 UNDEF_PIN
 #ifdef DIO61
 #undef DIO61
 #endif
-#define DIO61 -61
+#define DIO61 UNDEF_PIN
 #endif
 #ifndef DOUT15
-#define DOUT15 -62
+#define DOUT15 UNDEF_PIN
 #ifdef DIO62
 #undef DIO62
 #endif
-#define DIO62 -62
+#define DIO62 UNDEF_PIN
 #endif
 #ifndef DOUT16
-#define DOUT16 -63
+#define DOUT16 UNDEF_PIN
 #ifdef DIO63
 #undef DIO63
 #endif
-#define DIO63 -63
+#define DIO63 UNDEF_PIN
 #endif
 #ifndef DOUT17
-#define DOUT17 -64
+#define DOUT17 UNDEF_PIN
 #ifdef DIO64
 #undef DIO64
 #endif
-#define DIO64 -64
+#define DIO64 UNDEF_PIN
 #endif
 #ifndef DOUT18
-#define DOUT18 -65
+#define DOUT18 UNDEF_PIN
 #ifdef DIO65
 #undef DIO65
 #endif
-#define DIO65 -65
+#define DIO65 UNDEF_PIN
 #endif
 #ifndef DOUT19
-#define DOUT19 -66
+#define DOUT19 UNDEF_PIN
 #ifdef DIO66
 #undef DIO66
 #endif
-#define DIO66 -66
+#define DIO66 UNDEF_PIN
 #endif
 #ifndef DOUT20
-#define DOUT20 -67
+#define DOUT20 UNDEF_PIN
 #ifdef DIO67
 #undef DIO67
 #endif
-#define DIO67 -67
+#define DIO67 UNDEF_PIN
 #endif
 #ifndef DOUT21
-#define DOUT21 -68
+#define DOUT21 UNDEF_PIN
 #ifdef DIO68
 #undef DIO68
 #endif
-#define DIO68 -68
+#define DIO68 UNDEF_PIN
 #endif
 #ifndef DOUT22
-#define DOUT22 -69
+#define DOUT22 UNDEF_PIN
 #ifdef DIO69
 #undef DIO69
 #endif
-#define DIO69 -69
+#define DIO69 UNDEF_PIN
 #endif
 #ifndef DOUT23
-#define DOUT23 -70
+#define DOUT23 UNDEF_PIN
 #ifdef DIO70
 #undef DIO70
 #endif
-#define DIO70 -70
+#define DIO70 UNDEF_PIN
 #endif
 #ifndef DOUT24
-#define DOUT24 -71
+#define DOUT24 UNDEF_PIN
 #ifdef DIO71
 #undef DIO71
 #endif
-#define DIO71 -71
+#define DIO71 UNDEF_PIN
 #endif
 #ifndef DOUT25
-#define DOUT25 -72
+#define DOUT25 UNDEF_PIN
 #ifdef DIO72
 #undef DIO72
 #endif
-#define DIO72 -72
+#define DIO72 UNDEF_PIN
 #endif
 #ifndef DOUT26
-#define DOUT26 -73
+#define DOUT26 UNDEF_PIN
 #ifdef DIO73
 #undef DIO73
 #endif
-#define DIO73 -73
+#define DIO73 UNDEF_PIN
 #endif
 #ifndef DOUT27
-#define DOUT27 -74
+#define DOUT27 UNDEF_PIN
 #ifdef DIO74
 #undef DIO74
 #endif
-#define DIO74 -74
+#define DIO74 UNDEF_PIN
 #endif
 #ifndef DOUT28
-#define DOUT28 -75
+#define DOUT28 UNDEF_PIN
 #ifdef DIO75
 #undef DIO75
 #endif
-#define DIO75 -75
+#define DIO75 UNDEF_PIN
 #endif
 #ifndef DOUT29
-#define DOUT29 -76
+#define DOUT29 UNDEF_PIN
 #ifdef DIO76
 #undef DIO76
 #endif
-#define DIO76 -76
+#define DIO76 UNDEF_PIN
 #endif
 #ifndef DOUT30
-#define DOUT30 -77
+#define DOUT30 UNDEF_PIN
 #ifdef DIO77
 #undef DIO77
 #endif
-#define DIO77 -77
+#define DIO77 UNDEF_PIN
 #endif
 #ifndef DOUT31
-#define DOUT31 -78
+#define DOUT31 UNDEF_PIN
 #ifdef DIO78
 #undef DIO78
 #endif
-#define DIO78 -78
+#define DIO78 UNDEF_PIN
 #endif
 #ifndef LIMIT_X
-#define LIMIT_X -100
+#define LIMIT_X UNDEF_PIN
 #ifdef DIO100
 #undef DIO100
 #endif
-#define DIO100 -100
+#define DIO100 UNDEF_PIN
 #endif
 #ifndef LIMIT_Y
-#define LIMIT_Y -101
+#define LIMIT_Y UNDEF_PIN
 #ifdef DIO101
 #undef DIO101
 #endif
-#define DIO101 -101
+#define DIO101 UNDEF_PIN
 #endif
 #ifndef LIMIT_Z
-#define LIMIT_Z -102
+#define LIMIT_Z UNDEF_PIN
 #ifdef DIO102
 #undef DIO102
 #endif
-#define DIO102 -102
+#define DIO102 UNDEF_PIN
 #endif
 #ifndef LIMIT_X2
-#define LIMIT_X2 -103
+#define LIMIT_X2 UNDEF_PIN
 #ifdef DIO103
 #undef DIO103
 #endif
-#define DIO103 -103
+#define DIO103 UNDEF_PIN
 #endif
 #ifndef LIMIT_Y2
-#define LIMIT_Y2 -104
+#define LIMIT_Y2 UNDEF_PIN
 #ifdef DIO104
 #undef DIO104
 #endif
-#define DIO104 -104
+#define DIO104 UNDEF_PIN
 #endif
 #ifndef LIMIT_Z2
-#define LIMIT_Z2 -105
+#define LIMIT_Z2 UNDEF_PIN
 #ifdef DIO105
 #undef DIO105
 #endif
-#define DIO105 -105
+#define DIO105 UNDEF_PIN
 #endif
 #ifndef LIMIT_A
-#define LIMIT_A -106
+#define LIMIT_A UNDEF_PIN
 #ifdef DIO106
 #undef DIO106
 #endif
-#define DIO106 -106
+#define DIO106 UNDEF_PIN
 #endif
 #ifndef LIMIT_B
-#define LIMIT_B -107
+#define LIMIT_B UNDEF_PIN
 #ifdef DIO107
 #undef DIO107
 #endif
-#define DIO107 -107
+#define DIO107 UNDEF_PIN
 #endif
 #ifndef LIMIT_C
-#define LIMIT_C -108
+#define LIMIT_C UNDEF_PIN
 #ifdef DIO108
 #undef DIO108
 #endif
-#define DIO108 -108
+#define DIO108 UNDEF_PIN
 #endif
 #ifndef PROBE
-#define PROBE -109
+#define PROBE UNDEF_PIN
 #ifdef DIO109
 #undef DIO109
 #endif
-#define DIO109 -109
+#define DIO109 UNDEF_PIN
 #endif
 #ifndef ESTOP
-#define ESTOP -110
+#define ESTOP UNDEF_PIN
 #ifdef DIO110
 #undef DIO110
 #endif
-#define DIO110 -110
+#define DIO110 UNDEF_PIN
 #endif
 #ifndef SAFETY_DOOR
-#define SAFETY_DOOR -111
+#define SAFETY_DOOR UNDEF_PIN
 #ifdef DIO111
 #undef DIO111
 #endif
-#define DIO111 -111
+#define DIO111 UNDEF_PIN
 #endif
 #ifndef FHOLD
-#define FHOLD -112
+#define FHOLD UNDEF_PIN
 #ifdef DIO112
 #undef DIO112
 #endif
-#define DIO112 -112
+#define DIO112 UNDEF_PIN
 #endif
 #ifndef CS_RES
-#define CS_RES -113
+#define CS_RES UNDEF_PIN
 #ifdef DIO113
 #undef DIO113
 #endif
-#define DIO113 -113
+#define DIO113 UNDEF_PIN
 #endif
 #ifndef ANALOG0
-#define ANALOG0 -114
+#define ANALOG0 UNDEF_PIN
 #ifdef DIO114
 #undef DIO114
 #endif
-#define DIO114 -114
+#define DIO114 UNDEF_PIN
 #endif
 #ifndef ANALOG1
-#define ANALOG1 -115
+#define ANALOG1 UNDEF_PIN
 #ifdef DIO115
 #undef DIO115
 #endif
-#define DIO115 -115
+#define DIO115 UNDEF_PIN
 #endif
 #ifndef ANALOG2
-#define ANALOG2 -116
+#define ANALOG2 UNDEF_PIN
 #ifdef DIO116
 #undef DIO116
 #endif
-#define DIO116 -116
+#define DIO116 UNDEF_PIN
 #endif
 #ifndef ANALOG3
-#define ANALOG3 -117
+#define ANALOG3 UNDEF_PIN
 #ifdef DIO117
 #undef DIO117
 #endif
-#define DIO117 -117
+#define DIO117 UNDEF_PIN
 #endif
 #ifndef ANALOG4
-#define ANALOG4 -118
+#define ANALOG4 UNDEF_PIN
 #ifdef DIO118
 #undef DIO118
 #endif
-#define DIO118 -118
+#define DIO118 UNDEF_PIN
 #endif
 #ifndef ANALOG5
-#define ANALOG5 -119
+#define ANALOG5 UNDEF_PIN
 #ifdef DIO119
 #undef DIO119
 #endif
-#define DIO119 -119
+#define DIO119 UNDEF_PIN
 #endif
 #ifndef ANALOG6
-#define ANALOG6 -120
+#define ANALOG6 UNDEF_PIN
 #ifdef DIO120
 #undef DIO120
 #endif
-#define DIO120 -120
+#define DIO120 UNDEF_PIN
 #endif
 #ifndef ANALOG7
-#define ANALOG7 -121
+#define ANALOG7 UNDEF_PIN
 #ifdef DIO121
 #undef DIO121
 #endif
-#define DIO121 -121
+#define DIO121 UNDEF_PIN
 #endif
 #ifndef ANALOG8
-#define ANALOG8 -122
+#define ANALOG8 UNDEF_PIN
 #ifdef DIO122
 #undef DIO122
 #endif
-#define DIO122 -122
+#define DIO122 UNDEF_PIN
 #endif
 #ifndef ANALOG9
-#define ANALOG9 -123
+#define ANALOG9 UNDEF_PIN
 #ifdef DIO123
 #undef DIO123
 #endif
-#define DIO123 -123
+#define DIO123 UNDEF_PIN
 #endif
 #ifndef ANALOG10
-#define ANALOG10 -124
+#define ANALOG10 UNDEF_PIN
 #ifdef DIO124
 #undef DIO124
 #endif
-#define DIO124 -124
+#define DIO124 UNDEF_PIN
 #endif
 #ifndef ANALOG11
-#define ANALOG11 -125
+#define ANALOG11 UNDEF_PIN
 #ifdef DIO125
 #undef DIO125
 #endif
-#define DIO125 -125
+#define DIO125 UNDEF_PIN
 #endif
 #ifndef ANALOG12
-#define ANALOG12 -126
+#define ANALOG12 UNDEF_PIN
 #ifdef DIO126
 #undef DIO126
 #endif
-#define DIO126 -126
+#define DIO126 UNDEF_PIN
 #endif
 #ifndef ANALOG13
-#define ANALOG13 -127
+#define ANALOG13 UNDEF_PIN
 #ifdef DIO127
 #undef DIO127
 #endif
-#define DIO127 -127
+#define DIO127 UNDEF_PIN
 #endif
 #ifndef ANALOG14
-#define ANALOG14 -128
+#define ANALOG14 UNDEF_PIN
 #ifdef DIO128
 #undef DIO128
 #endif
-#define DIO128 -128
+#define DIO128 UNDEF_PIN
 #endif
 #ifndef ANALOG15
-#define ANALOG15 -129
+#define ANALOG15 UNDEF_PIN
 #ifdef DIO129
 #undef DIO129
 #endif
-#define DIO129 -129
+#define DIO129 UNDEF_PIN
 #endif
 #ifndef DIN0
-#define DIN0 -130
+#define DIN0 UNDEF_PIN
 #ifdef DIO130
 #undef DIO130
 #endif
-#define DIO130 -130
+#define DIO130 UNDEF_PIN
 #endif
 #ifndef DIN1
-#define DIN1 -131
+#define DIN1 UNDEF_PIN
 #ifdef DIO131
 #undef DIO131
 #endif
-#define DIO131 -131
+#define DIO131 UNDEF_PIN
 #endif
 #ifndef DIN2
-#define DIN2 -132
+#define DIN2 UNDEF_PIN
 #ifdef DIO132
 #undef DIO132
 #endif
-#define DIO132 -132
+#define DIO132 UNDEF_PIN
 #endif
 #ifndef DIN3
-#define DIN3 -133
+#define DIN3 UNDEF_PIN
 #ifdef DIO133
 #undef DIO133
 #endif
-#define DIO133 -133
+#define DIO133 UNDEF_PIN
 #endif
 #ifndef DIN4
-#define DIN4 -134
+#define DIN4 UNDEF_PIN
 #ifdef DIO134
 #undef DIO134
 #endif
-#define DIO134 -134
+#define DIO134 UNDEF_PIN
 #endif
 #ifndef DIN5
-#define DIN5 -135
+#define DIN5 UNDEF_PIN
 #ifdef DIO135
 #undef DIO135
 #endif
-#define DIO135 -135
+#define DIO135 UNDEF_PIN
 #endif
 #ifndef DIN6
-#define DIN6 -136
+#define DIN6 UNDEF_PIN
 #ifdef DIO136
 #undef DIO136
 #endif
-#define DIO136 -136
+#define DIO136 UNDEF_PIN
 #endif
 #ifndef DIN7
-#define DIN7 -137
+#define DIN7 UNDEF_PIN
 #ifdef DIO137
 #undef DIO137
 #endif
-#define DIO137 -137
+#define DIO137 UNDEF_PIN
 #endif
 #ifndef DIN8
-#define DIN8 -138
+#define DIN8 UNDEF_PIN
 #ifdef DIO138
 #undef DIO138
 #endif
-#define DIO138 -138
+#define DIO138 UNDEF_PIN
 #endif
 #ifndef DIN9
-#define DIN9 -139
+#define DIN9 UNDEF_PIN
 #ifdef DIO139
 #undef DIO139
 #endif
-#define DIO139 -139
+#define DIO139 UNDEF_PIN
 #endif
 #ifndef DIN10
-#define DIN10 -140
+#define DIN10 UNDEF_PIN
 #ifdef DIO140
 #undef DIO140
 #endif
-#define DIO140 -140
+#define DIO140 UNDEF_PIN
 #endif
 #ifndef DIN11
-#define DIN11 -141
+#define DIN11 UNDEF_PIN
 #ifdef DIO141
 #undef DIO141
 #endif
-#define DIO141 -141
+#define DIO141 UNDEF_PIN
 #endif
 #ifndef DIN12
-#define DIN12 -142
+#define DIN12 UNDEF_PIN
 #ifdef DIO142
 #undef DIO142
 #endif
-#define DIO142 -142
+#define DIO142 UNDEF_PIN
 #endif
 #ifndef DIN13
-#define DIN13 -143
+#define DIN13 UNDEF_PIN
 #ifdef DIO143
 #undef DIO143
 #endif
-#define DIO143 -143
+#define DIO143 UNDEF_PIN
 #endif
 #ifndef DIN14
-#define DIN14 -144
+#define DIN14 UNDEF_PIN
 #ifdef DIO144
 #undef DIO144
 #endif
-#define DIO144 -144
+#define DIO144 UNDEF_PIN
 #endif
 #ifndef DIN15
-#define DIN15 -145
+#define DIN15 UNDEF_PIN
 #ifdef DIO145
 #undef DIO145
 #endif
-#define DIO145 -145
+#define DIO145 UNDEF_PIN
 #endif
 #ifndef DIN16
-#define DIN16 -146
+#define DIN16 UNDEF_PIN
 #ifdef DIO146
 #undef DIO146
 #endif
-#define DIO146 -146
+#define DIO146 UNDEF_PIN
 #endif
 #ifndef DIN17
-#define DIN17 -147
+#define DIN17 UNDEF_PIN
 #ifdef DIO147
 #undef DIO147
 #endif
-#define DIO147 -147
+#define DIO147 UNDEF_PIN
 #endif
 #ifndef DIN18
-#define DIN18 -148
+#define DIN18 UNDEF_PIN
 #ifdef DIO148
 #undef DIO148
 #endif
-#define DIO148 -148
+#define DIO148 UNDEF_PIN
 #endif
 #ifndef DIN19
-#define DIN19 -149
+#define DIN19 UNDEF_PIN
 #ifdef DIO149
 #undef DIO149
 #endif
-#define DIO149 -149
+#define DIO149 UNDEF_PIN
 #endif
 #ifndef DIN20
-#define DIN20 -150
+#define DIN20 UNDEF_PIN
 #ifdef DIO150
 #undef DIO150
 #endif
-#define DIO150 -150
+#define DIO150 UNDEF_PIN
 #endif
 #ifndef DIN21
-#define DIN21 -151
+#define DIN21 UNDEF_PIN
 #ifdef DIO151
 #undef DIO151
 #endif
-#define DIO151 -151
+#define DIO151 UNDEF_PIN
 #endif
 #ifndef DIN22
-#define DIN22 -152
+#define DIN22 UNDEF_PIN
 #ifdef DIO152
 #undef DIO152
 #endif
-#define DIO152 -152
+#define DIO152 UNDEF_PIN
 #endif
 #ifndef DIN23
-#define DIN23 -153
+#define DIN23 UNDEF_PIN
 #ifdef DIO153
 #undef DIO153
 #endif
-#define DIO153 -153
+#define DIO153 UNDEF_PIN
 #endif
 #ifndef DIN24
-#define DIN24 -154
+#define DIN24 UNDEF_PIN
 #ifdef DIO154
 #undef DIO154
 #endif
-#define DIO154 -154
+#define DIO154 UNDEF_PIN
 #endif
 #ifndef DIN25
-#define DIN25 -155
+#define DIN25 UNDEF_PIN
 #ifdef DIO155
 #undef DIO155
 #endif
-#define DIO155 -155
+#define DIO155 UNDEF_PIN
 #endif
 #ifndef DIN26
-#define DIN26 -156
+#define DIN26 UNDEF_PIN
 #ifdef DIO156
 #undef DIO156
 #endif
-#define DIO156 -156
+#define DIO156 UNDEF_PIN
 #endif
 #ifndef DIN27
-#define DIN27 -157
+#define DIN27 UNDEF_PIN
 #ifdef DIO157
 #undef DIO157
 #endif
-#define DIO157 -157
+#define DIO157 UNDEF_PIN
 #endif
 #ifndef DIN28
-#define DIN28 -158
+#define DIN28 UNDEF_PIN
 #ifdef DIO158
 #undef DIO158
 #endif
-#define DIO158 -158
+#define DIO158 UNDEF_PIN
 #endif
 #ifndef DIN29
-#define DIN29 -159
+#define DIN29 UNDEF_PIN
 #ifdef DIO159
 #undef DIO159
 #endif
-#define DIO159 -159
+#define DIO159 UNDEF_PIN
 #endif
 #ifndef DIN30
-#define DIN30 -160
+#define DIN30 UNDEF_PIN
 #ifdef DIO160
 #undef DIO160
 #endif
-#define DIO160 -160
+#define DIO160 UNDEF_PIN
 #endif
 #ifndef DIN31
-#define DIN31 -161
+#define DIN31 UNDEF_PIN
 #ifdef DIO161
 #undef DIO161
 #endif
-#define DIO161 -161
+#define DIO161 UNDEF_PIN
 #endif
 #ifndef TX
-#define TX -200
+#define TX UNDEF_PIN
 #ifdef DIO200
 #undef DIO200
 #endif
-#define DIO200 -200
+#define DIO200 UNDEF_PIN
 #endif
 #ifndef RX
-#define RX -201
+#define RX UNDEF_PIN
 #ifdef DIO201
 #undef DIO201
 #endif
-#define DIO201 -201
+#define DIO201 UNDEF_PIN
 #endif
 #ifndef USB_DM
-#define USB_DM -202
+#define USB_DM UNDEF_PIN
 #ifdef DIO202
 #undef DIO202
 #endif
-#define DIO202 -202
+#define DIO202 UNDEF_PIN
 #endif
 #ifndef USB_DP
-#define USB_DP -203
+#define USB_DP UNDEF_PIN
 #ifdef DIO203
 #undef DIO203
 #endif
-#define DIO203 -203
+#define DIO203 UNDEF_PIN
 #endif
 #ifndef SPI_CLK
-#define SPI_CLK -204
+#define SPI_CLK UNDEF_PIN
 #ifdef DIO204
 #undef DIO204
 #endif
-#define DIO204 -204
+#define DIO204 UNDEF_PIN
 #endif
 #ifndef SPI_SDI
-#define SPI_SDI -205
+#define SPI_SDI UNDEF_PIN
 #ifdef DIO205
 #undef DIO205
 #endif
-#define DIO205 -205
+#define DIO205 UNDEF_PIN
 #endif
 #ifndef SPI_SDO
-#define SPI_SDO -206
+#define SPI_SDO UNDEF_PIN
 #ifdef DIO206
 #undef DIO206
 #endif
-#define DIO206 -206
+#define DIO206 UNDEF_PIN
 #endif
 #ifndef SPI_CS
-#define SPI_CS -207
+#define SPI_CS UNDEF_PIN
 #ifdef DIO207
 #undef DIO207
 #endif
-#define DIO207 -207
+#define DIO207 UNDEF_PIN
 #endif
 #ifndef I2C_SCL
-#define I2C_SCL -208
+#define I2C_SCL UNDEF_PIN
 #ifdef DIO208
 #undef DIO208
 #endif
-#define DIO208 -208
+#define DIO208 UNDEF_PIN
 #endif
 #ifndef I2C_SDA
-#define I2C_SDA -209
+#define I2C_SDA UNDEF_PIN
 #ifdef DIO209
 #undef DIO209
 #endif
-#define DIO209 -209
+#define DIO209 UNDEF_PIN
 #endif
 
 	// if the pins are undefined turn on option
-#if (ESTOP < 0 && SAFETY_DOOR < 0 && FHOLD < 0 && CS_RES < 0 && !defined(DISABLE_ALL_CONTROLS))
+#if (!ASSERT_PIN(ESTOP) && !ASSERT_PIN(SAFETY_DOOR) && !ASSERT_PIN(FHOLD) && !ASSERT_PIN(CS_RES) && !defined(DISABLE_ALL_CONTROLS))
 #define DISABLE_ALL_CONTROLS
 #endif
 
-#if (ESTOP < 0)
+#if (!ASSERT_PIN(ESTOP))
 #define ESTOP_INV_MASK 0
 #else
 #define ESTOP_INV_MASK 1
 #endif
-#if (SAFETY_DOOR < 0)
+#if (!ASSERT_PIN(SAFETY_DOOR))
 #define SAFETY_DOOR_INV_MASK 0
 #else
 #define SAFETY_DOOR_INV_MASK 2
 #endif
-#if (FHOLD < 0)
+#if (!ASSERT_PIN(FHOLD))
 #define FHOLD_INV_MASK 0
 #else
 #define FHOLD_INV_MASK 4
 #endif
-#if (CS_RES < 0)
+#if (!ASSERT_PIN(CS_RES))
 #define CS_RES_INV_MASK 0
 #else
 #define CS_RES_INV_MASK 8
@@ -1945,52 +1945,52 @@ extern "C"
 
 #define CONTROLS_INV_MASK (ESTOP_INV_MASK | SAFETY_DOOR_INV_MASK | FHOLD_INV_MASK | CS_RES_INV_MASK)
 
-#if (LIMIT_X < 0 && LIMIT_X2 < 0 && LIMIT_Y < 0 && LIMIT_Y2 < 0 && LIMIT_Z < 0 && LIMIT_Z2 < 0 && LIMIT_A < 0 && LIMIT_B < 0 && LIMIT_C < 0 && !defined(DISABLE_ALL_LIMITS))
+#if (!ASSERT_PIN(LIMIT_X) && !ASSERT_PIN(LIMIT_X2) && !ASSERT_PIN(LIMIT_Y) && !ASSERT_PIN(LIMIT_Y2) && !ASSERT_PIN(LIMIT_Z) && !ASSERT_PIN(LIMIT_Z2) && !ASSERT_PIN(LIMIT_A) && !ASSERT_PIN(LIMIT_B) && !ASSERT_PIN(LIMIT_C) && !defined(DISABLE_ALL_LIMITS))
 #define DISABLE_ALL_LIMITS
 #endif
 
-#if (LIMIT_X < 0)
+#if (!ASSERT_PIN(LIMIT_X))
 #define LIMIT_X_INV_MASK 0
 #else
 #define LIMIT_X_INV_MASK 1
 #endif
-#if (LIMIT_Y < 0)
+#if (!ASSERT_PIN(LIMIT_Y))
 #define LIMIT_Y_INV_MASK 0
 #else
 #define LIMIT_Y_INV_MASK 2
 #endif
-#if (LIMIT_Z < 0)
+#if (!ASSERT_PIN(LIMIT_Z))
 #define LIMIT_Z_INV_MASK 0
 #else
 #define LIMIT_Z_INV_MASK 4
 #endif
-#if (LIMIT_A < 0)
+#if (!ASSERT_PIN(LIMIT_A))
 #define LIMIT_A_INV_MASK 0
 #else
 #define LIMIT_A_INV_MASK 8
 #endif
-#if (LIMIT_B < 0)
+#if (!ASSERT_PIN(LIMIT_B))
 #define LIMIT_B_INV_MASK 0
 #else
 #define LIMIT_B_INV_MASK 16
 #endif
-#if (LIMIT_C < 0)
+#if (!ASSERT_PIN(LIMIT_C))
 #define LIMIT_C_INV_MASK 0
 #else
 #define LIMIT_C_INV_MASK 32
 #endif
 
-#if (LIMIT_X2 < 0)
+#if (!ASSERT_PIN(LIMIT_X2))
 #define LIMIT_X2_INV_MASK 0
 #else
 #define LIMIT_X2_INV_MASK 1
 #endif
-#if (LIMIT_Y2 < 0)
+#if (!ASSERT_PIN(LIMIT_Y2))
 #define LIMIT_Y2_INV_MASK 0
 #else
 #define LIMIT_Y2_INV_MASK 2
 #endif
-#if (LIMIT_Z2 < 0)
+#if (!ASSERT_PIN(LIMIT_Z2))
 #define LIMIT_Z2_INV_MASK 0
 #else
 #define LIMIT_Z2_INV_MASK 4
@@ -1999,42 +1999,42 @@ extern "C"
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
-#if ((DIN0 < 0) && defined(DIN0_ISR))
+#if ((!ASSERT_PIN(DIN0)) && defined(DIN0_ISR))
 #define DIN0_MASK 0
 #else
 #define DIN0_MASK 1
 #endif
-#if ((DIN1 < 0) && defined(DIN1_ISR))
+#if ((!ASSERT_PIN(DIN1)) && defined(DIN1_ISR))
 #define DIN1_MASK 0
 #else
 #define DIN1_MASK 2
 #endif
-#if ((DIN2 < 0) && defined(DIN2_ISR))
+#if ((!ASSERT_PIN(DIN2)) && defined(DIN2_ISR))
 #define DIN2_MASK 0
 #else
 #define DIN2_MASK 4
 #endif
-#if ((DIN3 < 0) && defined(DIN3_ISR))
+#if ((!ASSERT_PIN(DIN3)) && defined(DIN3_ISR))
 #define DIN3_MASK 0
 #else
 #define DIN3_MASK 8
 #endif
-#if ((DIN4 < 0) && defined(DIN4_ISR))
+#if ((!ASSERT_PIN(DIN4)) && defined(DIN4_ISR))
 #define DIN4_MASK 0
 #else
 #define DIN4_MASK 16
 #endif
-#if ((DIN5 < 0) && defined(DIN5_ISR))
+#if ((!ASSERT_PIN(DIN5)) && defined(DIN5_ISR))
 #define DIN5_MASK 0
 #else
 #define DIN5_MASK 32
 #endif
-#if ((DIN6 < 0) && defined(DIN6_ISR))
+#if ((!ASSERT_PIN(DIN6)) && defined(DIN6_ISR))
 #define DIN6_MASK 0
 #else
 #define DIN6_MASK 64
 #endif
-#if ((DIN7 < 0) && defined(DIN7_ISR))
+#if ((!ASSERT_PIN(DIN7)) && defined(DIN7_ISR))
 #define DIN7_MASK 0
 #else
 #define DIN7_MASK 128
@@ -2042,7 +2042,7 @@ extern "C"
 
 #define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
 
-#if (PROBE < 0 && !defined(DISABLE_PROBE))
+#if (!ASSERT_PIN(PROBE) && !defined(DISABLE_PROBE))
 #define DISABLE_PROBE
 #endif
 
@@ -2128,13 +2128,13 @@ typedef uint16_t step_t;
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #error "Delta does not support dual drive axis"
 #endif
-#if ((LIMIT_X < 0) && (LIMIT_X2 < 0))
+#if ((!ASSERT_PIN(LIMIT_X)) && (!ASSERT_PIN(LIMIT_X2)))
 #error "Delta requires at least one X axis endstop"
 #endif
-#if ((LIMIT_Y < 0) && (LIMIT_Y2 < 0))
+#if ((!ASSERT_PIN(LIMIT_Y)) && (!ASSERT_PIN(LIMIT_Y2)))
 #error "Delta requires at least one Y axis endstop"
 #endif
-#if ((LIMIT_Z < 0) && (LIMIT_Z2 < 0))
+#if ((!ASSERT_PIN(LIMIT_Z)) && (!ASSERT_PIN(LIMIT_Z2)))
 #error "Delta requires at least one Z axis endstop"
 #endif
 #endif

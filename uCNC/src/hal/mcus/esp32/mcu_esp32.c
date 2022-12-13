@@ -424,22 +424,22 @@ IRAM_ATTR void servo_reset(void *p)
 {
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	mcu_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	mcu_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	mcu_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	mcu_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	mcu_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	mcu_clear_output(SERVO5);
 #endif
 #ifdef IC74HC595_HAS_SERVOS
@@ -536,7 +536,7 @@ void mcu_rtc_task(void *arg)
 #if SERVOS_MASK > 0
 		switch (servo_counter)
 		{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 		case SERVO0_FRAME:
 			mcu_set_output(SERVO0);
 			start_servo_timeout(mcu_servos[0]);
@@ -545,7 +545,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 		case SERVO1_FRAME:
 			mcu_set_output(SERVO1);
 			start_servo_timeout(mcu_servos[1]);
@@ -554,7 +554,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 		case SERVO2_FRAME:
 			mcu_set_output(SERVO2);
 			start_servo_timeout(mcu_servos[2]);
@@ -563,7 +563,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 		case SERVO3_FRAME:
 			mcu_set_output(SERVO3);
 			start_servo_timeout(mcu_servos[3]);
@@ -572,7 +572,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 		case SERVO4_FRAME:
 			mcu_set_output(SERVO4);
 			start_servo_timeout(mcu_servos[4]);
@@ -581,7 +581,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 		case SERVO5_FRAME:
 			mcu_set_output(SERVO5);
 			start_servo_timeout(mcu_servos[5]);
