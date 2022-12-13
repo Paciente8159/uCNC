@@ -214,7 +214,7 @@ bool cnc_dotasks(void)
 		return !cnc_get_exec_state(EXEC_KILL | EXEC_HOMING);
 	}
 
-	//µCNC already in error loop. No point in sending the alarms
+	// µCNC already in error loop. No point in sending the alarms
 	if (cnc_state.loop_state == LOOP_ERROR_RESET)
 	{
 		return !cnc_get_exec_state(EXEC_KILL);
@@ -303,6 +303,14 @@ void cnc_alarm(int8_t code)
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
 	cnc_state.alarm = code;
+#ifdef ENABLE_IO_ALARM_DEBUG
+	protocol_send_string(MSG_START);
+	protocol_send_string(__romstr__("LIMITS:"));
+	serial_print_int(io_alarm_limits);
+	protocol_send_string(__romstr__("CONTROLS:"));
+	serial_print_int(io_alarm_controls);
+	protocol_send_string(MSG_END);
+#endif
 }
 
 bool cnc_has_alarm()

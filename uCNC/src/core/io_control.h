@@ -82,6 +82,11 @@ extern "C"
 	// DECL_EVENT_HANDLER(set_output);
 #endif
 
+#ifdef ENABLE_IO_ALARM_DEBUG
+extern uint8_t io_alarm_limits;
+extern uint8_t io_alarm_controls;
+#endif
+
 #ifdef __cplusplus
 }
 #endif

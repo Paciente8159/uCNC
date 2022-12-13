@@ -27,6 +27,11 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
+#ifdef ENABLE_IO_ALARM_DEBUG
+uint8_t io_alarm_limits;
+uint8_t io_alarm_controls;
+#endif
+
 #ifdef ENABLE_IO_MODULES
 // event_input_change_handler
 WEAK_EVENT_HANDLER(input_change)
@@ -159,6 +164,9 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #endif
 			itp_stop();
 			cnc_set_exec_state(EXEC_HALT);
+#ifdef ENABLE_IO_ALARM_DEBUG
+			io_alarm_limits = limits;
+#endif
 		}
 	}
 
@@ -185,6 +193,9 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	{
 		cnc_set_exec_state(EXEC_KILL);
 		cnc_stop();
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
 		return; // forces exit
 	}
 #endif
@@ -193,6 +204,9 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	{
 		// safety door activates hold simultaneously to start the controlled stop
 		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+#ifdef ENABLE_IO_ALARM_DEBUG
+		io_alarm_controls = controls;
+#endif
 	}
 #endif
 #if !(FHOLD < 0)
