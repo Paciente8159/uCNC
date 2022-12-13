@@ -699,7 +699,7 @@ extern "C"
 #define STEP_DUAL1_MASK (1 << DUAL_DRIVE1_STEPPER)
 #endif
 
-//axis2 and 3 are only replicating axis (no self-squaring)
+// axis2 and 3 are only replicating axis (no self-squaring)
 
 // dual axis2
 #ifdef DUAL_DRIVE2_AXIS
@@ -1999,45 +1999,45 @@ extern "C"
 #define LIMITS_INV_MASK (LIMIT_X_INV_MASK | LIMIT_Y_INV_MASK | LIMIT_Z_INV_MASK | LIMIT_A_INV_MASK | LIMIT_B_INV_MASK | LIMIT_B_INV_MASK)
 #define LIMITS_DUAL_INV_MASK (LIMIT_X2_INV_MASK | LIMIT_Y2_INV_MASK | LIMIT_Z2_INV_MASK)
 
-#if ((!ASSERT_PIN(DIN0)) && defined(DIN0_ISR))
-#define DIN0_MASK 0
-#else
+#if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
 #define DIN0_MASK 1
-#endif
-#if ((!ASSERT_PIN(DIN1)) && defined(DIN1_ISR))
-#define DIN1_MASK 0
 #else
+#define DIN0_MASK 0
+#endif
+#if (ASSERT_PIN(DIN1) && defined(DIN1_ISR))
 #define DIN1_MASK 2
-#endif
-#if ((!ASSERT_PIN(DIN2)) && defined(DIN2_ISR))
-#define DIN2_MASK 0
 #else
+#define DIN1_MASK 0
+#endif
+#if (ASSERT_PIN(DIN2) && defined(DIN2_ISR))
 #define DIN2_MASK 4
-#endif
-#if ((!ASSERT_PIN(DIN3)) && defined(DIN3_ISR))
-#define DIN3_MASK 0
 #else
+#define DIN2_MASK 0
+#endif
+#if (ASSERT_PIN(DIN3) && defined(DIN3_ISR))
 #define DIN3_MASK 8
-#endif
-#if ((!ASSERT_PIN(DIN4)) && defined(DIN4_ISR))
-#define DIN4_MASK 0
 #else
+#define DIN3_MASK 0
+#endif
+#if (ASSERT_PIN(DIN4) && defined(DIN4_ISR))
 #define DIN4_MASK 16
-#endif
-#if ((!ASSERT_PIN(DIN5)) && defined(DIN5_ISR))
-#define DIN5_MASK 0
 #else
+#define DIN4_MASK 0
+#endif
+#if (ASSERT_PIN(DIN5) && defined(DIN5_ISR))
 #define DIN5_MASK 32
-#endif
-#if ((!ASSERT_PIN(DIN6)) && defined(DIN6_ISR))
-#define DIN6_MASK 0
 #else
+#define DIN5_MASK 0
+#endif
+#if (ASSERT_PIN(DIN6) && defined(DIN6_ISR))
 #define DIN6_MASK 64
-#endif
-#if ((!ASSERT_PIN(DIN7)) && defined(DIN7_ISR))
-#define DIN7_MASK 0
 #else
+#define DIN6_MASK 0
+#endif
+#if (ASSERT_PIN(DIN7) && defined(DIN7_ISR))
 #define DIN7_MASK 128
+#else
+#define DIN7_MASK 0
 #endif
 
 #define DIN_ONCHANGE_MASK (DIN0_MASK | DIN1_MASK | DIN2_MASK | DIN3_MASK | DIN4_MASK | DIN5_MASK | DIN6_MASK | DIN7_MASK)
