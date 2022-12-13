@@ -49,28 +49,28 @@ void set_speed(int16_t value)
 
 	if (value == 0)
 	{
-#if !(SPINDLE_RELAY_FWD < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
 		mcu_clear_output(SPINDLE_RELAY_FWD);
 #endif
-#if !(SPINDLE_RELAY_REV < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
 		mcu_clear_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else if (value < 0)
 	{
-#if !(SPINDLE_RELAY_FWD < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
 		mcu_clear_output(SPINDLE_RELAY_FWD);
 #endif
-#if !(SPINDLE_RELAY_REV < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
 		mcu_set_output(SPINDLE_RELAY_REV);
 #endif
 	}
 	else
 	{
-#if !(SPINDLE_RELAY_REV < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_REV)
 		mcu_clear_output(SPINDLE_RELAY_REV);
 #endif
-#if !(SPINDLE_RELAY_FWD < 0)
+#if ASSERT_PIN(SPINDLE_RELAY_FWD)
 		mcu_set_output(SPINDLE_RELAY_FWD);
 #endif
 	}

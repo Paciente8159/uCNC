@@ -35,7 +35,7 @@
 static void startup_code(void)
 {
 // force laser mode
-#if !(LASER_PPI < 0)
+#if ASSERT_PIN(LASER_PPI)
 	mcu_config_output(LASER_PPI);
 #ifndef INVERT_LASER_PPI_LOGIC
 	mcu_clear_output(LASER_PPI);
@@ -49,7 +49,7 @@ static void startup_code(void)
 
 static void shutdown_code(void)
 {
-#if !(LASER_PPI < 0)
+#if ASSERT_PIN(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
 	mcu_clear_output(LASER_PPI);
 #else
@@ -65,7 +65,7 @@ static void set_coolant(uint8_t value)
 {
 // easy macro
 #ifdef ENABLE_COOLANT
-	SET_COOLANT(LASER_PPI_AIR_ASSIST, NOPIN, value);
+	SET_COOLANT(LASER_PPI_AIR_ASSIST, UNDEF_PIN, value);
 #endif
 }
 

@@ -105,97 +105,97 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 	if ((++pwm_counter) >> resolution)
 	{
 		uint8_t pwm_ref = pwm_counter << resolution;
-#if !(PWM0 < 0)
+#if ASSERT_PIN(PWM0)
 		if (pwm_ref > esp32_pwm[0])
 		{
 			mcu_clear_output(PWM0);
 		}
 #endif
-#if !(PWM1 < 0)
+#if ASSERT_PIN(PWM1)
 		if (pwm_ref > esp32_pwm[1])
 		{
 			mcu_clear_output(PWM1);
 		}
 #endif
-#if !(PWM2 < 0)
+#if ASSERT_PIN(PWM2)
 		if (pwm_ref > esp32_pwm[2])
 		{
 			mcu_clear_output(PWM2);
 		}
 #endif
-#if !(PWM3 < 0)
+#if ASSERT_PIN(PWM3)
 		if (pwm_ref > esp32_pwm[3])
 		{
 			mcu_clear_output(PWM3);
 		}
 #endif
-#if !(PWM4 < 0)
+#if ASSERT_PIN(PWM4)
 		if (pwm_ref > esp32_pwm[4])
 		{
 			mcu_clear_output(PWM4);
 		}
 #endif
-#if !(PWM5 < 0)
+#if ASSERT_PIN(PWM5)
 		if (pwm_ref > esp32_pwm[5])
 		{
 			mcu_clear_output(PWM5);
 		}
 #endif
-#if !(PWM6 < 0)
+#if ASSERT_PIN(PWM6)
 		if (pwm_ref > esp32_pwm[6])
 		{
 			mcu_clear_output(PWM6);
 		}
 #endif
-#if !(PWM7 < 0)
+#if ASSERT_PIN(PWM7)
 		if (pwm_ref > esp32_pwm[7])
 		{
 			mcu_clear_output(PWM7);
 		}
 #endif
-#if !(PWM8 < 0)
+#if ASSERT_PIN(PWM8)
 		if (pwm_ref > esp32_pwm[8])
 		{
 			mcu_clear_output(PWM8);
 		}
 #endif
-#if !(PWM9 < 0)
+#if ASSERT_PIN(PWM9)
 		if (pwm_ref > esp32_pwm[9])
 		{
 			mcu_clear_output(PWM9);
 		}
 #endif
-#if !(PWM10 < 0)
+#if ASSERT_PIN(PWM10)
 		if (pwm_ref > esp32_pwm[10])
 		{
 			mcu_clear_output(PWM10);
 		}
 #endif
-#if !(PWM11 < 0)
+#if ASSERT_PIN(PWM11)
 		if (pwm_ref > esp32_pwm[11])
 		{
 			mcu_clear_output(PWM11);
 		}
 #endif
-#if !(PWM12 < 0)
+#if ASSERT_PIN(PWM12)
 		if (pwm_ref > esp32_pwm[12])
 		{
 			mcu_clear_output(PWM12);
 		}
 #endif
-#if !(PWM13 < 0)
+#if ASSERT_PIN(PWM13)
 		if (pwm_ref > esp32_pwm[13])
 		{
 			mcu_clear_output(PWM13);
 		}
 #endif
-#if !(PWM14 < 0)
+#if ASSERT_PIN(PWM14)
 		if (pwm_ref > esp32_pwm[14])
 		{
 			mcu_clear_output(PWM14);
 		}
 #endif
-#if !(PWM15 < 0)
+#if ASSERT_PIN(PWM15)
 		if (pwm_ref > esp32_pwm[15])
 		{
 			mcu_clear_output(PWM15);
@@ -203,97 +203,97 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-#if !(PWM0_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM0_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[0])
 		{
 			pwm_mask &= ~(1 << 0);
 		}
 #endif
-#if !(PWM1_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM1_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[1])
 		{
 			pwm_mask &= ~(1 << 1);
 		}
 #endif
-#if !(PWM2_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM2_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[2])
 		{
 			pwm_mask &= ~(1 << 2);
 		}
 #endif
-#if !(PWM3_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM3_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[3])
 		{
 			pwm_mask &= ~(1 << 3);
 		}
 #endif
-#if !(PWM4_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM4_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[4])
 		{
 			pwm_mask &= ~(1 << 4);
 		}
 #endif
-#if !(PWM5_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM5_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[5])
 		{
 			pwm_mask &= ~(1 << 5);
 		}
 #endif
-#if !(PWM6_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM6_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[6])
 		{
 			pwm_mask &= ~(1 << 6);
 		}
 #endif
-#if !(PWM7_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM7_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[7])
 		{
 			pwm_mask &= ~(1 << 7);
 		}
 #endif
-#if !(PWM8_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM8_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[8])
 		{
 			pwm_mask &= ~(1 << 8);
 		}
 #endif
-#if !(PWM9_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM9_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[9])
 		{
 			pwm_mask &= ~(1 << 9);
 		}
 #endif
-#if !(PWM10_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM10_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[10])
 		{
 			pwm_mask &= ~(1 << 10);
 		}
 #endif
-#if !(PWM11_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM11_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[11])
 		{
 			pwm_mask &= ~(1 << 11);
 		}
 #endif
-#if !(PWM12_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM12_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[12])
 		{
 			pwm_mask &= ~(1 << 12);
 		}
 #endif
-#if !(PWM13_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM13_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[13])
 		{
 			pwm_mask &= ~(1 << 13);
 		}
 #endif
-#if !(PWM14_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM14_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[14])
 		{
 			pwm_mask &= ~(1 << 14);
 		}
 #endif
-#if !(PWM15_IO_OFFSET < 0)
+#if ASSERT_PIN_EXTENDER(PWM15_IO_OFFSET)
 		if (pwm_ref > esp32_pwm[15])
 		{
 			pwm_mask &= ~(1 << 15);
@@ -304,97 +304,97 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 	else
 	{
 		pwm_counter = 0;
-#if !(PWM0 < 0)
+#if ASSERT_PIN(PWM0)
 		if (esp32_pwm[0])
 		{
 			mcu_set_output(PWM0);
 		}
 #endif
-#if !(PWM1 < 0)
+#if ASSERT_PIN(PWM1)
 		if (esp32_pwm[1])
 		{
 			mcu_set_output(PWM1);
 		}
 #endif
-#if !(PWM2 < 0)
+#if ASSERT_PIN(PWM2)
 		if (esp32_pwm[2])
 		{
 			mcu_set_output(PWM2);
 		}
 #endif
-#if !(PWM3 < 0)
+#if ASSERT_PIN(PWM3)
 		if (esp32_pwm[3])
 		{
 			mcu_set_output(PWM3);
 		}
 #endif
-#if !(PWM4 < 0)
+#if ASSERT_PIN(PWM4)
 		if (esp32_pwm[4])
 		{
 			mcu_set_output(PWM4);
 		}
 #endif
-#if !(PWM5 < 0)
+#if ASSERT_PIN(PWM5)
 		if (esp32_pwm[5])
 		{
 			mcu_set_output(PWM5);
 		}
 #endif
-#if !(PWM6 < 0)
+#if ASSERT_PIN(PWM6)
 		if (esp32_pwm[6])
 		{
 			mcu_set_output(PWM6);
 		}
 #endif
-#if !(PWM7 < 0)
+#if ASSERT_PIN(PWM7)
 		if (esp32_pwm[7])
 		{
 			mcu_set_output(PWM7);
 		}
 #endif
-#if !(PWM8 < 0)
+#if ASSERT_PIN(PWM8)
 		if (esp32_pwm[8])
 		{
 			mcu_set_output(PWM8);
 		}
 #endif
-#if !(PWM9 < 0)
+#if ASSERT_PIN(PWM9)
 		if (esp32_pwm[9])
 		{
 			mcu_set_output(PWM9);
 		}
 #endif
-#if !(PWM10 < 0)
+#if ASSERT_PIN(PWM10)
 		if (esp32_pwm[10])
 		{
 			mcu_set_output(PWM10);
 		}
 #endif
-#if !(PWM11 < 0)
+#if ASSERT_PIN(PWM11)
 		if (esp32_pwm[11])
 		{
 			mcu_set_output(PWM11);
 		}
 #endif
-#if !(PWM12 < 0)
+#if ASSERT_PIN(PWM12)
 		if (esp32_pwm[12])
 		{
 			mcu_set_output(PWM12);
 		}
 #endif
-#if !(PWM13 < 0)
+#if ASSERT_PIN(PWM13)
 		if (esp32_pwm[13])
 		{
 			mcu_set_output(PWM13);
 		}
 #endif
-#if !(PWM14 < 0)
+#if ASSERT_PIN(PWM14)
 		if (esp32_pwm[14])
 		{
 			mcu_set_output(PWM14);
 		}
 #endif
-#if !(PWM15 < 0)
+#if ASSERT_PIN(PWM15)
 		if (esp32_pwm[15])
 		{
 			mcu_set_output(PWM15);
@@ -424,22 +424,22 @@ IRAM_ATTR void servo_reset(void *p)
 {
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	mcu_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	mcu_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	mcu_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	mcu_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	mcu_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	mcu_clear_output(SERVO5);
 #endif
 #ifdef IC74HC595_HAS_SERVOS
@@ -536,7 +536,7 @@ void mcu_rtc_task(void *arg)
 #if SERVOS_MASK > 0
 		switch (servo_counter)
 		{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 		case SERVO0_FRAME:
 			mcu_set_output(SERVO0);
 			start_servo_timeout(mcu_servos[0]);
@@ -545,7 +545,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 		case SERVO1_FRAME:
 			mcu_set_output(SERVO1);
 			start_servo_timeout(mcu_servos[1]);
@@ -554,7 +554,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 		case SERVO2_FRAME:
 			mcu_set_output(SERVO2);
 			start_servo_timeout(mcu_servos[2]);
@@ -563,7 +563,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 		case SERVO3_FRAME:
 			mcu_set_output(SERVO3);
 			start_servo_timeout(mcu_servos[3]);
@@ -572,7 +572,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 		case SERVO4_FRAME:
 			mcu_set_output(SERVO4);
 			start_servo_timeout(mcu_servos[4]);
@@ -581,7 +581,7 @@ void mcu_rtc_task(void *arg)
 #endif
 			break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 		case SERVO5_FRAME:
 			mcu_set_output(SERVO5);
 			start_servo_timeout(mcu_servos[5]);

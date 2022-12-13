@@ -445,13 +445,13 @@ extern "C"
  *
  * */
 #ifndef PWM_PINS_OFFSET
-#define PWM_PINS_OFFSET 24
+#define PWM_PINS_OFFSET 25
 #endif
 #ifndef SERVO_PINS_OFFSET
-#define SERVO_PINS_OFFSET 40
+#define SERVO_PINS_OFFSET 41
 #endif
 #ifndef DOUT_PINS_OFFSET
-#define DOUT_PINS_OFFSET 46
+#define DOUT_PINS_OFFSET 47
 #endif
 #ifndef ANALOG_PINS_OFFSET
 #define ANALOG_PINS_OFFSET 114

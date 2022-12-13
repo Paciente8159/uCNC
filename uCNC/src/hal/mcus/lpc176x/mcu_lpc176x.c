@@ -42,22 +42,22 @@ static uint8_t mcu_servos[6];
 
 static FORCEINLINE void mcu_clear_servos()
 {
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	mcu_clear_output(SERVO0);
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	mcu_clear_output(SERVO1);
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	mcu_clear_output(SERVO2);
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	mcu_clear_output(SERVO3);
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	mcu_clear_output(SERVO4);
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	mcu_clear_output(SERVO5);
 #endif
 }
@@ -70,38 +70,38 @@ static FORCEINLINE void mcu_set_servos()
 
 	switch (servo_counter)
 	{
-#if SERVO0 >= 0
+#if ASSERT_PIN(SERVO0)
 	case 0:
 		mcu_set_output(SERVO0);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[0]);
 
 		break;
 #endif
-#if SERVO1 >= 0
+#if ASSERT_PIN(SERVO1)
 	case 1:
 		mcu_set_output(SERVO1);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[1]);
 		break;
 #endif
-#if SERVO2 >= 0
+#if ASSERT_PIN(SERVO2)
 	case 2:
 		mcu_set_output(SERVO2);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[2]);
 		break;
 #endif
-#if SERVO3 >= 0
+#if ASSERT_PIN(SERVO3)
 	case 3:
 		mcu_set_output(SERVO3);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[3]);
 		break;
 #endif
-#if SERVO4 >= 0
+#if ASSERT_PIN(SERVO4)
 	case 4:
 		mcu_set_output(SERVO4);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[4]);
 		break;
 #endif
-#if SERVO5 >= 0
+#if ASSERT_PIN(SERVO5)
 	case 5:
 		mcu_set_output(SERVO5);
 		SERVO_TIMER_REG->MR1 = (SERVO_MIN + mcu_servos[5]);
