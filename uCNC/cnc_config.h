@@ -366,6 +366,14 @@ extern "C"
 // #define DISABLE_PROBE
 #endif
 
+/**
+ * 
+ * Uncomment to store the state of the limits, controls and probe states that tiggered and alarm
+ * This is useful to debug momentary faults
+ * 
+*/
+// #define ENABLE_IO_ALARM_DEBUG
+
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
