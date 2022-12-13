@@ -62,7 +62,7 @@
 #define VFD_HOLD_ON_ERROR
 #endif
 
-#if !(VFD_TX_PIN < 0) && !(VFD_RX_PIN < 0)
+#if ASSERT_PIN(VFD_TX_PIN) && ASSERT_PIN(VFD_RX_PIN)
 SOFTUART(vfd_uart, VFD_BAUDRATE, VFD_TX_PIN, VFD_RX_PIN)
 
 #define VFD_STOPPED 0

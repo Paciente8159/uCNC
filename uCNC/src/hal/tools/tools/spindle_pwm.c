@@ -55,7 +55,7 @@ static uint8_t speed;
 static void startup_code(void)
 {
 // force pwm mode
-#if !(SPINDLE_PWM < 0)
+#if ASSERT_PIN(SPINDLE_PWM)
 	mcu_config_pwm(SPINDLE_PWM, 1000);
 #endif
 }
@@ -66,7 +66,7 @@ static void set_speed(int16_t value)
 	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_PWM_DIR, value, invert);
 	speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
-#if !(SPINDLE_PWM_DIR < 0)
+#if ASSERT_PIN(SPINDLE_PWM_DIR)
 	if ((value <= 0))
 	{
 		mcu_clear_output(SPINDLE_PWM_DIR);
@@ -77,7 +77,7 @@ static void set_speed(int16_t value)
 	}
 #endif
 
-#if !(SPINDLE_PWM < 0)
+#if ASSERT_PIN(SPINDLE_PWM)
 	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #else
 	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
@@ -118,7 +118,7 @@ static void pid_update(int16_t value)
 	if (speed != 0)
 	{
 		uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
-#if !(SPINDLE_PWM < 0)
+#if ASSERT_PIN(SPINDLE_PWM)
 		mcu_set_pwm(SPINDLE_PWM, newval);
 #else
 		io_set_pwm(SPINDLE_PWM, newval);
@@ -128,7 +128,7 @@ static void pid_update(int16_t value)
 
 static int16_t pid_error(void)
 {
-#if (!(SPINDLE_FEEDBACK < 0) && !(SPINDLE_PWM < 0))
+#if (ASSERT_PIN(SPINDLE_FEEDBACK) && ASSERT_PIN(SPINDLE_PWM))
 	uint8_t reader = mcu_get_analog(ANALOG0);
 	return (speed - reader);
 #else

@@ -57,13 +57,13 @@ static uint8_t speed;
 static void startup_code(void)
 {
 // do whatever routine you need to do here to arm the ESC
-#if !(SPINDLE_BESC_POWER_RELAY < 0)
-#if !(SPINDLE_BESC_SERVO < 0)
+#if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
+#if ASSERT_PIN(SPINDLE_BESC_SERVO)
 	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_NEUTRAL);
 #endif
 	mcu_set_output(SPINDLE_BESC_POWER_RELAY);
 	cnc_delay_ms(1000);
-#if !(SPINDLE_BESC_SERVO < 0)
+#if ASSERT_PIN(SPINDLE_BESC_SERVO)
 	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
 #endif
 	cnc_delay_ms(2000);
@@ -72,7 +72,7 @@ static void startup_code(void)
 
 static void shutdown_code(void)
 {
-#if !(SPINDLE_BESC_POWER_RELAY < 0)
+#if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
 	mcu_clear_output(SPINDLE_BESC_POWER_RELAY);
 #endif
 }
@@ -93,13 +93,13 @@ static void set_speed(int16_t value)
 
 	if ((value <= 0))
 	{
-#if !(SPINDLE_BESC_SERVO < 0)
+#if ASSERT_PIN(SPINDLE_BESC_SERVO)
 		mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
 #endif
 	}
 	else
 	{
-#if !(SPINDLE_BESC_SERVO < 0)
+#if ASSERT_PIN(SPINDLE_BESC_SERVO)
 		mcu_set_servo(SPINDLE_BESC_SERVO, (uint8_t)value);
 #endif
 	}

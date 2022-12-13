@@ -25,8 +25,8 @@ extern "C"
 #endif
 
 #define NOPIN 0
-#define ASSERT_PIN(X) (X > NOPIN)
-#define ASSERT_PIN_EXTENDER(X) (X < NOPIN)
+#define ASSERT_PIN(X) (X > 0)
+#define ASSERT_PIN_EXTENDER(X) (X >= 0)
 
 	/**
 	 *
@@ -2046,37 +2046,37 @@ extern "C"
 #define DISABLE_PROBE
 #endif
 
-#if !(SERVO0 < 0)
+#if ASSERT_PIN(SERVO0)
 #define SERVO0_MASK (1U << 0)
 #define SERVO0_FRAME 0
 #else
 #define SERVO0_MASK 0
 #endif
-#if !(SERVO1 < 0)
+#if ASSERT_PIN(SERVO1)
 #define SERVO1_MASK (1U << 1)
 #define SERVO1_FRAME 3
 #else
 #define SERVO1_MASK 0
 #endif
-#if !(SERVO2 < 0)
+#if ASSERT_PIN(SERVO2)
 #define SERVO2_MASK (1U << 2)
 #define SERVO2_FRAME 6
 #else
 #define SERVO2_MASK 0
 #endif
-#if !(SERVO3 < 0)
+#if ASSERT_PIN(SERVO3)
 #define SERVO3_MASK (1U << 3)
 #define SERVO3_FRAME 9
 #else
 #define SERVO3_MASK 0
 #endif
-#if !(SERVO4 < 0)
+#if ASSERT_PIN(SERVO4)
 #define SERVO4_MASK (1U << 4)
 #define SERVO4_FRAME 12
 #else
 #define SERVO4_MASK 0
 #endif
-#if !(SERVO5 < 0)
+#if ASSERT_PIN(SERVO5)
 #define SERVO5_MASK (1U << 5)
 #define SERVO5_FRAME 15
 #else
