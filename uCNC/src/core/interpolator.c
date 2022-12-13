@@ -743,6 +743,12 @@ void itp_run(void)
 #ifdef DUAL_DRIVE1_AXIS
 			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
 #endif
+#ifdef DUAL_DRIVE2_AXIS
+			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL2) ? STEP_DUAL2_MASK : 0;
+#endif
+#ifdef DUAL_DRIVE3_AXIS
+			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL3) ? STEP_DUAL3_MASK : 0;
+#endif
 #endif
 			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
