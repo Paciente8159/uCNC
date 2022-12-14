@@ -498,11 +498,11 @@ void protocol_send_gcode_modes(void)
 #ifdef ENABLE_G39_H_MAPPING
 	if (modalgroups[13])
 	{
-		protocol_send_parser_modalstate('G', 29, 2);
+		protocol_send_parser_modalstate('G', 39, 2);
 	}
 	else
 	{
-		protocol_send_parser_modalstate('G', 29, 1);
+		protocol_send_parser_modalstate('G', 39, 1);
 	}
 #endif
 
@@ -876,6 +876,12 @@ void protocol_send_pins_states(void)
 #define PPI_INFO ""
 #endif
 
+#ifdef ENABLE_G39_H_MAPPING
+#define HMAP_INFO "HMAP,"
+#else
+#define HMAP_INFO ""
+#endif
+
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
 #define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
@@ -887,7 +893,7 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)

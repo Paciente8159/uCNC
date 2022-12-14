@@ -38,11 +38,18 @@ static uint8_t mc_last_dirbits;
 #endif
 
 #ifdef ENABLE_G39_H_MAPPING
+
+#if H_MAPING_GRID_FACTOR < 2 || H_MAPING_GRID_FACTOR > 6
+#error "H_MAPING_GRID_FACTOR must be a value between 2 and 6"
+#endif
+
+#define H_MAPING_ARRAY_SIZE (H_MAPING_GRID_FACTOR * H_MAPING_GRID_FACTOR)
+
 static float hmap_x;
 static float hmap_y;
 static float hmap_x_offset;
 static float hmap_y_offset;
-static float hmap_offsets[9];
+static float hmap_offsets[H_MAPING_ARRAY_SIZE];
 FORCEINLINE static void mc_apply_hmap(float *target);
 #endif
 
@@ -797,10 +804,14 @@ static void mc_apply_hmap(float *target)
 	uint8_t height_row, height_col;
 
 	// outside of the region don't apply hmap
-	if (x_weight < 0 || x_weight > 2 || y_weight < 0 || y_weight > 2)
+	if (x_weight < 0 || x_weight > 1 || y_weight < 0 || y_weight > 1)
 	{
 		return;
 	}
+
+	// checks the partition
+	x_weight *= (H_MAPING_GRID_FACTOR - 1);
+	y_weight *= (H_MAPING_GRID_FACTOR - 1);
 
 	height_row = (uint8_t)x_weight;
 	height_col = (uint8_t)y_weight;
@@ -810,10 +821,10 @@ static void mc_apply_hmap(float *target)
 
 	float a0, a1, a2, a3;
 
-	a0 = hmap_offsets[3 * height_col + height_row];
-	a1 = hmap_offsets[3 * height_col + height_row + 1];
-	a2 = hmap_offsets[3 * height_col + height_row + 3];
-	a3 = hmap_offsets[3 * height_col + height_row + 4] + a0 - a1 - a2;
+	a0 = hmap_offsets[H_MAPING_GRID_FACTOR * height_col + height_row];
+	a1 = hmap_offsets[H_MAPING_GRID_FACTOR * height_col + height_row + 1];
+	a2 = hmap_offsets[H_MAPING_GRID_FACTOR * height_col + height_row + H_MAPING_GRID_FACTOR];
+	a3 = hmap_offsets[H_MAPING_GRID_FACTOR * height_col + height_row + H_MAPING_GRID_FACTOR + 1] + a0 - a1 - a2;
 	a1 -= a0;
 	a2 -= a0;
 
@@ -908,12 +919,12 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	}
 
 	// make offsets relative to point 0,0
-	for (uint8_t j = 0; j < 3; j++)
+	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
-		for (uint8_t i = 0; i < 3; i++)
+		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
-
-			hmap_offsets[i + 3 * j] = hmap_offsets[i + 3 * j] - hmap_offsets[0];
+			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+			hmap_offsets[map] = hmap_offsets[map] - hmap_offsets[0];
 		}
 	}
 

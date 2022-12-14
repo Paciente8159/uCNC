@@ -281,6 +281,12 @@ extern "C"
  *  - a homing command
  **/
 // #define ENABLE_G39_H_MAPPING
+#ifdef ENABLE_G39_H_MAPPING
+// set the grid size factor
+// this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2
+// the minimum value is 2 (4 points) and the maximum is 6 (36 points)
+#define H_MAPING_GRID_FACTOR 3
+#endif
 
 	/**
 	 * Changes the planner acceleration profile generation from axis driven to
