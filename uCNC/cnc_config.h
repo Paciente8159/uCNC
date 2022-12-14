@@ -262,6 +262,26 @@ extern "C"
 //#define SKEW_COMPENSATION_XY_ONLY
 #endif
 
+/**
+ * Uncomment to enable surface height mapping compensation
+ * This enables G39 gcode and is useful for PCB milling and similar jobs
+ * It uses a 9 point matrix and bilinear interpolation to compensate for Z height deformations
+ * To map a region do G39 X<left bottom corner> Y<left bottom corner> Z<max-depth> I<X region offset> J<Y region offset>
+ * G39.1 will disable HMAP
+ * G39.2 will re-enable it
+ * 
+ * It's an error if:
+ *  - I and J are missing
+ *  - I or J are negative
+ *  - Z is missing
+ *  - cutter radius compensation is active (not implemented)
+ * 
+ * The map will not be stored in memory and will be reset on any of the following conditions
+ *  - a hardware or software reset
+ *  - a homing command
+ **/
+// #define ENABLE_G39_H_MAPPING
+
 	/**
 	 * Changes the planner acceleration profile generation from axis driven to
 	 * linear actuator driven

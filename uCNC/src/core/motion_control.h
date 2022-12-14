@@ -33,6 +33,7 @@ extern "C"
 #define MOTIONCONTROL_MODE_BACKLASH_COMPENSATION 2
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM 4
 #define MOTIONCONTROL_MODE_PAUSEPROGRAM_CONDITIONAL 8
+#define MOTIONCONTROL_MODE_APPLY_HMAP 16
 
 #define MOTIONCONTROL_PROBE_INVERT 1
 #define MOTIONCONTROL_PROBE_NOALARM_ONFAIL 2
@@ -101,6 +102,10 @@ extern "C"
 
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
+
+	#ifdef ENABLE_G39_H_MAPPING
+	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
+	#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler

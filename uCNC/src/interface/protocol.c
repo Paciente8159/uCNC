@@ -109,7 +109,8 @@ void protocol_send_feedback(const char *__s)
 
 static uint8_t protocol_get_tools(void)
 {
-	uint8_t modalgroups[12];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[15];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -467,7 +468,8 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 
 void protocol_send_gcode_modes(void)
 {
-	uint8_t modalgroups[13];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[15];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -492,6 +494,17 @@ void protocol_send_gcode_modes(void)
 	{
 		protocol_send_parser_modalstate('G', modalgroups[7], 0);
 	}
+
+#ifdef ENABLE_G39_H_MAPPING
+	if (modalgroups[13])
+	{
+		protocol_send_parser_modalstate('G', 29, 2);
+	}
+	else
+	{
+		protocol_send_parser_modalstate('G', 29, 1);
+	}
+#endif
 
 	for (uint8_t i = 8; i < 11; i++)
 	{
