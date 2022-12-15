@@ -1669,6 +1669,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			if (!new_state->groups.motion_mantissa)
 			{
 				error = mc_build_hmap(target, words->ijk, words->r, &block_data);
+				if (error == STATUS_OK)
+				{
+					new_state->groups.height_map_active = 1;
+				}
 			}
 			break;
 #endif

@@ -280,7 +280,7 @@ extern "C"
  *  - a hardware or software reset
  *  - a homing command
  **/
-// #define ENABLE_G39_H_MAPPING
+#define ENABLE_G39_H_MAPPING
 #ifdef ENABLE_G39_H_MAPPING
 // set the grid size factor
 // this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2

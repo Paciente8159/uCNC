@@ -733,39 +733,45 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
 #if ASSERT_PIN(PROBE)
-	uint8_t prev_state = cnc_get_exec_state(EXEC_HOLD);
-	io_enable_probe();
 #ifdef ENABLE_G39_H_MAPPING
 	// disable hmap for probing motion
 	block_data->motion_mode &= ~MOTIONCONTROL_MODE_APPLY_HMAP;
 #endif
-	mc_line(target, block_data);
+	if (itp_sync() != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
 
+	mc_line(target, block_data);
+	// enable the probe
+	io_enable_probe();
 	do
 	{
-		if (!cnc_dotasks())
-		{
-			return STATUS_CRITICAL_FAIL;
-		}
-
-#if (defined(FORCE_SOFT_POLLING) || !defined(PROBE_ISR))
 		if (io_get_probe() ^ (flags & 0x01))
 		{
 			mcu_probe_changed_cb();
 			break;
 		}
-#endif
-	} while (cnc_get_exec_state(EXEC_RUN));
+	} while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
 
+	// disables the probe
 	io_disable_probe();
-	cnc_stop();
+
+	// clears HALT state if possible
+	cnc_clear_exec_state(EXEC_HALT);
+
+	// HALT could not be cleared. Something is wrong
+	if (cnc_get_exec_state(EXEC_HALT))
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
 	itp_clear();
 	planner_clear();
 	parser_update_probe_pos();
 	// sync the position of the motion control
 	mc_sync_position();
-	cnc_clear_exec_state(~prev_state | ~EXEC_HOLD); // restores HOLD previous state
-	cnc_delay_ms(g_settings.debounce_ms);			// adds a delay before reading io pin (debounce)
+	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 	bool probe_ok = io_get_probe();
 	probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? !probe_ok : probe_ok;
 	if (!probe_ok)
@@ -796,6 +802,27 @@ void mc_sync_position(void)
 }
 
 #ifdef ENABLE_G39_H_MAPPING
+
+void mc_print_hmap(void)
+{
+	// print map
+	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
+	{
+		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
+		{
+			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+			float new_h = hmap_offsets[map];
+			protocol_send_string(MSG_START);
+			protocol_send_string(__romstr__("HMAP;"));
+			serial_print_int(i);
+			serial_putc(';');
+			serial_print_int(j);
+			serial_putc(';');
+			serial_print_flt(new_h);
+			protocol_send_string(MSG_END);
+		}
+	}
+}
 
 static void mc_apply_hmap(float *target)
 {
@@ -830,20 +857,23 @@ static void mc_apply_hmap(float *target)
 
 	target[AXIS_Z] += (a0 + a1 * x_weight + a2 * y_weight + a3 * x_weight * y_weight);
 }
+
 uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data)
 {
 	uint8_t error;
 	float start_x = target[AXIS_X];
 	float start_y = target[AXIS_Y];
+	float offset_x = offset[0] / (H_MAPING_GRID_FACTOR - 1);
+	float offset_y = offset[1] / (H_MAPING_GRID_FACTOR - 1);
 	float position[AXIS_COUNT];
 	float feed = block_data->feed;
 
 	mc_get_position(position);
 
-	for (uint8_t j = 0; j < 3; j++)
+	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
 		target[AXIS_X] = start_x;
-		for (uint8_t i = 0; i < 3; i++)
+		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
 			block_data->feed = FLT_MAX;
 			// retract if needed
@@ -859,7 +889,6 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			// transverse motion to position
 			position[AXIS_X] = target[AXIS_X];
 			position[AXIS_Y] = target[AXIS_Y];
-			block_data->feed = feed;
 			error = mc_line(position, block_data);
 			if (error != STATUS_OK)
 			{
@@ -867,6 +896,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			}
 
 			// probe
+			block_data->feed = feed;
 			memcpy(position, target, sizeof(position));
 			if (mc_probe(position, 0, block_data) != STATUS_PROBE_SUCCESS)
 			{
@@ -878,14 +908,14 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			itp_get_rt_position(probe_position);
 			kinematics_apply_forward(probe_position, position);
 			kinematics_apply_reverse_transform(position);
-			hmap_offsets[i + 3 * j] = position[AXIS_Z];
+			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_Z];
 			protocol_send_probe_result(1);
 
 			// update to new target
-			target[AXIS_X] += offset[0] * 0.5f;
+			target[AXIS_X] += offset_x;
 		}
 
-		target[AXIS_Y] += offset[1] * 0.5f;
+		target[AXIS_Y] += offset_y;
 	}
 
 	block_data->feed = FLT_MAX;
@@ -903,6 +933,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	// transverse to 1st point
 	position[AXIS_X] = start_x;
 	position[AXIS_Y] = start_y;
+	block_data->feed = FLT_MAX;
 	error = mc_line(position, block_data);
 	if (error != STATUS_OK)
 	{
@@ -918,15 +949,26 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		return error;
 	}
 
+	float h_offset_base = hmap_offsets[0];
 	// make offsets relative to point 0,0
 	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
 	{
 		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
 		{
 			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
-			hmap_offsets[map] = hmap_offsets[map] - hmap_offsets[0];
+			float new_h = hmap_offsets[map] - h_offset_base;
+			hmap_offsets[map] = new_h;
 		}
 	}
+
+	// store coordinates
+	hmap_x = target[AXIS_X];
+	hmap_y = target[AXIS_Y];
+	hmap_x_offset = offset[0];
+	hmap_y_offset = offset[1];
+
+	// print map
+	mc_print_hmap();
 
 	return STATUS_OK;
 }
