@@ -50,6 +50,10 @@ static float hmap_y;
 static float hmap_x_offset;
 static float hmap_y_offset;
 static float hmap_offsets[H_MAPING_ARRAY_SIZE];
+
+// the maximum subsegment length factor
+#define H_MAPING_SEGMENT_INV_SIZE (MIN(((float)H_MAPING_GRID_FACTOR / hmap_x_offset), ((float)H_MAPING_GRID_FACTOR / hmap_y_offset)))
+
 FORCEINLINE static void mc_apply_hmap(float *target);
 #endif
 
@@ -375,7 +379,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
 #ifdef ENABLE_G39_H_MAPPING
-	line_segments = MAX((uint32_t)line_dist, line_segments);
+	line_segments = MAX((uint32_t)ceilf(line_dist * H_MAPING_SEGMENT_INV_SIZE), line_segments);
 #endif
 #ifdef KINEMATICS_MOTION_BY_SEGMENTS
 	line_segments = MAX((uint32_t)ceilf(line_dist * KINEMATICS_MOTION_SEGMENT_INV_SIZE), line_segments);
