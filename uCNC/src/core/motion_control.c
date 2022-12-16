@@ -65,10 +65,9 @@ static float hmap_y;
 static float hmap_x_offset;
 static float hmap_y_offset;
 static float hmap_offsets[H_MAPING_ARRAY_SIZE];
-static float prev_hmap_offset;
 
 // the maximum subsegment length factor
-#define H_MAPING_SEGMENT_INV_SIZE (MIN(((float)H_MAPING_GRID_FACTOR / hmap_x_offset), ((float)H_MAPING_GRID_FACTOR / hmap_y_offset)))
+#define H_MAPING_SEGMENT_INV_SIZE (MAX(((float)H_MAPING_GRID_FACTOR / hmap_x_offset), ((float)H_MAPING_GRID_FACTOR / hmap_y_offset)))
 
 FORCEINLINE static float mc_apply_hmap(float *target);
 #endif
@@ -114,9 +113,9 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 #ifdef ENABLE_LINACT_PLANNER
 	block_data->full_steps = 0;
 #endif
-// #ifdef MOTION_NON_UNIFORM
-// 	block_data->dirbits = 0;
-// #endif
+	// #ifdef MOTION_NON_UNIFORM
+	// 	block_data->dirbits = 0;
+	// #endif
 	uint32_t max_steps = 0;
 
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -267,13 +266,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
 	memcpy(prev_target, mc_last_target, sizeof(mc_last_target));
 
-#ifdef ENABLE_G39_H_MAPPING
-	float h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? prev_hmap_offset : 0;
-	// undo any hmap modification if hmap is active
-	prev_target[AXIS_Z] -= h_offset;
-#endif
-
-	// calculates the travelled distance
+	// calculates the traveled distance
 	float line_dist = 0;
 	float motion_segment[AXIS_COUNT];
 	for (uint8_t i = AXIS_COUNT; i != 0;)
@@ -292,9 +285,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 	// modify the gcode with Hmap
-	h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(target)) : 0;
+	float h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(target)) : 0;
+	float target_hmap_offset = h_offset;
 	target[AXIS_Z] += h_offset;
-	prev_hmap_offset = h_offset;
 #endif
 
 	int32_t step_new_pos[STEPPER_COUNT];
@@ -443,6 +436,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	bool is_subsegment = false;
 	while (--line_segments)
 	{
+		is_subsegment = true;
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
 			i--;
@@ -452,47 +446,36 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #ifdef ENABLE_G39_H_MAPPING
 		h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
 		prev_target[AXIS_Z] += h_offset;
-		prev_hmap_offset = h_offset;
 #endif
 		kinematics_apply_inverse(prev_target, step_new_pos);
 		error = mc_line_segment(step_new_pos, block_data);
+#ifdef ENABLE_G39_H_MAPPING
+		// unmodify target
+		prev_target[AXIS_Z] -= h_offset;
+#endif
 		if (error)
 		{
 			memcpy(target, prev_target, sizeof(prev_target));
-#ifdef ENABLE_G39_H_MAPPING
-			// unmodify target
-			target[AXIS_Z] -= h_offset;
-#endif
 			block_data->feed = feed;
 			return error;
 		}
-
-#ifdef ENABLE_G39_H_MAPPING
-		prev_target[AXIS_Z] -= h_offset;
-#endif
 		// after the first segment all following segments are inline
 		block_data->cos_theta = 1;
-		is_subsegment = true;
 	}
 
 	if (is_subsegment)
 	{
-#ifdef ENABLE_G39_H_MAPPING
-		h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(target)) : 0;
-		// already applied
-		// target[AXIS_Z] += h_offset;
-		prev_hmap_offset = h_offset;
-#endif
 		kinematics_apply_inverse(target, step_new_pos);
 	}
 #endif
 	error = mc_line_segment(step_new_pos, block_data);
-	// stores the new position for the next motion
-	memcpy(mc_last_target, target, sizeof(mc_last_target));
+
 #ifdef ENABLE_G39_H_MAPPING
 	// unmodify target
-	target[AXIS_Z] -= h_offset;
+	target[AXIS_Z] -= target_hmap_offset;
 #endif
+	// stores the new position for the next motion
+	memcpy(mc_last_target, target, sizeof(mc_last_target));
 	block_data->feed = feed;
 	return error;
 }
@@ -921,8 +904,8 @@ static float mc_apply_hmap(float *target)
 	y_weight *= (H_MAPING_GRID_FACTOR - 1);
 
 	// prevent exact offset error
-	height_row = (uint8_t)(x_weight - 0.000001f);
-	height_col = (uint8_t)(y_weight - 0.000001f);
+	height_row = (uint8_t)MAX(0, (x_weight - 0.000001f));
+	height_col = (uint8_t)MAX(0, (y_weight - 0.000001f));
 
 	x_weight -= height_row;
 	y_weight -= height_col;
@@ -970,7 +953,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		}
 	}
 	// print map
-	mc_print_hmap();
+	// mc_print_hmap();
 
 	return STATUS_OK;
 
