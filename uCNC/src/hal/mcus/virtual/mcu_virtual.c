@@ -64,7 +64,7 @@
 #define USESERIAL
 #ifdef USESERIAL
 #ifndef WIN_COM_NAME
-#define WIN_COM_NAME COM1
+#define WIN_COM_NAME COM11
 #endif
 #endif
 #elif (WIN_INTERFACE == 2)

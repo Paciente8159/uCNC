@@ -235,6 +235,15 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		kinematics_apply_transform(target);
 	}
 
+#ifdef ENABLE_G39_H_MAPPING
+	// modify the gcode with Hmap
+	float original_z = target[AXIS_Z];
+	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP))
+	{
+		mc_apply_hmap(target);
+	}
+#endif
+
 	// check travel limits (soft limits)
 	if (!kinematics_check_boundaries(target))
 	{
@@ -379,7 +388,10 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	// this contains a motion. Any tool update will be done here
 	uint32_t line_segments = 1;
 #ifdef ENABLE_G39_H_MAPPING
-	line_segments = MAX((uint32_t)ceilf(line_dist * H_MAPING_SEGMENT_INV_SIZE), line_segments);
+	if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP))
+	{
+		line_segments = MAX((uint32_t)ceilf(line_dist * H_MAPING_SEGMENT_INV_SIZE), line_segments);
+	}
 #endif
 #ifdef KINEMATICS_MOTION_BY_SEGMENTS
 	line_segments = MAX((uint32_t)ceilf(line_dist * KINEMATICS_MOTION_SEGMENT_INV_SIZE), line_segments);
@@ -411,6 +423,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		}
 
 #ifdef ENABLE_G39_H_MAPPING
+		prev_target[AXIS_Z] = original_z;
 		if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP))
 		{
 			mc_apply_hmap(prev_target);
@@ -433,12 +446,17 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	if (is_subsegment)
 	{
 #ifdef ENABLE_G39_H_MAPPING
+		float original_z = prev_target[AXIS_Z];
 		if (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP))
 		{
 			mc_apply_hmap(target);
 		}
 #endif
 		kinematics_apply_inverse(target, step_new_pos);
+#ifdef ENABLE_G39_H_MAPPING
+		// restore z
+		prev_target[AXIS_Z] = original_z;
+#endif
 	}
 #endif
 	error = mc_line_segment(step_new_pos, block_data);
@@ -772,17 +790,17 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	// clears HALT state if possible
 	cnc_clear_exec_state(EXEC_HALT);
 
+	itp_clear();
+	planner_clear();
+	parser_update_probe_pos();
+	// sync the position of the motion control
+	mc_sync_position();
 	// HALT could not be cleared. Something is wrong
 	if (cnc_get_exec_state(EXEC_HALT))
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	itp_clear();
-	planner_clear();
-	parser_update_probe_pos();
-	// sync the position of the motion control
-	mc_sync_position();
 	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 	bool probe_ok = io_get_probe();
 	probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? !probe_ok : probe_ok;
@@ -891,6 +909,38 @@ static void mc_apply_hmap(float *target)
 
 uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data)
 {
+	// dummy map
+
+	// store coordinates
+	hmap_x = target[AXIS_X];
+	hmap_y = target[AXIS_Y];
+	hmap_x_offset = offset[0];
+	hmap_y_offset = offset[1];
+
+	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
+	{
+		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
+		{
+			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+			float new_h = (2.0f * rand() / RAND_MAX) - 1.0f;
+			hmap_offsets[map] = new_h;
+		}
+	}
+
+	float h_offset_base2 = hmap_offsets[0];
+	// make offsets relative to point 0,0
+	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
+	{
+		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
+		{
+			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+			float new_h = hmap_offsets[map] - h_offset_base2;
+			hmap_offsets[map] = new_h;
+		}
+	}
+
+	return STATUS_OK;
+
 	uint8_t error;
 	float start_x = target[AXIS_X];
 	float start_y = target[AXIS_Y];
