@@ -115,6 +115,8 @@ static itp_segment_t *itp_rt_sgm;
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 static volatile uint8_t itp_step_lock;
 #endif
+// keeps track if the itp timer is running or not (prevent restarting)
+static volatile bool itp_is_running;
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
 volatile int32_t itp_sync_step_counter;
@@ -212,7 +214,6 @@ static bool itp_sgm_is_full(void)
 
 static bool itp_sgm_is_empty(void)
 {
-
 	return (itp_sgm_data_read == itp_sgm_data_write);
 }
 
@@ -1058,6 +1059,8 @@ void itp_stop(void)
 		cnc_set_exec_state(EXEC_HALT);
 	}
 
+	cnc_clear_exec_state(EXEC_RUN);
+
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -1067,6 +1070,7 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
+	itp_is_running = false;
 }
 
 void itp_stop_tools(void)
@@ -1711,14 +1715,15 @@ MCU_CALLBACK void mcu_step_cb(void)
 void itp_start(bool is_synched)
 {
 	// starts the step isr if is stopped and there are segments to execute
-	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RUN | EXEC_RESUMING) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
+	if (!cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM | EXEC_RESUMING) && !itp_sgm_is_empty() && !itp_is_running) // exec state is not hold or alarm and not already running
 	{
 		// check if the start is controlled by synched motion before start
 		if (!is_synched)
 		{
-			cnc_set_exec_state(EXEC_RUN); // flags that it started running
 			__ATOMIC__
 			{
+				cnc_set_exec_state(EXEC_RUN); // flags that it started running
+				itp_is_running = true;
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
 			}
 		}

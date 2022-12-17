@@ -866,6 +866,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				{
 					return STATUS_GCODE_NO_OFFSETS_IN_PLANE;
 				}
+
+#ifdef ENABLE_G39_H_MAPPING
+				if (new_state->groups.height_map_active)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
+#endif
 				break;
 			case G19:
 				if (!CHECKFLAG(cmd->words, GCODE_YZPLANE_AXIS))
@@ -877,6 +884,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				{
 					return STATUS_GCODE_NO_OFFSETS_IN_PLANE;
 				}
+
+#ifdef ENABLE_G39_H_MAPPING
+				if (new_state->groups.height_map_active)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
+#endif
 				break;
 			}
 			break;
@@ -892,6 +906,10 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			// G39
 			if (!new_state->groups.motion_mantissa)
 			{
+				if (new_state->groups.plane != G17)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
 				// if I, J, Z and R are missing
 				if ((cmd->words & (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_Z | GCODE_WORD_R)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_Z | GCODE_WORD_R))
 				{
@@ -1234,7 +1252,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	switch (new_state->groups.plane)
 	{
 #if (defined(AXIS_X) && defined(AXIS_Y))
-	case 0:
+	case G17:
 		a = AXIS_X;
 		b = AXIS_Y;
 		offset_a = AXIS_X;
@@ -1242,7 +1260,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 #if (defined(AXIS_X) && defined(AXIS_Z))
-	case 1:
+	case G18:
+#ifdef ENABLE_G39_H_MAPPING
+		if (new_state->groups.height_map_active)
+		{
+			return STATUS_INVALID_PLANE_SELECTED;
+		}
+#endif
 		a = AXIS_Z;
 		b = AXIS_X;
 		offset_a = AXIS_Z;
@@ -1250,7 +1274,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 #if (defined(AXIS_Y) && defined(AXIS_Z))
-	case 2:
+	case G19:
+#ifdef ENABLE_G39_H_MAPPING
+		if (new_state->groups.height_map_active)
+		{
+			return STATUS_INVALID_PLANE_SELECTED;
+		}
+#endif
 		a = AXIS_Y;
 		b = AXIS_Z;
 		offset_a = AXIS_Y;
@@ -1669,6 +1699,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			if (!new_state->groups.motion_mantissa)
 			{
 				error = mc_build_hmap(target, words->ijk, words->r, &block_data);
+				if (error == STATUS_OK)
+				{
+					new_state->groups.height_map_active = 1;
+				}
 			}
 			break;
 #endif
