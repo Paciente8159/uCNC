@@ -103,7 +103,7 @@ extern "C"
 	 * */
 
 #ifndef TOOL_COUNT
-#define TOOL_COUNT 0
+#define TOOL_COUNT 1
 #endif
 
 #if TOOL_COUNT > 0
@@ -237,7 +237,7 @@ extern "C"
 // enables automatic status report sending
 // this value sets the millisecond interval of the reports
 // values bellow 100ms have no effect
-#define STATUS_AUTOMATIC_REPORT_INTERVAL 100
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
 
 	/**
 	 *
@@ -280,7 +280,7 @@ extern "C"
  *  - a hardware or software reset
  *  - a homing command
  **/
-#define ENABLE_G39_H_MAPPING
+// #define ENABLE_G39_H_MAPPING
 #ifdef ENABLE_G39_H_MAPPING
 // set the grid size factor
 // this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2
@@ -325,7 +325,7 @@ extern "C"
 	 * from 0 to 3. With a value o 0 the DSS will be disabled.
 	 * */
 
-#define DSS_MAX_OVERSAMPLING 0
+#define DSS_MAX_OVERSAMPLING 3
 #define DSS_CUTOFF_FREQ 500
 
 	/**
@@ -383,10 +383,10 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-#define DISABLE_ALL_LIMITS
+// #define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
 // #define DISABLE_PROBE
