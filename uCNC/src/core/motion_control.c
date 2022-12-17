@@ -113,9 +113,9 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 #ifdef ENABLE_LINACT_PLANNER
 	block_data->full_steps = 0;
 #endif
-	// #ifdef MOTION_NON_UNIFORM
-	// 	block_data->dirbits = 0;
-	// #endif
+#ifdef MOTION_NON_UNIFORM
+	block_data->dirbits = 0;
+#endif
 	uint32_t max_steps = 0;
 
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
@@ -953,38 +953,38 @@ static float mc_apply_hmap(float *target)
 
 uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data)
 {
-	// generate dummy map
-	// store coordinates
-	hmap_x = target[AXIS_X];
-	hmap_y = target[AXIS_Y];
-	hmap_x_offset = offset[0];
-	hmap_y_offset = offset[1];
+	// // generate dummy map
+	// // store coordinates
+	// hmap_x = target[AXIS_X];
+	// hmap_y = target[AXIS_Y];
+	// hmap_x_offset = offset[0];
+	// hmap_y_offset = offset[1];
 
-	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
-	{
-		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
-		{
-			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
-			float new_h = (2.0f * rand() / RAND_MAX) - 1.0f;
-			hmap_offsets[map] = new_h;
-		}
-	}
+	// for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
+	// {
+	// 	for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
+	// 	{
+	// 		uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+	// 		float new_h = (2.0f * rand() / RAND_MAX) - 1.0f;
+	// 		hmap_offsets[map] = new_h;
+	// 	}
+	// }
 
-	float h_offset_base2 = hmap_offsets[0];
-	// make offsets relative to point 0,0
-	for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
-	{
-		for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
-		{
-			uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
-			float new_h = hmap_offsets[map] - h_offset_base2;
-			hmap_offsets[map] = new_h;
-		}
-	}
-	// print map
-	mc_print_hmap();
+	// float h_offset_base2 = hmap_offsets[0];
+	// // make offsets relative to point 0,0
+	// for (uint8_t j = 0; j < H_MAPING_GRID_FACTOR; j++)
+	// {
+	// 	for (uint8_t i = 0; i < H_MAPING_GRID_FACTOR; i++)
+	// 	{
+	// 		uint8_t map = i + (H_MAPING_GRID_FACTOR * j);
+	// 		float new_h = hmap_offsets[map] - h_offset_base2;
+	// 		hmap_offsets[map] = new_h;
+	// 	}
+	// }
+	// // print map
+	// mc_print_hmap();
 
-	return STATUS_OK;
+	// return STATUS_OK;
 
 	uint8_t error;
 	float start_x = target[AXIS_X];
