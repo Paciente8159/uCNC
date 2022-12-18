@@ -92,6 +92,9 @@ extern "C"
 #define G92_1 11
 #define G92_2 12
 #define G92_3 13
+//lathe mode
+#define G7 1
+#define G8 0
 
 #define M0 1
 #define M1 2
@@ -185,12 +188,16 @@ extern "C"
 		// 1byte
 		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
-		#ifdef ENABLE_G39_H_MAPPING
-		uint8_t height_map_active: 1; // unused
-		#else
-		uint8_t : 1; // unused
-		#endif
-		uint8_t : 1; // unused
+#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active : 1; // unused
+#else
+	uint8_t : 1; // unused
+#endif
+#ifdef ENABLE_LATHE_MODE
+		uint8_t lathe_radius_mode : 1;
+#else
+	uint8_t : 1; // unused
+#endif
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;

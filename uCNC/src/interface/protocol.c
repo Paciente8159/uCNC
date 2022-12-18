@@ -481,9 +481,10 @@ void protocol_send_gcode_modes(void)
 
 	protocol_send_string(__romstr__("[GC:"));
 
-	for (uint8_t i = 0; i < 7; i++)
+	protocol_send_parser_modalstate('G', modalgroups[0], modalgroups[12]);
+	for (uint8_t i = 1; i < 7; i++)
 	{
-		protocol_send_parser_modalstate('G', modalgroups[i], modalgroups[12]);
+		protocol_send_parser_modalstate('G', modalgroups[i], 0);
 	}
 
 	if (modalgroups[7] == 62)
@@ -495,15 +496,11 @@ void protocol_send_gcode_modes(void)
 		protocol_send_parser_modalstate('G', modalgroups[7], 0);
 	}
 
+#ifdef ENABLE_LATHE_MODE
+	protocol_send_parser_modalstate('G', modalgroups[14], 0);
+#endif
 #ifdef ENABLE_G39_H_MAPPING
-	if (modalgroups[13])
-	{
-		protocol_send_parser_modalstate('G', 39, 2);
-	}
-	else
-	{
-		protocol_send_parser_modalstate('G', 39, 1);
-	}
+	protocol_send_parser_modalstate('G', 39, modalgroups[13]);
 #endif
 
 	for (uint8_t i = 8; i < 11; i++)

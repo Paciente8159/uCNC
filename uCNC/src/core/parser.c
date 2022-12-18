@@ -200,7 +200,10 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 #endif
 	modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
 #ifdef ENABLE_G39_H_MAPPING
-	modalgroups[13] = parser_state.groups.height_map_active;
+	modalgroups[13] = parser_state.groups.height_map_active + 1;
+#endif
+#ifdef ENABLE_LATHE_MODE
+	modalgroups[14] = 8 - parser_state.groups.lathe_radius_mode;
 #endif
 	*feed = (uint16_t)parser_state.feedrate;
 }
@@ -1578,6 +1581,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	// only if any target word was used
 	if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 	{
+#ifdef ENABLE_LATHE_MODE
+		// if X coordinate was explicitly declared and radius mode is active modify the value of X to half
+		if (CHECKFLAG(cmd->words, GCODE_WORD_X) && new_state->groups.lathe_radius_mode)
+		{
+			target[AXIS_X] = 0.5f;
+		}
+#endif
 #ifdef ENABLE_G39_H_MAPPING
 		if (new_state->groups.height_map_active)
 		{
@@ -2106,6 +2116,12 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_group |= GCODE_GROUP_MOTION;
 		new_state->groups.motion = code;
 		break;
+#ifdef ENABLE_LATHE_MODE
+	case 7:
+	case 8:
+		new_state->groups.lathe_radius_mode = (8 - code);
+		return STATUS_OK;
+#endif
 	case 17:
 	case 18:
 	case 19:
@@ -2549,6 +2565,9 @@ void parser_reset(void)
 	parser_wco_counter = 0;
 #ifdef ENABLE_G39_H_MAPPING
 	parser_state.groups.height_map_active = 0;
+#endif
+#ifdef ENABLE_LATHE_MODE
+	parser_state.groups.lathe_radius_mode = G8;
 #endif
 }
 

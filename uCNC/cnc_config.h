@@ -147,6 +147,12 @@ extern "C"
 // #define ENABLE_LASER_PPI
 
 /**
+ * Uncomment to enable lathe support features and gcode
+ * This enables support for G7/G8
+ * */
+#define ENABLE_LATHE_MODE
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
