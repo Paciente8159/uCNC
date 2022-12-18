@@ -155,6 +155,7 @@ static void delta_calc_bounds(void)
 		}
 		else
 		{
+			minz = middlez - sum;
 			for (uint8_t i = 0; i < 8; ++i)
 			{
 				if (mint1 > r[i][0])

@@ -262,6 +262,32 @@ extern "C"
 //#define SKEW_COMPENSATION_XY_ONLY
 #endif
 
+/**
+ * Uncomment to enable surface height mapping compensation
+ * This enables G39 gcode and is useful for PCB milling and similar jobs
+ * It uses a 9 point matrix and bilinear interpolation to compensate for Z height deformations
+ * To map a region do G39 X<left bottom corner> Y<left bottom corner> Z<max-depth> I<X region offset> J<Y region offset>
+ * G39.1 will disable HMAP
+ * G39.2 will re-enable it
+ * 
+ * It's an error if:
+ *  - I and J are missing
+ *  - I or J are negative
+ *  - Z is missing
+ *  - cutter radius compensation is active (not implemented)
+ * 
+ * The map will not be stored in memory and will be reset on any of the following conditions
+ *  - a hardware or software reset
+ *  - a homing command
+ **/
+// #define ENABLE_G39_H_MAPPING
+#ifdef ENABLE_G39_H_MAPPING
+// set the grid size factor
+// this sets the size of the Hmap -> H_MAPING_GRID_FACTOR ^ 2
+// the minimum value is 2 (4 points) and the maximum is 6 (36 points)
+#define H_MAPING_GRID_FACTOR 3
+#endif
+
 	/**
 	 * Changes the planner acceleration profile generation from axis driven to
 	 * linear actuator driven
@@ -288,8 +314,8 @@ extern "C"
 	 * (performs 0 steps in the ISR tick) and skips calculations
 	 * */
 
-#define STEP_ISR_SKIP_MAIN
-#define STEP_ISR_SKIP_IDLE
+// #define STEP_ISR_SKIP_MAIN
+// #define STEP_ISR_SKIP_IDLE
 
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic
@@ -379,7 +405,7 @@ extern "C"
 	 * that uCNC is recognized a Grbl protocol controller device)
 	 * */
 
-#define EMULATE_GRBL_STARTUP
+// #define EMULATE_GRBL_STARTUP
 
 	/**
 	 *
@@ -387,7 +413,7 @@ extern "C"
 	 *
 	 * */
 
-#define ENABLE_SYSTEM_INFO
+// #define ENABLE_SYSTEM_INFO
 
 	/**
 	 * Enables additional core grbl system commands

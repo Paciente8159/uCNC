@@ -109,7 +109,8 @@ void protocol_send_feedback(const char *__s)
 
 static uint8_t protocol_get_tools(void)
 {
-	uint8_t modalgroups[12];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[15];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -467,7 +468,8 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 
 void protocol_send_gcode_modes(void)
 {
-	uint8_t modalgroups[13];
+	// leave extra room for future modal groups
+	uint8_t modalgroups[15];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -492,6 +494,17 @@ void protocol_send_gcode_modes(void)
 	{
 		protocol_send_parser_modalstate('G', modalgroups[7], 0);
 	}
+
+#ifdef ENABLE_G39_H_MAPPING
+	if (modalgroups[13])
+	{
+		protocol_send_parser_modalstate('G', 39, 2);
+	}
+	else
+	{
+		protocol_send_parser_modalstate('G', 39, 1);
+	}
+#endif
 
 	for (uint8_t i = 8; i < 11; i++)
 	{
@@ -863,6 +876,12 @@ void protocol_send_pins_states(void)
 #define PPI_INFO ""
 #endif
 
+#ifdef ENABLE_G39_H_MAPPING
+#define HMAP_INFO "HMAP,"
+#else
+#define HMAP_INFO ""
+#endif
+
 #define DSS_INFO "DSS" STRGIFY(DSS_MAX_OVERSAMPLING) "_" STRGIFY(DSS_CUTOFF_FREQ) ","
 #define PLANNER_INFO             \
 	STRGIFY(PLANNER_BUFFER_SIZE) \
@@ -874,7 +893,7 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)

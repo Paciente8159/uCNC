@@ -39,6 +39,9 @@ extern "C"
 #define G1 1
 #define G2 2
 #define G3 3
+#ifdef ENABLE_G39_H_MAPPING
+#define G39 39
+#endif
 // G38.2, G38.3, G38.4, G38.5
 // mantissa must also be checked
 #define G38 38
@@ -182,7 +185,12 @@ extern "C"
 		// 1byte
 		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
-		uint8_t : 2; // unused
+		#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active: 1; // unused
+		#else
+		uint8_t : 1; // unused
+		#endif
+		uint8_t : 1; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
 		uint8_t plane : 2;

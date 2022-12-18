@@ -27,6 +27,11 @@ static volatile uint8_t io_spindle_speed;
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 
+#if ASSERT_PIN(PROBE)
+static volatile bool io_last_probe;
+static bool io_probe_enabled;
+#endif
+
 #ifdef ENABLE_IO_ALARM_DEBUG
 uint8_t io_alarm_limits;
 uint8_t io_alarm_controls;
@@ -226,23 +231,26 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 {
-#ifdef DISABLE_PROBE
+#if !ASSERT_PIN(PROBE)
 	return;
-#endif
+#else
 
-#if ASSERT_PIN(PROBE)
-	static bool prev_probe = false;
-	bool probe = io_get_probe();
-
-	if (prev_probe == probe)
+	if (!io_probe_enabled)
 	{
 		return;
 	}
 
-	prev_probe = probe;
+	bool probe = io_get_probe();
 
-	// on hit enables hold (directly)
-	cnc_set_exec_state(EXEC_HOLD);
+	if (io_last_probe == probe)
+	{
+		return;
+	}
+
+	io_last_probe = probe;
+
+	// stops the machine
+	itp_stop();
 	// stores rt position
 	parser_sync_probe();
 #endif
@@ -452,38 +460,42 @@ uint8_t io_get_controls(void)
 
 void io_enable_probe(void)
 {
+#if ASSERT_PIN(PROBE)
+	io_last_probe = io_get_probe();
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_enable, NULL);
 #endif
 #ifndef FORCE_SOFT_POLLING
-#if ASSERT_PIN(PROBE)
 	mcu_enable_probe_isr();
 #endif
+	io_probe_enabled = true;
 #endif
 }
 
 void io_disable_probe(void)
 {
-#ifndef FORCE_SOFT_POLLING
 #if ASSERT_PIN(PROBE)
+	io_probe_enabled = false;
+#ifndef FORCE_SOFT_POLLING
 	mcu_disable_probe_isr();
-#endif
 #endif
 #ifdef ENABLE_IO_MODULES
 	EVENT_INVOKE(probe_disable, NULL);
+#endif
 #endif
 }
 
 bool io_get_probe(void)
 {
-#ifdef DISABLE_PROBE
+#if !ASSERT_PIN(PROBE)
 	return false;
-#endif
+#else
 #if ASSERT_PIN(PROBE)
 	bool probe = (mcu_get_input(PROBE) != 0);
 	return (!g_settings.probe_invert_mask) ? probe : !probe;
 #else
 	return false;
+#endif
 #endif
 }
 

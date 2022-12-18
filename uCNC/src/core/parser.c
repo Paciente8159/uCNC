@@ -199,6 +199,9 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 	modalgroups[11] = 0;
 #endif
 	modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
+#ifdef ENABLE_G39_H_MAPPING
+	modalgroups[13] = parser_state.groups.height_map_active;
+#endif
 	*feed = (uint16_t)parser_state.feedrate;
 }
 
@@ -863,6 +866,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				{
 					return STATUS_GCODE_NO_OFFSETS_IN_PLANE;
 				}
+
+#ifdef ENABLE_G39_H_MAPPING
+				if (new_state->groups.height_map_active)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
+#endif
 				break;
 			case G19:
 				if (!CHECKFLAG(cmd->words, GCODE_YZPLANE_AXIS))
@@ -874,6 +884,13 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				{
 					return STATUS_GCODE_NO_OFFSETS_IN_PLANE;
 				}
+
+#ifdef ENABLE_G39_H_MAPPING
+				if (new_state->groups.height_map_active)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
+#endif
 				break;
 			}
 			break;
@@ -884,6 +901,28 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			}
 
 			break;
+#ifdef ENABLE_G39_H_MAPPING
+		case G39:
+			// G39
+			if (!new_state->groups.motion_mantissa)
+			{
+				if (new_state->groups.plane != G17)
+				{
+					return STATUS_INVALID_PLANE_SELECTED;
+				}
+				// if I, J, Z and R are missing
+				if ((cmd->words & (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_Z | GCODE_WORD_R)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_Z | GCODE_WORD_R))
+				{
+					return STATUS_GCODE_VALUE_WORD_MISSING;
+				}
+				// if either I or J are negative
+				if (words->ijk[0] < 0 || words->ijk[0] < 0)
+				{
+					return STATUS_NEGATIVE_VALUE;
+				}
+			}
+			break;
+#endif
 #ifdef ENABLE_CANNED_CYCLES
 		default: // G81..G89 canned cycles (partially implemented)
 			// It is an error if:
@@ -921,7 +960,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		}
 
 		// group 5 - feed rate mode
-		if (new_state->groups.motion >= G1 && new_state->groups.motion <= G38)
+		if (new_state->groups.motion != G0)
 		{
 			if (!CHECKFLAG(cmd->words, GCODE_WORD_F))
 			{
@@ -1213,7 +1252,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	switch (new_state->groups.plane)
 	{
 #if (defined(AXIS_X) && defined(AXIS_Y))
-	case 0:
+	case G17:
 		a = AXIS_X;
 		b = AXIS_Y;
 		offset_a = AXIS_X;
@@ -1221,7 +1260,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 #if (defined(AXIS_X) && defined(AXIS_Z))
-	case 1:
+	case G18:
+#ifdef ENABLE_G39_H_MAPPING
+		if (new_state->groups.height_map_active)
+		{
+			return STATUS_INVALID_PLANE_SELECTED;
+		}
+#endif
 		a = AXIS_Z;
 		b = AXIS_X;
 		offset_a = AXIS_Z;
@@ -1229,7 +1274,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 #if (defined(AXIS_Y) && defined(AXIS_Z))
-	case 2:
+	case G19:
+#ifdef ENABLE_G39_H_MAPPING
+		if (new_state->groups.height_map_active)
+		{
+			return STATUS_INVALID_PLANE_SELECTED;
+		}
+#endif
 		a = AXIS_Y;
 		b = AXIS_Z;
 		offset_a = AXIS_Y;
@@ -1527,6 +1578,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	// only if any target word was used
 	if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 	{
+#ifdef ENABLE_G39_H_MAPPING
+		if (new_state->groups.height_map_active)
+		{
+			block_data.motion_mode |= MOTIONCONTROL_MODE_APPLY_HMAP;
+		}
+#endif
+
 		uint8_t probe_flags;
 		switch (new_state->groups.motion)
 		{
@@ -1636,6 +1694,18 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 
 			return error;
+#ifdef ENABLE_G39_H_MAPPING
+		case G39:
+			if (!new_state->groups.motion_mantissa)
+			{
+				error = mc_build_hmap(target, words->ijk, words->r, &block_data);
+				if (error == STATUS_OK)
+				{
+					new_state->groups.height_map_active = 1;
+				}
+			}
+			break;
+#endif
 #ifdef ENABLE_PARSER_MODULES
 		default: // other motion commands (derived from extended commands)
 			args.new_state = new_state;
@@ -1977,6 +2047,9 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		case 59:
 		case 61:
 		case 92:
+#ifdef ENABLE_G39_H_MAPPING
+		case 39:
+#endif
 			break;
 		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
@@ -2005,6 +2078,9 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 88:
 	case 89:
 #endif
+#ifdef ENABLE_G39_H_MAPPING
+	case 39:
+#endif
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2015,6 +2091,18 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			cmd->group_0_1_useaxis = 1;
 		}
 
+#ifdef ENABLE_G39_H_MAPPING
+		if (code == 39)
+		{
+			new_state->groups.height_map_active = (mantissa == 2) ? 1 : 0;
+
+			if (mantissa)
+			{
+				return STATUS_OK;
+			}
+		}
+
+#endif
 		new_group |= GCODE_GROUP_MOTION;
 		new_state->groups.motion = code;
 		break;
@@ -2459,6 +2547,9 @@ void parser_reset(void)
 	memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset)); // G92.2
 	parser_parameters.tool_length_offset = 0;
 	parser_wco_counter = 0;
+#ifdef ENABLE_G39_H_MAPPING
+	parser_state.groups.height_map_active = 0;
+#endif
 }
 
 // loads parameters
