@@ -35,12 +35,22 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
+#define EXTENDED_GCODE_BASE 0
+#define EXTENDED_MCODE_BASE 1000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
+#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
+
 #define G0 0
 #define G1 1
 #define G2 2
 #define G3 3
 #ifdef ENABLE_G39_H_MAPPING
 #define G39 39
+#endif
+// available with sync motions enabled
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#define G33 33
 #endif
 // G38.2, G38.3, G38.4, G38.5
 // mantissa must also be checked
@@ -93,9 +103,10 @@ extern "C"
 #define G92_2 12
 #define G92_3 13
 //lathe mode
+#ifdef ENABLE_LATHE_MODE
 #define G7 1
 #define G8 0
-
+#endif
 #define M0 1
 #define M1 2
 #define M2 3
@@ -111,11 +122,14 @@ extern "C"
 #define M48 1
 #define M49 0
 
-#define EXTENDED_GCODE_BASE 0
-#define EXTENDED_MCODE_BASE 1000
-#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
-#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
-#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
+// extended codes
+#define M10 EXTENDED_MCODE(10)
+#ifdef ENABLE_LASER_PPI
+#define M126 EXTENDED_MCODE(126)
+#define M127 EXTENDED_MCODE(127)
+#define M128 EXTENDED_MCODE(128)
+#endif
+
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001

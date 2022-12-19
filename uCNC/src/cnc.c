@@ -229,6 +229,9 @@ bool cnc_dotasks(void)
 	if (!lock_itp)
 	{
 		lock_itp = true;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		mc_spindle_sync_update();
+#endif
 #ifdef ENABLE_MAIN_LOOP_MODULES
 		EVENT_INVOKE(cnc_dotasks, NULL);
 #endif

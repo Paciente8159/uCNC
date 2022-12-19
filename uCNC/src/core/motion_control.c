@@ -52,6 +52,15 @@ static float mc_last_target[AXIS_COUNT];
 static uint8_t mc_last_dirbits;
 #endif
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
+static volatile uint8_t synched_motion_status;
+static volatile int32_t spindle_index_counter;
+static uint32_t steps_per_index;
+static float steps_per_index_inv;
+static uint32_t motion_total_steps;
+static float rpm_to_stepfeed_constant;
+#endif
+
 #ifdef ENABLE_G39_H_MAPPING
 
 #if H_MAPING_GRID_FACTOR < 2 || H_MAPING_GRID_FACTOR > 6
@@ -873,6 +882,241 @@ void mc_sync_position(void)
 	kinematics_apply_forward(mc_last_step_pos, mc_last_target);
 	parser_sync_position();
 }
+
+#ifdef ENABLE_RT_SYNC_MOTIONS
+#define RPM_PPR_INV (1.0f / (float)RPM_PPR)
+
+#define SYNC_DISABLED 0
+#define SYNC_READY 1
+#define SYNC_STARTING 2
+#define SYNC_RUNNING 4
+
+void mc_spindle_index_cb_handler(void)
+{
+	switch (synched_motion_status)
+	{
+	case SYNC_READY:
+		itp_start(false);
+		synched_motion_status = SYNC_STARTING;
+		break;
+	case SYNC_STARTING:
+		if (itp_sync_ready())
+		{
+			spindle_index_counter = lroundf(steps_per_index_inv * itp_sync_step_counter);
+			synched_motion_status = SYNC_RUNNING;
+		}
+		break;
+	case SYNC_RUNNING:
+		spindle_index_counter++;
+		break;
+	}
+}
+
+uint8_t mc_spindle_sync_line(float *target, float mm_per_rev, motion_data_t *block_data)
+{
+	// syncs motions and sets spindle
+	if (mc_update_tools(block_data) != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	if (!block_data->motion_flags.bit.spindle_running)
+	{
+		return STATUS_SPINDLE_STOPPED;
+	}
+
+#ifdef TOOL_WAIT_FOR_SPEED
+	// wait for spindle to reach the desired speed
+	uint16_t programmed_speed = block_data->spindle;
+	uint16_t at_speed_threshold = lroundf(TOOL_WAIT_FOR_SPEED_MAX_ERROR * 0.01f * programmed_speed);
+
+	// wait for tool at speed
+	uint32_t start_spindle_time = mcu_millis();
+	while (ABS(programmed_speed - tool_get_speed()) > at_speed_threshold)
+	{
+		if (!cnc_dotasks() || (mcu_millis() - start_spindle_time) > (DELAY_ON_RESUME_SPINDLE * 1000))
+		{
+			return STATUS_SPINDLE_STOPPED;
+		}
+	}
+#endif
+
+	float average_rpm = block_data->spindle;
+#ifdef ENABLE_ENCODER_RPM
+	average_rpm = 0;
+	for (uint8_t i = 10; i != 0; i--)
+	{
+		while (!encoder_rpm_updated)
+		{
+			cnc_dotasks();
+		}
+
+		average_rpm += (float)encoder_get_rpm();
+	}
+
+	average_rpm *= 0.1f;
+	// spindle speed ins not valid
+	if (average_rpm < 1)
+	{
+		return STATUS_SPINDLE_STOPPED;
+	}
+#endif
+
+	// gets the starting point
+	float prev_target[AXIS_COUNT];
+	mc_get_position(prev_target);
+	kinematics_apply_transform(prev_target);
+	int32_t prev_step_pos[STEPPER_COUNT];
+	kinematics_apply_inverse(prev_target, prev_step_pos);
+
+	// gets the exit point (copies to prevent modifying target vector)
+	float line_dist = 0;
+	float dir_vect[AXIS_COUNT];
+	memcpy(dir_vect, target, sizeof(dir_vect));
+	kinematics_apply_transform(dir_vect);
+	int32_t next_step_pos[STEPPER_COUNT];
+	kinematics_apply_inverse(dir_vect, next_step_pos);
+
+	// calculates amount of motion vector
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		dir_vect[i] -= prev_target[i];
+		line_dist += dir_vect[i] * dir_vect[i];
+	}
+
+	line_dist = sqrtf(line_dist);
+
+	// determines the normalized direction vector
+	// and the maximum acceleration
+	float max_accel = FLT_MAX;
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		dir_vect[i] /= line_dist;
+		// denormalize max feed rate for each axis
+		float denorm_param = g_settings.acceleration[i] / ABS(dir_vect[i]);
+		max_accel = MIN(max_accel, denorm_param);
+	}
+
+	// calculates the total number of steps in the motion
+	uint32_t total_steps = 0;
+	for (uint8_t i = AXIS_TO_STEPPERS; i != 0;)
+	{
+		i--;
+		int32_t steps = next_step_pos[i] - prev_step_pos[i];
+
+		steps = ABS(steps);
+		if (total_steps < (uint32_t)steps)
+		{
+			total_steps = steps;
+		}
+	}
+
+	motion_total_steps = total_steps;
+
+	// from this the factor to convert from RPM to step feed can be obtained
+	// step rate = rpm_to_stepfeed_constant * RPM
+	rpm_to_stepfeed_constant = mm_per_rev * total_steps * MIN_SEC_MULT / line_dist;
+
+	// calculates the feedrate based in the K factor and the programmed spindle RPM
+	// spindle is in Rev/min and K is in units(mm) per Rev Rev/min * mm/Rev = mm/min
+	float total_revs = line_dist / mm_per_rev;
+	float feed = mm_per_rev * average_rpm;
+	block_data->feed = feed;
+	block_data->motion_flags.bit.synched = 1;
+
+	// convert feed to mm/s
+	feed *= MIN_SEC_MULT;
+
+	// resets indexes
+	spindle_index_counter = 0;
+	itp_sync_step_counter = 0;
+
+	// calculates the expected number of steps per revolution
+	float steps_per_rev = (float)motion_total_steps / total_revs;
+	steps_per_index = lroundf(steps_per_rev);
+	steps_per_index_inv = 1.0f / steps_per_index;
+
+	if (mc_line(target, block_data) != STATUS_OK)
+	{
+		return STATUS_CRITICAL_FAIL;
+	}
+
+#ifdef ENABLE_ENCODER_RPM
+	// attach the index event callback
+	encoder_attach_index_cb(&mc_spindle_index_cb_handler);
+#endif
+
+	// flag the spindle index callback that it can start the threading motion
+	synched_motion_status = SYNC_READY;
+
+	// wait for the motion to end
+	if (itp_sync() != STATUS_OK)
+	{
+		synched_motion_status = SYNC_DISABLED;
+		return STATUS_CRITICAL_FAIL;
+	}
+
+	synched_motion_status = SYNC_DISABLED;
+#ifdef ENABLE_ENCODER_RPM
+	encoder_dettach_index_cb();
+#endif
+
+	return STATUS_OK;
+}
+
+void mc_spindle_sync_update()
+{
+#ifdef ENABLE_ENCODER_RPM
+	if ((synched_motion_status == SYNC_RUNNING))
+	{
+		float rpm = (float)encoder_get_rpm();
+
+		if (rpm < 1)
+		{
+			protocol_send_feedback(__romstr__("SPINDLE STOPPED ERROR"));
+			cnc_alarm(EXEC_ALARM_SPINDLE_SYNC_FAIL);
+			return;
+		}
+
+#ifndef RPM_SYNC_UPDATE_ON_INDEX_ONLY
+		int32_t error, rt_pulse_counter, spindle_pulse_counter, index_counter;
+		__ATOMIC__
+		{
+			index_counter = spindle_index_counter;
+			rt_pulse_counter = itp_sync_step_counter;
+		}
+
+		// calculate the spindle position
+		float counts = (float)index_counter + ((float)encoder_get_position(RPM_ENCODER) * RPM_PPR_INV);
+		spindle_pulse_counter = lroundf(counts * steps_per_index);
+
+		// if negative the axis are ahead of spindle and need to slow down
+		// if positive the axis are behind the spindle and need to speed up.
+		error = spindle_pulse_counter - rt_pulse_counter;
+
+		// this updates the interpolator right on the next step and the current motion in the planner
+		itp_update_feed(((rpm * rpm_to_stepfeed_constant) + error));
+
+#ifdef G33_DEBUG
+		protocol_send_string(MSG_START);
+		serial_print_int(rt_pulse_counter);
+		serial_putc(':');
+		serial_print_int(index_counter);
+		serial_putc(':');
+		serial_print_int(spindle_pulse_counter);
+		serial_putc(':');
+		serial_print_int(error);
+		serial_putc(':');
+		serial_print_flt(rpm);
+		protocol_send_string(MSG_END);
+#endif
+#endif
+	}
+#endif
+}
+#endif
 
 #ifdef ENABLE_G39_H_MAPPING
 

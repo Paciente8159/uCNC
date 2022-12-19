@@ -103,9 +103,14 @@ extern "C"
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
 
-	#ifdef ENABLE_G39_H_MAPPING
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	uint8_t mc_spindle_sync_line(float *target, float mm_per_rev, motion_data_t *block_data);
+	void mc_spindle_sync_update();
+#endif
+
+#ifdef ENABLE_G39_H_MAPPING
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
-	#endif
+#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler

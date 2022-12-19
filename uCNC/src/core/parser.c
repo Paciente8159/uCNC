@@ -28,14 +28,6 @@
 #include <string.h>
 #include <float.h>
 
-// extended codes
-#define M10 EXTENDED_MCODE(10)
-#ifdef ENABLE_LASER_PPI
-#define M126 EXTENDED_MCODE(126)
-#define M127 EXTENDED_MCODE(127)
-#define M128 EXTENDED_MCODE(128)
-#endif
-
 #define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
 #define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
 #define G28HOME COORD_SYS_COUNT							 // G28 index
@@ -64,6 +56,7 @@ static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
+
 #ifdef ENABLE_LASER_PPI
 // turn laser off callback
 extern MCU_CALLBACK void laser_ppi_turnoff_cb(void);
@@ -904,6 +897,21 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			}
 
 			break;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		case G33:
+			if (!CHECKFLAG(cmd->words, GCODE_XYZ_AXIS))
+			{
+				// it's an error no axis word is specified
+				return STATUS_GCODE_NO_AXIS_WORDS;
+			}
+
+			if (!CHECKFLAG(cmd->words, GCODE_WORD_K))
+			{
+				// it's an error no distance per rev word is specified
+				return STATUS_GCODE_VALUE_WORD_MISSING;
+			}
+			break;
+#endif
 #ifdef ENABLE_G39_H_MAPPING
 		case G39:
 			// G39
@@ -1582,10 +1590,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	if (new_state->groups.nonmodal == 0 && CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 	{
 #ifdef ENABLE_LATHE_MODE
-		// if X coordinate was explicitly declared and radius mode is active modify the value of X to half
-		if (CHECKFLAG(cmd->words, GCODE_WORD_X) && new_state->groups.lathe_radius_mode)
+		// if radius mode is active modify the value of X to half
+		if (new_state->groups.lathe_radius_mode)
 		{
-			target[AXIS_X] = 0.5f;
+			target[AXIS_X] = fast_flt_div2(target[AXIS_X]);
 		}
 #endif
 #ifdef ENABLE_G39_H_MAPPING
@@ -1704,6 +1712,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 
 			return error;
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		case G33:
+			error = mc_spindle_sync_line(target, words->ijk[2], &block_data);
+			break;
+#endif
 #ifdef ENABLE_G39_H_MAPPING
 		case G39:
 			if (!new_state->groups.motion_mantissa)
@@ -1728,6 +1741,14 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 		// tool is updated in motion
 		update_tools = false;
+
+#ifdef ENABLE_LATHE_MODE
+		// if radius mode is active undo X modification to store position in normal mode
+		if (new_state->groups.lathe_radius_mode)
+		{
+			target[AXIS_X] = fast_flt_mul2(target[AXIS_X]);
+		}
+#endif
 		// saves position
 		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 	}
@@ -2087,6 +2108,9 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 87:
 	case 88:
 	case 89:
+#endif
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	case 33:
 #endif
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
