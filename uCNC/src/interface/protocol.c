@@ -35,7 +35,7 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_settings)
 }
 #endif
 
-static void procotol_send_newline(void)
+static void protocol_send_newline(void)
 {
 	protocol_send_string(MSG_EOL);
 }
@@ -46,7 +46,7 @@ void protocol_send_ok(void)
 	protocol_busy = true;
 #endif
 	protocol_send_string(MSG_OK);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -59,7 +59,7 @@ void protocol_send_error(uint8_t error)
 #endif
 	protocol_send_string(MSG_ERROR);
 	serial_print_int(error);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -72,7 +72,7 @@ void protocol_send_alarm(int8_t alarm)
 #endif
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -370,7 +370,7 @@ void protocol_send_status(void)
 	}
 
 	serial_putc('>');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -391,7 +391,7 @@ void protocol_send_gcode_coordsys(void)
 		serial_putc(':');
 		serial_print_fltarr(axis, AXIS_COUNT);
 		serial_putc(']');
-		procotol_send_newline();
+		protocol_send_newline();
 	}
 
 	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
@@ -401,33 +401,33 @@ void protocol_send_gcode_coordsys(void)
 		parser_get_coordsys(i, axis);
 		serial_print_fltarr(axis, AXIS_COUNT);
 		serial_putc(']');
-		procotol_send_newline();
+		protocol_send_newline();
 	}
 
 	protocol_send_string(__romstr__("[G28:"));
 	parser_get_coordsys(28, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 	protocol_send_string(__romstr__("[G30:"));
 	parser_get_coordsys(30, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 	protocol_send_string(__romstr__("[G92:"));
 	parser_get_coordsys(92, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 
 #ifdef AXIS_TOOL
 	protocol_send_string(__romstr__("[TLO:"));
 	parser_get_coordsys(254, axis);
 	serial_print_flt(axis[0]);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #endif
 	protocol_send_probe_result(parser_get_probe_result());
 
@@ -448,7 +448,7 @@ void protocol_send_probe_result(uint8_t val)
 	serial_putc(':');
 	serial_putc('0' + val);
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -523,7 +523,7 @@ void protocol_send_gcode_modes(void)
 	serial_print_int(spindle);
 
 	serial_putc(']');
-	procotol_send_newline();
+	protocol_send_newline();
 #ifdef ECHO_CMD
 	protocol_busy = false;
 #endif
@@ -535,7 +535,7 @@ void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t val
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_int(value);
-	procotol_send_newline();
+	protocol_send_newline();
 }
 
 static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
@@ -544,7 +544,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 	serial_print_int(setting);
 	serial_putc('=');
 	serial_print_flt(value);
-	procotol_send_newline();
+	protocol_send_newline();
 }
 
 void protocol_send_start_blocks(void)
@@ -564,7 +564,7 @@ void protocol_send_start_blocks(void)
 		}
 		else
 		{
-			procotol_send_newline();
+			protocol_send_newline();
 			break;
 		}
 	}
@@ -580,7 +580,7 @@ void protocol_send_start_blocks(void)
 		}
 		else
 		{
-			procotol_send_newline();
+			protocol_send_newline();
 			break;
 		}
 	}
