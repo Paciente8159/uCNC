@@ -15,6 +15,10 @@
 
 #include "../cnc.h"
 
+#ifndef MAX_MODAL_GROUPS
+#define MAX_MODAL_GROUPS 20
+#endif
+
 #ifdef ECHO_CMD
 static bool protocol_busy;
 #endif
@@ -32,6 +36,14 @@ WEAK_EVENT_HANDLER(protocol_send_pins_states)
 WEAK_EVENT_HANDLER(protocol_send_cnc_settings)
 {
 	DEFAULT_EVENT_HANDLER(protocol_send_cnc_settings);
+}
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
+// event_protocol_send_gcode_modes_handler
+WEAK_EVENT_HANDLER(protocol_send_gcode_modes)
+{
+	DEFAULT_EVENT_HANDLER(protocol_send_gcode_modes);
 }
 #endif
 
@@ -110,7 +122,7 @@ void protocol_send_feedback(const char *__s)
 static uint8_t protocol_get_tools(void)
 {
 	// leave extra room for future modal groups
-	uint8_t modalgroups[15];
+	uint8_t modalgroups[MAX_MODAL_GROUPS];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -469,7 +481,7 @@ static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uin
 void protocol_send_gcode_modes(void)
 {
 	// leave extra room for future modal groups
-	uint8_t modalgroups[15];
+	uint8_t modalgroups[MAX_MODAL_GROUPS];
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
@@ -504,6 +516,10 @@ void protocol_send_gcode_modes(void)
 	{
 		protocol_send_parser_modalstate('G', 39, 1);
 	}
+#endif
+
+#ifdef ENABLE_SETTINGS_MODULES
+	EVENT_INVOKE(protocol_send_gcode_modes, NULL);
 #endif
 
 	for (uint8_t i = 8; i < 11; i++)
