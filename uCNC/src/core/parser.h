@@ -315,6 +315,12 @@ extern "C"
 	// event_gcode_exec_modifier_handler
 	DECL_EVENT_HANDLER(gcode_exec_modifier);
 
+	// event_gcode_before_motion_handler
+	DECL_EVENT_HANDLER(gcode_before_motion);
+
+	// event_gcode_after_motion_handler
+	DECL_EVENT_HANDLER(gcode_after_motion);
+
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
@@ -326,6 +332,12 @@ extern "C"
 
 	// event_parse_token_handler
 	DECL_EVENT_HANDLER(parse_token);
+
+	// event_parser_get_modes_handler
+	DECL_EVENT_HANDLER(parser_get_modes);
+
+	// event_parser_reset_handler
+	DECL_EVENT_HANDLER(parser_reset);
 #endif
 
 #ifdef __cplusplus

@@ -58,6 +58,11 @@ extern "C"
 	DECL_EVENT_HANDLER(protocol_send_cnc_settings);
 #endif
 
+#ifdef ENABLE_PARSER_MODULES
+	// event_protocol_send_gcode_modes_handler
+	DECL_EVENT_HANDLER(protocol_send_gcode_modes);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

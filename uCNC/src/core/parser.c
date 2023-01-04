@@ -98,10 +98,22 @@ WEAK_EVENT_HANDLER(gcode_exec)
 	DEFAULT_EVENT_HANDLER(gcode_exec);
 }
 
-// event_gcode_exec_handler
+// event_gcode_exec_modifier_handler
 WEAK_EVENT_HANDLER(gcode_exec_modifier)
 {
 	DEFAULT_EVENT_HANDLER(gcode_exec_modifier);
+}
+
+// event_gcode_before_motion_handler
+WEAK_EVENT_HANDLER(gcode_before_motion)
+{
+	DEFAULT_EVENT_HANDLER(gcode_before_motion);
+}
+
+// event_gcode_after_motion_handler
+WEAK_EVENT_HANDLER(gcode_after_motion)
+{
+	DEFAULT_EVENT_HANDLER(gcode_after_motion);
 }
 
 // event_grbl_cmd_handler
@@ -114,6 +126,18 @@ WEAK_EVENT_HANDLER(grbl_cmd)
 WEAK_EVENT_HANDLER(parse_token)
 {
 	DEFAULT_EVENT_HANDLER(parse_token);
+}
+
+// event_parser_get_modes_handler
+WEAK_EVENT_HANDLER(parser_get_modes)
+{
+	DEFAULT_EVENT_HANDLER(parser_get_modes);
+}
+
+// event_parser_reset_handler
+WEAK_EVENT_HANDLER(parser_reset)
+{
+	DEFAULT_EVENT_HANDLER(parser_reset);
 }
 #endif
 
@@ -201,6 +225,10 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 	modalgroups[10] = 49 - parser_state.groups.feed_speed_override;
 #ifdef ENABLE_G39_H_MAPPING
 	modalgroups[13] = parser_state.groups.height_map_active;
+#endif
+// event_parser_get_modes_handler
+#ifdef ENABLE_PARSER_MODULES
+	EVENT_INVOKE(parser_get_modes, modalgroups);
 #endif
 	*feed = (uint16_t)parser_state.feedrate;
 }
@@ -712,12 +740,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
 		{
 			gcode_parse_args_t args = {word, code, error, value, new_state, words, cmd};
-			uint8_t newerror = EVENT_INVOKE(gcode_parse, &args);
-			// is extended command
-			if (cmd->group_extended != 0)
-			{
-				error = newerror;
-			}
+			error = EVENT_INVOKE(gcode_parse, &args);
 		}
 #endif
 
@@ -1585,6 +1608,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 #endif
 
+#ifdef ENABLE_PARSER_MODULES
+		EVENT_INVOKE(gcode_before_motion, &args);
+#endif
+
 		uint8_t probe_flags;
 		switch (new_state->groups.motion)
 		{
@@ -1715,6 +1742,10 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			break;
 #endif
 		}
+
+#ifdef ENABLE_PARSER_MODULES
+		EVENT_INVOKE(gcode_after_motion, &args);
+#endif
 
 		// tool is updated in motion
 		update_tools = false;
@@ -2549,6 +2580,10 @@ void parser_reset(void)
 	parser_wco_counter = 0;
 #ifdef ENABLE_G39_H_MAPPING
 	parser_state.groups.height_map_active = 0;
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
+		EVENT_INVOKE(parser_reset, NULL);
 #endif
 }
 
