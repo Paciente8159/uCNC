@@ -740,12 +740,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
 		{
 			gcode_parse_args_t args = {word, code, error, value, new_state, words, cmd};
-			uint8_t newerror = EVENT_INVOKE(gcode_parse, &args);
-			// is extended command
-			if (cmd->group_extended != 0)
-			{
-				error = newerror;
-			}
+			error = EVENT_INVOKE(gcode_parse, &args);
 		}
 #endif
 

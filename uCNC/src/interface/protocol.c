@@ -16,7 +16,7 @@
 #include "../cnc.h"
 
 #ifndef MAX_MODAL_GROUPS
-#define MAX_MODAL_GROUPS 20
+#define MAX_MODAL_GROUPS 14
 #endif
 
 #ifdef ECHO_CMD
@@ -518,7 +518,7 @@ void protocol_send_gcode_modes(void)
 	}
 #endif
 
-#ifdef ENABLE_SETTINGS_MODULES
+#ifdef ENABLE_PARSER_MODULES
 	EVENT_INVOKE(protocol_send_gcode_modes, NULL);
 #endif
 
