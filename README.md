@@ -126,6 +126,8 @@ NOTES:
 
 Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
   - Cubic and quadratic splines: G5/G5.1
+  - Bilinear surface mapping: G39/G39.1
+  - Lathe radius mode: G7/G8
   - Spindle synchronized motion: G33
   - Stepper enable/disable: M17/M18
   - General Pin Control: M42
