@@ -314,8 +314,8 @@ extern "C"
 	 * (performs 0 steps in the ISR tick) and skips calculations
 	 * */
 
-// #define STEP_ISR_SKIP_MAIN
-// #define STEP_ISR_SKIP_IDLE
+#define STEP_ISR_SKIP_MAIN
+#define STEP_ISR_SKIP_IDLE
 
 	/**
 	 * Sets the maximum number of step doubling loops carried by the DSS (Dynamic
@@ -405,7 +405,7 @@ extern "C"
 	 * that uCNC is recognized a Grbl protocol controller device)
 	 * */
 
-// #define EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP
 
 	/**
 	 *
@@ -413,7 +413,7 @@ extern "C"
 	 *
 	 * */
 
-// #define ENABLE_SYSTEM_INFO
+#define ENABLE_SYSTEM_INFO
 
 	/**
 	 * Enables additional core grbl system commands
