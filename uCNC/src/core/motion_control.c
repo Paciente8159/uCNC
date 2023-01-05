@@ -505,7 +505,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 	// stores the new position for the next motion
 	memcpy(mc_last_target, target, sizeof(mc_last_target));
+	// restores feed and clears max acceleration to enable recalculation on next motion
 	block_data->feed = feed;
+	block_data->max_accel = 0;
 	return error;
 }
 
@@ -684,7 +686,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
 	uint8_t axis_mask = (1 << axis);
-	motion_data_t block_data;
+	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 
 	cnc_unlock(true);
