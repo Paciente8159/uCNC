@@ -17,6 +17,7 @@
 - added support for bilinear height map generation for irregular surfaces via custom G39 and G39.1 (#343)
 - added support motion commands modifications at parser level (support for G7/G8 extension module) (#346)
 - added boardmap for UNO CNC Shield v3 (Grbl 0.8 mapping) (#348)
+- added servo controlled pen holder tool (#351)
 
 ### Changed
 
