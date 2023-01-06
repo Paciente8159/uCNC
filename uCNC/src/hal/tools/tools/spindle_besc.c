@@ -90,7 +90,7 @@ static int16_t range_speed(int16_t value)
 		return 0;
 	}
 
-	value = (int16_t)((THROTTLE_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + SPINDLE_BESC_LOW);
+	value = (int16_t)((SPINDLE_BESC_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + SPINDLE_BESC_LOW);
 	return value;
 }
 
