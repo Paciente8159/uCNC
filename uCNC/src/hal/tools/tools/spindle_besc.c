@@ -41,10 +41,16 @@
 #endif
 #endif
 
-#define THROTTLE_DOWN 50
-#define THROTTLE_NEUTRAL 127
-#define THROTTLE_FULL 255
-#define THROTTLE_RANGE (THROTTLE_FULL - THROTTLE_DOWN)
+#ifndef SPINDLE_BESC_LOW
+#define SPINDLE_BESC_LOW 50
+#endif
+#ifndef SPINDLE_BESC_MID
+#define SPINDLE_BESC_MID 127
+#endif
+#ifndef SPINDLE_BESC_HIGH
+#define SPINDLE_BESC_HIGH 255
+#endif
+#define SPINDLE_BESC_RANGE (ABS((SPINDLE_BESC_HIGH - SPINDLE_BESC_LOW)))
 
 #ifdef SPINDLE_BESC_HAS_RPM_ENCODER
 #ifndef ENABLE_ENCODER_RPM
@@ -59,12 +65,12 @@ static void startup_code(void)
 // do whatever routine you need to do here to arm the ESC
 #if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_NEUTRAL);
+	mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
 #endif
 	mcu_set_output(SPINDLE_BESC_POWER_RELAY);
 	cnc_delay_ms(1000);
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-	mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
+	mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
 #endif
 	cnc_delay_ms(2000);
 #endif
@@ -84,7 +90,7 @@ static int16_t range_speed(int16_t value)
 		return 0;
 	}
 
-	value = (int16_t)((THROTTLE_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + THROTTLE_DOWN);
+	value = (int16_t)((THROTTLE_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + SPINDLE_BESC_LOW);
 	return value;
 }
 
@@ -94,7 +100,7 @@ static void set_speed(int16_t value)
 	if ((value <= 0))
 	{
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-		mcu_set_servo(SPINDLE_BESC_SERVO, THROTTLE_DOWN);
+		mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
 #endif
 	}
 	else

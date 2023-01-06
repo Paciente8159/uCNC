@@ -28,24 +28,30 @@
 #define PEN_SERVO SERVO0
 #endif
 
-#define THROTTLE_DOWN 50
-#define THROTTLE_NEUTRAL 127
-#define THROTTLE_FULL 255
-#define THROTTLE_RANGE (THROTTLE_FULL - THROTTLE_DOWN)
+#ifndef PEN_SERVO_LOW
+#define PEN_SERVO_LOW 50
+#endif
+#ifndef PEN_SERVO_MID
+#define PEN_SERVO_MID 127
+#endif
+#ifndef PEN_SERVO_HIGH
+#define PEN_SERVO_HIGH 255
+#endif
+#define PEN_SERVO_RANGE (ABS((PEN_SERVO_HIGH - PEN_SERVO_LOW)))
 
 static uint8_t speed;
 
 static void startup_code(void)
 {
 #if ASSERT_PIN(PEN_SERVO)
-	mcu_set_servo(PEN_SERVO, THROTTLE_DOWN);
+	mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 }
 
 static void shutdown_code(void)
 {
 #if ASSERT_PIN(PEN_SERVO)
-	mcu_set_servo(PEN_SERVO, THROTTLE_DOWN);
+	mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 }
 
@@ -56,7 +62,7 @@ static int16_t range_speed(int16_t value)
 		return 0;
 	}
 
-	value = (int16_t)((THROTTLE_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + THROTTLE_DOWN);
+	value = (int16_t)((PEN_SERVO_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + PEN_SERVO_LOW);
 	return value;
 }
 
@@ -65,7 +71,7 @@ static void set_speed(int16_t value)
 	if ((value <= 0))
 	{
 #if ASSERT_PIN(PEN_SERVO)
-		mcu_set_servo(PEN_SERVO, THROTTLE_DOWN);
+		mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 	}
 	else
@@ -77,7 +83,6 @@ static void set_speed(int16_t value)
 
 	speed = (value <= 0) ? 0 : value;
 }
-
 
 static uint16_t get_speed(void)
 {
