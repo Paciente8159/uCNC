@@ -168,7 +168,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
-			cnc_set_exec_state(EXEC_HALT);
+			cnc_set_exec_state(EXEC_LIMTS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -196,11 +196,10 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(ESTOP)
 	if (CHECKFLAG(controls, ESTOP_MASK))
 	{
-		cnc_set_exec_state(EXEC_KILL);
-		cnc_stop();
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
+		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
 		return; // forces exit
 	}
 #endif

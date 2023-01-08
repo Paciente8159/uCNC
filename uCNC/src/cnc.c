@@ -315,7 +315,7 @@ void cnc_alarm(int8_t code)
 
 bool cnc_has_alarm()
 {
-	return ((CHECKFLAG(cnc_state.exec_state, EXEC_ALARM) != EXEC_IDLE) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
+	return (cnc_get_exec_state(EXEC_KILL) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
 }
 
 void cnc_stop(void)
@@ -435,12 +435,9 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 	// if releasing from a HOLD state with and active delay in exec
-	if (CHECKFLAG(statemask, EXEC_HOLD) && CHECKFLAG(cnc_state.exec_state, EXEC_HOLD))
+	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
 		SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
-		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
-		// prevents from clearing twice
-		CLEARFLAG(statemask, EXEC_HOLD);
 #if TOOL_COUNT > 0
 		// updated the coolant pins
 		tool_set_coolant(planner_get_coolant());
@@ -467,7 +464,6 @@ void cnc_clear_exec_state(uint8_t statemask)
 		}
 #endif
 #endif
-		CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
@@ -533,7 +529,7 @@ void cnc_call_rt_command(uint8_t command)
 #endif
 	case CMD_CODE_CYCLE_START:
 		// prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
-		if (!CHECKFLAG(cnc_state.exec_state, EXEC_RESUMING))
+		if (cnc_get_exec_state(EXEC_RESUMING) != EXEC_RESUMING)
 		{
 			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
@@ -542,7 +538,7 @@ void cnc_call_rt_command(uint8_t command)
 		SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
 		break;
 	case CMD_CODE_JOG_CANCEL:
-		if (CHECKFLAG(cnc_state.exec_state, EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
+		if (cnc_get_exec_state(EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
 		{
 			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
 		}
@@ -762,8 +758,12 @@ void cnc_check_fault_systems(void)
 bool cnc_check_interlocking(void)
 {
 	// check all flags
-	// if kill leave
-	if (CHECKFLAG(cnc_state.exec_state, EXEC_KILL))
+
+	// an existing KILL condition can be due to:
+	// - ESTOP trigger
+	// - soft reset command
+	// - any cnc_alarm call
+	if (cnc_get_exec_state(EXEC_KILL))
 	{
 #if ASSERT_PIN(ESTOP)
 		// the emergency stop is pressed.
@@ -773,50 +773,59 @@ bool cnc_check_interlocking(void)
 			return false;
 		}
 #endif
-		if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) // reset or emergency stop during a homing cycle
+		if (cnc_get_exec_state(EXEC_HOMING)) // reset or emergency stop during a homing cycle
 		{
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
 		}
-		else if (CHECKFLAG(cnc_state.exec_state, EXEC_RUN)) // reset or emergency stop during a running cycle
+		else if (cnc_get_exec_state(EXEC_HALT)) // reset or emergency stop during a running cycle
 		{
 			cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 		}
 		return false;
 	}
 
-	if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR) && CHECKFLAG(cnc_state.exec_state, EXEC_HOMING)) // door opened during a homing cycle
+	// an HALT condition or a limit switch was triggered
+	// this can be due to any abrupt stop while in motion
+	if (cnc_get_exec_state(EXEC_HALT | EXEC_LIMTS))
 	{
-		cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
-		return false;
-	}
-
-	if (CHECKFLAG(cnc_state.exec_state, EXEC_HALT) && CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
-	{
-		if (!CHECKFLAG(cnc_state.exec_state, EXEC_HOMING) && io_get_limits()) // if a motion is being performed allow trigger the limit switch alarm
+		if (!cnc_get_exec_state(EXEC_HOMING)) // if a motion is being performed allow trigger the limit switch alarm
 		{
 			cnc_alarm(EXEC_ALARM_HARD_LIMIT);
 		}
 		else
 		{
-			CLEARFLAG(cnc_state.exec_state, EXEC_RUN);
+			cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 		}
 
 		return false;
 	}
 
-	// opened door or hold with the machine still moving
-	if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR | EXEC_HOLD) && !CHECKFLAG(cnc_state.exec_state, EXEC_RUN))
+	// the safety door condition is active
+	if (cnc_get_exec_state(EXEC_DOOR)) 
 	{
-		if (CHECKFLAG(cnc_state.exec_state, EXEC_DOOR))
+		// door opened during a homing cycle exit with alarm
+		if (cnc_get_exec_state(EXEC_HOMING))
 		{
-			cnc_stop(); // stop all tools not only motion
-		}
-		else
-		{
-			itp_stop(); // stop motion
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 		}
 
-		if (CHECKFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
+		// with the door opened put machine on HOLD
+		cnc_set_exec_state(EXEC_HOLD);
+
+		// if the machined has stopped stop all tools
+		if(!cnc_get_exec_state(EXEC_RUN)){
+			cnc_stop();
+		}
+
+		return false;
+	}
+
+	// an hold condition is active and motion as stopped
+	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
+	{
+		itp_stop(); // stop motion
+
+		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
 		{
 			itp_clear();
 			planner_clear();

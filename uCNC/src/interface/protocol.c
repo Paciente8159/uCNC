@@ -278,7 +278,6 @@ void protocol_send_status(void)
 		case EXEC_JOG:
 			protocol_send_string(MSG_STATUS_JOG);
 			break;
-		case EXEC_RESUMING:
 		case EXEC_RUN:
 			protocol_send_string(MSG_STATUS_RUN);
 			break;
