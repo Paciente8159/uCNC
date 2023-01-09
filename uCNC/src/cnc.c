@@ -157,8 +157,9 @@ void cnc_run(void)
 		if (cnc_state.alarm < 0)
 		{
 			cnc_state.loop_state = LOOP_STARTUP_RESET;
+			cnc_clear_exec_state(EXEC_KILL);
 		}
-	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET);
+	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
 
 bool cnc_exec_cmd(void)
