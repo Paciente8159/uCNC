@@ -168,7 +168,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
-			cnc_set_exec_state(EXEC_LIMTS);
+			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -337,6 +337,7 @@ void io_lock_limits(uint8_t limitmask)
 void io_invert_limits(uint8_t limitmask)
 {
 	io_invert_limits_mask = limitmask;
+	mcu_limits_changed_cb();
 }
 
 uint8_t io_get_limits(void)

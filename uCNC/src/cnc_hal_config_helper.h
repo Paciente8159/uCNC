@@ -655,8 +655,14 @@ extern "C"
 #ifndef DUAL_DRIVE1_STEPPER
 #define DUAL_DRIVE1_STEPPER 7
 #endif
+#ifndef DUAL_DRIVE2_STEPPER
+#define DUAL_DRIVE2_STEPPER 6
+#endif
+#ifndef DUAL_DRIVE3_STEPPER
+#define DUAL_DRIVE3_STEPPER 7
+#endif
 
-#if (!defined(DUAL_DRIVE0_AXIS) && !defined(DUAL_DRIVE1_AXIS))
+#if (!defined(DUAL_DRIVE0_AXIS) && !defined(DUAL_DRIVE1_AXIS) && !defined(DUAL_DRIVE2_AXIS) && !defined(DUAL_DRIVE3_AXIS))
 #error "Enabling dual axis drive requires to configure at least one axis with dual drive"
 #endif
 

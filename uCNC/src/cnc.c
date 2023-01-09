@@ -24,7 +24,8 @@
 
 #define LOOP_STARTUP_RESET 0
 #define LOOP_RUNNING 1
-#define LOOP_ERROR_RESET 2
+#define LOOP_FAULT 2
+#define LOOP_REQUIRE_RESET 4
 
 #define UNLOCK_OK 0
 #define UNLOCK_LOCKED 1
@@ -125,16 +126,18 @@ void cnc_run(void)
 		{
 		} while (cnc_exec_cmd());
 
-		cnc_state.loop_state = LOOP_ERROR_RESET;
+		cnc_state.loop_state = LOOP_FAULT;
 		serial_flush();
-		if (cnc_state.alarm > 0)
+		uint8_t alarm = cnc_state.alarm;
+		if (alarm > EXEC_ALARM_NOALARM)
 		{
 			protocol_send_alarm(cnc_state.alarm);
 		}
-		if (cnc_state.alarm < EXEC_ALARM_PROBE_FAIL_INITIAL)
+		if (alarm < EXEC_ALARM_PROBE_FAIL_INITIAL && alarm != EXEC_ALARM_NOALARM)
 		{
 			io_enable_steppers(~g_settings.step_enable_invert);
 			cnc_check_fault_systems();
+			cnc_state.loop_state = LOOP_REQUIRE_RESET;
 			break;
 		}
 	}
@@ -145,20 +148,17 @@ void cnc_run(void)
 		{
 			if (serial_getc() == EOL)
 			{
-				protocol_send_feedback(MSG_FEEDBACK_12);
+				protocol_send_feedback(MSG_FEEDBACK_1);
 				protocol_send_ok();
 			}
 		}
 		cnc_dotasks();
-		if (io_get_controls() & ESTOP_MASK)
+		// a hard/soft reset is pending
+		if (cnc_state.alarm < 0)
 		{
 			cnc_state.loop_state = LOOP_STARTUP_RESET;
 		}
-		else
-		{
-			break;
-		}
-	} while (1);
+	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET);
 }
 
 bool cnc_exec_cmd(void)
@@ -211,11 +211,11 @@ bool cnc_dotasks(void)
 
 	if (cnc_has_alarm())
 	{
-		return !cnc_get_exec_state(EXEC_KILL | EXEC_HOMING);
+		return !cnc_get_exec_state(EXEC_KILL);
 	}
 
 	// µCNC already in error loop. No point in sending the alarms
-	if (cnc_state.loop_state == LOOP_ERROR_RESET)
+	if (cnc_state.loop_state >= LOOP_FAULT)
 	{
 		return !cnc_get_exec_state(EXEC_KILL);
 	}
@@ -305,9 +305,9 @@ void cnc_alarm(int8_t code)
 	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
 	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("LIMITS>"));
+	protocol_send_string(__romstr__("LIMITS:"));
 	serial_print_int(io_alarm_limits);
-	protocol_send_string(__romstr__(" CONTROLS>"));
+	protocol_send_string(__romstr__("|CONTROLS:"));
 	serial_print_int(io_alarm_controls);
 	protocol_send_string(MSG_END);
 #endif
@@ -331,15 +331,15 @@ void cnc_stop(void)
 
 uint8_t cnc_unlock(bool force)
 {
-	// tries to clear alarms or any active hold state
-	cnc_clear_exec_state(EXEC_ALARM | EXEC_HOLD);
+	// tries to clear alarms, door or any active hold state
+	cnc_clear_exec_state(EXEC_RESET_LOCKED);
 	// checks all interlocking again
 	cnc_check_interlocking();
 
 	// forces to clear HALT error to allow motion after limit switch trigger
 	if (force)
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_HALT);
+		CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
 		cnc_state.alarm = EXEC_ALARM_NOALARM;
 	}
 
@@ -359,9 +359,9 @@ uint8_t cnc_unlock(bool force)
 	else
 	{
 		// on unlock any alarm caused by not having homing reference or hitting a limit switch is reset at user request
-		// this must be done directly beacuse cnc_clear_exec_state will check the limit switch state
+		// this must be done directly because cnc_clear_exec_state will check the limit switch state
 		// all other alarm flags remain active if any input is still active
-		CLEARFLAG(cnc_state.exec_state, EXEC_HALT);
+		CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
 		// clears all other locking flags
 		cnc_clear_exec_state(EXEC_GCODE_LOCKED | EXEC_HOLD);
 		// signals stepper enable pins
@@ -419,18 +419,18 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// has a pending (not cleared by user) alarm
 	if (cnc_state.alarm)
 	{
-		CLEARFLAG(statemask, EXEC_HALT);
+		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
 
 	uint8_t limits = 0;
 #if (LIMITS_MASK != 0)
-	limits = io_get_limits(); // can't clear the EXEC_HALT is any limit is triggered
+	limits = io_get_limits(); // can't clear the EXEC_UNHOMED is any limit is triggered
 #endif
 	if (g_settings.hard_limits_enabled) // if hardlimits are enabled and limits are triggered
 	{
 		if (limits || g_settings.homing_enabled)
 		{
-			CLEARFLAG(statemask, EXEC_HALT);
+			CLEARFLAG(statemask, EXEC_UNHOMED);
 		}
 	}
 
@@ -464,6 +464,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 		}
 #endif
 #endif
+		CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
@@ -484,7 +485,7 @@ void cnc_reset(void)
 	cnc_state.rt_cmd = RT_CMD_CLEAR;
 	cnc_state.feed_ovr_cmd = RT_CMD_CLEAR;
 	cnc_state.tool_ovr_cmd = RT_CMD_CLEAR;
-	cnc_state.exec_state = EXEC_ALARM | EXEC_HOLD; // Activates all alarms and hold
+	cnc_state.exec_state = EXEC_RESET_LOCKED; // Activates all alarms, door and hold
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 
 	// clear all systems
@@ -517,7 +518,6 @@ void cnc_call_rt_command(uint8_t command)
 	{
 	case CMD_CODE_RESET:
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_RESET);
-		// SETFLAG(cnc_state.exec_state, EXEC_KILL);
 		break;
 	case CMD_CODE_FEED_HOLD:
 		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
@@ -586,13 +586,25 @@ void cnc_exec_rt_commands(void)
 		cnc_state.rt_cmd = RT_CMD_CLEAR;
 		if (command & RT_CMD_RESET)
 		{
+			if (cnc_get_exec_state(EXEC_HOMING))
+			{
+				cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
+				return;
+			}
+
+			if (cnc_get_exec_state(EXEC_RUN))
+			{
+				cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
+				return;
+			}
+
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			return;
 		}
 
 		if (command & RT_CMD_CYCLE_START)
 		{
-			cnc_clear_exec_state(EXEC_HOLD);
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
 		}
 	}
 
@@ -773,11 +785,8 @@ bool cnc_check_interlocking(void)
 			return false;
 		}
 #endif
-		if (cnc_get_exec_state(EXEC_HOMING)) // reset or emergency stop during a homing cycle
-		{
-			cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
-		}
-		else if (cnc_get_exec_state(EXEC_HALT)) // reset or emergency stop during a running cycle
+		// something caused the motion to stop abruptly
+		if (cnc_get_exec_state(EXEC_UNHOMED))
 		{
 			cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
 		}
@@ -786,34 +795,38 @@ bool cnc_check_interlocking(void)
 
 	// an HALT condition or a limit switch was triggered
 	// this can be due to any abrupt stop while in motion
-	if (cnc_get_exec_state(EXEC_HALT | EXEC_LIMTS))
+	if (cnc_get_exec_state(EXEC_LIMITS))
 	{
 		if (!cnc_get_exec_state(EXEC_HOMING)) // if a motion is being performed allow trigger the limit switch alarm
 		{
-			cnc_alarm(EXEC_ALARM_HARD_LIMIT);
-		}
-		else
-		{
-			cnc_alarm(EXEC_ALARM_ABORT_CYCLE);
+			if (cnc_get_exec_state(EXEC_UNHOMED))
+			{
+				cnc_alarm(EXEC_ALARM_HARD_LIMIT);
+			}
+			else
+			{
+				cnc_alarm(EXEC_ALARM_HARD_LIMIT_NOMOTION);
+			}
 		}
 
 		return false;
 	}
 
 	// the safety door condition is active
-	if (cnc_get_exec_state(EXEC_DOOR)) 
+	if (cnc_get_exec_state(EXEC_DOOR))
 	{
 		// door opened during a homing cycle exit with alarm
 		if (cnc_get_exec_state(EXEC_HOMING))
 		{
 			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
 		}
-
-		// with the door opened put machine on HOLD
-		cnc_set_exec_state(EXEC_HOLD);
-
-		// if the machined has stopped stop all tools
-		if(!cnc_get_exec_state(EXEC_RUN)){
+		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
+		{
+			// with the door opened put machine on HOLD
+			cnc_set_exec_state(EXEC_HOLD);
+		}
+		else // if the machined is not moving stop the tool too
+		{
 			cnc_stop();
 		}
 

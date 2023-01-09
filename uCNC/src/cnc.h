@@ -51,20 +51,21 @@ extern "C"
 #define RT_CMD_COOL_MST_TOGGLE 128
 
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0												// All flags cleared
-#define EXEC_RUN 1												// Motions are being executed
-#define EXEC_HOLD 2												// Feed hold is active
-#define EXEC_RESUMING (EXEC_HOLD | EXEC_RUN)					// Motions are being being hold or resumed
-#define EXEC_JOG 4												// Jogging in execution
-#define EXEC_HOMING 8											// Homing in execution
-#define EXEC_LIMTS 16											// Limits hit
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMTS)				// Limit switch is active during a homing motion
-#define EXEC_DOOR 32											// Safety door open
-#define EXEC_HALT 64											// All motions are halted and machine is locked
-#define EXEC_KILL 128											// Emergency stop
-#define EXEC_ALARM (EXEC_HALT | EXEC_DOOR | EXEC_KILL)		// System alarms
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 255										// All states
+#define EXEC_IDLE 0															// All flags cleared
+#define EXEC_RUN 1															// Motions are being executed
+#define EXEC_HOLD 2															// Feed hold is active
+#define EXEC_JOG 4															// Jogging in execution
+#define EXEC_HOMING 8														// Homing in execution
+#define EXEC_DOOR 16														// Safety door open
+#define EXEC_UNHOMED 32														// Machine is not homed or lost position due to abrupt stop
+#define EXEC_LIMITS 64														// Limits hit
+#define EXEC_KILL 128														// Emergency stop
+#define EXEC_RESUMING (EXEC_HOLD | EXEC_RUN)								// Motions are being being hold or resumed
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)							// Limit switch is active during a homing motion
+#define EXEC_ALARM (EXEC_UNHOMED | EXEC_LIMITS | EXEC_KILL)					// System alarms
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)				// System reset locked
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 255													// All states
 
 // creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1

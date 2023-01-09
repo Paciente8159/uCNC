@@ -1056,7 +1056,7 @@ void itp_stop(void)
 	// any stop command while running triggers an HALT alarm
 	if (cnc_get_exec_state(EXEC_RUN))
 	{
-		cnc_set_exec_state(EXEC_HALT);
+		cnc_set_exec_state(EXEC_UNHOMED);
 	}
 
 	cnc_clear_exec_state(EXEC_RUN);
