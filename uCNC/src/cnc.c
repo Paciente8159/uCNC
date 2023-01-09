@@ -128,7 +128,7 @@ void cnc_run(void)
 
 		cnc_state.loop_state = LOOP_FAULT;
 		serial_flush();
-		uint8_t alarm = cnc_state.alarm;
+		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
 			protocol_send_alarm(cnc_state.alarm);
@@ -400,6 +400,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 	if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
 	{
 		CLEARFLAG(statemask, EXEC_KILL);
+		// no point in continuing
+		return;
 	}
 #endif
 #if ASSERT_PIN(SAFETY_DOOR)
