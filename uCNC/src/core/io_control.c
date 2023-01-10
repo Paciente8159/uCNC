@@ -94,7 +94,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 #ifndef DISABLE_ALL_LIMITS
 
-	if (g_settings.hard_limits_enabled)
+	if (g_settings.hard_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
 		static uint8_t prev_limits = 0;
 		uint8_t limits = io_get_limits();

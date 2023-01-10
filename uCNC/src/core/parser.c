@@ -191,7 +191,7 @@ uint8_t parser_read_command(void)
 		cnc_clear_exec_state(EXEC_JOG);
 		return error;
 	}
-	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
+	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
 		return STATUS_SYSTEM_GC_LOCK;

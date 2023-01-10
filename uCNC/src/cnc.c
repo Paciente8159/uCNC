@@ -224,7 +224,7 @@ bool cnc_dotasks(void)
 	// check security interlocking for any problem
 	if (!cnc_check_interlocking())
 	{
-		return !cnc_get_exec_state(EXEC_KILL);
+		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
 	if (!lock_itp)
@@ -337,7 +337,7 @@ uint8_t cnc_unlock(bool force)
 	// checks all interlocking again
 	cnc_check_interlocking();
 
-	// forces to clear HALT error to allow motion after limit switch trigger
+	// forces to clear EXEC_UNHOMED error to allow motion after limit switch trigger
 	if (force)
 	{
 		CLEARFLAG(cnc_state.exec_state, EXEC_UNHOMED);
@@ -345,7 +345,7 @@ uint8_t cnc_unlock(bool force)
 	}
 
 	// if any alarm state is still active checks system faults
-	if (cnc_get_exec_state(EXEC_ALARM))
+	if (cnc_get_exec_state(EXEC_ALARM) || cnc_has_alarm())
 	{
 		if (!cnc_get_exec_state(EXEC_KILL))
 		{
@@ -813,6 +813,21 @@ bool cnc_check_interlocking(void)
 
 		return false;
 	}
+	
+	// an hold condition is active and motion as stopped
+	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
+	{
+		itp_stop(); // stop motion
+
+		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
+		{
+			itp_clear();
+			planner_clear();
+			CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+		}
+
+		return false;
+	}
 
 #if ASSERT_PIN(SAFETY_DOOR)
 	// the safety door condition is active
@@ -836,21 +851,6 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 #endif
-
-	// an hold condition is active and motion as stopped
-	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
-	{
-		itp_stop(); // stop motion
-
-		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
-		{
-			itp_clear();
-			planner_clear();
-			CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
-		}
-
-		return false;
-	}
 
 	return true;
 }
