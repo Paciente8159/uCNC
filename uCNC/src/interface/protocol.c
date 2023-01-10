@@ -232,6 +232,7 @@ void protocol_send_status(void)
 	{
 		switch (state)
 		{
+#if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
 			protocol_send_string(MSG_STATUS_DOOR);
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
@@ -257,6 +258,7 @@ void protocol_send_status(void)
 				}
 			}
 			break;
+#endif
 		case EXEC_UNHOMED:
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))

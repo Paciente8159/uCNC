@@ -534,9 +534,11 @@ void cnc_call_rt_command(uint8_t command)
 			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
 		break;
+#if ASSERT_PIN(SAFETY_DOOR)
 	case CMD_CODE_SAFETY_DOOR:
 		SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
 		break;
+#endif
 	case CMD_CODE_JOG_CANCEL:
 		if (cnc_get_exec_state(EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
 		{
@@ -812,6 +814,7 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 
+#if ASSERT_PIN(SAFETY_DOOR)
 	// the safety door condition is active
 	if (cnc_get_exec_state(EXEC_DOOR))
 	{
@@ -832,6 +835,7 @@ bool cnc_check_interlocking(void)
 
 		return false;
 	}
+#endif
 
 	// an hold condition is active and motion as stopped
 	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))

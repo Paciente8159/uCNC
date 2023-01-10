@@ -50,6 +50,26 @@ extern "C"
 #define RT_CMD_COOL_FLD_TOGGLE 64
 #define RT_CMD_COOL_MST_TOGGLE 128
 
+/**
+ * Flags and state changes
+ * 
+ * EXEC_KILL
+ * Set by cnc_alarm.
+ * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed. 
+ * 
+ * EXEC_LIMITS
+ * Set when at a transition of a limit switch from inactive to the active state. 
+ * Cleared by reset or unlock. Not affected by the limit switch state.
+ * 
+ * EXEC_UNHOMED
+ * Set when the interpolator is abruptly stopped causing the position to be lost.
+ * Cleared by homing or unlock.
+ * 
+ * EXEC_DOOR
+ * Set with when the safety door pin is active or the safety door command is called.
+ * Cleared by cycle resume, unlock or reset. If the door is opened it will remain active
+ * 
+ */
 // current cnc states (multiple can be active/overlapped at the same time)
 #define EXEC_IDLE 0															// All flags cleared
 #define EXEC_RUN 1															// Motions are being executed

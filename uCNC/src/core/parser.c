@@ -594,10 +594,12 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		break;
 	case GRBL_UNLOCK:
 		cnc_unlock(true);
+#if ASSERT_PIN(SAFETY_DOOR)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
+#endif
 		protocol_send_feedback(MSG_FEEDBACK_3);
 		break;
 	case GRBL_HOME:
@@ -607,11 +609,12 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		}
 
 		cnc_unlock(true);
+#if ASSERT_PIN(SAFETY_DOOR)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
-
+#endif
 		cnc_home();
 		break;
 	case GRBL_HELP:
@@ -2583,7 +2586,7 @@ void parser_reset(void)
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-		EVENT_INVOKE(parser_reset, NULL);
+	EVENT_INVOKE(parser_reset, NULL);
 #endif
 }
 
