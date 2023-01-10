@@ -420,7 +420,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #endif
 
 	// has a pending (not cleared by user) alarm
-	if (cnc_state.alarm)
+	if (cnc_state.alarm <= EXEC_ALARM_ABORT_CYCLE || g_settings.homing_enabled)
 	{
 		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
@@ -429,12 +429,9 @@ void cnc_clear_exec_state(uint8_t statemask)
 #if (LIMITS_MASK != 0)
 	limits = io_get_limits(); // can't clear the EXEC_UNHOMED is any limit is triggered
 #endif
-	if (g_settings.hard_limits_enabled) // if hardlimits are enabled and limits are triggered
+	if (g_settings.hard_limits_enabled && limits) // if hardlimits are enabled and limits are triggered
 	{
-		if (limits || g_settings.homing_enabled)
-		{
-			CLEARFLAG(statemask, EXEC_UNHOMED);
-		}
+		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
 
 	// if releasing from a HOLD state with and active delay in exec
