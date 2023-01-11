@@ -420,7 +420,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #endif
 
 	// has a pending (not cleared by user) alarm
-	if (cnc_state.alarm <= EXEC_ALARM_ABORT_CYCLE || g_settings.homing_enabled)
+	if (cnc_state.alarm || g_settings.homing_enabled)
 	{
 		CLEARFLAG(statemask, EXEC_UNHOMED);
 	}
