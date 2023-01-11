@@ -471,27 +471,27 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
 	uint8_t scaled = RTC_OCRA;
-	mcu_servos_val[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+	mcu_servos_val[servo - SERVO_PINS_OFFSET] = value;
 	if (value < 64)
 	{
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 0;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 0;
 		scaled >>= 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6) + scaled;
 	}
 	else if (value < 192)
 	{
 		value -= 64;
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 1;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 7);
 	}
 	else
 	{
 		value -= 192;
-		mcu_servos_loops[servo - SERVO0_UCNC_INTERNAL_PIN] = 2;
+		mcu_servos_loops[servo - SERVO_PINS_OFFSET] = 2;
 		scaled >>= 1;
 		scaled = (uint8_t)(((uint16_t)(value * scaled)) >> 6);
 	}
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = scaled;
+	mcu_servos[servo - SERVO_PINS_OFFSET] = scaled;
 #endif
 }
 
@@ -502,7 +502,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
 	if ((1U << offset) & SERVOS_MASK)
 	{
 		return mcu_servos_val[offset];

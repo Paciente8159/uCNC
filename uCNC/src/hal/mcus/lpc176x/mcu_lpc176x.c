@@ -481,7 +481,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_set_servo
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
 }
 #endif
 
@@ -492,7 +492,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 #ifndef mcu_get_servo
 uint8_t mcu_get_servo(uint8_t servo)
 {
-	return mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN];
+	return mcu_servos[servo - SERVO_PINS_OFFSET];
 }
 #endif
 

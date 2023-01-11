@@ -1140,7 +1140,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		case M10:
 			if (words->p < 6)
 			{
-				io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+				io_set_pwm(words->p + SERVO_PINS_OFFSET, (uint8_t)CLAMP(words->s, 0, 255));
 			}
 			break;
 #endif
