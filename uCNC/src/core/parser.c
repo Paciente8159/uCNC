@@ -155,7 +155,7 @@ void parser_init(void)
 #endif
 	memset(parser_last_pos, 0, sizeof(parser_last_pos));
 	parser_parameters_load();
-	parser_reset();
+	parser_reset(false);
 }
 
 uint8_t parser_read_command(void)
@@ -2557,8 +2557,13 @@ static void parser_discard_command(void)
 	} while (c != EOL);
 }
 
-void parser_reset(void)
+void parser_reset(bool stopgroup_only)
 {
+	parser_state.groups.stopping = 0; // resets all stopping commands (M0,M1,M2,M30,M60)
+	if (stopgroup_only)
+	{
+		return;
+	}
 	parser_state.groups.coord_system = G54;				  // G54
 	parser_state.groups.plane = G17;					  // G17
 	parser_state.groups.feed_speed_override = M48;		  // M48
@@ -2566,7 +2571,6 @@ void parser_reset(void)
 	parser_state.groups.distance_mode = G90;			  // G90
 	parser_state.groups.feedrate_mode = G94;			  // G94
 	parser_state.groups.tlo_mode = G49;					  // G49
-	parser_state.groups.stopping = 0;					  // resets all stopping commands (M0,M1,M2,M30,M60)
 #if TOOL_COUNT > 0
 	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5

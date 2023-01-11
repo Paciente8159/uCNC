@@ -80,7 +80,6 @@ extern "C"
 #define EXEC_UNHOMED 32														// Machine is not homed or lost position due to abrupt stop
 #define EXEC_LIMITS 64														// Limits hit
 #define EXEC_KILL 128														// Emergency stop
-#define EXEC_RESUMING (EXEC_HOLD | EXEC_RUN)								// Motions are being being hold or resumed
 #define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)							// Limit switch is active during a homing motion
 #define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)					// Interlocking check failed
 #define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)					// System alarms

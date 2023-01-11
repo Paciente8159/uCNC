@@ -369,7 +369,7 @@ uint8_t cnc_unlock(bool force)
 
 		io_set_steps(g_settings.step_invert_mask);
 		io_enable_steppers(g_settings.step_enable_invert);
-		parser_reset();
+		parser_reset(true); // reset stop group only
 
 		// hard reset
 		// if homing not enabled run startup blocks
@@ -437,7 +437,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
-		SETFLAG(cnc_state.exec_state, EXEC_RESUMING);
+		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
 #if TOOL_COUNT > 0
 		// updated the coolant pins
 		tool_set_coolant(planner_get_coolant());
@@ -446,7 +446,6 @@ void cnc_clear_exec_state(uint8_t statemask)
 		{
 			if (!planner_buffer_is_empty())
 			{
-
 				cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
 			}
 		}
@@ -464,7 +463,6 @@ void cnc_clear_exec_state(uint8_t statemask)
 		}
 #endif
 #endif
-		CLEARFLAG(cnc_state.exec_state, EXEC_RESUMING);
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
@@ -529,7 +527,7 @@ void cnc_call_rt_command(uint8_t command)
 #endif
 	case CMD_CODE_CYCLE_START:
 		// prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
-		if (cnc_get_exec_state(EXEC_RESUMING) != EXEC_RESUMING)
+		if (!cnc_get_exec_state(EXEC_RUN))
 		{
 			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
@@ -813,7 +811,7 @@ bool cnc_check_interlocking(void)
 
 		return false;
 	}
-	
+
 	// an hold condition is active and motion as stopped
 	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
 	{

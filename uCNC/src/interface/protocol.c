@@ -501,9 +501,10 @@ void protocol_send_gcode_modes(void)
 
 	protocol_send_string(__romstr__("[GC:"));
 
-	for (uint8_t i = 0; i < 7; i++)
+	protocol_send_parser_modalstate('G', modalgroups[0], modalgroups[12]);
+	for (uint8_t i = 1; i < 7; i++)
 	{
-		protocol_send_parser_modalstate('G', modalgroups[i], modalgroups[12]);
+		protocol_send_parser_modalstate('G', modalgroups[i], 0);
 	}
 
 	if (modalgroups[7] == 62)
