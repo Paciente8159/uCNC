@@ -861,12 +861,15 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		case G0: // G0
 		case G1: // G1
 #endif
+#ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2, G38.3, G38.4, G38.5
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
 			}
 			break;
+#endif
+#ifndef DISABLE_ARC_SUPPORT
 		case G2:
 		case G3:
 			switch (new_state->groups.plane)
@@ -920,6 +923,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				break;
 			}
 			break;
+#endif
 		case G80: // G80 and
 			if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
 			{
@@ -1102,12 +1106,17 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	float target[AXIS_COUNT];
+#ifndef DISABLE_ARC_SUPPORT
 	// plane selection
 	uint8_t a = 0;
 	uint8_t b = 0;
 	uint8_t offset_a = 0;
 	uint8_t offset_b = 0;
-	float radius;
+	float radius, x, y;
+#endif
+#ifndef DISABLE_PROBING_SUPPORT
+	uint8_t probe_flags;
+#endif
 	motion_data_t block_data = {0};
 	uint8_t error = 0;
 	bool update_tools = false;
@@ -1274,6 +1283,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		mc_dwell(&block_data);
 	}
 
+#ifndef DISABLE_ARC_SUPPORT
 	// 11. set active plane (G17, G18, G19)
 	switch (new_state->groups.plane)
 	{
@@ -1314,6 +1324,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 	}
+#endif
 
 	// 12. set length units (G20, G21).
 	if (new_state->groups.units == G20) // all internal state variables must be converted to mm
@@ -1597,7 +1608,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	}
 
-	float x, y;
 	// 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
 	// G80 does no motion
 	// G81 to G89 is executed in a separate function and uses G53,G0,G1 and G4 has building blocks
@@ -1615,7 +1625,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		EVENT_INVOKE(gcode_before_motion, &args);
 #endif
 
-		uint8_t probe_flags;
 		switch (new_state->groups.motion)
 		{
 		case G0:
@@ -1634,6 +1643,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			error = mc_line(target, &block_data);
 			break;
+#ifndef DISABLE_ARC_SUPPORT
 		case G2:
 		case G3:
 			if (block_data.feed == 0)
@@ -1700,6 +1710,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
 			break;
+#endif
+#ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
 				  // G38.3
 				  // G38.4
@@ -1735,6 +1747,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				}
 			}
 			break;
+#endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
 		default: // other motion commands (derived from extended commands)
@@ -2075,15 +2088,17 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	{
 		switch (code)
 		{
-			// codes with possible mantissa
+// codes with possible mantissa
+#ifndef DISABLE_PROBING_SUPPORT
 		case 38:
+#ifdef ENABLE_G39_H_MAPPING
+		case 39:
+#endif
+#endif
 		case 43:
 		case 59:
 		case 61:
 		case 92:
-#ifdef ENABLE_G39_H_MAPPING
-		case 39:
-#endif
 			break;
 		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
@@ -2094,12 +2109,19 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 	switch (code)
 	{
-		// motion codes
+// motion codes
+#ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+#ifdef ENABLE_G39_H_MAPPING
+	case 39:
+#endif
+#endif
 	case 0:
 	case 1:
+#ifndef DISABLE_ARC_SUPPORT
 	case 2:
 	case 3:
+#endif
 	case 80:
 #ifdef ENABLE_CANNED_CYCLES
 	case 81:
@@ -2112,9 +2134,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 88:
 	case 89:
 #endif
-#ifdef ENABLE_G39_H_MAPPING
-	case 39:
-#endif
+
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2141,12 +2161,15 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_state->groups.motion = code;
 		break;
 	case 17:
+#ifndef DISABLE_ARC_SUPPORT
 	case 18:
 	case 19:
 		new_group |= GCODE_GROUP_PLANE;
 		code -= 17;
 		new_state->groups.plane = code;
+#endif
 		break;
+
 	case 90:
 	case 91:
 		new_group |= GCODE_GROUP_DISTANCE;

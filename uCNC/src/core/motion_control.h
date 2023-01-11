@@ -89,7 +89,9 @@ extern "C"
 
 	// async motions
 	uint8_t mc_line(float *target, motion_data_t *block_data);
+#ifndef DISABLE_ARC_SUPPORT
 	uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data);
+#endif
 
 	// sync motions
 	uint8_t mc_dwell(motion_data_t *block_data);
@@ -98,14 +100,16 @@ extern "C"
 
 	// mixed/special motions
 	uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit);
+#ifndef DISABLE_PROBING_SUPPORT
 	uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data);
+#endif
 
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
 
-	#ifdef ENABLE_G39_H_MAPPING
+#ifdef ENABLE_G39_H_MAPPING
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
-	#endif
+#endif
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler

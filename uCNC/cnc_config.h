@@ -214,6 +214,13 @@ extern "C"
 	//#define GCODE_ACCEPT_WORD_E
 
 	/**
+	 * Shrink µCNC 
+	 * It's possible to shrink µCNC by disable some core features like arc support (G2,G3,G17,G18,G19) and probing (G38.x and if enabled G39,G39.x)
+	 */
+	// #define DISABLE_ARC_SUPPORT
+	// #define DISABLE_PROBING_SUPPORT
+
+	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
 

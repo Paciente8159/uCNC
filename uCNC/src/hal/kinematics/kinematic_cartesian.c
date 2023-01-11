@@ -45,6 +45,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
+	float target[AXIS_COUNT];
+	
+#ifndef DISABLE_ALL_LIMITS
 #ifndef DISABLE_Z_HOMING
 #if (defined(AXIS_Z) && (ASSERT_PIN(LIMIT_Z) || ASSERT_PIN(LIMIT_Z2)))
 	if (mc_home_axis(AXIS_Z, LIMIT_Z_MASK))
@@ -102,7 +105,6 @@ uint8_t kinematics_home(void)
 	cnc_unlock(true);
 	// flags homing clear by the unlock
 	cnc_set_exec_state(EXEC_HOMING);
-	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
@@ -117,7 +119,7 @@ uint8_t kinematics_home(void)
 	// starts offset and waits to finnish
 	mc_line(target, &block_data);
 	itp_sync();
-
+#endif
 	// unlocks the machine to go to offset
 	cnc_clear_exec_state(EXEC_HOMING);
 

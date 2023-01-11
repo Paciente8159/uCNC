@@ -83,6 +83,9 @@ extern "C"
 #ifdef PROBE
 #undef PROBE
 #endif
+#ifndef DISABLE_PROBING_SUPPORT
+#define DISABLE_PROBING_SUPPORT
+#endif
 #endif
 
 #ifdef LIMIT_X_DISABLE
@@ -2226,6 +2229,13 @@ typedef uint16_t step_t;
 
 #if (defined(MCU_HAS_USB) || defined(MCU_HAS_WIFI) || defined(MCU_HAS_BLUETOOTH))
 #define ENABLE_SYNC_TX
+#endif
+
+#ifdef DISABLE_PROBING_SUPPORT
+#ifdef ENABLE_G39_H_MAPPING
+#undef ENABLE_G39_H_MAPPING
+#warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
+#endif
 #endif
 
 #ifdef __cplusplus
