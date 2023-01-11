@@ -104,7 +104,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
 
   - Outside the RS274NGC scope
-    - Bilinear surface mapping: G39/G39.1*
+    - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
@@ -124,7 +124,7 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
-- _G39/G39.1 only active if Height Map enabled_
+- _G39,G39.1,G39.2 only active if Height Map enabled_
 
 Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
   - Cubic and quadratic splines: G5/G5.1
