@@ -278,7 +278,7 @@ extern "C"
 	void parser_parameters_reset(void);
 	void parser_parameters_save(void);
 	void parser_sync_position(void);
-	void parser_reset(void);
+	void parser_reset(bool stopgroup_only);
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);

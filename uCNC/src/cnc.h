@@ -50,20 +50,42 @@ extern "C"
 #define RT_CMD_COOL_FLD_TOGGLE 64
 #define RT_CMD_COOL_MST_TOGGLE 128
 
+/**
+ * Flags and state changes
+ * 
+ * EXEC_KILL
+ * Set by cnc_alarm.
+ * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed. 
+ * 
+ * EXEC_LIMITS
+ * Set when at a transition of a limit switch from inactive to the active state. 
+ * Cleared by reset or unlock. Not affected by the limit switch state.
+ * 
+ * EXEC_UNHOMED
+ * Set when the interpolator is abruptly stopped causing the position to be lost.
+ * Cleared by homing or unlock.
+ * 
+ * EXEC_DOOR
+ * Set with when the safety door pin is active or the safety door command is called.
+ * Cleared by cycle resume, unlock or reset. If the door is opened it will remain active
+ * 
+ */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0												// All flags cleared
-#define EXEC_RUN 1												// Motions are being executed
-#define EXEC_RESUMING 2											// Motions are being resumed from a hold
-#define EXEC_HOLD 4												// Feed hold is active
-#define EXEC_JOG 8												// Jogging in execution
-#define EXEC_HOMING 16											// Homing in execution
-#define EXEC_HALT 32											// Limit switch is active or position lost due to abrupt stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_HALT)				// Limit switch is active during a homing motion
-#define EXEC_DOOR 64											// Safety door open
-#define EXEC_KILL 128											// Emergency stop
-#define EXEC_ALARM (EXEC_HALT | EXEC_DOOR | EXEC_KILL)			// System alarms
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 255										// All states
+#define EXEC_IDLE 0															// All flags cleared
+#define EXEC_RUN 1															// Motions are being executed
+#define EXEC_HOLD 2															// Feed hold is active
+#define EXEC_JOG 4															// Jogging in execution
+#define EXEC_HOMING 8														// Homing in execution
+#define EXEC_DOOR 16														// Safety door open
+#define EXEC_UNHOMED 32														// Machine is not homed or lost position due to abrupt stop
+#define EXEC_LIMITS 64														// Limits hit
+#define EXEC_KILL 128														// Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)							// Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)					// Interlocking check failed
+#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)					// System alarms
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)				// System reset locked
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 255													// All states
 
 // creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1
