@@ -2148,6 +2148,11 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef DISABLE_COORD_SYS_SUPPORT
+#undef COORD_SYS_COUNT
+#define COORD_SYS_COUNT 1
+#endif
+
 // some sanity checks
 #if (COORD_SYS_COUNT < 1 || COORD_SYS_COUNT > 9)
 #error "Invalid config option COORD_SYS_COUNT must be set between 1 and 9"

@@ -215,10 +215,19 @@ extern "C"
 
 	/**
 	 * Shrink µCNC 
-	 * It's possible to shrink µCNC by disable some core features like arc support (G2,G3,G17,G18,G19) and probing (G38.x and if enabled G39,G39.x)
+	 * It's possible to shrink µCNC by disable some core features:
+	 *   - arc support (G2,G3,G17,G18,G19)
+	 *   - probing (G38.x and if enabled G39,G39.x)
+	 *   - coordinate systems (G55 to G59.3, G54 remains active) and home  and non volatile storage for these systems
+	 *   - home commands (G28 and G30)
+	 *   - disable G10. This affects coordinate systems and home as it's not possible to define them.
 	 */
 	// #define DISABLE_ARC_SUPPORT
 	// #define DISABLE_PROBING_SUPPORT
+	// #define DISABLE_COORD_SYS_SUPPORT
+	// #define DISABLE_HOME_SUPPORT
+	// #define DISABLE_G10_SUPPORT
+	// #define DISABLE_PATH_MODES
 
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)

@@ -92,8 +92,9 @@ WEAK_EVENT_HANDLER(probe_disable)
 
 MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
-#ifndef DISABLE_ALL_LIMITS
-
+#ifdef DISABLE_ALL_LIMITS
+	return;
+#else
 	if (g_settings.hard_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
 		static uint8_t prev_limits = 0;

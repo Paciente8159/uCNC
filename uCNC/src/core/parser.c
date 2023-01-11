@@ -243,12 +243,14 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 	case 254:
 		memcpy(axis, (float *)&parser_parameters.tool_length_offset, sizeof(float));
 		break;
+#ifndef DISABLE_HOME_SUPPORT
 	case 28:
 		settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
 		break;
 	case 30:
 		settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
 		break;
+#endif
 	case 92:
 		memcpy(axis, parser_parameters.g92_offset, sizeof(parser_parameters.g92_offset));
 		break;
@@ -267,10 +269,12 @@ void parser_parameters_reset(void)
 {
 	// erase all parameters for G54..G59.x coordinate systems
 	memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
 	}
+#endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
@@ -812,6 +816,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				return STATUS_NEGATIVE_VALUE;
 			}
 			break;
+#ifndef DISABLE_G10_SUPPORT
 		case G10:
 			// G10
 			// if no P or L is present
@@ -833,6 +838,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				}
 			}
 			break;
+#endif
 		case G92:
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
@@ -1370,14 +1376,17 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		parser_wco_counter = 0;
 	}
 #endif
-	// 15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
+// 15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COORDSYS))
 	{
 		parser_parameters.coord_system_index = new_state->groups.coord_system;
 		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset[0], PARSER_PARAM_SIZE);
 		parser_wco_counter = 0;
 	}
-	// 16. set path control mode (G61, G61.1, G64)
+#endif
+// 16. set path control mode (G61, G61.1, G64)
+#ifndef DISABLE_PATH_MODES
 	switch (new_state->groups.path_mode)
 	{
 	case G61_1:
@@ -1387,6 +1396,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		block_data.motion_mode |= PLANNER_MOTION_CONTINUOUS;
 		break;
 	}
+#endif
 
 	// 17. set distance mode (G90, G91)
 	memcpy(target, parser_last_pos, sizeof(parser_last_pos));
@@ -1450,10 +1460,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	error = 0;
 	switch (new_state->groups.nonmodal)
 	{
+#ifndef DISABLE_G10_SUPPORT
 	case G10: // G10
 		index = ((uint8_t)words->p) ? words->p : (parser_parameters.coord_system_index + 1);
 		switch (index)
 		{
+#ifndef DISABLE_HOME_SUPPORT
 		case 28:
 			index = G28HOME;
 			break;
@@ -1461,10 +1473,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			index = G30HOME;
 			break;
+#endif
 		default:
 			index--;
 			break;
 		}
+#endif
 		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
@@ -1513,7 +1527,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 	}
 
-	// stores G10 L2 command in the right address
+// stores G10 L2 command in the right address
+#ifndef DISABLE_G10_SUPPORT
 	if (index <= G30HOME)
 	{
 		float coords[AXIS_COUNT];
@@ -1557,7 +1572,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 		parser_wco_counter = 0;
 	}
-
+#endif
 	// laser disabled in nonmodal moves
 	if (g_settings.laser_mode && new_state->groups.nonmodal)
 	{
@@ -1566,6 +1581,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	switch (new_state->groups.nonmodal)
 	{
+#ifndef DISABLE_HOME_SUPPORT
 	case G28: // G28
 	case G30: // G30
 		block_data.feed = FLT_MAX;
@@ -1591,6 +1607,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		// saves position
 		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 		break;
+#endif
 	case G92: // G92
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
@@ -2160,16 +2177,15 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_group |= GCODE_GROUP_MOTION;
 		new_state->groups.motion = code;
 		break;
-	case 17:
 #ifndef DISABLE_ARC_SUPPORT
+	case 17:
 	case 18:
 	case 19:
-		new_group |= GCODE_GROUP_PLANE;
 		code -= 17;
 		new_state->groups.plane = code;
-#endif
+		new_group |= GCODE_GROUP_PLANE;
 		break;
-
+#endif
 	case 90:
 	case 91:
 		new_group |= GCODE_GROUP_DISTANCE;
@@ -2206,6 +2222,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_state->groups.return_mode = code - 98;
 		break;
 	case 54:
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	case 55:
 	case 56:
 	case 57:
@@ -2216,7 +2233,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 
-		new_group |= GCODE_GROUP_COORDSYS;
 		code -= (54 - mantissa);
 
 		if (code > COORD_SYS_COUNT)
@@ -2224,7 +2240,10 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
 		}
 		new_state->groups.coord_system = code;
+#endif
+		new_group |= GCODE_GROUP_COORDSYS;
 		break;
+#ifndef DISABLE_PATH_MODES
 	case 61:
 	case 64:
 		code -= (61 - mantissa);
@@ -2232,18 +2251,23 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		new_group |= GCODE_GROUP_PATH;
 		new_state->groups.path_mode = code;
+		new_group |= GCODE_GROUP_PATH;
 		break;
+#endif
 	// de following nonmodal colide with motion groupcodes
 	case 92:
 		if (mantissa > 3)
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+#ifndef DISABLE_G10_SUPPORT
 	case 10:
+#endif
+#ifndef DISABLE_HOME_SUPPORT
 	case 28:
 	case 30:
+#endif
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2599,6 +2623,7 @@ void parser_reset(bool stopgroup_only)
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 	parser_state.tool_index = g_settings.default_tool;
+	parser_state.groups.path_mode = G61;
 #ifdef ENABLE_LASER_PPI
 	parser_config_ppi();
 #endif
@@ -2644,12 +2669,14 @@ void parser_parameters_load(void)
 		}
 	}
 
-	// load G54
+// load G54
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 	{
 		memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
 	}
+#endif
 }
 
 void parser_sync_position(void)
