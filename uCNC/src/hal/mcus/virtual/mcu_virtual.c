@@ -723,25 +723,25 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 	// Receive until the peer shuts down the connection
 	do
 	{
-		unsigned char c = getch();
+		unsigned char c = getchar();
 		switch (c)
 		{
-		 case '"':
-		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-		 	mcu_controls_changed_cb();
-		 	break;
-		 case '%':
-		 	virtualmap.special_inputs ^= (1 << (PROBE - LIMIT_X));
-		 	mcu_limits_changed_cb();
-		 	break;
-		 case '&':
-		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-		 	mcu_limits_changed_cb();
-		 	break;
-		// case '/':
-		// 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-		// 	mcu_limits_changed_cb();
-		// 	break;
+//		 case '"':
+//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
+//		 	mcu_controls_changed_cb();
+//		 	break;
+//		 case '%':
+//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
+//		 	mcu_limits_changed_cb();
+//		 	break;
+//		 case '&':
+//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
+//		 	mcu_limits_changed_cb();
+//		 	break;
+//		 case '/':
+//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
+//		 	mcu_limits_changed_cb();
+//		 	break;
 		// case '[':
 		// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
 		// 	mcu_limits_changed_cb();
