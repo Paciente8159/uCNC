@@ -22,19 +22,19 @@
 ### Changed
 
 - modified/fixed probing motions and probe status checks (#344)
-- redesigned machine interlocking internal states (#352)
-- alarms 1, 2 and 3 now require a reset command (all systems are reset) before allow unlocking (#352)
-- added alarm condition when limits are hit without motion and position is not lost (#352)
-- modified status messages of a resume after hold release (goes idle while starting spindle and then run with motion start) (#352)
-- home cycle can now be executed with hard limits disabled (still requires endtops to be wired and configured) (#352)
+- redesigned machine interlocking internal states (#353)
+- alarms 1, 2 and 3 now require a reset command (all systems are reset) before allow unlocking (#353)
+- added alarm condition when limits are hit without motion and position is not lost (#353)
+- modified status messages of a resume after hold release (goes idle while starting spindle and then run with motion start) (#353)
+- home cycle can now be executed with hard limits disabled (still requires endtops to be wired and configured) (#353)
 
 ### Fixed
 
 - fixed data motion block initialization that caused random issues during homing (#350)
-- fixed active modal states print added group0 mantissa to groups 1 to 6 (#352)
-- fixed random homing error caused by incorrect reading after input inversion for retraction motion (#352)
-- fixed multiple drive axis compilation error (#352)
-- fixed error loop with ESTOP pressed (#352)
+- fixed active modal states print added group0 mantissa to groups 1 to 6 (#353)
+- fixed random homing error caused by incorrect reading after input inversion for retraction motion (#353)
+- fixed multiple drive axis compilation error (#353)
+- fixed error loop with ESTOP pressed (#353)
 
 ## [1.5.6] - 28-11-2022
 
