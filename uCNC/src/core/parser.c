@@ -155,7 +155,7 @@ void parser_init(void)
 #endif
 	memset(parser_last_pos, 0, sizeof(parser_last_pos));
 	parser_parameters_load();
-	parser_reset();
+	parser_reset(false);
 }
 
 uint8_t parser_read_command(void)
@@ -191,7 +191,7 @@ uint8_t parser_read_command(void)
 		cnc_clear_exec_state(EXEC_JOG);
 		return error;
 	}
-	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD | EXEC_RESUMING)))
+	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
 		return STATUS_SYSTEM_GC_LOCK;
@@ -594,10 +594,12 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		break;
 	case GRBL_UNLOCK:
 		cnc_unlock(true);
+#if ASSERT_PIN(SAFETY_DOOR)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
+#endif
 		protocol_send_feedback(MSG_FEEDBACK_3);
 		break;
 	case GRBL_HOME:
@@ -607,11 +609,12 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		}
 
 		cnc_unlock(true);
+#if ASSERT_PIN(SAFETY_DOOR)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
 		}
-
+#endif
 		cnc_home();
 		break;
 	case GRBL_HELP:
@@ -2554,8 +2557,13 @@ static void parser_discard_command(void)
 	} while (c != EOL);
 }
 
-void parser_reset(void)
+void parser_reset(bool stopgroup_only)
 {
+	parser_state.groups.stopping = 0; // resets all stopping commands (M0,M1,M2,M30,M60)
+	if (stopgroup_only)
+	{
+		return;
+	}
 	parser_state.groups.coord_system = G54;				  // G54
 	parser_state.groups.plane = G17;					  // G17
 	parser_state.groups.feed_speed_override = M48;		  // M48
@@ -2563,7 +2571,6 @@ void parser_reset(void)
 	parser_state.groups.distance_mode = G90;			  // G90
 	parser_state.groups.feedrate_mode = G94;			  // G94
 	parser_state.groups.tlo_mode = G49;					  // G49
-	parser_state.groups.stopping = 0;					  // resets all stopping commands (M0,M1,M2,M30,M60)
 #if TOOL_COUNT > 0
 	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5
@@ -2583,7 +2590,7 @@ void parser_reset(void)
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-		EVENT_INVOKE(parser_reset, NULL);
+	EVENT_INVOKE(parser_reset, NULL);
 #endif
 }
 

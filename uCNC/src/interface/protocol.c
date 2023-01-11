@@ -232,11 +232,11 @@ void protocol_send_status(void)
 	{
 		switch (state)
 		{
+#if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
 			protocol_send_string(MSG_STATUS_DOOR);
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
-
 				if (cnc_get_exec_state(EXEC_RUN))
 				{
 					serial_putc('2');
@@ -258,8 +258,17 @@ void protocol_send_status(void)
 				}
 			}
 			break;
-		case EXEC_HALT:
-			protocol_send_string(MSG_STATUS_ALARM);
+#endif
+		case EXEC_UNHOMED:
+		case EXEC_LIMITS:
+			if (!cnc_get_exec_state(EXEC_HOMING))
+			{
+				protocol_send_string(MSG_STATUS_ALARM);
+			}
+			else
+			{
+				protocol_send_string(MSG_STATUS_HOME);
+			}
 			break;
 		case EXEC_HOLD:
 			protocol_send_string(MSG_STATUS_HOLD);
@@ -278,7 +287,6 @@ void protocol_send_status(void)
 		case EXEC_JOG:
 			protocol_send_string(MSG_STATUS_JOG);
 			break;
-		case EXEC_RESUMING:
 		case EXEC_RUN:
 			protocol_send_string(MSG_STATUS_RUN);
 			break;
@@ -493,9 +501,10 @@ void protocol_send_gcode_modes(void)
 
 	protocol_send_string(__romstr__("[GC:"));
 
-	for (uint8_t i = 0; i < 7; i++)
+	protocol_send_parser_modalstate('G', modalgroups[0], modalgroups[12]);
+	for (uint8_t i = 1; i < 7; i++)
 	{
-		protocol_send_parser_modalstate('G', modalgroups[i], modalgroups[12]);
+		protocol_send_parser_modalstate('G', modalgroups[i], 0);
 	}
 
 	if (modalgroups[7] == 62)
@@ -870,6 +879,24 @@ void protocol_send_pins_states(void)
 #define FASTMATH_INFO ""
 #endif
 
+#ifdef RAM_ONLY_SETTINGS
+#define SETTINGS_INFO "RAM,"
+#else
+#define SETTINGS_INFO ""
+#endif
+
+#ifdef ENABLE_IO_ALARM_DEBUG
+#define IODBG_INFO "IODBG,"
+#else
+#define IODBG_INFO ""
+#endif
+
+#ifdef FORCE_SOFT_POLLING
+#define SPOLL_INFO "SP,"
+#else
+#define SPOLL_INFO ""
+#endif
+
 #ifdef ENABLE_LINACT_PLANNER
 #define LINPLAN_INFO "LP,"
 #else
@@ -909,7 +936,7 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)

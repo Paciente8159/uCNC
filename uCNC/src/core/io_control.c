@@ -94,7 +94,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 {
 #ifndef DISABLE_ALL_LIMITS
 
-	if (g_settings.hard_limits_enabled)
+	if (g_settings.hard_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
 	{
 		static uint8_t prev_limits = 0;
 		uint8_t limits = io_get_limits();
@@ -168,7 +168,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
-			cnc_set_exec_state(EXEC_HALT);
+			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -196,11 +196,10 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(ESTOP)
 	if (CHECKFLAG(controls, ESTOP_MASK))
 	{
-		cnc_set_exec_state(EXEC_KILL);
-		cnc_stop();
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
+		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
 		return; // forces exit
 	}
 #endif
@@ -338,6 +337,7 @@ void io_lock_limits(uint8_t limitmask)
 void io_invert_limits(uint8_t limitmask)
 {
 	io_invert_limits_mask = limitmask;
+	mcu_limits_changed_cb();
 }
 
 uint8_t io_get_limits(void)

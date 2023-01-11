@@ -689,8 +689,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 
-	cnc_unlock(true);
-
 #ifdef ENABLE_G39_H_MAPPING
 	// resets height map
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
@@ -699,8 +697,8 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	// locks limits to accept axis limit mask only or else throw error
 	io_lock_limits(axis_limit);
 	io_invert_limits(0);
-	// if HOLD or ALARM are still active or any limit switch is not cleared fails to home
-	mcu_limits_changed_cb();
+	cnc_unlock(true);
+
 	if (cnc_get_exec_state(EXEC_HOLD | EXEC_ALARM) || CHECKFLAG(io_get_limits(), LIMITS_MASK))
 	{
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE);
@@ -749,7 +747,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	// the wrong switch was activated bails
 	if (!CHECKFLAG(limits_flags, axis_limit))
 	{
-		cnc_set_exec_state(EXEC_HALT);
+		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
 		return STATUS_CRITICAL_FAIL;
 	}
@@ -768,7 +766,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	target[axis] += max_home_dist;
 	block_data.feed = g_settings.homing_slow_feed_rate;
 	// block_data.steps[axis] = max_home_dist;
-	// unlocks the machine for next motion (this will clear the EXEC_HALT flag
+	// unlocks the machine for next motion (this will clear the EXEC_UNHOMED flag
 	// temporary inverts the limit mask to trigger ISR on switch release
 	io_invert_limits(axis_limit);
 
@@ -797,7 +795,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 	if (CHECKFLAG(limits_flags, axis_limit))
 	{
-		cnc_set_exec_state(EXEC_HALT);
+		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
 		return STATUS_CRITICAL_FAIL;
 	}
@@ -817,6 +815,18 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		return STATUS_CRITICAL_FAIL;
 	}
 
+	bool probe_ok = io_get_probe();
+	probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? probe_ok : !probe_ok;
+
+	if (!probe_ok)
+	{
+		if (!(flags & MOTIONCONTROL_PROBE_NOALARM_ONFAIL))
+		{
+			cnc_alarm(EXEC_ALARM_PROBE_FAIL_INITIAL);
+		}
+		return STATUS_OK;
+	}
+
 	mc_line(target, block_data);
 	// enable the probe
 	io_enable_probe();
@@ -833,7 +843,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	io_disable_probe();
 
 	// clears HALT state if possible
-	cnc_clear_exec_state(EXEC_HALT);
+	cnc_unlock(true);
 
 	itp_clear();
 	planner_clear();
@@ -841,13 +851,13 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	// sync the position of the motion control
 	mc_sync_position();
 	// HALT could not be cleared. Something is wrong
-	if (cnc_get_exec_state(EXEC_HALT))
+	if (cnc_get_exec_state(EXEC_UNHOMED))
 	{
 		return STATUS_CRITICAL_FAIL;
 	}
 
 	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
-	bool probe_ok = io_get_probe();
+	probe_ok = io_get_probe();
 	probe_ok = (flags & MOTIONCONTROL_PROBE_INVERT) ? !probe_ok : probe_ok;
 	if (!probe_ok)
 	{
