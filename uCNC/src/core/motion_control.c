@@ -511,6 +511,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	return error;
 }
 
+#ifndef DISABLE_ARC_SUPPORT
 // applies an algorithm similar to grbl with slight changes
 uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, float radius, uint8_t axis_0, uint8_t axis_1, bool isclockwise, motion_data_t *block_data)
 {
@@ -641,6 +642,7 @@ uint8_t mc_arc(float *target, float center_offset_a, float center_offset_b, floa
 	// Ensure last segment arrives at target location.
 	return mc_line(target, block_data);
 }
+#endif
 
 uint8_t mc_dwell(motion_data_t *block_data)
 {
@@ -668,6 +670,7 @@ uint8_t mc_pause(void)
 
 uint8_t mc_update_tools(motion_data_t *block_data)
 {
+#if (TOOL_COUNT > 0)
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
 		if (itp_sync() != STATUS_OK)
@@ -678,7 +681,7 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 		planner_sync_tools(block_data);
 		itp_sync_spindle();
 	}
-
+#endif
 	return STATUS_OK;
 }
 
@@ -803,6 +806,7 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	return STATUS_OK;
 }
 
+#ifndef DISABLE_PROBING_SUPPORT
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
 #if ASSERT_PIN(PROBE)
@@ -872,6 +876,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 	return STATUS_PROBE_SUCCESS;
 }
+#endif
 
 void mc_get_position(float *target)
 {
