@@ -39,6 +39,7 @@
 - fixed random homing error caused by incorrect reading after input inversion for retraction motion (#353)
 - fixed multiple drive axis compilation error (#353)
 - fixed error loop with ESTOP pressed (#353)
+- fixed path mode not being reset on parser reset (#354)
 - fixed incorrect offset reference for servo pins with servos not working. (#356)
 
 ## [1.5.6] - 28-11-2022
