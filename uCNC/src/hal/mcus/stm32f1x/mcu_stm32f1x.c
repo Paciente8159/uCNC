@@ -555,7 +555,7 @@ void mcu_disable_probe_isr(void)
 void mcu_set_servo(uint8_t servo, uint8_t value)
 {
 #if SERVOS_MASK > 0
-	mcu_servos[servo - SERVO0_UCNC_INTERNAL_PIN] = value;
+	mcu_servos[servo - SERVO_PINS_OFFSET] = value;
 #endif
 }
 
@@ -566,7 +566,7 @@ void mcu_set_servo(uint8_t servo, uint8_t value)
 uint8_t mcu_get_servo(uint8_t servo)
 {
 #if SERVOS_MASK > 0
-	uint8_t offset = servo - SERVO0_UCNC_INTERNAL_PIN;
+	uint8_t offset = servo - SERVO_PINS_OFFSET;
 
 	if ((1U << offset) & SERVOS_MASK)
 	{

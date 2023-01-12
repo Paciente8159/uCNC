@@ -243,12 +243,14 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 	case 254:
 		memcpy(axis, (float *)&parser_parameters.tool_length_offset, sizeof(float));
 		break;
+#ifndef DISABLE_HOME_SUPPORT
 	case 28:
 		settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
 		break;
 	case 30:
 		settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
 		break;
+#endif
 	case 92:
 		memcpy(axis, parser_parameters.g92_offset, sizeof(parser_parameters.g92_offset));
 		break;
@@ -267,10 +269,12 @@ void parser_parameters_reset(void)
 {
 	// erase all parameters for G54..G59.x coordinate systems
 	memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
 	}
+#endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
@@ -812,6 +816,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				return STATUS_NEGATIVE_VALUE;
 			}
 			break;
+#ifndef DISABLE_G10_SUPPORT
 		case G10:
 			// G10
 			// if no P or L is present
@@ -833,6 +838,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				}
 			}
 			break;
+#endif
 		case G92:
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
@@ -861,12 +867,15 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 		case G0: // G0
 		case G1: // G1
 #endif
+#ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2, G38.3, G38.4, G38.5
 			if (!CHECKFLAG(cmd->words, GCODE_ALL_AXIS))
 			{
 				return STATUS_GCODE_NO_AXIS_WORDS;
 			}
 			break;
+#endif
+#ifndef DISABLE_ARC_SUPPORT
 		case G2:
 		case G3:
 			switch (new_state->groups.plane)
@@ -920,6 +929,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 				break;
 			}
 			break;
+#endif
 		case G80: // G80 and
 			if (CHECKFLAG(cmd->words, GCODE_ALL_AXIS) && !cmd->group_0_1_useaxis)
 			{
@@ -1102,12 +1112,17 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	float target[AXIS_COUNT];
+#ifndef DISABLE_ARC_SUPPORT
 	// plane selection
 	uint8_t a = 0;
 	uint8_t b = 0;
 	uint8_t offset_a = 0;
 	uint8_t offset_b = 0;
-	float radius;
+	float radius, x, y;
+#endif
+#ifndef DISABLE_PROBING_SUPPORT
+	uint8_t probe_flags;
+#endif
 	motion_data_t block_data = {0};
 	uint8_t error = 0;
 	bool update_tools = false;
@@ -1140,7 +1155,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		case M10:
 			if (words->p < 6)
 			{
-				io_set_pwm(words->p + SERVO0_UCNC_INTERNAL_PIN, (uint8_t)CLAMP(words->s, 0, 255));
+				io_set_pwm(words->p + SERVO_PINS_OFFSET, (uint8_t)CLAMP(words->s, 0, 255));
 			}
 			break;
 #endif
@@ -1274,6 +1289,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		mc_dwell(&block_data);
 	}
 
+#ifndef DISABLE_ARC_SUPPORT
 	// 11. set active plane (G17, G18, G19)
 	switch (new_state->groups.plane)
 	{
@@ -1314,6 +1330,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 #endif
 	}
+#endif
 
 	// 12. set length units (G20, G21).
 	if (new_state->groups.units == G20) // all internal state variables must be converted to mm
@@ -1359,14 +1376,17 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		parser_wco_counter = 0;
 	}
 #endif
-	// 15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
+// 15. coordinate system selection (G54, G55, G56, G57, G58, G59, G59.1, G59.2, G59.3) (OK nothing to be done)
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	if (CHECKFLAG(cmd->groups, GCODE_GROUP_COORDSYS))
 	{
 		parser_parameters.coord_system_index = new_state->groups.coord_system;
 		settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (parser_parameters.coord_system_index * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset[0], PARSER_PARAM_SIZE);
 		parser_wco_counter = 0;
 	}
-	// 16. set path control mode (G61, G61.1, G64)
+#endif
+// 16. set path control mode (G61, G61.1, G64)
+#ifndef DISABLE_PATH_MODES
 	switch (new_state->groups.path_mode)
 	{
 	case G61_1:
@@ -1376,6 +1396,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		block_data.motion_mode |= PLANNER_MOTION_CONTINUOUS;
 		break;
 	}
+#endif
 
 	// 17. set distance mode (G90, G91)
 	memcpy(target, parser_last_pos, sizeof(parser_last_pos));
@@ -1439,10 +1460,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	error = 0;
 	switch (new_state->groups.nonmodal)
 	{
+#ifndef DISABLE_G10_SUPPORT
 	case G10: // G10
 		index = ((uint8_t)words->p) ? words->p : (parser_parameters.coord_system_index + 1);
 		switch (index)
 		{
+#ifndef DISABLE_HOME_SUPPORT
 		case 28:
 			index = G28HOME;
 			break;
@@ -1450,10 +1473,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			index = G30HOME;
 			break;
+#endif
 		default:
 			index--;
 			break;
 		}
+#endif
 		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
@@ -1502,7 +1527,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 	}
 
-	// stores G10 L2 command in the right address
+// stores G10 L2 command in the right address
+#ifndef DISABLE_G10_SUPPORT
 	if (index <= G30HOME)
 	{
 		float coords[AXIS_COUNT];
@@ -1546,7 +1572,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		}
 		parser_wco_counter = 0;
 	}
-
+#endif
 	// laser disabled in nonmodal moves
 	if (g_settings.laser_mode && new_state->groups.nonmodal)
 	{
@@ -1555,6 +1581,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	switch (new_state->groups.nonmodal)
 	{
+#ifndef DISABLE_HOME_SUPPORT
 	case G28: // G28
 	case G30: // G30
 		block_data.feed = FLT_MAX;
@@ -1580,6 +1607,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		// saves position
 		memcpy(parser_last_pos, target, sizeof(parser_last_pos));
 		break;
+#endif
 	case G92: // G92
 		for (uint8_t i = AXIS_COUNT; i != 0;)
 		{
@@ -1597,7 +1625,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	}
 
-	float x, y;
 	// 20. perform motion (G0 to G3, G80 to G89), as modified (possibly) by G53.
 	// G80 does no motion
 	// G81 to G89 is executed in a separate function and uses G53,G0,G1 and G4 has building blocks
@@ -1615,7 +1642,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		EVENT_INVOKE(gcode_before_motion, &args);
 #endif
 
-		uint8_t probe_flags;
 		switch (new_state->groups.motion)
 		{
 		case G0:
@@ -1634,6 +1660,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			error = mc_line(target, &block_data);
 			break;
+#ifndef DISABLE_ARC_SUPPORT
 		case G2:
 		case G3:
 			if (block_data.feed == 0)
@@ -1700,6 +1727,8 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 			error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
 			break;
+#endif
+#ifndef DISABLE_PROBING_SUPPORT
 		case G38: // G38.2
 				  // G38.3
 				  // G38.4
@@ -1735,6 +1764,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 				}
 			}
 			break;
+#endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
 		default: // other motion commands (derived from extended commands)
@@ -2075,15 +2105,17 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	{
 		switch (code)
 		{
-			// codes with possible mantissa
+// codes with possible mantissa
+#ifndef DISABLE_PROBING_SUPPORT
 		case 38:
+#ifdef ENABLE_G39_H_MAPPING
+		case 39:
+#endif
+#endif
 		case 43:
 		case 59:
 		case 61:
 		case 92:
-#ifdef ENABLE_G39_H_MAPPING
-		case 39:
-#endif
 			break;
 		default:
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
@@ -2094,12 +2126,19 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 
 	switch (code)
 	{
-		// motion codes
+// motion codes
+#ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+#ifdef ENABLE_G39_H_MAPPING
+	case 39:
+#endif
+#endif
 	case 0:
 	case 1:
+#ifndef DISABLE_ARC_SUPPORT
 	case 2:
 	case 3:
+#endif
 	case 80:
 #ifdef ENABLE_CANNED_CYCLES
 	case 81:
@@ -2112,9 +2151,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	case 88:
 	case 89:
 #endif
-#ifdef ENABLE_G39_H_MAPPING
-	case 39:
-#endif
+
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2140,13 +2177,15 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_group |= GCODE_GROUP_MOTION;
 		new_state->groups.motion = code;
 		break;
+#ifndef DISABLE_ARC_SUPPORT
 	case 17:
 	case 18:
 	case 19:
-		new_group |= GCODE_GROUP_PLANE;
 		code -= 17;
 		new_state->groups.plane = code;
+		new_group |= GCODE_GROUP_PLANE;
 		break;
+#endif
 	case 90:
 	case 91:
 		new_group |= GCODE_GROUP_DISTANCE;
@@ -2183,6 +2222,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		new_state->groups.return_mode = code - 98;
 		break;
 	case 54:
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	case 55:
 	case 56:
 	case 57:
@@ -2193,7 +2233,6 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 
-		new_group |= GCODE_GROUP_COORDSYS;
 		code -= (54 - mantissa);
 
 		if (code > COORD_SYS_COUNT)
@@ -2201,7 +2240,10 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_UNSUPPORTED_COORD_SYS;
 		}
 		new_state->groups.coord_system = code;
+#endif
+		new_group |= GCODE_GROUP_COORDSYS;
 		break;
+#ifndef DISABLE_PATH_MODES
 	case 61:
 	case 64:
 		code -= (61 - mantissa);
@@ -2209,18 +2251,23 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
-		new_group |= GCODE_GROUP_PATH;
 		new_state->groups.path_mode = code;
+		new_group |= GCODE_GROUP_PATH;
 		break;
+#endif
 	// de following nonmodal colide with motion groupcodes
 	case 92:
 		if (mantissa > 3)
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+#ifndef DISABLE_G10_SUPPORT
 	case 10:
+#endif
+#ifndef DISABLE_HOME_SUPPORT
 	case 28:
 	case 30:
+#endif
 		if (cmd->group_0_1_useaxis)
 		{
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
@@ -2576,6 +2623,7 @@ void parser_reset(bool stopgroup_only)
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
 	parser_state.tool_index = g_settings.default_tool;
+	parser_state.groups.path_mode = G61;
 #ifdef ENABLE_LASER_PPI
 	parser_config_ppi();
 #endif
@@ -2621,12 +2669,14 @@ void parser_parameters_load(void)
 		}
 	}
 
-	// load G54
+// load G54
+#ifndef DISABLE_COORD_SYS_SUPPORT
 	if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 	{
 		memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
 		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
 	}
+#endif
 }
 
 void parser_sync_position(void)

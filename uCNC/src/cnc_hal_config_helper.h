@@ -83,6 +83,9 @@ extern "C"
 #ifdef PROBE
 #undef PROBE
 #endif
+#ifndef DISABLE_PROBING_SUPPORT
+#define DISABLE_PROBING_SUPPORT
+#endif
 #endif
 
 #ifdef LIMIT_X_DISABLE
@@ -2145,6 +2148,11 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef DISABLE_COORD_SYS_SUPPORT
+#undef COORD_SYS_COUNT
+#define COORD_SYS_COUNT 1
+#endif
+
 // some sanity checks
 #if (COORD_SYS_COUNT < 1 || COORD_SYS_COUNT > 9)
 #error "Invalid config option COORD_SYS_COUNT must be set between 1 and 9"
@@ -2226,6 +2234,13 @@ typedef uint16_t step_t;
 
 #if (defined(MCU_HAS_USB) || defined(MCU_HAS_WIFI) || defined(MCU_HAS_BLUETOOTH))
 #define ENABLE_SYNC_TX
+#endif
+
+#ifdef DISABLE_PROBING_SUPPORT
+#ifdef ENABLE_G39_H_MAPPING
+#undef ENABLE_G39_H_MAPPING
+#warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
+#endif
 #endif
 
 #ifdef __cplusplus
