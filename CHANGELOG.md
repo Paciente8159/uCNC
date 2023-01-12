@@ -6,7 +6,10 @@
 
 # Changelog
 
-## [1.5.7] - 06-01-2023
+## [1.5.7] - 12-01-2023
+
+## Contributors
+[@etet100](https://github.com/etet100) - servo bug fix and homing bug testing
 
 ### Added
 
@@ -18,6 +21,7 @@
 - added support motion commands modifications at parser level (support for G7/G8 extension module) (#346)
 - added boardmap for UNO CNC Shield v3 (Grbl 0.8 mapping) (#348)
 - added servo controlled pen holder tool (#351)
+- added new options to disable core parsing features to shrink code size (#354)
 
 ### Changed
 
@@ -35,6 +39,7 @@
 - fixed random homing error caused by incorrect reading after input inversion for retraction motion (#353)
 - fixed multiple drive axis compilation error (#353)
 - fixed error loop with ESTOP pressed (#353)
+- fixed incorrect offset reference for servo pins with servos not working. (#356)
 
 ## [1.5.6] - 28-11-2022
 
