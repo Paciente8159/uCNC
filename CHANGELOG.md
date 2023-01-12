@@ -6,6 +6,42 @@
 
 # Changelog
 
+## [1.5.7] - 12-01-2023
+
+## Contributors
+[@etet100](https://github.com/etet100) - servo bug fix and homing bug testing
+
+### Added
+
+- added support for spindle synched motions (#339)
+- added compile option to enable IO alarm debug messages (#341)
+- extended dual driver axis up to 4 dual axis using the full 8 stepper drivers control signals (#298)
+- added macro to assert IO pins and created UNDEF_PIN macro (#342)
+- added support for bilinear height map generation for irregular surfaces via custom G39 and G39.1 (#343)
+- added support motion commands modifications at parser level (support for G7/G8 extension module) (#346)
+- added boardmap for UNO CNC Shield v3 (Grbl 0.8 mapping) (#348)
+- added servo controlled pen holder tool (#351)
+- added new options to disable core parsing features to shrink code size (#354)
+
+### Changed
+
+- modified/fixed probing motions and probe status checks (#344)
+- redesigned machine interlocking internal states (#353)
+- alarms 1, 2 and 3 now require a reset command (all systems are reset) before allow unlocking (#353)
+- added alarm condition when limits are hit without motion and position is not lost (#353)
+- modified status messages of a resume after hold release (goes idle while starting spindle and then run with motion start) (#353)
+- home cycle can now be executed with hard limits disabled (still requires endtops to be wired and configured) (#353)
+
+### Fixed
+
+- fixed data motion block initialization that caused random issues during homing (#350)
+- fixed active modal states print added group0 mantissa to groups 1 to 6 (#353)
+- fixed random homing error caused by incorrect reading after input inversion for retraction motion (#353)
+- fixed multiple drive axis compilation error (#353)
+- fixed error loop with ESTOP pressed (#353)
+- fixed path mode not being reset on parser reset (#354)
+- fixed incorrect offset reference for servo pins with servos not working. (#356)
+
 ## [1.5.6] - 28-11-2022
 
 ### Added
@@ -1087,6 +1123,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.5.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.7
 [1.5.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.6
 [1.5.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.5
 [1.5.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.4

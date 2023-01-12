@@ -104,6 +104,7 @@ List of Supported G-Codes since µCNC 1.3.0:
   - Valid Non-Command Words: A, B, C, F, H, I, J, K, L, N, P, Q, R, S, T, X, Y, Z
 
   - Outside the RS274NGC scope
+    - Bilinear surface mapping: G39,G39.1,G39.2*
     - Servo Control: M10*
     - Trinamic settings: M350* (set/get microsteps), M906* (set/get current), 913* (stealthchop threshold), 914* (stall sensitivity-stallGuard capable chips only), 920* (set/get register)
     - Digital pins/trimpot settings: M351* (set/get microsteps), M907* (set/get current via digipot)
@@ -123,10 +124,10 @@ NOTES:
 - _M1 stop condition can be set in HAL file_
 - _M6 additional tools can be defined in HAL file_
 - _M10 only active if servo motors are configured_
+- _G39,G39.1,G39.2 only active if Height Map enabled_
 
 Other G/M codes available via [external modules](https://github.com/Paciente8159/uCNC-modules)
   - Cubic and quadratic splines: G5/G5.1
-  - Bilinear surface mapping: G39/G39.1
   - Lathe radius mode: G7/G8
   - Spindle synchronized motion: G33
   - Stepper enable/disable: M17/M18
@@ -180,12 +181,12 @@ I used several UNO emulators but debugging was not easy. So a kind of virtual bo
 It can run on:
 
 - AVR (Arduino UNO/MEGA)
-- STM32F1 (Bluepill) - v1.1.x
+- STM32F1 (like the Bluepill) - v1.1.x
 - SAMD21 (Arduino Zero/M0) - v1.3.x
-- STM32F4 (Blackpill) - v1.4.x (Does not emulate EEPROM)
+- STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
-- NXP LPC1768 - v1.5.x (eeprom emulation and analog still being developed) 
+- NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed) 
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics
