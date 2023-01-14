@@ -95,8 +95,8 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
     #define STEP_ENA_INV DEFAULT_STEP_ENA_INV
 #endif
 
-#if (!defined(LIMITS_INV_MASK))
-    #define LIMITS_INV_MASK DEFAULT_LIMITS_INV_MASK
+#if (!defined(LIMIT_INV_MASK))
+    #define LIMIT_INV_MASK DEFAULT_LIMIT_INV_MASK
 #endif
 
 #if (!defined(PROBE_INV_MASK))
