@@ -97,6 +97,29 @@ extern "C"
 
 	//#define ECHO_CMD
 
+    /**
+     * Override default configuration settings. Use _PER_AXIS parameters to
+     * define different settings for each axis.
+     * */
+
+// #define DIR_INV_MASK 2
+// #define LIMIT_INV_MASK 255
+// #define SOFT_LIMITS_ENABLED 1
+// #define HARD_LIMITS_ENABLED 1
+// #define HOMING_ENABLED 1
+// #define HOMING_DIR_INV_MASK 0
+// #define HOMING_FAST 2000
+// #define HOMING_SLOW 1500
+// #define HOMING_OFFSET 4
+// #define STEP_PER_MM 200
+// #define STEP_PER_MM_PER_AXIS {80, 144}
+// #define MAX_FEED 6000
+// #define MAX_FEED_PER_AXIS {6000, 6000}
+// #define ACCEL 1000
+// #define ACCEL_PER_AXIS {1000, 1000}
+// #define MAX_DIST 1000
+// #define MAX_DIST_PER_AXIS {420, 650}
+
 	/**
 	 * Sets/limits the number of tools to be used
 	 * The tool and tool order are configured in the cnc_hal_config.h

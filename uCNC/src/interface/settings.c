@@ -83,30 +83,143 @@ static uint8_t crc7(uint8_t c, uint8_t crc)
 }
 #endif
 
+#if (!defined(STEP_INV_MASK))
+    #define STEP_INV_MASK DEFAULT_STEP_INV_MASK
+#endif
+
+#if (!defined(DIR_INV_MASK))
+    #define DIR_INV_MASK DEFAULT_DIR_INV_MASK
+#endif
+
+#if (!defined(STEP_ENA_INV))
+    #define STEP_ENA_INV DEFAULT_STEP_ENA_INV
+#endif
+
+#if (!defined(LIMITS_INV_MASK))
+    #define LIMITS_INV_MASK DEFAULT_LIMITS_INV_MASK
+#endif
+
+#if (!defined(PROBE_INV_MASK))
+    #define PROBE_INV_MASK DEFAULT_PROBE_INV_MASK
+#endif
+
+#if (!defined(STATUS_MASK))
+    #define STATUS_MASK DEFAULT_STATUS_MASK
+#endif
+
+#if (!defined(CONTROL_INV_MASK))
+    #define CONTROL_INV_MASK DEFAULT_CONTROL_INV_MASK
+#endif
+
+#if (!defined(G64_FACTOR))
+    #define G64_FACTOR DEFAULT_G64_FACTOR
+#endif
+
+#if (!defined(ARC_TOLERANCE))
+    #define ARC_TOLERANCE DEFAULT_ARC_TOLERANCE
+#endif
+
+#if (!defined(REPORT_INCHES))
+    #define REPORT_INCHES DEFAULT_REPORT_INCHES
+#endif
+
+#if (!defined(SOFT_LIMITS_ENABLED))
+    #define SOFT_LIMITS_ENABLED DEFAULT_SOFT_LIMITS_ENABLED
+#endif
+
+#if (!defined(HARD_LIMITS_ENABLED))
+    #define HARD_LIMITS_ENABLED DEFAULT_HARD_LIMITS_ENABLED
+#endif
+
+#if (!defined(HOMING_ENABLED))
+    #define HOMING_ENABLED DEFAULT_HOMING_ENABLED
+#endif
+
+#if (!defined(DEBOUNCE_MS))
+    #define DEBOUNCE_MS DEFAULT_DEBOUNCE_MS
+#endif
+
+#if (!defined(HOMING_DIR_INV_MASK))
+    #define HOMING_DIR_INV_MASK DEFAULT_HOMING_DIR_INV_MASK
+#endif
+
+#if (!defined(HOMING_FAST))
+    #define HOMING_FAST DEFAULT_HOMING_FAST
+#endif
+
+#if (!defined(HOMING_SLOW))
+    #define HOMING_SLOW DEFAULT_HOMING_SLOW
+#endif
+
+#if (!defined(HOMING_OFFSET))
+    #define HOMING_OFFSET DEFAULT_HOMING_OFFSET
+#endif
+
+#if (!defined(SPINDLE_MAX_RPM))
+    #define SPINDLE_MAX_RPM DEFAULT_SPINDLE_MAX_RPM
+#endif
+
+#if (!defined(SPINDLE_MIN_RPM))
+    #define SPINDLE_MIN_RPM DEFAULT_SPINDLE_MIN_RPM
+#endif
+
+#if (!defined(STEP_PER_MM))
+    #define STEP_PER_MM DEFAULT_STEP_PER_MM
+#endif
+
+#if (!defined(STEP_PER_MM_PER_AXIS))
+    #define STEP_PER_MM_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, STEP_PER_MM)
+#endif
+
+#if (!defined(MAX_FEED))
+    #define MAX_FEED DEFAULT_MAX_FEED
+#endif
+
+#if (!defined(MAX_FEED_PER_AXIS))
+    #define MAX_FEED_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, MAX_FEED)
+#endif
+
+#if (!defined(ACCEL))
+    #define ACCEL DEFAULT_ACCEL
+#endif
+
+#if (!defined(ACCEL_PER_AXIS))
+    #define ACCEL_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, ACCEL)
+#endif
+
+#if (!defined(MAX_DIST))
+    #define MAX_DIST DEFAULT_MAX_DIST
+#endif
+
+#if (!defined(MAX_DIST_PER_AXIS))
+    #define MAX_DIST_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, MAX_DIST)
+#endif
+
+// @note ustawienia domyślne
 const settings_t __rom__ default_settings =
 	{
 		.version = SETTINGS_VERSION,
 		.max_step_rate = F_STEP_MAX,
-		.step_invert_mask = DEFAULT_STEP_INV_MASK,
-		.dir_invert_mask = DEFAULT_DIR_INV_MASK,
-		.step_enable_invert = DEFAULT_STEP_ENA_INV,
-		.limits_invert_mask = DEFAULT_LIMIT_INV_MASK,
-		.probe_invert_mask = DEFAULT_PROBE_INV_MASK,
-		.status_report_mask = DEFAULT_STATUS_MASK,
-		.control_invert_mask = DEFAULT_CONTROL_INV_MASK,
-		.g64_angle_factor = DEFAULT_G64_FACTOR,
-		.arc_tolerance = DEFAULT_ARC_TOLERANCE,
-		.report_inches = DEFAULT_REPORT_INCHES,
-		.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
-		.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
-		.homing_enabled = DEFAULT_HOMING_ENABLED,
-		.debounce_ms = DEFAULT_DEBOUNCE_MS,
-		.homing_dir_invert_mask = DEFAULT_HOMING_DIR_INV_MASK,
-		.homing_fast_feed_rate = DEFAULT_HOMING_FAST,
-		.homing_slow_feed_rate = DEFAULT_HOMING_SLOW,
-		.homing_offset = DEFAULT_HOMING_OFFSET,
-		.spindle_max_rpm = DEFAULT_SPINDLE_MAX_RPM,
-		.spindle_min_rpm = DEFAULT_SPINDLE_MIN_RPM,
+		.step_invert_mask = STEP_INV_MASK,
+		.dir_invert_mask = DIR_INV_MASK,
+		.step_enable_invert = STEP_ENA_INV,
+		.limits_invert_mask = LIMIT_INV_MASK,
+		.probe_invert_mask = PROBE_INV_MASK,
+		.status_report_mask = STATUS_MASK,
+		.control_invert_mask = CONTROL_INV_MASK,
+		.g64_angle_factor = G64_FACTOR,
+		.arc_tolerance = ARC_TOLERANCE,
+		.report_inches = REPORT_INCHES,
+		.soft_limits_enabled = SOFT_LIMITS_ENABLED,
+		.hard_limits_enabled = HARD_LIMITS_ENABLED,
+		.homing_enabled = HOMING_ENABLED,
+		.debounce_ms = DEBOUNCE_MS,
+		.homing_dir_invert_mask = HOMING_DIR_INV_MASK,
+		.homing_fast_feed_rate = HOMING_FAST,
+		.homing_slow_feed_rate = HOMING_SLOW,
+		.homing_offset = HOMING_OFFSET,
+		.spindle_max_rpm = SPINDLE_MAX_RPM,
+		.spindle_min_rpm = SPINDLE_MIN_RPM,
 		.laser_mode = 0,
 #ifdef ENABLE_LASER_PPI
 		.laser_ppi = DEFAULT_LASER_PPI,
@@ -114,10 +227,10 @@ const settings_t __rom__ default_settings =
 		.laser_ppi_mixmode_ppi = 0.25,
 		.laser_ppi_mixmode_uswidth = 0.75,
 #endif
-		.step_per_mm = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM),
-		.max_feed_rate = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_FEED),
-		.acceleration = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_ACCEL),
-		.max_distance = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_DIST),
+		.step_per_mm = STEP_PER_MM_PER_AXIS,
+		.max_feed_rate = MAX_FEED_PER_AXIS,
+		.acceleration = ACCEL_PER_AXIS,
+		.max_distance = MAX_DIST_PER_AXIS,
 #if TOOL_COUNT > 0
 		.default_tool = DEFAULT_STARTUP_TOOL,
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
