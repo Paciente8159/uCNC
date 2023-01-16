@@ -1593,25 +1593,25 @@ extern "C"
 #define DIO207_AHB1EN SPI_CS_AHB1EN
 #define DIO207_GPIO SPI_CS_GPIO
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#define I2C_SCL_AHB1EN (__rccgpioen__(I2C_SCL_PORT))
-#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#define I2C_CLK_AHB1EN (__rccgpioen__(I2C_CLK_PORT))
+#define I2C_CLK_GPIO (__gpio__(I2C_CLK_PORT))
 #define DIO208 208
-#define DIO208_PORT I2C_SCL_PORT
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_AHB1EN I2C_SCL_AHB1EN
-#define DIO208_GPIO I2C_SCL_GPIO
+#define DIO208_PORT I2C_CLK_PORT
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_AHB1EN I2C_CLK_AHB1EN
+#define DIO208_GPIO I2C_CLK_GPIO
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#define I2C_SDA_AHB1EN (__rccgpioen__(I2C_SDA_PORT))
-#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#define I2C_DATA_AHB1EN (__rccgpioen__(I2C_DATA_PORT))
+#define I2C_DATA_GPIO (__gpio__(I2C_DATA_PORT))
 #define DIO209 209
-#define DIO209_PORT I2C_SDA_PORT
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_AHB1EN I2C_SDA_AHB1EN
-#define DIO209_GPIO I2C_SDA_GPIO
+#define DIO209_PORT I2C_DATA_PORT
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_AHB1EN I2C_DATA_AHB1EN
+#define DIO209_GPIO I2C_DATA_GPIO
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -3060,7 +3060,7 @@ extern "C"
 #endif
 
 // I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
+#if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 
 #ifndef I2C_PORT

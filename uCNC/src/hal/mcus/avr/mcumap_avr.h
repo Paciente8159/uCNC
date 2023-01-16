@@ -1905,29 +1905,29 @@ extern "C"
 #define DIO207_INREG (__inreg__(SPI_CS_PORT))
 #define DIO207_DIRREG (__dirreg__(SPI_CS_PORT))
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
 #define DIO208 208
-#define I2C_SCL 208
-#define DIO208_PORT (I2C_SCL_PORT)
-#define DIO208_BIT (I2C_SCL_BIT)
-#define I2C_SCL_OUTREG (__outreg__(I2C_SCL_PORT))
-#define I2C_SCL_INREG (__inreg__(I2C_SCL_PORT))
-#define I2C_SCL_DIRREG (__dirreg__(I2C_SCL_PORT))
-#define DIO208_OUTREG (__outreg__(I2C_SCL_PORT))
-#define DIO208_INREG (__inreg__(I2C_SCL_PORT))
-#define DIO208_DIRREG (__dirreg__(I2C_SCL_PORT))
+#define I2C_CLK 208
+#define DIO208_PORT (I2C_CLK_PORT)
+#define DIO208_BIT (I2C_CLK_BIT)
+#define I2C_CLK_OUTREG (__outreg__(I2C_CLK_PORT))
+#define I2C_CLK_INREG (__inreg__(I2C_CLK_PORT))
+#define I2C_CLK_DIRREG (__dirreg__(I2C_CLK_PORT))
+#define DIO208_OUTREG (__outreg__(I2C_CLK_PORT))
+#define DIO208_INREG (__inreg__(I2C_CLK_PORT))
+#define DIO208_DIRREG (__dirreg__(I2C_CLK_PORT))
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
 #define DIO209 209
-#define I2C_SDA 209
-#define DIO209_PORT (I2C_SDA_PORT)
-#define DIO209_BIT (I2C_SDA_BIT)
-#define I2C_SDA_OUTREG (__outreg__(I2C_SDA_PORT))
-#define I2C_SDA_INREG (__inreg__(I2C_SDA_PORT))
-#define I2C_SDA_DIRREG (__dirreg__(I2C_SDA_PORT))
-#define DIO209_OUTREG (__outreg__(I2C_SDA_PORT))
-#define DIO209_INREG (__inreg__(I2C_SDA_PORT))
-#define DIO209_DIRREG (__dirreg__(I2C_SDA_PORT))
+#define I2C_DATA 209
+#define DIO209_PORT (I2C_DATA_PORT)
+#define DIO209_BIT (I2C_DATA_BIT)
+#define I2C_DATA_OUTREG (__outreg__(I2C_DATA_PORT))
+#define I2C_DATA_INREG (__inreg__(I2C_DATA_PORT))
+#define I2C_DATA_DIRREG (__dirreg__(I2C_DATA_PORT))
+#define DIO209_OUTREG (__outreg__(I2C_DATA_PORT))
+#define DIO209_INREG (__inreg__(I2C_DATA_PORT))
+#define DIO209_DIRREG (__dirreg__(I2C_DATA_PORT))
 #endif
 
 // ISR on change inputs
@@ -4359,7 +4359,7 @@ extern "C"
 #endif
 
 // I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
+#if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL

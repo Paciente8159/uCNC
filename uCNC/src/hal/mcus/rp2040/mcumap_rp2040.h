@@ -1,10 +1,10 @@
 /*
-	Name: mcumap_esp8266.h
+	Name: mcumap_rp2040.h
 	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 05-02-2022
+	Date: 16-01-2023
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,15 +16,18 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_ESP8266_H
-#define MCUMAP_ESP8266_H
+#ifndef MCUMAP_RP2040_H
+#define MCUMAP_RP2040_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <Arduino.h>
+// #include <chrono>
 
 /*
 	Generates all the interface definitions.
@@ -39,7 +42,7 @@ extern "C"
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 80000000L
+#define F_CPU 133000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -68,20 +71,6 @@ extern "C"
 #ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
-
-#ifndef MCU_CALLBACK
-#define MCU_CALLBACK IRAM_ATTR
-#endif
-
-#ifdef ENABLE_RX_SYNC
-#define MCU_RX_CALLBACK ICACHE_FLASH_ATTR
-#endif
-
-#ifdef ENABLE_TX_SYNC
-#define MCU_TX_CALLBACK ICACHE_FLASH_ATTR
-#endif
-
-#define MCU_IO_CALLBACK ICACHE_FLASH_ATTR
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -1040,12 +1029,13 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
+	extern uint8_t rpi_pico_pwm[16];
+#define mcu_set_pwm(X, Y) (rpi_pico_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
+#define mcu_get_pwm(X) (rpi_pico_pwm[X - PWM_PINS_OFFSET] << 1)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
-#define mcu_spi_xmit(X)           \
+#define mcu_spi_xmit(X) {}
+// #define mcu_spi_xmit(X)           \
 	{                             \
 		while (SPI1CMD & SPIBUSY) \
 			;                     \
@@ -1056,10 +1046,10 @@ extern "C"
 		(uint8_t)(SPI1W0 & 0xff); \
 	}
 
-#define mcu_spi_config(X, Y) esp8266_spi_config(X, Y)
+#define mcu_spi_config(X, Y) rpi_pico_spi_config(X, Y)
 
-	extern void esp8266_delay_us(uint16_t delay);
-#define mcu_delay_us(X) esp8266_delay_us(X)
+	extern void rpi_pico_delay_us(uint16_t delay);
+#define mcu_delay_us(X) rpi_pico_delay_us(X)
 
 #ifdef __cplusplus
 }

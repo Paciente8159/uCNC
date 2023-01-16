@@ -736,12 +736,12 @@ void mcu_init(void)
 #ifdef MCU_HAS_I2C
 	i2c_config_t i2cconf = {
 		.mode = I2C_MODE_MASTER,
-		.sda_io_num = I2C_SDA_BIT, // select GPIO specific to your project
+		.sda_io_num = I2C_DATA_BIT, // select GPIO specific to your project
 		.sda_pullup_en = GPIO_PULLUP_ENABLE,
-		.scl_io_num = I2C_SCL_BIT, // select GPIO specific to your project
+		.scl_io_num = I2C_CLK_BIT, // select GPIO specific to your project
 		.scl_pullup_en = GPIO_PULLUP_ENABLE,
 		.master.clk_speed = I2C_FREQ, // select frequency specific to your project
-		.clk_flags = 0,				  // you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here
+		.clk_flags = 0,				  // you can use I2C_CLKK_SRC_FLAG_* flags to choose i2c source clock here
 	};
 	i2c_param_config((i2c_port_t)I2C_PORT, &i2cconf);
 	i2c_driver_install(I2C_PORT, I2C_MODE_MASTER, 0, 0, 0);

@@ -2213,33 +2213,33 @@ extern "C"
 #define DIO207_OUTREG SPI_CS_OUTREG
 #define DIO207_INREG SPI_CS_INREG
 #endif
-#if (defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#if (I2C_SCL_BIT < 32)
-#define I2C_SCL_OUTREG OUT0
-#define I2C_SCL_INREG IN0
+#if (defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#if (I2C_CLK_BIT < 32)
+#define I2C_CLK_OUTREG OUT0
+#define I2C_CLK_INREG IN0
 #else
-#define I2C_SCL_OUTREG OUT1
-#define I2C_SCL_INREG IN1
+#define I2C_CLK_OUTREG OUT1
+#define I2C_CLK_INREG IN1
 #endif
 #define DIO208 208
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_OUTREG I2C_SCL_OUTREG
-#define DIO208_INREG I2C_SCL_INREG
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_OUTREG I2C_CLK_OUTREG
+#define DIO208_INREG I2C_CLK_INREG
 #endif
-#if (defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#if (I2C_SDA_BIT < 32)
-#define I2C_SDA_OUTREG OUT0
-#define I2C_SDA_INREG IN0
+#if (defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#if (I2C_DATA_BIT < 32)
+#define I2C_DATA_OUTREG OUT0
+#define I2C_DATA_INREG IN0
 #else
-#define I2C_SDA_OUTREG OUT1
-#define I2C_SDA_INREG IN1
+#define I2C_DATA_OUTREG OUT1
+#define I2C_DATA_INREG IN1
 #endif
 #define DIO209 209
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_OUTREG I2C_SDA_OUTREG
-#define DIO209_INREG I2C_SDA_INREG
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_OUTREG I2C_DATA_OUTREG
+#define DIO209_INREG I2C_DATA_INREG
 #endif
 
 // ISR on change inputs
@@ -2710,7 +2710,7 @@ extern "C"
 #endif
 
 // I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
+#if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 #ifndef I2C_PORT
 #define I2C_PORT 0

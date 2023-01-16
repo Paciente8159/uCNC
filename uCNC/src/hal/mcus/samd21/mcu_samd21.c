@@ -579,8 +579,8 @@ void mcu_init(void)
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
-	mcu_config_altfunc(I2C_SCL);
-	mcu_config_altfunc(I2C_SDA);
+	mcu_config_altfunc(I2C_CLK);
+	mcu_config_altfunc(I2C_DATA);
 
 	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
 	while (I2CCOM->I2CM.SYNCBUSY.reg)

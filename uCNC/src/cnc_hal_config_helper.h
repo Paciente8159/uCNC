@@ -1911,15 +1911,15 @@ extern "C"
 #endif
 #define DIO207 UNDEF_PIN
 #endif
-#ifndef I2C_SCL
-#define I2C_SCL UNDEF_PIN
+#ifndef I2C_CLK
+#define I2C_CLK UNDEF_PIN
 #ifdef DIO208
 #undef DIO208
 #endif
 #define DIO208 UNDEF_PIN
 #endif
-#ifndef I2C_SDA
-#define I2C_SDA UNDEF_PIN
+#ifndef I2C_DATA
+#define I2C_DATA UNDEF_PIN
 #ifdef DIO209
 #undef DIO209
 #endif

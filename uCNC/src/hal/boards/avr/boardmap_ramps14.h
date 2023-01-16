@@ -183,10 +183,10 @@ extern "C"
 	//  #define DIN0_ISR 0
 
 // hardware I2C
-#define I2C_SCL_BIT 0
-#define I2C_SCL_PORT D
-#define I2C_SDA_BIT 1
-#define I2C_SDA_PORT D
+#define I2C_CLK_BIT 0
+#define I2C_CLK_PORT D
+#define I2C_DATA_BIT 1
+#define I2C_DATA_PORT D
 // software I2C
 // #define DIN30_BIT 0
 // #define DIN30_PORT D

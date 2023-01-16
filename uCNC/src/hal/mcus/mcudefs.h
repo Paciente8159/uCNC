@@ -78,6 +78,13 @@ extern "C"
 #endif
 #endif
 
+#if (MCU == MCU_RP2040)
+#include "rp2040/mcumap_rp2040.h"
+#ifndef CFG_TUSB_MCU
+#define CFG_TUSB_MCU OPT_MCU_RP2040
+#endif
+#endif
+
 #if (MCU == MCU_VIRTUAL_WIN)
 #include "virtual/mcumap_virtual.h"
 #endif

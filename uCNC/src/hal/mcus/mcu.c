@@ -697,12 +697,12 @@ void __attribute__((weak)) mcu_io_init(void)
 #if ASSERT_PIN(SPI_CS)
 	mcu_config_output(SPI_CS);
 #endif
-#if ASSERT_PIN(I2C_SCL)
-	mcu_config_input(I2C_SCL);
-	mcu_config_pullup(I2C_SCL);
+#if ASSERT_PIN(I2C_CLK)
+	mcu_config_input(I2C_CLK);
+	mcu_config_pullup(I2C_CLK);
 #endif
-#if ASSERT_PIN(I2C_SDA)
-	mcu_config_input(I2C_SDA);
-	mcu_config_pullup(I2C_SDA);
+#if ASSERT_PIN(I2C_DATA)
+	mcu_config_input(I2C_DATA);
+	mcu_config_pullup(I2C_DATA);
 #endif
 }

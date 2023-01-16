@@ -151,10 +151,10 @@ extern "C"
 #define ANALOG3_CHANNEL 3
 
 // hardware I2C
-#define I2C_SCL_BIT 1
-#define I2C_SCL_PORT 0
-#define I2C_SDA_BIT 0
-#define I2C_SDA_PORT 0
+#define I2C_CLK_BIT 1
+#define I2C_CLK_PORT 0
+#define I2C_DATA_BIT 0
+#define I2C_DATA_PORT 0
 #define I2C_PORT 1
 // software I2C
 // #define DIN30_BIT 1

@@ -2798,41 +2798,41 @@ extern "C"
 #define DIO207_PINHALF SPI_CS_PINHALF
 #define DIO207_PINCON SPI_CS_PINCON
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#define I2C_SCL_MBED_PIN __mbedpin__(I2C_SCL_PORT, I2C_SCL_BIT)
-#define I2C_SCL_GPIOREG __gpioreg__(I2C_SCL_PORT)
-#if (I2C_SCL_BIT < 16)
-#define I2C_SCL_PINHALF L
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#define I2C_CLK_MBED_PIN __mbedpin__(I2C_CLK_PORT, I2C_CLK_BIT)
+#define I2C_CLK_GPIOREG __gpioreg__(I2C_CLK_PORT)
+#if (I2C_CLK_BIT < 16)
+#define I2C_CLK_PINHALF L
 #else
-#define I2C_SCL_PINHALF H
+#define I2C_CLK_PINHALF H
 #endif
-#define I2C_SCL_PINCON __pincon__(I2C_SCL_PORT, I2C_SCL_PINHALF)
+#define I2C_CLK_PINCON __pincon__(I2C_CLK_PORT, I2C_CLK_PINHALF)
 #define DIO208 208
-#define DIO208_MBED_PIN I2C_SCL_MBED_PIN
-#define DIO208_PORT I2C_SCL_PORT
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_GPIOREG I2C_SCL_GPIOREG
-#define DIO208_PINHALF I2C_SCL_PINHALF
-#define DIO208_PINCON I2C_SCL_PINCON
+#define DIO208_MBED_PIN I2C_CLK_MBED_PIN
+#define DIO208_PORT I2C_CLK_PORT
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_GPIOREG I2C_CLK_GPIOREG
+#define DIO208_PINHALF I2C_CLK_PINHALF
+#define DIO208_PINCON I2C_CLK_PINCON
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#define I2C_SDA_MBED_PIN __mbedpin__(I2C_SDA_PORT, I2C_SDA_BIT)
-#define I2C_SDA_GPIOREG __gpioreg__(I2C_SDA_PORT)
-#if (I2C_SDA_BIT < 16)
-#define I2C_SDA_PINHALF L
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#define I2C_DATA_MBED_PIN __mbedpin__(I2C_DATA_PORT, I2C_DATA_BIT)
+#define I2C_DATA_GPIOREG __gpioreg__(I2C_DATA_PORT)
+#if (I2C_DATA_BIT < 16)
+#define I2C_DATA_PINHALF L
 #else
-#define I2C_SDA_PINHALF H
+#define I2C_DATA_PINHALF H
 #endif
-#define I2C_SDA_PINCON __pincon__(I2C_SDA_PORT, I2C_SDA_PINHALF)
+#define I2C_DATA_PINCON __pincon__(I2C_DATA_PORT, I2C_DATA_PINHALF)
 #define DIO209 209
-#define DIO209_MBED_PIN I2C_SDA_MBED_PIN
-#define DIO209_PORT I2C_SDA_PORT
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_GPIOREG I2C_SDA_GPIOREG
-#define DIO209_PINHALF I2C_SDA_PINHALF
-#define DIO209_PINCON I2C_SDA_PINCON
+#define DIO209_MBED_PIN I2C_DATA_MBED_PIN
+#define DIO209_PORT I2C_DATA_PORT
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_GPIOREG I2C_DATA_GPIOREG
+#define DIO209_PINHALF I2C_DATA_PINHALF
+#define DIO209_PINCON I2C_DATA_PINCON
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -3638,7 +3638,7 @@ extern "C"
 #endif
 
 // I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
+#if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 #ifndef I2C_PORT
 #define I2C_PORT 0
@@ -3653,13 +3653,13 @@ extern "C"
 
 #include "lpc17xx_i2c.h"
 
-#if ((I2C_SCL_MBED_PIN == P0_28) && (I2C_SDA_MBED_PIN == P0_27) && (I2C_PORT == 0))
+#if ((I2C_CLK_MBED_PIN == P0_28) && (I2C_DATA_MBED_PIN == P0_27) && (I2C_PORT == 0))
 #define I2C_ALT_FUNC 1
-#elif ((I2C_SCL_MBED_PIN == P0_1) && (I2C_SDA_MBED_PIN == P0_0) && (I2C_PORT == 1))
+#elif ((I2C_CLK_MBED_PIN == P0_1) && (I2C_DATA_MBED_PIN == P0_0) && (I2C_PORT == 1))
 #define I2C_ALT_FUNC 3
-#elif ((I2C_SCL_MBED_PIN == P0_20) && (I2C_SDA_MBED_PIN == P0_19) && (I2C_PORT == 1))
+#elif ((I2C_CLK_MBED_PIN == P0_20) && (I2C_DATA_MBED_PIN == P0_19) && (I2C_PORT == 1))
 #define I2C_ALT_FUNC 3
-#elif ((I2C_SCL_MBED_PIN == P0_11) && (I2C_SDA_MBED_PIN == P0_10) && (I2C_PORT == 2))
+#elif ((I2C_CLK_MBED_PIN == P0_11) && (I2C_DATA_MBED_PIN == P0_10) && (I2C_PORT == 2))
 #define I2C_ALT_FUNC 2
 #else
 #error "I2C pin configuration not supported"

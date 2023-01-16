@@ -45,7 +45,7 @@ extern "C"
 	 * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_RPI_PICO
 #endif
 
 // optional name to override default board name build info (if option enabled)

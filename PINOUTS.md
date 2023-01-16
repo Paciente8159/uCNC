@@ -66,5 +66,5 @@ This wiring can be completely modified by the user.
 | DIN27   | STEPPER7_UART_RX    |
 | DIN28   | SOFT_UART_RX    |
 | DIN29   | SOFT_SPI_SDI or TMC_SPI_SDI or STEPPER_DIGIPOT_SDI    |
-| DIN30   | SOFT_I2C_SCL    |
-| DIN31   | SOFT_I2C_SDA    |
+| DIN30   | SOFT_I2C_CLK    |
+| DIN31   | SOFT_I2C_DATA    |
