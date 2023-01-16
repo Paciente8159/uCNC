@@ -24,61 +24,6 @@ extern "C"
 {
 #endif
 
-// default step per mm
-#define DEFAULT_STEP_PER_MM 200
-// default feed in mm/m
-#define DEFAULT_MAX_FEED 500
-// default acceleration in mm/s^2
-#define DEFAULT_ACCEL 10
-// default max distance traveled by each axis in mm
-#define DEFAULT_MAX_DIST 200
-
-#define DEFAULT_HOMING_DIR_INV_MASK 0
-#define DEFAULT_HOMING_SLOW 10
-#define DEFAULT_HOMING_FAST 50
-#define DEFAULT_HOMING_OFFSET 2
-
-#define DEFAULT_STEP_INV_MASK 0
-#define DEFAULT_STEP_ENA_INV 0
-#define DEFAULT_DIR_INV_MASK 0
-
-#define DEFAULT_STATUS_MASK 1
-#define DEFAULT_CONTROL_INV_MASK 0
-#define DEFAULT_LIMIT_INV_MASK 0
-#define DEFAULT_PROBE_INV_MASK 0
-
-#define DEFAULT_INPUT_MASK0 0
-#define DEFAULT_INPUT_MASK1 0
-
-#define DEFAULT_G64_FACTOR 0.2
-#define DEFAULT_ARC_TOLERANCE 0.002
-
-#define DEFAULT_STARTUP_TOOL 1
-
-#define DEFAULT_SPINDLE_MAX_RPM 1000
-#define DEFAULT_SPINDLE_MIN_RPM 0
-
-#define DEFAULT_REPORT_INCHES 0
-#define DEFAULT_HOMING_ENABLED 0
-#define DEFAULT_HARD_LIMITS_ENABLED 0
-#define DEFAULT_SOFT_LIMITS_ENABLED 0
-
-#define DEFAULT_DEBOUNCE_MS 250
-
-#define DEFAULT_LIN_DELTA_ARM_LENGTH 230
-#define DEFAULT_LIN_DELTA_BASE_RADIUS 115
-
-#define DEFAULT_DELTA_BICEP_LENGTH 100
-#define DEFAULT_DELTA_FOREARM_LENGTH 300
-#define DEFAULT_DELTA_EFFECTOR_RADIUS 24
-#define DEFAULT_DELTA_BASE_RADIUS 75
-#define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
-
-#define DEFAULT_LASER_PPI 254
-#define DEFAULT_LASER_PPI_USWIDTH 1500
-
-#define DEFAULT_PID ({0, 0, 0})
-
 #define DEFAULT_ARRAY_0(y) \
 	{                      \
 	}
@@ -144,6 +89,191 @@ extern "C"
 	}
 #define _DEFAULT_ARRAY(x, y) DEFAULT_ARRAY_##x(y)
 #define DEFAULT_ARRAY(x, y) _DEFAULT_ARRAY(x, y)
+
+// default step per mm
+#if (defined(DEFAULT_STEP_PER_MM) && defined(DEFAULT_STEP_PER_MM_PER_AXIS))
+#error "Use either DEFAULT_STEP_PER_MM or DEFAULT_STEP_PER_MM_PER_AXIS, not both."
+#endif
+
+#if (!defined(DEFAULT_STEP_PER_MM))
+#define DEFAULT_STEP_PER_MM 200
+#endif
+
+#if (!defined(DEFAULT_STEP_PER_MM_PER_AXIS))
+#define DEFAULT_STEP_PER_MM_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM)
+#endif
+
+// default feed in mm/m
+#if (defined(DEFAULT_MAX_FEED) && defined(DEFAULT_MAX_FEED_PER_AXIS))
+#error "Use either DEFAULT_MAX or DEFAULT_MAX_PER_AXIS, not both."
+#endif
+
+#if (!defined(DEFAULT_MAX_FEED))
+#define DEFAULT_MAX_FEED 500
+#endif
+
+#if (!defined(DEFAULT_MAX_FEED_PER_AXIS))
+#define DEFAULT_MAX_FEED_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_FEED)
+#endif
+
+// default acceleration in mm/s^2
+#if (defined(DEFAULT_ACCEL) && defined(DEFAULT_ACCEL_PER_AXIS))
+#error "Use either DEFAULT_ACCEL or DEFAULT_ACCEL_AXIS, not both."
+#endif
+
+#if (!defined(DEFAULT_ACCEL))
+#define DEFAULT_ACCEL 10
+#endif
+
+#if (!defined(DEFAULT_ACCEL_PER_AXIS))
+#define DEFAULT_ACCEL_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_ACCEL)
+#endif
+
+// default max distance traveled by each axis in mm
+#if (defined(DEFAULT_MAX_DIST) && defined(DEFAULT_MAX_DIST_PER_AXIS))
+#error "Use either DEFAULT_MAX_DIST or DEFAULT_MAX_DIST_PER_AXIS, not both."
+#endif
+
+#if (!defined(DEFAULT_MAX_DIST))
+#define DEFAULT_MAX_DIST 200
+#endif
+
+#if (!defined(DEFAULT_MAX_DIST_PER_AXIS))
+#define DEFAULT_MAX_DIST_PER_AXIS DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_DIST)
+#endif
+
+// limits
+#if (!defined(DEFAULT_LIMIT_INV_MASK))
+#define DEFAULT_LIMIT_INV_MASK 0
+#endif
+
+#if (!defined(DEFAULT_SOFT_LIMITS_ENABLED))
+#define DEFAULT_SOFT_LIMITS_ENABLED 0
+#endif
+
+#if (!defined(DEFAULT_HARD_LIMITS_ENABLED))
+#define DEFAULT_HARD_LIMITS_ENABLED 0
+#endif
+
+// misc
+#if (!defined(DEFAULT_PROBE_INV_MASK))
+#define DEFAULT_PROBE_INV_MASK 0
+#endif
+
+#if (!defined(DEFAULT_STATUS_MASK))
+#define DEFAULT_STATUS_MASK 1
+#endif
+
+#if (!defined(DEFAULT_CONTROL_INV_MASK))
+#define DEFAULT_CONTROL_INV_MASK 0
+#endif
+
+#if (!defined(DEFAULT_STARTUP_TOOL))
+#define DEFAULT_STARTUP_TOOL 1
+#endif
+
+#if (!defined(DEFAULT_G64_FACTOR))
+#define DEFAULT_G64_FACTOR 0.2
+#endif
+
+#if (!defined(DEFAULT_ARC_TOLERANCE))
+#define DEFAULT_ARC_TOLERANCE 0.002
+#endif
+
+#if (!defined(DEFAULT_REPORT_INCHES))
+#define DEFAULT_REPORT_INCHES 0
+#endif
+
+#if (!defined(DEFAULT_DEBOUNCE_MS))
+#define DEFAULT_DEBOUNCE_MS 250
+#endif
+
+#define DEFAULT_INPUT_MASK0 0
+#define DEFAULT_INPUT_MASK1 0
+
+// spindle
+#if (!defined(DEFAULT_SPINDLE_MAX_RPM))
+#define DEFAULT_SPINDLE_MAX_RPM 1000
+#endif
+
+#if (!defined(DEFAULT_SPINDLE_MIN_RPM))
+#define DEFAULT_SPINDLE_MIN_RPM 0
+#endif
+
+// default homing configuration
+#if (!defined(DEFAULT_HOMING_DIR_INV_MASK))
+#define DEFAULT_HOMING_DIR_INV_MASK 0
+#endif
+
+#if (!defined(DEFAULT_HOMING_ENABLED))
+#define DEFAULT_HOMING_ENABLED 0
+#endif
+
+#if (!defined(DEFAULT_HOMING_FAST))
+#define DEFAULT_HOMING_FAST 50
+#endif
+
+#if (!defined(DEFAULT_HOMING_SLOW))
+#define DEFAULT_HOMING_SLOW 10
+#endif
+
+#if (!defined(DEFAULT_HOMING_OFFSET))
+#define DEFAULT_HOMING_OFFSET 2
+#endif
+
+// step/dir/motor_enabled
+#if (!defined(DEFAULT_STEP_INV_MASK))
+#define DEFAULT_STEP_INV_MASK 0
+#endif
+
+#if (!defined(DEFAULT_STEP_ENA_INV))
+#define DEFAULT_STEP_ENA_INV 0
+#endif
+
+#if (!defined(DEFAULT_DIR_INV_MASK))
+#define DEFAULT_DIR_INV_MASK 0
+#endif
+
+// linear delta
+#if (!defined(DEFAULT_LIN_DELTA_ARM_LENGTH))
+#define DEFAULT_LIN_DELTA_ARM_LENGTH 230
+#endif
+
+#if (!defined(DEFAULT_LIN_DELTA_BASE_RADIUS))
+#define DEFAULT_LIN_DELTA_BASE_RADIUS 115
+#endif
+
+// delta kinematics
+#if (!defined(DEFAULT_DELTA_BICEP_LENGTH))
+#define DEFAULT_DELTA_BICEP_LENGTH 100
+#endif
+
+#if (!defined(DEFAULT_DELTA_FOREARM_LENGHT))
+#define DEFAULT_DELTA_FOREARM_LENGTH 300
+#endif
+
+#if (!defined(DEFAULT_DELTA_EFFECTOR_RADIUS))
+#define DEFAULT_DELTA_EFFECTOR_RADIUS 24
+#endif
+
+#if (!defined(DEFAULT_DELTA_BASE_RADIUS))
+#define DEFAULT_DELTA_BASE_RADIUS 75
+#endif
+
+#if (!defined(DEFAULT_DELTA_BICEP_HOMING_ANGLE))
+#define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
+#endif
+
+// laser mode
+#if (!defined(DEFAULT_LASER_PPI))
+#define DEFAULT_LASER_PPI 254
+#endif
+
+#if (!defined(DEFAULT_LASER_PPI_USWIDTH))
+#define DEFAULT_LASER_PPI_USWIDTH 1500
+#endif
+
+#define DEFAULT_PID ({0, 0, 0})
 
 #ifdef __cplusplus
 }
