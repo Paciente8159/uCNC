@@ -19,7 +19,7 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_RP2040)
-
+#include "core_cm0plus.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,26 +37,20 @@
 static volatile bool rpi_pico_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void rpi_pico_uart_init(int baud);
-char rpi_pico_uart_read(void);
-void rpi_pico_uart_write(char c);
-bool rpi_pico_uart_rx_ready(void);
-bool rpi_pico_uart_tx_ready(void);
-void rpi_pico_uart_flush(void);
-void rpi_pico_uart_process(void);
+void rpi_pico_uart_init(int baud){}
+char rpi_pico_uart_read(void){return 0;}
+void rpi_pico_uart_write(char c){}
+bool rpi_pico_uart_rx_ready(void){return false;}
+bool rpi_pico_uart_tx_ready(void){return false;}
+void rpi_pico_uart_flush(void){}
+void rpi_pico_uart_process(void){}
 
 #ifndef RAM_ONLY_SETTINGS
-void rpi_pico_eeprom_init(int size);
-uint8_t rpi_pico_eeprom_read(uint16_t address);
-void rpi_pico_eeprom_write(uint16_t address, uint8_t value);
-void rpi_pico_eeprom_flush(void);
+void rpi_pico_eeprom_init(int size){}
+uint8_t rpi_pico_eeprom_read(uint16_t address){return 0;}
+void rpi_pico_eeprom_write(uint16_t address, uint8_t value){}
+void rpi_pico_eeprom_flush(void){}
 #endif
-
-static uint32_t system_get_time(void) {
-	return 0;//std::chrono::steady_clock::now();
-}
-
-// ETSTimer rpi_pico_rtc_timer;
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t rpi_pico_oneshot_counter;
@@ -393,6 +387,81 @@ static void mcu_usart_init(void)
 {
 	rpi_pico_uart_init(BAUDRATE);
 }
+
+/**
+ * 
+ * Initializes the systick timer that is used as an RTC
+ * and defines the systick handler for the ISR callback
+ * 
+ * **/
+void mcu_rtc_init()
+{
+	SysTick->CTRL = 0;
+	SysTick->LOAD = ((F_CPU / 1000) - 1);
+	SysTick->VAL = 0;
+	NVIC_SetPriority(SysTick_IRQn, 10);
+	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+}
+
+void SysTick_Handler(void)
+{
+	mcu_disable_global_isr();
+	// counts to 20 and reloads
+#if SERVOS_MASK > 0
+	static uint8_t ms_servo_counter = 0;
+	uint8_t servo_counter = ms_servo_counter;
+
+	switch (servo_counter)
+	{
+#if ASSERT_PIN(SERVO0)
+	case SERVO0_FRAME:
+		servo_start_timeout(mcu_servos[0]);
+		mcu_set_output(SERVO0);
+		break;
+#endif
+#if ASSERT_PIN(SERVO1)
+	case SERVO1_FRAME:
+		mcu_set_output(SERVO1);
+		servo_start_timeout(mcu_servos[1]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO2)
+	case SERVO2_FRAME:
+		mcu_set_output(SERVO2);
+		servo_start_timeout(mcu_servos[2]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO3)
+	case SERVO3_FRAME:
+		mcu_set_output(SERVO3);
+		servo_start_timeout(mcu_servos[3]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO4)
+	case SERVO4_FRAME:
+		mcu_set_output(SERVO4);
+		servo_start_timeout(mcu_servos[4]);
+		break;
+#endif
+#if ASSERT_PIN(SERVO5)
+	case SERVO5_FRAME:
+		mcu_set_output(SERVO5);
+		servo_start_timeout(mcu_servos[5]);
+		break;
+#endif
+	}
+
+	servo_counter++;
+	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
+
+#endif
+	uint32_t millis = mcu_runtime_ms;
+	millis++;
+	mcu_runtime_ms = millis;
+	mcu_rtc_cb(millis);
+	mcu_enable_global_isr();
+}
+
 /**
  * initializes the mcu
  * this function needs to:
@@ -406,9 +475,8 @@ void mcu_init(void)
 	mcu_io_init();
 	mcu_usart_init();
 
-	// // init rtc
-	// os_timer_setfn(&rpi_pico_rtc_timer, (os_timer_func_t *)&mcu_rtc_isr, NULL);
-	// os_timer_arm(&rpi_pico_rtc_timer, 1, true);
+	// init rtc
+	mcu_rtc_init();
 
 	// // init timer1
 	// timer1_isr_init();
@@ -599,20 +667,28 @@ void mcu_stop_itp_isr(void)
  * */
 uint32_t mcu_millis()
 {
-	return mcu_runtime_ms;
+	uint32_t val = mcu_runtime_ms;
+	return val;
 }
 
+/**
+ * provides a delay in us (micro seconds)
+ * the maximum allowed delay is 255 us
+ * */
 uint32_t mcu_micros()
 {
-	return (uint32_t)system_get_time();
+	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
-void rpi_pico_delay_us(uint16_t delay)
+#ifndef mcu_delay_us
+void mcu_delay_us(uint16_t delay)
 {
-	uint32_t time = system_get_time() + delay - 1;
-	while (time > system_get_time())
+	// lpc176x_delay_us(delay);
+	uint32_t target = mcu_micros + delay;
+	while (target > mcu_micros)
 		;
 }
+#endif
 
 /**
  * runs all internal tasks of the MCU.

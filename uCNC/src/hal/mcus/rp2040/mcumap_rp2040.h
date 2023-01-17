@@ -1,6 +1,6 @@
 /*
 	Name: mcumap_rp2040.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
+	Description: Contains all MCU and PIN definitions for RP2040 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -42,7 +42,7 @@ extern "C"
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 133000000L
+#define F_CPU 125000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -82,26 +82,6 @@ extern "C"
 // this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
 // overrides utils.h definition to implement this method with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
-
-// PINNAMES for ESP8266
-#define PERIPHS_IO_MUX_GPIO0 (PERIPHS_IO_MUX + 0x34)
-#define PERIPHS_IO_MUX_GPIO1 (PERIPHS_IO_MUX + 0x18)
-#define PERIPHS_IO_MUX_GPIO2 (PERIPHS_IO_MUX + 0x38)
-#define PERIPHS_IO_MUX_GPIO3 (PERIPHS_IO_MUX + 0x14)
-#define PERIPHS_IO_MUX_GPIO4 (PERIPHS_IO_MUX + 0x3C)
-#define PERIPHS_IO_MUX_GPIO5 (PERIPHS_IO_MUX + 0x40)
-#define PERIPHS_IO_MUX_GPIO6 (PERIPHS_IO_MUX + 0x1c)
-#define PERIPHS_IO_MUX_GPIO7 (PERIPHS_IO_MUX + 0x20)
-#define PERIPHS_IO_MUX_GPIO8 (PERIPHS_IO_MUX + 0x24)
-#define PERIPHS_IO_MUX_GPIO9 (PERIPHS_IO_MUX + 0x28)
-#define PERIPHS_IO_MUX_GPIO10 (PERIPHS_IO_MUX + 0x2c)
-#define PERIPHS_IO_MUX_GPIO11 (PERIPHS_IO_MUX + 0x30)
-#define PERIPHS_IO_MUX_GPIO12 (PERIPHS_IO_MUX + 0x04)
-#define PERIPHS_IO_MUX_GPIO13 (PERIPHS_IO_MUX + 0x08)
-#define PERIPHS_IO_MUX_GPIO14 (PERIPHS_IO_MUX + 0x0C)
-#define PERIPHS_IO_MUX_GPIO15 (PERIPHS_IO_MUX + 0x10)
-
-#define __gpioreg__(X) (__helper__(PERIPHS_IO_MUX_GPIO, X, ))
 
 // IO pins
 #if (defined(STEP0_BIT))
@@ -1017,25 +997,37 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq)                \
+	{                                          \
+		pinMode(__indirect__(X, BIT), OUTPUT); \
+		analogWriteRange(255);                 \
+		analogWriteFreq(freq);                 \
+		analogWriteResolution(8);              \
+	}
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) digitalRead(__indirect__(X, BIT))
-#define mcu_get_output(X) digitalRead(__indirect__(X, BIT))
-#define mcu_set_output(X) digitalWrite(__indirect__(X, BIT), 1)
-#define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
-#define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
+#define mcu_get_input(X) gpio_get(__indirect__(X, BIT))
+#define mcu_get_output(X) gpio_get(__indirect__(X, BIT))
+#define mcu_set_output(X) gpio_set_mask(1 << __indirect__(X, BIT))
+#define mcu_clear_output(X) gpio_clr_mask(1 << __indirect__(X, BIT))
+#define mcu_toggle_output(X) gpio_xor_mask(1 << __indirect__(X, BIT))
 
 	extern uint8_t rpi_pico_pwm[16];
-#define mcu_set_pwm(X, Y) (rpi_pico_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (rpi_pico_pwm[X - PWM_PINS_OFFSET] << 1)
+#define mcu_set_pwm(X, Y)                      \
+	{                                          \
+		rpi_pico_pwm[X - PWM_PINS_OFFSET] = Y; \
+		analogWrite(__indirect__(X, BIT), Y);  \
+	}
+#define mcu_get_pwm(X) (rpi_pico_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
-#define mcu_spi_xmit(X) {}
-// #define mcu_spi_xmit(X)           \
+#define mcu_spi_xmit(X) \
+	{                   \
+	}
+	// #define mcu_spi_xmit(X)           \
 	{                             \
 		while (SPI1CMD & SPIBUSY) \
 			;                     \
@@ -1049,7 +1041,6 @@ extern "C"
 #define mcu_spi_config(X, Y) rpi_pico_spi_config(X, Y)
 
 	extern void rpi_pico_delay_us(uint16_t delay);
-#define mcu_delay_us(X) rpi_pico_delay_us(X)
 
 #ifdef __cplusplus
 }
