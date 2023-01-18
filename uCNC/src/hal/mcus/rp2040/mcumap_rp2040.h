@@ -27,6 +27,8 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #include <Arduino.h>
+#include "hardware/timer.h"
+#include "hardware/irq.h"
 
 /*
 	Generates all the interface definitions.
@@ -76,19 +78,19 @@ extern "C"
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-// this next set of rules defines the internal delay macros
-#define F_CPU_MHZ (F_CPU / 1000000UL)
-#define US_TO_CYCLES(X) (X * F_CPU_MHZ)
+	// this next set of rules defines the internal delay macros
+	// #define F_CPU_MHZ (F_CPU / 1000000UL)
+	// #define US_TO_CYCLES(X) (X * F_CPU_MHZ)
 
-	extern unsigned long ulMainGetRunTimeCounterValue();
-#define mcu_delay_cycles(X)                                     \
-	{                                                           \
-		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
-		while (target > ulMainGetRunTimeCounterValue())         \
-			;                                                   \
-	}
-#define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
-#define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
+	// 	extern unsigned long ulMainGetRunTimeCounterValue();
+	// #define mcu_delay_cycles(X)                                     \
+// 	{                                                           \
+// 		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
+// 		while (target > ulMainGetRunTimeCounterValue())         \
+// 			;                                                   \
+// 	}
+	// #define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
+	// #define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -1033,11 +1035,49 @@ extern "C"
 #error "I2C port number must be 0 or 1"
 #endif
 
+// since Arduino Pico does not allow access to pico-SDK functions low level timer functions are used
+#ifndef ITP_TIMER
+#define ITP_TIMER 1
+#endif
+
+#ifndef RTC_TIMER
+#define RTC_TIMER 2
+#endif
+
+#ifndef ONESHOT_TIMER
+#define ONESHOT_TIMER 3
+#endif
+
+#define __timer_irq__(X) TIMER_IRQ_##X
+#define _timer_irq_(X)  __timer_irq__(X)
+
+#define ITP_IRQ _timer_irq_(ITP_TIMER)
+
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+
+#ifndef BYTE_OPS
+#define BYTE_OPS
+// Set bit y in byte x
+#define SETBIT(x, y) ((x) |= (1 << (y)))
+// Clear bit y in byte x
+#define CLEARBIT(x, y) ((x) &= ~(1 << (y)))
+// Check bit y in byte x
+#define CHECKBIT(x, y) ((x) & (1 << (y)))
+// Toggle bit y in byte x
+#define TOGGLEBIT(x, y) ((x) ^= (1 << (y)))
+// Set byte y in byte x
+#define SETFLAG(x, y) ((x) |= (y))
+// Clear byte y in byte x
+#define CLEARFLAG(x, y) ((x) &= ~(y))
+// Check byte y in byte x
+#define CHECKFLAG(x, y) ((x) & (y))
+// Toggle byte y in byte x
+#define TOGGLEFLAG(x, y) ((x) ^= (y))
+#endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_pwm(X, freq)                \
@@ -1054,9 +1094,9 @@ extern "C"
 
 #define mcu_get_input(X) CHECKFLAG(sio_hw->gpio_in, __indirect__(X, BIT))
 #define mcu_get_output(X) CHECKFLAG(sio_hw->gpio_out, __indirect__(X, BIT))
-#define mcu_set_output(X) SETFLAG(sio_hw->gpio_set, __indirect__(X, BIT))
-#define mcu_clear_output(X) SETFLAG(sio_hw->gpio_clr, __indirect__(X, BIT))
-#define mcu_toggle_output(X) SETFLAG(sio_hw->gpio_togl, __indirect__(X, BIT))
+#define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
+#define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
+#define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
 	extern uint8_t rp2040_pwm[16];
 #define mcu_set_pwm(X, Y)                     \

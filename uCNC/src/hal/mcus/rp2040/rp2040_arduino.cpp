@@ -16,10 +16,10 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifdef RP2040
-#include <Arduino.h>
+#if (MCU == MCU_RP2040)
 #include <stdint.h>
 #include <stdbool.h>
+#include <Arduino.h>
 
 /**
  *
@@ -65,10 +65,9 @@ static uint8_t rp2040_tx_buffer_counter;
 extern "C"
 {
 #include "../../../cnc.h"
-
+#ifdef ENABLE_WIFI
 	static bool rp2040_wifi_clientok(void)
 	{
-#ifdef ENABLE_WIFI
 		static bool connected = false;
 		static bool process_busy = false;
 		static uint32_t next_info = 0;
@@ -116,17 +115,18 @@ extern "C"
 				return true;
 			}
 		}
-#endif
 		return false;
 	}
+#endif
 
-	static void rp2040_uart_init(int baud)
+	void rp2040_uart_init(int baud)
 	{
 #ifdef MCU_HAS_USB
 		Serial.begin(baud);
 #endif
 #ifdef MCU_HAS_UART
-		COM_UART.setPinout(TX_BIT, RX_BIT);
+		COM_UART.setTX(TX_BIT);
+		COM_UART.setRX(RX_BIT);
 		COM_UART.begin(baud);
 #endif
 #ifdef ENABLE_WIFI
@@ -176,7 +176,7 @@ extern "C"
 		rp2040_tx_buffer_counter = 0;
 	}
 
-	static void rp2040_uart_write(char c)
+	void rp2040_uart_write(char c)
 	{
 		switch (c)
 		{
@@ -200,7 +200,7 @@ extern "C"
 		}
 	}
 
-	static bool rp2040_uart_rx_ready(void)
+	bool rp2040_uart_rx_ready(void)
 	{
 		bool wifiready = false;
 #ifdef ENABLE_WIFI
@@ -212,17 +212,16 @@ extern "C"
 		return ((Serial.available() > 0) || wifiready);
 	}
 
-	static bool rp2040_uart_tx_ready(void)
+	bool rp2040_uart_tx_ready(void)
 	{
 		return (rp2040_tx_buffer_counter != RP2040_BUFFER_SIZE);
 	}
 
-	static void rp2040_uart_process(void)
+	void rp2040_uart_process(void)
 	{
 #ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
 		{
-			system_soft_wdt_feed();
 			mcu_com_rx_cb((unsigned char)Serial.read());
 		}
 #endif
@@ -230,7 +229,6 @@ extern "C"
 #ifdef MCU_HAS_UART
 		while (COM_UART.available() > 0)
 		{
-			system_soft_wdt_feed();
 			mcu_com_rx_cb((unsigned char)COM_UART.read());
 		}
 #endif
@@ -242,7 +240,6 @@ extern "C"
 		{
 			while (serverClient.available() > 0)
 			{
-				system_soft_wdt_feed();
 				mcu_com_rx_cb((unsigned char)serverClient.read());
 			}
 		}
@@ -294,7 +291,6 @@ extern "C"
 
 #ifdef MCU_HAS_SPI
 #include <SPI.h>
-#include <HardwareSPI.h>
 extern "C"
 {
 	static void rp2040_spi_config(uint8_t mode, uint32_t freq)

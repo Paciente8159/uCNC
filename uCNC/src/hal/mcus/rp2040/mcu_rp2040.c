@@ -22,10 +22,19 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include "rp2040_arduino.h"
+#include <pico/time.h>
+#include <hardware/timer.h>
+#include <../pico-sdk/src/common/pico_time/include/pico/time.h>
 
 static volatile bool rp2040_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
+
+extern void rp2040_uart_init(int baud);
+extern void rp2040_uart_flush(void);
+extern void rp2040_uart_write(char c);
+extern bool rp2040_uart_rx_ready(void);
+extern bool rp2040_uart_tx_ready(void);
+extern void rp2040_uart_process(void);
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 static uint32_t rp2040_oneshot_counter;
@@ -254,7 +263,7 @@ static void mcu_gen_pwm(void)
 
 static uint32_t mcu_step_counter;
 static uint32_t mcu_step_reload;
-static void mcu_gen_step(void)
+static bool mcu_gen_step(struct repeating_timer* t)
 {
 	if (mcu_step_reload)
 	{
@@ -269,6 +278,8 @@ static void mcu_gen_step(void)
 			mcu_step_counter = mcu_step_reload;
 		}
 	}
+
+	return true;
 }
 
 void mcu_din_isr(void)
@@ -297,7 +308,7 @@ void mcu_rtc_isr(void *arg)
 	mcu_rtc_cb(mcu_runtime_ms);
 }
 
-void mcu_itp_isr(void)
+static void mcu_itp_isr(void)
 {
 	// mcu_disable_global_isr();
 	// static bool resetstep = false;
@@ -307,56 +318,10 @@ void mcu_itp_isr(void)
 	// 	mcu_step_reset_cb();
 	// resetstep = !resetstep;
 	// mcu_enable_global_isr();
-	mcu_gen_step();
-	mcu_gen_pwm();
-	mcu_gen_oneshot();
+	// mcu_gen_step();
+	// mcu_gen_pwm();
+	// mcu_gen_oneshot();
 }
-
-// static void mcu_uart_isr(void *arg)
-// {
-// 	/*ATTENTION:*/
-// 	/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 	/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 	/*IF NOT , POST AN EVENT AND PROCESS IN SYSTEM TASK */
-// 	if ((READ_PERI_REG(UART_INT_ST(0)) & UART_FRM_ERR_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_FRM_ERR_INT_CLR);
-// 	}
-// 	else if ((READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)))
-// 	{
-// 		// disable ISR
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
-// 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		unsigned char c = 0;
-
-// 		for (uint8_t i = 0; i < fifo_len; i++)
-// 		{
-// 			c = READ_PERI_REG(UART_FIFO(0)) & 0xFF;
-// 			mcu_com_rx_cb(c);
-// 		}
-
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_FULL_INT_CLR | UART_RXFIFO_TOUT_INT_CLR);
-// 		// reenable ISR
-// 		SET_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
-// 	}
-// 	else if (UART_TXFIFO_EMPTY_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_TXFIFO_EMPTY_INT_ST))
-// 	{
-// 		/* to output uart data from uart buffer directly in empty interrupt handler*/
-// 		/*instead of processing in system event, in order not to wait for current task/function to quit */
-// 		/*ATTENTION:*/
-// 		/*IN NON-OS VERSION SDK, DO NOT USE "ICACHE_FLASH_ATTR" FUNCTIONS IN THE WHOLE HANDLER PROCESS*/
-// 		/*ALL THE FUNCTIONS CALLED IN INTERRUPT HANDLER MUST BE DECLARED IN RAM */
-// 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_TXFIFO_EMPTY_INT_ENA);
-// 		mcu_com_tx_cb();
-// 		// system_os_post(uart_recvTaskPrio, 1, 0);
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_TXFIFO_EMPTY_INT_CLR);
-// 	}
-// 	else if (UART_RXFIFO_OVF_INT_ST == (READ_PERI_REG(UART_INT_ST(0)) & UART_RXFIFO_OVF_INT_ST))
-// 	{
-// 		WRITE_PERI_REG(UART_INT_CLR(0), UART_RXFIFO_OVF_INT_CLR);
-// 	}
-// }
 
 static void mcu_usart_init(void)
 {
@@ -364,10 +329,10 @@ static void mcu_usart_init(void)
 }
 
 /**
- * 
+ *
  * Initializes the systick timer that is used as an RTC
  * and defines the systick handler for the ISR callback
- * 
+ *
  * **/
 void mcu_rtc_init()
 {
@@ -588,14 +553,16 @@ bool mcu_get_global_isr(void)
 #endif
 
 // Step interpolator
+
+struct repeating_timer itp_timer;
 /**
  * convert step rate to clock cycles
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
-	*prescaller = 0;
+	uint32_t totalticks = (uint32_t)((float)(1000000UL >> 1) / frequency);
+	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
 		(*prescaller) += 1;
@@ -607,7 +574,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)(128000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
+	return ((float)(1000000UL >> 1) / (float)(((uint32_t)ticks) << prescaller));
 }
 
 /**
@@ -615,8 +582,8 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	int64_t mcu_step_reload = (((uint32_t)ticks) << prescaller);
+	add_repeating_timer_us(-mcu_step_reload, mcu_gen_step, NULL, &itp_timer);
 }
 
 /**
@@ -624,8 +591,9 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	mcu_step_counter = mcu_step_reload;
+	int64_t mcu_step_reload = (((uint32_t)ticks) << prescaller);
+	cancel_repeating_timer(&itp_timer);
+	add_repeating_timer_us(-mcu_step_reload, mcu_gen_step, NULL, &itp_timer);
 }
 
 /**
@@ -633,7 +601,7 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	mcu_step_reload = 0;
+	cancel_repeating_timer(&itp_timer);
 }
 
 /**

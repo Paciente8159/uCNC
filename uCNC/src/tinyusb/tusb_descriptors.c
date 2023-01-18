@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License (MIT)
  *
  * Copyright (c) 2019 Ha Thach (tinyusb.org)
@@ -22,6 +22,9 @@
  * THE SOFTWARE.
  *
  */
+
+#include "../cnc.h"
+#ifdef USB_TINYUSB_STACK
 
 #include "src/tusb.h"
 
@@ -181,3 +184,5 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
 
   return _desc_str;
 }
+
+#endif

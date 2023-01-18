@@ -24,26 +24,24 @@ extern "C"
 {
 #endif
 
-// #ifndef BOARD_NAME
-// #define BOARD_NAME "RPi Pico"
-// #endif
+#ifndef BOARD_NAME
+#define BOARD_NAME "RPi Pico"
+#endif
 
 // SAME AS GRBL for test purposes
 // Setup step pins
-#define STEP2_BIT 4  // assigns STEP2 pin
-#define STEP2_PORT D // assigns STEP2 port
-#define STEP1_BIT 5  // assigns STEP1 pin
-#define STEP1_PORT D // assigns STEP1 port
-#define STEP0_BIT 16 // assigns STEP0 pin
-#define STEP0_PORT D // assigns STEP0 port
+#define STEP2_BIT 10  // assigns STEP2 pin
+#define STEP1_BIT 6  // assigns STEP1 pin
+#define STEP0_BIT 2 // assigns STEP0 pin
 
 // Setup dir pins
-#define DIR2_BIT 13 // assigns DIR2 pin
-#define DIR2_PORT D // assigns DIR2 port
-#define DIR1_BIT 12 // assigns DIR1 pin
-#define DIR1_PORT D // assigns DIR1 port
-#define DIR0_BIT 14 // assigns DIR0 pin
-#define DIR0_PORT D // assigns DIR0 port
+#define DIR2_BIT 11 // assigns DIR2 pin
+#define DIR1_BIT 7 // assigns DIR1 pin
+#define DIR0_BIT 3 // assigns DIR0 pin
+
+#define LIMIT_Z_BIT 13
+#define LIMIT_Y_BIT 9
+#define LIMIT_X_BIT 5
 
 // Setup control input pins
 // #define ESTOP_BIT 0
@@ -51,25 +49,28 @@ extern "C"
 //#define ESTOP_ISR
 
 // Setup com pins
-#define RX_BIT 3
-#define TX_BIT 1
-#define RX_PORT D
-#define TX_PORT D
+#define RX_BIT 1
+#define TX_BIT 0
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
 
+//forces USB
+#define MCU_HAS_USB
+
     // Setup PWM
-#define PWM0_BIT 2  // assigns PWM0 pin
-#define PWM0_PORT D // assigns PWM0 pin
+// #define PWM0_BIT 2  // assigns PWM0 pin
+// #define PWM0_PORT D // assigns PWM0 pin
 
 // Setup generic IO Pins
 // spindle dir
-#define DOUT0_BIT 15
-#define DOUT0_PORT D
+// #define DOUT0_BIT 15
+// #define DOUT0_PORT D
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
-#define STEP0_EN_BIT 0
-#define STEP0_EN_PORT D
+#define STEP2_EN_BIT 12
+#define STEP1_EN_BIT 8
+#define STEP0_EN_BIT 4
+
 
 #ifdef __cplusplus
 }

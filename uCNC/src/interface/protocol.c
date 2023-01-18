@@ -121,8 +121,8 @@ void protocol_send_feedback(const char *__s)
 
 void protocol_send_ip(uint32_t ip)
 {
-	uint8_t *pt = (uint8_t*)&ip;
-	#ifdef ECHO_CMD
+	uint8_t *pt = (uint8_t *)&ip;
+#ifdef ECHO_CMD
 	protocol_busy = true;
 #endif
 	protocol_send_string(MSG_START);
