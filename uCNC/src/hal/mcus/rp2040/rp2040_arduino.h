@@ -21,6 +21,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**
+ *
+ * This handles all communications via Serial USB, Serial UART and WiFi
+ *
+ * **/
+
 #ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
@@ -60,7 +66,7 @@ extern "C"
 {
 #include "../../../cnc.h"
 
-	bool rp2040_wifi_clientok(void)
+	static bool rp2040_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
 		static bool connected = false;
@@ -114,9 +120,15 @@ extern "C"
 		return false;
 	}
 
-	void rp2040_uart_init(int baud)
+	static void rp2040_uart_init(int baud)
 	{
+#ifdef MCU_HAS_USB
 		Serial.begin(baud);
+#endif
+#ifdef MCU_HAS_UART
+		COM_UART.setPinout(TX_BIT, RX_BIT);
+		COM_UART.begin(baud);
+#endif
 #ifdef ENABLE_WIFI
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
 #ifdef WIFI_DEBUG
@@ -128,11 +140,12 @@ extern "C"
 		wifiManager.setConfigPortalTimeout(30);
 		if (!wifiManager.autoConnect("RP2040"))
 		{
-			Serial.println("[MSG: WiFi manager up]");
-			Serial.println("[MSG: Setup page @ 192.168.4.1]");
+			protocol_send_feedback(" WiFi manager up");
+			protocol_send_feedback(" Setup page @ 192.168.4.1");
 		}
-		else{
-			Serial.print(WiFi.localIP());
+		else
+		{
+			protocol_send_ip(WiFi.localIP());
 		}
 
 		server.begin();
@@ -145,8 +158,14 @@ extern "C"
 
 	void rp2040_uart_flush(void)
 	{
+#ifdef MCU_HAS_USB
 		Serial.println(rp2040_tx_buffer);
 		Serial.flush();
+#endif
+#ifdef MCU_HAS_UART
+		COM_UART.println(rp2040_tx_buffer);
+		COM_UART.flush();
+#endif
 #ifdef ENABLE_WIFI
 		if (rp2040_wifi_clientok())
 		{
@@ -157,12 +176,7 @@ extern "C"
 		rp2040_tx_buffer_counter = 0;
 	}
 
-	unsigned char rp2040_uart_read(void)
-	{
-		return (unsigned char)Serial.read();
-	}
-
-	void rp2040_uart_write(char c)
+	static void rp2040_uart_write(char c)
 	{
 		switch (c)
 		{
@@ -186,7 +200,7 @@ extern "C"
 		}
 	}
 
-	bool rp2040_uart_rx_ready(void)
+	static bool rp2040_uart_rx_ready(void)
 	{
 		bool wifiready = false;
 #ifdef ENABLE_WIFI
@@ -198,18 +212,28 @@ extern "C"
 		return ((Serial.available() > 0) || wifiready);
 	}
 
-	bool rp2040_uart_tx_ready(void)
+	static bool rp2040_uart_tx_ready(void)
 	{
 		return (rp2040_tx_buffer_counter != RP2040_BUFFER_SIZE);
 	}
 
-	void rp2040_uart_process(void)
+	static void rp2040_uart_process(void)
 	{
+#ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
 		{
 			system_soft_wdt_feed();
 			mcu_com_rx_cb((unsigned char)Serial.read());
 		}
+#endif
+
+#ifdef MCU_HAS_UART
+		while (COM_UART.available() > 0)
+		{
+			system_soft_wdt_feed();
+			mcu_com_rx_cb((unsigned char)COM_UART.read());
+		}
+#endif
 
 #ifdef ENABLE_WIFI
 		wifiManager.process();
@@ -225,5 +249,135 @@ extern "C"
 #endif
 	}
 }
+
+/**
+ *
+ * This handles EEPROM simulation on flash memory
+ *
+ * **/
+
+#ifndef RAM_ONLY_SETTINGS
+#include <EEPROM.h>
+extern "C"
+{
+#include "../../../cnc.h"
+	static void rp2040_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	static uint8_t rp2040_eeprom_read(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	static void rp2040_eeprom_write(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	static void rp2040_eeprom_flush(void)
+	{
+		if (!EEPROM.commit())
+		{
+			protocol_send_feedback(" EEPROM write error");
+		}
+	}
+}
+#endif
+
+/**
+ *
+ * This handles SPI communications
+ *
+ * **/
+
+#ifdef MCU_HAS_SPI
+#include <SPI.h>
+#include <HardwareSPI.h>
+extern "C"
+{
+	static void rp2040_spi_config(uint8_t mode, uint32_t freq)
+	{
+		COM_SPI.setRX(SPI_SDI);
+		COM_SPI.setTX(SPI_SDO);
+		COM_SPI.setSCK(SPI_CLK);
+		COM_SPI.setCS(SPI_CS);
+		COM_SPI.end();
+		COM_SPI.begin();
+		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
+	}
+
+	static uint8_t rp2040_spi_xmit(uint8_t data)
+	{
+		return COM_SPI.transfer(data);
+	}
+}
+
+#endif
+
+/**
+ *
+ * This handles I2C communications
+ *
+ * **/
+
+#ifdef MCU_HAS_I2C
+#include <Wire.h>
+extern "C"
+{
+	static void rp2040_i2c_init(uint32_t freq)
+	{
+		COM_I2C.setSDA(I2C_DATA);
+		COM_I2C.setSCL(I2C_CLK);
+		COM_I2C.setClock(freq);
+		COM_I2C.begin();
+	}
+
+	static void rp2040_spi_config(uint32_t freq)
+	{
+		COM_I2C.setClock(freq);
+	}
+
+	static uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop)
+	{
+		if (send_start)
+		{
+			// init
+			COM_I2C.beginTransmission(data);
+			return 1;
+		}
+
+		if (send_stop)
+		{
+			COM_I2C.endTransmission();
+			return 1;
+		}
+
+		COM_I2C.write(data);
+
+		return 1;
+	}
+
+	static uint8_t rp2040_i2c_read(bool with_ack, bool send_stop)
+	{
+		uint8_t c = 0;
+		if (COM_I2C.available() <= 0)
+		{
+			return 0;
+		}
+
+		c = COM_I2C.read();
+
+		if (send_stop)
+		{
+			COM_I2C.endTransmission();
+		}
+
+		return c;
+	}
+}
+
+#endif
 
 #endif

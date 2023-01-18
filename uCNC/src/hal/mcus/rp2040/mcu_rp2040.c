@@ -19,48 +19,23 @@
 #include "../../../cnc.h"
 
 #if (MCU == MCU_RP2040)
-#include "core_cm0plus.h"
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
-#ifdef MCU_HAS_I2C
-// #include "twi.h"
-#endif
+#include "rp2040_arduino.h"
 
-#define UART_PARITY_EN (BIT(1))
-#define UART_PARITY_EN_M 0x00000001
-#define UART_PARITY_EN_S 1
-#define UART_PARITY (BIT(0))
-#define UART_PARITY_M 0x00000001
-#define UART_PARITY_S 0
-
-static volatile bool rpi_pico_global_isr_enabled;
+static volatile bool rp2040_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
-void rpi_pico_uart_init(int baud){}
-char rpi_pico_uart_read(void){return 0;}
-void rpi_pico_uart_write(char c){}
-bool rpi_pico_uart_rx_ready(void){return false;}
-bool rpi_pico_uart_tx_ready(void){return false;}
-void rpi_pico_uart_flush(void){}
-void rpi_pico_uart_process(void){}
-
-#ifndef RAM_ONLY_SETTINGS
-void rpi_pico_eeprom_init(int size){}
-uint8_t rpi_pico_eeprom_read(uint16_t address){return 0;}
-void rpi_pico_eeprom_write(uint16_t address, uint8_t value){}
-void rpi_pico_eeprom_flush(void){}
-#endif
-
 #ifdef MCU_HAS_ONESHOT_TIMER
-static uint32_t rpi_pico_oneshot_counter;
-static uint32_t rpi_pico_oneshot_reload;
+static uint32_t rp2040_oneshot_counter;
+static uint32_t rp2040_oneshot_reload;
 static void mcu_gen_oneshot(void)
 {
-	if (rpi_pico_oneshot_counter)
+	if (rp2040_oneshot_counter)
 	{
-		rpi_pico_oneshot_counter--;
-		if (!rpi_pico_oneshot_counter)
+		rp2040_oneshot_counter--;
+		if (!rp2040_oneshot_counter)
 		{
 			if (mcu_timeout_cb)
 			{
@@ -71,7 +46,7 @@ static void mcu_gen_oneshot(void)
 }
 #endif
 
-uint8_t rpi_pico_pwm[16];
+uint8_t rp2040_pwm[16];
 static void mcu_gen_pwm(void)
 {
 	static uint8_t pwm_counter = 0;
@@ -79,97 +54,97 @@ static void mcu_gen_pwm(void)
 	if (++pwm_counter < 127)
 	{
 #if ASSERT_PIN(PWM0)
-		if (pwm_counter > rpi_pico_pwm[0])
+		if (pwm_counter > rp2040_pwm[0])
 		{
 			mcu_clear_output(PWM0);
 		}
 #endif
 #if ASSERT_PIN(PWM1)
-		if (pwm_counter > rpi_pico_pwm[1])
+		if (pwm_counter > rp2040_pwm[1])
 		{
 			mcu_clear_output(PWM1);
 		}
 #endif
 #if ASSERT_PIN(PWM2)
-		if (pwm_counter > rpi_pico_pwm[2])
+		if (pwm_counter > rp2040_pwm[2])
 		{
 			mcu_clear_output(PWM2);
 		}
 #endif
 #if ASSERT_PIN(PWM3)
-		if (pwm_counter > rpi_pico_pwm[3])
+		if (pwm_counter > rp2040_pwm[3])
 		{
 			mcu_clear_output(PWM3);
 		}
 #endif
 #if ASSERT_PIN(PWM4)
-		if (pwm_counter > rpi_pico_pwm[4])
+		if (pwm_counter > rp2040_pwm[4])
 		{
 			mcu_clear_output(PWM4);
 		}
 #endif
 #if ASSERT_PIN(PWM5)
-		if (pwm_counter > rpi_pico_pwm[5])
+		if (pwm_counter > rp2040_pwm[5])
 		{
 			mcu_clear_output(PWM5);
 		}
 #endif
 #if ASSERT_PIN(PWM6)
-		if (pwm_counter > rpi_pico_pwm[6])
+		if (pwm_counter > rp2040_pwm[6])
 		{
 			mcu_clear_output(PWM6);
 		}
 #endif
 #if ASSERT_PIN(PWM7)
-		if (pwm_counter > rpi_pico_pwm[7])
+		if (pwm_counter > rp2040_pwm[7])
 		{
 			mcu_clear_output(PWM7);
 		}
 #endif
 #if ASSERT_PIN(PWM8)
-		if (pwm_counter > rpi_pico_pwm[8])
+		if (pwm_counter > rp2040_pwm[8])
 		{
 			mcu_clear_output(PWM8);
 		}
 #endif
 #if ASSERT_PIN(PWM9)
-		if (pwm_counter > rpi_pico_pwm[9])
+		if (pwm_counter > rp2040_pwm[9])
 		{
 			mcu_clear_output(PWM9);
 		}
 #endif
 #if ASSERT_PIN(PWM10)
-		if (pwm_counter > rpi_pico_pwm[10])
+		if (pwm_counter > rp2040_pwm[10])
 		{
 			mcu_clear_output(PWM10);
 		}
 #endif
 #if ASSERT_PIN(PWM11)
-		if (pwm_counter > rpi_pico_pwm[11])
+		if (pwm_counter > rp2040_pwm[11])
 		{
 			mcu_clear_output(PWM11);
 		}
 #endif
 #if ASSERT_PIN(PWM12)
-		if (pwm_counter > rpi_pico_pwm[12])
+		if (pwm_counter > rp2040_pwm[12])
 		{
 			mcu_clear_output(PWM12);
 		}
 #endif
 #if ASSERT_PIN(PWM13)
-		if (pwm_counter > rpi_pico_pwm[13])
+		if (pwm_counter > rp2040_pwm[13])
 		{
 			mcu_clear_output(PWM13);
 		}
 #endif
 #if ASSERT_PIN(PWM14)
-		if (pwm_counter > rpi_pico_pwm[14])
+		if (pwm_counter > rp2040_pwm[14])
 		{
 			mcu_clear_output(PWM14);
 		}
 #endif
 #if ASSERT_PIN(PWM15)
-		if (pwm_counter > rpi_pico_pwm[15])
+		if (pwm_counter > rp2040_pwm[15])
 		{
 			mcu_clear_output(PWM15);
 		}
@@ -179,97 +154,97 @@ static void mcu_gen_pwm(void)
 	{
 		pwm_counter = 0;
 #if ASSERT_PIN(PWM0)
-		if (rpi_pico_pwm[0])
+		if (rp2040_pwm[0])
 		{
 			mcu_set_output(PWM0);
 		}
 #endif
 #if ASSERT_PIN(PWM1)
-		if (rpi_pico_pwm[1])
+		if (rp2040_pwm[1])
 		{
 			mcu_set_output(PWM1);
 		}
 #endif
 #if ASSERT_PIN(PWM2)
-		if (rpi_pico_pwm[2])
+		if (rp2040_pwm[2])
 		{
 			mcu_set_output(PWM2);
 		}
 #endif
 #if ASSERT_PIN(PWM3)
-		if (rpi_pico_pwm[3])
+		if (rp2040_pwm[3])
 		{
 			mcu_set_output(PWM3);
 		}
 #endif
 #if ASSERT_PIN(PWM4)
-		if (rpi_pico_pwm[4])
+		if (rp2040_pwm[4])
 		{
 			mcu_set_output(PWM4);
 		}
 #endif
 #if ASSERT_PIN(PWM5)
-		if (rpi_pico_pwm[5])
+		if (rp2040_pwm[5])
 		{
 			mcu_set_output(PWM5);
 		}
 #endif
 #if ASSERT_PIN(PWM6)
-		if (rpi_pico_pwm[6])
+		if (rp2040_pwm[6])
 		{
 			mcu_set_output(PWM6);
 		}
 #endif
 #if ASSERT_PIN(PWM7)
-		if (rpi_pico_pwm[7])
+		if (rp2040_pwm[7])
 		{
 			mcu_set_output(PWM7);
 		}
 #endif
 #if ASSERT_PIN(PWM8)
-		if (rpi_pico_pwm[8])
+		if (rp2040_pwm[8])
 		{
 			mcu_set_output(PWM8);
 		}
 #endif
 #if ASSERT_PIN(PWM9)
-		if (rpi_pico_pwm[9])
+		if (rp2040_pwm[9])
 		{
 			mcu_set_output(PWM9);
 		}
 #endif
 #if ASSERT_PIN(PWM10)
-		if (rpi_pico_pwm[10])
+		if (rp2040_pwm[10])
 		{
 			mcu_set_output(PWM10);
 		}
 #endif
 #if ASSERT_PIN(PWM11)
-		if (rpi_pico_pwm[11])
+		if (rp2040_pwm[11])
 		{
 			mcu_set_output(PWM11);
 		}
 #endif
 #if ASSERT_PIN(PWM12)
-		if (rpi_pico_pwm[12])
+		if (rp2040_pwm[12])
 		{
 			mcu_set_output(PWM12);
 		}
 #endif
 #if ASSERT_PIN(PWM13)
-		if (rpi_pico_pwm[13])
+		if (rp2040_pwm[13])
 		{
 			mcu_set_output(PWM13);
 		}
 #endif
 #if ASSERT_PIN(PWM14)
-		if (rpi_pico_pwm[14])
+		if (rp2040_pwm[14])
 		{
 			mcu_set_output(PWM14);
 		}
 #endif
 #if ASSERT_PIN(PWM15)
-		if (rpi_pico_pwm[15])
+		if (rp2040_pwm[15])
 		{
 			mcu_set_output(PWM15);
 		}
@@ -385,7 +360,7 @@ void mcu_itp_isr(void)
 
 static void mcu_usart_init(void)
 {
-	rpi_pico_uart_init(BAUDRATE);
+	rp2040_uart_init(BAUDRATE);
 }
 
 /**
@@ -485,10 +460,10 @@ void mcu_init(void)
 	// timer1_write(625);
 
 #ifndef RAM_ONLY_SETTINGS
-	rpi_pico_eeprom_init(1024); // 1K Emulated EEPROM
+	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
 #ifdef MCU_HAS_SPI
-	rpi_pico_spi_init(SPI_FREQ, SPI_MODE);
+	rp2040_spi_init(SPI_FREQ, SPI_MODE);
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -555,7 +530,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
 {
-	return rpi_pico_uart_tx_ready();
+	return rp2040_uart_tx_ready();
 }
 #endif
 
@@ -572,7 +547,7 @@ void mcu_putc(char c)
 		;
 #endif
 
-	rpi_pico_uart_write(c);
+	rp2040_uart_write(c);
 }
 #endif
 
@@ -585,7 +560,7 @@ void mcu_putc(char c)
 void mcu_enable_global_isr(void)
 {
 	// ets_intr_unlock();
-	rpi_pico_global_isr_enabled = true;
+	rp2040_global_isr_enabled = true;
 }
 #endif
 
@@ -596,7 +571,7 @@ void mcu_enable_global_isr(void)
 #ifndef mcu_disable_global_isr
 void mcu_disable_global_isr(void)
 {
-	rpi_pico_global_isr_enabled = false;
+	rp2040_global_isr_enabled = false;
 	// ets_intr_lock();
 }
 #endif
@@ -608,7 +583,7 @@ void mcu_disable_global_isr(void)
 #ifndef mcu_get_global_isr
 bool mcu_get_global_isr(void)
 {
-	return rpi_pico_global_isr_enabled;
+	return rp2040_global_isr_enabled;
 }
 #endif
 
@@ -667,8 +642,7 @@ void mcu_stop_itp_isr(void)
  * */
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return millis();
 }
 
 /**
@@ -677,18 +651,8 @@ uint32_t mcu_millis()
  * */
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return micros();
 }
-
-#ifndef mcu_delay_us
-void mcu_delay_us(uint16_t delay)
-{
-	// lpc176x_delay_us(delay);
-	uint32_t target = mcu_micros + delay;
-	while (target > mcu_micros)
-		;
-}
-#endif
 
 /**
  * runs all internal tasks of the MCU.
@@ -697,9 +661,7 @@ void mcu_delay_us(uint16_t delay)
  * */
 void mcu_dotasks(void)
 {
-	// reset WDT
-	// system_soft_wdt_feed();
-	rpi_pico_uart_process();
+	rp2040_uart_process();
 }
 
 // Non volatile memory
@@ -709,7 +671,7 @@ void mcu_dotasks(void)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS
-	return rpi_pico_eeprom_read(address);
+	return rp2040_eeprom_read(address);
 #else
 	return 0;
 #endif
@@ -721,7 +683,7 @@ uint8_t mcu_eeprom_getc(uint16_t address)
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
 #ifndef RAM_ONLY_SETTINGS
-	rpi_pico_eeprom_write(address, value);
+	rp2040_eeprom_write(address, value);
 #endif
 }
 
@@ -731,7 +693,7 @@ void mcu_eeprom_putc(uint16_t address, uint8_t value)
 void mcu_eeprom_flush(void)
 {
 #ifndef RAM_ONLY_SETTINGS
-	rpi_pico_eeprom_flush();
+	rp2040_eeprom_flush();
 #endif
 }
 
@@ -801,7 +763,7 @@ void mcu_eeprom_flush(void)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
-	rpi_pico_oneshot_reload = (128000UL / timeout);
+	rp2040_oneshot_reload = (128000UL / timeout);
 }
 #endif
 
@@ -811,7 +773,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 #ifndef mcu_start_timeout
 void mcu_start_timeout()
 {
-	rpi_pico_oneshot_counter = rpi_pico_oneshot_reload;
+	rp2040_oneshot_counter = rp2040_oneshot_reload;
 }
 #endif
 #endif

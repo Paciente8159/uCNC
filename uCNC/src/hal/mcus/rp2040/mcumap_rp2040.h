@@ -27,7 +27,6 @@ extern "C"
 #include <stdbool.h>
 #include <stdint.h>
 #include <Arduino.h>
-// #include <chrono>
 
 /*
 	Generates all the interface definitions.
@@ -38,11 +37,11 @@ extern "C"
 */
 
 /*
-	ESP8266 Defaults
+	RP2040 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 125000000L
+#define F_CPU 133000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -50,6 +49,10 @@ extern "C"
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
+#endif
+
+#ifndef RP2040
+#define RP2040
 #endif
 
 // defines special mcu to access flash strings and arrays
@@ -62,6 +65,7 @@ extern "C"
 #define rom_read_byte *
 
 // needed by software delays
+// this can be ignored since custom delay functions will be defined
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
@@ -71,6 +75,20 @@ extern "C"
 #ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
+
+// this next set of rules defines the internal delay macros
+#define F_CPU_MHZ (F_CPU / 1000000UL)
+#define US_TO_CYCLES(X) (X * F_CPU_MHZ)
+
+	extern unsigned long ulMainGetRunTimeCounterValue();
+#define mcu_delay_cycles(X)                                     \
+	{                                                           \
+		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
+		while (target > ulMainGetRunTimeCounterValue())         \
+			;                                                   \
+	}
+#define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
+#define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -961,6 +979,14 @@ extern "C"
 #define COM_PORT 0
 #endif
 
+#if (COM_PORT == 0)
+#define COM_UART Serial1
+#elif (COM_PORT == 1)
+#define COM_UART Serial2
+#else
+#error "UART COM port number must be 0 or 1"
+#endif
+
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
@@ -976,19 +1002,36 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#ifndef SPI_PORT
+#define SPI_PORT 0
+#endif
 #endif
 
-// Hardware I2C not supported
+#if (SPI_PORT == 0)
+#define COM_SPI SPI
+#elif (SPI_PORT == 1)
+#define COM_SPI SPI1
+#else
+#error "SPI port number must be 0 or 1"
+#endif
 
-// #if (defined(I2C_CLK) && defined(I2C_DATA))
-// #define MCU_HAS_I2C
-// #ifndef I2C_PORT
-// #define I2C_PORT 0
-// #endif
-// #ifndef I2C_FREQ
-// #define I2C_FREQ 1000000UL
-// #endif
-// #endif
+#if (defined(I2C_CLK) && defined(I2C_DATA))
+#define MCU_HAS_I2C
+#ifndef I2C_PORT
+#define I2C_PORT 0
+#endif
+#ifndef I2C_FREQ
+#define I2C_FREQ 1000000UL
+#endif
+#endif
+
+#if (I2C_PORT == 0)
+#define COM_I2C Wire
+#elif (I2C_PORT == 1)
+#define COM_I2C Wire1
+#else
+#error "I2C port number must be 0 or 1"
+#endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
@@ -1009,38 +1052,20 @@ extern "C"
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) gpio_get(__indirect__(X, BIT))
-#define mcu_get_output(X) gpio_get(__indirect__(X, BIT))
-#define mcu_set_output(X) gpio_set_mask(1 << __indirect__(X, BIT))
-#define mcu_clear_output(X) gpio_clr_mask(1 << __indirect__(X, BIT))
-#define mcu_toggle_output(X) gpio_xor_mask(1 << __indirect__(X, BIT))
+#define mcu_get_input(X) CHECKFLAG(sio_hw->gpio_in, __indirect__(X, BIT))
+#define mcu_get_output(X) CHECKFLAG(sio_hw->gpio_out, __indirect__(X, BIT))
+#define mcu_set_output(X) SETFLAG(sio_hw->gpio_set, __indirect__(X, BIT))
+#define mcu_clear_output(X) SETFLAG(sio_hw->gpio_clr, __indirect__(X, BIT))
+#define mcu_toggle_output(X) SETFLAG(sio_hw->gpio_togl, __indirect__(X, BIT))
 
-	extern uint8_t rpi_pico_pwm[16];
-#define mcu_set_pwm(X, Y)                      \
-	{                                          \
-		rpi_pico_pwm[X - PWM_PINS_OFFSET] = Y; \
-		analogWrite(__indirect__(X, BIT), Y);  \
+	extern uint8_t rp2040_pwm[16];
+#define mcu_set_pwm(X, Y)                     \
+	{                                         \
+		rp2040_pwm[X - PWM_PINS_OFFSET] = Y;  \
+		analogWrite(__indirect__(X, BIT), Y); \
 	}
-#define mcu_get_pwm(X) (rpi_pico_pwm[X - PWM_PINS_OFFSET])
+#define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
-
-#define mcu_spi_xmit(X) \
-	{                   \
-	}
-	// #define mcu_spi_xmit(X)           \
-	{                             \
-		while (SPI1CMD & SPIBUSY) \
-			;                     \
-		SPI1W0 = x;               \
-		SPI1CMD |= SPIBUSY;       \
-		while (SPI1CMD & SPIBUSY) \
-			;                     \
-		(uint8_t)(SPI1W0 & 0xff); \
-	}
-
-#define mcu_spi_config(X, Y) rpi_pico_spi_config(X, Y)
-
-	extern void rpi_pico_delay_us(uint16_t delay);
 
 #ifdef __cplusplus
 }
