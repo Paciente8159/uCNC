@@ -16,16 +16,20 @@
 	See the	GNU General Public License for more details.
 */
 
+extern "C"
+{
+#include "../../../cnc.h"
+
 #if (MCU == MCU_RP2040)
 #include <stdint.h>
 #include <stdbool.h>
 #include <Arduino.h>
 
-/**
- *
- * This handles all communications via Serial USB, Serial UART and WiFi
- *
- * **/
+	/**
+	 *
+	 * This handles all communications via Serial USB, Serial UART and WiFi
+	 *
+	 * **/
 
 #ifdef ENABLE_WIFI
 #include <WiFi.h>
@@ -44,27 +48,24 @@
 #define WIFI_PASS "pass"
 #endif
 
-WebServer httpServer(80);
-HTTPUpdateServer httpUpdater;
-const char *update_path = "/firmware";
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
+	WebServer httpServer(80);
+	HTTPUpdateServer httpUpdater;
+	const char *update_path = "/firmware";
+	const char *update_username = WIFI_USER;
+	const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer server(WIFI_PORT);
-WiFiClient serverClient;
-WiFiManager wifiManager;
+	WiFiServer server(WIFI_PORT);
+	WiFiClient serverClient;
+	WiFiManager wifiManager;
 #endif
 
 #ifndef RP2040_BUFFER_SIZE
 #define RP2040_BUFFER_SIZE 255
 #endif
 
-static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
-static uint8_t rp2040_tx_buffer_counter;
+	static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
+	static uint8_t rp2040_tx_buffer_counter;
 
-extern "C"
-{
-#include "../../../cnc.h"
 #ifdef ENABLE_WIFI
 	static bool rp2040_wifi_clientok(void)
 	{
@@ -372,8 +373,7 @@ extern "C"
 
 		return c;
 	}
+#endif
+
+#endif
 }
-
-#endif
-
-#endif

@@ -24,7 +24,7 @@
  */
 
 #include "../cnc.h"
-#ifdef USB_TINYUSB_STACK
+#if (CFG_TUSB_MCU != OPT_MCU_NONE)
 
 #include "src/tusb.h"
 

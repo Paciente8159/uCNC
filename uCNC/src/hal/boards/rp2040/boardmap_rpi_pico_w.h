@@ -30,6 +30,9 @@ extern "C"
 
 #include "boardmap_rpi_pico.h"
 
+// led pin is controlled by the external WiFi controller 
+#undef DIO31_BIT
+
 #ifdef __cplusplus
 }
 #endif

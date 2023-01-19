@@ -71,6 +71,9 @@ extern "C"
 #define STEP1_EN_BIT 8
 #define STEP0_EN_BIT 4
 
+//activity LED
+#define DOUT31_BIT 25
+
 
 #ifdef __cplusplus
 }

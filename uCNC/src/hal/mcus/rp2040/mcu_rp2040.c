@@ -22,12 +22,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <pico/time.h>
-#include <hardware/timer.h>
-#include <../pico-sdk/src/common/pico_time/include/pico/time.h>
 
 static volatile bool rp2040_global_isr_enabled;
-static volatile uint32_t mcu_runtime_ms;
 
 extern void rp2040_uart_init(int baud);
 extern void rp2040_uart_flush(void);
@@ -36,251 +32,7 @@ extern bool rp2040_uart_rx_ready(void);
 extern bool rp2040_uart_tx_ready(void);
 extern void rp2040_uart_process(void);
 
-#ifdef MCU_HAS_ONESHOT_TIMER
-static uint32_t rp2040_oneshot_counter;
-static uint32_t rp2040_oneshot_reload;
-static void mcu_gen_oneshot(void)
-{
-	if (rp2040_oneshot_counter)
-	{
-		rp2040_oneshot_counter--;
-		if (!rp2040_oneshot_counter)
-		{
-			if (mcu_timeout_cb)
-			{
-				mcu_timeout_cb();
-			}
-		}
-	}
-}
-#endif
-
 uint8_t rp2040_pwm[16];
-static void mcu_gen_pwm(void)
-{
-	static uint8_t pwm_counter = 0;
-	// software PWM
-	if (++pwm_counter < 127)
-	{
-#if ASSERT_PIN(PWM0)
-		if (pwm_counter > rp2040_pwm[0])
-		{
-			mcu_clear_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (pwm_counter > rp2040_pwm[1])
-		{
-			mcu_clear_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (pwm_counter > rp2040_pwm[2])
-		{
-			mcu_clear_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (pwm_counter > rp2040_pwm[3])
-		{
-			mcu_clear_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (pwm_counter > rp2040_pwm[4])
-		{
-			mcu_clear_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (pwm_counter > rp2040_pwm[5])
-		{
-			mcu_clear_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (pwm_counter > rp2040_pwm[6])
-		{
-			mcu_clear_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (pwm_counter > rp2040_pwm[7])
-		{
-			mcu_clear_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (pwm_counter > rp2040_pwm[8])
-		{
-			mcu_clear_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (pwm_counter > rp2040_pwm[9])
-		{
-			mcu_clear_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (pwm_counter > rp2040_pwm[10])
-		{
-			mcu_clear_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (pwm_counter > rp2040_pwm[11])
-		{
-			mcu_clear_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (pwm_counter > rp2040_pwm[12])
-		{
-			mcu_clear_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (pwm_counter > rp2040_pwm[13])
-		{
-			mcu_clear_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (pwm_counter > rp2040_pwm[14])
-		{
-			mcu_clear_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (pwm_counter > rp2040_pwm[15])
-		{
-			mcu_clear_output(PWM15);
-		}
-#endif
-	}
-	else
-	{
-		pwm_counter = 0;
-#if ASSERT_PIN(PWM0)
-		if (rp2040_pwm[0])
-		{
-			mcu_set_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (rp2040_pwm[1])
-		{
-			mcu_set_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (rp2040_pwm[2])
-		{
-			mcu_set_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (rp2040_pwm[3])
-		{
-			mcu_set_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (rp2040_pwm[4])
-		{
-			mcu_set_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (rp2040_pwm[5])
-		{
-			mcu_set_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (rp2040_pwm[6])
-		{
-			mcu_set_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (rp2040_pwm[7])
-		{
-			mcu_set_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (rp2040_pwm[8])
-		{
-			mcu_set_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (rp2040_pwm[9])
-		{
-			mcu_set_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (rp2040_pwm[10])
-		{
-			mcu_set_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (rp2040_pwm[11])
-		{
-			mcu_set_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (rp2040_pwm[12])
-		{
-			mcu_set_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (rp2040_pwm[13])
-		{
-			mcu_set_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (rp2040_pwm[14])
-		{
-			mcu_set_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (rp2040_pwm[15])
-		{
-			mcu_set_output(PWM15);
-		}
-#endif
-	}
-}
-
-static uint32_t mcu_step_counter;
-static uint32_t mcu_step_reload;
-static bool mcu_gen_step(struct repeating_timer* t)
-{
-	if (mcu_step_reload)
-	{
-		if (!--mcu_step_counter)
-		{
-			static bool resetstep = false;
-			if (!resetstep)
-				mcu_step_cb();
-			else
-				mcu_step_reset_cb();
-			resetstep = !resetstep;
-			mcu_step_counter = mcu_step_reload;
-		}
-	}
-
-	return true;
-}
 
 void mcu_din_isr(void)
 {
@@ -302,50 +54,149 @@ void mcu_controls_isr(void)
 	mcu_controls_changed_cb();
 }
 
-void mcu_rtc_isr(void *arg)
+// RTC, ONESHOT, and SERVO alarms
+// slow rate alarms all share a single timer
+typedef struct rp2040_alarm_
 {
-	mcu_runtime_ms++;
-	mcu_rtc_cb(mcu_runtime_ms);
+	uint32_t timeout;
+	void (*alarm_cb)(void);
+	struct rp2040_alarm_ *next;
+} rp2040_alarm_t;
+
+volatile rp2040_alarm_t *mcu_alarms;
+// the alarm isr processes all executes all pending RTC, ONESHOT and SERVO isr's
+void mcu_alarm_isr(void)
+{
+	hw_clear_bits(&timer_hw->intr, (1U << ALARM_TIMER));
+	if (mcu_alarms)
+	{
+		while (mcu_alarms->timeout < (uint32_t)timer_hw->timerawl)
+		{
+			rp2040_alarm_t *alarm = (rp2040_alarm_t *)mcu_alarms;
+			// advance
+			mcu_alarms = mcu_alarms->next;
+			// dequeue
+			alarm->next = NULL;
+			if (alarm->alarm_cb)
+			{
+				alarm->alarm_cb();
+			}
+
+			// no more alarms
+			if (!mcu_alarms)
+			{
+				return;
+			}
+		}
+
+		timer_hw->alarm[ALARM_TIMER] = mcu_alarms->timeout;
+	}
+	else
+	{
+		// just re-arm
+		timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
+	}
 }
 
-static void mcu_itp_isr(void)
+// initializes the alarm isr
+void mcu_alarms_init(void)
 {
-	// mcu_disable_global_isr();
-	// static bool resetstep = false;
-	// if (!resetstep)
-	// 	mcu_step_cb();
-	// else
-	// 	mcu_step_reset_cb();
-	// resetstep = !resetstep;
-	// mcu_enable_global_isr();
-	// mcu_gen_step();
-	// mcu_gen_pwm();
-	// mcu_gen_oneshot();
+	hw_set_bits(&timer_hw->inte, 1u << ALARM_TIMER);
+	// Set irq handler for alarm irq
+	irq_set_exclusive_handler(ALARM_TIMER_IRQ, mcu_alarm_isr);
+	// Enable the alarm irq
+	irq_set_enabled(ALARM_TIMER_IRQ, true);
+
+	// just re-arm
+	timer_hw->alarm[ALARM_TIMER] = 0xFFFFFFFF;
 }
 
-static void mcu_usart_init(void)
+// enqueues an alarm for execution
+void mcu_enqueue_alarm(rp2040_alarm_t *a, uint32_t timeout_us)
 {
-	rp2040_uart_init(BAUDRATE);
+	uint64_t target = timer_hw->timerawl + timeout_us;
+	a->timeout = (uint32_t)target;
+	a->next = NULL;
+
+	__ATOMIC__
+	{
+		rp2040_alarm_t *ptr = (rp2040_alarm_t *)mcu_alarms;
+		// is the only
+		if (!ptr)
+		{
+			mcu_alarms = a;
+			// adjust alarm to next event
+			timer_hw->alarm[ALARM_TIMER] = mcu_alarms->timeout;
+		}
+		else
+		{
+			while (ptr)
+			{
+				// comes before first alarm in queue
+				if (ptr->timeout < target && ptr->timeout < (uint32_t)target && ptr == mcu_alarms)
+				{
+					a->next = (rp2040_alarm_t *)mcu_alarms;
+					mcu_alarms = a;
+					break;
+				}
+
+				// will be the last in queue
+				if (!ptr->next)
+				{
+					ptr->next = a;
+					break;
+				}
+
+				// insert mid queue
+				if (ptr->next->timeout > target)
+				{
+					a->next = ptr->next;
+					ptr->next = a;
+					break;
+				}
+
+				ptr = ptr->next;
+			}
+		}
+	}
 }
 
-/**
- *
- * Initializes the systick timer that is used as an RTC
- * and defines the systick handler for the ISR callback
- *
- * **/
-void mcu_rtc_init()
-{
-	SysTick->CTRL = 0;
-	SysTick->LOAD = ((F_CPU / 1000) - 1);
-	SysTick->VAL = 0;
-	NVIC_SetPriority(SysTick_IRQn, 10);
-	SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
-}
+#if SERVOS_MASK > 0
 
-void SysTick_Handler(void)
+static uint8_t mcu_servos[6];
+static rp2040_alarm_t servo_alarm;
+#define servo_start_timeout(X) mcu_enqueue_alarm(&servo_alarm, (X))
+
+static void mcu_clear_servos(void)
 {
-	mcu_disable_global_isr();
+#if ASSERT_PIN(SERVO0)
+	mcu_clear_output(SERVO0);
+#endif
+#if ASSERT_PIN(SERVO1)
+	mcu_clear_output(SERVO1);
+#endif
+#if ASSERT_PIN(SERVO2)
+	mcu_clear_output(SERVO2);
+#endif
+#if ASSERT_PIN(SERVO3)
+	mcu_clear_output(SERVO3);
+#endif
+#if ASSERT_PIN(SERVO4)
+	mcu_clear_output(SERVO4);
+#endif
+#if ASSERT_PIN(SERVO5)
+	mcu_clear_output(SERVO5);
+#endif
+}
+#endif
+
+static rp2040_alarm_t rtc_alarm;
+
+void mcu_rtc_isr(void)
+{
+	// enqueue alarm again
+	mcu_enqueue_alarm(&rtc_alarm, 1000UL);
+
 	// counts to 20 and reloads
 #if SERVOS_MASK > 0
 	static uint8_t ms_servo_counter = 0;
@@ -395,11 +246,12 @@ void SysTick_Handler(void)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
-	mcu_enable_global_isr();
+	mcu_rtc_cb(millis());
+}
+
+static void mcu_usart_init(void)
+{
+	rp2040_uart_init(BAUDRATE);
 }
 
 /**
@@ -415,14 +267,15 @@ void mcu_init(void)
 	mcu_io_init();
 	mcu_usart_init();
 
-	// init rtc
-	mcu_rtc_init();
+	pinMode(LED_BUILTIN, OUTPUT);
+	// init rtc, oneshot and servo alarms
+	mcu_alarms_init();
+	rtc_alarm.alarm_cb = &mcu_rtc_isr;
+	mcu_enqueue_alarm(&rtc_alarm, 500000UL);
 
-	// // init timer1
-	// timer1_isr_init();
-	// timer1_attachInterrupt(mcu_itp_isr);
-	// timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	// timer1_write(625);
+#if SERVOS_MASK > 0
+	servo_alarm.alarm_cb = &mcu_clear_servos;
+#endif
 
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
@@ -434,6 +287,13 @@ void mcu_init(void)
 #ifdef MCU_HAS_I2C
 	i2c_master_gpio_init();
 	i2c_master_init();
+#endif
+
+#ifdef MCU_HAS_ONESHOT
+	// // Set irq handler for alarm irq
+	// irq_set_exclusive_handler(ONESHOT_IRQ, mcu_oneshot_isr);
+	// // Enable the alarm irq
+	// irq_set_enabled(ITP_TIMER_IRQ, true);
 #endif
 }
 
@@ -554,7 +414,32 @@ bool mcu_get_global_isr(void)
 
 // Step interpolator
 
-struct repeating_timer itp_timer;
+static uint32_t mcu_step_counter;
+static uint32_t mcu_step_reload;
+static void mcu_itp_isr(void)
+{
+	static bool resetstep = false;
+
+	mcu_disable_global_isr();
+	// Clear the alarm irq
+	hw_clear_bits(&timer_hw->intr, (1U << ITP_TIMER));
+	uint32_t target = (uint32_t)timer_hw->timerawl + mcu_step_reload;
+	timer_hw->alarm[ITP_TIMER] = target;
+
+	if (!resetstep)
+	{
+		mcu_step_cb();
+	}
+
+	else
+	{
+		mcu_step_reset_cb();
+	}
+
+	resetstep = !resetstep;
+	mcu_enable_global_isr();
+}
+
 /**
  * convert step rate to clock cycles
  * */
@@ -582,8 +467,24 @@ float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	int64_t mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	add_repeating_timer_us(-mcu_step_reload, mcu_gen_step, NULL, &itp_timer);
+	hw_set_bits(&timer_hw->inte, 1u << ITP_TIMER);
+	// Set irq handler for alarm irq
+	irq_set_exclusive_handler(ITP_TIMER_IRQ, mcu_itp_isr);
+	// Enable the alarm irq
+	irq_set_enabled(ITP_TIMER_IRQ, true);
+	// Enable interrupt in block and at processor
+
+	// Alarm is only 32 bits so if trying to delay more
+	// than that need to be careful and keep track of the upper
+	// bits
+	uint32_t target = (((uint32_t)ticks) << prescaller);
+	mcu_step_reload = target;
+
+	target += (uint32_t)timer_hw->timerawl;
+
+	// Write the lower 32 bits of the target time to the alarm which
+	// will arm it
+	timer_hw->alarm[ITP_TIMER] = target;
 }
 
 /**
@@ -591,9 +492,14 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
-	int64_t mcu_step_reload = (((uint32_t)ticks) << prescaller);
-	cancel_repeating_timer(&itp_timer);
-	add_repeating_timer_us(-mcu_step_reload, mcu_gen_step, NULL, &itp_timer);
+	uint32_t target = (((uint32_t)ticks) << prescaller);
+	mcu_step_reload = target;
+
+	target += (uint32_t)timer_hw->timerawl;
+
+	// Write the lower 32 bits of the target time to the alarm which
+	// will arm it
+	timer_hw->alarm[ITP_TIMER] = target;
 }
 
 /**
@@ -601,7 +507,8 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
  * */
 void mcu_stop_itp_isr(void)
 {
-	cancel_repeating_timer(&itp_timer);
+	irq_set_enabled(ITP_TIMER_IRQ, false);
+	hw_clear_bits(&timer_hw->inte, 1u << ITP_TIMER);
 }
 
 /**
@@ -727,11 +634,23 @@ void mcu_eeprom_flush(void)
  * configures a single shot timeout in us
  * */
 
+static uint32_t rp2040_oneshot_reload;
+static rp2040_alarm_t oneshot_alarm;
+static void mcu_oneshot_isr(void)
+{
+	if (mcu_timeout_cb)
+	{
+		mcu_timeout_cb();
+	}
+}
+
 #ifndef mcu_config_timeout
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
+	// mcu_timeout_cb = fp;
+	oneshot_alarm.alarm_cb = &mcu_oneshot_isr;
+	rp2040_oneshot_reload = (1000000UL / timeout);
 	mcu_timeout_cb = fp;
-	rp2040_oneshot_reload = (128000UL / timeout);
 }
 #endif
 
@@ -741,7 +660,20 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 #ifndef mcu_start_timeout
 void mcu_start_timeout()
 {
-	rp2040_oneshot_counter = rp2040_oneshot_reload;
+	// hw_set_bits(&timer_hw->inte, 1u << ONESHOT_TIMER);
+	// // Enable interrupt in block and at processor
+	// // Alarm is only 32 bits so if trying to delay more
+	// // than that need to be careful and keep track of the upper
+	// // bits
+	// uint32_t target = (((uint32_t)ticks) << prescaller);
+	// rp2040_oneshot_reload = target;
+
+	// target += (uint32_t)timer_hw->timerawl;
+
+	// // Write the lower 32 bits of the target time to the alarm which
+	// // will arm it
+	// timer_hw->alarm[ONESHOT_TIMER] = target;
+	mcu_enqueue_alarm(&oneshot_alarm, rp2040_oneshot_reload);
 }
 #endif
 #endif

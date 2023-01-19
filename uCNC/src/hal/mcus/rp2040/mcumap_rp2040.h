@@ -1040,18 +1040,33 @@ extern "C"
 #define ITP_TIMER 1
 #endif
 
+// a single timer slot is used to do RTC, SERVO and ONESHOT
 #ifndef RTC_TIMER
 #define RTC_TIMER 2
 #endif
 
-#ifndef ONESHOT_TIMER
-#define ONESHOT_TIMER 3
+#ifndef SERVO_TIMER
+#undef SERVO_TIMER
+#define SERVO_TIMER RTC_TIMER
 #endif
+
+#ifndef ONESHOT_TIMER
+#undef ONESHOT_TIMER
+#define ONESHOT_TIMER RTC_TIMER
+#define MCU_HAS_ONESHOT
+#endif
+
+#define ALARM_TIMER RTC_TIMER
+#define RTC_ALARM 0
+#define SERVO_ALARM 1
+#define ONESHOT_ALARM 2
 
 #define __timer_irq__(X) TIMER_IRQ_##X
 #define _timer_irq_(X)  __timer_irq__(X)
 
-#define ITP_IRQ _timer_irq_(ITP_TIMER)
+#define ITP_TIMER_IRQ _timer_irq_(ITP_TIMER)
+#define RTC_TIMER_IRQ _timer_irq_(RTC_TIMER)
+#define ALARM_TIMER_IRQ _timer_irq_(ALARM_TIMER)
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
