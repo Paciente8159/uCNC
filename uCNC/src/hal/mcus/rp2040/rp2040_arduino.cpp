@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <Arduino.h>
+#include <string.h>
+#include "../../../cnc.h"
 
 /**
  *
@@ -28,20 +30,30 @@
  * **/
 
 #ifdef ENABLE_WIFI
+#ifndef WIFI_SSID_MAX_LEN
+#define WIFI_SSID_MAX_LEN 32
+#endif
+
+#ifndef WIFI_PASS_MAX_LEN
+#define WIFI_PASS_MAX_LEN 32
+#endif
+
+#define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, WIFI_PASS_MAX_LEN)
+
 #include <WiFi.h>
 #include <WebServer.h>
-#include <HTTPUpdate.h>
+#include <HTTPUpdateServer.h>
 
 #ifndef WIFI_PORT
 #define WIFI_PORT 23
 #endif
 
 #ifndef WIFI_USER
-#define WIFI_USER "admin"
+#define WIFI_USER "admin\0"
 #endif
 
 #ifndef WIFI_PASS
-#define WIFI_PASS "pass"
+#define WIFI_PASS "pass\0"
 #endif
 
 WebServer httpServer(80);
@@ -52,74 +64,332 @@ const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
-WiFiManager wifiManager;
-#endif
 
-#ifndef RP2040_BUFFER_SIZE
-#define RP2040_BUFFER_SIZE 255
-#endif
-
-static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
-static uint8_t rp2040_tx_buffer_counter;
-
-extern "C"
+typedef struct
 {
-#include "../../../cnc.h"
+	uint8_t wifi_on;
+	uint8_t wifi_mode;
+	char ssid[WIFI_SSID_MAX_LEN];
+	char pass[WIFI_PASS_MAX_LEN];
+} wifi_settings_t;
 
-#ifdef ENABLE_WIFI
-	static bool rp2040_wifi_clientok(void)
+uint16_t wifi_settings_offset;
+wifi_settings_t wifi_settings;
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
+{
+	char str[TX_BUFFER_SIZE];
+	char arg[ARG_MAX_LEN];
+	char has_arg = (next_char == '=');
+	memset(arg, 0, sizeof(arg));
+	if (has_arg)
 	{
-		static bool connected = false;
-		static bool process_busy = false;
-		static uint32_t next_info = 0;
-
-		if (WiFi.status() != WL_CONNECTED && next_info < mcu_millis())
+		char c = serial_getc();
+		uint8_t i = 0;
+		while (c)
 		{
-			next_info = mcu_millis() + 30000;
-			connected = false;
-			if (process_busy)
+			arg[i++] = c;
+			if (i >= ARG_MAX_LEN)
 			{
-				return false;
+				return STATUS_INVALID_STATEMENT;
 			}
-			process_busy = true;
-			Serial.println("[MSG:Disconnected from WiFi]");
-			process_busy = false;
-			return false;
+			c = serial_getc();
 		}
+	}
 
-		if (!connected)
+	if (!strncmp(grbl_cmd_str, "WIFI", 4))
+	{
+		if (!strcmp(&grbl_cmd_str[4], "ON"))
 		{
-			connected = true;
-			Serial.println("[MSG: WiFi AP connected]");
-			Serial.print("[MSG: Board IP @ ");
-			Serial.print(WiFi.localIP());
-			Serial.println("]");
-		}
-
-		if (server.hasClient())
-		{
-			if (serverClient)
+			WiFi.disconnect();
+			switch (wifi_settings.wifi_mode)
 			{
-				if (serverClient.connected())
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback(str);
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback(str);
+				break;
+			}
+
+			wifi_settings.wifi_on = 1;
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "OFF"))
+		{
+			WiFi.disconnect();
+			wifi_settings.wifi_on = 0;
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "SSID"))
+		{
+			if (has_arg)
+			{
+				uint8_t len = strlen(arg);
+				if (len > WIFI_SSID_MAX_LEN)
 				{
-					serverClient.stop();
+					protocol_send_feedback("WiFi SSID is too long");
+				}
+				memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
+				strcpy(wifi_settings.ssid, arg);
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+				protocol_send_feedback("WiFi SSID modified");
+			}
+			else
+			{
+				sprintf(str, "SSID>%s", wifi_settings.ssid);
+				protocol_send_feedback(str);
+			}
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "SCAN"))
+		{
+			// Serial.println("[MSG:Scanning Networks]");
+			protocol_send_feedback("Scanning Networks");
+			int numSsid = WiFi.scanNetworks();
+			if (numSsid == -1)
+			{
+				protocol_send_feedback("Failed to scan!");
+				while (true)
+					;
+			}
+
+			// print the list of networks seen:
+			sprintf(str, "%d available networks", numSsid);
+			protocol_send_feedback(str);
+
+			// print the network number and name for each network found:
+			for (int netid = 0; netid < numSsid; netid++)
+			{
+				sprintf(str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid), WiFi.RSSI(netid));
+				protocol_send_feedback(str);
+			}
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "SAVE"))
+		{
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			protocol_send_feedback("WiFi settings saved");
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "RESET"))
+		{
+			settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
+			memset(&wifi_settings, 0, sizeof(wifi_settings_t));
+			protocol_send_feedback("WiFi settings deleted");
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "MODE"))
+		{
+			if (has_arg)
+			{
+				int mode = atoi(arg) - 1;
+				if (mode >= 0)
+				{
+					wifi_settings.wifi_mode = mode;
+				}
+				else
+				{
+					protocol_send_feedback("Invalid value. STA+AP(1), STA(2), AP(3)");
 				}
 			}
-			serverClient = server.available();
-			serverClient.println("[MSG: New client connected]\r\n");
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 0:
+				protocol_send_feedback("WiFi mode>STA+AP");
+				break;
+			case 1:
+				protocol_send_feedback("WiFi mode>STA");
+				break;
+			case 2:
+				protocol_send_feedback("WiFi mode>AP");
+				break;
+			}
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[4], "PASS") && has_arg)
+		{
+			uint8_t len = strlen(arg);
+			if (len > WIFI_PASS_MAX_LEN)
+			{
+				protocol_send_feedback("WiFi pass is too long");
+			}
+			memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
+			strcpy(wifi_settings.pass, arg);
+			protocol_send_feedback("WiFi password modified");
+			return STATUS_OK;
+		}
+	}
+	return STATUS_INVALID_STATEMENT;
+}
+#endif
+
+bool rp2040_wifi_clientok(void)
+{
+	static uint32_t next_info = 30000;
+	static bool connected = false;
+	char str[TX_BUFFER_SIZE];
+
+	if (!wifi_settings.wifi_on)
+	{
+		return false;
+	}
+
+	if ((WiFi.status() != WL_CONNECTED))
+	{
+		connected = false;
+		if (next_info > millis())
+		{
 			return false;
 		}
-		else if (serverClient)
+		next_info = millis() + 30000;
+		protocol_send_feedback("Disconnected from WiFi");
+		return false;
+	}
+
+	if (!connected)
+	{
+		connected = true;
+		protocol_send_feedback("Connected to WiFi");
+		sprintf(str, "SSID>%s", wifi_settings.ssid);
+		protocol_send_feedback(str);
+		sprintf(str, "IP>%s", WiFi.localIP().toString().c_str());
+		protocol_send_feedback(str);
+	}
+
+	if (server.hasClient())
+	{
+		if (serverClient)
 		{
 			if (serverClient.connected())
 			{
-				return true;
+				serverClient.stop();
 			}
 		}
+		serverClient = server.available();
+		serverClient.println("[MSG:New client connected]");
 		return false;
+	}
+	else if (serverClient)
+	{
+		if (serverClient.connected())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void rp2040_wifi_init(void)
+{
+	wifi_settings = {0};
+	memcpy(wifi_settings.ssid, BOARD_NAME, strlen(BOARD_NAME));
+	memcpy(wifi_settings.pass, WIFI_PASS, strlen(WIFI_PASS));
+#ifdef ENABLE_SETTINGS_MODULES
+	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+	{
+		settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
+		memset(&wifi_settings, 0, sizeof(wifi_settings_t));
 	}
 #endif
 
+	WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+	if (!wifi_settings.wifi_on)
+	{
+		WiFi.disconnect();
+	}
+	server.begin();
+	server.setNoDelay(true);
+	httpUpdater.setup(&httpServer, update_path, update_username, update_password);
+	httpServer.begin();
+}
+
+void rp2040_wifi_flush(char *buffer)
+{
+	if (rp2040_wifi_clientok())
+	{
+		serverClient.println(buffer);
+		serverClient.flush();
+	}
+}
+
+unsigned char rp2040_wifi_read(void)
+{
+	if (rp2040_wifi_clientok())
+	{
+		if (serverClient.available() > 0)
+		{
+			return (unsigned char)serverClient.read();
+		}
+	}
+
+	return (unsigned char)0;
+}
+
+bool rp2040_wifi_rx_ready(void)
+{
+	bool wifiready = false;
+	if (rp2040_wifi_clientok())
+	{
+		wifiready = (serverClient.available() > 0);
+	}
+
+	return wifiready;
+}
+
+void rp2040_wifi_process(void)
+{
+	if (rp2040_wifi_clientok())
+	{
+		while (serverClient.available() > 0)
+		{
+			mcu_com_rx_cb((unsigned char)serverClient.read());
+		}
+	}
+
+	httpServer.handleClient();
+}
+
+#endif
+
+#ifndef RP2040_BUFFER_SIZE
+#define RP2040_BUFFER_SIZE TX_BUFFER_SIZE
+#endif
+
+static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
+	static uint8_t rp2040_tx_buffer_counter;
+
+extern "C"
+{
 	void rp2040_uart_init(int baud)
 	{
 #ifdef MCU_HAS_USB
@@ -131,28 +401,7 @@ extern "C"
 		COM_UART.begin(baud);
 #endif
 #ifdef ENABLE_WIFI
-		WiFi.setSleepMode(WIFI_NONE_SLEEP);
-#ifdef WIFI_DEBUG
-		wifiManager.setDebugOutput(true);
-#else
-		wifiManager.setDebugOutput(false);
-#endif
-		wifiManager.setConfigPortalBlocking(false);
-		wifiManager.setConfigPortalTimeout(30);
-		if (!wifiManager.autoConnect("RP2040"))
-		{
-			protocol_send_feedback(" WiFi manager up");
-			protocol_send_feedback(" Setup page @ 192.168.4.1");
-		}
-		else
-		{
-			protocol_send_ip(WiFi.localIP());
-		}
-
-		server.begin();
-		server.setNoDelay(true);
-		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-		httpServer.begin();
+		rp2040_wifi_init();
 #endif
 		rp2040_tx_buffer_counter = 0;
 	}
@@ -168,11 +417,7 @@ extern "C"
 		COM_UART.flush();
 #endif
 #ifdef ENABLE_WIFI
-		if (rp2040_wifi_clientok())
-		{
-			serverClient.println(rp2040_tx_buffer);
-			serverClient.flush();
-		}
+		rp2040_wifi_flush(rp2040_tx_buffer);
 #endif
 		rp2040_tx_buffer_counter = 0;
 	}
@@ -207,7 +452,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (rp2040_wifi_clientok())
 		{
-			wifiready = (serverClient.available() > 0);
+			wifiready = (rp2040_wifi_rx_ready() > 0);
 		}
 #endif
 		return ((Serial.available() > 0) || wifiready);
@@ -235,15 +480,7 @@ extern "C"
 #endif
 
 #ifdef ENABLE_WIFI
-		wifiManager.process();
-		httpServer.handleClient();
-		if (rp2040_wifi_clientok())
-		{
-			while (serverClient.available() > 0)
-			{
-				mcu_com_rx_cb((unsigned char)serverClient.read());
-			}
-		}
+		rp2040_wifi_process();
 #endif
 	}
 }
@@ -258,7 +495,6 @@ extern "C"
 #include <EEPROM.h>
 extern "C"
 {
-#include "../../../cnc.h"
 	static void rp2040_eeprom_init(int size)
 	{
 		EEPROM.begin(size);
