@@ -1504,6 +1504,9 @@ extern "C"
 #define USB_DP_PMUXVAL (pinmuxval(USB_DP_MUX))
 #define DIO203_PMUX USB_DP_PMUX
 #define DIO203_PMUXVAL USB_DP_PMUXVAL
+#ifdef USBCON
+#undef USBCON
+#endif
 #endif
 
 #ifdef MCU_HAS_UART
