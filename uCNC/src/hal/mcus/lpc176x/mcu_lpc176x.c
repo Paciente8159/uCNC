@@ -23,8 +23,7 @@
 #include "system_LPC17xx.h"
 
 #ifdef MCU_HAS_USB
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include <tusb_ucnc.h>
 #endif
 
 /**
@@ -264,7 +263,7 @@ void MCU_COM_ISR(void)
 void USB_IRQHandler(void)
 {
 	mcu_disable_global_isr();
-	tud_int_handler(0);
+	tusb_cdc_isr_handler();
 	mcu_enable_global_isr();
 }
 #endif
@@ -345,7 +344,7 @@ void mcu_usart_init(void)
 	NVIC_ClearPendingIRQ(USB_IRQn);
 	NVIC_EnableIRQ(USB_IRQn);
 
-	tusb_init();
+	tusb_cdc_init();
 #endif
 }
 
@@ -525,11 +524,11 @@ void mcu_putc(char c)
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{
-		tud_cdc_write_char(c);
+		tusb_cdc_write(c);
 	}
 	if (c == '\r' || c == 0)
 	{
-		tud_cdc_write_flush();
+		tusb_cdc_flush();
 	}
 #endif
 }
@@ -680,12 +679,12 @@ void mcu_delay_us(uint16_t delay)
 void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
-	tud_cdc_write_flush();
-	tud_task(); // tinyusb device task
+	tusb_cdc_flush();
+	tusb_cdc_task(); // tinyusb device task
 
-	while (tud_cdc_available())
+	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tud_cdc_read_char();
+		unsigned char c = (unsigned char)tusb_cdc_read();
 		mcu_com_rx_cb(c);
 	}
 #endif

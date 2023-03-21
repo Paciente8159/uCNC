@@ -26,8 +26,7 @@
 #include <math.h>
 
 #ifdef MCU_HAS_USB
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include <tusb_ucnc.h>
 #endif
 
 #ifndef FLASH_SIZE
@@ -89,7 +88,7 @@ void MCU_SERIAL_ISR(void)
 void OTG_FS_IRQHandler(void)
 {
 	mcu_disable_global_isr();
-	tud_int_handler(0);
+	tusb_cdc_isr_handler();
 	USB_OTG_FS->GINTSTS = 0xBFFFFFFFU;
 	NVIC_ClearPendingIRQ(OTG_FS_IRQn);
 	mcu_enable_global_isr();
@@ -436,7 +435,7 @@ void mcu_usart_init(void)
 	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
 	USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
 
-	tusb_init();
+	tusb_cdc_init();
 #endif
 
 #ifdef MCU_HAS_UART
@@ -479,11 +478,11 @@ void mcu_putc(char c)
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{
-		tud_cdc_write_char(c);
+		tusb_cdc_write(c);
 	}
 	if (c == '\r' || c == 0)
 	{
-		tud_cdc_write_flush();
+		tusb_cdc_flush();
 	}
 #endif
 }
@@ -717,12 +716,12 @@ void mcu_rtc_init()
 void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
-	tud_cdc_write_flush();
-	tud_task(); // tinyusb device task
+	tusb_cdc_flush();
+	tusb_cdc_task(); // tinyusb device task
 
-	while (tud_cdc_available())
+	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tud_cdc_read_char();
+		unsigned char c = (unsigned char)tusb_cdc_read();
 		mcu_com_rx_cb(c);
 	}
 #endif

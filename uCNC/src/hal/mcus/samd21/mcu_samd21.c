@@ -39,8 +39,7 @@
 #define NVM_MEMORY ((volatile uint16_t *)FLASH_ADDR)
 
 #ifdef MCU_HAS_USB
-#include "../../../tinyusb/tusb_config.h"
-#include "../../../tinyusb/src/tusb.h"
+#include <tusb_ucnc.h>
 #endif
 
 volatile bool samd21_global_isr_enabled;
@@ -299,7 +298,7 @@ void mcu_usart_init(void)
 	// USB->DEVICE.CTRLB.reg |= USB_DEVICE_CTRLB_SPDCONF_FS;
 	while (USB->DEVICE.SYNCBUSY.bit.SWRST)
 		;
-	tusb_init();
+	tusb_cdc_init();
 #endif
 }
 
@@ -307,7 +306,7 @@ void mcu_usart_init(void)
 void USB_Handler(void)
 {
 	mcu_disable_global_isr();
-	tud_int_handler(0);
+	tusb_cdc_isr_handler();
 	mcu_enable_global_isr();
 }
 #endif
@@ -705,11 +704,11 @@ void mcu_putc(char c)
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{
-		tud_cdc_write_char(c);
+		tusb_cdc_write(c);
 	}
 	if (c == '\r' || c == 0)
 	{
-		tud_cdc_write_flush();
+		tusb_cdc_flush();
 	}
 #endif
 }
@@ -919,12 +918,12 @@ void mcu_delay_us(uint16_t delay)
 void mcu_dotasks(void)
 {
 #ifdef MCU_HAS_USB
-	tud_cdc_write_flush();
-	tud_task(); // tinyusb device task
+	tusb_cdc_flush();
+	tusb_cdc_task(); // tinyusb device task
 
-	while (tud_cdc_available())
+	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tud_cdc_read_char();
+		unsigned char c = (unsigned char)tusb_cdc_read();
 		mcu_com_rx_cb(c);
 	}
 #endif
