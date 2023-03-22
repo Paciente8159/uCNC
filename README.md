@@ -6,6 +6,11 @@
 
 µCNC - Universal CNC firmware for microcontrollers
 
+# VERSION 1.6+ TINYUSB NOTES
+
+From version 1.6 and newer TinyUSB integration is now managed via a and external Arduino IDE library customized for µCNC and can be downloaded at [uCNC-tinyusb](https://github.com/Paciente8159/uCNC-tinyusb).
+This core change makes TinyUSB future updates much more easier and quicker. This also may help USB hosting implementation in a near future to allow USB drives to be plugged and read by the driver.
+
 # IMPORTANT NOTE
 
 By default and as a safety measure µCNC control inputs (Emergency stop, Safety door, Hold, Cycle start-resume), as well as limit switches and probe, are held high by the microcontroller input weak-pull up resistors. If left unconnected or connected to normally opened switches these inputs will be in an active/triggered state and the controller may lock all motions.
