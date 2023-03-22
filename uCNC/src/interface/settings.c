@@ -114,10 +114,10 @@ const settings_t __rom__ default_settings =
 		.laser_ppi_mixmode_ppi = 0.25,
 		.laser_ppi_mixmode_uswidth = 0.75,
 #endif
-		.step_per_mm = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_STEP_PER_MM),
-		.max_feed_rate = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_FEED),
-		.acceleration = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_ACCEL),
-		.max_distance = DEFAULT_ARRAY(AXIS_COUNT, DEFAULT_MAX_DIST),
+		.step_per_mm = DEFAULT_STEP_PER_MM_PER_AXIS,
+		.max_feed_rate = DEFAULT_MAX_FEED_PER_AXIS,
+		.acceleration = DEFAULT_ACCEL_PER_AXIS,
+		.max_distance = DEFAULT_MAX_DIST_PER_AXIS,
 #if TOOL_COUNT > 0
 		.default_tool = DEFAULT_STARTUP_TOOL,
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),

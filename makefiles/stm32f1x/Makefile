@@ -105,6 +105,7 @@ BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSTM32F103xB \
+-DCFG_TUSB_MCU=OPT_MCU_STM32F1 \
 -DBOARD=BOARD_$(BOARD)
 
 # AS includes
@@ -124,7 +125,8 @@ C_INCLUDES =  \
 -I"./" \
 -Idrivers/ \
 -I"../../uCNC/" \
--I"../../uCNC/src/"
+-I"../../uCNC/src/"\
+-I"../../uCNC-tinyusb/src"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 

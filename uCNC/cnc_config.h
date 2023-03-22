@@ -97,6 +97,44 @@ extern "C"
 
 	//#define ECHO_CMD
 
+/**
+ * Override default configuration settings. Use _PER_AXIS parameters to
+ * define different settings for each axis.
+ */
+
+// #define DEFAULT_DIR_INV_MASK 0
+// #define DEFAULT_LIMIT_INV_MASK 0
+// #define DEFAULT_SOFT_LIMITS_ENABLED 0
+// #define DEFAULT_HARD_LIMITS_ENABLED 0
+// #define DEFAULT_HOMING_ENABLED 0
+// #define DEFAULT_HOMING_DIR_INV_MASK 0
+// #define DEFAULT_HOMING_FAST 50
+// #define DEFAULT_HOMING_SLOW 10
+// #define DEFAULT_HOMING_OFFSET 2
+// #define DEFAULT_STEP_PER_MM 200
+// #define DEFAULT_STEP_PER_MM_PER_AXIS {200, 200, 200}
+// #define DEFAULT_MAX_FEED 500
+// #define DEFAULT_MAX_FEED_PER_AXIS {500, 500, 500}
+// #define DEFAULT_ACCEL 10
+// #define DEFAULT_ACCEL_PER_AXIS {10, 10, 10}
+// #define DEFAULT_MAX_DIST 200
+// #define DEFAULT_MAX_DIST_PER_AXIS {200, 200, 50}
+// #define DEFAULT_ARC_TOLERANCE 0.002
+// #define DEFAULT_DEBOUNCE_MS 250
+
+#if defined(KINEMATIC_DELTA)
+    // #define DEFAULT_LIN_DELTA_ARM_LENGTH 230
+    // #define DEFAULT_LIN_DELTA_BASE_RADIUS 115
+#endif
+
+#if defined(KINEMATIC_LINEAR_DELTA)
+    // #define DEFAULT_DELTA_BICEP_LENGTH 100
+    // #define DEFAULT_DELTA_FOREARM_LENGTH 300
+    // #define DEFAULT_DELTA_EFFECTOR_RADIUS 24
+    // #define DEFAULT_DELTA_BASE_RADIUS 75
+    // #define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
+#endif
+
 	/**
 	 * Sets/limits the number of tools to be used
 	 * The tool and tool order are configured in the cnc_hal_config.h
@@ -109,6 +147,11 @@ extern "C"
 #if TOOL_COUNT > 0
 
 /**
+ * Override the default startup tool
+ */
+//#define DEFAULT_STARTUP_TOOL 1
+
+/**
  * Enable or disable coolant
  * */
 // #define ENABLE_COOLANT
@@ -117,7 +160,7 @@ extern "C"
  * On speed change waits for the tool to reach the designated speed
  * The maximum error is a value between 0-0% and 100-100%
  * 0% error will only continue if the tool reaches the exact programed speed
- * 100% will continue regardless of the current value 
+ * 100% will continue regardless of the current value
  * This will be ignored on laser mode
  * */
 // #define TOOL_WAIT_FOR_SPEED
@@ -144,7 +187,14 @@ extern "C"
  * Uncomment to enable laser PPI feature
  * Laser PPI requires the MCU to support ONESHOT timeout
  * */
-// #define ENABLE_LASER_PPI
+//#define ENABLE_LASER_PPI
+
+/**
+ * Override default laser configuration settings.
+ */
+
+// #define DEFAULT_LASER_PPI 254
+// #define DEFAULT_LASER_PPI_USWIDTH 1500
 
 /**
  * Feed overrides increments and percentage ranges
@@ -214,7 +264,7 @@ extern "C"
 	//#define GCODE_ACCEPT_WORD_E
 
 	/**
-	 * Shrink µCNC 
+	 * Shrink µCNC
 	 * It's possible to shrink µCNC by disable some core features:
 	 *   - arc support (G2,G3,G17,G18,G19)
 	 *   - probing (G38.x and if enabled G39,G39.x)
@@ -285,13 +335,13 @@ extern "C"
  * To map a region do G39 X<left bottom corner> Y<left bottom corner> Z<max-depth> I<X region offset> J<Y region offset>
  * G39.1 will disable HMAP
  * G39.2 will re-enable it
- * 
+ *
  * It's an error if:
  *  - I and J are missing
  *  - I or J are negative
  *  - Z is missing
  *  - cutter radius compensation is active (not implemented)
- * 
+ *
  * The map will not be stored in memory and will be reset on any of the following conditions
  *  - a hardware or software reset
  *  - a homing command
@@ -409,10 +459,10 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * Uncomment to store the state of the limits, controls and probe states that tiggered and alarm
  * This is useful to debug momentary faults
- * 
+ *
 */
 // #define ENABLE_IO_ALARM_DEBUG
 
