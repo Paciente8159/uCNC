@@ -102,6 +102,7 @@ BUILD_OPTIONS ?=
 
 C_DEFS =  $(BUILD_OPTIONS)\
 -DSAMD21 \
+-DCFG_TUSB_MCU=OPT_MCU_SAMD21 \
 -D__SAMD21E18A__ \
 -DBOARD=BOARD_$(BOARD)
 
@@ -122,7 +123,8 @@ C_INCLUDES =  \
 -Idrivers/ \
 -Iasf/ \
 -I"../../uCNC/" \
--I"../../uCNC/src/"
+-I"../../uCNC/src/"\
+-I"../../uCNC-tinyusb/src"
 
 C_INCLUDES += $(foreach d,$(C_HEADERS),$(addsuffix $(dir $(d)),"-I"))
 
