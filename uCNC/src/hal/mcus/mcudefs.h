@@ -31,51 +31,30 @@ extern "C"
 */
 #if (MCU == MCU_AVR)
 #include "avr/mcumap_avr.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_NONE
-#endif
 #endif
 
 #if (MCU == MCU_STM32F1X)
 #include "stm32f1x/mcumap_stm32f1x.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_STM32F1
-#endif
 #endif
 
 #if (MCU == MCU_STM32F4X)
 #include "stm32f4x/mcumap_stm32f4x.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_STM32F4
-#endif
 #endif
 
 #if (MCU == MCU_SAMD21)
 #include "samd21/mcumap_samd21.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_SAMD21
-#endif
 #endif
 
 #if (MCU == MCU_LPC176X)
 #include "lpc176x/mcumap_lpc176x.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_LPC175X_6X
-#endif
 #endif
 
 #if (MCU == MCU_ESP8266)
 #include "esp8266/mcumap_esp8266.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_NONE
-#endif
 #endif
 
 #if (MCU == MCU_ESP32)
 #include "esp32/mcumap_esp32.h"
-#ifndef CFG_TUSB_MCU
-#define CFG_TUSB_MCU OPT_MCU_NONE
-#endif
 #endif
 
 #if (MCU == MCU_VIRTUAL_WIN)

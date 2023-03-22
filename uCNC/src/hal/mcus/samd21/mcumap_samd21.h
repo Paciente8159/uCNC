@@ -1504,6 +1504,9 @@ extern "C"
 #define USB_DP_PMUXVAL (pinmuxval(USB_DP_MUX))
 #define DIO203_PMUX USB_DP_PMUX
 #define DIO203_PMUXVAL USB_DP_PMUXVAL
+#ifdef USBCON
+#undef USBCON
+#endif
 #endif
 
 #ifdef MCU_HAS_UART
@@ -3048,18 +3051,14 @@ extern "C"
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
 #if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tusb_cdc_write_available())
 #define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (COM_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_USB)
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() tud_cdc_n_available(0)
-#define mcu_tx_ready() tud_cdc_n_write_available(0)
+#define mcu_rx_ready() tusb_cdc_available()
+#define mcu_tx_ready() tusb_cdc_write_available()
 #endif
 
 #ifdef MCU_HAS_SPI

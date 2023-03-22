@@ -1,4 +1,0 @@
-#all
-#*/**/*
-#!src/tusb_config.h
-#!src/tusb_descriptors.c
