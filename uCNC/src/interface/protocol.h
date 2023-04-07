@@ -40,6 +40,9 @@ extern "C"
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
 	void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
+#ifdef ENABLE_WIFI
+	void protocol_send_ip(uint32_t ip);
+#endif
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 	void protocol_send_pins_states(void);
 #endif

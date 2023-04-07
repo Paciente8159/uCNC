@@ -143,6 +143,16 @@ extern "C"
 #include "esp32/boardmap_mks_dlc32.h"
 #endif
 
+#if (BOARD == BOARD_RPI_PICO)
+#define MCU MCU_RP2040
+#include "rp2040/boardmap_rpi_pico.h"
+#endif
+
+#if (BOARD == BOARD_RPI_PICO_W)
+#define MCU MCU_RP2040
+#include "rp2040/boardmap_rpi_pico_w.h"
+#endif
+
 #if (BOARD == BOARD_VIRTUAL)
 #ifndef __linux__
 #define MCU MCU_VIRTUAL_WIN

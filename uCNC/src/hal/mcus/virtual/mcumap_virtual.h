@@ -198,8 +198,8 @@
 #define SPI_SDI 205
 #define SPI_SDO 206
 #define SPI_CS 207
-#define I2C_SCL 208
-#define I2C_SDA 209
+#define I2C_CLK 208
+#define I2C_DATA 209
 
 #define MCU_HAS_ONESHOT_TIMER
 

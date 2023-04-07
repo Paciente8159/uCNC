@@ -2920,43 +2920,43 @@ extern "C"
 #define DIO207_CR SPI_CS_CR
 #define DIO207_CROFF SPI_CS_CROFF
 #endif
-#if (defined(I2C_SCL_PORT) && defined(I2C_SCL_BIT))
-#define I2C_SCL 208
-#define I2C_SCL_APB2EN (__rccapb2gpioen__(I2C_SCL_PORT))
-#define I2C_SCL_GPIO (__gpio__(I2C_SCL_PORT))
-#if (I2C_SCL_BIT < 8)
-#define I2C_SCL_CROFF I2C_SCL_BIT
-#define I2C_SCL_CR CRL
+#if (defined(I2C_CLK_PORT) && defined(I2C_CLK_BIT))
+#define I2C_CLK 208
+#define I2C_CLK_APB2EN (__rccapb2gpioen__(I2C_CLK_PORT))
+#define I2C_CLK_GPIO (__gpio__(I2C_CLK_PORT))
+#if (I2C_CLK_BIT < 8)
+#define I2C_CLK_CROFF I2C_CLK_BIT
+#define I2C_CLK_CR CRL
 #else
-#define I2C_SCL_CROFF (I2C_SCL_BIT & 0x07)
-#define I2C_SCL_CR CRH
+#define I2C_CLK_CROFF (I2C_CLK_BIT & 0x07)
+#define I2C_CLK_CR CRH
 #endif
 #define DIO208 208
-#define DIO208_PORT I2C_SCL_PORT
-#define DIO208_BIT I2C_SCL_BIT
-#define DIO208_APB2EN I2C_SCL_APB2EN
-#define DIO208_GPIO I2C_SCL_GPIO
-#define DIO208_CR I2C_SCL_CR
-#define DIO208_CROFF I2C_SCL_CROFF
+#define DIO208_PORT I2C_CLK_PORT
+#define DIO208_BIT I2C_CLK_BIT
+#define DIO208_APB2EN I2C_CLK_APB2EN
+#define DIO208_GPIO I2C_CLK_GPIO
+#define DIO208_CR I2C_CLK_CR
+#define DIO208_CROFF I2C_CLK_CROFF
 #endif
-#if (defined(I2C_SDA_PORT) && defined(I2C_SDA_BIT))
-#define I2C_SDA 209
-#define I2C_SDA_APB2EN (__rccapb2gpioen__(I2C_SDA_PORT))
-#define I2C_SDA_GPIO (__gpio__(I2C_SDA_PORT))
-#if (I2C_SDA_BIT < 8)
-#define I2C_SDA_CROFF I2C_SDA_BIT
-#define I2C_SDA_CR CRL
+#if (defined(I2C_DATA_PORT) && defined(I2C_DATA_BIT))
+#define I2C_DATA 209
+#define I2C_DATA_APB2EN (__rccapb2gpioen__(I2C_DATA_PORT))
+#define I2C_DATA_GPIO (__gpio__(I2C_DATA_PORT))
+#if (I2C_DATA_BIT < 8)
+#define I2C_DATA_CROFF I2C_DATA_BIT
+#define I2C_DATA_CR CRL
 #else
-#define I2C_SDA_CROFF (I2C_SDA_BIT & 0x07)
-#define I2C_SDA_CR CRH
+#define I2C_DATA_CROFF (I2C_DATA_BIT & 0x07)
+#define I2C_DATA_CR CRH
 #endif
 #define DIO209 209
-#define DIO209_PORT I2C_SDA_PORT
-#define DIO209_BIT I2C_SDA_BIT
-#define DIO209_APB2EN I2C_SDA_APB2EN
-#define DIO209_GPIO I2C_SDA_GPIO
-#define DIO209_CR I2C_SDA_CR
-#define DIO209_CROFF I2C_SDA_CROFF
+#define DIO209_PORT I2C_DATA_PORT
+#define DIO209_BIT I2C_DATA_BIT
+#define DIO209_APB2EN I2C_DATA_APB2EN
+#define DIO209_GPIO I2C_DATA_GPIO
+#define DIO209_CR I2C_DATA_CR
+#define DIO209_CROFF I2C_DATA_CROFF
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -4296,10 +4296,10 @@ extern "C"
 #endif
 
 // I2C
-#if (defined(I2C_SCL) && defined(I2C_SDA))
+#if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
-#define I2C_SCL_PIN __iopin__(I2C_SCL_PORT, I2C_SCL_BIT)
-#define I2C_SDA_PIN __iopin__(I2C_SDA_PORT, I2C_SDA_BIT)
+#define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
+#define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
 #ifndef I2C_PORT
 #define I2C_PORT 1
 #endif
@@ -4308,10 +4308,10 @@ extern "C"
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 #define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
 
-#if ((I2C_PORT == 1) && (I2C_SCL_PORT == B6) && (I2C_SDA_PORT == B7))
-#elif ((I2C_PORT == 1) && (I2C_SCL_PORT == B8) && (I2C_SDA_PORT == B9))
+#if ((I2C_PORT == 1) && (I2C_CLK_PORT == B6) && (I2C_DATA_PORT == B7))
+#elif ((I2C_PORT == 1) && (I2C_CLK_PORT == B8) && (I2C_DATA_PORT == B9))
 #define I2C_REMAP AFIO_MAPR_I2C1_REMAP
-#elif ((I2C_PORT == 2) && (I2C_SCL_PORT == B10) && (I2C_SDA_PORT == B11))
+#elif ((I2C_PORT == 2) && (I2C_CLK_PORT == B10) && (I2C_DATA_PORT == B11))
 #else
 #error "I2C pin configuration not supported"
 #endif

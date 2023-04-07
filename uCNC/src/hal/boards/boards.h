@@ -44,6 +44,8 @@ extern "C"
 #define BOARD_WEMOS_D1_R32 50
 #define BOARD_MKS_TINYBEE 51
 #define BOARD_MKS_DLC32 52
+#define BOARD_RPI_PICO 60
+#define BOARD_RPI_PICO_W 61
 #define BOARD_VIRTUAL 99
 
 // special purpose board

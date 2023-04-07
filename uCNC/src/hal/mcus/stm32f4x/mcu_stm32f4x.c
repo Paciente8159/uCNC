@@ -515,13 +515,13 @@ void mcu_init(void)
 #endif
 #ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_af(I2C_SCL, I2C_AFIO);
-	mcu_config_af(I2C_SDA, I2C_AFIO);
-	mcu_config_pullup(I2C_SCL);
-	mcu_config_pullup(I2C_SDA);
+	mcu_config_af(I2C_CLK, I2C_AFIO);
+	mcu_config_af(I2C_DATA, I2C_AFIO);
+	mcu_config_pullup(I2C_CLK);
+	mcu_config_pullup(I2C_DATA);
 	// set opendrain
-	mcu_config_opendrain(I2C_SCL);
-	mcu_config_opendrain(I2C_SDA);
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
 	// reset I2C
 	I2C_REG->CR1 |= I2C_CR1_SWRST;
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;

@@ -1,10 +1,10 @@
 /*
-	Name: mcumap_esp8266.h
-	Description: Contains all MCU and PIN definitions for Arduino ESP8266 to run µCNC.
+	Name: mcumap_rp2040.h
+	Description: Contains all MCU and PIN definitions for RP2040 to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 05-02-2022
+	Date: 16-01-2023
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,15 +16,19 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUMAP_ESP8266_H
-#define MCUMAP_ESP8266_H
+#ifndef MCUMAP_RP2040_H
+#define MCUMAP_RP2040_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <Arduino.h>
+#include "hardware/timer.h"
+#include "hardware/irq.h"
 
 /*
 	Generates all the interface definitions.
@@ -35,11 +39,11 @@ extern "C"
 */
 
 /*
-	ESP8266 Defaults
+	RP2040 Defaults
 */
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 80000000L
+#define F_CPU 133000000L
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -47,6 +51,10 @@ extern "C"
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
+#endif
+
+#ifndef RP2040
+#define RP2040
 #endif
 
 // defines special mcu to access flash strings and arrays
@@ -59,6 +67,7 @@ extern "C"
 #define rom_read_byte *
 
 // needed by software delays
+// this can be ignored since custom delay functions will be defined
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
@@ -69,19 +78,19 @@ extern "C"
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-#ifndef MCU_CALLBACK
-#define MCU_CALLBACK IRAM_ATTR
-#endif
+	// this next set of rules defines the internal delay macros
+	// #define F_CPU_MHZ (F_CPU / 1000000UL)
+	// #define US_TO_CYCLES(X) (X * F_CPU_MHZ)
 
-#ifdef ENABLE_RX_SYNC
-#define MCU_RX_CALLBACK ICACHE_FLASH_ATTR
-#endif
-
-#ifdef ENABLE_TX_SYNC
-#define MCU_TX_CALLBACK ICACHE_FLASH_ATTR
-#endif
-
-#define MCU_IO_CALLBACK ICACHE_FLASH_ATTR
+	// 	extern unsigned long ulMainGetRunTimeCounterValue();
+	// #define mcu_delay_cycles(X)                                     \
+// 	{                                                           \
+// 		uint32_t target = ulMainGetRunTimeCounterValue() + (X); \
+// 		while (target > ulMainGetRunTimeCounterValue())         \
+// 			;                                                   \
+// 	}
+	// #define mcu_delay_100ns() mcu_delay_cycles(F_CPU_MHZ / 10UL)
+	// #define mcu_delay_us(X) (mcu_delay_cycles(US_TO_CYCLES(X)))
 
 #ifdef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 255
@@ -93,26 +102,6 @@ extern "C"
 // this method is faster then normal multiplication (for 32 bit for 16 and 8 bits is slightly lower)
 // overrides utils.h definition to implement this method with or without fast math option enabled
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
-
-// PINNAMES for ESP8266
-#define PERIPHS_IO_MUX_GPIO0 (PERIPHS_IO_MUX + 0x34)
-#define PERIPHS_IO_MUX_GPIO1 (PERIPHS_IO_MUX + 0x18)
-#define PERIPHS_IO_MUX_GPIO2 (PERIPHS_IO_MUX + 0x38)
-#define PERIPHS_IO_MUX_GPIO3 (PERIPHS_IO_MUX + 0x14)
-#define PERIPHS_IO_MUX_GPIO4 (PERIPHS_IO_MUX + 0x3C)
-#define PERIPHS_IO_MUX_GPIO5 (PERIPHS_IO_MUX + 0x40)
-#define PERIPHS_IO_MUX_GPIO6 (PERIPHS_IO_MUX + 0x1c)
-#define PERIPHS_IO_MUX_GPIO7 (PERIPHS_IO_MUX + 0x20)
-#define PERIPHS_IO_MUX_GPIO8 (PERIPHS_IO_MUX + 0x24)
-#define PERIPHS_IO_MUX_GPIO9 (PERIPHS_IO_MUX + 0x28)
-#define PERIPHS_IO_MUX_GPIO10 (PERIPHS_IO_MUX + 0x2c)
-#define PERIPHS_IO_MUX_GPIO11 (PERIPHS_IO_MUX + 0x30)
-#define PERIPHS_IO_MUX_GPIO12 (PERIPHS_IO_MUX + 0x04)
-#define PERIPHS_IO_MUX_GPIO13 (PERIPHS_IO_MUX + 0x08)
-#define PERIPHS_IO_MUX_GPIO14 (PERIPHS_IO_MUX + 0x0C)
-#define PERIPHS_IO_MUX_GPIO15 (PERIPHS_IO_MUX + 0x10)
-
-#define __gpioreg__(X) (__helper__(PERIPHS_IO_MUX_GPIO, X, ))
 
 // IO pins
 #if (defined(STEP0_BIT))
@@ -992,6 +981,14 @@ extern "C"
 #define COM_PORT 0
 #endif
 
+#if (COM_PORT == 0)
+#define COM_UART Serial1
+#elif (COM_PORT == 1)
+#define COM_UART Serial2
+#else
+#error "UART COM port number must be 0 or 1"
+#endif
+
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
@@ -1007,19 +1004,69 @@ extern "C"
 #ifndef SPI_FREQ
 #define SPI_FREQ 1000000UL
 #endif
+#ifndef SPI_PORT
+#define SPI_PORT 0
+#endif
 #endif
 
-// Hardware I2C not supported
+#if (SPI_PORT == 0)
+#define COM_SPI SPI
+#elif (SPI_PORT == 1)
+#define COM_SPI SPI1
+#else
+#error "SPI port number must be 0 or 1"
+#endif
 
-// #if (defined(I2C_CLK) && defined(I2C_DATA))
-// #define MCU_HAS_I2C
-// #ifndef I2C_PORT
-// #define I2C_PORT 0
-// #endif
-// #ifndef I2C_FREQ
-// #define I2C_FREQ 1000000UL
-// #endif
-// #endif
+#if (defined(I2C_CLK) && defined(I2C_DATA))
+#define MCU_HAS_I2C
+#ifndef I2C_PORT
+#define I2C_PORT 0
+#endif
+#ifndef I2C_FREQ
+#define I2C_FREQ 1000000UL
+#endif
+#endif
+
+#if (I2C_PORT == 0)
+#define COM_I2C Wire
+#elif (I2C_PORT == 1)
+#define COM_I2C Wire1
+#else
+#error "I2C port number must be 0 or 1"
+#endif
+
+// since Arduino Pico does not allow access to pico-SDK functions low level timer functions are used
+#ifndef ITP_TIMER
+#define ITP_TIMER 1
+#endif
+
+// a single timer slot is used to do RTC, SERVO and ONESHOT
+#ifndef RTC_TIMER
+#define RTC_TIMER 2
+#endif
+
+#ifndef SERVO_TIMER
+#undef SERVO_TIMER
+#define SERVO_TIMER RTC_TIMER
+#endif
+
+#ifndef ONESHOT_TIMER
+#undef ONESHOT_TIMER
+#define ONESHOT_TIMER RTC_TIMER
+#define MCU_HAS_ONESHOT
+#endif
+
+#define ALARM_TIMER RTC_TIMER
+#define RTC_ALARM 0
+#define SERVO_ALARM 1
+#define ONESHOT_ALARM 2
+
+#define __timer_irq__(X) TIMER_IRQ_##X
+#define _timer_irq_(X)  __timer_irq__(X)
+
+#define ITP_TIMER_IRQ _timer_irq_(ITP_TIMER)
+#define RTC_TIMER_IRQ _timer_irq_(RTC_TIMER)
+#define ALARM_TIMER_IRQ _timer_irq_(ALARM_TIMER)
 
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
@@ -1027,39 +1074,53 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 
+#ifndef BYTE_OPS
+#define BYTE_OPS
+// Set bit y in byte x
+#define SETBIT(x, y) ((x) |= (1 << (y)))
+// Clear bit y in byte x
+#define CLEARBIT(x, y) ((x) &= ~(1 << (y)))
+// Check bit y in byte x
+#define CHECKBIT(x, y) ((x) & (1 << (y)))
+// Toggle bit y in byte x
+#define TOGGLEBIT(x, y) ((x) ^= (1 << (y)))
+// Set byte y in byte x
+#define SETFLAG(x, y) ((x) |= (y))
+// Clear byte y in byte x
+#define CLEARFLAG(x, y) ((x) &= ~(y))
+// Check byte y in byte x
+#define CHECKFLAG(x, y) ((x) & (y))
+// Toggle byte y in byte x
+#define TOGGLEFLAG(x, y) ((x) ^= (y))
+#endif
+
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq)                \
+	{                                          \
+		pinMode(__indirect__(X, BIT), OUTPUT); \
+		analogWriteRange(255);                 \
+		analogWriteFreq(freq);                 \
+		analogWriteResolution(8);              \
+	}
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
 #define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
 
-#define mcu_get_input(X) digitalRead(__indirect__(X, BIT))
-#define mcu_get_output(X) digitalRead(__indirect__(X, BIT))
-#define mcu_set_output(X) digitalWrite(__indirect__(X, BIT), 1)
-#define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
-#define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
+#define mcu_get_input(X) CHECKFLAG(sio_hw->gpio_in, __indirect__(X, BIT))
+#define mcu_get_output(X) CHECKFLAG(sio_hw->gpio_out, __indirect__(X, BIT))
+#define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
+#define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
+#define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
-	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
-
-#define mcu_spi_xmit(X)           \
-	{                             \
-		while (SPI1CMD & SPIBUSY) \
-			;                     \
-		SPI1W0 = x;               \
-		SPI1CMD |= SPIBUSY;       \
-		while (SPI1CMD & SPIBUSY) \
-			;                     \
-		(uint8_t)(SPI1W0 & 0xff); \
+	extern uint8_t rp2040_pwm[16];
+#define mcu_set_pwm(X, Y)                     \
+	{                                         \
+		rp2040_pwm[X - PWM_PINS_OFFSET] = Y;  \
+		analogWrite(__indirect__(X, BIT), Y); \
 	}
-
-#define mcu_spi_config(X, Y) esp8266_spi_config(X, Y)
-
-	extern void esp8266_delay_us(uint16_t delay);
-#define mcu_delay_us(X) esp8266_delay_us(X)
+#define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
+#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #ifdef __cplusplus
 }

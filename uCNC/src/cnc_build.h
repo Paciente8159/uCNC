@@ -25,7 +25,7 @@ extern "C"
 #endif
 
 #define CNC_MAJOR_MINOR_VERSION "1.6"
-#define CNC_PATCH_VERSION ".pre"
+#define CNC_PATCH_VERSION ".0-pre"
 
 #define CNC_VERSION CNC_MAJOR_MINOR_VERSION CNC_PATCH_VERSION
 

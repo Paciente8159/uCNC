@@ -119,6 +119,33 @@ void protocol_send_feedback(const char *__s)
 #endif
 }
 
+void protocol_send_ip(uint32_t ip)
+{
+	uint8_t *pt = (uint8_t *)&ip;
+#ifdef ECHO_CMD
+	protocol_busy = true;
+#endif
+	protocol_send_string(MSG_START);
+	serial_putc('I');
+	serial_putc('P');
+	serial_putc(' ');
+	uint8_t b = *pt;
+	serial_print_int((uint32_t)b);
+	serial_putc('.');
+	b = *(++pt);
+	serial_print_int((uint32_t)b);
+	serial_putc('.');
+	b = *(++pt);
+	serial_print_int((uint32_t)b);
+	serial_putc('.');
+	b = *(++pt);
+	serial_print_int((uint32_t)b);
+	protocol_send_string(MSG_END);
+#ifdef ECHO_CMD
+	protocol_busy = false;
+#endif
+}
+
 static uint8_t protocol_get_tools(void)
 {
 	// leave extra room for future modal groups

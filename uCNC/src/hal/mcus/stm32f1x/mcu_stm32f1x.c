@@ -509,8 +509,8 @@ void mcu_init(void)
 
 #ifdef MCU_HAS_I2C
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_output_af(I2C_SCL, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_output_af(I2C_SDA, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
 #ifdef SPI_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
