@@ -139,7 +139,7 @@ extern "C"
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
 #include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
-#include "cnc_hal_overrides.h" //config override file
+#include "../cnc_hal_overrides.h" //config override file
 // fill remaining HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
 // initializes core utilities (like fast math functions)
