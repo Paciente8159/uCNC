@@ -58,13 +58,11 @@ extern "C"
 #define MCU_HAS_USB
 
     // Setup PWM
-// #define PWM0_BIT 2  // assigns PWM0 pin
-// #define PWM0_PORT D // assigns PWM0 pin
+#define PWM0_BIT 14  // assigns PWM0 pin
 
 // Setup generic IO Pins
 // spindle dir
-// #define DOUT0_BIT 15
-// #define DOUT0_PORT D
+#define DOUT0_BIT 15
 
 // Stepper enable pin. For Grbl on Uno board a single pin is used
 #define STEP2_EN_BIT 12
