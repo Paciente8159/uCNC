@@ -163,7 +163,7 @@ extern "C"
 #error Undefined board
 #endif
 
-#include "boardmap_overrides.h"
+#include "../../../boardmap_overrides.h"
 #include "../mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus
