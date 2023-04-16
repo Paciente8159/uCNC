@@ -6,6 +6,18 @@
 
 # Changelog
 
+## [1.6.0] - 17-04-2023
+
+### Added
+
+- added core support for RP2040 MCU (#360)
+
+### Changed
+
+- moved tinyUSB out from the source and into an external library (#359)
+- moved override configuration files to root directory of the project (#362)
+
+
 ## [1.5.7] - 12-01-2023
 
 ## Contributors

@@ -6,6 +6,11 @@
 
 µCNC - Universal CNC firmware for microcontrollers
 
+# Building µCNC
+
+To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
+Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
+
 # VERSION 1.6+ TINYUSB NOTES
 
 From version 1.6 and newer TinyUSB integration is now managed via a and external Arduino IDE library customized for µCNC and can be downloaded at [uCNC-tinyusb](https://github.com/Paciente8159/uCNC-tinyusb).
