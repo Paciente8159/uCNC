@@ -976,6 +976,9 @@ extern "C"
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
 #endif
+#ifdef ENABLE_BLUETOOTH
+#define MCU_HAS_BLUETOOTH
+#endif
 
 #ifndef COM_PORT
 #define COM_PORT 0
