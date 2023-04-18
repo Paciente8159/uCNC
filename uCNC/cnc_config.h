@@ -39,13 +39,17 @@ extern "C"
 // #define ENABLE_WIFI
 #endif
 
+#ifndef ENABLE_BLUETOOTH
+// #define ENABLE_BLUETOOTH
+#endif
+
 	/**
 	 * Choose the board
 	 * Check boards.h for list of available/supported boards
 	 * */
 
 #ifndef BOARD
-#define BOARD BOARD_UNO
+#define BOARD BOARD_RPI_PICO_W
 #endif
 
 // optional name to override default board name build info (if option enabled)

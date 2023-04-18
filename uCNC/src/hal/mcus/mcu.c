@@ -706,3 +706,10 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_pullup(I2C_DATA);
 #endif
 }
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
+{
+	return STATUS_INVALID_STATEMENT;
+}
+#endif

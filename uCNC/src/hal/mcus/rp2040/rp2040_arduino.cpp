@@ -41,8 +41,7 @@
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, WIFI_PASS_MAX_LEN)
 
 #ifdef ENABLE_BLUETOOTH
-#include "BluetoothSerial.h"
-BluetoothSerial SerialBT;
+#include <SerialBT.h>
 
 uint8_t bt_on;
 uint16_t bt_settings_offset;
@@ -113,7 +112,7 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 	{
 		if (!strcmp(&grbl_cmd_str[3], "ON"))
 		{
-			SerialBT.begin(BOARD_NAME);
+			SerialBT.begin(BAUDRATE, SERIAL_8N1);
 			protocol_send_feedback("Bluetooth enabled");
 			bt_on = 1;
 			settings_save(bt_settings_offset, &bt_on, 1);
@@ -288,7 +287,7 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 }
 #endif
 
-bool rp2040_wifi_bt_clientok(void)
+bool rp2040_wifi_clientok(void)
 {
 #ifdef ENABLE_WIFI
 	static uint32_t next_info = 30000;
@@ -381,7 +380,7 @@ void rp2040_wifi_bt_init(void)
 
 	if (bt_on)
 	{
-		SerialBT.begin(BOARD_NAME);
+		SerialBT.begin(BAUDRATE, SERIAL_8N1);
 	}
 #endif
 }
@@ -389,25 +388,22 @@ void rp2040_wifi_bt_init(void)
 void rp2040_wifi_bt_flush(char *buffer)
 {
 #ifdef ENABLE_WIFI
-	if (rp2040_wifi_bt_clientok())
+	if (rp2040_wifi_clientok())
 	{
 		serverClient.println(buffer);
 		serverClient.flush();
 	}
 #endif
 #ifdef ENABLE_BLUETOOTH
-	if (SerialBT.hasClient())
-	{
-		SerialBT.println(buffer);
-		SerialBT.flush();
-	}
+	SerialBT.println(buffer);
+	SerialBT.flush();
 #endif
 }
 
 unsigned char rp2040_wifi_bt_read(void)
 {
 #ifdef ENABLE_WIFI
-	if (rp2040_wifi_bt_clientok())
+	if (rp2040_wifi_clientok())
 	{
 		if (serverClient.available() > 0)
 		{
@@ -417,10 +413,7 @@ unsigned char rp2040_wifi_bt_read(void)
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	if (SerialBT.hasClient())
-	{
 		return (unsigned char)SerialBT.read();
-	}
 #endif
 
 	return (unsigned char)0;
@@ -430,7 +423,7 @@ bool rp2040_wifi_b_rx_ready(void)
 {
 	bool wifiready = false;
 #ifdef ENABLE_WIFI
-	if (rp2040_wifi_bt_clientok())
+	if (rp2040_wifi_clientok())
 	{
 		wifiready = (serverClient.available() > 0);
 	}
@@ -447,7 +440,7 @@ bool rp2040_wifi_b_rx_ready(void)
 void rp2040_wifi_bt_process(void)
 {
 #ifdef ENABLE_WIFI
-	if (rp2040_wifi_bt_clientok())
+	if (rp2040_wifi_clientok())
 	{
 		while (serverClient.available() > 0)
 		{
@@ -459,14 +452,10 @@ void rp2040_wifi_bt_process(void)
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	if (SerialBT.hasClient())
-	{
 		while (SerialBT.available() > 0)
 		{
-			esp_task_wdt_reset();
 			mcu_com_rx_cb((unsigned char)SerialBT.read());
 		}
-	}
 #endif
 }
 
@@ -541,7 +530,7 @@ extern "C"
 	{
 		bool wifiready = false;
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-		if (rp2040_wifi_bt_clientok())
+		if (rp2040_wifi_clientok())
 		{
 			wifiready = (rp2040_wifi_b_rx_ready() > 0);
 		}

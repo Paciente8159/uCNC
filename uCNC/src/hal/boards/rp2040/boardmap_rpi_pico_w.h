@@ -28,10 +28,6 @@ extern "C"
 #define BOARD_NAME "RPi Pico W"
 #endif
 
-#ifndef ENABLE_WIFI
-#define ENABLE_WIFI
-#endif
-
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 
 #include "boardmap_rpi_pico.h"
