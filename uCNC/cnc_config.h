@@ -39,6 +39,10 @@ extern "C"
 // #define ENABLE_WIFI
 #endif
 
+#ifndef ENABLE_BLUETOOTH
+// #define ENABLE_BLUETOOTH
+#endif
+
 	/**
 	 * Choose the board
 	 * Check boards.h for list of available/supported boards

@@ -29,7 +29,7 @@
  *
  * **/
 
-#ifdef ENABLE_WIFI
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef WIFI_SSID_MAX_LEN
 #define WIFI_SSID_MAX_LEN 32
 #endif
@@ -40,6 +40,14 @@
 
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, WIFI_PASS_MAX_LEN)
 
+#ifdef ENABLE_BLUETOOTH
+#include <SerialBT.h>
+
+uint8_t bt_on;
+uint16_t bt_settings_offset;
+#endif
+
+#ifdef ENABLE_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
@@ -75,6 +83,7 @@ typedef struct
 
 uint16_t wifi_settings_offset;
 wifi_settings_t wifi_settings;
+#endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
@@ -98,6 +107,31 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 		}
 	}
 
+#ifdef ENABLE_BLUETOOTH
+	if (!strncmp(grbl_cmd_str, "BTH", 3))
+	{
+		if (!strcmp(&grbl_cmd_str[3], "ON"))
+		{
+			SerialBT.begin(BAUDRATE, SERIAL_8N1);
+			protocol_send_feedback("Bluetooth enabled");
+			bt_on = 1;
+			settings_save(bt_settings_offset, &bt_on, 1);
+
+			return STATUS_OK;
+		}
+
+		if (!strcmp(&grbl_cmd_str[3], "OFF"))
+		{
+			SerialBT.end();
+			protocol_send_feedback("Bluetooth disabled");
+			bt_on = 0;
+			settings_save(bt_settings_offset, &bt_on, 1);
+
+			return STATUS_OK;
+		}
+	}
+#endif
+#ifdef ENABLE_WIFI
 	if (!strncmp(grbl_cmd_str, "WIFI", 4))
 	{
 		if (!strcmp(&grbl_cmd_str[4], "ON"))
@@ -248,12 +282,14 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 			return STATUS_OK;
 		}
 	}
+#endif
 	return STATUS_INVALID_STATEMENT;
 }
 #endif
 
 bool rp2040_wifi_clientok(void)
 {
+#ifdef ENABLE_WIFI
 	static uint32_t next_info = 30000;
 	static bool connected = false;
 	char str[TX_BUFFER_SIZE];
@@ -305,11 +341,13 @@ bool rp2040_wifi_clientok(void)
 			return true;
 		}
 	}
+#endif
 	return false;
 }
 
-void rp2040_wifi_init(void)
+void rp2040_wifi_bt_init(void)
 {
+#ifdef ENABLE_WIFI
 	wifi_settings = {0};
 	memcpy(wifi_settings.ssid, BOARD_NAME, strlen(BOARD_NAME));
 	memcpy(wifi_settings.pass, WIFI_PASS, strlen(WIFI_PASS));
@@ -331,19 +369,40 @@ void rp2040_wifi_init(void)
 	server.setNoDelay(true);
 	httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 	httpServer.begin();
+#endif
+#ifdef ENABLE_BLUETOOTH
+	bt_settings_offset = settings_register_external_setting(1);
+	if (settings_load(bt_settings_offset, &bt_on, 1))
+	{
+		settings_erase(bt_settings_offset, 1);
+		bt_on = 0;
+	}
+
+	if (bt_on)
+	{
+		SerialBT.begin(BAUDRATE, SERIAL_8N1);
+	}
+#endif
 }
 
-void rp2040_wifi_flush(char *buffer)
+void rp2040_wifi_bt_flush(char *buffer)
 {
+#ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		serverClient.println(buffer);
 		serverClient.flush();
 	}
+#endif
+#ifdef ENABLE_BLUETOOTH
+	SerialBT.println(buffer);
+	SerialBT.flush();
+#endif
 }
 
-unsigned char rp2040_wifi_read(void)
+unsigned char rp2040_wifi_bt_read(void)
 {
+#ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		if (serverClient.available() > 0)
@@ -351,23 +410,36 @@ unsigned char rp2040_wifi_read(void)
 			return (unsigned char)serverClient.read();
 		}
 	}
+#endif
+
+#ifdef ENABLE_BLUETOOTH
+		return (unsigned char)SerialBT.read();
+#endif
 
 	return (unsigned char)0;
 }
 
-bool rp2040_wifi_rx_ready(void)
+bool rp2040_wifi_b_rx_ready(void)
 {
 	bool wifiready = false;
+#ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		wifiready = (serverClient.available() > 0);
 	}
+#endif
 
-	return wifiready;
+	bool btready = false;
+#ifdef ENABLE_BLUETOOTH
+	btready = (SerialBT.available() > 0);
+#endif
+
+	return (wifiready || btready);
 }
 
-void rp2040_wifi_process(void)
+void rp2040_wifi_bt_process(void)
 {
+#ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		while (serverClient.available() > 0)
@@ -377,6 +449,14 @@ void rp2040_wifi_process(void)
 	}
 
 	httpServer.handleClient();
+#endif
+
+#ifdef ENABLE_BLUETOOTH
+		while (SerialBT.available() > 0)
+		{
+			mcu_com_rx_cb((unsigned char)SerialBT.read());
+		}
+#endif
 }
 
 #endif
@@ -386,7 +466,7 @@ void rp2040_wifi_process(void)
 #endif
 
 static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
-	static uint8_t rp2040_tx_buffer_counter;
+static uint8_t rp2040_tx_buffer_counter;
 
 extern "C"
 {
@@ -400,8 +480,8 @@ extern "C"
 		COM_UART.setRX(RX_BIT);
 		COM_UART.begin(baud);
 #endif
-#ifdef ENABLE_WIFI
-		rp2040_wifi_init();
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+		rp2040_wifi_bt_init();
 #endif
 		rp2040_tx_buffer_counter = 0;
 	}
@@ -416,8 +496,8 @@ extern "C"
 		COM_UART.println(rp2040_tx_buffer);
 		COM_UART.flush();
 #endif
-#ifdef ENABLE_WIFI
-		rp2040_wifi_flush(rp2040_tx_buffer);
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+		rp2040_wifi_bt_flush(rp2040_tx_buffer);
 #endif
 		rp2040_tx_buffer_counter = 0;
 	}
@@ -449,10 +529,10 @@ extern "C"
 	bool rp2040_uart_rx_ready(void)
 	{
 		bool wifiready = false;
-#ifdef ENABLE_WIFI
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		if (rp2040_wifi_clientok())
 		{
-			wifiready = (rp2040_wifi_rx_ready() > 0);
+			wifiready = (rp2040_wifi_b_rx_ready() > 0);
 		}
 #endif
 		return ((Serial.available() > 0) || wifiready);
@@ -479,8 +559,8 @@ extern "C"
 		}
 #endif
 
-#ifdef ENABLE_WIFI
-		rp2040_wifi_process();
+#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+		rp2040_wifi_bt_process();
 #endif
 	}
 }
