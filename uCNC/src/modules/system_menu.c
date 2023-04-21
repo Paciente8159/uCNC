@@ -21,10 +21,14 @@
 #define MENU_RENDER 1
 
 #ifdef ENABLE_SYSTEM_MENU
-DECL_MENU_ACTION(hold, "Hold", system_menu_rt_command, CMD_CODE_FEED_HOLD);
-DECL_MENU_ACTION(resume, "Resume", system_menu_rt_command, RT_CMD_CYCLE_START);
-DECL_MENU_ACTION(home, "Home", system_menu_serial_command, "$H");
-DECL_MENU(system_menu_main, "Main menu", NULL, 5, &hold, &resume, &home);
+
+DECL_MENU_ACTION(hold, "Hold", system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
+DECL_MENU_ACTION(resume, "Resume", system_menu_action_rt_cmd, CONST_VARG(RT_CMD_CYCLE_START));
+DECL_MENU_ACTION(home, "Home", system_menu_action_serial_cmd, "$H");
+//DECL_MENU_GOTO(settings, "Settings", &settings_menu);
+DECL_MENU(system_menu_main, 1, 0, "Main menu", 3, &hold, &resume, &home);
+
+DECL_MENU(settings_menu, 2, 1, "Settings menu", &system_menu_main, 0);
 
 system_menu_t g_system_menu;
 #endif
@@ -125,19 +129,19 @@ void system_menu_action(uint8_t action)
  * **/
 
 // calls a new menu
-void system_menu_goto(void *cmd)
+void system_menu_action_goto(void *cmd)
 {
     g_system_menu.active_menu = cmd;
     g_system_menu.current_index = 0;
     g_system_menu.flags |= MENU_RENDER;
 }
 
-void system_menu_rt_command(void *cmd)
+void system_menu_action_rt_cmd(void *cmd)
 {
     cnc_call_rt_command((uint8_t)cmd);
 }
 
-void system_menu_serial_command(void *cmd)
+void system_menu_action_serial_cmd(void *cmd)
 {
     serial_inject_cmd((const char *)cmd, false);
 }

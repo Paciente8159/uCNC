@@ -36,6 +36,8 @@ extern "C"
 #define SYSTEM_MENU_ACTION_NEXT 2
 #define SYSTEM_MENU_ACTION_PREV 3
 
+#define CONST_VARG(X) ((void *)X)
+
     typedef struct system_menu_entry_
     {
         char menu_name[SYSTEM_MENU_MAX_STR_LEN];
@@ -44,14 +46,15 @@ extern "C"
         void *render_arg;
         void (*action)(void *);
         void *action_arg;
-        struct system_menu_walker_ *parent;
     } system_menu_item_t;
 
     typedef struct system_menu_walker_
     {
+        uint8_t menu_id;
+        uint8_t parent_id;
+        const char *label;
         uint8_t item_count;
         system_menu_item_t **items;
-        struct system_menu_walker_ *parent;
         struct system_menu_walker_ *extended;
     } system_menu_walker_t;
 
@@ -62,17 +65,16 @@ extern "C"
         uint8_t current_index;
     } system_menu_t;
 
-#define DECL_MENU_ENTRY(name, strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg, parent_menu) static const system_menu_item_t name __rom__ = {strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg, parent_menu}
+#define DECL_MENU_ENTRY(name, strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg) static const system_menu_item_t name __rom__ = {strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg}
 
 /**
  * Helper macros
  * **/
-#define DECL_MENU_LABEL(name, strvalue) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, NULL, NULL, NULL)
-#define DECL_MENU_GOTO(name, strvalue, menu) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, NULL, NULL, menu)
-#define DECL_MENU_ACTION(name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg, NULL)
-#define DECL_MENU(name, strvalue, parent_menu, count, ...) \
-    DECL_MENU_LABEL(name##_label, strvalue);               \
-    static system_menu_walker_t name = {count, {&name##_label, __VA_ARGS__}, parent_menu, NULL}
+#define DECL_MENU_LABEL(name, strvalue) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, NULL, NULL)
+#define DECL_MENU_GOTO(name, strvalue, menu) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
+#define DECL_MENU_ACTION(name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
+
+#define DECL_MENU(name, id, parent_id, label, count, ...) static system_menu_walker_t name = {id, parent_id, label, count, {__VA_ARGS__}, NULL}
 
 #define MENU_WALKER(walker, item) for (system_menu_walker_t *item = walker; item != NULL; item = item->extended)
 #define MENU_ITEM_WALKER(walker, iterator) for (uint8_t iterator = 0; iterator < walker->item_count; iterator++)
@@ -82,19 +84,26 @@ extern "C"
 #endif
 
     void system_menu_append(system_menu_walker_t *parent_menu, system_menu_walker_t *extended_menu);
-    void system_menu_render_header(system_menu_walker_t *menu);
-    void system_menu_render_content(system_menu_walker_t *menu);
-    void system_menu_render_footer(system_menu_walker_t *menu);
+    // void system_menu_render_header(system_menu_walker_t *menu);
+    // void system_menu_render_content(system_menu_walker_t *menu);
+    // void system_menu_render_footer(system_menu_walker_t *menu);
     void system_menu_render(void);
     void system_menu_reset(void);
     void system_menu_action(uint8_t action);
 
     /**
-     * Helper µCNC commands callbacks
+     * Helper µCNC action callbacks
      * **/
-    void system_menu_goto(void *cmd);
-    void system_menu_rt_command(void *cmd);
-    void system_menu_serial_command(void *cmd);
+    void system_menu_action_goto(void *cmd);
+    void system_menu_action_rt_cmd(void *cmd);
+    void system_menu_action_serial_cmd(void *cmd);
+
+    /**
+     * Helper µCNC render callbacks
+     * **/
+    void system_menu_label_var(void *cmd);
+    void system_menu_action_rt_cmd(void *cmd);
+    void system_menu_action_serial_cmd(void *cmd);
 
 #ifdef __cplusplus
 }

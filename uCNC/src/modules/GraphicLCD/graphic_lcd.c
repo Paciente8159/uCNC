@@ -110,38 +110,38 @@ void graphic_lcd_system_draw_menu(void)
 
 	// u8g2_DrawStr(&u8g2, 1, y, hold_menu.menu_name);
 	uint8_t item_index = 0;
-	MENU_WALK(graphic_lcd_menu_walker, walker_ptr)
-	{
-		for (uint8_t item_index = 0; item_index < walker_ptr->item_count; item_index++)
-		{
-			rom_memcpy(&entry, walker_ptr->item[item_index], sizeof(system_menu_item_t));
-			if (entry.id == display_screen.current_menu)
-			{
-				if (entry.drawmenu)
-				{
-					entry.drawmenu(NULL);
-					return;
-				}
+	// MENU_WALK(graphic_lcd_menu_walker, walker_ptr)
+	// {
+	// 	for (uint8_t item_index = 0; item_index < walker_ptr->item_count; item_index++)
+	// 	{
+	// 		rom_memcpy(&entry, walker_ptr->item[item_index], sizeof(system_menu_item_t));
+	// 		if (entry.id == display_screen.current_menu)
+	// 		{
+	// 			if (entry.drawmenu)
+	// 			{
+	// 				entry.drawmenu(NULL);
+	// 				return;
+	// 			}
 
-				u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), 0, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
-			}
+	// 			u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), 0, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
+	// 		}
 
-			if (entry.parent_id == display_screen.current_menu)
-			{
-				if (display_screen.current_menu_item == item_index)
-				{
-					u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name) + (TEXT_WIDTH(entry.menu_name) / 2), y, U8G2_BTN_INV | U8G2_BTN_HCENTER, LCDWIDTH, 0, 0, entry.menu_name);
-				}
-				else
-				{
-					u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), y, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
-				}
+	// 		if (entry.parent_id == display_screen.current_menu)
+	// 		{
+	// 			if (display_screen.current_menu_item == item_index)
+	// 			{
+	// 				u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name) + (TEXT_WIDTH(entry.menu_name) / 2), y, U8G2_BTN_INV | U8G2_BTN_HCENTER, LCDWIDTH, 0, 0, entry.menu_name);
+	// 			}
+	// 			else
+	// 			{
+	// 				u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), y, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
+	// 			}
 
-				y += FONTHEIGHT;
-				item_index++;
-			}
-		}
-	}
+	// 			y += FONTHEIGHT;
+	// 			item_index++;
+	// 		}
+	// 	}
+	// }
 }
 
 /**
@@ -746,7 +746,7 @@ CREATE_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
 
 DECL_MODULE(graphic_lcd)
 {
-	graphic_lcd_menu_walker = &main_menu;
+	// graphic_lcd_menu_walker = &main_menu;
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
