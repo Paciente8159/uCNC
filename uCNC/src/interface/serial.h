@@ -51,7 +51,7 @@ extern "C"
 	unsigned char serial_getc(void);
 	void serial_ungetc(void);
 	unsigned char serial_peek(void);
-	void serial_inject_cmd(const char *__s);
+	void serial_inject_cmd(const char *__s, bool in_rom);
 	void serial_restore_line(void);
 	void serial_rx_clear(void);
 	void serial_select(uint8_t source);

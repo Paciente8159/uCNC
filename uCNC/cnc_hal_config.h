@@ -593,6 +593,16 @@ extern "C"
 #define STEPPER7_DIGIPOT_VALUE 0
 #endif
 
+/**
+ * Enable System Menu for displays
+ * This enables Menu system manager to generate the interfaces for displays controlled by µCNC
+ * **/
+#define ENABLE_SYSTEM_MENU
+// override the default max string length for each menu entry
+#ifndef SYSTEM_MENU_MAX_STR_LEN
+// #define SYSTEM_MENU_MAX_STR_LEN 32
+#endif
+
 #ifdef __cplusplus
 }
 #endif

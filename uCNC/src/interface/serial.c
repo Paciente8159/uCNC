@@ -166,13 +166,13 @@ unsigned char serial_peek(void)
 	return EOL;
 }
 
-void serial_inject_cmd(const char *__s)
+void serial_inject_cmd(const char *__s, bool in_rom)
 {
-	unsigned char c = (unsigned char)rom_strptr(__s++);
+	unsigned char c = (unsigned char)(in_rom) ? rom_strptr(__s++) : __s++;
 	do
 	{
 		mcu_com_rx_cb(c);
-		c = (unsigned char)rom_strptr(__s++);
+		c = (unsigned char)(in_rom) ? rom_strptr(__s++) : __s++;
 	} while (c != 0);
 }
 
