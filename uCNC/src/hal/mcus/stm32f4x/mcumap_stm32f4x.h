@@ -37,13 +37,9 @@ extern "C"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 84000000UL
+#define F_CPU SystemCoreClock
 #endif
 
-// defines the value of the external crystal (by default sets to 25MHZ like the one in the blackpill)
-#ifndef EXTERNAL_XTAL_MHZ
-#define EXTERNAL_XTAL_MHZ 25
-#endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 100000

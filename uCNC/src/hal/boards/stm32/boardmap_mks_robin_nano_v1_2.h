@@ -28,18 +28,6 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
-#ifndef STM32F103xE
-#define STM32F103xE
-#endif
-
-#ifndef STM32F10X_HD
-#define STM32F10X_HD
-#endif
-
-#ifndef F_CPU
-#define F_CPU 72000000UL
-#endif
-
 #ifndef FLASH_SIZE
 #define FLASH_SIZE 0x80000UL
 #endif

@@ -28,16 +28,8 @@ extern "C"
 #define BOARD_NAME "STM32 Bluepill"
 #endif
 
-#ifndef STM32F103xB
-#define STM32F103xB
-#endif
-
 #ifndef FLASH_SIZE
 #define FLASH_SIZE 0x10000
-#endif
-
-#ifndef F_CPU
-#define F_CPU 72000000UL
 #endif
 
 // Setup step pins

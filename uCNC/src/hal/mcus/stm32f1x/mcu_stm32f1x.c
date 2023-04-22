@@ -29,7 +29,7 @@
 #endif
 
 #ifndef FLASH_SIZE
-#error "Device FLASH size undefined"
+#error "Device FLASH size undefined. Please define FLASH_SIZE."
 #endif
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
@@ -44,6 +44,12 @@
 #define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
+#endif
+
+#ifdef CUSTOM_CLOCKS_INIT
+#ifndef EXTERNAL_XTAL_MHZ
+#error "With CUSTOM_CLOCKS_INIT option enabled you must define EXTERNAL_XTAL_MHZ"
+#endif
 #endif
 
 static uint8_t stm32_flash_page[FLASH_EEPROM_SIZE];
@@ -350,7 +356,7 @@ static void mcu_usart_init(void);
 
 void mcu_clocks_init()
 {
-#ifndef FRAMEWORK_CLOCKS_INIT
+#ifdef CUSTOM_CLOCKS_INIT
 	/* Reset the RCC clock configuration to the default reset state */
 	/* Set HSION bit */
 	RCC->CR |= (uint32_t)0x00000001;

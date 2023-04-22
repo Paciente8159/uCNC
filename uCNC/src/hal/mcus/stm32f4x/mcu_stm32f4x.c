@@ -30,7 +30,7 @@
 #endif
 
 #ifndef FLASH_SIZE
-#error "Device FLASH size undefined"
+#error "Device FLASH size undefined. Please define FLASH_SIZE."
 #endif
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
@@ -330,7 +330,7 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#ifndef FRAMEWORK_CLOCKS_INIT
+#ifdef CUSTOM_CLOCKS_INIT
 #if (F_CPU == 84000000)
 #define PLLN 336
 #define PLLP 1
@@ -342,10 +342,13 @@ static void mcu_usart_init(void);
 #else
 #error "Running the CPU at this frequency might lead to unexpected behaviour"
 #endif
+#ifndef EXTERNAL_XTAL_MHZ
+#error "With CUSTOM_CLOCKS_INIT option enabled you must define EXTERNAL_XTAL_MHZ"
+#endif
 #endif
 void mcu_clocks_init()
 {
-#ifndef FRAMEWORK_CLOCKS_INIT
+#ifdef CUSTOM_CLOCKS_INIT
 	// enable power clock
 	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
 	// set voltage regulator scale 2
