@@ -52,6 +52,8 @@
 #endif
 #endif
 
+#define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
+#define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
 static uint8_t stm32_flash_page[FLASH_EEPROM_SIZE];
 static uint16_t stm32_flash_current_page;
 static bool stm32_flash_modified;
@@ -707,7 +709,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
 		while (counter--)
 		{
-			*ptr = *eeprom;
+			READ_FLASH(ptr,eeprom);
 			eeprom++;
 			ptr++;
 		}
@@ -775,7 +777,7 @@ void mcu_eeprom_flush()
 			}
 			FLASH->CR = 0;
 			FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
-			*eeprom = *ptr;
+			WRITE_FLASH(eeprom, ptr);
 			while (FLASH->SR & FLASH_SR_BSY)
 				; // wait while busy
 			mcu_enable_global_isr();
