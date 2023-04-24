@@ -65,6 +65,7 @@ extern "C"
 // Setup com pins
 #define RX_BIT 3
 #define TX_BIT 1
+#define RX_PULLUP
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
 

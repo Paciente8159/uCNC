@@ -32,6 +32,11 @@ extern bool rp2040_uart_rx_ready(void);
 extern bool rp2040_uart_tx_ready(void);
 extern void rp2040_uart_process(void);
 
+extern void rp2040_eeprom_init(int size);
+extern uint8_t rp2040_eeprom_read(uint16_t address);
+extern void rp2040_eeprom_write(uint16_t address, uint8_t value);
+extern void rp2040_eeprom_flush(void);
+
 uint8_t rp2040_pwm[16];
 
 void mcu_din_isr(void)

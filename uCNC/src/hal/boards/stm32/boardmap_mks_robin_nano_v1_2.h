@@ -37,9 +37,6 @@ extern "C"
 #undef USB_VCP
 #endif
 
-// Setup COM pins
-#define UART_PORT 3
-
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
 #define STEP0_PORT E // assigns STEP0 port
@@ -97,11 +94,13 @@ extern "C"
 #define PROBE_PORT A
 #define PROBE_ISR
 
+// Setup COM pins
 #define UART_PORT 3
 #define TX_BIT 10
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
+#define RX_PULLUP
 
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin

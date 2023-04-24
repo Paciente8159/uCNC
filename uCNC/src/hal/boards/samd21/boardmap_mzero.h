@@ -88,6 +88,7 @@ extern "C"
 #define TX_PORT A
 #define RX_BIT 11
 #define RX_PORT A
+#define RX_PULLUP
 // set COM number. By default SERCOM2 if not set. Arduino IDE already uses SERCOM0 and SERCOM1
 // #define UART_PORT 2
 
