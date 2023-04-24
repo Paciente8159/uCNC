@@ -132,7 +132,7 @@ void servo_timer_init(void)
 	RCC->SERVO_TIMER_ENREG |= SERVO_TIMER_APB;
 	SERVO_TIMER_REG->CR1 = 0;
 	SERVO_TIMER_REG->DIER = 0;
-	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
+	SERVO_TIMER_REG->PSC = (SERVO_CLOCK / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
 	SERVO_TIMER_REG->SR &= ~0x01;
@@ -334,79 +334,9 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#ifdef CUSTOM_CLOCKS_INIT
-#if (F_CPU == 84000000)
-#define PLLN 336
-#define PLLP 1
-#define PLLQ 7
-#elif (F_CPU == 168000000)
-#define PLLN 336
-#define PLLP 0
-#define PLLQ 7
-#else
-#error "Running the CPU at this frequency might lead to unexpected behaviour"
-#endif
-#ifndef EXTERNAL_XTAL_MHZ
-#error "With CUSTOM_CLOCKS_INIT option enabled you must define EXTERNAL_XTAL_MHZ"
-#endif
-#endif
 void mcu_clocks_init()
 {
-#ifdef CUSTOM_CLOCKS_INIT
-	// enable power clock
-	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
-	// set voltage regulator scale 2
-	SETFLAG(PWR->CR, (0x02UL << PWR_CR_VOS_Pos));
-
-	FLASH->ACR = (FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_LATENCY_2WS);
-
-	/* Enable HSE */
-	SETFLAG(RCC->CR, RCC_CR_HSEON);
-	CLEARFLAG(RCC->CR, RCC_CR_HSEBYP);
-	/* Wait till HSE is ready */
-	while (!(RCC->CR & RCC_CR_HSERDY))
-		;
-
-	RCC->PLLCFGR = 0;
-
-	// Main PLL clock can be configured by the following formula:
-	// choose HSI or HSE as the source:
-	// fVCO = source_clock * (N / M)
-	// Main PLL = fVCO / P
-	// PLL48CLK = fVCO / Q
-	// to make it simple just set M = external crystal
-	// then all others are a fixed value to simplify making
-	// fVCO = 336
-	// Main PLL = fVCO / P = 336/4 = 84MHz
-	// PLL48CLK = fVCO / Q = 336/7 = 48MHz
-	// to run at other speeds different configuration must be applied but the limit for fast AHB is 180Mhz, APB is 90Mhz and slow APB is 45Mhz
-	SETFLAG(RCC->PLLCFGR, (RCC_PLLCFGR_PLLSRC_HSE | (EXTERNAL_XTAL_MHZ << RCC_PLLCFGR_PLLM_Pos) | (PLLN << RCC_PLLCFGR_PLLN_Pos) | (PLLP << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (PLLQ << RCC_PLLCFGR_PLLQ_Pos)));
-	/* Enable PLL */
-	SETFLAG(RCC->CR, RCC_CR_PLLON);
-	/* Wait till PLL is ready */
-	while (!CHECKFLAG(RCC->CR, RCC_CR_PLLRDY))
-		;
-
-	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
-	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
-	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
-	 */
-	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESC | APB1_PRESC));
-
-	/* Select PLL as system clock source */
-	CLEARFLAG(RCC->CFGR, RCC_CFGR_SW);
-	SETFLAG(RCC->CFGR, (0x02UL << RCC_CFGR_SW_Pos));
-	/* Wait till PLL is used as system clock source */
-	while ((RCC->CFGR & RCC_CFGR_SW) != (0x02UL << RCC_CFGR_SW_Pos))
-		;
-
-	SystemCoreClockUpdate();
-#else
-	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
-	RCC->CFGR |= (APB2_PRESC | APB1_PRESC);
-#endif
-
-	// // initialize debugger clock (used by us delay)
+    // initialize debugger clock (used by us delay)
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	{
 		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -647,7 +577,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(TIMER_CLOCK >> 1) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -661,7 +591,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
+	return ((float)TIMER_CLOCK / (float)(((uint32_t)ticks) << (prescaller + 1)));
 }
 
 // starts a constant rate pulse at a given frequency.
@@ -1022,7 +952,7 @@ void MCU_ONESHOT_ISR(void)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+	uint32_t clocks = (uint32_t)((ONESHOT_TIMER_CLOCK / 1000000UL) * timeout);
 	uint32_t presc = 1;
 
 	mcu_timeout_cb = fp;
