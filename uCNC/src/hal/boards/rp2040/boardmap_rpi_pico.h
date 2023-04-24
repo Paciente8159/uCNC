@@ -73,6 +73,11 @@ extern "C"
 //activity LED
 #define DOUT31_BIT 25
 
+//disable EEPROM emulation
+#ifndef RAM_ONLY_SETTINGS
+#define RAM_ONLY_SETTINGS
+#endif
+
 
 #ifdef __cplusplus
 }
