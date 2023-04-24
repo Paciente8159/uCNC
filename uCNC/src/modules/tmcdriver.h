@@ -24,7 +24,9 @@ extern "C"
 {
 #endif
 
-	void tmcdriver_init(void);
+#include "../module.h"
+
+	DECL_MODULE(tmcdriver);
 
 #ifdef __cplusplus
 }

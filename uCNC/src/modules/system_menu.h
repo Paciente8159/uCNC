@@ -32,6 +32,18 @@ extern "C"
 #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
+#ifndef SYSTEM_MENU_IDLE_TIMEOUT_MS
+#define SYSTEM_MENU_IDLE_TIMEOUT_MS 5000
+#endif
+
+// render flags
+// the higher the bit the higher the priority
+#define SYSTEM_MENU_ALARM 128
+#define SYSTEM_MENU_STARTUP 64
+#define SYSTEM_MENU_IDLE 8
+#define SYSTEM_MENU_RENDER 1
+
+#define SYSTEM_MENU_ACTION_NONE 0
 #define SYSTEM_MENU_ACTION_SELECT 1
 #define SYSTEM_MENU_ACTION_NEXT 2
 #define SYSTEM_MENU_ACTION_PREV 3
@@ -48,23 +60,26 @@ extern "C"
         void *action_arg;
     } system_menu_item_t;
 
-    typedef struct system_menu_walker_
+    typedef struct system_menu_page_
     {
         uint8_t menu_id;
         uint8_t parent_id;
         const char *label;
         uint8_t item_count;
         system_menu_item_t **items;
-        struct system_menu_walker_ *extended;
-    } system_menu_walker_t;
+        struct system_menu_page_ *extended;
+    } system_menu_page_t;
 
     typedef struct system_menu_
     {
         uint8_t flags;
-        system_menu_walker_t *active_menu;
+        uint8_t current_menu;
         uint8_t current_index;
+        system_menu_page_t *menu_entry;
+        uint32_t idle_timeout;
     } system_menu_t;
 
+#define MENU_ENTRY(name) ((system_menu_item_t *)&name)
 #define DECL_MENU_ENTRY(name, strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg) static const system_menu_item_t name __rom__ = {strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg}
 
 /**
@@ -74,22 +89,30 @@ extern "C"
 #define DECL_MENU_GOTO(name, strvalue, menu) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
 #define DECL_MENU_ACTION(name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(name, id, parent_id, label, count, ...) static system_menu_walker_t name = {id, parent_id, label, count, {__VA_ARGS__}, NULL}
+#define DECL_MENU(id, parent_id, label, count, ...) static system_menu_page_t m##id = {id, parent_id, label, count, (system_menu_item_t **){__VA_ARGS__}, NULL}
+#define MENU(id) (&m##id)
 
-#define MENU_WALKER(walker, item) for (system_menu_walker_t *item = walker; item != NULL; item = item->extended)
-#define MENU_ITEM_WALKER(walker, iterator) for (uint8_t iterator = 0; iterator < walker->item_count; iterator++)
+#define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
 
 #ifdef ENABLE_SYSTEM_MENU
     extern system_menu_t g_system_menu;
 #endif
 
-    void system_menu_append(system_menu_walker_t *parent_menu, system_menu_walker_t *extended_menu);
-    // void system_menu_render_header(system_menu_walker_t *menu);
-    // void system_menu_render_content(system_menu_walker_t *menu);
-    // void system_menu_render_footer(system_menu_walker_t *menu);
+	DECL_MODULE(system_menu);
+    void system_menu_append(system_menu_page_t *extended_menu);
     void system_menu_render(void);
     void system_menu_reset(void);
     void system_menu_action(uint8_t action);
+
+    /**
+     * Overridable functions to be implemented for the display to render the system menu
+     * **/
+    void system_menu_render_header(const char *__s);
+    void system_menu_render_content(uint8_t index, const char *__s);
+    void system_menu_render_footer(system_menu_page_t *menu);
+    void system_menu_render_startup(void);
+    void system_menu_render_idle(void);
+    void system_menu_render_alarm(void);
 
     /**
      * Helper µCNC action callbacks

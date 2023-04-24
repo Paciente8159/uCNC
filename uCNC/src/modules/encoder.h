@@ -24,6 +24,7 @@ extern "C"
 {
 #endif
 
+#include "../module.h"
 #include <stdint.h>
 
 #define ENC0 0
@@ -37,7 +38,7 @@ extern "C"
 
 	typedef void (*encoder_index_cb)(void);
 
-	void encoder_init(void);
+	DECL_MODULE(encoder);
 	int32_t encoder_get_position(uint8_t i);
 	void encoder_print_values(void);
 	void encoder_reset_position(uint8_t i, int32_t position);

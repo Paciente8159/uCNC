@@ -25,17 +25,17 @@
 #include "modules/pid.h"
 
 /**
- * 
+ *
  * this is the place to declare all parser extension registration calls
  * Example: LOAD_MODULE(m42);
- * 
+ *
  **/
 static FORCEINLINE void load_modules(void)
 {
-	// PLACE YOUR MODULES HERE
-	#ifdef LOAD_MODULES_OVERRIDE
+// PLACE YOUR MODULES HERE
+#ifdef LOAD_MODULES_OVERRIDE
 	LOAD_MODULES_OVERRIDE();
-	#endif
+#endif
 }
 
 void mod_init(void)
@@ -58,6 +58,10 @@ void mod_init(void)
 
 #ifdef ENABLE_TMC_DRIVERS
 	LOAD_MODULE(tmcdriver);
+#endif
+
+#ifdef ENABLE_SYSTEM_MENU
+	LOAD_MODULE(system_menu);
 #endif
 
 	load_modules();

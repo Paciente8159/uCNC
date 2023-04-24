@@ -78,7 +78,7 @@ typedef struct
 } screen_options_t;
 
 static screen_options_t display_screen;
-static system_menu_walker_t *graphic_lcd_menu_walker;
+static system_menu_page_t *graphic_lcd_menu_walker;
 
 static bool graphic_lcd_current_menu_active;
 
@@ -90,13 +90,13 @@ void graphic_lcd_system_draw_menu(void)
 	switch (u8x8_GetMenuEvent(u8g2_GetU8x8(&u8g2)))
 	{
 	case U8X8_MSG_GPIO_MENU_SELECT:
-
+		system_menu_action(SYSTEM_MENU_ACTION_SELECT);
 		break;
 	case U8X8_MSG_GPIO_MENU_NEXT:
-		display_screen.current_menu_item++;
+		system_menu_action(SYSTEM_MENU_ACTION_NEXT);
 		break;
 	case U8X8_MSG_GPIO_MENU_PREV:
-		display_screen.current_menu_item--;
+		system_menu_action(SYSTEM_MENU_ACTION_PREV);
 		break;
 	}
 

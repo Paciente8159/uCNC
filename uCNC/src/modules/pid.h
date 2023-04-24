@@ -24,7 +24,9 @@ extern "C"
 {
 #endif
 
-	void pid_init(void);
+#include "../module.h"
+
+	DECL_MODULE(pid);
 
 #ifdef __cplusplus
 }

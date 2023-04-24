@@ -24,7 +24,9 @@ extern "C"
 {
 #endif
 
-	void digimstep_init(void);
+#include "../module.h"
+
+	DECL_MODULE(digimstep);
 
 #ifdef __cplusplus
 }

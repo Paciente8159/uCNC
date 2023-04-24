@@ -18,35 +18,49 @@
 
 #include "system_menu.h"
 
-#define MENU_RENDER 1
-
 #ifdef ENABLE_SYSTEM_MENU
 
 DECL_MENU_ACTION(hold, "Hold", system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
 DECL_MENU_ACTION(resume, "Resume", system_menu_action_rt_cmd, CONST_VARG(RT_CMD_CYCLE_START));
 DECL_MENU_ACTION(home, "Home", system_menu_action_serial_cmd, "$H");
-//DECL_MENU_GOTO(settings, "Settings", &settings_menu);
-DECL_MENU(system_menu_main, 1, 0, "Main menu", 3, &hold, &resume, &home);
-
-DECL_MENU(settings_menu, 2, 1, "Settings menu", &system_menu_main, 0);
+// DECL_MENU_GOTO(settings, "Settings", &settings_menu);
+DECL_MENU(1, 0, "Main menu", 3, &hold, &resume, &home);
+DECL_MENU(2, 1, "Settings menu", 0, NULL);
 
 system_menu_t g_system_menu;
-#endif
 
-static system_menu_item_t *system_menu_get_item(system_menu_walker_t *menu, uint8_t index)
+void system_menu_init(void)
 {
-    MENU_WALKER(menu, menu_item)
+    g_system_menu.current_menu = 0;
+    g_system_menu.current_index = 0;
+    g_system_menu.menu_entry = NULL;
+    g_system_menu.flags = SYSTEM_MENU_RENDER;
+    system_menu_append(MENU(1));
+    system_menu_append(MENU(2));
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    ADD_EVENT_LISTENER(cnc_dotasks, system_menu_render);
+    ADD_EVENT_LISTENER(cnc_reset, system_menu_render);
+#endif
+}
+
+static system_menu_item_t *system_menu_get_item(uint8_t menu_id, uint8_t index)
+{
+    MENU_LOOP(g_system_menu.menu_entry, menu_item)
     {
-        // in the item group
-        if (index < menu_item->item_count)
+        if (menu_item->menu_id == menu_id)
         {
-            return menu_item->items[index];
-        }
-        else
-        {
-            // must be in one extended menu
-            index - menu_item->item_count;
-            // get the next set of extended menu entries
+            // in the item group
+            if (index < menu_item->item_count)
+            {
+                return menu_item->items[index];
+            }
+            else
+            {
+                // must be in one extended menu
+                index - menu_item->item_count;
+                // get the next set of extended menu entries
+            }
         }
     }
 
@@ -55,14 +69,9 @@ static system_menu_item_t *system_menu_get_item(system_menu_walker_t *menu, uint
     return NULL;
 }
 
-void system_menu_append(system_menu_walker_t *parent_menu, system_menu_walker_t *extended_menu)
+void system_menu_append(system_menu_page_t *extended_menu)
 {
-    if (!parent_menu)
-    {
-        parent_menu = &system_menu_main;
-    }
-
-    system_menu_walker_t *ptr = parent_menu;
+    system_menu_page_t *ptr = g_system_menu.menu_entry;
 
     while (ptr->extended != NULL)
     {
@@ -74,28 +83,112 @@ void system_menu_append(system_menu_walker_t *parent_menu, system_menu_walker_t 
 
 void system_menu_reset(void)
 {
-    g_system_menu.active_menu = NULL;
+    g_system_menu.current_menu = 0;
     g_system_menu.current_index = 0;
-    g_system_menu.flags = MENU_RENDER;
+    g_system_menu.flags = SYSTEM_MENU_STARTUP | SYSTEM_MENU_RENDER;
+    g_system_menu.idle_timeout = mcu_millis() + SYSTEM_MENU_IDLE_TIMEOUT_MS;
+}
+
+void system_menu_render(void)
+{
+    uint8_t renderflags = g_system_menu.flags;
+    g_system_menu.flags &= ~SYSTEM_MENU_RENDER;
+
+    if(g_system_menu.idle_timeout < mcu_millis())
+
+    // the render flag is active
+    if (renderflags & SYSTEM_MENU_RENDER)
+    {
+        if (renderflags & SYSTEM_MENU_ALARM)
+        {
+            system_menu_render_startup();
+            return;
+        }
+
+        if (renderflags & SYSTEM_MENU_STARTUP)
+        {
+            system_menu_render_startup();
+            return;
+        }
+
+        if (renderflags & SYSTEM_MENU_IDLE)
+        {
+            system_menu_render_idle();
+            return;
+        }
+
+        if (!g_system_menu.current_menu)
+        {
+            // nothing to render
+            return;
+        }
+        else
+        {
+            MENU_LOOP(g_system_menu.menu_entry, menu_item)
+            {
+                if (menu_item->menu_id == g_system_menu.current_menu)
+                {
+                    system_menu_render_header(menu_item->label);
+                    break;
+                }
+            }
+
+            MENU_LOOP(g_system_menu.menu_entry, menu_item)
+            {
+                if (menu_item->menu_id == g_system_menu.current_menu)
+                {
+                    uint8_t item_index = 0;
+                    for (uint8_t i = 0; i < menu_item->item_count; i++)
+                    {
+                        if (menu_item->items[i]->render)
+                        {
+                            menu_item->items[i]->render(menu_item->items[i]->render_arg);
+                        }
+                        else
+                        {
+                            system_menu_render_content(item_index + i, menu_item->label);
+                        }
+                    }
+                    item_index += menu_item->item_count;
+                }
+            }
+        }
+    }
 }
 
 void system_menu_action(uint8_t action)
 {
+    static uint32_t last_action_time = 0;
+    uint32_t current_time = mcu_millis();
+
+    bool is_idle = ((current_time - last_action_time) > SYSTEM_MENU_IDLE_TIMEOUT_MS);
+
+    if (action)
+    {
+        is_idle = false;
+        last_action_time = current_time;
+    }
+    else if (is_idle)
+    {
+        return;
+    }
+
     switch (action)
     {
     case SYSTEM_MENU_ACTION_SELECT:
-        if (!g_system_menu.active_menu)
+        if (!g_system_menu.current_menu)
         {
-            g_system_menu.active_menu = &system_menu_main;
+            // enter main menu
+            g_system_menu.current_menu = 1;
             g_system_menu.current_index = 0;
         }
         else
         {
             // if inside a menu get get the arg
-            system_menu_item_t *next = system_menu_get_menu_item(g_system_menu.active_menu, g_system_menu.current_index);
+            system_menu_item_t *next = system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
             if (next)
             {
-                // found custom
+                // found custom action and execute
                 if (next->action)
                 {
                     next->action(next->action_arg);
@@ -106,7 +199,7 @@ void system_menu_action(uint8_t action)
             {
                 // something went wrong (menu not found)
                 // return to home screen
-                g_system_menu.active_menu = NULL;
+                g_system_menu.current_menu = 0;
                 g_system_menu.current_index = 0;
             }
         }
@@ -118,10 +211,11 @@ void system_menu_action(uint8_t action)
         g_system_menu.current_index--;
         break;
     default:
-        break;
+        // no new action don't render
+        return;
     }
 
-    g_system_menu.flags |= MENU_RENDER;
+    g_system_menu.flags |= SYSTEM_MENU_RENDER;
 }
 
 /**
@@ -131,9 +225,9 @@ void system_menu_action(uint8_t action)
 // calls a new menu
 void system_menu_action_goto(void *cmd)
 {
-    g_system_menu.active_menu = cmd;
+    g_system_menu.current_menu = (uint8_t)cmd;
     g_system_menu.current_index = 0;
-    g_system_menu.flags |= MENU_RENDER;
+    g_system_menu.flags |= SYSTEM_MENU_RENDER;
 }
 
 void system_menu_action_rt_cmd(void *cmd)
@@ -145,3 +239,33 @@ void system_menu_action_serial_cmd(void *cmd)
 {
     serial_inject_cmd((const char *)cmd, false);
 }
+
+void __attribute__((weak)) system_menu_render_header(const char *__s)
+{
+    protocol_send_string(__romstr__("*----------*"));
+    protocol_send_string(MSG_EOL);
+    protocol_send_string(__s);
+    protocol_send_string(MSG_EOL);
+    protocol_send_string(__romstr__("*----------*"));
+    protocol_send_string(MSG_EOL);
+}
+
+void __attribute__((weak)) system_menu_render_content(uint8_t index, const char *__s)
+{
+    protocol_send_string(__s);
+    protocol_send_string(MSG_EOL);
+}
+
+void __attribute__((weak)) system_menu_render_startup(void)
+{
+}
+
+void __attribute__((weak)) system_menu_render_idle(void)
+{
+}
+
+void __attribute__((weak)) system_menu_render_alarm(void)
+{
+}
+
+#endif
