@@ -100,6 +100,7 @@ extern "C"
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
+#define RX_PULLUP
 
 #define USB_DM_BIT 11
 #define USB_DM_PORT A
