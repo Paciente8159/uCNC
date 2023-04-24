@@ -795,7 +795,6 @@ static void mcu_eeprom_erase(void)
 	while (FLASH->SR & FLASH_SR_BSY)
 		; // wait while busy
 	FLASH->CR = 0;
-	mcu_putc('e');
 }
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
@@ -836,7 +835,6 @@ void mcu_eeprom_flush()
 		uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
 		while (counter--)
 		{
-			mcu_putc('w');
 			while (FLASH->SR & FLASH_SR_BSY)
 				; // wait while busy
 			mcu_disable_global_isr();
