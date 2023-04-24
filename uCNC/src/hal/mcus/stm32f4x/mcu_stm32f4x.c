@@ -34,22 +34,26 @@
 #endif
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
+#define FLASH_EEPROM_SIZE_WORD (FLASH_EEPROM_SIZE >> 2)
+#define FLASH_EEPROM_SIZE_WORD_ALIGNED (FLASH_EEPROM_SIZE_WORD << 2)
 
-#if (FLASH_BANK1_END <= 0x0801FFFFUL)
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 10) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 10) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
-#else
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 11) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 11) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
-#endif
+#define FLASH_SECTOR_SIZE 0x20000UL
+#define FLASH_SECTORS ((FLASH_END - FLASH_BASE + 1) / FLASH_SECTOR_SIZE) + 4
 
-static uint8_t stm32_flash_page[FLASH_EEPROM_SIZE];
-static uint16_t stm32_flash_current_page;
-static bool stm32_flash_modified;
+#define FLASH_EEPROM_START (FLASH_END - FLASH_SECTOR_SIZE + 1)
+#define FLASH_EEPROM_PER_SECTION (FLASH_SECTOR_SIZE / FLASH_EEPROM_SIZE_WORD_ALIGNED)
+#define FLASH_EEPROM_END (FLASH_EEPROM_START + (FLASH_EEPROM_PER_SECTION * FLASH_EEPROM_SIZE_WORD_ALIGNED) - 1)
+// read and write invert
+#define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
+#define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
+#define EEPROM_CLEAN 0
+#define EEPROM_DIRTY 1
+#define EEPROM_NEEDS_NEWPAGE 2
+
+static uint8_t stm32_eeprom_buffer[FLASH_EEPROM_SIZE_WORD_ALIGNED];
+static uint32_t stm32_flash_current_offset;
+static uint8_t stm32_flash_modified;
+static void FORCEINLINE mcu_eeprom_init(void);
 
 /**
  * The internal clock counter
@@ -494,8 +498,6 @@ void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
-	stm32_flash_current_page = -1;
-	stm32_global_isr_enabled = false;
 	mcu_io_init();
 	mcu_usart_init();
 	mcu_rtc_init();
@@ -537,6 +539,9 @@ void mcu_init(void)
 #endif
 
 	mcu_disable_probe_isr();
+	stm32_flash_current_offset = 0;
+	stm32_global_isr_enabled = false;
+	mcu_eeprom_init();
 	mcu_enable_global_isr();
 }
 
@@ -730,105 +735,135 @@ void mcu_dotasks()
 #endif
 }
 
-// checks if the current page is loaded to ram
-// if not loads it
-static uint16_t mcu_access_flash_page(uint16_t address)
+// gets were the first copy of the eeprom is
+static void mcu_eeprom_init(void)
 {
-	uint16_t address_page = address & FLASH_PAGE_MASK;
-	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
-	if (stm32_flash_current_page != address_page)
+	uint32_t eeprom_offset = 0;
+	for (eeprom_offset = 0; eeprom_offset < FLASH_SECTOR_SIZE; eeprom_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED)
 	{
-		stm32_flash_modified = false;
-		stm32_flash_current_page = address_page;
-		uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 2);
-		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
-		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
-		while (counter--)
+		if (*((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset)) == 0xFFFFFFFF)
 		{
-			*ptr = *eeprom;
-			eeprom++;
-			ptr++;
+			break;
 		}
 	}
 
-	return address_offset;
+	// if not found at start then it's not initialized
+	if (eeprom_offset)
+	{
+		// one step back
+		eeprom_offset -= FLASH_EEPROM_SIZE_WORD_ALIGNED;
+		stm32_flash_current_offset = eeprom_offset;
+	}
+	else
+	{
+		stm32_flash_current_offset = 0;
+		stm32_flash_modified = EEPROM_CLEAN;
+		memset(stm32_eeprom_buffer, 0, FLASH_EEPROM_SIZE_WORD_ALIGNED);
+		return;
+	}
+
+	uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
+	uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
+	volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset));
+	while (counter--)
+	{
+		READ_FLASH(ptr, eeprom);
+		eeprom++;
+		ptr++;
+	}
 }
 
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	uint16_t offset = mcu_access_flash_page(address);
-	return stm32_flash_page[offset];
+	return stm32_eeprom_buffer[address];
 }
 
-// static void mcu_eeprom_erase(uint16_t address)
-// {
-// 	// while (FLASH->SR & FLASH_SR_BSY)
-// 	// 	; // wait while busy
-// 	// // unlock flash if locked
-// 	// if (FLASH->CR & FLASH_CR_LOCK)
-// 	// {
-// 	// 	FLASH->KEYR = 0x45670123;
-// 	// 	FLASH->KEYR = 0xCDEF89AB;
-// 	// }
-// 	// FLASH->CR = 0;			   // Ensure PG bit is low
-// 	// FLASH->CR |= FLASH_CR_PER; // set the PER bit
-// 	// FLASH->AR = (FLASH_EEPROM + address);
-// 	// FLASH->CR |= FLASH_CR_STRT; // set the start bit
-// 	// while (FLASH->SR & FLASH_SR_BSY)
-// 	// 	; // wait while busy
-// 	// FLASH->CR = 0;
-// }
+static void mcu_eeprom_erase(void)
+{
+	while (FLASH->SR & FLASH_SR_BSY)
+		; // wait while busy
+	// unlock flash if locked
+	if (FLASH->CR & FLASH_CR_LOCK)
+	{
+		FLASH->KEYR = 0x45670123;
+		FLASH->KEYR = 0xCDEF89AB;
+	}
+	FLASH->CR = 0;																				// Ensure PG bit is low
+	FLASH->CR |= FLASH_CR_SER | (((FLASH_SECTORS - 1) << FLASH_CR_SNB_Pos) & FLASH_CR_MER_Msk); // set the SER bit
+	FLASH->CR |= FLASH_CR_STRT;																	// set the start bit
+	while (FLASH->SR & FLASH_SR_BSY)
+		; // wait while busy
+	FLASH->CR = 0;
+}
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	uint16_t offset = mcu_access_flash_page(address);
-
-	if (stm32_flash_page[offset] != value)
+	// if the value of the eeprom is modified then it will be marked as dirty
+	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
+	// if a bit is changed from 0 back to 1 then it will need to rewrite values in a new page
+	// flash read and writing is done in negated form
+	if (stm32_eeprom_buffer[address] != value)
 	{
-		stm32_flash_modified = true;
+		stm32_flash_modified |= EEPROM_DIRTY;
+		if ((value ^ stm32_eeprom_buffer[address]) & ~value)
+		{
+			stm32_flash_modified |= EEPROM_NEEDS_NEWPAGE;
+		}
 	}
 
-	stm32_flash_page[offset] = value;
+	stm32_eeprom_buffer[address] = value;
 }
 
 void mcu_eeprom_flush()
 {
-	// if (stm32_flash_modified)
-	// {
-	// 	mcu_eeprom_erase(stm32_flash_current_page);
-	// 	volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
-	// 	uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-	// 	uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 1);
-	// 	while (counter--)
-	// 	{
-	// 		while (FLASH->SR & FLASH_SR_BSY)
-	// 			; // wait while busy
-	// 		mcu_disable_global_isr();
-	// 		// unlock flash if locked
-	// 		if (FLASH->CR & FLASH_CR_LOCK)
-	// 		{
-	// 			FLASH->KEYR = 0x45670123;
-	// 			FLASH->KEYR = 0xCDEF89AB;
-	// 		}
-	// 		FLASH->CR = 0;
-	// 		FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
-	// 		*eeprom = *ptr;
-	// 		while (FLASH->SR & FLASH_SR_BSY)
-	// 			; // wait while busy
-	// 		mcu_enable_global_isr();
-	// 		if (FLASH->SR & (FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR))
-	// 			protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
-	// 		if (FLASH->SR & FLASH_SR_WRPERR)
-	// 			protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
-	// 		FLASH->CR = 0;				 // Ensure PG bit is low
-	// 		FLASH->SR = 0;
-	// 		eeprom++;
-	// 		ptr++;
-	// 	}
-	// 	stm32_flash_modified = false;
-	// 	// Restore interrupt flag state.*/
-	// }
+	if (stm32_flash_modified)
+	{
+		if (CHECKFLAG(stm32_flash_modified, EEPROM_NEEDS_NEWPAGE))
+		{
+			stm32_flash_current_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED;
+		}
+
+		if (stm32_flash_current_offset >= FLASH_EEPROM_END)
+		{
+			mcu_eeprom_erase();
+			stm32_flash_current_offset = 0;
+		}
+
+		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + stm32_flash_current_offset));
+		uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
+		uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
+		while (counter--)
+		{
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+			mcu_disable_global_isr();
+			// unlock flash if locked
+			if (FLASH->CR & FLASH_CR_LOCK)
+			{
+				FLASH->KEYR = 0x45670123;
+				FLASH->KEYR = 0xCDEF89AB;
+			}
+			FLASH->CR = 0;
+			FLASH->CR |= FLASH_CR_PSIZE_1;
+			FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
+			WRITE_FLASH(eeprom, ptr);
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+			mcu_enable_global_isr();
+			if (FLASH->SR & (FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR))
+				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
+			if (FLASH->SR & FLASH_SR_WRPERR)
+				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
+			FLASH->CR = 0;				 // Ensure PG bit is low
+			FLASH->SR = 0;
+			eeprom++;
+			ptr++;
+		}
+		stm32_flash_modified = EEPROM_CLEAN;
+
+		// Restore interrupt flag state.*/
+	}
 }
 
 #ifdef MCU_HAS_SPI

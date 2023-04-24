@@ -88,6 +88,7 @@ extern "C"
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
+#define RX_PULLUP
 
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 11
