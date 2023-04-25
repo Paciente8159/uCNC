@@ -36,7 +36,7 @@
 // this is needed if a custom flash size is defined
 #define FLASH_LIMIT (FLASH_BASE + FLASH_SIZE - 1)
 
-#if (FLASH_LIMIT > FLASH_BANK1_END)
+#if (FLASH_LIMIT > FLASH_END)
 #error "The set FLASH_SIZE is beyond the chip capability"
 #endif
 
