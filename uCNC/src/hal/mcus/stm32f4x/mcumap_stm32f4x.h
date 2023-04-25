@@ -2922,9 +2922,9 @@ extern "C"
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
 #if ((UART_PORT == 1) || (UART_PORT == 6))
-#define PERIPH_CLOCK HAL_RCC_GetPCLK2Freq()
+#define UART_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
-#define PERIPH_CLOCK HAL_RCC_GetPCLK1Freq()
+#define UART_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #if ((UART_PORT >= 1) && (UART_PORT <= 3))
 #define GPIO_AF_USART 0x07
@@ -2959,9 +2959,11 @@ extern "C"
 #if (SPI_PORT == 2 || SPI_PORT == 3)
 #define SPI_ENREG RCC->APB1ENR
 #define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
 #else
 #define SPI_ENREG RCC->APB2ENR
 #define SPI_ENVAL __helper__(RCC_APB2ENR_SPI, SPI_PORT, EN)
+#define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
 #endif
 
 #endif
@@ -2976,7 +2978,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
+#define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 #define I2C_AFIO 4
 
 #ifndef I2C_FREQ

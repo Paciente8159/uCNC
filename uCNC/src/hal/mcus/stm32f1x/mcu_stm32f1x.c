@@ -29,7 +29,7 @@
 #endif
 
 #ifndef FLASH_SIZE
-#error "Device FLASH size undefined. Please define FLASH_SIZE."
+#define FLASH_SIZE (FLASH_BANK1_END - FLASH_BASE + 1)
 #endif
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
@@ -44,12 +44,6 @@
 #define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
-#endif
-
-#ifdef CUSTOM_CLOCKS_INIT
-#ifndef EXTERNAL_XTAL_MHZ
-#error "With CUSTOM_CLOCKS_INIT option enabled you must define EXTERNAL_XTAL_MHZ"
-#endif
 #endif
 
 #define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
@@ -147,7 +141,7 @@ void servo_timer_init(void)
 	RCC->SERVO_TIMER_ENREG |= SERVO_TIMER_APB;
 	SERVO_TIMER_REG->CR1 = 0;
 	SERVO_TIMER_REG->DIER = 0;
-	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
+	SERVO_TIMER_REG->PSC = (SERVO_CLOCK / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
 #if (SERVO_TIMER != 6 && SERVO_TIMER != 7)
@@ -358,48 +352,6 @@ static void mcu_usart_init(void);
 
 void mcu_clocks_init()
 {
-#ifdef CUSTOM_CLOCKS_INIT
-	/* Reset the RCC clock configuration to the default reset state */
-	/* Set HSION bit */
-	RCC->CR |= (uint32_t)0x00000001;
-	/* Reset SW, HPRE, PPRE1, PPRE2, ADCPRE and MCO bits */
-	RCC->CFGR &= (uint32_t)0xF8FF0000;
-	/* Reset HSEON, CSSON and PLLON bits */
-	RCC->CR &= (uint32_t)0xFEF6FFFF;
-	/* Reset HSEBYP bit */
-	RCC->CR &= (uint32_t)0xFFFBFFFF;
-	/* Disable all interrupts and clear pending bits */
-	RCC->CIR = 0x009F0000;
-	/* Enable HSE */
-	RCC->CR |= ((uint32_t)RCC_CR_HSEON);
-	/* Wait till HSE is ready */
-	while (!(RCC->CR & RCC_CR_HSERDY))
-		;
-	/* Configure the Flash Latency cycles and enable prefetch buffer */
-	FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY_2;
-	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
-	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
-	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
-	 */
-	RCC->CFGR = (uint32_t)(RCC_CFGR_HPRE_DIV1 |
-						   APB1_PRESC | APB2_PRESC |
-						   RCC_CFGR_PLLSRC |
-						   RCC_CFGR_PLLMULL9);
-	/* Enable PLL */
-	RCC->CR |= RCC_CR_PLLON;
-	/* Wait till PLL is ready */
-	while (!(RCC->CR & RCC_CR_PLLRDY))
-		;
-	/* Select PLL as system clock source */
-	RCC->CFGR |= (uint32_t)RCC_CFGR_SW_PLL;
-	/* Wait till PLL is used as system clock source */
-	while (!(RCC->CFGR & (uint32_t)RCC_CFGR_SWS))
-		;
-#else
-	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
-	RCC->CFGR |= (APB1_PRESC | APB2_PRESC);
-#endif
-
 	// initialize debugger clock (used by us delay)
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	{
@@ -446,7 +398,7 @@ void mcu_usart_init(void)
 	COM_UART->CR3 = 0;
 	COM_UART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)BAUDRATE));
+	float baudrate = ((float)(UART_CLOCK >> 4) / ((float)BAUDRATE));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -598,7 +550,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(ITP_TIMER_CLOCK >> 1) / frequency);
 
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
@@ -613,7 +565,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
+	return ((float)ITP_TIMER_CLOCK / (float)(((uint32_t)ticks) << (prescaller + 1)));
 }
 
 // starts a constant rate pulse at a given frequency.
@@ -709,7 +661,7 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
 		while (counter--)
 		{
-			READ_FLASH(ptr,eeprom);
+			READ_FLASH(ptr, eeprom);
 			eeprom++;
 			ptr++;
 		}
@@ -799,7 +751,7 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
 	if (div < 2)
@@ -950,7 +902,7 @@ void MCU_ONESHOT_ISR(void)
 #ifndef mcu_config_timeout
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
-	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+	uint32_t clocks = (uint32_t)((ONESHOT_TIMER_CLOCK / 1000000UL) * timeout);
 	uint32_t presc = 1;
 
 	mcu_timeout_cb = fp;

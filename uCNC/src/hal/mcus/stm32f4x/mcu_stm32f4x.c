@@ -386,7 +386,7 @@ void mcu_usart_init(void)
 	COM_UART->CR3 = 0;
 	COM_UART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)(BAUDRATE)));
+	float baudrate = ((float)(UART_CLOCK >> 4) / ((float)(BAUDRATE)));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -800,7 +800,7 @@ void mcu_eeprom_flush()
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
 	if (div < 2)
