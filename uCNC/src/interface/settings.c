@@ -265,7 +265,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 		*(__ptr++) = value;
 	}
 
-	return (crc) ? (crc ^ mcu_eeprom_getc(address)) : 255;
+	return (crc ^ mcu_eeprom_getc(address));
 #else
 	return 255; // returns error
 #endif
@@ -582,7 +582,9 @@ void settings_erase(uint16_t address, uint8_t size)
 
 	// erase crc byte that is next to data
 	mcu_eeprom_putc(address, EOL);
+#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
 	mcu_eeprom_flush();
+#endif
 #endif
 }
 

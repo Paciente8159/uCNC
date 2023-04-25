@@ -30,26 +30,38 @@
 #endif
 
 #ifndef FLASH_SIZE
-#error "Device FLASH size undefined"
+#define FLASH_SIZE (FLASH_END - FLASH_BASE + 1)
 #endif
+
+// this is needed if a custom flash size is defined
+#define FLASH_LIMIT (FLASH_BASE + FLASH_SIZE - 1)
+
+#if (FLASH_LIMIT > FLASH_END)
+#error "The set FLASH_SIZE is beyond the chip capability"
+#endif
+
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
+#define FLASH_EEPROM_SIZE_WORD (FLASH_EEPROM_SIZE >> 2)
+#define FLASH_EEPROM_SIZE_WORD_ALIGNED (FLASH_EEPROM_SIZE_WORD << 2)
 
-#if (FLASH_BANK1_END <= 0x0801FFFFUL)
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 10) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 10) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
-#else
-#define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 11) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 11) - 1))
-#define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
-#define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
-#endif
+#define FLASH_SECTOR_SIZE 0x20000UL
+#define FLASH_SECTORS (FLASH_SIZE / FLASH_SECTOR_SIZE) + 4
 
-static uint8_t stm32_flash_page[FLASH_EEPROM_SIZE];
-static uint16_t stm32_flash_current_page;
-static bool stm32_flash_modified;
+#define FLASH_EEPROM_START (FLASH_LIMIT - FLASH_SECTOR_SIZE + 1)
+#define FLASH_EEPROM_PER_SECTION (FLASH_SECTOR_SIZE / FLASH_EEPROM_SIZE_WORD_ALIGNED)
+#define FLASH_EEPROM_END (FLASH_EEPROM_START + (FLASH_EEPROM_PER_SECTION * FLASH_EEPROM_SIZE_WORD_ALIGNED) - 1)
+// read and write invert
+#define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
+#define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
+#define EEPROM_CLEAN 0
+#define EEPROM_DIRTY 1
+#define EEPROM_NEEDS_NEWPAGE 2
+
+static uint8_t stm32_eeprom_buffer[FLASH_EEPROM_SIZE_WORD_ALIGNED];
+static uint32_t stm32_flash_current_offset;
+static uint8_t stm32_flash_modified;
+static void FORCEINLINE mcu_eeprom_init(void);
 
 /**
  * The internal clock counter
@@ -128,7 +140,7 @@ void servo_timer_init(void)
 	RCC->SERVO_TIMER_ENREG |= SERVO_TIMER_APB;
 	SERVO_TIMER_REG->CR1 = 0;
 	SERVO_TIMER_REG->DIER = 0;
-	SERVO_TIMER_REG->PSC = (F_CPU / 255000) - 1;
+	SERVO_TIMER_REG->PSC = (SERVO_CLOCK / 255000) - 1;
 	SERVO_TIMER_REG->ARR = 255;
 	SERVO_TIMER_REG->EGR |= 0x01;
 	SERVO_TIMER_REG->SR &= ~0x01;
@@ -330,76 +342,9 @@ void osSystickHandler(void)
 static void mcu_rtc_init(void);
 static void mcu_usart_init(void);
 
-#ifndef FRAMEWORK_CLOCKS_INIT
-#if (F_CPU == 84000000)
-#define PLLN 336
-#define PLLP 1
-#define PLLQ 7
-#elif (F_CPU == 168000000)
-#define PLLN 336
-#define PLLP 0
-#define PLLQ 7
-#else
-#error "Running the CPU at this frequency might lead to unexpected behaviour"
-#endif
-#endif
 void mcu_clocks_init()
 {
-#ifndef FRAMEWORK_CLOCKS_INIT
-	// enable power clock
-	SETFLAG(RCC->APB1ENR, RCC_APB1ENR_PWREN);
-	// set voltage regulator scale 2
-	SETFLAG(PWR->CR, (0x02UL << PWR_CR_VOS_Pos));
-
-	FLASH->ACR = (FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_LATENCY_2WS);
-
-	/* Enable HSE */
-	SETFLAG(RCC->CR, RCC_CR_HSEON);
-	CLEARFLAG(RCC->CR, RCC_CR_HSEBYP);
-	/* Wait till HSE is ready */
-	while (!(RCC->CR & RCC_CR_HSERDY))
-		;
-
-	RCC->PLLCFGR = 0;
-
-	// Main PLL clock can be configured by the following formula:
-	// choose HSI or HSE as the source:
-	// fVCO = source_clock * (N / M)
-	// Main PLL = fVCO / P
-	// PLL48CLK = fVCO / Q
-	// to make it simple just set M = external crystal
-	// then all others are a fixed value to simplify making
-	// fVCO = 336
-	// Main PLL = fVCO / P = 336/4 = 84MHz
-	// PLL48CLK = fVCO / Q = 336/7 = 48MHz
-	// to run at other speeds different configuration must be applied but the limit for fast AHB is 180Mhz, APB is 90Mhz and slow APB is 45Mhz
-	SETFLAG(RCC->PLLCFGR, (RCC_PLLCFGR_PLLSRC_HSE | (EXTERNAL_XTAL_MHZ << RCC_PLLCFGR_PLLM_Pos) | (PLLN << RCC_PLLCFGR_PLLN_Pos) | (PLLP << RCC_PLLCFGR_PLLP_Pos) /*main clock /4*/ | (PLLQ << RCC_PLLCFGR_PLLQ_Pos)));
-	/* Enable PLL */
-	SETFLAG(RCC->CR, RCC_CR_PLLON);
-	/* Wait till PLL is ready */
-	while (!CHECKFLAG(RCC->CR, RCC_CR_PLLRDY))
-		;
-
-	/* Configure the System clock frequency, HCLK, PCLK2 and PCLK1 prescalers */
-	/* HCLK = SYSCLK, PCLK2 = HCLK, PCLK1 = HCLK / 2
-	 * If crystal is 16MHz, add in PLLXTPRE flag to prescale by 2
-	 */
-	SETFLAG(RCC->CFGR, (uint32_t)(RCC_CFGR_HPRE_DIV1 | APB2_PRESC | APB1_PRESC));
-
-	/* Select PLL as system clock source */
-	CLEARFLAG(RCC->CFGR, RCC_CFGR_SW);
-	SETFLAG(RCC->CFGR, (0x02UL << RCC_CFGR_SW_Pos));
-	/* Wait till PLL is used as system clock source */
-	while ((RCC->CFGR & RCC_CFGR_SW) != (0x02UL << RCC_CFGR_SW_Pos))
-		;
-
-	SystemCoreClockUpdate();
-#else
-	RCC->CFGR &= ~(RCC_CFGR_PPRE1_Msk | RCC_CFGR_PPRE2_Msk);
-	RCC->CFGR |= (APB2_PRESC | APB1_PRESC);
-#endif
-
-	// // initialize debugger clock (used by us delay)
+    // initialize debugger clock (used by us delay)
 	if (!(CoreDebug->DEMCR & CoreDebug_DEMCR_TRCENA_Msk))
 	{
 		CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
@@ -449,7 +394,7 @@ void mcu_usart_init(void)
 	COM_UART->CR3 = 0;
 	COM_UART->SR = 0;
 	// //115200 baudrate
-	float baudrate = ((float)(PERIPH_CLOCK >> 4) / ((float)(BAUDRATE)));
+	float baudrate = ((float)(UART_CLOCK >> 4) / ((float)(BAUDRATE)));
 	uint16_t brr = (uint16_t)baudrate;
 	baudrate -= brr;
 	brr <<= 4;
@@ -491,8 +436,6 @@ void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)
 	mcu_clocks_init();
-	stm32_flash_current_page = -1;
-	stm32_global_isr_enabled = false;
 	mcu_io_init();
 	mcu_usart_init();
 	mcu_rtc_init();
@@ -534,6 +477,9 @@ void mcu_init(void)
 #endif
 
 	mcu_disable_probe_isr();
+	stm32_flash_current_offset = 0;
+	stm32_global_isr_enabled = false;
+	mcu_eeprom_init();
 	mcu_enable_global_isr();
 }
 
@@ -639,7 +585,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)((float)(F_CPU >> 2) / frequency);
+	uint32_t totalticks = (uint32_t)((float)(TIMER_CLOCK >> 1) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -653,7 +599,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return ((float)F_CPU / (float)(((uint32_t)ticks) << (prescaller + 1)));
+	return ((float)TIMER_CLOCK / (float)(((uint32_t)ticks) << (prescaller + 1)));
 }
 
 // starts a constant rate pulse at a given frequency.
@@ -727,112 +673,142 @@ void mcu_dotasks()
 #endif
 }
 
-// checks if the current page is loaded to ram
-// if not loads it
-static uint16_t mcu_access_flash_page(uint16_t address)
+// gets were the first copy of the eeprom is
+static void mcu_eeprom_init(void)
 {
-	uint16_t address_page = address & FLASH_PAGE_MASK;
-	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
-	if (stm32_flash_current_page != address_page)
+	uint32_t eeprom_offset = 0;
+	for (eeprom_offset = 0; eeprom_offset < FLASH_SECTOR_SIZE; eeprom_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED)
 	{
-		stm32_flash_modified = false;
-		stm32_flash_current_page = address_page;
-		uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 2);
-		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
-		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
-		while (counter--)
+		if (*((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset)) == 0xFFFFFFFF)
 		{
-			*ptr = *eeprom;
-			eeprom++;
-			ptr++;
+			break;
 		}
 	}
 
-	return address_offset;
+	// if not found at start then it's not initialized
+	if (eeprom_offset)
+	{
+		// one step back
+		eeprom_offset -= FLASH_EEPROM_SIZE_WORD_ALIGNED;
+		stm32_flash_current_offset = eeprom_offset;
+	}
+	else
+	{
+		stm32_flash_current_offset = 0;
+		stm32_flash_modified = EEPROM_CLEAN;
+		memset(stm32_eeprom_buffer, 0, FLASH_EEPROM_SIZE_WORD_ALIGNED);
+		return;
+	}
+
+	uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
+	uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
+	volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + eeprom_offset));
+	while (counter--)
+	{
+		READ_FLASH(ptr, eeprom);
+		eeprom++;
+		ptr++;
+	}
 }
 
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
-	uint16_t offset = mcu_access_flash_page(address);
-	return stm32_flash_page[offset];
+	return stm32_eeprom_buffer[address];
 }
 
-// static void mcu_eeprom_erase(uint16_t address)
-// {
-// 	// while (FLASH->SR & FLASH_SR_BSY)
-// 	// 	; // wait while busy
-// 	// // unlock flash if locked
-// 	// if (FLASH->CR & FLASH_CR_LOCK)
-// 	// {
-// 	// 	FLASH->KEYR = 0x45670123;
-// 	// 	FLASH->KEYR = 0xCDEF89AB;
-// 	// }
-// 	// FLASH->CR = 0;			   // Ensure PG bit is low
-// 	// FLASH->CR |= FLASH_CR_PER; // set the PER bit
-// 	// FLASH->AR = (FLASH_EEPROM + address);
-// 	// FLASH->CR |= FLASH_CR_STRT; // set the start bit
-// 	// while (FLASH->SR & FLASH_SR_BSY)
-// 	// 	; // wait while busy
-// 	// FLASH->CR = 0;
-// }
+static void mcu_eeprom_erase(void)
+{
+	while (FLASH->SR & FLASH_SR_BSY)
+		; // wait while busy
+	// unlock flash if locked
+	if (FLASH->CR & FLASH_CR_LOCK)
+	{
+		FLASH->KEYR = 0x45670123;
+		FLASH->KEYR = 0xCDEF89AB;
+	}
+	FLASH->CR = 0;																				// Ensure PG bit is low
+	FLASH->CR |= FLASH_CR_SER | (((FLASH_SECTORS - 1) << FLASH_CR_SNB_Pos) & FLASH_CR_MER_Msk); // set the SER bit
+	FLASH->CR |= FLASH_CR_STRT;																	// set the start bit
+	while (FLASH->SR & FLASH_SR_BSY)
+		; // wait while busy
+	FLASH->CR = 0;
+}
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-	uint16_t offset = mcu_access_flash_page(address);
-
-	if (stm32_flash_page[offset] != value)
+	// if the value of the eeprom is modified then it will be marked as dirty
+	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
+	// if a bit is changed from 0 back to 1 then it will need to rewrite values in a new page
+	// flash read and writing is done in negated form
+	if (stm32_eeprom_buffer[address] != value)
 	{
-		stm32_flash_modified = true;
+		stm32_flash_modified |= EEPROM_DIRTY;
+		if ((value ^ stm32_eeprom_buffer[address]) & ~value)
+		{
+			stm32_flash_modified |= EEPROM_NEEDS_NEWPAGE;
+		}
 	}
 
-	stm32_flash_page[offset] = value;
+	stm32_eeprom_buffer[address] = value;
 }
 
 void mcu_eeprom_flush()
 {
-	// if (stm32_flash_modified)
-	// {
-	// 	mcu_eeprom_erase(stm32_flash_current_page);
-	// 	volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
-	// 	uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-	// 	uint16_t counter = (uint16_t)(FLASH_EEPROM_SIZE >> 1);
-	// 	while (counter--)
-	// 	{
-	// 		while (FLASH->SR & FLASH_SR_BSY)
-	// 			; // wait while busy
-	// 		mcu_disable_global_isr();
-	// 		// unlock flash if locked
-	// 		if (FLASH->CR & FLASH_CR_LOCK)
-	// 		{
-	// 			FLASH->KEYR = 0x45670123;
-	// 			FLASH->KEYR = 0xCDEF89AB;
-	// 		}
-	// 		FLASH->CR = 0;
-	// 		FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
-	// 		*eeprom = *ptr;
-	// 		while (FLASH->SR & FLASH_SR_BSY)
-	// 			; // wait while busy
-	// 		mcu_enable_global_isr();
-	// 		if (FLASH->SR & (FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR))
-	// 			protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
-	// 		if (FLASH->SR & FLASH_SR_WRPERR)
-	// 			protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
-	// 		FLASH->CR = 0;				 // Ensure PG bit is low
-	// 		FLASH->SR = 0;
-	// 		eeprom++;
-	// 		ptr++;
-	// 	}
-	// 	stm32_flash_modified = false;
-	// 	// Restore interrupt flag state.*/
-	// }
+	if (stm32_flash_modified)
+	{
+		if (CHECKFLAG(stm32_flash_modified, EEPROM_NEEDS_NEWPAGE))
+		{
+			stm32_flash_current_offset += FLASH_EEPROM_SIZE_WORD_ALIGNED;
+		}
+
+		if (stm32_flash_current_offset >= FLASH_EEPROM_END)
+		{
+			mcu_eeprom_erase();
+			stm32_flash_current_offset = 0;
+		}
+
+		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM_START + stm32_flash_current_offset));
+		uint32_t *ptr = ((uint32_t *)&stm32_eeprom_buffer[0]);
+		uint32_t counter = (uint32_t)FLASH_EEPROM_SIZE_WORD;
+		while (counter--)
+		{
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+			mcu_disable_global_isr();
+			// unlock flash if locked
+			if (FLASH->CR & FLASH_CR_LOCK)
+			{
+				FLASH->KEYR = 0x45670123;
+				FLASH->KEYR = 0xCDEF89AB;
+			}
+			FLASH->CR = 0;
+			FLASH->CR |= FLASH_CR_PSIZE_1;
+			FLASH->CR |= FLASH_CR_PG; // Ensure PG bit is high
+			WRITE_FLASH(eeprom, ptr);
+			while (FLASH->SR & FLASH_SR_BSY)
+				; // wait while busy
+			mcu_enable_global_isr();
+			if (FLASH->SR & (FLASH_SR_PGAERR | FLASH_SR_PGPERR | FLASH_SR_PGSERR))
+				protocol_send_error(42); // STATUS_SETTING_WRITE_FAIL
+			if (FLASH->SR & FLASH_SR_WRPERR)
+				protocol_send_error(43); // STATUS_SETTING_PROTECTED_FAIL
+			FLASH->CR = 0;				 // Ensure PG bit is low
+			FLASH->SR = 0;
+			eeprom++;
+			ptr++;
+		}
+		stm32_flash_modified = EEPROM_CLEAN;
+
+		// Restore interrupt flag state.*/
+	}
 }
 
 #ifdef MCU_HAS_SPI
 void mcu_spi_config(uint8_t mode, uint32_t frequency)
 {
 	mode = CLAMP(0, mode, 4);
-	uint8_t div = (uint8_t)(PERIPH_CLOCK / frequency);
+	uint8_t div = (uint8_t)(SPI_CLOCK / frequency);
 
 	uint8_t speed;
 	if (div < 2)
@@ -984,7 +960,7 @@ void MCU_ONESHOT_ISR(void)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	// up and down counter (generates half the step rate at each event)
-	uint32_t clocks = (uint32_t)((F_CPU / 1000000UL) * timeout);
+	uint32_t clocks = (uint32_t)((ONESHOT_TIMER_CLOCK / 1000000UL) * timeout);
 	uint32_t presc = 1;
 
 	mcu_timeout_cb = fp;
