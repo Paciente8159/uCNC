@@ -31,17 +31,25 @@
 #ifndef FLASH_SIZE
 #define FLASH_SIZE (FLASH_BANK1_END - FLASH_BASE + 1)
 #endif
+
+// this is needed if a custom flash size is defined
+#define FLASH_LIMIT (FLASH_BASE + FLASH_SIZE - 1)
+
+#if (FLASH_LIMIT > FLASH_BANK1_END)
+#error "The set FLASH_SIZE is beyond the chip capability"
+#endif
+
 // set the FLASH EEPROM SIZE
 #define FLASH_EEPROM_SIZE 0x400
 
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
 #define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 10) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 10) - 1))
+#define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #else
 #define FLASH_EEPROM_PAGES (((FLASH_EEPROM_SIZE - 1) >> 11) + 1)
-#define FLASH_EEPROM (FLASH_BASE + (FLASH_SIZE - 1) - ((FLASH_EEPROM_PAGES << 11) - 1))
+#define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #endif
