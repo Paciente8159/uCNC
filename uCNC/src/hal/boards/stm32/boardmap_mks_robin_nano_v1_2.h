@@ -28,10 +28,6 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x80000UL
-#endif
-
 #define NO_USB_VCP
 #ifdef USB_VCP
 #undef USB_VCP

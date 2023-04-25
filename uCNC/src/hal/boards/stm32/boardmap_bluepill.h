@@ -28,10 +28,6 @@ extern "C"
 #define BOARD_NAME "STM32 Bluepill"
 #endif
 
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x10000
-#endif
-
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port

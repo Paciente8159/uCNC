@@ -28,14 +28,6 @@ extern "C"
 #define BOARD_NAME "SKR Pro 1.2"
 #endif
 
-#ifndef EXTERNAL_XTAL_MHZ
-#define EXTERNAL_XTAL_MHZ 8
-#endif
-
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x100000
-#endif
-
 // Setup COM pins
 // #define UART_PORT 3
 
