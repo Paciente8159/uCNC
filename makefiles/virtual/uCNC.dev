@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=77
+UnitCount=80
 
 [VersionInfo]
 Major=1
@@ -821,7 +821,27 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit78]
-FileName=..\..\uCNC\src\modules\G33\parser_g33.c
+FileName=..\..\uCNC\src\modules\system_menu.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit79]
+FileName=..\..\uCNC\src\modules\system_menu.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit80]
+FileName=..\..\uCNC\src\modules\GraphicLCD\graphic_lcd.c
 CompileCpp=0
 Folder=
 Compile=1

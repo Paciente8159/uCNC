@@ -29,6 +29,11 @@ DECL_MENU(2, 1, "Settings menu", 0, NULL);
 
 system_menu_t g_system_menu;
 
+static void system_menu_enqueue_redraw(uint32_t delay)
+{
+	g_system_menu.next_redraw = delay + mcu_millis();
+}
+
 static const system_menu_item_t *system_menu_get_item(uint8_t menu_id, int16_t index)
 {
 	MENU_LOOP(g_system_menu.menu_entry, menu_item)
@@ -70,74 +75,63 @@ void system_menu_reset(void)
 {
 	g_system_menu.current_menu = 0;
 	g_system_menu.current_index = 0;
-	g_system_menu.flags = SYSTEM_MENU_STARTUP | SYSTEM_MENU_RENDER;
-	g_system_menu.next_redraw = mcu_millis() + SYSTEM_MENU_IDLE_TIMEOUT_MS;
+	g_system_menu.flags = SYSTEM_MENU_STARTUP;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
 }
 
-CREATE_EVENT_LISTENER(cnc_dotasks, system_menu_render);
 void system_menu_render(void)
 {
 	uint8_t renderflags = g_system_menu.flags;
-	g_system_menu.flags &= ~SYSTEM_MENU_RENDER;
 
 	if (g_system_menu.next_redraw < mcu_millis())
 	{
-		// the render flag is active
-		if (renderflags & SYSTEM_MENU_RENDER)
+		g_system_menu.flags = SYSTEM_MENU_IDLE;
+
+		if (renderflags & SYSTEM_MENU_ALARM)
 		{
-			if (renderflags & SYSTEM_MENU_ALARM)
-			{
-				system_menu_render_startup();
-				return;
-			}
+			system_menu_render_alarm();
+			return;
+		}
 
-			if (renderflags & SYSTEM_MENU_STARTUP)
-			{
-				system_menu_render_startup();
-				return;
-			}
+		if (renderflags & SYSTEM_MENU_STARTUP)
+		{
+			system_menu_render_startup();
+			system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_STARTUP_MS);
+			return;
+		}
 
-			if (renderflags & SYSTEM_MENU_IDLE)
-			{
-				system_menu_render_idle();
-				return;
-			}
+		// idle or nothing to render
+		if (renderflags == SYSTEM_MENU_IDLE || !g_system_menu.current_menu)
+		{
+			system_menu_render_idle();
+			system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_IDLE_MS);
+			return;
+		}
 
-			if (!g_system_menu.current_menu)
+		uint8_t item_index = 0;
+		MENU_LOOP(g_system_menu.menu_entry, menu_item)
+		{
+			if (menu_item->menu_id == g_system_menu.current_menu)
 			{
-				// nothing to render
-				return;
-			}
-			else
-			{
-				uint8_t item_index = 0;
-				MENU_LOOP(g_system_menu.menu_entry, menu_item)
+				if (!item_index)
 				{
-					if (menu_item->menu_id == g_system_menu.current_menu)
-					{
-						if (!item_index)
-						{
-							system_menu_render_header(menu_item->label);
-						}
+					system_menu_render_header(menu_item->label);
+				}
 
-						for (uint8_t i = 0; i < menu_item->item_count; i++)
-						{
-							if (menu_item->items[i]->render)
-							{
-								menu_item->items[i]->render(menu_item->items[i]->render_arg);
-							}
-							else
-							{
-								system_menu_render_content(item_index + i, menu_item->items[i]);
-							}
-						}
-						item_index += menu_item->item_count;
+				for (uint8_t i = 0; i < menu_item->item_count; i++, item_index++)
+				{
+					if (system_menu_render_menu_item_filter(item_index))
+					{
+						system_menu_render_menu_item(item_index, menu_item->items[i]);
 					}
 				}
 			}
 		}
 
-		g_system_menu.next_redraw = mcu_millis() + SYSTEM_MENU_REDRAW_MS;
+		system_menu_render_footer();
+
+		system_menu_enqueue_redraw(SYSTEM_MENU_ACTIVE_REDRAW_MS);
 	}
 }
 
@@ -146,7 +140,7 @@ void system_menu_action(uint8_t action)
 	static uint32_t last_action_time = 0;
 	uint32_t current_time = mcu_millis();
 
-	bool is_idle = ((current_time - last_action_time) > SYSTEM_MENU_IDLE_TIMEOUT_MS);
+	bool is_idle = ((current_time - last_action_time) > SYSTEM_MENU_ACTIVE_REDRAW_MS);
 
 	if (action)
 	{
@@ -158,6 +152,8 @@ void system_menu_action(uint8_t action)
 		g_system_menu.flags = SYSTEM_MENU_IDLE;
 		return;
 	}
+
+	g_system_menu.flags |= SYSTEM_MENU_RENDER;
 
 	switch (action)
 	{
@@ -203,7 +199,8 @@ void system_menu_action(uint8_t action)
 		return;
 	}
 
-	g_system_menu.flags |= SYSTEM_MENU_RENDER;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
 }
 
 /**
@@ -216,6 +213,8 @@ void system_menu_action_goto(void *cmd)
 	g_system_menu.current_menu = (uint8_t)cmd;
 	g_system_menu.current_index = 0;
 	g_system_menu.flags |= SYSTEM_MENU_RENDER;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
 }
 
 void system_menu_action_rt_cmd(void *cmd)
@@ -233,14 +232,40 @@ void __attribute__((weak)) system_menu_render_header(const char *__s)
 	// render the menu header
 }
 
-void __attribute__((weak)) system_menu_render_content(uint8_t item_index, const system_menu_item_t *item)
+void __attribute__((weak)) system_menu_render_footer(void)
 {
-	// render item
+	// render the menu footer
+}
+
+bool __attribute__((weak)) system_menu_render_menu_item_filter(uint8_t item_index)
+{
+	return true;
+}
+
+void __attribute__((weak)) system_menu_render_menu_item(uint8_t item_index, const system_menu_item_t *item)
+{
+	system_menu_item_t menuitem = {0};
+	rom_memcpy(&menuitem, item, sizeof(system_menu_item_t));
+
+	// menu item has custom render method
+	if (menuitem.render)
+	{
+		menuitem.render(menuitem.render_arg);
+	}
+	else
+	{
+		// render item
+		system_menu_item_render_label(item_index, menuitem.label);
+		if (menuitem.argptr)
+		{
+		}
+	}
 }
 
 void __attribute__((weak)) system_menu_render_startup(void)
 {
 	// render startup screen
+	system_menu_render_header(__romstr__("µCNC"));
 }
 
 void __attribute__((weak)) system_menu_render_idle(void)
@@ -254,19 +279,20 @@ void __attribute__((weak)) system_menu_render_alarm(void)
 	// render alarm screen
 }
 
-void system_menu_init(void)
+/**
+ * Helper µCNC render callbacks
+ * **/
+void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, const char *label)
 {
-	g_system_menu.current_menu = 0;
-	g_system_menu.current_index = 0;
-	g_system_menu.menu_entry = NULL;
-	g_system_menu.flags = SYSTEM_MENU_RENDER;
-	system_menu_append(MENU(1));
-	system_menu_append(MENU(2));
+}
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_EVENT_LISTENER(cnc_dotasks, system_menu_render);
-	// ADD_EVENT_LISTENER(cnc_reset, system_menu_render);
-#endif
+DECL_MODULE(system_menu)
+{
+	// entry menu
+	g_system_menu.menu_entry = MENU(1);
+	// append subsequent menus
+	system_menu_append(MENU(2));
+	system_menu_reset();
 }
 
 #endif

@@ -69,81 +69,6 @@ static u8g2_t u8g2;
 #define JUSTIFY_TOP u8g2_GetAscent(&u8g2)
 #define TEXT_WIDTH(t) u8g2_GetUTF8Width(&u8g2, t)
 
-typedef struct
-{
-	uint32_t screen_timeout;
-	int8_t current_screen;
-	int8_t current_menu;
-	uint8_t current_menu_item;
-} screen_options_t;
-
-static screen_options_t display_screen;
-static system_menu_page_t *graphic_lcd_menu_walker;
-
-static bool graphic_lcd_current_menu_active;
-
-
-
-void graphic_lcd_system_draw_menu(void)
-{
-	static uint8_t highlighted = 0;
-	switch (u8x8_GetMenuEvent(u8g2_GetU8x8(&u8g2)))
-	{
-	case U8X8_MSG_GPIO_MENU_SELECT:
-		system_menu_action(SYSTEM_MENU_ACTION_SELECT);
-		break;
-	case U8X8_MSG_GPIO_MENU_NEXT:
-		system_menu_action(SYSTEM_MENU_ACTION_NEXT);
-		break;
-	case U8X8_MSG_GPIO_MENU_PREV:
-		system_menu_action(SYSTEM_MENU_ACTION_PREV);
-		break;
-	}
-
-	if (display_screen.current_menu < 0)
-	{
-		return;
-	}
-	// char buff[32];
-	system_menu_item_t entry;
-	u8g2_int_t y = JUSTIFY_CENTER - (display_screen.current_menu_item * FONTHEIGHT);
-
-	// u8g2_DrawStr(&u8g2, 1, y, hold_menu.menu_name);
-	uint8_t item_index = 0;
-	// MENU_WALK(graphic_lcd_menu_walker, walker_ptr)
-	// {
-	// 	for (uint8_t item_index = 0; item_index < walker_ptr->item_count; item_index++)
-	// 	{
-	// 		rom_memcpy(&entry, walker_ptr->item[item_index], sizeof(system_menu_item_t));
-	// 		if (entry.id == display_screen.current_menu)
-	// 		{
-	// 			if (entry.drawmenu)
-	// 			{
-	// 				entry.drawmenu(NULL);
-	// 				return;
-	// 			}
-
-	// 			u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), 0, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
-	// 		}
-
-	// 		if (entry.parent_id == display_screen.current_menu)
-	// 		{
-	// 			if (display_screen.current_menu_item == item_index)
-	// 			{
-	// 				u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name) + (TEXT_WIDTH(entry.menu_name) / 2), y, U8G2_BTN_INV | U8G2_BTN_HCENTER, LCDWIDTH, 0, 0, entry.menu_name);
-	// 			}
-	// 			else
-	// 			{
-	// 				u8g2_DrawButtonUTF8(&u8g2, ALIGN_CENTER(entry.menu_name), y, U8G2_BTN_BW0, 0, 0, 0, entry.menu_name);
-	// 			}
-
-	// 			y += FONTHEIGHT;
-	// 			item_index++;
-	// 		}
-	// 	}
-	// }
-}
-
 /**
  *
  * can also be done via hardware SPI and I2C libraries of µCNC
@@ -470,19 +395,6 @@ void ftoa(float __val, char *__s, int __radix)
 	itoa(digits, &__s[i], 10);
 }
 
-void graphic_lcd_start_screen(void)
-{
-	char buff[32];
-	rom_strcpy(buff, __romstr__("µCNC"));
-	u8g2_ClearBuffer(&u8g2);
-	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
-	u8g2_DrawUTF8X2(&u8g2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(&u8g2, buff)), JUSTIFY_CENTER - FONTHEIGHT / 2, buff);
-	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
-	u8g2_SetFont(&u8g2, u8g2_font_6x12_tr);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
-	u8g2_SendBuffer(&u8g2);
-}
-
 void graphic_lcd_system_status_screen(void)
 {
 	// starts from the bottom up
@@ -689,46 +601,42 @@ void graphic_lcd_system_main_screen(void)
 	u8g2_DrawButtonUTF8(&u8g2, 1, 1, U8G2_BTN_BW1, 5, 1, 1, "X");
 }
 
+// static bool graphic_lcd_current_menu_active;
 #ifdef ENABLE_MAIN_LOOP_MODULES
-/**
- * Handles SD card in the main loop
- * */
-uint8_t graphic_lcd_loop(void *args, bool *handled)
+uint8_t graphic_lcd_update(void *args, bool *handled)
 {
-	static uint32_t refresh = 0;
-	if (display_screen.screen_timeout < mcu_millis())
-	{
-		u8g2_SetFont(&u8g2, u8g2_font_tinytim_tf);
-		display_screen.current_menu = 0;
+	if(io_get_pinvalue(U8X8_MSG_GPIO_MENU_SELECT_PIN)){
+		system_menu_action(SYSTEM_MENU_ACTION_SELECT);
 	}
+	// get user actions
+	// if (g_system_menu.next_redraw < mcu_millis())
+	// {
+	// 	mcu_putc(u8x8_GetMenuEvent(u8g2_GetU8x8(&u8g2)));
+	// }
 
-	if (refresh < mcu_millis())
-	{
-		u8g2_ClearBuffer(&u8g2);
-		switch (display_screen.current_menu)
-		{
-		case -2:
-			graphic_lcd_start_screen();
-			break;
-		case -1:
-			graphic_lcd_system_main_screen();
-			graphic_lcd_system_status_screen();
-			break;
-		default:
-			graphic_lcd_system_draw_menu();
-			break;
-		}
+	// switch (u8x8_GetMenuEvent(u8g2_GetU8x8(&u8g2)))
+	// {
+	// case U8X8_MSG_GPIO_MENU_SELECT:
+	// 	system_menu_action(SYSTEM_MENU_ACTION_SELECT);
+	// 	break;
+	// case U8X8_MSG_GPIO_MENU_NEXT:
+	// 	system_menu_action(SYSTEM_MENU_ACTION_NEXT);
+	// 	break;
+	// case U8X8_MSG_GPIO_MENU_PREV:
+	// 	system_menu_action(SYSTEM_MENU_ACTION_PREV);
+	// 	break;
+	// }
 
-		u8g2_NextPage(&u8g2);
-		refresh = mcu_millis() + GRAPHIC_LCD_REFRESH;
-	}
+	// render menu
+	system_menu_render();
 
 	return STATUS_OK;
 }
 
-CREATE_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
+CREATE_EVENT_LISTENER(cnc_dotasks, graphic_lcd_update);
+#endif
 
-uint8_t graphic_lcd_start(void *args, bool *handled)
+DECL_MODULE(graphic_lcd)
 {
 	// u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
@@ -736,22 +644,59 @@ uint8_t graphic_lcd_start(void *args, bool *handled)
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display
-	display_screen.screen_timeout = mcu_millis() + 5000;
-	display_screen.current_menu = -2;
 	u8g2_FirstPage(&u8g2);
-}
 
-CREATE_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
-#endif
-
-DECL_MODULE(graphic_lcd)
-{
-	// graphic_lcd_menu_walker = &main_menu;
-
+// adds the display loop
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
-	ADD_EVENT_LISTENER(cnc_dotasks, graphic_lcd_loop);
+	// ADD_EVENT_LISTENER(cnc_reset, graphic_lcd_start);
+	ADD_EVENT_LISTENER(cnc_dotasks, graphic_lcd_update);
 #else
 #warning "Main loop extensions are not enabled. SD card will not work."
 #endif
+}
+
+// system menu overrides
+
+void system_menu_render_startup(void)
+{
+	serial_putc('s');
+	u8g2_ClearBuffer(&u8g2);
+	char buff[32];
+	rom_strcpy(buff, __romstr__("µCNC"));
+	u8g2_ClearBuffer(&u8g2);
+	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
+	u8g2_DrawUTF8X2(&u8g2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(&u8g2, buff)), JUSTIFY_CENTER - FONTHEIGHT / 2, buff);
+	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
+	u8g2_SetFont(&u8g2, u8g2_font_6x12_tr);
+	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
+	u8g2_SendBuffer(&u8g2);
+	u8g2_NextPage(&u8g2);
+}
+
+void system_menu_render_idle(void)
+{
+	serial_putc('i');
+	u8g2_ClearBuffer(&u8g2);
+	graphic_lcd_system_main_screen();
+	graphic_lcd_system_status_screen();
+	u8g2_NextPage(&u8g2);
+}
+
+void system_menu_render_header(const char *__s)
+{
+	u8g2_ClearBuffer(&u8g2);
+	char buff[32];
+	rom_strcpy(buff, __s);
+	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_TOP, buff);
+}
+
+void system_menu_item_render_label(uint8_t item_index, const char *label)
+{
+	item_index++;
+	u8g2_DrawStr(&u8g2, ALIGN_LEFT, JUSTIFY_TOP + (item_index * FONTHEIGHT), label);
+}
+
+void system_menu_render_footer(void)
+{
+	u8g2_NextPage(&u8g2);
 }

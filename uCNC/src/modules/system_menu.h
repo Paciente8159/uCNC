@@ -32,12 +32,16 @@ extern "C"
 #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
-#ifndef SYSTEM_MENU_IDLE_TIMEOUT_MS
-#define SYSTEM_MENU_IDLE_TIMEOUT_MS 5000
+#ifndef SYSTEM_MENU_ACTIVE_REDRAW_MS
+#define SYSTEM_MENU_ACTIVE_REDRAW_MS 10000
 #endif
 
-#ifndef SYSTEM_MENU_REDRAW_MS
-#define SYSTEM_MENU_REDRAW_MS 200
+#ifndef SYSTEM_MENU_REDRAW_STARTUP_MS
+#define SYSTEM_MENU_REDRAW_STARTUP_MS 5000
+#endif
+
+#ifndef SYSTEM_MENU_REDRAW_IDLE_MS
+#define SYSTEM_MENU_REDRAW_IDLE_MS 200
 #endif
 
 // render flags
@@ -115,8 +119,9 @@ extern "C"
 	 * Overridable functions to be implemented for the display to render the system menu
 	 * **/
 	void system_menu_render_header(const char *__s);
-	void system_menu_render_content(uint8_t item_index, const system_menu_item_t *item);
-	void system_menu_render_footer(system_menu_page_t *menu);
+	bool system_menu_render_menu_item_filter(uint8_t item_index);
+	void system_menu_render_menu_item(uint8_t item_index, const system_menu_item_t *item);
+	void system_menu_render_footer(void);
 	void system_menu_render_startup(void);
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
@@ -131,9 +136,7 @@ extern "C"
 	/**
 	 * Helper µCNC render callbacks
 	 * **/
-	void system_menu_label_var(void *cmd);
-	void system_menu_action_rt_cmd(void *cmd);
-	void system_menu_action_serial_cmd(void *cmd);
+	void system_menu_item_render_label(uint8_t item_index, const char *label);
 
 #ifdef __cplusplus
 }
