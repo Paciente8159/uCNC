@@ -6,6 +6,22 @@
 
 # Changelog
 
+## [1.6.1] - 26-04-2023
+
+### Added
+
+- added EEPROM emulation to STM32F4 mcu boards (#370)
+- added Bluetooth support for RP2040 (#364)
+
+### Changed
+
+- better STM32 variants support and configuration (#371)
+
+### Fixed
+
+- fixed missing UART RX PULLUP configuration that caused random character input stream on noisy environments, leading to random error messages and deadlocks (#369)
+- fixed RAM_ONLY_SETTINGS option that was default in v1.6.0 pre builds (#369)
+
 ## [1.6.0] - 17-04-2023
 
 ### Added
