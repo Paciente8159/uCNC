@@ -33,6 +33,11 @@
 - moved tinyUSB out from the source and into an external library (#359)
 - moved override configuration files to root directory of the project (#362)
 
+## [1.6.0-alpha] - 19-01-2023
+
+### Added
+
+- initial release of core support for RP2040 MCU (#360)
 
 ## [1.5.7] - 12-01-2023
 
@@ -1151,6 +1156,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.6.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.1
+[1.6.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0
+[1.6.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0-alpha
 [1.5.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.7
 [1.5.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.6
 [1.5.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.5
