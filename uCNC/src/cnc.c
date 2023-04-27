@@ -76,6 +76,12 @@ WEAK_EVENT_HANDLER(cnc_dotasks)
 	DEFAULT_EVENT_HANDLER(cnc_dotasks);
 }
 
+// event_cnc_dotasks_handler
+WEAK_EVENT_HANDLER(cnc_io_dotasks)
+{
+	DEFAULT_EVENT_HANDLER(cnc_io_dotasks);
+}
+
 // event_cnc_stop_handler
 WEAK_EVENT_HANDLER(cnc_stop)
 {
@@ -526,7 +532,6 @@ void cnc_call_rt_command(uint8_t command)
 		break;
 #endif
 	case CMD_CODE_CYCLE_START:
-		// prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
 		if (!cnc_get_exec_state(EXEC_RUN))
 		{
 			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
@@ -892,6 +897,10 @@ static void cnc_io_dotasks(void)
 		CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
 		protocol_send_status();
 	}
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_io_dotasks, NULL);
+#endif
 }
 
 void cnc_run_startup_blocks(void)

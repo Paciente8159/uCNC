@@ -20,9 +20,9 @@
 
 #ifdef ENABLE_SYSTEM_MENU
 
-DECL_MENU_ACTION(hold, "Hold", system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
-DECL_MENU_ACTION(resume, "Resume", system_menu_action_rt_cmd, CONST_VARG(RT_CMD_CYCLE_START));
-DECL_MENU_ACTION(home, "Home", system_menu_action_serial_cmd, "$H");
+DECL_MENU_ACTION(hold, "Hold", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
+DECL_MENU_ACTION(resume, "Resume", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
+DECL_MENU_ACTION(home, "Home", &system_menu_action_serial_cmd, "$H");
 // DECL_MENU_GOTO(settings, "Settings", &settings_menu);
 DECL_MENU(1, 0, "Main menu", 3, &hold, &resume, &home);
 DECL_MENU(2, 1, "Settings menu", 0, NULL);
@@ -59,6 +59,22 @@ static const system_menu_item_t *system_menu_get_item(uint8_t menu_id, int16_t i
 	return NULL;
 }
 
+static uint8_t system_menu_get_itemcount(uint8_t menu_id)
+{
+	uint8_t item_count = 0;
+	MENU_LOOP(g_system_menu.menu_entry, menu_item)
+	{
+		if (menu_item->menu_id == menu_id)
+		{
+			item_count += menu_item->item_count;
+		}
+	}
+
+	// could not find
+	// return empty item
+	return item_count;
+}
+
 void system_menu_append(system_menu_page_t *extended_menu)
 {
 	system_menu_page_t *ptr = g_system_menu.menu_entry;
@@ -75,6 +91,7 @@ void system_menu_reset(void)
 {
 	g_system_menu.current_menu = 0;
 	g_system_menu.current_index = 0;
+	g_system_menu.total_items = 0;
 	g_system_menu.flags = SYSTEM_MENU_STARTUP;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
@@ -101,73 +118,66 @@ void system_menu_render(void)
 			return;
 		}
 
-		// idle or nothing to render
-		if (renderflags == SYSTEM_MENU_IDLE || !g_system_menu.current_menu)
+		if (renderflags & SYSTEM_MENU_ACTIVE)
 		{
-			system_menu_render_idle();
-			system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_IDLE_MS);
-			return;
-		}
-
-		uint8_t item_index = 0;
-		MENU_LOOP(g_system_menu.menu_entry, menu_item)
-		{
-			if (menu_item->menu_id == g_system_menu.current_menu)
+			uint8_t item_index = 0;
+			MENU_LOOP(g_system_menu.menu_entry, menu_item)
 			{
-				if (!item_index)
+				if (menu_item->menu_id == g_system_menu.current_menu)
 				{
-					system_menu_render_header(menu_item->label);
-				}
-
-				for (uint8_t i = 0; i < menu_item->item_count; i++, item_index++)
-				{
-					if (system_menu_render_menu_item_filter(item_index))
+					if (!item_index)
 					{
-						system_menu_render_menu_item(item_index, menu_item->items[i]);
+						system_menu_render_header(menu_item->page_label);
+					}
+
+					for (uint8_t i = 0; i < menu_item->item_count; i++, item_index++)
+					{
+						if (system_menu_render_menu_item_filter(item_index))
+						{
+							system_menu_render_menu_item(item_index, menu_item->items[i]);
+						}
 					}
 				}
 			}
+
+			system_menu_render_footer();
+			system_menu_enqueue_redraw(SYSTEM_MENU_ACTIVE_REDRAW_MS);
+			return;
 		}
 
-		system_menu_render_footer();
-
-		system_menu_enqueue_redraw(SYSTEM_MENU_ACTIVE_REDRAW_MS);
+		// idle or nothing to render
+		// reset menus
+		g_system_menu.current_menu = 0;
+		g_system_menu.current_index = 0;
+		system_menu_render_idle();
+		system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_IDLE_MS);
 	}
+}
+
+bool system_menu_is_item_active(uint8_t item_index)
+{
+	return (g_system_menu.current_index == item_index);
 }
 
 void system_menu_action(uint8_t action)
 {
-	static uint32_t last_action_time = 0;
-	uint32_t current_time = mcu_millis();
-
-	bool is_idle = ((current_time - last_action_time) > SYSTEM_MENU_ACTIVE_REDRAW_MS);
-
-	if (action)
-	{
-		is_idle = false;
-		last_action_time = current_time;
-	}
-	else if (is_idle)
-	{
-		g_system_menu.flags = SYSTEM_MENU_IDLE;
-		return;
-	}
-
-	g_system_menu.flags |= SYSTEM_MENU_RENDER;
+	system_menu_item_t *next = NULL;
 
 	switch (action)
 	{
 	case SYSTEM_MENU_ACTION_SELECT:
+		g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
 		if (!g_system_menu.current_menu)
 		{
 			// enter main menu
 			g_system_menu.current_menu = 1;
+			g_system_menu.total_items = system_menu_get_itemcount(1);
 			g_system_menu.current_index = 0;
 		}
 		else
 		{
 			// if inside a menu get the arg
-			const system_menu_item_t *next = system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
+			next = system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
 			if (next)
 			{
 				system_menu_item_t item = {0};
@@ -176,6 +186,7 @@ void system_menu_action(uint8_t action)
 				if (item.action)
 				{
 					item.action(item.action_arg);
+					g_system_menu.next_redraw = 0;
 					return;
 				}
 			}
@@ -189,10 +200,24 @@ void system_menu_action(uint8_t action)
 		}
 		break;
 	case SYSTEM_MENU_ACTION_NEXT:
-		g_system_menu.current_index++;
+		if (g_system_menu.current_menu)
+		{
+			g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+			if ((g_system_menu.total_items - 1) > g_system_menu.current_index)
+			{
+				g_system_menu.current_index++;
+			}
+		}
 		break;
 	case SYSTEM_MENU_ACTION_PREV:
-		g_system_menu.current_index--;
+		if (g_system_menu.current_menu)
+		{
+			g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+			if (g_system_menu.current_index)
+			{
+				g_system_menu.current_index--;
+			}
+		}
 		break;
 	default:
 		// no new action don't render
@@ -212,7 +237,8 @@ void system_menu_action_goto(void *cmd)
 {
 	g_system_menu.current_menu = (uint8_t)cmd;
 	g_system_menu.current_index = 0;
-	g_system_menu.flags |= SYSTEM_MENU_RENDER;
+	g_system_menu.total_items = system_menu_get_itemcount((uint8_t)cmd);
+	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
 }
@@ -220,11 +246,17 @@ void system_menu_action_goto(void *cmd)
 void system_menu_action_rt_cmd(void *cmd)
 {
 	cnc_call_rt_command((uint8_t)cmd);
+	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
 }
 
 void system_menu_action_serial_cmd(void *cmd)
 {
 	serial_inject_cmd((const char *)cmd, false);
+	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
 }
 
 void __attribute__((weak)) system_menu_render_header(const char *__s)

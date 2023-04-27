@@ -48,7 +48,7 @@ extern "C"
 // the higher the bit the higher the priority
 #define SYSTEM_MENU_ALARM 128
 #define SYSTEM_MENU_STARTUP 64
-#define SYSTEM_MENU_RENDER 1
+#define SYSTEM_MENU_ACTIVE 1
 #define SYSTEM_MENU_IDLE 0
 
 #define SYSTEM_MENU_ACTION_NONE 0
@@ -72,9 +72,9 @@ extern "C"
 	{
 		uint8_t menu_id;
 		uint8_t parent_id;
-		const char *label;
+		const char *page_label;
 		uint8_t item_count;
-		system_menu_item_t** const items;
+		system_menu_item_t **const items;
 		struct system_menu_page_ *extended;
 	} system_menu_page_t;
 
@@ -83,12 +83,13 @@ extern "C"
 		uint8_t flags;
 		uint8_t current_menu;
 		uint8_t current_index;
+		uint8_t total_items;
 		system_menu_page_t *menu_entry;
 		uint32_t next_redraw;
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
-#define DECL_MENU_ENTRY(name, strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg) static const system_menu_item_t name __rom__ = {strvalue, argptr, display_cb, display_cb_arg, action_cb, action_cb_arg}
+#define DECL_MENU_ENTRY(name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg) static const system_menu_item_t name __rom__ = {.label = strvalue, .argptr = arg_ptr, .render = display_cb, .render_arg = display_cb_arg, .action = action_cb, .action_arg = action_cb_arg}
 
 /**
  * Helper macros
@@ -97,10 +98,10 @@ extern "C"
 #define DECL_MENU_GOTO(name, strvalue, menu) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
 #define DECL_MENU_ACTION(name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(id, parent_id, label, count, ...)  \
-	static const char m##id##_label[] __rom__ = label; \
-	static const system_menu_item_t* m##id##_items[] = {__VA_ARGS__}; \
-	static system_menu_page_t m##id = {id, parent_id, m##id##_label, count, m##id##_items, NULL}
+#define DECL_MENU(id, parentid, label, count, ...)                    \
+	static const char m##id##_label[] __rom__ = label;                \
+	static const system_menu_item_t *m##id##_items[] = {__VA_ARGS__}; \
+	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .item_count = count, .items = m##id##_items, .extended = NULL}
 #define MENU(id) (&m##id)
 
 #define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
@@ -113,7 +114,7 @@ extern "C"
 	void system_menu_append(system_menu_page_t *extended_menu);
 	void system_menu_render(void);
 	void system_menu_reset(void);
-	void system_menu_action(uint8_t action);
+	bool system_menu_is_item_active(uint8_t item_index);
 
 	/**
 	 * Overridable functions to be implemented for the display to render the system menu
