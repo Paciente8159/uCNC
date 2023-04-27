@@ -53,7 +53,7 @@
 // #define U8X8_MSG_GPIO_MENU_PREV_PIN DIN23
 
 #ifndef GRAPHIC_LCD_MAX_LINES
-#define GRAPHIC_LCD_MAX_LINES 6
+#define GRAPHIC_LCD_MAX_LINES 5
 #endif
 
 #ifndef GRAPHIC_LCD_REFRESH
@@ -670,6 +670,7 @@ void system_menu_render_header(const char *__s)
 void system_menu_item_render_label(uint8_t item_index, const char *label)
 {
 	y_coord += FONTHEIGHT + 1;
+	u8g2_SetDrawColor(&u8g2, 1);
 	if (system_menu_is_item_active(item_index))
 	{
 		u8g2_SetDrawColor(&u8g2, 1);
@@ -677,16 +678,16 @@ void system_menu_item_render_label(uint8_t item_index, const char *label)
 		u8g2_SetDrawColor(&u8g2, 0);
 	}
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
-	u8g2_SetDrawColor(&u8g2, 1);
 }
 
-void system_menu_item_render_value(uint8_t item_index, const char *value)
+void system_menu_item_render_arg(const char *value)
 {
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
 }
 
 void system_menu_render_footer(void)
 {
+	u8g2_SetDrawColor(&u8g2, 1);
 	u8g2_NextPage(&u8g2);
 }
 

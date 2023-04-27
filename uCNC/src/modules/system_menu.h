@@ -48,6 +48,8 @@ extern "C"
 // the higher the bit the higher the priority
 #define SYSTEM_MENU_ALARM 128
 #define SYSTEM_MENU_STARTUP 64
+#define SYSTEM_MENU_MODIFY_MODE 4
+#define SYSTEM_MENU_EDIT_MODE 2
 #define SYSTEM_MENU_ACTIVE 1
 #define SYSTEM_MENU_IDLE 0
 
@@ -65,25 +67,33 @@ extern "C"
 #define VARG_UINT(X) (X)
 #endif
 
-	typedef struct system_menu_entry_
+	typedef void (*system_menu_page_cb)(void);
+	typedef void (*system_menu_item_cb)(void *);
+
+	typedef struct system_menu_item_
 	{
-		char label[SYSTEM_MENU_MAX_STR_LEN];
+		char *label;
 		void *argptr;
-		void (*render)(void *);
+		system_menu_item_cb render;
 		void *render_arg;
-		void (*action)(void *);
+		system_menu_item_cb action;
 		void *action_arg;
 	} system_menu_item_t;
+
+	typedef struct system_menu_index_
+	{
+		const system_menu_item_t *menu_item;
+		struct system_menu_index_ *next;
+	} system_menu_index_t;
 
 	typedef struct system_menu_page_
 	{
 		uint8_t menu_id;
 		uint8_t parent_id;
 		const char *page_label;
-		void (*page_render)(void);
-		void (*page_action)(void);
-		uint8_t item_count;
-		const system_menu_item_t **items;
+		system_menu_page_cb page_render;
+		system_menu_page_cb page_action;
+		system_menu_index_t *items_index;
 		struct system_menu_page_ *extended;
 	} system_menu_page_t;
 
@@ -98,20 +108,23 @@ extern "C"
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
-#define DECL_MENU_ENTRY(name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg) static const system_menu_item_t name __rom__ = {.label = strvalue, .argptr = arg_ptr, .render = display_cb, .render_arg = display_cb_arg, .action = action_cb, .action_arg = action_cb_arg}
+#define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                         \
+	static const system_menu_item_t name##_item __rom__ = {.label = strvalue, .argptr = arg_ptr, .render = display_cb, .render_arg = display_cb_arg, .action = action_cb, .action_arg = action_cb_arg}; \
+	static system_menu_index_t name = {.menu_item = &name##_item, .next = NULL};                                                                                                                       \
+	system_menu_append_item(menu_id, &name)
 
 /**
  * Helper macros
  * **/
-#define DECL_MENU_LABEL(name, strvalue) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, NULL, NULL)
-#define DECL_MENU_GOTO(name, strvalue, menu) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
-#define DECL_MENU_ACTION(name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
+#define DECL_MENU_LABEL(menu_id, name, strvalue) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, NULL, NULL)
+#define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
+#define DECL_MENU_VAR(menu_id, name, strvalue, varptr, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, NULL, NULL)
+#define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(id, parentid, label, count, ...)                    \
-	static const char m##id##_label[] __rom__ = label;                \
-	static const system_menu_item_t *m##id##_items[] = {__VA_ARGS__}; \
-	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .item_count = count, .items = m##id##_items, .extended = NULL}
-#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb) static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .item_count = -1, .items = NULL, .extended = NULL}
+#define DECL_MENU(id, parentid, label)                 \
+	static const char m##id##_label[] __rom__ = label; \
+	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}
+#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb) static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}
 #define MENU(id) (&m##id)
 
 #define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
@@ -121,7 +134,8 @@ extern "C"
 #endif
 
 	DECL_MODULE(system_menu);
-	void system_menu_append(system_menu_page_t *extended_menu);
+	void system_menu_append(system_menu_page_t *newpage);
+	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
 	void system_menu_render(void);
 	void system_menu_reset(void);
 	bool system_menu_is_item_active(uint8_t item_index);
@@ -149,6 +163,13 @@ extern "C"
 	 * Helper µCNC render callbacks
 	 * **/
 	void system_menu_item_render_label(uint8_t item_index, const char *label);
+	void system_menu_item_render_arg(const char *label);
+	void system_menu_item_render_str_arg(void *strptr);
+	void system_menu_item_render_uint32_arg(void *intptr);
+	void system_menu_item_render_uint16_arg(void *intptr);
+	void system_menu_item_render_uint8_arg(void *intptr);
+	void system_menu_item_render_bool_arg(void *intptr);
+	void system_menu_item_render_flt_arg(void *fltpt);
 
 	/**
 	 * Helper µCNC to display variables
@@ -157,13 +178,13 @@ extern "C"
 	extern char *system_menu_var_to_str_set_buffer_ptr;
 	void system_menu_var_to_str_set_buffer(char *ptr);
 	void system_menu_var_to_str(unsigned char c);
-	
+
 #define system_menu_int_to_str(buf_ptr, var)    \
 	system_menu_var_to_str_set_buffer(buf_ptr); \
 	print_int(system_menu_var_to_str, (uint32_t)var)
 #define system_menu_flt_to_str(buf_ptr, var)    \
 	system_menu_var_to_str_set_buffer(buf_ptr); \
-	print_flt(system_menu_var_to_str, var)
+	print_flt(system_menu_var_to_str, (float)var)
 
 #ifdef __cplusplus
 }
