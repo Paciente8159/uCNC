@@ -130,7 +130,7 @@ static u8g2_t u8g2;
 // #include "../softi2c.h"
 // uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 // {
-// 	static uint8_t buffer[32]; /* u8g2/u8x8 will never send more than 32 bytes between START_TRANSFER and END_TRANSFER */
+// 	static uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN]; /* u8g2/u8x8 will never send more than 32 bytes between START_TRANSFER and END_TRANSFER */
 // 	static uint8_t buf_idx;
 // 	uint8_t *data;
 
@@ -363,49 +363,6 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 	return 1;
 }
 
-/**
- * Helper functions for numbers
- * */
-
-void ftoa(float __val, char *__s, int __radix)
-{
-	uint8_t i = 0;
-	if (__val < 0)
-	{
-		__s[i++] = '-';
-		__val = -__val;
-	}
-
-	uint32_t interger = (uint32_t)floorf(__val);
-	__val -= interger;
-	uint32_t mult = (interger < 10) ? 1000 : ((interger < 100) ? 100 : 10);
-	__val *= mult;
-	uint32_t digits = (uint32_t)roundf(__val);
-	if (digits == mult)
-	{
-		interger++;
-		digits = 0;
-	}
-
-	itoa(interger, &__s[i], 10);
-	while (__s[i] != 0)
-	{
-		i++;
-	}
-	__s[i++] = '.';
-	if ((mult == 1000) && (digits < 100))
-	{
-		__s[i++] = '0';
-	}
-
-	if ((mult >= 100) && (digits < 10))
-	{
-		__s[i++] = '0';
-	}
-
-	itoa(digits, &__s[i], 10);
-}
-
 #ifndef GRAPHIC_LCD_ENCODER_BTN
 #define GRAPHIC_LCD_ENCODER_BTN DIN21
 #endif
@@ -485,7 +442,7 @@ DECL_MODULE(graphic_lcd)
 void system_menu_render_startup(void)
 {
 	u8g2_ClearBuffer(&u8g2);
-	char buff[32];
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("µCNC"));
 	u8g2_ClearBuffer(&u8g2);
 	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
@@ -503,7 +460,7 @@ void system_menu_render_idle(void)
 	// starts from the bottom up
 
 	// coordinates
-	char buff[32];
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	uint8_t y = JUSTIFY_BOTTOM;
 
 	float axis[MAX(AXIS_COUNT, 3)];
@@ -515,17 +472,17 @@ void system_menu_render_idle(void)
 #if (AXIS_COUNT >= 4)
 	memset(buff, 0, 32);
 	buff[0] = 'A';
-	ftoa(axis[3], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[3]);
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
 
 #if (AXIS_COUNT >= 5)
 	buff[0] = 'B';
-	ftoa(axis[4], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[4]);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 6)
 	buff[0] = 'C';
-	ftoa(axis[5], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[5]);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
 #endif
 	y -= (FONTHEIGHT + 3);
@@ -536,17 +493,17 @@ void system_menu_render_idle(void)
 
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
-	ftoa(axis[0], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[0]);
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
 #endif
 #if (AXIS_COUNT >= 2)
 	buff[0] = 'Y';
-	ftoa(axis[1], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[1]);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
-	ftoa(axis[2], &buff[1], 10);
+	system_menu_flt_to_str(&buff[1], axis[2]);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
 #endif
 
@@ -564,7 +521,7 @@ void system_menu_render_idle(void)
 	}
 
 	// Realtime feed
-	ftoa(itp_get_rt_feed(), &buff[5], 10);
+	system_menu_flt_to_str(&buff[5], itp_get_rt_feed());
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
 	memset(buff, 0, 32);
 
@@ -576,10 +533,10 @@ void system_menu_render_idle(void)
 	uint8_t coolant;
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 	rom_strcpy(tool, __romstr__(" T "));
-	itoa(modalgroups[11], &tool[3], 10);
+	system_menu_int_to_str(&tool[3], modalgroups[11]);
 	// Realtime tool speed
 	rom_strcpy(buff, __romstr__("S "));
-	itoa(tool_get_speed(), &buff[2], 10);
+	system_menu_int_to_str(&buff[2], tool_get_speed());
 	strcat(buff, tool);
 	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
 	memset(buff, 0, 32);
@@ -703,15 +660,16 @@ static uint8_t y_coord;
 void system_menu_render_header(const char *__s)
 {
 	u8g2_ClearBuffer(&u8g2);
-	char buff[32];
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __s);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_TOP + 1, buff);
 	u8g2_DrawLine(&u8g2, 0, FONTHEIGHT + 1, LCDWIDTH, FONTHEIGHT + 1);
-	y_coord = FONTHEIGHT + 2;
+	y_coord = 1;
 }
 
 void system_menu_item_render_label(uint8_t item_index, const char *label)
 {
+	y_coord += FONTHEIGHT + 1;
 	if (system_menu_is_item_active(item_index))
 	{
 		u8g2_SetDrawColor(&u8g2, 1);
@@ -719,8 +677,12 @@ void system_menu_item_render_label(uint8_t item_index, const char *label)
 		u8g2_SetDrawColor(&u8g2, 0);
 	}
 	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
-	y_coord += FONTHEIGHT + 1;
 	u8g2_SetDrawColor(&u8g2, 1);
+}
+
+void system_menu_item_render_value(uint8_t item_index, const char *value)
+{
+	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
 }
 
 void system_menu_render_footer(void)

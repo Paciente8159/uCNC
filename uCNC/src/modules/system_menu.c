@@ -23,9 +23,27 @@
 DECL_MENU_ACTION(hold, "Hold", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
 DECL_MENU_ACTION(resume, "Resume", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
 DECL_MENU_ACTION(home, "Home", &system_menu_action_serial_cmd, "$H");
-// DECL_MENU_GOTO(settings, "Settings", &settings_menu);
-DECL_MENU(1, 0, "Main menu", 3, &hold, &resume, &home);
-DECL_MENU(2, 1, "Settings menu", 0, NULL);
+DECL_MENU_GOTO(settings, "Settings", CONST_VARG(2));
+DECL_MENU(1, 0, "Main menu", 4, &hold, &resume, &home, &settings);
+
+// Settings menu will be dynamic
+// this allow more complex generation with preprocessor conditions
+void system_menu_settings_page_render(void)
+{
+	system_menu_render_header(__romstr__("Settings"));
+	uint8_t index = 0;
+	if (system_menu_render_menu_item_filter(index))
+	{
+		system_menu_item_render_label(index, "X st/mm");
+		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		// system_menu_item_render_var(index, )
+	}
+}
+void system_menu_settings_page_action(void)
+{
+}
+
+DECL_DYNAMIC_MENU(2, 1, system_menu_settings_page_render, system_menu_settings_page_action);
 
 system_menu_t g_system_menu;
 
@@ -125,17 +143,25 @@ void system_menu_render(void)
 			{
 				if (menu_item->menu_id == g_system_menu.current_menu)
 				{
-					if (!item_index)
+					if (!menu_item->page_render)
 					{
-						system_menu_render_header(menu_item->page_label);
-					}
-
-					for (uint8_t i = 0; i < menu_item->item_count; i++, item_index++)
-					{
-						if (system_menu_render_menu_item_filter(item_index))
+						if (!item_index)
 						{
-							system_menu_render_menu_item(item_index, menu_item->items[i]);
+							system_menu_render_header(menu_item->page_label);
 						}
+
+						for (uint8_t i = 0; i < menu_item->item_count; i++, item_index++)
+						{
+							if (system_menu_render_menu_item_filter(item_index))
+							{
+								system_menu_render_menu_item(item_index, menu_item->items[i]);
+							}
+						}
+					}
+					else
+					{
+						// custom page render
+						menu_item->page_render();
 					}
 				}
 			}
@@ -177,7 +203,7 @@ void system_menu_action(uint8_t action)
 		else
 		{
 			// if inside a menu get the arg
-			next = system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
+			next = (system_menu_item_t *)system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
 			if (next)
 			{
 				system_menu_item_t item = {0};
@@ -235,9 +261,9 @@ void system_menu_action(uint8_t action)
 // calls a new menu
 void system_menu_action_goto(void *cmd)
 {
-	g_system_menu.current_menu = (uint8_t)cmd;
+	g_system_menu.current_menu = (uint8_t)VARG_UINT(cmd);
 	g_system_menu.current_index = 0;
-	g_system_menu.total_items = system_menu_get_itemcount((uint8_t)cmd);
+	g_system_menu.total_items = system_menu_get_itemcount((uint8_t)VARG_UINT(cmd));
 	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
@@ -245,7 +271,7 @@ void system_menu_action_goto(void *cmd)
 
 void system_menu_action_rt_cmd(void *cmd)
 {
-	cnc_call_rt_command((uint8_t)cmd);
+	cnc_call_rt_command((uint8_t)VARG_UINT(cmd));
 	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
@@ -253,7 +279,7 @@ void system_menu_action_rt_cmd(void *cmd)
 
 void system_menu_action_serial_cmd(void *cmd)
 {
-	serial_inject_cmd((const char *)cmd, false);
+	serial_inject_cmd((const char *)cmd);
 	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
@@ -316,6 +342,26 @@ void __attribute__((weak)) system_menu_render_alarm(void)
  * **/
 void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, const char *label)
 {
+}
+
+void __attribute__((weak)) system_menu_item_render_value(uint8_t item_index, const char *label)
+{
+}
+
+/**
+ * Helper µCNC to display variables
+ * **/
+
+char *system_menu_var_to_str_set_buffer_ptr;
+void system_menu_var_to_str_set_buffer(char *ptr)
+{
+	system_menu_var_to_str_set_buffer_ptr = ptr;
+}
+
+void system_menu_var_to_str(unsigned char c)
+{
+	*system_menu_var_to_str_set_buffer_ptr = c;
+	*(++system_menu_var_to_str_set_buffer_ptr) = 0;
 }
 
 DECL_MODULE(system_menu)

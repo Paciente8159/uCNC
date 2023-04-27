@@ -57,6 +57,13 @@ extern "C"
 #define SYSTEM_MENU_ACTION_PREV 3
 
 #define CONST_VARG(X) ((void *)X)
+#if (__SIZEOF_POINTER__ == 2)
+#define VARG_UINT(X) ((uint16_t)X)
+#elif (__SIZEOF_POINTER__ == 4)
+#define VARG_UINT(X) ((uint32_t)X)
+#else
+#define VARG_UINT(X) (X)
+#endif
 
 	typedef struct system_menu_entry_
 	{
@@ -73,8 +80,10 @@ extern "C"
 		uint8_t menu_id;
 		uint8_t parent_id;
 		const char *page_label;
+		void (*page_render)(void);
+		void (*page_action)(void);
 		uint8_t item_count;
-		system_menu_item_t **const items;
+		const system_menu_item_t **items;
 		struct system_menu_page_ *extended;
 	} system_menu_page_t;
 
@@ -101,7 +110,8 @@ extern "C"
 #define DECL_MENU(id, parentid, label, count, ...)                    \
 	static const char m##id##_label[] __rom__ = label;                \
 	static const system_menu_item_t *m##id##_items[] = {__VA_ARGS__}; \
-	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .item_count = count, .items = m##id##_items, .extended = NULL}
+	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .item_count = count, .items = m##id##_items, .extended = NULL}
+#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb) static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .item_count = -1, .items = NULL, .extended = NULL}
 #define MENU(id) (&m##id)
 
 #define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
@@ -115,6 +125,7 @@ extern "C"
 	void system_menu_render(void);
 	void system_menu_reset(void);
 	bool system_menu_is_item_active(uint8_t item_index);
+	void system_menu_action(uint8_t action);
 
 	/**
 	 * Overridable functions to be implemented for the display to render the system menu
@@ -138,6 +149,21 @@ extern "C"
 	 * Helper µCNC render callbacks
 	 * **/
 	void system_menu_item_render_label(uint8_t item_index, const char *label);
+
+	/**
+	 * Helper µCNC to display variables
+	 * **/
+
+	extern char *system_menu_var_to_str_set_buffer_ptr;
+	void system_menu_var_to_str_set_buffer(char *ptr);
+	void system_menu_var_to_str(unsigned char c);
+	
+#define system_menu_int_to_str(buf_ptr, var)    \
+	system_menu_var_to_str_set_buffer(buf_ptr); \
+	print_int(system_menu_var_to_str, (uint32_t)var)
+#define system_menu_flt_to_str(buf_ptr, var)    \
+	system_menu_var_to_str_set_buffer(buf_ptr); \
+	print_flt(system_menu_var_to_str, var)
 
 #ifdef __cplusplus
 }

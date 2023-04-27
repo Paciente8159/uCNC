@@ -292,7 +292,7 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-// #define ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
 // #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
@@ -522,7 +522,7 @@ extern "C"
 	 * Storing is disabled and the defaults will be loaded at each power up
 	 * This is useful if you don't have EEPROM/FLASH storage or the divide read/write maximum cycle count is low to prevent damage
 	 * */
-	#define RAM_ONLY_SETTINGS
+	// #define RAM_ONLY_SETTINGS
 
 	/**
 	 * EXPERIMENTAL! Uncomment to enable fast math macros to reduce the number of
