@@ -425,7 +425,7 @@ CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_lcd_update);
 DECL_MODULE(graphic_lcd)
 {
 // u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
-#if (MCU == MCU_VIRTUAL)
+#if (BOARD == BOARD_VIRTUAL)
 	u8g2_SetupBuffer_SDL_128x64(&u8g2, &u8g2_cb_r0);
 #else
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
@@ -680,9 +680,16 @@ void system_menu_render_header(const char *__s)
 
 void system_menu_item_render_label(uint8_t item_index, const char *label)
 {
+	y_coord += FONTHEIGHT + 1;
 	if (label)
 	{
-		y_coord += FONTHEIGHT + 1;
+		if(g_system_menu.flags & SYSTEM_MENU_MODE_EDIT){
+			y_coord += FONTHEIGHT + 1;
+			u8g2_SetDrawColor(&u8g2, 1);
+			u8g2_DrawStr(&u8g2, ALIGN_CENTER(label), y_coord + JUSTIFY_TOP + 1, label);
+			return;
+		}
+		
 		u8g2_SetDrawColor(&u8g2, 1);
 		if ((g_system_menu.current_index == item_index))
 		{
@@ -698,6 +705,12 @@ void system_menu_item_render_arg(uint8_t item_index, const char *value)
 {
 	if (value)
 	{
+		if(g_system_menu.flags & SYSTEM_MENU_MODE_EDIT){
+			y_coord += 2*(FONTHEIGHT + 1);
+			u8g2_DrawStr(&u8g2, ALIGN_CENTER(value), y_coord + JUSTIFY_TOP + 1, value);
+			return;
+		}
+
 		u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
 	}
 }

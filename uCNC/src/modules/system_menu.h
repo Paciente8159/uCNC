@@ -46,12 +46,9 @@ extern "C"
 
 // render flags
 // the higher the bit the higher the priority
-#define SYSTEM_MENU_ALARM 128
-#define SYSTEM_MENU_STARTUP 64
-#define SYSTEM_MENU_MODIFY_MODE 4
-#define SYSTEM_MENU_EDIT_MODE 2
-#define SYSTEM_MENU_ACTIVE 1
-#define SYSTEM_MENU_IDLE 0
+#define SYSTEM_MENU_MODE_MODIFY 2
+#define SYSTEM_MENU_MODE_EDIT 1
+#define SYSTEM_MENU_MODE_DISPLAY 0
 
 #define SYSTEM_MENU_ACTION_NONE 0
 #define SYSTEM_MENU_ACTION_SELECT 1
@@ -68,8 +65,9 @@ extern "C"
 #endif
 
 	// anonymous struct that is defined later
-	typedef struct system_menu_item_ system_menu_item_t; 
-	typedef uint8_t (*system_menu_page_cb)(uint8_t);
+	typedef struct system_menu_item_ system_menu_item_t;
+	typedef void (*system_menu_page_render_cb)(void);
+	typedef uint8_t (*system_menu_page_action_cb)(uint8_t);
 	typedef void (*system_menu_item_render_cb)(uint8_t, system_menu_item_t *);
 	typedef uint8_t (*system_menu_item_action_cb)(uint8_t, void *);
 
@@ -94,8 +92,8 @@ extern "C"
 		uint8_t menu_id;
 		uint8_t parent_id;
 		const char *page_label;
-		system_menu_page_cb page_render;
-		system_menu_page_cb page_action;
+		system_menu_page_render_cb page_render;
+		system_menu_page_action_cb page_action;
 		system_menu_index_t *items_index;
 		struct system_menu_page_ *extended;
 	} system_menu_page_t;
@@ -122,7 +120,7 @@ extern "C"
  * **/
 #define DECL_MENU_LABEL(menu_id, name, strvalue) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, NULL, NULL)
 #define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
-#define DECL_MENU_VAR(menu_id, name, strvalue, varptr, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, NULL, NULL)
+#define DECL_MENU_VAR(menu_id, name, strvalue, varptr, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_edit_var, NULL)
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
 #define DECL_MENU(id, parentid, label)                 \
