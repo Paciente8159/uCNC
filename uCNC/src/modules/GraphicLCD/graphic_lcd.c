@@ -398,6 +398,10 @@ uint8_t graphic_lcd_update(void *args, bool *handled)
 {
 	switch (graphic_lcd_rotary_encoder_control())
 	{
+	case 0:
+		// no action needed to go idle
+		system_menu_action(SYSTEM_MENU_ACTION_NONE);
+		break;
 	case GRAPHIC_LCD_SELECT:
 		system_menu_action(SYSTEM_MENU_ACTION_SELECT);
 		break;
@@ -420,9 +424,12 @@ CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_lcd_update);
 
 DECL_MODULE(graphic_lcd)
 {
-	// u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
+// u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
+#if (MCU == MCU_VIRTUAL)
+	u8g2_SetupBuffer_SDL_128x64(&u8g2, &u8g2_cb_r0);
+#else
 	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
-	// u8g2_SetupBuffer_SDL_128x64(&u8g2, &u8g2_cb_r0);
+#endif
 	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(&u8g2);
 	u8g2_SetPowerSave(&u8g2, 0); // wake up display
@@ -664,25 +671,35 @@ void system_menu_render_header(const char *__s)
 	rom_strcpy(buff, __s);
 	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_TOP + 1, buff);
 	u8g2_DrawLine(&u8g2, 0, FONTHEIGHT + 1, LCDWIDTH, FONTHEIGHT + 1);
+	if (g_system_menu.current_index < 0)
+	{
+		u8g2_DrawButtonUTF8(&u8g2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, U8G2_BTN_INV, TEXT_WIDTH("X") + 2, 2, 1, "X");
+	}
 	y_coord = 1;
 }
 
 void system_menu_item_render_label(uint8_t item_index, const char *label)
 {
-	y_coord += FONTHEIGHT + 1;
-	u8g2_SetDrawColor(&u8g2, 1);
-	if (system_menu_is_item_active(item_index))
+	if (label)
 	{
+		y_coord += FONTHEIGHT + 1;
 		u8g2_SetDrawColor(&u8g2, 1);
-		u8g2_DrawBox(&u8g2, ALIGN_LEFT, y_coord, LCDWIDTH, FONTHEIGHT + 1);
-		u8g2_SetDrawColor(&u8g2, 0);
+		if ((g_system_menu.current_index == item_index))
+		{
+			u8g2_SetDrawColor(&u8g2, 1);
+			u8g2_DrawBox(&u8g2, ALIGN_LEFT, y_coord, LCDWIDTH, FONTHEIGHT + 1);
+			u8g2_SetDrawColor(&u8g2, 0);
+		}
+		u8g2_DrawStr(&u8g2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
 	}
-	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
 }
 
-void system_menu_item_render_arg(const char *value)
+void system_menu_item_render_arg(uint8_t item_index, const char *value)
 {
-	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
+	if (value)
+	{
+		u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
+	}
 }
 
 void system_menu_render_footer(void)
@@ -694,18 +711,19 @@ void system_menu_render_footer(void)
 bool system_menu_render_menu_item_filter(uint8_t item_index)
 {
 	static uint8_t menu_top = 0;
+	uint8_t current_index = MAX(0, g_system_menu.current_index);
 
 	uint8_t top = menu_top;
-	if ((top + GRAPHIC_LCD_MAX_LINES) < item_index)
+	if ((top + GRAPHIC_LCD_MAX_LINES) <= current_index)
 	{
 		// advance menu top
-		menu_top = top = item_index - GRAPHIC_LCD_MAX_LINES;
+		menu_top = top = (current_index - GRAPHIC_LCD_MAX_LINES + 1);
 	}
 
-	if (top > item_index)
+	if (top > current_index)
 	{
 		// rewind menu top
-		menu_top = top = item_index;
+		menu_top = top = current_index;
 	}
 
 	return ((top <= item_index) && (item_index < (top + GRAPHIC_LCD_MAX_LINES)));

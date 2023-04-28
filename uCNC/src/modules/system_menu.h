@@ -32,8 +32,8 @@ extern "C"
 #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
-#ifndef SYSTEM_MENU_ACTIVE_REDRAW_MS
-#define SYSTEM_MENU_ACTIVE_REDRAW_MS 10000
+#ifndef SYSTEM_MENU_GO_IDLE_MS
+#define SYSTEM_MENU_GO_IDLE_MS 10000
 #endif
 
 #ifndef SYSTEM_MENU_REDRAW_STARTUP_MS
@@ -67,18 +67,21 @@ extern "C"
 #define VARG_UINT(X) (X)
 #endif
 
-	typedef void (*system_menu_page_cb)(void);
-	typedef void (*system_menu_item_cb)(void *);
+	// anonymous struct that is defined later
+	typedef struct system_menu_item_ system_menu_item_t; 
+	typedef uint8_t (*system_menu_page_cb)(uint8_t);
+	typedef void (*system_menu_item_render_cb)(uint8_t, system_menu_item_t *);
+	typedef uint8_t (*system_menu_item_action_cb)(uint8_t, void *);
 
-	typedef struct system_menu_item_
+	struct system_menu_item_
 	{
 		char *label;
 		void *argptr;
-		system_menu_item_cb render;
+		system_menu_item_render_cb item_render;
 		void *render_arg;
-		system_menu_item_cb action;
+		system_menu_item_action_cb item_action;
 		void *action_arg;
-	} system_menu_item_t;
+	};
 
 	typedef struct system_menu_index_
 	{
@@ -101,15 +104,16 @@ extern "C"
 	{
 		uint8_t flags;
 		uint8_t current_menu;
-		uint8_t current_index;
+		int16_t current_index;
 		uint8_t total_items;
 		system_menu_page_t *menu_entry;
 		uint32_t next_redraw;
+		uint32_t go_idle;
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
 #define DECL_MENU_ENTRY(menu_id, name, strvalue, arg_ptr, display_cb, display_cb_arg, action_cb, action_cb_arg)                                                                                         \
-	static const system_menu_item_t name##_item __rom__ = {.label = strvalue, .argptr = arg_ptr, .render = display_cb, .render_arg = display_cb_arg, .action = action_cb, .action_arg = action_cb_arg}; \
+	static const system_menu_item_t name##_item __rom__ = {.label = strvalue, .argptr = arg_ptr, .item_render = display_cb, .render_arg = display_cb_arg, .item_action = action_cb, .action_arg = action_cb_arg}; \
 	static system_menu_index_t name = {.menu_item = &name##_item, .next = NULL};                                                                                                                       \
 	system_menu_append_item(menu_id, &name)
 
@@ -138,7 +142,6 @@ extern "C"
 	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
 	void system_menu_render(void);
 	void system_menu_reset(void);
-	bool system_menu_is_item_active(uint8_t item_index);
 	void system_menu_action(uint8_t action);
 
 	/**
@@ -151,25 +154,26 @@ extern "C"
 	void system_menu_render_startup(void);
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
-
+	
 	/**
 	 * Helper µCNC action callbacks
 	 * **/
-	void system_menu_action_goto(void *cmd);
-	void system_menu_action_rt_cmd(void *cmd);
-	void system_menu_action_serial_cmd(void *cmd);
+	uint8_t system_menu_action_goto(uint8_t action, void *cmd);
+	uint8_t system_menu_action_rt_cmd(uint8_t action, void *cmd);
+	uint8_t system_menu_action_serial_cmd(uint8_t action, void *cmd);
+	uint8_t system_menu_edit_var(uint8_t action, void *cmd);
 
 	/**
 	 * Helper µCNC render callbacks
 	 * **/
 	void system_menu_item_render_label(uint8_t item_index, const char *label);
-	void system_menu_item_render_arg(const char *label);
-	void system_menu_item_render_str_arg(void *strptr);
-	void system_menu_item_render_uint32_arg(void *intptr);
-	void system_menu_item_render_uint16_arg(void *intptr);
-	void system_menu_item_render_uint8_arg(void *intptr);
-	void system_menu_item_render_bool_arg(void *intptr);
-	void system_menu_item_render_flt_arg(void *fltpt);
+	void system_menu_item_render_arg(uint8_t item_index, const char *label);
+	void system_menu_item_render_str_arg(uint8_t item_index, system_menu_item_t *item);
+	void system_menu_item_render_uint32_arg(uint8_t item_index, system_menu_item_t *item);
+	void system_menu_item_render_uint16_arg(uint8_t item_index, system_menu_item_t *item);
+	void system_menu_item_render_uint8_arg(uint8_t item_index, system_menu_item_t *item);
+	void system_menu_item_render_bool_arg(uint8_t item_index, system_menu_item_t *item);
+	void system_menu_item_render_flt_arg(uint8_t item_index, system_menu_item_t *item);
 
 	/**
 	 * Helper µCNC to display variables

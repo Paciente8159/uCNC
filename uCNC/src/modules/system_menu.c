@@ -20,29 +20,6 @@
 
 #ifdef ENABLE_SYSTEM_MENU
 
-DECL_MENU(1, 0, "Main menu");
-
-// // Settings menu will be dynamic
-// // this allow more complex generation with preprocessor conditions
-// void system_menu_settings_page_render(void)
-// {
-// 	system_menu_render_header(__romstr__("Settings"));
-// 	uint8_t index = 0;
-// 	if (system_menu_render_menu_item_filter(index))
-// 	{
-// 		system_menu_item_render_label(index, "Steps/mm X:");
-// 		system_menu_item_render_flt_arg(&g_settings.step_per_mm[0]);
-// 	}
-// }
-
-// void system_menu_settings_page_action(void)
-// {
-// }
-
-// DECL_DYNAMIC_MENU(2, 1, system_menu_settings_page_render, system_menu_settings_page_action);
-
-DECL_MENU(2, 1, "Settings");
-
 system_menu_t g_system_menu;
 
 static void system_menu_enqueue_redraw(uint32_t delay)
@@ -50,14 +27,13 @@ static void system_menu_enqueue_redraw(uint32_t delay)
 	g_system_menu.next_redraw = delay + mcu_millis();
 }
 
-static system_menu_page_cb system_menu_get_page_action(uint8_t menu_id)
+static const system_menu_page_t *system_menu_get(uint8_t menu_id)
 {
-	MENU_LOOP(g_system_menu.menu_entry, menu_item)
+	MENU_LOOP(g_system_menu.menu_entry, menu_page)
 	{
-		if (menu_item->menu_id == menu_id)
+		if (menu_page->menu_id == menu_id)
 		{
-			// in the item group
-			return menu_item->page_action;
+			return menu_page;
 		}
 	}
 
@@ -68,23 +44,26 @@ static system_menu_page_cb system_menu_get_page_action(uint8_t menu_id)
 
 static const system_menu_item_t *system_menu_get_item(uint8_t menu_id, int16_t index)
 {
-	MENU_LOOP(g_system_menu.menu_entry, menu_page)
+	if (menu_id && (index >= 0))
 	{
-		if (menu_page->menu_id == menu_id)
+		MENU_LOOP(g_system_menu.menu_entry, menu_page)
 		{
-			if (!menu_page->items_index)
+			if (menu_page->menu_id == menu_id)
 			{
-				return NULL;
-			}
-			// in the item group
-			system_menu_index_t *item = menu_page->items_index;
-			while (index && item->next)
-			{
-				item = item->next;
-				index--;
-			}
+				if (!menu_page->items_index)
+				{
+					return NULL;
+				}
+				// in the item group
+				system_menu_index_t *item = menu_page->items_index;
+				while (index && item->next)
+				{
+					item = item->next;
+					index--;
+				}
 
-			return (!index) ? item->menu_item : NULL;
+				return (!index) ? item->menu_item : NULL;
+			}
 		}
 	}
 
@@ -157,164 +136,148 @@ void system_menu_append(system_menu_page_t *newpage)
 
 void system_menu_reset(void)
 {
-	g_system_menu.current_menu = 0;
+	// startup menu
+	g_system_menu.current_menu = 255;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
-	g_system_menu.flags = SYSTEM_MENU_STARTUP;
+	g_system_menu.flags = 0;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
+	g_system_menu.go_idle = SYSTEM_MENU_REDRAW_STARTUP_MS + mcu_millis();
 }
 
 void system_menu_render(void)
 {
-	uint8_t renderflags = g_system_menu.flags;
-
+	// checks if it's time to redraw
 	if (g_system_menu.next_redraw < mcu_millis())
 	{
-		g_system_menu.flags = SYSTEM_MENU_IDLE;
-
-		if (renderflags & SYSTEM_MENU_ALARM)
+		uint8_t item_index = 0;
+		MENU_LOOP(g_system_menu.menu_entry, menu_page)
 		{
-			system_menu_render_alarm();
-			return;
-		}
-
-		if (renderflags & SYSTEM_MENU_STARTUP)
-		{
-			system_menu_render_startup();
-			system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_STARTUP_MS);
-			return;
-		}
-
-		if (renderflags & SYSTEM_MENU_ACTIVE)
-		{
-			uint8_t item_index = 0;
-			MENU_LOOP(g_system_menu.menu_entry, menu_page)
+			if (menu_page->menu_id == g_system_menu.current_menu)
 			{
-				if (menu_page->menu_id == g_system_menu.current_menu)
+				// if menu has custom render
+				if (menu_page->page_render)
 				{
-					if (!menu_page->page_render)
+					if (!menu_page->page_render(0))
 					{
-						if (!item_index)
-						{
-							system_menu_render_header(menu_page->page_label);
-						}
-
-						system_menu_index_t *item = menu_page->items_index;
-						while (item)
-						{
-							if (system_menu_render_menu_item_filter(item_index))
-							{
-								system_menu_render_menu_item(item_index, item->menu_item);
-							}
-							item = item->next;
-							item_index++;
-						}
-					}
-					else
-					{
-						// custom page render
-						menu_page->page_render();
+						return;
 					}
 				}
-			}
 
-			system_menu_render_footer();
-			system_menu_enqueue_redraw(SYSTEM_MENU_ACTIVE_REDRAW_MS);
-			return;
+				// renders header
+				if (!item_index)
+				{
+					system_menu_render_header(menu_page->page_label);
+				}
+
+				// runs througn each item
+				system_menu_index_t *item = menu_page->items_index;
+				while (item)
+				{
+					if (system_menu_render_menu_item_filter(item_index))
+					{
+						system_menu_render_menu_item(item_index, item->menu_item);
+					}
+					item = item->next;
+					item_index++;
+				}
+			}
 		}
 
-		// idle or nothing to render
-		// reset menus
-		g_system_menu.current_menu = 0;
-		g_system_menu.current_index = 0;
-		system_menu_render_idle();
-		system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_IDLE_MS);
+		system_menu_render_footer();
+		return;
 	}
-}
-
-bool system_menu_is_item_active(uint8_t item_index)
-{
-	return (g_system_menu.current_index == item_index);
 }
 
 void system_menu_action(uint8_t action)
 {
-	system_menu_item_t *next = NULL;
 	uint8_t currentmenu = g_system_menu.current_menu;
+	int16_t currentindex = g_system_menu.current_index;
 
-	system_menu_page_cb cb = system_menu_get_page_action(currentmenu);
-	if (cb)
+	if (action == SYSTEM_MENU_ACTION_NONE)
 	{
-		cb();
-		// forces imediate render
-		g_system_menu.next_redraw = 0;
+		if (currentmenu && (g_system_menu.go_idle < mcu_millis()))
+		{
+			currentmenu = g_system_menu.current_menu = 0;
+			currentindex = g_system_menu.current_index = 0;
+			g_system_menu.next_redraw = 0;
+		}
 		return;
 	}
 
-	switch (action)
+	const system_menu_page_t *menupage = system_menu_get(currentmenu);
+	const system_menu_item_t *menuitem_ptr = (system_menu_item_t *)system_menu_get_item(currentmenu, currentindex);
+	g_system_menu.go_idle = mcu_millis() + SYSTEM_MENU_GO_IDLE_MS;
+
+	if (menupage)
 	{
-	case SYSTEM_MENU_ACTION_SELECT:
 		g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-		if (!currentmenu)
+		// forces imediate render
+		g_system_menu.next_redraw = 0;
+
+		// checks if the menu has a custom action callback
+		if (menupage->page_action)
 		{
-			// enter main menu
-			g_system_menu.current_menu = 1;
-			g_system_menu.total_items = system_menu_get_item_count(1);
-			g_system_menu.current_index = 0;
-		}
-		else
-		{
-			// if inside a menu get the arg
-			next = (system_menu_item_t *)system_menu_get_item(currentmenu, g_system_menu.current_index);
-			if (next)
+			// if the custom action callback returns 0 exit
+			// else continue
+			if (!menupage->page_action(action))
 			{
-				system_menu_item_t item = {0};
-				rom_memcpy(&item, next, sizeof(system_menu_item_t));
-				// found custom action and execute
-				if (item.action)
+				return;
+			}
+		}
+
+		// if the item exists
+		if (menuitem_ptr)
+		{
+			system_menu_item_t menuitem = {0};
+			rom_memcpy(&menuitem, menuitem_ptr, sizeof(system_menu_item_t));
+			// checks if the menu item has a custom action callback
+			if (menuitem.item_action)
+			{
+				if (!menuitem.item_action(action, menuitem.action_arg))
 				{
-					item.action(item.action_arg);
-					g_system_menu.next_redraw = 0;
 					return;
 				}
 			}
-			else
-			{
-				// something went wrong (menu not found)
-				// return to home screen
-				g_system_menu.current_menu = 0;
-				g_system_menu.current_index = 0;
-			}
 		}
-		break;
-	case SYSTEM_MENU_ACTION_NEXT:
-		if (g_system_menu.current_menu)
-		{
-			g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-			if ((g_system_menu.total_items - 1) > g_system_menu.current_index)
-			{
-				g_system_menu.current_index++;
-			}
-		}
-		break;
-	case SYSTEM_MENU_ACTION_PREV:
-		if (g_system_menu.current_menu)
-		{
-			g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-			if (g_system_menu.current_index)
-			{
-				g_system_menu.current_index--;
-			}
-		}
-		break;
-	default:
-		// no new action don't render
-		return;
-	}
 
-	// forces imediate render
-	g_system_menu.next_redraw = 0;
+		// executes the default system_menu actions
+		switch (action)
+		{
+		case SYSTEM_MENU_ACTION_SELECT:
+			// index -1 is return to previous menu
+			if (currentindex < 0)
+			{
+				if (!system_menu_action_goto(action, CONST_VARG(menupage->parent_id)))
+				{
+					return;
+				}
+			}
+			break;
+		case SYSTEM_MENU_ACTION_NEXT:
+			if (currentmenu)
+			{
+				if ((g_system_menu.total_items - 1) > currentindex)
+				{
+					g_system_menu.current_index++;
+				}
+			}
+			break;
+		case SYSTEM_MENU_ACTION_PREV:
+			if (currentmenu)
+			{
+				if (currentindex > -1)
+				{
+					g_system_menu.current_index--;
+				}
+			}
+			break;
+		default:
+			// no new action
+			return;
+		}
+	}
 }
 
 /**
@@ -322,31 +285,88 @@ void system_menu_action(uint8_t action)
  * **/
 
 // calls a new menu
-void system_menu_action_goto(void *cmd)
+uint8_t system_menu_action_goto(uint8_t action, void *cmd)
 {
-	g_system_menu.current_menu = (uint8_t)VARG_UINT(cmd);
-	g_system_menu.current_index = 0;
-	g_system_menu.total_items = system_menu_get_item_count((uint8_t)VARG_UINT(cmd));
-	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-	// forces imediate render
-	g_system_menu.next_redraw = 0;
+	if (action == SYSTEM_MENU_ACTION_SELECT)
+	{
+		uint8_t menu_id = (uint8_t)VARG_UINT(cmd);
+		g_system_menu.current_menu = menu_id;
+		g_system_menu.current_index = 0;
+		// menu 0 goes to idle screen
+		if (menu_id)
+		{
+			g_system_menu.total_items = system_menu_get_item_count(menu_id);
+			g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+		}
+		else
+		{
+			g_system_menu.flags = SYSTEM_MENU_IDLE;
+		}
+		// forces imediate render
+		g_system_menu.next_redraw = 0;
+		return 0;
+	}
+	return 1;
 }
 
-void system_menu_action_rt_cmd(void *cmd)
+uint8_t system_menu_action_rt_cmd(uint8_t action, void *cmd)
 {
-	cnc_call_rt_command((uint8_t)VARG_UINT(cmd));
-	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-	// forces imediate render
-	g_system_menu.next_redraw = 0;
+	if (action == SYSTEM_MENU_ACTION_SELECT)
+	{
+		cnc_call_rt_command((uint8_t)VARG_UINT(cmd));
+		g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+		// forces imediate render
+		g_system_menu.next_redraw = 0;
+		return 0;
+	}
+	return 1;
 }
 
-void system_menu_action_serial_cmd(void *cmd)
+uint8_t system_menu_action_serial_cmd(uint8_t action, void *cmd)
 {
-	serial_inject_cmd((const char *)cmd);
-	g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
-	// forces imediate render
-	g_system_menu.next_redraw = 0;
+	if (action == SYSTEM_MENU_ACTION_SELECT)
+	{
+		serial_inject_cmd((const char *)cmd);
+		g_system_menu.flags |= SYSTEM_MENU_ACTIVE;
+		// forces imediate render
+		g_system_menu.next_redraw = 0;
+		return 0;
+	}
+	return 1;
 }
+
+uint8_t system_menu_edit_var(uint8_t action, void *cmd)
+{
+	if (g_system_menu.flags | SYSTEM_MENU_EDIT_MODE)
+	{
+		g_system_menu.flags ^= SYSTEM_MENU_MODIFY_MODE;
+	}
+	g_system_menu.flags |= SYSTEM_MENU_EDIT_MODE;
+
+	if (cmd)
+	{
+		switch (*((uint8_t *)cmd))
+		{
+		case SYSTEM_MENU_ACTION_SELECT:
+			/* code */
+			break;
+		case SYSTEM_MENU_ACTION_PREV:
+			/* code */
+			break;
+		case SYSTEM_MENU_ACTION_NEXT:
+			/* code */
+			break;
+		default:
+			break;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * Helper µCNC render callbacks
+ * **/
 
 void __attribute__((weak)) system_menu_render_header(const char *__s)
 {
@@ -368,22 +388,13 @@ void __attribute__((weak)) system_menu_render_menu_item(uint8_t item_index, cons
 	system_menu_item_t menuitem = {0};
 	rom_memcpy(&menuitem, item, sizeof(system_menu_item_t));
 
+	// render item
+	system_menu_item_render_label(item_index, menuitem.label);
+
 	// menu item has custom render method
-	if (!menuitem.argptr && menuitem.render)
+	if (menuitem.item_render)
 	{
-		menuitem.render(menuitem.render_arg);
-	}
-	else
-	{
-		// render item
-		system_menu_item_render_label(item_index, menuitem.label);
-		if (menuitem.argptr)
-		{
-			if (menuitem.render)
-			{
-				menuitem.render(menuitem.argptr);
-			}
-		}
+		menuitem.item_render(item_index, &menuitem);
 	}
 }
 
@@ -410,47 +421,47 @@ void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, con
 {
 }
 
-void __attribute__((weak)) system_menu_item_render_arg(const char *label)
+void __attribute__((weak)) system_menu_item_render_arg(uint8_t item_index, const char *label)
 {
 }
 
-void __attribute__((weak)) system_menu_item_render_str_arg(void *strptr)
+void __attribute__((weak)) system_menu_item_render_str_arg(uint8_t item_index, system_menu_item_t *item)
 {
-	system_menu_item_render_arg((const char *)strptr);
+	system_menu_item_render_arg(item_index, (const char *)item->argptr);
 }
 
-void system_menu_item_render_uint32_arg(void *intptr)
+void system_menu_item_render_uint32_arg(uint8_t item_index, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-	system_menu_int_to_str(buffer, *((uint32_t *)intptr));
-	system_menu_item_render_arg((const char *)buffer);
+	system_menu_int_to_str(buffer, *((uint32_t *)item->argptr));
+	system_menu_item_render_arg(item_index, (const char *)buffer);
 }
 
-void system_menu_item_render_uint16_arg(void *intptr)
+void system_menu_item_render_uint16_arg(uint8_t item_index, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-	system_menu_int_to_str(buffer, (uint32_t) * ((uint16_t *)intptr));
-	system_menu_item_render_arg((const char *)buffer);
+	system_menu_int_to_str(buffer, (uint32_t) * ((uint16_t *)item->argptr));
+	system_menu_item_render_arg(item_index, (const char *)buffer);
 }
 
-void system_menu_item_render_uint8_arg(void *intptr)
+void system_menu_item_render_uint8_arg(uint8_t item_index, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-	system_menu_int_to_str(buffer, (uint32_t) * ((uint8_t *)intptr));
-	system_menu_item_render_arg((const char *)buffer);
+	system_menu_int_to_str(buffer, (uint32_t) * ((uint8_t *)item->argptr));
+	system_menu_item_render_arg(item_index, (const char *)buffer);
 }
 
-void system_menu_item_render_bool_arg(void *boolptr)
+void system_menu_item_render_bool_arg(uint8_t item_index, system_menu_item_t *item)
 {
-	char *buffer = (*((bool *)boolptr)) ? "true" : "false";
-	system_menu_item_render_arg((const char *)buffer);
+	char *buffer = (*((bool *)item->argptr)) ? "1" : "0";
+	system_menu_item_render_arg(item_index, (const char *)buffer);
 }
 
-void system_menu_item_render_flt_arg(void *fltptr)
+void system_menu_item_render_flt_arg(uint8_t item_index, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-	system_menu_flt_to_str(buffer, *((float *)fltptr));
-	system_menu_item_render_arg((const char *)buffer);
+	system_menu_flt_to_str(buffer, *((float *)item->argptr));
+	system_menu_item_render_arg(item_index, (const char *)buffer);
 }
 
 /**
@@ -469,10 +480,38 @@ void system_menu_var_to_str(unsigned char c)
 	*(++system_menu_var_to_str_set_buffer_ptr) = 0;
 }
 
+static uint8_t system_menu_startup(uint8_t id)
+{
+	system_menu_render_startup();
+	return 0;
+}
+DECL_DYNAMIC_MENU(255, 0, system_menu_startup, NULL);
+
+static uint8_t system_menu_open(uint8_t menu)
+{
+	return system_menu_action_goto(SYSTEM_MENU_ACTION_SELECT, CONST_VARG(1));
+}
+
+static uint8_t system_menu_idle(uint8_t id)
+{
+	system_menu_render_idle();
+	system_menu_enqueue_redraw(SYSTEM_MENU_REDRAW_IDLE_MS);
+	return 0;
+}
+
+DECL_DYNAMIC_MENU(0, 0, system_menu_idle, system_menu_open);
+DECL_MENU(1, 0, "Main menu");
+DECL_MENU(2, 1, "Settings");
+
 DECL_MODULE(system_menu)
 {
-	// entry menu
-	g_system_menu.menu_entry = MENU(1);
+	// entry menu to startup screen
+	g_system_menu.menu_entry = MENU(255);
+	// append idle menu
+	system_menu_append(MENU(0));
+
+	// append main
+	system_menu_append(MENU(1));
 
 	// menu entries
 	DECL_MENU_ACTION(1, hold, "Hold", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
@@ -490,7 +529,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(2, s7, "Control inv:", &g_settings.control_invert_mask, system_menu_item_render_uint8_arg);
 	DECL_MENU_VAR(2, s20, "Soft-limits:", &g_settings.soft_limits_enabled, system_menu_item_render_bool_arg);
 	DECL_MENU_VAR(2, s2, "Steps/mm X:", &g_settings.step_per_mm[0], system_menu_item_render_flt_arg);
-	
+
 	system_menu_reset();
 }
 
