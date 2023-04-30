@@ -594,11 +594,10 @@ extern "C"
 #endif
 
 /**
- * Enable System Menu for displays
- * This enables Menu system manager to generate the interfaces for displays controlled by µCNC
+ * System Menu for displays
+ * System Menu manages interfaces and control actions for displays in µCNC
  * **/
-#define ENABLE_SYSTEM_MENU
-// override the default max string length for each menu entry
+// override the default max string buffer length
 #ifndef SYSTEM_MENU_MAX_STR_LEN
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif

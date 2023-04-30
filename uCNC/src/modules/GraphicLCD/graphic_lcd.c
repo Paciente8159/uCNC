@@ -425,6 +425,7 @@ CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_lcd_update);
 
 DECL_MODULE(graphic_lcd)
 {
+	system_menu_init();
 // u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
 #if (BOARD == BOARD_VIRTUAL)
 	u8g2_SetupBuffer_SDL_128x64(U8G2, &u8g2_cb_r0);
@@ -435,6 +436,10 @@ DECL_MODULE(graphic_lcd)
 	u8g2_ClearDisplay(U8G2);
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
+	//clear
+	u8g2_ClearBuffer(U8G2);
+	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
+	u8g2_NextPage(U8G2);
 
 // adds the display loop
 #ifdef ENABLE_MAIN_LOOP_MODULES

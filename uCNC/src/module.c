@@ -62,9 +62,5 @@ void mod_init(void)
 	LOAD_MODULE(tmcdriver);
 #endif
 
-#ifdef ENABLE_SYSTEM_MENU
-	LOAD_MODULE(system_menu);
-#endif
-
 	load_modules();
 }

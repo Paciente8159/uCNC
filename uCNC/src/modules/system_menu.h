@@ -129,21 +129,20 @@ extern "C"
  * Helper macros
  * **/
 #define DECL_MENU_LABEL(menu_id, name, strvalue) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, NULL, NULL)
-#define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, system_menu_action_goto, menu)
+#define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, "->", system_menu_action_goto, menu)
 #define DECL_MENU_VAR(menu_id, name, strvalue, varptr, vartype, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_action_edit, CONST_VARG(vartype))
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
-#define DECL_MENU(id, parentid, label)                 \
-	static const char m##id##_label[] __rom__ = label; \
-	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}
+#define DECL_MENU(id, parentid, label)                                                                                                                                                      \
+	static const char m##id##_label[] __rom__ = label;                                                                                                                                      \
+	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}; \
+	system_menu_append(&m##id)
 #define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb) static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}
 #define MENU(id) (&m##id)
 
 #define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
 
-#ifdef ENABLE_SYSTEM_MENU
 	extern system_menu_t g_system_menu;
-#endif
 
 	DECL_MODULE(system_menu);
 	void system_menu_reset(void);
