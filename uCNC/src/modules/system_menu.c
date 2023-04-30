@@ -236,7 +236,7 @@ void system_menu_render(void)
 					{
 						if (system_menu_render_menu_item_filter(item_index))
 						{
-							system_menu_render_menu_item(render_flags | ((cur_index==item_index) ? SYSTEM_MENU_MODE_SELECT : 0), item->menu_item);
+							system_menu_render_menu_item(render_flags | ((cur_index == item_index) ? SYSTEM_MENU_MODE_SELECT : 0), item->menu_item);
 						}
 						item = item->next;
 						item_index++;
@@ -477,48 +477,56 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 	system_menu_item_t item = {0};
 	float modifier = 0;
 
+	itmptr = system_menu_get_current_item();
+	if (!itmptr)
+	{
+		system_menu_go_idle();
+		return 0;
+	}
+
+	rom_memcpy(&item, itmptr, sizeof(system_menu_item_t));
+
 	switch (action)
 	{
 	case SYSTEM_MENU_ACTION_SELECT:
-		if (currentmult < 0)
-		{
-			// exit edit mode
-			g_system_menu.flags &= ~SYSTEM_MENU_MODE_EDIT;
-			return 0;
-		}
-		else if (flags & SYSTEM_MENU_MODE_EDIT)
+		if (flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			// toogle modify mode
 			g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
 		}
+		g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
 		break;
 	case SYSTEM_MENU_ACTION_PREV:
 	case SYSTEM_MENU_ACTION_NEXT:
 		if (flags & SYSTEM_MENU_MODE_MODIFY)
 		{
 			// increment var by multiplier
-			itmptr = system_menu_get_current_item();
-			if (!itmptr)
-			{
-				system_menu_go_idle();
-				return 0;
-			}
-
-			rom_memcpy(&item, itmptr, sizeof(system_menu_item_t));
 			if (!item.argptr)
 			{
-				return 0;
+				// passthrough action
+				return 1;
 			}
-			modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : powf(-10.0f, currentmult);
+			
+			if (vartype == VAR_TYPE_FLOAT)
+			{
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : powf(-10.0f, (currentmult - 3));
+			}
+			else
+			{
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : powf(-10.0f, currentmult);
+			}
 		}
-		else
+		else if (flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			currentmult += (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : -1;
 		}
+		else
+		{
+			// passthrough action
+			return 1;
+		}
 		break;
 	}
-
-	g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
 
 	// modify mode enabled
 	if (flags & SYSTEM_MENU_MODE_MODIFY)

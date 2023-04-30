@@ -68,7 +68,7 @@
 #define GRAPHIC_LCD_HOME 32
 
 static u8g2_t graphiclcd_u8g2;
-#define U8G2 ((u8g2_t*)&graphiclcd_u8g2)
+#define U8G2 ((u8g2_t *)&graphiclcd_u8g2)
 
 #define LCDWIDTH u8g2_GetDisplayWidth(U8G2)
 #define LCDHEIGHT u8g2_GetDisplayHeight(U8G2)
@@ -672,37 +672,44 @@ void system_menu_render_header(const char *__s)
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __s);
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_TOP + 1, buff);
-	u8g2_DrawLine(U8G2, 0, FONTHEIGHT + 1, LCDWIDTH, FONTHEIGHT + 1);
-	y_coord = 1;
+	u8g2_DrawLine(U8G2, 0, FONTHEIGHT + 2, LCDWIDTH, FONTHEIGHT + 2);
+	y_coord = 2;
 }
 
-void system_menu_render_nav_back(bool is_hover){
-	if(is_hover){
-		u8g2_DrawButtonUTF8(U8G2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, U8G2_BTN_INV, TEXT_WIDTH("X") + 2, 2, 1, "X");
+void system_menu_render_nav_back(bool is_hover)
+{
+	u8g2_SetDrawColor(U8G2, 1);
+	uint8_t mode = U8G2_BTN_BW1;
+	if (is_hover)
+	{
+		mode |= U8G2_BTN_INV;
 	}
+
+	u8g2_DrawButtonUTF8(U8G2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, mode, TEXT_WIDTH("X") + 2, 2, 1, "X");
 }
 
 void system_menu_item_render_label(uint8_t render_flags, const char *label)
 {
 	y_coord += FONTHEIGHT + 1;
+	uint8_t y = y_coord;
 	if (label)
 	{
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			y_coord += FONTHEIGHT + 1;
+			y = y_coord;
 			u8g2_SetDrawColor(U8G2, 1);
-			u8g2_DrawStr(U8G2, ALIGN_CENTER(label), y_coord + JUSTIFY_TOP + 1, label);
+			u8g2_DrawStr(U8G2, ALIGN_CENTER(label), y + JUSTIFY_TOP + 1, label);
 			return;
 		}
 
 		u8g2_SetDrawColor(U8G2, 1);
 		if (render_flags & SYSTEM_MENU_ACTION_SELECT)
 		{
-			u8g2_SetDrawColor(U8G2, 1);
-			u8g2_DrawBox(U8G2, ALIGN_LEFT, y_coord, LCDWIDTH, FONTHEIGHT + 1);
+			u8g2_DrawBox(U8G2, ALIGN_LEFT, y, LCDWIDTH, FONTHEIGHT + 1);
 			u8g2_SetDrawColor(U8G2, 0);
 		}
-		u8g2_DrawStr(U8G2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
+		u8g2_DrawStr(U8G2, ALIGN_LEFT, y + JUSTIFY_TOP + 1, label);
 	}
 }
 
@@ -710,25 +717,42 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 {
 	if (value)
 	{
+		uint8_t y = y_coord;
+
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			y_coord += 2 * (FONTHEIGHT + 1);
 			uint8_t start_pos = ALIGN_CENTER(value);
 			u8g2_DrawStr(U8G2, start_pos, y_coord + JUSTIFY_TOP + 1, value);
 			y_coord += FONTHEIGHT;
-			char *comma = strchr(value, '.');
+			y = y_coord;
+			char *dot = strchr(value, '.');
 			uint8_t base_pos = start_pos + TEXT_WIDTH(value);
-			if (comma)
+			int8_t mult = g_system_menu.current_multiplier + 1;
+			if (dot && mult > 3)
 			{
-				base_pos -= TEXT_WIDTH(comma);
+				// jump the comma position
+				mult++;
 			}
 
-			u8g2_DrawBox(U8G2, base_pos - 6, y_coord, 6, 2);
+			if (mult > 0)
+			{
+				base_pos -= 6 * mult;
+				if (render_flags & SYSTEM_MENU_MODE_MODIFY)
+				{
+					u8g2_DrawTriangle(U8G2, base_pos, y - FONTHEIGHT, base_pos + 6, y - FONTHEIGHT, base_pos + 3, y - FONTHEIGHT - 4);
+					u8g2_DrawTriangle(U8G2, base_pos + 1, y, base_pos + 6, y, base_pos + 3, y + 3);
+				}
+				else
+				{
+					u8g2_DrawBox(U8G2, base_pos + 1, y, 5, 2);
+				}
+			}
 
 			return;
 		}
 
-		u8g2_DrawStr(U8G2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
+		u8g2_DrawStr(U8G2, ALIGN_RIGHT(value), y + JUSTIFY_TOP + 1, value);
 	}
 }
 
