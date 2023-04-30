@@ -67,18 +67,19 @@
 #define GRAPHIC_LCD_DOWN 16
 #define GRAPHIC_LCD_HOME 32
 
-static u8g2_t u8g2;
+static u8g2_t graphiclcd_u8g2;
+#define U8G2 ((u8g2_t*)&graphiclcd_u8g2)
 
-#define LCDWIDTH u8g2_GetDisplayWidth(&u8g2)
-#define LCDHEIGHT u8g2_GetDisplayHeight(&u8g2)
-#define FONTHEIGHT (u8g2_GetAscent(&u8g2) - u8g2_GetDescent(&u8g2))
-#define ALIGN_CENTER(t) ((LCDWIDTH - u8g2_GetUTF8Width(&u8g2, t)) / 2)
-#define ALIGN_RIGHT(t) (LCDWIDTH - u8g2_GetUTF8Width(&u8g2, t))
+#define LCDWIDTH u8g2_GetDisplayWidth(U8G2)
+#define LCDHEIGHT u8g2_GetDisplayHeight(U8G2)
+#define FONTHEIGHT (u8g2_GetAscent(U8G2) - u8g2_GetDescent(U8G2))
+#define ALIGN_CENTER(t) ((LCDWIDTH - u8g2_GetUTF8Width(U8G2, t)) / 2)
+#define ALIGN_RIGHT(t) (LCDWIDTH - u8g2_GetUTF8Width(U8G2, t))
 #define ALIGN_LEFT 0
 #define JUSTIFY_CENTER ((LCDHEIGHT + FONTHEIGHT) / 2)
-#define JUSTIFY_BOTTOM (LCDHEIGHT + u8g2_GetDescent(&u8g2))
-#define JUSTIFY_TOP u8g2_GetAscent(&u8g2)
-#define TEXT_WIDTH(t) u8g2_GetUTF8Width(&u8g2, t)
+#define JUSTIFY_BOTTOM (LCDHEIGHT + u8g2_GetDescent(U8G2))
+#define JUSTIFY_TOP u8g2_GetAscent(U8G2)
+#define TEXT_WIDTH(t) u8g2_GetUTF8Width(U8G2, t)
 
 /**
  *
@@ -424,16 +425,16 @@ CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_lcd_update);
 
 DECL_MODULE(graphic_lcd)
 {
-// u8g2_Setup_st7920_s_128x64_f(&u8g2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
+// u8g2_Setup_st7920_s_128x64_f(U8G2, U8G2_R0, u8x8_byte_4wire_sw_spi, u8x8_gpio_and_delay_ucnc);
 #if (BOARD == BOARD_VIRTUAL)
-	u8g2_SetupBuffer_SDL_128x64(&u8g2, &u8g2_cb_r0);
+	u8g2_SetupBuffer_SDL_128x64(U8G2, &u8g2_cb_r0);
 #else
-	u8g2_Setup_ssd1306_i2c_128x64_noname_f(&u8g2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
+	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
 #endif
-	u8g2_InitDisplay(&u8g2); // send init sequence to the display, display is in sleep mode after this,
-	u8g2_ClearDisplay(&u8g2);
-	u8g2_SetPowerSave(&u8g2, 0); // wake up display
-	u8g2_FirstPage(&u8g2);
+	u8g2_InitDisplay(U8G2); // send init sequence to the display, display is in sleep mode after this,
+	u8g2_ClearDisplay(U8G2);
+	u8g2_SetPowerSave(U8G2, 0); // wake up display
+	u8g2_FirstPage(U8G2);
 
 // adds the display loop
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -448,22 +449,22 @@ DECL_MODULE(graphic_lcd)
 
 void system_menu_render_startup(void)
 {
-	u8g2_ClearBuffer(&u8g2);
+	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __romstr__("µCNC"));
-	u8g2_ClearBuffer(&u8g2);
-	u8g2_SetFont(&u8g2, u8g2_font_9x15_t_symbols);
-	u8g2_DrawUTF8X2(&u8g2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(&u8g2, buff)), JUSTIFY_CENTER - FONTHEIGHT / 2, buff);
+	u8g2_ClearBuffer(U8G2);
+	u8g2_SetFont(U8G2, u8g2_font_9x15_t_symbols);
+	u8g2_DrawUTF8X2(U8G2, (LCDWIDTH / 2 - u8g2_GetUTF8Width(U8G2, buff)), JUSTIFY_CENTER - FONTHEIGHT / 2, buff);
 	rom_strcpy(buff, __romstr__(("v" CNC_VERSION)));
-	u8g2_SetFont(&u8g2, u8g2_font_6x12_tr);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
-	u8g2_SendBuffer(&u8g2);
-	u8g2_NextPage(&u8g2);
+	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
+	u8g2_SendBuffer(U8G2);
+	u8g2_NextPage(U8G2);
 }
 
 void system_menu_render_idle(void)
 {
-	u8g2_ClearBuffer(&u8g2);
+	u8g2_ClearBuffer(U8G2);
 	// starts from the bottom up
 
 	// coordinates
@@ -480,38 +481,38 @@ void system_menu_render_idle(void)
 	memset(buff, 0, 32);
 	buff[0] = 'A';
 	system_menu_flt_to_str(&buff[1], axis[3]);
-	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 
 #if (AXIS_COUNT >= 5)
 	buff[0] = 'B';
 	system_menu_flt_to_str(&buff[1], axis[4]);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 6)
 	buff[0] = 'C';
 	system_menu_flt_to_str(&buff[1], axis[5]);
-	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_RIGHT(buff), y, buff);
 #endif
 	y -= (FONTHEIGHT + 3);
 #endif
 
 	memset(buff, 0, 32);
-	u8g2_DrawLine(&u8g2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
 
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
 	system_menu_flt_to_str(&buff[1], axis[0]);
-	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 #endif
 #if (AXIS_COUNT >= 2)
 	buff[0] = 'Y';
 	system_menu_flt_to_str(&buff[1], axis[1]);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 #endif
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
 	system_menu_flt_to_str(&buff[1], axis[2]);
-	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_RIGHT(buff), y, buff);
 #endif
 
 	memset(buff, 0, 32);
@@ -529,7 +530,7 @@ void system_menu_render_idle(void)
 
 	// Realtime feed
 	system_menu_flt_to_str(&buff[5], itp_get_rt_feed());
-	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 	memset(buff, 0, 32);
 
 	// Tool
@@ -545,9 +546,9 @@ void system_menu_render_idle(void)
 	rom_strcpy(buff, __romstr__("S "));
 	system_menu_int_to_str(&buff[2], tool_get_speed());
 	strcat(buff, tool);
-	u8g2_DrawStr(&u8g2, ALIGN_RIGHT(buff), y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_RIGHT(buff), y, buff);
 	memset(buff, 0, 32);
-	u8g2_DrawLine(&u8g2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
 
 	y -= (FONTHEIGHT + 3);
 
@@ -599,7 +600,7 @@ void system_menu_render_idle(void)
 			break;
 		}
 	}
-	u8g2_DrawStr(&u8g2, ALIGN_LEFT, y, buff);
+	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 	memset(buff, 0, 32);
 
 	uint8_t controls = io_get_controls();
@@ -659,66 +660,82 @@ void system_menu_render_idle(void)
 			buff[i++] = 'C';
 		}
 	}
-	u8g2_DrawStr(&u8g2, (LCDWIDTH >> 1), y, buff);
-	u8g2_NextPage(&u8g2);
+	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
+	u8g2_NextPage(U8G2);
 }
 
 static uint8_t y_coord;
+
 void system_menu_render_header(const char *__s)
 {
-	u8g2_ClearBuffer(&u8g2);
+	u8g2_ClearBuffer(U8G2);
 	char buff[SYSTEM_MENU_MAX_STR_LEN];
 	rom_strcpy(buff, __s);
-	u8g2_DrawStr(&u8g2, ALIGN_CENTER(buff), JUSTIFY_TOP + 1, buff);
-	u8g2_DrawLine(&u8g2, 0, FONTHEIGHT + 1, LCDWIDTH, FONTHEIGHT + 1);
-	if (g_system_menu.current_index < 0)
-	{
-		u8g2_DrawButtonUTF8(&u8g2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, U8G2_BTN_INV, TEXT_WIDTH("X") + 2, 2, 1, "X");
-	}
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_TOP + 1, buff);
+	u8g2_DrawLine(U8G2, 0, FONTHEIGHT + 1, LCDWIDTH, FONTHEIGHT + 1);
 	y_coord = 1;
 }
 
-void system_menu_item_render_label(uint8_t item_index, const char *label)
+void system_menu_render_nav_back(bool is_hover){
+	if(is_hover){
+		u8g2_DrawButtonUTF8(U8G2, ALIGN_RIGHT("X") - 2, FONTHEIGHT - 1, U8G2_BTN_INV, TEXT_WIDTH("X") + 2, 2, 1, "X");
+	}
+}
+
+void system_menu_item_render_label(uint8_t render_flags, const char *label)
 {
 	y_coord += FONTHEIGHT + 1;
 	if (label)
 	{
-		if(g_system_menu.flags & SYSTEM_MENU_MODE_EDIT){
+		if (render_flags & SYSTEM_MENU_MODE_EDIT)
+		{
 			y_coord += FONTHEIGHT + 1;
-			u8g2_SetDrawColor(&u8g2, 1);
-			u8g2_DrawStr(&u8g2, ALIGN_CENTER(label), y_coord + JUSTIFY_TOP + 1, label);
+			u8g2_SetDrawColor(U8G2, 1);
+			u8g2_DrawStr(U8G2, ALIGN_CENTER(label), y_coord + JUSTIFY_TOP + 1, label);
 			return;
 		}
-		
-		u8g2_SetDrawColor(&u8g2, 1);
-		if ((g_system_menu.current_index == item_index))
+
+		u8g2_SetDrawColor(U8G2, 1);
+		if (render_flags & SYSTEM_MENU_ACTION_SELECT)
 		{
-			u8g2_SetDrawColor(&u8g2, 1);
-			u8g2_DrawBox(&u8g2, ALIGN_LEFT, y_coord, LCDWIDTH, FONTHEIGHT + 1);
-			u8g2_SetDrawColor(&u8g2, 0);
+			u8g2_SetDrawColor(U8G2, 1);
+			u8g2_DrawBox(U8G2, ALIGN_LEFT, y_coord, LCDWIDTH, FONTHEIGHT + 1);
+			u8g2_SetDrawColor(U8G2, 0);
 		}
-		u8g2_DrawStr(&u8g2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
+		u8g2_DrawStr(U8G2, ALIGN_LEFT, y_coord + JUSTIFY_TOP + 1, label);
 	}
 }
 
-void system_menu_item_render_arg(uint8_t item_index, const char *value)
+void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 {
 	if (value)
 	{
-		if(g_system_menu.flags & SYSTEM_MENU_MODE_EDIT){
-			y_coord += 2*(FONTHEIGHT + 1);
-			u8g2_DrawStr(&u8g2, ALIGN_CENTER(value), y_coord + JUSTIFY_TOP + 1, value);
+		if (render_flags & SYSTEM_MENU_MODE_EDIT)
+		{
+			y_coord += 2 * (FONTHEIGHT + 1);
+			uint8_t start_pos = ALIGN_CENTER(value);
+			u8g2_DrawStr(U8G2, start_pos, y_coord + JUSTIFY_TOP + 1, value);
+			y_coord += FONTHEIGHT;
+			char *comma = strchr(value, '.');
+			uint8_t base_pos = start_pos + TEXT_WIDTH(value);
+			if (comma)
+			{
+				base_pos -= TEXT_WIDTH(comma);
+			}
+
+			u8g2_DrawBox(U8G2, base_pos - 6, y_coord, 6, 2);
+
 			return;
 		}
 
-		u8g2_DrawStr(&u8g2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
+		u8g2_DrawStr(U8G2, ALIGN_RIGHT(value), y_coord + JUSTIFY_TOP + 1, value);
 	}
 }
 
 void system_menu_render_footer(void)
 {
-	u8g2_SetDrawColor(&u8g2, 1);
-	u8g2_NextPage(&u8g2);
+	u8g2_SetDrawColor(U8G2, 1);
+	u8g2_NextPage(U8G2);
 }
 
 bool system_menu_render_menu_item_filter(uint8_t item_index)

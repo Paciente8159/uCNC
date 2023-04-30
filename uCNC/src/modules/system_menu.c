@@ -17,14 +17,13 @@
 */
 
 #include "system_menu.h"
+#include <math.h>
 
 #ifdef ENABLE_SYSTEM_MENU
 
 system_menu_t g_system_menu;
 
 static void system_menu_redraw_timeout(uint32_t delay);
-static const system_menu_page_t *system_menu_get(uint8_t menu_id);
-static const system_menu_item_t *system_menu_get_item(uint8_t menu_id, int16_t index);
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
 static void system_menu_redraw_timeout(uint32_t delay);
 
@@ -74,13 +73,13 @@ DECL_MODULE(system_menu)
 	system_menu_append(MENU(2));
 
 	// settings menu
-	DECL_MENU_VAR(2, s3, "Dir inv:", &g_settings.dir_invert_mask, system_menu_item_render_uint8_arg);
-	DECL_MENU_VAR(2, s4, "Enable inv:", &g_settings.step_enable_invert, system_menu_item_render_uint8_arg);
-	DECL_MENU_VAR(2, s5, "Limits inv:", &g_settings.limits_invert_mask, system_menu_item_render_uint8_arg);
-	DECL_MENU_VAR(2, s6, "Probe inv:", &g_settings.probe_invert_mask, system_menu_item_render_bool_arg);
-	DECL_MENU_VAR(2, s7, "Control inv:", &g_settings.control_invert_mask, system_menu_item_render_uint8_arg);
-	DECL_MENU_VAR(2, s20, "Soft-limits:", &g_settings.soft_limits_enabled, system_menu_item_render_bool_arg);
-	DECL_MENU_VAR(2, s2, "Steps/mm X:", &g_settings.step_per_mm[0], system_menu_item_render_flt_arg);
+	DECL_MENU_VAR(2, s3, "Dir inv:", &g_settings.dir_invert_mask, VAR_TYPE_UINT8, system_menu_item_render_uint8_arg);
+	DECL_MENU_VAR(2, s4, "Enable inv:", &g_settings.step_enable_invert, VAR_TYPE_UINT8, system_menu_item_render_uint8_arg);
+	DECL_MENU_VAR(2, s5, "Limits inv:", &g_settings.limits_invert_mask, VAR_TYPE_UINT8, system_menu_item_render_uint8_arg);
+	DECL_MENU_VAR(2, s6, "Probe inv:", &g_settings.probe_invert_mask, VAR_TYPE_BOOLEAN, system_menu_item_render_bool_arg);
+	DECL_MENU_VAR(2, s7, "Control inv:", &g_settings.control_invert_mask, VAR_TYPE_UINT8, system_menu_item_render_uint8_arg);
+	DECL_MENU_VAR(2, s20, "Soft-limits:", &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN, system_menu_item_render_bool_arg);
+	DECL_MENU_VAR(2, s2, "Steps/mm X:", &g_settings.step_per_mm[0], VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
 
 	// reset system menu
 	system_menu_reset();
@@ -102,6 +101,7 @@ void system_menu_action(uint8_t action)
 	{
 		if (currentmenu && (g_system_menu.go_idle < mcu_millis()))
 		{
+			// system_menu_go_idle();
 			currentmenu = g_system_menu.current_menu = 0;
 			currentindex = g_system_menu.current_index = 0;
 			g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
@@ -116,8 +116,8 @@ void system_menu_action(uint8_t action)
 		return;
 	}
 
-	const system_menu_page_t *menupage = system_menu_get(currentmenu);
-	const system_menu_item_t *menuitem_ptr = (system_menu_item_t *)system_menu_get_item(currentmenu, currentindex);
+	const system_menu_page_t *menupage = system_menu_get_current();
+	const system_menu_item_t *menuitem_ptr = (system_menu_item_t *)system_menu_get_current_item();
 	g_system_menu.go_idle = mcu_millis() + SYSTEM_MENU_GO_IDLE_MS;
 
 	if (menupage)
@@ -131,6 +131,15 @@ void system_menu_action(uint8_t action)
 			// if the custom action callback returns 0 exit
 			// else continue
 			if (!menupage->page_action(action))
+			{
+				return;
+			}
+		}
+
+		// if it's over the nav back element
+		if (currentindex < 0 || g_system_menu.current_multiplier < 0)
+		{
+			if (!system_menu_action_nav_back(action, NULL))
 			{
 				return;
 			}
@@ -156,13 +165,13 @@ void system_menu_action(uint8_t action)
 		{
 		case SYSTEM_MENU_ACTION_SELECT:
 			// index -1 is return to previous menu
-			if (currentindex < 0)
-			{
-				if (!system_menu_action_goto(action, CONST_VARG(VARG_UINT(menupage->parent_id))))
-				{
-					return;
-				}
-			}
+			// if (currentindex < 0)
+			// {
+			// 	if (!system_menu_action_goto(action, CONST_VARG(VARG_CONST(menupage->parent_id))))
+			// 	{
+			// 		return;
+			// 	}
+			// }
 			break;
 		case SYSTEM_MENU_ACTION_NEXT:
 			if (currentmenu)
@@ -191,6 +200,8 @@ void system_menu_action(uint8_t action)
 
 void system_menu_render(void)
 {
+	uint8_t render_flags = g_system_menu.flags;
+	uint8_t cur_index = g_system_menu.current_index;
 	// checks if it's time to redraw
 	if (g_system_menu.next_redraw < mcu_millis())
 	{
@@ -214,8 +225,8 @@ void system_menu_render(void)
 
 				if (g_system_menu.flags & SYSTEM_MENU_MODE_EDIT)
 				{
-					const system_menu_item_t *item = system_menu_get_item(g_system_menu.current_menu, g_system_menu.current_index);
-					system_menu_render_menu_item(item_index, item);
+					const system_menu_item_t *item = system_menu_get_current_item();
+					system_menu_render_menu_item(render_flags, item);
 				}
 				else
 				{
@@ -225,7 +236,7 @@ void system_menu_render(void)
 					{
 						if (system_menu_render_menu_item_filter(item_index))
 						{
-							system_menu_render_menu_item(item_index, item->menu_item);
+							system_menu_render_menu_item(render_flags | ((cur_index==item_index) ? SYSTEM_MENU_MODE_SELECT : 0), item->menu_item);
 						}
 						item = item->next;
 						item_index++;
@@ -234,6 +245,7 @@ void system_menu_render(void)
 			}
 		}
 
+		system_menu_render_nav_back((g_system_menu.current_index < 0 || g_system_menu.current_multiplier < 0));
 		system_menu_render_footer();
 		return;
 	}
@@ -244,11 +256,12 @@ static void system_menu_redraw_timeout(uint32_t delay)
 	g_system_menu.next_redraw = delay + mcu_millis();
 }
 
-static const system_menu_page_t *system_menu_get(uint8_t menu_id)
+const system_menu_page_t *system_menu_get_current(void)
 {
+	uint8_t menu = g_system_menu.current_menu;
 	MENU_LOOP(g_system_menu.menu_entry, menu_page)
 	{
-		if (menu_page->menu_id == menu_id)
+		if (menu_page->menu_id == menu)
 		{
 			return menu_page;
 		}
@@ -259,13 +272,15 @@ static const system_menu_page_t *system_menu_get(uint8_t menu_id)
 	return NULL;
 }
 
-static const system_menu_item_t *system_menu_get_item(uint8_t menu_id, int16_t index)
+const system_menu_item_t *system_menu_get_current_item(void)
 {
-	if (menu_id && (index >= 0))
+	int8_t menu = (int8_t)g_system_menu.current_menu;
+	int16_t index = g_system_menu.current_index;
+	if ((menu > 0) && (index >= 0))
 	{
 		MENU_LOOP(g_system_menu.menu_entry, menu_page)
 		{
-			if (menu_page->menu_id == menu_id)
+			if (menu_page->menu_id == menu)
 			{
 				if (!menu_page->items_index)
 				{
@@ -357,10 +372,24 @@ void system_menu_reset(void)
 	g_system_menu.current_menu = 255;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
-	g_system_menu.flags = 0;
+	g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
+	g_system_menu.current_multiplier = 0;
 	// forces imediate render
 	g_system_menu.next_redraw = 0;
 	g_system_menu.go_idle = SYSTEM_MENU_REDRAW_STARTUP_MS + mcu_millis();
+}
+
+void system_menu_go_idle(void)
+{
+	// idle menu
+	g_system_menu.current_menu = 0;
+	g_system_menu.current_index = 0;
+	g_system_menu.total_items = 0;
+	g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
+	g_system_menu.current_multiplier = 0;
+	// forces imediate render
+	g_system_menu.next_redraw = 0;
+	g_system_menu.go_idle = SYSTEM_MENU_GO_IDLE_MS + mcu_millis();
 }
 
 /**
@@ -372,9 +401,11 @@ uint8_t system_menu_action_goto(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
-		uint8_t menu_id = (uint8_t)VARG_UINT(cmd);
+		uint8_t menu_id = (uint8_t)VARG_CONST(cmd);
 		g_system_menu.current_menu = menu_id;
 		g_system_menu.current_index = 0;
+		g_system_menu.current_multiplier = 0;
+		g_system_menu.flags &= ~(SYSTEM_MENU_MODE_EDIT | SYSTEM_MENU_MODE_MODIFY);
 		// menu 0 goes to idle screen
 		if (menu_id)
 		{
@@ -389,7 +420,7 @@ uint8_t system_menu_action_rt_cmd(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
-		cnc_call_rt_command((uint8_t)VARG_UINT(cmd));
+		cnc_call_rt_command((uint8_t)VARG_CONST(cmd));
 		return 0;
 	}
 	return 1;
@@ -405,29 +436,139 @@ uint8_t system_menu_action_serial_cmd(uint8_t action, void *cmd)
 	return 1;
 }
 
-uint8_t system_menu_edit_var(uint8_t action, void *cmd)
+uint8_t system_menu_action_nav_back(uint8_t action, void *cmd)
 {
-	if (g_system_menu.flags & SYSTEM_MENU_MODE_EDIT)
+	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
-		g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
+		// direct to page nav back action
+		if (cmd)
+		{
+			return system_menu_action_goto(action, cmd);
+		}
+
+		if (g_system_menu.current_multiplier < 0)
+		{
+			g_system_menu.current_multiplier = 0;
+			g_system_menu.flags &= ~(SYSTEM_MENU_MODE_EDIT | SYSTEM_MENU_MODE_MODIFY);
+			return 0;
+		}
+
+		if (g_system_menu.current_index < 0)
+		{
+			const system_menu_page_t *menu = system_menu_get_current();
+			if (menu)
+			{
+				return system_menu_action_goto(action, CONST_VARG(VARG_CONST(menu->parent_id)));
+			}
+		}
+
+		system_menu_go_idle();
+		return system_menu_action_goto(action, CONST_VARG(0));
 	}
+	return 1;
+}
+
+uint8_t system_menu_action_edit(uint8_t action, void *cmd)
+{
+	uint8_t vartype = (uint8_t)VARG_CONST(cmd);
+	uint8_t flags = g_system_menu.flags;
+	int8_t currentmult = g_system_menu.current_multiplier;
+	const system_menu_item_t *itmptr = NULL;
+	system_menu_item_t item = {0};
+	float modifier = 0;
+
+	switch (action)
+	{
+	case SYSTEM_MENU_ACTION_SELECT:
+		if (currentmult < 0)
+		{
+			// exit edit mode
+			g_system_menu.flags &= ~SYSTEM_MENU_MODE_EDIT;
+			return 0;
+		}
+		else if (flags & SYSTEM_MENU_MODE_EDIT)
+		{
+			// toogle modify mode
+			g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
+		}
+		break;
+	case SYSTEM_MENU_ACTION_PREV:
+	case SYSTEM_MENU_ACTION_NEXT:
+		if (flags & SYSTEM_MENU_MODE_MODIFY)
+		{
+			// increment var by multiplier
+			itmptr = system_menu_get_current_item();
+			if (!itmptr)
+			{
+				system_menu_go_idle();
+				return 0;
+			}
+
+			rom_memcpy(&item, itmptr, sizeof(system_menu_item_t));
+			if (!item.argptr)
+			{
+				return 0;
+			}
+			modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : powf(-10.0f, currentmult);
+		}
+		else
+		{
+			currentmult += (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : -1;
+		}
+		break;
+	}
+
 	g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
 
-	if (cmd)
+	// modify mode enabled
+	if (flags & SYSTEM_MENU_MODE_MODIFY)
 	{
-		switch (*((uint8_t *)cmd))
+		// adds the multiplier
+		switch (vartype)
 		{
-		case SYSTEM_MENU_ACTION_SELECT:
-			/* code */
+		case VAR_TYPE_BOOLEAN:
+			(*(bool *)item.argptr) = (modifier > 0) ? 1 : 0;
 			break;
-		case SYSTEM_MENU_ACTION_PREV:
-			/* code */
+		case VAR_TYPE_INT8:
+		case VAR_TYPE_UINT8:
+			(*(uint8_t *)item.argptr) += (uint8_t)modifier;
+			(*(uint8_t *)item.argptr) = CLAMP(0, (*(uint8_t *)item.argptr), 0xFF);
 			break;
-		case SYSTEM_MENU_ACTION_NEXT:
-			/* code */
+		case VAR_TYPE_INT16:
+		case VAR_TYPE_UINT16:
+			(*(uint16_t *)item.argptr) += (uint16_t)modifier;
+			(*(uint16_t *)item.argptr) = CLAMP(0, (*(uint16_t *)item.argptr), 0xFFFF);
 			break;
-		default:
+		case VAR_TYPE_INT32:
+		case VAR_TYPE_UINT32:
+			(*(uint32_t *)item.argptr) += (uint32_t)modifier;
+			(*(uint32_t *)item.argptr) = CLAMP(0, (*(uint32_t *)item.argptr), 0xFFFFFFFF);
 			break;
+		case VAR_TYPE_FLOAT:
+			(*(float *)item.argptr) += modifier;
+			(*(float *)item.argptr) = CLAMP(__FLT_MIN__, (*(float *)item.argptr), __FLT_MAX__);
+			break;
+		}
+	}
+	else
+	{
+		// clamps the multiplier
+		switch (vartype)
+		{
+		case VAR_TYPE_BOOLEAN:
+			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 0);
+			break;
+		case VAR_TYPE_INT8:
+		case VAR_TYPE_UINT8:
+			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 2);
+			break;
+		case VAR_TYPE_INT16:
+		case VAR_TYPE_UINT16:
+			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 4);
+		case VAR_TYPE_INT32:
+		case VAR_TYPE_UINT32:
+		case VAR_TYPE_FLOAT:
+			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 9);
 		}
 	}
 
@@ -450,13 +591,18 @@ void __attribute__((weak)) system_menu_render_footer(void)
 	// render the menu footer
 }
 
+void __attribute__((weak)) system_menu_render_nav_back(bool is_hover)
+{
+	// render the nav back element
+}
+
 bool __attribute__((weak)) system_menu_render_menu_item_filter(uint8_t item_index)
 {
 	// filters if the menu item in an item page is to be printed (true) or not (false)
 	return true;
 }
 
-void __attribute__((weak)) system_menu_render_menu_item(uint8_t item_index, const system_menu_item_t *item)
+void __attribute__((weak)) system_menu_render_menu_item(uint8_t render_flags, const system_menu_item_t *item)
 {
 	// this is the default rendering of a menu item
 	// prints a label
@@ -464,17 +610,17 @@ void __attribute__((weak)) system_menu_render_menu_item(uint8_t item_index, cons
 	rom_memcpy(&menuitem, item, sizeof(system_menu_item_t));
 
 	// render item label
-	system_menu_item_render_label(item_index, menuitem.label);
+	system_menu_item_render_label(render_flags, menuitem.label);
 
 	// menu item has custom render method
 	if (menuitem.item_render)
 	{
-		menuitem.item_render(item_index, &menuitem);
+		menuitem.item_render(render_flags, &menuitem);
 	}
 	else
 	{
 		// defaults to render the arg as a string
-		system_menu_item_render_str_arg(item_index, &menuitem);
+		system_menu_item_render_str_arg(render_flags, &menuitem);
 	}
 }
 
@@ -502,48 +648,48 @@ void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, con
 	// this is were the display renders the item label
 }
 
-void __attribute__((weak)) system_menu_item_render_arg(uint8_t item_index, const char *label)
+void __attribute__((weak)) system_menu_item_render_arg(uint8_t render_flags, const char *label)
 {
 	// this is were the display renders the item variable
 }
 
-void __attribute__((weak)) system_menu_item_render_str_arg(uint8_t item_index, system_menu_item_t *item)
+void __attribute__((weak)) system_menu_item_render_str_arg(uint8_t render_flags, system_menu_item_t *item)
 {
-	system_menu_item_render_arg(item_index, (const char *)item->argptr);
+	system_menu_item_render_arg(render_flags, (const char *)item->argptr);
 }
 
-void system_menu_item_render_uint32_arg(uint8_t item_index, system_menu_item_t *item)
+void system_menu_item_render_uint32_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 	system_menu_int_to_str(buffer, *((uint32_t *)item->argptr));
-	system_menu_item_render_arg(item_index, (const char *)buffer);
+	system_menu_item_render_arg(render_flags, (const char *)buffer);
 }
 
-void system_menu_item_render_uint16_arg(uint8_t item_index, system_menu_item_t *item)
+void system_menu_item_render_uint16_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 	system_menu_int_to_str(buffer, (uint32_t) * ((uint16_t *)item->argptr));
-	system_menu_item_render_arg(item_index, (const char *)buffer);
+	system_menu_item_render_arg(render_flags, (const char *)buffer);
 }
 
-void system_menu_item_render_uint8_arg(uint8_t item_index, system_menu_item_t *item)
+void system_menu_item_render_uint8_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 	system_menu_int_to_str(buffer, (uint32_t) * ((uint8_t *)item->argptr));
-	system_menu_item_render_arg(item_index, (const char *)buffer);
+	system_menu_item_render_arg(render_flags, (const char *)buffer);
 }
 
-void system_menu_item_render_bool_arg(uint8_t item_index, system_menu_item_t *item)
+void system_menu_item_render_bool_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	char *buffer = (*((bool *)item->argptr)) ? "1" : "0";
-	system_menu_item_render_arg(item_index, (const char *)buffer);
+	system_menu_item_render_arg(render_flags, (const char *)buffer);
 }
 
-void system_menu_item_render_flt_arg(uint8_t item_index, system_menu_item_t *item)
+void system_menu_item_render_flt_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 	system_menu_flt_to_str(buffer, *((float *)item->argptr));
-	system_menu_item_render_arg(item_index, (const char *)buffer);
+	system_menu_item_render_arg(render_flags, (const char *)buffer);
 }
 
 /**
