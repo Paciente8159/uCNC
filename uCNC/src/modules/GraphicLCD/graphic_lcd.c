@@ -41,13 +41,6 @@
 // #define U8X8_MSG_GPIO_CS_PIN DOUT10
 #endif
 
-#ifndef U8X8_MSG_GPIO_I2C_CLOCK_PIN
-#define U8X8_MSG_GPIO_I2C_CLOCK_PIN DIN30
-#endif
-#ifndef U8X8_MSG_GPIO_I2C_DATA_PIN
-#define U8X8_MSG_GPIO_I2C_DATA_PIN DIN31
-#endif
-
 // #define U8X8_MSG_GPIO_MENU_SELECT_PIN DIN21
 // #define U8X8_MSG_GPIO_MENU_NEXT_PIN DIN22
 // #define U8X8_MSG_GPIO_MENU_PREV_PIN DIN23
@@ -127,45 +120,52 @@ static u8g2_t graphiclcd_u8g2;
 // }
 // #endif
 
-// #ifdef MCU_HAS_I2C
-// #include "../softi2c.h"
-// uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
-// {
-// 	static uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN]; /* u8g2/u8x8 will never send more than 32 bytes between START_TRANSFER and END_TRANSFER */
-// 	static uint8_t buf_idx;
-// 	uint8_t *data;
+#include "../softi2c.h"
+#ifndef MCU_HAS_I2C
+#ifndef U8X8_MSG_GPIO_I2C_CLOCK_PIN
+#define U8X8_MSG_GPIO_I2C_CLOCK_PIN DIN30
+#endif
+#ifndef U8X8_MSG_GPIO_I2C_DATA_PIN
+#define U8X8_MSG_GPIO_I2C_DATA_PIN DIN31
+#endif
+SOFTI2C(graphic_i2c, 100000UL, U8X8_MSG_GPIO_I2C_CLOCK_PIN, U8X8_MSG_GPIO_I2C_DATA_PIN)
+#endif
 
-// 	switch (msg)
-// 	{
-// 	case U8X8_MSG_BYTE_SEND:
-// 		data = (uint8_t *)arg_ptr;
-// 		while (arg_int > 0)
-// 		{
-// 			buffer[buf_idx++] = *data;
-// 			data++;
-// 			arg_int--;
-// 		}
-// 		break;
-// 	case U8X8_MSG_BYTE_INIT:
-// 		/* add your custom code to init i2c subsystem */
-// 		break;
-// 	case U8X8_MSG_BYTE_SET_DC:
-// 		/* ignored for i2c */
-// 		break;
-// 	case U8X8_MSG_BYTE_START_TRANSFER:
-// 		buf_idx = 0;
-// 		break;
-// 	case U8X8_MSG_BYTE_END_TRANSFER:
-// 		serial_print_int(buf_idx);
-// 		softi2c_send(NULL, u8x8_GetI2CAddress(u8x8) >> 1, buffer, (int)buf_idx);
-// 		break;
-// 	default:
-// 		return 0;
-// 	}
+uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
+{
+#ifdef MCU_HAS_I2C
+	softi2c_port_t *i2c_port = NULL;
+#else
+	softi2c_port_t *i2c_port = &graphic_i2c;
+#endif
+	static uint8_t i2c_buffer[32]; /* u8g2/u8x8 will never send more than 32 bytes between START_TRANSFER and END_TRANSFER */
+	static uint8_t i2c_buffer_offset = 0;
 
-// 	return 1;
-// }
-// #endif
+	switch (msg)
+	{
+	case U8X8_MSG_BYTE_SEND:
+		memcpy(&i2c_buffer[i2c_buffer_offset], arg_ptr, arg_int);
+		i2c_buffer_offset += arg_int;
+		break;
+	case U8X8_MSG_BYTE_INIT:
+		/* add your custom code to init i2c subsystem */
+		break;
+	case U8X8_MSG_BYTE_SET_DC:
+		/* ignored for i2c */
+		break;
+	case U8X8_MSG_BYTE_START_TRANSFER:
+		i2c_buffer_offset = 0;
+		break;
+	case U8X8_MSG_BYTE_END_TRANSFER:
+		softi2c_send(i2c_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset);
+		i2c_buffer_offset = 0;
+		break;
+	default:
+		return 0;
+	}
+
+	return 1;
+}
 
 uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
@@ -377,11 +377,41 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 uint8_t graphic_lcd_rotary_encoder_control(void)
 {
 	static uint8_t last_pin_state = 0;
+	static uint8_t last_rot_transition = 0;
 	uint8_t pin_state = 0;
 
-	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_BTN) ? 1 : 0;
+// rotation encoder
+#ifndef GRAPHIC_LCD_INVERT_ENCODER_DIR
 	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_ENC1) ? 2 : 0;
 	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_ENC2) ? 4 : 0;
+#else
+	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_ENC1) ? 4 : 0;
+	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_ENC2) ? 2 : 0;
+#endif
+
+	switch (pin_state)
+	{
+	case 6:
+		last_rot_transition = 0;
+		pin_state = 0;
+		break;
+	case 4:
+		pin_state = (last_rot_transition == 0) ? 2 : 0;
+		last_rot_transition = 1;
+		break;
+	case 2:
+		pin_state = (last_rot_transition == 0) ? 4 : 0;
+		last_rot_transition = 2;
+		break;
+	default:
+		last_rot_transition = 3;
+		pin_state = 0;
+		break;
+	}
+
+	pin_state |= io_get_pinvalue(GRAPHIC_LCD_ENCODER_BTN) ? 1 : 0;
+
+	pin_state = ~pin_state;
 
 	uint8_t pin_diff = last_pin_state ^ pin_state;
 	if (pin_diff)
@@ -430,13 +460,13 @@ DECL_MODULE(graphic_lcd)
 #if (BOARD == BOARD_VIRTUAL)
 	u8g2_SetupBuffer_SDL_128x64(U8G2, &u8g2_cb_r0);
 #else
-	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, u8x8_byte_sw_i2c, u8x8_gpio_and_delay_ucnc);
+	u8g2_Setup_ssd1306_i2c_128x64_noname_f(U8G2, U8G2_R0, /*u8x8_byte_sw_i2c*/ u8x8_byte_ucnc_hw_i2c, u8x8_gpio_and_delay_ucnc);
 #endif
 	u8g2_InitDisplay(U8G2); // send init sequence to the display, display is in sleep mode after this,
 	u8g2_ClearDisplay(U8G2);
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
-	//clear
+	// clear
 	u8g2_ClearBuffer(U8G2);
 	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
 	u8g2_NextPage(U8G2);
@@ -709,7 +739,7 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 		}
 
 		u8g2_SetDrawColor(U8G2, 1);
-		if (render_flags & SYSTEM_MENU_ACTION_SELECT)
+		if (render_flags & SYSTEM_MENU_MODE_SELECT)
 		{
 			u8g2_DrawBox(U8G2, ALIGN_LEFT, y, LCDWIDTH, FONTHEIGHT + 1);
 			u8g2_SetDrawColor(U8G2, 0);

@@ -21,9 +21,9 @@
 
 system_menu_t g_system_menu;
 
-static void system_menu_redraw_timeout(uint32_t delay);
+static void system_menu_go_idle_timeout(uint32_t delay);
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
-static void system_menu_redraw_timeout(uint32_t delay);
+static void system_menu_go_idle_timeout(uint32_t delay);
 static uint8_t system_menu_action_settings_cmd(uint8_t action, void *cmd);
 
 // declarate startup screen
@@ -36,7 +36,7 @@ static void system_menu_startup(void)
 static void system_menu_idle(void)
 {
 	system_menu_render_idle();
-	system_menu_redraw_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
+	system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 }
 static uint8_t system_menu_main_open(uint8_t action)
 {
@@ -202,18 +202,21 @@ void system_menu_action(uint8_t action)
 
 	if (action == SYSTEM_MENU_ACTION_NONE)
 	{
-		if (currentmenu && (g_system_menu.go_idle < mcu_millis()))
+		// idle timeout occurred
+		if (g_system_menu.go_idle < mcu_millis())
 		{
 			// system_menu_go_idle();
 			currentmenu = g_system_menu.current_menu = 0;
 			currentindex = g_system_menu.current_index = 0;
-			g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
-			g_system_menu.next_redraw = 0;
+			g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+			system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
+			// g_system_menu.next_redraw = 0;
 		}
 		return;
 	}
 
 	// startup screen, alarm or other special (128...255)
+	// ignore actions
 	if (currentmenu < 0)
 	{
 		return;
@@ -221,12 +224,12 @@ void system_menu_action(uint8_t action)
 
 	const system_menu_page_t *menupage = system_menu_get_current();
 	const system_menu_item_t *menuitem_ptr = (system_menu_item_t *)system_menu_get_current_item();
-	g_system_menu.go_idle = mcu_millis() + SYSTEM_MENU_GO_IDLE_MS;
 
 	if (menupage)
 	{
 		// forces imediate render
-		g_system_menu.next_redraw = 0;
+		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+		system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
 
 		// checks if the menu has a custom action callback
 		if (menupage->page_action)
@@ -298,8 +301,9 @@ void system_menu_render(void)
 	uint8_t render_flags = g_system_menu.flags;
 	uint8_t cur_index = g_system_menu.current_index;
 	// checks if it's time to redraw
-	if (g_system_menu.next_redraw < mcu_millis())
+	if (render_flags & SYSTEM_MENU_MODE_REDRAW)
 	{
+		g_system_menu.flags &= ~SYSTEM_MENU_MODE_REDRAW;
 		uint8_t item_index = 0;
 		MENU_LOOP(g_system_menu.menu_entry, menu_page)
 		{
@@ -346,9 +350,9 @@ void system_menu_render(void)
 	}
 }
 
-static void system_menu_redraw_timeout(uint32_t delay)
+static void system_menu_go_idle_timeout(uint32_t delay)
 {
-	g_system_menu.next_redraw = delay + mcu_millis();
+	g_system_menu.go_idle = delay + mcu_millis();
 }
 
 const system_menu_page_t *system_menu_get_current(void)
@@ -473,11 +477,11 @@ void system_menu_reset(void)
 	g_system_menu.current_menu = 255;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
-	g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
+
 	g_system_menu.current_multiplier = 0;
 	// forces imediate render
-	g_system_menu.next_redraw = 0;
-	g_system_menu.go_idle = SYSTEM_MENU_REDRAW_STARTUP_MS + mcu_millis();
+	g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
+	system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_STARTUP_MS);
 }
 
 void system_menu_go_idle(void)
@@ -486,11 +490,10 @@ void system_menu_go_idle(void)
 	g_system_menu.current_menu = 0;
 	g_system_menu.current_index = 0;
 	g_system_menu.total_items = 0;
-	g_system_menu.flags = SYSTEM_MENU_MODE_DISPLAY;
 	g_system_menu.current_multiplier = 0;
 	// forces imediate render
-	g_system_menu.next_redraw = 0;
-	g_system_menu.go_idle = SYSTEM_MENU_GO_IDLE_MS + mcu_millis();
+	g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
+	system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
 }
 
 /**
@@ -634,11 +637,11 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 
 			if (vartype == VAR_TYPE_FLOAT)
 			{
-				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : powf(-10.0f, (currentmult - 3));
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : -powf(10.0f, (currentmult - 3));
 			}
 			else
 			{
-				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : powf(-10.0f, currentmult);
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : -powf(10.0f, currentmult);
 			}
 		}
 		else if (flags & SYSTEM_MENU_MODE_EDIT)

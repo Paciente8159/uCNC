@@ -45,9 +45,10 @@ extern "C"
 #endif
 
 // render flags
-#define SYSTEM_MENU_MODE_MODIFY 4
-#define SYSTEM_MENU_MODE_EDIT 2
-#define SYSTEM_MENU_MODE_SELECT 1
+#define SYSTEM_MENU_MODE_MODIFY 8
+#define SYSTEM_MENU_MODE_EDIT 4
+#define SYSTEM_MENU_MODE_SELECT 2
+#define SYSTEM_MENU_MODE_REDRAW 1
 #define SYSTEM_MENU_MODE_DISPLAY 0
 
 #define SYSTEM_MENU_ACTION_NONE 0
@@ -115,7 +116,7 @@ extern "C"
 		int8_t current_multiplier;
 		uint8_t total_items;
 		system_menu_page_t *menu_entry;
-		uint32_t next_redraw;
+		// uint32_t next_redraw;
 		uint32_t go_idle;
 	} system_menu_t;
 
