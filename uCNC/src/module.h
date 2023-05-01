@@ -28,7 +28,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define UCNC_MODULE_VERSION_1_5_0_PLUS
+#define UCNC_MODULE_VERSION 010700
 
 #define DECL_MODULE(name) void name##_init(void)
 #define LOAD_MODULE(name)          \
@@ -71,30 +71,30 @@ extern "C"
 	// for example DECL_EVENT_HANDLER(<event name>) will create a function declaration equivalent to uint8_t event_<event name>_handler(void* args)
 	// event_<event name>_handler can then be placed inside the core code to run the hook code
 
-#define DECL_EVENT_HANDLER(name)                        \
-	typedef uint8_t (*name##_delegate)(void *, bool *); \
-	EVENT(name)                                         \
-	name##_event;                                       \
-	uint8_t event_##name##_handler(void *args)
+#define DECL_EVENT_HANDLER(name)             \
+	typedef bool (*name##_delegate)(void *); \
+	EVENT(name)                              \
+	name##_event;                            \
+	bool event_##name##_handler(void *args)
 #define WEAK_EVENT_HANDLER(name)           \
 	name##_delegate_event_t *name##_event; \
-	uint8_t __attribute__((weak)) event_##name##_handler(void *args)
-#define OVERRIDE_EVENT_HANDLER(name) uint8_t event_##name##_handler(void *args)
+	bool __attribute__((weak)) event_##name##_handler(void *args)
+#define OVERRIDE_EVENT_HANDLER(name) bool event_##name##_handler(void *args)
 #define DEFAULT_EVENT_HANDLER(name)                  \
 	{                                                \
 		name##_delegate_event_t *ptr = name##_event; \
-		bool handled = false;                        \
-		uint8_t result = 0;                          \
-		while (ptr != NULL && !handled)              \
+		while (ptr != NULL)                          \
 		{                                            \
 			if (ptr->fptr != NULL)                   \
 			{                                        \
-				result = ptr->fptr(args, &handled);  \
+				if (ptr->fptr(args))                 \
+				{                                    \
+					return true;                     \
+				}                                    \
 			}                                        \
 			ptr = ptr->next;                         \
 		}                                            \
-                                                     \
-		return result;                               \
+		return false;                                \
 	}
 
 	void mod_init(void);

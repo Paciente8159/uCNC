@@ -292,7 +292,7 @@ extern "C"
 	{
 		unsigned char word;
 		uint8_t code;
-		uint8_t error;
+		uint8_t* error;
 		float value;
 		parser_state_t *new_state;
 		parser_words_t *words;
@@ -303,6 +303,7 @@ extern "C"
 
 	typedef struct gcode_exec_args_
 	{
+		uint8_t* error;
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
@@ -324,6 +325,7 @@ extern "C"
 	// event_grbl_cmd_handler
 	typedef struct grbl_cmd_args_
 	{
+		uint8_t *error;
 		unsigned char *cmd;
 		uint8_t len;
 		char next_char;
