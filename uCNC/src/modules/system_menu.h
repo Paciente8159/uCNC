@@ -25,7 +25,7 @@ extern "C"
 #endif
 
 #include "../cnc.h"
-#include "system_menu_languages.h"
+#include "system_languages.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>

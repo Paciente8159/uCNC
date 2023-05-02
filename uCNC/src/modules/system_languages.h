@@ -1,5 +1,5 @@
 /*
-	Name: system_menu_languages.h
+	Name: system_languages.h
 	Description: System menus for displays for µCNC.
 
 	Copyright: Copyright (c) João Martins
@@ -16,21 +16,23 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef SYSTEM_MENU_LANGUAGES_H
-#define SYSTEM_MENU_LANGUAGES_H
+#ifndef SYSTEM_LANGUAGES_H
+#define SYSTEM_LANGUAGES_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define MENU_EN 1
+#define LANGUAGE_EN 1
 
-#ifndef SYSTEM_MENU_LANGUAGE
-#define SYSTEM_MENU_LANGUAGE MENU_EN
+#ifndef SYSTEM_LANGUAGE
+#define SYSTEM_LANGUAGE LANGUAGE_EN
 #endif
 
-#if (SYSTEM_MENU_LANGUAGE == MENU_LANGUAGE_EN)
+#if (SYSTEM_LANGUAGE == LANGUAGE_EN)
+#include "language/language_en.h"
+#endif
 
 #ifdef __cplusplus
 }
