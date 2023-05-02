@@ -575,22 +575,22 @@ extern "C"
 #include <EEPROM.h>
 extern "C"
 {
-	static void rp2040_eeprom_init(int size)
+	void rp2040_eeprom_init(int size)
 	{
 		EEPROM.begin(size);
 	}
 
-	static uint8_t rp2040_eeprom_read(uint16_t address)
+	uint8_t rp2040_eeprom_read(uint16_t address)
 	{
 		return EEPROM.read(address);
 	}
 
-	static void rp2040_eeprom_write(uint16_t address, uint8_t value)
+	void rp2040_eeprom_write(uint16_t address, uint8_t value)
 	{
 		EEPROM.write(address, value);
 	}
 
-	static void rp2040_eeprom_flush(void)
+	void rp2040_eeprom_flush(void)
 	{
 		if (!EEPROM.commit())
 		{

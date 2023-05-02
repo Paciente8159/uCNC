@@ -50,6 +50,7 @@ extern "C"
 
 // Setup com pins
 #define RX_BIT 1
+#define RX_PULLUP
 #define TX_BIT 0
 // only uncomment this if other port other then 0 is used
 // #define COM_PORT 0
@@ -71,6 +72,11 @@ extern "C"
 
 //activity LED
 #define DOUT31_BIT 25
+
+//disable EEPROM emulation
+#ifndef RAM_ONLY_SETTINGS
+#define RAM_ONLY_SETTINGS
+#endif
 
 
 #ifdef __cplusplus

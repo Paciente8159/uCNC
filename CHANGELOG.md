@@ -6,6 +6,22 @@
 
 # Changelog
 
+## [1.6.1] - 26-04-2023
+
+### Added
+
+- added EEPROM emulation to STM32F4 mcu boards (#370)
+- added Bluetooth support for RP2040 (#364)
+
+### Changed
+
+- better STM32 variants support and configuration (#371)
+
+### Fixed
+
+- fixed missing UART RX PULLUP configuration that caused random character input stream on noisy environments, leading to random error messages and deadlocks (#369)
+- fixed RAM_ONLY_SETTINGS option that was default in v1.6.0 pre builds (#369)
+
 ## [1.6.0] - 17-04-2023
 
 ### Added
@@ -17,6 +33,11 @@
 - moved tinyUSB out from the source and into an external library (#359)
 - moved override configuration files to root directory of the project (#362)
 
+## [1.6.0-alpha] - 19-01-2023
+
+### Added
+
+- initial release of core support for RP2040 MCU (#360)
 
 ## [1.5.7] - 12-01-2023
 
@@ -1135,6 +1156,9 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.6.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.1
+[1.6.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0
+[1.6.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0-alpha
 [1.5.7]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.7
 [1.5.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.6
 [1.5.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.5.5

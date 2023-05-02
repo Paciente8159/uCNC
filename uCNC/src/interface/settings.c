@@ -178,20 +178,7 @@ const settings_t __rom__ default_settings =
 // event_settings_change_handler
 WEAK_EVENT_HANDLER(settings_change)
 {
-	// custom handler
-	settings_change_delegate_event_t *ptr = settings_change_event;
-	bool handled = false;
-	uint8_t result = STATUS_INVALID_STATEMENT;
-	while (ptr != NULL && !handled)
-	{
-		if (ptr->fptr != NULL)
-		{
-			result = ptr->fptr(args, &handled);
-		}
-		ptr = ptr->next;
-	}
-
-	return result;
+	DEFAULT_EVENT_HANDLER(settings_change);
 }
 
 // event_settings_load_handler
@@ -242,14 +229,10 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	uint8_t error = EVENT_INVOKE(settings_load, &args);
-	if (error)
+	//if handled exit
+	if (EVENT_INVOKE(settings_load, &args))
 	{
-		if (error == STATUS_EXTERNAL_SETTINGS_OK)
-		{
-			return STATUS_OK;
-		}
-		return error;
+		return STATUS_OK;
 	}
 	// if unable to get settings from external memory tries to get from internal EEPROM
 #endif
@@ -265,7 +248,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 		*(__ptr++) = value;
 	}
 
-	return (crc) ? (crc ^ mcu_eeprom_getc(address)) : 255;
+	return (crc ^ mcu_eeprom_getc(address));
 #else
 	return 255; // returns error
 #endif
@@ -291,8 +274,9 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	if (EVENT_INVOKE(settings_save, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	if (EVENT_INVOKE(settings_save, &args))
 	{
+		// if the event was handled
 		return;
 	}
 #endif
@@ -545,7 +529,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 	else
 	{
 		setting_args_t extended_setting = {.id = id, .value = value};
-		if (EVENT_INVOKE(settings_change, &extended_setting))
+		if (!EVENT_INVOKE(settings_change, &extended_setting))
 		{
 			return STATUS_INVALID_STATEMENT;
 		}
@@ -564,8 +548,9 @@ void settings_erase(uint16_t address, uint8_t size)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = NULL, .size = size};
-	if (EVENT_INVOKE(settings_erase, &args) == STATUS_EXTERNAL_SETTINGS_OK)
+	if (EVENT_INVOKE(settings_erase, &args))
 	{
+		//if the event was handled
 		return;
 	}
 #endif
@@ -582,7 +567,9 @@ void settings_erase(uint16_t address, uint8_t size)
 
 	// erase crc byte that is next to data
 	mcu_eeprom_putc(address, EOL);
+#if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
 	mcu_eeprom_flush();
+#endif
 #endif
 }
 

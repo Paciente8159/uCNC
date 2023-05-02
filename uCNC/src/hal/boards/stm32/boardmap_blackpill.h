@@ -28,18 +28,6 @@ extern "C"
 #define BOARD_NAME "STM32 Blackpill"
 #endif
 
-#ifndef STM32F401xC
-#define STM32F401xC
-#endif
-
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x60000
-#endif
-
-#ifndef F_CPU
-#define F_CPU 84000000UL
-#endif
-
 // Setup step pins
 #define STEP0_BIT 0	 // assigns STEP0 pin
 #define STEP0_PORT A // assigns STEP0 port
@@ -100,6 +88,7 @@ extern "C"
 #define TX_PORT A
 #define RX_BIT 10
 #define RX_PORT A
+#define RX_PULLUP
 
 // PIN A10 is also used because of the USB ID (USB OTG)
 #define USB_DM_BIT 11

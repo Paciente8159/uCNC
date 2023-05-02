@@ -28,29 +28,10 @@ extern "C"
 #define BOARD_NAME "MKS Robin Nano 1.2"
 #endif
 
-#ifndef STM32F103xE
-#define STM32F103xE
-#endif
-
-#ifndef STM32F10X_HD
-#define STM32F10X_HD
-#endif
-
-#ifndef F_CPU
-#define F_CPU 72000000UL
-#endif
-
-#ifndef FLASH_SIZE
-#define FLASH_SIZE 0x80000UL
-#endif
-
 #define NO_USB_VCP
 #ifdef USB_VCP
 #undef USB_VCP
 #endif
-
-// Setup COM pins
-#define UART_PORT 3
 
 // Setup step pins
 #define STEP0_BIT 3	 // assigns STEP0 pin
@@ -109,11 +90,13 @@ extern "C"
 #define PROBE_PORT A
 #define PROBE_ISR
 
+// Setup COM pins
 #define UART_PORT 3
 #define TX_BIT 10
 #define TX_PORT B
 #define RX_BIT 11
 #define RX_PORT B
+#define RX_PULLUP
 
 // Setup PWM
 #define PWM0_BIT 0	// assigns PWM0 pin

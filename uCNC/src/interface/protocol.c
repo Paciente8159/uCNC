@@ -974,13 +974,13 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 	{
 		if (ptr->fptr != NULL)
 		{
-			ptr->fptr(args, NULL);
+			ptr->fptr(args);
 			serial_putc(',');
 		}
 		ptr = ptr->next;
 	}
 
-	return 0;
+	return false;
 }
 
 void protocol_send_cnc_info(void)

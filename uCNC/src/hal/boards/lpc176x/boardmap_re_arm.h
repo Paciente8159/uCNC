@@ -84,6 +84,7 @@ extern "C"
 #define TX_BIT 2
 #define RX_PORT 0
 #define TX_PORT 0
+#define RX_PULLUP
 // only uncomment this if other port other then 0 is used
 //#define UART_PORT 0
 

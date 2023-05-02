@@ -33,15 +33,13 @@ extern "C"
 */
 #include <stm32f1xx.h>
 #include <stdbool.h>
+#include <stm32f1xx_hal_rcc.h>
 
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 72000000UL
+#define F_CPU SystemCoreClock
 #endif
 
-#ifndef EXTERNAL_XTAL_MHZ
-#define EXTERNAL_XTAL_MHZ 8
-#endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 100000
@@ -71,17 +69,6 @@ extern "C"
 		while (t > DWT->CYCCNT) \
 			;                   \
 	}
-
-// APB1 cannot exceed 36MHz
-#if (F_CPU > 36000000UL)
-#define APB1_PRESC RCC_CFGR_PPRE1_DIV2
-#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
-#define PERIPH_CLOCK (F_CPU >> 1)
-#else
-#define APB1_PRESC RCC_CFGR_PPRE1_DIV1
-#define APB2_PRESC RCC_CFGR_PPRE2_DIV2
-#define PERIPH_CLOCK F_CPU
-#endif
 
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
@@ -3291,9 +3278,11 @@ extern "C"
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
 #if (PWM0_TIMER == 1 || (PWM0_TIMER >= 8 & PWM0_TIMER <= 11))
 #define PWM0_ENREG RCC->APB2ENR
+#define PWM0_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM0_APBEN __helper__(RCC_APB2ENR_TIM, PWM0_TIMER, EN)
 #else
 #define PWM0_ENREG RCC->APB1ENR
+#define PWM0_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM0_APBEN __helper__(RCC_APB1ENR_TIM, PWM0_TIMER, EN)
 #endif
 #define PWM0_TIMREG (__tim__(PWM0_TIMER))
@@ -3337,13 +3326,16 @@ extern "C"
 #define DIO25_CCMREG PWM0_CCMREG
 #define DIO25_CCR PWM0_CCR
 #define DIO25_ENOUTPUT PWM0_ENOUTPUT
+#define DIO25_CLOCK PWM0_CLOCK
 #endif
 #if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
 #if (PWM1_TIMER == 1 || (PWM1_TIMER >= 8 & PWM1_TIMER <= 11))
 #define PWM1_ENREG RCC->APB2ENR
+#define PWM1_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM1_APBEN __helper__(RCC_APB2ENR_TIM, PWM1_TIMER, EN)
 #else
 #define PWM1_ENREG RCC->APB1ENR
+#define PWM1_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM1_APBEN __helper__(RCC_APB1ENR_TIM, PWM1_TIMER, EN)
 #endif
 #define PWM1_TIMREG (__tim__(PWM1_TIMER))
@@ -3387,13 +3379,16 @@ extern "C"
 #define DIO26_CCMREG PWM1_CCMREG
 #define DIO26_CCR PWM1_CCR
 #define DIO26_ENOUTPUT PWM1_ENOUTPUT
+#define DIO26_CLOCK PWM1_CLOCK
 #endif
 #if (defined(PWM2_CHANNEL) && defined(PWM2_TIMER) && defined(PWM2))
 #if (PWM2_TIMER == 1 || (PWM2_TIMER >= 8 & PWM2_TIMER <= 11))
 #define PWM2_ENREG RCC->APB2ENR
+#define PWM2_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM2_APBEN __helper__(RCC_APB2ENR_TIM, PWM2_TIMER, EN)
 #else
 #define PWM2_ENREG RCC->APB1ENR
+#define PWM2_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM2_APBEN __helper__(RCC_APB1ENR_TIM, PWM2_TIMER, EN)
 #endif
 #define PWM2_TIMREG (__tim__(PWM2_TIMER))
@@ -3437,13 +3432,16 @@ extern "C"
 #define DIO27_CCMREG PWM2_CCMREG
 #define DIO27_CCR PWM2_CCR
 #define DIO27_ENOUTPUT PWM2_ENOUTPUT
+#define DIO27_CLOCK PWM2_CLOCK
 #endif
 #if (defined(PWM3_CHANNEL) && defined(PWM3_TIMER) && defined(PWM3))
 #if (PWM3_TIMER == 1 || (PWM3_TIMER >= 8 & PWM3_TIMER <= 11))
 #define PWM3_ENREG RCC->APB2ENR
+#define PWM3_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM3_APBEN __helper__(RCC_APB2ENR_TIM, PWM3_TIMER, EN)
 #else
 #define PWM3_ENREG RCC->APB1ENR
+#define PWM3_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM3_APBEN __helper__(RCC_APB1ENR_TIM, PWM3_TIMER, EN)
 #endif
 #define PWM3_TIMREG (__tim__(PWM3_TIMER))
@@ -3487,13 +3485,16 @@ extern "C"
 #define DIO28_CCMREG PWM3_CCMREG
 #define DIO28_CCR PWM3_CCR
 #define DIO28_ENOUTPUT PWM3_ENOUTPUT
+#define DIO28_CLOCK PWM3_CLOCK
 #endif
 #if (defined(PWM4_CHANNEL) && defined(PWM4_TIMER) && defined(PWM4))
 #if (PWM4_TIMER == 1 || (PWM4_TIMER >= 8 & PWM4_TIMER <= 11))
 #define PWM4_ENREG RCC->APB2ENR
+#define PWM4_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM4_APBEN __helper__(RCC_APB2ENR_TIM, PWM4_TIMER, EN)
 #else
 #define PWM4_ENREG RCC->APB1ENR
+#define PWM4_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM4_APBEN __helper__(RCC_APB1ENR_TIM, PWM4_TIMER, EN)
 #endif
 #define PWM4_TIMREG (__tim__(PWM4_TIMER))
@@ -3537,13 +3538,16 @@ extern "C"
 #define DIO29_CCMREG PWM4_CCMREG
 #define DIO29_CCR PWM4_CCR
 #define DIO29_ENOUTPUT PWM4_ENOUTPUT
+#define DIO29_CLOCK PWM4_CLOCK
 #endif
 #if (defined(PWM5_CHANNEL) && defined(PWM5_TIMER) && defined(PWM5))
 #if (PWM5_TIMER == 1 || (PWM5_TIMER >= 8 & PWM5_TIMER <= 11))
 #define PWM5_ENREG RCC->APB2ENR
+#define PWM5_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM5_APBEN __helper__(RCC_APB2ENR_TIM, PWM5_TIMER, EN)
 #else
 #define PWM5_ENREG RCC->APB1ENR
+#define PWM5_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM5_APBEN __helper__(RCC_APB1ENR_TIM, PWM5_TIMER, EN)
 #endif
 #define PWM5_TIMREG (__tim__(PWM5_TIMER))
@@ -3587,13 +3591,16 @@ extern "C"
 #define DIO30_CCMREG PWM5_CCMREG
 #define DIO30_CCR PWM5_CCR
 #define DIO30_ENOUTPUT PWM5_ENOUTPUT
+#define DIO30_CLOCK PWM5_CLOCK
 #endif
 #if (defined(PWM6_CHANNEL) && defined(PWM6_TIMER) && defined(PWM6))
 #if (PWM6_TIMER == 1 || (PWM6_TIMER >= 8 & PWM6_TIMER <= 11))
 #define PWM6_ENREG RCC->APB2ENR
+#define PWM6_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM6_APBEN __helper__(RCC_APB2ENR_TIM, PWM6_TIMER, EN)
 #else
 #define PWM6_ENREG RCC->APB1ENR
+#define PWM6_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM6_APBEN __helper__(RCC_APB1ENR_TIM, PWM6_TIMER, EN)
 #endif
 #define PWM6_TIMREG (__tim__(PWM6_TIMER))
@@ -3637,13 +3644,16 @@ extern "C"
 #define DIO31_CCMREG PWM6_CCMREG
 #define DIO31_CCR PWM6_CCR
 #define DIO31_ENOUTPUT PWM6_ENOUTPUT
+#define DIO31_CLOCK PWM6_CLOCK
 #endif
 #if (defined(PWM7_CHANNEL) && defined(PWM7_TIMER) && defined(PWM7))
 #if (PWM7_TIMER == 1 || (PWM7_TIMER >= 8 & PWM7_TIMER <= 11))
 #define PWM7_ENREG RCC->APB2ENR
+#define PWM7_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM7_APBEN __helper__(RCC_APB2ENR_TIM, PWM7_TIMER, EN)
 #else
 #define PWM7_ENREG RCC->APB1ENR
+#define PWM7_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM7_APBEN __helper__(RCC_APB1ENR_TIM, PWM7_TIMER, EN)
 #endif
 #define PWM7_TIMREG (__tim__(PWM7_TIMER))
@@ -3687,13 +3697,16 @@ extern "C"
 #define DIO32_CCMREG PWM7_CCMREG
 #define DIO32_CCR PWM7_CCR
 #define DIO32_ENOUTPUT PWM7_ENOUTPUT
+#define DIO32_CLOCK PWM7_CLOCK
 #endif
 #if (defined(PWM8_CHANNEL) && defined(PWM8_TIMER) && defined(PWM8))
 #if (PWM8_TIMER == 1 || (PWM8_TIMER >= 8 & PWM8_TIMER <= 11))
 #define PWM8_ENREG RCC->APB2ENR
+#define PWM8_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM8_APBEN __helper__(RCC_APB2ENR_TIM, PWM8_TIMER, EN)
 #else
 #define PWM8_ENREG RCC->APB1ENR
+#define PWM8_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM8_APBEN __helper__(RCC_APB1ENR_TIM, PWM8_TIMER, EN)
 #endif
 #define PWM8_TIMREG (__tim__(PWM8_TIMER))
@@ -3737,13 +3750,16 @@ extern "C"
 #define DIO33_CCMREG PWM8_CCMREG
 #define DIO33_CCR PWM8_CCR
 #define DIO33_ENOUTPUT PWM8_ENOUTPUT
+#define DIO33_CLOCK PWM8_CLOCK
 #endif
 #if (defined(PWM9_CHANNEL) && defined(PWM9_TIMER) && defined(PWM9))
 #if (PWM9_TIMER == 1 || (PWM9_TIMER >= 8 & PWM9_TIMER <= 11))
 #define PWM9_ENREG RCC->APB2ENR
+#define PWM9_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM9_APBEN __helper__(RCC_APB2ENR_TIM, PWM9_TIMER, EN)
 #else
 #define PWM9_ENREG RCC->APB1ENR
+#define PWM9_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM9_APBEN __helper__(RCC_APB1ENR_TIM, PWM9_TIMER, EN)
 #endif
 #define PWM9_TIMREG (__tim__(PWM9_TIMER))
@@ -3787,13 +3803,16 @@ extern "C"
 #define DIO34_CCMREG PWM9_CCMREG
 #define DIO34_CCR PWM9_CCR
 #define DIO34_ENOUTPUT PWM9_ENOUTPUT
+#define DIO34_CLOCK PWM9_CLOCK
 #endif
 #if (defined(PWM10_CHANNEL) && defined(PWM10_TIMER) && defined(PWM10))
 #if (PWM10_TIMER == 1 || (PWM10_TIMER >= 8 & PWM10_TIMER <= 11))
 #define PWM10_ENREG RCC->APB2ENR
+#define PWM10_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM10_APBEN __helper__(RCC_APB2ENR_TIM, PWM10_TIMER, EN)
 #else
 #define PWM10_ENREG RCC->APB1ENR
+#define PWM10_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM10_APBEN __helper__(RCC_APB1ENR_TIM, PWM10_TIMER, EN)
 #endif
 #define PWM10_TIMREG (__tim__(PWM10_TIMER))
@@ -3837,13 +3856,16 @@ extern "C"
 #define DIO35_CCMREG PWM10_CCMREG
 #define DIO35_CCR PWM10_CCR
 #define DIO35_ENOUTPUT PWM10_ENOUTPUT
+#define DIO35_CLOCK PWM10_CLOCK
 #endif
 #if (defined(PWM11_CHANNEL) && defined(PWM11_TIMER) && defined(PWM11))
 #if (PWM11_TIMER == 1 || (PWM11_TIMER >= 8 & PWM11_TIMER <= 11))
 #define PWM11_ENREG RCC->APB2ENR
+#define PWM11_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM11_APBEN __helper__(RCC_APB2ENR_TIM, PWM11_TIMER, EN)
 #else
 #define PWM11_ENREG RCC->APB1ENR
+#define PWM11_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM11_APBEN __helper__(RCC_APB1ENR_TIM, PWM11_TIMER, EN)
 #endif
 #define PWM11_TIMREG (__tim__(PWM11_TIMER))
@@ -3887,13 +3909,16 @@ extern "C"
 #define DIO36_CCMREG PWM11_CCMREG
 #define DIO36_CCR PWM11_CCR
 #define DIO36_ENOUTPUT PWM11_ENOUTPUT
+#define DIO36_CLOCK PWM11_CLOCK
 #endif
 #if (defined(PWM12_CHANNEL) && defined(PWM12_TIMER) && defined(PWM12))
 #if (PWM12_TIMER == 1 || (PWM12_TIMER >= 8 & PWM12_TIMER <= 11))
 #define PWM12_ENREG RCC->APB2ENR
+#define PWM12_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM12_APBEN __helper__(RCC_APB2ENR_TIM, PWM12_TIMER, EN)
 #else
 #define PWM12_ENREG RCC->APB1ENR
+#define PWM12_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM12_APBEN __helper__(RCC_APB1ENR_TIM, PWM12_TIMER, EN)
 #endif
 #define PWM12_TIMREG (__tim__(PWM12_TIMER))
@@ -3937,13 +3962,16 @@ extern "C"
 #define DIO37_CCMREG PWM12_CCMREG
 #define DIO37_CCR PWM12_CCR
 #define DIO37_ENOUTPUT PWM12_ENOUTPUT
+#define DIO37_CLOCK PWM12_CLOCK
 #endif
 #if (defined(PWM13_CHANNEL) && defined(PWM13_TIMER) && defined(PWM13))
 #if (PWM13_TIMER == 1 || (PWM13_TIMER >= 8 & PWM13_TIMER <= 11))
 #define PWM13_ENREG RCC->APB2ENR
+#define PWM13_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM13_APBEN __helper__(RCC_APB2ENR_TIM, PWM13_TIMER, EN)
 #else
 #define PWM13_ENREG RCC->APB1ENR
+#define PWM13_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM13_APBEN __helper__(RCC_APB1ENR_TIM, PWM13_TIMER, EN)
 #endif
 #define PWM13_TIMREG (__tim__(PWM13_TIMER))
@@ -3987,13 +4015,16 @@ extern "C"
 #define DIO38_CCMREG PWM13_CCMREG
 #define DIO38_CCR PWM13_CCR
 #define DIO38_ENOUTPUT PWM13_ENOUTPUT
+#define DIO38_CLOCK PWM13_CLOCK
 #endif
 #if (defined(PWM14_CHANNEL) && defined(PWM14_TIMER) && defined(PWM14))
 #if (PWM14_TIMER == 1 || (PWM14_TIMER >= 8 & PWM14_TIMER <= 11))
 #define PWM14_ENREG RCC->APB2ENR
+#define PWM14_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM14_APBEN __helper__(RCC_APB2ENR_TIM, PWM14_TIMER, EN)
 #else
 #define PWM14_ENREG RCC->APB1ENR
+#define PWM14_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM14_APBEN __helper__(RCC_APB1ENR_TIM, PWM14_TIMER, EN)
 #endif
 #define PWM14_TIMREG (__tim__(PWM14_TIMER))
@@ -4037,13 +4068,16 @@ extern "C"
 #define DIO39_CCMREG PWM14_CCMREG
 #define DIO39_CCR PWM14_CCR
 #define DIO39_ENOUTPUT PWM14_ENOUTPUT
+#define DIO39_CLOCK PWM14_CLOCK
 #endif
 #if (defined(PWM15_CHANNEL) && defined(PWM15_TIMER) && defined(PWM15))
 #if (PWM15_TIMER == 1 || (PWM15_TIMER >= 8 & PWM15_TIMER <= 11))
 #define PWM15_ENREG RCC->APB2ENR
+#define PWM15_CLOCK HAL_RCC_GetPCLK2Freq()
 #define PWM15_APBEN __helper__(RCC_APB2ENR_TIM, PWM15_TIMER, EN)
 #else
 #define PWM15_ENREG RCC->APB1ENR
+#define PWM15_CLOCK HAL_RCC_GetPCLK1Freq()
 #define PWM15_APBEN __helper__(RCC_APB1ENR_TIM, PWM15_TIMER, EN)
 #endif
 #define PWM15_TIMREG (__tim__(PWM15_TIMER))
@@ -4087,6 +4121,7 @@ extern "C"
 #define DIO40_CCMREG PWM15_CCMREG
 #define DIO40_CCR PWM15_CCR
 #define DIO40_ENOUTPUT PWM15_ENOUTPUT
+#define DIO40_CLOCK PWM15_CLOCK
 #endif
 
 /**********************************************
@@ -4234,6 +4269,11 @@ extern "C"
 //  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
 //  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
 //  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
+#if (UART_PORT == 1)
+#define UART_CLOCK HAL_RCC_GetPCLK2Freq()
+#else
+#define UART_CLOCK HAL_RCC_GetPCLK1Freq()
+#endif
 #if ((UART_PORT == 1) && (UART_TX_PIN == A9) && (UART_RX_PIN == A10))
 #elif ((UART_PORT == 1) && (UART_TX_PIN == B6) && (UART_RX_PIN == B7))
 #define COM_REMAP AFIO_MAPR_USART1_REMAP
@@ -4288,9 +4328,11 @@ extern "C"
 #if (SPI_PORT == 1)
 #define SPI_ENREG RCC->APB2ENR
 #define SPI_ENVAL RCC_APB2ENR_SPI1EN
+#define SPI_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define SPI_ENREG RCC->APB1ENR
 #define SPI_ENVAL __helper__(RCC_APB1ENR_SPI, SPI_PORT, EN)
+#define SPI_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 
 #endif
@@ -4306,7 +4348,7 @@ extern "C"
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
-#define I2C_SPEEDRANGE (PERIPH_CLOCK / 1000000UL)
+#define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 
 #if ((I2C_PORT == 1) && (I2C_CLK_PORT == B6) && (I2C_DATA_PORT == B7))
 #elif ((I2C_PORT == 1) && (I2C_CLK_PORT == B8) && (I2C_DATA_PORT == B9))
@@ -4323,16 +4365,16 @@ extern "C"
 // I2C freq
 #if (I2C_FREQ < 5000UL)
 #define I2C_PRESC 3
-#define I2C_DIV (F_CPU / (I2C_FREQ << 6))
+#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 6))
 #elif (I2C_FREQ < 20000UL)
 #define I2C_PRESC 2
-#define I2C_DIV (F_CPU / (I2C_FREQ << 4))
+#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 4))
 #elif (I2C_FREQ < 80000UL)
 #define I2C_PRESC 1
-#define I2C_DIV (F_CPU / (I2C_FREQ << 2))
+#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / (I2C_FREQ << 2))
 #else
 #define I2C_PRESC 0
-#define I2C_DIV (F_CPU / I2C_FREQ)
+#define I2C_DIV (HAL_RCC_GetPCLK1Freq() / I2C_FREQ)
 #endif
 #endif
 
@@ -4370,10 +4412,12 @@ extern "C"
 #define ITP_TIMER_ENREG APB2ENR
 #define ITP_TIMER_RESETREG APB1RSTR
 #define ITP_TIMER_APB __helper__(RCC_APB2ENR_TIM, ITP_TIMER, EN)
+#define ITP_TIMER_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define ITP_TIMER_ENREG APB1ENR
 #define ITP_TIMER_RESETREG APB1RSTR
 #define ITP_TIMER_APB __helper__(RCC_APB1ENR_TIM, ITP_TIMER, EN)
+#define ITP_TIMER_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 
 #ifndef SERVO_TIMER
@@ -4409,10 +4453,12 @@ extern "C"
 #define SERVO_TIMER_ENREG APB2ENR
 #define SERVO_TIMER_RESETREG APB1RSTR
 #define SERVO_TIMER_APB __helper__(RCC_APB2ENR_TIM, SERVO_TIMER, EN)
+#define SERVO_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define SERVO_TIMER_ENREG APB1ENR
 #define SERVO_TIMER_RESETREG APB1RSTR
 #define SERVO_TIMER_APB __helper__(RCC_APB1ENR_TIM, SERVO_TIMER, EN)
+#define SERVO_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 
 #ifdef ONESHOT_TIMER
@@ -4447,10 +4493,12 @@ extern "C"
 #define ONESHOT_TIMER_ENREG APB2ENR
 #define ONESHOT_TIMER_RESETREG APB1RSTR
 #define ONESHOT_TIMER_APB __helper__(RCC_APB2ENR_TIM, ONESHOT_TIMER, EN)
+#define ONESHOT_TIMER_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define ONESHOT_TIMER_ENREG APB1ENR
 #define ONESHOT_TIMER_RESETREG APB1RSTR
 #define ONESHOT_TIMER_APB __helper__(RCC_APB1ENR_TIM, ONESHOT_TIMER, EN)
+#define ONESHOT_TIMER_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #endif
 
@@ -4521,7 +4569,7 @@ extern "C"
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) &= ~(GPIO_RESET << ((__indirect__(diopin, CROFF)) << 2U));          \
 		__indirect__(diopin, GPIO)->__indirect__(diopin, CR) |= (GPIO_OUTALT_PP_50MHZ << ((__indirect__(diopin, CROFF)) << 2U)); \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                   \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(F_CPU / 1000000UL) - 1;                                                   \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(__indirect__(diopin, CLOCK) / 1000000UL) - 1;                             \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                        \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                             \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                 \
