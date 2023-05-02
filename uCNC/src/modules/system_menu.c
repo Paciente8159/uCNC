@@ -21,10 +21,15 @@
 
 system_menu_t g_system_menu;
 
+static float jog_distance, jog_feed;
+static bool jog_mode;
+
 static void system_menu_go_idle_timeout(uint32_t delay);
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
 static void system_menu_go_idle_timeout(uint32_t delay);
-static uint8_t system_menu_action_settings_cmd(uint8_t action, void *cmd);
+static bool system_menu_action_settings_cmd(uint8_t action, void *cmd);
+static bool system_menu_action_jog(uint8_t action, void *cmd);
+static void system_menu_render_item_locked(uint8_t render_flags, system_menu_item_t *);
 
 // declarate startup screen
 static void system_menu_startup(void)
@@ -38,7 +43,7 @@ static void system_menu_idle(void)
 	system_menu_render_idle();
 	system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 }
-static uint8_t system_menu_main_open(uint8_t action)
+static bool system_menu_main_open(uint8_t action)
 {
 	return system_menu_action_goto(SYSTEM_MENU_ACTION_SELECT, CONST_VARG(1));
 }
@@ -59,9 +64,38 @@ DECL_MODULE(system_menu)
 	// main menu entries
 	DECL_MENU_ACTION(1, hold, "Hold", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
 	DECL_MENU_ACTION(1, resume, "Resume", &system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
-	DECL_MENU_ACTION(1, unlock, "Unlock", &system_menu_action_serial_cmd, "$X");
-	DECL_MENU_ACTION(1, home, "Home", &system_menu_action_serial_cmd, "$H");
+	DECL_MENU_ACTION(1, unlock, "Unlock", &system_menu_action_serial_cmd, "$X\r");
+	DECL_MENU_ACTION(1, home, "Home", &system_menu_action_serial_cmd, "$H\r");
+	DECL_MENU_GOTO(1, overrides, "Overrides", CONST_VARG(8));
+	DECL_MENU_GOTO(1, jog, "Jog", CONST_VARG(7));
 	DECL_MENU_GOTO(1, settings, "Settings", CONST_VARG(2));
+
+	DECL_MENU(7, 1, "Overrides");
+
+	// append Jog menu
+	// default initial distance
+	jog_distance = 1.0f;
+	jog_feed = 100.0f;
+	jog_mode = false;
+	DECL_MENU(7, 1, "Jog");
+	DECL_MENU_ENTRY(7, jogx, "Jog X axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "X");
+#if (AXIS_COUNT > 1)
+	DECL_MENU_ENTRY(7, jogy, "Jog Y axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "Y");
+#endif
+#if (AXIS_COUNT > 2)
+	DECL_MENU_ENTRY(7, jogz, "Jog Z axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "Z");
+#endif
+#if (AXIS_COUNT > 3)
+	DECL_MENU_ENTRY(7, joga, "Jog A axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "A");
+#endif
+#if (AXIS_COUNT > 4)
+	DECL_MENU_ENTRY(7, jogb, "Jog B axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "B");
+#endif
+#if (AXIS_COUNT > 5)
+	DECL_MENU_ENTRY(7, jogc, "Jog C axis", NULL, &system_menu_render_item_locked, NULL, &system_menu_action_jog, "C");
+#endif
+	DECL_MENU_VAR(7, jogdist, "Jog dist:", &jog_distance, VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
+	DECL_MENU_VAR(7, jogfeed, "Jog feed:", &jog_feed, VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
 
 	// append settings menu
 	DECL_MENU(2, 1, "Settings");
@@ -106,7 +140,6 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s27, "Offset:", &g_settings.homing_offset, VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
 
 // append steppers settings menu
-#if (AXIS_COUNT > 0)
 	DECL_MENU(4, 2, "Axis");
 	DECL_MENU_VAR(4, s100, "X step/mm:", &g_settings.step_per_mm[0], VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
 	DECL_MENU_VAR(4, s110, "X v-max:", &g_settings.max_feed_rate[0], VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
@@ -159,7 +192,6 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(4, s135, "C max dist:", &g_settings.max_distance[5], VAR_TYPE_FLOAT, system_menu_item_render_flt_arg);
 #ifdef ENABLE_BACKLASH_COMPENSATION
 	DECL_MENU_VAR(4, s145, " C backlash:", &g_settings.backlash_steps[5], VAR_TYPE_UINT16, system_menu_item_render_uint16_arg);
-#endif
 #endif
 #endif
 
@@ -234,9 +266,9 @@ void system_menu_action(uint8_t action)
 		// checks if the menu has a custom action callback
 		if (menupage->page_action)
 		{
-			// if the custom action callback returns 0 exit
+			// if the custom action callback returns 1 it was handled
 			// else continue
-			if (!menupage->page_action(action))
+			if (menupage->page_action(action))
 			{
 				return;
 			}
@@ -245,7 +277,7 @@ void system_menu_action(uint8_t action)
 		// if it's over the nav back element
 		if (currentindex < 0 || g_system_menu.current_multiplier < 0)
 		{
-			if (!system_menu_action_nav_back(action, NULL))
+			if (system_menu_action_nav_back(action, NULL))
 			{
 				return;
 			}
@@ -259,7 +291,7 @@ void system_menu_action(uint8_t action)
 			// checks if the menu item has a custom action callback
 			if (menuitem.item_action)
 			{
-				if (!menuitem.item_action(action, menuitem.action_arg))
+				if (menuitem.item_action(action, menuitem.action_arg))
 				{
 					return;
 				}
@@ -501,7 +533,7 @@ void system_menu_go_idle(void)
  * **/
 
 // calls a new menu
-uint8_t system_menu_action_goto(uint8_t action, void *cmd)
+bool system_menu_action_goto(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
@@ -515,32 +547,87 @@ uint8_t system_menu_action_goto(uint8_t action, void *cmd)
 		{
 			g_system_menu.total_items = system_menu_get_item_count(menu_id);
 		}
-		return 0;
+		return true;
 	}
-	return 1;
+	return false;
 }
 
-uint8_t system_menu_action_rt_cmd(uint8_t action, void *cmd)
+bool system_menu_action_rt_cmd(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(cmd));
-		return 0;
+		return true;
 	}
-	return 1;
+	return false;
 }
 
-uint8_t system_menu_action_serial_cmd(uint8_t action, void *cmd)
+bool system_menu_action_serial_cmd(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
-		serial_inject_cmd((const char *)cmd);
-		return 0;
+		if (serial_get_rx_freebytes() > 20)
+		{
+			serial_inject_cmd((const char *)cmd);
+		}
+		return true;
 	}
-	return 1;
+	return false;
 }
 
-static uint8_t system_menu_action_settings_cmd(uint8_t action, void *cmd)
+bool system_menu_action_jog(uint8_t action, void *cmd)
+{
+	if (action == SYSTEM_MENU_ACTION_SELECT)
+	{
+		if (cnc_get_exec_state(EXEC_JOG))
+		{
+			cnc_call_rt_command(CMD_CODE_JOG_CANCEL);
+		}
+		jog_mode = !jog_mode;
+		return true;
+	}
+	else if (jog_mode)
+	{
+		// one jog command at time
+		if (serial_get_rx_freebytes() > 20 && !cnc_get_exec_state(EXEC_JOG | EXEC_RUN))
+		{
+			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			memset(buffer, SYSTEM_MENU_MAX_STR_LEN, 1);
+			rom_strcpy(buffer, __romstr__("$J=G91"));
+			char *ptr = buffer;
+			// search for the end of string
+			while (*++ptr)
+				;
+			// replaces the axis letter
+			*ptr++ = *((char *)cmd);
+			switch (action)
+			{
+			case SYSTEM_MENU_ACTION_NEXT:
+				system_menu_flt_to_str(ptr, jog_distance);
+				break;
+			case SYSTEM_MENU_ACTION_PREV:
+				system_menu_flt_to_str(ptr, -jog_distance);
+				break;
+			default:
+				return false;
+			}
+			// search for the end of string
+			while (*++ptr)
+				;
+			*ptr++ = 'F';
+			system_menu_flt_to_str(ptr, jog_feed);
+			while (*++ptr)
+				;
+			*ptr++ = '\r';
+			serial_inject_cmd(buffer);
+			serial_print_str(buffer);
+		}
+		return true;
+	}
+	return false;
+}
+
+static bool system_menu_action_settings_cmd(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
@@ -559,12 +646,12 @@ static uint8_t system_menu_action_settings_cmd(uint8_t action, void *cmd)
 		default:
 			break;
 		}
-		return 0;
+		return true;
 	}
-	return 1;
+	return false;
 }
 
-uint8_t system_menu_action_nav_back(uint8_t action, void *cmd)
+bool system_menu_action_nav_back(uint8_t action, void *cmd)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
@@ -578,7 +665,7 @@ uint8_t system_menu_action_nav_back(uint8_t action, void *cmd)
 		{
 			g_system_menu.current_multiplier = 0;
 			g_system_menu.flags &= ~(SYSTEM_MENU_MODE_EDIT | SYSTEM_MENU_MODE_MODIFY);
-			return 0;
+			return true;
 		}
 
 		if (g_system_menu.current_index < 0)
@@ -593,10 +680,10 @@ uint8_t system_menu_action_nav_back(uint8_t action, void *cmd)
 		system_menu_go_idle();
 		return system_menu_action_goto(action, CONST_VARG(0));
 	}
-	return 1;
+	return false;
 }
 
-uint8_t system_menu_action_edit(uint8_t action, void *cmd)
+bool system_menu_action_edit(uint8_t action, void *cmd)
 {
 	uint8_t vartype = (uint8_t)VARG_CONST(cmd);
 	uint8_t flags = g_system_menu.flags;
@@ -609,7 +696,7 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 	if (!itmptr)
 	{
 		system_menu_go_idle();
-		return 0;
+		return true;
 	}
 
 	rom_memcpy(&item, itmptr, sizeof(system_menu_item_t));
@@ -632,7 +719,7 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 			if (!item.argptr)
 			{
 				// passthrough action
-				return 1;
+				return false;
 			}
 
 			if (vartype == VAR_TYPE_FLOAT)
@@ -651,7 +738,7 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 		else
 		{
 			// passthrough action
-			return 1;
+			return false;
 		}
 		break;
 	}
@@ -709,7 +796,7 @@ uint8_t system_menu_action_edit(uint8_t action, void *cmd)
 	}
 
 	// stop action propagation
-	return 0;
+	return true;
 }
 
 /**
@@ -826,6 +913,14 @@ void system_menu_item_render_flt_arg(uint8_t render_flags, system_menu_item_t *i
 	char buffer[SYSTEM_MENU_MAX_STR_LEN];
 	system_menu_flt_to_str(buffer, *((float *)item->argptr));
 	system_menu_item_render_arg(render_flags, (const char *)buffer);
+}
+
+void system_menu_render_item_locked(uint8_t render_flags, system_menu_item_t *item)
+{
+	if ((render_flags & SYSTEM_MENU_MODE_SELECT) && jog_mode)
+	{
+		system_menu_item_render_arg(render_flags, "x");
+	}
 }
 
 /**

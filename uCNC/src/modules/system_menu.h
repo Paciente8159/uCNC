@@ -25,7 +25,9 @@ extern "C"
 #endif
 
 #include "../cnc.h"
+#include "system_menu_languages.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 
 #ifndef SYSTEM_MENU_MAX_STR_LEN
@@ -77,9 +79,9 @@ extern "C"
 	// anonymous struct that is defined later
 	typedef struct system_menu_item_ system_menu_item_t;
 	typedef void (*system_menu_page_render_cb)(void);
-	typedef uint8_t (*system_menu_page_action_cb)(uint8_t);
+	typedef bool (*system_menu_page_action_cb)(uint8_t);
 	typedef void (*system_menu_item_render_cb)(uint8_t, system_menu_item_t *);
-	typedef uint8_t (*system_menu_item_action_cb)(uint8_t, void *);
+	typedef bool (*system_menu_item_action_cb)(uint8_t, void *);
 
 	struct system_menu_item_
 	{
@@ -172,11 +174,11 @@ extern "C"
 	/**
 	 * Helper µCNC action callbacks
 	 * **/
-	uint8_t system_menu_action_goto(uint8_t action, void *cmd);
-	uint8_t system_menu_action_rt_cmd(uint8_t action, void *cmd);
-	uint8_t system_menu_action_serial_cmd(uint8_t action, void *cmd);
-	uint8_t system_menu_action_edit(uint8_t action, void *cmd);
-	uint8_t system_menu_action_nav_back(uint8_t action, void *cmd);
+	bool system_menu_action_goto(uint8_t action, void *cmd);
+	bool system_menu_action_rt_cmd(uint8_t action, void *cmd);
+	bool system_menu_action_serial_cmd(uint8_t action, void *cmd);
+	bool system_menu_action_edit(uint8_t action, void *cmd);
+	bool system_menu_action_nav_back(uint8_t action, void *cmd);
 
 	/**
 	 * Helper µCNC render callbacks

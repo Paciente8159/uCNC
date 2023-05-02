@@ -25,7 +25,7 @@
 #include <math.h>
 #include "../system_menu.h"
 
-#ifndef UCNC_MODULE_VERSION_1_5_0_PLUS
+#if (UCNC_MODULE_VERSION > 010700)
 #error "This module is not compatible with the current version of µCNC"
 #endif
 
@@ -425,7 +425,7 @@ uint8_t graphic_lcd_rotary_encoder_control(void)
 
 // static bool graphic_lcd_current_menu_active;
 #ifdef ENABLE_MAIN_LOOP_MODULES
-uint8_t graphic_lcd_update(void *args, bool *handled)
+bool graphic_lcd_update(void *args)
 {
 	switch (graphic_lcd_rotary_encoder_control())
 	{
