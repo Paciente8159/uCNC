@@ -47,8 +47,9 @@ extern "C"
 #endif
 
 // render flags
-#define SYSTEM_MENU_MODE_MODIFY 8
-#define SYSTEM_MENU_MODE_EDIT 4
+#define SYSTEM_MENU_MODE_MODIFY 16
+#define SYSTEM_MENU_MODE_EDIT 8
+#define SYSTEM_MENU_MODE_SIMPLE_EDIT 4
 #define SYSTEM_MENU_MODE_SELECT 2
 #define SYSTEM_MENU_MODE_REDRAW 1
 #define SYSTEM_MENU_MODE_DISPLAY 0
@@ -134,6 +135,7 @@ extern "C"
 #define DECL_MENU_LABEL(menu_id, name, strvalue) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, NULL, NULL)
 #define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, "->", system_menu_action_goto, menu)
 #define DECL_MENU_VAR(menu_id, name, strvalue, varptr, vartype, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_action_edit, CONST_VARG(vartype))
+#define DECL_MENU_VAR_SIMPLE(menu_id, name, strvalue, varptr, vartype, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_action_edit_simple, CONST_VARG(vartype))
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
 #define DECL_MENU(id, parentid, label)                                                                                                                                                      \
@@ -178,6 +180,7 @@ extern "C"
 	bool system_menu_action_rt_cmd(uint8_t action, void *cmd);
 	bool system_menu_action_serial_cmd(uint8_t action, void *cmd);
 	bool system_menu_action_edit(uint8_t action, void *cmd);
+	bool system_menu_action_edit_simple(uint8_t action, void *cmd);
 	bool system_menu_action_nav_back(uint8_t action, void *cmd);
 
 	/**

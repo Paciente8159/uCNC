@@ -54,6 +54,10 @@ extern "C"
 #define STR_BICEP_LEN "Bicep len:"
 #define STR_FARM_LEN "F-arm len:"
 #define STR_HOME_ANG "Home ang:"
+#define STR_FEED_OVR "Feed ov:"
+#define STR_FEED_100 "Feed 100%:"
+#define STR_TOOL_OVR "Tool ov:"
+#define STR_TOOL_100 "Tool 100%:"
 
 #ifdef __cplusplus
 }
