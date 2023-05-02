@@ -62,6 +62,19 @@ extern "C"
 		planner_flags_t planner_flags;
 	} planner_block_t;
 
+	typedef struct
+	{
+		uint8_t feed_override;
+		uint8_t rapid_feed_override;
+#if TOOL_COUNT > 0
+		int16_t spindle_speed;
+		uint8_t spindle_speed_override;
+		planner_flags_t state_flags;
+#endif
+	} planner_state_t;
+
+	extern planner_state_t g_planner_state;
+
 	void planner_init(void);
 	void planner_clear(void);
 	bool planner_buffer_is_full(void);
@@ -95,8 +108,7 @@ extern "C"
 	void planner_coolant_ovr_reset(void);
 #endif
 
-	bool planner_get_overflows(uint8_t *overflows);
-
+	bool planner_overflows_updated(void);
 	uint8_t planner_get_buffer_freeblocks();
 
 #ifdef __cplusplus

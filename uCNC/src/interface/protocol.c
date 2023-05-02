@@ -175,15 +175,18 @@ static void protocol_send_status_tail(void)
 		return;
 	}
 
-	uint8_t ovr[3];
-	if (planner_get_overflows(ovr))
+	if (planner_overflows_updated())
 	{
 		protocol_send_string(MSG_STATUS_OVR);
-		serial_print_int(ovr[0]);
+		serial_print_int(g_planner_state.feed_override);
 		serial_putc(',');
-		serial_print_int(ovr[1]);
+		serial_print_int(g_planner_state.rapid_feed_override);
 		serial_putc(',');
-		serial_print_int(ovr[2]);
+#if TOOL_COUNT > 0
+		serial_print_int(g_planner_state.spindle_speed_override);
+#else
+		serial_putc('0');
+#endif
 		uint8_t tools = protocol_get_tools();
 		if (tools)
 		{
