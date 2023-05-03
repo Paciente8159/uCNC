@@ -55,7 +55,13 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.5. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.6. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.6 added a couple of new features.
+
+- added support for RP2040 MCU.
+- moved tinyUSB to an external project allowing easier update and integration with both PIO and Arduino IDE.
+
 Version 1.5 added a couple of new features.
 
 - added support for ESP8266 MCU and the WeMos D1 boards.
@@ -196,7 +202,8 @@ It can run on:
 - STM32F4 (like the Blackpill) - v1.4.x (Does not emulate EEPROM)
 - ESP8266 - v1.5.x (supports wifi connection via telnet, lacks analog and input isr)
 - ESP32 - v1.5.x (supports wifi connection via telnet and bluetooth)
-- NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed) 
+- NXP LPC1768/9 - v1.5.x (eeprom emulation and analog still being developed)
+- RP2040 - v1.6.x (supports wifi connection via telnet and bluetooth)
 - Windows PC (used for simulation/debugging only - ISR on Windows doesn't allow to use it as a real alternative)
 
 ### µCNC current supported kinematics
@@ -220,7 +227,6 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add more MCU HAL (RP2040 may be implemented in a near future)
 - Add support for graphical LCD
 - Add more GCode features and hardware modules
 - Add additional kinematics
