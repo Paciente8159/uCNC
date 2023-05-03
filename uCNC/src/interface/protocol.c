@@ -175,8 +175,9 @@ static void protocol_send_status_tail(void)
 		return;
 	}
 
-	if (planner_overflows_updated())
+	if (!g_planner_state.ovr_counter)
 	{
+		g_planner_state.ovr_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
 		protocol_send_string(MSG_STATUS_OVR);
 		serial_print_int(g_planner_state.feed_override);
 		serial_putc(',');
@@ -211,6 +212,7 @@ static void protocol_send_status_tail(void)
 		}
 		return;
 	}
+	g_planner_state.ovr_counter--;
 }
 
 void protocol_send_status(void)
@@ -265,6 +267,7 @@ void protocol_send_status(void)
 #if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
 			protocol_send_string(MSG_STATUS_DOOR);
+			serial_putc(':');
 			if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 			{
 				if (cnc_get_exec_state(EXEC_RUN))
@@ -302,6 +305,7 @@ void protocol_send_status(void)
 			break;
 		case EXEC_HOLD:
 			protocol_send_string(MSG_STATUS_HOLD);
+			serial_putc(':');
 			if (cnc_get_exec_state(EXEC_RUN))
 			{
 				serial_putc('1');

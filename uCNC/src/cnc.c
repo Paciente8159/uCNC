@@ -588,7 +588,8 @@ void cnc_exec_rt_commands(void)
 	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
 	if (command)
 	{
-		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		// clear all but status report
+		cnc_state.rt_cmd &= RT_CMD_REPORT;
 		if (command & RT_CMD_RESET)
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))

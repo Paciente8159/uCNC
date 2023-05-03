@@ -28,7 +28,6 @@ static uint8_t planner_data_write;
 static uint8_t planner_data_read;
 static uint8_t planner_data_blocks;
 planner_state_t g_planner_state;
-static uint8_t planner_ovr_counter;
 
 FORCEINLINE static void planner_add_block(void);
 FORCEINLINE static uint8_t planner_buffer_next(uint8_t index);
@@ -526,7 +525,7 @@ void planner_feed_ovr_inc(uint8_t value)
 	if (ovr_val != g_planner_state.feed_override)
 	{
 		g_planner_state.feed_override = ovr_val;
-		planner_ovr_counter = 0;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
@@ -536,7 +535,7 @@ void planner_rapid_feed_ovr(uint8_t value)
 	if (g_planner_state.rapid_feed_override != value)
 	{
 		g_planner_state.rapid_feed_override = value;
-		planner_ovr_counter = 0;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
@@ -546,7 +545,7 @@ void planner_feed_ovr_reset(void)
 	if (g_planner_state.feed_override != 100)
 	{
 		g_planner_state.feed_override = 100;
-		planner_ovr_counter = 0;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
@@ -556,7 +555,7 @@ void planner_rapid_feed_ovr_reset(void)
 	if (g_planner_state.rapid_feed_override != 100)
 	{
 		g_planner_state.rapid_feed_override = 100;
-		planner_ovr_counter = 0;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
@@ -572,14 +571,14 @@ void planner_spindle_ovr_inc(uint8_t value)
 	if (ovr_val != g_planner_state.spindle_speed_override)
 	{
 		g_planner_state.spindle_speed_override = ovr_val;
-		planner_ovr_counter = 0;
+		g_planner_state.ovr_counter = 0;
 	}
 }
 
 void planner_spindle_ovr_reset(void)
 {
 	g_planner_state.spindle_speed_override = 100;
-	planner_ovr_counter = 0;
+	g_planner_state.ovr_counter = 0;
 }
 
 static uint8_t coolant_override;
@@ -601,18 +600,6 @@ void planner_coolant_ovr_reset(void)
 	coolant_override = 0;
 }
 #endif
-
-bool planner_overflows_updated(void)
-{
-	if (!planner_ovr_counter)
-	{
-		planner_ovr_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
-		return true;
-	}
-
-	planner_ovr_counter--;
-	return false;
-}
 
 uint8_t planner_get_buffer_freeblocks()
 {

@@ -188,8 +188,8 @@ extern "C"
 #define MSG_FEEDBACK_15 __romstr__("Settings defaults")
 
 #define MSG_STATUS_ALARM __romstr__("Alarm")
-#define MSG_STATUS_DOOR __romstr__("Door:")
-#define MSG_STATUS_HOLD __romstr__("Hold:")
+#define MSG_STATUS_DOOR __romstr__("Door")
+#define MSG_STATUS_HOLD __romstr__("Hold")
 #define MSG_STATUS_HOME __romstr__("Home")
 #define MSG_STATUS_JOG __romstr__("Jog")
 #define MSG_STATUS_RUN __romstr__("Run")

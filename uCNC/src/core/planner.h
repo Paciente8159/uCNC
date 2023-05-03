@@ -64,8 +64,10 @@ extern "C"
 
 	typedef struct
 	{
+		uint8_t ovr_counter;
 		uint8_t feed_override;
 		uint8_t rapid_feed_override;
+		uint8_t planner_ovr_counter;
 #if TOOL_COUNT > 0
 		int16_t spindle_speed;
 		uint8_t spindle_speed_override;
@@ -108,7 +110,6 @@ extern "C"
 	void planner_coolant_ovr_reset(void);
 #endif
 
-	bool planner_overflows_updated(void);
 	uint8_t planner_get_buffer_freeblocks();
 
 #ifdef __cplusplus

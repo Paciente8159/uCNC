@@ -79,10 +79,10 @@ extern "C"
 
 	// anonymous struct that is defined later
 	typedef struct system_menu_item_ system_menu_item_t;
-	typedef void (*system_menu_page_render_cb)(void);
+	typedef void (*system_menu_page_render_cb)(uint8_t);
 	typedef bool (*system_menu_page_action_cb)(uint8_t);
 	typedef void (*system_menu_item_render_cb)(uint8_t, system_menu_item_t *);
-	typedef bool (*system_menu_item_action_cb)(uint8_t, void *);
+	typedef bool (*system_menu_item_action_cb)(uint8_t, system_menu_item_t *);
 
 	struct system_menu_item_
 	{
@@ -134,8 +134,9 @@ extern "C"
  * **/
 #define DECL_MENU_LABEL(menu_id, name, strvalue) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, NULL, NULL)
 #define DECL_MENU_GOTO(menu_id, name, strvalue, menu) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, "->", system_menu_action_goto, menu)
-#define DECL_MENU_VAR(menu_id, name, strvalue, varptr, vartype, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_action_edit, CONST_VARG(vartype))
-#define DECL_MENU_VAR_SIMPLE(menu_id, name, strvalue, varptr, vartype, render_cb) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, render_cb, varptr, system_menu_action_edit_simple, CONST_VARG(vartype))
+#define DECL_MENU_VAR(menu_id, name, strvalue, varptr, vartype) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, system_menu_item_render_var_arg, CONST_VARG(vartype), system_menu_action_edit, CONST_VARG(vartype))
+#define DECL_MENU_VAR_SIMPLE(menu_id, name, strvalue, varptr, vartype) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, system_menu_item_render_var_arg, CONST_VARG(vartype), system_menu_action_edit_simple, CONST_VARG(vartype))
+#define DECL_MENU_VAR_CUSTOM_EDIT(menu_id, name, strvalue, varptr, vartype, actioncb, actioncb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, varptr, system_menu_item_render_var_arg, CONST_VARG(vartype), actioncb, actioncb_arg)
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
 #define DECL_MENU(id, parentid, label)                                                                                                                                                      \
@@ -176,29 +177,25 @@ extern "C"
 	/**
 	 * Helper µCNC action callbacks
 	 * **/
-	bool system_menu_action_goto(uint8_t action, void *cmd);
-	bool system_menu_action_rt_cmd(uint8_t action, void *cmd);
-	bool system_menu_action_serial_cmd(uint8_t action, void *cmd);
-	bool system_menu_action_edit(uint8_t action, void *cmd);
-	bool system_menu_action_edit_simple(uint8_t action, void *cmd);
-	bool system_menu_action_nav_back(uint8_t action, void *cmd);
+	bool system_menu_action_goto(uint8_t action, system_menu_item_t *item);
+	bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item);
+	bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item);
+	bool system_menu_action_edit(uint8_t action, system_menu_item_t *item);
+	bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item);
 
 	/**
 	 * Helper µCNC render callbacks
 	 * **/
+	// these should be implemented on the display side
+	// one to render label and the other to render the label variable argument
 	void system_menu_item_render_label(uint8_t render_flags, const char *label);
 	void system_menu_item_render_arg(uint8_t render_flags, const char *label);
-	void system_menu_item_render_str_arg(uint8_t render_flags, system_menu_item_t *item);
-	void system_menu_item_render_uint32_arg(uint8_t render_flags, system_menu_item_t *item);
-	void system_menu_item_render_uint16_arg(uint8_t render_flags, system_menu_item_t *item);
-	void system_menu_item_render_uint8_arg(uint8_t render_flags, system_menu_item_t *item);
-	void system_menu_item_render_bool_arg(uint8_t render_flags, system_menu_item_t *item);
-	void system_menu_item_render_flt_arg(uint8_t render_flags, system_menu_item_t *item);
+	// generic menu item argument renderer
+	void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *item);
 
 	/**
 	 * Helper µCNC to display variables
 	 * **/
-
 	extern char *system_menu_var_to_str_set_buffer_ptr;
 	void system_menu_var_to_str_set_buffer(char *ptr);
 	void system_menu_var_to_str(unsigned char c);
