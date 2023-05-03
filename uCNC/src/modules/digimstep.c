@@ -76,7 +76,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Y');
@@ -87,7 +87,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Z');
@@ -98,7 +98,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('A');
@@ -109,7 +109,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('B');
@@ -120,7 +120,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('C');
@@ -131,7 +131,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('I');
@@ -142,7 +142,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('J');
@@ -153,7 +153,7 @@ bool m351_exec(void *args)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(']');
 			protocol_send_string(MSG_EOL);
 		}
