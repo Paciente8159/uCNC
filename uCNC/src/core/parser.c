@@ -1453,7 +1453,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	// if non-modal is executed
 	uint8_t index = 255;
-	error = 0;
+	error = STATUS_OK;
 	switch (new_state->groups.nonmodal)
 	{
 #ifndef DISABLE_G10_SUPPORT
