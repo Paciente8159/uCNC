@@ -98,9 +98,9 @@ DECL_MODULE(system_menu)
 
 	DECL_MENU(8, 1, STR_OVERRIDES);
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
-	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(RT_CMD_FEED_100));
+	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
-	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(RT_CMD_SPINDLE_100));
+	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu
 	// default initial distance
@@ -259,6 +259,13 @@ void system_menu_action(uint8_t action)
 	int8_t currentmenu = (int8_t)g_system_menu.current_menu;
 	int16_t currentindex = g_system_menu.current_index;
 
+	// forces a second redraw after flushing all commands
+	if (g_system_menu.flags & SYSTEM_MENU_MODE_DELAYED_REDRAW)
+	{
+		g_system_menu.flags &= ~SYSTEM_MENU_MODE_DELAYED_REDRAW;
+		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+	}
+
 	if (action == SYSTEM_MENU_ACTION_NONE)
 	{
 		// idle timeout occurred
@@ -267,7 +274,7 @@ void system_menu_action(uint8_t action)
 			// system_menu_go_idle();
 			currentmenu = g_system_menu.current_menu = 0;
 			currentindex = g_system_menu.current_index = 0;
-			g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+			g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
 			system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 			// g_system_menu.next_redraw = 0;
 		}
@@ -574,6 +581,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
+		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		return true;
 	}

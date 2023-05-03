@@ -47,6 +47,7 @@ extern "C"
 #endif
 
 // render flags
+#define SYSTEM_MENU_MODE_DELAYED_REDRAW 32
 #define SYSTEM_MENU_MODE_MODIFY 16
 #define SYSTEM_MENU_MODE_EDIT 8
 #define SYSTEM_MENU_MODE_SIMPLE_EDIT 4
