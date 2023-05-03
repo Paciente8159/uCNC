@@ -30,6 +30,9 @@ extern "C"
 
 #define UCNC_MODULE_VERSION 010700
 
+#define EVENT_CONTINUE false
+#define EVENT_HANDLED true
+
 #define DECL_MODULE(name) void name##_init(void)
 #define LOAD_MODULE(name)          \
 	extern void name##_init(void); \
