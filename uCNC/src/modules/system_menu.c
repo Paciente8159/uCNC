@@ -640,6 +640,9 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 				break;
 			}
 			break;
+		default:
+			// allow to propagate
+			return false;
 		}
 
 		return true;
@@ -686,6 +689,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 				system_menu_flt_to_str(ptr, -jog_distance);
 				break;
 			default:
+				// allow to propagate
 				return false;
 			}
 			// search for the end of string
@@ -872,6 +876,9 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			return false;
 		}
 		break;
+	default:
+		// allow to propagate
+		return false;
 	}
 
 	// modify mode enabled
