@@ -186,6 +186,7 @@ extern "C"
 #define SPI_CLK_PORT 0
 #define SPI_CS_BIT 16
 #define SPI_CS_PORT 0
+#define SPI_PORT 0
 
 // software SPI
 // #define DOUT29_BIT 9

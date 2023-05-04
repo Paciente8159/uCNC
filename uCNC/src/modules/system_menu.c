@@ -776,15 +776,17 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 	{
 		uint8_t vartype = (uint8_t)VARG_CONST(item->action_arg);
 
-		bool inc;
+		bool inc = true;
 		switch (action)
 		{
 		case SYSTEM_MENU_ACTION_NEXT:
-			inc = true;
 			break;
 		case SYSTEM_MENU_ACTION_PREV:
 			inc = false;
 			break;
+		default:
+			// allow to propagate
+			return false;
 		}
 
 		switch (vartype)

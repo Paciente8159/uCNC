@@ -179,6 +179,7 @@ extern "C"
 #define SPI_CLK_PORT 0
 #define SPI_CS_BIT 23
 #define SPI_CS_PORT 0
+#define SPI_PORT 0
 
 // #define SPI_PORT 1
 // #define SPI_FREQ 100000UL
