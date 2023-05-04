@@ -218,6 +218,32 @@ extern "C"
 #define DIN19_PORT L
 #define DIN19_PULLUP
 
+//pins for smart adapter
+//clk
+#define DOUT4_BIT 1
+#define DOUT4_PORT H
+//data
+#define DOUT5_BIT 1
+#define DOUT5_PORT A
+//cs
+#define DOUT6_BIT 0
+#define DOUT6_PORT H
+//beep
+#define DOUT7_BIT 0
+#define DOUT7_PORT C
+//enc btn
+#define DIN16_BIT 2
+#define DIN16_PORT C
+#define DIN16_PULLUP
+//enc 1
+#define DIN17_BIT 4
+#define DIN17_PORT C
+#define DIN17_PULLUP
+//enc 2
+#define DIN18_BIT 6
+#define DIN18_PORT C
+#define DIN18_PULLUP
+
 #define ONESHOT_TIMER 4
 
 #ifdef __cplusplus
