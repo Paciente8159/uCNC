@@ -371,7 +371,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			g_settings.arc_tolerance = value;
 			break;
 		case 13:
-			g_settings.report_inches = value;
+			g_settings.report_inches = value1;
 			break;
 		case 20:
 			if (!g_settings.homing_enabled && value1)

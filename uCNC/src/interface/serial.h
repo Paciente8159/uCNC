@@ -57,13 +57,24 @@ extern "C"
 	void serial_select(uint8_t source);
 
 	void serial_putc(unsigned char c);
-	void serial_print_str(const char *__s);
-	void serial_print_bytes(const uint8_t *data, uint8_t count);
-	void serial_print_int(int32_t num);
-	void serial_print_flt(float num);
-	void serial_print_fltunits(float num);
-	void serial_print_intarr(int32_t *arr, uint8_t count);
-	void serial_print_fltarr(float *arr, uint8_t count);
+	// printing utils
+	typedef void (*print_cb)(unsigned char);
+	void print_str(print_cb cb, const char *__s);
+	void print_bytes(print_cb cb, const uint8_t *data, uint8_t count);
+	void print_int(print_cb cb, int32_t num);
+	void print_flt(print_cb cb, float num);
+	void print_fltunits(print_cb cb, float num);
+	void print_intarr(print_cb cb, int32_t *arr, uint8_t count);
+	void print_fltarr(print_cb cb, float *arr, uint8_t count);
+
+#define serial_print_str(__s) print_str(serial_putc, __s)
+#define serial_print_bytes(data, count) print_bytes(serial_putc, data, count)
+#define serial_print_int(num) print_int(serial_putc, num)
+#define serial_print_flt(num) print_flt(serial_putc, num)
+#define serial_print_fltunits(num) print_fltunits(serial_putc, num)
+#define serial_print_intarr(arr, count) print_intarr(serial_putc, arr, count)
+#define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
+
 	void serial_flush(void);
 	uint8_t serial_get_rx_freebytes(void);
 

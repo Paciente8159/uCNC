@@ -23,23 +23,11 @@
 #include <math.h>
 #include <float.h>
 
-typedef struct
-{
-	uint8_t feed_override;
-	uint8_t rapid_feed_override;
-#if TOOL_COUNT > 0
-	int16_t spindle_speed;
-	uint8_t spindle_speed_override;
-	planner_flags_t state_flags;
-#endif
-} planner_state_t;
-
 static planner_block_t planner_data[PLANNER_BUFFER_SIZE];
 static uint8_t planner_data_write;
 static uint8_t planner_data_read;
 static uint8_t planner_data_blocks;
-static planner_state_t planner_state;
-static uint8_t planner_ovr_counter;
+planner_state_t g_planner_state;
 
 FORCEINLINE static void planner_add_block(void);
 FORCEINLINE static uint8_t planner_buffer_next(uint8_t index);
@@ -205,8 +193,8 @@ static void planner_add_block(void)
 	// planner is empty update tools with current planner values
 	if (!blocks)
 	{
-		planner_state.spindle_speed = planner_data[index].spindle;
-		planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
+		g_planner_state.spindle_speed = planner_data[index].spindle;
+		g_planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
 	}
 #endif
 
@@ -239,8 +227,8 @@ void planner_discard_block(void)
 #if TOOL_COUNT > 0
 	if (blocks)
 	{
-		planner_state.spindle_speed = planner_data[index].spindle;
-		planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
+		g_planner_state.spindle_speed = planner_data[index].spindle;
+		g_planner_state.state_flags.reg = planner_data[index].planner_flags.reg;
 	}
 #endif
 
@@ -310,8 +298,8 @@ void planner_clear(void)
 	// clears all motions stored in the buffer
 	planner_buffer_clear();
 #if TOOL_COUNT > 0
-	planner_state.spindle_speed = 0;
-	planner_state.state_flags.reg = 0;
+	g_planner_state.spindle_speed = 0;
+	g_planner_state.state_flags.reg = 0;
 #endif
 }
 
@@ -339,16 +327,16 @@ float planner_get_block_exit_speed_sqr(void)
 
 	if (planner_data[next].planner_flags.bit.feed_override)
 	{
-		if (planner_state.feed_override != 100)
+		if (g_planner_state.feed_override != 100)
 		{
-			exit_speed_sqr *= fast_flt_pow2((float)planner_state.feed_override);
+			exit_speed_sqr *= fast_flt_pow2((float)g_planner_state.feed_override);
 			exit_speed_sqr *= 0.0001f;
 		}
 
 		// if rapid overrides are active the feed must not exceed the rapid motion feed
-		if (planner_state.rapid_feed_override != 100)
+		if (g_planner_state.rapid_feed_override != 100)
 		{
-			rapid_feed_sqr *= fast_flt_pow2((float)planner_state.rapid_feed_override);
+			rapid_feed_sqr *= fast_flt_pow2((float)g_planner_state.rapid_feed_override);
 			rapid_feed_sqr *= 0.0001f;
 		}
 	}
@@ -400,16 +388,16 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 	float target_speed_sqr = planner_data[index].feed_sqr;
 	if (planner_data[index].planner_flags.bit.feed_override)
 	{
-		if (planner_state.feed_override != 100)
+		if (g_planner_state.feed_override != 100)
 		{
-			target_speed_sqr *= fast_flt_pow2((float)planner_state.feed_override);
+			target_speed_sqr *= fast_flt_pow2((float)g_planner_state.feed_override);
 			target_speed_sqr *= 0.0001f;
 		}
 
 		// if rapid overrides are active the feed must not exceed the rapid motion feed
-		if (planner_state.rapid_feed_override != 100)
+		if (g_planner_state.rapid_feed_override != 100)
 		{
-			rapid_feed_sqr *= fast_flt_pow2((float)planner_state.rapid_feed_override);
+			rapid_feed_sqr *= fast_flt_pow2((float)g_planner_state.rapid_feed_override);
 			rapid_feed_sqr *= 0.0001f;
 		}
 	}
@@ -422,19 +410,19 @@ float planner_get_block_top_speed(float exit_speed_sqr)
 #if TOOL_COUNT > 0
 int16_t planner_get_spindle_speed(float scale)
 {
-	if (planner_state.state_flags.bit.spindle_running)
+	if (g_planner_state.state_flags.bit.spindle_running)
 	{
-		float scaled_spindle = (float)planner_state.spindle_speed;
-		bool neg = (planner_state.state_flags.bit.spindle_running == 2);
+		float scaled_spindle = (float)g_planner_state.spindle_speed;
+		bool neg = (g_planner_state.state_flags.bit.spindle_running == 2);
 
 		if (g_settings.laser_mode && neg) // scales laser power only if invert is active (M4)
 		{
 			scaled_spindle *= scale; // scale calculated in laser mode (otherwise scale is always 1)
 		}
 
-		if (planner_data[planner_data_read].planner_flags.bit.feed_override && planner_state.spindle_speed_override != 100)
+		if (planner_data[planner_data_read].planner_flags.bit.feed_override && g_planner_state.spindle_speed_override != 100)
 		{
-			scaled_spindle = 0.01f * (float)planner_state.spindle_speed_override * scaled_spindle;
+			scaled_spindle = 0.01f * (float)g_planner_state.spindle_speed_override * scaled_spindle;
 		}
 		scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
 		int16_t output = tool_range_speed(scaled_spindle);
@@ -447,12 +435,12 @@ int16_t planner_get_spindle_speed(float scale)
 
 float planner_get_previous_spindle_speed(void)
 {
-	return (float)planner_state.spindle_speed;
+	return (float)g_planner_state.spindle_speed;
 }
 
 uint8_t planner_get_previous_coolant(void)
 {
-	return planner_state.state_flags.bit.coolant;
+	return g_planner_state.state_flags.bit.coolant;
 }
 #endif
 
@@ -520,54 +508,54 @@ static void planner_recalculate(void)
 void planner_sync_tools(motion_data_t *block_data)
 {
 #if TOOL_COUNT > 0
-	planner_state.spindle_speed = block_data->spindle;
-	planner_state.state_flags.reg &= ~STATE_COPY_FLAG_MASK;
-	planner_state.state_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK);
+	g_planner_state.spindle_speed = block_data->spindle;
+	g_planner_state.state_flags.reg &= ~STATE_COPY_FLAG_MASK;
+	g_planner_state.state_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK);
 #endif
 }
 
 // overrides
 void planner_feed_ovr_inc(uint8_t value)
 {
-	uint8_t ovr_val = planner_state.feed_override;
+	uint8_t ovr_val = g_planner_state.feed_override;
 	ovr_val += value;
 	ovr_val = MAX(ovr_val, FEED_OVR_MIN);
 	ovr_val = MIN(ovr_val, FEED_OVR_MAX);
 
-	if (ovr_val != planner_state.feed_override)
+	if (ovr_val != g_planner_state.feed_override)
 	{
-		planner_state.feed_override = ovr_val;
-		planner_ovr_counter = 0;
+		g_planner_state.feed_override = ovr_val;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
 
 void planner_rapid_feed_ovr(uint8_t value)
 {
-	if (planner_state.rapid_feed_override != value)
+	if (g_planner_state.rapid_feed_override != value)
 	{
-		planner_state.rapid_feed_override = value;
-		planner_ovr_counter = 0;
+		g_planner_state.rapid_feed_override = value;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
 
 void planner_feed_ovr_reset(void)
 {
-	if (planner_state.feed_override != 100)
+	if (g_planner_state.feed_override != 100)
 	{
-		planner_state.feed_override = 100;
-		planner_ovr_counter = 0;
+		g_planner_state.feed_override = 100;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
 
 void planner_rapid_feed_ovr_reset(void)
 {
-	if (planner_state.rapid_feed_override != 100)
+	if (g_planner_state.rapid_feed_override != 100)
 	{
-		planner_state.rapid_feed_override = 100;
-		planner_ovr_counter = 0;
+		g_planner_state.rapid_feed_override = 100;
+		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
 }
@@ -575,29 +563,29 @@ void planner_rapid_feed_ovr_reset(void)
 #if TOOL_COUNT > 0
 void planner_spindle_ovr_inc(uint8_t value)
 {
-	uint8_t ovr_val = planner_state.spindle_speed_override;
+	uint8_t ovr_val = g_planner_state.spindle_speed_override;
 	ovr_val += value;
 	ovr_val = MAX(ovr_val, SPINDLE_OVR_MIN);
 	ovr_val = MIN(ovr_val, SPINDLE_OVR_MAX);
 
-	if (ovr_val != planner_state.spindle_speed_override)
+	if (ovr_val != g_planner_state.spindle_speed_override)
 	{
-		planner_state.spindle_speed_override = ovr_val;
-		planner_ovr_counter = 0;
+		g_planner_state.spindle_speed_override = ovr_val;
+		g_planner_state.ovr_counter = 0;
 	}
 }
 
 void planner_spindle_ovr_reset(void)
 {
-	planner_state.spindle_speed_override = 100;
-	planner_ovr_counter = 0;
+	g_planner_state.spindle_speed_override = 100;
+	g_planner_state.ovr_counter = 0;
 }
 
 static uint8_t coolant_override;
 
 uint8_t planner_get_coolant(void)
 {
-	return (planner_state.state_flags.bit.coolant ^ coolant_override);
+	return (g_planner_state.state_flags.bit.coolant ^ coolant_override);
 }
 
 uint8_t planner_coolant_ovr_toggle(uint8_t value)
@@ -608,29 +596,10 @@ uint8_t planner_coolant_ovr_toggle(uint8_t value)
 
 void planner_coolant_ovr_reset(void)
 {
-	planner_state.state_flags.bit.coolant = 0;
+	g_planner_state.state_flags.bit.coolant = 0;
 	coolant_override = 0;
 }
 #endif
-
-bool planner_get_overflows(uint8_t *overflows)
-{
-	if (!planner_ovr_counter)
-	{
-		overflows[0] = planner_state.feed_override;
-		overflows[1] = planner_state.rapid_feed_override;
-#if TOOL_COUNT > 0
-		overflows[2] = planner_state.spindle_speed_override;
-#else
-		overflows[2] = 0;
-#endif
-		planner_ovr_counter = STATUS_WCO_REPORT_MIN_FREQUENCY;
-		return true;
-	}
-
-	planner_ovr_counter--;
-	return false;
-}
 
 uint8_t planner_get_buffer_freeblocks()
 {

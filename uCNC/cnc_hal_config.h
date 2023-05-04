@@ -593,6 +593,15 @@ extern "C"
 #define STEPPER7_DIGIPOT_VALUE 0
 #endif
 
+/**
+ * System Menu for displays
+ * System Menu manages interfaces and control actions for displays in µCNC
+ * **/
+// override the default max string buffer length
+#ifndef SYSTEM_MENU_MAX_STR_LEN
+// #define SYSTEM_MENU_MAX_STR_LEN 32
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -168,12 +168,12 @@ unsigned char serial_peek(void)
 
 void serial_inject_cmd(const char *__s)
 {
-	unsigned char c = (unsigned char)rom_strptr(__s++);
+	unsigned char c;
 	do
 	{
+		c = (unsigned char)*__s++;
 		mcu_com_rx_cb(c);
-		c = (unsigned char)rom_strptr(__s++);
-	} while (c != 0);
+	} while (c);
 }
 
 void serial_putc(unsigned char c)
@@ -212,34 +212,34 @@ void serial_putc(unsigned char c)
 #endif
 }
 
-void serial_print_str(const char *__s)
+void print_str(print_cb cb, const char *__s)
 {
 	while (*__s)
 	{
-		serial_putc(*__s++);
+		cb(*__s++);
 	}
 }
 
-void serial_print_bytes(const uint8_t *data, uint8_t count)
+void print_bytes(print_cb cb, const uint8_t *data, uint8_t count)
 {
 	do
 	{
-		serial_putc(' ');
+		cb(' ');
 		uint8_t up = *data >> 4;
 		char c = (up > 9) ? ('a' + up - 10) : ('0' + up);
-		serial_putc(c);
+		cb(c);
 		up = *data & 0x0F;
 		c = (up > 9) ? ('a' + up - 10) : ('0' + up);
-		serial_putc(c);
+		cb(c);
 		data++;
 	} while (--count);
 }
 
-void serial_print_int(int32_t num)
+void print_int(print_cb cb, int32_t num)
 {
 	if (num == 0)
 	{
-		serial_putc('0');
+		cb('0');
 		return;
 	}
 
@@ -248,7 +248,7 @@ void serial_print_int(int32_t num)
 
 	if (num < 0)
 	{
-		serial_putc('-');
+		cb('-');
 		num = -num;
 	}
 
@@ -262,15 +262,15 @@ void serial_print_int(int32_t num)
 	do
 	{
 		i--;
-		serial_putc('0' + buffer[i]);
+		cb('0' + buffer[i]);
 	} while (i);
 }
 
-void serial_print_flt(float num)
+void print_flt(print_cb cb, float num)
 {
 	if (num < 0)
 	{
-		serial_putc('-');
+		cb('-');
 		num = -num;
 	}
 
@@ -285,59 +285,59 @@ void serial_print_flt(float num)
 		digits = 0;
 	}
 
-	serial_print_int(interger);
-	serial_putc('.');
+	print_int(cb, interger);
+	cb('.');
 	if (g_settings.report_inches)
 	{
 		if (digits < 1000)
 		{
-			serial_putc('0');
+			cb('0');
 		}
 	}
 
 	if (digits < 100)
 	{
-		serial_putc('0');
+		cb('0');
 	}
 
 	if (digits < 10)
 	{
-		serial_putc('0');
+		cb('0');
 	}
 
-	serial_print_int(digits);
+	print_int(cb, digits);
 }
 
-void serial_print_fltunits(float num)
+void print_fltunits(print_cb cb, float num)
 {
 	num = (!g_settings.report_inches) ? num : (num * MM_INCH_MULT);
-	serial_print_flt(num);
+	print_flt(cb, num);
 }
 
-void serial_print_intarr(int32_t *arr, uint8_t count)
+void print_intarr(print_cb cb, int32_t *arr, uint8_t count)
 {
 	do
 	{
-		serial_print_int(*arr++);
+		print_int(cb, *arr++);
 		count--;
 		if (count)
 		{
-			serial_putc(',');
+			cb(',');
 		}
 
 	} while (count);
 }
 
-void serial_print_fltarr(float *arr, uint8_t count)
+void print_fltarr(print_cb cb, float *arr, uint8_t count)
 {
 	uint8_t i = count;
 	do
 	{
-		serial_print_fltunits(*arr++);
+		print_fltunits(cb, *arr++);
 		i--;
 		if (i)
 		{
-			serial_putc(',');
+			cb(',');
 		}
 
 	} while (i);
@@ -347,8 +347,8 @@ void serial_print_fltarr(float *arr, uint8_t count)
 		i = 3 - count;
 		do
 		{
-			serial_putc(',');
-			serial_print_flt(0);
+			cb(',');
+			print_flt(cb, 0);
 		} while (--i);
 	}
 }

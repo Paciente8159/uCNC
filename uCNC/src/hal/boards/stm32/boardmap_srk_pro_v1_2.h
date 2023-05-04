@@ -188,7 +188,7 @@ extern "C"
 #define DIN25_PORT D
 #define DIN25_PULLUP
 
-//software SPI for card access
+//hardware SPI for card access
 #define SPI_SDO_BIT 5
 #define SPI_SDO_PORT B
 #define SPI_SDI_BIT 6
@@ -201,6 +201,32 @@ extern "C"
 //SD detect pin
 #define DIN19_BIT 11
 #define DIN19_PORT B
+
+//pins for smart adapter
+//clk
+#define DOUT4_BIT 2
+#define DOUT4_PORT G
+//data
+#define DOUT5_BIT 11
+#define DOUT5_PORT D
+//cs
+#define DOUT6_BIT 10
+#define DOUT6_PORT D
+//beep
+#define DOUT7_BIT 4
+#define DOUT7_PORT G
+//enc btn
+#define DIN16_BIT 8
+#define DIN16_PORT A
+#define DIN16_PULLUP
+//enc 1
+#define DIN17_BIT 11
+#define DIN17_PORT F
+#define DIN17_PULLUP
+//enc 2
+#define DIN18_BIT 10
+#define DIN18_PORT G
+#define DIN18_PULLUP
 
 #define ONESHOT_TIMER 3
 

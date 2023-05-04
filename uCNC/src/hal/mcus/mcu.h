@@ -70,6 +70,14 @@ extern "C"
 #endif
 
 /**
+ * config pullup
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pullup
+	void mcu_config_pullup(uint8_t pin);
+#endif
+
+/**
  * config a pin in output mode
  * can be defined either as a function or a macro call
  * */

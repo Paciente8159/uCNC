@@ -24,7 +24,9 @@ extern "C"
 {
 #endif
 
-	void digipot_init(void);
+#include "../module.h"
+
+	DECL_MODULE(digipot);
 
 #ifdef __cplusplus
 }
