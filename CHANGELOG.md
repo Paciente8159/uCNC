@@ -6,6 +6,13 @@
 
 # Changelog
 
+## [1.6.2] - 04-05-2023
+
+### Fixed
+
+- fixed ```?``` command being cleared before responding depending on the execution point were the call was made. This will make the status command more responsive (#376)
+- updated README
+
 ## [1.6.1] - 26-04-2023
 
 ### Added
@@ -1156,6 +1163,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.6.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.2
 [1.6.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0
 [1.6.0-alpha]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0-alpha
