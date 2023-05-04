@@ -520,11 +520,9 @@ void cnc_call_rt_command(uint8_t command)
 	case CMD_CODE_FEED_HOLD:
 		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
 		break;
-#if STATUS_AUTOMATIC_REPORT_INTERVAL < 100
 	case CMD_CODE_REPORT:
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
 		break;
-#endif
 	case CMD_CODE_CYCLE_START:
 		// prevents loop if cycle start is always pressed or unconnected (during cnc_dotasks)
 		if (!cnc_get_exec_state(EXEC_RUN))
@@ -583,7 +581,8 @@ void cnc_exec_rt_commands(void)
 	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
 	if (command)
 	{
-		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		// clear all but report. report is handled in cnc_io_dotasks
+		cnc_state.rt_cmd &= RT_CMD_REPORT;
 		if (command & RT_CMD_RESET)
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))
