@@ -77,6 +77,14 @@ extern "C"
 #define DIN30_BIT 4
 #define DIN31_BIT 0
 
+//pins for smart adapter
+//clk
+#define DOUT4_BIT 26
+//data
+#define DOUT5_BIT 05
+//cs
+#define DOUT6_BIT 27
+
 // include the IO expander
 #include "../../../modules/ic74hc595.h"
 

@@ -198,14 +198,15 @@ extern "C"
 
 //pins for smart adapter
 //clk
-#define DOUT4_BIT 16
+#define DOUT4_BIT 15
 #define DOUT4_PORT 0
 //data
-#define DOUT5_BIT 15
+#define DOUT5_BIT 18
 #define DOUT5_PORT 0
 //cs
-#define DOUT6_BIT 18
+#define DOUT6_BIT 16
 #define DOUT6_PORT 0
+
 //beep
 #define DOUT7_BIT 30
 #define DOUT7_PORT 1

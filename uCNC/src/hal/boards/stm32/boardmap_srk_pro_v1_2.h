@@ -204,13 +204,13 @@ extern "C"
 
 //pins for smart adapter
 //clk
-#define DOUT4_BIT 10
-#define DOUT4_PORT D
+#define DOUT4_BIT 2
+#define DOUT4_PORT G
 //data
-#define DOUT5_BIT 2
-#define DOUT5_PORT G
+#define DOUT5_BIT 11
+#define DOUT5_PORT D
 //cs
-#define DOUT6_BIT 11
+#define DOUT6_BIT 10
 #define DOUT6_PORT D
 //beep
 #define DOUT7_BIT 4
