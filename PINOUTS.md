@@ -8,10 +8,10 @@ This wiring can be completely modified by the user.
 | DOUT1   | SPINDLE_REV |
 | DOUT2   | COOLANT_FLOOD |
 | DOUT3   | COOLANT_MIST |
-| DOUT4   |     |
-| DOUT5   |     |
-| DOUT6   |     |
-| DOUT7   |     |
+| DOUT4   | DISPLAY CLK |
+| DOUT5   | DISPLAY DAT    |
+| DOUT6   | DISPLAY CS    |
+| DOUT7   | DISPLAY BEEP    |
 | DOUT8   |     |
 | DOUT9   |     |
 | DOUT10   |     |
@@ -52,9 +52,9 @@ This wiring can be completely modified by the user.
 | DIN13   | ENC5_DIR    |
 | DIN14   | ENC6_DIR    |
 | DIN15   | ENC7_DIR    |
-| DIN16   |     |
-| DIN17   |     |
-| DIN18   |     |
+| DIN16   | DISPLAY ENC BTN    |
+| DIN17   | DISPLAY ENC1    |
+| DIN18   | DISPLAY ENC2    |
 | DIN19   |     |
 | DIN20   | STEPPER0_UART_RX    |
 | DIN21   | STEPPER1_UART_RX    |
