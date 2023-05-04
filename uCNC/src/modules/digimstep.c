@@ -25,44 +25,42 @@
 // this ID must be unique for each code
 #define M351 EXTENDED_MCODE(351)
 
-uint8_t m351_parse(void *args, bool* handled);
-uint8_t m351_exec(void *args, bool* handled);
+bool m351_parse(void *args);
+bool m351_exec(void *args);
 
 CREATE_EVENT_LISTENER(gcode_parse, m351_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m351_exec);
 
 // this just parses and acceps the code
-uint8_t m351_parse(void *args, bool* handled)
+bool m351_parse(void *args)
 {
 	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
 
 	if (ptr->word == 'M' && ptr->value == 351.0f)
 	{
-		*handled = true;
-
 		if (ptr->cmd->group_extended != 0)
 		{
 			// there is a collision of custom gcode commands (only one per line can be processed)
-			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+			return EVENT_HANDLED;
 		}
 		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
 		ptr->cmd->group_extended = M351;
-		return STATUS_OK;
+		*(ptr->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return ptr->error;
+	return EVENT_CONTINUE;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
-uint8_t m351_exec(void *args, bool* handled)
+bool m351_exec(void *args)
 {
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 
 	if (ptr->cmd->group_extended == M351)
 	{
-		*handled = true;
-
 		itp_sync();
 		if (!ptr->cmd->words)
 		{
@@ -78,7 +76,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Y');
@@ -89,7 +87,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Z');
@@ -100,7 +98,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('A');
@@ -111,7 +109,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('B');
@@ -122,7 +120,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('C');
@@ -133,7 +131,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('I');
@@ -144,7 +142,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('J');
@@ -155,7 +153,7 @@ uint8_t m351_exec(void *args, bool* handled)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(']');
 			protocol_send_string(MSG_EOL);
 		}
@@ -233,10 +231,11 @@ uint8_t m351_exec(void *args, bool* handled)
 #endif
 		}
 
-		return STATUS_OK;
+		*(ptr->error) = STATUS_OK;
+		return EVENT_HANDLED;
 	}
 
-	return STATUS_GCODE_EXTENDED_UNSUPPORTED;
+	return EVENT_CONTINUE;
 }
 
 #endif

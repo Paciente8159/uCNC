@@ -554,12 +554,8 @@ static uint8_t parser_grbl_command(void)
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
-	grbl_cmd_args_t args = {grbl_cmd_str, grbl_cmd_len, c};
-	uint8_t newerror = EVENT_INVOKE(grbl_cmd, &args);
-	if (newerror >= GRBL_SYSTEM_CMD)
-	{
-		error = newerror;
-	}
+	grbl_cmd_args_t args = {&error, grbl_cmd_str, grbl_cmd_len, c};
+	EVENT_INVOKE(grbl_cmd, &args);
 #endif
 
 	return error;
@@ -746,8 +742,8 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ENABLE_PARSER_MODULES
 		if ((error == STATUS_GCODE_UNSUPPORTED_COMMAND || error == STATUS_GCODE_UNUSED_WORDS))
 		{
-			gcode_parse_args_t args = {word, code, error, value, new_state, words, cmd};
-			error = EVENT_INVOKE(gcode_parse, &args);
+			gcode_parse_args_t args = {word, code, &error, value, new_state, words, cmd};
+			EVENT_INVOKE(gcode_parse, &args);
 		}
 #endif
 
@@ -1124,11 +1120,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 	uint8_t probe_flags;
 #endif
 	motion_data_t block_data = {0};
-	uint8_t error = 0;
+	uint8_t error = STATUS_OK;
 	bool update_tools = false;
 
 #ifdef ENABLE_PARSER_MODULES
-	gcode_exec_args_t args = {new_state, words, cmd, target, &block_data};
+	gcode_exec_args_t args = {&error, new_state, words, cmd, target, &block_data};
 	EVENT_INVOKE(gcode_exec_modifier, &args);
 #endif
 
@@ -1186,13 +1182,13 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			break;
 #endif
 		default:
+			error = STATUS_GCODE_UNSUPPORTED_COMMAND;
 #ifdef ENABLE_PARSER_MODULES
-			return EVENT_INVOKE(gcode_exec, &args);
+			EVENT_INVOKE(gcode_exec, &args);
 #endif
-			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
 
-		return STATUS_OK;
+		return error;
 	}
 
 #ifdef GCODE_PROCESS_LINE_NUMBERS
@@ -1457,7 +1453,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 
 	// if non-modal is executed
 	uint8_t index = 255;
-	error = 0;
+	error = STATUS_OK;
 	switch (new_state->groups.nonmodal)
 	{
 #ifndef DISABLE_G10_SUPPORT
@@ -1771,7 +1767,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			args.new_state = new_state;
 			args.words = words;
 			args.cmd = cmd;
-			error = EVENT_INVOKE(gcode_exec, &args);
+			EVENT_INVOKE(gcode_exec, &args);
 			break;
 #endif
 		}
