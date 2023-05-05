@@ -197,11 +197,17 @@ DECL_MODULE(digipot)
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, digipot_config);
+#else
+#error "Main loop extensions are not enabled. Stepper digipot will not be configured."
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m907_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m907_exec);
+#else
+#warning "Parser extensions are not enabled. M907 code extension will not work."
 #endif
+
+#ifndef
 }
 
 #endif

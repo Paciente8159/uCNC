@@ -1149,33 +1149,35 @@ bool m920_exec(void *args)
 
 DECL_MODULE(tmcdriver)
 {
-#ifdef STEPPER0_SPI_CS
+#if ASSERT_PIN(STEPPER0_SPI_CS)
 	mcu_set_output(STEPPER0_SPI_CS);
 #endif
-#ifdef STEPPER1_SPI_CS
+#if ASSERT_PIN(STEPPER1_SPI_CS)
 	mcu_set_output(STEPPER1_SPI_CS);
 #endif
-#ifdef STEPPER2_SPI_CS
+#if ASSERT_PIN(STEPPER2_SPI_CS)
 	mcu_set_output(STEPPER2_SPI_CS);
 #endif
-#ifdef STEPPER3_SPI_CS
+#if ASSERT_PIN(STEPPER3_SPI_CS)
 	mcu_set_output(STEPPER3_SPI_CS);
 #endif
-#ifdef STEPPER4_SPI_CS
+#if ASSERT_PIN(STEPPER4_SPI_CS)
 	mcu_set_output(STEPPER4_SPI_CS);
 #endif
-#ifdef STEPPER5_SPI_CS
+#if ASSERT_PIN(STEPPER5_SPI_CS)
 	mcu_set_output(STEPPER5_SPI_CS);
 #endif
-#ifdef STEPPER6_SPI_CS
+#if ASSERT_PIN(STEPPER6_SPI_CS)
 	mcu_set_output(STEPPER6_SPI_CS);
 #endif
-#ifdef STEPPER7_SPI_CS
+#if ASSERT_PIN(STEPPER7_SPI_CS)
 	mcu_set_output(STEPPER7_SPI_CS);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, tmcdriver_config_handler);
+#else
+#error "Main loop extensions are not enabled. TMC configurations will not work."
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m350_parse);
@@ -1188,6 +1190,8 @@ DECL_MODULE(tmcdriver)
 	ADD_EVENT_LISTENER(gcode_exec, m914_exec);
 	ADD_EVENT_LISTENER(gcode_parse, m920_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m920_exec);
+#else
+#warning "Parser extensions are not enabled. M350, M906, M913, M914 and M920 code extensions will not work."
 #endif
 
 #ifdef STEPPER0_HAS_TMC

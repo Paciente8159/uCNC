@@ -69,10 +69,10 @@ bool m351_exec(void *args)
 			protocol_send_string(__romstr__("[MSTEPS:"));
 			val = -1;
 			serial_putc('X');
-#ifdef STEPPER0_MSTEP0
+#if ASSERT_PIN(STEPPER0_MSTEP0)
 			val = mcu_get_output(STEPPER0_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER0_MSTEP1
+#if ASSERT_PIN(STEPPER0_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
@@ -80,10 +80,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('Y');
-#ifdef STEPPER1_MSTEP0
+#if ASSERT_PIN(STEPPER1_MSTEP0)
 			val = mcu_get_output(STEPPER1_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER1_MSTEP1
+#if ASSERT_PIN(STEPPER1_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
@@ -91,10 +91,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('Z');
-#ifdef STEPPER2_MSTEP0
+#if ASSERT_PIN(STEPPER2_MSTEP0)
 			val = mcu_get_output(STEPPER2_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER2_MSTEP1
+#if ASSERT_PIN(STEPPER2_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
@@ -102,10 +102,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('A');
-#ifdef STEPPER3_MSTEP0
+#if ASSERT_PIN(STEPPER3_MSTEP0)
 			val = mcu_get_output(STEPPER3_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER3_MSTEP1
+#if ASSERT_PIN(STEPPER3_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
@@ -113,10 +113,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('B');
-#ifdef STEPPER4_MSTEP0
+#if ASSERT_PIN(STEPPER4_MSTEP0)
 			val = mcu_get_output(STEPPER4_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER4_MSTEP1
+#if ASSERT_PIN(STEPPER4_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
@@ -124,10 +124,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('C');
-#ifdef STEPPER5_MSTEP0
+#if ASSERT_PIN(STEPPER5_MSTEP0)
 			val = mcu_get_output(STEPPER5_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER5_MSTEP1
+#if ASSERT_PIN(STEPPER5_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
@@ -135,10 +135,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('I');
-#ifdef STEPPER6_MSTEP0
+#if ASSERT_PIN(STEPPER6_MSTEP0)
 			val = mcu_get_output(STEPPER6_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER6_MSTEP1
+#if ASSERT_PIN(STEPPER6_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
@@ -146,10 +146,10 @@ bool m351_exec(void *args)
 			serial_putc(',');
 			val = -1;
 			serial_putc('J');
-#ifdef STEPPER7_MSTEP0
+#if ASSERT_PIN(STEPPER7_MSTEP0)
 			val = mcu_get_output(STEPPER7_MSTEP0) ? 1 : 0;
 #endif
-#ifdef STEPPER7_MSTEP1
+#if ASSERT_PIN(STEPPER7_MSTEP1)
 			val = MAX(0, val);
 			val |= mcu_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
@@ -160,73 +160,73 @@ bool m351_exec(void *args)
 
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
-#ifdef STEPPER0_MSTEP0
+#if ASSERT_PIN(STEPPER0_MSTEP0)
 			io_set_output(STEPPER0_MSTEP0, ((uint8_t)ptr->words->xyzabc[0] & 0x01));
 #endif
-#ifdef STEPPER0_MSTEP1
+#if ASSERT_PIN(STEPPER0_MSTEP1)
 			io_set_output(STEPPER0_MSTEP1, ((uint8_t)ptr->words->xyzabc[0] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
-#ifdef STEPPER1_MSTEP0
+#if ASSERT_PIN(STEPPER1_MSTEP0)
 			io_set_output(STEPPER1_MSTEP0, ((uint8_t)ptr->words->xyzabc[1] & 0x01));
 #endif
-#ifdef STEPPER1_MSTEP1
+#if ASSERT_PIN(STEPPER1_MSTEP1)
 			io_set_output(STEPPER1_MSTEP1, ((uint8_t)ptr->words->xyzabc[1] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
-#ifdef STEPPER2_MSTEP0
+#if ASSERT_PIN(STEPPER2_MSTEP0)
 			io_set_output(STEPPER2_MSTEP0, (((uint8_t)ptr->words->xyzabc[2]) & 0x01));
 #endif
-#ifdef STEPPER2_MSTEP1
+#if ASSERT_PIN(STEPPER2_MSTEP1)
 			io_set_output(STEPPER2_MSTEP1, (((uint8_t)ptr->words->xyzabc[2]) & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
-#ifdef STEPPER3_MSTEP0
+#if ASSERT_PIN(STEPPER3_MSTEP0)
 			io_set_output(STEPPER3_MSTEP0, ((uint8_t)ptr->words->xyzabc[3] & 0x01));
 #endif
-#ifdef STEPPER3_MSTEP1
+#if ASSERT_PIN(STEPPER3_MSTEP1)
 			io_set_output(STEPPER3_MSTEP1, ((uint8_t)ptr->words->xyzabc[3] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
-#ifdef STEPPER4_MSTEP0
+#if ASSERT_PIN(STEPPER4_MSTEP0)
 			io_set_output(STEPPER4_MSTEP0, ((uint8_t)ptr->words->xyzabc[4] & 0x01));
 #endif
-#ifdef STEPPER4_MSTEP1
+#if ASSERT_PIN(STEPPER4_MSTEP1)
 			io_set_output(STEPPER4_MSTEP1, ((uint8_t)ptr->words->xyzabc[4] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
-#ifdef STEPPER5_MSTEP0
+#if ASSERT_PIN(STEPPER5_MSTEP0)
 			io_set_output(STEPPER5_MSTEP0, ((uint8_t)ptr->words->xyzabc[5] & 0x01));
 #endif
-#ifdef STEPPER5_MSTEP1
+#if ASSERT_PIN(STEPPER5_MSTEP1)
 			io_set_output(STEPPER5_MSTEP1, ((uint8_t)ptr->words->xyzabc[5] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
-#ifdef STEPPER6_MSTEP0
+#if ASSERT_PIN(STEPPER6_MSTEP0)
 			io_set_output(STEPPER6_MSTEP0, ((uint8_t)ptr->words->ijk[0] & 0x01));
 #endif
-#ifdef STEPPER6_MSTEP1
+#if ASSERT_PIN(STEPPER6_MSTEP1)
 			io_set_output(STEPPER6_MSTEP1, ((uint8_t)ptr->words->ijk[0] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
-#ifdef STEPPER7_MSTEP0
+#if ASSERT_PIN(STEPPER7_MSTEP0)
 			io_set_output(STEPPER7_MSTEP0, ((uint8_t)ptr->words->ijk[1] & 0x01));
 #endif
-#ifdef STEPPER7_MSTEP1
+#if ASSERT_PIN(STEPPER7_MSTEP1)
 			io_set_output(STEPPER7_MSTEP1, ((uint8_t)ptr->words->ijk[1] & 0x02));
 #endif
 		}
@@ -242,58 +242,60 @@ bool m351_exec(void *args)
 
 DECL_MODULE(digimstep)
 {
-#ifdef STEPPER0_MSTEP0
+#if ASSERT_PIN(STEPPER0_MSTEP0)
 	io_set_output(STEPPER0_MSTEP0, (STEPPER0_MSTEP & 0x01));
 #endif
-#ifdef STEPPER0_MSTEP1
+#if ASSERT_PIN(STEPPER0_MSTEP1)
 	io_set_output(STEPPER0_MSTEP1, (STEPPER0_MSTEP & 0x02));
 #endif
-#ifdef STEPPER1_MSTEP0
+#if ASSERT_PIN(STEPPER1_MSTEP0)
 	io_set_output(STEPPER1_MSTEP0, (STEPPER1_MSTEP & 0x01));
 #endif
-#ifdef STEPPER1_MSTEP1
+#if ASSERT_PIN(STEPPER1_MSTEP1)
 	io_set_output(STEPPER1_MSTEP1, (STEPPER1_MSTEP & 0x02));
 #endif
-#ifdef STEPPER2_MSTEP0
+#if ASSERT_PIN(STEPPER2_MSTEP0)
 	io_set_output(STEPPER2_MSTEP0, (STEPPER2_MSTEP & 0x01));
 #endif
-#ifdef STEPPER2_MSTEP1
+#if ASSERT_PIN(STEPPER2_MSTEP1)
 	io_set_output(STEPPER2_MSTEP1, (STEPPER2_MSTEP & 0x02));
 #endif
-#ifdef STEPPER3_MSTEP0
+#if ASSERT_PIN(STEPPER3_MSTEP0)
 	io_set_output(STEPPER3_MSTEP0, (STEPPER3_MSTEP & 0x01));
 #endif
-#ifdef STEPPER3_MSTEP1
+#if ASSERT_PIN(STEPPER3_MSTEP1)
 	io_set_output(STEPPER3_MSTEP1, (STEPPER3_MSTEP & 0x02));
 #endif
-#ifdef STEPPER4_MSTEP0
+#if ASSERT_PIN(STEPPER4_MSTEP0)
 	io_set_output(STEPPER4_MSTEP0, (STEPPER4_MSTEP & 0x01));
 #endif
-#ifdef STEPPER4_MSTEP1
+#if ASSERT_PIN(STEPPER4_MSTEP1)
 	io_set_output(STEPPER4_MSTEP1, (STEPPER4_MSTEP & 0x02));
 #endif
-#ifdef STEPPER5_MSTEP0
+#if ASSERT_PIN(STEPPER5_MSTEP0)
 	io_set_output(STEPPER5_MSTEP0, (STEPPER5_MSTEP & 0x01));
 #endif
-#ifdef STEPPER5_MSTEP1
+#if ASSERT_PIN(STEPPER5_MSTEP1)
 	io_set_output(STEPPER5_MSTEP1, (STEPPER5_MSTEP & 0x02));
 #endif
-#ifdef STEPPER6_MSTEP0
+#if ASSERT_PIN(STEPPER6_MSTEP0)
 	io_set_output(STEPPER6_MSTEP0, (STEPPER6_MSTEP & 0x01));
 #endif
-#ifdef STEPPER6_MSTEP1
+#if ASSERT_PIN(STEPPER6_MSTEP1)
 	io_set_output(STEPPER6_MSTEP1, (STEPPER6_MSTEP & 0x02));
 #endif
-#ifdef STEPPER7_MSTEP0
+#if ASSERT_PIN(STEPPER7_MSTEP0)
 	io_set_output(STEPPER7_MSTEP0, (STEPPER7_MSTEP & 0x01));
 #endif
-#ifdef STEPPER7_MSTEP1
+#if ASSERT_PIN(STEPPER7_MSTEP1)
 	io_set_output(STEPPER7_MSTEP1, (STEPPER7_MSTEP & 0x02));
 #endif
 
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m351_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m351_exec);
+#else
+#warning "Parser extensions are not enabled. M351 code extension will not work."
 #endif
 }
 #endif
