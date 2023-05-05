@@ -206,8 +206,6 @@ DECL_MODULE(digipot)
 #else
 #warning "Parser extensions are not enabled. M907 code extension will not work."
 #endif
-
-#ifndef
 }
 
 #endif
