@@ -3570,6 +3570,10 @@ extern "C"
 #define UART_ALT_FUNC 1
 #define UART_PCLKSEL_REG PCLKSEL0
 #define UART_PCLKSEL_MASK (3 << 6)
+#elif ((UART_PORT == 1) && (TX_MBED_PIN == P0_15) && (RX_MBED_PIN == P0_16))
+#define UART_ALT_FUNC 1
+#define UART_PCLKSEL_REG PCLKSEL0
+#define UART_PCLKSEL_MASK (3 << 8)
 #elif ((UART_PORT == 1) && (TX_MBED_PIN == P2_0) && (RX_MBED_PIN == P2_1))
 #define UART_ALT_FUNC 2
 #define UART_PCLKSEL_REG PCLKSEL0
@@ -3578,8 +3582,20 @@ extern "C"
 #define UART_ALT_FUNC 1
 #define UART_PCLKSEL_REG PCLKSEL1
 #define UART_PCLKSEL_MASK (3 << 16)
+#elif ((UART_PORT == 2) && (TX_MBED_PIN == P2_8) && (RX_MBED_PIN == P2_9))
+#define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 16)
 #elif ((UART_PORT == 3) && (TX_MBED_PIN == P0_0) && (RX_MBED_PIN == P0_1))
 #define UART_ALT_FUNC 2
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 18)
+#elif ((UART_PORT == 3) && (TX_MBED_PIN == P0_25) && (RX_MBED_PIN == P0_26))
+#define UART_ALT_FUNC 3
+#define UART_PCLKSEL_REG PCLKSEL1
+#define UART_PCLKSEL_MASK (3 << 18)
+#elif ((UART_PORT == 3) && (TX_MBED_PIN == P4_28) && (RX_MBED_PIN == P4_29))
+#define UART_ALT_FUNC 3
 #define UART_PCLKSEL_REG PCLKSEL1
 #define UART_PCLKSEL_MASK (3 << 18)
 #else

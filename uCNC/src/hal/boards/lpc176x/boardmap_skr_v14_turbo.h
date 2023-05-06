@@ -92,12 +92,12 @@ extern "C"
 // #define PROBE_ISR -3
 
 // Setup com pins
-// #define RX_BIT 3
-// #define TX_BIT 2
-// #define RX_PORT 0
-// #define TX_PORT 0
+#define RX_BIT 29
+#define TX_BIT 28
+#define RX_PORT 4
+#define TX_PORT 4
 // // only uncomment this if other port other then 0 is used
-// //#define UART_PORT 0
+#define UART_PORT 3
 
 #define USB_DM_BIT 30
 #define USB_DM_PORT 0
