@@ -23,7 +23,17 @@
 #include "system_LPC17xx.h"
 
 #ifdef MCU_HAS_USB
+#ifdef USE_ARDUINO_CDC
+extern void mcu_usb_dotasks(void);
+extern void mcu_usb_init(void);
+extern void mcu_usb_putc(char c);
+extern void mcu_usb_flush(void);
+extern char mcu_usb_getc(void);
+extern uint8_t mcu_usb_available(void);
+extern uint8_t mcu_usb_tx_available(void);
+#else
 #include <tusb_ucnc.h>
+#endif
 #endif
 
 /**
@@ -260,12 +270,14 @@ void MCU_COM_ISR(void)
 }
 #endif
 #ifdef MCU_HAS_USB
+#ifndef USE_ARDUINO_CDC
 void USB_IRQHandler(void)
 {
 	mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
 	mcu_enable_global_isr();
 }
+#endif
 #endif
 
 void mcu_usart_init(void)
@@ -322,7 +334,10 @@ void mcu_usart_init(void)
 #endif
 
 #ifdef MCU_HAS_USB
-	// // configure USB as Virtual COM port
+#ifdef USE_ARDUINO_CDC
+	mcu_usb_init();
+#else
+	// // // configure USB as Virtual COM port
 	LPC_PINCON->PINSEL1 &= ~((3 << 26) | (3 << 28)); /* P0.29 D+, P0.30 D- */
 	LPC_PINCON->PINSEL1 |= ((1 << 26) | (1 << 28));	 /* PINSEL1 26.27, 28.29  = 01 */
 
@@ -345,6 +360,8 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(USB_IRQn);
 
 	tusb_cdc_init();
+#endif
+
 #endif
 }
 
@@ -522,6 +539,26 @@ void mcu_putc(char c)
 #endif
 #endif
 #ifdef MCU_HAS_USB
+#ifdef USE_ARDUINO_CDC
+	while (!mcu_usb_tx_available())
+	{
+		mcu_usb_flush();
+	}
+
+	if (c != 0)
+	{
+		mcu_usb_putc(c);
+	}
+	if (c == '\r' || c == 0)
+	{
+		mcu_usb_flush();
+	}
+#else
+	while (!tud_cdc_n_write_available(0))
+	{
+		tusb_cdc_flush();
+	}
+
 	if (c != 0)
 	{
 		tusb_cdc_write(c);
@@ -530,6 +567,7 @@ void mcu_putc(char c)
 	{
 		tusb_cdc_flush();
 	}
+#endif
 #endif
 }
 #endif
@@ -679,6 +717,15 @@ void mcu_delay_us(uint16_t delay)
 void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
+#ifdef USE_ARDUINO_CDC
+	mcu_usb_flush();
+	mcu_usb_dotasks();
+	while (mcu_usb_available())
+	{
+		unsigned char c = (unsigned char)mcu_usb_getc();
+		mcu_com_rx_cb(c);
+	}
+#else
 	tusb_cdc_flush();
 	tusb_cdc_task(); // tinyusb device task
 
@@ -687,6 +734,7 @@ void mcu_dotasks()
 		unsigned char c = (unsigned char)tusb_cdc_read();
 		mcu_com_rx_cb(c);
 	}
+#endif
 #endif
 }
 

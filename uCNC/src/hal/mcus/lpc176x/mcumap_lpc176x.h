@@ -1,6 +1,6 @@
 /*
-	Name: mcumap_stm32f10x.h
-	Description: Contains all MCU and PIN definitions for STM32F10x to run µCNC.
+	Name: mcumap_lpc176x.h
+	Description: Contains all MCU and PIN definitions for NXP LPC176x to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -3834,19 +3834,27 @@ extern "C"
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#ifdef USE_ARDUINO_CDC
+extern uint8_t mcu_usb_available(void);
+extern uint8_t mcu_usb_tx_available(void);
+#define usb_tx_available() mcu_usb_tx_available()
+#define usb_rx_available() mcu_usb_available()
+#else
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || tud_cdc_n_available(0))
-#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && tud_cdc_n_write_available(0))
+#define usb_tx_available() tud_cdc_n_write_available(0)
+#define usb_rx_available() tud_cdc_n_available(0)
+#endif
+
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || usb_tx_available())
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && usb_tx_available())
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
 #elif defined(MCU_HAS_USB)
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() tud_cdc_n_available(0)
-#define mcu_tx_ready() tud_cdc_n_write_available(0)
+#define mcu_rx_ready() usb_rx_available()
+#define mcu_tx_ready() usb_tx_available()
 #endif
 
 #define mcu_spi_xmit(X)                     \
