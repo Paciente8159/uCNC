@@ -224,7 +224,7 @@ extern "C"
 #define DIN17_PORT 3
 #define DIN17_PULLUP
 //enc 2
-#define DIN18_BIT 226
+#define DIN18_BIT 26
 #define DIN18_PORT 3
 #define DIN18_PULLUP
 
