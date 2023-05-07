@@ -747,6 +747,16 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		}
 #endif
 
+#ifdef IGNORE_UNDEFINED_AXIS
+		if (error == STATUS_GCODE_UNUSED_WORDS)
+		{
+			if (word <= 'C' || word >= 'X') // ignore undefined axis chars
+			{
+				// ignore
+				error = STATUS_OK;
+			}
+		}
+#endif
 		if (error)
 		{
 			parser_discard_command();
@@ -2542,12 +2552,6 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 	default:
 		if (c >= 'A' && c <= 'Z') // invalid recognized char
 		{
-#ifdef IGNORE_UNDEFINED_AXIS
-			if (c <= 'C' || c >= 'X') // ignore undefined axis chars
-			{
-				return STATUS_OK;
-			}
-#endif
 			return STATUS_GCODE_UNUSED_WORDS;
 		}
 		return STATUS_INVALID_STATEMENT;
