@@ -222,6 +222,55 @@ CREATE_EVENT_LISTENER(gcode_exec, m914_exec);
 CREATE_EVENT_LISTENER(gcode_parse, m920_parse);
 CREATE_EVENT_LISTENER(gcode_exec, m920_exec);
 
+static bool mcodes_parse_words(gcode_parse_args_t *ptr)
+{
+	switch (ptr->word)
+	{
+#ifndef AXIS_X
+	case 'X':
+		ptr->cmd->words |= GCODE_WORD_X;
+		ptr->words->xyzabc[0] = ptr->value;
+		break;
+#endif
+#ifndef AXIS_Y
+	case 'Y':
+		ptr->cmd->words |= GCODE_WORD_Y;
+		ptr->words->xyzabc[1] = ptr->value;
+		break;
+#endif
+#ifndef AXIS_Z
+	case 'Z':
+		ptr->cmd->words |= GCODE_WORD_Z;
+		ptr->words->xyzabc[2] = ptr->value;
+		break;
+#endif
+#ifndef AXIS_A
+	case 'A':
+		ptr->cmd->words |= GCODE_WORD_A;
+		ptr->words->xyzabc[3] = ptr->value;
+		break;
+#endif
+#ifndef AXIS_B
+	case 'B':
+		ptr->cmd->words |= GCODE_WORD_B;
+		ptr->words->xyzabc[4] = ptr->value;
+		break;
+#endif
+#ifndef AXIS_C
+	case 'C':
+		ptr->cmd->words |= GCODE_WORD_C;
+		ptr->words->xyzabc[5] = ptr->value;
+		break;
+#endif
+	default:
+		// unable to catch the word
+		return EVENT_CONTINUE;
+	}
+
+	*(ptr->error) = STATUS_OK;
+	return EVENT_HANDLED;
+}
+
 // this just parses and acceps the code
 bool m350_parse(void *args)
 {
@@ -239,6 +288,12 @@ bool m350_parse(void *args)
 		ptr->cmd->group_extended = M350;
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
+	}
+
+	// parse undefined axis words directly if the regular parser does not handle them
+	if (ptr->cmd->group_extended == M350)
+	{
+		return mcodes_parse_words(ptr);
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
@@ -394,6 +449,12 @@ bool m906_parse(void *args)
 		return EVENT_HANDLED;
 	}
 
+	// parse undefined axis words directly if the regular parser does not handle them
+	if (ptr->cmd->group_extended == M906)
+	{
+		return mcodes_parse_words(ptr);
+	}
+
 	// if this is not catched by this parser, just send back the error so other extenders can process it
 	return EVENT_CONTINUE;
 }
@@ -544,6 +605,12 @@ bool m913_parse(void *args)
 		ptr->cmd->group_extended = M913;
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
+	}
+
+	// parse undefined axis words directly if the regular parser does not handle them
+	if (ptr->cmd->group_extended == M913)
+	{
+		return mcodes_parse_words(ptr);
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it
@@ -698,6 +765,12 @@ bool m914_parse(void *args)
 		return EVENT_HANDLED;
 	}
 
+	// parse undefined axis words directly if the regular parser does not handle them
+	if (ptr->cmd->group_extended == M914)
+	{
+		return mcodes_parse_words(ptr);
+	}
+
 	// if this is not catched by this parser, just send back the error so other extenders can process it
 	return EVENT_CONTINUE;
 }
@@ -848,6 +921,12 @@ bool m920_parse(void *args)
 		ptr->cmd->group_extended = M920;
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
+	}
+
+	// parse undefined axis words directly if the regular parser does not handle them
+	if (ptr->cmd->group_extended == M920)
+	{
+		return mcodes_parse_words(ptr);
 	}
 
 	// if this is not catched by this parser, just send back the error so other extenders can process it

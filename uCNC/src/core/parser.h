@@ -231,7 +231,11 @@ extern "C"
 
 	typedef struct
 	{
+		#ifndef ENABLE_PARSER_MODULES 
 		float xyzabc[AXIS_COUNT];
+		#else
+		float xyzabc[6];
+		#endif
 		float ijk[3];
 		float d;
 		float f;
