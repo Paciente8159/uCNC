@@ -753,7 +753,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			if (word <= 'C' || word >= 'X') // ignore undefined axis chars
 			{
 				// ignore
-				return STATUS_OK;
+				error = STATUS_OK;
 			}
 		}
 #endif
