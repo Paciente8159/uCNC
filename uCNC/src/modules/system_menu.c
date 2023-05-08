@@ -630,7 +630,9 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
-		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_RT_CMD_SENT);
+		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
+		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
 	return false;
@@ -643,7 +645,9 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 		if (serial_get_rx_freebytes() > 20)
 		{
 			serial_inject_cmd((const char *)item->action_arg);
-			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_CMD_SENT);
+			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			rom_strcpy(buffer, __romstr__(STR_CMD_SENT));
+			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
 		return true;
 	}
