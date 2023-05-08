@@ -6,6 +6,29 @@
 
 # Changelog
 
+## [1.7.0-beta] - 08-05-2023
+
+### Added
+
+- new system menu module to handle all display related logic (#374)(#379)(#380)
+- SKR Turbo v1.4 Wifi Serial boardmap config (#385)
+
+### Changed
+
+- reviewed TinyUSB mcu macros (#384)
+- core module system function declaration tweaks (#373)
+
+### Fixed
+
+- fixed some deprecated PIN checking with ASSERT_PIN that caused compilation issues depending on the enabled options (TMC drivers, and RAMBO digipot and digistep) (#382)
+- fixed USB hang on high rate gcode stress with NXP LPC boards (#386)
+- fixed extended M Codes parsing for TMC drivers when not all AXIS are defined leading to unexpected behavior (#388)
+
+### Fixed
+
+- fixed ```?``` command being cleared before responding depending on the execution point were the call was made. This will make the status command more responsive (#376)
+- updated README
+
 ## [1.6.2] - 04-05-2023
 
 ### Fixed
@@ -1163,6 +1186,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0-beta
 [1.6.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.2
 [1.6.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.1
 [1.6.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.0
