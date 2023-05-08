@@ -259,6 +259,16 @@ void system_menu_action(uint8_t action)
 	int8_t currentmenu = (int8_t)g_system_menu.current_menu;
 	int16_t currentindex = g_system_menu.current_index;
 
+	// kill alarm is active
+	if (cnc_get_exec_state(EXEC_ALARM))
+	{
+		// never go idle
+		g_system_menu.go_idle = UINT32_MAX;
+		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+		// leave. ignore all actions
+		return;
+	}
+
 	// forces a second redraw after flushing all commands
 	if (g_system_menu.flags & SYSTEM_MENU_MODE_DELAYED_REDRAW)
 	{
@@ -371,6 +381,13 @@ void system_menu_render(void)
 	{
 		g_system_menu.flags &= ~SYSTEM_MENU_MODE_REDRAW;
 		uint8_t item_index = 0;
+
+		if (cnc_get_exec_state(EXEC_ALARM))
+		{
+			system_menu_render_alarm();
+			return;
+		}
+
 		MENU_LOOP(g_system_menu.menu_entry, menu_page)
 		{
 			if (menu_page->menu_id == g_system_menu.current_menu)
