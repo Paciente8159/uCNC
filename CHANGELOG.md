@@ -12,6 +12,7 @@
 
 - new system menu module to handle all display related logic (#374)(#379)(#380)
 - SKR Turbo v1.4 Wifi Serial boardmap config (#385)
+- added default PINS for [RepRap Discount Full Graphic Smart Controller](https://reprap.org/wiki/RepRapDiscount_Full_Graphic_Smart_Controller) on several boards (#374)
 
 ### Changed
 
@@ -23,11 +24,6 @@
 - fixed some deprecated PIN checking with ASSERT_PIN that caused compilation issues depending on the enabled options (TMC drivers, and RAMBO digipot and digistep) (#382)
 - fixed USB hang on high rate gcode stress with NXP LPC boards (#386)
 - fixed extended M Codes parsing for TMC drivers when not all AXIS are defined leading to unexpected behavior (#388)
-
-### Fixed
-
-- fixed ```?``` command being cleared before responding depending on the execution point were the call was made. This will make the status command more responsive (#376)
-- updated README
 
 ## [1.6.2] - 04-05-2023
 
