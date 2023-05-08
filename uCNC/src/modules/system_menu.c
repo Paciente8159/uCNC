@@ -276,6 +276,25 @@ void system_menu_action(uint8_t action)
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
 	}
 
+	// with a modal popup active actions will be locked
+	// after the popup show time is over return to normal flow
+	if (g_system_menu.flags & SYSTEM_MENU_MODE_MODAL_POPUP)
+	{
+		// popup timeout occurred
+		if (g_system_menu.go_idle < mcu_millis())
+		{
+			g_system_menu.flags &= ~SYSTEM_MENU_MODE_MODAL_POPUP;
+			g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+			system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
+		}
+		else
+		{
+			// prevent redraw
+			g_system_menu.flags &= ~SYSTEM_MENU_MODE_REDRAW;
+		}
+		return;
+	}
+
 	if (action == SYSTEM_MENU_ACTION_NONE)
 	{
 		// idle timeout occurred
@@ -431,6 +450,17 @@ void system_menu_render(void)
 		system_menu_render_footer();
 		return;
 	}
+}
+
+void system_menu_show_modal_popup(uint32_t timeout, const char *__s)
+{
+	// prevents redraw
+	g_system_menu.flags &= ~(SYSTEM_MENU_MODE_REDRAW | SYSTEM_MENU_MODE_DELAYED_REDRAW);
+	// renders the popup
+	system_menu_render_modal_popup(__s);
+	// locks the popup action
+	g_system_menu.flags |= SYSTEM_MENU_MODE_MODAL_POPUP;
+	system_menu_go_idle_timeout(timeout);
 }
 
 static void system_menu_go_idle_timeout(uint32_t delay)
@@ -600,6 +630,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
+		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_RT_CMD_SENT);
 		return true;
 	}
 	return false;
@@ -612,6 +643,7 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 		if (serial_get_rx_freebytes() > 20)
 		{
 			serial_inject_cmd((const char *)item->action_arg);
+			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_CMD_SENT);
 		}
 		return true;
 	}
@@ -726,6 +758,8 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item)
 {
+	char buffer[SYSTEM_MENU_MAX_STR_LEN];
+
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
 		uint8_t settings_action = (uint8_t)VARG_CONST(item->action_arg);
@@ -733,16 +767,20 @@ static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *
 		{
 		case 0:
 			settings_init();
+			rom_strcpy(buffer, __romstr__(STR_SETTINGS_LOADED));
 			break;
 		case 1:
 			settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+			rom_strcpy(buffer, __romstr__(STR_SETTINGS_SAVED));
 			break;
 		case 2:
 			settings_reset(false);
+			rom_strcpy(buffer, __romstr__(STR_SETTINGS_RESET));
 			break;
 		default:
 			break;
 		}
+		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
 	return false;
@@ -1016,6 +1054,11 @@ void __attribute__((weak)) system_menu_render_idle(void)
 void __attribute__((weak)) system_menu_render_alarm(void)
 {
 	// render alarm screen
+}
+
+void __attribute__((weak)) system_menu_render_modal_popup(const char *__s)
+{
+	// renders the modal popup message
 }
 
 /**

@@ -34,19 +34,28 @@ extern "C"
 #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
+// if no action go to idle screen after 10s
 #ifndef SYSTEM_MENU_GO_IDLE_MS
 #define SYSTEM_MENU_GO_IDLE_MS 10000
 #endif
 
+// show startup screen for 5s
 #ifndef SYSTEM_MENU_REDRAW_STARTUP_MS
 #define SYSTEM_MENU_REDRAW_STARTUP_MS 5000
 #endif
 
+// show modal popup screen for 2s
+#ifndef SYSTEM_MENU_MODAL_POPUP_MS
+#define SYSTEM_MENU_MODAL_POPUP_MS 2000
+#endif
+
+// refresh idle screen every 0.2s
 #ifndef SYSTEM_MENU_REDRAW_IDLE_MS
 #define SYSTEM_MENU_REDRAW_IDLE_MS 200
 #endif
 
 // render flags
+#define SYSTEM_MENU_MODE_MODAL_POPUP 64
 #define SYSTEM_MENU_MODE_DELAYED_REDRAW 32
 #define SYSTEM_MENU_MODE_MODIFY 16
 #define SYSTEM_MENU_MODE_EDIT 8
@@ -156,6 +165,7 @@ extern "C"
 	void system_menu_go_idle(void);
 	void system_menu_action(uint8_t action);
 	void system_menu_render(void);
+	void system_menu_show_modal_popup(uint32_t timeout, const char *__s);
 
 	void system_menu_append(system_menu_page_t *newpage);
 	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
@@ -174,6 +184,7 @@ extern "C"
 	void system_menu_render_startup(void);
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
+	void system_menu_render_modal_popup(const char *__s);
 
 	/**
 	 * Helper µCNC action callbacks

@@ -58,6 +58,11 @@ extern "C"
 #define STR_FEED_100 "Feed 100%:"
 #define STR_TOOL_OVR "Tool ov:"
 #define STR_TOOL_100 "Tool 100%:"
+#define STR_RT_CMD_SENT "RT command sent"
+#define STR_CMD_SENT "Command sent"
+#define STR_SETTINGS_LOADED "Settings loaded"
+#define STR_SETTINGS_SAVED "Settings saved"
+#define STR_SETTINGS_RESET "Settings reset"
 
 #ifdef __cplusplus
 }
