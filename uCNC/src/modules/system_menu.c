@@ -78,11 +78,9 @@ DECL_MODULE(system_menu)
 
 	// entry menu to startup screen
 	DECL_DYNAMIC_MENU(255, 0, system_menu_startup, NULL);
-	system_menu_append(MENU(255));
 
 	// append idle menu
 	DECL_DYNAMIC_MENU(0, 0, system_menu_idle, system_menu_main_open);
-	system_menu_append(MENU(0));
 
 	// append main
 	DECL_MENU(1, 0, STR_MAIN_MENU);
@@ -421,7 +419,9 @@ void system_menu_render(void)
 				// renders header
 				if (!item_index)
 				{
-					system_menu_render_header(menu_page->page_label);
+					char buff[SYSTEM_MENU_MAX_STR_LEN];
+					rom_strcpy(buff, menu_page->page_label);
+					system_menu_render_header(buff);
 				}
 
 				if (g_system_menu.flags & SYSTEM_MENU_MODE_EDIT)
@@ -630,7 +630,9 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
-		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_RT_CMD_SENT);
+		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
+		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
 	return false;
@@ -643,7 +645,9 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 		if (serial_get_rx_freebytes() > 20)
 		{
 			serial_inject_cmd((const char *)item->action_arg);
-			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, STR_CMD_SENT);
+			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			rom_strcpy(buffer, __romstr__(STR_CMD_SENT));
+			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
 		return true;
 	}
