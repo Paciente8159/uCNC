@@ -78,11 +78,9 @@ DECL_MODULE(system_menu)
 
 	// entry menu to startup screen
 	DECL_DYNAMIC_MENU(255, 0, system_menu_startup, NULL);
-	system_menu_append(MENU(255));
 
 	// append idle menu
 	DECL_DYNAMIC_MENU(0, 0, system_menu_idle, system_menu_main_open);
-	system_menu_append(MENU(0));
 
 	// append main
 	DECL_MENU(1, 0, STR_MAIN_MENU);
@@ -421,7 +419,9 @@ void system_menu_render(void)
 				// renders header
 				if (!item_index)
 				{
-					system_menu_render_header(menu_page->page_label);
+					char buff[SYSTEM_MENU_MAX_STR_LEN];
+					rom_strcpy(buff, menu_page->page_label);
+					system_menu_render_header(buff);
 				}
 
 				if (g_system_menu.flags & SYSTEM_MENU_MODE_EDIT)

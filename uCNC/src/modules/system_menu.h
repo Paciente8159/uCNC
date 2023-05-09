@@ -153,7 +153,9 @@ extern "C"
 	static const char m##id##_label[] __rom__ = label;                                                                                                                                      \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
-#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb) __attribute__((used)) static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}
+#define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                                                      \
+	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = NULL, .page_render = render_cb, .page_action = action_cb, .items_index = NULL, .extended = NULL}; \
+	system_menu_append(&m##id)
 #define MENU(id) (&m##id)
 
 #define MENU_LOOP(page, item) for (system_menu_page_t *item = page; item != NULL; item = item->extended)
