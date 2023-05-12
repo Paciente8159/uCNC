@@ -93,6 +93,18 @@ WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
 {
 	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
 }
+
+// event_cnc_home_start
+WEAK_EVENT_HANDLER(cnc_home_start)
+{
+	DEFAULT_EVENT_HANDLER(cnc_home_start);
+}
+
+// event_cnc_home_finish
+WEAK_EVENT_HANDLER(cnc_home_finish)
+{
+	DEFAULT_EVENT_HANDLER(cnc_home_finish);
+}
 #endif
 
 void cnc_init(void)
@@ -288,6 +300,9 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 void cnc_home(void)
 {
 	cnc_set_exec_state(EXEC_HOMING);
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_home_start, NULL);
+#endif
 	uint8_t error = kinematics_home();
 	// unlock expected limits
 	io_lock_limits(0);
@@ -297,12 +312,20 @@ void cnc_home(void)
 		// disables homing and reenables alarm messages
 		cnc_clear_exec_state(EXEC_HOMING);
 		// cnc_alarm(error);
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		uint8_t args = {error};
+		EVENT_INVOKE(cnc_home_finish, args);
+#endif
 		return;
 	}
 
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	cnc_run_startup_blocks();
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	uint8_t args = {error};
+	EVENT_INVOKE(cnc_home_finish, args);
+#endif
 }
 
 void cnc_alarm(int8_t code)
