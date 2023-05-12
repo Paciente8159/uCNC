@@ -313,8 +313,7 @@ void cnc_home(void)
 		cnc_clear_exec_state(EXEC_HOMING);
 		// cnc_alarm(error);
 #ifdef ENABLE_MAIN_LOOP_MODULES
-		uint8_t args = {error};
-		EVENT_INVOKE(cnc_home_finish, args);
+		EVENT_INVOKE(cnc_home_finish, &error);
 #endif
 		return;
 	}
@@ -323,8 +322,7 @@ void cnc_home(void)
 	mc_sync_position();
 	cnc_run_startup_blocks();
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	uint8_t args = {error};
-	EVENT_INVOKE(cnc_home_finish, args);
+	EVENT_INVOKE(cnc_home_finish, &error);
 #endif
 }
 
