@@ -11,10 +11,9 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.6+ TINYUSB NOTES
+# VERSION 1.7+ NOTES
 
-From version 1.6 and newer TinyUSB integration is now managed via a and external Arduino IDE library customized for µCNC and can be downloaded at [uCNC-tinyusb](https://github.com/Paciente8159/uCNC-tinyusb).
-This core change makes TinyUSB future updates much more easier and quicker. This also may help USB hosting implementation in a near future to allow USB drives to be plugged and read by the driver.
+Version 1.7 introduced some small but breaking changes to modules function declarations. If you are upgrading from a previous version you need to upgrade the modules also. Modules for previous versions are available in the releases section of the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
 
 # IMPORTANT NOTE
 

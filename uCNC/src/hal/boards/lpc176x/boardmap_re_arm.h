@@ -160,26 +160,30 @@ extern "C"
 // #define DIN31_PORT 0
 
 // hardware SPI (onboard)
-// #define SPI_SDO_BIT 9
-// #define SPI_SDO_PORT 0
-// #define SPI_SDI_BIT 8
-// #define SPI_SDI_PORT 0
-// #define SPI_CLK_BIT 7
-// #define SPI_CLK_PORT 0
-// #define SPI_CS_BIT 6
-// #define SPI_CS_PORT 0
-// #define SPI_PORT 1
+#define SPI_SDO_BIT 9
+#define SPI_SDO_PORT 0
+#define SPI_SDI_BIT 8
+#define SPI_SDI_PORT 0
+#define SPI_CLK_BIT 7
+#define SPI_CLK_PORT 0
+#define SPI_CS_BIT 6
+#define SPI_CS_PORT 0
+#define SPI_PORT 1
 
 // hardware SPI (display adapter)
-#define SPI_SDO_BIT 18
-#define SPI_SDO_PORT 0
-#define SPI_SDI_BIT 17
-#define SPI_SDI_PORT 0
-#define SPI_CLK_BIT 15
-#define SPI_CLK_PORT 0
-#define SPI_CS_BIT 23
-#define SPI_CS_PORT 0
-#define SPI_PORT 0
+// #define SPI_SDO_BIT 18
+// #define SPI_SDO_PORT 0
+// #define SPI_SDI_BIT 17
+// #define SPI_SDI_PORT 0
+// #define SPI_CLK_BIT 15
+// #define SPI_CLK_PORT 0
+// #define SPI_CS_BIT 23
+// #define SPI_CS_PORT 0
+// #define SPI_PORT 0
+// sd card detect
+// #define DIN19_BIT 31
+// #define DIN19_PORT 1
+// #define DIN19_PULLUP
 
 // #define SPI_PORT 1
 // #define SPI_FREQ 100000UL
@@ -190,11 +194,6 @@ extern "C"
 // #define DIN29_PORT 0
 // #define DOUT30_BIT 7
 // #define DOUT30_PORT 0
-
-// sd card detect
-#define DIN19_BIT 31
-#define DIN19_PORT 1
-#define DIN19_PULLUP
 
 //pins for smart adapter
 //clk

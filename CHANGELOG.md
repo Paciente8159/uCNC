@@ -6,6 +6,17 @@
 
 # Changelog
 
+## [1.7.0] - 12-05-2023
+
+### Added
+
+- added system menu alarm screen rendering logic (#379)
+- added system menu modal popup (#380)
+
+### Changed
+
+- system menu tweaks and minor fixes (#391)
+
 ## [1.7.0-beta] - 08-05-2023
 
 ### Added
@@ -1182,6 +1193,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0
 [1.7.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0-beta
 [1.6.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.2
 [1.6.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.1
