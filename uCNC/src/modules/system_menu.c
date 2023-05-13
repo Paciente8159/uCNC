@@ -24,11 +24,10 @@ system_menu_t g_system_menu;
 static float jog_distance, jog_feed;
 
 static uint8_t system_menu_get_item_count(uint8_t menu_id);
-static void system_menu_go_idle_timeout(uint32_t delay);
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item);
 static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item);
 static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *item);
-static void system_menu_render_item_locked(uint8_t render_flags, system_menu_item_t *item);
+static void system_menu_render_axis_position(uint8_t render_flags, system_menu_item_t *item);
 static bool system_menu_action_nav_back(uint8_t action, const system_menu_page_t *item);
 
 static void system_menu_goto(uint8_t id)
@@ -54,7 +53,7 @@ static void system_menu_startup(uint8_t render_flags)
 static void system_menu_idle(uint8_t render_flags)
 {
 	system_menu_render_idle();
-	system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
+	system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 }
 static bool system_menu_main_open(uint8_t action)
 {
@@ -103,21 +102,21 @@ DECL_MODULE(system_menu)
 	// append Jog menu
 	// default initial distance
 	DECL_MENU(7, 1, STR_JOG);
-	DECL_MENU_ENTRY(7, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "X");
+	DECL_MENU_ENTRY(7, jogx, STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
 #if (AXIS_COUNT > 1)
-	DECL_MENU_ENTRY(7, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "Y");
+	DECL_MENU_ENTRY(7, jogy, STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
 #endif
 #if (AXIS_COUNT > 2)
-	DECL_MENU_ENTRY(7, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "Z");
+	DECL_MENU_ENTRY(7, jogz, STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
 #endif
 #if (AXIS_COUNT > 3)
-	DECL_MENU_ENTRY(7, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "A");
+	DECL_MENU_ENTRY(7, joga, STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
 #endif
 #if (AXIS_COUNT > 4)
-	DECL_MENU_ENTRY(7, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "B");
+	DECL_MENU_ENTRY(7, jogb, STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
 #endif
 #if (AXIS_COUNT > 5)
-	DECL_MENU_ENTRY(7, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_item_locked, NULL, system_menu_action_jog, "C");
+	DECL_MENU_ENTRY(7, jogc, STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
 #endif
 	DECL_MENU_VAR(7, jogdist, STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(7, jogfeed, STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
@@ -261,17 +260,23 @@ void system_menu_action(uint8_t action)
 	if (cnc_get_exec_state(EXEC_ALARM))
 	{
 		// never go idle
-		g_system_menu.go_idle = UINT32_MAX;
+		g_system_menu.action_timeout = UINT32_MAX;
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
 		// leave. ignore all actions
 		return;
 	}
 
+	uint32_t timestamp = mcu_millis();
+
 	// forces a second redraw after flushing all commands
 	if (g_system_menu.flags & SYSTEM_MENU_MODE_DELAYED_REDRAW)
 	{
-		g_system_menu.flags &= ~SYSTEM_MENU_MODE_DELAYED_REDRAW;
-		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+		if (g_system_menu.action_timeout < timestamp)
+		{
+			g_system_menu.flags &= ~SYSTEM_MENU_MODE_DELAYED_REDRAW;
+			g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
+			system_menu_action_timeout(SYSTEM_MENU_GO_IDLE_MS);
+		}
 	}
 
 	// with a modal popup active actions will be locked
@@ -279,11 +284,11 @@ void system_menu_action(uint8_t action)
 	if (g_system_menu.flags & SYSTEM_MENU_MODE_MODAL_POPUP)
 	{
 		// popup timeout occurred
-		if (g_system_menu.go_idle < mcu_millis())
+		if (g_system_menu.action_timeout < timestamp)
 		{
 			g_system_menu.flags &= ~SYSTEM_MENU_MODE_MODAL_POPUP;
 			g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
-			system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
+			system_menu_action_timeout(SYSTEM_MENU_GO_IDLE_MS);
 		}
 		else
 		{
@@ -296,13 +301,13 @@ void system_menu_action(uint8_t action)
 	if (action == SYSTEM_MENU_ACTION_NONE)
 	{
 		// idle timeout occurred
-		if (g_system_menu.go_idle < mcu_millis())
+		if (g_system_menu.action_timeout < timestamp)
 		{
 			// system_menu_go_idle();
 			currentmenu = g_system_menu.current_menu = 0;
 			currentindex = g_system_menu.current_index = 0;
 			g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
-			system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
+			system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
 			// g_system_menu.next_redraw = 0;
 		}
 		return;
@@ -322,7 +327,7 @@ void system_menu_action(uint8_t action)
 	{
 		// forces imediate render
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
-		system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
+		system_menu_action_timeout(SYSTEM_MENU_GO_IDLE_MS);
 
 		// checks if the menu has a custom action callback
 		if (menupage->page_action)
@@ -460,12 +465,13 @@ void system_menu_show_modal_popup(uint32_t timeout, const char *__s)
 	system_menu_render_modal_popup(__s);
 	// locks the popup action
 	g_system_menu.flags |= SYSTEM_MENU_MODE_MODAL_POPUP;
-	system_menu_go_idle_timeout(timeout);
+	system_menu_action_timeout(timeout);
 }
 
-static void system_menu_go_idle_timeout(uint32_t delay)
+void system_menu_action_timeout(uint32_t delay)
 {
-	g_system_menu.go_idle = delay + mcu_millis();
+	// if the arg is 0 then the update is done right away
+	g_system_menu.action_timeout = (delay) ? (delay + mcu_millis()) : 0;
 }
 
 const system_menu_page_t *system_menu_get_current(void)
@@ -594,7 +600,7 @@ void system_menu_reset(void)
 	g_system_menu.current_multiplier = 0;
 	// forces imediate render
 	g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
-	system_menu_go_idle_timeout(SYSTEM_MENU_REDRAW_STARTUP_MS);
+	system_menu_action_timeout(SYSTEM_MENU_REDRAW_STARTUP_MS);
 }
 
 void system_menu_go_idle(void)
@@ -606,7 +612,7 @@ void system_menu_go_idle(void)
 	g_system_menu.current_multiplier = 0;
 	// forces imediate render
 	g_system_menu.flags = SYSTEM_MENU_MODE_REDRAW;
-	system_menu_go_idle_timeout(SYSTEM_MENU_GO_IDLE_MS);
+	system_menu_action_timeout(SYSTEM_MENU_GO_IDLE_MS);
 }
 
 /**
@@ -628,7 +634,6 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
-		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
 		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
@@ -725,7 +730,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 		if (serial_get_rx_freebytes() > 32 && !cnc_get_exec_state(EXEC_RUN))
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
-			memset(buffer, SYSTEM_MENU_MAX_STR_LEN, 1);
+			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
 			rom_strcpy(buffer, __romstr__("$J=G91"));
 			char *ptr = buffer;
 			// search for the end of string
@@ -1112,11 +1117,30 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 	system_menu_item_render_arg(render_flags, (const char *)buff_ptr);
 }
 
-static void system_menu_render_item_locked(uint8_t render_flags, system_menu_item_t *item)
+static void system_menu_render_axis_position(uint8_t render_flags, system_menu_item_t *item)
 {
 	if ((render_flags & (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT)) == (SYSTEM_MENU_MODE_SELECT | SYSTEM_MENU_MODE_SIMPLE_EDIT))
 	{
-		system_menu_item_render_arg(render_flags, "x");
+		// force auto render in this state
+		g_system_menu.flags |= SYSTEM_MENU_MODE_DELAYED_REDRAW;
+		system_menu_action_timeout(SYSTEM_MENU_REDRAW_IDLE_MS);
+
+		float axis[MAX(AXIS_COUNT, 3)];
+		int32_t steppos[STEPPER_COUNT];
+		itp_get_rt_position(steppos);
+		kinematics_apply_forward(steppos, axis);
+		kinematics_apply_reverse_transform(axis);
+		// X = 0
+		char axis_letter = *((char *)item->action_arg);
+		uint8_t axis_index = (axis_letter >= 'X') ? (axis_letter - 'X') : (3 + axis_letter - 'A');
+
+		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
+		char *buff_ptr = buffer;
+		system_menu_flt_to_str(buff_ptr, axis[axis_index]);
+
+		system_menu_item_render_arg(render_flags, buffer);
+		// system_menu_item_render_arg(render_flags, "x");
 	}
 }
 

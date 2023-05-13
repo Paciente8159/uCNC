@@ -130,7 +130,7 @@ extern "C"
 		uint8_t total_items;
 		system_menu_page_t *menu_entry;
 		// uint32_t next_redraw;
-		uint32_t go_idle;
+		uint32_t action_timeout;
 	} system_menu_t;
 
 #define MENU_ENTRY(name) ((system_menu_item_t *)&name)
@@ -168,6 +168,7 @@ extern "C"
 	void system_menu_action(uint8_t action);
 	void system_menu_render(void);
 	void system_menu_show_modal_popup(uint32_t timeout, const char *__s);
+	void system_menu_action_timeout(uint32_t delay);
 
 	void system_menu_append(system_menu_page_t *newpage);
 	void system_menu_append_item(uint8_t menu_id, system_menu_index_t *newitem);
