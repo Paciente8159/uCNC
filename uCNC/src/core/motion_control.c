@@ -78,6 +78,18 @@ WEAK_EVENT_HANDLER(mc_line_segment)
 {
 	DEFAULT_EVENT_HANDLER(mc_line_segment);
 }
+
+// event_mc_home_axis_start
+WEAK_EVENT_HANDLER(mc_home_axis_start)
+{
+	DEFAULT_EVENT_HANDLER(mc_home_axis_start);
+}
+
+// event_mc_home_axis_finish
+WEAK_EVENT_HANDLER(mc_home_axis_finish)
+{
+	DEFAULT_EVENT_HANDLER(mc_home_axis_finish);
+}
 #endif
 
 void mc_init(void)
@@ -729,6 +741,13 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	block_data.dwell = 0;
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	{
+		uint8_t args[] = {axis, axis_limit};
+		EVENT_INVOKE(mc_home_axis_start, args);
+	}
+#endif
+
 	cnc_unlock(true);
 	// re-flags homing clear by the unlock
 	cnc_set_exec_state(EXEC_HOMING);
@@ -736,6 +755,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 	if (itp_sync() != STATUS_OK)
 	{
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
+		EVENT_INVOKE(mc_home_axis_finish, args);
+#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -752,6 +775,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
+		EVENT_INVOKE(mc_home_axis_finish, args);
+#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -781,6 +808,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	if (itp_sync() != STATUS_OK)
 	{
 		// restores limits mask
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
+		EVENT_INVOKE(mc_home_axis_finish, args);
+#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -800,9 +831,17 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
+		EVENT_INVOKE(mc_home_axis_finish, args);
+#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	uint8_t args[] = {axis, axis_limit, STATUS_OK};
+	EVENT_INVOKE(mc_home_axis_finish, args);
+#endif
 	return STATUS_OK;
 }
 

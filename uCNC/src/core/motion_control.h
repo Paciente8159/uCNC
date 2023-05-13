@@ -114,6 +114,10 @@ extern "C"
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler
 	DECL_EVENT_HANDLER(mc_line_segment);
+	// event_mc_home_start
+	DECL_EVENT_HANDLER(mc_home_axis_start);
+	// event_mc_home_finish
+	DECL_EVENT_HANDLER(mc_home_axis_finish);
 #endif
 
 #ifdef __cplusplus
