@@ -6,6 +6,25 @@
 
 # Changelog
 
+## [1.7.1] - 13-05-2023
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - new events at each axis homing (#393)
+
+### Added
+
+- new events at each axis homing start and end to allow custom actions like probe/limit deploying #393
+
+### Changed
+
+- modified `~` char logic to allow passthrough if a Grbl system command is being sent. This allows to write short file names to sd card addon module via commands (#395)
+- system menu now displays the axis realtime position while axis is locked for jogging (#398)
+
+### Fixed
+
+- fixed position unshynchronized after cancaling a jog motion (#399)
+- system menu jog command bad string initialization leading to random buffer overflow errors (#398)
+
 ## [1.7.0] - 12-05-2023
 
 ### Added
@@ -1193,6 +1212,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1
 [1.7.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0
 [1.7.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0-beta
 [1.6.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.6.2
