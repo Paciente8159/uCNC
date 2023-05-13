@@ -78,6 +78,18 @@ WEAK_EVENT_HANDLER(mc_line_segment)
 {
 	DEFAULT_EVENT_HANDLER(mc_line_segment);
 }
+
+// event_mc_home_axis_start
+WEAK_EVENT_HANDLER(mc_home_axis_start)
+{
+	DEFAULT_EVENT_HANDLER(mc_home_axis_start);
+}
+
+// event_mc_home_axis_finish
+WEAK_EVENT_HANDLER(mc_home_axis_finish)
+{
+	DEFAULT_EVENT_HANDLER(mc_home_axis_finish);
+}
 #endif
 
 void mc_init(void)
@@ -685,16 +697,31 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 	return STATUS_OK;
 }
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+void mc_home_axis_finalize(homing_status_t *status)
+{
+	EVENT_INVOKE(mc_home_axis_finish, status);
+}
+#endif
+
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
 	uint8_t axis_mask = (1 << axis);
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis, axis_limit, STATUS_OK};
+#endif
 
 #ifdef ENABLE_G39_H_MAPPING
 	// resets height map
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+#endif
+
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	EVENT_INVOKE(mc_home_axis_start, &homing_status);
+	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
 
 	// locks limits to accept axis limit mask only or else throw error
@@ -803,6 +830,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	// if cleanup is called at any other exit point then homing has failed
+	homing_status.status = STATUS_OK;
+#endif
 	return STATUS_OK;
 }
 
