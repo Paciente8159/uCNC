@@ -697,16 +697,31 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 	return STATUS_OK;
 }
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+void mc_home_axis_finalize(homing_status_t *status)
+{
+	EVENT_INVOKE(mc_home_axis_finish, status);
+}
+#endif
+
 uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
 	uint8_t axis_mask = (1 << axis);
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis, axis_limit, STATUS_OK};
+#endif
 
 #ifdef ENABLE_G39_H_MAPPING
 	// resets height map
 	memset(hmap_offsets, 0, sizeof(hmap_offsets));
+#endif
+
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	EVENT_INVOKE(mc_home_axis_start, &homing_status);
+	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
 
 	// locks limits to accept axis limit mask only or else throw error
@@ -741,13 +756,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	block_data.dwell = 0;
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
-#ifdef ENABLE_MOTION_CONTROL_MODULES
-	{
-		uint8_t args[] = {axis, axis_limit};
-		EVENT_INVOKE(mc_home_axis_start, args);
-	}
-#endif
-
 	cnc_unlock(true);
 	// re-flags homing clear by the unlock
 	cnc_set_exec_state(EXEC_HOMING);
@@ -755,10 +763,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 
 	if (itp_sync() != STATUS_OK)
 	{
-#ifdef ENABLE_MOTION_CONTROL_MODULES
-		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
-		EVENT_INVOKE(mc_home_axis_finish, args);
-#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -775,10 +779,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-#ifdef ENABLE_MOTION_CONTROL_MODULES
-		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
-		EVENT_INVOKE(mc_home_axis_finish, args);
-#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -808,10 +808,6 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	if (itp_sync() != STATUS_OK)
 	{
 		// restores limits mask
-#ifdef ENABLE_MOTION_CONTROL_MODULES
-		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
-		EVENT_INVOKE(mc_home_axis_finish, args);
-#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
@@ -831,16 +827,12 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
 		cnc_alarm(EXEC_ALARM_HOMING_FAIL_APPROACH);
-#ifdef ENABLE_MOTION_CONTROL_MODULES
-		uint8_t args[] = {axis, axis_limit, STATUS_CRITICAL_FAIL};
-		EVENT_INVOKE(mc_home_axis_finish, args);
-#endif
 		return STATUS_CRITICAL_FAIL;
 	}
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	uint8_t args[] = {axis, axis_limit, STATUS_OK};
-	EVENT_INVOKE(mc_home_axis_finish, args);
+	// if cleanup is called at any other exit point then homing has failed
+	homing_status.status = STATUS_OK;
 #endif
 	return STATUS_OK;
 }

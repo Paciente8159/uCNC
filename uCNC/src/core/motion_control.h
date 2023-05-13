@@ -83,6 +83,14 @@ extern "C"
 		motion_flags_t motion_flags;
 	} motion_data_t;
 
+#ifdef ENABLE_MOTION_CONTROL_MODULES
+	typedef struct homing_status_ {
+		uint8_t axis;
+		uint8_t axis_limit;
+		uint8_t status;
+	} homing_status_t;
+#endif
+
 	void mc_init(void);
 	bool mc_get_checkmode(void);
 	bool mc_toogle_checkmode(void);
