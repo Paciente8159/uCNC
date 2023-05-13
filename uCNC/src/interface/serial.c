@@ -368,8 +368,9 @@ void serial_flush(void)
 // All ascii will be sent to buffer and processed later (including comments)
 MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 {
+	static bool is_grbl_cmd = false;
 	uint8_t write;
-	if (c < ((unsigned char)'~')) // ascii (except CMD_CODE_CYCLE_START and DEL)
+	if (c < ((unsigned char)0x7F)) // ascii (all bellow DEL)
 	{
 		switch (c)
 		{
@@ -381,25 +382,41 @@ MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 		case CMD_CODE_FEED_HOLD:
 			cnc_call_rt_command((uint8_t)c);
 			return;
-		default:
-			if (serial_rx_overflow)
+		case '\n':
+		case '\r':
+		case 0:
+			// EOL marker
+			is_grbl_cmd = false;
+			break;
+		case '$':
+			is_grbl_cmd = true;
+			break;
+		case CMD_CODE_CYCLE_START:
+			if (!is_grbl_cmd)
 			{
-				c = OVF;
+				cnc_call_rt_command(CMD_CODE_CYCLE_START);
+				return;
 			}
-			write = serial_rx_write;
-			serial_rx_buffer[write] = c;
-			if (++write == RX_BUFFER_SIZE)
-			{
-				write = 0;
-			}
-			if (write == serial_rx_read)
-			{
-				serial_rx_overflow++;
-			}
-
-			serial_rx_write = write;
-			return;
+			break;
 		}
+
+		if (serial_rx_overflow)
+		{
+			c = OVF;
+		}
+		write = serial_rx_write;
+		serial_rx_buffer[write] = c;
+		if (++write == RX_BUFFER_SIZE)
+		{
+			write = 0;
+		}
+		if (write == serial_rx_read)
+		{
+			serial_rx_overflow++;
+		}
+
+		serial_rx_write = write;
+		return;
 	}
 	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
 	{
