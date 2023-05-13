@@ -825,6 +825,7 @@ bool cnc_check_interlocking(void)
 		{
 			itp_clear();
 			planner_clear();
+			mc_sync_position();
 			CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
 		}
 
