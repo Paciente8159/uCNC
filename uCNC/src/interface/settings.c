@@ -320,15 +320,15 @@ uint8_t settings_change(setting_offset_t id, float value)
 
 	bool value1 = (value8 != 0);
 
-	if (value < 0 && !settings_allows_negative(id))
-	{
-		return STATUS_NEGATIVE_VALUE;
-	}
-
 #ifdef ENABLE_SETTINGS_MODULES
 	if (id < 256)
 	{
 #endif
+		if (value < 0 && !settings_allows_negative(id))
+		{
+			return STATUS_NEGATIVE_VALUE;
+		}
+
 		uint8_t setting = (uint8_t)id;
 		switch (setting)
 		{
