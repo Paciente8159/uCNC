@@ -301,6 +301,17 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 #endif
 }
 
+bool settings_allows_negative(setting_offset_t id)
+{
+#if TOOL_COUNT > 0
+	if(id > 80 && id <= (80 + TOOL_COUNT))
+	{
+		return true;
+	}
+#endif
+	return false;
+}
+
 uint8_t settings_change(setting_offset_t id, float value)
 {
 	uint8_t result = STATUS_OK;
@@ -309,7 +320,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 
 	bool value1 = (value8 != 0);
 
-	if (value < 0)
+	if (value < 0 && !settings_allows_negative(id))
 	{
 		return STATUS_NEGATIVE_VALUE;
 	}
