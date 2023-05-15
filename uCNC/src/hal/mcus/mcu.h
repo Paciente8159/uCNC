@@ -476,6 +476,10 @@ extern "C"
 #ifndef mcu_i2c_read
 	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
 #endif
+
+#ifndef mcu_i2c_config
+	void mcu_i2c_config(uint32_t frequency);
+#endif
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

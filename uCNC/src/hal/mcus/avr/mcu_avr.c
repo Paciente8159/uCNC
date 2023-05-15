@@ -453,11 +453,7 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	// set freq
-	TWSR = I2C_PRESC;
-	TWBR = (uint8_t)I2C_DIV & 0xFF;
-	// enable TWI
-	TWCR = (1 << TWEN);
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	// disable probe isr
@@ -973,6 +969,33 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	// disable TWI
+	TWCR &= ~(1 << TWEN);
+	// set freq
+	uint8_t div = 0;
+	if ((frequency < 5000UL))
+	{
+		div = 3;
+	}
+	else if ((frequency < 20000UL))
+	{
+		div = 2;
+	}
+	else if ((frequency < 80000UL))
+	{
+		div = 1;
+	}
+
+	TWSR = div;
+	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
+	// enable TWI
+	TWCR = (1 << TWEN);
 }
 #endif
 #endif
