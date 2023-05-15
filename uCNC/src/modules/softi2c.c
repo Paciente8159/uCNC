@@ -17,7 +17,8 @@
 */
 #include "softi2c.h"
 
-void softi2c_delay(uint8_t loops_100ns){
+void softi2c_delay(uint8_t loops_100ns)
+{
 	while (loops_100ns--)
 	{
 		mcu_delay_100ns();
@@ -63,7 +64,8 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		// init
 		port->sda(true);
 		port->scl(true);
-		if(!softi2c_clock_stretch(port)){
+		if (!softi2c_clock_stretch(port))
+		{
 			return 0;
 		}
 		port->sda(false);
@@ -177,9 +179,10 @@ void softi2c_config(softi2c_port_t *port, uint32_t frequency)
 	if (!port)
 	{
 #ifdef MCU_HAS_I2C
-		return mcu_i2c_config(frequency);
-#else
-		return 0;
+		mcu_i2c_config(frequency);
 #endif
+		return;
 	}
+
+	port->i2cdelay = I2C_DELAY(frequency);
 }
