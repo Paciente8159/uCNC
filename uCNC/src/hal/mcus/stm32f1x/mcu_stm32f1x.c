@@ -883,6 +883,16 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return c;
 }
 #endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	I2C_REG->CR1 &= ~I2C_CR1_PE;
+	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	// initialize the SPI configuration register
+	I2C_REG->CR1 |= I2C_CR1_PE;
+}
+#endif
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
