@@ -46,9 +46,9 @@ extern "C"
 #define PWM0_BIT 32
 
 // configure the 74HC595 modules
-#define DOUT4_BIT 21
-#define DOUT5_BIT 16
-#define DOUT6_BIT 17
+#define DOUT8_BIT 21
+#define DOUT9_BIT 16
+#define DOUT10_BIT 17
 // uses 3 x 74HS595
 #define IC74HC595_COUNT 1
 
