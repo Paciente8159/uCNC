@@ -873,6 +873,17 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return c;
 }
 #endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	I2C_REG->I2CONSET &= ~I2C_I2CONSET_I2EN;
+	I2C_DeInit(I2C_REG);
+	I2C_Init(I2C_REG, I2C_FREQ);
+	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
