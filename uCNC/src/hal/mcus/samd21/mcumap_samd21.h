@@ -36,7 +36,7 @@ extern "C"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 48000000UL
+#define F_CPU SystemCoreClock
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX

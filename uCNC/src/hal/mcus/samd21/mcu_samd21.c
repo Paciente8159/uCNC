@@ -24,7 +24,7 @@
 #include "mcumap_samd21.h"
 
 #include "sam.h"
-//#include "instance/nvmctrl.h"
+// #include "instance/nvmctrl.h"
 #include <string.h>
 #include <math.h>
 
@@ -566,7 +566,7 @@ void mcu_init(void)
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
-	I2CCOM->I2CM.BAUD.reg = SERCOM_I2CM_BAUD_BAUD(F_CPU / I2C_FREQ);
+	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * I2C_FREQ) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
@@ -1186,6 +1186,26 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return data;
 }
 #endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	// disable I2C
+	I2CCOM->I2CM.CTRLA.bit.ENABLE = 0;
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * frequency) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	// enable I2C
+	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
