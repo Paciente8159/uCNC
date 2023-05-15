@@ -17,24 +17,32 @@
 */
 #include "softi2c.h"
 
+void softi2c_delay(uint8_t loops_100ns){
+	while (loops_100ns--)
+	{
+		mcu_delay_100ns();
+	}
+}
+
 static uint8_t softi2c_clock_stretch(softi2c_port_t *port)
 {
 	uint8_t timeout = 3;
 	while (!port->get_scl() && timeout--)
 	{
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 	}
 
 	return timeout;
 }
+
 static void softi2c_stop(softi2c_port_t *port)
 {
 	port->sda(false);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 	port->scl(true);
 	softi2c_clock_stretch(port);
 	port->sda(true);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 }
 
 static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
@@ -59,24 +67,24 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 			return 0;
 		}
 		port->sda(false);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 		port->scl(false);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 	}
 
 	for (uint8_t i = 0; i < 8; i++)
 	{
 		port->sda((c & 0x80));
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 		port->scl(true);
-		port->wait();
+		softi2c_delay(port->i2cdelay);
 		port->scl(false); // write the most-significant bit
 		c <<= 1;
 	}
 
 	// read ack
 	port->sda(true);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 	port->scl(true);
 	softi2c_clock_stretch(port);
 	ack = !port->get_sda();
@@ -110,9 +118,9 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	} while (!--i);
 
 	port->sda(!with_ack);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 	port->scl(true);
-	port->wait();
+	softi2c_delay(port->i2cdelay);
 	port->scl(false);
 
 	if (send_stop)
@@ -162,4 +170,16 @@ uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, ui
 	}
 
 	return 0;
+}
+
+void softi2c_config(softi2c_port_t *port, uint32_t frequency)
+{
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_config(frequency);
+#else
+		return 0;
+#endif
+	}
 }
