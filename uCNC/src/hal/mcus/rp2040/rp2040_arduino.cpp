@@ -478,7 +478,12 @@ extern "C"
 #ifdef MCU_HAS_UART
 		COM_UART.setTX(TX_BIT);
 		COM_UART.setRX(RX_BIT);
-		COM_UART.begin(baud);
+		COM_UART.begin(BAUDRATE);
+#endif
+#ifdef MCU_HAS_UART2
+		COM2_UART.setTX(TX2_BIT);
+		COM2_UART.setRX(RX2_BIT);
+		COM2_UART.begin(BAUDRATE2);
 #endif
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_init();
@@ -495,6 +500,10 @@ extern "C"
 #ifdef MCU_HAS_UART
 		COM_UART.println(rp2040_tx_buffer);
 		COM_UART.flush();
+#endif
+#ifdef MCU_HAS_UART2
+		COM2_UART.println(rp2040_tx_buffer);
+		COM2_UART.flush();
 #endif
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_flush(rp2040_tx_buffer);
@@ -556,6 +565,13 @@ extern "C"
 		while (COM_UART.available() > 0)
 		{
 			mcu_com_rx_cb((unsigned char)COM_UART.read());
+		}
+#endif
+
+#ifdef MCU_HAS_UART2
+		while (COM2_UART.available() > 0)
+		{
+			mcu_com_rx_cb((unsigned char)COM2_UART.read());
 		}
 #endif
 
