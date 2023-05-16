@@ -24,7 +24,7 @@
 #include "mcumap_samd21.h"
 
 #include "sam.h"
-//#include "instance/nvmctrl.h"
+// #include "instance/nvmctrl.h"
 #include <string.h>
 #include <math.h>
 
@@ -227,6 +227,27 @@ void mcu_com_isr()
 }
 #endif
 
+#ifdef MCU_HAS_UART2
+void mcu_com2_isr()
+{
+	mcu_disable_global_isr();
+	if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
+	{
+		COM2_UART->USART.INTFLAG.bit.RXC = 1;
+		unsigned char c = (0xff & COM2_INREG);
+		mcu_com_rx_cb(c);
+	}
+#ifndef ENABLE_SYNC_TX
+	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
+	{
+		COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+		mcu_com_tx_cb();
+	}
+#endif
+	mcu_enable_global_isr();
+}
+#endif
+
 void mcu_usart_init(void)
 {
 #ifdef MCU_HAS_UART
@@ -272,6 +293,52 @@ void mcu_usart_init(void)
 	// enable COM_UART
 	COM_UART->USART.CTRLA.bit.ENABLE = 1;
 	while (COM_UART->USART.SYNCBUSY.bit.ENABLE)
+		;
+
+#endif
+#ifdef MCU_HAS_UART2
+	PM->APBCMASK.reg |= PM_APBCMASK_COM2;
+
+	/* Setup GCLK SERCOMx to use GENCLK0 */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN_GCLK0 | GCLK_CLKCTRL_ID_COM2;
+	while (GCLK->STATUS.bit.SYNCBUSY)
+		;
+
+	// Start the Software Reset
+	COM2_UART->USART.CTRLA.bit.SWRST = 1;
+
+	while (COM2_UART->USART.SYNCBUSY.bit.SWRST)
+		;
+
+	COM2_UART->USART.CTRLA.bit.MODE = 1;
+	COM2_UART->USART.CTRLA.bit.SAMPR = 0;		   // 16x sample rate
+	COM2_UART->USART.CTRLA.bit.FORM = 0;		   // no parity
+	COM2_UART->USART.CTRLA.bit.DORD = 1;		   // LSB first
+	COM2_UART->USART.CTRLA.bit.RXPO = COM2_RX_PAD; // RX on PAD3
+	COM2_UART->USART.CTRLA.bit.TXPO = COM2_TX_PAD; // TX on PAD2
+	COM2_UART->USART.CTRLB.bit.SBMODE = 0;		   // one stop bit
+	COM2_UART->USART.CTRLB.bit.CHSIZE = 0;		   // 8 bits
+	COM2_UART->USART.CTRLB.bit.RXEN = 1;		   // enable receiver
+	COM2_UART->USART.CTRLB.bit.TXEN = 1;		   // enable transmitter
+
+	while (COM2_UART->USART.SYNCBUSY.bit.CTRLB)
+		;
+
+	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (F_CPU >> 4))));
+
+	COM2_UART->USART.BAUD.reg = baud2;
+	mcu_config_altfunc(TX);
+	mcu_config_altfunc(RX);
+	COM2_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
+	COM2_UART->USART.INTENSET.bit.ERROR = 1;
+
+	NVIC_ClearPendingIRQ(COM2_IRQ);
+	NVIC_EnableIRQ(COM2_IRQ);
+	NVIC_SetPriority(COM2_IRQ, 0);
+
+	// enable COM_UART
+	COM2_UART->USART.CTRLA.bit.ENABLE = 1;
+	while (COM2_UART->USART.SYNCBUSY.bit.ENABLE)
 		;
 
 #endif
@@ -691,14 +758,24 @@ bool mcu_tx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
-		;
+	{
+#ifdef MCU_HAS_USB
+		tusb_cdc_flush();
 #endif
+	}
+#endif
+#ifdef MCU_HAS_UART
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+#endif
+#endif
+#ifdef MCU_HAS_UART2
+	COM2_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #endif
 #endif
 #ifdef MCU_HAS_USB

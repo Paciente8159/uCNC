@@ -3665,35 +3665,35 @@ extern "C"
 
 #define UART2_PCONP __helper__(CLKPWR_PCONP_PCUART, UART2_PORT, )
 
-#if ((UART2_PORT == 0) && (TX_MBED_PIN == P0_2) && (RX_MBED_PIN == P0_3))
+#if ((UART2_PORT == 0) && (TX2_MBED_PIN == P0_2) && (RX2_MBED_PIN == P0_3))
 #define UART2_ALT_FUNC 1
 #define UART2_PCLKSEL_REG PCLKSEL0
 #define UART2_PCLKSEL_MASK (3 << 6)
-#elif ((UART2_PORT == 1) && (TX_MBED_PIN == P0_15) && (RX_MBED_PIN == P0_16))
+#elif ((UART2_PORT == 1) && (TX2_MBED_PIN == P0_15) && (RX2_MBED_PIN == P0_16))
 #define UART2_ALT_FUNC 1
 #define UART2_PCLKSEL_REG PCLKSEL0
 #define UART2_PCLKSEL_MASK (3 << 8)
-#elif ((UART2_PORT == 1) && (TX_MBED_PIN == P2_0) && (RX_MBED_PIN == P2_1))
+#elif ((UART2_PORT == 1) && (TX2_MBED_PIN == P2_0) && (RX2_MBED_PIN == P2_1))
 #define UART2_ALT_FUNC 2
 #define UART2_PCLKSEL_REG PCLKSEL0
 #define UART2_PCLKSEL_MASK (3 << 8)
-#elif ((UART2_PORT == 2) && (TX_MBED_PIN == P0_10) && (RX_MBED_PIN == P0_11))
+#elif ((UART2_PORT == 2) && (TX2_MBED_PIN == P0_10) && (RX2_MBED_PIN == P0_11))
 #define UART2_ALT_FUNC 1
 #define UART2_PCLKSEL_REG PCLKSEL1
 #define UART2_PCLKSEL_MASK (3 << 16)
-#elif ((UART2_PORT == 2) && (TX_MBED_PIN == P2_8) && (RX_MBED_PIN == P2_9))
+#elif ((UART2_PORT == 2) && (TX2_MBED_PIN == P2_8) && (RX2_MBED_PIN == P2_9))
 #define UART2_ALT_FUNC 2
 #define UART2_PCLKSEL_REG PCLKSEL1
 #define UART2_PCLKSEL_MASK (3 << 16)
-#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P0_0) && (RX_MBED_PIN == P0_1))
+#elif ((UART2_PORT == 3) && (TX2_MBED_PIN == P0_0) && (RX2_MBED_PIN == P0_1))
 #define UART2_ALT_FUNC 2
 #define UART2_PCLKSEL_REG PCLKSEL1
 #define UART2_PCLKSEL_MASK (3 << 18)
-#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P0_25) && (RX_MBED_PIN == P0_26))
+#elif ((UART2_PORT == 3) && (TX2_MBED_PIN == P0_25) && (RX2_MBED_PIN == P0_26))
 #define UART2_ALT_FUNC 3
 #define UART2_PCLKSEL_REG PCLKSEL1
 #define UART2_PCLKSEL_MASK (3 << 18)
-#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P4_28) && (RX_MBED_PIN == P4_29))
+#elif ((UART2_PORT == 3) && (TX2_MBED_PIN == P4_28) && (RX2_MBED_PIN == P4_29))
 #define UART2_ALT_FUNC 3
 #define UART2_PCLKSEL_REG PCLKSEL1
 #define UART2_PCLKSEL_MASK (3 << 18)
@@ -3708,8 +3708,8 @@ extern "C"
 #define COM2_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART2_PORT, )
 #define MCU_COM2_ISR __helper__(UART, UART2_PORT, _IRQHandler)
 
-#define COM_OUTREG (COM2_UART)->THR
-#define COM_INREG (COM2_UART)->RBR
+#define COM2_OUTREG (COM2_UART)->THR
+#define COM2_INREG (COM2_UART)->RBR
 
 #endif
 

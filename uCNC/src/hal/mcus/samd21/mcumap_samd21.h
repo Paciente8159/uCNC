@@ -1289,9 +1289,29 @@ extern "C"
 #define DIO209_BIT I2C_DATA_BIT
 #define DIO209_GPIO I2C_DATA_GPIO
 #endif
+#if (defined(TX2_PORT) && defined(TX2_BIT))
+#define TX2 210
+#define TX2_GPIO (PORTREG(TX2_PORT))
+#define DIO210 210
+#define DIO210_PORT TX2_PORT
+#define DIO210_BIT TX2_BIT
+#define DIO210_GPIO TX2_GPIO
+#endif
+#if (defined(RX2_PORT) && defined(RX2_BIT))
+#define RX2 211
+#define RX2_GPIO (PORTREG(RX2_PORT))
+#define DIO211 211
+#define DIO211_PORT RX2_PORT
+#define DIO211_BIT RX2_BIT
+#define DIO211_GPIO RX2_GPIO
+#endif
+
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#endif
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
@@ -1531,6 +1551,30 @@ extern "C"
 #define COM_INREG (COM_UART->USART.DATA.reg)
 #define COM_TX_PAD sercompad(TX_, UART_PORT, TX_PORT, TX_BIT)
 #define COM_RX_PAD sercompad(RX_, UART_PORT, RX_PORT, RX_BIT)
+#endif
+
+#ifdef MCU_HAS_UART2
+// Arduino already uses SERCOM0 and SERCOM 1
+#ifndef UART2_PORT
+#define UART2_PORT 2
+#endif
+#define TX2_PMUX (pinmux(TX2_PORT, TX2_BIT))
+#define TX2_PMUXVAL (sercommux_pin(UART2_PORT, TX2_PORT, TX2_BIT))
+#define DIO210_PMUX TX2_PMUX
+#define DIO210_PMUXVAL TX2_PMUXVAL
+#define RX2_PMUX (pinmux(RX2_PORT, RX2_BIT))
+#define RX2_PMUXVAL (sercommux_pin(UART2_PORT, RX2_PORT, RX2_BIT))
+#define DIO211_PMUX RX2_PMUX
+#define DIO211_PMUXVAL RX2_PMUXVAL
+#define COM2_UART __helper__(SERCOM, UART2_PORT, )
+#define PM_APBCMASK_COM2 __helper__(PM_APBCMASK_SERCOM, UART2_PORT, )
+#define GCLK_CLKCTRL_ID_COM2 __helper__(GCLK_CLKCTRL_ID_SERCOM, UART2_PORT, _CORE)
+#define COM2_IRQ __helper__(SERCOM, UART2_PORT, _IRQn)
+#define mcu_com2_isr __helper__(SERCOM, UART2_PORT, _Handler)
+#define COM2_OUTREG (COM2_UART->USART.DATA.reg)
+#define COM2_INREG (COM2_UART->USART.DATA.reg)
+#define COM2_TX_PAD sercompad(TX_, UART2_PORT, TX2_PORT, TX2_BIT)
+#define COM2_RX_PAD sercompad(RX_, UART2_PORT, RX2_PORT, RX2_BIT)
 #endif
 
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
@@ -3050,19 +3094,44 @@ extern "C"
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
+#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#elif (defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
+#define mcu_tx_ready() ((COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (COM_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
+#elif defined(MCU_HAS_UART2)
+#define mcu_rx_ready() (COM2_UART->USART.INTFLAG.bit.RXC)
+#define mcu_tx_ready() (COM2_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
 #endif
 
 #ifdef MCU_HAS_SPI

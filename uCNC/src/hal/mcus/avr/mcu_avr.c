@@ -387,12 +387,12 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #endif
 
 #ifdef MCU_HAS_UART2
-ISR(COM_RX2_vect, ISR_BLOCK)
+ISR(COM2_RX_vect, ISR_BLOCK)
 {
 	mcu_com_rx_cb(COM2_INREG);
 }
 #ifndef ENABLE_SYNC_TX
-ISR(COM_TX2_vect, ISR_BLOCK)
+ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_2, UDRIE_2);
 	mcu_com_tx_cb();

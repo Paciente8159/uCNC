@@ -4367,12 +4367,12 @@ extern "C"
 #define BAUDRATE2 BAUDRATE
 #endif
 #ifndef UART2_PORT
-#define COM_RX2_vect USART_RX_vect
-#define COM_TX2_vect USART_UDRE_vect
+#define COM2_RX_vect USART_RX_vect
+#define COM2_TX_vect USART_UDRE_vect
 #define UART2_PORT 0
 #else
-#define COM_RX2_vect __comrxvect__(UART2_PORT)
-#define COM_TX2_vect __comtxvect__(UART2_PORT)
+#define COM2_RX_vect __comrxvect__(UART2_PORT)
+#define COM2_TX_vect __comtxvect__(UART2_PORT)
 #endif
 #define COM2_OUTREG __udrreg__(UART2_PORT)
 #define COM2_INREG __udrreg__(UART2_PORT)
