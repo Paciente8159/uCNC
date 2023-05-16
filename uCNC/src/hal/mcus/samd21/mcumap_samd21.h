@@ -1306,7 +1306,6 @@ extern "C"
 #define DIO211_GPIO RX2_GPIO
 #endif
 
-
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -1531,6 +1530,9 @@ extern "C"
 
 #ifdef MCU_HAS_UART
 // Arduino already uses SERCOM0 and SERCOM 1
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
 #ifndef UART_PORT
 #define UART_PORT 2
 #endif
@@ -1554,6 +1556,9 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
 // Arduino already uses SERCOM0 and SERCOM 1
 #ifndef UART2_PORT
 #define UART2_PORT 2
@@ -3095,8 +3100,8 @@ extern "C"
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
 #if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || (COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && (COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
 #ifndef ENABLE_SYNC_TX

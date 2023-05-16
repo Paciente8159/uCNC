@@ -280,7 +280,7 @@ void MCU_COM2_ISR(void)
 	// Receive Line Status
 	if (irqstatus == UART_IIR_INTID_RLS)
 	{
-		uint32_t linestatus = UART_GetLineStatus(COM_UART);
+		uint32_t linestatus = UART_GetLineStatus(COM2_UART);
 
 		// Receive Line Status
 		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))

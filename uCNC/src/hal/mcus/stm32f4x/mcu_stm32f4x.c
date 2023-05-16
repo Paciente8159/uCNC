@@ -430,9 +430,9 @@ void mcu_usart_init(void)
 
 #ifdef MCU_HAS_UART2
 	/*enables RCC clocks and GPIO*/
-	RCC->COM_APB |= (COM2_APBEN);
-	mcu_config_af(TX, GPIO_AF_USART2);
-	mcu_config_af(RX, GPIO_AF_USART2);
+	RCC->COM2_APB |= (COM2_APBEN);
+	mcu_config_af(TX2, GPIO_AF_USART2);
+	mcu_config_af(RX2, GPIO_AF_USART2);
 	/*setup UART*/
 	COM2_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
 	COM2_UART->CR2 = 0; // 1 stop bit STOP=00
@@ -444,7 +444,7 @@ void mcu_usart_init(void)
 	baudrate2 -= brr2;
 	brr2 <<= 4;
 	brr2 += (uint16_t)roundf(16.0f * baudrate2);
-	COM2_UART->BRR = brr;
+	COM2_UART->BRR = brr2;
 	COM2_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
 	NVIC_SetPriority(COM2_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM2_IRQ);

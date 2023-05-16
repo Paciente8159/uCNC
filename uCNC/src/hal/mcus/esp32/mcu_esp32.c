@@ -518,8 +518,14 @@ void mcu_core0_tasks_init(void *arg)
 	// register PWM isr
 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
 #endif
+#ifdef MCU_HAS_UART
 	// install UART driver handler
 	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
+#ifdef MCU_HAS_UART2
+	// install UART driver handler
+	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
 }
 
 void mcu_rtc_task(void *arg)

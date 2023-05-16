@@ -327,8 +327,8 @@ void mcu_usart_init(void)
 	uint16_t baud2 = (uint16_t)(65536.0f * (1.0f - (((float)BAUDRATE2) / (F_CPU >> 4))));
 
 	COM2_UART->USART.BAUD.reg = baud2;
-	mcu_config_altfunc(TX);
-	mcu_config_altfunc(RX);
+	mcu_config_altfunc(TX2);
+	mcu_config_altfunc(RX2);
 	COM2_UART->USART.INTENSET.bit.RXC = 1; // enable recieved interrupt
 	COM2_UART->USART.INTENSET.bit.ERROR = 1;
 
