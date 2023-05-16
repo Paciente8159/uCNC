@@ -96,6 +96,27 @@ void MCU_SERIAL_ISR(void)
 }
 #endif
 
+#ifdef MCU_HAS_UART2
+void MCU_SERIAL2_ISR(void)
+{
+	mcu_disable_global_isr();
+	if (COM2_UART->SR & USART_SR_RXNE)
+	{
+		unsigned char c = COM2_INREG;
+		mcu_com_rx_cb(c);
+	}
+
+#ifndef ENABLE_SYNC_TX
+	if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
+	{
+		COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
+		mcu_com_tx_cb();
+	}
+#endif
+	mcu_enable_global_isr();
+}
+#endif
+
 #ifdef MCU_HAS_USB
 void OTG_FS_IRQHandler(void)
 {
@@ -406,20 +427,57 @@ void mcu_usart_init(void)
 	NVIC_EnableIRQ(COM_IRQ);
 	COM_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
 #endif
+
+#ifdef MCU_HAS_UART2
+	/*enables RCC clocks and GPIO*/
+	RCC->COM_APB |= (COM2_APBEN);
+	mcu_config_af(TX, GPIO_AF_USART2);
+	mcu_config_af(RX, GPIO_AF_USART2);
+	/*setup UART*/
+	COM2_UART->CR1 = 0; // 8 bits No parity M=0 PCE=0
+	COM2_UART->CR2 = 0; // 1 stop bit STOP=00
+	COM2_UART->CR3 = 0;
+	COM2_UART->SR = 0;
+	// //115200 baudrate
+	float baudrate2 = ((float)(UART2_CLOCK >> 4) / ((float)(BAUDRATE2)));
+	uint16_t brr2 = (uint16_t)baudrate2;
+	baudrate2 -= brr2;
+	brr2 <<= 4;
+	brr2 += (uint16_t)roundf(16.0f * baudrate2);
+	COM2_UART->BRR = brr;
+	COM2_UART->CR1 |= USART_CR1_RXNEIE; // enable RXNEIE
+	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM2_IRQ);
+	NVIC_EnableIRQ(COM2_IRQ);
+	COM2_UART->CR1 |= (USART_CR1_RE | USART_CR1_TE | USART_CR1_UE); // enable TE, RE and UART
+#endif
 }
 
 void mcu_putc(char c)
 {
-#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	while (!(COM_UART->SR & USART_SR_TC))
-		;
+	while (!mcu_tx_ready())
+	{
+#ifdef MCU_HAS_USB
+		tusb_cdc_flush();
 #endif
+	}
+#endif
+
+#ifdef MCU_HAS_UART
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
 #endif
+
+#ifdef MCU_HAS_UART2
+	COM2_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM2_UART->CR1 |= (USART_CR1_TXEIE);
+#endif
+#endif
+
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{

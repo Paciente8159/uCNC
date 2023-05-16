@@ -422,16 +422,29 @@ void mcu_usart_init(void)
 
 void mcu_putc(char c)
 {
-#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	while (!(COM_UART->SR & USART_SR_TC))
-		;
+	while (!mcu_tx_ready())
+	{
+#ifdef MCU_HAS_USB
+		tusb_cdc_flush();
 #endif
+	}
+#endif
+
+#ifdef MCU_HAS_UART
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
 #endif
+
+#ifdef MCU_HAS_UART2
+	COM2_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM2_UART->CR1 |= (USART_CR1_TXEIE);
+#endif
+#endif
+
 #ifdef MCU_HAS_USB
 	if (c != 0)
 	{

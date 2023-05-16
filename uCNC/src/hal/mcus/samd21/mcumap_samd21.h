@@ -3097,8 +3097,8 @@ extern "C"
 #if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
-#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || (COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
+#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && (COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
