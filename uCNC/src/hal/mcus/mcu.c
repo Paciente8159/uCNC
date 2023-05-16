@@ -705,6 +705,15 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input(I2C_DATA);
 	mcu_config_pullup(I2C_DATA);
 #endif
+#if ASSERT_PIN(TX2)
+mcu_config_output(TX2);
+#endif
+#if ASSERT_PIN(RX2)
+mcu_config_input(RX2);
+#ifdef RX2_PULLUP
+mcu_config_pullup(RX2);
+#endif
+#endif
 }
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
