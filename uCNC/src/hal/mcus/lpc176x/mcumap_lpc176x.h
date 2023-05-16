@@ -2834,9 +2834,49 @@ extern "C"
 #define DIO209_PINHALF I2C_DATA_PINHALF
 #define DIO209_PINCON I2C_DATA_PINCON
 #endif
+#if (defined(TX2_PORT) && defined(TX2_BIT))
+#define TX2 210
+#define TX2_MBED_PIN __mbedpin__(TX2_PORT, TX2_BIT)
+#define TX2_GPIOREG __gpioreg__(TX2_PORT)
+#if (TX2_BIT < 16)
+#define TX2_PINHALF L
+#else
+#define TX2_PINHALF H
+#endif
+#define TX2_PINCON __pincon__(TX2_PORT, TX2_PINHALF)
+#define DIO210 210
+#define DIO210_MBED_PIN TX2_MBED_PIN
+#define DIO210_PORT TX2_PORT
+#define DIO210_BIT TX2_BIT
+#define DIO210_GPIOREG TX2_GPIOREG
+#define DIO210_PINHALF TX2_PINHALF
+#define DIO210_PINCON TX2_PINCON
+#endif
+#if (defined(RX2_PORT) && defined(RX2_BIT))
+#define RX2 211
+#define RX2_MBED_PIN __mbedpin__(RX2_PORT, RX2_BIT)
+#define RX2_GPIOREG __gpioreg__(RX2_PORT)
+#if (RX2_BIT < 16)
+#define RX2_PINHALF L
+#else
+#define RX2_PINHALF H
+#endif
+#define RX2_PINCON __pincon__(RX2_PORT, RX2_PINHALF)
+#define DIO211 211
+#define DIO211_MBED_PIN RX2_MBED_PIN
+#define DIO211_PORT RX2_PORT
+#define DIO211_BIT RX2_BIT
+#define DIO211_GPIOREG RX2_GPIOREG
+#define DIO211_PINHALF RX2_PINHALF
+#define DIO211_PINCON RX2_PINCON
+#endif
+
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#endif
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
@@ -3614,6 +3654,65 @@ extern "C"
 
 #endif
 
+#ifdef MCU_HAS_UART2
+#ifndef UART2_PORT
+#define UART2_PORT 0
+#endif
+
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
+
+#define UART2_PCONP __helper__(CLKPWR_PCONP_PCUART, UART2_PORT, )
+
+#if ((UART2_PORT == 0) && (TX_MBED_PIN == P0_2) && (RX_MBED_PIN == P0_3))
+#define UART2_ALT_FUNC 1
+#define UART2_PCLKSEL_REG PCLKSEL0
+#define UART2_PCLKSEL_MASK (3 << 6)
+#elif ((UART2_PORT == 1) && (TX_MBED_PIN == P0_15) && (RX_MBED_PIN == P0_16))
+#define UART2_ALT_FUNC 1
+#define UART2_PCLKSEL_REG PCLKSEL0
+#define UART2_PCLKSEL_MASK (3 << 8)
+#elif ((UART2_PORT == 1) && (TX_MBED_PIN == P2_0) && (RX_MBED_PIN == P2_1))
+#define UART2_ALT_FUNC 2
+#define UART2_PCLKSEL_REG PCLKSEL0
+#define UART2_PCLKSEL_MASK (3 << 8)
+#elif ((UART2_PORT == 2) && (TX_MBED_PIN == P0_10) && (RX_MBED_PIN == P0_11))
+#define UART2_ALT_FUNC 1
+#define UART2_PCLKSEL_REG PCLKSEL1
+#define UART2_PCLKSEL_MASK (3 << 16)
+#elif ((UART2_PORT == 2) && (TX_MBED_PIN == P2_8) && (RX_MBED_PIN == P2_9))
+#define UART2_ALT_FUNC 2
+#define UART2_PCLKSEL_REG PCLKSEL1
+#define UART2_PCLKSEL_MASK (3 << 16)
+#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P0_0) && (RX_MBED_PIN == P0_1))
+#define UART2_ALT_FUNC 2
+#define UART2_PCLKSEL_REG PCLKSEL1
+#define UART2_PCLKSEL_MASK (3 << 18)
+#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P0_25) && (RX_MBED_PIN == P0_26))
+#define UART2_ALT_FUNC 3
+#define UART2_PCLKSEL_REG PCLKSEL1
+#define UART2_PCLKSEL_MASK (3 << 18)
+#elif ((UART2_PORT == 3) && (TX_MBED_PIN == P4_28) && (RX_MBED_PIN == P4_29))
+#define UART2_ALT_FUNC 3
+#define UART2_PCLKSEL_REG PCLKSEL1
+#define UART2_PCLKSEL_MASK (3 << 18)
+#else
+#error "UART2 pin configuration not supported"
+#endif
+
+// this MCU does not work well with both TX and RX interrupt
+// this forces the sync TX method to fix communication
+#define COM2_UART __helper__(LPC_UART, UART2_PORT, )
+#define COM2_IRQ __helper__(UART, UART2_PORT, _IRQn)
+#define COM2_PCLK __helper__(CLKPWR_PCLKSEL_UART, UART2_PORT, )
+#define MCU_COM2_ISR __helper__(UART, UART2_PORT, _IRQHandler)
+
+#define COM_OUTREG (COM2_UART)->THR
+#define COM_INREG (COM2_UART)->RBR
+
+#endif
+
 // SPI
 #if (defined(SPI_CLK) && defined(SPI_SDI) && defined(SPI_SDO))
 #define MCU_HAS_SPI
@@ -3846,15 +3945,42 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || CHECKBIT(COM2_UART->LSR, 0) || usb_tx_available())
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && CHECKBIT(COM2_UART->LSR, 5) && usb_tx_available())
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || usb_tx_available())
 #define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && usb_tx_available())
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#elif (defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#define mcu_rx_ready() (CHECKBIT(COM2_UART->LSR, 0) || usb_tx_available())
+#define mcu_tx_ready() (CHECKBIT(COM2_UART->LSR, 5) && usb_tx_available())
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
+#define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || CHECKBIT(COM2_UART->LSR, 0))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && (CHECKBIT(COM2_UART->LSR, 5))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
+#elif defined(MCU_HAS_UART2)
+#define mcu_rx_ready() (CHECKBIT(COM2_UART->LSR, 0))
+#define mcu_tx_ready() (CHECKBIT(COM2_UART->LSR, 5))
 #elif defined(MCU_HAS_USB)
 #define mcu_rx_ready() usb_rx_available()
 #define mcu_tx_ready() usb_tx_available()
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
 #endif
 
 #define mcu_spi_xmit(X)                     \
