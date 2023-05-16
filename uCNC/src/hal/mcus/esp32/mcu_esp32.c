@@ -663,6 +663,7 @@ void mcu_init(void)
 	}
 #endif
 
+#ifdef MCU_HAS_UART
 	// initialize UART
 	const uart_config_t uartconfig = {
 		.baud_rate = BAUDRATE,
@@ -674,6 +675,21 @@ void mcu_init(void)
 	// We won't use a buffer for sending data.
 	uart_param_config(COM_PORT, &uartconfig);
 	uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+#endif
+
+#ifdef MCU_HAS_UART2
+	// initialize UART
+	const uart_config_t uart2config = {
+		.baud_rate = BAUDRATE2,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+		.source_clk = UART_SCLK_APB};
+	// We won't use a buffer for sending data.
+	uart_param_config(COM2_PORT, &uart2config);
+	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+#endif
 
 #ifdef IC74HC595_HAS_PWMS
 	// initialize PWM timer
@@ -878,7 +894,12 @@ void mcu_putc(char c)
 	if ((mcu_tx_buffer_counter >= TX_BUFFER_SIZE) || (c == '\n'))
 	{
 		mcu_tx_buffer[mcu_tx_buffer_counter] = 0;
+#ifdef MCU_HAS_UART
 		uart_write_bytes(COM_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+#endif
+#ifdef MCU_HAS_UART2
+		uart_write_bytes(COM2_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+#endif
 		esp32_wifi_bt_flush(mcu_tx_buffer);
 		mcu_tx_buffer_counter = 0;
 	}
@@ -1035,11 +1056,21 @@ void mcu_dotasks(void)
 
 	// loop through received data
 	char rxdata[RX_BUFFER_SIZE];
-	int rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-	for (int i = 0; i < rxlen; i++)
+	int rxlen, i;
+#ifdef MCU_HAS_UART
+	rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	for (i = 0; i < rxlen; i++)
 	{
 		mcu_com_rx_cb((unsigned char)rxdata[i]);
 	}
+#endif
+#ifdef MCU_HAS_UART2
+	rxlen = uart_read_bytes(COM2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	for (i = 0; i < rxlen; i++)
+	{
+		mcu_com_rx_cb((unsigned char)rxdata[i]);
+	}
+#endif
 
 	esp32_wifi_bt_process();
 }
