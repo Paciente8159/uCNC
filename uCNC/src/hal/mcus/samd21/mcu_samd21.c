@@ -238,7 +238,7 @@ void mcu_com2_isr()
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #elif defined(UART2_PASSTHROUGH)
-		mcu_uart_write(c);
+		mcu_uart_putc(c);
 		mcu_uart_rcv_cb(c);
 #endif
 	}

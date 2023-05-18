@@ -19,53 +19,73 @@
 
 void softuart_putc(softuart_port_t *port, uint8_t c)
 {
-	port->tx(false);
-	port->wait();
-	uint8_t bits = 8;
-	do
+	if (!port)
 	{
-		if (c & 0x01)
-		{
-			port->tx(true);
-		}
-		else
-		{
-			port->tx(false);
-		}
-		c >>= 1;
+#ifdef MCU_HAS_UART2
+		mcu_uart_putc(c);
+#endif
+	}
+	else
+	{
+		port->tx(false);
 		port->wait();
-	} while (--bits);
-	port->tx(true);
-	port->wait();
+		uint8_t bits = 8;
+		do
+		{
+			if (c & 0x01)
+			{
+				port->tx(true);
+			}
+			else
+			{
+				port->tx(false);
+			}
+			c >>= 1;
+			port->wait();
+		} while (--bits);
+		port->tx(true);
+		port->wait();
+	}
 }
 
 int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
 	unsigned char val = 0;
 
-	ms_timeout *= 1000;
-	while (port->rx())
+	if (!port)
 	{
-		mcu_delay_us(1);
-		if (!ms_timeout--)
-		{
-			return -1;
-		}
+#ifdef MCU_HAS_UART2
+		return mcu_uart_getc(ms_timeout);
+#else
+		return -1;
+#endif
 	}
-	port->waithalf();
-
-	uint8_t bits = 8;
-	uint8_t mask = 0x01;
-	do
+	else
 	{
-		port->wait();
-		if (port->rx())
+		ms_timeout *= 1000;
+		while (port->rx())
 		{
-			val |= mask;
+			mcu_delay_us(1);
+			if (!ms_timeout--)
+			{
+				return -1;
+			}
 		}
-		mask <<= 1;
-	} while (--bits);
-	port->waithalf();
+		port->waithalf();
+
+		uint8_t bits = 8;
+		uint8_t mask = 0x01;
+		do
+		{
+			port->wait();
+			if (port->rx())
+			{
+				val |= mask;
+			}
+			mask <<= 1;
+		} while (--bits);
+		port->waithalf();
+	}
 
 	return (int16_t)val;
 }

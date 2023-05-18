@@ -582,21 +582,21 @@ extern "C"
 }
 
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_write
-void mcu_uart_write(uint8_t c)
+#ifndef mcu_uart_putc
+void mcu_uart_putc(uint8_t c)
 {
 	COM2_UART.write(c);
 }
 #endif
-#ifndef mcu_uart_read
-uint8_t mcu_uart_read(uint32_t timeout)
+#ifndef mcu_uart_getc
+int16_t mcu_uart_getc(uint32_t timeout)
 {
 	timeout += mcu_millis();
 	while (!COM2_UART.available())
 	{
 		if (timeout < mcu_millis())
 		{
-			return 0;
+			return -1;
 		}
 	}
 
