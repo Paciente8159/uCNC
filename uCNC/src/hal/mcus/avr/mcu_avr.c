@@ -386,10 +386,15 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #endif
 #endif
 
-#ifdef MCU_HAS_UART2
+#if defined(MCU_HAS_UART2)
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM2_INREG);
+#elif defined(UART2_PASSTHROUGH)
+	mcu_uart_write(COM2_INREG);
+	mcu_uart_rcv_cb(COM2_INREG);
+#endif
 }
 #ifndef ENABLE_SYNC_TX
 ISR(COM2_TX_vect, ISR_BLOCK)
@@ -555,9 +560,9 @@ void mcu_putc(char c)
 	SETBIT(UCSRB, UDRIE);
 #endif
 #endif
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 #ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_2, UDRE_2);
+	loop_until_bit_is_set(UCSRA_2, UDRE);
 #endif
 	COM2_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
@@ -1017,6 +1022,35 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_write
+void mcu_uart_write(uint8_t c)
+{
+	loop_until_bit_is_set(UCSRA_2, UDRE_2);
+	COM2_OUTREG = c;
+}
+#endif
+#ifndef mcu_uart_read
+uint8_t mcu_uart_read(uint32_t timeout)
+{
+	timeout += mcu_millis();
+	while (!CHECKBIT(UCSRA_2, RXC_2))
+	{
+		if (timeout < mcu_millis())
+		{
+			return 0;
+		}
+	}
+	return COM2_INREG;
+}
+#endif
+#ifndef mcu_uart_rcv_cb
+void __attribute__((weak)) mcu_uart_rcv_cb(uint8_t c)
+{
 }
 #endif
 #endif

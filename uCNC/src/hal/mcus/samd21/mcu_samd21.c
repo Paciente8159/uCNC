@@ -227,7 +227,7 @@ void mcu_com_isr()
 }
 #endif
 
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2))
 void mcu_com2_isr()
 {
 	mcu_disable_global_isr();
@@ -235,7 +235,12 @@ void mcu_com2_isr()
 	{
 		COM2_UART->USART.INTFLAG.bit.RXC = 1;
 		unsigned char c = (0xff & COM2_INREG);
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
+#elif defined(UART2_PASSTHROUGH)
+		mcu_uart_write(c);
+		mcu_uart_rcv_cb(c);
+#endif
 	}
 #ifndef ENABLE_SYNC_TX
 	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
@@ -772,7 +777,7 @@ void mcu_putc(char c)
 	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #endif
 #endif
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 	COM2_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt

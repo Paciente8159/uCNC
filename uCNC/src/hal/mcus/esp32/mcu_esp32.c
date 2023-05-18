@@ -1070,12 +1070,20 @@ void mcu_dotasks(void)
 		mcu_com_rx_cb((unsigned char)rxdata[i]);
 	}
 #endif
-#ifdef MCU_HAS_UART2
+#if defined(MCU_HAS_UART2)
 	rxlen = uart_read_bytes(COM2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
 		mcu_com_rx_cb((unsigned char)rxdata[i]);
 	}
+#elif defined(UART2_PASSTHROUGH)
+	uart_write_bytes(COM2_PORT, rxdata, rxlen);
+	for (i = 0; i < rxlen; i++)
+	{
+		mcu_uart_rcv_cb((unsigned char)rxdata[i]);
+	}
+#endif
 #endif
 
 	esp32_wifi_bt_process();
@@ -1290,6 +1298,28 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	mcu_spi_conf.queue_size = 1;
 
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_write
+void mcu_uart_write(uint8_t c)
+{
+	uart_write_bytes(COM2_PORT, c, 1);
+}
+#endif
+#ifndef mcu_uart_read
+uint8_t mcu_uart_read(uint32_t timeout)
+{
+	char c = 0;
+	uart_read_bytes(COM2_PORT, &c, 1, timeout);
+	return c;
+}
+#endif
+#ifndef mcu_uart_rcv_cb
+void __attribute__((weak)) mcu_uart_rcv_cb(uint8_t c)
+{
 }
 #endif
 #endif

@@ -3945,7 +3945,7 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || CHECKBIT(COM2_UART->LSR, 0) || usb_tx_available())
 #define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && CHECKBIT(COM2_UART->LSR, 5) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
@@ -3957,22 +3957,22 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
-#elif (defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 #define mcu_rx_ready() (CHECKBIT(COM2_UART->LSR, 0) || usb_tx_available())
 #define mcu_tx_ready() (CHECKBIT(COM2_UART->LSR, 5) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
-#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
+#elif (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)))
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0) || CHECKBIT(COM2_UART->LSR, 0))
-#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && (CHECKBIT(COM2_UART->LSR, 5))
+#define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5) && CHECKBIT(COM2_UART->LSR, 5))
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (CHECKBIT(COM_UART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM_UART->LSR, 5))
-#elif defined(MCU_HAS_UART2)
+#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 #define mcu_rx_ready() (CHECKBIT(COM2_UART->LSR, 0))
 #define mcu_tx_ready() (CHECKBIT(COM2_UART->LSR, 5))
 #elif defined(MCU_HAS_USB)

@@ -3358,12 +3358,12 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || (COM2_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && (COM2_UART->SR & USART_SR_TXE) && tud_cdc_n_write_available(0))
-#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
+#elif (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)))
 #define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || (COM2_UART->SR & USART_SR_RXNE))
 #define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && (COM2_UART->SR & USART_SR_TXE))
 #elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
@@ -3371,7 +3371,7 @@ extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && tud_cdc_n_write_available(0))
-#elif (defined(MCU_HAS_UART2) && defined(MCU_HAS_USB))
+#elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM2_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
@@ -3379,7 +3379,7 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (COM_UART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
-#elif defined(MCU_HAS_UART2)
+#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 #define mcu_rx_ready() (COM2_UART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM2_UART->SR & USART_SR_TXE)
 #elif defined(MCU_HAS_USB)

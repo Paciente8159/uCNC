@@ -479,7 +479,19 @@ extern "C"
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(char* grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_write
+	void mcu_uart_write(uint8_t c);
+#endif
+#ifndef mcu_uart_read
+	uint8_t mcu_uart_read(uint32_t timeout);
+#endif
+#ifndef mcu_uart_rcv_cb
+	void mcu_uart_rcv_cb(uint8_t c);
+#endif
 #endif
 
 #ifdef __cplusplus

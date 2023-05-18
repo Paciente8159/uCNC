@@ -93,6 +93,32 @@ void MCU_SERIAL_ISR(void)
 }
 #endif
 
+#if (defined(MCU_HAS_UART2))
+void MCU_SERIAL2_ISR(void)
+{
+	mcu_disable_global_isr();
+	if (COM2_UART->SR & USART_SR_RXNE)
+	{
+		unsigned char c = COM2_INREG;
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+		mcu_com_rx_cb(c);
+#elif defined(UART2_PASSTHROUGH)
+		mcu_uart_write(c);
+		mcu_uart_rcv_cb(c);
+#endif
+	}
+
+#ifndef ENABLE_SYNC_TX
+	if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
+	{
+		COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
+		mcu_com_tx_cb();
+	}
+#endif
+	mcu_enable_global_isr();
+}
+#endif
+
 #ifdef MCU_HAS_USB
 void USB_HP_CAN1_TX_IRQHandler(void)
 {
@@ -438,7 +464,7 @@ void mcu_putc(char c)
 #endif
 #endif
 
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 	COM2_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM2_UART->CR1 |= (USART_CR1_TXEIE);
@@ -968,6 +994,31 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 #ifndef mcu_start_timeout
 void mcu_start_timeout()
 {
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_write
+void mcu_uart_write(uint8_t c)
+{
+	while (!(COM2_UART->SR & USART_SR_TXE))
+		;
+	COM2_OUTREG = c;
+}
+#endif
+#ifndef mcu_uart_read
+uint8_t mcu_uart_read(uint32_t timeout)
+{
+	timeout += mcu_millis();
+	while (!(COM2_UART->SR & USART_SR_RXNE))
+	{
+		if (timeout < mcu_millis())
+		{
+			return 0;
+		}
+	}
+	return COM2_INREG;
 }
 #endif
 #endif

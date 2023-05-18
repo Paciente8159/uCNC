@@ -4640,15 +4640,15 @@ extern "C"
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
-#define mcu_tx_ready() ((CHECKBIT(UCSRA, UDRE)) && (CHECKBIT(UCSRA_2, UDRE_2)))
-#define mcu_rx_ready() ((CHECKBIT(UCSRA, RX)) || (CHECKBIT(UCSRA_2, RX_2)))
+#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)))
+#define mcu_tx_ready() ((CHECKBIT(UCSRA, UDRE)) && (CHECKBIT(UCSRA_2, UDRE)))
+#define mcu_rx_ready() ((CHECKBIT(UCSRA, RXC)) || (CHECKBIT(UCSRA_2, RXC_2)))
 #elif defined(MCU_HAS_UART)
 #define mcu_tx_ready() (CHECKBIT(UCSRA, UDRE))
-#define mcu_rx_ready() (CHECKBIT(UCSRA, RX))
-#elif defined(MCU_HAS_UART2)
+#define mcu_rx_ready() (CHECKBIT(UCSRA, RXC))
+#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 #define mcu_tx_ready() (CHECKBIT(UCSRA_2, UDRE_2))
-#define mcu_rx_ready() (CHECKBIT(UCSRA_2, RX_2))
+#define mcu_rx_ready() (CHECKBIT(UCSRA_2, RXC_2))
 #endif
 
 #ifdef MCU_HAS_SPI
