@@ -391,9 +391,11 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 {
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM2_INREG);
-#elif defined(UART2_PASSTHROUGH)
+#else
+#ifdef UART2_PASSTHROUGH
 	mcu_uart_putc(COM2_INREG);
-	mcu_uart_rcv_cb(COM2_INREG);
+#endif
+	mcu_uart_rx_cb(COM2_INREG);
 #endif
 }
 #ifndef ENABLE_SYNC_TX
@@ -1046,11 +1048,6 @@ int16_t mcu_uart_getc(uint32_t timeout)
 		}
 	}
 	return COM2_INREG;
-}
-#endif
-#ifndef mcu_uart_rcv_cb
-void __attribute__((weak)) mcu_uart_rcv_cb(uint8_t c)
-{
 }
 #endif
 #endif

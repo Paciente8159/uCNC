@@ -1077,11 +1077,13 @@ void mcu_dotasks(void)
 	{
 		mcu_com_rx_cb((unsigned char)rxdata[i]);
 	}
-#elif defined(UART2_PASSTHROUGH)
+#else
+#ifdef UART2_PASSTHROUGH
 	uart_write_bytes(COM2_PORT, rxdata, rxlen);
+#endif
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_uart_rcv_cb((unsigned char)rxdata[i]);
+		mcu_uart_rx_cb((unsigned char)rxdata[i]);
 	}
 #endif
 #endif
@@ -1306,7 +1308,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #ifndef mcu_uart_putc
 void mcu_uart_putc(uint8_t c)
 {
-	uart_write_bytes(COM2_PORT, c, 1);
+	uart_write_bytes(COM2_PORT, &c, 1);
 }
 #endif
 #ifndef mcu_uart_getc
@@ -1315,11 +1317,6 @@ int16_t mcu_uart_getc(uint32_t timeout)
 	char c = 0;
 	uint8_t read = uart_read_bytes(COM2_PORT, &c, 1, timeout);
 	return (read > 0) ? c : -1;
-}
-#endif
-#ifndef mcu_uart_rcv_cb
-void __attribute__((weak)) mcu_uart_rcv_cb(uint8_t c)
-{
 }
 #endif
 #endif

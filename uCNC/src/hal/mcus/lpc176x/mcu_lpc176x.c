@@ -297,9 +297,11 @@ void MCU_COM2_ISR(void)
 		unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
-#elif defined(UART2_PASSTHROUGH)
+#else
+#ifdef UART2_PASSTHROUGH
 		mcu_uart_putc(c);
-		mcu_uart_rcv_cb(c);
+#endif
+		mcu_uart_rx_cb(c);
 #endif
 	}
 
@@ -944,11 +946,6 @@ int16_t mcu_uart_getc(uint32_t timeout)
 		}
 	}
 	return (CHECKBIT(COM2_UART->LSR, 0) ? COM2_INREG : 0);
-}
-#endif
-#ifndef mcu_uart_rcv_cb
-void __attribute__((weak)) mcu_uart_rcv_cb(uint8_t c)
-{
 }
 #endif
 #endif

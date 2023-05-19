@@ -1925,6 +1925,20 @@ extern "C"
 #endif
 #define DIO209 UNDEF_PIN
 #endif
+#ifndef TX2
+#define TX2 UNDEF_PIN
+#ifdef DIO210
+#undef DIO210
+#endif
+#define DIO210 UNDEF_PIN
+#endif
+#ifndef RX2
+#define RX2 UNDEF_PIN
+#ifdef DIO211
+#undef DIO211
+#endif
+#define DIO211 UNDEF_PIN
+#endif
 
 	// if the pins are undefined turn on option
 #if (!ASSERT_PIN(ESTOP) && !ASSERT_PIN(SAFETY_DOOR) && !ASSERT_PIN(FHOLD) && !ASSERT_PIN(CS_RES) && !defined(DISABLE_ALL_CONTROLS))

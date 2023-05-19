@@ -237,9 +237,11 @@ void mcu_com2_isr()
 		unsigned char c = (0xff & COM2_INREG);
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
-#elif defined(UART2_PASSTHROUGH)
+#else
+#ifdef UART2_PASSTHROUGH
 		mcu_uart_putc(c);
-		mcu_uart_rcv_cb(c);
+#endif
+		mcu_uart_rx_cb(c);
 #endif
 	}
 #ifndef ENABLE_SYNC_TX
@@ -1361,6 +1363,31 @@ void mcu_start_timeout()
 	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 1;
 	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
 #endif
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_putc
+void mcu_uart_putc(uint8_t c)
+{
+	while (!(COM2_UART->USART.INTFLAG.bit.DRE))
+		;
+	COM2_OUTREG = c;
+}
+#endif
+#ifndef mcu_uart_getc
+int16_t mcu_uart_getc(uint32_t timeout)
+{
+	timeout += mcu_millis();
+	while (!(COM2_UART->USART.INTFLAG.bit.RXC))
+	{
+		if (timeout < mcu_millis())
+		{
+			return -1;
+		}
+	}
+	return COM2_INREG;
 }
 #endif
 #endif

@@ -105,9 +105,11 @@ void MCU_SERIAL2_ISR(void)
 		unsigned char c = COM2_INREG;
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
-#elif defined(UART2_PASSTHROUGH)
+#else
+#ifdef UART2_PASSTHROUGH
 		mcu_uart_putc(c);
-		mcu_uart_rcv_cb(c);
+#endif
+		mcu_uart_rx_cb(c);
 #endif
 	}
 

@@ -489,9 +489,11 @@ extern "C"
 #ifndef mcu_uart_getc
 	int16_t mcu_uart_getc(uint32_t timeout);
 #endif
-#ifndef mcu_uart_rcv_cb
-	void mcu_uart_rcv_cb(uint8_t c);
+#ifndef mcu_uart_rx_cb
+	void mcu_uart_rx_cb(uint8_t c);
 #endif
+typedef void (*mcu_uart_rcv_delegate)(uint8_t);
+extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
 #endif
 
 #ifdef __cplusplus

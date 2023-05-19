@@ -21,7 +21,7 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 {
 	if (!port)
 	{
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
 		mcu_uart_putc(c);
 #endif
 	}
@@ -54,7 +54,7 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 
 	if (!port)
 	{
-#ifdef MCU_HAS_UART2
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
 		return mcu_uart_getc(ms_timeout);
 #else
 		return -1;
