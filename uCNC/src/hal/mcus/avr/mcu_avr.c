@@ -380,7 +380,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #ifndef ENABLE_SYNC_TX
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	CLEARBIT(UCSRB, UDRIE);
+	CLEARBIT(UCSRB_REG, UDRIE_BIT);
 	mcu_com_tx_cb();
 }
 #endif
@@ -401,7 +401,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #ifndef ENABLE_SYNC_TX
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
-	CLEARBIT(UCSRB_2, UDRIE_2);
+	CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
 	mcu_com_tx_cb();
 }
 #endif
@@ -427,31 +427,31 @@ void mcu_init(void)
 #ifdef MCU_HAS_UART
 #if BAUDRATE < 57600
 	UBRR_value = (F_CPU / (16UL * BAUDRATE)) - 1;
-	UCSRA &= ~(1 << U2X); // baud doubler off  - Only needed on Uno XXX
+	UCSRA_REG &= ~(1 << U2X_BIT); // baud doubler off  - Only needed on Uno XXX
 #else
 	UBRR_value = (F_CPU / (8UL * BAUDRATE)) - 1;
-	UCSRA |= (1 << U2X); // baud doubler on for high baud rates, i.e. 115200
+	UCSRA_REG |= (1 << U2X_BIT); // baud doubler on for high baud rates, i.e. 115200
 #endif
-	UBRRH = UBRR_value >> 8;
-	UBRRL = UBRR_value;
+	UBRRH_REG = UBRR_value >> 8;
+	UBRRL_REG = UBRR_value;
 
 	// enable rx, tx, and interrupt on complete reception of a byte and UDR empty
-	UCSRB |= (1 << RXEN | 1 << TXEN | 1 << RXCIE);
+	UCSRB_REG |= (1 << RXEN_BIT | 1 << TXEN_BIT | 1 << RXCIE_BIT);
 #endif
 
 #ifdef MCU_HAS_UART2
 #if BAUDRATE2 < 57600
 	UBRR_value = (F_CPU / (16UL * BAUDRATE2)) - 1;
-	UCSRA_2 &= ~(1 << U2X_2); // baud doubler off  - Only needed on Uno XXX
+	UCSRA_REG_2 &= ~(1 << U2X_BIT_2); // baud doubler off  - Only needed on Uno XXX
 #else
 	UBRR_value = (F_CPU / (8UL * BAUDRATE2)) - 1;
-	UCSRA_2 |= (1 << U2X_2); // baud doubler on for high baud rates, i.e. 115200
+	UCSRA_REG_2 |= (1 << U2X_BIT_2); // baud doubler on for high baud rates, i.e. 115200
 #endif
-	UBRRH_2 = UBRR_value >> 8;
-	UBRRL_2 = UBRR_value;
+	UBRRH_REG_2 = UBRR_value >> 8;
+	UBRRL_REG_2 = UBRR_value;
 
 	// enable rx, tx, and interrupt on complete reception of a byte and UDR empty
-	UCSRB_2 |= (1 << RXEN_2 | 1 << TXEN_2 | 1 << RXCIE_2);
+	UCSRB_REG_2 |= (1 << RXEN_BIT_2 | 1 << TXEN_BIT_2 | 1 << RXCIE_BIT_2);
 #endif
 
 // enable interrupts on pin changes
@@ -555,20 +555,20 @@ void mcu_putc(char c)
 {
 #ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA, UDRE);
+	loop_until_bit_is_set(UCSRA_REG, UDRE_BIT);
 #endif
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	SETBIT(UCSRB, UDRIE);
+	SETBIT(UCSRB_REG, UDRIE_BIT);
 #endif
 #endif
 #if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 #ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_2, UDRE);
+	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT);
 #endif
 	COM2_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
-	SETBIT(UCSRB_2, UDRIE_2);
+	SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
 #endif
 #endif
 }
@@ -1032,7 +1032,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #ifndef mcu_uart_putc
 void mcu_uart_putc(uint8_t c)
 {
-	loop_until_bit_is_set(UCSRA_2, UDRE_2);
+	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT_2);
 	COM2_OUTREG = c;
 }
 #endif
@@ -1040,7 +1040,7 @@ void mcu_uart_putc(uint8_t c)
 int16_t mcu_uart_getc(uint32_t timeout)
 {
 	timeout += mcu_millis();
-	while (!CHECKBIT(UCSRA_2, RXC_2))
+	while (!CHECKBIT(UCSRA_REG_2, RXC_BIT_2))
 	{
 		if (timeout < mcu_millis())
 		{
