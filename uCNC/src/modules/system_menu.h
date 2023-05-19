@@ -96,7 +96,7 @@ extern "C"
 
 	struct system_menu_item_
 	{
-		char *label;
+		const char *label;
 		void *argptr;
 		system_menu_item_render_cb item_render;
 		void *render_arg;

@@ -518,8 +518,14 @@ void mcu_core0_tasks_init(void *arg)
 	// register PWM isr
 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
 #endif
+#ifdef MCU_HAS_UART
 	// install UART driver handler
 	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
+#ifdef MCU_HAS_UART2
+	// install UART driver handler
+	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
 }
 
 void mcu_rtc_task(void *arg)
@@ -663,6 +669,7 @@ void mcu_init(void)
 	}
 #endif
 
+#ifdef MCU_HAS_UART
 	// initialize UART
 	const uart_config_t uartconfig = {
 		.baud_rate = BAUDRATE,
@@ -674,6 +681,21 @@ void mcu_init(void)
 	// We won't use a buffer for sending data.
 	uart_param_config(COM_PORT, &uartconfig);
 	uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+#endif
+
+#ifdef MCU_HAS_UART2
+	// initialize UART
+	const uart_config_t uart2config = {
+		.baud_rate = BAUDRATE2,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+		.source_clk = UART_SCLK_APB};
+	// We won't use a buffer for sending data.
+	uart_param_config(COM2_PORT, &uart2config);
+	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+#endif
 
 #ifdef IC74HC595_HAS_PWMS
 	// initialize PWM timer
@@ -878,7 +900,12 @@ void mcu_putc(char c)
 	if ((mcu_tx_buffer_counter >= TX_BUFFER_SIZE) || (c == '\n'))
 	{
 		mcu_tx_buffer[mcu_tx_buffer_counter] = 0;
+#ifdef MCU_HAS_UART
 		uart_write_bytes(COM_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+#endif
+#ifdef MCU_HAS_UART2
+		uart_write_bytes(COM2_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+#endif
 		esp32_wifi_bt_flush(mcu_tx_buffer);
 		mcu_tx_buffer_counter = 0;
 	}
@@ -1035,11 +1062,31 @@ void mcu_dotasks(void)
 
 	// loop through received data
 	char rxdata[RX_BUFFER_SIZE];
-	int rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-	for (int i = 0; i < rxlen; i++)
+	int rxlen, i;
+#ifdef MCU_HAS_UART
+	rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	for (i = 0; i < rxlen; i++)
 	{
 		mcu_com_rx_cb((unsigned char)rxdata[i]);
 	}
+#endif
+#if defined(MCU_HAS_UART2)
+	rxlen = uart_read_bytes(COM2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+	for (i = 0; i < rxlen; i++)
+	{
+		mcu_com_rx_cb((unsigned char)rxdata[i]);
+	}
+#else
+#ifdef UART2_PASSTHROUGH
+	uart_write_bytes(COM2_PORT, rxdata, rxlen);
+#endif
+	for (i = 0; i < rxlen; i++)
+	{
+		mcu_uart_rx_cb((unsigned char)rxdata[i]);
+	}
+#endif
+#endif
 
 	esp32_wifi_bt_process();
 }
@@ -1273,6 +1320,23 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 	mcu_spi_conf.queue_size = 1;
 
 	spi_bus_add_device(SPI_PORT, &mcu_spi_conf, &mcu_spi_handle);
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_putc
+void mcu_uart_putc(uint8_t c)
+{
+	uart_write_bytes(COM2_PORT, &c, 1);
+}
+#endif
+#ifndef mcu_uart_getc
+int16_t mcu_uart_getc(uint32_t timeout)
+{
+	char c = 0;
+	uint8_t read = uart_read_bytes(COM2_PORT, &c, 1, timeout);
+	return (read > 0) ? c : -1;
 }
 #endif
 #endif

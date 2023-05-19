@@ -2241,6 +2241,34 @@ extern "C"
 #define DIO209_OUTREG I2C_DATA_OUTREG
 #define DIO209_INREG I2C_DATA_INREG
 #endif
+#if (defined(TX2_BIT))
+#define TX2 210
+#if (TX2_BIT < 32)
+#define TX2_OUTREG OUT0
+#define TX2_INREG IN0
+#else
+#define TX2_OUTREG OUT1
+#define TX2_INREG IN1
+#endif
+#define DIO210 210
+#define DIO210_BIT TX2_BIT
+#define DIO210_OUTREG TX2_OUTREG
+#define DIO210_INREG TX2_INREG
+#endif
+#if (defined(RX2_BIT))
+#define RX2 211
+#if (RX2_BIT < 32)
+#define RX2_OUTREG OUT0
+#define RX2_INREG IN0
+#else
+#define RX2_OUTREG OUT1
+#define RX2_INREG IN1
+#endif
+#define DIO211 211
+#define DIO211_BIT RX2_BIT
+#define DIO211_OUTREG RX2_OUTREG
+#define DIO211_INREG RX2_INREG
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -2651,6 +2679,18 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#ifndef COM_PORT
+#define COM_PORT 0
+#endif
+#endif
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
+#ifndef COM2_PORT
+#define COM2_PORT 0
+#endif
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
@@ -2660,10 +2700,6 @@ extern "C"
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
-#endif
-
-#ifndef COM_PORT
-#define COM_PORT 0
 #endif
 
 // force sync TX anyway
