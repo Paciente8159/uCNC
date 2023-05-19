@@ -269,6 +269,55 @@ void MCU_COM_ISR(void)
 	mcu_enable_global_isr();
 }
 #endif
+
+#if (defined(MCU_HAS_UART2))
+void MCU_COM2_ISR(void)
+{
+	mcu_disable_global_isr();
+	uint32_t irqstatus = UART_GetIntId(COM2_UART);
+	irqstatus &= UART_IIR_INTID_MASK;
+
+	// Receive Line Status
+	if (irqstatus == UART_IIR_INTID_RLS)
+	{
+		uint32_t linestatus = UART_GetLineStatus(COM2_UART);
+
+		// Receive Line Status
+		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+		{
+			// There are errors or break interrupt
+			// Read LSR will clear the interrupt
+			/*uint8_t dummy = */ (COM2_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
+			return;
+		}
+	}
+
+	if (irqstatus == UART_IIR_INTID_RDA)
+	{
+		unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
+#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+		mcu_com_rx_cb(c);
+#else
+#ifdef UART2_PASSTHROUGH
+		mcu_uart_putc(c);
+#endif
+		mcu_uart_rx_cb(c);
+#endif
+	}
+
+#ifndef ENABLE_SYNC_TX
+	if (irqstatus == UART_IIR_INTID_THRE)
+	{
+		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
+		COM2_UART->IER &= ~UART_IER_THREINT_EN;
+		mcu_com_tx_cb();
+	}
+#endif
+
+	mcu_enable_global_isr();
+}
+#endif
+
 #ifdef MCU_HAS_USB
 #ifndef USE_ARDUINO_CDC
 void USB_IRQHandler(void)
@@ -283,34 +332,6 @@ void USB_IRQHandler(void)
 void mcu_usart_init(void)
 {
 #ifdef MCU_HAS_UART
-	/*mcu_config_af(TX, UART_ALT_FUNC);
-	mcu_config_af(RX, UART_ALT_FUNC);
-	LPC_SC->PCONP |= UART_PCONP;
-	LPC_SC->UART_PCLKSEL_REG &= ~UART_PCLKSEL_MASK; // div clock by 4
-
-	COM_UART->FCR = UART_FCR_FIFO_EN | UART_FCR_RX_RS | UART_FCR_TX_RS; // Enable FIFO and reset Rx/Tx FIFO buffers
-	COM_UART->IER = 0;
-	COM_UART->ACR = 0;
-	COM_UART->LCR = 0;
-	COM_UART->TER = 0;
-	// COM_UART->FCR = 0;
-
-	COM_UART->LCR = UART_LCR_WLEN8 | UART_LCR_DLAB_EN;
-
-	uint32_t uartspeed = ((F_CPU >> 2) / (16 * BAUDRATE));
-	COM_UART->DLL = uartspeed & 0xFF;
-	COM_UART->DLM = (uartspeed >> 0x08) & 0xFF;
-	while ((COM_UART->LCR & UART_LCR_DLAB_EN))
-		;
-
-	COM_UART->IER |= UART_IER_RLSINT_EN;
-	#ifndef ENABLE_SYNC_RX
-	COM_UART->IER |= UART_IER_RBRINT_EN;
-	#endif
-
-	COM_UART->TER |= UART_TER_TXEN;
-
-*/
 	PINSEL_CFG_Type tx = {TX_PORT, TX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
 	PINSEL_ConfigPin(&tx);
 	PINSEL_CFG_Type rx = {RX_PORT, RX_BIT, UART_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
@@ -331,6 +352,29 @@ void mcu_usart_init(void)
 	NVIC_SetPriority(COM_IRQ, 3);
 	NVIC_ClearPendingIRQ(COM_IRQ);
 	NVIC_EnableIRQ(COM_IRQ);
+#endif
+
+#ifdef MCU_HAS_UART2
+	PINSEL_CFG_Type tx = {TX2_PORT, TX2_BIT, UART2_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
+	PINSEL_ConfigPin(&tx);
+	PINSEL_CFG_Type rx = {RX2_PORT, RX2_BIT, UART2_ALT_FUNC, PINSEL_PINMODE_PULLUP, PINSEL_PINMODE_NORMAL};
+	PINSEL_ConfigPin(&rx);
+
+	CLKPWR_SetPCLKDiv(COM2_PCLK, CLKPWR_PCLKSEL_CCLK_DIV_4);
+
+	UART_CFG_Type conf = {BAUDRATE2, UART_PARITY_NONE, UART_DATABIT_8, UART_STOPBIT_1};
+	UART_Init(COM2_UART, &conf);
+
+	// Enable UART Transmit
+	UART_TxCmd(COM2_UART, ENABLE);
+
+	// Configure Interrupts
+	UART_IntConfig(COM2_UART, UART_INTCFG_RLS, ENABLE);
+	UART_IntConfig(COM2_UART, UART_INTCFG_RBR, ENABLE);
+
+	NVIC_SetPriority(COM2_IRQ, 3);
+	NVIC_ClearPendingIRQ(COM2_IRQ);
+	NVIC_EnableIRQ(COM2_IRQ);
 #endif
 
 #ifdef MCU_HAS_USB
@@ -528,23 +572,34 @@ bool mcu_tx_ready(void)
 #ifndef mcu_putc
 void mcu_putc(char c)
 {
-#ifdef MCU_HAS_UART
 #ifdef ENABLE_SYNC_TX
 	while (!mcu_tx_ready())
-		;
+	{
+#ifdef MCU_HAS_USB
+#ifdef USE_ARDUINO_CDC
+		mcu_usb_flush();
+#else
+		tusb_cdc_flush();
 #endif
+#endif
+	}
+#endif
+
+#ifdef MCU_HAS_UART
 	COM_OUTREG = c;
 #ifndef ENABLE_SYNC_TX
 	COM_UART->IER |= UART_IER_THREINT_EN;
 #endif
 #endif
+#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
+	COM2_OUTREG = c;
+#ifndef ENABLE_SYNC_TX
+	COM2_UART->IER |= UART_IER_THREINT_EN;
+#endif
+#endif
+
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-	while (!mcu_usb_tx_available())
-	{
-		mcu_usb_flush();
-	}
-
 	if (c != 0)
 	{
 		mcu_usb_putc(c);
@@ -554,11 +609,6 @@ void mcu_putc(char c)
 		mcu_usb_flush();
 	}
 #else
-	while (!tud_cdc_n_write_available(0))
-	{
-		tusb_cdc_flush();
-	}
-
 	if (c != 0)
 	{
 		tusb_cdc_write(c);
@@ -871,6 +921,31 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifndef mcu_uart_putc
+void mcu_uart_putc(uint8_t c)
+{
+	while (!(CHECKBIT(COM2_UART->LSR, 5)))
+		;
+	COM2_OUTREG = c;
+}
+#endif
+#ifndef mcu_uart_getc
+int16_t mcu_uart_getc(uint32_t timeout)
+{
+	timeout += mcu_millis();
+	while (!(CHECKBIT(COM2_UART->LSR, 0)))
+	{
+		if (timeout < mcu_millis())
+		{
+			return -1;
+		}
+	}
+	return (CHECKBIT(COM2_UART->LSR, 0) ? COM2_INREG : 0);
 }
 #endif
 #endif

@@ -705,6 +705,15 @@ void __attribute__((weak)) mcu_io_init(void)
 	mcu_config_input(I2C_DATA);
 	mcu_config_pullup(I2C_DATA);
 #endif
+#if ASSERT_PIN(TX2)
+	mcu_config_output(TX2);
+#endif
+#if ASSERT_PIN(RX2)
+	mcu_config_input(RX2);
+#ifdef RX2_PULLUP
+	mcu_config_pullup(RX2);
+#endif
+#endif
 }
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -712,4 +721,17 @@ uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t gr
 {
 	return STATUS_INVALID_STATEMENT;
 }
+#endif
+
+#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+mcu_uart_rcv_delegate mcu_uart_rcv_cb;
+#ifndef mcu_uart_rx_cb
+void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
+{
+	if (mcu_uart_rcv_cb)
+	{
+		mcu_uart_rcv_cb(c);
+	}
+}
+#endif
 #endif

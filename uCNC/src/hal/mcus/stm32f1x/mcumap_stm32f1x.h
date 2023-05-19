@@ -2945,9 +2945,51 @@ extern "C"
 #define DIO209_CR I2C_DATA_CR
 #define DIO209_CROFF I2C_DATA_CROFF
 #endif
+#if (defined(TX2_PORT) && defined(TX2_BIT))
+#define TX2 210
+#define TX2_APB2EN (__rccapb2gpioen__(TX2_PORT))
+#define TX2_GPIO (__gpio__(TX2_PORT))
+#if (TX2_BIT < 8)
+#define TX2_CROFF TX2_BIT
+#define TX2_CR CRL
+#else
+#define TX2_CROFF (TX2_BIT&0x07)
+#define TX2_CR CRH
+#endif
+#define DIO210 210
+#define DIO210_PORT TX2_PORT
+#define DIO210_BIT TX2_BIT
+#define DIO210_APB2EN TX2_APB2EN
+#define DIO210_GPIO TX2_GPIO
+#define DIO210_CR TX2_CR
+#define DIO210_CROFF TX2_CROFF
+#endif
+#if (defined(RX2_PORT) && defined(RX2_BIT))
+#define RX2 211
+#define RX2_APB2EN (__rccapb2gpioen__(RX2_PORT))
+#define RX2_GPIO (__gpio__(RX2_PORT))
+#if (RX2_BIT < 8)
+#define RX2_CROFF RX2_BIT
+#define RX2_CR CRL
+#else
+#define RX2_CROFF (RX2_BIT&0x07)
+#define RX2_CR CRH
+#endif
+#define DIO211 211
+#define DIO211_PORT RX2_PORT
+#define DIO211_BIT RX2_BIT
+#define DIO211_APB2EN RX2_APB2EN
+#define DIO211_GPIO RX2_GPIO
+#define DIO211_CR RX2_CR
+#define DIO211_CROFF RX2_CROFF
+#endif
+
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
+#endif
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
@@ -4292,6 +4334,76 @@ extern "C"
 #endif
 #endif
 
+#ifdef MCU_HAS_UART2
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
+#ifndef UART2_PORT
+#define UART2_PORT 1
+#endif
+// this MCU does not work well with both TX and RX interrupt
+// this forces the sync TX method to fix communication
+//  #define ENABLE_SYNC_TX
+#if (UART2_PORT < 4)
+#define COM2_UART __usart__(UART2_PORT)
+#define COM2_IRQ __helper__(USART, UART2_PORT, _IRQn)
+#define MCU_SERIAL2_ISR __helper__(USART, UART2_PORT, _IRQHandler)
+#define COM2_OUTREG (COM2_UART)->DR
+#define COM2_INREG (COM2_UART)->DR
+#if (UART2_PORT == 1)
+#define COM2_APB APB2ENR
+#define COM2_APBEN __helper__(RCC_APB2ENR_USART, UART2_PORT, EN)
+#else
+#define COM2_APB APB1ENR
+#define COM2_APBEN __helper__(RCC_APB1ENR_USART, UART2_PORT, EN)
+#endif
+#else
+#define COM2_UART __uart__(UART2_PORT)
+#define COM2_IRQ __helper__(UART, UART2_PORT, _IRQn)
+#define MCU_SERIAL2_ISR __helper__(UART, UART2_PORT, _IRQHandler)
+#define COM2_APB APB1ENR
+#define COM2_APBEN __helper__(RCC_APB1ENR_, COM2_UART, EN)
+#define COM2_OUTREG (COM2_UART)->DR
+#define COM2_INREG (COM2_UART)->DR
+#endif
+
+#define UART2_TX_PIN __iopin__(TX2_PORT, TX2_BIT)
+#define UART2_RX_PIN __iopin__(RX2_PORT, RX2_BIT)
+
+// remmaping and pin checking
+//  USART	TX	RX	APB	APB2ENR	REMAP
+//  1	A9	A10	APB2ENR	RCC_APB2ENR_USART1EN	0
+//  1	B6	B7	APB2ENR	RCC_APB2ENR_USART1EN	1
+//  2	A2	A3	APB1ENR	RCC_APB1ENR_USART2EN	0
+//  2	D5	D6	APB1ENR	RCC_APB1ENR_USART2EN	1
+//  3	B10	B11	APB1ENR	RCC_APB1ENR_USART3EN	0
+//  3	C10	C11	APB1ENR	RCC_APB1ENR_USART3EN	1
+//  3	D8	D9	APB1ENR	RCC_APB1ENR_USART3EN	3
+//  4	C10	C11	APB1ENR	RCC_APB1ENR_UART4EN	x
+//  5	C12	D2	APB1ENR	RCC_APB1ENR_UART5EN	x
+#if (UART2_PORT == 1)
+#define UART2_CLOCK HAL_RCC_GetPCLK2Freq()
+#else
+#define UART2_CLOCK HAL_RCC_GetPCLK1Freq()
+#endif
+#if ((UART2_PORT == 1) && (UART2_TX_PIN == A9) && (UART2_RX_PIN == A10))
+#elif ((UART2_PORT == 1) && (UART2_TX_PIN == B6) && (UART2_RX_PIN == B7))
+#define COM2_REMAP AFIO_MAPR_USART1_REMAP
+#elif ((UART2_PORT == 2) && (UART2_TX_PIN == A2) && (UART2_RX_PIN == A3))
+#elif ((UART2_PORT == 2) && (UART2_TX_PIN == D5) && (UART2_RX_PIN == D6))
+#define COM2_REMAP AFIO_MAPR_USART2_REMAP
+#elif ((UART2_PORT == 3) && (UART2_TX_PIN == B10) && (UART2_RX_PIN == B11))
+#elif ((UART2_PORT == 3) && (UART2_TX_PIN == C10) && (UART2_RX_PIN == C11))
+#define COM2_REMAP AFIO_MAPR_USART3_REMAP_PARTIALREMAP
+#elif ((UART2_PORT == 3) && (UART2_TX_PIN == D8) && (UART2_RX_PIN == D9))
+#define COM2_REMAP AFIO_MAPR_USART3_REMAP_FULLREMAP
+#elif ((UART2_PORT == 4) && (UART2_TX_PIN == C10) && (UART2_RX_PIN == C11))
+#elif ((UART2_PORT == 5) && (UART2_TX_PIN == C12) && (UART2_RX_PIN == D2))
+#else
+#error "USART/UART2 pin configuration not supported"
+#endif
+#endif
+
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
 #define MCU_HAS_SPI
 #define SPI_CLK_PIN __iopin__(SPI_CLK_PORT, SPI_CLK_BIT)
@@ -4668,14 +4780,42 @@ extern "C"
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
 
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || (COM2_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
+#define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && (COM2_UART->SR & USART_SR_TXE) && tud_cdc_n_write_available(0))
+#elif (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || COM2_UART->SR & USART_SR_RXNE))
+#define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && COM2_UART->SR & USART_SR_TXE))
+#elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && tud_cdc_n_write_available(0))
+#elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
+#ifndef ENABLE_SYNC_TX
+#define ENABLE_SYNC_TX
+#endif
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+#define mcu_rx_ready() ((COM2_UART->SR & USART_SR_RXNE) || tud_cdc_n_available(0))
+#define mcu_tx_ready() ((COM2_UART->SR & USART_SR_TXE) && tud_cdc_n_write_available(0))
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (COM_UART->SR & USART_SR_RXNE)
 #define mcu_tx_ready() (COM_UART->SR & USART_SR_TXE)
+#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
+#define mcu_rx_ready() (COM2_UART->SR & USART_SR_RXNE)
+#define mcu_tx_ready() (COM2_UART->SR & USART_SR_TXE)
 #elif defined(MCU_HAS_USB)
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);

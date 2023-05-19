@@ -854,6 +854,16 @@ extern "C"
 #define I2C_DATA 209
 #define DIO209_BIT (I2C_DATA_BIT)
 #endif
+#if (defined(TX2_BIT))
+#define DIO210 210
+#define TX2 210
+#define DIO210_BIT (TX2_BIT)
+#endif
+#if (defined(RX2_BIT))
+#define DIO211 211
+#define RX2 211
+#define DIO211_BIT (RX2_BIT)
+#endif
 
 // ISR on change inputs
 #if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
@@ -970,6 +980,9 @@ extern "C"
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
+#if (defined(TX2) && defined(RX2))
+#define MCU_HAS_UART2
+#endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
 #endif
@@ -980,16 +993,33 @@ extern "C"
 #define MCU_HAS_BLUETOOTH
 #endif
 
+#ifdef MCU_HAS_UART
 #ifndef COM_PORT
 #define COM_PORT 0
 #endif
-
 #if (COM_PORT == 0)
 #define COM_UART Serial1
 #elif (COM_PORT == 1)
 #define COM_UART Serial2
 #else
 #error "UART COM port number must be 0 or 1"
+#endif
+#endif
+
+#ifdef MCU_HAS_UART2
+#ifndef BAUDRATE2
+#define BAUDRATE2 BAUDRATE
+#endif
+#ifndef COM2_PORT
+#define COM2_PORT 0
+#endif
+#if (COM2_PORT == 0)
+#define COM2_UART Serial1
+#elif (COM2_PORT == 1)
+#define COM2_UART Serial2
+#else
+#error "UART2 COM port number must be 0 or 1"
+#endif
 #endif
 
 #ifndef ENABLE_SYNC_TX
@@ -1065,7 +1095,7 @@ extern "C"
 #define ONESHOT_ALARM 2
 
 #define __timer_irq__(X) TIMER_IRQ_##X
-#define _timer_irq_(X)  __timer_irq__(X)
+#define _timer_irq_(X) __timer_irq__(X)
 
 #define ITP_TIMER_IRQ _timer_irq_(ITP_TIMER)
 #define RTC_TIMER_IRQ _timer_irq_(RTC_TIMER)
