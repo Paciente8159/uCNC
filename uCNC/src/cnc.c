@@ -390,12 +390,27 @@ uint8_t cnc_unlock(bool force)
 
 uint8_t cnc_get_exec_state(uint8_t statemask)
 {
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	uint8_t state = CHECKFLAG(cnc_state.exec_state, statemask);
+	MULTIBOARD_GET_CNCSTATE(&state);
+	return state;
+#endif
+#endif
+
 	return CHECKFLAG(cnc_state.exec_state, statemask);
 }
 
 void cnc_set_exec_state(uint8_t statemask)
 {
 	SETFLAG(cnc_state.exec_state, statemask);
+
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	uint8_t state = cnc_state.exec_state;
+	MULTIBOARD_SYNC_CNCSTATE(state);
+#endif
+#endif
 }
 
 void cnc_clear_exec_state(uint8_t statemask)
@@ -472,6 +487,13 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
+
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	uint8_t state = cnc_state.exec_state;
+	MULTIBOARD_SYNC_CNCSTATE(state);
+#endif
+#endif
 }
 
 void cnc_delay_ms(uint32_t miliseconds)
