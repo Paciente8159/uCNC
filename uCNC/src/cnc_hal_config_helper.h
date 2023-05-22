@@ -2250,6 +2250,19 @@ typedef uint16_t step_t;
 #define ENABLE_SYNC_TX
 #endif
 
+
+#ifdef MCU_HAS_I2C
+
+// defaults to master I2C
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 0
+#endif
+
+#if !defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+#error "I2C can't be configured in slave mode"
+#endif
+#endif
+
 #ifdef DISABLE_PROBING_SUPPORT
 #ifdef ENABLE_G39_H_MAPPING
 #undef ENABLE_G39_H_MAPPING

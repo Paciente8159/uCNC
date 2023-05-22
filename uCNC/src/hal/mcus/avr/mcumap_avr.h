@@ -4427,6 +4427,7 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
 #endif

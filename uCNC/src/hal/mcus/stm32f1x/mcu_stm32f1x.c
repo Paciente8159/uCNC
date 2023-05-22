@@ -517,21 +517,7 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
-#ifdef SPI_REMAP
-	AFIO->MAPR |= I2C_REMAP;
-#endif
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
-	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= I2C_CR1_PE;
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	mcu_disable_probe_isr();
@@ -928,12 +914,67 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
-	I2C_REG->CR1 &= ~I2C_CR1_PE;
+	RCC->APB1ENR |= I2C_APBEN;
+	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
+#ifdef SPI_REMAP
+	AFIO->MAPR |= I2C_REMAP;
+#endif
+	// reset I2C
+	I2C_REG->CR1 |= I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	// set max freq
+	I2C_REG->CR2 |= I2C_SPEEDRANGE;
+	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
 	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+#if I2C_ADDRESS != 0
+	// set address
+	I2C_REG->OAR1 = (I2C_ADDRESS << 1);
+	I2C_REG->OAR2 = 0;
+	// enable events
+	I2C_REG->CR2 |= I2C_CR2_ITEVTEN;
+	NVIC_SetPriority(I2C_IRQ, 10);
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+	NVIC_EnableIRQ(I2C_IRQ);
+#endif
 	// initialize the SPI configuration register
 	I2C_REG->CR1 |= I2C_CR1_PE;
 }
 #endif
+
+#if I2C_ADDRESS != 0
+void I2C_ISR(void)
+{
+	// address match or generic call
+	if ((I2C_REG->SR1 & I2C_SR1_ADDR) == I2C_SR1_ADDR)
+	{
+		// Address matched, do necessary processing
+		// Clear ADDR flag by reading SR1 and SR2 registers
+		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
+		{
+			mcu_i2c_data_buffer = NULL;
+			mcu_i2c_req_cb();
+		}
+		NVIC_ClearPendingIRQ(I2C_IRQ);
+	}
+
+	if ((I2C_REG->SR1 & I2C_SR1_STOPF) == I2C_SR1_STOPF)
+	{
+		// stop transmission
+		mcu_i2c_data_buffer = NULL;
+	}
+
+	if ((I2C_REG->SR1 & I2C_SR1_BTF) == I2C_SR1_BTF)
+	{
+		if (mcu_i2c_data_buffer)
+		{
+			mcu_i2c_data_buffer++;
+			I2C_REG->DR = *mcu_i2c_data_buffer;
+		}
+	}
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER

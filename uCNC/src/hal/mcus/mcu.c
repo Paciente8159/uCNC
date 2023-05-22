@@ -737,11 +737,10 @@ void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
 #endif
 
 #if (defined(MCU_HAS_I2C))
-void __attribute__((weak)) mcu_i2c_mas2slv_cb(void)
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+uint8_t *mcu_i2c_data_buffer;
+void __attribute__((weak)) mcu_i2c_req_cb(void)
 {
 }
-
-void __attribute__((weak)) mcu_i2c_slv2mas_cb(void)
-{
-}
+#endif
 #endif

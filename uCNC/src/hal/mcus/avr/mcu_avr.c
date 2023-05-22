@@ -494,7 +494,7 @@ void mcu_init(void)
 
 #ifdef MCU_HAS_I2C
 	// configure as I2C master
-	mcu_i2c_config(0, I2C_FREQ);
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	// disable probe isr
@@ -1026,12 +1026,11 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #endif
 
 #ifndef mcu_i2c_config
-void mcu_i2c_config(uint8_t address, uint32_t frequency)
+void mcu_i2c_config(uint32_t frequency)
 {
-	if (address)
-	{
-		TWAR = (address << 1) | 1;
-	}
+#if I2C_ADDRESS != 0
+	TWAR = (I2C_ADDRESS << 1) | 1;
+#endif
 	// disable TWI
 	TWCR &= ~(1 << TWEN);
 	// set freq
@@ -1053,13 +1052,13 @@ void mcu_i2c_config(uint8_t address, uint32_t frequency)
 	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
 	// enable TWI
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	if (address)
-	{
-		TWCR |= (1 << TWIE) | (1 << TWEA);
-	}
+#if I2C_ADDRESS != 0
+	TWCR |= (1 << TWIE) | (1 << TWEA);
+#endif
 }
 #endif
 
+#if I2C_ADDRESS != 0
 ISR(TWI_vect)
 {
 	switch (TW_STATUS)
@@ -1068,17 +1067,28 @@ ISR(TWI_vect)
 	case TW_SR_SLA_ACK:
 	case TW_SR_GCALL_ACK:
 		mcu_enable_global_isr();
-		mcu_i2c_mas2slv_cb();
+		mcu_i2c_data_buffer = NULL;
+		mcu_i2c_req_cb();
 		break;
 	case TW_ST_SLA_ACK:
-		mcu_enable_global_isr();
-		mcu_i2c_slv2mas_cb();
+	case TW_ST_DATA_ACK:
+		// sends the data
+		if (mcu_i2c_data_buffer)
+		{
+			mcu_i2c_data_buffer++;
+			TWDR = *mcu_i2c_data_buffer;
+		}
+		break;
+	case TW_ST_LAST_DATA:
+		// sends the data
+		mcu_i2c_data_buffer = NULL;
 		break;
 	}
 
 	// clear and reenable I2C ISR
 	TWCR |= (1 << TWIE) | (1 << TWINT);
 }
+#endif
 #endif
 
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))

@@ -478,11 +478,13 @@ extern "C"
 #endif
 
 #ifndef mcu_i2c_config
-	void mcu_i2c_config(uint8_t address, uint32_t frequency);
+	void mcu_i2c_config(uint32_t frequency);
 #endif
 
-MCU_IO_CALLBACK void mcu_i2c_mas2slv_cb(void);
-MCU_IO_CALLBACK void mcu_i2c_slv2mas_cb(void);
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+	extern uint8_t *mcu_i2c_data_buffer;
+	MCU_IO_CALLBACK void mcu_i2c_req_cb(void);
+#endif
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -499,8 +501,8 @@ MCU_IO_CALLBACK void mcu_i2c_slv2mas_cb(void);
 #ifndef mcu_uart_rx_cb
 	void mcu_uart_rx_cb(uint8_t c);
 #endif
-typedef void (*mcu_uart_rcv_delegate)(uint8_t);
-extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
+	typedef void (*mcu_uart_rcv_delegate)(uint8_t);
+	extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
 #endif
 
 #ifdef __cplusplus
