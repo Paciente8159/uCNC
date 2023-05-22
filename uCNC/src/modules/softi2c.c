@@ -179,7 +179,7 @@ void softi2c_config(softi2c_port_t *port, uint32_t frequency)
 	if (!port)
 	{
 #ifdef MCU_HAS_I2C
-		mcu_i2c_config(frequency);
+		mcu_i2c_config(0, frequency);
 #endif
 		return;
 	}

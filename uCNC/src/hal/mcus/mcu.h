@@ -478,8 +478,11 @@ extern "C"
 #endif
 
 #ifndef mcu_i2c_config
-	void mcu_i2c_config(uint32_t frequency);
+	void mcu_i2c_config(uint8_t address, uint32_t frequency);
 #endif
+
+MCU_IO_CALLBACK void mcu_i2c_mas2slv_cb(void);
+MCU_IO_CALLBACK void mcu_i2c_slv2mas_cb(void);
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

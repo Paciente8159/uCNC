@@ -735,3 +735,13 @@ void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
 }
 #endif
 #endif
+
+#if (defined(MCU_HAS_I2C))
+void __attribute__((weak)) mcu_i2c_mas2slv_cb(void)
+{
+}
+
+void __attribute__((weak)) mcu_i2c_slv2mas_cb(void)
+{
+}
+#endif

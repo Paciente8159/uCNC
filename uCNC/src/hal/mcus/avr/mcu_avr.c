@@ -493,7 +493,8 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	mcu_i2c_config(I2C_FREQ);
+	// configure as I2C master
+	mcu_i2c_config(0, I2C_FREQ);
 #endif
 
 	// disable probe isr
@@ -957,6 +958,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
+#include <util/twi.h>
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
@@ -966,7 +968,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 		while (!(TWCR & (1 << TWINT)))
 			;
-		if ((TWSR & 0xF8) != 0x08)
+		if (TW_STATUS != TW_START)
 		{
 			return 0;
 		}
@@ -977,12 +979,12 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	while (!(TWCR & (1 << TWINT)))
 		;
 
-	switch (TWSR & 0xF8)
+	switch (TW_STATUS)
 	{
-	case 0x18:
-	case 0x28:
-	case 0x40:
-	case 0x50:
+	case TW_MT_SLA_ACK:
+	case TW_MT_DATA_ACK:
+	case TW_MR_SLA_ACK:
+	case TW_MR_DATA_ACK:
 		break;
 	default:
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
@@ -1024,8 +1026,12 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #endif
 
 #ifndef mcu_i2c_config
-void mcu_i2c_config(uint32_t frequency)
+void mcu_i2c_config(uint8_t address, uint32_t frequency)
 {
+	if (address)
+	{
+		TWAR = (address << 1) | 1;
+	}
 	// disable TWI
 	TWCR &= ~(1 << TWEN);
 	// set freq
@@ -1046,9 +1052,33 @@ void mcu_i2c_config(uint32_t frequency)
 	TWSR = div;
 	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
 	// enable TWI
-	TWCR = (1 << TWEN);
+	TWCR = (1 << TWINT) | (1 << TWEN);
+	if (address)
+	{
+		TWCR |= (1 << TWIE) | (1 << TWEA);
+	}
 }
 #endif
+
+ISR(TWI_vect)
+{
+	switch (TW_STATUS)
+	{
+		// an addressed or general master to slave command
+	case TW_SR_SLA_ACK:
+	case TW_SR_GCALL_ACK:
+		mcu_enable_global_isr();
+		mcu_i2c_mas2slv_cb();
+		break;
+	case TW_ST_SLA_ACK:
+		mcu_enable_global_isr();
+		mcu_i2c_slv2mas_cb();
+		break;
+	}
+
+	// clear and reenable I2C ISR
+	TWCR |= (1 << TWIE) | (1 << TWINT);
+}
 #endif
 
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
