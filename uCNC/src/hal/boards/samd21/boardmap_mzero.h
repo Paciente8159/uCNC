@@ -89,8 +89,8 @@ extern "C"
 #define RX_BIT 11
 #define RX_PORT A
 #define RX_PULLUP
-// set COM number. By default SERCOM2 if not set. Arduino IDE already uses SERCOM0 and SERCOM1
-// #define UART_PORT 2
+	// set COM number. By default SERCOM2 if not set. Arduino IDE already uses SERCOM0 and SERCOM1
+	// #define UART_PORT 2
 
 #define USB_DM_BIT 24
 #define USB_DM_PORT A
@@ -131,7 +131,14 @@ extern "C"
 #define STEP0_EN_PORT A
 
 	// Setup the Step Timer used has the heartbeat for µCNC
-	//#define ITP_TIMER 5
+	// #define ITP_TIMER 5
+
+#define I2C_CLK_BIT 23
+#define I2C_CLK_PORT A
+#define I2C_DATA_BIT 22
+#define I2C_DATA_PORT A
+#define I2C_PORT 3
+#define I2C_ADDRESS 1
 
 #define ONESHOT_TIMER 2
 

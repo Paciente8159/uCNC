@@ -623,42 +623,7 @@ void mcu_init(void)
 
 #endif
 #ifdef MCU_HAS_I2C
-	PM->APBCMASK.reg |= PM_APBCMASK_I2CCOM;
-
-	/* Setup GCLK SERCOM */
-	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID_I2CCOM;
-	while (GCLK->STATUS.bit.SYNCBUSY)
-		;
-
-	// Start the Software Reset
-	I2CCOM->I2CM.CTRLA.bit.SWRST = 1;
-
-	while (I2CCOM->I2CM.SYNCBUSY.bit.SWRST)
-		;
-
-	I2CCOM->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.BAUD.reg = F_CPU / (2 * I2C_FREQ) - 5 - (((F_CPU / 1000000) * 125) / (2 * 1000));
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_ENABLE | SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(3);
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
-	mcu_config_altfunc(I2C_CLK);
-	mcu_config_altfunc(I2C_DATA);
-
-	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
-	while (I2CCOM->I2CM.SYNCBUSY.reg)
-		;
-
+	mcu_i2c_config(I2C_FREQ);
 #endif
 	mcu_enable_global_isr();
 }
@@ -1274,8 +1239,44 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
-	// disable I2C
-	I2CCOM->I2CM.CTRLA.bit.ENABLE = 0;
+	PM->APBCMASK.reg |= PM_APBCMASK_I2CCOM;
+
+	/* Setup GCLK SERCOM */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(0) | GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_ID_I2CCOM;
+	while (GCLK->STATUS.bit.SYNCBUSY)
+		;
+
+#if I2C_ADDRESS != 0
+	// Start the Software Reset
+	I2CCOM->I2CS.CTRLA.bit.SWRST = 1;
+
+	while (I2CCOM->I2CS.SYNCBUSY.bit.SWRST)
+		;
+
+	I2CCOM->I2CS.CTRLB.reg = SERCOM_I2CS_CTRLB_AACKEN | SERCOM_I2CS_CTRLB_SMEN;
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CS.ADDR.reg = SERCOM_I2CS_ADDR_ADDR(I2C_ADDRESS) | SERCOM_I2CS_ADDR_GENCEN;
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH | SERCOM_I2CS_INTENSET_DRDY | SERCOM_I2CS_INTENSET_PREC;
+	NVIC_SetPriority(I2C_IRQ, 10);
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+	NVIC_EnableIRQ(I2C_IRQ);
+
+	I2CCOM->I2CS.CTRLA.reg = SERCOM_I2CS_CTRLA_ENABLE | SERCOM_I2CS_CTRLA_MODE_I2C_SLAVE | SERCOM_I2CS_CTRLA_SDAHOLD(3);
+	while (I2CCOM->I2CS.SYNCBUSY.reg)
+		;
+#else
+	// Start the Software Reset
+	I2CCOM->I2CM.CTRLA.bit.SWRST = 1;
+
+	while (I2CCOM->I2CM.SYNCBUSY.bit.SWRST)
+		;
+
+	I2CCOM->I2CM.CTRLB.reg = SERCOM_I2CM_CTRLB_SMEN;
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
@@ -1283,10 +1284,62 @@ void mcu_i2c_config(uint32_t frequency)
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
 
-	// enable I2C
+	I2CCOM->I2CM.CTRLA.reg = SERCOM_I2CM_CTRLA_ENABLE | SERCOM_I2CM_CTRLA_MODE_I2C_MASTER | SERCOM_I2CM_CTRLA_SDAHOLD(3);
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	I2CCOM->I2CM.STATUS.reg |= SERCOM_I2CM_STATUS_BUSSTATE(1);
+	while (I2CCOM->I2CM.SYNCBUSY.reg)
+		;
+
+	mcu_config_altfunc(I2C_CLK);
+	mcu_config_altfunc(I2C_DATA);
+
 	I2CCOM->I2CM.CTRLA.bit.ENABLE = 1;
 	while (I2CCOM->I2CM.SYNCBUSY.reg)
 		;
+#endif
+}
+#endif
+
+#if I2C_ADDRESS != 0
+void I2C_ISR(void)
+{
+	switch (I2CCOM->I2CS.INTFLAG.reg)
+	{
+	case SERCOM_I2CS_INTFLAG_AMATCH:
+		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
+		if (!I2CCOM->I2CS.STATUS.bit.DIR)
+		{
+			mcu_i2c_data_buffer = NULL;
+			mcu_i2c_req_cb();
+		}
+		else
+		{
+			// write the first data byte
+			if (mcu_i2c_data_buffer)
+			{
+				I2CCOM->I2CS.DATA.reg = *mcu_i2c_data_buffer;
+				mcu_i2c_data_buffer++;
+			}
+		}
+		break;
+	case SERCOM_I2CS_INTFLAG_DRDY:
+		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
+		if (mcu_i2c_data_buffer)
+		{
+			I2CCOM->I2CS.DATA.reg = *mcu_i2c_data_buffer;
+			mcu_i2c_data_buffer++;
+		}
+		break;
+	case SERCOM_I2CS_INTFLAG_PREC:
+		// stop transmission
+		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
+		mcu_i2c_data_buffer = NULL;
+		break;
+	}
+
+	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
 

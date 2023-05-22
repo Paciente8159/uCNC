@@ -1044,7 +1044,13 @@ void I2C_ISR(void)
 			mcu_i2c_data_buffer = NULL;
 			mcu_i2c_req_cb();
 		}
-		NVIC_ClearPendingIRQ(I2C_IRQ);
+		else
+		{
+			if (mcu_i2c_data_buffer)
+			{
+				I2C_REG->DR = *mcu_i2c_data_buffer++;
+			}
+		}
 	}
 
 	if ((I2C_REG->SR1 & I2C_SR1_STOPF) == I2C_SR1_STOPF)
@@ -1057,10 +1063,11 @@ void I2C_ISR(void)
 	{
 		if (mcu_i2c_data_buffer)
 		{
-			mcu_i2c_data_buffer++;
-			I2C_REG->DR = *mcu_i2c_data_buffer;
+			I2C_REG->DR = *mcu_i2c_data_buffer++;
 		}
 	}
+
+	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
 
