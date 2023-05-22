@@ -470,12 +470,7 @@ void mcu_init(void)
 
 #endif
 #ifdef MCU_HAS_I2C
-	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
-	PINSEL_ConfigPin(&scl);
-	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
-	PINSEL_ConfigPin(&sda);
-	I2C_Init(I2C_REG, I2C_FREQ);
-	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	mcu_disable_probe_isr();
@@ -929,10 +924,63 @@ void mcu_i2c_config(uint32_t frequency)
 {
 	I2C_REG->I2CONSET &= ~I2C_I2CONSET_I2EN;
 	I2C_DeInit(I2C_REG);
-	I2C_Init(I2C_REG, I2C_FREQ);
+	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&scl);
+	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&sda);
+#if I2C_ADDRESS != 0
+	I2C_OWNSLAVEADDR_CFG_Type i2c_slave = {0};
+	i2c_slave.SlaveAddr_7bit = I2C_ADDRESS;
+	i2c_slave.GeneralCallState = ENABLE;
+	i2c_slave.SlaveAddrChannel = I2C_PORT;
+	I2C_SetOwnSlaveAddr(I2C_REG, &i2c_slave);
+	// slave mode
+	I2C_Cmd(I2C_REG, I2C_SLAVE_MODE, ENABLE);
+	I2C_IntCmd(I2C_REG, ENABLE);
+#else
+	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
+#endif
+
+	I2C_Init(I2C_REG, frequency);
 	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
 }
 #endif
+
+#if I2C_ADDRESS != 0
+void I2C_ISR(void){
+	switch (I2C_REG->I2STAT)
+	{
+		// an addressed or general master to slave command
+	case 0x60:
+	case 0x70:
+		mcu_enable_global_isr();
+		mcu_i2c_data_buffer = NULL;
+		mcu_i2c_req_cb();
+		break;
+		// after slave read address ack or read data ack
+	case 0xA8:
+	case 0xB8:
+		// sends the data
+		if (mcu_i2c_data_buffer)
+		{
+			mcu_i2c_data_buffer++;
+			I2C_REG->I2DAT = *mcu_i2c_data_buffer;
+		}
+		break;
+		// after slave read last data ack
+	case 0xC8:
+		// sends the data
+		mcu_i2c_data_buffer = NULL;
+		break;
+	}
+
+	// clear and reenable I2C ISR
+	I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+	I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
+}
+#endif
+// this is similar to AVR
+
 
 #endif
 
