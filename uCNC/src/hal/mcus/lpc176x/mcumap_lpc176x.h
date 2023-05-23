@@ -3755,11 +3755,16 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
+
 #ifndef I2C_PORT
 #define I2C_PORT 0
 #endif
 #ifndef I2C_FREQ
 #define I2C_FREQ 100000UL
+#endif
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 1
 #endif
 
 #define I2C_REG __helper__(LPC_I2C, I2C_PORT, )
@@ -3767,6 +3772,8 @@ extern "C"
 #define I2C_PCON __helper__(CLKPWR_PCONP_PCI2C, I2C_PORT, )
 
 #include "lpc17xx_i2c.h"
+#define I2C_ISR __helper__(I2C, I2C_PORT, _IRQHandler)
+#define I2C_IRQ __helper__(I2C, I2C_PORT, _IRQn)
 
 #if ((I2C_CLK_MBED_PIN == P0_28) && (I2C_DATA_MBED_PIN == P0_27) && (I2C_PORT == 0))
 #define I2C_ALT_FUNC 1

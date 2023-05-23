@@ -4427,23 +4427,24 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
 #endif
 // I2C freq
-#if (I2C_FREQ < 5000UL)
-#define I2C_PRESC 3
-#define I2C_DIV (F_CPU / (I2C_FREQ << 6))
-#elif (I2C_FREQ < 20000UL)
-#define I2C_PRESC 2
-#define I2C_DIV (F_CPU / (I2C_FREQ << 4))
-#elif (I2C_FREQ < 80000UL)
-#define I2C_PRESC 1
-#define I2C_DIV (F_CPU / (I2C_FREQ << 2))
-#else
-#define I2C_PRESC 0
-#define I2C_DIV (F_CPU / I2C_FREQ)
-#endif
+// #if (I2C_FREQ < 5000UL)
+// #define I2C_PRESC 3
+// #define I2C_DIV (F_CPU / (I2C_FREQ << 6))
+// #elif (I2C_FREQ < 20000UL)
+// #define I2C_PRESC 2
+// #define I2C_DIV (F_CPU / (I2C_FREQ << 4))
+// #elif (I2C_FREQ < 80000UL)
+// #define I2C_PRESC 1
+// #define I2C_DIV (F_CPU / (I2C_FREQ << 2))
+// #else
+// #define I2C_PRESC 0
+// #define I2C_DIV (F_CPU / I2C_FREQ)
+// #endif
 #endif
 
 // Timer registers

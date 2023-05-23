@@ -679,7 +679,7 @@ extern "C"
 #include <Wire.h>
 extern "C"
 {
-	static void rp2040_i2c_init(uint32_t freq)
+	void rp2040_i2c_init(uint32_t freq)
 	{
 		COM_I2C.setSDA(I2C_DATA);
 		COM_I2C.setSCL(I2C_CLK);
@@ -687,12 +687,12 @@ extern "C"
 		COM_I2C.begin();
 	}
 
-	static void rp2040_spi_config(uint32_t freq)
+	void rp2040_spi_config(uint32_t freq)
 	{
 		COM_I2C.setClock(freq);
 	}
 
-	static uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop)
+	uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	{
 		if (send_start)
 		{
@@ -712,7 +712,7 @@ extern "C"
 		return 1;
 	}
 
-	static uint8_t rp2040_i2c_read(bool with_ack, bool send_stop)
+	uint8_t rp2040_i2c_read(bool with_ack, bool send_stop)
 	{
 		uint8_t c = 0;
 		if (COM_I2C.available() <= 0)

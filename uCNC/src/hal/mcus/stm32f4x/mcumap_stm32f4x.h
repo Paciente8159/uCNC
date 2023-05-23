@@ -3059,6 +3059,9 @@ extern "C"
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 #define I2C_AFIO 4
 
+#define I2C_IRQ __helper__(I2C,I2C_PORT,_EV_IRQn)
+#define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
+
 #ifndef I2C_FREQ
 #define I2C_FREQ 100000UL
 #endif

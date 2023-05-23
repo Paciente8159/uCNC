@@ -493,11 +493,8 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	// set freq
-	TWSR = I2C_PRESC;
-	TWBR = (uint8_t)I2C_DIV & 0xFF;
-	// enable TWI
-	TWCR = (1 << TWEN);
+	// configure as I2C master
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	// disable probe isr
@@ -961,6 +958,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
+#include <util/twi.h>
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
@@ -970,7 +968,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 		while (!(TWCR & (1 << TWINT)))
 			;
-		if ((TWSR & 0xF8) != 0x08)
+		if (TW_STATUS != TW_START)
 		{
 			return 0;
 		}
@@ -981,12 +979,12 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	while (!(TWCR & (1 << TWINT)))
 		;
 
-	switch (TWSR & 0xF8)
+	switch (TW_STATUS)
 	{
-	case 0x18:
-	case 0x28:
-	case 0x40:
-	case 0x50:
+	case TW_MT_SLA_ACK:
+	case TW_MT_DATA_ACK:
+	case TW_MR_SLA_ACK:
+	case TW_MR_DATA_ACK:
 		break;
 	default:
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
@@ -1024,6 +1022,71 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+#endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+#if I2C_ADDRESS != 0
+	TWAR = (I2C_ADDRESS << 1) | 1;
+#endif
+	// disable TWI
+	TWCR &= ~(1 << TWEN);
+	// set freq
+	uint8_t div = 0;
+	if ((frequency < 5000UL))
+	{
+		div = 3;
+	}
+	else if ((frequency < 20000UL))
+	{
+		div = 2;
+	}
+	else if ((frequency < 80000UL))
+	{
+		div = 1;
+	}
+
+	TWSR = div;
+	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
+	// enable TWI
+	TWCR = (1 << TWINT) | (1 << TWEN);
+#if I2C_ADDRESS != 0
+	TWCR |= (1 << TWIE) | (1 << TWEA);
+#endif
+}
+#endif
+
+#if I2C_ADDRESS != 0
+ISR(TWI_vect)
+{
+	switch (TW_STATUS)
+	{
+		// an addressed or general master to slave command
+	case TW_SR_SLA_ACK:
+	case TW_SR_GCALL_ACK:
+		mcu_enable_global_isr();
+		mcu_i2c_data_buffer = NULL;
+		mcu_i2c_req_cb();
+		break;
+	case TW_ST_SLA_ACK:
+	case TW_ST_DATA_ACK:
+		// sends the data
+		if (mcu_i2c_data_buffer)
+		{
+			mcu_i2c_data_buffer++;
+			TWDR = *mcu_i2c_data_buffer;
+		}
+		break;
+	case TW_ST_LAST_DATA:
+		// sends the data
+		mcu_i2c_data_buffer = NULL;
+		break;
+	}
+
+	// clear and reenable I2C ISR
+	TWCR |= (1 << TWIE) | (1 << TWINT);
 }
 #endif
 #endif

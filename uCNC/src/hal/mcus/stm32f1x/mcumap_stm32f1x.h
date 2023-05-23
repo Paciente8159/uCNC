@@ -4452,11 +4452,14 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
 #define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
 #define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
 #ifndef I2C_PORT
 #define I2C_PORT 1
 #endif
+#define I2C_IRQ __helper__(I2C,I2C_PORT,_EV_IRQn)
+#define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )

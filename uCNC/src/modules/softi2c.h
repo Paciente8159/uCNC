@@ -30,12 +30,14 @@ extern "C"
 
 	typedef struct softi2c_port_
 	{
-		void (*wait)(void);
+		uint32_t i2cdelay;
 		void (*scl)(bool);
 		void (*sda)(bool);
 		bool (*get_sda)(void);
 		bool (*get_scl)(void);
 	} softi2c_port_t;
+
+#define I2C_DELAY(FREQ) MAX(0, ((2500000UL / FREQ) - 1))
 
 #define SOFTI2C(NAME, FREQ, SCLPIN, SDAPIN) \
 	void NAME##_scl(bool state)             \
@@ -76,14 +78,11 @@ extern "C"
 		mcu_config_pullup(SCLPIN);          \
 		return mcu_get_input(SCLPIN);       \
 	}                                       \
-	void NAME##_wait(void)                  \
-	{                                       \
-		mcu_delay_cycles(F_CPU / FREQ);     \
-	}                                       \
-	softi2c_port_t NAME = {.wait = &NAME##_wait, .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda, .get_scl = &NAME##_get_scl};
+	softi2c_port_t NAME = {.i2cdelay = I2C_DELAY(FREQ), .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda, .get_scl = &NAME##_get_scl};
 
 	uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len);
 	uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len);
+	void softi2c_config(softi2c_port_t *port, uint32_t frequency);
 
 #ifdef __cplusplus
 }

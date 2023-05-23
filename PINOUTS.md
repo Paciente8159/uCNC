@@ -12,9 +12,9 @@ This wiring can be completely modified by the user.
 | DOUT5   | DISPLAY DAT    |
 | DOUT6   | DISPLAY CS    |
 | DOUT7   | DISPLAY BEEP    |
-| DOUT8   |     |
-| DOUT9   |     |
-| DOUT10   |     |
+| DOUT8   | IC74HC595_DATA    |
+| DOUT9   | IC74HC595_CLK    |
+| DOUT10   | IC74HC595_LATCH    |
 | DOUT11   | STEPPER_DIGIPOT_CS    |
 | DOUT12   | STEPPER0_MSTEP1    |
 | DOUT13   | STEPPER1_MSTEP1    |

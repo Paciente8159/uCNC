@@ -997,6 +997,80 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	return c;
 }
 #endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	RCC->APB1ENR |= I2C_APBEN;
+	mcu_config_af(I2C_CLK, I2C_AFIO);
+	mcu_config_af(I2C_DATA, I2C_AFIO);
+	mcu_config_pullup(I2C_CLK);
+	mcu_config_pullup(I2C_DATA);
+	// set opendrain
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
+	// reset I2C
+	I2C_REG->CR1 |= I2C_CR1_SWRST;
+	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+	// set max freq
+	I2C_REG->CR2 |= I2C_SPEEDRANGE;
+	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
+	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+#if I2C_ADDRESS != 0
+	// set address
+	I2C_REG->OAR1 = (I2C_ADDRESS << 1);
+	I2C_REG->OAR2 = 0;
+	// enable events
+	I2C_REG->CR2 |= I2C_CR2_ITEVTEN;
+	NVIC_SetPriority(I2C_IRQ, 10);
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+	NVIC_EnableIRQ(I2C_IRQ);
+#endif
+	// initialize the SPI configuration register
+	I2C_REG->CR1 |= I2C_CR1_PE;
+}
+#endif
+
+#if I2C_ADDRESS != 0
+void I2C_ISR(void)
+{
+	// address match or generic call
+	if ((I2C_REG->SR1 & I2C_SR1_ADDR) == I2C_SR1_ADDR)
+	{
+		// Address matched, do necessary processing
+		// Clear ADDR flag by reading SR1 and SR2 registers
+		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
+		{
+			mcu_i2c_data_buffer = NULL;
+			mcu_i2c_req_cb();
+		}
+		else
+		{
+			if (mcu_i2c_data_buffer)
+			{
+				I2C_REG->DR = *mcu_i2c_data_buffer++;
+			}
+		}
+	}
+
+	if ((I2C_REG->SR1 & I2C_SR1_STOPF) == I2C_SR1_STOPF)
+	{
+		// stop transmission
+		mcu_i2c_data_buffer = NULL;
+	}
+
+	if ((I2C_REG->SR1 & I2C_SR1_BTF) == I2C_SR1_BTF)
+	{
+		if (mcu_i2c_data_buffer)
+		{
+			I2C_REG->DR = *mcu_i2c_data_buffer++;
+		}
+	}
+
+	NVIC_ClearPendingIRQ(I2C_IRQ);
+}
+#endif
+
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER

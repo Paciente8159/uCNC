@@ -476,6 +476,15 @@ extern "C"
 #ifndef mcu_i2c_read
 	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
 #endif
+
+#ifndef mcu_i2c_config
+	void mcu_i2c_config(uint32_t frequency);
+#endif
+
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+	extern uint8_t *mcu_i2c_data_buffer;
+	MCU_IO_CALLBACK void mcu_i2c_req_cb(void);
+#endif
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
@@ -492,8 +501,8 @@ extern "C"
 #ifndef mcu_uart_rx_cb
 	void mcu_uart_rx_cb(uint8_t c);
 #endif
-typedef void (*mcu_uart_rcv_delegate)(uint8_t);
-extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
+	typedef void (*mcu_uart_rcv_delegate)(uint8_t);
+	extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
 #endif
 
 #ifdef __cplusplus
