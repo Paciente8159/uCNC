@@ -679,55 +679,55 @@ extern "C"
 #include <Wire.h>
 extern "C"
 {
-	void rp2040_i2c_init(uint32_t freq)
+#if (I2C_ADDRESS != 0)
+	static uint8_t mcu_i2c_buffer_len;
+	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+	void rp2040_i2c_onreceive(int len)
 	{
-		COM_I2C.setSDA(I2C_DATA);
-		COM_I2C.setSCL(I2C_CLK);
-		COM_I2C.setClock(freq);
-		COM_I2C.begin();
+		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
+		mcu_i2c_buffer_len = l;
+		mcu_i2c_slave_cb(mcu_i2c_buffer, l);
 	}
 
-	void rp2040_spi_config(uint32_t freq)
+	void rp2040_i2c_onrequest(void)
 	{
-		COM_I2C.setClock(freq);
+		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
 	}
 
-	uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop)
+#endif
+
+	void mcu_i2c_config(uint32_t frequency)
 	{
-		if (send_start)
-		{
-			// init
-			COM_I2C.beginTransmission(data);
-			return 1;
-		}
-
-		if (send_stop)
-		{
-			COM_I2C.endTransmission();
-			return 1;
-		}
-
-		COM_I2C.write(data);
-
-		return 1;
+		I2C_REG.setSDA(I2C_DATA);
+		I2C_REG.setSCL(I2C_CLK);
+		I2C_REG.setClock(frequency);
+#if I2C_ADDRESS == 0
+		I2C_REG.setClock(frequency);
+		I2C_REG.begin();
+#else
+		I2C_REG.setClock(frequency);
+		I2C_REG.onReceive(rp2040_i2c_onreceive);
+		I2C_REG.onRequest(rp2040_i2c_onrequest);
+		I2C_REG.begin(I2C_ADDRESS);
+#endif
 	}
 
-	uint8_t rp2040_i2c_read(bool with_ack, bool send_stop)
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 	{
-		uint8_t c = 0;
-		if (COM_I2C.available() <= 0)
+		I2C_REG.beginTransmission(address);
+		I2C_REG.write(data, datalen);
+		return (I2C_REG.endTransmission(true) == 0) ? I2C_OK : I2C_NOTOK;
+	}
+
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+	{
+		if (I2C_REG.requestFrom(address, datalen) == datalen)
 		{
-			return 0;
+			I2C_REG.readBytes(data, datalen);
+			return I2C_OK;
 		}
 
-		c = COM_I2C.read();
-
-		if (send_stop)
-		{
-			COM_I2C.endTransmission();
-		}
-
-		return c;
+		return I2C_NOTOK;
 	}
 }
 #endif
