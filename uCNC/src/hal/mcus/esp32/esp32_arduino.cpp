@@ -1,6 +1,6 @@
 /*
-	Name: esp32_uart.cpp
-	Description: Contains all Arduino ESP32 C++ to C functions used by UART in µCNC.
+	Name: esp32_arduino.cpp
+	Description: Contains all Arduino ESP32 C++ to C functions used by µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -35,7 +35,7 @@
 #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, BT_ID_MAX_LEN)
 
 #ifdef ENABLE_BLUETOOTH
-#include "BluetoothSerial.h"
+#include <BluetoothSerial.h>
 BluetoothSerial SerialBT;
 
 uint8_t bt_on;
@@ -465,6 +465,56 @@ extern "C"
 		httpServer.handleClient();
 #endif
 	}
+
+#ifdef MCU_HAS_I2C
+#include <Wire.h>
+
+#if (I2C_ADDRESS != 0)
+	static uint8_t mcu_i2c_buffer_len;
+	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+	void esp32_i2c_onreceive(int len)
+	{
+		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
+		mcu_i2c_buffer_len = l;
+		mcu_i2c_slave_cb(mcu_i2c_buffer, l);
+	}
+
+	void esp32_i2c_onrequest(void)
+	{
+		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
+	}
+
+#endif
+
+	void mcu_i2c_config(uint32_t frequency)
+	{
+#if (I2C_ADDRESS == 0)
+		I2C_REG.begin(I2C_DATA_BIT, I2C_CLK_BIT, frequency);
+#else
+		I2C_REG.onReceive(esp32_i2c_onreceive);
+		I2C_REG.onRequest(esp32_i2c_onrequest);
+		I2C_REG.begin(I2C_ADDRESS, I2C_DATA_BIT, I2C_CLK_BIT, frequency);
+#endif
+	}
+
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+	{
+		I2C_REG.beginTransmission(address);
+		I2C_REG.write(data, datalen);
+		return (I2C_REG.endTransmission(true) == 0) ? I2C_OK : I2C_NOTOK;
+	}
+
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+	{
+		if (I2C_REG.requestFrom(address, datalen) == datalen)
+		{
+			I2C_REG.readBytes(data, datalen);
+			return I2C_OK;
+		}
+
+		return I2C_NOTOK;
+	}
+#endif
 }
 
 #endif

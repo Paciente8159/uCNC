@@ -2745,22 +2745,31 @@ extern "C"
 #endif
 #endif
 
+// Helper macros
+#define __helper_ex__(left, mid, right) (left##mid##right)
+#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#define __indirect__ex__(X, Y) DIO##X##_##Y
+#define __indirect__(X, Y) __indirect__ex__(X, Y)
+
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
 #ifndef I2C_PORT
 #define I2C_PORT 0
 #endif
 #ifndef I2C_FREQ
 #define I2C_FREQ 1000000UL
 #endif
+
+#if(I2C_PORT==0)
+#define I2C_REG Wire
+#else
+#define I2C_REG __helper__(Wire, I2C_PORT, )
+#endif
 #endif
 
-// Helper macros
-#define __helper_ex__(left, mid, right) (left##mid##right)
-#define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
-#define __indirect__ex__(X, Y) DIO##X##_##Y
-#define __indirect__(X, Y) __indirect__ex__(X, Y)
+
 
 #ifndef IC74HC595_I2S_PORT
 #define IC74HC595_I2S_PORT 0
