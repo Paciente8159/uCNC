@@ -821,8 +821,8 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	if (send_start)
 	{
@@ -881,10 +881,8 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	return 1;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
 	uint8_t c = 0;
 
@@ -917,6 +915,53 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 
 	return c;
 }
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+			}
+
+			return mcu_i2c_write(data[datalen], false, true);
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		{
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				data[i] = mcu_i2c_read(true, false);
+			}
+
+			data[datalen] = mcu_i2c_read(false, true);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
 #endif
 
 #ifndef mcu_i2c_config
@@ -947,35 +992,71 @@ void mcu_i2c_config(uint32_t frequency)
 #endif
 
 #if I2C_ADDRESS != 0
-void I2C_ISR(void){
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
+ISR(TWI_vect)
+{
+	static uint8_t index = 0;
+
+	uint8_t i = index;
+
 	switch (I2C_REG->I2STAT)
 	{
-		// an addressed or general master to slave command
-	case 0x60:
-	case 0x70:
-		mcu_enable_global_isr();
-		mcu_i2c_data_buffer = NULL;
-		mcu_i2c_req_cb();
+	/*slave receiver*/
+	case 0x60:			   // addressed, returned ack
+	case 0x70:		   // addressed generally, returned ack
+	case 0x68:   // lost arbitration, returned ack
+	case 0x78: // lost arbitration, returned ack
+		index = 0;
+		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
 		break;
-		// after slave read address ack or read data ack
-	case 0xA8:
-	case 0xB8:
+	case 0x80:
+	case 0x90:
+		index++;
+		__attribute__((fallthrough));
+	case 0xA0: // stop or repeated start condition received
 		// sends the data
-		if (mcu_i2c_data_buffer)
+		if (i < I2C_SLAVE_BUFFER_SIZE)
 		{
-			mcu_i2c_data_buffer++;
-			I2C_REG->I2DAT = *mcu_i2c_data_buffer;
+			mcu_i2c_buffer[i] = I2C_REG->I2DAT;
+			I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+		}
+		if (I2C_REG->I2STAT == 0xA0)
+		{
+			index = 0;
+			mcu_i2c_buffer[i] = 0;
+			// unlock ISR and process the info request
+			mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
 		}
 		break;
-		// after slave read last data ack
-	case 0xC8:
-		// sends the data
-		mcu_i2c_data_buffer = NULL;
+	/*slave trasnmitter*/
+	case 0xA8:			 // addressed, returned ack
+	case 0xB0: // arbitration lost, returned ack
+		i = 0;
+		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+		__attribute__((fallthrough));
+	case 0xB8: // byte sent, ack returned
+		// copy data to output register
+		I2C_REG->I2DAT = mcu_i2c_buffer[i++];
+		// if there is more to send, ack, otherwise nack
+		if (i < I2C_SLAVE_BUFFER_SIZE)
+		{
+			I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+		}
+		index = i;
+		break;
+	case 0xC0: // received nack, we are done
+	case 0xC8: // received ack, but we are done already!
+		index = 0;
+		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+		break;
+	case 0x00: // bus error, illegal stop/start
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		break;
 	}
 
-	// clear and reenable I2C ISR
-	I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
 	I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
 }
 #endif

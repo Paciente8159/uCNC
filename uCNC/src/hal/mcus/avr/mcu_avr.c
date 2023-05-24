@@ -1122,6 +1122,7 @@ ISR(TWI_vect)
 		TWCR |= (1 << TWEA);
 		break;
 	case TW_SR_DATA_ACK:
+	case TW_SR_GCALL_DATA_ACK:
 		index++;
 		__attribute__((fallthrough));
 	case TW_SR_STOP: // stop or repeated start condition received
