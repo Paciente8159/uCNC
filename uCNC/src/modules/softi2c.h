@@ -28,6 +28,13 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifndef I2C_OK
+#define I2C_OK 0
+#endif
+#ifndef I2C_NOTOK
+#define I2C_NOTOK 1
+#endif
+
 	typedef struct softi2c_port_
 	{
 		uint32_t i2cdelay;
