@@ -469,22 +469,35 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-	uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop);
+#ifndef I2C_OK
+#define I2C_OK 0
+#endif
+#ifndef I2C_NOTOK
+#define I2C_NOTOK 1
 #endif
 
-#ifndef mcu_i2c_read
-	uint8_t mcu_i2c_read(bool with_ack, bool send_stop);
+#ifndef mcu_i2c_send
+	// master sends command to slave
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen);
+#endif
+#ifndef mcu_i2c_receive
+	// master receive response from slave
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen);
+#endif
+
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+#ifndef I2C_SLAVE_BUFFER_SIZE
+#define I2C_SLAVE_BUFFER_SIZE 48
+#endif
+#ifndef mcu_i2c_slave_cb
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen);
+#endif
 #endif
 
 #ifndef mcu_i2c_config
 	void mcu_i2c_config(uint32_t frequency);
 #endif
 
-#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
-	extern uint8_t *mcu_i2c_data_buffer;
-	MCU_IO_CALLBACK void mcu_i2c_req_cb(void);
-#endif
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

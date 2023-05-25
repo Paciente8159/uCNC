@@ -48,15 +48,6 @@ static void softi2c_stop(softi2c_port_t *port)
 
 static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
 {
-	if (!port)
-	{
-#ifdef MCU_HAS_I2C
-		return mcu_i2c_write(c, send_start, send_stop);
-#else
-		return 0;
-#endif
-	}
-
 	uint8_t ack = 0;
 
 	if (send_start)
@@ -66,7 +57,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		port->scl(true);
 		if (!softi2c_clock_stretch(port))
 		{
-			return 0;
+			return I2C_NOTOK;
 		}
 		port->sda(false);
 		softi2c_delay(port->i2cdelay);
@@ -97,21 +88,12 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 		softi2c_stop(port);
 	}
 
-	return ack;
+	return ((ack) ? I2C_OK : I2C_NOTOK);
 }
 
 static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 {
-	if (!port)
-	{
-#ifdef MCU_HAS_I2C
-		return mcu_i2c_read(with_ack, send_stop);
-#else
-		return 0;
-#endif
-	}
-
-	uint8_t c = 0;
+	uint8_t c = 0xFF;
 	uint8_t i = 8;
 	do
 	{
@@ -135,32 +117,50 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 
 uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_send(address, data, len);
+#else
+		return I2C_NOTOK;
+#endif
+	}
+
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, address << 1, true, false)) // start, send address, write
+		if (softi2c_write(port, address << 1, true, false) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			for (uint8_t i = 0; i < len; i++)
 			{
-				if (!softi2c_write(port, data[i], false, false))
+				if (softi2c_write(port, data[i], false, false) != I2C_OK)
 				{
-					return 0;
+					return I2C_NOTOK;
 				}
 			}
 
 			return softi2c_write(port, data[len], false, true);
 		}
 	}
-	return 0;
+	return I2C_NOTOK;
 }
 
 uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
 {
+	if (!port)
+	{
+#ifdef MCU_HAS_I2C
+		return mcu_i2c_receive(address, data, len);
+#else
+		return I2C_NOTOK;
+#endif
+	}
+
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, (address << 1) | 0x01, true, false)) // start, send address, write
+		if (softi2c_write(port, (address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
 			for (uint8_t i = 0; i < len; i++)
 			{
@@ -168,10 +168,11 @@ uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, ui
 			}
 
 			data[len] = softi2c_read(port, false, true);
+			return I2C_OK;
 		}
 	}
 
-	return 0;
+	return I2C_NOTOK;
 }
 
 void softi2c_config(softi2c_port_t *port, uint32_t frequency)

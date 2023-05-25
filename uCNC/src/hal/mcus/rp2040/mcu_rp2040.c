@@ -297,7 +297,7 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	rp2040_i2c_init();
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 #ifdef MCU_HAS_ONESHOT
@@ -582,29 +582,6 @@ void mcu_eeprom_flush(void)
 	rp2040_eeprom_flush();
 #endif
 }
-
-#ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
-{
-	return rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop);
-}
-#endif
-
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
-{
-	return uint8_t rp2040_i2c_read(bool with_ack, bool send_stop);
-}
-#endif
-
-#ifndef mcu_i2c_config
-void mcu_i2c_config(uint32_t frequency)
-{
-	rp2040_spi_config(uint32_t freq);
-}
-#endif
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 /**

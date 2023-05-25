@@ -140,6 +140,13 @@ extern "C"
 	// On STM32F1x cores this will default to Timer 3
 	//#define SERVO_TIMER 3
 
+#define I2C_CLK_BIT 10
+#define I2C_CLK_PORT B
+#define I2C_DATA_BIT 11
+#define I2C_DATA_PORT B
+#define I2C_PORT 2
+// #define I2C_ADDRESS 1
+
 #define ONESHOT_TIMER 1
 
 #ifdef __cplusplus

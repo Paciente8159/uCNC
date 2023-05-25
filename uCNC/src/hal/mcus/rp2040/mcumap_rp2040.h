@@ -1052,6 +1052,8 @@ extern "C"
 
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
+
 #ifndef I2C_PORT
 #define I2C_PORT 0
 #endif
@@ -1061,9 +1063,9 @@ extern "C"
 #endif
 
 #if (I2C_PORT == 0)
-#define COM_I2C Wire
+#define I2C_REG Wire
 #elif (I2C_PORT == 1)
-#define COM_I2C Wire1
+#define I2C_REG Wire1
 #else
 #error "I2C port number must be 0 or 1"
 #endif
