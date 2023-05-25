@@ -482,7 +482,7 @@ extern "C"
 #endif
 #ifndef mcu_i2c_receive
 	// master receive response from slave
-	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen);
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout);
 #endif
 
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
