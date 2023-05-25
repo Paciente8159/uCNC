@@ -719,7 +719,7 @@ extern "C"
 		return (I2C_REG.endTransmission(true) == 0) ? I2C_OK : I2C_NOTOK;
 	}
 
-	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 	{
 		if (I2C_REG.requestFrom(address, datalen) == datalen)
 		{

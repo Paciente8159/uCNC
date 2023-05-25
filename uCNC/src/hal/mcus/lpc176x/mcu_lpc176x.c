@@ -882,9 +882,10 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	return 1;
 }
 
-static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0;
+	uint8_t c = 0xFF;
+	ms_timeout += mcu_millis();
 
 	if (with_ack)
 	{
@@ -899,17 +900,22 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 
 	// Wait for complete
 	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
-		;
+	{
+		if (ms_timeout >= mcu_millis())
+		{
+			return 0xFF;
+		}
+	}
 
 	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
 
-	if (send_stop)
+	if (send_stop || (ms_timeout >= mcu_millis()))
 	{
 		/* Make sure start bit is not active */
 		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout >= mcu_millis()))
 			;
 	}
 
@@ -943,7 +949,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 #endif
 #ifndef mcu_i2c_receive
 // master receive response from slave
-uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
 	if (datalen)
 	{
@@ -952,10 +958,10 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
 		{
 			for (uint8_t i = 0; i < datalen; i++)
 			{
-				data[i] = mcu_i2c_read(true, false);
+				data[i] = mcu_i2c_read(true, false, ms_timeout);
 			}
 
-			data[datalen] = mcu_i2c_read(false, true);
+			data[datalen] = mcu_i2c_read(false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}
@@ -1003,9 +1009,9 @@ ISR(TWI_vect)
 	switch (I2C_REG->I2STAT)
 	{
 	/*slave receiver*/
-	case 0x60:			   // addressed, returned ack
-	case 0x70:		   // addressed generally, returned ack
-	case 0x68:   // lost arbitration, returned ack
+	case 0x60: // addressed, returned ack
+	case 0x70: // addressed generally, returned ack
+	case 0x68: // lost arbitration, returned ack
 	case 0x78: // lost arbitration, returned ack
 		index = 0;
 		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
@@ -1031,7 +1037,7 @@ ISR(TWI_vect)
 		}
 		break;
 	/*slave trasnmitter*/
-	case 0xA8:			 // addressed, returned ack
+	case 0xA8: // addressed, returned ack
 	case 0xB0: // arbitration lost, returned ack
 		i = 0;
 		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
@@ -1061,7 +1067,6 @@ ISR(TWI_vect)
 }
 #endif
 // this is similar to AVR
-
 
 #endif
 

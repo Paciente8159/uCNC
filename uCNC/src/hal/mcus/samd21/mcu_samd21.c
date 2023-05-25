@@ -1208,8 +1208,10 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	return 1;
 }
 
-static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
+	ms_timeout += mcu_millis();
+
 	if (with_ack)
 	{
 		I2CCOM->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
@@ -1219,12 +1221,17 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
 	}
 
-	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
-		;
+	while (!(I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
+	{
+		if (ms_timeout >= mcu_millis())
+		{
+			return 0xFF;
+		}
+	}
 
 	uint8_t data = I2CCOM->I2CM.DATA.reg;
 
-	if (send_stop)
+	if (send_stop || (ms_timeout >= mcu_millis()))
 	{
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 	}
@@ -1260,7 +1267,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 
 #ifndef mcu_i2c_receive
 // master receive response from slave
-uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
 	if (datalen)
 	{
@@ -1269,10 +1276,10 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
 		{
 			for (uint8_t i = 0; i < datalen; i++)
 			{
-				data[i] = mcu_i2c_read(true, false);
+				data[i] = mcu_i2c_read(true, false, ms_timeout);
 			}
 
-			data[datalen] = mcu_i2c_read(false, true);
+			data[datalen] = mcu_i2c_read(false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}
