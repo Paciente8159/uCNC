@@ -81,7 +81,7 @@ extern "C"
 #define I2C_CLK_BIT 27
 #define I2C_DATA_BIT 26
 #define I2C_PORT 1
-#define I2C_ADDRESS 1
+// #define I2C_ADDRESS 1
 
 #ifdef __cplusplus
 }

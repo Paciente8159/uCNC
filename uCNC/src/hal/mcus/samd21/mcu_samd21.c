@@ -1180,8 +1180,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 /**
  * https://www.eevblog.com/forum/microcontrollers/i2c-atmel/
  * */
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	if (send_start)
 	{
@@ -1208,18 +1207,16 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	return 1;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
 	if (with_ack)
 	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
+		I2CCOM->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
 	}
 	else
 	{
-		I2CCOM->I2CM.CTRLB.reg &= ~SERCOM_I2CM_CTRLB_ACKACT;
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
 	}
 
 	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
@@ -1233,6 +1230,54 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return data;
+}
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+			}
+
+			return mcu_i2c_write(data[datalen], false, true);
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		{
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				data[i] = mcu_i2c_read(true, false);
+			}
+
+			data[datalen] = mcu_i2c_read(false, true);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
 }
 #endif
 
@@ -1253,7 +1298,7 @@ void mcu_i2c_config(uint32_t frequency)
 	while (I2CCOM->I2CS.SYNCBUSY.bit.SWRST)
 		;
 
-	I2CCOM->I2CS.CTRLB.reg = SERCOM_I2CS_CTRLB_AACKEN | SERCOM_I2CS_CTRLB_SMEN;
+	I2CCOM->I2CS.CTRLB.reg = SERCOM_I2CS_CTRLB_AACKEN | SERCOM_I2CS_CTRLB_SMEN | SERCOM_I2CS_CTRLB_AMODE(0);
 	while (I2CCOM->I2CS.SYNCBUSY.reg)
 		;
 
@@ -1261,7 +1306,7 @@ void mcu_i2c_config(uint32_t frequency)
 	while (I2CCOM->I2CS.SYNCBUSY.reg)
 		;
 
-	I2CCOM->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH | SERCOM_I2CS_INTENSET_DRDY | SERCOM_I2CS_INTENSET_PREC;
+	I2CCOM->I2CS.INTENSET.reg = SERCOM_I2CS_INTENSET_AMATCH | SERCOM_I2CS_INTENSET_DRDY | SERCOM_I2CS_INTENSET_PREC | SERCOM_I2CS_INTENSET_ERROR;
 	NVIC_SetPriority(I2C_IRQ, 10);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
@@ -1303,41 +1348,71 @@ void mcu_i2c_config(uint32_t frequency)
 #endif
 
 #if I2C_ADDRESS != 0
+
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
 void I2C_ISR(void)
 {
+	static uint8_t index = 0;
+
+	uint8_t i = index;
+
 	switch (I2CCOM->I2CS.INTFLAG.reg)
 	{
 	case SERCOM_I2CS_INTFLAG_AMATCH:
-		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_AMATCH;
-		if (!I2CCOM->I2CS.STATUS.bit.DIR)
+		i = 0;
+		if (I2CCOM->I2CS.STATUS.bit.DIR)
 		{
-			mcu_i2c_data_buffer = NULL;
-			mcu_i2c_req_cb();
+			// write first byte
+			I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
+			I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+			index = i;
+		}
+		index = i;
+		break;
+	case SERCOM_I2CS_INTFLAG_DRDY:
+		if (i < I2C_SLAVE_BUFFER_SIZE)
+		{
+			if (I2CCOM->I2CS.STATUS.bit.DIR)
+			{
+				I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
+				I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+			}
+			else
+			{
+				if (i < I2C_SLAVE_BUFFER_SIZE)
+				{
+					mcu_i2c_buffer[i++] = I2CCOM->I2CS.DATA.reg;
+					I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+				}
+			}
+
+			index = i;
 		}
 		else
 		{
-			// write the first data byte
-			if (mcu_i2c_data_buffer)
-			{
-				I2CCOM->I2CS.DATA.reg = *mcu_i2c_data_buffer;
-				mcu_i2c_data_buffer++;
-			}
-		}
-		break;
-	case SERCOM_I2CS_INTFLAG_DRDY:
-		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_DRDY;
-		if (mcu_i2c_data_buffer)
-		{
-			I2CCOM->I2CS.DATA.reg = *mcu_i2c_data_buffer;
-			mcu_i2c_data_buffer++;
+			index = 0;
+			I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
 		}
 		break;
 	case SERCOM_I2CS_INTFLAG_PREC:
 		// stop transmission
-		I2CCOM->I2CS.INTFLAG.reg = SERCOM_I2CS_INTFLAG_PREC;
-		mcu_i2c_data_buffer = NULL;
+		index = 0;
+		mcu_i2c_buffer[i] = 0;
+		// unlock ISR and process the info request
+		if (!(I2CCOM->I2CS.STATUS.bit.DIR) && i)
+		{
+			mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+		}
+		break;
+	case SERCOM_I2CS_INTFLAG_ERROR:
+		// stop transmission
+		index = 0;
 		break;
 	}
+
+	I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
