@@ -920,8 +920,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
@@ -966,10 +965,8 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	return 1;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
 	uint8_t c = 0;
 
@@ -995,6 +992,54 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	return c;
+}
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+			}
+
+			return mcu_i2c_write(data[datalen], false, true);
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)
+{
+	if (datalen)
+	{
+		datalen--;
+		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		{
+			for (uint8_t i = 0; i < datalen; i++)
+			{
+				data[i] = mcu_i2c_read(true, false);
+			}
+
+			data[datalen] = mcu_i2c_read(false, true);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
 }
 #endif
 
@@ -1028,43 +1073,82 @@ void mcu_i2c_config(uint32_t frequency)
 #endif
 	// initialize the SPI configuration register
 	I2C_REG->CR1 |= I2C_CR1_PE;
+#if I2C_ADDRESS != 0
+	// prepare ACK in slave mode
+	I2C_REG->CR1 |= I2C_CR1_ACK;
+#endif
 }
 #endif
 
 #if I2C_ADDRESS != 0
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
 void I2C_ISR(void)
 {
+	static uint8_t index = 0;
+
+	uint8_t i = index;
+
 	// address match or generic call
+	// Clear ISR flag by reading SR1 and SR2 registers
 	if ((I2C_REG->SR1 & I2C_SR1_ADDR) == I2C_SR1_ADDR)
 	{
+		index = 1;
+		i = 1;
+
 		// Address matched, do necessary processing
-		// Clear ADDR flag by reading SR1 and SR2 registers
-		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
+		if ((I2C_REG->SR2 & I2C_SR2_TRA))
 		{
-			mcu_i2c_data_buffer = NULL;
-			mcu_i2c_req_cb();
-		}
-		else
-		{
-			if (mcu_i2c_data_buffer)
-			{
-				I2C_REG->DR = *mcu_i2c_data_buffer++;
-			}
+			I2C_REG->DR = mcu_i2c_buffer[0];
 		}
 	}
 
+	// Clear ISR flag by reading SR1 and writing CR1 registers
 	if ((I2C_REG->SR1 & I2C_SR1_STOPF) == I2C_SR1_STOPF)
 	{
 		// stop transmission
-		mcu_i2c_data_buffer = NULL;
+		index = 0;
+		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
+		{
+			mcu_i2c_buffer[i] = 0;
+			// unlock ISR and process the info request
+			mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+		}
+		I2C_REG->CR1 |= (I2C_CR1_STOP | I2C_CR1_ACK);
 	}
 
+	// Clear ISR flag by reading SR1 and read/write DR registers
 	if ((I2C_REG->SR1 & I2C_SR1_BTF) == I2C_SR1_BTF)
 	{
-		if (mcu_i2c_data_buffer)
+		if (i < I2C_SLAVE_BUFFER_SIZE)
 		{
-			I2C_REG->DR = *mcu_i2c_data_buffer++;
+			if ((I2C_REG->SR2 & I2C_SR2_TRA))
+			{
+				I2C_REG->DR = mcu_i2c_buffer[i++];
+			}
+			else
+			{
+				mcu_i2c_buffer[i++] = I2C_REG->DR;
+			}
+
+			index = i;
 		}
+		else
+		{
+			// send NACK
+			I2C_REG->CR1 &= ~I2C_CR1_ACK;
+		}
+	}
+
+	// An error ocurred
+	if (I2C_REG->SR1 & 0XF0)
+	{
+		// stop transmission
+		index = 0;
+		I2C_REG->CR1 |= (I2C_CR1_STOP | I2C_CR1_ACK);
+		// clear ISR flag
+		I2C_REG->SR1 &= 0X0F;
 	}
 
 	NVIC_ClearPendingIRQ(I2C_IRQ);

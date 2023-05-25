@@ -1046,6 +1046,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 	return I2C_NOTOK;
 }
 #endif
+
 #ifndef mcu_i2c_receive
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen)

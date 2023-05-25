@@ -4465,10 +4465,10 @@ extern "C"
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 
-#if ((I2C_PORT == 1) && (I2C_CLK_PORT == B6) && (I2C_DATA_PORT == B7))
-#elif ((I2C_PORT == 1) && (I2C_CLK_PORT == B8) && (I2C_DATA_PORT == B9))
+#if ((I2C_PORT == 1) && (I2C_CLK_PIN == B6) && (I2C_DATA_PIN == B7))
+#elif ((I2C_PORT == 1) && (I2C_CLK_PIN == B8) && (I2C_DATA_PIN == B9))
 #define I2C_REMAP AFIO_MAPR_I2C1_REMAP
-#elif ((I2C_PORT == 2) && (I2C_CLK_PORT == B10) && (I2C_DATA_PORT == B11))
+#elif ((I2C_PORT == 2) && (I2C_CLK_PIN == B10) && (I2C_DATA_PIN == B11))
 #else
 #error "I2C pin configuration not supported"
 #endif
