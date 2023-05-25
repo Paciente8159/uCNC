@@ -73,7 +73,7 @@ extern "C"
  * **/
 #ifdef IS_MASTER_BOARD
 	uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_t datalen);
-	uint8_t master_get_response(void *data, uint8_t datalen, uint32_t timeout);
+	uint8_t master_get_response(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t timeout);
 #else
 	uint8_t slave_ack(void);
 	uint8_t slave_response(void *data, uint8_t datalen);

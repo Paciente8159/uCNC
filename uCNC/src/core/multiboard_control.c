@@ -26,14 +26,16 @@
 
 #ifdef ENABLE_MULTIBOARD
 
+#ifdef IS_MASTER_BOARD
 uint8_t multiboard_get_byte(uint8_t cmd, uint8_t *var, uint8_t error_val, void *arg, uint8_t arglen)
 {
 	for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
 	{
 		uint8_t val = error_val;
-		if (!master_send_command(slaveid, cmd, arg, arglen))
+		master_send_command(0, cmd, &val, 1);
+		/*if (master_send_command(slaveid, cmd, arg, arglen) == I2C_OK)
 		{
-			if (!master_get_response(&val, 1, 2))
+			if (master_get_response(slaveid, &val, 1, 2) == I2C_OK)
 			{
 				*var |= val;
 			}
@@ -45,55 +47,61 @@ uint8_t multiboard_get_byte(uint8_t cmd, uint8_t *var, uint8_t error_val, void *
 		else
 		{
 			return MULTIBOARD_CONTROL_CMD_ERROR;
-		}
+		}*/
 	}
 
 	return MULTIBOARD_CONTROL_OK;
 }
+#endif
 
-#define PROPAGATION_TIME_IN_US ceilf(SLAVE_BOARDS_COUNT * 1000000.0f / BAUDRATE2)
-#define PROTOCOL_TIMEOUT_IN_MS ceilf(PROPAGATION_TIME_IN_US / 1000.0f)
+#if MULTIBOARD_IPC == IPC_I2C
 
 #ifdef IS_MASTER_BOARD
+#ifndef I2C_BUFFER_SIZE
+#define I2C_BUFFER_SIZE 48
+#endif
 
 uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_t datalen)
 {
-	// the average time the message takes to propagate through the serial bus with passthrough
-	uint8_t crc = 0;
-	mcu_i2c_write(address, true, false);
-	crc = crc7(address, crc);
-	mcu_i2c_write(command, false, false);
-	crc = crc7(command, crc);
+	uint8_t buffer[I2C_BUFFER_SIZE];
+	buffer[0] = command;
 	if (data && datalen)
 	{
-		uint8_t *ptr = data;
-		do
-		{
-			mcu_i2c_write(*ptr, false, false);
-			crc = crc7(*ptr, crc);
-		} while (--datalen);
+		memcpy(&buffer[1], data, datalen);
 	}
-	mcu_i2c_write(crc, false, true);
 
-	if (address)
-	{
-		// mcu
-	}
-	else
-	{
-		// check slave ack for each slave
-		for (uint8_t id = 1; id <= SLAVE_BOARDS_COUNT; id++)
-		{
-			//mcu_i2c_read()
-		}
-	}
+	return mcu_i2c_send(address, buffer, datalen + 1);
 }
-uint8_t master_get_response(void *data, uint8_t datalen, uint32_t timeout)
+
+uint8_t master_get_response(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t timeout)
 {
+	return 0;//mcu_i2c_receive(address, data, datalen, timeout);
 }
 #else
-uint8_t slave_ack(void);
-uint8_t slave_response(void *data, uint8_t datalen);
+
+// overrides the I2C slave callback
+MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
+{
+	// all data request commands only have the command id and the crc
+	bool isrequest = (datalen == 2);
+	// the CRC can be checked here if needed
+	switch (data[0])
+	{
+		// sync states
+	case MULTIBOARD_CMD_CNCSTATE:
+		if (isrequest)
+		{
+			data[0] = cnc_get_exec_state(EXEC_ALLACTIVE);
+		}
+		else
+		{
+			cnc_set_exec_state(data[0]);
+		}
+		break;
+	}
+}
+
+#endif
 #endif
 
 #endif

@@ -1223,7 +1223,7 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	while (!(I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
 	{
-		if (ms_timeout >= mcu_millis())
+		if (ms_timeout < mcu_millis())
 		{
 			return 0xFF;
 		}
@@ -1231,7 +1231,7 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	uint8_t data = I2CCOM->I2CM.DATA.reg;
 
-	if (send_stop || (ms_timeout >= mcu_millis()))
+	if (send_stop || (ms_timeout < mcu_millis()))
 	{
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 	}

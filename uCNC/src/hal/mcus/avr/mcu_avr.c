@@ -1010,7 +1010,7 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
 	while (!(TWCR & (1 << TWINT)))
 	{
-		if (ms_timeout >= mcu_millis())
+		if (ms_timeout < mcu_millis())
 		{
 			return 0xFF;
 		}
@@ -1018,10 +1018,10 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 	
 	c = TWDR;
 
-	if (send_stop || (ms_timeout >= mcu_millis()))
+	if (send_stop || (ms_timeout < mcu_millis()))
 	{
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO) && (ms_timeout >= mcu_millis()))
+		while (TWCR & (1 << TWSTO))
 			;
 	}
 

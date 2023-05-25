@@ -901,7 +901,7 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 	// Wait for complete
 	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
 	{
-		if (ms_timeout >= mcu_millis())
+		if (ms_timeout < mcu_millis())
 		{
 			return 0xFF;
 		}
@@ -909,13 +909,13 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
 
-	if (send_stop || (ms_timeout >= mcu_millis()))
+	if (send_stop || (ms_timeout < mcu_millis()))
 	{
 		/* Make sure start bit is not active */
 		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout >= mcu_millis()))
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
 			;
 	}
 

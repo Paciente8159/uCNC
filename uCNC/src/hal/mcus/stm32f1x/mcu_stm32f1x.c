@@ -895,7 +895,7 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
 	{
-		if (ms_timeout >= mcu_millis())
+		if (ms_timeout < mcu_millis())
 		{
 			return 0xFF;
 		}
@@ -903,10 +903,10 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	c = I2C_REG->DR;
 
-	if (send_stop || (ms_timeout >= mcu_millis()))
+	if (send_stop || (ms_timeout < mcu_millis()))
 	{
 		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP) && (ms_timeout >= mcu_millis()))
+		while ((I2C_REG->CR1 & I2C_CR1_STOP))
 			;
 	}
 
