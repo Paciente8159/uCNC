@@ -927,23 +927,46 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #ifdef MCU_HAS_I2C
 
-#ifdef I2C_ERROR_CHECKING
-#define I2C_LOOP_CHECK() \
+#ifdef ENABLE_I2C_ERROR_CHECKING
+
+#define I2C_DUMP_STATE() { \
+	serial_print_int(I2C_REG->CR1); \
+	serial_print_str(" "); \
+	serial_print_int(I2C_REG->SR1); \
+	serial_print_str(" "); \
+	serial_print_int(I2C_REG->SR2); \
+	serial_print_str("\n"); \
+}
+
+// I don't think it should take I2C more than 50 iterations of
+// the check loop to send the start condition.
+#define I2C_MAX_START_TIME 	50
+#define I2C_MAX_OTHER_TIME	(F_CPU / 1000)
+#define I2C_LOOP_CHECK(idx, maxTime) \
 { \
-	uint8_t sr = I2C_REG->SR1; \
-	if(sr & (I2C_SR1_BERR | I2C_SR1_AF)) \
+	if((I2C_REG->SR1 & (I2C_SR1_AF | I2C_SR1_BERR))) \
 	{ \
-		/* These are light error and we can still
-		   try to send a stop if they happen */ \
+		/* We break out of the loop and maybe handle the error later */ \
+		serial_print_str("AF IDX=" #idx "\n"); \
+		I2C_DUMP_STATE(); \
 		break; \
 	} \
-	if(sr & I2C_SR1_ARLO) \
+	if((I2C_REG->SR1 & I2C_SR1_ARLO)) \
 	{ \
 		/* If we lost bus arbitration we will not be
 		   able to send a stop condition. */ \
+		serial_print_str("ARLO IDX=" #idx "\n"); \
+		I2C_DUMP_STATE(); \
 		return 0; \
 	} \
-}
+	if(++timeout >= maxTime) { \
+		/* In case there is a problem which we didn't catch,
+		   this timeout should take care of it. */ \
+		serial_print_str("TIMEOUT IDX=" #idx "\n"); \
+		I2C_DUMP_STATE(); \
+		return 0; \
+	} \
+} timeout = 0;
 #else
 #define I2C_LOOP_CHECK() ;
 #endif
@@ -951,6 +974,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
+	uint32_t timeout = 0;
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
@@ -960,23 +984,18 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		// If an error occured mid-write we should not continue to write and if
 		// we do we should leave the bus in this error state until another
 		// start occurs and the bus can be reset into a sane state.
-		if(I2C_REG->SR2 & I2C_SR2_BUSY)
+		if((I2C_REG->SR2 & I2C_SR2_BUSY))
 		{
+			serial_print_str("Busy\n");
+			I2C_DUMP_STATE();
 			// Bus should probably not be busy if we are just starting a transfer
 			if(!(I2C_REG->SR2 & I2C_SR2_MSL))
 			{
 				// We are not the master.
-				if(I2C_REG->SR1 & I2C_SR1_ARLO)
-				{
-					// An arbitration error has occured, either there are multiple masters
-					// or some peripheral messed up. Perform a software reset
-					I2C_RESET();
-				}
-				else
-				{
-					// No error, another master is transmitting, abort.
-					return 0;
-				}
+				// An arbitration error has occured, either there are multiple masters
+				// or some peripheral messed up. Perform a software reset
+				serial_print_str("Reset\n");
+				I2C_RESET();
 			}
 			// If we are the master, this will cause a repeated start which is fine.
 		}
@@ -984,19 +1003,20 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
-			;
+			I2C_LOOP_CHECK(1, I2C_MAX_START_TIME)
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			I2C_REG->CR1 |= I2C_CR1_STOP;
+			I2C_REG->SR1 &= ~I2C_SR1_AF;
 			while ((I2C_REG->CR1 & I2C_CR1_STOP))
-				;
+				I2C_LOOP_CHECK(2, I2C_MAX_OTHER_TIME)
 			return 0;
 		}
 	}
 
 	I2C_REG->DR = data;
 	while (!(I2C_REG->SR1 & status))
-		I2C_LOOP_CHECK()
+		I2C_LOOP_CHECK(3, I2C_MAX_OTHER_TIME)
 	// read SR2 to clear ADDR
 	if (send_start)
 	{
@@ -1006,8 +1026,9 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	if (I2C_REG->SR1 & I2C_SR1_AF)
 	{
 		I2C_REG->CR1 |= I2C_CR1_STOP;
+		I2C_REG->SR1 &= ~I2C_SR1_AF;
 		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
+			I2C_LOOP_CHECK(4, I2C_MAX_OTHER_TIME)
 		return 0;
 	}
 
@@ -1015,7 +1036,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	{
 		I2C_REG->CR1 |= I2C_CR1_STOP;
 		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
+			I2C_LOOP_CHECK(5, I2C_MAX_OTHER_TIME)
 	}
 
 	return 1;
@@ -1025,6 +1046,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 #ifndef mcu_i2c_read
 uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 {
+	uint32_t timeout = 0;
 	uint8_t c = 0;
 
 	if (!with_ack)
@@ -1037,7 +1059,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
-		I2C_LOOP_CHECK()
+		I2C_LOOP_CHECK(6, I2C_MAX_OTHER_TIME)
 	;
 	c = I2C_REG->DR;
 
@@ -1045,7 +1067,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	{
 		I2C_REG->CR1 |= I2C_CR1_STOP;
 		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
+			I2C_LOOP_CHECK(7, I2C_MAX_OTHER_TIME)
 	}
 
 	return c;
