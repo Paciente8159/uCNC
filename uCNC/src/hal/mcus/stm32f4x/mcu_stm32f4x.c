@@ -497,6 +497,19 @@ void mcu_putc(char c)
 #endif
 }
 
+#ifdef MCU_HAS_I2C
+#define I2C_RESET() \
+	/* Perform a software reset of I2C */ \
+	I2C_REG->CR1 |= I2C_CR1_SWRST; \
+	I2C_REG->CR1 &= ~I2C_CR1_SWRST; \
+	/* Set I2C max clock frequency */ \
+	I2C_REG->CR2 |= I2C_SPEEDRANGE; \
+	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1); \
+	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS); \
+	/* Enable I2C peripheral */ \
+	I2C_REG->CR1 |= I2C_CR1_PE
+#endif
+
 void mcu_init(void)
 {
 	// make sure both APB1 and APB2 are running at the same clock (48MHz)
@@ -530,15 +543,8 @@ void mcu_init(void)
 	// set opendrain
 	mcu_config_opendrain(I2C_CLK);
 	mcu_config_opendrain(I2C_DATA);
-	// reset I2C
-	I2C_REG->CR1 |= I2C_CR1_SWRST;
-	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
-	// set max freq
-	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (I2C_FREQ <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= I2C_CR1_PE;
+
+	I2C_RESET();
 #endif
 
 	mcu_disable_probe_isr();
@@ -920,6 +926,28 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
+
+#ifdef I2C_ERROR_CHECKING
+#define I2C_LOOP_CHECK() \
+{ \
+	uint8_t sr = I2C_REG->SR1; \
+	if(sr & (I2C_SR1_BERR | I2C_SR1_AF)) \
+	{ \
+		/* These are light error and we can still
+		   try to send a stop if they happen */ \
+		break; \
+	} \
+	if(sr & I2C_SR1_ARLO) \
+	{ \
+		/* If we lost bus arbitration we will not be
+		   able to send a stop condition. */ \
+		return 0; \
+	} \
+}
+#else
+#define I2C_LOOP_CHECK() ;
+#endif
+
 #ifndef mcu_i2c_write
 uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
@@ -927,6 +955,32 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
 	{
+#ifdef ENABLE_I2C_ERROR_CHECKING
+		// Bad I2C errors should be reset only if we are just starting a transfer.
+		// If an error occured mid-write we should not continue to write and if
+		// we do we should leave the bus in this error state until another
+		// start occurs and the bus can be reset into a sane state.
+		if(I2C_REG->SR2 & I2C_SR2_BUSY)
+		{
+			// Bus should probably not be busy if we are just starting a transfer
+			if(!(I2C_REG->SR2 & I2C_SR2_MSL))
+			{
+				// We are not the master.
+				if(I2C_REG->SR1 & I2C_SR1_ARLO)
+				{
+					// An arbitration error has occured, either there are multiple masters
+					// or some peripheral messed up. Perform a software reset
+					I2C_RESET();
+				}
+				else
+				{
+					// No error, another master is transmitting, abort.
+					return 0;
+				}
+			}
+			// If we are the master, this will cause a repeated start which is fine.
+		}
+#endif
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
@@ -942,7 +996,7 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	I2C_REG->DR = data;
 	while (!(I2C_REG->SR1 & status))
-		;
+		I2C_LOOP_CHECK()
 	// read SR2 to clear ADDR
 	if (send_start)
 	{
@@ -983,7 +1037,7 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 	}
 
 	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
-		;
+		I2C_LOOP_CHECK()
 	;
 	c = I2C_REG->DR;
 
