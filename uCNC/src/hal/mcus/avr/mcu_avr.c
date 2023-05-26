@@ -959,6 +959,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #ifdef MCU_HAS_I2C
 #include <util/twi.h>
+#if I2C_ADDRESS == 0
 void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
@@ -1044,21 +1045,24 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
+	datalen = 2;
 	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
-			for (uint8_t i = 0; i < datalen; i++)
+			do
 			{
-				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				datalen--;
+				if (mcu_i2c_write(*data, false, (release && (datalen == 0))) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
-			}
+				data++;
 
-			return mcu_i2c_write(data[datalen], false, release);
+			} while (datalen);
+
+			return I2C_OK;
 		}
 	}
 
@@ -1090,15 +1094,17 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 	return I2C_NOTOK;
 }
 #endif
+#endif
 
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
-#if I2C_ADDRESS != 0
-	TWAR = (I2C_ADDRESS << 1) | 1;
-#endif
 	// disable TWI
 	TWCR = 0;
+
+#if I2C_ADDRESS != 0
+	TWAR = ((I2C_ADDRESS << 1) | 1);
+#else
 	// set freq
 	uint8_t div = 0;
 	if ((frequency < 5000UL))
@@ -1116,11 +1122,12 @@ void mcu_i2c_config(uint32_t frequency)
 
 	TWSR = div;
 	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
+#endif
 	// enable TWI
-#if I2C_ADDRESS != 0
-	TWCR = (1 << TWIE) | (1 << TWEA) | (1 << TWINT) | (1 << TWEN);
-#else
 	TWCR = (1 << TWINT) | (1 << TWEN);
+
+#if I2C_ADDRESS != 0
+	TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA));
 #endif
 }
 #endif
@@ -1128,19 +1135,18 @@ void mcu_i2c_config(uint32_t frequency)
 #if I2C_ADDRESS != 0
 uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 
-ISR(TWI_vect)
+ISR(TWI_vect, ISR_BLOCK)
 {
 	static uint8_t index = 0;
+	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
 
 	uint8_t i = index;
 
 	switch (TW_STATUS)
 	{
 	// slave receiver
-	case TW_SR_SLA_ACK:			   // addressed, returned ack
-	case TW_SR_GCALL_ACK:		   // addressed generally, returned ack
-	case TW_SR_ARB_LOST_SLA_ACK:   // lost arbitration, returned ack
-	case TW_SR_ARB_LOST_GCALL_ACK: // lost arbitration, returned ack
+	case TW_SR_SLA_ACK:	  // addressed, returned ack
+	case TW_SR_GCALL_ACK: // addressed generally, returned ack
 		index = 0;
 		break;
 	case TW_SR_DATA_ACK:
@@ -1158,7 +1164,7 @@ ISR(TWI_vect)
 			index = 0;
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
-			mcu_enable_global_isr();
+			//mcu_enable_global_isr();
 			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
 		}
 		break;
@@ -1173,26 +1179,23 @@ ISR(TWI_vect)
 		// if there is more to send, ack, otherwise nack
 		if (i >= I2C_SLAVE_BUFFER_SIZE)
 		{
-			TWCR = (1 << TWIE) | (1 << TWINT) | (1 << TWEN);
+			TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
 			return;
 		}
 		index = i;
 		break;
-	case TW_ST_DATA_NACK: // received nack, we are done
-	case TW_ST_LAST_DATA: // received ack, but we are done already!
+	case TW_SR_DATA_NACK: // received nack, we are done
+	case TW_SR_GCALL_DATA_NACK: // received ack, but we are done already!
 	case TW_BUS_ERROR:	  // bus error, illegal stop/start
-	default:			  // other
 		index = 0;
-		break;
+		TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
+		return;
+	default:								// other
+		index = 0;
+		return;
 	}
 
-	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
-	TWCR = (1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
-}
-#else
-ISR(TWI_vect)
-{
-	TWCR = (1 << TWINT) | (1 << TWEN);
+	TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA));
 }
 #endif
 #endif
