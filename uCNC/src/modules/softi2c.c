@@ -155,12 +155,12 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	return c;
 }
 
-uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len)
+uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, bool release)
 {
 	if (!port)
 	{
 #ifdef MCU_HAS_I2C
-		return mcu_i2c_send(address, data, len);
+		return mcu_i2c_send(address, data, len, release);
 #else
 		return I2C_NOTOK;
 #endif
@@ -180,7 +180,7 @@ uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8
 				}
 			}
 
-			return softi2c_write(port, data[len], false, true);
+			return softi2c_write(port, data[len], false, release);
 		}
 	}
 	return I2C_NOTOK;

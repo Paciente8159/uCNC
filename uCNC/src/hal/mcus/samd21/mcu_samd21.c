@@ -1180,8 +1180,20 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 /**
  * https://www.eevblog.com/forum/microcontrollers/i2c-atmel/
  * */
+
+void mcu_i2c_write_stop(bool *stop)
+{
+	if (*stop)
+	{
+		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+	}
+}
+
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+	uint32_t ms_timeout = mcu_millis() + 25;
+
 	if (send_start)
 	{
 		I2CCOM->I2CM.ADDR.reg = data;
@@ -1192,25 +1204,28 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	}
 
 	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
-		;
+	{
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+	}
 
 	if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
 	{
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-		return 0;
+		return I2C_NOTOK;
 	}
 
-	if (send_stop)
-	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-	}
-
-	return 1;
+	return I2C_OK;
 }
 
-static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
+	*data = 0xFF;
 	ms_timeout += mcu_millis();
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (with_ack)
 	{
@@ -1223,25 +1238,20 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 
 	while (!(I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
 	{
-		if (ms_timeout >= mcu_millis())
+		if (ms_timeout < mcu_millis())
 		{
-			return 0xFF;
+			stop = true;
+			return I2C_NOTOK;
 		}
 	}
 
-	uint8_t data = I2CCOM->I2CM.DATA.reg;
-
-	if (send_stop || (ms_timeout >= mcu_millis()))
-	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-	}
-
-	return data;
+	*data = I2CCOM->I2CM.DATA.reg;
+	return I2C_OK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
 	if (datalen)
 	{
@@ -1257,7 +1267,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 				}
 			}
 
-			return mcu_i2c_write(data[datalen], false, true);
+			return mcu_i2c_write(data[datalen], false, release);
 		}
 	}
 
@@ -1269,17 +1279,19 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	if (datalen)
+	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
-			for (uint8_t i = 0; i < datalen; i++)
+			while (datalen--)
 			{
-				data[i] = mcu_i2c_read(true, false, ms_timeout);
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
 			}
-
-			data[datalen] = mcu_i2c_read(false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}
