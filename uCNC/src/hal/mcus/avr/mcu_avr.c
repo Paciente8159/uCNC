@@ -959,16 +959,37 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #ifdef MCU_HAS_I2C
 #include <util/twi.h>
+void mcu_i2c_write_stop(bool *stop)
+{
+	if (*stop)
+	{
+		uint32_t ms_timeout = mcu_millis() + 25;
+
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWSTO)) && (ms_timeout > mcu_millis()))
+			;
+	}
+}
+
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+	uint32_t ms_timeout = mcu_millis() + 25;
 	if (send_start)
 	{
 		// init
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 		while (!(TWCR & (1 << TWINT)))
-			;
-		if (TW_STATUS != TW_START)
 		{
+			if (ms_timeout < mcu_millis())
+			{
+				stop = true;
+				return I2C_NOTOK;
+			}
+		}
+		if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+		{
+			stop = true;
 			return I2C_NOTOK;
 		}
 	}
@@ -976,7 +997,13 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
 	while (!(TWCR & (1 << TWINT)))
-		;
+	{
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+	}
 
 	switch (TW_STATUS)
 	{
@@ -986,53 +1013,38 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	case TW_MR_DATA_ACK:
 		break;
 	default:
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
+		stop = true;
 		return I2C_NOTOK;
-	}
-
-	if (send_stop)
-	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
 	}
 
 	return I2C_OK;
 }
 
-static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0xFF;
+	*data = 0xFF;
 	ms_timeout += mcu_millis();
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
 	while (!(TWCR & (1 << TWINT)))
 	{
 		if (ms_timeout < mcu_millis())
 		{
-			return 0xFF;
+			stop = true;
+			return I2C_NOTOK;
 		}
 	}
-	
-	c = TWDR;
 
-	if (send_stop || (ms_timeout < mcu_millis()))
-	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
-	}
-
-	return c;
+	*data = TWDR;
+	return I2C_OK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
-	if (datalen)
+	if (data && datalen)
 	{
 		datalen--;
 		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
@@ -1046,7 +1058,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 				}
 			}
 
-			return mcu_i2c_write(data[datalen], false, true);
+			return mcu_i2c_write(data[datalen], false, release);
 		}
 	}
 
@@ -1058,17 +1070,19 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	if (datalen)
+	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
-			for (uint8_t i = 0; i < datalen; i++)
+			while (datalen--)
 			{
-				data[i] = mcu_i2c_read(true, false, ms_timeout);
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
 			}
-
-			data[datalen] = mcu_i2c_read(false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}
@@ -1084,7 +1098,7 @@ void mcu_i2c_config(uint32_t frequency)
 	TWAR = (I2C_ADDRESS << 1) | 1;
 #endif
 	// disable TWI
-	TWCR &= ~(1 << TWEN);
+	TWCR = 0;
 	// set freq
 	uint8_t div = 0;
 	if ((frequency < 5000UL))
@@ -1103,9 +1117,10 @@ void mcu_i2c_config(uint32_t frequency)
 	TWSR = div;
 	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
 	// enable TWI
-	TWCR = (1 << TWINT) | (1 << TWEN);
 #if I2C_ADDRESS != 0
-	TWCR |= (1 << TWIE) | (1 << TWEA);
+	TWCR = (1 << TWIE) | (1 << TWEA) | (1 << TWINT) | (1 << TWEN);
+#else
+	TWCR = (1 << TWINT) | (1 << TWEN);
 #endif
 }
 #endif
@@ -1121,13 +1136,12 @@ ISR(TWI_vect)
 
 	switch (TW_STATUS)
 	{
-	/*slave receiver*/
+	// slave receiver
 	case TW_SR_SLA_ACK:			   // addressed, returned ack
 	case TW_SR_GCALL_ACK:		   // addressed generally, returned ack
 	case TW_SR_ARB_LOST_SLA_ACK:   // lost arbitration, returned ack
 	case TW_SR_ARB_LOST_GCALL_ACK: // lost arbitration, returned ack
 		index = 0;
-		TWCR |= (1 << TWEA);
 		break;
 	case TW_SR_DATA_ACK:
 	case TW_SR_GCALL_DATA_ACK:
@@ -1138,7 +1152,6 @@ ISR(TWI_vect)
 		if (i < I2C_SLAVE_BUFFER_SIZE)
 		{
 			mcu_i2c_buffer[i] = TWDR;
-			TWCR |= (1 << TWEA);
 		}
 		if (TW_STATUS == TW_SR_STOP)
 		{
@@ -1149,34 +1162,37 @@ ISR(TWI_vect)
 			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
 		}
 		break;
-	/*slave trasnmitter*/
+	// slave transmitter
 	case TW_ST_SLA_ACK:			 // addressed, returned ack
 	case TW_ST_ARB_LOST_SLA_ACK: // arbitration lost, returned ack
 		i = 0;
-		TWCR |= (1 << TWEA);
 		__attribute__((fallthrough));
 	case TW_ST_DATA_ACK: // byte sent, ack returned
 		// copy data to output register
 		TWDR = mcu_i2c_buffer[i++];
 		// if there is more to send, ack, otherwise nack
-		if (i < I2C_SLAVE_BUFFER_SIZE)
+		if (i >= I2C_SLAVE_BUFFER_SIZE)
 		{
-			TWCR |= (1 << TWEA);
+			TWCR = (1 << TWIE) | (1 << TWINT) | (1 << TWEN);
+			return;
 		}
 		index = i;
 		break;
 	case TW_ST_DATA_NACK: // received nack, we are done
 	case TW_ST_LAST_DATA: // received ack, but we are done already!
+	case TW_BUS_ERROR:	  // bus error, illegal stop/start
+	default:			  // other
 		index = 0;
-		TWCR |= (1 << TWEA);
-		break;
-	case TW_BUS_ERROR: // bus error, illegal stop/start
-		TWCR |= (1 << TWSTO);
 		break;
 	}
 
 	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
-	TWCR |= (1 << TWIE) | (1 << TWINT) | (1 << TWEN);
+	TWCR = (1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA);
+}
+#else
+ISR(TWI_vect)
+{
+	TWCR = (1 << TWINT) | (1 << TWEN);
 }
 #endif
 #endif

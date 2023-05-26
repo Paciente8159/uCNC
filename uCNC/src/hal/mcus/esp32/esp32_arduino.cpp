@@ -497,11 +497,11 @@ extern "C"
 #endif
 	}
 
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 	{
 		I2C_REG.beginTransmission(address);
 		I2C_REG.write(data, datalen);
-		return (I2C_REG.endTransmission(true) == 0) ? I2C_OK : I2C_NOTOK;
+		return (I2C_REG.endTransmission(release) == 0) ? I2C_OK : I2C_NOTOK;
 	}
 
 	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)

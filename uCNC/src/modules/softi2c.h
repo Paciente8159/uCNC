@@ -87,7 +87,7 @@ extern "C"
 	}                                       \
 	softi2c_port_t NAME = {.i2cdelay = I2C_DELAY(FREQ), .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda, .get_scl = &NAME##_get_scl};
 
-	uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len);
+	uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, bool release);
 	uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, uint32_t ms_timeout);
 	void softi2c_config(softi2c_port_t *port, uint32_t frequency);
 

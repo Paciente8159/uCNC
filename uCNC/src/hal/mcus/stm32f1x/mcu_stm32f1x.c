@@ -833,8 +833,23 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
+void mcu_i2c_write_stop(bool *stop)
+{
+	if (*stop)
+	{
+		uint32_t ms_timeout = mcu_millis() + 25;
+
+		I2C_REG->CR1 |= I2C_CR1_STOP;
+		while ((I2C_REG->CR1 & I2C_CR1_STOP) && (ms_timeout > mcu_millis()))
+			;
+	}
+}
+
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+	uint32_t ms_timeout = mcu_millis() + 25;
+
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
@@ -842,19 +857,29 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
-			;
+		{
+			if (ms_timeout < mcu_millis())
+			{
+				stop = true;
+				return I2C_NOTOK;
+			}
+		}
 		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
-			I2C_REG->CR1 |= I2C_CR1_STOP;
-			while ((I2C_REG->CR1 & I2C_CR1_STOP))
-				;
-			return 0;
+			stop = true;
+			return I2C_NOTOK;
 		}
 	}
 
 	I2C_REG->DR = data;
 	while (!(I2C_REG->SR1 & status))
-		;
+	{
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+	}
 	// read SR2 to clear ADDR
 	if (send_start)
 	{
@@ -863,26 +888,18 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	if (I2C_REG->SR1 & I2C_SR1_AF)
 	{
-		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
-		return 0;
+		stop = true;
+		return I2C_NOTOK;
 	}
 
-	if (send_stop)
-	{
-		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
-	}
-
-	return 1;
+	return I2C_OK;
 }
 
-static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0;
+	*data = 0xFF;
 	ms_timeout += mcu_millis();
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (!with_ack)
 	{
@@ -897,25 +914,18 @@ static uint8_t mcu_i2c_read(bool with_ack, bool send_stop, uint32_t ms_timeout)
 	{
 		if (ms_timeout < mcu_millis())
 		{
-			return 0xFF;
+			stop = true;
+			return I2C_NOTOK;
 		}
 	}
 
-	c = I2C_REG->DR;
-
-	if (send_stop || (ms_timeout < mcu_millis()))
-	{
-		I2C_REG->CR1 |= I2C_CR1_STOP;
-		while ((I2C_REG->CR1 & I2C_CR1_STOP))
-			;
-	}
-
-	return c;
+	*data = I2C_REG->DR;
+	return I2C_OK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
 	if (datalen)
 	{
@@ -931,7 +941,7 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 				}
 			}
 
-			return mcu_i2c_write(data[datalen], false, true);
+			return mcu_i2c_write(data[datalen], false, release);
 		}
 	}
 
@@ -943,17 +953,19 @@ uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen)
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
 {
-	if (datalen)
+	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
-			for (uint8_t i = 0; i < datalen; i++)
+			while (datalen--)
 			{
-				data[i] = mcu_i2c_read(true, false, ms_timeout);
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
 			}
-
-			data[datalen] = mcu_i2c_read(false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}
