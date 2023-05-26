@@ -920,6 +920,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
+#if I2C_ADDRESS == 0
 void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
@@ -1013,22 +1014,24 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
-	if (datalen)
+	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
-			for (uint8_t i = 0; i < datalen; i++)
+			do
 			{
-				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
 				{
-					stop = true;
 					return I2C_NOTOK;
 				}
-			}
+				data++;
 
-			return mcu_i2c_write(data[datalen], false, release);
+			} while (datalen);
+
+			return I2C_OK;
 		}
 	}
 
@@ -1044,21 +1047,23 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 	{
 		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
-			while (datalen--)
+			do
 			{
+				datalen--;
 				bool last = (datalen == 0);
 				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
 				data++;
-			}
+			} while (datalen);
 			return I2C_OK;
 		}
 	}
 
 	return I2C_NOTOK;
 }
+#endif
 #endif
 
 #ifndef mcu_i2c_config
