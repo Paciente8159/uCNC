@@ -966,10 +966,6 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
 		{
-			if(I2C_REG->SR1 & I2C_SR1_AF)
-			{
-				break;
-			}
 			if(I2C_REG->SR1 & I2C_SR1_ARLO)
 			{
 				stop = false;
@@ -1038,14 +1034,6 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 
 	while (!(I2C_REG->SR1 & I2C_SR1_RXNE))
 	{
-		if(I2C_REG->SR1 & I2C_SR1_AF)
-		{
-			break;
-		}
-		if(I2C_REG->SR1 & I2C_SR1_ARLO)
-		{
-			return I2C_NOTOK;
-		}
 		if (ms_timeout < mcu_millis())
 		{
 			return I2C_NOTOK;
