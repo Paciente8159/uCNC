@@ -942,10 +942,35 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
 	{
+		if((I2C_REG->SR1 & I2C_SR1_ARLO) || ((I2C_REG->CR1 & I2C_CR1_START) && (I2C_REG->CR1 & I2C_CR1_STOP)))
+		{
+			// Save values
+			uint32_t cr2 = I2C_REG->CR2;
+			uint32_t ccr = I2C_REG->CCR;
+			uint32_t trise = I2C_REG->TRISE;
+
+			// Software reset
+			I2C_REG->CR1 |= I2C_CR1_SWRST;
+			I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+
+			// Restore values
+			I2C_REG->CR2 = cr2;
+			I2C_REG->CCR = ccr;
+			I2C_REG->TRISE = trise;
+
+			// Enable
+			I2C_REG->CR1 |= I2C_CR1_PE;
+		}
+
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
 		{
+			if(I2C_REG->SR1 & I2C_SR1_ARLO)
+			{
+				stop = false;
+				return I2C_NOTOK;
+			}
 			if (ms_timeout < mcu_millis())
 			{
 				stop = true;
@@ -962,6 +987,15 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->DR = data;
 	while (!(I2C_REG->SR1 & status))
 	{
+		if(I2C_REG->SR1 & I2C_SR1_AF)
+		{
+			break;
+		}
+		if(I2C_REG->SR1 & I2C_SR1_ARLO)
+		{
+			stop = false;
+			return I2C_NOTOK;
+		}
 		if (ms_timeout < mcu_millis())
 		{
 			stop = true;
