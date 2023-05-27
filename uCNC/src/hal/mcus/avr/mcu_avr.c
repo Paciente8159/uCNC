@@ -960,7 +960,8 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #ifdef MCU_HAS_I2C
 #include <util/twi.h>
 #if I2C_ADDRESS == 0
-void mcu_i2c_write_stop(bool *stop)
+
+static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
@@ -979,6 +980,18 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	if (send_start)
 	{
 		// init
+		// on error, a start or stop condition in progress, reset
+		if ((TW_STATUS == TW_BUS_ERROR) || CHECKFLAG(TWCR, ((1 << TWSTA) | (1 << TWSTO))))
+		{
+			uint8_t twsr = (TWSR & 0x03);
+			uint8_t twbr = TWBR;
+			TWCR = 0;
+			TWSR = twsr;
+			TWBR = twbr;
+			// enable TWI
+			TWCR = (1 << TWINT) | (1 << TWEN);
+		}
+
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 		while (!(TWCR & (1 << TWINT)))
 		{
@@ -1165,7 +1178,7 @@ ISR(TWI_vect, ISR_BLOCK)
 			index = 0;
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
-			//mcu_enable_global_isr();
+			// mcu_enable_global_isr();
 			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
 		}
 		break;
@@ -1185,13 +1198,13 @@ ISR(TWI_vect, ISR_BLOCK)
 		}
 		index = i;
 		break;
-	case TW_SR_DATA_NACK: // received nack, we are done
+	case TW_SR_DATA_NACK:		// received nack, we are done
 	case TW_SR_GCALL_DATA_NACK: // received ack, but we are done already!
-	case TW_BUS_ERROR:	  // bus error, illegal stop/start
+	case TW_BUS_ERROR:			// bus error, illegal stop/start
 		index = 0;
 		TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
 		return;
-	default:								// other
+	default: // other
 		index = 0;
 		return;
 	}
