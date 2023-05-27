@@ -3761,10 +3761,10 @@ extern "C"
 #define I2C_PORT 0
 #endif
 #ifndef I2C_FREQ
-#define I2C_FREQ 100000UL
+#define I2C_FREQ 400000UL
 #endif
 #ifndef I2C_ADDRESS
-#define I2C_ADDRESS 1
+#define I2C_ADDRESS 0
 #endif
 
 #define I2C_REG __helper__(LPC_I2C, I2C_PORT, )

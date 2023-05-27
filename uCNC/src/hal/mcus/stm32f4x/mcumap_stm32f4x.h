@@ -3049,6 +3049,11 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 0
+#endif
+
 
 #ifndef I2C_PORT
 #define I2C_PORT 1
@@ -3063,7 +3068,7 @@ extern "C"
 #define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
 
 #ifndef I2C_FREQ
-#define I2C_FREQ 100000UL
+#define I2C_FREQ 400000UL
 #endif
 #endif
 

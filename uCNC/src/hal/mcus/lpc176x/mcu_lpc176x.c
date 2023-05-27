@@ -843,6 +843,15 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	if (send_start)
 	{
+		// manual 19.9.7.3
+		if (!I2C_REG->I2STAT || (I2C_REG->I2CONSET & I2C_I2CONSET_STA) || (I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
+			// Wait for complete
+			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
+				;
+		}
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
