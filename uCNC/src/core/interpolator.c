@@ -1051,12 +1051,10 @@ void itp_update(void)
 
 void itp_stop(void)
 {
-	// any stop command while running triggers an HALT alarm
-	if (cnc_get_exec_state(EXEC_RUN))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-	}
-
+	mcu_stop_itp_isr();
+	//signals the main loop that the ITP has been halted.
+	//if the halt flag is not combined with a RT_CMD_RUN_IDLE flag that means that this was an abrupt stop
+	cnc_call_rt_state_command(RT_CMD_RUN_HALT);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -1064,9 +1062,6 @@ void itp_stop(void)
 		tool_set_speed(0);
 	}
 #endif
-
-	mcu_stop_itp_isr();
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)
@@ -1286,7 +1281,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				// loads a new segment
 				itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
-				cnc_set_exec_state(EXEC_RUN);
 				if (itp_rt_sgm->block != NULL)
 				{
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -1350,7 +1344,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 			else
 			{
-				cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+				cnc_call_rt_state_command(RT_CMD_RUN_IDLE); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
 				itp_stop();						// the buffer is empty. The ISR can stop
 				return;
 			}

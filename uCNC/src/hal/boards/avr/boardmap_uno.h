@@ -71,20 +71,20 @@ extern "C"
 #define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
 
 // Setup probe pin
-#define PROBE_BIT 5
-#define PROBE_PORT C
-#define PROBE_ISR 1
+// #define PROBE_BIT 5
+// #define PROBE_PORT C
+// #define PROBE_ISR 1
 
 // Setup control input pins
-#define ESTOP_BIT 0
-#define FHOLD_BIT 1
-#define CS_RES_BIT 2
-#define ESTOP_PORT C
-#define FHOLD_PORT C
-#define CS_RES_PORT C
-#define ESTOP_ISR 1
-#define FHOLD_ISR 1
-#define CS_RES_ISR 1
+// #define ESTOP_BIT 0
+// #define FHOLD_BIT 1
+// #define CS_RES_BIT 2
+// #define ESTOP_PORT C
+// #define FHOLD_PORT C
+// #define CS_RES_PORT C
+// #define ESTOP_ISR 1
+// #define FHOLD_ISR 1
+// #define CS_RES_ISR 1
 
 // Setup com pins
 #define RX_BIT 0
@@ -141,6 +141,12 @@ extern "C"
 	//#define RTC_TIMER 0
 
 	#define ONESHOT_TIMER 2
+
+	#define I2C_CLK_BIT 5
+#define I2C_CLK_PORT C
+	#define I2C_DATA_BIT 4
+#define I2C_DATA_PORT C
+// #define PROBE_ISR 1
 
 #ifdef __cplusplus
 }

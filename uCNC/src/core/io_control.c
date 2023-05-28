@@ -169,7 +169,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
-			cnc_set_exec_state(EXEC_LIMITS);
+			cnc_call_rt_state_command(RT_CMD_LIMITS_HIT);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -200,7 +200,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
-		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+		cnc_call_rt_state_command(RT_CMD_RESET);
 		return; // forces exit
 	}
 #endif
@@ -208,7 +208,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 	{
 		// safety door activates hold simultaneously to start the controlled stop
-		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+		cnc_call_rt_state_command(RT_CMD_FEED_HOLD | RT_CMD_SAFETY_DOOR);
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
@@ -217,7 +217,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
 	{
-		cnc_set_exec_state(EXEC_HOLD);
+		cnc_call_rt_state_command(RT_CMD_FEED_HOLD);
 	}
 #endif
 #if ASSERT_PIN(CS_RES)

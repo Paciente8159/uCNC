@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DWIN_INTERFACE=2 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
+Compiler=-DWIN_INTERFACE=0 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN_@@_
 CppCompiler=_@@_
 Linker=-lws2_32 -lSDL2main -lSDL2_@@_
 IsCpp=0
@@ -841,16 +841,6 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit80]
-FileName=..\..\uCNC\src\modules\GraphicLCD\graphic_lcd.c
-CompileCpp=0
-Folder=
-Compile=1
-Link=1
-Priority=1000
-OverrideBuildCmd=0
-BuildCmd=
-
-[Unit81]
 FileName=clib\mui.c
 CompileCpp=0
 Folder=
@@ -860,7 +850,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit82]
+[Unit81]
 FileName=clib\mui.h
 CompileCpp=0
 Folder=
@@ -870,7 +860,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit83]
+[Unit82]
 FileName=clib\mui_u8g2.c
 CompileCpp=0
 Folder=
@@ -880,7 +870,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit84]
+[Unit83]
 FileName=clib\mui_u8g2.h
 CompileCpp=0
 Folder=
@@ -890,7 +880,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit85]
+[Unit84]
 FileName=clib\u8g2.h
 CompileCpp=0
 Folder=
@@ -900,7 +890,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit86]
+[Unit85]
 FileName=clib\u8g2_bitmap.c
 CompileCpp=0
 Folder=
@@ -910,7 +900,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit87]
+[Unit86]
 FileName=clib\u8g2_box.c
 CompileCpp=0
 Folder=
@@ -920,7 +910,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit88]
+[Unit87]
 FileName=clib\u8g2_buffer.c
 CompileCpp=0
 Folder=
@@ -930,7 +920,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit89]
+[Unit88]
 FileName=clib\u8g2_button.c
 CompileCpp=0
 Folder=
@@ -940,7 +930,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit90]
+[Unit89]
 FileName=clib\u8g2_circle.c
 CompileCpp=0
 Folder=
@@ -950,7 +940,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit91]
+[Unit90]
 FileName=clib\u8g2_cleardisplay.c
 CompileCpp=0
 Folder=
@@ -960,7 +950,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit92]
+[Unit91]
 FileName=clib\u8g2_d_memory.c
 CompileCpp=0
 Folder=
@@ -970,7 +960,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit93]
+[Unit92]
 FileName=clib\u8g2_d_setup.c
 CompileCpp=0
 Folder=
@@ -980,7 +970,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit94]
+[Unit93]
 FileName=clib\u8g2_font.c
 CompileCpp=0
 Folder=
@@ -990,7 +980,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit95]
+[Unit94]
 FileName=clib\u8g2_fonts.c
 CompileCpp=0
 Folder=
@@ -1000,7 +990,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit96]
+[Unit95]
 FileName=clib\u8g2_hvline.c
 CompileCpp=0
 Folder=
@@ -1010,7 +1000,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit97]
+[Unit96]
 FileName=clib\u8g2_input_value.c
 CompileCpp=0
 Folder=
@@ -1020,7 +1010,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit98]
+[Unit97]
 FileName=clib\u8g2_intersection.c
 CompileCpp=0
 Folder=
@@ -1030,7 +1020,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit99]
+[Unit98]
 FileName=clib\u8g2_kerning.c
 CompileCpp=0
 Folder=
@@ -1040,7 +1030,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit100]
+[Unit99]
 FileName=clib\u8g2_line.c
 CompileCpp=0
 Folder=
@@ -1050,7 +1040,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit101]
+[Unit100]
 FileName=clib\u8g2_ll_hvline.c
 CompileCpp=0
 Folder=
@@ -1060,7 +1050,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit102]
+[Unit101]
 FileName=clib\u8g2_message.c
 CompileCpp=0
 Folder=
@@ -1070,7 +1060,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit103]
+[Unit102]
 FileName=clib\u8g2_polygon.c
 CompileCpp=0
 Folder=
@@ -1080,7 +1070,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit104]
+[Unit103]
 FileName=clib\u8g2_selection_list.c
 CompileCpp=0
 Folder=
@@ -1090,7 +1080,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit105]
+[Unit104]
 FileName=clib\u8g2_setup.c
 CompileCpp=0
 Folder=
@@ -1100,7 +1090,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit106]
+[Unit105]
 FileName=clib\u8log.c
 CompileCpp=0
 Folder=
@@ -1110,7 +1100,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit107]
+[Unit106]
 FileName=clib\u8log_u8g2.c
 CompileCpp=0
 Folder=
@@ -1120,7 +1110,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit108]
+[Unit107]
 FileName=clib\u8log_u8x8.c
 CompileCpp=0
 Folder=
@@ -1130,7 +1120,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit109]
+[Unit108]
 FileName=clib\u8x8.h
 CompileCpp=0
 Folder=
@@ -1140,7 +1130,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit110]
+[Unit109]
 FileName=clib\u8x8_8x8.c
 CompileCpp=0
 Folder=
@@ -1150,7 +1140,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit111]
+[Unit110]
 FileName=clib\u8x8_byte.c
 CompileCpp=0
 Folder=
@@ -1160,7 +1150,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit112]
+[Unit111]
 FileName=clib\u8x8_cad.c
 CompileCpp=0
 Folder=
@@ -1170,7 +1160,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit113]
+[Unit112]
 FileName=clib\u8x8_capture.c
 CompileCpp=0
 Folder=
@@ -1180,7 +1170,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit114]
+[Unit113]
 FileName=clib\u8x8_d_a2printer.c
 CompileCpp=0
 Folder=
@@ -1190,7 +1180,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit115]
+[Unit114]
 FileName=clib\u8x8_d_gp1247ai.c
 CompileCpp=0
 Folder=
@@ -1200,7 +1190,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit116]
+[Unit115]
 FileName=clib\u8x8_d_gp1287ai.c
 CompileCpp=0
 Folder=
@@ -1210,7 +1200,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit117]
+[Unit116]
 FileName=clib\u8x8_d_gu800.c
 CompileCpp=0
 Folder=
@@ -1220,7 +1210,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit118]
+[Unit117]
 FileName=clib\u8x8_d_hd44102.c
 CompileCpp=0
 Folder=
@@ -1230,7 +1220,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit119]
+[Unit118]
 FileName=clib\u8x8_d_il3820_296x128.c
 CompileCpp=0
 Folder=
@@ -1240,7 +1230,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit120]
+[Unit119]
 FileName=clib\u8x8_d_ist3020.c
 CompileCpp=0
 Folder=
@@ -1250,7 +1240,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit121]
+[Unit120]
 FileName=clib\u8x8_d_ist3088.c
 CompileCpp=0
 Folder=
@@ -1260,7 +1250,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit122]
+[Unit121]
 FileName=clib\u8x8_d_ist7920.c
 CompileCpp=0
 Folder=
@@ -1270,7 +1260,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit123]
+[Unit122]
 FileName=clib\u8x8_d_ks0108.c
 CompileCpp=0
 Folder=
@@ -1280,7 +1270,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit124]
+[Unit123]
 FileName=clib\u8x8_d_lc7981.c
 CompileCpp=0
 Folder=
@@ -1290,7 +1280,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit125]
+[Unit124]
 FileName=clib\u8x8_d_ld7032_60x32.c
 CompileCpp=0
 Folder=
@@ -1300,7 +1290,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit126]
+[Unit125]
 FileName=clib\u8x8_d_ls013b7dh03.c
 CompileCpp=0
 Folder=
@@ -1310,7 +1300,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit127]
+[Unit126]
 FileName=clib\u8x8_d_max7219.c
 CompileCpp=0
 Folder=
@@ -1320,7 +1310,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit128]
+[Unit127]
 FileName=clib\u8x8_d_pcd8544_84x48.c
 CompileCpp=0
 Folder=
@@ -1330,7 +1320,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit129]
+[Unit128]
 FileName=clib\u8x8_d_pcf8812.c
 CompileCpp=0
 Folder=
@@ -1340,7 +1330,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit130]
+[Unit129]
 FileName=clib\u8x8_d_pcf8814_hx1230.c
 CompileCpp=0
 Folder=
@@ -1350,7 +1340,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit131]
+[Unit130]
 FileName=clib\u8x8_d_s1d15e06.c
 CompileCpp=0
 Folder=
@@ -1360,7 +1350,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit132]
+[Unit131]
 FileName=clib\u8x8_d_s1d15721.c
 CompileCpp=0
 Folder=
@@ -1370,7 +1360,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit133]
+[Unit132]
 FileName=clib\u8x8_d_sbn1661.c
 CompileCpp=0
 Folder=
@@ -1380,7 +1370,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit134]
+[Unit133]
 FileName=clib\u8x8_d_sdl_128x64.c
 CompileCpp=0
 Folder=
@@ -1390,7 +1380,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit135]
+[Unit134]
 FileName=clib\u8x8_d_sed1330.c
 CompileCpp=0
 Folder=
@@ -1400,7 +1390,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit136]
+[Unit135]
 FileName=clib\u8x8_d_sh1106_64x32.c
 CompileCpp=0
 Folder=
@@ -1410,7 +1400,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit137]
+[Unit136]
 FileName=clib\u8x8_d_sh1106_72x40.c
 CompileCpp=0
 Folder=
@@ -1420,7 +1410,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit138]
+[Unit137]
 FileName=clib\u8x8_d_sh1107.c
 CompileCpp=0
 Folder=
@@ -1430,7 +1420,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit139]
+[Unit138]
 FileName=clib\u8x8_d_sh1108.c
 CompileCpp=0
 Folder=
@@ -1440,7 +1430,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit140]
+[Unit139]
 FileName=clib\u8x8_d_sh1122.c
 CompileCpp=0
 Folder=
@@ -1450,7 +1440,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit141]
+[Unit140]
 FileName=clib\u8x8_d_ssd1305.c
 CompileCpp=0
 Folder=
@@ -1460,7 +1450,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit142]
+[Unit141]
 FileName=clib\u8x8_d_ssd1306_48x64.c
 CompileCpp=0
 Folder=
@@ -1470,7 +1460,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit143]
+[Unit142]
 FileName=clib\u8x8_d_ssd1306_64x32.c
 CompileCpp=0
 Folder=
@@ -1480,7 +1470,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit144]
+[Unit143]
 FileName=clib\u8x8_d_ssd1306_64x48.c
 CompileCpp=0
 Folder=
@@ -1490,7 +1480,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit145]
+[Unit144]
 FileName=clib\u8x8_d_ssd1306_72x40.c
 CompileCpp=0
 Folder=
@@ -1500,7 +1490,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit146]
+[Unit145]
 FileName=clib\u8x8_d_ssd1306_96x16.c
 CompileCpp=0
 Folder=
@@ -1510,7 +1500,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit147]
+[Unit146]
 FileName=clib\u8x8_d_ssd1306_96x40.c
 CompileCpp=0
 Folder=
@@ -1520,7 +1510,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit148]
+[Unit147]
 FileName=clib\u8x8_d_ssd1306_128x32.c
 CompileCpp=0
 Folder=
@@ -1530,7 +1520,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit149]
+[Unit148]
 FileName=clib\u8x8_d_ssd1306_128x64_noname.c
 CompileCpp=0
 Folder=
@@ -1540,7 +1530,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit150]
+[Unit149]
 FileName=clib\u8x8_d_ssd1306_2040x16.c
 CompileCpp=0
 Folder=
@@ -1550,7 +1540,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit151]
+[Unit150]
 FileName=clib\u8x8_d_ssd1309.c
 CompileCpp=0
 Folder=
@@ -1560,7 +1550,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit152]
+[Unit151]
 FileName=clib\u8x8_d_ssd1316.c
 CompileCpp=0
 Folder=
@@ -1570,7 +1560,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit153]
+[Unit152]
 FileName=clib\u8x8_d_ssd1317.c
 CompileCpp=0
 Folder=
@@ -1580,7 +1570,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit154]
+[Unit153]
 FileName=clib\u8x8_d_ssd1318.c
 CompileCpp=0
 Folder=
@@ -1590,7 +1580,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit155]
+[Unit154]
 FileName=clib\u8x8_d_ssd1320.c
 CompileCpp=0
 Folder=
@@ -1600,7 +1590,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit156]
+[Unit155]
 FileName=clib\u8x8_d_ssd1322.c
 CompileCpp=0
 Folder=
@@ -1610,7 +1600,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit157]
+[Unit156]
 FileName=clib\u8x8_d_ssd1325.c
 CompileCpp=0
 Folder=
@@ -1620,7 +1610,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit158]
+[Unit157]
 FileName=clib\u8x8_d_ssd1326.c
 CompileCpp=0
 Folder=
@@ -1630,7 +1620,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit159]
+[Unit158]
 FileName=clib\u8x8_d_ssd1327.c
 CompileCpp=0
 Folder=
@@ -1640,7 +1630,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit160]
+[Unit159]
 FileName=clib\u8x8_d_ssd1329.c
 CompileCpp=0
 Folder=
@@ -1650,7 +1640,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit161]
+[Unit160]
 FileName=clib\u8x8_d_ssd1606_172x72.c
 CompileCpp=0
 Folder=
@@ -1660,7 +1650,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit162]
+[Unit161]
 FileName=clib\u8x8_d_ssd1607_200x200.c
 CompileCpp=0
 Folder=
@@ -1670,7 +1660,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit163]
+[Unit162]
 FileName=clib\u8x8_d_st7511.c
 CompileCpp=0
 Folder=
@@ -1680,7 +1670,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit164]
+[Unit163]
 FileName=clib\u8x8_d_st7528.c
 CompileCpp=0
 Folder=
@@ -1690,7 +1680,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit165]
+[Unit164]
 FileName=clib\u8x8_d_st7565.c
 CompileCpp=0
 Folder=
@@ -1700,7 +1690,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit166]
+[Unit165]
 FileName=clib\u8x8_d_st7567.c
 CompileCpp=0
 Folder=
@@ -1710,7 +1700,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit167]
+[Unit166]
 FileName=clib\u8x8_d_st7571.c
 CompileCpp=0
 Folder=
@@ -1720,7 +1710,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit168]
+[Unit167]
 FileName=clib\u8x8_d_st7586s_erc240160.c
 CompileCpp=0
 Folder=
@@ -1730,7 +1720,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit169]
+[Unit168]
 FileName=clib\u8x8_d_st7586s_jlx384160.c
 CompileCpp=0
 Folder=
@@ -1740,7 +1730,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit170]
+[Unit169]
 FileName=clib\u8x8_d_st7586s_s028hn118a.c
 CompileCpp=0
 Folder=
@@ -1750,7 +1740,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit171]
+[Unit170]
 FileName=clib\u8x8_d_st7586s_ymc240160.c
 CompileCpp=0
 Folder=
@@ -1760,7 +1750,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit172]
+[Unit171]
 FileName=clib\u8x8_d_st7588.c
 CompileCpp=0
 Folder=
@@ -1770,7 +1760,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit173]
+[Unit172]
 FileName=clib\u8x8_d_st7920.c
 CompileCpp=0
 Folder=
@@ -1780,7 +1770,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit174]
+[Unit173]
 FileName=clib\u8x8_d_st75160.c
 CompileCpp=0
 Folder=
@@ -1790,7 +1780,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit175]
+[Unit174]
 FileName=clib\u8x8_d_st75256.c
 CompileCpp=0
 Folder=
@@ -1800,7 +1790,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit176]
+[Unit175]
 FileName=clib\u8x8_d_st75320.c
 CompileCpp=0
 Folder=
@@ -1810,7 +1800,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit177]
+[Unit176]
 FileName=clib\u8x8_d_stdio.c
 CompileCpp=0
 Folder=
@@ -1820,7 +1810,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit178]
+[Unit177]
 FileName=clib\u8x8_d_t6963.c
 CompileCpp=0
 Folder=
@@ -1830,7 +1820,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit179]
+[Unit178]
 FileName=clib\u8x8_d_uc1601.c
 CompileCpp=0
 Folder=
@@ -1840,7 +1830,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit180]
+[Unit179]
 FileName=clib\u8x8_d_uc1604.c
 CompileCpp=0
 Folder=
@@ -1850,7 +1840,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit181]
+[Unit180]
 FileName=clib\u8x8_d_uc1608.c
 CompileCpp=0
 Folder=
@@ -1860,7 +1850,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit182]
+[Unit181]
 FileName=clib\u8x8_d_uc1609.c
 CompileCpp=0
 Folder=
@@ -1870,7 +1860,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit183]
+[Unit182]
 FileName=clib\u8x8_d_uc1610.c
 CompileCpp=0
 Folder=
@@ -1880,7 +1870,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit184]
+[Unit183]
 FileName=clib\u8x8_d_uc1611.c
 CompileCpp=0
 Folder=
@@ -1890,7 +1880,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit185]
+[Unit184]
 FileName=clib\u8x8_d_uc1617.c
 CompileCpp=0
 Folder=
@@ -1900,7 +1890,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit186]
+[Unit185]
 FileName=clib\u8x8_d_uc1638.c
 CompileCpp=0
 Folder=
@@ -1910,7 +1900,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit187]
+[Unit186]
 FileName=clib\u8x8_d_uc1701_dogs102.c
 CompileCpp=0
 Folder=
@@ -1920,7 +1910,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit188]
+[Unit187]
 FileName=clib\u8x8_d_uc1701_mini12864.c
 CompileCpp=0
 Folder=
@@ -1930,7 +1920,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit189]
+[Unit188]
 FileName=clib\u8x8_debounce.c
 CompileCpp=0
 Folder=
@@ -1940,7 +1930,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit190]
+[Unit189]
 FileName=clib\u8x8_display.c
 CompileCpp=0
 Folder=
@@ -1950,7 +1940,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit191]
+[Unit190]
 FileName=clib\u8x8_fonts.c
 CompileCpp=0
 Folder=
@@ -1960,7 +1950,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit192]
+[Unit191]
 FileName=clib\u8x8_gpio.c
 CompileCpp=0
 Folder=
@@ -1970,7 +1960,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit193]
+[Unit192]
 FileName=clib\u8x8_input_value.c
 CompileCpp=0
 Folder=
@@ -1980,7 +1970,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit194]
+[Unit193]
 FileName=clib\u8x8_message.c
 CompileCpp=0
 Folder=
@@ -1990,7 +1980,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit195]
+[Unit194]
 FileName=clib\u8x8_sdl_key.c
 CompileCpp=0
 Folder=
@@ -2000,7 +1990,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit196]
+[Unit195]
 FileName=clib\u8x8_selection_list.c
 CompileCpp=0
 Folder=
@@ -2010,7 +2000,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit197]
+[Unit196]
 FileName=clib\u8x8_setup.c
 CompileCpp=0
 Folder=
@@ -2020,7 +2010,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit198]
+[Unit197]
 FileName=clib\u8x8_string.c
 CompileCpp=0
 Folder=
@@ -2030,7 +2020,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit199]
+[Unit198]
 FileName=clib\u8x8_u8toa.c
 CompileCpp=0
 Folder=
@@ -2040,8 +2030,18 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit200]
+[Unit199]
 FileName=clib\u8x8_u16toa.c
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit200]
+FileName=..\..\uCNC\src\utils.c
 CompileCpp=0
 Folder=
 Compile=1

@@ -28,8 +28,13 @@ extern "C"
 #define RT_CMD_CLEAR 0
 
 #define RT_CMD_RESET 1
-#define RT_CMD_CYCLE_START 2
-#define RT_CMD_REPORT 4
+#define RT_CMD_LIMITS_HIT 2
+#define RT_CMD_SAFETY_DOOR 4
+#define RT_CMD_FEED_HOLD 8
+#define RT_CMD_CYCLE_START 16
+#define RT_CMD_RUN_HALT 32
+#define RT_CMD_RUN_IDLE 64
+#define RT_CMD_REPORT 128
 
 // feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -184,7 +189,11 @@ extern "C"
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);
 	void cnc_clear_exec_state(uint8_t statemask);
+
+	// processes the ascii real time commands and enqueues them for execution in the main loop
 	void cnc_call_rt_command(uint8_t command);
+	// enqueues a state change to be made in the main loop
+	void cnc_call_rt_state_command(uint8_t command);
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// generates a default delegate, event and handler hook

@@ -29,28 +29,25 @@
 #ifdef IS_MASTER_BOARD
 uint8_t multiboard_get_byte(uint8_t cmd, uint8_t *var, uint8_t error_val, void *arg, uint8_t arglen)
 {
-	//mcu_i2c_send(0, &cmd, 1, true);
-
-	// for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
-	// {
-	// 	uint8_t val = error_val;
-	// 	//master_send_command(0, cmd, &val, 1);
-	// 	/*if (master_send_command(slaveid, cmd, arg, arglen) == I2C_OK)
-	// 	{
-	// 		if (master_get_response(slaveid, &val, 1, 2) == I2C_OK)
-	// 		{
-	// 			*var |= val;
-	// 		}
-	// 		else
-	// 		{
-	// 			return MULTIBOARD_CONTROL_RESPONSE_ERROR;
-	// 		}
-	// 	}
-	// 	else
-	// 	{
-	// 		return MULTIBOARD_CONTROL_CMD_ERROR;
-	// 	}*/
-	// }
+	for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
+	{
+		uint8_t val = error_val;
+		if (master_send_command(slaveid, cmd, arg, arglen) == I2C_OK)
+		{
+			if (master_get_response(slaveid, &val, 1, 2) == I2C_OK)
+			{
+				*var |= val;
+			}
+			else
+			{
+				return MULTIBOARD_CONTROL_RESPONSE_ERROR;
+			}
+		}
+		else
+		{
+			return MULTIBOARD_CONTROL_CMD_ERROR;
+		}
+	}
 
 	return MULTIBOARD_CONTROL_OK;
 }
@@ -77,21 +74,19 @@ uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_
 
 uint8_t master_get_response(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t timeout)
 {
-	return 0;//mcu_i2c_receive(address, data, datalen, timeout);
+	return mcu_i2c_receive(address, data, datalen, timeout);
 }
 #else
 
 // overrides the I2C slave callback
 MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 {
-	// all data request commands only have the command id and the crc
-	bool isrequest = (datalen == 2);
 	// the CRC can be checked here if needed
 	switch (data[0])
 	{
 		// sync states
 	case MULTIBOARD_CMD_CNCSTATE:
-		if (isrequest)
+		if (datalen == 1)
 		{
 			data[0] = cnc_get_exec_state(EXEC_ALLACTIVE);
 		}

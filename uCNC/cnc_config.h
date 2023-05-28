@@ -404,7 +404,7 @@ extern "C"
 	 * segments.
 	 * */
 
-	#define BRESENHAM_16BIT
+	// #define BRESENHAM_16BIT
 
 	/**
 	 * Performs motions with variable acceleration (trapezoidal speed profile
@@ -559,7 +559,7 @@ extern "C"
  * Enable Multi-Board (experimental)
  * This allow to distribute IO in more than a single board
  * **/
-#define ENABLE_MULTIBOARD
+// #define ENABLE_MULTIBOARD
 // #ifndef BAUDRATE2
 // #define BAUDRATE2 230400
 // #endif
@@ -570,14 +570,13 @@ extern "C"
 // uncomment if this board will be the master board
 // there can only be one master board in the bus
 #define IS_MASTER_BOARD
-#define I2C_FREQ 100000UL
 #ifdef IS_MASTER_BOARD
 // define the number of slave boards in the system
 #define SLAVE_BOARDS_COUNT 1
 #else
 // set the slave board ID
 // each board must have a unique ID that should be a sequencial starting at 1 and ending at SLAVE_BOARDS_COUNT
-#define SLAVE_BOARD_ID 1
+#define SLAVE_BOARD_ID 8
 #define I2C_ADDRESS SLAVE_BOARD_ID
 #endif
 #endif

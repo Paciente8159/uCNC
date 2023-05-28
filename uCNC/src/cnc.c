@@ -38,7 +38,7 @@
 typedef struct
 {
 	// uint8_t system_state;		//signals if CNC is system_state and gcode can run
-	volatile uint8_t exec_state;
+	volatile uint8_t exec_state;	// on single board this probably doesn't need to be volatile anymore
 	uint8_t loop_state;
 	volatile uint8_t rt_cmd;
 	volatile uint8_t feed_ovr_cmd;
@@ -214,8 +214,6 @@ bool cnc_dotasks(void)
 		return false;
 	}
 
-	cnc_exec_rt_commands(); // executes all pending realtime commands
-
 	if (cnc_has_alarm())
 	{
 		return !cnc_get_exec_state(EXEC_KILL);
@@ -390,27 +388,16 @@ uint8_t cnc_unlock(bool force)
 
 uint8_t cnc_get_exec_state(uint8_t statemask)
 {
-#ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	uint8_t state = CHECKFLAG(cnc_state.exec_state, statemask);
-	MULTIBOARD_GET_CNCSTATE(&state);
-	return state;
-#endif
-#endif
-
 	return CHECKFLAG(cnc_state.exec_state, statemask);
 }
 
 void cnc_set_exec_state(uint8_t statemask)
 {
-	SETFLAG(cnc_state.exec_state, statemask);
-
-#ifdef ENABLE_MULTIBOARD
 #ifdef IS_MASTER_BOARD
-	uint8_t state = cnc_state.exec_state;
-	MULTIBOARD_SYNC_CNCSTATE(state);
+	// broadcasts the mask change
+	MULTIBOARD_SYNC_CNCSTATE(statemask);
 #endif
-#endif
+	SETFLAG(cnc_state.exec_state, statemask);
 }
 
 void cnc_clear_exec_state(uint8_t statemask)
@@ -487,13 +474,6 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
-
-#ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	uint8_t state = cnc_state.exec_state;
-	MULTIBOARD_SYNC_CNCSTATE(state);
-#endif
-#endif
 }
 
 void cnc_delay_ms(uint32_t miliseconds)
@@ -543,29 +523,29 @@ void cnc_call_rt_command(uint8_t command)
 	switch (command)
 	{
 	case CMD_CODE_RESET:
-		SETFLAG(cnc_state.rt_cmd, RT_CMD_RESET);
+		cnc_call_rt_state_command(RT_CMD_RESET);
 		break;
 	case CMD_CODE_FEED_HOLD:
-		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+		cnc_call_rt_state_command(RT_CMD_FEED_HOLD);
 		break;
 	case CMD_CODE_REPORT:
-		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+		cnc_call_rt_state_command(RT_CMD_REPORT);
 		break;
 	case CMD_CODE_CYCLE_START:
 		if (!cnc_get_exec_state(EXEC_RUN))
 		{
-			SETFLAG(cnc_state.rt_cmd, RT_CMD_CYCLE_START); // tries to clear hold if possible
+			cnc_call_rt_state_command(RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
 		break;
 #if ASSERT_PIN(SAFETY_DOOR)
 	case CMD_CODE_SAFETY_DOOR:
-		SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
+		cnc_call_rt_state_command(RT_CMD_SAFETY_DOOR);
 		break;
 #endif
 	case CMD_CODE_JOG_CANCEL:
 		if (cnc_get_exec_state(EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
 		{
-			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+			cnc_call_rt_state_command(RT_CMD_FEED_HOLD);
 		}
 		break;
 	default:
@@ -593,6 +573,11 @@ void cnc_call_rt_command(uint8_t command)
 	}
 }
 
+void cnc_call_rt_state_command(uint8_t command)
+{
+	SETFLAG(cnc_state.rt_cmd, command);
+}
+
 // Executes pending realtime commands
 // Realtime commands are split in to 3 groups
 //   -operation commands
@@ -605,13 +590,54 @@ void cnc_exec_rt_commands(void)
 	bool update_tools = false;
 
 	// executes feeds override rt commands
-	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
+	uint8_t command = cnc_state.rt_cmd & ~RT_CMD_REPORT; // copies realtime flags states
+	cnc_state.rt_cmd ^= command;
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		cnc_state.rt_cmd &= RT_CMD_REPORT;
+
+		if (command & RT_CMD_RUN_IDLE)
+		{
+			cnc_clear_exec_state(EXEC_RUN);
+		}
+
+		if ((command & RT_CMD_RUN_HALT) && cnc_get_exec_state(EXEC_RUN))
+		{
+			cnc_clear_exec_state(EXEC_RUN);
+			cnc_set_exec_state(EXEC_UNHOMED);
+		}
+
+		if (command & RT_CMD_CYCLE_START)
+		{
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+		}
+
+		if (command & RT_CMD_FEED_HOLD)
+		{
+			cnc_set_exec_state(EXEC_HOLD);
+		}
+
+		if (command & RT_CMD_SAFETY_DOOR)
+		{
+			cnc_set_exec_state(EXEC_HOLD | EXEC_HOLD);
+		}
+
+		if (command & RT_CMD_LIMITS_HIT)
+		{
+			cnc_set_exec_state(EXEC_LIMITS);
+		}
+
 		if (command & RT_CMD_RESET)
 		{
+#if ASSERT_PIN(ESTOP)
+			uint8_t controls = io_get_controls();
+			if (CHECKFLAG(controls, ESTOP_MASK))
+			{
+				cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+				return; // forces exit
+			}
+#endif
+
 			if (cnc_get_exec_state(EXEC_HOMING))
 			{
 				cnc_alarm(EXEC_ALARM_HOMING_FAIL_RESET);
@@ -626,11 +652,6 @@ void cnc_exec_rt_commands(void)
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			return;
-		}
-
-		if (command & RT_CMD_CYCLE_START)
-		{
-			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
 		}
 	}
 
@@ -888,6 +909,23 @@ static void cnc_io_dotasks(void)
 
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
+	// #ifdef IS_MASTER_BOARD
+	// 	static uint8_t prevstate = 0;
+	// 	uint8_t state = cnc_state.exec_state;
+	// 	if (state != prevstate)
+	// 	{
+	// 		prevstate = state;
+	// 		MULTIBOARD_SYNC_CNCSTATE(state);
+	// 	}
+	// /*
+	// 	static uint32_t prevtime = 0;
+	// 	uint32_t time = mcu_millis();
+	// 	if (time != prevtime)
+	// 	{
+	// 		prevtime = time;
+	// 		MULTIBOARD_SYNC_CNCSTATE(state);
+	// 	}*/
+	// #endif
 
 	// checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
@@ -899,6 +937,8 @@ static void cnc_io_dotasks(void)
 	mcu_inputs_changed_cb();
 #endif
 
+	cnc_exec_rt_commands(); // executes all pending realtime commands
+
 	if (cnc_status_report_lock)
 	{
 		return;
@@ -909,7 +949,7 @@ static void cnc_io_dotasks(void)
 	if (next_auto_report < current_time)
 	{
 		next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
-		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
+		cnc_call_rt_state_command(RT_CMD_REPORT);
 	}
 #endif
 
