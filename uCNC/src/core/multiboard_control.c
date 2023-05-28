@@ -95,6 +95,18 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 			cnc_set_exec_state(data[1]);
 		}
 		break;
+	case MULTIBOARD_CMD_CNCALARM:
+	{
+		if (datalen == 1)
+		{
+			data[0] = cnc_get_alarm();
+		}
+		else
+		{
+			cnc_alarm(data[1]);
+		}
+		break;
+	}
 	}
 }
 

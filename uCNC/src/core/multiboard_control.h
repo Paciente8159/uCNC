@@ -34,10 +34,11 @@ extern "C"
 #define MULTIBOARD_CONTROL_RESPONSE_ERROR 2
 
 #define MULTIBOARD_CMD_CNCSTATE 0xB1
-#define MULTIBOARD_CMD_CONTROLS 0xB2
-#define MULTIBOARD_CMD_LIMITS 0xB3
-#define MULTIBOARD_CMD_PROBE 0xB4
-#define MULTIBOARD_CMD_PIN 0xB5
+#define MULTIBOARD_CMD_CNCALARM 0xB2
+#define MULTIBOARD_CMD_CONTROLS 0xB3
+#define MULTIBOARD_CMD_LIMITS 0xB4
+#define MULTIBOARD_CMD_PROBE 0xB5
+#define MULTIBOARD_CMD_PIN 0xB6
 #define MULTIBOARD_CMD_CNCSETTINGS 0xC1
 #define MULTIBOARD_CMD_ITPBLOCK 0xD1
 #define MULTIBOARD_CMD_ITPSEGMENT 0xD2
@@ -87,6 +88,7 @@ extern "C"
 	 * **/
 
 #define MULTIBOARD_SYNC_CNCSTATE(state) master_send_command(0, MULTIBOARD_CMD_CNCSTATE, &state, 1)
+#define MULTIBOARD_SYNC_CNCALARM(alarm) master_send_command(0, MULTIBOARD_CMD_CNCALARM, &alarm, 1)
 #define MULTIBOARD_SYNC_CNCSETTINGS() master_send_command(0, MULTIBOARD_CMD_CNCSETTINGS, &g_settings, sizeof(settings_t))
 #define MULTIBOARD_SYNC_ITPBLOCK(block, blocklen) master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, &block, blocklen);
 #define MULTIBOARD_SYNC_ITPSEGMENT(segm, segmlen) master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, &segm, segmlen);

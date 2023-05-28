@@ -38,7 +38,7 @@
 typedef struct
 {
 	// uint8_t system_state;		//signals if CNC is system_state and gcode can run
-	volatile uint8_t exec_state;	// on single board this probably doesn't need to be volatile anymore
+	volatile uint8_t exec_state; // on single board this probably doesn't need to be volatile anymore
 	uint8_t loop_state;
 	volatile uint8_t rt_cmd;
 	volatile uint8_t feed_ovr_cmd;
@@ -305,6 +305,10 @@ void cnc_home(void)
 
 void cnc_alarm(int8_t code)
 {
+#ifdef IS_MASTER_BOARD
+	// broadcasts the alarm change
+	MULTIBOARD_SYNC_CNCALARM(code);
+#endif
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
 	cnc_state.alarm = code;
@@ -316,6 +320,11 @@ void cnc_alarm(int8_t code)
 	serial_print_int(io_alarm_controls);
 	protocol_send_string(MSG_END);
 #endif
+}
+
+int8_t cnc_get_alarm(void)
+{
+	return cnc_state.alarm;
 }
 
 bool cnc_has_alarm()
@@ -394,10 +403,13 @@ uint8_t cnc_get_exec_state(uint8_t statemask)
 void cnc_set_exec_state(uint8_t statemask)
 {
 #ifdef IS_MASTER_BOARD
-	// broadcasts the mask change
+	SETFLAG(statemask, cnc_state.exec_state);
+	// broadcasts the new state
 	MULTIBOARD_SYNC_CNCSTATE(statemask);
-#endif
+	cnc_state.exec_state = statemask;
+#else
 	SETFLAG(cnc_state.exec_state, statemask);
+#endif
 }
 
 void cnc_clear_exec_state(uint8_t statemask)
@@ -473,7 +485,14 @@ void cnc_clear_exec_state(uint8_t statemask)
 #endif
 	}
 
+#ifdef IS_MASTER_BOARD
+	statemask = cnc_state.exec_state & (~statemask);
+	// broadcasts the mask change
+	MULTIBOARD_SYNC_CNCSTATE(statemask);
+	cnc_state.exec_state = statemask;
+#else
 	CLEARFLAG(cnc_state.exec_state, statemask);
+#endif
 }
 
 void cnc_delay_ms(uint32_t miliseconds)

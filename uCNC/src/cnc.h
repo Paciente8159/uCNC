@@ -57,23 +57,23 @@ extern "C"
 
 /**
  * Flags and state changes
- * 
+ *
  * EXEC_KILL
  * Set by cnc_alarm.
- * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed. 
- * 
+ * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed.
+ *
  * EXEC_LIMITS
- * Set when at a transition of a limit switch from inactive to the active state. 
+ * Set when at a transition of a limit switch from inactive to the active state.
  * Cleared by reset or unlock. Not affected by the limit switch state.
- * 
+ *
  * EXEC_UNHOMED
  * Set when the interpolator is abruptly stopped causing the position to be lost.
  * Cleared by homing or unlock.
- * 
+ *
  * EXEC_DOOR
  * Set with when the safety door pin is active or the safety door command is called.
  * Cleared by cycle resume, unlock or reset. If the door is opened it will remain active
- * 
+ *
  */
 // current cnc states (multiple can be active/overlapped at the same time)
 #define EXEC_IDLE 0															// All flags cleared
@@ -143,7 +143,7 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"	  //inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
 // fill remaining HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
@@ -180,8 +180,6 @@ extern "C"
 	// do events returns true if all OK and false if an ABORT alarm is reached
 	bool cnc_dotasks(void);
 	void cnc_home(void);
-	void cnc_alarm(int8_t code);
-	bool cnc_has_alarm();
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);
@@ -189,6 +187,10 @@ extern "C"
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);
 	void cnc_clear_exec_state(uint8_t statemask);
+
+	int8_t cnc_get_alarm(void);
+	void cnc_alarm(int8_t code);
+	bool cnc_has_alarm();
 
 	// processes the ascii real time commands and enqueues them for execution in the main loop
 	void cnc_call_rt_command(uint8_t command);
