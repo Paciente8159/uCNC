@@ -2250,7 +2250,6 @@ typedef uint16_t step_t;
 #define ENABLE_SYNC_TX
 #endif
 
-
 #ifdef MCU_HAS_I2C
 
 // defaults to master I2C
@@ -2268,6 +2267,10 @@ typedef uint16_t step_t;
 #undef ENABLE_G39_H_MAPPING
 #warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
 #endif
+#endif
+
+#if defined(ENABLE_MULTIBOARD)
+#define FORCE_SOFT_POLLING
 #endif
 
 #ifdef __cplusplus

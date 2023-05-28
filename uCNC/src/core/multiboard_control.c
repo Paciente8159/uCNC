@@ -26,28 +26,49 @@
 
 #ifdef ENABLE_MULTIBOARD
 
+slave_board_io_t g_slaves_io;
+
 #ifdef IS_MASTER_BOARD
-uint8_t multiboard_get_byte(uint8_t cmd, uint8_t *var, uint8_t error_val, void *arg, uint8_t arglen)
+void multiboard_get_slave_boards_io(void)
 {
-	for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
+	slave_board_io_t slaves;
+
+	// sets all values to one
+	// that translates to all alarms active
+	memset(&slaves, 0xFF, sizeof(slave_board_io_t));
+
+	for (uint8_t slaveid = SLAVE_BOARDS_ADDRESS_OFFSET; slaveid < (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARDS_COUNT); slaveid++)
 	{
-		uint8_t val = error_val;
-		if (master_send_command(slaveid, cmd, arg, arglen) == I2C_OK)
+		slave_board_io_t slave_data = {0};
+		if (master_get_response(slaveid, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) == I2C_OK)
 		{
-			if (master_get_response(slaveid, &val, 1, 2) == I2C_OK)
-			{
-				*var |= val;
-			}
-			else
-			{
-				return MULTIBOARD_CONTROL_RESPONSE_ERROR;
-			}
-		}
-		else
-		{
-			return MULTIBOARD_CONTROL_CMD_ERROR;
+			slaves.slave_io_reg &= slave_data.slave_io_reg;
 		}
 	}
+}
+
+uint8_t multiboard_get_data(uint8_t cmd, uint16_t *data, uint16_t default_value, uint8_t datalen)
+{
+	// for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
+	// {
+	// 	*data = default_value;
+	// 	if (master_send_command(slaveid, cmd, NULL, 0) == I2C_OK)
+	// 	{
+	// 		uint16_t val;
+	// 		if (master_get_response(slaveid, (uint8_t *)&val, datalen, 2) == I2C_OK)
+	// 		{
+	// 			*data &= val;
+	// 		}
+	// 		else
+	// 		{
+	// 			return MULTIBOARD_CONTROL_RESPONSE_ERROR;
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		return MULTIBOARD_CONTROL_CMD_ERROR;
+	// 	}
+	// }
 
 	return MULTIBOARD_CONTROL_OK;
 }
@@ -72,8 +93,13 @@ uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_
 	return mcu_i2c_send(address, buffer, datalen + 1, true);
 }
 
-uint8_t master_get_response(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t timeout)
+uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout)
 {
+	if (mcu_i2c_send(address, &command, 1, false) != I2C_OK)
+	{
+		return I2C_NOTOK;
+	}
+
 	return mcu_i2c_receive(address, data, datalen, timeout);
 }
 #else
@@ -93,10 +119,10 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 		else
 		{
 			cnc_set_exec_state(data[1]);
+			cnc_clear_exec_state(~data[1]);
 		}
 		break;
 	case MULTIBOARD_CMD_CNCALARM:
-	{
 		if (datalen == 1)
 		{
 			data[0] = cnc_get_alarm();
@@ -106,7 +132,9 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 			cnc_alarm(data[1]);
 		}
 		break;
-	}
+	case MULTIBOARD_CMD_SLAVE_IO:
+		memcpy(data, &g_slaves_io.slave_io_reg, sizeof(slave_board_io_t));
+		break;
 	}
 }
 

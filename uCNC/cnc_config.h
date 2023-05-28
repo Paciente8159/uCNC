@@ -573,10 +573,11 @@ extern "C"
 #ifdef IS_MASTER_BOARD
 // define the number of slave boards in the system
 #define SLAVE_BOARDS_COUNT 1
+#define SLAVE_BOARDS_ADDRESS_OFFSET 1
 #else
 // set the slave board ID
 // each board must have a unique ID that should be a sequencial starting at 1 and ending at SLAVE_BOARDS_COUNT
-#define SLAVE_BOARD_ID 8
+#define SLAVE_BOARD_ID 1
 #define I2C_ADDRESS SLAVE_BOARD_ID
 #endif
 #endif

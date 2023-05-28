@@ -346,6 +346,7 @@ uint8_t io_get_limits(void)
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
+
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
@@ -404,6 +405,14 @@ uint8_t io_get_limits(void)
 	}
 #endif
 
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	result |= g_slaves_io.slave_io_bits.limits;
+#else
+	g_slaves_io.slave_io_bits.limits = result;
+#endif
+#endif
+
 	return result;
 }
 
@@ -428,8 +437,17 @@ uint8_t io_get_limits_dual(void)
 	value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
-	uint8_t inv = io_invert_limits_mask & LIMITS_DUAL_MASK;
-	return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK) ^ inv);
+	uint8_t result = io_invert_limits_mask & LIMITS_DUAL_MASK;
+	result ^= (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK));
+
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	result |= g_slaves_io.slave_io_bits.limits2;
+#else
+	g_slaves_io.slave_io_bits.limits2 = result;
+#endif
+#endif
+	return result;
 #endif
 }
 
@@ -456,7 +474,17 @@ uint8_t io_get_controls(void)
 	value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
 #endif
 
-	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
+	uint8_t result = (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
+
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	result |= g_slaves_io.slave_io_bits.controls;
+#else
+	g_slaves_io.slave_io_bits.controls = result;
+#endif
+#endif
+
+	return result;
 }
 
 void io_enable_probe(void)
@@ -488,15 +516,21 @@ void io_disable_probe(void)
 
 bool io_get_probe(void)
 {
-#if !ASSERT_PIN(PROBE)
-	return false;
-#else
 #if ASSERT_PIN(PROBE)
 	bool probe = (mcu_get_input(PROBE) != 0);
-	return (!g_settings.probe_invert_mask) ? probe : !probe;
+	probe = (!g_settings.probe_invert_mask) ? probe : !probe;
+
+#ifdef ENABLE_MULTIBOARD
+#ifdef IS_MASTER_BOARD
+	probe |= g_slaves_io.slave_io_bits.probe;
+#else
+	g_slaves_io.slave_io_bits.probe = probe;
+#endif
+#endif
+
+	return probe;
 #else
 	return false;
-#endif
 #endif
 }
 

@@ -294,7 +294,6 @@ void cnc_home(void)
 	{
 		// disables homing and reenables alarm messages
 		cnc_clear_exec_state(EXEC_HOMING);
-		// cnc_alarm(error);
 		return;
 	}
 
@@ -928,25 +927,13 @@ static void cnc_io_dotasks(void)
 
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
-	// #ifdef IS_MASTER_BOARD
-	// 	static uint8_t prevstate = 0;
-	// 	uint8_t state = cnc_state.exec_state;
-	// 	if (state != prevstate)
-	// 	{
-	// 		prevstate = state;
-	// 		MULTIBOARD_SYNC_CNCSTATE(state);
-	// 	}
-	// /*
-	// 	static uint32_t prevtime = 0;
-	// 	uint32_t time = mcu_millis();
-	// 	if (time != prevtime)
-	// 	{
-	// 		prevtime = time;
-	// 		MULTIBOARD_SYNC_CNCSTATE(state);
-	// 	}*/
-	// #endif
 
-	// checks inputs and triggers ISR checks if enforced soft polling
+// #ifdef IS_MASTER_BOARD
+// 	if (!(mcu_millis() & 0xFF))
+// 		multiboard_get_slave_boards_io();
+// #endif
+
+		// checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
