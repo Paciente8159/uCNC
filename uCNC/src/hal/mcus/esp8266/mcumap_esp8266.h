@@ -1017,7 +1017,7 @@ extern "C"
 // #define I2C_PORT 0
 // #endif
 // #ifndef I2C_FREQ
-// #define I2C_FREQ 1000000UL
+// #define I2C_FREQ 400000UL
 // #endif
 // #endif
 

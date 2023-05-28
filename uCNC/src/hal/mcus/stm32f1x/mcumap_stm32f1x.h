@@ -4453,6 +4453,10 @@ extern "C"
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
 #define MCU_SUPPORTS_I2C_SLAVE
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 0
+#endif
+
 #define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
 #define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
 #ifndef I2C_PORT
@@ -4474,7 +4478,7 @@ extern "C"
 #endif
 
 #ifndef I2C_FREQ
-#define I2C_FREQ 100000UL
+#define I2C_FREQ 400000UL
 #endif
 
 // I2C freq

@@ -821,7 +821,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
-
+#if I2C_ADDRESS == 0
 void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
@@ -843,6 +843,15 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	if (send_start)
 	{
+		// manual 19.9.7.3
+		if (!I2C_REG->I2STAT || (I2C_REG->I2CONSET & I2C_I2CONSET_STA) || (I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
+			// Wait for complete
+			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
+				;
+		}
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
@@ -936,27 +945,31 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 // master sends command to slave
 uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
 {
-	if (datalen)
+	if (data && datalen)
 	{
-		datalen--;
 		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
-			for (uint8_t i = 0; i < datalen; i++)
+			do
 			{
-				if (mcu_i2c_write(data[i], false, false) != I2C_OK)
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
-			}
+				data++;
 
-			return mcu_i2c_write(data[datalen], false, release);
+			} while (datalen);
+
+			return I2C_OK;
 		}
 	}
 
 	return I2C_NOTOK;
 }
 #endif
+
 #ifndef mcu_i2c_receive
 // master receive response from slave
 uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
@@ -965,21 +978,23 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 	{
 		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
 		{
-			while (datalen--)
+			do
 			{
+				datalen--;
 				bool last = (datalen == 0);
 				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
 				data++;
-			}
+			} while (datalen);
 			return I2C_OK;
 		}
 	}
 
 	return I2C_NOTOK;
 }
+#endif
 #endif
 
 #ifndef mcu_i2c_config
