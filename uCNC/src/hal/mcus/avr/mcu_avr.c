@@ -1157,11 +1157,15 @@ ISR(TWI_vect, ISR_BLOCK)
 
 	uint8_t i = index;
 
+	mcu_putc(TW_STATUS);
+
 	switch (TW_STATUS)
 	{
 	// slave receiver
 	case TW_SR_DATA_ACK:
 	case TW_SR_GCALL_DATA_ACK:
+	case TW_SR_ARB_LOST_SLA_ACK:
+	case TW_SR_ARB_LOST_GCALL_ACK:
 		index++;
 		__attribute__((fallthrough));
 	case TW_SR_STOP: // stop or repeated start condition received
@@ -1181,8 +1185,8 @@ ISR(TWI_vect, ISR_BLOCK)
 		}
 		break;
 	// slave transmitter
-	case TW_ST_SLA_ACK:			 // addressed, returned ack
-	case TW_ST_ARB_LOST_SLA_ACK: // arbitration lost, returned ack
+	case TW_ST_SLA_ACK:
+	case TW_ST_ARB_LOST_SLA_ACK:
 		i = 0;
 		__attribute__((fallthrough));
 	case TW_ST_DATA_ACK: // byte sent, ack returned
@@ -1197,17 +1201,13 @@ ISR(TWI_vect, ISR_BLOCK)
 		}
 		index = i;
 		break;
-	case TW_SR_DATA_NACK:								   // received nack, we are done
-	case TW_SR_GCALL_DATA_NACK:							   // received ack, but we are done already!
-		TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN)); // send NACK back and releases line
-		return;
 	case TW_BUS_ERROR: // bus error, illegal stop/start
 		index = 0;
 		TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
-		return;
+		break;
 	default: // other cases like reset data and prepare ACK to receive data
 		index = 0;
-		return;
+		break;
 	}
 
 	TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA));

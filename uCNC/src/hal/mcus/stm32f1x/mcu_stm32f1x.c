@@ -1071,7 +1071,7 @@ void I2C_ISR(void)
 		if ((I2C_REG->SR2 & I2C_SR2_TRA))
 		{
 			I2C_REG->DR = mcu_i2c_buffer[0];
-			if (datalen < i)
+			if (i >= datalen)
 			{
 				// send NACK
 				I2C_REG->CR1 &= ~I2C_CR1_ACK;

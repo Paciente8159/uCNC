@@ -1043,6 +1043,8 @@ ISR(TWI_vect)
 	/*slave receiver*/
 	case 0x80:
 	case 0x90:
+	case 0x68:
+	case 0x78:
 		index++;
 		__attribute__((fallthrough));
 	case 0xA0: // stop or repeated start condition received
@@ -1077,11 +1079,6 @@ ISR(TWI_vect)
 		}
 		index = i;
 		break;
-	case 0xC0: // received nack, we are done
-	case 0xC8: // received ack, but we are done already!
-		// send NACK
-		I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
-		return;
 	case 0x00: // bus error, illegal stop/start
 		index = 0;
 		// restart I2C
@@ -1096,7 +1093,7 @@ ISR(TWI_vect)
 		break;
 	default:  // other cases like reset data and prepare ACK to receive data
 		index = 0;
-		return;
+		break;
 	}
 
 	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
