@@ -685,8 +685,8 @@ extern "C"
 	void rp2040_i2c_onreceive(int len)
 	{
 		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
+		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
 		mcu_i2c_buffer_len = l;
-		mcu_i2c_slave_cb(mcu_i2c_buffer, l);
 	}
 
 	void rp2040_i2c_onrequest(void)

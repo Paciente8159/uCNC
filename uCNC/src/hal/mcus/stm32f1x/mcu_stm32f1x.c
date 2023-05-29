@@ -856,7 +856,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
 	{
-		if((I2C_REG->SR1 & I2C_SR1_ARLO) || ((I2C_REG->CR1 & I2C_CR1_START) && (I2C_REG->CR1 & I2C_CR1_STOP)))
+		if ((I2C_REG->SR1 & I2C_SR1_ARLO) || ((I2C_REG->CR1 & I2C_CR1_START) && (I2C_REG->CR1 & I2C_CR1_STOP)))
 		{
 			// Save values
 			uint32_t cr2 = I2C_REG->CR2;
@@ -880,7 +880,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2C_REG->CR1 |= I2C_CR1_START;
 		while (!((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY)))
 		{
-			if(I2C_REG->SR1 & I2C_SR1_ARLO)
+			if (I2C_REG->SR1 & I2C_SR1_ARLO)
 			{
 				stop = false;
 				return I2C_NOTOK;
@@ -901,11 +901,11 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->DR = data;
 	while (!(I2C_REG->SR1 & status))
 	{
-		if(I2C_REG->SR1 & I2C_SR1_AF)
+		if (I2C_REG->SR1 & I2C_SR1_AF)
 		{
 			break;
 		}
-		if(I2C_REG->SR1 & I2C_SR1_ARLO)
+		if (I2C_REG->SR1 & I2C_SR1_ARLO)
 		{
 			stop = false;
 			return I2C_NOTOK;
@@ -1036,7 +1036,7 @@ void mcu_i2c_config(uint32_t frequency)
 	I2C_REG->OAR1 = (I2C_ADDRESS << 1);
 	I2C_REG->OAR2 = 0;
 	// enable events
-	I2C_REG->CR2 |= I2C_CR2_ITEVTEN;
+	I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
 	NVIC_SetPriority(I2C_IRQ, 10);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
@@ -1056,6 +1056,7 @@ uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 void I2C_ISR(void)
 {
 	static uint8_t index = 0;
+	static uint8_t datalen = 0;
 
 	uint8_t i = index;
 
@@ -1070,6 +1071,12 @@ void I2C_ISR(void)
 		if ((I2C_REG->SR2 & I2C_SR2_TRA))
 		{
 			I2C_REG->DR = mcu_i2c_buffer[0];
+			if (datalen < i)
+			{
+				// send NACK
+				I2C_REG->CR1 &= ~I2C_CR1_ACK;
+				return;
+			}
 		}
 	}
 
@@ -1078,47 +1085,59 @@ void I2C_ISR(void)
 	{
 		// stop transmission
 		index = 0;
+		datalen = 0;
 		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
 		{
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
 			mcu_enable_global_isr();
-			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = i;
 		}
-		I2C_REG->CR1 |= (I2C_CR1_STOP | I2C_CR1_ACK);
+
+		// prepare ACk for next transmition
+		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
 	// Clear ISR flag by reading SR1 and read/write DR registers
 	if ((I2C_REG->SR1 & I2C_SR1_BTF) == I2C_SR1_BTF)
 	{
-		if (i < I2C_SLAVE_BUFFER_SIZE)
+		if ((I2C_REG->SR2 & I2C_SR2_TRA))
 		{
-			if ((I2C_REG->SR2 & I2C_SR2_TRA))
+			I2C_REG->DR = mcu_i2c_buffer[i++];
+			if (i >= datalen)
 			{
-				I2C_REG->DR = mcu_i2c_buffer[i++];
+				// send NACK
+				I2C_REG->CR1 &= ~I2C_CR1_ACK;
+				return;
 			}
-			else
-			{
-				mcu_i2c_buffer[i++] = I2C_REG->DR;
-			}
-
-			index = i;
 		}
 		else
 		{
-			// send NACK
-			I2C_REG->CR1 &= ~I2C_CR1_ACK;
+			mcu_i2c_buffer[i++] = I2C_REG->DR;
+			if (i >= I2C_SLAVE_BUFFER_SIZE)
+			{
+				// send NACK
+				I2C_REG->CR1 &= ~I2C_CR1_ACK;
+				return;
+			}
 		}
+
+		index = i;
+		I2C_REG->CR1 |= I2C_CR1_ACK;
 	}
 
 	// An error ocurred
-	if (I2C_REG->SR1 & 0XF0)
+	if (I2C_REG->SR1 & 0XFF00)
 	{
-		// stop transmission
+		// prepare ACK for next transmission
 		index = 0;
-		I2C_REG->CR1 |= (I2C_CR1_STOP | I2C_CR1_ACK);
+		datalen = 0;
+		I2C_REG->CR1 |= I2C_CR1_ACK;
+		I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
 		// clear ISR flag
-		I2C_REG->SR1 &= 0X0F;
+		I2C_REG->SR1 &= 0X00FF;
+		I2C_REG->SR2;
 	}
 
 	NVIC_ClearPendingIRQ(I2C_IRQ);

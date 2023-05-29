@@ -1378,6 +1378,7 @@ uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 void I2C_ISR(void)
 {
 	static uint8_t index = 0;
+	static uint8_t datalen = 0;
 
 	uint8_t i = index;
 
@@ -1390,34 +1391,42 @@ void I2C_ISR(void)
 			// write first byte
 			I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
 			I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+			if (i >= datalen)
+			{
+				I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+				return;
+			}
 			index = i;
 		}
 		index = i;
 		break;
 	case SERCOM_I2CS_INTFLAG_DRDY:
-		if (i < I2C_SLAVE_BUFFER_SIZE)
+		if (I2CCOM->I2CS.STATUS.bit.DIR)
 		{
-			if (I2CCOM->I2CS.STATUS.bit.DIR)
+			I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
+			if (i >= datalen)
 			{
-				I2CCOM->I2CS.DATA.reg = mcu_i2c_buffer[i++];
-				I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
+				I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+				return;
 			}
-			else
-			{
-				if (i < I2C_SLAVE_BUFFER_SIZE)
-				{
-					mcu_i2c_buffer[i++] = I2CCOM->I2CS.DATA.reg;
-					I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
-				}
-			}
-
-			index = i;
 		}
 		else
 		{
-			index = 0;
-			I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+			if (i < I2C_SLAVE_BUFFER_SIZE)
+			{
+				mcu_i2c_buffer[i++] = I2CCOM->I2CS.DATA.reg;
+				if (i >= I2C_SLAVE_BUFFER_SIZE)
+				{
+					I2CCOM->I2CS.CTRLB.bit.ACKACT = 1;
+					I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(2);
+					return;
+				}
+			}
 		}
+
+		index = i;
 		break;
 	case SERCOM_I2CS_INTFLAG_PREC:
 		// stop transmission
@@ -1427,7 +1436,8 @@ void I2C_ISR(void)
 		if (!(I2CCOM->I2CS.STATUS.bit.DIR) && i)
 		{
 			mcu_enable_global_isr();
-			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
 		}
 		break;
 	case SERCOM_I2CS_INTFLAG_ERROR:
@@ -1436,6 +1446,7 @@ void I2C_ISR(void)
 		break;
 	}
 
+	I2CCOM->I2CS.CTRLB.bit.ACKACT = 0;
 	I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
 
 	NVIC_ClearPendingIRQ(I2C_IRQ);

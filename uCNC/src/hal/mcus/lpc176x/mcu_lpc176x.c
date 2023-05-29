@@ -822,7 +822,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #ifdef MCU_HAS_I2C
 #if I2C_ADDRESS == 0
-void mcu_i2c_write_stop(bool *stop)
+static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
@@ -834,6 +834,10 @@ void mcu_i2c_write_stop(bool *stop)
 		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
 			;
 	}
+}
+
+static void mcu_i2c_reset()
+{
 }
 
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
@@ -1030,19 +1034,13 @@ uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 ISR(TWI_vect)
 {
 	static uint8_t index = 0;
+	static uint8_t datalen = 0;
 
 	uint8_t i = index;
 
 	switch (I2C_REG->I2STAT)
 	{
 	/*slave receiver*/
-	case 0x60: // addressed, returned ack
-	case 0x70: // addressed generally, returned ack
-	case 0x68: // lost arbitration, returned ack
-	case 0x78: // lost arbitration, returned ack
-		index = 0;
-		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
-		break;
 	case 0x80:
 	case 0x90:
 		index++;
@@ -1052,7 +1050,6 @@ ISR(TWI_vect)
 		if (i < I2C_SLAVE_BUFFER_SIZE)
 		{
 			mcu_i2c_buffer[i] = I2C_REG->I2DAT;
-			I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
 		}
 		if (I2C_REG->I2STAT == 0xA0)
 		{
@@ -1060,35 +1057,50 @@ ISR(TWI_vect)
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
 			mcu_enable_global_isr();
-			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
 		}
 		break;
 	/*slave trasnmitter*/
 	case 0xA8: // addressed, returned ack
 	case 0xB0: // arbitration lost, returned ack
 		i = 0;
-		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
 		__attribute__((fallthrough));
 	case 0xB8: // byte sent, ack returned
 		// copy data to output register
 		I2C_REG->I2DAT = mcu_i2c_buffer[i++];
 		// if there is more to send, ack, otherwise nack
-		if (i < I2C_SLAVE_BUFFER_SIZE)
+		if (i >= datalen)
 		{
-			I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+			I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
+			return;
 		}
 		index = i;
 		break;
 	case 0xC0: // received nack, we are done
 	case 0xC8: // received ack, but we are done already!
+		// send NACK
+		I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
+		return;
 	case 0x00: // bus error, illegal stop/start
 		index = 0;
-		I2C_REG->I2CONSET |= I2C_I2CONSET_AA;
+		// restart I2C
+		uint32_t clkh = I2Cx->I2SCLH;
+		uint32_t clkl = I2Cx->I2SCLL;
+		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, DISABLE);
+		I2C_DeInit(I2C_REG);
+		I2C_Init(I2C_REG, I2C_FREQ);
+		I2Cx->I2SCLH = clkh;
+		I2Cx->I2SCLL = clkl;
+		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
 		break;
+	default:  // other cases like reset data and prepare ACK to receive data
+		index = 0;
+		return;
 	}
 
 	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
-	I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
+	I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC | I2C_I2CONSET_AA;
 }
 #endif
 // this is similar to AVR

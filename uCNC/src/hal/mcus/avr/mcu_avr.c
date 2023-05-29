@@ -1153,6 +1153,7 @@ uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 ISR(TWI_vect, ISR_BLOCK)
 {
 	static uint8_t index = 0;
+	static uint8_t datalen = 0;
 	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
 
 	uint8_t i = index;
@@ -1160,10 +1161,6 @@ ISR(TWI_vect, ISR_BLOCK)
 	switch (TW_STATUS)
 	{
 	// slave receiver
-	case TW_SR_SLA_ACK:	  // addressed, returned ack
-	case TW_SR_GCALL_ACK: // addressed generally, returned ack
-		index = 0;
-		break;
 	case TW_SR_DATA_ACK:
 	case TW_SR_GCALL_DATA_ACK:
 		index++;
@@ -1180,7 +1177,8 @@ ISR(TWI_vect, ISR_BLOCK)
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
 			// mcu_enable_global_isr();
-			mcu_i2c_slave_cb(mcu_i2c_buffer, i);
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
 		}
 		break;
 	// slave transmitter
@@ -1192,20 +1190,23 @@ ISR(TWI_vect, ISR_BLOCK)
 		// copy data to output register
 		TWDR = mcu_i2c_buffer[i++];
 		// if there is more to send, ack, otherwise nack
-		if (i >= I2C_SLAVE_BUFFER_SIZE)
+		if (i >= datalen)
 		{
-			TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
+			datalen = 0;
+			TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN)); // on last byte send NACK
 			return;
 		}
 		index = i;
 		break;
-	case TW_SR_DATA_NACK:		// received nack, we are done
-	case TW_SR_GCALL_DATA_NACK: // received ack, but we are done already!
-	case TW_BUS_ERROR:			// bus error, illegal stop/start
+	case TW_SR_DATA_NACK:								   // received nack, we are done
+	case TW_SR_GCALL_DATA_NACK:							   // received ack, but we are done already!
+		TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN)); // send NACK back and releases line
+		return;
+	case TW_BUS_ERROR: // bus error, illegal stop/start
 		index = 0;
 		TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
 		return;
-	default: // other
+	default: // other cases like reset data and prepare ACK to receive data
 		index = 0;
 		return;
 	}

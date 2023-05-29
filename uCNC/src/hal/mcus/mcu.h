@@ -490,7 +490,7 @@ extern "C"
 #define I2C_SLAVE_BUFFER_SIZE 48
 #endif
 #ifndef mcu_i2c_slave_cb
-	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen);
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t* datalen);
 #endif
 #endif
 
