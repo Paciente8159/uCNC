@@ -738,7 +738,7 @@ void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
 
 #if (defined(MCU_HAS_I2C))
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
-void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
+void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t* datalen)
 {
 }
 #endif
