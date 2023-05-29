@@ -1158,8 +1158,6 @@ ISR(TWI_vect, ISR_BLOCK)
 
 	uint8_t i = index;
 
-	mcu_putc(TW_STATUS);
-
 	switch (TW_STATUS)
 	{
 	// slave receiver

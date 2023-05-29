@@ -928,12 +928,23 @@ static void cnc_io_dotasks(void)
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
 
-// #ifdef IS_MASTER_BOARD
-// 	if (!(mcu_millis() & 0xFF))
-// 		multiboard_get_slave_boards_io();
-// #endif
+#ifdef IS_MASTER_BOARD
+	static uint32_t next_run = 0;
+	if (next_run < mcu_millis())
+	{
+		next_run = mcu_millis() + 1;
+		multiboard_get_slave_boards_io();
+	}
+#else
+	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(0xFF);
+	g_slaves_io.slave_io_bits.alarm = cnc_get_alarm();
+	g_slaves_io.slave_io_bits.probe = io_get_probe();
+	g_slaves_io.slave_io_bits.controls = io_get_controls();
+	g_slaves_io.slave_io_bits.limits2 = io_get_limits_dual();
+	g_slaves_io.slave_io_bits.limits = io_get_limits();
+#endif
 
-		// checks inputs and triggers ISR checks if enforced soft polling
+	// checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();

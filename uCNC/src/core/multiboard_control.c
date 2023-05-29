@@ -45,6 +45,8 @@ void multiboard_get_slave_boards_io(void)
 			slaves.slave_io_reg &= slave_data.slave_io_reg;
 		}
 	}
+
+	g_slaves_io.slave_io_reg = slaves.slave_io_reg;
 }
 
 uint8_t multiboard_get_data(uint8_t cmd, uint16_t *data, uint16_t default_value, uint8_t datalen)
@@ -105,14 +107,14 @@ uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uin
 #else
 
 // overrides the I2C slave callback
-MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
+MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 {
 	// the CRC can be checked here if needed
 	switch (data[0])
 	{
 		// sync states
 	case MULTIBOARD_CMD_CNCSTATE:
-		if (datalen == 1)
+		if (*datalen == 1)
 		{
 			data[0] = cnc_get_exec_state(EXEC_ALLACTIVE);
 		}
@@ -123,7 +125,7 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 		}
 		break;
 	case MULTIBOARD_CMD_CNCALARM:
-		if (datalen == 1)
+		if (*datalen == 1)
 		{
 			data[0] = cnc_get_alarm();
 		}
@@ -133,6 +135,7 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t datalen)
 		}
 		break;
 	case MULTIBOARD_CMD_SLAVE_IO:
+		*datalen = sizeof(slave_board_io_t);
 		memcpy(data, &g_slaves_io.slave_io_reg, sizeof(slave_board_io_t));
 		break;
 	}
