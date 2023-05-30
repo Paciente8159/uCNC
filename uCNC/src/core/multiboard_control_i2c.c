@@ -26,7 +26,6 @@
 #include <math.h>
 
 #ifdef ENABLE_MULTIBOARD
-#if MULTIBOARD_IPC == IPC_I2C
 
 #ifdef IS_MASTER_BOARD
 #ifndef I2C_BUFFER_SIZE
@@ -187,7 +186,6 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
     }
 }
 
-#endif
 #endif
 
 #endif

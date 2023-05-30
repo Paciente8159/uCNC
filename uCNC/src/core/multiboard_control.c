@@ -28,9 +28,10 @@
 
 slave_board_io_t g_slaves_io;
 
+#ifdef IS_MASTER_BOARD
 void multiboard_set_slave_boards_io(void)
 {
-	master_send_command(0, MULTIBOARD_CMD_SLAVE_IO, &g_slaves_io, sizeof(slave_board_io_t));
+	master_send_command(0, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&g_slaves_io, sizeof(slave_board_io_t));
 }
 
 void multiboard_get_slave_boards_io(void)
@@ -51,32 +52,6 @@ void multiboard_get_slave_boards_io(void)
 	g_slaves_io.slave_io_reg = slaves.slave_io_reg;
 }
 
-uint8_t multiboard_get_data(uint8_t cmd, uint16_t *data, uint16_t default_value, uint8_t datalen)
-{
-	// for (uint8_t slaveid = 1; slaveid <= SLAVE_BOARDS_COUNT; slaveid++)
-	// {
-	// 	*data = default_value;
-	// 	if (master_send_command(slaveid, cmd, NULL, 0) == I2C_OK)
-	// 	{
-	// 		uint16_t val;
-	// 		if (master_get_response(slaveid, (uint8_t *)&val, datalen, 2) == I2C_OK)
-	// 		{
-	// 			*data &= val;
-	// 		}
-	// 		else
-	// 		{
-	// 			return MULTIBOARD_CONTROL_RESPONSE_ERROR;
-	// 		}
-	// 	}
-	// 	else
-	// 	{
-	// 		return MULTIBOARD_CONTROL_CMD_ERROR;
-	// 	}
-	// }
-
-	return MULTIBOARD_CONTROL_OK;
-}
-
 __attribute__((weak)) uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen)
 {
 	return MULTIBOARD_CONTROL_OK;
@@ -87,6 +62,7 @@ __attribute__((weak)) uint8_t master_get_response(uint8_t address, uint8_t comma
 	return MULTIBOARD_CONTROL_OK;
 }
 
+#else
 void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 {
 	// the CRC can be checked here if needed
@@ -112,7 +88,7 @@ void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 		itp_start(*ptr);
 		break;
 	case MULTIBOARD_CMD_ITPPOS_RESET:
-		itp_reset_rt_position(ptr);
+		itp_reset_rt_position((float *)ptr);
 		break;
 	}
 }
@@ -128,5 +104,6 @@ void slave_rqst_cb(uint8_t *data, uint8_t *datalen)
 		break;
 	}
 }
+#endif
 
 #endif

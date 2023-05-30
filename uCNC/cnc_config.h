@@ -452,7 +452,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS
@@ -563,7 +563,7 @@ extern "C"
 #ifdef ENABLE_MULTIBOARD
 
 #define SLAVE_BOARDS_COUNT 1
-#define SLAVE_BOARDS_ADDRESS_OFFSET 1
+#define SLAVE_BOARDS_ADDRESS_OFFSET 8
 
 // uncomment if this board will be the master board
 // there can only be one master board in the bus
@@ -571,7 +571,7 @@ extern "C"
 #ifndef IS_MASTER_BOARD
 // set the slave board ID
 // each board must have a unique ID that should be a sequencial starting at 1 and ending at SLAVE_BOARDS_COUNT
-#define SLAVE_BOARD_ID 1
+#define SLAVE_BOARD_ID 0
 #define I2C_ADDRESS (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARD_ID)
 #endif
 #endif

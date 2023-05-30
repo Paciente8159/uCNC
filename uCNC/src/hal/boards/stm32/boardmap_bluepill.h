@@ -145,7 +145,6 @@ extern "C"
 #define I2C_DATA_BIT 11
 #define I2C_DATA_PORT B
 #define I2C_PORT 2
-// #define I2C_ADDRESS 1
 
 #define ONESHOT_TIMER 1
 

@@ -20,6 +20,8 @@
 #define MULTIBOARD_CONTROL_H
 #endif
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {

@@ -413,7 +413,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #ifndef DISABLE_ALL_CONTROLS
 	uint8_t controls = io_get_controls();
 
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) || defined(ENABLE_MULTIBOARD)
 	if (CHECKFLAG(controls, ESTOP_MASK)) // can't clear the alarm flag if ESTOP is active
 	{
 		CLEARFLAG(statemask, EXEC_KILL);
@@ -421,13 +421,13 @@ void cnc_clear_exec_state(uint8_t statemask)
 		return;
 	}
 #endif
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 	if (CHECKFLAG(controls, SAFETY_DOOR_MASK)) // can't clear the door flag if SAFETY_DOOR is active
 	{
 		CLEARFLAG(statemask, EXEC_DOOR | EXEC_HOLD);
 	}
 #endif
-#if ASSERT_PIN(FHOLD)
+#if ASSERT_PIN(FHOLD) || defined(ENABLE_MULTIBOARD)
 	if (CHECKFLAG(controls, FHOLD_MASK)) // can't clear the hold flag if FHOLD is active
 	{
 		CLEARFLAG(statemask, EXEC_HOLD);
@@ -442,7 +442,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 	uint8_t limits = 0;
-#if (LIMITS_MASK != 0)
+#if (LIMITS_MASK != 0) || defined(ENABLE_MULTIBOARD)
 	limits = io_get_limits(); // can't clear the EXEC_UNHOMED is any limit is triggered
 #endif
 	if (g_settings.hard_limits_enabled && limits) // if hardlimits are enabled and limits are triggered
@@ -484,7 +484,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 	statemask = cnc_state.exec_state & (~statemask);
 	// broadcasts the mask change
-	MULTIBOARD_SYNC_CNCSTATE(statemask);
+	g_slaves_io.slave_io_bits.state = statemask;
+	multiboard_set_slave_boards_io();
 	cnc_state.exec_state = statemask;
 
 #else
@@ -553,7 +554,7 @@ void cnc_call_rt_command(uint8_t command)
 			cnc_call_rt_state_command(RT_CMD_CYCLE_START); // tries to clear hold if possible
 		}
 		break;
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 	case CMD_CODE_SAFETY_DOOR:
 		cnc_call_rt_state_command(RT_CMD_SAFETY_DOOR);
 		break;
@@ -645,7 +646,7 @@ void cnc_exec_rt_commands(void)
 
 		if (command & RT_CMD_RESET)
 		{
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) || defined(ENABLE_MULTIBOARD)
 			uint8_t controls = io_get_controls();
 			if (CHECKFLAG(controls, ESTOP_MASK))
 			{
@@ -790,22 +791,22 @@ void cnc_exec_rt_commands(void)
 void cnc_check_fault_systems(void)
 {
 	uint8_t inputs;
-#ifdef CONTROLS_MASK
+#if CONTROLS_MASK || defined(ENABLE_MULTIBOARD)
 	inputs = io_get_controls();
 #endif
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) || defined(ENABLE_MULTIBOARD)
 	if (CHECKFLAG(inputs, ESTOP_MASK)) // fault on emergency stop
 	{
 		protocol_send_feedback(MSG_FEEDBACK_12);
 	}
 #endif
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 	if (CHECKFLAG(inputs, SAFETY_DOOR_MASK)) // fault on safety door
 	{
 		protocol_send_feedback(MSG_FEEDBACK_6);
 	}
 #endif
-#if (LIMITS_MASK != 0)
+#if (LIMITS_MASK != 0) || defined(ENABLE_MULTIBOARD)
 	if (g_settings.hard_limits_enabled) // fault on limits
 	{
 		inputs = io_get_limits();
@@ -840,7 +841,7 @@ bool cnc_check_interlocking(void)
 	// - any cnc_alarm call
 	if (cnc_get_exec_state(EXEC_KILL))
 	{
-#if ASSERT_PIN(ESTOP)
+#if ASSERT_PIN(ESTOP) || defined(ENABLE_MULTIBOARD)
 		// the emergency stop is pressed.
 		if (io_get_controls() & ESTOP_MASK)
 		{
@@ -891,7 +892,7 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 	// the safety door condition is active
 	if (cnc_get_exec_state(EXEC_DOOR))
 	{
@@ -929,7 +930,13 @@ static void cnc_io_dotasks(void)
 #ifdef ENABLE_MULTIBOARD
 #ifdef IS_MASTER_BOARD
 	// read external IO
-	multiboard_get_slave_boards_io();
+	static uint32_t elapsed = 0;
+	if (elapsed < mcu_millis())
+	{
+		elapsed = mcu_millis() + 500;
+		multiboard_get_slave_boards_io();
+	}
+
 #else
 	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(0xFF);
 	g_slaves_io.slave_io_bits.probe = io_get_probe();

@@ -264,7 +264,7 @@ void protocol_send_status(void)
 	{
 		switch (state)
 		{
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 		case EXEC_DOOR:
 			protocol_send_string(MSG_STATUS_DOOR);
 			serial_putc(':');

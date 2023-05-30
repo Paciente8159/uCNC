@@ -154,7 +154,7 @@ static void itp_sgm_buffer_write(void);
 FORCEINLINE static bool itp_sgm_is_full(void);
 FORCEINLINE static bool itp_sgm_is_empty(void);
 /*FORCEINLINE*/ static void itp_sgm_clear(void);
-#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 FORCEINLINE static void itp_blk_buffer_write(void);
 #endif
 static void itp_blk_clear(void);
