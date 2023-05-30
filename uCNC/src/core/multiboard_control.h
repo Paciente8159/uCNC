@@ -44,6 +44,8 @@ extern "C"
 #define MULTIBOARD_CMD_ITPSEGMENT 0xD2
 #define MULTIBOARD_CMD_ITPRUN 0xD3
 #define MULTIBOARD_CMD_SLAVE_IO 0xE1
+#define MULTIBOARD_CMD_CONFIRM_CRC 0xF1
+#define MULTIBOARD_CMD_SLAVE_ACK 0xF5
 
 	/**
 	 * Multiboard communication is based on these functions and different communication protocols can be used/defined to allow multiboard support
@@ -80,7 +82,7 @@ extern "C"
 	extern slave_board_io_t g_slaves_io;
 
 #ifdef IS_MASTER_BOARD
-	uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_t datalen);
+	uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen);
 	uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout);
 
 	/**
@@ -110,6 +112,8 @@ extern "C"
 // #define MULTIBOARD_GET_IOLIMITS(limits) multiboard_get_byte(MULTIBOARD_CMD_LIMITS, limits, 0, NULL, 0)
 // #define MULTIBOARD_GET_IOPROBE(probe) multiboard_get_byte(MULTIBOARD_CMD_PROBE, probe, 0, NULL, 0)
 // #define MULTIBOARD_GET_IOINPUT(input, inputval) multiboard_get_byte(MULTIBOARD_CMD_PIN, inputval, 0, &input, 1)
+#else
+	void slave_rcv_cb(uint8_t *data, uint8_t *datalen);
 #endif
 
 #endif

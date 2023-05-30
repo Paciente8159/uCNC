@@ -33,17 +33,15 @@ void multiboard_get_slave_boards_io(void)
 {
 	slave_board_io_t slaves;
 
-	// sets all values to one
-	// that translates to all alarms active
-	memset(&slaves, 0xFF, sizeof(slave_board_io_t));
-
 	for (uint8_t slaveid = SLAVE_BOARDS_ADDRESS_OFFSET; slaveid < (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARDS_COUNT); slaveid++)
 	{
-		slave_board_io_t slave_data = {0};
-		if (master_get_response(slaveid, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) == I2C_OK)
+		slave_board_io_t slave_data;
+		if (master_get_response(slaveid, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) != I2C_OK)
 		{
-			slaves.slave_io_reg &= slave_data.slave_io_reg;
+			slave_data.slave_io_reg = 0xFFFFFFFF;
 		}
+
+		slaves.slave_io_reg |= slave_data.slave_io_reg;
 	}
 
 	g_slaves_io.slave_io_reg = slaves.slave_io_reg;
@@ -76,38 +74,15 @@ uint8_t multiboard_get_data(uint8_t cmd, uint16_t *data, uint16_t default_value,
 }
 #endif
 
-#if MULTIBOARD_IPC == IPC_I2C
-
-#ifdef IS_MASTER_BOARD
-#ifndef I2C_BUFFER_SIZE
-#define I2C_BUFFER_SIZE 48
-#endif
-
-uint8_t master_send_command(uint8_t address, uint8_t command, void *data, uint8_t datalen)
+__attribute__((weak)) uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen)
 {
-	uint8_t buffer[I2C_BUFFER_SIZE];
-	buffer[0] = command;
-	if (data && datalen)
-	{
-		memcpy(&buffer[1], data, datalen);
-	}
-
-	return mcu_i2c_send(address, buffer, datalen + 1, true);
 }
 
-uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout)
+__attribute__((weak)) uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout)
 {
-	if (mcu_i2c_send(address, &command, 1, false) != I2C_OK)
-	{
-		return I2C_NOTOK;
-	}
-
-	return mcu_i2c_receive(address, data, datalen, timeout);
 }
-#else
 
-// overrides the I2C slave callback
-MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
+void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 {
 	// the CRC can be checked here if needed
 	switch (data[0])
@@ -140,8 +115,5 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 		break;
 	}
 }
-
-#endif
-#endif
 
 #endif
