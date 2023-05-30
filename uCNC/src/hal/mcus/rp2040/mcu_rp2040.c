@@ -37,6 +37,13 @@ extern uint8_t rp2040_eeprom_read(uint16_t address);
 extern void rp2040_eeprom_write(uint16_t address, uint8_t value);
 extern void rp2040_eeprom_flush(void);
 
+#ifdef MCU_HAS_I2C
+extern void rp2040_i2c_init(uint32_t freq);
+extern void rp2040_spi_config(uint32_t freq);
+extern uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop);
+uint8_t rp2040_i2c_read(bool with_ack, bool send_stop);
+#endif
+
 uint8_t rp2040_pwm[16];
 
 void mcu_din_isr(void)
@@ -290,8 +297,7 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	i2c_master_gpio_init();
-	i2c_master_init();
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 #ifdef MCU_HAS_ONESHOT
@@ -576,63 +582,6 @@ void mcu_eeprom_flush(void)
 	rp2040_eeprom_flush();
 #endif
 }
-
-// #ifdef MCU_HAS_I2C
-// #ifndef mcu_i2c_write
-// uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
-// {
-// 	if (send_start)
-// 	{
-// 		// init
-// 		i2c_master_start();
-// 		if (!i2c_master_checkAck())
-// 		{
-// 			i2c_master_stop();
-// 			return 0;
-// 		}
-// 	}
-
-// 	i2c_master_writeByte(data);
-
-// 	if (!i2c_master_checkAck())
-// 	{
-// 		i2c_master_stop();
-// 		return 0;
-// 	}
-
-// 	if (send_stop)
-// 	{
-// 		i2c_master_stop();
-// 	}
-
-// 	return 1;
-// }
-// #endif
-
-// #ifndef mcu_i2c_read
-// uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
-// {
-// 	uint8_t c = 0;
-
-// 	if (with_ack)
-// 	{
-// 		i2c_master_send_ack();
-// 	}
-// 	else
-// 	{
-// 		i2c_master_send_nack();
-// 	}
-// 	c = i2c_master_readByte();
-
-// 	if (send_stop)
-// 	{
-// 		i2c_master_stop();
-// 	}
-
-// 	return c;
-// }
-// #endif
-// #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 /**

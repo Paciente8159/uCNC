@@ -97,6 +97,8 @@ extern "C"
 // #define ANALOG0_ADC 2
 
 // #define SERVO0_BIT 33
+#define I2C_CLK_BIT 22
+#define I2C_DATA_BIT 21
 
 #ifdef __cplusplus
 }

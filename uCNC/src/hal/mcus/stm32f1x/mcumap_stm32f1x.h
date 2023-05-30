@@ -4452,26 +4452,33 @@ extern "C"
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 0
+#endif
+
 #define I2C_CLK_PIN __iopin__(I2C_CLK_PORT, I2C_CLK_BIT)
 #define I2C_DATA_PIN __iopin__(I2C_DATA_PORT, I2C_DATA_BIT)
 #ifndef I2C_PORT
 #define I2C_PORT 1
 #endif
+#define I2C_IRQ __helper__(I2C,I2C_PORT,_EV_IRQn)
+#define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
 
 #define I2C_APBEN __helper__(RCC_APB1ENR_I2C, I2C_PORT, EN)
 #define I2C_REG __helper__(I2C, I2C_PORT, )
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 
-#if ((I2C_PORT == 1) && (I2C_CLK_PORT == B6) && (I2C_DATA_PORT == B7))
-#elif ((I2C_PORT == 1) && (I2C_CLK_PORT == B8) && (I2C_DATA_PORT == B9))
+#if ((I2C_PORT == 1) && (I2C_CLK_PIN == B6) && (I2C_DATA_PIN == B7))
+#elif ((I2C_PORT == 1) && (I2C_CLK_PIN == B8) && (I2C_DATA_PIN == B9))
 #define I2C_REMAP AFIO_MAPR_I2C1_REMAP
-#elif ((I2C_PORT == 2) && (I2C_CLK_PORT == B10) && (I2C_DATA_PORT == B11))
+#elif ((I2C_PORT == 2) && (I2C_CLK_PIN == B10) && (I2C_DATA_PIN == B11))
 #else
 #error "I2C pin configuration not supported"
 #endif
 
 #ifndef I2C_FREQ
-#define I2C_FREQ 100000UL
+#define I2C_FREQ 400000UL
 #endif
 
 // I2C freq

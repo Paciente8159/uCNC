@@ -470,12 +470,7 @@ void mcu_init(void)
 
 #endif
 #ifdef MCU_HAS_I2C
-	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
-	PINSEL_ConfigPin(&scl);
-	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
-	PINSEL_ConfigPin(&sda);
-	I2C_Init(I2C_REG, I2C_FREQ);
-	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	mcu_disable_probe_isr();
@@ -826,16 +821,52 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+#if I2C_ADDRESS == 0
+static void mcu_i2c_write_stop(bool *stop)
 {
+	if (*stop)
+	{
+		uint32_t ms_timeout = mcu_millis() + 25;
+
+		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
+		// Wait for complete
+		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
+			;
+	}
+}
+
+static void mcu_i2c_reset()
+{
+}
+
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+	uint32_t ms_timeout = mcu_millis() + 25;
+
 	if (send_start)
 	{
+		// manual 19.9.7.3
+		if (!I2C_REG->I2STAT || (I2C_REG->I2CONSET & I2C_I2CONSET_STA) || (I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+		{
+			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
+			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
+			// Wait for complete
+			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
+				;
+		}
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
 		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
-			;
+		{
+			if (ms_timeout < mcu_millis())
+			{
+				stop = true;
+				return I2C_NOTOK;
+			}
+		}
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
 		if ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK) != 0x08)
 		{
@@ -843,8 +874,13 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 			// Wait for complete
 			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
-				;
-			return 0;
+			{
+				if (ms_timeout < mcu_millis())
+				{
+					stop = true;
+					return I2C_NOTOK;
+				}
+			}
 		}
 	}
 
@@ -855,7 +891,13 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	I2C_REG->I2DAT = data & I2C_I2DAT_BITMASK;
 	// Wait for complete
 	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
-		;
+	{
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+	}
 
 	switch ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK))
 	{
@@ -865,33 +907,18 @@ uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	case 0x50:
 		break;
 	default:
-		/* Make sure start bit is not active */
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
-		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
-		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
-			;
-		return 0;
+		stop = true;
+		return I2C_NOTOK;
 	}
 
-	if (send_stop)
-	{
-		/* Make sure start bit is not active */
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
-		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
-		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
-			;
-	}
-
-	return 1;
+	return I2C_OK;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0;
+	*data = 0xFF;
+	ms_timeout += mcu_millis();
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (with_ack)
 	{
@@ -906,23 +933,175 @@ uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
 
 	// Wait for complete
 	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
-		;
-
-	c = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
-
-	if (send_stop)
 	{
-		/* Make sure start bit is not active */
-		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
-		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
-		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
-			;
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
 	}
 
-	return c;
+	*data = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
+	return I2C_OK;
+}
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+
+			} while (datalen);
+
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
 }
 #endif
+
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		{
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+			} while (datalen);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+#endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	I2C_REG->I2CONSET &= ~I2C_I2CONSET_I2EN;
+	I2C_DeInit(I2C_REG);
+	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&scl);
+	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
+	PINSEL_ConfigPin(&sda);
+#if I2C_ADDRESS != 0
+	I2C_OWNSLAVEADDR_CFG_Type i2c_slave = {0};
+	i2c_slave.SlaveAddr_7bit = I2C_ADDRESS;
+	i2c_slave.GeneralCallState = ENABLE;
+	i2c_slave.SlaveAddrChannel = I2C_PORT;
+	I2C_SetOwnSlaveAddr(I2C_REG, &i2c_slave);
+	// slave mode
+	I2C_Cmd(I2C_REG, I2C_SLAVE_MODE, ENABLE);
+	I2C_IntCmd(I2C_REG, ENABLE);
+#else
+	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
+#endif
+
+	I2C_Init(I2C_REG, frequency);
+	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
+}
+#endif
+
+#if I2C_ADDRESS != 0
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
+ISR(TWI_vect)
+{
+	static uint8_t index = 0;
+	static uint8_t datalen = 0;
+
+	uint8_t i = index;
+
+	switch (I2C_REG->I2STAT)
+	{
+	/*slave receiver*/
+	case 0x80:
+	case 0x90:
+	case 0x68:
+	case 0x78:
+		index++;
+		__attribute__((fallthrough));
+	case 0xA0: // stop or repeated start condition received
+		// sends the data
+		if (i < I2C_SLAVE_BUFFER_SIZE)
+		{
+			mcu_i2c_buffer[i] = I2C_REG->I2DAT;
+		}
+		if (I2C_REG->I2STAT == 0xA0)
+		{
+			index = 0;
+			mcu_i2c_buffer[i] = 0;
+			// unlock ISR and process the info request
+			mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
+		}
+		break;
+	/*slave trasnmitter*/
+	case 0xA8: // addressed, returned ack
+	case 0xB0: // arbitration lost, returned ack
+		i = 0;
+		__attribute__((fallthrough));
+	case 0xB8: // byte sent, ack returned
+		// copy data to output register
+		I2C_REG->I2DAT = mcu_i2c_buffer[i++];
+		// if there is more to send, ack, otherwise nack
+		if (i >= datalen)
+		{
+			I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC;
+			return;
+		}
+		index = i;
+		break;
+	case 0x00: // bus error, illegal stop/start
+		index = 0;
+		// restart I2C
+		uint32_t clkh = I2Cx->I2SCLH;
+		uint32_t clkl = I2Cx->I2SCLL;
+		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, DISABLE);
+		I2C_DeInit(I2C_REG);
+		I2C_Init(I2C_REG, I2C_FREQ);
+		I2Cx->I2SCLH = clkh;
+		I2Cx->I2SCLL = clkl;
+		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
+		break;
+	default:  // other cases like reset data and prepare ACK to receive data
+		index = 0;
+		break;
+	}
+
+	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
+	I2C_REG->I2CONCLR |= I2C_I2CONCLR_SIC | I2C_I2CONSET_AA;
+}
+#endif
+// this is similar to AVR
+
 #endif
 
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))

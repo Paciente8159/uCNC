@@ -493,11 +493,8 @@ void mcu_init(void)
 #endif
 
 #ifdef MCU_HAS_I2C
-	// set freq
-	TWSR = I2C_PRESC;
-	TWBR = (uint8_t)I2C_DIV & 0xFF;
-	// enable TWI
-	TWCR = (1 << TWEN);
+	// configure as I2C master
+	mcu_i2c_config(I2C_FREQ);
 #endif
 
 	// disable probe isr
@@ -961,69 +958,259 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 
 #ifdef MCU_HAS_I2C
-#ifndef mcu_i2c_write
-uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+#include <util/twi.h>
+#if I2C_ADDRESS == 0
+
+static void mcu_i2c_write_stop(bool *stop)
 {
+	if (*stop)
+	{
+		uint32_t ms_timeout = mcu_millis() + 25;
+
+		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
+		while ((TWCR & (1 << TWSTO)) && (ms_timeout > mcu_millis()))
+			;
+	}
+}
+
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+{
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
+	uint32_t ms_timeout = mcu_millis() + 25;
 	if (send_start)
 	{
 		// init
+		// on error, a start or stop condition in progress, reset
+		if ((TW_STATUS == TW_BUS_ERROR) || CHECKFLAG(TWCR, ((1 << TWSTA) | (1 << TWSTO))))
+		{
+			uint8_t twsr = (TWSR & 0x03);
+			uint8_t twbr = TWBR;
+			TWCR = 0;
+			TWSR = twsr;
+			TWBR = twbr;
+			// enable TWI
+			TWCR = (1 << TWINT) | (1 << TWEN);
+		}
+
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
 		while (!(TWCR & (1 << TWINT)))
-			;
-		if ((TWSR & 0xF8) != 0x08)
 		{
-			return 0;
+			if (ms_timeout < mcu_millis())
+			{
+				stop = true;
+				return I2C_NOTOK;
+			}
+		}
+		if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+		{
+			stop = true;
+			return I2C_NOTOK;
 		}
 	}
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
 	while (!(TWCR & (1 << TWINT)))
-		;
-
-	switch (TWSR & 0xF8)
 	{
-	case 0x18:
-	case 0x28:
-	case 0x40:
-	case 0x50:
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
+	}
+
+	switch (TW_STATUS)
+	{
+	case TW_MT_SLA_ACK:
+	case TW_MT_DATA_ACK:
+	case TW_MR_SLA_ACK:
+	case TW_MR_DATA_ACK:
 		break;
 	default:
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
-		return 0;
+		stop = true;
+		return I2C_NOTOK;
 	}
 
-	if (send_stop)
-	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
-	}
-
-	return 1;
+	return I2C_OK;
 }
-#endif
 
-#ifndef mcu_i2c_read
-uint8_t mcu_i2c_read(bool with_ack, bool send_stop)
+static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
-	uint8_t c = 0;
+	*data = 0xFF;
+	ms_timeout += mcu_millis();
+	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
 	while (!(TWCR & (1 << TWINT)))
-		;
-	c = TWDR;
-
-	if (send_stop)
 	{
-		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while (TWCR & (1 << TWSTO))
-			;
+		if (ms_timeout < mcu_millis())
+		{
+			stop = true;
+			return I2C_NOTOK;
+		}
 	}
 
-	return c;
+	*data = TWDR;
+	return I2C_OK;
+}
+
+#ifndef mcu_i2c_send
+// master sends command to slave
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		{
+			// send data, stop
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+
+			} while (datalen);
+
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+
+#ifndef mcu_i2c_receive
+// master receive response from slave
+uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
+{
+	if (data && datalen)
+	{
+		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		{
+			do
+			{
+				datalen--;
+				bool last = (datalen == 0);
+				if (mcu_i2c_read(data, !last, last, ms_timeout) != I2C_OK)
+				{
+					return I2C_NOTOK;
+				}
+				data++;
+			} while (datalen);
+			return I2C_OK;
+		}
+	}
+
+	return I2C_NOTOK;
+}
+#endif
+#endif
+
+#ifndef mcu_i2c_config
+void mcu_i2c_config(uint32_t frequency)
+{
+	// disable TWI
+	TWCR = 0;
+
+#if I2C_ADDRESS != 0
+	TWAR = ((I2C_ADDRESS << 1) | 1);
+#else
+	// set freq
+	uint8_t div = 0;
+	if ((frequency < 5000UL))
+	{
+		div = 3;
+	}
+	else if ((frequency < 20000UL))
+	{
+		div = 2;
+	}
+	else if ((frequency < 80000UL))
+	{
+		div = 1;
+	}
+
+	TWSR = div;
+	TWBR = (uint8_t)((F_CPU / (frequency << (div << 1)))) & 0xFF;
+#endif
+	// enable TWI
+	TWCR = (1 << TWINT) | (1 << TWEN);
+
+#if I2C_ADDRESS != 0
+	TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA));
+#endif
+}
+#endif
+
+#if I2C_ADDRESS != 0
+uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+
+ISR(TWI_vect, ISR_BLOCK)
+{
+	static uint8_t index = 0;
+	static uint8_t datalen = 0;
+	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
+
+	uint8_t i = index;
+
+	mcu_putc(TW_STATUS);
+
+	switch (TW_STATUS)
+	{
+	// slave receiver
+	case TW_SR_DATA_ACK:
+	case TW_SR_GCALL_DATA_ACK:
+	case TW_SR_ARB_LOST_SLA_ACK:
+	case TW_SR_ARB_LOST_GCALL_ACK:
+		index++;
+		__attribute__((fallthrough));
+	case TW_SR_STOP: // stop or repeated start condition received
+		// sends the data
+		if (i < I2C_SLAVE_BUFFER_SIZE)
+		{
+			mcu_i2c_buffer[i] = TWDR;
+		}
+		if (TW_STATUS == TW_SR_STOP)
+		{
+			index = 0;
+			mcu_i2c_buffer[i] = 0;
+			// unlock ISR and process the info request
+			// mcu_enable_global_isr();
+			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
+			datalen = MIN(i, I2C_SLAVE_BUFFER_SIZE);
+		}
+		break;
+	// slave transmitter
+	case TW_ST_SLA_ACK:
+	case TW_ST_ARB_LOST_SLA_ACK:
+		i = 0;
+		__attribute__((fallthrough));
+	case TW_ST_DATA_ACK: // byte sent, ack returned
+		// copy data to output register
+		TWDR = mcu_i2c_buffer[i++];
+		// if there is more to send, ack, otherwise nack
+		if (i >= datalen)
+		{
+			datalen = 0;
+			TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN)); // on last byte send NACK
+			return;
+		}
+		index = i;
+		break;
+	case TW_BUS_ERROR: // bus error, illegal stop/start
+		index = 0;
+		TWCR = (1 << TWSTO) | (1 << TWINT); // releases line
+		break;
+	default: // other cases like reset data and prepare ACK to receive data
+		index = 0;
+		break;
+	}
+
+	TWCR = ((1 << TWIE) | (1 << TWINT) | (1 << TWEN) | (1 << TWEA));
 }
 #endif
 #endif

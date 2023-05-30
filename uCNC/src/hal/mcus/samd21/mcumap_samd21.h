@@ -36,7 +36,7 @@ extern "C"
 
 // defines the frequency of the mcu
 #ifndef F_CPU
-#define F_CPU 48000000UL
+#define F_CPU SystemCoreClock
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
@@ -1622,17 +1622,23 @@ extern "C"
 
 #if (defined(I2C_CLK) && defined(I2C_DATA))
 #define MCU_HAS_I2C
+#define MCU_SUPPORTS_I2C_SLAVE
+
 #ifndef I2C_PORT
-#define I2C_PORT 1
+#define I2C_PORT 3
 #endif
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
+#endif
+#ifndef I2C_ADDRESS
+#define I2C_ADDRESS 0
 #endif
 
 #define I2CCOM __helper__(SERCOM, I2C_PORT, )
 #define PM_APBCMASK_I2CCOM __helper__(PM_APBCMASK_SERCOM, I2C_PORT, )
 #define GCLK_CLKCTRL_ID_I2CCOM __helper__(GCLK_CLKCTRL_ID_SERCOM, I2C_PORT, _CORE)
-#define I2C_DATA (I2CCOM->SPI.DATA.reg)
+#define I2C_IRQ __helper__(SERCOM, I2C_PORT, _IRQn)
+#define I2C_ISR __helper__(SERCOM, I2C_PORT, _Handler)
 	// #define OUTPAD 0
 	// #define INPAD 3
 
@@ -1641,10 +1647,10 @@ extern "C"
 #define I2C_DATA_PMUX (pinmux(I2C_DATA_PORT, I2C_DATA_BIT))
 #define I2C_DATA_PMUXVAL (sercommux_pin(I2C_PORT, I2C_DATA_PORT, I2C_DATA_BIT))
 
-#define DIO207_PMUX I2C_CLK_PMUX
-#define DIO207_PMUXVAL I2C_CLK_PMUXVAL
-#define DIO208_PMUX I2C_DATA_PMUX
-#define DIO208_PMUXVAL I2C_DATA_PMUXVAL
+#define DIO208_PMUX I2C_CLK_PMUX
+#define DIO208_PMUXVAL I2C_CLK_PMUXVAL
+#define DIO209_PMUX I2C_DATA_PMUX
+#define DIO209_PMUXVAL I2C_DATA_PMUXVAL
 
 // #if (I2C_PORT != 1 && I2C_PORT != 3)
 // #error "SPI PORT is not valid (SERCOM 1 or 3 only)"
@@ -3108,16 +3114,16 @@ extern "C"
 #define ENABLE_SYNC_TX
 #endif
 #elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
 #elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() ((COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
 #define mcu_tx_ready() ((COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
 #ifndef ENABLE_SYNC_TX
@@ -3130,8 +3136,8 @@ extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() (COM2_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM2_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_USB)
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
 #define mcu_rx_ready() tud_cdc_n_available(0)
 #define mcu_tx_ready() tud_cdc_n_write_available(0)
 #ifndef ENABLE_SYNC_TX
