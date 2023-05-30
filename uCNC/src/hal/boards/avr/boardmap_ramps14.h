@@ -62,15 +62,15 @@ extern "C"
 
 	// Setup limit pins
 
-// #define LIMIT_X_BIT 5	// assigns LIMIT_X pin
-// #define LIMIT_X_PORT E	// assigns LIMIT_X port
-// #define LIMIT_X_ISR -6	// assigns LIMIT_X ISR
+#define LIMIT_X_BIT 5	// assigns LIMIT_X pin
+#define LIMIT_X_PORT E	// assigns LIMIT_X port
+#define LIMIT_X_ISR -6	// assigns LIMIT_X ISR
 #define LIMIT_X2_BIT 4	// assigns LIMIT_X2 pin
 #define LIMIT_X2_PORT E // assigns LIMIT_X2 port
 #define LIMIT_X2_ISR -5 // assigns LIMIT_X2 ISR
-// #define LIMIT_Y_BIT 1	// assigns LIMIT_Y pin
-// #define LIMIT_Y_PORT J	// assigns LIMIT_Y port
-// #define LIMIT_Y_ISR 1	// assigns LIMIT_Y ISR
+#define LIMIT_Y_BIT 1	// assigns LIMIT_Y pin
+#define LIMIT_Y_PORT J	// assigns LIMIT_Y port
+#define LIMIT_Y_ISR 1	// assigns LIMIT_Y ISR
 #define LIMIT_Y2_BIT 0	// assigns LIMIT_Y2 pin
 #define LIMIT_Y2_PORT J // assigns LIMIT_Y2 port
 #define LIMIT_Y2_ISR 1	// assigns LIMIT_Y2 ISR

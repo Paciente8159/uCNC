@@ -43,8 +43,8 @@ extern "C"
 #define STEP1_PORT D // assigns STEP1 port
 #define STEP0_BIT 2	 // assigns STEP0 pin
 #define STEP0_PORT D // assigns STEP0 port
-//#define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
-//#define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
+// #define STEP6_BIT 4 //assigns STEP6 pin (will mirror DUAL_AXIS0)
+// #define STEP6_PORT C //assigns STEP6 port (will mirror DUAL_AXIS0)
 
 // Setup dir pins
 #define DIR2_BIT 7	// assigns DIR2 pin
@@ -58,9 +58,9 @@ extern "C"
 #define LIMIT_Z_BIT 4  // assigns LIMIT_Z pin
 #define LIMIT_Z_PORT B // assigns LIMIT_Z port
 #define LIMIT_Z_ISR 0  // assigns LIMIT_Z ISR
-// #define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
-// #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
-// #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
+	// #define LIMIT_Y2_BIT 4 //Z and second Y limit share the pin
+	// #define LIMIT_Y2_PORT B //Z and second Y limit share the pin
+	// #define LIMIT_Y2_ISR 0 //Z and second Y limit share the pin
 
 #define LIMIT_Y_BIT 2  // assigns LIMIT_Y pin
 #define LIMIT_Y_PORT B // assigns LIMIT_Y port
@@ -71,20 +71,20 @@ extern "C"
 #define LIMIT_X_ISR 0  // assigns LIMIT_X ISR
 
 // Setup probe pin
-// #define PROBE_BIT 5
-// #define PROBE_PORT C
-// #define PROBE_ISR 1
+#define PROBE_BIT 5
+#define PROBE_PORT C
+#define PROBE_ISR 1
 
 // Setup control input pins
-// #define ESTOP_BIT 0
-// #define FHOLD_BIT 1
-// #define CS_RES_BIT 2
-// #define ESTOP_PORT C
-// #define FHOLD_PORT C
-// #define CS_RES_PORT C
-// #define ESTOP_ISR 1
-// #define FHOLD_ISR 1
-// #define CS_RES_ISR 1
+#define ESTOP_BIT 0
+#define FHOLD_BIT 1
+#define CS_RES_BIT 2
+#define ESTOP_PORT C
+#define FHOLD_PORT C
+#define CS_RES_PORT C
+#define ESTOP_ISR 1
+#define FHOLD_ISR 1
+#define CS_RES_ISR 1
 
 // Setup com pins
 #define RX_BIT 0
@@ -93,7 +93,7 @@ extern "C"
 #define TX_PORT D
 #define RX_PULLUP
 	// only uncomment this if other port other then 0 is used
-	//#define UART_PORT 0
+	// #define UART_PORT 0
 
 	// Setup PWM
 #define PWM0_BIT 3	// assigns PWM0 pin
@@ -134,19 +134,18 @@ extern "C"
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
-	//#define ITP_TIMER 1
+	// #define ITP_TIMER 1
 
 	// Setup the RTC Timer used by µCNC to provide an (mostly) accurate time base for all time dependent functions
 	// Timer 0 is set by default
-	//#define RTC_TIMER 0
+	// #define RTC_TIMER 0
 
-	#define ONESHOT_TIMER 2
+#define ONESHOT_TIMER 2
 
-	#define I2C_CLK_BIT 5
-#define I2C_CLK_PORT C
-	#define I2C_DATA_BIT 4
-#define I2C_DATA_PORT C
-// #define PROBE_ISR 1
+// #define I2C_CLK_BIT 5
+// #define I2C_CLK_PORT C
+// #define I2C_DATA_BIT 4
+// #define I2C_DATA_PORT C
 
 #ifdef __cplusplus
 }
