@@ -28,7 +28,11 @@
 
 slave_board_io_t g_slaves_io;
 
-#ifdef IS_MASTER_BOARD
+void multiboard_set_slave_boards_io(void)
+{
+	master_send_command(0, MULTIBOARD_CMD_SLAVE_IO, &g_slaves_io, sizeof(slave_board_io_t));
+}
+
 void multiboard_get_slave_boards_io(void)
 {
 	slave_board_io_t slaves;
@@ -36,7 +40,7 @@ void multiboard_get_slave_boards_io(void)
 	for (uint8_t slaveid = SLAVE_BOARDS_ADDRESS_OFFSET; slaveid < (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARDS_COUNT); slaveid++)
 	{
 		slave_board_io_t slave_data;
-		if (master_get_response(slaveid, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) != I2C_OK)
+		if (master_get_response(slaveid, MULTIBOARD_REQUEST_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) != I2C_OK)
 		{
 			slave_data.slave_io_reg = 0xFFFFFFFF;
 		}
@@ -72,14 +76,15 @@ uint8_t multiboard_get_data(uint8_t cmd, uint16_t *data, uint16_t default_value,
 
 	return MULTIBOARD_CONTROL_OK;
 }
-#endif
 
 __attribute__((weak)) uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen)
 {
+	return MULTIBOARD_CONTROL_OK;
 }
 
 __attribute__((weak)) uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout)
 {
+	return MULTIBOARD_CONTROL_OK;
 }
 
 void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
@@ -87,29 +92,20 @@ void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 	// the CRC can be checked here if needed
 	switch (data[0])
 	{
-		// sync states
-	case MULTIBOARD_CMD_CNCSTATE:
-		if (*datalen == 1)
-		{
-			data[0] = cnc_get_exec_state(EXEC_ALLACTIVE);
-		}
-		else
-		{
-			cnc_set_exec_state(data[1]);
-			cnc_clear_exec_state(~data[1]);
-		}
-		break;
-	case MULTIBOARD_CMD_CNCALARM:
-		if (*datalen == 1)
-		{
-			data[0] = cnc_get_alarm();
-		}
-		else
-		{
-			cnc_alarm(data[1]);
-		}
-		break;
 	case MULTIBOARD_CMD_SLAVE_IO:
+		cnc_set_exec_state(((slave_board_io_t *)data)->slave_io_bits.state);
+		cnc_clear_exec_state(~((slave_board_io_t *)data)->slave_io_bits.state);
+		g_slaves_io.slave_io_reg = ((slave_board_io_t *)data)->slave_io_reg;
+		break;
+	}
+}
+
+void slave_rqst_cb(uint8_t *data, uint8_t *datalen)
+{
+	// the CRC can be checked here if needed
+	switch (data[0])
+	{
+	case MULTIBOARD_REQUEST_CMD_SLAVE_IO:
 		*datalen = sizeof(slave_board_io_t);
 		memcpy(data, &g_slaves_io.slave_io_reg, sizeof(slave_board_io_t));
 		break;

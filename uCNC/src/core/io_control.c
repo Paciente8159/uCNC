@@ -259,57 +259,8 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 	static uint8_t prev_inputs = 0;
-	uint8_t inputs = 0;
+	uint8_t inputs = io_get_onchange_inputs();
 	uint8_t diff;
-
-#if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
-	if (mcu_get_input(DIN0))
-	{
-		inputs |= DIN0_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN1) && defined(DIN1_ISR))
-	if (mcu_get_input(DIN1))
-	{
-		inputs |= DIN1_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN2) && defined(DIN2_ISR))
-	if (mcu_get_input(DIN2))
-	{
-		inputs |= DIN2_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN3) && defined(DIN3_ISR))
-	if (mcu_get_input(DIN3))
-	{
-		inputs |= DIN3_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN4) && defined(DIN4_ISR))
-	if (mcu_get_input(DIN4))
-	{
-		inputs |= DIN4_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN5) && defined(DIN5_ISR))
-	if (mcu_get_input(DIN5))
-	{
-		inputs |= DIN5_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN6) && defined(DIN6_ISR))
-	if (mcu_get_input(DIN6))
-	{
-		inputs |= DIN6_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN7) && defined(DIN7_ISR))
-	if (mcu_get_input(DIN7))
-	{
-		inputs |= DIN7_MASK;
-	}
-#endif
 
 #if (ENCODERS > 0)
 	inputs ^= g_settings.encoders_pulse_invert_mask;
@@ -406,11 +357,8 @@ uint8_t io_get_limits(void)
 #endif
 
 #ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	result |= g_slaves_io.slave_io_bits.limits;
-#else
+	result |= (g_slaves_io.slave_io_bits.limits & ~(LIMITS_DUAL_MASK | LIMITS_MASK));
 	g_slaves_io.slave_io_bits.limits = result;
-#endif
 #endif
 
 	return result;
@@ -441,11 +389,8 @@ uint8_t io_get_limits_dual(void)
 	result ^= (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK));
 
 #ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	result |= g_slaves_io.slave_io_bits.limits2;
-#else
+	result |= (g_slaves_io.slave_io_bits.limits2 & ~LIMITS_DUAL_MASK);
 	g_slaves_io.slave_io_bits.limits2 = result;
-#endif
 #endif
 	return result;
 #endif
@@ -477,11 +422,8 @@ uint8_t io_get_controls(void)
 	uint8_t result = (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 
 #ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	result |= g_slaves_io.slave_io_bits.controls;
-#else
+	result |= (g_slaves_io.slave_io_bits.controls & ~CONTROLS_MASK);
 	g_slaves_io.slave_io_bits.controls = result;
-#endif
 #endif
 
 	return result;
@@ -514,6 +456,68 @@ void io_disable_probe(void)
 #endif
 }
 
+uint8_t io_get_onchange_inputs(void)
+{
+	uint8_t inputs = 0;
+#if (DIN_ONCHANGE_MASK != 0)
+#if (DIN0_MASK != 0)
+	if (mcu_get_input(DIN0))
+	{
+		inputs |= DIN0_MASK;
+	}
+#endif
+#if (DIN1_MASK != 0)
+	if (mcu_get_input(DIN1))
+	{
+		inputs |= DIN1_MASK;
+	}
+#endif
+#if (DIN2_MASK != 0)
+	if (mcu_get_input(DIN2))
+	{
+		inputs |= DIN2_MASK;
+	}
+#endif
+#if (DIN3_MASK != 0)
+	if (mcu_get_input(DIN3))
+	{
+		inputs |= DIN3_MASK;
+	}
+#endif
+#if (DIN4_MASK != 0)
+	if (mcu_get_input(DIN4))
+	{
+		inputs |= DIN4_MASK;
+	}
+#endif
+#if (DIN5_MASK != 0)
+	if (mcu_get_input(DIN5))
+	{
+		inputs |= DIN5_MASK;
+	}
+#endif
+#if (DIN6_MASK != 0)
+	if (mcu_get_input(DIN6))
+	{
+		inputs |= DIN6_MASK;
+	}
+#endif
+#if (DIN7_MASK != 0)
+	if (mcu_get_input(DIN7))
+	{
+		inputs |= DIN7_MASK;
+	}
+#endif
+#endif
+
+#ifdef ENABLE_MULTIBOARD
+	inputs |= (g_slaves_io.slave_io_bits.onchange_inputs & ~DIN_ONCHANGE_MASK);
+	g_slaves_io.slave_io_bits.onchange_inputs = inputs;
+#endif
+
+	return inputs;
+}
+
 bool io_get_probe(void)
 {
 #if ASSERT_PIN(PROBE)
@@ -521,7 +525,7 @@ bool io_get_probe(void)
 	probe = (!g_settings.probe_invert_mask) ? probe : !probe;
 
 #ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
+#if !ASSERT_PIN(PROBE)
 	probe |= g_slaves_io.slave_io_bits.probe;
 #else
 	g_slaves_io.slave_io_bits.probe = probe;

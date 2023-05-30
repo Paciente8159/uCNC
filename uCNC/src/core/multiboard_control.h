@@ -39,13 +39,19 @@ extern "C"
 #define MULTIBOARD_CMD_LIMITS 0xB4
 #define MULTIBOARD_CMD_PROBE 0xB5
 #define MULTIBOARD_CMD_PIN 0xB6
+#define MULTIBOARD_CMD_SLAVE_IO 0xB7
 #define MULTIBOARD_CMD_CNCSETTINGS 0xC1
 #define MULTIBOARD_CMD_ITPBLOCK 0xD1
 #define MULTIBOARD_CMD_ITPSEGMENT 0xD2
 #define MULTIBOARD_CMD_ITPRUN 0xD3
-#define MULTIBOARD_CMD_SLAVE_IO 0xE1
-#define MULTIBOARD_CMD_CONFIRM_CRC 0xF1
-#define MULTIBOARD_CMD_SLAVE_ACK 0xF5
+
+// commands that expect a response from the slave
+#define MULTIBOARD_REQUEST_CMDS_BASE 0xE0
+
+#define MULTIBOARD_REQUEST_CMD_SLAVE_IO (MULTIBOARD_REQUEST_CMDS_BASE + 1)
+
+#define MULTIBOARD_CMD_CONFIRM_CRC 0xA3
+#define MULTIBOARD_CMD_SLAVE_ACK 0xA5
 
 	/**
 	 * Multiboard communication is based on these functions and different communication protocols can be used/defined to allow multiboard support
@@ -72,18 +78,21 @@ extern "C"
 		struct
 		{
 			uint8_t state;
-			int8_t alarm;
 			uint8_t probe : 1;
 			uint8_t limits2 : 3;
 			uint8_t controls : 4;
 			uint8_t limits;
+			uint8_t onchange_inputs;
 		} slave_io_bits;
 	} slave_board_io_t;
 	extern slave_board_io_t g_slaves_io;
 
-#ifdef IS_MASTER_BOARD
 	uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen);
 	uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout);
+	// master to slave data received callback
+	void slave_rcv_cb(uint8_t *data, uint8_t *datalen);
+	// slave to master data request callback (request always comes from master)
+	void slave_rqst_cb(uint8_t *data, uint8_t *datalen);
 
 	/**
 	 *
@@ -92,11 +101,11 @@ extern "C"
 	 *
 	 * **/
 
-#define MULTIBOARD_SYNC_CNCSTATE(state) master_send_command(0, MULTIBOARD_CMD_CNCSTATE, &state, 1)
-#define MULTIBOARD_SYNC_CNCALARM(alarm) master_send_command(0, MULTIBOARD_CMD_CNCALARM, &alarm, 1)
+// #define MULTIBOARD_SYNC_CNCSTATE(state) master_send_command(0, MULTIBOARD_CMD_CNCSTATE, &state, 1)
+// #define MULTIBOARD_SYNC_CNCALARM(alarm) master_send_command(0, MULTIBOARD_CMD_CNCALARM, &alarm, 1)
 #define MULTIBOARD_SYNC_CNCSETTINGS() master_send_command(0, MULTIBOARD_CMD_CNCSETTINGS, &g_settings, sizeof(settings_t))
-#define MULTIBOARD_SYNC_ITPBLOCK(block, blocklen) master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, &block, blocklen);
-#define MULTIBOARD_SYNC_ITPSEGMENT(segm, segmlen) master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, &segm, segmlen);
+// #define MULTIBOARD_SYNC_ITPBLOCK(block, blocklen) master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, &block, blocklen);
+// #define MULTIBOARD_SYNC_ITPSEGMENT(segm, segmlen) master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, &segm, segmlen);
 
 #define MULTIBOARD_SYNC_IOOUTPUT(output, inputval)                         \
 	{                                                                      \
@@ -104,17 +113,16 @@ extern "C"
 		master_send_command(0, MULTIBOARD_CMD_PIN, output, 0, &packet, 2); \
 	}
 
+	void multiboard_set_slave_boards_io(void);
 	void multiboard_get_slave_boards_io(void);
 
-// #define MULTIBOARD_GET_SLAVESTATE(state) multiboard_get_data(MULTIBOARD_CMD_CNCSTATE, state, EXEC_ALLACTIVE, NULL, 0)
-// queries slave boards for the limits, controls and probe pins
-// #define MULTIBOARD_GET_SPECIAL_INPUTS(sp_inputs) multiboard_get_data(MULTIBOARD_CMD_CONTROLS, sp_inputs, 0xFFFF, NULL, 0)
-// #define MULTIBOARD_GET_IOLIMITS(limits) multiboard_get_byte(MULTIBOARD_CMD_LIMITS, limits, 0, NULL, 0)
-// #define MULTIBOARD_GET_IOPROBE(probe) multiboard_get_byte(MULTIBOARD_CMD_PROBE, probe, 0, NULL, 0)
-// #define MULTIBOARD_GET_IOINPUT(input, inputval) multiboard_get_byte(MULTIBOARD_CMD_PIN, inputval, 0, &input, 1)
-#else
-	void slave_rcv_cb(uint8_t *data, uint8_t *datalen);
-#endif
+	// #define MULTIBOARD_GET_SLAVESTATE(state) multiboard_get_data(MULTIBOARD_CMD_CNCSTATE, state, EXEC_ALLACTIVE, NULL, 0)
+	// queries slave boards for the limits, controls and probe pins
+	// #define MULTIBOARD_GET_SPECIAL_INPUTS(sp_inputs) multiboard_get_data(MULTIBOARD_CMD_CONTROLS, sp_inputs, 0xFFFF, NULL, 0)
+	// #define MULTIBOARD_GET_IOLIMITS(limits) multiboard_get_byte(MULTIBOARD_CMD_LIMITS, limits, 0, NULL, 0)
+	// #define MULTIBOARD_GET_IOPROBE(probe) multiboard_get_byte(MULTIBOARD_CMD_PROBE, probe, 0, NULL, 0)
+	// #define MULTIBOARD_GET_IOINPUT(input, inputval) multiboard_get_byte(MULTIBOARD_CMD_PIN, inputval, 0, &input, 1)
+	
 
 #endif
 

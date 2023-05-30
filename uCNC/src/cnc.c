@@ -304,10 +304,6 @@ void cnc_home(void)
 
 void cnc_alarm(int8_t code)
 {
-#ifdef IS_MASTER_BOARD
-	// broadcasts the alarm change
-	MULTIBOARD_SYNC_CNCALARM(code);
-#endif
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
 	cnc_state.alarm = code;
@@ -401,10 +397,11 @@ uint8_t cnc_get_exec_state(uint8_t statemask)
 
 void cnc_set_exec_state(uint8_t statemask)
 {
-#ifdef IS_MASTER_BOARD
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 	SETFLAG(statemask, cnc_state.exec_state);
 	// broadcasts the new state
-	MULTIBOARD_SYNC_CNCSTATE(statemask);
+	g_slaves_io.slave_io_bits.state = statemask;
+	multiboard_set_slave_boards_io();
 	cnc_state.exec_state = statemask;
 #else
 	SETFLAG(cnc_state.exec_state, statemask);
@@ -484,11 +481,12 @@ void cnc_clear_exec_state(uint8_t statemask)
 #endif
 	}
 
-#ifdef IS_MASTER_BOARD
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 	statemask = cnc_state.exec_state & (~statemask);
 	// broadcasts the mask change
 	MULTIBOARD_SYNC_CNCSTATE(statemask);
 	cnc_state.exec_state = statemask;
+
 #else
 	CLEARFLAG(cnc_state.exec_state, statemask);
 #endif
@@ -928,20 +926,18 @@ static void cnc_io_dotasks(void)
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
 
+#ifdef ENABLE_MULTIBOARD
 #ifdef IS_MASTER_BOARD
-	static uint32_t next_run = 0;
-	if (next_run < mcu_millis())
-	{
-		next_run = mcu_millis() + 1;
-		multiboard_get_slave_boards_io();
-	}
+	// read external IO
+	multiboard_get_slave_boards_io();
 #else
 	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(0xFF);
-	g_slaves_io.slave_io_bits.alarm = cnc_get_alarm();
 	g_slaves_io.slave_io_bits.probe = io_get_probe();
 	g_slaves_io.slave_io_bits.controls = io_get_controls();
 	g_slaves_io.slave_io_bits.limits2 = io_get_limits_dual();
 	g_slaves_io.slave_io_bits.limits = io_get_limits();
+	g_slaves_io.slave_io_bits.onchange_inputs = io_get_onchange_inputs();
+#endif
 #endif
 
 	// checks inputs and triggers ISR checks if enforced soft polling
@@ -949,7 +945,7 @@ static void cnc_io_dotasks(void)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
 #endif
-#if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
+#if (DIN_ONCHANGE_MASK != 0)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
 	mcu_inputs_changed_cb();
 #endif

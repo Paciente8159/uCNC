@@ -43,6 +43,7 @@ extern "C"
 	void io_enable_probe(void);
 	void io_disable_probe(void);
 	bool io_get_probe(void);
+	uint8_t io_get_onchange_inputs(void);
 
 	uint8_t io_get_analog(uint8_t pin);
 
@@ -83,8 +84,8 @@ extern "C"
 #endif
 
 #ifdef ENABLE_IO_ALARM_DEBUG
-extern uint8_t io_alarm_limits;
-extern uint8_t io_alarm_controls;
+	extern uint8_t io_alarm_limits;
+	extern uint8_t io_alarm_controls;
 #endif
 
 #ifdef __cplusplus

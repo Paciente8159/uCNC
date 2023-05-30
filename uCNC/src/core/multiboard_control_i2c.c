@@ -133,22 +133,38 @@ uint8_t master_get_response(uint8_t address, uint8_t command, uint8_t *data, uin
 #else
 
 // overrides the I2C slave callback
+typedef struct i2c_cmd_data_
+{
+    uint8_t cmd;
+    uint8_t first_byte;
+    uint8_t datalen;
+} i2c_cmd_data_t;
+
+static i2c_cmd_data_t i2c_cmd_data;
 MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 {
     static uint8_t last_crc = 0;
 
+    // CRC checking command
     if (data[0] == MULTIBOARD_CMD_CONFIRM_CRC)
     {
         if (data[1] == last_crc)
         {
             // crc matches
+            // restore data initial 2 bytes
+            data[0] = i2c_cmd_data.cmd;
+            data[1] = i2c_cmd_data.first_byte;
+            *datalen = i2c_cmd_data.datalen;
+            // now can execute the command
+            slave_rcv_cb(data, datalen);
             // reply with ACK
             data[0] = MULTIBOARD_CMD_SLAVE_ACK;
             *datalen = 1;
             return;
         }
     }
-    else
+    // master to slave command
+    else if (data[0] < MULTIBOARD_REQUEST_CMDS_BASE)
     {
         uint8_t crc = 0;
         for (uint8_t i = 0; i < *datalen; i++)
@@ -159,7 +175,15 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
         // in the end also add own ID to CRC
         // master must get ACK from addressed SLAVE
         last_crc = crc7(SLAVE_BOARD_ID, crc);
-        slave_rcv_cb(data, datalen);
+        i2c_cmd_data.cmd = data[0];
+        i2c_cmd_data.first_byte = data[1];
+        i2c_cmd_data.datalen = *datalen;
+    }
+    // slave to master request command
+    else
+    {
+        // request command
+        slave_rqst_cb(data, datalen);
     }
 }
 
