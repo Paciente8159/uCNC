@@ -1314,6 +1314,11 @@ extern "C"
 #endif
 #if (defined(USB_DP) && defined(USB_DM))
 #define MCU_HAS_USB
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+extern bool tud_cdc_n_connected (uint8_t itf);
+#define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
+#define usb_rx_available() tud_cdc_n_available(0)
 #endif
 
 #define __pinmuxevenodd0 PMUXE
@@ -3106,26 +3111,20 @@ extern "C"
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
 #if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || (COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
-#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && (COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || (COM2_UART->USART.INTFLAG.bit.RXC) || usb_rx_available())
+#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && (COM2_UART->USART.INTFLAG.bit.DRE) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
 #elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
-#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || usb_rx_available())
+#define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
 #elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() ((COM2_UART->USART.INTFLAG.bit.RXC) || tud_cdc_n_available(0))
-#define mcu_tx_ready() ((COM2_UART->USART.INTFLAG.bit.DRE) && tud_cdc_n_write_available(0))
+#define mcu_rx_ready() ((COM2_UART->USART.INTFLAG.bit.RXC) || usb_rx_available())
+#define mcu_tx_ready() ((COM2_UART->USART.INTFLAG.bit.DRE) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
@@ -3136,10 +3135,8 @@ extern "C"
 #define mcu_rx_ready() (COM2_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM2_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_USB)
-	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-	extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define mcu_rx_ready() tud_cdc_n_available(0)
-#define mcu_tx_ready() tud_cdc_n_write_available(0)
+#define mcu_rx_ready() usb_rx_available()
+#define mcu_tx_ready() usb_tx_available()
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
