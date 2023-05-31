@@ -65,23 +65,24 @@ extern "C"
 // #define LIMIT_A_ISR
 
 // Setup control input pins
-#define ESTOP_BIT 5
-#define ESTOP_PORT B
-#define FHOLD_BIT 6
-#define FHOLD_PORT B
-#define CS_RES_BIT 7
-#define CS_RES_PORT B
+// #define ESTOP_BIT 5
+// #define ESTOP_PORT B
+// #define FHOLD_BIT 6
+// #define FHOLD_PORT B
+// #define CS_RES_BIT 7
+// #define CS_RES_PORT B
 // #define SAFETY_DOOR_BIT 8
 // #define SAFETY_DOOR_PORT B
-// Setup probe pin
-#define PROBE_BIT 9
-#define PROBE_PORT B
-
 // Enable controls switch interrupt
-#define ESTOP_ISR
-#define FHOLD_ISR
-#define CS_RES_ISR
-#define SAFETY_DOOR_ISR
+// #define ESTOP_ISR
+// #define FHOLD_ISR
+// #define CS_RES_ISR
+// #define SAFETY_DOOR_ISR
+
+// Setup probe pin
+// #define PROBE_BIT 9
+// #define PROBE_PORT B
+
 
 #define UART_PORT 1
 #define TX_BIT 9
@@ -140,11 +141,11 @@ extern "C"
 	// On STM32F1x cores this will default to Timer 3
 	// #define SERVO_TIMER 3
 
-// #define I2C_CLK_BIT 6
-// #define I2C_CLK_PORT B
-// #define I2C_DATA_BIT 7
-// #define I2C_DATA_PORT B
-// #define I2C_PORT 1
+#define I2C_CLK_BIT 6
+#define I2C_CLK_PORT B
+#define I2C_DATA_BIT 7
+#define I2C_DATA_PORT B
+#define I2C_PORT 1
 
 #define ONESHOT_TIMER 1
 

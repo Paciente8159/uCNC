@@ -400,7 +400,7 @@ void cnc_set_exec_state(uint8_t statemask)
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 	SETFLAG(statemask, cnc_state.exec_state);
 	// broadcasts the new state
-	g_slaves_io.slave_io_bits.state = statemask;
+	g_slaves_io.slave_io_bits.state = statemask & ~EXEC_RUN;
 	multiboard_set_slave_boards_io();
 	cnc_state.exec_state = statemask;
 #else
@@ -484,7 +484,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 	statemask = cnc_state.exec_state & (~statemask);
 	// broadcasts the mask change
-	g_slaves_io.slave_io_bits.state = statemask;
+	g_slaves_io.slave_io_bits.state = statemask & ~EXEC_RUN;
 	multiboard_set_slave_boards_io();
 	cnc_state.exec_state = statemask;
 
@@ -938,7 +938,7 @@ static void cnc_io_dotasks(void)
 	}
 
 #else
-	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(0xFF);
+	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(~EXEC_RUN);
 	g_slaves_io.slave_io_bits.probe = io_get_probe();
 	g_slaves_io.slave_io_bits.controls = io_get_controls();
 	g_slaves_io.slave_io_bits.limits2 = io_get_limits_dual();

@@ -567,7 +567,7 @@ extern "C"
 
 // uncomment if this board will be the master board
 // there can only be one master board in the bus
-// #define IS_MASTER_BOARD
+#define IS_MASTER_BOARD
 #ifndef IS_MASTER_BOARD
 // set the slave board ID
 // each board must have a unique ID that should be a sequencial starting at 1 and ending at SLAVE_BOARDS_COUNT

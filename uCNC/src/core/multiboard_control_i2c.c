@@ -69,8 +69,8 @@ uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uin
             buffer[j] = data[i];
             crc = crc7(data[i], crc);
         }
-        datalen += 1;
     }
+    datalen += 1;
 
     // sends the command
     // retries on fail
@@ -173,7 +173,7 @@ MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 
         // in the end also add own ID to CRC
         // master must get ACK from addressed SLAVE
-        last_crc = crc7(SLAVE_BOARD_ID, crc);
+        last_crc = crc7((SLAVE_BOARDS_ADDRESS_OFFSET+SLAVE_BOARD_ID), crc);
         i2c_cmd_data.cmd = data[0];
         i2c_cmd_data.first_byte = data[1];
         i2c_cmd_data.datalen = *datalen;

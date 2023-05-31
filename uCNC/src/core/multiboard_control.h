@@ -105,14 +105,14 @@ extern "C"
 
 // #define MULTIBOARD_SYNC_CNCSTATE(state) master_send_command(0, MULTIBOARD_CMD_CNCSTATE, &state, 1)
 // #define MULTIBOARD_SYNC_CNCALARM(alarm) master_send_command(0, MULTIBOARD_CMD_CNCALARM, &alarm, 1)
-#define MULTIBOARD_SYNC_CNCSETTINGS() master_send_command(0, MULTIBOARD_CMD_CNCSETTINGS, &g_settings, sizeof(settings_t))
+#define MULTIBOARD_SYNC_CNCSETTINGS() master_send_command(0, MULTIBOARD_CMD_CNCSETTINGS, (uint8_t*)&g_settings, sizeof(settings_t))
 // #define MULTIBOARD_SYNC_ITPBLOCK(block, blocklen) master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, &block, blocklen);
 // #define MULTIBOARD_SYNC_ITPSEGMENT(segm, segmlen) master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, &segm, segmlen);
 
 #define MULTIBOARD_SYNC_IOOUTPUT(output, inputval)                         \
 	{                                                                      \
 		uint8_t packet[2] = {output, inputval};                            \
-		master_send_command(0, MULTIBOARD_CMD_PIN, output, 0, &packet, 2); \
+		master_send_command(0, MULTIBOARD_CMD_PIN, (uint8_t*)output, 0, &packet, 2); \
 	}
 
 	void multiboard_set_slave_boards_io(void);
