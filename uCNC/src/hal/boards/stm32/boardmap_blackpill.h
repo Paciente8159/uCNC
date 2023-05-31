@@ -49,14 +49,14 @@ extern "C"
 #define DIR3_PORT A // assigns DIR3 port
 
 // Setup limit pins
-#define LIMIT_X_BIT 12 // assigns LIMIT_X pin
-#define LIMIT_X_PORT B // assigns LIMIT_X port
-#define LIMIT_Y_BIT 13 // assigns LIMIT_Y pin
-#define LIMIT_Y_PORT B // assigns LIMIT_Y port
-#define LIMIT_Z_BIT 14 // assigns LIMIT_Z pin
-#define LIMIT_Z_PORT B // assigns LIMIT_Z port
-#define LIMIT_A_BIT 15 // assigns LIMIT_A pin
-#define LIMIT_A_PORT B // assigns LIMIT_A port
+// #define LIMIT_X_BIT 12 // assigns LIMIT_X pin
+// #define LIMIT_X_PORT B // assigns LIMIT_X port
+// #define LIMIT_Y_BIT 13 // assigns LIMIT_Y pin
+// #define LIMIT_Y_PORT B // assigns LIMIT_Y port
+// #define LIMIT_Z_BIT 14 // assigns LIMIT_Z pin
+// #define LIMIT_Z_PORT B // assigns LIMIT_Z port
+// #define LIMIT_A_BIT 15 // assigns LIMIT_A pin
+// #define LIMIT_A_PORT B // assigns LIMIT_A port
 
 // Enable limits switch interrupt
 // #define LIMIT_X_ISR

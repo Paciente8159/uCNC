@@ -194,6 +194,7 @@ extern "C"
 
 	// processes the ascii real time commands and enqueues them for execution in the main loop
 	void cnc_call_rt_command(uint8_t command);
+	void cnc_cancel_goidle(void);
 	// enqueues a state change to be made in the main loop
 	void cnc_call_rt_state_command(uint8_t command);
 

@@ -233,7 +233,7 @@ static void itp_sgm_clear(void)
 void itp_blk_buffer_write(void)
 {
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	master_send_command(0, MULTIBOARD_CMD_ITPBLOCK_ADVANCE, NULL, 0);
+	master_send_command(0, MULTIBOARD_CMD_ITPBLOCK_WRITE, NULL, 0);
 #endif
 
 	// curcular always. No need to control override
@@ -375,7 +375,7 @@ void itp_run(void)
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+		MULTIBOARD_SLAVE_SET_STATE(&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
 #endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
@@ -688,7 +688,7 @@ void itp_run(void)
 
 // finally write the segment
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+		MULTIBOARD_SLAVE_SET_ITPSEGMENT(sgm, sizeof(itp_segment_t));
 #endif
 		itp_sgm_buffer_write();
 	}
@@ -806,7 +806,7 @@ void itp_run(void)
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+		MULTIBOARD_SLAVE_SET_ITPBLOCK(&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
 #endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
@@ -1047,7 +1047,7 @@ void itp_run(void)
 
 		// finally write the segment
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+		MULTIBOARD_SLAVE_SET_ITPSEGMENT(sgm, sizeof(itp_segment_t));
 #endif
 		itp_sgm_buffer_write();
 	}
@@ -1727,6 +1727,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 void itp_start(bool is_synched)
 {
+	cnc_cancel_goidle();
 	// starts the step isr if is stopped and there are segments to execute
 	if (!cnc_get_exec_state(EXEC_RUN | EXEC_HOLD | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
 	{

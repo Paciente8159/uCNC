@@ -26,31 +26,7 @@
 
 #ifdef ENABLE_MULTIBOARD
 
-slave_board_io_t g_slaves_io;
-
 #ifdef IS_MASTER_BOARD
-void multiboard_set_slave_boards_io(void)
-{
-	master_send_command(0, MULTIBOARD_CMD_SLAVE_IO, (uint8_t *)&g_slaves_io, sizeof(slave_board_io_t));
-}
-
-void multiboard_get_slave_boards_io(void)
-{
-	slave_board_io_t slaves;
-
-	for (uint8_t slaveid = SLAVE_BOARDS_ADDRESS_OFFSET; slaveid < (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARDS_COUNT); slaveid++)
-	{
-		slave_board_io_t slave_data;
-		if (master_get_response(slaveid, MULTIBOARD_REQUEST_CMD_SLAVE_IO, (uint8_t *)&slave_data, sizeof(slave_board_io_t), 2) != I2C_OK)
-		{
-			slave_data.slave_io_reg = 0xFFFFFFFF;
-		}
-
-		slaves.slave_io_reg |= slave_data.slave_io_reg;
-	}
-
-	g_slaves_io.slave_io_reg = slaves.slave_io_reg;
-}
 
 __attribute__((weak)) uint8_t master_send_command(uint8_t address, uint8_t command, uint8_t *data, uint8_t datalen)
 {
@@ -62,6 +38,25 @@ __attribute__((weak)) uint8_t master_get_response(uint8_t address, uint8_t comma
 	return MULTIBOARD_CONTROL_OK;
 }
 
+uint8_t master_get_combined_responses(uint8_t command, uint8_t *data, uint8_t datalen, uint32_t timeout)
+{
+	for (uint8_t slaveid = SLAVE_BOARDS_ADDRESS_OFFSET; slaveid < (SLAVE_BOARDS_ADDRESS_OFFSET + SLAVE_BOARDS_COUNT); slaveid++)
+	{
+		uint8_t buffer[datalen + 1];
+		if (master_get_response(slaveid, command, buffer, datalen, timeout) != MULTIBOARD_CONTROL_OK)
+		{
+			memset(data, 0xFF, datalen);
+		}
+
+		for (uint8_t i = 0; i < datalen; i++)
+		{
+			data[i] |= buffer[i + 1];
+		}
+	}
+
+	return MULTIBOARD_CONTROL_OK;
+}
+
 #else
 void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 {
@@ -70,15 +65,16 @@ void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 	uint8_t *ptr = &data[1];
 	switch (cmd)
 	{
-	case MULTIBOARD_CMD_SLAVE_IO:
-		cnc_set_exec_state(((slave_board_io_t *)ptr)->slave_io_bits.state);
-		cnc_clear_exec_state(~((slave_board_io_t *)ptr)->slave_io_bits.state);
-		g_slaves_io.slave_io_reg = ((slave_board_io_t *)ptr)->slave_io_reg;
+	case MULTIBOARD_CMD_SET_CNC_STATE:
+		cnc_set_exec_state(data[1]);
+		break;
+	case MULTIBOARD_CMD_CLEAR_CNC_STATE:
+		cnc_clear_exec_state(data[1]);
 		break;
 	case MULTIBOARD_CMD_ITPBLOCK:
 		itp_add_block(ptr);
 		break;
-	case MULTIBOARD_CMD_ITPBLOCK_ADVANCE:
+	case MULTIBOARD_CMD_ITPBLOCK_WRITE:
 		itp_blk_buffer_write();
 		break;
 	case MULTIBOARD_CMD_ITPSEGMENT:
@@ -89,6 +85,8 @@ void slave_rcv_cb(uint8_t *data, uint8_t *datalen)
 		break;
 	case MULTIBOARD_CMD_ITPPOS_RESET:
 		itp_reset_rt_position((float *)ptr);
+	case MULTIBOARD_CMD_CNCSETTINGS:
+		memcpy(&g_settings, ptr, sizeof(settings_t));
 		break;
 	}
 }
@@ -98,9 +96,17 @@ void slave_rqst_cb(uint8_t *data, uint8_t *datalen)
 	// the CRC can be checked here if needed
 	switch (data[0])
 	{
-	case MULTIBOARD_REQUEST_CMD_SLAVE_IO:
-		*datalen = sizeof(slave_board_io_t);
-		memcpy(data, &g_slaves_io.slave_io_reg, sizeof(slave_board_io_t));
+	case MULTIBOARD_CMD_REQUEST_LIMITS:
+		*datalen = 2;
+		data[1] = io_get_limits();
+		break;
+	case MULTIBOARD_CMD_REQUEST_LIMITS_DUAL:
+		*datalen = 2;
+		data[1] = io_get_limits_dual();
+		break;
+	case MULTIBOARD_CMD_REQUEST_CONTROLS:
+		*datalen = 2;
+		data[1] = io_get_controls();
 		break;
 	}
 }

@@ -398,14 +398,12 @@ uint8_t cnc_get_exec_state(uint8_t statemask)
 void cnc_set_exec_state(uint8_t statemask)
 {
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	SETFLAG(statemask, cnc_state.exec_state);
-	// broadcasts the new state
-	g_slaves_io.slave_io_bits.state = statemask & ~EXEC_RUN;
-	multiboard_set_slave_boards_io();
-	cnc_state.exec_state = statemask;
-#else
-	SETFLAG(cnc_state.exec_state, statemask);
+	if (statemask != EXEC_RUN)
+	{
+		MULTIBOARD_SLAVE_SET_STATE(statemask);
+	}
 #endif
+	SETFLAG(cnc_state.exec_state, statemask);
 }
 
 void cnc_clear_exec_state(uint8_t statemask)
@@ -482,15 +480,12 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	statemask = cnc_state.exec_state & (~statemask);
-	// broadcasts the mask change
-	g_slaves_io.slave_io_bits.state = statemask & ~EXEC_RUN;
-	multiboard_set_slave_boards_io();
-	cnc_state.exec_state = statemask;
-
-#else
-	CLEARFLAG(cnc_state.exec_state, statemask);
+	if (statemask != EXEC_RUN)
+	{
+		MULTIBOARD_SLAVE_CLEAR_STATE(statemask);
+	}
 #endif
+	CLEARFLAG(cnc_state.exec_state, statemask);
 }
 
 void cnc_delay_ms(uint32_t miliseconds)
@@ -593,6 +588,11 @@ void cnc_call_rt_command(uint8_t command)
 void cnc_call_rt_state_command(uint8_t command)
 {
 	SETFLAG(cnc_state.rt_cmd, command);
+}
+
+void cnc_cancel_goidle(void)
+{
+	CLEARFLAG(cnc_state.rt_cmd, RT_CMD_RUN_IDLE);
 }
 
 // Executes pending realtime commands
@@ -926,26 +926,6 @@ static void cnc_io_dotasks(void)
 
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
-
-#ifdef ENABLE_MULTIBOARD
-#ifdef IS_MASTER_BOARD
-	// read external IO
-	static uint32_t elapsed = 0;
-	if (elapsed < mcu_millis())
-	{
-		elapsed = mcu_millis() + 500;
-		multiboard_get_slave_boards_io();
-	}
-
-#else
-	g_slaves_io.slave_io_bits.state = cnc_get_exec_state(~EXEC_RUN);
-	g_slaves_io.slave_io_bits.probe = io_get_probe();
-	g_slaves_io.slave_io_bits.controls = io_get_controls();
-	g_slaves_io.slave_io_bits.limits2 = io_get_limits_dual();
-	g_slaves_io.slave_io_bits.limits = io_get_limits();
-	g_slaves_io.slave_io_bits.onchange_inputs = io_get_onchange_inputs();
-#endif
-#endif
 
 	// checks inputs and triggers ISR checks if enforced soft polling
 #if defined(FORCE_SOFT_POLLING)
