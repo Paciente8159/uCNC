@@ -77,7 +77,7 @@ extern "C"
 
 	uint8_t mcu_usb_tx_available(void)
 	{
-		return UsbSerial.availableForWrite();
+		return (UsbSerial.availableForWrite() | (UsbSerial.host_connected ? 0 : 1));
 	}
 #endif
 }
