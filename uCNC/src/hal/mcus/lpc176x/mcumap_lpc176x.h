@@ -3948,7 +3948,8 @@ extern uint8_t mcu_usb_tx_available(void);
 #else
 extern uint32_t tud_cdc_n_write_available(uint8_t itf);
 extern uint32_t tud_cdc_n_available(uint8_t itf);
-#define usb_tx_available() tud_cdc_n_write_available(0)
+extern bool tud_cdc_n_connected (uint8_t itf);
+#define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
 
