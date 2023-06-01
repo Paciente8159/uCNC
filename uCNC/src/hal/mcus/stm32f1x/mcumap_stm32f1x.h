@@ -4802,8 +4802,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
-#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || COM2_UART->SR & USART_SR_RXNE))
-#define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && COM2_UART->SR & USART_SR_TXE))
+#define mcu_rx_ready() ((COM_UART->SR & USART_SR_RXNE) || (COM2_UART->SR & USART_SR_RXNE))
+#define mcu_tx_ready() ((COM_UART->SR & USART_SR_TXE) && (COM2_UART->SR & USART_SR_TXE))
 #elif (defined(MCU_HAS_UART) && defined(MCU_HAS_USB))
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
