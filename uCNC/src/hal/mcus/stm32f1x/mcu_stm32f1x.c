@@ -1078,7 +1078,7 @@ void I2C_ISR(void)
 		{
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
-			// mcu_enable_global_isr();
+			mcu_enable_global_isr();
 			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
 			datalen = i;
 		}
@@ -1093,7 +1093,7 @@ void I2C_ISR(void)
 	if ((I2C_REG->SR1 & I2C_SR1_TXE))
 	{
 		I2C_REG->DR = mcu_i2c_buffer[i++];
-		if (i >= datalen)
+		if (i > datalen)
 		{
 			// send NACK
 			I2C_REG->CR1 |= I2C_CR1_STOP;
@@ -1110,15 +1110,6 @@ void I2C_ISR(void)
 		I2C_REG->CR1 |= I2C_CR1_PE;
 		// stop transmission
 		datalen = 0;
-		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
-		{
-			mcu_i2c_buffer[i] = 0;
-			// unlock ISR and process the info request
-			mcu_enable_global_isr();
-			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
-			datalen = i;
-			i = 0;
-		}
 	}
 
 	// An error ocurred
