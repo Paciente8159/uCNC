@@ -1027,22 +1027,25 @@ void mcu_i2c_config(uint32_t frequency)
 	// reset I2C
 	I2C_REG->CR1 |= I2C_CR1_SWRST;
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
+#if I2C_ADDRESS == 0
 	// set max freq
 	I2C_REG->CR2 |= I2C_SPEEDRANGE;
 	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
 	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
-#if I2C_ADDRESS != 0
+#else
 	// set address
-	I2C_REG->OAR1 = (I2C_ADDRESS << 1);
+	I2C_REG->OAR1 &= ~(I2C_OAR1_ADDMODE | 0x0F);
+	I2C_REG->OAR1 |= (I2C_ADDRESS << 1);
 	I2C_REG->OAR2 = 0;
+	I2C_REG->CR1 &= ~I2C_CR1_NOSTRETCH;
 	// enable events
-	I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
+	I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN | I2C_CR2_ITBUFEN);
 	NVIC_SetPriority(I2C_IRQ, 10);
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
 	// initialize the SPI configuration register
-	I2C_REG->CR1 |= I2C_CR1_PE;
+	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
 #if I2C_ADDRESS != 0
 	// prepare ACK in slave mode
 	I2C_REG->CR1 |= I2C_CR1_ACK;
@@ -1062,31 +1065,16 @@ void I2C_ISR(void)
 
 	// address match or generic call
 	// Clear ISR flag by reading SR1 and SR2 registers
-	if ((I2C_REG->SR1 & I2C_SR1_ADDR) == I2C_SR1_ADDR)
+	if ((I2C_REG->SR1 & I2C_SR1_ADDR))
 	{
-		index = 1;
-		i = 1;
+		// clear the ISR flag
+		volatile uint32_t status = I2C_REG->SR1;
+		(void)status;
+		status = I2C_REG->SR2;
+		(void)status;
 
-		// Address matched, do necessary processing
-		if ((I2C_REG->SR2 & I2C_SR2_TRA))
-		{
-			I2C_REG->DR = mcu_i2c_buffer[0];
-			if (i >= datalen)
-			{
-				// send NACK
-				I2C_REG->CR1 &= ~I2C_CR1_ACK;
-				return;
-			}
-		}
-	}
-
-	// Clear ISR flag by reading SR1 and writing CR1 registers
-	if ((I2C_REG->SR1 & I2C_SR1_STOPF) == I2C_SR1_STOPF)
-	{
-		// stop transmission
-		index = 0;
-		datalen = 0;
-		if (!(I2C_REG->SR2 & I2C_SR2_TRA))
+		// // Address matched, do necessary processing
+		if ((status & I2C_SR2_TRA) && !datalen)
 		{
 			mcu_i2c_buffer[i] = 0;
 			// unlock ISR and process the info request
@@ -1094,37 +1082,34 @@ void I2C_ISR(void)
 			mcu_i2c_slave_cb(mcu_i2c_buffer, &i);
 			datalen = i;
 		}
-
-		// prepare ACk for next transmition
-		I2C_REG->CR1 |= I2C_CR1_ACK;
+		i = 0;
 	}
 
-	// Clear ISR flag by reading SR1 and read/write DR registers
-	if ((I2C_REG->SR1 & I2C_SR1_BTF) == I2C_SR1_BTF)
+	if ((I2C_REG->SR1 & I2C_SR1_RXNE))
 	{
-		if ((I2C_REG->SR2 & I2C_SR2_TRA))
-		{
-			I2C_REG->DR = mcu_i2c_buffer[i++];
-			if (i >= datalen)
-			{
-				// send NACK
-				I2C_REG->CR1 &= ~I2C_CR1_ACK;
-				return;
-			}
-		}
-		else
-		{
-			mcu_i2c_buffer[i++] = I2C_REG->DR;
-			if (i >= I2C_SLAVE_BUFFER_SIZE)
-			{
-				// send NACK
-				I2C_REG->CR1 &= ~I2C_CR1_ACK;
-				return;
-			}
-		}
+		mcu_i2c_buffer[i++] = I2C_REG->DR;
+	}
 
-		index = i;
-		I2C_REG->CR1 |= I2C_CR1_ACK;
+	if ((I2C_REG->SR1 & I2C_SR1_TXE))
+	{
+		I2C_REG->DR = mcu_i2c_buffer[i++];
+		if (i > datalen)
+		{
+			// send NACK
+			I2C_REG->CR1 |= I2C_CR1_STOP;
+			datalen = 0;
+		}
+	}
+
+	// Clear ISR flag by reading SR1 and writing CR1 registers
+	if ((I2C_REG->SR1 & I2C_SR1_STOPF))
+	{
+		// clear the ISR flag
+		volatile uint32_t status = I2C_REG->SR1;
+		(void)status;
+		I2C_REG->CR1 |= I2C_CR1_PE;
+		// stop transmission
+		datalen = 0;
 	}
 
 	// An error ocurred
@@ -1136,10 +1121,16 @@ void I2C_ISR(void)
 		I2C_REG->CR1 |= I2C_CR1_ACK;
 		I2C_REG->CR2 |= (I2C_CR2_ITEVTEN | I2C_CR2_ITERREN);
 		// clear ISR flag
-		I2C_REG->SR1 &= 0X00FF;
-		I2C_REG->SR2;
+		I2C_REG->SR1 = I2C_REG->SR1 & 0X00FF;
+		volatile uint32_t status = I2C_REG->SR1;
+		(void)status;
+		status = I2C_REG->SR2;
+		(void)status;
 	}
 
+	// prepare ACK for next transmition
+	index = i;
+	I2C_REG->CR1 |= I2C_CR1_ACK;
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 }
 #endif
