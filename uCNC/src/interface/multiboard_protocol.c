@@ -16,13 +16,18 @@
 */
 
 #include "../cnc.h"
-#include "multiboard_protocol.h"
 
+#ifdef ENABLE_MULTIBOARD
+
+slave_board_io_t g_slave_io;
 static multiboard_data_t multiboard_data;
 
-#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
+#ifndef IS_MASTER_BOARD
 // multiboard slave uses the UART port to communicate to master
 MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
+#else
+void protocol_rx_cb(uint8_t c)
+#endif
 {
     static int8_t protocol_state = -3;
 
@@ -129,5 +134,23 @@ void multiboard_slave_dotasks(void)
         // }
 
         multiboard_slave_send_status_byte(MULTIBOARD_PROTOCOL_ACK);
+    }
+
+    void multiboard_master_send_command(uint8_t command, uint8_t * data, uint8_t len)
+    {
+        mcu_uart_putc(MULTIBOARD_PROTOCOL_SOF);
+        mcu_uart_putc(MULTIBOARD_PROTOCOL_SOF);
+        mcu_uart_putc(MULTIBOARD_PROTOCOL_SOF);
+        mcu_uart_putc(command);
+        uint8_t crc = crc7(command, 0);
+        mcu_uart_putc(len);
+        crc = crc7(len, crc);
+        for (uint8_t i = 0; i < len; i++)
+        {
+            mcu_uart_putc(data[i]);
+            crc = crc7(data[i], crc);
+        }
+        mcu_uart_putc(crc);
+        mcu_uart_putc(MULTIBOARD_PROTOCOL_EOF);
     }
 }

@@ -87,13 +87,6 @@ win_port_t uart2;
 #define COM_BUFFER_SIZE 50
 #endif
 
-// MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
-//{
-// #ifdef ENABLE_IO_MODULES
-//	EVENT_INVOKE(input_change, NULL);
-// #endif
-// }
-
 /*timers*/
 int start_timer(int, void (*)(void));
 void stop_timer(void);
@@ -313,6 +306,30 @@ void ioserver(void *args)
  * Comunications can be done via console, sockets or serial port
  * */
 
+volatile bool uart2_rx_ready = false;
+volatile uint8_t uart2_rx_last = 0;
+void mcu_uart_rx_cb(uint8_t c)
+{
+	uart2_rx_ready = true;
+	uart2_rx_last = c;
+	if (mcu_uart_rcv_cb)
+	{
+		mcu_uart_rcv_cb(c);
+	}
+}
+
+int16_t mcu_uart_getc(uint32_t timeout)
+{
+	timeout += mcu_millis();
+	while (!uart2_rx_ready)
+	{
+		if (timeout < mcu_millis())
+			return -1;
+	}
+
+	return uart2_rx_last;
+}
+
 void com_init(void)
 {
 	uart0.io.rx.rxHandler = mcu_com_rx_cb;
@@ -324,11 +341,11 @@ void com_init(void)
 	console_init(&uart0);
 #endif
 
-	#ifdef MCU_HAS_UART2
-	uart2.io.rx.rxHandler = mcu_uart_rcv_cb;
-	memcpy(uart2.io.portname,"34000\0", 6);
+#ifdef MCU_HAS_UART2
+	uart2.io.rx.rxHandler = mcu_uart_rx_cb;
+	memcpy(uart2.io.portname, "34000\0", 6);
 	socket_init(&uart2);
-	#endif
+#endif
 }
 
 void com_send(char *buff, int len)
@@ -336,7 +353,8 @@ void com_send(char *buff, int len)
 	port_write(&uart0, buff, len);
 }
 
-void mcu_uart_putc(uint8_t c){
+void mcu_uart_putc(uint8_t c)
+{
 	port_write(&uart2, &c, 1);
 }
 
@@ -375,56 +393,10 @@ pthread_t thread_idout;
 pthread_t thread_timer_id;
 pthread_t thread_step_id;
 
-void mcu_rx_isr(unsigned char c)
-{
-	if (c)
-	{
-		mcu_com_rx_cb(c);
-	}
-}
-
 void mcu_tx_isr(void)
 {
 	uart0.io.tx.empty = true;
 }
-
-// emulates uart RX
-//  void *comsimul(void)
-//  {
-//  #ifdef USECOM
-//  uart0.io.tx.empty = true;
-//  virtualserial_init(&mcu_tx_isr, &mcu_rx_isr);
-//  #else
-//  	for (;;)
-//  	{
-//  		unsigned char c = getch();
-//  		if (c != 0)
-//  		{
-//  			uart_char = c;
-//  			while (!serial_rx_is_empty())
-//  			{
-//  			}
-//  			serial_rx_isr(c);
-//  			if (c == '\n' | c == '\r')
-//  			{
-//  			}
-//  		}
-//  	}
-//  #endif
-//  }
-
-// emulates uart TX
-// void *comoutsimul(void)
-//{
-//	for (;;)
-//	{
-//		if (uart0.io.tx.empty)
-//		{
-//			uart0.io.tx.empty = false;
-//			serial_tx_isr();
-//		}
-//	}
-// }
 
 // simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;

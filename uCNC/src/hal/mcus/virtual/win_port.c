@@ -120,7 +120,7 @@ void port_write(win_port_t *port, char *buff, int len)
 /**
  * CONSOLE
  * **/
- DWORD WINAPI consoleserver(LPVOID lpParam)
+DWORD WINAPI consoleserver(LPVOID lpParam)
 {
     win_port_io_t *io = lpParam;
     char recvbuf[256];
@@ -302,7 +302,8 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
             recvbuflen = strlen(recvbuf);
             for (int i = 0; i < recvbuflen; i++)
             {
-                mcu_com_rx_cb(recvbuf[i]);
+                if (io->rx.rxHandler)
+                    io->rx.rxHandler(recvbuf[i]);
             }
             memset(recvbuf, 0, sizeof(recvbuf));
         }
@@ -554,8 +555,8 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
     while (1)
     {
         dwWaitResult = WaitForSingleObject(
-            io->tx.txReady,   // event handle
-            INFINITE); // indefinite wait
+            io->tx.txReady, // event handle
+            INFINITE);      // indefinite wait
         osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
         switch (dwWaitResult)
         {
@@ -563,7 +564,7 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
         case WAIT_OBJECT_0:
             dwWaitResult = WaitForSingleObject(
                 io->tx.bufferMutex, // handle to mutex
-                INFINITE);   // no time-out interval
+                INFINITE);          // no time-out interval
 
             switch (dwWaitResult)
             {

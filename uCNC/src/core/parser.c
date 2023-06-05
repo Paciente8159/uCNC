@@ -594,7 +594,7 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		break;
 	case GRBL_UNLOCK:
 		cnc_unlock(true);
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;
@@ -609,7 +609,7 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		}
 
 		cnc_unlock(true);
-#if ASSERT_PIN(SAFETY_DOOR)
+#if ASSERT_PIN(SAFETY_DOOR) || defined(ENABLE_MULTIBOARD)
 		if (cnc_get_exec_state(EXEC_DOOR))
 		{
 			return STATUS_CHECK_DOOR;

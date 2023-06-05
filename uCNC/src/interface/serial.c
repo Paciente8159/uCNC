@@ -366,7 +366,7 @@ void serial_flush(void)
 // ISR
 // New char handle strategy
 // All ascii will be sent to buffer and processed later (including comments)
-#if !defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
+#if !defined(ENABLE_MULTIBOARD) || defined(IS_MASTER_BOARD)
 MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 {
 	static bool is_grbl_cmd = false;

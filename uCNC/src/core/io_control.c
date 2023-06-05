@@ -169,7 +169,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			itp_lock_stepper(0); // unlocks axis
 #endif
 			itp_stop();
-			cnc_set_exec_state(EXEC_LIMITS);
+			cnc_call_rt_state_command(RT_CMD_LIMITS_HIT);
 #ifdef ENABLE_IO_ALARM_DEBUG
 			io_alarm_limits = limits;
 #endif
@@ -200,7 +200,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
-		cnc_alarm(EXEC_ALARM_EMERGENCY_STOP);
+		cnc_call_rt_state_command(RT_CMD_RESET);
 		return; // forces exit
 	}
 #endif
@@ -208,7 +208,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
 	{
 		// safety door activates hold simultaneously to start the controlled stop
-		cnc_set_exec_state(EXEC_DOOR | EXEC_HOLD);
+		cnc_call_rt_state_command(RT_CMD_FEED_HOLD | RT_CMD_SAFETY_DOOR);
 #ifdef ENABLE_IO_ALARM_DEBUG
 		io_alarm_controls = controls;
 #endif
@@ -217,7 +217,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
 	{
-		cnc_set_exec_state(EXEC_HOLD);
+		cnc_call_rt_state_command(RT_CMD_FEED_HOLD);
 	}
 #endif
 #if ASSERT_PIN(CS_RES)
@@ -259,57 +259,8 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
 	static uint8_t prev_inputs = 0;
-	uint8_t inputs = 0;
+	uint8_t inputs = io_get_onchange_inputs();
 	uint8_t diff;
-
-#if (ASSERT_PIN(DIN0) && defined(DIN0_ISR))
-	if (mcu_get_input(DIN0))
-	{
-		inputs |= DIN0_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN1) && defined(DIN1_ISR))
-	if (mcu_get_input(DIN1))
-	{
-		inputs |= DIN1_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN2) && defined(DIN2_ISR))
-	if (mcu_get_input(DIN2))
-	{
-		inputs |= DIN2_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN3) && defined(DIN3_ISR))
-	if (mcu_get_input(DIN3))
-	{
-		inputs |= DIN3_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN4) && defined(DIN4_ISR))
-	if (mcu_get_input(DIN4))
-	{
-		inputs |= DIN4_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN5) && defined(DIN5_ISR))
-	if (mcu_get_input(DIN5))
-	{
-		inputs |= DIN5_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN6) && defined(DIN6_ISR))
-	if (mcu_get_input(DIN6))
-	{
-		inputs |= DIN6_MASK;
-	}
-#endif
-#if (ASSERT_PIN(DIN7) && defined(DIN7_ISR))
-	if (mcu_get_input(DIN7))
-	{
-		inputs |= DIN7_MASK;
-	}
-#endif
 
 #if (ENCODERS > 0)
 	inputs ^= g_settings.encoders_pulse_invert_mask;
@@ -346,6 +297,7 @@ uint8_t io_get_limits(void)
 #ifdef DISABLE_ALL_LIMITS
 	return 0;
 #endif
+
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
@@ -404,6 +356,11 @@ uint8_t io_get_limits(void)
 	}
 #endif
 
+#ifdef ENABLE_MULTIBOARD
+	result |= (g_slave_io.slave_io_bits.limits & ~(LIMITS_DUAL_MASK | LIMITS_MASK));
+	g_slave_io.slave_io_bits.limits = result;
+#endif
+
 	return result;
 }
 
@@ -428,8 +385,14 @@ uint8_t io_get_limits_dual(void)
 	value |= ((mcu_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
 #endif
 #endif
-	uint8_t inv = io_invert_limits_mask & LIMITS_DUAL_MASK;
-	return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK) ^ inv);
+	uint8_t result = io_invert_limits_mask & LIMITS_DUAL_MASK;
+	result ^= (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK));
+
+#ifdef ENABLE_MULTIBOARD
+	result |= (g_slave_io.slave_io_bits.limits2 & ~LIMITS_DUAL_MASK);
+	g_slave_io.slave_io_bits.limits2 = result;
+#endif
+	return result;
 #endif
 }
 
@@ -456,7 +419,14 @@ uint8_t io_get_controls(void)
 	value |= ((mcu_get_input(CS_RES)) ? CS_RES_MASK : 0);
 #endif
 
-	return (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
+	uint8_t result = (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
+
+#ifdef ENABLE_MULTIBOARD
+	result |= (g_slave_io.slave_io_bits.controls & ~CONTROLS_MASK);
+	g_slave_io.slave_io_bits.controls = result;
+#endif
+
+	return result;
 }
 
 void io_enable_probe(void)
@@ -486,17 +456,85 @@ void io_disable_probe(void)
 #endif
 }
 
+uint8_t io_get_onchange_inputs(void)
+{
+	uint8_t inputs = 0;
+#if (DIN_ONCHANGE_MASK != 0)
+#if (DIN0_MASK != 0)
+	if (mcu_get_input(DIN0))
+	{
+		inputs |= DIN0_MASK;
+	}
+#endif
+#if (DIN1_MASK != 0)
+	if (mcu_get_input(DIN1))
+	{
+		inputs |= DIN1_MASK;
+	}
+#endif
+#if (DIN2_MASK != 0)
+	if (mcu_get_input(DIN2))
+	{
+		inputs |= DIN2_MASK;
+	}
+#endif
+#if (DIN3_MASK != 0)
+	if (mcu_get_input(DIN3))
+	{
+		inputs |= DIN3_MASK;
+	}
+#endif
+#if (DIN4_MASK != 0)
+	if (mcu_get_input(DIN4))
+	{
+		inputs |= DIN4_MASK;
+	}
+#endif
+#if (DIN5_MASK != 0)
+	if (mcu_get_input(DIN5))
+	{
+		inputs |= DIN5_MASK;
+	}
+#endif
+#if (DIN6_MASK != 0)
+	if (mcu_get_input(DIN6))
+	{
+		inputs |= DIN6_MASK;
+	}
+#endif
+#if (DIN7_MASK != 0)
+	if (mcu_get_input(DIN7))
+	{
+		inputs |= DIN7_MASK;
+	}
+#endif
+#endif
+
+#ifdef ENABLE_MULTIBOARD
+	inputs |= (g_slave_io.slave_io_bits.onchange_inputs & ~DIN_ONCHANGE_MASK);
+	g_slave_io.slave_io_bits.onchange_inputs = inputs;
+#endif
+
+	return inputs;
+}
+
 bool io_get_probe(void)
 {
-#if !ASSERT_PIN(PROBE)
-	return false;
-#else
 #if ASSERT_PIN(PROBE)
 	bool probe = (mcu_get_input(PROBE) != 0);
-	return (!g_settings.probe_invert_mask) ? probe : !probe;
+	probe = (!g_settings.probe_invert_mask) ? probe : !probe;
+
+#ifdef ENABLE_MULTIBOARD
+#if !ASSERT_PIN(PROBE)
+	probe |= g_slave_io.slave_io_bits.probe;
+#else
+	g_slave_io.slave_io_bits.probe = probe;
+#endif
+#endif
+
+	return probe;
 #else
 	return false;
-#endif
 #endif
 }
 

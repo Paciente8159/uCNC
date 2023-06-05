@@ -53,6 +53,14 @@ extern "C"
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
 #endif
+#ifdef ENABLE_MULTIBOARD
+#ifndef IS_MASTER_BOARD // on slave exposes this function
+	// inserts a block sent by the main board
+	void itp_add_block(uint8_t *data);
+	void itp_add_segment(uint8_t *data);
+	void itp_blk_buffer_write(void);
+#endif
+#endif
 
 #ifdef __cplusplus
 }

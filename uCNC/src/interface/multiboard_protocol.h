@@ -45,6 +45,21 @@ extern "C"
 
     extern multiboard_data_t g_multiboard_data;
 
+    typedef union slave_board_io_
+	{
+		uint32_t slave_io_reg;
+		struct
+		{
+			uint8_t state;
+			uint8_t probe : 1;
+			uint8_t limits2 : 3;
+			uint8_t controls : 4;
+			uint8_t limits;
+			uint8_t onchange_inputs;
+		} slave_io_bits;
+	} slave_board_io_t;
+	extern slave_board_io_t g_slave_io;
+
 #define MULTIBOARD_PROTOCOL_SOF 0xAA
 #define MULTIBOARD_PROTOCOL_EOF 0x55
 #define MULTIBOARD_PROTOCOL_ACK 0xFE70       // ACK+CRC
@@ -58,14 +73,16 @@ extern "C"
 // list of commands
 
 // Master to slave
-#define MULTIBOARD_CMD_SET_STATE
-#define MULTIBOARD_CMD_CLEAR_STATE
-#define MULTIBOARD_CMD_ITP_BLOCK
-#define MULTIBOARD_CMD_ITP_SEGMENT
-#define MULTIBOARD_CMD_ITP_NEWBLOCK
-#define MULTIBOARD_CMD_ITP_RUN
+#define MULTIBOARD_CMD_SET_STATE 0x81
+#define MULTIBOARD_CMD_CLEAR_STATE 0x82
+#define MULTIBOARD_CMD_ITP_BLOCK 0x83
+#define MULTIBOARD_CMD_ITP_SEGMENT 0x84
+#define MULTIBOARD_CMD_ITP_NEWBLOCK 0x85
+#define MULTIBOARD_CMD_ITP_RUN 0x86
 
     void multiboard_slave_process_command(uint8_t command);
+
+    void multiboard_master_send_command(uint8_t command, uint8_t* data, uint8_t len);
 
 #ifdef __cplusplus
 }

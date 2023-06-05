@@ -154,7 +154,9 @@ static void itp_sgm_buffer_write(void);
 FORCEINLINE static bool itp_sgm_is_full(void);
 FORCEINLINE static bool itp_sgm_is_empty(void);
 /*FORCEINLINE*/ static void itp_sgm_clear(void);
+#if !defined(ENABLE_MULTIBOARD) || defined(IS_MASTER_BOARD)
 FORCEINLINE static void itp_blk_buffer_write(void);
+#endif
 static void itp_blk_clear(void);
 // FORCEINLINE static void itp_nomotion(uint8_t type, uint16_t delay);
 
@@ -228,8 +230,12 @@ static void itp_sgm_clear(void)
 	memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 }
 
-static void itp_blk_buffer_write(void)
+void itp_blk_buffer_write(void)
 {
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+	master_send_command(0, MULTIBOARD_CMD_ITPBLOCK_ADVANCE, NULL, 0);
+#endif
+
 	// curcular always. No need to control override
 	if (++itp_blk_data_write == INTERPOLATOR_BUFFER_SIZE)
 	{
@@ -368,6 +374,9 @@ void itp_run(void)
 
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+#endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
 		// if an hold is active forces to deaccelerate
@@ -677,7 +686,10 @@ void itp_run(void)
 			// break;
 		}
 
-		// finally write the segment
+// finally write the segment
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+#endif
 		itp_sgm_buffer_write();
 	}
 #if TOOL_COUNT > 0
@@ -793,6 +805,9 @@ void itp_run(void)
 
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+#endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
 		// if an hold is active forces to deaccelerate
@@ -1031,6 +1046,9 @@ void itp_run(void)
 		}
 
 		// finally write the segment
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+#endif
 		itp_sgm_buffer_write();
 	}
 #if TOOL_COUNT > 0
@@ -1038,8 +1056,10 @@ void itp_run(void)
 	tool_set_coolant(planner_get_coolant());
 #endif
 
+#if (!defined(ENABLE_MULTIBOARD) || defined(IS_MASTER_BOARD))
 	// starts the step isr if is stopped and there are segments to execute
 	itp_start(start_is_synched);
+#endif
 }
 #endif
 
@@ -1051,12 +1071,10 @@ void itp_update(void)
 
 void itp_stop(void)
 {
-	// any stop command while running triggers an HALT alarm
-	if (cnc_get_exec_state(EXEC_RUN))
-	{
-		cnc_set_exec_state(EXEC_UNHOMED);
-	}
-
+	mcu_stop_itp_isr();
+	// signals the main loop that the ITP has been halted.
+	// if the halt flag is not combined with a RT_CMD_RUN_IDLE flag that means that this was an abrupt stop
+	cnc_call_rt_state_command(RT_CMD_RUN_HALT);
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -1064,9 +1082,6 @@ void itp_stop(void)
 		tool_set_speed(0);
 	}
 #endif
-
-	mcu_stop_itp_isr();
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)
@@ -1119,6 +1134,9 @@ int32_t itp_get_rt_position_index(int8_t index)
 
 void itp_reset_rt_position(float *origin)
 {
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+	master_send_command(0, MULTIBOARD_CMD_ITPPOS_RESET, (uint8_t*)origin, (sizeof(float) * AXIS_COUNT));
+#endif
 	if (!g_settings.homing_enabled)
 	{
 		memset(origin, 0, (sizeof(float) * AXIS_COUNT));
@@ -1286,7 +1304,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			{
 				// loads a new segment
 				itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
-				cnc_set_exec_state(EXEC_RUN);
 				if (itp_rt_sgm->block != NULL)
 				{
 #if (DSS_MAX_OVERSAMPLING != 0)
@@ -1350,8 +1367,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 			else
 			{
-				cnc_clear_exec_state(EXEC_RUN); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
-				itp_stop();						// the buffer is empty. The ISR can stop
+				cnc_call_rt_state_command(RT_CMD_RUN_IDLE); // this naturally clears the RUN flag. Any other ISR stop does not clear the flag.
+				itp_stop();									// the buffer is empty. The ISR can stop
 				return;
 			}
 		}
@@ -1718,9 +1735,30 @@ void itp_start(bool is_synched)
 		{
 			__ATOMIC__
 			{
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+				master_send_command(0, MULTIBOARD_CMD_ITPRUN, (uint8_t*)&is_synched, 1);
+#endif
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
 			}
 		}
 	}
 }
+
+#ifdef ENABLE_MULTIBOARD
+#ifndef IS_MASTER_BOARD // on slave exposes this function
+// inserts a block sent by the main board
+void itp_add_block(uint8_t *data)
+{
+	memcpy(&itp_blk_data[itp_blk_data_write], data, sizeof(itp_block_t));
+}
+
+void itp_add_segment(uint8_t *data)
+{
+	memcpy(&itp_sgm_data[itp_sgm_data_write], data, sizeof(itp_segment_t));
+	// point to block
+	itp_sgm_data[itp_sgm_data_write].block = &itp_blk_data[itp_blk_data_write];
+	itp_sgm_buffer_write();
+}
+#endif
+#endif
