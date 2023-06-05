@@ -20,6 +20,7 @@
 
 static multiboard_data_t multiboard_data;
 
+#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
 // multiboard slave uses the UART port to communicate to master
 MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 {
@@ -68,6 +69,7 @@ MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
     multiboard_data.rawdata[current_state++] = c;
     protocol_state = current_state;
 }
+#endif
 
 static void multiboard_slave_send_sof(void)
 {
@@ -85,7 +87,6 @@ static void multiboard_slave_send_status_byte(uint16_t word)
     serial_putc(word & 0xFF);             // NACK CRC
     serial_putc(MULTIBOARD_PROTOCOL_EOF); // EOF
 }
-
 
 // all commands are executed in the main loop
 void multiboard_slave_dotasks(void)
@@ -115,17 +116,17 @@ void multiboard_slave_dotasks(void)
         }
 
         // run actions
-        switch (command)
-        {
-        case /* constant-expression */:
-            /* code */
-            break;
+        // switch (command)
+        // {
+        // case /* constant-expression */:
+        //     /* code */
+        //     break;
 
-        default:
-            // command unknowed. can be use for eventual command extensions
-            // send ACK the same way
-            break;
-        }
+        // default:
+        //     // command unknowed. can be use for eventual command extensions
+        //     // send ACK the same way
+        //     break;
+        // }
 
         multiboard_slave_send_status_byte(MULTIBOARD_PROTOCOL_ACK);
     }

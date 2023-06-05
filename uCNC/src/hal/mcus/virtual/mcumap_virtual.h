@@ -19,7 +19,23 @@
 #ifndef MCUMAP_VIRTUAL_H
 #define MCUMAP_VIRTUAL_H
 
+#include <stdio.h>
+#include <conio.h>
+#include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <math.h>
+#include <windows.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#include <stdio.h>
+
+#pragma comment(lib, "Ws2_32.lib")
+#include "win_port.h"
+
 #define F_CPU 1000000
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 40000
@@ -215,6 +231,11 @@ extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
 #define asm __asm__
-#define VFD_HUANYANG_TYPE1
+// #define VFD_HUANYANG_TYPE1
+
+//allow use uart2 via socket
+#define MCU_HAS_UART2
+#define UART2_DETACH_MAIN_PROTOCOL
+
 
 #endif

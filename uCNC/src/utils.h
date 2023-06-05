@@ -173,9 +173,10 @@ extern "C"
 #define M_COS_TAYLOR_1 0.1666666666666666667f
 #endif
 
-#ifndef FORCEINLINE
-#define FORCEINLINE __attribute__((always_inline)) inline
+#ifdef FORCEINLINE
+#undef FORCEINLINE
 #endif
+#define FORCEINLINE __attribute__((always_inline,gnu_inline)) inline
 
 	static FORCEINLINE uint8_t __atomic_in(void)
 	{
