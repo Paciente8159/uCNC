@@ -726,7 +726,7 @@ uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t gr
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
 mcu_uart_rcv_delegate mcu_uart_rcv_cb;
 #ifndef mcu_uart_rx_cb
-void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
+MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
 {
 	if (mcu_uart_rcv_cb)
 	{

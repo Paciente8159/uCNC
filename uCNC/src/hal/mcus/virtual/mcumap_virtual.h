@@ -27,13 +27,13 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <stdio.h>
 
-#pragma comment(lib, "Ws2_32.lib")
+// #pragma comment(lib, "Ws2_32.lib")
 #include "win_port.h"
 
 #define F_CPU 1000000

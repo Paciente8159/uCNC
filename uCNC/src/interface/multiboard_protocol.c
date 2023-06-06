@@ -1,6 +1,6 @@
 /*
     Name: multiboard_protocol.c
-    Description: µCNC implementation of a multiboard send-response protocol
+    Description: µCNC implementation of a multiboard send-response protocol over UART2 port
     Copyright: Copyright (c) João Martins
     Author: João Martins
     Date: 02/06/2023
@@ -22,12 +22,7 @@
 slave_board_io_t g_slave_io;
 static multiboard_data_t multiboard_data;
 
-#ifndef IS_MASTER_BOARD
-// multiboard slave uses the UART port to communicate to master
-MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
-#else
-void protocol_rx_cb(uint8_t c)
-#endif
+MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
 {
     static int8_t protocol_state = -3;
 
@@ -121,22 +116,52 @@ void multiboard_slave_dotasks(void)
         }
 
         // run actions
-        // switch (command)
-        // {
-        // case /* constant-expression */:
-        //     /* code */
-        //     break;
-
-        // default:
-        //     // command unknowed. can be use for eventual command extensions
-        //     // send ACK the same way
-        //     break;
-        // }
+        switch (command)
+        {
+        case MULTIBOARD_CMD_SET_STATE:
+            cnc_set_exec_state(multiboard_data.multiboard_frame.content[0]);
+            break;
+        case MULTIBOARD_CMD_CLEAR_STATE:
+            cnc_clear_exec_state(multiboard_data.multiboard_frame.content[0]);
+            break;
+        default:
+            // command unknowed. can be use for eventual command extensions
+            // send ACK the same way
+            break;
+        }
 
         multiboard_slave_send_status_byte(MULTIBOARD_PROTOCOL_ACK);
     }
+}
 
-    void multiboard_master_send_command(uint8_t command, uint8_t * data, uint8_t len)
+static uint8_t multiboard_master_get_response(uint8_t command, uint32_t timeout)
+{
+    timeout += mcu_millis();
+    while (!multiboard_data.multiboard_frame.crc)
+    {
+        // cnc_io_dotasks();
+        if (timeout < mcu_millis())
+        {
+            return MULTIBOARD_PROTOCOL_TIMEOUT;
+        }
+    }
+
+    switch (command)
+    {
+    // commands that expect ACK
+    case MULTIBOARD_CMD_SET_STATE:
+        if (multiboard_data.multiboard_frame.crc != 0x70 || multiboard_data.multiboard_frame.content[0] != 0xFE)
+        {
+            return MULTIBOARD_PROTOCOL_ERROR;
+        }
+    }
+}
+
+void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
+{
+    uint8_t tries = MULTIBOARD_PROTOCOL_RETRIES;
+
+    do
     {
         mcu_uart_putc(MULTIBOARD_PROTOCOL_SOF);
         mcu_uart_putc(MULTIBOARD_PROTOCOL_SOF);
@@ -152,5 +177,9 @@ void multiboard_slave_dotasks(void)
         }
         mcu_uart_putc(crc);
         mcu_uart_putc(MULTIBOARD_PROTOCOL_EOF);
-    }
+        if (--tries)
+        {
+            return;
+        }
+    } while (multiboard_master_get_response(command, MULTIBOARD_PROTOCOL_TIMEOUT_MS) != MULTIBOARD_PROTOCOL_OK);
 }

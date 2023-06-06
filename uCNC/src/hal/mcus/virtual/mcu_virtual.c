@@ -195,12 +195,11 @@ typedef struct virtual_map_t
 
 static volatile VIRTUAL_MAP virtualmap;
 
-void ioserver(void *args)
+void* ioserver(void *args)
 {
 	HANDLE hPipe;
-	TCHAR chBuf[sizeof(VIRTUAL_MAP)];
 	BOOL fSuccess = FALSE;
-	DWORD cbRead, cbToWrite, cbWritten, dwMode;
+	DWORD cbRead, cbToWrite, cbWritten;
 	LPTSTR lpszPipename = TEXT("\\\\.\\pipe\\ucncio");
 
 	// Try to open a named pipe; wait for it, if necessary.
@@ -223,8 +222,8 @@ void ioserver(void *args)
 
 		if (hPipe == INVALID_HANDLE_VALUE)
 		{
-			printf("CreateNamedPipe failed, GLE=%d.\n", GetLastError());
-			return;
+			printf("CreateNamedPipe failed, GLE=%lu.\n", GetLastError());
+			return NULL;
 		}
 
 		// Wait for the client to connect; if it succeeds,
@@ -241,7 +240,7 @@ void ioserver(void *args)
 			char lpvMessage[sizeof(VIRTUAL_MAP)];
 			do
 			{
-				memcpy(lpvMessage, &virtualmap, sizeof(VIRTUAL_MAP));
+				memcpy(lpvMessage, (VIRTUAL_MAP *)&virtualmap, sizeof(VIRTUAL_MAP));
 
 				fSuccess = WriteFile(
 					hPipe,		// pipe handle
@@ -252,7 +251,7 @@ void ioserver(void *args)
 
 				if (!fSuccess)
 				{
-					printf("WriteFile to pipe failed. GLE=%d\n", GetLastError());
+					printf("WriteFile to pipe failed. GLE=%lu\n", GetLastError());
 					break;
 				}
 
@@ -268,7 +267,7 @@ void ioserver(void *args)
 				if (!fSuccess && GetLastError() != ERROR_MORE_DATA)
 					break;
 
-				VIRTUAL_MAP *ptr = &lpvMessage;
+				VIRTUAL_MAP *ptr = (VIRTUAL_MAP *)&lpvMessage;
 				if (virtualmap.special_inputs != ptr->special_inputs)
 				{
 					uint32_t diff = virtualmap.special_inputs ^ ptr->special_inputs;
@@ -286,29 +285,29 @@ void ioserver(void *args)
 					virtualmap.inputs = ptr->inputs;
 					mcu_inputs_changed_cb();
 				}
-				memcpy(virtualmap.analog, ptr->analog, 16);
+				memcpy((uint8_t *)virtualmap.analog, ptr->analog, 16);
 
 			} while (fSuccess); // repeat loop if ERROR_MORE_DATA
 
 			if (!fSuccess)
 			{
-				printf("ReadFile from pipe failed. GLE=%d\n", GetLastError());
+				printf("ReadFile from pipe failed. GLE=%lu\n", GetLastError());
 			}
 		}
 
 		CloseHandle(hPipe);
 	}
 
-	return;
+	return NULL;
 }
 
 /**
  * Comunications can be done via console, sockets or serial port
  * */
-
+#ifdef MCU_HAS_UART2
 volatile bool uart2_rx_ready = false;
 volatile uint8_t uart2_rx_last = 0;
-void mcu_uart_rx_cb(uint8_t c)
+void win_uart_rcv_callback(uint8_t c)
 {
 	uart2_rx_ready = true;
 	uart2_rx_last = c;
@@ -329,6 +328,7 @@ int16_t mcu_uart_getc(uint32_t timeout)
 
 	return uart2_rx_last;
 }
+#endif
 
 void com_init(void)
 {
@@ -343,6 +343,7 @@ void com_init(void)
 
 #ifdef MCU_HAS_UART2
 	uart2.io.rx.rxHandler = mcu_uart_rx_cb;
+	mcu_uart_rcv_cb = win_uart_rcv_callback;
 	memcpy(uart2.io.portname, "34000\0", 6);
 	socket_init(&uart2);
 #endif
@@ -355,7 +356,7 @@ void com_send(char *buff, int len)
 
 void mcu_uart_putc(uint8_t c)
 {
-	port_write(&uart2, &c, 1);
+	port_write(&uart2, (char*)&c, 1);
 }
 
 // UART communication
@@ -491,7 +492,7 @@ void rpmsimul(void)
 void ticksimul(void)
 {
 
-	static VIRTUAL_MAP initials = {0};
+	// static VIRTUAL_MAP initials = {0};
 
 	if (global_isr_enabled)
 	{

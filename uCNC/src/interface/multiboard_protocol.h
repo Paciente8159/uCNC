@@ -27,6 +27,12 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#ifndef MULTIBOARD_PROTOCOL_TIMEOUT_MS
+#define MULTIBOARD_PROTOCOL_TIMEOUT_MS 10
+#endif
+#ifndef MULTIBOARD_PROTOCOL_RETRIES
+#define MULTIBOARD_PROTOCOL_RETRIES 5
+#endif
 #ifndef MULTIBOARD_BUFFER_SIZE
 #define MULTIBOARD_BUFFER_SIZE 48
 #endif
@@ -46,24 +52,28 @@ extern "C"
     extern multiboard_data_t g_multiboard_data;
 
     typedef union slave_board_io_
-	{
-		uint32_t slave_io_reg;
-		struct
-		{
-			uint8_t state;
-			uint8_t probe : 1;
-			uint8_t limits2 : 3;
-			uint8_t controls : 4;
-			uint8_t limits;
-			uint8_t onchange_inputs;
-		} slave_io_bits;
-	} slave_board_io_t;
-	extern slave_board_io_t g_slave_io;
+    {
+        uint32_t slave_io_reg;
+        struct
+        {
+            uint8_t state;
+            uint8_t probe : 1;
+            uint8_t limits2 : 3;
+            uint8_t controls : 4;
+            uint8_t limits;
+            uint8_t onchange_inputs;
+        } slave_io_bits;
+    } slave_board_io_t;
+    extern slave_board_io_t g_slave_io;
+
+#define MULTIBOARD_PROTOCOL_OK 0
+#define MULTIBOARD_PROTOCOL_TIMEOUT 1
+#define MULTIBOARD_PROTOCOL_ERROR 2
 
 #define MULTIBOARD_PROTOCOL_SOF 0xAA
 #define MULTIBOARD_PROTOCOL_EOF 0x55
-#define MULTIBOARD_PROTOCOL_ACK 0xFE70       // ACK+CRC
-#define MULTIBOARD_PROTOCOL_NACK 0xFD6B      // NACK+CRC
+#define MULTIBOARD_PROTOCOL_ACK 0xFE70  // ACK+CRC
+#define MULTIBOARD_PROTOCOL_NACK 0xFD6B // NACK+CRC
 
 // these codes might not be used
 // since this will work on a send+response base ensure command order will not be necessary
@@ -79,10 +89,10 @@ extern "C"
 #define MULTIBOARD_CMD_ITP_SEGMENT 0x84
 #define MULTIBOARD_CMD_ITP_NEWBLOCK 0x85
 #define MULTIBOARD_CMD_ITP_RUN 0x86
+#define MULTIBOARD_CMD_ITP_POS_RESET 0x87
 
-    void multiboard_slave_process_command(uint8_t command);
-
-    void multiboard_master_send_command(uint8_t command, uint8_t* data, uint8_t len);
+    void multiboard_slave_dotasks(void);
+    void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len);
 
 #ifdef __cplusplus
 }

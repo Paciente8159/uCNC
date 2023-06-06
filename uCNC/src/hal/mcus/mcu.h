@@ -512,7 +512,7 @@ extern "C"
 	int16_t mcu_uart_getc(uint32_t timeout);
 #endif
 #ifndef mcu_uart_rx_cb
-	void mcu_uart_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
 #endif
 	typedef void (*mcu_uart_rcv_delegate)(uint8_t);
 	extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;

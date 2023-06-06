@@ -17,7 +17,7 @@ static void port_init(win_port_t *port)
 
     if (port->io.tx.bufferMutex == NULL)
     {
-        printf("CreateMutex error: %d\n", (int)GetLastError());
+        printf("CreateMutex error: %lu\n", GetLastError());
         return;
     }
 
@@ -30,7 +30,7 @@ static void port_init(win_port_t *port)
 
     if (port->io.tx.txReady == NULL)
     {
-        printf("CreateEvent failed (%d)\n", GetLastError());
+        printf("CreateEvent failed (%lu)\n", GetLastError());
         return;
     }
 
@@ -43,7 +43,7 @@ static void port_init(win_port_t *port)
 
     if (port->io.rx.rxReady == NULL)
     {
-        printf("CreateEvent failed (%d)\n", GetLastError());
+        printf("CreateEvent failed (%lu)\n", GetLastError());
         return;
     }
 
@@ -57,7 +57,7 @@ static void port_init(win_port_t *port)
 
     if (port->rxThread == NULL)
     {
-        printf("CreateThread failed (%d)\n", GetLastError());
+        printf("CreateThread failed (%lu)\n", GetLastError());
         return;
     }
 
@@ -80,14 +80,14 @@ static void port_init(win_port_t *port)
 
         if (port->txThread == NULL)
         {
-            printf("CreateThread failed (%d)\n", (int)GetLastError());
+            printf("CreateThread failed (%lu)\n", GetLastError());
             return;
         }
         break;
 
     // An error occurred
     default:
-        printf("Wait error (%d)\n", (int)GetLastError());
+        printf("Wait error (%lu)\n", GetLastError());
         return;
     }
 }
@@ -103,14 +103,14 @@ void port_write(win_port_t *port, char *buff, int len)
     {
     // The thread got ownership of the mutex
     case WAIT_OBJECT_0:
-        memcpy(port->io.tx.buffer, buff, len);
+        memcpy((char*)port->io.tx.buffer, buff, len);
         ReleaseMutex(port->io.tx.bufferMutex);
         port->io.tx.empty = true;
         break;
 
     // The thread got ownership of an abandoned mutex
     case WAIT_ABANDONED:
-        printf("Wait error (%d)\n", (int)GetLastError());
+        printf("Wait error (%lu)\n", GetLastError());
         return;
     }
 
@@ -150,7 +150,7 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
 {
     win_port_io_t *io = lpParam;
     DWORD dwWaitResult;
-    int iResult;
+    int iResult = 0;
 
     while (1)
     {
@@ -170,7 +170,7 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen(io->tx.buffer);
+                iResult = strlen((char*)io->tx.buffer);
                 /*for (int k = 0; k < iResult; k++)
                 {
                     putchar(com_buffer[k]);
@@ -179,7 +179,7 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
 
             // The thread got ownership of an abandoned mutex
             case WAIT_ABANDONED:
-                printf("Wait error (%d)\n", (int)GetLastError());
+                printf("Wait error (%lu)\n", GetLastError());
                 return -1;
             }
 
@@ -187,11 +187,11 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
 
         // An error occurred
         default:
-            printf("Serial client thread error (%d)\n", (int)GetLastError());
+            printf("Serial client thread error (%lu)\n", GetLastError());
             return -1;
         }
 
-        memset(io->tx.buffer, 0, 256);
+        memset((char*)io->tx.buffer, 0, 256);
         ReleaseMutex(io->tx.bufferMutex);
     }
     return -1;
@@ -249,7 +249,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
     ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (ListenSocket == INVALID_SOCKET)
     {
-        printf("socket failed with error: %d\n", (int)WSAGetLastError());
+        printf("socket failed with error: %d\n", WSAGetLastError());
         freeaddrinfo(result);
         WSACleanup();
         return -1;
@@ -259,7 +259,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
     iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
     if (iResult == SOCKET_ERROR)
     {
-        printf("bind failed with error: %d\n", (int)WSAGetLastError());
+        printf("bind failed with error: %d\n", WSAGetLastError());
         freeaddrinfo(result);
         closesocket(ListenSocket);
         WSACleanup();
@@ -271,7 +271,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
     iResult = listen(ListenSocket, SOMAXCONN);
     if (iResult == SOCKET_ERROR)
     {
-        printf("listen failed with error: %d\n", (int)WSAGetLastError());
+        printf("listen failed with error: %d\n", WSAGetLastError());
         closesocket(ListenSocket);
         WSACleanup();
         return -1;
@@ -282,7 +282,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
     (*((SOCKET *)io->tx.txHandle)) = accept(ListenSocket, NULL, NULL);
     if ((*((SOCKET *)io->tx.txHandle)) == INVALID_SOCKET)
     {
-        printf("accept failed with error: %d\n", (int)WSAGetLastError());
+        printf("accept failed with error: %d\n", WSAGetLastError());
         closesocket(ListenSocket);
         WSACleanup();
         return -1;
@@ -311,7 +311,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
             printf("Connection closing...\n");
         else
         {
-            printf("recv failed with error: %d\n", (int)WSAGetLastError());
+            printf("recv failed with error: %d\n", WSAGetLastError());
             closesocket((*((SOCKET *)io->tx.txHandle)));
             WSACleanup();
             return -1;
@@ -323,7 +323,7 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
     iResult = shutdown((*((SOCKET *)io->tx.txHandle)), SD_SEND);
     if (iResult == SOCKET_ERROR)
     {
-        printf("shutdown failed with error: %d\n", (int)WSAGetLastError());
+        printf("shutdown failed with error: %d\n", WSAGetLastError());
         closesocket((*((SOCKET *)io->tx.txHandle)));
         WSACleanup();
         return -1;
@@ -362,12 +362,12 @@ static DWORD WINAPI socketclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen(io->tx.buffer);
+                iResult = strlen((char*)io->tx.buffer);
 
                 iSendResult = send((*((SOCKET *)io->tx.txHandle)), io->tx.buffer, iResult, 0);
                 if (iSendResult == SOCKET_ERROR)
                 {
-                    printf("send failed with error: %d\n", (int)WSAGetLastError());
+                    printf("send failed with error: %d\n", WSAGetLastError());
                     closesocket((*((SOCKET *)io->tx.txHandle)));
                     WSACleanup();
                 }
@@ -377,7 +377,7 @@ static DWORD WINAPI socketclient(LPVOID lpParam)
 
             // The thread got ownership of an abandoned mutex
             case WAIT_ABANDONED:
-                printf("Wait error (%d)\n", (int)GetLastError());
+                printf("Wait error (%lu)\n", GetLastError());
                 return -1;
             }
 
@@ -385,7 +385,7 @@ static DWORD WINAPI socketclient(LPVOID lpParam)
 
         // An error occurred
         default:
-            printf("Socket client thread error (%d)\n", (int)GetLastError());
+            printf("Socket client thread error (%lu)\n", GetLastError());
             return -1;
         }
     }
@@ -485,7 +485,7 @@ static DWORD WINAPI uartserver(LPVOID lpParam)
                 // An error occurred in the overlapped operation;
                 // call GetLastError to find out what it was
                 // and abort if it is fatal.
-                fprintf(stderr, "Error %d in COM event", (int)GetLastError());
+                fprintf(stderr, "Error %lu in COM event", GetLastError());
                 break;
             }
             else
@@ -519,7 +519,7 @@ static DWORD WINAPI uartserver(LPVOID lpParam)
                         else
                         {
                             // An error occurred when calling the ReadFile function.
-                            fprintf(stderr, "Error %d reading COM", (int)GetLastError());
+                            fprintf(stderr, "Error %lu reading COM", GetLastError());
                             break;
                         }
 
@@ -576,14 +576,14 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
                     if (GetLastError() != ERROR_IO_PENDING)
                     {
                         // WriteFile failed, but isn't delayed. Report error and abort.
-                        fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
+                        fprintf(stderr, "Error %lu in Writing to Serial Port", GetLastError());
                     }
                 }
                 break;
 
             // The thread got ownership of an abandoned mutex
             case WAIT_ABANDONED:
-                printf("Wait error (%d)\n", (int)GetLastError());
+                printf("Wait error (%lu)\n", GetLastError());
                 return;
             }
 
@@ -591,7 +591,7 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
 
         // An error occurred
         default:
-            printf("Serial client thread error (%d)\n", (int)GetLastError());
+            printf("Serial client thread error (%lu)\n", GetLastError());
             return;
         }
 

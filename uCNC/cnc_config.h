@@ -540,9 +540,11 @@ extern "C"
 	 *
 	 * **/
 
-#define ENABLE_MULTIBOARD
+// #define ENABLE_MULTIBOARD
 #ifdef ENABLE_MULTIBOARD
-#define IS_MASTER_BOARD
+#ifndef IS_MASTER_BOARD
+// #define IS_MASTER_BOARD
+#endif
 #endif
 
 /**
