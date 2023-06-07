@@ -723,6 +723,58 @@ uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t gr
 }
 #endif
 
+#ifndef ENABLE_SYNC_TX
+uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
+volatile uint8_t mcu_com_tx_buffer_write;
+#endif
+
+void mcu_putc(uint8_t c)
+{
+#ifdef ENABLE_SYNC_TX
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	mcu_uart_putc(c);
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	mcu_uart2_putc(c);
+#endif
+#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+	mcu_usb_putc(c);
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	mcu_wifi_putc(c);
+#endif
+#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
+	mcu_bt_putc(c);
+#endif
+#else
+	uint8_t i = mcu_com_tx_buffer_write;
+	mcu_com_tx_buffer[i++] = c;
+	mcu_com_tx_buffer_write = i;
+#endif
+}
+
+void mcu_flush(void)
+{
+#ifndef ENABLE_SYNC_TX
+#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+	mcu_usb_flush();
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	mcu_wifi_flush();
+#endif
+#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
+	mcu_bt_flush();
+#endif
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	mcu_uart_flush();
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	mcu_uart2_flush();
+#endif
+	mcu_com_tx_buffer_write = 0;
+#endif
+}
+
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
 mcu_uart_rcv_delegate mcu_uart_rcv_cb;
 #ifndef mcu_uart_rx_cb
@@ -738,7 +790,7 @@ void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
 
 #if (defined(MCU_HAS_I2C))
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
-void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t* datalen)
+void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)
 {
 }
 #endif

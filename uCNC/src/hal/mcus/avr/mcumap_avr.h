@@ -4644,17 +4644,6 @@ extern "C"
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
 
-#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)))
-#define mcu_tx_ready() ((CHECKBIT(UCSRA_REG, UDRE_BIT)) && (CHECKBIT(UCSRA_REG_2, UDRE_BIT)))
-#define mcu_rx_ready() ((CHECKBIT(UCSRA_REG, RXC_BIT)) || (CHECKBIT(UCSRA_REG_2, RXC_BIT_2)))
-#elif defined(MCU_HAS_UART)
-#define mcu_tx_ready() (CHECKBIT(UCSRA_REG, UDRE_BIT))
-#define mcu_rx_ready() (CHECKBIT(UCSRA_REG, RXC_BIT))
-#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-#define mcu_tx_ready() (CHECKBIT(UCSRA_REG_2, UDRE_BIT_2))
-#define mcu_rx_ready() (CHECKBIT(UCSRA_REG_2, RXC_BIT_2))
-#endif
-
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)               \
 	({                                \

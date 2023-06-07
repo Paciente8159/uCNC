@@ -378,10 +378,11 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	mcu_com_rx_cb(COM_INREG);
 }
 #ifndef ENABLE_SYNC_TX
+static uint8_t mcu_uart_tx_out;
 ISR(COM_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG, UDRIE_BIT);
-	mcu_com_tx_cb();
+	mcu_uart_putc(mcu_com_tx_buffer[mcu_uart_tx_out++]);
 }
 #endif
 #endif
@@ -548,27 +549,59 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-void mcu_putc(char c)
-{
 #ifdef MCU_HAS_UART
-#ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_REG, UDRE_BIT);
-#endif
+void mcu_uart_putc(uint8_t c)
+{
+	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+	{
+		cnc_dotasks();
+	}
+
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	SETBIT(UCSRB_REG, UDRIE_BIT);
 #endif
-#endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT);
-#endif
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
-#endif
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	mcu_uart_tx_out = 1;
+	mcu_uart_putc(mcu_com_tx_buffer[0]);
+	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+	{
+		cnc_dotasks();
+	}
 #endif
 }
+#endif
+
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT))
+	{
+		cnc_dotasks();
+	}
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	SETBIT(UCSRB_REG_2, UDRIE_BIT);
+#endif
+}
+
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	mcu_uart2_tx_out = 1;
+	mcu_uart2_putc(mcu_com_tx_buffer[0]);
+	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT))
+	{
+		cnc_dotasks();
+	}
+#endif
+}
+#endif
 
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
