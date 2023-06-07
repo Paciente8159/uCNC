@@ -44,8 +44,8 @@
 // #pragma comment(lib, "Ws2_32.lib")
 
 // #include "win_port.h"
-win_port_t uart0;
-win_port_t uart2;
+volatile win_port_t uart0;
+volatile win_port_t uart2;
 
 #ifndef WIN_INTERFACE
 #define WIN_INTERFACE 0
@@ -333,6 +333,8 @@ int16_t mcu_uart_getc(uint32_t timeout)
 void com_init(void)
 {
 	uart0.io.rx.rxHandler = mcu_com_rx_cb;
+	uart0.io.tx.len = 0;
+	
 #ifdef USESOCKETS
 	socket_init(&uart0);
 #elif defined(USESERIAL)
@@ -343,9 +345,10 @@ void com_init(void)
 
 #ifdef MCU_HAS_UART2
 	uart2.io.rx.rxHandler = mcu_uart_rx_cb;
+	uart2.io.tx.len = 0;
 	mcu_uart_rcv_cb = win_uart_rcv_callback;
-	memcpy(uart2.io.portname, "34000\0", 6);
-	socket_init(&uart2);
+	memcpy(uart2.io.portname, "\\\\.\\COM7\0", strlen("\\\\.\\COM7\0"));
+	uart_init(&uart2);
 #endif
 }
 
@@ -396,7 +399,7 @@ pthread_t thread_step_id;
 
 void mcu_tx_isr(void)
 {
-	uart0.io.tx.empty = true;
+	uart0.io.tx.len = 0;
 }
 
 // simulates internal clock (1Kz limited by windows timer)
@@ -563,10 +566,8 @@ void mcu_init(void)
 	// #endif
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
 	pthread_create(&thread_io, NULL, &ioserver, NULL);
-	uart0.io.tx.empty = false;
 	g_mcu_buffercount = 0;
 	pulse_counter_ptr = &pulse_counter;
-	uart0.io.tx.empty = true;
 	mcu_enable_global_isr();
 }
 
@@ -792,17 +793,17 @@ void mcu_enable_tx_isr(void)
 #ifndef USECONSOLE
 	mcu_com_tx_cb();
 #endif
-	uart0.io.tx.empty = true;
+	uart0.io.tx.len = 0;
 }
 
 void mcu_disable_tx_isr(void)
 {
-	uart0.io.tx.empty = false;
+	uart0.io.tx.len = 0;
 }
 
 bool mcu_tx_ready(void)
 {
-	return uart0.io.tx.empty;
+	return (uart0.io.tx.len==0);
 }
 
 static char mcu_tx_buffer[256];
@@ -811,9 +812,9 @@ void mcu_putc(char c)
 	static int buff_index = 0;
 	if (c != 0)
 	{
-		//		while (!uart0.io.tx.empty)
+		//		while (!uart0.io.tx.len)
 		//			;
-		//		uart0.io.tx.empty = false;
+		//		uart0.io.tx.len = false;
 
 		mcu_tx_buffer[buff_index++] = c;
 		if (c == '\n')
@@ -824,8 +825,6 @@ void mcu_putc(char c)
 		}
 		putchar(c);
 	}
-	uart0.io.tx.empty = true;
-	uart0.io.tx.empty = true;
 }
 
 char mcu_getc(void)

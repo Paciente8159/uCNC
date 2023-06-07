@@ -19,6 +19,7 @@
 #include <math.h>
 #include "../cnc.h"
 
+#ifndef DISABLE_GRBL_PROTOCOL
 static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 static uint8_t serial_rx_read;
 static volatile uint8_t serial_rx_write;
@@ -27,6 +28,7 @@ static volatile uint8_t serial_rx_overflow;
 static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
 static volatile uint8_t serial_tx_read;
 static uint8_t serial_tx_write;
+#endif
 #endif
 
 static uint8_t serial_read_select;
@@ -51,6 +53,7 @@ void serial_init(void)
 
 bool serial_rx_is_empty(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	switch (serial_read_select)
 	{
 	case SERIAL_UART:
@@ -59,12 +62,13 @@ bool serial_rx_is_empty(void)
 	case SERIAL_N1:
 		return false;
 	}
-
+#endif
 	return true;
 }
 
 unsigned char serial_getc(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	unsigned char c;
 	switch (serial_read_select)
 	{
@@ -89,7 +93,6 @@ unsigned char serial_getc(void)
 		case '\t':
 			return ' ';
 		}
-
 		return c;
 		break;
 	case SERIAL_N0:
@@ -107,16 +110,18 @@ unsigned char serial_getc(void)
 		}
 		return c;
 	}
-
+#endif
 	return EOL;
 }
 
 void serial_ungetc(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	if (--serial_rx_read == 0xFF)
 	{
 		serial_rx_read = RX_BUFFER_SIZE - 1;
 	}
+#endif
 }
 
 void serial_select(uint8_t source)
@@ -137,7 +142,9 @@ void serial_select(uint8_t source)
 
 unsigned char serial_peek(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	unsigned char c;
+
 	switch (serial_read_select)
 	{
 	case SERIAL_UART:
@@ -154,15 +161,14 @@ unsigned char serial_peek(void)
 			return EOL;
 		case '\t':
 			return ' ';
-		default:
-			return c;
 		}
-		break;
+		return c;
 	case SERIAL_N0:
 	case SERIAL_N1:
 		c = mcu_eeprom_getc(serial_read_index);
 		return (c > 0 && c < 128) ? c : 0;
 	}
+#endif
 	return EOL;
 }
 
@@ -194,10 +200,12 @@ void serial_putc(unsigned char c)
 
 	serial_tx_buffer[serial_tx_write] = c;
 	serial_tx_write = write;
+#ifndef DISABLE_GRBL_PROTOCOL
 	if (c == '\n')
 	{
 		serial_flush();
 	}
+#endif
 #else
 	while (!mcu_tx_ready())
 	{
@@ -368,6 +376,7 @@ void serial_flush(void)
 // All ascii will be sent to buffer and processed later (including comments)
 MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	static bool is_grbl_cmd = false;
 	uint8_t write;
 	if (c < ((unsigned char)0x7F)) // ascii (all bellow DEL)
@@ -422,6 +431,12 @@ MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 	{
 		cnc_call_rt_command((uint8_t)c);
 	}
+#else
+#ifdef ENABLE_MULTIBOARD
+	// re-route this call
+	multiboard_rcv_byte_cb(c);
+#endif
+#endif
 }
 
 MCU_TX_CALLBACK void mcu_com_tx_cb(void)
@@ -448,14 +463,17 @@ MCU_TX_CALLBACK void mcu_com_tx_cb(void)
 
 void serial_rx_clear(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	serial_rx_write = 0;
 	serial_rx_read = 0;
 	serial_rx_overflow = 0;
 	serial_rx_buffer[0] = EOL;
+#endif
 }
 
 uint8_t serial_get_rx_freebytes(void)
 {
+#ifndef DISABLE_GRBL_PROTOCOL
 	uint16_t buf = serial_rx_write;
 	if (serial_rx_read > buf)
 	{
@@ -463,4 +481,7 @@ uint8_t serial_get_rx_freebytes(void)
 	}
 
 	return (uint8_t)(RX_BUFFER_CAPACITY - (buf - serial_rx_read));
+#else
+	return 0;
+#endif
 }

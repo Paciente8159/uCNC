@@ -11,7 +11,7 @@ typedef struct win_port_rx_
 
 typedef struct win_port_tx_
 {
-    bool empty;
+    int len;
     char buffer[256];
     void *bufferMutex;
     void *txReady;

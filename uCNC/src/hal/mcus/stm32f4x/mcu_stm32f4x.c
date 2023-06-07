@@ -486,14 +486,16 @@ void mcu_putc(char c)
 #endif
 
 #ifdef MCU_HAS_USB
-	if (c != 0)
-	{
-		tusb_cdc_write(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tusb_cdc_flush();
-	}
+	// if (c != 0)
+	// {
+	// 	tusb_cdc_write(c);
+	// }
+	// if (c == '\r' || c == 0)
+	// {
+	// 	tusb_cdc_flush();
+	// }
+	tusb_cdc_write(c);
+	tusb_cdc_flush();
 #endif
 }
 

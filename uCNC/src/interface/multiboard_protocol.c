@@ -24,6 +24,11 @@ static multiboard_data_t multiboard_data;
 
 MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
 {
+    multiboard_rcv_byte_cb(c);
+}
+
+void multiboard_rcv_byte_cb(unsigned char c)
+{
     static int8_t protocol_state = -3;
 
     int8_t current_state = protocol_state;
@@ -69,7 +74,8 @@ MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
     multiboard_data.rawdata[current_state++] = c;
     protocol_state = current_state;
 }
-#endif
+
+#ifndef IS_MASTER_BOARD
 
 static void multiboard_slave_send_sof(void)
 {
@@ -86,6 +92,7 @@ static void multiboard_slave_send_status_byte(uint16_t word)
     serial_putc((word >> 8) & 0xFF);      // NACK
     serial_putc(word & 0xFF);             // NACK CRC
     serial_putc(MULTIBOARD_PROTOCOL_EOF); // EOF
+    serial_flush();
 }
 
 // all commands are executed in the main loop
@@ -134,6 +141,8 @@ void multiboard_slave_dotasks(void)
     }
 }
 
+#else
+
 static uint8_t multiboard_master_get_response(uint8_t command, uint32_t timeout)
 {
     timeout += mcu_millis();
@@ -150,11 +159,13 @@ static uint8_t multiboard_master_get_response(uint8_t command, uint32_t timeout)
     {
     // commands that expect ACK
     case MULTIBOARD_CMD_SET_STATE:
-        if (multiboard_data.multiboard_frame.crc != 0x70 || multiboard_data.multiboard_frame.content[0] != 0xFE)
+        if (multiboard_data.multiboard_frame.crc == 0x70 && multiboard_data.multiboard_frame.content[0] == 0xFE)
         {
-            return MULTIBOARD_PROTOCOL_ERROR;
+            return MULTIBOARD_PROTOCOL_OK;
         }
     }
+    
+    return MULTIBOARD_PROTOCOL_ERROR;
 }
 
 void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
@@ -183,3 +194,5 @@ void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
         }
     } while (multiboard_master_get_response(command, MULTIBOARD_PROTOCOL_TIMEOUT_MS) != MULTIBOARD_PROTOCOL_OK);
 }
+#endif
+#endif

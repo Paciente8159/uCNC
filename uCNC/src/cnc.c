@@ -119,12 +119,12 @@ void cnc_init(void)
 
 void cnc_run(void)
 {
+#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
+	multiboard_slave_dotasks();
+	cnc_dotasks();
+#else
 	// enters loop reset
 	cnc_reset();
-
-	#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
-	multiboard_slave_dotasks();
-	#endif
 
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
@@ -170,6 +170,7 @@ void cnc_run(void)
 			cnc_clear_exec_state(EXEC_KILL);
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
+#endif
 }
 
 bool cnc_exec_cmd(void)

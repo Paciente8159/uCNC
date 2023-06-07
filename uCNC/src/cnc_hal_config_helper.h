@@ -2270,6 +2270,17 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifdef ENABLE_MULTIBOARD
+#define UART2_DETACH_MAIN_PROTOCOL
+#ifdef CRC_WITHOUT_LOOKUP_TABLE
+#undef CRC_WITHOUT_LOOKUP_TABLE
+#endif
+#ifndef IS_MASTER_BOARD
+#define RAM_ONLY_SETTINGS
+#define DISABLE_GRBL_PROTOCOL
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif

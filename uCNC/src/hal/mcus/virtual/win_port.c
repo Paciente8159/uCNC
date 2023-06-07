@@ -98,14 +98,14 @@ void port_write(win_port_t *port, char *buff, int len)
     dwWaitResult = WaitForSingleObject(
         port->io.tx.bufferMutex, // handle to mutex
         INFINITE);               // no time-out interval
-    port->io.tx.empty = false;
+    int l = port->io.tx.len;
+    port->io.tx.len += len;
     switch (dwWaitResult)
     {
     // The thread got ownership of the mutex
     case WAIT_OBJECT_0:
-        memcpy((char*)port->io.tx.buffer, buff, len);
+        memcpy((char *)&port->io.tx.buffer[l], buff, len);
         ReleaseMutex(port->io.tx.bufferMutex);
-        port->io.tx.empty = true;
         break;
 
     // The thread got ownership of an abandoned mutex
@@ -170,7 +170,7 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen((char*)io->tx.buffer);
+                iResult = strlen((char *)io->tx.buffer);
                 /*for (int k = 0; k < iResult; k++)
                 {
                     putchar(com_buffer[k]);
@@ -191,7 +191,7 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
             return -1;
         }
 
-        memset((char*)io->tx.buffer, 0, 256);
+        memset((char *)io->tx.buffer, 0, 256);
         ReleaseMutex(io->tx.bufferMutex);
     }
     return -1;
@@ -362,7 +362,7 @@ static DWORD WINAPI socketclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen((char*)io->tx.buffer);
+                iResult = strlen((char *)io->tx.buffer);
 
                 iSendResult = send((*((SOCKET *)io->tx.txHandle)), io->tx.buffer, iResult, 0);
                 if (iSendResult == SOCKET_ERROR)
@@ -570,7 +570,7 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen(io->tx.buffer);
+                iResult = io->tx.len;//strlen(io->tx.buffer);
                 if (!WriteFile(io->tx.txHandle, io->tx.buffer, iResult, &dNoOfBytesWritten, &osWrite))
                 {
                     if (GetLastError() != ERROR_IO_PENDING)
@@ -579,6 +579,7 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
                         fprintf(stderr, "Error %lu in Writing to Serial Port", GetLastError());
                     }
                 }
+                io->tx.len = 0;
                 break;
 
             // The thread got ownership of an abandoned mutex
@@ -607,4 +608,5 @@ void uart_init(win_port_t *port)
     port->txCallback = uartclient;
     port_init(port);
 }
+
 #endif
