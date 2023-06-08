@@ -788,10 +788,10 @@ void virtualconsoleclient(void)
 			// The thread got ownership of the mutex
 			case WAIT_OBJECT_0:
 				iResult = strlen(com_buffer);
-				/*for (int k = 0; k < iResult; k++)
+				for (int k = 0; k < iResult; k++)
 				{
 					putchar(com_buffer[k]);
-				}*/
+				}
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -939,6 +939,7 @@ void com_send(char *buff, int len)
 	}
 
 	SetEvent(txReady);
+	sleep(1);
 }
 
 // UART communication
@@ -1418,7 +1419,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 void mcu_enable_tx_isr(void)
 {
 #ifndef USECONSOLE
-	mcu_com_tx_cb();
+	// mcu_com_tx_cb();
 #endif
 	mcu_tx_enabled = true;
 }
@@ -1433,27 +1434,39 @@ bool mcu_tx_ready(void)
 	return mcu_tx_empty;
 }
 
-void mcu_putc(char c)
-{
-	static int buff_index = 0;
-	if (c != 0)
-	{
-		//		while (!mcu_tx_empty)
-		//			;
-		//		mcu_tx_empty = false;
-
-		mcu_tx_buffer[buff_index++] = c;
-		if (c == '\n')
-		{
-			mcu_tx_buffer[buff_index++] = 0;
-			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
-			buff_index = 0;
-		}
-		putchar(c);
-	}
-	mcu_tx_empty = true;
-	mcu_tx_enabled = true;
+void mcu_uart_putc(uint8_t c){
+	#ifdef ENABLE_SYNC_TX
+		com_send(c, 1);
+		#endif
 }
+	void mcu_uart_flush(void){
+		#ifndef ENABLE_SYNC_TX
+		uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+		com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+		#endif
+	}
+
+//void mcu_putc(char c)
+//{
+//	static int buff_index = 0;
+//	if (c != 0)
+//	{
+//		//		while (!mcu_tx_empty)
+//		//			;
+//		//		mcu_tx_empty = false;
+//
+//		mcu_tx_buffer[buff_index++] = c;
+//		if (c == '\n')
+//		{
+//			mcu_tx_buffer[buff_index++] = 0;
+//			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
+//			buff_index = 0;
+//		}
+//		putchar(c);
+//	}
+//	mcu_tx_empty = true;
+//	mcu_tx_enabled = true;
+//}
 
 char mcu_getc(void)
 {

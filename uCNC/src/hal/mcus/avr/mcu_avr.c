@@ -375,14 +375,18 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #ifdef MCU_HAS_UART
 ISR(COM_RX_vect, ISR_BLOCK)
 {
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM_INREG);
+#else
+	mcu_uart_rx_cb(COM_INREG);
+#endif
 }
 #ifndef ENABLE_SYNC_TX
-static uint8_t mcu_uart_tx_out;
 ISR(COM_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG, UDRIE_BIT);
-	mcu_uart_putc(mcu_com_tx_buffer[mcu_uart_tx_out++]);
+	// keeps sending chars until null is found
+	mcu_uart_flush();
 }
 #endif
 #endif
@@ -390,20 +394,23 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #if defined(MCU_HAS_UART2)
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM2_INREG);
 #else
-#ifdef UART2_PASSTHROUGH
-	mcu_uart_putc(COM2_INREG);
-#endif
-	mcu_uart_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(COM2_INREG);
 #endif
 }
 #ifndef ENABLE_SYNC_TX
+static uint8_t *mcu_com2_tx_ptr;
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
-	mcu_com_tx_cb();
+	// keeps sending chars until null is found
+	mcu_com2_tx_ptr++;
+	if (*mcu_com2_tx_ptr)
+	{
+		mcu_uart_putc(*mcu_com2_tx_ptr);
+	}
 }
 #endif
 #endif
@@ -552,10 +559,10 @@ uint8_t mcu_get_servo(uint8_t servo)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
+#ifdef ENABLE_SYNC_TX
 	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
-	{
-		cnc_dotasks();
-	}
+		;
+#endif
 
 	COM_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -566,11 +573,24 @@ void mcu_uart_putc(uint8_t c)
 void mcu_uart_flush(void)
 {
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_uart_tx_out = 1;
-	mcu_uart_putc(mcu_com_tx_buffer[0]);
-	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+	if (CHECKBIT(UCSRA_REG, UDRE_BIT)) // not ready start flushing
 	{
-		cnc_dotasks();
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
 	}
 #endif
 }
@@ -593,11 +613,10 @@ void mcu_uart2_putc(uint8_t c)
 void mcu_uart2_flush(void)
 {
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_uart2_tx_out = 1;
-	mcu_uart2_putc(mcu_com_tx_buffer[0]);
-	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT))
+	mcu_com2_tx_ptr = (mcu_com_tx_buffer_write > TX_BUFFER_HALF) ? &mcu_com_tx_buffer[TX_BUFFER_HALF] : &mcu_com_tx_buffer[0];
+	if (*mcu_com2_tx_ptr)
 	{
-		cnc_dotasks();
+		mcu_uart2_putc(*mcu_com2_tx_ptr);
 	}
 #endif
 }

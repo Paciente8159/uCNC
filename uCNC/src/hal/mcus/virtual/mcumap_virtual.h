@@ -47,7 +47,8 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-#define ENABLE_SYNC_TX
+//#define ENABLE_SYNC_TX
+#define MCU_HAS_UART
 
 // joints step/dir pins
 #define STEP0 1

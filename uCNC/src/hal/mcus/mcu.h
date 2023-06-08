@@ -218,8 +218,16 @@ extern "C"
 #define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 114) // buffer sizes
 #endif
 #endif
-extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
-extern volatile uint8_t mcu_com_tx_buffer_write;
+#define TX_BUFFER_SIZE_ALIGNED (TX_BUFFER_SIZE & 0xFE)
+#define TX_BUFFER_HALF (TX_BUFFER_SIZE_ALIGNED >> 1)
+	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE_ALIGNED];
+	extern volatile uint8_t mcu_com_tx_head;
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart_tx_tail;
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart2_tx_tail;
+#endif
 #endif
 #ifndef mcu_putc
 	void mcu_putc(uint8_t c);
@@ -498,7 +506,7 @@ extern volatile uint8_t mcu_com_tx_buffer_write;
 #define I2C_SLAVE_BUFFER_SIZE 48
 #endif
 #ifndef mcu_i2c_slave_cb
-	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t* datalen);
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
 #endif
 #endif
 
@@ -513,42 +521,42 @@ extern volatile uint8_t mcu_com_tx_buffer_write;
 #endif
 
 #ifdef MCU_HAS_USB
-void mcu_usb_putc(uint8_t c);
-void mcu_usb_flush(void);
+	void mcu_usb_putc(uint8_t c);
+	void mcu_usb_flush(void);
 #ifdef DETACH_USB_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_UART
-void mcu_uart_putc(uint8_t c);
-void mcu_uart_flush(void);
+	void mcu_uart_putc(uint8_t c);
+	void mcu_uart_flush(void);
 #ifdef DETACH_UART_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_UART2
-void mcu_uart2_putc(uint8_t c);
-void mcu_uart2_flush(void);
+	void mcu_uart2_putc(uint8_t c);
+	void mcu_uart2_flush(void);
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_WIFI
-void mcu_wifi_putc(uint8_t c);
-void mcu_wifi_flush(void);
+	void mcu_wifi_putc(uint8_t c);
+	void mcu_wifi_flush(void);
 #ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
 #endif
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
-void mcu_bt_putc(uint8_t c);
-void mcu_bt_flush(void);
+	void mcu_bt_putc(uint8_t c);
+	void mcu_bt_flush(void);
 #ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
 #endif
 #endif
 

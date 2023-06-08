@@ -167,9 +167,11 @@ void serial_inject_cmd(const char *__s)
 
 void serial_putc(unsigned char c)
 {
-	cnc_status_report_lock = true;
 	mcu_putc(c);
-	cnc_status_report_lock = false;
+	if (c == '\n')
+	{
+		serial_flush();
+	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	mcu_toggle_output(ACTIVITY_LED);
 #endif
