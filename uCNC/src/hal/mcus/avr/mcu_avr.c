@@ -1270,22 +1270,6 @@ ISR(TWI_vect, ISR_BLOCK)
 #endif
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!CHECKBIT(UCSRA_REG_2, RXC_BIT_2))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return COM2_INREG;
-}
-#endif
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 

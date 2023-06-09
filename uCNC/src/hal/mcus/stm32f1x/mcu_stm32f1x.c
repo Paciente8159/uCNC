@@ -1271,29 +1271,4 @@ void mcu_start_timeout()
 #endif
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	while (!(COM2_UART->SR & USART_SR_TXE))
-		;
-	COM2_OUTREG = c;
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!(COM2_UART->SR & USART_SR_RXNE))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return COM2_INREG;
-}
-#endif
-#endif
-
 #endif

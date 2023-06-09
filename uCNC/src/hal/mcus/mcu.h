@@ -558,20 +558,6 @@ extern "C"
 #endif
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-	void mcu_uart_putc(uint8_t c);
-#endif
-#ifndef mcu_uart_getc
-	int16_t mcu_uart_getc(uint32_t timeout);
-#endif
-#ifndef mcu_uart_rx_cb
-	void mcu_uart_rx_cb(uint8_t c);
-#endif
-	typedef void (*mcu_uart_rcv_delegate)(uint8_t);
-	extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
-#endif
-
 #ifdef __cplusplus
 }
 #endif

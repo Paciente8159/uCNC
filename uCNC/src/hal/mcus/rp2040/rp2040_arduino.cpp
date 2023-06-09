@@ -641,30 +641,6 @@ extern "C"
 	}
 }
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	COM2_UART.write(c);
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!COM2_UART.available())
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-
-	return (uint8_t)(0xFF & COM2_UART.read());
-}
-#endif
-#endif
-
 /**
  *
  * This handles EEPROM simulation on flash memory

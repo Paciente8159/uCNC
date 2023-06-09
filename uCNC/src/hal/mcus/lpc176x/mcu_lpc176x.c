@@ -1138,31 +1138,6 @@ ISR(TWI_vect)
 
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	while (!(CHECKBIT(COM2_UART->LSR, 5)))
-		;
-	COM2_OUTREG = c;
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!(CHECKBIT(COM2_UART->LSR, 0)))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return (CHECKBIT(COM2_UART->LSR, 0) ? COM2_INREG : 0);
-}
-#endif
-#endif
-
 #ifdef MCU_HAS_ONESHOT_TIMER
 
 void MCU_ONESHOT_ISR(void)

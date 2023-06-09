@@ -1226,23 +1226,6 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 #endif
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	uart_write_bytes(COM2_PORT, &c, 1);
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	char c = 0;
-	uint8_t read = uart_read_bytes(COM2_PORT, &c, 1, timeout);
-	return (read > 0) ? c : -1;
-}
-#endif
-#endif
-
 /*IO functions*/
 // IO functions
 void mcu_set_servo(uint8_t servo, uint8_t value)
