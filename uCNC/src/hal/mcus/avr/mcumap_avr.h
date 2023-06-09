@@ -4332,10 +4332,10 @@ extern "C"
 #define MCU_HAS_UART2
 #endif
 
-// with both UART define enable make TX sync to broadcast messages to both ports
-#if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
-#define ENABLE_SYNC_TX
-#endif
+// // with both UART define enable make TX sync to broadcast messages to both ports
+// #if (defined(MCU_HAS_UART) && defined(MCU_HAS_UART2))
+// #define ENABLE_SYNC_TX
+// #endif
 
 // COM registers
 #ifdef MCU_HAS_UART

@@ -218,9 +218,7 @@ extern "C"
 #define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 114) // buffer sizes
 #endif
 #endif
-#define TX_BUFFER_SIZE_ALIGNED (TX_BUFFER_SIZE & 0xFE)
-#define TX_BUFFER_HALF (TX_BUFFER_SIZE_ALIGNED >> 1)
-	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE_ALIGNED];
+	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
 	extern volatile uint8_t mcu_com_tx_head;
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	extern uint8_t mcu_uart_tx_tail;

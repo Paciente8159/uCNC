@@ -19,7 +19,6 @@
 #include "../../cnc.h"
 
 #ifndef ENABLE_SYNC_TX
-uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE_ALIGNED];
 volatile uint8_t mcu_com_tx_head;
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 uint8_t mcu_uart_tx_tail;
@@ -764,6 +763,7 @@ void mcu_putc(uint8_t c)
 	while (write == mcu_uart_tx_tail)
 	{
 		cnc_status_report_lock = true;
+		mcu_flush();
 		cnc_dotasks();
 	} // while buffer is full
 #endif
@@ -771,6 +771,7 @@ void mcu_putc(uint8_t c)
 	while (write == mcu_uart2_tx_tail)
 	{
 		cnc_status_report_lock = true;
+		mcu_flush();
 		cnc_dotasks();
 	} // while buffer is full
 #endif
@@ -805,7 +806,10 @@ void mcu_flush(void)
 	}
 #endif
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	mcu_uart2_flush();
+	if (mcu_uart2_tx_tail != mcu_com_tx_head)
+	{
+		mcu_uart2_flush();
+	}
 #endif
 #endif
 }
