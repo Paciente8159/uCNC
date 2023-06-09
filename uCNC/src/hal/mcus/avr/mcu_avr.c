@@ -553,7 +553,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
 		;
 #endif
@@ -1213,8 +1213,6 @@ ISR(TWI_vect, ISR_BLOCK)
 	// clear and reenable I2C ISR by default this falls to NACK if ACK is not set
 
 	uint8_t i = index;
-
-	mcu_putc(TW_STATUS);
 
 	switch (TW_STATUS)
 	{

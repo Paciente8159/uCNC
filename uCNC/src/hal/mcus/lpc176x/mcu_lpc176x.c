@@ -312,16 +312,6 @@ void MCU_COM2_ISR(void)
 		mcu_uart2_flush();
 	}
 #endif
-}
-
-#ifndef ENABLE_SYNC_TX
-if (irqstatus == UART_IIR_INTID_THRE)
-{
-	// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-	COM2_UART->IER &= ~UART_IER_THREINT_EN;
-	mcu_com_tx_cb();
-}
-#endif
 
 mcu_enable_global_isr();
 }

@@ -79,39 +79,43 @@ void MCU_SERIAL_ISR(void)
 	if (COM_UART->SR & USART_SR_RXNE)
 	{
 		unsigned char c = COM_INREG;
-		mcu_com_rx_cb(c);
-	}
-
-#ifndef ENABLE_SYNC_TX
-	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
-	{
-		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
-		mcu_com_tx_cb();
-	}
-#endif
-	mcu_enable_global_isr();
-}
-#endif
-
-#if (defined(MCU_HAS_UART2))
-void MCU_SERIAL2_ISR(void)
-{
-	mcu_disable_global_isr();
-	if (COM2_UART->SR & USART_SR_RXNE)
-	{
-		unsigned char c = COM2_INREG;
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else
 		mcu_uart_rx_cb(c);
 #endif
 	}
 
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
+	{
+		COM_UART->CR1 &= ~(USART_CR1_TXEIE);
+		mcu_uart_flush();
+	}
+#endif
+	mcu_enable_global_isr();
+}
+#endif
+
+#ifdef MCU_HAS_UART2
+void MCU_SERIAL2_ISR(void)
+{
+	mcu_disable_global_isr();
+	if (COM2_UART->SR & USART_SR_RXNE)
+	{
+		unsigned char c = COM2_INREG;
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+		mcu_com_rx_cb(c);
+#else
+		mcu_uart2_rx_cb(c);
+#endif
+	}
+
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
 	{
 		COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
-		mcu_com_tx_cb();
+		mcu_uart2_flush();
 	}
 #endif
 	mcu_enable_global_isr();
@@ -445,42 +449,101 @@ void mcu_usart_init(void)
 #endif
 }
 
-void mcu_putc(char c)
-{
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-	{
 #ifdef MCU_HAS_USB
-		tusb_cdc_flush();
-#endif
-	}
+void mcu_usb_putc(uint8_t c)
+{
+	tusb_cdc_write(c);
+}
+
+void mcu_usb_flush(void)
+{
+	tusb_cdc_flush();
+}
 #endif
 
 #ifdef MCU_HAS_UART
+
+void mcu_uart_putc(uint8_t c)
+{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	while (!(COM_UART->SR & USART_SR_TXE))
+		;
+#endif
+
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	COM_UART->CR1 |= (USART_CR1_TXEIE);
 #endif
-#endif
+}
 
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM2_UART->CR1 |= (USART_CR1_TXEIE);
-#endif
-#endif
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if ((COM_UART->SR & USART_SR_TXE)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
 
-#ifdef MCU_HAS_USB
-	if (c != 0)
-	{
-		tusb_cdc_write(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tusb_cdc_flush();
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
 	}
 #endif
 }
+
+#endif
+
+#ifdef MCU_HAS_UART2
+
+void mcu_uart2_putc(uint8_t c)
+{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	while (!(COM2_UART->SR & USART_SR_TXE))
+		;
+#endif
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	COM2_UART->CR1 |= (USART_CR1_TXEIE);
+#endif
+}
+
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if ((COM2_UART->SR & USART_SR_TXE)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart2_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart2_tx_tail = read;
+		mcu_uart2_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
+	}
+#endif
+}
+
+#endif
 
 void mcu_init(void)
 {
