@@ -106,9 +106,6 @@ void MCU_SERIAL2_ISR(void)
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else
-#ifdef UART2_PASSTHROUGH
-		mcu_uart_putc(c);
-#endif
 		mcu_uart_rx_cb(c);
 #endif
 	}

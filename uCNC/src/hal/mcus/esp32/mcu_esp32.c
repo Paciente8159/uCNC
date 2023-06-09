@@ -1084,9 +1084,6 @@ void mcu_dotasks(void)
 		mcu_com_rx_cb((uint8_t)rxdata[i]);
 	}
 #else
-#ifdef UART2_PASSTHROUGH
-	uart_write_bytes(COM2_PORT, rxdata, rxlen);
-#endif
 	for (i = 0; i < rxlen; i++)
 	{
 		mcu_uart_rx_cb((uint8_t)rxdata[i]);

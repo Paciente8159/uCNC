@@ -214,13 +214,17 @@ void mcu_com_isr()
 	{
 		COM_UART->USART.INTFLAG.bit.RXC = 1;
 		unsigned char c = (0xff & COM_INREG);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
+#else
+		mcu_uart_rx_cb(c);
+#endif
 	}
 #ifndef ENABLE_SYNC_TX
 	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 	{
 		COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-		mcu_com_tx_cb();
+		mcu_uart_flush();
 	}
 #endif
 	mcu_enable_global_isr();
@@ -235,20 +239,17 @@ void mcu_com2_isr()
 	{
 		COM2_UART->USART.INTFLAG.bit.RXC = 1;
 		unsigned char c = (0xff & COM2_INREG);
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else
-#ifdef UART2_PASSTHROUGH
-		mcu_uart_putc(c);
-#endif
-		mcu_uart_rx_cb(c);
+		mcu_uart2_rx_cb(c);
 #endif
 	}
 #ifndef ENABLE_SYNC_TX
 	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
 	{
 		COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-		mcu_com_tx_cb();
+		mcu_uart2_flush();
 	}
 #endif
 	mcu_enable_global_isr();
@@ -727,41 +728,130 @@ bool mcu_tx_ready(void)
  * sends a char either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
-#ifndef mcu_putc
-void mcu_putc(char c)
+#ifdef MCU_HAS_USB
+void mcu_usb_putc(uint8_t c)
+{
+	tusb_cdc_write(c);
+}
+
+void mcu_usb_flush(void)
+{
+	tusb_cdc_flush();
+}
+#endif
+
+#ifdef MCU_HAS_UART
+void mcu_uart_putc(uint8_t c)
 {
 #ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-	{
-#ifdef MCU_HAS_USB
-		tusb_cdc_flush();
+	while (!(COM_UART->USART.INTFLAG.bit.DRE))
+		;
 #endif
-	}
-#endif
-#ifdef MCU_HAS_UART
+
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #endif
-#endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
-#endif
-#ifdef MCU_HAS_USB
-	if (c != 0)
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if ((COM_UART->USART.INTFLAG.bit.DRE)) // not ready start flushing
 	{
-		tusb_cdc_write(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tusb_cdc_flush();
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
 	}
 #endif
 }
 #endif
+
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+#ifdef ENABLE_SYNC_TX
+	while (!(COM2_UART->USART.INTFLAG.bit.DRE))
+		;
+#endif
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+#endif
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if ((COM2_UART->USART.INTFLAG.bit.DRE)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart2_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart2_tx_tail = read;
+		mcu_uart2_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
+	}
+#endif
+}
+#endif
+
+// #ifdef ENABLE_SYNC_TX
+// 	while (!mcu_tx_ready())
+// 	{
+// #ifdef MCU_HAS_USB
+// 		tusb_cdc_flush();
+// #endif
+// 	}
+// #endif
+// #ifdef MCU_HAS_UART
+// 	COM_OUTREG = c;
+// #ifndef ENABLE_SYNC_TX
+// 	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+// #endif
+// #endif
+// #if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
+// 	COM2_OUTREG = c;
+// #ifndef ENABLE_SYNC_TX
+// 	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
+// #endif
+// #endif
+// #ifdef MCU_HAS_USB
+// 	if (c != 0)
+// 	{
+// 		tusb_cdc_write(c);
+// 	}
+// 	if (c == '\r' || c == 0)
+// 	{
+// 		tusb_cdc_flush();
+// 	}
+// #endif
+// }
+// #endif
 
 // ISR
 /**
@@ -972,8 +1062,12 @@ void mcu_dotasks(void)
 
 	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tusb_cdc_read();
+		uint8_t c = (uint8_t)tusb_cdc_read();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #endif
 }
@@ -1546,31 +1640,6 @@ void mcu_start_timeout()
 	ONESHOT_REG->COUNT16.INTENSET.bit.MC0 = 1;
 	ONESHOT_REG->COUNT16.CTRLA.bit.ENABLE = 1; // enable timer and also write protection
 #endif
-}
-#endif
-#endif
-
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	while (!(COM2_UART->USART.INTFLAG.bit.DRE))
-		;
-	COM2_OUTREG = c;
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!(COM2_UART->USART.INTFLAG.bit.RXC))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return COM2_INREG;
 }
 #endif
 #endif

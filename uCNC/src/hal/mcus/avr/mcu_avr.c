@@ -393,7 +393,7 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #if defined(MCU_HAS_UART2)
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM2_INREG);
 #else
 	mcu_uart2_rx_cb(COM2_INREG);
