@@ -26,8 +26,6 @@
 #ifdef USE_ARDUINO_CDC
 extern void mcu_usb_dotasks(void);
 extern void mcu_usb_init(void);
-extern void mcu_usb_putc(char c);
-extern void mcu_usb_flush(void);
 extern char mcu_usb_getc(void);
 extern uint8_t mcu_usb_available(void);
 extern uint8_t mcu_usb_tx_available(void);
@@ -254,7 +252,11 @@ void MCU_COM_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
+#else
+		mcu_uart_rx_cb(c);
+#endif
 	}
 
 #ifndef ENABLE_SYNC_TX
@@ -262,7 +264,7 @@ void MCU_COM_ISR(void)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 		COM_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_com_tx_cb();
+		mcu_uart_flush();
 	}
 #endif
 
@@ -295,13 +297,10 @@ void MCU_COM2_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else
-#ifdef UART2_PASSTHROUGH
-		mcu_uart_putc(c);
-#endif
-		mcu_uart_rx_cb(c);
+		mcu_uart2_rx_cb(c);
 #endif
 	}
 
@@ -310,11 +309,21 @@ void MCU_COM2_ISR(void)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 		COM2_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_com_tx_cb();
+		mcu_uart2_flush();
 	}
 #endif
+}
 
-	mcu_enable_global_isr();
+#ifndef ENABLE_SYNC_TX
+if (irqstatus == UART_IIR_INTID_THRE)
+{
+	// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
+	COM2_UART->IER &= ~UART_IER_THREINT_EN;
+	mcu_com_tx_cb();
+}
+#endif
+
+mcu_enable_global_isr();
 }
 #endif
 
@@ -564,55 +573,82 @@ bool mcu_tx_ready(void)
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
-#ifndef mcu_putc
-void mcu_putc(char c)
+#ifdef MCU_HAS_UART
+void mcu_uart_putc(uint8_t c)
 {
 #ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-	{
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-		mcu_usb_flush();
-#else
-		tusb_cdc_flush();
-#endif
-#endif
-	}
+	while (!CHECKBIT(COM_UART->LSR, 5))
+		;
 #endif
 
-#ifdef MCU_HAS_UART
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	COM_UART->IER |= UART_IER_THREINT_EN;
 #endif
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(COM_UART->LSR, 5)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		uint8_t c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
 #endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM2_UART->IER |= UART_IER_THREINT_EN;
+	}
 #endif
+}
 #endif
 
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-	if (c != 0)
-	{
-		mcu_usb_putc(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		mcu_usb_flush();
-	}
-#else
-	if (c != 0)
-	{
-		tusb_cdc_write(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tusb_cdc_flush();
-	}
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+#ifdef ENABLE_SYNC_TX
+	while (!CHECKBIT(COM2_UART->LSR, 5))
+		;
 #endif
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	COM2_UART->IER |= UART_IER_THREINT_EN;
+#endif
+}
+
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(COM2_UART->LSR, 5)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart2_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		uint8_t c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart2_tx_tail = read;
+		mcu_uart2_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
+	}
 #endif
 }
 #endif
@@ -768,7 +804,11 @@ void mcu_dotasks()
 	while (mcu_usb_available())
 	{
 		unsigned char c = (unsigned char)mcu_usb_getc();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #else
 	tusb_cdc_flush();
@@ -777,7 +817,11 @@ void mcu_dotasks()
 	while (tusb_cdc_available())
 	{
 		unsigned char c = (unsigned char)tusb_cdc_read();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #endif
 #endif
@@ -1091,7 +1135,7 @@ ISR(TWI_vect)
 		I2Cx->I2SCLL = clkl;
 		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
 		break;
-	default:  // other cases like reset data and prepare ACK to receive data
+	default: // other cases like reset data and prepare ACK to receive data
 		index = 0;
 		break;
 	}

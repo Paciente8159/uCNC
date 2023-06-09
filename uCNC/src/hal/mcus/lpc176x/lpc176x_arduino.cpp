@@ -54,14 +54,20 @@ extern "C"
 		UsbSerial.begin(BAUDRATE);
 	}
 
-	void mcu_usb_putc(char c)
+	void mcu_usb_putc(uint8_t c)
 	{
 		UsbSerial.write(c);
 	}
 
 	void mcu_usb_flush(void)
 	{
+#ifdef MCU_HAS_USB
+#ifdef USE_ARDUINO_CDC
 		UsbSerial.flushTX();
+#else
+		tusb_cdc_flush();
+#endif
+#endif
 	}
 
 	char mcu_usb_getc(void)

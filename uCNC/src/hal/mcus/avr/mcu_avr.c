@@ -1273,13 +1273,6 @@ ISR(TWI_vect, ISR_BLOCK)
 #endif
 
 #if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT_2);
-	COM2_OUTREG = c;
-}
-#endif
 #ifndef mcu_uart_getc
 int16_t mcu_uart_getc(uint32_t timeout)
 {
