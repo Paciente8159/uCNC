@@ -53,13 +53,6 @@ WiFiClient serverClient;
 WiFiManager wifiManager;
 #endif
 
-#ifndef ESP8266_BUFFER_SIZE
-#define ESP8266_BUFFER_SIZE 255
-#endif
-
-static char esp8266_tx_buffer[ESP8266_BUFFER_SIZE];
-static uint8_t esp8266_tx_buffer_counter;
-
 extern "C"
 {
 #include "../../../cnc.h"
@@ -103,7 +96,7 @@ extern "C"
 					serverClient.stop();
 				}
 			}
-			serverClient = server.available();
+			serverClient = server.accept();
 			serverClient.println("[MSG: New client connected]\r\n");
 			return false;
 		}
@@ -135,7 +128,8 @@ extern "C"
 			Serial.println("[MSG: WiFi manager up]");
 			Serial.println("[MSG: Setup page @ 192.168.4.1]");
 		}
-		else{
+		else
+		{
 			Serial.print(WiFi.localIP());
 		}
 
@@ -144,21 +138,6 @@ extern "C"
 		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 		httpServer.begin();
 #endif
-		esp8266_tx_buffer_counter = 0;
-	}
-
-	void esp8266_uart_flush(void)
-	{
-		Serial.println(esp8266_tx_buffer);
-		Serial.flush();
-#ifdef ENABLE_WIFI
-		if (esp8266_wifi_clientok())
-		{
-			serverClient.println(esp8266_tx_buffer);
-			serverClient.flush();
-		}
-#endif
-		esp8266_tx_buffer_counter = 0;
 	}
 
 	unsigned char esp8266_uart_read(void)
@@ -166,29 +145,55 @@ extern "C"
 		return (unsigned char)Serial.read();
 	}
 
-	void esp8266_uart_write(char c)
+#ifdef MCU_HAS_UART
+	void mcu_uart_putc(uint8_t c)
 	{
-		switch (c)
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		Serial.write(c);
+#endif
+	}
+
+	void mcu_uart_flush(void)
+	{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		if (mcu_uart_tx_tail != mcu_com_tx_head)
 		{
-		case '\n':
-		case '\r':
-			if (esp8266_tx_buffer_counter)
+			if (mcu_uart_tx_tail > mcu_com_tx_head)
 			{
-				esp8266_tx_buffer[esp8266_tx_buffer_counter] = 0;
-				esp8266_uart_flush();
-			}
-			break;
-		default:
-			if (esp8266_tx_buffer_counter >= (ESP8266_BUFFER_SIZE - 1))
-			{
-				esp8266_tx_buffer[esp8266_tx_buffer_counter] = 0;
-				esp8266_uart_flush();
+				Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
+				Serial.flush();
+				mcu_uart_tx_tail = 0;
 			}
 
-			esp8266_tx_buffer[esp8266_tx_buffer_counter++] = c;
-			break;
+			Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+			Serial.flush();
+			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
+#endif
 	}
+#endif
+
+#ifdef MCU_HAS_WIFI
+	void mcu_wifi_putc(uint8_t c)
+	{
+#ifdef ENABLE_WIFI
+		if (esp8266_wifi_clientok())
+		{
+			serverClient.write(c);
+		}
+#endif
+	}
+
+	void mcu_wifi_flush(void)
+	{
+#ifdef ENABLE_WIFI
+		if (esp8266_wifi_clientok())
+		{
+			serverClient.flush();
+		}
+#endif
+	}
+#endif
 
 	bool esp8266_uart_rx_ready(void)
 	{
@@ -202,17 +207,16 @@ extern "C"
 		return ((Serial.available() > 0) || wifiready);
 	}
 
-	bool esp8266_uart_tx_ready(void)
-	{
-		return (esp8266_tx_buffer_counter != ESP8266_BUFFER_SIZE);
-	}
-
 	void esp8266_uart_process(void)
 	{
 		while (Serial.available() > 0)
 		{
 			system_soft_wdt_feed();
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_com_rx_cb((uint8_t)Serial.read());
+#else
+			mcu_wifi_rx_cb((uint8_t)Serial.read());
+#endif
 		}
 
 #ifdef ENABLE_WIFI
@@ -223,7 +227,11 @@ extern "C"
 			while (serverClient.available() > 0)
 			{
 				system_soft_wdt_feed();
+#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
 				mcu_com_rx_cb((uint8_t)serverClient.read());
+#else
+				mcu_wifi_rx_cb((uint8_t)serverClient.read());
+#endif
 			}
 		}
 #endif

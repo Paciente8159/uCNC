@@ -992,10 +992,6 @@ extern "C"
 #define COM_PORT 0
 #endif
 
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
-#endif
-
 #define MCU_HAS_ONESHOT_TIMER
 
 // SPI
