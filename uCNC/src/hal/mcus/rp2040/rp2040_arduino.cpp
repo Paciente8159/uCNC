@@ -88,7 +88,7 @@ wifi_settings_t wifi_settings;
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 {
-	char str[TX_BUFFER_SIZE];
+	char str[128];
 	char arg[ARG_MAX_LEN];
 	char has_arg = (next_char == '=');
 	memset(arg, 0, sizeof(arg));
@@ -292,7 +292,7 @@ bool rp2040_wifi_clientok(void)
 #ifdef ENABLE_WIFI
 	static uint32_t next_info = 30000;
 	static bool connected = false;
-	char str[TX_BUFFER_SIZE];
+	char str[128];
 
 	if (!wifi_settings.wifi_on)
 	{
@@ -411,20 +411,14 @@ void mcu_wifi_flush(void)
 void mcu_bt_putc(uint8_t c)
 {
 #ifdef ENABLE_BLUETOOTH
-	if (SerialBT.hasClient())
-	{
 		SerialBT.write(c);
-	}
 #endif
 }
 
 void mcu_bt_flush(void)
 {
 #ifdef ENABLE_BLUETOOTH
-	if (SerialBT.hasClient())
-	{
-		SerialBT.flush();
-	}
+	SerialBT.flush();
 #endif
 }
 #endif
