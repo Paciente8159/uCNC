@@ -480,16 +480,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return esp8266_uart_tx_ready();
-}
-#endif
-
 // ISR
 /**
  * enables global interrupts on the MCU

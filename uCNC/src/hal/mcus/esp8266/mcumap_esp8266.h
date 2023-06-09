@@ -986,6 +986,7 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
 #ifndef COM_PORT

@@ -24,11 +24,8 @@
 
 #ifdef ENABLE_WIFI
 #include <ESP8266WiFi.h>
-#include <Hash.h>
-#include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPUpdateServer.h>
-#include <WiFiManager.h>
 
 #ifndef WIFI_PORT
 #define WIFI_PORT 23
@@ -42,6 +39,12 @@
 #define WIFI_PASS "pass"
 #endif
 
+#ifndef WIFI_SSID_MAX_LEN
+#define WIFI_SSID_MAX_LEN 32
+#endif
+
+#define ARG_MAX_LEN WIFI_SSID_MAX_LEN
+
 ESP8266WebServer httpServer(80);
 ESP8266HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
@@ -50,41 +53,233 @@ const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
-WiFiManager wifiManager;
+
+typedef struct
+{
+	uint8_t wifi_on;
+	uint8_t wifi_mode;
+	char ssid[WIFI_SSID_MAX_LEN];
+	char pass[WIFI_SSID_MAX_LEN];
+} wifi_settings_t;
+
+uint16_t wifi_settings_offset;
+wifi_settings_t wifi_settings;
 #endif
 
 extern "C"
 {
 #include "../../../cnc.h"
 
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
+	{
+		char str[TX_BUFFER_SIZE];
+		char arg[ARG_MAX_LEN];
+		char has_arg = (next_char == '=');
+		memset(arg, 0, sizeof(arg));
+		if (has_arg)
+		{
+			char c = serial_getc();
+			uint8_t i = 0;
+			while (c)
+			{
+				arg[i++] = c;
+				if (i >= ARG_MAX_LEN)
+				{
+					return STATUS_INVALID_STATEMENT;
+				}
+				c = serial_getc();
+			}
+		}
+
+#ifdef ENABLE_WIFI
+		if (!strncmp(grbl_cmd_str, "WIFI", 4))
+		{
+			if (!strcmp(&grbl_cmd_str[4], "ON"))
+			{
+				WiFi.disconnect();
+				switch (wifi_settings.wifi_mode)
+				{
+				case 1:
+					WiFi.mode(WIFI_STA);
+					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+					protocol_send_feedback("Trying to connect to WiFi");
+					break;
+				case 2:
+					WiFi.mode(WIFI_AP);
+					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+					protocol_send_feedback("AP started");
+					protocol_send_feedback("SSID>" BOARD_NAME);
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					break;
+				default:
+					WiFi.mode(WIFI_AP_STA);
+					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+					protocol_send_feedback("Trying to connect to WiFi");
+					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+					protocol_send_feedback("AP started");
+					protocol_send_feedback("SSID>" BOARD_NAME);
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					break;
+				}
+
+				wifi_settings.wifi_on = 1;
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "OFF"))
+			{
+				WiFi.disconnect();
+				wifi_settings.wifi_on = 0;
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "SSID"))
+			{
+				if (has_arg)
+				{
+					uint8_t len = strlen(arg);
+					if (len > WIFI_SSID_MAX_LEN)
+					{
+						protocol_send_feedback("WiFi SSID is too long");
+					}
+					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
+					strcpy(wifi_settings.ssid, arg);
+					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+					protocol_send_feedback("WiFi SSID modified");
+				}
+				else
+				{
+					sprintf(str, "SSID>%s", wifi_settings.ssid);
+					protocol_send_feedback(str);
+				}
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "SCAN"))
+			{
+				// Serial.println("[MSG:Scanning Networks]");
+				protocol_send_feedback("Scanning Networks");
+				int numSsid = WiFi.scanNetworks();
+				if (numSsid == -1)
+				{
+					protocol_send_feedback("Failed to scan!");
+					while (true)
+						;
+				}
+
+				// print the list of networks seen:
+				sprintf(str, "%d available networks", numSsid);
+				protocol_send_feedback(str);
+
+				// print the network number and name for each network found:
+				for (int netid = 0; netid < numSsid; netid++)
+				{
+					sprintf(str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
+					protocol_send_feedback(str);
+				}
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "SAVE"))
+			{
+				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+				protocol_send_feedback("WiFi settings saved");
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "RESET"))
+			{
+				settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
+				memset(&wifi_settings, 0, sizeof(wifi_settings_t));
+				protocol_send_feedback("WiFi settings deleted");
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "MODE"))
+			{
+				if (has_arg)
+				{
+					int mode = atoi(arg) - 1;
+					if (mode >= 0)
+					{
+						wifi_settings.wifi_mode = mode;
+					}
+					else
+					{
+						protocol_send_feedback("Invalid value. STA+AP(1), STA(2), AP(3)");
+					}
+				}
+
+				switch (wifi_settings.wifi_mode)
+				{
+				case 0:
+					protocol_send_feedback("WiFi mode>STA+AP");
+					break;
+				case 1:
+					protocol_send_feedback("WiFi mode>STA");
+					break;
+				case 2:
+					protocol_send_feedback("WiFi mode>AP");
+					break;
+				}
+				return STATUS_OK;
+			}
+
+			if (!strcmp(&grbl_cmd_str[4], "PASS") && has_arg)
+			{
+				uint8_t len = strlen(arg);
+				if (len > WIFI_SSID_MAX_LEN)
+				{
+					protocol_send_feedback("WiFi pass is too long");
+				}
+				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
+				strcpy(wifi_settings.pass, arg);
+				protocol_send_feedback("WiFi password modified");
+				return STATUS_OK;
+			}
+		}
+#endif
+		return STATUS_INVALID_STATEMENT;
+	}
+#endif
+
 	bool esp8266_wifi_clientok(void)
 	{
 #ifdef ENABLE_WIFI
+		static uint32_t next_info = 30000;
 		static bool connected = false;
-		static bool process_busy = false;
-		static uint32_t next_info = 0;
+		char str[TX_BUFFER_SIZE];
 
-		if (WiFi.status() != WL_CONNECTED && next_info < mcu_millis())
+		if (!wifi_settings.wifi_on)
 		{
-			next_info = mcu_millis() + 30000;
+			return false;
+		}
+
+		if ((WiFi.status() != WL_CONNECTED))
+		{
 			connected = false;
-			if (process_busy)
+			if (next_info > mcu_millis())
 			{
 				return false;
 			}
-			process_busy = true;
-			Serial.println("[MSG:Disconnected from WiFi]");
-			process_busy = false;
+			next_info = mcu_millis() + 30000;
+			protocol_send_feedback("Disconnected from WiFi");
 			return false;
 		}
 
 		if (!connected)
 		{
 			connected = true;
-			Serial.println("[MSG: WiFi AP connected]");
-			Serial.print("[MSG: Board IP @ ");
-			Serial.print(WiFi.localIP());
-			Serial.println("]");
+			protocol_send_feedback("Connected to WiFi");
+			sprintf(str, "SSID>%s", wifi_settings.ssid);
+			protocol_send_feedback(str);
+			sprintf(str, "IP>%s", WiFi.localIP().toString().c_str());
+			protocol_send_feedback(str);
 		}
 
 		if (server.hasClient())
@@ -96,8 +291,8 @@ extern "C"
 					serverClient.stop();
 				}
 			}
-			serverClient = server.accept();
-			serverClient.println("[MSG: New client connected]\r\n");
+			serverClient = server.available();
+			serverClient.println("[MSG:New client connected]");
 			return false;
 		}
 		else if (serverClient)
@@ -116,33 +311,24 @@ extern "C"
 		Serial.begin(baud);
 #ifdef ENABLE_WIFI
 		WiFi.setSleepMode(WIFI_NONE_SLEEP);
-#ifdef WIFI_DEBUG
-		wifiManager.setDebugOutput(true);
-#else
-		wifiManager.setDebugOutput(false);
-#endif
-		wifiManager.setConfigPortalBlocking(false);
-		wifiManager.setConfigPortalTimeout(30);
-		if (!wifiManager.autoConnect("ESP8266"))
+
+		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			Serial.println("[MSG: WiFi manager up]");
-			Serial.println("[MSG: Setup page @ 192.168.4.1]");
-		}
-		else
-		{
-			Serial.print(WiFi.localIP());
+			settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
+			memset(&wifi_settings, 0, sizeof(wifi_settings_t));
 		}
 
+		WiFi.begin();
+		if (!wifi_settings.wifi_on)
+		{
+			WiFi.disconnect();
+		}
 		server.begin();
 		server.setNoDelay(true);
 		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
 		httpServer.begin();
 #endif
-	}
-
-	unsigned char esp8266_uart_read(void)
-	{
-		return (unsigned char)Serial.read();
 	}
 
 #ifdef MCU_HAS_UART
@@ -169,6 +355,8 @@ extern "C"
 			Serial.flush();
 			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
+#else
+		Serial.flush();
 #endif
 	}
 #endif
@@ -215,12 +403,11 @@ extern "C"
 #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_com_rx_cb((uint8_t)Serial.read());
 #else
-			mcu_uart_rx_cb((uint8_t)Serial.read());
+		mcu_uart_rx_cb((uint8_t)Serial.read());
 #endif
 		}
 
 #ifdef ENABLE_WIFI
-		wifiManager.process();
 		httpServer.handleClient();
 		if (esp8266_wifi_clientok())
 		{
