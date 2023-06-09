@@ -863,42 +863,58 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #endif
 
 /*UART*/
-static char mcu_tx_buffer[TX_BUFFER_SIZE + 2];
-static uint8_t mcu_tx_buffer_counter;
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return (mcu_tx_buffer_counter < TX_BUFFER_SIZE);
-}
-#endif
 
 /**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
-#ifndef mcu_putc
-
-void mcu_putc(char c)
-{
-	mcu_tx_buffer[mcu_tx_buffer_counter++] = c;
-
-	// autoflush if full
-	if ((mcu_tx_buffer_counter >= TX_BUFFER_SIZE) || (c == '\n'))
-	{
-		mcu_tx_buffer[mcu_tx_buffer_counter] = 0;
 #ifdef MCU_HAS_UART
-		uart_write_bytes(COM_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
+void mcu_uart_putc(uint8_t c)
+{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	uart_write_bytes(COM_PORT, &c, 1);
 #endif
-#ifdef MCU_HAS_UART2
-		uart_write_bytes(COM2_PORT, mcu_tx_buffer, mcu_tx_buffer_counter);
-#endif
-		esp32_wifi_bt_flush(mcu_tx_buffer);
-		mcu_tx_buffer_counter = 0;
+}
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if (mcu_uart_tx_tail != mcu_com_tx_head)
+	{
+		if (mcu_uart_tx_tail > mcu_com_tx_head)
+		{
+			uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
+			mcu_uart_tx_tail = 0;
+		}
+
+		uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+		mcu_uart_tx_tail = mcu_com_tx_head;
 	}
+#endif
+}
+#endif
+
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	uart_write_bytes(COM2_PORT, &c, 1);
+#endif
+}
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if (mcu_uart2_tx_tail != mcu_com_tx_head)
+	{
+		if (mcu_uart2_tx_tail > mcu_com_tx_head)
+		{
+			uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (TX_BUFFER_SIZE - mcu_uart2_tx_tail));
+			mcu_uart2_tx_tail = 0;
+		}
+
+		uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (mcu_com_tx_head - mcu_uart2_tx_tail));
+		mcu_uart2_tx_tail = mcu_com_tx_head;
+	}
+#endif
 }
 #endif
 
@@ -1057,7 +1073,7 @@ void mcu_dotasks(void)
 	rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_com_rx_cb((unsigned char)rxdata[i]);
+		mcu_com_rx_cb((uint8_t)rxdata[i]);
 	}
 #endif
 #if defined(MCU_HAS_UART2)
@@ -1065,7 +1081,7 @@ void mcu_dotasks(void)
 #if !defined(UART2_DETACH_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_com_rx_cb((unsigned char)rxdata[i]);
+		mcu_com_rx_cb((uint8_t)rxdata[i]);
 	}
 #else
 #ifdef UART2_PASSTHROUGH
@@ -1073,7 +1089,7 @@ void mcu_dotasks(void)
 #endif
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_uart_rx_cb((unsigned char)rxdata[i]);
+		mcu_uart_rx_cb((uint8_t)rxdata[i]);
 	}
 #endif
 #endif

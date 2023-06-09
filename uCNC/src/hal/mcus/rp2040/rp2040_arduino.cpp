@@ -444,7 +444,7 @@ void rp2040_wifi_bt_process(void)
 	{
 		while (serverClient.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)serverClient.read());
+			mcu_com_rx_cb((uint8_t)serverClient.read());
 		}
 	}
 
@@ -454,7 +454,7 @@ void rp2040_wifi_bt_process(void)
 #ifdef ENABLE_BLUETOOTH
 	while (SerialBT.available() > 0)
 	{
-		mcu_com_rx_cb((unsigned char)SerialBT.read());
+		mcu_com_rx_cb((uint8_t)SerialBT.read());
 	}
 #endif
 }
@@ -557,21 +557,21 @@ extern "C"
 #ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)Serial.read());
+			mcu_com_rx_cb((uint8_t)Serial.read());
 		}
 #endif
 
 #ifdef MCU_HAS_UART
 		while (COM_UART.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)COM_UART.read());
+			mcu_com_rx_cb((uint8_t)COM_UART.read());
 		}
 #endif
 
 #if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
 		while (COM2_UART.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)COM2_UART.read());
+			mcu_com_rx_cb((uint8_t)COM2_UART.read());
 		}
 #endif
 

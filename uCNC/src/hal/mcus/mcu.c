@@ -780,10 +780,6 @@ void mcu_putc(uint8_t c)
 
 	mcu_com_tx_buffer[mcu_com_tx_head] = c;
 	mcu_com_tx_head = write;
-	if (c == '\n')
-	{
-		mcu_flush();
-	}
 #endif
 }
 

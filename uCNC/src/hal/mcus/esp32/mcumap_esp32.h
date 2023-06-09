@@ -2703,9 +2703,9 @@ extern "C"
 #endif
 
 // force sync TX anyway
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
-#endif
+// #ifndef ENABLE_SYNC_TX
+// #define ENABLE_SYNC_TX
+// #endif
 
 #ifndef PWM_TIMER
 #define PWM_TIMER 0

@@ -212,7 +212,7 @@ extern "C"
 		while (Serial.available() > 0)
 		{
 			system_soft_wdt_feed();
-			mcu_com_rx_cb((unsigned char)Serial.read());
+			mcu_com_rx_cb((uint8_t)Serial.read());
 		}
 
 #ifdef ENABLE_WIFI
@@ -223,7 +223,7 @@ extern "C"
 			while (serverClient.available() > 0)
 			{
 				system_soft_wdt_feed();
-				mcu_com_rx_cb((unsigned char)serverClient.read());
+				mcu_com_rx_cb((uint8_t)serverClient.read());
 			}
 		}
 #endif

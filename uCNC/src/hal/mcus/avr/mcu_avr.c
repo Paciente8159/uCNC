@@ -7,8 +7,7 @@
 								void mcu_step_cb();
 								void mcu_step_reset_cb();
 						serial.h
-								void mcu_com_rx_cb(unsinged char c);
-								char mcu_com_tx_cb();
+								void mcu_com_rx_cb(uint8_t c);
 						trigger_control.h
 								void mcu_limits_changed_cb();
 								void mcu_controls_changed_cb();

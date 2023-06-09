@@ -51,7 +51,7 @@ extern "C"
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c);
+	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
 	MCU_TX_CALLBACK void mcu_com_tx_cb();
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
@@ -204,35 +204,6 @@ extern "C"
  * */
 #ifndef mcu_get_servo
 	uint8_t mcu_get_servo(uint8_t servo);
-#endif
-
-/**
- * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
- * can be defined either as a function or a macro call
- * */
-#ifndef ENABLE_SYNC_TX
-#ifndef TX_BUFFER_SIZE
-#ifndef ECHO_CMD
-#define TX_BUFFER_SIZE 114 // buffer sizes
-#else
-#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 114) // buffer sizes
-#endif
-#endif
-	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
-	extern volatile uint8_t mcu_com_tx_head;
-#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	extern uint8_t mcu_uart_tx_tail;
-#endif
-#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	extern uint8_t mcu_uart2_tx_tail;
-#endif
-#endif
-#ifndef mcu_putc
-	void mcu_putc(uint8_t c);
-#endif
-
-#ifndef mcu_flush
-	void mcu_flush(void);
 #endif
 
 // ISR
@@ -516,6 +487,35 @@ extern "C"
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+#endif
+
+/**
+ * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef ENABLE_SYNC_TX
+#ifndef TX_BUFFER_SIZE
+#ifndef ECHO_CMD
+#define TX_BUFFER_SIZE 114 // buffer sizes
+#else
+#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 114) // buffer sizes
+#endif
+#endif
+	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
+	extern volatile uint8_t mcu_com_tx_head;
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart_tx_tail;
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart2_tx_tail;
+#endif
+#endif
+#ifndef mcu_putc
+	void mcu_putc(uint8_t c);
+#endif
+
+#ifndef mcu_flush
+	void mcu_flush(void);
 #endif
 
 #ifdef MCU_HAS_USB
