@@ -215,7 +215,7 @@ extern "C"
 #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_com_rx_cb((uint8_t)Serial.read());
 #else
-			mcu_wifi_rx_cb((uint8_t)Serial.read());
+			mcu_uart_rx_cb((uint8_t)Serial.read());
 #endif
 		}
 

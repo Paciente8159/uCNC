@@ -360,33 +360,6 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 }
 #endif
 
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return rp2040_uart_tx_ready();
-}
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-
-void mcu_putc(char c)
-{
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-
-	rp2040_uart_write(c);
-}
-#endif
-
 // ISR
 /**
  * enables global interrupts on the MCU
