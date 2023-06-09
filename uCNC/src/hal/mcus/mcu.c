@@ -19,6 +19,7 @@
 #include "../../cnc.h"
 
 #ifndef ENABLE_SYNC_TX
+uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
 volatile uint8_t mcu_com_tx_head;
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 uint8_t mcu_uart_tx_tail;
