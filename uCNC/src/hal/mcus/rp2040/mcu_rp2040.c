@@ -37,13 +37,6 @@ extern uint8_t rp2040_eeprom_read(uint16_t address);
 extern void rp2040_eeprom_write(uint16_t address, uint8_t value);
 extern void rp2040_eeprom_flush(void);
 
-#ifdef MCU_HAS_I2C
-extern void rp2040_i2c_init(uint32_t freq);
-extern void rp2040_spi_config(uint32_t freq);
-extern uint8_t rp2040_i2c_write(uint8_t data, bool send_start, bool send_stop);
-uint8_t rp2040_i2c_read(bool with_ack, bool send_stop);
-#endif
-
 uint8_t rp2040_pwm[16];
 
 void mcu_din_isr(void)
@@ -293,7 +286,7 @@ void mcu_init(void)
 	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
 #endif
 #ifdef MCU_HAS_SPI
-	rp2040_spi_init(SPI_FREQ, SPI_MODE);
+	mcu_spi_config(SPI_FREQ, SPI_MODE);
 #endif
 
 #ifdef MCU_HAS_I2C
@@ -357,33 +350,6 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
 	return 0;
-}
-#endif
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return rp2040_uart_tx_ready();
-}
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-
-void mcu_putc(char c)
-{
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-
-	rp2040_uart_write(c);
 }
 #endif
 

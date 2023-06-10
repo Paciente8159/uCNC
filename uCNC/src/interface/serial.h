@@ -35,11 +35,6 @@ extern "C"
 #define RX_BUFFER_CAPACITY 128
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
-#ifndef ECHO_CMD
-#define TX_BUFFER_SIZE (112 + SAFEMARGIN) // buffer sizes
-#else
-#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 112 + SAFEMARGIN) // buffer sizes
-#endif
 
 #define SERIAL_UART 0
 #define SERIAL_N0 1

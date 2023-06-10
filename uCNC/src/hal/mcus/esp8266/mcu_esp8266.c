@@ -46,11 +46,6 @@ static volatile bool esp8266_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 
 void esp8266_uart_init(int baud);
-char esp8266_uart_read(void);
-void esp8266_uart_write(char c);
-bool esp8266_uart_rx_ready(void);
-bool esp8266_uart_tx_ready(void);
-void esp8266_uart_flush(void);
 void esp8266_uart_process(void);
 
 #ifndef RAM_ONLY_SETTINGS
@@ -482,33 +477,6 @@ void mcu_set_pwm(uint8_t pwm, uint8_t value)
 uint8_t mcu_get_pwm(uint8_t pwm)
 {
 	return 0;
-}
-#endif
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-	return esp8266_uart_tx_ready();
-}
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-
-void mcu_putc(char c)
-{
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-		;
-#endif
-
-	esp8266_uart_write(c);
 }
 #endif
 

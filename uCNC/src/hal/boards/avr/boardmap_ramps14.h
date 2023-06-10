@@ -246,6 +246,14 @@ extern "C"
 
 #define ONESHOT_TIMER 4
 
+// #define RX2_BIT 0
+// #define TX2_BIT 1
+// #define RX2_PORT H
+// #define TX2_PORT H
+// #define RX2_PULLUP
+// // only uncomment this if other port other then 0 is used
+// #define UART2_PORT 2
+
 #ifdef __cplusplus
 }
 #endif

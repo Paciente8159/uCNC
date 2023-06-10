@@ -88,7 +88,7 @@ wifi_settings_t wifi_settings;
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 {
-	char str[TX_BUFFER_SIZE];
+	char str[128];
 	char arg[ARG_MAX_LEN];
 	char has_arg = (next_char == '=');
 	memset(arg, 0, sizeof(arg));
@@ -292,7 +292,7 @@ bool rp2040_wifi_clientok(void)
 #ifdef ENABLE_WIFI
 	static uint32_t next_info = 30000;
 	static bool connected = false;
-	char str[TX_BUFFER_SIZE];
+	char str[128];
 
 	if (!wifi_settings.wifi_on)
 	{
@@ -385,20 +385,43 @@ void rp2040_wifi_bt_init(void)
 #endif
 }
 
-void rp2040_wifi_bt_flush(char *buffer)
+#ifdef MCU_HAS_WIFI
+void mcu_wifi_putc(uint8_t c)
 {
 #ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
-		serverClient.println(buffer);
+		serverClient.write(c);
+	}
+#endif
+}
+
+void mcu_wifi_flush(void)
+{
+#ifdef ENABLE_WIFI
+	if (rp2040_wifi_clientok())
+	{
 		serverClient.flush();
 	}
 #endif
+}
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+void mcu_bt_putc(uint8_t c)
+{
 #ifdef ENABLE_BLUETOOTH
-	SerialBT.println(buffer);
+		SerialBT.write(c);
+#endif
+}
+
+void mcu_bt_flush(void)
+{
+#ifdef ENABLE_BLUETOOTH
 	SerialBT.flush();
 #endif
 }
+#endif
 
 unsigned char rp2040_wifi_bt_read(void)
 {
@@ -419,7 +442,7 @@ unsigned char rp2040_wifi_bt_read(void)
 	return (unsigned char)0;
 }
 
-bool rp2040_wifi_b_rx_ready(void)
+bool rp2040_wifi_bt_rx_ready(void)
 {
 	bool wifiready = false;
 #ifdef ENABLE_WIFI
@@ -444,7 +467,11 @@ void rp2040_wifi_bt_process(void)
 	{
 		while (serverClient.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)serverClient.read());
+#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+			mcu_com_rx_cb((uint8_t)serverClient.read());
+#else
+			mcu_wifi_rx_cb((uint8_t)serverClient.read());
+#endif
 		}
 	}
 
@@ -454,19 +481,16 @@ void rp2040_wifi_bt_process(void)
 #ifdef ENABLE_BLUETOOTH
 	while (SerialBT.available() > 0)
 	{
-		mcu_com_rx_cb((unsigned char)SerialBT.read());
+#ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+		mcu_com_rx_cb((uint8_t)SerialBT.read());
+#else
+		mcu_bt_rx_cb((uint8_t)SerialBT.read());
+#endif
 	}
 #endif
 }
 
 #endif
-
-#ifndef RP2040_BUFFER_SIZE
-#define RP2040_BUFFER_SIZE TX_BUFFER_SIZE
-#endif
-
-static char rp2040_tx_buffer[RP2040_BUFFER_SIZE];
-static uint8_t rp2040_tx_buffer_counter;
 
 extern "C"
 {
@@ -488,52 +512,75 @@ extern "C"
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_init();
 #endif
-		rp2040_tx_buffer_counter = 0;
 	}
 
-	void rp2040_uart_flush(void)
-	{
 #ifdef MCU_HAS_USB
-		Serial.println(rp2040_tx_buffer);
-		Serial.flush();
-#endif
-#ifdef MCU_HAS_UART
-		COM_UART.println(rp2040_tx_buffer);
-		COM_UART.flush();
-#endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-		COM2_UART.println(rp2040_tx_buffer);
-		COM2_UART.flush();
-#endif
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_flush(rp2040_tx_buffer);
-#endif
-		rp2040_tx_buffer_counter = 0;
-	}
-
-	void rp2040_uart_write(char c)
+	void mcu_usb_putc(uint8_t c)
 	{
-		switch (c)
+		Serial.write(c);
+	}
+
+	void mcu_usb_flush(void)
+	{
+		Serial.flush();
+	}
+#endif
+
+#ifdef MCU_HAS_UART
+	void mcu_uart_putc(uint8_t c)
+	{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		COM_UART.write(c);
+#endif
+	}
+
+	void mcu_uart_flush(void)
+	{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		if (mcu_uart_tx_tail != mcu_com_tx_head)
 		{
-		case '\n':
-		case '\r':
-			if (rp2040_tx_buffer_counter)
+			if (mcu_uart_tx_tail > mcu_com_tx_head)
 			{
-				rp2040_tx_buffer[rp2040_tx_buffer_counter] = 0;
-				rp2040_uart_flush();
-			}
-			break;
-		default:
-			if (rp2040_tx_buffer_counter >= (RP2040_BUFFER_SIZE - 1))
-			{
-				rp2040_tx_buffer[rp2040_tx_buffer_counter] = 0;
-				rp2040_uart_flush();
+				COM_UART.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
+				COM_UART.flush();
+				mcu_uart_tx_tail = 0;
 			}
 
-			rp2040_tx_buffer[rp2040_tx_buffer_counter++] = c;
-			break;
+			COM_UART.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+			COM_UART.flush();
+			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
+#endif
 	}
+#endif
+
+#ifdef MCU_HAS_UART2
+	void mcu_uart2_putc(uint8_t c)
+	{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+		COM2_UART.write(c);
+#endif
+	}
+
+	void mcu_uart2_flush(void)
+	{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+		if (mcu_uart2_tx_tail != mcu_com_tx_head)
+		{
+			if (mcu_uart2_tx_tail > mcu_com_tx_head)
+			{
+				COM2_UART.write(&mcu_com_tx_buffer[mcu_uart2_tx_tail], (TX_BUFFER_SIZE - mcu_uart2_tx_tail));
+				COM2_UART.flush();
+				mcu_uart2_tx_tail = 0;
+			}
+
+			COM2_UART.write(&mcu_com_tx_buffer[mcu_uart2_tx_tail], (mcu_com_tx_head - mcu_uart2_tx_tail));
+			COM2_UART.flush();
+			mcu_uart2_tx_tail = mcu_com_tx_head;
+		}
+#endif
+	}
+#endif
 
 	bool rp2040_uart_rx_ready(void)
 	{
@@ -541,15 +588,10 @@ extern "C"
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 		if (rp2040_wifi_clientok())
 		{
-			wifiready = (rp2040_wifi_b_rx_ready() > 0);
+			wifiready = (rp2040_wifi_bt_rx_ready() > 0);
 		}
 #endif
 		return ((Serial.available() > 0) || wifiready);
-	}
-
-	bool rp2040_uart_tx_ready(void)
-	{
-		return (rp2040_tx_buffer_counter != RP2040_BUFFER_SIZE);
 	}
 
 	void rp2040_uart_process(void)
@@ -557,21 +599,33 @@ extern "C"
 #ifdef MCU_HAS_USB
 		while (Serial.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)Serial.read());
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+			mcu_com_rx_cb((uint8_t)Serial.read());
+#else
+			mcu_usb_rx_cb((uint8_t)Serial.read());
+#endif
 		}
 #endif
 
 #ifdef MCU_HAS_UART
 		while (COM_UART.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)COM_UART.read());
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+			mcu_com_rx_cb((uint8_t)COM_UART.read());
+#else
+			mcu_uart_rx_cb((uint8_t)COM_UART.read());
+#endif
 		}
 #endif
 
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
+#ifdef MCU_HAS_UART2
 		while (COM2_UART.available() > 0)
 		{
-			mcu_com_rx_cb((unsigned char)COM2_UART.read());
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+			mcu_com_rx_cb((uint8_t)COM2_UART.read());
+#else
+			mcu_uart2_rx_cb((uint8_t)COM2_UART.read());
+#endif
 		}
 #endif
 
@@ -580,30 +634,6 @@ extern "C"
 #endif
 	}
 }
-
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	COM2_UART.write(c);
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!COM2_UART.available())
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-
-	return (uint8_t)(0xFF & COM2_UART.read());
-}
-#endif
-#endif
 
 /**
  *
@@ -650,18 +680,18 @@ extern "C"
 #include <SPI.h>
 extern "C"
 {
-	static void rp2040_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(uint8_t mode, uint32_t freq)
 	{
-		COM_SPI.setRX(SPI_SDI);
-		COM_SPI.setTX(SPI_SDO);
-		COM_SPI.setSCK(SPI_CLK);
-		COM_SPI.setCS(SPI_CS);
+		COM_SPI.setRX(SPI_SDI_BIT);
+		COM_SPI.setTX(SPI_SDO_BIT);
+		COM_SPI.setSCK(SPI_CLK_BIT);
+		COM_SPI.setCS(SPI_CS_BIT);
 		COM_SPI.end();
 		COM_SPI.begin();
 		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
 	}
 
-	static uint8_t rp2040_spi_xmit(uint8_t data)
+	uint8_t mcu_spi_xmit(uint8_t data)
 	{
 		return COM_SPI.transfer(data);
 	}
@@ -698,14 +728,12 @@ extern "C"
 
 	void mcu_i2c_config(uint32_t frequency)
 	{
-		I2C_REG.setSDA(I2C_DATA);
-		I2C_REG.setSCL(I2C_CLK);
-		I2C_REG.setClock(frequency);
+		I2C_REG.setSDA(I2C_DATA_BIT);
+		I2C_REG.setSCL(I2C_CLK_BIT);
 #if I2C_ADDRESS == 0
 		I2C_REG.setClock(frequency);
 		I2C_REG.begin();
 #else
-		I2C_REG.setClock(frequency);
 		I2C_REG.onReceive(rp2040_i2c_onreceive);
 		I2C_REG.onRequest(rp2040_i2c_onrequest);
 		I2C_REG.begin(I2C_ADDRESS);

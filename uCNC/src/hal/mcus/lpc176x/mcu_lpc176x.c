@@ -26,8 +26,6 @@
 #ifdef USE_ARDUINO_CDC
 extern void mcu_usb_dotasks(void);
 extern void mcu_usb_init(void);
-extern void mcu_usb_putc(char c);
-extern void mcu_usb_flush(void);
 extern char mcu_usb_getc(void);
 extern uint8_t mcu_usb_available(void);
 extern uint8_t mcu_usb_tx_available(void);
@@ -254,15 +252,19 @@ void MCU_COM_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
+#else
+		mcu_uart_rx_cb(c);
+#endif
 	}
 
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	if (irqstatus == UART_IIR_INTID_THRE)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 		COM_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_com_tx_cb();
+		mcu_uart_flush();
 	}
 #endif
 
@@ -295,22 +297,19 @@ void MCU_COM2_ISR(void)
 	if (irqstatus == UART_IIR_INTID_RDA)
 	{
 		unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else
-#ifdef UART2_PASSTHROUGH
-		mcu_uart_putc(c);
-#endif
-		mcu_uart_rx_cb(c);
+		mcu_uart2_rx_cb(c);
 #endif
 	}
 
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (irqstatus == UART_IIR_INTID_THRE)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 		COM2_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_com_tx_cb();
+		mcu_uart2_flush();
 	}
 #endif
 
@@ -552,67 +551,81 @@ uint8_t mcu_get_servo(uint8_t servo)
 #endif
 
 /**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-bool mcu_tx_ready(void)
-{
-}
-#endif
-
-/**
  * sends a char either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
-#ifndef mcu_putc
-void mcu_putc(char c)
-{
-#ifdef ENABLE_SYNC_TX
-	while (!mcu_tx_ready())
-	{
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-		mcu_usb_flush();
-#else
-		tusb_cdc_flush();
-#endif
-#endif
-	}
-#endif
-
 #ifdef MCU_HAS_UART
+void mcu_uart_putc(uint8_t c)
+{
+	while (!CHECKBIT(COM_UART->LSR, 5))
+		;
+
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	COM_UART->IER |= UART_IER_THREINT_EN;
 #endif
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(COM_UART->LSR, 5)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		uint8_t c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
 #endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	COM2_UART->IER |= UART_IER_THREINT_EN;
+	}
 #endif
+}
 #endif
 
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-	if (c != 0)
-	{
-		mcu_usb_putc(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		mcu_usb_flush();
-	}
-#else
-	if (c != 0)
-	{
-		tusb_cdc_write(c);
-	}
-	if (c == '\r' || c == 0)
-	{
-		tusb_cdc_flush();
-	}
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+	while (!CHECKBIT(COM2_UART->LSR, 5))
+		;
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	COM2_UART->IER |= UART_IER_THREINT_EN;
 #endif
+}
+
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(COM2_UART->LSR, 5)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart2_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		uint8_t c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart2_tx_tail = read;
+		mcu_uart2_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
+	}
 #endif
 }
 #endif
@@ -768,7 +781,11 @@ void mcu_dotasks()
 	while (mcu_usb_available())
 	{
 		unsigned char c = (unsigned char)mcu_usb_getc();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #else
 	tusb_cdc_flush();
@@ -777,7 +794,11 @@ void mcu_dotasks()
 	while (tusb_cdc_available())
 	{
 		unsigned char c = (unsigned char)tusb_cdc_read();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #endif
 #endif
@@ -1004,12 +1025,12 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
-	I2C_REG->I2CONSET &= ~I2C_I2CONSET_I2EN;
 	I2C_DeInit(I2C_REG);
 	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
 	PINSEL_ConfigPin(&scl);
 	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
 	PINSEL_ConfigPin(&sda);
+	I2C_Init(I2C_REG, frequency);
 #if I2C_ADDRESS != 0
 	I2C_OWNSLAVEADDR_CFG_Type i2c_slave = {0};
 	i2c_slave.SlaveAddr_7bit = I2C_ADDRESS;
@@ -1022,16 +1043,13 @@ void mcu_i2c_config(uint32_t frequency)
 #else
 	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
 #endif
-
-	I2C_Init(I2C_REG, frequency);
-	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
 }
 #endif
 
 #if I2C_ADDRESS != 0
 uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 
-ISR(TWI_vect)
+void I2C_ISR(void)
 {
 	static uint8_t index = 0;
 	static uint8_t datalen = 0;
@@ -1091,7 +1109,7 @@ ISR(TWI_vect)
 		I2Cx->I2SCLL = clkl;
 		I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
 		break;
-	default:  // other cases like reset data and prepare ACK to receive data
+	default: // other cases like reset data and prepare ACK to receive data
 		index = 0;
 		break;
 	}
@@ -1102,31 +1120,6 @@ ISR(TWI_vect)
 #endif
 // this is similar to AVR
 
-#endif
-
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	while (!(CHECKBIT(COM2_UART->LSR, 5)))
-		;
-	COM2_OUTREG = c;
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!(CHECKBIT(COM2_UART->LSR, 0)))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return (CHECKBIT(COM2_UART->LSR, 0) ? COM2_INREG : 0);
-}
-#endif
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
