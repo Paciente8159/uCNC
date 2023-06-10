@@ -465,10 +465,8 @@ void mcu_usb_flush(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	while (!(COM_UART->SR & USART_SR_TXE))
 		;
-#endif
 
 	COM_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -507,10 +505,8 @@ void mcu_uart_flush(void)
 
 void mcu_uart2_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	while (!(COM2_UART->SR & USART_SR_TXE))
 		;
-#endif
 
 	COM2_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)

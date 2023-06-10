@@ -380,7 +380,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 	mcu_uart_rx_cb(COM_INREG);
 #endif
 }
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 ISR(COM_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG, UDRIE_BIT);
@@ -399,7 +399,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 	mcu_uart2_rx_cb(COM2_INREG);
 #endif
 }
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);

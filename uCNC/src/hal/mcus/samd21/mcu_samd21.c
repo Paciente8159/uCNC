@@ -220,7 +220,7 @@ void mcu_com_isr()
 		mcu_uart_rx_cb(c);
 #endif
 	}
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
 	{
 		COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
@@ -245,7 +245,7 @@ void mcu_com2_isr()
 		mcu_uart2_rx_cb(c);
 #endif
 	}
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
 	{
 		COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
@@ -743,10 +743,8 @@ void mcu_usb_flush(void)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
 	while (!(COM_UART->USART.INTFLAG.bit.DRE))
 		;
-#endif
 
 	COM_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -783,10 +781,8 @@ void mcu_uart_flush(void)
 #ifdef MCU_HAS_UART2
 void mcu_uart2_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
 	while (!(COM2_UART->USART.INTFLAG.bit.DRE))
 		;
-#endif
 
 	COM2_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)

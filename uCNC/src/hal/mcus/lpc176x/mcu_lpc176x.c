@@ -259,7 +259,7 @@ void MCU_COM_ISR(void)
 #endif
 	}
 
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	if (irqstatus == UART_IIR_INTID_THRE)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
@@ -304,7 +304,7 @@ void MCU_COM2_ISR(void)
 #endif
 	}
 
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (irqstatus == UART_IIR_INTID_THRE)
 	{
 		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
@@ -557,10 +557,8 @@ uint8_t mcu_get_servo(uint8_t servo)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
 	while (!CHECKBIT(COM_UART->LSR, 5))
 		;
-#endif
 
 	COM_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -597,10 +595,8 @@ void mcu_uart_flush(void)
 #ifdef MCU_HAS_UART2
 void mcu_uart2_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
 	while (!CHECKBIT(COM2_UART->LSR, 5))
 		;
-#endif
 
 	COM2_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
