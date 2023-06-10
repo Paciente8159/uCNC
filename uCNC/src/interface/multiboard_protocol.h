@@ -91,7 +91,6 @@ extern "C"
 #define MULTIBOARD_CMD_ITP_RUN 0x86
 #define MULTIBOARD_CMD_ITP_POS_RESET 0x87
 
-    void multiboard_rcv_byte_cb(unsigned char c);
 #ifndef IS_MASTER_BOARD
     void multiboard_slave_dotasks(void);
 #else

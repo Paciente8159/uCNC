@@ -543,8 +543,10 @@ extern "C"
 #define ENABLE_MULTIBOARD
 #ifdef ENABLE_MULTIBOARD
 #ifndef IS_MASTER_BOARD
-// #define IS_MASTER_BOARD
+#define IS_MASTER_BOARD
 #endif
+
+#define DETACH_UART_FROM_MAIN_PROTOCOL
 #endif
 
 /**

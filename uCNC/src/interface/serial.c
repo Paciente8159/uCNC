@@ -24,7 +24,7 @@ static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 static uint8_t serial_rx_read;
 static volatile uint8_t serial_rx_write;
 static volatile uint8_t serial_rx_overflow;
-
+#endif
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
 
@@ -388,11 +388,6 @@ MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 	{
 		cnc_call_rt_command((uint8_t)c);
 	}
-#else
-#ifdef ENABLE_MULTIBOARD
-	// re-route this call
-	multiboard_rcv_byte_cb(c);
-#endif
 #endif
 }
 

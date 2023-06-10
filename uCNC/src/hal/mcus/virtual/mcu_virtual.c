@@ -305,17 +305,17 @@ void *ioserver(void *args)
  * Comunications can be done via console, sockets or serial port
  * */
 #ifdef MCU_HAS_UART2
-volatile bool uart2_rx_ready = false;
-volatile uint8_t uart2_rx_last = 0;
-void win_uart_rcv_callback(uint8_t c)
-{
-	uart2_rx_ready = true;
-	uart2_rx_last = c;
-	if (mcu_uart_rcv_cb)
-	{
-		mcu_uart_rcv_cb(c);
-	}
-}
+//volatile bool uart2_rx_ready = false;
+//volatile uint8_t uart2_rx_last = 0;
+//void win_uart_rcv_callback(uint8_t c)
+//{
+//	uart2_rx_ready = true;
+//	uart2_rx_last = c;
+//	if (mcu_uart_rcv_cb)
+//	{
+//		mcu_uart_rcv_cb(c);
+//	}
+//}
 
 int16_t mcu_uart_getc(uint32_t timeout)
 {
@@ -603,22 +603,25 @@ void virtualconsoleclient(void)
 
 void com_init(void)
 {
+#ifdef IS_MASTER_BOARD
 	uart0.io.rx.rxHandler = mcu_com_rx_cb;
 	uart0.io.tx.len = 0;
 
 #ifdef USESOCKETS
+	memcpy(uart0.io.portname, "23\0", strlen("23\0"));
 	socket_init(&uart0);
 #elif defined(USESERIAL)
 	uart_init(&uart0);
 #elif defined(USECONSOLE)
 	console_init(&uart0);
 #endif
+#endif
 
 #ifdef MCU_HAS_UART2
 	uart2.io.rx.rxHandler = mcu_uart_rx_cb;
 	uart2.io.tx.len = 0;
-	mcu_uart_rcv_cb = win_uart_rcv_callback;
-	memcpy(uart2.io.portname, "\\\\.\\COM7\0", strlen("\\\\.\\COM7\0"));
+	mcu_uart_rcv_cb = mcu_uart2_rx_cb;
+	memcpy(uart2.io.portname, "\\\\.\\" str(WIN_COM_NAME), strlen("\\\\.\\" str(WIN_COM_NAME)));
 	uart_init(&uart2);
 #endif
 }
@@ -626,6 +629,11 @@ void com_init(void)
 void com_send(char *buff, int len)
 {
 	port_write(&uart0, buff, len);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	port_write(&uart2, (char *)&c, 1);
 }
 
 // UART communication

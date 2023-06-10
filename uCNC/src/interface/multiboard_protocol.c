@@ -22,12 +22,7 @@
 slave_board_io_t g_slave_io;
 static multiboard_data_t multiboard_data;
 
-MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
-{
-    multiboard_rcv_byte_cb(c);
-}
-
-void multiboard_rcv_byte_cb(unsigned char c)
+static FORCEINLINE void multiboard_rcv_byte_cb(unsigned char c)
 {
     static int8_t protocol_state = -3;
 
@@ -76,6 +71,11 @@ void multiboard_rcv_byte_cb(unsigned char c)
 }
 
 #ifndef IS_MASTER_BOARD
+// slave board rx callback
+MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
+{
+    multiboard_rcv_byte_cb(c);
+}
 
 static void multiboard_slave_send_sof(void)
 {
@@ -142,6 +142,12 @@ void multiboard_slave_dotasks(void)
 }
 
 #else
+
+// slave board rx callback
+MCU_RX_CALLBACK void mcu_uart2_rx_cb(unsigned char c)
+{
+    multiboard_rcv_byte_cb(c);
+}
 
 static uint8_t multiboard_master_get_response(uint8_t command, uint32_t timeout)
 {

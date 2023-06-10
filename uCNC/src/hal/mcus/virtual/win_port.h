@@ -5,7 +5,7 @@ typedef unsigned long(__attribute__((__stdcall__)) * port_callback)(void *);
 
 typedef struct win_port_rx_
 {
-    void *rxReady;
+    HANDLE rxReady;
     void (*rxHandler)(unsigned char);
 } win_port_rx_t;
 
