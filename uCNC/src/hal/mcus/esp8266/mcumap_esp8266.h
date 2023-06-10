@@ -986,14 +986,11 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
 #ifndef COM_PORT
 #define COM_PORT 0
-#endif
-
-#ifndef ENABLE_SYNC_TX
-#define ENABLE_SYNC_TX
 #endif
 
 #define MCU_HAS_ONESHOT_TIMER

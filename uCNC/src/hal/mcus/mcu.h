@@ -51,7 +51,7 @@ extern "C"
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c);
+	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
 	MCU_TX_CALLBACK void mcu_com_tx_cb();
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
@@ -204,21 +204,6 @@ extern "C"
  * */
 #ifndef mcu_get_servo
 	uint8_t mcu_get_servo(uint8_t servo);
-#endif
-
-/**
- * checks if the serial hardware of the MCU is ready do send the next char
- * */
-#ifndef mcu_tx_ready
-	bool mcu_tx_ready(void); // Start async send
-#endif
-
-/**
- * sends a char either via uart (hardware, software or USB virtual COM port)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-	void mcu_putc(char c);
 #endif
 
 // ISR
@@ -490,7 +475,7 @@ extern "C"
 #define I2C_SLAVE_BUFFER_SIZE 48
 #endif
 #ifndef mcu_i2c_slave_cb
-	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t* datalen);
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
 #endif
 #endif
 
@@ -504,18 +489,73 @@ extern "C"
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
+/**
+ * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef ENABLE_SYNC_TX
+#ifndef TX_BUFFER_SIZE
+#ifndef ECHO_CMD
+#define TX_BUFFER_SIZE 114 // buffer sizes
+#else
+#define TX_BUFFER_SIZE (RX_BUFFER_SIZE + 114) // buffer sizes
+#endif
+#endif
+	extern uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
+	extern volatile uint8_t mcu_com_tx_head;
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart_tx_tail;
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_uart2_tx_tail;
+#endif
+#endif
+#ifndef mcu_putc
+	void mcu_putc(uint8_t c);
+#endif
+
+#ifndef mcu_flush
+	void mcu_flush(void);
+#endif
+
+#ifdef MCU_HAS_USB
+	void mcu_usb_putc(uint8_t c);
+	void mcu_usb_flush(void);
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_UART
 	void mcu_uart_putc(uint8_t c);
-#endif
-#ifndef mcu_uart_getc
-	int16_t mcu_uart_getc(uint32_t timeout);
-#endif
-#ifndef mcu_uart_rx_cb
+	void mcu_uart_flush(void);
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
 #endif
-	typedef void (*mcu_uart_rcv_delegate)(uint8_t);
-	extern mcu_uart_rcv_delegate mcu_uart_rcv_cb;
+#endif
+
+#ifdef MCU_HAS_UART2
+	void mcu_uart2_putc(uint8_t c);
+	void mcu_uart2_flush(void);
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_WIFI
+	void mcu_wifi_putc(uint8_t c);
+	void mcu_wifi_flush(void);
+#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+	void mcu_bt_putc(uint8_t c);
+	void mcu_bt_flush(void);
+#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
+#endif
 #endif
 
 #ifdef __cplusplus

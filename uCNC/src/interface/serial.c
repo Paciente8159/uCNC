@@ -24,12 +24,6 @@ static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
 static uint8_t serial_rx_read;
 static volatile uint8_t serial_rx_write;
 static volatile uint8_t serial_rx_overflow;
-#ifndef ENABLE_SYNC_TX
-static unsigned char serial_tx_buffer[TX_BUFFER_SIZE];
-static volatile uint8_t serial_tx_read;
-static uint8_t serial_tx_write;
-#endif
-#endif
 
 static uint8_t serial_read_select;
 static uint16_t serial_read_index;
@@ -42,12 +36,6 @@ void serial_init(void)
 	serial_rx_write = 0;
 	serial_rx_read = 0;
 	memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
-
-#ifndef ENABLE_SYNC_TX
-	serial_tx_read = 0;
-	serial_tx_write = 0;
-	memset(serial_tx_buffer, 0, sizeof(serial_tx_buffer));
-#endif
 #endif
 }
 
@@ -184,39 +172,13 @@ void serial_inject_cmd(const char *__s)
 
 void serial_putc(unsigned char c)
 {
-#ifndef ENABLE_SYNC_TX
-	uint8_t write = serial_tx_write;
-	if (++write == TX_BUFFER_SIZE)
-	{
-		write = 0;
-	}
-	while (write == serial_tx_read)
-	{
-		cnc_status_report_lock = true;
-		cnc_dotasks();
-	} // while buffer is full
-
-	cnc_status_report_lock = false;
-
-	serial_tx_buffer[serial_tx_write] = c;
-	serial_tx_write = write;
-#ifndef DISABLE_GRBL_PROTOCOL
+	mcu_putc(c);
 	if (c == '\n')
 	{
 		serial_flush();
 	}
-#endif
-#else
-	while (!mcu_tx_ready())
-	{
-		cnc_status_report_lock = true;
-		cnc_dotasks();
-	}
-	cnc_status_report_lock = false;
-	mcu_putc(c);
 #if ASSERT_PIN(ACTIVITY_LED)
 	mcu_toggle_output(ACTIVITY_LED);
-#endif
 #endif
 }
 
@@ -363,12 +325,7 @@ void print_fltarr(print_cb cb, float *arr, uint8_t count)
 
 void serial_flush(void)
 {
-#ifndef ENABLE_SYNC_TX
-	if (serial_tx_write != serial_tx_read && mcu_tx_ready())
-	{
-		mcu_com_tx_cb();
-	}
-#endif
+	mcu_flush();
 }
 
 // ISR
@@ -435,28 +392,6 @@ MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
 #ifdef ENABLE_MULTIBOARD
 	// re-route this call
 	multiboard_rcv_byte_cb(c);
-#endif
-#endif
-}
-
-MCU_TX_CALLBACK void mcu_com_tx_cb(void)
-{
-#ifndef ENABLE_SYNC_TX
-	uint8_t read = serial_tx_read;
-	if (read == serial_tx_write)
-	{
-		return;
-	}
-
-	unsigned char c = serial_tx_buffer[read];
-	if (++read == TX_BUFFER_SIZE)
-	{
-		read = 0;
-	}
-	serial_tx_read = read;
-	mcu_putc(c);
-#if ASSERT_PIN(ACTIVITY_LED)
-	mcu_toggle_output(ACTIVITY_LED);
 #endif
 #endif
 }

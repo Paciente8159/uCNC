@@ -195,7 +195,7 @@ typedef struct virtual_map_t
 
 static volatile VIRTUAL_MAP virtualmap;
 
-void* ioserver(void *args)
+void *ioserver(void *args)
 {
 	HANDLE hPipe;
 	BOOL fSuccess = FALSE;
@@ -326,7 +326,278 @@ int16_t mcu_uart_getc(uint32_t timeout)
 			return -1;
 	}
 
-	return uart2_rx_last;
+	PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
+
+	dwStoredFlags = EV_RXCHAR;
+	if (!SetCommMask(hComm, dwStoredFlags))
+	{
+		fprintf(stderr, "Error setting COM mask\n");
+		CloseHandle(hComm);
+		return 1;
+	}
+
+	osStatus.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (osStatus.hEvent == NULL)
+	{
+		fprintf(stderr, "Error setting COM event\n");
+		CloseHandle(hComm);
+		return 1;
+	}
+
+	for (;;)
+	{
+		// Issue a status event check if one hasn't been issued already.
+		if (!fWaitingOnStat)
+		{
+			if (!WaitCommEvent(hComm, &dwCommEvent, &osStatus))
+			{
+				if (GetLastError() == ERROR_IO_PENDING)
+					fWaitingOnStat = TRUE;
+				// The original text is: bWaitingOnStatusHandle = TRUE;
+				else
+					// Error in WaitCommEvent function; abort.
+					break;
+			}
+		}
+
+		SetEvent(rxReady);
+		// Check on overlapped operation.
+		// if (fWaitingOnStat)
+		// {
+		// Wait a little while for an event to occur.
+		dwRes = WaitForSingleObject(osStatus.hEvent, INFINITE);
+		switch (dwRes)
+		{
+		// Event occurred.
+		case WAIT_OBJECT_0:
+			if (!GetOverlappedResult(hComm, &osStatus, &dwOvRes, FALSE))
+			{
+				// An error occurred in the overlapped operation;
+				// call GetLastError to find out what it was
+				// and abort if it is fatal.
+				fprintf(stderr, "Error %d in COM event", (int)GetLastError());
+				break;
+			}
+			else
+			{
+				// Status event is stored in the event flag
+				// specified in the original WaitCommEvent call.
+				// Deal with the status event as appropriate.
+				char recvbuf[256];
+				int recvbuflen = 256;
+				DWORD dwRead = 0;
+				switch (dwCommEvent)
+				{
+				case EV_RXCHAR:
+					do
+					{
+						if (ReadFile(hComm, &recvbuf, recvbuflen, &dwRead, &osStatus))
+						{
+							// Read a byte and process it.
+							recvbuflen = strlen(recvbuf);
+							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
+							for (int i = 0; i < recvbuflen; i++)
+							{
+								putchar(recvbuf[i]);
+								mcu_com_rx_cb(recvbuf[i]);
+							}
+							memset(recvbuf, 0, sizeof(recvbuf));
+						}
+						else
+						{
+							// An error occurred when calling the ReadFile function.
+							fprintf(stderr, "Error %d reading COM", (int)GetLastError());
+							break;
+						}
+
+					} while (dwRead);
+					break;
+				default:
+					break;
+				}
+			}
+
+			// Set fWaitingOnStat flag to indicate that a new
+			// WaitCommEvent is to be issued.
+			fWaitingOnStat = FALSE;
+			break;
+		}
+		// }
+	}
+
+	CloseHandle(osStatus.hEvent);
+}
+
+void virtualserialclient(void)
+{
+	DWORD dwWaitResult;
+	OVERLAPPED osWrite = {0};
+	char buffer[256];
+	int iSendResult;
+	int iResult;
+
+	DWORD dNoOfBytesWritten;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+		osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+				if (!WriteFile(hComm, com_buffer, iResult, &dNoOfBytesWritten, &osWrite))
+				{
+					if (GetLastError() != ERROR_IO_PENDING)
+					{
+						// WriteFile failed, but isn't delayed. Report error and abort.
+						fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
+					}
+				}
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", (int)GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Serial client thread error (%d)\n", (int)GetLastError());
+			return;
+		}
+
+		CloseHandle(osWrite.hEvent);
+		memset(com_buffer, 0, 256);
+		ReleaseMutex(bufferMutex);
+	}
+}
+
+#endif
+
+#ifdef USECONSOLE
+
+DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
+{
+	WSADATA wsaData;
+	int iResult;
+
+	SOCKET ListenSocket = INVALID_SOCKET;
+
+	struct addrinfo *result = NULL;
+	struct addrinfo hints;
+
+	int iSendResult;
+	char recvbuf[256];
+	int recvbuflen = 256;
+
+	memset(recvbuf, 0, sizeof(recvbuf));
+	SetEvent(rxReady);
+	// Receive until the peer shuts down the connection
+	do
+	{
+		unsigned char c = getchar();
+		switch (c)
+		{
+			//		 case '"':
+			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
+			//		 	mcu_controls_changed_cb();
+			//		 	break;
+			//		 case '%':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '&':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '/':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			// case '[':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case ']':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case '}':
+			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
+			// 	mcu_controls_changed_cb();
+			// 	break;
+		default:
+			mcu_com_rx_cb(c);
+			break;
+		}
+
+	} while (1);
+
+	return 0;
+}
+
+void virtualconsoleclient(void)
+{
+	DWORD dwWaitResult;
+	int iResult;
+
+	while (1)
+	{
+		dwWaitResult = WaitForSingleObject(
+			txReady,   // event handle
+			INFINITE); // indefinite wait
+
+		switch (dwWaitResult)
+		{
+		// Event object was signaled
+		case WAIT_OBJECT_0:
+			dwWaitResult = WaitForSingleObject(
+				bufferMutex, // handle to mutex
+				INFINITE);	 // no time-out interval
+
+			switch (dwWaitResult)
+			{
+			// The thread got ownership of the mutex
+			case WAIT_OBJECT_0:
+				iResult = strlen(com_buffer);
+				for (int k = 0; k < iResult; k++)
+				{
+					putchar(com_buffer[k]);
+				}
+				break;
+
+			// The thread got ownership of an abandoned mutex
+			case WAIT_ABANDONED:
+				printf("Wait error (%d)\n", (int)GetLastError());
+				return;
+			}
+
+			break;
+
+		// An error occurred
+		default:
+			printf("Serial client thread error (%d)\n", (int)GetLastError());
+			return 0;
+		}
+
+		memset(com_buffer, 0, 256);
+		ReleaseMutex(bufferMutex);
+	}
 }
 #endif
 
@@ -334,7 +605,7 @@ void com_init(void)
 {
 	uart0.io.rx.rxHandler = mcu_com_rx_cb;
 	uart0.io.tx.len = 0;
-	
+
 #ifdef USESOCKETS
 	socket_init(&uart0);
 #elif defined(USESERIAL)
@@ -355,11 +626,6 @@ void com_init(void)
 void com_send(char *buff, int len)
 {
 	port_write(&uart0, buff, len);
-}
-
-void mcu_uart_putc(uint8_t c)
-{
-	port_write(&uart2, (char*)&c, 1);
 }
 
 // UART communication
@@ -791,7 +1057,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 void mcu_enable_tx_isr(void)
 {
 #ifndef USECONSOLE
-	mcu_com_tx_cb();
+	// mcu_com_tx_cb();
 #endif
 	uart0.io.tx.len = 0;
 }
@@ -803,29 +1069,44 @@ void mcu_disable_tx_isr(void)
 
 bool mcu_tx_ready(void)
 {
-	return (uart0.io.tx.len==0);
+	return (uart0.io.tx.len == 0);
 }
 
-static char mcu_tx_buffer[256];
-void mcu_putc(char c)
+void mcu_uart_putc(uint8_t c)
 {
-	static int buff_index = 0;
-	if (c != 0)
-	{
-		//		while (!uart0.io.tx.len)
-		//			;
-		//		uart0.io.tx.len = false;
-
-		mcu_tx_buffer[buff_index++] = c;
-		if (c == '\n')
-		{
-			mcu_tx_buffer[buff_index++] = 0;
-			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
-			buff_index = 0;
-		}
-		putchar(c);
-	}
+#ifdef ENABLE_SYNC_TX
+	com_send(c, 1);
+#endif
 }
+void mcu_uart_flush(void)
+{
+#ifndef ENABLE_SYNC_TX
+	uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+	com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+#endif
+}
+
+// void mcu_putc(char c)
+//{
+//	static int buff_index = 0;
+//	if (c != 0)
+//	{
+//		//		while (!mcu_tx_empty)
+//		//			;
+//		//		mcu_tx_empty = false;
+//
+//		mcu_tx_buffer[buff_index++] = c;
+//		if (c == '\n')
+//		{
+//			mcu_tx_buffer[buff_index++] = 0;
+//			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
+//			buff_index = 0;
+//		}
+//		putchar(c);
+//	}
+//	mcu_tx_empty = true;
+//	mcu_tx_enabled = true;
+// }
 
 char mcu_getc(void)
 {

@@ -382,23 +382,49 @@ extern "C"
 #endif
 	}
 
-	void esp32_wifi_bt_flush(char *buffer)
+#ifdef MCU_HAS_WIFI
+	void mcu_wifi_putc(uint8_t c)
 	{
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			serverClient.println(buffer);
+			serverClient.write(c);
+		}
+#endif
+	}
+
+	void mcu_wifi_flush(void)
+	{
+#ifdef ENABLE_WIFI
+		if (esp32_wifi_clientok())
+		{
 			serverClient.flush();
 		}
 #endif
+	}
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+	void mcu_bt_putc(uint8_t c)
+	{
 #ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
-			SerialBT.println(buffer);
+			SerialBT.write(c);
+		}
+#endif
+	}
+
+	void mcu_bt_flush(void)
+	{
+#ifdef ENABLE_BLUETOOTH
+		if (SerialBT.hasClient())
+		{
 			SerialBT.flush();
 		}
 #endif
 	}
+#endif
 
 	unsigned char esp32_wifi_bt_read(void)
 	{
@@ -447,7 +473,11 @@ extern "C"
 			while (SerialBT.available() > 0)
 			{
 				esp_task_wdt_reset();
-				mcu_com_rx_cb((unsigned char)SerialBT.read());
+#ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+				mcu_com_rx_cb((uint8_t)SerialBT.read());
+#else
+				mcu_bt_rx_cb((uint8_t)SerialBT.read());
+#endif
 			}
 		}
 #endif
@@ -458,7 +488,11 @@ extern "C"
 			while (serverClient.available() > 0)
 			{
 				esp_task_wdt_reset();
-				mcu_com_rx_cb((unsigned char)serverClient.read());
+#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+				mcu_com_rx_cb((uint8_t)serverClient.read());
+#else
+				mcu_wifi_rx_cb((uint8_t)serverClient.read());
+#endif
 			}
 		}
 

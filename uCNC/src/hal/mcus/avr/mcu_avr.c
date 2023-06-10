@@ -7,8 +7,7 @@
 								void mcu_step_cb();
 								void mcu_step_reset_cb();
 						serial.h
-								void mcu_com_rx_cb(unsinged char c);
-								char mcu_com_tx_cb();
+								void mcu_com_rx_cb(uint8_t c);
 						trigger_control.h
 								void mcu_limits_changed_cb();
 								void mcu_controls_changed_cb();
@@ -375,13 +374,18 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #ifdef MCU_HAS_UART
 ISR(COM_RX_vect, ISR_BLOCK)
 {
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM_INREG);
+#else
+	mcu_uart_rx_cb(COM_INREG);
+#endif
 }
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 ISR(COM_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG, UDRIE_BIT);
-	mcu_com_tx_cb();
+	// keeps sending chars until null is found
+	mcu_uart_flush();
 }
 #endif
 #endif
@@ -389,20 +393,18 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #if defined(MCU_HAS_UART2)
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	mcu_com_rx_cb(COM2_INREG);
 #else
-#ifdef UART2_PASSTHROUGH
-	mcu_uart_putc(COM2_INREG);
-#endif
-	mcu_uart_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(COM2_INREG);
 #endif
 }
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	CLEARBIT(UCSRB_REG_2, UDRIE_BIT_2);
-	mcu_com_tx_cb();
+	// keeps sending chars until null is found
+	mcu_uart2_flush();
 }
 #endif
 #endif
@@ -548,27 +550,82 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-void mcu_putc(char c)
-{
 #ifdef MCU_HAS_UART
-#ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_REG, UDRE_BIT);
+void mcu_uart_putc(uint8_t c)
+{
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+		;
 #endif
+
 	COM_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	SETBIT(UCSRB_REG, UDRIE_BIT);
 #endif
+}
+
+void mcu_uart_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(UCSRA_REG, UDRE_BIT)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart_tx_tail = read;
+		mcu_uart_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
 #endif
-#if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifdef ENABLE_SYNC_TX
-	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT);
-#endif
-	COM2_OUTREG = c;
-#ifndef ENABLE_SYNC_TX
-	SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
-#endif
+	}
 #endif
 }
+#endif
+
+#ifdef MCU_HAS_UART2
+void mcu_uart2_putc(uint8_t c)
+{
+	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT_2));
+
+	COM2_OUTREG = c;
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
+#endif
+}
+
+void mcu_uart2_flush(void)
+{
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	if (CHECKBIT(UCSRA_REG_2, UDRE_BIT_2)) // not ready start flushing
+	{
+		uint8_t read = mcu_uart2_tx_tail;
+		if (read == mcu_com_tx_head)
+		{
+			return;
+		}
+
+		unsigned char c = mcu_com_tx_buffer[read];
+		if (++read == TX_BUFFER_SIZE)
+		{
+			read = 0;
+		}
+		mcu_uart2_tx_tail = read;
+		mcu_uart2_putc(c);
+#if ASSERT_PIN(ACTIVITY_LED)
+		mcu_toggle_output(ACTIVITY_LED);
+#endif
+	}
+#endif
+}
+#endif
 
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
@@ -1157,8 +1214,6 @@ ISR(TWI_vect, ISR_BLOCK)
 
 	uint8_t i = index;
 
-	mcu_putc(TW_STATUS);
-
 	switch (TW_STATUS)
 	{
 	// slave receiver
@@ -1215,29 +1270,6 @@ ISR(TWI_vect, ISR_BLOCK)
 #endif
 #endif
 
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
-#ifndef mcu_uart_putc
-void mcu_uart_putc(uint8_t c)
-{
-	loop_until_bit_is_set(UCSRA_REG_2, UDRE_BIT_2);
-	COM2_OUTREG = c;
-}
-#endif
-#ifndef mcu_uart_getc
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!CHECKBIT(UCSRA_REG_2, RXC_BIT_2))
-	{
-		if (timeout < mcu_millis())
-		{
-			return -1;
-		}
-	}
-	return COM2_INREG;
-}
-#endif
-#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
