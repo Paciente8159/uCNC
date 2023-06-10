@@ -313,7 +313,7 @@ void MCU_COM2_ISR(void)
 	}
 #endif
 
-mcu_enable_global_isr();
+	mcu_enable_global_isr();
 }
 #endif
 
@@ -1029,12 +1029,12 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 #ifndef mcu_i2c_config
 void mcu_i2c_config(uint32_t frequency)
 {
-	I2C_REG->I2CONSET &= ~I2C_I2CONSET_I2EN;
 	I2C_DeInit(I2C_REG);
 	PINSEL_CFG_Type scl = {I2C_CLK_PORT, I2C_CLK_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
 	PINSEL_ConfigPin(&scl);
 	PINSEL_CFG_Type sda = {I2C_DATA_PORT, I2C_DATA_BIT, I2C_ALT_FUNC, PINSEL_PINMODE_TRISTATE, PINSEL_PINMODE_OPENDRAIN};
 	PINSEL_ConfigPin(&sda);
+	I2C_Init(I2C_REG, frequency);
 #if I2C_ADDRESS != 0
 	I2C_OWNSLAVEADDR_CFG_Type i2c_slave = {0};
 	i2c_slave.SlaveAddr_7bit = I2C_ADDRESS;
@@ -1047,16 +1047,13 @@ void mcu_i2c_config(uint32_t frequency)
 #else
 	I2C_Cmd(I2C_REG, I2C_MASTER_MODE, ENABLE);
 #endif
-
-	I2C_Init(I2C_REG, frequency);
-	I2C_REG->I2CONSET |= I2C_I2CONSET_I2EN;
 }
 #endif
 
 #if I2C_ADDRESS != 0
 uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
 
-ISR(TWI_vect)
+void I2C_ISR(void)
 {
 	static uint8_t index = 0;
 	static uint8_t datalen = 0;

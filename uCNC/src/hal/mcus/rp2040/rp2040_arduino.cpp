@@ -680,18 +680,18 @@ extern "C"
 #include <SPI.h>
 extern "C"
 {
-	static void rp2040_spi_config(uint8_t mode, uint32_t freq)
+	void mcu_spi_config(uint8_t mode, uint32_t freq)
 	{
-		COM_SPI.setRX(SPI_SDI);
-		COM_SPI.setTX(SPI_SDO);
-		COM_SPI.setSCK(SPI_CLK);
-		COM_SPI.setCS(SPI_CS);
+		COM_SPI.setRX(SPI_SDI_BIT);
+		COM_SPI.setTX(SPI_SDO_BIT);
+		COM_SPI.setSCK(SPI_CLK_BIT);
+		COM_SPI.setCS(SPI_CS_BIT);
 		COM_SPI.end();
 		COM_SPI.begin();
 		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
 	}
 
-	static uint8_t rp2040_spi_xmit(uint8_t data)
+	uint8_t mcu_spi_xmit(uint8_t data)
 	{
 		return COM_SPI.transfer(data);
 	}
@@ -728,14 +728,12 @@ extern "C"
 
 	void mcu_i2c_config(uint32_t frequency)
 	{
-		I2C_REG.setSDA(I2C_DATA);
-		I2C_REG.setSCL(I2C_CLK);
-		I2C_REG.setClock(frequency);
+		I2C_REG.setSDA(I2C_DATA_BIT);
+		I2C_REG.setSCL(I2C_CLK_BIT);
 #if I2C_ADDRESS == 0
 		I2C_REG.setClock(frequency);
 		I2C_REG.begin();
 #else
-		I2C_REG.setClock(frequency);
 		I2C_REG.onReceive(rp2040_i2c_onreceive);
 		I2C_REG.onRequest(rp2040_i2c_onrequest);
 		I2C_REG.begin(I2C_ADDRESS);
