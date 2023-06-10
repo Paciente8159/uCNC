@@ -820,39 +820,6 @@ void mcu_uart_flush(void)
 }
 #endif
 
-// #ifdef ENABLE_SYNC_TX
-// 	while (!mcu_tx_ready())
-// 	{
-// #ifdef MCU_HAS_USB
-// 		tusb_cdc_flush();
-// #endif
-// 	}
-// #endif
-// #ifdef MCU_HAS_UART
-// 	COM_OUTREG = c;
-// #ifndef ENABLE_SYNC_TX
-// 	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-// #endif
-// #endif
-// #if (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
-// 	COM2_OUTREG = c;
-// #ifndef ENABLE_SYNC_TX
-// 	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-// #endif
-// #endif
-// #ifdef MCU_HAS_USB
-// 	if (c != 0)
-// 	{
-// 		tusb_cdc_write(c);
-// 	}
-// 	if (c == '\r' || c == 0)
-// 	{
-// 		tusb_cdc_flush();
-// 	}
-// #endif
-// }
-// #endif
-
 // ISR
 /**
  * enables global interrupts on the MCU
