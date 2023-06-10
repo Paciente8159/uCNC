@@ -732,7 +732,11 @@ void mcu_dotasks()
 	while (tusb_cdc_available())
 	{
 		unsigned char c = (unsigned char)tusb_cdc_read();
+#if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
+#else
+		mcu_usb_rx_cb(c);
+#endif
 	}
 #endif
 }
