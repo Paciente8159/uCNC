@@ -44,6 +44,8 @@ extern "C"
 // #define COM_PORT 0
 
 #define PWM0_BIT 32
+#define PWM0_CHANNEL 0
+#define PWM0_TIMER 0
 
 // configure the 74HC595 modules
 #define DOUT8_BIT 21
