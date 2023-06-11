@@ -235,7 +235,7 @@ extern void virtual_delay_us(uint16_t delay);
 
 //allow use uart2 via socket
 #define MCU_HAS_UART2
-#define UART2_DETACH_MAIN_PROTOCOL
+#define DETACH_UART2_FROM_MAIN_PROTOCOL
 
 
 #endif

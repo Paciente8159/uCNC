@@ -72,13 +72,13 @@ extern "C"
 
 #define MULTIBOARD_PROTOCOL_SOF 0xAA
 #define MULTIBOARD_PROTOCOL_EOF 0x55
-#define MULTIBOARD_PROTOCOL_ACK 0xFE70  // ACK+CRC
-#define MULTIBOARD_PROTOCOL_NACK 0xFD6B // NACK+CRC
+#define MULTIBOARD_PROTOCOL_ACK 0xFE // ACK
+#define MULTIBOARD_PROTOCOL_NACK 0xFD // NACK
 
 // these codes might not be used
 // since this will work on a send+response base ensure command order will not be necessary
-#define MULTIBOARD_PROTOCOL_SYNC 0xF846      // SYNC+CRC
-#define MULTIBOARD_PROTOCOL_SYNC_LOST 0xF94F // SYNC_LOST+CRC
+// #define MULTIBOARD_PROTOCOL_SYNC 0xF846      // SYNC+CRC
+// #define MULTIBOARD_PROTOCOL_SYNC_LOST 0xF94F // SYNC_LOST+CRC
 
 // list of commands
 

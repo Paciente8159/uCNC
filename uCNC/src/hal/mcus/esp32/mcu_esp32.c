@@ -1078,7 +1078,7 @@ void mcu_dotasks(void)
 #endif
 #if defined(MCU_HAS_UART2)
 	rxlen = uart_read_bytes(COM2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-#if !defined(UART2_DETACH_MAIN_PROTOCOL)
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
 		mcu_com_rx_cb((uint8_t)rxdata[i]);

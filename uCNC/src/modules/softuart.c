@@ -21,7 +21,7 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 {
 	if (!port)
 	{
-#if (defined(MCU_HAS_UART2) && defined(UART2_DETACH_MAIN_PROTOCOL))
+#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
 		mcu_uart_putc(c);
 #endif
 	}
