@@ -3110,7 +3110,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
 
-#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
+#if (defined(MCU_HAS_UART) && (defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 #define mcu_rx_ready() ((COM_UART->USART.INTFLAG.bit.RXC) || (COM2_UART->USART.INTFLAG.bit.RXC) || usb_rx_available())
 #define mcu_tx_ready() ((COM_UART->USART.INTFLAG.bit.DRE) && (COM2_UART->USART.INTFLAG.bit.DRE) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
@@ -3122,7 +3122,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #ifndef ENABLE_SYNC_TX
 #define ENABLE_SYNC_TX
 #endif
-#elif ((defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
+#elif ((defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)) && defined(MCU_HAS_USB))
 #define mcu_rx_ready() ((COM2_UART->USART.INTFLAG.bit.RXC) || usb_rx_available())
 #define mcu_tx_ready() ((COM2_UART->USART.INTFLAG.bit.DRE) && usb_tx_available())
 #ifndef ENABLE_SYNC_TX
@@ -3131,7 +3131,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #elif defined(MCU_HAS_UART)
 #define mcu_rx_ready() (COM_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM_UART->USART.INTFLAG.bit.DRE)
-#elif (defined(MCU_HAS_UART2) && !defined(UART2_DETACH_MAIN_PROTOCOL))
+#elif (defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
 #define mcu_rx_ready() (COM2_UART->USART.INTFLAG.bit.RXC)
 #define mcu_tx_ready() (COM2_UART->USART.INTFLAG.bit.DRE)
 #elif defined(MCU_HAS_USB)
