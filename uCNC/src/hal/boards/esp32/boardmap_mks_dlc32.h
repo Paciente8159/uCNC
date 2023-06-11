@@ -44,6 +44,8 @@ extern "C"
 // #define COM_PORT 0
 
 #define PWM0_BIT 32
+#define PWM0_CHANNEL 0
+#define PWM0_TIMER 0
 
 // configure the 74HC595 modules
 #define DOUT8_BIT 21
@@ -51,6 +53,11 @@ extern "C"
 #define DOUT10_BIT 17
 // uses 3 x 74HS595
 #define IC74HC595_COUNT 1
+
+#define IC74HC595_CUSTOM_SHIFT_IO //Enables custom MCU data shift transmission. In ESP32 that is via I2S
+#define IC74HC595_I2S_WS 17
+#define IC74HC595_I2S_CLK 16
+#define IC74HC595_I2S_DATA 21
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1
