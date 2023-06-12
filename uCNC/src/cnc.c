@@ -208,8 +208,6 @@ bool cnc_exec_cmd(void)
 
 bool cnc_dotasks(void)
 {
-	static bool lock_itp = false;
-
 	// run io basic tasks
 	cnc_io_dotasks();
 
@@ -236,6 +234,8 @@ bool cnc_dotasks(void)
 		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
+#if !defined(ENABLE_MULTIBOARD) || defined(IS_MASTER_BOARD)
+	static bool lock_itp = false;
 	if (!lock_itp)
 	{
 		lock_itp = true;
@@ -246,7 +246,7 @@ bool cnc_dotasks(void)
 		itp_run();
 		lock_itp = false;
 	}
-
+#endif
 	return !cnc_get_exec_state(EXEC_KILL);
 }
 

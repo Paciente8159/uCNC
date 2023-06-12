@@ -19,7 +19,7 @@
 
 #ifdef ENABLE_MULTIBOARD
 
-slave_board_io_t g_multiboard_slave_io;
+slave_board_state_t g_multiboard_slave;
 
 // small ring buffer
 DECL_STATIC_BUFFER(multiboard_data_t, multiboard_ring_buffer, 3);
@@ -170,19 +170,19 @@ void multiboard_slave_dotasks(void)
 				itp_start(msg.multiboard_frame.content[0]);
 				break;
 			case MULTIBOARD_CMD_ITP_POS_RESET:
-				itp_reset_rt_position(msg.multiboard_frame.content);
+				itp_reset_rt_position((float*)msg.multiboard_frame.content);
 				break;
 			case MULTIBOARD_CMD_SET_OUTPUT:
 				io_set_output(msg.multiboard_frame.content[0], msg.multiboard_frame.content[1]);
 				break;
 				// request commands
 			case MULTIBOARD_CMD_GET_ITP_POS:
-				itp_get_rt_position(msg.multiboard_frame.content);
+				itp_get_rt_position((int32_t*)msg.multiboard_frame.content);
 				msg.multiboard_frame.length = sizeof(int32_t) * STEPPER_COUNT;
 				multiboard_slave_send_response(&msg, false);
 				return;
 			case MULTIBOARD_CMD_GET_PIN:
-				*((int16_t*)&msg.multiboard_frame.content[0]) = io_get_pinvalue(msg.multiboard_frame.content[0]);
+				*((int16_t *)&msg.multiboard_frame.content[0]) = io_get_pinvalue(msg.multiboard_frame.content[0]);
 				msg.multiboard_frame.length = 2;
 				multiboard_slave_send_response(&msg, false);
 				return;
@@ -196,6 +196,25 @@ void multiboard_slave_dotasks(void)
 			msg.multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_ACK;
 			multiboard_slave_send_response(&msg, true);
 		}
+	}
+
+	static slave_board_io_t prev_io = {0};
+	slave_board_io_t io;
+	io.slave_io_bits.state = cnc_get_exec_state(EXEC_ALLACTIVE);
+	io.slave_io_bits.limits = io_get_limits();
+	io.slave_io_bits.limits2 = io_get_limits_dual();
+	io.slave_io_bits.controls = io_get_controls();
+	io.slave_io_bits.probe = io_get_probe();
+
+	if (prev_io.slave_io_reg ^ io.slave_io_reg)
+	{
+		// slave io changed
+		multiboard_data_t msg;
+		msg.multiboard_frame.command = MULTIBOARD_SLAVE_IO_CHANGED;
+		msg.multiboard_frame.length = 4;
+		memcpy(msg.multiboard_frame.content, &io, sizeof(slave_board_io_t));
+		multiboard_slave_send_response(&msg, false);
+		prev_io.slave_io_reg = io.slave_io_reg;
 	}
 }
 
@@ -217,13 +236,17 @@ static uint8_t multiboard_master_process_slave_message(uint8_t command, multiboa
 
 	switch (msg.multiboard_frame.command)
 	{
+		// handle master requests
 	case MULTIBOARD_CMD_GET_ITP_POS:
-		/* code */
+		memcpy(g_multiboard_slave.itp_rt_pos, msg.multiboard_frame.content, sizeof(g_multiboard_slave.itp_rt_pos));
 		break;
+	case MULTIBOARD_CMD_GET_PIN:
+		break;
+	// slave spontaneous messages
 	case MULTIBOARD_SLAVE_IO_CHANGED:
-		if (msg.multiboard_frame.length == sizeof(slave_board_io_t))
+		if (msg.multiboard_frame.length == 3) // 3 bytes the initial 3bytes of the struct
 		{
-			memcpy(&g_multiboard_slave_io, msg.multiboard_frame.content, sizeof(slave_board_io_t));
+			memcpy(&g_multiboard_slave.io, msg.multiboard_frame.content, sizeof(slave_board_io_t));
 		}
 	default:
 		// unrecognized message
