@@ -357,8 +357,8 @@ uint8_t io_get_limits(void)
 #endif
 
 #ifdef ENABLE_MULTIBOARD
-	result |= (g_slave_io.slave_io_bits.limits & ~(LIMITS_DUAL_MASK | LIMITS_MASK));
-	g_slave_io.slave_io_bits.limits = result;
+	result |= (g_multiboard_slave_io.slave_io_bits.limits & ~(LIMITS_DUAL_MASK | LIMITS_MASK));
+	g_multiboard_slave_io.slave_io_bits.limits = result;
 #endif
 
 	return result;
@@ -389,8 +389,8 @@ uint8_t io_get_limits_dual(void)
 	result ^= (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK));
 
 #ifdef ENABLE_MULTIBOARD
-	result |= (g_slave_io.slave_io_bits.limits2 & ~LIMITS_DUAL_MASK);
-	g_slave_io.slave_io_bits.limits2 = result;
+	result |= (g_multiboard_slave_io.slave_io_bits.limits2 & ~LIMITS_DUAL_MASK);
+	g_multiboard_slave_io.slave_io_bits.limits2 = result;
 #endif
 	return result;
 #endif
@@ -422,8 +422,8 @@ uint8_t io_get_controls(void)
 	uint8_t result = (value ^ (g_settings.control_invert_mask & CONTROLS_INV_MASK));
 
 #ifdef ENABLE_MULTIBOARD
-	result |= (g_slave_io.slave_io_bits.controls & ~CONTROLS_MASK);
-	g_slave_io.slave_io_bits.controls = result;
+	result |= (g_multiboard_slave_io.slave_io_bits.controls & ~CONTROLS_MASK);
+	g_multiboard_slave_io.slave_io_bits.controls = result;
 #endif
 
 	return result;
@@ -511,8 +511,8 @@ uint8_t io_get_onchange_inputs(void)
 #endif
 
 #ifdef ENABLE_MULTIBOARD
-	inputs |= (g_slave_io.slave_io_bits.onchange_inputs & ~DIN_ONCHANGE_MASK);
-	g_slave_io.slave_io_bits.onchange_inputs = inputs;
+	inputs |= (g_multiboard_slave_io.slave_io_bits.onchange_inputs & ~DIN_ONCHANGE_MASK);
+	g_multiboard_slave_io.slave_io_bits.onchange_inputs = inputs;
 #endif
 
 	return inputs;
@@ -526,9 +526,9 @@ bool io_get_probe(void)
 
 #ifdef ENABLE_MULTIBOARD
 #if !ASSERT_PIN(PROBE)
-	probe |= g_slave_io.slave_io_bits.probe;
+	probe |= g_multiboard_slave_io.slave_io_bits.probe;
 #else
-	g_slave_io.slave_io_bits.probe = probe;
+	g_multiboard_slave_io.slave_io_bits.probe = probe;
 #endif
 #endif
 

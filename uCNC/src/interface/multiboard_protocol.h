@@ -49,30 +49,30 @@ extern "C"
         } multiboard_frame;
     } multiboard_data_t;
 
-    extern multiboard_data_t g_multiboard_data;
-
     typedef union slave_board_io_
     {
         uint32_t slave_io_reg;
         struct
         {
-            uint8_t state;
-            uint8_t probe : 1;
-            uint8_t limits2 : 3;
-            uint8_t controls : 4;
-            uint8_t limits;
-            uint8_t onchange_inputs;
+            uint8_t state;           // internal cnc state
+            uint8_t probe : 1;       // probe
+            uint8_t limits2 : 3;     // dual limits
+            uint8_t controls : 4;    // controls
+            uint8_t limits;          // limits
+            uint8_t onchange_inputs; // interruptable inputs
         } slave_io_bits;
     } slave_board_io_t;
-    extern slave_board_io_t g_slave_io;
+
+    extern slave_board_io_t g_multiboard_slave_io;
 
 #define MULTIBOARD_PROTOCOL_OK 0
 #define MULTIBOARD_PROTOCOL_TIMEOUT 1
 #define MULTIBOARD_PROTOCOL_ERROR 2
+#define MULTIBOARD_PROTOCOL_UNEXPECTED_MESSAGE 3
 
 #define MULTIBOARD_PROTOCOL_SOF 0xAA
 #define MULTIBOARD_PROTOCOL_EOF 0x55
-#define MULTIBOARD_PROTOCOL_ACK 0xFE // ACK
+#define MULTIBOARD_PROTOCOL_ACK 0xFE  // ACK
 #define MULTIBOARD_PROTOCOL_NACK 0xFD // NACK
 
 // these codes might not be used
@@ -82,14 +82,22 @@ extern "C"
 
 // list of commands
 
-// Master to slave
+// Master to slave commands
 #define MULTIBOARD_CMD_SET_STATE 0x81
 #define MULTIBOARD_CMD_CLEAR_STATE 0x82
 #define MULTIBOARD_CMD_ITP_BLOCK 0x83
 #define MULTIBOARD_CMD_ITP_SEGMENT 0x84
-#define MULTIBOARD_CMD_ITP_NEWBLOCK 0x85
-#define MULTIBOARD_CMD_ITP_RUN 0x86
+#define MULTIBOARD_CMD_ITP_BLOCK_WRITE 0x85
+#define MULTIBOARD_CMD_ITP_START 0x86
 #define MULTIBOARD_CMD_ITP_POS_RESET 0x87
+#define MULTIBOARD_CMD_SET_OUTPUT 0x88
+
+// Master to slave request commands
+#define MULTIBOARD_CMD_GET_ITP_POS 0xA0
+#define MULTIBOARD_CMD_GET_PIN 0xA1
+
+// Slave to master messages
+#define MULTIBOARD_SLAVE_IO_CHANGED 0xC0
 
 #ifndef IS_MASTER_BOARD
     void multiboard_slave_dotasks(void);

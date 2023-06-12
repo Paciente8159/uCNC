@@ -176,7 +176,7 @@ extern "C"
 #ifdef FORCEINLINE
 #undef FORCEINLINE
 #endif
-#define FORCEINLINE __attribute__((always_inline,gnu_inline)) inline
+#define FORCEINLINE __attribute__((always_inline, gnu_inline)) inline
 
 	static FORCEINLINE uint8_t __atomic_in(void)
 	{
@@ -204,11 +204,100 @@ extern "C"
 #define STRGIFY(s) __STRGIFY__(s)
 
 #ifndef CRC_WITHOUT_LOOKUP_TABLE
-extern const uint8_t __rom__ crc7_table[256];
+	extern const uint8_t __rom__ crc7_table[256];
 #define crc7(x, y) rom_read_byte(&crc7_table[x ^ y])
 #else
 uint8_t crc7(uint8_t c, uint8_t crc);
 #endif
+
+/**
+ * RING BUFFER UTILS
+ * **/
+#define DECL_BUFFER_TYPE(T, SIZE) \
+	typedef struct T##_buffer_    \
+	{                             \
+		volatile uint8_t count;   \
+		volatile uint8_t head;    \
+		uint8_t tail;             \
+		T data[SIZE];             \
+	} T##_buffer_t
+
+#define DECL_BUFFER(T, NAME, SIZE)           \
+	DECL_BUFFER_TYPE(T, SIZE);               \
+	static const uint8_t NAME##_size = SIZE; \
+	T##_buffer_t NAME
+
+#define DECL_STATIC_BUFFER(T, NAME, SIZE)    \
+	DECL_BUFFER_TYPE(T, SIZE);               \
+	static const uint8_t NAME##_size = SIZE; \
+	static T##_buffer_t NAME
+
+#define BUFFER_EMPTY(buffer) (!buffer.count)
+#define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
+#define BUFFER_PEEK(buffer) (&buffer.data[buffer.tail])
+#define BUFFER_READ(buffer)                   \
+	{                                         \
+		uint8_t i = buffer.tail++;            \
+		if (!BUFFER_EMPTY(buffer))            \
+		{                                     \
+			buffer.tail++;                    \
+			if (buffer.tail >= buffer##_size) \
+			{                                 \
+				buffer.tail = 0;              \
+			}                                 \
+			buffer.count--;                   \
+		}                                     \
+		&buffer.data[i];                      \
+	}
+
+#define BUFFER_POP(buffer, ptr)                                                 \
+	{                                                                           \
+		if (!BUFFER_EMPTY(buffer))                                              \
+		{                                                                       \
+			if (ptr != NULL)                                                    \
+			{                                                                   \
+				memcpy(ptr, &buffer.data[buffer.tail], sizeof(buffer.data[0])); \
+			}                                                                   \
+			buffer.tail++;                                                      \
+			if (buffer.tail >= buffer##_size)                                   \
+			{                                                                   \
+				buffer.tail = 0;                                                \
+			}                                                                   \
+			buffer.count--;                                                     \
+		}                                                                       \
+	}
+#define BUFFER_WRITE(buffer)             \
+	{                                    \
+		if (!BUFFER_FULL(buffer))        \
+		{                                \
+			uint8_t r = buffer.head + 1; \
+			if (r >= buffer##_size)      \
+			{                            \
+				r = 0;                   \
+			}                            \
+			buffer.head = r;             \
+			buffer.count++;              \
+		}                                \
+	}
+
+#define BUFFER_PUSH(buffer, ptr)                                      \
+	{                                                                 \
+		if (!BUFFER_FULL(buffer))                                     \
+		{                                                             \
+			uint8_t r = buffer.head + 1;                              \
+			if (r >= buffer##_size)                                   \
+			{                                                         \
+				r = 0;                                                \
+			}                                                         \
+			buffer.head = r;                                          \
+			buffer.count++;                                           \
+			if (ptr != NULL)                                          \
+			{                                                         \
+				memcpy(ptr, &buffer.data[r], sizeof(buffer.data[0])); \
+			}                                                         \
+		}                                                             \
+	}
+#define BUFFER_NEXT_SLOT(buffer) (&buffer.data[buffer.head])
 
 #ifdef __cplusplus
 }

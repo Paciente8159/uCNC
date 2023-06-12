@@ -489,7 +489,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 	}
 
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	statemask = cnc_state.exec_state & (~statemask);
+	CLEARFLAG(cnc_state.exec_state, statemask);
 	// broadcasts the mask change
 	statemask &= ~EXEC_RUN;
 	if (statemask)

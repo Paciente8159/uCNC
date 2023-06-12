@@ -233,7 +233,7 @@ static void itp_sgm_clear(void)
 void itp_blk_buffer_write(void)
 {
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	multiboard_master_send_command(MULTIBOARD_CMD_ITP_NEWBLOCK, NULL, 0);
+	multiboard_master_send_command(MULTIBOARD_CMD_ITP_BLOCK_WRITE, NULL, 0);
 #endif
 
 	// curcular always. No need to control override
@@ -1102,22 +1102,22 @@ void itp_get_rt_position(int32_t *position)
 
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
+	position[0] = encoder_get_position(STEP0_ENCODER);
 #endif
 #if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
+	position[1] = encoder_get_position(STEP1_ENCODER);
 #endif
 #if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
+	position[2] = encoder_get_position(STEP2_ENCODER);
 #endif
 #if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
+	position[3] = encoder_get_position(STEP3_ENCODER);
 #endif
 #if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
+	position[4] = encoder_get_position(STEP4_ENCODER);
 #endif
 #if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
+	position[5] = encoder_get_position(STEP5_ENCODER);
 #endif
 #endif
 }
@@ -1736,7 +1736,7 @@ void itp_start(bool is_synched)
 			__ATOMIC__
 			{
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-				multiboard_master_send_command(MULTIBOARD_CMD_ITP_RUN, (uint8_t*)&is_synched, 1);
+				multiboard_master_send_command(MULTIBOARD_CMD_ITP_START, (uint8_t*)&is_synched, 1);
 #endif
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
