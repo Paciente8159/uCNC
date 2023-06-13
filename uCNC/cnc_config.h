@@ -54,7 +54,7 @@ extern "C"
 
 // optional name to override default board name build info (if option enabled)
 #ifndef BOARD_NAME
-//#define BOARD_NAME "My custom board"
+// #define BOARD_NAME "My custom board"
 #endif
 
 	/**
@@ -99,44 +99,44 @@ extern "C"
 	 * Uncomment to enable. Only necessary to debug communication problems
 	 * */
 
-	//#define ECHO_CMD
+	// #define ECHO_CMD
 
-/**
- * Override default configuration settings. Use _PER_AXIS parameters to
- * define different settings for each axis.
- */
+	/**
+	 * Override default configuration settings. Use _PER_AXIS parameters to
+	 * define different settings for each axis.
+	 */
 
-// #define DEFAULT_DIR_INV_MASK 0
-// #define DEFAULT_LIMIT_INV_MASK 0
-// #define DEFAULT_SOFT_LIMITS_ENABLED 0
-// #define DEFAULT_HARD_LIMITS_ENABLED 0
-// #define DEFAULT_HOMING_ENABLED 0
-// #define DEFAULT_HOMING_DIR_INV_MASK 0
-// #define DEFAULT_HOMING_FAST 50
-// #define DEFAULT_HOMING_SLOW 10
-// #define DEFAULT_HOMING_OFFSET 2
-// #define DEFAULT_STEP_PER_MM 200
-// #define DEFAULT_STEP_PER_MM_PER_AXIS {200, 200, 200}
-// #define DEFAULT_MAX_FEED 500
-// #define DEFAULT_MAX_FEED_PER_AXIS {500, 500, 500}
-// #define DEFAULT_ACCEL 10
-// #define DEFAULT_ACCEL_PER_AXIS {10, 10, 10}
-// #define DEFAULT_MAX_DIST 200
-// #define DEFAULT_MAX_DIST_PER_AXIS {200, 200, 50}
-// #define DEFAULT_ARC_TOLERANCE 0.002
-// #define DEFAULT_DEBOUNCE_MS 250
+	// #define DEFAULT_DIR_INV_MASK 0
+	// #define DEFAULT_LIMIT_INV_MASK 0
+	// #define DEFAULT_SOFT_LIMITS_ENABLED 0
+	// #define DEFAULT_HARD_LIMITS_ENABLED 0
+	// #define DEFAULT_HOMING_ENABLED 0
+	// #define DEFAULT_HOMING_DIR_INV_MASK 0
+	// #define DEFAULT_HOMING_FAST 50
+	// #define DEFAULT_HOMING_SLOW 10
+	// #define DEFAULT_HOMING_OFFSET 2
+	// #define DEFAULT_STEP_PER_MM 200
+	// #define DEFAULT_STEP_PER_MM_PER_AXIS {200, 200, 200}
+	// #define DEFAULT_MAX_FEED 500
+	// #define DEFAULT_MAX_FEED_PER_AXIS {500, 500, 500}
+	// #define DEFAULT_ACCEL 10
+	// #define DEFAULT_ACCEL_PER_AXIS {10, 10, 10}
+	// #define DEFAULT_MAX_DIST 200
+	// #define DEFAULT_MAX_DIST_PER_AXIS {200, 200, 50}
+	// #define DEFAULT_ARC_TOLERANCE 0.002
+	// #define DEFAULT_DEBOUNCE_MS 250
 
 #if defined(KINEMATIC_DELTA)
-    // #define DEFAULT_LIN_DELTA_ARM_LENGTH 230
-    // #define DEFAULT_LIN_DELTA_BASE_RADIUS 115
+	// #define DEFAULT_LIN_DELTA_ARM_LENGTH 230
+	// #define DEFAULT_LIN_DELTA_BASE_RADIUS 115
 #endif
 
 #if defined(KINEMATIC_LINEAR_DELTA)
-    // #define DEFAULT_DELTA_BICEP_LENGTH 100
-    // #define DEFAULT_DELTA_FOREARM_LENGTH 300
-    // #define DEFAULT_DELTA_EFFECTOR_RADIUS 24
-    // #define DEFAULT_DELTA_BASE_RADIUS 75
-    // #define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
+	// #define DEFAULT_DELTA_BICEP_LENGTH 100
+	// #define DEFAULT_DELTA_FOREARM_LENGTH 300
+	// #define DEFAULT_DELTA_EFFECTOR_RADIUS 24
+	// #define DEFAULT_DELTA_BASE_RADIUS 75
+	// #define DEFAULT_DELTA_BICEP_HOMING_ANGLE 0
 #endif
 
 	/**
@@ -153,7 +153,7 @@ extern "C"
 /**
  * Override the default startup tool
  */
-//#define DEFAULT_STARTUP_TOOL 1
+// #define DEFAULT_STARTUP_TOOL 1
 
 /**
  * Enable or disable coolant
@@ -173,25 +173,24 @@ extern "C"
 #endif
 
 /**
-	 * Number of seconds of delay before motions restart after releasing from a
-	 * hold or after setting a new spindle speed This is used by spindle to
-	 * ensure spindle gets up to speed in motions
-	 * This will be ignored on laser mode
-	 * */
+ * Number of seconds of delay before motions restart after releasing from a
+ * hold or after setting a new spindle speed This is used by spindle to
+ * ensure spindle gets up to speed in motions
+ * This will be ignored on laser mode
+ * */
 #define DELAY_ON_RESUME_SPINDLE 4
 #define DELAY_ON_SPINDLE_SPEED_CHANGE 1
 // define coolant delay at restart
 #define DELAY_ON_RESUME_COOLANT 1
 // uncomment to make M7 act as M8
-//#define M7_SAME_AS_M8
+// #define M7_SAME_AS_M8
 #endif
-
 
 /**
  * Uncomment to enable laser PPI feature
  * Laser PPI requires the MCU to support ONESHOT timeout
  * */
-//#define ENABLE_LASER_PPI
+// #define ENABLE_LASER_PPI
 
 /**
  * Override default laser configuration settings.
@@ -208,16 +207,16 @@ extern "C"
 #define FEED_OVR_COARSE 10
 #define FEED_OVR_FINE 1
 
-/**
- * Rapid feed overrides percentages
- * */
+	/**
+	 * Rapid feed overrides percentages
+	 * */
 
 #define RAPID_FEED_OVR1 50
 #define RAPID_FEED_OVR2 25
 
-/**
- * Spindle speed overrides increments percentages and ranges
- * */
+	/**
+	 * Spindle speed overrides increments percentages and ranges
+	 * */
 
 #define SPINDLE_OVR_MAX 200
 #define SPINDLE_OVR_MIN 10
@@ -242,18 +241,18 @@ extern "C"
  * processes and displays the currently executing gcode numbered line
  * */
 
-//#define GCODE_PROCESS_LINE_NUMBERS
+// #define GCODE_PROCESS_LINE_NUMBERS
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 // uncomment this line to ignore the value in the N parameter and count real
 // text lines
-//#define GCODE_COUNT_TEXT_LINES
+// #define GCODE_COUNT_TEXT_LINES
 #endif
 
 	/**
 	 * processes comment as defined in the RS274NGC
 	 * */
 
-	//#define PROCESS_COMMENTS
+	// #define PROCESS_COMMENTS
 
 	/**
 	 * Enables RS274NGC canned cycles
@@ -265,7 +264,7 @@ extern "C"
 	 * accepts the E word (currently is processed has A)
 	 * */
 
-	//#define GCODE_ACCEPT_WORD_E
+	// #define GCODE_ACCEPT_WORD_E
 
 	/**
 	 * Shrink µCNC
@@ -329,7 +328,7 @@ extern "C"
 // #define ENABLE_SKEW_COMPENSATION
 #ifdef ENABLE_SKEW_COMPENSATION
 // uncomment to correct only in the xy axis
-//#define SKEW_COMPENSATION_XY_ONLY
+// #define SKEW_COMPENSATION_XY_ONLY
 #endif
 
 /**
@@ -363,11 +362,11 @@ extern "C"
 	 * linear actuator driven
 	 * */
 
-	//#define ENABLE_LINACT_PLANNER
+	// #define ENABLE_LINACT_PLANNER
 #ifdef ENABLE_LINACT_PLANNER
 	// uncomment to do a stop and start if any of the linear actuators is at a
 	// still state or changes direction
-	//#define ENABLE_LINACT_COLD_START
+	// #define ENABLE_LINACT_COLD_START
 #endif
 
 	/**
@@ -430,7 +429,7 @@ extern "C"
 	 * interrupts)
 	 * */
 
-	//#define FORCE_SOFT_POLLING
+	// #define FORCE_SOFT_POLLING
 
 	/**
 	 * Runs a check for state change inside the scheduler. This is a failsafe
@@ -462,13 +461,13 @@ extern "C"
 // #define DISABLE_PROBE
 #endif
 
-/**
- *
- * Uncomment to store the state of the limits, controls and probe states that tiggered and alarm
- * This is useful to debug momentary faults
- *
-*/
-// #define ENABLE_IO_ALARM_DEBUG
+	/**
+	 *
+	 * Uncomment to store the state of the limits, controls and probe states that tiggered and alarm
+	 * This is useful to debug momentary faults
+	 *
+	 */
+	// #define ENABLE_IO_ALARM_DEBUG
 
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
