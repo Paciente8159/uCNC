@@ -29,7 +29,7 @@
 
 #include "../../../cnc.h"
 #if (MCU == MCU_VIRTUAL_WIN)
-
+#include "../mcu.h"
 // #include <stdio.h>
 // #include <winsock2.h>
 // #include <ws2tcpip.h>
@@ -43,9 +43,9 @@
 
 // #pragma comment(lib, "Ws2_32.lib")
 
-// #include "win_port.h"
+ #include "win_port.h"
 volatile win_port_t uart0;
-volatile win_port_t uart2;
+volatile win_port_t socket0;
 
 #ifndef WIN_INTERFACE
 #define WIN_INTERFACE 0
@@ -304,338 +304,6 @@ void *ioserver(void *args)
 /**
  * Comunications can be done via console, sockets or serial port
  * */
-#ifdef MCU_HAS_UART2
-//volatile bool uart2_rx_ready = false;
-//volatile uint8_t uart2_rx_last = 0;
-//void win_uart_rcv_callback(uint8_t c)
-//{
-//	uart2_rx_ready = true;
-//	uart2_rx_last = c;
-//	if (mcu_uart_rcv_cb)
-//	{
-//		mcu_uart_rcv_cb(c);
-//	}
-//}
-
-int16_t mcu_uart_getc(uint32_t timeout)
-{
-	timeout += mcu_millis();
-	while (!uart2_rx_ready)
-	{
-		if (timeout < mcu_millis())
-			return -1;
-	}
-
-	PurgeComm(hComm, PURGE_TXABORT | PURGE_RXABORT | PURGE_TXCLEAR | PURGE_RXCLEAR);
-
-	dwStoredFlags = EV_RXCHAR;
-	if (!SetCommMask(hComm, dwStoredFlags))
-	{
-		fprintf(stderr, "Error setting COM mask\n");
-		CloseHandle(hComm);
-		return 1;
-	}
-
-	osStatus.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	if (osStatus.hEvent == NULL)
-	{
-		fprintf(stderr, "Error setting COM event\n");
-		CloseHandle(hComm);
-		return 1;
-	}
-
-	for (;;)
-	{
-		// Issue a status event check if one hasn't been issued already.
-		if (!fWaitingOnStat)
-		{
-			if (!WaitCommEvent(hComm, &dwCommEvent, &osStatus))
-			{
-				if (GetLastError() == ERROR_IO_PENDING)
-					fWaitingOnStat = TRUE;
-				// The original text is: bWaitingOnStatusHandle = TRUE;
-				else
-					// Error in WaitCommEvent function; abort.
-					break;
-			}
-		}
-
-		SetEvent(rxReady);
-		// Check on overlapped operation.
-		// if (fWaitingOnStat)
-		// {
-		// Wait a little while for an event to occur.
-		dwRes = WaitForSingleObject(osStatus.hEvent, INFINITE);
-		switch (dwRes)
-		{
-		// Event occurred.
-		case WAIT_OBJECT_0:
-			if (!GetOverlappedResult(hComm, &osStatus, &dwOvRes, FALSE))
-			{
-				// An error occurred in the overlapped operation;
-				// call GetLastError to find out what it was
-				// and abort if it is fatal.
-				fprintf(stderr, "Error %d in COM event", (int)GetLastError());
-				break;
-			}
-			else
-			{
-				// Status event is stored in the event flag
-				// specified in the original WaitCommEvent call.
-				// Deal with the status event as appropriate.
-				char recvbuf[256];
-				int recvbuflen = 256;
-				DWORD dwRead = 0;
-				switch (dwCommEvent)
-				{
-				case EV_RXCHAR:
-					do
-					{
-						if (ReadFile(hComm, &recvbuf, recvbuflen, &dwRead, &osStatus))
-						{
-							// Read a byte and process it.
-							recvbuflen = strlen(recvbuf);
-							recvbuflen = (dwRead > recvbuflen) ? recvbuflen : dwRead;
-							for (int i = 0; i < recvbuflen; i++)
-							{
-								putchar(recvbuf[i]);
-								mcu_com_rx_cb(recvbuf[i]);
-							}
-							memset(recvbuf, 0, sizeof(recvbuf));
-						}
-						else
-						{
-							// An error occurred when calling the ReadFile function.
-							fprintf(stderr, "Error %d reading COM", (int)GetLastError());
-							break;
-						}
-
-					} while (dwRead);
-					break;
-				default:
-					break;
-				}
-			}
-
-			// Set fWaitingOnStat flag to indicate that a new
-			// WaitCommEvent is to be issued.
-			fWaitingOnStat = FALSE;
-			break;
-		}
-		// }
-	}
-
-	CloseHandle(osStatus.hEvent);
-}
-
-void virtualserialclient(void)
-{
-	DWORD dwWaitResult;
-	OVERLAPPED osWrite = {0};
-	char buffer[256];
-	int iSendResult;
-	int iResult;
-
-	DWORD dNoOfBytesWritten;
-
-	while (1)
-	{
-		dwWaitResult = WaitForSingleObject(
-			txReady,   // event handle
-			INFINITE); // indefinite wait
-		osWrite.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-		switch (dwWaitResult)
-		{
-		// Event object was signaled
-		case WAIT_OBJECT_0:
-			dwWaitResult = WaitForSingleObject(
-				bufferMutex, // handle to mutex
-				INFINITE);	 // no time-out interval
-
-			switch (dwWaitResult)
-			{
-			// The thread got ownership of the mutex
-			case WAIT_OBJECT_0:
-				iResult = strlen(com_buffer);
-				if (!WriteFile(hComm, com_buffer, iResult, &dNoOfBytesWritten, &osWrite))
-				{
-					if (GetLastError() != ERROR_IO_PENDING)
-					{
-						// WriteFile failed, but isn't delayed. Report error and abort.
-						fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
-					}
-				}
-				break;
-
-			// The thread got ownership of an abandoned mutex
-			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", (int)GetLastError());
-				return;
-			}
-
-			break;
-
-		// An error occurred
-		default:
-			printf("Serial client thread error (%d)\n", (int)GetLastError());
-			return;
-		}
-
-		CloseHandle(osWrite.hEvent);
-		memset(com_buffer, 0, 256);
-		ReleaseMutex(bufferMutex);
-	}
-}
-
-#endif
-
-#ifdef USECONSOLE
-
-DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
-{
-	WSADATA wsaData;
-	int iResult;
-
-	SOCKET ListenSocket = INVALID_SOCKET;
-
-	struct addrinfo *result = NULL;
-	struct addrinfo hints;
-
-	int iSendResult;
-	char recvbuf[256];
-	int recvbuflen = 256;
-
-	memset(recvbuf, 0, sizeof(recvbuf));
-	SetEvent(rxReady);
-	// Receive until the peer shuts down the connection
-	do
-	{
-		unsigned char c = getchar();
-		switch (c)
-		{
-			//		 case '"':
-			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-			//		 	mcu_controls_changed_cb();
-			//		 	break;
-			//		 case '%':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '&':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '/':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			// case '[':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case ']':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case '}':
-			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
-			// 	mcu_controls_changed_cb();
-			// 	break;
-		default:
-			mcu_com_rx_cb(c);
-			break;
-		}
-
-	} while (1);
-
-	return 0;
-}
-
-void virtualconsoleclient(void)
-{
-	DWORD dwWaitResult;
-	int iResult;
-
-	while (1)
-	{
-		dwWaitResult = WaitForSingleObject(
-			txReady,   // event handle
-			INFINITE); // indefinite wait
-
-		switch (dwWaitResult)
-		{
-		// Event object was signaled
-		case WAIT_OBJECT_0:
-			dwWaitResult = WaitForSingleObject(
-				bufferMutex, // handle to mutex
-				INFINITE);	 // no time-out interval
-
-			switch (dwWaitResult)
-			{
-			// The thread got ownership of the mutex
-			case WAIT_OBJECT_0:
-				iResult = strlen(com_buffer);
-				for (int k = 0; k < iResult; k++)
-				{
-					putchar(com_buffer[k]);
-				}
-				break;
-
-			// The thread got ownership of an abandoned mutex
-			case WAIT_ABANDONED:
-				printf("Wait error (%d)\n", (int)GetLastError());
-				return;
-			}
-
-			break;
-
-		// An error occurred
-		default:
-			printf("Serial client thread error (%d)\n", (int)GetLastError());
-			return 0;
-		}
-
-		memset(com_buffer, 0, 256);
-		ReleaseMutex(bufferMutex);
-	}
-}
-#endif
-
-void com_init(void)
-{
-#ifdef IS_MASTER_BOARD
-	uart0.io.rx.rxHandler = mcu_com_rx_cb;
-	uart0.io.tx.len = 0;
-
-#ifdef USESOCKETS
-	memcpy(uart0.io.portname, "23\0", strlen("23\0"));
-	socket_init(&uart0);
-#elif defined(USESERIAL)
-	uart_init(&uart0);
-#elif defined(USECONSOLE)
-	console_init(&uart0);
-#endif
-#endif
-
-#ifdef MCU_HAS_UART2
-	uart2.io.rx.rxHandler = mcu_uart_rx_cb;
-	uart2.io.tx.len = 0;
-	mcu_uart_rcv_cb = mcu_uart2_rx_cb;
-	memcpy(uart2.io.portname, "\\\\.\\" str(WIN_COM_NAME), strlen("\\\\.\\" str(WIN_COM_NAME)));
-	uart_init(&uart2);
-#endif
-}
-
-void com_send(char *buff, int len)
-{
-	port_write(&uart0, buff, len);
-}
-
-void mcu_uart_putc(uint8_t c)
-{
-	port_write(&uart2, (char *)&c, 1);
-}
-
 // UART communication
 uint8_t g_mcu_combuffer[COM_BUFFER_SIZE];
 uint8_t g_mcu_bufferhead;
@@ -670,11 +338,6 @@ pthread_t thread_id;
 pthread_t thread_idout;
 pthread_t thread_timer_id;
 pthread_t thread_step_id;
-
-void mcu_tx_isr(void)
-{
-	uart0.io.tx.len = 0;
-}
 
 // simulates internal clock (1Kz limited by windows timer)
 volatile static uint32_t mcu_runtime = 0;
@@ -769,28 +432,8 @@ void rpmsimul(void)
 void ticksimul(void)
 {
 
-	// static VIRTUAL_MAP initials = {0};
-
 	if (global_isr_enabled)
 	{
-
-		// FILE *infile = fopen("inputs.txt", "r");
-		// char inputs[255];
-
-		// if (infile != NULL) //checks input file
-		// {
-		// 	fscanf(infile, "%lX", &(virtualmap.inputs));
-		// 	fclose(infile);
-
-		// 	uint32_t diff = virtualmap.inputs ^ initials.inputs;
-		// 	initials.inputs = virtualmap.inputs;
-
-		// 	if (diff)
-		// 	{
-		// 		isr_flags |= ISR_INPUT; //flags input isr
-		// 	}
-		// }
-
 		mcu_runtime++;
 		mcu_disable_global_isr();
 		mcu_rtc_cb(mcu_runtime);
@@ -803,6 +446,7 @@ void ticksimul(void)
 //	return mcu_runtime;
 // }
 
+
 void mcu_init(void)
 {
 	startCycleCounter();
@@ -810,34 +454,19 @@ void mcu_init(void)
 	virtualmap.special_inputs = 0;
 	virtualmap.inputs = 0;
 	virtualmap.outputs = 0;
-	com_init();
+	uart0.io.rx.rxHandler = mcu_com_rx_cb;
+	console_init(&uart0);
+
+	socket0.io.rx.rxHandler = mcu_wifi_rx_cb;
+	socket0.io.isclient = true;
+	strcpy(socket0.io.portname,"34000");
+	socket_init(&socket0);
 	send_char = false;
-	//	FILE *infile = fopen("inputs.txt", "r");
-	//	if (infile != NULL)
-	//	{
-	//		fscanf(infile, "%lX", &(virtualmap.inputs));
-	//		fclose(infile);
-	//	}
-	//	else
-	//	{
-	//		infile = fopen("inputs.txt", "w+");
-	//		if (infile != NULL)
-	//		{
-	//			fprintf(infile, "%lX", virtualmap.inputs);
-	//			fflush(infile);txHandle
-	//			fclose(infile);
-	//		}
-	//		else
-	//		{
-	//			printf("Failed to open input file");
-	//		}
-	//	}
+
 	g_cpu_freq = getCPUFreq();
 	start_timer(1, &ticksimul);
 	start_timer(10, &rpmsimul);
-	// #ifdef USECONSOLE
-	//	pthread_create(&thread_idout, NULL, &comoutsimul, NULL);
-	// #endif
+
 	pthread_create(&thread_step_id, NULL, &stepsimul, NULL);
 	pthread_create(&thread_io, NULL, &ioserver, NULL);
 	g_mcu_buffercount = 0;
@@ -1061,60 +690,22 @@ uint8_t mcu_get_servo(uint8_t servo)
 }
 
 // Communication functions
-// sends a packet
-void mcu_enable_tx_isr(void)
-{
-#ifndef USECONSOLE
-	// mcu_com_tx_cb();
-#endif
-	uart0.io.tx.len = 0;
-}
-
-void mcu_disable_tx_isr(void)
-{
-	uart0.io.tx.len = 0;
-}
-
-bool mcu_tx_ready(void)
-{
-	return (uart0.io.tx.len == 0);
-}
-
 void mcu_uart_putc(uint8_t c)
 {
-#ifdef ENABLE_SYNC_TX
-	com_send(c, 1);
-#endif
+	port_write(&uart0, &c, 1);
 }
 void mcu_uart_flush(void)
 {
-#ifndef ENABLE_SYNC_TX
-	uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
-	com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
-#endif
 }
 
-// void mcu_putc(char c)
-//{
-//	static int buff_index = 0;
-//	if (c != 0)
-//	{
-//		//		while (!mcu_tx_empty)
-//		//			;
-//		//		mcu_tx_empty = false;
-//
-//		mcu_tx_buffer[buff_index++] = c;
-//		if (c == '\n')
-//		{
-//			mcu_tx_buffer[buff_index++] = 0;
-//			com_send(mcu_tx_buffer, strlen(mcu_tx_buffer));
-//			buff_index = 0;
-//		}
-//		putchar(c);
-//	}
-//	mcu_tx_empty = true;
-//	mcu_tx_enabled = true;
-// }
+void mcu_wifi_putc(uint8_t c)
+{
+	port_write(&socket0, &c, 1);
+}
+void mcu_wifi_flush(void)
+{
+
+}
 
 char mcu_getc(void)
 {

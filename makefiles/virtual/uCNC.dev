@@ -9,7 +9,7 @@ Libs=
 PrivateResource=
 ResourceIncludes=
 MakeIncludes=
-Compiler=-DWIN_INTERFACE=2 -DENABLE_EXTRA_SYSTEM_CMDS -DWIN_COM_NAME=COM11 -DBOARD=BOARD_VIRTUAL -DMCU=MCU_VIRTUAL_WIN -DENABLE_MULTIBOARD -DIS_MASTER_BOARD_@@_
+Compiler=-DWIN_INTERFACE=2_@@_-DBOARD=BOARD_VIRTUAL_@@_-DMCU=MCU_VIRTUAL_WIN_@@_-DENABLE_MULTIBOARD_@@_-DMULTIBOARD_RX_CB=mcu_wifi_rx_cb_@@_-DMULTIBOARD_TX=mcu_wifi_putc_@@_-DMULTIBOARD_FLUSH=mcu_wifi_flush_@@__@@_
 CppCompiler=_@@_
 Linker=-lws2_32 -lSDL2main -lSDL2_@@_
 IsCpp=0
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=79
+UnitCount=83
 
 [VersionInfo]
 Major=1
@@ -951,7 +951,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit81]
-FileName=..\..\uCNC\src\hal\mcus\virtual\win_port.c
+FileName=..\..\uCNC\src\utils.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -961,7 +961,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit82]
-FileName=..\..\uCNC\src\hal\mcus\virtual\win_port.h
+FileName=..\..\uCNC\src\hal\mcus\virtual\win_port.c
 CompileCpp=0
 Folder=
 Compile=1
@@ -981,7 +981,7 @@ OverrideBuildCmd=0
 BuildCmd=
 
 [Unit83]
-FileName=..\..\uCNC\src\utils.c
+FileName=..\..\uCNC\src\hal\mcus\virtual\win_port.h
 CompileCpp=0
 Folder=
 Compile=1

@@ -122,15 +122,21 @@ void port_write(win_port_t *port, char *buff, int len)
  * **/
 DWORD WINAPI consoleserver(LPVOID lpParam)
 {
-    win_port_io_t *io = lpParam;
+    win_port_io_t *io = (win_port_io_t *)lpParam;
     char recvbuf[256];
 
     memset(recvbuf, 0, 256);
     SetEvent(io->rx.rxReady);
+    sleep(1);
     // Receive until the peer shuts down the connection
     do
     {
-        unsigned char c = getchar();
+        unsigned char c = getch();
+        putc(c, stderr);
+        if (c == '\r')
+        {
+            putc('\n', stderr);
+        }
         switch (c)
         {
         default:
@@ -170,11 +176,9 @@ DWORD WINAPI consoleclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = strlen((char *)io->tx.buffer);
-                /*for (int k = 0; k < iResult; k++)
-                {
-                    putchar(com_buffer[k]);
-                }*/
+                printf("%s", ((char *)io->tx.buffer));
+                io->tx.len = 0;
+                memset((char *)io->tx.buffer, 0, 256);
                 break;
 
             // The thread got ownership of an abandoned mutex
@@ -255,15 +259,29 @@ static DWORD WINAPI socketserver(LPVOID lpParam)
         return -1;
     }
 
-    // Setup the TCP listening socket
-    iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
-    if (iResult == SOCKET_ERROR)
+    if (!io->isclient)
     {
-        printf("bind failed with error: %d\n", WSAGetLastError());
-        freeaddrinfo(result);
-        closesocket(ListenSocket);
-        WSACleanup();
-        return -1;
+        // Setup the TCP listening socket
+        iResult = bind(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+        if (iResult == SOCKET_ERROR)
+        {
+            printf("bind failed with error: %d\n", WSAGetLastError());
+            freeaddrinfo(result);
+            closesocket(ListenSocket);
+            WSACleanup();
+            return -1;
+        }
+    }
+    else
+    {
+        iResult = connect(ListenSocket, result->ai_addr, (int)result->ai_addrlen);
+        if (iResult == SOCKET_ERROR)
+        {
+            freeaddrinfo(result);
+            closesocket(ListenSocket);
+            WSACleanup();
+            return -1;
+        }
     }
 
     freeaddrinfo(result);
@@ -570,7 +588,7 @@ static DWORD WINAPI uartclient(LPVOID lpParam)
             {
             // The thread got ownership of the mutex
             case WAIT_OBJECT_0:
-                iResult = io->tx.len;//strlen(io->tx.buffer);
+                iResult = io->tx.len; // strlen(io->tx.buffer);
                 if (!WriteFile(io->tx.txHandle, io->tx.buffer, iResult, &dNoOfBytesWritten, &osWrite))
                 {
                     if (GetLastError() != ERROR_IO_PENDING)

@@ -218,7 +218,7 @@ void multiboard_slave_dotasks(void)
 	}
 }
 
-#else
+#elif defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 
 // slave board rx callback
 MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)

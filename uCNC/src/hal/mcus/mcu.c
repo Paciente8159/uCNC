@@ -811,19 +811,6 @@ void mcu_flush(void)
 #endif
 }
 
-#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
-mcu_uart_rcv_delegate mcu_uart_rcv_cb;
-#ifndef mcu_uart_rx_cb
-MCU_RX_CALLBACK void __attribute__((weak)) mcu_uart_rx_cb(uint8_t c)
-{
-	if (mcu_uart_rcv_cb)
-	{
-		mcu_uart_rcv_cb(c);
-	}
-}
-#endif
-#endif
-
 #if (defined(MCU_HAS_I2C))
 #if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
 void __attribute__((weak)) mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen)

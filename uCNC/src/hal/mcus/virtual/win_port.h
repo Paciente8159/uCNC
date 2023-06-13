@@ -22,6 +22,7 @@ typedef struct win_port_tx_
 typedef struct win_port_io_
 {
     char portname[32];
+    bool isclient;
     volatile struct win_port_rx_ rx;
     volatile struct win_port_tx_ tx;
 } win_port_io_t;

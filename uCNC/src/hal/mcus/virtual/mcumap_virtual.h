@@ -220,7 +220,6 @@
 #define MCU_HAS_ONESHOT_TIMER
 
 // just to compile
-#define mcu_rx_ready() true
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)
@@ -231,11 +230,10 @@ extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
 #define asm __asm__
-// #define VFD_HUANYANG_TYPE1
 
-//allow use uart2 via socket
-#define MCU_HAS_UART2
-#define DETACH_UART2_FROM_MAIN_PROTOCOL
-
+#define MCU_HAS_UART
+#define MCU_HAS_WIFI
+#define DETACH_WIFI_FROM_MAIN_PROTOCOL
+//#define ENABLE_SYNC_TX
 
 #endif
