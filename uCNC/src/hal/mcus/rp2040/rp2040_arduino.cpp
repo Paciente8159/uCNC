@@ -281,6 +281,36 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 			protocol_send_feedback("WiFi password modified");
 			return STATUS_OK;
 		}
+
+		if (!strcmp(&grbl_cmd_str[4], "IP"))
+			{
+				if (wifi_settings.wifi_on)
+				{
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					case 2:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					default:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					}
+				}
+				else
+				{
+					protocol_send_feedback("WiFi is off");
+				}
+
+				return STATUS_OK;
+			}
 	}
 #endif
 	return STATUS_INVALID_STATEMENT;
@@ -351,14 +381,13 @@ void rp2040_wifi_bt_init(void)
 	wifi_settings = {0};
 	memcpy(wifi_settings.ssid, BOARD_NAME, strlen(BOARD_NAME));
 	memcpy(wifi_settings.pass, WIFI_PASS, strlen(WIFI_PASS));
-#ifdef ENABLE_SETTINGS_MODULES
+
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 	{
 		settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
 		memset(&wifi_settings, 0, sizeof(wifi_settings_t));
 	}
-#endif
 
 	WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
 	if (!wifi_settings.wifi_on)

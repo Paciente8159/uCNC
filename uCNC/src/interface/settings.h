@@ -77,11 +77,11 @@ extern "C"
 		float delta_armbase_radius;
 		// float delta_efector_height;
 #elif (KINEMATIC == KINEMATIC_DELTA)
-		float delta_base_radius;
-		float delta_effector_radius;
-		float delta_bicep_length;
-		float delta_forearm_length;
-		float delta_bicep_homing_angle;
+	float delta_base_radius;
+	float delta_effector_radius;
+	float delta_bicep_length;
+	float delta_forearm_length;
+	float delta_bicep_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		uint16_t backlash_steps[AXIS_TO_STEPPERS];
@@ -119,7 +119,7 @@ extern "C"
 #endif
 
 #ifndef ENABLE_SETTINGS_MODULES
-typedef uint8_t setting_offset_t;
+	typedef uint8_t setting_offset_t;
 #else
 typedef uint16_t setting_offset_t;
 #endif
@@ -135,9 +135,9 @@ typedef uint16_t setting_offset_t;
 	void settings_erase(uint16_t address, uint8_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
-#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	uint16_t settings_register_external_setting(uint8_t size);
-
+	
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler
 	typedef struct setting_args_
 	{
