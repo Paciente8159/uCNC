@@ -44,13 +44,14 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(char *buffer);
 void esp32_wifi_bt_process(void);
 
-#ifndef RAM_ONLY_SETTINGS
-#include <nvs.h>
-#include <esp_partition.h>
-// Non volatile memory
 #ifndef FLASH_EEPROM_SIZE
 #define FLASH_EEPROM_SIZE 1024
 #endif
+
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+#include <nvs.h>
+#include <esp_partition.h>
+// Non volatile memory
 typedef struct
 {
 	nvs_handle_t nvs_handle;
@@ -645,7 +646,7 @@ void mcu_init(void)
 	mcu_io_init();
 
 	// starts EEPROM before UART to enable WiFi and BT settings
-#ifndef RAM_ONLY_SETTINGS
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 	// esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
@@ -667,6 +668,9 @@ void mcu_init(void)
 	{
 		log_e("eeprom failed to open");
 	}
+#else
+	extern void esp32_eeprom_init(int size);
+	esp32_eeprom_init(FLASH_EEPROM_SIZE);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -1098,6 +1102,7 @@ void mcu_dotasks(void)
 /**
  * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
  * */
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS
@@ -1142,6 +1147,7 @@ void mcu_eeprom_flush(void)
 	}
 #endif
 }
+#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
@@ -1193,7 +1199,7 @@ void mcu_start_timeout()
 #endif
 #endif
 
-#ifdef MCU_HAS_SPI
+#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
 
 static spi_device_handle_t mcu_spi_handle;
 
