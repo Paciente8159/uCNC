@@ -582,4 +582,39 @@ extern "C"
 #endif
 }
 
+/**
+ *
+ * This handles EEPROM simulation on flash memory
+ *
+ * **/
+
+#if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
+#include <EEPROM.h>
+extern "C"
+{
+	void esp32_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t mcu_eeprom_getc(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void mcu_eeprom_flush(void)
+	{
+		if (!EEPROM.commit())
+		{
+			protocol_send_feedback(" EEPROM write error");
+		}
+	}
+}
+#endif
+
 #endif
