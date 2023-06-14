@@ -425,7 +425,7 @@ extern "C"
 
 	void mcu_wifi_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
 		uint8_t head = mcu_com_tx_head;
 		if (mcu_wifi_tx_tail != head)
 		{
