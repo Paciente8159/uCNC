@@ -2266,14 +2266,37 @@ typedef uint16_t step_t;
 #endif
 
 #ifdef ENABLE_MULTIBOARD
-#define DETACH_UART2_FROM_MAIN_PROTOCOL
+// forces crc table for faster crc calculations
 #ifdef CRC_WITHOUT_LOOKUP_TABLE
 #undef CRC_WITHOUT_LOOKUP_TABLE
 #endif
+
+// on slave board disables GRBL protocol and non volatile settings
 #ifndef IS_MASTER_BOARD
 #define RAM_ONLY_SETTINGS
 #define DISABLE_GRBL_PROTOCOL
 #endif
+
+#if(MULTIBOARD_PORT == MULTIBOARD_USES_UART)
+#ifndef MCU_HAS_UART
+#error "This board does not have UART port configured or UART is not supported"
+#endif
+#define DETACH_UART_FROM_MAIN_PROTOCOL
+#define MULTIBOARD_RX_CB mcu_uart_rx_cb
+#define MULTIBOARD_TX mcu_uart_putc
+#define MULTIBOARD_FLUSH mcu_uart_flush
+#endif
+
+#if(MULTIBOARD_PORT == MULTIBOARD_USES_UART2)
+#ifndef MCU_HAS_UART2
+#error "This board does not have UART2 port configured or UART2 is not supported"
+#endif
+#define DETACH_UART2_FROM_MAIN_PROTOCOL
+#define MULTIBOARD_RX_CB mcu_uart2_rx_cb
+#define MULTIBOARD_TX mcu_uart2_putc
+#define MULTIBOARD_FLUSH mcu_uart2_flush
+#endif
+
 #endif
 
 #ifdef __cplusplus

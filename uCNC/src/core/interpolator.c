@@ -375,7 +375,7 @@ void itp_run(void)
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t *)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
 #endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
@@ -688,7 +688,7 @@ void itp_run(void)
 
 // finally write the segment
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+		master_send_command(0, MULTIBOARD_CMD_ITPSEGMENT, (uint8_t *)sgm, sizeof(itp_segment_t));
 #endif
 		itp_sgm_buffer_write();
 	}
@@ -806,7 +806,7 @@ void itp_run(void)
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		multiboard_master_send_command(MULTIBOARD_CMD_ITP_BLOCK, (uint8_t*)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+		multiboard_master_send_command(MULTIBOARD_CMD_ITP_BLOCK, (uint8_t *)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
 #endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 
@@ -1047,7 +1047,7 @@ void itp_run(void)
 
 		// finally write the segment
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		multiboard_master_send_command(MULTIBOARD_CMD_ITP_SEGMENT, (uint8_t*)sgm, sizeof(itp_segment_t));
+		multiboard_master_send_command(MULTIBOARD_CMD_ITP_SEGMENT, (uint8_t *)sgm, sizeof(itp_segment_t));
 #endif
 		itp_sgm_buffer_write();
 	}
@@ -1100,6 +1100,15 @@ void itp_get_rt_position(int32_t *position)
 {
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+	// ORED position
+	for (uint8_t i = STEPPER_COUNT; i != 0;)
+	{
+		i--;
+		position[i] |= g_multiboard_slave.itp_rt_pos[i];
+	}
+#endif
+
 #if STEPPERS_ENCODERS_MASK != 0
 #if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
 	position[0] = encoder_get_position(STEP0_ENCODER);
@@ -1135,7 +1144,7 @@ int32_t itp_get_rt_position_index(int8_t index)
 void itp_reset_rt_position(float *origin)
 {
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	multiboard_master_send_command(MULTIBOARD_CMD_ITP_POS_RESET, (uint8_t*)origin, (sizeof(float) * AXIS_COUNT));
+	multiboard_master_send_command(MULTIBOARD_CMD_ITP_POS_RESET, (uint8_t *)origin, (sizeof(float) * AXIS_COUNT));
 #endif
 	if (!g_settings.homing_enabled)
 	{
@@ -1736,7 +1745,7 @@ void itp_start(bool is_synched)
 			__ATOMIC__
 			{
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-				multiboard_master_send_command(MULTIBOARD_CMD_ITP_START, (uint8_t*)&is_synched, 1);
+				multiboard_master_send_command(MULTIBOARD_CMD_ITP_START, (uint8_t *)&is_synched, 1);
 #endif
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);

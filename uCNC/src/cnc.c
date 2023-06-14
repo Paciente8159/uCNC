@@ -309,9 +309,9 @@ void cnc_home(void)
 
 void cnc_alarm(int8_t code)
 {
+	cnc_state.alarm = code;
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
-	cnc_state.alarm = code;
 #ifdef ENABLE_IO_ALARM_DEBUG
 	protocol_send_string(MSG_START);
 	protocol_send_string(__romstr__("LIMITS:"));

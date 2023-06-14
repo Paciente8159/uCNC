@@ -602,6 +602,43 @@ extern "C"
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
+
+	/**
+	 *
+	 * Multiboard config
+	 * These are the advanced multiboard configurations
+	 *
+	 * **/
+
+#ifdef ENABLE_MULTIBOARD
+
+// uncomment to set this has the master board
+#ifndef IS_MASTER_BOARD
+#define IS_MASTER_BOARD
+#endif
+
+//multiboard port options
+#define MULTIBOARD_USES_UART 0
+#define MULTIBOARD_USES_UART2 1
+// #define MULTIBOARD_USES_USB 2
+// #define MULTIBOARD_USES_WIFI 3
+// #define MULTIBOARD_USES_BT 4
+
+//by default uses uart2
+#ifndef MULTIBOARD_PORT
+#define MULTIBOARD_PORT MULTIBOARD_USES_UART
+#endif
+
+// uncomment all subsystems that exist in the slave board
+// #define SLAVE_HAS_CONTROLS
+// #define SLAVE_HAS_LIMITS
+// #define SLAVE_HAS_PROBE
+// #define SLAVE_HAS_CHANGE_INPUTS
+// #define SLAVE_HAS_ENCODERS
+// #define SLAVE_HAS_STEPPERS
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif

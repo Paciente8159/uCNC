@@ -24,17 +24,18 @@ slave_board_state_t g_multiboard_slave;
 // small ring buffer
 DECL_STATIC_BUFFER(multiboard_data_t, multiboard_ring_buffer, 3);
 
+// defaults to UART2 if undefined
 #ifndef MULTIBOARD_RX_CB
-#define MULTIBOARD_RX_CB mcu_uart_rx_cb
+#define MULTIBOARD_RX_CB mcu_uart2_rx_cb
 #endif
 #ifndef MULTIBOARD_TX
-#define MULTIBOARD_TX mcu_uart_putc
+#define MULTIBOARD_TX mcu_uart2_putc
 #endif
 #ifndef MULTIBOARD_FLUSH
-#define MULTIBOARD_FLUSH mcu_uart_flush
+#define MULTIBOARD_FLUSH mcu_uart2_flush
 #endif
 
-static FORCEINLINE void multiboard_rcv_byte_cb(unsigned char c)
+void MULTIBOARD_RX_CB(unsigned char c)
 {
 	static int8_t framebytes = -3;
 
@@ -97,12 +98,6 @@ static bool multiboard_check_crc(multiboard_data_t packet)
 }
 
 #ifndef IS_MASTER_BOARD
-// slave board rx callback
-MCU_RX_CALLBACK void MULTIBOARD_RX_CB(unsigned char c)
-{
-	multiboard_rcv_byte_cb(c);
-}
-
 static void multiboard_slave_send_response(multiboard_data_t *msg, bool is_ack)
 {
 	uint8_t len = (msg->multiboard_frame.length + 2), crc = 0;
@@ -170,14 +165,14 @@ void multiboard_slave_dotasks(void)
 				itp_start(msg.multiboard_frame.content[0]);
 				break;
 			case MULTIBOARD_CMD_ITP_POS_RESET:
-				itp_reset_rt_position((float*)msg.multiboard_frame.content);
+				itp_reset_rt_position((float *)msg.multiboard_frame.content);
 				break;
 			case MULTIBOARD_CMD_SET_OUTPUT:
 				io_set_output(msg.multiboard_frame.content[0], msg.multiboard_frame.content[1]);
 				break;
 				// request commands
 			case MULTIBOARD_CMD_GET_ITP_POS:
-				itp_get_rt_position((int32_t*)msg.multiboard_frame.content);
+				itp_get_rt_position((int32_t *)msg.multiboard_frame.content);
 				msg.multiboard_frame.length = sizeof(int32_t) * STEPPER_COUNT;
 				multiboard_slave_send_response(&msg, false);
 				return;
@@ -192,7 +187,7 @@ void multiboard_slave_dotasks(void)
 				break;
 			}
 
-			msg.multiboard_frame.length = 0;
+			msg.multiboard_frame.length = 1;
 			msg.multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_ACK;
 			multiboard_slave_send_response(&msg, true);
 		}
@@ -219,13 +214,6 @@ void multiboard_slave_dotasks(void)
 }
 
 #elif defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-
-// slave board rx callback
-MCU_RX_CALLBACK void mcu_uart_rx_cb(unsigned char c)
-{
-	multiboard_rcv_byte_cb(c);
-}
-
 static uint8_t multiboard_master_process_slave_message(uint8_t command, multiboard_data_t msg)
 {
 	// checks the msg crc
@@ -261,9 +249,11 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 	timeout += mcu_millis();
 	while (true)
 	{
+		mcu_dotasks();
 		// received something
 		while (!BUFFER_EMPTY(multiboard_ring_buffer))
 		{
+			mcu_dotasks();
 			// gets
 			multiboard_data_t msg;
 			BUFFER_POP(multiboard_ring_buffer, &msg);
@@ -297,6 +287,12 @@ void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
 {
 	uint8_t tries = MULTIBOARD_PROTOCOL_RETRIES;
 
+	// prevents reentrancy
+	if (cnc_get_alarm() == EXEC_ALARM_MULTIBOARD_CRITICAL_ERROR)
+	{
+		return;
+	}
+
 	do
 	{
 		MULTIBOARD_TX(MULTIBOARD_PROTOCOL_SOF);
@@ -319,6 +315,7 @@ void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
 			cnc_alarm(EXEC_ALARM_MULTIBOARD_CRITICAL_ERROR);
 			return;
 		}
+		mcu_dotasks();
 	} while (multiboard_master_check_ack(command, MULTIBOARD_PROTOCOL_TIMEOUT_MS) != MULTIBOARD_PROTOCOL_OK);
 }
 #endif

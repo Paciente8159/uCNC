@@ -537,17 +537,12 @@ extern "C"
 	/**
 	 *
 	 * Multiboard config
+	 * This are the basic multiboard definitions
+	 * Please go to the cnc_hal_config.h to configure advanced multiboard options
 	 *
 	 * **/
 
-// #define ENABLE_MULTIBOARD
-#ifdef ENABLE_MULTIBOARD
-#ifndef IS_MASTER_BOARD
-// #define IS_MASTER_BOARD
-#endif
-
-#define DETACH_UART_FROM_MAIN_PROTOCOL
-#endif
+#define ENABLE_MULTIBOARD
 
 /**
  *
