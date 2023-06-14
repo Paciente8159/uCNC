@@ -24,6 +24,10 @@
 #include <string.h>
 #include "../../../../cnc_config.h"
 
+#ifndef TX_BUFFER_SIZE
+#define TX_BUFFER_SIZE 128
+#endif
+
 #ifndef BT_ID_MAX_LEN
 #define BT_ID_MAX_LEN 32
 #endif
@@ -631,7 +635,7 @@ extern "C"
 			esp32spi->end();
 			esp32spi = NULL;
 		}
-		
+
 #if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
 		esp32spi = new SPIClass(HSPI);
 #else

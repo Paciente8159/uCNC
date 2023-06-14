@@ -1199,7 +1199,7 @@ void mcu_start_timeout()
 #endif
 #endif
 
-#ifdef MCU_HAS_SPI
+#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
 
 static spi_device_handle_t mcu_spi_handle;
 
