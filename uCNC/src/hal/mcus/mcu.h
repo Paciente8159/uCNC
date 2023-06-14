@@ -509,6 +509,9 @@ extern "C"
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	extern uint8_t mcu_uart2_tx_tail;
 #endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	extern uint8_t mcu_wifi_tx_tail;
+#endif
 #endif
 #ifndef mcu_putc
 	void mcu_putc(uint8_t c);
