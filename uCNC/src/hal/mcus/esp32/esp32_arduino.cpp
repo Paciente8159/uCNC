@@ -415,7 +415,7 @@ extern "C"
 #ifdef MCU_HAS_WIFI
 	void mcu_wifi_putc(uint8_t c)
 	{
-#ifdef ENABLE_WIFI
+#if defined(ENABLE_SYNC_TX) || defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
 		if (esp32_wifi_clientok())
 		{
 			serverClient.write(c);
@@ -425,10 +425,21 @@ extern "C"
 
 	void mcu_wifi_flush(void)
 	{
-#ifdef ENABLE_WIFI
-		if (esp32_wifi_clientok())
+#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+		uint8_t head = mcu_com_tx_head;
+		if (mcu_wifi_tx_tail != head)
 		{
-			serverClient.flush();
+			if (esp32_wifi_clientok())
+			{
+				if (mcu_wifi_tx_tail > head)
+				{
+					serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (TX_BUFFER_SIZE - mcu_wifi_tx_tail));
+					mcu_wifi_tx_tail = 0;
+				}
+
+				serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (head - mcu_wifi_tx_tail));
+			}
+			mcu_wifi_tx_tail = head;
 		}
 #endif
 	}

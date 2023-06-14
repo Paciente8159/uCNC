@@ -27,6 +27,9 @@ uint8_t mcu_uart_tx_tail;
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 uint8_t mcu_uart2_tx_tail;
 #endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+uint8_t mcu_wifi_tx_tail;
+#endif
 #endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
@@ -740,9 +743,6 @@ void mcu_putc(uint8_t c)
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_putc(c);
 #endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	mcu_wifi_putc(c);
-#endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	mcu_bt_putc(c);
 #endif
@@ -753,6 +753,9 @@ void mcu_putc(uint8_t c)
 #endif
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	mcu_uart2_putc(c);
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	mcu_wifi_putc(c);
 #endif
 #else
 	uint8_t write = mcu_com_tx_head;
@@ -776,6 +779,14 @@ void mcu_putc(uint8_t c)
 		cnc_dotasks();
 	} // while buffer is full
 #endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	while (write == mcu_wifi_tx_tail)
+	{
+		cnc_status_report_lock = true;
+		mcu_flush();
+		cnc_dotasks();
+	} // while buffer is full
+#endif
 	cnc_status_report_lock = false;
 
 	mcu_com_tx_buffer[mcu_com_tx_head] = c;
@@ -787,9 +798,6 @@ void mcu_flush(void)
 {
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_flush();
-#endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	mcu_wifi_flush();
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	mcu_bt_flush();
@@ -806,6 +814,12 @@ void mcu_flush(void)
 	if (mcu_uart2_tx_tail != mcu_com_tx_head)
 	{
 		mcu_uart2_flush();
+	}
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	if (mcu_wifi_tx_tail != mcu_com_tx_head)
+	{
+		mcu_wifi_flush();
 	}
 #endif
 #endif
