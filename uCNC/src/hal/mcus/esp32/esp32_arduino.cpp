@@ -280,6 +280,36 @@ extern "C"
 				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
+
+			if (!strcmp(&grbl_cmd_str[4], "IP"))
+			{
+				if (wifi_settings.wifi_on)
+				{
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					case 2:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					default:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					}
+				}
+				else
+				{
+					protocol_send_feedback("WiFi is off");
+				}
+
+				return STATUS_OK;
+			}
 		}
 #endif
 		return STATUS_INVALID_STATEMENT;

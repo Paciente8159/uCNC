@@ -227,9 +227,14 @@ void settings_init(void)
 
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
+	// settiing address invalid
+	if (address == UINT16_MAX)
+	{
+		return STATUS_SETTING_DISABLED;
+	}
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
-	//if handled exit
+	// if handled exit
 	if (EVENT_INVOKE(settings_load, &args))
 	{
 		return STATUS_OK;
@@ -272,6 +277,11 @@ void settings_reset(bool erase_startup_blocks)
 
 void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 {
+	if (address == UINT16_MAX)
+	{
+		return;
+	}
+
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_save, &args))
@@ -304,7 +314,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 bool settings_allows_negative(setting_offset_t id)
 {
 #if TOOL_COUNT > 0
-	if(id > 80 && id <= (80 + TOOL_COUNT))
+	if (id > 80 && id <= (80 + TOOL_COUNT))
 	{
 		return true;
 	}
@@ -556,12 +566,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 
 void settings_erase(uint16_t address, uint8_t size)
 {
+	if (address == UINT16_MAX)
+	{
+		return;
+	}
 
 #ifdef ENABLE_SETTINGS_MODULES
 	settings_args_t args = {.address = address, .data = NULL, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
-		//if the event was handled
+		// if the event was handled
 		return;
 	}
 #endif
@@ -634,12 +648,15 @@ void settings_save_startup_gcode(uint16_t address)
 #endif
 }
 
-#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 uint16_t settings_register_external_setting(uint8_t size)
 {
+#if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;
 	uint16_t new_offset = setting_offset;
 	setting_offset += size + 1; // include crc
 	return new_offset;
-}
+#else
+	#warning "External/extension settings storing is disabled"
+	return UINT16_MAX;
 #endif
+}

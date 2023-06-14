@@ -76,8 +76,8 @@ extern "C"
 #define ONESHOT_TIMER 2
 
 #define SPI_CLK_BIT 14
-#define SPI_SDO_BIT 12
-#define SPI_SDI_BIT 13
+#define SPI_SDO_BIT 13
+#define SPI_SDI_BIT 12
 #define SPI_CS_BIT 15
 
 //software I2C
