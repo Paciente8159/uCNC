@@ -739,6 +739,8 @@ uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t gr
 
 void mcu_putc(uint8_t c)
 {
+	mcu_uart_putc(c);
+	return;
 	// USB, WiFi and BT have usually dedicated buffers
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_putc(c);
@@ -796,6 +798,8 @@ void mcu_putc(uint8_t c)
 
 void mcu_flush(void)
 {
+	mcu_uart_flush();
+	return;
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_flush();
 #endif

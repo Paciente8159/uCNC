@@ -551,49 +551,42 @@ uint8_t mcu_get_servo(uint8_t servo)
 }
 
 #ifdef MCU_HAS_UART
+DECL_BUFFER(char, uart, 64);
 void mcu_uart_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
-		;
-#endif
-
-	COM_OUTREG = c;
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	SETBIT(UCSRB_REG, UDRIE_BIT);
-#endif
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart, &c);
 }
 
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	if (CHECKBIT(UCSRA_REG, UDRE_BIT)) // not ready start flushing
 	{
-		uint8_t read = mcu_uart_tx_tail;
-		if (read == mcu_com_tx_head)
+		if (BUFFER_EMPTY(uart))
 		{
 			return;
 		}
-
-		unsigned char c = mcu_com_tx_buffer[read];
-		if (++read == TX_BUFFER_SIZE)
-		{
-			read = 0;
-		}
-		mcu_uart_tx_tail = read;
-		mcu_uart_putc(c);
+		uint8_t c;
+		BUFFER_DEQUEUE(uart, &c);
+		while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
+			;
+		COM_OUTREG = c;
+		SETBIT(UCSRB_REG, UDRIE_BIT);
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
 #endif
 	}
-#endif
 }
 #endif
 
 #ifdef MCU_HAS_UART2
 void mcu_uart2_putc(uint8_t c)
 {
-	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT_2));
+	while (!CHECKBIT(UCSRA_REG_2, UDRE_BIT_2))
+		;
 
 	COM2_OUTREG = c;
 #if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
@@ -1269,7 +1262,6 @@ ISR(TWI_vect, ISR_BLOCK)
 }
 #endif
 #endif
-
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 

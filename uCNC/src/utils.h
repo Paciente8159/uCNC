@@ -211,7 +211,7 @@ extern "C"
 	{
 		volatile uint8_t count;
 		volatile uint8_t head;
-		uint8_t tail;
+		volatile uint8_t tail;
 	} ring_buffer_t;
 
 #define DECL_BUFFER(T, N, S)           \
@@ -225,17 +225,19 @@ extern "C"
 #define BUFFER_PEEK(buffer) (&buffer##_bufferdata[buffer.tail])
 #define BUFFER_PULL(buffer)                   \
 	{                                         \
-		uint8_t i = buffer.tail++;            \
+		uint8_t tail = buffer.tail;           \
+		void *p = &buffer##_bufferdata[tail]; \
 		if (!BUFFER_EMPTY(buffer))            \
 		{                                     \
-			buffer.tail++;                    \
-			if (buffer.tail >= buffer##_size) \
+			tail++;                           \
+			if (tail >= buffer##_size)        \
 			{                                 \
-				buffer.tail = 0;              \
+				tail = 0;                     \
 			}                                 \
 			buffer.count--;                   \
+			buffer.tail = tail;               \
 		}                                     \
-		&buffer##_bufferdata[i];              \
+		p;                                    \
 	}
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                                      \
