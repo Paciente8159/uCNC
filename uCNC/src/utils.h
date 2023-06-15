@@ -26,6 +26,7 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <math.h>
 
 #ifndef BYTE_OPS
@@ -201,6 +202,160 @@ extern "C"
 
 #define __STRGIFY__(s) #s
 #define STRGIFY(s) __STRGIFY__(s)
+
+/**
+ * RING BUFFER UTILS
+ * **/
+#define DECL_BUFFER_TYPE(T, S)  \
+	typedef struct T##_buffer_  \
+	{                           \
+		volatile uint8_t count; \
+		volatile uint8_t head;  \
+		uint8_t tail;           \
+		T data[S];              \
+	} T##S##_buffer_t
+
+#define DECL_BUFFER(T, N, S)           \
+	DECL_BUFFER_TYPE(T, S);            \
+	static const uint8_t N##_size = S; \
+	T##S##_buffer_t N
+
+#define DECL_STATIC_BUFFER(T, N, S)    \
+	DECL_BUFFER_TYPE(T, S);            \
+	static const uint8_t N##_size = S; \
+	static T##S##_buffer_t N
+
+#define BUFFER_AVAILABLE(buffer) (buffer.count)
+#define BUFFER_EMPTY(buffer) (!buffer.count)
+#define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
+#define BUFFER_PEEK(buffer) (&buffer.data[buffer.tail])
+#define BUFFER_PULL(buffer)                   \
+	{                                         \
+		uint8_t i = buffer.tail++;            \
+		if (!BUFFER_EMPTY(buffer))            \
+		{                                     \
+			buffer.tail++;                    \
+			if (buffer.tail >= buffer##_size) \
+			{                                 \
+				buffer.tail = 0;              \
+			}                                 \
+			buffer.count--;                   \
+		}                                     \
+		&buffer.data[i];                      \
+	}
+
+#define BUFFER_DEQUEUE(buffer, ptr)                                      \
+	{                                                                    \
+		if (!BUFFER_EMPTY(buffer))                                       \
+		{                                                                \
+			uint8_t tail = buffer.tail;                                  \
+			if (ptr != NULL)                                             \
+			{                                                            \
+				memcpy(ptr, &buffer.data[tail], sizeof(buffer.data[0])); \
+			}                                                            \
+			tail++;                                                      \
+			if (tail >= buffer##_size)                                   \
+			{                                                            \
+				tail = 0;                                                \
+			}                                                            \
+			buffer.tail = tail;                                          \
+			buffer.count--;                                              \
+		}                                                                \
+	}
+#define BUFFER_PUSH(buffer)                 \
+	{                                       \
+		if (!BUFFER_FULL(buffer))           \
+		{                                   \
+			uint8_t head = buffer.head + 1; \
+			if (head >= buffer##_size)      \
+			{                               \
+				head = 0;                   \
+			}                               \
+			buffer.head = head;             \
+			buffer.count++;                 \
+		}                                   \
+	}
+
+#define BUFFER_ENQUEUE(buffer, ptr)                                      \
+	{                                                                    \
+		if (!BUFFER_FULL(buffer))                                        \
+		{                                                                \
+			uint8_t head = buffer.head;                                  \
+			if (ptr != NULL)                                             \
+			{                                                            \
+				memcpy(&buffer.data[head], ptr, sizeof(buffer.data[0])); \
+			}                                                            \
+			head++;                                                      \
+			if (head >= buffer##_size)                                   \
+			{                                                            \
+				head = 0;                                                \
+			}                                                            \
+			buffer.head = head;                                          \
+			buffer.count++;                                              \
+		}                                                                \
+	}
+#define BUFFER_NEXT_FREE(buffer) (&buffer.data[buffer.head])
+
+#define BUFFER_WRITE(buffer, ptr, len, written) ({                                   \
+	*written = 0;                                                                    \
+	uint8_t head = buffer.head;                                                      \
+	uint8_t count = buffer.count;                                                    \
+	count = MIN(buffer##_size - count, len);                                         \
+	if (count)                                                                       \
+	{                                                                                \
+		uint8_t avail = (buffer##_size - head);                                      \
+		if (avail < count && avail)                                                  \
+		{                                                                            \
+			memcpy(&buffer.data[head], ptr, avail * sizeof(buffer.data[0]));         \
+			*written = avail;                                                        \
+			count -= avail;                                                          \
+			head = 0;                                                                \
+		}                                                                            \
+		else                                                                         \
+		{                                                                            \
+			avail = 0;                                                               \
+		}                                                                            \
+		if (count)                                                                   \
+		{                                                                            \
+			memcpy(&buffer.data[head], &ptr[avail], count * sizeof(buffer.data[0])); \
+			*written += count;                                                       \
+			buffer.count += *written;                                                \
+			buffer.head = head + count;                                              \
+		}                                                                            \
+	}                                                                                \
+})
+
+#define BUFFER_READ(buffer, ptr, len, read) ({                                       \
+	*read = 0;                                                                       \
+	uint8_t count = buffer.count;                                                    \
+	uint8_t tail = buffer.tail;                                                      \
+	if (count > len)                                                                 \
+	{                                                                                \
+		count = len;                                                                 \
+	}                                                                                \
+	if (count)                                                                       \
+	{                                                                                \
+		uint8_t avail = buffer_size - tail;                                          \
+		if (avail < count && avail)                                                  \
+		{                                                                            \
+			memcpy(ptr, &buffer.data[tail], avail * sizeof(buffer.data[0]));         \
+			*read = avail;                                                           \
+			count -= avail;                                                          \
+			tail = 0;                                                                \
+		}                                                                            \
+		else                                                                         \
+		{                                                                            \
+			avail = 0;                                                               \
+		}                                                                            \
+		if (count)                                                                   \
+		{                                                                            \
+			memcpy(&ptr[avail], &buffer.data[tail], count * sizeof(buffer.data[0])); \
+			*read += count;                                                          \
+			buffer.count -= *read;                                                   \
+			buffer.tail = tail + count;                                              \
+		}                                                                            \
+	}                                                                                \
+})
 
 #ifdef __cplusplus
 }
