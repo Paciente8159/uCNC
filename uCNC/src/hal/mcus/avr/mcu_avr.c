@@ -554,7 +554,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 DECL_BUFFER(char, uart, 64);
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (!BUFFER_EMPTY(uart))
 	{
 		mcu_uart_flush();
 	}
@@ -571,8 +571,6 @@ void mcu_uart_flush(void)
 		}
 		uint8_t c;
 		BUFFER_DEQUEUE(uart, &c);
-		while (!CHECKBIT(UCSRA_REG, UDRE_BIT))
-			;
 		COM_OUTREG = c;
 		SETBIT(UCSRB_REG, UDRIE_BIT);
 #if ASSERT_PIN(ACTIVITY_LED)
