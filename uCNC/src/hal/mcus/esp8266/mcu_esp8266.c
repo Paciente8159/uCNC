@@ -489,6 +489,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 void mcu_enable_global_isr(void)
 {
 	// ets_intr_unlock();
+	// xt_rsil(0);
 	esp8266_global_isr_enabled = true;
 }
 #endif
@@ -501,6 +502,7 @@ void mcu_enable_global_isr(void)
 void mcu_disable_global_isr(void)
 {
 	esp8266_global_isr_enabled = false;
+	// xt_rsil(15);
 	// ets_intr_lock();
 }
 #endif

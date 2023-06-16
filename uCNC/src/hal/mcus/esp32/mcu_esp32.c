@@ -887,13 +887,13 @@ void mcu_uart_putc(uint8_t c)
 }
 void mcu_uart_flush(void)
 {
-	if (!BUFFER_EMPTY(uart))
+	while (!BUFFER_EMPTY(uart))
 	{
 		uint8_t tmp[UART_TX_BUFFER_SIZE];
-		uint8_t w;
+		uint8_t r;
 
-		BUFFER_WRITE(uart, tmp, UART_TX_BUFFER_SIZE, &w);
-		uart_write_bytes(COM_PORT, &tmp, w);
+		BUFFER_READ(uart, tmp, UART_TX_BUFFER_SIZE, r);
+		uart_write_bytes(COM_PORT, tmp, r);
 	}
 }
 #endif
@@ -914,13 +914,13 @@ void mcu_uart2_putc(uint8_t c)
 
 void mcu_uart2_flush(void)
 {
-if (!BUFFER_EMPTY(uart))
+	while (!BUFFER_EMPTY(uart2))
 	{
 		uint8_t tmp[UART2_TX_BUFFER_SIZE];
-		uint8_t w;
+		uint8_t r;
 
-		BUFFER_WRITE(uart, tmp, UART2_TX_BUFFER_SIZE, &w);
-		uart_write_bytes(COM2_PORT, &tmp, w);
+		BUFFER_READ(uart2, tmp, UART2_TX_BUFFER_SIZE, r);
+		uart_write_bytes(COM2_PORT, tmp, r);
 	}
 }
 #endif

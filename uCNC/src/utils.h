@@ -197,8 +197,12 @@ extern "C"
 		mcu_enable_global_isr();
 	}
 
+#ifndef __ATOMIC__
 #define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#endif
+#ifndef __ATOMIC_FORCEON__
 #define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#endif
 
 #define __STRGIFY__(s) #s
 #define STRGIFY(s) __STRGIFY__(s)
@@ -318,7 +322,7 @@ extern "C"
 #define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                                   \
-	*written = 0;                                                                                    \
+	written = 0;                                                                                     \
 	uint8_t count, head;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -332,7 +336,7 @@ extern "C"
 		if (avail < count && avail)                                                                  \
 		{                                                                                            \
 			memcpy(&buffer##_bufferdata[head], ptr, avail * sizeof(buffer##_bufferdata[0]));         \
-			*written = avail;                                                                        \
+			written = avail;                                                                         \
 			count -= avail;                                                                          \
 			head = 0;                                                                                \
 		}                                                                                            \
@@ -343,18 +347,23 @@ extern "C"
 		if (count)                                                                                   \
 		{                                                                                            \
 			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
-			*written += count;                                                                       \
+			written += count;                                                                        \
 			__ATOMIC__                                                                               \
 			{                                                                                        \
-				buffer.head = head + count;                                                          \
-				buffer.count += *written;                                                            \
+				head += count;                                                                       \
+				if (head == buffer##_size)                                                           \
+				{                                                                                    \
+					head = 0;                                                                        \
+				}                                                                                    \
+				buffer.head = head;                                                                  \
+				buffer.count += written;                                                             \
 			}                                                                                        \
 		}                                                                                            \
 	}                                                                                                \
 })
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                       \
-	*read = 0;                                                                                       \
+	read = 0;                                                                                        \
 	uint8_t count, tail;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -367,11 +376,11 @@ extern "C"
 	}                                                                                                \
 	if (count)                                                                                       \
 	{                                                                                                \
-		uint8_t avail = buffer_size - tail;                                                          \
+		uint8_t avail = buffer##_size - tail;                                                        \
 		if (avail < count && avail)                                                                  \
 		{                                                                                            \
 			memcpy(ptr, &buffer##_bufferdata[tail], avail * sizeof(buffer##_bufferdata[0]));         \
-			*read = avail;                                                                           \
+			read = avail;                                                                            \
 			count -= avail;                                                                          \
 			tail = 0;                                                                                \
 		}                                                                                            \
@@ -382,11 +391,16 @@ extern "C"
 		if (count)                                                                                   \
 		{                                                                                            \
 			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
-			*read += count;                                                                          \
+			read += count;                                                                           \
 			__ATOMIC__                                                                               \
 			{                                                                                        \
-				buffer.head = tail + count;                                                          \
-				buffer.count -= *read;                                                               \
+				tail += count;                                                                       \
+				if (tail == buffer##_size)                                                           \
+				{                                                                                    \
+					tail = 0;                                                                        \
+				}                                                                                    \
+				buffer.tail = tail;                                                                  \
+				buffer.count -= read;                                                                \
 			}                                                                                        \
 		}                                                                                            \
 	}                                                                                                \

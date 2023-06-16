@@ -321,7 +321,7 @@ extern "C"
 					serverClient.stop();
 				}
 			}
-			serverClient = server.available();
+			serverClient = server.accept();
 			serverClient.println("[MSG:New client connected]");
 			return false;
 		}
@@ -377,13 +377,14 @@ extern "C"
 
 	void mcu_uart_flush(void)
 	{
-		if (!BUFFER_EMPTY(uart))
+		while (!BUFFER_EMPTY(uart))
 		{
 			uint8_t tmp[UART_TX_BUFFER_SIZE];
-			uint8_t w;
+			uint8_t r;
+			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
 
-			BUFFER_WRITE(uart, tmp, UART_TX_BUFFER_SIZE, &w);
-			Serial.write(tmp, w);
+			BUFFER_READ(uart, tmp, max, r);
+			Serial.write(tmp, r);
 			Serial.flush();
 		}
 	}
@@ -407,16 +408,18 @@ extern "C"
 	{
 		if (esp8266_wifi_clientok())
 		{
-			if (!BUFFER_EMPTY(wifi))
+			while (!BUFFER_EMPTY(wifi))
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
-				uint8_t w;
+				uint8_t r;
+				uint8_t max = (uint8_t)MIN(serverClient.availableForWrite(), WIFI_TX_BUFFER_SIZE);
 
-				BUFFER_WRITE(wifi, tmp, WIFI_TX_BUFFER_SIZE, &w);
-				serverClient.write(tmp, w);
+				BUFFER_READ(wifi, tmp, max, r);
+				serverClient.write(tmp, r);
 			}
 		}
-		else {
+		else
+		{
 			// no client (discard)
 			BUFFER_CLEAR(wifi);
 		}

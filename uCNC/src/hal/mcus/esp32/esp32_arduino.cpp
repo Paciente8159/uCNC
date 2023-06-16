@@ -430,13 +430,13 @@ extern "C"
 	{
 		if (esp32_wifi_clientok())
 		{
-			if (!BUFFER_EMPTY(wifi))
+			while (!BUFFER_EMPTY(wifi))
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
-				uint8_t w;
+				uint8_t r;
 
-				BUFFER_WRITE(wifi, tmp, WIFI_TX_BUFFER_SIZE, &w);
-				serverClient.write(tmp, w);
+				BUFFER_READ(wifi, tmp, WIFI_TX_BUFFER_SIZE, r);
+				serverClient.write(tmp, r);
 			}
 		}
 		else
@@ -465,19 +465,20 @@ extern "C"
 	{
 		if (SerialBT.hasClient())
 		{
-			if (!BUFFER_EMPTY(wifi))
+			while (!BUFFER_EMPTY(bluetooth))
 			{
 				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
-				uint8_t w;
+				uint8_t r;
 
-				BUFFER_WRITE(wifi, tmp, BLUETOOTH_TX_BUFFER_SIZE, &w);
-				SerialBT.write(tmp, w);
+				BUFFER_READ(bluetooth, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+				SerialBT.write(tmp, r);
 				SerialBT.flush();
 			}
 		}
-		else {
+		else
+		{
 			// no client (discard)
-			BUFFER_CLEAR(wifi);
+			BUFFER_CLEAR(bluetooth);
 		}
 	}
 #endif
