@@ -362,65 +362,64 @@ extern "C"
 	}
 
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 	void mcu_uart_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		Serial.write(c);
-#endif
+		while (BUFFER_FULL(uart))
+		{
+			mcu_uart_flush();
+		}
+		BUFFER_ENQUEUE(uart, &c);
 	}
 
 	void mcu_uart_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		if (mcu_uart_tx_tail != mcu_com_tx_head)
+		if (!BUFFER_EMPTY(uart))
 		{
-			if (mcu_uart_tx_tail > mcu_com_tx_head)
-			{
-				Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
-				Serial.flush();
-				mcu_uart_tx_tail = 0;
-			}
+			uint8_t tmp[UART_TX_BUFFER_SIZE];
+			uint8_t w;
 
-			Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+			BUFFER_WRITE(uart, tmp, UART_TX_BUFFER_SIZE, &w);
+			Serial.write(tmp, w);
 			Serial.flush();
-			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
-#else
-		Serial.flush();
-#endif
 	}
 #endif
 
 #ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
 	void mcu_wifi_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		if (esp8266_wifi_clientok())
+		while (BUFFER_FULL(wifi))
 		{
-			serverClient.write(c);
+			mcu_wifi_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(wifi, &c);
 	}
 
 	void mcu_wifi_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		uint8_t head = mcu_com_tx_head;
-		if (mcu_wifi_tx_tail != head)
+		if (esp8266_wifi_clientok())
 		{
-			if (esp8266_wifi_clientok())
+			if (!BUFFER_EMPTY(wifi))
 			{
-				if (mcu_wifi_tx_tail > head)
-				{
-					serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (TX_BUFFER_SIZE - mcu_wifi_tx_tail));
-					mcu_wifi_tx_tail = 0;
-				}
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t w;
 
-				serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (head - mcu_wifi_tx_tail));
+				BUFFER_WRITE(wifi, tmp, WIFI_TX_BUFFER_SIZE, &w);
+				serverClient.write(tmp, w);
 			}
-			mcu_wifi_tx_tail = head;
 		}
-#endif
+		else {
+			// no client (discard)
+			BUFFER_CLEAR(wifi);
+		}
 	}
 #endif
 
@@ -444,7 +443,7 @@ extern "C"
 #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_com_rx_cb((uint8_t)Serial.read());
 #else
-		mcu_uart_rx_cb((uint8_t)Serial.read());
+			mcu_uart_rx_cb((uint8_t)Serial.read());
 #endif
 		}
 

@@ -413,57 +413,72 @@ extern "C"
 	}
 
 #ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
 	void mcu_wifi_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		if (esp32_wifi_clientok())
+		while (BUFFER_FULL(wifi))
 		{
-			serverClient.write(c);
+			mcu_wifi_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(wifi, &c);
 	}
 
 	void mcu_wifi_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		uint8_t head = mcu_com_tx_head;
-		if (mcu_wifi_tx_tail != head)
+		if (esp32_wifi_clientok())
 		{
-			if (esp32_wifi_clientok())
+			if (!BUFFER_EMPTY(wifi))
 			{
-				if (mcu_wifi_tx_tail > head)
-				{
-					serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (TX_BUFFER_SIZE - mcu_wifi_tx_tail));
-					mcu_wifi_tx_tail = 0;
-				}
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t w;
 
-				serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (head - mcu_wifi_tx_tail));
+				BUFFER_WRITE(wifi, tmp, WIFI_TX_BUFFER_SIZE, &w);
+				serverClient.write(tmp, w);
 			}
-			mcu_wifi_tx_tail = head;
 		}
-#endif
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(wifi);
+		}
 	}
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, bluetooth, BLUETOOTH_TX_BUFFER_SIZE);
 	void mcu_bt_putc(uint8_t c)
 	{
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
+		while (BUFFER_FULL(bluetooth))
 		{
-			SerialBT.write(c);
+			mcu_bt_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(bluetooth, &c);
 	}
 
 	void mcu_bt_flush(void)
 	{
-#ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
-			SerialBT.flush();
+			if (!BUFFER_EMPTY(wifi))
+			{
+				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+				uint8_t w;
+
+				BUFFER_WRITE(wifi, tmp, BLUETOOTH_TX_BUFFER_SIZE, &w);
+				SerialBT.write(tmp, w);
+				SerialBT.flush();
+			}
 		}
-#endif
+		else {
+			// no client (discard)
+			BUFFER_CLEAR(wifi);
+		}
 	}
 #endif
 

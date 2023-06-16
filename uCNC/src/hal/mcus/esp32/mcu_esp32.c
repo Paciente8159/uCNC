@@ -873,52 +873,55 @@ uint8_t mcu_get_pwm(uint8_t pwm)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 void mcu_uart_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	uart_write_bytes(COM_PORT, &c, 1);
-#endif
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart, &c);
 }
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (mcu_uart_tx_tail != mcu_com_tx_head)
+	if (!BUFFER_EMPTY(uart))
 	{
-		if (mcu_uart_tx_tail > mcu_com_tx_head)
-		{
-			uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
-			mcu_uart_tx_tail = 0;
-		}
+		uint8_t tmp[UART_TX_BUFFER_SIZE];
+		uint8_t w;
 
-		uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
-		mcu_uart_tx_tail = mcu_com_tx_head;
+		BUFFER_WRITE(uart, tmp, UART_TX_BUFFER_SIZE, &w);
+		uart_write_bytes(COM_PORT, &tmp, w);
 	}
-#endif
 }
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 void mcu_uart2_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	uart_write_bytes(COM2_PORT, &c, 1);
-#endif
+	while (BUFFER_FULL(uart2))
+	{
+		mcu_uart2_flush();
+	}
+	BUFFER_ENQUEUE(uart2, &c);
 }
+
 void mcu_uart2_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (mcu_uart2_tx_tail != mcu_com_tx_head)
+if (!BUFFER_EMPTY(uart))
 	{
-		if (mcu_uart2_tx_tail > mcu_com_tx_head)
-		{
-			uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (TX_BUFFER_SIZE - mcu_uart2_tx_tail));
-			mcu_uart2_tx_tail = 0;
-		}
+		uint8_t tmp[UART2_TX_BUFFER_SIZE];
+		uint8_t w;
 
-		uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (mcu_com_tx_head - mcu_uart2_tx_tail));
-		mcu_uart2_tx_tail = mcu_com_tx_head;
+		BUFFER_WRITE(uart, tmp, UART2_TX_BUFFER_SIZE, &w);
+		uart_write_bytes(COM2_PORT, &tmp, w);
 	}
-#endif
 }
 #endif
 
