@@ -384,7 +384,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(char, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
 	if (BUFFER_EMPTY(uart))
@@ -412,7 +412,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(char, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 ISR(COM2_TX_vect, ISR_BLOCK)
 {
 	// keeps sending chars until null is found

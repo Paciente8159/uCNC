@@ -739,8 +739,6 @@ uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t gr
 
 void mcu_putc(uint8_t c)
 {
-	mcu_uart_putc(c);
-	return;
 	// USB, WiFi and BT have usually dedicated buffers
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_putc(c);
@@ -748,8 +746,6 @@ void mcu_putc(uint8_t c)
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	mcu_bt_putc(c);
 #endif
-
-#ifdef ENABLE_SYNC_TX
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	mcu_uart_putc(c);
 #endif
@@ -759,73 +755,24 @@ void mcu_putc(uint8_t c)
 #if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
 	mcu_wifi_putc(c);
 #endif
-#else
-	uint8_t write = mcu_com_tx_head;
-	if (++write == TX_BUFFER_SIZE)
-	{
-		write = 0;
-	}
-#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	while (write == mcu_uart_tx_tail)
-	{
-		cnc_status_report_lock = true;
-		mcu_flush();
-		cnc_dotasks();
-	} // while buffer is full
-#endif
-#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	while (write == mcu_uart2_tx_tail)
-	{
-		cnc_status_report_lock = true;
-		mcu_flush();
-		cnc_dotasks();
-	} // while buffer is full
-#endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	while (write == mcu_wifi_tx_tail)
-	{
-		cnc_status_report_lock = true;
-		mcu_flush();
-		cnc_dotasks();
-	} // while buffer is full
-#endif
-	cnc_status_report_lock = false;
-
-	mcu_com_tx_buffer[mcu_com_tx_head] = c;
-	mcu_com_tx_head = write;
-#endif
 }
 
 void mcu_flush(void)
 {
-	mcu_uart_flush();
-	return;
 #if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 	mcu_usb_flush();
 #endif
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	mcu_bt_flush();
 #endif
-
-#ifndef ENABLE_SYNC_TX
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (mcu_uart_tx_tail != mcu_com_tx_head)
-	{
-		mcu_uart_flush();
-	}
+	mcu_uart_flush();
 #endif
 #if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (mcu_uart2_tx_tail != mcu_com_tx_head)
-	{
-		mcu_uart2_flush();
-	}
+	mcu_uart2_flush();
 #endif
 #if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	if (mcu_wifi_tx_tail != mcu_com_tx_head)
-	{
-		mcu_wifi_flush();
-	}
-#endif
+	mcu_wifi_flush();
 #endif
 }
 

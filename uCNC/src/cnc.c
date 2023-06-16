@@ -877,10 +877,10 @@ static void cnc_io_dotasks(void)
 	mcu_inputs_changed_cb();
 #endif
 
-	if (cnc_status_report_lock)
-	{
-		return;
-	}
+	// if (cnc_status_report_lock)
+	// {
+	// 	return;
+	// }
 
 #if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
 	uint32_t current_time = mcu_millis();
