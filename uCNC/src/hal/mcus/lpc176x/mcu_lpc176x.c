@@ -274,7 +274,7 @@ void MCU_COM_ISR(void)
 				COM_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart, &c);
 			COM_OUTREG = c;
 		}
@@ -584,8 +584,15 @@ void mcu_uart_putc(uint8_t c)
 
 void mcu_uart_flush(void)
 {
-	if (CHECKBIT(COM_UART->LSR, 5)) // not ready start flushing
+	if (CHECKBIT(COM_UART->LSR, 5) && !(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
+		if (BUFFER_EMPTY(uart))
+		{
+			return;
+		}
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(uart, &c);
+		COM_OUTREG = c;
 		COM_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
@@ -606,8 +613,15 @@ void mcu_uart2_putc(uint8_t c)
 
 void mcu_uart2_flush(void)
 {
-	if (CHECKBIT(COM2_UART->LSR, 5)) // not ready start flushing
+	if (CHECKBIT(COM2_UART->LSR, 5) && !(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
+		if (BUFFER_EMPTY(uart2))
+		{
+			return;
+		}
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(uart2, &c);
+		COM2_OUTREG = c;
 		COM2_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
