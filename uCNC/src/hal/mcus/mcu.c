@@ -18,20 +18,6 @@
 
 #include "../../cnc.h"
 
-#ifndef ENABLE_SYNC_TX
-uint8_t mcu_com_tx_buffer[TX_BUFFER_SIZE];
-volatile uint8_t mcu_com_tx_head;
-#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-uint8_t mcu_uart_tx_tail;
-#endif
-#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-uint8_t mcu_uart2_tx_tail;
-#endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-uint8_t mcu_wifi_tx_tail;
-#endif
-#endif
-
 #ifdef MCU_HAS_ONESHOT_TIMER
 MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
 #endif

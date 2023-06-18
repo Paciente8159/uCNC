@@ -283,34 +283,34 @@ uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_
 		}
 
 		if (!strcmp(&grbl_cmd_str[4], "IP"))
+		{
+			if (wifi_settings.wifi_on)
 			{
-				if (wifi_settings.wifi_on)
+				switch (wifi_settings.wifi_mode)
 				{
-					switch (wifi_settings.wifi_mode)
-					{
-					case 1:
-						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
-						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
-						break;
-					case 2:
-						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
-						break;
-					default:
-						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
-						break;
-					}
+				case 1:
+					sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					break;
+				case 2:
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					break;
+				default:
+					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback(str);
+					break;
 				}
-				else
-				{
-					protocol_send_feedback("WiFi is off");
-				}
-
-				return STATUS_OK;
 			}
+			else
+			{
+				protocol_send_feedback("WiFi is off");
+			}
+
+			return STATUS_OK;
+		}
 	}
 #endif
 	return STATUS_INVALID_STATEMENT;
@@ -415,51 +415,65 @@ void rp2040_wifi_bt_init(void)
 }
 
 #ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
 void mcu_wifi_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		if (rp2040_wifi_clientok())
-		{
-			serverClient.write(c);
-		}
-#endif
+	while (BUFFER_FULL(wifi))
+	{
+		mcu_wifi_flush();
+	}
+	BUFFER_ENQUEUE(wifi, &c);
 }
 
 void mcu_wifi_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-		uint8_t head = mcu_com_tx_head;
-		if (mcu_wifi_tx_tail != head)
+	if (rp2040_wifi_clientok())
+	{
+		while (!BUFFER_EMPTY(wifi))
 		{
-			if (rp2040_wifi_clientok())
-			{
-				if (mcu_wifi_tx_tail > head)
-				{
-					serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (TX_BUFFER_SIZE - mcu_wifi_tx_tail));
-					mcu_wifi_tx_tail = 0;
-				}
+			uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+			uint8_t r;
 
-				serverClient.write(&mcu_com_tx_buffer[mcu_wifi_tx_tail], (head - mcu_wifi_tx_tail));
-			}
-			mcu_wifi_tx_tail = head;
+			BUFFER_READ(wifi, tmp, WIFI_TX_BUFFER_SIZE, r);
+			serverClient.write(tmp, r);
 		}
-#endif
+	}
+	else
+	{
+		// no client (discard)
+		BUFFER_CLEAR(wifi);
+	}
 }
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, bluetooth, BLUETOOTH_TX_BUFFER_SIZE);
 void mcu_bt_putc(uint8_t c)
 {
-#ifdef ENABLE_BLUETOOTH
-		SerialBT.write(c);
-#endif
+	while (BUFFER_FULL(bluetooth))
+	{
+		mcu_bt_flush();
+	}
+	BUFFER_ENQUEUE(bluetooth, &c);
 }
 
 void mcu_bt_flush(void)
 {
-#ifdef ENABLE_BLUETOOTH
-	SerialBT.flush();
-#endif
+	while (!BUFFER_EMPTY(bluetooth))
+	{
+		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+		uint8_t r;
+
+		BUFFER_READ(bluetooth, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+		SerialBT.write(tmp, r);
+		SerialBT.flush();
+	}
 }
 #endif
 
@@ -567,58 +581,58 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 	void mcu_uart_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		COM_UART.write(c);
-#endif
+		while (BUFFER_FULL(uart))
+		{
+			mcu_uart_flush();
+		}
+		BUFFER_ENQUEUE(uart, &c);
 	}
 
 	void mcu_uart_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		if (mcu_uart_tx_tail != mcu_com_tx_head)
+		while (!BUFFER_EMPTY(uart))
 		{
-			if (mcu_uart_tx_tail > mcu_com_tx_head)
-			{
-				COM_UART.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
-				COM_UART.flush();
-				mcu_uart_tx_tail = 0;
-			}
+			uint8_t tmp[UART_TX_BUFFER_SIZE];
+			uint8_t r = 0;
 
-			COM_UART.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+			BUFFER_READ(uart, tmp, UART_TX_BUFFER_SIZE, r);
+			COM_UART.write(tmp, r);
 			COM_UART.flush();
-			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
-#endif
 	}
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 	void mcu_uart2_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		COM2_UART.write(c);
-#endif
+		while (BUFFER_FULL(uart2))
+		{
+			mcu_uart2_flush();
+		}
+		BUFFER_ENQUEUE(uart2, &c);
 	}
 
 	void mcu_uart2_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		if (mcu_uart2_tx_tail != mcu_com_tx_head)
+		while (!BUFFER_EMPTY(uart2))
 		{
-			if (mcu_uart2_tx_tail > mcu_com_tx_head)
-			{
-				COM2_UART.write(&mcu_com_tx_buffer[mcu_uart2_tx_tail], (TX_BUFFER_SIZE - mcu_uart2_tx_tail));
-				COM2_UART.flush();
-				mcu_uart2_tx_tail = 0;
-			}
+			uint8_t tmp[UART2_TX_BUFFER_SIZE];
+			uint8_t r;
 
-			COM2_UART.write(&mcu_com_tx_buffer[mcu_uart2_tx_tail], (mcu_com_tx_head - mcu_uart2_tx_tail));
+			BUFFER_READ(uart2, tmp, UART2_TX_BUFFER_SIZE, r);
+			COM2_UART.write(tmp, r);
 			COM2_UART.flush();
-			mcu_uart2_tx_tail = mcu_com_tx_head;
 		}
-#endif
 	}
 #endif
 
