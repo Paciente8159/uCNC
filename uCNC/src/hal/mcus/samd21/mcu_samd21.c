@@ -207,52 +207,74 @@ void MCU_ITP_ISR(void)
 }
 
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 void mcu_com_isr()
 {
-	mcu_disable_global_isr();
-	if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
+	__ATOMIC_FORCEON__
 	{
-		COM_UART->USART.INTFLAG.bit.RXC = 1;
-		unsigned char c = (0xff & COM_INREG);
+		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
+		{
+			COM_UART->USART.INTFLAG.bit.RXC = 1;
+			unsigned char c = (0xff & COM_INREG);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
+			mcu_com_rx_cb(c);
 #else
-		mcu_uart_rx_cb(c);
+			mcu_uart_rx_cb(c);
 #endif
+		}
+		if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
+		{
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart))
+			{
+				COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+				return;
+			}
+
+			uint8_t c;
+			BUFFER_DEQUEUE(uart, &c);
+			COM_OUTREG = c;
+		}
 	}
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (COM_UART->USART.INTFLAG.bit.DRE && COM_UART->USART.INTENSET.bit.DRE)
-	{
-		COM_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-		mcu_uart_flush();
-	}
-#endif
-	mcu_enable_global_isr();
 }
 #endif
 
 #if (defined(MCU_HAS_UART2))
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 void mcu_com2_isr()
 {
-	mcu_disable_global_isr();
-	if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
+	__ATOMIC_FORCEON__
 	{
-		COM2_UART->USART.INTFLAG.bit.RXC = 1;
-		unsigned char c = (0xff & COM2_INREG);
+		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
+		{
+			COM2_UART->USART.INTFLAG.bit.RXC = 1;
+			unsigned char c = (0xff & COM2_INREG);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
+			mcu_com_rx_cb(c);
 #else
-		mcu_uart2_rx_cb(c);
+			mcu_uart2_rx_cb(c);
 #endif
+		}
+		if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
+		{
+			// keeps sending chars until null is found
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart2))
+			{
+				COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
+				return;
+			}
+			uint8_t c;
+			BUFFER_DEQUEUE(uart2, &c);
+			COM2_OUTREG = c;
+		}
 	}
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (COM2_UART->USART.INTFLAG.bit.DRE && COM2_UART->USART.INTENSET.bit.DRE)
-	{
-		COM2_UART->USART.INTENCLR.reg = SERCOM_USART_INTENCLR_DRE;
-		mcu_uart2_flush();
-	}
-#endif
-	mcu_enable_global_isr();
 }
 #endif
 
@@ -743,76 +765,44 @@ void mcu_usb_flush(void)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
-	while (!(COM_UART->USART.INTFLAG.bit.DRE))
-		;
-
-	COM_OUTREG = c;
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart, &c);
 }
 
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if ((COM_UART->USART.INTFLAG.bit.DRE)) // not ready start flushing
+	if (!(COM_UART->USART.INTENSET.reg & SERCOM_USART_INTENSET_DRE)) // not ready start flushing
 	{
-		uint8_t read = mcu_uart_tx_tail;
-		if (read == mcu_com_tx_head)
-		{
-			return;
-		}
-
-		unsigned char c = mcu_com_tx_buffer[read];
-		if (++read == TX_BUFFER_SIZE)
-		{
-			read = 0;
-		}
-		mcu_uart_tx_tail = read;
-		mcu_uart_putc(c);
+		COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
 #endif
 	}
-#endif
 }
 #endif
 
 #ifdef MCU_HAS_UART2
 void mcu_uart2_putc(uint8_t c)
 {
-	while (!(COM2_UART->USART.INTFLAG.bit.DRE))
-		;
-
-	COM2_OUTREG = c;
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	COM2_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
-#endif
+	while (BUFFER_FULL(uart2))
+	{
+		mcu_uart2_flush();
+	}
+	BUFFER_ENQUEUE(uart2, &c);
 }
 
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if ((COM2_UART->USART.INTFLAG.bit.DRE)) // not ready start flushing
+	if (!(COM2_UART->USART.INTENSET.reg & SERCOM_USART_INTENSET_DRE)) // not ready start flushing
 	{
-		uint8_t read = mcu_uart2_tx_tail;
-		if (read == mcu_com_tx_head)
-		{
-			return;
-		}
-
-		unsigned char c = mcu_com_tx_buffer[read];
-		if (++read == TX_BUFFER_SIZE)
-		{
-			read = 0;
-		}
-		mcu_uart2_tx_tail = read;
-		mcu_uart2_putc(c);
+		COM2_UART->USART.INTENSET.bit.DRE = 1; // enable tx interrupt
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
 #endif
 	}
-#endif
 }
 #endif
 
