@@ -17,6 +17,7 @@
 */
 
 #ifdef ESP8266
+#include "../../../../cnc_config.h"
 #include <Arduino.h>
 #include "user_interface.h"
 #include <stdint.h>
@@ -73,7 +74,7 @@ extern "C"
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 		char arg[ARG_MAX_LEN];
 		char has_arg = (next_char == '=');
 		memset(arg, 0, sizeof(arg));
@@ -283,7 +284,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -467,5 +468,60 @@ extern "C"
 #endif
 	}
 }
+
+#ifdef MCU_HAS_SPI
+#include <Arduino.h>
+#include <SPI.h>
+#include "esp_peri.h"
+extern "C"
+{
+	#include "../../../cnc.h"
+	void esp8266_spi_init(uint32_t freq, uint8_t mode)
+	{
+		SPI.begin();
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
+
+	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	{
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
+}
+
+#endif
+
+#ifndef RAM_ONLY_SETTINGS
+#include <Arduino.h>
+#include <EEPROM.h>
+#include <stdint.h>
+extern "C"
+{
+	void esp8266_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t mcu_eeprom_getc(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void mcu_eeprom_flush(void)
+	{
+		if (!EEPROM.commit())
+		{
+			Serial.println("[MSG: EEPROM write error]");
+		}
+	}
+}
+
+#endif
 
 #endif

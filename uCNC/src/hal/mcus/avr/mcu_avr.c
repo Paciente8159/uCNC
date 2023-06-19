@@ -582,7 +582,7 @@ void mcu_uart_putc(uint8_t c)
 
 void mcu_uart_flush(void)
 {
-	if (CHECKBIT(UCSRA_REG, UDRE_BIT)) // not ready start flushing
+	if (!CHECKBIT(UCSRB_REG, UDRIE_BIT)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
 #if ASSERT_PIN(ACTIVITY_LED)
@@ -604,7 +604,7 @@ void mcu_uart2_putc(uint8_t c)
 
 void mcu_uart2_flush(void)
 {
-	if (CHECKBIT(UCSRA_REG_2, UDRE_BIT_2)) // not ready start flushing
+	if (!CHECKBIT(UCSRB_REG_2, UDRIE_BIT_2)) // not ready start flushing
 	{
 		SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
 #if ASSERT_PIN(ACTIVITY_LED)

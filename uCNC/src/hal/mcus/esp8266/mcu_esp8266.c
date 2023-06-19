@@ -49,10 +49,7 @@ void esp8266_uart_init(int baud);
 void esp8266_uart_process(void);
 
 #ifndef RAM_ONLY_SETTINGS
-void esp8266_eeprom_init(int size);
-uint8_t esp8266_eeprom_read(uint16_t address);
-void esp8266_eeprom_write(uint16_t address, uint8_t value);
-void esp8266_eeprom_flush(void);
+extern void esp8266_eeprom_init(int size);
 #endif
 
 ETSTimer esp8266_rtc_timer;
@@ -598,39 +595,6 @@ void mcu_dotasks(void)
 	// reset WDT
 	system_soft_wdt_feed();
 	esp8266_uart_process();
-}
-
-// Non volatile memory
-/**
- * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
- * */
-uint8_t mcu_eeprom_getc(uint16_t address)
-{
-#ifndef RAM_ONLY_SETTINGS
-	return esp8266_eeprom_read(address);
-#else
-	return 0;
-#endif
-}
-
-/**
- * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
- * */
-void mcu_eeprom_putc(uint16_t address, uint8_t value)
-{
-#ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_write(address, value);
-#endif
-}
-
-/**
- * flushes all recorded registers into the eeprom.
- * */
-void mcu_eeprom_flush(void)
-{
-#ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_flush();
-#endif
 }
 
 // #ifdef MCU_HAS_I2C
