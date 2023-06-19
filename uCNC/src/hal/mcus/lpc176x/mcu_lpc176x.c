@@ -228,92 +228,110 @@ void mcu_clocks_init(void)
  * The respective IRQHandler will execute these functions
 //  **/
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 void MCU_COM_ISR(void)
 {
-	mcu_disable_global_isr();
-	uint32_t irqstatus = UART_GetIntId(COM_UART);
-	irqstatus &= UART_IIR_INTID_MASK;
-
-	// Receive Line Status
-	if (irqstatus == UART_IIR_INTID_RLS)
+	__ATOMIC_FORCEON__
 	{
-		uint32_t linestatus = UART_GetLineStatus(COM_UART);
+		uint32_t irqstatus = UART_GetIntId(COM_UART);
+		irqstatus &= UART_IIR_INTID_MASK;
 
 		// Receive Line Status
-		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+		if (irqstatus == UART_IIR_INTID_RLS)
 		{
-			// There are errors or break interrupt
-			// Read LSR will clear the interrupt
-			/*uint8_t dummy = */ (COM_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
-			return;
+			uint32_t linestatus = UART_GetLineStatus(COM_UART);
+
+			// Receive Line Status
+			if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+			{
+				// There are errors or break interrupt
+				// Read LSR will clear the interrupt
+				/*uint8_t dummy = */ (COM_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
+				return;
+			}
+		}
+
+		if (irqstatus == UART_IIR_INTID_RDA)
+		{
+			unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+			mcu_com_rx_cb(c);
+#else
+			mcu_uart_rx_cb(c);
+#endif
+		}
+
+		if (irqstatus == UART_IIR_INTID_THRE)
+		{
+			// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
+
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart))
+			{
+				COM_UART->IER &= ~UART_IER_THREINT_EN;
+				return;
+			}
+			uint8_t c = 0;
+			BUFFER_DEQUEUE(uart, &c);
+			COM_OUTREG = c;
 		}
 	}
-
-	if (irqstatus == UART_IIR_INTID_RDA)
-	{
-		unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
-#else
-		mcu_uart_rx_cb(c);
-#endif
-	}
-
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (irqstatus == UART_IIR_INTID_THRE)
-	{
-		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-		COM_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_uart_flush();
-	}
-#endif
-
-	mcu_enable_global_isr();
 }
 #endif
 
 #if (defined(MCU_HAS_UART2))
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
-	mcu_disable_global_isr();
-	uint32_t irqstatus = UART_GetIntId(COM2_UART);
-	irqstatus &= UART_IIR_INTID_MASK;
-
-	// Receive Line Status
-	if (irqstatus == UART_IIR_INTID_RLS)
+	__ATOMIC_FORCEON__
 	{
-		uint32_t linestatus = UART_GetLineStatus(COM2_UART);
+		uint32_t irqstatus = UART_GetIntId(COM2_UART);
+		irqstatus &= UART_IIR_INTID_MASK;
 
 		// Receive Line Status
-		if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+		if (irqstatus == UART_IIR_INTID_RLS)
 		{
-			// There are errors or break interrupt
-			// Read LSR will clear the interrupt
-			/*uint8_t dummy = */ (COM2_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
-			return;
+			uint32_t linestatus = UART_GetLineStatus(COM2_UART);
+
+			// Receive Line Status
+			if (linestatus & (UART_LSR_OE | UART_LSR_PE | UART_LSR_FE | UART_LSR_RXFE | UART_LSR_BI))
+			{
+				// There are errors or break interrupt
+				// Read LSR will clear the interrupt
+				/*uint8_t dummy = */ (COM2_INREG & UART_RBR_MASKBIT); // Dummy read on RX to clear interrupt, then bail out
+				return;
+			}
+		}
+
+		if (irqstatus == UART_IIR_INTID_RDA)
+		{
+			unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+			mcu_com_rx_cb(c);
+#else
+			mcu_uart2_rx_cb(c);
+#endif
+		}
+
+		if (irqstatus == UART_IIR_INTID_THRE)
+		{
+			mcu_enable_global_isr();
+			if (BUFFER_EMPTY(uart2))
+			{
+				COM2_UART->IER &= ~UART_IER_THREINT_EN;
+				return;
+			}
+			uint8_t c;
+			BUFFER_DEQUEUE(uart2, &c);
+			COM2_OUTREG = c;
 		}
 	}
-
-	if (irqstatus == UART_IIR_INTID_RDA)
-	{
-		unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
-#else
-		mcu_uart2_rx_cb(c);
-#endif
-	}
-
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (irqstatus == UART_IIR_INTID_THRE)
-	{
-		// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
-		COM2_UART->IER &= ~UART_IER_THREINT_EN;
-		mcu_uart2_flush();
-	}
-#endif
-
-	mcu_enable_global_isr();
 }
 #endif
 
@@ -557,76 +575,62 @@ uint8_t mcu_get_servo(uint8_t servo)
 #ifdef MCU_HAS_UART
 void mcu_uart_putc(uint8_t c)
 {
-	while (!CHECKBIT(COM_UART->LSR, 5))
-		;
-
-	COM_OUTREG = c;
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	COM_UART->IER |= UART_IER_THREINT_EN;
-#endif
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart, &c);
 }
 
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (CHECKBIT(COM_UART->LSR, 5)) // not ready start flushing
+	if (!(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		uint8_t read = mcu_uart_tx_tail;
-		if (read == mcu_com_tx_head)
+		if (BUFFER_EMPTY(uart))
 		{
 			return;
 		}
-
-		uint8_t c = mcu_com_tx_buffer[read];
-		if (++read == TX_BUFFER_SIZE)
-		{
-			read = 0;
-		}
-		mcu_uart_tx_tail = read;
-		mcu_uart_putc(c);
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(uart, &c);
+		while (!CHECKBIT(COM_UART->LSR, 5))
+			;
+		COM_OUTREG = c;
+		COM_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
 #endif
 	}
-#endif
 }
 #endif
 
 #ifdef MCU_HAS_UART2
 void mcu_uart2_putc(uint8_t c)
 {
-	while (!CHECKBIT(COM2_UART->LSR, 5))
-		;
-
-	COM2_OUTREG = c;
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	COM2_UART->IER |= UART_IER_THREINT_EN;
-#endif
+	while (BUFFER_FULL(uart2))
+	{
+		mcu_uart2_flush();
+	}
+	BUFFER_ENQUEUE(uart2, &c);
 }
 
 void mcu_uart2_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (CHECKBIT(COM2_UART->LSR, 5)) // not ready start flushing
+	if (!(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		uint8_t read = mcu_uart2_tx_tail;
-		if (read == mcu_com_tx_head)
+		if (BUFFER_EMPTY(uart2))
 		{
 			return;
 		}
-
-		uint8_t c = mcu_com_tx_buffer[read];
-		if (++read == TX_BUFFER_SIZE)
-		{
-			read = 0;
-		}
-		mcu_uart2_tx_tail = read;
-		mcu_uart2_putc(c);
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(uart2, &c);
+		while (!CHECKBIT(COM2_UART->LSR, 5))
+			;
+		COM2_OUTREG = c;
+		COM2_UART->IER |= UART_IER_THREINT_EN;
 #if ASSERT_PIN(ACTIVITY_LED)
 		mcu_toggle_output(ACTIVITY_LED);
 #endif
 	}
-#endif
 }
 #endif
 

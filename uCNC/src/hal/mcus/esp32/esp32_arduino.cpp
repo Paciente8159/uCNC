@@ -87,7 +87,7 @@ extern "C"
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 		char arg[ARG_MAX_LEN];
 		char has_arg = (next_char == '=');
 		memset(arg, 0, sizeof(arg));
@@ -280,6 +280,36 @@ extern "C"
 				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
+
+			if (!strcmp(&grbl_cmd_str[4], "IP"))
+			{
+				if (wifi_settings.wifi_on)
+				{
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					case 2:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					default:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					}
+				}
+				else
+				{
+					protocol_send_feedback("WiFi is off");
+				}
+
+				return STATUS_OK;
+			}
 		}
 #endif
 		return STATUS_INVALID_STATEMENT;
@@ -291,7 +321,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -383,46 +413,73 @@ extern "C"
 	}
 
 #ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
 	void mcu_wifi_putc(uint8_t c)
 	{
-#ifdef ENABLE_WIFI
-		if (esp32_wifi_clientok())
+		while (BUFFER_FULL(wifi))
 		{
-			serverClient.write(c);
+			mcu_wifi_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(wifi, &c);
 	}
 
 	void mcu_wifi_flush(void)
 	{
-#ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			serverClient.flush();
+			while (!BUFFER_EMPTY(wifi))
+			{
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t r;
+
+				BUFFER_READ(wifi, tmp, WIFI_TX_BUFFER_SIZE, r);
+				serverClient.write(tmp, r);
+			}
 		}
-#endif
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(wifi);
+		}
 	}
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+#ifndef BLUETOOTH_TX_BUFFER_SIZE
+#define BLUETOOTH_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, bluetooth, BLUETOOTH_TX_BUFFER_SIZE);
 	void mcu_bt_putc(uint8_t c)
 	{
-#ifdef ENABLE_BLUETOOTH
-		if (SerialBT.hasClient())
+		while (BUFFER_FULL(bluetooth))
 		{
-			SerialBT.write(c);
+			mcu_bt_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(bluetooth, &c);
 	}
 
 	void mcu_bt_flush(void)
 	{
-#ifdef ENABLE_BLUETOOTH
 		if (SerialBT.hasClient())
 		{
-			SerialBT.flush();
+			while (!BUFFER_EMPTY(bluetooth))
+			{
+				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+				uint8_t r;
+
+				BUFFER_READ(bluetooth, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+				SerialBT.write(tmp, r);
+				SerialBT.flush();
+			}
 		}
-#endif
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(bluetooth);
+		}
 	}
 #endif
 
@@ -551,5 +608,77 @@ extern "C"
 	}
 #endif
 }
+
+/**
+ *
+ * This handles EEPROM simulation on flash memory
+ *
+ * **/
+
+#if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
+#include <EEPROM.h>
+extern "C"
+{
+	void esp32_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t mcu_eeprom_getc(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void mcu_eeprom_flush(void)
+	{
+		if (!EEPROM.commit())
+		{
+			protocol_send_feedback(" EEPROM write error");
+		}
+	}
+}
+#endif
+
+#if defined(MCU_HAS_SPI) && defined(USE_ARDUINO_SPI_LIBRARY)
+#include <SPI.h>
+SPIClass *esp32spi = NULL;
+uint32_t esp32spifreq = SPI_FREQ;
+uint8_t esp32spimode = SPI_MODE0;
+extern "C"
+{
+	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	{
+		if (esp32spi != NULL)
+		{
+			esp32spi->end();
+			esp32spi = NULL;
+		}
+
+#if (SPI_CLK_BIT == 14 || SPI_CLK_BIT == 25)
+		esp32spi = new SPIClass(HSPI);
+#else
+		esp32spi = new SPIClass(VSPI);
+#endif
+		esp32spi->begin(SPI_CLK_BIT, SPI_SDI_BIT, SPI_SDO_BIT, SPI_CS_BIT);
+		esp32spifreq = freq;
+		esp32spimode = mode;
+	}
+
+	uint8_t mcu_spi_xmit(uint8_t data)
+	{
+
+		esp32spi->beginTransaction(SPISettings(esp32spifreq, MSBFIRST, esp32spimode));
+		data = esp32spi->transfer(data);
+		esp32spi->endTransaction();
+		return data;
+	}
+}
+
+#endif
 
 #endif

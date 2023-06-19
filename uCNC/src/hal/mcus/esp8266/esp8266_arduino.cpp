@@ -17,6 +17,7 @@
 */
 
 #ifdef ESP8266
+#include "../../../../cnc_config.h"
 #include <Arduino.h>
 #include "user_interface.h"
 #include <stdint.h>
@@ -73,7 +74,7 @@ extern "C"
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
 	{
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 		char arg[ARG_MAX_LEN];
 		char has_arg = (next_char == '=');
 		memset(arg, 0, sizeof(arg));
@@ -242,6 +243,36 @@ extern "C"
 				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
+
+			if (!strcmp(&grbl_cmd_str[4], "IP"))
+			{
+				if (wifi_settings.wifi_on)
+				{
+					switch (wifi_settings.wifi_mode)
+					{
+					case 1:
+						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					case 2:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					default:
+						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback(str);
+						break;
+					}
+				}
+				else
+				{
+					protocol_send_feedback("WiFi is off");
+				}
+
+				return STATUS_OK;
+			}
 		}
 #endif
 		return STATUS_INVALID_STATEMENT;
@@ -253,7 +284,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		static uint32_t next_info = 30000;
 		static bool connected = false;
-		char str[TX_BUFFER_SIZE];
+		char str[64];
 
 		if (!wifi_settings.wifi_on)
 		{
@@ -291,7 +322,7 @@ extern "C"
 					serverClient.stop();
 				}
 			}
-			serverClient = server.available();
+			serverClient = server.accept();
 			serverClient.println("[MSG:New client connected]");
 			return false;
 		}
@@ -332,54 +363,67 @@ extern "C"
 	}
 
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 	void mcu_uart_putc(uint8_t c)
 	{
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		Serial.write(c);
-#endif
+		while (BUFFER_FULL(uart))
+		{
+			mcu_uart_flush();
+		}
+		BUFFER_ENQUEUE(uart, &c);
 	}
 
 	void mcu_uart_flush(void)
 	{
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-		if (mcu_uart_tx_tail != mcu_com_tx_head)
+		while (!BUFFER_EMPTY(uart))
 		{
-			if (mcu_uart_tx_tail > mcu_com_tx_head)
-			{
-				Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
-				Serial.flush();
-				mcu_uart_tx_tail = 0;
-			}
+			uint8_t tmp[UART_TX_BUFFER_SIZE];
+			uint8_t r;
+			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
 
-			Serial.write(&mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
+			BUFFER_READ(uart, tmp, max, r);
+			Serial.write(tmp, r);
 			Serial.flush();
-			mcu_uart_tx_tail = mcu_com_tx_head;
 		}
-#else
-		Serial.flush();
-#endif
 	}
 #endif
 
 #ifdef MCU_HAS_WIFI
+#ifndef WIFI_TX_BUFFER_SIZE
+#define WIFI_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
 	void mcu_wifi_putc(uint8_t c)
 	{
-#ifdef ENABLE_WIFI
-		if (esp8266_wifi_clientok())
+		while (BUFFER_FULL(wifi))
 		{
-			serverClient.write(c);
+			mcu_wifi_flush();
 		}
-#endif
+		BUFFER_ENQUEUE(wifi, &c);
 	}
 
 	void mcu_wifi_flush(void)
 	{
-#ifdef ENABLE_WIFI
 		if (esp8266_wifi_clientok())
 		{
-			serverClient.flush();
+			while (!BUFFER_EMPTY(wifi))
+			{
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t r;
+				uint8_t max = (uint8_t)MIN(serverClient.availableForWrite(), WIFI_TX_BUFFER_SIZE);
+
+				BUFFER_READ(wifi, tmp, max, r);
+				serverClient.write(tmp, r);
+			}
 		}
-#endif
+		else
+		{
+			// no client (discard)
+			BUFFER_CLEAR(wifi);
+		}
 	}
 #endif
 
@@ -403,7 +447,7 @@ extern "C"
 #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
 			mcu_com_rx_cb((uint8_t)Serial.read());
 #else
-		mcu_uart_rx_cb((uint8_t)Serial.read());
+			mcu_uart_rx_cb((uint8_t)Serial.read());
 #endif
 		}
 
@@ -424,5 +468,60 @@ extern "C"
 #endif
 	}
 }
+
+#ifdef MCU_HAS_SPI
+#include <Arduino.h>
+#include <SPI.h>
+#include "esp_peri.h"
+extern "C"
+{
+	#include "../../../cnc.h"
+	void esp8266_spi_init(uint32_t freq, uint8_t mode)
+	{
+		SPI.begin();
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
+
+	void mcu_spi_config(uint8_t mode, uint32_t freq)
+	{
+		SPI.setFrequency(freq);
+		SPI.setDataMode(mode);
+	}
+}
+
+#endif
+
+#ifndef RAM_ONLY_SETTINGS
+#include <Arduino.h>
+#include <EEPROM.h>
+#include <stdint.h>
+extern "C"
+{
+	void esp8266_eeprom_init(int size)
+	{
+		EEPROM.begin(size);
+	}
+
+	uint8_t mcu_eeprom_getc(uint16_t address)
+	{
+		return EEPROM.read(address);
+	}
+
+	void mcu_eeprom_putc(uint16_t address, uint8_t value)
+	{
+		EEPROM.write(address, value);
+	}
+
+	void mcu_eeprom_flush(void)
+	{
+		if (!EEPROM.commit())
+		{
+			Serial.println("[MSG: EEPROM write error]");
+		}
+	}
+}
+
+#endif
 
 #endif

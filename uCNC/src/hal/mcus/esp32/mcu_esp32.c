@@ -44,13 +44,14 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(char *buffer);
 void esp32_wifi_bt_process(void);
 
-#ifndef RAM_ONLY_SETTINGS
-#include <nvs.h>
-#include <esp_partition.h>
-// Non volatile memory
 #ifndef FLASH_EEPROM_SIZE
 #define FLASH_EEPROM_SIZE 1024
 #endif
+
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+#include <nvs.h>
+#include <esp_partition.h>
+// Non volatile memory
 typedef struct
 {
 	nvs_handle_t nvs_handle;
@@ -645,7 +646,7 @@ void mcu_init(void)
 	mcu_io_init();
 
 	// starts EEPROM before UART to enable WiFi and BT settings
-#ifndef RAM_ONLY_SETTINGS
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 	// esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
@@ -667,6 +668,9 @@ void mcu_init(void)
 	{
 		log_e("eeprom failed to open");
 	}
+#else
+	extern void esp32_eeprom_init(int size);
+	esp32_eeprom_init(FLASH_EEPROM_SIZE);
 #endif
 
 #ifdef MCU_HAS_UART
@@ -869,52 +873,55 @@ uint8_t mcu_get_pwm(uint8_t pwm)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
 void mcu_uart_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	uart_write_bytes(COM_PORT, &c, 1);
-#endif
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart, &c);
 }
 void mcu_uart_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	if (mcu_uart_tx_tail != mcu_com_tx_head)
+	while (!BUFFER_EMPTY(uart))
 	{
-		if (mcu_uart_tx_tail > mcu_com_tx_head)
-		{
-			uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (TX_BUFFER_SIZE - mcu_uart_tx_tail));
-			mcu_uart_tx_tail = 0;
-		}
+		uint8_t tmp[UART_TX_BUFFER_SIZE];
+		uint8_t r;
 
-		uart_write_bytes(COM_PORT, &mcu_com_tx_buffer[mcu_uart_tx_tail], (mcu_com_tx_head - mcu_uart_tx_tail));
-		mcu_uart_tx_tail = mcu_com_tx_head;
+		BUFFER_READ(uart, tmp, UART_TX_BUFFER_SIZE, r);
+		uart_write_bytes(COM_PORT, tmp, r);
 	}
-#endif
 }
 #endif
 
 #ifdef MCU_HAS_UART2
+#ifndef UART2_TX_BUFFER_SIZE
+#define UART2_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
 void mcu_uart2_putc(uint8_t c)
 {
-#if defined(ENABLE_SYNC_TX) || defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	uart_write_bytes(COM2_PORT, &c, 1);
-#endif
+	while (BUFFER_FULL(uart2))
+	{
+		mcu_uart2_flush();
+	}
+	BUFFER_ENQUEUE(uart2, &c);
 }
+
 void mcu_uart2_flush(void)
 {
-#if !defined(ENABLE_SYNC_TX) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	if (mcu_uart2_tx_tail != mcu_com_tx_head)
+	while (!BUFFER_EMPTY(uart2))
 	{
-		if (mcu_uart2_tx_tail > mcu_com_tx_head)
-		{
-			uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (TX_BUFFER_SIZE - mcu_uart2_tx_tail));
-			mcu_uart2_tx_tail = 0;
-		}
+		uint8_t tmp[UART2_TX_BUFFER_SIZE];
+		uint8_t r;
 
-		uart_write_bytes(COM2_PORT, &mcu_com_tx_buffer[mcu_uart2_tx_tail], (mcu_com_tx_head - mcu_uart2_tx_tail));
-		mcu_uart2_tx_tail = mcu_com_tx_head;
+		BUFFER_READ(uart2, tmp, UART2_TX_BUFFER_SIZE, r);
+		uart_write_bytes(COM2_PORT, tmp, r);
 	}
-#endif
 }
 #endif
 
@@ -1098,6 +1105,7 @@ void mcu_dotasks(void)
 /**
  * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
  * */
+#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS
@@ -1142,6 +1150,7 @@ void mcu_eeprom_flush(void)
 	}
 #endif
 }
+#endif
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
@@ -1193,7 +1202,7 @@ void mcu_start_timeout()
 #endif
 #endif
 
-#ifdef MCU_HAS_SPI
+#if defined(MCU_HAS_SPI) && !defined(USE_ARDUINO_SPI_LIBRARY)
 
 static spi_device_handle_t mcu_spi_handle;
 

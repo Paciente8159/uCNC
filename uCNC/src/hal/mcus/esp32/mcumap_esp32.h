@@ -64,6 +64,9 @@ extern "C"
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+#define __ATOMIC__
+#define __ATOMIC_FORCEON__
+
 // needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1

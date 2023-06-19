@@ -946,12 +946,10 @@ static void cnc_io_dotasks(void)
 	mcu_inputs_changed_cb();
 #endif
 
-	cnc_exec_rt_commands(); // executes all pending realtime commands
-
-	if (cnc_status_report_lock)
-	{
-		return;
-	}
+	// if (cnc_status_report_lock)
+	// {
+	// 	return;
+	// }
 
 #if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
 	uint32_t current_time = mcu_millis();
