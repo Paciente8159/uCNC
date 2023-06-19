@@ -22,7 +22,7 @@
 slave_board_state_t g_multiboard_slave;
 
 // small ring buffer
-DECL_STATIC_BUFFER(multiboard_data_t, multiboard_ring_buffer, 3);
+DECL_BUFFER(multiboard_data_t, multiboard_ring_buffer, 3);
 
 // defaults to UART2 if undefined
 #ifndef MULTIBOARD_RX_CB
@@ -40,7 +40,7 @@ void MULTIBOARD_RX_CB(unsigned char c)
 	static int8_t framebytes = -3;
 
 	int8_t current_bytes = framebytes;
-	multiboard_data_t *ringbuffer = BUFFER_NEXT_SLOT(multiboard_ring_buffer);
+	multiboard_data_t *ringbuffer = BUFFER_NEXT_FREE(multiboard_ring_buffer);
 
 	switch (c)
 	{
@@ -57,7 +57,7 @@ void MULTIBOARD_RX_CB(unsigned char c)
 		if (ringbuffer->multiboard_frame.length == (current_bytes - 3))
 		{
 			ringbuffer->multiboard_frame.crc = ringbuffer->rawdata[(current_bytes - 1)];
-			BUFFER_WRITE(multiboard_ring_buffer); // advances the buffer if possible
+			BUFFER_PUSH(multiboard_ring_buffer); // advances the buffer if possible
 			framebytes = -3;					  // reset protocol internal state
 			return;
 		}
@@ -131,7 +131,7 @@ void multiboard_slave_dotasks(void)
 	while (!BUFFER_EMPTY(multiboard_ring_buffer))
 	{
 		multiboard_data_t msg;
-		BUFFER_POP(multiboard_ring_buffer, &msg);
+		BUFFER_DEQUEUE(multiboard_ring_buffer, &msg);
 		// check message CRC
 		if (!multiboard_check_crc(msg))
 		{
@@ -256,7 +256,7 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 			mcu_dotasks();
 			// gets
 			multiboard_data_t msg;
-			BUFFER_POP(multiboard_ring_buffer, &msg);
+			BUFFER_DEQUEUE(multiboard_ring_buffer, &msg);
 			// ACK for matched command (don't bother check the CRC)
 			if (msg.multiboard_frame.command == command && msg.multiboard_frame.length == 1 && msg.multiboard_frame.content[0] == MULTIBOARD_PROTOCOL_ACK)
 			{
