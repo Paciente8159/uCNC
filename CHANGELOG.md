@@ -6,21 +6,6 @@
 
 # Changelog
 
-* Allow negative values for some settings by @patryk3211 in https://github.com/Paciente8159/uCNC/pull/400
-* Add extra UART port by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/402
-* fixed macro errors if both UART defined by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/403
-* remapped IC74HC595 pins by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/405
-* Improved error recovery for STM32 microcontrollers by @patryk3211 in https://github.com/Paciente8159/uCNC/pull/407
-* Add I2C speed configuration function by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/401
-* USB Tx ready available checks if device connected by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/409
-* modified ISR to prevent I2C response fail by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/411
-* Uarts with circular buffers by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/418
-* added DLC32 missing PIO config and I2S by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/420
-* new wifi IP command by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/422
-* added ESP32 EEPROM and SPI via Arduino option by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/423
-* Buffered wifi transmission by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/424
-* TX ring buffers by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/425
-
 ## [1.7.2] - unreleased
 
 ## Contributors
