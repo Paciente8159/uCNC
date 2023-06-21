@@ -9,7 +9,7 @@
 ## [1.7.2] - unreleased
 
 ## Contributors
-[@patryk3211](https://github.com/patryk3211) - new events at each axis homing (#400)(#407)
+[@patryk3211](https://github.com/patryk3211) - allow negative values for some settings, and I2C ISR error recovery for STM32  (#400)(#407)
 
 ### Added
 
