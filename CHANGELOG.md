@@ -6,6 +6,43 @@
 
 # Changelog
 
+* Allow negative values for some settings by @patryk3211 in https://github.com/Paciente8159/uCNC/pull/400
+* Add extra UART port by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/402
+* fixed macro errors if both UART defined by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/403
+* remapped IC74HC595 pins by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/405
+* Improved error recovery for STM32 microcontrollers by @patryk3211 in https://github.com/Paciente8159/uCNC/pull/407
+* Add I2C speed configuration function by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/401
+* USB Tx ready available checks if device connected by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/409
+* modified ISR to prevent I2C response fail by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/411
+* Uarts with circular buffers by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/418
+* added DLC32 missing PIO config and I2S by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/420
+* new wifi IP command by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/422
+* added ESP32 EEPROM and SPI via Arduino option by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/423
+* Buffered wifi transmission by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/424
+* TX ring buffers by @Paciente8159 in https://github.com/Paciente8159/uCNC/pull/425
+
+## [1.7.2] - unreleased
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - new events at each axis homing (#400)(#407)
+
+### Added
+
+- new optional UART2 port (#402)(#403)
+- new I2C HAL functions (#407)(#401)(#411)
+- ESP32 alternative EEPROM and SPI functions via Arduino (optional) (#423)
+- added new `$wifiip` command to print board IP address (#422)
+
+### Changed
+
+- Allow negative values for some settings (#400)
+- All TX com ports now have a dedicated ring buffer, improving also WiFi transmission rates (#424)(#425)(#418)
+- Pin remapping on 74HC595 for ESP32(#401)
+
+### Fixed
+
+- MKS DLC32 missing boardmap settings (#420)
+
 ## [1.7.1] - 13-05-2023
 
 ## Contributors
@@ -1212,6 +1249,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1
 [1.7.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0
 [1.7.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0-beta
