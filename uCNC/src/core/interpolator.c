@@ -1148,11 +1148,15 @@ float itp_get_rt_feed(void)
 	return feed;
 }
 
+bool itp_is_empty(void){
+	return (planner_buffer_is_empty() && itp_sgm_is_empty() && (itp_rt_sgm == NULL));
+}
+
 // flushes all motions from all systems (planner or interpolator)
 // used to make a sync motion
 uint8_t itp_sync(void)
 {
-	while (!planner_buffer_is_empty() || !itp_sgm_is_empty() || (itp_rt_sgm != NULL))
+	while (!itp_is_empty())
 	{
 		if (!cnc_dotasks())
 		{

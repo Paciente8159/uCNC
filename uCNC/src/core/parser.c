@@ -180,20 +180,19 @@ uint8_t parser_read_command(void)
 		}
 	}
 
+	bool is_jogging = false;
 	if (error == GRBL_JOG_CMD)
 	{
-		if (cnc_get_exec_state(~EXEC_JOG))
-		{
-			return STATUS_SYSTEM_GC_LOCK;
-		}
-		error = parser_gcode_command();
-		itp_sync();
-		cnc_clear_exec_state(EXEC_JOG);
-		return error;
+		is_jogging = true;
 	}
 	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
 		parser_discard_command();
+		return STATUS_SYSTEM_GC_LOCK;
+	}
+
+	if (cnc_get_exec_state(EXEC_JOG) && !is_jogging) // error if trying to do a normal move with jog active
+	{
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
@@ -331,6 +330,7 @@ static uint8_t parser_grbl_command(void)
 		case 'G':
 		case 'P':
 		case 'I':
+		case 'J':
 			break;
 		default:
 			parser_discard_command();
@@ -489,7 +489,7 @@ static uint8_t parser_grbl_command(void)
 			{
 				break;
 			}
-			if (cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
+			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
 				return STATUS_IDLE_ERROR;
 			}

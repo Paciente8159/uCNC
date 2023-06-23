@@ -541,7 +541,7 @@ void cnc_call_rt_command(uint8_t command)
 		break;
 #endif
 	case CMD_CODE_JOG_CANCEL:
-		if (cnc_get_exec_state(EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
+		if (cnc_get_exec_state(EXEC_JOG))
 		{
 			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
 		}
@@ -826,10 +826,16 @@ bool cnc_check_interlocking(void)
 			itp_clear();
 			planner_clear();
 			mc_sync_position();
-			CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+			cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
 		}
 
 		return false;
+	}
+
+	// all systems flushed and not executing any motions (go idle)
+	if (itp_is_empty() && cnc_get_exec_state(EXEC_ALLACTIVE))
+	{
+		cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG);
 	}
 
 #if ASSERT_PIN(SAFETY_DOOR)
