@@ -238,7 +238,7 @@ uint8_t crc7(uint8_t c, uint8_t crc);
 #define BUFFER_PEEK(buffer) (&buffer##_bufferdata[buffer.tail])
 #define BUFFER_PULL(buffer)                   \
 	{                                         \
-		uint8_t count, tail;                  \
+		uint8_t tail;                         \
 		__ATOMIC__                            \
 		{                                     \
 			tail = buffer.tail;               \
@@ -414,7 +414,7 @@ uint8_t crc7(uint8_t c, uint8_t crc);
 	}                                                                                                \
 })
 
-#define BUFFER_CLEAR(buffer) ({__ATOMIC__{buffer##_bufferdata[0] = 0;buffer.tail = 0;buffer.head = 0;buffer.count = 0; \
+#define BUFFER_CLEAR(buffer) ({__ATOMIC__{*((uint8_t*)buffer##_bufferdata) = 0;buffer.tail = 0;buffer.head = 0;buffer.count = 0; \
 	}                                                                                                                  \
 	})
 

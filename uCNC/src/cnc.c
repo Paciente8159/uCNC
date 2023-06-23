@@ -38,7 +38,7 @@
 typedef struct
 {
 	// uint8_t system_state;		//signals if CNC is system_state and gcode can run
-	volatile uint8_t exec_state; // on single board this probably doesn't need to be volatile anymore
+	volatile uint8_t exec_state;
 	uint8_t loop_state;
 	volatile uint8_t rt_cmd;
 	volatile uint8_t feed_ovr_cmd;
@@ -569,7 +569,7 @@ void cnc_call_rt_command(uint8_t command)
 		break;
 #endif
 	case CMD_CODE_JOG_CANCEL:
-		if (cnc_get_exec_state(EXEC_JOG | EXEC_RUN) == (EXEC_JOG | EXEC_RUN))
+		if (cnc_get_exec_state(EXEC_JOG))
 		{
 			cnc_call_rt_state_command(RT_CMD_FEED_HOLD);
 		}
@@ -622,14 +622,13 @@ void cnc_exec_rt_commands(void)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
 
-		if (command & RT_CMD_RUN_IDLE)
-		{
-			cnc_clear_exec_state(EXEC_RUN);
-		}
+		// if (command & RT_CMD_RUN_IDLE)
+		// {
+		// 	cnc_clear_exec_state(EXEC_RUN);
+		// }
 
-		if ((command & RT_CMD_RUN_HALT) && cnc_get_exec_state(EXEC_RUN))
+		if ((command & RT_CMD_RUN_HALT))
 		{
-			cnc_clear_exec_state(EXEC_RUN);
 			cnc_set_exec_state(EXEC_UNHOMED);
 		}
 
@@ -895,7 +894,7 @@ bool cnc_check_interlocking(void)
 			itp_clear();
 			planner_clear();
 			mc_sync_position();
-			CLEARFLAG(cnc_state.exec_state, EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+			cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
 		}
 
 		return false;

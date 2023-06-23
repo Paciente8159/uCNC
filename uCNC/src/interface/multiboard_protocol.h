@@ -28,13 +28,19 @@ extern "C"
 
 #include <stdint.h>
 #ifndef MULTIBOARD_PROTOCOL_TIMEOUT_MS
-#define MULTIBOARD_PROTOCOL_TIMEOUT_MS 10
+#define MULTIBOARD_PROTOCOL_TIMEOUT_MS 100
 #endif
 #ifndef MULTIBOARD_PROTOCOL_RETRIES
 #define MULTIBOARD_PROTOCOL_RETRIES 5
 #endif
 #ifndef MULTIBOARD_BUFFER_SIZE
 #define MULTIBOARD_BUFFER_SIZE 48
+#endif
+
+#ifdef MULTIBOARD_PROTOCOL_DEBUG
+#define MULTIBOARD_DEBUG_MSG(X) protocol_send_string(X)
+#else
+#define MULTIBOARD_DEBUG_MSG(X)
 #endif
 
 	typedef union multiboard_data_

@@ -102,7 +102,7 @@ void MCU_SERIAL_ISR(void)
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart, &c);
 			COM_OUTREG = c;
 		}
@@ -137,7 +137,7 @@ void MCU_SERIAL2_ISR(void)
 				COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
-			uint8_t c;
+			uint8_t c = 0;
 			BUFFER_DEQUEUE(uart2, &c);
 			COM2_OUTREG = c;
 		}
