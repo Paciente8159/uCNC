@@ -832,12 +832,6 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 
-	// all systems flushed and not executing any motions (go idle)
-	if (itp_is_empty() && cnc_get_exec_state(EXEC_ALLACTIVE))
-	{
-		cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG);
-	}
-
 #if ASSERT_PIN(SAFETY_DOOR)
 	// the safety door condition is active
 	if (cnc_get_exec_state(EXEC_DOOR))

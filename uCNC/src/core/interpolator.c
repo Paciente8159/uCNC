@@ -1051,10 +1051,20 @@ void itp_update(void)
 
 void itp_stop(void)
 {
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 	// any stop command while running triggers an HALT alarm
-	if (cnc_get_exec_state(EXEC_RUN))
+	if (state & EXEC_RUN)
 	{
 		cnc_set_exec_state(EXEC_UNHOMED);
+	}
+
+	// end of JOG
+	if (state & EXEC_JOG)
+	{
+		if (itp_is_empty())
+		{
+			cnc_clear_exec_state(EXEC_JOG);
+		}
 	}
 
 	io_set_steps(g_settings.step_invert_mask);
@@ -1148,7 +1158,8 @@ float itp_get_rt_feed(void)
 	return feed;
 }
 
-bool itp_is_empty(void){
+bool itp_is_empty(void)
+{
 	return (planner_buffer_is_empty() && itp_sgm_is_empty() && (itp_rt_sgm == NULL));
 }
 
