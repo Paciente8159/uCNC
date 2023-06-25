@@ -19,9 +19,7 @@
 #define MAX_MODAL_GROUPS 14
 #endif
 
-#ifdef ECHO_CMD
 static bool protocol_busy;
-#endif
 
 #ifdef ENABLE_IO_MODULES
 // event_protocol_send_pins_states_handler
@@ -54,77 +52,54 @@ static void protocol_send_newline(void)
 
 void protocol_send_ok(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(MSG_OK);
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_error(uint8_t error)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(MSG_ERROR);
 	serial_print_int(error);
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_alarm(int8_t alarm)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_string(const char *__s)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	unsigned char c = (unsigned char)rom_strptr(__s++);
 	do
 	{
 		serial_putc(c);
+		if (c == '\n')
+		{
+			protocol_busy = false;
+		}
 		c = (unsigned char)rom_strptr(__s++);
 	} while (c != 0);
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_feedback(const char *__s)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(MSG_START);
 	protocol_send_string(__s);
 	protocol_send_string(MSG_END);
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_ip(uint32_t ip)
 {
 	uint8_t *pt = (uint8_t *)&ip;
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(MSG_START);
 	serial_putc('I');
 	serial_putc('P');
@@ -141,9 +116,6 @@ void protocol_send_ip(uint32_t ip)
 	b = *(++pt);
 	serial_print_int((uint32_t)b);
 	protocol_send_string(MSG_END);
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 static uint8_t protocol_get_tools(void)
@@ -217,16 +189,12 @@ static void protocol_send_status_tail(void)
 
 void protocol_send_status(void)
 {
-#ifdef ECHO_CMD
 	if (protocol_busy)
 	{
 		return;
 	}
-#endif
 
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	float axis[MAX(AXIS_COUNT, 3)];
 
 	int32_t steppos[AXIS_TO_STEPPERS];
@@ -425,16 +393,11 @@ void protocol_send_status(void)
 
 	serial_putc('>');
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_gcode_coordsys(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	float axis[MAX(AXIS_COUNT, 3)];
 	uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
 	for (uint8_t i = 0; i < coordlimit; i++)
@@ -484,18 +447,12 @@ void protocol_send_gcode_coordsys(void)
 	protocol_send_newline();
 #endif
 	protocol_send_probe_result(parser_get_probe_result());
-
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(__romstr__("[PRB:"));
 	parser_get_coordsys(255, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
@@ -503,9 +460,6 @@ void protocol_send_probe_result(uint8_t val)
 	serial_putc('0' + val);
 	serial_putc(']');
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
@@ -528,9 +482,7 @@ void protocol_send_gcode_modes(void)
 	uint16_t spindle;
 	uint8_t coolant;
 
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
 	protocol_send_string(__romstr__("[GC:"));
@@ -583,9 +535,6 @@ void protocol_send_gcode_modes(void)
 
 	serial_putc(']');
 	protocol_send_newline();
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value)
@@ -608,9 +557,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 
 void protocol_send_start_blocks(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	unsigned char c = 0;
 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	protocol_send_string(__romstr__("$N0="));
@@ -643,16 +590,11 @@ void protocol_send_start_blocks(void)
 			break;
 		}
 	}
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 void protocol_send_cnc_settings(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
 #ifdef EMULATE_GRBL_STARTUP
 	// just adds this for compatibility
@@ -759,17 +701,12 @@ void protocol_send_cnc_settings(void)
 #ifdef ENABLE_SETTINGS_MODULES
 	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
 #endif
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
 void protocol_send_pins_states(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	for (uint8_t i = 0; i < 161; i++)
 	{
 		int16_t val = io_get_pinvalue(i);
@@ -839,10 +776,6 @@ void protocol_send_pins_states(void)
 	protocol_send_string(__romstr__("[RUNTIME:"));
 	serial_print_int(mcu_millis());
 	protocol_send_string(MSG_END);
-
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 #endif
 
@@ -992,15 +925,10 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 
 void protocol_send_cnc_info(void)
 {
-#ifdef ECHO_CMD
 	protocol_busy = true;
-#endif
 	protocol_send_string(VER_INFO);
 	protocol_send_string(OPT_INFO);
 	EVENT_INVOKE(protocol_send_cnc_info, NULL);
 	protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
-#ifdef ECHO_CMD
-	protocol_busy = false;
-#endif
 }
 #endif
