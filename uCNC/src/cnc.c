@@ -178,6 +178,10 @@ bool cnc_exec_cmd(void)
 		uint8_t c = serial_peek();
 		switch (c)
 		{
+		case OVF:
+			serial_rx_clear();
+			error = STATUS_OVERFLOW;
+			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
 			serial_getc();
 			break;

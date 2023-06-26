@@ -29,7 +29,7 @@ extern "C"
 #include <stdarg.h>
 
 #define EOL 0x00 // end of line char
-#define OVF 0x2A // overflow char
+#define OVF 0x15 // overflow char
 #define SAFEMARGIN 2
 #ifndef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 128

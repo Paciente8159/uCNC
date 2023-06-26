@@ -389,7 +389,7 @@ void serial_rx_clear(void)
 	serial_rx_write = 0;
 	serial_rx_read = 0;
 	serial_rx_overflow = 0;
-	serial_rx_buffer[0] = EOL;
+	memset(serial_rx_buffer, 0, RX_BUFFER_SIZE);
 }
 
 uint8_t serial_get_rx_freebytes(void)
