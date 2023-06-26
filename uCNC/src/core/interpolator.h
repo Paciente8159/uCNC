@@ -39,6 +39,7 @@ extern "C"
 	int32_t itp_get_rt_position_index(int8_t index);
 	void itp_reset_rt_position(float *origin);
 	float itp_get_rt_feed(void);
+	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);

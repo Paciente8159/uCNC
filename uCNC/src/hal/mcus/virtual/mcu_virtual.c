@@ -1435,15 +1435,16 @@ bool mcu_tx_ready(void)
 }
 
 void mcu_uart_putc(uint8_t c){
-	#ifdef ENABLE_SYNC_TX
-		com_send(c, 1);
-		#endif
+	// #ifdef ENABLE_SYNC_TX
+	// 	com_send(c, 1);
+	// 	#endif
+	putchar(c);
 }
 	void mcu_uart_flush(void){
-		#ifndef ENABLE_SYNC_TX
-		uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
-		com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
-		#endif
+		// #ifndef ENABLE_SYNC_TX
+		// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+		// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+		// #endif
 	}
 
 //void mcu_putc(char c)
@@ -1651,6 +1652,13 @@ void mcu_dotasks(void)
 
 void mcu_config_input_isr(int pin)
 {
+}
+
+int main (void) {
+	cnc_init();
+	for(;;) {
+		cnc_run();
+	}
 }
 
 #endif
