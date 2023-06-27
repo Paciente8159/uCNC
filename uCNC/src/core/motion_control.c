@@ -1147,3 +1147,20 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 	return STATUS_OK;
 }
 #endif
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+static int32_t mc_last_step_pos_copy[STEPPER_COUNT];
+static float mc_last_target_copy[AXIS_COUNT];
+// stores the motion controller reference positions
+void mc_store(void)
+{
+	memcpy(mc_last_step_pos_copy, mc_last_step_pos, sizeof(mc_last_step_pos));
+	memcpy(mc_last_target_copy, mc_last_target, sizeof(mc_last_target));
+}
+// restores the motion controller reference positions
+void mc_restore(void)
+{
+	memcpy(mc_last_step_pos, mc_last_step_pos_copy, sizeof(mc_last_step_pos));
+	memcpy(mc_last_target, mc_last_target_copy, sizeof(mc_last_target));
+}
+#endif

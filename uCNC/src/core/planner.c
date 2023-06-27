@@ -605,3 +605,29 @@ uint8_t planner_get_buffer_freeblocks()
 {
 	return PLANNER_BUFFER_SIZE - planner_data_blocks;
 }
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+static planner_block_t planner_data_copy[PLANNER_BUFFER_SIZE];
+static uint8_t planner_data_write_copy;
+static uint8_t planner_data_read_copy;
+static uint8_t planner_data_blocks_copy;
+static planner_state_t g_planner_state_copy;
+// creates a full copy of the planner state
+void planner_store(void)
+{
+	memcpy(planner_data_copy, planner_data, sizeof(planner_data));
+	planner_data_write_copy = planner_data_write;
+	planner_data_read_copy = planner_data_read;
+	planner_data_blocks_copy = planner_data_blocks;
+	memcpy(&g_planner_state_copy, &g_planner_state, sizeof(planner_state_t));
+}
+// restores the planner to it's previous saved state
+void planner_restore(void)
+{
+	memcpy(planner_data, planner_data_copy, sizeof(planner_data));
+	planner_data_write = planner_data_write_copy;
+	planner_data_read = planner_data_read_copy;
+	planner_data_blocks = planner_data_blocks_copy;
+	memcpy(&g_planner_state, &g_planner_state_copy, sizeof(planner_state_t));
+}
+#endif

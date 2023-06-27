@@ -112,6 +112,13 @@ extern "C"
 
 	uint8_t planner_get_buffer_freeblocks();
 
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// creates a full copy of the planner state
+	void planner_store(void);
+	// restores the planner to it's previous saved state
+	void planner_restore(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

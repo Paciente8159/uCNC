@@ -119,6 +119,13 @@ extern "C"
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
 #endif
 
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// stores the motion controller reference positions
+	void mc_store(void);
+	// restores the motion controller reference positions
+	void mc_restore(void);
+#endif
+
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	// event_mc_line_segment_handler
 	DECL_EVENT_HANDLER(mc_line_segment);
