@@ -1216,6 +1216,11 @@ MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 }
 #endif
 
+#ifdef ENABLE_RT_SYNC_MOTIONS
+void __attribute__((weak)) itp_rt_stepbits(uint8_t* stepbits, uint8_t dirbits){
+}
+#endif
+
 // always fires after pulse
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
@@ -1682,6 +1687,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 		stepbits &= ~itp_step_lock;
+#endif
+
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		itp_rt_stepbits_cb(&stepbits, itp_rt_sgm->block->dirbits);
 #endif
 	}
 }

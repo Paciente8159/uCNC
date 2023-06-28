@@ -53,6 +53,7 @@ extern "C"
 	extern volatile int32_t itp_sync_step_counter;
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
+	void itp_rt_stepbits(uint8_t *stepbits, uint8_t dirbits);
 #endif
 
 #ifdef __cplusplus
