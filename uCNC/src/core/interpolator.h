@@ -29,6 +29,57 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
+// Itp update flags
+#define ITP_NOUPDATE 0
+#define ITP_UPDATE_ISR 1
+#define ITP_UPDATE_TOOL 2
+#define ITP_UPDATE (ITP_UPDATE_ISR | ITP_UPDATE_TOOL)
+#define ITP_ACCEL 4
+#define ITP_CONST 8
+#define ITP_DEACCEL 16
+#define ITP_SYNC 32
+
+	// contains data of the block being executed by the pulse routine
+	// this block has the necessary data to execute the Bresenham line algorithm
+	typedef struct itp_blk_
+	{
+#ifdef STEP_ISR_SKIP_MAIN
+		uint8_t main_stepper;
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+		uint8_t idle_axis;
+#endif
+		uint8_t dirbits;
+		step_t steps[STEPPER_COUNT];
+		step_t total_steps;
+		step_t errors[STEPPER_COUNT];
+#ifdef GCODE_PROCESS_LINE_NUMBERS
+		uint32_t line;
+#endif
+#ifdef ENABLE_BACKLASH_COMPENSATION
+		bool backlash_comp;
+#endif
+	} itp_block_t;
+
+	// contains data of the block segment being executed by the pulse and integrator routines
+	// the segment is a fragment of the motion defined in the block
+	// this also contains the acceleration/deacceleration info
+	typedef struct pulse_sgm_
+	{
+		itp_block_t *block;
+		uint16_t remaining_steps;
+		uint16_t timer_counter;
+		uint16_t timer_prescaller;
+#if (DSS_MAX_OVERSAMPLING != 0)
+		int8_t next_dss;
+#endif
+#if TOOL_COUNT > 0
+		int16_t spindle;
+#endif
+		float feed;
+		uint8_t flags;
+	} itp_segment_t;
+
 	void itp_init(void);
 	void itp_run(void);
 	void itp_update(void);
@@ -53,7 +104,7 @@ extern "C"
 	extern volatile int32_t itp_sync_step_counter;
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
-	void itp_rt_stepbits(uint8_t *stepbits, uint8_t dirbits);
+	void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t* rt_sgm);
 #endif
 
 #ifdef __cplusplus
