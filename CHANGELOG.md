@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.7.2] - unreleased
+## [1.7.2] - 29-06-2023
 
 ## Contributors
 [@patryk3211](https://github.com/patryk3211) - allow negative values for some settings, and I2C ISR error recovery for STM32  (#400)(#407)
@@ -23,10 +23,13 @@
 - Allow negative values for some settings (#400)
 - All TX com ports now have a dedicated ring buffer, improving also WiFi transmission rates (#424)(#425)(#418)
 - Pin remapping on 74HC595 for ESP32(#401)
+- Multiple JOG commands can now be enqueued and sent to planner to allow smoother motion while jogging via external controller (#427)
+- Protocol minor changes to response contamination with status reports (#430)
 
 ### Fixed
 
 - MKS DLC32 missing boardmap settings (#420)
+- Serial command buffer overflow causes controller to stop accepting new commands (#431)
 
 ## [1.7.1] - 13-05-2023
 
