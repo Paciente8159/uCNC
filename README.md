@@ -6,11 +6,6 @@
 
 µCNC - Universal CNC firmware for microcontrollers
 
-# __IMPORTANT NOTE__
-
-The latest commits (in particular #425) broke USB communication for all boards that have native USB support. All boards that use USB via a serial to USB converter (like the CH340) are not affected.
-I'm investigating the issue so please use the latest release version and not the master. As soon as this issue is solved this warning will be removed.
-
 # Building µCNC
 
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
