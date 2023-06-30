@@ -771,6 +771,28 @@ void mcu_delay_us(uint16_t delay)
 }
 #endif
 
+#ifdef MCU_HAS_USB
+#ifndef USE_ARDUINO_CDC
+void mcu_usb_putc(uint8_t c)
+{
+	if (!tusb_cdc_write_available())
+	{
+		mcu_usb_flush();
+	}
+	tusb_cdc_write(c);
+}
+
+void mcu_usb_flush(void)
+{
+	tusb_cdc_flush();
+	while (!tusb_cdc_write_available())
+	{
+		mcu_dotasks(); // tinyusb device task
+	}
+}
+#endif
+#endif
+
 /**
  * runs all internal tasks of the MCU.
  * for the moment these are:
@@ -792,7 +814,6 @@ void mcu_dotasks()
 #endif
 	}
 #else
-	tusb_cdc_flush();
 	tusb_cdc_task(); // tinyusb device task
 
 	while (tusb_cdc_available())

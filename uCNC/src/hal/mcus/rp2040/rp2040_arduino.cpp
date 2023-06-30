@@ -569,14 +569,30 @@ extern "C"
 	}
 
 #ifdef MCU_HAS_USB
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+	DECL_BUFFER(uint8_t, usb, USB_TX_BUFFER_SIZE);
 	void mcu_usb_putc(uint8_t c)
 	{
-		Serial.write(c);
+		while (BUFFER_FULL(usb))
+		{
+			mcu_usb_flush();
+		}
+		BUFFER_ENQUEUE(usb, &c);
 	}
 
 	void mcu_usb_flush(void)
 	{
-		Serial.flush();
+		while (!BUFFER_EMPTY(usb))
+		{
+			char tmp[USB_TX_BUFFER_SIZE];
+			uint8_t r;
+
+			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);
+			Serial.write(tmp, r);
+			Serial.flush();
+		}
 	}
 #endif
 
