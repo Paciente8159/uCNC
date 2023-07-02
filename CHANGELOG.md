@@ -6,7 +6,7 @@
 
 # Changelog
 
-## [1.7.2] - 29-06-2023
+## [1.7.2] - 02-07-2023
 
 ## Contributors
 [@patryk3211](https://github.com/patryk3211) - allow negative values for some settings, and I2C ISR error recovery for STM32  (#400)(#407)
@@ -30,6 +30,10 @@
 
 - MKS DLC32 missing boardmap settings (#420)
 - Serial command buffer overflow causes controller to stop accepting new commands (#431)
+- fixed broken USB communication on all platforms (#434)
+- fixed OTA on ESP32 (#434)
+- fixed swapped stepper 1 an 2 pins on MKS DLC32 board (#436)
+
 
 ## [1.7.1] - 13-05-2023
 
