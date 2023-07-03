@@ -35,8 +35,12 @@
 #define PLASMA_ARC_OK_INPUT DIN13
 #endif
 
-#ifndef PLASMA_ON_INPUT
-#define PLASMA_ON_INPUT DIN13
+#ifndef PLASMA_ON_OUTPUT
+#define PLASMA_ON_OUTPUT DOUT0
+#endif
+
+#ifndef PLASMA_STEPPERS_MASK
+#define PLASMA_STEPPERS_MASK (1 << 2)
 #endif
 
 // overridable
@@ -90,7 +94,15 @@ static plasma_start_params_t plasma_start_params;
 
 bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
 {
+    static bool plasma_starting = false;
     plasma_thc_enabled = false;
+    if (plasma_starting)
+    {
+        // prevent reentrancy
+        return;
+    }
+
+    plasma_starting = true;
     while (start_params.retries--)
     {
         // cutoff torch
@@ -129,7 +141,7 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
                 mc_dwell(&block);
 
                 // confirm if arc is ok
-                if (PLASMA_ARC_OK())
+                if (plasma_thc_arc_ok())
                 {
                     mc_get_position(pos);
                     pos[AXIS_Z] -= start_params.cut_depth;
@@ -144,17 +156,19 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
                     plasma_thc_enabled = true;
                     cnc_clear_exec_state(EXEC_HOLD);
                     // continues program
+                    plasma_starting = false;
                     return true;
                 }
             }
         }
     }
 
+    plasma_starting = false;
     return false;
 }
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-void itp_rt_stepbits(uint8_t *stepbits, uint8_t dirbits)
+void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t *rt_sgm)
 {
     uint8_t step_error = plasma_step_error;
     if (!step_error)
@@ -165,14 +179,14 @@ void itp_rt_stepbits(uint8_t *stepbits, uint8_t dirbits)
     if (step_error > 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        io_set_dirs(dirbits & ~PLASMA_STEPPERS_MASK);
+        io_set_dirs(rt_sgm->block->dirbits & ~PLASMA_STEPPERS_MASK);
         step_error--;
     }
 
     if (step_error < 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        io_set_dirs(dirbits | PLASMA_STEPPERS_MASK);
+        io_set_dirs(rt_sgm->block->dirbits | PLASMA_STEPPERS_MASK);
         step_error--;
     }
 
@@ -192,52 +206,53 @@ CREATE_EVENT_LISTENER(gcode_exec, m103_exec);
 // this just parses and acceps the code
 bool m103_parse(void *args)
 {
-	gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
-	if (ptr->word == 'M' && ptr->code == 103)
-	{
-		if (ptr->cmd->group_extended != 0)
-		{
-			// there is a collision of custom gcode commands (only one per line can be processed)
-			*(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
-			return EVENT_HANDLED;
-		}
-		// tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
-		ptr->cmd->group_extended = M103;
-		*(ptr->error) = STATUS_OK;
-		return EVENT_HANDLED;
-	}
+    gcode_parse_args_t *ptr = (gcode_parse_args_t *)args;
+    if (ptr->word == 'M' && ptr->code == 103)
+    {
+        if (ptr->cmd->group_extended != 0)
+        {
+            // there is a collision of custom gcode commands (only one per line can be processed)
+            *(ptr->error) = STATUS_GCODE_MODAL_GROUP_VIOLATION;
+            return EVENT_HANDLED;
+        }
+        // tells the gcode validation and execution functions this is custom code M42 (ID must be unique)
+        ptr->cmd->group_extended = M103;
+        *(ptr->error) = STATUS_OK;
+        return EVENT_HANDLED;
+    }
 
-	// if this is not catched by this parser, just send back the error so other extenders can process it
-	return EVENT_CONTINUE;
+    // if this is not catched by this parser, just send back the error so other extenders can process it
+    return EVENT_CONTINUE;
 }
 
 // this actually performs 2 steps in 1 (validation and execution)
 bool m103_exec(void *args)
 {
-	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
-	if (ptr->cmd->group_extended == M103)
-	{
-		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P))
-		{
-			*(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
-			return EVENT_HANDLED;
-		}
+    gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+    if (ptr->cmd->group_extended == M103)
+    {
+        if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P))
+        {
+            *(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
+            return EVENT_HANDLED;
+        }
 
-		plasma_start_params.dwell = (uint16_t)(ptr->words->p * 1000);
-		plasma_start_params.probe_depth = ptr->words->ijk[0];
-		plasma_start_params.probe_feed = ptr->words->ijk[1];
-		plasma_start_params.retract_height = ptr->words->r;
-		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_F)))
-		{
-			plasma_start_params.cut_feed = ptr->words->f;
-		}
-		plasma_start_params.cut_feed = (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_L))) ? ptr->words->l : 1;
+        plasma_start_params.dwell = (uint16_t)(ptr->words->p * 1000);
+        plasma_start_params.probe_depth = ptr->words->ijk[0];
+        plasma_start_params.probe_feed = ptr->words->ijk[1];
+        plasma_start_params.cut_depth = ptr->words->ijk[2];
+        plasma_start_params.retract_height = ptr->words->r;
+        if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_F)))
+        {
+            plasma_start_params.cut_feed = ptr->words->f;
+        }
+        plasma_start_params.retries = (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_L))) ? ptr->words->l : 1;
 
         *(ptr->error) = STATUS_OK;
-		return EVENT_HANDLED;
-	}
+        return EVENT_HANDLED;
+    }
 
-	return EVENT_CONTINUE;
+    return EVENT_CONTINUE;
 }
 
 #endif
@@ -245,61 +260,151 @@ bool m103_exec(void *args)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 bool plasma_thc_update_loop(void *ptr)
 {
-	if (plasma_thc_enabled)
-	{
-		// arc lost
-		// on arc lost the plasma must enter hold
-		if (!(plasma_thc_arc_ok()))
-		{
-			// set hold and wait for motion to stop
-			cnc_set_exec_state(EXEC_HOLD);
-			itp_sync();
-			// store planner and motion controll data away
-			planner_store();
-			mc_store();
-			// reset planner and sync systems
-			planner_clear();
-			mc_sync_position();
+    if (plasma_thc_enabled)
+    {
+        // arc lost
+        // on arc lost the plasma must enter hold
+        if (!(plasma_thc_arc_ok()))
+        {
+            // set hold and wait for motion to stop
+            cnc_set_exec_state(EXEC_HOLD);
+            itp_sync();
+            // store planner and motion controll data away
+            planner_store();
+            mc_store();
+            // reset planner and sync systems
+            planner_clear();
+            mc_sync_position();
 
-			// clear the current hold state
-			cnc_clear_exec_state(EXEC_HOLD);
-		}
+            // clear the current hold state
+            cnc_clear_exec_state(EXEC_HOLD);
+        }
 
-		if (plasma_thc_up())
-		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = p->steps[p->main_stepper];
-			// p->dirbits &= 0xFB;
+        if (plasma_thc_up())
+        {
+            // option 1 - modify the planner block
+            // this assumes Z is not moving in this motion
+            // planner_block_t *p = planner_get_block();
+            // p->steps[2] = p->steps[p->main_stepper];
+            // p->dirbits &= 0xFB;
 
-			// option 2 - mask the step bits directly
-			plasma_step_error += 1;
-		}
-		else if (plasma_thc_down())
-		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = p->steps[p->main_stepper];
-			// p->dirbits |= 4;
+            // option 2 - mask the step bits directly
+            plasma_step_error += 1;
+        }
+        else if (plasma_thc_down())
+        {
+            // option 1 - modify the planner block
+            // this assumes Z is not moving in this motion
+            // planner_block_t *p = planner_get_block();
+            // p->steps[2] = p->steps[p->main_stepper];
+            // p->dirbits |= 4;
 
-			// option 2 - mask the step bits directly
-			plasma_step_error -= 1;
-		}
-		else
-		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = 0;
+            // option 2 - mask the step bits directly
+            plasma_step_error -= 1;
+        }
+        else
+        {
+            // option 1 - modify the planner block
+            // this assumes Z is not moving in this motion
+            // planner_block_t *p = planner_get_block();
+            // p->steps[2] = 0;
 
-			// option 2 - mask the step bits directly
-			plasma_step_error = 0;
-		}
-	}
-	return EVENT_CONTINUE;
+            // option 2 - mask the step bits directly
+            plasma_step_error = 0;
+        }
+    }
+    return EVENT_CONTINUE;
 }
 
 CREATE_EVENT_LISTENER(cnc_dotasks, plasma_thc_update_loop);
 #endif
+
+DECL_MODULE(plasma_thc)
+{
+#ifdef ENABLE_MAIN_LOOP_MODULES
+    ADD_EVENT_LISTENER(cnc_dotasks, plasma_thc_update_loop);
+#else
+#error "Main loop extensions are not enabled. TMC configurations will not work."
+#endif
+#ifdef ENABLE_PARSER_MODULES
+    ADD_EVENT_LISTENER(gcode_parse, m103_parse);
+    ADD_EVENT_LISTENER(gcode_exec, m103_exec);
+#else
+#error "Parser extensions are not enabled. M103 code extension will not work."
+#endif
+}
+
+static void startup_code(void)
+{
+// force plasma off
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+    mcu_clear_output(PLASMA_ON_OUTPUT);
+#endif
+}
+
+static void shutdown_code(void)
+{
+// force plasma off
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+    mcu_clear_output(PLASMA_ON_OUTPUT);
+#endif
+}
+
+static void set_speed(int16_t value)
+{
+    // turn plasma on
+    if (value)
+    {
+        if (!plasma_thc_arc_ok())
+        {
+            if (plasma_thc_probe_and_start(plasma_start_params))
+            {
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+                mcu_set_output(PLASMA_ON_OUTPUT);
+#endif
+            }
+        }
+    }
+    else
+    {
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+        mcu_clear_output(PLASMA_ON_OUTPUT);
+#endif
+    }
+}
+
+static int16_t range_speed(int16_t value)
+{
+    // binary output
+    value = value ? 1 : 0;
+    return value;
+}
+
+static void set_coolant(uint8_t value)
+{
+// easy macro
+#ifdef ENABLE_COOLANT
+    SET_COOLANT(LASER_PWM_AIR_ASSIST, UNDEF_PIN, value);
+#endif
+}
+
+static uint16_t get_speed(void)
+{
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+    return mcu_get_output(PLASMA_ON_OUTPUT);
+#else
+    return 0;
+#endif
+}
+
+const tool_t plasma_thc = {
+    .startup_code = &startup_code,
+    .shutdown_code = &shutdown_code,
+#if PID_CONTROLLERS > 0
+    .pid_update = NULL,
+    .pid_error = NULL,
+#endif
+    .range_speed = &range_speed,
+    .get_speed = &get_speed,
+    .set_speed = &set_speed,
+    .set_coolant = &set_coolant};

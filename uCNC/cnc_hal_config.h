@@ -115,14 +115,37 @@ extern "C"
 	/*
 		Tool definition
 		For any given tool the respective macro TOOLx (x from 1 to 16) must be created
+		Tools must be assigned in sequential order
+		That is TOOL1, TOOL2 etc...
+		You can't skip tool numbers (for example define TOOL1 and TOOL3 without having a TOOL2)
 	*/
 
+
+/**
+ * 
+ * Enables Laser PPI capabilities 
+ * 
+ * **/
 #ifdef ENABLE_LASER_PPI
 #define LASER_PPI PWM0
 // Uncomment to invert the output login on the LASER_PPI pin
 // #define INVERT_LASER_PPI_LOGIC
 #endif
 
+/**
+ * 
+ * Enables Plasma THC capabilities
+ * 
+ * **/
+// #define ENABLE_PLASMA_THC
+
+
+/**
+ * 
+ * 
+ * 
+ * 
+ * **/
 // assign the tools from 1 to 16
 #define TOOL1 spindle_pwm
 // #define TOOL2 laser
