@@ -1059,7 +1059,7 @@ void itp_stop(void)
 	}
 
 	// end of JOG
-	if (state & EXEC_JOG)
+	if (CHECKFLAG(state, (EXEC_JOG | EXEC_HOLD)) == EXEC_JOG)
 	{
 		if (itp_is_empty())
 		{
