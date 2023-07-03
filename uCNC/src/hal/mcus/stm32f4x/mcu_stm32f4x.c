@@ -484,12 +484,20 @@ void mcu_usart_init(void)
 #ifdef MCU_HAS_USB
 void mcu_usb_putc(uint8_t c)
 {
+	if (!tusb_cdc_write_available())
+	{
+		mcu_usb_flush();
+	}
 	tusb_cdc_write(c);
 }
 
 void mcu_usb_flush(void)
 {
 	tusb_cdc_flush();
+	while (!tusb_cdc_write_available())
+	{
+		mcu_dotasks(); // tinyusb device task
+	}
 }
 #endif
 
@@ -772,7 +780,6 @@ void mcu_rtc_init()
 void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
-	tusb_cdc_flush();
 	tusb_cdc_task(); // tinyusb device task
 
 	while (tusb_cdc_available())

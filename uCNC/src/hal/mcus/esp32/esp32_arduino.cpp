@@ -46,6 +46,7 @@ uint16_t bt_settings_offset;
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
+#include <Update.h>
 
 #ifndef WIFI_PORT
 #define WIFI_PORT 23
