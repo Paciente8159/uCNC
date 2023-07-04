@@ -133,7 +133,6 @@ void cnc_run(void)
 		} while (cnc_exec_cmd());
 
 		cnc_state.loop_state = LOOP_FAULT;
-		// serial_flush();
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
