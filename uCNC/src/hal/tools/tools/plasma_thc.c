@@ -99,7 +99,7 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
     if (plasma_starting)
     {
         // prevent reentrancy
-        return;
+        return false;
     }
 
     plasma_starting = true;
@@ -115,7 +115,7 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
         mc_get_position(pos);
 
         // modify target to probe depth
-        pos[AXIS_Z] -= start_params.probe_depth;
+        pos[AXIS_Z] += start_params.probe_depth;
         // probe feed speed
         block.feed = start_params.probe_feed;
         // similar to G38.2
@@ -123,10 +123,10 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
         {
             // modify target to probe depth
             mc_get_position(pos);
-            pos[AXIS_Z] += start_params.probe_depth;
+            pos[AXIS_Z] -= start_params.probe_depth * 0.5;
             block.feed = start_params.probe_feed * 0.5f; // half speed
             // similar to G38.4
-            if (mc_probe(pos, 2, &block) == STATUS_PROBE_SUCCESS)
+            if (mc_probe(pos, 1, &block) == STATUS_PROBE_SUCCESS)
             {
                 // modify target to torch start height
                 mc_get_position(pos);
@@ -149,12 +149,7 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
                     block.feed = start_params.cut_feed;
                     mc_line(pos, &block);
                     cnc_set_exec_state(EXEC_HOLD);
-                    // restore the motion controller, planner and parser
-                    mc_restore();
-                    planner_restore();
-                    parser_sync_position();
                     plasma_thc_enabled = true;
-                    cnc_clear_exec_state(EXEC_HOLD);
                     // continues program
                     plasma_starting = false;
                     return true;
@@ -276,8 +271,20 @@ bool plasma_thc_update_loop(void *ptr)
             planner_clear();
             mc_sync_position();
 
-            // clear the current hold state
-            cnc_clear_exec_state(EXEC_HOLD);
+            if (plasma_thc_probe_and_start(plasma_start_params))
+            {
+                // restore the motion controller, planner and parser
+                mc_restore();
+                planner_restore();
+                parser_sync_position();
+
+                // clear the current hold state
+                cnc_clear_exec_state(EXEC_HOLD);
+            }
+            else
+            {
+                cnc_alarm(EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE);
+            }
         }
 
         if (plasma_thc_up())
@@ -359,6 +366,7 @@ static void set_speed(int16_t value)
         {
             if (plasma_thc_probe_and_start(plasma_start_params))
             {
+                cnc_clear_exec_state(EXEC_HOLD);
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
                 mcu_set_output(PLASMA_ON_OUTPUT);
 #endif
