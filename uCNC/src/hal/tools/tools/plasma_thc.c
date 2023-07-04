@@ -168,9 +168,9 @@ bool plasma_thc_probe_and_start(void)
 }
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t *rt_sgm)
+void itp_rt_stepbits(uint8_t *stepbits, uint8_t *dirs)
 {
-    uint8_t step_error = plasma_step_error;
+    int8_t step_error = plasma_step_error;
     if (!step_error)
     {
         return;
@@ -179,16 +179,14 @@ void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t *rt_sgm)
     if (step_error > 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        rt_sgm->block->dirbits &= ~PLASMA_STEPPERS_MASK;
-        io_set_dirs(rt_sgm->block->dirbits);
+        *dirs &= ~PLASMA_STEPPERS_MASK;
         step_error--;
     }
 
     if (step_error < 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        rt_sgm->block->dirbits |= PLASMA_STEPPERS_MASK;
-        io_set_dirs(rt_sgm->block->dirbits);
+        *dirs |= PLASMA_STEPPERS_MASK;
         step_error++;
     }
 
@@ -289,7 +287,7 @@ bool plasma_thc_update_loop(void *ptr)
             // p->dirbits &= 0xFB;
 
             // option 2 - mask the step bits directly
-            plasma_step_error += 1;
+            plasma_step_error = 1;
         }
         else if (plasma_thc_down())
         {
@@ -300,7 +298,7 @@ bool plasma_thc_update_loop(void *ptr)
             // p->dirbits |= 4;
 
             // option 2 - mask the step bits directly
-            plasma_step_error -= 1;
+            plasma_step_error = -1;
         }
         else
         {
