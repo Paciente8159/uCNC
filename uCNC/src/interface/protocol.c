@@ -52,14 +52,12 @@ static void protocol_send_newline(void)
 
 void protocol_send_ok(void)
 {
-	protocol_busy = true;
 	protocol_send_string(MSG_OK);
 	protocol_send_newline();
 }
 
 void protocol_send_error(uint8_t error)
 {
-	protocol_busy = true;
 	protocol_send_string(MSG_ERROR);
 	serial_print_int(error);
 	protocol_send_newline();
@@ -67,7 +65,6 @@ void protocol_send_error(uint8_t error)
 
 void protocol_send_alarm(int8_t alarm)
 {
-	protocol_busy = true;
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
 	protocol_send_newline();
@@ -75,22 +72,16 @@ void protocol_send_alarm(int8_t alarm)
 
 void protocol_send_string(const char *__s)
 {
-	protocol_busy = true;
 	unsigned char c = (unsigned char)rom_strptr(__s++);
 	do
 	{
 		serial_putc(c);
-		if (c == '\n')
-		{
-			protocol_busy = false;
-		}
 		c = (unsigned char)rom_strptr(__s++);
 	} while (c != 0);
 }
 
 void protocol_send_feedback(const char *__s)
 {
-	protocol_busy = true;
 	protocol_send_string(MSG_START);
 	protocol_send_string(__s);
 	protocol_send_string(MSG_END);
@@ -99,7 +90,6 @@ void protocol_send_feedback(const char *__s)
 void protocol_send_ip(uint32_t ip)
 {
 	uint8_t *pt = (uint8_t *)&ip;
-	protocol_busy = true;
 	protocol_send_string(MSG_START);
 	serial_putc('I');
 	serial_putc('P');
@@ -189,12 +179,11 @@ static void protocol_send_status_tail(void)
 
 void protocol_send_status(void)
 {
-	if (protocol_busy)
+	if (protocol_busy || serial_tx_busy())
 	{
 		return;
 	}
 
-	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
 
 	int32_t steppos[AXIS_TO_STEPPERS];
@@ -447,12 +436,12 @@ void protocol_send_gcode_coordsys(void)
 	protocol_send_newline();
 #endif
 	protocol_send_probe_result(parser_get_probe_result());
+	protocol_busy = false;
 }
 
 void protocol_send_probe_result(uint8_t val)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
-	protocol_busy = true;
 	protocol_send_string(__romstr__("[PRB:"));
 	parser_get_coordsys(255, axis);
 	serial_print_fltarr(axis, AXIS_COUNT);
@@ -482,7 +471,6 @@ void protocol_send_gcode_modes(void)
 	uint16_t spindle;
 	uint8_t coolant;
 
-	protocol_busy = true;
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
 
 	protocol_send_string(__romstr__("[GC:"));
@@ -590,6 +578,8 @@ void protocol_send_start_blocks(void)
 			break;
 		}
 	}
+
+	protocol_busy = false;
 }
 
 void protocol_send_cnc_settings(void)
@@ -701,6 +691,7 @@ void protocol_send_cnc_settings(void)
 #ifdef ENABLE_SETTINGS_MODULES
 	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
 #endif
+	protocol_busy = false;
 }
 
 #ifdef ENABLE_EXTRA_SYSTEM_CMDS
@@ -776,6 +767,7 @@ void protocol_send_pins_states(void)
 	protocol_send_string(__romstr__("[RUNTIME:"));
 	serial_print_int(mcu_millis());
 	protocol_send_string(MSG_END);
+	protocol_busy = false;
 }
 #endif
 
@@ -930,5 +922,6 @@ void protocol_send_cnc_info(void)
 	protocol_send_string(OPT_INFO);
 	EVENT_INVOKE(protocol_send_cnc_info, NULL);
 	protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
+	protocol_busy = false;
 }
 #endif

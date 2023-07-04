@@ -62,10 +62,10 @@ extern "C"
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1
 #define DIR0_IO_OFFSET 2
-#define STEP1_IO_OFFSET 3
-#define DIR1_IO_OFFSET 4
-#define STEP2_IO_OFFSET 5
-#define DIR2_IO_OFFSET 6
+#define STEP1_IO_OFFSET 5
+#define DIR1_IO_OFFSET 6
+#define STEP2_IO_OFFSET 3
+#define DIR2_IO_OFFSET 4
 
 	// Setup the Step Timer used has the heartbeat for µCNC
 	// Timer 1 is used by default
