@@ -92,7 +92,7 @@ typedef struct plasma_start_params_
 } plasma_start_params_t;
 static plasma_start_params_t plasma_start_params;
 
-bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
+bool plasma_thc_probe_and_start(void)
 {
     static bool plasma_starting = false;
     plasma_thc_enabled = false;
@@ -103,7 +103,10 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
     }
 
     plasma_starting = true;
-    while (start_params.retries--)
+    uint8_t ret = plasma_start_params.retries;
+    cnc_store_motion();
+
+    while (ret--)
     {
         // cutoff torch
         motion_data_t block = {0};
@@ -115,28 +118,28 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
         mc_get_position(pos);
 
         // modify target to probe depth
-        pos[AXIS_Z] += start_params.probe_depth;
+        pos[AXIS_Z] += plasma_start_params.probe_depth;
         // probe feed speed
-        block.feed = start_params.probe_feed;
+        block.feed = plasma_start_params.probe_feed;
         // similar to G38.2
         if (mc_probe(pos, 0, &block) == STATUS_PROBE_SUCCESS)
         {
             // modify target to probe depth
             mc_get_position(pos);
-            pos[AXIS_Z] -= start_params.probe_depth * 0.5;
-            block.feed = start_params.probe_feed * 0.5f; // half speed
+            pos[AXIS_Z] -= plasma_start_params.probe_depth * 0.5;
+            block.feed = plasma_start_params.probe_feed * 0.5f; // half speed
             // similar to G38.4
             if (mc_probe(pos, 1, &block) == STATUS_PROBE_SUCCESS)
             {
                 // modify target to torch start height
                 mc_get_position(pos);
-                pos[AXIS_Z] += start_params.retract_height;
+                pos[AXIS_Z] += plasma_start_params.retract_height;
                 // rapid feed
                 block.feed = FLT_MAX;
                 mc_line(pos, &block);
                 // turn torch on and wait before confirm the arc on signal
                 block.motion_flags.bit.spindle_running = 1;
-                block.dwell = start_params.dwell;
+                block.dwell = plasma_start_params.dwell;
                 // updated tools and wait
                 mc_dwell(&block);
 
@@ -144,20 +147,22 @@ bool plasma_thc_probe_and_start(plasma_start_params_t start_params)
                 if (plasma_thc_arc_ok())
                 {
                     mc_get_position(pos);
-                    pos[AXIS_Z] -= start_params.cut_depth;
+                    pos[AXIS_Z] -= plasma_start_params.cut_depth;
                     // rapid feed
-                    block.feed = start_params.cut_feed;
+                    block.feed = plasma_start_params.cut_feed;
                     mc_line(pos, &block);
                     cnc_set_exec_state(EXEC_HOLD);
                     plasma_thc_enabled = true;
                     // continues program
                     plasma_starting = false;
+                    cnc_restore_motion();
                     return true;
                 }
             }
         }
     }
 
+    cnc_restore_motion();
     plasma_starting = false;
     return false;
 }
@@ -174,15 +179,17 @@ void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t *rt_sgm)
     if (step_error > 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        io_set_dirs(rt_sgm->block->dirbits & ~PLASMA_STEPPERS_MASK);
+        rt_sgm->block->dirbits &= ~PLASMA_STEPPERS_MASK;
+        io_set_dirs(rt_sgm->block->dirbits);
         step_error--;
     }
 
     if (step_error < 0)
     {
         *stepbits |= PLASMA_STEPPERS_MASK;
-        io_set_dirs(rt_sgm->block->dirbits | PLASMA_STEPPERS_MASK);
-        step_error--;
+        rt_sgm->block->dirbits |= PLASMA_STEPPERS_MASK;
+        io_set_dirs(rt_sgm->block->dirbits);
+        step_error++;
     }
 
     plasma_step_error = step_error;
@@ -261,28 +268,14 @@ bool plasma_thc_update_loop(void *ptr)
         // on arc lost the plasma must enter hold
         if (!(plasma_thc_arc_ok()))
         {
-            // set hold and wait for motion to stop
-            cnc_set_exec_state(EXEC_HOLD);
-            itp_sync();
-            // store planner and motion controll data away
-            planner_store();
-            mc_store();
-            // reset planner and sync systems
-            planner_clear();
-            mc_sync_position();
-
-            if (plasma_thc_probe_and_start(plasma_start_params))
+            if (plasma_thc_probe_and_start())
             {
-                // restore the motion controller, planner and parser
-                mc_restore();
-                planner_restore();
-                parser_sync_position();
-
-                // clear the current hold state
-                cnc_clear_exec_state(EXEC_HOLD);
             }
             else
             {
+                // must restore the planner and motion to be purged
+                mc_restore();
+                planner_restore();
                 cnc_alarm(EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE);
             }
         }
@@ -364,7 +357,7 @@ static void set_speed(int16_t value)
     {
         if (!plasma_thc_arc_ok())
         {
-            if (plasma_thc_probe_and_start(plasma_start_params))
+            if (plasma_thc_probe_and_start())
             {
                 cnc_clear_exec_state(EXEC_HOLD);
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)

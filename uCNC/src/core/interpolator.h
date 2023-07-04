@@ -92,6 +92,7 @@ extern "C"
 	float itp_get_rt_feed(void);
 	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
+	
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(KINEMATICS_MOTION_BY_SEGMENTS))

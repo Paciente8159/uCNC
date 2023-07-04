@@ -862,9 +862,11 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-	mc_line(target, block_data);
 	// enable the probe
 	io_enable_probe();
+	mcu_probe_changed_cb();
+	mc_line(target, block_data);
+	
 	do
 	{
 		if (io_get_probe() ^ (flags & 0x01))

@@ -137,7 +137,7 @@ extern "C"
  * Enables Plasma THC capabilities
  * 
  * **/
-// #define ENABLE_PLASMA_THC
+ #define ENABLE_PLASMA_THC
 
 
 /**
@@ -147,7 +147,7 @@ extern "C"
  * 
  * **/
 // assign the tools from 1 to 16
-#define TOOL1 spindle_pwm
+#define TOOL1 plasma_thc
 // #define TOOL2 laser
 // #define TOOL3 laser_ppi
 // #define TOOL4 spindle_besc
