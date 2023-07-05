@@ -94,6 +94,8 @@ extern "C"
 
 /**
  * Uncomment this feature to enable up to 2 dual drive axis
+ * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
+ * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
  */
 //#define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS

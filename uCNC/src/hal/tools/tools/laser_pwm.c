@@ -45,7 +45,9 @@
 #endif
 
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
-#define PWM_MIN_VALUE 2
+#ifndef LASER_PWM_MIN_VALUE
+#define LASER_PWM_MIN_VALUE 2
+#endif
 
 static bool previous_mode;
 
@@ -84,7 +86,7 @@ static void set_speed(int16_t value)
 static int16_t range_speed(int16_t value)
 {
 	// converts core tool speed to laser power (PWM)
-	value = (int16_t)(PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
+	value = (int16_t)(LASER_PWM_MIN_VALUE + ((255.0f - LASER_PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
 	return value;
 }
 
