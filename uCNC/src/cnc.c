@@ -253,6 +253,7 @@ bool cnc_dotasks(void)
 void cnc_store_motion(void)
 {
 	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
 	while (!itp_is_empty() && cnc_get_exec_state(EXEC_RUN))
 	{
@@ -268,14 +269,19 @@ void cnc_store_motion(void)
 	itp_clear();
 	planner_clear();
 	mc_sync_position();
-	// clear the current hold state
-	cnc_clear_exec_state(EXEC_HOLD);
+	// clear the current hold state (if not set previosly)
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+
 	lock_itp = false;
 }
 
 void cnc_restore_motion(void)
 {
 	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
 	while (!itp_is_empty())
 	{
@@ -296,7 +302,10 @@ void cnc_restore_motion(void)
 	parser_sync_position();
 
 	// clear the current hold state
-	cnc_clear_exec_state(EXEC_HOLD);
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
 	lock_itp = false;
 }
 

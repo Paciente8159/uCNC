@@ -76,9 +76,14 @@ uint8_t __attribute__((weak)) plasma_thc_arc_ok(void)
 #endif
 }
 
+#define PLASMA_ARC_OFF 0
+#define PLASMA_ARC_OK 1
+#define PLASMA_ARC_LOST 2
+
 // plasma thc controller variables
-static bool plasma_thc_enabled;
+static uint8_t plasma_thc_state;
 static volatile int8_t plasma_step_error;
+
 typedef struct plasma_start_params_
 {
     float probe_depth;    // I
@@ -88,14 +93,12 @@ typedef struct plasma_start_params_
     float cut_feed;       // F
     uint16_t dwell;       // P*1000
     uint8_t retries;      // L
-
 } plasma_start_params_t;
 static plasma_start_params_t plasma_start_params;
 
 bool plasma_thc_probe_and_start(void)
 {
     static bool plasma_starting = false;
-    plasma_thc_enabled = false;
     if (plasma_starting)
     {
         // prevent reentrancy
@@ -106,9 +109,17 @@ bool plasma_thc_probe_and_start(void)
     uint8_t ret = plasma_start_params.retries;
     cnc_store_motion();
 
+    // wait for cycle start
+    while (cnc_get_exec_state(EXEC_HOLD))
+    {
+        cnc_dotasks();
+    }
+
     while (ret--)
     {
         // cutoff torch
+        // temporary disable
+        plasma_thc_state = PLASMA_ARC_OFF;
         motion_data_t block = {0};
         block.motion_flags.bit.spindle_running = 0;
         mc_update_tools(&block);
@@ -151,8 +162,8 @@ bool plasma_thc_probe_and_start(void)
                     // rapid feed
                     block.feed = plasma_start_params.cut_feed;
                     mc_line(pos, &block);
-                    cnc_set_exec_state(EXEC_HOLD);
-                    plasma_thc_enabled = true;
+                    // enable plasma mode
+                    plasma_thc_state = PLASMA_ARC_OK;
                     // continues program
                     plasma_starting = false;
                     cnc_restore_motion();
@@ -260,12 +271,19 @@ bool m103_exec(void *args)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 bool plasma_thc_update_loop(void *ptr)
 {
-    if (plasma_thc_enabled)
+    if (plasma_thc_state == PLASMA_ARC_OK)
     {
         // arc lost
         // on arc lost the plasma must enter hold
         if (!(plasma_thc_arc_ok()))
         {
+            // places the machine under a HOLD and signals the arc lost
+            // this requires the operator to inspect the work to see if was
+            // a simple arc lost or the torch is hover a hole
+            plasma_thc_state = PLASMA_ARC_LOST;
+            cnc_set_exec_state(EXEC_HOLD);
+
+            // prepares the reprobing action to be executed on cycle resume action
             if (plasma_thc_probe_and_start())
             {
             }
@@ -353,6 +371,8 @@ static void set_speed(int16_t value)
     // turn plasma on
     if (value)
     {
+        // enable plasma mode
+        plasma_thc_state = true;
         if (!plasma_thc_arc_ok())
         {
             if (plasma_thc_probe_and_start())
@@ -366,9 +386,12 @@ static void set_speed(int16_t value)
     }
     else
     {
+        // disable plasma THC mode
+        plasma_thc_state = false;
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
         mcu_clear_output(PLASMA_ON_OUTPUT);
 #endif
+        mc_sync_position();
     }
 }
 
