@@ -24,9 +24,18 @@ extern "C"
 {
 #endif
 
+//undefined pin
 #define UNDEF_PIN 0
-#define ASSERT_PIN(X) (X > 0)
-#define ASSERT_PIN_EXTENDER(X) (X >= 0)
+// assert pin (io or extended)
+#define ASSERT_PIN(X) (X != 0)
+#define _EVAL_DIO_(X) DIO##X
+#define EVAL_DIO(X) DIO##X
+// assert pin io
+#define ASSERT_PIN_IO(X) (EVAL_DIO(X) > 0)
+// assert pin extended
+#define ASSERT_PIN_EXTENDED(X) (EVAL_DIO(X) < 0)
+// assert pin extended offset
+#define ASSERT_IO_OFFSET(X) (X >= 0)
 
 	/**
 	 *

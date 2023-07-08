@@ -415,22 +415,22 @@ static uint16_t mcu_servos[6];
 static FORCEINLINE void mcu_clear_servos()
 {
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -536,36 +536,36 @@ void sysTickHook(void)
 #if ASSERT_PIN(SERVO0)
 	case SERVO0_FRAME:
 		servo_start_timeout(mcu_servos[0]);
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		servo_start_timeout(mcu_servos[1]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		servo_start_timeout(mcu_servos[2]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		servo_start_timeout(mcu_servos[3]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		servo_start_timeout(mcu_servos[4]);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		servo_start_timeout(mcu_servos[5]);
 		break;
 #endif
@@ -786,7 +786,7 @@ void mcu_uart_flush(void)
 	{
 		COM_UART->USART.INTENSET.bit.DRE = 1; // enable recieved interrupt
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -808,7 +808,7 @@ void mcu_uart_flush(void)
 	{
 		COM2_UART->USART.INTENSET.bit.DRE = 1; // enable tx interrupt
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }

@@ -1209,9 +1209,9 @@ uint32_t itp_get_rt_line_number(void)
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
 #ifndef INVERT_LASER_PPI_LOGIC
-	mcu_clear_output(LASER_PPI);
+	io_clear_output(LASER_PPI);
 #else
-	mcu_set_output(LASER_PPI);
+	io_set_output(LASER_PPI);
 #endif
 }
 #endif
@@ -1284,9 +1284,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 				}
 				mcu_start_timeout();
 #ifndef INVERT_LASER_PPI_LOGIC
-				mcu_set_output(LASER_PPI);
+				io_set_output(LASER_PPI);
 #else
-				mcu_clear_output(LASER_PPI);
+				io_clear_output(LASER_PPI);
 #endif
 			}
 		}

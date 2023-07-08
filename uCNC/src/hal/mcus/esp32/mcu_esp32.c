@@ -109,97 +109,97 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 #if ASSERT_PIN(PWM0)
 		if (pwm_ref > esp32_pwm[0])
 		{
-			mcu_clear_output(PWM0);
+			io_clear_output(PWM0);
 		}
 #endif
 #if ASSERT_PIN(PWM1)
 		if (pwm_ref > esp32_pwm[1])
 		{
-			mcu_clear_output(PWM1);
+			io_clear_output(PWM1);
 		}
 #endif
 #if ASSERT_PIN(PWM2)
 		if (pwm_ref > esp32_pwm[2])
 		{
-			mcu_clear_output(PWM2);
+			io_clear_output(PWM2);
 		}
 #endif
 #if ASSERT_PIN(PWM3)
 		if (pwm_ref > esp32_pwm[3])
 		{
-			mcu_clear_output(PWM3);
+			io_clear_output(PWM3);
 		}
 #endif
 #if ASSERT_PIN(PWM4)
 		if (pwm_ref > esp32_pwm[4])
 		{
-			mcu_clear_output(PWM4);
+			io_clear_output(PWM4);
 		}
 #endif
 #if ASSERT_PIN(PWM5)
 		if (pwm_ref > esp32_pwm[5])
 		{
-			mcu_clear_output(PWM5);
+			io_clear_output(PWM5);
 		}
 #endif
 #if ASSERT_PIN(PWM6)
 		if (pwm_ref > esp32_pwm[6])
 		{
-			mcu_clear_output(PWM6);
+			io_clear_output(PWM6);
 		}
 #endif
 #if ASSERT_PIN(PWM7)
 		if (pwm_ref > esp32_pwm[7])
 		{
-			mcu_clear_output(PWM7);
+			io_clear_output(PWM7);
 		}
 #endif
 #if ASSERT_PIN(PWM8)
 		if (pwm_ref > esp32_pwm[8])
 		{
-			mcu_clear_output(PWM8);
+			io_clear_output(PWM8);
 		}
 #endif
 #if ASSERT_PIN(PWM9)
 		if (pwm_ref > esp32_pwm[9])
 		{
-			mcu_clear_output(PWM9);
+			io_clear_output(PWM9);
 		}
 #endif
 #if ASSERT_PIN(PWM10)
 		if (pwm_ref > esp32_pwm[10])
 		{
-			mcu_clear_output(PWM10);
+			io_clear_output(PWM10);
 		}
 #endif
 #if ASSERT_PIN(PWM11)
 		if (pwm_ref > esp32_pwm[11])
 		{
-			mcu_clear_output(PWM11);
+			io_clear_output(PWM11);
 		}
 #endif
 #if ASSERT_PIN(PWM12)
 		if (pwm_ref > esp32_pwm[12])
 		{
-			mcu_clear_output(PWM12);
+			io_clear_output(PWM12);
 		}
 #endif
 #if ASSERT_PIN(PWM13)
 		if (pwm_ref > esp32_pwm[13])
 		{
-			mcu_clear_output(PWM13);
+			io_clear_output(PWM13);
 		}
 #endif
 #if ASSERT_PIN(PWM14)
 		if (pwm_ref > esp32_pwm[14])
 		{
-			mcu_clear_output(PWM14);
+			io_clear_output(PWM14);
 		}
 #endif
 #if ASSERT_PIN(PWM15)
 		if (pwm_ref > esp32_pwm[15])
 		{
-			mcu_clear_output(PWM15);
+			io_clear_output(PWM15);
 		}
 #endif
 
@@ -308,97 +308,97 @@ IRAM_ATTR void mcu_pwm_isr(void *arg)
 #if ASSERT_PIN(PWM0)
 		if (esp32_pwm[0])
 		{
-			mcu_set_output(PWM0);
+			io_set_output(PWM0);
 		}
 #endif
 #if ASSERT_PIN(PWM1)
 		if (esp32_pwm[1])
 		{
-			mcu_set_output(PWM1);
+			io_set_output(PWM1);
 		}
 #endif
 #if ASSERT_PIN(PWM2)
 		if (esp32_pwm[2])
 		{
-			mcu_set_output(PWM2);
+			io_set_output(PWM2);
 		}
 #endif
 #if ASSERT_PIN(PWM3)
 		if (esp32_pwm[3])
 		{
-			mcu_set_output(PWM3);
+			io_set_output(PWM3);
 		}
 #endif
 #if ASSERT_PIN(PWM4)
 		if (esp32_pwm[4])
 		{
-			mcu_set_output(PWM4);
+			io_set_output(PWM4);
 		}
 #endif
 #if ASSERT_PIN(PWM5)
 		if (esp32_pwm[5])
 		{
-			mcu_set_output(PWM5);
+			io_set_output(PWM5);
 		}
 #endif
 #if ASSERT_PIN(PWM6)
 		if (esp32_pwm[6])
 		{
-			mcu_set_output(PWM6);
+			io_set_output(PWM6);
 		}
 #endif
 #if ASSERT_PIN(PWM7)
 		if (esp32_pwm[7])
 		{
-			mcu_set_output(PWM7);
+			io_set_output(PWM7);
 		}
 #endif
 #if ASSERT_PIN(PWM8)
 		if (esp32_pwm[8])
 		{
-			mcu_set_output(PWM8);
+			io_set_output(PWM8);
 		}
 #endif
 #if ASSERT_PIN(PWM9)
 		if (esp32_pwm[9])
 		{
-			mcu_set_output(PWM9);
+			io_set_output(PWM9);
 		}
 #endif
 #if ASSERT_PIN(PWM10)
 		if (esp32_pwm[10])
 		{
-			mcu_set_output(PWM10);
+			io_set_output(PWM10);
 		}
 #endif
 #if ASSERT_PIN(PWM11)
 		if (esp32_pwm[11])
 		{
-			mcu_set_output(PWM11);
+			io_set_output(PWM11);
 		}
 #endif
 #if ASSERT_PIN(PWM12)
 		if (esp32_pwm[12])
 		{
-			mcu_set_output(PWM12);
+			io_set_output(PWM12);
 		}
 #endif
 #if ASSERT_PIN(PWM13)
 		if (esp32_pwm[13])
 		{
-			mcu_set_output(PWM13);
+			io_set_output(PWM13);
 		}
 #endif
 #if ASSERT_PIN(PWM14)
 		if (esp32_pwm[14])
 		{
-			mcu_set_output(PWM14);
+			io_set_output(PWM14);
 		}
 #endif
 #if ASSERT_PIN(PWM15)
 		if (esp32_pwm[15])
 		{
-			mcu_set_output(PWM15);
+			io_set_output(PWM15);
 		}
 #endif
 	}
@@ -426,22 +426,22 @@ IRAM_ATTR void servo_reset(void *p)
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 #ifdef IC74HC595_HAS_SERVOS
 	ic74hc595_set_servos(0);
@@ -545,7 +545,7 @@ void mcu_rtc_task(void *arg)
 		{
 #if ASSERT_PIN(SERVO0)
 		case SERVO0_FRAME:
-			mcu_set_output(SERVO0);
+			io_set_output(SERVO0);
 			start_servo_timeout(mcu_servos[0]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO0_MASK;
@@ -554,7 +554,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO1)
 		case SERVO1_FRAME:
-			mcu_set_output(SERVO1);
+			io_set_output(SERVO1);
 			start_servo_timeout(mcu_servos[1]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO1_MASK;
@@ -563,7 +563,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO2)
 		case SERVO2_FRAME:
-			mcu_set_output(SERVO2);
+			io_set_output(SERVO2);
 			start_servo_timeout(mcu_servos[2]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO2_MASK;
@@ -572,7 +572,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO3)
 		case SERVO3_FRAME:
-			mcu_set_output(SERVO3);
+			io_set_output(SERVO3);
 			start_servo_timeout(mcu_servos[3]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO3_MASK;
@@ -581,7 +581,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO4)
 		case SERVO4_FRAME:
-			mcu_set_output(SERVO4);
+			io_set_output(SERVO4);
 			start_servo_timeout(mcu_servos[4]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO4_MASK;
@@ -590,7 +590,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO5)
 		case SERVO5_FRAME:
-			mcu_set_output(SERVO5);
+			io_set_output(SERVO5);
 			start_servo_timeout(mcu_servos[5]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO5_MASK;

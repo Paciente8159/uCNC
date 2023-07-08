@@ -56,7 +56,7 @@ static void startup_code(void)
 {
 // force pwm mode
 #if ASSERT_PIN(SPINDLE_PWM)
-	mcu_config_pwm(SPINDLE_PWM, 1000);
+	io_config_pwm(SPINDLE_PWM, 1000);
 #endif
 }
 
@@ -69,16 +69,16 @@ static void set_speed(int16_t value)
 #if ASSERT_PIN(SPINDLE_PWM_DIR)
 	if ((value <= 0))
 	{
-		mcu_clear_output(SPINDLE_PWM_DIR);
+		io_clear_output(SPINDLE_PWM_DIR);
 	}
 	else
 	{
-		mcu_set_output(SPINDLE_PWM_DIR);
+		io_set_output(SPINDLE_PWM_DIR);
 	}
 #endif
 
 #if ASSERT_PIN(SPINDLE_PWM)
-	mcu_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
+	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #else
 	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
@@ -117,9 +117,9 @@ static void pid_update(int16_t value)
 {
 	if (speed != 0)
 	{
-		uint8_t newval = CLAMP(0, mcu_get_pwm(SPINDLE_PWM) + value, 255);
+		uint8_t newval = CLAMP(0, io_get_pwm(SPINDLE_PWM) + value, 255);
 #if ASSERT_PIN(SPINDLE_PWM)
-		mcu_set_pwm(SPINDLE_PWM, newval);
+		io_set_pwm(SPINDLE_PWM, newval);
 #else
 		io_set_pwm(SPINDLE_PWM, newval);
 #endif
@@ -129,7 +129,7 @@ static void pid_update(int16_t value)
 static int16_t pid_error(void)
 {
 #if (ASSERT_PIN(SPINDLE_FEEDBACK) && ASSERT_PIN(SPINDLE_PWM))
-	uint8_t reader = mcu_get_analog(ANALOG0);
+	uint8_t reader = io_get_analog(ANALOG0);
 	return (speed - reader);
 #else
 	return 0;
