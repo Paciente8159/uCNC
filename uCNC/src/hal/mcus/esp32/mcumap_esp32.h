@@ -2746,8 +2746,10 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
-#define __indirect__ex__(X, Y) DIO##X##_##Y
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) (DIO##X##_##Y)
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
@@ -2832,28 +2834,8 @@ extern "C"
 	}
 
 #ifdef IC74HC595_HAS_PWMS
-	extern void mcu_pwm_freq_config(uint16_t freq);
-#define mcu_config_pwm(X, freq)    \
-	{                              \
-		mcu_config_output(X);      \
-		mcu_pwm_freq_config(freq); \
-	}
-	extern uint8_t esp32_pwm[16];
-	extern uint16_t esp32_pwm_mask;
-#define mcu_set_pwm(X, Y)                                    \
-	{                                                        \
-		if (Y)                                               \
-		{                                                    \
-			esp32_pwm_mask |= (1 << (X - PWM_PINS_OFFSET));  \
-		}                                                    \
-		else                                                 \
-		{                                                    \
-			esp32_pwm_mask &= ~(1 << (X - PWM_PINS_OFFSET)); \
-		}                                                    \
-		esp32_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);         \
-	}
-#define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET])
-#else
+	extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
+#endif
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
@@ -2879,7 +2861,6 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#endif
 #define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
 
 #ifdef MCU_HAS_ONESHOT_TIMER

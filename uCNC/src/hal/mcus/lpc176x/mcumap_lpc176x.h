@@ -3836,8 +3836,10 @@ extern "C"
 #endif
 
 // Indirect macro access
-#define __indirect__ex__(X, Y) DIO##X##_##Y
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) (DIO##X##_##Y)
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #define mcu_config_output(diopin)                                                                                            \
 	{                                                                                                                        \
