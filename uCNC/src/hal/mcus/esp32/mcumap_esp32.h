@@ -2747,7 +2747,7 @@ extern "C"
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
 #ifndef __indirect__
-#define __indirect__ex__(X, Y) (DIO##X##_##Y)
+#define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 

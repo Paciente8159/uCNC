@@ -3837,7 +3837,7 @@ extern "C"
 
 // Indirect macro access
 #ifndef __indirect__
-#define __indirect__ex__(X, Y) (DIO##X##_##Y)
+#define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 

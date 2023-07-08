@@ -1520,7 +1520,7 @@ extern "C"
 
 #if (IC74HC595_COUNT>0)
 #ifndef __indirect__
-#define __indirect__ex__(X, Y) (DIO##X##_##Y)
+#define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 	extern uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
