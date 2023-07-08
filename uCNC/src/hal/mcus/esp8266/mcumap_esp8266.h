@@ -1037,9 +1037,10 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
+#define MCU_HAS_SOFT_PWM_TIMER
+#define mcu_softpwm_freq_config(freq) 1
+#define mcu_set_pwm(X, Y) io_set_soft_pwm(X,Y)
+#define mcu_get_pwm(X) io_get_soft_pwm(X)
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #define mcu_spi_xmit(X)           \

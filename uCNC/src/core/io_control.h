@@ -59,6 +59,7 @@ extern "C"
 	extern uint8_t g_io_soft_pwm[16];
 	extern uint8_t g_soft_pwm_res;
 #define io_set_soft_pwm(pin, value) ({ g_io_soft_pwm[pin - PWM_PINS_OFFSET] = (0xFF & value); })
+#define io_get_soft_pwm(pin) g_io_soft_pwm[pin - PWM_PINS_OFFSET]
 	void io_soft_pwm_update(void);
 #endif
 
