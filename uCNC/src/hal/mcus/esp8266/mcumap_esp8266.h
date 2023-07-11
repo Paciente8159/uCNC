@@ -1027,6 +1027,8 @@ extern "C"
 #endif
 
 #define MCU_HAS_SOFT_PWM_TIMER
+extern uint8_t g_io_soft_pwm[16];
+extern uint8_t g_soft_pwm_res;
 #define mcu_set_pwm(X, Y) ({g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);})
 #define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
