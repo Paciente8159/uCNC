@@ -195,6 +195,7 @@ bool cnc_exec_cmd(void)
 		}
 		else
 		{
+			parser_sync_position();
 			protocol_send_error(error);
 #ifdef ENABLE_MAIN_LOOP_MODULES
 			EVENT_INVOKE(cnc_exec_cmd_error, &error);
