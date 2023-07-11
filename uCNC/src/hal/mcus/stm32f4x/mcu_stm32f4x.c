@@ -627,67 +627,6 @@ uint8_t mcu_get_servo(uint8_t servo)
 	return 0;
 }
 
-#ifndef mcu_get_input
-uint8_t mcu_get_input(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_get_output
-uint8_t mcu_get_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_set_output
-void mcu_set_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_clear_output
-void mcu_clear_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_toggle_output
-void mcu_toggle_output(uint8_t pin)
-{
-}
-#endif
-
-#ifndef mcu_enable_probe_isr
-void mcu_enable_probe_isr(void)
-{
-}
-#endif
-#ifndef mcu_disable_probe_isr
-void mcu_disable_probe_isr(void)
-{
-}
-#endif
-
-// Analog input
-#ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
-{
-}
-#endif
-
-// PWM
-#ifndef mcu_set_pwm
-void mcu_set_pwm(uint8_t pwm, uint8_t value)
-{
-}
-#endif
-
-#ifndef mcu_get_pwm
-uint8_t mcu_get_pwm(uint8_t pwm)
-{
-}
-#endif
-
 // ISR
 // enables all interrupts on the mcu. Must be called to enable all IRS functions
 #ifndef mcu_enable_global_isr

@@ -1026,8 +1026,12 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 
+#define MCU_HAS_SOFT_PWM_TIMER
+#define mcu_set_pwm(X, Y) ({g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);})
+#define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
+
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq) g_soft_pwm_res = 1;pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
@@ -1039,10 +1043,7 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-#define MCU_HAS_SOFT_PWM_TIMER
-#define mcu_softpwm_freq_config(freq) 1
-#define mcu_set_pwm(X, Y) io_set_soft_pwm(X,Y)
-#define mcu_get_pwm(X) io_get_soft_pwm(X)
+
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #define mcu_spi_xmit(X)           \
