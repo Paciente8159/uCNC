@@ -1021,11 +1021,19 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
+
+#define MCU_HAS_SOFT_PWM_TIMER
+extern uint8_t g_io_soft_pwm[16];
+extern uint8_t g_soft_pwm_res;
+#define mcu_set_pwm(X, Y) ({g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);})
+#define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq) g_soft_pwm_res = 1;pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
@@ -1037,9 +1045,7 @@ extern "C"
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
-	extern uint8_t esp8266_pwm[16];
-#define mcu_set_pwm(X, Y) (esp8266_pwm[X - PWM_PINS_OFFSET] = (0x7F & (Y >> 1)))
-#define mcu_get_pwm(X) (esp8266_pwm[X - PWM_PINS_OFFSET] << 1)
+
 #define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
 
 #define mcu_spi_xmit(X)           \

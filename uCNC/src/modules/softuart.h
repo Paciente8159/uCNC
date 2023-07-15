@@ -41,16 +41,16 @@ extern "C"
 	{                                                                  \
 		if (state)                                                     \
 		{                                                              \
-			mcu_set_output(TXPIN);                                     \
+			io_set_output(TXPIN);                                     \
 		}                                                              \
 		else                                                           \
 		{                                                              \
-			mcu_clear_output(TXPIN);                                   \
+			io_clear_output(TXPIN);                                   \
 		}                                                              \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return mcu_get_input(RXPIN);                                   \
+		return io_get_input(RXPIN);                                   \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \

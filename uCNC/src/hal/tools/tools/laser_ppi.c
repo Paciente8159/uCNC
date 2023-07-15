@@ -36,11 +36,11 @@ static void startup_code(void)
 {
 // force laser mode
 #if ASSERT_PIN(LASER_PPI)
-	mcu_config_output(LASER_PPI);
+	io_config_output(LASER_PPI);
 #ifndef INVERT_LASER_PPI_LOGIC
-	mcu_clear_output(LASER_PPI);
+	io_clear_output(LASER_PPI);
 #else
-	mcu_set_output(LASER_PPI);
+	io_set_output(LASER_PPI);
 #endif
 #elif ASSERT_PIN_EXTENDER(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
@@ -57,9 +57,9 @@ static void shutdown_code(void)
 {
 #if ASSERT_PIN(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
-	mcu_clear_output(LASER_PPI);
+	io_clear_output(LASER_PPI);
 #else
-	mcu_set_output(LASER_PPI);
+	io_set_output(LASER_PPI);
 #endif
 #elif ASSERT_PIN_EXTENDER(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC

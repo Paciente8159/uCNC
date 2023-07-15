@@ -2980,8 +2980,10 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #endif
 #endif
 
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS

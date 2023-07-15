@@ -47,8 +47,10 @@ extern "C"
 #define DOUT8_BIT 27
 #define DOUT9_BIT 25
 #define DOUT10_BIT 26
+
+// bitbanging 74hc595 (not used)
 // uses 3 x 74HS595
-#define IC74HC595_COUNT 3
+// #define IC74HC595_COUNT 3
 // #define IC74HC595_DELAY_CYCLES 0
 
 //Use I2S to shift data in ESP32
@@ -57,6 +59,8 @@ extern "C"
 #define IC74HC595_I2S_CLK 25
 #define IC74HC595_I2S_DATA 27
 // #define IC74HC595_I2S_PORT 0
+// uses 3 x 74HS595 but for I2S use this value has to be set to 4 (I2S sends data as 32-bit (4bytes))
+#define IC74HC595_COUNT 4
 
 #define STEP0_EN_IO_OFFSET 0
 #define STEP0_IO_OFFSET 1
