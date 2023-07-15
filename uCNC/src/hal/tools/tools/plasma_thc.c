@@ -182,22 +182,30 @@ bool plasma_thc_probe_and_start(void)
 void itp_rt_stepbits(uint8_t *stepbits, uint8_t *dirs)
 {
     int8_t step_error = plasma_step_error;
-    if (!step_error)
+
+    // no error or no steps being performed
+    if (!step_error || !*stepbits)
     {
         return;
     }
 
     if (step_error > 0)
     {
-        *stepbits |= PLASMA_STEPPERS_MASK;
-        *dirs &= ~PLASMA_STEPPERS_MASK;
+        if (step_error == 1)
+        {
+            *stepbits |= PLASMA_STEPPERS_MASK;
+            *dirs &= ~PLASMA_STEPPERS_MASK;
+        }
         step_error--;
     }
 
     if (step_error < 0)
     {
-        *stepbits |= PLASMA_STEPPERS_MASK;
-        *dirs |= PLASMA_STEPPERS_MASK;
+        if (step_error == -1)
+        {
+            *stepbits |= PLASMA_STEPPERS_MASK;
+            *dirs |= PLASMA_STEPPERS_MASK;
+        }
         step_error++;
     }
 
@@ -296,7 +304,7 @@ bool plasma_thc_update_loop(void *ptr)
             }
         }
 
-        if (plasma_thc_up())
+        if (plasma_thc_up() && !plasma_step_error)
         {
             // option 1 - modify the planner block
             // this assumes Z is not moving in this motion
@@ -305,9 +313,12 @@ bool plasma_thc_update_loop(void *ptr)
             // p->dirbits &= 0xFB;
 
             // option 2 - mask the step bits directly
-            plasma_step_error = 1;
+            // clamp tool max step rate according to the actual motion feed
+            float feed = itp_get_rt_feed();
+            float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
+            plasma_step_error = 1 + (uint8_t)max_feed_ratio;
         }
-        else if (plasma_thc_down())
+        else if (plasma_thc_down() && !plasma_step_error)
         {
             // option 1 - modify the planner block
             // this assumes Z is not moving in this motion
@@ -316,7 +327,9 @@ bool plasma_thc_update_loop(void *ptr)
             // p->dirbits |= 4;
 
             // option 2 - mask the step bits directly
-            plasma_step_error = -1;
+            float feed = itp_get_rt_feed();
+            float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
+            plasma_step_error = -(1 + (uint8_t)max_feed_ratio);
         }
         else
         {
