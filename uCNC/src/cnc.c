@@ -46,6 +46,7 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
+static bool lock_itp = false;
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -207,8 +208,6 @@ bool cnc_exec_cmd(void)
 
 bool cnc_dotasks(void)
 {
-	static bool lock_itp = false;
-
 	// run io basic tasks
 	cnc_io_dotasks();
 
@@ -249,6 +248,69 @@ bool cnc_dotasks(void)
 	}
 
 	return !cnc_get_exec_state(EXEC_KILL);
+}
+
+void cnc_store_motion(void)
+{
+	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_HOLD);
+	while (!itp_is_empty() && cnc_get_exec_state(EXEC_RUN))
+	{
+		if (!cnc_dotasks())
+		{
+			return;
+		}
+	}
+	// store planner and motion controll data away
+	planner_store();
+	mc_store();
+	// reset planner and sync systems
+	itp_clear();
+	planner_clear();
+	mc_sync_position();
+	// clear the current hold state (if not set previosly)
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+
+	lock_itp = false;
+	#endif
+}
+
+void cnc_restore_motion(void)
+{
+	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_HOLD);
+	while (!itp_is_empty())
+	{
+		if (!cnc_dotasks())
+		{
+			return;
+		}
+	}
+
+	// reset planner and sync systems
+	itp_clear();
+	planner_clear();
+	mc_sync_position();
+
+	// restore the motion controller, planner and parser
+	mc_restore();
+	planner_restore();
+	parser_sync_position();
+
+	// clear the current hold state
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+	lock_itp = false;
+	#endif
 }
 
 // this function is executed every millisecond

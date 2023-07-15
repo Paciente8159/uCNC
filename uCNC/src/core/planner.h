@@ -30,7 +30,7 @@ extern "C"
 #include <stdbool.h>
 
 #ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 30
+#define PLANNER_BUFFER_SIZE 20
 #endif
 
 #define PLANNER_MOTION_EXACT_PATH 32 // default (not used)

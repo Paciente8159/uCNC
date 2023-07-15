@@ -92,6 +92,7 @@ extern "C"
 	float itp_get_rt_feed(void);
 	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
+	
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(KINEMATICS_MOTION_BY_SEGMENTS))
@@ -104,7 +105,7 @@ extern "C"
 	extern volatile int32_t itp_sync_step_counter;
 	void itp_update_feed(float feed);
 	bool itp_sync_ready(void);
-	void itp_rt_stepbits(uint8_t *stepbits, itp_segment_t* rt_sgm);
+	void itp_rt_stepbits(uint8_t *stepbits, uint8_t* dirs);
 #endif
 
 #ifdef __cplusplus

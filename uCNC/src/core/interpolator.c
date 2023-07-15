@@ -1010,7 +1010,7 @@ void itp_stop(void)
 	// end of JOG
 	if (CHECKFLAG(state, (EXEC_JOG | EXEC_HOLD)) == EXEC_JOG)
 	{
-		if (itp_is_empty())
+		if (itp_is_empty() && planner_buffer_is_empty())
 		{
 			cnc_clear_exec_state(EXEC_JOG);
 		}
@@ -1109,14 +1109,14 @@ float itp_get_rt_feed(void)
 
 bool itp_is_empty(void)
 {
-	return (planner_buffer_is_empty() && itp_sgm_is_empty() && (itp_rt_sgm == NULL));
+	return (itp_sgm_is_empty() && (itp_rt_sgm == NULL));
 }
 
 // flushes all motions from all systems (planner or interpolator)
 // used to make a sync motion
 uint8_t itp_sync(void)
 {
-	while (!itp_is_empty())
+	while (!itp_is_empty() || !planner_buffer_is_empty())
 	{
 		if (!cnc_dotasks())
 		{
@@ -1157,24 +1157,16 @@ uint32_t itp_get_rt_line_number(void)
 // turn laser off callback
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
-#if ASSERT_PIN(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
 	io_clear_output(LASER_PPI);
 #else
 	io_set_output(LASER_PPI);
 #endif
-#elif ASSERT_PIN_EXTENDER(LASER_PPI)
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_set_output(LASER_PPI, false);
-#else
-	io_set_output(LASER_PPI, true);
-#endif
-#endif
 }
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-void __attribute__((weak)) itp_rt_stepbits(uint8_t *stepbits, itp_segment_t *rt_sgm)
+void __attribute__((weak)) itp_rt_stepbits(uint8_t *stepbits, uint8_t *dirs)
 {
 }
 #endif
@@ -1511,8 +1503,18 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 #endif
 
+			uint8_t dirs = itp_rt_sgm->block->dirbits;
 #ifdef ENABLE_RT_SYNC_MOTIONS
-			itp_rt_stepbits(&new_stepbits, itp_rt_sgm);
+			static uint8_t last_dirs = 0;
+			if (new_stepbits)
+			{
+				itp_rt_stepbits(&new_stepbits, &dirs);
+				if (dirs != last_dirs)
+				{
+					last_dirs = dirs;
+					io_set_dirs(dirs);
+				}
+			}
 #endif
 
 // updates the stepper coordinates
@@ -1523,7 +1525,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR0_MASK)
+					if (dirs & DIR0_MASK)
 					{
 						itp_rt_step_pos[0]--;
 					}
@@ -1543,7 +1545,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR1_MASK)
+					if (dirs & DIR1_MASK)
 					{
 						itp_rt_step_pos[1]--;
 					}
@@ -1563,7 +1565,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR2_MASK)
+					if (dirs & DIR2_MASK)
 					{
 						itp_rt_step_pos[2]--;
 					}
@@ -1583,7 +1585,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR3_MASK)
+					if (dirs & DIR3_MASK)
 					{
 						itp_rt_step_pos[3]--;
 					}
@@ -1604,7 +1606,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR4_MASK)
+					if (dirs & DIR4_MASK)
 					{
 						itp_rt_step_pos[4]--;
 					}
@@ -1625,7 +1627,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 				if (!itp_rt_sgm->block->backlash_comp)
 				{
 #endif
-					if (itp_rt_sgm->block->dirbits & DIR5_MASK)
+					if (dirs & DIR5_MASK)
 					{
 						itp_rt_step_pos[5]--;
 					}

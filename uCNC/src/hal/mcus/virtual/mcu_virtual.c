@@ -1242,21 +1242,21 @@ void mcu_start_timeout()
 
 uint8_t mcu_get_pin_offset(uint8_t pin)
 {
-	if (pin >= STEP0 && pin <= STEP7_EN)
+	if (pin >= 1 && pin <= 24)
 	{
 		return pin;
 	}
-	else if (pin >= DOUT0 && pin <= DOUT31)
+	else if (pin >= 47 && pin <= 78)
 	{
-		return pin - DOUT0;
+		return pin - 47;
 	}
-	if (pin >= LIMIT_X && pin <= CS_RES)
+	if (pin >= 100 && pin <= 113)
 	{
-		return pin - LIMIT_X;
+		return pin - 100;
 	}
-	else if (pin >= DIN0 && pin <= DIN31)
+	else if (pin >= 130 && pin <= 161)
 	{
-		return pin - DIN0;
+		return pin - 130;
 	}
 
 	return -1;
