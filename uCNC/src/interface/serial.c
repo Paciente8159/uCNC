@@ -176,7 +176,7 @@ void serial_putc(unsigned char c)
 		mcu_flush();
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
-	mcu_toggle_output(ACTIVITY_LED);
+	io_toggle_output(ACTIVITY_LED);
 #endif
 }
 

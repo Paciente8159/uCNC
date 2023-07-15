@@ -65,12 +65,12 @@ static void startup_code(void)
 // do whatever routine you need to do here to arm the ESC
 #if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-	mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
+	io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_MID);
 #endif
-	mcu_set_output(SPINDLE_BESC_POWER_RELAY);
+	io_set_output(SPINDLE_BESC_POWER_RELAY);
 	cnc_delay_ms(1000);
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-	mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
+	io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
 #endif
 	cnc_delay_ms(2000);
 #endif
@@ -79,7 +79,7 @@ static void startup_code(void)
 static void shutdown_code(void)
 {
 #if ASSERT_PIN(SPINDLE_BESC_POWER_RELAY)
-	mcu_clear_output(SPINDLE_BESC_POWER_RELAY);
+	io_clear_output(SPINDLE_BESC_POWER_RELAY);
 #endif
 }
 
@@ -100,13 +100,13 @@ static void set_speed(int16_t value)
 	if ((value <= 0))
 	{
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-		mcu_set_servo(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
+		io_set_pwm(SPINDLE_BESC_SERVO, SPINDLE_BESC_LOW);
 #endif
 	}
 	else
 	{
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-		mcu_set_servo(SPINDLE_BESC_SERVO, (uint8_t)value);
+		io_set_pwm(SPINDLE_BESC_SERVO, (uint8_t)value);
 #endif
 	}
 

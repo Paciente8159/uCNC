@@ -194,6 +194,7 @@ bool cnc_exec_cmd(void)
 		}
 		else
 		{
+			parser_sync_position();
 			protocol_send_error(error);
 #ifdef ENABLE_MAIN_LOOP_MODULES
 			EVENT_INVOKE(cnc_exec_cmd_error, &error);
@@ -280,7 +281,7 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 		// this blinks aprox. once every 1024ms
 		if (!(millis & (0x200 - 1)))
 		{
-			mcu_toggle_output(ACTIVITY_LED);
+			io_toggle_output(ACTIVITY_LED);
 		}
 #endif
 		mcu_disable_global_isr();

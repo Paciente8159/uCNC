@@ -94,6 +94,8 @@ extern "C"
 
 /**
  * Uncomment this feature to enable up to 2 dual drive axis
+ * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
+ * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
  */
 //#define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
@@ -232,9 +234,9 @@ extern "C"
 	 *
 	 * For example
 	 *
-	 * #define PID1_DELTA() (my_setpoint - mcu_get_analog(ANA0))
-	 * #define PID1_OUTPUT(X) (mcu_set_pwm(PWM0, X))
-	 * #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+	 * #define PID1_DELTA() (my_setpoint - io_get_analog(ANA0))
+	 * #define PID1_OUTPUT(X) (io_set_pwm(PWM0, X))
+	 * #define PID1_STOP() (io_set_pwm(PWM0, 0))
 	 *
 	 * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
 	 * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
@@ -247,9 +249,9 @@ extern "C"
 	// reference to io_get_spindle defined in io_control
 	//  	extern uint8_t io_get_spindle(void);
 	//  #define SPINDLE_SPEED ANALOG0
-	//  #define PID1_DELTA() (io_get_spindle() - mcu_get_analog(SPINDLE_SPEED))
-	//  #define PID1_OUTPUT(X) (mcu_set_pwm(SPINDLE_PWM, X))
-	//  #define PID1_STOP() (mcu_set_pwm(PWM0, 0))
+	//  #define PID1_DELTA() (io_get_spindle() - io_get_analog(SPINDLE_SPEED))
+	//  #define PID1_OUTPUT(X) (io_set_pwm(SPINDLE_PWM, X))
+	//  #define PID1_STOP() (io_set_pwm(PWM0, 0))
 	//  //optional
 	//  #define PID1_FREQ_DIV 50
 #endif

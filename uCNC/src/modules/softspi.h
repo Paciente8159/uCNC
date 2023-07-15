@@ -44,25 +44,25 @@ extern "C"
 	{                                                         \
 		if (state)                                            \
 		{                                                     \
-			mcu_set_output(CLKPIN);                           \
+			io_set_output(CLKPIN);                           \
 		}                                                     \
 		else                                                  \
 		{                                                     \
-			mcu_clear_output(CLKPIN);                         \
+			io_clear_output(CLKPIN);                         \
 		}                                                     \
 	}                                                         \
 	void NAME##_mosi(bool state)                              \
 	{                                                         \
 		if (state)                                            \
 		{                                                     \
-			mcu_set_output(MOSIPIN);                          \
+			io_set_output(MOSIPIN);                          \
 		}                                                     \
 		else                                                  \
 		{                                                     \
-			mcu_clear_output(MOSIPIN);                        \
+			io_clear_output(MOSIPIN);                        \
 		}                                                     \
 	}                                                         \
-	bool NAME##_miso(void) { return mcu_get_input(MISOPIN); } \
+	bool NAME##_miso(void) { return io_get_input(MISOPIN); } \
 	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spidelay = SPI_DELAY(FREQ), .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
 
 	void softspi_config(softspi_port_t *port, uint8_t mode, uint32_t frequency);

@@ -44,14 +44,14 @@ static uint8_t speed;
 static void startup_code(void)
 {
 #if ASSERT_PIN(PEN_SERVO)
-	mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
+	io_set_pwm(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 }
 
 static void shutdown_code(void)
 {
 #if ASSERT_PIN(PEN_SERVO)
-	mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
+	io_set_pwm(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 }
 
@@ -71,13 +71,13 @@ static void set_speed(int16_t value)
 	if ((value <= 0))
 	{
 #if ASSERT_PIN(PEN_SERVO)
-		mcu_set_servo(PEN_SERVO, PEN_SERVO_LOW);
+		io_set_pwm(PEN_SERVO, PEN_SERVO_LOW);
 #endif
 	}
 	else
 	{
 #if ASSERT_PIN(PEN_SERVO)
-		mcu_set_servo(PEN_SERVO, (uint8_t)value);
+		io_set_pwm(PEN_SERVO, (uint8_t)value);
 #endif
 	}
 

@@ -6,6 +6,18 @@
 
 # Changelog
 
+## [1.7.3] - 15-07-2023
+
+### Changed
+
+- modified TX protocol to prevent status message print in the middle of other feedback messages (#439)(#446)
+- configurable laser PWM min value (#442)
+
+### Fixed
+
+- fixed parser/motion control position unsynched after mid motion error (#438)
+- fixed some tools compilation errors with IO extender (#441)
+
 ## [1.7.2] - 02-07-2023
 
 ## Contributors
@@ -33,7 +45,6 @@
 - fixed broken USB communication on all platforms (#434)
 - fixed OTA on ESP32 (#434)
 - fixed swapped stepper 1 an 2 pins on MKS DLC32 board (#436)
-
 
 ## [1.7.1] - 13-05-2023
 
@@ -1241,6 +1252,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1
 [1.7.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0

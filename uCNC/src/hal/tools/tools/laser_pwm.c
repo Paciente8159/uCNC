@@ -45,7 +45,9 @@
 #endif
 
 // this sets the minimum power (laser will never fully turn off during engraving and prevents power up delays)
-#define PWM_MIN_VALUE 2
+#ifndef LASER_PWM_MIN_VALUE
+#define LASER_PWM_MIN_VALUE 2
+#endif
 
 static bool previous_mode;
 
@@ -53,8 +55,8 @@ static void startup_code(void)
 {
 // force laser mode
 #if ASSERT_PIN(LASER_PWM)
-	mcu_config_pwm(LASER_PWM, LASER_FREQ);
-	mcu_set_pwm(LASER_PWM, 0);
+	io_config_pwm(LASER_PWM, LASER_FREQ);
+	io_set_pwm(LASER_PWM, 0);
 #else
 	io_set_pwm(LASER_PWM, 0);
 #endif
@@ -75,7 +77,7 @@ static void set_speed(int16_t value)
 
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if ASSERT_PIN(LASER_PWM)
-	mcu_set_pwm(LASER_PWM, (uint8_t)ABS(value));
+	io_set_pwm(LASER_PWM, (uint8_t)ABS(value));
 #else
 	io_set_pwm(LASER_PWM, (uint8_t)ABS(value));
 #endif
@@ -84,7 +86,7 @@ static void set_speed(int16_t value)
 static int16_t range_speed(int16_t value)
 {
 	// converts core tool speed to laser power (PWM)
-	value = (int16_t)(PWM_MIN_VALUE + ((255.0f - PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
+	value = (int16_t)(LASER_PWM_MIN_VALUE + ((255.0f - LASER_PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
 	return value;
 }
 
@@ -99,7 +101,7 @@ static void set_coolant(uint8_t value)
 static uint16_t get_speed(void)
 {
 #if ASSERT_PIN(LASER_PWM)
-	float laser = (float)mcu_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
+	float laser = (float)io_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
 	return (uint16_t)lroundf(laser);
 #else
 	return 0;
