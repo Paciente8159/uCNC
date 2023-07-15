@@ -48,7 +48,7 @@ extern "C"
 			mcu_delay_us(50);
 			mcu_usb_dotasks();
 #if ASSERT_PIN(ACTIVITY_LED)
-			mcu_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
+			io_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
 #endif
 		}
 		UsbSerial.begin(BAUDRATE);

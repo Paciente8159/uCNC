@@ -1008,7 +1008,7 @@ void itp_stop(void)
 	}
 
 	// end of JOG
-	if (state & EXEC_JOG)
+	if (CHECKFLAG(state, (EXEC_JOG | EXEC_HOLD)) == EXEC_JOG)
 	{
 		if (itp_is_empty() && planner_buffer_is_empty())
 		{
@@ -1157,10 +1157,18 @@ uint32_t itp_get_rt_line_number(void)
 // turn laser off callback
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
+#if ASSERT_PIN(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
-	mcu_clear_output(LASER_PPI);
+	io_clear_output(LASER_PPI);
 #else
-	mcu_set_output(LASER_PPI);
+	io_set_output(LASER_PPI);
+#endif
+#elif ASSERT_PIN_EXTENDER(LASER_PPI)
+#ifndef INVERT_LASER_PPI_LOGIC
+	io_set_output(LASER_PPI, false);
+#else
+	io_set_output(LASER_PPI, true);
+#endif
 #endif
 }
 #endif
@@ -1242,9 +1250,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 			}
 			mcu_start_timeout();
 #ifndef INVERT_LASER_PPI_LOGIC
-			mcu_set_output(LASER_PPI);
+			io_set_output(LASER_PPI);
 #else
-			mcu_clear_output(LASER_PPI);
+			io_clear_output(LASER_PPI);
 #endif
 		}
 	}

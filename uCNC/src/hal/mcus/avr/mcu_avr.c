@@ -51,22 +51,22 @@ static FORCEINLINE void mcu_clear_servos()
 	RTC_TIMSK = (1U << RTC_OCIEA);
 	RTC_TIFR = (1U << 2);
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 }
 
@@ -92,42 +92,42 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	case SERVO0_FRAME:
 		RTC_OCRB = mcu_servos[0];
 		servo_loops = mcu_servos_loops[0];
-		mcu_set_output(SERVO0);
+		io_set_output(SERVO0);
 		break;
 #endif
 #if ASSERT_PIN(SERVO1)
 	case SERVO1_FRAME:
 		RTC_OCRB = mcu_servos[1];
 		servo_loops = mcu_servos_loops[1];
-		mcu_set_output(SERVO1);
+		io_set_output(SERVO1);
 		break;
 #endif
 #if ASSERT_PIN(SERVO2)
 	case SERVO2_FRAME:
 		RTC_OCRB = mcu_servos[2];
 		servo_loops = mcu_servos_loops[2];
-		mcu_set_output(SERVO2);
+		io_set_output(SERVO2);
 		break;
 #endif
 #if ASSERT_PIN(SERVO3)
 	case SERVO3_FRAME:
 		RTC_OCRB = mcu_servos[3];
 		servo_loops = mcu_servos_loops[3];
-		mcu_set_output(SERVO3);
+		io_set_output(SERVO3);
 		break;
 #endif
 #if ASSERT_PIN(SERVO4)
 	case SERVO4_FRAME:
 		RTC_OCRB = mcu_servos[4];
 		servo_loops = mcu_servos_loops[4];
-		mcu_set_output(SERVO4);
+		io_set_output(SERVO4);
 		break;
 #endif
 #if ASSERT_PIN(SERVO5)
 	case SERVO5_FRAME:
 		RTC_OCRB = mcu_servos[5];
 		servo_loops = mcu_servos_loops[5];
-		mcu_set_output(SERVO5);
+		io_set_output(SERVO5);
 		break;
 #endif
 	}
@@ -586,7 +586,7 @@ void mcu_uart_flush(void)
 	{
 		SETBIT(UCSRB_REG, UDRIE_BIT);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }
@@ -608,7 +608,7 @@ void mcu_uart2_flush(void)
 	{
 		SETBIT(UCSRB_REG_2, UDRIE_BIT_2);
 #if ASSERT_PIN(ACTIVITY_LED)
-		mcu_toggle_output(ACTIVITY_LED);
+		io_toggle_output(ACTIVITY_LED);
 #endif
 	}
 }

@@ -62,8 +62,8 @@ extern "C"
 	 *
 	 * Defines axis count
 	 * Defines the machine kinematics (cartesian, corexy, delta, custom, ...)
-	 * For custom/advanced configurations go to the specified kinematics header
-	 * file
+	 * For custom/advanced configurations go to the specified kinematics header file
+	 * This does not take in account any dual drive axis. For example a X Y Y2 Z machine is still a 3 axis machine
 	 * */
 
 #ifndef AXIS_COUNT
@@ -189,6 +189,10 @@ extern "C"
 /**
  * Uncomment to enable laser PPI feature
  * Laser PPI requires the MCU to support ONESHOT timeout
+ * Also note that enabling LASER PPI will use an internal STEPPER motor for calculations
+ * Usually this will occupy STEPPER with index AXIS_COUNT
+ * For example on a 3 axis machine (uses steppers 0 to 2) laser ppi will use stepper 3 index
+ * This should be taken in account with pin mapping and dual axis config
  * */
 // #define ENABLE_LASER_PPI
 
@@ -460,7 +464,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS

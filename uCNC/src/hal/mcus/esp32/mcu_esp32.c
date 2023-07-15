@@ -73,7 +73,6 @@ static flash_eeprom_t mcu_eeprom;
 hw_timer_t *esp32_step_timer;
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-extern uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 static volatile uint8_t ic74hc595_update_lock;
 void ic74hc595_shift_io_pins(void)
 {
@@ -89,327 +88,9 @@ void ic74hc595_shift_io_pins(void)
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-// pwm channels
-uint8_t esp32_pwm[16];
-uint16_t esp32_pwm_mask;
-// pwm resolution
-uint8_t esp32_pwm_res;
 IRAM_ATTR void mcu_pwm_isr(void *arg)
 {
-	static uint8_t pwm_counter = 0;
-	uint8_t resolution = esp32_pwm_res;
-#ifdef IC74HC595_HAS_PWMS
-	static uint16_t pwm_mask_last = 0;
-	uint16_t pwm_mask = esp32_pwm_mask;
-#endif
-	// software PWM
-	if ((++pwm_counter) >> resolution)
-	{
-		uint8_t pwm_ref = pwm_counter << resolution;
-#if ASSERT_PIN(PWM0)
-		if (pwm_ref > esp32_pwm[0])
-		{
-			mcu_clear_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (pwm_ref > esp32_pwm[1])
-		{
-			mcu_clear_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (pwm_ref > esp32_pwm[2])
-		{
-			mcu_clear_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (pwm_ref > esp32_pwm[3])
-		{
-			mcu_clear_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (pwm_ref > esp32_pwm[4])
-		{
-			mcu_clear_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (pwm_ref > esp32_pwm[5])
-		{
-			mcu_clear_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (pwm_ref > esp32_pwm[6])
-		{
-			mcu_clear_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (pwm_ref > esp32_pwm[7])
-		{
-			mcu_clear_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (pwm_ref > esp32_pwm[8])
-		{
-			mcu_clear_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (pwm_ref > esp32_pwm[9])
-		{
-			mcu_clear_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (pwm_ref > esp32_pwm[10])
-		{
-			mcu_clear_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (pwm_ref > esp32_pwm[11])
-		{
-			mcu_clear_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (pwm_ref > esp32_pwm[12])
-		{
-			mcu_clear_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (pwm_ref > esp32_pwm[13])
-		{
-			mcu_clear_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (pwm_ref > esp32_pwm[14])
-		{
-			mcu_clear_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (pwm_ref > esp32_pwm[15])
-		{
-			mcu_clear_output(PWM15);
-		}
-#endif
-
-#ifdef IC74HC595_HAS_PWMS
-#if ASSERT_PIN_EXTENDER(PWM0_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[0])
-		{
-			pwm_mask &= ~(1 << 0);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM1_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[1])
-		{
-			pwm_mask &= ~(1 << 1);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM2_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[2])
-		{
-			pwm_mask &= ~(1 << 2);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM3_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[3])
-		{
-			pwm_mask &= ~(1 << 3);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM4_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[4])
-		{
-			pwm_mask &= ~(1 << 4);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM5_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[5])
-		{
-			pwm_mask &= ~(1 << 5);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM6_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[6])
-		{
-			pwm_mask &= ~(1 << 6);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM7_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[7])
-		{
-			pwm_mask &= ~(1 << 7);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM8_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[8])
-		{
-			pwm_mask &= ~(1 << 8);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM9_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[9])
-		{
-			pwm_mask &= ~(1 << 9);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM10_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[10])
-		{
-			pwm_mask &= ~(1 << 10);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM11_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[11])
-		{
-			pwm_mask &= ~(1 << 11);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM12_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[12])
-		{
-			pwm_mask &= ~(1 << 12);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM13_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[13])
-		{
-			pwm_mask &= ~(1 << 13);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM14_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[14])
-		{
-			pwm_mask &= ~(1 << 14);
-		}
-#endif
-#if ASSERT_PIN_EXTENDER(PWM15_IO_OFFSET)
-		if (pwm_ref > esp32_pwm[15])
-		{
-			pwm_mask &= ~(1 << 15);
-		}
-#endif
-#endif
-	}
-	else
-	{
-		pwm_counter = 0;
-#if ASSERT_PIN(PWM0)
-		if (esp32_pwm[0])
-		{
-			mcu_set_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (esp32_pwm[1])
-		{
-			mcu_set_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (esp32_pwm[2])
-		{
-			mcu_set_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (esp32_pwm[3])
-		{
-			mcu_set_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (esp32_pwm[4])
-		{
-			mcu_set_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (esp32_pwm[5])
-		{
-			mcu_set_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (esp32_pwm[6])
-		{
-			mcu_set_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (esp32_pwm[7])
-		{
-			mcu_set_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (esp32_pwm[8])
-		{
-			mcu_set_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (esp32_pwm[9])
-		{
-			mcu_set_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (esp32_pwm[10])
-		{
-			mcu_set_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (esp32_pwm[11])
-		{
-			mcu_set_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (esp32_pwm[12])
-		{
-			mcu_set_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (esp32_pwm[13])
-		{
-			mcu_set_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (esp32_pwm[14])
-		{
-			mcu_set_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (esp32_pwm[15])
-		{
-			mcu_set_output(PWM15);
-		}
-#endif
-	}
-
-#ifdef IC74HC595_HAS_PWMS
-	if (pwm_mask_last != pwm_mask)
-	{
-		ic74hc595_set_pwms(pwm_mask);
-		pwm_mask_last = pwm_mask;
-	}
-#endif
+	io_soft_pwm_update();
 
 	timer_group_clr_intr_status_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
 	/* After the alarm has been triggered
@@ -426,22 +107,22 @@ IRAM_ATTR void servo_reset(void *p)
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 #if ASSERT_PIN(SERVO0)
-	mcu_clear_output(SERVO0);
+	io_clear_output(SERVO0);
 #endif
 #if ASSERT_PIN(SERVO1)
-	mcu_clear_output(SERVO1);
+	io_clear_output(SERVO1);
 #endif
 #if ASSERT_PIN(SERVO2)
-	mcu_clear_output(SERVO2);
+	io_clear_output(SERVO2);
 #endif
 #if ASSERT_PIN(SERVO3)
-	mcu_clear_output(SERVO3);
+	io_clear_output(SERVO3);
 #endif
 #if ASSERT_PIN(SERVO4)
-	mcu_clear_output(SERVO4);
+	io_clear_output(SERVO4);
 #endif
 #if ASSERT_PIN(SERVO5)
-	mcu_clear_output(SERVO5);
+	io_clear_output(SERVO5);
 #endif
 #ifdef IC74HC595_HAS_SERVOS
 	ic74hc595_set_servos(0);
@@ -498,7 +179,7 @@ IRAM_ATTR void mcu_gpio_isr(void *type)
 }
 
 #ifdef IC74HC595_HAS_PWMS
-void mcu_pwm_freq_config(uint16_t freq)
+uint8_t mcu_softpwm_freq_config(uint16_t freq)
 {
 	// keeps 8 bit resolution up to 1KHz
 	// reduces bit resolution for higher frequencies
@@ -506,10 +187,10 @@ void mcu_pwm_freq_config(uint16_t freq)
 	// determines the bit resolution (8 - esp32_pwm_res);
 	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.001f)), 0);
 	freq >>= res;
-	esp32_pwm_res = res;
 	// timer base frequency is APB clock/2
 	// it's then divided by 256
 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)roundf((float)(getApbFrequency() >> 9) / (float)freq));
+	return res;
 }
 #endif
 
@@ -545,7 +226,7 @@ void mcu_rtc_task(void *arg)
 		{
 #if ASSERT_PIN(SERVO0)
 		case SERVO0_FRAME:
-			mcu_set_output(SERVO0);
+			io_set_output(SERVO0);
 			start_servo_timeout(mcu_servos[0]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO0_MASK;
@@ -554,7 +235,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO1)
 		case SERVO1_FRAME:
-			mcu_set_output(SERVO1);
+			io_set_output(SERVO1);
 			start_servo_timeout(mcu_servos[1]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO1_MASK;
@@ -563,7 +244,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO2)
 		case SERVO2_FRAME:
-			mcu_set_output(SERVO2);
+			io_set_output(SERVO2);
 			start_servo_timeout(mcu_servos[2]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO2_MASK;
@@ -572,7 +253,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO3)
 		case SERVO3_FRAME:
-			mcu_set_output(SERVO3);
+			io_set_output(SERVO3);
 			start_servo_timeout(mcu_servos[3]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO3_MASK;
@@ -581,7 +262,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO4)
 		case SERVO4_FRAME:
-			mcu_set_output(SERVO4);
+			io_set_output(SERVO4);
 			start_servo_timeout(mcu_servos[4]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO4_MASK;
@@ -590,7 +271,7 @@ void mcu_rtc_task(void *arg)
 #endif
 #if ASSERT_PIN(SERVO5)
 		case SERVO5_FRAME:
-			mcu_set_output(SERVO5);
+			io_set_output(SERVO5);
 			start_servo_timeout(mcu_servos[5]);
 #ifdef IC74HC595_HAS_SERVOS
 			servomask = SERVO5_MASK;

@@ -4523,8 +4523,10 @@ extern "C"
 #define PCINT2_MASK (PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK)
 
 // Indirect macro access
-#define __indirect__ex__(X, Y) (DIO##X##_##Y)
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS

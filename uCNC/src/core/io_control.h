@@ -31,8 +31,33 @@ extern "C"
 #endif
 
 #include "../module.h"
+#include "../modules/ic74hc595.h"
+#include "../hal/io_hal.h"
 #include <stdint.h>
 #include <stdbool.h>
+
+/**
+ * IO CONTROL<-> MCU HAL
+ *
+ **/
+#define io_config_input(pin) io_hal_config_input(pin)
+#define io_config_pullup(pin)  io_hal_config_pullup(pin)
+#define io_get_input(pin)  io_hal_get_input(pin)
+#define io_config_analog(pin)  io_hal_config_analog(pin)
+#define io_get_analog(pin)  io_hal_get_analog(pin)
+
+#define io_config_output(pin) io_hal_config_output(pin)
+#define io_set_output(pin) io_hal_set_output(pin)
+#define io_clear_output(pin) io_hal_clear_output(pin)
+#define io_toggle_output(pin) io_hal_toggle_output(pin)
+#define io_get_output(pin) io_hal_get_output(pin)
+#define io_config_pwm(pin, freq) io_hal_config_pwm(pin, freq)
+#define io_set_pwm(pin, value) io_hal_set_pwm(pin, value)
+#define io_get_pwm(pin) io_hal_get_pwm(pin)
+
+#if defined(MCU_HAS_SOFT_PWM_TIMER) || defined(IC74HC595_HAS_PWMS)
+	MCU_CALLBACK void io_soft_pwm_update(void);
+#endif
 
 	// inputs
 	void io_lock_limits(uint8_t limitmask);
@@ -44,18 +69,15 @@ extern "C"
 	void io_disable_probe(void);
 	bool io_get_probe(void);
 
-	uint8_t io_get_analog(uint8_t pin);
-
 	// outputs
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
 
-	void io_set_pwm(uint8_t pin, uint8_t value);
-	void io_set_output(uint8_t pin, bool state);
-
 	void io_enable_steppers(uint8_t mask);
 
+	// all purpose functions
+	void io_set_pinvalue(uint8_t pin, uint8_t value);
 	int16_t io_get_pinvalue(uint8_t pin);
 
 #ifdef ENABLE_IO_MODULES
@@ -65,26 +87,26 @@ extern "C"
 	DECL_EVENT_HANDLER(probe_enable);
 	// event_probe_disable_handler
 	DECL_EVENT_HANDLER(probe_disable);
-	// // event_set_steps_handler
-	// DECL_EVENT_HANDLER(set_steps);
-	// // event_toggle_steps_handler
-	// DECL_EVENT_HANDLER(toggle_steps);
-	// // event_set_dirs_handler
-	// DECL_EVENT_HANDLER(set_dirs);
-	// // event_enable_steppers_handler
-	// DECL_EVENT_HANDLER(enable_steppers);
-	// typedef struct set_output_args_
-	// {
-	// 	uint8_t pin;
-	// 	bool state;
-	// } set_output_args_t;
-	// // event_set_output_handler
-	// DECL_EVENT_HANDLER(set_output);
+// // event_set_steps_handler
+// DECL_EVENT_HANDLER(set_steps);
+// // event_toggle_steps_handler
+// DECL_EVENT_HANDLER(toggle_steps);
+// // event_set_dirs_handler
+// DECL_EVENT_HANDLER(set_dirs);
+// // event_enable_steppers_handler
+// DECL_EVENT_HANDLER(enable_steppers);
+// typedef struct set_output_args_
+// {
+// 	uint8_t pin;
+// 	bool state;
+// } set_output_args_t;
+// // event_set_output_handler
+// DECL_EVENT_HANDLER(set_output);
 #endif
 
 #ifdef ENABLE_IO_ALARM_DEBUG
-extern uint8_t io_alarm_limits;
-extern uint8_t io_alarm_controls;
+	extern uint8_t io_alarm_limits;
+	extern uint8_t io_alarm_controls;
 #endif
 
 #ifdef __cplusplus
