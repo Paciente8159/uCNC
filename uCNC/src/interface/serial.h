@@ -47,11 +47,11 @@ extern "C"
 	void serial_ungetc(void);
 	unsigned char serial_peek(void);
 	void serial_inject_cmd(const char *__s);
-	void serial_restore_line(void);
 	void serial_rx_clear(void);
 	void serial_select(uint8_t source);
 
 	void serial_putc(unsigned char c);
+	uint8_t serial_tx_busy(void);
 	// printing utils
 	typedef void (*print_cb)(unsigned char);
 	void print_str(print_cb cb, const char *__s);
@@ -70,7 +70,6 @@ extern "C"
 #define serial_print_intarr(arr, count) print_intarr(serial_putc, arr, count)
 #define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
 
-	void serial_flush(void);
 	uint8_t serial_get_rx_freebytes(void);
 
 #ifdef __cplusplus

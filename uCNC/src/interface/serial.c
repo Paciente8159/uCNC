@@ -165,16 +165,24 @@ void serial_inject_cmd(const char *__s)
 	} while (c);
 }
 
+static uint8_t serial_tx_count;
 void serial_putc(unsigned char c)
 {
+	serial_tx_count++;
 	mcu_putc(c);
 	if (c == '\n')
 	{
-		serial_flush();
+		serial_tx_count = 0;
+		mcu_flush();
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	mcu_toggle_output(ACTIVITY_LED);
 #endif
+}
+
+uint8_t serial_tx_busy(void)
+{
+	return serial_tx_count;
 }
 
 void print_str(print_cb cb, const char *__s)
@@ -316,11 +324,6 @@ void print_fltarr(print_cb cb, float *arr, uint8_t count)
 			print_flt(cb, 0);
 		} while (--i);
 	}
-}
-
-void serial_flush(void)
-{
-	mcu_flush();
 }
 
 // ISR
