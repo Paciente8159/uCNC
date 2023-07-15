@@ -293,6 +293,14 @@ extern "C"
 	// #define ENABLE_RT_SYNC_MOTIONS
 
 	/**
+	 * enable motion control and planner highjacking
+	 * this unlocks funtions to perform a full planner copy and restore
+	 * this requires some memory since the full planned contents must be stored and also the motion control reference position 
+	 * */
+
+	// #define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+
+	/**
 	 * Uncomment to enable module extensions
 	 * */
 // #define ENABLE_MAIN_LOOP_MODULES
