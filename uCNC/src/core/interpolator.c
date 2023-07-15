@@ -1157,18 +1157,10 @@ uint32_t itp_get_rt_line_number(void)
 // turn laser off callback
 MCU_CALLBACK void laser_ppi_turnoff_cb(void)
 {
-#if ASSERT_PIN(LASER_PPI)
 #ifndef INVERT_LASER_PPI_LOGIC
 	io_clear_output(LASER_PPI);
 #else
 	io_set_output(LASER_PPI);
-#endif
-#elif ASSERT_PIN_EXTENDER(LASER_PPI)
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_set_output(LASER_PPI, false);
-#else
-	io_set_output(LASER_PPI, true);
-#endif
 #endif
 }
 #endif

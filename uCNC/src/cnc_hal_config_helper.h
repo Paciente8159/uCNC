@@ -640,14 +640,14 @@ extern "C"
 #define LASER_PPI_MASK STEP6_MASK
 #endif
 #ifndef LASER_PPI
-#define LASER_PPI -1
+#define LASER_PPI UNDEF_PIN
 #endif
 // #ifdef STEP_ISR_SKIP_MAIN
 // #undef STEP_ISR_SKIP_MAIN
 // #warning "STEP_ISR_SKIP_MAIN was disabled for Laser PPI mode"
 // #endif
 #else
-#define LASER_PPI -1
+#define LASER_PPI UNDEF_PIN
 #endif
 
 #define __stepname_helper__(x) STEP##x##_MASK
@@ -2272,6 +2272,24 @@ typedef uint16_t step_t;
 #undef ENABLE_G39_H_MAPPING
 #warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
 #endif
+#endif
+
+#ifdef ENABLE_PLASMA_THC
+
+//forces modes
+#ifndef ENABLE_MAIN_LOOP_MODULES
+#define ENABLE_MAIN_LOOP_MODULES
+#endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
+#ifndef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#endif
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
+#endif
+
 #endif
 
 #ifdef __cplusplus

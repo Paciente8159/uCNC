@@ -252,6 +252,7 @@ bool cnc_dotasks(void)
 
 void cnc_store_motion(void)
 {
+	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
 	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
@@ -259,7 +260,7 @@ void cnc_store_motion(void)
 	{
 		if (!cnc_dotasks())
 		{
-			return false;
+			return;
 		}
 	}
 	// store planner and motion controll data away
@@ -276,10 +277,12 @@ void cnc_store_motion(void)
 	}
 
 	lock_itp = false;
+	#endif
 }
 
 void cnc_restore_motion(void)
 {
+	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
 	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
@@ -287,7 +290,7 @@ void cnc_restore_motion(void)
 	{
 		if (!cnc_dotasks())
 		{
-			return false;
+			return;
 		}
 	}
 
@@ -307,6 +310,7 @@ void cnc_restore_motion(void)
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
 	lock_itp = false;
+	#endif
 }
 
 // this function is executed every millisecond

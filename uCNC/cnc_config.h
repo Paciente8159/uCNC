@@ -289,23 +289,21 @@ extern "C"
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
-
-	 #define ENABLE_RT_SYNC_MOTIONS
+	// #define ENABLE_RT_SYNC_MOTIONS
 
 	/**
 	 * enable motion control and planner highjacking
 	 * this unlocks funtions to perform a full planner copy and restore
-	 * this requires some memory since the full planned contents must be stored and also the motion control reference position 
+	 * this requires some memory since the full planned contents must be stored and also the motion control reference position
 	 * */
-
-	 #define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// #define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 
 	/**
 	 * Uncomment to enable module extensions
 	 * */
- #define ENABLE_MAIN_LOOP_MODULES
+// #define ENABLE_MAIN_LOOP_MODULES
 // #define ENABLE_IO_MODULES
- #define ENABLE_PARSER_MODULES
+// #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
 // #define ENABLE_SETTINGS_MODULES
 
@@ -318,7 +316,7 @@ extern "C"
 // enables automatic status report sending
 // this value sets the millisecond interval of the reports
 // values bellow 100ms have no effect
-#define STATUS_AUTOMATIC_REPORT_INTERVAL 1000
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
 
 	/**
 	 *
@@ -464,7 +462,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-#define DISABLE_ALL_CONTROLS
+// #define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS

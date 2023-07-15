@@ -97,7 +97,7 @@ extern "C"
  * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
  * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
  */
-//#define ENABLE_DUAL_DRIVE_AXIS
+// #define ENABLE_DUAL_DRIVE_AXIS
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 // defines the first dual drive capable axis
 // #define DUAL_DRIVE0_AXIS X
@@ -107,7 +107,7 @@ extern "C"
 //  #define DUAL_DRIVE0_ENABLE_SELFSQUARING
 
 // defines the first second drive capable axis
-//#define DUAL_DRIVE1_AXIS Y
+// #define DUAL_DRIVE1_AXIS Y
 // by default this will be rewired to STEPPER7 (if available on the board)
 // this can be uncommented to re-wire to an available (unused stepper other then 7)
 // #define DUAL_DRIVE1_STEPPER 7
@@ -122,11 +122,10 @@ extern "C"
 		You can't skip tool numbers (for example define TOOL1 and TOOL3 without having a TOOL2)
 	*/
 
-
 /**
- * 
- * Enables Laser PPI capabilities 
- * 
+ *
+ * Enables Laser PPI capabilities
+ *
  * **/
 #ifdef ENABLE_LASER_PPI
 #define LASER_PPI PWM0
@@ -135,25 +134,76 @@ extern "C"
 #endif
 
 /**
- * 
+ *
  * Enables Plasma THC capabilities
- * 
+ *
  * **/
- #define ENABLE_PLASMA_THC
-
+//  #define ENABLE_PLASMA_THC
 
 /**
+ *
+ * Tool pallete
+ * You can assign your tool pallete indexes here
+ * Up to 16 tools can be defined
+ * M6 command is available if TOOL_COUNT >= 2
+ *
+ * to set a tool you just need to define which tool will be in which index.
+ * For example: Set TOOL1 as laser_pwm
  * 
+ * #define TOOL1 laser_pwm
  * 
- * 
+ * Tools can be any of the built in tools available in /src/hal/tools/tools/ or you can use your own custom tool.
  * 
  * **/
 // assign the tools from 1 to 16
-#define TOOL1 plasma_thc
-// #define TOOL2 laser
-// #define TOOL3 laser_ppi
-// #define TOOL4 spindle_besc
-// #define TOOL5 spindle_relay
+#if (TOOL_COUNT >= 1)
+#define TOOL1 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 2)
+#define TOOL2 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 3)
+#define TOOL3 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 4)
+#define TOOL4 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 5)
+#define TOOL5 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 6)
+#define TOOL6 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 7)
+#define TOOL7 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 8)
+#define TOOL8 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 9)
+#define TOOL9 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 10)
+#define TOOL10 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 11)
+#define TOOL11 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 12)
+#define TOOL12 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 13)
+#define TOOL13 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 14)
+#define TOOL14 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 15)
+#define TOOL15 spindle_pwm
+#endif
+#if (TOOL_COUNT >= 16)
+#define TOOL16 spindle_pwm
+#endif
 
 // enable RPM encoder for spindle_pwm
 // depends on encoders (below)
@@ -333,7 +383,7 @@ extern "C"
 #define STEPPER0_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER1_HAS_TMC
+// #define STEPPER1_HAS_TMC
 #ifdef STEPPER1_HAS_TMC
 #define STEPPER1_DRIVER_TYPE 2208
 // choose the interface type
@@ -360,7 +410,7 @@ extern "C"
 #define STEPPER1_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER2_HAS_TMC
+// #define STEPPER2_HAS_TMC
 #ifdef STEPPER2_HAS_TMC
 #define STEPPER2_DRIVER_TYPE 2208
 // choose the interface type
@@ -387,7 +437,7 @@ extern "C"
 #define STEPPER2_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER3_HAS_TMC
+// #define STEPPER3_HAS_TMC
 #ifdef STEPPER3_HAS_TMC
 #define STEPPER3_DRIVER_TYPE 2208
 // choose the interface type
@@ -414,7 +464,7 @@ extern "C"
 #define STEPPER3_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER4_HAS_TMC
+// #define STEPPER4_HAS_TMC
 #ifdef STEPPER4_HAS_TMC
 #define STEPPER4_DRIVER_TYPE 2208
 // choose the interface type
@@ -441,7 +491,7 @@ extern "C"
 #define STEPPER4_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER5_HAS_TMC
+// #define STEPPER5_HAS_TMC
 #ifdef STEPPER5_HAS_TMC
 #define STEPPER5_DRIVER_TYPE 2208
 // choose the interface type
@@ -468,7 +518,7 @@ extern "C"
 #define STEPPER5_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER6_HAS_TMC
+// #define STEPPER6_HAS_TMC
 #ifdef STEPPER6_HAS_TMC
 #define STEPPER6_DRIVER_TYPE 2208
 // choose the interface type
@@ -495,7 +545,7 @@ extern "C"
 #define STEPPER6_STALL_SENSITIVITY 10
 #endif
 // uncomment to enable trinamic driver
-//#define STEPPER7_HAS_TMC
+// #define STEPPER7_HAS_TMC
 #ifdef STEPPER7_HAS_TMC
 #define STEPPER7_DRIVER_TYPE 2208
 // choose the interface type
