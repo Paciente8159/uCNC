@@ -20,10 +20,6 @@
 
 #include "../cnc.h"
 
-#if PID_CONTROLLERS > 0
-static volatile uint8_t io_spindle_speed;
-#endif
-
 static uint8_t io_lock_limits_mask;
 static uint8_t io_invert_limits_mask;
 

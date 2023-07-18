@@ -425,24 +425,14 @@ static void set_coolant(uint8_t value)
 #endif
 }
 
-static uint16_t get_speed(void)
-{
-#if ASSERT_PIN(PLASMA_ON_OUTPUT)
-	return io_get_output(PLASMA_ON_OUTPUT);
-#else
-	return 0;
-#endif
-}
-
 const tool_t plasma_thc = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-	.pid_error = NULL,
 #endif
 	.range_speed = &range_speed,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};
 

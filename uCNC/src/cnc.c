@@ -236,6 +236,11 @@ bool cnc_dotasks(void)
 		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+	// run the tool pid update
+	tool_pid_update();
+#endif
+
 	if (!lock_itp)
 	{
 		lock_itp = true;
@@ -252,7 +257,7 @@ bool cnc_dotasks(void)
 
 void cnc_store_motion(void)
 {
-	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
 	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
@@ -277,12 +282,12 @@ void cnc_store_motion(void)
 	}
 
 	lock_itp = false;
-	#endif
+#endif
 }
 
 void cnc_restore_motion(void)
 {
-	#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 	// set hold and wait for motion to stop
 	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
 	cnc_set_exec_state(EXEC_HOLD);
@@ -310,7 +315,7 @@ void cnc_restore_motion(void)
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
 	lock_itp = false;
-	#endif
+#endif
 }
 
 // this function is executed every millisecond

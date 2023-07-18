@@ -39,8 +39,6 @@
 #endif
 #define PEN_SERVO_RANGE (ABS((PEN_SERVO_HIGH - PEN_SERVO_LOW)))
 
-static uint8_t speed;
-
 static void startup_code(void)
 {
 #if ASSERT_PIN(PEN_SERVO)
@@ -80,28 +78,15 @@ static void set_speed(int16_t value)
 		io_set_pwm(PEN_SERVO, (uint8_t)value);
 #endif
 	}
-
-	speed = (value <= 0) ? 0 : value;
-}
-
-static uint16_t get_speed(void)
-{
-#if ASSERT_PIN(PEN_SERVO)
-	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)lroundf(spindle);
-#else
-	return 0;
-#endif
 }
 
 const tool_t pen_servo = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-	.pid_error = NULL,
 #endif
 	.range_speed = &range_speed,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = NULL};

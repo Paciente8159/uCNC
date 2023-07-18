@@ -48,10 +48,6 @@ void mod_init(void)
 	LOAD_MODULE(digipot);
 #endif
 
-#if PID_CONTROLLERS > 0
-	LOAD_MODULE(pid);
-#endif
-
 #if ENCODERS > 0
 	LOAD_MODULE(encoder);
 #endif

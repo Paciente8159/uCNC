@@ -148,30 +148,6 @@ const settings_t __rom__ default_settings =
 		.encoders_pulse_invert_mask = 0,
 		.encoders_dir_invert_mask = 0,
 #endif
-#if PID_CONTROLLERS > 0
-		.pid_gain[0] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 1
-		.pid_gain[1] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 2
-		.pid_gain[2] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 3
-		.pid_gain[3] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 4
-		.pid_gain[4] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 5
-		.pid_gain[5] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 6
-		.pid_gain[6] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 7
-		.pid_gain[7] = DEFAULT_ARRAY(3, 0),
-#endif
 };
 
 #ifdef ENABLE_SETTINGS_MODULES
@@ -518,21 +494,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 				g_settings.backlash_steps[setting] = value16;
 			}
 #endif
-#if PID_CONTROLLERS > 0
-			// kp ki and kd 0 -> 41, 42, 43
-			// kp ki and kd 1 -> 45, 46, 47, etc...
-			else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
-			{
-				uint8_t k = (setting & 0x03);
-				uint8_t pid = (setting >> 2) - 10;
-				// 3 is invalid index
-				if (k == 0x03)
-				{
-					return STATUS_INVALID_STATEMENT;
-				}
-				g_settings.pid_gain[pid][k] = value;
-			}
-#endif
+
 #if TOOL_COUNT > 0
 			else if (setting > 80 && setting <= (80 + TOOL_COUNT))
 			{

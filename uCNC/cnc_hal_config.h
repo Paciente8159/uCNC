@@ -213,6 +213,14 @@ extern "C"
 // depends on encoders (below)
 // #define SPINDLE_BESC_HAS_RPM_ENCODER
 
+/**
+ * Uncomment to enable PID controller for tools
+ * Each tool has it's own PID controller and EEPROM settings
+ * Chech the tool file to find the settings for each tool
+ * 
+ * **/
+// #define ENABLE_TOOL_PID_CONTROLLER
+
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
@@ -276,57 +284,6 @@ extern "C"
 // instead of updating in every PPR
 // #define RPM_SYNC_UPDATE_ON_INDEX_ONLY
 #endif
-#endif
-
-/*
-	Sets the number of PID controllers to be used
-*/
-#define PID_CONTROLLERS 0
-
-#if PID_CONTROLLERS > 0
-#include "src/modules/pid.h"
-
-	/**
-	 * To use PID you need to set the number o PID controllers.
-	 * PID0 is hardwired to run the tool PID (defined or not). That being said if you need a PID for any other purpose other than the tool the number of PID controllers
-	 * to be enabled must be greater then 1.
-	 *
-	 * µCNC will run each PID in a timed slot inside the rtc timer scheduler like this.
-	 * Let's say you have enabled 3 PID controllers. At each RTC call of the scheduller it will run the current PID controller in a ring loop
-	 *
-	 * |--RTC+0--|--RTC+1--|--RTC+2--|--RTC+3--|--RTC+4--|--RTC+5--|--RTC+6--|..etc..
-	 * |--PID 0--|--PID 1--|--PID 2--|--PID 0--|--PID 1--|--PID 2--|--PID 0--|..etc..
-	 *
-	 * REMEMBER PID0 is hardwired to the tool PID. If the tool PID is not defined for the current tool it will simply do nothing.
-	 *
-	 *
-	 * To use the PID controller 3 definitions are needed
-	 * PIDx_DELTA() -> sets the function that gets the error between the setpoint and the current value for x PID controller
-	 * PIDx_OUTPUT(X) -> sets the output after calculating the pid corrected value for x PID controller
-	 * PIDx_STOP() -> runs this function on any halt or emergency stop of the machine
-	 *
-	 * For example
-	 *
-	 * #define PID1_DELTA() (my_setpoint - io_get_analog(ANA0))
-	 * #define PID1_OUTPUT(X) (io_set_pwm(PWM0, X))
-	 * #define PID1_STOP() (io_set_pwm(PWM0, 0))
-	 *
-	 * An optional configuration is the sampling rate of the PID update. By default the sampling rate is 125Hz.
-	 * To reduce the sampling rate a 125/PIDx_FREQ_DIV can be defined between 1 (125Hz) and 250 (0.5Hz)
-	 *
-	 * You can but you should not define PID for tools. Tools have a dedicated PID that can be customized for each tool. Check the tool HAL for this.
-	 *
-	 * */
-	// here is an example on how to add an PID controller to the spindle
-	// this exemple assumes that the spindle speed is feedback via an analog pin
-	// reference to io_get_spindle defined in io_control
-	//  	extern uint8_t io_get_spindle(void);
-	//  #define SPINDLE_SPEED ANALOG0
-	//  #define PID1_DELTA() (io_get_spindle() - io_get_analog(SPINDLE_SPEED))
-	//  #define PID1_OUTPUT(X) (io_set_pwm(SPINDLE_PWM, X))
-	//  #define PID1_STOP() (io_set_pwm(PWM0, 0))
-	//  //optional
-	//  #define PID1_FREQ_DIV 50
 #endif
 
 /**

@@ -42,8 +42,6 @@
 #endif
 #endif
 
-static int16_t spindle_speed;
-
 void set_speed(int16_t value)
 {
 
@@ -83,19 +81,13 @@ void set_coolant(uint8_t value)
 #endif
 }
 
-uint16_t get_speed(void)
-{
-	return ABS(spindle_speed);
-}
-
 const tool_t spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-	.pid_error = NULL,
 #endif
 	.range_speed = NULL,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};

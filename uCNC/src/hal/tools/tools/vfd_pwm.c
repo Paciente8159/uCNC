@@ -48,6 +48,16 @@
 #define VFD_PWM_ANALOG_FEEDBACK ANALOG0
 #endif
 
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_VFD_PWM_PID)
+#ifndef VFD_PWM_PID_SAMPLE_RATE_HZ
+#define VFD_PWM_PID_SAMPLE_RATE_HZ 125
+#endif
+#define VFD_PWM_PID_SETTING_ID 304
+#include "../../../modules/pid.h"
+static pid_data_t vfd_pwm_pid;
+DECL_EXTENDED_SETTING(VFD_PWM_PID_SETTING_ID, vfd_pwm_pid.k, float, 3, protocol_send_gcode_setting_line_flt);
+#endif
+
 static uint8_t speed;
 
 static void startup_code(void)
@@ -55,6 +65,13 @@ static void startup_code(void)
 // force pwm mode
 #if ASSERT_PIN(VFD_PWM)
 	io_config_pwm(VFD_PWM, 1000);
+#endif
+
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_VFD_PWM_PID)
+	EXTENDED_SETTING_INIT(VFD_PWM_PID_SETTING_ID, vfd_pwm_pid.k);
+	settings_load(EXTENDED_SETTING_ADDRESS(VFD_PWM_PID_SETTING_ID), (uint8_t*)vfd_pwm_pid.k, sizeof(vfd_pwm_pid.k));
+	vfd_pwm_pid.max = g_settings.spindle_max_rpm;
+	vfd_pwm_pid.min = g_settings.spindle_min_rpm;
 #endif
 }
 
@@ -96,49 +113,32 @@ static int16_t range_speed(int16_t value)
 	return value;
 }
 
-static uint16_t get_speed(void)
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_VFD_PWM_PID)
+static void pid_update(void)
 {
-#if ASSERT_PIN(VFD_PWM_ANALOG_FEEDBACK)
-	float spindle = (float)io_get_analog(VFD_PWM_ANALOG_FEEDBACK) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)lroundf(spindle);
-#else
-	return 0;
-#endif
-}
+	float output = tool_get_setpoint();
 
-#if PID_CONTROLLERS > 0
-static void pid_update(int16_t value)
-{
-	if (speed != 0)
+	if (output != 0)
 	{
-		uint8_t newval = CLAMP(0, io_get_pwm(VFD_PWM) + value, 255);
-#if ASSERT_PIN(VFD_PWM)
-		io_set_pwm(VFD_PWM, newval);
-#else
-		io_set_pwm(VFD_PWM, newval);
-#endif
+		if (pid_compute(&vfd_pwm_pid, &output, output, get_speed(), HZ_TO_MS(VFD_PWM_PID_SAMPLE_RATE_HZ)))
+		{
+			io_set_pwm(VFD_PWM, range_speed((int16_t)output));
+		}
 	}
-}
-
-static int16_t pid_error(void)
-{
-#if (ASSERT_PIN(VFD_PWM_ANALOG_FEEDBACK) && ASSERT_PIN(VFD_PWM))
-	uint8_t reader = io_get_analog(VFD_PWM_ANALOG_FEEDBACK);
-	return (speed - reader);
-#else
-	return 0;
-#endif
 }
 #endif
 
 const tool_t vfd_pwm = {
 	.startup_code = &startup_code,
 	.shutdown_code = NULL,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+#ifndef DISABLE_SPINDLE_PWM_PID
 	.pid_update = &pid_update,
-	.pid_error = &pid_error,
+#else
+	.pid_update = NULL,
+#endif
 #endif
 	.range_speed = &range_speed,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};
