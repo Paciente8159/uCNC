@@ -89,9 +89,8 @@ static uint16_t get_speed(void)
 const tool_t laser_ppi = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-	.pid_error = NULL,
 #endif
 	.range_speed = NULL,
 	.get_speed = &get_speed,

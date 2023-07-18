@@ -534,7 +534,7 @@ void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t val
 	protocol_send_newline();
 }
 
-static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
+void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value)
 {
 	serial_putc('$');
 	serial_print_int(setting);
@@ -631,15 +631,6 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
 	protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
 #endif
-#endif
-
-#if PID_CONTROLLERS > 0
-	for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
-	{
-		protocol_send_gcode_setting_line_flt(40 + 4 * i, g_settings.pid_gain[i][0]);
-		protocol_send_gcode_setting_line_flt(41 + 4 * i, g_settings.pid_gain[i][1]);
-		protocol_send_gcode_setting_line_flt(42 + 4 * i, g_settings.pid_gain[i][2]);
-	}
 #endif
 
 #if TOOL_COUNT > 0

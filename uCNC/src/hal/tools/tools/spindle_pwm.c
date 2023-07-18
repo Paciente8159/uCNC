@@ -50,13 +50,30 @@
 #endif
 #endif
 
-static uint8_t speed;
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
+#ifndef SPINDLE_PWM_PID_SAMPLE_RATE_HZ
+#define SPINDLE_PWM_PID_SAMPLE_RATE_HZ 125
+#endif
+#define SPINDLE_PWM_PID_SETTING_ID 300
+#include <stdbool.h>
+#include "../../../modules/pid.h"
+static pid_data_t spindle_pwm_pid;
+DECL_EXTENDED_SETTING(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k, float, 3, protocol_send_gcode_setting_line_flt);
+#endif
 
-static void startup_code(void)
+static void
+startup_code(void)
 {
 // force pwm mode
 #if ASSERT_PIN(SPINDLE_PWM)
 	io_config_pwm(SPINDLE_PWM, 1000);
+#endif
+
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
+	EXTENDED_SETTING_INIT(SPINDLE_PWM_PID_SETTING_ID, spindle_pwm_pid.k);
+	settings_load(EXTENDED_SETTING_ADDRESS(SPINDLE_PWM_PID_SETTING_ID), (uint8_t *)spindle_pwm_pid.k, sizeof(spindle_pwm_pid.k));
+	spindle_pwm_pid.max = g_settings.spindle_max_rpm;
+	spindle_pwm_pid.min = g_settings.spindle_min_rpm;
 #endif
 }
 
@@ -64,7 +81,6 @@ static void set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
 	// SET_SPINDLE(SPINDLE_PWM, SPINDLE_PWM_DIR, value, invert);
-	speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if ASSERT_PIN(SPINDLE_PWM_DIR)
 	if ((value <= 0))
@@ -104,45 +120,38 @@ static uint16_t get_speed(void)
 	return encoder_get_rpm();
 #else
 #if ASSERT_PIN(SPINDLE_PWM)
-	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)lroundf(spindle);
+	return tool_get_setpoint();
 #else
 	return 0;
 #endif
 #endif
 }
 
-#if PID_CONTROLLERS > 0
-static void pid_update(int16_t value)
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
+static void pid_update(void)
 {
-	if (speed != 0)
+	float output = tool_get_setpoint();
+
+	if (output != 0)
 	{
-		uint8_t newval = CLAMP(0, io_get_pwm(SPINDLE_PWM) + value, 255);
-#if ASSERT_PIN(SPINDLE_PWM)
-		io_set_pwm(SPINDLE_PWM, newval);
-#else
-		io_set_pwm(SPINDLE_PWM, newval);
-#endif
+		if (pid_compute(&spindle_pwm_pid, &output, output, get_speed(), HZ_TO_MS(SPINDLE_PWM_PID_SAMPLE_RATE_HZ)))
+		{
+			io_set_pwm(SPINDLE_PWM, range_speed((int16_t)output));
+		}
 	}
 }
 
-static int16_t pid_error(void)
-{
-#if (ASSERT_PIN(SPINDLE_FEEDBACK) && ASSERT_PIN(SPINDLE_PWM))
-	uint8_t reader = io_get_analog(ANALOG0);
-	return (speed - reader);
-#else
-	return 0;
-#endif
-}
 #endif
 
 const tool_t spindle_pwm = {
 	.startup_code = &startup_code,
 	.shutdown_code = NULL,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+#ifndef DISABLE_SPINDLE_PWM_PID
 	.pid_update = &pid_update,
-	.pid_error = &pid_error,
+#else
+	.pid_update = NULL,
+#endif
 #endif
 	.range_speed = &range_speed,
 	.get_speed = &get_speed,

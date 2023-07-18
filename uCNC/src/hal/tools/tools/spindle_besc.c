@@ -58,8 +58,6 @@
 #endif
 #endif
 
-static uint8_t speed;
-
 static void startup_code(void)
 {
 // do whatever routine you need to do here to arm the ESC
@@ -109,8 +107,6 @@ static void set_speed(int16_t value)
 		io_set_pwm(SPINDLE_BESC_SERVO, (uint8_t)value);
 #endif
 	}
-
-	speed = (value <= 0) ? 0 : value;
 }
 
 static void set_coolant(uint8_t value)
@@ -126,8 +122,7 @@ static uint16_t get_speed(void)
 	return encoder_get_rpm();
 #else
 #if ASSERT_PIN(SPINDLE_BESC_SERVO)
-	float spindle = (float)speed * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)lroundf(spindle);
+	return tool_get_setpoint();
 #else
 	return 0;
 #endif
@@ -137,9 +132,8 @@ static uint16_t get_speed(void)
 const tool_t spindle_besc = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-	.pid_error = NULL,
 #endif
 	.range_speed = &range_speed,
 	.get_speed = &get_speed,
