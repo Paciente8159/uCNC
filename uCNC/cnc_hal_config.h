@@ -221,6 +221,17 @@ extern "C"
  * **/
 // #define ENABLE_TOOL_PID_CONTROLLER
 
+/**
+ * Set a custom filter that prevents step motions in realtime
+ * This can be any expression that can be evaluated as true or false
+ * If defined and the expression evaluates to true the ISR will be unable to generate steps until condition cleared
+ * 
+ * In the example bellow if input pin DIN19 is active step ISR will stop generating steps
+ * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
+ * 
+ * **/
+// #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
+
 // Assigns an output to an blinking led (1Hz rate)
 #define ACTIVITY_LED DOUT31
 
