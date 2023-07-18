@@ -58,8 +58,6 @@ static pid_data_t vfd_pwm_pid;
 DECL_EXTENDED_SETTING(VFD_PWM_PID_SETTING_ID, vfd_pwm_pid.k, float, 3, protocol_send_gcode_setting_line_flt);
 #endif
 
-static uint8_t speed;
-
 static void startup_code(void)
 {
 // force pwm mode
@@ -79,7 +77,6 @@ static void set_speed(int16_t value)
 {
 	// easy macro to execute the same code as below
 	// SET_SPINDLE(VFD_PWM, VFD_PWM_DIR, value, invert);
-	speed = (uint8_t)ABS(value);
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if ASSERT_PIN(VFD_PWM_DIR)
 	if ((value <= 0))
