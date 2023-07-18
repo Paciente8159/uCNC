@@ -1046,7 +1046,7 @@ extern uint8_t g_soft_pwm_res;
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
 
 
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
 #define mcu_spi_xmit(X)           \
 	{                             \

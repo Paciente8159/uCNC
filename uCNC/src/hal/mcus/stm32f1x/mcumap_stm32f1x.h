@@ -4755,7 +4755,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		while (!(ADC1->SR & ADC_SR_EOS))            \
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOS;                    \
-		(0xFF & (ADC1->DR >> 4));                   \
+		(0x3FF & (ADC1->DR >> 2));                   \
 	})
 
 #define mcu_spi_xmit(X)                                               \
