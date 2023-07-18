@@ -2800,7 +2800,7 @@ extern "C"
 #define mcu_config_analog(X)                                                      \
 	{                                                                             \
 		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_9);                                       \
+		adc1_config_width(ADC_WIDTH_BIT_10);                                       \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
 	}
 #define mcu_config_pullup(X)                                       \
@@ -2861,7 +2861,7 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
+#define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)

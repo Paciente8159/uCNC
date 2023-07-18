@@ -1156,7 +1156,7 @@ extern "C"
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
 #define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

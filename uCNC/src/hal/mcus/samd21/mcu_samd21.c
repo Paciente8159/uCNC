@@ -114,7 +114,7 @@ static void mcu_setup_clocks(void)
 	while (ADC->STATUS.bit.SYNCBUSY)
 		;
 	// set resolution
-	ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_8BIT_Val;
+	ADC->CTRLB.bit.RESSEL = ADC_CTRLB_RESSEL_10BIT_Val;
 	ADC->CTRLB.bit.PRESCALER = ADC_CTRLB_PRESCALER_DIV32_Val;
 	while (ADC->STATUS.bit.SYNCBUSY)
 		;
@@ -709,7 +709,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }

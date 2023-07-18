@@ -1383,7 +1383,7 @@ void mcu_toggle_output(uint8_t pin)
 	}
 }
 
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	channel -= ANALOG0;
 	return virtualmap.analog[channel];
