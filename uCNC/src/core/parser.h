@@ -153,6 +153,7 @@ extern "C"
 // only used in canned cycles and splines for now
 // can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
+#define GCODE_WORD_E GCODE_WORD_A
 
 #define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
