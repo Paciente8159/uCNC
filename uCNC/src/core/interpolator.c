@@ -1186,6 +1186,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 	static uint16_t new_laser_ppi = 0;
 #endif
 
+#ifdef RT_STEP_PREVENT_CONDITION
+	if (RT_STEP_PREVENT_CONDITION)
+	{
+		return;
+	}
+#endif
+
 	if (itp_busy) // prevents reentrancy
 	{
 		return;
