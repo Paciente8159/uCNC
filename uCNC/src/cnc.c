@@ -170,6 +170,9 @@ void cnc_run(void)
 
 bool cnc_exec_cmd(void)
 {
+#ifdef ENABLE_PARSING_TIME_DEBUG
+	uint32_t exec_time;
+#endif
 	// process gcode commands
 	if (!serial_rx_is_empty())
 	{
@@ -186,7 +189,20 @@ bool cnc_exec_cmd(void)
 			serial_getc();
 			break;
 		default:
+#ifdef ENABLE_PARSING_TIME_DEBUG
+			if (!exec_time)
+			{
+				exec_time = mcu_millis();
+			}
+#endif
 			error = parser_read_command();
+#ifdef ENABLE_PARSING_TIME_DEBUG
+			exec_time = mcu_millis() - exec_time;
+			protocol_send_string(MSG_START);
+			protocol_send_string(__romstr__("exec time "));
+			serial_print_int(exec_time);
+			protocol_send_string(MSG_END);
+#endif
 			break;
 		}
 		if (!error)

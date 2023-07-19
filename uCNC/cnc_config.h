@@ -102,6 +102,13 @@ extern "C"
 	// #define ECHO_CMD
 
 	/**
+	 * Debug command parsing time
+	 * Uncomment to enable. This measures the time it takes to execute a command line and place it in the planner
+	 * */
+
+	// #define ENABLE_PARSING_TIME_DEBUG
+
+	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
 	 * define different settings for each axis.
 	 */

@@ -135,9 +135,8 @@ extern "C"
 			res.i = ((res.i << 1) - 0x3f7adaba); \
 			if (res.i < 0)                       \
 				res.i = 0;                       \
-			res.f;                               \
 		}                                        \
-		0;                                       \
+		res.f;                                   \
 	})
 // mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
