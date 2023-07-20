@@ -117,7 +117,7 @@ static void pid_update(void)
 
 	if (output != 0)
 	{
-		if (pid_compute(&vfd_pwm_pid, &output, output, get_speed(), HZ_TO_MS(VFD_PWM_PID_SAMPLE_RATE_HZ)))
+		if (pid_compute(&vfd_pwm_pid, &output, output, tool_get_speed(), HZ_TO_MS(VFD_PWM_PID_SAMPLE_RATE_HZ)))
 		{
 			io_set_pwm(VFD_PWM, range_speed((int16_t)output));
 		}

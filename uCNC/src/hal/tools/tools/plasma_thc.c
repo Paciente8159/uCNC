@@ -80,7 +80,7 @@ uint8_t __attribute__((weak)) plasma_thc_arc_ok(void)
 
 // overridable
 // user can implement aditional data to be printed in the status message
-void __attribute__((weak)) plasma_thc_send_status(void)
+void __attribute__((weak)) plasma_thc_extension_send_status(void)
 {
 }
 
@@ -348,7 +348,6 @@ static void pid_update(void)
 			plasma_step_error = 0;
 		}
 	}
-	return EVENT_CONTINUE;
 }
 
 DECL_MODULE(plasma_thc)
@@ -366,13 +365,13 @@ bool plasma_protocol_send_status(void *args)
 {
 	protocol_send_string(__romstr__("THC:"));
 
-	plasma_thc_send_status();
+	plasma_thc_extension_send_status();
 
 	if (CHECKFLAG(plasma_thc_state, PLASMA_THC_ENABLED))
 	{
 		serial_putc('E');
 	}
-	if (plasma_thc_ok())
+	if (plasma_thc_arc_ok())
 	{
 		serial_putc('A');
 	}
@@ -392,10 +391,18 @@ CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
 
 static void startup_code(void)
 {
+	static bool run_once = false;
+
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
+
+	if (!run_once)
+	{
+		ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+		run_once = true;
+	}
 }
 
 static void shutdown_code(void)
