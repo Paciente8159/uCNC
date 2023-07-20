@@ -18,6 +18,7 @@
 - added new tool for plasma THC (#447)
 - added debugging parsing execution time option (#452)
 - added new step/dir output condition filter that prevents motion based on condition assert (#451)
+- new set of macros that allow quick custom settings prototyping (#449)
 
 ### Changed
 
