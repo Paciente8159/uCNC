@@ -132,9 +132,7 @@ static uint16_t get_speed(void)
 const tool_t spindle_besc = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-#endif
 	.range_speed = &range_speed,
 	.get_speed = &get_speed,
 	.set_speed = &set_speed,
