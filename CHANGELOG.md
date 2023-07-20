@@ -6,6 +6,24 @@
 
 # Changelog
 
+# Changelog
+
+## [1.8.0-beta] - 20-07-2023
+
+### Added
+
+- new IO HAL that simplifies io control and calls (#443)
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions (#432)
+- added realtime modification of step and dir bits to be executed in the fly (#447)
+- added new tool for plasma THC (#447)
+- added debugging parsing execution time option (#452)
+- added new step/dir output condition filter that prevents motion based on condition assert (#451)
+
+### Changed
+
+- all analog inputs were modified from 8bit resolution to 10bit  (#450)
+- complete redesign of PID module and modiified tools functions to make use of PID update loop (#449)
+
 ## [1.7.3] - 15-07-2023
 
 ### Changed
@@ -1252,6 +1270,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-beta
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1

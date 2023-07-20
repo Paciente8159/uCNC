@@ -11,7 +11,9 @@
 To configure µCNC to fit your hardware you can use [µCNC config builder web tool](https://paciente8159.github.io/uCNC-config-builder/) to generate the config override files.
 Although most of the options are configurable via the web tool, some options might be missing and you might need to add them manually (regarding tools or addon modules mostly).
 
-# VERSION 1.7+ NOTES
+# VERSION 1.8+ NOTES
+
+Version 1.8 introduced some small but breaking changes to tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier. Previous version modules should work in this version but future module will begin to use this new IO HALL. Previous modules will be also gradually converted to use this new IO HAL.
 
 Version 1.7 introduced some small but breaking changes to modules function declarations. If you are upgrading from a previous version you need to upgrade the modules also. Modules for previous versions are available in the releases section of the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
 
@@ -54,7 +56,20 @@ You can also reach me at µCNC discord channel
 
 ## Current µCNC status
 
-µCNC current major version is v1.6. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+µCNC current major version is v1.8. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
+
+Version 1.8 added the following new major features.
+
+- new IO HAL that simplifies io control and calls.
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions.
+- added realtime modification of step and dir bits to be executed in the fly.
+- added new tool for plasma THC.
+- all analog inputs were modified from 8bit resolution to 10bit.
+- complete redesign of PID module and modiified tools functions to make use of PID update loop.
+
+Version 1.7 added a new major feature.
+
+- added system menus module that allows to manage and render user menus in any type of display.
 
 Version 1.6 added a couple of new features.
 
