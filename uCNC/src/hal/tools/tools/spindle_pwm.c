@@ -127,7 +127,7 @@ static uint16_t get_speed(void)
 #endif
 }
 
-#ifndef DISABLE_SPINDLE_PWM_PID
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 static void pid_update(void)
 {
 	float output = tool_get_setpoint();
@@ -146,7 +146,7 @@ static void pid_update(void)
 const tool_t spindle_pwm = {
 	.startup_code = &startup_code,
 	.shutdown_code = NULL,
-#ifndef DISABLE_SPINDLE_PWM_PID
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_SPINDLE_PWM_PID)
 	.pid_update = &pid_update,
 #else
 	.pid_update = NULL,
