@@ -22,7 +22,7 @@
 ### Changed
 
 - all analog inputs were modified from 8bit resolution to 10bit  (#450)
-- complete redesign of PID module and modiified tools functions to make use of PID update loop (#449)
+- complete redesign of PID module and modified tools functions to make use of PID update loop (#449)
 
 ## [1.7.3] - 15-07-2023
 
