@@ -278,8 +278,7 @@ bool m103_exec(void *args)
 
 #endif
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-bool plasma_thc_update_loop(void *ptr)
+static void pid_update(void)
 {
 	if (plasma_thc_state == PLASMA_ARC_OK)
 	{
@@ -347,16 +346,8 @@ bool plasma_thc_update_loop(void *ptr)
 	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(cnc_dotasks, plasma_thc_update_loop);
-#endif
-
 DECL_MODULE(plasma_thc)
 {
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	ADD_EVENT_LISTENER(cnc_dotasks, plasma_thc_update_loop);
-#else
-#error "Main loop extensions are not enabled. TMC configurations will not work."
-#endif
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
@@ -428,9 +419,7 @@ static void set_coolant(uint8_t value)
 const tool_t plasma_thc = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#ifdef ENABLE_TOOL_PID_CONTROLLER
-	.pid_update = NULL,
-#endif
+	.pid_update = &pid_update,
 	.range_speed = &range_speed,
 	.get_speed = NULL,
 	.set_speed = &set_speed,

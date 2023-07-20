@@ -219,7 +219,9 @@ extern "C"
  * Chech the tool file to find the settings for each tool
  * 
  * **/
+#ifndef ENABLE_TOOL_PID_CONTROLLER
 // #define ENABLE_TOOL_PID_CONTROLLER
+#endif
 
 /**
  * Set a custom filter that prevents step motions in realtime

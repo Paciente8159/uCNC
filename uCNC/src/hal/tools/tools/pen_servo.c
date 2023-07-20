@@ -83,9 +83,7 @@ static void set_speed(int16_t value)
 const tool_t pen_servo = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
-#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-#endif
 	.range_speed = &range_speed,
 	.get_speed = NULL,
 	.set_speed = &set_speed,

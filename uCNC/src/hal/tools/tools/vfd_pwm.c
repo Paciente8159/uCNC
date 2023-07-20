@@ -128,12 +128,10 @@ static void pid_update(void)
 const tool_t vfd_pwm = {
 	.startup_code = &startup_code,
 	.shutdown_code = NULL,
-#ifdef ENABLE_TOOL_PID_CONTROLLER
-#ifndef DISABLE_SPINDLE_PWM_PID
+#if defined(ENABLE_TOOL_PID_CONTROLLER) && !defined(DISABLE_VFD_PWM_PID)
 	.pid_update = &pid_update,
 #else
 	.pid_update = NULL,
-#endif
 #endif
 	.range_speed = &range_speed,
 	.get_speed = NULL,

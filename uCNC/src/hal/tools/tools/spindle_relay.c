@@ -84,9 +84,7 @@ void set_coolant(uint8_t value)
 const tool_t spindle_relay = {
 	.startup_code = NULL,
 	.shutdown_code = NULL,
-#ifdef ENABLE_TOOL_PID_CONTROLLER
 	.pid_update = NULL,
-#endif
 	.range_speed = NULL,
 	.get_speed = NULL,
 	.set_speed = &set_speed,
