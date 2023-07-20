@@ -84,9 +84,8 @@ void __attribute__((weak)) plasma_thc_send_status(void)
 {
 }
 
-#define PLASMA_ARC_OFF 0
-#define PLASMA_ARC_OK 1
-#define PLASMA_ARC_LOST 2
+#define PLASMA_THC_DISABLED 0
+#define PLASMA_THC_ENABLED 1
 
 // plasma thc controller variables
 static uint8_t plasma_thc_state;
@@ -127,7 +126,7 @@ bool plasma_thc_probe_and_start(void)
 	{
 		// cutoff torch
 		// temporary disable
-		plasma_thc_state = PLASMA_ARC_OFF;
+		plasma_thc_state = PLASMA_THC_DISABLED;
 		motion_data_t block = {0};
 		block.motion_flags.bit.spindle_running = 0;
 		mc_update_tools(&block);
@@ -171,7 +170,7 @@ bool plasma_thc_probe_and_start(void)
 					block.feed = plasma_start_params.cut_feed;
 					mc_line(pos, &block);
 					// enable plasma mode
-					plasma_thc_state = PLASMA_ARC_OK;
+					plasma_thc_state = PLASMA_THC_ENABLED;
 					// continues program
 					plasma_starting = false;
 					cnc_restore_motion();
@@ -286,7 +285,7 @@ bool m103_exec(void *args)
 
 static void pid_update(void)
 {
-	if (plasma_thc_state == PLASMA_ARC_OK)
+	if (CHECKFLAG(plasma_thc_state, PLASMA_THC_ENABLED))
 	{
 		// arc lost
 		// on arc lost the plasma must enter hold
@@ -295,7 +294,7 @@ static void pid_update(void)
 			// places the machine under a HOLD and signals the arc lost
 			// this requires the operator to inspect the work to see if was
 			// a simple arc lost or the torch is hover a hole
-			plasma_thc_state = PLASMA_ARC_LOST;
+			plasma_thc_state = PLASMA_THC_DISABLED;
 			cnc_set_exec_state(EXEC_HOLD);
 
 			// prepares the reprobing action to be executed on cycle resume action
@@ -362,23 +361,29 @@ DECL_MODULE(plasma_thc)
 #endif
 }
 
+// uses similar status to grblhal
 bool plasma_protocol_send_status(void *args)
 {
 	protocol_send_string(__romstr__("THC:"));
-	serial_putc(plasma_thc_state + 48);
-	serial_putc(',');
+
+	plasma_thc_send_status();
+
+	if (CHECKFLAG(plasma_thc_state, PLASMA_THC_ENABLED))
+	{
+		serial_putc('E');
+	}
+	if (plasma_thc_ok())
+	{
+		serial_putc('A');
+	}
 	if (plasma_thc_up())
 	{
 		serial_putc('U');
 	}
-	else if(plasma_thc_down()){
+	if (plasma_thc_down())
+	{
 		serial_putc('D');
 	}
-	else{
-		serial_putc('-');
-	}
-
-	plasma_thc_send_status
 
 	return EVENT_CONTINUE;
 }
@@ -407,7 +412,7 @@ static void set_speed(int16_t value)
 	if (value)
 	{
 		// enable plasma mode
-		plasma_thc_state = true;
+		plasma_thc_state = PLASMA_THC_ENABLED;
 		if (!plasma_thc_arc_ok())
 		{
 			if (plasma_thc_probe_and_start())
@@ -422,7 +427,7 @@ static void set_speed(int16_t value)
 	else
 	{
 		// disable plasma THC mode
-		plasma_thc_state = false;
+		plasma_thc_state = PLASMA_THC_DISABLED;
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 		io_clear_output(PLASMA_ON_OUTPUT);
 #endif
