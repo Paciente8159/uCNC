@@ -56,6 +56,10 @@ You can also reach me at µCNC discord channel
 
 µCNC current major version is v1.6. You can check all the new features, changes and bug fixes in the [CHANGELOG](https://github.com/Paciente8159/uCNC/blob/master/CHANGELOG.md).
 
+Version 1.7 added a new major feature.
+
+- added system menus module that allows to manage and render user menus in any type of display.
+
 Version 1.6 added a couple of new features.
 
 - added support for RP2040 MCU.
