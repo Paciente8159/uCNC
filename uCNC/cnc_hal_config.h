@@ -138,7 +138,7 @@ extern "C"
  * Enables Plasma THC capabilities
  *
  * **/
- #define ENABLE_PLASMA_THC
+//  #define ENABLE_PLASMA_THC
 
 /**
  *
@@ -157,7 +157,7 @@ extern "C"
  * **/
 // assign the tools from 1 to 16
 #if (TOOL_COUNT >= 1)
-#define TOOL1 plasma_thc
+#define TOOL1 spindle_pwm
 #endif
 #if (TOOL_COUNT >= 2)
 #define TOOL2 spindle_pwm
