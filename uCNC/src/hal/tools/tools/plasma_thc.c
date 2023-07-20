@@ -78,6 +78,12 @@ uint8_t __attribute__((weak)) plasma_thc_arc_ok(void)
 #endif
 }
 
+// overridable
+// user can implement aditional data to be printed in the status message
+void __attribute__((weak)) plasma_thc_send_status(void)
+{
+}
+
 #define PLASMA_ARC_OFF 0
 #define PLASMA_ARC_OK 1
 #define PLASMA_ARC_LOST 2
@@ -355,6 +361,29 @@ DECL_MODULE(plasma_thc)
 #error "Parser extensions are not enabled. M103 code extension will not work."
 #endif
 }
+
+bool plasma_protocol_send_status(void *args)
+{
+	protocol_send_string(__romstr__("THC:"));
+	serial_putc(plasma_thc_state + 48);
+	serial_putc(',');
+	if (plasma_thc_up())
+	{
+		serial_putc('U');
+	}
+	else if(plasma_thc_down()){
+		serial_putc('D');
+	}
+	else{
+		serial_putc('-');
+	}
+
+	plasma_thc_send_status
+
+	return EVENT_CONTINUE;
+}
+
+CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
 
 static void startup_code(void)
 {

@@ -127,6 +127,23 @@ static uint8_t protocol_get_tools(void)
 	return coolant;
 }
 
+WEAK_EVENT_HANDLER(protocol_send_status)
+{
+	// custom handler
+	protocol_send_status_delegate_event_t *ptr = protocol_send_status_event;
+	while (ptr != NULL)
+	{
+		if (ptr->fptr != NULL)
+		{
+			serial_putc('|');
+			ptr->fptr(args);
+		}
+		ptr = ptr->next;
+	}
+
+	return EVENT_CONTINUE;
+}
+
 static void protocol_send_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
@@ -371,6 +388,8 @@ void protocol_send_status(void)
 	}
 
 	protocol_send_status_tail();
+
+	EVENT_INVOKE(protocol_send_status, NULL);
 
 	if ((g_settings.status_report_mask & 2))
 	{
