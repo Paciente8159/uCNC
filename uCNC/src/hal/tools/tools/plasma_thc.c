@@ -309,7 +309,6 @@ bool m103_exec(void *args)
 		}
 		plasma_start_params.retries = (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_L))) ? ptr->words->l : 1;
 
-		SETFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
