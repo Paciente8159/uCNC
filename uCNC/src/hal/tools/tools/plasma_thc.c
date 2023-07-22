@@ -43,7 +43,38 @@
 #define PLASMA_STEPPERS_MASK (1 << 2)
 #endif
 
+#ifndef PLASMA_THC_ENABLE_PIN
+#define PLASMA_THC_ENABLE_PIN 64
+#endif
+
+#if PLASMA_THC_ENABLE_PIN < 64
+#error "Plasma THC virtual pin must be equal or greated then 64"
+#endif
+
 #ifdef ENABLE_PLASMA_THC
+
+#define PLASMA_THC_ENABLED 1
+#define PLASMA_THC_ACTIVE 2
+#define PLASMA_THC_VAD_ACTIVE 4
+// #define PLASMA_THC_UP_ACTIVE 8
+// #define PLASMA_THC_DOWN_ACTIVE 16
+
+// plasma thc controller variables
+static uint8_t plasma_thc_state;
+static volatile int8_t plasma_step_error;
+
+typedef struct plasma_start_params_
+{
+	float probe_depth;	  // I
+	float probe_feed;	  // J
+	float retract_height; // R
+	float cut_depth;	  // K
+	float cut_feed;		  // F
+	float vad;			  // D
+	uint16_t dwell;		  // P*1000
+	uint8_t retries;	  // L
+} plasma_start_params_t;
+static plasma_start_params_t plasma_start_params;
 
 // overridable
 // user can implement the plasma thc up condition based on analog voltage reading using analog the controller analog inputs and PID controllers
@@ -84,24 +115,21 @@ void __attribute__((weak)) plasma_thc_extension_send_status(void)
 {
 }
 
-#define PLASMA_THC_DISABLED 0
-#define PLASMA_THC_ENABLED 1
-
-// plasma thc controller variables
-static uint8_t plasma_thc_state;
-static volatile int8_t plasma_step_error;
-
-typedef struct plasma_start_params_
+// overridable
+// user can implement the plasma thc VAD (velocity anti-dive) condition on it's on conditions or external signals
+uint8_t __attribute__((weak)) plasma_thc_vad_active(void)
 {
-	float probe_depth;	  // I
-	float probe_feed;	  // J
-	float retract_height; // R
-	float cut_depth;	  // K
-	float cut_feed;		  // F
-	uint16_t dwell;		  // P*1000
-	uint8_t retries;	  // L
-} plasma_start_params_t;
-static plasma_start_params_t plasma_start_params;
+	planner_block_t *p = planner_get_block();
+	// not exactly the current programmed feed but close enough
+	float feed = fast_flt_sqrt(p->feed_sqr) * p->feed_conversion;
+	float current_feed = itp_get_rt_feed();
+	float ratio = current_feed / feed;
+	if (ratio < plasma_start_params.vad){
+		return PLASMA_THC_VAD_ACTIVE;
+	}
+	
+	return 0;
+}
 
 bool plasma_thc_probe_and_start(void)
 {
@@ -126,7 +154,7 @@ bool plasma_thc_probe_and_start(void)
 	{
 		// cutoff torch
 		// temporary disable
-		plasma_thc_state = PLASMA_THC_DISABLED;
+		CLEARFLAG(plasma_thc_state, PLASMA_THC_ACTIVE);
 		motion_data_t block = {0};
 		block.motion_flags.bit.spindle_running = 0;
 		mc_update_tools(&block);
@@ -155,7 +183,7 @@ bool plasma_thc_probe_and_start(void)
 				// rapid feed
 				block.feed = FLT_MAX;
 				mc_line(pos, &block);
-				// turn torch on and wait before confirm the arc on signal
+				// turn torch on and wait before confirm the arc on signal and form puddle
 				block.motion_flags.bit.spindle_running = 1;
 				block.dwell = plasma_start_params.dwell;
 				// updated tools and wait
@@ -170,7 +198,7 @@ bool plasma_thc_probe_and_start(void)
 					block.feed = plasma_start_params.cut_feed;
 					mc_line(pos, &block);
 					// enable plasma mode
-					plasma_thc_state = PLASMA_THC_ENABLED;
+					SETFLAG(plasma_thc_state, PLASMA_THC_ACTIVE);
 					// continues program
 					plasma_starting = false;
 					cnc_restore_motion();
@@ -257,9 +285,15 @@ bool m103_exec(void *args)
 	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
 	if (ptr->cmd->group_extended == M103)
 	{
-		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P))
+		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P | GCODE_WORD_D)) != (GCODE_WORD_I | GCODE_WORD_J | GCODE_WORD_K | GCODE_WORD_R | GCODE_WORD_P | GCODE_WORD_D))
 		{
 			*(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
+			return EVENT_HANDLED;
+		}
+
+		if (ptr->words->d < 0 || ptr->words->d > 100)
+		{
+			*(ptr->error) = STATUS_INVALID_STATEMENT;
 			return EVENT_HANDLED;
 		}
 
@@ -268,12 +302,14 @@ bool m103_exec(void *args)
 		plasma_start_params.probe_feed = ptr->words->ijk[1];
 		plasma_start_params.cut_depth = ptr->words->ijk[2];
 		plasma_start_params.retract_height = ptr->words->r;
+		plasma_start_params.vad = ptr->words->d * 0.01f;
 		if (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_F)))
 		{
 			plasma_start_params.cut_feed = ptr->words->f;
 		}
 		plasma_start_params.retries = (CHECKFLAG(ptr->cmd->words, (GCODE_WORD_L))) ? ptr->words->l : 1;
 
+		SETFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
 		*(ptr->error) = STATUS_OK;
 		return EVENT_HANDLED;
 	}
@@ -281,11 +317,49 @@ bool m103_exec(void *args)
 	return EVENT_CONTINUE;
 }
 
+#define M62 EXTENDED_MCODE(62)
+#define M63 EXTENDED_MCODE(63)
+#define M64 EXTENDED_MCODE(64)
+#define M65 EXTENDED_MCODE(65)
+
+bool plasma_virtual_pins(void *args)
+{
+	gcode_exec_args_t *ptr = (gcode_exec_args_t *)args;
+	switch (ptr->cmd->group_extended)
+	{
+	case M62:
+	case M64:
+		if (ptr->words->p == PLASMA_THC_ENABLE_PIN)
+		{
+			SETFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
+			*(ptr->error) = STATUS_OK;
+			return EVENT_HANDLED;
+		}
+		break;
+	case M63:
+		mc_sync_position();
+	case M65:
+		if (ptr->words->p == PLASMA_THC_ENABLE_PIN)
+		{
+			CLEARFLAG(plasma_thc_state, PLASMA_THC_ENABLED);
+			*(ptr->error) = STATUS_OK;
+			return EVENT_HANDLED;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return EVENT_CONTINUE;
+}
+
+CREATE_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
 #endif
 
 static void pid_update(void)
 {
-	if (CHECKFLAG(plasma_thc_state, PLASMA_THC_ENABLED))
+	uint8_t state = plasma_thc_state;
+	if (CHECKFLAG(state, PLASMA_THC_ENABLED) && CHECKFLAG(state, PLASMA_THC_ACTIVE))
 	{
 		// arc lost
 		// on arc lost the plasma must enter hold
@@ -294,7 +368,6 @@ static void pid_update(void)
 			// places the machine under a HOLD and signals the arc lost
 			// this requires the operator to inspect the work to see if was
 			// a simple arc lost or the torch is hover a hole
-			plasma_thc_state = PLASMA_THC_DISABLED;
 			cnc_set_exec_state(EXEC_HOLD);
 
 			// prepares the reprobing action to be executed on cycle resume action
@@ -310,42 +383,46 @@ static void pid_update(void)
 			}
 		}
 
-		if (plasma_thc_up() && !plasma_step_error)
+		// evals if VAD is active before running plasma UP/DOWN
+		if (!plasma_thc_vad_active())
 		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = p->steps[p->main_stepper];
-			// p->dirbits &= 0xFB;
+			if (plasma_thc_up() && !plasma_step_error)
+			{
+				// option 1 - modify the planner block
+				// this assumes Z is not moving in this motion
+				// planner_block_t *p = planner_get_block();
+				// p->steps[2] = p->steps[p->main_stepper];
+				// p->dirbits &= 0xFB;
 
-			// option 2 - mask the step bits directly
-			// clamp tool max step rate according to the actual motion feed
-			float feed = itp_get_rt_feed();
-			float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
-			plasma_step_error = 1 + (uint8_t)max_feed_ratio;
-		}
-		else if (plasma_thc_down() && !plasma_step_error)
-		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = p->steps[p->main_stepper];
-			// p->dirbits |= 4;
+				// option 2 - mask the step bits directly
+				// clamp tool max step rate according to the actual motion feed
+				float feed = itp_get_rt_feed();
+				float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
+				plasma_step_error = 1 + (uint8_t)max_feed_ratio;
+			}
+			else if (plasma_thc_down() && !plasma_step_error)
+			{
+				// option 1 - modify the planner block
+				// this assumes Z is not moving in this motion
+				// planner_block_t *p = planner_get_block();
+				// p->steps[2] = p->steps[p->main_stepper];
+				// p->dirbits |= 4;
 
-			// option 2 - mask the step bits directly
-			float feed = itp_get_rt_feed();
-			float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
-			plasma_step_error = -(1 + (uint8_t)max_feed_ratio);
-		}
-		else
-		{
-			// option 1 - modify the planner block
-			// this assumes Z is not moving in this motion
-			// planner_block_t *p = planner_get_block();
-			// p->steps[2] = 0;
+				// option 2 - mask the step bits directly
+				float feed = itp_get_rt_feed();
+				float max_feed_ratio = ceilf(feed / g_settings.max_feed_rate[AXIS_TOOL]);
+				plasma_step_error = -(1 + (uint8_t)max_feed_ratio);
+			}
+			else
+			{
+				// option 1 - modify the planner block
+				// this assumes Z is not moving in this motion
+				// planner_block_t *p = planner_get_block();
+				// p->steps[2] = 0;
 
-			// option 2 - mask the step bits directly
-			plasma_step_error = 0;
+				// option 2 - mask the step bits directly
+				plasma_step_error = 0;
+			}
 		}
 	}
 }
@@ -355,6 +432,7 @@ DECL_MODULE(plasma_thc)
 #ifdef ENABLE_PARSER_MODULES
 	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
 	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
+	ADD_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
 #else
 #error "Parser extensions are not enabled. M103 code extension will not work."
 #endif
@@ -363,17 +441,36 @@ DECL_MODULE(plasma_thc)
 // uses similar status to grblhal
 bool plasma_protocol_send_status(void *args)
 {
+	uint8_t state = plasma_thc_state;
+	
 	protocol_send_string(__romstr__("THC:"));
 
 	plasma_thc_extension_send_status();
-
-	if (CHECKFLAG(plasma_thc_state, PLASMA_THC_ENABLED))
+	
+	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
 		serial_putc('E');
 	}
+	else{
+		serial_putc('*');
+	}
+	if (CHECKFLAG(state, PLASMA_THC_ACTIVE))
+	{
+		serial_putc('R');
+	}
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+	if (io_get_output(PLASMA_ON_OUTPUT))
+	{
+		serial_putc('T');
+	}
+#endif
 	if (plasma_thc_arc_ok())
 	{
 		serial_putc('A');
+	}
+	if (plasma_thc_vad_active())
+	{
+		serial_putc('V');
 	}
 	if (plasma_thc_up())
 	{
@@ -415,31 +512,46 @@ static void shutdown_code(void)
 
 static void set_speed(int16_t value)
 {
-	// turn plasma on
-	if (value)
+	uint8_t state = plasma_thc_state;
+
+	if (CHECKFLAG(state, PLASMA_THC_ENABLED))
 	{
-		// enable plasma mode
-		plasma_thc_state = PLASMA_THC_ENABLED;
-		if (!plasma_thc_arc_ok())
+		// turn plasma on
+		if (value)
 		{
-			if (plasma_thc_probe_and_start())
+			if (!plasma_thc_arc_ok())
 			{
-				cnc_clear_exec_state(EXEC_HOLD);
-#if ASSERT_PIN(PLASMA_ON_OUTPUT)
-				io_set_output(PLASMA_ON_OUTPUT);
-#endif
+				if (plasma_thc_probe_and_start())
+				{
+					cnc_clear_exec_state(EXEC_HOLD);
+				}
+				else
+				{
+					// plasma not started
+					value = 0;
+				}
 			}
 		}
+		else
+		{
+			// disable plasma THC mode
+			CLEARFLAG(plasma_thc_state, PLASMA_THC_ACTIVE);
+		}
+	}
+
+#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+	if (value)
+	{
+		// turn plasma on
+		io_set_output(PLASMA_ON_OUTPUT);
 	}
 	else
 	{
-		// disable plasma THC mode
-		plasma_thc_state = PLASMA_THC_DISABLED;
-#if ASSERT_PIN(PLASMA_ON_OUTPUT)
+		// disable plasma and sync position
 		io_clear_output(PLASMA_ON_OUTPUT);
-#endif
 		mc_sync_position();
 	}
+#endif
 }
 
 static int16_t range_speed(int16_t value)

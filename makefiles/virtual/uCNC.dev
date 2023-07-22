@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=000000e0a0000000001000000
-UnitCount=79
+UnitCount=81
 
 [VersionInfo]
 Major=1
@@ -932,6 +932,26 @@ BuildCmd=
 
 [Unit1]
 FileName=..\..\uCNC\build_opt.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit80]
+FileName=..\..\uCNC\src\hal\io_hal.h
+CompileCpp=0
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit81]
+FileName=..\..\uCNC\src\modules\M62-M65\parser_m62_m65.c
 CompileCpp=0
 Folder=
 Compile=1
