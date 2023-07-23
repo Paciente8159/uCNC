@@ -1236,11 +1236,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 	}
 
+	uint8_t new_stepbits = stepbits;
+
 	// sets step bits
 #ifdef ENABLE_LASER_PPI
 	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
-		if (stepbits & LASER_PPI_MASK)
+		if (new_stepbits & LASER_PPI_MASK)
 		{
 			if (new_laser_ppi)
 			{
@@ -1256,7 +1258,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 	}
 #endif
-	io_toggle_steps(stepbits);
+	io_toggle_steps(new_stepbits);
 
 	// if buffer empty loads one
 	if (itp_rt_sgm == NULL)
@@ -1337,13 +1339,13 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-	if (stepbits && (itp_rt_sgm->flags & ITP_SYNC))
+	if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
 	{
 		itp_sync_step_counter++;
 	}
 #endif
 
-	uint8_t new_stepbits = 0;
+	new_stepbits = 0;
 	itp_busy = true;
 	mcu_enable_global_isr();
 
@@ -1658,6 +1660,8 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 #if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
 	stepbits = (new_stepbits & ~itp_step_lock);
+#else
+	stepbits = new_stepbits;
 #endif
 }
 
