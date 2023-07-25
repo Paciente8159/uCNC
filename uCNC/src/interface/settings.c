@@ -97,6 +97,9 @@ const settings_t __rom__ default_settings =
 		.g64_angle_factor = DEFAULT_G64_FACTOR,
 		.arc_tolerance = DEFAULT_ARC_TOLERANCE,
 		.report_inches = DEFAULT_REPORT_INCHES,
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		.s_curve_profile = 0,
+#endif
 		.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
 		.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
 		.homing_enabled = DEFAULT_HOMING_ENABLED,
@@ -370,6 +373,11 @@ uint8_t settings_change(setting_offset_t id, float value)
 		case 13:
 			g_settings.report_inches = value1;
 			break;
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		case 14:
+			g_settings.s_curve_profile = CLAMP(0, value8, 5);
+			break;
+#endif
 		case 20:
 			if (!g_settings.homing_enabled && value1)
 			{
@@ -618,7 +626,7 @@ uint16_t settings_register_external_setting(uint8_t size)
 	setting_offset += size + 1; // include crc
 	return new_offset;
 #else
-	#warning "External/extension settings storing is disabled"
+#warning "External/extension settings storing is disabled"
 	return UINT16_MAX;
 #endif
 }

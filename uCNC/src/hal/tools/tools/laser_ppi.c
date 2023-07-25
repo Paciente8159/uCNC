@@ -23,6 +23,10 @@
 #include <float.h>
 #include <math.h>
 
+#ifndef LASER_PPI
+#define LASER_PPI PWM0
+#endif
+
 // #define ENABLE_COOLANT
 #ifdef ENABLE_COOLANT
 #ifndef LASER_PPI_AIR_ASSIST
@@ -42,12 +46,6 @@ static void startup_code(void)
 #else
 	io_set_output(LASER_PPI);
 #endif
-#elif ASSERT_PIN_EXTENDER(LASER_PPI)
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_set_output(LASER_PPI, false);
-#else
-	io_set_output(LASER_PPI, true);
-#endif
 #endif
 	g_settings.laser_mode |= LASER_PPI_MODE;
 	parser_config_ppi();
@@ -60,12 +58,6 @@ static void shutdown_code(void)
 	io_clear_output(LASER_PPI);
 #else
 	io_set_output(LASER_PPI);
-#endif
-#elif ASSERT_PIN_EXTENDER(LASER_PPI)
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_set_output(LASER_PPI, false);
-#else
-	io_set_output(LASER_PPI, true);
 #endif
 #endif
 	// restore laser mode

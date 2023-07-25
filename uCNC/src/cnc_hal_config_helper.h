@@ -24,7 +24,7 @@ extern "C"
 {
 #endif
 
-//undefined pin
+// undefined pin
 #define UNDEF_PIN 0
 // assert pin (io or extended)
 #define ASSERT_PIN(X) (X != 0)
@@ -1996,7 +1996,7 @@ typedef uint16_t step_t;
 #error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
 #endif
 
-#if ((S_CURVE_ACCELERATION_LEVEL < 0) || (S_CURVE_ACCELERATION_LEVEL > 3))
+#if ((S_CURVE_ACCELERATION_LEVEL < -1) || (S_CURVE_ACCELERATION_LEVEL > 5))
 #error "invalid s-curve velocity profile setting"
 #endif
 
@@ -2120,7 +2120,7 @@ typedef uint16_t step_t;
 
 #ifdef ENABLE_PLASMA_THC
 
-//forces modes
+// forces modes
 #ifndef ENABLE_TOOL_PID_CONTROLLER
 #define ENABLE_TOOL_PID_CONTROLLER
 #endif

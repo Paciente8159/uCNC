@@ -46,6 +46,9 @@ extern "C"
 		// juntion deviation is automatic and always on
 		float arc_tolerance;
 		bool report_inches;
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		uint8_t s_curve_profile;
+#endif
 		bool soft_limits_enabled;
 		bool hard_limits_enabled;
 		bool homing_enabled;
