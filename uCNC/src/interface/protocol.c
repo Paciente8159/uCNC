@@ -806,12 +806,6 @@ void protocol_send_pins_states(void)
 #define DYNACCEL_INFO ""
 #endif
 
-#ifndef USE_LEGACY_STEP_INTERPOLATOR
-#define ACCELALG_INFO "NI,"
-#else
-#define ACCELALG_INFO ""
-#endif
-
 #ifdef INVERT_EMERGENCY_STOP
 #define INVESTOP_INFO "IE,"
 #else
