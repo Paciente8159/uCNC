@@ -435,7 +435,7 @@ extern "C"
 	 *
 	 * */
 
-	#define S_CURVE_ACCELERATION_LEVEL 1
+	#define S_CURVE_ACCELERATION_LEVEL 0
 
 	/**
 	 * Forces pin pooling for all limits and control pins (with or without
