@@ -8,6 +8,23 @@
 
 # Changelog
 
+## [1.8.0-rc] - unreleased
+
+### Added
+
+- added status report extender callcack  (#454)
+- added Plasma THC velocity anty-dive (#456)
+
+### Changed
+
+- Unified interpolator run function and new S-Curve acceleration profiles (#458)
+- implemented Plasma THC status report callback (#454)
+- Plasma THC tool update via PID callback (#453)
+
+### Fixed
+
+- step output generation from beta (#457)
+
 ## [1.8.0-beta] - 20-07-2023
 
 ### Added
@@ -1271,6 +1288,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-rc
 [1.8.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-beta
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
