@@ -37,7 +37,9 @@ typedef union
 #define COS cos(a)
 #define SIN sin(a)
 #define TAN tan(a)
-#define HALF (0.5f*a)
+#define TANH ({float k=a*0.001;k-=0.5f;((k / (0.5f + abs(k))) + 0.5f);})
+#define SCURVE ({float k=a*0.001;float x=(1.0f/(1.0f+pow(k/(1.0f-k),-2)));x;})
+#define BEZIER ({uint32_t k=128*a*0.001;float k2=k*k; float c1=k2-2.5*k; float c2=(c1*3+5); (c2*2*k2*k);})
 #define HALF_FAST ({int32_t result = (*(int32_t*)&a); if((result&0x7f800000)!=0) result-=0x00800000; else result = 0; (*(float*)&result); })
 #define MUL_124 ((a<<7)-(a<<2))
 #define DIV_124 ((a>>7)+(a>>12))
@@ -87,7 +89,7 @@ void setup() {
   offset = TCNT1;
   TCCR1B=0;
 
-  Serial.println("8-bit");
+  /*Serial.println("8-bit");
   DO_OP(uint8_t, uint16_t, 0,0xFF,ADD);
   DO_OP(uint8_t, uint16_t, 0,0xFF,SUB);
   DO_OP(uint8_t, uint16_t, 0,0xFF,MUL);
@@ -109,11 +111,11 @@ void setup() {
   DO_OP(uint64_t, uint64_t, 0,0xFFFF,ADD);
   DO_OP(uint64_t, uint64_t, 0,0xFFFF,SUB);
   DO_OP(uint64_t, uint64_t, 0,0xFFFF,MUL);
-  DO_OP(uint64_t, uint64_t, 0,0xFFFF,DIV);
+  DO_OP(uint64_t, uint64_t, 0,0xFFFF,DIV);*/
   Serial.println("float");
-  DO_OP(float, float, 0,10000,ADD);
-  DO_OP(float, float, 0,10000,SUB);
-  DO_OP(float, float, 0,10000,MUL);
+  DO_OP(float, float, 0,1000,TANH);
+  DO_OP(float, float, 0,1000,SCURVE);
+  DO_OP(float, float, 0,1000,BEZIER);
   DO_OP(float, float, 0,10000,DIV);
   DO_OP(float, float, 0,10000,FLT_BY4);
   /*Serial.println("testes");

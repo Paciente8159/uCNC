@@ -800,8 +800,8 @@ void protocol_send_pins_states(void)
 #define BRESENHAM_INFO ""
 #endif
 
-#ifdef ENABLE_S_CURVE_ACCELERATION
-#define DYNACCEL_INFO "S,"
+#if S_CURVE_ACCELERATION_LEVEL != 0
+#define DYNACCEL_INFO "S" STRGIFY(S_CURVE_ACCELERATION_LEVEL) ","
 #else
 #define DYNACCEL_INFO ""
 #endif

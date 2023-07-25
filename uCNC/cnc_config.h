@@ -427,19 +427,15 @@ extern "C"
 	 * Performs motions with variable acceleration (trapezoidal speed profile
 	 * with rounded speed transition between accel/deaccel and constant speed)
 	 * instead of constant acceleration (trapezoidal speed profile)
+	 * 
+	 * 0 - disabled
+	 * 1 - mild profile (smaller mid slope and higher initial and exit slopes)
+	 * 2 - medium profile (medium mid slope and medium initial and exit slopes)
+	 * 3 - agressive (higher mid slope and smaller initial and exit slopes - uses bezier 5th order)
 	 *
 	 * */
 
-	// #define ENABLE_S_CURVE_ACCELERATION
-
-	/**
-	 * Enables legacy step interpolation generator (prior to version 1.4)
-	 * This runs a variable time window Riemman sum integrator (better performance).
-	 * S-Curve acceleration will disable this option
-	 * This produces option outputs code smaller size
-	 * */
-
-#define USE_LEGACY_STEP_INTERPOLATOR
+	#define S_CURVE_ACCELERATION_LEVEL 1
 
 	/**
 	 * Forces pin pooling for all limits and control pins (with or without
