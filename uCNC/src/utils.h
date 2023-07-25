@@ -114,7 +114,7 @@ extern "C"
 		flt_t res;                               \
 		res.f = (x);                             \
 		if (res.i)                               \
-			res.i = (0x1fbeecc0 + (res.i >> 1)); \
+			res.i = ((res.i >> 1) - 0xe041a9fb); \
 		res.f;                                   \
 	})
 // fast_flt_invsqrt takes about 18 clock cycles on AVR instead of +/-960 if using normal 1/sqrt (x53 faster). The error of this shortcut should be under 4~5%.
@@ -132,7 +132,7 @@ extern "C"
 		res.f = ABS((x));                        \
 		if (res.f != 0)                          \
 		{                                        \
-			res.i = ((res.i << 1) - 0x3f7adaba); \
+			res.i = ((res.i << 1) + 0xc0858106); \
 			if (res.i < 0)                       \
 				res.i = 0;                       \
 		}                                        \
