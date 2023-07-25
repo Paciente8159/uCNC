@@ -138,6 +138,22 @@ extern "C"
 		}                                        \
 		res.f;                                   \
 	})
+
+#define fast_flt_inv(x)               \
+	({                                \
+		flt_t res;                    \
+		res.f = (x);                  \
+		res.i = (0x7EF0624D - res.i); \
+		res.f;                        \
+	})
+
+#define fast_flt_div(y, x)            \
+	({                                \
+		flt_t res;                    \
+		res.f = (x);                  \
+		res.i = (0x7EF0624D - res.i); \
+		(y) * res.f;                  \
+	})
 // mul10 takes about 26 clock cycles on AVR instead of 77 on 32bit integer multiply by 10 (x~3 faster). Can be customized for each MCU
 #ifndef fast_int_mul10
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
@@ -149,7 +165,9 @@ extern "C"
 #define fast_flt_mul4(x) ((x)*4.0f)
 #define fast_flt_sqrt(x) (sqrtf(x))
 #define fast_flt_invsqrt(x) (1.0f / sqrtf(x))
-#define fast_flt_pow2(x) (x * x)
+#define fast_flt_pow2(x) ((x) * (x))
+#define fast_flt_inv(x) (1.0f / (x))
+#define fast_flt_div(y, x) ((y) / (x))
 #ifndef fast_int_mul10
 #define fast_int_mul10(x) (x * 10)
 #endif

@@ -361,7 +361,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 	// calculates the linear distance traveled
 	line_dist = fast_flt_sqrt(line_dist);
-	float inv_dist = 1.0f / line_dist;
+	float inv_dist = fast_flt_inv(line_dist);
 
 	// feed values
 	float max_feed = FLT_MAX;
@@ -382,9 +382,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		dir_vect[i] = normal_vect;
 		normal_vect = ABS(normal_vect);
 		// denormalize max feed rate for each axis
-		float denorm_param = g_settings.max_feed_rate[i] / normal_vect;
+		float denorm_param = fast_flt_div(g_settings.max_feed_rate[i], normal_vect);
 		max_feed = MIN(max_feed, denorm_param);
-		denorm_param = g_settings.acceleration[i] / normal_vect;
+		denorm_param = fast_flt_div(g_settings.acceleration[i], normal_vect);
 		max_accel = MIN(max_accel, denorm_param);
 	}
 	max_feed *= inv_dist;
@@ -399,7 +399,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		// modify PPI settings according o the S value
 		if (g_settings.laser_mode & LASER_PPI_MODE)
 		{
-			float laser_ppi_scale = (float)block_data->spindle / (float)g_settings.spindle_max_rpm;
+			float laser_ppi_scale = fast_flt_div((float)block_data->spindle, (float)g_settings.spindle_max_rpm);
 			if (g_settings.laser_mode & LASER_PPI_VARPOWER_MODE)
 			{
 				float blend = g_settings.laser_ppi_mixmode_ppi;
@@ -434,7 +434,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	block_data->feed = MIN(max_feed, step_feed);
 	block_data->max_feed = max_feed;
 
-	block_data->feed_conversion = line_dist / feed_convert_to_steps_per_sec;
+	block_data->feed_conversion = fast_flt_div(line_dist, feed_convert_to_steps_per_sec);
 
 #ifdef MOTION_SEGMENTED
 	// this contains a motion. Any tool update will be done here
@@ -866,7 +866,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	io_enable_probe();
 	mcu_probe_changed_cb();
 	mc_line(target, block_data);
-	
+
 	do
 	{
 		if (io_get_probe() ^ (flags & 0x01))

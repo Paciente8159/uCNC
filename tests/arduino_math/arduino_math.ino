@@ -31,7 +31,8 @@ typedef union
 #define ROUND roundf(a / b)
 #define ROUNDA roundf(a)
 #define CAST (int32_t)a
-#define INV 1 / a
+#define INV 1 / (a*0.001f)
+#define INV2 ({flt_t res; res.f=a*0.001f; res.i = (0x7eef1aa0 - res.i);res.f;})
 #define DBL 2 * a
 #define SQRT sqrtf(a)
 #define COS cos(a)
@@ -65,14 +66,14 @@ uint16_t clocks = TCNT1;TCCR1B=0;\
 Serial.println(#TYPE);\
 PRINT_OP(OP);\
 Serial.print("a = ");\
-Serial.println((uint32_t)a);\
+Serial.println(a);\
 Serial.print("b = ");\
-Serial.println((uint32_t)b);\
+Serial.println(b);\
 if(a<res) \
 Serial.print("res > ");\
 else \
 Serial.print("res < ");\
-Serial.println((uint32_t) res);\
+Serial.println(res);\
 Serial.print("Elapsed (clocks): ");\
 Serial.println(clocks-offset);\
 }
@@ -116,8 +117,8 @@ void setup() {
   DO_OP(float, float, 0,1000,TANH);
   DO_OP(float, float, 0,1000,SCURVE);
   DO_OP(float, float, 0,1000,BEZIER);
-  DO_OP(float, float, 0,10000,DIV);
-  DO_OP(float, float, 0,10000,FLT_BY4);
+  DO_OP(float, float, 0,1000,INV);
+  DO_OP(float, float, 0,1000,INV2);
   /*Serial.println("testes");
   DO_OP(float, 0,10000,ROUND);
   DO_OP(float, 0,10000,ROUNDA);

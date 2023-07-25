@@ -233,11 +233,19 @@ static float s_curve_function(float pt, float scale)
 #elif S_CURVE_ACCELERATION_LEVEL == 2
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
-	return scale * (0.75f * (pt / (0.25f + ABS(pt))) + 0.5f);
+	// optimized fast inverse aproximation
+	float k = (0.25f + ABS(pt));
+	int32_t *i = (int32_t *)&k;
+	*i = 0x7EEF1AA0 - *i;
+	return scale * (0.75f * pt * k + 0.5f);
 #elif S_CURVE_ACCELERATION_LEVEL == 1
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
-	return scale * ((pt / (0.5f + ABS(pt))) + 0.5f);
+	// optimized fast inverse aproximation
+	float k = (0.5f + ABS(pt));
+	int32_t *i = (int32_t *)&k;
+	*i = 0x7EEF1AA0 - *i;
+	return scale * (pt * k + 0.5f);
 #endif
 }
 #endif
@@ -370,7 +378,7 @@ void itp_run(void)
 			float junction_speed_sqr = planner_get_block_top_speed(exit_speed_sqr);
 
 			junction_speed = fast_flt_sqrt(junction_speed_sqr);
-			float accel_inv = 1.0f / itp_cur_plan_block->acceleration;
+			float accel_inv = fast_flt_inv(itp_cur_plan_block->acceleration);
 
 			accel_until = remaining_steps;
 			deaccel_from = 0;
@@ -387,7 +395,7 @@ void itp_run(void)
 #endif
 				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = 1.0f / ceilf(INTERPOLATOR_FREQ * t);
+				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
 				t_acc_integrator = t * slices_inv;
 #if S_CURVE_ACCELERATION_LEVEL != 0
 				acc_step = slices_inv;
@@ -417,7 +425,7 @@ void itp_run(void)
 #endif
 				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = 1.0f / ceilf(INTERPOLATOR_FREQ * t);
+				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
 				t_deac_integrator = t * slices_inv;
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
@@ -481,7 +489,10 @@ void itp_run(void)
 		}
 
 		// update speed at the end of segment
-		itp_cur_plan_block->entry_feed_sqr = MAX(0, fast_flt_pow2((current_speed + speed_change)));
+		if (speed_change)
+		{
+			itp_cur_plan_block->entry_feed_sqr = MAX(0, fast_flt_pow2((current_speed + speed_change)));
+		}
 
 		/*
 			common calculations for all three profiles (accel, constant and deaccel)

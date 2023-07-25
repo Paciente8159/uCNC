@@ -150,7 +150,7 @@ void planner_add_line(motion_data_t *block_data)
 				// this way the output will be between 0<tan(theta/2)<inf
 				// but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
 				// all angles greater than 1 that can be excluded
-				angle_factor = 1.0f / (1.0f + cos_theta);
+				angle_factor = fast_flt_inv(1.0f + cos_theta);
 				cos_theta = (1.0f - fast_flt_pow2(cos_theta));
 				angle_factor *= fast_flt_sqrt(cos_theta);
 			}
