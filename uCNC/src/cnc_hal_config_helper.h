@@ -1996,10 +1996,8 @@ typedef uint16_t step_t;
 #error "DSS_CUTOFF_FREQ should not be set above 1/8th of the max step rate"
 #endif
 
-#ifdef ENABLE_S_CURVE_ACCELERATION
-#ifdef USE_LEGACY_STEP_INTERPOLATOR
-#undef USE_LEGACY_STEP_INTERPOLATOR
-#endif
+#if ((S_CURVE_ACCELERATION_LEVEL < 0) || (S_CURVE_ACCELERATION_LEVEL > 3))
+#error "invalid s-curve velocity profile setting"
 #endif
 
 #if (defined(KINEMATICS_MOTION_BY_SEGMENTS))
