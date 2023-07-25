@@ -624,6 +624,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
 	protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
 	protocol_send_gcode_setting_line_int(13, g_settings.report_inches);
+#if S_CURVE_ACCELERATION_LEVEL == -1
+	protocol_send_gcode_setting_line_int(14, g_settings.s_curve_profile);
+#endif
 	protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
 	protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
 	protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);

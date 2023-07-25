@@ -219,17 +219,25 @@ void itp_init(void)
 // evals the point in a s-curve function
 // receives a value between 0 and 1
 // outputs a value along a curve according to the scale
-static float s_curve_function(float pt, float scale)
+static float s_curve_function(float pt)
 {
-#ifdef S_CURVE_TANH
-	return 0.5 * (tanh(6 * pt - 3) + 1) * scale;
-#endif
-#if S_CURVE_ACCELERATION_LEVEL == 3
+#if S_CURVE_ACCELERATION_LEVEL == 5
+	return 0.5 * (tanh(6 * pt - 3) + 1);
+#elif S_CURVE_ACCELERATION_LEVEL == 4
 	// from this https://forum.duet3d.com/topic/4802/6th-order-jerk-controlled-motion-planning/95
 	float pt_sqr = fast_flt_pow2(pt);
 	float k = 3.0f * (pt_sqr - 2.5f * pt) + 5.0f;
 	k = fast_flt_mul2(k) * pt_sqr * pt;
-	return k * scale;
+	return k;
+#elif S_CURVE_ACCELERATION_LEVEL == 3
+	// from this https://en.wikipedia.org/wiki/Sigmoid_function
+	pt -= 0.5f;
+	// optimized fast inverse aproximation
+	float k = (0.15f + ABS(pt));
+	int32_t *i = (int32_t *)&k;
+	*i = 0x7EEF1AA0 - *i;
+	k = (0.65f * pt * k + 0.5f);
+	return CLAMP(0, k, 1);
 #elif S_CURVE_ACCELERATION_LEVEL == 2
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
@@ -237,7 +245,8 @@ static float s_curve_function(float pt, float scale)
 	float k = (0.25f + ABS(pt));
 	int32_t *i = (int32_t *)&k;
 	*i = 0x7EEF1AA0 - *i;
-	return scale * (0.75f * pt * k + 0.5f);
+	k = (0.75f * pt * k + 0.5f);
+	return CLAMP(0, k, 1);
 #elif S_CURVE_ACCELERATION_LEVEL == 1
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
@@ -245,7 +254,52 @@ static float s_curve_function(float pt, float scale)
 	float k = (0.5f + ABS(pt));
 	int32_t *i = (int32_t *)&k;
 	*i = 0x7EEF1AA0 - *i;
-	return scale * (pt * k + 0.5f);
+	k = (pt * k + 0.5f);
+	return CLAMP(0, k, 1);
+#elif S_CURVE_ACCELERATION_LEVEL == -1
+	float k, pt_sqr;
+	int32_t *i;
+	switch (g_settings.s_curve_profile)
+	{
+	case 1:
+		// from this https://en.wikipedia.org/wiki/Sigmoid_function
+		pt -= 0.5f;
+		// optimized fast inverse aproximation
+		k = (0.5f + ABS(pt));
+		i = (int32_t *)&k;
+		*i = 0x7EEF1AA0 - *i;
+		k = (pt * k + 0.5f);
+		return CLAMP(0, k, 1);
+	case 2:
+		// from this https://en.wikipedia.org/wiki/Sigmoid_function
+		pt -= 0.5f;
+		// optimized fast inverse aproximation
+		k = (0.25f + ABS(pt));
+		i = (int32_t *)&k;
+		*i = 0x7EEF1AA0 - *i;
+		k = (0.75f * pt * k + 0.5f);
+		return CLAMP(0, k, 1);
+	case 3:
+		// from this https://en.wikipedia.org/wiki/Sigmoid_function
+		pt -= 0.5f;
+		// optimized fast inverse aproximation
+		k = (0.15f + ABS(pt));
+		i = (int32_t *)&k;
+		*i = 0x7EEF1AA0 - *i;
+		k = (0.65f * pt * k + 0.5f);
+		return CLAMP(0, k, 1);
+	case 4:
+		// from this https://forum.duet3d.com/topic/4802/6th-order-jerk-controlled-motion-planning/95
+		pt_sqr = fast_flt_pow2(pt);
+		k = 3.0f * (pt_sqr - 2.5f * pt) + 5.0f;
+		k = fast_flt_mul2(k) * pt_sqr * pt;
+		return k;
+	case 5:
+		return 0.5 * (tanh(6 * pt - 3) + 1);
+	default:
+		// defaults to linear
+		return pt;
+	}
 #endif
 }
 #endif
@@ -454,7 +508,7 @@ void itp_run(void)
 			float acum = acc_step_acum;
 			acum += acc_step;
 			acc_step_acum = MIN(acum, 0.999f);
-			float new_speed = s_curve_function(acum, acc_scale) + acc_init_speed;
+			float new_speed = acc_scale * s_curve_function(acum) + acc_init_speed;
 			new_speed = (t_acc_integrator >= 0) ? (new_speed + acc_init_speed) : (acc_init_speed - new_speed);
 			speed_change = new_speed - current_speed;
 #else
@@ -479,7 +533,7 @@ void itp_run(void)
 			float acum = deac_step_acum;
 			acum += deac_step;
 			deac_step_acum = MIN(acum, 0.999f);
-			float new_speed = junction_speed - s_curve_function(acum, deac_scale);
+			float new_speed = junction_speed - deac_scale * s_curve_function(acum);
 			speed_change = new_speed - current_speed;
 #else
 			speed_change = -(integrator * itp_cur_plan_block->acceleration);

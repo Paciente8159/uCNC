@@ -427,11 +427,14 @@ extern "C"
 	 * Performs motions with variable acceleration (trapezoidal speed profile
 	 * with rounded speed transition between accel/deaccel and constant speed)
 	 * instead of constant acceleration (trapezoidal speed profile)
-	 * 
-	 * 0 - disabled
-	 * 1 - mild profile (smaller mid slope and higher initial and exit slopes)
-	 * 2 - medium profile (medium mid slope and medium initial and exit slopes)
-	 * 3 - agressive (higher mid slope and smaller initial and exit slopes - uses bezier 5th order)
+	 *
+	 * -1 - selectable via setting $14
+	 *  0 - disabled
+	 *  1 - mild profile (smaller mid slope and higher initial and exit slopes)
+	 *  2 - medium profile (medium mid slope and medium initial and exit slopes)
+	 *  3 - stron profile (high mid slope and medium initial and exit slopes)
+	 *  4 - agressive (higher mid slope and smaller initial and exit slopes - uses bezier 5th order)
+	 *  5 - agressive2 (higher mid slope and smaller initial and exit slopes - uses tanh curve)
 	 *
 	 * */
 
