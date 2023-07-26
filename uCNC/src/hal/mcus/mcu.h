@@ -33,16 +33,42 @@ extern "C"
 #define MCU_CALLBACK
 #endif
 
-#ifndef MCU_TX_CALLBACK
-#define MCU_TX_CALLBACK MCU_CALLBACK
-#endif
-
 #ifndef MCU_RX_CALLBACK
 #define MCU_RX_CALLBACK MCU_CALLBACK
 #endif
 
 #ifndef MCU_IO_CALLBACK
 #define MCU_IO_CALLBACK MCU_CALLBACK
+#endif
+
+#ifndef F_STEP_MAX
+#define F_STEP_MAX 30000
+#endif
+
+// defines special mcu to access flash strings and arrays
+#ifndef __rom__
+#define __rom__
+#endif
+#ifndef __romstr__
+#define __romstr__
+#endif
+#ifndef __romarr__
+#define __romarr__ const char
+#endif
+#ifndef rom_strptr
+#define rom_strptr *
+#endif
+#ifndef rom_strcpy
+#define rom_strcpy strcpy
+#endif
+#ifndef rom_strncpy
+#define rom_strncpy strncpy
+#endif
+#ifndef rom_memcpy
+#define rom_memcpy memcpy
+#endif
+#ifndef rom_read_byte
+#define rom_read_byte *
 #endif
 
 	// the extern is not necessary
@@ -52,7 +78,6 @@ extern "C"
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
 	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
-	MCU_TX_CALLBACK void mcu_com_tx_cb();
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);

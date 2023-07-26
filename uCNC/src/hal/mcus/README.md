@@ -1,12 +1,876 @@
+<p align="center">
+<img src="https://github.com/Paciente8159/uCNC/blob/master/docs/logo.png?raw=true">
+</p>
+
+
 # µCNC
-µCNC - A universal CNC firmware for microcontrollers
+µCNC - Universal CNC firmware for microcontrollers
 
-## How to add a custom MCU to µCNC
-µCNC can be extended to other custom MCU as well. For that you only need to define how your mcu responds to the HAL interface:
-  1. Create the needed files that implements all the functions defined in the [mcu.h](https://github.com/Paciente8159/uCNC/blob/master/src/hal/mcus/mcu.h) header file. mcu.h acts has the HAL interface and contains all the needed mcu function declarations that µCNC needs (direct IO operations, pwm outputs, analog reading, communications, etc...).
-  2. You must also edit [mcus.h](https://github.com/Paciente8159/uCNC/blob/master/src/hal/mcus/mcus.h) and [mcudefs.h](https://github.com/Paciente8159/uCNC/blob/master/src/hal/mcus/mcudefs.h) to add you custom MCU.
+_**Jump to section**_
+* [µCNC HAL](#µCNC-HAL)
+* [The microcontroller HAL](#The-microcontroller-HAL)
+   * [Pin naming conventions ](#pin-naming-conventions )
+   * [Creating the HAL for a custom MCU](#creating-the-hal-for-a-custom-mcu)
 
-  Compile it and test it.
+# µCNC HAL (Hardware Abstraction Layer)
+µCNC has several HAL dimensions/layers. The first is the microcontroller HAL.
+This HAL provides the abstraction layer needed to use all the core functionalities in any microcontroller/PC board.
 
-  For more detailed explanation please refer to the [wiki](https://github.com/Paciente8159/uCNC/wiki/Understanding-the-HAL#Creating-the-HAL-for-a-custom-MCU)
+## The microcontroller HAL
+This HAL is actually composed of two parts. The MCU and the board/kit. 
+   * The MCU defines all the basic functions required by the µCNC to write and read on and from the microcontroller I/O. These functions include for example how to set or clear an output pin or read from an input pin.
+   * The board contains all the definitions needed to map the µCNC internal named pins to the microcontroller physical pins.
+   * From v1.2.0 on there is a general cnc_hal_config.h file that allows to connect the general purpose pins to certain modules or functionalities. This allows the user to customize µCNC for custom needs.
+
+The way to implement/code this completely free. The only thing µCNC needs to know is that when it want's to set the step pin of motor 0 high it has to call: 
+```mcu_set_output(STEP0);```
+
+### Pin naming conventions 
+µCNC sets a list of names that are used by the core functions to tell the microcontroller what to do.
+These are the fixed names used internally:
+
+#### Output pins - special
++ ```STEP#``` pin defines the step output pin that controls linear actuator driver.
+   + ```STEP0 to STEP5``` are the output pins to control the step signal up to 6 independent drivers.
+   + ```STEP6 and STEP7``` are the output pins used as shadow registers to drive dual drive linear actuators.
++ ```DIR#``` pin defines the dir output pin that controls the linear actuator driver.
+   + ```DIR0 to DIR5``` are the output pins to control the direction signal up to 6 independent drivers
++ ```STEPPER#_ENABLE``` pin defines the enable output pin that controls the linear actuator driver.
+   + ```STEPPER0_ENABLE to STEPPER5_ENABLE``` are the output pins to control the enable signal up to 6 independent drivers.
++ ```SERVO#``` pin defines the servo signal output pin that controls common servo motors (1-2ms tON with 20ms period).
+   + ```SERVO0 to SERVO7``` are the the servo signal output pins with up to 8 independent servos.
+
+#### Input pins - special
++ ```LIMIT_#``` pin defines the input pin that controls end-stop switch detection.
+   + ```LIMIT_X```, ```LIMIT_Y```, ```LIMIT_Z```, ```LIMIT_A```, ```LIMIT_B```, ```LIMIT_C```, ```LIMIT_X2```, ```LIMIT_Y2``` and ```LIMIT_Z2```.
++ ```ESTOP```, ```SAFETY_DOOR```, ```FHOLD``` and ```CS_RES``` pin defines the input pins that controls user actions and safety features.
++ ```PROBE``` pin defines the input pin used for probing and tool length detection.
+
+#### COM pins - special
++ ```TX``` pin defines the UART port tx pin.
++ ```RX``` pin defines the UART port rx.
++ ```TX2``` pin defines the UART2 port tx pin.
++ ```RX2``` pin defines the UART2 port rx.
++ ```USB_DP``` pin defines the USB D+ port pin.
++ ```USB_DM``` pin defines the USB D- port pin.
++ ```SPI_CLK``` pin defines the SPI clock port pin.
++ ```SPI_SDI``` pin defines the SPI data input (MISO) port pin.
++ ```SPI_SDO``` pin defines the SPI data output (MOSI) port pin.
++ ```SPI_CS``` pin defines the SPI chip select port pin.
++ ```I2C_CLK``` pin defines the I2S clock port pin.
++ ```I2C_DATA``` pin defines the I2C data port pin.
+
+SPI_CLK
+
+#### Output pins - generic
++ ```PWM#``` pin defines a pwm output pin.
+   + ```PWM0 to PWM15``` are the pwm output pins.
++ ```DOUT#``` pin defines a generic output pin.
+   + ```DOUT0 to DOUT31``` are the generic output pins.
+
+#### Input pins - generic
++ ```ANALOG#``` pin defines an analog input pin.
+   + ```ANALOG0 to ANALOG15``` are the analog input pins.
++ ```DIN#``` pin defines a generic input pin.
+   + ```DIN0 to DIN31``` are the generic input pins. Pins ```DIN0 to DIN7``` can also be have ISR on change option enabled. In conjunction with ```DIN8 to DIN31``` they can form a pair for the encoder module.
+
+These pins also obey a numbering system to make them transversal between boards and MCU as mapped in the table bellow:
+
+| Pin number | Alias | Pin name |
+| --- | --- | --- |
+| 0 | DIO0 | STEP0 |
+| 1 | DIO1 | STEP1 |
+| 2 | DIO2 | STEP2 |
+| 3 | DIO3 | STEP3 |
+| 4 | DIO4 | STEP4 |
+| 5 | DIO5 | STEP5 |
+| 6 | DIO6 | STEP6 |
+| 7 | DIO7 | STEP7 |
+| 8 | DIO8 | DIR0 |
+| 9 | DIO9 | DIR1 |
+| 10 | DIO10 | DIR2 |
+| 11 | DIO11 | DIR3 |
+| 12 | DIO12 | DIR4 |
+| 13 | DIO13 | DIR5 |
+| 14 | DIO14 | DIR6 |
+| 15 | DIO15 | DIR7 |
+| 16 | DIO16 | STEP0_EN |
+| 17 | DIO17 | STEP1_EN |
+| 18 | DIO18 | STEP2_EN |
+| 19 | DIO19 | STEP3_EN |
+| 20 | DIO20 | STEP4_EN |
+| 21 | DIO21 | STEP5_EN |
+| 22 | DIO22 | STEP6_EN |
+| 23 | DIO23 | STEP7_EN |
+| 24 | DIO24 | PWM0 |
+| 25 | DIO25 | PWM1 |
+| 26 | DIO26 | PWM2 |
+| 27 | DIO27 | PWM3 |
+| 28 | DIO28 | PWM4 |
+| 29 | DIO29 | PWM5 |
+| 30 | DIO30 | PWM6 |
+| 31 | DIO31 | PWM7 |
+| 32 | DIO32 | PWM8 |
+| 33 | DIO33 | PWM9 |
+| 34 | DIO34 | PWM10 |
+| 35 | DIO35 | PWM11 |
+| 36 | DIO36 | PWM12 |
+| 37 | DIO37 | PWM13 |
+| 38 | DIO38 | PWM14 |
+| 39 | DIO39 | PWM15 |
+| 40 | DIO40 | SERVO0 |
+| 41 | DIO41 | SERVO1 |
+| 42 | DIO42 | SERVO2 |
+| 43 | DIO43 | SERVO3 |
+| 44 | DIO44 | SERVO4 |
+| 45 | DIO45 | SERVO5 |
+| 46 | DIO46 | DOUT0 |
+| 47 | DIO47 | DOUT1 |
+| 48 | DIO48 | DOUT2 |
+| 49 | DIO49 | DOUT3 |
+| 50 | DIO50 | DOUT4 |
+| 51 | DIO51 | DOUT5 |
+| 52 | DIO52 | DOUT6 |
+| 53 | DIO53 | DOUT7 |
+| 54 | DIO54 | DOUT8 |
+| 55 | DIO55 | DOUT9 |
+| 56 | DIO56 | DOUT10 |
+| 57 | DIO57 | DOUT11 |
+| 58 | DIO58 | DOUT12 |
+| 59 | DIO59 | DOUT13 |
+| 60 | DIO60 | DOUT14 |
+| 61 | DIO61 | DOUT15 |
+| 62 | DIO62 | DOUT16 |
+| 63 | DIO63 | DOUT17 |
+| 64 | DIO64 | DOUT18 |
+| 65 | DIO65 | DOUT19 |
+| 66 | DIO66 | DOUT20 |
+| 67 | DIO67 | DOUT21 |
+| 68 | DIO68 | DOUT22 |
+| 69 | DIO69 | DOUT23 |
+| 70 | DIO70 | DOUT24 |
+| 71 | DIO71 | DOUT25 |
+| 72 | DIO72 | DOUT26 |
+| 73 | DIO73 | DOUT27 |
+| 74 | DIO74 | DOUT28 |
+| 75 | DIO75 | DOUT29 |
+| 76 | DIO76 | DOUT30 |
+| 77 | DIO77 | DOUT31 |
+| 100 | DIO100 | LIMIT_X |
+| 101 | DIO101 | LIMIT_Y |
+| 102 | DIO102 | LIMIT_Z |
+| 103 | DIO103 | LIMIT_X2 |
+| 104 | DIO104 | LIMIT_Y2 |
+| 105 | DIO105 | LIMIT_Z2 |
+| 106 | DIO106 | LIMIT_A |
+| 107 | DIO107 | LIMIT_B |
+| 108 | DIO108 | LIMIT_C |
+| 109 | DIO109 | PROBE |
+| 110 | DIO110 | ESTOP |
+| 111 | DIO111 | SAFETY_DOOR |
+| 112 | DIO112 | FHOLD |
+| 113 | DIO113 | CS_RES |
+| 114 | DIO114 | ANALOG0 |
+| 115 | DIO115 | ANALOG1 |
+| 116 | DIO116 | ANALOG2 |
+| 117 | DIO117 | ANALOG3 |
+| 118 | DIO118 | ANALOG4 |
+| 119 | DIO119 | ANALOG5 |
+| 120 | DIO120 | ANALOG6 |
+| 121 | DIO121 | ANALOG7 |
+| 122 | DIO122 | ANALOG8 |
+| 123 | DIO123 | ANALOG9 |
+| 124 | DIO124 | ANALOG10 |
+| 125 | DIO125 | ANALOG11 |
+| 126 | DIO126 | ANALOG12 |
+| 127 | DIO127 | ANALOG13 |
+| 128 | DIO128 | ANALOG14 |
+| 129 | DIO129 | ANALOG15 |
+| 130 | DIO130 | DIN0 |
+| 131 | DIO131 | DIN1 |
+| 132 | DIO132 | DIN2 |
+| 133 | DIO133 | DIN3 |
+| 134 | DIO134 | DIN4 |
+| 135 | DIO135 | DIN5 |
+| 136 | DIO136 | DIN6 |
+| 137 | DIO137 | DIN7 |
+| 138 | DIO138 | DIN8 |
+| 139 | DIO139 | DIN9 |
+| 140 | DIO140 | DIN10 |
+| 141 | DIO141 | DIN11 |
+| 142 | DIO142 | DIN12 |
+| 143 | DIO143 | DIN13 |
+| 144 | DIO144 | DIN14 |
+| 145 | DIO145 | DIN15 |
+| 146 | DIO146 | DIN16 |
+| 147 | DIO147 | DIN17 |
+| 148 | DIO148 | DIN18 |
+| 149 | DIO149 | DIN19 |
+| 150 | DIO150 | DIN20 |
+| 151 | DIO151 | DIN21 |
+| 152 | DIO152 | DIN22 |
+| 153 | DIO153 | DIN23 |
+| 154 | DIO154 | DIN24 |
+| 155 | DIO155 | DIN25 |
+| 156 | DIO156 | DIN26 |
+| 157 | DIO157 | DIN27 |
+| 158 | DIO158 | DIN28 |
+| 159 | DIO159 | DIN29 |
+| 160 | DIO160 | DIN30 |
+| 161 | DIO161 | DIN31 |
+| 200 | DIO200 | TX |
+| 201 | DIO201 | RX |
+| 202 | DIO202 | USB_DM |
+| 203 | DIO203 | USB_DP |
+| 204 | DIO204 | SPI_CLK |
+| 205 | DIO205 | SPI_SDI |
+| 206 | DIO206 | SPI_SDO |
+| 207 | DIO207 | SPI_CS |
+| 208 | DIO208 | I2C_SCL |
+| 209 | DIO209 | I2C_SDA |
+| 210 | DIO210 | TX2 |
+| 211 | DIO211 | RX2 |
+
+### Creating the HAL for a custom MCU 
+Before creating a custom HAL for a custom board/microcontroller the microcontroller must have the following hardware features available: 
+   * At least 2 hardware timers (it might be possible with only a single timer but with limitations)
+   * At least a communication hardware port
+   * A non volatile memory if you need to store the configuration parameter (optional: is possible to work without this feature)
+   * PWM hardware IO (optional: is possible to work without this feature)
+   * Input pins with interrupt on change (the interrupt on change is optional: is possible to work without this feature by using only soft pooling but some features may not be available)
+   * Input pins with ADC (optional: is possible to work without this feature but some feature may not be available)
+
+**After this 4 steps are needed:**
+
+   **1. Implement all functions defined in the mcu.h** 
+   
+   All functions defined by the ```muc.h``` must be implemented. These are: 
+
+   ```
+#ifndef MCU_CALLBACK
+#define MCU_CALLBACK
+#endif
+
+#ifndef MCU_RX_CALLBACK
+#define MCU_RX_CALLBACK MCU_CALLBACK
+#endif
+
+#ifndef MCU_IO_CALLBACK
+#define MCU_IO_CALLBACK MCU_CALLBACK
+#endif
+
+#ifndef F_STEP_MAX
+#define F_STEP_MAX 30000
+#endif
+
+// defines special mcu to access flash strings and arrays
+#ifndef __rom__
+#define __rom__
+#endif
+#ifndef __romstr__
+#define __romstr__
+#endif
+#ifndef __romarr__
+#define __romarr__ const char
+#endif
+#ifndef rom_strptr
+#define rom_strptr *
+#endif
+#ifndef rom_strcpy
+#define rom_strcpy strcpy
+#endif
+#ifndef rom_strncpy
+#define rom_strncpy strncpy
+#endif
+#ifndef rom_memcpy
+#define rom_memcpy memcpy
+#endif
+#ifndef rom_read_byte
+#define rom_read_byte *
+#endif
+
+	// the extern is not necessary
+	// this explicit declaration just serves to reeinforce the idea that these callbacks are implemented on other µCNC core code translation units
+	// these callbacks provide a transparent way for the mcu to call them when the ISR/IRQ is triggered
+
+	MCU_CALLBACK void mcu_step_cb(void);
+	MCU_CALLBACK void mcu_step_reset_cb(void);
+	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
+	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
+	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_probe_changed_cb(void);
+	MCU_IO_CALLBACK void mcu_inputs_changed_cb(void);
+
+/*IO functions*/
+
+/**
+ * config a pin in input mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_input
+	void mcu_config_input(uint8_t pin);
+#endif
+
+/**
+ * config pullup
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pullup
+	void mcu_config_pullup(uint8_t pin);
+#endif
+
+/**
+ * config a pin in output mode
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_output
+	void mcu_config_output(uint8_t pin);
+#endif
+
+/**
+ * get the value of a digital input pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_input
+	uint8_t mcu_get_input(uint8_t pin);
+#endif
+
+/**
+ * gets the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_output
+	uint8_t mcu_get_output(uint8_t pin);
+#endif
+
+/**
+ * sets the value of a digital output pin to logical 1
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_output
+	void mcu_set_output(uint8_t pin);
+#endif
+
+/**
+ * sets the value of a digital output pin to logical 0
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_clear_output
+	void mcu_clear_output(uint8_t pin);
+#endif
+
+/**
+ * toggles the value of a digital output pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_toggle_output
+	void mcu_toggle_output(uint8_t pin);
+#endif
+
+	/**
+	 *
+	 * This is used has by the generic mcu functions has generic (overridable) IO initializer
+	 *
+	 * */
+	void mcu_io_init(void);
+
+	/**
+	 * initializes the mcu
+	 * this function needs to:
+	 *   - configure all IO pins (digital IO, PWM, Analog, etc...)
+	 *   - configure all interrupts
+	 *   - configure uart or usb
+	 *   - start the internal RTC
+	 * */
+	void mcu_init(void);
+
+/**
+ * enables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_probe_isr
+	void mcu_enable_probe_isr(void);
+#endif
+
+/**
+ * disables the pin probe mcu isr on change
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_probe_isr
+	void mcu_disable_probe_isr(void);
+#endif
+
+/**
+ * gets the voltage value of a built-in ADC pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_analog
+	uint16_t mcu_get_analog(uint8_t channel);
+#endif
+
+/**
+ * configs the pwm pin and output frequency
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_config_pwm
+	void mcu_config_pwm(uint8_t pin, uint16_t freq);
+#endif
+
+/**
+ * sets the pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_pwm
+	void mcu_set_pwm(uint8_t pwm, uint8_t value);
+#endif
+
+/**
+ * gets the configured pwm value of a built-in pwm pin
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_pwm
+	uint8_t mcu_get_pwm(uint8_t pwm);
+#endif
+
+/**
+ * sets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_set_servo
+	void mcu_set_servo(uint8_t servo, uint8_t value);
+#endif
+
+/**
+ * gets the pwm for a servo (50Hz with tON between 1~2ms)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_servo
+	uint8_t mcu_get_servo(uint8_t servo);
+#endif
+
+// ISR
+/**
+ * enables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_enable_global_isr
+	void mcu_enable_global_isr(void);
+#endif
+
+/**
+ * disables global interrupts on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_disable_global_isr
+	void mcu_disable_global_isr(void);
+#endif
+
+/**
+ * gets global interrupts state on the MCU
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_get_global_isr
+	bool mcu_get_global_isr(void);
+#endif
+
+	// Step interpolator
+	/**
+	 * convert step rate/frequency to timer ticks and prescaller
+	 * */
+	void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller);
+
+	/**
+	 * convert timer ticks and prescaller to step rate/frequency
+	 * */
+	float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller);
+
+	/**
+	 * starts the timer interrupt that generates the step pulses for the interpolator
+	 * */
+	void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller);
+
+	/**
+	 * changes the step rate of the timer interrupt that generates the step pulses for the interpolator
+	 * */
+	void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller);
+
+	/**
+	 * stops the timer interrupt that generates the step pulses for the interpolator
+	 * */
+	void mcu_stop_itp_isr(void);
+
+	/**
+	 * gets the MCU running time in milliseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
+	uint32_t mcu_millis(void);
+
+	/**
+	 * gets the MCU running time in microseconds.
+	 * the time counting is controled by the internal RTC
+	 * */
+	uint32_t mcu_micros(void);
+
+#ifndef mcu_nop
+#define mcu_nop() asm volatile("nop\n\t")
+#endif
+
+	void mcu_delay_loop(uint16_t loops);
+
+#ifndef mcu_delay_cycles
+// set per MCU
+#ifndef MCU_CLOCKS_PER_CYCLE
+#error "MCU_CLOCKS_PER_CYCLE not defined for this MCU"
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#error "MCU_CYCLES_PER_LOOP not defined for this MCU"
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#error "MCU_CYCLES_PER_LOOP_OVERHEAD not defined for this MCU"
+#endif
+
+#define mcu_delay_cycles(X)                                                                                                                     \
+	{                                                                                                                                           \
+		if (X > (MCU_CYCLES_PER_LOOP + MCU_CYCLES_PER_LOOP_OVERHEAD))                                                                           \
+		{                                                                                                                                       \
+			mcu_delay_loop((uint16_t)((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP));                                               \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)  \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) - (((X - MCU_CYCLES_PER_LOOP_OVERHEAD) / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10) \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+		}                                                                                                                                       \
+		else                                                                                                                                    \
+		{                                                                                                                                       \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 0)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 1)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 2)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 3)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 4)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 5)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 6)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 7)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 8)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 9)                                                                    \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+			if ((X - ((X / MCU_CYCLES_PER_LOOP) * MCU_CYCLES_PER_LOOP)) > 10)                                                                   \
+			{                                                                                                                                   \
+				mcu_nop();                                                                                                                      \
+			}                                                                                                                                   \
+		}                                                                                                                                       \
+	}
+#endif
+
+#ifndef mcu_delay_100ns
+#define mcu_delay_100ns() mcu_delay_cycles((F_CPU / MCU_CLOCKS_PER_CYCLE / 10000000UL))
+#endif
+
+/**
+ * provides a delay in us (micro seconds)
+ * the maximum allowed delay is 255 us
+ * */
+#ifndef mcu_delay_us
+#define mcu_delay_us(X) mcu_delay_cycles(F_CPU / MCU_CLOCKS_PER_CYCLE / 1000000UL * X)
+#endif
+
+#ifdef MCU_HAS_ONESHOT_TIMER
+	typedef void (*mcu_timeout_delgate)(void);
+	extern MCU_CALLBACK mcu_timeout_delgate mcu_timeout_cb;
+/**
+ * configures a single shot timeout in us
+ * */
+#ifndef mcu_config_timeout
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout);
+#endif
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+#ifndef mcu_start_timeout
+	void mcu_start_timeout();
+#endif
+#endif
+
+	/**
+	 * runs all internal tasks of the MCU.
+	 * for the moment these are:
+	 *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task
+	 * */
+	void mcu_dotasks(void);
+
+	// Non volatile memory
+	/**
+	 * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+	 * */
+	uint8_t mcu_eeprom_getc(uint16_t address);
+
+	/**
+	 * sets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
+	 * */
+	void mcu_eeprom_putc(uint16_t address, uint8_t value);
+
+	/**
+	 * flushes all recorded registers into the eeprom.
+	 * */
+	void mcu_eeprom_flush(void);
+
+#ifdef MCU_HAS_SPI
+#ifndef mcu_spi_xmit
+	uint8_t mcu_spi_xmit(uint8_t data);
+#endif
+
+#ifndef mcu_spi_config
+	void mcu_spi_config(uint8_t mode, uint32_t frequency);
+#endif
+#endif
+
+#ifdef MCU_HAS_I2C
+#ifndef I2C_OK
+#define I2C_OK 0
+#endif
+#ifndef I2C_NOTOK
+#define I2C_NOTOK 1
+#endif
+
+#ifndef mcu_i2c_send
+	// master sends command to slave
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release);
+#endif
+#ifndef mcu_i2c_receive
+	// master receive response from slave
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout);
+#endif
+
+#if defined(MCU_SUPPORTS_I2C_SLAVE) && (I2C_ADDRESS != 0)
+#ifndef I2C_SLAVE_BUFFER_SIZE
+#define I2C_SLAVE_BUFFER_SIZE 48
+#endif
+#ifndef mcu_i2c_slave_cb
+	MCU_IO_CALLBACK void mcu_i2c_slave_cb(uint8_t *data, uint8_t *datalen);
+#endif
+#endif
+
+#ifndef mcu_i2c_config
+	void mcu_i2c_config(uint32_t frequency);
+#endif
+
+#endif
+
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+#endif
+
+/**
+ * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
+ * can be defined either as a function or a macro call
+ * */
+#ifndef mcu_putc
+	void mcu_putc(uint8_t c);
+#endif
+
+#ifndef mcu_flush
+	void mcu_flush(void);
+#endif
+
+#ifdef MCU_HAS_USB
+	void mcu_usb_putc(uint8_t c);
+	void mcu_usb_flush(void);
+#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_UART
+	void mcu_uart_putc(uint8_t c);
+	void mcu_uart_flush(void);
+#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_UART2
+	void mcu_uart2_putc(uint8_t c);
+	void mcu_uart2_flush(void);
+#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_WIFI
+	void mcu_wifi_putc(uint8_t c);
+	void mcu_wifi_flush(void);
+#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
+#endif
+#endif
+
+#ifdef MCU_HAS_BLUETOOTH
+	void mcu_bt_putc(uint8_t c);
+	void mcu_bt_flush(void);
+#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
+#endif
+#endif
+   ```
+
+Also internally **AT LEAST** these macros need to be defined
+
+```
+// defines the maximum and minimum step rates
+#ifndef F_STEP_MAX
+#define F_STEP_MAX 100000
+#endif
+// defines special mcu to access flash strings and arrays
+// the following definition will work on all MCU
+// custom adjustments can be tailored for each MCU architecture (check for example AVR)
+#define __rom__
+#define __romstr__
+#define __romarr__ const char
+#define rom_strptr *
+#define rom_strcpy strcpy
+#define rom_strncpy strncpy
+#define rom_memcpy memcpy
+#define rom_read_byte *
+```
+
+And add some definitions to generate internal software delays like this
+```
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#ifndef MCU_CYCLES_PER_LOOP
+#define MCU_CYCLES_PER_LOOP 4
+#endif
+#ifndef MCU_CYCLES_PER_LOOP_OVERHEAD
+#define MCU_CYCLES_PER_LOOP_OVERHEAD 11
+#endif
+
+/* OR IN ALTERNATIVE YOU CAN DEFINE A CUSTOM CYCLE DELAY FUNCTION LIKE FOR EXAMPLE USED IN ARM */
+
+// needed by software delays
+#ifndef MCU_CLOCKS_PER_CYCLE
+#define MCU_CLOCKS_PER_CYCLE 1
+#endif
+#define mcu_delay_cycles(X)     \
+	{                           \
+		DWT->CYCCNT = 0;        \
+		uint32_t t = X;         \
+		while (t > DWT->CYCCNT) \
+			;                   \
+	}
+```
+
+
+  Internally the implementation of the MCU must:
+
+    - use a interrupt timer to call `mcu_step_cb()` and `mcu_step_reset_cb()` alternately (evenly spaced). Both these ISR run once every step at a maximum rate (set by Grbl's setting `$0`)
+
+    - use a 1ms interrupt timer or RTC to generate the running time and call `mcu_rtc_cb(uint32_t millis)`. `mcu_dotasks()` **MUST NOT BE CALLED HERE**
+
+    - if a hardware communications has events or ISR, the ISR must call `mcu_com_rx_cb(unsigned char c)` with the received char, or if handled internally by library or RTOS send every received char in the buffer through `mcu_com_rx_cb(unsigned char c)`.
+
+    - if interruptible inputs are used they appropriately call mcu_limits_changed_cb(), mcu_controls_changed_cb(), mcu_probe_changed_cb() and mcu_inputs_changed_cb()
+
+   **2. Map all µCNC internal pin names to I/O pins**
+
+   The HAL must know the I/O pin to modify when the core want's to modify STEP0 pin for example. Again...µCNC doesn't care how it's done as long has it does what it is asked...If the switch is flicked on the bulb should turn on... simple.
+
+   **3. Add the new board and mcu libraries to µCNC**
+
+   * The mcu to the `mcus.h` file and give it an ID. Add the needed libraries to load if the MCU is chosen in the `mcudefs.f` file. 
+   * Execute the same steps above for files `boards.h` and `boarddefs.h`
+   
+   **4. Create the project and build**
+   From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).
+   Then on main just call the two functions needed to run µCNC. A bare minimum main file should look like this
+
+```
+#include "cnc.h"
+
+void main(void)
+{
+    //initializes all systems
+    cnc_init();
+
+    for(;;)
+    {
+        cnc_run();
+    }
+
+}
+
+```
   
