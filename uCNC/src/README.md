@@ -239,8 +239,9 @@ Add a new file .c to uCNC directory (same has uCNC.ino) and paste this code
 // preprocessor check if module is enabled
 #ifdef ENABLE_MAIN_LOOP_MODULES
 
-// custom code implementation
-void my_custom_code(void)
+// custom code listener callback implementation
+// all callbacks must be of type bool (*function_pointer) (void*)
+bool my_custom_code(void* args)
 {
     // do something
 }
