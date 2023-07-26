@@ -185,19 +185,23 @@ typedef struct
 
 To create custom event handlers these macros are available:
 
-DECL_EVENT_HANDLER(name)
-WEAK_EVENT_HANDLER(name)
-DEFAULT_EVENT_HANDLER(name)
+`DECL_EVENT_HANDLER(name)`
+
+`WEAK_EVENT_HANDLER(name)`
+
+`DEFAULT_EVENT_HANDLER(name)`
 
 To create custom event listeners these macros are available:
 
-CREATE_EVENT_LISTENER(name, handler)
-ADD_EVENT_LISTENER(name, handler)
+`CREATE_EVENT_LISTENER(name, handler)`
+
+`ADD_EVENT_LISTENER(name, handler)`
 
 There are also a few other usefull macros that make module initialization and declaration easier. These are:
 
-DECL_MODULE(name)
-LOAD_MODULE(name)
+`DECL_MODULE(name)`
+
+`LOAD_MODULE(name)`
 
 As mentioned all events run a default calback handler that runs through all the listeners or shortens the execution if one of the listeners responds with a `EVENT_HANDLED`.
 
