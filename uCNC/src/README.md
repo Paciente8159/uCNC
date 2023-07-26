@@ -239,15 +239,15 @@ Add a new file .c to uCNC directory (same has uCNC.ino) and paste this code
 // preprocessor check if module is enabled
 #ifdef ENABLE_MAIN_LOOP_MODULES
 
-// custom function declaration
-void my_custom_code(void);
-// create a listener of type cnc_dotasks
-CREATE_LISTENER(cnc_dotasks_delegate, my_custom_code);
 // custom code implementation
 void my_custom_code(void)
 {
     // do something
 }
+
+// create a listener of type cnc_dotasks
+CREATE_EVENT_LISTENER(cnc_dotasks, my_custom_code);
+#endif
 
 // you only need to add the event listener to the event handler
 // you can either call the ADD_EVENT_LISTENER inside the main µCNC initialization code 
@@ -255,10 +255,11 @@ void my_custom_code(void)
 // Here is an example
 
 DECL_MODULE(my_custom_module){
+#ifdef ENABLE_MAIN_LOOP_MODULES
 	// attach the listener
-	ADD_LISTENER(cnc_dotasks_delegate, my_custom_code, cnc_dotasks_event);
-}
+	ADD_EVENT_LISTENER(cnc_dotasks, my_custom_code);
 #endif
+}
 ```
 
 This created the event listener that is of type cnc_dotasks. The only thing left to do is to attach it so that it gets called when cnc_dotasks is fired.
@@ -276,7 +277,7 @@ int main(void)
     cnc_init();
 
     // add the listener to cnc_dotasks
-    // ADD_LISTENER(cnc_dotasks_delegate, my_custom_code, cnc_dotasks_event);
+    // ADD_EVENT_LISTENER(cnc_dotasks, my_custom_code);
 
 	// or instead of calling the listener you can call the module initializer that does that task like this
 
