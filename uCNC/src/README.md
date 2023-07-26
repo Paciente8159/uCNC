@@ -244,6 +244,9 @@ Add a new file .c to uCNC directory (same has uCNC.ino) and paste this code
 bool my_custom_code(void* args)
 {
     // do something
+
+	// in this case we will return EVENT_CONTINUE to allow event to propagate to other listeners
+	return EVENT_CONTINUE;
 }
 
 // create a listener of type cnc_dotasks
