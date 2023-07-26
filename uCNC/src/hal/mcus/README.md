@@ -875,22 +875,21 @@ Also internally **AT LEAST** these macros need to be defined
    From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).
    Then on main just call the two functions needed to run µCNC. A bare minimum main file should look like this:
 
-   ```
-	#include "cnc.h"
+```
+#include "cnc.h"
 
-	void main(void)
+void main(void)
+{
+	//initializes all systems
+	cnc_init();
+
+	for(;;)
 	{
-		//initializes all systems
-		cnc_init();
-
-		for(;;)
-		{
-			cnc_run();
-		}
-
+		cnc_run();
 	}
 
-	```
+}
+```
 
 Again the example bellow will (I hope) help to clarify this.
 
