@@ -226,9 +226,9 @@ This is usefull if you want to to make a listener the only one that is able to l
 Creating a new event listener is easy. All current modules are placed inside the `src/modules` directory but it's not mandatory. It's just a matter of having them organized.
 If you place them in other places the only difference is the `#includes` directives should be updated since they use relative paths.
 
-Also new modules should be initialized inside the load_modules function in module.c. This is not mandatory. It's a matter of keeping code organized and insure that the function calls are done in the correct order. Due to Arduino IDE limitations (not supporting folders) in the way you can access and modify source that is not in the same directory as the .ino file, different ways of including custom code can be adopted to make it work.
+Also new modules should be initialized inside the `load_modules` function in module.c. This is not mandatory. It's a matter of keeping code organized and insure that the function calls are done in the correct order. Due to Arduino IDE limitations (not supporting folders) in the way you can access and modify source that is not in the same directory as the .ino file, different ways of including custom code can be adopted to make it work.
 
-Let's look at an example in the Arduino IDE environment by creating and attaching and event listener to cnc_dotasks.
+Let's look at an example in the Arduino IDE environment by creating and attaching and event listener to `cnc_dotasks`.
 
 Add a new file .c to uCNC directory (same has uCNC.ino) and paste this code
 
@@ -266,7 +266,7 @@ DECL_MODULE(my_custom_module){
 }
 ```
 
-This created the event listener that is of type cnc_dotasks. The only thing left to do is to attach it so that it gets called when cnc_dotasks is fired.
+This created the event listener that is of type `cnc_dotasks`. The only thing left to do is to attach it so that it gets called when `cnc_dotasks` is fired.
 
 In the uCNC.ino it's just a matter of adding the listener to the event like this:
 
@@ -284,7 +284,6 @@ int main(void)
     // ADD_EVENT_LISTENER(cnc_dotasks, my_custom_code);
 
 	// or instead of calling the listener you can call the module initializer that does that task like this
-
 	LOAD_MODULE(my_custom_module);
 
     for (;;)
