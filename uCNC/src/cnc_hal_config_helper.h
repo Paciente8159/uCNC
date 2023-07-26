@@ -730,6 +730,9 @@ extern "C"
 /**
  * final pin cleaning and configuration
  **/
+#ifndef DIO0
+#define DIO0 UNDEF_PIN
+#endif
 #ifndef STEP0
 #define STEP0 UNDEF_PIN
 #ifdef DIO1

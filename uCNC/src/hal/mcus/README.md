@@ -7,26 +7,30 @@
 µCNC - Universal CNC firmware for microcontrollers
 
 _**Jump to section**_
-* [µCNC HAL](#µCNC-HAL)
-* [The microcontroller HAL](#The-microcontroller-HAL)
-   * [Pin naming conventions ](#pin-naming-conventions )
+* [µCNC HAL](#µcnc-hal)
+* [The microcontroller HAL](#the-microcontroller-hal)
+   * [The microcontroller IO internal logic](#the-microcontroller-io-internal-logic)
+   * [Pin naming conventions](#pin-naming-conventions)
    * [Creating the HAL for a custom MCU](#creating-the-hal-for-a-custom-mcu)
 
 # µCNC HAL (Hardware Abstraction Layer)
-µCNC has several HAL dimensions/layers. The first is the microcontroller HAL.
+µCNC has several HAL dimensions/layers. The first and most important layer is the microcontroller HAL.
 This HAL provides the abstraction layer needed to use all the core functionalities in any microcontroller/PC board.
 
 ## The microcontroller HAL
-This HAL is actually composed of two parts. The MCU and the board/kit. 
+Starting version 1.8, this HAL is actually composed of three parts (instead of 2 like in the previous versions). The MCU, the board/kit HAL and the new IO HAL. 
    * The MCU defines all the basic functions required by the µCNC to write and read on and from the microcontroller I/O. These functions include for example how to set or clear an output pin or read from an input pin.
    * The board contains all the definitions needed to map the µCNC internal named pins to the microcontroller physical pins.
-   * From v1.2.0 on there is a general cnc_hal_config.h file that allows to connect the general purpose pins to certain modules or functionalities. This allows the user to customize µCNC for custom needs.
+   * From v1.8.0 and newer a new IO HAL was introduced. This allow the precompiller to link at build time the correct I/O function (either direct MCU IO pin or using a supported extender like the IC74HC595).
 
-The way to implement/code this completely free. The only thing µCNC needs to know is that when it want's to set the step pin of motor 0 high it has to call: 
-```mcu_set_output(STEP0);```
+The way this works is like this:
+
+### The microcontroller IO internal logic   
+
+Every pin inside µCNC has a friendly definition, an intermediate translation definition and an internal number definition.
 
 ### Pin naming conventions 
-µCNC sets a list of names that are used by the core functions to tell the microcontroller what to do.
+µCNC sets a list of names that are used by the core functions to tell the microcontroller what to do. These have friendly names to make them easy to understand.
 These are the fixed names used internally:
 
 #### Output pins - special
@@ -76,86 +80,86 @@ SPI_CLK
 
 These pins also obey a numbering system to make them transversal between boards and MCU as mapped in the table bellow:
 
-| Pin number | Alias | Pin name |
+| Pin value | Alias | Pin name |
 | --- | --- | --- |
-| 0 | DIO0 | STEP0 |
-| 1 | DIO1 | STEP1 |
-| 2 | DIO2 | STEP2 |
-| 3 | DIO3 | STEP3 |
-| 4 | DIO4 | STEP4 |
-| 5 | DIO5 | STEP5 |
-| 6 | DIO6 | STEP6 |
-| 7 | DIO7 | STEP7 |
-| 8 | DIO8 | DIR0 |
-| 9 | DIO9 | DIR1 |
-| 10 | DIO10 | DIR2 |
-| 11 | DIO11 | DIR3 |
-| 12 | DIO12 | DIR4 |
-| 13 | DIO13 | DIR5 |
-| 14 | DIO14 | DIR6 |
-| 15 | DIO15 | DIR7 |
-| 16 | DIO16 | STEP0_EN |
-| 17 | DIO17 | STEP1_EN |
-| 18 | DIO18 | STEP2_EN |
-| 19 | DIO19 | STEP3_EN |
-| 20 | DIO20 | STEP4_EN |
-| 21 | DIO21 | STEP5_EN |
-| 22 | DIO22 | STEP6_EN |
-| 23 | DIO23 | STEP7_EN |
-| 24 | DIO24 | PWM0 |
-| 25 | DIO25 | PWM1 |
-| 26 | DIO26 | PWM2 |
-| 27 | DIO27 | PWM3 |
-| 28 | DIO28 | PWM4 |
-| 29 | DIO29 | PWM5 |
-| 30 | DIO30 | PWM6 |
-| 31 | DIO31 | PWM7 |
-| 32 | DIO32 | PWM8 |
-| 33 | DIO33 | PWM9 |
-| 34 | DIO34 | PWM10 |
-| 35 | DIO35 | PWM11 |
-| 36 | DIO36 | PWM12 |
-| 37 | DIO37 | PWM13 |
-| 38 | DIO38 | PWM14 |
-| 39 | DIO39 | PWM15 |
-| 40 | DIO40 | SERVO0 |
-| 41 | DIO41 | SERVO1 |
-| 42 | DIO42 | SERVO2 |
-| 43 | DIO43 | SERVO3 |
-| 44 | DIO44 | SERVO4 |
-| 45 | DIO45 | SERVO5 |
-| 46 | DIO46 | DOUT0 |
-| 47 | DIO47 | DOUT1 |
-| 48 | DIO48 | DOUT2 |
-| 49 | DIO49 | DOUT3 |
-| 50 | DIO50 | DOUT4 |
-| 51 | DIO51 | DOUT5 |
-| 52 | DIO52 | DOUT6 |
-| 53 | DIO53 | DOUT7 |
-| 54 | DIO54 | DOUT8 |
-| 55 | DIO55 | DOUT9 |
-| 56 | DIO56 | DOUT10 |
-| 57 | DIO57 | DOUT11 |
-| 58 | DIO58 | DOUT12 |
-| 59 | DIO59 | DOUT13 |
-| 60 | DIO60 | DOUT14 |
-| 61 | DIO61 | DOUT15 |
-| 62 | DIO62 | DOUT16 |
-| 63 | DIO63 | DOUT17 |
-| 64 | DIO64 | DOUT18 |
-| 65 | DIO65 | DOUT19 |
-| 66 | DIO66 | DOUT20 |
-| 67 | DIO67 | DOUT21 |
-| 68 | DIO68 | DOUT22 |
-| 69 | DIO69 | DOUT23 |
-| 70 | DIO70 | DOUT24 |
-| 71 | DIO71 | DOUT25 |
-| 72 | DIO72 | DOUT26 |
-| 73 | DIO73 | DOUT27 |
-| 74 | DIO74 | DOUT28 |
-| 75 | DIO75 | DOUT29 |
-| 76 | DIO76 | DOUT30 |
-| 77 | DIO77 | DOUT31 |
+| 1 | DIO1 | STEP0 |
+| 2 | DIO2 | STEP1 |
+| 3 | DIO3 | STEP2 |
+| 4 | DIO4 | STEP3 |
+| 5 | DIO5 | STEP4 |
+| 6 | DIO6 | STEP5 |
+| 7 | DIO7 | STEP6 |
+| 8 | DIO8 | STEP7 |
+| 9 | DIO9 | DIR0 |
+| 10 | DIO10 | DIR1 |
+| 11 | DIO11 | DIR2 |
+| 12 | DIO12 | DIR3 |
+| 13 | DIO13 | DIR4 |
+| 14 | DIO14 | DIR5 |
+| 15 | DIO15 | DIR6 |
+| 16 | DIO16 | DIR7 |
+| 17 | DIO17 | STEP0_EN |
+| 18 | DIO18 | STEP1_EN |
+| 19 | DIO19 | STEP2_EN |
+| 20 | DIO20 | STEP3_EN |
+| 21 | DIO21 | STEP4_EN |
+| 22 | DIO22 | STEP5_EN |
+| 23 | DIO23 | STEP6_EN |
+| 24 | DIO24 | STEP7_EN |
+| 25 | DIO25 | PWM0 |
+| 26 | DIO26 | PWM1 |
+| 27 | DIO27 | PWM2 |
+| 28 | DIO28 | PWM3 |
+| 29 | DIO29 | PWM4 |
+| 30 | DIO30 | PWM5 |
+| 31 | DIO31 | PWM6 |
+| 32 | DIO32 | PWM7 |
+| 33 | DIO33 | PWM8 |
+| 34 | DIO34 | PWM9 |
+| 35 | DIO35 | PWM10 |
+| 36 | DIO36 | PWM11 |
+| 37 | DIO37 | PWM12 |
+| 38 | DIO38 | PWM13 |
+| 39 | DIO39 | PWM14 |
+| 40 | DIO40 | PWM15 |
+| 41 | DIO41 | SERVO0 |
+| 42 | DIO42 | SERVO1 |
+| 43 | DIO43 | SERVO2 |
+| 44 | DIO44 | SERVO3 |
+| 45 | DIO45 | SERVO4 |
+| 46 | DIO46 | SERVO5 |
+| 47 | DIO47 | DOUT0 |
+| 48 | DIO48 | DOUT1 |
+| 49 | DIO49 | DOUT2 |
+| 50 | DIO50 | DOUT3 |
+| 51 | DIO51 | DOUT4 |
+| 52 | DIO52 | DOUT5 |
+| 53 | DIO53 | DOUT6 |
+| 54 | DIO54 | DOUT7 |
+| 55 | DIO55 | DOUT8 |
+| 56 | DIO56 | DOUT9 |
+| 57 | DIO57 | DOUT10 |
+| 58 | DIO58 | DOUT11 |
+| 59 | DIO59 | DOUT12 |
+| 60 | DIO60 | DOUT13 |
+| 61 | DIO61 | DOUT14 |
+| 62 | DIO62 | DOUT15 |
+| 63 | DIO63 | DOUT16 |
+| 64 | DIO64 | DOUT17 |
+| 65 | DIO65 | DOUT18 |
+| 66 | DIO66 | DOUT19 |
+| 67 | DIO67 | DOUT20 |
+| 68 | DIO68 | DOUT21 |
+| 69 | DIO69 | DOUT22 |
+| 70 | DIO70 | DOUT23 |
+| 71 | DIO71 | DOUT24 |
+| 72 | DIO72 | DOUT25 |
+| 73 | DIO73 | DOUT26 |
+| 74 | DIO74 | DOUT27 |
+| 75 | DIO75 | DOUT28 |
+| 76 | DIO76 | DOUT29 |
+| 77 | DIO77 | DOUT30 |
+| 78 | DIO78 | DOUT31 |
 | 100 | DIO100 | LIMIT_X |
 | 101 | DIO101 | LIMIT_Y |
 | 102 | DIO102 | LIMIT_Z |
@@ -230,6 +234,40 @@ These pins also obey a numbering system to make them transversal between boards 
 | 209 | DIO209 | I2C_SDA |
 | 210 | DIO210 | TX2 |
 | 211 | DIO211 | RX2 |
+
+With the introduction of the new IO HAL `src/hal/io_hal.h` all these definitions/values must be interchangable and match the above table.
+`src/hal/io_hal.h` and `src/core/io_control.h` will then provide a series of preprocessor macros that translate between a µCNC IO call and the actual MCU IO call, based on all the available information (the IO HAL, the boardmap and the MCU HAL).
+
+This (I hope) will become clearer in the example at the end of this file.
+
+### How is a pin evaluated?
+
+As state before a pin must respect the constrains described in the previous table.
+If an IO pin is defined (for example STEP0), then it can only assume 3 values:
+
+It's an MCU IO pin then:
+STEP0 must evaluate to value 1 and DIO1 must evaluate to 1 also
+
+It's an extended IO pin then:
+STEP0 must evaluate to value 1 and DIO1 must evaluate to -1
+
+If it's and undefined pin then
+STEP0 must evaluate to value 0 and DIO1 must evaluate to 0 also
+
+Lets take and example:
+
+When we want to set generic output pin 0 (friendly name DOUT0) pin high we call this:
+
+`io_set_output(DOUT0);`
+
+Internally µCNC starts to decode this by a series of translations performed by the preprocessor, that are performed this way
+   * `io_set_output(DOUT0);` -> DOUT0 (friendly name) is converted to a µCNC internal pin value. In this case DOUT0 is number 47. If not defined all pins will return 0.
+   * Next this number is prefixed with `DIO` and is converted to an intermediate translation name `DIO47` (or DIO0 if undefined).
+   * DIO47 is evaluated also for it's value. If DIO47 is positive then it's an IO pin of the MCU. If is negative then it's an extended pin via a supported extender (currently only IC74HC595 or similar). In our example it will evaluate to 47 (and IO pin of the MCU).
+   * `io_set_output(DOUT0);` will then go through several translations and will become `mcu_set_output(STEP0)`. This function or preprocessor macro is part of the mcu template that has to be created for each MCU and implements the way the it does certain tasks, like setting and output pin logic high for example.
+
+This is kind of convoluted work ensures that the once the translation HAL between the MCU and µCNC is correctly created, every part of the core and most modules work as expected in your microcontroller.
+A bit further down on this document an example to use the Arduino framework will be provided, to make this easier to understand.
 
 ### Creating the HAL for a custom MCU 
 Before creating a custom HAL for a custom board/microcontroller the microcontroller must have the following hardware features available: 
@@ -788,25 +826,6 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 Also internally **AT LEAST** these macros need to be defined
 
 ```
-// defines the maximum and minimum step rates
-#ifndef F_STEP_MAX
-#define F_STEP_MAX 100000
-#endif
-// defines special mcu to access flash strings and arrays
-// the following definition will work on all MCU
-// custom adjustments can be tailored for each MCU architecture (check for example AVR)
-#define __rom__
-#define __romstr__
-#define __romarr__ const char
-#define rom_strptr *
-#define rom_strcpy strcpy
-#define rom_strncpy strncpy
-#define rom_memcpy memcpy
-#define rom_read_byte *
-```
-
-And add some definitions to generate internal software delays like this
-```
 // needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
@@ -833,7 +852,6 @@ And add some definitions to generate internal software delays like this
 	}
 ```
 
-
   Internally the implementation of the MCU must:
 
     - use a interrupt timer to call `mcu_step_cb()` and `mcu_step_reset_cb()` alternately (evenly spaced). Both these ISR run once every step at a maximum rate (set by Grbl's setting `$0`)
@@ -855,7 +873,66 @@ And add some definitions to generate internal software delays like this
    
    **4. Create the project and build**
    From this point on you just need to create a project to run the program. This can be either a `main` file and a `makefile` and build, or using Arduino IDE to compile the project (the appropriate core/board manager must also be installed).
-   Then on main just call the two functions needed to run µCNC. A bare minimum main file should look like this
+   Then on main just call the two functions needed to run µCNC. A bare minimum main file should look like this:
+
+   ```
+	#include "cnc.h"
+
+	void main(void)
+	{
+		//initializes all systems
+		cnc_init();
+
+		for(;;)
+		{
+			cnc_run();
+		}
+
+	}
+
+	```
+
+Again the example bellow will (I hope) help to clarify this.
+
+### An example of implementing the some functions for a custom MCU
+
+Now for a practical example of how to implement all this.
+
+Let's create a boarmap were we link the internal µCNC pins and then make the MCU execute the desired action.
+This example will use Arduino IDE as a base.
+
+In our boardmap we need to assign out pins. These names and definitions can be set freely
+
+Let's also assume that on your boardmap you want to define pins using Arduino IDE pin numbers with the and you have DOUT0 pin defined like <frindly name>_PIN:
+
+`#define DOUT0_PIN 50 // DOUT0 is pin 50 of the IDE`
+
+Assuming that this is an actual IO pin of the MCU we can tell the IO HAL that the pin exists like this:
+
+```
+#if defined(DOUT0_PIN)
+#define DOUT0 47
+#define DIO47 47
+#endif
+```
+
+The IO HAL will try to set this pin by calling the `mcu.h` function `mcu_set_output(pin)`. We can define it like this:
+
+```
+// this not a performant way to do this but works as an example
+void mcu_set_output(uint8_t pin){
+	switch(pin){
+		case DOUT0:
+			digitalWrite(DOUT0_PIN);
+			break;
+
+		...other pins...
+	}
+}
+
+```
+
+
 
 ```
 #include "cnc.h"
@@ -873,4 +950,3 @@ void main(void)
 }
 
 ```
-  
