@@ -9,6 +9,13 @@
 ## module.c and module.h
 These files contain initialization code for all modules that extend µCNC functionalities, like custom modules.
 
+_**Jump to section**_
+* [Adding custom modules to µCNC](#adding-custom-modules-to-µcnc)
+   * [µCNC existing events/delegates](#µcnc-existing-eventsdelegates)
+   * [modules.h and events](#modulesh-and-events)
+   * [Creating a new custom event listener](#creating-a-new-custom-event-listener)
+   * [Creating a new custom event](#creating-a-new-custom-event)
+
 # Adding custom modules to µCNC
 
 __IMPORTANT NOTE__: _Version 1.7 implemented breaking changes to modules declarations. Please check the modules releases to get the right modules for your version [repository](https://github.com/Paciente8159/uCNC-modules)_

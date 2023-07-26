@@ -6,6 +6,11 @@
 # µCNC
 µCNC - Universal CNC firmware for microcontrollers
 
+_**Jump to section**_
+* [Adding custom tools to µCNC](#adding-custom-tools-to-µcnc)
+   * [µCNC tool structure](#µcnc-tool-structure)
+   * [µCNC creating a dummy tool](#µcnc-creating-a-dummy-tool)
+
 # Adding custom tools to µCNC
 
 µCNC tool is a bit different from modules but it's equally straight forward.
