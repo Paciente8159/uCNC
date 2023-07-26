@@ -902,7 +902,7 @@ This example will use Arduino IDE as a base.
 
 In our boardmap we need to assign out pins. These names and definitions can be set freely
 
-Let's also assume that on your boardmap you want to define pins using Arduino IDE pin numbers with the and you have DOUT0 pin defined like <frindly name>_PIN:
+Let's also assume that on your boardmap you want to define pins using Arduino IDE pin numbers with the and you have DOUT0 pin defined like friendly_name_PIN:
 
 `#define DOUT0_PIN 50 // DOUT0 is pin 50 of the IDE`
 
