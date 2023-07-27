@@ -13,7 +13,7 @@ _**Jump to section**_
    * [Pin naming conventions](#pin-naming-conventions)
    * [How is a pin evaluated?](#how-is-a-pin-evaluated)
    * [Creating the HAL for a custom MCU](#creating-the-hal-for-a-custom-mcu)
-   * [An example of implementing the some functions for a custom MCU](#an-example-of-implementing-the-some-functions-for-a-custom-mcu)
+   * [Implementation example for a custom MCU using ArduinoIDE](#implementation-example-for-a-custom-mcu-using-arduinoide)
 
 # µCNC HAL (Hardware Abstraction Layer)
 µCNC has several HAL dimensions/layers. The first and most important layer is the microcontroller HAL.
@@ -71,6 +71,8 @@ SPI_CLK
 #### Output pins - generic
 + ```PWM#``` pin defines a pwm output pin.
    + ```PWM0 to PWM15``` are the pwm output pins.
++ ```SERVO#``` pin defines a pwm output pin.
+   + ```SERVO0 to SERVO5``` are the servo output pins.
 + ```DOUT#``` pin defines a generic output pin.
    + ```DOUT0 to DOUT31``` are the generic output pins.
 
@@ -895,12 +897,12 @@ void main(void)
 
 Again the example bellow will (I hope) help to clarify this.
 
-### An example of implementing the some functions for a custom MCU
+### Implementation example for a custom MCU using ArduinoIDE
 
 Now for a practical example of how to implement all this.
 
 Let's create a boarmap were we link the internal µCNC pins and then make the MCU execute the desired action.
-This example will use Arduino IDE as a base.
+This example will use Arduino IDE as a base, but you can use (and I recommend) using baremetal or as close to the MCU programming as possible for best performance.
 
 In our boardmap we need to create a way to assign out pins. These names and definitions can be set freely. Accross all MCU it was conventioned to use a friendly_name_BIT and friendly_name_PORT, but this is not mandatory. For example in AVR to set up a pin we do it like this:
 
