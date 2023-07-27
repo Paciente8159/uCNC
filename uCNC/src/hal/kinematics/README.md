@@ -51,3 +51,85 @@ In addition to the standard configurations you need to set 5 extra settings:
 | $109        | [Delta forearm length, mm](https://github.com/Paciente8159/uCNC/wiki/Basic-user-guide#109---delta-forearm-length-mm)             |
 
 For more information please head to the [µCNC wiki page](https://github.com/Paciente8159/uCNC/wiki)
+
+## The kinematics HAL
+This HAL is manages the way the linear actuators and the 3D Cartesian space axis relate to each other. 
+   * Converts linear actuators (steppers) in to X,Y,Z,A,B,C coordinates and back.
+   * Converts any X,Y,Z transformation to compensate for non perpendicular axis (un-skew) and back.
+   * Defines the order of the axis movements when homing.
+
+### Creating the HAL for a custom kinematics
+   **2 steps are needed:**
+
+   **1. Implement all functions defined in the kinematics.h**
+
+   All functions defined by the ```kinematics.h``` must be implemented. These are: 
+
+   ```
+    /**
+	 * @brief Initializes the kinematic system.
+	 * This can be for example read the non volatile memory parameters for that kinematics and store them in RAM
+     * Any other kind of initialization procedure can be done
+	 */
+   	void kinematics_init(void);
+
+	/**
+	 * @brief Converts from machine absolute coordinates to step position.
+	 * This is done after computing position relative to the active coordinate system
+	 *
+	 * @param axis Position in world coordinates
+	 * @param steps Position in steps
+	 */
+
+	void kinematics_apply_inverse(float *axis, int32_t *steps);
+
+	/**
+	 * @brief Converts from step position to machine absolute coordinates.
+	 * This is done after computing position relative to the active coordinate system
+	 *
+	 * @param steps Position in steps
+	 * @param axis Position in world coordinates
+	 */
+	void kinematics_apply_forward(int32_t *steps, float *axis);
+
+	/**
+	 * @brief Executes the homing motion for the machine.
+	 * The homing motion for each axis is defined in the motion control.
+	 * In the kinematics home function the axis order of the homing motion and other custom motions can be defined
+	 *
+	 * @return uint8_t Error status
+	 */
+	uint8_t kinematics_home(void);
+
+	/**
+	 * @brief Aplies a transformation to the position sent to planner.
+	 * This is aplied only on normal and jog moves. Homing motions go directly to planner.
+	 *
+	 * @param axis Target in absolute coordinates
+	 */
+	void kinematics_apply_transform(float *axis);
+
+	/**
+	 * @brief Aplies a reverse transformation to the position returned from the planner.
+	 * This is aplied only on normal and jog moves. Homing motions go directly to planner.
+	 *
+	 * @param axis Target in absolute coordinates
+	 */
+	void kinematics_apply_reverse_transform(float *axis);
+
+	/**
+	 * @brief Checks if the desired target is inside sofware boundries
+	 *
+	 * @param axis Target in absolute coordinates
+	 * @return true If inside boundries
+	 * @return false If outside boundries
+	 */
+	bool kinematics_check_boundaries(float *axis);
+
+   ```
+
+**2. Add the new kinematic library to µCNC**
+
+   * Add the new kinematic to `kinematics.h` file and give it an ID. Add the needed libraries to load in the `kinematicdefs.h` file. 
+
+Now just edit the config file to specify the kinemtics file you want to use and recompile µCNC for your board.

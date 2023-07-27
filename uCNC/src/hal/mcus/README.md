@@ -957,7 +957,7 @@ Here is a preprocessor trick. This macro takes 2 arguments, makes some replaceme
 #endif
 ```
 
-So if we call `__indirect__(DOUT0, IDEPIN)` it will first evaluate both parameters to resolve them. `DOUT0` will be replaced by 47 and IDEPIN (if you have not created any definition for it) will remain the same and will be passed to the next macro. Next `47` and `IDEPIN` wil be be concatenated to `DIO` and `_` and will become `DIO47_IDEPIN` that is equivalent to `DOUT0_IDEPIN`.
+So if we call `__indirect__(DOUT0, IDEPIN)` it will first evaluate both parameters to resolve them. `DOUT0` will be replaced by 47 and IDEPIN (you cannot have a #define IDEPIN anywere in yor code or this will not work) will remain the same and will be passed to the next macro. Next `47` and `IDEPIN` wil be be concatenated to `DIO` and `_` and will become `DIO47_IDEPIN` that is equivalent to `DOUT0_IDEPIN`.
 
 Resuming: `__indirect__(DOUT0, IDEPIN)` -> `__indirect__ex__(47, IDEPIN)` -> `DIO47_IDEPIN` -> `DOUT0_IDEPIN` -> `50`
 
