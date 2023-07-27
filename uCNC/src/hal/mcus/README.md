@@ -11,7 +11,9 @@ _**Jump to section**_
 * [The microcontroller HAL](#the-microcontroller-hal)
    * [The microcontroller IO internal logic](#the-microcontroller-io-internal-logic)
    * [Pin naming conventions](#pin-naming-conventions)
+   * [How is a pin evaluated?](#how-is-a-pin-evaluated)
    * [Creating the HAL for a custom MCU](#creating-the-hal-for-a-custom-mcu)
+   * [An example of implementing the some functions for a custom MCU](#an-example-of-implementing-the-some-functions-for-a-custom-mcu)
 
 # µCNC HAL (Hardware Abstraction Layer)
 µCNC has several HAL dimensions/layers. The first and most important layer is the microcontroller HAL.
@@ -900,18 +902,26 @@ Now for a practical example of how to implement all this.
 Let's create a boarmap were we link the internal µCNC pins and then make the MCU execute the desired action.
 This example will use Arduino IDE as a base.
 
-In our boardmap we need to assign out pins. These names and definitions can be set freely
+In our boardmap we need to create a way to assign out pins. These names and definitions can be set freely. Accross all MCU it was conventioned to use a friendly_name_BIT and friendly_name_PORT, but this is not mandatory. For example in AVR to set up a pin we do it like this:
 
-Let's also assume that on your boardmap you want to define pins using Arduino IDE pin numbers with the and you have DOUT0 pin defined like friendly_name_PIN:
+```
+// assign DOUT0 to pin B4 of the MCU
+#define DOUT0_BIT 4
+#define DOUT0_PORT B
+```
 
-`#define DOUT0_PIN 50 // DOUT0 is pin 50 of the IDE`
+Let's also assume that on your boardmap you want to define pins using Arduino IDE pin numbers with the and you have DOUT0 pin defined like friendly_name_IDEPIN:
+
+`#define DOUT0_IDEPIN 50 // DOUT0 is pin 50 of the IDE`
 
 Assuming that this is an actual IO pin of the MCU we can tell the IO HAL that the pin exists like this:
 
 ```
-#if defined(DOUT0_PIN)
+// if DOUT0 IDE pin is defined then define DOUT0 and DIO47 to match the table
+#if defined(DOUT0_IDEPIN)
 #define DOUT0 47
 #define DIO47 47
+#define DIO47_IDEPIN DOUT0_IDEPIN // calling DOUT0_IDEPIN or DIO47_IDEPIN will be the same. this will prove usefull later
 #endif
 ```
 
@@ -931,21 +941,29 @@ void mcu_set_output(uint8_t pin){
 
 ```
 
+There is a way to improve this and avoid going through a long switch/case statement for all pins. With a bit a preprocessor trickery we can make a direct call (that is why it's possible to define some calls as functions or macros).
 
+Let's define a couple of macros to resolve the friendly name to out friendly_name_IDEPIN definition.
 
-```
-#include "cnc.h"
-
-void main(void)
-{
-    //initializes all systems
-    cnc_init();
-
-    for(;;)
-    {
-        cnc_run();
-    }
-
-}
+Here is a preprocessor trick. This macro takes 2 arguments, makes some replacements and concatenates the replacement results
 
 ```
+// Indirect macro access
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) DIO##X##_##Y
+#define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
+```
+
+So if we call `__indirect__(DOUT0, IDEPIN)` it will first evaluate both parameters to resolve them. `DOUT0` will be replaced by 47 and IDEPIN (if you have not created any definition for it) will remain the same and will be passed to the next macro. Next `47` and `IDEPIN` wil be be concatenated to `DIO` and `_` and will become `DIO47_IDEPIN` that is equivalent to `DOUT0_IDEPIN`.
+
+Resuming: `__indirect__(DOUT0, IDEPIN)` -> `__indirect__ex__(47, IDEPIN)` -> `DIO47_IDEPIN` -> `DOUT0_IDEPIN` -> `50`
+
+We can now define a macro `mcu_set_output` that makes use of this replacement and converts to our Arduino call to `digitalWrite` like this:
+
+```
+#define mcu_set_output(X) digitalWrite(__indirect__(X, IDEPIN))
+```
+
+Again the preprocessor will convert `mcu_set_output(DOUT0)` to `digitalWrite(50)` like we need it. And this aplicable to all pins.
+
