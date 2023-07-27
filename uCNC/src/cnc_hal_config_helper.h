@@ -2003,7 +2003,7 @@ typedef uint16_t step_t;
 #error "invalid s-curve velocity profile setting"
 #endif
 
-#if (defined(KINEMATICS_MOTION_BY_SEGMENTS))
+#if (defined(IS_DELTA_KINEMATICS))
 #ifdef ENABLE_DUAL_DRIVE_AXIS
 #error "Delta does not support dual drive axis"
 #endif
