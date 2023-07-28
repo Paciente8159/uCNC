@@ -85,6 +85,11 @@ extern "C"
 	float delta_bicep_length;
 	float delta_forearm_length;
 	float delta_bicep_homing_angle;
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	float scara_arm_length;
+	float scara_forearm_length;
+	float scara_arm_homing_angle;
+	float scara_forearm_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		uint16_t backlash_steps[AXIS_TO_STEPPERS];
@@ -159,12 +164,12 @@ typedef uint16_t setting_offset_t;
 	DECL_EVENT_HANDLER(settings_erase);
 #endif
 
-	/**
-	 *
-	 * Settings quick/help macros
-	 * These allow custom settings setup of simple settings
-	 *
-	 * **/
+/**
+ *
+ * Settings quick/help macros
+ * These allow custom settings setup of simple settings
+ *
+ * **/
 #define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb)                                      \
 	static uint32_t set##ID##_settings_address;                                                    \
 	bool set##ID##_settings_load(void *args)                                                       \

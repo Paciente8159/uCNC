@@ -71,7 +71,7 @@ extern "C"
 #endif
 
 #ifndef KINEMATIC
-#define KINEMATIC KINEMATIC_CARTESIAN
+#define KINEMATIC KINEMATIC_SCARA
 #endif
 
 	/**
