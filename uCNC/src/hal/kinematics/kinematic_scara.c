@@ -41,6 +41,7 @@ void kinematics_init(void)
 	scara_max_distance_to_center_sqr *= scara_max_distance_to_center_sqr;
 	scara_min_distance_to_center_sqr = g_settings.scara_arm_length - g_settings.scara_forearm_length;
 	scara_min_distance_to_center_sqr *= scara_min_distance_to_center_sqr;
+	mc_sync_position();
 }
 
 void kinematics_apply_inverse(float *axis, int32_t *steps)
@@ -187,9 +188,14 @@ void kinematics_apply_reverse_transform(float *axis)
 
 bool kinematics_check_boundaries(float *axis)
 {
+	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
+	{
+		return true;
+	}
+	
 	float distance_to_center_sqr = axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y];
 
-	if (distance_to_center_sqr < scara_max_distance_to_center_sqr || distance_to_center_sqr > scara_max_distance_to_center_sqr)
+	if (distance_to_center_sqr < scara_min_distance_to_center_sqr || distance_to_center_sqr > scara_max_distance_to_center_sqr)
 	{
 		return false;
 	}

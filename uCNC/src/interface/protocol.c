@@ -637,6 +637,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
 #if (KINEMATIC == KINEMATIC_DELTA)
 	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.scara_arm_homing_angle);
+	protocol_send_gcode_setting_line_flt(29, g_settings.scara_forearm_homing_angle);
 #endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
@@ -677,6 +680,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
 	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
 	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.scara_arm_length);
+	protocol_send_gcode_setting_line_flt(107, g_settings.scara_forearm_length);
 #endif
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
