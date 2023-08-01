@@ -271,3 +271,161 @@ These are the default µCNC pins/definitions for this tool:
 #endif
 
 ```
+
+
+## vfd_modbus
+
+This tool controls a VFD using modbus communication protocol.
+The modbus is supported over the softuart module that implement a pure software (bit-banging) uart emulation.
+
+Currently supports:
+  - HUANYANG type1 (tested)
+  - HUANYANG type2 (untested)
+  - YL620 (partially tested)
+
+These are the default µCNC pins/configurations for this tool:
+
+```
+// defines default coolant pins
+#ifdef ENABLE_COOLANT
+// if unset uses DOUT2 by default has the tool flood output control
+#ifndef VFD_COOLANT_FLOOD
+#define VFD_COOLANT_FLOOD DOUT1
+#endif
+// if unset uses DOUT3 by default has the tool mist output control
+#ifndef VFD_COOLANT_MIST
+#define VFD_COOLANT_MIST DOUT2
+#endif
+#endif
+
+// defines VFD report mode
+// if false returns programmed speed
+// if true return speed read from VFD (if VFD supports this)
+#ifndef GET_SPINDLE_TRUE_RPM
+#define GET_SPINDLE_TRUE_RPM false
+#endif
+
+// defines default softuart pins and vfd communication settings
+#ifndef VFD_TX_PIN
+// uses DOUT27 as the default UART TX pin on softuart
+#define VFD_TX_PIN DOUT27
+#endif
+// uses DIN27 as the default UART RX pin on softuart
+#ifndef VFD_RX_PIN
+#define VFD_RX_PIN DIN27
+#endif
+// uses a default baudrate of 9600 for the softuart
+#ifndef VFD_BAUDRATE
+#define VFD_BAUDRATE 9600
+#endif
+// uses a default value of 100ms as a communication timeout
+#ifndef VFD_TIMEOUT
+#define VFD_TIMEOUT 100
+#endif
+// uses a default value of 100ms as a communication retry in case of a timeout
+#ifndef VFD_RETRY_DELAY_MS
+#define VFD_RETRY_DELAY_MS 100
+#endif
+
+// by default it will put the machine on HOLD if a communication error happens with the VFD
+// you can add this to override that behavior
+// #define IGNORE_VFD_COM_ERRORS
+
+// sets the VFD communication address
+#define VFD_ADDRESS 8
+// sets the number of retries in case of a communication error
+#define VFD_MAX_COMMAND_RETRIES 2
+
+```
+
+Most VFD don't follow any type of standard regarding modbus implementation. This tool has a set of formated blocks for 3 different brands of VFD but possibly can be extended to be used with others.
+
+A VFD custom VFD might be added by defining the message settings and the VFD settings needed to convert frequency to speed and vice versa
+
+```
+/**
+ *
+ * VFD Commands are an array of 7 bytes that have the following information
+ *
+ * {tx command length, rx command length, MODBUS command type, start address high byte, start address low byte, value high byte, value low byte}
+ *
+ * A typical MODBUS command is usually 8 <vfd address (1byte) + MODBUS command type (1byte) + start address (2byte) + value (2byte) + CRC (2byte)>
+ * A tx command length of 0 will mute the command
+ *
+ * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
+ *
+ * */
+
+```
+
+Here is the example for the HUANYANG type1 that does not use 8 byte length commands
+
+```
+#if (VFD_CONTROLLER == VFD_HUANYANG_TYPE1)
+#define VFD_SETRPM_CMD                                         \
+	{                                                          \
+		7, 6, MODBUS_FORCE_SINGLE_COIL, 0x02, 0x00, 0x00, 0x00 \
+	}
+#define VFD_GETRPM_CMD                                            \
+	{                                                             \
+		8, 8, MODBUS_READ_INPUT_REGISTERS, 0x03, 0x01, 0x00, 0x00 \
+	}
+// sets fixed freq 400.00Hz -> 40000
+#define VFD_RPM_HZ_CMD                                        \
+	{                                                         \
+		8, 8, MODBUS_READ_COIL_STATUS, 0x03, 0x05, 0x00, 0x00 \
+	}
+#define VFD_CW_CMD                                                  \
+	{                                                               \
+		6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x01, 0x00, 0x00 \
+	}
+#define VFD_CCW_CMD                                                 \
+	{                                                               \
+		6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x11, 0x00, 0x00 \
+	}
+#define VFD_STOP_CMD                                                \
+	{                                                               \
+		6, 6, MODBUS_READ_HOLDING_REGISTERS, 0x01, 0x08, 0x00, 0x00 \
+	}
+#define VFD_IN_MULT g_settings.spindle_max_rpm
+#define VFD_IN_DIV vfd_state.rpm_hz
+#define VFD_OUT_MULT vfd_state.rpm_hz
+#define VFD_OUT_DIV g_settings.spindle_max_rpm
+```
+
+Here is the example for the YL620 that uses 8 byte length commands
+
+```
+#if (VFD_CONTROLLER == VFD_YL620)
+#define VFD_SETRPM_CMD                                              \
+	{                                                               \
+		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x01, 0x00, 0x00 \
+	}
+#define VFD_GETRPM_CMD                                              \
+	{                                                               \
+		8, 8, MODBUS_READ_HOLDING_REGISTERS, 0x20, 0x0B, 0x00, 0x01 \
+	}
+#define VFD_RPM_HZ_CMD                                           \
+	{                                                            \
+		0, MODBUS_READ_HOLDING_REGISTERS, 0xB0, 0x05, 0x00, 0x02 \
+	}
+#define VFD_CW_CMD                                                  \
+	{                                                               \
+		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x12 \
+	}
+#define VFD_CCW_CMD                                                 \
+	{                                                               \
+		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x22 \
+	}
+#define VFD_STOP_CMD                                                \
+	{                                                               \
+		8, 8, MODBUS_PRESET_SINGLE_REGISTER, 0x20, 0x00, 0x00, 0x01 \
+	}
+#define VFD_IN_MULT 60.0f
+#define VFD_IN_DIV 10.0f
+#define VFD_OUT_MULT 10.0f
+#define VFD_OUT_DIV 60.0f
+#endif
+```
+
+Each of these CMDs is then used internally to communicate with the VFD and read/write the VFD coils/registers.
