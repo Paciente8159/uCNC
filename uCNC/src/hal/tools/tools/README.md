@@ -16,6 +16,7 @@ _**Jump to section**_
    * [spindle_besc](#spindle_besc)
    * [vfd_pwm](#vfd_pwm)
    * [vfd_modbus](#vfd_modbus)
+   * [plasma_thc](#plasma_thc)
 
 # Available tools in to µCNC
 
@@ -353,6 +354,9 @@ A VFD custom VFD might be added by defining the message settings and the VFD set
  * A tx command length of 0 will mute the command and rx length should be ommited
  *
  * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
+ * 
+ * Apart from defining the needed VFD commands, 4 additional definitions must be set to allow converting from tool speed to vfd speed and backward
+ * Usually on VFD's this is a convertion from VFD frequency to spindle RPM
  *
  * */
 ```
@@ -448,3 +452,69 @@ Here is the example for the YL620 that uses 8 byte length commands
 ```
 
 Each of these CMDs is then used internally to communicate with the VFD and read/write the VFD coils/registers.
+
+## plasma_thc
+
+This tool controls a plasma torch with automatic height control.
+This tool also provides an additional MCode that allows to fully program the plasma startup motion pattern.
+While cutting this tool is able to adjust the torch height in real time. By default these adjustments and the status of the plasma arc are controlled by some digital inputs pins (UP/DOWN/ARC_OK). This allows the tool to be controlled by an external module like the Proma THC 150.
+
+But these inputs can be overriden to use any custom method to control these motions/signals, like for example use an analog input to read the torch/metal voltage difference and use a completelly standalone solution (similar to linuxCNC).
+
+This tool is also designed to probe the initial height of the cut using the probe input. This can also be overwriten.
+
+These are the default µCNC pins/configurations for this tool:
+
+```
+// if unset uses DIN15 by default has UP input signal control
+#ifndef PLASMA_UP_INPUT
+#define PLASMA_UP_INPUT DIN15
+#endif
+
+// if unset uses DIN14 by default has DOWN input signal control
+#ifndef PLASMA_DOWN_INPUT
+#define PLASMA_DOWN_INPUT DIN14
+#endif
+
+// if unset uses DIN13 by default has ARC OK input signal control
+#ifndef PLASMA_ARC_OK_INPUT
+#define PLASMA_ARC_OK_INPUT DIN13
+#endif
+
+// if unset uses DOUT0 by default has PLASMA ON output signal control
+#ifndef PLASMA_ON_OUTPUT
+#define PLASMA_ON_OUTPUT DOUT0
+#endif
+
+// if unset uses STEPPER2 (usually used in Z axis) as the THC linear actuator. If multiple STEPPERS are used for Z this should be changed
+#ifndef PLASMA_STEPPERS_MASK
+#define PLASMA_STEPPERS_MASK (1 << 2)
+#endif
+
+// if unset creates a virtual µCNC pin to be controlled be M62-M65 extension module to enable or disable THC mode (this requires module M62-M65)
+#ifndef PLASMA_THC_ENABLE_PIN
+#define PLASMA_THC_ENABLE_PIN 64
+#endif
+```
+
+Additionally a MCode command M103 is available to control the probing and arc start motion using only M3/M4 S commands.
+The command has these arguments
+
+```
+M103 I<probe depth in units> J<probe feed in units/s> R<probe retract heigth in units> K<probe depth in units> F<cut feed in units/s> D<Velocity Anti-Dive ration (0 to 100 (%))> P<cut dwell time in seconds> L<max number of arc start retries>
+```
+
+After these parameters are set THC must be enabled via M62(synched) or M64(immediately).
+
+With THC enable the M3/M4 commands will do the following motions before igniting the torch.
+
+  - check if ARC OK signal is off
+  - turn the torch off
+  - probes down until it hits the metal or fails if after the max probe distance to the metal is not found and retries
+  - retracts up until it looses contact or fails if after the max probe distance to the metal is not found and retries
+  - retracts (fast move) to the initial cut height
+  - turns the torch on, waits the programmed time to form the puddle and read if the arc is ok
+  - if arc is ok, travells at the cut feed to the final cut height
+
+After this the motion cut executes. During this time the THC constantly monitors the arc ok signal and halts if it fails, and the up and down signals to see if it as to adjust the cutting height.
+
