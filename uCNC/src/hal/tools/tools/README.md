@@ -345,17 +345,36 @@ A VFD custom VFD might be added by defining the message settings and the VFD set
 ```
 /**
  *
- * VFD Commands are an array of 7 bytes that have the following information
+ * VFD Commands are an array of 6 (if first byte is 0) or 7(otherwise) bytes that have the following information
  *
  * {tx command length, rx command length, MODBUS command type, start address high byte, start address low byte, value high byte, value low byte}
  *
  * A typical MODBUS command is usually 8 <vfd address (1byte) + MODBUS command type (1byte) + start address (2byte) + value (2byte) + CRC (2byte)>
- * A tx command length of 0 will mute the command
+ * A tx command length of 0 will mute the command and rx length should be ommited
  *
  * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
  *
  * */
+```
 
+Let's digest the set RPM command for the HUANYANG type1 with the above information
+
+```
+// 7 bytes
+#define VFD_SETRPM_CMD                                         \
+	{                                                          \
+		7/*tx command length*/, 6/*rx command length*/, MODBUS_FORCE_SINGLE_COIL/*MODBUS command type*/, 0x02/*start address high byte*/, 0x00/*start address low byte*/, 0x00/*value high byte*/, 0x00/*value low byte*/ \
+	}
+```
+
+Here is an example of a 6 byte command (dummy command)
+
+```
+// 6 bytes
+#define VFD_RPM_HZ_CMD                                           \
+	{                                                            \
+		0/*tx command length (dummy command)*/, MODBUS_READ_HOLDING_REGISTERS/*MODBUS command type*/, 0xB0/*start address high byte*/, 0x05/*start address low byte*/, 0x00/*value high byte*/, 0x02/*value low byte*/ \
+	}
 ```
 
 Here is the example for the HUANYANG type1 that does not use 8 byte length commands

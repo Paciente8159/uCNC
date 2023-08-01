@@ -81,8 +81,12 @@ typedef struct vfd_state
 static vfd_state_t vfd_state;
 
 /*VFD settings*/
+#ifndef VFD_ADDRESS
 #define VFD_ADDRESS 8
+#endif
+#ifndef VFD_MAX_COMMAND_RETRIES
 #define VFD_MAX_COMMAND_RETRIES 2
+#endif
 
 // choose the controller type
 // types available
@@ -97,12 +101,12 @@ static vfd_state_t vfd_state;
 
 /**
  *
- * VFD Commands are an array of 7 bytes that have the following information
+ * VFD Commands are an array of 6 (if first byte is 0 for dummy commands) or 7(otherwise) bytes that have the following information
  *
  * {tx command length, rx command length, MODBUS command type, start address high byte, start address low byte, value high byte, value low byte}
  *
  * A typical MODBUS command is usually 8 <vfd address (1byte) + MODBUS command type (1byte) + start address (2byte) + value (2byte) + CRC (2byte)>
- * A tx command length of 0 will mute the command
+ * A tx command length of 0 will mute the command and rx length should be ommited
  *
  * Some VFD do not use the standard MODBUS message format and some times the command length is different (like the Huanyang Type1)
  *
