@@ -15,7 +15,7 @@ _**Jump to section**_
    * [spindle_relay](#spindle_relay)
    * [spindle_besc](#spindle_besc)
    * [vfd_pwm](#vfd_pwm)
-
+   * [vfd_modbus](#vfd_modbus)
 
 # Available tools in to µCNC
 
