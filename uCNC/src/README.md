@@ -61,7 +61,6 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | input_change | uint8_t* | ENABLE_IO_MODULES | Fires when a generic input (DIN0-7) pin changes state. Args is an uint8_t array with 2 values. The first is the inputs current values mask and the second a maks with the inputs that changed since the last time |
 | probe_enable | NULL | ENABLE_IO_MODULES | Fires when the probe is enabled |
 | probe_disable | NULL | ENABLE_IO_MODULES | Fires when the probe is disabled |
-| mc_line_segment | NULL | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner |
 | mc_home_axis_start | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is starting. Pointer to homing_status_t struct with homming information |
 | mc_home_axis_finish | homing_status_t* | ENABLE_MOTION_CONTROL_MODULES | Fires once per axis when homing motion is finnished |
 | mc_line_segment | motion_data_t* | ENABLE_MOTION_CONTROL_MODULES | Fires when a line segment is about to be sent from the motion control to the planner. Arg is a pointer to a motion_data_t struct with the current motion block data |
@@ -321,7 +320,7 @@ WEAK_EVENT_HANDLER(cnc_alarm)
 
 *Again remember. You can make a module take hover this event callback (disabling all existing listeners of this event by creating and override callback with `OVERRIDE_EVENT_HANDLER` like showned above).*
 
-The only step left is to actually add the callback inside the core code to be executed. In this case let's lace it inside our `void cnc_alarm(int8_t code)` function like this:
+The only step left is to actually add the callback inside the core code to be executed. In this case let's call it inside our `void cnc_alarm(int8_t code)` function like this:
 
 ```
 void cnc_alarm(int8_t code)
