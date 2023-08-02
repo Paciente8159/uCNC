@@ -211,6 +211,13 @@ extern "C"
 // #define DEFAULT_LASER_PPI_USWIDTH 1500
 
 /**
+ *
+ * Enables Plasma THC capabilities
+ *
+ * **/
+//  #define ENABLE_PLASMA_THC
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
