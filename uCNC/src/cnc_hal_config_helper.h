@@ -2123,6 +2123,10 @@ typedef uint16_t step_t;
 #endif
 #endif
 
+#ifndef DISABLE_SETTINGS_MODULES
+#define ENABLE_SETTINGS_MODULES
+#endif
+
 #ifdef ENABLE_LASER_PPI
 // forces modes
 #ifndef ENABLE_RT_SYNC_MOTIONS

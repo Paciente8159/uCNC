@@ -319,7 +319,13 @@ extern "C"
 // #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
-// #define ENABLE_SETTINGS_MODULES
+
+	/**
+	 * Settings extensions are enabled by default
+	 * Uncomment to disable this extension.
+	 * Some option might override this (like ENABLE_TOOL_PID_CONTROLLER)
+	 * */
+// #define DISABLE_SETTINGS_MODULES
 
 /**
  * Report specific options
