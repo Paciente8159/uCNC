@@ -191,35 +191,37 @@ bool laser_ppi_mcodes_exec(void *args)
 			*(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
 			return EVENT_HANDLED;
 		}
+		
+		*(ptr->error) = STATUS_OK;
 		break;
 	}
 
 	switch (ptr->cmd->group_extended)
 	{
-		case M126:
-			g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-			switch ((((uint8_t)ptr->words->p)))
-			{
-			case 1:
-				g_settings.laser_mode |= LASER_PPI_MODE;
-				break;
-			case 2:
-				g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
-				break;
-			case 3:
-				g_settings.laser_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-				break;
-			}
-			laser_ppi_config_parameters();
+	case M126:
+		g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
+		switch ((((uint8_t)ptr->words->p)))
+		{
+		case 1:
+			g_settings.laser_mode |= LASER_PPI_MODE;
 			break;
-		case M127:
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = ptr->words->p * MM_INCH_MULT;
-			laser_ppi_config_parameters();
+		case 2:
+			g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
 			break;
-		case M128:
-			g_settings.laser_ppi_uswidth = (uint16_t)ptr->words->p;
-			laser_ppi_config_parameters();
+		case 3:
+			g_settings.laser_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
 			break;
+		}
+		laser_ppi_config_parameters();
+		return EVENT_HANDLED;
+	case M127:
+		g_settings.laser_ppi = (uint16_t)ptr->words->p;
+		laser_ppi_config_parameters();
+		return EVENT_HANDLED;
+	case M128:
+		g_settings.laser_ppi_uswidth = (uint16_t)ptr->words->p;
+		laser_ppi_config_parameters();
+		return EVENT_HANDLED;
 	}
 
 	return EVENT_CONTINUE;
@@ -246,6 +248,13 @@ static void startup_code(void)
 	g_settings.laser_mode |= LASER_PPI_MODE;
 	laser_ppi_config_parameters();
 	HOOK_ATTACH_CALLBACK(itp_rt_stepbits, laser_ppi_pulse);
+
+	RUNONCE
+	{
+		ADD_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
+		ADD_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
+		RUNONCE_COMPLETE();
+	}
 }
 
 static void shutdown_code(void)
