@@ -882,6 +882,17 @@ MCU_CALLBACK void mcu_step_cb(void)
 		return;
 	}
 
+	uint8_t new_stepbits = stepbits;
+	io_toggle_steps(new_stepbits);
+
+	// sets step bits
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	if (new_stepbits && itp_rt_sgm)
+	{
+		HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
+	}
+#endif
+
 	if (itp_rt_sgm != NULL)
 	{
 		if (itp_rt_sgm->flags & ITP_UPDATE)
@@ -908,13 +919,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			itp_sgm_buffer_read();
 		}
 	}
-
-	uint8_t new_stepbits = stepbits;
-	io_toggle_steps(new_stepbits);
-	// sets step bits
-#ifdef ENABLE_RT_SYNC_MOTIONS
-	HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
-#endif
 
 	// if buffer empty loads one
 	if (itp_rt_sgm == NULL)
@@ -994,15 +998,15 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 	}
 
-/*
-Must put this on G33 module
-#ifdef ENABLE_RT_SYNC_MOTIONS
-	if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
-	{
-		itp_sync_step_counter++;
-	}
-#endif
-*/
+	/*
+	Must put this on G33 module
+	#ifdef ENABLE_RT_SYNC_MOTIONS
+		if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
+		{
+			itp_sync_step_counter++;
+		}
+	#endif
+	*/
 
 	new_stepbits = 0;
 	itp_busy = true;

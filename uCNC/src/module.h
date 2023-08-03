@@ -116,6 +116,12 @@ extern "C"
 		name##_cb(__VA_ARGS__); \
 	}
 
+#define RUNONCE                  \
+	static bool runonce = false; \
+	if (!runonce)
+
+#define RUNONCE_COMPLETE() runonce = true
+
 #ifdef __cplusplus
 }
 #endif
