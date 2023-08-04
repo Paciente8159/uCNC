@@ -66,7 +66,8 @@ static volatile uint8_t itp_step_lock;
 #endif
 
 #ifdef ENABLE_RT_SYNC_MOTIONS
-volatile int32_t itp_sync_step_counter;
+// deprecated with new hooks
+// volatile int32_t itp_sync_step_counter;
 
 void itp_update_feed(float feed)
 {
@@ -96,6 +97,9 @@ bool itp_sync_ready(void)
 
 	return false;
 }
+
+CREATE_HOOK(itp_rt_pre_stepbits);
+CREATE_HOOK(itp_rt_stepbits);
 #endif
 
 static void itp_sgm_buffer_read(void);
@@ -854,24 +858,6 @@ uint32_t itp_get_rt_line_number(void)
 }
 #endif
 
-#ifdef ENABLE_LASER_PPI
-// turn laser off callback
-MCU_CALLBACK void laser_ppi_turnoff_cb(void)
-{
-#ifndef INVERT_LASER_PPI_LOGIC
-	io_clear_output(LASER_PPI);
-#else
-	io_set_output(LASER_PPI);
-#endif
-}
-#endif
-
-#ifdef ENABLE_RT_SYNC_MOTIONS
-void __attribute__((weak)) itp_rt_stepbits(uint8_t *stepbits, uint8_t *dirs)
-{
-}
-#endif
-
 // always fires after pulse
 MCU_CALLBACK void mcu_step_reset_cb(void)
 {
@@ -883,9 +869,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 {
 	static uint8_t stepbits = 0;
 	static bool itp_busy = false;
-#ifdef ENABLE_LASER_PPI
-	static uint16_t new_laser_ppi = 0;
-#endif
 
 #ifdef RT_STEP_PREVENT_CONDITION
 	if (RT_STEP_PREVENT_CONDITION)
@@ -899,6 +882,17 @@ MCU_CALLBACK void mcu_step_cb(void)
 		return;
 	}
 
+	uint8_t new_stepbits = stepbits;
+	io_toggle_steps(new_stepbits);
+
+	// sets step bits
+#ifdef ENABLE_RT_SYNC_MOTIONS
+	if (new_stepbits && itp_rt_sgm)
+	{
+		HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
+	}
+#endif
+
 	if (itp_rt_sgm != NULL)
 	{
 		if (itp_rt_sgm->flags & ITP_UPDATE)
@@ -911,18 +905,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 #if TOOL_COUNT > 0
 			if (itp_rt_sgm->flags & ITP_UPDATE_TOOL)
 			{
-#ifdef ENABLE_LASER_PPI
-				if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
-				{
-					new_laser_ppi = itp_rt_sgm->spindle;
-				}
-				else
-				{
-#endif
-					tool_set_speed(itp_rt_sgm->spindle);
-#ifdef ENABLE_LASER_PPI
-				}
-#endif
+				tool_set_speed(itp_rt_sgm->spindle);
 			}
 #endif
 			itp_rt_sgm->flags &= ~(ITP_UPDATE);
@@ -936,30 +919,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 			itp_sgm_buffer_read();
 		}
 	}
-
-	uint8_t new_stepbits = stepbits;
-
-	// sets step bits
-#ifdef ENABLE_LASER_PPI
-	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
-	{
-		if (new_stepbits & LASER_PPI_MASK)
-		{
-			if (new_laser_ppi)
-			{
-				mcu_config_timeout(&laser_ppi_turnoff_cb, new_laser_ppi);
-				new_laser_ppi = 0;
-			}
-			mcu_start_timeout();
-#ifndef INVERT_LASER_PPI_LOGIC
-			io_set_output(LASER_PPI);
-#else
-			io_clear_output(LASER_PPI);
-#endif
-		}
-	}
-#endif
-	io_toggle_steps(new_stepbits);
 
 	// if buffer empty loads one
 	if (itp_rt_sgm == NULL)
@@ -1039,12 +998,15 @@ MCU_CALLBACK void mcu_step_cb(void)
 		}
 	}
 
-#ifdef ENABLE_RT_SYNC_MOTIONS
-	if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
-	{
-		itp_sync_step_counter++;
-	}
-#endif
+	/*
+	Must put this on G33 module
+	#ifdef ENABLE_RT_SYNC_MOTIONS
+		if (new_stepbits && (itp_rt_sgm->flags & ITP_SYNC))
+		{
+			itp_sync_step_counter++;
+		}
+	#endif
+	*/
 
 	new_stepbits = 0;
 	itp_busy = true;
@@ -1218,7 +1180,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			static uint8_t last_dirs = 0;
 			if (new_stepbits)
 			{
-				itp_rt_stepbits(&new_stepbits, &dirs);
+				HOOK_INVOKE(itp_rt_pre_stepbits, &new_stepbits, &dirs);
 				if (dirs != last_dirs)
 				{
 					last_dirs = dirs;

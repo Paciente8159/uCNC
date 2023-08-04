@@ -287,9 +287,6 @@ extern "C"
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-#ifdef ENABLE_LASER_PPI
-	void parser_config_ppi(void);
-#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook

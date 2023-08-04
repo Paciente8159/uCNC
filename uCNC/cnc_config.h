@@ -211,6 +211,13 @@ extern "C"
 // #define DEFAULT_LASER_PPI_USWIDTH 1500
 
 /**
+ *
+ * Enables Plasma THC capabilities
+ *
+ * **/
+//  #define ENABLE_PLASMA_THC
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
@@ -312,7 +319,13 @@ extern "C"
 // #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
-// #define ENABLE_SETTINGS_MODULES
+
+	/**
+	 * Settings extensions are enabled by default
+	 * Uncomment to disable this extension.
+	 * Some option might override this (like ENABLE_TOOL_PID_CONTROLLER)
+	 * */
+// #define DISABLE_SETTINGS_MODULES
 
 /**
  * Report specific options

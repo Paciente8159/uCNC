@@ -447,7 +447,9 @@ extern "C"
 /*laser ppi*/
 #if (TOOL_COUNT < 1)
 #undef ENABLE_LASER_PPI
+#undef ENABLE_PLASMA_THC
 #endif
+
 #ifdef ENABLE_LASER_PPI
 #ifndef MCU_HAS_ONESHOT_TIMER
 #error "The current MCU does not support ONESHOT_TIMER or the ONESHOT_TIMER is not configured"
@@ -2121,8 +2123,18 @@ typedef uint16_t step_t;
 #endif
 #endif
 
-#ifdef ENABLE_PLASMA_THC
+#ifndef DISABLE_SETTINGS_MODULES
+#define ENABLE_SETTINGS_MODULES
+#endif
 
+#ifdef ENABLE_LASER_PPI
+// forces modes
+#ifndef ENABLE_RT_SYNC_MOTIONS
+#define ENABLE_RT_SYNC_MOTIONS
+#endif
+#endif
+
+#ifdef ENABLE_PLASMA_THC
 // forces modes
 #ifndef ENABLE_TOOL_PID_CONTROLLER
 #define ENABLE_TOOL_PID_CONTROLLER
@@ -2136,7 +2148,6 @@ typedef uint16_t step_t;
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
 #endif
-
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER

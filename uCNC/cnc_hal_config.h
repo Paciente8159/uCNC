@@ -135,13 +135,6 @@ extern "C"
 
 /**
  *
- * Enables Plasma THC capabilities
- *
- * **/
-//  #define ENABLE_PLASMA_THC
-
-/**
- *
  * Tool pallete
  * You can assign your tool pallete indexes here
  * Up to 16 tools can be defined

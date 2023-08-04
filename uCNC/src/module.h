@@ -102,6 +102,26 @@ extern "C"
 
 	void mod_init(void);
 
+// uses VARADIC MACRO available since C99
+#define DECL_HOOK(name, ...)                        \
+	typedef void (*name##_delegate_t)(__VA_ARGS__); \
+	extern name##_delegate_t name##_cb
+#define CREATE_HOOK(name) name##_delegate_t name##_cb
+#define HOOK_ATTACH_CALLBACK(name, cb) name##_cb = &cb
+#define HOOK_RELEASE(name) name##_cb = NULL
+
+#define HOOK_INVOKE(name, ...)  \
+	if (name##_cb)              \
+	{                           \
+		name##_cb(__VA_ARGS__); \
+	}
+
+#define RUNONCE                  \
+	static bool runonce = false; \
+	if (!runonce)
+
+#define RUNONCE_COMPLETE() runonce = true
+
 #ifdef __cplusplus
 }
 #endif
