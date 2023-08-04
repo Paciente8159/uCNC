@@ -426,17 +426,6 @@ static void pid_update(void)
 	}
 }
 
-DECL_MODULE(plasma_thc)
-{
-#ifdef ENABLE_PARSER_MODULES
-	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
-	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
-	ADD_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
-#else
-#error "Parser extensions are not enabled. M103 code extension will not work."
-#endif
-}
-
 // uses similar status to grblhal
 bool plasma_protocol_send_status(void *args)
 {
@@ -485,20 +474,24 @@ bool plasma_protocol_send_status(void *args)
 
 CREATE_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
 
+DECL_MODULE(plasma_thc)
+{
+	ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
+#ifdef ENABLE_PARSER_MODULES
+	ADD_EVENT_LISTENER(gcode_parse, m103_parse);
+	ADD_EVENT_LISTENER(gcode_exec, m103_exec);
+	ADD_EVENT_LISTENER(gcode_exec, plasma_virtual_pins);
+#else
+#error "Parser extensions are not enabled. M103 code extension will not work."
+#endif
+}
+
 static void startup_code(void)
 {
-	static bool run_once = false;
-
 // force plasma off
 #if ASSERT_PIN(PLASMA_ON_OUTPUT)
 	io_clear_output(PLASMA_ON_OUTPUT);
 #endif
-
-	if (!run_once)
-	{
-		ADD_EVENT_LISTENER(protocol_send_status, plasma_protocol_send_status);
-		run_once = true;
-	}
 }
 
 static void shutdown_code(void)

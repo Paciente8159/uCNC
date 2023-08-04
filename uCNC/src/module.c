@@ -56,6 +56,10 @@ void mod_init(void)
 	LOAD_MODULE(tmcdriver);
 #endif
 
+#ifdef ENABLE_LASER_PPI
+	LOAD_MODULE(laser_ppi);
+#endif
+
 #ifdef ENABLE_PLASMA_THC
 	LOAD_MODULE(plasma_thc);
 #endif

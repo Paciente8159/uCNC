@@ -191,7 +191,7 @@ bool laser_ppi_mcodes_exec(void *args)
 			*(ptr->error) = STATUS_GCODE_VALUE_WORD_MISSING;
 			return EVENT_HANDLED;
 		}
-		
+
 		*(ptr->error) = STATUS_OK;
 		break;
 	}
@@ -230,6 +230,16 @@ bool laser_ppi_mcodes_exec(void *args)
 CREATE_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
 #endif
 
+DECL_MODULE(laser_ppi)
+{
+	#ifdef ENABLE_PARSER_MODULES
+	ADD_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
+	ADD_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
+	#else
+	#warning "Parser extensions are not enabled. M126, M127 and M128 code extensions will not work."
+	#endif
+}
+
 /**
  * Now starts the actual tool functions definitions
  * These functions will then be called by the tool HAL
@@ -248,13 +258,6 @@ static void startup_code(void)
 	g_settings.laser_mode |= LASER_PPI_MODE;
 	laser_ppi_config_parameters();
 	HOOK_ATTACH_CALLBACK(itp_rt_stepbits, laser_ppi_pulse);
-
-	RUNONCE
-	{
-		ADD_EVENT_LISTENER(gcode_parse, laser_ppi_mcodes_parse);
-		ADD_EVENT_LISTENER(gcode_exec, laser_ppi_mcodes_exec);
-		RUNONCE_COMPLETE();
-	}
 }
 
 static void shutdown_code(void)
