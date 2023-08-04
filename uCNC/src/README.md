@@ -12,6 +12,7 @@ These files contain initialization code for all modules that extend µCNC functi
 _**Jump to section**_
 * [Adding custom modules to µCNC](#adding-custom-modules-to-µcnc)
    * [µCNC existing events/delegates](#µcnc-existing-eventsdelegates)
+   * [µCNC existing hooks](#µcnc-existing-hooks)
    * [modules.h and events](#modulesh-and-events)
    * [Creating a new custom event listener](#creating-a-new-custom-event-listener)
    * [Creating a new custom event](#creating-a-new-custom-event)
@@ -25,6 +26,7 @@ __NOTE__: _Version 1.4.6 implemented changes to module initialization. Also addi
 µCNC has implemented a module system that allows the user to perform custom actions that get executed in an event/delegate fashion style similar to what is done with C#. Multiple callbacks functions can be attached to the same event.
 These modules can be quite useful and perform several things like adding custom custom gcodes to perform actions, or modifying IO states if a given condition is verified.
 µCNC already has a few useful modules like PID controller, Encoder module, TMC drivers support and custom G/M code support.
+Version 1.8 also introduces the concept of simple hooks. These hooks are simple function pointers that execute the assigned callback at that time. They are usually used inside interrupt service routines and provide a way to extend ISR's with small extra code blocks to perform certain tasks. Unlike events, simple hooks can only run a single callback. The active callback is the last one to attach to any give hook.
 
 ## µCNC existing events/delegates
 
@@ -183,6 +185,18 @@ typedef struct
 	motion_flags_t motion_flags; // motion type flags
 } motion_data_t;
 ```
+
+## µCNC existing hooks
+
+These are the list of available hooks inside 
+
+__NOTE__: Not all simple hooks may be listed here. To find all available simple hooks declarations, do a search on all files (on VSCode in Windows it's Ctrl+Shift+F) of the project of `DECL_HOOK`. You can also search for the `HOOK_INVOKE` to see what argument is being passed to the simple hook handler.
+
+| Event name | Argument | Enable option | Description |
+| --- | --- | --- | --- |
+| itp_rt_pre_stepbits | int*, int* | ENABLE_RT_SYNC_MOTIONS | Fires when the next computed step bits and dirs have been computed to be output. Args are a pointer the stepbit var and a pointer to a dirbit var |
+| itp_rt_stepbits | int, int | ENABLE_RT_SYNC_MOTIONS | Fires when the setpbits have been output to the IO. Args are the stepbit mask value and the step ISR flags value |
+| encoder_index | void | ENCODER_COUNT | Fires when the index of the specialized rpm encoder is triggered. Has no args |
 
 ## modules.h and events 
 
