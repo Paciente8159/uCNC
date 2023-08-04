@@ -36,18 +36,8 @@ static int32_t encoders_pos[ENCODERS];
 
 static volatile uint32_t prev_time;
 static volatile uint32_t current_time;
-static encoder_index_cb rpm_index_cb;
 bool encoder_rpm_updated;
-
-void encoder_attach_index_cb(encoder_index_cb callback)
-{
-	rpm_index_cb = callback;
-}
-
-void encoder_dettach_index_cb(void)
-{
-	rpm_index_cb = NULL;
-}
+CREATE_HOOK(encoder_index);
 
 uint16_t encoder_get_rpm(void)
 {
@@ -173,10 +163,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 #endif
 		{
 			encoders_pos[RPM_ENCODER] = 0;
-			if (rpm_index_cb)
-			{
-				rpm_index_cb();
-			}
+			HOOK_INVOKE(encoder_index);
 		}
 	}
 #endif
