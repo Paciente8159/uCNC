@@ -563,6 +563,15 @@ extern "C"
 
 	// #define ENABLE_FAST_MATH
 
+	/**
+	 * EXPERIMENTAL! Uncomment to enable fast trignometric macros to reduce the number of
+	 * required cpu cycles needed for some trignometric operations (mainly on 8-bit
+	 * processors) Output binary will be bigger. Fast trignometric macros can be used in
+	 * functions that calculate coordinates since tipical error is below 0.001
+	 * */
+
+	// #define ENABLE_FAST_TRIG
+
 /**
  *
  * HAL offsets
