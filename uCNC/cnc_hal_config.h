@@ -308,6 +308,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER0_STALL_SENSITIVITY 10
+#define STEPPER0_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER1_HAS_TMC
@@ -335,6 +336,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER1_STALL_SENSITIVITY 10
+#define STEPPER1_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER2_HAS_TMC
@@ -362,6 +364,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER2_STALL_SENSITIVITY 10
+#define STEPPER2_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER3_HAS_TMC
@@ -389,6 +392,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER3_STALL_SENSITIVITY 10
+#define STEPPER3_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER4_HAS_TMC
@@ -416,6 +420,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER4_STALL_SENSITIVITY 10
+#define STEPPER4_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER5_HAS_TMC
@@ -443,6 +448,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER5_STALL_SENSITIVITY 10
+#define STEPPER5_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER6_HAS_TMC
@@ -470,6 +476,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER6_STALL_SENSITIVITY 10
+#define STEPPER6_UART_ADDRESS 0
 #endif
 // uncomment to enable trinamic driver
 //#define STEPPER7_HAS_TMC
@@ -497,6 +504,7 @@ extern "C"
 // this value must be set between 0 and 255 for TMC2209
 // if driver does not support stallGuard this will be ignored
 #define STEPPER7_STALL_SENSITIVITY 10
+#define STEPPER7_UART_ADDRESS 0
 #endif
 
 	/**
