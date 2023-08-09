@@ -90,6 +90,25 @@ extern "C"
 	 */
 	void kinematics_apply_reverse_transform(float *axis);
 
+		/**
+	 * @brief Converts from machine absolute coordinates to step position.
+	 * This calls kinematics_apply_inverse after applying any custom geometry transformation (like skew compensation)
+	 *
+	 * @param axis Position in world coordinates
+	 * @param steps Position in steps
+	 */
+
+	void kinematics_coordinates_to_steps(float *axis, int32_t *steps);
+
+	/**
+	 * @brief Converts from step position to machine absolute coordinates.
+	 * This calls kinematics_apply_forward and then recomputes any custom geometry transformation inversion (like skew compensation)
+	 *
+	 * @param steps Position in steps
+	 * @param axis Position in world coordinates
+	 */
+	void kinematics_steps_to_coordinates(int32_t *steps, float *axis);
+
 	/**
 	 * @brief Checks if the desired target is inside sofware boundries
 	 *
