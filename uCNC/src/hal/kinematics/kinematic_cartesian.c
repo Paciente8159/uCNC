@@ -139,37 +139,6 @@ uint8_t kinematics_home(void)
 	return STATUS_OK;
 }
 
-void kinematics_apply_transform(float *axis)
-{
-	/*
-	Define your custom transform
-*/
-#ifdef ENABLE_SKEW_COMPENSATION
-	// apply correction skew factors that compensate for machine axis alignemnt
-	axis[AXIS_X] -= axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	axis[AXIS_X] -= axis[AXIS_Z] * (g_settings.skew_xy_factor - g_settings.skew_xz_factor * g_settings.skew_yz_factor);
-	axis[AXIS_Y] -= axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
-}
-
-void kinematics_apply_reverse_transform(float *axis)
-{
-	/*
-	Define your custom transform inverse operation
-*/
-
-	// perform unskew of the coordinates
-#ifdef ENABLE_SKEW_COMPENSATION
-	axis[AXIS_X] += axis[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-	axis[AXIS_X] += axis[AXIS_Z] * g_settings.skew_xz_factor;
-	axis[AXIS_Y] += axis[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
-}
-
 bool kinematics_check_boundaries(float *axis)
 {
 	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))

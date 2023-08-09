@@ -262,12 +262,6 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	target[AXIS_Z] += target_hmap_offset;
 #endif
 
-	// In homing mode no kinematics modifications is applied to prevent unwanted axis movements
-	if (!cnc_get_exec_state(EXEC_HOMING))
-	{
-		kinematics_apply_transform(target);
-	}
-
 	// check travel limits (soft limits)
 	if (!kinematics_check_boundaries(target))
 	{
@@ -322,8 +316,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	}
 
 	int32_t step_new_pos[STEPPER_COUNT];
+
 	// converts transformed target to stepper position
-	kinematics_apply_inverse(target, step_new_pos);
+	kinematics_coordinates_to_steps(target, step_new_pos);
 	// calculates the amount of steps performed for this motion
 
 	uint32_t max_steps = 0;
@@ -487,7 +482,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
 		prev_target[AXIS_Z] += h_offset;
 #endif
-		kinematics_apply_inverse(prev_target, step_new_pos);
+		kinematics_coordinates_to_steps(prev_target, step_new_pos);
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
@@ -505,7 +500,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 	if (is_subsegment)
 	{
-		kinematics_apply_inverse(target, step_new_pos);
+		kinematics_coordinates_to_steps(target, step_new_pos);
 	}
 #endif
 	error = mc_line_segment(step_new_pos, block_data);
@@ -912,13 +907,12 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 void mc_get_position(float *target)
 {
 	memcpy(target, mc_last_target, sizeof(mc_last_target));
-	kinematics_apply_reverse_transform(target);
 }
 
 void mc_sync_position(void)
 {
 	itp_get_rt_position(mc_last_step_pos);
-	kinematics_apply_forward(mc_last_step_pos, mc_last_target);
+	kinematics_steps_to_coordinates(mc_last_step_pos, mc_last_target);
 	parser_sync_position();
 }
 
@@ -1080,8 +1074,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			// store position
 			int32_t probe_position[STEPPER_COUNT];
 			itp_get_rt_position(probe_position);
-			kinematics_apply_forward(probe_position, position);
-			kinematics_apply_reverse_transform(position);
+			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_Z];
 			protocol_send_probe_result(1);
 

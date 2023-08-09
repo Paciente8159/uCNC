@@ -310,8 +310,7 @@ void parser_sync_probe(void)
 
 void parser_update_probe_pos(void)
 {
-	kinematics_apply_forward(rt_probe_step_pos, parser_parameters.last_probe_position);
-	kinematics_apply_reverse_transform(parser_parameters.last_probe_position);
+	kinematics_steps_to_coordinates(rt_probe_step_pos, parser_parameters.last_probe_position);
 }
 
 static uint8_t parser_grbl_command(void)

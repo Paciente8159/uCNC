@@ -62,11 +62,6 @@ extern "C"
 #define DELTA_ARM_MAX_ANGLE 89
 #endif
 
-	/*
-	Enable Skew compensation
-*/
-	//#define ENABLE_SKEW_COMPENSATION
-
 #ifdef __cplusplus
 }
 #endif
