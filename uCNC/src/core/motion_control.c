@@ -263,7 +263,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #endif
 
 	// check travel limits (soft limits)
-	if (!kinematics_check_boundaries(target))
+	if (!kinematics_check_softlimits(target))
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
