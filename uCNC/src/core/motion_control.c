@@ -719,6 +719,15 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
 
+	if (!g_settings.hard_limits_enabled)
+	{
+#ifdef ALLOW_SOFTWARE_HOMING
+		return STATUS_OK;
+#else
+		return STATUS_HARDLIMITS_DISABLED;
+#endif
+	}
+
 	// locks limits to accept axis limit mask only or else throw error
 	io_lock_limits(axis_limit);
 	io_invert_limits(0);
