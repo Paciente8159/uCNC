@@ -136,7 +136,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
 #endif
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU_GOTO(2, goaxis, STR_KINEMATICS, CONST_VARG(5));
+	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
 
 	DECL_MENU(6, 2, STR_IO_CONFIG);
@@ -1128,8 +1128,7 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		float axis[MAX(AXIS_COUNT, 3)];
 		int32_t steppos[STEPPER_COUNT];
 		itp_get_rt_position(steppos);
-		kinematics_apply_forward(steppos, axis);
-		kinematics_apply_reverse_transform(axis);
+		kinematics_steps_to_coordinates(steppos, axis);
 		// X = 0
 		char axis_letter = *((char *)item->action_arg);
 		uint8_t axis_index = (axis_letter >= 'X') ? (axis_letter - 'X') : (3 + axis_letter - 'A');
