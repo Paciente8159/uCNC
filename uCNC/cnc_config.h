@@ -351,6 +351,17 @@ extern "C"
 	// #define SET_ORIGIN_AT_HOME_POS
 
 	/**
+	 *
+	 * Enable this option to allow the $H to be used to perform a software homing.
+	 * Software homing will only work if hardware limits are disabled.
+	 * This will apply the not execute the homing search motions but it will still
+	 * execute the pull-off motion before reset the coordinate system
+	 * 
+	 * */
+
+	// #define ALLOW_SOFTWARE_HOMING
+
+	/**
 	 * If the type of machine supports skew and needs skew correction
 	 *  (defined in the specified kinematics_xxx.h file)
 	 * */
