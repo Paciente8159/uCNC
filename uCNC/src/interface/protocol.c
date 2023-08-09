@@ -205,8 +205,7 @@ void protocol_send_status(void)
 
 	int32_t steppos[AXIS_TO_STEPPERS];
 	itp_get_rt_position(steppos);
-	kinematics_apply_forward(steppos, axis);
-	kinematics_apply_reverse_transform(axis);
+	kinematics_steps_to_coordinates(steppos, axis);
 	float feed = itp_get_rt_feed(); // convert from mm/s to mm/m
 #if TOOL_COUNT > 0
 	uint16_t spindle = tool_get_speed();
