@@ -118,16 +118,16 @@ extern "C"
 	 */
 	bool kinematics_check_boundaries(float *axis);
 
-	/**
-	 * @brief Checks the motion software limits
-	 * This internally calls kinematics_check_boundaries after applying machine transformations
-	 * This ensure that in a transformation makes an axis travell past it's limits
-	 *
-	 * @param axis Target in absolute coordinates
-	 * @return true If inside boundries
-	 * @return false If outside boundries
-	 */
-	bool kinematics_check_softlimits(float *axis);
+	// /**
+	//  * @brief Checks the motion software limits
+	//  * This internally calls kinematics_check_boundaries after applying machine transformations
+	//  * This ensure that in a transformation makes an axis travell past it's limits
+	//  *
+	//  * @param axis Target in absolute coordinates
+	//  * @return true If inside boundries
+	//  * @return false If outside boundries
+	//  */
+	// bool kinematics_check_softlimits(float *axis);
 
 #ifdef __cplusplus
 }

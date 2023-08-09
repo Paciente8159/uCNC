@@ -97,34 +97,34 @@ void kinematics_steps_to_coordinates(int32_t *steps, float *axis)
         }
 }
 
-/**
- * @brief Checks the motion software limits
- * This internally calls kinematics_check_boundaries after applying machine transformations
- * This ensure that in a transformation makes an axis travell past it's limits
- *
- * @param axis Target in absolute coordinates
- * @return true If inside boundries
- * @return false If outside boundries
- */
-bool kinematics_check_softlimits(float *axis)
-{
-        // make an axis copy to preven unintended target modifications
-        float axis_copy[AXIS_COUNT];
-        memcpy(axis_copy, axis, sizeof(axis_copy));
-        // In homing mode no kinematics modifications is applied to prevent unwanted axis movements
-        if (!cnc_get_exec_state(EXEC_HOMING))
-        {
-                kinematics_apply_transform(axis_copy);
+// /**
+//  * @brief Checks the motion software limits
+//  * This internally calls kinematics_check_boundaries after applying machine transformations
+//  * This ensure that in a transformation makes an axis travell past it's limits
+//  *
+//  * @param axis Target in absolute coordinates
+//  * @return true If inside boundries
+//  * @return false If outside boundries
+//  */
+// bool kinematics_check_softlimits(float *axis)
+// {
+//         // make an axis copy to preven unintended target modifications
+//         float axis_copy[AXIS_COUNT];
+//         memcpy(axis_copy, axis, sizeof(axis_copy));
+//         // In homing mode no kinematics modifications is applied to prevent unwanted axis movements
+//         if (!cnc_get_exec_state(EXEC_HOMING))
+//         {
+//                 kinematics_apply_transform(axis_copy);
 
-#ifdef ENABLE_SKEW_COMPENSATION
-                // apply correction skew factors that compensate for machine axis alignemnt
-                axis_copy[AXIS_X] -= axis_copy[AXIS_Y] * g_settings.skew_xy_factor;
-#ifndef SKEW_COMPENSATION_XY_ONLY
-                axis_copy[AXIS_X] -= axis_copy[AXIS_Z] * (g_settings.skew_xy_factor - g_settings.skew_xz_factor * g_settings.skew_yz_factor);
-                axis_copy[AXIS_Y] -= axis_copy[AXIS_Z] * g_settings.skew_yz_factor;
-#endif
-#endif
-        }
+// #ifdef ENABLE_SKEW_COMPENSATION
+//                 // apply correction skew factors that compensate for machine axis alignemnt
+//                 axis_copy[AXIS_X] -= axis_copy[AXIS_Y] * g_settings.skew_xy_factor;
+// #ifndef SKEW_COMPENSATION_XY_ONLY
+//                 axis_copy[AXIS_X] -= axis_copy[AXIS_Z] * (g_settings.skew_xy_factor - g_settings.skew_xz_factor * g_settings.skew_yz_factor);
+//                 axis_copy[AXIS_Y] -= axis_copy[AXIS_Z] * g_settings.skew_yz_factor;
+// #endif
+// #endif
+//         }
 
-        return kinematics_check_boundaries(axis_copy);
-}
+//         return kinematics_check_boundaries(axis_copy);
+// }
