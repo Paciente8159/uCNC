@@ -319,6 +319,13 @@ bool settings_allows_negative(setting_offset_t id)
 		return true;
 	}
 #endif
+
+#ifdef ENABLE_SKEW_COMPENSATION
+	if (id >=37 && id <= 39)
+	{
+		return true;
+	}
+#endif
 	return false;
 }
 
