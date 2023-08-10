@@ -95,75 +95,34 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 	{
 		static uint8_t prev_limits = 0;
 		uint8_t limits = io_get_limits();
-
-#if (LIMITS_DUAL_MASK != 0)
-		static uint8_t prev_limits_dual = 0;
-		uint8_t limits_dual = io_get_limits_dual();
-		uint8_t limit_combined = limits | limits_dual;
-
-		if (!(limits ^ prev_limits) && !(limits_dual ^ prev_limits_dual))
+		uint8_t limits_diff = prev_limits;
+		limits_diff ^= limits;
+		if (!limits_diff)
 		{
 			return;
 		}
+
 		prev_limits = limits;
-		prev_limits_dual = limits_dual;
-#else
-		if (!(limits ^ prev_limits))
+
+		if (limits)
 		{
-			return;
-		}
-		prev_limits = limits;
-		uint8_t limit_combined = limits;
-#endif
-		if (limit_combined)
-		{
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
-			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (io_lock_limits_mask & limit_combined))
+			uint8_t limits_ref = io_lock_limits_mask;
+			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (limits_ref & limits))
 			{
-				// if homing and dual drive axis are enabled
-#ifdef DUAL_DRIVE0_ENABLE_SELFSQUARING
-				if (limit_combined & LIMIT_DUAL0_MASK) // the limit triggered matches the first dual drive axis
+				// changed limit is from the current mask
+				if((limits_diff & limits_ref))
 				{
-					// lock the stepper accodring to the blocked
-					itp_lock_stepper((limits_dual & LIMIT_DUAL0_MASK) ? STEP_DUAL0_MASK : STEP_DUAL0);
+					// lock steps on the current limits
+					itp_lock_stepper(limits);
 
-					if (limits != limits_dual) // but not both
+					if (limits != limits_ref) // current limits are all the ones marked as locked
 					{
 						return; // exits and doesn't trip the alarm
 					}
 				}
-#endif
-#ifdef DUAL_DRIVE1_ENABLE_SELFSQUARING
-				if (limit_combined & LIMIT_DUAL1_MASK) // the limit triggered matches the second dual drive axis
-				{
-					itp_lock_stepper((limits_dual & LIMIT_DUAL1_MASK) ? STEP_DUAL1_MASK : STEP_DUAL1);
-
-					if (limits != limits_dual) // but not both
-					{
-						return; // exits and doesn't trip the alarm
-					}
-				}
-#endif
-#if (defined(IS_DELTA_KINEMATICS))
-				if ((limit_combined & LIMITS_DELTA_MASK))
-				{
-					if (limit_combined != LIMITS_DELTA_MASK)
-					{
-						itp_lock_stepper(limit_combined);
-						return;
-					}
-				}
-				else
-				{
-					return;
-				}
-#endif
 			}
-#endif
 
-#if (defined(DUAL_DRIVE0_ENABLE_SELFSQUARING) || defined(DUAL_DRIVE1_ENABLE_SELFSQUARING) || defined(IS_DELTA_KINEMATICS))
 			itp_lock_stepper(0); // unlocks axis
-#endif
 			itp_stop();
 			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
@@ -345,88 +304,42 @@ uint8_t io_get_limits(void)
 	uint8_t value = 0;
 
 #if ASSERT_PIN(LIMIT_X)
-	value |= ((io_get_input(LIMIT_X)) ? LIMIT_X_MASK : 0);
+	value |= ((io_get_input(LIMIT_X)) ? LIMIT_X_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Y)
-	value |= ((io_get_input(LIMIT_Y)) ? LIMIT_Y_MASK : 0);
+	value |= ((io_get_input(LIMIT_Y)) ? LIMIT_Y_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_Z)
-	value |= ((io_get_input(LIMIT_Z)) ? LIMIT_Z_MASK : 0);
+	value |= ((io_get_input(LIMIT_Z)) ? LIMIT_Z_IO_MASK : 0);
+#endif
+#if ASSERT_PIN(LIMIT_X2)
+	value |= ((io_get_input(LIMIT_X2)) ? LIMIT_X2_IO_MASK : 0);
+#endif
+#if ASSERT_PIN(LIMIT_Y2)
+	value |= ((io_get_input(LIMIT_Y2)) ? LIMIT_Y2_IO_MASK : 0);
+#endif
+#if ASSERT_PIN(LIMIT_Z2)
+	value |= ((io_get_input(LIMIT_Z2)) ? LIMIT_Z2_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_A)
-	value |= ((io_get_input(LIMIT_A)) ? LIMIT_A_MASK : 0);
+	value |= ((io_get_input(LIMIT_A)) ? LIMIT_A_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_B)
-	value |= ((io_get_input(LIMIT_B)) ? LIMIT_B_MASK : 0);
+	value |= ((io_get_input(LIMIT_B)) ? LIMIT_B_IO_MASK : 0);
 #endif
 #if ASSERT_PIN(LIMIT_C)
-	value |= ((io_get_input(LIMIT_C)) ? LIMIT_C_MASK : 0);
+	value |= ((io_get_input(LIMIT_C)) ? LIMIT_C_IO_MASK : 0);
 #endif
 
 	uint8_t inv = g_settings.limits_invert_mask;
 	uint8_t result = (value ^ (inv & LIMITS_INV_MASK));
 
-#if LIMITS_DUAL_INV_MASK != 0
-	uint8_t value2 = 0;
-
-#if ASSERT_PIN(LIMIT_X2)
-#if !(LIMITS_DUAL_MASK & LIMIT_X_MASK)
-	value2 |= ((io_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
-#endif
-#endif
-#if ASSERT_PIN(LIMIT_Y2)
-#if !(LIMITS_DUAL_MASK & LIMIT_Y_MASK)
-	value2 |= ((io_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
-#endif
-#endif
-#if ASSERT_PIN(LIMIT_Z2)
-#if !(LIMITS_DUAL_MASK & LIMIT_Z_MASK)
-	value2 |= ((io_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
-#endif
-#endif
-
-	result |= (value2 ^ (inv & LIMITS_DUAL_INV_MASK & ~LIMITS_DUAL_MASK));
-
-#endif
-
 	if (cnc_get_exec_state(EXEC_HOMING))
 	{
 		result ^= io_invert_limits_mask;
 	}
-#if LIMITS_DUAL_INV_MASK
-	else
-	{
-		result |= io_get_limits_dual();
-	}
-#endif
 
 	return result;
-}
-
-uint8_t io_get_limits_dual(void)
-{
-#if (defined(DISABLE_ALL_LIMITS) || (LIMITS_DUAL_MASK == 0))
-	return 0;
-#else
-	uint8_t value = 0;
-#if ASSERT_PIN(LIMIT_X2)
-#if (LIMITS_DUAL_MASK & LIMIT_X_MASK)
-	value |= ((io_get_input(LIMIT_X2)) ? LIMIT_X_MASK : 0);
-#endif
-#endif
-#if ASSERT_PIN(LIMIT_Y2)
-#if (LIMITS_DUAL_MASK & LIMIT_Y_MASK)
-	value |= ((io_get_input(LIMIT_Y2)) ? LIMIT_Y_MASK : 0);
-#endif
-#endif
-#if ASSERT_PIN(LIMIT_Z2)
-#if (LIMITS_DUAL_MASK & LIMIT_Z_MASK)
-	value |= ((io_get_input(LIMIT_Z2)) ? LIMIT_Z_MASK : 0);
-#endif
-#endif
-	uint8_t inv = io_invert_limits_mask & LIMITS_DUAL_MASK;
-	return (value ^ (g_settings.limits_invert_mask & LIMITS_DUAL_MASK & LIMITS_DUAL_INV_MASK) ^ inv);
-#endif
 }
 
 uint8_t io_get_controls(void)
@@ -508,7 +421,7 @@ void io_set_steps(uint8_t mask)
 #endif
 
 #if ASSERT_PIN_IO(STEP0)
-	if (mask & STEP0_MASK)
+	if (mask & STEP0_IO_MASK)
 	{
 		mcu_set_output(STEP0);
 	}
@@ -519,7 +432,7 @@ void io_set_steps(uint8_t mask)
 
 #endif
 #if ASSERT_PIN_IO(STEP1)
-	if (mask & STEP1_MASK)
+	if (mask & STEP1_IO_MASK)
 	{
 		mcu_set_output(STEP1);
 	}
@@ -529,7 +442,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP2)
-	if (mask & STEP2_MASK)
+	if (mask & STEP2_IO_MASK)
 	{
 		mcu_set_output(STEP2);
 	}
@@ -539,7 +452,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP3)
-	if (mask & STEP3_MASK)
+	if (mask & STEP3_IO_MASK)
 	{
 		mcu_set_output(STEP3);
 	}
@@ -549,7 +462,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP4)
-	if (mask & STEP4_MASK)
+	if (mask & STEP4_IO_MASK)
 	{
 		mcu_set_output(STEP4);
 	}
@@ -559,7 +472,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP5)
-	if (mask & STEP5_MASK)
+	if (mask & STEP5_IO_MASK)
 	{
 		mcu_set_output(STEP5);
 	}
@@ -569,7 +482,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP6)
-	if (mask & STEP6_MASK)
+	if (mask & STEP6_IO_MASK)
 	{
 		mcu_set_output(STEP6);
 	}
@@ -579,7 +492,7 @@ void io_set_steps(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(STEP7)
-	if (mask & STEP7_MASK)
+	if (mask & STEP7_IO_MASK)
 	{
 		mcu_set_output(STEP7);
 	}
@@ -601,49 +514,49 @@ void io_toggle_steps(uint8_t mask)
 #endif
 
 #if ASSERT_PIN_IO(STEP0)
-	if (mask & STEP0_MASK)
+	if (mask & STEP0_IO_MASK)
 	{
 		mcu_toggle_output(STEP0);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP1)
-	if (mask & STEP1_MASK)
+	if (mask & STEP1_IO_MASK)
 	{
 		mcu_toggle_output(STEP1);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP2)
-	if (mask & STEP2_MASK)
+	if (mask & STEP2_IO_MASK)
 	{
 		mcu_toggle_output(STEP2);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP3)
-	if (mask & STEP3_MASK)
+	if (mask & STEP3_IO_MASK)
 	{
 		mcu_toggle_output(STEP3);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP4)
-	if (mask & STEP4_MASK)
+	if (mask & STEP4_IO_MASK)
 	{
 		mcu_toggle_output(STEP4);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP5)
-	if (mask & STEP5_MASK)
+	if (mask & STEP5_IO_MASK)
 	{
 		mcu_toggle_output(STEP5);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP6)
-	if (mask & STEP6_MASK)
+	if (mask & STEP6_IO_MASK)
 	{
 		mcu_toggle_output(STEP6);
 	}
 #endif
 #if ASSERT_PIN_IO(STEP7)
-	if (mask & STEP7_MASK)
+	if (mask & STEP7_IO_MASK)
 	{
 		mcu_toggle_output(STEP7);
 	}
@@ -663,7 +576,7 @@ void io_set_dirs(uint8_t mask)
 #endif
 
 #if ASSERT_PIN_IO(DIR0)
-	if (mask & DIR0_MASK)
+	if (mask & STEP0_IO_MASK)
 	{
 		mcu_set_output(DIR0);
 	}
@@ -673,7 +586,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR1)
-	if (mask & DIR1_MASK)
+	if (mask & STEP1_IO_MASK)
 	{
 		mcu_set_output(DIR1);
 	}
@@ -683,7 +596,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR2)
-	if (mask & DIR2_MASK)
+	if (mask & STEP2_IO_MASK)
 	{
 		mcu_set_output(DIR2);
 	}
@@ -693,7 +606,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR3)
-	if (mask & DIR3_MASK)
+	if (mask & STEP3_IO_MASK)
 	{
 		mcu_set_output(DIR3);
 	}
@@ -703,7 +616,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR4)
-	if (mask & DIR4_MASK)
+	if (mask & STEP4_IO_MASK)
 	{
 		mcu_set_output(DIR4);
 	}
@@ -713,7 +626,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR5)
-	if (mask & DIR5_MASK)
+	if (mask & STEP5_IO_MASK)
 	{
 		mcu_set_output(DIR5);
 	}
@@ -723,7 +636,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR6)
-	if (mask & DIR6_MASK)
+	if (mask & STEP6_IO_MASK)
 	{
 		mcu_set_output(DIR6);
 	}
@@ -733,7 +646,7 @@ void io_set_dirs(uint8_t mask)
 	}
 #endif
 #if ASSERT_PIN_IO(DIR7)
-	if (mask & DIR7_MASK)
+	if (mask & STEP7_IO_MASK)
 	{
 		mcu_set_output(DIR7);
 	}

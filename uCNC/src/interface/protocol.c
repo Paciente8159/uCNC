@@ -356,32 +356,32 @@ void protocol_send_status(void)
 			serial_putc('P');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_X_MASK))
+		if (CHECKFLAG(limits, LINACT0_LIMIT_MASK))
 		{
 			serial_putc('X');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Y_MASK))
+		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
 			serial_putc('Y');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Z_MASK))
+		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
 		{
 			serial_putc('Z');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_A_MASK))
+		if (CHECKFLAG(limits, LINACT3_LIMIT_MASK))
 		{
 			serial_putc('A');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_B_MASK))
+		if (CHECKFLAG(limits, LINACT4_LIMIT_MASK))
 		{
 			serial_putc('B');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_C_MASK))
+		if (CHECKFLAG(limits, LINACT5_LIMIT_MASK))
 		{
 			serial_putc('C');
 		}

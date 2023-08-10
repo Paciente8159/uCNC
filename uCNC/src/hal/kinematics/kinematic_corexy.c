@@ -60,7 +60,7 @@ uint8_t kinematics_home(void)
 #ifndef DISABLE_ALL_LIMITS
 #ifndef DISABLE_Z_HOMING
 #if (defined(AXIS_Z) && (ASSERT_PIN(LIMIT_Z) || ASSERT_PIN(LIMIT_Z2)))
-	if (mc_home_axis(AXIS_Z, LIMIT_Z_MASK))
+	if (mc_home_axis(AXIS_Z, LINACT2_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
 	}
@@ -69,7 +69,7 @@ uint8_t kinematics_home(void)
 
 #ifndef DISABLE_X_HOMING
 #if (defined(AXIS_X) && (ASSERT_PIN(LIMIT_X) || ASSERT_PIN(LIMIT_X2)))
-	if (mc_home_axis(AXIS_X, LIMIT_X_MASK))
+	if (mc_home_axis(AXIS_X, LINACT0_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_X;
 	}
@@ -78,7 +78,7 @@ uint8_t kinematics_home(void)
 
 #ifndef DISABLE_Y_HOMING
 #if (defined(AXIS_Y) && (ASSERT_PIN(LIMIT_Y) || ASSERT_PIN(LIMIT_Y2)))
-	if (mc_home_axis(AXIS_Y, LIMIT_Y_MASK))
+	if (mc_home_axis(AXIS_Y, LINACT1_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Y;
 	}
@@ -87,7 +87,7 @@ uint8_t kinematics_home(void)
 
 #ifndef DISABLE_A_HOMING
 #if (defined(AXIS_A) && ASSERT_PIN(LIMIT_A))
-	if (mc_home_axis(AXIS_A, LIMIT_A_MASK))
+	if (mc_home_axis(AXIS_A, LINACT3_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_A;
 	}
@@ -96,7 +96,7 @@ uint8_t kinematics_home(void)
 
 #ifndef DISABLE_B_HOMING
 #if (defined(AXIS_B) && ASSERT_PIN(LIMIT_B))
-	if (mc_home_axis(AXIS_B, LIMIT_B_MASK))
+	if (mc_home_axis(AXIS_B, LINACT4_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_B;
 	}
@@ -105,7 +105,7 @@ uint8_t kinematics_home(void)
 
 #ifndef DISABLE_C_HOMING
 #if (defined(AXIS_C) && ASSERT_PIN(LIMIT_C))
-	if (mc_home_axis(AXIS_C, LIMIT_C_MASK))
+	if (mc_home_axis(AXIS_C, LINACT5_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_C;
 	}
