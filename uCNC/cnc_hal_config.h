@@ -93,11 +93,16 @@ extern "C"
 // #define DISABLE_C_HOMING
 
 /**
+ * Uncomment this feature to enable X and Y homing simultaneously
+ */
+// #define ENABLE_XY_SIMULTANEOUS_HOMING
+
+/**
  * Uncomment this feature to enable multi motor axis
  * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
  * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
  */
-#define ENABLE_MULTI_STEPPER_AXIS
+// #define ENABLE_MULTI_STEPPER_AXIS
 #ifdef ENABLE_MULTI_STEPPER_AXIS
 
 /**
@@ -123,13 +128,13 @@ extern "C"
  * **/
 
 // defines a multi stepper linear actuator LINACT0
- #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
+//  #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
 
 // defines a second multi stepper linear actuator LINACT1
- #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
+//  #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
 
 // defines a second multi stepper linear actuator LINACT2
- #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
+//  #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
 
 // there is no limit to the ammount of STEP IO that can be combined into a LINACT. For example it's possible to assign 4 independent STEP IO to a single LINACT
 // #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP5_IO_MASK | STEP6_IO_MASK | STEP7_IO_MASK)
@@ -156,17 +161,17 @@ extern "C"
  * 
  * **/
 
- #define ENABLE_X_AUTOLEVEL
+// #define ENABLE_X_AUTOLEVEL
 #ifdef ENABLE_X_AUTOLEVEL
 #define LIMIT_X2_IO_MASK STEP5_IO_MASK
 #endif
 
- #define ENABLE_Y_AUTOLEVEL
+// #define ENABLE_Y_AUTOLEVEL
 #ifdef ENABLE_Y_AUTOLEVEL
 #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
 #endif
 
- #define ENABLE_Z_AUTOLEVEL
+// #define ENABLE_Z_AUTOLEVEL
 #ifdef ENABLE_Z_AUTOLEVEL
 #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
 #endif

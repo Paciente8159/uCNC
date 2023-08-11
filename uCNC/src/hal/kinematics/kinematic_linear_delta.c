@@ -145,36 +145,31 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 
 uint8_t kinematics_home(void)
 {
-	if (mc_home_axis(AXIS_Z, LIMITS_DELTA_MASK))
+	if (mc_home_axis(AXIS_Z_MASK, LIMITS_DELTA_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
 	}
 
-#ifndef DISABLE_A_HOMING
-#if (defined(AXIS_A) && ASSERT_PIN(LIMIT_A))
-	if (mc_home_axis(AXIS_A, LINACT3_LIMIT_MASK))
+
+#if AXIS_A_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
 	{
-		return (KINEMATIC_HOMING_ERROR_X|KINEMATIC_HOMING_ERROR_Y|KINEMATIC_HOMING_ERROR_Z);
+		return KINEMATIC_HOMING_ERROR_A;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_B_HOMING
-#if (defined(AXIS_B) && ASSERT_PIN(LIMIT_B))
-	if (mc_home_axis(AXIS_B, LINACT4_LIMIT_MASK))
+#if AXIS_B_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_B;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_C_HOMING
-#if (defined(AXIS_C) && ASSERT_PIN(LIMIT_C))
-	if (mc_home_axis(AXIS_C, LINACT5_LIMIT_MASK))
+#if AXIS_C_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_C;
 	}
-#endif
 #endif
 
 	// unlocks the machine to go to offset

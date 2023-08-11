@@ -20,7 +20,9 @@
 
 #include "../cnc.h"
 
+#ifdef ENABLE_MULTI_STEP_HOMING
 static uint8_t io_lock_limits_mask;
+#endif
 static uint8_t io_invert_limits_mask;
 
 #if ASSERT_PIN(PROBE)
@@ -106,11 +108,12 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 
 		if (limits)
 		{
+#ifdef ENABLE_MULTI_STEP_HOMING
 			uint8_t limits_ref = io_lock_limits_mask;
 			if (cnc_get_exec_state((EXEC_RUN | EXEC_HOMING)) == (EXEC_RUN | EXEC_HOMING) && (limits_ref & limits))
 			{
 				// changed limit is from the current mask
-				if((limits_diff & limits_ref))
+				if ((limits_diff & limits_ref))
 				{
 					// lock steps on the current limits
 					itp_lock_stepper(limits);
@@ -123,6 +126,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 			}
 
 			itp_lock_stepper(0); // unlocks axis
+#endif
 			itp_stop();
 			cnc_set_exec_state(EXEC_LIMITS);
 #ifdef ENABLE_IO_ALARM_DEBUG
@@ -285,10 +289,12 @@ MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 	}
 }
 
+#ifdef ENABLE_MULTI_STEP_HOMING
 void io_lock_limits(uint8_t limitmask)
 {
 	io_lock_limits_mask = limitmask;
 }
+#endif
 
 void io_invert_limits(uint8_t limitmask)
 {

@@ -1575,27 +1575,27 @@ extern "C"
 #elif !defined(LIMIT_X_IO_MASK)
 #define LIMIT_X_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Y) && !defined(LIMIT_Y_IO_MASK)
+#if ASSERT_PIN(LIMIT_Y) && !defined(LIMIT_Y_IO_MASK) && (AXIS_COUNT > 1)
 #define LIMIT_Y_IO_MASK STEP1_IO_MASK
 #elif !defined(LIMIT_Y_IO_MASK)
 #define LIMIT_Y_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_Z) && !defined(LIMIT_Z_IO_MASK)
+#if ASSERT_PIN(LIMIT_Z) && !defined(LIMIT_Z_IO_MASK) && (AXIS_COUNT > 2)
 #define LIMIT_Z_IO_MASK STEP2_IO_MASK
 #elif !defined(LIMIT_Z_IO_MASK)
 #define LIMIT_Z_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_A) && !defined(LIMIT_A_IO_MASK)
+#if ASSERT_PIN(LIMIT_A) && !defined(LIMIT_A_IO_MASK) && (AXIS_COUNT > 3)
 #define LIMIT_A_IO_MASK STEP3_IO_MASK
 #elif !defined(LIMIT_A_IO_MASK)
 #define LIMIT_A_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_B) && !defined(LIMIT_B_IO_MASK)
+#if ASSERT_PIN(LIMIT_B) && !defined(LIMIT_B_IO_MASK) && (AXIS_COUNT > 4)
 #define LIMIT_B_IO_MASK STEP4_IO_MASK
 #elif !defined(LIMIT_B_IO_MASK)
 #define LIMIT_B_IO_MASK STEP_UNDEF_IO_MASK
 #endif
-#if ASSERT_PIN(LIMIT_C) && !defined(LIMIT_C_IO_MASK)
+#if ASSERT_PIN(LIMIT_C) && !defined(LIMIT_C_IO_MASK) && (AXIS_COUNT > 5)
 #define LIMIT_C_IO_MASK STEP5_IO_MASK
 #elif !defined(LIMIT_C_IO_MASK)
 #define LIMIT_C_IO_MASK STEP_UNDEF_IO_MASK
@@ -1654,6 +1654,43 @@ extern "C"
 #endif
 #ifndef LINACT5_LIMIT_MASK
 #define LINACT5_LIMIT_MASK (LIMIT_C_IO_MASK)
+#endif
+
+#ifndef AXIS_X
+#undef LINACT0_IO_MASK
+#undef LINACT0_LIMIT_MASK
+#define LINACT0_IO_MASK 0
+#define LINACT0_LIMIT_MASK 0
+#endif
+#ifndef AXIS_Y
+#undef LINACT1_IO_MASK
+#undef LINACT1_LIMIT_MASK
+#define LINACT1_IO_MASK 0
+#define LINACT1_LIMIT_MASK 0
+#endif
+#ifndef AXIS_Z
+#undef LINACT2_IO_MASK
+#undef LINACT2_LIMIT_MASK
+#define LINACT2_IO_MASK 0
+#define LINACT2_LIMIT_MASK 0
+#endif
+#ifndef AXIS_A
+#undef LINACT3_IO_MASK
+#undef LINACT3_LIMIT_MASK
+#define LINACT3_IO_MASK 0
+#define LINACT3_LIMIT_MASK 0
+#endif
+#ifndef AXIS_B
+#undef LINACT4_IO_MASK
+#undef LINACT4_LIMIT_MASK
+#define LINACT4_IO_MASK 0
+#define LINACT4_LIMIT_MASK 0
+#endif
+#ifndef AXIS_C
+#undef LINACT5_IO_MASK
+#undef LINACT5_LIMIT_MASK
+#define LINACT5_IO_MASK 0
+#define LINACT5_LIMIT_MASK 0
 #endif
 
 #define LIMITS_MASK (LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK | LINACT2_LIMIT_MASK | LINACT3_LIMIT_MASK | LINACT4_LIMIT_MASK | LINACT5_LIMIT_MASK)
@@ -1964,6 +2001,134 @@ typedef uint16_t step_t;
 #if (STATUS_AUTOMATIC_REPORT_INTERVAL < 0 || STATUS_AUTOMATIC_REPORT_INTERVAL > 1000)
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
+
+#if defined(ENABLE_X_AUTOLEVEL) || defined(ENABLE_Y_AUTOLEVEL) || defined(ENABLE_Z_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) || defined(ENABLE_XY_SIMULTANEOUS_HOMING)
+#define ENABLE_MULTI_STEP_HOMING
+#endif
+
+#if defined(AXIS_X) && LINACT0_LIMIT_MASK && !defined(DISABLE_X_HOMING)
+#define AXIS_X_HOMING_MASK (1 << AXIS_X)
+#else
+#define AXIS_X_HOMING_MASK 0
+#endif
+#if defined(AXIS_Y) && LINACT1_LIMIT_MASK && !defined(DISABLE_Y_HOMING)
+#define AXIS_Y_HOMING_MASK (1 << AXIS_Y)
+#else
+#define AXIS_Y_HOMING_MASK 0
+#endif
+#if defined(AXIS_Z) && LINACT2_LIMIT_MASK && !defined(DISABLE_Z_HOMING)
+#define AXIS_Z_HOMING_MASK (1 << AXIS_Z)
+#else
+#define AXIS_Z_HOMING_MASK 0
+#endif
+#if defined(AXIS_A) && LINACT3_LIMIT_MASK && !defined(DISABLE_A_HOMING)
+#define AXIS_A_HOMING_MASK (1 << AXIS_A)
+#else
+#define AXIS_A_HOMING_MASK 0
+#endif
+#if defined(AXIS_B) && LINACT4_LIMIT_MASK && !defined(DISABLE_B_HOMING)
+#define AXIS_B_HOMING_MASK (1 << AXIS_B)
+#else
+#define AXIS_B_HOMING_MASK 0
+#endif
+#if defined(AXIS_C) && LINACT5_LIMIT_MASK && !defined(DISABLE_C_HOMING)
+#define AXIS_C_HOMING_MASK (1 << AXIS_C)
+#else
+#define AXIS_C_HOMING_MASK 0
+#endif
+
+#if (LINACT0_IO_MASK & LINACT1_IO_MASK)
+#error "Linear actuator 0 and 1 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT2_IO_MASK)
+#error "Linear actuator 0 and 2 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 0 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 0 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT0_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 0 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT2_IO_MASK)
+#error "Linear actuator 1 and 2 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 1 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 1 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT1_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 1 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT3_IO_MASK)
+#error "Linear actuator 2 and 3 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 2 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT2_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 2 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT3_IO_MASK & LINACT4_IO_MASK)
+#error "Linear actuator 3 and 4 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT3_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 3 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+#if (LINACT4_IO_MASK & LINACT5_IO_MASK)
+#error "Linear actuator 4 and 5 have overlapped outputs and this can lead to unpredictable results"
+#endif
+
+#if (LINACT0_LIMIT_MASK & LINACT1_LIMIT_MASK)
+#error "Linear actuator 0 and 1 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT2_LIMIT_MASK)
+#error "Linear actuator 0 and 2 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 0 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 0 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT0_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 0 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT2_LIMIT_MASK)
+#error "Linear actuator 1 and 2 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 1 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 1 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT1_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 1 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT3_LIMIT_MASK)
+#error "Linear actuator 2 and 3 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 2 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT2_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 2 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT3_LIMIT_MASK & LINACT4_LIMIT_MASK)
+#error "Linear actuator 3 and 4 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT3_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 3 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+#if (LINACT4_LIMIT_MASK & LINACT5_LIMIT_MASK)
+#error "Linear actuator 4 and 5 have overlapped input limits and this can lead to unpredictable results"
+#endif
+
 
 #ifdef MCU_HAS_I2C
 

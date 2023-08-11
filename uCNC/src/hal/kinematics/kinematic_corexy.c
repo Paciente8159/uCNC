@@ -58,58 +58,69 @@ uint8_t kinematics_home(void)
 	float target[AXIS_COUNT];
 
 #ifndef DISABLE_ALL_LIMITS
-#ifndef DISABLE_Z_HOMING
-#if (defined(AXIS_Z) && (ASSERT_PIN(LIMIT_Z) || ASSERT_PIN(LIMIT_Z2)))
-	if (mc_home_axis(AXIS_Z, LINACT2_LIMIT_MASK))
+#if AXIS_Z_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Z_HOMING_MASK, LINACT2_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Z;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_X_HOMING
-#if (defined(AXIS_X) && (ASSERT_PIN(LIMIT_X) || ASSERT_PIN(LIMIT_X2)))
-	if (mc_home_axis(AXIS_X, LINACT0_LIMIT_MASK))
+#ifndef ENABLE_XY_SIMULTANEOUS_HOMING
+
+#if AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_X;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_Y_HOMING
-#if (defined(AXIS_Y) && (ASSERT_PIN(LIMIT_Y) || ASSERT_PIN(LIMIT_Y2)))
-	if (mc_home_axis(AXIS_Y, LINACT1_LIMIT_MASK))
+#if AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_Y;
 	}
 #endif
+
+#else
+
+#if AXIS_X_HOMING_MASK != 0 && AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK | AXIS_Y_HOMING_MASK, LINACT0_LIMIT_MASK | LINACT1_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_XY;
+	}
+#elif AXIS_X_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_X_HOMING_MASK, LINACT0_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_X;
+	}
+#elif AXIS_Y_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_Y_HOMING_MASK, LINACT1_LIMIT_MASK))
+	{
+		return KINEMATIC_HOMING_ERROR_Y;
+	}
 #endif
 
-#ifndef DISABLE_A_HOMING
-#if (defined(AXIS_A) && ASSERT_PIN(LIMIT_A))
-	if (mc_home_axis(AXIS_A, LINACT3_LIMIT_MASK))
+#endif
+
+#if AXIS_A_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_A_HOMING_MASK, LINACT3_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_A;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_B_HOMING
-#if (defined(AXIS_B) && ASSERT_PIN(LIMIT_B))
-	if (mc_home_axis(AXIS_B, LINACT4_LIMIT_MASK))
+#if AXIS_B_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_B_HOMING_MASK, LINACT4_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_B;
 	}
 #endif
-#endif
 
-#ifndef DISABLE_C_HOMING
-#if (defined(AXIS_C) && ASSERT_PIN(LIMIT_C))
-	if (mc_home_axis(AXIS_C, LINACT5_LIMIT_MASK))
+#if AXIS_C_HOMING_MASK != 0
+	if (mc_home_axis(AXIS_C_HOMING_MASK, LINACT5_LIMIT_MASK))
 	{
 		return KINEMATIC_HOMING_ERROR_C;
 	}
-#endif
 #endif
 
 	cnc_unlock(true);

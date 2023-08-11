@@ -376,8 +376,10 @@ void cnc_home(void)
 {
 	cnc_set_exec_state(EXEC_HOMING);
 	uint8_t error = kinematics_home();
-	// unlock expected limits
+// unlock expected limits
+#ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(0);
+#endif
 	io_invert_limits(0);
 	if (error)
 	{

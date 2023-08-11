@@ -704,10 +704,9 @@ void mc_home_axis_finalize(homing_status_t *status)
 }
 #endif
 
-uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
+uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 {
 	float target[AXIS_COUNT];
-	uint8_t axis_mask = (1 << axis);
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 #ifdef ENABLE_MOTION_CONTROL_MODULES
@@ -724,8 +723,10 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
 
-	// locks limits to accept axis limit mask only or else throw error
+// locks limits to accept axis limit mask only or else throw error
+#ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(axis_limit);
+#endif
 	io_invert_limits(0);
 	cnc_unlock(true);
 
@@ -735,19 +736,28 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	float max_home_dist;
-	max_home_dist = -g_settings.max_distance[axis] * 1.5f;
-
-	// checks homing dir
-	if (g_settings.homing_dir_invert_mask & axis_mask)
-	{
-		max_home_dist = -max_home_dist;
-	}
-
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
-	target[axis] += max_home_dist;
+
+	// set's the homing distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
+	{
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			float max_home_dist;
+			max_home_dist = -g_settings.max_distance[i] * 1.5f;
+
+			// checks homing dir
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				max_home_dist = -max_home_dist;
+			}
+			target[i] += max_home_dist;
+		}
+	}
+
 	// initializes planner block data
 	// memset(block_data.steps, 0, sizeof(block_data.steps));
 	// block_data.steps[axis] = max_home_dist;
@@ -782,18 +792,28 @@ uint8_t mc_home_axis(uint8_t axis, uint8_t axis_limit)
 		return STATUS_CRITICAL_FAIL;
 	}
 
-	// back off from switch at lower speed
-	max_home_dist = g_settings.homing_offset * 5.0f;
-
 	// sync's the motion control with the real time position
 	mc_sync_position();
 	mc_get_position(target);
-	if (g_settings.homing_dir_invert_mask & axis_mask)
+
+	// set's the homing distance for each axis
+	for (uint8_t i = 0; i < AXIS_COUNT; i++)
 	{
-		max_home_dist = -max_home_dist;
+		uint8_t imask = (1 << i);
+		if (imask & axis_mask)
+		{
+			// back off from switch at lower speed
+			float max_home_dist = g_settings.homing_offset * 5.0f;
+
+			// checks homing dir
+			if (g_settings.homing_dir_invert_mask & axis_mask)
+			{
+				max_home_dist = -max_home_dist;
+			}
+			target[i] += max_home_dist;
+		}
 	}
 
-	target[axis] += max_home_dist;
 	block_data.feed = g_settings.homing_slow_feed_rate;
 	// block_data.steps[axis] = max_home_dist;
 	// unlocks the machine for next motion (this will clear the EXEC_UNHOMED flag
