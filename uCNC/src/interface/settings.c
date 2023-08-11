@@ -135,6 +135,11 @@ const settings_t __rom__ default_settings =
 		.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
 		.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
 		.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
+#elif (KINEMATIC == KINEMATIC_SCARA)
+		.scara_arm_length = DEFAULT_SCARA_ARM_LENGTH,
+		.scara_forearm_length = DEFAULT_SCARA_FOREARM_LENGTH,
+		.scara_arm_homing_angle = DEFAULT_SCARA_ARM_HOMING_ANGLE,
+		.scara_forearm_homing_angle = DEFAULT_SCARA_FOREARM_HOMING_ANGLE,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -234,7 +239,8 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 
 	return (crc ^ mcu_eeprom_getc(address));
 #else
-	return 255; // returns error
+	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	return 0; // loads defaults
 #endif
 }
 
@@ -294,6 +300,12 @@ bool settings_allows_negative(setting_offset_t id)
 {
 #if TOOL_COUNT > 0
 	if (id > 80 && id <= (80 + TOOL_COUNT))
+	{
+		return true;
+	}
+#endif
+#ifdef ENABLE_SKEW_COMPENSATION
+	if (id >=37 && id <= 39)
 	{
 		return true;
 	}
@@ -472,6 +484,19 @@ uint8_t settings_change(setting_offset_t id, float value)
 		break;
 	case 28:
 		g_settings.delta_bicep_homing_angle = value;
+		break;
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	case 106:
+		g_settings.scara_arm_length = value;
+		break;
+	case 107:
+		g_settings.scara_forearm_length = value;
+		break;
+	case 28:
+		g_settings.scara_arm_homing_angle = value;
+		break;
+	case 29:
+		g_settings.scara_forearm_homing_angle = value;
 		break;
 #endif
 		default:

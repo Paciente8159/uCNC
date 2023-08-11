@@ -136,7 +136,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
 #endif
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU_GOTO(2, goaxis, STR_KINEMATICS, CONST_VARG(5));
+	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
 
 	DECL_MENU(6, 2, STR_IO_CONFIG);
@@ -162,6 +162,12 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s25, STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s27, STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s29, STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
+#endif
 
 	// append steppers settings menu
 	DECL_MENU(4, 2, STR_AXIS);
@@ -1128,8 +1134,7 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		float axis[MAX(AXIS_COUNT, 3)];
 		int32_t steppos[STEPPER_COUNT];
 		itp_get_rt_position(steppos);
-		kinematics_apply_forward(steppos, axis);
-		kinematics_apply_reverse_transform(axis);
+		kinematics_steps_to_coordinates(steppos, axis);
 		// X = 0
 		char axis_letter = *((char *)item->action_arg);
 		uint8_t axis_index = (axis_letter >= 'X') ? (axis_letter - 'X') : (3 + axis_letter - 'A');

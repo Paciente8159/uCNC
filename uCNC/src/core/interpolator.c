@@ -804,7 +804,7 @@ void itp_reset_rt_position(float *origin)
 	}
 
 	// sync origin and steppers position
-	kinematics_apply_inverse(origin, itp_rt_step_pos);
+	kinematics_coordinates_to_steps(origin, itp_rt_step_pos);
 
 #if STEPPERS_ENCODERS_MASK != 0
 	encoders_itp_reset_rt_position(origin);

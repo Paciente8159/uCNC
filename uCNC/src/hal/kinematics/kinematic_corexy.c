@@ -161,20 +161,6 @@ uint8_t kinematics_home(void)
 	return STATUS_OK;
 }
 
-void kinematics_apply_transform(float *axis)
-{
-	/*
-	Define your custom transform
-	*/
-}
-
-void kinematics_apply_reverse_transform(float *axis)
-{
-	/*
-	Define your custom transform inverse operation
-	*/
-}
-
 bool kinematics_check_boundaries(float *axis)
 {
 	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))

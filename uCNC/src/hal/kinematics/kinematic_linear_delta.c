@@ -205,14 +205,6 @@ uint8_t kinematics_home(void)
 	return STATUS_OK;
 }
 
-void kinematics_apply_transform(float *axis)
-{
-}
-
-void kinematics_apply_reverse_transform(float *axis)
-{
-}
-
 bool kinematics_check_boundaries(float *axis)
 {
 	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))

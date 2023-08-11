@@ -74,9 +74,9 @@ extern "C"
 #define DOUT31_BIT 25
 
 //disable EEPROM emulation
-#ifndef RAM_ONLY_SETTINGS
-#define RAM_ONLY_SETTINGS
-#endif
+// #ifndef RAM_ONLY_SETTINGS
+// #define RAM_ONLY_SETTINGS
+// #endif
 
 #define I2C_CLK_BIT 27
 #define I2C_DATA_BIT 26
