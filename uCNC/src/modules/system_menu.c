@@ -162,6 +162,12 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s25, STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s27, STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
+#if (KINEMATIC == KINEMATIC_DELTA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s29, STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
+#endif
 
 	// append steppers settings menu
 	DECL_MENU(4, 2, STR_AXIS);
