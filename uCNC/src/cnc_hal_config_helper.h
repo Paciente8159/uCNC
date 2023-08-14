@@ -2002,7 +2002,7 @@ typedef uint16_t step_t;
 #error "Invalid config option STATUS_AUTOMATIC_REPORT_INTERVAL must be set between 0 and 1000"
 #endif
 
-#if defined(ENABLE_X_AUTOLEVEL) || defined(ENABLE_Y_AUTOLEVEL) || defined(ENABLE_Z_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) || defined(ENABLE_XY_SIMULTANEOUS_HOMING)
+#if defined(ENABLE_AXIS_AUTOLEVEL) || defined(IS_DELTA_KINEMATICS) || defined(ENABLE_XY_SIMULTANEOUS_HOMING)
 #define ENABLE_MULTI_STEP_HOMING
 #endif
 

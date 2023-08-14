@@ -152,28 +152,28 @@ extern "C"
  * LIMITx			-		-		C		B		A		Z&Z2	Y&Y2	X&X2
  * 
  * LINACT with multiple STEP IO pulse all those IO in sync, but when homing it can stop independently as it hits the correspondent limit until all motors reach the desired home position.
- * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP that it controls
+ * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
  * 
  * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
- * to reassing LIMIT_X2 to STEP6 like this
+ * to reassing LIMIT_X2 to STEP6 IO MASK like this
  * 
  * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
  * 
  * **/
 
-// #define ENABLE_X_AUTOLEVEL
-#ifdef ENABLE_X_AUTOLEVEL
-#define LIMIT_X2_IO_MASK STEP5_IO_MASK
-#endif
+// #define ENABLE_AXIS_AUTOLEVEL
 
-// #define ENABLE_Y_AUTOLEVEL
-#ifdef ENABLE_Y_AUTOLEVEL
-#define LIMIT_Y2_IO_MASK STEP6_IO_MASK
-#endif
+#ifdef ENABLE_AXIS_AUTOLEVEL
 
-// #define ENABLE_Z_AUTOLEVEL
-#ifdef ENABLE_Z_AUTOLEVEL
-#define LIMIT_Z2_IO_MASK STEP7_IO_MASK
+// Uncomment to modify X2 limit mask value to match the X2 motor
+// #define LIMIT_X2_IO_MASK STEP5_IO_MASK
+
+// Uncomment to modify Y2 limit mask value to match the Y2 motor
+// #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
+
+// Uncomment to modify Y2 limit mask value to match the Y2 motor
+// #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
+
 #endif
 
 /**
