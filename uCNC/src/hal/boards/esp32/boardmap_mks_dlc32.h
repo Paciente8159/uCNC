@@ -98,9 +98,6 @@ extern "C"
 //cs
 #define DOUT6_BIT 27
 
-// include the IO expander
-#include "../../../modules/ic74hc595.h"
-
 #ifdef __cplusplus
 }
 #endif

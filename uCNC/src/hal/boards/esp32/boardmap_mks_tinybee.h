@@ -120,9 +120,6 @@ extern "C"
 #define DIN18_BIT 14
 #define DIN18_PULLUP
 
-// include the IO expander
-#include "../../../modules/ic74hc595.h"
-
 #ifdef __cplusplus
 }
 #endif

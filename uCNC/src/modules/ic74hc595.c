@@ -18,7 +18,6 @@
 */
 
 #include "../cnc.h"
-#include "ic74hc595.h"
 #include <stdint.h>
 #include <stdbool.h>
 
