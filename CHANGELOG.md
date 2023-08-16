@@ -6,6 +6,21 @@
 
 # Changelog
 
+## [1.7.4] - 16-08-2023
+
+### Added
+
+- added option to allow machine homing using only homing cycle enabled and soft limits (#475)
+
+### Changed
+
+- modified UART TMC to be addressable (#466)
+
+### Fixed
+
+- fixed skew compensation not accepts negative values (#472)
+- fixed skew compensation error accumulation over motions (#474)
+
 ## [1.7.3] - 15-07-2023
 
 ### Changed
@@ -1252,6 +1267,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1
