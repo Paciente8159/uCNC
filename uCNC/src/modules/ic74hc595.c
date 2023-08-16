@@ -176,6 +176,10 @@ FORCEINLINE void ic74hc595_set_steps(uint8_t mask)
 
 FORCEINLINE void ic74hc595_toggle_steps(uint8_t mask)
 {
+	if (!mask)
+	{
+		return;
+	}
 #if ASSERT_IO_OFFSET(STEP0_IO_OFFSET)
 	if (mask & (1 << 0))
 	{

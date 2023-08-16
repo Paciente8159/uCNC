@@ -16,6 +16,7 @@
 	See the	GNU General Public License for more details.
 */
 
+#include "../cnc.h"
 #include "system_menu.h"
 #include <math.h>
 
