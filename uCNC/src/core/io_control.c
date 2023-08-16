@@ -595,6 +595,10 @@ void io_toggle_steps(uint8_t mask)
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(toggle_steps, &mask);
 	// #endif
+	if (!mask)
+	{
+		return;
+	}
 
 #ifdef IC74HC595_HAS_STEPS
 	ic74hc595_toggle_steps(mask);

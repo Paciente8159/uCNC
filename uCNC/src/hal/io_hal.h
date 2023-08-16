@@ -7,6 +7,8 @@ extern "C"
 {
 #endif
 
+#include "../modules/ic74hc595.h"
+
 /*IO HAL*/
 #if ASSERT_PIN_IO(STEP0)
 #define io1_config_output mcu_config_output(STEP0)
@@ -4770,6 +4772,10 @@ extern "C"
 #endif
 
 /*PWM*/
+extern uint8_t g_soft_pwm_res;
+extern uint8_t g_io_soft_pwm[16];
+extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
+
 #if ASSERT_PIN_IO(PWM0)
 #define io25_config_pwm(freq) mcu_config_pwm(PWM0, freq)
 #define io25_set_pwm(value) mcu_set_pwm(PWM0, value)

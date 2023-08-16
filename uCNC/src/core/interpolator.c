@@ -929,7 +929,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 			// loads a new segment
 			itp_rt_sgm = &itp_sgm_data[itp_sgm_data_read];
 			cnc_set_exec_state(EXEC_RUN);
-			if (itp_rt_sgm->block != NULL)
+			if (itp_rt_sgm->remaining_steps)
 			{
 #if (DSS_MAX_OVERSAMPLING != 0)
 				if (itp_rt_sgm->next_dss != 0)

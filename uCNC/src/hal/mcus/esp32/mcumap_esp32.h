@@ -2833,9 +2833,6 @@ extern "C"
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
-#ifdef IC74HC595_HAS_PWMS
-	extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
-#endif
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
