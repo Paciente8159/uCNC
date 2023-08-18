@@ -73,24 +73,20 @@ static flash_eeprom_t mcu_eeprom;
 hw_timer_t *esp32_step_timer;
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-static volatile uint8_t ic74hc595_update_lock;
 void ic74hc595_shift_io_pins(void)
 {
-	if (!ic74hc595_update_lock++)
-	{
-		do
-		{
-			uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
-			I2SREG.conf_single_data = data;
-		} while (--ic74hc595_update_lock);
-	}
 }
 #endif
 
-#ifdef IC74HC595_HAS_PWMS
-IRAM_ATTR void mcu_pwm_isr(void *arg)
+#if defined(IC74HC595_CUSTOM_SHIFT_IO) && (IC74HC595_COUNT != 0)
+IRAM_ATTR void io_updater(void *arg)
 {
+#ifdef IC74HC595_HAS_PWMS
 	io_soft_pwm_update();
+#endif
+
+	uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
+	I2SREG.conf_single_data = data;
 
 	timer_group_clr_intr_status_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
 	/* After the alarm has been triggered
@@ -196,9 +192,26 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 
 void mcu_core0_tasks_init(void *arg)
 {
-#ifdef IC74HC595_HAS_PWMS
+#if defined(IC74HC595_CUSTOM_SHIFT_IO) && (IC74HC595_COUNT != 0)
+	// initialize PWM timer
+	/* Select and initialize basic parameters of the timer */
+	timer_config_t pwmconfig = {
+		.divider = 2,
+		.counter_dir = TIMER_COUNT_UP,
+		.counter_en = TIMER_PAUSE,
+		.alarm_en = TIMER_ALARM_EN,
+		.auto_reload = true,
+	}; // default clock source is APB
+	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &pwmconfig);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
 	// register PWM isr
-	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
+	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, io_updater, NULL, 0, NULL);
+	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
 #endif
 #ifdef MCU_HAS_UART
 	// install UART driver handler
@@ -382,26 +395,6 @@ void mcu_init(void)
 	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
-#ifdef IC74HC595_HAS_PWMS
-	// initialize PWM timer
-	/* Select and initialize basic parameters of the timer */
-	timer_config_t pwmconfig = {
-		.divider = 2,
-		.counter_dir = TIMER_COUNT_UP,
-		.counter_en = TIMER_PAUSE,
-		.alarm_en = TIMER_ALARM_EN,
-		.auto_reload = true,
-	}; // default clock source is APB
-	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &pwmconfig);
-
-	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
-	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
-#endif
-
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
@@ -468,7 +461,7 @@ void mcu_init(void)
 	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
-	I2SREG.clkm_conf.clkm_div_num = 4; // reset value of 4
+	I2SREG.clkm_conf.clkm_div_num = 1; // reset value of 4
 	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
 	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
 

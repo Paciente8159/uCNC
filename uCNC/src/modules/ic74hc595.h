@@ -1535,12 +1535,6 @@ extern "C"
 #define ic74hc595_get_pin(pin) 0
 #endif
 
-	void ic74hc595_set_steps(uint8_t mask);
-	void ic74hc595_toggle_steps(uint8_t mask);
-	void ic74hc595_set_dirs(uint8_t mask);
-	void ic74hc595_enable_steppers(uint8_t mask);
-	void ic74hc595_set_pwms(uint16_t mask);
-	void ic74hc595_set_servos(uint8_t mask);
 	void ic74hc595_set_output(uint8_t pin, bool state);
 	void ic74hc595_shift_io_pins(void);
 
