@@ -196,10 +196,6 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 
 void mcu_core0_tasks_init(void *arg)
 {
-#ifdef IC74HC595_HAS_PWMS
-	// register PWM isr
-	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
-#endif
 #ifdef MCU_HAS_UART
 	// install UART driver handler
 	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
@@ -399,6 +395,8 @@ void mcu_init(void)
 	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
 	/* Configure the alarm value and the interrupt on alarm. */
 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
+	// register PWM isr
+	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, mcu_pwm_isr, NULL, 0, NULL);
 	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
 #endif
 
@@ -468,7 +466,7 @@ void mcu_init(void)
 	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
-	I2SREG.clkm_conf.clkm_div_num = 4; // reset value of 4
+	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
 	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
 	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
 
