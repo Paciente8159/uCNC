@@ -1535,7 +1535,6 @@ extern "C"
 #define ic74hc595_get_pin(pin) 0
 #endif
 
-	void ic74hc595_set_output(uint8_t pin, bool state);
 	void ic74hc595_shift_io_pins(void);
 
 #ifdef __cplusplus

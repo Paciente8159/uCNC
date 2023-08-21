@@ -75,6 +75,17 @@ hw_timer_t *esp32_step_timer;
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 void ic74hc595_shift_io_pins(void)
 {
+#ifndef IC74HC595_HAS_PWMS
+	static volatile uint8_t ic74hc595_update_lock = 0;
+	if (!ic74hc595_update_lock++)
+	{
+		do
+		{
+			uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
+			I2SREG.conf_single_data = data;
+		} while (--ic74hc595_update_lock);
+	}
+#endif
 }
 #endif
 
@@ -121,7 +132,7 @@ IRAM_ATTR void servo_reset(void *p)
 	io_clear_output(SERVO5);
 #endif
 #ifdef IC74HC595_HAS_SERVOS
-	ic74hc595_set_servos(0);
+	ic74hc595_shift_io_pins();
 #endif
 }
 
@@ -190,9 +201,54 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 }
 #endif
 
-void mcu_core0_tasks_init(void *arg)
+static FORCEINLINE void esp32_i2s_extender_init(void)
 {
-#if defined(IC74HC595_CUSTOM_SHIFT_IO) && (IC74HC595_COUNT != 0)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	i2s_config_t i2s_config = {
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
+		.sample_rate = 156250UL,			   // 312500KHz * 32bit * 2 channels = 20MHz
+		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
+		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.dma_buf_count = 2,
+		.dma_buf_len = 8,
+		.use_apll = false,
+		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1 // Interrupt level 1
+	};
+
+	i2s_pin_config_t pin_config = {
+		.bck_io_num = IC74HC595_I2S_CLK,
+		.ws_io_num = IC74HC595_I2S_WS,
+		.data_out_num = IC74HC595_I2S_DATA,
+		.data_in_num = -1 // Not used
+	};
+
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, NULL);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
+	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
+	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
+	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
+	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+
+	//
+	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
+	I2SREG.conf_chan.tx_chan_mod = 3; //
+	I2SREG.sample_rate_conf.tx_bits_mod = 32;
+
+	I2SREG.conf_single_data = 0;
+
+	// Use normal clock format, (WS is aligned with the last bit)
+	I2SREG.conf.tx_msb_shift = 0;
+	I2SREG.conf.rx_msb_shift = 0;
+
+	// Disable TX interrupts
+	I2SREG.int_ena.out_eof = 0;
+	I2SREG.int_ena.out_dscr_err = 0;
+
+#endif
+
+#if defined(IC74HC595_HAS_PWMS)
 	// initialize PWM timer
 	/* Select and initialize basic parameters of the timer */
 	timer_config_t pwmconfig = {
@@ -212,7 +268,12 @@ void mcu_core0_tasks_init(void *arg)
 	// register PWM isr
 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, io_updater, NULL, 0, NULL);
 	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
 #endif
+}
+
+void mcu_core0_tasks_init(void *arg)
+{
 #ifdef MCU_HAS_UART
 	// install UART driver handler
 	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
@@ -220,6 +281,10 @@ void mcu_core0_tasks_init(void *arg)
 #ifdef MCU_HAS_UART2
 	// install UART driver handler
 	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+#endif
+
+#ifdef IC74HC595_HAS_PWMS
+	esp32_i2s_extender_init();
 #endif
 }
 
@@ -294,7 +359,7 @@ void mcu_rtc_task(void *arg)
 		}
 
 #ifdef IC74HC595_HAS_SERVOS
-		ic74hc595_set_servos(servomask);
+		ic74hc595_shift_io_pins();
 #endif
 
 		servo_counter++;
@@ -395,27 +460,9 @@ void mcu_init(void)
 	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
-// #ifdef IC74HC595_HAS_PWMS
-// 	// initialize PWM timer
-// 	/* Select and initialize basic parameters of the timer */
-// 	timer_config_t pwmconfig = {
-// 		.divider = 2,
-// 		.counter_dir = TIMER_COUNT_UP,
-// 		.counter_en = TIMER_PAUSE,
-// 		.alarm_en = TIMER_ALARM_EN,
-// 		.auto_reload = true,
-// 	}; // default clock source is APB
-// 	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &pwmconfig);
-
-// 	/* Timer's counter will initially start from value below.
-// 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-// 	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
-// 	/* Configure the alarm value and the interrupt on alarm. */
-// 	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
-// 	// register PWM isr
-// 	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, io_updater, NULL, 0, NULL);
-// 	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
-// #endif
+#ifndef IC74HC595_HAS_PWMS
+	esp32_i2s_extender_init();
+#endif
 
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
@@ -458,53 +505,6 @@ void mcu_init(void)
 #ifdef MCU_HAS_I2C
 	mcu_i2c_config(I2C_FREQ);
 #endif
-
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-	i2s_config_t i2s_config = {
-		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
-		.sample_rate = 156250UL,			   // 312500KHz * 32bit * 2 channels = 20MHz
-		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
-		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-		.dma_buf_count = 2,
-		.dma_buf_len = 8,
-		.use_apll = false,
-		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1 // Interrupt level 1
-	};
-
-	i2s_pin_config_t pin_config = {
-		.bck_io_num = IC74HC595_I2S_CLK,
-		.ws_io_num = IC74HC595_I2S_WS,
-		.data_out_num = IC74HC595_I2S_DATA,
-		.data_in_num = -1 // Not used
-	};
-
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, NULL);
-	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
-
-	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
-	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
-	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
-
-	//
-	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
-	I2SREG.conf_chan.tx_chan_mod = 3; //
-	I2SREG.sample_rate_conf.tx_bits_mod = 32;
-
-	I2SREG.conf_single_data = 0;
-
-	// Use normal clock format, (WS is aligned with the last bit)
-	I2SREG.conf.tx_msb_shift = 0;
-	I2SREG.conf.rx_msb_shift = 0;
-
-	// Disable TX interrupts
-	I2SREG.int_ena.out_eof = 0;
-	I2SREG.int_ena.out_dscr_err = 0;
-
-#endif
-
-	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
 
 	esp32_wifi_bt_init();
 	mcu_enable_global_isr();

@@ -2765,14 +2765,12 @@ extern "C"
 #define I2C_FREQ 400000UL
 #endif
 
-#if(I2C_PORT==0)
+#if (I2C_PORT == 0)
 #define I2C_REG Wire
 #else
 #define I2C_REG __helper__(Wire, I2C_PORT, )
 #endif
 #endif
-
-
 
 #ifndef IC74HC595_I2S_PORT
 #define IC74HC595_I2S_PORT 0
@@ -2800,7 +2798,7 @@ extern "C"
 #define mcu_config_analog(X)                                                      \
 	{                                                                             \
 		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_10);                                       \
+		adc1_config_width(ADC_WIDTH_BIT_10);                                      \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
 	}
 #define mcu_config_pullup(X)                                       \
@@ -2832,7 +2830,7 @@ extern "C"
 	{                                                                           \
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-
+#ifndef IC74HC595_HAS_PWMS
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
@@ -2858,6 +2856,18 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
+#else
+// forces all PWM to be generated via software
+#define mcu_config_pwm(X, Y)                         \
+	{                                                \
+		g_soft_pwm_res = mcu_softpwm_freq_config(Y); \
+	}
+#define mcu_set_pwm(X, Y)                                \
+	{                                                    \
+		g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); \
+	}
+#define mcy_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
+#endif
 #define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
 
 #ifdef MCU_HAS_ONESHOT_TIMER

@@ -853,10 +853,6 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 	static uint8_t pwm_counter_last = 0;
 	uint8_t pwm_counter = pwm_counter_last;
 	uint8_t resolution = g_soft_pwm_res;
-#ifdef IC74HC595_HAS_PWMS
-	static uint16_t pwm_mask_last = 0;
-	uint16_t pwm_mask = 0;
-#endif
 	// software PWM
 	pwm_counter += (1 << resolution);
 	pwm_counter_last = pwm_counter;
@@ -963,105 +959,61 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 #if ASSERT_PIN(PWM10)
 	if (pwm_counter > g_io_soft_pwm[10] || !g_io_soft_pwm[10])
 	{
-#if ASSERT_PIN(PWM10)
 		io_clear_output(PWM10);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM10)
 		io_set_output(PWM10);
-#elif ASSERT_PIN_EXTENDED(PWM10)
-		pwm_mask |= (1 << 10);
-#endif
 	}
 #endif
 #if ASSERT_PIN(PWM11)
 	if (pwm_counter > g_io_soft_pwm[11] || !g_io_soft_pwm[11])
 	{
-#if ASSERT_PIN(PWM11)
 		io_clear_output(PWM11);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM11)
 		io_set_output(PWM11);
-#elif ASSERT_PIN_EXTENDED(PWM11)
-		pwm_mask |= (1 << 11);
-#endif
 	}
 #endif
 #if ASSERT_PIN(PWM12)
 	if (pwm_counter > g_io_soft_pwm[12] || !g_io_soft_pwm[12])
 	{
-#if ASSERT_PIN(PWM12)
 		io_clear_output(PWM12);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM12)
 		io_set_output(PWM12);
-#elif ASSERT_PIN_EXTENDED(PWM12)
-		pwm_mask |= (1 << 12);
-#endif
 	}
 #endif
 #if ASSERT_PIN(PWM13)
 	if (pwm_counter > g_io_soft_pwm[13] || !g_io_soft_pwm[13])
 	{
-#if ASSERT_PIN(PWM13)
 		io_clear_output(PWM13);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM13)
 		io_set_output(PWM13);
-#elif ASSERT_PIN_EXTENDED(PWM13)
-		pwm_mask |= (1 << 13);
-#endif
 	}
 #endif
 #if ASSERT_PIN(PWM14)
 	if (pwm_counter > g_io_soft_pwm[14] || !g_io_soft_pwm[14])
 	{
-#if ASSERT_PIN(PWM14)
 		io_clear_output(PWM14);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM14)
 		io_set_output(PWM14);
-#elif ASSERT_PIN_EXTENDED(PWM14)
-		pwm_mask |= (1 << 14);
-#endif
 	}
 #endif
 #if ASSERT_PIN(PWM15)
 	if (pwm_counter > g_io_soft_pwm[15] || !g_io_soft_pwm[15])
 	{
-#if ASSERT_PIN(PWM15)
 		io_clear_output(PWM15);
-#endif
 	}
 	else
 	{
-#if ASSERT_PIN(PWM15)
 		io_set_output(PWM15);
-#elif ASSERT_PIN_EXTENDED(PWM15)
-		pwm_mask |= (1 << 15);
-#endif
-	}
-#endif
-
-#ifdef IC74HC595_HAS_PWMS
-	if (pwm_mask_last != pwm_mask)
-	{
-		ic74hc595_set_pwms(pwm_mask);
-		pwm_mask_last = pwm_mask;
 	}
 #endif
 }
