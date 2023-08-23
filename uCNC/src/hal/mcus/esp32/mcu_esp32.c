@@ -73,7 +73,7 @@ static flash_eeprom_t mcu_eeprom;
 hw_timer_t *esp32_step_timer;
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-void ic74hc595_shift_io_pins(void)
+MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
 #ifndef IC74HC595_HAS_PWMS
 	static volatile uint8_t ic74hc595_update_lock = 0;
@@ -81,7 +81,7 @@ void ic74hc595_shift_io_pins(void)
 	{
 		do
 		{
-			uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
+			uint32_t data = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
 			I2SREG.conf_single_data = data;
 		} while (--ic74hc595_update_lock);
 	}
@@ -89,14 +89,14 @@ void ic74hc595_shift_io_pins(void)
 }
 #endif
 
-#if defined(IC74HC595_CUSTOM_SHIFT_IO) && (IC74HC595_COUNT != 0)
-IRAM_ATTR void io_updater(void *arg)
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+MCU_CALLBACK void io_updater(void *arg)
 {
 #ifdef IC74HC595_HAS_PWMS
 	io_soft_pwm_update();
 #endif
 
-	uint32_t data = *((uint32_t *)&ic74hc595_io_pins[0]);
+	uint32_t data = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
 	I2SREG.conf_single_data = data;
 
 	timer_group_clr_intr_status_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
@@ -109,7 +109,7 @@ IRAM_ATTR void io_updater(void *arg)
 
 #if SERVOS_MASK > 0
 static uint8_t mcu_servos[6];
-IRAM_ATTR void servo_reset(void *p)
+MCU_CALLBACK void servo_reset(void *p)
 {
 	timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
@@ -162,7 +162,7 @@ void start_servo_timeout(uint8_t timeout)
 }
 #endif
 
-IRAM_ATTR void mcu_gpio_isr(void *type)
+MCU_CALLBACK void mcu_gpio_isr(void *type)
 {
 	// read the address and not the pointer value because we are passing a literal integer
 	// reading the pointer value would try to read an invalid memory address
@@ -372,7 +372,7 @@ void mcu_rtc_task(void *arg)
 	}
 }
 
-IRAM_ATTR void mcu_itp_isr(void *arg)
+MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 	static bool resetstep = false;
 
@@ -850,7 +850,7 @@ void mcu_eeprom_flush(void)
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 
-IRAM_ATTR void mcu_oneshot_isr(void *arg)
+MCU_CALLBACK void mcu_oneshot_isr(void *arg)
 {
 	timer_pause(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 	timer_group_clr_intr_status_in_isr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);

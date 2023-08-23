@@ -1523,7 +1523,7 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
-	extern uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+	extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 #define ic74hc595_set_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] |= (__indirect__(pin, IO_BITMASK))
 #define ic74hc595_clear_pin(pin) ic74hc595_io_pins[__indirect__(pin, IO_BYTEOFFSET)] &= ~(__indirect__(pin, IO_BITMASK))
 #define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))

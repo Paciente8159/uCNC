@@ -7,8 +7,6 @@ extern "C"
 {
 #endif
 
-#include "../modules/ic74hc595.h"
-
 /*IO HAL*/
 #if ASSERT_PIN_IO(STEP0)
 #define io1_config_output mcu_config_output(STEP0)

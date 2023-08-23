@@ -164,7 +164,6 @@ extern "C"
 #endif
 
 #include "../../../boardmap_overrides.h"
-#include "../../modules/ic74hc595.h"
 #include "../mcus/mcudefs.h" //configures the MCU for the selected board
 
 #ifdef __cplusplus

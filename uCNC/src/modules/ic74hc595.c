@@ -43,11 +43,10 @@
 
 #define ic74hc595_delay() mcu_delay_cycles(IC74HC595_DELAY_CYCLES)
 
-#if (IC74HC595_COUNT != 0)
-uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
-static volatile uint8_t ic74hc595_update_lock;
-void __attribute__((weak)) ic74hc595_shift_io_pins(void)
+volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+MCU_CALLBACK void __attribute__((weak)) ic74hc595_shift_io_pins(void)
 {
+	static volatile uint8_t ic74hc595_update_lock = 0;
 	uint8_t pins[IC74HC595_COUNT];
 	if (!ic74hc595_update_lock++)
 	{
@@ -87,5 +86,3 @@ void __attribute__((weak)) ic74hc595_shift_io_pins(void)
 		} while (--ic74hc595_update_lock);
 	}
 }
-
-#endif
