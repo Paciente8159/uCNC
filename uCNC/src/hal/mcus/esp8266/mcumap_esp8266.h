@@ -989,8 +989,8 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
 
 #define MCU_HAS_ONESHOT_TIMER

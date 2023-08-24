@@ -53,7 +53,7 @@ extern "C"
 #define RX_PULLUP
 #define TX_BIT 0
 // only uncomment this if other port other then 0 is used
-// #define COM_PORT 0
+// #define UART_PORT 0
 
 //forces USB
 #define MCU_HAS_USB
