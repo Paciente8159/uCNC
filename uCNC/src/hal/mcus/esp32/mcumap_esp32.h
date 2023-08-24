@@ -2682,14 +2682,14 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
 #endif
 #if (defined(TX2) && defined(RX2))
 #define MCU_HAS_UART2
-#ifndef COM2_PORT
-#define COM2_PORT 0
+#ifndef UART2_PORT
+#define UART2_PORT 0
 #endif
 #ifndef BAUDRATE2
 #define BAUDRATE2 BAUDRATE

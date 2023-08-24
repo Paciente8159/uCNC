@@ -198,11 +198,11 @@ void mcu_core0_tasks_init(void *arg)
 {
 #ifdef MCU_HAS_UART
 	// install UART driver handler
-	uart_driver_install(COM_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+	uart_driver_install(UART_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 #endif
 #ifdef MCU_HAS_UART2
 	// install UART driver handler
-	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
+	uart_driver_install(UART2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 #endif
 }
 
@@ -360,8 +360,8 @@ void mcu_init(void)
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 		.source_clk = UART_SCLK_APB};
 	// We won't use a buffer for sending data.
-	uart_param_config(COM_PORT, &uartconfig);
-	uart_set_pin(COM_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	uart_param_config(UART_PORT, &uartconfig);
+	uart_set_pin(UART_PORT, TX_BIT, RX_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
 #ifdef MCU_HAS_UART2
@@ -374,8 +374,8 @@ void mcu_init(void)
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 		.source_clk = UART_SCLK_APB};
 	// We won't use a buffer for sending data.
-	uart_param_config(COM2_PORT, &uart2config);
-	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	uart_param_config(UART2_PORT, &uart2config);
+	uart_set_pin(UART2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
@@ -572,7 +572,7 @@ void mcu_uart_flush(void)
 		uint8_t r;
 
 		BUFFER_READ(uart, tmp, UART_TX_BUFFER_SIZE, r);
-		uart_write_bytes(COM_PORT, tmp, r);
+		uart_write_bytes(UART_PORT, tmp, r);
 	}
 }
 #endif
@@ -599,7 +599,7 @@ void mcu_uart2_flush(void)
 		uint8_t r;
 
 		BUFFER_READ(uart2, tmp, UART2_TX_BUFFER_SIZE, r);
-		uart_write_bytes(COM2_PORT, tmp, r);
+		uart_write_bytes(UART2_PORT, tmp, r);
 	}
 }
 #endif
@@ -756,14 +756,14 @@ void mcu_dotasks(void)
 	char rxdata[RX_BUFFER_SIZE];
 	int rxlen, i;
 #ifdef MCU_HAS_UART
-	rxlen = uart_read_bytes(COM_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
 	for (i = 0; i < rxlen; i++)
 	{
 		mcu_com_rx_cb((uint8_t)rxdata[i]);
 	}
 #endif
 #if defined(MCU_HAS_UART2)
-	rxlen = uart_read_bytes(COM2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
+	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
