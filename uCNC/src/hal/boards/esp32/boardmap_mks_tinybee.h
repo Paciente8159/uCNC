@@ -41,7 +41,7 @@ extern "C"
 #define TX_BIT 1
 #define RX_PULLUP
 // only uncomment this if other port other then 0 is used
-// #define COM_PORT 0
+// #define UART_PORT 0
 
 // configure the 74HC595 modules
 #define DOUT8_BIT 27
