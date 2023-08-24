@@ -39,6 +39,12 @@
 
 static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
+static volatile bool mcu_itp_timer_running;
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+volatile static uint32_t esp32_io_counter;
+volatile static uint32_t esp32_io_counter_reload;
+#endif
+hw_timer_t *esp32_step_timer;
 
 void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(char *buffer);
@@ -70,39 +76,43 @@ static flash_eeprom_t mcu_eeprom;
 #include "driver/i2s.h"
 #endif
 
-hw_timer_t *esp32_step_timer;
-
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
+// disable this function
+// IO will be updated at a fixed rate
 MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
-#ifndef IC74HC595_HAS_PWMS
-	static volatile uint8_t ic74hc595_update_lock = 0;
-	if (!ic74hc595_update_lock++)
-	{
-		do
-		{
-			uint32_t data = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
-			I2SREG.conf_single_data = data;
-		} while (--ic74hc595_update_lock);
-	}
-#endif
 }
 #endif
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-MCU_CALLBACK void io_updater(void *arg)
+MCU_CALLBACK void esp32_io_updater(void *arg)
 {
+	static bool resetstep = false;
+
 #ifdef IC74HC595_HAS_PWMS
 	io_soft_pwm_update();
 #endif
 
+	if (mcu_itp_timer_running)
+	{
+		if (!--esp32_io_counter)
+		{
+			if (!resetstep)
+				mcu_step_cb();
+			else
+				mcu_step_reset_cb();
+			resetstep = !resetstep;
+			esp32_io_counter = esp32_io_counter_reload;
+		}
+	}
+
 	uint32_t data = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
 	I2SREG.conf_single_data = data;
 
-	timer_group_clr_intr_status_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	/* After the alarm has been triggered
 	  we need enable it again, so it is triggered the next time */
-	timer_group_enable_alarm_in_isr(PWM_TIMER_TG, PWM_TIMER_IDX);
+	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
 
 #endif
@@ -246,29 +256,26 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 	I2SREG.int_ena.out_eof = 0;
 	I2SREG.int_ena.out_dscr_err = 0;
 
-#endif
-
-#if defined(IC74HC595_HAS_PWMS)
-	// initialize PWM timer
+	// initialize ITP timer that will run at a fixed rate to update all IO
 	/* Select and initialize basic parameters of the timer */
-	timer_config_t pwmconfig = {
+	timer_config_t itpconfig = {
 		.divider = 2,
 		.counter_dir = TIMER_COUNT_UP,
 		.counter_en = TIMER_PAUSE,
 		.alarm_en = TIMER_ALARM_EN,
 		.auto_reload = true,
 	}; // default clock source is APB
-	timer_init(PWM_TIMER_TG, PWM_TIMER_IDX, &pwmconfig);
+	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
 
 	/* Timer's counter will initially start from value below.
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(PWM_TIMER_TG, PWM_TIMER_IDX, 0x00000000ULL);
+	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(PWM_TIMER_TG, PWM_TIMER_IDX, (uint64_t)157);
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)160);
 	// register PWM isr
-	timer_isr_register(PWM_TIMER_TG, PWM_TIMER_IDX, io_updater, NULL, 0, NULL);
-	timer_enable_intr(PWM_TIMER_TG, PWM_TIMER_IDX);
-	timer_start(PWM_TIMER_TG, PWM_TIMER_IDX);
+	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
 #endif
 }
 
@@ -283,7 +290,7 @@ void mcu_core0_tasks_init(void *arg)
 	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 #endif
 
-#ifdef IC74HC595_HAS_PWMS
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
 	esp32_i2s_extender_init();
 #endif
 }
@@ -372,6 +379,7 @@ void mcu_rtc_task(void *arg)
 	}
 }
 
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 	static bool resetstep = false;
@@ -387,6 +395,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	  we need enable it again, so it is triggered the next time */
 	timer_group_enable_alarm_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 }
+#endif
 
 /**
  * initializes the mcu
@@ -464,6 +473,7 @@ void mcu_init(void)
 	esp32_i2s_extender_init();
 #endif
 
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
@@ -472,6 +482,7 @@ void mcu_init(void)
 	itpconfig.alarm_en = TIMER_ALARM_EN;
 	itpconfig.auto_reload = true;
 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+#endif
 
 	// initialize rtc timer (currently on core 1)
 	// moved to core 0
@@ -663,8 +674,12 @@ bool mcu_get_global_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	// up and down counter (generates half the step rate at each event)
+// up and down counter (generates half the step rate at each event)
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t totalticks = (uint32_t)(500000.0f / frequency);
+#else
+	uint32_t totalticks = (uint32_t)(125000.0f / frequency);
+#endif
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -677,17 +692,22 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 	return (500000.0f / ((float)ticks * (float)prescaller));
+#else
+	return (125000.0f / ((float)ticks * (float)prescaller));
+#endif
 }
 
 /**
  * starts the timer interrupt that generates the step pulses for the interpolator
  * */
-static volatile bool mcu_itp_timer_running;
+
 void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	if (!mcu_itp_timer_running)
 	{
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 		/* Timer's counter will initially start from value below.
 		   Also, if auto_reload is set, this value will be automatically reload on alarm */
 		timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
@@ -698,6 +718,10 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 		timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
 
 		timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+#else
+		esp32_io_counter_reload = (uint32_t)(ticks * prescaller);
+		esp32_io_counter = esp32_io_counter_reload;
+#endif
 		mcu_itp_timer_running = true;
 	}
 	else
@@ -713,9 +737,13 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	if (mcu_itp_timer_running)
 	{
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
 		timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
 		timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+#else
+		esp32_io_counter_reload = (uint32_t)(ticks * prescaller);
+#endif
 	}
 	else
 	{
@@ -730,9 +758,11 @@ void mcu_stop_itp_isr(void)
 {
 	if (mcu_itp_timer_running)
 	{
+#ifndef IC74HC595_CUSTOM_SHIFT_IO
 		// timerAlarmDisable(esp32_step_timer);
 		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
 		timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+#endif
 		mcu_itp_timer_running = false;
 	}
 }

@@ -1016,6 +1016,10 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 		io_set_output(PWM15);
 	}
 #endif
+
+#ifdef IC74HC595_HAS_PWMS
+	ic74hc595_shift_io_pins();
+#endif
 }
 #endif
 
