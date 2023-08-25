@@ -91,8 +91,6 @@ static void set_speed(int16_t value)
 
 #if ASSERT_PIN(VFD_PWM)
 	io_set_pwm(VFD_PWM, (uint8_t)ABS(value));
-#else
-	io_set_pwm(VFD_PWM, (uint8_t)ABS(value));
 #endif
 }
 

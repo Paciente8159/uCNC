@@ -99,22 +99,22 @@ static IRAM_ATTR void mcu_gen_step(void)
 
 IRAM_ATTR void mcu_din_isr(void)
 {
-	io_inputs_isr();
+	mcu_inputs_changed_cb();
 }
 
 IRAM_ATTR void mcu_probe_isr(void)
 {
-	io_probe_isr();
+	mcu_probe_changed_cb();
 }
 
 IRAM_ATTR void mcu_limits_isr(void)
 {
-	io_limits_isr();
+	mcu_limits_changed_cb();
 }
 
 IRAM_ATTR void mcu_controls_isr(void)
 {
-	io_controls_isr();
+	mcu_controls_changed_cb();
 }
 
 IRAM_ATTR void mcu_rtc_isr(void *arg)
