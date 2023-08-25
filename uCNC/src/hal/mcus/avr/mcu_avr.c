@@ -617,10 +617,7 @@ void mcu_uart2_flush(void)
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
-	if (frequency < F_STEP_MIN)
-		frequency = F_STEP_MIN;
-	if (frequency > F_STEP_MAX)
-		frequency = F_STEP_MAX;
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	uint32_t clocks = (uint32_t)floorf((float)F_CPU / frequency);
 	*prescaller = (1 << 3); // CTC mode

@@ -98,9 +98,13 @@ MCU_CALLBACK void esp32_io_updater(void *arg)
 		if (!--esp32_io_counter)
 		{
 			if (!resetstep)
+			{
 				mcu_step_cb();
+			}
 			else
+			{
 				mcu_step_reset_cb();
+			}
 			resetstep = !resetstep;
 			esp32_io_counter = esp32_io_counter_reload;
 		}
@@ -674,6 +678,7 @@ bool mcu_get_global_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 // up and down counter (generates half the step rate at each event)
 #ifndef IC74HC595_CUSTOM_SHIFT_IO
 	uint32_t totalticks = (uint32_t)(500000.0f / frequency);
