@@ -97,7 +97,9 @@ DECL_MODULE(system_menu)
 	DECL_MENU(8, 1, STR_OVERRIDES);
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
 	DECL_MENU_ACTION(8, ovf_100, STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
+#if (TOOL_COUNT > 0)
 	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
+#endif
 	DECL_MENU_ACTION(8, ovt_100, STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu

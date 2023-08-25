@@ -95,8 +95,6 @@ static void set_speed(int16_t value)
 
 #if ASSERT_PIN(SPINDLE_PWM)
 	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
-#else
-	io_set_pwm(SPINDLE_PWM, (uint8_t)ABS(value));
 #endif
 }
 
