@@ -473,10 +473,6 @@ void mcu_init(void)
 	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
-#ifndef IC74HC595_HAS_PWMS
-	esp32_i2s_extender_init();
-#endif
-
 #ifndef IC74HC595_CUSTOM_SHIFT_IO
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
