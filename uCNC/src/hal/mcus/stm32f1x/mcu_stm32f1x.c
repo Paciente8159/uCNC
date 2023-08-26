@@ -416,6 +416,9 @@ void mcu_clocks_init()
 		DWT->CYCCNT = 0;
 		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	}
+
+	//free some jtag pins
+	AFIO->MAPR |= (2<<24);
 }
 
 void mcu_usart_init(void)
