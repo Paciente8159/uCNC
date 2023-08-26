@@ -263,7 +263,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 	// initialize ITP timer that will run at a fixed rate to update all IO
 	/* Select and initialize basic parameters of the timer */
 	timer_config_t itpconfig = {
-		.divider = 2,
+		.divider = getApbFrequency() / 1000000UL,
 		.counter_dir = TIMER_COUNT_UP,
 		.counter_en = TIMER_PAUSE,
 		.alarm_en = TIMER_ALARM_EN,
@@ -275,7 +275,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)160);
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)4);
 	// register PWM isr
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
