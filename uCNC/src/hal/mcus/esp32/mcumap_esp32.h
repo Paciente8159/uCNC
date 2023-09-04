@@ -28,9 +28,7 @@ extern "C"
 #include "driver/timer.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
-#ifndef IC74HC595_HAS_PWMS
 #include "driver/ledc.h"
-#endif
 
 /*
 	Generates all the interface definitions.
@@ -49,7 +47,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 125000UL
+#define F_STEP_MAX 62500UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -2705,12 +2703,6 @@ extern "C"
 #define MCU_HAS_BLUETOOTH
 #endif
 
-#ifndef PWM_TIMER
-#define PWM_TIMER 0
-#endif
-#define PWM_TIMER_TG (PWM_TIMER & 0x01)
-#define PWM_TIMER_IDX ((PWM_TIMER >> 1) & 0x01)
-
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 3
 #endif
@@ -2830,7 +2822,7 @@ extern "C"
 	{                                                                           \
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-#ifndef IC74HC595_HAS_PWMS
+
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
@@ -2856,18 +2848,6 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#else
-// forces all PWM to be generated via software
-#define mcu_config_pwm(X, Y)                         \
-	{                                                \
-		g_soft_pwm_res = mcu_softpwm_freq_config(Y); \
-	}
-#define mcu_set_pwm(X, Y)                                \
-	{                                                    \
-		g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); \
-	}
-#define mcy_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
-#endif
 #define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
 
 #ifdef MCU_HAS_ONESHOT_TIMER

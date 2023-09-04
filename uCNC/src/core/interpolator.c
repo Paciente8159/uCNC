@@ -559,13 +559,14 @@ void itp_run(void)
 
 		if (current_speed <= 0)
 		{
+			// speed can't be negative
+			current_speed = 0;
+			itp_cur_plan_block->entry_feed_sqr = 0;
+
 			if (cnc_get_exec_state(EXEC_HOLD))
 			{
 				return;
 			}
-
-			// speed can't be negative
-			current_speed = 0;
 		}
 
 		partial_distance += current_speed * integrator;
@@ -660,7 +661,7 @@ void itp_run(void)
 #endif
 		remaining_steps -= segm_steps;
 
-		if (remaining_steps == accel_until) // resets float additions error
+		if (remaining_steps == accel_until && !cnc_get_exec_state(EXEC_HOLD)) // resets float additions error
 		{
 			itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(junction_speed);
 		}
