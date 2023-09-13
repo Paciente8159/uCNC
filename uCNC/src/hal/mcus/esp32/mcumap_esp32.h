@@ -2704,13 +2704,13 @@ extern "C"
 #endif
 
 #ifndef SERVO_TIMER
-#define SERVO_TIMER 3
+#define SERVO_TIMER 1
 #endif
 #define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
 #define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 1
+#define ITP_TIMER 3
 #endif
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
