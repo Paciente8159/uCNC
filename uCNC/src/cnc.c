@@ -858,6 +858,20 @@ bool cnc_check_interlocking(void)
 	}
 #endif
 
+	// end of JOG
+	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)
+	{
+		if (itp_is_empty())
+		{
+			cnc_clear_exec_state(EXEC_JOG);
+		}
+	}
+
+	if (itp_is_empty())
+	{
+		cnc_clear_exec_state(EXEC_RUN);
+	}
+
 	return true;
 }
 
