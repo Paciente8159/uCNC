@@ -1523,7 +1523,7 @@ extern "C"
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
-	extern uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
+	extern volatile uint8_t ic74hc595_io_pins[IC74HC595_COUNT];
 #define ic74hc595_set_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] |= (__indirect__(pin, IO_BITMASK))
 #define ic74hc595_clear_pin(pin) ic74hc595_io_pins[__indirect__(pin, IO_BYTEOFFSET)] &= ~(__indirect__(pin, IO_BITMASK))
 #define ic74hc595_toggle_pin(pin) ic74hc595_io_pins[(__indirect__(pin, IO_BYTEOFFSET))] ^= (__indirect__(pin, IO_BITMASK))
@@ -1535,13 +1535,6 @@ extern "C"
 #define ic74hc595_get_pin(pin) 0
 #endif
 
-	void ic74hc595_set_steps(uint8_t mask);
-	void ic74hc595_toggle_steps(uint8_t mask);
-	void ic74hc595_set_dirs(uint8_t mask);
-	void ic74hc595_enable_steppers(uint8_t mask);
-	void ic74hc595_set_pwms(uint16_t mask);
-	void ic74hc595_set_servos(uint8_t mask);
-	void ic74hc595_set_output(uint8_t pin, bool state);
 	void ic74hc595_shift_io_pins(void);
 
 #ifdef __cplusplus

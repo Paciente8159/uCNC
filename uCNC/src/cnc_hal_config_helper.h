@@ -27,15 +27,35 @@ extern "C"
 // undefined pin
 #define UNDEF_PIN 0
 // assert pin (io or extended)
-#define ASSERT_PIN(X) (X != 0)
 #define _EVAL_DIO_(X) DIO##X
 #define EVAL_DIO(X) DIO##X
+
+#define ASSERT_PIN(X) (EVAL_DIO(X) != 0)
 // assert pin io
 #define ASSERT_PIN_IO(X) (EVAL_DIO(X) > 0)
 // assert pin extended
 #define ASSERT_PIN_EXTENDED(X) (EVAL_DIO(X) < 0)
 // assert pin extended offset
 #define ASSERT_IO_OFFSET(X) (X >= 0)
+
+#include "cnc_build.h"
+// make the needed includes (do not change the order)
+// include lists of available option
+#include "hal/boards/boards.h"
+#include "hal/mcus/mcus.h"
+#include "hal/kinematics/kinematics.h"
+// user configurations
+#include "../cnc_config.h"
+// board and mcu configurations
+#include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
+// machine kinematics configurations
+#include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
+// machine tools configurations
+#include "hal/tools/tool.h" //configures the kinematics for the cnc machine
+// final HAL configurations
+#include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
+#include "../cnc_hal_overrides.h" //config override file
+#include "modules/ic74hc595.h" // io extender
 
 	/**
 	 *
@@ -2155,6 +2175,8 @@ typedef uint16_t step_t;
 #define ENABLE_SETTINGS_MODULES
 #endif
 #endif
+
+#include "hal/io_hal.h"
 
 #ifdef __cplusplus
 }

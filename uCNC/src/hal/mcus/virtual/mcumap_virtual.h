@@ -128,7 +128,6 @@
 #define STEP6_EN_IO_OFFSET 22
 #define STEP7_EN_IO_OFFSET 23
 //#define PWM0_IO_OFFSET 24
-#define mcu_softpwm_freq_config(x) 7
 #endif
 #define PWM0 25
 #define DIO25 25
