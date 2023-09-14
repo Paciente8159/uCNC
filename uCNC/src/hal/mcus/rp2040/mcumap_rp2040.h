@@ -994,12 +994,12 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
-#if (COM_PORT == 0)
+#if (UART_PORT == 0)
 #define COM_UART Serial1
-#elif (COM_PORT == 1)
+#elif (UART_PORT == 1)
 #define COM_UART Serial2
 #else
 #error "UART COM port number must be 0 or 1"
@@ -1010,12 +1010,12 @@ extern "C"
 #ifndef BAUDRATE2
 #define BAUDRATE2 BAUDRATE
 #endif
-#ifndef COM2_PORT
-#define COM2_PORT 0
+#ifndef UART2_PORT
+#define UART2_PORT 0
 #endif
-#if (COM2_PORT == 0)
+#if (UART2_PORT == 0)
 #define COM2_UART Serial1
-#elif (COM2_PORT == 1)
+#elif (UART2_PORT == 1)
 #define COM2_UART Serial2
 #else
 #error "UART2 COM port number must be 0 or 1"

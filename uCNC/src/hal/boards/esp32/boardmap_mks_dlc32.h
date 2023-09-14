@@ -41,7 +41,7 @@ extern "C"
 #define TX_BIT 1
 #define RX_PULLUP
 // only uncomment this if other port other then 0 is used
-// #define COM_PORT 0
+// #define UART_PORT 0
 
 #define PWM0_BIT 32
 #define PWM0_CHANNEL 0
@@ -97,9 +97,6 @@ extern "C"
 #define DOUT5_BIT 05
 //cs
 #define DOUT6_BIT 27
-
-// include the IO expander
-#include "../../../modules/ic74hc595.h"
 
 #ifdef __cplusplus
 }

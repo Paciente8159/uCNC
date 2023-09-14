@@ -70,7 +70,7 @@ static uint8_t parse_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
-FORCEINLINE static uint8_t parser_gcode_command(void);
+FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
 static void parser_discard_command(void);
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
@@ -187,7 +187,7 @@ uint8_t parser_read_command(void)
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	return parser_gcode_command();
+	return parser_gcode_command(is_jogging);
 }
 
 void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
@@ -1792,7 +1792,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 /*
 	Parse the next gcode line available in the buffer and send it to the motion controller
 */
-static uint8_t parser_gcode_command(void)
+static uint8_t parser_gcode_command(bool is_jogging)
 {
 	uint8_t result = 0;
 	// initializes new state
@@ -1829,7 +1829,7 @@ static uint8_t parser_gcode_command(void)
 	}
 
 	// if is jog motion state is not preserved
-	if (!cnc_get_exec_state(EXEC_JOG))
+	if (!is_jogging)
 	{
 		// if everything went ok updates the parser modal groups and position
 		memcpy(&parser_state, &next_state, sizeof(parser_state_t));

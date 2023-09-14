@@ -30,9 +30,6 @@ extern "C"
 {
 #endif
 
-#include "../module.h"
-#include "../modules/ic74hc595.h"
-#include "../hal/io_hal.h"
 #include <stdint.h>
 #include <stdbool.h>
 

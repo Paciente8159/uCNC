@@ -28,9 +28,7 @@ extern "C"
 #include "driver/timer.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
-#ifndef IC74HC595_HAS_PWMS
 #include "driver/ledc.h"
-#endif
 
 /*
 	Generates all the interface definitions.
@@ -49,7 +47,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 100000UL
+#define F_STEP_MAX 62500UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -2682,14 +2680,14 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
 #endif
 #if (defined(TX2) && defined(RX2))
 #define MCU_HAS_UART2
-#ifndef COM2_PORT
-#define COM2_PORT 0
+#ifndef UART2_PORT
+#define UART2_PORT 0
 #endif
 #ifndef BAUDRATE2
 #define BAUDRATE2 BAUDRATE
@@ -2705,20 +2703,14 @@ extern "C"
 #define MCU_HAS_BLUETOOTH
 #endif
 
-#ifndef PWM_TIMER
-#define PWM_TIMER 0
-#endif
-#define PWM_TIMER_TG (PWM_TIMER & 0x01)
-#define PWM_TIMER_IDX ((PWM_TIMER >> 1) & 0x01)
-
 #ifndef SERVO_TIMER
-#define SERVO_TIMER 3
+#define SERVO_TIMER 1
 #endif
 #define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
 #define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 1
+#define ITP_TIMER 3
 #endif
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
@@ -2765,14 +2757,12 @@ extern "C"
 #define I2C_FREQ 400000UL
 #endif
 
-#if(I2C_PORT==0)
+#if (I2C_PORT == 0)
 #define I2C_REG Wire
 #else
 #define I2C_REG __helper__(Wire, I2C_PORT, )
 #endif
 #endif
-
-
 
 #ifndef IC74HC595_I2S_PORT
 #define IC74HC595_I2S_PORT 0
@@ -2800,7 +2790,7 @@ extern "C"
 #define mcu_config_analog(X)                                                      \
 	{                                                                             \
 		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_10);                                       \
+		adc1_config_width(ADC_WIDTH_BIT_10);                                      \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
 	}
 #define mcu_config_pullup(X)                                       \
@@ -2833,9 +2823,6 @@ extern "C"
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
-#ifdef IC74HC595_HAS_PWMS
-	extern uint8_t mcu_softpwm_freq_config(uint16_t freq);
-#endif
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \

@@ -566,13 +566,14 @@ void itp_run(void)
 
 		if (current_speed <= 0)
 		{
+			// speed can't be negative
+			current_speed = 0;
+			itp_cur_plan_block->entry_feed_sqr = 0;
+
 			if (cnc_get_exec_state(EXEC_HOLD))
 			{
 				return;
 			}
-
-			// speed can't be negative
-			current_speed = 0;
 		}
 
 		partial_distance += current_speed * integrator;
@@ -667,7 +668,7 @@ void itp_run(void)
 #endif
 		remaining_steps -= segm_steps;
 
-		if (remaining_steps == accel_until) // resets float additions error
+		if (remaining_steps == accel_until && !cnc_get_exec_state(EXEC_HOLD)) // resets float additions error
 		{
 			itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(junction_speed);
 		}
@@ -727,15 +728,6 @@ void itp_stop(void)
 		cnc_set_exec_state(EXEC_UNHOMED);
 	}
 
-	// end of JOG
-	if (CHECKFLAG(state, (EXEC_JOG | EXEC_HOLD)) == EXEC_JOG)
-	{
-		if (itp_is_empty() && planner_buffer_is_empty())
-		{
-			cnc_clear_exec_state(EXEC_JOG);
-		}
-	}
-
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -745,7 +737,6 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)

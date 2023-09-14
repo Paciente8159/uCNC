@@ -78,8 +78,6 @@ static void set_speed(int16_t value)
 // speed optimized version (in AVR it's 24 instruction cycles)
 #if ASSERT_PIN(LASER_PWM)
 	io_set_pwm(LASER_PWM, (uint8_t)ABS(value));
-#else
-	io_set_pwm(LASER_PWM, (uint8_t)ABS(value));
 #endif
 }
 

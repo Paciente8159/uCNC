@@ -49,7 +49,10 @@
 
 #define MCU_HAS_UART
 
+//#define EMULATE_74HC595
+
 // joints step/dir pins
+#ifndef EMULATE_74HC595
 #define STEP0 1
 #define DIO1 1
 #define STEP1 2
@@ -98,6 +101,34 @@
 #define DIO23 23
 #define STEP7_EN 24
 #define DIO24 24
+#else
+#define IC74HC595_COUNT 4
+#define STEP0_IO_OFFSET 0
+#define STEP1_IO_OFFSET 1
+#define STEP2_IO_OFFSET 2
+#define STEP3_IO_OFFSET 3
+#define STEP4_IO_OFFSET 4
+#define STEP5_IO_OFFSET 5
+#define STEP6_IO_OFFSET 6
+#define STEP7_IO_OFFSET 7
+#define DIR0_IO_OFFSET 8
+#define DIR1_IO_OFFSET 9
+#define DIR2_IO_OFFSET 10
+#define DIR3_IO_OFFSET 11
+#define DIR4_IO_OFFSET 12
+#define DIR5_IO_OFFSET 13
+#define DIR6_IO_OFFSET 14
+#define DIR7_IO_OFFSET 15
+#define STEP0_EN_IO_OFFSET 16
+#define STEP1_EN_IO_OFFSET 17
+#define STEP2_EN_IO_OFFSET 18
+#define STEP3_EN_IO_OFFSET 19
+#define STEP4_EN_IO_OFFSET 20
+#define STEP5_EN_IO_OFFSET 21
+#define STEP6_EN_IO_OFFSET 22
+#define STEP7_EN_IO_OFFSET 23
+//#define PWM0_IO_OFFSET 24
+#endif
 #define PWM0 25
 #define DIO25 25
 #define PWM1 26

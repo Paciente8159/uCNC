@@ -125,24 +125,7 @@ extern "C"
 #define LINACT4_MASK 16
 #define LINACT5_MASK 32
 
-#include "cnc_build.h"
-// make the needed includes (do not change the order)
-// include lists of available option
-#include "hal/boards/boards.h"
-#include "hal/mcus/mcus.h"
-#include "hal/kinematics/kinematics.h"
-// user configurations
-#include "../cnc_config.h"
-// board and mcu configurations
-#include "hal/boards/boarddefs.h" //configures the board IO and service interrupts
-// machine kinematics configurations
-#include "hal/kinematics/kinematicdefs.h" //configures the kinematics for the cnc machine
-// machine tools configurations
-#include "hal/tools/tool.h" //configures the kinematics for the cnc machine
-// final HAL configurations
-#include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
-#include "../cnc_hal_overrides.h" //config override file
-// fill remaining HAL configurations and sanity checks
+// do all HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
 // initializes core utilities (like fast math functions)
 #include "utils.h"
@@ -153,7 +136,6 @@ extern "C"
 #include "interface/settings.h"
 #include "interface/serial.h"
 #include "interface/protocol.h"
-#include "core/io_control.h"
 #include "core/io_control.h"
 #include "core/parser.h"
 #include "core/motion_control.h"

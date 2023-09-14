@@ -422,90 +422,90 @@ void io_set_steps(uint8_t mask)
 	// 	EVENT_INVOKE(set_steps, &mask);
 	// #endif
 
-#ifdef IC74HC595_HAS_STEPS
-	ic74hc595_set_steps(mask);
-#endif
-
-#if ASSERT_PIN_IO(STEP0)
+#if ASSERT_PIN(STEP0)
 	if (mask & STEP0_IO_MASK)
 	{
-		mcu_set_output(STEP0);
+		io_set_output(STEP0);
 	}
 	else
 	{
-		mcu_clear_output(STEP0);
+		io_clear_output(STEP0);
 	}
 
 #endif
-#if ASSERT_PIN_IO(STEP1)
+#if ASSERT_PIN(STEP1)
 	if (mask & STEP1_IO_MASK)
 	{
-		mcu_set_output(STEP1);
+		io_set_output(STEP1);
 	}
 	else
 	{
-		mcu_clear_output(STEP1);
+		io_clear_output(STEP1);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP2)
+#if ASSERT_PIN(STEP2)
 	if (mask & STEP2_IO_MASK)
 	{
-		mcu_set_output(STEP2);
+		io_set_output(STEP2);
 	}
 	else
 	{
-		mcu_clear_output(STEP2);
+		io_clear_output(STEP2);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP3)
+#if ASSERT_PIN(STEP3)
 	if (mask & STEP3_IO_MASK)
 	{
-		mcu_set_output(STEP3);
+		io_set_output(STEP3);
 	}
 	else
 	{
-		mcu_clear_output(STEP3);
+		io_clear_output(STEP3);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP4)
+#if ASSERT_PIN(STEP4)
 	if (mask & STEP4_IO_MASK)
 	{
-		mcu_set_output(STEP4);
+		io_set_output(STEP4);
 	}
 	else
 	{
-		mcu_clear_output(STEP4);
+		io_clear_output(STEP4);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP5)
+#if ASSERT_PIN(STEP5)
 	if (mask & STEP5_IO_MASK)
 	{
-		mcu_set_output(STEP5);
+		io_set_output(STEP5);
 	}
 	else
 	{
-		mcu_clear_output(STEP5);
+		io_clear_output(STEP5);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP6)
+#if ASSERT_PIN(STEP6)
 	if (mask & STEP6_IO_MASK)
 	{
-		mcu_set_output(STEP6);
+		io_set_output(STEP6);
 	}
 	else
 	{
-		mcu_clear_output(STEP6);
+		io_clear_output(STEP6);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP7)
+#if ASSERT_PIN(STEP7)
 	if (mask & STEP7_IO_MASK)
 	{
-		mcu_set_output(STEP7);
+		io_set_output(STEP7);
 	}
 	else
 	{
-		mcu_clear_output(STEP7);
+		io_clear_output(STEP7);
 	}
+#endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_shift_io_pins();
 #endif
 }
 
@@ -514,58 +514,62 @@ void io_toggle_steps(uint8_t mask)
 	// #ifdef ENABLE_IO_MODULES
 	// 	EVENT_INVOKE(toggle_steps, &mask);
 	// #endif
+	if (!mask)
+	{
+		return;
+	}
 
-#ifdef IC74HC595_HAS_STEPS
-	ic74hc595_toggle_steps(mask);
-#endif
-
-#if ASSERT_PIN_IO(STEP0)
+#if ASSERT_PIN(STEP0)
 	if (mask & STEP0_IO_MASK)
 	{
-		mcu_toggle_output(STEP0);
+		io_toggle_output(STEP0);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP1)
+#if ASSERT_PIN(STEP1)
 	if (mask & STEP1_IO_MASK)
 	{
-		mcu_toggle_output(STEP1);
+		io_toggle_output(STEP1);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP2)
+#if ASSERT_PIN(STEP2)
 	if (mask & STEP2_IO_MASK)
 	{
-		mcu_toggle_output(STEP2);
+		io_toggle_output(STEP2);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP3)
+#if ASSERT_PIN(STEP3)
 	if (mask & STEP3_IO_MASK)
 	{
-		mcu_toggle_output(STEP3);
+		io_toggle_output(STEP3);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP4)
+#if ASSERT_PIN(STEP4)
 	if (mask & STEP4_IO_MASK)
 	{
-		mcu_toggle_output(STEP4);
+		io_toggle_output(STEP4);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP5)
+#if ASSERT_PIN(STEP5)
 	if (mask & STEP5_IO_MASK)
 	{
-		mcu_toggle_output(STEP5);
+		io_toggle_output(STEP5);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP6)
+#if ASSERT_PIN(STEP6)
 	if (mask & STEP6_IO_MASK)
 	{
-		mcu_toggle_output(STEP6);
+		io_toggle_output(STEP6);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP7)
+#if ASSERT_PIN(STEP7)
 	if (mask & STEP7_IO_MASK)
 	{
-		mcu_toggle_output(STEP7);
+		io_toggle_output(STEP7);
 	}
+#endif
+
+#ifdef IC74HC595_HAS_STEPS
+	ic74hc595_shift_io_pins();
 #endif
 }
 
@@ -577,89 +581,89 @@ void io_set_dirs(uint8_t mask)
 	// 	EVENT_INVOKE(set_dirs, &mask);
 	// #endif
 
-#ifdef IC74HC595_HAS_DIRS
-	ic74hc595_set_dirs(mask);
-#endif
-
-#if ASSERT_PIN_IO(DIR0)
+#if ASSERT_PIN(DIR0)
 	if (mask & STEP0_IO_MASK)
 	{
-		mcu_set_output(DIR0);
+		io_set_output(DIR0);
 	}
 	else
 	{
-		mcu_clear_output(DIR0);
+		io_clear_output(DIR0);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR1)
+#if ASSERT_PIN(DIR1)
 	if (mask & STEP1_IO_MASK)
 	{
-		mcu_set_output(DIR1);
+		io_set_output(DIR1);
 	}
 	else
 	{
-		mcu_clear_output(DIR1);
+		io_clear_output(DIR1);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR2)
+#if ASSERT_PIN(DIR2)
 	if (mask & STEP2_IO_MASK)
 	{
-		mcu_set_output(DIR2);
+		io_set_output(DIR2);
 	}
 	else
 	{
-		mcu_clear_output(DIR2);
+		io_clear_output(DIR2);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR3)
+#if ASSERT_PIN(DIR3)
 	if (mask & STEP3_IO_MASK)
 	{
-		mcu_set_output(DIR3);
+		io_set_output(DIR3);
 	}
 	else
 	{
-		mcu_clear_output(DIR3);
+		io_clear_output(DIR3);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR4)
+#if ASSERT_PIN(DIR4)
 	if (mask & STEP4_IO_MASK)
 	{
-		mcu_set_output(DIR4);
+		io_set_output(DIR4);
 	}
 	else
 	{
-		mcu_clear_output(DIR4);
+		io_clear_output(DIR4);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR5)
+#if ASSERT_PIN(DIR5)
 	if (mask & STEP5_IO_MASK)
 	{
-		mcu_set_output(DIR5);
+		io_set_output(DIR5);
 	}
 	else
 	{
-		mcu_clear_output(DIR5);
+		io_clear_output(DIR5);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR6)
+#if ASSERT_PIN(DIR6)
 	if (mask & STEP6_IO_MASK)
 	{
-		mcu_set_output(DIR6);
+		io_set_output(DIR6);
 	}
 	else
 	{
-		mcu_clear_output(DIR6);
+		io_clear_output(DIR6);
 	}
 #endif
-#if ASSERT_PIN_IO(DIR7)
+#if ASSERT_PIN(DIR7)
 	if (mask & STEP7_IO_MASK)
 	{
-		mcu_set_output(DIR7);
+		io_set_output(DIR7);
 	}
 	else
 	{
-		mcu_clear_output(DIR7);
+		io_clear_output(DIR7);
 	}
+#endif
+
+#ifdef IC74HC595_HAS_DIRS
+	ic74hc595_shift_io_pins();
 #endif
 }
 
@@ -669,89 +673,89 @@ void io_enable_steppers(uint8_t mask)
 	// 	EVENT_INVOKE(enable_steppers, &mask);
 	// #endif
 
-#ifdef IC74HC595_HAS_STEPS_EN
-	ic74hc595_enable_steppers(mask);
-#endif
-
-#if ASSERT_PIN_IO(STEP0_EN)
+#if ASSERT_PIN(STEP0_EN)
 	if (mask & 0x01)
 	{
-		mcu_set_output(STEP0_EN);
+		io_set_output(STEP0_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP0_EN);
+		io_clear_output(STEP0_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP1_EN)
+#if ASSERT_PIN(STEP1_EN)
 	if (mask & 0x02)
 	{
-		mcu_set_output(STEP1_EN);
+		io_set_output(STEP1_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP1_EN);
+		io_clear_output(STEP1_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP2_EN)
+#if ASSERT_PIN(STEP2_EN)
 	if (mask & 0x04)
 	{
-		mcu_set_output(STEP2_EN);
+		io_set_output(STEP2_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP2_EN);
+		io_clear_output(STEP2_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP3_EN)
+#if ASSERT_PIN(STEP3_EN)
 	if (mask & 0x08)
 	{
-		mcu_set_output(STEP3_EN);
+		io_set_output(STEP3_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP3_EN);
+		io_clear_output(STEP3_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP4_EN)
+#if ASSERT_PIN(STEP4_EN)
 	if (mask & 0x10)
 	{
-		mcu_set_output(STEP4_EN);
+		io_set_output(STEP4_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP4_EN);
+		io_clear_output(STEP4_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP5_EN)
+#if ASSERT_PIN(STEP5_EN)
 	if (mask & 0x20)
 	{
-		mcu_set_output(STEP5_EN);
+		io_set_output(STEP5_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP5_EN);
+		io_clear_output(STEP5_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP6_EN)
+#if ASSERT_PIN(STEP6_EN)
 	if (mask & 0x40)
 	{
-		mcu_set_output(STEP6_EN);
+		io_set_output(STEP6_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP6_EN);
+		io_clear_output(STEP6_EN);
 	}
 #endif
-#if ASSERT_PIN_IO(STEP7_EN)
+#if ASSERT_PIN(STEP7_EN)
 	if (mask & 0x80)
 	{
-		mcu_set_output(STEP7_EN);
+		io_set_output(STEP7_EN);
 	}
 	else
 	{
-		mcu_clear_output(STEP7_EN);
+		io_clear_output(STEP7_EN);
 	}
+#endif
+
+#ifdef IC74HC595_HAS_STEPS_EN
+	ic74hc595_shift_io_pins();
 #endif
 }
 
@@ -768,276 +772,173 @@ MCU_CALLBACK void io_soft_pwm_update(void)
 	static uint8_t pwm_counter_last = 0;
 	uint8_t pwm_counter = pwm_counter_last;
 	uint8_t resolution = g_soft_pwm_res;
-#ifdef IC74HC595_HAS_PWMS
-	static uint16_t pwm_mask_last = 0;
-	uint16_t pwm_mask = 0;
-#endif
 	// software PWM
 	pwm_counter += (1 << resolution);
 	pwm_counter_last = pwm_counter;
-#if ASSERT_PIN(PWM0)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM0))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM0)))
 	if (pwm_counter > g_io_soft_pwm[0] || !g_io_soft_pwm[0])
 	{
-#if ASSERT_PIN_IO(PWM0)
-		mcu_clear_output(PWM0);
-#endif
+		io_clear_output(PWM0);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM0)
-		mcu_set_output(PWM0);
-#elif ASSERT_PIN_EXTENDED(PWM0)
-		pwm_mask |= (1 << 0);
-#endif
+		io_set_output(PWM0);
 	}
 #endif
-#if ASSERT_PIN(PWM1)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM1))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM1)))
 	if (pwm_counter > g_io_soft_pwm[1] || !g_io_soft_pwm[1])
 	{
-#if ASSERT_PIN_IO(PWM1)
-		mcu_clear_output(PWM1);
-#endif
+		io_clear_output(PWM1);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM1)
-		mcu_set_output(PWM1);
-#elif ASSERT_PIN_EXTENDED(PWM1)
-		pwm_mask |= (1 << 1);
-#endif
+		io_set_output(PWM1);
 	}
 #endif
-#if ASSERT_PIN(PWM2)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM2))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM2)))
+
 	if (pwm_counter > g_io_soft_pwm[2] || !g_io_soft_pwm[2])
 	{
-#if ASSERT_PIN_IO(PWM2)
-		mcu_clear_output(PWM2);
-#endif
+		io_clear_output(PWM2);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM2)
-		mcu_set_output(PWM2);
-#elif ASSERT_PIN_EXTENDED(PWM2)
-		pwm_mask |= (1 << 2);
-#endif
+		io_set_output(PWM2);
 	}
 #endif
-#if ASSERT_PIN(PWM3)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM3))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM3)))
 	if (pwm_counter > g_io_soft_pwm[3] || !g_io_soft_pwm[3])
 	{
-#if ASSERT_PIN_IO(PWM3)
-		mcu_clear_output(PWM3);
-#endif
+		io_clear_output(PWM3);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM3)
-		mcu_set_output(PWM3);
-#elif ASSERT_PIN_EXTENDED(PWM3)
-		pwm_mask |= (1 << 3);
-#endif
+		io_set_output(PWM3);
 	}
 #endif
-#if ASSERT_PIN(PWM4)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM4))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM4)))
 	if (pwm_counter > g_io_soft_pwm[4] || !g_io_soft_pwm[4])
 	{
-#if ASSERT_PIN_IO(PWM4)
-		mcu_clear_output(PWM4);
-#endif
+		io_clear_output(PWM4);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM4)
-		mcu_set_output(PWM4);
-#elif ASSERT_PIN_EXTENDED(PWM4)
-		pwm_mask |= (1 << 4);
-#endif
+		io_set_output(PWM4);
 	}
 #endif
-#if ASSERT_PIN(PWM5)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM5))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM5)))
 	if (pwm_counter > g_io_soft_pwm[5] || !g_io_soft_pwm[5])
 	{
-#if ASSERT_PIN_IO(PWM5)
-		mcu_clear_output(PWM5);
-#endif
+		io_clear_output(PWM5);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM5)
-		mcu_set_output(PWM5);
-#elif ASSERT_PIN_EXTENDED(PWM5)
-		pwm_mask |= (1 << 5);
-#endif
+		io_set_output(PWM5);
 	}
 #endif
-#if ASSERT_PIN(PWM6)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM6))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM6)))
 	if (pwm_counter > g_io_soft_pwm[6] || !g_io_soft_pwm[6])
 	{
-#if ASSERT_PIN_IO(PWM6)
-		mcu_clear_output(PWM6);
-#endif
+		io_clear_output(PWM6);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM6)
-		mcu_set_output(PWM6);
-#elif ASSERT_PIN_EXTENDED(PWM6)
-		pwm_mask |= (1 << 6);
-#endif
+		io_set_output(PWM6);
 	}
 #endif
-#if ASSERT_PIN(PWM7)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM7))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM7)))
 	if (pwm_counter > g_io_soft_pwm[7] || !g_io_soft_pwm[7])
 	{
-#if ASSERT_PIN_IO(PWM7)
-		mcu_clear_output(PWM7);
-#endif
+		io_clear_output(PWM7);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM7)
-		mcu_set_output(PWM7);
-#elif ASSERT_PIN_EXTENDED(PWM7)
-		pwm_mask |= (1 << 7);
-#endif
+		io_set_output(PWM7);
 	}
 #endif
-#if ASSERT_PIN(PWM8)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM8))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM8)))
 	if (pwm_counter > g_io_soft_pwm[8] || !g_io_soft_pwm[8])
 	{
-#if ASSERT_PIN_IO(PWM8)
-		mcu_clear_output(PWM8);
-#endif
+		io_clear_output(PWM8);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM8)
-		mcu_set_output(PWM8);
-#elif ASSERT_PIN_EXTENDED(PWM8)
-		pwm_mask |= (1 << 8);
-#endif
+		io_set_output(PWM8);
 	}
 #endif
-#if ASSERT_PIN(PWM9)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM9))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM9)))
 	if (pwm_counter > g_io_soft_pwm[9] || !g_io_soft_pwm[9])
 	{
-#if ASSERT_PIN_IO(PWM9)
-		mcu_clear_output(PWM9);
-#endif
+		io_clear_output(PWM9);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM9)
-		mcu_set_output(PWM9);
-#elif ASSERT_PIN_EXTENDED(PWM9)
-		pwm_mask |= (1 << 9);
-#endif
+		io_set_output(PWM9);
 	}
 #endif
-#if ASSERT_PIN(PWM10)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM10))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM10)))
 	if (pwm_counter > g_io_soft_pwm[10] || !g_io_soft_pwm[10])
 	{
-#if ASSERT_PIN_IO(PWM10)
-		mcu_clear_output(PWM10);
-#endif
+		io_clear_output(PWM10);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM10)
-		mcu_set_output(PWM10);
-#elif ASSERT_PIN_EXTENDED(PWM10)
-		pwm_mask |= (1 << 10);
-#endif
+		io_set_output(PWM10);
 	}
 #endif
-#if ASSERT_PIN(PWM11)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM11))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM11)))
 	if (pwm_counter > g_io_soft_pwm[11] || !g_io_soft_pwm[11])
 	{
-#if ASSERT_PIN_IO(PWM11)
-		mcu_clear_output(PWM11);
-#endif
+		io_clear_output(PWM11);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM11)
-		mcu_set_output(PWM11);
-#elif ASSERT_PIN_EXTENDED(PWM11)
-		pwm_mask |= (1 << 11);
-#endif
+		io_set_output(PWM11);
 	}
 #endif
-#if ASSERT_PIN(PWM12)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM12))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM12)))
 	if (pwm_counter > g_io_soft_pwm[12] || !g_io_soft_pwm[12])
 	{
-#if ASSERT_PIN_IO(PWM12)
-		mcu_clear_output(PWM12);
-#endif
+		io_clear_output(PWM12);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM12)
-		mcu_set_output(PWM12);
-#elif ASSERT_PIN_EXTENDED(PWM12)
-		pwm_mask |= (1 << 12);
-#endif
+		io_set_output(PWM12);
 	}
 #endif
-#if ASSERT_PIN(PWM13)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM13))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM13)))
 	if (pwm_counter > g_io_soft_pwm[13] || !g_io_soft_pwm[13])
 	{
-#if ASSERT_PIN_IO(PWM13)
-		mcu_clear_output(PWM13);
-#endif
+		io_clear_output(PWM13);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM13)
-		mcu_set_output(PWM13);
-#elif ASSERT_PIN_EXTENDED(PWM13)
-		pwm_mask |= (1 << 13);
-#endif
+		io_set_output(PWM13);
 	}
 #endif
-#if ASSERT_PIN(PWM14)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM14))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM14)))
 	if (pwm_counter > g_io_soft_pwm[14] || !g_io_soft_pwm[14])
 	{
-#if ASSERT_PIN_IO(PWM14)
-		mcu_clear_output(PWM14);
-#endif
+		io_clear_output(PWM14);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM14)
-		mcu_set_output(PWM14);
-#elif ASSERT_PIN_EXTENDED(PWM14)
-		pwm_mask |= (1 << 14);
-#endif
+		io_set_output(PWM14);
 	}
 #endif
-#if ASSERT_PIN(PWM15)
+#if ((defined(IC74HC595_HAS_PWMS) && ASSERT_PIN_EXTENDED(PWM15))||(defined(MCU_HAS_SOFT_PWM_TIMER) && ASSERT_PIN(PWM15)))
 	if (pwm_counter > g_io_soft_pwm[15] || !g_io_soft_pwm[15])
 	{
-#if ASSERT_PIN_IO(PWM15)
-		mcu_clear_output(PWM15);
-#endif
+		io_clear_output(PWM15);
 	}
 	else
 	{
-#if ASSERT_PIN_IO(PWM15)
-		mcu_set_output(PWM15);
-#elif ASSERT_PIN_EXTENDED(PWM15)
-		pwm_mask |= (1 << 15);
-#endif
+		io_set_output(PWM15);
 	}
 #endif
 
 #ifdef IC74HC595_HAS_PWMS
-	if (pwm_mask_last != pwm_mask)
-	{
-		ic74hc595_set_pwms(pwm_mask);
-		pwm_mask_last = pwm_mask;
-	}
+	ic74hc595_shift_io_pins();
 #endif
 }
 #endif
@@ -1601,6 +1502,10 @@ void io_set_pinvalue(uint8_t pin, uint8_t value)
 #endif
 		}
 	}
+
+#ifdef IC74HC595_HAS_DOUTS
+	ic74hc595_shift_io_pins();
+#endif
 }
 
 int16_t io_get_pinvalue(uint8_t pin)

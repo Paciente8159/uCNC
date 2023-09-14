@@ -156,7 +156,7 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		uint32_t time = mcu_micros();
 		prev_time = current_time;
 		current_time = time;
-#ifdef RPM_INDEX_OUTPUT
+#ifdef RPM_INDEX_INPUT
 		if (io_get_input(RPM_INDEX_INPUT))
 #else
 		if (encoders_pos[RPM_ENCODER] >= RPM_PPR)

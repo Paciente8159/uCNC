@@ -867,116 +867,121 @@ extern "C"
 #endif
 
 // ISR on change inputs
-#if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
-#define DIO52_ISR (LIMIT_X_ISR)
+extern void mcu_din_isr(void);
+extern void mcu_probe_isr(void);
+extern void mcu_limits_isr(void);
+extern void mcu_controls_isr(void);
+#if(defined(LIMIT_X_ISR) && defined(LIMIT_X))
+#define DIO100_ISR (LIMIT_X_ISR)
 #define LIMIT_X_ISRCALLBACK mcu_limit_isr
-#define DIO52_ISRCALLBACK mcu_limit_isr
+#define DIO100_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
-#define DIO53_ISR (LIMIT_Y_ISR)
+#if(defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
+#define DIO101_ISR (LIMIT_Y_ISR)
 #define LIMIT_Y_ISRCALLBACK mcu_limit_isr
-#define DIO53_ISRCALLBACK mcu_limit_isr
+#define DIO101_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
-#define DIO54_ISR (LIMIT_Z_ISR)
+#if(defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
+#define DIO102_ISR (LIMIT_Z_ISR)
 #define LIMIT_Z_ISRCALLBACK mcu_limit_isr
-#define DIO54_ISRCALLBACK mcu_limit_isr
+#define DIO102_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
-#define DIO55_ISR (LIMIT_X2_ISR)
+#if(defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
+#define DIO103_ISR (LIMIT_X2_ISR)
 #define LIMIT_X2_ISRCALLBACK mcu_limit_isr
-#define DIO55_ISRCALLBACK mcu_limit_isr
+#define DIO103_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
-#define DIO56_ISR (LIMIT_Y2_ISR)
+#if(defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
+#define DIO104_ISR (LIMIT_Y2_ISR)
 #define LIMIT_Y2_ISRCALLBACK mcu_limit_isr
-#define DIO56_ISRCALLBACK mcu_limit_isr
+#define DIO104_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
-#define DIO57_ISR (LIMIT_Z2_ISR)
+#if(defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
+#define DIO105_ISR (LIMIT_Z2_ISR)
 #define LIMIT_Z2_ISRCALLBACK mcu_limit_isr
-#define DIO57_ISRCALLBACK mcu_limit_isr
+#define DIO105_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
-#define DIO58_ISR (LIMIT_A_ISR)
+#if(defined(LIMIT_A_ISR) && defined(LIMIT_A))
+#define DIO106_ISR (LIMIT_A_ISR)
 #define LIMIT_A_ISRCALLBACK mcu_limit_isr
-#define DIO58_ISRCALLBACK mcu_limit_isr
+#define DIO106_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
-#define DIO59_ISR (LIMIT_B_ISR)
+#if(defined(LIMIT_B_ISR) && defined(LIMIT_B))
+#define DIO107_ISR (LIMIT_B_ISR)
 #define LIMIT_B_ISRCALLBACK mcu_limit_isr
-#define DIO59_ISRCALLBACK mcu_limit_isr
+#define DIO107_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
-#define DIO60_ISR (LIMIT_C_ISR)
+#if(defined(LIMIT_C_ISR) && defined(LIMIT_C))
+#define DIO108_ISR (LIMIT_C_ISR)
 #define LIMIT_C_ISRCALLBACK mcu_limit_isr
-#define DIO60_ISRCALLBACK mcu_limit_isr
+#define DIO108_ISRCALLBACK mcu_limit_isr
 #endif
-#if (defined(PROBE_ISR) && defined(PROBE))
-#define DIO61_ISR (PROBE_ISR)
+#if(defined(PROBE_ISR) && defined(PROBE))
+#define DIO109_ISR (PROBE_ISR)
 #define PROBE_ISRCALLBACK mcu_probe_isr
-#define DIO61_ISRCALLBACK mcu_probe_isr
+#define DIO109_ISRCALLBACK mcu_probe_isr
 #endif
-#if (defined(ESTOP_ISR) && defined(ESTOP))
-#define DIO62_ISR (ESTOP_ISR)
+#if(defined(ESTOP_ISR) && defined(ESTOP))
+#define DIO110_ISR (ESTOP_ISR)
 #define ESTOP_ISRCALLBACK mcu_control_isr
-#define DIO62_ISRCALLBACK mcu_control_isr
+#define DIO110_ISRCALLBACK mcu_control_isr
 #endif
-#if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
-#define DIO63_ISR (SAFETY_DOOR_ISR)
+#if(defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
+#define DIO111_ISR (SAFETY_DOOR_ISR)
 #define SAFETY_DOOR_ISRCALLBACK mcu_control_isr
-#define DIO63_ISRCALLBACK mcu_control_isr
+#define DIO111_ISRCALLBACK mcu_control_isr
 #endif
-#if (defined(FHOLD_ISR) && defined(FHOLD))
-#define DIO64_ISR (FHOLD_ISR)
+#if(defined(FHOLD_ISR) && defined(FHOLD))
+#define DIO112_ISR (FHOLD_ISR)
 #define FHOLD_ISRCALLBACK mcu_control_isr
-#define DIO64_ISRCALLBACK mcu_control_isr
+#define DIO112_ISRCALLBACK mcu_control_isr
 #endif
-#if (defined(CS_RES_ISR) && defined(CS_RES))
-#define DIO65_ISR (CS_RES_ISR)
+#if(defined(CS_RES_ISR) && defined(CS_RES))
+#define DIO113_ISR (CS_RES_ISR)
 #define CS_RES_ISRCALLBACK mcu_control_isr
-#define DIO65_ISRCALLBACK mcu_control_isr
+#define DIO113_ISRCALLBACK mcu_control_isr
 #endif
-#if (defined(DIN0_ISR) && defined(DIN0))
-#define DIO82_ISR (DIN0_ISR)
+#if(defined(DIN0_ISR) && defined(DIN0))
+#define DIO130_ISR (DIN0_ISR)
 #define DIN0_ISRCALLBACK mcu_din_isr
-#define DIO82_ISRCALLBACK mcu_din_isr
+#define DIO130_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN1_ISR) && defined(DIN1))
-#define DIO83_ISR (DIN1_ISR)
+#if(defined(DIN1_ISR) && defined(DIN1))
+#define DIO131_ISR (DIN1_ISR)
 #define DIN1_ISRCALLBACK mcu_din_isr
-#define DIO83_ISRCALLBACK mcu_din_isr
+#define DIO131_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN2_ISR) && defined(DIN2))
-#define DIO84_ISR (DIN2_ISR)
+#if(defined(DIN2_ISR) && defined(DIN2))
+#define DIO132_ISR (DIN2_ISR)
 #define DIN2_ISRCALLBACK mcu_din_isr
-#define DIO84_ISRCALLBACK mcu_din_isr
+#define DIO132_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN3_ISR) && defined(DIN3))
-#define DIO85_ISR (DIN3_ISR)
+#if(defined(DIN3_ISR) && defined(DIN3))
+#define DIO133_ISR (DIN3_ISR)
 #define DIN3_ISRCALLBACK mcu_din_isr
-#define DIO85_ISRCALLBACK mcu_din_isr
+#define DIO133_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN4_ISR) && defined(DIN4))
-#define DIO86_ISR (DIN4_ISR)
+#if(defined(DIN4_ISR) && defined(DIN4))
+#define DIO134_ISR (DIN4_ISR)
 #define DIN4_ISRCALLBACK mcu_din_isr
-#define DIO86_ISRCALLBACK mcu_din_isr
+#define DIO134_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN5_ISR) && defined(DIN5))
-#define DIO87_ISR (DIN5_ISR)
+#if(defined(DIN5_ISR) && defined(DIN5))
+#define DIO135_ISR (DIN5_ISR)
 #define DIN5_ISRCALLBACK mcu_din_isr
-#define DIO87_ISRCALLBACK mcu_din_isr
+#define DIO135_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN6_ISR) && defined(DIN6))
-#define DIO88_ISR (DIN6_ISR)
+#if(defined(DIN6_ISR) && defined(DIN6))
+#define DIO136_ISR (DIN6_ISR)
 #define DIN6_ISRCALLBACK mcu_din_isr
-#define DIO88_ISRCALLBACK mcu_din_isr
+#define DIO136_ISRCALLBACK mcu_din_isr
 #endif
-#if (defined(DIN7_ISR) && defined(DIN7))
-#define DIO89_ISR (DIN7_ISR)
+#if(defined(DIN7_ISR) && defined(DIN7))
+#define DIO137_ISR (DIN7_ISR)
 #define DIN7_ISRCALLBACK mcu_din_isr
-#define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
+#define DIO137_ISRCALLBACK mcu_din_isr
 #endif
+
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
@@ -989,8 +994,8 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
 
 #define MCU_HAS_ONESHOT_TIMER

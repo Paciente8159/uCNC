@@ -1506,10 +1506,7 @@ void mcu_bufferClear(void)
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 {
-	if (frequency < F_STEP_MIN)
-		frequency = F_STEP_MIN;
-	if (frequency > F_STEP_MAX)
-		frequency = F_STEP_MAX;
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	*ticks = (uint16_t)floorf((F_CPU / frequency));
 	*tick_reps = 1;
