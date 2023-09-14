@@ -268,32 +268,32 @@ void mcu_core0_tasks_init(void *arg)
 	uart_driver_install(COM2_PORT, RX_BUFFER_CAPACITY * 2, 0, 0, NULL, 0);
 #endif
 
-#ifdef IC74HC595_HAS_PWMS
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-	esp32_i2s_extender_init();
-#endif
+	// #ifdef IC74HC595_HAS_PWMS
+	// #ifdef IC74HC595_CUSTOM_SHIFT_IO
+	// 	esp32_i2s_extender_init();
+	// #endif
 
-	// initialize ITP timer that will run at a fixed rate to update all IO
-	/* Select and initialize basic parameters of the timer */
-	timer_config_t itpconfig = {0};
-	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
-	itpconfig.counter_dir = TIMER_COUNT_UP;
-	itpconfig.counter_en = TIMER_PAUSE;
-	itpconfig.intr_type = TIMER_INTR_MAX;
-	itpconfig.alarm_en = TIMER_ALARM_EN;
-	itpconfig.auto_reload = true;
-	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+	// 	// initialize ITP timer that will run at a fixed rate to update all IO
+	// 	/* Select and initialize basic parameters of the timer */
+	// 	timer_config_t itpconfig = {0};
+	// 	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
+	// 	itpconfig.counter_dir = TIMER_COUNT_UP;
+	// 	itpconfig.counter_en = TIMER_PAUSE;
+	// 	itpconfig.intr_type = TIMER_INTR_MAX;
+	// 	itpconfig.alarm_en = TIMER_ALARM_EN;
+	// 	itpconfig.auto_reload = true;
+	// 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
 
-	/* Timer's counter will initially start from value below.
-	   Also, if auto_reload is set, this value will be automatically reload on alarm */
-	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
-	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)8);
-	// register PWM isr
-	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
-	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
-	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
-#endif
+	// 	/* Timer's counter will initially start from value below.
+	// 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	// 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	// 	/* Configure the alarm value and the interrupt on alarm. */
+	// 	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)8);
+	// 	// register PWM isr
+	// 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
+	// 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// 	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+	// #endif
 }
 
 void mcu_rtc_task(void *arg)
@@ -470,10 +470,32 @@ void mcu_init(void)
 	uart_set_pin(COM2_PORT, TX2_BIT, RX2_BIT, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 #endif
 
-#ifndef IC74HC595_HAS_PWMS
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	esp32_i2s_extender_init();
 #endif
+
+#ifdef IC74HC595_HAS_PWMS
+	// initialize ITP timer that will run at a fixed rate to update all IO
+	/* Select and initialize basic parameters of the timer */
+	timer_config_t itpconfig = {0};
+	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
+	itpconfig.counter_dir = TIMER_COUNT_UP;
+	itpconfig.counter_en = TIMER_PAUSE;
+	itpconfig.intr_type = TIMER_INTR_MAX;
+	itpconfig.alarm_en = TIMER_ALARM_EN;
+	itpconfig.auto_reload = true;
+	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
+
+	/* Timer's counter will initially start from value below.
+	   Also, if auto_reload is set, this value will be automatically reload on alarm */
+	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
+	/* Configure the alarm value and the interrupt on alarm. */
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)8);
+	// register PWM isr
+	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
+	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
+	timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
+#else
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
 	itpconfig.divider = getApbFrequency() / 1000000UL; // 1us per pulse
