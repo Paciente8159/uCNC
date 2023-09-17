@@ -727,7 +727,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_get_rx_freebytes() > 32 && !cnc_get_exec_state(EXEC_RUN))
+		if (serial_get_rx_freebytes() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
