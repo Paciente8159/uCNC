@@ -257,7 +257,7 @@ void system_menu_action(uint8_t action)
 	int16_t currentindex = g_system_menu.current_index;
 
 	// kill alarm is active
-	if (cnc_get_exec_state(EXEC_ALARM))
+	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 	{
 		// never go idle
 		g_system_menu.action_timeout = UINT32_MAX;
@@ -404,7 +404,7 @@ void system_menu_render(void)
 		g_system_menu.flags &= ~SYSTEM_MENU_MODE_REDRAW;
 		uint8_t item_index = 0;
 
-		if (cnc_get_exec_state(EXEC_ALARM))
+		if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 		{
 			system_menu_render_alarm();
 			return;
