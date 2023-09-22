@@ -259,8 +259,8 @@ void system_menu_action(uint8_t action)
 	// kill alarm is active
 	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 	{
-		// never go idle
-		g_system_menu.action_timeout = UINT32_MAX;
+		// go idle (like popup) if normalized
+		g_system_menu.action_timeout = mcu_millis() + SYSTEM_MENU_MODAL_POPUP_MS;
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
 		// leave. ignore all actions
 		return;
