@@ -173,7 +173,7 @@ uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 		i2c_buffer_offset = 0;
 		break;
 	case U8X8_MSG_BYTE_END_TRANSFER:
-		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset);
+		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset, true);
 		i2c_buffer_offset = 0;
 		break;
 	default:
@@ -361,12 +361,13 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 #ifndef GRAPHIC_DISPLAY_ENCODER_ENC2
 #define GRAPHIC_DISPLAY_ENCODER_ENC2 DIN18
 #endif
-// reads inputs and returns a mask with a pin state transition (only rising or only falling)
+// reads inputs and returns a mask with a pin state transition
 uint8_t graphic_display_rotary_encoder_control(void)
 {
 	static uint8_t last_pin_state = 0;
 	static uint8_t last_rot_transition = 0;
 	uint8_t pin_state = 0;
+	static uint32_t long_press_timeout = 0;
 
 // rotation encoder
 #ifndef GRAPHIC_DISPLAY_INVERT_ENCODER_DIR
@@ -384,11 +385,13 @@ uint8_t graphic_display_rotary_encoder_control(void)
 		pin_state = 0;
 		break;
 	case 4:
-		pin_state = (last_rot_transition == 0) ? 2 : 0;
+		pin_state = (last_rot_transition == 0) ? 2 : (last_rot_transition == 3) ? 4
+																				: 0;
 		last_rot_transition = 1;
 		break;
 	case 2:
-		pin_state = (last_rot_transition == 0) ? 4 : 0;
+		pin_state = (last_rot_transition == 0) ? 4 : (last_rot_transition == 3) ? 2
+																				: 0;
 		last_rot_transition = 2;
 		break;
 	default:
@@ -401,9 +404,32 @@ uint8_t graphic_display_rotary_encoder_control(void)
 
 	pin_state = ~pin_state;
 
+	// if btn is pressed
+	if ((pin_state & 1))
+	{
+		uint32_t long_press = long_press_timeout;
+		if (long_press && long_press < mcu_millis())
+		{
+			// forces a soft reset
+			cnc_call_rt_command(0x18);
+			long_press_timeout = 0;
+		}
+	}
+	else
+	{
+		// resets long press timer
+		long_press_timeout = 0;
+	}
+
 	uint8_t pin_diff = last_pin_state ^ pin_state;
 	if (pin_diff)
 	{
+		// if btn is pressed (1st transition)
+		if ((pin_state & 1))
+		{
+			// set soft reset timeout (5s)
+			long_press_timeout = mcu_millis() + 5000;
+		}
 		last_pin_state = pin_state;
 		return (pin_diff & pin_state);
 	}
@@ -483,6 +509,67 @@ DECL_MODULE(graphic_display)
 #endif
 }
 
+static void io_states_str(char *buff)
+{
+	uint8_t controls = io_get_controls();
+	uint8_t limits = io_get_limits();
+	uint8_t probe = io_get_probe();
+	rom_strcpy(buff, __romstr__("Sw:"));
+	uint8_t i = 3;
+	if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
+	{
+		if (CHECKFLAG(controls, ESTOP_MASK))
+		{
+			buff[i++] = 'R';
+		}
+
+		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
+		{
+			buff[i++] = 'D';
+		}
+
+		if (CHECKFLAG(controls, FHOLD_MASK))
+		{
+			buff[i++] = 'H';
+		}
+
+		if (probe)
+		{
+			buff[i++] = 'P';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_X_MASK))
+		{
+			buff[i++] = 'X';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_Y_MASK))
+		{
+			buff[i++] = 'Y';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_Z_MASK))
+		{
+			buff[i++] = 'Z';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_A_MASK))
+		{
+			buff[i++] = 'A';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_B_MASK))
+		{
+			buff[i++] = 'B';
+		}
+
+		if (CHECKFLAG(limits, LIMIT_C_MASK))
+		{
+			buff[i++] = 'C';
+		}
+	}
+}
+
 // system menu overrides
 
 void system_menu_render_startup(void)
@@ -498,6 +585,12 @@ void system_menu_render_startup(void)
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
 	u8g2_SendBuffer(U8G2);
 	u8g2_NextPage(U8G2);
+
+	// reset menu on actual alarm reset or soft reset
+	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
+	{
+		system_menu_reset();
+	}
 }
 
 void system_menu_render_idle(void)
@@ -532,9 +625,9 @@ void system_menu_render_idle(void)
 	system_menu_flt_to_str(&buff[1], axis[5]);
 	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
 #endif
-	y -= (FONTHEIGHT + 3);
 	memset(buff, 0, 32);
 	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
+	y -= (FONTHEIGHT + 3);
 #endif
 
 #if (AXIS_COUNT >= 3)
@@ -650,65 +743,9 @@ void system_menu_render_idle(void)
 		}
 	}
 	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
+
 	memset(buff, 0, 32);
-
-	uint8_t controls = io_get_controls();
-	uint8_t limits = io_get_limits();
-	uint8_t probe = io_get_probe();
-	rom_strcpy(buff, __romstr__("Sw:"));
-	i = 3;
-	if (CHECKFLAG(controls, (ESTOP_MASK | SAFETY_DOOR_MASK | FHOLD_MASK)) || CHECKFLAG(limits, LIMITS_MASK) || probe)
-	{
-		if (CHECKFLAG(controls, ESTOP_MASK))
-		{
-			buff[i++] = 'R';
-		}
-
-		if (CHECKFLAG(controls, SAFETY_DOOR_MASK))
-		{
-			buff[i++] = 'D';
-		}
-
-		if (CHECKFLAG(controls, FHOLD_MASK))
-		{
-			buff[i++] = 'H';
-		}
-
-		if (probe)
-		{
-			buff[i++] = 'P';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_X_MASK))
-		{
-			buff[i++] = 'X';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_Y_MASK))
-		{
-			buff[i++] = 'Y';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_Z_MASK))
-		{
-			buff[i++] = 'Z';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_A_MASK))
-		{
-			buff[i++] = 'A';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_B_MASK))
-		{
-			buff[i++] = 'B';
-		}
-
-		if (CHECKFLAG(limits, LIMIT_C_MASK))
-		{
-			buff[i++] = 'C';
-		}
-	}
+	io_states_str(buff);
 	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
 	u8g2_NextPage(U8G2);
 }
@@ -900,4 +937,92 @@ static uint8_t graphic_display_str_line_len(const char *__s)
 	}
 
 	return chars;
+}
+
+// define this way so it can be translated
+// this defaults to english
+#ifndef STR_USER_NEEDS_SYSTEM_RESET_1
+#define STR_USER_NEEDS_SYSTEM_RESET_1 "Press btn for 5s"
+#endif
+
+#ifndef STR_USER_NEEDS_SYSTEM_RESET_2
+#define STR_USER_NEEDS_SYSTEM_RESET_2 "to reset"
+#endif
+
+void system_menu_render_alarm(void)
+{
+	// system_menu_show_modal_popup(0,__romstr__(STR_USER_NEEDS_SYSTEM_RESET));
+	// system_menu_show_modal_popup(0,__romstr__(STR_USER_NEEDS_SYSTEM_RESET));
+	u8g2_ClearBuffer(U8G2);
+	// coordinates
+	uint8_t y = JUSTIFY_TOP + 1;
+	char buff[SYSTEM_MENU_MAX_STR_LEN];
+	u8g2_SetFontMode(U8G2, 1);
+	u8g2_SetDrawColor(U8G2, 1); /* color 1 for the box */
+	u8g2_DrawBox(U8G2, 0, 0, LCDWIDTH, FONTHEIGHT);
+	u8g2_SetDrawColor(U8G2, 0); /* color 1 for the font */
+	rom_strcpy(buff, __romstr__("ALARM "));
+	uint8_t alarm = cnc_get_alarm();
+	system_menu_int_to_str(&buff[6], alarm);
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
+	u8g2_SetDrawColor(U8G2, 1); /* color 1 for the font */
+	y += JUSTIFY_TOP + 2;
+
+	switch (alarm)
+	{
+	case 1:
+		rom_strcpy(buff, __romstr__(STR_ALARM_1));
+		break;
+	case 2:
+		rom_strcpy(buff, __romstr__(STR_ALARM_2));
+		break;
+	case 3:
+		rom_strcpy(buff, __romstr__(STR_ALARM_3));
+		break;
+	case 4:
+		rom_strcpy(buff, __romstr__(STR_ALARM_4));
+		break;
+	case 5:
+		rom_strcpy(buff, __romstr__(STR_ALARM_5));
+		break;
+	case 6:
+		rom_strcpy(buff, __romstr__(STR_ALARM_6));
+		break;
+	case 7:
+		rom_strcpy(buff, __romstr__(STR_ALARM_7));
+		break;
+	case 8:
+		rom_strcpy(buff, __romstr__(STR_ALARM_8));
+		break;
+	case 9:
+		rom_strcpy(buff, __romstr__(STR_ALARM_9));
+		break;
+	case 10:
+		rom_strcpy(buff, __romstr__(STR_ALARM_10));
+		break;
+	case 11:
+		rom_strcpy(buff, __romstr__(STR_ALARM_11));
+		break;
+	case 12:
+		rom_strcpy(buff, __romstr__(STR_ALARM_12));
+		break;
+	case 13:
+		rom_strcpy(buff, __romstr__(STR_ALARM_13));
+		break;
+	default:
+		rom_strcpy(buff, __romstr__(STR_ALARM_0));
+		break;
+	}
+
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
+	y += JUSTIFY_TOP + 2;
+	io_states_str(buff);
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
+	y += JUSTIFY_TOP + 2;
+	rom_strcpy(buff, __romstr__("Press btn for 5s"));
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
+	y += JUSTIFY_TOP + 2;
+	rom_strcpy(buff, __romstr__("to reset"));
+	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
+	u8g2_NextPage(U8G2);
 }

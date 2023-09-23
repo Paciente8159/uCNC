@@ -24,7 +24,7 @@
  *
  * @param axis Target in absolute coordinates
  */
-void __attribute__((weak)) kinematics_apply_transform(float *axis)
+void kinematics_apply_transform(float *axis)
 {
 }
 
@@ -34,7 +34,7 @@ void __attribute__((weak)) kinematics_apply_transform(float *axis)
  *
  * @param axis Target in absolute coordinates
  */
-void __attribute__((weak)) kinematics_apply_reverse_transform(float *axis)
+void kinematics_apply_reverse_transform(float *axis)
 {
 }
 
