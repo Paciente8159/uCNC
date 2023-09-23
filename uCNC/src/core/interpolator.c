@@ -1058,15 +1058,6 @@ void itp_stop(void)
 		cnc_set_exec_state(EXEC_UNHOMED);
 	}
 
-	// end of JOG
-	if (CHECKFLAG(state, (EXEC_JOG | EXEC_HOLD)) == EXEC_JOG)
-	{
-		if (itp_is_empty())
-		{
-			cnc_clear_exec_state(EXEC_JOG);
-		}
-	}
-
 	io_set_steps(g_settings.step_invert_mask);
 #if TOOL_COUNT > 0
 	if (g_settings.laser_mode)
@@ -1076,7 +1067,6 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)

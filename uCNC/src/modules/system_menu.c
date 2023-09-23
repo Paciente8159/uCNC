@@ -257,10 +257,10 @@ void system_menu_action(uint8_t action)
 	int16_t currentindex = g_system_menu.current_index;
 
 	// kill alarm is active
-	if (cnc_get_exec_state(EXEC_ALARM))
+	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 	{
-		// never go idle
-		g_system_menu.action_timeout = UINT32_MAX;
+		// go idle (like popup) if normalized
+		g_system_menu.action_timeout = mcu_millis() + SYSTEM_MENU_MODAL_POPUP_MS;
 		g_system_menu.flags |= SYSTEM_MENU_MODE_REDRAW;
 		// leave. ignore all actions
 		return;
@@ -404,7 +404,7 @@ void system_menu_render(void)
 		g_system_menu.flags &= ~SYSTEM_MENU_MODE_REDRAW;
 		uint8_t item_index = 0;
 
-		if (cnc_get_exec_state(EXEC_ALARM))
+		if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
 		{
 			system_menu_render_alarm();
 			return;
@@ -727,7 +727,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_get_rx_freebytes() > 32 && !cnc_get_exec_state(EXEC_RUN))
+		if (serial_get_rx_freebytes() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);

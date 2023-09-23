@@ -63,6 +63,21 @@ extern "C"
 #define STR_SETTINGS_LOADED "Settings loaded"
 #define STR_SETTINGS_SAVED "Settings saved"
 #define STR_SETTINGS_RESET "Settings reset"
+// alarms
+#define STR_ALARM_0 "Unknowned"
+#define STR_ALARM_1 "Hard limits hit"
+#define STR_ALARM_2 "Soft limits hit"
+#define STR_ALARM_3 "Aborted by user"
+#define STR_ALARM_4 "Probe hit"
+#define STR_ALARM_5 "Probe no hit"
+#define STR_ALARM_6 "Home reset"
+#define STR_ALARM_7 "Door opened"
+#define STR_ALARM_8 "Limits in contact"
+#define STR_ALARM_9 "Failed home find"
+#define STR_ALARM_10 "Failed autolevel"
+#define STR_ALARM_11 "Limits are active"
+#define STR_ALARM_12 "Tool sync fail"
+#define STR_ALARM_13 "Limits tripped"
 
 #ifdef __cplusplus
 }

@@ -329,6 +329,11 @@ bool cnc_has_alarm()
 	return (cnc_get_exec_state(EXEC_KILL) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
 }
 
+uint8_t cnc_get_alarm(void)
+{
+	return cnc_state.alarm;
+}
+
 void cnc_stop(void)
 {
 	itp_stop();
@@ -857,6 +862,20 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 #endif
+
+	// end of JOG
+	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)
+	{
+		if (itp_is_empty())
+		{
+			cnc_clear_exec_state(EXEC_JOG);
+		}
+	}
+
+	if (itp_is_empty())
+	{
+		cnc_clear_exec_state(EXEC_RUN);
+	}
 
 	return true;
 }
