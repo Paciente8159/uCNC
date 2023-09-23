@@ -102,6 +102,11 @@ SOFTSPI(graphic_spi, 100000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_
 
 uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
 	uint8_t *data;
 	switch (msg)
 	{
@@ -112,6 +117,10 @@ uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 			softspi_xmit(graphic_port, (uint8_t)*data);
 			data++;
 			arg_int--;
+			if (!cnc_get_exec_state(EXEC_ALARM))
+			{
+				cnc_dotasks();
+			}
 		}
 		break;
 	case U8X8_MSG_BYTE_INIT:
@@ -186,21 +195,26 @@ uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
 uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
 	switch (msg)
 	{
 	case U8X8_MSG_GPIO_AND_DELAY_INIT: // called once during init phase of u8g2/u8x8
 		break;						   // can be used to setup pins
 	case U8X8_MSG_DELAY_NANO:		   // delay arg_int * 1 nano second
-		while (arg_int--)
-			;
+		// while (arg_int--)
+		// 	;
 		break;
 	case U8X8_MSG_DELAY_100NANO: // delay arg_int * 100 nano seconds
-		while (arg_int--)
-			mcu_delay_100ns();
+		// while (arg_int--)
+		// 	mcu_delay_100ns();
 		break;
 	case U8X8_MSG_DELAY_10MICRO: // delay arg_int * 10 micro seconds
-		while (arg_int--)
-			mcu_delay_us(10);
+		// while (arg_int--)
+		// 	mcu_delay_us(10);
 		break;
 	case U8X8_MSG_DELAY_MILLI: // delay arg_int * 1 milli second
 		cnc_delay_ms(arg_int);
@@ -450,25 +464,40 @@ CREATE_EVENT_LISTENER(cnc_reset, graphic_display_start);
 
 bool graphic_display_update(void *args)
 {
-	switch (graphic_display_rotary_encoder_control())
-	{
-	case 0:
-		// no action needed to go idle
-		system_menu_action(SYSTEM_MENU_ACTION_NONE);
-		break;
-	case GRAPHIC_DISPLAY_SELECT:
-		system_menu_action(SYSTEM_MENU_ACTION_SELECT);
-		break;
-	case GRAPHIC_DISPLAY_NEXT:
-		system_menu_action(SYSTEM_MENU_ACTION_NEXT);
-		break;
-	case GRAPHIC_DISPLAY_PREV:
-		system_menu_action(SYSTEM_MENU_ACTION_PREV);
-		break;
-	}
+	static bool running = false;
 
-	// render menu
-	system_menu_render();
+	if (!running)
+	{
+		running = true;
+		switch (graphic_display_rotary_encoder_control())
+		{
+		case 0:
+			// no action needed to go idle
+			system_menu_action(SYSTEM_MENU_ACTION_NONE);
+			break;
+		case GRAPHIC_DISPLAY_SELECT:
+			system_menu_action(SYSTEM_MENU_ACTION_SELECT);
+			break;
+		case GRAPHIC_DISPLAY_NEXT:
+			system_menu_action(SYSTEM_MENU_ACTION_NEXT);
+			break;
+		case GRAPHIC_DISPLAY_PREV:
+			system_menu_action(SYSTEM_MENU_ACTION_PREV);
+			break;
+		}
+
+		if (!cnc_get_exec_state(EXEC_ALARM))
+		{
+			cnc_dotasks();
+		}
+		// render menu
+		system_menu_render();
+		if (!cnc_get_exec_state(EXEC_ALARM))
+		{
+			cnc_dotasks();
+		}
+		running = false;
+	}
 
 	return false;
 }
@@ -584,7 +613,6 @@ void system_menu_render_startup(void)
 	u8g2_SetFont(U8G2, u8g2_font_6x12_tr);
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), JUSTIFY_CENTER + FONTHEIGHT, buff);
 	u8g2_SendBuffer(U8G2);
-	u8g2_NextPage(U8G2);
 
 	// reset menu on actual alarm reset or soft reset
 	if (cnc_get_exec_state(EXEC_INTERLOCKING_FAIL) || cnc_has_alarm())
@@ -630,6 +658,11 @@ void system_menu_render_idle(void)
 	y -= (FONTHEIGHT + 3);
 #endif
 
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
 	system_menu_flt_to_str(&buff[1], axis[2]);
@@ -646,6 +679,11 @@ void system_menu_render_idle(void)
 	y -= (FONTHEIGHT + 3);
 #endif
 
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
 #if (AXIS_COUNT >= 1)
 	buff[0] = 'X';
 	system_menu_flt_to_str(&buff[1], axis[0]);
@@ -659,6 +697,11 @@ void system_menu_render_idle(void)
 	u8g2_DrawLine(U8G2, 0, y - FONTHEIGHT - 1, LCDWIDTH, y - FONTHEIGHT - 1);
 	y -= (FONTHEIGHT + 3);
 #endif
+
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
 
 	// units, feed and tool
 	if (g_settings.report_inches)
@@ -694,8 +737,12 @@ void system_menu_render_idle(void)
 
 	y -= (FONTHEIGHT + 3);
 
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
 	// system status
-	uint8_t i;
 
 	rom_strcpy(buff, __romstr__("St:"));
 	uint8_t state = cnc_get_exec_state(0xFF);
@@ -747,7 +794,13 @@ void system_menu_render_idle(void)
 	memset(buff, 0, 32);
 	io_states_str(buff);
 	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
-	u8g2_NextPage(U8G2);
+
+	if (!cnc_get_exec_state(EXEC_ALARM))
+	{
+		cnc_dotasks();
+	}
+
+	u8g2_SendBuffer(U8G2);
 }
 
 static uint8_t y_coord;
@@ -778,6 +831,10 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 	uint8_t y = y_coord;
 	if (label)
 	{
+		if (!cnc_get_exec_state(EXEC_ALARM))
+		{
+			cnc_dotasks();
+		}
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			y_coord += FONTHEIGHT + 1;
@@ -801,6 +858,11 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 {
 	if (value)
 	{
+		if (!cnc_get_exec_state(EXEC_ALARM))
+		{
+			cnc_dotasks();
+		}
+
 		uint8_t y = y_coord;
 
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
@@ -851,7 +913,7 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 void system_menu_render_footer(void)
 {
 	u8g2_SetDrawColor(U8G2, 1);
-	u8g2_NextPage(U8G2);
+	u8g2_SendBuffer(U8G2);
 }
 
 bool system_menu_render_menu_item_filter(uint8_t item_index)
@@ -898,7 +960,7 @@ void system_menu_render_modal_popup(const char *__s)
 		y_start += FONTHEIGHT + 1;
 	} while (--lines);
 
-	u8g2_NextPage(U8G2);
+	u8g2_SendBuffer(U8G2);
 }
 
 static uint8_t graphic_display_str_lines(const char *__s, uint8_t *max_len)
@@ -968,6 +1030,8 @@ void system_menu_render_alarm(void)
 	u8g2_SetDrawColor(U8G2, 1); /* color 1 for the font */
 	y += JUSTIFY_TOP + 2;
 
+	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
+
 	switch (alarm)
 	{
 	case 1:
@@ -1016,6 +1080,7 @@ void system_menu_render_alarm(void)
 
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 	y += JUSTIFY_TOP + 2;
+	memset(buff, 0, SYSTEM_MENU_MAX_STR_LEN);
 	io_states_str(buff);
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 	y += JUSTIFY_TOP + 2;
@@ -1024,5 +1089,5 @@ void system_menu_render_alarm(void)
 	y += JUSTIFY_TOP + 2;
 	rom_strcpy(buff, __romstr__("to reset"));
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
-	u8g2_NextPage(U8G2);
+	u8g2_SendBuffer(U8G2);
 }
