@@ -412,6 +412,11 @@ bool cnc_has_alarm()
 	return (cnc_get_exec_state(EXEC_KILL) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
 }
 
+uint8_t cnc_get_alarm(void)
+{
+	return cnc_state.alarm;
+}
+
 void cnc_stop(void)
 {
 	itp_stop();
