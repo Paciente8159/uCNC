@@ -6,6 +6,25 @@
 
 # Changelog
 
+## [1.7.5] - 26-09-2023
+
+### Added
+
+- added function to be able to get current active alarm code (used on system menu alarm rendering) (#508)
+
+### Changed
+
+- uniformed architectures UART names (#483)
+- STM32F1 modified config to allow use JTAG pins as GPIO (#486)
+- modified system menu to allow multiple JOG commands chainned up (#501)
+- modified system menu alarm screen condition to prevent alarm screen rendenring on startup lock (#507)
+
+### Fixed
+
+- fixed encoder option typo (#482)
+- fixed jog command made permanent changes to parser state (#493) (#495)
+- fixed compilation error for 5 or more axis machines (#499)
+
 ## [1.7.4] - 16-08-2023
 
 ### Added
@@ -1267,6 +1286,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
 [1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
