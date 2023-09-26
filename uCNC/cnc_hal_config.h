@@ -74,11 +74,22 @@ extern "C"
 #define FHOLD_PULLUP_ENABLE
 #define CS_RES_PULLUP_ENABLE
 
+
+/**
+ * Uncomment this to use Y axis as a Z axis alias on 2 axis machines
+ * This allows the Gcode to expect X and Z coordinates in the parser
+ * **/
+// #define USE_Y_AS_Z_ALIAS
+
 /**
  * Uncomment this feature to enable tool length compensation
  */
-#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
+#ifndef AXIS_TOOL
+#ifdef AXIS_Z
 #define AXIS_TOOL AXIS_Z
+#elif ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+#define AXIS_TOOL AXIS_Y
+#endif
 #endif
 
 /**

@@ -259,7 +259,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #ifdef ENABLE_G39_H_MAPPING
 	// modify the gcode with Hmap
 	float target_hmap_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(target)) : 0;
-	target[AXIS_Z] += target_hmap_offset;
+	target[AXIS_TOOL] += target_hmap_offset;
 #endif
 
 	// check travel limits (soft limits)
@@ -267,7 +267,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
 		if (cnc_get_exec_state(EXEC_JOG))
@@ -286,7 +286,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 #ifdef ENABLE_G39_H_MAPPING
 	// modify the gcode with Hmap
 	float h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
-	prev_target[AXIS_Z] += h_offset;
+	prev_target[AXIS_TOOL] += h_offset;
 #endif
 
 	// calculates the traveled distance
@@ -302,7 +302,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 // remove the hmap postion of the motion
 #ifdef ENABLE_G39_H_MAPPING
-	motion_segment[AXIS_Z] += (h_offset - target_hmap_offset);
+	motion_segment[AXIS_TOOL] += (h_offset - target_hmap_offset);
 #endif
 
 	// no motion. bail out.
@@ -310,7 +310,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 		return STATUS_OK;
 	}
@@ -349,7 +349,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	{
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		target[AXIS_Z] -= target_hmap_offset;
+		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 		return STATUS_OK;
 	}
@@ -464,7 +464,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		prev_target[AXIS_Z] -= h_offset;
+		prev_target[AXIS_TOOL] -= h_offset;
 #endif
 	}
 
@@ -480,13 +480,13 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 		h_offset = (CHECKFLAG(block_data->motion_mode, MOTIONCONTROL_MODE_APPLY_HMAP)) ? (mc_apply_hmap(prev_target)) : 0;
-		prev_target[AXIS_Z] += h_offset;
+		prev_target[AXIS_TOOL] += h_offset;
 #endif
 		kinematics_coordinates_to_steps(prev_target, step_new_pos);
 		error = mc_line_segment(step_new_pos, block_data);
 #ifdef ENABLE_G39_H_MAPPING
 		// unmodify target
-		prev_target[AXIS_Z] -= h_offset;
+		prev_target[AXIS_TOOL] -= h_offset;
 #endif
 		if (error)
 		{
@@ -507,7 +507,7 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_G39_H_MAPPING
 	// unmodify target
-	target[AXIS_Z] -= target_hmap_offset;
+	target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
 	// stores the new position for the next motion
@@ -1076,9 +1076,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 		{
 			block_data->feed = FLT_MAX;
 			// retract if needed
-			if (position[AXIS_Z] < (target[AXIS_Z] + retract_h))
+			if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
 			{
-				position[AXIS_Z] = (target[AXIS_Z] + retract_h);
+				position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
 				error = mc_line(position, block_data);
 				if (error != STATUS_OK)
 				{
@@ -1106,7 +1106,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 			int32_t probe_position[STEPPER_COUNT];
 			itp_get_rt_position(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
-			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_Z];
+			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
 			protocol_send_probe_result(1);
 
 			// update to new target
@@ -1118,9 +1118,9 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	block_data->feed = FLT_MAX;
 	// fast retract if needed
-	if (position[AXIS_Z] < (target[AXIS_Z] + retract_h))
+	if (position[AXIS_TOOL] < (target[AXIS_TOOL] + retract_h))
 	{
-		position[AXIS_Z] = (target[AXIS_Z] + retract_h);
+		position[AXIS_TOOL] = (target[AXIS_TOOL] + retract_h);
 		error = mc_line(position, block_data);
 		if (error != STATUS_OK)
 		{
@@ -1140,7 +1140,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 	// move to 1st point at feed speed
 	block_data->feed = feed;
-	position[AXIS_Z] = hmap_offsets[0];
+	position[AXIS_TOOL] = hmap_offsets[0];
 	error = mc_line(position, block_data);
 	if (error != STATUS_OK)
 	{

@@ -2149,6 +2149,10 @@ typedef uint16_t step_t;
 #error "Linear actuator 4 and 5 have overlapped input limits and this can lead to unpredictable results"
 #endif
 
+#if ((AXIS_COUNT != 2) && defined(USE_Y_AS_Z_ALIAS))
+#error "Y axis can only be used as a Z alias in 2 axis machines."
+#endif
+
 
 #ifdef MCU_HAS_I2C
 
@@ -2166,6 +2170,13 @@ typedef uint16_t step_t;
 #ifdef ENABLE_G39_H_MAPPING
 #undef ENABLE_G39_H_MAPPING
 #warning "ENABLE_G39_H_MAPPING disabled via DISABLE_PROBING_SUPPORT"
+#endif
+#endif
+
+#ifndef AXIS_TOOL
+#ifdef ENABLE_G39_H_MAPPING
+#undef ENABLE_G39_H_MAPPING
+#warning "ENABLE_G39_H_MAPPING disabled via because AXIS_TOOL is not defined"
 #endif
 #endif
 

@@ -1326,7 +1326,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		parser_parameters.tool_length_offset = 0;
 		if (new_state->groups.tlo_mode == G43)
 		{
-			parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
+			parser_parameters.tool_length_offset = words->xyzabc[AXIS_TOOL];
 			CLEARFLAG(cmd->words, GCODE_WORD_Z);
 			words->xyzabc[AXIS_TOOL] = 0; // resets parameter so it it doen't do anything else
 		}
@@ -2362,6 +2362,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #endif
 #ifdef AXIS_Y
 	case 'Y':
+#if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+	case 'Z':
+#endif
 		new_words |= GCODE_WORD_Y;
 		words->xyzabc[AXIS_Y] = value;
 		break;
@@ -2371,6 +2374,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		new_words |= GCODE_WORD_Z;
 		words->xyzabc[AXIS_Z] = value;
 		break;
+
 #endif
 #ifdef AXIS_A
 	case 'A':

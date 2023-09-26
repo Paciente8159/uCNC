@@ -726,34 +726,34 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 		unsigned char c = getchar();
 		switch (c)
 		{
-//		 case '"':
-//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-//		 	mcu_controls_changed_cb();
-//		 	break;
-//		 case '%':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-//		 case '&':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-//		 case '/':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-		// case '[':
-		// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
-		// 	mcu_limits_changed_cb();
-		// 	break;
-		// case ']':
-		// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
-		// 	mcu_limits_changed_cb();
-		// 	break;
-		// case '}':
-		// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
-		// 	mcu_controls_changed_cb();
-		// 	break;
+			//		 case '"':
+			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
+			//		 	mcu_controls_changed_cb();
+			//		 	break;
+			//		 case '%':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '&':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '/':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			// case '[':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case ']':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case '}':
+			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
+			// 	mcu_controls_changed_cb();
+			// 	break;
 		default:
 			mcu_com_rx_cb(c);
 			break;
@@ -1244,7 +1244,7 @@ uint8_t mcu_get_pin_offset(uint8_t pin)
 {
 	if (pin >= 1 && pin <= 24)
 	{
-		return pin;
+		return pin - 1;
 	}
 	else if (pin >= 47 && pin <= 78)
 	{
@@ -1434,20 +1434,22 @@ bool mcu_tx_ready(void)
 	return mcu_tx_empty;
 }
 
-void mcu_uart_putc(uint8_t c){
+void mcu_uart_putc(uint8_t c)
+{
 	// #ifdef ENABLE_SYNC_TX
 	// 	com_send(c, 1);
 	// 	#endif
 	putchar(c);
 }
-	void mcu_uart_flush(void){
-		// #ifndef ENABLE_SYNC_TX
-		// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
-		// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
-		// #endif
-	}
+void mcu_uart_flush(void)
+{
+	// #ifndef ENABLE_SYNC_TX
+	// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+	// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+	// #endif
+}
 
-//void mcu_putc(char c)
+// void mcu_putc(char c)
 //{
 //	static int buff_index = 0;
 //	if (c != 0)
@@ -1467,7 +1469,7 @@ void mcu_uart_putc(uint8_t c){
 //	}
 //	mcu_tx_empty = true;
 //	mcu_tx_enabled = true;
-//}
+// }
 
 char mcu_getc(void)
 {
@@ -1651,9 +1653,11 @@ void mcu_config_input_isr(int pin)
 {
 }
 
-int main (void) {
+int main(void)
+{
 	cnc_init();
-	for(;;) {
+	for (;;)
+	{
 		cnc_run();
 	}
 }

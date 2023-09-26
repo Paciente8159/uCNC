@@ -362,7 +362,11 @@ void protocol_send_status(void)
 
 		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
+			#if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+			serial_putc('Z');
+			#else
 			serial_putc('Y');
+			#endif
 		}
 
 		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
