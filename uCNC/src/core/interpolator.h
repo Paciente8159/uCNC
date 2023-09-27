@@ -38,6 +38,7 @@ extern "C"
 #define ITP_CONST 8
 #define ITP_DEACCEL 16
 #define ITP_SYNC 32
+#define ITP_BACKLASH 64
 
 	// contains data of the block being executed by the pulse routine
 	// this block has the necessary data to execute the Bresenham line algorithm
@@ -55,9 +56,6 @@ extern "C"
 		step_t errors[STEPPER_COUNT];
 #ifdef GCODE_PROCESS_LINE_NUMBERS
 		uint32_t line;
-#endif
-#ifdef ENABLE_BACKLASH_COMPENSATION
-		bool backlash_comp;
 #endif
 	} itp_block_t;
 
@@ -95,7 +93,7 @@ extern "C"
 
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(KINEMATICS_MOTION_BY_SEGMENTS))
+#ifdef ENABLE_MULTI_STEP_HOMING
 	void itp_lock_stepper(uint8_t lockmask);
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS

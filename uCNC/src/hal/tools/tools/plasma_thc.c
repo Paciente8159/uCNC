@@ -164,7 +164,7 @@ bool plasma_thc_probe_and_start(void)
 		mc_get_position(pos);
 
 		// modify target to probe depth
-		pos[AXIS_Z] += plasma_start_params.probe_depth;
+		pos[AXIS_TOOL] += plasma_start_params.probe_depth;
 		// probe feed speed
 		block.feed = plasma_start_params.probe_feed;
 		// similar to G38.2
@@ -172,14 +172,14 @@ bool plasma_thc_probe_and_start(void)
 		{
 			// modify target to probe depth
 			mc_get_position(pos);
-			pos[AXIS_Z] -= plasma_start_params.probe_depth * 0.5;
+			pos[AXIS_TOOL] -= plasma_start_params.probe_depth * 0.5;
 			block.feed = plasma_start_params.probe_feed * 0.5f; // half speed
 			// similar to G38.4
 			if (mc_probe(pos, 1, &block) == STATUS_PROBE_SUCCESS)
 			{
 				// modify target to torch start height
 				mc_get_position(pos);
-				pos[AXIS_Z] += plasma_start_params.retract_height;
+				pos[AXIS_TOOL] += plasma_start_params.retract_height;
 				// rapid feed
 				block.feed = FLT_MAX;
 				mc_line(pos, &block);
@@ -193,7 +193,7 @@ bool plasma_thc_probe_and_start(void)
 				if (plasma_thc_arc_ok())
 				{
 					mc_get_position(pos);
-					pos[AXIS_Z] -= plasma_start_params.cut_depth;
+					pos[AXIS_TOOL] -= plasma_start_params.cut_depth;
 					// rapid feed
 					block.feed = plasma_start_params.cut_feed;
 					mc_line(pos, &block);

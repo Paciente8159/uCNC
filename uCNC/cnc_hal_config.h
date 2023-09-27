@@ -74,11 +74,22 @@ extern "C"
 #define FHOLD_PULLUP_ENABLE
 #define CS_RES_PULLUP_ENABLE
 
+
+/**
+ * Uncomment this to use Y axis as a Z axis alias on 2 axis machines
+ * This allows the Gcode to expect X and Z coordinates in the parser
+ * **/
+// #define USE_Y_AS_Z_ALIAS
+
 /**
  * Uncomment this feature to enable tool length compensation
  */
-#if (!defined(AXIS_TOOL) && defined(AXIS_Z))
+#ifndef AXIS_TOOL
+#ifdef AXIS_Z
 #define AXIS_TOOL AXIS_Z
+#elif ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+#define AXIS_TOOL AXIS_Y
+#endif
 #endif
 
 /**
@@ -93,25 +104,138 @@ extern "C"
 // #define DISABLE_C_HOMING
 
 /**
- * Uncomment this feature to enable up to 2 dual drive axis
+ * Uncomment this feature to enable X and Y homing simultaneously
+ */
+// #define ENABLE_XY_SIMULTANEOUS_HOMING
+
+/**
+ * Uncomment this feature to enable multi motor axis
  * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
  * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI
  */
-// #define ENABLE_DUAL_DRIVE_AXIS
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-// defines the first dual drive capable axis
-// #define DUAL_DRIVE0_AXIS X
-// by default this will be rewired to STEPPER6 (if available on the board)
-// this can be uncommented to re-wire to an available (unused stepper other then 6)
-// #define DUAL_DRIVE0_STEPPER 6
-//  #define DUAL_DRIVE0_ENABLE_SELFSQUARING
+// #define ENABLE_MULTI_STEPPER_AXIS
+#ifdef ENABLE_MULTI_STEPPER_AXIS
 
-// defines the first second drive capable axis
-// #define DUAL_DRIVE1_AXIS Y
-// by default this will be rewired to STEPPER7 (if available on the board)
-// this can be uncommented to re-wire to an available (unused stepper other then 7)
-// #define DUAL_DRIVE1_STEPPER 7
-// #define DUAL_DRIVE1_ENABLE_SELFSQUARING
+/**
+ * Configure each multi motor linear actuator.
+ * 
+ * AXIS are the motion degrees of freedom of the machine in 3D space
+ * STEP are the stepper controller drivers that are controlled by the the board
+ * LINACT are the linear actuators that drive the machine motion. You can think of linear actuator as a combination of linear guide + motor
+ * 
+ * Each AXIS is logically attached to a LINACT.
+ * AXIS_X <-> LINACT0
+ * AXIS_Y <-> LINACT1
+ * etc..
+ * 
+ * In some machines the coorelation between AXIS and LINACT is direct. For example cartesian machines the AXIS X motion is the result of motions of the LINACT0, AXIS Y of LINACT1, AXIS Z of LINACT2, etc.
+ * On Core XY kinematics the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X and Y motions are a combination of motions of both LINACT0 and LINAXCT1. 
+ * On Delta type machines the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X, Y and Z are all a combination of motions of LINACT0, 1 and 2.
+ * 
+ * As stated earlier LINACT is a combination of linear guide + motor. Usually a LINACT is defined as a single stepper motor.
+ * But it can also be composed of multiple stepper motors (2, 3, 4, etc...)
+ * 
+ * To enable this just define the LINACTx_IO_MASK as a combination of STEPx_IO_MASK's
+ * **/
+
+// defines a multi stepper linear actuator LINACT0
+//  #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
+
+// defines a second multi stepper linear actuator LINACT1
+//  #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
+
+// defines a second multi stepper linear actuator LINACT2
+//  #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
+
+// there is no limit to the ammount of STEP IO that can be combined into a LINACT. For example it's possible to assign 4 independent STEP IO to a single LINACT
+// #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP5_IO_MASK | STEP6_IO_MASK | STEP7_IO_MASK)
+
+/**
+ * SELF SQUARING/AUTOLEVEL AXIS
+ * Limits switches have a mask value that is equivalent to the STEPx that it controls.
+ * 
+ * By default these mask values match the corresponding AXIS, LINACT, STEP, etc...
+ * 
+ * STEPx			7		6		5		4		3		2		1		0	
+ * STEPx_IO_MASK	128		64		32		16		8		4		2		1
+ * AXISx			-		-		C		B		C		Z		Y		X
+ * LINACTx			-		-		5		4		3		2		1		0
+ * LIMITx			-		-		C		B		A		Z&Z2	Y&Y2	X&X2
+ * 
+ * LINACT with multiple STEP IO pulse all those IO in sync, but when homing it can stop independently as it hits the correspondent limit until all motors reach the desired home position.
+ * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
+ * 
+ * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
+ * to reassing LIMIT_X2 to STEP6 IO MASK like this
+ * 
+ * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
+ * 
+ * **/
+
+// #define ENABLE_AXIS_AUTOLEVEL
+
+#ifdef ENABLE_AXIS_AUTOLEVEL
+
+// Uncomment to modify X2 limit mask value to match the X2 motor
+// #define LIMIT_X2_IO_MASK STEP5_IO_MASK
+
+// Uncomment to modify Y2 limit mask value to match the Y2 motor
+// #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
+
+// Uncomment to modify Y2 limit mask value to match the Y2 motor
+// #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
+
+#endif
+
+/**
+ * Advanced Multi-axis
+ * The advantage of using this mask scheme is that it's possible to defined advanced custom self squaring/planning rigs
+ * and complete reassing of unused axis limits to perform the task
+ * 
+ * Let's assume a custom cartesian machine that has 3 axis with 5 motors and 5 limit switches with the following configuration
+ * 
+ * Axis X - 1 motor/limit
+ * Axis Y - 2 motors/limits (self squaring)
+ * Axis Z - 3 motors/limits (self leveling - 3 point plane)
+ * 
+ * By default, with the machine configured for a 3 axis machine 3 linear actuators are configured with one motor each. By default AXIS_X -> LINACT0 -> STEP0, AXIS_Y-> LINACT1 -> STEP1, etc...
+ * One possibility would be to map the connections (from STEP0 to STEP5) as X,Y,Z,Y2,Z2,Z3.
+ * 
+ * Let's assume the user also wants the connections to be made in the order X,Y,Y2,Z,Z2,Z3
+ * 
+ * 
+ * Axis X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch
+ * Axis Y requires a second STEPx output. Because we also want to reorder the connection we must define our custom LINACTx for the remaining axis like this
+ * 
+ * // defines a custom LINACT1_IO_MASK to use STP1 and STEP2
+ * #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP2_IO_MASK)
+ * // defines a custom LINACT1_IO_MASK to use STP3, STEP4 and STEP5
+ * #define LINACT2_IO_MASK (STEP3_IO_MASK | STEP4_IO_MASK | STEP5_IO_MASK)
+ * 
+ * Then let's configure the limits:
+ * 
+ * Limits for AXIS X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch (uses LIMIT_X)
+ * Limits for AXIS Y only require Limit Y2 to be reasigned to match STEP2 so in this case
+ * 
+ * #define ENABLE_Y_AUTOLEVEL
+ * #define LIMIT_Y2_IO_MASK STEP2_IO_MASK
+ * 
+ * And finally limits for AXIS Z will new to be reassined to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
+ *  
+ * // enable Z selfsquare/selfplane
+ * #define ENABLE_Z_AUTOLEVEL
+ * #define LIMIT_Y_IO_MASK STEP3_IO_MASK
+ * #define LIMIT_Y2_IO_MASK STEP4_IO_MASK
+ * #define LIMIT_A_IO_MASK STEP5_IO_MASK
+ * 
+ * There is still a final step that involve reassing LINACT2 limits to include the extra limit (LIMIT A) like this
+ * 
+ * #define LINACT2_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK | LIMIT_A_IO_MASK)
+ * 
+ * That is it. 
+ * 
+ * **/
+
 #endif
 
 	/*

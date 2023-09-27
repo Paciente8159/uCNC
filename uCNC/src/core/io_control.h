@@ -57,10 +57,11 @@ extern "C"
 #endif
 
 	// inputs
+	#ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
+	#endif
 	void io_invert_limits(uint8_t limitmask);
 	uint8_t io_get_limits(void);
-	uint8_t io_get_limits_dual(void);
 	uint8_t io_get_controls(void);
 	void io_enable_probe(void);
 	void io_disable_probe(void);

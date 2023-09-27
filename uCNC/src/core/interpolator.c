@@ -61,7 +61,7 @@ static uint8_t prev_dss;
 static int16_t prev_spindle;
 // pointer to the segment being executed
 static itp_segment_t *itp_rt_sgm;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
+#ifdef ENABLE_MULTI_STEP_HOMING
 static volatile uint8_t itp_step_lock;
 #endif
 
@@ -208,7 +208,7 @@ void itp_init(void)
 	memset(itp_blk_data, 0, sizeof(itp_blk_data));
 	memset(itp_sgm_data, 0, sizeof(itp_sgm_data));
 	itp_rt_sgm = NULL;
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
+#ifdef ENABLE_MULTI_STEP_HOMING
 	itp_step_lock = 0;
 #endif
 #endif
@@ -308,6 +308,27 @@ static float s_curve_function(float pt)
 }
 #endif
 
+FORCEINLINE static uint8_t itp_get_linact_dirs(uint8_t mask)
+{
+	switch (mask)
+	{
+	case 1:
+		return LINACT0_IO_MASK;
+	case 2:
+		return LINACT1_IO_MASK;
+	case 4:
+		return LINACT2_IO_MASK;
+	case 8:
+		return LINACT3_IO_MASK;
+	case 16:
+		return LINACT4_IO_MASK;
+	case 32:
+		return LINACT5_IO_MASK;
+	}
+
+	return 0;
+}
+
 void itp_run(void)
 {
 	// conversion vars
@@ -359,25 +380,8 @@ void itp_run(void)
 			itp_blk_data[itp_blk_data_write].line = itp_cur_plan_block->line;
 #endif
 
-// overwrites previous values
-#ifdef ENABLE_BACKLASH_COMPENSATION
-			itp_blk_data[itp_blk_data_write].backlash_comp = itp_cur_plan_block->planner_flags.bit.backlash_comp;
-#endif
-			itp_blk_data[itp_blk_data_write].dirbits = itp_cur_plan_block->dirbits;
-#ifdef ENABLE_DUAL_DRIVE_AXIS
-#ifdef DUAL_DRIVE0_AXIS
-			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL0) ? STEP_DUAL0_MASK : 0;
-#endif
-#ifdef DUAL_DRIVE1_AXIS
-			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL1) ? STEP_DUAL1_MASK : 0;
-#endif
-#ifdef DUAL_DRIVE2_AXIS
-			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL2) ? STEP_DUAL2_MASK : 0;
-#endif
-#ifdef DUAL_DRIVE3_AXIS
-			itp_blk_data[itp_blk_data_write].dirbits |= CHECKFLAG(itp_blk_data[itp_blk_data_write].dirbits, STEP_DUAL3) ? STEP_DUAL3_MASK : 0;
-#endif
-#endif
+			// reset dirbits
+			itp_blk_data[itp_blk_data_write].dirbits = 0;
 			step_t total_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
 			itp_blk_data[itp_blk_data_write].total_steps = total_steps << 1;
 
@@ -391,12 +395,15 @@ void itp_run(void)
 #endif
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 			{
+				uint8_t mask = (1 << i);
+				// convert from motion block direction bits to LINACT bit mask
+				itp_blk_data[itp_blk_data_write].dirbits |= itp_get_linact_dirs(itp_cur_plan_block->dirbits & mask);
 				itp_blk_data[itp_blk_data_write].errors[i] = total_steps;
 				itp_blk_data[itp_blk_data_write].steps[i] = itp_cur_plan_block->steps[i] << 1;
 #ifdef STEP_ISR_SKIP_IDLE
 				if (!itp_cur_plan_block->steps[i])
 				{
-					itp_blk_data[itp_blk_data_write].idle_axis |= (1 << i);
+					itp_blk_data[itp_blk_data_write].idle_axis |= mask;
 				}
 #endif
 			}
@@ -674,6 +681,14 @@ void itp_run(void)
 			sgm->flags |= ITP_SYNC;
 		}
 
+		// overwrites previous values
+#ifdef ENABLE_BACKLASH_COMPENSATION
+		if (itp_cur_plan_block->planner_flags.bit.backlash_comp)
+		{
+			sgm->flags |= ITP_BACKLASH;
+		}
+#endif
+
 		if (remaining_steps == 0)
 		{
 			itp_blk_buffer_write();
@@ -835,7 +850,7 @@ void itp_sync_spindle(void)
 #endif
 }
 
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
+#ifdef ENABLE_MULTI_STEP_HOMING
 void itp_lock_stepper(uint8_t lockmask)
 {
 	itp_step_lock = lockmask;
@@ -874,18 +889,111 @@ MCU_CALLBACK void mcu_step_cb(void)
 	}
 
 	uint8_t new_stepbits = stepbits;
-	io_toggle_steps(new_stepbits);
-
-	// sets step bits
-#ifdef ENABLE_RT_SYNC_MOTIONS
-	if (new_stepbits && itp_rt_sgm)
-	{
-		HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
-	}
-#endif
+	uint8_t dirs = 0;
 
 	if (itp_rt_sgm != NULL)
 	{
+		dirs = itp_rt_sgm->block->dirbits;
+		io_toggle_steps(new_stepbits);
+
+		// sets step bits
+#ifdef ENABLE_RT_SYNC_MOTIONS
+		if (new_stepbits && itp_rt_sgm)
+		{
+			HOOK_INVOKE(itp_rt_stepbits, new_stepbits, itp_rt_sgm->flags);
+		}
+#endif
+
+#ifdef ENABLE_BACKLASH_COMPENSATION
+		// resets step bit so that they don't update the rt position
+		if (itp_rt_sgm->flags & ITP_BACKLASH)
+		{
+			new_stepbits = 0;
+		}
+#endif
+
+// updates the stepper coordinates
+#if (STEPPER_COUNT > 0)
+		if (new_stepbits & LINACT0_IO_MASK)
+		{
+			if (dirs & LINACT0_IO_MASK)
+			{
+				itp_rt_step_pos[0]--;
+			}
+			else
+			{
+				itp_rt_step_pos[0]++;
+			}
+		}
+#endif
+#if (STEPPER_COUNT > 1)
+		if (new_stepbits & LINACT1_IO_MASK)
+		{
+			if (dirs & LINACT1_IO_MASK)
+			{
+				itp_rt_step_pos[1]--;
+			}
+			else
+			{
+				itp_rt_step_pos[1]++;
+			}
+		}
+#endif
+#if (STEPPER_COUNT > 2)
+		if (new_stepbits & LINACT2_IO_MASK)
+		{
+			if (dirs & LINACT2_IO_MASK)
+			{
+				itp_rt_step_pos[2]--;
+			}
+			else
+			{
+				itp_rt_step_pos[2]++;
+			}
+		}
+#endif
+#if (STEPPER_COUNT > 3)
+		if (new_stepbits & LINACT3_IO_MASK)
+		{
+			if (dirs & LINACT3_IO_MASK)
+			{
+				itp_rt_step_pos[3]--;
+			}
+			else
+			{
+				itp_rt_step_pos[3]++;
+			}
+		}
+#endif
+
+#if (STEPPER_COUNT > 4)
+		if (new_stepbits & LINACT4_IO_MASK)
+		{
+			if (dirs & LINACT4_IO_MASK)
+			{
+				itp_rt_step_pos[4]--;
+			}
+			else
+			{
+				itp_rt_step_pos[4]++;
+			}
+		}
+#endif
+
+#if (STEPPER_COUNT > 5)
+		if (new_stepbits & LINACT5_IO_MASK)
+		{
+			if (dirs & LINACT5_IO_MASK)
+			{
+				itp_rt_step_pos[5]--;
+			}
+			else
+			{
+				itp_rt_step_pos[5]++;
+			}
+		}
+#endif
+
 		if (itp_rt_sgm->flags & ITP_UPDATE)
 		{
 			if (itp_rt_sgm->flags & ITP_UPDATE_ISR)
@@ -1013,20 +1121,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 0)
 			{
-				new_stepbits |= STEP0_ITP_MASK;
+				new_stepbits |= LINACT0_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP0_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 0)))
 				{
 #endif
 					itp_rt_sgm->block->errors[0] += itp_rt_sgm->block->steps[0];
 					if (itp_rt_sgm->block->errors[0] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[0] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP0_ITP_MASK;
+						new_stepbits |= LINACT0_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1039,20 +1147,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 1)
 			{
-				new_stepbits |= STEP1_ITP_MASK;
+				new_stepbits |= LINACT1_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP1_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 1)))
 				{
 #endif
 					itp_rt_sgm->block->errors[1] += itp_rt_sgm->block->steps[1];
 					if (itp_rt_sgm->block->errors[1] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[1] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP1_ITP_MASK;
+						new_stepbits |= LINACT1_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1065,20 +1173,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 2)
 			{
-				new_stepbits |= STEP2_ITP_MASK;
+				new_stepbits |= LINACT2_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP2_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 2)))
 				{
 #endif
 					itp_rt_sgm->block->errors[2] += itp_rt_sgm->block->steps[2];
 					if (itp_rt_sgm->block->errors[2] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[2] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP2_ITP_MASK;
+						new_stepbits |= LINACT2_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1091,20 +1199,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 3)
 			{
-				new_stepbits |= STEP3_ITP_MASK;
+				new_stepbits |= LINACT3_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP3_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 3)))
 				{
 #endif
 					itp_rt_sgm->block->errors[3] += itp_rt_sgm->block->steps[3];
 					if (itp_rt_sgm->block->errors[3] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[3] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP3_ITP_MASK;
+						new_stepbits |= LINACT3_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1117,20 +1225,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 4)
 			{
-				new_stepbits |= STEP4_ITP_MASK;
+				new_stepbits |= LINACT4_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP4_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 4)))
 				{
 #endif
 					itp_rt_sgm->block->errors[4] += itp_rt_sgm->block->steps[4];
 					if (itp_rt_sgm->block->errors[4] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[4] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP4_ITP_MASK;
+						new_stepbits |= LINACT4_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1143,20 +1251,20 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef STEP_ISR_SKIP_MAIN
 			if (itp_rt_sgm->block->main_stepper == 5)
 			{
-				new_stepbits |= STEP5_ITP_MASK;
+				new_stepbits |= LINACT5_IO_MASK;
 			}
 			else
 			{
 #endif
 #ifdef STEP_ISR_SKIP_IDLE
-				if (!(itp_rt_sgm->block->idle_axis & STEP5_MASK))
+				if (!(itp_rt_sgm->block->idle_axis & (1 << 5)))
 				{
 #endif
 					itp_rt_sgm->block->errors[5] += itp_rt_sgm->block->steps[5];
 					if (itp_rt_sgm->block->errors[5] > itp_rt_sgm->block->total_steps)
 					{
 						itp_rt_sgm->block->errors[5] -= itp_rt_sgm->block->total_steps;
-						new_stepbits |= STEP5_ITP_MASK;
+						new_stepbits |= LINACT5_IO_MASK;
 					}
 #ifdef STEP_ISR_SKIP_IDLE
 				}
@@ -1166,7 +1274,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 #endif
 #endif
 
-			uint8_t dirs = itp_rt_sgm->block->dirbits;
 #ifdef ENABLE_RT_SYNC_MOTIONS
 			static uint8_t last_dirs = 0;
 			if (new_stepbits)
@@ -1179,130 +1286,6 @@ MCU_CALLBACK void mcu_step_cb(void)
 				}
 			}
 #endif
-
-// updates the stepper coordinates
-#if (STEPPER_COUNT > 0)
-			if (new_stepbits & STEP0_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR0_MASK)
-					{
-						itp_rt_step_pos[0]--;
-					}
-					else
-					{
-						itp_rt_step_pos[0]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
-#if (STEPPER_COUNT > 1)
-			if (new_stepbits & STEP1_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR1_MASK)
-					{
-						itp_rt_step_pos[1]--;
-					}
-					else
-					{
-						itp_rt_step_pos[1]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
-#if (STEPPER_COUNT > 2)
-			if (new_stepbits & STEP2_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR2_MASK)
-					{
-						itp_rt_step_pos[2]--;
-					}
-					else
-					{
-						itp_rt_step_pos[2]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
-#if (STEPPER_COUNT > 3)
-			if (new_stepbits & STEP3_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR3_MASK)
-					{
-						itp_rt_step_pos[3]--;
-					}
-					else
-					{
-						itp_rt_step_pos[3]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
-
-#if (STEPPER_COUNT > 4)
-			if (new_stepbits & STEP4_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR4_MASK)
-					{
-						itp_rt_step_pos[4]--;
-					}
-					else
-					{
-						itp_rt_step_pos[4]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
-
-#if (STEPPER_COUNT > 5)
-			if (new_stepbits & STEP5_ITP_MASK)
-			{
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				if (!itp_rt_sgm->block->backlash_comp)
-				{
-#endif
-					if (dirs & DIR5_MASK)
-					{
-						itp_rt_step_pos[5]--;
-					}
-					else
-					{
-						itp_rt_step_pos[5]++;
-					}
-#ifdef ENABLE_BACKLASH_COMPENSATION
-				}
-#endif
-			}
-#endif
 		}
 
 		// no step remaining discards current segment
@@ -1311,8 +1294,7 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 	mcu_disable_global_isr(); // lock isr before clearin busy flag
 	itp_busy = false;
-
-#if (defined(ENABLE_DUAL_DRIVE_AXIS) || defined(IS_DELTA_KINEMATICS))
+#ifdef ENABLE_MULTI_STEP_HOMING
 	stepbits = (new_stepbits & ~itp_step_lock);
 #else
 	stepbits = new_stepbits;

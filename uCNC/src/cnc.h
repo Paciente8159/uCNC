@@ -93,35 +93,37 @@ extern "C"
 #define FHOLD_MASK 4
 #define CS_RES_MASK 8
 
-#define CONTROLS_MASK (ESTOP_MASK | FHOLD_MASK | CS_RES_MASK | SAFETY_DOOR_MASK)
+// basic step and dir IO masks
+// STEPS DIRS and LIMITS can be combined to form MULTI AXIS/LIMITS combinations
+/**
+ * Basic step and dir IO masks
+ * STEPS DIRS and LIMITS can be combined to form MULTI AXIS/LIMITS combinations
+ * 
+ * Usually (depends on the kinematic) STEP0 is assigned to AXIS X, STEP1 is assigned to AXIS Y, etc..
+ * But STEP0 can be formed by multiple STEPPERS (for example STEPPER0, STEPPER5, STEPPER6 and STEPPER7)
+ * 
+ * STEP0_MASK can then be formed by a combinations of stepper IO masks like this
+ * 
+ * #define STEP0_MASK (STEPPER0_IO_MASK | STEPPER5_IO_MASK | STEPPER6_IO_MASK | STEPPER7_IO_MASK)
+ * 
+ * For auto-squaring LIMITS should also match this STEPx mask by merging all combined limits to form a multi-switch limit
+ * **/
+#define STEP_UNDEF_IO_MASK 0
+#define STEP0_IO_MASK 1
+#define STEP1_IO_MASK 2
+#define STEP2_IO_MASK 4
+#define STEP3_IO_MASK 8
+#define STEP4_IO_MASK 16
+#define STEP5_IO_MASK 32
+#define STEP6_IO_MASK 64
+#define STEP7_IO_MASK 128
 
-#define LIMIT_X_MASK 1
-#define LIMIT_Y_MASK 2
-#define LIMIT_Z_MASK 4
-#define LIMIT_A_MASK 8
-#define LIMIT_B_MASK 16
-#define LIMIT_C_MASK 32
-
-#define LIMITS_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK | LIMIT_A_MASK | LIMIT_B_MASK | LIMIT_C_MASK)
-#define LIMITS_DELTA_MASK (LIMIT_X_MASK | LIMIT_Y_MASK | LIMIT_Z_MASK)
-
-#define STEP0_MASK 1
-#define STEP1_MASK 2
-#define STEP2_MASK 4
-#define STEP3_MASK 8
-#define STEP4_MASK 16
-#define STEP5_MASK 32
-#define STEP6_MASK 64
-#define STEP7_MASK 128
-
-#define DIR0_MASK 1
-#define DIR1_MASK 2
-#define DIR2_MASK 4
-#define DIR3_MASK 8
-#define DIR4_MASK 16
-#define DIR5_MASK 32
-#define DIR6_MASK 64
-#define DIR7_MASK 128
+#define LINACT0_MASK 1
+#define LINACT1_MASK 2
+#define LINACT2_MASK 4
+#define LINACT3_MASK 8
+#define LINACT4_MASK 16
+#define LINACT5_MASK 32
 
 // do all HAL configurations and sanity checks
 #include "cnc_hal_config_helper.h"
