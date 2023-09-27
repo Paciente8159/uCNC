@@ -60,21 +60,18 @@ extern "C"
 	DECL_BUFFER(uint8_t, usb, USB_TX_BUFFER_SIZE);
 	void mcu_usb_flush(void)
 	{
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
+
 		while (!BUFFER_EMPTY(usb))
 		{
 			char tmp[USB_TX_BUFFER_SIZE];
 			uint8_t r;
 
 			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);
+#ifdef MCU_HAS_USB
 			UsbSerial.write(tmp, r);
 			UsbSerial.flushTX();
+#endif
 		}
-#else
-		tusb_cdc_flush();
-#endif
-#endif
 	}
 
 	void mcu_usb_putc(uint8_t c)
