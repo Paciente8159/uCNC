@@ -74,26 +74,13 @@ WEAK_EVENT_HANDLER(rtc_tick)
 // event_cnc_dotasks_handler
 WEAK_EVENT_HANDLER(cnc_dotasks)
 {
-	// prevent re-entrancy
-	static bool running = false;
-	if (!running)
-	{
-		running = true;
-		DEFAULT_EVENT_HANDLER(cnc_dotasks);
-		running = false;
-	}
+	DEFAULT_EVENT_HANDLER(cnc_dotasks);
 }
 
 // event_cnc_dotasks_handler
 WEAK_EVENT_HANDLER(cnc_io_dotasks)
 {
-	// prevent re-entrancy
-	static bool running = false;
-	if (!running)
-	{
-		running = true;
-		DEFAULT_EVENT_HANDLER(cnc_io_dotasks);
-	}
+	DEFAULT_EVENT_HANDLER(cnc_io_dotasks);
 }
 
 // event_cnc_stop_handler
@@ -271,7 +258,14 @@ bool cnc_dotasks(void)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_dotasks, NULL);
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		EVENT_INVOKE(cnc_dotasks, NULL);
+		running = false;
+	}
 #endif
 
 	if (!lock_itp)
@@ -429,6 +423,8 @@ bool cnc_has_alarm()
 
 uint8_t cnc_get_alarm(void)
 {
+	// force interlocking check to set alarm code in case this as not yet been set
+	cnc_check_interlocking();
 	return cnc_state.alarm;
 }
 
@@ -1019,7 +1015,14 @@ static void cnc_io_dotasks(void)
 	}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_io_dotasks, NULL);
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		EVENT_INVOKE(cnc_io_dotasks, NULL);
+		running = false;
+	}
 #endif
 }
 
