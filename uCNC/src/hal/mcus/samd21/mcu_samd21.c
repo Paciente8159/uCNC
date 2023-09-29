@@ -756,6 +756,10 @@ void mcu_usb_putc(uint8_t c)
 	if (!tusb_cdc_write_available())
 	{
 		mcu_usb_flush();
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
 	tusb_cdc_write(c);
 }

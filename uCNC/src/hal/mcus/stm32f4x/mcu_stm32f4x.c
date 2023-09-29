@@ -497,6 +497,10 @@ void mcu_usb_flush(void)
 	while (!tusb_cdc_write_available())
 	{
 		mcu_dotasks(); // tinyusb device task
+		if (!tusb_cdc_connected)
+		{
+			return;
+		}
 	}
 }
 #endif
