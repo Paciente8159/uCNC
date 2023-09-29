@@ -166,7 +166,7 @@ extern "C"
  * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
  * 
  * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
- * to reassing LIMIT_X2 to STEP6 IO MASK like this
+ * to reassign LIMIT_X2 to STEP6 IO MASK do it like this
  * 
  * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
  * 
@@ -217,20 +217,20 @@ extern "C"
  * Limits for AXIS X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch (uses LIMIT_X)
  * Limits for AXIS Y only require Limit Y2 to be reasigned to match STEP2 so in this case
  * 
- * #define ENABLE_Y_AUTOLEVEL
  * #define LIMIT_Y2_IO_MASK STEP2_IO_MASK
  * 
- * And finally limits for AXIS Z will new to be reassined to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
+ * And finally limits for AXIS Z will new to be reassigned to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
  *  
  * // enable Z selfsquare/selfplane
- * #define ENABLE_Z_AUTOLEVEL
  * #define LIMIT_Y_IO_MASK STEP3_IO_MASK
  * #define LIMIT_Y2_IO_MASK STEP4_IO_MASK
  * #define LIMIT_A_IO_MASK STEP5_IO_MASK
  * 
- * There is still a final step that involve reassing LINACT2 limits to include the extra limit (LIMIT A) like this
+ * There is still a final step that involve reassign LINACT2 limits to include the extra limit (LIMIT A) like this
  * 
  * #define LINACT2_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK | LIMIT_A_IO_MASK)
+ * 
+ * Also remember that ENABLE_AXIS_AUTOLEVEL should be enabled for this to work
  * 
  * That is it. 
  * 
