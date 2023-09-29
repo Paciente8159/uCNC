@@ -74,13 +74,26 @@ WEAK_EVENT_HANDLER(rtc_tick)
 // event_cnc_dotasks_handler
 WEAK_EVENT_HANDLER(cnc_dotasks)
 {
-	DEFAULT_EVENT_HANDLER(cnc_dotasks);
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		DEFAULT_EVENT_HANDLER(cnc_dotasks);
+		running = false;
+	}
 }
 
 // event_cnc_dotasks_handler
 WEAK_EVENT_HANDLER(cnc_io_dotasks)
 {
-	DEFAULT_EVENT_HANDLER(cnc_io_dotasks);
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		DEFAULT_EVENT_HANDLER(cnc_io_dotasks);
+	}
 }
 
 // event_cnc_stop_handler
@@ -257,13 +270,13 @@ bool cnc_dotasks(void)
 	tool_pid_update();
 #endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_dotasks, NULL);
+#endif
+
 	if (!lock_itp)
 	{
 		lock_itp = true;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-		EVENT_INVOKE(cnc_dotasks, NULL);
-#endif
-
 		itp_run();
 		lock_itp = false;
 	}
@@ -573,7 +586,7 @@ void cnc_delay_ms(uint32_t miliseconds)
 	uint32_t t_start = mcu_millis();
 	while ((mcu_millis() - t_start) < miliseconds)
 	{
-		cnc_io_dotasks();
+		cnc_dotasks();
 	}
 }
 
