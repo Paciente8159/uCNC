@@ -257,13 +257,20 @@ bool cnc_dotasks(void)
 	tool_pid_update();
 #endif
 
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		EVENT_INVOKE(cnc_dotasks, NULL);
+		running = false;
+	}
+#endif
+
 	if (!lock_itp)
 	{
 		lock_itp = true;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-		EVENT_INVOKE(cnc_dotasks, NULL);
-#endif
-
 		itp_run();
 		lock_itp = false;
 	}
@@ -416,6 +423,8 @@ bool cnc_has_alarm()
 
 uint8_t cnc_get_alarm(void)
 {
+	// force interlocking check to set alarm code in case this as not yet been set
+	cnc_check_interlocking();
 	return cnc_state.alarm;
 }
 
@@ -573,7 +582,7 @@ void cnc_delay_ms(uint32_t miliseconds)
 	uint32_t t_start = mcu_millis();
 	while ((mcu_millis() - t_start) < miliseconds)
 	{
-		cnc_io_dotasks();
+		cnc_dotasks();
 	}
 }
 
@@ -1006,7 +1015,14 @@ static void cnc_io_dotasks(void)
 	}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	EVENT_INVOKE(cnc_io_dotasks, NULL);
+	// prevent re-entrancy
+	static bool running = false;
+	if (!running)
+	{
+		running = true;
+		EVENT_INVOKE(cnc_io_dotasks, NULL);
+		running = false;
+	}
 #endif
 }
 
