@@ -128,12 +128,7 @@ DECL_MODULE(system_menu)
 	DECL_MENU(2, 1, STR_SETTINGS);
 
 	// settings menu
-	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
-	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
-	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 	DECL_MENU_GOTO(2, ioconfig, STR_IO_CONFIG, CONST_VARG(6));
-	DECL_MENU_VAR(2, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(2, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 	DECL_MENU_GOTO(2, gohome, STR_HOMING, CONST_VARG(3));
 #if (AXIS_COUNT > 0)
 	DECL_MENU_GOTO(2, goaxis, STR_AXIS, CONST_VARG(4));
@@ -141,6 +136,14 @@ DECL_MODULE(system_menu)
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
 	DECL_MENU_GOTO(2, kinemats, STR_KINEMATICS, CONST_VARG(5));
 #endif
+	DECL_MENU_GOTO(2, other_config, STR_OTHER, CONST_VARG(9));
+	DECL_MENU_ACTION(2, set_load, STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
+	DECL_MENU_ACTION(2, set_save, STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
+	DECL_MENU_ACTION(2, set_reset, STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
+
+	DECL_MENU(9, 2, STR_OTHER);
+	DECL_MENU_VAR(9, s11, STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(9, s12, STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
 	DECL_MENU(6, 2, STR_IO_CONFIG);
 	DECL_MENU_VAR(6, s2, STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
