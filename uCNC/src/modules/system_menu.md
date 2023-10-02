@@ -25,16 +25,16 @@ Only the the overrided screens and render callbacks will be displayed. All other
 
 ### User actions and menu interactions
 
-System menu works by calling two main funtions inside the main loop. These are ´´´system_menu_action´´´ and ´´´system_menu_render´´´ (the calling of these functions must be done by the module that makes use of the system menu, like for example the display menu).
+System menu works by calling two main funtions inside the main loop. These are `system_menu_action` and `system_menu_render` (the calling of these functions must be done by the module that makes use of the system menu, like for example the display menu).
 
-´´´system_menu_action´´´ - receives a value that indicates a user action and sets the current navigation internal logic (page, selected item, etc...). Currently the system module handles 4 different actions:
+`system_menu_action` - receives a value that indicates a user action and sets the current navigation internal logic (page, selected item, etc...). Currently the system module handles 4 different actions:
  - No action (when there is no user activity)
  - User selected and item/or enter edit mode/or execute action
  - User moved to the next item/or increment in edit mode
  - User moved to the previous item/or decrement in edit mode
 Custom actions can also be taylored to menu items, extending the range of user actions depending on the type of feedback system that is used (rotary knobs, keyboards, touch screens, etc..).
 
-´´´system_menu_render´´´ - renders the screen (if it's on a custom screen), according to the current menu page, type, position, etc. Menu items can navigate to other menu pages or also have fully custom rendered screens.
+`system_menu_render` - renders the screen (if it's on a custom screen), according to the current menu page, type, position, etc. Menu items can navigate to other menu pages or also have fully custom rendered screens.
 
 There are several built in simple actions that are available via system menu module like calling serial commands, calling real time commands, navigate through the system menu, and utility functions like converting numbers and number arrays to strings to be rendered.
 
