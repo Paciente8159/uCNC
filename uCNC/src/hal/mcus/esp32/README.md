@@ -8,6 +8,8 @@ _µCNC for ESP32 can be built this way_
 4. Edit ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board.
 5. If needed edit the platformio.ini file environment for your board. Compile the sketch and upload it to your board.
 
+**Note** ESP32 boards build environments are available in two flavors. Regular Arduino and an ESPIDF with Arduino as a component that has some optimized options for low latency timer ISR. 
+
 ## Method two - Arduino IDE (easiest)
 
 1. Get [Arduino IDE](https://www.arduino.cc/en/software) and install it.
