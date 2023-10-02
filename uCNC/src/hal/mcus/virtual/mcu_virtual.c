@@ -456,6 +456,7 @@ void socketclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
@@ -774,10 +775,10 @@ void virtualconsoleclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
-
 		switch (dwWaitResult)
 		{
 		// Event object was signaled
@@ -795,6 +796,7 @@ void virtualconsoleclient(void)
 				{
 					putchar(com_buffer[k]);
 				}
+				memset(com_buffer, 0, 256);
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -808,7 +810,7 @@ void virtualconsoleclient(void)
 		// An error occurred
 		default:
 			printf("Serial client thread error (%d)\n", (int)GetLastError());
-			return 0;
+			return;
 		}
 
 		memset(com_buffer, 0, 256);
