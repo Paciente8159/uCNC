@@ -820,6 +820,7 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
+
 [Unit56]
 FileName=..\..\uCNC\src\interface\settings.h
 CompileCpp=0
@@ -1000,7 +1001,6 @@ Priority=1000
 OverrideBuildCmd=0
 BuildCmd=
 
-[Unit86]
 FileName=..\..\uCNC\cnc_hal_config.h
 CompileCpp=0
 Folder=
