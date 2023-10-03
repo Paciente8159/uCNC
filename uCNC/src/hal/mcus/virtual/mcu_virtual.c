@@ -309,8 +309,9 @@ void ioserver(void *args)
  * Comunications can be done via sockets or serial port
  * */
 HANDLE rxReady, rxThread;
-HANDLE txReady, txThread;
+HANDLE txReady, txThread, txFree;
 HANDLE bufferMutex;
+HANDLE bufferMutexDone;
 char com_buffer[256];
 char mcu_tx_buffer[256];
 volatile bool mcu_tx_empty;
@@ -455,6 +456,7 @@ void socketclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
@@ -653,6 +655,7 @@ void virtualserialclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
@@ -678,6 +681,7 @@ void virtualserialclient(void)
 						fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
 					}
 				}
+				memset(com_buffer, 0, 256);
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -726,34 +730,34 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 		unsigned char c = getchar();
 		switch (c)
 		{
-//		 case '"':
-//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-//		 	mcu_controls_changed_cb();
-//		 	break;
-//		 case '%':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-//		 case '&':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-//		 case '/':
-//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-//		 	mcu_limits_changed_cb();
-//		 	break;
-		// case '[':
-		// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
-		// 	mcu_limits_changed_cb();
-		// 	break;
-		// case ']':
-		// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
-		// 	mcu_limits_changed_cb();
-		// 	break;
-		// case '}':
-		// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
-		// 	mcu_controls_changed_cb();
-		// 	break;
+			//		 case '"':
+			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
+			//		 	mcu_controls_changed_cb();
+			//		 	break;
+			//		 case '%':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '&':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			//		 case '/':
+			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
+			//		 	mcu_limits_changed_cb();
+			//		 	break;
+			// case '[':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case ']':
+			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
+			// 	mcu_limits_changed_cb();
+			// 	break;
+			// case '}':
+			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
+			// 	mcu_controls_changed_cb();
+			// 	break;
 		default:
 			mcu_com_rx_cb(c);
 			break;
@@ -771,10 +775,10 @@ void virtualconsoleclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
-
 		switch (dwWaitResult)
 		{
 		// Event object was signaled
@@ -792,6 +796,7 @@ void virtualconsoleclient(void)
 				{
 					putchar(com_buffer[k]);
 				}
+				memset(com_buffer, 0, 256);
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -805,7 +810,7 @@ void virtualconsoleclient(void)
 		// An error occurred
 		default:
 			printf("Serial client thread error (%d)\n", (int)GetLastError());
-			return 0;
+			return;
 		}
 
 		memset(com_buffer, 0, 256);
@@ -871,6 +876,19 @@ void com_init(void)
 		return;
 	}
 
+	txFree = CreateEvent(
+		NULL,		   // default security attributes
+		FALSE,		   // manual-reset event
+		FALSE,		   // initial state is nonsignaled
+		TEXT("txFree") // object name
+	);
+
+	if (txFree == NULL)
+	{
+		printf("CreateEvent failed (%d)\n", GetLastError());
+		return;
+	}
+
 	rxThread = CreateThread(
 		NULL,		  // default security attributes
 		0,			  // use default stack size
@@ -918,28 +936,37 @@ void com_init(void)
 
 void com_send(char *buff, int len)
 {
-	DWORD dwWaitResult;
-	dwWaitResult = WaitForSingleObject(
-		bufferMutex, // handle to mutex
-		INFINITE);	 // no time-out interval
-	mcu_tx_empty = false;
+	DWORD dwWaitResult = WaitForSingleObject(
+		txFree,	   // event handle
+		INFINITE); // indefinite wait
 	switch (dwWaitResult)
 	{
 	// The thread got ownership of the mutex
 	case WAIT_OBJECT_0:
-		memcpy(com_buffer, buff, len);
-		ReleaseMutex(bufferMutex);
-		mcu_tx_empty = true;
+		
+		dwWaitResult = WaitForSingleObject(
+			bufferMutex, // handle to mutex
+			INFINITE);	 // no time-out interval
+		mcu_tx_empty = false;
+		switch (dwWaitResult)
+		{
+		// The thread got ownership of the mutex
+		case WAIT_OBJECT_0:
+			memcpy(com_buffer, buff, len);
+			ReleaseMutex(bufferMutex);
+			mcu_tx_empty = true;
+			break;
+
+		// The thread got ownership of an abandoned mutex
+		case WAIT_ABANDONED:
+			printf("Wait error (%d)\n", (int)GetLastError());
+			return;
+		}
+
+		SetEvent(txReady);
 		break;
-
-	// The thread got ownership of an abandoned mutex
-	case WAIT_ABANDONED:
-		printf("Wait error (%d)\n", (int)GetLastError());
-		return;
 	}
-
-	SetEvent(txReady);
-	sleep(1);
+	// sleep(1);
 }
 
 // UART communication
@@ -1246,15 +1273,15 @@ uint8_t mcu_get_pin_offset(uint8_t pin)
 	{
 		return pin;
 	}
-	else if (pin >= DOUT0 && pin <= DOUT31)
+	else if (pin >= DOUT_PINS_OFFSET && pin <= (DOUT_PINS_OFFSET + 32))
 	{
 		return pin - DOUT0;
 	}
-	if (pin >= LIMIT_X && pin <= CS_RES)
+	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
 	{
 		return pin - LIMIT_X;
 	}
-	else if (pin >= DIN0 && pin <= DIN31)
+	else if (pin >= DIN_PINS_OFFSET && pin <= (DIN_PINS_OFFSET + 32))
 	{
 		return pin - DIN0;
 	}
@@ -1434,20 +1461,28 @@ bool mcu_tx_ready(void)
 	return mcu_tx_empty;
 }
 
-void mcu_uart_putc(uint8_t c){
-	// #ifdef ENABLE_SYNC_TX
-	// 	com_send(c, 1);
-	// 	#endif
-	putchar(c);
-}
-	void mcu_uart_flush(void){
-		// #ifndef ENABLE_SYNC_TX
-		// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
-		// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
-		// #endif
+#ifndef UART_TX_BUFFER_SIZE
+#define UART_TX_BUFFER_SIZE 64
+#endif
+DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart))
+	{
+		mcu_uart_flush();
 	}
+	BUFFER_ENQUEUE(uart, &c);
+	// putchar(c);
+}
+void mcu_uart_flush(void)
+{
+	char buff[UART_TX_BUFFER_SIZE];
+	uint8_t i = BUFFER_READ_AVAILABLE(uart);
+	BUFFER_READ(uart, buff, UART_TX_BUFFER_SIZE, i);
+	com_send(buff, i);
+}
 
-//void mcu_putc(char c)
+// void mcu_putc(char c)
 //{
 //	static int buff_index = 0;
 //	if (c != 0)
@@ -1467,7 +1502,7 @@ void mcu_uart_putc(uint8_t c){
 //	}
 //	mcu_tx_empty = true;
 //	mcu_tx_enabled = true;
-//}
+// }
 
 char mcu_getc(void)
 {
@@ -1654,9 +1689,11 @@ void mcu_config_input_isr(int pin)
 {
 }
 
-int main (void) {
+int main(void)
+{
 	cnc_init();
-	for(;;) {
+	for (;;)
+	{
 		cnc_run();
 	}
 }
