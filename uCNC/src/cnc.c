@@ -343,6 +343,8 @@ void cnc_stop(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_stop, NULL);
 #endif
+
+	cnc_clear_exec_state(EXEC_RUN);
 }
 
 uint8_t cnc_unlock(bool force)
