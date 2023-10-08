@@ -42,7 +42,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | gcode_before_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires before a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | gcode_after_motion | gcode_exec_args_t* | ENABLE_PARSER_MODULES | Fires after a motion group command is executed (G0, G1, G2, etc...). Arg is a pointer to a gcode_exec_args_t struct |
 | grbl_cmd | grbl_cmd_args_t* | ENABLE_PARSER_MODULES | Fires when a custom/unknown '$' grbl type command is received. Arg is a pointer to a grbl_cmd_args_t struct |
-| parse_token | NULL | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/char is received for further processing |
+| parse_token | NULL | ENABLE_PARSER_MODULES | Fires when a custom/unknown token/uint8_t is received for further processing |
 | parser_get_modes | uint8_t * | ENABLE_PARSER_MODULES | Fires when $G command is issued and the active modal states array is being requested (can be used to modify the active modes with extended gcodes). Arg is a pointer to an uint8_t array with the parser motion groups current values |
 | parser_reset | NULL | ENABLE_PARSER_MODULES | Fires on parser reset |
 | cnc_reset | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when µCNC resets |
@@ -88,7 +88,7 @@ gcode_parse_args_t* - Pointer to a struct of type gcode_parse_args_t. The gcode_
 ```
 typedef struct gcode_parse_args_
 {
-	unsigned char word; // This is the GCode word being parsed (usually 'G' or 'M')
+	uint8_t word; // This is the GCode word being parsed (usually 'G' or 'M')
 	uint8_t code; // This is the GCode word argument converted to uint8_t format (example 98)
 	uint8_t error; // The parser current error code (STATUS_GCODE_EXTENDED_UNSUPPORTED)
 	float value; // This is the actual GCode word argument parsed as float. Useful if code has mantissa or is bigger then 255 (example 98.1)
@@ -123,9 +123,9 @@ grbl_cmd_args_t* - Pointer to a struct of type grbl_cmd_args_t. The grbl_cmd_arg
 typedef struct grbl_cmd_args_
 {
 	uint8_t *error; // current parser error state
-	unsigned char *cmd; // pointer to the command string
+	uint8_t *cmd; // pointer to the command string
 	uint8_t len; // command string length
-	char next_char; // next char to be read
+	uint8_t next_char; // next uint8_t to be read
 } grbl_cmd_args_t;
 ```
 

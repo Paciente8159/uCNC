@@ -60,12 +60,12 @@ static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
 
-static unsigned char parser_get_next_preprocessed(bool peek);
-FORCEINLINE static void parser_get_comment(unsigned char start_char);
-FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
+static uint8_t parser_get_next_preprocessed(bool peek);
+FORCEINLINE static void parser_get_comment(uint8_t start_char);
+FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
-FORCEINLINE static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
+FORCEINLINE static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parse_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
@@ -152,7 +152,7 @@ void parser_init(void)
 uint8_t parser_read_command(void)
 {
 	uint8_t error = STATUS_OK;
-	unsigned char c = serial_peek();
+	uint8_t c = serial_peek();
 
 	if (c == '$')
 	{
@@ -307,8 +307,8 @@ void parser_update_probe_pos(void)
 static uint8_t parser_grbl_command(void)
 {
 	serial_getc(); // eat $
-	unsigned char c = serial_peek();
-	unsigned char grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
+	uint8_t c = serial_peek();
+	uint8_t grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
@@ -377,7 +377,7 @@ static uint8_t parser_grbl_command(void)
 			{
 				float val = 0;
 				setting_offset_t setting_num = 0;
-				serial_ungetc();
+				//serial_ungetc();
 				error = parser_get_float(&val);
 				if (!error)
 				{
@@ -457,7 +457,7 @@ static uint8_t parser_grbl_command(void)
 				// everything ok reverts string and saves it
 				do
 				{
-					serial_ungetc();
+					//serial_ungetc();
 				} while (serial_peek() != '=');
 				serial_getc();
 				settings_save_startup_gcode(block_address);
@@ -537,7 +537,7 @@ static uint8_t parser_grbl_command(void)
 	}
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	if (mcu_custom_grbl_cmd((char *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
+	if (mcu_custom_grbl_cmd((uint8_t *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
 	{
 		return STATUS_OK;
 	}
@@ -659,7 +659,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	uint8_t wordcount = 0;
 	for (;;)
 	{
-		unsigned char word = 0;
+		uint8_t word = 0;
 		float value = 0;
 		// this flushes leading white chars and also takes care of processing comments
 		parser_get_next_preprocessed(true);
@@ -1849,7 +1849,7 @@ uint8_t parser_get_float(float *value)
 	uint8_t fpcount = 0;
 	uint8_t result = NUMBER_UNDEF;
 
-	unsigned char c = parser_get_next_preprocessed(true);
+	uint8_t c = parser_get_next_preprocessed(true);
 
 	*value = 0;
 
@@ -1945,7 +1945,7 @@ uint8_t parser_get_float(float *value)
 */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
-static void parser_get_comment(unsigned char start_char)
+static void parser_get_comment(uint8_t start_char)
 {
 	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
@@ -1953,7 +1953,7 @@ static void parser_get_comment(unsigned char start_char)
 #endif
 	for (;;)
 	{
-		unsigned char c = serial_peek();
+		uint8_t c = serial_peek();
 		switch (c)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
@@ -2011,11 +2011,11 @@ static void parser_get_comment(unsigned char start_char)
 	}
 }
 
-static uint8_t parser_get_token(unsigned char *word, float *value)
+static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	unsigned char c = serial_getc();
+	uint8_t c = serial_getc();
 
-	// if other char starts tokenization
+	// if other uint8_t starts tokenization
 	if (c >= 'a' && c <= 'z')
 	{
 		c -= 32; // uppercase
@@ -2032,7 +2032,7 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 #ifdef ECHO_CMD
 		serial_putc(c);
 #endif
-		if (c >= 'A' && c <= 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			if (!parser_get_float(value))
 			{
@@ -2341,7 +2341,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	return STATUS_OK;
 }
 
-static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
+static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	uint16_t new_words = cmd->words;
 	switch (c)
@@ -2492,7 +2492,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #endif
 		break;
 	default:
-		if (c >= 'A' && c <= 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			return STATUS_GCODE_UNUSED_WORDS;
 		}
@@ -2509,9 +2509,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 	return STATUS_OK;
 }
 
-static unsigned char parser_get_next_preprocessed(bool peek)
+static uint8_t parser_get_next_preprocessed(bool peek)
 {
-	unsigned char c = serial_peek();
+	uint8_t c = serial_peek();
 
 	while (c == ' ' || c == '(' || c == ';')
 	{
@@ -2533,7 +2533,7 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 
 static void parser_discard_command(void)
 {
-	unsigned char c = '@';
+	uint8_t c = '@';
 #ifdef ECHO_CMD
 	serial_putc(c);
 #endif

@@ -1,10 +1,21 @@
 /*
 	Name: serial.c
 	Description: Serial communication basic read/write functions µCNC.
+	The serial has been completelly redesigned to allow multiple stream sources of code.
+	Streams are prority based.
+	Priority is as follows
+	UART
+	UART2
+	USB
+	WIFI
+	BT
+	Others
+
+
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 30/12/2019
+	Date: 07-10-2023
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -19,164 +30,193 @@
 #include <math.h>
 #include "../cnc.h"
 
-static unsigned char serial_rx_buffer[RX_BUFFER_SIZE];
-static uint8_t serial_rx_read;
-static volatile uint8_t serial_rx_write;
-static volatile uint8_t serial_rx_overflow;
+static serial_stream_t *serial_stream;
+static serial_stream_t *current_stream;
 
-static uint8_t serial_read_select;
-static uint16_t serial_read_index;
-
-// static void serial_rx_clear();
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+DECL_SERIAL_STREAM(uart_serial_stream, mcu_uart_getc, mcu_uart_available, mcu_uart_clear, mcu_uart_putc, mcu_uart_flush);
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+DECL_SERIAL_STREAM(uart2_serial_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uart2_clear, mcu_uart2_putc, mcu_uart2_flush);
+#endif
+#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+DECL_SERIAL_STREAM(usb_serial_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+DECL_SERIAL_STREAM(wifi_serial_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
+#endif
+#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
+DECL_SERIAL_STREAM(bt_serial_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
+#endif
 
 void serial_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-	serial_rx_write = 0;
-	serial_rx_read = 0;
-	memset(serial_rx_buffer, 0, sizeof(serial_rx_buffer));
+	serial_stream = NULL;
+#endif
+
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+	serial_stream_register(&uart_serial_stream);
+#endif
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
+	serial_stream_register(&uart2_serial_stream);
+#endif
+#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
+	serial_stream_register(&usb_serial_stream);
+#endif
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
+	serial_stream_register(&wifi_serial_stream);
+#endif
+#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
+	serial_stream_register(&bt_serial_stream);
+#endif
+	current_stream = serial_stream;
+}
+
+void serial_stream_register(serial_stream_t *stream)
+{
+	if (serial_stream == NULL)
+	{
+		serial_stream = stream;
+		serial_stream->next = NULL;
+	}
+	else
+	{
+		serial_stream_t *p = serial_stream;
+		while (p->next != NULL)
+		{
+			p = p->next;
+		}
+		p->next = stream;
+		p->next->next = NULL;
+	}
+}
+
+static uint8_t serial_peek_buffer;
+void serial_stream_change(serial_stream_t *stream)
+{
+	serial_peek_buffer = 0;
+	if (stream != NULL)
+	{
+		current_stream = stream;
+		return;
+	}
+
+	current_stream = current_stream->next;
+
+	if (!current_stream)
+	{
+		current_stream = serial_stream;
+	}
+}
+
+uint8_t serial_getc(void)
+{
+	uint8_t peek = serial_peek_buffer;
+	if (peek)
+	{
+		serial_peek_buffer = 0;
+		return peek;
+	}
+
+	while (!current_stream->stream_available())
+		;
+	peek = current_stream->stream_getc();
+	switch (peek)
+	{
+	case '\n':
+	case '\r':
+	case 0:
+		return EOL;
+	case '\t':
+		return ' ';
+	}
+	return peek;
+}
+
+uint8_t serial_peek(void)
+{
+	uint8_t peek = serial_getc();
+	serial_peek_buffer = peek;
+
+	return peek;
+}
+
+uint8_t serial_available(void)
+{
+	return current_stream->stream_available();
+}
+
+uint8_t serial_freebytes(void)
+{
+	return (RX_BUFFER_SIZE - serial_available());
+}
+
+void serial_clear(void)
+{
+	current_stream->stream_clear();
+}
+
+#ifndef DISABLE_MULTISTRTEAM_SERIAL
+static bool serial_broadcast_enabled;
+#endif
+void serial_broadcast(bool enable)
+{
+#ifndef DISABLE_MULTISTRTEAM_SERIAL
+	serial_broadcast_enabled = enable;
 #endif
 }
 
-bool serial_rx_is_empty(void)
-{
-	switch (serial_read_select)
-	{
-	case SERIAL_UART:
-		return (serial_rx_write == serial_rx_read);
-	case SERIAL_N0:
-	case SERIAL_N1:
-		return false;
-	}
-
-	return true;
-}
-
-unsigned char serial_getc(void)
-{
-	unsigned char c;
-	switch (serial_read_select)
-	{
-	case SERIAL_UART:
-		while (serial_rx_write == serial_rx_read)
-		{
-			cnc_dotasks();
-		}
-
-		c = serial_rx_buffer[serial_rx_read];
-		if (++serial_rx_read == RX_BUFFER_SIZE)
-		{
-			serial_rx_read = 0;
-		}
-
-		switch (c)
-		{
-		case '\r':
-		case '\n':
-		case EOL:
-			return EOL;
-		case '\t':
-			return ' ';
-		}
-
-		return c;
-		break;
-	case SERIAL_N0:
-	case SERIAL_N1:
-		c = mcu_eeprom_getc(serial_read_index++);
-		if (c > 0 && c < 128)
-		{
-			serial_putc(c);
-		}
-		else
-		{
-			c = 0;
-			serial_putc(':');
-			serial_read_select = SERIAL_UART; // resets the serial select
-		}
-		return c;
-	}
-
-	return EOL;
-}
-
-void serial_ungetc(void)
-{
-	if (--serial_rx_read == 0xFF)
-	{
-		serial_rx_read = RX_BUFFER_SIZE - 1;
-	}
-}
-
-void serial_select(uint8_t source)
-{
-	serial_read_select = source;
-	switch (serial_read_select)
-	{
-	case SERIAL_N0:
-		serial_putc('>');
-		serial_read_index = STARTUP_BLOCK0_ADDRESS_OFFSET;
-		break;
-	case SERIAL_N1:
-		serial_putc('>');
-		serial_read_index = STARTUP_BLOCK1_ADDRESS_OFFSET;
-		break;
-	}
-}
-
-unsigned char serial_peek(void)
-{
-	unsigned char c;
-	switch (serial_read_select)
-	{
-	case SERIAL_UART:
-		while (serial_rx_write == serial_rx_read)
-		{
-			cnc_dotasks();
-		}
-		c = serial_rx_buffer[serial_rx_read];
-		switch (c)
-		{
-		case '\r':
-		case '\n':
-		case EOL:
-			return EOL;
-		case '\t':
-			return ' ';
-		default:
-			return c;
-		}
-		break;
-	case SERIAL_N0:
-	case SERIAL_N1:
-		c = mcu_eeprom_getc(serial_read_index);
-		return (c > 0 && c < 128) ? c : 0;
-	}
-	return EOL;
-}
-
-void serial_inject_cmd(const char *__s)
-{
-	unsigned char c;
-	do
-	{
-		c = (unsigned char)*__s++;
-		mcu_com_rx_cb(c);
-	} while (c);
-}
-
 static uint8_t serial_tx_count;
-void serial_putc(unsigned char c)
+void serial_putc(uint8_t c)
 {
 	serial_tx_count++;
-	mcu_putc(c);
+#ifndef DISABLE_MULTISTRTEAM_SERIAL
+	if (!serial_broadcast_enabled)
+	{
+		current_stream->stream_putc(c);
+	}
+	else
+	{
+		serial_stream_t *p = serial_stream;
+		while (p)
+		{
+			p->stream_putc(c);
+			p = p->next;
+		}
+	}
+#else
+	serial_stream->stream_putc(c);
+#endif
+
 	if (c == '\n')
 	{
 		serial_tx_count = 0;
-		mcu_flush();
+		serial_flush();
 	}
 #if ASSERT_PIN(ACTIVITY_LED)
 	io_toggle_output(ACTIVITY_LED);
+#endif
+}
+
+void serial_flush(void)
+{
+#ifndef DISABLE_MULTISTRTEAM_SERIAL
+	if (!serial_broadcast_enabled)
+	{
+		current_stream->stream_flush();
+	}
+	else
+	{
+		serial_stream_t *p = serial_stream;
+		while (p)
+		{
+			p->stream_flush();
+			p = p->next;
+		}
+	}
+#else
+	serial_stream->stream_flush();
 #endif
 }
 
@@ -185,7 +225,7 @@ uint8_t serial_tx_busy(void)
 	return serial_tx_count;
 }
 
-void print_str(print_cb cb, const char *__s)
+void print_str(print_cb cb, const uint8_t *__s)
 {
 	while (*__s)
 	{
@@ -199,7 +239,7 @@ void print_bytes(print_cb cb, const uint8_t *data, uint8_t count)
 	{
 		cb(' ');
 		uint8_t up = *data >> 4;
-		char c = (up > 9) ? ('a' + up - 10) : ('0' + up);
+		uint8_t c = (up > 9) ? ('a' + up - 10) : ('0' + up);
 		cb(c);
 		up = *data & 0x0F;
 		c = (up > 9) ? ('a' + up - 10) : ('0' + up);
@@ -216,7 +256,7 @@ void print_int(print_cb cb, int32_t num)
 		return;
 	}
 
-	unsigned char buffer[11];
+	uint8_t buffer[11];
 	uint8_t i = 0;
 
 	if (num < 0)
@@ -324,84 +364,4 @@ void print_fltarr(print_cb cb, float *arr, uint8_t count)
 			print_flt(cb, 0);
 		} while (--i);
 	}
-}
-
-// ISR
-// New char handle strategy
-// All ascii will be sent to buffer and processed later (including comments)
-MCU_RX_CALLBACK void mcu_com_rx_cb(unsigned char c)
-{
-	static bool is_grbl_cmd = false;
-	uint8_t write;
-	if (c < ((unsigned char)0x7F)) // ascii (all bellow DEL)
-	{
-		switch (c)
-		{
-		case CMD_CODE_REPORT:
-#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
-			return;
-#endif
-		case CMD_CODE_RESET:
-		case CMD_CODE_FEED_HOLD:
-			cnc_call_rt_command((uint8_t)c);
-			return;
-		case '\n':
-		case '\r':
-		case 0:
-			// EOL marker
-			is_grbl_cmd = false;
-			break;
-		case '$':
-			is_grbl_cmd = true;
-			break;
-		case CMD_CODE_CYCLE_START:
-			if (!is_grbl_cmd)
-			{
-				cnc_call_rt_command(CMD_CODE_CYCLE_START);
-				return;
-			}
-			break;
-		}
-
-		if (serial_rx_overflow)
-		{
-			c = OVF;
-		}
-		write = serial_rx_write;
-		serial_rx_buffer[write] = c;
-		if (++write == RX_BUFFER_SIZE)
-		{
-			write = 0;
-		}
-		if (write == serial_rx_read)
-		{
-			serial_rx_overflow++;
-		}
-
-		serial_rx_write = write;
-		return;
-	}
-	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
-	{
-		cnc_call_rt_command((uint8_t)c);
-	}
-}
-
-void serial_rx_clear(void)
-{
-	serial_rx_write = 0;
-	serial_rx_read = 0;
-	serial_rx_overflow = 0;
-	memset(serial_rx_buffer, 0, RX_BUFFER_SIZE);
-}
-
-uint8_t serial_get_rx_freebytes(void)
-{
-	uint16_t buf = serial_rx_write;
-	if (serial_rx_read > buf)
-	{
-		buf += RX_BUFFER_SIZE;
-	}
-
-	return (uint8_t)(RX_BUFFER_CAPACITY - (buf - serial_rx_read));
 }

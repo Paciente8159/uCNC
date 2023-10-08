@@ -244,8 +244,8 @@ extern "C"
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
-#define BUFFER_PEEK(buffer) (&buffer##_bufferdata[buffer.tail])
-#define BUFFER_PULL(buffer)                   \
+#define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
+#define BUFFER_REMOVE(buffer)                   \
 	{                                         \
 		uint8_t count, tail;                  \
 		__ATOMIC__                            \
@@ -263,7 +263,7 @@ extern "C"
 			__ATOMIC__                        \
 			{                                 \
 				buffer.tail = tail;           \
-				buffer.count++;               \
+				buffer.count--;               \
 			}                                 \
 		}                                     \
 		p;                                    \
@@ -292,7 +292,7 @@ extern "C"
 		}                                                                            \
 	}
 
-#define BUFFER_PUSH(buffer)            \
+#define BUFFER_STORE(buffer)            \
 	{                                  \
 		if (!BUFFER_FULL(buffer))      \
 		{                              \

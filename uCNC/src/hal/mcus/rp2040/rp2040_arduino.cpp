@@ -66,9 +66,9 @@ uint16_t bt_settings_offset;
 
 WebServer httpServer(80);
 HTTPUpdateServer httpUpdater;
-const char *update_path = "/firmware";
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
+const uint8_t *update_path = "/firmware";
+const uint8_t *update_username = WIFI_USER;
+const uint8_t *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
@@ -77,8 +77,8 @@ typedef struct
 {
 	uint8_t wifi_on;
 	uint8_t wifi_mode;
-	char ssid[WIFI_SSID_MAX_LEN];
-	char pass[WIFI_PASS_MAX_LEN];
+	uint8_t ssid[WIFI_SSID_MAX_LEN];
+	uint8_t pass[WIFI_PASS_MAX_LEN];
 } wifi_settings_t;
 
 uint16_t wifi_settings_offset;
@@ -86,15 +86,15 @@ wifi_settings_t wifi_settings;
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
+uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
 {
-	char str[128];
-	char arg[ARG_MAX_LEN];
-	char has_arg = (next_char == '=');
+	uint8_t str[128];
+	uint8_t arg[ARG_MAX_LEN];
+	uint8_t has_arg = (next_char == '=');
 	memset(arg, 0, sizeof(arg));
 	if (has_arg)
 	{
-		char c = serial_getc();
+		uint8_t c = serial_getc();
 		uint8_t i = 0;
 		while (c)
 		{
@@ -322,7 +322,7 @@ bool rp2040_wifi_clientok(void)
 #ifdef ENABLE_WIFI
 	static uint32_t next_info = 30000;
 	static bool connected = false;
-	char str[128];
+	uint8_t str[128];
 
 	if (!wifi_settings.wifi_on)
 	{
@@ -477,23 +477,23 @@ void mcu_bt_flush(void)
 }
 #endif
 
-unsigned char rp2040_wifi_bt_read(void)
+uint8_t rp2040_wifi_bt_read(void)
 {
 #ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		if (serverClient.available() > 0)
 		{
-			return (unsigned char)serverClient.read();
+			return (uint8_t)serverClient.read();
 		}
 	}
 #endif
 
 #ifdef ENABLE_BLUETOOTH
-	return (unsigned char)SerialBT.read();
+	return (uint8_t)SerialBT.read();
 #endif
 
-	return (unsigned char)0;
+	return (uint8_t)0;
 }
 
 bool rp2040_wifi_bt_rx_ready(void)
@@ -586,7 +586,7 @@ extern "C"
 	{
 		while (!BUFFER_EMPTY(usb))
 		{
-			char tmp[USB_TX_BUFFER_SIZE];
+			uint8_t tmp[USB_TX_BUFFER_SIZE];
 			uint8_t r;
 
 			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);

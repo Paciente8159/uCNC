@@ -47,7 +47,7 @@ volatile static uint32_t esp32_io_counter_reload;
 hw_timer_t *esp32_step_timer;
 
 void esp32_wifi_bt_init(void);
-void esp32_wifi_bt_flush(char *buffer);
+void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
 #ifndef FLASH_EEPROM_SIZE
@@ -599,7 +599,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 /*UART*/
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
@@ -824,7 +824,7 @@ void mcu_dotasks(void)
 	esp_task_wdt_reset();
 
 	// loop through received data
-	char rxdata[RX_BUFFER_SIZE];
+	uint8_t rxdata[RX_BUFFER_SIZE];
 	int rxlen, i;
 #ifdef MCU_HAS_UART
 	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);

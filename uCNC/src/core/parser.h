@@ -292,7 +292,7 @@ extern "C"
 	// generates a default delegate, event and handler hook
 	typedef struct gcode_parse_args_
 	{
-		unsigned char word;
+		uint8_t word;
 		uint8_t code;
 		uint8_t* error;
 		float value;
@@ -328,9 +328,9 @@ extern "C"
 	typedef struct grbl_cmd_args_
 	{
 		uint8_t *error;
-		unsigned char *cmd;
+		uint8_t *cmd;
 		uint8_t len;
-		char next_char;
+		uint8_t next_char;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
 

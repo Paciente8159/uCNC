@@ -372,10 +372,21 @@ ISR(PCINT2_vect, ISR_BLOCK) // input pin on change service routine
 #endif
 
 #ifdef MCU_HAS_UART
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 ISR(COM_RX_vect, ISR_BLOCK)
 {
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_com_rx_cb(COM_INREG);
+	uint8_t c = COM_INREG;
+	if (mcu_com_rx_cb(COM_INREG))
+	{
+		if (BUFFER_FULL(uart_rx))
+		{
+			c = OVF;
+		}
+
+		*(BUFFER_NEXT_FREE(uart_rx)) = c;
+		BUFFER_STORE(uart_rx);
+	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
 #endif
@@ -384,16 +395,16 @@ ISR(COM_RX_vect, ISR_BLOCK)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 ISR(COM_TX_vect, ISR_BLOCK)
 {
-	if (BUFFER_EMPTY(uart))
+	if (BUFFER_EMPTY(uart_tx))
 	{
 		CLEARBIT(UCSRB_REG, UDRIE_BIT);
 		return;
 	}
 	uint8_t c;
-	BUFFER_DEQUEUE(uart, &c);
+	BUFFER_DEQUEUE(uart_tx, &c);
 	COM_OUTREG = c;
 }
 
@@ -571,13 +582,30 @@ uint8_t mcu_get_servo(uint8_t servo)
 
 #ifdef MCU_HAS_UART
 
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)

@@ -218,7 +218,7 @@ void mcu_com_isr()
 		if (COM_UART->USART.INTFLAG.bit.RXC && COM_UART->USART.INTENSET.bit.RXC)
 		{
 			COM_UART->USART.INTFLAG.bit.RXC = 1;
-			unsigned char c = (0xff & COM_INREG);
+			uint8_t c = (0xff & COM_INREG);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -254,7 +254,7 @@ void mcu_com2_isr()
 		if (COM2_UART->USART.INTFLAG.bit.RXC && COM2_UART->USART.INTENSET.bit.RXC)
 		{
 			COM2_UART->USART.INTFLAG.bit.RXC = 1;
-			unsigned char c = (0xff & COM2_INREG);
+			uint8_t c = (0xff & COM2_INREG);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -737,7 +737,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #endif
 
 /**
- * checks if the serial hardware of the MCU is ready do send the next char
+ * checks if the serial hardware of the MCU is ready do send the next uint8_t
  * */
 #ifndef mcu_tx_ready
 bool mcu_tx_ready(void)
@@ -747,7 +747,7 @@ bool mcu_tx_ready(void)
 #endif
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM_UART port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM_UART port)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_USB

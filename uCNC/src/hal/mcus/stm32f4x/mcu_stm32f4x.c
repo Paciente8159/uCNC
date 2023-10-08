@@ -86,7 +86,7 @@ void MCU_SERIAL_ISR(void)
 	{
 		if (COM_UART->SR & USART_SR_RXNE)
 		{
-			unsigned char c = COM_INREG;
+			uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -121,7 +121,7 @@ void MCU_SERIAL2_ISR(void)
 	{
 		if (COM2_UART->SR & USART_SR_RXNE)
 		{
-			unsigned char c = COM2_INREG;
+			uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -729,7 +729,7 @@ void mcu_dotasks()
 
 	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tusb_cdc_read();
+		uint8_t c = (uint8_t)tusb_cdc_read();
 #if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 		mcu_com_rx_cb(c);
 #else

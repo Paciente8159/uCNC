@@ -50,7 +50,7 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 
 int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
-	unsigned char val = 0;
+	uint8_t val = 0;
 
 	if (!port)
 	{

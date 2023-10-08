@@ -26,7 +26,7 @@
 #ifdef USE_ARDUINO_CDC
 extern void mcu_usb_dotasks(void);
 extern void mcu_usb_init(void);
-extern char mcu_usb_getc(void);
+extern uint8_t mcu_usb_getc(void);
 extern uint8_t mcu_usb_available(void);
 extern uint8_t mcu_usb_tx_available(void);
 #else
@@ -256,7 +256,7 @@ void MCU_COM_ISR(void)
 
 		if (irqstatus == UART_IIR_INTID_RDA)
 		{
-			unsigned char c = (unsigned char)(COM_INREG & UART_RBR_MASKBIT);
+			uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -311,7 +311,7 @@ void MCU_COM2_ISR(void)
 
 		if (irqstatus == UART_IIR_INTID_RDA)
 		{
-			unsigned char c = (unsigned char)(COM2_INREG & UART_RBR_MASKBIT);
+			uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 			mcu_com_rx_cb(c);
 #else
@@ -569,7 +569,7 @@ uint8_t mcu_get_servo(uint8_t servo)
 #endif
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
@@ -811,7 +811,7 @@ void mcu_dotasks()
 	mcu_usb_dotasks();
 	while (mcu_usb_available())
 	{
-		unsigned char c = (unsigned char)mcu_usb_getc();
+		uint8_t c = (uint8_t)mcu_usb_getc();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
 #else
@@ -823,7 +823,7 @@ void mcu_dotasks()
 
 	while (tusb_cdc_available())
 	{
-		unsigned char c = (unsigned char)tusb_cdc_read();
+		uint8_t c = (uint8_t)tusb_cdc_read();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 		mcu_com_rx_cb(c);
 #else

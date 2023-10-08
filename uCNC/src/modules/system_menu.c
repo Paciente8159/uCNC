@@ -436,7 +436,7 @@ void system_menu_render(void)
 				// renders header
 				if (!item_index)
 				{
-					char buff[SYSTEM_MENU_MAX_STR_LEN];
+					uint8_t buff[SYSTEM_MENU_MAX_STR_LEN];
 					rom_strcpy(buff, menu_page->page_label);
 					system_menu_render_header(buff);
 				}
@@ -469,7 +469,7 @@ void system_menu_render(void)
 	}
 }
 
-void system_menu_show_modal_popup(uint32_t timeout, const char *__s)
+void system_menu_show_modal_popup(uint32_t timeout, const uint8_t *__s)
 {
 	// prevents redraw
 	g_system_menu.flags &= ~(SYSTEM_MENU_MODE_REDRAW | SYSTEM_MENU_MODE_DELAYED_REDRAW);
@@ -647,7 +647,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
-		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
 		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
@@ -659,10 +659,10 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
-		if (serial_get_rx_freebytes() > 20)
+		if (serial_freebytes() > 20)
 		{
-			serial_inject_cmd((const char *)item->action_arg);
-			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			//serial_inject_cmd((const uint8_t *)item->action_arg);
+			uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 			rom_strcpy(buffer, __romstr__(STR_CMD_SENT));
 			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
@@ -685,7 +685,7 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 	}
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
-		char override = (char)VARG_CONST(item->action_arg);
+		uint8_t override = (uint8_t)VARG_CONST(item->action_arg);
 		switch (action)
 		{
 		case SYSTEM_MENU_ACTION_NEXT:
@@ -739,17 +739,17 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_get_rx_freebytes() > 32)
+		if (serial_freebytes() > 32)
 		{
-			char buffer[SYSTEM_MENU_MAX_STR_LEN];
+			uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
 			rom_strcpy(buffer, __romstr__("$J=G91"));
-			char *ptr = buffer;
+			uint8_t *ptr = buffer;
 			// search for the end of string
 			while (*++ptr)
 				;
 			// replaces the axis letter
-			*ptr++ = *((char *)item->action_arg);
+			*ptr++ = *((uint8_t *)item->action_arg);
 			switch (action)
 			{
 			case SYSTEM_MENU_ACTION_NEXT:
@@ -770,7 +770,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
-			serial_inject_cmd(buffer);
+			//serial_inject_cmd(buffer);
 		}
 		return true;
 	}
@@ -779,7 +779,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 
 static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *item)
 {
-	char buffer[SYSTEM_MENU_MAX_STR_LEN];
+	uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 
 	if (action == SYSTEM_MENU_ACTION_SELECT)
 	{
@@ -1018,7 +1018,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
  * These can be overriten by the display to perform the rendering of the menu content
  * **/
 
-void __attribute__((weak)) system_menu_render_header(const char *__s)
+void __attribute__((weak)) system_menu_render_header(const uint8_t *__s)
 {
 	// render the menu header
 }
@@ -1077,7 +1077,7 @@ void __attribute__((weak)) system_menu_render_alarm(void)
 	// render alarm screen
 }
 
-void __attribute__((weak)) system_menu_render_modal_popup(const char *__s)
+void __attribute__((weak)) system_menu_render_modal_popup(const uint8_t *__s)
 {
 	// renders the modal popup message
 }
@@ -1085,12 +1085,12 @@ void __attribute__((weak)) system_menu_render_modal_popup(const char *__s)
 /**
  * Helper µCNC render callbacks
  * **/
-void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, const char *label)
+void __attribute__((weak)) system_menu_item_render_label(uint8_t item_index, const uint8_t *label)
 {
 	// this is were the display renders the item label
 }
 
-void __attribute__((weak)) system_menu_item_render_arg(uint8_t render_flags, const char *label)
+void __attribute__((weak)) system_menu_item_render_arg(uint8_t render_flags, const uint8_t *label)
 {
 	// this is were the display renders the item variable
 }
@@ -1098,8 +1098,8 @@ void __attribute__((weak)) system_menu_item_render_arg(uint8_t render_flags, con
 void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *item)
 {
 	uint8_t vartype = (uint8_t)VARG_CONST(item->render_arg);
-	char buffer[SYSTEM_MENU_MAX_STR_LEN];
-	char *buff_ptr = buffer;
+	uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
+	uint8_t *buff_ptr = buffer;
 	switch (vartype)
 	{
 	case VAR_TYPE_BOOLEAN:
@@ -1122,11 +1122,11 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 		system_menu_flt_to_str(buffer, *((float *)item->argptr));
 		break;
 	default:
-		buff_ptr = (char *)item->argptr;
+		buff_ptr = (uint8_t *)item->argptr;
 		break;
 	}
 
-	system_menu_item_render_arg(render_flags, (const char *)buff_ptr);
+	system_menu_item_render_arg(render_flags, (const uint8_t *)buff_ptr);
 }
 
 static void system_menu_render_axis_position(uint8_t render_flags, system_menu_item_t *item)
@@ -1142,12 +1142,12 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
 		itp_get_rt_position(steppos);
 		kinematics_steps_to_coordinates(steppos, axis);
 		// X = 0
-		char axis_letter = *((char *)item->action_arg);
+		uint8_t axis_letter = *((uint8_t *)item->action_arg);
 		uint8_t axis_index = (axis_letter >= 'X') ? (axis_letter - 'X') : (3 + axis_letter - 'A');
 
-		char buffer[SYSTEM_MENU_MAX_STR_LEN];
+		uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 		memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
-		char *buff_ptr = buffer;
+		uint8_t *buff_ptr = buffer;
 		system_menu_flt_to_str(buff_ptr, axis[axis_index]);
 
 		system_menu_item_render_arg(render_flags, buffer);
@@ -1159,13 +1159,13 @@ static void system_menu_render_axis_position(uint8_t render_flags, system_menu_i
  * Helper µCNC to display variables
  * **/
 
-char *system_menu_var_to_str_set_buffer_ptr;
-void system_menu_var_to_str_set_buffer(char *ptr)
+uint8_t *system_menu_var_to_str_set_buffer_ptr;
+void system_menu_var_to_str_set_buffer(uint8_t *ptr)
 {
 	system_menu_var_to_str_set_buffer_ptr = ptr;
 }
 
-void system_menu_var_to_str(unsigned char c)
+void system_menu_var_to_str(uint8_t c)
 {
 	*system_menu_var_to_str_set_buffer_ptr = c;
 	*(++system_menu_var_to_str_set_buffer_ptr) = 0;

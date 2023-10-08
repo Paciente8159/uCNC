@@ -186,7 +186,7 @@ WEAK_EVENT_HANDLER(settings_erase)
 
 void settings_init(void)
 {
-	const char version[3] = SETTINGS_VERSION;
+	const uint8_t version[3] = SETTINGS_VERSION;
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 	if (!error)
@@ -598,7 +598,7 @@ bool settings_check_startup_gcode(uint16_t address)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t size = (RX_BUFFER_SIZE - 1); // defined in serial.h
 	uint8_t crc = 0;
-	unsigned char c;
+	uint8_t c;
 	uint16_t cmd_address = address;
 
 	// pre-checks command valid crc
@@ -630,7 +630,7 @@ void settings_save_startup_gcode(uint16_t address)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t size = (RX_BUFFER_SIZE - 1);
 	uint8_t crc = 0;
-	unsigned char c;
+	uint8_t c;
 	do
 	{
 		c = serial_getc();

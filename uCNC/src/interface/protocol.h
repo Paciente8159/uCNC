@@ -33,8 +33,8 @@ extern "C"
 	void protocol_send_alarm(int8_t alarm);
 	void protocol_send_status(void);
 	DECL_EVENT_HANDLER(protocol_send_status);
-	void protocol_send_string(const char *__s);
-	void protocol_send_feedback(const char *__s);
+	void protocol_send_string(const uint8_t *__s);
+	void protocol_send_feedback(const uint8_t *__s);
 	void protocol_send_probe_result(uint8_t val);
 	void protocol_send_gcode_coordsys(void);
 	void protocol_send_gcode_modes(void);

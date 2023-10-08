@@ -63,7 +63,7 @@ extern "C"
 
 		while (!BUFFER_EMPTY(usb))
 		{
-			char tmp[USB_TX_BUFFER_SIZE];
+			uint8_t tmp[USB_TX_BUFFER_SIZE];
 			uint8_t r;
 
 			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);
@@ -83,7 +83,7 @@ extern "C"
 		BUFFER_ENQUEUE(usb, &c);
 	}
 
-	char mcu_usb_getc(void)
+	uint8_t mcu_usb_getc(void)
 	{
 		int16_t c = UsbSerial.read();
 		return (uint8_t)((c >= 0) ? c : 0);
