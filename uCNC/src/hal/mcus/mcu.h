@@ -529,7 +529,7 @@ extern "C"
 
 
 #ifdef MCU_HAS_USB
-	uint8_t mcu_usb_getc(bool peek);
+	uint8_t mcu_usb_getc(void);
 	uint8_t mcu_usb_available(void);
 	void mcu_usb_putc(uint8_t c);
 	void mcu_usb_flush(void);
@@ -539,7 +539,7 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART
-	uint8_t mcu_uart_getc(bool peek);
+	uint8_t mcu_uart_getc(void);
 	uint8_t mcu_uart_available(void);
 	void mcu_uart_clear(void);
 	void mcu_uart_putc(uint8_t c);

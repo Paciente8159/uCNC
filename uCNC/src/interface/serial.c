@@ -112,16 +112,29 @@ void serial_stream_change(serial_stream_t *stream)
 
 uint8_t serial_getc(void)
 {
+	uint8_t peek = serial_peek();
+	serial_peek_buffer = 0;
+	return peek;
+}
+
+static FORCEINLINE uint8_t _serial_peek(void)
+{
 	uint8_t peek = serial_peek_buffer;
 	if (peek)
 	{
-		serial_peek_buffer = 0;
 		return peek;
 	}
 
 	while (!current_stream->stream_available())
 		;
 	peek = current_stream->stream_getc();
+	serial_peek_buffer = peek;
+	return peek;
+}
+
+uint8_t serial_peek(void)
+{
+	uint8_t peek = _serial_peek();
 	switch (peek)
 	{
 	case '\n':
@@ -131,14 +144,6 @@ uint8_t serial_getc(void)
 	case '\t':
 		return ' ';
 	}
-	return peek;
-}
-
-uint8_t serial_peek(void)
-{
-	uint8_t peek = serial_getc();
-	serial_peek_buffer = peek;
-
 	return peek;
 }
 
@@ -157,12 +162,12 @@ void serial_clear(void)
 	current_stream->stream_clear();
 }
 
-#ifndef DISABLE_MULTISTRTEAM_SERIAL
+#ifndef DISABLE_MULTISTREAM_SERIAL
 static bool serial_broadcast_enabled;
 #endif
 void serial_broadcast(bool enable)
 {
-#ifndef DISABLE_MULTISTRTEAM_SERIAL
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	serial_broadcast_enabled = enable;
 #endif
 }
@@ -171,7 +176,7 @@ static uint8_t serial_tx_count;
 void serial_putc(uint8_t c)
 {
 	serial_tx_count++;
-#ifndef DISABLE_MULTISTRTEAM_SERIAL
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!serial_broadcast_enabled)
 	{
 		current_stream->stream_putc(c);
@@ -201,7 +206,7 @@ void serial_putc(uint8_t c)
 
 void serial_flush(void)
 {
-#ifndef DISABLE_MULTISTRTEAM_SERIAL
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!serial_broadcast_enabled)
 	{
 		current_stream->stream_flush();

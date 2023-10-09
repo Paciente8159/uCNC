@@ -330,7 +330,7 @@ static uint8_t parser_grbl_command(void)
 
 	do
 	{
-		c = serial_getc();
+		c = serial_peek();
 		// toupper
 		if (c >= 'a' && c <= 'z')
 		{
@@ -339,8 +339,14 @@ static uint8_t parser_grbl_command(void)
 
 		if (!(c >= 'A' && c <= 'Z'))
 		{
+			if (c < '0' || c > '9' || grbl_cmd_len) // replaces old ungetc
+			{
+				serial_getc();
+			}
 			break;
 		}
+		
+		serial_getc();
 		grbl_cmd_str[grbl_cmd_len++] = c;
 	} while ((grbl_cmd_len < GRBL_CMD_MAX_LEN));
 
@@ -444,23 +450,34 @@ static uint8_t parser_grbl_command(void)
 					return STATUS_INVALID_STATEMENT;
 				}
 
-				error = parser_fetch_command(&next_state, &words, &cmd);
-				if (error)
-				{
-					return error;
-				}
-				error = parser_validate_command(&next_state, &words, &cmd);
-				if (error)
-				{
-					return error;
-				}
-				// everything ok reverts string and saves it
-				do
-				{
-					//serial_ungetc();
-				} while (serial_peek() != '=');
-				serial_getc();
 				settings_save_startup_gcode(block_address);
+				// run startup block
+
+				if (error)
+				{
+					// the Gcode is not valid then erase the startup block
+					mcu_eeprom_putc(block_address, 0);
+					return error;
+				}
+				// error = parser_fetch_command(&next_state, &words, &cmd);
+				// if (error)
+				// {
+				// 	// the Gcode is not valid then erase the startup block
+				// 	mcu_eeprom_putc(block_address, 0);
+				// 	return error;
+				// }
+				// error = parser_validate_command(&next_state, &words, &cmd);
+				// if (error)
+				// {
+				// 	return error;
+				// }
+				// // everything ok reverts string and saves it
+				// do
+				// {
+				// 	//serial_ungetc();
+				// } while (serial_peek() != '=');
+				// serial_getc();
+				
 				return STATUS_OK;
 			case EOL:
 				return GRBL_SEND_STARTUP_BLOCKS;
