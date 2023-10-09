@@ -43,6 +43,10 @@ extern "C"
 #define LIMIT_Y_BIT 9
 #define LIMIT_X_BIT 5
 
+#define LIMIT_X_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_Z_PULLUP
+
 // Setup control input pins
 // #define ESTOP_BIT 0
 // #define ESTOP_PORT A

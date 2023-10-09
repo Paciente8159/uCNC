@@ -974,7 +974,7 @@ extern "C"
 #if (defined(DIN7_ISR) && defined(DIN7))
 #define DIO89_ISR (DIN7_ISR)
 #define DIN7_ISRCALLBACK mcu_din_isr
-#define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
+#define DIO89_ISRCALLBACK mcu_din_isr
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -1110,22 +1110,15 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-// Set bit y in byte x
-#define SETBIT(x, y) ((x) |= (1 << (y)))
-// Clear bit y in byte x
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y)))
-// Check bit y in byte x
-#define CHECKBIT(x, y) ((x) & (1 << (y)))
-// Toggle bit y in byte x
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y)))
-// Set byte y in byte x
-#define SETFLAG(x, y) ((x) |= (y))
-// Clear byte y in byte x
-#define CLEARFLAG(x, y) ((x) &= ~(y))
-// Check byte y in byte x
-#define CHECKFLAG(x, y) ((x) & (y))
-// Toggle byte y in byte x
-#define TOGGLEFLAG(x, y) ((x) ^= (y))
+#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
@@ -1139,10 +1132,10 @@ extern "C"
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
+#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), mcu_din_isr, CHANGE)
 
-#define mcu_get_input(X) CHECKFLAG(sio_hw->gpio_in, __indirect__(X, BIT))
-#define mcu_get_output(X) CHECKFLAG(sio_hw->gpio_out, __indirect__(X, BIT))
+#define mcu_get_input(X) CHECKBIT(sio_hw->gpio_in, __indirect__(X, BIT))
+#define mcu_get_output(X) CHECKBIT(sio_hw->gpio_out, __indirect__(X, BIT))
 #define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
 #define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
 #define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
