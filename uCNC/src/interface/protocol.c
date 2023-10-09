@@ -697,43 +697,39 @@ void protocol_send_cnc_settings(void)
 void protocol_send_pins_states(void)
 {
 	protocol_busy = true;
-	for (uint8_t i = 0; i < 161; i++)
+	for (uint8_t i = 0; i < (DIN_PINS_OFFSET + 32); i++)
 	{
+		i = (i!=(DOUT_PINS_OFFSET + 32)) ? i : 100;
 		int16_t val = io_get_pinvalue(i);
 		if (val >= 0)
 		{
 			if (i < 100)
 			{
-				if (i < 24)
+				if (i < PWM_PINS_OFFSET)
 				{
 					protocol_send_string(__romstr__("[SO:"));
 				}
-				else if (i < 40)
+				else if (i < SERVO_PINS_OFFSET)
 				{
 					protocol_send_string(__romstr__("[P:"));
 				}
-				else if (i < 46)
+				else if (i < DOUT_PINS_OFFSET)
 				{
 					protocol_send_string(__romstr__("[SV:"));
 				}
-				else if (i < 78)
+				else if (i < (DOUT_PINS_OFFSET + 32))
 				{
 					protocol_send_string(__romstr__("[O:"));
-				}
-
-				else
-				{
-					i = 100; // jumps to inputs
 				}
 			}
 
 			if (i >= 100)
 			{
-				if (i < 114)
+				if (i < ANALOG_PINS_OFFSET)
 				{
 					protocol_send_string(__romstr__("[SI:"));
 				}
-				else if (i < 130)
+				else if (i < DIN_PINS_OFFSET)
 				{
 					protocol_send_string(__romstr__("[A:"));
 				}
