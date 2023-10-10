@@ -62,9 +62,9 @@ uint16_t bt_settings_offset;
 
 WebServer httpServer(80);
 HTTPUpdateServer httpUpdater;
-const uint8_t *update_path = "/firmware";
-const uint8_t *update_username = WIFI_USER;
-const uint8_t *update_password = WIFI_PASS;
+const char *update_path = "/firmware";
+const char *update_username = WIFI_USER;
+const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer server(WIFI_PORT);
 WiFiClient serverClient;
@@ -108,9 +108,9 @@ extern "C"
 		}
 
 #ifdef ENABLE_BLUETOOTH
-		if (!strncmp(grbl_cmd_str, "BTH", 3))
+		if (!strncmp((const char*)grbl_cmd_str, "BTH", 3))
 		{
-			if (!strcmp(&grbl_cmd_str[3], "ON"))
+			if (!strcmp((const char*)&grbl_cmd_str[3], "ON"))
 			{
 				SerialBT.begin(BOARD_NAME);
 				protocol_send_feedback("Bluetooth enabled");
@@ -120,7 +120,7 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[3], "OFF"))
+			if (!strcmp((const char*)&grbl_cmd_str[3], "OFF"))
 			{
 				SerialBT.end();
 				protocol_send_feedback("Bluetooth disabled");
@@ -132,35 +132,35 @@ extern "C"
 		}
 #endif
 #ifdef ENABLE_WIFI
-		if (!strncmp(grbl_cmd_str, "WIFI", 4))
+		if (!strncmp((const char*)grbl_cmd_str, "WIFI", 4))
 		{
-			if (!strcmp(&grbl_cmd_str[4], "ON"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "ON"))
 			{
 				WiFi.disconnect();
 				switch (wifi_settings.wifi_mode)
 				{
 				case 1:
 					WiFi.mode(WIFI_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+					WiFi.begin((char*)wifi_settings.ssid, (char*)wifi_settings.pass);
 					protocol_send_feedback("Trying to connect to WiFi");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+					WiFi.softAP(BOARD_NAME, (char*)wifi_settings.pass);
 					protocol_send_feedback("AP started");
 					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback(str);
+					sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback((const char*)str);
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
-					WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+					WiFi.begin((char*)wifi_settings.ssid, (char*)wifi_settings.pass);
 					protocol_send_feedback("Trying to connect to WiFi");
-					WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+					WiFi.softAP(BOARD_NAME, (char*)wifi_settings.pass);
 					protocol_send_feedback("AP started");
 					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback(str);
+					sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback((const char*)str);
 					break;
 				}
 
@@ -169,7 +169,7 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "OFF"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "OFF"))
 			{
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
@@ -177,29 +177,29 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "SSID"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "SSID"))
 			{
 				if (has_arg)
 				{
-					uint8_t len = strlen(arg);
+					uint8_t len = strlen((const char*)arg);
 					if (len > WIFI_SSID_MAX_LEN)
 					{
 						protocol_send_feedback("WiFi SSID is too long");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
-					strcpy(wifi_settings.ssid, arg);
+					strcpy((char*)wifi_settings.ssid, (const char*)arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 					protocol_send_feedback("WiFi SSID modified");
 				}
 				else
 				{
-					sprintf(str, "SSID>%s", wifi_settings.ssid);
-					protocol_send_feedback(str);
+					sprintf((char*)str, "SSID>%s", wifi_settings.ssid);
+					protocol_send_feedback((const char*)str);
 				}
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "SCAN"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
 				protocol_send_feedback("Scanning Networks");
@@ -212,26 +212,26 @@ extern "C"
 				}
 
 				// print the list of networks seen:
-				sprintf(str, "%d available networks", numSsid);
-				protocol_send_feedback(str);
+				sprintf((char*)str, "%d available networks", numSsid);
+				protocol_send_feedback((const char*)str);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					sprintf(str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					protocol_send_feedback(str);
+					sprintf((char*)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
+					protocol_send_feedback((const char*)str);
 				}
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "SAVE"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback("WiFi settings saved");
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "RESET"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
 				memset(&wifi_settings, 0, sizeof(wifi_settings_t));
@@ -239,11 +239,11 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "MODE"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "MODE"))
 			{
 				if (has_arg)
 				{
-					int mode = atoi(arg) - 1;
+					int mode = atoi((const char*)arg) - 1;
 					if (mode >= 0)
 					{
 						wifi_settings.wifi_mode = mode;
@@ -269,38 +269,38 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "PASS") && has_arg)
+			if (!strcmp((const char*)&grbl_cmd_str[4], "PASS") && has_arg)
 			{
-				uint8_t len = strlen(arg);
+				uint8_t len = strlen((const char*)arg);
 				if (len > WIFI_SSID_MAX_LEN)
 				{
 					protocol_send_feedback("WiFi pass is too long");
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
-				strcpy(wifi_settings.pass, arg);
+				strcpy((char*)wifi_settings.pass, (const char*)arg);
 				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
 
-			if (!strcmp(&grbl_cmd_str[4], "IP"))
+			if (!strcmp((const char*)&grbl_cmd_str[4], "IP"))
 			{
 				if (wifi_settings.wifi_on)
 				{
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf(str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
-						sprintf(str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
+						sprintf((char*)str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char*)str);
+						sprintf((char*)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char*)str);
 						break;
 					case 2:
-						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
+						sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char*)str);
 						break;
 					default:
-						sprintf(str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback(str);
+						sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char*)str);
 						break;
 					}
 				}
@@ -345,10 +345,10 @@ extern "C"
 		{
 			connected = true;
 			protocol_send_feedback("Connected to WiFi");
-			sprintf(str, "SSID>%s", wifi_settings.ssid);
-			protocol_send_feedback(str);
-			sprintf(str, "IP>%s", WiFi.localIP().toString().c_str());
-			protocol_send_feedback(str);
+			sprintf((char*)str, "SSID>%s", wifi_settings.ssid);
+			protocol_send_feedback((const char*)str);
+			sprintf((char*)str, "IP>%s", WiFi.localIP().toString().c_str());
+			protocol_send_feedback((const char*)str);
 		}
 
 		if (server.hasClient())
@@ -417,33 +417,52 @@ extern "C"
 #ifndef WIFI_TX_BUFFER_SIZE
 #define WIFI_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, wifi, WIFI_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+
+	uint8_t mcu_wifi_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(wifi_rx, &c);
+		return c;
+	}
+
+	uint8_t mcu_wifi_available(void)
+	{
+		return BUFFER_READ_AVAILABLE(wifi_rx);
+	}
+
+	void mcu_wifi_clear(void)
+	{
+		BUFFER_CLEAR(wifi_rx);
+	}
+
 	void mcu_wifi_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(wifi))
+		while (BUFFER_FULL(wifi_tx))
 		{
 			mcu_wifi_flush();
 		}
-		BUFFER_ENQUEUE(wifi, &c);
+		BUFFER_ENQUEUE(wifi_tx, &c);
 	}
 
 	void mcu_wifi_flush(void)
 	{
 		if (esp32_wifi_clientok())
 		{
-			while (!BUFFER_EMPTY(wifi))
+			while (!BUFFER_EMPTY(wifi_tx))
 			{
 				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
 				uint8_t r;
 
-				BUFFER_READ(wifi, tmp, WIFI_TX_BUFFER_SIZE, r);
+				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
 				serverClient.write(tmp, r);
 			}
 		}
 		else
 		{
 			// no client (discard)
-			BUFFER_CLEAR(wifi);
+			BUFFER_CLEAR(wifi_tx);
 		}
 	}
 #endif
@@ -452,26 +471,45 @@ extern "C"
 #ifndef BLUETOOTH_TX_BUFFER_SIZE
 #define BLUETOOTH_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, bluetooth, BLUETOOTH_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+
+	uint8_t mcu_bt_getc(void)
+	{
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(bt_rx, &c);
+		return c;
+	}
+
+	uint8_t mcu_bt_available(void)
+	{
+		return BUFFER_READ_AVAILABLE(bt_rx);
+	}
+
+	void mcu_bt_clear(void)
+	{
+		BUFFER_CLEAR(bt_rx);
+	}
+
 	void mcu_bt_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(bluetooth))
+		while (BUFFER_FULL(bt_tx))
 		{
 			mcu_bt_flush();
 		}
-		BUFFER_ENQUEUE(bluetooth, &c);
+		BUFFER_ENQUEUE(bt_tx, &c);
 	}
 
 	void mcu_bt_flush(void)
 	{
 		if (SerialBT.hasClient())
 		{
-			while (!BUFFER_EMPTY(bluetooth))
+			while (!BUFFER_EMPTY(bt_tx))
 			{
 				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
 				uint8_t r;
 
-				BUFFER_READ(bluetooth, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+				BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
 				SerialBT.write(tmp, r);
 				SerialBT.flush();
 			}
@@ -479,7 +517,7 @@ extern "C"
 		else
 		{
 			// no client (discard)
-			BUFFER_CLEAR(bluetooth);
+			BUFFER_CLEAR(bt_tx);
 		}
 	}
 #endif
@@ -532,7 +570,17 @@ extern "C"
 			{
 				esp_task_wdt_reset();
 #ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-				mcu_com_rx_cb((uint8_t)SerialBT.read());
+				uint8_t c = SerialBT.read();
+				if (mcu_com_rx_cb(c))
+				{
+					if (BUFFER_FULL(bt_rx))
+					{
+						c = OVF;
+					}
+
+					*(BUFFER_NEXT_FREE(bt_rx)) = c;
+					BUFFER_STORE(bt_rx);
+				}
 #else
 				mcu_bt_rx_cb((uint8_t)SerialBT.read());
 #endif
@@ -547,7 +595,17 @@ extern "C"
 			{
 				esp_task_wdt_reset();
 #ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-				mcu_com_rx_cb((uint8_t)serverClient.read());
+				uint8_t c = serverClient.read();
+				if (mcu_com_rx_cb(c))
+				{
+					if (BUFFER_FULL(wifi_rx))
+					{
+						c = OVF;
+					}
+
+					*(BUFFER_NEXT_FREE(wifi_rx)) = c;
+					BUFFER_STORE(wifi_rx);
+				}
 #else
 				mcu_wifi_rx_cb((uint8_t)serverClient.read());
 #endif

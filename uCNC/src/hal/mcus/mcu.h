@@ -526,11 +526,10 @@ extern "C"
 	 * can be defined either as a function or a macro call
 	 * */
 
-
-
 #ifdef MCU_HAS_USB
 	uint8_t mcu_usb_getc(void);
 	uint8_t mcu_usb_available(void);
+	void mcu_usb_clear(void);
 	void mcu_usb_putc(uint8_t c);
 	void mcu_usb_flush(void);
 #ifdef DETACH_USB_FROM_MAIN_PROTOCOL
@@ -552,6 +551,7 @@ extern "C"
 #ifdef MCU_HAS_UART2
 	uint8_t mcu_uart2_getc(void);
 	uint8_t mcu_uart2_available(void);
+	void mcu_uart2_clear(void);
 	void mcu_uart2_putc(uint8_t c);
 	void mcu_uart2_flush(void);
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
@@ -562,6 +562,7 @@ extern "C"
 #ifdef MCU_HAS_WIFI
 	uint8_t mcu_wifi_getc(void);
 	uint8_t mcu_wifi_available(void);
+	void mcu_wifi_clear(void);
 	void mcu_wifi_putc(uint8_t c);
 	void mcu_wifi_flush(void);
 #ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
@@ -571,6 +572,8 @@ extern "C"
 
 #ifdef MCU_HAS_BLUETOOTH
 	uint8_t mcu_bt_getc(void);
+	uint8_t mcu_bt_available(void);
+	void mcu_bt_clear(void);
 	void mcu_bt_putc(uint8_t c);
 	void mcu_bt_flush(void);
 #ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL

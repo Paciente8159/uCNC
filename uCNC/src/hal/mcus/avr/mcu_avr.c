@@ -377,7 +377,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 {
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	uint8_t c = COM_INREG;
-	if (mcu_com_rx_cb(COM_INREG))
+	if (mcu_com_rx_cb(c))
 	{
 		if (BUFFER_FULL(uart_rx))
 		{
@@ -411,12 +411,23 @@ ISR(COM_TX_vect, ISR_BLOCK)
 #endif
 
 #if defined(MCU_HAS_UART2)
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	mcu_com_rx_cb(COM2_INREG);
+	uint8_t c = COM2_INREG;
+	if (mcu_com_rx_cb(c))
+	{
+		if (BUFFER_FULL(uart2_rx))
+		{
+			c = OVF;
+		}
+
+		*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+		BUFFER_STORE(uart2_rx);
+	}
 #else
-	mcu_uart2_rx_cb(COM2_INREG);
+	mcu_uart_rx_cb(COM2_INREG);
 #endif
 }
 
@@ -621,6 +632,23 @@ void mcu_uart_flush(void)
 #endif
 
 #ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
 	while (BUFFER_FULL(uart2))
