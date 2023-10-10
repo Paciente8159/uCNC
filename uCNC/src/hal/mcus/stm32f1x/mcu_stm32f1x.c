@@ -76,7 +76,9 @@ volatile bool stm32_global_isr_enabled;
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
 void MCU_SERIAL_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -85,7 +87,16 @@ void MCU_SERIAL_ISR(void)
 		{
 			uint8_t c = COM_INREG;
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+				BUFFER_STORE(uart_rx);
+			}
 #else
 			mcu_uart_rx_cb(c);
 #endif
@@ -94,13 +105,13 @@ void MCU_SERIAL_ISR(void)
 		if ((COM_UART->SR & USART_SR_TXE) && (COM_UART->CR1 & USART_CR1_TXEIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart))
+			if (BUFFER_EMPTY(uart_tx))
 			{
 				COM_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart, &c);
+			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -111,7 +122,9 @@ void MCU_SERIAL_ISR(void)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+
 void MCU_SERIAL2_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -120,7 +133,16 @@ void MCU_SERIAL2_ISR(void)
 		{
 			uint8_t c = COM2_INREG;
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart2_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+				BUFFER_STORE(uart2_rx);
+			}
 #else
 			mcu_uart2_rx_cb(c);
 #endif
@@ -129,13 +151,13 @@ void MCU_SERIAL2_ISR(void)
 		if ((COM2_UART->SR & USART_SR_TXE) && (COM2_UART->CR1 & USART_CR1_TXEIE))
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2))
+			if (BUFFER_EMPTY(uart2_tx))
 			{
 				COM2_UART->CR1 &= ~(USART_CR1_TXEIE);
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart2, &c);
+			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
 	}
@@ -417,8 +439,8 @@ void mcu_clocks_init()
 		DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
 	}
 
-	//free some jtag pins
-	AFIO->MAPR |= (2<<24);
+	// free some jtag pins
+	AFIO->MAPR |= (2 << 24);
 }
 
 void mcu_usart_init(void)
@@ -473,6 +495,24 @@ void mcu_usart_init(void)
 }
 
 #ifdef MCU_HAS_USB
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+uint8_t mcu_usb_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(usb_rx, &c);
+	return c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
 void mcu_usb_putc(uint8_t c)
 {
 	if (!tusb_cdc_write_available())
@@ -498,13 +538,30 @@ void mcu_usb_flush(void)
 
 #ifdef MCU_HAS_UART
 
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
@@ -523,13 +580,30 @@ void mcu_uart_flush(void)
 
 #ifdef MCU_HAS_UART2
 
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (BUFFER_FULL(uart2_tx))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
@@ -737,7 +811,16 @@ void mcu_dotasks()
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
 #if !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-		mcu_com_rx_cb(c);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
 #else
 		mcu_usb_rx_cb(c);
 #endif
