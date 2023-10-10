@@ -26,9 +26,6 @@
 #ifdef USE_ARDUINO_CDC
 extern void mcu_usb_dotasks(void);
 extern void mcu_usb_init(void);
-extern uint8_t mcu_usb_getc(void);
-extern uint8_t mcu_usb_available(void);
-extern uint8_t mcu_usb_tx_available(void);
 #else
 #include <tusb_ucnc.h>
 #endif
@@ -231,7 +228,9 @@ void mcu_clocks_init(void)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
 void MCU_COM_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -258,7 +257,17 @@ void MCU_COM_ISR(void)
 		{
 			uint8_t c = (uint8_t)(COM_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+				BUFFER_STORE(uart_rx);
+			}
+
 #else
 			mcu_uart_rx_cb(c);
 #endif
@@ -269,13 +278,13 @@ void MCU_COM_ISR(void)
 			// UART_IntConfig(COM_USART, UART_INTCFG_THRE, DISABLE);
 
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart))
+			if (BUFFER_EMPTY(uart_tx))
 			{
 				COM_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
 			uint8_t c = 0;
-			BUFFER_DEQUEUE(uart, &c);
+			BUFFER_DEQUEUE(uart_tx, &c);
 			COM_OUTREG = c;
 		}
 	}
@@ -286,7 +295,8 @@ void MCU_COM_ISR(void)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
 void MCU_COM2_ISR(void)
 {
 	__ATOMIC_FORCEON__
@@ -313,7 +323,16 @@ void MCU_COM2_ISR(void)
 		{
 			uint8_t c = (uint8_t)(COM2_INREG & UART_RBR_MASKBIT);
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart2_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+				BUFFER_STORE(uart2_rx);
+			}
 #else
 			mcu_uart2_rx_cb(c);
 #endif
@@ -322,13 +341,13 @@ void MCU_COM2_ISR(void)
 		if (irqstatus == UART_IIR_INTID_THRE)
 		{
 			mcu_enable_global_isr();
-			if (BUFFER_EMPTY(uart2))
+			if (BUFFER_EMPTY(uart2_tx))
 			{
 				COM2_UART->IER &= ~UART_IER_THREINT_EN;
 				return;
 			}
 			uint8_t c;
-			BUFFER_DEQUEUE(uart2, &c);
+			BUFFER_DEQUEUE(uart2_tx, &c);
 			COM2_OUTREG = c;
 		}
 	}
@@ -573,25 +592,43 @@ uint8_t mcu_get_servo(uint8_t servo)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
+
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
 void mcu_uart_flush(void)
 {
 	if (!(COM_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart))
+		if (BUFFER_EMPTY(uart_tx))
 		{
 			return;
 		}
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart, &c);
+		BUFFER_DEQUEUE(uart_tx, &c);
 		while (!CHECKBIT(COM_UART->LSR, 5))
 			;
 		COM_OUTREG = c;
@@ -604,25 +641,42 @@ void mcu_uart_flush(void)
 #endif
 
 #ifdef MCU_HAS_UART2
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (BUFFER_FULL(uart2_tx))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
 	if (!(COM2_UART->IER & UART_IER_THREINT_EN)) // not ready start flushing
 	{
-		if (BUFFER_EMPTY(uart2))
+		if (BUFFER_EMPTY(uart2_tx))
 		{
 			return;
 		}
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2, &c);
+		BUFFER_DEQUEUE(uart2_tx, &c);
 		while (!CHECKBIT(COM2_UART->LSR, 5))
 			;
 		COM2_OUTREG = c;
@@ -809,15 +863,6 @@ void mcu_dotasks()
 #ifdef USE_ARDUINO_CDC
 	mcu_usb_flush();
 	mcu_usb_dotasks();
-	while (mcu_usb_available())
-	{
-		uint8_t c = (uint8_t)mcu_usb_getc();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-		mcu_com_rx_cb(c);
-#else
-		mcu_usb_rx_cb(c);
-#endif
-	}
 #else
 	tusb_cdc_task(); // tinyusb device task
 

@@ -32,9 +32,30 @@ extern "C"
 {
 #include "../../../cnc.h"
 #ifdef USE_ARDUINO_CDC
+	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
 	void mcu_usb_dotasks(void)
 	{
 		MSC_RunDeferredCommands();
+		while (UsbSerial.available() > 0)
+		{
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+			uint8_t c = (uint8_t)UsbSerial.read();
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(usb_rx))
+				{
+					c = OVF;
+				}
+
+				*(BUFFER_NEXT_FREE(usb_rx)) = c;
+				BUFFER_STORE(usb_rx);
+			}
+
+#else
+			mcu_usb_rx_cb((uint8_t)UsbSerial.read());
+#endif
+		}
 	}
 
 	void mcu_usb_init(void)
@@ -57,18 +78,19 @@ extern "C"
 #ifndef USB_TX_BUFFER_SIZE
 #define USB_TX_BUFFER_SIZE 64
 #endif
-	DECL_BUFFER(uint8_t, usb, USB_TX_BUFFER_SIZE);
+	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+
 	void mcu_usb_flush(void)
 	{
 
-		while (!BUFFER_EMPTY(usb))
+		while (!BUFFER_EMPTY(usb_tx))
 		{
 			uint8_t tmp[USB_TX_BUFFER_SIZE];
 			uint8_t r;
 
-			BUFFER_READ(usb, tmp, USB_TX_BUFFER_SIZE, r);
+			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
 #ifdef MCU_HAS_USB
-			UsbSerial.write(tmp, r);
+			UsbSerial.write((char *)tmp, r);
 			UsbSerial.flushTX();
 #endif
 		}
@@ -76,28 +98,30 @@ extern "C"
 
 	void mcu_usb_putc(uint8_t c)
 	{
-		while (BUFFER_FULL(usb))
+		while (BUFFER_FULL(usb_tx))
 		{
 			mcu_usb_flush();
 		}
-		BUFFER_ENQUEUE(usb, &c);
+		BUFFER_ENQUEUE(usb_tx, &c);
 	}
 
 	uint8_t mcu_usb_getc(void)
 	{
-		int16_t c = UsbSerial.read();
-		return (uint8_t)((c >= 0) ? c : 0);
+		uint8_t c = 0;
+		BUFFER_DEQUEUE(usb_rx, &c);
+		return c;
 	}
 
 	uint8_t mcu_usb_available(void)
 	{
-		return UsbSerial.available();
+		return BUFFER_READ_AVAILABLE(usb_rx);
 	}
 
-	uint8_t mcu_usb_tx_available(void)
+	void mcu_usb_clear(void)
 	{
-		return (UsbSerial.availableForWrite() | (UsbSerial.host_connected ? 0 : 1));
+		BUFFER_CLEAR(usb_rx);
 	}
+
 #endif
 }
 #endif
