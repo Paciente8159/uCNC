@@ -606,7 +606,7 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 uint8_t mcu_uart_getc(void)
 {
@@ -614,6 +614,8 @@ uint8_t mcu_uart_getc(void)
 	BUFFER_DEQUEUE(uart_rx, &c);
 	return c;
 }
+
+uint8_t mcu_uart_available(void)
 {
 	return BUFFER_READ_AVAILABLE(uart_rx);
 }
