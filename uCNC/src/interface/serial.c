@@ -30,6 +30,11 @@
 #include <math.h>
 #include "../cnc.h"
 
+static uint8_t (*stream_getc)(void);
+uint8_t (*stream_available)(void);
+void (*stream_clear)(void);
+
+#ifndef DISABLE_MULTISTREAM_SERIAL
 static serial_stream_t *serial_stream;
 static serial_stream_t *current_stream;
 
@@ -48,13 +53,21 @@ DECL_SERIAL_STREAM(wifi_serial_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wi
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(bt_serial_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
 #endif
+#else
+// if not multistreaming
+void (*stream_putc)(uint8_t);
+void (*stream_flush)(void);
+
+#endif
+
+static uint8_t serial_peek_buffer;
 
 void serial_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
 	serial_stream = NULL;
 #endif
-
+#ifndef DISABLE_MULTISTREAM_SERIAL
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 	serial_stream_register(&uart_serial_stream);
 #endif
@@ -70,9 +83,13 @@ void serial_init(void)
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	serial_stream_register(&bt_serial_stream);
 #endif
-	current_stream = serial_stream;
+current_stream = serial_stream;
+#else
+serial_stream_change(NULL);
+#endif
 }
 
+#ifndef DISABLE_MULTISTREAM_SERIAL
 void serial_stream_register(serial_stream_t *stream)
 {
 	if (serial_stream == NULL)
@@ -92,9 +109,19 @@ void serial_stream_register(serial_stream_t *stream)
 	}
 }
 
-static uint8_t serial_peek_buffer;
+// on cleanup sets the correct stdin streams
+void stream_stdin(uint8_t *p)
+{
+	stream_getc = current_stream->stream_getc;
+	stream_available = current_stream->stream_available;
+	stream_clear = current_stream->stream_clear;
+}
+#endif
+
 void serial_stream_change(serial_stream_t *stream)
 {
+#ifndef DISABLE_MULTISTREAM_SERIAL
+	uint8_t cleanup __attribute__((__cleanup__(stream_stdin))) = 0;
 	serial_peek_buffer = 0;
 	if (stream != NULL)
 	{
@@ -108,6 +135,24 @@ void serial_stream_change(serial_stream_t *stream)
 	{
 		current_stream = serial_stream;
 	}
+#else
+	stream_getc = mcu_getc;
+	stream_available = mcu_available;
+	stream_clear = mcu_clear;
+#endif
+}
+
+static uint16_t stream_eeprom_address;
+static uint8_t stream_eeprom_getc(void)
+{
+	return mcu_eeprom_getc(stream_eeprom_address++);
+}
+
+void serial_stream_eeprom(uint16_t address)
+{
+	stream_eeprom_address = address;
+	stream_getc = &stream_eeprom_getc;
+	stream_available = NULL;
 }
 
 uint8_t serial_getc(void)
@@ -125,9 +170,9 @@ static FORCEINLINE uint8_t _serial_peek(void)
 		return peek;
 	}
 
-	while (!current_stream->stream_available())
+	while (!serial_available())
 		;
-	peek = current_stream->stream_getc();
+	peek = stream_getc();
 	serial_peek_buffer = peek;
 	return peek;
 }
@@ -149,7 +194,12 @@ uint8_t serial_peek(void)
 
 uint8_t serial_available(void)
 {
-	return current_stream->stream_available();
+	if (!stream_available)
+	{
+		// if undef allow to continue
+		return 1;
+	}
+	return stream_available();
 }
 
 uint8_t serial_freebytes(void)
@@ -159,7 +209,11 @@ uint8_t serial_freebytes(void)
 
 void serial_clear(void)
 {
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	current_stream->stream_clear();
+#else
+	mcu_clear();
+#endif
 }
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -191,7 +245,7 @@ void serial_putc(uint8_t c)
 		}
 	}
 #else
-	serial_stream->stream_putc(c);
+	mcu_putc(c);
 #endif
 
 	if (c == '\n')
@@ -221,7 +275,7 @@ void serial_flush(void)
 		}
 	}
 #else
-	serial_stream->stream_flush();
+	mcu_flush();
 #endif
 }
 

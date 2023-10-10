@@ -57,6 +57,7 @@ extern "C"
 
 	void serial_stream_register(serial_stream_t *stream);
 	void serial_stream_change(serial_stream_t *stream);
+	void serial_stream_eeprom(uint16_t address);
 
 	void serial_broadcast(bool enable);
 	void serial_putc(uint8_t c);
@@ -66,8 +67,8 @@ extern "C"
 	uint8_t serial_getc(void);
 	uint8_t serial_peek(void);
 	uint8_t serial_available(void);
-	uint8_t serial_freebytes(void);
 	void serial_clear(void);
+	uint8_t serial_freebytes(void);
 
 	// printing utils
 	typedef void (*print_cb)(uint8_t);

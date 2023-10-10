@@ -578,6 +578,22 @@ extern "C"
 #endif
 #endif
 
+#ifndef mcu_getc
+#define mcu_getc (&mcu_uart_getc)
+#endif
+#ifndef mcu_available
+#define mcu_available (&mcu_uart_available)
+#endif
+#ifndef mcu_clear
+#define mcu_clear (&mcu_uart_clear)
+#endif
+#ifndef mcu_putc
+#define mcu_putc (&mcu_uart_putc)
+#endif
+#ifndef mcu_flush
+#define mcu_flush (&mcu_uart_flush)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

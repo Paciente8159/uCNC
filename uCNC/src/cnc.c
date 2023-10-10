@@ -1029,9 +1029,11 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	// serial_select(SERIAL_N0);
-	// cnc_exec_cmd();
-	// serial_select(SERIAL_N1);
-	// cnc_exec_cmd();
-	// serial_select(SERIAL_UART);
+	serial_broadcast(true);
+	serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
+	cnc_exec_cmd();
+	serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
+	cnc_exec_cmd();
+	serial_broadcast(false);
+	serial_stream_change(NULL);
 }

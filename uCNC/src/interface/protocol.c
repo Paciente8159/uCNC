@@ -70,7 +70,7 @@ void protocol_send_alarm(int8_t alarm)
 	protocol_send_newline();
 }
 
-void protocol_send_string(const uint8_t *__s)
+void protocol_send_string(const char *__s)
 {
 	uint8_t c = (uint8_t)rom_strptr(__s++);
 	do
@@ -80,7 +80,7 @@ void protocol_send_string(const uint8_t *__s)
 	} while (c != 0);
 }
 
-void protocol_send_feedback(const uint8_t *__s)
+void protocol_send_feedback(const char *__s)
 {
 	protocol_send_string(MSG_START);
 	protocol_send_string(__s);

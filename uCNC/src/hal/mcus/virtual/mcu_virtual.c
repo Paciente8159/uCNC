@@ -1515,32 +1515,32 @@ void mcu_uart_flush(void)
 //	mcu_tx_enabled = true;
 // }
 
-uint8_t mcu_getc(void)
-{
-	uint8_t c = 0;
-	if (g_mcu_buffertail != g_mcu_bufferhead)
-	{
-		c = g_mcu_combuffer[g_mcu_buffertail];
-		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
-		{
-			g_mcu_buffertail = 0;
-		}
-
-		if (c == '\n')
-		{
-			g_mcu_buffercount--;
-		}
-	}
-
-	return c;
-}
-
-uint8_t mcu_peek(void)
-{
-	if (g_mcu_buffercount == 0)
-		return 0;
-	return g_mcu_combuffer[g_mcu_buffertail];
-}
+//uint8_t mcu_getc(void)
+//{
+//	uint8_t c = 0;
+//	if (g_mcu_buffertail != g_mcu_bufferhead)
+//	{
+//		c = g_mcu_combuffer[g_mcu_buffertail];
+//		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
+//		{
+//			g_mcu_buffertail = 0;
+//		}
+//
+//		if (c == '\n')
+//		{
+//			g_mcu_buffercount--;
+//		}
+//	}
+//
+//	return c;
+//}
+//
+//uint8_t mcu_peek(void)
+//{
+//	if (g_mcu_buffercount == 0)
+//		return 0;
+//	return g_mcu_combuffer[g_mcu_buffertail];
+//}
 
 void mcu_bufferClear(void)
 {
