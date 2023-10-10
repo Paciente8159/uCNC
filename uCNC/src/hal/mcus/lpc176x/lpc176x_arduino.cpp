@@ -32,6 +32,11 @@ extern "C"
 {
 #include "../../../cnc.h"
 #ifdef USE_ARDUINO_CDC
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
+#endif
+
+	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
 
 	void mcu_usb_dotasks(void)
@@ -39,8 +44,8 @@ extern "C"
 		MSC_RunDeferredCommands();
 		while (UsbSerial.available() > 0)
 		{
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)UsbSerial.read();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(usb_rx))
@@ -53,7 +58,7 @@ extern "C"
 			}
 
 #else
-			mcu_usb_rx_cb((uint8_t)UsbSerial.read());
+			mcu_usb_rx_cb(c);
 #endif
 		}
 	}
@@ -74,11 +79,6 @@ extern "C"
 		}
 		UsbSerial.begin(BAUDRATE);
 	}
-
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
 
 	void mcu_usb_flush(void)
 	{
