@@ -150,7 +150,7 @@ void cnc_run(void)
 
 	do
 	{
-		if (!serial_available())
+		if (serial_available())
 		{
 			if (serial_getc() == EOL)
 			{
