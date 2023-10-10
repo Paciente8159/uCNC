@@ -610,6 +610,7 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
+	serial_broadcast(true);
 	protocol_send_string(MSG_STARTUP);
 }
 
@@ -1029,17 +1030,17 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
 	{
+		serial_broadcast(true);
 		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
+		serial_broadcast(true);
 		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
-	serial_broadcast(false);
 	serial_stream_change(NULL);
 }

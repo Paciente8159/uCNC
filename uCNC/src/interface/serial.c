@@ -83,9 +83,10 @@ void serial_init(void)
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	serial_stream_register(&bt_serial_stream);
 #endif
-current_stream = serial_stream;
+
+	serial_stream_change(serial_stream);
 #else
-serial_stream_change(NULL);
+	serial_stream_change(NULL);
 #endif
 }
 
@@ -129,6 +130,7 @@ void serial_stream_change(serial_stream_t *stream)
 		return;
 	}
 
+	// starts by the prioritary and test one by one until one that as characters available is found
 	current_stream = current_stream->next;
 
 	if (!current_stream)
@@ -174,7 +176,8 @@ static FORCEINLINE uint8_t _serial_peek(void)
 		;
 	peek = stream_getc();
 	// prevents null char reading from eeprom
-	if(!peek) {
+	if (!peek)
+	{
 		peek = '\n';
 	}
 	serial_peek_buffer = peek;
@@ -198,12 +201,38 @@ uint8_t serial_peek(void)
 
 uint8_t serial_available(void)
 {
+#ifndef DISABLE_MULTISTREAM_SERIAL
+	if (!stream_available)
+	{
+		// if undef allow to continue
+		return 1;
+	}
+
+	uint8_t count = stream_available();
+	if (!count)
+	{
+		serial_stream_t *p = serial_stream;
+		while (p)
+		{
+			if(p->stream_available()){
+				serial_stream_change(p);
+				break;
+			}
+			p = p->next;
+		}
+
+		count = stream_available();
+	}
+
+	return count;
+#else
 	if (!stream_available)
 	{
 		// if undef allow to continue
 		return 1;
 	}
 	return stream_available();
+#endif
 }
 
 uint8_t serial_freebytes(void)
