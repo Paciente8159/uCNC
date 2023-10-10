@@ -26,10 +26,6 @@
 static volatile bool rp2040_global_isr_enabled;
 
 extern void rp2040_uart_init(int baud);
-extern void rp2040_uart_flush(void);
-extern void rp2040_uart_write(uint8_t c);
-extern bool rp2040_uart_rx_ready(void);
-extern bool rp2040_uart_tx_ready(void);
 extern void rp2040_uart_process(void);
 
 extern void rp2040_eeprom_init(int size);
