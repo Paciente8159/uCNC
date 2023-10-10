@@ -305,7 +305,7 @@ bool settings_allows_negative(setting_offset_t id)
 	}
 #endif
 #ifdef ENABLE_SKEW_COMPENSATION
-	if (id >=37 && id <= 39)
+	if (id >= 37 && id <= 39)
 	{
 		return true;
 	}
@@ -595,6 +595,9 @@ void settings_erase(uint16_t address, uint8_t size)
 
 bool settings_check_startup_gcode(uint16_t address)
 {
+	serial_putc('>');
+	serial_putc(':');
+
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t size = (RX_BUFFER_SIZE - 1); // defined in serial.h
 	uint8_t crc = 0;
@@ -615,14 +618,16 @@ bool settings_check_startup_gcode(uint16_t address)
 
 	if (crc ^ mcu_eeprom_getc(cmd_address))
 	{
-		serial_putc('>');
-		serial_putc(':');
 		protocol_send_error(STATUS_SETTING_READ_FAIL);
 		settings_erase(address, 1);
 		return false;
 	}
-#endif
+
 	return true;
+#else
+	protocol_send_ok();
+	return false;
+#endif
 }
 
 void settings_save_startup_gcode(uint16_t address)
@@ -635,7 +640,8 @@ void settings_save_startup_gcode(uint16_t address)
 	{
 		c = serial_getc();
 		crc = crc7(c, crc);
-		mcu_eeprom_putc(address++, (uint8_t)c);
+		mcu_eeprom_putc(address, (uint8_t)c);
+		address++;
 		size--;
 	} while (size && c);
 

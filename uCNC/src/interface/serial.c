@@ -173,6 +173,10 @@ static FORCEINLINE uint8_t _serial_peek(void)
 	while (!serial_available())
 		;
 	peek = stream_getc();
+	// prevents null char reading from eeprom
+	if(!peek) {
+		peek = '\n';
+	}
 	serial_peek_buffer = peek;
 	return peek;
 }

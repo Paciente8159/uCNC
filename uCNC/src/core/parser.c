@@ -669,8 +669,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	{
 		uint8_t word = 0;
 		float value = 0;
-		// this flushes leading white chars and also takes care of processing comments
-		parser_get_next_preprocessed(true);
+		
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
@@ -2021,7 +2020,8 @@ static void parser_get_comment(uint8_t start_char)
 
 static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	uint8_t c = serial_getc();
+	// this flushes leading white chars and also takes care of processing comments
+	uint8_t c = parser_get_next_preprocessed(false);
 
 	// if other uint8_t starts tokenization
 	if (c >= 'a' && c <= 'z')
