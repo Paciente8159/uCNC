@@ -86,169 +86,169 @@ DECL_MODULE(system_menu)
 	DECL_MENU(1, 0, STR_MAIN_MENU);
 
 	// main menu entries
-	DECL_MENU_ACTION(1, hold, (uint8_t*)STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
-	DECL_MENU_ACTION(1, resume, (uint8_t*)STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
-	DECL_MENU_ACTION(1, unlock, (uint8_t*)STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
-	DECL_MENU_ACTION(1, home, (uint8_t*)STR_HOME, system_menu_action_serial_cmd, "$H\r");
-	DECL_MENU_GOTO(1, jog, (uint8_t*)STR_JOG, CONST_VARG(7));
-	DECL_MENU_GOTO(1, overrides, (uint8_t*)STR_OVERRIDES, CONST_VARG(8));
-	DECL_MENU_GOTO(1, settings, (uint8_t*)STR_SETTINGS, CONST_VARG(2));
+	DECL_MENU_ACTION(1, hold, (uint8_t *)STR_HOLD, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_HOLD));
+	DECL_MENU_ACTION(1, resume, (uint8_t *)STR_RESUME, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_CYCLE_START));
+	DECL_MENU_ACTION(1, unlock, (uint8_t *)STR_UNLOCK, system_menu_action_serial_cmd, "$X\r");
+	DECL_MENU_ACTION(1, home, (uint8_t *)STR_HOME, system_menu_action_serial_cmd, "$H\r");
+	DECL_MENU_GOTO(1, jog, (uint8_t *)STR_JOG, CONST_VARG(7));
+	DECL_MENU_GOTO(1, overrides, (uint8_t *)STR_OVERRIDES, CONST_VARG(8));
+	DECL_MENU_GOTO(1, settings, (uint8_t *)STR_SETTINGS, CONST_VARG(2));
 
 	DECL_MENU(8, 1, STR_OVERRIDES);
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, (uint8_t*)STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
-	DECL_MENU_ACTION(8, ovf_100, (uint8_t*)STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
+	DECL_MENU_VAR_CUSTOM_EDIT(8, ovf, (uint8_t *)STR_FEED_OVR, &g_planner_state.feed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('f'));
+	DECL_MENU_ACTION(8, ovf_100, (uint8_t *)STR_FEED_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_FEED_100));
 #if (TOOL_COUNT > 0)
-	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, (uint8_t*)STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
+	DECL_MENU_VAR_CUSTOM_EDIT(8, ovt, (uint8_t *)STR_TOOL_OVR, &g_planner_state.spindle_speed_override, VAR_TYPE_UINT8, system_menu_action_overrides, CONST_VARG('s'));
 #endif
-	DECL_MENU_ACTION(8, ovt_100, (uint8_t*)STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
+	DECL_MENU_ACTION(8, ovt_100, (uint8_t *)STR_TOOL_100, system_menu_action_rt_cmd, CONST_VARG(CMD_CODE_SPINDLE_100));
 
 	// append Jog menu
 	// default initial distance
 	DECL_MENU(7, 1, STR_JOG);
-	DECL_MENU_ENTRY(7, jogx, (uint8_t*)STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
+	DECL_MENU_ENTRY(7, jogx, (uint8_t *)STR_JOG_AXIS("X"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "X");
 #if (AXIS_COUNT > 1)
-	DECL_MENU_ENTRY(7, jogy, (uint8_t*)STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
+	DECL_MENU_ENTRY(7, jogy, (uint8_t *)STR_JOG_AXIS("Y"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Y");
 #endif
 #if (AXIS_COUNT > 2)
-	DECL_MENU_ENTRY(7, jogz, (uint8_t*)STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
+	DECL_MENU_ENTRY(7, jogz, (uint8_t *)STR_JOG_AXIS("Z"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "Z");
 #endif
 #if (AXIS_COUNT > 3)
-	DECL_MENU_ENTRY(7, joga, (uint8_t*)STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
+	DECL_MENU_ENTRY(7, joga, (uint8_t *)STR_JOG_AXIS("A"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "A");
 #endif
 #if (AXIS_COUNT > 4)
-	DECL_MENU_ENTRY(7, jogb, (uint8_t*)STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
+	DECL_MENU_ENTRY(7, jogb, (uint8_t *)STR_JOG_AXIS("B"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "B");
 #endif
 #if (AXIS_COUNT > 5)
-	DECL_MENU_ENTRY(7, jogc, (uint8_t*)STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
+	DECL_MENU_ENTRY(7, jogc, (uint8_t *)STR_JOG_AXIS("C"), NULL, system_menu_render_axis_position, NULL, system_menu_action_jog, "C");
 #endif
-	DECL_MENU_VAR(7, jogdist, (uint8_t*)STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(7, jogfeed, (uint8_t*)STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(7, jogdist, (uint8_t *)STR_JOG_DIST, &jog_distance, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(7, jogfeed, (uint8_t *)STR_JOG_FEED, &jog_feed, VAR_TYPE_FLOAT);
 
 	// append settings menu
 	DECL_MENU(2, 1, STR_SETTINGS);
 
 	// settings menu
-	DECL_MENU_GOTO(2, ioconfig, (uint8_t*)STR_IO_CONFIG, CONST_VARG(6));
-	DECL_MENU_GOTO(2, gohome, (uint8_t*)STR_HOMING, CONST_VARG(3));
+	DECL_MENU_GOTO(2, ioconfig, (uint8_t *)STR_IO_CONFIG, CONST_VARG(6));
+	DECL_MENU_GOTO(2, gohome, (uint8_t *)STR_HOMING, CONST_VARG(3));
 #if (AXIS_COUNT > 0)
-	DECL_MENU_GOTO(2, goaxis, (uint8_t*)STR_AXIS, CONST_VARG(4));
+	DECL_MENU_GOTO(2, goaxis, (uint8_t *)STR_AXIS, CONST_VARG(4));
 #endif
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU_GOTO(2, kinemats, (uint8_t*)STR_KINEMATICS, CONST_VARG(5));
+	DECL_MENU_GOTO(2, kinemats, (uint8_t *)STR_KINEMATICS, CONST_VARG(5));
 #endif
-	DECL_MENU_GOTO(2, other_config, (uint8_t*)STR_OTHER, CONST_VARG(9));
-	DECL_MENU_ACTION(2, set_load, (uint8_t*)STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
-	DECL_MENU_ACTION(2, set_save, (uint8_t*)STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
-	DECL_MENU_ACTION(2, set_reset, (uint8_t*)STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
+	DECL_MENU_GOTO(2, other_config, (uint8_t *)STR_OTHER, CONST_VARG(9));
+	DECL_MENU_ACTION(2, set_load, (uint8_t *)STR_LOAD_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(0));
+	DECL_MENU_ACTION(2, set_save, (uint8_t *)STR_SAVE_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(1));
+	DECL_MENU_ACTION(2, set_reset, (uint8_t *)STR_RESET_SETTINGS, system_menu_action_settings_cmd, CONST_VARG(2));
 
 	DECL_MENU(9, 2, STR_OTHER);
-	DECL_MENU_VAR(9, s11, (uint8_t*)STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(9, s12, (uint8_t*)STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(9, s11, (uint8_t *)STR_G64_FACT, &g_settings.g64_angle_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(9, s12, (uint8_t *)STR_ARC_TOL, &g_settings.arc_tolerance, VAR_TYPE_FLOAT);
 
 	DECL_MENU(6, 2, STR_IO_CONFIG);
-	DECL_MENU_VAR(6, s2, (uint8_t*)STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
-	DECL_MENU_VAR(6, s3, (uint8_t*)STR_DIR_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
-	DECL_MENU_VAR(6, s4, (uint8_t*)STR_ENABLE_INV, &g_settings.step_enable_invert, VAR_TYPE_UINT8);
-	DECL_MENU_VAR(6, s5, (uint8_t*)STR_LIMITS_INV, &g_settings.limits_invert_mask, VAR_TYPE_UINT8);
-	DECL_MENU_VAR(6, s6, (uint8_t*)STR_PROBE_INV, &g_settings.probe_invert_mask, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(6, s7, (uint8_t*)STR_CONTROL_INV, &g_settings.control_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s2, (uint8_t *)STR_STEP_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s3, (uint8_t *)STR_DIR_INV, &g_settings.dir_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s4, (uint8_t *)STR_ENABLE_INV, &g_settings.step_enable_invert, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s5, (uint8_t *)STR_LIMITS_INV, &g_settings.limits_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s6, (uint8_t *)STR_PROBE_INV, &g_settings.probe_invert_mask, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(6, s7, (uint8_t *)STR_CONTROL_INV, &g_settings.control_invert_mask, VAR_TYPE_UINT8);
 #if ENCODERS > 0
-	DECL_MENU_VAR(6, s8, (uint8_t*)STR_ENC_P_INV, &g_settings.encoders_pulse_invert_mask, VAR_TYPE_UINT8);
-	DECL_MENU_VAR(6, s9, (uint8_t*)STR_ENC_D_INV, &g_settings.encoders_dir_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s8, (uint8_t *)STR_ENC_P_INV, &g_settings.encoders_pulse_invert_mask, VAR_TYPE_UINT8);
+	DECL_MENU_VAR(6, s9, (uint8_t *)STR_ENC_D_INV, &g_settings.encoders_dir_invert_mask, VAR_TYPE_UINT8);
 #endif
 
 	// append homing settings menu
 	DECL_MENU(3, 2, STR_HOMING);
 
-	DECL_MENU_VAR(3, s20, (uint8_t*)STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s21, (uint8_t*)STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s22, (uint8_t*)STR_ENABLE_HOMING, &g_settings.homing_enabled, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s23, (uint8_t*)STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s24, (uint8_t*)STR_SLOW_FEED, &g_settings.homing_slow_feed_rate, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s25, (uint8_t*)STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s26, (uint8_t*)STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s27, (uint8_t*)STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s20, (uint8_t *)STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s21, (uint8_t *)STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s22, (uint8_t *)STR_ENABLE_HOMING, &g_settings.homing_enabled, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s23, (uint8_t *)STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s24, (uint8_t *)STR_SLOW_FEED, &g_settings.homing_slow_feed_rate, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s25, (uint8_t *)STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s26, (uint8_t *)STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s27, (uint8_t *)STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
 #if (KINEMATIC == KINEMATIC_DELTA)
-	DECL_MENU_VAR(3, s28, (uint8_t*)STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s28, (uint8_t *)STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
 #elif (KINEMATIC == KINEMATIC_SCARA)
-	DECL_MENU_VAR(3, s28, (uint8_t*)STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s29, (uint8_t*)STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s28, (uint8_t *)STR_OFFSET, &g_settings.scara_arm_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(3, s29, (uint8_t *)STR_OFFSET, &g_settings.scara_forearm_homing_angle, VAR_TYPE_FLOAT);
 #endif
 
 	// append steppers settings menu
 	DECL_MENU(4, 2, STR_AXIS);
-	DECL_MENU_VAR(4, s100, (uint8_t*)STR_STEPMM("X"), &g_settings.step_per_mm[0], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s110, (uint8_t*)STR_VMAX("X"), &g_settings.max_feed_rate[0], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s120, (uint8_t*)STR_ACCEL("X"), &g_settings.acceleration[0], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s130, (uint8_t*)STR_MAX_DIST("X"), &g_settings.max_distance[0], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s100, (uint8_t *)STR_STEPMM("X"), &g_settings.step_per_mm[0], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s110, (uint8_t *)STR_VMAX("X"), &g_settings.max_feed_rate[0], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s120, (uint8_t *)STR_ACCEL("X"), &g_settings.acceleration[0], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s130, (uint8_t *)STR_MAX_DIST("X"), &g_settings.max_distance[0], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	DECL_MENU_VAR(4, s140, (uint8_t*)STR_BACKLASH("X"), &g_settings.backlash_steps[0], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s140, (uint8_t *)STR_BACKLASH("X"), &g_settings.backlash_steps[0], VAR_TYPE_UINT16);
 #endif
 
 #if (AXIS_COUNT > 1)
-	DECL_MENU_VAR(4, s101, (uint8_t*)STR_STEPMM("Y"), &g_settings.step_per_mm[1], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s111, (uint8_t*)STR_VMAX("Y"), &g_settings.max_feed_rate[1], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s121, (uint8_t*)STR_ACCEL("Y"), &g_settings.acceleration[1], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s131, (uint8_t*)STR_MAX_DIST("Y"), &g_settings.max_distance[1], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s101, (uint8_t *)STR_STEPMM("Y"), &g_settings.step_per_mm[1], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s111, (uint8_t *)STR_VMAX("Y"), &g_settings.max_feed_rate[1], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s121, (uint8_t *)STR_ACCEL("Y"), &g_settings.acceleration[1], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s131, (uint8_t *)STR_MAX_DIST("Y"), &g_settings.max_distance[1], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	DECL_MENU_VAR(4, s141, (uint8_t*)STR_BACKLASH("Y"), &g_settings.backlash_steps[1], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s141, (uint8_t *)STR_BACKLASH("Y"), &g_settings.backlash_steps[1], VAR_TYPE_UINT16);
 #endif
 #endif
 #if (AXIS_COUNT > 2)
-	DECL_MENU_VAR(4, s102, (uint8_t*)STR_STEPMM("Z"), &g_settings.step_per_mm[2], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s112, (uint8_t*)STR_VMAX("Z"), &g_settings.max_feed_rate[2], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s122, (uint8_t*)STR_ACCEL("Z"), &g_settings.acceleration[2], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s132, (uint8_t*)STR_MAX_DIST("Z"), &g_settings.max_distance[2], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s102, (uint8_t *)STR_STEPMM("Z"), &g_settings.step_per_mm[2], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s112, (uint8_t *)STR_VMAX("Z"), &g_settings.max_feed_rate[2], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s122, (uint8_t *)STR_ACCEL("Z"), &g_settings.acceleration[2], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s132, (uint8_t *)STR_MAX_DIST("Z"), &g_settings.max_distance[2], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	DECL_MENU_VAR(4, s142, (uint8_t*)STR_BACKLASH("Z"), &g_settings.backlash_steps[2], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s142, (uint8_t *)STR_BACKLASH("Z"), &g_settings.backlash_steps[2], VAR_TYPE_UINT16);
 #endif
 #endif
 #if (AXIS_COUNT > 3)
-	DECL_MENU_VAR(4, s103, (uint8_t*)STR_STEPMM("A"), &g_settings.step_per_mm[3], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s113, (uint8_t*)STR_VMAX("A"), &g_settings.max_feed_rate[3], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s123, (uint8_t*)STR_ACCEL("A"), &g_settings.acceleration[3], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s133, (uint8_t*)STR_MAX_DIST("A"), &g_settings.max_distance[3], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s103, (uint8_t *)STR_STEPMM("A"), &g_settings.step_per_mm[3], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s113, (uint8_t *)STR_VMAX("A"), &g_settings.max_feed_rate[3], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s123, (uint8_t *)STR_ACCEL("A"), &g_settings.acceleration[3], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s133, (uint8_t *)STR_MAX_DIST("A"), &g_settings.max_distance[3], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	DECL_MENU_VAR(4, s143, (uint8_t*)STR_BACKLASH("A"), &g_settings.backlash_steps[3], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s143, (uint8_t *)STR_BACKLASH("A"), &g_settings.backlash_steps[3], VAR_TYPE_UINT16);
 #endif
 #endif
 #if (AXIS_COUNT > 4)
-	DECL_MENU_VAR(4, s104, (uint8_t*)STR_STEPMM("B"), &g_settings.step_per_mm[4], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s114, (uint8_t*)STR_VMAX("B"), &g_settings.max_feed_rate[4], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s124, (uint8_t*)STR_ACCEL("B"), &g_settings.acceleration[4], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s134, (uint8_t*)STR_MAX_DIST("B"), &g_settings.max_distance[4], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s104, (uint8_t *)STR_STEPMM("B"), &g_settings.step_per_mm[4], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s114, (uint8_t *)STR_VMAX("B"), &g_settings.max_feed_rate[4], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s124, (uint8_t *)STR_ACCEL("B"), &g_settings.acceleration[4], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s134, (uint8_t *)STR_MAX_DIST("B"), &g_settings.max_distance[4], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMPENSATION
-	DECL_MENU_VAR(4, s144, (uint8_t*)STR_BACKLASH("B"), &g_settings.backlash_steps[4], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s144, (uint8_t *)STR_BACKLASH("B"), &g_settings.backlash_steps[4], VAR_TYPE_UINT16);
 #endif
 #endif
 #if (AXIS_COUNT > 5)
-	DECL_MENU_VAR(4, s105, (uint8_t*)STR_STEPMM("C"), &g_settings.step_per_mm[5], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s115, (uint8_t*)STR_VMAX("C"), &g_settings.max_feed_rate[5], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s125, (uint8_t*)STR_ACCEL("C"), &g_settings.acceleration[5], VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(4, s135, (uint8_t*)STR_MAX_DIST("C"), &g_settings.max_distance[5], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s105, (uint8_t *)STR_STEPMM("C"), &g_settings.step_per_mm[5], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s115, (uint8_t *)STR_VMAX("C"), &g_settings.max_feed_rate[5], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s125, (uint8_t *)STR_ACCEL("C"), &g_settings.acceleration[5], VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(4, s135, (uint8_t *)STR_MAX_DIST("C"), &g_settings.max_distance[5], VAR_TYPE_FLOAT);
 #ifdef ENABLE_BACKLASH_COMENSATION
-	DECL_MENU_VAR(4, s145, (uint8_t*)STR_BACKLASH("C"), &g_settings.backlash_steps[5], VAR_TYPE_UINT16);
+	DECL_MENU_VAR(4, s145, (uint8_t *)STR_BACKLASH("C"), &g_settings.backlash_steps[5], VAR_TYPE_UINT16);
 #endif
 #endif
 
 #if (defined(ENABLE_SKEW_COMPENSATION) || (KINEMATIC == KINEMATIC_LINEAR_DELTA) || (KINEMATIC == KINEMATIC_DELTA))
-	DECL_MENU(5, 2, (uint8_t*)STR_KINEMATICS);
+	DECL_MENU(5, 2, (uint8_t *)STR_KINEMATICS);
 #ifdef ENABLE_SKEW_COMPENSATION
-	DECL_MENU_VAR(5, s37, (uint8_t*)STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s37, (uint8_t *)STR_SKEW_FACTOR("XY"), &g_settings.skew_xy_factor, VAR_TYPE_FLOAT);
 #ifndef SKEW_COMPENSATION_XY_ONLY
-	DECL_MENU_VAR(5, s38, (uint8_t*)STR_SKEW_FACTOR("XZ"), &g_settings.skew_xz_factor, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s39, (uint8_t*)STR_SKEW_FACTOR("YZ"), &g_settings.skew_yz_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s38, (uint8_t *)STR_SKEW_FACTOR("XZ"), &g_settings.skew_xz_factor, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s39, (uint8_t *)STR_SKEW_FACTOR("YZ"), &g_settings.skew_yz_factor, VAR_TYPE_FLOAT);
 #endif
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
-	DECL_MENU_VAR(5, s106, (uint8_t*)STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s107, (uint8_t*)STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s106, (uint8_t *)STR_ARM_LEN, &g_settings.delta_arm_length, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s107, (uint8_t *)STR_BASE_RAD, &g_settings.delta_armbase_radius, VAR_TYPE_FLOAT);
 #elif (KINEMATIC == KINEMATIC_DELTA)
-	DECL_MENU_VAR(5, s106, (uint8_t*)STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s107, (uint8_t*)STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s108, (uint8_t*)STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s109, (uint8_t*)STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(5, s28, (uint8_t*)STR_HOME_ANG, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s106, (uint8_t *)STR_BASE_RAD, &g_settings.delta_base_radius, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s107, (uint8_t *)STR_EFF_RAD, &g_settings.delta_effector_radius, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s108, (uint8_t *)STR_BICEP_LEN, &g_settings.delta_bicep_length, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s109, (uint8_t *)STR_FARM_LEN, &g_settings.delta_forearm_length, VAR_TYPE_FLOAT);
+	DECL_MENU_VAR(5, s28, (uint8_t *)STR_HOME_ANG, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
 #endif
 #endif
 
@@ -437,7 +437,7 @@ void system_menu_render(void)
 				if (!item_index)
 				{
 					uint8_t buff[SYSTEM_MENU_MAX_STR_LEN];
-					rom_strcpy((char*)buff, (const char*)menu_page->page_label);
+					rom_strcpy((char *)buff, (const char *)menu_page->page_label);
 					system_menu_render_header(buff);
 				}
 
@@ -648,7 +648,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
-		rom_strcpy((char*)buffer, __romstr__(STR_RT_CMD_SENT));
+		rom_strcpy((char *)buffer, __romstr__(STR_RT_CMD_SENT));
 		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
@@ -661,9 +661,15 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		if (serial_freebytes() > 20)
 		{
-			//serial_inject_cmd((const uint8_t *)item->action_arg);
 			uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
-			rom_strcpy((char*)buffer, __romstr__(STR_CMD_SENT));
+			if (system_menu_send_cmd((const uint8_t *)item->action_arg) == STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_SENT));
+			}
+			else{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+			}
+
 			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
 		return true;
@@ -743,7 +749,7 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 		{
 			uint8_t buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
-			rom_strcpy((char*)buffer, __romstr__("$J=G91"));
+			rom_strcpy((char *)buffer, __romstr__("$J=G91"));
 			uint8_t *ptr = buffer;
 			// search for the end of string
 			while (*++ptr)
@@ -770,7 +776,11 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
-			//serial_inject_cmd(buffer);
+			if (system_menu_send_cmd(buffer) != STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+				system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
+			}
 		}
 		return true;
 	}
@@ -788,15 +798,15 @@ static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *
 		{
 		case 0:
 			settings_init();
-			rom_strcpy((char*)buffer, __romstr__(STR_SETTINGS_LOADED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_LOADED));
 			break;
 		case 1:
 			settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			rom_strcpy((char*)buffer, __romstr__(STR_SETTINGS_SAVED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_SAVED));
 			break;
 		case 2:
 			settings_reset(false);
-			rom_strcpy((char*)buffer, __romstr__(STR_SETTINGS_RESET));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_RESET));
 			break;
 		default:
 			break;
@@ -1080,6 +1090,12 @@ void __attribute__((weak)) system_menu_render_alarm(void)
 void __attribute__((weak)) system_menu_render_modal_popup(const uint8_t *__s)
 {
 	// renders the modal popup message
+}
+
+// this needs to be implemented using a serial stream
+uint8_t __attribute__((weak)) system_menu_send_cmd(const uint8_t *__s)
+{
+	return STATUS_STREAM_FAILED;
 }
 
 /**

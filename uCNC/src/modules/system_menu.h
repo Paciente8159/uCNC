@@ -188,6 +188,8 @@ extern "C"
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
 	void system_menu_render_modal_popup(const uint8_t *__s);
+	// this needs to be implemented using a serial stream
+	uint8_t system_menu_send_cmd(const uint8_t *__s);
 
 	/**
 	 * Helper µCNC action callbacks
