@@ -83,11 +83,9 @@ void serial_init(void)
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 	serial_stream_register(&bt_serial_stream);
 #endif
-
-	serial_stream_change(serial_stream);
-#else
-	serial_stream_change(NULL);
 #endif
+
+	serial_stream_change(NULL);
 }
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -131,12 +129,7 @@ void serial_stream_change(serial_stream_t *stream)
 	}
 
 	// starts by the prioritary and test one by one until one that as characters available is found
-	current_stream = current_stream->next;
-
-	if (!current_stream)
-	{
-		current_stream = serial_stream;
-	}
+	current_stream = serial_stream;
 #else
 	stream_getc = mcu_getc;
 	stream_available = mcu_available;
@@ -208,20 +201,20 @@ uint8_t serial_available(void)
 		return 1;
 	}
 
-	uint8_t count = stream_available();
+	uint8_t count = (!stream_available) ? 0 : stream_available();
 	if (!count)
 	{
 		serial_stream_t *p = serial_stream;
 		while (p)
 		{
-			if(p->stream_available()){
+			count = (!p->stream_available) ? 0 : p->stream_available();
+			if (count)
+			{
 				serial_stream_change(p);
-				break;
+				return count;
 			}
 			p = p->next;
 		}
-
-		count = stream_available();
 	}
 
 	return count;

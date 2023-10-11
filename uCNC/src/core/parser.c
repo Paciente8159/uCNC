@@ -461,6 +461,7 @@ static uint8_t parser_grbl_command(void)
 				}
 
 				serial_broadcast(false);
+				// reset streams
 				serial_stream_change(NULL);
 
 				if (error != STATUS_OK)
