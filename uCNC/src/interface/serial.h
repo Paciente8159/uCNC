@@ -37,26 +37,27 @@ extern "C"
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
 
-#define SERIAL_UART 0
-#define SERIAL_N0 1
-#define SERIAL_N1 2
+	typedef uint8_t (*stream_getc_cb)(void);
+	typedef uint8_t (*stream_available_cb)(void);
+	typedef void (*stream_clear_cb)(void);
 
 	typedef struct serial_stream_
 	{
-		uint8_t (*stream_getc)(void);
-		uint8_t (*stream_available)(void);
-		void (*stream_clear)(void);
+		stream_getc_cb stream_getc;
+		stream_available_cb stream_available;
+		stream_clear_cb stream_clear;
 		void (*stream_putc)(uint8_t);
 		void (*stream_flush)(void);
 		struct serial_stream_ *next;
 	} serial_stream_t;
 
-	#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {&getc_cb, &available_cb, &clear_cb, &putc_cb, &flush_cb, NULL}
+#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {&getc_cb, &available_cb, &clear_cb, &putc_cb, &flush_cb, NULL}
 
 	void serial_init();
 
 	void serial_stream_register(serial_stream_t *stream);
 	void serial_stream_change(serial_stream_t *stream);
+	void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
 	void serial_stream_eeprom(uint16_t address);
 
 	void serial_broadcast(bool enable);

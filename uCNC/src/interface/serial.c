@@ -30,9 +30,9 @@
 #include <math.h>
 #include "../cnc.h"
 
-static uint8_t (*stream_getc)(void);
-uint8_t (*stream_available)(void);
-void (*stream_clear)(void);
+static stream_getc_cb stream_getc;
+static stream_available_cb stream_available;
+static stream_clear_cb stream_clear;
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
 static serial_stream_t *serial_stream;
@@ -137,6 +137,13 @@ void serial_stream_change(serial_stream_t *stream)
 #endif
 }
 
+void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
+{
+	stream_getc = getc_cb;
+	stream_available = available_cb;
+	stream_clear = clear_cb;
+}
+
 static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
@@ -146,8 +153,7 @@ static uint8_t stream_eeprom_getc(void)
 void serial_stream_eeprom(uint16_t address)
 {
 	stream_eeprom_address = address;
-	stream_getc = &stream_eeprom_getc;
-	stream_available = NULL;
+	serial_stream_readonly(&stream_eeprom_getc, NULL, NULL);
 }
 
 uint8_t serial_getc(void)
@@ -167,6 +173,13 @@ static FORCEINLINE uint8_t _serial_peek(void)
 
 	while (!serial_available())
 		;
+#ifndef DISABLE_MULTISTREAM_SERIAL
+	if (!stream_getc)
+	{
+		// if getc not defined return overflow to force multiple overflow errors
+		return OVF;
+	}
+#endif
 	peek = stream_getc();
 	// prevents null char reading from eeprom
 	if (!peek)
@@ -236,7 +249,10 @@ uint8_t serial_freebytes(void)
 void serial_clear(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	current_stream->stream_clear();
+	if (stream_clear)
+	{
+		stream_clear();
+	}
 #else
 	mcu_clear();
 #endif
