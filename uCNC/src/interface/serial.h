@@ -51,7 +51,7 @@ extern "C"
 		struct serial_stream_ *next;
 	} serial_stream_t;
 
-#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {&getc_cb, &available_cb, &clear_cb, &putc_cb, &flush_cb, NULL}
+#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
 
 	void serial_init();
 

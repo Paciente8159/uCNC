@@ -247,7 +247,7 @@ extern "C"
 #define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
 #define BUFFER_REMOVE(buffer)          \
 	{                                  \
-		uint8_t tail;           \
+		uint8_t tail;                  \
 		__ATOMIC__                     \
 		{                              \
 			tail = buffer.tail;        \
@@ -337,7 +337,6 @@ extern "C"
 #define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                                   \
-	written = 0;                                                                                     \
 	uint8_t count, head;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -345,6 +344,7 @@ extern "C"
 		count = buffer.count;                                                                        \
 	}                                                                                                \
 	count = MIN(buffer##_size - count, len);                                                         \
+	written = 0;                                                                                     \
 	if (count)                                                                                       \
 	{                                                                                                \
 		uint8_t avail = (buffer##_size - head);                                                      \
@@ -378,7 +378,6 @@ extern "C"
 })
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                       \
-	read = 0;                                                                                        \
 	uint8_t count, tail;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -389,6 +388,7 @@ extern "C"
 	{                                                                                                \
 		count = len;                                                                                 \
 	}                                                                                                \
+	read = 0;                                                                                        \
 	if (count)                                                                                       \
 	{                                                                                                \
 		uint8_t avail = buffer##_size - tail;                                                        \
