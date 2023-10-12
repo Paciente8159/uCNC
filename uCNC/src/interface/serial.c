@@ -35,7 +35,7 @@ static stream_available_cb stream_available;
 static stream_clear_cb stream_clear;
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
-static serial_stream_t *serial_stream;
+static serial_stream_t *default_stream;
 static serial_stream_t *current_stream;
 
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -65,7 +65,7 @@ static uint8_t serial_peek_buffer;
 void serial_init(void)
 {
 #ifdef FORCE_GLOBALS_TO_0
-	serial_stream = NULL;
+	default_stream = NULL;
 #endif
 #ifndef DISABLE_MULTISTREAM_SERIAL
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -91,14 +91,14 @@ void serial_init(void)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 void serial_stream_register(serial_stream_t *stream)
 {
-	if (serial_stream == NULL)
+	if (default_stream == NULL)
 	{
-		serial_stream = stream;
-		serial_stream->next = NULL;
+		default_stream = stream;
+		default_stream->next = NULL;
 	}
 	else
 	{
-		serial_stream_t *p = serial_stream;
+		serial_stream_t *p = default_stream;
 		while (p->next != NULL)
 		{
 			p = p->next;
@@ -129,7 +129,7 @@ void serial_stream_change(serial_stream_t *stream)
 	}
 
 	// starts by the prioritary and test one by one until one that as characters available is found
-	current_stream = serial_stream;
+	current_stream = default_stream;
 #else
 	stream_getc = mcu_getc;
 	stream_available = mcu_available;
@@ -172,7 +172,10 @@ static FORCEINLINE uint8_t _serial_peek(void)
 	}
 
 	while (!serial_available())
-		;
+	{
+		mcu_dotasks();
+	}
+	
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!stream_getc)
 	{
@@ -208,19 +211,19 @@ uint8_t serial_peek(void)
 uint8_t serial_available(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
-	if (!stream_available)
+	if (stream_available == NULL)
 	{
 		// if undef allow to continue
 		return 1;
 	}
 
-	uint8_t count = (!stream_available) ? 0 : stream_available();
+	uint8_t count = stream_available();
 	if (!count)
 	{
-		serial_stream_t *p = serial_stream;
-		while (p)
+		serial_stream_t *p = default_stream;
+		while (p != NULL)
 		{
-			count = (!p->stream_available) ? 0 : p->stream_available();
+			count = (!(p->stream_available)) ? 0 : p->stream_available();
 			if (count)
 			{
 				serial_stream_change(p);
@@ -279,7 +282,7 @@ void serial_putc(uint8_t c)
 	}
 	else
 	{
-		serial_stream_t *p = serial_stream;
+		serial_stream_t *p = default_stream;
 		while (p)
 		{
 			p->stream_putc(c);
@@ -309,7 +312,7 @@ void serial_flush(void)
 	}
 	else
 	{
-		serial_stream_t *p = serial_stream;
+		serial_stream_t *p = default_stream;
 		while (p)
 		{
 			p->stream_flush();

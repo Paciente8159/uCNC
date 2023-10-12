@@ -27,43 +27,39 @@
 #include <usb/mscuser.h>
 #include <CDCSerial.h>
 #include <usb/mscuser.h>
+#include <stdint.h>
 
 extern "C"
 {
 #include "../../../cnc.h"
 #ifdef USE_ARDUINO_CDC
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
-#endif
-
-	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
-
-	void mcu_usb_dotasks(void)
+	void lpc176x_usb_dotasks(void)
 	{
 		MSC_RunDeferredCommands();
-		while (UsbSerial.available() > 0)
-		{
-			uint8_t c = (uint8_t)UsbSerial.read();
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(usb_rx))
-				{
-					c = OVF;
-				}
-
-				*(BUFFER_NEXT_FREE(usb_rx)) = c;
-				BUFFER_STORE(usb_rx);
-			}
-
-#else
-			mcu_usb_rx_cb(c);
-#endif
-		}
 	}
 
-	void mcu_usb_init(void)
+	bool lpc176x_usb_available(void)
+	{
+		return (UsbSerial.available() > 0);
+	}
+
+	uint8_t lpc176x_usb_getc(void)
+	{
+		return (uint8_t)UsbSerial.read();
+	}
+
+	void lpc176x_usb_putc(uint8_t c)
+	{
+		char a = (char)c;
+		UsbSerial.write(&a, 1);
+	}
+
+	void lpc176x_usb_write(uint8_t* ptr, uint8_t len)
+	{
+		UsbSerial.write((char*)ptr, len);
+	}
+
+	void lpc176x_usb_init(void)
 	{
 		USB_Init();			// USB Initialization
 		USB_Connect(false); // USB clear connection
@@ -72,54 +68,13 @@ extern "C"
 		while (!USB_Configuration && usb_timeout > mcu_millis())
 		{
 			mcu_delay_us(50);
-			mcu_usb_dotasks();
+			MSC_RunDeferredCommands();
 #if ASSERT_PIN(ACTIVITY_LED)
 			io_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
 #endif
 		}
 		UsbSerial.begin(BAUDRATE);
-	}
-
-	void mcu_usb_flush(void)
-	{
-
-		while (!BUFFER_EMPTY(usb_tx))
-		{
-			uint8_t tmp[USB_TX_BUFFER_SIZE];
-			uint8_t r;
-
-			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
-#ifdef MCU_HAS_USB
-			UsbSerial.write((char *)tmp, r);
-			UsbSerial.flushTX();
-#endif
-		}
-	}
-
-	void mcu_usb_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(usb_tx))
-		{
-			mcu_usb_flush();
-		}
-		BUFFER_ENQUEUE(usb_tx, &c);
-	}
-
-	uint8_t mcu_usb_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_usb_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(usb_rx);
-	}
-
-	void mcu_usb_clear(void)
-	{
-		BUFFER_CLEAR(usb_rx);
+// 		// BUFFER_CLEAR(usb_rx);
 	}
 
 #endif

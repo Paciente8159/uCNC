@@ -24,8 +24,12 @@
 
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-extern void mcu_usb_dotasks(void);
-extern void mcu_usb_init(void);
+extern void lpc176x_usb_dotasks(void);
+extern bool lpc176x_usb_available(void);
+extern uint8_t lpc176x_usb_getc(void);
+extern void lpc176x_usb_putc(uint8_t c);
+extern void lpc176x_usb_init(void);
+extern void lpc176x_usb_write(uint8_t *ptr, uint8_t len);
 #else
 #include <tusb_ucnc.h>
 #endif
@@ -36,7 +40,8 @@ extern void mcu_usb_init(void);
  * Increments every millisecond
  * Can count up to almost 50 days
  **/
-static volatile uint32_t mcu_runtime_ms;
+// provided by the framework
+extern volatile uint64_t _millis;
 volatile bool lpc_global_isr_enabled;
 
 // define the mcu internal servo variables
@@ -172,10 +177,8 @@ void MCU_SERVO_ISR(void)
 void MCU_RTC_ISR(void)
 {
 	mcu_disable_global_isr();
-	uint32_t millis = mcu_runtime_ms;
-	millis++;
-	mcu_runtime_ms = millis;
-	mcu_rtc_cb(millis);
+	_millis++;
+	mcu_rtc_cb((uint32_t)_millis);
 	mcu_enable_global_isr();
 }
 
@@ -354,17 +357,6 @@ void MCU_COM2_ISR(void)
 }
 #endif
 
-#ifdef MCU_HAS_USB
-#ifndef USE_ARDUINO_CDC
-void USB_IRQHandler(void)
-{
-	mcu_disable_global_isr();
-	tusb_cdc_isr_handler();
-	mcu_enable_global_isr();
-}
-#endif
-#endif
-
 void mcu_usart_init(void)
 {
 #ifdef MCU_HAS_UART
@@ -415,7 +407,7 @@ void mcu_usart_init(void)
 
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-	mcu_usb_init();
+	lpc176x_usb_init();
 #else
 	// // // configure USB as Virtual COM port
 	LPC_PINCON->PINSEL1 &= ~((3 << 26) | (3 << 28)); /* P0.29 D+, P0.30 D- */
@@ -803,8 +795,7 @@ void mcu_stop_itp_isr(void)
  * */
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return (uint32_t)_millis;
 }
 
 /**
@@ -813,7 +804,7 @@ uint32_t mcu_millis()
  * */
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return ((mcu_millis() * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
 }
 
 #ifndef mcu_delay_us
@@ -827,7 +818,16 @@ void mcu_delay_us(uint16_t delay)
 #endif
 
 #ifdef MCU_HAS_USB
+DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
 #ifndef USE_ARDUINO_CDC
+void USB_IRQHandler(void)
+{
+	mcu_disable_global_isr();
+	tusb_cdc_isr_handler();
+	mcu_enable_global_isr();
+}
+
 void mcu_usb_putc(uint8_t c)
 {
 	if (!tusb_cdc_write_available())
@@ -849,7 +849,57 @@ void mcu_usb_flush(void)
 		}
 	}
 }
+#else
+#ifndef USB_TX_BUFFER_SIZE
+#define USB_TX_BUFFER_SIZE 64
 #endif
+
+DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+void mcu_usb_flush(void)
+{
+	while (!BUFFER_EMPTY(usb_tx))
+	{
+		// use this of char is not 8bits
+		// uint8_t c = 0;
+		// BUFFER_DEQUEUE(usb_tx, &c);
+		// lpc176x_usb_putc(c);
+
+		// bulk sending
+		uint8_t tmp[USB_TX_BUFFER_SIZE];
+		uint8_t r;
+
+		BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
+		lpc176x_usb_write(tmp, r);
+	}
+}
+
+void mcu_usb_putc(uint8_t c)
+{
+	while (BUFFER_FULL(usb_tx))
+	{
+		mcu_usb_flush();
+	}
+	BUFFER_ENQUEUE(usb_tx, &c);
+}
+#endif
+
+uint8_t mcu_usb_getc(void)
+{
+	char c = BUFFER_PEEK(usb_rx);
+	BUFFER_REMOVE(usb_rx);
+	return (uint8_t)c;
+}
+
+uint8_t mcu_usb_available(void)
+{
+	return BUFFER_READ_AVAILABLE(usb_rx);
+}
+
+void mcu_usb_clear(void)
+{
+	BUFFER_CLEAR(usb_rx);
+}
+
 #endif
 
 /**
@@ -861,8 +911,25 @@ void mcu_dotasks()
 {
 #ifdef MCU_HAS_USB
 #ifdef USE_ARDUINO_CDC
-	mcu_usb_flush();
-	mcu_usb_dotasks();
+	lpc176x_usb_dotasks();
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+	while (lpc176x_usb_available())
+	{
+		uint8_t c = lpc176x_usb_getc();
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
+	}
+#else
+	mcu_usb_rx_cb(c);
+#endif
 #else
 	tusb_cdc_task(); // tinyusb device task
 
@@ -870,7 +937,16 @@ void mcu_dotasks()
 	{
 		uint8_t c = (uint8_t)tusb_cdc_read();
 #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-		mcu_com_rx_cb(c);
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(usb_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(usb_rx)) = c;
+			BUFFER_STORE(usb_rx);
+		}
 #else
 		mcu_usb_rx_cb(c);
 #endif
@@ -930,10 +1006,6 @@ static void mcu_i2c_write_stop(bool *stop)
 		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
 			;
 	}
-}
-
-static void mcu_i2c_reset()
-{
 }
 
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
