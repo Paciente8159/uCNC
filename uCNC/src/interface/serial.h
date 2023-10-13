@@ -61,19 +61,19 @@ extern "C"
 	void serial_stream_eeprom(uint16_t address);
 
 	void serial_broadcast(bool enable);
-	void serial_putc(uint8_t c);
+	void serial_putc(char c);
 	void serial_flush(void);
 	uint8_t serial_tx_busy(void);
 
-	uint8_t serial_getc(void);
-	uint8_t serial_peek(void);
+	char serial_getc(void);
+	char serial_peek(void);
 	uint8_t serial_available(void);
 	void serial_clear(void);
 	uint8_t serial_freebytes(void);
 
 	// printing utils
-	typedef void (*print_cb)(uint8_t);
-	void print_str(print_cb cb, const uint8_t *__s);
+	typedef void (*print_cb)(char);
+	void print_str(print_cb cb, const char *__s);
 	void print_bytes(print_cb cb, const uint8_t *data, uint8_t count);
 	void print_int(print_cb cb, int32_t num);
 	void print_flt(print_cb cb, float num);

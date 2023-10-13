@@ -96,12 +96,12 @@ extern "C"
 
 	struct system_menu_item_
 	{
-		const uint8_t *label;
+		const char *label;
 		void *argptr;
 		system_menu_item_render_cb item_render;
-		void *render_arg;
+		const void *render_arg;
 		system_menu_item_action_cb item_action;
-		void *action_arg;
+		const void *action_arg;
 	};
 
 	typedef struct system_menu_index_
@@ -114,7 +114,7 @@ extern "C"
 	{
 		uint8_t menu_id;
 		uint8_t parent_id;
-		const uint8_t *page_label;
+		const char *page_label;
 		system_menu_page_render_cb page_render;
 		system_menu_page_action_cb page_action;
 		system_menu_index_t *items_index;
@@ -150,7 +150,7 @@ extern "C"
 #define DECL_MENU_ACTION(menu_id, name, strvalue, action_cb, action_cb_arg) DECL_MENU_ENTRY(menu_id, name, strvalue, NULL, NULL, NULL, action_cb, action_cb_arg)
 
 #define DECL_MENU(id, parentid, label)                                                                                                                                                      \
-	static const uint8_t m##id##_label[] __rom__ = label;                                                                                                                                      \
+	static const char m##id##_label[] __rom__ = label;                                                                                                                                      \
 	static system_menu_page_t m##id = {.menu_id = id, .parent_id = parentid, .page_label = m##id##_label, .page_render = NULL, .page_action = NULL, .items_index = NULL, .extended = NULL}; \
 	system_menu_append(&m##id)
 #define DECL_DYNAMIC_MENU(id, parentid, render_cb, action_cb)                                                                                                                                                      \
@@ -167,7 +167,7 @@ extern "C"
 	void system_menu_go_idle(void);
 	void system_menu_action(uint8_t action);
 	void system_menu_render(void);
-	void system_menu_show_modal_popup(uint32_t timeout, const uint8_t *__s);
+	void system_menu_show_modal_popup(uint32_t timeout, const char *__s);
 	void system_menu_action_timeout(uint32_t delay);
 
 	void system_menu_append(system_menu_page_t *newpage);
@@ -179,7 +179,7 @@ extern "C"
 	/**
 	 * Overridable functions to be implemented for the display to render the system menu
 	 * **/
-	void system_menu_render_header(const uint8_t *__s);
+	void system_menu_render_header(const char *__s);
 	bool system_menu_render_menu_item_filter(uint8_t item_index);
 	void system_menu_render_menu_item(uint8_t render_flags, const system_menu_item_t *item);
 	void system_menu_render_nav_back(bool is_hover);
@@ -187,9 +187,9 @@ extern "C"
 	void system_menu_render_startup(void);
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
-	void system_menu_render_modal_popup(const uint8_t *__s);
+	void system_menu_render_modal_popup(const char *__s);
 	// this needs to be implemented using a serial stream
-	uint8_t system_menu_send_cmd(const uint8_t *__s);
+	uint8_t system_menu_send_cmd(const char *__s);
 
 	/**
 	 * Helper µCNC action callbacks
@@ -205,17 +205,17 @@ extern "C"
 	 * **/
 	// these should be implemented on the display side
 	// one to render label and the other to render the label variable argument
-	void system_menu_item_render_label(uint8_t render_flags, const uint8_t *label);
-	void system_menu_item_render_arg(uint8_t render_flags, const uint8_t *label);
+	void system_menu_item_render_label(uint8_t render_flags, const char *label);
+	void system_menu_item_render_arg(uint8_t render_flags, const char *label);
 	// generic menu item argument renderer
 	void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *item);
 
 	/**
 	 * Helper µCNC to display variables
 	 * **/
-	extern uint8_t *system_menu_var_to_str_set_buffer_ptr;
-	void system_menu_var_to_str_set_buffer(uint8_t *ptr);
-	void system_menu_var_to_str(uint8_t c);
+	extern char *system_menu_var_to_str_set_buffer_ptr;
+	void system_menu_var_to_str_set_buffer(char *ptr);
+	void system_menu_var_to_str(char c);
 
 #define system_menu_int_to_str(buf_ptr, var)    \
 	system_menu_var_to_str_set_buffer(buf_ptr); \

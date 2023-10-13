@@ -156,16 +156,16 @@ void serial_stream_eeprom(uint16_t address)
 	serial_stream_readonly(&stream_eeprom_getc, NULL, NULL);
 }
 
-uint8_t serial_getc(void)
+char serial_getc(void)
 {
 	uint8_t peek = serial_peek();
 	serial_peek_buffer = 0;
 	return peek;
 }
 
-static FORCEINLINE uint8_t _serial_peek(void)
+static FORCEINLINE char _serial_peek(void)
 {
-	uint8_t peek = serial_peek_buffer;
+	char peek = serial_peek_buffer;
 	if (peek)
 	{
 		return peek;
@@ -175,7 +175,7 @@ static FORCEINLINE uint8_t _serial_peek(void)
 	{
 		mcu_dotasks();
 	}
-	
+
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!stream_getc)
 	{
@@ -183,7 +183,7 @@ static FORCEINLINE uint8_t _serial_peek(void)
 		return OVF;
 	}
 #endif
-	peek = stream_getc();
+	peek = (char)stream_getc();
 	// prevents null char reading from eeprom
 	if (!peek)
 	{
@@ -193,7 +193,7 @@ static FORCEINLINE uint8_t _serial_peek(void)
 	return peek;
 }
 
-uint8_t serial_peek(void)
+char serial_peek(void)
 {
 	uint8_t peek = _serial_peek();
 	switch (peek)
@@ -272,7 +272,7 @@ void serial_broadcast(bool enable)
 }
 
 static uint8_t serial_tx_count;
-void serial_putc(uint8_t c)
+void serial_putc(char c)
 {
 	serial_tx_count++;
 #ifndef DISABLE_MULTISTREAM_SERIAL
@@ -285,7 +285,7 @@ void serial_putc(uint8_t c)
 		serial_stream_t *p = default_stream;
 		while (p)
 		{
-			p->stream_putc(c);
+			p->stream_putc((uint8_t)c);
 			p = p->next;
 		}
 	}
@@ -329,7 +329,7 @@ uint8_t serial_tx_busy(void)
 	return serial_tx_count;
 }
 
-void print_str(print_cb cb, const uint8_t *__s)
+void print_str(print_cb cb, const char *__s)
 {
 	while (*__s)
 	{

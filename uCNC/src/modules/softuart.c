@@ -17,7 +17,7 @@
 */
 #include "softuart.h"
 
-void softuart_putc(softuart_port_t *port, uint8_t c)
+void softuart_putc(softuart_port_t *port, char c)
 {
 	if (!port)
 	{
@@ -50,7 +50,7 @@ void softuart_putc(softuart_port_t *port, uint8_t c)
 
 int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 {
-	uint8_t val = 0;
+	char val = 0;
 
 	if (!port)
 	{
