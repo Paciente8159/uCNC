@@ -278,14 +278,20 @@ void serial_putc(char c)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!serial_broadcast_enabled)
 	{
-		current_stream->stream_putc(c);
+		if (current_stream->stream_putc)
+		{
+			current_stream->stream_putc(c);
+		}
 	}
 	else
 	{
 		serial_stream_t *p = default_stream;
 		while (p)
 		{
-			p->stream_putc((uint8_t)c);
+			if (p->stream_putc)
+			{
+				p->stream_putc((uint8_t)c);
+			}
 			p = p->next;
 		}
 	}
@@ -308,14 +314,20 @@ void serial_flush(void)
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	if (!serial_broadcast_enabled)
 	{
-		current_stream->stream_flush();
+		if (current_stream->stream_flush)
+		{
+			current_stream->stream_flush();
+		}
 	}
 	else
 	{
 		serial_stream_t *p = default_stream;
 		while (p)
 		{
-			p->stream_flush();
+			if (p->stream_flush)
+			{
+				p->stream_flush();
+			}
 			p = p->next;
 		}
 	}
