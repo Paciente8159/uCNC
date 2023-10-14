@@ -1013,10 +1013,12 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 4);
+			break;
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
 		case VAR_TYPE_FLOAT:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 9);
+			break;
 		}
 	}
 

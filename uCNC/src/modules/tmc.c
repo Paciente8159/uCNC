@@ -219,6 +219,7 @@ uint32_t tmc_write_register(tmc_driver_t *driver, uint8_t address, uint32_t val)
 		val >>= 8;
 		data[1] = (uint8_t)(val & 0xFF);
 		driver->rw(data, 5, 5);
+		break;
 	default:
 		return TMC_WRITE_ERROR;
 	}
