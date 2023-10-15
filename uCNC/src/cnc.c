@@ -123,12 +123,11 @@ void cnc_run(void)
 	// enters loop reset
 	cnc_reset();
 
+	cnc_state.loop_state = LOOP_RUNNING;
+
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
-		// serial_select(SERIAL_UART);
-		cnc_state.loop_state = LOOP_RUNNING;
-
 		do
 		{
 		} while (cnc_exec_cmd());
@@ -159,11 +158,10 @@ void cnc_run(void)
 			}
 		}
 		cnc_dotasks();
-		// a hard/soft reset is pending
-		if (cnc_state.alarm < 0)
+		// a soft reset is pending
+		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
 		{
-			cnc_state.loop_state = LOOP_STARTUP_RESET;
-			cnc_clear_exec_state(EXEC_KILL);
+			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
@@ -707,6 +705,7 @@ void cnc_exec_rt_commands(void)
 			}
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
+			cnc_state.loop_state = LOOP_STARTUP_RESET;
 			return;
 		}
 
