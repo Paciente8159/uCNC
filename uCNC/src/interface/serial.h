@@ -24,36 +24,55 @@ extern "C"
 {
 #endif
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
 
-#define EOL 0x00 // end of line char
-#define OVF 0x15 // overflow char
+#define EOL 0x00 // end of line uint8_t
+#define OVF 0x15 // overflow uint8_t
 #define SAFEMARGIN 2
 #ifndef RX_BUFFER_CAPACITY
 #define RX_BUFFER_CAPACITY 128
 #endif
 #define RX_BUFFER_SIZE (RX_BUFFER_CAPACITY + SAFEMARGIN) // buffer sizes
 
-#define SERIAL_UART 0
-#define SERIAL_N0 1
-#define SERIAL_N1 2
+	typedef uint8_t (*stream_getc_cb)(void);
+	typedef uint8_t (*stream_available_cb)(void);
+	typedef void (*stream_clear_cb)(void);
+
+	typedef struct serial_stream_
+	{
+		stream_getc_cb stream_getc;
+		stream_available_cb stream_available;
+		stream_clear_cb stream_clear;
+		void (*stream_putc)(uint8_t);
+		void (*stream_flush)(void);
+		struct serial_stream_ *next;
+	} serial_stream_t;
+
+#define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
 
 	void serial_init();
 
-	bool serial_rx_is_empty(void);
-	unsigned char serial_getc(void);
-	void serial_ungetc(void);
-	unsigned char serial_peek(void);
-	void serial_inject_cmd(const char *__s);
-	void serial_rx_clear(void);
-	void serial_select(uint8_t source);
+	void serial_stream_register(serial_stream_t *stream);
+	void serial_stream_change(serial_stream_t *stream);
+	void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
+	void serial_stream_eeprom(uint16_t address);
 
-	void serial_putc(unsigned char c);
+	void serial_broadcast(bool enable);
+	void serial_putc(char c);
+	void serial_flush(void);
 	uint8_t serial_tx_busy(void);
+
+	char serial_getc(void);
+	char serial_peek(void);
+	uint8_t serial_available(void);
+	void serial_clear(void);
+	uint8_t serial_freebytes(void);
+
 	// printing utils
-	typedef void (*print_cb)(unsigned char);
+	typedef void (*print_cb)(char);
 	void print_str(print_cb cb, const char *__s);
 	void print_bytes(print_cb cb, const uint8_t *data, uint8_t count);
 	void print_int(print_cb cb, int32_t num);
@@ -69,8 +88,6 @@ extern "C"
 #define serial_print_fltunits(num) print_fltunits(serial_putc, num)
 #define serial_print_intarr(arr, count) print_intarr(serial_putc, arr, count)
 #define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
-
-	uint8_t serial_get_rx_freebytes(void);
 
 #ifdef __cplusplus
 }

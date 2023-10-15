@@ -154,7 +154,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 // 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
 // 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
 // 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		unsigned char c = 0;
+// 		uint8_t c = 0;
 
 // 		for (uint8_t i = 0; i < fifo_len; i++)
 // 		{

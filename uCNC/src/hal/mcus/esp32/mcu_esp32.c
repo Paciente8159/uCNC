@@ -47,7 +47,7 @@ volatile static uint32_t esp32_io_counter_reload;
 hw_timer_t *esp32_step_timer;
 
 void esp32_wifi_bt_init(void);
-void esp32_wifi_bt_flush(char *buffer);
+void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
 #ifndef FLASH_EEPROM_SIZE
@@ -599,30 +599,49 @@ uint8_t mcu_get_pwm(uint8_t pwm)
 /*UART*/
 
 /**
- * sends a char either via uart (hardware, software or USB virtual COM port)
+ * sends a uint8_t either via uart (hardware, software or USB virtual COM port)
  * can be defined either as a function or a macro call
  * */
 #ifdef MCU_HAS_UART
 #ifndef UART_TX_BUFFER_SIZE
 #define UART_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+uint8_t mcu_uart_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
+
 void mcu_uart_flush(void)
 {
-	while (!BUFFER_EMPTY(uart))
+	while (!BUFFER_EMPTY(uart_tx))
 	{
 		uint8_t tmp[UART_TX_BUFFER_SIZE];
 		uint8_t r;
 
-		BUFFER_READ(uart, tmp, UART_TX_BUFFER_SIZE, r);
+		BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
 		uart_write_bytes(UART_PORT, tmp, r);
 	}
 }
@@ -632,24 +651,43 @@ void mcu_uart_flush(void)
 #ifndef UART2_TX_BUFFER_SIZE
 #define UART2_TX_BUFFER_SIZE 64
 #endif
-DECL_BUFFER(uint8_t, uart2, UART2_TX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+
+uint8_t mcu_uart2_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart2_rx, &c);
+	return c;
+}
+
+uint8_t mcu_uart2_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart2_rx);
+}
+
+void mcu_uart2_clear(void)
+{
+	BUFFER_CLEAR(uart2_rx);
+}
+
 void mcu_uart2_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart2))
+	while (BUFFER_FULL(uart2_tx))
 	{
 		mcu_uart2_flush();
 	}
-	BUFFER_ENQUEUE(uart2, &c);
+	BUFFER_ENQUEUE(uart2_tx, &c);
 }
 
 void mcu_uart2_flush(void)
 {
-	while (!BUFFER_EMPTY(uart2))
+	while (!BUFFER_EMPTY(uart2_tx))
 	{
 		uint8_t tmp[UART2_TX_BUFFER_SIZE];
 		uint8_t r;
 
-		BUFFER_READ(uart2, tmp, UART2_TX_BUFFER_SIZE, r);
+		BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
 		uart_write_bytes(UART2_PORT, tmp, r);
 	}
 }
@@ -824,13 +862,23 @@ void mcu_dotasks(void)
 	esp_task_wdt_reset();
 
 	// loop through received data
-	char rxdata[RX_BUFFER_SIZE];
+	uint8_t rxdata[RX_BUFFER_SIZE];
 	int rxlen, i;
 #ifdef MCU_HAS_UART
 	rxlen = uart_read_bytes(UART_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_com_rx_cb((uint8_t)rxdata[i]);
+		uint8_t c = (uint8_t)rxdata[i];
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(uart_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart_rx)) = c;
+			BUFFER_STORE(uart_rx);
+		}
 	}
 #endif
 #if defined(MCU_HAS_UART2)
@@ -838,7 +886,17 @@ void mcu_dotasks(void)
 #if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_com_rx_cb((uint8_t)rxdata[i]);
+		uint8_t c = (uint8_t)rxdata[i];
+		if (mcu_com_rx_cb(c))
+		{
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+		}
 	}
 #else
 	for (i = 0; i < rxlen; i++)

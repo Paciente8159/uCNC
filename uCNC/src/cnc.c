@@ -126,7 +126,7 @@ void cnc_run(void)
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
-		serial_select(SERIAL_UART);
+		// serial_select(SERIAL_UART);
 		cnc_state.loop_state = LOOP_RUNNING;
 
 		do
@@ -150,7 +150,7 @@ void cnc_run(void)
 
 	do
 	{
-		if (!serial_rx_is_empty())
+		if (serial_available())
 		{
 			if (serial_getc() == EOL)
 			{
@@ -174,7 +174,7 @@ bool cnc_exec_cmd(void)
 	uint32_t exec_time;
 #endif
 	// process gcode commands
-	if (!serial_rx_is_empty())
+	if (serial_available())
 	{
 		uint8_t error = 0;
 		// protocol_echo();
@@ -182,7 +182,7 @@ bool cnc_exec_cmd(void)
 		switch (c)
 		{
 		case OVF:
-			serial_rx_clear();
+			serial_clear();
 			error = STATUS_OVERFLOW;
 			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
@@ -597,7 +597,7 @@ void cnc_reset(void)
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 
 	// clear all systems
-	serial_rx_clear();
+	serial_clear();
 	itp_clear();
 	planner_clear();
 	kinematics_init();
@@ -610,6 +610,7 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
+	serial_broadcast(true);
 	protocol_send_string(MSG_STARTUP);
 }
 
@@ -1029,9 +1030,20 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	serial_select(SERIAL_N0);
-	cnc_exec_cmd();
-	serial_select(SERIAL_N1);
-	cnc_exec_cmd();
-	serial_select(SERIAL_UART);
+	serial_broadcast(true);
+	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+	{
+		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
+		cnc_exec_cmd();
+	}
+	
+	serial_broadcast(true);
+	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
+	{
+		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
+		cnc_exec_cmd();
+	}
+	
+	// reset streams
+	serial_stream_change(NULL);
 }

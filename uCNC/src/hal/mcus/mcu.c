@@ -717,49 +717,56 @@ void __attribute__((weak)) mcu_io_init(void)
 }
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char)
+uint8_t __attribute__((weak)) mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
 {
 	return STATUS_INVALID_STATEMENT;
 }
 #endif
 
-void mcu_putc(uint8_t c)
+// ISR
+// New uint8_t handle strategy
+// All ascii will be sent to buffer and processed later (including comments)
+MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c)
 {
-	// USB, WiFi and BT have usually dedicated buffers
-#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-	mcu_usb_putc(c);
+	static bool is_grbl_cmd = false;
+	if (c < ((uint8_t)0x7F)) // ascii (all bellow DEL)
+	{
+		switch (c)
+		{
+		case CMD_CODE_REPORT:
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+			return false;
 #endif
-#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
-	mcu_bt_putc(c);
-#endif
-#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_uart_putc(c);
-#endif
-#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	mcu_uart2_putc(c);
-#endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	mcu_wifi_putc(c);
-#endif
-}
+		case CMD_CODE_RESET:
+		case CMD_CODE_FEED_HOLD:
+			cnc_call_rt_command((uint8_t)c);
+			return false;
+		case '\n':
+		case '\r':
+		case 0:
+			// EOL marker
+			is_grbl_cmd = false;
+			break;
+		case '$':
+			is_grbl_cmd = true;
+			break;
+		case CMD_CODE_CYCLE_START:
+			if (!is_grbl_cmd)
+			{
+				cnc_call_rt_command(CMD_CODE_CYCLE_START);
+				return false;
+			}
+			break;
+		}
 
-void mcu_flush(void)
-{
-#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
-	mcu_usb_flush();
-#endif
-#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
-	mcu_bt_flush();
-#endif
-#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-	mcu_uart_flush();
-#endif
-#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
-	mcu_uart2_flush();
-#endif
-#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
-	mcu_wifi_flush();
-#endif
+	}
+	else // extended ascii (plus CMD_CODE_CYCLE_START and DEL)
+	{
+		cnc_call_rt_command((uint8_t)c);
+		return false;
+	}
+
+	return true;
 }
 
 #if (defined(MCU_HAS_I2C))

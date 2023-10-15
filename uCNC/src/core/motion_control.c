@@ -705,7 +705,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis, axis_limit, STATUS_OK};
+	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
 
 #ifdef ENABLE_G39_H_MAPPING

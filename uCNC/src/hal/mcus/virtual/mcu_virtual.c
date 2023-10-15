@@ -7,8 +7,8 @@
 				void itp_step_isr();
 				void itp_step_reset_isr();
 			serial.h
-				void serial_rx_isr(char c);
-				char serial_tx_isr();
+				void serial_rx_isr(uint8_t c);
+				uint8_t serial_tx_isr();
 			trigger_control.h
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
@@ -241,7 +241,7 @@ void ioserver(void *args)
 			// Send a message to the pipe server.
 
 			cbToWrite = sizeof(VIRTUAL_MAP);
-			char lpvMessage[sizeof(VIRTUAL_MAP)];
+			uint8_t lpvMessage[sizeof(VIRTUAL_MAP)];
 			do
 			{
 				memcpy(lpvMessage, &virtualmap, sizeof(VIRTUAL_MAP));
@@ -310,9 +310,11 @@ void ioserver(void *args)
  * */
 HANDLE rxReady, rxThread;
 HANDLE txReady, txThread;
+HANDLE txReady, txThread, txFree;
 HANDLE bufferMutex;
-char com_buffer[256];
-char mcu_tx_buffer[256];
+HANDLE bufferMutexDone;
+uint8_t com_buffer[256];
+uint8_t mcu_tx_buffer[256];
 volatile bool mcu_tx_empty;
 volatile bool mcu_tx_enabled;
 
@@ -331,7 +333,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	struct addrinfo hints;
 
 	int iSendResult;
-	char recvbuf[256];
+	uint8_t recvbuf[256];
 	int recvbuflen = 256;
 
 	// Initialize Winsock
@@ -449,7 +451,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 void socketclient(void)
 {
 	DWORD dwWaitResult;
-	char buffer[256];
+	uint8_t buffer[256];
 	int iSendResult;
 	int iResult;
 
@@ -504,8 +506,8 @@ void socketclient(void)
 
 #ifdef USESERIAL
 volatile HANDLE hComm = NULL;
-unsigned char ComPortName[] = "\\\\.\\" str(WIN_COM_NAME);
-unsigned char ComParams[] = "baud=" str(BAUDRATE) " parity=N data=8 stop=1";
+uint8_t ComPortName[] = "\\\\.\\" str(WIN_COM_NAME);
+uint8_t ComParams[] = "baud=" str(BAUDRATE) " parity=N data=8 stop=1";
 
 DWORD WINAPI virtualserialserver(LPVOID lpParam)
 {
@@ -596,7 +598,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 				// Status event is stored in the event flag
 				// specified in the original WaitCommEvent call.
 				// Deal with the status event as appropriate.
-				char recvbuf[256];
+				uint8_t recvbuf[256];
 				int recvbuflen = 256;
 				DWORD dwRead = 0;
 				switch (dwCommEvent)
@@ -645,7 +647,7 @@ void virtualserialclient(void)
 {
 	DWORD dwWaitResult;
 	OVERLAPPED osWrite = {0};
-	char buffer[256];
+	uint8_t buffer[256];
 	int iSendResult;
 	int iResult;
 
@@ -703,7 +705,8 @@ void virtualserialclient(void)
 #endif
 
 #ifdef USECONSOLE
-
+DECL_BUFFER(uint8_t, uart_rx, 128);
+DECL_BUFFER(uint8_t, uart_tx, 64);
 DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 {
 	WSADATA wsaData;
@@ -715,7 +718,7 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 	struct addrinfo hints;
 
 	int iSendResult;
-	char recvbuf[256];
+	uint8_t recvbuf[256];
 	int recvbuflen = 256;
 
 	memset(recvbuf, 0, sizeof(recvbuf));
@@ -723,39 +726,19 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 	// Receive until the peer shuts down the connection
 	do
 	{
-		unsigned char c = getchar();
+		uint8_t c = getchar();
 		switch (c)
 		{
-			//		 case '"':
-			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-			//		 	mcu_controls_changed_cb();
-			//		 	break;
-			//		 case '%':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '&':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '/':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			// case '[':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case ']':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case '}':
-			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
-			// 	mcu_controls_changed_cb();
-			// 	break;
 		default:
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				BUFFER_ENQUEUE(uart_rx, &c);
+			}
 			break;
 		}
 
@@ -771,10 +754,10 @@ void virtualconsoleclient(void)
 
 	while (1)
 	{
+		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
-
 		switch (dwWaitResult)
 		{
 		// Event object was signaled
@@ -792,6 +775,7 @@ void virtualconsoleclient(void)
 				{
 					putchar(com_buffer[k]);
 				}
+				memset(com_buffer, 0, 256);
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -805,7 +789,7 @@ void virtualconsoleclient(void)
 		// An error occurred
 		default:
 			printf("Serial client thread error (%d)\n", (int)GetLastError());
-			return 0;
+			return;
 		}
 
 		memset(com_buffer, 0, 256);
@@ -871,6 +855,19 @@ void com_init(void)
 		return;
 	}
 
+	txFree = CreateEvent(
+		NULL,		   // default security attributes
+		FALSE,		   // manual-reset event
+		FALSE,		   // initial state is nonsignaled
+		TEXT("txFree") // object name
+	);
+
+	if (txFree == NULL)
+	{
+		printf("CreateEvent failed (%d)\n", GetLastError());
+		return;
+	}
+
 	rxThread = CreateThread(
 		NULL,		  // default security attributes
 		0,			  // use default stack size
@@ -918,28 +915,37 @@ void com_init(void)
 
 void com_send(char *buff, int len)
 {
-	DWORD dwWaitResult;
-	dwWaitResult = WaitForSingleObject(
-		bufferMutex, // handle to mutex
-		INFINITE);	 // no time-out interval
-	mcu_tx_empty = false;
+	DWORD dwWaitResult = WaitForSingleObject(
+		txFree,	   // event handle
+		INFINITE); // indefinite wait
 	switch (dwWaitResult)
 	{
 	// The thread got ownership of the mutex
 	case WAIT_OBJECT_0:
-		memcpy(com_buffer, buff, len);
-		ReleaseMutex(bufferMutex);
-		mcu_tx_empty = true;
+		
+		dwWaitResult = WaitForSingleObject(
+			bufferMutex, // handle to mutex
+			INFINITE);	 // no time-out interval
+		mcu_tx_empty = false;
+		switch (dwWaitResult)
+		{
+		// The thread got ownership of the mutex
+		case WAIT_OBJECT_0:
+			memcpy(com_buffer, buff, len);
+			ReleaseMutex(bufferMutex);
+			mcu_tx_empty = true;
+			break;
+
+		// The thread got ownership of an abandoned mutex
+		case WAIT_ABANDONED:
+			printf("Wait error (%d)\n", (int)GetLastError());
+			return;
+		}
+
+		SetEvent(txReady);
 		break;
-
-	// The thread got ownership of an abandoned mutex
-	case WAIT_ABANDONED:
-		printf("Wait error (%d)\n", (int)GetLastError());
-		return;
 	}
-
-	SetEvent(txReady);
-	sleep(1);
+	// sleep(1);
 }
 
 // UART communication
@@ -967,7 +973,7 @@ volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
 volatile bool pulse_enabled = false;
 volatile bool send_char = false;
-volatile unsigned char uart_char;
+volatile uint8_t uart_char;
 
 uint8_t pwms[16];
 
@@ -977,7 +983,7 @@ pthread_t thread_idout;
 pthread_t thread_timer_id;
 pthread_t thread_step_id;
 
-void mcu_rx_isr(unsigned char c)
+void mcu_rx_isr(uint8_t c)
 {
 	if (c)
 	{
@@ -999,7 +1005,7 @@ void mcu_tx_isr(void)
 //  #else
 //  	for (;;)
 //  	{
-//  		unsigned char c = getch();
+//  		uint8_t c = getch();
 //  		if (c != 0)
 //  		{
 //  			uart_char = c;
@@ -1127,7 +1133,7 @@ void ticksimul(void)
 	{
 
 		// FILE *infile = fopen("inputs.txt", "r");
-		// char inputs[255];
+		// uint8_t inputs[255];
 
 		// if (infile != NULL) //checks input file
 		// {
@@ -1434,22 +1440,60 @@ bool mcu_tx_ready(void)
 	return mcu_tx_empty;
 }
 
-void mcu_uart_putc(uint8_t c)
+uint8_t mcu_uart_getc()
 {
-	// #ifdef ENABLE_SYNC_TX
-	// 	com_send(c, 1);
-	// 	#endif
-	putchar(c);
-}
-void mcu_uart_flush(void)
-{
-	// #ifndef ENABLE_SYNC_TX
-	// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
-	// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
-	// #endif
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	
+	return c;
 }
 
-// void mcu_putc(char c)
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
+void mcu_uart_putc(uint8_t c)
+{
+	while (BUFFER_FULL(uart_tx))
+	{
+		mcu_uart_flush();
+	}
+	BUFFER_ENQUEUE(uart_tx, &c);
+}
+
+void mcu_uart_flush(void)
+{
+	uint8_t buff[64];
+	int len = 0;
+	BUFFER_READ(uart_tx, buff, 64, len);
+	com_send(buff, len);
+#if ASSERT_PIN(ACTIVITY_LED)
+	io_toggle_output(ACTIVITY_LED);
+#endif
+}
+
+// void mcu_uart_putc(uint8_t c)
+// {
+// 	// #ifdef ENABLE_SYNC_TX
+// 	// 	com_send(c, 1);
+// 	// 	#endif
+// 	putchar(c);
+// }
+// void mcu_uart_flush(void)
+// {
+// 	// #ifndef ENABLE_SYNC_TX
+// 	// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+// 	// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+// 	// #endif
+// }
+
+// void mcu_putc(uint8_t c)
 //{
 //	static int buff_index = 0;
 //	if (c != 0)
@@ -1471,36 +1515,36 @@ void mcu_uart_flush(void)
 //	mcu_tx_enabled = true;
 // }
 
-char mcu_getc(void)
-{
-	char c = 0;
-	if (g_mcu_buffertail != g_mcu_bufferhead)
-	{
-		c = g_mcu_combuffer[g_mcu_buffertail];
-		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
-		{
-			g_mcu_buffertail = 0;
-		}
-
-		if (c == '\n')
-		{
-			g_mcu_buffercount--;
-		}
-	}
-
-	return c;
-}
-
-char mcu_peek(void)
-{
-	if (g_mcu_buffercount == 0)
-		return 0;
-	return g_mcu_combuffer[g_mcu_buffertail];
-}
+//uint8_t mcu_getc(void)
+//{
+//	uint8_t c = 0;
+//	if (g_mcu_buffertail != g_mcu_bufferhead)
+//	{
+//		c = g_mcu_combuffer[g_mcu_buffertail];
+//		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
+//		{
+//			g_mcu_buffertail = 0;
+//		}
+//
+//		if (c == '\n')
+//		{
+//			g_mcu_buffercount--;
+//		}
+//	}
+//
+//	return c;
+//}
+//
+//uint8_t mcu_peek(void)
+//{
+//	if (g_mcu_buffercount == 0)
+//		return 0;
+//	return g_mcu_combuffer[g_mcu_buffertail];
+//}
 
 void mcu_bufferClear(void)
 {
-	memset(&g_mcu_combuffer, 0, sizeof(char) * COM_BUFFER_SIZE);
+	memset(&g_mcu_combuffer, 0, sizeof(uint8_t) * COM_BUFFER_SIZE);
 	g_mcu_buffertail = 0;
 	g_mcu_bufferhead = 0;
 }
@@ -1553,10 +1597,10 @@ void mcu_stop_itp_isr(void)
 	pulse_enabled = false;
 }
 
-void mcu_printfp(const char *__fmt, ...)
+void mcu_printfp(const uint8_t *__fmt, ...)
 {
-	char buffer[50];
-	char *newfmt = strcpy((char *)&buffer, __fmt);
+	uint8_t buffer[50];
+	uint8_t *newfmt = strcpy((uint8_t *)&buffer, __fmt);
 	va_list __ap;
 	va_start(__ap, __fmt);
 	vprintf(newfmt, __ap);
@@ -1574,18 +1618,18 @@ void virtual_delay_us(uint16_t delay)
 	} while (elapsed < delay);
 }
 
-void mcu_loadDummyPayload(const char *__fmt, ...)
+void mcu_loadDummyPayload(const uint8_t *__fmt, ...)
 {
-	char buffer[30];
-	char payload[50];
-	char *newfmt = strcpy((char *)&buffer, __fmt);
+	uint8_t buffer[30];
+	uint8_t payload[50];
+	uint8_t *newfmt = strcpy((uint8_t *)&buffer, __fmt);
 	va_list __ap;
 	va_start(__ap, __fmt);
-	vsprintf((char *)&payload, newfmt, __ap);
+	vsprintf((uint8_t *)&payload, newfmt, __ap);
 	va_end(__ap);
 	g_mcu_bufferhead = strlen(payload);
 	memset(&g_mcu_combuffer, 0, g_mcu_bufferhead);
-	strcpy((char *)&g_mcu_combuffer, payload);
+	strcpy((uint8_t *)&g_mcu_combuffer, payload);
 	g_mcu_buffertail = 0;
 	g_mcu_buffercount++;
 }

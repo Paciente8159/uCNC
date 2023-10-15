@@ -437,7 +437,7 @@ void system_menu_render(void)
 				if (!item_index)
 				{
 					char buff[SYSTEM_MENU_MAX_STR_LEN];
-					rom_strcpy(buff, menu_page->page_label);
+					rom_strcpy((char *)buff, (const char *)menu_page->page_label);
 					system_menu_render_header(buff);
 				}
 
@@ -648,7 +648,7 @@ bool system_menu_action_rt_cmd(uint8_t action, system_menu_item_t *item)
 	{
 		cnc_call_rt_command((uint8_t)VARG_CONST(item->action_arg));
 		char buffer[SYSTEM_MENU_MAX_STR_LEN];
-		rom_strcpy(buffer, __romstr__(STR_RT_CMD_SENT));
+		rom_strcpy((char *)buffer, __romstr__(STR_RT_CMD_SENT));
 		system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		return true;
 	}
@@ -659,11 +659,18 @@ bool system_menu_action_serial_cmd(uint8_t action, system_menu_item_t *item)
 {
 	if (action == SYSTEM_MENU_ACTION_SELECT && item)
 	{
-		if (serial_get_rx_freebytes() > 20)
+		if (serial_freebytes() > 20)
 		{
-			serial_inject_cmd((const char *)item->action_arg);
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
-			rom_strcpy(buffer, __romstr__(STR_CMD_SENT));
+			if (system_menu_send_cmd((const char *)item->action_arg) == STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_SENT));
+			}
+			else
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+			}
+
 			system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
 		}
 		return true;
@@ -685,7 +692,7 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 	}
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
-		char override = (char)VARG_CONST(item->action_arg);
+		uint8_t override = (uint8_t)VARG_CONST(item->action_arg);
 		switch (action)
 		{
 		case SYSTEM_MENU_ACTION_NEXT:
@@ -739,17 +746,17 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 	else if (g_system_menu.flags & SYSTEM_MENU_MODE_SIMPLE_EDIT)
 	{
 		// one jog command at time
-		if (serial_get_rx_freebytes() > 32)
+		if (serial_freebytes() > 32)
 		{
 			char buffer[SYSTEM_MENU_MAX_STR_LEN];
 			memset(buffer, 0, SYSTEM_MENU_MAX_STR_LEN);
-			rom_strcpy(buffer, __romstr__("$J=G91"));
+			rom_strcpy((char *)buffer, __romstr__("$J=G91"));
 			char *ptr = buffer;
 			// search for the end of string
 			while (*++ptr)
 				;
 			// replaces the axis letter
-			*ptr++ = *((char *)item->action_arg);
+			*ptr++ = *((uint8_t *)item->action_arg);
 			switch (action)
 			{
 			case SYSTEM_MENU_ACTION_NEXT:
@@ -770,7 +777,11 @@ static bool system_menu_action_jog(uint8_t action, system_menu_item_t *item)
 			while (*++ptr)
 				;
 			*ptr++ = '\r';
-			serial_inject_cmd(buffer);
+			if (system_menu_send_cmd(buffer) != STATUS_OK)
+			{
+				rom_strcpy((char *)buffer, __romstr__(STR_CMD_NOTSENT));
+				system_menu_show_modal_popup(SYSTEM_MENU_MODAL_POPUP_MS, buffer);
+			}
 		}
 		return true;
 	}
@@ -788,15 +799,15 @@ static bool system_menu_action_settings_cmd(uint8_t action, system_menu_item_t *
 		{
 		case 0:
 			settings_init();
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_LOADED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_LOADED));
 			break;
 		case 1:
 			settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_SAVED));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_SAVED));
 			break;
 		case 2:
 			settings_reset(false);
-			rom_strcpy(buffer, __romstr__(STR_SETTINGS_RESET));
+			rom_strcpy((char *)buffer, __romstr__(STR_SETTINGS_RESET));
 			break;
 		default:
 			break;
@@ -1002,10 +1013,12 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		case VAR_TYPE_INT16:
 		case VAR_TYPE_UINT16:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 4);
+			break;
 		case VAR_TYPE_INT32:
 		case VAR_TYPE_UINT32:
 		case VAR_TYPE_FLOAT:
 			g_system_menu.current_multiplier = CLAMP(-1, currentmult, 9);
+			break;
 		}
 	}
 
@@ -1082,6 +1095,12 @@ void __attribute__((weak)) system_menu_render_modal_popup(const char *__s)
 	// renders the modal popup message
 }
 
+// this needs to be implemented using a serial stream
+uint8_t __attribute__((weak)) system_menu_send_cmd(const char *__s)
+{
+	return STATUS_STREAM_FAILED;
+}
+
 /**
  * Helper µCNC render callbacks
  * **/
@@ -1122,7 +1141,7 @@ void system_menu_item_render_var_arg(uint8_t render_flags, system_menu_item_t *i
 		system_menu_flt_to_str(buffer, *((float *)item->argptr));
 		break;
 	default:
-		buff_ptr = (char *)item->argptr;
+		buff_ptr = item->argptr;
 		break;
 	}
 
@@ -1165,7 +1184,7 @@ void system_menu_var_to_str_set_buffer(char *ptr)
 	system_menu_var_to_str_set_buffer_ptr = ptr;
 }
 
-void system_menu_var_to_str(unsigned char c)
+void system_menu_var_to_str(char c)
 {
 	*system_menu_var_to_str_set_buffer_ptr = c;
 	*(++system_menu_var_to_str_set_buffer_ptr) = 0;

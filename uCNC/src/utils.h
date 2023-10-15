@@ -244,29 +244,27 @@ extern "C"
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
-#define BUFFER_PEEK(buffer) (&buffer##_bufferdata[buffer.tail])
-#define BUFFER_PULL(buffer)                   \
-	{                                         \
-		uint8_t count, tail;                  \
-		__ATOMIC__                            \
-		{                                     \
-			tail = buffer.tail;               \
-		}                                     \
-		void *p = &buffer##_bufferdata[tail]; \
-		if (!BUFFER_EMPTY(buffer))            \
-		{                                     \
-			tail++;                           \
-			if (tail >= buffer##_size)        \
-			{                                 \
-				tail = 0;                     \
-			}                                 \
-			__ATOMIC__                        \
-			{                                 \
-				buffer.tail = tail;           \
-				buffer.count++;               \
-			}                                 \
-		}                                     \
-		p;                                    \
+#define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
+#define BUFFER_REMOVE(buffer)          \
+	{                                  \
+		uint8_t tail;                  \
+		__ATOMIC__                     \
+		{                              \
+			tail = buffer.tail;        \
+		}                              \
+		if (!BUFFER_EMPTY(buffer))     \
+		{                              \
+			tail++;                    \
+			if (tail >= buffer##_size) \
+			{                          \
+				tail = 0;              \
+			}                          \
+			__ATOMIC__                 \
+			{                          \
+				buffer.tail = tail;    \
+				buffer.count--;        \
+			}                          \
+		}                              \
 	}
 
 #define BUFFER_DEQUEUE(buffer, ptr)                                                  \
@@ -292,7 +290,7 @@ extern "C"
 		}                                                                            \
 	}
 
-#define BUFFER_PUSH(buffer)            \
+#define BUFFER_STORE(buffer)           \
 	{                                  \
 		if (!BUFFER_FULL(buffer))      \
 		{                              \
@@ -339,7 +337,6 @@ extern "C"
 #define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
 #define BUFFER_WRITE(buffer, ptr, len, written) ({                                                   \
-	written = 0;                                                                                     \
 	uint8_t count, head;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -347,6 +344,7 @@ extern "C"
 		count = buffer.count;                                                                        \
 	}                                                                                                \
 	count = MIN(buffer##_size - count, len);                                                         \
+	written = 0;                                                                                     \
 	if (count)                                                                                       \
 	{                                                                                                \
 		uint8_t avail = (buffer##_size - head);                                                      \
@@ -380,7 +378,6 @@ extern "C"
 })
 
 #define BUFFER_READ(buffer, ptr, len, read) ({                                                       \
-	read = 0;                                                                                        \
 	uint8_t count, tail;                                                                             \
 	__ATOMIC__                                                                                       \
 	{                                                                                                \
@@ -391,6 +388,7 @@ extern "C"
 	{                                                                                                \
 		count = len;                                                                                 \
 	}                                                                                                \
+	read = 0;                                                                                        \
 	if (count)                                                                                       \
 	{                                                                                                \
 		uint8_t avail = buffer##_size - tail;                                                        \
@@ -423,9 +421,16 @@ extern "C"
 	}                                                                                                \
 })
 
-#define BUFFER_CLEAR(buffer) ({__ATOMIC__{buffer##_bufferdata[0] = 0;buffer.tail = 0;buffer.head = 0;buffer.count = 0; \
-	}                                                                                                                  \
-	})
+#define BUFFER_CLEAR(buffer)            \
+	{                                   \
+		__ATOMIC__                      \
+		{                               \
+			buffer##_bufferdata[0] = 0; \
+			buffer.tail = 0;            \
+			buffer.head = 0;            \
+			buffer.count = 0;           \
+		}                               \
+	}
 
 #ifdef __cplusplus
 }

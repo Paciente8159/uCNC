@@ -53,7 +53,7 @@ MCU_CALLBACK void __attribute__((weak)) ic74hc595_shift_io_pins(void)
 	{
 		do
 		{
-			memcpy(pins, ic74hc595_io_pins, IC74HC595_COUNT);
+			memcpy(pins, (const void*)ic74hc595_io_pins, IC74HC595_COUNT);
 			mcu_clear_output(IC74HC595_LATCH);
 			for (uint8_t i = IC74HC595_COUNT; i != 0;)
 			{

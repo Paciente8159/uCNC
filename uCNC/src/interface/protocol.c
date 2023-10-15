@@ -48,6 +48,7 @@ WEAK_EVENT_HANDLER(protocol_send_gcode_modes)
 static void protocol_send_newline(void)
 {
 	protocol_send_string(MSG_EOL);
+	serial_broadcast(false);
 }
 
 void protocol_send_ok(void)
@@ -65,6 +66,7 @@ void protocol_send_error(uint8_t error)
 
 void protocol_send_alarm(int8_t alarm)
 {
+	serial_broadcast(true);
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
 	protocol_send_newline();
@@ -72,19 +74,21 @@ void protocol_send_alarm(int8_t alarm)
 
 void protocol_send_string(const char *__s)
 {
-	unsigned char c = (unsigned char)rom_strptr(__s++);
+	uint8_t c = (uint8_t)rom_strptr(__s++);
 	do
 	{
 		serial_putc(c);
-		c = (unsigned char)rom_strptr(__s++);
+		c = (uint8_t)rom_strptr(__s++);
 	} while (c != 0);
 }
 
 void protocol_send_feedback(const char *__s)
 {
+	serial_broadcast(true);
 	protocol_send_string(MSG_START);
 	protocol_send_string(__s);
-	protocol_send_string(MSG_END);
+	serial_putc(']');
+	protocol_send_newline();
 }
 
 void protocol_send_ip(uint32_t ip)
@@ -200,6 +204,8 @@ void protocol_send_status(void)
 	{
 		return;
 	}
+
+	serial_broadcast(true);
 
 	float axis[MAX(AXIS_COUNT, 3)];
 
@@ -399,7 +405,7 @@ void protocol_send_status(void)
 		protocol_send_string(MSG_STATUS_BUF);
 		serial_print_int((uint32_t)planner_get_buffer_freeblocks());
 		serial_putc(',');
-		serial_print_int((uint32_t)serial_get_rx_freebytes());
+		serial_print_int((uint32_t)serial_freebytes());
 	}
 
 	serial_putc('>');
@@ -473,7 +479,7 @@ void protocol_send_probe_result(uint8_t val)
 	protocol_send_newline();
 }
 
-static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
+static void protocol_send_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)
 {
 	serial_putc(word);
 	serial_print_int(val);
@@ -494,6 +500,8 @@ void protocol_send_gcode_modes(void)
 	uint8_t coolant;
 
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
+
+	serial_broadcast(true);
 
 	protocol_send_string(__romstr__("[GC:"));
 
@@ -568,7 +576,7 @@ void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value)
 void protocol_send_start_blocks(void)
 {
 	protocol_busy = true;
-	unsigned char c = 0;
+	uint8_t c = 0;
 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	protocol_send_string(__romstr__("$N0="));
 	for (;;)

@@ -45,6 +45,13 @@ extern "C"
 #define F_STEP_MAX 30000
 #endif
 
+#define STREAM_UART 1
+#define STREAM_UART2 2
+#define STREAM_USB 4
+#define STREAM_WIFI 8
+#define STREAM_BTH 16
+#define STREAM_BOARDCAST 255
+
 // defines special mcu to access flash strings and arrays
 #ifndef __rom__
 #define __rom__
@@ -53,7 +60,7 @@ extern "C"
 #define __romstr__
 #endif
 #ifndef __romarr__
-#define __romarr__ const char
+#define __romarr__ const uint8_t
 #endif
 #ifndef rom_strptr
 #define rom_strptr *
@@ -77,7 +84,7 @@ extern "C"
 
 	MCU_CALLBACK void mcu_step_cb(void);
 	MCU_CALLBACK void mcu_step_reset_cb(void);
-	MCU_RX_CALLBACK void mcu_com_rx_cb(uint8_t c);
+	MCU_RX_CALLBACK bool mcu_com_rx_cb(uint8_t c);
 	MCU_CALLBACK void mcu_rtc_cb(uint32_t millis);
 	MCU_IO_CALLBACK void mcu_controls_changed_cb(void);
 	MCU_IO_CALLBACK void mcu_limits_changed_cb(void);
@@ -511,22 +518,18 @@ extern "C"
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char);
 #endif
 
-/**
- * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-	void mcu_putc(uint8_t c);
-#endif
-
-#ifndef mcu_flush
-	void mcu_flush(void);
-#endif
+	/**
+	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
+	 * can be defined either as a function or a macro call
+	 * */
 
 #ifdef MCU_HAS_USB
+	uint8_t mcu_usb_getc(void);
+	uint8_t mcu_usb_available(void);
+	void mcu_usb_clear(void);
 	void mcu_usb_putc(uint8_t c);
 	void mcu_usb_flush(void);
 #ifdef DETACH_USB_FROM_MAIN_PROTOCOL
@@ -535,6 +538,9 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART
+	uint8_t mcu_uart_getc(void);
+	uint8_t mcu_uart_available(void);
+	void mcu_uart_clear(void);
 	void mcu_uart_putc(uint8_t c);
 	void mcu_uart_flush(void);
 #ifdef DETACH_UART_FROM_MAIN_PROTOCOL
@@ -543,6 +549,9 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_UART2
+	uint8_t mcu_uart2_getc(void);
+	uint8_t mcu_uart2_available(void);
+	void mcu_uart2_clear(void);
 	void mcu_uart2_putc(uint8_t c);
 	void mcu_uart2_flush(void);
 #ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
@@ -551,6 +560,9 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_WIFI
+	uint8_t mcu_wifi_getc(void);
+	uint8_t mcu_wifi_available(void);
+	void mcu_wifi_clear(void);
 	void mcu_wifi_putc(uint8_t c);
 	void mcu_wifi_flush(void);
 #ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
@@ -559,11 +571,30 @@ extern "C"
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+	uint8_t mcu_bt_getc(void);
+	uint8_t mcu_bt_available(void);
+	void mcu_bt_clear(void);
 	void mcu_bt_putc(uint8_t c);
 	void mcu_bt_flush(void);
 #ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
 #endif
+#endif
+
+#ifndef mcu_getc
+#define mcu_getc (&mcu_uart_getc)
+#endif
+#ifndef mcu_available
+#define mcu_available (&mcu_uart_available)
+#endif
+#ifndef mcu_clear
+#define mcu_clear (&mcu_uart_clear)
+#endif
+#ifndef mcu_putc
+#define mcu_putc (&mcu_uart_putc)
+#endif
+#ifndef mcu_flush
+#define mcu_flush (&mcu_uart_flush)
 #endif
 
 #ifdef __cplusplus

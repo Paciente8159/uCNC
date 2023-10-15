@@ -313,7 +313,7 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #define __romstr__
 #endif
 #ifndef __romarr__
-#define __romarr__ const char
+#define __romarr__ const uint8_t
 #endif
 #ifndef rom_strptr
 #define rom_strptr *
@@ -771,11 +771,11 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	uint8_t mcu_custom_grbl_cmd(char *grbl_cmd_str, uint8_t grbl_cmd_len, char next_char);
+	uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char);
 #endif
 
 /**
- * sends a char either via uart (hardware, software USB CDC, Wifi or BT)
+ * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_putc
@@ -862,7 +862,7 @@ Also internally **AT LEAST** these macros need to be defined
 
     - use a 1ms interrupt timer or RTC to generate the running time and call `mcu_rtc_cb(uint32_t millis)`. `mcu_dotasks()` **MUST NOT BE CALLED HERE**
 
-    - if a hardware communications has events or ISR, the ISR must call `mcu_com_rx_cb(unsigned char c)` with the received char, or if handled internally by library or RTOS send every received char in the buffer through `mcu_com_rx_cb(unsigned char c)`.
+    - if a hardware communications has events or ISR, the ISR must call `mcu_com_rx_cb(uint8_t c)` with the received uint8_t, or if handled internally by library or RTOS send every received uint8_t in the buffer through `mcu_com_rx_cb(uint8_t c)`.
 
     - if interruptible inputs are used they appropriately call mcu_limits_changed_cb(), mcu_controls_changed_cb(), mcu_probe_changed_cb() and mcu_inputs_changed_cb()
 
