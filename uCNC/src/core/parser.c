@@ -584,8 +584,8 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		}
 		else
 		{
-			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			protocol_send_feedback(MSG_FEEDBACK_5);
+			cnc_alarm(EXEC_ALARM_SOFTRESET);
 		}
 		break;
 	case GRBL_SEND_SETTINGS_RESET:
