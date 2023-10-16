@@ -722,36 +722,48 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
-		switch (command & RTCMD_NORMAL_MASK)
+		int8_t ovr = 0;
+		if (command & RTCMD_NORMAL_MASK)
 		{
-		case RT_CMD_FEED_100:
-			planner_feed_ovr_reset();
-			break;
-		case RT_CMD_FEED_INC_COARSE:
-			planner_feed_ovr_inc(FEED_OVR_COARSE);
-			break;
-		case RT_CMD_FEED_DEC_COARSE:
-			planner_feed_ovr_inc(-FEED_OVR_COARSE);
-			break;
-		case RT_CMD_FEED_INC_FINE:
-			planner_feed_ovr_inc(FEED_OVR_FINE);
-			break;
-		case RT_CMD_FEED_DEC_FINE:
-			planner_feed_ovr_inc(-FEED_OVR_FINE);
-			break;
+			switch (command & RTCMD_NORMAL_MASK)
+			{
+			case RT_CMD_FEED_100:
+				planner_feed_ovr_reset();
+				break;
+			case RT_CMD_FEED_INC_COARSE:
+				ovr = FEED_OVR_COARSE;
+				break;
+			case RT_CMD_FEED_DEC_COARSE:
+				ovr = -FEED_OVR_COARSE;
+				break;
+			case RT_CMD_FEED_INC_FINE:
+				ovr = FEED_OVR_FINE;
+				break;
+			case RT_CMD_FEED_DEC_FINE:
+				ovr = -FEED_OVR_FINE;
+				break;
+			}
+			// if 0 does nothing
+			planner_feed_ovr_inc(ovr);
 		}
 
-		switch (command & RTCMD_RAPID_MASK)
+		if ((command & RTCMD_RAPID_MASK))
 		{
-		case RT_CMD_RAPIDFEED_100:
-			planner_rapid_feed_ovr_reset();
-			break;
-		case RT_CMD_RAPIDFEED_OVR1:
-			planner_rapid_feed_ovr(RAPID_FEED_OVR1);
-			break;
-		case RT_CMD_RAPIDFEED_OVR2:
-			planner_rapid_feed_ovr(RAPID_FEED_OVR2);
-			break;
+			// reset fast override by default
+			ovr = 100;
+			switch (command & RTCMD_RAPID_MASK)
+			{
+			// case RT_CMD_RAPIDFEED_100:
+			// 	ovr = 100;
+			// 	break;
+			case RT_CMD_RAPIDFEED_OVR1:
+				ovr = RAPID_FEED_OVR1;
+				break;
+			case RT_CMD_RAPIDFEED_OVR2:
+				ovr = RAPID_FEED_OVR2;
+				break;
+			}
+			planner_rapid_feed_ovr((uint8_t)ovr);
 		}
 	}
 
@@ -1037,14 +1049,14 @@ void cnc_run_startup_blocks(void)
 		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
-	
+
 	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
-	
+
 	// reset streams
 	serial_stream_change(NULL);
 }
