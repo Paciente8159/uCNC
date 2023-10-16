@@ -286,7 +286,7 @@ void planner_init(void)
 #endif
 	planner_buffer_clear();
 	planner_feed_ovr_reset();
-	planner_rapid_feed_ovr_reset();
+	planner_rapid_feed_ovr(100);
 #if TOOL_COUNT > 0
 	planner_spindle_ovr_reset();
 	planner_coolant_ovr_reset();
@@ -515,7 +515,7 @@ void planner_sync_tools(motion_data_t *block_data)
 }
 
 // overrides
-void planner_feed_ovr_inc(uint8_t value)
+void planner_feed_ovr_inc(int8_t value)
 {
 	uint8_t ovr_val = g_planner_state.feed_override;
 	ovr_val += value;
@@ -545,16 +545,6 @@ void planner_feed_ovr_reset(void)
 	if (g_planner_state.feed_override != 100)
 	{
 		g_planner_state.feed_override = 100;
-		g_planner_state.ovr_counter = 0;
-		itp_update();
-	}
-}
-
-void planner_rapid_feed_ovr_reset(void)
-{
-	if (g_planner_state.rapid_feed_override != 100)
-	{
-		g_planner_state.rapid_feed_override = 100;
 		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}

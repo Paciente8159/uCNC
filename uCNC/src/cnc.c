@@ -23,8 +23,9 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING 1
-#define LOOP_FAULT 2
+#define LOOP_UNLOCK 1
+#define LOOP_RUNNING 2
+#define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
 
 #define UNLOCK_OK 0
@@ -123,12 +124,12 @@ void cnc_run(void)
 	// enters loop reset
 	cnc_reset();
 
+	cnc_state.loop_state = LOOP_UNLOCK;
+
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
-		// serial_select(SERIAL_UART);
 		cnc_state.loop_state = LOOP_RUNNING;
-
 		do
 		{
 		} while (cnc_exec_cmd());
@@ -159,11 +160,10 @@ void cnc_run(void)
 			}
 		}
 		cnc_dotasks();
-		// a hard/soft reset is pending
-		if (cnc_state.alarm < 0)
+		// a soft reset is pending
+		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
 		{
-			cnc_state.loop_state = LOOP_STARTUP_RESET;
-			cnc_clear_exec_state(EXEC_KILL);
+			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
@@ -483,7 +483,7 @@ uint8_t cnc_unlock(bool force)
 
 		// hard reset
 		// if homing not enabled run startup blocks
-		if (cnc_state.loop_state == LOOP_STARTUP_RESET && !g_settings.homing_enabled)
+		if (cnc_state.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
 		{
 			cnc_run_startup_blocks();
 		}
@@ -707,6 +707,7 @@ void cnc_exec_rt_commands(void)
 			}
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
+			cnc_state.loop_state = LOOP_STARTUP_RESET;
 			return;
 		}
 
@@ -721,36 +722,48 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
-		switch (command & RTCMD_NORMAL_MASK)
+		int8_t ovr = 0;
+		if (command & RTCMD_NORMAL_MASK)
 		{
-		case RT_CMD_FEED_100:
-			planner_feed_ovr_reset();
-			break;
-		case RT_CMD_FEED_INC_COARSE:
-			planner_feed_ovr_inc(FEED_OVR_COARSE);
-			break;
-		case RT_CMD_FEED_DEC_COARSE:
-			planner_feed_ovr_inc(-FEED_OVR_COARSE);
-			break;
-		case RT_CMD_FEED_INC_FINE:
-			planner_feed_ovr_inc(FEED_OVR_FINE);
-			break;
-		case RT_CMD_FEED_DEC_FINE:
-			planner_feed_ovr_inc(-FEED_OVR_FINE);
-			break;
+			switch (command & RTCMD_NORMAL_MASK)
+			{
+			case RT_CMD_FEED_100:
+				planner_feed_ovr_reset();
+				break;
+			case RT_CMD_FEED_INC_COARSE:
+				ovr = FEED_OVR_COARSE;
+				break;
+			case RT_CMD_FEED_DEC_COARSE:
+				ovr = -FEED_OVR_COARSE;
+				break;
+			case RT_CMD_FEED_INC_FINE:
+				ovr = FEED_OVR_FINE;
+				break;
+			case RT_CMD_FEED_DEC_FINE:
+				ovr = -FEED_OVR_FINE;
+				break;
+			}
+			// if 0 does nothing
+			planner_feed_ovr_inc(ovr);
 		}
 
-		switch (command & RTCMD_RAPID_MASK)
+		if ((command & RTCMD_RAPID_MASK))
 		{
-		case RT_CMD_RAPIDFEED_100:
-			planner_rapid_feed_ovr_reset();
-			break;
-		case RT_CMD_RAPIDFEED_OVR1:
-			planner_rapid_feed_ovr(RAPID_FEED_OVR1);
-			break;
-		case RT_CMD_RAPIDFEED_OVR2:
-			planner_rapid_feed_ovr(RAPID_FEED_OVR2);
-			break;
+			// reset fast override by default
+			ovr = 100;
+			switch (command & RTCMD_RAPID_MASK)
+			{
+			// case RT_CMD_RAPIDFEED_100:
+			// 	ovr = 100;
+			// 	break;
+			case RT_CMD_RAPIDFEED_OVR1:
+				ovr = RAPID_FEED_OVR1;
+				break;
+			case RT_CMD_RAPIDFEED_OVR2:
+				ovr = RAPID_FEED_OVR2;
+				break;
+			}
+			planner_rapid_feed_ovr((uint8_t)ovr);
 		}
 	}
 
@@ -1036,14 +1049,14 @@ void cnc_run_startup_blocks(void)
 		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
-	
+
 	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
-	
+
 	// reset streams
 	serial_stream_change(NULL);
 }

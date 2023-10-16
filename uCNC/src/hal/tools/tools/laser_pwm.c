@@ -57,8 +57,6 @@ static void startup_code(void)
 #if ASSERT_PIN(LASER_PWM)
 	io_config_pwm(LASER_PWM, LASER_FREQ);
 	io_set_pwm(LASER_PWM, 0);
-#else
-	io_set_pwm(LASER_PWM, 0);
 #endif
 	previous_mode = g_settings.laser_mode;
 	g_settings.laser_mode = LASER_PWM_MODE;
