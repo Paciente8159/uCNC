@@ -30,12 +30,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade platformio
     - name: Run PlatformIO
-      run: pio run -e ${{build.boards}}
+      run: pio run -e ${{matrix.boards}}
     - name: Upload binaries
       uses: actions/upload-artifact@v3
       with:
-          name: ${{build.boards}}
+          name: ${{matrix.boards}}
           path: |
-                .pio/build/${{build.boards}}/*.bin
-                .pio/build/${{build.boards}}/*.hex
-                .pio/build/${{build.boards}}/*.uf2
+                .pio/build/${{matrix.boards}}/*.bin
+                .pio/build/${{matrix.boards}}/*.hex
+                .pio/build/${{matrix.boards}}/*.uf2
