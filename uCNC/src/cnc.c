@@ -23,8 +23,9 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING 1
-#define LOOP_FAULT 2
+#define LOOP_UNLOCK 1
+#define LOOP_RUNNING 2
+#define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
 
 #define UNLOCK_OK 0
@@ -123,11 +124,12 @@ void cnc_run(void)
 	// enters loop reset
 	cnc_reset();
 
-	cnc_state.loop_state = LOOP_RUNNING;
+	cnc_state.loop_state = LOOP_UNLOCK;
 
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
+		cnc_state.loop_state = LOOP_RUNNING;
 		do
 		{
 		} while (cnc_exec_cmd());
@@ -481,7 +483,7 @@ uint8_t cnc_unlock(bool force)
 
 		// hard reset
 		// if homing not enabled run startup blocks
-		if (cnc_state.loop_state == LOOP_STARTUP_RESET && !g_settings.homing_enabled)
+		if (cnc_state.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
 		{
 			cnc_run_startup_blocks();
 		}
