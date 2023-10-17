@@ -25,6 +25,7 @@ jobs:
           
   build_release:
     runs-on: ubuntu-latest
+    needs: create_release
     strategy:
       fail-fast: false # Allow all machines to finish building
       matrix:
