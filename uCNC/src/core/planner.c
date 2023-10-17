@@ -285,10 +285,10 @@ void planner_init(void)
 #endif
 #endif
 	planner_buffer_clear();
-	planner_feed_ovr_reset();
-	planner_rapid_feed_ovr_reset();
+	planner_feed_ovr(100);
+	planner_rapid_feed_ovr(100);
 #if TOOL_COUNT > 0
-	planner_spindle_ovr_reset();
+	planner_spindle_ovr(100);
 	planner_coolant_ovr_reset();
 #endif
 }
@@ -515,16 +515,11 @@ void planner_sync_tools(motion_data_t *block_data)
 }
 
 // overrides
-void planner_feed_ovr_inc(uint8_t value)
+void planner_feed_ovr(uint8_t value)
 {
-	uint8_t ovr_val = g_planner_state.feed_override;
-	ovr_val += value;
-	ovr_val = MAX(ovr_val, FEED_OVR_MIN);
-	ovr_val = MIN(ovr_val, FEED_OVR_MAX);
-
-	if (ovr_val != g_planner_state.feed_override)
+	if (value != g_planner_state.feed_override)
 	{
-		g_planner_state.feed_override = ovr_val;
+		g_planner_state.feed_override = value;
 		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
@@ -540,28 +535,8 @@ void planner_rapid_feed_ovr(uint8_t value)
 	}
 }
 
-void planner_feed_ovr_reset(void)
-{
-	if (g_planner_state.feed_override != 100)
-	{
-		g_planner_state.feed_override = 100;
-		g_planner_state.ovr_counter = 0;
-		itp_update();
-	}
-}
-
-void planner_rapid_feed_ovr_reset(void)
-{
-	if (g_planner_state.rapid_feed_override != 100)
-	{
-		g_planner_state.rapid_feed_override = 100;
-		g_planner_state.ovr_counter = 0;
-		itp_update();
-	}
-}
-
 #if TOOL_COUNT > 0
-void planner_spindle_ovr_inc(uint8_t value)
+void planner_spindle_ovr(uint8_t value)
 {
 	uint8_t ovr_val = g_planner_state.spindle_speed_override;
 	ovr_val += value;
@@ -573,12 +548,6 @@ void planner_spindle_ovr_inc(uint8_t value)
 		g_planner_state.spindle_speed_override = ovr_val;
 		g_planner_state.ovr_counter = 0;
 	}
-}
-
-void planner_spindle_ovr_reset(void)
-{
-	g_planner_state.spindle_speed_override = 100;
-	g_planner_state.ovr_counter = 0;
 }
 
 static uint8_t coolant_override;

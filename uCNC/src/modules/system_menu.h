@@ -99,9 +99,9 @@ extern "C"
 		const char *label;
 		void *argptr;
 		system_menu_item_render_cb item_render;
-		void *render_arg;
+		const void *render_arg;
 		system_menu_item_action_cb item_action;
-		void *action_arg;
+		const void *action_arg;
 	};
 
 	typedef struct system_menu_index_

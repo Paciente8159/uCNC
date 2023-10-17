@@ -23,8 +23,9 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING 1
-#define LOOP_FAULT 2
+#define LOOP_UNLOCK 1
+#define LOOP_RUNNING 2
+#define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
 
 #define UNLOCK_OK 0
@@ -122,6 +123,8 @@ void cnc_run(void)
 	// enters loop reset
 	cnc_reset();
 
+	cnc_state.loop_state = LOOP_UNLOCK;
+
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
@@ -158,11 +161,10 @@ void cnc_run(void)
 			}
 		}
 		cnc_dotasks();
-		// a hard/soft reset is pending
-		if (cnc_state.alarm < 0)
+		// a soft reset is pending
+		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
 		{
-			cnc_state.loop_state = LOOP_STARTUP_RESET;
-			cnc_clear_exec_state(EXEC_KILL);
+			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
@@ -390,7 +392,7 @@ uint8_t cnc_unlock(bool force)
 
 		// hard reset
 		// if homing not enabled run startup blocks
-		if (cnc_state.loop_state == LOOP_STARTUP_RESET && !g_settings.homing_enabled)
+		if (cnc_state.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
 		{
 			cnc_run_startup_blocks();
 		}
@@ -613,6 +615,7 @@ void cnc_exec_rt_commands(void)
 			}
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
+			cnc_state.loop_state = LOOP_STARTUP_RESET;
 			return;
 		}
 
@@ -627,29 +630,30 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+		uint8_t ovr = g_planner_state.feed_override;
 		switch (command & RTCMD_NORMAL_MASK)
 		{
 		case RT_CMD_FEED_100:
-			planner_feed_ovr_reset();
+			planner_feed_ovr(100);
 			break;
 		case RT_CMD_FEED_INC_COARSE:
-			planner_feed_ovr_inc(FEED_OVR_COARSE);
+			planner_feed_ovr(ovr + FEED_OVR_COARSE);
 			break;
 		case RT_CMD_FEED_DEC_COARSE:
-			planner_feed_ovr_inc(-FEED_OVR_COARSE);
+			planner_feed_ovr(ovr - FEED_OVR_COARSE);
 			break;
 		case RT_CMD_FEED_INC_FINE:
-			planner_feed_ovr_inc(FEED_OVR_FINE);
+			planner_feed_ovr(ovr + FEED_OVR_FINE);
 			break;
 		case RT_CMD_FEED_DEC_FINE:
-			planner_feed_ovr_inc(-FEED_OVR_FINE);
+			planner_feed_ovr(ovr - FEED_OVR_FINE);
 			break;
 		}
 
 		switch (command & RTCMD_RAPID_MASK)
 		{
 		case RT_CMD_RAPIDFEED_100:
-			planner_rapid_feed_ovr_reset();
+			planner_rapid_feed_ovr(100);
 			break;
 		case RT_CMD_RAPIDFEED_OVR1:
 			planner_rapid_feed_ovr(RAPID_FEED_OVR1);
@@ -665,24 +669,25 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
-			planner_spindle_ovr_reset();
+			planner_spindle_ovr(100);
 			break;
 		case RT_CMD_SPINDLE_INC_COARSE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_DEC_COARSE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_INC_FINE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_DEC_FINE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_TOGGLE:
 			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
