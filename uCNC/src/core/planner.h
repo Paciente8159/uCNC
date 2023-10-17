@@ -98,14 +98,10 @@ extern "C"
 	void planner_sync_tools(motion_data_t *block_data);
 
 	// overrides
-	void planner_feed_ovr_reset(void);
-	void planner_feed_ovr_inc(uint8_t value);
-
-	void planner_rapid_feed_ovr_reset();
+	void planner_feed_ovr(uint8_t value);
 	void planner_rapid_feed_ovr(uint8_t value);
 #if TOOL_COUNT > 0
-	void planner_spindle_ovr_reset(void);
-	void planner_spindle_ovr_inc(uint8_t value);
+	void planner_spindle_ovr(uint8_t value);
 	uint8_t planner_coolant_ovr_toggle(uint8_t value);
 	void planner_coolant_ovr_reset(void);
 #endif
