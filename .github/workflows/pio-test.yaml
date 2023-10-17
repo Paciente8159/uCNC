@@ -1,4 +1,4 @@
-name: PlatformIO CI
+name: PlatformIO CI Tests
 
 on: [push]
 
