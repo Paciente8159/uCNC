@@ -48,7 +48,7 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: ${{matrix.boards}}
-        path: release/${{matrix.boards}}
+        path: ${{matrix.boards}}
     - name: Display structure of downloaded files
       run: ls -R
     - name: Create Release
@@ -68,6 +68,5 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: release/
         asset_name: ${{matrix.boards}}
         asset_content_type: application/zip
