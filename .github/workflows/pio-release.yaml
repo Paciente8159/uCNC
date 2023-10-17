@@ -48,27 +48,8 @@ jobs:
     - name: Download binaries
       uses: actions/download-artifact@v3
       with:
-        name: ${{matrix.boards}}.zip
+        name: ${{matrix.boards}}
         path: ./
     - name: Display structure of downloaded files
       run: ls -R
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: µCNC ${{ github.ref }}
-        draft: false
-        prerelease: false
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-        asset_path: ${{matrix.boards}}.zip
-        asset_name: ${{matrix.boards}}.zip
-        asset_content_type: application/zip
+    
