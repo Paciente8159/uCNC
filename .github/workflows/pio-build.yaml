@@ -1,6 +1,15 @@
 name: PlatformIO CI Builds
 
-on: [push]
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+  release:
+    types:
+    - published
 
 jobs:
   build:
@@ -42,3 +51,13 @@ jobs:
                 .pio/build/${{matrix.boards}}/*.bin
                 .pio/build/${{matrix.boards}}/*.hex
                 .pio/build/${{matrix.boards}}/*.uf2
+    - name: Upload binary ${{matrix.boards}}.zip to release
+      if: ${{ github.event_name == 'release' }}
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: uCNC-release.zip
+        asset_name: ${{matrix.boards}}.zip
+        asset_content_type: application/zip
