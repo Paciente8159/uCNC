@@ -1,0 +1,44 @@
+name: PlatformIO CI Builds
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false # Allow all machines to finish building
+      matrix:
+        boards: [bluepill_f103c8_clone, re_arm, arduinoZero, bluepill_f103c8, rpi_pico, mks_tinybee, rambo, ramps14mirror, rpi_pico_w, d1, arduinoM0, skr_v14_turbo, mks_gen_l_v1, mks_dlc32, x_controller, uno, blackpill_f411ce, blackpill_f401cc, skr_pro_v1_2, uno_shield_v3, mks_base_v13, ramps14, d1_r32, mks_robin_nano_v1_2, mks_dlc]
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache pip
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v3
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Run PlatformIO
+      run: pio run -e ${{matrix.boards}}
+    - name: Upload binaries
+      uses: actions/upload-artifact@v3
+      with:
+          name: ${{matrix.boards}}
+          path: |
+                .pio/build/${{matrix.boards}}/*.bin
+                .pio/build/${{matrix.boards}}/*.hex
+                .pio/build/${{matrix.boards}}/*.uf2
