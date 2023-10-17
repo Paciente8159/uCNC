@@ -6,6 +6,23 @@
 
 # Changelog
 
+## [1.7.6] - 17-10-2023
+
+### Changed
+
+- modified/reordered settings display in system menu (#515)
+- modified soft reset to improve software controller startup message detection (#531)
+- simplified override messages to reduce compilation size (#531)
+- modified system menu to fix warnings (#531)
+
+### Fixed
+
+- fixed USB infinite loop on flush call if unconnected (#511)
+- fixed RUN state clear after alarm while running (#520)
+- fixed pin status report function in command $P (#525)
+- fixed IO input and output macros for RP2040 (#526)
+
+
 ## [1.7.5] - 26-09-2023
 
 ### Added
@@ -1286,6 +1303,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.7.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.6
 [1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
 [1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
