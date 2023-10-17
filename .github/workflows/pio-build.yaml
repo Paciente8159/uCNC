@@ -51,6 +51,12 @@ jobs:
                 .pio/build/${{matrix.boards}}/*.bin
                 .pio/build/${{matrix.boards}}/*.hex
                 .pio/build/${{matrix.boards}}/*.uf2
+    - name: List dirs
+      run: ls -R
+    - name: Download artifacts
+      uses: actions/download-artifact@v3
+      with:
+          name: ${{matrix.boards}}
     - name: Upload binary ${{matrix.boards}}.zip to release
       if: ${{ github.event_name == 'release' }}
       uses: actions/upload-release-asset@v1
