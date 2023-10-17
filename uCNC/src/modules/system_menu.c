@@ -699,10 +699,10 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 			switch (override)
 			{
 			case 'f':
-				planner_feed_ovr_inc(FEED_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_FEED_INC_FINE);
 				break;
 			case 's':
-				planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_SPINDLE_INC_FINE);
 				break;
 			}
 			break;
@@ -710,10 +710,10 @@ static bool system_menu_action_overrides(uint8_t action, system_menu_item_t *ite
 			switch (override)
 			{
 			case 'f':
-				planner_feed_ovr_inc(-FEED_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_FEED_DEC_FINE);
 				break;
 			case 's':
-				planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+				cnc_call_rt_command(CMD_CODE_SPINDLE_DEC_FINE);
 				break;
 			}
 			break;

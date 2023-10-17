@@ -722,48 +722,37 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
-		int8_t ovr = 0;
-		if (command & RTCMD_NORMAL_MASK)
+		uint8_t ovr = g_planner_state.feed_override;
+		switch (command & RTCMD_NORMAL_MASK)
 		{
-			switch (command & RTCMD_NORMAL_MASK)
-			{
-			case RT_CMD_FEED_100:
-				planner_feed_ovr_reset();
-				break;
-			case RT_CMD_FEED_INC_COARSE:
-				ovr = FEED_OVR_COARSE;
-				break;
-			case RT_CMD_FEED_DEC_COARSE:
-				ovr = -FEED_OVR_COARSE;
-				break;
-			case RT_CMD_FEED_INC_FINE:
-				ovr = FEED_OVR_FINE;
-				break;
-			case RT_CMD_FEED_DEC_FINE:
-				ovr = -FEED_OVR_FINE;
-				break;
-			}
-			// if 0 does nothing
-			planner_feed_ovr_inc(ovr);
+		case RT_CMD_FEED_100:
+			planner_feed_ovr(100);
+			break;
+		case RT_CMD_FEED_INC_COARSE:
+			planner_feed_ovr(ovr + FEED_OVR_COARSE);
+			break;
+		case RT_CMD_FEED_DEC_COARSE:
+			planner_feed_ovr(ovr - FEED_OVR_COARSE);
+			break;
+		case RT_CMD_FEED_INC_FINE:
+			planner_feed_ovr(ovr + FEED_OVR_FINE);
+			break;
+		case RT_CMD_FEED_DEC_FINE:
+			planner_feed_ovr(ovr - FEED_OVR_FINE);
+			break;
 		}
 
-		if ((command & RTCMD_RAPID_MASK))
+		switch (command & RTCMD_RAPID_MASK)
 		{
-			// reset fast override by default
-			ovr = 100;
-			switch (command & RTCMD_RAPID_MASK)
-			{
-			// case RT_CMD_RAPIDFEED_100:
-			// 	ovr = 100;
-			// 	break;
-			case RT_CMD_RAPIDFEED_OVR1:
-				ovr = RAPID_FEED_OVR1;
-				break;
-			case RT_CMD_RAPIDFEED_OVR2:
-				ovr = RAPID_FEED_OVR2;
-				break;
-			}
-			planner_rapid_feed_ovr((uint8_t)ovr);
+		case RT_CMD_RAPIDFEED_100:
+			planner_rapid_feed_ovr(100);
+			break;
+		case RT_CMD_RAPIDFEED_OVR1:
+			planner_rapid_feed_ovr(RAPID_FEED_OVR1);
+			break;
+		case RT_CMD_RAPIDFEED_OVR2:
+			planner_rapid_feed_ovr(RAPID_FEED_OVR2);
+			break;
 		}
 	}
 
@@ -772,24 +761,25 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
-			planner_spindle_ovr_reset();
+			planner_spindle_ovr(100);
 			break;
 		case RT_CMD_SPINDLE_INC_COARSE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_DEC_COARSE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_INC_FINE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_DEC_FINE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_TOGGLE:
 			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
