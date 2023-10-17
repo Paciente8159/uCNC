@@ -517,6 +517,8 @@ void planner_sync_tools(motion_data_t *block_data)
 // overrides
 void planner_feed_ovr(uint8_t value)
 {
+	value = CLAMP(FEED_OVR_MIN, value, FEED_OVR_MAX);
+	
 	if (value != g_planner_state.feed_override)
 	{
 		g_planner_state.feed_override = value;
@@ -527,6 +529,8 @@ void planner_feed_ovr(uint8_t value)
 
 void planner_rapid_feed_ovr(uint8_t value)
 {
+	value = CLAMP(FEED_OVR_MIN, value, FEED_OVR_MAX);
+
 	if (g_planner_state.rapid_feed_override != value)
 	{
 		g_planner_state.rapid_feed_override = value;
@@ -538,14 +542,11 @@ void planner_rapid_feed_ovr(uint8_t value)
 #if TOOL_COUNT > 0
 void planner_spindle_ovr(uint8_t value)
 {
-	uint8_t ovr_val = g_planner_state.spindle_speed_override;
-	ovr_val += value;
-	ovr_val = MAX(ovr_val, SPINDLE_OVR_MIN);
-	ovr_val = MIN(ovr_val, SPINDLE_OVR_MAX);
+	value = CLAMP(SPINDLE_OVR_MIN, value, SPINDLE_OVR_MAX);
 
-	if (ovr_val != g_planner_state.spindle_speed_override)
+	if (value != g_planner_state.spindle_speed_override)
 	{
-		g_planner_state.spindle_speed_override = ovr_val;
+		g_planner_state.spindle_speed_override = value;
 		g_planner_state.ovr_counter = 0;
 	}
 }
