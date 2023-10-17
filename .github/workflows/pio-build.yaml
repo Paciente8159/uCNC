@@ -48,3 +48,10 @@ jobs:
                 .pio/build/${{matrix.boards}}/*.bin
                 .pio/build/${{matrix.boards}}/*.hex
                 .pio/build/${{matrix.boards}}/*.uf2
+    - name: Download binaries
+      uses: actions/download-artifact@v3
+      with:
+        name: ${{matrix.boards}}
+        path: ./
+    - name: Display structure of downloaded files
+      run: ls -R
