@@ -6,13 +6,29 @@ on:
     - 'v*'
 
 jobs:
-  build:
+  create_release:
+    name: Create release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: µCNC ${{ github.ref }}
+          draft: false
+          prerelease: false
+          
+  build_release:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false # Allow all machines to finish building
       matrix:
         boards: [bluepill_f103c8_clone, re_arm, arduinoZero, bluepill_f103c8, rpi_pico, mks_tinybee, rambo, ramps14mirror, rpi_pico_w, d1, arduinoM0, skr_v14_turbo, mks_gen_l_v1, mks_dlc32, x_controller, uno, blackpill_f411ce, blackpill_f401cc, skr_pro_v1_2, uno_shield_v3, mks_base_v13, ramps14, d1_r32, mks_robin_nano_v1_2, mks_dlc]
-    
     steps:
     - uses: actions/checkout@v4
     - name: Cache pip
@@ -46,16 +62,6 @@ jobs:
           path: ./${{matrix.boards}}.zip
     - name: Display structure of downloaded files
       run: ls -R
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: µCNC ${{ github.ref }}
-        draft: false
-        prerelease: false
     - name: Upload Release Asset
       id: upload-release-asset 
       uses: actions/upload-release-asset@v1
