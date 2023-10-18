@@ -8,6 +8,8 @@ _µCNC for ESP32 can be built this way_
 4. Edit ```cnc_config.h file``` and ```cnc_hal_config.h file``` to fit your needs and board.
 5. If needed edit the platformio.ini file environment for your board. Compile the sketch and upload it to your board.
 
+ESP32 on PlatformIO now prevents 2 flavors of the same souce code. The normal Arduino compilation and a version using ESPIDF and Arduino as a component. This second version adds an optimizations to timer ISR that make step generation smoother in particular using 74HC595 IO extension. It's possible to also make changes to build more performant code if for example you want to compile code with only WiFi or Bluetooth, by tweaking the options on the ```sdkconfig.deafults``` file.
+
 **Note** ESP32 boards build environments are available in two flavors. Regular Arduino and an ESPIDF with Arduino as a component that has some optimized options for low latency timer ISR. 
 
 ## Method two - Arduino IDE (easiest)

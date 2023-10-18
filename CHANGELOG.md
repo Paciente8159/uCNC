@@ -15,6 +15,7 @@
 - added status report extender callcack  (#454)
 - added Plasma THC velocity anti-dive (#456)
 - added initial Scara Kinematics (#460)
+- added ESP32 optional optimized compilation using ESPIDF and Arduino as a component
 
 ### Changed
 
