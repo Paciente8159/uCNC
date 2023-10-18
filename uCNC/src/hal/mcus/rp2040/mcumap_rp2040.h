@@ -1105,8 +1105,10 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
@@ -1147,7 +1149,7 @@ extern "C"
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
 #define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

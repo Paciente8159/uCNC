@@ -48,6 +48,7 @@ WEAK_EVENT_HANDLER(protocol_send_gcode_modes)
 static void protocol_send_newline(void)
 {
 	protocol_send_string(MSG_EOL);
+	serial_broadcast(false);
 }
 
 void protocol_send_ok(void)
@@ -65,6 +66,7 @@ void protocol_send_error(uint8_t error)
 
 void protocol_send_alarm(int8_t alarm)
 {
+	serial_broadcast(true);
 	protocol_send_string(MSG_ALARM);
 	serial_print_int(alarm);
 	protocol_send_newline();
@@ -72,19 +74,21 @@ void protocol_send_alarm(int8_t alarm)
 
 void protocol_send_string(const char *__s)
 {
-	unsigned char c = (unsigned char)rom_strptr(__s++);
+	uint8_t c = (uint8_t)rom_strptr(__s++);
 	do
 	{
 		serial_putc(c);
-		c = (unsigned char)rom_strptr(__s++);
+		c = (uint8_t)rom_strptr(__s++);
 	} while (c != 0);
 }
 
 void protocol_send_feedback(const char *__s)
 {
+	serial_broadcast(true);
 	protocol_send_string(MSG_START);
 	protocol_send_string(__s);
-	protocol_send_string(MSG_END);
+	serial_putc(']');
+	protocol_send_newline();
 }
 
 void protocol_send_ip(uint32_t ip)
@@ -125,6 +129,23 @@ static uint8_t protocol_get_tools(void)
 	}
 #endif
 	return coolant;
+}
+
+WEAK_EVENT_HANDLER(protocol_send_status)
+{
+	// custom handler
+	protocol_send_status_delegate_event_t *ptr = protocol_send_status_event;
+	while (ptr != NULL)
+	{
+		if (ptr->fptr != NULL)
+		{
+			serial_putc('|');
+			ptr->fptr(args);
+		}
+		ptr = ptr->next;
+	}
+
+	return EVENT_CONTINUE;
 }
 
 static void protocol_send_status_tail(void)
@@ -183,6 +204,8 @@ void protocol_send_status(void)
 	{
 		return;
 	}
+
+	serial_broadcast(true);
 
 	float axis[MAX(AXIS_COUNT, 3)];
 
@@ -338,32 +361,36 @@ void protocol_send_status(void)
 			serial_putc('P');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_X_MASK))
+		if (CHECKFLAG(limits, LINACT0_LIMIT_MASK))
 		{
 			serial_putc('X');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Y_MASK))
+		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
+#if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+			serial_putc('Z');
+#else
 			serial_putc('Y');
+#endif
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Z_MASK))
+		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
 		{
 			serial_putc('Z');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_A_MASK))
+		if (CHECKFLAG(limits, LINACT3_LIMIT_MASK))
 		{
 			serial_putc('A');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_B_MASK))
+		if (CHECKFLAG(limits, LINACT4_LIMIT_MASK))
 		{
 			serial_putc('B');
 		}
 
-		if (CHECKFLAG(limits, LIMIT_C_MASK))
+		if (CHECKFLAG(limits, LINACT5_LIMIT_MASK))
 		{
 			serial_putc('C');
 		}
@@ -371,12 +398,14 @@ void protocol_send_status(void)
 
 	protocol_send_status_tail();
 
+	EVENT_INVOKE(protocol_send_status, NULL);
+
 	if ((g_settings.status_report_mask & 2))
 	{
 		protocol_send_string(MSG_STATUS_BUF);
 		serial_print_int((uint32_t)planner_get_buffer_freeblocks());
 		serial_putc(',');
-		serial_print_int((uint32_t)serial_get_rx_freebytes());
+		serial_print_int((uint32_t)serial_freebytes());
 	}
 
 	serial_putc('>');
@@ -450,7 +479,7 @@ void protocol_send_probe_result(uint8_t val)
 	protocol_send_newline();
 }
 
-static void protocol_send_parser_modalstate(unsigned char word, uint8_t val, uint8_t mantissa)
+static void protocol_send_parser_modalstate(uint8_t word, uint8_t val, uint8_t mantissa)
 {
 	serial_putc(word);
 	serial_print_int(val);
@@ -471,6 +500,8 @@ void protocol_send_gcode_modes(void)
 	uint8_t coolant;
 
 	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
+
+	serial_broadcast(true);
 
 	protocol_send_string(__romstr__("[GC:"));
 
@@ -533,7 +564,7 @@ void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t val
 	protocol_send_newline();
 }
 
-static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
+void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value)
 {
 	serial_putc('$');
 	serial_print_int(setting);
@@ -545,7 +576,7 @@ static void protocol_send_gcode_setting_line_flt(uint8_t setting, float value)
 void protocol_send_start_blocks(void)
 {
 	protocol_busy = true;
-	unsigned char c = 0;
+	uint8_t c = 0;
 	uint16_t address = STARTUP_BLOCK0_ADDRESS_OFFSET;
 	protocol_send_string(__romstr__("$N0="));
 	for (;;)
@@ -604,6 +635,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(11, g_settings.g64_angle_factor);
 	protocol_send_gcode_setting_line_flt(12, g_settings.arc_tolerance);
 	protocol_send_gcode_setting_line_int(13, g_settings.report_inches);
+#if S_CURVE_ACCELERATION_LEVEL == -1
+	protocol_send_gcode_setting_line_int(14, g_settings.s_curve_profile);
+#endif
 	protocol_send_gcode_setting_line_int(20, g_settings.soft_limits_enabled);
 	protocol_send_gcode_setting_line_int(21, g_settings.hard_limits_enabled);
 	protocol_send_gcode_setting_line_int(22, g_settings.homing_enabled);
@@ -614,6 +648,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(27, g_settings.homing_offset);
 #if (KINEMATIC == KINEMATIC_DELTA)
 	protocol_send_gcode_setting_line_flt(28, g_settings.delta_bicep_homing_angle);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	protocol_send_gcode_setting_line_flt(28, g_settings.scara_arm_homing_angle);
+	protocol_send_gcode_setting_line_flt(29, g_settings.scara_forearm_homing_angle);
 #endif
 	protocol_send_gcode_setting_line_int(30, g_settings.spindle_max_rpm);
 	protocol_send_gcode_setting_line_int(31, g_settings.spindle_min_rpm);
@@ -630,15 +667,6 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(38, g_settings.skew_xz_factor);
 	protocol_send_gcode_setting_line_flt(39, g_settings.skew_yz_factor);
 #endif
-#endif
-
-#if PID_CONTROLLERS > 0
-	for (uint8_t i = 0; i < PID_CONTROLLERS; i++)
-	{
-		protocol_send_gcode_setting_line_flt(40 + 4 * i, g_settings.pid_gain[i][0]);
-		protocol_send_gcode_setting_line_flt(41 + 4 * i, g_settings.pid_gain[i][1]);
-		protocol_send_gcode_setting_line_flt(42 + 4 * i, g_settings.pid_gain[i][2]);
-	}
 #endif
 
 #if TOOL_COUNT > 0
@@ -663,6 +691,9 @@ void protocol_send_cnc_settings(void)
 	protocol_send_gcode_setting_line_flt(107, g_settings.delta_effector_radius);
 	protocol_send_gcode_setting_line_flt(108, g_settings.delta_bicep_length);
 	protocol_send_gcode_setting_line_flt(109, g_settings.delta_forearm_length);
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	protocol_send_gcode_setting_line_flt(106, g_settings.scara_arm_length);
+	protocol_send_gcode_setting_line_flt(107, g_settings.scara_forearm_length);
 #endif
 
 	for (uint8_t i = 0; i < AXIS_COUNT; i++)
@@ -699,7 +730,7 @@ void protocol_send_pins_states(void)
 	protocol_busy = true;
 	for (uint8_t i = 0; i < (DIN_PINS_OFFSET + 32); i++)
 	{
-		i = (i!=(DOUT_PINS_OFFSET + 32)) ? i : 100;
+		i = (i != (DOUT_PINS_OFFSET + 32)) ? i : 100;
 		int16_t val = io_get_pinvalue(i);
 		if (val >= 0)
 		{
@@ -785,16 +816,10 @@ void protocol_send_pins_states(void)
 #define BRESENHAM_INFO ""
 #endif
 
-#ifdef ENABLE_S_CURVE_ACCELERATION
-#define DYNACCEL_INFO "S,"
+#if S_CURVE_ACCELERATION_LEVEL != 0
+#define DYNACCEL_INFO "S" STRGIFY(S_CURVE_ACCELERATION_LEVEL) ","
 #else
 #define DYNACCEL_INFO ""
-#endif
-
-#ifndef USE_LEGACY_STEP_INTERPOLATOR
-#define ACCELALG_INFO "NI,"
-#else
-#define ACCELALG_INFO ""
 #endif
 
 #ifdef INVERT_EMERGENCY_STOP
@@ -890,7 +915,7 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO ACCELALG_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
 #define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)

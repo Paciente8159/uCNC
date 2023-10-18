@@ -64,7 +64,7 @@ extern "C"
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
-#define __romarr__ const char
+#define __romarr__ const uint8_t
 #define rom_strptr *
 #define rom_strcpy strcpy
 #define rom_strncpy strncpy
@@ -2980,8 +2980,10 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #endif
 #endif
 
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS

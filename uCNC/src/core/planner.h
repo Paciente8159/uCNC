@@ -30,7 +30,7 @@ extern "C"
 #include <stdbool.h>
 
 #ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 30
+#define PLANNER_BUFFER_SIZE 20
 #endif
 
 #define PLANNER_MOTION_EXACT_PATH 32 // default (not used)
@@ -107,6 +107,13 @@ extern "C"
 #endif
 
 	uint8_t planner_get_buffer_freeblocks();
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// creates a full copy of the planner state
+	void planner_store(void);
+	// restores the planner to it's previous saved state
+	void planner_restore(void);
+#endif
 
 #ifdef __cplusplus
 }

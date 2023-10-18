@@ -4523,8 +4523,10 @@ extern "C"
 #define PCINT2_MASK (PCINT2_LIMITS_MASK | PCINT2_CONTROLS_MASK | PROBE_ISR2 | PCINT2_DIN_IO_MASK)
 
 // Indirect macro access
-#define __indirect__ex__(X, Y) (DIO##X##_##Y)
+#ifndef __indirect__
+#define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
@@ -4617,11 +4619,11 @@ extern "C"
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
 #define mcu_get_analog(diopin)                          \
 	{                                                   \
-		ADMUX = (0x60 | __indirect__(diopin, CHANNEL)); \
+		ADMUX = (0x00 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
 			;                                           \
-		ADCH;                                           \
+		(0x3FF & ((ADCH << 8) | ADCL));                 \
 	}
 
 #ifdef PROBE_ISR

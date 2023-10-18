@@ -32,6 +32,7 @@ extern "C"
 	void protocol_send_error(uint8_t error);
 	void protocol_send_alarm(int8_t alarm);
 	void protocol_send_status(void);
+	DECL_EVENT_HANDLER(protocol_send_status);
 	void protocol_send_string(const char *__s);
 	void protocol_send_feedback(const char *__s);
 	void protocol_send_probe_result(uint8_t val);
@@ -40,6 +41,7 @@ extern "C"
 	void protocol_send_cnc_settings(void);
 	void protocol_send_start_blocks(void);
 	void protocol_send_gcode_setting_line_int(setting_offset_t setting, uint16_t value);
+	void protocol_send_gcode_setting_line_flt(setting_offset_t setting, float value);
 #ifdef ENABLE_WIFI
 	void protocol_send_ip(uint32_t ip);
 #endif

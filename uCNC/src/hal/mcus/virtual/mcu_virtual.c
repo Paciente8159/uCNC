@@ -7,8 +7,8 @@
 				void itp_step_isr();
 				void itp_step_reset_isr();
 			serial.h
-				void serial_rx_isr(char c);
-				char serial_tx_isr();
+				void serial_rx_isr(uint8_t c);
+				uint8_t serial_tx_isr();
 			trigger_control.h
 				void dio_limits_isr(uint8_t limits);
 				void io_controls_isr(uint8_t controls);
@@ -241,7 +241,7 @@ void ioserver(void *args)
 			// Send a message to the pipe server.
 
 			cbToWrite = sizeof(VIRTUAL_MAP);
-			char lpvMessage[sizeof(VIRTUAL_MAP)];
+			uint8_t lpvMessage[sizeof(VIRTUAL_MAP)];
 			do
 			{
 				memcpy(lpvMessage, &virtualmap, sizeof(VIRTUAL_MAP));
@@ -309,11 +309,12 @@ void ioserver(void *args)
  * Comunications can be done via sockets or serial port
  * */
 HANDLE rxReady, rxThread;
+HANDLE txReady, txThread;
 HANDLE txReady, txThread, txFree;
 HANDLE bufferMutex;
 HANDLE bufferMutexDone;
-char com_buffer[256];
-char mcu_tx_buffer[256];
+uint8_t com_buffer[256];
+uint8_t mcu_tx_buffer[256];
 volatile bool mcu_tx_empty;
 volatile bool mcu_tx_enabled;
 
@@ -332,7 +333,7 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 	struct addrinfo hints;
 
 	int iSendResult;
-	char recvbuf[256];
+	uint8_t recvbuf[256];
 	int recvbuflen = 256;
 
 	// Initialize Winsock
@@ -450,13 +451,12 @@ DWORD WINAPI socketserver(LPVOID lpParam)
 void socketclient(void)
 {
 	DWORD dwWaitResult;
-	char buffer[256];
+	uint8_t buffer[256];
 	int iSendResult;
 	int iResult;
 
 	while (1)
 	{
-		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
@@ -506,8 +506,8 @@ void socketclient(void)
 
 #ifdef USESERIAL
 volatile HANDLE hComm = NULL;
-unsigned char ComPortName[] = "\\\\.\\" str(WIN_COM_NAME);
-unsigned char ComParams[] = "baud=" str(BAUDRATE) " parity=N data=8 stop=1";
+uint8_t ComPortName[] = "\\\\.\\" str(WIN_COM_NAME);
+uint8_t ComParams[] = "baud=" str(BAUDRATE) " parity=N data=8 stop=1";
 
 DWORD WINAPI virtualserialserver(LPVOID lpParam)
 {
@@ -598,7 +598,7 @@ DWORD WINAPI virtualserialserver(LPVOID lpParam)
 				// Status event is stored in the event flag
 				// specified in the original WaitCommEvent call.
 				// Deal with the status event as appropriate.
-				char recvbuf[256];
+				uint8_t recvbuf[256];
 				int recvbuflen = 256;
 				DWORD dwRead = 0;
 				switch (dwCommEvent)
@@ -647,7 +647,7 @@ void virtualserialclient(void)
 {
 	DWORD dwWaitResult;
 	OVERLAPPED osWrite = {0};
-	char buffer[256];
+	uint8_t buffer[256];
 	int iSendResult;
 	int iResult;
 
@@ -655,7 +655,6 @@ void virtualserialclient(void)
 
 	while (1)
 	{
-		SetEvent(txFree);
 		dwWaitResult = WaitForSingleObject(
 			txReady,   // event handle
 			INFINITE); // indefinite wait
@@ -681,7 +680,6 @@ void virtualserialclient(void)
 						fprintf(stderr, "Error %d in Writing to Serial Port", (int)GetLastError());
 					}
 				}
-				memset(com_buffer, 0, 256);
 				break;
 
 			// The thread got ownership of an abandoned mutex
@@ -707,7 +705,8 @@ void virtualserialclient(void)
 #endif
 
 #ifdef USECONSOLE
-
+DECL_BUFFER(uint8_t, uart_rx, 128);
+DECL_BUFFER(uint8_t, uart_tx, 64);
 DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 {
 	WSADATA wsaData;
@@ -719,7 +718,7 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 	struct addrinfo hints;
 
 	int iSendResult;
-	char recvbuf[256];
+	uint8_t recvbuf[256];
 	int recvbuflen = 256;
 
 	memset(recvbuf, 0, sizeof(recvbuf));
@@ -727,39 +726,19 @@ DWORD WINAPI virtualconsoleserver(LPVOID lpParam)
 	// Receive until the peer shuts down the connection
 	do
 	{
-		unsigned char c = getchar();
+		uint8_t c = getchar();
 		switch (c)
 		{
-			//		 case '"':
-			//		 	virtualmap.special_inputs ^= (1 << (ESTOP - LIMIT_X));
-			//		 	mcu_controls_changed_cb();
-			//		 	break;
-			//		 case '%':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_X - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '&':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Y - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			//		 case '/':
-			//		 	virtualmap.special_inputs ^= (1 << (LIMIT_Z - LIMIT_X));
-			//		 	mcu_limits_changed_cb();
-			//		 	break;
-			// case '[':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_X2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case ']':
-			// 	virtualmap.special_inputs ^= (1 << (LIMIT_Y2 - LIMIT_X));
-			// 	mcu_limits_changed_cb();
-			// 	break;
-			// case '}':
-			// 	virtualmap.special_inputs ^= (1 << (SAFETY_DOOR - LIMIT_X));
-			// 	mcu_controls_changed_cb();
-			// 	break;
 		default:
-			mcu_com_rx_cb(c);
+			if (mcu_com_rx_cb(c))
+			{
+				if (BUFFER_FULL(uart_rx))
+				{
+					c = OVF;
+				}
+
+				BUFFER_ENQUEUE(uart_rx, &c);
+			}
 			break;
 		}
 
@@ -994,7 +973,7 @@ volatile unsigned long *pulse_counter_ptr;
 volatile unsigned long integrator_counter = 0;
 volatile bool pulse_enabled = false;
 volatile bool send_char = false;
-volatile unsigned char uart_char;
+volatile uint8_t uart_char;
 
 uint8_t pwms[16];
 
@@ -1004,7 +983,7 @@ pthread_t thread_idout;
 pthread_t thread_timer_id;
 pthread_t thread_step_id;
 
-void mcu_rx_isr(unsigned char c)
+void mcu_rx_isr(uint8_t c)
 {
 	if (c)
 	{
@@ -1026,7 +1005,7 @@ void mcu_tx_isr(void)
 //  #else
 //  	for (;;)
 //  	{
-//  		unsigned char c = getch();
+//  		uint8_t c = getch();
 //  		if (c != 0)
 //  		{
 //  			uart_char = c;
@@ -1154,7 +1133,7 @@ void ticksimul(void)
 	{
 
 		// FILE *infile = fopen("inputs.txt", "r");
-		// char inputs[255];
+		// uint8_t inputs[255];
 
 		// if (infile != NULL) //checks input file
 		// {
@@ -1269,21 +1248,21 @@ void mcu_start_timeout()
 
 uint8_t mcu_get_pin_offset(uint8_t pin)
 {
-	if (pin >= STEP0 && pin <= STEP7_EN)
+	if (pin >= 1 && pin <= 24)
 	{
-		return pin;
+		return pin - 1;
 	}
-	else if (pin >= DOUT_PINS_OFFSET && pin <= (DOUT_PINS_OFFSET + 32))
+	else if (pin >= 47 && pin <= 78)
 	{
-		return pin - DOUT0;
+		return pin - 47;
 	}
-	if (pin >= 100 && pin < ANALOG_PINS_OFFSET)
+	if (pin >= 100 && pin <= 113)
 	{
-		return pin - LIMIT_X;
+		return pin - 100;
 	}
-	else if (pin >= DIN_PINS_OFFSET && pin <= (DIN_PINS_OFFSET + 32))
+	else if (pin >= 130 && pin <= 161)
 	{
-		return pin - DIN0;
+		return pin - 130;
 	}
 
 	return -1;
@@ -1410,7 +1389,7 @@ void mcu_toggle_output(uint8_t pin)
 	}
 }
 
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	channel -= ANALOG0;
 	return virtualmap.analog[channel];
@@ -1461,28 +1440,60 @@ bool mcu_tx_ready(void)
 	return mcu_tx_empty;
 }
 
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, uart, UART_TX_BUFFER_SIZE);
+uint8_t mcu_uart_getc()
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(uart_rx, &c);
+	
+	return c;
+}
+
+uint8_t mcu_uart_available(void)
+{
+	return BUFFER_READ_AVAILABLE(uart_rx);
+}
+
+void mcu_uart_clear(void)
+{
+	BUFFER_CLEAR(uart_rx);
+}
+
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart))
+	while (BUFFER_FULL(uart_tx))
 	{
 		mcu_uart_flush();
 	}
-	BUFFER_ENQUEUE(uart, &c);
-	// putchar(c);
-}
-void mcu_uart_flush(void)
-{
-	char buff[UART_TX_BUFFER_SIZE];
-	uint8_t i = BUFFER_READ_AVAILABLE(uart);
-	BUFFER_READ(uart, buff, UART_TX_BUFFER_SIZE, i);
-	com_send(buff, i);
+	BUFFER_ENQUEUE(uart_tx, &c);
 }
 
-// void mcu_putc(char c)
+void mcu_uart_flush(void)
+{
+	uint8_t buff[64];
+	int len = 0;
+	BUFFER_READ(uart_tx, buff, 64, len);
+	com_send(buff, len);
+#if ASSERT_PIN(ACTIVITY_LED)
+	io_toggle_output(ACTIVITY_LED);
+#endif
+}
+
+// void mcu_uart_putc(uint8_t c)
+// {
+// 	// #ifdef ENABLE_SYNC_TX
+// 	// 	com_send(c, 1);
+// 	// 	#endif
+// 	putchar(c);
+// }
+// void mcu_uart_flush(void)
+// {
+// 	// #ifndef ENABLE_SYNC_TX
+// 	// uint8_t i = (mcu_com_tx_buffer_write < TX_BUFFER_HALF) ? 0 : TX_BUFFER_HALF;
+// 	// com_send(&mcu_com_tx_buffer[i], strlen(&mcu_com_tx_buffer[i]));
+// 	// #endif
+// }
+
+// void mcu_putc(uint8_t c)
 //{
 //	static int buff_index = 0;
 //	if (c != 0)
@@ -1504,36 +1515,36 @@ void mcu_uart_flush(void)
 //	mcu_tx_enabled = true;
 // }
 
-char mcu_getc(void)
-{
-	char c = 0;
-	if (g_mcu_buffertail != g_mcu_bufferhead)
-	{
-		c = g_mcu_combuffer[g_mcu_buffertail];
-		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
-		{
-			g_mcu_buffertail = 0;
-		}
-
-		if (c == '\n')
-		{
-			g_mcu_buffercount--;
-		}
-	}
-
-	return c;
-}
-
-char mcu_peek(void)
-{
-	if (g_mcu_buffercount == 0)
-		return 0;
-	return g_mcu_combuffer[g_mcu_buffertail];
-}
+//uint8_t mcu_getc(void)
+//{
+//	uint8_t c = 0;
+//	if (g_mcu_buffertail != g_mcu_bufferhead)
+//	{
+//		c = g_mcu_combuffer[g_mcu_buffertail];
+//		if (++g_mcu_buffertail == COM_BUFFER_SIZE)
+//		{
+//			g_mcu_buffertail = 0;
+//		}
+//
+//		if (c == '\n')
+//		{
+//			g_mcu_buffercount--;
+//		}
+//	}
+//
+//	return c;
+//}
+//
+//uint8_t mcu_peek(void)
+//{
+//	if (g_mcu_buffercount == 0)
+//		return 0;
+//	return g_mcu_combuffer[g_mcu_buffertail];
+//}
 
 void mcu_bufferClear(void)
 {
-	memset(&g_mcu_combuffer, 0, sizeof(char) * COM_BUFFER_SIZE);
+	memset(&g_mcu_combuffer, 0, sizeof(uint8_t) * COM_BUFFER_SIZE);
 	g_mcu_buffertail = 0;
 	g_mcu_bufferhead = 0;
 }
@@ -1541,10 +1552,7 @@ void mcu_bufferClear(void)
 // RealTime
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *tick_reps)
 {
-	if (frequency < F_STEP_MIN)
-		frequency = F_STEP_MIN;
-	if (frequency > F_STEP_MAX)
-		frequency = F_STEP_MAX;
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 
 	*ticks = (uint16_t)floorf((F_CPU / frequency));
 	*tick_reps = 1;
@@ -1589,10 +1597,10 @@ void mcu_stop_itp_isr(void)
 	pulse_enabled = false;
 }
 
-void mcu_printfp(const char *__fmt, ...)
+void mcu_printfp(const uint8_t *__fmt, ...)
 {
-	char buffer[50];
-	char *newfmt = strcpy((char *)&buffer, __fmt);
+	uint8_t buffer[50];
+	uint8_t *newfmt = strcpy((uint8_t *)&buffer, __fmt);
 	va_list __ap;
 	va_start(__ap, __fmt);
 	vprintf(newfmt, __ap);
@@ -1610,18 +1618,18 @@ void virtual_delay_us(uint16_t delay)
 	} while (elapsed < delay);
 }
 
-void mcu_loadDummyPayload(const char *__fmt, ...)
+void mcu_loadDummyPayload(const uint8_t *__fmt, ...)
 {
-	char buffer[30];
-	char payload[50];
-	char *newfmt = strcpy((char *)&buffer, __fmt);
+	uint8_t buffer[30];
+	uint8_t payload[50];
+	uint8_t *newfmt = strcpy((uint8_t *)&buffer, __fmt);
 	va_list __ap;
 	va_start(__ap, __fmt);
-	vsprintf((char *)&payload, newfmt, __ap);
+	vsprintf((uint8_t *)&payload, newfmt, __ap);
 	va_end(__ap);
 	g_mcu_bufferhead = strlen(payload);
 	memset(&g_mcu_combuffer, 0, g_mcu_bufferhead);
-	strcpy((char *)&g_mcu_combuffer, payload);
+	strcpy((uint8_t *)&g_mcu_combuffer, payload);
 	g_mcu_buffertail = 0;
 	g_mcu_buffercount++;
 }

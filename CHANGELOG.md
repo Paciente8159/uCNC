@@ -6,6 +6,47 @@
 
 # Changelog
 
+# Changelog
+
+## [1.8.0] - 18-10-2023
+
+### Added
+
+- added status report extender callcack  (#454)
+- added Plasma THC velocity anti-dive (#456)
+- added initial Scara Kinematics (#460)
+- added ESP32 optional optimized compilation using ESPIDF and Arduino as a component
+
+### Changed
+
+- unified interpolator run function and new S-Curve acceleration profiles (#458)
+- implemented Plasma THC status report callback (#454)
+- plasma THC tool update via PID callback (#453)
+- configurable S curve patterns (#459)
+- moved custom MCodes to laser ppi compilation unit (#464)
+- added new RT Hooks inside interpolator step ITP, to be used by laser PPI and G33 (#464)
+- moved all ESP32 I2S IO update calls to core0 (#485)
+- added frequency clamp to step to frequency functions (#485)
+- complete redesign of multiaxis system (#477)
+- new autolevel with multi axis config (#477)
+- fixed ITP for multi step linear actuators (#477)
+- modified homing and added support for multi axis homing in parallel (#477)
+- integrated backlash filtering in the rt segment flags (#477)
+- modified cnc delay to run dotasks instead of only io_dotasks (#513)
+- prevent re-entrant code inside dotasks events (#513)
+- redesign the main loop tasks to prevent re-entrant code on the event callbacks (#513)
+- force interlocking check before getting the alarm to force alarm code refresh if alarm condition is triggered by ISR (#513)
+- fixed scara kinematics code to match new multi axis (#513)
+- complete redesign of the serial communication to deal with multi-stream/sources and allow future expansions (#529)
+
+### Fixed
+
+- step output generation from beta (#457)
+- fixed tool helper macros (#468)
+- fixed bug in skew compensation (#476)
+- fixed 74HC595 concurrency race (#478)
+- fixed hold issue on version1.8 that keeps generating steps until the end of the motion (#489)
+
 ## [1.7.6] - 17-10-2023
 
 ### Changed
@@ -21,6 +62,7 @@
 - fixed RUN state clear after alarm while running (#520)
 - fixed pin status report function in command $P (#525)
 - fixed IO input and output macros for RP2040 (#526)
+- fixed RP2040 input change ISR macro (#526)
 
 
 ## [1.7.5] - 26-09-2023
@@ -56,6 +98,23 @@
 
 - fixed skew compensation not accepts negative values (#472)
 - fixed skew compensation error accumulation over motions (#474)
+
+## [1.8.0-beta] - 20-07-2023
+
+### Added
+
+- new IO HAL that simplifies io control and calls (#443)
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions (#432)
+- added realtime modification of step and dir bits to be executed in the fly (#447)
+- added new tool for plasma THC (#447)
+- added debugging parsing execution time option (#452)
+- added new step/dir output condition filter that prevents motion based on condition assert (#451)
+- new set of macros that allow quick custom settings prototyping (#449)
+
+### Changed
+
+- all analog inputs were modified from 8bit resolution to 10bit  (#450)
+- complete redesign of PID module and modified tools functions to make use of PID update loop (#449)
 
 ## [1.7.3] - 15-07-2023
 
@@ -1303,9 +1362,11 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0
 [1.7.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.6
 [1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
 [1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
+[1.8.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-beta
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1

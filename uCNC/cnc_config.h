@@ -102,6 +102,13 @@ extern "C"
 	// #define ECHO_CMD
 
 	/**
+	 * Debug command parsing time
+	 * Uncomment to enable. This measures the time it takes to execute a command line and place it in the planner
+	 * */
+
+	// #define ENABLE_PARSING_TIME_DEBUG
+
+	/**
 	 * Override default configuration settings. Use _PER_AXIS parameters to
 	 * define different settings for each axis.
 	 */
@@ -204,6 +211,13 @@ extern "C"
 // #define DEFAULT_LASER_PPI_USWIDTH 1500
 
 /**
+ *
+ * Enables Plasma THC capabilities
+ *
+ * **/
+//  #define ENABLE_PLASMA_THC
+
+/**
  * Feed overrides increments and percentage ranges
  * */
 #define FEED_OVR_MAX 200
@@ -289,8 +303,14 @@ extern "C"
 	/**
 	 * enable step counting on sync motion command (needed for some Gcode extensions like G33)
 	 * */
-
 	// #define ENABLE_RT_SYNC_MOTIONS
+
+	/**
+	 * enable motion control and planner highjacking
+	 * this unlocks funtions to perform a full planner copy and restore
+	 * this requires some memory since the full planned contents must be stored and also the motion control reference position
+	 * */
+	// #define ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
 
 	/**
 	 * Uncomment to enable module extensions
@@ -299,7 +319,13 @@ extern "C"
 // #define ENABLE_IO_MODULES
 // #define ENABLE_PARSER_MODULES
 // #define ENABLE_MOTION_CONTROL_MODULES
-// #define ENABLE_SETTINGS_MODULES
+
+	/**
+	 * Settings extensions are enabled by default
+	 * Uncomment to disable this extension.
+	 * Some option might override this (like ENABLE_TOOL_PID_CONTROLLER)
+	 * */
+// #define DISABLE_SETTINGS_MODULES
 
 /**
  * Report specific options
@@ -426,18 +452,17 @@ extern "C"
 	 * with rounded speed transition between accel/deaccel and constant speed)
 	 * instead of constant acceleration (trapezoidal speed profile)
 	 *
+	 * -1 - selectable via setting $14
+	 *  0 - disabled
+	 *  1 - mild profile (smaller mid slope and higher initial and exit slopes)
+	 *  2 - medium profile (medium mid slope and medium initial and exit slopes)
+	 *  3 - stron profile (high mid slope and medium initial and exit slopes)
+	 *  4 - agressive (higher mid slope and smaller initial and exit slopes - uses bezier 5th order)
+	 *  5 - agressive2 (higher mid slope and smaller initial and exit slopes - uses tanh curve)
+	 *
 	 * */
 
-	// #define ENABLE_S_CURVE_ACCELERATION
-
-	/**
-	 * Enables legacy step interpolation generator (prior to version 1.4)
-	 * This runs a variable time window Riemman sum integrator (better performance).
-	 * S-Curve acceleration will disable this option
-	 * This produces option outputs code smaller size
-	 * */
-
-#define USE_LEGACY_STEP_INTERPOLATOR
+	#define S_CURVE_ACCELERATION_LEVEL 0
 
 	/**
 	 * Forces pin pooling for all limits and control pins (with or without

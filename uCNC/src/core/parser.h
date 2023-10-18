@@ -153,6 +153,7 @@ extern "C"
 // only used in canned cycles and splines for now
 // can overlap same memory position
 #define GCODE_WORD_Q GCODE_WORD_D
+#define GCODE_WORD_E GCODE_WORD_A
 
 #define GCODE_WORD_TOOL (1 << AXIS_TOOL)
 
@@ -286,15 +287,12 @@ extern "C"
 	void parser_machine_to_work(float *axis);
 	uint8_t parser_get_float(float *value);
 	uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
-#ifdef ENABLE_LASER_PPI
-	void parser_config_ppi(void);
-#endif
 
 #ifdef ENABLE_PARSER_MODULES
 	// generates a default delegate, event and handler hook
 	typedef struct gcode_parse_args_
 	{
-		unsigned char word;
+		uint8_t word;
 		uint8_t code;
 		uint8_t* error;
 		float value;
@@ -330,9 +328,9 @@ extern "C"
 	typedef struct grbl_cmd_args_
 	{
 		uint8_t *error;
-		unsigned char *cmd;
+		uint8_t *cmd;
 		uint8_t len;
-		char next_char;
+		uint8_t next_char;
 	} grbl_cmd_args_t;
 	DECL_EVENT_HANDLER(grbl_cmd);
 

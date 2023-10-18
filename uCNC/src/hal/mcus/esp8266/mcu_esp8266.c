@@ -73,210 +73,9 @@ static IRAM_ATTR void mcu_gen_oneshot(void)
 }
 #endif
 
-uint8_t esp8266_pwm[16];
 static IRAM_ATTR void mcu_gen_pwm(void)
 {
-	static uint8_t pwm_counter = 0;
-	// software PWM
-	if (++pwm_counter < 127)
-	{
-#if ASSERT_PIN(PWM0)
-		if (pwm_counter > esp8266_pwm[0])
-		{
-			mcu_clear_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (pwm_counter > esp8266_pwm[1])
-		{
-			mcu_clear_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (pwm_counter > esp8266_pwm[2])
-		{
-			mcu_clear_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (pwm_counter > esp8266_pwm[3])
-		{
-			mcu_clear_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (pwm_counter > esp8266_pwm[4])
-		{
-			mcu_clear_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (pwm_counter > esp8266_pwm[5])
-		{
-			mcu_clear_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (pwm_counter > esp8266_pwm[6])
-		{
-			mcu_clear_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (pwm_counter > esp8266_pwm[7])
-		{
-			mcu_clear_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (pwm_counter > esp8266_pwm[8])
-		{
-			mcu_clear_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (pwm_counter > esp8266_pwm[9])
-		{
-			mcu_clear_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (pwm_counter > esp8266_pwm[10])
-		{
-			mcu_clear_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (pwm_counter > esp8266_pwm[11])
-		{
-			mcu_clear_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (pwm_counter > esp8266_pwm[12])
-		{
-			mcu_clear_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (pwm_counter > esp8266_pwm[13])
-		{
-			mcu_clear_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (pwm_counter > esp8266_pwm[14])
-		{
-			mcu_clear_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (pwm_counter > esp8266_pwm[15])
-		{
-			mcu_clear_output(PWM15);
-		}
-#endif
-	}
-	else
-	{
-		pwm_counter = 0;
-#if ASSERT_PIN(PWM0)
-		if (esp8266_pwm[0])
-		{
-			mcu_set_output(PWM0);
-		}
-#endif
-#if ASSERT_PIN(PWM1)
-		if (esp8266_pwm[1])
-		{
-			mcu_set_output(PWM1);
-		}
-#endif
-#if ASSERT_PIN(PWM2)
-		if (esp8266_pwm[2])
-		{
-			mcu_set_output(PWM2);
-		}
-#endif
-#if ASSERT_PIN(PWM3)
-		if (esp8266_pwm[3])
-		{
-			mcu_set_output(PWM3);
-		}
-#endif
-#if ASSERT_PIN(PWM4)
-		if (esp8266_pwm[4])
-		{
-			mcu_set_output(PWM4);
-		}
-#endif
-#if ASSERT_PIN(PWM5)
-		if (esp8266_pwm[5])
-		{
-			mcu_set_output(PWM5);
-		}
-#endif
-#if ASSERT_PIN(PWM6)
-		if (esp8266_pwm[6])
-		{
-			mcu_set_output(PWM6);
-		}
-#endif
-#if ASSERT_PIN(PWM7)
-		if (esp8266_pwm[7])
-		{
-			mcu_set_output(PWM7);
-		}
-#endif
-#if ASSERT_PIN(PWM8)
-		if (esp8266_pwm[8])
-		{
-			mcu_set_output(PWM8);
-		}
-#endif
-#if ASSERT_PIN(PWM9)
-		if (esp8266_pwm[9])
-		{
-			mcu_set_output(PWM9);
-		}
-#endif
-#if ASSERT_PIN(PWM10)
-		if (esp8266_pwm[10])
-		{
-			mcu_set_output(PWM10);
-		}
-#endif
-#if ASSERT_PIN(PWM11)
-		if (esp8266_pwm[11])
-		{
-			mcu_set_output(PWM11);
-		}
-#endif
-#if ASSERT_PIN(PWM12)
-		if (esp8266_pwm[12])
-		{
-			mcu_set_output(PWM12);
-		}
-#endif
-#if ASSERT_PIN(PWM13)
-		if (esp8266_pwm[13])
-		{
-			mcu_set_output(PWM13);
-		}
-#endif
-#if ASSERT_PIN(PWM14)
-		if (esp8266_pwm[14])
-		{
-			mcu_set_output(PWM14);
-		}
-#endif
-#if ASSERT_PIN(PWM15)
-		if (esp8266_pwm[15])
-		{
-			mcu_set_output(PWM15);
-		}
-#endif
-	}
+	io_soft_pwm_update();
 }
 
 static uint32_t mcu_step_counter;
@@ -300,22 +99,22 @@ static IRAM_ATTR void mcu_gen_step(void)
 
 IRAM_ATTR void mcu_din_isr(void)
 {
-	io_inputs_isr();
+	mcu_inputs_changed_cb();
 }
 
 IRAM_ATTR void mcu_probe_isr(void)
 {
-	io_probe_isr();
+	mcu_probe_changed_cb();
 }
 
 IRAM_ATTR void mcu_limits_isr(void)
 {
-	io_limits_isr();
+	mcu_limits_changed_cb();
 }
 
 IRAM_ATTR void mcu_controls_isr(void)
 {
-	io_controls_isr();
+	mcu_controls_changed_cb();
 }
 
 IRAM_ATTR void mcu_rtc_isr(void *arg)
@@ -355,7 +154,7 @@ IRAM_ATTR void mcu_itp_isr(void)
 // 		CLEAR_PERI_REG_MASK(UART_INT_ENA(0), UART_RXFIFO_FULL_INT_ENA | UART_RXFIFO_TOUT_INT_ENA);
 // 		WRITE_PERI_REG(UART_INT_CLR(0), (READ_PERI_REG(UART_INT_ST(0)) & (UART_RXFIFO_FULL_INT_ST | UART_RXFIFO_TOUT_INT_ST)));
 // 		uint8_t fifo_len = (READ_PERI_REG(UART_STATUS(0)) >> UART_RXFIFO_CNT_S) & UART_RXFIFO_CNT;
-// 		unsigned char c = 0;
+// 		uint8_t c = 0;
 
 // 		for (uint8_t i = 0; i < fifo_len; i++)
 // 		{
@@ -450,7 +249,7 @@ void mcu_disable_probe_isr(void)
  * can be defined either as a function or a macro call
  * */
 #ifndef mcu_get_analog
-uint8_t mcu_get_analog(uint8_t channel)
+uint16_t mcu_get_analog(uint8_t channel)
 {
 	return 0;
 }
@@ -521,6 +320,8 @@ bool mcu_get_global_isr(void)
  * */
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
+	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
+	
 	// up and down counter (generates half the step rate at each event)
 	uint32_t totalticks = (uint32_t)((float)(128000UL >> 1) / frequency);
 	*prescaller = 0;

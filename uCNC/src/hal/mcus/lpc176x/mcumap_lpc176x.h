@@ -3836,8 +3836,10 @@ extern "C"
 #endif
 
 // Indirect macro access
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #define mcu_config_output(diopin)                                                                                            \
 	{                                                                                                                        \
@@ -3925,7 +3927,7 @@ extern "C"
 	}
 #define mcu_get_pwm(diopin) (uint8_t) LPC_PWM1->__indirect__(diopin, MR)
 
-#define mcu_get_analog(diopin) (uint8_t)(((LPC_ADC->__indirect__(diopin, ADDR)) & 0xFFF) >> 4)
+#define mcu_get_analog(diopin) (uint16_t)(((LPC_ADC->__indirect__(diopin, ADDR)) >> 2) & 0x03FF)
 
 	extern volatile bool lpc_global_isr_enabled;
 #define mcu_enable_global_isr()        \

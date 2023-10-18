@@ -49,9 +49,9 @@ This wiring can be completely modified by the user.
 | DIN10   | ENC2_DIR    |
 | DIN11   | ENC3_DIR    |
 | DIN12   | ENC4_DIR    |
-| DIN13   | ENC5_DIR    |
-| DIN14   | ENC6_DIR    |
-| DIN15   | ENC7_DIR    |
+| DIN13   | ENC5_DIR or PLASMA_ARC_OK    |
+| DIN14   | ENC6_DIR  or PLASMA_DOWN    |
+| DIN15   | ENC7_DIR  or PLASMA_UP   |
 | DIN16   | DISPLAY ENC BTN    |
 | DIN17   | DISPLAY ENC1    |
 | DIN18   | DISPLAY ENC2    |

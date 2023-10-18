@@ -48,16 +48,20 @@ void mod_init(void)
 	LOAD_MODULE(digipot);
 #endif
 
-#if PID_CONTROLLERS > 0
-	LOAD_MODULE(pid);
-#endif
-
 #if ENCODERS > 0
 	LOAD_MODULE(encoder);
 #endif
 
 #ifdef ENABLE_TMC_DRIVERS
 	LOAD_MODULE(tmcdriver);
+#endif
+
+#ifdef ENABLE_LASER_PPI
+	LOAD_MODULE(laser_ppi);
+#endif
+
+#ifdef ENABLE_PLASMA_THC
+	LOAD_MODULE(plasma_thc);
 #endif
 
 	load_modules();

@@ -43,9 +43,9 @@ extern "C"
 #define LIMIT_Y_BIT 9
 #define LIMIT_X_BIT 5
 
-#define LIMIT_X_PULLUP
-#define LIMIT_Y_PULLUP
 #define LIMIT_Z_PULLUP
+#define LIMIT_Y_PULLUP
+#define LIMIT_X_PULLUP
 
 // Setup control input pins
 // #define ESTOP_BIT 0
@@ -78,9 +78,9 @@ extern "C"
 #define DOUT31_BIT 25
 
 //disable EEPROM emulation
-#ifndef RAM_ONLY_SETTINGS
-#define RAM_ONLY_SETTINGS
-#endif
+// #ifndef RAM_ONLY_SETTINGS
+// #define RAM_ONLY_SETTINGS
+// #endif
 
 #define I2C_CLK_BIT 27
 #define I2C_DATA_BIT 26
