@@ -13,9 +13,13 @@ Although most of the options are configurable via the web tool, some options mig
 
 # VERSION 1.8+ NOTES
 
-Version 1.8 introduced some small but breaking changes to tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier. Previous version modules should work in this version but future module will begin to use this new IO HALL. Previous modules will be also gradually converted to use this new IO HAL.
+Version 1.8 introduced several breaking changes from the previous version. These are:
+  - Tools functions declarations. This version also introduces a new IO HAL that makes io abstraction easier and more performant.
+  - New serial/multi-stream interface. All communications ports and extension modules (displays, SD cards, etc..) that communicate to the parser now do it via a custom serial stream implementation. Serial streams are segregated and responses are sent back to the source only instead of all ports. Some types of messages are still broadcast (like status reports, alarms and feedback messages).
+  - Modules now also defines HOOKs that can be used as hookable points for a single consumer function.
+  - There are several README documents that contain relevant information about parts of the system/HAL/modules etc. This makes it easier to keep the information up to date with each change.
 
-Version 1.7 introduced some small but breaking changes to modules function declarations. If you are upgrading from a previous version you need to upgrade the modules also. Modules for previous versions are available in the releases section of the [µCNC-modules repository](https://github.com/Paciente8159/uCNC-modules).
+With version 1.8 µCNC is becomming too large for Atmega328P (still supports it, but barelly fits). For that reason and to keep giving support for this MCU a branch of version 1.7 will be maintained with all the latest bugfixes and patches.
 
 # IMPORTANT NOTE
 
@@ -65,7 +69,10 @@ Version 1.8 added the following new major features.
 - added realtime modification of step and dir bits to be executed in the fly.
 - added new tool for plasma THC.
 - all analog inputs were modified from 8bit resolution to 10bit.
-- complete redesign of PID module and modiified tools functions to make use of PID update loop.
+- complete redesign of PID module and modified tools functions to make use of PID update loop.
+- complete redesign of serial communications to support and deal with multi-stream/origins.
+- complete redesign of multi-stepper axis and self-squaring axis.
+- initial support for Scara kinematics
 
 Version 1.7 added a new major feature.
 
@@ -229,6 +236,7 @@ Currently µCNC supports the following kinematics:
 - CoreXY
 - Linear delta robot
 - Rotary delta robot
+- Scara
 
 ### µCNC roadmap
 
@@ -241,9 +249,10 @@ These changes are:
 
 Future versions are in plan for:
 
-- Add support for graphical LCD
+- Add support for Web interface
 - Add more GCode features and hardware modules
 - Add additional kinematics
+- Add HAL for new MCU
 
 ### Building µCNC
 
