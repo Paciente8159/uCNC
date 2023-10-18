@@ -1112,22 +1112,15 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-// Set bit y in byte x
-#define SETBIT(x, y) ((x) |= (1 << (y)))
-// Clear bit y in byte x
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y)))
-// Check bit y in byte x
-#define CHECKBIT(x, y) ((x) & (1 << (y)))
-// Toggle bit y in byte x
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y)))
-// Set byte y in byte x
-#define SETFLAG(x, y) ((x) |= (y))
-// Clear byte y in byte x
-#define CLEARFLAG(x, y) ((x) &= ~(y))
-// Check byte y in byte x
-#define CHECKFLAG(x, y) ((x) & (y))
-// Toggle byte y in byte x
-#define TOGGLEFLAG(x, y) ((x) ^= (y))
+#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)

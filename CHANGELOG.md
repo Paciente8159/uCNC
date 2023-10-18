@@ -8,7 +8,7 @@
 
 # Changelog
 
-## [1.8.0-rc] - unreleased
+## [1.8.0] - unreleased
 
 ### Added
 
@@ -24,6 +24,57 @@
 ### Fixed
 
 - step output generation from beta (#457)
+
+## [1.7.6] - 17-10-2023
+
+### Changed
+
+- modified/reordered settings display in system menu (#515)
+- modified soft reset to improve software controller startup message detection (#531)
+- simplified override messages to reduce compilation size (#531)
+- modified system menu to fix warnings (#531)
+
+### Fixed
+
+- fixed USB infinite loop on flush call if unconnected (#511)
+- fixed RUN state clear after alarm while running (#520)
+- fixed pin status report function in command $P (#525)
+- fixed IO input and output macros for RP2040 (#526)
+
+
+## [1.7.5] - 26-09-2023
+
+### Added
+
+- added function to be able to get current active alarm code (used on system menu alarm rendering) (#508)
+
+### Changed
+
+- uniformed architectures UART names (#483)
+- STM32F1 modified config to allow use JTAG pins as GPIO (#486)
+- modified system menu to allow multiple JOG commands chainned up (#501)
+- modified system menu alarm screen condition to prevent alarm screen rendenring on startup lock (#507)
+
+### Fixed
+
+- fixed encoder option typo (#482)
+- fixed jog command made permanent changes to parser state (#493) (#495)
+- fixed compilation error for 5 or more axis machines (#499)
+
+## [1.7.4] - 16-08-2023
+
+### Added
+
+- added option to allow machine homing using only homing cycle enabled and soft limits (#475)
+
+### Changed
+
+- modified UART TMC to be addressable (#466)
+
+### Fixed
+
+- fixed skew compensation not accepts negative values (#472)
+- fixed skew compensation error accumulation over motions (#474)
 
 ## [1.8.0-beta] - 20-07-2023
 
@@ -1288,7 +1339,10 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
-[1.8.0-rc]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-rc
+[1.8.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0
+[1.7.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.6
+[1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
+[1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
 [1.8.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-beta
 [1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
 [1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2

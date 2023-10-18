@@ -160,7 +160,7 @@ extern "C"
 	bool cnc_dotasks(void);
 	void cnc_home(void);
 	void cnc_alarm(int8_t code);
-	bool cnc_has_alarm();
+	bool cnc_has_alarm(void);
 	uint8_t cnc_get_alarm(void);
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);

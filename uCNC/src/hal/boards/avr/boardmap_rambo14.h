@@ -186,6 +186,8 @@ extern "C"
 
 #define ONESHOT_TIMER 2
 
+#define ENABLE_PARSER_MODULES
+
 #ifdef __cplusplus
 }
 #endif
