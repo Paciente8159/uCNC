@@ -109,10 +109,10 @@ extern "C"
 #define M49 0
 
 #define EXTENDED_GCODE_BASE 0
-#define EXTENDED_MCODE_BASE 1000
-#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
-#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
-#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
+#define EXTENDED_MCODE_BASE 10000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_MOTION_GCODE(X) (-X)
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -186,11 +186,11 @@ extern "C"
 		// 1byte
 		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
-		#ifdef ENABLE_G39_H_MAPPING
-		uint8_t height_map_active: 1; // unused
-		#else
-		uint8_t : 1; // unused
-		#endif
+#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active : 1; // unused
+#else
+	uint8_t : 1; // unused
+#endif
 		uint8_t : 1; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
@@ -232,11 +232,11 @@ extern "C"
 
 	typedef struct
 	{
-		#ifndef ENABLE_PARSER_MODULES 
+#ifndef ENABLE_PARSER_MODULES
 		float xyzabc[AXIS_COUNT];
-		#else
-		float xyzabc[6];
-		#endif
+#else
+	float xyzabc[6];
+#endif
 		float ijk[3];
 		float d;
 		float f;
@@ -254,8 +254,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
-		int16_t group_extended : 15;
-		uint8_t group_0_1_useaxis : 1;
+		int16_t group_extended;
+		uint8_t group_0_1_useaxis;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -294,7 +294,7 @@ extern "C"
 	{
 		uint8_t word;
 		uint8_t code;
-		uint8_t* error;
+		uint8_t *error;
 		float value;
 		parser_state_t *new_state;
 		parser_words_t *words;
@@ -305,7 +305,7 @@ extern "C"
 
 	typedef struct gcode_exec_args_
 	{
-		uint8_t* error;
+		uint8_t *error;
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
