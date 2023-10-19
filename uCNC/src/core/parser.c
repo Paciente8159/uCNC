@@ -233,6 +233,9 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 	case 254:
 		memcpy(axis, (float *)&parser_parameters.tool_length_offset, sizeof(float));
 		break;
+	case 253:
+		memcpy(axis, parser_last_pos, sizeof(parser_last_pos));
+		break;
 #ifndef DISABLE_HOME_SUPPORT
 	case 28:
 		settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
