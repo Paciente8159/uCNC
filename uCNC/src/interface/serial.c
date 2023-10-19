@@ -35,7 +35,7 @@ static stream_available_cb stream_available;
 static stream_clear_cb stream_clear;
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
-static serial_stream_t *default_stream;
+serial_stream_t *default_stream;
 static serial_stream_t *current_stream;
 
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)

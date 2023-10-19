@@ -89,6 +89,29 @@ extern "C"
 #define serial_print_intarr(arr, count) print_intarr(serial_putc, arr, count)
 #define serial_print_fltarr(arr, count) print_fltarr(serial_putc, arr, count)
 
+#ifdef ENABLE_DEBUG_STREAM
+#ifndef DEBUG_STREAM
+extern serial_stream_t *default_stream;
+#define DEBUG_STREAM default_stream
+#endif
+
+#define DEBUG_STR(__s) print_str(DEBUG_STREAM->stream_putc, __s)
+#define DEBUG_BYTES(data, count) print_bytes(DEBUG_STREAM->stream_putc, data, count)
+#define DEBUG_INT(num) print_int(DEBUG_STREAM->stream_putc, num)
+#define DEBUG_FLT(num) print_flt(DEBUG_STREAM->stream_putc, num)
+#define DEBUG_FLTUNITS(num) print_fltunits(DEBUG_STREAM->stream_putc, num)
+#define DEBUG_INTARR(arr, count) print_intarr(DEBUG_STREAM->stream_putc, arr, count)
+#define DEBUG_FLTARR(arr, count) print_fltarr(DEBUG_STREAM->stream_putc, arr, count)
+#else
+#define DEBUG_STR(__s)
+#define DEBUG_BYTES(data, count)
+#define DEBUG_INT(num)
+#define DEBUG_FLT(num)
+#define DEBUG_FLTUNITS(num)
+#define DEBUG_INTARR(arr, count)
+#define DEBUG_FLTARR(arr, count)
+#endif
+
 #ifdef __cplusplus
 }
 #endif
