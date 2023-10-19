@@ -231,21 +231,33 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 		memcpy(axis, parser_parameters.last_probe_position, sizeof(parser_parameters.last_probe_position));
 		break;
 	case 254:
-		memcpy(axis, (float *)&parser_parameters.tool_length_offset, sizeof(float));
+		*axis = parser_parameters.tool_length_offset;
+		break;
+	case 253:
+		memcpy(axis, parser_last_pos, sizeof(parser_last_pos));
 		break;
 #ifndef DISABLE_HOME_SUPPORT
 	case 28:
-		settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 	case 30:
-		settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 #endif
 	case 92:
 		memcpy(axis, parser_parameters.g92_offset, sizeof(parser_parameters.g92_offset));
 		break;
 	default:
-		settings_load(PARSER_CORDSYS_ADDRESS + (system_num * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(PARSER_CORDSYS_ADDRESS + (system_num * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 	}
 }
@@ -670,7 +682,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	{
 		uint8_t word = 0;
 		float value = 0;
-		
+
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
