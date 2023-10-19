@@ -674,6 +674,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
+			serial_broadcast(true);
 			protocol_send_string(MSG_ECHO);
 		}
 #endif
@@ -683,6 +684,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return error;
 		}
@@ -719,6 +721,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -760,6 +763,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return error;
 		}

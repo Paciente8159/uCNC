@@ -223,12 +223,20 @@ uint8_t serial_available(void)
 		serial_stream_t *p = default_stream;
 		while (p != NULL)
 		{
-			count = (!(p->stream_available)) ? 0 : p->stream_available();
-			if (count)
+#ifdef ENABLE_DEBUG_STREAM
+			// skip the debug stream
+			if (p != DEBUG_STREAM)
 			{
-				serial_stream_change(p);
-				return count;
+#endif
+				count = (!(p->stream_available)) ? 0 : p->stream_available();
+				if (count)
+				{
+					serial_stream_change(p);
+					return count;
+				}
+#ifdef ENABLE_DEBUG_STREAM
 			}
+#endif
 			p = p->next;
 		}
 	}
