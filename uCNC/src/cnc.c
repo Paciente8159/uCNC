@@ -95,6 +95,12 @@ WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
 {
 	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
 }
+
+// event_cnc_alarm
+WEAK_EVENT_HANDLER(cnc_alarm)
+{
+	DEFAULT_EVENT_HANDLER(cnc_alarm);
+}
 #endif
 
 void cnc_init(void)
@@ -413,6 +419,9 @@ void cnc_alarm(int8_t code)
 	protocol_send_string(__romstr__("|CONTROLS:"));
 	serial_print_int(io_alarm_controls);
 	protocol_send_string(MSG_END);
+#endif
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_alarm, NULL);
 #endif
 }
 

@@ -187,6 +187,8 @@ extern "C"
 	DECL_EVENT_HANDLER(cnc_stop);
 	// event_cnc_exec_cmd_error_handler
 	DECL_EVENT_HANDLER(cnc_exec_cmd_error);
+	// event_cnc_alarm
+	DECL_EVENT_HANDLER(cnc_alarm);
 #endif
 
 #ifdef __cplusplus
