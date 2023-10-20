@@ -350,16 +350,6 @@ void serial_flush(void)
 #endif
 }
 
-#ifdef ENABLE_DEBUG_STREAM
-void debug_putc(char c){
-	DEBUG_STREAM->stream_putc(c);
-	if (c == '\n')
-	{
-		DEBUG_STREAM->stream_flush();
-	}
-}
-#endif
-
 uint8_t serial_tx_busy(void)
 {
 	return serial_tx_count;
