@@ -312,6 +312,17 @@ void serial_putc(char c)
 #endif
 }
 
+#ifdef ENABLE_DEBUG_STREAM
+void debug_putc(char c){
+	DEBUG_STREAM->stream_putc(c);
+
+	if (c == '\n')
+	{
+		DEBUG_STREAM->stream_flush();
+	}
+}
+#endif
+
 void serial_flush(void)
 {
 #ifndef DISABLE_MULTISTREAM_SERIAL
