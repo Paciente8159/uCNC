@@ -35,7 +35,7 @@ static stream_available_cb stream_available;
 static stream_clear_cb stream_clear;
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
-static serial_stream_t *default_stream;
+serial_stream_t *default_stream;
 static serial_stream_t *current_stream;
 
 #if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
@@ -210,36 +210,39 @@ char serial_peek(void)
 
 uint8_t serial_available(void)
 {
-#ifndef DISABLE_MULTISTREAM_SERIAL
 	if (stream_available == NULL)
 	{
 		// if undef allow to continue
 		return 1;
 	}
 
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	uint8_t count = stream_available();
 	if (!count)
 	{
 		serial_stream_t *p = default_stream;
 		while (p != NULL)
 		{
-			count = (!(p->stream_available)) ? 0 : p->stream_available();
-			if (count)
+#ifdef ENABLE_DEBUG_STREAM
+			// skip the debug stream
+			if (p != DEBUG_STREAM)
 			{
-				serial_stream_change(p);
-				return count;
+#endif
+				count = (!(p->stream_available)) ? 0 : p->stream_available();
+				if (count)
+				{
+					serial_stream_change(p);
+					return count;
+				}
+#ifdef ENABLE_DEBUG_STREAM
 			}
+#endif
 			p = p->next;
 		}
 	}
 
 	return count;
 #else
-	if (!stream_available)
-	{
-		// if undef allow to continue
-		return 1;
-	}
 	return stream_available();
 #endif
 }
@@ -308,6 +311,17 @@ void serial_putc(char c)
 	io_toggle_output(ACTIVITY_LED);
 #endif
 }
+
+#ifdef ENABLE_DEBUG_STREAM
+void debug_putc(char c){
+	DEBUG_STREAM->stream_putc(c);
+
+	if (c == '\n')
+	{
+		DEBUG_STREAM->stream_flush();
+	}
+}
+#endif
 
 void serial_flush(void)
 {
