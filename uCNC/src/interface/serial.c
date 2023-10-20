@@ -210,13 +210,13 @@ char serial_peek(void)
 
 uint8_t serial_available(void)
 {
-#ifndef DISABLE_MULTISTREAM_SERIAL
 	if (stream_available == NULL)
 	{
 		// if undef allow to continue
 		return 1;
 	}
 
+#ifndef DISABLE_MULTISTREAM_SERIAL
 	uint8_t count = stream_available();
 	if (!count)
 	{
@@ -243,11 +243,6 @@ uint8_t serial_available(void)
 
 	return count;
 #else
-	if (!stream_available)
-	{
-		// if undef allow to continue
-		return 1;
-	}
 	return stream_available();
 #endif
 }
@@ -343,6 +338,16 @@ void serial_flush(void)
 	mcu_flush();
 #endif
 }
+
+#ifdef ENABLE_DEBUG_STREAM
+void debug_putc(char c){
+	DEBUG_STREAM->stream_putc(c);
+	if (c == '\n')
+	{
+		DEBUG_STREAM->stream_flush();
+	}
+}
+#endif
 
 uint8_t serial_tx_busy(void)
 {

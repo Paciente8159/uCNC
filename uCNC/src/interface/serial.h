@@ -94,14 +94,14 @@ extern "C"
 extern serial_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
 #endif
-
-#define DEBUG_STR(__s) print_str(DEBUG_STREAM->stream_putc, __s)
-#define DEBUG_BYTES(data, count) print_bytes(DEBUG_STREAM->stream_putc, data, count)
-#define DEBUG_INT(num) print_int(DEBUG_STREAM->stream_putc, num)
-#define DEBUG_FLT(num) print_flt(DEBUG_STREAM->stream_putc, num)
-#define DEBUG_FLTUNITS(num) print_fltunits(DEBUG_STREAM->stream_putc, num)
-#define DEBUG_INTARR(arr, count) print_intarr(DEBUG_STREAM->stream_putc, arr, count)
-#define DEBUG_FLTARR(arr, count) print_fltarr(DEBUG_STREAM->stream_putc, arr, count)
+extern void debug_putc(char c);
+#define DEBUG_STR(__s) print_str(debug_putc, __s)
+#define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)
+#define DEBUG_INT(num) print_int(debug_putc, num)
+#define DEBUG_FLT(num) print_flt(debug_putc, num)
+#define DEBUG_FLTUNITS(num) print_fltunits(debug_putc, num)
+#define DEBUG_INTARR(arr, count) print_intarr(debug_putc, arr, count)
+#define DEBUG_FLTARR(arr, count) print_fltarr(debug_putc, arr, count)
 #else
 #define DEBUG_STR(__s)
 #define DEBUG_BYTES(data, count)
