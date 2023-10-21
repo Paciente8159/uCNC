@@ -31,28 +31,6 @@
 // extended codes
 #define M10 EXTENDED_MCODE(10)
 
-#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
-#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
-#define G28HOME COORD_SYS_COUNT							 // G28 index
-#define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
-
-#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
-#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
-#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
-#ifdef G92_STORE_NONVOLATILE
-#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
-#endif
-
-#define NUMBER_UNDEF 0
-#define NUMBER_OK 0x20
-#define NUMBER_ISFLOAT 0x40
-#define NUMBER_ISNEGATIVE 0x80
-
-#ifndef GRBL_CMD_MAX_LEN
-#define GRBL_CMD_MAX_LEN 32
-#endif
-
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
 static uint8_t parser_wco_counter;

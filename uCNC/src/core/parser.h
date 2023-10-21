@@ -109,10 +109,32 @@ extern "C"
 #define M49 0
 
 #define EXTENDED_GCODE_BASE 0
-#define EXTENDED_MCODE_BASE 1000
-#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + X)
-#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + X)
-#define EXTENDED_MOTION_GCODE(X) (-EXTENDED_GCODE(X))
+#define EXTENDED_MCODE_BASE 10000
+#define EXTENDED_MCODE(X) (EXTENDED_MCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_GCODE(X) (EXTENDED_GCODE_BASE + (int16_t)(X * 10))
+#define EXTENDED_MOTION_GCODE(X) (-X)
+
+#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
+#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
+#define G28HOME COORD_SYS_COUNT							 // G28 index
+#define G30HOME COORD_SYS_COUNT + 1						 // G30 index
+#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
+
+#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
+#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
+#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
+#ifdef G92_STORE_NONVOLATILE
+#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
+#endif
+
+#define NUMBER_UNDEF 0
+#define NUMBER_OK 0x20
+#define NUMBER_ISFLOAT 0x40
+#define NUMBER_ISNEGATIVE 0x80
+
+#ifndef GRBL_CMD_MAX_LEN
+#define GRBL_CMD_MAX_LEN 32
+#endif
 
 // group masks
 #define GCODE_GROUP_MOTION 0x0001
@@ -186,11 +208,11 @@ extern "C"
 		// 1byte
 		uint8_t motion_mantissa : 3;
 		uint8_t coord_system : 3;
-		#ifdef ENABLE_G39_H_MAPPING
-		uint8_t height_map_active: 1; // unused
-		#else
-		uint8_t : 1; // unused
-		#endif
+#ifdef ENABLE_G39_H_MAPPING
+		uint8_t height_map_active : 1; // unused
+#else
+	uint8_t : 1; // unused
+#endif
 		uint8_t : 1; // unused
 		// 1byte
 		uint8_t nonmodal : 4; // reset to 0 in every line (non persistent)
@@ -232,11 +254,11 @@ extern "C"
 
 	typedef struct
 	{
-		#ifndef ENABLE_PARSER_MODULES 
+#ifndef ENABLE_PARSER_MODULES
 		float xyzabc[AXIS_COUNT];
-		#else
-		float xyzabc[6];
-		#endif
+#else
+	float xyzabc[6];
+#endif
 		float ijk[3];
 		float d;
 		float f;
@@ -254,8 +276,8 @@ extern "C"
 	{
 		uint16_t groups;
 		uint16_t words;
-		int16_t group_extended : 15;
-		uint8_t group_0_1_useaxis : 1;
+		int16_t group_extended;
+		uint8_t group_0_1_useaxis;
 	} parser_cmd_explicit_t;
 
 	typedef struct
@@ -294,7 +316,7 @@ extern "C"
 	{
 		uint8_t word;
 		uint8_t code;
-		uint8_t* error;
+		uint8_t *error;
 		float value;
 		parser_state_t *new_state;
 		parser_words_t *words;
@@ -305,7 +327,7 @@ extern "C"
 
 	typedef struct gcode_exec_args_
 	{
-		uint8_t* error;
+		uint8_t *error;
 		parser_state_t *new_state;
 		parser_words_t *words;
 		parser_cmd_explicit_t *cmd;
