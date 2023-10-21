@@ -95,6 +95,12 @@ WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
 {
 	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
 }
+
+// event_cnc_alarm
+WEAK_EVENT_HANDLER(cnc_alarm)
+{
+	DEFAULT_EVENT_HANDLER(cnc_alarm);
+}
 #endif
 
 void cnc_init(void)
@@ -227,13 +233,13 @@ bool cnc_dotasks(void)
 	// run io basic tasks
 	cnc_io_dotasks();
 
+	cnc_exec_rt_commands(); // executes all pending realtime commands
+
 	// let µCNC finnish startup/reset code
 	if (cnc_state.loop_state == LOOP_STARTUP_RESET)
 	{
 		return false;
 	}
-
-	cnc_exec_rt_commands(); // executes all pending realtime commands
 
 	if (cnc_has_alarm())
 	{
@@ -405,15 +411,24 @@ void cnc_alarm(int8_t code)
 {
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
-	cnc_state.alarm = code;
-#ifdef ENABLE_IO_ALARM_DEBUG
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("LIMITS:"));
-	serial_print_int(io_alarm_limits);
-	protocol_send_string(__romstr__("|CONTROLS:"));
-	serial_print_int(io_alarm_controls);
-	protocol_send_string(MSG_END);
+	if (!cnc_state.alarm || code < 0)
+	{
+		cnc_state.alarm = code;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		if (code > 0)
+		{
+			EVENT_INVOKE(cnc_alarm, NULL);
+		}
 #endif
+#ifdef ENABLE_IO_ALARM_DEBUG
+		protocol_send_string(MSG_START);
+		protocol_send_string(__romstr__("LIMITS:"));
+		serial_print_int(io_alarm_limits);
+		protocol_send_string(__romstr__("|CONTROLS:"));
+		serial_print_int(io_alarm_controls);
+		protocol_send_string(MSG_END);
+#endif
+	}
 }
 
 bool cnc_has_alarm()
@@ -688,11 +703,21 @@ void cnc_exec_rt_commands(void)
 
 	// executes feeds override rt commands
 	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
+
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+	uint32_t current_time = mcu_millis();
+	if (next_auto_report < current_time)
+	{
+		next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
+		command |= RT_CMD_REPORT;
+	}
+#endif
+
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		cnc_state.rt_cmd &= RT_CMD_REPORT;
-		if (command & RT_CMD_RESET)
+		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		if (CHECKFLAG(command, RT_CMD_RESET))
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))
 			{
@@ -711,10 +736,21 @@ void cnc_exec_rt_commands(void)
 			return;
 		}
 
-		if (command & RT_CMD_CYCLE_START)
+		if (CHECKFLAG(command, RT_CMD_CYCLE_START))
 		{
 			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
 		}
+
+		if (CHECKFLAG(command, RT_CMD_REPORT))
+		{
+			protocol_send_status();
+		}
+	}
+
+	// let µCNC finnish startup/reset code
+	if (cnc_state.loop_state == LOOP_STARTUP_RESET)
+	{
+		return;
 	}
 
 	// executes feeds override rt commands
@@ -997,27 +1033,6 @@ static void cnc_io_dotasks(void)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
 	mcu_inputs_changed_cb();
 #endif
-
-	// if (cnc_status_report_lock)
-	// {
-	// 	return;
-	// }
-
-#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
-	uint32_t current_time = mcu_millis();
-	if (next_auto_report < current_time)
-	{
-		next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
-		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
-	}
-#endif
-
-	if (CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
-	{
-		// if a report request is sent, clear the respective flag
-		CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
-		protocol_send_status();
-	}
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	// prevent re-entrancy

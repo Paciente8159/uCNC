@@ -163,10 +163,10 @@ DECL_MODULE(system_menu)
 	DECL_MENU_VAR(3, s20, STR_SOFTLIMITS, &g_settings.soft_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s21, STR_HARDLIMITS, &g_settings.hard_limits_enabled, VAR_TYPE_BOOLEAN);
 	DECL_MENU_VAR(3, s22, STR_ENABLE_HOMING, &g_settings.homing_enabled, VAR_TYPE_BOOLEAN);
-	DECL_MENU_VAR(3, s23, STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s23, STR_DIR_INV_MASK, &g_settings.homing_dir_invert_mask, VAR_TYPE_UINT8);
 	DECL_MENU_VAR(3, s24, STR_SLOW_FEED, &g_settings.homing_slow_feed_rate, VAR_TYPE_FLOAT);
 	DECL_MENU_VAR(3, s25, STR_FAST_FEED, &g_settings.homing_fast_feed_rate, VAR_TYPE_FLOAT);
-	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_BOOLEAN);
+	DECL_MENU_VAR(3, s26, STR_DEBOUNCEMS, &g_settings.debounce_ms, VAR_TYPE_UINT16);
 	DECL_MENU_VAR(3, s27, STR_OFFSET, &g_settings.homing_offset, VAR_TYPE_FLOAT);
 #if (KINEMATIC == KINEMATIC_DELTA)
 	DECL_MENU_VAR(3, s28, STR_OFFSET, &g_settings.delta_bicep_homing_angle, VAR_TYPE_FLOAT);
@@ -883,7 +883,7 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (inc) ? 1 : 0;
+			(*(bool *)item->argptr) = inc;
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
@@ -932,7 +932,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
 		}
 		g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
-		break;
+		return true;
 	case SYSTEM_MENU_ACTION_PREV:
 	case SYSTEM_MENU_ACTION_NEXT:
 		if (flags & SYSTEM_MENU_MODE_MODIFY)
@@ -944,13 +944,17 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 				return false;
 			}
 
-			if (vartype == VAR_TYPE_FLOAT)
+			switch (vartype)
 			{
+			case VAR_TYPE_BOOLEAN:
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : 0;
+				break;
+			case VAR_TYPE_FLOAT:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : -powf(10.0f, (currentmult - 3));
-			}
-			else
-			{
+				break;
+			default:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : -powf(10.0f, currentmult);
+				break;
 			}
 		}
 		else if (flags & SYSTEM_MENU_MODE_EDIT)
@@ -975,7 +979,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (modifier > 0) ? 1 : 0;
+			(*(bool *)item->argptr) = (modifier != 0);
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:

@@ -172,7 +172,7 @@ bool kinematics_check_boundaries(float *axis)
 	{
 		i--;
 #ifdef SET_ORIGIN_AT_HOME_POS
-		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? -axis[i] : axis[i];
+		float value = !(g_settings.homing_dir_invert_mask & (1 << i)) ? axis[i] : -axis[i];
 #else
 		float value = axis[i];
 #endif
