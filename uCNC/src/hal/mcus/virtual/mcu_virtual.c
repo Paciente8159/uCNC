@@ -1697,6 +1697,20 @@ void mcu_config_input_isr(int pin)
 {
 }
 
+void kinematics_apply_transform(float *axis)
+{
+}
+
+/**
+ * @brief Aplies a reverse transformation to the position returned from the planner.
+ * This is aplied only on normal and jog moves. Homing motions go directly to planner.
+ *
+ * @param axis Target in absolute coordinates
+ */
+void kinematics_apply_reverse_transform(float *axis)
+{
+}
+
 int main(void)
 {
 	cnc_init();
