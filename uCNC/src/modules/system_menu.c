@@ -883,7 +883,7 @@ bool system_menu_action_edit_simple(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (inc) ? 1 : 0;
+			(*(bool *)item->argptr) = inc;
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
@@ -932,7 +932,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 			g_system_menu.flags ^= SYSTEM_MENU_MODE_MODIFY;
 		}
 		g_system_menu.flags |= SYSTEM_MENU_MODE_EDIT;
-		break;
+		return true;
 	case SYSTEM_MENU_ACTION_PREV:
 	case SYSTEM_MENU_ACTION_NEXT:
 		if (flags & SYSTEM_MENU_MODE_MODIFY)
@@ -944,13 +944,17 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 				return false;
 			}
 
-			if (vartype == VAR_TYPE_FLOAT)
+			switch (vartype)
 			{
+			case VAR_TYPE_BOOLEAN:
+				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? 1 : 0;
+				break;
+			case VAR_TYPE_FLOAT:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, (currentmult - 3)) : -powf(10.0f, (currentmult - 3));
-			}
-			else
-			{
+				break;
+			default:
 				modifier = (action == SYSTEM_MENU_ACTION_NEXT) ? powf(10.0f, currentmult) : -powf(10.0f, currentmult);
+				break;
 			}
 		}
 		else if (flags & SYSTEM_MENU_MODE_EDIT)
@@ -975,7 +979,7 @@ bool system_menu_action_edit(uint8_t action, system_menu_item_t *item)
 		switch (vartype)
 		{
 		case VAR_TYPE_BOOLEAN:
-			(*(bool *)item->argptr) = (modifier > 0) ? 1 : 0;
+			(*(bool *)item->argptr) = (modifier != 0);
 			break;
 		case VAR_TYPE_INT8:
 		case VAR_TYPE_UINT8:
