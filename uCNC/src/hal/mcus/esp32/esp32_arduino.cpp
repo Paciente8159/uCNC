@@ -376,12 +376,29 @@ extern "C"
 	}
 
 #if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+
+#include "../../../modules/endpoint.h"
+#include "../../../modules/flash_fs.h"
+#define MCU_FLASH_FS_LITTLE_FS 1
+#define MCU_FLASH_FS_SPIFFS 2
+
+#ifndef MCU_FLASH_FS
+#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+#endif
+
+#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
+#include "FS.h"
+#include <LittleFS.h>
+#define FLASH_FS LittleFS
+#endif
+
 	// call to the webserver initializer
 	DECL_MODULE(endpoint)
 	{
 #ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
+		FLASH_FS.begin(false);
 		web_server.begin();
 	}
 
@@ -400,7 +417,7 @@ extern "C"
 		return web_server.arg(name).c_str();
 	}
 
-	void endpoint_send(int code, const char *content_type, const char *data, uint8_t len)
+	void endpoint_send(int code, const char *content_type, const char *data)
 	{
 		web_server.send(code, content_type, data);
 	}
@@ -409,6 +426,14 @@ extern "C"
 	{
 		web_server.sendHeader(name, data, first);
 	}
+
+	bool endpoint_send_file(const char * file_path, const char *content_type)
+	{
+		File file = FLASH_FS.open(file_path, "r");
+		web_server.streamFile(file, content_type);
+		file.close();
+	}
+
 #endif
 
 	void esp32_wifi_bt_init(void)

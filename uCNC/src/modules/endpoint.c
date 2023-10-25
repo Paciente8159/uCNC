@@ -26,7 +26,7 @@ extern "C"
 
 #include "../cnc.h"
 
-// #if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+// #if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 // 	DECL_MODULE(endpoint)
 // 	{
 // 		endpoint_server_init();

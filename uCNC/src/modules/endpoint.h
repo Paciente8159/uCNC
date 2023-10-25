@@ -24,23 +24,17 @@ extern "C"
 {
 #endif
 
-#include "../module.h"
+#include "../cnc.h"
 
 	typedef void (*endpoint_delegate)(void);
-	typedef struct endpoint_
-	{
-		const char *uri;
-		uint8_t method;
-		endpoint_delegate request_handler;
-		endpoint_delegate file_handler;
-	} endpoint_t;
 
 	DECL_MODULE(endpoint);
 	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_has_args(void);
 	const char * endpoint_request_arg(const char* name);
-	void endpoint_send(int code, const char *content_type, const char *data, uint8_t len);
+	void endpoint_send(int code, const char *content_type, const char *data);
 	void endpoint_send_header(const char *name, const char *data, bool first);
+	bool endpoint_send_file(const char * file_path, const char *content_type);
 
 #ifdef __cplusplus
 }
