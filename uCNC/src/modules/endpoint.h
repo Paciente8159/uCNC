@@ -38,9 +38,9 @@ extern "C"
 	DECL_MODULE(endpoint);
 	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_has_args(void);
-	void endpoint_request_arg(const char* name);
-	void endpoint_send(const char* data, uint8_t len);
-	void endpoint_send_header(const char* data, uint8_t len);
+	const char * endpoint_request_arg(const char* name);
+	void endpoint_send(int code, const char *content_type, const char *data, uint8_t len);
+	void endpoint_send_header(const char *name, const char *data, bool first);
 
 #ifdef __cplusplus
 }

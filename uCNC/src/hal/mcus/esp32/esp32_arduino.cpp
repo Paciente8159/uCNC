@@ -390,12 +390,25 @@ extern "C"
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 	}
 
-	int endpoint_request_has_args(void){
+	int endpoint_request_has_args(void)
+	{
 		return web_server.args();
 	}
-	void endpoint_request_arg(const char *name);
-	void endpoint_send(const char *data, uint8_t len);
-	void endpoint_send_header(const char *data, uint8_t len);
+
+	const char *endpoint_request_arg(const char *name)
+	{
+		return web_server.arg(name).c_str();
+	}
+
+	void endpoint_send(int code, const char *content_type, const char *data, uint8_t len)
+	{
+		web_server.send(code, content_type, data);
+	}
+
+	void endpoint_send_header(const char *name, const char *data, bool first)
+	{
+		web_server.sendHeader(name, data, first);
+	}
 #endif
 
 	void esp32_wifi_bt_init(void)
