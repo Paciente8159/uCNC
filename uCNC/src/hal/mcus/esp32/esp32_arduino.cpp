@@ -289,13 +289,13 @@ extern "C"
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf((char *)str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
 						protocol_send_feedback((const char *)str);
 						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
 						protocol_send_feedback((const char *)str);
 						break;
 					case 2:
-						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
 						protocol_send_feedback((const char *)str);
 						break;
 					default:
@@ -403,7 +403,7 @@ extern "C"
 #endif
 		FLASH_FS.begin(true);
 		web_server.begin();
-		Serial.begin(115200);
+		// Serial.begin(115200);
 		// Serial.println()
 	}
 
@@ -412,24 +412,19 @@ extern "C"
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 	}
 
-	bool endpoint_request_hasarg(const char *argname)
+	int endpoint_request_hasargs(void)
 	{
-		for(int i = 0; i<web_server.args(); i++){
-			Serial.println(web_server.argName(i));
-			Serial.println(web_server.arg(i));
-		}
-
-		if (argname == NULL)
-		{
-			return (web_server.args() != 0);
-		}
-
-		return web_server.hasArg(String(argname));
+		return web_server.args();
 	}
 
-	const char *endpoint_request_arg(const char *name)
+	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen)
 	{
-		return web_server.arg(String(name)).c_str();
+		if(!web_server.hasArg(String(argname))){
+			argvalue[0] = 0;
+			return false;
+		}
+		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
+		return true;
 	}
 
 	void endpoint_send(int code, const char *content_type, const char *data)

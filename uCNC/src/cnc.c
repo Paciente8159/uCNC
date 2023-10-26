@@ -56,7 +56,6 @@ static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
-static bool cnc_exec_cmd(void);
 static void cnc_run_startup_blocks(void);
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -90,10 +89,10 @@ WEAK_EVENT_HANDLER(cnc_stop)
 	DEFAULT_EVENT_HANDLER(cnc_stop);
 }
 
-// event_cnc_exec_cmd_error_handler
-WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
+// event_cnc_parse_cmd_error_handler
+WEAK_EVENT_HANDLER(cnc_parse_cmd_error)
 {
-	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
+	DEFAULT_EVENT_HANDLER(cnc_parse_cmd_error);
 }
 
 // event_cnc_alarm
@@ -138,7 +137,8 @@ void cnc_run(void)
 		cnc_state.loop_state = LOOP_RUNNING;
 		do
 		{
-		} while (cnc_exec_cmd());
+			cnc_parse_cmd();
+		} while (cnc_dotasks());
 
 		cnc_state.loop_state = LOOP_FAULT;
 		int8_t alarm = cnc_state.alarm;
@@ -174,15 +174,15 @@ void cnc_run(void)
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 }
 
-bool cnc_exec_cmd(void)
+uint8_t cnc_parse_cmd(void)
 {
 #ifdef ENABLE_PARSING_TIME_DEBUG
 	uint32_t exec_time;
 #endif
+	uint8_t error = 0;
 	// process gcode commands
 	if (serial_available())
 	{
-		uint8_t error = 0;
 		// protocol_echo();
 		uint8_t c = serial_peek();
 		switch (c)
@@ -220,12 +220,12 @@ bool cnc_exec_cmd(void)
 			parser_sync_position();
 			protocol_send_error(error);
 #ifdef ENABLE_MAIN_LOOP_MODULES
-			EVENT_INVOKE(cnc_exec_cmd_error, &error);
+			EVENT_INVOKE(cnc_parse_cmd_error, &error);
 #endif
 		}
 	}
 
-	return cnc_dotasks();
+	return error;
 }
 
 bool cnc_dotasks(void)
@@ -1054,14 +1054,14 @@ void cnc_run_startup_blocks(void)
 	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
-		cnc_exec_cmd();
+		cnc_parse_cmd();
 	}
 
 	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
-		cnc_exec_cmd();
+		cnc_parse_cmd();
 	}
 
 	// reset streams

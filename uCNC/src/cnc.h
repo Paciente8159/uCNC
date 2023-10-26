@@ -167,6 +167,7 @@ extern "C"
 	void cnc_delay_ms(uint32_t miliseconds);
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
+	uint8_t cnc_parse_cmd(void);
 
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);
@@ -185,8 +186,8 @@ extern "C"
 	DECL_EVENT_HANDLER(cnc_io_dotasks);
 	// event_cnc_stop_handler
 	DECL_EVENT_HANDLER(cnc_stop);
-	// event_cnc_exec_cmd_error_handler
-	DECL_EVENT_HANDLER(cnc_exec_cmd_error);
+	// event_cnc_parse_cmd_error_handler
+	DECL_EVENT_HANDLER(cnc_parse_cmd_error);
 	// event_cnc_alarm
 	DECL_EVENT_HANDLER(cnc_alarm);
 #endif

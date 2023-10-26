@@ -50,7 +50,7 @@ __NOTE__: Not all event hooks might be listed here. To find all available event 
 | cnc_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main loop running. Any repeating task should be hooked here |
 | cnc_io_dotasks | NULL | ENABLE_MAIN_LOOP_MODULES | Fires on the main IO loop running. This is similar to cnc_dotasks, the main difference is that this task will run also during delays |
 | cnc_stop | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when a halt/stop condition is triggered |
-| cnc_exec_cmd_error | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received |
+| cnc_parse_cmd_error | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an invalid command is received |
 | cnc_alarm | NULL | ENABLE_MAIN_LOOP_MODULES | Fires when an alarm is triggered |
 | settings_change | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when a $ setting is changed. Arg is a pointer to a settings_args_t struct |
 | settings_load | settings_args_t* | ENABLE_SETTINGS_MODULES | Fires when settings are loaded from memory. Arg is a pointer to a settings_args_t struct |
