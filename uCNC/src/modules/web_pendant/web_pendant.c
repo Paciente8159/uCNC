@@ -29,11 +29,74 @@
 #error "This module is not compatible with the current version of µCNC"
 #endif
 
+#ifdef DECL_SERIAL_STREAM
+DECL_BUFFER(uint8_t, web_pendant_stream_buffer, RX_BUFFER_SIZE);
+static uint8_t web_pendant_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(web_pendant_stream_buffer, &c);
+	return c;
+}
+
+uint8_t web_pendant_available(void)
+{
+	return BUFFER_READ_AVAILABLE(web_pendant_stream_buffer);
+}
+
+void web_pendant_clear(void)
+{
+	BUFFER_CLEAR(web_pendant_stream_buffer);
+}
+
+DECL_SERIAL_STREAM(web_pendant_stream, web_pendant_getc, web_pendant_available, web_pendant_clear, NULL, NULL);
+
+uint8_t web_pendant_send_cmd(const char *__s)
+{
+	// if machine is running (not jogging) rejects the command
+	if (cnc_get_exec_state(EXEC_RUN | EXEC_JOG) == EXEC_RUN)
+	{
+		return STATUS_SYSTEM_GC_LOCK;
+	}
+
+	uint8_t len = strlen(__s);
+	uint8_t w;
+
+	if (BUFFER_WRITE_AVAILABLE(web_pendant_stream_buffer) < len)
+	{
+		return STATUS_STREAM_FAILED;
+	}
+
+	BUFFER_WRITE(web_pendant_stream_buffer, __s, len, w);
+
+	return STATUS_OK;
+}
+
+#endif
+
 void web_pendant_request(void)
 {
-	if (!endpoint_send_file("/index.html.gz", "text/html"))
+	// if does not have args return the page
+	if (!endpoint_request_hasarg(NULL))
 	{
-		endpoint_send(404, "text/plain", "FileNotFound");
+		if (!endpoint_send_file("/index.html.gz", "text/html"))
+		{
+			protocol_send_string(__romstr__("Server error. File not found"));
+			endpoint_send(404, "text/plain", "FileNotFound");
+		}
+	}
+	else{
+		// if(endpoint_request_hasarg("rtcmd")){
+		// 	const char* arg = endpoint_request_arg("rtcmd");
+		// 	// run the rtcmd char directly through the rx callback
+		// 	//mcu_com_rx_cb(arg[0]);
+		// 	// serial_print_str(arg);
+		// }
+
+		// if(endpoint_request_hasarg("cmd")){
+		// 	const char* arg = endpoint_request_arg("cmd");
+		// 	//web_pendant_send_cmd(arg);
+		// 	// serial_print_str(arg);
+		// }
 	}
 }
 

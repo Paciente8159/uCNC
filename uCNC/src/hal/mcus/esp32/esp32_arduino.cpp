@@ -67,7 +67,7 @@ const char *update_username = OTA_USER;
 const char *update_password = OTA_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer telnet_server(WIFI_PORT);
-WiFiClient serverClient;
+WiFiClient server_client;
 
 typedef struct
 {
@@ -353,20 +353,20 @@ extern "C"
 
 		if (telnet_server.hasClient())
 		{
-			if (serverClient)
+			if (server_client)
 			{
-				if (serverClient.connected())
+				if (server_client.connected())
 				{
-					serverClient.stop();
+					server_client.stop();
 				}
 			}
-			serverClient = telnet_server.available();
-			serverClient.println("[MSG:New client connected]");
+			server_client = telnet_server.available();
+			server_client.println("[MSG:New client connected]");
 			return false;
 		}
-		else if (serverClient)
+		else if (server_client)
 		{
-			if (serverClient.connected())
+			if (server_client.connected())
 			{
 				return true;
 			}
@@ -401,8 +401,10 @@ extern "C"
 #ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
-		FLASH_FS.begin(false);
+		FLASH_FS.begin(true);
 		web_server.begin();
+		Serial.begin(115200);
+		// Serial.println()
 	}
 
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
@@ -410,14 +412,24 @@ extern "C"
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 	}
 
-	int endpoint_request_has_args(void)
+	bool endpoint_request_hasarg(const char *argname)
 	{
-		return web_server.args();
+		for(int i = 0; i<web_server.args(); i++){
+			Serial.println(web_server.argName(i));
+			Serial.println(web_server.arg(i));
+		}
+
+		if (argname == NULL)
+		{
+			return (web_server.args() != 0);
+		}
+
+		return web_server.hasArg(String(argname));
 	}
 
 	const char *endpoint_request_arg(const char *name)
 	{
-		return web_server.arg(name).c_str();
+		return web_server.arg(String(name)).c_str();
 	}
 
 	void endpoint_send(int code, const char *content_type, const char *data)
@@ -430,11 +442,16 @@ extern "C"
 		web_server.sendHeader(name, data, first);
 	}
 
-	bool endpoint_send_file(const char * file_path, const char *content_type)
+	bool endpoint_send_file(const char *file_path, const char *content_type)
 	{
-		File file = FLASH_FS.open(file_path, "r");
-		web_server.streamFile(file, content_type);
-		file.close();
+		if (FLASH_FS.exists(file_path))
+		{
+			File file = FLASH_FS.open(file_path, "r");
+			web_server.streamFile(file, content_type);
+			file.close();
+			return true;
+		}
+		return false;
 	}
 
 #endif
@@ -523,7 +540,7 @@ extern "C"
 				uint8_t r;
 
 				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-				serverClient.write(tmp, r);
+				server_client.write(tmp, r);
 			}
 		}
 		else
@@ -594,9 +611,9 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			if (serverClient.available() > 0)
+			if (server_client.available() > 0)
 			{
-				return (uint8_t)serverClient.read();
+				return (uint8_t)server_client.read();
 			}
 		}
 #endif
@@ -617,7 +634,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			wifiready = (serverClient.available() > 0);
+			wifiready = (server_client.available() > 0);
 		}
 #endif
 
@@ -658,11 +675,11 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			while (serverClient.available() > 0)
+			while (server_client.available() > 0)
 			{
 				esp_task_wdt_reset();
 #ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-				uint8_t c = serverClient.read();
+				uint8_t c = server_client.read();
 				if (mcu_com_rx_cb(c))
 				{
 					if (BUFFER_FULL(wifi_rx))
@@ -674,7 +691,7 @@ extern "C"
 					BUFFER_STORE(wifi_rx);
 				}
 #else
-				mcu_wifi_rx_cb((uint8_t)serverClient.read());
+				mcu_wifi_rx_cb((uint8_t)server_client.read());
 #endif
 			}
 		}

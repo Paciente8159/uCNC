@@ -30,8 +30,8 @@ extern "C"
 
 	DECL_MODULE(endpoint);
 	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
-	int endpoint_request_has_args(void);
-	const char * endpoint_request_arg(const char* name);
+	bool endpoint_request_hasarg(const char* argname);
+	const char * endpoint_request_arg(const char* argname);
 	void endpoint_send(int code, const char *content_type, const char *data);
 	void endpoint_send_header(const char *name, const char *data, bool first);
 	bool endpoint_send_file(const char * file_path, const char *content_type);
