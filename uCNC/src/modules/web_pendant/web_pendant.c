@@ -18,7 +18,6 @@
 
 #include "../../cnc.h"
 #include "../../modules/endpoint.h"
-#include "../../modules/flash_fs.h"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -40,7 +39,6 @@ void web_pendant_request(void)
 
 void web_pendant_status_request(void)
 {
-	uint8_t state = 0;
 	float axis[AXIS_COUNT];
 	int32_t steppos[AXIS_TO_STEPPERS];
 	itp_get_rt_position(steppos);
@@ -55,52 +53,60 @@ void web_pendant_status_request(void)
 	char response[256];
 	char part[32];
 
-	sprintf(response, '{"ax":"%d\0"', AXIS_COUNT);
+	sprintf(response, "{\"ax\":\"%d\"", AXIS_COUNT);
 
 	// CHECK STATE
-	uint8_t state = 0;
 	if (cnc_has_alarm())
 	{
-		sprintf(part, ',"st":"Alarm\0"');
+		sprintf(part, ",\"st\":\"Alarm\"");
 	}
 	else if (mc_get_checkmode())
 	{
-		sprintf(part, ',"st":"Check\0"');
+		sprintf(part, ",\"st\":\"Check\"");
 	}
 	else
 	{
+		uint8_t state = cnc_get_exec_state(0xFF);
+		uint8_t filter = 0x80;
+		while (!(state & filter) && filter)
+		{
+			filter >>= 1;
+		}
+
+		state &= filter;
+
 		switch (state)
 		{
 #if ASSERT_PIN(SAFETY_DOOR)
 		case EXEC_DOOR:
-			sprintf(part, ',"st":"Door\0"');
+			sprintf(part, ",\"st\":\"Door\"");
 			break;
 #endif
 		case EXEC_UNHOMED:
 		case EXEC_LIMITS:
 			if (!cnc_get_exec_state(EXEC_HOMING))
 			{
-				sprintf(part, ',"st":"Alarm\0"');
+				sprintf(part, ",\"st\":\"Alarm\"");
 			}
 			else
 			{
-				sprintf(part, ',"st":"Home\0"');
+				sprintf(part, ",\"st\":\"Home\"");
 			}
 			break;
 		case EXEC_HOLD:
-			sprintf(part, ',"st":"Hold\0"');
+			sprintf(part, ",\"st\":\"Hold\"");
 			break;
 		case EXEC_HOMING:
-			sprintf(part, ',"st":"Home\0"');
+			sprintf(part, ",\"st\":\"Home\"");
 			break;
 		case EXEC_JOG:
-			sprintf(part, ',"st":"Jog\0"');
+			sprintf(part, ",\"st\":\"Jog\"");
 			break;
 		case EXEC_RUN:
-			sprintf(part, ',"st":"Run\0"');
+			sprintf(part, ",\"st\":\"Run\"");
 			break;
 		default:
-			sprintf(part, ',"st":"Idle\0"');
+			sprintf(part, ",\"st\":\"Idle\"");
 			break;
 		}
 	}
@@ -110,39 +116,39 @@ void web_pendant_status_request(void)
 	// GET POS
 
 #if (AXIS_COUNT >= 1)
-	sprintf(part, ',"x":"%0.3f\0"', axis[0]);
+	sprintf(part, ",\"x\":\"%0.3f\"", axis[0]);
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT == 2)
 #if defined(USE_Y_AS_Z_ALIAS))
-	sprintf(part, ',"z":"%0.3f\0"', axis[1]);
+	sprintf(part, ",\"z\":\"%0.3f\"", axis[1]);
 #else
-	sprintf(part, ',"y":"%0.3f\0"', axis[1]);
+	sprintf(part, ",\"y\":\"%0.3f\"", axis[1]);
 #endif
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT >= 2)
-	sprintf(part, ',"y":"%0.3f\0"', axis[1]);
+	sprintf(part, ",\"y\":\"%0.3f\"", axis[1]);
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT >= 3)
-	sprintf(part, ',"z":"%0.3f\0"', axis[2]);
+	sprintf(part, ",\"z\":\"%0.3f\"", axis[2]);
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT >= 4)
-	sprintf(part, ',"a":"%0.3f\0"', axis[3]);
+	sprintf(part, ",\"a\":\"%0.3f\"", axis[3]);
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT >= 5)
-	sprintf(part, ',"b":"%0.3f\0"', axis[4]);
+	sprintf(part, ",\"b\":\"%0.3f\"", axis[4]);
 	strcat(response, part);
 #endif
 #if (AXIS_COUNT == 6)
-	sprintf(part, ',"c":"%0.3f\0"', axis[5]);
+	sprintf(part, ",\"c\":\"%0.3f\"", axis[5]);
 	strcat(response, part);
 #endif
 
-	sprintf(part, '",f":"%0.0f,s":"%d\0"', feed, spindle);
+	sprintf(part, ",\"f\":\"%0.0f\",\"s\":\"%d\"}", feed, spindle);
 	strcat(response, part);
 
 	endpoint_send(200, "application/json", response);

@@ -378,7 +378,6 @@ extern "C"
 #if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
 #include "../../../modules/endpoint.h"
-#include "../../../modules/flash_fs.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
@@ -390,6 +389,10 @@ extern "C"
 #include "FS.h"
 #include <LittleFS.h>
 #define FLASH_FS LittleFS
+#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
+#include "FS.h"
+#include <SPIFFS.h>
+#define FLASH_FS SPIFFS
 #endif
 
 	// call to the webserver initializer

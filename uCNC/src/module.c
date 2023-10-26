@@ -24,7 +24,7 @@
 #include "modules/encoder.h"
 #include "modules/pid.h"
 #include "modules/endpoint.h"
-#include "modules/ic74hs595.h"
+#include "modules/ic74hc595.h"
 #include "modules/modbus.h"
 #include "modules/softi2c.h"
 #include "modules/softspi.h"
@@ -44,6 +44,7 @@ static FORCEINLINE void load_modules(void)
 #ifdef LOAD_MODULES_OVERRIDE
 	LOAD_MODULES_OVERRIDE();
 #endif
+	LOAD_MODULE(web_pendant);
 }
 
 void mod_init(void)
