@@ -991,6 +991,7 @@ extern void mcu_controls_isr(void);
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#define MCU_HAS_ENDPOINTS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 

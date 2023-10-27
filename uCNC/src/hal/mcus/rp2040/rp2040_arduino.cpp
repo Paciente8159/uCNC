@@ -70,8 +70,8 @@ const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer server(WIFI_PORT);
-WiFiClient serverClient;
+WiFiServer telnet_server(WIFI_PORT);
+WiFiClient server_client;
 
 typedef struct
 {
@@ -288,13 +288,13 @@ uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t
 				switch (wifi_settings.wifi_mode)
 				{
 				case 1:
-					sprintf((char*)str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
+					sprintf((char*)str, "STA IP>%s", WiFi.localIP().toString().c_str());
 					protocol_send_feedback((const char*)str);
 					sprintf((char*)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
 					protocol_send_feedback((const char*)str);
 					break;
 				case 2:
-					sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					sprintf((char*)str, "IP>%s", WiFi.localIP().toString().c_str());
 					protocol_send_feedback((const char*)str);
 					break;
 				default:
@@ -350,22 +350,22 @@ bool rp2040_wifi_clientok(void)
 		protocol_send_feedback((const char*)str);
 	}
 
-	if (server.hasClient())
+	if (telnet_server.hasClient())
 	{
-		if (serverClient)
+		if (server_client)
 		{
-			if (serverClient.connected())
+			if (server_client.connected())
 			{
-				serverClient.stop();
+				server_client.stop();
 			}
 		}
-		serverClient = server.available();
-		serverClient.println("[MSG:New client connected]");
+		server_client = telnet_server.available();
+		server_client.println("[MSG:New client connected]");
 		return false;
 	}
-	else if (serverClient)
+	else if (server_client)
 	{
-		if (serverClient.connected())
+		if (server_client.connected())
 		{
 			return true;
 		}
@@ -373,6 +373,80 @@ bool rp2040_wifi_clientok(void)
 #endif
 	return false;
 }
+
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+
+#include "../../../modules/endpoint.h"
+#define MCU_FLASH_FS_LITTLE_FS 1
+#define MCU_FLASH_FS_SPIFFS 2
+
+#ifndef MCU_FLASH_FS
+#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+#endif
+
+#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
+#include "FS.h"
+#include <LittleFS.h>
+#define FLASH_FS LittleFS
+#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
+#include "FS.h"
+#include <SPIFFS.h>
+#define FLASH_FS SPIFFS
+#endif
+
+	// call to the webserver initializer
+	DECL_MODULE(endpoint)
+	{
+#ifndef CUSTOM_OTA_ENDPOINT
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#endif
+		FLASH_FS.begin(true);
+		web_server.begin();
+	}
+
+	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+	{
+		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+	}
+
+	int endpoint_request_hasargs(void)
+	{
+		return web_server.args();
+	}
+
+	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen)
+	{
+		if(!web_server.hasArg(String(argname))){
+			argvalue[0] = 0;
+			return false;
+		}
+		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
+		return true;
+	}
+
+	void endpoint_send(int code, const char *content_type, const char *data)
+	{
+		web_server.send(code, content_type, data);
+	}
+
+	void endpoint_send_header(const char *name, const char *data, bool first)
+	{
+		web_server.sendHeader(name, data, first);
+	}
+
+	bool endpoint_send_file(const char *file_path, const char *content_type)
+	{
+		if (FLASH_FS.exists(file_path))
+		{
+			File file = FLASH_FS.open(file_path, "r");
+			web_server.streamFile(file, content_type);
+			file.close();
+			return true;
+		}
+		return false;
+	}
+
+#endif
 
 void rp2040_wifi_bt_init(void)
 {
@@ -392,10 +466,12 @@ void rp2040_wifi_bt_init(void)
 	{
 		WiFi.disconnect();
 	}
-	server.begin();
-	server.setNoDelay(true);
-	httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-	httpServer.begin();
+	telnet_server.begin();
+	telnet_server.setNoDelay(true);
+#if !defined(MCU_HAS_ENDPOINTS)
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+		web_server.begin();
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 	bt_settings_offset = settings_register_external_setting(1);
@@ -454,7 +530,7 @@ void mcu_wifi_flush(void)
 			uint8_t r;
 
 			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-			serverClient.write(tmp, r);
+			server_client.write(tmp, r);
 		}
 	}
 	else
@@ -517,9 +593,9 @@ uint8_t rp2040_wifi_bt_read(void)
 #ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
-		if (serverClient.available() > 0)
+		if (server_client.available() > 0)
 		{
-			return (uint8_t)serverClient.read();
+			return (uint8_t)server_client.read();
 		}
 	}
 #endif
@@ -537,7 +613,7 @@ bool rp2040_wifi_bt_rx_ready(void)
 #ifdef ENABLE_WIFI
 	if (rp2040_wifi_clientok())
 	{
-		wifiready = (serverClient.available() > 0);
+		wifiready = (server_client.available() > 0);
 	}
 #endif
 
@@ -556,10 +632,10 @@ void rp2040_wifi_bt_process(void)
 
 	if (rp2040_wifi_clientok())
 	{
-		while (serverClient.available() > 0)
+		while (server_client.available() > 0)
 		{
 #ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)serverClient.read();
+			uint8_t c = (uint8_t)server_client.read();
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(wifi_rx))
@@ -572,7 +648,7 @@ void rp2040_wifi_bt_process(void)
 			}
 
 #else
-			mcu_wifi_rx_cb((uint8_t)serverClient.read());
+			mcu_wifi_rx_cb((uint8_t)server_client.read());
 #endif
 		}
 	}
