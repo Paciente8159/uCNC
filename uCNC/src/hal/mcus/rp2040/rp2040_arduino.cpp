@@ -64,7 +64,7 @@ uint16_t bt_settings_offset;
 #define WIFI_PASS "pass\0"
 #endif
 
-WebServer httpServer(80);
+WebServer web_server(80);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
@@ -653,7 +653,7 @@ void rp2040_wifi_bt_process(void)
 		}
 	}
 
-	httpServer.handleClient();
+	web_server.handleClient();
 #endif
 
 #ifdef ENABLE_BLUETOOTH

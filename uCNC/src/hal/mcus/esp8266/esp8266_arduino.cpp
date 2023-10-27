@@ -46,7 +46,7 @@
 
 #define ARG_MAX_LEN WIFI_SSID_MAX_LEN
 
-ESP8266WebServer httpServer(80);
+ESP8266WebServer web_server(80);
 ESP8266HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
@@ -573,7 +573,7 @@ extern "C"
 		}
 
 #ifdef ENABLE_WIFI
-		httpServer.handleClient();
+		web_server.handleClient();
 		if (esp8266_wifi_clientok())
 		{
 			while (server_client.available() > 0)
