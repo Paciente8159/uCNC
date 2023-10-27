@@ -248,18 +248,16 @@ uint8_t parser_get_probe_result(void)
 void parser_parameters_reset(void)
 {
 	// erase all parameters for G54..G59.x coordinate systems
-	memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
 #ifndef DISABLE_COORD_SYS_SUPPORT
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
-		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
+		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 	}
 #endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
-	settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
-	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+	settings_erase(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 #endif
 }
 
@@ -440,15 +438,18 @@ static uint8_t parser_grbl_command(void)
 					return STATUS_INVALID_STATEMENT;
 				}
 
-				settings_save_startup_gcode(block_address);
+				settings_save(block_address, NULL, UINT16_MAX);
 				// run startup block
 				serial_broadcast(true);
 				serial_stream_eeprom(block_address);
+				// checks the command validity
 				error = parser_fetch_command(&next_state, &words, &cmd);
-				if (error == STATUS_OK)
-				{
-					error = parser_validate_command(&next_state, &words, &cmd);
-				}
+				// if uncomment will also check if any gcode rules are violated
+				// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
+				// if (error == STATUS_OK)
+				// {
+				// 	error = parser_validate_command(&next_state, &words, &cmd);
+				// }
 
 				serial_broadcast(false);
 				// reset streams
@@ -457,7 +458,7 @@ static uint8_t parser_grbl_command(void)
 				if (error != STATUS_OK)
 				{
 					// the Gcode is not valid then erase the startup block
-					mcu_eeprom_putc(block_address, 0);
+					settings_erase(block_address, NULL, 1);
 				}
 
 				return error;
@@ -2594,8 +2595,7 @@ void parser_parameters_load(void)
 #ifdef G92_STORE_NONVOLATILE
 	if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
 	{
-		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
-		settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
+		settings_erase(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
 	}
 	memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
 #else
@@ -2607,7 +2607,7 @@ void parser_parameters_load(void)
 	{
 		if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 		{
-			settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
+			settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 		}
 	}
 
@@ -2615,8 +2615,7 @@ void parser_parameters_load(void)
 #ifndef DISABLE_COORD_SYS_SUPPORT
 	if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 	{
-		memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
-		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
+		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 	}
 #endif
 }

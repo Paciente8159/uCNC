@@ -195,8 +195,7 @@ extern "C"
 
 			if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
 			{
-				settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
-				memset(&wifi_settings, 0, sizeof(wifi_settings_t));
+				settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback((const char *)"WiFi settings deleted");
 				return STATUS_OK;
 			}
@@ -346,8 +345,7 @@ extern "C"
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			settings_erase(wifi_settings_offset, sizeof(wifi_settings_t));
-			memset(&wifi_settings, 0, sizeof(wifi_settings_t));
+			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
 		WiFi.begin();
