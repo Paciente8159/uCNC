@@ -313,7 +313,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 		crc = crc7(c, crc);
 		mcu_eeprom_putc(address++, c);
 		i++;
-		if (__ptr == NULL && (c == EOL))
+		if (!__ptr && (c == EOL))
 		{
 			size = i;
 			break;
@@ -648,13 +648,6 @@ bool settings_check_startup_gcode(uint16_t address)
 	serial_putc(':');
 	protocol_send_ok();
 	return false;
-#endif
-}
-
-void settings_save_startup_gcode(uint16_t address)
-{
-#ifndef RAM_ONLY_SETTINGS
-	settings_save(address, NULL, UINT16_MAX);
 #endif
 }
 
