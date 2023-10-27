@@ -184,6 +184,12 @@ WEAK_EVENT_HANDLER(settings_erase)
 }
 #endif
 
+static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
+{
+	crc = crc7(((uint8_t *)&size)[0], crc);
+	return crc7(((uint8_t *)&size)[1], crc);
+}
+
 void settings_init(void)
 {
 	const uint8_t version[3] = SETTINGS_VERSION;
@@ -209,7 +215,7 @@ void settings_init(void)
 	}
 }
 
-uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
+uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	// settiing address invalid
 	if (address == UINT16_MAX)
@@ -229,17 +235,33 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	while (size)
+	for (uint16_t i = MAX(size, 1); i != 0; i--)
 	{
-		size--;
 		uint8_t value = mcu_eeprom_getc(address++);
 		crc = crc7(value, crc);
-		*(__ptr++) = value;
+		if (__ptr)
+		{
+			*(__ptr++) = value;
+		}
+		if (!__ptr && (value == EOL))
+		{
+			break;
+		}
 	}
+
+	crc = settings_size_crc(size, crc);
 
 	return (crc ^ mcu_eeprom_getc(address));
 #else
-	rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	if (address == SETTINGS_ADDRESS_OFFSET)
+	{
+		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	}
+	else
+	{
+		size = MAX(size, 1);
+		memset(__ptr, 0, size);
+	}
 	return 0; // loads defaults
 #endif
 }
@@ -252,15 +274,13 @@ void settings_reset(bool erase_startup_blocks)
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
-		mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET + 1, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET + 1, 0);
+		settings_erase(STARTUP_BLOCK0_ADDRESS_OFFSET, NULL, 1);
+		settings_erase(STARTUP_BLOCK1_ADDRESS_OFFSET, NULL, 1);
 	}
 #endif
 }
 
-void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
+void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	if (address == UINT16_MAX)
 	{
@@ -279,17 +299,23 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	while (size)
+	for (uint16_t i = 0; i < size; i++)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}
 
-		size--;
-		crc = crc7(*__ptr, crc);
-		mcu_eeprom_putc(address++, *(__ptr++));
+		uint8_t c = (__ptr!=NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
+		crc = crc7(c, crc);
+		mcu_eeprom_putc(address++, c);
+		if(__ptr==NULL && (c == EOL)){
+			size = i + 1;
+			break;
+		}
 	}
+
+	crc = settings_size_crc(size, crc);
 
 	mcu_eeprom_putc(address, crc);
 	mcu_eeprom_flush();
@@ -559,15 +585,19 @@ uint8_t settings_change(setting_offset_t id, float value)
 	return result;
 }
 
-void settings_erase(uint16_t address, uint8_t size)
+void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	if (address == UINT16_MAX)
 	{
 		return;
 	}
 
+	if(__ptr){
+		memset(__ptr, 0, size);
+	}
+
 #ifdef ENABLE_SETTINGS_MODULES
-	settings_args_t args = {.address = address, .data = NULL, .size = size};
+	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
 		// if the event was handled
@@ -575,18 +605,19 @@ void settings_erase(uint16_t address, uint8_t size)
 	}
 #endif
 #ifndef RAM_ONLY_SETTINGS
-	while (size)
+	for (uint16_t i = size; i != 0; i--)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}
-		mcu_eeprom_putc(address++, EOL);
-		size--;
+		mcu_eeprom_putc(address++, 0);
 	}
 
+	uint8_t crc = settings_size_crc(size, 0);
+
 	// erase crc byte that is next to data
-	mcu_eeprom_putc(address, EOL);
+	mcu_eeprom_putc(address, crc);
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
 	mcu_eeprom_flush();
 #endif
@@ -599,27 +630,10 @@ bool settings_check_startup_gcode(uint16_t address)
 	serial_putc(':');
 
 #ifndef RAM_ONLY_SETTINGS
-	uint8_t size = (RX_BUFFER_SIZE - 1); // defined in serial.h
-	uint8_t crc = 0;
-	uint8_t c;
-	uint16_t cmd_address = address;
-
-	// pre-checks command valid crc
-	do
-	{
-		c = mcu_eeprom_getc(cmd_address++);
-		crc = crc7(c, crc);
-		if (!c)
-		{
-			break;
-		}
-		size--;
-	} while (size);
-
-	if (crc ^ mcu_eeprom_getc(cmd_address))
+	if (settings_load(address, NULL, 0))
 	{
 		protocol_send_error(STATUS_SETTING_READ_FAIL);
-		settings_erase(address, 1);
+		settings_erase(address, NULL, 1);
 		return false;
 	}
 
@@ -633,23 +647,11 @@ bool settings_check_startup_gcode(uint16_t address)
 void settings_save_startup_gcode(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS
-	uint8_t size = (RX_BUFFER_SIZE - 1);
-	uint8_t crc = 0;
-	uint8_t c;
-	do
-	{
-		c = serial_getc();
-		crc = crc7(c, crc);
-		mcu_eeprom_putc(address, (uint8_t)c);
-		address++;
-		size--;
-	} while (size && c);
-
-	mcu_eeprom_putc(address, crc);
+	settings_save(address, NULL, UINT16_MAX);
 #endif
 }
 
-uint16_t settings_register_external_setting(uint8_t size)
+uint16_t settings_register_external_setting(uint16_t size)
 {
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;

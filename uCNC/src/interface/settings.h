@@ -133,14 +133,14 @@ typedef uint16_t setting_offset_t;
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
-	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
-	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
+	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size);
+	void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size);
 	void settings_reset(bool erase_startup_blocks);
 	uint8_t settings_change(setting_offset_t id, float value);
-	void settings_erase(uint16_t address, uint8_t size);
+	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
 	void settings_save_startup_gcode(uint16_t address);
-	uint16_t settings_register_external_setting(uint8_t size);
+	uint16_t settings_register_external_setting(uint16_t size);
 
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler
