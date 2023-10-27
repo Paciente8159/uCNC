@@ -1050,14 +1050,12 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
 		cnc_exec_cmd();
 	}
 
-	serial_broadcast(true);
 	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
 	{
 		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);

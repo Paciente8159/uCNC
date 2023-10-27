@@ -147,7 +147,9 @@ void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb availabl
 static uint16_t stream_eeprom_address;
 static uint8_t stream_eeprom_getc(void)
 {
-	return mcu_eeprom_getc(stream_eeprom_address++);
+	uint8_t c = mcu_eeprom_getc(stream_eeprom_address++);
+	serial_putc((c != EOL) ? c : ':');
+	return c;
 }
 
 void serial_stream_eeprom(uint16_t address)
@@ -313,7 +315,8 @@ void serial_putc(char c)
 }
 
 #ifdef ENABLE_DEBUG_STREAM
-void debug_putc(char c){
+void debug_putc(char c)
+{
 	DEBUG_STREAM->stream_putc(c);
 
 	if (c == '\n')

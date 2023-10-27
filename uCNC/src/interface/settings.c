@@ -235,7 +235,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	for (uint16_t i = MAX(size, 1); i != 0; i--)
+	for (uint16_t i = 0; i < size;)
 	{
 		uint8_t value = mcu_eeprom_getc(address++);
 		crc = crc7(value, crc);
@@ -243,8 +243,11 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 		{
 			*(__ptr++) = value;
 		}
+
+		i++;
 		if (!__ptr && (value == EOL))
 		{
+			size = i;
 			break;
 		}
 	}
@@ -299,18 +302,20 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	for (uint16_t i = 0; i < size; i++)
+	for (uint16_t i = 0; i < size;)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}
 
-		uint8_t c = (__ptr!=NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
+		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
 		crc = crc7(c, crc);
 		mcu_eeprom_putc(address++, c);
-		if(__ptr==NULL && (c == EOL)){
-			size = i + 1;
+		i++;
+		if (__ptr == NULL && (c == EOL))
+		{
+			size = i;
 			break;
 		}
 	}
@@ -592,7 +597,8 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return;
 	}
 
-	if(__ptr){
+	if (__ptr)
+	{
 		memset(__ptr, 0, size);
 	}
 
@@ -626,12 +632,12 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 
 bool settings_check_startup_gcode(uint16_t address)
 {
+	serial_broadcast(true);
 	serial_putc('>');
-	serial_putc(':');
-
 #ifndef RAM_ONLY_SETTINGS
-	if (settings_load(address, NULL, 0))
+	if (settings_load(address, NULL, UINT16_MAX))
 	{
+		serial_putc(':');
 		protocol_send_error(STATUS_SETTING_READ_FAIL);
 		settings_erase(address, NULL, 1);
 		return false;
@@ -639,6 +645,7 @@ bool settings_check_startup_gcode(uint16_t address)
 
 	return true;
 #else
+	serial_putc(':');
 	protocol_send_ok();
 	return false;
 #endif
