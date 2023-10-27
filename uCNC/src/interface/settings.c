@@ -217,6 +217,10 @@ void settings_init(void)
 
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM load @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	// settiing address invalid
 	if (address == UINT16_MAX)
 	{
@@ -285,6 +289,10 @@ void settings_reset(bool erase_startup_blocks)
 
 void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM save @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	if (address == UINT16_MAX)
 	{
 		return;
@@ -592,6 +600,10 @@ uint8_t settings_change(setting_offset_t id, float value)
 
 void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM erase @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	if (address == UINT16_MAX)
 	{
 		return;

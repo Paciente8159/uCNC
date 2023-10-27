@@ -96,7 +96,7 @@ extern serial_stream_t *default_stream;
 #endif
 
 extern void debug_putc(char c);
-#define DEBUG_PUTC debug_putc
+#define DEBUG_PUTC(c) debug_putc(c)
 #define DEBUG_STR(__s) print_str(debug_putc, __s)
 #define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)
 #define DEBUG_INT(num) print_int(debug_putc, num)
@@ -105,6 +105,7 @@ extern void debug_putc(char c);
 #define DEBUG_INTARR(arr, count) print_intarr(debug_putc, arr, count)
 #define DEBUG_FLTARR(arr, count) print_fltarr(debug_putc, arr, count)
 #else
+#define DEBUG_PUTC(c)
 #define DEBUG_STR(__s)
 #define DEBUG_BYTES(data, count)
 #define DEBUG_INT(num)
