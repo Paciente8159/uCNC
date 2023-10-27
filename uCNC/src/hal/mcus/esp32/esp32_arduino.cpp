@@ -402,8 +402,6 @@ extern "C"
 #endif
 		FLASH_FS.begin(true);
 		web_server.begin();
-		// Serial.begin(115200);
-		// Serial.println()
 	}
 
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
