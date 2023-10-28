@@ -400,7 +400,7 @@ DECL_MODULE(endpoint)
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
-	FLASH_FS.begin(true);
+	FLASH_FS.begin();
 	web_server.begin();
 }
 
