@@ -4332,6 +4332,9 @@ extern "C"
 #define MCU_HAS_UART2
 #endif
 
+#define USART0_RX_vect USART_RX_vect
+#define USART0_UDRE_vect USART_UDRE_vect
+
 // COM registers
 #ifdef MCU_HAS_UART
 #ifndef UART_PORT
