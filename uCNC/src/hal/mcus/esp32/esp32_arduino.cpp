@@ -52,19 +52,19 @@ uint16_t bt_settings_offset;
 #define WIFI_PORT 23
 #endif
 
-#ifndef OTA_USER
-#define OTA_USER "admin"
+#ifndef WIFI_USER
+#define WIFI_USER "admin"
 #endif
 
-#ifndef OTA_PASS
-#define OTA_PASS "pass"
+#ifndef WIFI_PASS
+#define WIFI_PASS "pass"
 #endif
 
 WebServer web_server(80);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
-const char *update_username = OTA_USER;
-const char *update_password = OTA_PASS;
+const char *update_username = WIFI_USER;
+const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
 WiFiServer telnet_server(WIFI_PORT);
 WiFiClient server_client;
