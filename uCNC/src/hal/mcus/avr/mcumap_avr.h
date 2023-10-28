@@ -4332,6 +4332,10 @@ extern "C"
 #define MCU_HAS_UART2
 #endif
 
+//makes ISR name seamless between Uno and Mega
+#define USART0_RX_vect USART_RX_vect
+#define USART0_RX_vect USART_RX_vect
+
 // COM registers
 #ifdef MCU_HAS_UART
 #ifndef UART_PORT
