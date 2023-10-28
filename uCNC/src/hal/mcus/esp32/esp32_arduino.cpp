@@ -414,9 +414,10 @@ extern "C"
 		return web_server.args();
 	}
 
-	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen)
+	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 	{
-		if(!web_server.hasArg(String(argname))){
+		if (!web_server.hasArg(String(argname)))
+		{
 			argvalue[0] = 0;
 			return false;
 		}
@@ -454,16 +455,46 @@ extern "C"
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
+
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		WiFi.begin();
-		if (!wifi_settings.wifi_on)
+		if (wifi_settings.wifi_on)
 		{
-			WiFi.disconnect();
+			uint8_t str[64];
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			}
 		}
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
@@ -477,7 +508,7 @@ extern "C"
 		bt_settings_offset = settings_register_external_setting(1);
 		if (settings_load(bt_settings_offset, &bt_on, 1))
 		{
-			settings_erase(bt_settings_offset,(uint8_t *)&bt_on, 1);
+			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
 		}
 
 		if (bt_on)

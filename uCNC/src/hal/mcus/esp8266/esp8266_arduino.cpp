@@ -420,13 +420,42 @@ extern "C"
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		WiFi.begin();
-		if (!wifi_settings.wifi_on)
+		if (wifi_settings.wifi_on)
 		{
-			WiFi.disconnect();
+			uint8_t str[64];
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			}
 		}
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
