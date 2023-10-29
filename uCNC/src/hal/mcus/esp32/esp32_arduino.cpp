@@ -288,17 +288,17 @@ extern "C"
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
-						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char *)str);
-						break;
-					case 2:
 						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
 						protocol_send_feedback((const char *)str);
 						break;
-					default:
+					case 2:
 						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
+						break;
+					default:
+						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
+						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
 						protocol_send_feedback((const char *)str);
 						break;
 					}
@@ -449,21 +449,17 @@ extern "C"
 
 #endif
 
-	void esp32_wifi_bt_init(void)
-	{
 #ifdef ENABLE_WIFI
-#ifndef ENABLE_BLUETOOTH
-		WiFi.setSleep(WIFI_PS_NONE);
+	void mcu_wifi_task(void *arg)
+	{
+		WiFi.begin();
+		telnet_server.begin();
+		telnet_server.setNoDelay(true);
+#if !defined(MCU_HAS_ENDPOINTS)
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+		web_server.begin();
 #endif
-
-		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
-		{
-			wifi_settings = {0};
-			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-		}
+		WiFi.disconnect();
 
 		if (wifi_settings.wifi_on)
 		{
@@ -496,13 +492,32 @@ extern "C"
 				break;
 			}
 		}
-		telnet_server.begin();
-		telnet_server.setNoDelay(true);
 
-#if !defined(MCU_HAS_ENDPOINTS)
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
-		web_server.begin();
+		for (;;)
+		{
+			web_server.handleClient();
+			taskYIELD();
+		}
+	}
 #endif
+
+	void esp32_wifi_bt_init(void)
+	{
+#ifdef ENABLE_WIFI
+#ifndef ENABLE_BLUETOOTH
+		WiFi.setSleep(WIFI_PS_NONE);
+#endif
+
+		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+		{
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+		}
+
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 3, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
@@ -716,8 +731,6 @@ extern "C"
 #endif
 			}
 		}
-
-		web_server.handleClient();
 #endif
 	}
 

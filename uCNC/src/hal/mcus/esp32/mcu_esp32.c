@@ -508,8 +508,7 @@ void mcu_init(void)
 #endif
 
 	// initialize rtc timer (currently on core 1)
-	// moved to core 0
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, 0 /*CONFIG_ARDUINO_RUNNING_CORE*/);
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
