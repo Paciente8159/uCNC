@@ -8,6 +8,31 @@
 
 # Changelog
 
+## [1.8.1] - Unreleased
+
+### Added
+
+- added new endpoint interface to allow development of web server extension modules for MCU with WiFi (#554)
+- added function to get parser internal position (#537)
+- added new debug stream option to use a dedicated COM channel to print debug verbose (#548) 
+
+### Changed
+
+- ESP32 web server now runs on a separate task (#554)
+- ESP32 moved rtc task to core 1 (#554)
+- modified extented codes macro (#538)
+- modified alarm logic to allow execution of real time commands even with alarm conditions active (#548)
+
+### Fixed
+
+- fixed USART ISR vector naming on AVR UNO using web builder generated override files (#557)
+- fixed settings crc calculation to prevent accept invalid incorrect settings structures with stuffed bytes set to and leading to data offset missmatch (#553)
+- fixed startup blocks printing format (#553)
+- prevent alarm condition after enabling setting $21 (#549)
+- fixed variable edit logic error on system menu (#547)
+- fixed some variable types in system menu settings (#547)
+- fixed signess of coordinates with option SET_ORIGIN_AT_HOME_POS (#542)
+
 ## [1.8.0] - 18-10-2023
 
 ### Added
@@ -1362,6 +1387,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.1
 [1.8.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0
 [1.7.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.6
 [1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
