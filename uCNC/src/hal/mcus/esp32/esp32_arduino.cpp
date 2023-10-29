@@ -381,7 +381,7 @@ extern "C"
 #define MCU_FLASH_FS_SPIFFS 2
 
 #ifndef MCU_FLASH_FS
-#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+#define MCU_FLASH_FS MCU_FLASH_FS_SPIFFS
 #endif
 
 #if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
@@ -400,7 +400,7 @@ extern "C"
 #ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
-		FLASH_FS.begin(true);
+		FLASH_FS.begin();
 		web_server.begin();
 	}
 
