@@ -60,14 +60,14 @@ uint16_t bt_settings_offset;
 #define WIFI_PASS "pass"
 #endif
 
-WebServer httpServer(80);
+WebServer web_server(80);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer server(WIFI_PORT);
-WiFiClient serverClient;
+WiFiServer telnet_server(WIFI_PORT);
+WiFiClient server_client;
 
 typedef struct
 {
@@ -108,9 +108,9 @@ extern "C"
 		}
 
 #ifdef ENABLE_BLUETOOTH
-		if (!strncmp((const char*)grbl_cmd_str, "BTH", 3))
+		if (!strncmp((const char *)grbl_cmd_str, "BTH", 3))
 		{
-			if (!strcmp((const char*)&grbl_cmd_str[3], "ON"))
+			if (!strcmp((const char *)&grbl_cmd_str[3], "ON"))
 			{
 				SerialBT.begin(BOARD_NAME);
 				protocol_send_feedback("Bluetooth enabled");
@@ -120,7 +120,7 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[3], "OFF"))
+			if (!strcmp((const char *)&grbl_cmd_str[3], "OFF"))
 			{
 				SerialBT.end();
 				protocol_send_feedback("Bluetooth disabled");
@@ -132,35 +132,35 @@ extern "C"
 		}
 #endif
 #ifdef ENABLE_WIFI
-		if (!strncmp((const char*)grbl_cmd_str, "WIFI", 4))
+		if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
 		{
-			if (!strcmp((const char*)&grbl_cmd_str[4], "ON"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
 			{
 				WiFi.disconnect();
 				switch (wifi_settings.wifi_mode)
 				{
 				case 1:
 					WiFi.mode(WIFI_STA);
-					WiFi.begin((char*)wifi_settings.ssid, (char*)wifi_settings.pass);
+					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 					protocol_send_feedback("Trying to connect to WiFi");
 					break;
 				case 2:
 					WiFi.mode(WIFI_AP);
-					WiFi.softAP(BOARD_NAME, (char*)wifi_settings.pass);
+					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 					protocol_send_feedback("AP started");
 					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char*)str);
+					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback((const char *)str);
 					break;
 				default:
 					WiFi.mode(WIFI_AP_STA);
-					WiFi.begin((char*)wifi_settings.ssid, (char*)wifi_settings.pass);
+					WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
 					protocol_send_feedback("Trying to connect to WiFi");
-					WiFi.softAP(BOARD_NAME, (char*)wifi_settings.pass);
+					WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
 					protocol_send_feedback("AP started");
 					protocol_send_feedback("SSID>" BOARD_NAME);
-					sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char*)str);
+					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+					protocol_send_feedback((const char *)str);
 					break;
 				}
 
@@ -169,7 +169,7 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "OFF"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "OFF"))
 			{
 				WiFi.disconnect();
 				wifi_settings.wifi_on = 0;
@@ -177,29 +177,29 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "SSID"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "SSID"))
 			{
 				if (has_arg)
 				{
-					uint8_t len = strlen((const char*)arg);
+					uint8_t len = strlen((const char *)arg);
 					if (len > WIFI_SSID_MAX_LEN)
 					{
 						protocol_send_feedback("WiFi SSID is too long");
 					}
 					memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
-					strcpy((char*)wifi_settings.ssid, (const char*)arg);
+					strcpy((char *)wifi_settings.ssid, (const char *)arg);
 					settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 					protocol_send_feedback("WiFi SSID modified");
 				}
 				else
 				{
-					sprintf((char*)str, "SSID>%s", wifi_settings.ssid);
-					protocol_send_feedback((const char*)str);
+					sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
+					protocol_send_feedback((const char *)str);
 				}
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "SCAN"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "SCAN"))
 			{
 				// Serial.println("[MSG:Scanning Networks]");
 				protocol_send_feedback("Scanning Networks");
@@ -212,37 +212,37 @@ extern "C"
 				}
 
 				// print the list of networks seen:
-				sprintf((char*)str, "%d available networks", numSsid);
-				protocol_send_feedback((const char*)str);
+				sprintf((char *)str, "%d available networks", numSsid);
+				protocol_send_feedback((const char *)str);
 
 				// print the network number and name for each network found:
 				for (int netid = 0; netid < numSsid; netid++)
 				{
-					sprintf((char*)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
-					protocol_send_feedback((const char*)str);
+					sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid).c_str(), WiFi.RSSI(netid));
+					protocol_send_feedback((const char *)str);
 				}
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "SAVE"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "SAVE"))
 			{
 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback("WiFi settings saved");
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "RESET"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
 			{
 				settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 				protocol_send_feedback("WiFi settings deleted");
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "MODE"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "MODE"))
 			{
 				if (has_arg)
 				{
-					int mode = atoi((const char*)arg) - 1;
+					int mode = atoi((const char *)arg) - 1;
 					if (mode >= 0)
 					{
 						wifi_settings.wifi_mode = mode;
@@ -268,38 +268,38 @@ extern "C"
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "PASS") && has_arg)
+			if (!strcmp((const char *)&grbl_cmd_str[4], "PASS") && has_arg)
 			{
-				uint8_t len = strlen((const char*)arg);
+				uint8_t len = strlen((const char *)arg);
 				if (len > WIFI_SSID_MAX_LEN)
 				{
 					protocol_send_feedback("WiFi pass is too long");
 				}
 				memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
-				strcpy((char*)wifi_settings.pass, (const char*)arg);
+				strcpy((char *)wifi_settings.pass, (const char *)arg);
 				protocol_send_feedback("WiFi password modified");
 				return STATUS_OK;
 			}
 
-			if (!strcmp((const char*)&grbl_cmd_str[4], "IP"))
+			if (!strcmp((const char *)&grbl_cmd_str[4], "IP"))
 			{
 				if (wifi_settings.wifi_on)
 				{
 					switch (wifi_settings.wifi_mode)
 					{
 					case 1:
-						sprintf((char*)str, "STA IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char*)str);
-						sprintf((char*)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char*)str);
+						sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
 						break;
 					case 2:
-						sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char*)str);
+						sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
 						break;
 					default:
-						sprintf((char*)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-						protocol_send_feedback((const char*)str);
+						sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
+						sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+						protocol_send_feedback((const char *)str);
 						break;
 					}
 				}
@@ -344,28 +344,28 @@ extern "C"
 		{
 			connected = true;
 			protocol_send_feedback("Connected to WiFi");
-			sprintf((char*)str, "SSID>%s", wifi_settings.ssid);
-			protocol_send_feedback((const char*)str);
-			sprintf((char*)str, "IP>%s", WiFi.localIP().toString().c_str());
-			protocol_send_feedback((const char*)str);
+			sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
+			protocol_send_feedback((const char *)str);
+			sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
+			protocol_send_feedback((const char *)str);
 		}
 
-		if (server.hasClient())
+		if (telnet_server.hasClient())
 		{
-			if (serverClient)
+			if (server_client)
 			{
-				if (serverClient.connected())
+				if (server_client.connected())
 				{
-					serverClient.stop();
+					server_client.stop();
 				}
 			}
-			serverClient = server.available();
-			serverClient.println("[MSG:New client connected]");
+			server_client = telnet_server.available();
+			server_client.println("[MSG:New client connected]");
 			return false;
 		}
-		else if (serverClient)
+		else if (server_client)
 		{
-			if (serverClient.connected())
+			if (server_client.connected())
 			{
 				return true;
 			}
@@ -374,33 +374,156 @@ extern "C"
 		return false;
 	}
 
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+
+#include "../../../modules/endpoint.h"
+#define MCU_FLASH_FS_LITTLE_FS 1
+#define MCU_FLASH_FS_SPIFFS 2
+
+#ifndef MCU_FLASH_FS
+#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+#endif
+
+#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
+#include "FS.h"
+#include <LittleFS.h>
+#define FLASH_FS LittleFS
+#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
+#include "FS.h"
+#include <SPIFFS.h>
+#define FLASH_FS SPIFFS
+#endif
+
+	// call to the webserver initializer
+	DECL_MODULE(endpoint)
+	{
+#ifndef CUSTOM_OTA_ENDPOINT
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#endif
+		FLASH_FS.begin(true);
+		web_server.begin();
+	}
+
+	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+	{
+		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+	}
+
+	int endpoint_request_hasargs(void)
+	{
+		return web_server.args();
+	}
+
+	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
+	{
+		if (!web_server.hasArg(String(argname)))
+		{
+			argvalue[0] = 0;
+			return false;
+		}
+		strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
+		return true;
+	}
+
+	void endpoint_send(int code, const char *content_type, const char *data)
+	{
+		web_server.send(code, content_type, data);
+	}
+
+	void endpoint_send_header(const char *name, const char *data, bool first)
+	{
+		web_server.sendHeader(name, data, first);
+	}
+
+	bool endpoint_send_file(const char *file_path, const char *content_type)
+	{
+		if (FLASH_FS.exists(file_path))
+		{
+			File file = FLASH_FS.open(file_path, "r");
+			web_server.streamFile(file, content_type);
+			file.close();
+			return true;
+		}
+		return false;
+	}
+
+#endif
+
+#ifdef ENABLE_WIFI
+	void mcu_wifi_task(void *arg)
+	{
+		WiFi.begin();
+		telnet_server.begin();
+		telnet_server.setNoDelay(true);
+#if !defined(MCU_HAS_ENDPOINTS)
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+		web_server.begin();
+#endif
+		WiFi.disconnect();
+
+		if (wifi_settings.wifi_on)
+		{
+			uint8_t str[64];
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			}
+		}
+
+		for (;;)
+		{
+			web_server.handleClient();
+			taskYIELD();
+		}
+	}
+#endif
+
 	void esp32_wifi_bt_init(void)
 	{
 #ifdef ENABLE_WIFI
 #ifndef ENABLE_BLUETOOTH
 		WiFi.setSleep(WIFI_PS_NONE);
 #endif
+
 		wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 		if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
 		{
-			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+			wifi_settings = {0};
+			memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+			memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		WiFi.begin();
-		if (!wifi_settings.wifi_on)
-		{
-			WiFi.disconnect();
-		}
-		server.begin();
-		server.setNoDelay(true);
-		httpUpdater.setup(&httpServer, update_path, update_username, update_password);
-		httpServer.begin();
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 3, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
 		if (settings_load(bt_settings_offset, &bt_on, 1))
 		{
-			settings_erase(bt_settings_offset,(uint8_t *)&bt_on, 1);
+			settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
 		}
 
 		if (bt_on)
@@ -453,7 +576,7 @@ extern "C"
 				uint8_t r;
 
 				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-				serverClient.write(tmp, r);
+				server_client.write(tmp, r);
 			}
 		}
 		else
@@ -524,9 +647,9 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			if (serverClient.available() > 0)
+			if (server_client.available() > 0)
 			{
-				return (uint8_t)serverClient.read();
+				return (uint8_t)server_client.read();
 			}
 		}
 #endif
@@ -547,7 +670,7 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			wifiready = (serverClient.available() > 0);
+			wifiready = (server_client.available() > 0);
 		}
 #endif
 
@@ -588,11 +711,11 @@ extern "C"
 #ifdef ENABLE_WIFI
 		if (esp32_wifi_clientok())
 		{
-			while (serverClient.available() > 0)
+			while (server_client.available() > 0)
 			{
 				esp_task_wdt_reset();
 #ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-				uint8_t c = serverClient.read();
+				uint8_t c = server_client.read();
 				if (mcu_com_rx_cb(c))
 				{
 					if (BUFFER_FULL(wifi_rx))
@@ -604,12 +727,10 @@ extern "C"
 					BUFFER_STORE(wifi_rx);
 				}
 #else
-				mcu_wifi_rx_cb((uint8_t)serverClient.read());
+				mcu_wifi_rx_cb((uint8_t)server_client.read());
 #endif
 			}
 		}
-
-		httpServer.handleClient();
 #endif
 	}
 
