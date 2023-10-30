@@ -1,9 +1,23 @@
 dependencies:
+  arduino:
+    component_hash: e15adfd50cfde0e89cab8ba0e2fc54cc0b31e9357acd27d4a3e833165889d126
+    source:
+      git: https://github.com/espressif/arduino-esp32.git
+      path: .
+      type: git
+    version: 3670e2bf2aca822f2e1225fdb0e0796e490005a8
+  esp_littlefs:
+    component_hash: b41b1c9d4a7237094d0d1d4518db4662e27c4c14450f49f79a665f4d6d0135a3
+    source:
+      git: https://github.com/joltwallet/esp_littlefs.git
+      path: .
+      type: git
+    version: b671069b1e9e279f357736e7b51402f46e39d1b5
   idf:
     component_hash: null
     source:
       type: idf
     version: 4.4.4
-manifest_hash: dcf4d39b94252de130019eadceb989d72b0dbc26b552cfdcbb50f6da531d2b92
+manifest_hash: 9405d477551dd21ee290cffa71b99487cbfd561ba2fcba3520158d376ddb3778
 target: esp32
 version: 1.0.0

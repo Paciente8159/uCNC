@@ -78,3 +78,9 @@ windows/uCNCgui/obj/Debug/net6.0-windows/uCNCgui.GeneratedMSBuildEditorConfig.ed
 
 #PlatformIO
 .pio
+
+#ESPIDF
+managed_components
+sdkconfig.*
+dependencies.lock
+!sdkconfig.defaults
