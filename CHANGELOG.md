@@ -8,7 +8,7 @@
 
 # Changelog
 
-## [1.8.1] - Unreleased
+## [1.8.1] - 01-11-2023
 
 ### Added
 
