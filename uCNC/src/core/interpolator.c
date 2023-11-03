@@ -562,12 +562,15 @@ void itp_run(void)
 		/*
 			common calculations for all three profiles (accel, constant and deaccel)
 		*/
+		uint16_t segm_steps;
 		speed_change = fast_flt_div2(speed_change);
 		current_speed += speed_change;
 
 		if (current_speed > 0)
 		{
 			partial_distance += current_speed * integrator;
+			// computes how many steps it will perform at this speed and frame window
+			segm_steps = (uint16_t)floorf(speed_change);
 		}
 		else
 		{
@@ -580,12 +583,11 @@ void itp_run(void)
 			}
 
 			// flush remaining steps
-			partial_distance = remaining_steps;
+			segm_steps = (uint16_t)remaining_steps;
 			current_speed = -speed_change;
 		}
 
 		// computes how many steps it will perform at this speed and frame window
-		uint16_t segm_steps = (uint16_t)floorf(partial_distance);
 		partial_distance -= segm_steps;
 
 		// if computed steps exceed the remaining steps for the motion shortens the distance
