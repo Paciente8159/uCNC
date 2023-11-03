@@ -570,7 +570,7 @@ void itp_run(void)
 		{
 			partial_distance += current_speed * integrator;
 			// computes how many steps it will perform at this speed and frame window
-			segm_steps = (uint16_t)floorf(speed_change);
+			segm_steps = (uint16_t)floorf(partial_distance);
 		}
 		else
 		{
