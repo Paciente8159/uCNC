@@ -564,19 +564,23 @@ void itp_run(void)
 		*/
 		current_speed += fast_flt_div2(speed_change);
 
-		if (current_speed <= 0)
+		if (current_speed > 0)
 		{
+			partial_distance += current_speed * integrator;
+		}
+		else{
 			// speed can't be negative
-			current_speed = 0;
 			itp_cur_plan_block->entry_feed_sqr = 0;
 
 			if (cnc_get_exec_state(EXEC_HOLD))
 			{
 				return;
 			}
+			
+			// flush remaining steps
+			partial_distance = remaining_steps;
+			current_speed = fast_flt_div2(speed_change);
 		}
-
-		partial_distance += current_speed * integrator;
 
 		// computes how many steps it will perform at this speed and frame window
 		uint16_t segm_steps = (uint16_t)floorf(partial_distance);
