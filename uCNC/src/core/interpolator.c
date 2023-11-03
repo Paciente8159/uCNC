@@ -562,13 +562,15 @@ void itp_run(void)
 		/*
 			common calculations for all three profiles (accel, constant and deaccel)
 		*/
-		current_speed += fast_flt_div2(speed_change);
+		speed_change = fast_flt_div2(speed_change);
+		current_speed += speed_change;
 
 		if (current_speed > 0)
 		{
 			partial_distance += current_speed * integrator;
 		}
-		else{
+		else
+		{
 			// speed can't be negative
 			itp_cur_plan_block->entry_feed_sqr = 0;
 
@@ -576,10 +578,10 @@ void itp_run(void)
 			{
 				return;
 			}
-			
+
 			// flush remaining steps
 			partial_distance = remaining_steps;
-			current_speed = fast_flt_div2(speed_change);
+			current_speed = -speed_change;
 		}
 
 		// computes how many steps it will perform at this speed and frame window
