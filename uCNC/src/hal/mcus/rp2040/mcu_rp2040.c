@@ -35,6 +35,44 @@ extern void rp2040_eeprom_flush(void);
 
 uint8_t rp2040_pwm[16];
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+
+#ifndef IC74HC595_PIO_FREQ
+#define IC74HC595_PIO_FREQ 20000000UL
+#endif
+
+#if IC74HC595_COUNT != 4
+#error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
+#endif
+
+#ifdef IC74HC595_HAS_PWMS
+#warning "IC74HC595 on RP2040 does not support soft PWM yet!"
+#endif
+
+#include "pico/stdlib.h"
+#include "hardware/pio.h"
+#include "ic74hc595.pio.h"
+
+static PIO pio_ic74hc595;
+static uint sm_ic74hc595;
+
+void ic74hc595_pio_init()
+{
+	pio_ic74hc595 = pio0;
+	sm_ic74hc595 = 0;
+	uint offset = pio_add_program(pio_ic74hc595, &ic74hc595_program);
+	ic74hc595_program_init(pio_ic74hc595, sm_ic74hc595, offset, IC74HC595_PIO_DATA, IC74HC595_PIO_CLK, IC74HC595_PIO_LATCH, IC74HC595_PIO_FREQ);
+}
+
+// disable this function
+// IO will be updated at a fixed rate
+MCU_CALLBACK void ic74hc595_shift_io_pins(void)
+{
+	ic74hc595_program_write(pio_ic74hc595, sm_ic74hc595, *((volatile uint32_t *)&ic74hc595_io_pins[0]));
+}
+
+#endif
+
 void mcu_din_isr(void)
 {
 	mcu_inputs_changed_cb();
@@ -266,6 +304,10 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	ic74hc595_pio_init();
+#endif
 	mcu_usart_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
