@@ -195,30 +195,29 @@ extern "C"
 #define FORCEINLINE __attribute__((always_inline)) inline
 #endif
 
-	static FORCEINLINE uint8_t __atomic_in(void)
+#ifndef FORCEINLINE
+#define FORCEINLINE __attribute__((always_inline)) inline
+#endif
+
+	static FORCEINLINE bool __atomic_in(void)
 	{
 		mcu_disable_global_isr();
-		return 1;
+		return true;
 	}
 
-	static FORCEINLINE void __atomic_out(uint8_t *s)
+	static FORCEINLINE void __atomic_out(bool *s)
 	{
-		if (*s != 0)
+		if (*s)
 		{
 			mcu_enable_global_isr();
 		}
 	}
 
-	static FORCEINLINE void __atomic_out_on(uint8_t *s)
-	{
-		mcu_enable_global_isr();
-	}
-
 #ifndef __ATOMIC__
-#define __ATOMIC__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = mcu_get_global_isr(), __AtomLock = __atomic_in(); __AtomLock; __AtomLock = false)
 #endif
 #ifndef __ATOMIC_FORCEON__
-#define __ATOMIC_FORCEON__ for (uint8_t __restore_atomic__ __attribute__((__cleanup__(__atomic_out_on))) = 1, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = 0)
+#define __ATOMIC_FORCEON__ for (bool __restore_atomic__ __attribute__((__cleanup__(__atomic_out))) = true, __AtomLock = __atomic_in(); __AtomLock; __AtomLock = false)
 #endif
 
 #define __STRGIFY__(s) #s
@@ -235,190 +234,170 @@ extern "C"
 		volatile uint8_t tail;
 	} ring_buffer_t;
 
+#ifndef IMPLEMENTS_CUSTOM_BUFFER
 #define DECL_BUFFER(T, N, S)           \
 	static T N##_bufferdata[S];        \
 	static const uint8_t N##_size = S; \
 	static ring_buffer_t N
 
+#define BUFFER_INIT(T, N, S)
 #define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - buffer.count)
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
 #define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
-#define BUFFER_REMOVE(buffer)          \
-	{                                  \
-		uint8_t tail;                  \
-		__ATOMIC__                     \
-		{                              \
-			tail = buffer.tail;        \
-		}                              \
-		if (!BUFFER_EMPTY(buffer))     \
-		{                              \
-			tail++;                    \
-			if (tail >= buffer##_size) \
-			{                          \
-				tail = 0;              \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.tail = tail;    \
-				buffer.count--;        \
-			}                          \
-		}                              \
+#define BUFFER_REMOVE(buffer)                \
+	{                                        \
+		uint8_t tail;                        \
+		__ATOMIC__                           \
+		{                                    \
+			tail = buffer.tail;              \
+			if (!BUFFER_EMPTY(buffer))       \
+			{                                \
+				if (++tail >= buffer##_size) \
+				{                            \
+					tail = 0;                \
+				}                            \
+				buffer.tail = tail;          \
+				buffer.count--;              \
+			}                                \
+		}                                    \
 	}
 
-#define BUFFER_DEQUEUE(buffer, ptr)                                                  \
-	{                                                                                \
-		if (!BUFFER_EMPTY(buffer))                                                   \
-		{                                                                            \
-			uint8_t tail;                                                            \
-			__ATOMIC__                                                               \
-			{                                                                        \
-				tail = buffer.tail;                                                  \
-			}                                                                        \
-			memcpy(ptr, &buffer##_bufferdata[tail], sizeof(buffer##_bufferdata[0])); \
-			tail++;                                                                  \
-			if (tail >= buffer##_size)                                               \
-			{                                                                        \
-				tail = 0;                                                            \
-			}                                                                        \
-			__ATOMIC__                                                               \
-			{                                                                        \
-				buffer.tail = tail;                                                  \
-				buffer.count--;                                                      \
-			}                                                                        \
-		}                                                                            \
+#define BUFFER_DEQUEUE(buffer, ptr)                 \
+	{                                               \
+		if (!BUFFER_EMPTY(buffer))                  \
+		{                                           \
+			uint8_t tail;                           \
+			__ATOMIC__                              \
+			{                                       \
+				tail = buffer.tail;                 \
+				*(ptr) = buffer##_bufferdata[tail]; \
+				if (++tail >= buffer##_size)        \
+				{                                   \
+					tail = 0;                       \
+				}                                   \
+				buffer.tail = tail;                 \
+				buffer.count--;                     \
+			}                                       \
+		}                                           \
 	}
 
-#define BUFFER_STORE(buffer)           \
-	{                                  \
-		if (!BUFFER_FULL(buffer))      \
-		{                              \
-			uint8_t head;              \
-			__ATOMIC__                 \
-			{                          \
-				head = buffer.head;    \
-			}                          \
-			head++;                    \
-			if (head >= buffer##_size) \
-			{                          \
-				head = 0;              \
-			}                          \
-			__ATOMIC__                 \
-			{                          \
-				buffer.head = head;    \
-				buffer.count++;        \
-			}                          \
-		}                              \
+#define BUFFER_STORE(buffer)                 \
+	{                                        \
+		if (!BUFFER_FULL(buffer))            \
+		{                                    \
+			uint8_t head;                    \
+			__ATOMIC__                       \
+			{                                \
+				head = buffer.head;          \
+				if (++head >= buffer##_size) \
+				{                            \
+					head = 0;                \
+				}                            \
+				buffer.head = head;          \
+				buffer.count++;              \
+			}                                \
+		}                                    \
 	}
 
-#define BUFFER_ENQUEUE(buffer, ptr)                                                  \
-	{                                                                                \
-		if (!BUFFER_FULL(buffer))                                                    \
-		{                                                                            \
-			uint8_t head;                                                            \
-			__ATOMIC__                                                               \
-			{                                                                        \
-				head = buffer.head;                                                  \
-			}                                                                        \
-			memcpy(&buffer##_bufferdata[head], ptr, sizeof(buffer##_bufferdata[0])); \
-			head++;                                                                  \
-			if (head >= buffer##_size)                                               \
-			{                                                                        \
-				head = 0;                                                            \
-			}                                                                        \
-			__ATOMIC__                                                               \
-			{                                                                        \
-				buffer.head = head;                                                  \
-				buffer.count++;                                                      \
-			}                                                                        \
-		}                                                                            \
+#define BUFFER_ENQUEUE(buffer, ptr)                 \
+	{                                               \
+		if (!BUFFER_FULL(buffer))                   \
+		{                                           \
+			uint8_t head;                           \
+			__ATOMIC__                              \
+			{                                       \
+				head = buffer.head;                 \
+				buffer##_bufferdata[head] = *(ptr); \
+				if (++head >= buffer##_size)        \
+				{                                   \
+					head = 0;                       \
+				}                                   \
+				buffer.head = head;                 \
+				buffer.count++;                     \
+			}                                       \
+		}                                           \
 	}
 #define BUFFER_NEXT_FREE(buffer) (&buffer##_bufferdata[buffer.head])
 
-#define BUFFER_WRITE(buffer, ptr, len, written) ({                                                   \
-	uint8_t count, head;                                                                             \
-	__ATOMIC__                                                                                       \
-	{                                                                                                \
-		head = buffer.head;                                                                          \
-		count = buffer.count;                                                                        \
-	}                                                                                                \
-	count = MIN(buffer##_size - count, len);                                                         \
-	written = 0;                                                                                     \
-	if (count)                                                                                       \
-	{                                                                                                \
-		uint8_t avail = (buffer##_size - head);                                                      \
-		if (avail < count && avail)                                                                  \
-		{                                                                                            \
-			memcpy(&buffer##_bufferdata[head], ptr, avail * sizeof(buffer##_bufferdata[0]));         \
-			written = avail;                                                                         \
-			count -= avail;                                                                          \
-			head = 0;                                                                                \
-		}                                                                                            \
-		else                                                                                         \
-		{                                                                                            \
-			avail = 0;                                                                               \
-		}                                                                                            \
-		if (count)                                                                                   \
-		{                                                                                            \
-			memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
-			written += count;                                                                        \
-			__ATOMIC__                                                                               \
-			{                                                                                        \
-				head += count;                                                                       \
-				if (head == buffer##_size)                                                           \
-				{                                                                                    \
-					head = 0;                                                                        \
-				}                                                                                    \
-				buffer.head = head;                                                                  \
-				buffer.count += written;                                                             \
-			}                                                                                        \
-		}                                                                                            \
-	}                                                                                                \
+#define BUFFER_WRITE(buffer, ptr, len, written) ({                                                       \
+	uint8_t count, head;                                                                                 \
+	__ATOMIC__                                                                                           \
+	{                                                                                                    \
+		head = buffer.head;                                                                              \
+		count = buffer.count;                                                                            \
+		count = MIN(buffer##_size - count, len);                                                         \
+		written = 0;                                                                                     \
+		if (count)                                                                                       \
+		{                                                                                                \
+			uint8_t avail = (buffer##_size - head);                                                      \
+			if (avail < count && avail)                                                                  \
+			{                                                                                            \
+				memcpy(&buffer##_bufferdata[head], ptr, avail * sizeof(buffer##_bufferdata[0]));         \
+				written = avail;                                                                         \
+				count -= avail;                                                                          \
+				head = 0;                                                                                \
+			}                                                                                            \
+			else                                                                                         \
+			{                                                                                            \
+				avail = 0;                                                                               \
+			}                                                                                            \
+			if (count)                                                                                   \
+			{                                                                                            \
+				memcpy(&buffer##_bufferdata[head], &ptr[avail], count * sizeof(buffer##_bufferdata[0])); \
+				written += count;                                                                        \
+				head += count;                                                                           \
+				if (head == buffer##_size)                                                               \
+				{                                                                                        \
+					head = 0;                                                                            \
+				}                                                                                        \
+				buffer.head = head;                                                                      \
+				buffer.count += written;                                                                 \
+			}                                                                                            \
+		}                                                                                                \
+	}                                                                                                    \
 })
 
-#define BUFFER_READ(buffer, ptr, len, read) ({                                                       \
-	uint8_t count, tail;                                                                             \
-	__ATOMIC__                                                                                       \
-	{                                                                                                \
-		tail = buffer.tail;                                                                          \
-		count = buffer.count;                                                                        \
-	}                                                                                                \
-	if (count > len)                                                                                 \
-	{                                                                                                \
-		count = len;                                                                                 \
-	}                                                                                                \
-	read = 0;                                                                                        \
-	if (count)                                                                                       \
-	{                                                                                                \
-		uint8_t avail = buffer##_size - tail;                                                        \
-		if (avail < count && avail)                                                                  \
-		{                                                                                            \
-			memcpy(ptr, &buffer##_bufferdata[tail], avail * sizeof(buffer##_bufferdata[0]));         \
-			read = avail;                                                                            \
-			count -= avail;                                                                          \
-			tail = 0;                                                                                \
-		}                                                                                            \
-		else                                                                                         \
-		{                                                                                            \
-			avail = 0;                                                                               \
-		}                                                                                            \
-		if (count)                                                                                   \
-		{                                                                                            \
-			memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
-			read += count;                                                                           \
-			__ATOMIC__                                                                               \
-			{                                                                                        \
-				tail += count;                                                                       \
-				if (tail == buffer##_size)                                                           \
-				{                                                                                    \
-					tail = 0;                                                                        \
-				}                                                                                    \
-				buffer.tail = tail;                                                                  \
-				buffer.count -= read;                                                                \
-			}                                                                                        \
-		}                                                                                            \
-	}                                                                                                \
+#define BUFFER_READ(buffer, ptr, len, read) ({                                                           \
+	uint8_t count, tail;                                                                                 \
+	__ATOMIC__                                                                                           \
+	{                                                                                                    \
+		tail = buffer.tail;                                                                              \
+		count = buffer.count;                                                                            \
+		if (count > len)                                                                                 \
+		{                                                                                                \
+			count = len;                                                                                 \
+		}                                                                                                \
+		read = 0;                                                                                        \
+		if (count)                                                                                       \
+		{                                                                                                \
+			uint8_t avail = buffer##_size - tail;                                                        \
+			if (avail < count && avail)                                                                  \
+			{                                                                                            \
+				memcpy(ptr, &buffer##_bufferdata[tail], avail * sizeof(buffer##_bufferdata[0]));         \
+				read = avail;                                                                            \
+				count -= avail;                                                                          \
+				tail = 0;                                                                                \
+			}                                                                                            \
+			else                                                                                         \
+			{                                                                                            \
+				avail = 0;                                                                               \
+			}                                                                                            \
+			if (count)                                                                                   \
+			{                                                                                            \
+				memcpy(&ptr[avail], &buffer##_bufferdata[tail], count * sizeof(buffer##_bufferdata[0])); \
+				read += count;                                                                           \
+				tail += count;                                                                           \
+				if (tail == buffer##_size)                                                               \
+				{                                                                                        \
+					tail = 0;                                                                            \
+				}                                                                                        \
+				buffer.tail = tail;                                                                      \
+				buffer.count -= read;                                                                    \
+			}                                                                                            \
+		}                                                                                                \
+	}                                                                                                    \
 })
 
 #define BUFFER_CLEAR(buffer)            \
@@ -431,6 +410,7 @@ extern "C"
 			buffer.count = 0;           \
 		}                               \
 	}
+#endif
 
 #ifdef __cplusplus
 }

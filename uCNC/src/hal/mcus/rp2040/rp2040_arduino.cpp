@@ -23,940 +23,940 @@
 #include <string.h>
 #include "../../../cnc.h"
 
-/**
- *
- * This handles all communications via Serial USB, Serial UART and WiFi
- *
- * **/
-
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-#ifndef WIFI_SSID_MAX_LEN
-#define WIFI_SSID_MAX_LEN 32
-#endif
-
-#ifndef WIFI_PASS_MAX_LEN
-#define WIFI_PASS_MAX_LEN 32
-#endif
-
-#define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, WIFI_PASS_MAX_LEN)
-
-#ifdef ENABLE_BLUETOOTH
-#include <SerialBT.h>
-
-uint8_t bt_on;
-uint16_t bt_settings_offset;
-#endif
-
-#ifdef ENABLE_WIFI
-#include <WiFi.h>
-#include <WebServer.h>
-#include <HTTPUpdateServer.h>
-
-#ifndef WIFI_PORT
-#define WIFI_PORT 23
-#endif
-
-#ifndef WIFI_USER
-#define WIFI_USER "admin\0"
-#endif
-
-#ifndef WIFI_PASS
-#define WIFI_PASS "pass\0"
-#endif
-
-WebServer web_server(80);
-HTTPUpdateServer httpUpdater;
-const char *update_path = "/firmware";
-const char *update_username = WIFI_USER;
-const char *update_password = WIFI_PASS;
-#define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(WIFI_PORT);
-WiFiClient server_client;
-
-typedef struct
-{
-	uint8_t wifi_on;
-	uint8_t wifi_mode;
-	char ssid[WIFI_SSID_MAX_LEN];
-	char pass[WIFI_PASS_MAX_LEN];
-} wifi_settings_t;
-
-uint16_t wifi_settings_offset;
-wifi_settings_t wifi_settings;
-#endif
-
-#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
-{
-	uint8_t str[128];
-	uint8_t arg[ARG_MAX_LEN];
-	uint8_t has_arg = (next_char == '=');
-	memset(arg, 0, sizeof(arg));
-	if (has_arg)
-	{
-		uint8_t c = serial_getc();
-		uint8_t i = 0;
-		while (c)
-		{
-			arg[i++] = c;
-			if (i >= ARG_MAX_LEN)
-			{
-				return STATUS_INVALID_STATEMENT;
-			}
-			c = serial_getc();
-		}
-	}
-
-#ifdef ENABLE_BLUETOOTH
-	if (!strncmp((const char *)grbl_cmd_str, "BTH", 3))
-	{
-		if (!strcmp((const char *)&grbl_cmd_str[3], "ON"))
-		{
-			SerialBT.begin(BAUDRATE, SERIAL_8N1);
-			protocol_send_feedback((const char *)"Bluetooth enabled");
-			bt_on = 1;
-			settings_save(bt_settings_offset, &bt_on, 1);
-
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[3], "OFF"))
-		{
-			SerialBT.end();
-			protocol_send_feedback((const char *)"Bluetooth disabled");
-			bt_on = 0;
-			settings_save(bt_settings_offset, &bt_on, 1);
-
-			return STATUS_OK;
-		}
-	}
-#endif
-#ifdef ENABLE_WIFI
-	if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
-	{
-		if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
-		{
-			WiFi.disconnect();
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-				protocol_send_feedback((const char *)"Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-				protocol_send_feedback((const char *)"AP started");
-				protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
-				protocol_send_feedback((const char *)"Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
-				protocol_send_feedback((const char *)"AP started");
-				protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
-				break;
-			}
-
-			wifi_settings.wifi_on = 1;
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "OFF"))
-		{
-			WiFi.disconnect();
-			wifi_settings.wifi_on = 0;
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "SSID"))
-		{
-			if (has_arg)
-			{
-				uint8_t len = strlen((const char *)arg);
-				if (len > WIFI_SSID_MAX_LEN)
-				{
-					protocol_send_feedback((const char *)"WiFi SSID is too long");
-				}
-				memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
-				strcpy(wifi_settings.ssid, (const char *)arg);
-				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-				protocol_send_feedback((const char *)"WiFi SSID modified");
-			}
-			else
-			{
-				sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-				protocol_send_feedback((const char *)str);
-			}
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "SCAN"))
-		{
-			// Serial.println("[MSG:Scanning Networks]");
-			protocol_send_feedback((const char *)"Scanning Networks");
-			int numSsid = WiFi.scanNetworks();
-			if (numSsid == -1)
-			{
-				protocol_send_feedback((const char *)"Failed to scan!");
-				while (true)
-					;
-			}
-
-			// print the list of networks seen:
-			sprintf((char *)str, "%d available networks", numSsid);
-			protocol_send_feedback((const char *)str);
-
-			// print the network number and name for each network found:
-			for (int netid = 0; netid < numSsid; netid++)
-			{
-				sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid), WiFi.RSSI(netid));
-				protocol_send_feedback((const char *)str);
-			}
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "SAVE"))
-		{
-			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-			protocol_send_feedback((const char *)"WiFi settings saved");
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
-		{
-			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-			protocol_send_feedback((const char *)"WiFi settings deleted");
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "MODE"))
-		{
-			if (has_arg)
-			{
-				int mode = atoi((const char *)arg) - 1;
-				if (mode >= 0)
-				{
-					wifi_settings.wifi_mode = mode;
-				}
-				else
-				{
-					protocol_send_feedback((const char *)"Invalid value. STA+AP(1), STA(2), AP(3)");
-				}
-			}
-
-			switch (wifi_settings.wifi_mode)
-			{
-			case 0:
-				protocol_send_feedback((const char *)"WiFi mode>STA+AP");
-				break;
-			case 1:
-				protocol_send_feedback((const char *)"WiFi mode>STA");
-				break;
-			case 2:
-				protocol_send_feedback((const char *)"WiFi mode>AP");
-				break;
-			}
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "PASS") && has_arg)
-		{
-			uint8_t len = strlen((const char *)arg);
-			if (len > WIFI_PASS_MAX_LEN)
-			{
-				protocol_send_feedback((const char *)"WiFi pass is too long");
-			}
-			memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
-			strcpy(wifi_settings.pass, (const char *)arg);
-			protocol_send_feedback((const char *)"WiFi password modified");
-			return STATUS_OK;
-		}
-
-		if (!strcmp((const char *)&grbl_cmd_str[4], "IP"))
-		{
-			if (wifi_settings.wifi_on)
-			{
-				switch (wifi_settings.wifi_mode)
-				{
-				case 1:
-					sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
-					sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
-					break;
-				case 2:
-					sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
-					break;
-				default:
-					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-					protocol_send_feedback((const char *)str);
-					break;
-				}
-			}
-			else
-			{
-				protocol_send_feedback((const char *)"WiFi is off");
-			}
-
-			return STATUS_OK;
-		}
-	}
-#endif
-	return STATUS_INVALID_STATEMENT;
-}
-#endif
-
-bool rp2040_wifi_clientok(void)
-{
-#ifdef ENABLE_WIFI
-	static uint32_t next_info = 30000;
-	static bool connected = false;
-	uint8_t str[128];
-
-	if (!wifi_settings.wifi_on)
-	{
-		return false;
-	}
-
-	if ((WiFi.status() != WL_CONNECTED))
-	{
-		connected = false;
-		if (next_info > millis())
-		{
-			return false;
-		}
-		next_info = millis() + 30000;
-		protocol_send_feedback((const char *)"Disconnected from WiFi");
-		return false;
-	}
-
-	if (!connected)
-	{
-		connected = true;
-		protocol_send_feedback((const char *)"Connected to WiFi");
-		sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
-		protocol_send_feedback((const char *)str);
-		sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
-		protocol_send_feedback((const char *)str);
-	}
-
-	if (telnet_server.hasClient())
-	{
-		if (server_client)
-		{
-			if (server_client.connected())
-			{
-				server_client.stop();
-			}
-		}
-		server_client = telnet_server.available();
-		server_client.println("[MSG:New client connected]");
-		return false;
-	}
-	else if (server_client)
-	{
-		if (server_client.connected())
-		{
-			return true;
-		}
-	}
-#endif
-	return false;
-}
-
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
-
-#include "../../../modules/endpoint.h"
-#define MCU_FLASH_FS_LITTLE_FS 1
-#define MCU_FLASH_FS_SPIFFS 2
-
-#ifndef MCU_FLASH_FS
-#define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
-#endif
-
-#if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
-#include "FS.h"
-#include <LittleFS.h>
-#define FLASH_FS LittleFS
-#elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
-#include "FS.h"
-#include <SPIFFS.h>
-#define FLASH_FS SPIFFS
-#endif
-
-// call to the webserver initializer
-DECL_MODULE(endpoint)
-{
-#ifndef CUSTOM_OTA_ENDPOINT
-	httpUpdater.setup(&web_server, update_path, update_username, update_password);
-#endif
-	FLASH_FS.begin();
-	web_server.begin();
-}
-
-void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
-{
-	web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
-}
-
-int endpoint_request_hasargs(void)
-{
-	return web_server.args();
-}
-
-bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
-{
-	if (!web_server.hasArg(String(argname)))
-	{
-		argvalue[0] = 0;
-		return false;
-	}
-	strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
-	return true;
-}
-
-void endpoint_send(int code, const char *content_type, const char *data)
-{
-	web_server.send(code, content_type, data);
-}
-
-void endpoint_send_header(const char *name, const char *data, bool first)
-{
-	web_server.sendHeader(name, data, first);
-}
-
-bool endpoint_send_file(const char *file_path, const char *content_type)
-{
-	if (FLASH_FS.exists(file_path))
-	{
-		File file = FLASH_FS.open(file_path, "r");
-		web_server.streamFile(file, content_type);
-		file.close();
-		return true;
-	}
-	return false;
-}
-
-#endif
-
-void rp2040_wifi_bt_init(void)
-{
-#ifdef ENABLE_WIFI
-
-	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
-	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
-	{
-		wifi_settings = {0};
-		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
-		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
-		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
-	}
-
-	if (wifi_settings.wifi_on)
-	{
-		uint8_t str[64];
-
-		switch (wifi_settings.wifi_mode)
-		{
-		case 1:
-			WiFi.mode(WIFI_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			protocol_send_feedback("Trying to connect to WiFi");
-			break;
-		case 2:
-			WiFi.mode(WIFI_AP);
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			protocol_send_feedback("AP started");
-			protocol_send_feedback("SSID>" BOARD_NAME);
-			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-			protocol_send_feedback((const char *)str);
-			break;
-		default:
-			WiFi.mode(WIFI_AP_STA);
-			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-			protocol_send_feedback("Trying to connect to WiFi");
-			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-			protocol_send_feedback("AP started");
-			protocol_send_feedback("SSID>" BOARD_NAME);
-			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-			protocol_send_feedback((const char *)str);
-			break;
-		}
-	}
-	telnet_server.begin();
-	telnet_server.setNoDelay(true);
-#if !defined(MCU_HAS_ENDPOINTS)
-	httpUpdater.setup(&web_server, update_path, update_username, update_password);
-	web_server.begin();
-#endif
-#endif
-#ifdef ENABLE_BLUETOOTH
-	bt_settings_offset = settings_register_external_setting(1);
-	if (settings_load(bt_settings_offset, &bt_on, 1))
-	{
-		settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
-	}
-
-	if (bt_on)
-	{
-		SerialBT.begin(BAUDRATE, SERIAL_8N1);
-	}
-#endif
-}
-
-#ifdef MCU_HAS_WIFI
-#ifndef WIFI_TX_BUFFER_SIZE
-#define WIFI_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-
-uint8_t mcu_wifi_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(wifi_rx, &c);
-	return c;
-}
-
-uint8_t mcu_wifi_available(void)
-{
-	return BUFFER_READ_AVAILABLE(wifi_rx);
-}
-
-void mcu_wifi_clear(void)
-{
-	BUFFER_CLEAR(wifi_rx);
-}
-
-void mcu_wifi_putc(uint8_t c)
-{
-	while (BUFFER_FULL(wifi_tx))
-	{
-		mcu_wifi_flush();
-	}
-	BUFFER_ENQUEUE(wifi_tx, &c);
-}
-
-void mcu_wifi_flush(void)
-{
-	if (rp2040_wifi_clientok())
-	{
-		while (!BUFFER_EMPTY(wifi_tx))
-		{
-			uint8_t tmp[WIFI_TX_BUFFER_SIZE];
-			uint8_t r;
-
-			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
-			server_client.write(tmp, r);
-		}
-	}
-	else
-	{
-		// no client (discard)
-		BUFFER_CLEAR(wifi_tx);
-	}
-}
-#endif
-
-#ifdef MCU_HAS_BLUETOOTH
-#ifndef BLUETOOTH_TX_BUFFER_SIZE
-#define BLUETOOTH_TX_BUFFER_SIZE 64
-#endif
-DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
-DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-
-uint8_t mcu_bt_getc(void)
-{
-	uint8_t c = 0;
-	BUFFER_DEQUEUE(bt_rx, &c);
-	return c;
-}
-
-uint8_t mcu_bt_available(void)
-{
-	return BUFFER_READ_AVAILABLE(bt_rx);
-}
-
-void mcu_bt_clear(void)
-{
-	BUFFER_CLEAR(bt_rx);
-}
-
-void mcu_bt_putc(uint8_t c)
-{
-	while (BUFFER_FULL(bt_tx))
-	{
-		mcu_bt_flush();
-	}
-	BUFFER_ENQUEUE(bt_tx, &c);
-}
-
-void mcu_bt_flush(void)
-{
-	while (!BUFFER_EMPTY(bt_tx))
-	{
-		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
-		uint8_t r;
-
-		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
-		SerialBT.write(tmp, r);
-		SerialBT.flush();
-	}
-}
-#endif
-
-uint8_t rp2040_wifi_bt_read(void)
-{
-#ifdef ENABLE_WIFI
-	if (rp2040_wifi_clientok())
-	{
-		if (server_client.available() > 0)
-		{
-			return (uint8_t)server_client.read();
-		}
-	}
-#endif
-
-#ifdef ENABLE_BLUETOOTH
-	return (uint8_t)SerialBT.read();
-#endif
-
-	return (uint8_t)0;
-}
-
-bool rp2040_wifi_bt_rx_ready(void)
-{
-	bool wifiready = false;
-#ifdef ENABLE_WIFI
-	if (rp2040_wifi_clientok())
-	{
-		wifiready = (server_client.available() > 0);
-	}
-#endif
-
-	bool btready = false;
-#ifdef ENABLE_BLUETOOTH
-	btready = (SerialBT.available() > 0);
-#endif
-
-	return (wifiready || btready);
-}
-
-void rp2040_wifi_bt_process(void)
-{
-#ifdef ENABLE_WIFI
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-
-	if (rp2040_wifi_clientok())
-	{
-		while (server_client.available() > 0)
-		{
-#ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)server_client.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(wifi_rx))
-				{
-					c = OVF;
-				}
-
-				*(BUFFER_NEXT_FREE(wifi_rx)) = c;
-				BUFFER_STORE(wifi_rx);
-			}
-
-#else
-			mcu_wifi_rx_cb((uint8_t)server_client.read());
-#endif
-		}
-	}
-
-	web_server.handleClient();
-#endif
-
-#ifdef ENABLE_BLUETOOTH
-	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
-
-	while (SerialBT.available() > 0)
-	{
-#ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
-		uint8_t c = (uint8_t)SerialBT.read();
-		if (mcu_com_rx_cb(c))
-		{
-			if (BUFFER_FULL(bt_rx))
-			{
-				c = OVF;
-			}
-
-			*(BUFFER_NEXT_FREE(bt_rx)) = c;
-			BUFFER_STORE(bt_rx);
-		}
-
-#else
-		mcu_bt_rx_cb((uint8_t)SerialBT.read());
-#endif
-	}
-#endif
-}
-
-#endif
-
-extern "C"
-{
-	void rp2040_uart_init(int baud)
-	{
-#ifdef MCU_HAS_USB
-		Serial.begin(baud);
-#endif
-#ifdef MCU_HAS_UART
-		COM_UART.setTX(TX_BIT);
-		COM_UART.setRX(RX_BIT);
-		COM_UART.begin(BAUDRATE);
-#endif
-#ifdef MCU_HAS_UART2
-		COM2_UART.setTX(TX2_BIT);
-		COM2_UART.setRX(RX2_BIT);
-		COM2_UART.begin(BAUDRATE2);
-#endif
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_init();
-#endif
-	}
-
-#ifdef MCU_HAS_USB
-#ifndef USB_TX_BUFFER_SIZE
-#define USB_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
-
-	uint8_t mcu_usb_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(usb_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_usb_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(usb_rx);
-	}
-
-	void mcu_usb_clear(void)
-	{
-		BUFFER_CLEAR(usb_rx);
-	}
-
-	void mcu_usb_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(usb_tx))
-		{
-			mcu_usb_flush();
-		}
-		BUFFER_ENQUEUE(usb_tx, &c);
-	}
-
-	void mcu_usb_flush(void)
-	{
-		while (!BUFFER_EMPTY(usb_tx))
-		{
-			uint8_t tmp[USB_TX_BUFFER_SIZE];
-			uint8_t r;
-
-			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
-			Serial.write(tmp, r);
-			Serial.flush();
-		}
-	}
-#endif
-
-#ifdef MCU_HAS_UART
-#ifndef UART_TX_BUFFER_SIZE
-#define UART_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
-
-	uint8_t mcu_uart_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_uart_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(uart_rx);
-	}
-
-	void mcu_uart_clear(void)
-	{
-		BUFFER_CLEAR(uart_rx);
-	}
-
-	void mcu_uart_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart_tx))
-		{
-			mcu_uart_flush();
-		}
-		BUFFER_ENQUEUE(uart_tx, &c);
-	}
-
-	void mcu_uart_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart_tx))
-		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE];
-			uint8_t r = 0;
-
-			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-			COM_UART.write(tmp, r);
-			COM_UART.flush();
-		}
-	}
-#endif
-
-#ifdef MCU_HAS_UART2
-#ifndef UART2_TX_BUFFER_SIZE
-#define UART2_TX_BUFFER_SIZE 64
-#endif
-	DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
-	DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
-
-	uint8_t mcu_uart2_getc(void)
-	{
-		uint8_t c = 0;
-		BUFFER_DEQUEUE(uart2_rx, &c);
-		return c;
-	}
-
-	uint8_t mcu_uart2_available(void)
-	{
-		return BUFFER_READ_AVAILABLE(uart2_rx);
-	}
-
-	void mcu_uart2_clear(void)
-	{
-		BUFFER_CLEAR(uart2_rx);
-	}
-
-	void mcu_uart2_putc(uint8_t c)
-	{
-		while (BUFFER_FULL(uart2_tx))
-		{
-			mcu_uart2_flush();
-		}
-		BUFFER_ENQUEUE(uart2_tx, &c);
-	}
-
-	void mcu_uart2_flush(void)
-	{
-		while (!BUFFER_EMPTY(uart2_tx))
-		{
-			uint8_t tmp[UART2_TX_BUFFER_SIZE];
-			uint8_t r;
-
-			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
-			COM2_UART.write(tmp, r);
-			COM2_UART.flush();
-		}
-	}
-#endif
-
-	bool rp2040_uart_rx_ready(void)
-	{
-		bool wifiready = false;
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-		if (rp2040_wifi_clientok())
-		{
-			wifiready = (rp2040_wifi_bt_rx_ready() > 0);
-		}
-#endif
-		return ((Serial.available() > 0) || wifiready);
-	}
-
-	void rp2040_uart_process(void)
-	{
-#ifdef MCU_HAS_USB
-		while (Serial.available() > 0)
-		{
-#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)Serial.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(usb_rx))
-				{
-					c = OVF;
-				}
-
-				*(BUFFER_NEXT_FREE(usb_rx)) = c;
-				BUFFER_STORE(usb_rx);
-			}
-
-#else
-			mcu_usb_rx_cb((uint8_t)Serial.read());
-#endif
-		}
-#endif
-
-#ifdef MCU_HAS_UART
-		while (COM_UART.available() > 0)
-		{
-#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)COM_UART.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart_rx))
-				{
-					c = OVF;
-				}
-
-				*(BUFFER_NEXT_FREE(uart_rx)) = c;
-				BUFFER_STORE(uart_rx);
-			}
-#else
-			mcu_uart_rx_cb((uint8_t)COM_UART.read());
-#endif
-		}
-#endif
-
-#ifdef MCU_HAS_UART2
-		while (COM2_UART.available() > 0)
-		{
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
-			uint8_t c = (uint8_t)COM2_UART.read();
-			if (mcu_com_rx_cb(c))
-			{
-				if (BUFFER_FULL(uart2_rx))
-				{
-					c = OVF;
-				}
-
-				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-				BUFFER_STORE(uart2_rx);
-			}
-
-#else
-			mcu_uart2_rx_cb((uint8_t)COM2_UART.read());
-#endif
-		}
-#endif
-
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-		rp2040_wifi_bt_process();
-#endif
-	}
-}
+// /**
+//  *
+//  * This handles all communications via Serial USB, Serial UART and WiFi
+//  *
+//  * **/
+
+// #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+// #ifndef WIFI_SSID_MAX_LEN
+// #define WIFI_SSID_MAX_LEN 32
+// #endif
+
+// #ifndef WIFI_PASS_MAX_LEN
+// #define WIFI_PASS_MAX_LEN 32
+// #endif
+
+// #define ARG_MAX_LEN MAX(WIFI_SSID_MAX_LEN, WIFI_PASS_MAX_LEN)
+
+// #ifdef ENABLE_BLUETOOTH
+// #include <SerialBT.h>
+
+// uint8_t bt_on;
+// uint16_t bt_settings_offset;
+// #endif
+
+// #ifdef ENABLE_WIFI
+// #include <WiFi.h>
+// #include <WebServer.h>
+// #include <HTTPUpdateServer.h>
+
+// #ifndef WIFI_PORT
+// #define WIFI_PORT 23
+// #endif
+
+// #ifndef WIFI_USER
+// #define WIFI_USER "admin\0"
+// #endif
+
+// #ifndef WIFI_PASS
+// #define WIFI_PASS "pass\0"
+// #endif
+
+// WebServer web_server(80);
+// HTTPUpdateServer httpUpdater;
+// const char *update_path = "/firmware";
+// const char *update_username = WIFI_USER;
+// const char *update_password = WIFI_PASS;
+// #define MAX_SRV_CLIENTS 1
+// WiFiServer telnet_server(WIFI_PORT);
+// WiFiClient server_client;
+
+// typedef struct
+// {
+// 	uint8_t wifi_on;
+// 	uint8_t wifi_mode;
+// 	char ssid[WIFI_SSID_MAX_LEN];
+// 	char pass[WIFI_PASS_MAX_LEN];
+// } wifi_settings_t;
+
+// uint16_t wifi_settings_offset;
+// wifi_settings_t wifi_settings;
+// #endif
+
+// #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+// uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t next_char)
+// {
+// 	uint8_t str[128];
+// 	uint8_t arg[ARG_MAX_LEN];
+// 	uint8_t has_arg = (next_char == '=');
+// 	memset(arg, 0, sizeof(arg));
+// 	if (has_arg)
+// 	{
+// 		uint8_t c = serial_getc();
+// 		uint8_t i = 0;
+// 		while (c)
+// 		{
+// 			arg[i++] = c;
+// 			if (i >= ARG_MAX_LEN)
+// 			{
+// 				return STATUS_INVALID_STATEMENT;
+// 			}
+// 			c = serial_getc();
+// 		}
+// 	}
+
+// #ifdef ENABLE_BLUETOOTH
+// 	if (!strncmp((const char *)grbl_cmd_str, "BTH", 3))
+// 	{
+// 		if (!strcmp((const char *)&grbl_cmd_str[3], "ON"))
+// 		{
+// 			SerialBT.begin(BAUDRATE, SERIAL_8N1);
+// 			protocol_send_feedback((const char *)"Bluetooth enabled");
+// 			bt_on = 1;
+// 			settings_save(bt_settings_offset, &bt_on, 1);
+
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[3], "OFF"))
+// 		{
+// 			SerialBT.end();
+// 			protocol_send_feedback((const char *)"Bluetooth disabled");
+// 			bt_on = 0;
+// 			settings_save(bt_settings_offset, &bt_on, 1);
+
+// 			return STATUS_OK;
+// 		}
+// 	}
+// #endif
+// #ifdef ENABLE_WIFI
+// 	if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
+// 	{
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
+// 		{
+// 			WiFi.disconnect();
+// 			switch (wifi_settings.wifi_mode)
+// 			{
+// 			case 1:
+// 				WiFi.mode(WIFI_STA);
+// 				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+// 				protocol_send_feedback((const char *)"Trying to connect to WiFi");
+// 				break;
+// 			case 2:
+// 				WiFi.mode(WIFI_AP);
+// 				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+// 				protocol_send_feedback((const char *)"AP started");
+// 				protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
+// 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+// 				protocol_send_feedback((const char *)str);
+// 				break;
+// 			default:
+// 				WiFi.mode(WIFI_AP_STA);
+// 				WiFi.begin(wifi_settings.ssid, wifi_settings.pass);
+// 				protocol_send_feedback((const char *)"Trying to connect to WiFi");
+// 				WiFi.softAP(BOARD_NAME, wifi_settings.pass);
+// 				protocol_send_feedback((const char *)"AP started");
+// 				protocol_send_feedback((const char *)"SSID>" BOARD_NAME);
+// 				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+// 				protocol_send_feedback((const char *)str);
+// 				break;
+// 			}
+
+// 			wifi_settings.wifi_on = 1;
+// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "OFF"))
+// 		{
+// 			WiFi.disconnect();
+// 			wifi_settings.wifi_on = 0;
+// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "SSID"))
+// 		{
+// 			if (has_arg)
+// 			{
+// 				uint8_t len = strlen((const char *)arg);
+// 				if (len > WIFI_SSID_MAX_LEN)
+// 				{
+// 					protocol_send_feedback((const char *)"WiFi SSID is too long");
+// 				}
+// 				memset(wifi_settings.ssid, 0, sizeof(wifi_settings.ssid));
+// 				strcpy(wifi_settings.ssid, (const char *)arg);
+// 				settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 				protocol_send_feedback((const char *)"WiFi SSID modified");
+// 			}
+// 			else
+// 			{
+// 				sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
+// 				protocol_send_feedback((const char *)str);
+// 			}
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "SCAN"))
+// 		{
+// 			// Serial.println("[MSG:Scanning Networks]");
+// 			protocol_send_feedback((const char *)"Scanning Networks");
+// 			int numSsid = WiFi.scanNetworks();
+// 			if (numSsid == -1)
+// 			{
+// 				protocol_send_feedback((const char *)"Failed to scan!");
+// 				while (true)
+// 					;
+// 			}
+
+// 			// print the list of networks seen:
+// 			sprintf((char *)str, "%d available networks", numSsid);
+// 			protocol_send_feedback((const char *)str);
+
+// 			// print the network number and name for each network found:
+// 			for (int netid = 0; netid < numSsid; netid++)
+// 			{
+// 				sprintf((char *)str, "%d) %s\tSignal:  %ddBm", netid, WiFi.SSID(netid), WiFi.RSSI(netid));
+// 				protocol_send_feedback((const char *)str);
+// 			}
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "SAVE"))
+// 		{
+// 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			protocol_send_feedback((const char *)"WiFi settings saved");
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "RESET"))
+// 		{
+// 			settings_erase(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 			protocol_send_feedback((const char *)"WiFi settings deleted");
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "MODE"))
+// 		{
+// 			if (has_arg)
+// 			{
+// 				int mode = atoi((const char *)arg) - 1;
+// 				if (mode >= 0)
+// 				{
+// 					wifi_settings.wifi_mode = mode;
+// 				}
+// 				else
+// 				{
+// 					protocol_send_feedback((const char *)"Invalid value. STA+AP(1), STA(2), AP(3)");
+// 				}
+// 			}
+
+// 			switch (wifi_settings.wifi_mode)
+// 			{
+// 			case 0:
+// 				protocol_send_feedback((const char *)"WiFi mode>STA+AP");
+// 				break;
+// 			case 1:
+// 				protocol_send_feedback((const char *)"WiFi mode>STA");
+// 				break;
+// 			case 2:
+// 				protocol_send_feedback((const char *)"WiFi mode>AP");
+// 				break;
+// 			}
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "PASS") && has_arg)
+// 		{
+// 			uint8_t len = strlen((const char *)arg);
+// 			if (len > WIFI_PASS_MAX_LEN)
+// 			{
+// 				protocol_send_feedback((const char *)"WiFi pass is too long");
+// 			}
+// 			memset(wifi_settings.pass, 0, sizeof(wifi_settings.pass));
+// 			strcpy(wifi_settings.pass, (const char *)arg);
+// 			protocol_send_feedback((const char *)"WiFi password modified");
+// 			return STATUS_OK;
+// 		}
+
+// 		if (!strcmp((const char *)&grbl_cmd_str[4], "IP"))
+// 		{
+// 			if (wifi_settings.wifi_on)
+// 			{
+// 				switch (wifi_settings.wifi_mode)
+// 				{
+// 				case 1:
+// 					sprintf((char *)str, "STA IP>%s", WiFi.localIP().toString().c_str());
+// 					protocol_send_feedback((const char *)str);
+// 					sprintf((char *)str, "AP IP>%s", WiFi.softAPIP().toString().c_str());
+// 					protocol_send_feedback((const char *)str);
+// 					break;
+// 				case 2:
+// 					sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
+// 					protocol_send_feedback((const char *)str);
+// 					break;
+// 				default:
+// 					sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+// 					protocol_send_feedback((const char *)str);
+// 					break;
+// 				}
+// 			}
+// 			else
+// 			{
+// 				protocol_send_feedback((const char *)"WiFi is off");
+// 			}
+
+// 			return STATUS_OK;
+// 		}
+// 	}
+// #endif
+// 	return STATUS_INVALID_STATEMENT;
+// }
+// #endif
+
+// bool rp2040_wifi_clientok(void)
+// {
+// #ifdef ENABLE_WIFI
+// 	static uint32_t next_info = 30000;
+// 	static bool connected = false;
+// 	uint8_t str[128];
+
+// 	if (!wifi_settings.wifi_on)
+// 	{
+// 		return false;
+// 	}
+
+// 	if ((WiFi.status() != WL_CONNECTED))
+// 	{
+// 		connected = false;
+// 		if (next_info > millis())
+// 		{
+// 			return false;
+// 		}
+// 		next_info = millis() + 30000;
+// 		protocol_send_feedback((const char *)"Disconnected from WiFi");
+// 		return false;
+// 	}
+
+// 	if (!connected)
+// 	{
+// 		connected = true;
+// 		protocol_send_feedback((const char *)"Connected to WiFi");
+// 		sprintf((char *)str, "SSID>%s", wifi_settings.ssid);
+// 		protocol_send_feedback((const char *)str);
+// 		sprintf((char *)str, "IP>%s", WiFi.localIP().toString().c_str());
+// 		protocol_send_feedback((const char *)str);
+// 	}
+
+// 	if (telnet_server.hasClient())
+// 	{
+// 		if (server_client)
+// 		{
+// 			if (server_client.connected())
+// 			{
+// 				server_client.stop();
+// 			}
+// 		}
+// 		server_client = telnet_server.available();
+// 		server_client.println("[MSG:New client connected]");
+// 		return false;
+// 	}
+// 	else if (server_client)
+// 	{
+// 		if (server_client.connected())
+// 		{
+// 			return true;
+// 		}
+// 	}
+// #endif
+// 	return false;
+// }
+
+// #if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+
+// #include "../../../modules/endpoint.h"
+// #define MCU_FLASH_FS_LITTLE_FS 1
+// #define MCU_FLASH_FS_SPIFFS 2
+
+// #ifndef MCU_FLASH_FS
+// #define MCU_FLASH_FS MCU_FLASH_FS_LITTLE_FS
+// #endif
+
+// #if (MCU_FLASH_FS == MCU_FLASH_FS_LITTLE_FS)
+// #include "FS.h"
+// #include <LittleFS.h>
+// #define FLASH_FS LittleFS
+// #elif (MCU_FLASH_FS == MCU_FLASH_FS_SPIFFS)
+// #include "FS.h"
+// #include <SPIFFS.h>
+// #define FLASH_FS SPIFFS
+// #endif
+
+// // call to the webserver initializer
+// DECL_MODULE(endpoint)
+// {
+// #ifndef CUSTOM_OTA_ENDPOINT
+// 	httpUpdater.setup(&web_server, update_path, update_username, update_password);
+// #endif
+// 	FLASH_FS.begin();
+// 	web_server.begin();
+// }
+
+// void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
+// {
+// 	web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+// }
+
+// int endpoint_request_hasargs(void)
+// {
+// 	return web_server.args();
+// }
+
+// bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
+// {
+// 	if (!web_server.hasArg(String(argname)))
+// 	{
+// 		argvalue[0] = 0;
+// 		return false;
+// 	}
+// 	strncpy(argvalue, web_server.arg(String(argname)).c_str(), maxlen);
+// 	return true;
+// }
+
+// void endpoint_send(int code, const char *content_type, const char *data)
+// {
+// 	web_server.send(code, content_type, data);
+// }
+
+// void endpoint_send_header(const char *name, const char *data, bool first)
+// {
+// 	web_server.sendHeader(name, data, first);
+// }
+
+// bool endpoint_send_file(const char *file_path, const char *content_type)
+// {
+// 	if (FLASH_FS.exists(file_path))
+// 	{
+// 		File file = FLASH_FS.open(file_path, "r");
+// 		web_server.streamFile(file, content_type);
+// 		file.close();
+// 		return true;
+// 	}
+// 	return false;
+// }
+
+// #endif
+
+// void rp2040_wifi_bt_init(void)
+// {
+// #ifdef ENABLE_WIFI
+
+// 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
+// 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
+// 	{
+// 		wifi_settings = {0};
+// 		memcpy(wifi_settings.ssid, BOARD_NAME, strlen((const char *)BOARD_NAME));
+// 		memcpy(wifi_settings.pass, WIFI_PASS, strlen((const char *)WIFI_PASS));
+// 		settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
+// 	}
+
+// 	if (wifi_settings.wifi_on)
+// 	{
+// 		uint8_t str[64];
+
+// 		switch (wifi_settings.wifi_mode)
+// 		{
+// 		case 1:
+// 			WiFi.mode(WIFI_STA);
+// 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+// 			protocol_send_feedback("Trying to connect to WiFi");
+// 			break;
+// 		case 2:
+// 			WiFi.mode(WIFI_AP);
+// 			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+// 			protocol_send_feedback("AP started");
+// 			protocol_send_feedback("SSID>" BOARD_NAME);
+// 			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+// 			protocol_send_feedback((const char *)str);
+// 			break;
+// 		default:
+// 			WiFi.mode(WIFI_AP_STA);
+// 			WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+// 			protocol_send_feedback("Trying to connect to WiFi");
+// 			WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+// 			protocol_send_feedback("AP started");
+// 			protocol_send_feedback("SSID>" BOARD_NAME);
+// 			sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+// 			protocol_send_feedback((const char *)str);
+// 			break;
+// 		}
+// 	}
+// 	telnet_server.begin();
+// 	telnet_server.setNoDelay(true);
+// #if !defined(MCU_HAS_ENDPOINTS)
+// 	httpUpdater.setup(&web_server, update_path, update_username, update_password);
+// 	web_server.begin();
+// #endif
+// #endif
+// #ifdef ENABLE_BLUETOOTH
+// 	bt_settings_offset = settings_register_external_setting(1);
+// 	if (settings_load(bt_settings_offset, &bt_on, 1))
+// 	{
+// 		settings_erase(bt_settings_offset, (uint8_t *)&bt_on, 1);
+// 	}
+
+// 	if (bt_on)
+// 	{
+// 		SerialBT.begin(BAUDRATE, SERIAL_8N1);
+// 	}
+// #endif
+// }
+
+// #ifdef MCU_HAS_WIFI
+// #ifndef WIFI_TX_BUFFER_SIZE
+// #define WIFI_TX_BUFFER_SIZE 64
+// #endif
+// DECL_BUFFER(uint8_t, wifi_tx, WIFI_TX_BUFFER_SIZE);
+// DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+
+// uint8_t mcu_wifi_getc(void)
+// {
+// 	uint8_t c = 0;
+// 	BUFFER_DEQUEUE(wifi_rx, &c);
+// 	return c;
+// }
+
+// uint8_t mcu_wifi_available(void)
+// {
+// 	return BUFFER_READ_AVAILABLE(wifi_rx);
+// }
+
+// void mcu_wifi_clear(void)
+// {
+// 	BUFFER_CLEAR(wifi_rx);
+// }
+
+// void mcu_wifi_putc(uint8_t c)
+// {
+// 	while (BUFFER_FULL(wifi_tx))
+// 	{
+// 		mcu_wifi_flush();
+// 	}
+// 	BUFFER_ENQUEUE(wifi_tx, &c);
+// }
+
+// void mcu_wifi_flush(void)
+// {
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		while (!BUFFER_EMPTY(wifi_tx))
+// 		{
+// 			uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+// 			uint8_t r;
+
+// 			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
+// 			server_client.write(tmp, r);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		// no client (discard)
+// 		BUFFER_CLEAR(wifi_tx);
+// 	}
+// }
+// #endif
+
+// #ifdef MCU_HAS_BLUETOOTH
+// #ifndef BLUETOOTH_TX_BUFFER_SIZE
+// #define BLUETOOTH_TX_BUFFER_SIZE 64
+// #endif
+// DECL_BUFFER(uint8_t, bt_tx, BLUETOOTH_TX_BUFFER_SIZE);
+// DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
+
+// uint8_t mcu_bt_getc(void)
+// {
+// 	uint8_t c = 0;
+// 	BUFFER_DEQUEUE(bt_rx, &c);
+// 	return c;
+// }
+
+// uint8_t mcu_bt_available(void)
+// {
+// 	return BUFFER_READ_AVAILABLE(bt_rx);
+// }
+
+// void mcu_bt_clear(void)
+// {
+// 	BUFFER_CLEAR(bt_rx);
+// }
+
+// void mcu_bt_putc(uint8_t c)
+// {
+// 	while (BUFFER_FULL(bt_tx))
+// 	{
+// 		mcu_bt_flush();
+// 	}
+// 	BUFFER_ENQUEUE(bt_tx, &c);
+// }
+
+// void mcu_bt_flush(void)
+// {
+// 	while (!BUFFER_EMPTY(bt_tx))
+// 	{
+// 		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+// 		uint8_t r;
+
+// 		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
+// 		SerialBT.write(tmp, r);
+// 		SerialBT.flush();
+// 	}
+// }
+// #endif
+
+// uint8_t rp2040_wifi_bt_read(void)
+// {
+// #ifdef ENABLE_WIFI
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		if (server_client.available() > 0)
+// 		{
+// 			return (uint8_t)server_client.read();
+// 		}
+// 	}
+// #endif
+
+// #ifdef ENABLE_BLUETOOTH
+// 	return (uint8_t)SerialBT.read();
+// #endif
+
+// 	return (uint8_t)0;
+// }
+
+// bool rp2040_wifi_bt_rx_ready(void)
+// {
+// 	bool wifiready = false;
+// #ifdef ENABLE_WIFI
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		wifiready = (server_client.available() > 0);
+// 	}
+// #endif
+
+// 	bool btready = false;
+// #ifdef ENABLE_BLUETOOTH
+// 	btready = (SerialBT.available() > 0);
+// #endif
+
+// 	return (wifiready || btready);
+// }
+
+// void rp2040_wifi_bt_process(void)
+// {
+// #ifdef ENABLE_WIFI
+// 	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
+
+// 	if (rp2040_wifi_clientok())
+// 	{
+// 		while (server_client.available() > 0)
+// 		{
+// #ifndef DETACH_WIFI_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)server_client.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(wifi_rx))
+// 				{
+// 					c = OVF;
+// 				}
+
+// 				*(BUFFER_NEXT_FREE(wifi_rx)) = c;
+// 				BUFFER_STORE(wifi_rx);
+// 			}
+
+// #else
+// 			mcu_wifi_rx_cb((uint8_t)server_client.read());
+// #endif
+// 		}
+// 	}
+
+// 	web_server.handleClient();
+// #endif
+
+// #ifdef ENABLE_BLUETOOTH
+// 	DECL_BUFFER(uint8_t, bt_rx, RX_BUFFER_SIZE);
+
+// 	while (SerialBT.available() > 0)
+// 	{
+// #ifndef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
+// 		uint8_t c = (uint8_t)SerialBT.read();
+// 		if (mcu_com_rx_cb(c))
+// 		{
+// 			if (BUFFER_FULL(bt_rx))
+// 			{
+// 				c = OVF;
+// 			}
+
+// 			*(BUFFER_NEXT_FREE(bt_rx)) = c;
+// 			BUFFER_STORE(bt_rx);
+// 		}
+
+// #else
+// 		mcu_bt_rx_cb((uint8_t)SerialBT.read());
+// #endif
+// 	}
+// #endif
+// }
+
+// #endif
+
+// extern "C"
+// {
+// 	void rp2040_uart_init(int baud)
+// 	{
+// #ifdef MCU_HAS_USB
+// 		Serial.begin(baud);
+// #endif
+// #ifdef MCU_HAS_UART
+// 		COM_UART.setTX(TX_BIT);
+// 		COM_UART.setRX(RX_BIT);
+// 		COM_UART.begin(BAUDRATE);
+// #endif
+// #ifdef MCU_HAS_UART2
+// 		COM2_UART.setTX(TX2_BIT);
+// 		COM2_UART.setRX(RX2_BIT);
+// 		COM2_UART.begin(BAUDRATE2);
+// #endif
+// #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+// 		rp2040_wifi_bt_init();
+// #endif
+// 	}
+
+// #ifdef MCU_HAS_USB
+// #ifndef USB_TX_BUFFER_SIZE
+// #define USB_TX_BUFFER_SIZE 64
+// #endif
+// 	DECL_BUFFER(uint8_t, usb_tx, USB_TX_BUFFER_SIZE);
+// 	DECL_BUFFER(uint8_t, usb_rx, RX_BUFFER_SIZE);
+
+// 	uint8_t mcu_usb_getc(void)
+// 	{
+// 		uint8_t c = 0;
+// 		BUFFER_DEQUEUE(usb_rx, &c);
+// 		return c;
+// 	}
+
+// 	uint8_t mcu_usb_available(void)
+// 	{
+// 		return BUFFER_READ_AVAILABLE(usb_rx);
+// 	}
+
+// 	void mcu_usb_clear(void)
+// 	{
+// 		BUFFER_CLEAR(usb_rx);
+// 	}
+
+// 	void mcu_usb_putc(uint8_t c)
+// 	{
+// 		while (BUFFER_FULL(usb_tx))
+// 		{
+// 			mcu_usb_flush();
+// 		}
+// 		BUFFER_ENQUEUE(usb_tx, &c);
+// 	}
+
+// 	void mcu_usb_flush(void)
+// 	{
+// 		while (!BUFFER_EMPTY(usb_tx))
+// 		{
+// 			uint8_t tmp[USB_TX_BUFFER_SIZE];
+// 			uint8_t r;
+
+// 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
+// 			Serial.write(tmp, r);
+// 			Serial.flush();
+// 		}
+// 	}
+// #endif
+
+// #ifdef MCU_HAS_UART
+// #ifndef UART_TX_BUFFER_SIZE
+// #define UART_TX_BUFFER_SIZE 64
+// #endif
+// 	DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+// 	DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
+
+// 	uint8_t mcu_uart_getc(void)
+// 	{
+// 		uint8_t c = 0;
+// 		BUFFER_DEQUEUE(uart_rx, &c);
+// 		return c;
+// 	}
+
+// 	uint8_t mcu_uart_available(void)
+// 	{
+// 		return BUFFER_READ_AVAILABLE(uart_rx);
+// 	}
+
+// 	void mcu_uart_clear(void)
+// 	{
+// 		BUFFER_CLEAR(uart_rx);
+// 	}
+
+// 	void mcu_uart_putc(uint8_t c)
+// 	{
+// 		while (BUFFER_FULL(uart_tx))
+// 		{
+// 			mcu_uart_flush();
+// 		}
+// 		BUFFER_ENQUEUE(uart_tx, &c);
+// 	}
+
+// 	void mcu_uart_flush(void)
+// 	{
+// 		while (!BUFFER_EMPTY(uart_tx))
+// 		{
+// 			uint8_t tmp[UART_TX_BUFFER_SIZE];
+// 			uint8_t r = 0;
+
+// 			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
+// 			COM_UART.write(tmp, r);
+// 			COM_UART.flush();
+// 		}
+// 	}
+// #endif
+
+// #ifdef MCU_HAS_UART2
+// #ifndef UART2_TX_BUFFER_SIZE
+// #define UART2_TX_BUFFER_SIZE 64
+// #endif
+// 	DECL_BUFFER(uint8_t, uart2_tx, UART2_TX_BUFFER_SIZE);
+// 	DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
+
+// 	uint8_t mcu_uart2_getc(void)
+// 	{
+// 		uint8_t c = 0;
+// 		BUFFER_DEQUEUE(uart2_rx, &c);
+// 		return c;
+// 	}
+
+// 	uint8_t mcu_uart2_available(void)
+// 	{
+// 		return BUFFER_READ_AVAILABLE(uart2_rx);
+// 	}
+
+// 	void mcu_uart2_clear(void)
+// 	{
+// 		BUFFER_CLEAR(uart2_rx);
+// 	}
+
+// 	void mcu_uart2_putc(uint8_t c)
+// 	{
+// 		while (BUFFER_FULL(uart2_tx))
+// 		{
+// 			mcu_uart2_flush();
+// 		}
+// 		BUFFER_ENQUEUE(uart2_tx, &c);
+// 	}
+
+// 	void mcu_uart2_flush(void)
+// 	{
+// 		while (!BUFFER_EMPTY(uart2_tx))
+// 		{
+// 			uint8_t tmp[UART2_TX_BUFFER_SIZE];
+// 			uint8_t r;
+
+// 			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);
+// 			COM2_UART.write(tmp, r);
+// 			COM2_UART.flush();
+// 		}
+// 	}
+// #endif
+
+// 	bool rp2040_uart_rx_ready(void)
+// 	{
+// 		bool wifiready = false;
+// #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+// 		if (rp2040_wifi_clientok())
+// 		{
+// 			wifiready = (rp2040_wifi_bt_rx_ready() > 0);
+// 		}
+// #endif
+// 		return ((Serial.available() > 0) || wifiready);
+// 	}
+
+// 	void rp2040_uart_process(void)
+// 	{
+// #ifdef MCU_HAS_USB
+// 		while (Serial.available() > 0)
+// 		{
+// #ifndef DETACH_USB_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)Serial.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(usb_rx))
+// 				{
+// 					c = OVF;
+// 				}
+
+// 				*(BUFFER_NEXT_FREE(usb_rx)) = c;
+// 				BUFFER_STORE(usb_rx);
+// 			}
+
+// #else
+// 			mcu_usb_rx_cb((uint8_t)Serial.read());
+// #endif
+// 		}
+// #endif
+
+// #ifdef MCU_HAS_UART
+// 		while (COM_UART.available() > 0)
+// 		{
+// #ifndef DETACH_UART_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)COM_UART.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(uart_rx))
+// 				{
+// 					c = OVF;
+// 				}
+
+// 				*(BUFFER_NEXT_FREE(uart_rx)) = c;
+// 				BUFFER_STORE(uart_rx);
+// 			}
+// #else
+// 			mcu_uart_rx_cb((uint8_t)COM_UART.read());
+// #endif
+// 		}
+// #endif
+
+// #ifdef MCU_HAS_UART2
+// 		while (COM2_UART.available() > 0)
+// 		{
+// #ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+// 			uint8_t c = (uint8_t)COM2_UART.read();
+// 			if (mcu_com_rx_cb(c))
+// 			{
+// 				if (BUFFER_FULL(uart2_rx))
+// 				{
+// 					c = OVF;
+// 				}
+
+// 				*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+// 				BUFFER_STORE(uart2_rx);
+// 			}
+
+// #else
+// 			mcu_uart2_rx_cb((uint8_t)COM2_UART.read());
+// #endif
+// 		}
+// #endif
+
+// #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+// 		rp2040_wifi_bt_process();
+// #endif
+// 	}
+// }
 
 /**
  *
@@ -987,40 +987,40 @@ extern "C"
 	{
 		if (!EEPROM.commit())
 		{
-			protocol_send_feedback((const char *)" EEPROM write error");
+			DEBUG_STR((const char *)" EEPROM write error");
 		}
 	}
 }
 #endif
 
-/**
- *
- * This handles SPI communications
- *
- * **/
+// /**
+//  *
+//  * This handles SPI communications
+//  *
+//  * **/
 
-#ifdef MCU_HAS_SPI
-#include <SPI.h>
-extern "C"
-{
-	void mcu_spi_config(uint8_t mode, uint32_t freq)
-	{
-		COM_SPI.setRX(SPI_SDI_BIT);
-		COM_SPI.setTX(SPI_SDO_BIT);
-		COM_SPI.setSCK(SPI_CLK_BIT);
-		COM_SPI.setCS(SPI_CS_BIT);
-		COM_SPI.end();
-		COM_SPI.begin();
-		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
-	}
+// #ifdef MCU_HAS_SPI
+// #include <SPI.h>
+// extern "C"
+// {
+// 	void mcu_spi_config(uint8_t mode, uint32_t freq)
+// 	{
+// 		COM_SPI.setRX(SPI_SDI_BIT);
+// 		COM_SPI.setTX(SPI_SDO_BIT);
+// 		COM_SPI.setSCK(SPI_CLK_BIT);
+// 		COM_SPI.setCS(SPI_CS_BIT);
+// 		COM_SPI.end();
+// 		COM_SPI.begin();
+// 		COM_SPI.beginTransaction(SPISettings(freq, 1 /*MSBFIRST*/, mode));
+// 	}
 
-	uint8_t mcu_spi_xmit(uint8_t data)
-	{
-		return COM_SPI.transfer(data);
-	}
-}
+// 	uint8_t mcu_spi_xmit(uint8_t data)
+// 	{
+// 		return COM_SPI.transfer(data);
+// 	}
+// }
 
-#endif
+// #endif
 
 /**
  *

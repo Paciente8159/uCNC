@@ -1000,8 +1000,18 @@ extern "C"
 #endif
 #if (UART_PORT == 0)
 #define COM_UART Serial1
+#define UART_REG uart0
+#define UART_HW uart0_hw
+#define COM_INREG uart0_hw->dr
+#define COM_OUTREG uart0_hw->dr
+#define UART_IRQn UART0_IRQ
 #elif (UART_PORT == 1)
 #define COM_UART Serial2
+#define UART_REG uart1
+#define UART_HW uart1_hw
+#define COM_INREG uart1_hw->dr
+#define COM_OUTREG uart1_hw->dr
+#define UART_IRQn UART1_IRQ
 #else
 #error "UART COM port number must be 0 or 1"
 #endif
@@ -1016,8 +1026,18 @@ extern "C"
 #endif
 #if (UART2_PORT == 0)
 #define COM2_UART Serial1
+#define UART2_REG uart0
+#define UART2_HW uart0_hw
+#define COM2_INREG uart0_hw->dr
+#define COM2_OUTREG uart0_hw->dr
+#define UART2_IRQn UART0_IRQ
 #elif (UART2_PORT == 1)
 #define COM2_UART Serial2
+#define UART2_REG uart1
+#define UART2_HW uart1_hw
+#define COM2_INREG uart1_hw->dr
+#define COM2_OUTREG uart1_hw->dr
+#define UART2_IRQn UART1_IRQ
 #else
 #error "UART2 COM port number must be 0 or 1"
 #endif
@@ -1157,6 +1177,13 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 #endif
+
+#define IMPLEMENT_CUSTOM_BUFFER
+#include "pico/util/queue.h"
+#include "pico/stdlib.h"
+#include "hardware/irq.h"
+#define DECL_BUFFER(T, N, S) static queue_t N##_queue
+#define BUFFER_INIT(T, N, S) queue_init_with_spinlock(&N##_queue, sizeof(T), S, spin_lock_claim_unused(false));
 
 #ifdef __cplusplus
 }

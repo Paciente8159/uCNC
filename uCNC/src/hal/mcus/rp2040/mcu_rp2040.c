@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <pico/critical_section.h>
 
 static volatile bool rp2040_global_isr_enabled;
 
@@ -295,6 +296,8 @@ void mcu_init(void)
 	// // Enable the alarm irq
 	// irq_set_enabled(ITP_TIMER_IRQ, true);
 #endif
+
+	mcu_enable_global_isr();
 }
 
 /**
@@ -354,11 +357,21 @@ uint8_t mcu_get_pwm(uint8_t pwm)
  * enables global interrupts on the MCU
  * can be defined either as a function or a macro call
  * */
+
 #ifndef mcu_enable_global_isr
+static volatile spin_lock_t *mcu_spinlock;
+static volatile int mcu_spinlock_id;
+static volatile uint32_t mcu_spinlock_status;
 void mcu_enable_global_isr(void)
 {
-	// ets_intr_unlock();
 	rp2040_global_isr_enabled = true;
+	if (mcu_spinlock)
+	{
+		spin_unlock(mcu_spinlock, mcu_spinlock_status);
+		mcu_spinlock = NULL;
+		spin_lock_unclaim(mcu_spinlock_id);
+		mcu_spinlock_id = -1;
+	}
 }
 #endif
 
@@ -369,8 +382,14 @@ void mcu_enable_global_isr(void)
 #ifndef mcu_disable_global_isr
 void mcu_disable_global_isr(void)
 {
+	do
+	{
+		mcu_spinlock_id = spin_lock_claim_unused(false);
+	} while (mcu_spinlock_id < 0);
+	mcu_spinlock = spin_lock_init(mcu_spinlock_id);
+	mcu_spinlock_status = spin_lock_blocking(mcu_spinlock);
 	rp2040_global_isr_enabled = false;
-	// ets_intr_lock();
+	//  ets_intr_lock();
 }
 #endif
 
@@ -510,7 +529,7 @@ uint32_t mcu_micros()
  * */
 void mcu_dotasks(void)
 {
-	rp2040_uart_process();
+	// rp2040_uart_process();
 }
 
 // Non volatile memory
