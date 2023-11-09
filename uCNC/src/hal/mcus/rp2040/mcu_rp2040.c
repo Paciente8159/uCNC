@@ -29,9 +29,6 @@ static volatile lock_core_t mcu_spinlock;
 static volatile int mcu_spinlock_id;
 static volatile uint32_t mcu_spinlock_status;
 
-extern void rp2040_uart_init(int baud);
-extern void rp2040_uart_process(void);
-
 extern void rp2040_eeprom_init(int size);
 extern uint8_t rp2040_eeprom_read(uint16_t address);
 extern void rp2040_eeprom_write(uint16_t address, uint8_t value);
@@ -256,7 +253,14 @@ void mcu_rtc_isr(void)
 
 static void mcu_usart_init(void)
 {
+#ifdef MCU_HAS_UART
+	extern void rp2040_uart_init(int baud);
 	rp2040_uart_init(BAUDRATE);
+#endif
+#ifdef MCU_HAS_UART2
+	extern void rp2040_uart2_init(int baud);
+	rp2040_uart2_init(BAUDRATE2);
+#endif
 }
 
 /**
