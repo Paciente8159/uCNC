@@ -14,67 +14,65 @@ DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 // RX interrupt handler
-static void __not_in_flash_func(mcu_uart_isr)(void)
+static void mcu_uart_irq(void)
 {
-    uint32_t status = UART_HW->mis;
-    if (status & (UART_UARTMIS_RXMIS_BITS | UART_UARTIMSC_RTIM_BITS))
+    uint32_t st = UART_HW->ris;
+    if (st & (UART_UARTRIS_RXRIS_BITS | UART_UARTRIS_RTRIS_BITS))
     {
-        uint8_t c = (COM_INREG & 0xFF);
-#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
-        if (mcu_com_rx_cb(c))
+        while (uart_is_readable(UART_REG))
         {
-            if (BUFFER_FULL(uart_rx))
+            uint8_t c = (uart_getc(UART_REG) & 0xFF);
+#if !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
+            if (mcu_com_rx_cb(c))
             {
-                c = OVF;
-            }
+                if (BUFFER_FULL(uart_rx))
+                {
+                    c = OVF;
+                }
 
-            *(BUFFER_NEXT_FREE(uart_rx)) = c;
-            BUFFER_STORE(uart_rx);
-        }
+                BUFFER_ENQUEUE(uart_rx, &c);
+            }
 #else
-        mcu_uart_rx_cb(c);
+            mcu_uart_rx_cb(c);
 #endif
+        }
     }
 
-    // if (status & UART_UARTMIS_TXMIS_BITS)
-    // {
-    //     if (BUFFER_EMPTY(uart_tx)/* || ((UART_HW->fr & UART_UARTFR_TXFF_BITS))*/)
-    //     {
-    //         // hw_clear_bits(&UART_HW->imsc, UART_UARTIMSC_TXIM_BITS);
-    //         return;
-    //     }
-    //     uint8_t c;
-    //     BUFFER_DEQUEUE(uart_tx, &c);
-    //     COM_OUTREG = c;
-    // }
+    if (st & UART_UARTRIS_TXRIS_BITS)
+    {
+        while (uart_is_writable(UART_REG))
+        {
+            if (BUFFER_EMPTY(uart_tx))
+            {
+                hw_clear_bits(&UART_HW->icr, UART_UARTICR_TXIC_BITS);
+                hw_clear_bits(&UART_HW->imsc, UART_UARTIMSC_TXIM_BITS);
+                return;
+            }
+            uint8_t c;
+            BUFFER_DEQUEUE(uart_tx, &c);
+            uart_putc(UART_REG, (char)c);
+        }
+    }
 }
 
-void rp2040_uart_init()
+void rp2040_uart_init(int baud)
 {
-    // Set up our UART with a basic baud rate.
-    uart_init(UART_REG, BAUDRATE);
+    BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
+    BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
-    // Set the TX and RX pins by using the function select on the GPIO
-    // Set datasheet for more information on function select
     gpio_set_function(TX_BIT, GPIO_FUNC_UART);
     gpio_set_function(RX_BIT, GPIO_FUNC_UART);
 
-    // Set UART flow control CTS/RTS, we don't want these, so turn them off
+    uart_init(UART_REG, baud);
+
     uart_set_hw_flow(UART_REG, false, false);
-
-    // Set our data format
     uart_set_format(UART_REG, 8, 1, UART_PARITY_NONE);
+    uart_set_fifo_enabled(UART_REG, false);
 
-    // Turn off FIFO's - we want to do this character by character
-    uart_set_fifo_enabled(UART_REG, true);
-
-    // And set up and enable the interrupt handlers
-    irq_set_exclusive_handler(UART_IRQn, mcu_uart_isr);
+    irq_set_exclusive_handler(UART_IRQn, mcu_uart_irq);
     irq_set_enabled(UART_IRQn, true);
 
-    // Now enable the UART to send interrupts
     hw_set_bits(&UART_HW->imsc, UART_UARTIMSC_RXIM_BITS | UART_UARTIMSC_RTIM_BITS);
-    uart_set_irq_enables(UART_REG, true, false);
 }
 
 uint8_t mcu_uart_getc(void)
@@ -105,25 +103,18 @@ void mcu_uart_putc(uint8_t c)
 
 void mcu_uart_flush(void)
 {
-    if (!BUFFER_EMPTY(uart_tx))
+    if (!(UART_HW->imsc & UART_UARTIMSC_TXIM_BITS) && !BUFFER_EMPTY(uart_tx)) // not ready start flushing
     {
-        uint8_t tmp[UART_TX_BUFFER_SIZE];
-        uint8_t r;
-        BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
-        uart_puts(UART_REG, tmp);
+        uint8_t c;
+        BUFFER_DEQUEUE(uart_tx, &c);
+        COM_OUTREG = c;
+        // enable tx interrupts
+        hw_set_bits(&UART_HW->imsc, UART_UARTIMSC_TXIM_BITS);
+        
+#if ASSERT_PIN(ACTIVITY_LED)
+        io_toggle_output(ACTIVITY_LED);
+#endif
     }
-    //     if (!(UART_HW->imsc & UART_UARTIMSC_TXIM_BITS) && !(UART_HW->fr & UART_UARTFR_TXFF_BITS) && !BUFFER_EMPTY(uart_tx)) // not ready start flushing
-    //     {
-    //         // enable tx interrupts
-    //         hw_set_bits(&UART_HW->imsc, UART_UARTIMSC_TXIM_BITS);
-    //         // sends first char to trigger isr
-    //         uint8_t c;
-    //         BUFFER_DEQUEUE(uart_tx, &c);
-    //         COM_OUTREG = c;
-    // #if ASSERT_PIN(ACTIVITY_LED)
-    //         io_toggle_output(ACTIVITY_LED);
-    // #endif
-    //     }
 }
 
 #endif

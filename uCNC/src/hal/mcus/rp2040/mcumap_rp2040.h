@@ -1133,9 +1133,9 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1UL << (y)))	  /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))	  /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
 
 #define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
@@ -1178,12 +1178,27 @@ extern "C"
 #endif
 #endif
 
-#define IMPLEMENT_CUSTOM_BUFFER
+#define IMPLEMENTS_CUSTOM_BUFFER
 #include "pico/util/queue.h"
 #include "pico/stdlib.h"
 #include "hardware/irq.h"
-#define DECL_BUFFER(T, N, S) static queue_t N##_queue
+#define DECL_BUFFER(T, N, S)           \
+	static T N##_dumpvar;              \
+	static const uint8_t N##_size = S; \
+	static queue_t N##_queue
 #define BUFFER_INIT(T, N, S) queue_init_with_spinlock(&N##_queue, sizeof(T), S, spin_lock_claim_unused(false));
+#define BUFFER_WRITE_AVAILABLE(buffer) (buffer##_size - queue_get_level(&buffer##_queue))
+#define BUFFER_READ_AVAILABLE(buffer) queue_get_level(&buffer##_queue)
+#define BUFFER_EMPTY(buffer) queue_is_empty(&buffer##_queue)
+#define BUFFER_FULL(buffer) queue_is_full(&buffer##_queue)
+#define BUFFER_PEEK(buffer, ptr) queue_peek_blocking(&buffer##_queue, ptr)
+#define BUFFER_DEQUEUE(buffer, ptr) queue_remove_blocking(&buffer##_queue, ptr)
+#define BUFFER_ENQUEUE(buffer, ptr) queue_add_blocking(&buffer##_queue, ptr)
+#define BUFFER_CLEAR(buffer)                                       \
+	while (!queue_is_empty(&buffer##_queue))                       \
+	{                                                              \
+		queue_remove_blocking(&buffer##_queue, &buffer##_dumpvar); \
+	}
 
 #ifdef __cplusplus
 }

@@ -707,6 +707,7 @@ void cnc_exec_rt_commands(void)
 	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
 
 #if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+	static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
 	uint32_t current_time = mcu_millis();
 	if (next_auto_report < current_time)
 	{
@@ -1019,10 +1020,6 @@ bool cnc_check_interlocking(void)
 
 static void cnc_io_dotasks(void)
 {
-#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
-	static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
-#endif
-
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
 

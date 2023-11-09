@@ -25,6 +25,9 @@
 #include <pico/critical_section.h>
 
 static volatile bool rp2040_global_isr_enabled;
+static volatile lock_core_t mcu_spinlock;
+static volatile int mcu_spinlock_id;
+static volatile uint32_t mcu_spinlock_status;
 
 extern void rp2040_uart_init(int baud);
 extern void rp2040_uart_process(void);
@@ -267,6 +270,13 @@ static void mcu_usart_init(void)
 void mcu_init(void)
 {
 	mcu_io_init();
+
+	// do
+	// {
+	// 	mcu_spinlock_id = spin_lock_claim_unused(false);
+	// } while (mcu_spinlock_id < 0);
+	// lock_init(&mcu_spinlock, mcu_spinlock_id);
+
 	mcu_usart_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
@@ -359,19 +369,11 @@ uint8_t mcu_get_pwm(uint8_t pwm)
  * */
 
 #ifndef mcu_enable_global_isr
-static volatile spin_lock_t *mcu_spinlock;
-static volatile int mcu_spinlock_id;
-static volatile uint32_t mcu_spinlock_status;
+
 void mcu_enable_global_isr(void)
 {
 	rp2040_global_isr_enabled = true;
-	if (mcu_spinlock)
-	{
-		spin_unlock(mcu_spinlock, mcu_spinlock_status);
-		mcu_spinlock = NULL;
-		spin_lock_unclaim(mcu_spinlock_id);
-		mcu_spinlock_id = -1;
-	}
+	// lock_internal_spin_unlock_with_wait(&mcu_spinlock, mcu_spinlock_status);
 }
 #endif
 
@@ -382,14 +384,8 @@ void mcu_enable_global_isr(void)
 #ifndef mcu_disable_global_isr
 void mcu_disable_global_isr(void)
 {
-	do
-	{
-		mcu_spinlock_id = spin_lock_claim_unused(false);
-	} while (mcu_spinlock_id < 0);
-	mcu_spinlock = spin_lock_init(mcu_spinlock_id);
-	mcu_spinlock_status = spin_lock_blocking(mcu_spinlock);
+	// mcu_spinlock_status = spin_lock_blocking(mcu_spinlock.spin_lock);
 	rp2040_global_isr_enabled = false;
-	//  ets_intr_lock();
 }
 #endif
 

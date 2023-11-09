@@ -245,7 +245,7 @@ extern "C"
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
-#define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
+#define BUFFER_PEEK(buffer, ptr) (*(ptr) = buffer##_bufferdata[buffer.tail])
 #define BUFFER_REMOVE(buffer)                \
 	{                                        \
 		uint8_t tail;                        \
@@ -410,6 +410,7 @@ extern "C"
 			buffer.count = 0;           \
 		}                               \
 	}
+	
 #endif
 
 #ifdef __cplusplus
