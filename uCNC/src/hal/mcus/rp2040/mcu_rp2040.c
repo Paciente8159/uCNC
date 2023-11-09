@@ -251,15 +251,19 @@ void mcu_rtc_isr(void)
 	mcu_rtc_cb(millis());
 }
 
-static void mcu_usart_init(void)
+static void mcu_coms_init(void)
 {
 #ifdef MCU_HAS_UART
-	extern void rp2040_uart_init(int baud);
-	rp2040_uart_init(BAUDRATE);
+	extern void mcu_uart_init(int baud);
+	mcu_uart_init(BAUDRATE);
 #endif
 #ifdef MCU_HAS_UART2
-	extern void rp2040_uart2_init(int baud);
-	rp2040_uart2_init(BAUDRATE2);
+	extern void mcu_uart2_init(int baud);
+	mcu_uart2_init(BAUDRATE2);
+#endif
+#ifdef MCU_HAS_USB
+	extern void mcu_usb_init(void);
+	mcu_usb_init();
 #endif
 }
 
@@ -281,7 +285,7 @@ void mcu_init(void)
 	// } while (mcu_spinlock_id < 0);
 	// lock_init(&mcu_spinlock, mcu_spinlock_id);
 
-	mcu_usart_init();
+	mcu_coms_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
 	// init rtc, oneshot and servo alarms
@@ -529,7 +533,10 @@ uint32_t mcu_micros()
  * */
 void mcu_dotasks(void)
 {
-	// rp2040_uart_process();
+#ifdef MCU_HAS_USB
+	extern void mcu_usb_dotasks(void);
+	mcu_usb_dotasks();
+#endif
 }
 
 // Non volatile memory

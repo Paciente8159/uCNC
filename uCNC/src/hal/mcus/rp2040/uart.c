@@ -14,7 +14,7 @@ DECL_BUFFER(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
 DECL_BUFFER(uint8_t, uart_rx, RX_BUFFER_SIZE);
 
 // RX interrupt handler
-static void mcu_uart_irq(void)
+static void __not_in_flash_func(mcu_uart_irq)(void)
 {
     uint32_t st = UART_HW->ris;
     if (st & (UART_UARTRIS_RXRIS_BITS | UART_UARTRIS_RTRIS_BITS))
@@ -55,7 +55,7 @@ static void mcu_uart_irq(void)
     }
 }
 
-void rp2040_uart_init(int baud)
+void mcu_uart_init(int baud)
 {
     BUFFER_INIT(uint8_t, uart_tx, UART_TX_BUFFER_SIZE);
     BUFFER_INIT(uint8_t, uart_rx, RX_BUFFER_SIZE);

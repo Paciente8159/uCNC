@@ -60,7 +60,7 @@ extern "C"
 // #define UART_PORT 0
 
 //forces USB
-// #define MCU_HAS_USB
+#define MCU_HAS_USB
 
     // Setup PWM
 #define PWM0_BIT 14  // assigns PWM0 pin

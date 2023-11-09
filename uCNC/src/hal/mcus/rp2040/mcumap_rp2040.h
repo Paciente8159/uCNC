@@ -1043,6 +1043,26 @@ extern "C"
 #endif
 #endif
 
+#ifdef MCU_HAS_USB
+#ifndef tusb_cdc_init
+#define tusb_cdc_init tusb_init
+#define tusb_cdc_isr_handler() tud_int_handler(0)
+#define tusb_cdc_task tud_task
+#define tusb_cdc_available() tud_cdc_n_available(0)
+#define tusb_cdc_read() tud_cdc_n_read_char(0)
+#define tusb_cdc_flush() tud_cdc_n_write_flush(0)
+#define tusb_cdc_write(ch) tud_cdc_n_write_char(0, ch)
+#define tusb_cdc_write_available() tud_cdc_n_write_available(0)
+#define tusb_cdc_write_buffer(buffer, bufsize) tud_cdc_n_write(0, buffer, bufsize)
+#define tusb_cdc_connected tud_cdc_n_connected(0)
+#endif
+extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+extern uint32_t tud_cdc_n_available(uint8_t itf);
+extern bool tud_cdc_n_connected (uint8_t itf);
+#define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
+#define usb_rx_available() tud_cdc_n_available(0)
+#endif
+
 #define MCU_HAS_ONESHOT_TIMER
 
 // SPI
