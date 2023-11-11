@@ -82,13 +82,21 @@ void tool_init(void)
 #ifdef FORCE_GLOBALS_TO_0
 	memset(&tool_current, 0, sizeof(tool_t));
 #endif
+#if TOOL_COUNT > 1
 	tool_change(g_settings.default_tool);
+#else
+	memcpy(&tool_current, &TOOL1, sizeof(tool_t));
+	if (tool_current.startup_code)
+	{
+		tool_current.startup_code();
+	}
+#endif
 #endif
 }
 
 void tool_change(uint8_t tool)
 {
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	tool_stop();
 	if (tool_current.shutdown_code)
 	{

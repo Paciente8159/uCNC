@@ -670,7 +670,9 @@ void protocol_send_cnc_settings(void)
 #endif
 
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	protocol_send_gcode_setting_line_int(80, g_settings.default_tool);
+#endif
 	for (uint8_t i = 0; i < TOOL_COUNT; i++)
 	{
 		protocol_send_gcode_setting_line_flt(81 + i, g_settings.tool_length_offset[i]);

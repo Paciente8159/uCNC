@@ -285,7 +285,9 @@ extern "C"
 		parser_groups_t groups;
 		float feedrate;
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t tool_index;
+#endif
 		uint16_t spindle;
 #endif
 #ifdef GCODE_PROCESS_LINE_NUMBERS

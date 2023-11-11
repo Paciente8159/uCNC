@@ -72,7 +72,9 @@ extern "C"
 		float acceleration[STEPPER_COUNT];
 		float max_distance[AXIS_COUNT];
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t default_tool;
+#endif
 		float tool_length_offset[TOOL_COUNT];
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
