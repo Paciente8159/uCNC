@@ -57,8 +57,8 @@ extern "C"
  * */
 #define SET_COOLANT(X, Y, Z)                   \
 	{                                          \
-		io_set_pinvalue(X, (Z && COOLANT_MASK)); \
-		io_set_pinvalue(Y, (Z && MIST_MASK));    \
+		io_set_pinvalue(X, (Z & COOLANT_MASK)); \
+		io_set_pinvalue(Y, (Z & MIST_MASK));    \
 	}
 
 #ifdef __cplusplus
