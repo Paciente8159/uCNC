@@ -47,7 +47,7 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
-static bool lock_itp = false;
+static bool cnc_lock_itp = false;
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -274,11 +274,11 @@ bool cnc_dotasks(void)
 	}
 #endif
 
-	if (!lock_itp)
+	if (!cnc_lock_itp)
 	{
-		lock_itp = true;
+		cnc_lock_itp = true;
 		itp_run();
-		lock_itp = false;
+		cnc_lock_itp = false;
 	}
 
 	return !cnc_get_exec_state(EXEC_KILL);
@@ -310,7 +310,7 @@ void cnc_store_motion(void)
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
 
-	lock_itp = false;
+	cnc_lock_itp = false;
 #endif
 }
 
@@ -343,7 +343,7 @@ void cnc_restore_motion(void)
 	{
 		cnc_clear_exec_state(EXEC_HOLD);
 	}
-	lock_itp = false;
+	cnc_lock_itp = false;
 #endif
 }
 
@@ -595,13 +595,13 @@ void cnc_clear_exec_state(uint8_t statemask)
 	CLEARFLAG(cnc_state.exec_state, statemask);
 }
 
-void cnc_delay_ms(uint32_t miliseconds)
+void cnc_delay_ms(uint32_t milliseconds)
 {
-	uint32_t t_start = mcu_millis();
-	while ((mcu_millis() - t_start) < miliseconds)
+	milliseconds += mcu_millis();
+	do
 	{
 		cnc_dotasks();
-	}
+	} while (mcu_millis() < milliseconds);
 }
 
 void cnc_reset(void)
