@@ -509,8 +509,8 @@ void planner_sync_tools(motion_data_t *block_data)
 {
 #if TOOL_COUNT > 0
 	g_planner_state.spindle_speed = block_data->spindle;
-	g_planner_state.state_flags.reg &= ~STATE_COPY_FLAG_MASK;
-	g_planner_state.state_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK);
+	g_planner_state.state_flags.reg &= ~TOOL_STATE_COPY_FLAG_MASK;
+	g_planner_state.state_flags.reg |= (block_data->motion_flags.reg & TOOL_STATE_COPY_FLAG_MASK);
 #endif
 }
 
