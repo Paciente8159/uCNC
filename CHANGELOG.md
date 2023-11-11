@@ -8,6 +8,13 @@
 
 # Changelog
 
+## [1.8.3] - 11-11-2023
+
+### Fixed
+
+- fixed motion stall if the motion has an instant jump from speed 0 to the target speed (instant acceleration) causing the motion speed not to be correctly calculated and stalling the whole interpolator queue. (#561)
+- fixed error with option STATUS_AUTOMATIC_REPORT_INTERVAL enabled (#559)
+
 ## [1.8.2] - 03-11-2023
 
 ### Fixed
@@ -1393,6 +1400,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
 [1.8.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.2
 [1.8.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.1
 [1.8.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0
