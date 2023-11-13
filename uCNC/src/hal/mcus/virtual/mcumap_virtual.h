@@ -36,6 +36,22 @@
 #define rom_memcpy memcpy
 #define rom_read_byte *
 
+/* 7.18.2.1  Limits of exact-width integer types */
+#define INT8_MIN (-128)
+#define INT16_MIN (-32768)
+#define INT32_MIN (-2147483647 - 1)
+#define INT64_MIN  (-9223372036854775807LL - 1)
+
+#define INT8_MAX 127
+#define INT16_MAX 32767
+#define INT32_MAX 2147483647
+#define INT64_MAX 9223372036854775807LL
+
+#define UINT8_MAX 255
+#define UINT16_MAX 65535
+#define UINT32_MAX 0xffffffffU  /* 4294967295U */
+#define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
+
 //needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
@@ -47,7 +63,12 @@
 #define MCU_CYCLES_PER_LOOP_OVERHEAD 0
 #endif
 
-#define MCU_HAS_UART
+// #define MCU_HAS_UART
+#ifndef UART_PORT_NAME
+#define UART_PORT_NAME "COM1"
+#endif
+
+#define MCU_HAS_UART2
 
 //#define EMULATE_74HC595
 
@@ -386,7 +407,6 @@
 #define RX2 211
 #define DIO211 211
 
-
 #define MCU_HAS_ONESHOT_TIMER
 
 // just to compile
@@ -401,6 +421,5 @@ extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
 #define asm __asm__
-#define VFD_HUANYANG_TYPE1
 
 #endif

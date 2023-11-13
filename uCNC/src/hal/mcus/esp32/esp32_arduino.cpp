@@ -572,7 +572,8 @@ extern "C"
 		{
 			while (!BUFFER_EMPTY(wifi_tx))
 			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+				memset(tmp, 0, sizeof(tmp));
 				uint8_t r;
 
 				BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
@@ -626,7 +627,8 @@ extern "C"
 		{
 			while (!BUFFER_EMPTY(bt_tx))
 			{
-				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+				uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
+				memset(tmp, 0, sizeof(tmp));
 				uint8_t r;
 
 				BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
