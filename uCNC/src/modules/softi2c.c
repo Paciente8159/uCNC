@@ -15,6 +15,7 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
+#include "../cnc.h"
 #include "softi2c.h"
 
 void softi2c_delay(uint8_t loops_100ns)
@@ -60,7 +61,7 @@ static uint8_t softi2c_clock_stretch(softi2c_port_t *port)
 static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
 {
 	uint8_t ack = 0;
-
+	cnc_dotasks();
 	if (send_start)
 	{
 		// init
@@ -125,6 +126,7 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 {
 	uint8_t c = 0xFF;
 	uint8_t i = 8;
+	cnc_dotasks();
 	do
 	{
 		softi2c_delay(port->i2cdelay);
