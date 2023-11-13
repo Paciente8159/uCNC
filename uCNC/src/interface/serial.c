@@ -175,7 +175,7 @@ static FORCEINLINE char _serial_peek(void)
 
 	while (!serial_available())
 	{
-		mcu_dotasks();
+		cnc_dotasks();
 	}
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
