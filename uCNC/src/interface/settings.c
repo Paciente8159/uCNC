@@ -122,7 +122,9 @@ const settings_t __rom__ default_settings =
 		.acceleration = DEFAULT_ACCEL_PER_AXIS,
 		.max_distance = DEFAULT_MAX_DIST_PER_AXIS,
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		.default_tool = DEFAULT_STARTUP_TOOL,
+#endif
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
@@ -493,7 +495,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			break;
 #endif
 #endif
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		case 80:
 			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
 			break;

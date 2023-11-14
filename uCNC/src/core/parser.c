@@ -184,7 +184,11 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 	*spindle = (uint16_t)ABS(parser_state.spindle);
 	*coolant = parser_state.groups.coolant;
 	modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
+#if TOOL_COUNT > 1
 	modalgroups[11] = parser_state.tool_index;
+#else
+	modalgroups[11] = 1;
+#endif
 #else
 	modalgroups[8] = 5;
 	modalgroups[9] = 9;
@@ -1052,7 +1056,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 // RS274NGC v3 - 3.7 Other Input Codes
 // Words S and T must be positive
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	if (words->s < 0 || words->t < 0)
 	{
 		return STATUS_NEGATIVE_VALUE;
@@ -1180,6 +1184,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		new_state->spindle = (uint16_t)trunc(words->s);
 	}
 
+#if TOOL_COUNT > 1
 	// 5. select tool
 	if (CHECKFLAG(cmd->words, GCODE_WORD_T))
 	{
@@ -1197,6 +1202,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		tool_change(words->t);
 		new_state->tool_index = new_state->groups.tool_change;
 	}
+#endif
 
 	// 7. spindle on/rev/off (M3/M4/M5)
 	block_data.spindle = new_state->spindle;
@@ -2293,23 +2299,22 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		code = (code == 5) ? M5 : code - 2;
 		new_state->groups.spindle_turning = code;
 		break;
+#if TOOL_COUNT > 1
 	case 6:
 		new_group |= GCODE_GROUP_TOOLCHANGE;
 		break;
-#if ASSERT_PIN(COOLANT_MIST)
-	case 7:
 #endif
-#ifdef M7_SAME_AS_M8
 	case 7:
-#endif
 	case 8:
+#ifdef ENABLE_COOLANT
 		cmd->groups |= GCODE_GROUP_COOLANT; // word overlapping allowed
-#if ASSERT_PIN(COOLANT_MIST)
+#ifndef M7_SAME_AS_M8
 		new_state->groups.coolant |= ((code == 8) ? M8 : M7);
 #else
 		new_state->groups.coolant |= M8;
 #endif
 		return STATUS_OK;
+#endif
 	case 9:
 		cmd->groups |= GCODE_GROUP_COOLANT;
 		new_state->groups.coolant = M9;
@@ -2568,7 +2573,9 @@ void parser_reset(bool stopgroup_only)
 	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
+#if TOOL_COUNT > 1
 	parser_state.tool_index = g_settings.default_tool;
+#endif
 	parser_state.groups.path_mode = G61;
 #endif
 	parser_state.groups.motion = G1;											   // G1
