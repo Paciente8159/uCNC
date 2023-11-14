@@ -325,7 +325,7 @@ extern "C"
 
 	static volatile VIRTUAL_MAP virtualmap;
 
-	void ioserver(void *args)
+	void* ioserver(void *args)
 	{
 		HANDLE hPipe;
 		TCHAR chBuf[sizeof(VIRTUAL_MAP)];
@@ -354,7 +354,7 @@ extern "C"
 			if (hPipe == INVALID_HANDLE_VALUE)
 			{
 				printf("CreateNamedPipe failed, GLE=%d.\n", GetLastError());
-				return;
+				return NULL;
 			}
 
 			// Wait for the client to connect; if it succeeds,
@@ -429,7 +429,7 @@ extern "C"
 			CloseHandle(hPipe);
 		}
 
-		return;
+		return NULL;
 	}
 
 	uint8_t mcu_get_pin_offset(uint8_t pin)
@@ -777,7 +777,7 @@ extern "C"
 	/**
 	 * Initialize the MCU
 	 * **/
-
+	pthread_t thread_io;
 	void mcu_init(void)
 	{
 		startCycleCounter();
@@ -787,6 +787,7 @@ extern "C"
 		virtualmap.outputs = 0;
 		g_cpu_freq = getCPUFreq();
 		start_timer(1, &ticksimul);
+		pthread_create(&thread_io, NULL, &ioserver, NULL);
 		mcu_enable_global_isr();
 	}
 
