@@ -33,7 +33,7 @@ extern "C"
 // #include <ws2tcpip.h>
 // #pragma comment(lib, "ws2_32.lib") // Winsock Library
 // #include <windows.h>
-#include "WindowsSerial.h"
+#include "../../../../../makefiles/virtual/WindowsSerial.h"
 
 	/**
 	 *
