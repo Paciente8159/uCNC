@@ -1096,6 +1096,14 @@ extern "C"
 #define SERVO_ALARM 1
 #define ONESHOT_ALARM 2
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#ifdef IC74HC595_COUNT
+#undef IC74HC595_COUNT
+#endif
+// forces IC74HC595_COUNT to 4 to prevent errors
+#define IC74HC595_COUNT 4
+#endif
+
 #define __timer_irq__(X) TIMER_IRQ_##X
 #define _timer_irq_(X) __timer_irq__(X)
 
