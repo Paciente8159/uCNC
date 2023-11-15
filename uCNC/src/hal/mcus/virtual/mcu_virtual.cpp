@@ -15,11 +15,13 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
+#include "../../../cnc.h"
+#if (BOARD == BOARD_VIRTUAL)
 
+#ifdef __cplusplus
 extern "C"
 {
-#include "../../../cnc.h"
-#if (MCU == MCU_VIRTUAL_WIN)
+#endif
 
 #include <stdio.h>
 #include <conio.h>
@@ -325,7 +327,7 @@ extern "C"
 
 	static volatile VIRTUAL_MAP virtualmap;
 
-	void* ioserver(void *args)
+	void *ioserver(void *args)
 	{
 		HANDLE hPipe;
 		TCHAR chBuf[sizeof(VIRTUAL_MAP)];
@@ -800,6 +802,7 @@ extern "C"
 		}
 		return 0;
 	}
-
-#endif
+#ifdef __cplusplus
 }
+#endif
+#endif
