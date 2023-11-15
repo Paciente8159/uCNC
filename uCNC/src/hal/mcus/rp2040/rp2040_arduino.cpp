@@ -553,7 +553,8 @@ void mcu_wifi_flush(void)
 	{
 		while (!BUFFER_EMPTY(wifi_tx))
 		{
-			uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+			uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
 			uint8_t r;
 
 			BUFFER_READ(wifi_tx, tmp, WIFI_TX_BUFFER_SIZE, r);
@@ -605,7 +606,8 @@ void mcu_bt_flush(void)
 {
 	while (!BUFFER_EMPTY(bt_tx))
 	{
-		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE];
+		uint8_t tmp[BLUETOOTH_TX_BUFFER_SIZE + 1];
+		memset(tmp, 0, sizeof(tmp));
 		uint8_t r;
 
 		BUFFER_READ(bt_tx, tmp, BLUETOOTH_TX_BUFFER_SIZE, r);
@@ -769,7 +771,8 @@ extern "C"
 	{
 		while (!BUFFER_EMPTY(usb_tx))
 		{
-			uint8_t tmp[USB_TX_BUFFER_SIZE];
+			uint8_t tmp[USB_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
 			uint8_t r;
 
 			BUFFER_READ(usb_tx, tmp, USB_TX_BUFFER_SIZE, r);
@@ -816,7 +819,8 @@ extern "C"
 	{
 		while (!BUFFER_EMPTY(uart_tx))
 		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE];
+			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
 			uint8_t r = 0;
 
 			BUFFER_READ(uart_tx, tmp, UART_TX_BUFFER_SIZE, r);
@@ -863,7 +867,8 @@ extern "C"
 	{
 		while (!BUFFER_EMPTY(uart2_tx))
 		{
-			uint8_t tmp[UART2_TX_BUFFER_SIZE];
+			uint8_t tmp[UART2_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
 			uint8_t r;
 
 			BUFFER_READ(uart2_tx, tmp, UART2_TX_BUFFER_SIZE, r);

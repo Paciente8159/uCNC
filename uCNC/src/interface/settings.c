@@ -21,7 +21,10 @@
 #include "defaults.h"
 
 // if settings struct is changed this version should change too
-#define SETTINGS_VERSION "V06"
+#define SETTINGS_VERSION \
+	{                    \
+		'V', '0', '6'    \
+	}
 
 settings_t g_settings;
 

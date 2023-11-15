@@ -9,6 +9,8 @@ env.Append(
   LINKFLAGS=[
       "-static-libgcc",
       "-g3",
-	  "-lws2_32"
+      # "-lSDL2main",
+      # "-lSDL2",
+      "-lws2_32"
   ]
 )

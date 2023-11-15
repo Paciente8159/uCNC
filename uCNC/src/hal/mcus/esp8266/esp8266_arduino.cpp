@@ -502,7 +502,8 @@ extern "C"
 	{
 		while (!BUFFER_EMPTY(uart_tx))
 		{
-			uint8_t tmp[UART_TX_BUFFER_SIZE];
+			uint8_t tmp[UART_TX_BUFFER_SIZE + 1];
+			memset(tmp, 0, sizeof(tmp));
 			uint8_t r;
 			uint8_t max = (uint8_t)MIN(Serial.availableForWrite(), UART_TX_BUFFER_SIZE);
 
@@ -551,7 +552,8 @@ extern "C"
 		{
 			while (!BUFFER_EMPTY(wifi_tx))
 			{
-				uint8_t tmp[WIFI_TX_BUFFER_SIZE];
+				uint8_t tmp[WIFI_TX_BUFFER_SIZE + 1];
+				memset(tmp, 0, sizeof(tmp));
 				uint8_t r;
 				uint8_t max = (uint8_t)MIN(server_client.availableForWrite(), WIFI_TX_BUFFER_SIZE);
 
