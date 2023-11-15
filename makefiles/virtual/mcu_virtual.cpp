@@ -15,7 +15,7 @@
 	Also without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 	See the	GNU General Public License for more details.
 */
-#include "../../../cnc.h"
+#include "../../uCNC/src/cnc.h"
 #if (BOARD == BOARD_VIRTUAL)
 
 #ifdef __cplusplus
@@ -35,7 +35,7 @@ extern "C"
 // #include <ws2tcpip.h>
 // #pragma comment(lib, "ws2_32.lib") // Winsock Library
 // #include <windows.h>
-#include "../../../../../makefiles/virtual/WindowsSerial.h"
+#include "WindowsSerial.h"
 
 	/**
 	 *
