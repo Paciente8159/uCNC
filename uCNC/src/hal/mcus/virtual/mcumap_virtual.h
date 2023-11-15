@@ -420,6 +420,9 @@
 extern void virtual_delay_us(uint16_t delay);
 #define mcu_delay_us(X) virtual_delay_us(X)
 
+#include "../../tools/tool.h"
+extern const tool_t spindle_pwm;
+
 #define asm __asm__
 
 #endif

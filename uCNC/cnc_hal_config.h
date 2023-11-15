@@ -275,7 +275,6 @@ extern "C"
 // assign the tools from 1 to 16
 #if (TOOL_COUNT >= 1)
 // to allow build on virtual emulator
-extern const tool_t spindle_pwm;
 #define TOOL1 spindle_pwm
 #endif
 #if (TOOL_COUNT >= 2)
