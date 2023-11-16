@@ -226,7 +226,8 @@ void itp_init(void)
 static float s_curve_function(float pt)
 {
 #if S_CURVE_ACCELERATION_LEVEL == 5
-	return 0.5 * (tanh(6 * pt - 3) + 1);
+	float k = 0.5 * (tanh(6 * pt - 3) + 1);
+	return ((k - 0.00247262325f) * 1.004969839f);
 #elif S_CURVE_ACCELERATION_LEVEL == 4
 	// from this https://forum.duet3d.com/topic/4802/6th-order-jerk-controlled-motion-planning/95
 	float pt_sqr = fast_flt_pow2(pt);
@@ -241,7 +242,7 @@ static float s_curve_function(float pt)
 	int32_t *i = (int32_t *)&k;
 	*i = 0x7EEF1AA0 - *i;
 	k = (0.65f * pt * k + 0.5f);
-	return CLAMP(0, k, 1);
+	return ((k + 0.009599984f) * 0.981161788f);
 #elif S_CURVE_ACCELERATION_LEVEL == 2
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
@@ -250,7 +251,7 @@ static float s_curve_function(float pt)
 	int32_t *i = (int32_t *)&k;
 	*i = 0x7EEF1AA0 - *i;
 	k = (0.75f * pt * k + 0.5f);
-	return CLAMP(0, k, 1);
+	return ((k + 0.0130000114f) * 0.974658849f);
 #elif S_CURVE_ACCELERATION_LEVEL == 1
 	// from this https://en.wikipedia.org/wiki/Sigmoid_function
 	pt -= 0.5f;
@@ -259,7 +260,7 @@ static float s_curve_function(float pt)
 	int32_t *i = (int32_t *)&k;
 	*i = 0x7EEF1AA0 - *i;
 	k = (pt * k + 0.5f);
-	return CLAMP(0, k, 1);
+	return ((k - 0.0329999924f) * 1.070663794f);
 #elif S_CURVE_ACCELERATION_LEVEL == -1
 	float k, pt_sqr;
 	int32_t *i;
@@ -270,28 +271,28 @@ static float s_curve_function(float pt)
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.5f + ABS(pt));
-		i = (int32_t *)&k;
+		*i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (pt * k + 0.5f);
-		return CLAMP(0, k, 1);
+		return ((k - 0.0329999924f) * 1.070663794f);
 	case 2:
 		// from this https://en.wikipedia.org/wiki/Sigmoid_function
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.25f + ABS(pt));
-		i = (int32_t *)&k;
+		*i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (0.75f * pt * k + 0.5f);
-		return CLAMP(0, k, 1);
+		return ((k + 0.0130000114f) * 0.974658849f);
 	case 3:
 		// from this https://en.wikipedia.org/wiki/Sigmoid_function
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.15f + ABS(pt));
-		i = (int32_t *)&k;
+		*i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (0.65f * pt * k + 0.5f);
-		return CLAMP(0, k, 1);
+		return ((k + 0.009599984f) * 0.981161788f);
 	case 4:
 		// from this https://forum.duet3d.com/topic/4802/6th-order-jerk-controlled-motion-planning/95
 		pt_sqr = fast_flt_pow2(pt);
@@ -299,7 +300,8 @@ static float s_curve_function(float pt)
 		k = fast_flt_mul2(k) * pt_sqr * pt;
 		return k;
 	case 5:
-		return 0.5 * (tanh(6 * pt - 3) + 1);
+		k = 0.5 * (tanh(6 * pt - 3) + 1);
+		return ((k - 0.00247262325f) * 1.004969839f);
 	default:
 		// defaults to linear
 		return pt;
@@ -337,18 +339,18 @@ void itp_run(void)
 	static float junction_speed = 0;
 	static float feed_convert = 0;
 	static float partial_distance = 0;
-	static float t_acc_integrator = 0;
-	static float t_deac_integrator = 0;
+	static bool deaccel_to_targetspeed = false;
+	static float accel_integrator = 0;
+	static float deaccel_integrator = 0;
+
 #if S_CURVE_ACCELERATION_LEVEL != 0
-	static float acc_step = 0;
-	static float acc_step_acum = 0;
-	static float acc_scale = 0;
-	static float acc_init_speed = 0;
-
-	static float deac_step = 0;
-	static float deac_step_acum = 0;
-	static float deac_scale = 0;
-
+	static float initial_speed = 0;
+	static float accel_speed_change = 0;
+	static float deaccel_speed_change = 0;
+	static float accel_factor;
+	static float deaccel_factor;
+	static float accel_count = 0;
+	static float deaccel_count = 0;
 #endif
 
 	itp_segment_t *sgm = NULL;
@@ -416,6 +418,9 @@ void itp_run(void)
 			{
 				start_is_synched = true;
 			}
+
+			// reset distance tracker
+			partial_distance = 0;
 		}
 
 		uint32_t remaining_steps = itp_cur_plan_block->steps[itp_cur_plan_block->main_stepper];
@@ -444,31 +449,26 @@ void itp_run(void)
 
 			junction_speed = fast_flt_sqrt(junction_speed_sqr);
 			float accel_inv = fast_flt_inv(itp_cur_plan_block->acceleration);
-
 			accel_until = remaining_steps;
 			deaccel_from = 0;
+
 			if (junction_speed_sqr != itp_cur_plan_block->entry_feed_sqr)
 			{
 				float accel_dist = ABS(junction_speed_sqr - itp_cur_plan_block->entry_feed_sqr) * accel_inv;
 				accel_dist = fast_flt_div2(accel_dist);
-				accel_until -= floorf(accel_dist);
+				accel_until -= (uint32_t)truncf(accel_dist);
+				deaccel_to_targetspeed = (junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr);
 				float t = ABS(junction_speed - current_speed);
-#if S_CURVE_ACCELERATION_LEVEL != 0
-				acc_scale = t;
-				acc_step_acum = 0;
-				acc_init_speed = current_speed;
-#endif
-				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_acc_integrator = t * slices_inv;
+				float fact = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t * accel_inv));
+				accel_integrator = fact * t * accel_inv;
 #if S_CURVE_ACCELERATION_LEVEL != 0
-				acc_step = slices_inv;
+				accel_count = 0;
+				initial_speed = current_speed;
+				accel_speed_change = t;
+				// slice up time in an integral number of periods (half with positive jerk and half with negative)
+				accel_factor = fact;
 #endif
-				if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
-				{
-					t_acc_integrator = -t_acc_integrator;
-				}
 			}
 
 			// if entry speed already a junction speed updates it.
@@ -482,25 +482,21 @@ void itp_run(void)
 			{
 				float deaccel_dist = (junction_speed_sqr - exit_speed_sqr) * accel_inv;
 				deaccel_dist = fast_flt_div2(deaccel_dist);
-				deaccel_from = floorf(deaccel_dist);
-				// same as before t can be calculated using the normal ramp equation
+				deaccel_from = (uint32_t)truncf(deaccel_dist);
 				float t = ABS(junction_speed - fast_flt_sqrt(exit_speed_sqr));
-#if S_CURVE_ACCELERATION_LEVEL != 0
-				deac_scale = t;
-				deac_step_acum = 0;
-#endif
-				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_deac_integrator = t * slices_inv;
-
+				float fact = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t * accel_inv));
+				deaccel_integrator = fact * t * accel_inv;
 #if S_CURVE_ACCELERATION_LEVEL != 0
-				deac_step = slices_inv;
+				deaccel_count = 0;
+				deaccel_speed_change = t;
+				// slice up time in an integral number of periods (half with positive jerk and half with negative)
+				deaccel_factor = fact;
 #endif
 			}
 		}
 
-		float speed_change;
+		float speed_change, accel;
 		float profile_steps_limit;
 		float integrator;
 		// acceleration profile
@@ -513,18 +509,25 @@ void itp_run(void)
 				to the same distance traveled at a constant speed given that
 				constant_speed = 0.5 * (final_speed - initial_speed) + initial_speed
 				where
-				(final_speed - initial_speed) = acceleration * INTERPOLATOR_DELTA_T;
+				speed_change = final_speed - initial_speed = acceleration * INTERPOLATOR_DELTA_T;
+				distance travelled = final_position - initial_position = (initial_speed + 0.5*speed_change) * INTERPOLATOR_DELTA_T
 			*/
-			integrator = t_acc_integrator;
-#if S_CURVE_ACCELERATION_LEVEL != 0
-			float acum = acc_step_acum;
-			acum += acc_step;
-			acc_step_acum = MIN(acum, 0.999f);
-			float new_speed = acc_scale * s_curve_function(acum) + acc_init_speed;
-			new_speed = (t_acc_integrator >= 0) ? (new_speed + acc_init_speed) : (acc_init_speed - new_speed);
-			speed_change = new_speed - current_speed;
+			integrator = accel_integrator;
+#if S_CURVE_ACCELERATION_LEVEL == 0
+			accel = itp_cur_plan_block->acceleration;
+			speed_change = accel * integrator;
+			if (deaccel_to_targetspeed)
+			{
+				speed_change = -speed_change;
+			}
 #else
-			speed_change = integrator * itp_cur_plan_block->acceleration;
+			float acum = ++accel_count;
+			acum *= accel_factor;
+			if (deaccel_to_targetspeed)
+			{
+				acum = 1.0f - acum;
+			}
+			speed_change = accel_speed_change * s_curve_function(acum) + initial_speed - current_speed;
 #endif
 
 			profile_steps_limit = accel_until;
@@ -534,21 +537,20 @@ void itp_run(void)
 		{
 			// constant speed segment
 			speed_change = 0;
-			profile_steps_limit = deaccel_from;
 			integrator = INTERPOLATOR_DELTA_T;
+			profile_steps_limit = deaccel_from;
 			sgm->flags = (remaining_steps == accel_until) ? (ITP_UPDATE_ISR | ITP_CONST) : ITP_CONST;
 		}
 		else
 		{
-			integrator = t_deac_integrator;
-#if S_CURVE_ACCELERATION_LEVEL != 0
-			float acum = deac_step_acum;
-			acum += deac_step;
-			deac_step_acum = MIN(acum, 0.999f);
-			float new_speed = junction_speed - deac_scale * s_curve_function(acum);
-			speed_change = new_speed - current_speed;
+#if S_CURVE_ACCELERATION_LEVEL == 0
+			integrator = deaccel_integrator;
+			accel = itp_cur_plan_block->acceleration;
+			speed_change = -accel * integrator;
 #else
-			speed_change = -(integrator * itp_cur_plan_block->acceleration);
+			float acum = ++deaccel_count;
+			acum *= deaccel_factor;
+			speed_change = (deaccel_speed_change * s_curve_function(1.0f - acum) - current_speed);
 #endif
 			profile_steps_limit = 0;
 			sgm->flags = ITP_UPDATE_ISR | ITP_DEACCEL;
@@ -558,21 +560,19 @@ void itp_run(void)
 			common calculations for all three profiles (accel, constant and deaccel)
 		*/
 		uint16_t segm_steps;
-		speed_change = fast_flt_div2(speed_change);
-		current_speed += speed_change;
-
-		if (current_speed > 0)
+		float half_speed_change = fast_flt_div2(speed_change);
+		partial_distance += (current_speed + half_speed_change) * integrator;
+		// computes how many steps it will perform at this speed and frame window
+		segm_steps = (uint16_t)truncf(partial_distance);
+		if (speed_change)
 		{
-			partial_distance += current_speed * integrator;
-			// computes how many steps it will perform at this speed and frame window
-			segm_steps = (uint16_t)floorf(partial_distance);
-			// update speed at the end of segment
-			if (speed_change)
-			{
-				itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
-			}
+			current_speed += speed_change;
+			itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
+			// continue itp calculation with the average speed increase
+			current_speed -= half_speed_change;
 		}
-		else
+
+		if (current_speed <= 0)
 		{
 			// speed can't be negative
 			itp_cur_plan_block->entry_feed_sqr = 0;
@@ -602,14 +602,24 @@ void itp_run(void)
 // This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
 // DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
+
 		float dss_speed = current_speed;
 		uint8_t dss = 0;
-		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
+		switch (segm_steps)
 		{
-			dss_speed = fast_flt_mul2(dss_speed);
-			dss++;
+		case 0:
+		case 1:
+			dss_speed = INTERPOLATOR_FREQ; // one full bresenham sample
+			break;
+		default:
+			// not empty step block
+			while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
+			{
+				dss_speed = fast_flt_mul2(dss_speed);
+				dss++;
+			}
+			break;
 		}
-
 		if (dss != prev_dss)
 		{
 			sgm->flags = ITP_UPDATE_ISR;
