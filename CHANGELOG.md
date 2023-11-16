@@ -8,6 +8,13 @@
 
 # Changelog
 
+## [1.8.4] - 16-11-2023
+
+### Fixed
+
+- fixed non linear acceleration steps that generated motor noise on acceleration and deacceleration. These issues were introduce with change #561 (#571)
+- reduced itp timer calculations for blocks at speeds bellow the interpolator sample frequency leading to incorrect timing on these slow speed blocks (#571)
+
 ## [1.8.3] - 11-11-2023
 
 ### Fixed
@@ -1400,6 +1407,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
 [1.8.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.2
 [1.8.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.1
