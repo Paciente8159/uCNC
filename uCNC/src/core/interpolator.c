@@ -475,7 +475,7 @@ void itp_run(void)
 			if (accel_until == remaining_steps)
 			{
 				itp_cur_plan_block->entry_feed_sqr = junction_speed_sqr;
-				current_speed = fast_flt_sqrt(junction_speed_sqr);
+				current_speed = junction_speed;
 			}
 
 			if (junction_speed_sqr > exit_speed_sqr)
@@ -554,6 +554,12 @@ void itp_run(void)
 			sgm->flags = ITP_UPDATE_ISR | ITP_DEACCEL;
 		}
 
+		// update speed at the end of segment
+		if (speed_change)
+		{
+			itp_cur_plan_block->entry_feed_sqr = MAX(0, fast_flt_pow2((current_speed + speed_change)));
+		}
+
 		/*
 			common calculations for all three profiles (accel, constant and deaccel)
 		*/
@@ -566,11 +572,6 @@ void itp_run(void)
 			partial_distance += current_speed * integrator;
 			// computes how many steps it will perform at this speed and frame window
 			segm_steps = (uint16_t)floorf(partial_distance);
-			// update speed at the end of segment
-			if (speed_change)
-			{
-				itp_cur_plan_block->entry_feed_sqr = fast_flt_pow2(current_speed);
-			}
 		}
 		else
 		{
@@ -602,7 +603,7 @@ void itp_run(void)
 // This works in a similar way to Grbl's AMASS but has a modified implementation to minimize the processing penalty on the ISR and also take less static memory.
 // DSS never loads the step generating ISR with a frequency above half of the absolute maximum frequency
 #if (DSS_MAX_OVERSAMPLING != 0)
-		float dss_speed = current_speed;
+		float dss_speed = MAX(INTERPOLATOR_FREQ, current_speed);
 		uint8_t dss = 0;
 		while (dss_speed < DSS_CUTOFF_FREQ && dss < DSS_MAX_OVERSAMPLING && segm_steps)
 		{
@@ -624,7 +625,7 @@ void itp_run(void)
 #else
 		sgm->remaining_steps = segm_steps;
 		current_speed = MIN(current_speed, g_settings.max_step_rate);
-		mcu_freq_to_clocks(current_speed, &(sgm->timer_counter), &(sgm->timer_prescaller));
+		mcu_freq_to_clocks(MAX(INTERPOLATOR_FREQ, current_speed), &(sgm->timer_counter), &(sgm->timer_prescaller));
 #endif
 
 		sgm->feed = current_speed * feed_convert;
