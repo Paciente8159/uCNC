@@ -10,10 +10,22 @@
 
 ## [1.8.4] - 16-11-2023
 
+### Added
+
+- added support for 74HC595 custom shift register using PIO (#568)
+- added function to get parser internal position (#537)
+- added new debug stream option to use a dedicated COM channel to print debug verbose (#548) 
+
+### Changed
+
+- rebuilded virtual emulator for Windows (#569)
+
 ### Fixed
 
 - fixed non linear acceleration steps that generated motor noise on acceleration and deacceleration. These issues were introduce with change #561 (#571)
 - reduced itp timer calculations for blocks at speeds bellow the interpolator sample frequency leading to incorrect timing on these slow speed blocks (#571)
+- fixed stepper timer running at half the target speed on ESP32 using emulated PWM (#567)
+- fixed cooland funtions M7 and M8 (#562)
 
 ## [1.8.3] - 11-11-2023
 
