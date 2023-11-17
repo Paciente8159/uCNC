@@ -487,7 +487,6 @@ static uint8_t parser_grbl_command(void)
 			{
 				return STATUS_IDLE_ERROR;
 			}
-			cnc_set_exec_state(EXEC_JOG);
 			return GRBL_JOG_CMD;
 		}
 		break;
@@ -1819,6 +1818,11 @@ static uint8_t parser_gcode_command(bool is_jogging)
 	if (result != STATUS_OK)
 	{
 		return result;
+	}
+
+	if (is_jogging)
+	{
+		cnc_set_exec_state(EXEC_JOG);
 	}
 
 	// validates command
