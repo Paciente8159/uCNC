@@ -270,12 +270,19 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 		target[AXIS_TOOL] -= target_hmap_offset;
 #endif
 
+#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
 		if (cnc_get_exec_state(EXEC_JOG))
 		{
+#elif !defined(ALLOW_MOTION_TO_CONTINUE)
+		itp_sync();
+		cnc_set_exec_state(EXEC_HOLD);
+#endif
 			return STATUS_TRAVEL_EXCEEDED;
+#ifndef MODIFY_SOFT_LIMIT_TO_ERROR
 		}
 		cnc_alarm(EXEC_ALARM_SOFT_LIMIT);
 		return STATUS_OK;
+#endif
 	}
 
 	uint8_t error = STATUS_OK;
@@ -717,8 +724,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	EVENT_INVOKE(mc_home_axis_start, &homing_status);
 	homing_status.status = STATUS_CRITICAL_FAIL;
 #endif
-  
-  if (!g_settings.hard_limits_enabled)
+
+	if (!g_settings.hard_limits_enabled)
 	{
 #ifdef ALLOW_SOFTWARE_HOMING
 		return STATUS_OK;
