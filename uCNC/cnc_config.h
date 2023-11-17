@@ -315,10 +315,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-// #define ENABLE_MAIN_LOOP_MODULES
-// #define ENABLE_IO_MODULES
-// #define ENABLE_PARSER_MODULES
-// #define ENABLE_MOTION_CONTROL_MODULES
+	// #define ENABLE_MAIN_LOOP_MODULES
+	// #define ENABLE_IO_MODULES
+	// #define ENABLE_PARSER_MODULES
+	// #define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -338,28 +338,42 @@ extern "C"
 // values bellow 100ms have no effect
 #define STATUS_AUTOMATIC_REPORT_INTERVAL 0
 
-	/**
-	 *
-	 * Enable this option to set home has your machine origin.
-	 * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
-	 * In practice $23 sets if the machine homes towards the origin (default) or away from the origin (inverted)
-	 * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
-	 * By enabling this option after homing the machine will set the homing position has it's origin.
-	 * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
-	 * */
+/**
+ *
+ * Enable this option to set home has your machine origin.
+ * When a machine homes each axis is set to 0 or max_axis_distance (settings $13x) depending on if the home direction invert mask is turned on or off (settting $23)
+ * In practice $23 sets if the machine homes towards the origin (default) or away from the origin (inverted)
+ * After homing the machine coordinate system is set in a way that the workable volume has always positive coordinates.
+ * By enabling this option after homing the machine will set the homing position has it's origin.
+ * Because of this the machine coordinate system might be offset to negative dimensions in some axis.
+ * */
 
-	// #define SET_ORIGIN_AT_HOME_POS
+// #define SET_ORIGIN_AT_HOME_POS
 
-	/**
-	 *
-	 * Enable this option to allow the $H to be used to perform a software homing.
-	 * Software homing will only work if hardware limits are disabled.
-	 * This will apply the not execute the homing search motions but it will still
-	 * execute the pull-off motion before reset the coordinate system
-	 * 
-	 * */
+/**
+ *
+ * Enable this option to allow the $H to be used to perform a software homing.
+ * Software homing will only work if hardware limits are disabled.
+ * This will apply the not execute the homing search motions but it will still
+ * execute the pull-off motion before reset the coordinate system
+ *
+ * */
 
-	// #define ALLOW_SOFTWARE_HOMING
+// #define ALLOW_SOFTWARE_HOMING
+
+/**
+ * Enable this option to modify the behavior of software limits
+ * By default a motion that travels beyond software limits makes the controller send an alarm and halts the program
+ * You can modify this behavior to make the controller send an error and continue
+ * or set the machine into an hold and wait for the user to allow it to continue
+ * **/
+
+// #define MODIFY_SOFT_LIMIT_TO_ERROR
+#ifdef MODIFY_SOFT_LIMIT_TO_ERROR
+// uncomment this to allow motion to continue
+// otherwise it will put the machine in hold until the user allows it to continue
+// #define ALLOW_MOTION_TO_CONTINUE
+#endif
 
 	/**
 	 * If the type of machine supports skew and needs skew correction
@@ -462,7 +476,7 @@ extern "C"
 	 *
 	 * */
 
-	#define S_CURVE_ACCELERATION_LEVEL 0
+#define S_CURVE_ACCELERATION_LEVEL 0
 
 	/**
 	 * Forces pin pooling for all limits and control pins (with or without
