@@ -8,13 +8,14 @@
 
 # Changelog
 
-## [1.8.4] - 16-11-2023
+## [1.8.4] - 17-11-2023
 
 ### Added
 
 - added support for 74HC595 custom shift register using PIO (#568)
 - added function to get parser internal position (#537)
-- added new debug stream option to use a dedicated COM channel to print debug verbose (#548) 
+- added new debug stream option to use a dedicated COM channel to print debug verbose (#548)
+- added option to control how soft limits are treated (alarm or error) and if the program flow continues or holds in case of error (#572)
 
 ### Changed
 
@@ -26,6 +27,8 @@
 - reduced itp timer calculations for blocks at speeds bellow the interpolator sample frequency leading to incorrect timing on these slow speed blocks (#571)
 - fixed stepper timer running at half the target speed on ESP32 using emulated PWM (#567)
 - fixed cooland funtions M7 and M8 (#562)
+- fixed step generation is interrupted while processing incomplete command (#565)
+- fixed JOG flag being cleared while parsing command (caused with #565) (#573)
 
 ## [1.8.3] - 11-11-2023
 
