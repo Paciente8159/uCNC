@@ -794,31 +794,41 @@ extern "C"
  *
  * **/
 
-#if !defined(RAM_ONLY_SETTINGS) && defined(USE_ARDUINO_EEPROM_LIBRARY)
+#ifdef USE_ARDUINO_EEPROM_LIBRARY
 #include <EEPROM.h>
 extern "C"
 {
 	void esp32_eeprom_init(int size)
 	{
+#ifndef RAM_ONLY_SETTINGS
 		EEPROM.begin(size);
+#endif
 	}
 
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
+#ifndef RAM_ONLY_SETTINGS
 		return EEPROM.read(address);
+#else
+		return 0;
+#endif
 	}
 
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+#ifndef RAM_ONLY_SETTINGS
 		EEPROM.write(address, value);
+#endif
 	}
 
 	void mcu_eeprom_flush(void)
 	{
+#ifndef RAM_ONLY_SETTINGS
 		if (!EEPROM.commit())
 		{
 			protocol_send_feedback(" EEPROM write error");
 		}
+#endif
 	}
 }
 #endif

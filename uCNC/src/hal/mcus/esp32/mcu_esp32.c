@@ -437,7 +437,7 @@ void mcu_init(void)
 	{
 		log_e("eeprom failed to open");
 	}
-#else
+#elif !defined(RAM_ONLY_SETTINGS)
 	extern void esp32_eeprom_init(int size);
 	esp32_eeprom_init(FLASH_EEPROM_SIZE);
 #endif
@@ -914,7 +914,7 @@ void mcu_dotasks(void)
 /**
  * gets a byte at the given EEPROM (or other non volatile memory) address of the MCU.
  * */
-#if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
+#ifndef USE_ARDUINO_EEPROM_LIBRARY
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
 #ifndef RAM_ONLY_SETTINGS

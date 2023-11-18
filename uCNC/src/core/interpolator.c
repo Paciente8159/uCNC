@@ -271,7 +271,7 @@ static float s_curve_function(float pt)
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.5f + ABS(pt));
-		*i = (int32_t *)&k;
+		i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (pt * k + 0.5f);
 		return ((k - 0.0329999924f) * 1.070663794f);
@@ -280,7 +280,7 @@ static float s_curve_function(float pt)
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.25f + ABS(pt));
-		*i = (int32_t *)&k;
+		i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (0.75f * pt * k + 0.5f);
 		return ((k + 0.0130000114f) * 0.974658849f);
@@ -289,7 +289,7 @@ static float s_curve_function(float pt)
 		pt -= 0.5f;
 		// optimized fast inverse aproximation
 		k = (0.15f + ABS(pt));
-		*i = (int32_t *)&k;
+		i = (int32_t *)&k;
 		*i = 0x7EEF1AA0 - *i;
 		k = (0.65f * pt * k + 0.5f);
 		return ((k + 0.009599984f) * 0.981161788f);
