@@ -293,11 +293,11 @@ MCU_CALLBACK void mcu_gpio_isr(void *type)
 #ifdef IC74HC595_HAS_PWMS
 uint8_t mcu_softpwm_freq_config(uint16_t freq)
 {
-	// keeps 7 bit resolution up to 1KHz
+	// keeps 8 bit resolution up to 500Hz
 	// reduces bit resolution for higher frequencies
 
 	// determines the bit resolution (7 - esp32_pwm_res);
-	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.001f)), 0);
+	uint8_t res = (uint8_t)MAX((int8_t)ceilf(log2(freq * 0.002f)), 0);
 	return res;
 }
 #endif
