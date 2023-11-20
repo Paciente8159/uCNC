@@ -2862,6 +2862,7 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
+#include "xtensa/core-macros.h"
 #define mcu_delay_cycles(X)                              \
 	{                                                    \
 		uint32_t x = XTHAL_GET_CCOUNT();                 \
