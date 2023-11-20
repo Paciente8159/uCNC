@@ -2862,6 +2862,13 @@ extern "C"
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
+#define mcu_delay_cycles(X)                              \
+	{                                                    \
+		uint32_t x = XTHAL_GET_CCOUNT();                 \
+		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
+			;                                            \
+	}
+
 #ifdef __cplusplus
 }
 #endif
