@@ -94,6 +94,7 @@ extern "C"
 				ptr->fplock = true;                  \
 				if (ptr->fptr(args))                 \
 				{                                    \
+					ptr->fplock = false;             \
 					return true;                     \
 				}                                    \
 				ptr->fplock = false;                 \
