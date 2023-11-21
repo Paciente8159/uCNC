@@ -263,23 +263,16 @@ bool cnc_dotasks(void)
 	tool_pid_update();
 #endif
 
-#ifdef ENABLE_MAIN_LOOP_MODULES
-	// prevent re-entrancy
-	static bool running = false;
-	if (!running)
-	{
-		running = true;
-		EVENT_INVOKE(cnc_dotasks, NULL);
-		running = false;
-	}
-#endif
-
 	if (!cnc_lock_itp)
 	{
 		cnc_lock_itp = true;
 		itp_run();
 		cnc_lock_itp = false;
 	}
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_dotasks, NULL);
+#endif
 
 	return !cnc_get_exec_state(EXEC_KILL);
 }
@@ -1034,14 +1027,7 @@ static void cnc_io_dotasks(void)
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
-	// prevent re-entrancy
-	static bool running = false;
-	if (!running)
-	{
-		running = true;
-		EVENT_INVOKE(cnc_io_dotasks, NULL);
-		running = false;
-	}
+	EVENT_INVOKE(cnc_io_dotasks, NULL);
 #endif
 }
 

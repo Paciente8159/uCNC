@@ -43,12 +43,13 @@ extern "C"
 	typedef struct name##_delegate_event_    \
 	{                                        \
 		name##_delegate fptr;                \
+		bool fplock;                         \
 		struct name##_delegate_event_ *next; \
 	} name##_delegate_event_t;               \
 	extern name##_delegate_event_t *
 // #define EVENT_TYPE(name) name##_delegate_event_t
 #define EVENT_INVOKE(name, args) event_##name##_handler(args)
-#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, NULL}
+#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, false, NULL}
 #define ADD_EVENT_LISTENER(name, handler)                         \
 	{                                                             \
 		extern name##_delegate_event_t name##_delegate_##handler; \
@@ -88,12 +89,14 @@ extern "C"
 		name##_delegate_event_t *ptr = name##_event; \
 		while (ptr != NULL)                          \
 		{                                            \
-			if (ptr->fptr != NULL)                   \
+			if (ptr->fptr != NULL && !ptr->fplock)   \
 			{                                        \
+				ptr->fplock = true;                  \
 				if (ptr->fptr(args))                 \
 				{                                    \
 					return true;                     \
 				}                                    \
+				ptr->fplock = false;                 \
 			}                                        \
 			ptr = ptr->next;                         \
 		}                                            \
