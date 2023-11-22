@@ -37,31 +37,31 @@ extern "C"
 		bool (*miso)(void);
 	} softspi_port_t;
 
-#define SPI_DELAY(FREQ) MAX(0, ((2500000UL / FREQ) - 1))
+#define SPI_DELAY(FREQ) CLAMP(0, ((2500000UL / FREQ) - 1), 255)
 
-#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)   \
-	void NAME##_clk(bool state)                               \
-	{                                                         \
-		if (state)                                            \
-		{                                                     \
+#define SOFTSPI(NAME, FREQ, MODE, MOSIPIN, MISOPIN, CLKPIN)  \
+	void NAME##_clk(bool state)                              \
+	{                                                        \
+		if (state)                                           \
+		{                                                    \
 			io_set_output(CLKPIN);                           \
-		}                                                     \
-		else                                                  \
-		{                                                     \
+		}                                                    \
+		else                                                 \
+		{                                                    \
 			io_clear_output(CLKPIN);                         \
-		}                                                     \
-	}                                                         \
-	void NAME##_mosi(bool state)                              \
-	{                                                         \
-		if (state)                                            \
-		{                                                     \
+		}                                                    \
+	}                                                        \
+	void NAME##_mosi(bool state)                             \
+	{                                                        \
+		if (state)                                           \
+		{                                                    \
 			io_set_output(MOSIPIN);                          \
-		}                                                     \
-		else                                                  \
-		{                                                     \
+		}                                                    \
+		else                                                 \
+		{                                                    \
 			io_clear_output(MOSIPIN);                        \
-		}                                                     \
-	}                                                         \
+		}                                                    \
+	}                                                        \
 	bool NAME##_miso(void) { return io_get_input(MISOPIN); } \
 	__attribute__((used)) softspi_port_t NAME = {.spimode = MODE, .spidelay = SPI_DELAY(FREQ), .clk = &NAME##_clk, .mosi = &NAME##_mosi, .miso = &NAME##_miso};
 
