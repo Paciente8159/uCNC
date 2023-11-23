@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=1
 CompilerSettings=0000000000000000001000000
-UnitCount=94
+UnitCount=95
 
 [VersionInfo]
 Major=1
@@ -992,6 +992,16 @@ BuildCmd=
 
 [Unit37]
 FileName=..\..\uCNC\src\modules\tmc.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit95]
+FileName=..\..\uCNC\src\utils.c
 CompileCpp=1
 Folder=
 Compile=1
