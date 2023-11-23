@@ -347,7 +347,7 @@ uint8_t io_get_limits(void)
 	}
 
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-	result |= (g_multiboard_slave.io.slave_io_bits.limits & ~(LIMITS_DUAL_MASK | LIMITS_MASK));
+	result |= (g_multiboard_slave.io.slave_io_bits.limits & ~(LIMITS_MASK));
 	g_multiboard_slave.io.slave_io_bits.limits = result;
 #endif
 

@@ -431,7 +431,7 @@ void itp_run(void)
 		// clear the data segment
 		memset(sgm, 0, sizeof(itp_segment_t));
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-		master_send_command(0, MULTIBOARD_CMD_ITPBLOCK, (uint8_t *)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
+		multiboard_master_send_command(MULTIBOARD_CMD_ITP_BLOCK, (uint8_t *)&itp_blk_data[itp_blk_data_write], sizeof(itp_block_t));
 #endif
 		sgm->block = &itp_blk_data[itp_blk_data_write];
 

@@ -57,7 +57,7 @@ void MULTIBOARD_RX_CB(unsigned char c)
 		if (ringbuffer->multiboard_frame.length == (current_bytes - 3))
 		{
 			ringbuffer->multiboard_frame.crc = ringbuffer->rawdata[(current_bytes - 1)];
-			BUFFER_PUSH(multiboard_ring_buffer); // advances the buffer if possible
+			BUFFER_STORE(multiboard_ring_buffer); // advances the buffer if possible
 			framebytes = -3;					 // reset protocol internal state
 			return;
 		}
@@ -261,7 +261,7 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 			mcu_dotasks();
 			// gets
 			multiboard_data_t *msg;
-			msg = BUFFER_PEEK(multiboard_ring_buffer);
+			msg = &BUFFER_PEEK(multiboard_ring_buffer);
 			// ACK for matched command (don't bother check the CRC)
 			if (msg->multiboard_frame.command == command && msg->multiboard_frame.length == 1 && msg->multiboard_frame.content[0] == MULTIBOARD_PROTOCOL_ACK)
 			{
@@ -276,7 +276,7 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 				}
 			}
 
-			BUFFER_PULL(multiboard_ring_buffer);
+			BUFFER_REMOVE(multiboard_ring_buffer);
 		}
 
 		// cnc_io_dotasks();

@@ -433,19 +433,14 @@ void cnc_alarm(int8_t code)
 
 int8_t cnc_get_alarm(void)
 {
+	// force interlocking check to set alarm code in case this as not yet been set
+	cnc_check_interlocking();
 	return cnc_state.alarm;
 }
 
 bool cnc_has_alarm()
 {
 	return (cnc_get_exec_state(EXEC_KILL) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
-}
-
-uint8_t cnc_get_alarm(void)
-{
-	// force interlocking check to set alarm code in case this as not yet been set
-	cnc_check_interlocking();
-	return cnc_state.alarm;
 }
 
 void cnc_stop(void)

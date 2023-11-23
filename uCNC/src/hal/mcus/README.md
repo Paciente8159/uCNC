@@ -775,55 +775,53 @@ Before creating a custom HAL for a custom board/microcontroller the microcontrol
 #endif
 
 /**
- * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
- * can be defined either as a function or a macro call
- * */
-#ifndef mcu_putc
-	void mcu_putc(uint8_t c);
-#endif
-
-#ifndef mcu_flush
-	void mcu_flush(void);
-#endif
+	 * sends a uint8_t either via uart (hardware, software USB CDC, Wifi or BT)
+	 * can be defined either as a function or a macro call
+	 * */
 
 #ifdef MCU_HAS_USB
+	uint8_t mcu_usb_getc(void);
+	uint8_t mcu_usb_available(void);
+	void mcu_usb_clear(void);
 	void mcu_usb_putc(uint8_t c);
 	void mcu_usb_flush(void);
-#ifdef DETACH_USB_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_usb_rx_cb(uint8_t c);
-#endif
 #endif
 
 #ifdef MCU_HAS_UART
+	uint8_t mcu_uart_getc(void);
+	uint8_t mcu_uart_available(void);
+	void mcu_uart_clear(void);
 	void mcu_uart_putc(uint8_t c);
 	void mcu_uart_flush(void);
-#ifdef DETACH_UART_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_uart_rx_cb(uint8_t c);
-#endif
 #endif
 
 #ifdef MCU_HAS_UART2
+	uint8_t mcu_uart2_getc(void);
+	uint8_t mcu_uart2_available(void);
+	void mcu_uart2_clear(void);
 	void mcu_uart2_putc(uint8_t c);
 	void mcu_uart2_flush(void);
-#ifdef DETACH_UART2_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_uart2_rx_cb(uint8_t c);
-#endif
 #endif
 
 #ifdef MCU_HAS_WIFI
+	uint8_t mcu_wifi_getc(void);
+	uint8_t mcu_wifi_available(void);
+	void mcu_wifi_clear(void);
 	void mcu_wifi_putc(uint8_t c);
 	void mcu_wifi_flush(void);
-#ifdef DETACH_WIFI_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_wifi_rx_cb(uint8_t c);
-#endif
 #endif
 
 #ifdef MCU_HAS_BLUETOOTH
+	uint8_t mcu_bt_getc(void);
+	uint8_t mcu_bt_available(void);
+	void mcu_bt_clear(void);
 	void mcu_bt_putc(uint8_t c);
 	void mcu_bt_flush(void);
-#ifdef DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL
 	MCU_RX_CALLBACK void mcu_bt_rx_cb(uint8_t c);
-#endif
 #endif
    ```
 

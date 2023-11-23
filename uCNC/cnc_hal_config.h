@@ -791,7 +791,7 @@ extern "C"
 //multiboard port options
 #define MULTIBOARD_USES_UART 0
 #define MULTIBOARD_USES_UART2 1
-// #define MULTIBOARD_USES_USB 2
+#define MULTIBOARD_USES_USB 2
 // #define MULTIBOARD_USES_WIFI 3
 // #define MULTIBOARD_USES_BT 4
 
