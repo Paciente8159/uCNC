@@ -28,7 +28,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define UCNC_MODULE_VERSION 010700
+#define UCNC_MODULE_VERSION 10801
 
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
@@ -43,12 +43,13 @@ extern "C"
 	typedef struct name##_delegate_event_    \
 	{                                        \
 		name##_delegate fptr;                \
+		bool fplock;                         \
 		struct name##_delegate_event_ *next; \
 	} name##_delegate_event_t;               \
 	extern name##_delegate_event_t *
 // #define EVENT_TYPE(name) name##_delegate_event_t
 #define EVENT_INVOKE(name, args) event_##name##_handler(args)
-#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, NULL}
+#define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, false, NULL}
 #define ADD_EVENT_LISTENER(name, handler)                         \
 	{                                                             \
 		extern name##_delegate_event_t name##_delegate_##handler; \
@@ -88,12 +89,15 @@ extern "C"
 		name##_delegate_event_t *ptr = name##_event; \
 		while (ptr != NULL)                          \
 		{                                            \
-			if (ptr->fptr != NULL)                   \
+			if (ptr->fptr != NULL && !ptr->fplock)   \
 			{                                        \
+				ptr->fplock = true;                  \
 				if (ptr->fptr(args))                 \
 				{                                    \
+					ptr->fplock = false;             \
 					return true;                     \
 				}                                    \
+				ptr->fplock = false;                 \
 			}                                        \
 			ptr = ptr->next;                         \
 		}                                            \
@@ -101,6 +105,26 @@ extern "C"
 	}
 
 	void mod_init(void);
+
+// uses VARADIC MACRO available since C99
+#define DECL_HOOK(name, ...)                        \
+	typedef void (*name##_delegate_t)(__VA_ARGS__); \
+	extern name##_delegate_t name##_cb
+#define CREATE_HOOK(name) name##_delegate_t name##_cb
+#define HOOK_ATTACH_CALLBACK(name, cb) name##_cb = &cb
+#define HOOK_RELEASE(name) name##_cb = NULL
+
+#define HOOK_INVOKE(name, ...)  \
+	if (name##_cb)              \
+	{                           \
+		name##_cb(__VA_ARGS__); \
+	}
+
+#define RUNONCE                  \
+	static bool runonce = false; \
+	if (!runonce)
+
+#define RUNONCE_COMPLETE() runonce = true
 
 #ifdef __cplusplus
 }

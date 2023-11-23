@@ -37,7 +37,7 @@ extern "C"
 
 #define SET_SPINDLE(X, Y, W, Z) \
 	{                           \
-		io_set_output(Y, Z);    \
+		io_set_pinvalue(Y, Z);    \
 		io_set_pwm(X, W);       \
 	}
 
@@ -57,8 +57,8 @@ extern "C"
  * */
 #define SET_COOLANT(X, Y, Z)                   \
 	{                                          \
-		io_set_output(X, (Z && COOLANT_MASK)); \
-		io_set_output(Y, (Z && MIST_MASK));    \
+		io_set_pinvalue(X, (Z & COOLANT_MASK)); \
+		io_set_pinvalue(Y, (Z & MIST_MASK));    \
 	}
 
 #ifdef __cplusplus

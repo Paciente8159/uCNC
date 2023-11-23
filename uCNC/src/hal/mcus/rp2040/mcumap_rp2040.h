@@ -974,7 +974,7 @@ extern "C"
 #if (defined(DIN7_ISR) && defined(DIN7))
 #define DIO89_ISR (DIN7_ISR)
 #define DIN7_ISRCALLBACK mcu_din_isr
-#define DIO89_ISRCALLBACK __indirect__(X, ISRCALLBACK)
+#define DIO89_ISRCALLBACK mcu_din_isr
 #endif
 
 #if (defined(TX) && defined(RX))
@@ -988,18 +988,19 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#define MCU_HAS_ENDPOINTS
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
 #endif
 
 #ifdef MCU_HAS_UART
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
-#if (COM_PORT == 0)
+#if (UART_PORT == 0)
 #define COM_UART Serial1
-#elif (COM_PORT == 1)
+#elif (UART_PORT == 1)
 #define COM_UART Serial2
 #else
 #error "UART COM port number must be 0 or 1"
@@ -1010,12 +1011,12 @@ extern "C"
 #ifndef BAUDRATE2
 #define BAUDRATE2 BAUDRATE
 #endif
-#ifndef COM2_PORT
-#define COM2_PORT 0
+#ifndef UART2_PORT
+#define UART2_PORT 0
 #endif
-#if (COM2_PORT == 0)
+#if (UART2_PORT == 0)
 #define COM2_UART Serial1
-#elif (COM2_PORT == 1)
+#elif (UART2_PORT == 1)
 #define COM2_UART Serial2
 #else
 #error "UART2 COM port number must be 0 or 1"
@@ -1095,6 +1096,14 @@ extern "C"
 #define SERVO_ALARM 1
 #define ONESHOT_ALARM 2
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+#ifdef IC74HC595_COUNT
+#undef IC74HC595_COUNT
+#endif
+// forces IC74HC595_COUNT to 4 to prevent errors
+#define IC74HC595_COUNT 4
+#endif
+
 #define __timer_irq__(X) TIMER_IRQ_##X
 #define _timer_irq_(X) __timer_irq__(X)
 
@@ -1105,27 +1114,22 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-// Set bit y in byte x
-#define SETBIT(x, y) ((x) |= (1 << (y)))
-// Clear bit y in byte x
-#define CLEARBIT(x, y) ((x) &= ~(1 << (y)))
-// Check bit y in byte x
-#define CHECKBIT(x, y) ((x) & (1 << (y)))
-// Toggle bit y in byte x
-#define TOGGLEBIT(x, y) ((x) ^= (1 << (y)))
-// Set byte y in byte x
-#define SETFLAG(x, y) ((x) |= (y))
-// Clear byte y in byte x
-#define CLEARFLAG(x, y) ((x) &= ~(y))
-// Check byte y in byte x
-#define CHECKFLAG(x, y) ((x) & (y))
-// Toggle byte y in byte x
-#define TOGGLEFLAG(x, y) ((x) ^= (y))
+#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
+
+#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
@@ -1139,10 +1143,10 @@ extern "C"
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
-#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), __indirect__(X, ISRCALLBACK), CHANGE)
+#define mcu_config_input_isr(X) attachInterrupt(digitalPinToInterrupt(__indirect__(X, BIT)), mcu_din_isr, CHANGE)
 
-#define mcu_get_input(X) CHECKFLAG(sio_hw->gpio_in, __indirect__(X, BIT))
-#define mcu_get_output(X) CHECKFLAG(sio_hw->gpio_out, __indirect__(X, BIT))
+#define mcu_get_input(X) CHECKBIT(sio_hw->gpio_in, __indirect__(X, BIT))
+#define mcu_get_output(X) CHECKBIT(sio_hw->gpio_out, __indirect__(X, BIT))
 #define mcu_set_output(X) ({ sio_hw->gpio_set = (1UL << __indirect__(X, BIT)); })
 #define mcu_clear_output(X) ({ sio_hw->gpio_clr = (1UL << __indirect__(X, BIT)); })
 #define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
@@ -1154,7 +1158,7 @@ extern "C"
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
 #define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
-#define mcu_get_analog(X) (analogRead(__indirect__(X, BIT)) >> 2)
+#define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

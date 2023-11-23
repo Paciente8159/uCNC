@@ -36,18 +36,8 @@ static int32_t encoders_pos[ENCODERS];
 
 static volatile uint32_t prev_time;
 static volatile uint32_t current_time;
-static encoder_index_cb rpm_index_cb;
 bool encoder_rpm_updated;
-
-void encoder_attach_index_cb(encoder_index_cb callback)
-{
-	rpm_index_cb = callback;
-}
-
-void encoder_dettach_index_cb(void)
-{
-	rpm_index_cb = NULL;
-}
+CREATE_HOOK(encoder_index);
 
 uint16_t encoder_get_rpm(void)
 {
@@ -76,28 +66,28 @@ static FORCEINLINE uint8_t encoder_read_dirs(void)
 {
 	uint8_t value = 0;
 #if ENCODERS > 0
-	value |= ((mcu_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
+	value |= ((io_get_input(ENC0_DIR)) ? ENC0_MASK : 0);
 #endif
 #if ENCODERS > 1
-	value |= ((mcu_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
+	value |= ((io_get_input(ENC1_DIR)) ? ENC1_MASK : 0);
 #endif
 #if ENCODERS > 2
-	value |= ((mcu_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
+	value |= ((io_get_input(ENC2_DIR)) ? ENC2_MASK : 0);
 #endif
 #if ENCODERS > 3
-	value |= ((mcu_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
+	value |= ((io_get_input(ENC3_DIR)) ? ENC3_MASK : 0);
 #endif
 #if ENCODERS > 4
-	value |= ((mcu_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
+	value |= ((io_get_input(ENC4_DIR)) ? ENC4_MASK : 0);
 #endif
 #if ENCODERS > 5
-	value |= ((mcu_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
+	value |= ((io_get_input(ENC5_DIR)) ? ENC5_MASK : 0);
 #endif
 #if ENCODERS > 6
-	value |= ((mcu_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
+	value |= ((io_get_input(ENC6_DIR)) ? ENC6_MASK : 0);
 #endif
 #if ENCODERS > 7
-	value |= ((mcu_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
+	value |= ((io_get_input(ENC7_DIR)) ? ENC7_MASK : 0);
 #endif
 	return value ^ g_settings.encoders_dir_invert_mask;
 }
@@ -166,17 +156,14 @@ void encoders_update(uint8_t pulse, uint8_t diff)
 		uint32_t time = mcu_micros();
 		prev_time = current_time;
 		current_time = time;
-#ifdef RPM_INDEX_OUTPUT
-		if (mcu_get_input(RPM_INDEX_INPUT))
+#ifdef RPM_INDEX_INPUT
+		if (io_get_input(RPM_INDEX_INPUT))
 #else
 		if (encoders_pos[RPM_ENCODER] >= RPM_PPR)
 #endif
 		{
 			encoders_pos[RPM_ENCODER] = 0;
-			if (rpm_index_cb)
-			{
-				rpm_index_cb();
-			}
+			HOOK_INVOKE(encoder_index);
 		}
 	}
 #endif

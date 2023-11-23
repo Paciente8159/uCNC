@@ -25,8 +25,24 @@ extern "C"
 #endif
 
 #include "../module.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <float.h>
+#include <stdio.h>
 
-	DECL_MODULE(pid);
+#define HZ_TO_MS(hz) ((uint32_t)(0.001f*hz))
+
+	typedef struct pid_data_
+	{
+		float k[3];
+		float last_input;
+		float i_accum;
+		float max;
+		float min;
+		uint32_t next_sample;
+	} pid_data_t;
+
+	bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms);
 
 #ifdef __cplusplus
 }

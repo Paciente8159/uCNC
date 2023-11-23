@@ -41,22 +41,22 @@ extern "C"
 	{                                                                  \
 		if (state)                                                     \
 		{                                                              \
-			mcu_set_output(TXPIN);                                     \
+			io_set_output(TXPIN);                                     \
 		}                                                              \
 		else                                                           \
 		{                                                              \
-			mcu_clear_output(TXPIN);                                   \
+			io_clear_output(TXPIN);                                   \
 		}                                                              \
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return mcu_get_input(RXPIN);                                   \
+		return io_get_input(RXPIN);                                   \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \
 	__attribute__((used)) softuart_port_t NAME = {.wait = &NAME##_wait, .waithalf = &NAME##_waithalf, .tx = &NAME##_tx, .rx = &NAME##_rx};
 
-	void softuart_putc(softuart_port_t *port, uint8_t c);
+	void softuart_putc(softuart_port_t *port, char c);
 	int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout);
 
 #ifdef __cplusplus

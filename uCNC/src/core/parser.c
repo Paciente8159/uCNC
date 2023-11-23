@@ -30,33 +30,6 @@
 
 // extended codes
 #define M10 EXTENDED_MCODE(10)
-#ifdef ENABLE_LASER_PPI
-#define M126 EXTENDED_MCODE(126)
-#define M127 EXTENDED_MCODE(127)
-#define M128 EXTENDED_MCODE(128)
-#endif
-
-#define PARSER_PARAM_SIZE (sizeof(float) * AXIS_COUNT)	 // parser parameters array size
-#define PARSER_PARAM_ADDR_OFFSET (PARSER_PARAM_SIZE + 1) // parser parameters array size + 1 crc byte
-#define G28HOME COORD_SYS_COUNT							 // G28 index
-#define G30HOME COORD_SYS_COUNT + 1						 // G30 index
-#define G92OFFSET COORD_SYS_COUNT + 2					 // G92 index
-
-#define PARSER_CORDSYS_ADDRESS SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET							  // 1st coordinate system offset eeprom address (G54)
-#define G28ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G28HOME)) // G28 coordinate offset eeprom address
-#define G30ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G30HOME)) // G28 coordinate offset eeprom address
-#ifdef G92_STORE_NONVOLATILE
-#define G92ADDRESS (SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (PARSER_PARAM_ADDR_OFFSET * G92OFFSET)) // G92 coordinate offset eeprom address
-#endif
-
-#define NUMBER_UNDEF 0
-#define NUMBER_OK 0x20
-#define NUMBER_ISFLOAT 0x40
-#define NUMBER_ISNEGATIVE 0x80
-
-#ifndef GRBL_CMD_MAX_LEN
-#define GRBL_CMD_MAX_LEN 32
-#endif
 
 static parser_state_t parser_state;
 static parser_parameters_t parser_parameters;
@@ -64,22 +37,18 @@ static uint8_t parser_wco_counter;
 static float g92permanentoffset[AXIS_COUNT];
 static int32_t rt_probe_step_pos[STEPPER_COUNT];
 static float parser_last_pos[AXIS_COUNT];
-#ifdef ENABLE_LASER_PPI
-// turn laser off callback
-extern MCU_CALLBACK void laser_ppi_turnoff_cb(void);
-#endif
 
-static unsigned char parser_get_next_preprocessed(bool peek);
-FORCEINLINE static void parser_get_comment(unsigned char start_char);
-FORCEINLINE static uint8_t parser_get_token(unsigned char *word, float *value);
+static uint8_t parser_get_next_preprocessed(bool peek);
+FORCEINLINE static void parser_get_comment(uint8_t start_char);
+FORCEINLINE static uint8_t parser_get_token(uint8_t *word, float *value);
 FORCEINLINE static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
 FORCEINLINE static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t *new_state, parser_cmd_explicit_t *cmd);
-FORCEINLINE static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
+FORCEINLINE static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parse_grbl_exec_code(uint8_t code);
 static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
 static uint8_t parser_grbl_command(void);
-FORCEINLINE static uint8_t parser_gcode_command(void);
+FORCEINLINE static uint8_t parser_gcode_command(bool is_jogging);
 static void parser_discard_command(void);
 #ifdef ENABLE_CANNED_CYCLES
 uint8_t parser_exec_command_block(parser_state_t *new_state, parser_words_t *words, parser_cmd_explicit_t *cmd);
@@ -161,7 +130,7 @@ void parser_init(void)
 uint8_t parser_read_command(void)
 {
 	uint8_t error = STATUS_OK;
-	unsigned char c = serial_peek();
+	uint8_t c = serial_peek();
 
 	if (c == '$')
 	{
@@ -180,16 +149,10 @@ uint8_t parser_read_command(void)
 		}
 	}
 
+	bool is_jogging = false;
 	if (error == GRBL_JOG_CMD)
 	{
-		if (cnc_get_exec_state(~EXEC_JOG))
-		{
-			return STATUS_SYSTEM_GC_LOCK;
-		}
-		error = parser_gcode_command();
-		itp_sync();
-		cnc_clear_exec_state(EXEC_JOG);
-		return error;
+		is_jogging = true;
 	}
 	else if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
 	{
@@ -197,7 +160,12 @@ uint8_t parser_read_command(void)
 		return STATUS_SYSTEM_GC_LOCK;
 	}
 
-	return parser_gcode_command();
+	if (cnc_get_exec_state(EXEC_JOG) && !is_jogging) // error if trying to do a normal move with jog active
+	{
+		return STATUS_SYSTEM_GC_LOCK;
+	}
+
+	return parser_gcode_command(is_jogging);
 }
 
 void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
@@ -216,7 +184,11 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 	*spindle = (uint16_t)ABS(parser_state.spindle);
 	*coolant = parser_state.groups.coolant;
 	modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
+#if TOOL_COUNT > 1
 	modalgroups[11] = parser_state.tool_index;
+#else
+	modalgroups[11] = 1;
+#endif
 #else
 	modalgroups[8] = 5;
 	modalgroups[9] = 9;
@@ -241,21 +213,33 @@ void parser_get_coordsys(uint8_t system_num, float *axis)
 		memcpy(axis, parser_parameters.last_probe_position, sizeof(parser_parameters.last_probe_position));
 		break;
 	case 254:
-		memcpy(axis, (float *)&parser_parameters.tool_length_offset, sizeof(float));
+		*axis = parser_parameters.tool_length_offset;
+		break;
+	case 253:
+		memcpy(axis, parser_last_pos, sizeof(parser_last_pos));
 		break;
 #ifndef DISABLE_HOME_SUPPORT
 	case 28:
-		settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(G28ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 	case 30:
-		settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(G30ADDRESS, (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 #endif
 	case 92:
 		memcpy(axis, parser_parameters.g92_offset, sizeof(parser_parameters.g92_offset));
 		break;
 	default:
-		settings_load(PARSER_CORDSYS_ADDRESS + (system_num * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)axis, PARSER_PARAM_SIZE);
+		if (settings_load(PARSER_CORDSYS_ADDRESS + (system_num * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)axis, PARSER_PARAM_SIZE))
+		{
+			memset(axis, 0, PARSER_PARAM_SIZE);
+		}
 		break;
 	}
 }
@@ -268,18 +252,16 @@ uint8_t parser_get_probe_result(void)
 void parser_parameters_reset(void)
 {
 	// erase all parameters for G54..G59.x coordinate systems
-	memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
 #ifndef DISABLE_COORD_SYS_SUPPORT
 	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
-		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
+		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 	}
 #endif
 
 // erase G92
 #ifdef G92_STORE_NONVOLATILE
-	settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
-	memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+	settings_erase(G92ADDRESS, (uint8_t *)&g92permanentoffset, PARSER_PARAM_SIZE);
 #endif
 }
 
@@ -311,15 +293,14 @@ void parser_sync_probe(void)
 
 void parser_update_probe_pos(void)
 {
-	kinematics_apply_forward(rt_probe_step_pos, parser_parameters.last_probe_position);
-	kinematics_apply_reverse_transform(parser_parameters.last_probe_position);
+	kinematics_steps_to_coordinates(rt_probe_step_pos, parser_parameters.last_probe_position);
 }
 
 static uint8_t parser_grbl_command(void)
 {
 	serial_getc(); // eat $
-	unsigned char c = serial_peek();
-	unsigned char grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
+	uint8_t c = serial_peek();
+	uint8_t grbl_cmd_str[GRBL_CMD_MAX_LEN + 1];
 	uint8_t grbl_cmd_len = 0;
 
 	// if not IDLE
@@ -331,6 +312,7 @@ static uint8_t parser_grbl_command(void)
 		case 'G':
 		case 'P':
 		case 'I':
+		case 'J':
 			break;
 		default:
 			parser_discard_command();
@@ -340,7 +322,7 @@ static uint8_t parser_grbl_command(void)
 
 	do
 	{
-		c = serial_getc();
+		c = serial_peek();
 		// toupper
 		if (c >= 'a' && c <= 'z')
 		{
@@ -349,8 +331,14 @@ static uint8_t parser_grbl_command(void)
 
 		if (!(c >= 'A' && c <= 'Z'))
 		{
+			if (c < '0' || c > '9' || grbl_cmd_len) // replaces old ungetc
+			{
+				serial_getc();
+			}
 			break;
 		}
+
+		serial_getc();
 		grbl_cmd_str[grbl_cmd_len++] = c;
 	} while ((grbl_cmd_len < GRBL_CMD_MAX_LEN));
 
@@ -387,7 +375,7 @@ static uint8_t parser_grbl_command(void)
 			{
 				float val = 0;
 				setting_offset_t setting_num = 0;
-				serial_ungetc();
+				// serial_ungetc();
 				error = parser_get_float(&val);
 				if (!error)
 				{
@@ -454,24 +442,30 @@ static uint8_t parser_grbl_command(void)
 					return STATUS_INVALID_STATEMENT;
 				}
 
+				settings_save(block_address, NULL, UINT16_MAX);
+				// run startup block
+				serial_broadcast(true);
+				serial_stream_eeprom(block_address);
+				// checks the command validity
 				error = parser_fetch_command(&next_state, &words, &cmd);
-				if (error)
+				// if uncomment will also check if any gcode rules are violated
+				// allow bad rules for now to fit UNO. Will be catched when trying to execute the line
+				// if (error == STATUS_OK)
+				// {
+				// 	error = parser_validate_command(&next_state, &words, &cmd);
+				// }
+
+				serial_broadcast(false);
+				// reset streams
+				serial_stream_change(NULL);
+
+				if (error != STATUS_OK)
 				{
-					return error;
+					// the Gcode is not valid then erase the startup block
+					settings_erase(block_address, NULL, 1);
 				}
-				error = parser_validate_command(&next_state, &words, &cmd);
-				if (error)
-				{
-					return error;
-				}
-				// everything ok reverts string and saves it
-				do
-				{
-					serial_ungetc();
-				} while (serial_peek() != '=');
-				serial_getc();
-				settings_save_startup_gcode(block_address);
-				return STATUS_OK;
+
+				return error;
 			case EOL:
 				return GRBL_SEND_STARTUP_BLOCKS;
 			}
@@ -489,11 +483,10 @@ static uint8_t parser_grbl_command(void)
 			{
 				break;
 			}
-			if (cnc_get_exec_state(EXEC_ALLACTIVE) & !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
+			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
 				return STATUS_IDLE_ERROR;
 			}
-			cnc_set_exec_state(EXEC_JOG);
 			return GRBL_JOG_CMD;
 		}
 		break;
@@ -547,7 +540,7 @@ static uint8_t parser_grbl_command(void)
 	}
 
 #ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-	if (mcu_custom_grbl_cmd((char *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
+	if (mcu_custom_grbl_cmd((uint8_t *)grbl_cmd_str, grbl_cmd_len, c) == STATUS_OK)
 	{
 		return STATUS_OK;
 	}
@@ -585,8 +578,8 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 		}
 		else
 		{
-			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			protocol_send_feedback(MSG_FEEDBACK_5);
+			cnc_alarm(EXEC_ALARM_SOFTRESET);
 		}
 		break;
 	case GRBL_SEND_SETTINGS_RESET:
@@ -669,13 +662,13 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 	uint8_t wordcount = 0;
 	for (;;)
 	{
-		unsigned char word = 0;
+		uint8_t word = 0;
 		float value = 0;
-		// this flushes leading white chars and also takes care of processing comments
-		parser_get_next_preprocessed(true);
+
 #ifdef ECHO_CMD
 		if (!wordcount)
 		{
+			serial_broadcast(true);
 			protocol_send_string(MSG_ECHO);
 		}
 #endif
@@ -685,6 +678,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return error;
 		}
@@ -721,6 +715,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 #endif
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return STATUS_OK;
 		case 'G':
@@ -762,6 +757,7 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 			parser_discard_command();
 #ifdef ECHO_CMD
 			protocol_send_string(MSG_END);
+			serial_broadcast(false);
 #endif
 			return error;
 		}
@@ -1059,7 +1055,7 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 
 // RS274NGC v3 - 3.7 Other Input Codes
 // Words S and T must be positive
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	if (words->s < 0 || words->t < 0)
 	{
 		return STATUS_NEGATIVE_VALUE;
@@ -1089,20 +1085,6 @@ static uint8_t parser_validate_command(parser_state_t *new_state, parser_words_t
 			return STATUS_GCODE_VALUE_WORD_MISSING;
 		}
 		break;
-#endif
-#ifdef ENABLE_LASER_PPI
-	case M127:
-	case M128:
-		// prevents command execution if mode disabled
-		if (!(g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE)))
-		{
-			return STATUS_LASER_PPI_MODE_DISABLED;
-		}
-	case M126:
-		if (CHECKFLAG(cmd->words, (GCODE_WORD_P)) != (GCODE_WORD_P))
-		{
-			return STATUS_GCODE_VALUE_WORD_MISSING;
-		}
 #endif
 	}
 
@@ -1161,36 +1143,11 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		case M10:
 			if (words->p < 6)
 			{
-				io_set_pwm(words->p + SERVO_PINS_OFFSET, (uint8_t)CLAMP(words->s, 0, 255));
+				io_set_pinvalue(words->p + SERVO_PINS_OFFSET, (uint8_t)CLAMP(words->s, 0, 255));
 			}
 			break;
 #endif
-#ifdef ENABLE_LASER_PPI
-		case M126:
-			g_settings.laser_mode &= ~(LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-			switch ((((uint8_t)words->p)))
-			{
-			case 1:
-				g_settings.laser_mode |= LASER_PPI_MODE;
-				break;
-			case 2:
-				g_settings.laser_mode |= LASER_PPI_VARPOWER_MODE;
-				break;
-			case 3:
-				g_settings.laser_mode |= (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE);
-				break;
-			}
-			parser_config_ppi();
-			break;
-		case M127:
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = words->p * MM_INCH_MULT;
-			parser_config_ppi();
-			break;
-		case M128:
-			g_settings.laser_ppi_uswidth = (uint16_t)words->p;
-			parser_config_ppi();
-			break;
-#endif
+
 		default:
 			error = STATUS_GCODE_UNSUPPORTED_COMMAND;
 #ifdef ENABLE_PARSER_MODULES
@@ -1226,6 +1183,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		new_state->spindle = (uint16_t)trunc(words->s);
 	}
 
+#if TOOL_COUNT > 1
 	// 5. select tool
 	if (CHECKFLAG(cmd->words, GCODE_WORD_T))
 	{
@@ -1243,6 +1201,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		tool_change(words->t);
 		new_state->tool_index = new_state->groups.tool_change;
 	}
+#endif
 
 	// 7. spindle on/rev/off (M3/M4/M5)
 	block_data.spindle = new_state->spindle;
@@ -1375,7 +1334,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		parser_parameters.tool_length_offset = 0;
 		if (new_state->groups.tlo_mode == G43)
 		{
-			parser_parameters.tool_length_offset = words->xyzabc[AXIS_Z];
+			parser_parameters.tool_length_offset = words->xyzabc[AXIS_TOOL];
 			CLEARFLAG(cmd->words, GCODE_WORD_Z);
 			words->xyzabc[AXIS_TOOL] = 0; // resets parameter so it it doen't do anything else
 		}
@@ -1673,65 +1632,67 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			{
 				return STATUS_FEED_NOT_SET;
 			}
-
-			// target points
-			x = target[a] - parser_last_pos[a];
-			y = target[b] - parser_last_pos[b];
-			float center_offset_a = words->ijk[offset_a];
-			float center_offset_b = words->ijk[offset_b];
-			// radius mode
-			if (CHECKFLAG(cmd->words, GCODE_WORD_R))
+			else
 			{
-				if (x == 0 && y == 0)
+				// target points
+				x = target[a] - parser_last_pos[a];
+				y = target[b] - parser_last_pos[b];
+				float center_offset_a = words->ijk[offset_a];
+				float center_offset_b = words->ijk[offset_b];
+				// radius mode
+				if (CHECKFLAG(cmd->words, GCODE_WORD_R))
 				{
-					return STATUS_GCODE_INVALID_TARGET;
+					if (x == 0 && y == 0)
+					{
+						return STATUS_GCODE_INVALID_TARGET;
+					}
+
+					float x_sqr = x * x;
+					float y_sqr = y * y;
+					float c_factor = words->r * words->r;
+					c_factor = fast_flt_mul4(c_factor) - x_sqr - y_sqr;
+
+					if (c_factor < 0)
+					{
+						return STATUS_GCODE_ARC_RADIUS_ERROR;
+					}
+
+					c_factor = -sqrt((c_factor) / (x_sqr + y_sqr));
+
+					if (new_state->groups.motion == G3)
+					{
+						c_factor = -c_factor;
+					}
+
+					radius = words->r;
+					if (words->r < 0)
+					{
+						c_factor = -c_factor;
+						radius = -radius; // Finished with r. Set to positive for mc_arc
+					}
+
+					// Complete the operation by calculating the actual center of the arc
+					center_offset_a = (x - (y * c_factor));
+					center_offset_b = (y + (x * c_factor));
+					center_offset_a = fast_flt_div2(center_offset_a);
+					center_offset_b = fast_flt_div2(center_offset_b);
+				}
+				else // offset mode
+				{
+					// calculate radius and check if center is within tolerances
+					radius = sqrtf(center_offset_a * center_offset_a + center_offset_b * center_offset_b);
+					// calculates the distance between the center point and the target points and compares with the center offset distance
+					float x1 = x - center_offset_a;
+					float y1 = y - center_offset_b;
+					float r1 = sqrt(x1 * x1 + y1 * y1);
+					if (fabs(radius - r1) > 0.002) // error must not exceed 0.002mm according to the NIST RS274NGC standard
+					{
+						return STATUS_GCODE_INVALID_TARGET;
+					}
 				}
 
-				float x_sqr = x * x;
-				float y_sqr = y * y;
-				float c_factor = words->r * words->r;
-				c_factor = fast_flt_mul4(c_factor) - x_sqr - y_sqr;
-
-				if (c_factor < 0)
-				{
-					return STATUS_GCODE_ARC_RADIUS_ERROR;
-				}
-
-				c_factor = -sqrt((c_factor) / (x_sqr + y_sqr));
-
-				if (new_state->groups.motion == G3)
-				{
-					c_factor = -c_factor;
-				}
-
-				radius = words->r;
-				if (words->r < 0)
-				{
-					c_factor = -c_factor;
-					radius = -radius; // Finished with r. Set to positive for mc_arc
-				}
-
-				// Complete the operation by calculating the actual center of the arc
-				center_offset_a = (x - (y * c_factor));
-				center_offset_b = (y + (x * c_factor));
-				center_offset_a = fast_flt_div2(center_offset_a);
-				center_offset_b = fast_flt_div2(center_offset_b);
+				error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
 			}
-			else // offset mode
-			{
-				// calculate radius and check if center is within tolerances
-				radius = sqrtf(center_offset_a * center_offset_a + center_offset_b * center_offset_b);
-				// calculates the distance between the center point and the target points and compares with the center offset distance
-				float x1 = x - center_offset_a;
-				float y1 = y - center_offset_b;
-				float r1 = sqrt(x1 * x1 + y1 * y1);
-				if (fabs(radius - r1) > 0.002) // error must not exceed 0.002mm according to the NIST RS274NGC standard
-				{
-					return STATUS_GCODE_INVALID_TARGET;
-				}
-			}
-
-			error = mc_arc(target, center_offset_a, center_offset_b, radius, a, b, (new_state->groups.motion == 2), &block_data);
 			break;
 #endif
 #ifndef DISABLE_PROBING_SUPPORT
@@ -1841,7 +1802,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 /*
 	Parse the next gcode line available in the buffer and send it to the motion controller
 */
-static uint8_t parser_gcode_command(void)
+static uint8_t parser_gcode_command(bool is_jogging)
 {
 	uint8_t result = 0;
 	// initializes new state
@@ -1857,6 +1818,11 @@ static uint8_t parser_gcode_command(void)
 	if (result != STATUS_OK)
 	{
 		return result;
+	}
+
+	if (is_jogging)
+	{
+		cnc_set_exec_state(EXEC_JOG);
 	}
 
 	// validates command
@@ -1878,7 +1844,7 @@ static uint8_t parser_gcode_command(void)
 	}
 
 	// if is jog motion state is not preserved
-	if (!cnc_get_exec_state(EXEC_JOG))
+	if (!is_jogging)
 	{
 		// if everything went ok updates the parser modal groups and position
 		memcpy(&parser_state, &next_state, sizeof(parser_state_t));
@@ -1898,7 +1864,7 @@ uint8_t parser_get_float(float *value)
 	uint8_t fpcount = 0;
 	uint8_t result = NUMBER_UNDEF;
 
-	unsigned char c = parser_get_next_preprocessed(true);
+	uint8_t c = parser_get_next_preprocessed(true);
 
 	*value = 0;
 
@@ -1994,7 +1960,7 @@ uint8_t parser_get_float(float *value)
 */
 #define COMMENT_OK 1
 #define COMMENT_NOTOK 2
-static void parser_get_comment(unsigned char start_char)
+static void parser_get_comment(uint8_t start_char)
 {
 	uint8_t comment_end = 0;
 #ifdef PROCESS_COMMENTS
@@ -2002,7 +1968,7 @@ static void parser_get_comment(unsigned char start_char)
 #endif
 	for (;;)
 	{
-		unsigned char c = serial_peek();
+		uint8_t c = serial_peek();
 		switch (c)
 		{
 			// case '(':	//error under RS274NGC (commented for Grbl compatibility)
@@ -2060,11 +2026,12 @@ static void parser_get_comment(unsigned char start_char)
 	}
 }
 
-static uint8_t parser_get_token(unsigned char *word, float *value)
+static uint8_t parser_get_token(uint8_t *word, float *value)
 {
-	unsigned char c = serial_getc();
+	// this flushes leading white chars and also takes care of processing comments
+	uint8_t c = parser_get_next_preprocessed(false);
 
-	// if other char starts tokenization
+	// if other uint8_t starts tokenization
 	if (c >= 'a' && c <= 'z')
 	{
 		c -= 32; // uppercase
@@ -2081,7 +2048,7 @@ static uint8_t parser_get_token(unsigned char *word, float *value)
 #ifdef ECHO_CMD
 		serial_putc(c);
 #endif
-		if (c >= 'A' && c <= 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			if (!parser_get_float(value))
 			{
@@ -2338,23 +2305,22 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		code = (code == 5) ? M5 : code - 2;
 		new_state->groups.spindle_turning = code;
 		break;
+#if TOOL_COUNT > 1
 	case 6:
 		new_group |= GCODE_GROUP_TOOLCHANGE;
 		break;
-#if ASSERT_PIN(COOLANT_MIST)
-	case 7:
 #endif
-#ifdef M7_SAME_AS_M8
 	case 7:
-#endif
 	case 8:
+#ifdef ENABLE_COOLANT
 		cmd->groups |= GCODE_GROUP_COOLANT; // word overlapping allowed
-#if ASSERT_PIN(COOLANT_MIST)
+#ifndef M7_SAME_AS_M8
 		new_state->groups.coolant |= ((code == 8) ? M8 : M7);
 #else
 		new_state->groups.coolant |= M8;
 #endif
 		return STATUS_OK;
+#endif
 	case 9:
 		cmd->groups |= GCODE_GROUP_COOLANT;
 		new_state->groups.coolant = M9;
@@ -2376,19 +2342,6 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		cmd->group_extended = M10;
 		return STATUS_OK;
 #endif
-#ifdef ENABLE_LASER_PPI
-	case 126:
-	case 127:
-	case 128:
-		if (cmd->group_extended > 0)
-		{
-			// there is a collision of custom gcode commands (only one per line can be processed)
-			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
-		}
-		// tells the gcode validation and execution functions this is custom code(ID must be unique)
-		cmd->group_extended = EXTENDED_MCODE(code);
-		return STATUS_OK;
-#endif
 
 	default:
 		return STATUS_GCODE_UNSUPPORTED_COMMAND;
@@ -2403,7 +2356,7 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	return STATUS_OK;
 }
 
-static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
+static uint8_t parser_letter_word(uint8_t c, float value, uint8_t mantissa, parser_words_t *words, parser_cmd_explicit_t *cmd)
 {
 	uint16_t new_words = cmd->words;
 	switch (c)
@@ -2424,6 +2377,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #endif
 #ifdef AXIS_Y
 	case 'Y':
+#if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+	case 'Z':
+#endif
 		new_words |= GCODE_WORD_Y;
 		words->xyzabc[AXIS_Y] = value;
 		break;
@@ -2433,6 +2389,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 		new_words |= GCODE_WORD_Z;
 		words->xyzabc[AXIS_Z] = value;
 		break;
+
 #endif
 #ifdef AXIS_A
 	case 'A':
@@ -2550,7 +2507,7 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 #endif
 		break;
 	default:
-		if (c >= 'A' && c <= 'Z') // invalid recognized char
+		if (c >= 'A' && c <= 'Z') // invalid recognized uint8_t
 		{
 			return STATUS_GCODE_UNUSED_WORDS;
 		}
@@ -2567,9 +2524,9 @@ static uint8_t parser_letter_word(unsigned char c, float value, uint8_t mantissa
 	return STATUS_OK;
 }
 
-static unsigned char parser_get_next_preprocessed(bool peek)
+static uint8_t parser_get_next_preprocessed(bool peek)
 {
-	unsigned char c = serial_peek();
+	uint8_t c = serial_peek();
 
 	while (c == ' ' || c == '(' || c == ';')
 	{
@@ -2591,7 +2548,7 @@ static unsigned char parser_get_next_preprocessed(bool peek)
 
 static void parser_discard_command(void)
 {
-	unsigned char c = '@';
+	uint8_t c = '@';
 #ifdef ECHO_CMD
 	serial_putc(c);
 #endif
@@ -2622,11 +2579,10 @@ void parser_reset(bool stopgroup_only)
 	parser_state.groups.coolant = M9;		  // M9
 	parser_state.groups.spindle_turning = M5; // M5
 	parser_state.groups.tool_change = 1;
+#if TOOL_COUNT > 1
 	parser_state.tool_index = g_settings.default_tool;
-	parser_state.groups.path_mode = G61;
-#ifdef ENABLE_LASER_PPI
-	parser_config_ppi();
 #endif
+	parser_state.groups.path_mode = G61;
 #endif
 	parser_state.groups.motion = G1;											   // G1
 	parser_state.groups.units = G21;											   // G21
@@ -2652,8 +2608,7 @@ void parser_parameters_load(void)
 #ifdef G92_STORE_NONVOLATILE
 	if (settings_load(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE))
 	{
-		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
-		settings_erase(G92ADDRESS, PARSER_PARAM_SIZE);
+		settings_erase(G92ADDRESS, (uint8_t *)&parser_parameters.g92_offset, PARSER_PARAM_SIZE);
 	}
 	memcpy(g92permanentoffset, parser_parameters.g92_offset, sizeof(g92permanentoffset));
 #else
@@ -2665,7 +2620,7 @@ void parser_parameters_load(void)
 	{
 		if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 		{
-			settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), PARSER_PARAM_SIZE);
+			settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET + (i * PARSER_PARAM_ADDR_OFFSET), (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 		}
 	}
 
@@ -2673,8 +2628,7 @@ void parser_parameters_load(void)
 #ifndef DISABLE_COORD_SYS_SUPPORT
 	if (settings_load(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE))
 	{
-		memset(parser_parameters.coord_system_offset, 0, sizeof(parser_parameters.coord_system_offset));
-		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, PARSER_PARAM_SIZE);
+		settings_erase(SETTINGS_PARSER_PARAMETERS_ADDRESS_OFFSET, (uint8_t *)&parser_parameters.coord_system_offset, PARSER_PARAM_SIZE);
 	}
 #endif
 }
@@ -3023,25 +2977,3 @@ void parser_machine_to_work(float *axis)
 	}
 #endif
 }
-
-#ifdef ENABLE_LASER_PPI
-void parser_config_ppi(void)
-{
-	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
-	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
-	{
-		// if previously disabled, reload default value
-		if (!g_settings.step_per_mm[STEPPER_COUNT - 1])
-		{
-			g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
-		}
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth * g_settings.step_per_mm[STEPPER_COUNT - 1]));
-		mcu_config_timeout(&laser_ppi_turnoff_cb, g_settings.laser_ppi_uswidth);
-	}
-	else
-	{
-		g_settings.step_per_mm[STEPPER_COUNT - 1] = 0;
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = FLT_MAX;
-	}
-}
-#endif

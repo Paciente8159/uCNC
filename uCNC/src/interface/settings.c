@@ -21,7 +21,10 @@
 #include "defaults.h"
 
 // if settings struct is changed this version should change too
-#define SETTINGS_VERSION "V06"
+#define SETTINGS_VERSION \
+	{                    \
+		'V', '0', '6'    \
+	}
 
 settings_t g_settings;
 
@@ -39,6 +42,9 @@ const settings_t __rom__ default_settings =
 		.g64_angle_factor = DEFAULT_G64_FACTOR,
 		.arc_tolerance = DEFAULT_ARC_TOLERANCE,
 		.report_inches = DEFAULT_REPORT_INCHES,
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		.s_curve_profile = 0,
+#endif
 		.soft_limits_enabled = DEFAULT_SOFT_LIMITS_ENABLED,
 		.hard_limits_enabled = DEFAULT_HARD_LIMITS_ENABLED,
 		.homing_enabled = DEFAULT_HOMING_ENABLED,
@@ -61,7 +67,9 @@ const settings_t __rom__ default_settings =
 		.acceleration = DEFAULT_ACCEL_PER_AXIS,
 		.max_distance = DEFAULT_MAX_DIST_PER_AXIS,
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		.default_tool = DEFAULT_STARTUP_TOOL,
+#endif
 		.tool_length_offset = DEFAULT_ARRAY(TOOL_COUNT, 0),
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
@@ -74,6 +82,11 @@ const settings_t __rom__ default_settings =
 		.delta_bicep_length = DEFAULT_DELTA_BICEP_LENGTH,
 		.delta_forearm_length = DEFAULT_DELTA_FOREARM_LENGTH,
 		.delta_bicep_homing_angle = DEFAULT_DELTA_BICEP_HOMING_ANGLE,
+#elif (KINEMATIC == KINEMATIC_SCARA)
+		.scara_arm_length = DEFAULT_SCARA_ARM_LENGTH,
+		.scara_forearm_length = DEFAULT_SCARA_FOREARM_LENGTH,
+		.scara_arm_homing_angle = DEFAULT_SCARA_ARM_HOMING_ANGLE,
+		.scara_forearm_homing_angle = DEFAULT_SCARA_FOREARM_HOMING_ANGLE,
 #endif
 
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -89,30 +102,6 @@ const settings_t __rom__ default_settings =
 #if ENCODERS > 0
 		.encoders_pulse_invert_mask = 0,
 		.encoders_dir_invert_mask = 0,
-#endif
-#if PID_CONTROLLERS > 0
-		.pid_gain[0] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 1
-		.pid_gain[1] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 2
-		.pid_gain[2] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 3
-		.pid_gain[3] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 4
-		.pid_gain[4] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 5
-		.pid_gain[5] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 6
-		.pid_gain[6] = DEFAULT_ARRAY(3, 0),
-#endif
-#if PID_CONTROLLERS > 7
-		.pid_gain[7] = DEFAULT_ARRAY(3, 0),
 #endif
 };
 
@@ -142,9 +131,15 @@ WEAK_EVENT_HANDLER(settings_erase)
 }
 #endif
 
+static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
+{
+	crc = crc7(((uint8_t *)&size)[0], crc);
+	return crc7(((uint8_t *)&size)[1], crc);
+}
+
 void settings_init(void)
 {
-	const char version[3] = SETTINGS_VERSION;
+	const uint8_t version[3] = SETTINGS_VERSION;
 	uint8_t error = settings_load(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 
 	if (!error)
@@ -167,8 +162,12 @@ void settings_init(void)
 	}
 }
 
-uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
+uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM load @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	// settiing address invalid
 	if (address == UINT16_MAX)
 	{
@@ -187,17 +186,37 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	while (size)
+	for (uint16_t i = 0; i < size;)
 	{
-		size--;
 		uint8_t value = mcu_eeprom_getc(address++);
 		crc = crc7(value, crc);
-		*(__ptr++) = value;
+		if (__ptr)
+		{
+			*(__ptr++) = value;
+		}
+
+		i++;
+		if (!__ptr && (value == EOL))
+		{
+			size = i;
+			break;
+		}
 	}
+
+	crc = settings_size_crc(size, crc);
 
 	return (crc ^ mcu_eeprom_getc(address));
 #else
-	return 255; // returns error
+	if (address == SETTINGS_ADDRESS_OFFSET)
+	{
+		rom_memcpy(&g_settings, &default_settings, sizeof(settings_t));
+	}
+	else
+	{
+		size = MAX(size, 1);
+		memset(__ptr, 0, size);
+	}
+	return 0; // loads defaults
 #endif
 }
 
@@ -209,16 +228,18 @@ void settings_reset(bool erase_startup_blocks)
 	settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
 	if (erase_startup_blocks)
 	{
-		mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK0_ADDRESS_OFFSET + 1, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET, 0);
-		mcu_eeprom_putc(STARTUP_BLOCK1_ADDRESS_OFFSET + 1, 0);
+		settings_erase(STARTUP_BLOCK0_ADDRESS_OFFSET, NULL, 1);
+		settings_erase(STARTUP_BLOCK1_ADDRESS_OFFSET, NULL, 1);
 	}
 #endif
 }
 
-void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
+void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM save @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	if (address == UINT16_MAX)
 	{
 		return;
@@ -236,17 +257,25 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size)
 #ifndef RAM_ONLY_SETTINGS
 	uint8_t crc = 0;
 
-	while (size)
+	for (uint16_t i = 0; i < size;)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}
 
-		size--;
-		crc = crc7(*__ptr, crc);
-		mcu_eeprom_putc(address++, *(__ptr++));
+		uint8_t c = (__ptr != NULL) ? (*(__ptr++)) : ((uint8_t)serial_getc());
+		crc = crc7(c, crc);
+		mcu_eeprom_putc(address++, c);
+		i++;
+		if (!__ptr && (c == EOL))
+		{
+			size = i;
+			break;
+		}
 	}
+
+	crc = settings_size_crc(size, crc);
 
 	mcu_eeprom_putc(address, crc);
 	mcu_eeprom_flush();
@@ -257,6 +286,12 @@ bool settings_allows_negative(setting_offset_t id)
 {
 #if TOOL_COUNT > 0
 	if (id > 80 && id <= (80 + TOOL_COUNT))
+	{
+		return true;
+	}
+#endif
+#ifdef ENABLE_SKEW_COMPENSATION
+	if (id >= 37 && id <= 39)
 	{
 		return true;
 	}
@@ -336,6 +371,11 @@ uint8_t settings_change(setting_offset_t id, float value)
 		case 13:
 			g_settings.report_inches = value1;
 			break;
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		case 14:
+			g_settings.s_curve_profile = CLAMP(0, value8, 5);
+			break;
+#endif
 		case 20:
 			if (!g_settings.homing_enabled && value1)
 			{
@@ -400,7 +440,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			break;
 #endif
 #endif
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		case 80:
 			g_settings.default_tool = CLAMP(0, value8, (uint8_t)TOOL_COUNT);
 			break;
@@ -431,6 +471,19 @@ uint8_t settings_change(setting_offset_t id, float value)
 	case 28:
 		g_settings.delta_bicep_homing_angle = value;
 		break;
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	case 106:
+		g_settings.scara_arm_length = value;
+		break;
+	case 107:
+		g_settings.scara_forearm_length = value;
+		break;
+	case 28:
+		g_settings.scara_arm_homing_angle = value;
+		break;
+	case 29:
+		g_settings.scara_forearm_homing_angle = value;
+		break;
 #endif
 		default:
 			if (setting >= 100 && setting < (100 + AXIS_COUNT))
@@ -460,21 +513,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 				g_settings.backlash_steps[setting] = value16;
 			}
 #endif
-#if PID_CONTROLLERS > 0
-			// kp ki and kd 0 -> 41, 42, 43
-			// kp ki and kd 1 -> 45, 46, 47, etc...
-			else if (setting >= 40 && setting < (40 + (4 * PID_CONTROLLERS)))
-			{
-				uint8_t k = (setting & 0x03);
-				uint8_t pid = (setting >> 2) - 10;
-				// 3 is invalid index
-				if (k == 0x03)
-				{
-					return STATUS_INVALID_STATEMENT;
-				}
-				g_settings.pid_gain[pid][k] = value;
-			}
-#endif
+
 #if TOOL_COUNT > 0
 			else if (setting > 80 && setting <= (80 + TOOL_COUNT))
 			{
@@ -506,15 +545,24 @@ uint8_t settings_change(setting_offset_t id, float value)
 	return result;
 }
 
-void settings_erase(uint16_t address, uint8_t size)
+void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
+	DEBUG_STR("EEPROM erase @ ");
+	DEBUG_INT(address);
+	DEBUG_PUTC('\n');
+
 	if (address == UINT16_MAX)
 	{
 		return;
 	}
 
+	if (__ptr)
+	{
+		memset(__ptr, 0, size);
+	}
+
 #ifdef ENABLE_SETTINGS_MODULES
-	settings_args_t args = {.address = address, .data = NULL, .size = size};
+	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
 		// if the event was handled
@@ -522,18 +570,19 @@ void settings_erase(uint16_t address, uint8_t size)
 	}
 #endif
 #ifndef RAM_ONLY_SETTINGS
-	while (size)
+	for (uint16_t i = size; i != 0; i--)
 	{
 		if (cnc_get_exec_state(EXEC_RUN))
 		{
 			cnc_dotasks(); // updates buffer before cycling
 		}
-		mcu_eeprom_putc(address++, EOL);
-		size--;
+		mcu_eeprom_putc(address++, 0);
 	}
 
+	uint8_t crc = settings_size_crc(size, 0);
+
 	// erase crc byte that is next to data
-	mcu_eeprom_putc(address, EOL);
+	mcu_eeprom_putc(address, crc);
 #if !defined(ENABLE_EXTRA_SYSTEM_CMDS)
 	mcu_eeprom_flush();
 #endif
@@ -542,55 +591,26 @@ void settings_erase(uint16_t address, uint8_t size)
 
 bool settings_check_startup_gcode(uint16_t address)
 {
+	serial_broadcast(true);
+	serial_putc('>');
 #ifndef RAM_ONLY_SETTINGS
-	uint8_t size = (RX_BUFFER_SIZE - 1); // defined in serial.h
-	uint8_t crc = 0;
-	unsigned char c;
-	uint16_t cmd_address = address;
-
-	// pre-checks command valid crc
-	do
+	if (settings_load(address, NULL, UINT16_MAX))
 	{
-		c = mcu_eeprom_getc(cmd_address++);
-		crc = crc7(c, crc);
-		if (!c)
-		{
-			break;
-		}
-		size--;
-	} while (size);
-
-	if (crc ^ mcu_eeprom_getc(cmd_address))
-	{
-		serial_putc('>');
 		serial_putc(':');
 		protocol_send_error(STATUS_SETTING_READ_FAIL);
-		settings_erase(address, 1);
+		settings_erase(address, NULL, 1);
 		return false;
 	}
-#endif
+
 	return true;
-}
-
-void settings_save_startup_gcode(uint16_t address)
-{
-#ifndef RAM_ONLY_SETTINGS
-	uint8_t size = (RX_BUFFER_SIZE - 1);
-	uint8_t crc = 0;
-	unsigned char c;
-	do
-	{
-		c = serial_getc();
-		crc = crc7(c, crc);
-		mcu_eeprom_putc(address++, (uint8_t)c);
-		size--;
-	} while (size && c);
-
-	mcu_eeprom_putc(address, crc);
+#else
+	serial_putc(':');
+	protocol_send_ok();
+	return false;
 #endif
 }
 
-uint16_t settings_register_external_setting(uint8_t size)
+uint16_t settings_register_external_setting(uint16_t size)
 {
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	static uint16_t setting_offset = MODULES_SETTINGS_ADDRESS_OFFSET;
@@ -598,7 +618,7 @@ uint16_t settings_register_external_setting(uint8_t size)
 	setting_offset += size + 1; // include crc
 	return new_offset;
 #else
-	#warning "External/extension settings storing is disabled"
+#warning "External/extension settings storing is disabled"
 	return UINT16_MAX;
 #endif
 }

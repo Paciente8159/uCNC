@@ -41,18 +41,18 @@
 	static void tmc##CHANNEL##_rw(uint8_t *data, uint8_t wlen, uint8_t rlen) \
 	{                                                                        \
 		mcu_disable_global_isr();                                            \
-		mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
-		mcu_set_output(STEPPER##CHANNEL##_UART_TX);                          \
+		io_config_output(STEPPER##CHANNEL##_UART_TX);                       \
+		io_set_output(STEPPER##CHANNEL##_UART_TX);                          \
 		for (uint8_t i = 0; i < wlen; i++)                                   \
 		{                                                                    \
 			softuart_putc(&tmc##CHANNEL##_uart, data[i]);                    \
 		}                                                                    \
-		mcu_config_input(STEPPER##CHANNEL##_UART_TX);                        \
+		io_config_input(STEPPER##CHANNEL##_UART_TX);                        \
 		for (uint8_t i = 0; i < rlen; i++)                                   \
 		{                                                                    \
 			data[i] = softuart_getc(&tmc##CHANNEL##_uart, TMC_UART_TIMEOUT); \
 		}                                                                    \
-		mcu_config_output(STEPPER##CHANNEL##_UART_TX);                       \
+		io_config_output(STEPPER##CHANNEL##_UART_TX);                       \
 		mcu_enable_global_isr();                                             \
 		cnc_delay_ms(10);                                                    \
 	}
@@ -60,12 +60,12 @@
 #define TMC2_STEPPER_RW(CHANNEL)                                             \
 	static void tmc##CHANNEL##_rw(uint8_t *data, uint8_t wlen, uint8_t rlen) \
 	{                                                                        \
-		mcu_clear_output(STEPPER##CHANNEL##_SPI_CS);                         \
+		io_clear_output(STEPPER##CHANNEL##_SPI_CS);                         \
 		for (uint8_t i = 0; i < wlen; i++)                                   \
 		{                                                                    \
 			data[i] = softspi_xmit(&tmc##CHANNEL##_spi, data[i]);            \
 		}                                                                    \
-		mcu_set_output(STEPPER##CHANNEL##_SPI_CS);                           \
+		io_set_output(STEPPER##CHANNEL##_SPI_CS);                           \
 	}
 #define _TMC_STEPPER_RW(TYPE, CHANNEL) TMC##TYPE##_STEPPER_RW(CHANNEL)
 #define TMC_STEPPER_RW(TYPE, CHANNEL) _TMC_STEPPER_RW(TYPE, CHANNEL)
@@ -1229,28 +1229,28 @@ bool m920_exec(void *args)
 DECL_MODULE(tmcdriver)
 {
 #if ASSERT_PIN(STEPPER0_SPI_CS)
-	mcu_set_output(STEPPER0_SPI_CS);
+	io_set_output(STEPPER0_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER1_SPI_CS)
-	mcu_set_output(STEPPER1_SPI_CS);
+	io_set_output(STEPPER1_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER2_SPI_CS)
-	mcu_set_output(STEPPER2_SPI_CS);
+	io_set_output(STEPPER2_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER3_SPI_CS)
-	mcu_set_output(STEPPER3_SPI_CS);
+	io_set_output(STEPPER3_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER4_SPI_CS)
-	mcu_set_output(STEPPER4_SPI_CS);
+	io_set_output(STEPPER4_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER5_SPI_CS)
-	mcu_set_output(STEPPER5_SPI_CS);
+	io_set_output(STEPPER5_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER6_SPI_CS)
-	mcu_set_output(STEPPER6_SPI_CS);
+	io_set_output(STEPPER6_SPI_CS);
 #endif
 #if ASSERT_PIN(STEPPER7_SPI_CS)
-	mcu_set_output(STEPPER7_SPI_CS);
+	io_set_output(STEPPER7_SPI_CS);
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -1275,7 +1275,7 @@ DECL_MODULE(tmcdriver)
 
 #ifdef STEPPER0_HAS_TMC
 	tmc0_driver.type = STEPPER0_DRIVER_TYPE;
-	tmc0_driver.slave = 0;
+	tmc0_driver.slave = STEPPER0_UART_ADDRESS;
 	tmc0_driver.init = NULL;
 	tmc0_driver.rw = &tmc0_rw;
 	tmc0_settings.rms_current = STEPPER0_CURRENT_MA;
@@ -1297,7 +1297,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER1_HAS_TMC
 	tmc1_driver.type = STEPPER1_DRIVER_TYPE;
-	tmc1_driver.slave = 0;
+	tmc1_driver.slave = STEPPER1_UART_ADDRESS;
 	tmc1_driver.init = NULL;
 	tmc1_driver.rw = &tmc1_rw;
 	tmc1_settings.rms_current = STEPPER1_CURRENT_MA;
@@ -1319,7 +1319,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER2_HAS_TMC
 	tmc2_driver.type = STEPPER2_DRIVER_TYPE;
-	tmc2_driver.slave = 0;
+	tmc2_driver.slave = STEPPER2_UART_ADDRESS;
 	tmc2_driver.init = NULL;
 	tmc2_driver.rw = &tmc2_rw;
 	tmc2_settings.rms_current = STEPPER2_CURRENT_MA;
@@ -1341,7 +1341,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER3_HAS_TMC
 	tmc3_driver.type = STEPPER3_DRIVER_TYPE;
-	tmc3_driver.slave = 0;
+	tmc3_driver.slave = STEPPER3_UART_ADDRESS;
 	tmc3_driver.init = NULL;
 	tmc3_driver.rw = &tmc3_rw;
 	tmc3_settings.rms_current = STEPPER3_CURRENT_MA;
@@ -1363,7 +1363,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER4_HAS_TMC
 	tmc4_driver.type = STEPPER4_DRIVER_TYPE;
-	tmc4_driver.slave = 0;
+	tmc4_driver.slave = STEPPER4_UART_ADDRESS;
 	tmc4_driver.init = NULL;
 	tmc4_driver.rw = &tmc4_rw;
 	tmc4_settings.rms_current = STEPPER4_CURRENT_MA;
@@ -1385,7 +1385,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER5_HAS_TMC
 	tmc5_driver.type = STEPPER5_DRIVER_TYPE;
-	tmc5_driver.slave = 0;
+	tmc5_driver.slave = STEPPER5_UART_ADDRESS;
 	tmc5_driver.init = NULL;
 	tmc5_driver.rw = &tmc5_rw;
 	tmc5_settings.rms_current = STEPPER5_CURRENT_MA;
@@ -1407,7 +1407,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER6_HAS_TMC
 	tmc6_driver.type = STEPPER6_DRIVER_TYPE;
-	tmc6_driver.slave = 0;
+	tmc6_driver.slave = STEPPER6_UART_ADDRESS;
 	tmc6_driver.init = NULL;
 	tmc6_driver.rw = &tmc6_rw;
 	tmc6_settings.rms_current = STEPPER6_CURRENT_MA;
@@ -1429,7 +1429,7 @@ DECL_MODULE(tmcdriver)
 #endif
 #ifdef STEPPER7_HAS_TMC
 	tmc7_driver.type = STEPPER7_DRIVER_TYPE;
-	tmc7_driver.slave = 0;
+	tmc7_driver.slave = STEPPER7_UART_ADDRESS;
 	tmc7_driver.init = NULL;
 	tmc7_driver.rw = &tmc7_rw;
 	tmc7_settings.rms_current = STEPPER7_CURRENT_MA;

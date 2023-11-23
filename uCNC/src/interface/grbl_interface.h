@@ -105,6 +105,8 @@ extern "C"
 #define STATUS_LASER_PPI_MODE_DISABLED 54
 #define STATUS_TOOL_FAILURE 55
 #define STATUS_INVALID_PLANE_SELECTED 56
+#define STATUS_HARDLIMITS_DISABLED 57
+#define STATUS_STREAM_FAILED 58
 #define STATUS_GCODE_EXTENDED_UNSUPPORTED 254 // deprecated
 #define STATUS_CRITICAL_FAIL 255
 
@@ -149,7 +151,8 @@ extern "C"
 #define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11 // homing could not start since one of the limits was already triggered
 #define EXEC_ALARM_SPINDLE_SYNC_FAIL 12 // failed to achieve spindle sync speed
 #define EXEC_ALARM_HARD_LIMIT_NOMOTION 13 // hard limits were triggered without any motion (position was not lost)
-#define EXEC_ALARM_MULTIBOARD_CRITICAL_ERROR 14 // multiboard critical error. halt board operation
+#define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
+#define EXEC_ALARM_MULTIBOARD_CRITICAL_ERROR 15 // multiboard critical error. halt board operation
 
 // formated messages
 #define STR_EOL "\r\n"

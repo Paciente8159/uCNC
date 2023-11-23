@@ -30,14 +30,14 @@ extern "C"
 #include <stdbool.h>
 
 #ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 30
+#define PLANNER_BUFFER_SIZE 20
 #endif
 
 #define PLANNER_MOTION_EXACT_PATH 32 // default (not used)
 #define PLANNER_MOTION_EXACT_STOP 64
 #define PLANNER_MOTION_CONTINUOUS 128
 
-#define STATE_COPY_FLAG_MASK 0x1F
+#define TOOL_STATE_COPY_FLAG_MASK 0x78
 	typedef motion_flags_t planner_flags_t;
 
 	typedef struct planner_block_
@@ -98,19 +98,22 @@ extern "C"
 	void planner_sync_tools(motion_data_t *block_data);
 
 	// overrides
-	void planner_feed_ovr_reset(void);
-	void planner_feed_ovr_inc(uint8_t value);
-
-	void planner_rapid_feed_ovr_reset();
+	void planner_feed_ovr(uint8_t value);
 	void planner_rapid_feed_ovr(uint8_t value);
 #if TOOL_COUNT > 0
-	void planner_spindle_ovr_reset(void);
-	void planner_spindle_ovr_inc(uint8_t value);
+	void planner_spindle_ovr(uint8_t value);
 	uint8_t planner_coolant_ovr_toggle(uint8_t value);
 	void planner_coolant_ovr_reset(void);
 #endif
 
 	uint8_t planner_get_buffer_freeblocks();
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// creates a full copy of the planner state
+	void planner_store(void);
+	// restores the planner to it's previous saved state
+	void planner_restore(void);
+#endif
 
 #ifdef __cplusplus
 }

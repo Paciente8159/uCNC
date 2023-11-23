@@ -70,88 +70,88 @@ bool m351_exec(void *args)
 			val = -1;
 			serial_putc('X');
 #if ASSERT_PIN(STEPPER0_MSTEP0)
-			val = mcu_get_output(STEPPER0_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER0_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER0_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER0_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER0_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Y');
 #if ASSERT_PIN(STEPPER1_MSTEP0)
-			val = mcu_get_output(STEPPER1_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER1_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER1_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER1_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER1_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('Z');
 #if ASSERT_PIN(STEPPER2_MSTEP0)
-			val = mcu_get_output(STEPPER2_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER2_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER2_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER2_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER2_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('A');
 #if ASSERT_PIN(STEPPER3_MSTEP0)
-			val = mcu_get_output(STEPPER3_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER3_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER3_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER3_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER3_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('B');
 #if ASSERT_PIN(STEPPER4_MSTEP0)
-			val = mcu_get_output(STEPPER4_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER4_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER4_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER4_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER4_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('C');
 #if ASSERT_PIN(STEPPER5_MSTEP0)
-			val = mcu_get_output(STEPPER5_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER5_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER5_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER5_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER5_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('I');
 #if ASSERT_PIN(STEPPER6_MSTEP0)
-			val = mcu_get_output(STEPPER6_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER6_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER6_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER6_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER6_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(',');
 			val = -1;
 			serial_putc('J');
 #if ASSERT_PIN(STEPPER7_MSTEP0)
-			val = mcu_get_output(STEPPER7_MSTEP0) ? 1 : 0;
+			val = io_get_output(STEPPER7_MSTEP0) ? 1 : 0;
 #endif
 #if ASSERT_PIN(STEPPER7_MSTEP1)
 			val = MAX(0, val);
-			val |= mcu_get_output(STEPPER7_MSTEP1) ? 2 : 0;
+			val |= io_get_output(STEPPER7_MSTEP1) ? 2 : 0;
 #endif
 			serial_print_int(val);
 			serial_putc(']');
@@ -161,73 +161,73 @@ bool m351_exec(void *args)
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_X))
 		{
 #if ASSERT_PIN(STEPPER0_MSTEP0)
-			io_set_output(STEPPER0_MSTEP0, ((uint8_t)ptr->words->xyzabc[0] & 0x01));
+			io_set_pinvalue(STEPPER0_MSTEP0, ((uint8_t)ptr->words->xyzabc[0] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER0_MSTEP1)
-			io_set_output(STEPPER0_MSTEP1, ((uint8_t)ptr->words->xyzabc[0] & 0x02));
+			io_set_pinvalue(STEPPER0_MSTEP1, ((uint8_t)ptr->words->xyzabc[0] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Y))
 		{
 #if ASSERT_PIN(STEPPER1_MSTEP0)
-			io_set_output(STEPPER1_MSTEP0, ((uint8_t)ptr->words->xyzabc[1] & 0x01));
+			io_set_pinvalue(STEPPER1_MSTEP0, ((uint8_t)ptr->words->xyzabc[1] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER1_MSTEP1)
-			io_set_output(STEPPER1_MSTEP1, ((uint8_t)ptr->words->xyzabc[1] & 0x02));
+			io_set_pinvalue(STEPPER1_MSTEP1, ((uint8_t)ptr->words->xyzabc[1] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_Z))
 		{
 #if ASSERT_PIN(STEPPER2_MSTEP0)
-			io_set_output(STEPPER2_MSTEP0, (((uint8_t)ptr->words->xyzabc[2]) & 0x01));
+			io_set_pinvalue(STEPPER2_MSTEP0, (((uint8_t)ptr->words->xyzabc[2]) & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER2_MSTEP1)
-			io_set_output(STEPPER2_MSTEP1, (((uint8_t)ptr->words->xyzabc[2]) & 0x02));
+			io_set_pinvalue(STEPPER2_MSTEP1, (((uint8_t)ptr->words->xyzabc[2]) & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_A))
 		{
 #if ASSERT_PIN(STEPPER3_MSTEP0)
-			io_set_output(STEPPER3_MSTEP0, ((uint8_t)ptr->words->xyzabc[3] & 0x01));
+			io_set_pinvalue(STEPPER3_MSTEP0, ((uint8_t)ptr->words->xyzabc[3] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER3_MSTEP1)
-			io_set_output(STEPPER3_MSTEP1, ((uint8_t)ptr->words->xyzabc[3] & 0x02));
+			io_set_pinvalue(STEPPER3_MSTEP1, ((uint8_t)ptr->words->xyzabc[3] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_B))
 		{
 #if ASSERT_PIN(STEPPER4_MSTEP0)
-			io_set_output(STEPPER4_MSTEP0, ((uint8_t)ptr->words->xyzabc[4] & 0x01));
+			io_set_pinvalue(STEPPER4_MSTEP0, ((uint8_t)ptr->words->xyzabc[4] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER4_MSTEP1)
-			io_set_output(STEPPER4_MSTEP1, ((uint8_t)ptr->words->xyzabc[4] & 0x02));
+			io_set_pinvalue(STEPPER4_MSTEP1, ((uint8_t)ptr->words->xyzabc[4] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_C))
 		{
 #if ASSERT_PIN(STEPPER5_MSTEP0)
-			io_set_output(STEPPER5_MSTEP0, ((uint8_t)ptr->words->xyzabc[5] & 0x01));
+			io_set_pinvalue(STEPPER5_MSTEP0, ((uint8_t)ptr->words->xyzabc[5] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER5_MSTEP1)
-			io_set_output(STEPPER5_MSTEP1, ((uint8_t)ptr->words->xyzabc[5] & 0x02));
+			io_set_pinvalue(STEPPER5_MSTEP1, ((uint8_t)ptr->words->xyzabc[5] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_I))
 		{
 #if ASSERT_PIN(STEPPER6_MSTEP0)
-			io_set_output(STEPPER6_MSTEP0, ((uint8_t)ptr->words->ijk[0] & 0x01));
+			io_set_pinvalue(STEPPER6_MSTEP0, ((uint8_t)ptr->words->ijk[0] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER6_MSTEP1)
-			io_set_output(STEPPER6_MSTEP1, ((uint8_t)ptr->words->ijk[0] & 0x02));
+			io_set_pinvalue(STEPPER6_MSTEP1, ((uint8_t)ptr->words->ijk[0] & 0x02));
 #endif
 		}
 		if (CHECKFLAG(ptr->cmd->words, GCODE_WORD_J))
 		{
 #if ASSERT_PIN(STEPPER7_MSTEP0)
-			io_set_output(STEPPER7_MSTEP0, ((uint8_t)ptr->words->ijk[1] & 0x01));
+			io_set_pinvalue(STEPPER7_MSTEP0, ((uint8_t)ptr->words->ijk[1] & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER7_MSTEP1)
-			io_set_output(STEPPER7_MSTEP1, ((uint8_t)ptr->words->ijk[1] & 0x02));
+			io_set_pinvalue(STEPPER7_MSTEP1, ((uint8_t)ptr->words->ijk[1] & 0x02));
 #endif
 		}
 
@@ -243,52 +243,52 @@ bool m351_exec(void *args)
 DECL_MODULE(digimstep)
 {
 #if ASSERT_PIN(STEPPER0_MSTEP0)
-	io_set_output(STEPPER0_MSTEP0, (STEPPER0_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER0_MSTEP0, (STEPPER0_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER0_MSTEP1)
-	io_set_output(STEPPER0_MSTEP1, (STEPPER0_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER0_MSTEP1, (STEPPER0_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER1_MSTEP0)
-	io_set_output(STEPPER1_MSTEP0, (STEPPER1_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER1_MSTEP0, (STEPPER1_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER1_MSTEP1)
-	io_set_output(STEPPER1_MSTEP1, (STEPPER1_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER1_MSTEP1, (STEPPER1_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER2_MSTEP0)
-	io_set_output(STEPPER2_MSTEP0, (STEPPER2_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER2_MSTEP0, (STEPPER2_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER2_MSTEP1)
-	io_set_output(STEPPER2_MSTEP1, (STEPPER2_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER2_MSTEP1, (STEPPER2_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER3_MSTEP0)
-	io_set_output(STEPPER3_MSTEP0, (STEPPER3_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER3_MSTEP0, (STEPPER3_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER3_MSTEP1)
-	io_set_output(STEPPER3_MSTEP1, (STEPPER3_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER3_MSTEP1, (STEPPER3_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER4_MSTEP0)
-	io_set_output(STEPPER4_MSTEP0, (STEPPER4_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER4_MSTEP0, (STEPPER4_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER4_MSTEP1)
-	io_set_output(STEPPER4_MSTEP1, (STEPPER4_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER4_MSTEP1, (STEPPER4_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER5_MSTEP0)
-	io_set_output(STEPPER5_MSTEP0, (STEPPER5_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER5_MSTEP0, (STEPPER5_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER5_MSTEP1)
-	io_set_output(STEPPER5_MSTEP1, (STEPPER5_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER5_MSTEP1, (STEPPER5_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER6_MSTEP0)
-	io_set_output(STEPPER6_MSTEP0, (STEPPER6_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER6_MSTEP0, (STEPPER6_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER6_MSTEP1)
-	io_set_output(STEPPER6_MSTEP1, (STEPPER6_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER6_MSTEP1, (STEPPER6_MSTEP & 0x02));
 #endif
 #if ASSERT_PIN(STEPPER7_MSTEP0)
-	io_set_output(STEPPER7_MSTEP0, (STEPPER7_MSTEP & 0x01));
+	io_set_pinvalue(STEPPER7_MSTEP0, (STEPPER7_MSTEP & 0x01));
 #endif
 #if ASSERT_PIN(STEPPER7_MSTEP1)
-	io_set_output(STEPPER7_MSTEP1, (STEPPER7_MSTEP & 0x02));
+	io_set_pinvalue(STEPPER7_MSTEP1, (STEPPER7_MSTEP & 0x02));
 #endif
 
 #ifdef ENABLE_PARSER_MODULES

@@ -150,7 +150,7 @@ void planner_add_line(motion_data_t *block_data)
 				// this way the output will be between 0<tan(theta/2)<inf
 				// but if theta is 0<theta<90 the tan(theta/2) will be 0<tan(theta/2)<1
 				// all angles greater than 1 that can be excluded
-				angle_factor = 1.0f / (1.0f + cos_theta);
+				angle_factor = fast_flt_inv(1.0f + cos_theta);
 				cos_theta = (1.0f - fast_flt_pow2(cos_theta));
 				angle_factor *= fast_flt_sqrt(cos_theta);
 			}
@@ -285,10 +285,10 @@ void planner_init(void)
 #endif
 #endif
 	planner_buffer_clear();
-	planner_feed_ovr_reset();
-	planner_rapid_feed_ovr_reset();
+	planner_feed_ovr(100);
+	planner_rapid_feed_ovr(100);
 #if TOOL_COUNT > 0
-	planner_spindle_ovr_reset();
+	planner_spindle_ovr(100);
 	planner_coolant_ovr_reset();
 #endif
 }
@@ -509,22 +509,19 @@ void planner_sync_tools(motion_data_t *block_data)
 {
 #if TOOL_COUNT > 0
 	g_planner_state.spindle_speed = block_data->spindle;
-	g_planner_state.state_flags.reg &= ~STATE_COPY_FLAG_MASK;
-	g_planner_state.state_flags.reg |= (block_data->motion_flags.reg & STATE_COPY_FLAG_MASK);
+	g_planner_state.state_flags.reg &= ~TOOL_STATE_COPY_FLAG_MASK;
+	g_planner_state.state_flags.reg |= (block_data->motion_flags.reg & TOOL_STATE_COPY_FLAG_MASK);
 #endif
 }
 
 // overrides
-void planner_feed_ovr_inc(uint8_t value)
+void planner_feed_ovr(uint8_t value)
 {
-	uint8_t ovr_val = g_planner_state.feed_override;
-	ovr_val += value;
-	ovr_val = MAX(ovr_val, FEED_OVR_MIN);
-	ovr_val = MIN(ovr_val, FEED_OVR_MAX);
-
-	if (ovr_val != g_planner_state.feed_override)
+	value = CLAMP(FEED_OVR_MIN, value, FEED_OVR_MAX);
+	
+	if (value != g_planner_state.feed_override)
 	{
-		g_planner_state.feed_override = ovr_val;
+		g_planner_state.feed_override = value;
 		g_planner_state.ovr_counter = 0;
 		itp_update();
 	}
@@ -532,6 +529,8 @@ void planner_feed_ovr_inc(uint8_t value)
 
 void planner_rapid_feed_ovr(uint8_t value)
 {
+	value = CLAMP(FEED_OVR_MIN, value, FEED_OVR_MAX);
+
 	if (g_planner_state.rapid_feed_override != value)
 	{
 		g_planner_state.rapid_feed_override = value;
@@ -540,45 +539,16 @@ void planner_rapid_feed_ovr(uint8_t value)
 	}
 }
 
-void planner_feed_ovr_reset(void)
-{
-	if (g_planner_state.feed_override != 100)
-	{
-		g_planner_state.feed_override = 100;
-		g_planner_state.ovr_counter = 0;
-		itp_update();
-	}
-}
-
-void planner_rapid_feed_ovr_reset(void)
-{
-	if (g_planner_state.rapid_feed_override != 100)
-	{
-		g_planner_state.rapid_feed_override = 100;
-		g_planner_state.ovr_counter = 0;
-		itp_update();
-	}
-}
-
 #if TOOL_COUNT > 0
-void planner_spindle_ovr_inc(uint8_t value)
+void planner_spindle_ovr(uint8_t value)
 {
-	uint8_t ovr_val = g_planner_state.spindle_speed_override;
-	ovr_val += value;
-	ovr_val = MAX(ovr_val, SPINDLE_OVR_MIN);
-	ovr_val = MIN(ovr_val, SPINDLE_OVR_MAX);
+	value = CLAMP(SPINDLE_OVR_MIN, value, SPINDLE_OVR_MAX);
 
-	if (ovr_val != g_planner_state.spindle_speed_override)
+	if (value != g_planner_state.spindle_speed_override)
 	{
-		g_planner_state.spindle_speed_override = ovr_val;
+		g_planner_state.spindle_speed_override = value;
 		g_planner_state.ovr_counter = 0;
 	}
-}
-
-void planner_spindle_ovr_reset(void)
-{
-	g_planner_state.spindle_speed_override = 100;
-	g_planner_state.ovr_counter = 0;
 }
 
 static uint8_t coolant_override;
@@ -605,3 +575,29 @@ uint8_t planner_get_buffer_freeblocks()
 {
 	return PLANNER_BUFFER_SIZE - planner_data_blocks;
 }
+
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+static planner_block_t planner_data_copy[PLANNER_BUFFER_SIZE];
+static uint8_t planner_data_write_copy;
+static uint8_t planner_data_read_copy;
+static uint8_t planner_data_blocks_copy;
+static planner_state_t g_planner_state_copy;
+// creates a full copy of the planner state
+void planner_store(void)
+{
+	memcpy(planner_data_copy, planner_data, sizeof(planner_data));
+	planner_data_write_copy = planner_data_write;
+	planner_data_read_copy = planner_data_read;
+	planner_data_blocks_copy = planner_data_blocks;
+	memcpy(&g_planner_state_copy, &g_planner_state, sizeof(planner_state_t));
+}
+// restores the planner to it's previous saved state
+void planner_restore(void)
+{
+	memcpy(planner_data, planner_data_copy, sizeof(planner_data));
+	planner_data_write = planner_data_write_copy;
+	planner_data_read = planner_data_read_copy;
+	planner_data_blocks = planner_data_blocks_copy;
+	memcpy(&g_planner_state, &g_planner_state_copy, sizeof(planner_state_t));
+}
+#endif

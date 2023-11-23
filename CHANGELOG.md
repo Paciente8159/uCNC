@@ -6,6 +6,216 @@
 
 # Changelog
 
+# Changelog
+
+## [1.8.4] - 17-11-2023
+
+### Added
+
+- added support for 74HC595 custom shift register using PIO (#568)
+- added function to get parser internal position (#537)
+- added new debug stream option to use a dedicated COM channel to print debug verbose (#548)
+- added option to control how soft limits are treated (alarm or error) and if the program flow continues or holds in case of error (#572)
+
+### Changed
+
+- rebuilded virtual emulator for Windows (#569)
+
+### Fixed
+
+- fixed non linear acceleration steps that generated motor noise on acceleration and deacceleration. These issues were introduce with change #561 (#571)
+- reduced itp timer calculations for blocks at speeds bellow the interpolator sample frequency leading to incorrect timing on these slow speed blocks (#571)
+- fixed stepper timer running at half the target speed on ESP32 using emulated PWM (#567)
+- fixed cooland funtions M7 and M8 (#562)
+- fixed step generation is interrupted while processing incomplete command (#565)
+- fixed JOG flag being cleared while parsing command (caused with #565) (#573)
+
+## [1.8.3] - 11-11-2023
+
+### Fixed
+
+- fixed motion stall if the motion has an instant jump from speed 0 to the target speed (instant acceleration) causing the motion speed not to be correctly calculated and stalling the whole interpolator queue. (#561)
+- fixed error with option STATUS_AUTOMATIC_REPORT_INTERVAL enabled (#559)
+
+## [1.8.2] - 03-11-2023
+
+### Fixed
+
+- fixed random stalls at the end of a deacceleration motion to a full stop. Under particular condition and due to float rounding errors speed may reach negative values and the motion being unable to continue. (#558)
+
+## [1.8.1] - 01-11-2023
+
+### Added
+
+- added new endpoint interface to allow development of web server extension modules for MCU with WiFi (#554)
+- added function to get parser internal position (#537)
+- added new debug stream option to use a dedicated COM channel to print debug verbose (#548) 
+
+### Changed
+
+- ESP32 web server now runs on a separate task (#554)
+- ESP32 moved rtc task to core 1 (#554)
+- modified extented codes macro (#538)
+- modified alarm logic to allow execution of real time commands even with alarm conditions active (#548)
+
+### Fixed
+
+- fixed USART ISR vector naming on AVR UNO using web builder generated override files (#557)
+- fixed settings crc calculation to prevent accept invalid incorrect settings structures with stuffed bytes set to and leading to data offset missmatch (#553)
+- fixed startup blocks printing format (#553)
+- prevent alarm condition after enabling setting $21 (#549)
+- fixed variable edit logic error on system menu (#547)
+- fixed some variable types in system menu settings (#547)
+- fixed signess of coordinates with option SET_ORIGIN_AT_HOME_POS (#542)
+
+## [1.8.0] - 18-10-2023
+
+### Added
+
+- added status report extender callcack  (#454)
+- added Plasma THC velocity anti-dive (#456)
+- added initial Scara Kinematics (#460)
+- added ESP32 optional optimized compilation using ESPIDF and Arduino as a component
+
+### Changed
+
+- unified interpolator run function and new S-Curve acceleration profiles (#458)
+- implemented Plasma THC status report callback (#454)
+- plasma THC tool update via PID callback (#453)
+- configurable S curve patterns (#459)
+- moved custom MCodes to laser ppi compilation unit (#464)
+- added new RT Hooks inside interpolator step ITP, to be used by laser PPI and G33 (#464)
+- moved all ESP32 I2S IO update calls to core0 (#485)
+- added frequency clamp to step to frequency functions (#485)
+- complete redesign of multiaxis system (#477)
+- new autolevel with multi axis config (#477)
+- fixed ITP for multi step linear actuators (#477)
+- modified homing and added support for multi axis homing in parallel (#477)
+- integrated backlash filtering in the rt segment flags (#477)
+- modified cnc delay to run dotasks instead of only io_dotasks (#513)
+- prevent re-entrant code inside dotasks events (#513)
+- redesign the main loop tasks to prevent re-entrant code on the event callbacks (#513)
+- force interlocking check before getting the alarm to force alarm code refresh if alarm condition is triggered by ISR (#513)
+- fixed scara kinematics code to match new multi axis (#513)
+- complete redesign of the serial communication to deal with multi-stream/sources and allow future expansions (#529)
+
+### Fixed
+
+- step output generation from beta (#457)
+- fixed tool helper macros (#468)
+- fixed bug in skew compensation (#476)
+- fixed 74HC595 concurrency race (#478)
+- fixed hold issue on version1.8 that keeps generating steps until the end of the motion (#489)
+
+## [1.7.6] - 17-10-2023
+
+### Changed
+
+- modified/reordered settings display in system menu (#515)
+- modified soft reset to improve software controller startup message detection (#531)
+- simplified override messages to reduce compilation size (#531)
+- modified system menu to fix warnings (#531)
+
+### Fixed
+
+- fixed USB infinite loop on flush call if unconnected (#511)
+- fixed RUN state clear after alarm while running (#520)
+- fixed pin status report function in command $P (#525)
+- fixed IO input and output macros for RP2040 (#526)
+- fixed RP2040 input change ISR macro (#526)
+
+
+## [1.7.5] - 26-09-2023
+
+### Added
+
+- added function to be able to get current active alarm code (used on system menu alarm rendering) (#508)
+
+### Changed
+
+- uniformed architectures UART names (#483)
+- STM32F1 modified config to allow use JTAG pins as GPIO (#486)
+- modified system menu to allow multiple JOG commands chainned up (#501)
+- modified system menu alarm screen condition to prevent alarm screen rendenring on startup lock (#507)
+
+### Fixed
+
+- fixed encoder option typo (#482)
+- fixed jog command made permanent changes to parser state (#493) (#495)
+- fixed compilation error for 5 or more axis machines (#499)
+
+## [1.7.4] - 16-08-2023
+
+### Added
+
+- added option to allow machine homing using only homing cycle enabled and soft limits (#475)
+
+### Changed
+
+- modified UART TMC to be addressable (#466)
+
+### Fixed
+
+- fixed skew compensation not accepts negative values (#472)
+- fixed skew compensation error accumulation over motions (#474)
+
+## [1.8.0-beta] - 20-07-2023
+
+### Added
+
+- new IO HAL that simplifies io control and calls (#443)
+- added support for motion control/planner hijack. This allows to stash and restore all current buffered motions to allow execution of a completly new set of intermediate motions (#432)
+- added realtime modification of step and dir bits to be executed in the fly (#447)
+- added new tool for plasma THC (#447)
+- added debugging parsing execution time option (#452)
+- added new step/dir output condition filter that prevents motion based on condition assert (#451)
+- new set of macros that allow quick custom settings prototyping (#449)
+
+### Changed
+
+- all analog inputs were modified from 8bit resolution to 10bit  (#450)
+- complete redesign of PID module and modified tools functions to make use of PID update loop (#449)
+
+## [1.7.3] - 15-07-2023
+
+### Changed
+
+- modified TX protocol to prevent status message print in the middle of other feedback messages (#439)(#446)
+- configurable laser PWM min value (#442)
+
+### Fixed
+
+- fixed parser/motion control position unsynched after mid motion error (#438)
+- fixed some tools compilation errors with IO extender (#441)
+
+## [1.7.2] - 02-07-2023
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - allow negative values for some settings, and I2C ISR error recovery for STM32  (#400)(#407)
+
+### Added
+
+- new optional UART2 port (#402)(#403)
+- new I2C HAL functions (#407)(#401)(#411)
+- ESP32 alternative EEPROM and SPI functions via Arduino (optional) (#423)
+- added new `$wifiip` command to print board IP address (#422)
+
+### Changed
+
+- Allow negative values for some settings (#400)
+- All TX com ports now have a dedicated ring buffer, improving also WiFi transmission rates (#424)(#425)(#418)
+- Pin remapping on 74HC595 for ESP32(#401)
+- Multiple JOG commands can now be enqueued and sent to planner to allow smoother motion while jogging via external controller (#427)
+- Protocol minor changes to response contamination with status reports (#430)
+
+### Fixed
+
+- MKS DLC32 missing boardmap settings (#420)
+- Serial command buffer overflow causes controller to stop accepting new commands (#431)
+- fixed broken USB communication on all platforms (#434)
+- fixed OTA on ESP32 (#434)
+- fixed swapped stepper 1 an 2 pins on MKS DLC32 board (#436)
+
 ## [1.7.1] - 13-05-2023
 
 ## Contributors
@@ -1212,6 +1422,17 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
+[1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
+[1.8.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.2
+[1.8.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.1
+[1.8.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0
+[1.7.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.6
+[1.7.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.5
+[1.7.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.4
+[1.8.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.0-beta
+[1.7.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.3
+[1.7.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.2
 [1.7.1]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.1
 [1.7.0]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0
 [1.7.0-beta]: https://github.com/Paciente8159/uCNC/releases/tag/v1.7.0-beta

@@ -31,7 +31,7 @@ extern "C"
 
 	typedef struct
 	{
-		char version[3];
+		uint8_t version[3];
 		float max_step_rate;
 		// step delay not used
 		uint8_t step_invert_mask;
@@ -46,6 +46,9 @@ extern "C"
 		// juntion deviation is automatic and always on
 		float arc_tolerance;
 		bool report_inches;
+#if S_CURVE_ACCELERATION_LEVEL == -1
+		uint8_t s_curve_profile;
+#endif
 		bool soft_limits_enabled;
 		bool hard_limits_enabled;
 		bool homing_enabled;
@@ -69,7 +72,9 @@ extern "C"
 		float acceleration[STEPPER_COUNT];
 		float max_distance[AXIS_COUNT];
 #if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 		uint8_t default_tool;
+#endif
 		float tool_length_offset[TOOL_COUNT];
 #endif
 #if (KINEMATIC == KINEMATIC_LINEAR_DELTA)
@@ -82,6 +87,11 @@ extern "C"
 	float delta_bicep_length;
 	float delta_forearm_length;
 	float delta_bicep_homing_angle;
+#elif (KINEMATIC == KINEMATIC_SCARA)
+	float scara_arm_length;
+	float scara_forearm_length;
+	float scara_arm_homing_angle;
+	float scara_forearm_homing_angle;
 #endif
 #ifdef ENABLE_BACKLASH_COMPENSATION
 		uint16_t backlash_steps[AXIS_TO_STEPPERS];
@@ -96,9 +106,6 @@ extern "C"
 #if ENCODERS > 0
 		uint8_t encoders_pulse_invert_mask;
 		uint8_t encoders_dir_invert_mask;
-#endif
-#if PID_CONTROLLERS > 0
-		float pid_gain[PID_CONTROLLERS][3];
 #endif
 	} settings_t;
 
@@ -128,15 +135,14 @@ typedef uint16_t setting_offset_t;
 
 	void settings_init(void);
 	// Assumes that no structure being saved is bigger than 255 bytes
-	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint8_t size);
-	void settings_save(uint16_t address, uint8_t *__ptr, uint8_t size);
+	uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size);
+	void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size);
 	void settings_reset(bool erase_startup_blocks);
 	uint8_t settings_change(setting_offset_t id, float value);
-	void settings_erase(uint16_t address, uint8_t size);
+	void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size);
 	bool settings_check_startup_gcode(uint16_t address);
-	void settings_save_startup_gcode(uint16_t address);
-	uint16_t settings_register_external_setting(uint8_t size);
-	
+	uint16_t settings_register_external_setting(uint16_t size);
+
 #if (defined(ENABLE_SETTINGS_MODULES) || defined(BOARD_HAS_CUSTOM_SYSTEM_COMMANDS))
 	// event_settings_change_handler
 	typedef struct setting_args_
@@ -158,6 +164,84 @@ typedef uint16_t setting_offset_t;
 	// event_settings_erase_handler
 	DECL_EVENT_HANDLER(settings_erase);
 #endif
+
+/**
+ *
+ * Settings quick/help macros
+ * These allow custom settings setup of simple settings
+ *
+ * **/
+#define DECL_EXTENDED_SETTING(ID, var, type, count, print_cb)                                      \
+	static uint32_t set##ID##_settings_address;                                                    \
+	bool set##ID##_settings_load(void *args)                                                       \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count);       \
+			return EVENT_CONTINUE;                                                                 \
+		}                                                                                          \
+		return EVENT_HANDLED;                                                                      \
+	}                                                                                              \
+	bool set##ID##_settings_save(void *args)                                                       \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count);       \
+			return EVENT_HANDLED;                                                                  \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	bool set##ID##_settings_change(void *args)                                                     \
+	{                                                                                              \
+		setting_args_t *set = (setting_args_t *)args;                                              \
+		type *ptr = var;                                                                           \
+		if (set->id >= ID && set->id <= (ID + count))                                              \
+		{                                                                                          \
+			ptr[set->id - ID] = (type)set->value;                                                  \
+			return EVENT_HANDLED;                                                                  \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	bool set##ID##_settings_erase(void *args)                                                      \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			memset(var, 0, sizeof(type) * count);                                                  \
+		}                                                                                          \
+		return EVENT_HANDLED;                                                                      \
+	}                                                                                              \
+	bool set##ID##_protocol_send_cnc_settings(void *args)                                          \
+	{                                                                                              \
+		type *ptr = var;                                                                           \
+		for (uint8_t i = 0; i < count; i++)                                                        \
+		{                                                                                          \
+			print_cb(ID + i, ptr[i]);                                                              \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	CREATE_EVENT_LISTENER(settings_load, set##ID##_settings_load);                                 \
+	CREATE_EVENT_LISTENER(settings_save, set##ID##_settings_save);                                 \
+	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                             \
+	CREATE_EVENT_LISTENER(settings_erase, set##ID##_settings_erase);                               \
+	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+
+#define EXTENDED_SETTING_ADDRESS(ID) set##ID##_settings_address
+
+#define EXTENDED_SETTING_INIT(ID, var)                                                        \
+	static bool set##ID##_init = false;                                                       \
+	if (!set##ID##_init)                                                                      \
+	{                                                                                         \
+		set##ID##_settings_address = settings_register_external_setting(sizeof(var));         \
+		ADD_EVENT_LISTENER(settings_load, set##ID##_settings_load);                           \
+		ADD_EVENT_LISTENER(settings_save, set##ID##_settings_save);                           \
+		ADD_EVENT_LISTENER(settings_change, set##ID##_settings_change);                       \
+		ADD_EVENT_LISTENER(settings_erase, set##ID##_settings_erase);                         \
+		ADD_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings); \
+		set##ID##_init = true;                                                                \
+	}
 
 #ifdef __cplusplus
 }

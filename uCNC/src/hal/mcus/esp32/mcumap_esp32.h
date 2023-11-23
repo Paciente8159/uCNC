@@ -28,9 +28,7 @@ extern "C"
 #include "driver/timer.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
-#ifndef IC74HC595_HAS_PWMS
 #include "driver/ledc.h"
-#endif
 
 /*
 	Generates all the interface definitions.
@@ -49,7 +47,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 100000UL
+#define F_STEP_MAX 62500UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -2682,14 +2680,14 @@ extern "C"
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
-#ifndef COM_PORT
-#define COM_PORT 0
+#ifndef UART_PORT
+#define UART_PORT 0
 #endif
 #endif
 #if (defined(TX2) && defined(RX2))
 #define MCU_HAS_UART2
-#ifndef COM2_PORT
-#define COM2_PORT 0
+#ifndef UART2_PORT
+#define UART2_PORT 0
 #endif
 #ifndef BAUDRATE2
 #define BAUDRATE2 BAUDRATE
@@ -2700,25 +2698,20 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#define MCU_HAS_ENDPOINTS
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
 #endif
 
-#ifndef PWM_TIMER
-#define PWM_TIMER 0
-#endif
-#define PWM_TIMER_TG (PWM_TIMER & 0x01)
-#define PWM_TIMER_IDX ((PWM_TIMER >> 1) & 0x01)
-
 #ifndef SERVO_TIMER
-#define SERVO_TIMER 3
+#define SERVO_TIMER 1
 #endif
 #define SERVO_TIMER_TG (SERVO_TIMER & 0x01)
 #define SERVO_TIMER_IDX ((SERVO_TIMER >> 1) & 0x01)
 
 #ifndef ITP_TIMER
-#define ITP_TIMER 1
+#define ITP_TIMER 3
 #endif
 #define ITP_TIMER_TG (ITP_TIMER & 0x01)
 #define ITP_TIMER_IDX ((ITP_TIMER >> 1) & 0x01)
@@ -2746,8 +2739,10 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) (left##mid##right)
 #define __helper__(left, mid, right) (__helper_ex__(left, mid, right))
+#ifndef __indirect__
 #define __indirect__ex__(X, Y) DIO##X##_##Y
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
+#endif
 
 // I2C
 #if (defined(I2C_CLK) && defined(I2C_DATA))
@@ -2763,14 +2758,12 @@ extern "C"
 #define I2C_FREQ 400000UL
 #endif
 
-#if(I2C_PORT==0)
+#if (I2C_PORT == 0)
 #define I2C_REG Wire
 #else
 #define I2C_REG __helper__(Wire, I2C_PORT, )
 #endif
 #endif
-
-
 
 #ifndef IC74HC595_I2S_PORT
 #define IC74HC595_I2S_PORT 0
@@ -2798,7 +2791,7 @@ extern "C"
 #define mcu_config_analog(X)                                                      \
 	{                                                                             \
 		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_9);                                       \
+		adc1_config_width(ADC_WIDTH_BIT_10);                                      \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
 	}
 #define mcu_config_pullup(X)                                       \
@@ -2831,29 +2824,6 @@ extern "C"
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
-#ifdef IC74HC595_HAS_PWMS
-	extern void mcu_pwm_freq_config(uint16_t freq);
-#define mcu_config_pwm(X, freq)    \
-	{                              \
-		mcu_config_output(X);      \
-		mcu_pwm_freq_config(freq); \
-	}
-	extern uint8_t esp32_pwm[16];
-	extern uint16_t esp32_pwm_mask;
-#define mcu_set_pwm(X, Y)                                    \
-	{                                                        \
-		if (Y)                                               \
-		{                                                    \
-			esp32_pwm_mask |= (1 << (X - PWM_PINS_OFFSET));  \
-		}                                                    \
-		else                                                 \
-		{                                                    \
-			esp32_pwm_mask &= ~(1 << (X - PWM_PINS_OFFSET)); \
-		}                                                    \
-		esp32_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);         \
-	}
-#define mcu_get_pwm(X) (esp32_pwm[X - PWM_PINS_OFFSET])
-#else
 #define mcu_config_pwm(X, Y)                              \
 	{                                                     \
 		ledc_timer_config_t pwmtimer = {0};               \
@@ -2879,8 +2849,7 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#endif
-#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> 1)
+#define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
 
 #ifdef MCU_HAS_ONESHOT_TIMER
 #define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
@@ -2892,6 +2861,14 @@ extern "C"
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
+
+#include "xtensa/core-macros.h"
+#define mcu_delay_cycles(X)                              \
+	{                                                    \
+		uint32_t x = XTHAL_GET_CCOUNT();                 \
+		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
+			;                                            \
+	}
 
 #ifdef __cplusplus
 }

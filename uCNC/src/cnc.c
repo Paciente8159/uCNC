@@ -23,8 +23,9 @@
 #include "cnc.h"
 
 #define LOOP_STARTUP_RESET 0
-#define LOOP_RUNNING 1
-#define LOOP_FAULT 2
+#define LOOP_UNLOCK 1
+#define LOOP_RUNNING 2
+#define LOOP_FAULT 3
 #define LOOP_REQUIRE_RESET 4
 
 #define UNLOCK_OK 0
@@ -46,6 +47,7 @@ typedef struct
 	volatile int8_t alarm;
 } cnc_state_t;
 
+static bool cnc_lock_itp = false;
 static cnc_state_t cnc_state;
 bool cnc_status_report_lock;
 
@@ -54,7 +56,6 @@ static bool cnc_check_interlocking(void);
 static void cnc_exec_rt_commands(void);
 static void cnc_io_dotasks(void);
 static void cnc_reset(void);
-static bool cnc_exec_cmd(void);
 static void cnc_run_startup_blocks(void);
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
@@ -88,10 +89,16 @@ WEAK_EVENT_HANDLER(cnc_stop)
 	DEFAULT_EVENT_HANDLER(cnc_stop);
 }
 
-// event_cnc_exec_cmd_error_handler
-WEAK_EVENT_HANDLER(cnc_exec_cmd_error)
+// event_cnc_parse_cmd_error_handler
+WEAK_EVENT_HANDLER(cnc_parse_cmd_error)
 {
-	DEFAULT_EVENT_HANDLER(cnc_exec_cmd_error);
+	DEFAULT_EVENT_HANDLER(cnc_parse_cmd_error);
+}
+
+// event_cnc_alarm
+WEAK_EVENT_HANDLER(cnc_alarm)
+{
+	DEFAULT_EVENT_HANDLER(cnc_alarm);
 }
 #endif
 
@@ -126,18 +133,18 @@ void cnc_run(void)
 	// enters loop reset
 	cnc_reset();
 
+	cnc_state.loop_state = LOOP_UNLOCK;
+
 	// tries to reset. If fails jumps to error
 	while (cnc_unlock(false) != UNLOCK_ERROR)
 	{
-		serial_select(SERIAL_UART);
 		cnc_state.loop_state = LOOP_RUNNING;
-
 		do
 		{
-		} while (cnc_exec_cmd());
+			cnc_parse_cmd();
+		} while (cnc_dotasks());
 
 		cnc_state.loop_state = LOOP_FAULT;
-		serial_flush();
 		int8_t alarm = cnc_state.alarm;
 		if (alarm > EXEC_ALARM_NOALARM)
 		{
@@ -154,7 +161,7 @@ void cnc_run(void)
 
 	do
 	{
-		if (!serial_rx_is_empty())
+		if (serial_available())
 		{
 			if (serial_getc() == EOL)
 			{
@@ -163,31 +170,50 @@ void cnc_run(void)
 			}
 		}
 		cnc_dotasks();
-		// a hard/soft reset is pending
-		if (cnc_state.alarm < 0)
+		// a soft reset is pending
+		if (cnc_state.alarm == EXEC_ALARM_SOFTRESET)
 		{
-			cnc_state.loop_state = LOOP_STARTUP_RESET;
-			cnc_clear_exec_state(EXEC_KILL);
+			break;
 		}
 	} while (cnc_state.loop_state == LOOP_REQUIRE_RESET || cnc_get_exec_state(EXEC_KILL));
 #endif
 }
 
-bool cnc_exec_cmd(void)
+uint8_t cnc_parse_cmd(void)
 {
+#ifdef ENABLE_PARSING_TIME_DEBUG
+	uint32_t exec_time;
+#endif
+	uint8_t error = 0;
 	// process gcode commands
-	if (!serial_rx_is_empty())
+	if (serial_available())
 	{
-		uint8_t error = 0;
 		// protocol_echo();
 		uint8_t c = serial_peek();
 		switch (c)
 		{
+		case OVF:
+			serial_clear();
+			error = STATUS_OVERFLOW;
+			break;
 		case EOL: // not necessary but faster to catch empty lines and windows newline (CR+LF)
 			serial_getc();
 			break;
 		default:
+#ifdef ENABLE_PARSING_TIME_DEBUG
+			if (!exec_time)
+			{
+				exec_time = mcu_millis();
+			}
+#endif
 			error = parser_read_command();
+#ifdef ENABLE_PARSING_TIME_DEBUG
+			exec_time = mcu_millis() - exec_time;
+			protocol_send_string(MSG_START);
+			protocol_send_string(__romstr__("exec time "));
+			serial_print_int(exec_time);
+			protocol_send_string(MSG_END);
+#endif
 			break;
 		}
 		if (!error)
@@ -196,20 +222,23 @@ bool cnc_exec_cmd(void)
 		}
 		else
 		{
+			parser_sync_position();
 			protocol_send_error(error);
 #ifdef ENABLE_MAIN_LOOP_MODULES
-			EVENT_INVOKE(cnc_exec_cmd_error, &error);
+			EVENT_INVOKE(cnc_parse_cmd_error, &error);
 #endif
 		}
 	}
 
-	return cnc_dotasks();
+	return error;
 }
 
 bool cnc_dotasks(void)
 {
 	// run io basic tasks
 	cnc_io_dotasks();
+
+	cnc_exec_rt_commands(); // executes all pending realtime commands
 
 	// let µCNC finnish startup/reset code
 	if (cnc_state.loop_state == LOOP_STARTUP_RESET)
@@ -234,25 +263,92 @@ bool cnc_dotasks(void)
 		return !cnc_get_exec_state(EXEC_INTERLOCKING_FAIL);
 	}
 
-#if !defined(ENABLE_MULTIBOARD) || defined(IS_MASTER_BOARD)
-	static bool lock_itp = false;
-	if (!lock_itp)
-	{
-		lock_itp = true;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-		EVENT_INVOKE(cnc_dotasks, NULL);
+#ifdef ENABLE_TOOL_PID_CONTROLLER
+	// run the tool pid update
+	tool_pid_update();
 #endif
 
+	if (!cnc_lock_itp)
+	{
+		cnc_lock_itp = true;
 		itp_run();
-		lock_itp = false;
+		cnc_lock_itp = false;
 	}
+
+#ifdef ENABLE_MAIN_LOOP_MODULES
+	EVENT_INVOKE(cnc_dotasks, NULL);
 #endif
+
 	return !cnc_get_exec_state(EXEC_KILL);
+}
+
+void cnc_store_motion(void)
+{
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_HOLD);
+	while (!itp_is_empty() && cnc_get_exec_state(EXEC_RUN))
+	{
+		if (!cnc_dotasks())
+		{
+			return;
+		}
+	}
+	// store planner and motion controll data away
+	planner_store();
+	mc_store();
+	// reset planner and sync systems
+	itp_clear();
+	planner_clear();
+	mc_sync_position();
+	// clear the current hold state (if not set previosly)
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+
+	cnc_lock_itp = false;
+#endif
+}
+
+void cnc_restore_motion(void)
+{
+#ifdef ENABLE_MOTION_CONTROL_PLANNER_HIJACKING
+	// set hold and wait for motion to stop
+	uint8_t prevholdstate = cnc_get_exec_state(EXEC_HOLD);
+	cnc_set_exec_state(EXEC_HOLD);
+	while (!itp_is_empty())
+	{
+		if (!cnc_dotasks())
+		{
+			return;
+		}
+	}
+
+	// reset planner and sync systems
+	itp_clear();
+	planner_clear();
+	mc_sync_position();
+
+	// restore the motion controller, planner and parser
+	mc_restore();
+	planner_restore();
+	parser_sync_position();
+
+	// clear the current hold state
+	if (!prevholdstate)
+	{
+		cnc_clear_exec_state(EXEC_HOLD);
+	}
+	cnc_lock_itp = false;
+#endif
 }
 
 // this function is executed every millisecond
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
+#ifndef DISABLE_RTC_CODE
 	static bool running = false;
 
 	if (!running)
@@ -280,20 +376,23 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 		// this blinks aprox. once every 1024ms
 		if (!(millis & (0x200 - 1)))
 		{
-			mcu_toggle_output(ACTIVITY_LED);
+			io_toggle_output(ACTIVITY_LED);
 		}
 #endif
 		mcu_disable_global_isr();
 		running = false;
 	}
+#endif
 }
 
 void cnc_home(void)
 {
 	cnc_set_exec_state(EXEC_HOMING);
 	uint8_t error = kinematics_home();
-	// unlock expected limits
+// unlock expected limits
+#ifdef ENABLE_MULTI_STEP_HOMING
 	io_lock_limits(0);
+#endif
 	io_invert_limits(0);
 	if (error)
 	{
@@ -312,14 +411,24 @@ void cnc_alarm(int8_t code)
 	cnc_state.alarm = code;
 	cnc_set_exec_state(EXEC_KILL);
 	cnc_stop();
-#ifdef ENABLE_IO_ALARM_DEBUG
-	protocol_send_string(MSG_START);
-	protocol_send_string(__romstr__("LIMITS:"));
-	serial_print_int(io_alarm_limits);
-	protocol_send_string(__romstr__("|CONTROLS:"));
-	serial_print_int(io_alarm_controls);
-	protocol_send_string(MSG_END);
+	if (!cnc_state.alarm || code < 0)
+	{
+		cnc_state.alarm = code;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+		if (code > 0)
+		{
+			EVENT_INVOKE(cnc_alarm, NULL);
+		}
 #endif
+#ifdef ENABLE_IO_ALARM_DEBUG
+		protocol_send_string(MSG_START);
+		protocol_send_string(__romstr__("LIMITS:"));
+		serial_print_int(io_alarm_limits);
+		protocol_send_string(__romstr__("|CONTROLS:"));
+		serial_print_int(io_alarm_controls);
+		protocol_send_string(MSG_END);
+#endif
+	}
 }
 
 int8_t cnc_get_alarm(void)
@@ -332,6 +441,13 @@ bool cnc_has_alarm()
 	return (cnc_get_exec_state(EXEC_KILL) || (cnc_state.alarm != EXEC_ALARM_NOALARM));
 }
 
+uint8_t cnc_get_alarm(void)
+{
+	// force interlocking check to set alarm code in case this as not yet been set
+	cnc_check_interlocking();
+	return cnc_state.alarm;
+}
+
 void cnc_stop(void)
 {
 	itp_stop();
@@ -341,6 +457,7 @@ void cnc_stop(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_stop, NULL);
 #endif
+	cnc_clear_exec_state(EXEC_RUN);
 }
 
 uint8_t cnc_unlock(bool force)
@@ -386,7 +503,7 @@ uint8_t cnc_unlock(bool force)
 
 		// hard reset
 		// if homing not enabled run startup blocks
-		if (cnc_state.loop_state == LOOP_STARTUP_RESET && !g_settings.homing_enabled)
+		if (cnc_state.loop_state < LOOP_RUNNING && !g_settings.homing_enabled)
 		{
 			cnc_run_startup_blocks();
 		}
@@ -502,13 +619,13 @@ void cnc_clear_exec_state(uint8_t statemask)
 #endif
 }
 
-void cnc_delay_ms(uint32_t miliseconds)
+void cnc_delay_ms(uint32_t milliseconds)
 {
-	uint32_t t_start = mcu_millis();
-	while ((mcu_millis() - t_start) < miliseconds)
+	milliseconds += mcu_millis();
+	do
 	{
-		cnc_io_dotasks();
-	}
+		cnc_dotasks();
+	} while (mcu_millis() < milliseconds);
 }
 
 void cnc_reset(void)
@@ -521,7 +638,7 @@ void cnc_reset(void)
 	cnc_state.alarm = EXEC_ALARM_NOALARM;
 
 	// clear all systems
-	serial_rx_clear();
+	serial_clear();
 	itp_clear();
 	planner_clear();
 	kinematics_init();
@@ -534,8 +651,8 @@ void cnc_reset(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_reset, NULL);
 #endif
+	serial_broadcast(true);
 	protocol_send_string(MSG_STARTUP);
-	serial_flush();
 }
 
 void cnc_call_rt_command(uint8_t command)
@@ -616,43 +733,23 @@ void cnc_exec_rt_commands(void)
 	bool update_tools = false;
 
 	// executes feeds override rt commands
-	uint8_t command = cnc_state.rt_cmd & ~RT_CMD_REPORT; // copies realtime flags states
-	cnc_state.rt_cmd ^= command;
+	uint8_t command = cnc_state.rt_cmd; // copies realtime flags states
+
+#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
+	static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
+	uint32_t current_time = mcu_millis();
+	if (next_auto_report < current_time)
+	{
+		next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
+		command |= RT_CMD_REPORT;
+	}
+#endif
+
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-
-		// if (command & RT_CMD_RUN_IDLE)
-		// {
-		// 	cnc_clear_exec_state(EXEC_RUN);
-		// }
-
-		if ((command & RT_CMD_RUN_HALT))
-		{
-			cnc_set_exec_state(EXEC_UNHOMED);
-		}
-
-		if (command & RT_CMD_CYCLE_START)
-		{
-			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
-		}
-
-		if (command & RT_CMD_FEED_HOLD)
-		{
-			cnc_set_exec_state(EXEC_HOLD);
-		}
-
-		if (command & RT_CMD_SAFETY_DOOR)
-		{
-			cnc_set_exec_state(EXEC_HOLD | EXEC_HOLD);
-		}
-
-		if (command & RT_CMD_LIMITS_HIT)
-		{
-			cnc_set_exec_state(EXEC_LIMITS);
-		}
-
-		if (command & RT_CMD_RESET)
+		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		if (CHECKFLAG(command, RT_CMD_RESET))
 		{
 #if ASSERT_PIN(ESTOP) || defined(ENABLE_MULTIBOARD)
 			uint8_t controls = io_get_controls();
@@ -676,8 +773,25 @@ void cnc_exec_rt_commands(void)
 			}
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
+			cnc_state.loop_state = LOOP_STARTUP_RESET;
 			return;
 		}
+
+		if (CHECKFLAG(command, RT_CMD_CYCLE_START))
+		{
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_DOOR);
+		}
+
+		if (CHECKFLAG(command, RT_CMD_REPORT))
+		{
+			protocol_send_status();
+		}
+	}
+
+	// let µCNC finnish startup/reset code
+	if (cnc_state.loop_state == LOOP_STARTUP_RESET)
+	{
+		return;
 	}
 
 	// executes feeds override rt commands
@@ -685,29 +799,30 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.feed_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+		uint8_t ovr = g_planner_state.feed_override;
 		switch (command & RTCMD_NORMAL_MASK)
 		{
 		case RT_CMD_FEED_100:
-			planner_feed_ovr_reset();
+			planner_feed_ovr(100);
 			break;
 		case RT_CMD_FEED_INC_COARSE:
-			planner_feed_ovr_inc(FEED_OVR_COARSE);
+			planner_feed_ovr(ovr + FEED_OVR_COARSE);
 			break;
 		case RT_CMD_FEED_DEC_COARSE:
-			planner_feed_ovr_inc(-FEED_OVR_COARSE);
+			planner_feed_ovr(ovr - FEED_OVR_COARSE);
 			break;
 		case RT_CMD_FEED_INC_FINE:
-			planner_feed_ovr_inc(FEED_OVR_FINE);
+			planner_feed_ovr(ovr + FEED_OVR_FINE);
 			break;
 		case RT_CMD_FEED_DEC_FINE:
-			planner_feed_ovr_inc(-FEED_OVR_FINE);
+			planner_feed_ovr(ovr - FEED_OVR_FINE);
 			break;
 		}
 
 		switch (command & RTCMD_RAPID_MASK)
 		{
 		case RT_CMD_RAPIDFEED_100:
-			planner_rapid_feed_ovr_reset();
+			planner_rapid_feed_ovr(100);
 			break;
 		case RT_CMD_RAPIDFEED_OVR1:
 			planner_rapid_feed_ovr(RAPID_FEED_OVR1);
@@ -723,24 +838,25 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
-			planner_spindle_ovr_reset();
+			planner_spindle_ovr(100);
 			break;
 		case RT_CMD_SPINDLE_INC_COARSE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_DEC_COARSE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_COARSE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_COARSE);
 			break;
 		case RT_CMD_SPINDLE_INC_FINE:
-			planner_spindle_ovr_inc(SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr + SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_DEC_FINE:
-			planner_spindle_ovr_inc(-SPINDLE_OVR_FINE);
+			planner_spindle_ovr(ovr - SPINDLE_OVR_FINE);
 			break;
 		case RT_CMD_SPINDLE_TOGGLE:
 			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
@@ -923,15 +1039,25 @@ bool cnc_check_interlocking(void)
 	}
 #endif
 
+	// end of JOG
+	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)
+	{
+		if (itp_is_empty() && planner_buffer_is_empty())
+		{
+			cnc_clear_exec_state(EXEC_JOG);
+		}
+	}
+
+	if (itp_is_empty() && planner_buffer_is_empty())
+	{
+		cnc_clear_exec_state(EXEC_RUN);
+	}
+
 	return true;
 }
 
 static void cnc_io_dotasks(void)
 {
-#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
-	static uint32_t next_auto_report = STATUS_AUTOMATIC_REPORT_INTERVAL;
-#endif
-
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
 
@@ -945,27 +1071,6 @@ static void cnc_io_dotasks(void)
 	mcu_inputs_changed_cb();
 #endif
 
-	// if (cnc_status_report_lock)
-	// {
-	// 	return;
-	// }
-
-#if STATUS_AUTOMATIC_REPORT_INTERVAL >= 100
-	uint32_t current_time = mcu_millis();
-	if (next_auto_report < current_time)
-	{
-		next_auto_report = current_time + STATUS_AUTOMATIC_REPORT_INTERVAL;
-		cnc_call_rt_state_command(RT_CMD_REPORT);
-	}
-#endif
-
-	if (CHECKFLAG(cnc_state.rt_cmd, RT_CMD_REPORT))
-	{
-		// if a report request is sent, clear the respective flag
-		CLEARFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
-		protocol_send_status();
-	}
-
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_io_dotasks, NULL);
 #endif
@@ -973,9 +1078,18 @@ static void cnc_io_dotasks(void)
 
 void cnc_run_startup_blocks(void)
 {
-	serial_select(SERIAL_N0);
-	cnc_exec_cmd();
-	serial_select(SERIAL_N1);
-	cnc_exec_cmd();
-	serial_select(SERIAL_UART);
+	if (settings_check_startup_gcode(STARTUP_BLOCK0_ADDRESS_OFFSET))
+	{
+		serial_stream_eeprom(STARTUP_BLOCK0_ADDRESS_OFFSET);
+		cnc_parse_cmd();
+	}
+
+	if (settings_check_startup_gcode(STARTUP_BLOCK1_ADDRESS_OFFSET))
+	{
+		serial_stream_eeprom(STARTUP_BLOCK1_ADDRESS_OFFSET);
+		cnc_parse_cmd();
+	}
+
+	// reset streams
+	serial_stream_change(NULL);
 }

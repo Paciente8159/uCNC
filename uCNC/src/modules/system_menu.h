@@ -99,9 +99,9 @@ extern "C"
 		const char *label;
 		void *argptr;
 		system_menu_item_render_cb item_render;
-		void *render_arg;
+		const void *render_arg;
 		system_menu_item_action_cb item_action;
-		void *action_arg;
+		const void *action_arg;
 	};
 
 	typedef struct system_menu_index_
@@ -188,6 +188,8 @@ extern "C"
 	void system_menu_render_idle(void);
 	void system_menu_render_alarm(void);
 	void system_menu_render_modal_popup(const char *__s);
+	// this needs to be implemented using a serial stream
+	uint8_t system_menu_send_cmd(const char *__s);
 
 	/**
 	 * Helper µCNC action callbacks
@@ -213,7 +215,7 @@ extern "C"
 	 * **/
 	extern char *system_menu_var_to_str_set_buffer_ptr;
 	void system_menu_var_to_str_set_buffer(char *ptr);
-	void system_menu_var_to_str(unsigned char c);
+	void system_menu_var_to_str(char c);
 
 #define system_menu_int_to_str(buf_ptr, var)    \
 	system_menu_var_to_str_set_buffer(buf_ptr); \

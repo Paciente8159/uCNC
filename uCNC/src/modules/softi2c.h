@@ -51,39 +51,39 @@ extern "C"
 	{                                       \
 		if (state)                          \
 		{                                   \
-			mcu_config_input(SCLPIN);       \
-			mcu_config_pullup(SCLPIN);      \
+			io_config_input(SCLPIN);        \
+			io_config_pullup(SCLPIN);       \
 		}                                   \
 		else                                \
 		{                                   \
-			mcu_clear_output(SCLPIN);       \
-			mcu_config_output(SCLPIN);      \
+			io_clear_output(SCLPIN);        \
+			io_config_output(SCLPIN);       \
 		}                                   \
 	}                                       \
 	void NAME##_sda(bool state)             \
 	{                                       \
 		if (state)                          \
 		{                                   \
-			mcu_config_input(SDAPIN);       \
-			mcu_config_pullup(SDAPIN);      \
+			io_config_input(SDAPIN);        \
+			io_config_pullup(SDAPIN);       \
 		}                                   \
 		else                                \
 		{                                   \
-			mcu_clear_output(SDAPIN);       \
-			mcu_config_output(SDAPIN);      \
+			io_clear_output(SDAPIN);        \
+			io_config_output(SDAPIN);       \
 		}                                   \
 	}                                       \
 	bool NAME##_get_sda(void)               \
 	{                                       \
-		mcu_config_input(SDAPIN);           \
-		mcu_config_pullup(SDAPIN);          \
-		return mcu_get_input(SDAPIN);       \
+		io_config_input(SDAPIN);            \
+		io_config_pullup(SDAPIN);           \
+		return io_get_input(SDAPIN);        \
 	}                                       \
 	bool NAME##_get_scl(void)               \
 	{                                       \
-		mcu_config_input(SCLPIN);           \
-		mcu_config_pullup(SCLPIN);          \
-		return mcu_get_input(SCLPIN);       \
+		io_config_input(SCLPIN);            \
+		io_config_pullup(SCLPIN);           \
+		return io_get_input(SCLPIN);        \
 	}                                       \
 	softi2c_port_t NAME = {.i2cdelay = I2C_DELAY(FREQ), .scl = &NAME##_scl, .sda = &NAME##_sda, .get_sda = &NAME##_get_sda, .get_scl = &NAME##_get_scl};
 

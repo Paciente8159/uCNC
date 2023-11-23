@@ -25,6 +25,7 @@
 #define DECL_TOOL(tool) extern const tool_t tool
 
 static tool_t tool_current;
+static int16_t tool_current_speed;
 
 #ifdef TOOL1
 DECL_TOOL(TOOL1);
@@ -81,13 +82,21 @@ void tool_init(void)
 #ifdef FORCE_GLOBALS_TO_0
 	memset(&tool_current, 0, sizeof(tool_t));
 #endif
+#if TOOL_COUNT > 1
 	tool_change(g_settings.default_tool);
+#else
+	memcpy(&tool_current, &TOOL1, sizeof(tool_t));
+	if (tool_current.startup_code)
+	{
+		tool_current.startup_code();
+	}
+#endif
 #endif
 }
 
 void tool_change(uint8_t tool)
 {
-#if TOOL_COUNT > 0
+#if TOOL_COUNT > 1
 	tool_stop();
 	if (tool_current.shutdown_code)
 	{
@@ -191,6 +200,7 @@ void tool_change(uint8_t tool)
 void tool_set_speed(int16_t value)
 {
 #if TOOL_COUNT > 0
+	tool_current_speed = value;
 	if (tool_current.set_speed)
 	{
 		tool_current.set_speed(value);
@@ -205,6 +215,16 @@ uint16_t tool_get_speed()
 	{
 		return tool_current.get_speed();
 	}
+	return tool_current_speed;
+#endif
+	return 0;
+}
+
+int16_t tool_get_setpoint(void)
+{
+	// input value will always be positive
+#if TOOL_COUNT > 0
+	return tool_current_speed;
 #endif
 	return 0;
 }
@@ -240,27 +260,14 @@ void tool_stop()
 #endif
 }
 
-void tool_pid_update(int16_t value)
+void tool_pid_update(void)
 {
-#if PID_CONTROLLERS > 0
+#ifdef ENABLE_TOOL_PID_CONTROLLER
 #if TOOL_COUNT > 0
 	if (tool_current.pid_update)
 	{
-		tool_current.pid_update(value);
+		tool_current.pid_update();
 	}
 #endif
 #endif
-}
-
-int16_t tool_pid_error(void)
-{
-#if PID_CONTROLLERS > 0
-#if TOOL_COUNT > 0
-	if (tool_current.pid_error)
-	{
-		return tool_current.pid_error();
-	}
-#endif
-#endif
-	return 0;
 }

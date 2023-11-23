@@ -27,17 +27,39 @@
 #include <usb/mscuser.h>
 #include <CDCSerial.h>
 #include <usb/mscuser.h>
+#include <stdint.h>
 
 extern "C"
 {
 #include "../../../cnc.h"
 #ifdef USE_ARDUINO_CDC
-	void mcu_usb_dotasks(void)
+	void lpc176x_usb_dotasks(void)
 	{
 		MSC_RunDeferredCommands();
 	}
 
-	void mcu_usb_init(void)
+	bool lpc176x_usb_available(void)
+	{
+		return (UsbSerial.available() > 0);
+	}
+
+	uint8_t lpc176x_usb_getc(void)
+	{
+		return (uint8_t)UsbSerial.read();
+	}
+
+	void lpc176x_usb_putc(uint8_t c)
+	{
+		char a = (char)c;
+		UsbSerial.write(&a, 1);
+	}
+
+	void lpc176x_usb_write(uint8_t* ptr, uint8_t len)
+	{
+		UsbSerial.write((char*)ptr, len);
+	}
+
+	void lpc176x_usb_init(void)
 	{
 		USB_Init();			// USB Initialization
 		USB_Connect(false); // USB clear connection
@@ -46,45 +68,15 @@ extern "C"
 		while (!USB_Configuration && usb_timeout > mcu_millis())
 		{
 			mcu_delay_us(50);
-			mcu_usb_dotasks();
+			MSC_RunDeferredCommands();
 #if ASSERT_PIN(ACTIVITY_LED)
-			mcu_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
+			io_toggle_output(ACTIVITY_LED); // Flash quickly during USB initialization
 #endif
 		}
 		UsbSerial.begin(BAUDRATE);
+// 		// BUFFER_CLEAR(usb_rx);
 	}
 
-	void mcu_usb_putc(uint8_t c)
-	{
-		UsbSerial.write(c);
-	}
-
-	void mcu_usb_flush(void)
-	{
-#ifdef MCU_HAS_USB
-#ifdef USE_ARDUINO_CDC
-		UsbSerial.flushTX();
-#else
-		tusb_cdc_flush();
-#endif
-#endif
-	}
-
-	char mcu_usb_getc(void)
-	{
-		int16_t c = UsbSerial.read();
-		return (uint8_t)((c >= 0) ? c : 0);
-	}
-
-	uint8_t mcu_usb_available(void)
-	{
-		return UsbSerial.available();
-	}
-
-	uint8_t mcu_usb_tx_available(void)
-	{
-		return (UsbSerial.availableForWrite() | (UsbSerial.host_connected ? 0 : 1));
-	}
 #endif
 }
 #endif
