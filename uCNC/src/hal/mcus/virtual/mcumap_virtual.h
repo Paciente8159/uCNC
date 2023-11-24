@@ -81,10 +81,15 @@
 
 #define MCU_HAS_UART
 #ifndef UART_PORT_NAME
-#define UART_PORT_NAME "COM1"
+#define UART_PORT_NAME "\\\\.\\pipe\\uCNCUART0"
 #endif
 
 #define MCU_HAS_UART2
+#ifndef UART2_PORT_NAME
+#define UART2_PORT_NAME "\\\\.\\pipe\\uCNCUART1"
+#endif
+
+#define MCU_HAS_USB //console
 
 //#define EMULATE_74HC595
 

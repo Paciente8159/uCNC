@@ -596,7 +596,7 @@ extern "C"
 	 *
 	 * **/
 
-#define ENABLE_MULTIBOARD
+// #define ENABLE_MULTIBOARD
 
 /**
  *
