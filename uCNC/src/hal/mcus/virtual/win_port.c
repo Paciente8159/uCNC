@@ -726,30 +726,49 @@ int namedpipe_available(win_port_t *port)
     return bytesAvail;
 }
 
-void* pipeinit(void *p)
+void *pipeinit(void *p)
 {
     win_port_t *port = (win_port_t *)p;
     // Try to connect to the given port throuh CreateFile
-    port->handle = CreateNamedPipe(port->portname, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 1, 1024, 1024, 0, NULL);
-    if (port->handle == INVALID_HANDLE_VALUE)
+    if (!port->isclient)
     {
-        printf("CreateNamedPipe failed: %d\n", GetLastError());
-        return NULL;
-    }
+        port->handle = CreateNamedPipe(port->portname, PIPE_ACCESS_DUPLEX, PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT, 1, 1024, 1024, 0, NULL);
+        if (port->handle == INVALID_HANDLE_VALUE)
+        {
+            // error
+            printf("CreateNamedPipe failed: %d\n", GetLastError());
+            return NULL;
+        }
 
-    // Connect to the pipe
-    if (!ConnectNamedPipe(port->handle, NULL))
+        if (!ConnectNamedPipe(port->handle, NULL))
+        {
+            printf("ConnectNamedPipe failed: %d\n", GetLastError());
+            CloseHandle(port->handle);
+            return NULL;
+        }
+    }
+    else
     {
-        printf("ConnectNamedPipe failed: %d\n", GetLastError());
-        CloseHandle(port->handle);
-        return NULL;
+        HANDLE hPipe;
+        BOOL bSuccess;
+        OVERLAPPED overlapped = {0};
+
+        // Open the named pipe
+        port->handle = CreateFile(port->portname, GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+        if (port->handle == INVALID_HANDLE_VALUE)
+        {
+            // error
+            printf("CreateFile failed: %d\n", GetLastError());
+            CloseHandle(port->handle);
+            return NULL;
+        }
     }
 
     port->available_cb = namedpipe_available;
     port->read_cb = namedpipe_read;
     port->write_cb = namedpipe_write;
     port->connected = true;
-     return NULL;
+    return NULL;
 }
 
 void namedpipe_init(win_port_t *port)

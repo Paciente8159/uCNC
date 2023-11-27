@@ -118,6 +118,7 @@ void mcu_uart_process()
     for (int i = 0; i < count; i++)
     {
         uint8_t c = buff[i];
+#ifndef DETACH_UART_FROM_MAIN_PROTOCOL
         if (mcu_com_rx_cb(c))
         {
             if (BUFFER_FULL(uart_rx))
@@ -126,6 +127,9 @@ void mcu_uart_process()
             }
             BUFFER_ENQUEUE(uart_rx, &c);
         }
+#else
+        mcu_uart_rx_cb(c);
+#endif
     }
 }
 #endif
@@ -185,6 +189,7 @@ void mcu_uart2_process()
     for (int i = 0; i < count; i++)
     {
         uint8_t c = buff[i];
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
         if (mcu_com_rx_cb(c))
         {
             if (BUFFER_FULL(uart2_rx))
@@ -193,6 +198,9 @@ void mcu_uart2_process()
             }
             BUFFER_ENQUEUE(uart2_rx, &c);
         }
+#else
+        mcu_uart2_rx_cb(c);
+#endif
     }
 }
 #endif
@@ -252,6 +260,7 @@ void mcu_usb_process()
     for (int i = 0; i < count; i++)
     {
         uint8_t c = buff[i];
+#ifndef DETACH_USB_FROM_MAIN_PROTOCOL
         if (mcu_com_rx_cb(c))
         {
             if (BUFFER_FULL(usb_rx))
@@ -260,6 +269,9 @@ void mcu_usb_process()
             }
             BUFFER_ENQUEUE(usb_rx, &c);
         }
+#else
+        mcu_usb_rx_cb(c);
+#endif
     }
 }
 #endif
@@ -806,8 +818,14 @@ pthread_t thread_io;
 void mcu_init(void)
 {
     strcpy(uart.portname, UART_PORT_NAME);
+#ifdef IS_SLAVE_BOARD
+    uart.isclient = true;
+#endif
     namedpipe_init(&uart);
     strcpy(uart2.portname, UART2_PORT_NAME);
+#ifdef IS_SLAVE_BOARD
+    uart2.isclient = true;
+#endif
     namedpipe_init(&uart2);
     console_init(&usb);
     startCycleCounter();

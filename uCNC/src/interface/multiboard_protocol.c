@@ -173,7 +173,7 @@ void multiboard_slave_dotasks(void)
 				itp_reset_rt_position((float *)msg->multiboard_frame.content);
 				break;
 			case MULTIBOARD_CMD_SET_OUTPUT:
-				io_set_output(msg->multiboard_frame.content[0], msg->multiboard_frame.content[1]);
+				io_set_pinvalue(msg->multiboard_frame.content[0], msg->multiboard_frame.content[1]);
 				break;
 				// request commands
 			case MULTIBOARD_CMD_GET_ITP_POS:
@@ -202,7 +202,6 @@ void multiboard_slave_dotasks(void)
 	slave_board_io_t io;
 	io.slave_io_bits.state = cnc_get_exec_state(EXEC_ALLACTIVE);
 	io.slave_io_bits.limits = io_get_limits();
-	io.slave_io_bits.limits2 = io_get_limits_dual();
 	io.slave_io_bits.controls = io_get_controls();
 	io.slave_io_bits.probe = io_get_probe();
 

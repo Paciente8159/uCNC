@@ -784,8 +784,8 @@ extern "C"
 #ifdef ENABLE_MULTIBOARD
 
 // uncomment to set this has the master board
-#ifndef IS_MASTER_BOARD
-#define IS_MASTER_BOARD
+#ifndef IS_SLAVE_BOARD
+//#define IS_MASTER_BOARD
 #endif
 
 //multiboard port options

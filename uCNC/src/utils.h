@@ -252,7 +252,7 @@ uint8_t crc7(uint8_t c, uint8_t crc);
 #define BUFFER_READ_AVAILABLE(buffer) (buffer.count)
 #define BUFFER_EMPTY(buffer) (!buffer.count)
 #define BUFFER_FULL(buffer) (buffer.count == buffer##_size)
-#define BUFFER_PEEK(buffer) (buffer##_bufferdata[buffer.tail])
+#define BUFFER_PEEK(buffer) (&buffer##_bufferdata[buffer.tail])
 #define BUFFER_REMOVE(buffer)          \
 	{                                  \
 		uint8_t tail;                  \
@@ -433,7 +433,7 @@ uint8_t crc7(uint8_t c, uint8_t crc);
 	{                                   \
 		__ATOMIC__                      \
 		{                               \
-			buffer##_bufferdata[0] = 0; \
+			memset(buffer##_bufferdata, 0, sizeof(buffer##_bufferdata)); \
 			buffer.tail = 0;            \
 			buffer.head = 0;            \
 			buffer.count = 0;           \
