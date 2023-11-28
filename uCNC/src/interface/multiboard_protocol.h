@@ -111,7 +111,7 @@ extern "C"
 // Slave to master messages
 #define MULTIBOARD_SLAVE_IO_CHANGED 0xC0
 
-#if defined(ENABLE_MULTIBOARD) && !defined(IS_MASTER_BOARD)
+#if defined(ENABLE_MULTIBOARD) && defined(IS_SLAVE_BOARD)
 	void multiboard_slave_dotasks(void);
 #elif defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len);

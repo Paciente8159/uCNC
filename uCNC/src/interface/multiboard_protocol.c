@@ -97,7 +97,7 @@ static bool multiboard_check_crc(multiboard_data_t *packet)
 	return (crc == packet->multiboard_frame.crc);
 }
 
-#ifndef IS_MASTER_BOARD
+#ifdef IS_SLAVE_BOARD
 static void multiboard_slave_send_response(multiboard_data_t *msg, bool is_ack)
 {
 	uint8_t len = (msg->multiboard_frame.length + 2), crc = 0;
@@ -260,7 +260,7 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 			mcu_dotasks();
 			// gets
 			multiboard_data_t *msg;
-			msg = &BUFFER_PEEK(multiboard_ring_buffer);
+			msg = BUFFER_PEEK(multiboard_ring_buffer);
 			// ACK for matched command (don't bother check the CRC)
 			if (msg->multiboard_frame.command == command && msg->multiboard_frame.length == 1 && msg->multiboard_frame.content[0] == MULTIBOARD_PROTOCOL_ACK)
 			{

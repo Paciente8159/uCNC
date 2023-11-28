@@ -175,6 +175,7 @@ extern "C"
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
 	uint8_t cnc_parse_cmd(void);
+	void cnc_reset(void);
 
 	uint8_t cnc_get_exec_state(uint8_t statemask);
 	void cnc_set_exec_state(uint8_t statemask);

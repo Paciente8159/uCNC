@@ -2180,7 +2180,7 @@ typedef uint16_t step_t;
 #endif
 
 // on slave board disables GRBL protocol and non volatile settings
-#ifndef IS_MASTER_BOARD
+#ifdef IS_SLAVE_BOARD
 #define RAM_ONLY_SETTINGS
 #define DISABLE_GRBL_PROTOCOL
 #endif

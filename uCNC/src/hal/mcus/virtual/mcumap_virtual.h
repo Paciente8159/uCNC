@@ -81,7 +81,7 @@
 
 #define MCU_HAS_UART
 #ifndef UART_PORT_NAME
-#define UART_PORT_NAME "\\\\.\\pipe\\uCNCUART0"
+#define UART_PORT_NAME "\\\\.\\COM22"
 #endif
 
 #define MCU_HAS_UART2

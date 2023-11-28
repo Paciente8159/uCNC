@@ -107,7 +107,7 @@ extern "C"
 	DECL_HOOK(itp_rt_stepbits, uint8_t, uint8_t);
 #endif
 #ifdef ENABLE_MULTIBOARD
-#ifndef IS_MASTER_BOARD // on slave exposes this function
+#ifdef IS_SLAVE_BOARD // on slave exposes this function
 	// inserts a block sent by the main board
 	void itp_add_block(uint8_t *data);
 	void itp_add_segment(uint8_t *data);

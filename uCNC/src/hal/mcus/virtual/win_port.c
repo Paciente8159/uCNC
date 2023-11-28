@@ -683,8 +683,6 @@ void uart_init(win_port_t *port)
                 port->available_cb = uart_available;
                 port->read_cb = uart_read;
                 port->write_cb = uart_write;
-                // We wait 2s as the arduino board will be reseting
-                Sleep(2000);
             }
         }
     }

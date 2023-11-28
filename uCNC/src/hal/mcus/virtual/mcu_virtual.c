@@ -821,7 +821,7 @@ void mcu_init(void)
 #ifdef IS_SLAVE_BOARD
     uart.isclient = true;
 #endif
-    namedpipe_init(&uart);
+    uart_init(&uart);
     strcpy(uart2.portname, UART2_PORT_NAME);
 #ifdef IS_SLAVE_BOARD
     uart2.isclient = true;
