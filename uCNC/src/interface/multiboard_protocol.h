@@ -45,9 +45,10 @@ extern "C"
 
 	typedef union multiboard_data_
 	{
-		uint8_t rawdata[MULTIBOARD_BUFFER_SIZE + 3];
+		uint8_t rawdata[MULTIBOARD_BUFFER_SIZE + 4];
 		struct
 		{
+			uint8_t msg_id;
 			uint8_t command;
 			uint8_t length;
 			uint8_t content[MULTIBOARD_BUFFER_SIZE];

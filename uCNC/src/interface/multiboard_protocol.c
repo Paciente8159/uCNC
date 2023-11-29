@@ -40,7 +40,7 @@ void MULTIBOARD_RX_CB(unsigned char c)
 	static int8_t framebytes = -3;
 
 	int8_t current_bytes = framebytes;
-	multiboard_data_t *ringbuffer = BUFFER_NEXT_FREE(multiboard_ring_buffer);
+	multiboard_data_t *ringbuffer = (multiboard_data_t *)BUFFER_NEXT_FREE(multiboard_ring_buffer);
 
 	switch (c)
 	{
@@ -54,11 +54,11 @@ void MULTIBOARD_RX_CB(unsigned char c)
 		break;
 	case MULTIBOARD_PROTOCOL_EOF: // received a EOF (eval if is part of the message, it's EOF or error)
 		// EOF found at the expected location (cmd + message length + 1 (crc))
-		if (ringbuffer->multiboard_frame.length == (current_bytes - 3))
+		if (ringbuffer->multiboard_frame.length == (current_bytes - 4))
 		{
 			ringbuffer->multiboard_frame.crc = ringbuffer->rawdata[(current_bytes - 1)];
 			BUFFER_STORE(multiboard_ring_buffer); // advances the buffer if possible
-			framebytes = -3;					 // reset protocol internal state
+			framebytes = -3;					  // reset protocol internal state
 			return;
 		}
 		if (ringbuffer->multiboard_frame.length < current_bytes) // beyond expected message length
@@ -82,7 +82,7 @@ void MULTIBOARD_RX_CB(unsigned char c)
 
 static bool multiboard_check_crc(multiboard_data_t *packet)
 {
-	uint8_t len = (packet->multiboard_frame.length + 2), crc = 0;
+	uint8_t len = (packet->multiboard_frame.length + 3), crc = 0;
 
 	if (packet->multiboard_frame.length > MULTIBOARD_BUFFER_SIZE)
 	{
@@ -100,7 +100,7 @@ static bool multiboard_check_crc(multiboard_data_t *packet)
 #ifdef IS_SLAVE_BOARD
 static void multiboard_slave_send_response(multiboard_data_t *msg, bool is_ack)
 {
-	uint8_t len = (msg->multiboard_frame.length + 2), crc = 0;
+	uint8_t len = (msg->multiboard_frame.length + 3), crc = 0;
 	// if is ACK or NACK don't care about CRC
 	if (!is_ack)
 	{
@@ -131,70 +131,75 @@ static void multiboard_slave_send_response(multiboard_data_t *msg, bool is_ack)
 // all commands are executed in the main loop
 void multiboard_slave_dotasks(void)
 {
+	static uint8_t last_id = 0;
 	// there is an available command when the crc is set
 	// crc will never be 0
 	while (!BUFFER_EMPTY(multiboard_ring_buffer))
 	{
-		multiboard_data_t *msg;
-		msg = BUFFER_PEEK(multiboard_ring_buffer);
+		multiboard_data_t msg;
+		BUFFER_PEEK(multiboard_ring_buffer, &msg);
 		// check message CRC
-		if (!multiboard_check_crc(msg))
+		if (!multiboard_check_crc(&msg))
 		{
-			msg->multiboard_frame.length = 0;
-			msg->multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_NACK;
-			multiboard_slave_send_response(msg, true);
+			msg.multiboard_frame.length = 0;
+			msg.multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_NACK;
+			multiboard_slave_send_response(&msg, true);
 			return;
 		}
 		else
 		{
-			uint8_t command = msg->multiboard_frame.command;
-			// run actions
-			switch (command)
+			if (last_id != msg.multiboard_frame.msg_id) // msg not processed yet
 			{
-			case MULTIBOARD_CMD_SET_STATE:
-				cnc_set_exec_state(msg->multiboard_frame.content[0]);
-				break;
-			case MULTIBOARD_CMD_CLEAR_STATE:
-				cnc_clear_exec_state(msg->multiboard_frame.content[0]);
-				break;
-			case MULTIBOARD_CMD_ITP_BLOCK:
-				itp_add_block(msg->multiboard_frame.content);
-				break;
-			case MULTIBOARD_CMD_ITP_SEGMENT:
-				itp_add_segment(msg->multiboard_frame.content);
-				break;
-			case MULTIBOARD_CMD_ITP_BLOCK_WRITE:
-				itp_blk_buffer_write();
-				break;
-			case MULTIBOARD_CMD_ITP_START:
-				itp_start(msg->multiboard_frame.content[0]);
-				break;
-			case MULTIBOARD_CMD_ITP_POS_RESET:
-				itp_reset_rt_position((float *)msg->multiboard_frame.content);
-				break;
-			case MULTIBOARD_CMD_SET_OUTPUT:
-				io_set_pinvalue(msg->multiboard_frame.content[0], msg->multiboard_frame.content[1]);
-				break;
-				// request commands
-			case MULTIBOARD_CMD_GET_ITP_POS:
-				itp_get_rt_position((int32_t *)msg->multiboard_frame.content);
-				msg->multiboard_frame.length = sizeof(int32_t) * STEPPER_COUNT;
-				multiboard_slave_send_response(msg, false);
-				return;
-			case MULTIBOARD_CMD_GET_PIN:
-				*((int16_t *)&msg->multiboard_frame.content[0]) = io_get_pinvalue(msg->multiboard_frame.content[0]);
-				msg->multiboard_frame.length = 2;
-				multiboard_slave_send_response(msg, false);
-				return;
-			default:
-				// command unknowned. can be use for eventual command extensions
-				// send ACK anyway
-				break;
+				last_id = msg.multiboard_frame.msg_id;
+				uint8_t command = msg.multiboard_frame.command;
+				// run actions
+				switch (command)
+				{
+				case MULTIBOARD_CMD_SET_STATE:
+					cnc_set_exec_state(msg.multiboard_frame.content[0]);
+					break;
+				case MULTIBOARD_CMD_CLEAR_STATE:
+					cnc_clear_exec_state(msg.multiboard_frame.content[0]);
+					break;
+				case MULTIBOARD_CMD_ITP_BLOCK:
+					itp_add_block(msg.multiboard_frame.content);
+					break;
+				case MULTIBOARD_CMD_ITP_SEGMENT:
+					itp_add_segment(msg.multiboard_frame.content);
+					break;
+				case MULTIBOARD_CMD_ITP_BLOCK_WRITE:
+					itp_blk_buffer_write();
+					break;
+				case MULTIBOARD_CMD_ITP_START:
+					itp_start(msg.multiboard_frame.content[0]);
+					break;
+				case MULTIBOARD_CMD_ITP_POS_RESET:
+					itp_reset_rt_position((float *)msg.multiboard_frame.content);
+					break;
+				case MULTIBOARD_CMD_SET_OUTPUT:
+					io_set_pinvalue(msg.multiboard_frame.content[0], msg.multiboard_frame.content[1]);
+					break;
+					// request commands
+				case MULTIBOARD_CMD_GET_ITP_POS:
+					itp_get_rt_position((int32_t *)msg.multiboard_frame.content);
+					msg.multiboard_frame.length = sizeof(int32_t) * STEPPER_COUNT;
+					multiboard_slave_send_response(&msg, false);
+					return;
+				case MULTIBOARD_CMD_GET_PIN:
+					*((int16_t *)&msg.multiboard_frame.content[0]) = io_get_pinvalue(msg.multiboard_frame.content[0]);
+					msg.multiboard_frame.length = 2;
+					multiboard_slave_send_response(&msg, false);
+					return;
+				default:
+					// command unknowned. can be use for eventual command extensions
+					// send ACK anyway
+					break;
+				}
 			}
 
-			msg->multiboard_frame.length = 1;
-			msg->multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_ACK;
-			multiboard_slave_send_response(msg, true);
+			msg.multiboard_frame.length = 1;
+			msg.multiboard_frame.content[0] = MULTIBOARD_PROTOCOL_ACK;
+			multiboard_slave_send_response(&msg, true);
 		}
 	}
 
@@ -292,6 +297,7 @@ static uint8_t multiboard_master_check_ack(uint8_t command, uint32_t timeout)
 void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
 {
 	uint8_t tries = MULTIBOARD_PROTOCOL_RETRIES;
+	static uint8_t msg_id = 0;
 
 	// prevents reentrancy
 	if (cnc_get_alarm() == EXEC_ALARM_MULTIBOARD_CRITICAL_ERROR)
@@ -299,13 +305,20 @@ void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
 		return;
 	}
 
+	// increments the id
+	// the id prevents the slave to process a retransmitted message that was already processed
+	uint8_t id = msg_id + 1;
+	msg_id = id;
+
 	do
 	{
 		MULTIBOARD_TX(MULTIBOARD_PROTOCOL_SOF);
 		MULTIBOARD_TX(MULTIBOARD_PROTOCOL_SOF);
 		MULTIBOARD_TX(MULTIBOARD_PROTOCOL_SOF);
+		MULTIBOARD_TX(id);
 		MULTIBOARD_TX(command);
-		uint8_t crc = crc7(command, 0);
+		uint8_t crc = crc7(id, 0);
+		crc =  crc7(command, crc);
 		MULTIBOARD_TX(len);
 		crc = crc7(len, crc);
 		for (uint8_t i = 0; i < len; i++)

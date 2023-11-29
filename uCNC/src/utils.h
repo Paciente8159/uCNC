@@ -248,7 +248,7 @@ uint8_t crc7(uint8_t c, uint8_t crc);
 
 #define DECL_BUFFER(T, N, S)    \
 	static T N##_bufferdata[S]; \
-	static ring_buffer_t N = {0, 0, 0, N##_bufferdata, S, sizeof(T)}
+	static ring_buffer_t N = {0, 0, 0, (uint8_t *)N##_bufferdata, S, sizeof(T)}
 
 	uint8_t buffer_write_available(ring_buffer_t *buffer);
 	uint8_t buffer_read_available(ring_buffer_t *buffer);
