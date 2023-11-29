@@ -384,8 +384,7 @@ ISR(COM_RX_vect, ISR_BLOCK)
 			c = OVF;
 		}
 
-		*(BUFFER_NEXT_FREE(uart_rx)) = c;
-		BUFFER_STORE(uart_rx);
+		BUFFER_ENQUEUE(uart_rx, &c);
 	}
 #else
 	mcu_uart_rx_cb(COM_INREG);
@@ -423,8 +422,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 			c = OVF;
 		}
 
-		*(BUFFER_NEXT_FREE(uart2_rx)) = c;
-		BUFFER_STORE(uart2_rx);
+		BUFFER_ENQUEUE(uart2_rx, &c);
 	}
 #else
 	mcu_uart_rx_cb(COM2_INREG);
