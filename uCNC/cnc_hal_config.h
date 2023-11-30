@@ -74,7 +74,6 @@ extern "C"
 #define FHOLD_PULLUP_ENABLE
 #define CS_RES_PULLUP_ENABLE
 
-
 /**
  * Uncomment this to use Y axis as a Z axis alias on 2 axis machines
  * This allows the Gcode to expect X and Z coordinates in the parser
@@ -116,125 +115,125 @@ extern "C"
 // #define ENABLE_MULTI_STEPPER_AXIS
 #ifdef ENABLE_MULTI_STEPPER_AXIS
 
-/**
- * Configure each multi motor linear actuator.
- * 
- * AXIS are the motion degrees of freedom of the machine in 3D space
- * STEP are the stepper controller drivers that are controlled by the the board
- * LINACT are the linear actuators that drive the machine motion. You can think of linear actuator as a combination of linear guide + motor
- * 
- * Each AXIS is logically attached to a LINACT.
- * AXIS_X <-> LINACT0
- * AXIS_Y <-> LINACT1
- * etc..
- * 
- * In some machines the coorelation between AXIS and LINACT is direct. For example cartesian machines the AXIS X motion is the result of motions of the LINACT0, AXIS Y of LINACT1, AXIS Z of LINACT2, etc.
- * On Core XY kinematics the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X and Y motions are a combination of motions of both LINACT0 and LINAXCT1. 
- * On Delta type machines the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X, Y and Z are all a combination of motions of LINACT0, 1 and 2.
- * 
- * As stated earlier LINACT is a combination of linear guide + motor. Usually a LINACT is defined as a single stepper motor.
- * But it can also be composed of multiple stepper motors (2, 3, 4, etc...)
- * 
- * To enable this just define the LINACTx_IO_MASK as a combination of STEPx_IO_MASK's
- * **/
+	/**
+	 * Configure each multi motor linear actuator.
+	 *
+	 * AXIS are the motion degrees of freedom of the machine in 3D space
+	 * STEP are the stepper controller drivers that are controlled by the the board
+	 * LINACT are the linear actuators that drive the machine motion. You can think of linear actuator as a combination of linear guide + motor
+	 *
+	 * Each AXIS is logically attached to a LINACT.
+	 * AXIS_X <-> LINACT0
+	 * AXIS_Y <-> LINACT1
+	 * etc..
+	 *
+	 * In some machines the coorelation between AXIS and LINACT is direct. For example cartesian machines the AXIS X motion is the result of motions of the LINACT0, AXIS Y of LINACT1, AXIS Z of LINACT2, etc.
+	 * On Core XY kinematics the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X and Y motions are a combination of motions of both LINACT0 and LINAXCT1.
+	 * On Delta type machines the same logic as the cartesian is applied (regarding AXIS and LINACT logic) although, AXIS X, Y and Z are all a combination of motions of LINACT0, 1 and 2.
+	 *
+	 * As stated earlier LINACT is a combination of linear guide + motor. Usually a LINACT is defined as a single stepper motor.
+	 * But it can also be composed of multiple stepper motors (2, 3, 4, etc...)
+	 *
+	 * To enable this just define the LINACTx_IO_MASK as a combination of STEPx_IO_MASK's
+	 * **/
 
-// defines a multi stepper linear actuator LINACT0
-//  #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
+	// defines a multi stepper linear actuator LINACT0
+	//  #define LINACT0_IO_MASK (STEP0_IO_MASK | STEP5_IO_MASK)
 
-// defines a second multi stepper linear actuator LINACT1
-//  #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
+	// defines a second multi stepper linear actuator LINACT1
+	//  #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP6_IO_MASK)
 
-// defines a second multi stepper linear actuator LINACT2
-//  #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
+	// defines a second multi stepper linear actuator LINACT2
+	//  #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP7_IO_MASK)
 
-// there is no limit to the ammount of STEP IO that can be combined into a LINACT. For example it's possible to assign 4 independent STEP IO to a single LINACT
-// #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP5_IO_MASK | STEP6_IO_MASK | STEP7_IO_MASK)
+	// there is no limit to the ammount of STEP IO that can be combined into a LINACT. For example it's possible to assign 4 independent STEP IO to a single LINACT
+	// #define LINACT2_IO_MASK (STEP2_IO_MASK | STEP5_IO_MASK | STEP6_IO_MASK | STEP7_IO_MASK)
 
-/**
- * SELF SQUARING/AUTOLEVEL AXIS
- * Limits switches have a mask value that is equivalent to the STEPx that it controls.
- * 
- * By default these mask values match the corresponding AXIS, LINACT, STEP, etc...
- * 
- * STEPx			7		6		5		4		3		2		1		0	
- * STEPx_IO_MASK	128		64		32		16		8		4		2		1
- * AXISx			-		-		C		B		C		Z		Y		X
- * LINACTx			-		-		5		4		3		2		1		0
- * LIMITx			-		-		C		B		A		Z&Z2	Y&Y2	X&X2
- * 
- * LINACT with multiple STEP IO pulse all those IO in sync, but when homing it can stop independently as it hits the correspondent limit until all motors reach the desired home position.
- * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
- * 
- * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
- * to reassign LIMIT_X2 to STEP6 IO MASK do it like this
- * 
- * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
- * 
- * **/
+	/**
+	 * SELF SQUARING/AUTOLEVEL AXIS
+	 * Limits switches have a mask value that is equivalent to the STEPx that it controls.
+	 *
+	 * By default these mask values match the corresponding AXIS, LINACT, STEP, etc...
+	 *
+	 * STEPx			7		6		5		4		3		2		1		0
+	 * STEPx_IO_MASK	128		64		32		16		8		4		2		1
+	 * AXISx			-		-		C		B		C		Z		Y		X
+	 * LINACTx			-		-		5		4		3		2		1		0
+	 * LIMITx			-		-		C		B		A		Z&Z2	Y&Y2	X&X2
+	 *
+	 * LINACT with multiple STEP IO pulse all those IO in sync, but when homing it can stop independently as it hits the correspondent limit until all motors reach the desired home position.
+	 * To achieve that each each LIMITx_IO_MASK should be set to the corresponding STEP IO MASK that it controls
+	 *
+	 * For example to use STEP0 and STEP6 to drive the AXIS_X/LINACT0 you need to configure the correct LINACT0_IO_MASK and then to make LIMIT_X stop STEP0 and LIMIT_X2 stop STEP6 you need
+	 * to reassign LIMIT_X2 to STEP6 IO MASK do it like this
+	 *
+	 * #define LIMIT_X2_IO_MASK STEP6_IO_MASK
+	 *
+	 * **/
 
-// #define ENABLE_AXIS_AUTOLEVEL
+	// #define ENABLE_AXIS_AUTOLEVEL
 
 #ifdef ENABLE_AXIS_AUTOLEVEL
 
-// Uncomment to modify X2 limit mask value to match the X2 motor
-// #define LIMIT_X2_IO_MASK STEP5_IO_MASK
+	// Uncomment to modify X2 limit mask value to match the X2 motor
+	// #define LIMIT_X2_IO_MASK STEP5_IO_MASK
 
-// Uncomment to modify Y2 limit mask value to match the Y2 motor
-// #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
+	// Uncomment to modify Y2 limit mask value to match the Y2 motor
+	// #define LIMIT_Y2_IO_MASK STEP6_IO_MASK
 
-// Uncomment to modify Y2 limit mask value to match the Y2 motor
-// #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
+	// Uncomment to modify Y2 limit mask value to match the Y2 motor
+	// #define LIMIT_Z2_IO_MASK STEP7_IO_MASK
 
 #endif
 
-/**
- * Advanced Multi-axis
- * The advantage of using this mask scheme is that it's possible to defined advanced custom self squaring/planning rigs
- * and complete reassing of unused axis limits to perform the task
- * 
- * Let's assume a custom cartesian machine that has 3 axis with 5 motors and 5 limit switches with the following configuration
- * 
- * Axis X - 1 motor/limit
- * Axis Y - 2 motors/limits (self squaring)
- * Axis Z - 3 motors/limits (self leveling - 3 point plane)
- * 
- * By default, with the machine configured for a 3 axis machine 3 linear actuators are configured with one motor each. By default AXIS_X -> LINACT0 -> STEP0, AXIS_Y-> LINACT1 -> STEP1, etc...
- * One possibility would be to map the connections (from STEP0 to STEP5) as X,Y,Z,Y2,Z2,Z3.
- * 
- * Let's assume the user also wants the connections to be made in the order X,Y,Y2,Z,Z2,Z3
- * 
- * 
- * Axis X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch
- * Axis Y requires a second STEPx output. Because we also want to reorder the connection we must define our custom LINACTx for the remaining axis like this
- * 
- * // defines a custom LINACT1_IO_MASK to use STP1 and STEP2
- * #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP2_IO_MASK)
- * // defines a custom LINACT1_IO_MASK to use STP3, STEP4 and STEP5
- * #define LINACT2_IO_MASK (STEP3_IO_MASK | STEP4_IO_MASK | STEP5_IO_MASK)
- * 
- * Then let's configure the limits:
- * 
- * Limits for AXIS X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch (uses LIMIT_X)
- * Limits for AXIS Y only require Limit Y2 to be reasigned to match STEP2 so in this case
- * 
- * #define LIMIT_Y2_IO_MASK STEP2_IO_MASK
- * 
- * And finally limits for AXIS Z will new to be reassigned to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
- *  
- * // enable Z selfsquare/selfplane
- * #define LIMIT_Y_IO_MASK STEP3_IO_MASK
- * #define LIMIT_Y2_IO_MASK STEP4_IO_MASK
- * #define LIMIT_A_IO_MASK STEP5_IO_MASK
- * 
- * There is still a final step that involve reassign LINACT2 limits to include the extra limit (LIMIT A) like this
- * 
- * #define LINACT2_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK | LIMIT_A_IO_MASK)
- * 
- * Also remember that ENABLE_AXIS_AUTOLEVEL should be enabled for this to work
- * 
- * That is it. 
- * 
- * **/
+	/**
+	 * Advanced Multi-axis
+	 * The advantage of using this mask scheme is that it's possible to defined advanced custom self squaring/planning rigs
+	 * and complete reassing of unused axis limits to perform the task
+	 *
+	 * Let's assume a custom cartesian machine that has 3 axis with 5 motors and 5 limit switches with the following configuration
+	 *
+	 * Axis X - 1 motor/limit
+	 * Axis Y - 2 motors/limits (self squaring)
+	 * Axis Z - 3 motors/limits (self leveling - 3 point plane)
+	 *
+	 * By default, with the machine configured for a 3 axis machine 3 linear actuators are configured with one motor each. By default AXIS_X -> LINACT0 -> STEP0, AXIS_Y-> LINACT1 -> STEP1, etc...
+	 * One possibility would be to map the connections (from STEP0 to STEP5) as X,Y,Z,Y2,Z2,Z3.
+	 *
+	 * Let's assume the user also wants the connections to be made in the order X,Y,Y2,Z,Z2,Z3
+	 *
+	 *
+	 * Axis X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch
+	 * Axis Y requires a second STEPx output. Because we also want to reorder the connection we must define our custom LINACTx for the remaining axis like this
+	 *
+	 * // defines a custom LINACT1_IO_MASK to use STP1 and STEP2
+	 * #define LINACT1_IO_MASK (STEP1_IO_MASK | STEP2_IO_MASK)
+	 * // defines a custom LINACT1_IO_MASK to use STP3, STEP4 and STEP5
+	 * #define LINACT2_IO_MASK (STEP3_IO_MASK | STEP4_IO_MASK | STEP5_IO_MASK)
+	 *
+	 * Then let's configure the limits:
+	 *
+	 * Limits for AXIS X does not require any special configuration. Uses the default settings for a single linear actuator with one motor and a limit switch (uses LIMIT_X)
+	 * Limits for AXIS Y only require Limit Y2 to be reasigned to match STEP2 so in this case
+	 *
+	 * #define LIMIT_Y2_IO_MASK STEP2_IO_MASK
+	 *
+	 * And finally limits for AXIS Z will new to be reassigned to the matching STEPx. We will also need a 3rd limit. We will use LIMIT_A since AXIS_A is not used.
+	 *
+	 * // enable Z selfsquare/selfplane
+	 * #define LIMIT_Y_IO_MASK STEP3_IO_MASK
+	 * #define LIMIT_Y2_IO_MASK STEP4_IO_MASK
+	 * #define LIMIT_A_IO_MASK STEP5_IO_MASK
+	 *
+	 * There is still a final step that involve reassign LINACT2 limits to include the extra limit (LIMIT A) like this
+	 *
+	 * #define LINACT2_LIMIT_MASK (LIMIT_Y_IO_MASK | LIMIT_Y2_IO_MASK | LIMIT_A_IO_MASK)
+	 *
+	 * Also remember that ENABLE_AXIS_AUTOLEVEL should be enabled for this to work
+	 *
+	 * That is it.
+	 *
+	 * **/
 
 #endif
 
@@ -266,11 +265,11 @@ extern "C"
  *
  * to set a tool you just need to define which tool will be in which index.
  * For example: Set TOOL1 as laser_pwm
- * 
+ *
  * #define TOOL1 laser_pwm
- * 
+ *
  * Tools can be any of the built in tools available in /src/hal/tools/tools/ or you can use your own custom tool.
- * 
+ *
  * **/
 // assign the tools from 1 to 16
 #if (TOOL_COUNT >= 1)
@@ -335,7 +334,7 @@ extern "C"
  * Uncomment to enable PID controller for tools
  * Each tool has it's own PID controller and EEPROM settings
  * Chech the tool file to find the settings for each tool
- * 
+ *
  * **/
 #ifndef ENABLE_TOOL_PID_CONTROLLER
 // #define ENABLE_TOOL_PID_CONTROLLER
@@ -345,10 +344,10 @@ extern "C"
  * Set a custom filter that prevents step motions in realtime
  * This can be any expression that can be evaluated as true or false
  * If defined and the expression evaluates to true the ISR will be unable to generate steps until condition cleared
- * 
+ *
  * In the example bellow if input pin DIN19 is active step ISR will stop generating steps
  * Can be uses for example in sewing machines to prevent motion on needle down detection and avoid damadge to the needle
- * 
+ *
  * **/
 // #define RT_STEP_PREVENT_CONDITION io_get_input(DIN19)
 
@@ -773,7 +772,6 @@ extern "C"
 // #define SYSTEM_MENU_MAX_STR_LEN 32
 #endif
 
-
 	/**
 	 *
 	 * Multiboard config
@@ -785,28 +783,28 @@ extern "C"
 
 // uncomment to set this has the master board
 #ifndef IS_SLAVE_BOARD
-//#define IS_MASTER_BOARD
+#define IS_MASTER_BOARD
 #endif
 
-//multiboard port options
+// multiboard port options
 #define MULTIBOARD_USES_UART 0
 #define MULTIBOARD_USES_UART2 1
 #define MULTIBOARD_USES_USB 2
 // #define MULTIBOARD_USES_WIFI 3
 // #define MULTIBOARD_USES_BT 4
 
-//by default uses uart2
+// by default uses uart2
 #ifndef MULTIBOARD_PORT
 #define MULTIBOARD_PORT MULTIBOARD_USES_UART
 #endif
 
-// uncomment all subsystems that exist in the slave board
-// #define SLAVE_HAS_CONTROLS
-// #define SLAVE_HAS_LIMITS
-// #define SLAVE_HAS_PROBE
-// #define SLAVE_HAS_CHANGE_INPUTS
-// #define SLAVE_HAS_ENCODERS
-// #define SLAVE_HAS_STEPPERS
+	// uncomment all subsystems that exist in the slave board
+	// #define SLAVE_HAS_CONTROLS
+	// #define SLAVE_HAS_LIMITS
+	// #define SLAVE_HAS_PROBE
+	// #define SLAVE_HAS_CHANGE_INPUTS
+	// #define SLAVE_HAS_ENCODERS
+	// #define SLAVE_HAS_STEPPERS
 
 #endif
 

@@ -884,8 +884,8 @@ void mcu_usb_putc(uint8_t c)
 
 uint8_t mcu_usb_getc(void)
 {
-	char c = BUFFER_PEEK(usb_rx);
-	BUFFER_REMOVE(usb_rx);
+	char c = 0;
+	BUFFER_DEQUEUE(usb_rx, &c);
 	return (uint8_t)c;
 }
 

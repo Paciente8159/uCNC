@@ -779,6 +779,7 @@ void itp_get_rt_position(int32_t *position)
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
 
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+	multiboard_master_send_command(MULTIBOARD_CMD_GET_ITP_POS, (uint8_t *)g_multiboard_slave.itp_rt_pos, sizeof(g_multiboard_slave.itp_rt_pos));
 	// ORED position
 	for (uint8_t i = STEPPER_COUNT; i != 0;)
 	{

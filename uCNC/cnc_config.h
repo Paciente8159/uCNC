@@ -32,7 +32,7 @@ extern "C"
 	 * */
 
 #ifndef BAUDRATE
-#define BAUDRATE 115200
+#define BAUDRATE 1000000
 #endif
 
 #ifndef ENABLE_WIFI
@@ -336,7 +336,7 @@ extern "C"
 // enables automatic status report sending
 // this value sets the millisecond interval of the reports
 // values bellow 100ms have no effect
-#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 100
 
 /**
  *
@@ -597,7 +597,7 @@ extern "C"
 	 * **/
 
  #define ENABLE_MULTIBOARD
-  #define IS_SLAVE_BOARD
+ #define IS_SLAVE_BOARD
 
 /**
  *

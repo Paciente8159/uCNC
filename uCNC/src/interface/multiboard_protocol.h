@@ -45,14 +45,25 @@ extern "C"
 
 	typedef union multiboard_data_
 	{
-		uint8_t rawdata[MULTIBOARD_BUFFER_SIZE + 4];
+		uint8_t rawdata[MULTIBOARD_BUFFER_SIZE];
 		struct
 		{
-			uint8_t msg_id;
-			uint8_t command;
-			uint8_t length;
-			uint8_t content[MULTIBOARD_BUFFER_SIZE];
-			uint8_t crc;
+			uint8_t : 1; // always 0
+			uint8_t msgid : 3;
+			uint8_t ack : 4;
+			union
+			{
+				uint8_t rawcmd;
+				struct
+				{
+					uint8_t : 1; // always 0
+					uint8_t from_slave : 1;
+					uint8_t cmd : 6;
+				} cmd_regs;
+			};
+			uint8_t : 2; // always 0
+			uint8_t length : 6;
+			uint8_t data[MULTIBOARD_BUFFER_SIZE - 3];
 		} multiboard_frame;
 	} multiboard_data_t;
 
@@ -96,21 +107,24 @@ extern "C"
 // list of commands
 
 // Master to slave commands
-#define MULTIBOARD_CMD_SET_STATE 0x81
-#define MULTIBOARD_CMD_CLEAR_STATE 0x82
-#define MULTIBOARD_CMD_ITP_BLOCK 0x83
-#define MULTIBOARD_CMD_ITP_SEGMENT 0x84
-#define MULTIBOARD_CMD_ITP_BLOCK_WRITE 0x85
-#define MULTIBOARD_CMD_ITP_START 0x86
-#define MULTIBOARD_CMD_ITP_POS_RESET 0x87
-#define MULTIBOARD_CMD_SET_OUTPUT 0x88
+#define MULTIBOARD_CMD_SET_STATE 0x01
+#define MULTIBOARD_CMD_CLEAR_STATE 0x02
+#define MULTIBOARD_CMD_ITP_BLOCK 0x03
+#define MULTIBOARD_CMD_ITP_SEGMENT 0x04
+#define MULTIBOARD_CMD_ITP_BLOCK_WRITE 0x05
+#define MULTIBOARD_CMD_ITP_START 0x06
+#define MULTIBOARD_CMD_ITP_POS_RESET 0x07
+#define MULTIBOARD_CMD_SET_OUTPUT 0x08
 
 // Master to slave request commands
-#define MULTIBOARD_CMD_GET_ITP_POS 0xA0
-#define MULTIBOARD_CMD_GET_PIN 0xA1
+#define MULTIBOARD_CMD_GET_ITP_POS 0x10
+#define MULTIBOARD_CMD_GET_PIN 0x11
 
 // Slave to master messages
-#define MULTIBOARD_SLAVE_IO_CHANGED 0xC0
+#define MULTIBOARD_SLAVE_BASE_CMD 0x40
+#define MULTIBOARD_SLAVE_IO_CHANGED (MULTIBOARD_SLAVE_BASE_CMD + 1)
+#define MULTIBOARD_SLAVE_ITP_POS (MULTIBOARD_CMD_GET_ITP_POS + 1)
+#define MULTIBOARD_SLAVE_GET_PIN (MULTIBOARD_CMD_GET_PIN + 1)
 
 #if defined(ENABLE_MULTIBOARD) && defined(IS_SLAVE_BOARD)
 	void multiboard_slave_dotasks(void);
