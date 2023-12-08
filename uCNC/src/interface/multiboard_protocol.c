@@ -58,13 +58,13 @@ void MULTIBOARD_RX_CB(unsigned char c)
 		break;
 	case MULTIBOARD_PROTOCOL_EOF: // received a EOF (eval if is part of the message, it's EOF or error)
 		// EOF found at the expected location (id + cmd + message length + 1 (crc))
-		if (ringbuffer->multiboard_frame.length == current_bytes)
+		if (ringbuffer->multiboard_frame.length == current_bytes - 1)
 		{
 			BUFFER_STORE(multiboard_ring_buffer); // advances the buffer if possible
 			framebytes = -3;					  // reset protocol internal state
 			return;
 		}
-		if (ringbuffer->multiboard_frame.length < current_bytes) // beyond expected message length
+		if (ringbuffer->multiboard_frame.length < current_bytes - 1) // beyond expected message length
 		{
 			framebytes = -3; // reset protocol internal state
 			return;
@@ -97,6 +97,7 @@ void multiboard_tx_data(multiboard_data_t *msg)
 		crc = crc7(c, crc);
 	}
 	msg->rawdata[len] = crc;
+	MULTIBOARD_TX(crc);
 	MULTIBOARD_TX(MULTIBOARD_PROTOCOL_EOF); // EOF
 	MULTIBOARD_FLUSH();
 }
@@ -208,7 +209,7 @@ void multiboard_slave_dotasks(void)
 		// slave io changed
 		multiboard_data_t tmp;
 		tmp.multiboard_frame.rawcmd = MULTIBOARD_SLAVE_IO_CHANGED;
-		tmp.multiboard_frame.length = 4 + 3;
+		tmp.multiboard_frame.length = 4 + 3/*header*/;
 		memcpy(tmp.multiboard_frame.data, &io, sizeof(slave_board_io_t));
 		multiboard_slave_send_response(&tmp);
 		prev_io.slave_io_reg = io.slave_io_reg;
@@ -301,7 +302,7 @@ void multiboard_master_send_command(uint8_t command, uint8_t *data, uint8_t len)
 	msg.multiboard_frame.msgid = msg_id + 1;
 	msg_id = msg.multiboard_frame.msgid;
 	msg.multiboard_frame.rawcmd = command;
-	msg.multiboard_frame.length = len + 3;
+	msg.multiboard_frame.length = len + 3/*header*/;
 	memcpy(msg.multiboard_frame.data, data, len);
 
 	do

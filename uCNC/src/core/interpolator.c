@@ -720,10 +720,11 @@ void itp_run(void)
 		}
 
 		// finally write the segment
+		itp_sgm_buffer_write();
 #if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
 		multiboard_master_send_command(MULTIBOARD_CMD_ITP_SEGMENT, (uint8_t *)sgm, sizeof(itp_segment_t));
+		itp_start(start_is_synched);
 #endif
-		itp_sgm_buffer_write();
 	}
 #if TOOL_COUNT > 0
 	// updated the coolant pins
@@ -1376,6 +1377,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 
 void itp_start(bool is_synched)
 {
+#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
+	multiboard_master_send_command(MULTIBOARD_CMD_ITP_START, (uint8_t *)&is_synched, 1);
+#endif
 	// starts the step isr if is stopped and there are segments to execute
 	if (!cnc_get_exec_state(EXEC_RUN | EXEC_HOLD | EXEC_ALARM) && !itp_sgm_is_empty()) // exec state is not hold or alarm and not already running
 	{
@@ -1384,9 +1388,6 @@ void itp_start(bool is_synched)
 		{
 			__ATOMIC__
 			{
-#if defined(ENABLE_MULTIBOARD) && defined(IS_MASTER_BOARD)
-				multiboard_master_send_command(MULTIBOARD_CMD_ITP_START, (uint8_t *)&is_synched, 1);
-#endif
 				cnc_set_exec_state(EXEC_RUN); // flags that it started running
 				mcu_start_itp_isr(itp_sgm_data[itp_sgm_data_read].timer_counter, itp_sgm_data[itp_sgm_data_read].timer_prescaller);
 			}

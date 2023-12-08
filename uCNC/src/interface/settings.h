@@ -155,7 +155,7 @@ typedef uint16_t setting_offset_t;
 	{
 		uint16_t address;
 		uint8_t *data;
-		uint8_t size;
+		uint16_t size;
 	} settings_args_t;
 	// event_settings_load_handler
 	DECL_EVENT_HANDLER(settings_load);
