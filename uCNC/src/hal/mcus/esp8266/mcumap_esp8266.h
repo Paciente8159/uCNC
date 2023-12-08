@@ -866,122 +866,121 @@ extern "C"
 #define DIO209_BIT (I2C_DATA_BIT)
 #endif
 
-// ISR on change inputs
-extern void mcu_din_isr(void);
-extern void mcu_probe_isr(void);
-extern void mcu_limits_isr(void);
-extern void mcu_controls_isr(void);
-#if(defined(LIMIT_X_ISR) && defined(LIMIT_X))
+	// ISR on change inputs
+	extern void mcu_din_isr(void);
+	extern void mcu_probe_isr(void);
+	extern void mcu_limits_isr(void);
+	extern void mcu_controls_isr(void);
+#if (defined(LIMIT_X_ISR) && defined(LIMIT_X))
 #define DIO100_ISR (LIMIT_X_ISR)
 #define LIMIT_X_ISRCALLBACK mcu_limit_isr
 #define DIO100_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
+#if (defined(LIMIT_Y_ISR) && defined(LIMIT_Y))
 #define DIO101_ISR (LIMIT_Y_ISR)
 #define LIMIT_Y_ISRCALLBACK mcu_limit_isr
 #define DIO101_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
+#if (defined(LIMIT_Z_ISR) && defined(LIMIT_Z))
 #define DIO102_ISR (LIMIT_Z_ISR)
 #define LIMIT_Z_ISRCALLBACK mcu_limit_isr
 #define DIO102_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
+#if (defined(LIMIT_X2_ISR) && defined(LIMIT_X2))
 #define DIO103_ISR (LIMIT_X2_ISR)
 #define LIMIT_X2_ISRCALLBACK mcu_limit_isr
 #define DIO103_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
+#if (defined(LIMIT_Y2_ISR) && defined(LIMIT_Y2))
 #define DIO104_ISR (LIMIT_Y2_ISR)
 #define LIMIT_Y2_ISRCALLBACK mcu_limit_isr
 #define DIO104_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
+#if (defined(LIMIT_Z2_ISR) && defined(LIMIT_Z2))
 #define DIO105_ISR (LIMIT_Z2_ISR)
 #define LIMIT_Z2_ISRCALLBACK mcu_limit_isr
 #define DIO105_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_A_ISR) && defined(LIMIT_A))
+#if (defined(LIMIT_A_ISR) && defined(LIMIT_A))
 #define DIO106_ISR (LIMIT_A_ISR)
 #define LIMIT_A_ISRCALLBACK mcu_limit_isr
 #define DIO106_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_B_ISR) && defined(LIMIT_B))
+#if (defined(LIMIT_B_ISR) && defined(LIMIT_B))
 #define DIO107_ISR (LIMIT_B_ISR)
 #define LIMIT_B_ISRCALLBACK mcu_limit_isr
 #define DIO107_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(LIMIT_C_ISR) && defined(LIMIT_C))
+#if (defined(LIMIT_C_ISR) && defined(LIMIT_C))
 #define DIO108_ISR (LIMIT_C_ISR)
 #define LIMIT_C_ISRCALLBACK mcu_limit_isr
 #define DIO108_ISRCALLBACK mcu_limit_isr
 #endif
-#if(defined(PROBE_ISR) && defined(PROBE))
+#if (defined(PROBE_ISR) && defined(PROBE))
 #define DIO109_ISR (PROBE_ISR)
 #define PROBE_ISRCALLBACK mcu_probe_isr
 #define DIO109_ISRCALLBACK mcu_probe_isr
 #endif
-#if(defined(ESTOP_ISR) && defined(ESTOP))
+#if (defined(ESTOP_ISR) && defined(ESTOP))
 #define DIO110_ISR (ESTOP_ISR)
 #define ESTOP_ISRCALLBACK mcu_control_isr
 #define DIO110_ISRCALLBACK mcu_control_isr
 #endif
-#if(defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
+#if (defined(SAFETY_DOOR_ISR) && defined(SAFETY_DOOR))
 #define DIO111_ISR (SAFETY_DOOR_ISR)
 #define SAFETY_DOOR_ISRCALLBACK mcu_control_isr
 #define DIO111_ISRCALLBACK mcu_control_isr
 #endif
-#if(defined(FHOLD_ISR) && defined(FHOLD))
+#if (defined(FHOLD_ISR) && defined(FHOLD))
 #define DIO112_ISR (FHOLD_ISR)
 #define FHOLD_ISRCALLBACK mcu_control_isr
 #define DIO112_ISRCALLBACK mcu_control_isr
 #endif
-#if(defined(CS_RES_ISR) && defined(CS_RES))
+#if (defined(CS_RES_ISR) && defined(CS_RES))
 #define DIO113_ISR (CS_RES_ISR)
 #define CS_RES_ISRCALLBACK mcu_control_isr
 #define DIO113_ISRCALLBACK mcu_control_isr
 #endif
-#if(defined(DIN0_ISR) && defined(DIN0))
+#if (defined(DIN0_ISR) && defined(DIN0))
 #define DIO130_ISR (DIN0_ISR)
 #define DIN0_ISRCALLBACK mcu_din_isr
 #define DIO130_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN1_ISR) && defined(DIN1))
+#if (defined(DIN1_ISR) && defined(DIN1))
 #define DIO131_ISR (DIN1_ISR)
 #define DIN1_ISRCALLBACK mcu_din_isr
 #define DIO131_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN2_ISR) && defined(DIN2))
+#if (defined(DIN2_ISR) && defined(DIN2))
 #define DIO132_ISR (DIN2_ISR)
 #define DIN2_ISRCALLBACK mcu_din_isr
 #define DIO132_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN3_ISR) && defined(DIN3))
+#if (defined(DIN3_ISR) && defined(DIN3))
 #define DIO133_ISR (DIN3_ISR)
 #define DIN3_ISRCALLBACK mcu_din_isr
 #define DIO133_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN4_ISR) && defined(DIN4))
+#if (defined(DIN4_ISR) && defined(DIN4))
 #define DIO134_ISR (DIN4_ISR)
 #define DIN4_ISRCALLBACK mcu_din_isr
 #define DIO134_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN5_ISR) && defined(DIN5))
+#if (defined(DIN5_ISR) && defined(DIN5))
 #define DIO135_ISR (DIN5_ISR)
 #define DIN5_ISRCALLBACK mcu_din_isr
 #define DIO135_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN6_ISR) && defined(DIN6))
+#if (defined(DIN6_ISR) && defined(DIN6))
 #define DIO136_ISR (DIN6_ISR)
 #define DIN6_ISRCALLBACK mcu_din_isr
 #define DIO136_ISRCALLBACK mcu_din_isr
 #endif
-#if(defined(DIN7_ISR) && defined(DIN7))
+#if (defined(DIN7_ISR) && defined(DIN7))
 #define DIO137_ISR (DIN7_ISR)
 #define DIN7_ISRCALLBACK mcu_din_isr
 #define DIO137_ISRCALLBACK mcu_din_isr
 #endif
-
 
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
@@ -1033,13 +1032,15 @@ extern void mcu_controls_isr(void);
 #endif
 
 #define MCU_HAS_SOFT_PWM_TIMER
-extern uint8_t g_io_soft_pwm[16];
-extern uint8_t g_soft_pwm_res;
-#define mcu_set_pwm(X, Y) ({g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y);})
+	extern uint8_t g_io_soft_pwm[16];
+	extern uint8_t g_soft_pwm_res;
+#define mcu_set_pwm(X, Y) ({ g_io_soft_pwm[X - PWM_PINS_OFFSET] = (0xFF & Y); })
 #define mcu_get_pwm(X) g_io_soft_pwm[X - PWM_PINS_OFFSET]
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq) g_soft_pwm_res = 1;pinMode(__indirect__(X, BIT), OUTPUT)
+#define mcu_config_pwm(X, freq) \
+	g_soft_pwm_res = 1;         \
+	pinMode(__indirect__(X, BIT), OUTPUT)
 #define mcu_config_input(X) pinMode(__indirect__(X, BIT), INPUT)
 #define mcu_config_analog(X) mcu_config_input(X)
 #define mcu_config_pullup(X) pinMode(__indirect__(X, BIT), INPUT_PULLUP)
@@ -1050,7 +1051,6 @@ extern uint8_t g_soft_pwm_res;
 #define mcu_set_output(X) digitalWrite(__indirect__(X, BIT), 1)
 #define mcu_clear_output(X) digitalWrite(__indirect__(X, BIT), 0)
 #define mcu_toggle_output(X) digitalWrite(__indirect__(X, BIT), !digitalRead(__indirect__(X, BIT)))
-
 
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
@@ -1065,8 +1065,25 @@ extern uint8_t g_soft_pwm_res;
 		(uint8_t)(SPI1W0 & 0xff); \
 	}
 
-	extern void esp8266_delay_us(uint16_t delay);
-#define mcu_delay_us(X) esp8266_delay_us(X)
+#define cpucount()                                \
+	({                                             \
+		uint32_t r;                               \
+		asm volatile("rsr %0, ccount" : "=r"(r)); \
+		r;                                        \
+	})
+
+#define mcu_delay_cycles(X)          \
+	{                                \
+		uint32_t start = cpucount();   \
+		uint32_t end;                \
+		do                           \
+		{                            \
+			end = cpucount();          \
+		} while (X > (end - start)); \
+	}
+
+	// 	extern void esp8266_delay_us(uint16_t delay);
+	// #define mcu_delay_us(X) esp8266_delay_us(X)
 
 #ifdef __cplusplus
 }
