@@ -2704,6 +2704,7 @@ extern "C"
 #define MCU_HAS_BLUETOOTH
 #endif
 
+// servo timer is also used by emulated PWM if used
 #ifndef SERVO_TIMER
 #define SERVO_TIMER 1
 #endif
