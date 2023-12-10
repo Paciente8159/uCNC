@@ -2189,6 +2189,9 @@ typedef uint16_t step_t;
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
 #endif
+#ifndef ENABLE_PARSER_MODULES
+#define ENABLE_PARSER_MODULES
+#endif
 #endif
 
 #ifdef ENABLE_PLASMA_THC

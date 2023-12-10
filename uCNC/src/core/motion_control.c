@@ -393,6 +393,17 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 	max_accel *= inv_dist;
 
 #ifdef ENABLE_LASER_PPI
+	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
+	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE) && !g_settings.step_per_mm[STEPPER_COUNT - 1])
+	{
+		g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
+		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth * g_settings.step_per_mm[STEPPER_COUNT - 1]));
+	}
+	else
+	{
+		g_settings.step_per_mm[STEPPER_COUNT - 1] = 0;
+		g_settings.max_feed_rate[STEPPER_COUNT - 1] = FLT_MAX;
+	}
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
 	float laser_pulses_per_mm = 0;
 	if (block_data->motion_flags.bit.spindle_running && block_data->spindle)
