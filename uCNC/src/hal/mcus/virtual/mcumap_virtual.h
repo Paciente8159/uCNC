@@ -422,6 +422,7 @@ extern void virtual_delay_us(uint16_t delay);
 
 #include "../../tools/tool.h"
 extern const tool_t spindle_pwm;
+extern const tool_t laser_ppi;
 
 #define asm __asm__
 
