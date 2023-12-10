@@ -8,6 +8,23 @@
 
 # Changelog
 
+## [1.8.5] - unreleased
+
+### Added
+
+- added option to allow software homing (#572)
+
+### Changed
+
+- prevent module and main loop reentrancy to allow cnc main loop recall (inside waits and delays) (#576)
+- better ESP software delays (#575)
+- improved software generated PWM over 74HC595 for ESP32 (#574)
+
+### Fixed
+
+- fix jog flag being incorrectly cleared (#573)
+- fix Laser PPI tool and incorrect speed calculations in motion control with Laser PPI option enabled (#578)
+
 ## [1.8.4] - 17-11-2023
 
 ### Added
@@ -1422,6 +1439,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
 [1.8.2]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.2
