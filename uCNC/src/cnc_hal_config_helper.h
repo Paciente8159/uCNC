@@ -53,9 +53,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h" //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"	  //inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h" // io extender
+#include "modules/ic74hc595.h"	  // io extender
 
 	/**
 	 *
@@ -485,27 +485,21 @@ extern "C"
 #if (STEPPER_COUNT == 1)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 2
-#define LASER_PPI_MASK STEP1_IO_MASK
 #elif (STEPPER_COUNT == 2)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 3
-#define LASER_PPI_MASK STEP2_IO_MASK
 #elif (STEPPER_COUNT == 3)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 4
-#define LASER_PPI_MASK STEP3_IO_MASK
 #elif (STEPPER_COUNT == 4)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 5
-#define LASER_PPI_MASK STEP4_IO_MASK
 #elif (STEPPER_COUNT == 5)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 6
-#define LASER_PPI_MASK STEP5_IO_MASK
 #elif (STEPPER_COUNT == 6)
 #undef STEPPER_COUNT
 #define STEPPER_COUNT 7
-#define LASER_PPI_MASK STEP6_IO_MASK
 #endif
 #ifndef LASER_PPI
 #define LASER_PPI UNDEF_PIN
@@ -1655,6 +1649,11 @@ extern "C"
 #ifndef LINACT5_IO_MASK
 #define LINACT5_IO_MASK STEP5_IO_MASK
 #endif
+#ifdef ENABLE_LASER_PPI
+#ifndef LASERPPI_IO_MASK
+#define LASERPPI_IO_MASK STEP7_IO_MASK
+#endif
+#endif
 
 // linear actuator limits and limits association
 #ifndef LINACT0_LIMIT_MASK
@@ -1685,31 +1684,51 @@ extern "C"
 #ifndef AXIS_Y
 #undef LINACT1_IO_MASK
 #undef LINACT1_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 2)
+#define LINACT1_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT1_IO_MASK 0
+#endif
 #define LINACT1_LIMIT_MASK 0
 #endif
 #ifndef AXIS_Z
 #undef LINACT2_IO_MASK
 #undef LINACT2_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 3)
+#define LINACT2_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT2_IO_MASK 0
+#endif
 #define LINACT2_LIMIT_MASK 0
 #endif
 #ifndef AXIS_A
 #undef LINACT3_IO_MASK
 #undef LINACT3_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 4)
+#define LINACT3_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT3_IO_MASK 0
+#endif
 #define LINACT3_LIMIT_MASK 0
 #endif
 #ifndef AXIS_B
 #undef LINACT4_IO_MASK
 #undef LINACT4_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 5)
+#define LINACT4_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT4_IO_MASK 0
+#endif
 #define LINACT4_LIMIT_MASK 0
 #endif
 #ifndef AXIS_C
 #undef LINACT5_IO_MASK
 #undef LINACT5_LIMIT_MASK
+#if (defined(ENABLE_LASER_PPI) && STEPPER_COUNT == 6)
+#define LINACT5_IO_MASK LASERPPI_IO_MASK
+#else
 #define LINACT5_IO_MASK 0
+#endif
 #define LINACT5_LIMIT_MASK 0
 #endif
 
@@ -2152,7 +2171,6 @@ typedef uint16_t step_t;
 #if ((AXIS_COUNT != 2) && defined(USE_Y_AS_Z_ALIAS))
 #error "Y axis can only be used as a Z alias in 2 axis machines."
 #endif
-
 
 #ifdef MCU_HAS_I2C
 

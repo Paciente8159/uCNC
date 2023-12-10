@@ -394,21 +394,26 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 #ifdef ENABLE_LASER_PPI
 	g_settings.acceleration[STEPPER_COUNT - 1] = FLT_MAX;
-	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE) && !g_settings.step_per_mm[STEPPER_COUNT - 1])
+	float ppi_max_feedrate = FLT_MAX;
+	float ppi_step_rate = g_settings.step_per_mm[STEPPER_COUNT - 1];
+	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
-		g_settings.step_per_mm[STEPPER_COUNT - 1] = g_settings.laser_ppi * MM_INCH_MULT;
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = (60000000.0f / (g_settings.laser_ppi_uswidth * g_settings.step_per_mm[STEPPER_COUNT - 1]));
+		if (!ppi_step_rate)
+		{
+			ppi_step_rate = g_settings.laser_ppi * MM_INCH_MULT;
+		}
 	}
 	else
 	{
-		g_settings.step_per_mm[STEPPER_COUNT - 1] = 0;
-		g_settings.max_feed_rate[STEPPER_COUNT - 1] = FLT_MAX;
+		ppi_step_rate = 0;
 	}
+	g_settings.step_per_mm[STEPPER_COUNT - 1] = ppi_step_rate;
+	ppi_max_feedrate = (60000000.0f / (g_settings.laser_ppi_uswidth * ppi_step_rate));
 	mc_last_step_pos[STEPPER_COUNT - 1] = 0;
 	float laser_pulses_per_mm = 0;
 	if (block_data->motion_flags.bit.spindle_running && block_data->spindle)
 	{
-		laser_pulses_per_mm = g_settings.step_per_mm[STEPPER_COUNT - 1];
+		laser_pulses_per_mm = ppi_step_rate;
 		// modify PPI settings according o the S value
 		if (g_settings.laser_mode & LASER_PPI_MODE)
 		{
@@ -424,8 +429,9 @@ uint8_t mc_line(float *target, motion_data_t *block_data)
 
 		laser_pulses_per_mm *= line_dist;
 		// adjust max feed rate to ppi settings
-		max_feed = MIN(max_feed, g_settings.max_feed_rate[STEPPER_COUNT - 1] * inv_dist);
+		max_feed = MIN(max_feed, ppi_max_feedrate * inv_dist);
 	}
+
 	step_new_pos[STEPPER_COUNT - 1] = laser_pulses_per_mm;
 	if (step_new_pos[STEPPER_COUNT - 1] > max_steps)
 	{

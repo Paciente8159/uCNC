@@ -756,6 +756,23 @@ extern "C"
 		QueryPerformanceCounter(&perf_counter);
 		return (uint32_t)(perf_counter.QuadPart / cyclesPerMillisecond);
 	}
+	
+/**
+ * configures a single shot timeout in us
+ * */
+	static uint32_t oneshot_timeout;
+	static uint32_t oneshot_alarm;
+	void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout){
+		oneshot_timeout = timeout;
+		mcu_timeout_cb = fp;
+	}
+
+/**
+ * starts the timeout. Once hit the the respective callback is called
+ * */
+	void mcu_start_timeout(){
+		oneshot_alarm = mcu_micros() + oneshot_timeout;
+	}
 
 	void ticksimul(void)
 	{
@@ -774,6 +791,13 @@ extern "C"
 		}
 
 		mcu_rtc_cb(mcu_millis());
+		
+		if(oneshot_alarm!=0 && oneshot_alarm<mcu_micros()){
+			oneshot_alarm = 0;
+			if(mcu_timeout_cb){
+				mcu_timeout_cb();
+			}
+		}
 	}
 
 	/**

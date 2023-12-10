@@ -58,7 +58,7 @@ MCU_CALLBACK void laser_ppi_pulse(uint8_t new_stepbits, uint8_t flags)
 {
 	if (g_settings.laser_mode & (LASER_PPI_MODE | LASER_PPI_VARPOWER_MODE))
 	{
-		if (new_stepbits & LASER_PPI_MASK)
+		if (new_stepbits & LASERPPI_IO_MASK)
 		{
 			if (new_laser_ppi)
 			{
