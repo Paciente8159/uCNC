@@ -19,7 +19,23 @@
 #ifndef MCUMAP_VIRTUAL_H
 #define MCUMAP_VIRTUAL_H
 
+#include <stdio.h>
+#include <conio.h>
+#include <string.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <math.h>
+#include <winsock2.h>
+#include <windows.h>
+#include <ws2tcpip.h>
+#include <iphlpapi.h>
+#include <stdio.h>
+
+// #pragma comment(lib, "Ws2_32.lib")
+#include "win_port.h"
+
 #define F_CPU 1000000
 #ifndef F_STEP_MAX
 #define F_STEP_MAX 40000
@@ -65,10 +81,15 @@
 
 #define MCU_HAS_UART
 #ifndef UART_PORT_NAME
-#define UART_PORT_NAME "COM1"
+#define UART_PORT_NAME "\\\\.\\COM22"
 #endif
 
 #define MCU_HAS_UART2
+#ifndef UART2_PORT_NAME
+#define UART2_PORT_NAME "\\\\.\\pipe\\uCNCUART1"
+#endif
+
+#define MCU_HAS_USB //console
 
 //#define EMULATE_74HC595
 
@@ -410,7 +431,6 @@
 #define MCU_HAS_ONESHOT_TIMER
 
 // just to compile
-#define mcu_rx_ready() true
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)
@@ -422,7 +442,6 @@ extern void virtual_delay_us(uint16_t delay);
 
 #include "../../tools/tool.h"
 extern const tool_t spindle_pwm;
-extern const tool_t laser_ppi;
 
 #define asm __asm__
 
