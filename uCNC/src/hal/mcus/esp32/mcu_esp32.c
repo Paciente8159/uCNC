@@ -41,8 +41,7 @@ static volatile bool esp32_global_isr_enabled;
 static volatile uint32_t mcu_runtime_ms;
 static volatile bool mcu_itp_timer_running;
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-volatile static uint32_t esp32_io_counter;
-volatile static uint32_t esp32_io_counter_reload;
+uint32_t ic74hc595_i2s_pins;
 #endif
 hw_timer_t *esp32_step_timer;
 
@@ -81,7 +80,7 @@ static flash_eeprom_t mcu_eeprom;
 // IO will be updated at a fixed rate
 MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
-	I2SREG.conf_single_data = *((volatile uint32_t *)&ic74hc595_io_pins[0]);
+	I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 }
 #endif
 

@@ -2775,6 +2775,15 @@ extern "C"
 #endif
 #define IC74HC595_COUNT 4
 #define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+
+// custom pin operations for 74HS595
+extern uint32_t ic74hc595_i2s_pins;
+#define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+#define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
+#define ic74hc595_set_pin(pin) __atomic_fetch_or((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
+#define ic74hc595_clear_pin(pin) __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins, ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
+#define ic74hc595_toggle_pin(pin) __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
+#define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
 #endif
 
 #define mcu_config_output(X)                                              \
