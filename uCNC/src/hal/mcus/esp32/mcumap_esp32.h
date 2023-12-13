@@ -2831,7 +2831,7 @@ extern uint32_t ic74hc595_i2s_pins;
 	}
 #define mcu_toggle_output(X)                                                    \
 	{                                                                           \
-		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
+		__atomic_fetch_xor(__indirect__(X, OUTREG)->OUT, 1UL << (0x1F & __indirect__(X, BIT)), __ATOMIC_RELAXED); \
 	}
 
 #define mcu_config_pwm(X, Y)                              \
