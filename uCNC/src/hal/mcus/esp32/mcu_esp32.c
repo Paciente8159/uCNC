@@ -38,7 +38,6 @@
 #include <math.h>
 
 static volatile bool esp32_global_isr_enabled;
-static volatile uint32_t mcu_runtime_ms;
 static volatile bool mcu_itp_timer_running;
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 uint32_t ic74hc595_i2s_pins;
@@ -68,19 +67,127 @@ typedef struct
 static flash_eeprom_t mcu_eeprom;
 #endif
 
+/**
+ * IO 74HC595 expander via I2S
+ * **/
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 #if IC74HC595_COUNT != 4
-#error "IC74HC595_COUNT must be 4 to use ESP32 I2S mode for IO shifting"
+#error "IC74HC595_COUNT must be 4(bytes) to use ESP32 I2S mode for IO shifting"
 #endif
 #include "driver/i2s.h"
+#define USES_BUFFERED_MOTION
+
+#ifdef USES_BUFFERED_MOTION
+#define I2S_SAMPLES_PER_BUFFER 256
+#define I2S_BUFFER_COUNT 5
+#define I2S_DIRECT 0
+#define I2S_STREAM 1
+static bool i2s_mode;
+static uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
+// i2s writer queue
+static QueueHandle_t i2s_dma_queue;
 #endif
 
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-// disable this function
-// IO will be updated at a fixed rate
+// direct I2S write
 MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
-	I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	if (i2s_mode == I2S_DIRECT)
+	{
+		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+	}
+}
+
+void esp32_i2s_extender_update(void *param)
+{
+	static bool buffer_full = false;
+	i2s_event_t evt;
+	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+	for (;;)
+	{
+		if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
+		{
+			if (evt.type == I2S_EVENT_TX_DONE)
+			{
+				itp_segment_t *sgm = itp_get_rt_segment();
+				if (sgm)
+				{
+					if (sgm->flags & 255 /*someflag*/)
+					{
+						if (!buffer_full)
+						{
+							for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
+							{
+								// run update var ic74hc595_i2s_pins
+								/*do something*/
+								// write to buffer
+								i2s_dma_buffer[t] = ic74hc595_i2s_pins;
+							}
+							buffer_full = true;
+						}
+
+						uint32_t w = 0;
+						uint32_t i = 0;
+						while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
+						{
+							i = w;
+							vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+						}
+						buffer_full = false;
+					}
+				}
+			}
+
+			vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+		}
+	}
+}
+
+static FORCEINLINE void esp32_i2s_extender_init(void)
+{
+	i2s_config_t i2s_config = {
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX,			// Only TX
+		.sample_rate = 1000UL * I2S_SAMPLES_PER_BUFFER, // sample rate to do 2ms per buffer
+		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
+		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
+		.dma_buf_count = I2S_BUFFER_COUNT,
+		.dma_buf_len = I2S_SAMPLES_PER_BUFFER,
+		.use_apll = false,
+		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1, // Interrupt level 1
+		.tx_desc_auto_clear = false,
+		.fixed_mclk = 0};
+
+	i2s_pin_config_t pin_config = {
+		.bck_io_num = IC74HC595_I2S_CLK,
+		.ws_io_num = IC74HC595_I2S_WS,
+		.data_out_num = IC74HC595_I2S_DATA,
+		.data_in_num = -1 // Not used
+	};
+
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, &i2s_dma_queue);
+	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+
+	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
+	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
+	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
+	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+
+	//
+	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
+	I2SREG.conf_chan.tx_chan_mod = 3; //
+	I2SREG.sample_rate_conf.tx_bits_mod = 32;
+
+	I2SREG.conf_single_data = 0;
+
+	// Use normal clock format, (WS is aligned with the last bit)
+	I2SREG.conf.tx_msb_shift = 0;
+	I2SREG.conf.rx_msb_shift = 0;
+
+	// Disable TX interrupts
+	I2SREG.int_ena.out_eof = 0;
+	I2SREG.int_ena.out_dscr_err = 0;
+
+	xTaskCreatePinnedToCore(esp32_i2s_extender_update, "esp32I2Supdate", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
 #endif
 
@@ -301,53 +408,6 @@ uint8_t mcu_softpwm_freq_config(uint16_t freq)
 }
 #endif
 
-#ifdef IC74HC595_CUSTOM_SHIFT_IO
-static FORCEINLINE void esp32_i2s_extender_init(void)
-{
-	i2s_config_t i2s_config = {
-		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
-		.sample_rate = 156250UL,			   // 312500KHz * 32bit * 2 channels = 20MHz
-		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
-		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
-		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
-		.dma_buf_count = 2,
-		.dma_buf_len = 8,
-		.use_apll = false,
-		.intr_alloc_flags = ESP_INTR_FLAG_LEVEL1 // Interrupt level 1
-	};
-
-	i2s_pin_config_t pin_config = {
-		.bck_io_num = IC74HC595_I2S_CLK,
-		.ws_io_num = IC74HC595_I2S_WS,
-		.data_out_num = IC74HC595_I2S_DATA,
-		.data_in_num = -1 // Not used
-	};
-
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, NULL);
-	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
-
-	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
-	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
-	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
-
-	//
-	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
-	I2SREG.conf_chan.tx_chan_mod = 3; //
-	I2SREG.sample_rate_conf.tx_bits_mod = 32;
-
-	I2SREG.conf_single_data = 0;
-
-	// Use normal clock format, (WS is aligned with the last bit)
-	I2SREG.conf.tx_msb_shift = 0;
-	I2SREG.conf.rx_msb_shift = 0;
-
-	// Disable TX interrupts
-	I2SREG.int_ena.out_eof = 0;
-	I2SREG.int_ena.out_dscr_err = 0;
-}
-#endif
-
 void mcu_core0_tasks_init(void *arg)
 {
 #ifdef MCU_HAS_UART
@@ -370,8 +430,7 @@ void mcu_rtc_task(void *arg)
 		servo_update();
 #endif
 #endif
-		mcu_runtime_ms++;
-		mcu_rtc_cb(mcu_runtime_ms);
+		mcu_rtc_cb(mcu_millis());
 		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
 	}
 }
@@ -809,7 +868,7 @@ void mcu_stop_itp_isr(void)
  * */
 uint32_t mcu_millis()
 {
-	return mcu_runtime_ms;
+	return (uint32_t)(esp_system_get_time() / 1000);
 }
 
 extern int64_t esp_system_get_time(void);

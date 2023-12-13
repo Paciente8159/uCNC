@@ -1363,3 +1363,8 @@ void itp_start(bool is_synched)
 		}
 	}
 }
+
+itp_segment_t *itp_get_rt_segment()
+{
+	return (itp_sgm_is_empty()) ? NULL : &itp_sgm_data[itp_sgm_data_read];
+}

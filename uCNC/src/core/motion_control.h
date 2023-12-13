@@ -81,6 +81,10 @@ extern "C"
 		uint16_t dwell;
 		uint8_t motion_mode;
 		motion_flags_t motion_flags;
+#ifdef USES_BUFFERED_MOTION
+		// flags for motions performed using DMA buffers (for example I2S)
+		uint8_t motion_buffered;
+#endif
 	} motion_data_t;
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
