@@ -67,6 +67,11 @@ typedef struct
 static flash_eeprom_t mcu_eeprom;
 #endif
 
+MCU_CALLBACK void mcu_itp_isr(void *arg);
+MCU_CALLBACK void ic74hc595_shift_io_pins(void);
+MCU_CALLBACK void esp32_io_updater(void *arg);
+MCU_CALLBACK void mcu_gpio_isr(void *type);
+
 /**
  * IO 74HC595 expander via I2S
  * **/
@@ -80,65 +85,88 @@ static flash_eeprom_t mcu_eeprom;
 #ifdef USES_BUFFERED_MOTION
 #define I2S_SAMPLES_PER_BUFFER 256
 #define I2S_BUFFER_COUNT 5
-#define I2S_DIRECT 0
-#define I2S_STREAM 1
-static bool i2s_mode;
+#define I2S_SAMPLE_US 5
 static uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
 // i2s writer queue
 static QueueHandle_t i2s_dma_queue;
 #endif
 
+static uint32_t i2s_step_mode;
+
+static uint32_t i2s_itp_timer_reload;
+static int32_t i2s_itp_timer_counter;
+
+// implements the custom step mode function to switch between buffered stepping and realtime stepping
+void itp_set_step_mode(uint8_t mode)
+{
+	itp_sync();
+	i2s_step_mode = mode;
+}
+
 // direct I2S write
 MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
-	if (i2s_mode == I2S_DIRECT)
+	if (i2s_step_mode == ITP_STEP_MODE_REALTIME)
 	{
 		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 	}
 }
 
-void esp32_i2s_extender_update(void *param)
+void esp32_i2s_stream_task(void *param)
 {
-	static bool buffer_full = false;
+	uint8_t available_buffers = I2S_BUFFER_COUNT;
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
+
+	i2s_stop(IC74HC595_I2S_PORT);
+
 	for (;;)
 	{
 		if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
 		{
 			if (evt.type == I2S_EVENT_TX_DONE)
 			{
-				itp_segment_t *sgm = itp_get_rt_segment();
-				if (sgm)
+				available_buffers++;
+				if (available_buffers == I2S_BUFFER_COUNT && i2s_step_mode == ITP_STEP_MODE_REALTIME)
 				{
-					if (sgm->flags & 255 /*someflag*/)
-					{
-						if (!buffer_full)
-						{
-							for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
-							{
-								// run update var ic74hc595_i2s_pins
-								/*do something*/
-								// write to buffer
-								i2s_dma_buffer[t] = ic74hc595_i2s_pins;
-							}
-							buffer_full = true;
-						}
-
-						uint32_t w = 0;
-						uint32_t i = 0;
-						while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
-						{
-							i = w;
-							vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-						}
-						buffer_full = false;
-					}
+					i2s_stop(IC74HC595_I2S_PORT);
+					i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
 				}
 			}
-
-			vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
 		}
+
+		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		{
+			while (available_buffers && itp_get_rt_segment() != NULL)
+			{
+				for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
+				{
+					// generate steps
+					mcu_itp_isr(NULL);
+					// updated software PWM pins
+					io_soft_pwm_update();
+					// write to buffer
+					i2s_dma_buffer[t] = ic74hc595_i2s_pins;
+				}
+
+				uint32_t w = 0;
+				uint32_t i = 0;
+				while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
+				{
+					i = w;
+					vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+				}
+
+				if (available_buffers == I2S_BUFFER_COUNT)
+				{
+					i2s_start(IC74HC595_I2S_PORT);
+				}
+
+				available_buffers--;
+			}
+		}
+
+		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
 	}
 }
 
@@ -164,6 +192,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 		.data_in_num = -1 // Not used
 	};
 
+	i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
 	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, &i2s_dma_queue);
 	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
@@ -187,7 +216,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 	I2SREG.int_ena.out_eof = 0;
 	I2SREG.int_ena.out_dscr_err = 0;
 
-	xTaskCreatePinnedToCore(esp32_i2s_extender_update, "esp32I2Supdate", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
 #endif
 
@@ -228,6 +257,14 @@ MCU_CALLBACK void esp32_io_updater(void *arg)
 #endif
 
 	ic74hc595_shift_io_pins();
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	{
+		return;
+	}
+#endif
+
 	timer_group_clr_intr_status_in_isr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 	/* After the alarm has been triggered
 	  we need enable it again, so it is triggered the next time */
@@ -439,11 +476,43 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 	static bool resetstep = false;
 
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	{
+		if (!mcu_itp_timer_running)
+		{
+			return;
+		}
+
+		int32_t t = i2s_itp_timer_counter;
+		t -= I2S_SAMPLE_US;
+		if (t > 0)
+		{
+			i2s_itp_timer_counter = t;
+			// exit
+			return;
+		}
+
+		i2s_itp_timer_counter = i2s_itp_timer_reload + t;
+	}
+#endif
+
 	if (!resetstep)
+	{
 		mcu_step_cb();
+	}
 	else
+	{
 		mcu_step_reset_cb();
+	}
 	resetstep = !resetstep;
+
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	{
+		return;
+	}
+#endif
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
 	/* After the alarm has been triggered
@@ -814,6 +883,14 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	if (!mcu_itp_timer_running)
 	{
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		{
+			i2s_itp_timer_reload = ticks * prescaller;
+			mcu_itp_timer_running = true;
+			return;
+		}
+#endif
 		/* Timer's counter will initially start from value below.
 		   Also, if auto_reload is set, this value will be automatically reload on alarm */
 		timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
@@ -839,6 +916,14 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 {
 	if (mcu_itp_timer_running)
 	{
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		{
+			i2s_itp_timer_reload = ticks * prescaller;
+			return;
+		}
+#endif
+
 		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
 		timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)ticks * prescaller);
 		timer_start(ITP_TIMER_TG, ITP_TIMER_IDX);
@@ -856,6 +941,14 @@ void mcu_stop_itp_isr(void)
 {
 	if (mcu_itp_timer_running)
 	{
+#ifdef IC74HC595_CUSTOM_SHIFT_IO
+		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		{
+			mcu_itp_timer_running = false;
+			return;
+		}
+#endif
+
 		timer_pause(ITP_TIMER_TG, ITP_TIMER_IDX);
 		timer_disable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
 		mcu_itp_timer_running = false;
@@ -866,12 +959,12 @@ void mcu_stop_itp_isr(void)
  * gets the MCU running time in milliseconds.
  * the time counting is controled by the internal RTC
  * */
+extern int64_t esp_system_get_time(void);
 uint32_t mcu_millis()
 {
 	return (uint32_t)(esp_system_get_time() / 1000);
 }
 
-extern int64_t esp_system_get_time(void);
 uint32_t mcu_micros()
 {
 	return (uint32_t)esp_system_get_time();

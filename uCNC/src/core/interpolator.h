@@ -40,6 +40,9 @@ extern "C"
 #define ITP_SYNC 32
 #define ITP_BACKLASH 64
 
+#define ITP_STEP_MODE_DEFAULT 0
+#define ITP_STEP_MODE_REALTIME 1
+
 	// contains data of the block being executed by the pulse routine
 	// this block has the necessary data to execute the Bresenham line algorithm
 	typedef struct itp_blk_
@@ -91,6 +94,7 @@ extern "C"
 	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
 	itp_segment_t* itp_get_rt_segment();
+	void itp_set_step_mode(uint8_t mode);
 
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);
