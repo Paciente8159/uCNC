@@ -100,6 +100,8 @@ static int32_t i2s_itp_timer_counter;
 void itp_set_step_mode(uint8_t mode)
 {
 	itp_sync();
+	i2s_step_mode = mode;
+
 	cnc_delay_ms(20);
 
 	switch (mode)
@@ -115,8 +117,6 @@ void itp_set_step_mode(uint8_t mode)
 #endif
 		break;
 	}
-
-	i2s_step_mode = mode;
 }
 
 // direct I2S write
@@ -163,13 +163,25 @@ void esp32_i2s_stream_task(void *param)
 				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 			}
 
-			uint32_t w = 0;
+			
 			uint32_t i = 0;
-			while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
+			// uint32_t w = 0;
+
+			// while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK){
+			// 	i += w;
+			// 	vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+			// }
+			do
 			{
+				uint32_t w = 0;
+				esp_err_t er = i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1);
 				i += w;
+				if (er == ESP_OK && (i == I2S_SAMPLES_PER_BUFFER))
+				{
+					break;
+				}
 				vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-			}
+			} while (1);
 
 			// if (available_buffers == I2S_BUFFER_COUNT)
 			// {
@@ -206,7 +218,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 		.data_in_num = -1 // Not used
 	};
 
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0 /*I2S_BUFFER_COUNT*/, NULL/*&i2s_dma_queue*/);
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0 /*I2S_BUFFER_COUNT*/, NULL /*&i2s_dma_queue*/);
 	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
@@ -226,8 +238,8 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 	I2SREG.conf.rx_msb_shift = 0;
 
 	// Disable TX interrupts
-	I2SREG.int_ena.out_eof = 0;
-	I2SREG.int_ena.out_dscr_err = 0;
+	// I2SREG.int_ena.out_eof = 0;
+	// I2SREG.int_ena.out_dscr_err = 0;
 
 	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
