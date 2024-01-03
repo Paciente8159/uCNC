@@ -100,6 +100,22 @@ static int32_t i2s_itp_timer_counter;
 void itp_set_step_mode(uint8_t mode)
 {
 	itp_sync();
+	cnc_delay_ms(20);
+
+	switch (mode)
+	{
+	case ITP_STEP_MODE_REALTIME:
+#ifdef IC74HC595_HAS_PWMS
+		timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+#endif
+		break;
+	default:
+#ifdef IC74HC595_HAS_PWMS
+		timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+#endif
+		break;
+	}
+
 	i2s_step_mode = mode;
 }
 
@@ -118,52 +134,50 @@ void esp32_i2s_stream_task(void *param)
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
 
-	i2s_stop(IC74HC595_I2S_PORT);
-
 	for (;;)
 	{
-		if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
-		{
-			if (evt.type == I2S_EVENT_TX_DONE)
-			{
-				available_buffers++;
-				if (available_buffers == I2S_BUFFER_COUNT && i2s_step_mode == ITP_STEP_MODE_REALTIME)
-				{
-					i2s_stop(IC74HC595_I2S_PORT);
-					i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
-				}
-			}
-		}
+		// if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
+		// {
+		// 	if (evt.type == I2S_EVENT_TX_DONE)
+		// 	{
+		// 		available_buffers++;
+		// 		if (available_buffers == I2S_BUFFER_COUNT && i2s_step_mode == ITP_STEP_MODE_REALTIME)
+		// 		{
+		// 			i2s_stop(IC74HC595_I2S_PORT);
+		// 			i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
+		// 		}
+		// 	}
+		// }
 
 		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
 		{
-			while (available_buffers && itp_get_rt_segment() != NULL)
+			// while (available_buffers && itp_get_rt_segment() != NULL)
+			// {
+			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
 			{
-				for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
-				{
-					// generate steps
-					mcu_itp_isr(NULL);
-					// updated software PWM pins
-					io_soft_pwm_update();
-					// write to buffer
-					i2s_dma_buffer[t] = ic74hc595_i2s_pins;
-				}
-
-				uint32_t w = 0;
-				uint32_t i = 0;
-				while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
-				{
-					i = w;
-					vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-				}
-
-				if (available_buffers == I2S_BUFFER_COUNT)
-				{
-					i2s_start(IC74HC595_I2S_PORT);
-				}
-
-				available_buffers--;
+				// generate steps
+				mcu_itp_isr(NULL);
+				// updated software PWM pins
+				io_soft_pwm_update();
+				// write to buffer
+				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 			}
+
+			uint32_t w = 0;
+			uint32_t i = 0;
+			while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK)
+			{
+				i += w;
+				vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+			}
+
+			// if (available_buffers == I2S_BUFFER_COUNT)
+			// {
+			// 	i2s_start(IC74HC595_I2S_PORT);
+			// }
+
+			// available_buffers--;
+			// }
 		}
 
 		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
@@ -192,8 +206,7 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 		.data_in_num = -1 // Not used
 	};
 
-	i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0, &i2s_dma_queue);
+	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0 /*I2S_BUFFER_COUNT*/, NULL/*&i2s_dma_queue*/);
 	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
 
 	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
@@ -615,7 +628,7 @@ void mcu_init(void)
 	// register PWM isr
 	timer_isr_register(SERVO_TIMER_TG, SERVO_TIMER_IDX, esp32_io_updater, NULL, 0, NULL);
 	timer_enable_intr(SERVO_TIMER_TG, SERVO_TIMER_IDX);
-	timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+	// timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
 #endif
 
 	// inititialize ITP timer
