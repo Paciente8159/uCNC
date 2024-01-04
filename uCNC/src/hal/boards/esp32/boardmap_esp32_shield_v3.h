@@ -42,7 +42,7 @@ extern "C"
 #define LIMIT_Z_BIT 23  // assigns LIMIT_Z pin
 
 // Grbl 0.8 spindle en
-#define PWM0_BIT 23 // assigns PWM0 pin
+#define PWM0_BIT 19 // assigns PWM0 pin
 
 #ifdef __cplusplus
 }
