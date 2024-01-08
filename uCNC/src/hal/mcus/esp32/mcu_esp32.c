@@ -518,14 +518,15 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 		}
 		// stream mode tick
 		int32_t t = i2s_itp_timer_counter;
-		if (--t > 0)
+		t -= I2S_SAMPLE_US;
+		if (t > 0)
 		{
 			i2s_itp_timer_counter = t;
 			// exit
 			return;
 		}
 
-		i2s_itp_timer_counter = i2s_itp_timer_reload;
+		i2s_itp_timer_counter = i2s_itp_timer_reload + t;
 	}
 #endif
 
@@ -891,7 +892,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? (uint32_t)(500000.0f / frequency) : (uint32_t)((I2S_SAMPLE_RATE) / frequency);
+	uint32_t totalticks = (I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? (uint32_t)(500000.0f / frequency) : (uint32_t)((1000000.0f) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -904,7 +905,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (((I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? 500000.0f : (float)(I2S_SAMPLE_RATE)) / ((float)ticks * (float)prescaller));
+	return (((I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? 500000.0f : (float)(1000000.0f)) / ((float)ticks * (float)prescaller));
 }
 
 /**
