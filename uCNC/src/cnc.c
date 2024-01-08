@@ -390,6 +390,7 @@ void cnc_home(void)
 #endif
 	io_invert_limits(0);
 	// sync's the motion control with the real time position
+	// this flushes the homing motion before returning from error or home success
 	itp_clear();
 	planner_clear();
 	mc_sync_position();
