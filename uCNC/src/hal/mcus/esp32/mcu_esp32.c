@@ -1,6 +1,6 @@
 /*
 	Name: mcu_esp32.c
-	Description: Implements the µCNC HAL for ESP8266.
+	Description: Implements the µCNC HAL for ESP32.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
@@ -80,18 +80,19 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
 #error "IC74HC595_COUNT must be 4(bytes) to use ESP32 I2S mode for IO shifting"
 #endif
 #include "driver/i2s.h"
+#include "soc/i2s_struct.h"
 #define USES_BUFFERED_MOTION
 
 #ifdef USES_BUFFERED_MOTION
-#define I2S_SAMPLES_PER_BUFFER 256
-#define I2S_BUFFER_COUNT 5
-#define I2S_SAMPLE_US 5
+#define I2S_SAMPLE_RATE 250000UL
+#define I2S_SAMPLES_PER_BUFFER (I2S_SAMPLE_RATE / 500) // number of samples per 2ms (0.002/1 = 1/500)
+#define I2S_BUFFER_COUNT 5							   // DMA buffer size 5 * 2ms = 10ms stored motions (can be adjusted but may cause to much or too little latency)
+#define I2S_SAMPLE_US (1000000UL / I2S_SAMPLE_RATE)	   // (1s/250KHz = 0.000004s = 4us)
 static uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
-// i2s writer queue
-static QueueHandle_t i2s_dma_queue;
 #endif
 
-static uint32_t i2s_step_mode;
+static volatile uint32_t i2s_step_mode;
+#define I2S_STEP_MODE __atomic_load_n((uint32_t *)&i2s_step_mode, __ATOMIC_RELAXED)
 
 static uint32_t i2s_itp_timer_reload;
 static int32_t i2s_itp_timer_counter;
@@ -100,107 +101,28 @@ static int32_t i2s_itp_timer_counter;
 void itp_set_step_mode(uint8_t mode)
 {
 	itp_sync();
-	i2s_step_mode = mode;
-
+	__atomic_store_n((uint32_t *)&i2s_step_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 	cnc_delay_ms(20);
-
-	switch (mode)
-	{
-	case ITP_STEP_MODE_REALTIME:
-#ifdef IC74HC595_HAS_PWMS
-		timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
-#endif
-		break;
-	default:
-#ifdef IC74HC595_HAS_PWMS
-		timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
-#endif
-		break;
-	}
 }
 
 // direct I2S write
 MCU_CALLBACK void ic74hc595_shift_io_pins(void)
 {
-	if (i2s_step_mode == ITP_STEP_MODE_REALTIME)
+	if (I2S_STEP_MODE == ITP_STEP_MODE_REALTIME)
 	{
 		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 	}
 }
 
-void esp32_i2s_stream_task(void *param)
+static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 {
+	bool first_run = true;
 	uint8_t available_buffers = I2S_BUFFER_COUNT;
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
-
-	for (;;)
-	{
-		// if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
-		// {
-		// 	if (evt.type == I2S_EVENT_TX_DONE)
-		// 	{
-		// 		available_buffers++;
-		// 		if (available_buffers == I2S_BUFFER_COUNT && i2s_step_mode == ITP_STEP_MODE_REALTIME)
-		// 		{
-		// 			i2s_stop(IC74HC595_I2S_PORT);
-		// 			i2s_zero_dma_buffer(IC74HC595_I2S_PORT);
-		// 		}
-		// 	}
-		// }
-
-		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
-		{
-			// while (available_buffers && itp_get_rt_segment() != NULL)
-			// {
-			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
-			{
-				// generate steps
-				mcu_itp_isr(NULL);
-				// updated software PWM pins
-				io_soft_pwm_update();
-				// write to buffer
-				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-			}
-
-			
-			uint32_t i = 0;
-			// uint32_t w = 0;
-
-			// while (i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1) != ESP_OK){
-			// 	i += w;
-			// 	vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-			// }
-			do
-			{
-				uint32_t w = 0;
-				esp_err_t er = i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[i], I2S_SAMPLES_PER_BUFFER - i, &w, 1);
-				i += w;
-				if (er == ESP_OK && (i == I2S_SAMPLES_PER_BUFFER))
-				{
-					break;
-				}
-				vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-			} while (1);
-
-			// if (available_buffers == I2S_BUFFER_COUNT)
-			// {
-			// 	i2s_start(IC74HC595_I2S_PORT);
-			// }
-
-			// available_buffers--;
-			// }
-		}
-
-		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
-	}
-}
-
-static FORCEINLINE void esp32_i2s_extender_init(void)
-{
 	i2s_config_t i2s_config = {
-		.mode = I2S_MODE_MASTER | I2S_MODE_TX,			// Only TX
-		.sample_rate = 1000UL * I2S_SAMPLES_PER_BUFFER, // sample rate to do 2ms per buffer
+		.mode = I2S_MODE_MASTER | I2S_MODE_TX, // Only TX
+		.sample_rate = I2S_SAMPLE_RATE,
 		.bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
 		.channel_format = I2S_CHANNEL_FMT_ONLY_LEFT, // 1-channels
 		.communication_format = I2S_COMM_FORMAT_STAND_I2S | I2S_COMM_FORMAT_STAND_MSB,
@@ -217,31 +139,117 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 		.data_out_num = IC74HC595_I2S_DATA,
 		.data_in_num = -1 // Not used
 	};
+	QueueHandle_t i2s_dma_queue;
 
-	i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, 0 /*I2S_BUFFER_COUNT*/, NULL /*&i2s_dma_queue*/);
-	i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+	for (;;)
+	{
+		uint32_t mode = I2S_STEP_MODE;
 
-	I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
-	I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
-	I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
-	I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+		// updates the working mode
+		if (mode & ITP_STEP_MODE_SYNC)
+		{
+			switch (mode & ~ITP_STEP_MODE_SYNC)
+			{
+			case ITP_STEP_MODE_DEFAULT:
+				if (!first_run)
+				{
+					// pause any timer output generator
+#ifdef IC74HC595_HAS_PWMS
+					timer_pause(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+#endif
+					i2s_driver_uninstall(IC74HC595_I2S_PORT);
+				}
+				first_run = false;
+				I2SREG.conf.tx_start = 0;
+				I2SREG.conf.tx_reset = 1;
+				I2SREG.conf.tx_reset = 0;
+				I2SREG.conf.rx_fifo_reset = 1;
+				I2SREG.conf.rx_fifo_reset = 0;
+				available_buffers = I2S_BUFFER_COUNT;
+				i2s_driver_install(IC74HC595_I2S_PORT, &i2s_config, I2S_BUFFER_COUNT, &i2s_dma_queue);
+				i2s_set_pin(IC74HC595_I2S_PORT, &pin_config);
+				break;
+			case ITP_STEP_MODE_REALTIME:
+				// wait for DMA to output content
+				while (available_buffers < I2S_BUFFER_COUNT)
+				{
+					vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+				}
+				I2SREG.conf.tx_start = 0;
+				I2SREG.conf.tx_reset = 1;
+				I2SREG.conf.tx_reset = 0;
+				I2SREG.conf.rx_fifo_reset = 1;
+				I2SREG.conf.rx_fifo_reset = 0;
+				available_buffers = I2S_BUFFER_COUNT;
+				// modify registers for realtime usage
+				I2SREG.out_link.stop = 1;
+				I2SREG.fifo_conf.dscr_en = 0;
+				I2SREG.conf.tx_start = 0;
+				I2SREG.int_clr.val = 0xFFFFFFFF;
+				I2SREG.clkm_conf.clka_en = 0;	   // Use PLL/2 as reference
+				I2SREG.clkm_conf.clkm_div_num = 2; // reset value of 4
+				I2SREG.clkm_conf.clkm_div_a = 1;   // 0 at reset, what about divide by 0?
+				I2SREG.clkm_conf.clkm_div_b = 0;   // 0 at reset
+				I2SREG.fifo_conf.tx_fifo_mod = 3;  // 32 bits single channel data
+				I2SREG.conf_chan.tx_chan_mod = 3;  //
+				I2SREG.sample_rate_conf.tx_bits_mod = 32;
+				I2SREG.conf.tx_msb_shift = 0;
+				I2SREG.conf.rx_msb_shift = 0;
+				I2SREG.int_ena.out_eof = 0;
+				I2SREG.int_ena.out_dscr_err = 0;
+				I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+				I2SREG.conf1.tx_stop_en = 0;
+				I2SREG.int_ena.val = 0;
+				I2SREG.fifo_conf.dscr_en = 1;
+				I2SREG.int_clr.val = 0xFFFFFFFF;
+				I2SREG.out_link.start = 1;
+				I2SREG.conf.tx_start = 1;
+				ets_delay_us(20);
+#ifdef IC74HC595_HAS_PWMS
+				timer_start(SERVO_TIMER_TG, SERVO_TIMER_IDX);
+#endif
+				break;
+			}
 
-	//
-	I2SREG.fifo_conf.tx_fifo_mod = 3; // 32 bits single channel data
-	I2SREG.conf_chan.tx_chan_mod = 3; //
-	I2SREG.sample_rate_conf.tx_bits_mod = 32;
+			// clear sync flag
+			__atomic_fetch_and((uint32_t *)&i2s_step_mode, ~ITP_STEP_MODE_SYNC, __ATOMIC_RELAXED);
+		}
 
-	I2SREG.conf_single_data = 0;
+		// tracks DMA buffer usage
+		if (xQueueReceive(i2s_dma_queue, &evt, 0) == pdPASS)
+		{
+			if (evt.type == I2S_EVENT_TX_DONE)
+			{
+				available_buffers++;
+			}
+		}
 
-	// Use normal clock format, (WS is aligned with the last bit)
-	I2SREG.conf.tx_msb_shift = 0;
-	I2SREG.conf.rx_msb_shift = 0;
+		if (mode == ITP_STEP_MODE_DEFAULT)
+		{
+			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
+			{
+				// generate steps
+				mcu_itp_isr(NULL);
+				// updated software PWM pins
+				esp32_io_updater(NULL);
+				// write to buffer
+				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
+			}
 
-	// Disable TX interrupts
-	// I2SREG.int_ena.out_eof = 0;
-	// I2SREG.int_ena.out_dscr_err = 0;
+			uint32_t w = 0;
 
-	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+			i2s_write(IC74HC595_I2S_PORT, &i2s_dma_buffer[0], I2S_SAMPLES_PER_BUFFER, &w, 1);
+			available_buffers--;
+		}
+
+		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+	}
+}
+
+static FORCEINLINE void esp32_i2s_extender_init(void)
+{
+	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
+	xTaskCreatePinnedToCore(esp32_i2s_stream_task, "esp32I2Supdate", 4096, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 }
 #endif
 
@@ -284,7 +292,7 @@ MCU_CALLBACK void esp32_io_updater(void *arg)
 	ic74hc595_shift_io_pins();
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	if (I2S_STEP_MODE == ITP_STEP_MODE_DEFAULT)
 	{
 		return;
 	}
@@ -502,23 +510,22 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	static bool resetstep = false;
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	if (I2S_STEP_MODE == ITP_STEP_MODE_DEFAULT)
 	{
 		if (!mcu_itp_timer_running)
 		{
 			return;
 		}
-
+		// stream mode tick
 		int32_t t = i2s_itp_timer_counter;
-		t -= I2S_SAMPLE_US;
-		if (t > 0)
+		if (--t > 0)
 		{
 			i2s_itp_timer_counter = t;
 			// exit
 			return;
 		}
 
-		i2s_itp_timer_counter = i2s_itp_timer_reload + t;
+		i2s_itp_timer_counter = i2s_itp_timer_reload;
 	}
 #endif
 
@@ -533,7 +540,7 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 	resetstep = !resetstep;
 
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-	if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+	if (I2S_STEP_MODE == ITP_STEP_MODE_DEFAULT)
 	{
 		return;
 	}
@@ -654,7 +661,7 @@ void mcu_init(void)
 	timer_init(ITP_TIMER_TG, ITP_TIMER_IDX, &itpconfig);
 
 	// initialize rtc timer (currently on core 1)
-	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 1024, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+	xTaskCreatePinnedToCore(mcu_rtc_task, "rtcTask", 2048, NULL, 7, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 
 	// launches isr tasks that will run on core 0
 	// currently it's running PWM and UART on core 0
@@ -884,7 +891,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)(500000.0f / frequency);
+	uint32_t totalticks = (I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? (uint32_t)(500000.0f / frequency) : (uint32_t)((I2S_SAMPLE_RATE) / frequency);
 	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
@@ -897,7 +904,7 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (500000.0f / ((float)ticks * (float)prescaller));
+	return (((I2S_STEP_MODE == ITP_STEP_MODE_REALTIME) ? 500000.0f : (float)(I2S_SAMPLE_RATE)) / ((float)ticks * (float)prescaller));
 }
 
 /**
@@ -909,7 +916,7 @@ void mcu_start_itp_isr(uint16_t ticks, uint16_t prescaller)
 	if (!mcu_itp_timer_running)
 	{
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		if(I2S_STEP_MODE != ITP_STEP_MODE_REALTIME)
 		{
 			i2s_itp_timer_reload = ticks * prescaller;
 			mcu_itp_timer_running = true;
@@ -942,7 +949,7 @@ void mcu_change_itp_isr(uint16_t ticks, uint16_t prescaller)
 	if (mcu_itp_timer_running)
 	{
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		if (I2S_STEP_MODE == ITP_STEP_MODE_DEFAULT)
 		{
 			i2s_itp_timer_reload = ticks * prescaller;
 			return;
@@ -967,7 +974,7 @@ void mcu_stop_itp_isr(void)
 	if (mcu_itp_timer_running)
 	{
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-		if (i2s_step_mode == ITP_STEP_MODE_DEFAULT)
+		if (I2S_STEP_MODE == ITP_STEP_MODE_DEFAULT)
 		{
 			mcu_itp_timer_running = false;
 			return;

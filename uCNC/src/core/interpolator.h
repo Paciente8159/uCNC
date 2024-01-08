@@ -40,8 +40,10 @@ extern "C"
 #define ITP_SYNC 32
 #define ITP_BACKLASH 64
 
-#define ITP_STEP_MODE_DEFAULT 0
-#define ITP_STEP_MODE_REALTIME 1
+#define ITP_STEP_MODE_STARTUP 0
+#define ITP_STEP_MODE_DEFAULT 1
+#define ITP_STEP_MODE_REALTIME 2
+#define ITP_STEP_MODE_SYNC 4
 
 	// contains data of the block being executed by the pulse routine
 	// this block has the necessary data to execute the Bresenham line algorithm

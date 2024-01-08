@@ -389,6 +389,12 @@ void cnc_home(void)
 	io_lock_limits(0);
 #endif
 	io_invert_limits(0);
+	// sync's the motion control with the real time position
+	// this flushes the homing motion before returning from error or home success
+	itp_clear();
+	planner_clear();
+	mc_sync_position();
+
 	if (error)
 	{
 		// disables homing and reenables alarm messages
@@ -397,8 +403,6 @@ void cnc_home(void)
 		return;
 	}
 
-	// sync's the motion control with the real time position
-	mc_sync_position();
 	cnc_run_startup_blocks();
 }
 
