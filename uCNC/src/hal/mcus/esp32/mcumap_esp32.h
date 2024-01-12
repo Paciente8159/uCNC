@@ -47,7 +47,7 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 62500UL
+#define F_STEP_MAX 125000UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
@@ -2831,7 +2831,7 @@ extern uint32_t ic74hc595_i2s_pins;
 	}
 #define mcu_toggle_output(X)                                                    \
 	{                                                                           \
-		__atomic_fetch_xor(__indirect__(X, OUTREG)->OUT, 1UL << (0x1F & __indirect__(X, BIT)), __ATOMIC_RELAXED); \
+		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
 #define mcu_config_pwm(X, Y)                              \

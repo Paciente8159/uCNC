@@ -76,6 +76,7 @@ static IRAM_ATTR void mcu_gen_oneshot(void)
 static IRAM_ATTR void mcu_gen_pwm(void)
 {
 	io_soft_pwm_update();
+	ic74hc595_shift_io_pins();
 }
 
 static uint32_t mcu_step_counter;

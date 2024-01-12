@@ -96,7 +96,7 @@ extern "C"
 	bool itp_is_empty(void);
 	uint8_t itp_sync(void);
 	itp_segment_t* itp_get_rt_segment();
-	void itp_set_step_mode(uint8_t mode);
+	uint8_t itp_set_step_mode(uint8_t mode);
 
 	void itp_sync_spindle(void);
 	void itp_start(bool is_synched);

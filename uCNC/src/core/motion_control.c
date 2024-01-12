@@ -121,7 +121,7 @@ bool mc_toogle_checkmode(void)
 
 static void FORCEINLINE mc_restore_step_mode(uint8_t *mode)
 {
-	itp_set_step_mode((uint8_t)ITP_STEP_MODE_DEFAULT);
+	itp_set_step_mode(*mode);
 }
 
 static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
@@ -733,8 +733,8 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
-	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = ITP_STEP_MODE_DEFAULT;
-	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
+	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
+	
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
@@ -896,8 +896,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 {
 #if ASSERT_PIN(PROBE)
-	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = ITP_STEP_MODE_DEFAULT;
-	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
+	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
 #ifdef ENABLE_G39_H_MAPPING
 	// disable hmap for probing motion
 	block_data->motion_mode &= ~MOTIONCONTROL_MODE_APPLY_HMAP;
