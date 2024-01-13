@@ -68,7 +68,8 @@ static flash_eeprom_t mcu_eeprom;
 #endif
 
 MCU_CALLBACK void mcu_itp_isr(void *arg);
-FORCEINLINE static void esp32_io_updater(void);
+static FORCEINLINE void mcu_gen_pwm_and_servo(void);
+static FORCEINLINE void mcu_gen_step(void);
 MCU_CALLBACK void mcu_gpio_isr(void *type);
 
 /**
@@ -237,7 +238,8 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 
 			for (uint32_t t = 0; t < I2S_SAMPLES_PER_BUFFER; t++)
 			{
-				esp32_io_updater();
+				mcu_gen_step();
+				mcu_gen_pwm_and_servo();
 				// write to buffer
 				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 			}
@@ -290,81 +292,11 @@ void servo_reset(void);
  *
  * **/
 
-static volatile int32_t mcu_itp_timer_reload;
-
-static FORCEINLINE void esp32_io_updater(void)
-{
-	static bool step_reset = true;
-	static int32_t mcu_itp_timer_counter;
-	static int16_t mcu_soft_io_counter;
-
-	// generate steps
-	if (mcu_itp_timer_running)
-	{
-		// stream mode tick
-		int32_t t = mcu_itp_timer_counter;
-		bool reset = step_reset;
-		t -= (1000000UL / ITP_SAMPLE_RATE);
-		if (t <= 0)
-		{
-			if (!reset)
-			{
-				mcu_step_cb();
-			}
-			else
-			{
-				mcu_step_reset_cb();
-			}
-			step_reset = !reset;
-			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
-		}
-		else
-		{
-			mcu_itp_timer_counter = t;
-		}
-	}
-
-	int8_t t2 = mcu_soft_io_counter;
-	t2--;
-	if (t2 <= 0)
-	{
-// updated software PWM pins
-#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
-		io_soft_pwm_update();
-#endif
-
-		// update servo pins
 #if SERVOS_MASK > 0
-		// also run servo pin signals
-		uint32_t counter = servo_tick_counter;
-
-		// updated next servo output
-		if (!(counter & 0x7F))
-		{
-			servo_update();
-		}
-
-		// reached set tick alarm and resets all servo outputs
-		if (counter == servo_tick_alarm)
-		{
-			servo_reset();
-		}
-
-		// resets every 3ms
-		servo_tick_counter = ++counter;
-		// servo_tick_counter = (++counter != 384) ? counter : 0;
-#endif
-		mcu_soft_io_counter = (ITP_SAMPLE_RATE / 125000UL);
-	}
-	else
-	{
-		mcu_soft_io_counter = t2;
-	}
-}
-
-#if SERVOS_MASK > 0
+static uint32_t servo_tick_counter = 0;
+static uint32_t servo_tick_alarm = 0;
 static uint8_t mcu_servos[6];
-MCU_CALLBACK void servo_reset(void)
+static FORCEINLINE void servo_reset(void)
 {
 #if ASSERT_PIN(SERVO0)
 	io_clear_output(SERVO0);
@@ -386,8 +318,12 @@ MCU_CALLBACK void servo_reset(void)
 #endif
 }
 
-void start_servo_timeout(uint8_t timeout);
-MCU_CALLBACK void servo_update(void)
+#define start_servo_timeout(timeout)                          \
+	{                                                         \
+		servo_tick_alarm = servo_tick_counter + timeout + 64; \
+	}
+
+static FORCEINLINE void servo_update(void)
 {
 	static uint8_t servo_counter = 0;
 
@@ -434,13 +370,81 @@ MCU_CALLBACK void servo_update(void)
 	servo_counter++;
 	servo_counter = (servo_counter != 20) ? servo_counter : 0;
 }
-
-MCU_CALLBACK void start_servo_timeout(uint8_t timeout)
-{
-	servo_tick_alarm = servo_tick_counter + timeout + 64; /*aprox. 0.5ms*/
-	;
-}
 #endif
+
+static FORCEINLINE void mcu_gen_pwm_and_servo(void)
+{
+	static int16_t mcu_soft_io_counter;
+	int16_t t = mcu_soft_io_counter;
+	t--;
+	if (t <= 0)
+	{
+// updated software PWM pins
+#if defined(IC74HC595_HAS_PWMS) || defined(MCU_HAS_SOFT_PWM_TIMER)
+		io_soft_pwm_update();
+#endif
+
+		// update servo pins
+#if SERVOS_MASK > 0
+		// also run servo pin signals
+		uint32_t counter = servo_tick_counter;
+
+		// updated next servo output
+		if (!(counter & 0x7F))
+		{
+			servo_update();
+		}
+
+		// reached set tick alarm and resets all servo outputs
+		if (counter == servo_tick_alarm)
+		{
+			servo_reset();
+		}
+
+		// resets every 3ms
+		servo_tick_counter = ++counter;
+#endif
+		mcu_soft_io_counter = (int16_t)roundf((float)ITP_SAMPLE_RATE / 128000.0f);
+	}
+	else
+	{
+		mcu_soft_io_counter = t;
+	}
+}
+
+static volatile uint32_t mcu_itp_timer_reload;
+static volatile bool mcu_itp_timer_running;
+static FORCEINLINE void mcu_gen_step(void)
+{
+	static bool step_reset = true;
+	static int32_t mcu_itp_timer_counter;
+
+	// generate steps
+	if (mcu_itp_timer_running)
+	{
+		// stream mode tick
+		int32_t t = mcu_itp_timer_counter;
+		bool reset = step_reset;
+		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
+		if (t <= 0)
+		{
+			if (!reset)
+			{
+				mcu_step_cb();
+			}
+			else
+			{
+				mcu_step_reset_cb();
+			}
+			step_reset = !reset;
+			mcu_itp_timer_counter = mcu_itp_timer_reload + t;
+		}
+		else
+		{
+			mcu_itp_timer_counter = t;
+		}
+	}
+}
 
 MCU_CALLBACK void mcu_gpio_isr(void *type)
 {
@@ -501,7 +505,8 @@ void mcu_rtc_task(void *arg)
 
 MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
-	esp32_io_updater();
+	mcu_gen_step();
+	mcu_gen_pwm_and_servo();
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
 	ic74hc595_shift_io_pins();
 #endif
@@ -592,7 +597,7 @@ void mcu_init(void)
 
 	// inititialize ITP timer
 	timer_config_t itpconfig = {0};
-	itpconfig.divider = getApbFrequency() / 1000000UL;
+	itpconfig.divider = 2;
 	itpconfig.counter_dir = TIMER_COUNT_UP;
 	itpconfig.counter_en = TIMER_PAUSE;
 	itpconfig.intr_type = TIMER_INTR_MAX;
@@ -603,7 +608,7 @@ void mcu_init(void)
 	   Also, if auto_reload is set, this value will be automatically reload on alarm */
 	timer_set_counter_value(ITP_TIMER_TG, ITP_TIMER_IDX, 0x00000000ULL);
 	/* Configure the alarm value and the interrupt on alarm. */
-	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(1000000UL / ITP_SAMPLE_RATE));
+	timer_set_alarm_value(ITP_TIMER_TG, ITP_TIMER_IDX, (uint64_t)(getApbFrequency() / (ITP_SAMPLE_RATE * 2)));
 	// register PWM isr
 	timer_isr_register(ITP_TIMER_TG, ITP_TIMER_IDX, mcu_itp_isr, NULL, 0, NULL);
 	timer_enable_intr(ITP_TIMER_TG, ITP_TIMER_IDX);
