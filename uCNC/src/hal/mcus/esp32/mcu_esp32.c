@@ -130,7 +130,7 @@ uint8_t itp_set_step_mode(uint8_t mode)
 static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 {
 	bool first_run = true;
-	uint8_t available_buffers = I2S_BUFFER_COUNT;
+	int8_t available_buffers = I2S_BUFFER_COUNT;
 	i2s_event_t evt;
 	portTickType xLastWakeTimeUpload = xTaskGetTickCount();
 	i2s_config_t i2s_config = {
@@ -192,7 +192,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 							available_buffers++;
 						}
 					}
-					vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+					vTaskDelayUntil(&xLastWakeTimeUpload, (20 / portTICK_RATE_MS));
 				}
 				I2SREG.conf.tx_start = 0;
 				I2SREG.conf.tx_reset = 1;
@@ -242,7 +242,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			}
 		}
 
-		if (mode == ITP_STEP_MODE_DEFAULT)
+		while (mode == ITP_STEP_MODE_DEFAULT && available_buffers > 0)
 		{
 			uint32_t i2s_dma_buffer[I2S_SAMPLES_PER_BUFFER];
 
@@ -263,7 +263,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			available_buffers--;
 		}
 
-		vTaskDelayUntil(&xLastWakeTimeUpload, (1 / portTICK_RATE_MS));
+		vTaskDelayUntil(&xLastWakeTimeUpload, (5 / portTICK_RATE_MS));
 	}
 }
 
