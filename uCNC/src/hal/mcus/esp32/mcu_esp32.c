@@ -40,7 +40,7 @@
 static volatile bool esp32_global_isr_enabled;
 static volatile bool mcu_itp_timer_running;
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-uint32_t ic74hc595_i2s_pins;
+volatile uint32_t ic74hc595_i2s_pins;
 #endif
 hw_timer_t *esp32_step_timer;
 
@@ -76,7 +76,6 @@ MCU_CALLBACK void mcu_gpio_isr(void *type);
  * IO 74HC595 expander via I2S
  * **/
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
-MCU_CALLBACK void ic74hc595_shift_io_pins(void);
 #if IC74HC595_COUNT != 4
 #error "IC74HC595_COUNT must be 4(bytes) to use ESP32 I2S mode for IO shifting"
 #endif
@@ -98,6 +97,26 @@ MCU_CALLBACK void ic74hc595_shift_io_pins(void);
 static volatile uint32_t i2s_mode;
 #define I2S_MODE __atomic_load_n((uint32_t *)&i2s_mode, __ATOMIC_RELAXED)
 
+// software generated oneshot for RT steps like laser PPI
+#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+static uint32_t esp32_oneshot_counter;
+static uint32_t esp32_oneshot_reload;
+static FORCEINLINE void mcu_gen_oneshot(void)
+{
+	if (esp32_oneshot_counter)
+	{
+		esp32_oneshot_counter--;
+		if (!esp32_oneshot_counter)
+		{
+			if (mcu_timeout_cb)
+			{
+				mcu_timeout_cb();
+			}
+		}
+	}
+}
+#endif
+
 // implements the custom step mode function to switch between buffered stepping and realtime stepping
 uint8_t itp_set_step_mode(uint8_t mode)
 {
@@ -106,15 +125,6 @@ uint8_t itp_set_step_mode(uint8_t mode)
 	__atomic_store_n((uint32_t *)&i2s_mode, (ITP_STEP_MODE_SYNC | mode), __ATOMIC_RELAXED);
 	cnc_delay_ms(20);
 	return last_mode;
-}
-
-// direct I2S write
-MCU_CALLBACK void ic74hc595_shift_io_pins(void)
-{
-	if (I2S_MODE == ITP_STEP_MODE_REALTIME)
-	{
-		I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
-	}
 }
 
 static void IRAM_ATTR esp32_i2s_stream_task(void *param)
@@ -240,6 +250,9 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 			{
 				mcu_gen_step();
 				mcu_gen_pwm_and_servo();
+#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+				mcu_gen_oneshot();
+#endif
 				// write to buffer
 				i2s_dma_buffer[t] = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 			}
@@ -256,7 +269,7 @@ static void IRAM_ATTR esp32_i2s_stream_task(void *param)
 
 static FORCEINLINE void esp32_i2s_extender_init(void)
 {
-#ifdef IC74HC595_FORCE_REALTIME
+#ifdef USE_I2S_REALTIME_MODE_ONLY
 	itp_set_step_mode(ITP_STEP_MODE_REALTIME);
 #else
 	itp_set_step_mode(ITP_STEP_MODE_DEFAULT);
@@ -507,8 +520,13 @@ MCU_CALLBACK void mcu_itp_isr(void *arg)
 {
 	mcu_gen_step();
 	mcu_gen_pwm_and_servo();
+#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+	mcu_gen_oneshot();
+#endif
 #if defined(IC74HC595_HAS_STEPS) || defined(IC74HC595_HAS_DIRS) || defined(IC74HC595_HAS_PWMS) || defined(IC74HC595_HAS_SERVOS)
-	ic74hc595_shift_io_pins();
+	// this is where the IO update happens in RT mode
+	// this prevents multiple
+	I2SREG.conf_single_data = __atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED);
 #endif
 
 	timer_group_clr_intr_status_in_isr(ITP_TIMER_TG, ITP_TIMER_IDX);
@@ -1054,6 +1072,9 @@ MCU_CALLBACK void mcu_oneshot_isr(void *arg)
 void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 {
 	mcu_timeout_cb = fp;
+#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_reload = ((ITP_SAMPLE_RATE >> 1) / timeout);
+#else
 	timer_config_t config = {0};
 	config.divider = getApbFrequency() / 1000000UL; // 1us per count
 	config.counter_dir = TIMER_COUNT_UP;
@@ -1070,6 +1091,7 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
 	timer_set_alarm_value(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, (uint64_t)timeout);
 	timer_enable_intr(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
 	timer_isr_register(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX, mcu_oneshot_isr, NULL, 0, NULL);
+#endif
 }
 #endif
 
@@ -1077,9 +1099,13 @@ void mcu_config_timeout(mcu_timeout_delgate fp, uint32_t timeout)
  * starts the timeout. Once hit the the respective callback is called
  * */
 #ifndef mcu_start_timeout
-void mcu_start_timeout()
+MCU_CALLBACK void mcu_start_timeout()
 {
+#if defined(MCU_HAS_ONESHOT_TIMER) && !defined(USE_I2S_REALTIME_MODE_ONLY) && defined(ENABLE_RT_SYNC_MOTIONS)
+	esp32_oneshot_counter = esp32_oneshot_reload;
+#else
 	timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX);
+#endif
 }
 #endif
 #endif

@@ -753,6 +753,10 @@ void io_enable_steppers(uint8_t mask)
 		io_clear_output(STEP7_EN);
 	}
 #endif
+
+#ifdef IC74HC595_HAS_STEPS_EN
+	ic74hc595_shift_io_pins();
+#endif
 }
 
 #if defined(MCU_HAS_SOFT_PWM_TIMER) || defined(IC74HC595_HAS_PWMS)
