@@ -207,7 +207,7 @@ static FORCEINLINE void mcu_gen_step(void)
 		// stream mode tick
 		int32_t t = mcu_itp_timer_counter;
 		bool reset = step_reset;
-		t -= (1000000UL / ITP_SAMPLE_RATE);
+		t -= (int32_t)roundf(1000000.0f / (float)ITP_SAMPLE_RATE);
 		if (t <= 0)
 		{
 			if (!reset)
@@ -335,7 +335,7 @@ void mcu_init(void)
 	timer1_isr_init();
 	timer1_attachInterrupt(mcu_itp_isr);
 	timer1_enable(TIM_DIV1, TIM_EDGE, TIM_LOOP);
-	timer1_write(625);
+	timer1_write((APB_CLK_FREQ / ITP_SAMPLE_RATE));
 
 #ifndef RAM_ONLY_SETTINGS
 	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
@@ -471,13 +471,12 @@ bool mcu_get_global_isr(void)
 void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 {
 	frequency = CLAMP((float)F_STEP_MIN, frequency, (float)F_STEP_MAX);
-
 	// up and down counter (generates half the step rate at each event)
-	uint32_t totalticks = (uint32_t)(500000.0f / frequency);
-	*prescaller = 0;
+	uint32_t totalticks = (uint32_t)((500000.0f) / frequency);
+	*prescaller = 1;
 	while (totalticks > 0xFFFF)
 	{
-		(*prescaller) += 1;
+		(*prescaller) <<= 1;
 		totalticks >>= 1;
 	}
 
@@ -486,7 +485,8 @@ void mcu_freq_to_clocks(float frequency, uint16_t *ticks, uint16_t *prescaller)
 
 float mcu_clocks_to_freq(uint16_t ticks, uint16_t prescaller)
 {
-	return (500000.0f / (float)(((uint32_t)ticks) << prescaller));
+	uint32_t totalticks = (uint32_t)ticks * prescaller;
+	return 500000.0f / ((float)totalticks);
 }
 
 /**
