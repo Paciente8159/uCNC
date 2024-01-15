@@ -912,17 +912,22 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 	// enable the probe
 	io_enable_probe();
-	mcu_probe_changed_cb();
 	mc_line(target, block_data);
 
 	do
 	{
 		if (io_get_probe() ^ (flags & 0x01))
 		{
+#ifndef ENABLE_RT_PROBE_CHECKING
 			mcu_probe_changed_cb();
+#endif
 			break;
 		}
-	} while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
+	} while (cnc_dotasks());
+
+	// waits for the motion to stop();
+	itp_sync();
+	cnc_clear_exec_state(EXEC_HOLD);
 
 	// disables the probe
 	io_disable_probe();
