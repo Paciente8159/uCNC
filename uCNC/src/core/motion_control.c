@@ -914,8 +914,13 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	io_enable_probe();
 	mc_line(target, block_data);
 
+	//similar to itp_sync
 	do
 	{
+		if (cnc_dotasks() != STATUS_OK)
+		{
+			break;
+		}
 		if (io_get_probe() ^ (flags & 0x01))
 		{
 #ifndef ENABLE_RT_PROBE_CHECKING
@@ -923,21 +928,18 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 #endif
 			break;
 		}
-	} while (cnc_dotasks());
-
-	// waits for the motion to stop();
-	itp_sync();
-	cnc_clear_exec_state(EXEC_HOLD);
+	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
 	// disables the probe
 	io_disable_probe();
-
 	// clears HALT state if possible
 	cnc_unlock(true);
-
 	itp_clear();
 	planner_clear();
+	// clears hold
+	cnc_clear_exec_state(EXEC_HOLD);
 	parser_update_probe_pos();
+
 	// sync the position of the motion control
 	mc_sync_position();
 	// HALT could not be cleared. Something is wrong
