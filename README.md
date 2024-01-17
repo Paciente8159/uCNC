@@ -174,6 +174,14 @@ Other G/M codes available via [external modules](https://github.com/Paciente8159
   - Enable/disable analog output pin synched/immediately: M67/M68
   - Enable/disable a digital output that controls the PSU: M80/M81
   - Smoothieware laser clustering mode modified gcode
+  - Support for small LCD crystal displays with I2C interface
+  - Support for monochromatic 128x64 displays (like Reprap fullgraphic discount)
+  - Mobile web pendant via Wifi
+  - BL touch module
+  - SD card support using SPI
+  - Wait for digital/analog input: M66
+  - Set home position from current position: G28.1/G30.1
+  - Play tone via PWM pin: M300
 
 **ALL custom G/M codes require at least ENABLE_PARSER_MODULES option enabled**
 
