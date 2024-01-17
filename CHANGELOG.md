@@ -8,6 +8,22 @@
 
 # Changelog
 
+## [1.8.6] - 17-01-2024
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - fix STM32F4x PWM configuration macro (#585)
+
+### Changed
+
+- modified emulator stepping timings (more stable and linear) (#587)
+- modified probe command. Now with option to do realtime (in step ISR) checking. Also modified probe to do a controlled stop on contact (HOLD) to avoid step loss if probing too fast (#586)
+
+### Fixed
+
+- fix home motion flush after soft reset (#583)
+- fix STM32F4x PWM configuration macro (#585)
+- fixed G38.x command to allow only defined mantissas (#589)
+
 ## [1.8.5] - 12-12-2023
 
 ### Added
@@ -1439,6 +1455,7 @@ Version 1.1.0 comes with many added features and improvements over the previous 
 
 ### Initial release
 
+[1.8.6]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.5]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.5
 [1.8.4]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.4
 [1.8.3]: https://github.com/Paciente8159/uCNC/releases/tag/v1.8.3
