@@ -2102,6 +2102,10 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 // motion codes
 #ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+		if (mantissa < 2 || mantissa > 5)
+		{
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		}
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif
