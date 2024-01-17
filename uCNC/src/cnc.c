@@ -395,15 +395,13 @@ void cnc_home(void)
 	planner_clear();
 	mc_sync_position();
 
-	if (error)
-	{
-		// disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		// cnc_alarm(error);
-		return;
-	}
+	// disables homing and reenables limits alarm messages
+	cnc_clear_exec_state(EXEC_HOMING);
 
-	cnc_run_startup_blocks();
+	if (error == STATUS_OK)
+	{
+		cnc_run_startup_blocks();
+	}
 }
 
 void cnc_alarm(int8_t code)
@@ -451,7 +449,6 @@ void cnc_stop(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_stop, NULL);
 #endif
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 uint8_t cnc_unlock(bool force)
@@ -969,7 +966,8 @@ bool cnc_check_interlocking(void)
 			itp_clear();
 			planner_clear();
 			mc_sync_position();
-			cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+			// homing will be cleared inside homing cycle
+			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD);
 		}
 
 		return false;
@@ -1005,11 +1003,6 @@ bool cnc_check_interlocking(void)
 		{
 			cnc_clear_exec_state(EXEC_JOG);
 		}
-	}
-
-	if (itp_is_empty() && planner_buffer_is_empty())
-	{
-		cnc_clear_exec_state(EXEC_RUN);
 	}
 
 	return true;

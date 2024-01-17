@@ -795,8 +795,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 	cnc_unlock(true);
-	// re-flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -849,8 +847,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	io_invert_limits(axis_limit);
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
