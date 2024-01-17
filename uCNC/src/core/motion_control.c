@@ -920,34 +920,35 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 	// enable the probe
 	io_enable_probe();
-	mcu_probe_changed_cb();
 	mc_line(target, block_data);
 
+	//similar to itp_sync
 	do
 	{
-		if (io_get_probe() ^ (flags & 0x01))
+		if (!cnc_dotasks())
 		{
-			mcu_probe_changed_cb();
 			break;
 		}
-	} while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
+		if (io_get_probe() ^ (flags & 0x01))
+		{
+#ifndef ENABLE_RT_PROBE_CHECKING
+			mcu_probe_changed_cb();
+#endif
+			break;
+		}
+	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
+	// wait for a stop
+	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
 	// disables the probe
 	io_disable_probe();
-
-	// clears HALT state if possible
-	cnc_unlock(true);
-
 	itp_clear();
 	planner_clear();
-	parser_update_probe_pos();
+	// clears hold
+	cnc_clear_exec_state(EXEC_HOLD);
+
 	// sync the position of the motion control
 	mc_sync_position();
-	// HALT could not be cleared. Something is wrong
-	if (cnc_get_exec_state(EXEC_UNHOMED))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
 
 	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 	probe_ok = io_get_probe();
@@ -960,7 +961,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		}
 		return STATUS_OK;
 	}
-
 #endif
 
 	return STATUS_PROBE_SUCCESS;
@@ -1136,7 +1136,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 			// store position
 			int32_t probe_position[STEPPER_COUNT];
-			itp_get_rt_position(probe_position);
+			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
 			protocol_send_probe_result(1);

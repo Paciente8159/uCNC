@@ -291,6 +291,10 @@ void parser_sync_probe(void)
 	itp_get_rt_position(rt_probe_step_pos);
 }
 
+void parser_get_probe(int32_t *position){
+	memcpy(position, rt_probe_step_pos, sizeof(rt_probe_step_pos));
+}
+
 void parser_update_probe_pos(void)
 {
 	kinematics_steps_to_coordinates(rt_probe_step_pos, parser_parameters.last_probe_position);
@@ -1711,8 +1715,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			else
 			{
+				// failed at this position
+				parser_sync_probe();
 				parser_parameters.last_probe_ok = 0;
 			}
+			// sync probe position
+			parser_update_probe_pos();
 
 			if (error == STATUS_OK)
 			{
@@ -2102,6 +2110,10 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 // motion codes
 #ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+		if (mantissa < 2 || mantissa > 5)
+		{
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		}
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif
