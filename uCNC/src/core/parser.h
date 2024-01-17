@@ -301,6 +301,7 @@ extern "C"
 	void parser_get_coordsys(uint8_t system_num, float *axis);
 	bool parser_get_wco(float *axis);
 	void parser_sync_probe(void);
+	void parser_get_probe(int32_t *position);
 	void parser_update_probe_pos(void);
 	uint8_t parser_get_probe_result(void);
 	void parser_parameters_load(void);

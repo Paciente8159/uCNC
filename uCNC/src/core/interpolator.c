@@ -897,6 +897,10 @@ MCU_CALLBACK void mcu_step_cb(void)
 		return;
 	}
 
+#ifdef ENABLE_RT_PROBE_CHECKING
+	mcu_probe_changed_cb();
+#endif
+
 	uint8_t new_stepbits = stepbits;
 	uint8_t dirs = 0;
 

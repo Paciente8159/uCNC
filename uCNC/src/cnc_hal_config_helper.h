@@ -195,6 +195,12 @@ extern "C"
 #define PROBE_PULLUP
 #endif
 
+#ifdef ENABLE_RT_PROBE_CHECKING
+#ifdef PROBE_ISR
+#undef PROBE_ISR
+#endif
+#endif
+
 #ifdef ESTOP_PULLUP_ENABLE
 #define ESTOP_PULLUP
 #endif
