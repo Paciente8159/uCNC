@@ -917,7 +917,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	//similar to itp_sync
 	do
 	{
-		if (cnc_dotasks() != STATUS_OK)
+		if (!cnc_dotasks())
 		{
 			break;
 		}
@@ -932,8 +932,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 	// disables the probe
 	io_disable_probe();
-	// clears HALT state if possible
-	cnc_unlock(true);
 	itp_clear();
 	planner_clear();
 	// clears hold
