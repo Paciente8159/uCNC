@@ -1052,3 +1052,59 @@ void cnc_run_startup_blocks(void)
 	// reset streams
 	serial_stream_change(NULL);
 }
+
+uint8_t cnc_get_state(void)
+{
+	// state check must obay this order
+	if (cnc_has_alarm())
+	{
+		return GRBL_STATE_ALARM;
+	}
+	else if (mc_get_checkmode())
+	{
+		return GRBL_STATE_CHECKMODE;
+	}
+	else
+	{
+		uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+		if (state & (EXEC_UNHOMED | EXEC_LIMITS))
+		{
+			return (!cnc_get_exec_state(EXEC_HOMING)) ? GRBL_STATE_ALARM : GRBL_STATE_HOMING;
+		}
+
+#if ASSERT_PIN(SAFETY_DOOR)
+		if (state & EXEC_DOOR)
+		{
+			if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
+			{
+				return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_DOOR_2 : GRBL_STATE_DOOR_1;
+			}
+
+			return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_DOOR_3 : GRBL_STATE_DOOR_0;
+		}
+#endif
+
+		if (state & EXEC_HOMING)
+		{
+			return GRBL_STATE_HOMING;
+		}
+
+		if (state & EXEC_HOLD)
+		{
+			return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_HOLD_1 : GRBL_STATE_HOLD_0;
+		}
+
+		if (state & EXEC_JOG)
+		{
+			return GRBL_STATE_JOG;
+		}
+
+		if (state & EXEC_RUN)
+		{
+			return GRBL_STATE_RUN;
+		}
+	}
+
+	return GRBL_STATE_IDLE;
+}
