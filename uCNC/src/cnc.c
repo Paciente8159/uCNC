@@ -1078,10 +1078,10 @@ uint8_t cnc_get_state(void)
 		{
 			if (CHECKFLAG(io_get_controls(), SAFETY_DOOR_MASK))
 			{
-				return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_DOOR_2 : GRBL_STATE_DOOR_1;
+				return (CHECKFLAG(state, EXEC_RUN)) ? GRBL_STATE_DOOR_2 : GRBL_STATE_DOOR_1;
 			}
 
-			return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_DOOR_3 : GRBL_STATE_DOOR_0;
+			return (CHECKFLAG(state, EXEC_RUN)) ? GRBL_STATE_DOOR_3 : GRBL_STATE_DOOR_0;
 		}
 #endif
 
@@ -1092,7 +1092,7 @@ uint8_t cnc_get_state(void)
 
 		if (state & EXEC_HOLD)
 		{
-			return (cnc_get_exec_state(EXEC_RUN)) ? GRBL_STATE_HOLD_1 : GRBL_STATE_HOLD_0;
+			return (CHECKFLAG(state, EXEC_RUN)) ? GRBL_STATE_HOLD_1 : GRBL_STATE_HOLD_0;
 		}
 
 		if (state & EXEC_JOG)

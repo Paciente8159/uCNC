@@ -235,6 +235,7 @@ void protocol_send_status(void)
 		break;
 	case GRBL_STATE_DOOR_0:
 		protocol_send_string(MSG_STATUS_DOOR);
+		serial_putc(':');
 		serial_putc('0' + GRBL_STATE_CODE_MANTISSA(state));
 		break;
 	case GRBL_STATE_HOMING:
@@ -242,6 +243,7 @@ void protocol_send_status(void)
 		break;
 	case GRBL_STATE_HOLD_0:
 		protocol_send_string(MSG_STATUS_HOLD);
+		serial_putc(':');
 		serial_putc('0' + GRBL_STATE_CODE_MANTISSA(state));
 		break;
 	case GRBL_STATE_JOG:
