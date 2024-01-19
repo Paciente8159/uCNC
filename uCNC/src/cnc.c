@@ -341,9 +341,9 @@ void cnc_restore_motion(void)
 }
 
 // this function is executed every millisecond
+#ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-#ifndef DISABLE_RTC_CODE
 	static bool running = false;
 
 	if (!running)
@@ -377,8 +377,8 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 		mcu_disable_global_isr();
 		running = false;
 	}
-#endif
 }
+#endif
 
 void cnc_home(void)
 {
