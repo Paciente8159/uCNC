@@ -215,7 +215,7 @@ uint16_t tool_get_speed()
 	{
 		return tool_current.get_speed();
 	}
-	return tool_current_speed;
+	return tool_get_setpoint();
 #endif
 	return 0;
 }
@@ -224,19 +224,19 @@ int16_t tool_get_setpoint(void)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
-	return tool_current_speed;
+	return tool_range_speed(tool_current_speed, 1);
 #endif
 	return 0;
 }
 
-int16_t tool_range_speed(int16_t value)
+int16_t tool_range_speed(int16_t value, uint8_t conv)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
 	if (tool_current.range_speed)
 	{
 		value = ABS(value);
-		return tool_current.range_speed(value);
+		return tool_current.range_speed(value, conv);
 	}
 #endif
 	return value;

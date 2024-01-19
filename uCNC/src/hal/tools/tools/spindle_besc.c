@@ -81,14 +81,21 @@ static void shutdown_code(void)
 #endif
 }
 
-static int16_t range_speed(int16_t value)
+static int16_t range_speed(int16_t value, uint8_t conv)
 {
 	if (value == 0)
 	{
 		return 0;
 	}
 
-	value = (int16_t)((SPINDLE_BESC_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + SPINDLE_BESC_LOW);
+	if (!conv)
+	{
+		value = (int16_t)((SPINDLE_BESC_RANGE) * (((float)value) / g_settings.spindle_max_rpm) + SPINDLE_BESC_LOW);
+	}
+	else
+	{
+		value = (int16_t)roundf((1.0f / (float)SPINDLE_BESC_RANGE) * (value - SPINDLE_BESC_LOW) * g_settings.spindle_max_rpm);
+	}
 	return value;
 }
 

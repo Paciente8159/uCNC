@@ -77,7 +77,7 @@ static void dummy_tool_set_speed(int16_t value)
     // with this value some operation must be done in order to update the tool
 }
 
-static int16_t dummy_tool_range_speed(int16_t value)
+static int16_t dummy_tool_range_speed(int16_t value, uint8_t conv)
 {
     // in this function you do all your calculations to convert from GCode S speed to tool IO control speed (to PWM value or other for example)
 
@@ -85,6 +85,9 @@ static int16_t dummy_tool_range_speed(int16_t value)
     // if M4 the value will be negative
 
     // do something to value and return the converted value, that can be either a convertion formula or a lookup table
+
+	// conv = 0 (to convert from S to tool IO control speed)
+	// conv = 1 (to convert from tool IO control speed to S)
 
     return value;
 }
