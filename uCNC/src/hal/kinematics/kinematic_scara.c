@@ -144,7 +144,6 @@ uint8_t kinematics_home(void)
 	itp_reset_rt_position(target);
 	mc_sync_position();
 
-	cnc_set_exec_state(EXEC_HOMING);
 	motion_data_t block_data = {0};
 	mc_get_position(target);
 
@@ -160,8 +159,6 @@ uint8_t kinematics_home(void)
 	mc_line(target, &block_data);
 	itp_sync();
 #endif
-	// unlocks the machine to go to offset
-	cnc_clear_exec_state(EXEC_HOMING);
 	
 	return STATUS_OK;
 }
