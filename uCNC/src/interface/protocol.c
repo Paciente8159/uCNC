@@ -418,14 +418,14 @@ void protocol_send_gcode_coordsys(void)
 	{
 		parser_get_coordsys(i, axis);
 		protocol_send_string(__romstr__("[G"));
-		if (i < 5)
+		if (i < 6)
 		{
 			serial_print_int(i + 54);
 		}
 		else
 		{
 			protocol_send_string(__romstr__("59."));
-			serial_print_int(i - 4);
+			serial_print_int(i - 5);
 		}
 		serial_putc(':');
 		serial_print_fltarr(axis, AXIS_COUNT);
