@@ -84,7 +84,7 @@ extern "C"
 #define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)					// Interlocking check failed
 #define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)					// System alarms
 #define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)				// System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOMING | EXEC_JOG) // Gcode is locked by an alarm or any special motion state
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG) 				// Gcode is locked by an alarm or any special motion state
 #define EXEC_ALLACTIVE 255													// All states
 
 // this is a new list of states that can be used more easilly to get the current "Grbl" state

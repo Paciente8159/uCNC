@@ -79,10 +79,22 @@ static void set_speed(int16_t value)
 #endif
 }
 
-static int16_t range_speed(int16_t value)
+static int16_t range_speed(int16_t value, uint8_t conv)
 {
+	if (value == 0)
+	{
+		return 0;
+	}
+
 	// converts core tool speed to laser power (PWM)
-	value = (int16_t)(LASER_PWM_MIN_VALUE + ((255.0f - LASER_PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
+	if (!conv)
+	{
+		value = (int16_t)(LASER_PWM_MIN_VALUE + ((255.0f - LASER_PWM_MIN_VALUE) * (((float)value) / g_settings.spindle_max_rpm)));
+	}
+	else
+	{
+		value = (int16_t)roundf((1.0f / (float)(255.0f - LASER_PWM_MIN_VALUE)) * (value - LASER_PWM_MIN_VALUE) * g_settings.spindle_max_rpm);
+	}
 	return value;
 }
 
@@ -94,21 +106,11 @@ static void set_coolant(uint8_t value)
 #endif
 }
 
-static uint16_t get_speed(void)
-{
-#if ASSERT_PIN(LASER_PWM)
-	float laser = (float)io_get_pwm(LASER_PWM) * g_settings.spindle_max_rpm * UINT8_MAX_INV;
-	return (uint16_t)lroundf(laser);
-#else
-	return 0;
-#endif
-}
-
 const tool_t laser_pwm = {
 	.startup_code = &startup_code,
 	.shutdown_code = &shutdown_code,
 	.pid_update = NULL,
 	.range_speed = &range_speed,
-	.get_speed = &get_speed,
+	.get_speed = NULL,
 	.set_speed = &set_speed,
 	.set_coolant = &set_coolant};

@@ -106,9 +106,17 @@ static void set_coolant(uint8_t value)
 #endif
 }
 
-static int16_t range_speed(int16_t value)
+static int16_t range_speed(int16_t value, uint8_t conv)
 {
-	value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+	// converts core tool speed to laser power (PWM)
+	if (!conv)
+	{
+		value = (int16_t)((255.0f) * (((float)value) / g_settings.spindle_max_rpm));
+	}
+	else
+	{
+		value = (int16_t)roundf((1.0f / 255.0f) * value * g_settings.spindle_max_rpm);
+	}
 	return value;
 }
 
