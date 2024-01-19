@@ -95,9 +95,7 @@ void protocol_send_ip(uint32_t ip)
 {
 	uint8_t *pt = (uint8_t *)&ip;
 	protocol_send_string(MSG_START);
-	serial_putc('I');
-	serial_putc('P');
-	serial_putc(' ');
+	protocol_send_string(__romstr__("IP "));
 	uint8_t b = *pt;
 	serial_print_int((uint32_t)b);
 	serial_putc('.');
@@ -416,23 +414,20 @@ void protocol_send_gcode_coordsys(void)
 {
 	protocol_busy = true;
 	float axis[MAX(AXIS_COUNT, 3)];
-	uint8_t coordlimit = MIN(6, COORD_SYS_COUNT);
-	for (uint8_t i = 0; i < coordlimit; i++)
+	for (uint8_t i = 0; i < COORD_SYS_COUNT; i++)
 	{
 		parser_get_coordsys(i, axis);
 		protocol_send_string(__romstr__("[G"));
-		serial_print_int(i + 54);
+		if (i < 5)
+		{
+			serial_print_int(i + 54);
+		}
+		else
+		{
+			protocol_send_string(__romstr__("59."));
+			serial_print_int(i - 4);
+		}
 		serial_putc(':');
-		serial_print_fltarr(axis, AXIS_COUNT);
-		serial_putc(']');
-		protocol_send_newline();
-	}
-
-	for (uint8_t i = 6; i < COORD_SYS_COUNT; i++)
-	{
-		serial_print_int(i - 5);
-		serial_putc(':');
-		parser_get_coordsys(i, axis);
 		serial_print_fltarr(axis, AXIS_COUNT);
 		serial_putc(']');
 		protocol_send_newline();
@@ -542,13 +537,9 @@ void protocol_send_gcode_modes(void)
 
 	serial_putc('T');
 	serial_print_int(modalgroups[11]);
-	serial_putc(' ');
-
-	serial_putc('F');
+	protocol_send_string(__romstr__(" F"));
 	serial_print_fltunits(feed);
-	serial_putc(' ');
-
-	serial_putc('S');
+	protocol_send_string(__romstr__(" S"));
 	serial_print_int(spindle);
 
 	serial_putc(']');
