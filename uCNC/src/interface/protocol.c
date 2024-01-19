@@ -110,25 +110,6 @@ void protocol_send_ip(uint32_t ip)
 	protocol_send_string(MSG_END);
 }
 
-static uint8_t protocol_get_tools(void)
-{
-	// leave extra room for future modal groups
-	uint8_t modalgroups[MAX_MODAL_GROUPS];
-	uint16_t feed;
-	uint16_t spindle;
-	uint8_t coolant;
-
-	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
-
-#if TOOL_COUNT > 0
-	if (modalgroups[8] != 5)
-	{
-		coolant |= ((modalgroups[8] == 3) ? 4 : 8);
-	}
-#endif
-	return coolant;
-}
-
 WEAK_EVENT_HANDLER(protocol_send_status)
 {
 	// custom handler
@@ -146,7 +127,7 @@ WEAK_EVENT_HANDLER(protocol_send_status)
 	return EVENT_CONTINUE;
 }
 
-static void protocol_send_status_tail(void)
+static FORCEINLINE void protocol_send_status_tail(void)
 {
 	float axis[MAX(AXIS_COUNT, 3)];
 	if (parser_get_wco(axis))
@@ -169,27 +150,33 @@ static void protocol_send_status_tail(void)
 #else
 		serial_putc('0');
 #endif
-		uint8_t tools = protocol_get_tools();
-		if (tools)
+		uint8_t modalgroups[MAX_MODAL_GROUPS];
+		uint16_t feed;
+		uint16_t spindle;
+
+		parser_get_modes(modalgroups, &feed, &spindle);
+		if (modalgroups[8] != 5 || modalgroups[9])
 		{
 			protocol_send_string(MSG_STATUS_TOOL);
-			if (CHECKFLAG(tools, 4))
+			if (modalgroups[8] == 3)
 			{
 				serial_putc('S');
 			}
-			if (CHECKFLAG(tools, 8))
+			if (modalgroups[8] == 4)
 			{
 				serial_putc('C');
 			}
-			if (CHECKFLAG(tools, COOLANT_MASK))
+#ifdef ENABLE_COOLANT
+			if (CHECKFLAG(modalgroups[9], COOLANT_MASK))
 			{
 				serial_putc('F');
 			}
 
-			if (CHECKFLAG(tools, MIST_MASK))
+			if (CHECKFLAG(modalgroups[9], MIST_MASK))
 			{
 				serial_putc('M');
 			}
+#endif
 		}
 		return;
 	}
@@ -492,9 +479,8 @@ void protocol_send_gcode_modes(void)
 	uint8_t modalgroups[MAX_MODAL_GROUPS];
 	uint16_t feed;
 	uint16_t spindle;
-	uint8_t coolant;
 
-	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
+	parser_get_modes(modalgroups, &feed, &spindle);
 
 	serial_broadcast(true);
 
@@ -530,10 +516,25 @@ void protocol_send_gcode_modes(void)
 	EVENT_INVOKE(protocol_send_gcode_modes, NULL);
 #endif
 
-	for (uint8_t i = 8; i < 11; i++)
+	protocol_send_parser_modalstate('M', modalgroups[8], 0);
+#ifdef ENABLE_COOLANT
+	if (modalgroups[9] == M9)
 	{
-		protocol_send_parser_modalstate('M', modalgroups[i], 0);
+		protocol_send_string(__romstr__("M9 "));
 	}
+	if (modalgroups[9] & M7)
+	{
+		protocol_send_string(__romstr__("M7 "));
+	}
+	if (modalgroups[9] & M8)
+	{
+		protocol_send_string(__romstr__("M8 "));
+	}
+#else
+	// permanent M9
+	protocol_send_string(__romstr__("M9 "));
+#endif
+	protocol_send_parser_modalstate('M', modalgroups[10], 0);
 
 	serial_putc('T');
 	serial_print_int(modalgroups[11]);
