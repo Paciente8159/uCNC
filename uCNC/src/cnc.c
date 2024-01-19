@@ -676,12 +676,13 @@ void cnc_call_rt_command(uint8_t command)
 			tools_cmd |= (1 << (command - CMD_CODE_SPINDLE_100));
 		}
 
+#ifdef ENABLE_COOLANT
 		if (command >= CMD_CODE_COOL_FLD_TOGGLE && command <= CMD_CODE_COOL_MST_TOGGLE)
 		{
 			tools_cmd &= RTCMD_SPINDLE_MASK;
 			tools_cmd |= (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
 		}
-
+#endif
 		cnc_state.tool_ovr_cmd = tools_cmd;
 	}
 }
@@ -828,11 +829,12 @@ void cnc_exec_rt_commands(void)
 #endif
 		}
 
+#ifdef ENABLE_COOLANT
 		switch (command & RTCMD_COOLANT_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_COOL_FLD_TOGGLE:
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 		case RT_CMD_COOL_MST_TOGGLE:
 #endif
 			if (!cnc_get_exec_state(EXEC_ALARM)) // if no alarm is active
@@ -841,7 +843,7 @@ void cnc_exec_rt_commands(void)
 				{
 					planner_coolant_ovr_toggle(COOLANT_MASK);
 				}
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 				if (command == RT_CMD_COOL_MST_TOGGLE)
 				{
 					planner_coolant_ovr_toggle(MIST_MASK);
@@ -851,7 +853,7 @@ void cnc_exec_rt_commands(void)
 			break;
 #endif
 		}
-
+#endif
 		if (update_tools)
 		{
 			itp_update();

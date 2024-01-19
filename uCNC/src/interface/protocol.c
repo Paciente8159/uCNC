@@ -171,11 +171,12 @@ static FORCEINLINE void protocol_send_status_tail(void)
 			{
 				serial_putc('F');
 			}
-
+#ifndef M7_SAME_AS_M8
 			if (CHECKFLAG(modalgroups[9], MIST_MASK))
 			{
 				serial_putc('M');
 			}
+#endif
 #endif
 		}
 		return;
@@ -522,10 +523,12 @@ void protocol_send_gcode_modes(void)
 	{
 		protocol_send_string(__romstr__("M9 "));
 	}
+#ifndef M7_SAME_AS_M8
 	if (modalgroups[9] & M7)
 	{
 		protocol_send_string(__romstr__("M7 "));
 	}
+#endif
 	if (modalgroups[9] & M8)
 	{
 		protocol_send_string(__romstr__("M8 "));
