@@ -53,6 +53,33 @@ extern "C"
 
 #define DECL_SERIAL_STREAM(name, getc_cb, available_cb, clear_cb, putc_cb, flush_cb) serial_stream_t name = {getc_cb, available_cb, clear_cb, putc_cb, flush_cb, NULL}
 
+#define DECL_SERIAL_SIMPLE_STREAM(name, size)                                                   \
+	DECL_BUFFER(uint8_t, name##_stream_buffer, size);                                           \
+	static uint8_t name##_getc(void)                                                            \
+	{                                                                                           \
+		uint8_t c = 0;                                                                          \
+		BUFFER_DEQUEUE(name##_stream_buffer, &c);                                               \
+		return c;                                                                               \
+	}                                                                                           \
+	uint8_t name##_available(void) { return BUFFER_READ_AVAILABLE(name##_stream_buffer); }      \
+	void name##_clear(void) { BUFFER_CLEAR(name##_stream_buffer); }                             \
+	DECL_SERIAL_STREAM(name##_stream, name##_getc, name##_available, name##_clear, NULL, NULL); \
+	uint8_t name##_send_cmd(const char *__s)                                                    \
+	{ /*if machine is running (not jogging) rejects the command*/                               \
+		if (cnc_get_exec_state(EXEC_RUN | EXEC_JOG) == EXEC_RUN)                                \
+		{                                                                                       \
+			return STATUS_SYSTEM_GC_LOCK;                                                       \
+		}                                                                                       \
+		uint8_t len = strlen(__s);                                                              \
+		uint8_t w;                                                                              \
+		if (BUFFER_WRITE_AVAILABLE(name##_stream_buffer) < len)                                 \
+		{                                                                                       \
+			return STATUS_STREAM_FAILED;                                                        \
+		}                                                                                       \
+		BUFFER_WRITE(name##_stream_buffer, __s, len, w);                                        \
+		return STATUS_OK;                                                                       \
+	}
+
 	void serial_init();
 
 	void serial_stream_register(serial_stream_t *stream);
@@ -91,11 +118,11 @@ extern "C"
 
 #ifdef ENABLE_DEBUG_STREAM
 #ifndef DEBUG_STREAM
-extern serial_stream_t *default_stream;
+	extern serial_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
 #endif
 
-extern void debug_putc(char c);
+	extern void debug_putc(char c);
 #define DEBUG_PUTC(c) debug_putc(c)
 #define DEBUG_STR(__s) print_str(debug_putc, __s)
 #define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)
