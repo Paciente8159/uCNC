@@ -53,11 +53,6 @@ DECL_SERIAL_STREAM(wifi_serial_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wi
 #if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(bt_serial_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
 #endif
-#else
-// if not multistreaming
-void (*stream_putc)(uint8_t);
-void (*stream_flush)(void);
-
 #endif
 
 static uint8_t serial_peek_buffer;

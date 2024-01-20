@@ -28,11 +28,6 @@ extern "C"
 #define BOARD_NAME "Arduino UNO"
 #endif
 
-// reduces RAM usage a bit to prevent hardware resets
-#ifndef PLANNER_BUFFER_SIZE
-#define PLANNER_BUFFER_SIZE 14
-#endif
-
 #define PCINT0_PORT B
 #define PCINT1_PORT C
 #define PCINT2_PORT D
@@ -143,6 +138,23 @@ extern "C"
 	// #define RTC_TIMER 0
 
 #define ONESHOT_TIMER 2
+
+/**
+ * 
+ * These are some paramaters needed to reduce code size for the UNO board
+ * 
+ * **/
+// reduces RAM usage a bit to prevent hardware resets
+#ifndef PLANNER_BUFFER_SIZE
+#define PLANNER_BUFFER_SIZE 14
+#endif
+// reduces ITP code size by avoiding some optimizations
+#ifdef STEP_ISR_SKIP_MAIN
+#undef STEP_ISR_SKIP_MAIN
+#endif
+#ifdef STEP_ISR_SKIP_IDLE
+#undef STEP_ISR_SKIP_IDLE
+#endif
 
 #ifdef __cplusplus
 }
