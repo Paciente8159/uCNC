@@ -56,7 +56,7 @@ extern "C"
 	void serial_init();
 
 	void serial_stream_register(serial_stream_t *stream);
-	void serial_stream_change(serial_stream_t *stream);
+	bool serial_stream_change(serial_stream_t *stream);
 	void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb);
 	void serial_stream_eeprom(uint16_t address);
 
