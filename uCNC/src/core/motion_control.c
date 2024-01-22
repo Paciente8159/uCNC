@@ -971,10 +971,11 @@ void mc_sync_position(void)
 uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 {
 	float new_target[AXIS_COUNT];
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
 
-	if (cnc_get_exec_state(~(EXEC_RUN | EXEC_HOLD)) || cnc_has_alarm()) // if any other than idle, run or hold discards the command
+	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
 	{
-		return STATUS_SYSTEM_GC_LOCK;
+		return STATUS_IDLE_ERROR;
 	}
 
 	cnc_set_exec_state(EXEC_JOG);
