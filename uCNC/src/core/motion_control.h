@@ -115,6 +115,8 @@ extern "C"
 	void mc_get_position(float *target);
 	void mc_sync_position(void);
 
+	uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data);
+
 #ifdef ENABLE_G39_H_MAPPING
 	uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data_t *block_data);
 #endif
