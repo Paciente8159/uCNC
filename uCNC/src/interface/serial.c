@@ -144,11 +144,19 @@ bool serial_stream_change(serial_stream_t *stream)
 	return true;
 }
 
-void serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
+bool serial_stream_readonly(stream_getc_cb getc_cb, stream_available_cb available_cb, stream_clear_cb clear_cb)
 {
+#ifdef ENABLE_MULTISTREAM_GUARD
+	if (serial_rx_busy)
+	{
+		return false;
+	}
+#endif
+
 	stream_getc = getc_cb;
 	stream_available = available_cb;
 	stream_clear = clear_cb;
+	return true;
 }
 
 static uint16_t stream_eeprom_address;
