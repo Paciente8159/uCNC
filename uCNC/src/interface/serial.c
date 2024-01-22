@@ -230,35 +230,34 @@ uint8_t serial_available(void)
 
 #ifndef DISABLE_MULTISTREAM_SERIAL
 	uint8_t count = stream_available();
-#ifdef ENABLE_MULTISTREAM_GUARD
-	if (serial_rx_busy)
+	if (!count)
 	{
-#endif
-		if (!count)
-		{
-			serial_stream_t *p = default_stream;
-			while (p != NULL)
-			{
-#ifdef ENABLE_DEBUG_STREAM
-				// skip the debug stream
-				if (p != DEBUG_STREAM)
-				{
-#endif
-					count = (!(p->stream_available)) ? 0 : p->stream_available();
-					if (count)
-					{
-						serial_stream_change(p);
-						return count;
-					}
-#ifdef ENABLE_DEBUG_STREAM
-				}
-#endif
-				p = p->next;
-			}
-		}
 #ifdef ENABLE_MULTISTREAM_GUARD
-	}
+		if (serial_rx_busy)
+		{
+			return count;
+		}
 #endif
+		serial_stream_t *p = default_stream;
+		while (p != NULL)
+		{
+#ifdef ENABLE_DEBUG_STREAM
+			// skip the debug stream
+			if (p != DEBUG_STREAM)
+			{
+#endif
+				count = (!(p->stream_available)) ? 0 : p->stream_available();
+				if (count)
+				{
+					serial_stream_change(p);
+					return count;
+				}
+#ifdef ENABLE_DEBUG_STREAM
+			}
+#endif
+			p = p->next;
+		}
+	}
 	return count;
 #else
 	return stream_available();
