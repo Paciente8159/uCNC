@@ -13,6 +13,7 @@
 - modified UART ISR name to be seamless between Uno and Mega (#556)
 
 ### Fixed
+- fixed bug introduced with #556
 - fixed software bound checking with option SET_ORIGIN_AT_HOME_POS enabled (#541)
 - fixed system menu variable incorrect types for some settings (#539)
 - fixed coolant planner mask update control and removed deprecated coolant pin assert (#562)
