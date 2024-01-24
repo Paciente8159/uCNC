@@ -18,7 +18,6 @@
 */
 
 #include "cnc.h"
-#include "modules/tmcdriver.h"
 #include "modules/digimstep.h"
 #include "modules/digipot.h"
 #include "modules/encoder.h"
@@ -58,10 +57,6 @@ void mod_init(void)
 
 #if ENCODERS > 0
 	LOAD_MODULE(encoder);
-#endif
-
-#ifdef ENABLE_TMC_DRIVERS
-	LOAD_MODULE(tmcdriver);
 #endif
 
 #ifdef ENABLE_LASER_PPI

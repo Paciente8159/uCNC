@@ -8,6 +8,8 @@ extern "C"
 {
 #endif
 
+#define STEPPER0_HAS_TMC
+
 #ifdef __cplusplus
 }
 #endif
