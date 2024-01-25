@@ -19,7 +19,6 @@
 
 void softuart_putc(softuart_port_t *port, char c)
 {
-	cnc_dotasks();
 	if (!port)
 	{
 #if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
@@ -59,14 +58,13 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 	}
 	else
 	{
-		ms_timeout *= 1000;
+		ms_timeout += mcu_millis();
 		while (port->rx())
 		{
-			if (!ms_timeout--)
+			if (ms_timeout < mcu_millis())
 			{
 				return -1;
 			}
-			cnc_dotasks();
 		}
 		port->waithalf();
 
