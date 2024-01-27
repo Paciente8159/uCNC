@@ -22,7 +22,7 @@ void softuart_putc(softuart_port_t *port, char c)
 	if (!port)
 	{
 #if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
-		mcu_uart_putc(c);
+		mcu_uart2_putc(c);
 #endif
 	}
 	else
@@ -58,18 +58,20 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 	}
 	else
 	{
-		ms_timeout += mcu_millis();
+		ms_timeout *= 1000;
 		while (port->rx())
 		{
-			if (ms_timeout < mcu_millis())
+			if (!ms_timeout--)
 			{
 				return -1;
 			}
+			mcu_delay_us(1);
 		}
 		port->waithalf();
 
 		uint8_t bits = 8;
 		uint8_t mask = 0x01;
+
 		do
 		{
 			port->wait();
