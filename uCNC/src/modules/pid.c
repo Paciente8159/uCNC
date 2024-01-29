@@ -33,7 +33,7 @@ bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, ui
 	pid->next_sample = next_sample;
 	float pidkp = pid->k[0];
 	float pidki = pid->k[1] * delta_t;
-	float pidkd = delta_t > 0 ? pid->k[2] / delta_t : 0;
+	float pidkd = pid->k[2] / delta_t;
 	*output = 0;
 	float error = setpoint - input;
 	float input_delta = input - pid->last_input;

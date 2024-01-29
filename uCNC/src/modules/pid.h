@@ -30,7 +30,7 @@ extern "C"
 #include <float.h>
 #include <stdio.h>
 
-#define HZ_TO_MS(hz) ((uint32_t)(1000.0f/(hz)))
+#define HZ_TO_MS(hz) (1000/(hz))
 
 	typedef struct pid_data_
 	{

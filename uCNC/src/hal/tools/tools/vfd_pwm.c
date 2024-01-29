@@ -56,6 +56,9 @@
 #include "../../../modules/pid.h"
 static pid_data_t vfd_pwm_pid;
 DECL_EXTENDED_SETTING(VFD_PWM_PID_SETTING_ID, vfd_pwm_pid.k, float, 3, protocol_send_gcode_setting_line_flt);
+#if (HZ_TO_MS(VFD_PWM_PID_SAMPLE_RATE_HZ) == 0)
+#error "Period of VFD_PWM_PID_SAMPLE_RATE_HZ is zero (not enough integer precision)"
+#endif
 #endif
 
 static void startup_code(void)
