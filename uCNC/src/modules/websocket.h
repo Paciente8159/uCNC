@@ -1,10 +1,10 @@
 /*
-	Name: endpoint.h
-	Description: Webserver endpoints for µCNC.
+	Name: websocket.h
+	Description: Websocket for µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 25-10-2023
+	Date: 29-01-2024
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef ENDPOINT_H
-#define ENDPOINT_H
+#ifndef WEBSOCKET_H
+#define WEBSOCKET_H
 
 #ifdef __cplusplus
 extern "C"
@@ -27,15 +27,25 @@ extern "C"
 #include "../cnc.h"
 #include <stddef.h>
 
-	typedef void (*endpoint_delegate)(void);
+	typedef struct websocketclient_
+	{
+		uint8_t clientid;
+		uint32_t ip;
+	} websocketclient_t;
 
-	DECL_MODULE(endpoint);
-	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
-	int endpoint_request_hasargs(void);
-	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen);
-	void endpoint_send(int code, const char *content_type, const char *data);
-	void endpoint_send_header(const char *name, const char *data, bool first);
-	bool endpoint_send_file(const char * file_path, const char *content_type);
+	typedef struct websocket_event_
+	{
+		uint8_t id;
+		uint32_t ip;
+		uint8_t event;
+		uint8_t *data;
+		size_t length;
+	} websocket_event_t;
+
+	DECL_MODULE(websocket);
+	DECL_EVENT_HANDLER(websocket_client_connected);
+	DECL_EVENT_HANDLER(websocket_client_disconnected);
+	DECL_EVENT_HANDLER(websocket_client_client_data);
 
 #ifdef __cplusplus
 }

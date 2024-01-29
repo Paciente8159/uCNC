@@ -411,6 +411,58 @@ extern "C"
 
 #endif
 
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#include "WebSocketsServer.h"
+#include "../../../modules/websocket.h"
+	WebSocketsServer socket_server(81);
+
+	WEAK_EVENT_HANDLER(websocket_client_connected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_connected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_disconnected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_client_data)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_client_data);
+	}
+
+	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+	{
+		websocket_event_t event = {num, socket_server.remoteIP(num).v4(), type, payload, length};
+		switch (type)
+		{
+		case WStype_DISCONNECTED:
+			EVENT_INVOKE(websocket_client_disconnected, &event);
+			return;
+		case WStype_CONNECTED:
+			EVENT_INVOKE(websocket_client_connected, &event);
+			return;
+		case WStype_TEXT:
+		case WStype_BIN:
+		case WStype_FRAGMENT_TEXT_START:
+		case WStype_FRAGMENT_BIN_START:
+		case WStype_FRAGMENT:
+		case WStype_FRAGMENT_FIN:
+		case WStype_PING:
+		case WStype_PONG:
+			EVENT_INVOKE(websocket_client_client_data, &event);
+			break;
+		}
+	}
+
+	// call to the websocketserver initializer
+	DECL_MODULE(websocket)
+	{
+		socket_server.begin();
+		socket_server.onEvent(webSocketEvent);
+	}
+#endif
+
 	void esp8266_uart_init(int baud)
 	{
 		Serial.begin(baud);
@@ -627,6 +679,10 @@ extern "C"
 #endif
 			}
 		}
+
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.loop();
+#endif
 #endif
 	}
 }
