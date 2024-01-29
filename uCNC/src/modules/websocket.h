@@ -27,11 +27,23 @@ extern "C"
 #include "../cnc.h"
 #include <stddef.h>
 
-	typedef struct websocketclient_
-	{
-		uint8_t clientid;
-		uint32_t ip;
-	} websocketclient_t;
+#define WS_EVENT_ERROR 0
+#define WS_EVENT_DISCONNECTED 1
+#define WS_EVENT_CONNECTED 2
+#define WS_EVENT_TEXT 3
+#define WS_EVENT_BIN 4
+#define WS_EVENT_FRAGMENT_TEXT_START 5
+#define WS_EVENT_FRAGMENT_BIN_START 6
+#define WS_EVENT_FRAGMENT 7
+#define WS_EVENT_FRAGMENT_FIN 8
+#define WS_EVENT_PING 9
+#define WS_EVENT_PONG 10
+
+#define WS_SEND_TXT 1
+#define WS_SEND_BIN 2
+#define WS_SEND_PING 4
+#define WS_SEND_TYPE (WS_SEND_TXT | WS_SEND_BIN | WS_SEND_PING)
+#define WS_SEND_BROADCAST 128
 
 	typedef struct websocket_event_
 	{
@@ -42,10 +54,12 @@ extern "C"
 		size_t length;
 	} websocket_event_t;
 
+	/*These must be implemented by the MCU HAL*/
 	DECL_MODULE(websocket);
 	DECL_EVENT_HANDLER(websocket_client_connected);
 	DECL_EVENT_HANDLER(websocket_client_disconnected);
-	DECL_EVENT_HANDLER(websocket_client_client_data);
+	DECL_EVENT_HANDLER(websocket_client_receive);
+	void __attribute__((weak)) websocket_client_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags);
 
 #ifdef __cplusplus
 }
