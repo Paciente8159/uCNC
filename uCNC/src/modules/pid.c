@@ -23,7 +23,7 @@
 
 bool pid_compute(pid_data_t *pid, float *output, float setpoint, float input, uint32_t sample_rate_ms)
 {
-	if (mcu_millis() < pid->next_sample)																						 
+	if (mcu_millis() < pid->next_sample)
 	{
 		return false;
 	}
