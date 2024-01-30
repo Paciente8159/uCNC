@@ -443,7 +443,7 @@ extern "C"
 		DEFAULT_EVENT_HANDLER(websocket_client_receive);
 	}
 
-	void websocket_client_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
+	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
 	{
 		switch (flags & WS_SEND_TYPE)
 		{

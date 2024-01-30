@@ -48,8 +48,20 @@ uint16_t bt_settings_offset;
 #include <HTTPUpdateServer.h>
 #include <Update.h>
 
-#ifndef WIFI_PORT
-#define WIFI_PORT 23
+#ifndef TELNET_PORT
+#define TELNET_PORT 23
+#endif
+
+#ifndef WEBSERVER_PORT
+#define WEBSERVER_PORT 80
+#endif
+
+#ifndef WEBSOCKET_PORT
+#define WEBSOCKET_PORT 8080
+#endif
+
+#ifndef WEBSOCKET_MAX_CLIENTS
+#define WEBSOCKET_MAX_CLIENTS 2
 #endif
 
 #ifndef WIFI_USER
@@ -60,13 +72,13 @@ uint16_t bt_settings_offset;
 #define WIFI_PASS "pass"
 #endif
 
-WebServer web_server(80);
+WebServer web_server(WEBSERVER_PORT);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(WIFI_PORT);
+WiFiServer telnet_server(TELNET_PORT);
 WiFiClient server_client;
 
 typedef struct
@@ -501,6 +513,95 @@ extern "C"
 	}
 #endif
 
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#include "WebSocketsServer.h"
+#include "../../../modules/websocket.h"
+	WebSocketsServer socket_server(WEBSOCKET_PORT);
+
+	WEAK_EVENT_HANDLER(websocket_client_connected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_connected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_disconnected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_receive)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_receive);
+	}
+
+	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
+	{
+		switch (flags & WS_SEND_TYPE)
+		{
+		case WS_SEND_TXT:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastTXT(data, length);
+			}
+			else
+			{
+				socket_server.sendTXT(clientid, data, length);
+			}
+			break;
+		case WS_SEND_BIN:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastTXT(data, length);
+			}
+			else
+			{
+				socket_server.sendTXT(clientid, data, length);
+			}
+			break;
+		case WS_SEND_PING:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastPing(data, length);
+			}
+			else
+			{
+				socket_server.sendPing(clientid, data, length);
+			}
+			break;
+		}
+	}
+
+	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+	{
+		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
+		switch (type)
+		{
+		case WStype_DISCONNECTED:
+			EVENT_INVOKE(websocket_client_disconnected, &event);
+			return;
+		case WStype_CONNECTED:
+			EVENT_INVOKE(websocket_client_connected, &event);
+			return;
+		case WStype_TEXT:
+		case WStype_BIN:
+		case WStype_FRAGMENT_TEXT_START:
+		case WStype_FRAGMENT_BIN_START:
+		case WStype_FRAGMENT:
+		case WStype_FRAGMENT_FIN:
+		case WStype_PING:
+		case WStype_PONG:
+			EVENT_INVOKE(websocket_client_receive, &event);
+			break;
+		}
+	}
+
+	// call to the websocketserver initializer
+	DECL_MODULE(websocket)
+	{
+		socket_server.begin();
+		socket_server.onEvent(webSocketEvent);
+	}
+#endif
+
 	void esp32_wifi_bt_init(void)
 	{
 #ifdef ENABLE_WIFI
@@ -733,6 +834,10 @@ extern "C"
 #endif
 			}
 		}
+
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.loop();
+#endif
 #endif
 	}
 
