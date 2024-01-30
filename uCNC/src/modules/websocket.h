@@ -45,6 +45,12 @@ extern "C"
 #define WS_SEND_TYPE (WS_SEND_TXT | WS_SEND_BIN | WS_SEND_PING)
 #define WS_SEND_BROADCAST 128
 
+	typedef struct websocket_client_
+	{
+		uint8_t id;
+		uint32_t ip;
+	} websocket_client_t;
+
 	typedef struct websocket_event_
 	{
 		uint8_t id;

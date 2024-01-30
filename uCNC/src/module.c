@@ -72,6 +72,11 @@ void mod_init(void)
 	LOAD_MODULE(plasma_thc);
 #endif
 
+// web sockets
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+	LOAD_MODULE(websocket);
+#endif
+
 	load_modules();
 
 // load modules after all user modules
@@ -79,10 +84,5 @@ void mod_init(void)
 // web server is started here after all endpoints are added
 #if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
 	LOAD_MODULE(endpoint);
-#endif
-
-// web sockets is started here after all endpoints are added
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
-	LOAD_MODULE(websocket);
 #endif
 }

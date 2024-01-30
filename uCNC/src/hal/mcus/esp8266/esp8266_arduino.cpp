@@ -426,7 +426,7 @@ extern "C"
 #if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
 #include "WebSocketsServer.h"
 #include "../../../modules/websocket.h"
-	WebSocketsServer socket_server(81);
+	WebSocketsServer socket_server(WEBSOCKET_PORT);
 
 	WEAK_EVENT_HANDLER(websocket_client_connected)
 	{

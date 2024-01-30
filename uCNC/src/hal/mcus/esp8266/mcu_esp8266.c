@@ -212,7 +212,7 @@ void mcu_init(void)
 	timer1_write(625);
 
 #ifndef RAM_ONLY_SETTINGS
-	esp8266_eeprom_init(1024); // 1K Emulated EEPROM
+	esp8266_eeprom_init(2048); // 2K Emulated EEPROM
 #endif
 #ifdef MCU_HAS_SPI
 	esp8266_spi_init(SPI_FREQ, SPI_MODE);
