@@ -61,7 +61,6 @@ extern "C"
 	} websocket_event_t;
 
 	/*These must be implemented by the MCU HAL*/
-	DECL_MODULE(websocket);
 	DECL_EVENT_HANDLER(websocket_client_connected);
 	DECL_EVENT_HANDLER(websocket_client_disconnected);
 	DECL_EVENT_HANDLER(websocket_client_receive);

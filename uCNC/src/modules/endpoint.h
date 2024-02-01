@@ -29,7 +29,6 @@ extern "C"
 
 	typedef void (*endpoint_delegate)(void);
 
-	DECL_MODULE(endpoint);
 	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_hasargs(void);
 	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen);

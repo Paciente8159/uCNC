@@ -406,16 +406,6 @@ extern "C"
 #define FLASH_FS SPIFFS
 #endif
 
-	// call to the webserver initializer
-	DECL_MODULE(endpoint)
-	{
-#ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
-#endif
-		FLASH_FS.begin();
-		web_server.begin();
-	}
-
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 	{
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
@@ -467,10 +457,11 @@ extern "C"
 		WiFi.begin();
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
-#if !defined(MCU_HAS_ENDPOINTS)
+#ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
-		web_server.begin();
 #endif
+		FLASH_FS.begin();
+		web_server.begin();
 		WiFi.disconnect();
 
 		if (wifi_settings.wifi_on)
@@ -593,13 +584,6 @@ extern "C"
 			break;
 		}
 	}
-
-	// call to the websocketserver initializer
-	DECL_MODULE(websocket)
-	{
-		socket_server.begin();
-		socket_server.onEvent(webSocketEvent);
-	}
 #endif
 
 	void esp32_wifi_bt_init(void)
@@ -619,6 +603,11 @@ extern "C"
 		}
 
 		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 3, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.begin();
+		socket_server.onEvent(webSocketEvent);
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
