@@ -90,7 +90,7 @@ extern "C"
 		name##_delegate_event_t *ptr = start;                   \
 		if (!ptr)                                               \
 		{                                                       \
-			*ptr = name##_event;                                \
+			ptr = name##_event;                                \
 		}                                                       \
 		while (ptr != NULL)                                     \
 		{                                                       \
