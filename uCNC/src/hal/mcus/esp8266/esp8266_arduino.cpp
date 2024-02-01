@@ -434,6 +434,11 @@ extern "C"
 		DEFAULT_EVENT_HANDLER(websocket_client_receive);
 	}
 
+	WEAK_EVENT_HANDLER(websocket_client_error)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_error);
+	}
+
 	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
 	{
 		switch (flags & WS_SEND_TYPE)
@@ -473,15 +478,18 @@ extern "C"
 
 	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 	{
-		websocket_event_t event = {num, socket_server.remoteIP(num).v4(), type, payload, length};
+		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
 		switch (type)
 		{
 		case WStype_DISCONNECTED:
 			EVENT_INVOKE(websocket_client_disconnected, &event);
-			return;
+			break;
 		case WStype_CONNECTED:
 			EVENT_INVOKE(websocket_client_connected, &event);
-			return;
+			break;
+		case WStype_ERROR:
+			EVENT_INVOKE(websocket_client_error, &event);
+			break;
 		case WStype_TEXT:
 		case WStype_BIN:
 		case WStype_FRAGMENT_TEXT_START:
@@ -552,7 +560,7 @@ extern "C"
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
 		web_server.begin();
-		// web_server.on("/", server_test);
+		
 #ifdef MCU_HAS_WEBSOCKETS
 		socket_server.begin();
 		socket_server.onEvent(webSocketEvent);
@@ -698,7 +706,6 @@ extern "C"
 		}
 
 #ifdef ENABLE_WIFI
-		web_server.handleClient();
 		if (esp8266_wifi_clientok())
 		{
 			while (telnet_client.available() > 0)
@@ -722,9 +729,13 @@ extern "C"
 			}
 		}
 
+		if (wifi_settings.wifi_on)
+		{
+			web_server.handleClient();
 #ifdef MCU_HAS_WEBSOCKETS
-		socket_server.loop();
+			socket_server.loop();
 #endif
+		}
 #endif
 	}
 }

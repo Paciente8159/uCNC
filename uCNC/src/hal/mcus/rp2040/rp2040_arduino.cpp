@@ -29,7 +29,8 @@
  *
  * **/
 
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
+
 #ifndef WIFI_SSID_MAX_LEN
 #define WIFI_SSID_MAX_LEN 32
 #endif
@@ -47,13 +48,25 @@ uint8_t bt_on;
 uint16_t bt_settings_offset;
 #endif
 
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 #include <WiFi.h>
 #include <WebServer.h>
 #include <HTTPUpdateServer.h>
 
-#ifndef WIFI_PORT
-#define WIFI_PORT 23
+#ifndef TELNET_PORT
+#define TELNET_PORT 23
+#endif
+
+#ifndef WEBSERVER_PORT
+#define WEBSERVER_PORT 80
+#endif
+
+#ifndef WEBSOCKET_PORT
+#define WEBSOCKET_PORT 8080
+#endif
+
+#ifndef WEBSOCKET_MAX_CLIENTS
+#define WEBSOCKET_MAX_CLIENTS 2
 #endif
 
 #ifndef WIFI_USER
@@ -64,13 +77,13 @@ uint16_t bt_settings_offset;
 #define WIFI_PASS "pass\0"
 #endif
 
-WebServer web_server(80);
+WebServer web_server(WEBSERVER_PORT);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(WIFI_PORT);
+WiFiServer telnet_server(TELNET_PORT);
 WiFiClient server_client;
 
 typedef struct
@@ -131,7 +144,7 @@ uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t
 		}
 	}
 #endif
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 	if (!strncmp((const char *)grbl_cmd_str, "WIFI", 4))
 	{
 		if (!strcmp((const char *)&grbl_cmd_str[4], "ON"))
@@ -318,7 +331,7 @@ uint8_t mcu_custom_grbl_cmd(uint8_t *grbl_cmd_str, uint8_t grbl_cmd_len, uint8_t
 
 bool rp2040_wifi_clientok(void)
 {
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 	static uint32_t next_info = 30000;
 	static bool connected = false;
 	uint8_t str[128];
@@ -374,7 +387,7 @@ bool rp2040_wifi_clientok(void)
 	return false;
 }
 
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
+#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
 #include "../../../modules/endpoint.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
@@ -394,18 +407,12 @@ bool rp2040_wifi_clientok(void)
 #define FLASH_FS SPIFFS
 #endif
 
-// call to the webserver initializer
-DECL_MODULE(endpoint)
-{
-#ifndef CUSTOM_OTA_ENDPOINT
-	httpUpdater.setup(&web_server, update_path, update_username, update_password);
-#endif
-	FLASH_FS.begin();
-	web_server.begin();
-}
-
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
+	if (!method)
+	{
+		method = 255;
+	}
 	web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 }
 
@@ -449,9 +456,99 @@ bool endpoint_send_file(const char *file_path, const char *content_type)
 
 #endif
 
+#if defined(MCU_HAS_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#include "WebSocketsServer.h"
+#include "../../../modules/websocket.h"
+WebSocketsServer socket_server(WEBSOCKET_PORT);
+
+WEAK_EVENT_HANDLER(websocket_client_connected)
+{
+	DEFAULT_EVENT_HANDLER(websocket_client_connected);
+}
+
+WEAK_EVENT_HANDLER(websocket_client_disconnected)
+{
+	DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
+}
+
+WEAK_EVENT_HANDLER(websocket_client_receive)
+{
+	DEFAULT_EVENT_HANDLER(websocket_client_receive);
+}
+
+WEAK_EVENT_HANDLER(websocket_client_error)
+{
+	DEFAULT_EVENT_HANDLER(websocket_client_error);
+}
+
+void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
+{
+	switch (flags & WS_SEND_TYPE)
+	{
+	case WS_SEND_TXT:
+		if (flags & WS_SEND_BROADCAST)
+		{
+			socket_server.broadcastTXT(data, length);
+		}
+		else
+		{
+			socket_server.sendTXT(clientid, data, length);
+		}
+		break;
+	case WS_SEND_BIN:
+		if (flags & WS_SEND_BROADCAST)
+		{
+			socket_server.broadcastTXT(data, length);
+		}
+		else
+		{
+			socket_server.sendTXT(clientid, data, length);
+		}
+		break;
+	case WS_SEND_PING:
+		if (flags & WS_SEND_BROADCAST)
+		{
+			socket_server.broadcastPing(data, length);
+		}
+		else
+		{
+			socket_server.sendPing(clientid, data, length);
+		}
+		break;
+	}
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+{
+	websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
+	switch (type)
+	{
+	case WStype_DISCONNECTED:
+		EVENT_INVOKE(websocket_client_disconnected, &event);
+		break;
+	case WStype_CONNECTED:
+		EVENT_INVOKE(websocket_client_connected, &event);
+		break;
+	case WStype_ERROR:
+		EVENT_INVOKE(websocket_client_error, &event);
+		break;
+	case WStype_TEXT:
+	case WStype_BIN:
+	case WStype_FRAGMENT_TEXT_START:
+	case WStype_FRAGMENT_BIN_START:
+	case WStype_FRAGMENT:
+	case WStype_FRAGMENT_FIN:
+	case WStype_PING:
+	case WStype_PONG:
+		EVENT_INVOKE(websocket_client_receive, &event);
+		break;
+	}
+}
+#endif
+
 void rp2040_wifi_bt_init(void)
 {
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 
 	wifi_settings_offset = settings_register_external_setting(sizeof(wifi_settings_t));
 	if (settings_load(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t)))
@@ -495,9 +592,17 @@ void rp2040_wifi_bt_init(void)
 	}
 	telnet_server.begin();
 	telnet_server.setNoDelay(true);
-#if !defined(MCU_HAS_ENDPOINTS)
+#ifdef MCU_HAS_ENDPOINTS
+	FLASH_FS.begin();
+#endif
+#ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#endif
 	web_server.begin();
+
+#ifdef MCU_HAS_WEBSOCKETS
+	socket_server.begin();
+	socket_server.onEvent(webSocketEvent);
 #endif
 #endif
 #ifdef ENABLE_BLUETOOTH
@@ -619,7 +724,7 @@ void mcu_bt_flush(void)
 
 uint8_t rp2040_wifi_bt_read(void)
 {
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		if (server_client.available() > 0)
@@ -639,7 +744,7 @@ uint8_t rp2040_wifi_bt_read(void)
 bool rp2040_wifi_bt_rx_ready(void)
 {
 	bool wifiready = false;
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 	if (rp2040_wifi_clientok())
 	{
 		wifiready = (server_client.available() > 0);
@@ -656,7 +761,7 @@ bool rp2040_wifi_bt_rx_ready(void)
 
 void rp2040_wifi_bt_process(void)
 {
-#ifdef ENABLE_WIFI
+#ifdef MCU_HAS_WIFI
 	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
 
 	if (rp2040_wifi_clientok())
@@ -682,7 +787,13 @@ void rp2040_wifi_bt_process(void)
 		}
 	}
 
-	web_server.handleClient();
+	if (wifi_settings.wifi_on)
+	{
+		web_server.handleClient();
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.loop();
+#endif
+	}
 #endif
 
 #ifdef ENABLE_BLUETOOTH
@@ -729,7 +840,7 @@ extern "C"
 		COM2_UART.setRX(RX2_BIT);
 		COM2_UART.begin(BAUDRATE2);
 #endif
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_init();
 #endif
 	}
@@ -881,7 +992,7 @@ extern "C"
 	bool rp2040_uart_rx_ready(void)
 	{
 		bool wifiready = false;
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
 		if (rp2040_wifi_clientok())
 		{
 			wifiready = (rp2040_wifi_bt_rx_ready() > 0);
@@ -957,7 +1068,7 @@ extern "C"
 		}
 #endif
 
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
+#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
 		rp2040_wifi_bt_process();
 #endif
 	}

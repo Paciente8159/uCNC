@@ -408,6 +408,10 @@ extern "C"
 
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 	{
+		if (!method)
+		{
+			method = 255;
+		}
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 	}
 
@@ -451,59 +455,6 @@ extern "C"
 
 #endif
 
-#ifdef ENABLE_WIFI
-	void mcu_wifi_task(void *arg)
-	{
-		WiFi.begin();
-		telnet_server.begin();
-		telnet_server.setNoDelay(true);
-#ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
-#endif
-		FLASH_FS.begin();
-		web_server.begin();
-		WiFi.disconnect();
-
-		if (wifi_settings.wifi_on)
-		{
-			uint8_t str[64];
-
-			switch (wifi_settings.wifi_mode)
-			{
-			case 1:
-				WiFi.mode(WIFI_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
-				break;
-			case 2:
-				WiFi.mode(WIFI_AP);
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
-				break;
-			default:
-				WiFi.mode(WIFI_AP_STA);
-				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
-				protocol_send_feedback("Trying to connect to WiFi");
-				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
-				protocol_send_feedback("AP started");
-				protocol_send_feedback("SSID>" BOARD_NAME);
-				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
-				protocol_send_feedback((const char *)str);
-				break;
-			}
-		}
-
-		for (;;)
-		{
-			web_server.handleClient();
-			taskYIELD();
-		}
-	}
-#endif
-
 #if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
 #include "WebSocketsServer.h"
 #include "../../../modules/websocket.h"
@@ -522,6 +473,11 @@ extern "C"
 	WEAK_EVENT_HANDLER(websocket_client_receive)
 	{
 		DEFAULT_EVENT_HANDLER(websocket_client_receive);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_error)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_error);
 	}
 
 	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
@@ -568,10 +524,13 @@ extern "C"
 		{
 		case WStype_DISCONNECTED:
 			EVENT_INVOKE(websocket_client_disconnected, &event);
-			return;
+			break;
 		case WStype_CONNECTED:
 			EVENT_INVOKE(websocket_client_connected, &event);
-			return;
+			break;
+		case WStype_ERROR:
+			EVENT_INVOKE(websocket_client_error, &event);
+			break;
 		case WStype_TEXT:
 		case WStype_BIN:
 		case WStype_FRAGMENT_TEXT_START:
@@ -582,6 +541,69 @@ extern "C"
 		case WStype_PONG:
 			EVENT_INVOKE(websocket_client_receive, &event);
 			break;
+		}
+	}
+#endif
+
+#ifdef ENABLE_WIFI
+	void mcu_wifi_task(void *arg)
+	{
+		WiFi.begin();
+		telnet_server.begin();
+		telnet_server.setNoDelay(true);
+#ifndef CUSTOM_OTA_ENDPOINT
+		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#endif
+		FLASH_FS.begin();
+		web_server.begin();
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.begin();
+		socket_server.onEvent(webSocketEvent);
+#endif
+		WiFi.disconnect();
+
+		if (wifi_settings.wifi_on)
+		{
+			uint8_t str[64];
+
+			switch (wifi_settings.wifi_mode)
+			{
+			case 1:
+				WiFi.mode(WIFI_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				break;
+			case 2:
+				WiFi.mode(WIFI_AP);
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			default:
+				WiFi.mode(WIFI_AP_STA);
+				WiFi.begin((char *)wifi_settings.ssid, (char *)wifi_settings.pass);
+				protocol_send_feedback("Trying to connect to WiFi");
+				WiFi.softAP(BOARD_NAME, (char *)wifi_settings.pass);
+				protocol_send_feedback("AP started");
+				protocol_send_feedback("SSID>" BOARD_NAME);
+				sprintf((char *)str, "IP>%s", WiFi.softAPIP().toString().c_str());
+				protocol_send_feedback((const char *)str);
+				break;
+			}
+		}
+
+		for (;;)
+		{
+			if (wifi_settings.wifi_on)
+			{
+				web_server.handleClient();
+#ifdef MCU_HAS_WEBSOCKETS
+				socket_server.loop();
+#endif
+			}
+			taskYIELD();
 		}
 	}
 #endif
@@ -602,12 +624,13 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 3, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 1, NULL, 0);
+		// taskYIELD();
 
-#ifdef MCU_HAS_WEBSOCKETS
-		socket_server.begin();
-		socket_server.onEvent(webSocketEvent);
-#endif
+// #ifdef MCU_HAS_WEBSOCKETS
+// 		socket_server.begin();
+// 		socket_server.onEvent(webSocketEvent);
+// #endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
@@ -824,9 +847,9 @@ extern "C"
 			}
 		}
 
-#ifdef MCU_HAS_WEBSOCKETS
-		socket_server.loop();
-#endif
+// #ifdef MCU_HAS_WEBSOCKETS
+// 		socket_server.loop();
+// #endif
 #endif
 	}
 

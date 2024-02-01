@@ -63,6 +63,7 @@ extern "C"
 	/*These must be implemented by the MCU HAL*/
 	DECL_EVENT_HANDLER(websocket_client_connected);
 	DECL_EVENT_HANDLER(websocket_client_disconnected);
+	DECL_EVENT_HANDLER(websocket_client_error);
 	DECL_EVENT_HANDLER(websocket_client_receive);
 	void __attribute__((weak)) websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags);
 
