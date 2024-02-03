@@ -28,7 +28,7 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 
-#define UCNC_MODULE_VERSION 10801
+#define UCNC_MODULE_VERSION 10807
 
 #define EVENT_CONTINUE false
 #define EVENT_HANDLED true
@@ -84,24 +84,31 @@ extern "C"
 	name##_delegate_event_t *name##_event; \
 	bool __attribute__((weak)) event_##name##_handler(void *args)
 #define OVERRIDE_EVENT_HANDLER(name) bool event_##name##_handler(void *args)
-#define DEFAULT_EVENT_HANDLER(name)                  \
-	{                                                \
-		name##_delegate_event_t *ptr = name##_event; \
-		while (ptr != NULL)                          \
-		{                                            \
-			if (ptr->fptr != NULL && !ptr->fplock)   \
-			{                                        \
-				ptr->fplock = true;                  \
-				if (ptr->fptr(args))                 \
-				{                                    \
-					ptr->fplock = false;             \
-					return true;                     \
-				}                                    \
-				ptr->fplock = false;                 \
-			}                                        \
-			ptr = ptr->next;                         \
-		}                                            \
-		return false;                                \
+#define DEFAULT_EVENT_HANDLER(name)                             \
+	{                                                           \
+		static name##_delegate_event_t *start = NULL;           \
+		name##_delegate_event_t *ptr = start;                   \
+		if (!ptr)                                               \
+		{                                                       \
+			ptr = name##_event;                                 \
+		}                                                       \
+		while (ptr != NULL)                                     \
+		{                                                       \
+			start = ptr->next;                                  \
+			if (ptr->fptr != NULL && !ptr->fplock)              \
+			{                                                   \
+				ptr->fplock = true;                             \
+				if (ptr->fptr(args))                            \
+				{                                               \
+					ptr->fplock = false;                        \
+					start = name##_event; /*handled. restart.*/ \
+					return true;                                \
+				}                                               \
+				ptr->fplock = false;                            \
+			}                                                   \
+			ptr = start;                                        \
+		}                                                       \
+		return false;                                           \
 	}
 
 	void mod_init(void);

@@ -143,6 +143,11 @@ extern "C"
 #include "esp32/boardmap_mks_dlc32.h"
 #endif
 
+#if (BOARD == BOARD_ESP32_SHIELD_V3)
+#define MCU MCU_ESP32
+#include "esp32/boardmap_esp32_shield_v3.h"
+#endif
+
 #if (BOARD == BOARD_RPI_PICO)
 #define MCU MCU_RP2040
 #include "rp2040/boardmap_rpi_pico.h"

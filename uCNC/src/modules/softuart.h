@@ -72,7 +72,7 @@ extern "C"
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return io_get_input(RXPIN);                                    \
+		return io_get_input(TRXPIN);                                    \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \
