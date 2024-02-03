@@ -53,6 +53,12 @@ extern "C"
 #define F_STEP_MIN 1
 #endif
 
+#ifndef USE_CUSTOM_EEPROM_LIBRARY
+#ifndef USE_ARDUINO_EEPROM_LIBRARY
+#define USE_ARDUINO_EEPROM_LIBRARY
+#endif
+#endif
+
 // defines special mcu to access flash strings and arrays
 #define __rom__
 #define __romstr__
