@@ -47,10 +47,16 @@ extern "C"
 #endif
 // defines the maximum and minimum step rates
 #ifndef F_STEP_MAX
-#define F_STEP_MAX 62500UL
+#define F_STEP_MAX 125000UL
 #endif
 #ifndef F_STEP_MIN
 #define F_STEP_MIN 1
+#endif
+
+#ifndef USE_CUSTOM_EEPROM_LIBRARY
+#ifndef USE_ARDUINO_EEPROM_LIBRARY
+#define USE_ARDUINO_EEPROM_LIBRARY
+#endif
 #endif
 
 // defines special mcu to access flash strings and arrays
@@ -2775,6 +2781,15 @@ extern "C"
 #endif
 #define IC74HC595_COUNT 4
 #define I2SREG __helper__(I2S, IC74HC595_I2S_PORT, )
+
+	// custom pin operations for 74HS595
+	extern volatile uint32_t ic74hc595_i2s_pins;
+#define ic74hc595_pin_offset(pin) (__indirect__(pin, IO_OFFSET))
+#define ic74hc595_pin_mask(pin) (uint32_t)(1UL << ic74hc595_pin_offset(pin))
+#define ic74hc595_set_pin(pin) __atomic_fetch_or((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
+#define ic74hc595_clear_pin(pin) __atomic_fetch_and((uint32_t *)&ic74hc595_i2s_pins, ~(ic74hc595_pin_mask(pin)), __ATOMIC_RELAXED)
+#define ic74hc595_toggle_pin(pin) __atomic_fetch_xor((uint32_t *)&ic74hc595_i2s_pins, ic74hc595_pin_mask(pin), __ATOMIC_RELAXED)
+#define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
 #endif
 
 #define mcu_config_output(X)                                              \
@@ -2851,10 +2866,6 @@ extern "C"
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
 #define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
-
-#ifdef MCU_HAS_ONESHOT_TIMER
-#define mcu_start_timeout() timer_start(ONESHOT_TIMER_TG, ONESHOT_TIMER_IDX)
-#endif
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)

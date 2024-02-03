@@ -524,18 +524,18 @@ extern "C"
 	uint8_t mcu_wifi_getc(void)
 	{
 		uint8_t c = 0;
-		BUFFER_DEQUEUE(wifi_tx, &c);
+		BUFFER_DEQUEUE(wifi_rx, &c);
 		return c;
 	}
 
 	uint8_t mcu_wifi_available(void)
 	{
-		return BUFFER_READ_AVAILABLE(wifi_tx);
+		return BUFFER_READ_AVAILABLE(wifi_rx);
 	}
 
 	void mcu_wifi_clear(void)
 	{
-		BUFFER_CLEAR(wifi_tx);
+		BUFFER_CLEAR(wifi_rx);
 	}
 	void mcu_wifi_putc(uint8_t c)
 	{
