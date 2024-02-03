@@ -168,7 +168,7 @@ uint8_t parser_read_command(void)
 	return parser_gcode_command(is_jogging);
 }
 
-void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
+void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
 {
 	modalgroups[0] = parser_state.groups.motion;
 	modalgroups[12] = parser_state.groups.motion_mantissa;
@@ -182,8 +182,11 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 #if TOOL_COUNT > 0
 	modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
 	*spindle = (uint16_t)ABS(parser_state.spindle);
-	*coolant = parser_state.groups.coolant;
-	modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
+#ifdef ENABLE_COOLANT
+	modalgroups[9] = parser_state.groups.coolant;
+#else
+	modalgroups[9] = 0;
+#endif
 #if TOOL_COUNT > 1
 	modalgroups[11] = parser_state.tool_index;
 #else
@@ -289,6 +292,11 @@ bool parser_get_wco(float *axis)
 void parser_sync_probe(void)
 {
 	itp_get_rt_position(rt_probe_step_pos);
+}
+
+void parser_get_probe(int32_t *position)
+{
+	memcpy(position, rt_probe_step_pos, sizeof(rt_probe_step_pos));
 }
 
 void parser_update_probe_pos(void)
@@ -1711,8 +1719,12 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			}
 			else
 			{
+				// failed at this position
+				parser_sync_probe();
 				parser_parameters.last_probe_ok = 0;
 			}
+			// sync probe position
+			parser_update_probe_pos();
 
 			if (error == STATUS_OK)
 			{
@@ -2102,6 +2114,10 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 // motion codes
 #ifndef DISABLE_PROBING_SUPPORT
 	case 38: // check if 38.x
+		if (mantissa < 2 || mantissa > 5)
+		{
+			return STATUS_GCODE_UNSUPPORTED_COMMAND;
+		}
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif

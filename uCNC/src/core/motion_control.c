@@ -795,8 +795,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 	cnc_unlock(true);
-	// re-flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -849,8 +847,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	io_invert_limits(axis_limit);
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -912,34 +908,36 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 
 	// enable the probe
 	io_enable_probe();
-	mcu_probe_changed_cb();
 	mc_line(target, block_data);
 
+	// similar to itp_sync
 	do
 	{
-		if (io_get_probe() ^ (flags & 0x01))
+		if (!cnc_dotasks())
 		{
-			mcu_probe_changed_cb();
 			break;
 		}
-	} while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
+		if (io_get_probe() ^ (flags & 0x01))
+		{
+#ifndef ENABLE_RT_PROBE_CHECKING
+			mcu_probe_changed_cb();
+#endif
+			break;
+		}
+	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
+	// wait for a stop
+	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN))
+		;
 	// disables the probe
 	io_disable_probe();
-
-	// clears HALT state if possible
-	cnc_unlock(true);
-
 	itp_clear();
 	planner_clear();
-	parser_update_probe_pos();
+	// clears hold
+	cnc_clear_exec_state(EXEC_HOLD);
+
 	// sync the position of the motion control
 	mc_sync_position();
-	// HALT could not be cleared. Something is wrong
-	if (cnc_get_exec_state(EXEC_UNHOMED))
-	{
-		return STATUS_CRITICAL_FAIL;
-	}
 
 	cnc_delay_ms(g_settings.debounce_ms); // adds a delay before reading io pin (debounce)
 	probe_ok = io_get_probe();
@@ -952,7 +950,6 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 		}
 		return STATUS_OK;
 	}
-
 #endif
 
 	return STATUS_PROBE_SUCCESS;
@@ -969,6 +966,36 @@ void mc_sync_position(void)
 	itp_get_rt_position(mc_last_step_pos);
 	kinematics_steps_to_coordinates(mc_last_step_pos, mc_last_target);
 	parser_sync_position();
+}
+
+uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
+{
+	float new_target[AXIS_COUNT];
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
+	{
+		return STATUS_IDLE_ERROR;
+	}
+
+	cnc_set_exec_state(EXEC_JOG);
+
+	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
+	memcpy(new_target, mc_last_target, sizeof(mc_last_target));
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		new_target[i] += target_offset[i];
+	}
+
+	uint8_t error = mc_line(new_target, block_data);
+
+	if (error == STATUS_OK)
+	{
+		parser_sync_position();
+	}
+
+	return error;
 }
 
 #ifdef ENABLE_G39_H_MAPPING
@@ -1128,7 +1155,7 @@ uint8_t mc_build_hmap(float *target, float *offset, float retract_h, motion_data
 
 			// store position
 			int32_t probe_position[STEPPER_COUNT];
-			itp_get_rt_position(probe_position);
+			parser_get_probe(probe_position);
 			kinematics_steps_to_coordinates(probe_position, position);
 			hmap_offsets[i + H_MAPING_GRID_FACTOR * j] = position[AXIS_TOOL];
 			protocol_send_probe_result(1);

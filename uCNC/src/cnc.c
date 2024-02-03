@@ -341,9 +341,9 @@ void cnc_restore_motion(void)
 }
 
 // this function is executed every millisecond
+#ifndef DISABLE_RTC_CODE
 MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 {
-#ifndef DISABLE_RTC_CODE
 	static bool running = false;
 
 	if (!running)
@@ -377,8 +377,8 @@ MCU_CALLBACK void mcu_rtc_cb(uint32_t millis)
 		mcu_disable_global_isr();
 		running = false;
 	}
-#endif
 }
+#endif
 
 void cnc_home(void)
 {
@@ -389,17 +389,19 @@ void cnc_home(void)
 	io_lock_limits(0);
 #endif
 	io_invert_limits(0);
-	if (error)
-	{
-		// disables homing and reenables alarm messages
-		cnc_clear_exec_state(EXEC_HOMING);
-		// cnc_alarm(error);
-		return;
-	}
-
 	// sync's the motion control with the real time position
+	// this flushes the homing motion before returning from error or home success
+	itp_clear();
+	planner_clear();
 	mc_sync_position();
-	cnc_run_startup_blocks();
+
+	// disables homing and reenables limits alarm messages
+	cnc_clear_exec_state(EXEC_HOMING);
+
+	if (error == STATUS_OK)
+	{
+		cnc_run_startup_blocks();
+	}
 }
 
 void cnc_alarm(int8_t code)
@@ -447,7 +449,6 @@ void cnc_stop(void)
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	EVENT_INVOKE(cnc_stop, NULL);
 #endif
-	cnc_clear_exec_state(EXEC_RUN);
 }
 
 uint8_t cnc_unlock(bool force)
@@ -675,12 +676,13 @@ void cnc_call_rt_command(uint8_t command)
 			tools_cmd |= (1 << (command - CMD_CODE_SPINDLE_100));
 		}
 
+#ifdef ENABLE_COOLANT
 		if (command >= CMD_CODE_COOL_FLD_TOGGLE && command <= CMD_CODE_COOL_MST_TOGGLE)
 		{
 			tools_cmd &= RTCMD_SPINDLE_MASK;
 			tools_cmd |= (RT_CMD_COOL_FLD_TOGGLE << (command - CMD_CODE_COOL_FLD_TOGGLE));
 		}
-
+#endif
 		cnc_state.tool_ovr_cmd = tools_cmd;
 	}
 }
@@ -827,11 +829,12 @@ void cnc_exec_rt_commands(void)
 #endif
 		}
 
+#ifdef ENABLE_COOLANT
 		switch (command & RTCMD_COOLANT_MASK)
 		{
 #if TOOL_COUNT > 0
 		case RT_CMD_COOL_FLD_TOGGLE:
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 		case RT_CMD_COOL_MST_TOGGLE:
 #endif
 			if (!cnc_get_exec_state(EXEC_ALARM)) // if no alarm is active
@@ -840,7 +843,7 @@ void cnc_exec_rt_commands(void)
 				{
 					planner_coolant_ovr_toggle(COOLANT_MASK);
 				}
-#ifdef COOLANT_MIST
+#ifndef M7_SAME_AS_M8
 				if (command == RT_CMD_COOL_MST_TOGGLE)
 				{
 					planner_coolant_ovr_toggle(MIST_MASK);
@@ -850,7 +853,7 @@ void cnc_exec_rt_commands(void)
 			break;
 #endif
 		}
-
+#endif
 		if (update_tools)
 		{
 			itp_update();
@@ -965,7 +968,8 @@ bool cnc_check_interlocking(void)
 			itp_clear();
 			planner_clear();
 			mc_sync_position();
-			cnc_clear_exec_state(EXEC_HOMING | EXEC_JOG | EXEC_HOLD);
+			// homing will be cleared inside homing cycle
+			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD);
 		}
 
 		return false;
@@ -1001,11 +1005,6 @@ bool cnc_check_interlocking(void)
 		{
 			cnc_clear_exec_state(EXEC_JOG);
 		}
-	}
-
-	if (itp_is_empty() && planner_buffer_is_empty())
-	{
-		cnc_clear_exec_state(EXEC_RUN);
 	}
 
 	return true;

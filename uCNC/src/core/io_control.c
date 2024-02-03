@@ -208,10 +208,15 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 	io_last_probe = probe;
 
-	// stops the machine
-	itp_stop();
 	// stores rt position
-	parser_sync_probe();
+	__ATOMIC__
+	{
+		parser_sync_probe();
+	}
+
+	// instead of stopping the machine does a controlled stop (hold)
+	// itp_stop();
+	cnc_set_exec_state(EXEC_HOLD);
 #endif
 }
 

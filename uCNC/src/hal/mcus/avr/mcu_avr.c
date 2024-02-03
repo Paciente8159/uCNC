@@ -148,10 +148,14 @@ ISR(RTC_COMPA_vect, ISR_BLOCK)
 	ms_servo_counter = (servo_counter != 20) ? servo_counter : 0;
 
 #endif
+#ifndef DISABLE_RTC_CODE
 	uint32_t millis = mcu_runtime_ms;
 	millis++;
 	mcu_runtime_ms = millis;
 	mcu_rtc_cb(millis);
+#else
+	mcu_runtime_ms++;
+#endif
 }
 
 ISR(ITP_COMPA_vect, ISR_BLOCK)
@@ -850,8 +854,7 @@ void mcu_stop_itp_isr(void)
 // gets the mcu running time in ms
 uint32_t mcu_millis()
 {
-	uint32_t val = mcu_runtime_ms;
-	return val;
+	return mcu_runtime_ms;
 }
 
 uint32_t mcu_micros()
@@ -859,8 +862,7 @@ uint32_t mcu_micros()
 	uint32_t rtc_elapsed = RTC_TCNT;
 	uint32_t ms = mcu_runtime_ms;
 
-	rtc_elapsed = ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
-	return rtc_elapsed;
+	return ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
 }
 
 void mcu_start_rtc()

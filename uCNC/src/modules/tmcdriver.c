@@ -318,56 +318,56 @@ bool m350_exec(void *args)
 #ifdef STEPPER0_HAS_TMC
 			val = tmc_get_microstep(&tmc0_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('Y');
 #ifdef STEPPER1_HAS_TMC
 			val = tmc_get_microstep(&tmc1_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('Z');
 #ifdef STEPPER2_HAS_TMC
 			val = tmc_get_microstep(&tmc2_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('A');
 #ifdef STEPPER3_HAS_TMC
 			val = tmc_get_microstep(&tmc3_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('B');
 #ifdef STEPPER4_HAS_TMC
 			val = tmc_get_microstep(&tmc4_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('C');
 #ifdef STEPPER5_HAS_TMC
 			val = tmc_get_microstep(&tmc5_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('I');
 #ifdef STEPPER6_HAS_TMC
 			val = tmc_get_microstep(&tmc6_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(',');
 			val = 0;
 			serial_putc('J');
 #ifdef STEPPER7_HAS_TMC
 			val = tmc_get_microstep(&tmc7_driver);
 #endif
-			serial_print_flt(val);
+			serial_print_int(val);
 			serial_putc(']');
 			protocol_send_string(MSG_EOL);
 		}

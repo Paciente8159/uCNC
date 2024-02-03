@@ -174,7 +174,6 @@ uint8_t kinematics_home(void)
 
 	// unlocks the machine to go to offset
 	cnc_unlock(true);
-	cnc_set_exec_state(EXEC_HOMING);
 	float target[AXIS_COUNT];
 	motion_data_t block_data = {0};
 	mc_get_position(target);
@@ -188,8 +187,6 @@ uint8_t kinematics_home(void)
 	// starts offset and waits to finnish
 	mc_line(target, &block_data);
 	itp_sync();
-
-	cnc_clear_exec_state(EXEC_HOMING);
 
 	memset(target, 0, sizeof(target));
 #ifndef SET_ORIGIN_AT_HOME_POS
