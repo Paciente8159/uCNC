@@ -48,8 +48,20 @@ uint16_t bt_settings_offset;
 #include <HTTPUpdateServer.h>
 #include <Update.h>
 
-#ifndef WIFI_PORT
-#define WIFI_PORT 23
+#ifndef TELNET_PORT
+#define TELNET_PORT 23
+#endif
+
+#ifndef WEBSERVER_PORT
+#define WEBSERVER_PORT 80
+#endif
+
+#ifndef WEBSOCKET_PORT
+#define WEBSOCKET_PORT 8080
+#endif
+
+#ifndef WEBSOCKET_MAX_CLIENTS
+#define WEBSOCKET_MAX_CLIENTS 2
 #endif
 
 #ifndef WIFI_USER
@@ -60,13 +72,13 @@ uint16_t bt_settings_offset;
 #define WIFI_PASS "pass"
 #endif
 
-WebServer web_server(80);
+WebServer web_server(WEBSERVER_PORT);
 HTTPUpdateServer httpUpdater;
 const char *update_path = "/firmware";
 const char *update_username = WIFI_USER;
 const char *update_password = WIFI_PASS;
 #define MAX_SRV_CLIENTS 1
-WiFiServer telnet_server(WIFI_PORT);
+WiFiServer telnet_server(TELNET_PORT);
 WiFiClient server_client;
 
 typedef struct
@@ -394,18 +406,12 @@ extern "C"
 #define FLASH_FS SPIFFS
 #endif
 
-	// call to the webserver initializer
-	DECL_MODULE(endpoint)
-	{
-#ifndef CUSTOM_OTA_ENDPOINT
-		httpUpdater.setup(&web_server, update_path, update_username, update_password);
-#endif
-		FLASH_FS.begin();
-		web_server.begin();
-	}
-
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 	{
+		if (!method)
+		{
+			method = 255;
+		}
 		web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
 	}
 
@@ -449,15 +455,110 @@ extern "C"
 
 #endif
 
+#if defined(ENABLE_WIFI) && defined(MCU_HAS_WEBSOCKETS)
+#include "WebSocketsServer.h"
+#include "../../../modules/websocket.h"
+	WebSocketsServer socket_server(WEBSOCKET_PORT);
+
+	WEAK_EVENT_HANDLER(websocket_client_connected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_connected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_disconnected)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_disconnected);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_receive)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_receive);
+	}
+
+	WEAK_EVENT_HANDLER(websocket_client_error)
+	{
+		DEFAULT_EVENT_HANDLER(websocket_client_error);
+	}
+
+	void websocket_send(uint8_t clientid, uint8_t *data, size_t length, uint8_t flags)
+	{
+		switch (flags & WS_SEND_TYPE)
+		{
+		case WS_SEND_TXT:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastTXT(data, length);
+			}
+			else
+			{
+				socket_server.sendTXT(clientid, data, length);
+			}
+			break;
+		case WS_SEND_BIN:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastTXT(data, length);
+			}
+			else
+			{
+				socket_server.sendTXT(clientid, data, length);
+			}
+			break;
+		case WS_SEND_PING:
+			if (flags & WS_SEND_BROADCAST)
+			{
+				socket_server.broadcastPing(data, length);
+			}
+			else
+			{
+				socket_server.sendPing(clientid, data, length);
+			}
+			break;
+		}
+	}
+
+	void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
+	{
+		websocket_event_t event = {num, (uint32_t)socket_server.remoteIP(num), type, payload, length};
+		switch (type)
+		{
+		case WStype_DISCONNECTED:
+			EVENT_INVOKE(websocket_client_disconnected, &event);
+			break;
+		case WStype_CONNECTED:
+			EVENT_INVOKE(websocket_client_connected, &event);
+			break;
+		case WStype_ERROR:
+			EVENT_INVOKE(websocket_client_error, &event);
+			break;
+		case WStype_TEXT:
+		case WStype_BIN:
+		case WStype_FRAGMENT_TEXT_START:
+		case WStype_FRAGMENT_BIN_START:
+		case WStype_FRAGMENT:
+		case WStype_FRAGMENT_FIN:
+		case WStype_PING:
+		case WStype_PONG:
+			EVENT_INVOKE(websocket_client_receive, &event);
+			break;
+		}
+	}
+#endif
+
 #ifdef ENABLE_WIFI
 	void mcu_wifi_task(void *arg)
 	{
 		WiFi.begin();
 		telnet_server.begin();
 		telnet_server.setNoDelay(true);
-#if !defined(MCU_HAS_ENDPOINTS)
+#ifndef CUSTOM_OTA_ENDPOINT
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
+#endif
+		FLASH_FS.begin();
 		web_server.begin();
+#ifdef MCU_HAS_WEBSOCKETS
+		socket_server.begin();
+		socket_server.onEvent(webSocketEvent);
 #endif
 		WiFi.disconnect();
 
@@ -495,7 +596,13 @@ extern "C"
 
 		for (;;)
 		{
-			web_server.handleClient();
+			if (wifi_settings.wifi_on)
+			{
+				web_server.handleClient();
+#ifdef MCU_HAS_WEBSOCKETS
+				socket_server.loop();
+#endif
+			}
 			taskYIELD();
 		}
 	}
@@ -517,7 +624,13 @@ extern "C"
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 3, NULL, CONFIG_ARDUINO_RUNNING_CORE);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 1, NULL, 0);
+		// taskYIELD();
+
+// #ifdef MCU_HAS_WEBSOCKETS
+// 		socket_server.begin();
+// 		socket_server.onEvent(webSocketEvent);
+// #endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 		bt_settings_offset = settings_register_external_setting(1);
@@ -733,6 +846,10 @@ extern "C"
 #endif
 			}
 		}
+
+// #ifdef MCU_HAS_WEBSOCKETS
+// 		socket_server.loop();
+// #endif
 #endif
 	}
 

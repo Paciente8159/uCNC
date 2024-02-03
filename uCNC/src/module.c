@@ -68,10 +68,4 @@ void mod_init(void)
 #endif
 
 	load_modules();
-
-// load modules after all other modules
-// web server is started here after all endpoints are added
-#if defined(ENABLE_WIFI) && defined(MCU_HAS_ENDPOINTS)
-	LOAD_MODULE(endpoint);
-#endif
 }

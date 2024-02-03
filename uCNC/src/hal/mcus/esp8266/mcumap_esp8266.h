@@ -990,7 +990,12 @@ extern "C"
 #endif
 #ifdef ENABLE_WIFI
 #define MCU_HAS_WIFI
+#ifndef DISABLE_ENDPOINTS
 #define MCU_HAS_ENDPOINTS
+#endif
+#ifndef DISABLE_WEBSOCKETS
+#define MCU_HAS_WEBSOCKETS
+#endif
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #endif
 
