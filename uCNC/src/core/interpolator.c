@@ -746,6 +746,7 @@ void itp_stop(void)
 #endif
 
 	mcu_stop_itp_isr();
+	cnc_clear_exec_state(EXEC_RUN);
 }
 
 void itp_stop_tools(void)

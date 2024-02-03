@@ -168,7 +168,7 @@ uint8_t parser_read_command(void)
 	return parser_gcode_command(is_jogging);
 }
 
-void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, uint8_t *coolant)
+void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle)
 {
 	modalgroups[0] = parser_state.groups.motion;
 	modalgroups[12] = parser_state.groups.motion_mantissa;
@@ -182,8 +182,11 @@ void parser_get_modes(uint8_t *modalgroups, uint16_t *feed, uint16_t *spindle, u
 #if TOOL_COUNT > 0
 	modalgroups[8] = ((parser_state.groups.spindle_turning == M5) ? 5 : (2 + parser_state.groups.spindle_turning));
 	*spindle = (uint16_t)ABS(parser_state.spindle);
-	*coolant = parser_state.groups.coolant;
-	modalgroups[9] = (parser_state.groups.coolant == M9) ? 9 : MIN(parser_state.groups.coolant + 6, 8);
+#ifdef ENABLE_COOLANT
+	modalgroups[9] = parser_state.groups.coolant;
+#else
+	modalgroups[9] = 0;
+#endif
 #if TOOL_COUNT > 1
 	modalgroups[11] = parser_state.tool_index;
 #else
@@ -291,7 +294,8 @@ void parser_sync_probe(void)
 	itp_get_rt_position(rt_probe_step_pos);
 }
 
-void parser_get_probe(int32_t *position){
+void parser_get_probe(int32_t *position)
+{
 	memcpy(position, rt_probe_step_pos, sizeof(rt_probe_step_pos));
 }
 

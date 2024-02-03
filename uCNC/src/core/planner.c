@@ -425,7 +425,7 @@ int16_t planner_get_spindle_speed(float scale)
 			scaled_spindle = 0.01f * (float)g_planner_state.spindle_speed_override * scaled_spindle;
 		}
 		scaled_spindle = CLAMP(g_settings.spindle_min_rpm, scaled_spindle, g_settings.spindle_max_rpm);
-		int16_t output = tool_range_speed(scaled_spindle);
+		int16_t output = tool_range_speed(scaled_spindle, 0);
 
 		return (!neg) ? output : -output;
 	}

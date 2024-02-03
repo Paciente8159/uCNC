@@ -802,8 +802,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	block_data.motion_mode = MOTIONCONTROL_MODE_FEED;
 
 	cnc_unlock(true);
-	// re-flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -856,8 +854,6 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	io_invert_limits(axis_limit);
 
 	cnc_unlock(true);
-	// flags homing clear by the unlock
-	cnc_set_exec_state(EXEC_HOMING);
 	mc_line(target, &block_data);
 
 	if (itp_sync() != STATUS_OK)
@@ -922,7 +918,7 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	io_enable_probe();
 	mc_line(target, block_data);
 
-	//similar to itp_sync
+	// similar to itp_sync
 	do
 	{
 		if (!cnc_dotasks())
@@ -939,7 +935,8 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	} while (!itp_is_empty() || !planner_buffer_is_empty());
 
 	// wait for a stop
-	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN));
+	while (cnc_dotasks() && cnc_get_exec_state(EXEC_RUN))
+		;
 	// disables the probe
 	io_disable_probe();
 	itp_clear();
@@ -977,6 +974,36 @@ void mc_sync_position(void)
 	itp_get_rt_position(mc_last_step_pos);
 	kinematics_steps_to_coordinates(mc_last_step_pos, mc_last_target);
 	parser_sync_position();
+}
+
+uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
+{
+	float new_target[AXIS_COUNT];
+	uint8_t state = cnc_get_exec_state(EXEC_ALLACTIVE);
+
+	if ((state & ~EXEC_JOG) || cnc_has_alarm()) // if any other than idle or jog discards the command
+	{
+		return STATUS_IDLE_ERROR;
+	}
+
+	cnc_set_exec_state(EXEC_JOG);
+
+	// gets the previous machine position (transformed to calculate the direction vector and traveled distance)
+	memcpy(new_target, mc_last_target, sizeof(mc_last_target));
+	for (uint8_t i = AXIS_COUNT; i != 0;)
+	{
+		i--;
+		new_target[i] += target_offset[i];
+	}
+
+	uint8_t error = mc_line(new_target, block_data);
+
+	if (error == STATUS_OK)
+	{
+		parser_sync_position();
+	}
+
+	return error;
 }
 
 #ifdef ENABLE_G39_H_MAPPING

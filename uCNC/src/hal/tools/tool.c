@@ -24,7 +24,11 @@
 
 #define DECL_TOOL(tool) extern const tool_t tool
 
+#if TOOL_COUNT == 1
+#define tool_current TOOL1
+#else
 static tool_t tool_current;
+#endif
 static int16_t tool_current_speed;
 
 #ifdef TOOL1
@@ -78,19 +82,17 @@ DECL_TOOL(TOOL16);
 
 void tool_init(void)
 {
-#if TOOL_COUNT > 0
-#ifdef FORCE_GLOBALS_TO_0
-	memset(&tool_current, 0, sizeof(tool_t));
-#endif
-#if TOOL_COUNT > 1
-	tool_change(g_settings.default_tool);
-#else
-	memcpy(&tool_current, &TOOL1, sizeof(tool_t));
+#if TOOL_COUNT == 1
 	if (tool_current.startup_code)
 	{
 		tool_current.startup_code();
 	}
 #endif
+#if TOOL_COUNT > 1
+#ifdef FORCE_GLOBALS_TO_0
+	memset(&tool_current, 0, sizeof(tool_t));
+#endif
+	tool_change(g_settings.default_tool);
 #endif
 }
 
@@ -215,7 +217,7 @@ uint16_t tool_get_speed()
 	{
 		return tool_current.get_speed();
 	}
-	return tool_current_speed;
+	return tool_get_setpoint();
 #endif
 	return 0;
 }
@@ -224,19 +226,19 @@ int16_t tool_get_setpoint(void)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
-	return tool_current_speed;
+	return tool_range_speed(tool_current_speed, 1);
 #endif
 	return 0;
 }
 
-int16_t tool_range_speed(int16_t value)
+int16_t tool_range_speed(int16_t value, uint8_t conv)
 {
 	// input value will always be positive
 #if TOOL_COUNT > 0
 	if (tool_current.range_speed)
 	{
 		value = ABS(value);
-		return tool_current.range_speed(value);
+		return tool_current.range_speed(value, conv);
 	}
 #endif
 	return value;
