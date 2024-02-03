@@ -84,7 +84,8 @@ extern "C"
 	} motion_data_t;
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
-	typedef struct homing_status_ {
+	typedef struct homing_status_
+	{
 		uint8_t axis;
 		uint8_t axis_limit;
 		uint8_t status;
