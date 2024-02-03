@@ -671,18 +671,6 @@ extern "C"
 	}
 #endif
 
-	bool esp8266_uart_rx_ready(void)
-	{
-		bool wifiready = false;
-#ifdef ENABLE_WIFI
-		if (esp8266_wifi_clientok())
-		{
-			wifiready = (telnet_client.available() > 0);
-		}
-#endif
-		return ((Serial.available() > 0) || wifiready);
-	}
-
 	void esp8266_uart_process(void)
 	{
 		while (Serial.available() > 0)

@@ -8,6 +8,40 @@
 
 # Changelog
 
+## [1.8.7] - 03-02-2024
+
+## Contributors
+[@patryk3211](https://github.com/patryk3211) - fixed PID calculations (#604)
+[@jarney](https://github.com/jarney) - fixed LIMIT_C mask inverting (#603)
+
+### Added
+
+- added boardmap for ESP32 Wemos D1 R32 with Shield V3 (#610)
+- added initial implementation of websocket support (for ESP32, ESP8266 and RP2040) (#608)
+- added software emulated serial one-wire (#600)
+- added option to enable multistream guard (prevents serial stream to switch until line complete) (#596)
+- added direct motion control incremental jog function (#594)
+- added ESP32 DMA support via I2S to 74HC595 extender (#584)
+- added ESP8266 servo pin support (#584)
+- ESP8266 and ESP32 now use step aliasing in step generation to produce smoother speed increments at higher step rates (#584)
+
+### Changed
+
+- ESP32 web server and web socket server running on CPU0 (#608)
+- modified module default handler macro to improve event calling rotation (#606) 
+- removed all TMC driver support to external module (#599)
+- minor changes to reduce code compilation size for UNO board (#593)
+- cleaned code for CNC internal states (homing, jog and hold) (#590)
+
+### Fixed
+
+- fixed PID sample period calculation and prevent divide by zero operations (#604)
+- fixed LIMIT_C mask inverting option typo (#603)
+- fixed ESP8266 wifi listening to the wrong buffer (#601)
+- fixed softuart reading failure and potential lock (#600)
+- fixed AVR UART ISR macro (for multi and single UART MCUs) (#598)
+- fixed tool speed report message (#592)
+
 ## [1.8.6] - 17-01-2024
 
 ## Contributors

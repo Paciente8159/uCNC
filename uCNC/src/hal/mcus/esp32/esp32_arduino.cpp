@@ -779,23 +779,6 @@ extern "C"
 		return (uint8_t)0;
 	}
 
-	bool esp32_wifi_bt_rx_ready(void)
-	{
-		bool wifiready = false;
-#ifdef ENABLE_WIFI
-		if (esp32_wifi_clientok())
-		{
-			wifiready = (server_client.available() > 0);
-		}
-#endif
-
-		bool btready = false;
-#ifdef ENABLE_BLUETOOTH
-		btready = (SerialBT.available() > 0);
-#endif
-		return (wifiready || btready);
-	}
-
 	void esp32_wifi_bt_process(void)
 	{
 #ifdef ENABLE_BLUETOOTH

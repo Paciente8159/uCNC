@@ -698,14 +698,19 @@ static uint8_t parser_fetch_command(parser_state_t *new_state, parser_words_t *w
 		{
 		case 50:
 			mantissa++;
+			__attribute__((fallthrough));
 		case 40:
 			mantissa++;
+			__attribute__((fallthrough));
 		case 30:
 			mantissa++;
+			__attribute__((fallthrough));
 		case 20:
 			mantissa++;
+			__attribute__((fallthrough));
 		case 10:
 			mantissa++;
+			__attribute__((fallthrough));
 		case 0:
 			break;
 		default:
@@ -1443,7 +1448,6 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			index = G28HOME;
 			break;
 		case 30:
-
 			index = G30HOME;
 			break;
 #endif
@@ -1455,6 +1459,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 		break;
 	case G92_1: // G92.1
 		memset(g92permanentoffset, 0, sizeof(g92permanentoffset));
+		__attribute__((fallthrough));
 		// continue
 	case G92_2: // G92.2
 		memset(parser_parameters.g92_offset, 0, sizeof(parser_parameters.g92_offset));
@@ -1626,6 +1631,7 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 			{
 				block_data.spindle = 0;
 			}
+			__attribute__((fallthrough));
 		case G1:
 			if (block_data.feed == 0)
 			{
@@ -2118,6 +2124,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+		__attribute__((fallthrough));
 #ifdef ENABLE_G39_H_MAPPING
 	case 39:
 #endif
@@ -2201,6 +2208,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+		__attribute__((fallthrough));
 	case 49:
 		new_state->groups.tlo_mode = ((code == 49) ? G49 : G43);
 		new_group |= GCODE_GROUP_TOOLLENGTH;
@@ -2250,6 +2258,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 		{
 			return STATUS_GCODE_UNSUPPORTED_COMMAND;
 		}
+		__attribute__((fallthrough));
 #ifndef DISABLE_G10_SUPPORT
 	case 10:
 #endif
@@ -2262,6 +2271,7 @@ static uint8_t parser_gcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 			return STATUS_GCODE_MODAL_GROUP_VIOLATION;
 		}
 		cmd->group_0_1_useaxis = 1;
+		__attribute__((fallthrough));
 	case 4:
 	case 53:
 		// convert code within 4 bits without
@@ -2305,8 +2315,10 @@ static uint8_t parser_mcode_word(uint8_t code, uint8_t mantissa, parser_state_t 
 	{
 	case 60:
 		code = 5;
+		__attribute__((fallthrough));
 	case 30:
 		code = (code & 1) ? 5 : 3;
+		__attribute__((fallthrough));
 	case 0:
 	case 1:
 	case 2:

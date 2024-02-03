@@ -74,6 +74,7 @@ Version 1.8 added the following new major features.
 - complete redesign of multi-stepper axis and self-squaring axis.
 - initial support for Scara kinematics
 - endpoint interface module to allow development of web services and REST modules for WiFi (available on v1.8.1)
+- websocket interface module to allow development of web sockets modules for WiFi (available on v1.8.7)
 
 Version 1.7 added a new major feature.
 

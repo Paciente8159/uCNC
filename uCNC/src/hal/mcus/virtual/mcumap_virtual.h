@@ -410,7 +410,6 @@
 #define MCU_HAS_ONESHOT_TIMER
 
 // just to compile
-#define mcu_rx_ready() true
 #define mcu_nop()
 #define mcu_config_pullup(diopin)
 #define mcu_config_analog(diopin)

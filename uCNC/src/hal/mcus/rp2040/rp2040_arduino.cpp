@@ -741,23 +741,6 @@ uint8_t rp2040_wifi_bt_read(void)
 	return (uint8_t)0;
 }
 
-bool rp2040_wifi_bt_rx_ready(void)
-{
-	bool wifiready = false;
-#ifdef MCU_HAS_WIFI
-	if (rp2040_wifi_clientok())
-	{
-		wifiready = (server_client.available() > 0);
-	}
-#endif
-
-	bool btready = false;
-#ifdef ENABLE_BLUETOOTH
-	btready = (SerialBT.available() > 0);
-#endif
-
-	return (wifiready || btready);
-}
 
 void rp2040_wifi_bt_process(void)
 {
@@ -988,18 +971,6 @@ extern "C"
 		}
 	}
 #endif
-
-	bool rp2040_uart_rx_ready(void)
-	{
-		bool wifiready = false;
-#if (defined(MCU_HAS_WIFI) || defined(ENABLE_BLUETOOTH))
-		if (rp2040_wifi_clientok())
-		{
-			wifiready = (rp2040_wifi_bt_rx_ready() > 0);
-		}
-#endif
-		return ((Serial.available() > 0) || wifiready);
-	}
 
 	void rp2040_uart_process(void)
 	{
