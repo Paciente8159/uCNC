@@ -321,7 +321,7 @@ void mcu_init(void)
 #endif
 
 #ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(1024); // 1K Emulated EEPROM
+	rp2040_eeprom_init(2048); // 2K Emulated EEPROM
 #endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
