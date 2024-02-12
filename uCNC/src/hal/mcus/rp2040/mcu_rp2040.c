@@ -528,24 +528,6 @@ void mcu_stop_itp_isr(void)
 }
 
 /**
- * gets the MCU running time in milliseconds.
- * the time counting is controled by the internal RTC
- * */
-uint32_t mcu_millis()
-{
-	return millis();
-}
-
-/**
- * provides a delay in us (micro seconds)
- * the maximum allowed delay is 255 us
- * */
-uint32_t mcu_micros()
-{
-	return micros();
-}
-
-/**
  * runs all internal tasks of the MCU.
  * for the moment these are:
  *   - if USB is enabled and MCU uses tinyUSB framework run tinyUSB tud_task

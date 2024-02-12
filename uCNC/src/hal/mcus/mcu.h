@@ -289,17 +289,29 @@ extern "C"
 	 * */
 	void mcu_stop_itp_isr(void);
 
-	/**
-	 * gets the MCU running time in milliseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
+/**
+ * gets the MCU running time in milliseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_millis
 	uint32_t mcu_millis(void);
+#endif
 
-	/**
-	 * gets the MCU running time in microseconds.
-	 * the time counting is controled by the internal RTC
-	 * */
+/**
+ * gets the MCU running time in microseconds.
+ * the time counting is controled by the internal RTC
+ * */
+#ifndef mcu_micros
 	uint32_t mcu_micros(void);
+#endif
+
+/**
+ * gets the microsecond portion of the free RTC clock counter (from 0 to 1000).
+ * this free runner is always running even during an ISR or atomic operation
+ * */
+#ifndef mcu_free_micros
+	uint32_t mcu_free_micros(void);
+#endif
 
 #ifndef mcu_nop
 #define mcu_nop() asm volatile("nop\n\t")
@@ -495,7 +507,7 @@ extern "C"
 
 #ifndef mcu_i2c_send
 	// master sends command to slave
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release);
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout);
 #endif
 #ifndef mcu_i2c_receive
 	// master receive response from slave

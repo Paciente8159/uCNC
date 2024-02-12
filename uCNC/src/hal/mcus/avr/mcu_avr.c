@@ -859,10 +859,9 @@ uint32_t mcu_millis()
 
 uint32_t mcu_micros()
 {
-	uint32_t rtc_elapsed = RTC_TCNT;
 	uint32_t ms = mcu_runtime_ms;
 
-	return ((rtc_elapsed * 1000) / RTC_OCRA) + (ms * 1000);
+	return ((ms * 1000) + mcu_free_micros());
 }
 
 void mcu_start_rtc()
@@ -1064,18 +1063,23 @@ static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		int32_t ms_timeout = 25;
 
 		TWCR = (1 << TWINT) | (1 << TWSTO) | (1 << TWEN);
-		while ((TWCR & (1 << TWSTO)) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (!(TWCR & (1 << TWSTO)))
+			{
+				return;
+			}
+		}
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	int32_t ms_timeout = 25;
+	int32_t timeout = ms_timeout;
 	if (send_start)
 	{
 		// init
@@ -1092,7 +1096,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		}
 
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		__TIMEOUT_MS__(ms_timeout)
+		__TIMEOUT_MS__(timeout)
 		{
 			if (TWCR & (1 << TWINT))
 			{
@@ -1104,7 +1108,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			}
 		}
 
-		__TIMEOUT_ASSERT__(ms_timeout)
+		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
 			return I2C_NOTOK;
@@ -1113,7 +1117,8 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	__TIMEOUT_MS__(ms_timeout)
+	timeout = ms_timeout;
+	__TIMEOUT_MS__(timeout)
 	{
 		if (TWCR & (1 << TWINT))
 		{
@@ -1158,18 +1163,18 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1191,7 +1196,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{

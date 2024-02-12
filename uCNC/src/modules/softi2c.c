@@ -35,30 +35,29 @@ static void softi2c_stop(softi2c_port_t *port)
 	port->sda(true);
 }
 
-static uint8_t softi2c_clock_stretch(softi2c_port_t *port)
+static uint8_t softi2c_clock_stretch(softi2c_port_t *port, uint32_t ms_timeout)
 {
 	// releases the clock then monitors the clock line to see if it's available or not
 	// if not released under 50ms issues a timeout error
-	uint8_t timeout = 50;
 	port->scl(true);
-	while (!port->get_scl())
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (timeout--)
+		if (port->get_scl())
 		{
-			cnc_delay_ms(1);
+			return I2C_OK;
 		}
-		else
+		// if not in ISR run main loop
+		if (mcu_get_global_isr())
 		{
-			// sent stop condition and exit
-			softi2c_stop(port);
-			return I2C_NOTOK;
+			cnc_dotasks();
 		}
 	}
 
-	return I2C_OK;
+	softi2c_stop(port);
+	return I2C_NOTOK;
 }
 
-static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop)
+static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	uint8_t ack = 0;
 	cnc_dotasks();
@@ -66,21 +65,25 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	{
 		// init
 		port->sda(true);
-		uint8_t timeout = 50;
-		while (!port->get_sda())
+		uint8_t timeout = ms_timeout;
+		__TIMEOUT_MS__(timeout)
 		{
-			if (timeout--)
+			if (port->get_sda())
 			{
-				cnc_delay_ms(1);
+				break;
 			}
-			else
+			// if not in ISR run main loop
+			if (mcu_get_global_isr())
 			{
-				// unable to generate start condition
-				return I2C_NOTOK;
+				cnc_dotasks();
 			}
 		}
+		__TIMEOUT_ASSERT__(timeout)
+		{
+			return I2C_NOTOK;
+		}
 
-		if (softi2c_clock_stretch(port) != I2C_OK)
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
 		}
@@ -95,7 +98,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	{
 		port->sda((c & 0x80));
 		softi2c_delay(port->i2cdelay);
-		if (softi2c_clock_stretch(port) != I2C_OK)
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
 		}
@@ -107,7 +110,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	// read ack
 	port->sda(true);
 	softi2c_delay(port->i2cdelay);
-	if (softi2c_clock_stretch(port) != I2C_OK)
+	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
 	}
@@ -122,7 +125,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	return ((ack) ? I2C_OK : I2C_NOTOK);
 }
 
-static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
+static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	uint8_t c = 0xFF;
 	uint8_t i = 8;
@@ -130,7 +133,7 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	do
 	{
 		softi2c_delay(port->i2cdelay);
-		if (softi2c_clock_stretch(port) != I2C_OK)
+		if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 		{
 			return I2C_NOTOK;
 		}
@@ -142,7 +145,7 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 
 	port->sda(!with_ack);
 	softi2c_delay(port->i2cdelay);
-	if (softi2c_clock_stretch(port) != I2C_OK)
+	if (softi2c_clock_stretch(port, ms_timeout) != I2C_OK)
 	{
 		return I2C_NOTOK;
 	}
@@ -157,12 +160,12 @@ static uint8_t softi2c_read(softi2c_port_t *port, bool with_ack, bool send_stop)
 	return c;
 }
 
-uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, bool release)
+uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8_t len, bool release, uint32_t ms_timeout)
 {
 	if (!port)
 	{
 #ifdef MCU_HAS_I2C
-		return mcu_i2c_send(address, data, len, release);
+		return mcu_i2c_send(address, data, len, release, ms_timeout);
 #else
 		return I2C_NOTOK;
 #endif
@@ -171,18 +174,18 @@ uint8_t softi2c_send(softi2c_port_t *port, uint8_t address, uint8_t *data, uint8
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, address << 1, true, false) == I2C_OK) // start, send address, write
+		if (softi2c_write(port, address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			for (uint8_t i = 0; i < len; i++)
 			{
-				if (softi2c_write(port, data[i], false, false) != I2C_OK)
+				if (softi2c_write(port, data[i], false, false, ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
 			}
 
-			return softi2c_write(port, data[len], false, release);
+			return softi2c_write(port, data[len], false, release, ms_timeout);
 		}
 	}
 	return I2C_NOTOK;
@@ -202,14 +205,14 @@ uint8_t softi2c_receive(softi2c_port_t *port, uint8_t address, uint8_t *data, ui
 	if (len)
 	{
 		len--;
-		if (softi2c_write(port, (address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (softi2c_write(port, (address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			for (uint8_t i = 0; i < len; i++)
 			{
-				data[i] = softi2c_read(port, true, false);
+				data[i] = softi2c_read(port, true, false, ms_timeout);
 			}
 
-			data[len] = softi2c_read(port, false, true);
+			data[len] = softi2c_read(port, false, true, ms_timeout);
 			return I2C_OK;
 		}
 	}

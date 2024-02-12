@@ -933,7 +933,7 @@ static File upload_file;
 #endif
 	}
 
-	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 	{
 		I2C_REG.beginTransmission(address);
 		I2C_REG.write(data, datalen);

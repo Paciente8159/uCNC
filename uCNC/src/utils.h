@@ -432,7 +432,7 @@ extern "C"
 		}                               \
 	}
 
-#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_micros() - curr_us_##timeout, timeout -= ((elap_us_##timeout > 0) ? elap_us_##timeout : 500), curr_us_##timeout = mcu_micros())
+#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_free_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_free_micros() - curr_us_##timeout, timeout -= ABS(elap_us_##timeout), curr_us_##timeout = mcu_free_micros())
 #define __TIMEOUT_MS__(timeout) timeout*=1000; __TIMEOUT_US__(timeout)
 #define __TIMEOUT_ASSERT__(timeout) if(timeout < 0)
 
