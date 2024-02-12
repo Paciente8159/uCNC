@@ -999,20 +999,25 @@ static void mcu_i2c_write_stop(bool *stop)
 {
 	if (*stop)
 	{
-		uint32_t ms_timeout = mcu_millis() + 25;
+		uint32_t ms_timeout = 25;
 
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 		I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
-			;
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
+			{
+				return;
+			}
+		}
 	}
 }
 
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t ms_timeout = 25;
 
 	if (send_start)
 	{
@@ -1022,19 +1027,29 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 			// Wait for complete
-			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO) && (ms_timeout > mcu_millis()))
-				;
+			__TIMEOUT_MS__(ms_timeout)
+			{
+				if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
+				{
+					return;
+				}
+			}
 		}
 		// Enter to Master Transmitter mode
 		I2C_REG->I2CONSET = I2C_I2CONSET_STA;
 		// Wait for complete
-		while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+		ms_timeout = 25;
+		__TIMEOUT_MS__(ms_timeout)
 		{
-			if (ms_timeout < mcu_millis())
+			if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 			{
-				stop = true;
-				return I2C_NOTOK;
+				break;
 			}
+		}
+		__TIMEOUT_ASSERT__(ms_timeout)
+		{
+			stop = true;
+			return I2C_NOTOK;
 		}
 		I2C_REG->I2CONCLR = I2C_I2CONCLR_STAC;
 		if ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK) != 0x08)
@@ -1042,13 +1057,18 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 			I2C_REG->I2CONSET = I2C_I2CONSET_STO;
 			I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 			// Wait for complete
-			while (!(I2C_REG->I2CONSET & I2C_I2CONSET_STO))
+			ms_timeout = 25;
+			__TIMEOUT_MS__(ms_timeout)
 			{
-				if (ms_timeout < mcu_millis())
+				if (I2C_REG->I2CONSET & I2C_I2CONSET_STO)
 				{
-					stop = true;
-					return I2C_NOTOK;
+					break;
 				}
+			}
+			__TIMEOUT_ASSERT__(ms_timeout)
+			{
+				stop = true;
+				return I2C_NOTOK;
 			}
 		}
 	}
@@ -1059,13 +1079,19 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 	/* Make sure start bit is not active */
 	I2C_REG->I2DAT = data & I2C_I2DAT_BITMASK;
 	// Wait for complete
-	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+	ms_timeout = 25;
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 		{
-			stop = true;
-			return I2C_NOTOK;
+			break;
 		}
+	}
+
+	__TIMEOUT_ASSERT__(ms_timeout)
+	{
+		stop = true;
+		return I2C_NOTOK;
 	}
 
 	switch ((I2C_REG->I2STAT & I2C_STAT_CODE_BITMASK))
@@ -1086,7 +1112,6 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (with_ack)
@@ -1101,17 +1126,17 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 	I2C_REG->I2CONCLR = I2C_I2CONCLR_SIC;
 
 	// Wait for complete
-	while (!(I2C_REG->I2CONSET & I2C_I2CONSET_SI))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2C_REG->I2CONSET & I2C_I2CONSET_SI)
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
+			return I2C_OK;
 		}
 	}
 
-	*data = (uint8_t)(I2C_REG->I2DAT & I2C_I2DAT_BITMASK);
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send

@@ -1075,7 +1075,7 @@ static void mcu_i2c_write_stop(bool *stop)
 static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
+	int32_t ms_timeout = 25;
 	if (send_start)
 	{
 		// init
@@ -1092,15 +1092,19 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		}
 
 		TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
-		while (!(TWCR & (1 << TWINT)))
+		__TIMEOUT_MS__(ms_timeout)
 		{
-			if (ms_timeout < mcu_millis())
+			if (TWCR & (1 << TWINT))
 			{
-				stop = true;
-				return I2C_NOTOK;
+				if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+				{
+					stop = true;
+					return I2C_NOTOK;
+				}
 			}
 		}
-		if (TW_STATUS != TW_START && TW_STATUS != TW_REP_START)
+
+		__TIMEOUT_ASSERT__(ms_timeout)
 		{
 			stop = true;
 			return I2C_NOTOK;
@@ -1109,48 +1113,47 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 
 	TWDR = data;
 	TWCR = (1 << TWINT) | (1 << TWEN);
-	while (!(TWCR & (1 << TWINT)))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			switch (TW_STATUS)
+			{
+			case TW_MT_SLA_ACK:
+			case TW_MT_DATA_ACK:
+			case TW_MR_SLA_ACK:
+			case TW_MR_DATA_ACK:
+				break;
+			default:
+				stop = true;
+				return I2C_NOTOK;
+			}
+
+			return I2C_OK;
 		}
 	}
 
-	switch (TW_STATUS)
-	{
-	case TW_MT_SLA_ACK:
-	case TW_MT_DATA_ACK:
-	case TW_MR_SLA_ACK:
-	case TW_MR_DATA_ACK:
-		break;
-	default:
-		stop = true;
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	TWCR = (1 << TWINT) | (1 << TWEN) | ((!with_ack) ? 0 : (1 << TWEA));
-	while (!(TWCR & (1 << TWINT)))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (TWCR & (1 << TWINT))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = TWDR;
+			return I2C_OK;
 		}
 	}
 
-	*data = TWDR;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send

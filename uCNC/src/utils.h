@@ -159,10 +159,10 @@ extern "C"
 #define fast_int_mul10(x) ((((x) << 2) + (x)) << 1)
 #endif
 #else
-#define fast_flt_div2(x) ((x)*0.5f)
-#define fast_flt_div4(x) ((x)*0.25f)
-#define fast_flt_mul2(x) ((x)*2.0f)
-#define fast_flt_mul4(x) ((x)*4.0f)
+#define fast_flt_div2(x) ((x) * 0.5f)
+#define fast_flt_div4(x) ((x) * 0.25f)
+#define fast_flt_mul2(x) ((x) * 2.0f)
+#define fast_flt_mul4(x) ((x) * 4.0f)
 #define fast_flt_sqrt(x) (sqrtf(x))
 #define fast_flt_invsqrt(x) (1.0f / sqrtf(x))
 #define fast_flt_pow2(x) ((x) * (x))
@@ -431,6 +431,10 @@ extern "C"
 			buffer.count = 0;           \
 		}                               \
 	}
+
+#define __TIMEOUT_US__(timeout) for (int32_t elap_us_##timeout, curr_us_##timeout = mcu_micros(); ((int32_t)timeout) >= 0; elap_us_##timeout = mcu_micros() - curr_us_##timeout, timeout -= ((elap_us_##timeout > 0) ? elap_us_##timeout : 500), curr_us_##timeout = mcu_micros())
+#define __TIMEOUT_MS__(timeout) timeout*=1000; __TIMEOUT_US__(timeout)
+#define __TIMEOUT_ASSERT__(timeout) if(timeout < 0)
 
 #ifdef __cplusplus
 }
