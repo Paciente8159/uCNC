@@ -1187,8 +1187,10 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 void mcu_i2c_config(uint32_t frequency)
 {
 	RCC->APB1ENR |= I2C_APBEN;
-	mcu_config_output_af(I2C_CLK, GPIO_OUTALT_OD_50MHZ);
-	mcu_config_output_af(I2C_DATA, GPIO_OUTALT_OD_50MHZ);
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
+	mcu_config_af(I2C_CLK, GPIO_AF);
+	mcu_config_af(I2C_DATA, GPIO_AF);
 #ifdef SPI_REMAP
 	AFIO->MAPR |= I2C_REMAP;
 #endif
