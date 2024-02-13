@@ -74,6 +74,136 @@ extern "C"
 // Helper macros
 #define __helper_ex__(left, mid, right) left##mid##right
 #define __helper__(left, mid, right) __helper_ex__(left, mid, right)
+#define __iopin_ex__(port, bit) STM32IO_##port##bit
+#define __iopin__(port, bit) __iopin_ex__(port, bit)
+#define STM32IO_A0 1
+#define STM32IO_A1 2
+#define STM32IO_A2 3
+#define STM32IO_A3 4
+#define STM32IO_A4 5
+#define STM32IO_A5 6
+#define STM32IO_A6 7
+#define STM32IO_A7 8
+#define STM32IO_A8 9
+#define STM32IO_A9 10
+#define STM32IO_A10 11
+#define STM32IO_A11 12
+#define STM32IO_A12 13
+#define STM32IO_A13 14
+#define STM32IO_A14 15
+#define STM32IO_A15 16
+#define STM32IO_B0 17
+#define STM32IO_B1 18
+#define STM32IO_B2 19
+#define STM32IO_B3 20
+#define STM32IO_B4 21
+#define STM32IO_B5 22
+#define STM32IO_B6 23
+#define STM32IO_B7 24
+#define STM32IO_B8 25
+#define STM32IO_B9 26
+#define STM32IO_B10 27
+#define STM32IO_B11 28
+#define STM32IO_B12 29
+#define STM32IO_B13 30
+#define STM32IO_B14 31
+#define STM32IO_B15 32
+#define STM32IO_C0 33
+#define STM32IO_C1 34
+#define STM32IO_C2 35
+#define STM32IO_C3 36
+#define STM32IO_C4 37
+#define STM32IO_C5 38
+#define STM32IO_C6 39
+#define STM32IO_C7 40
+#define STM32IO_C8 41
+#define STM32IO_C9 42
+#define STM32IO_C10 43
+#define STM32IO_C11 44
+#define STM32IO_C12 45
+#define STM32IO_C13 46
+#define STM32IO_C14 47
+#define STM32IO_C15 48
+#define STM32IO_D0 49
+#define STM32IO_D1 50
+#define STM32IO_D2 51
+#define STM32IO_D3 52
+#define STM32IO_D4 53
+#define STM32IO_D5 54
+#define STM32IO_D6 55
+#define STM32IO_D7 56
+#define STM32IO_D8 57
+#define STM32IO_D9 58
+#define STM32IO_D10 59
+#define STM32IO_D11 60
+#define STM32IO_D12 61
+#define STM32IO_D13 62
+#define STM32IO_D14 63
+#define STM32IO_D15 64
+#define STM32IO_E0 65
+#define STM32IO_E1 66
+#define STM32IO_E2 67
+#define STM32IO_E3 68
+#define STM32IO_E4 69
+#define STM32IO_E5 70
+#define STM32IO_E6 71
+#define STM32IO_E7 72
+#define STM32IO_E8 73
+#define STM32IO_E9 74
+#define STM32IO_E10 75
+#define STM32IO_E11 76
+#define STM32IO_E12 77
+#define STM32IO_E13 78
+#define STM32IO_E14 79
+#define STM32IO_E15 80
+#define STM32IO_F0 81
+#define STM32IO_F1 82
+#define STM32IO_F2 83
+#define STM32IO_F3 84
+#define STM32IO_F4 85
+#define STM32IO_F5 86
+#define STM32IO_F6 87
+#define STM32IO_F7 88
+#define STM32IO_F8 89
+#define STM32IO_F9 90
+#define STM32IO_F10 91
+#define STM32IO_F11 92
+#define STM32IO_F12 93
+#define STM32IO_F13 94
+#define STM32IO_F14 95
+#define STM32IO_F15 96
+#define STM32IO_G0 97
+#define STM32IO_G1 98
+#define STM32IO_G2 99
+#define STM32IO_G3 100
+#define STM32IO_G4 101
+#define STM32IO_G5 102
+#define STM32IO_G6 103
+#define STM32IO_G7 104
+#define STM32IO_G8 105
+#define STM32IO_G9 106
+#define STM32IO_G10 107
+#define STM32IO_G11 108
+#define STM32IO_G12 109
+#define STM32IO_G13 110
+#define STM32IO_G14 111
+#define STM32IO_G15 112
+#define STM32IO_H0 113
+#define STM32IO_H1 114
+#define STM32IO_H2 115
+#define STM32IO_H3 116
+#define STM32IO_H4 117
+#define STM32IO_H5 118
+#define STM32IO_H6 119
+#define STM32IO_H7 120
+#define STM32IO_H8 121
+#define STM32IO_H9 122
+#define STM32IO_H10 123
+#define STM32IO_H11 124
+#define STM32IO_H12 125
+#define STM32IO_H13 126
+#define STM32IO_H14 127
+#define STM32IO_H15 128
 
 // STM32 internal register names
 #define __gpio__(X) (__helper__(GPIO, X, ))
@@ -1625,9 +1755,9 @@ extern "C"
 #if (defined(USB_DP) && defined(USB_DM))
 #define GPIO_OTG_FS 0x0A
 #define MCU_HAS_USB
-extern uint32_t tud_cdc_n_write_available(uint8_t itf);
-extern uint32_t tud_cdc_n_available(uint8_t itf);
-extern bool tud_cdc_n_connected (uint8_t itf);
+	extern uint32_t tud_cdc_n_write_available(uint8_t itf);
+	extern uint32_t tud_cdc_n_available(uint8_t itf);
+	extern bool tud_cdc_n_connected(uint8_t itf);
 #define usb_tx_available() (tud_cdc_n_write_available(0) || !tud_cdc_n_connected(0))
 #define usb_rx_available() tud_cdc_n_available(0)
 #endif
@@ -1963,13 +2093,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
  *	PWM pins
  **********************************************/
 #if (defined(PWM0_CHANNEL) && defined(PWM0_TIMER) && defined(PWM0))
-#if (PWM0_TIMER==1 || (PWM0_TIMER>=8 & PWM0_TIMER<=11))
+#if (PWM0_TIMER == 1 || (PWM0_TIMER >= 8 & PWM0_TIMER <= 11))
 #define PWM0_ENREG RCC->APB2ENR
-#define PWM0_APBEN __helper__(RCC_APB2ENR_TIM,PWM0_TIMER, EN)
+#define PWM0_APBEN __helper__(RCC_APB2ENR_TIM, PWM0_TIMER, EN)
 #define PWM0_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM0_ENREG RCC->APB1ENR
-#define PWM0_APBEN __helper__(RCC_APB1ENR_TIM,PWM0_TIMER, EN)
+#define PWM0_APBEN __helper__(RCC_APB1ENR_TIM, PWM0_TIMER, EN)
 #define PWM0_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM0_TIMREG (__tim__(PWM0_TIMER))
@@ -1986,16 +2116,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM0_CCMREG CCMR1
 #endif
-#if (PWM0_TIMER==1)
-#define PWM0_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM0_TIMER==8)
-#define PWM0_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM0_TIMER == 1)
+#define PWM0_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM0_TIMER == 8)
+#define PWM0_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM0_ENOUTPUT {}
+#define PWM0_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM0_TIMER>=1) && (PWM0_TIMER<=2)
+#if (PWM0_TIMER >= 1) && (PWM0_TIMER <= 2)
 #define PWM0_AF 0x01
-#elif (PWM0_TIMER>=3) && (PWM0_TIMER<=5)
+#elif (PWM0_TIMER >= 3) && (PWM0_TIMER <= 5)
 #define PWM0_AF 0x02
 #else
 #define PWM0_AF 0x03
@@ -2016,13 +2154,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO25_CLOCK PWM0_CLOCK
 #endif
 #if (defined(PWM1_CHANNEL) && defined(PWM1_TIMER) && defined(PWM1))
-#if (PWM1_TIMER==1 || (PWM1_TIMER>=8 & PWM1_TIMER<=11))
+#if (PWM1_TIMER == 1 || (PWM1_TIMER >= 8 & PWM1_TIMER <= 11))
 #define PWM1_ENREG RCC->APB2ENR
-#define PWM1_APBEN __helper__(RCC_APB2ENR_TIM,PWM1_TIMER, EN)
+#define PWM1_APBEN __helper__(RCC_APB2ENR_TIM, PWM1_TIMER, EN)
 #define PWM1_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM1_ENREG RCC->APB1ENR
-#define PWM1_APBEN __helper__(RCC_APB1ENR_TIM,PWM1_TIMER, EN)
+#define PWM1_APBEN __helper__(RCC_APB1ENR_TIM, PWM1_TIMER, EN)
 #define PWM1_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM1_TIMREG (__tim__(PWM1_TIMER))
@@ -2039,16 +2177,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM1_CCMREG CCMR1
 #endif
-#if (PWM1_TIMER==1)
-#define PWM1_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM1_TIMER==8)
-#define PWM1_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM1_TIMER == 1)
+#define PWM1_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM1_TIMER == 8)
+#define PWM1_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM1_ENOUTPUT {}
+#define PWM1_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM1_TIMER>=1) && (PWM1_TIMER<=2)
+#if (PWM1_TIMER >= 1) && (PWM1_TIMER <= 2)
 #define PWM1_AF 0x01
-#elif (PWM1_TIMER>=3) && (PWM1_TIMER<=5)
+#elif (PWM1_TIMER >= 3) && (PWM1_TIMER <= 5)
 #define PWM1_AF 0x02
 #else
 #define PWM1_AF 0x03
@@ -2069,13 +2215,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO26_CLOCK PWM1_CLOCK
 #endif
 #if (defined(PWM2_CHANNEL) && defined(PWM2_TIMER) && defined(PWM2))
-#if (PWM2_TIMER==1 || (PWM2_TIMER>=8 & PWM2_TIMER<=11))
+#if (PWM2_TIMER == 1 || (PWM2_TIMER >= 8 & PWM2_TIMER <= 11))
 #define PWM2_ENREG RCC->APB2ENR
-#define PWM2_APBEN __helper__(RCC_APB2ENR_TIM,PWM2_TIMER, EN)
+#define PWM2_APBEN __helper__(RCC_APB2ENR_TIM, PWM2_TIMER, EN)
 #define PWM2_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM2_ENREG RCC->APB1ENR
-#define PWM2_APBEN __helper__(RCC_APB1ENR_TIM,PWM2_TIMER, EN)
+#define PWM2_APBEN __helper__(RCC_APB1ENR_TIM, PWM2_TIMER, EN)
 #define PWM2_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM2_TIMREG (__tim__(PWM2_TIMER))
@@ -2092,16 +2238,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM2_CCMREG CCMR1
 #endif
-#if (PWM2_TIMER==1)
-#define PWM2_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM2_TIMER==8)
-#define PWM2_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM2_TIMER == 1)
+#define PWM2_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM2_TIMER == 8)
+#define PWM2_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM2_ENOUTPUT {}
+#define PWM2_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM2_TIMER>=1) && (PWM2_TIMER<=2)
+#if (PWM2_TIMER >= 1) && (PWM2_TIMER <= 2)
 #define PWM2_AF 0x01
-#elif (PWM2_TIMER>=3) && (PWM2_TIMER<=5)
+#elif (PWM2_TIMER >= 3) && (PWM2_TIMER <= 5)
 #define PWM2_AF 0x02
 #else
 #define PWM2_AF 0x03
@@ -2122,13 +2276,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO27_CLOCK PWM2_CLOCK
 #endif
 #if (defined(PWM3_CHANNEL) && defined(PWM3_TIMER) && defined(PWM3))
-#if (PWM3_TIMER==1 || (PWM3_TIMER>=8 & PWM3_TIMER<=11))
+#if (PWM3_TIMER == 1 || (PWM3_TIMER >= 8 & PWM3_TIMER <= 11))
 #define PWM3_ENREG RCC->APB2ENR
-#define PWM3_APBEN __helper__(RCC_APB2ENR_TIM,PWM3_TIMER, EN)
+#define PWM3_APBEN __helper__(RCC_APB2ENR_TIM, PWM3_TIMER, EN)
 #define PWM3_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM3_ENREG RCC->APB1ENR
-#define PWM3_APBEN __helper__(RCC_APB1ENR_TIM,PWM3_TIMER, EN)
+#define PWM3_APBEN __helper__(RCC_APB1ENR_TIM, PWM3_TIMER, EN)
 #define PWM3_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM3_TIMREG (__tim__(PWM3_TIMER))
@@ -2145,16 +2299,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM3_CCMREG CCMR1
 #endif
-#if (PWM3_TIMER==1)
-#define PWM3_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM3_TIMER==8)
-#define PWM3_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM3_TIMER == 1)
+#define PWM3_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM3_TIMER == 8)
+#define PWM3_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM3_ENOUTPUT {}
+#define PWM3_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM3_TIMER>=1) && (PWM3_TIMER<=2)
+#if (PWM3_TIMER >= 1) && (PWM3_TIMER <= 2)
 #define PWM3_AF 0x01
-#elif (PWM3_TIMER>=3) && (PWM3_TIMER<=5)
+#elif (PWM3_TIMER >= 3) && (PWM3_TIMER <= 5)
 #define PWM3_AF 0x02
 #else
 #define PWM3_AF 0x03
@@ -2175,13 +2337,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO28_CLOCK PWM3_CLOCK
 #endif
 #if (defined(PWM4_CHANNEL) && defined(PWM4_TIMER) && defined(PWM4))
-#if (PWM4_TIMER==1 || (PWM4_TIMER>=8 & PWM4_TIMER<=11))
+#if (PWM4_TIMER == 1 || (PWM4_TIMER >= 8 & PWM4_TIMER <= 11))
 #define PWM4_ENREG RCC->APB2ENR
-#define PWM4_APBEN __helper__(RCC_APB2ENR_TIM,PWM4_TIMER, EN)
+#define PWM4_APBEN __helper__(RCC_APB2ENR_TIM, PWM4_TIMER, EN)
 #define PWM4_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM4_ENREG RCC->APB1ENR
-#define PWM4_APBEN __helper__(RCC_APB1ENR_TIM,PWM4_TIMER, EN)
+#define PWM4_APBEN __helper__(RCC_APB1ENR_TIM, PWM4_TIMER, EN)
 #define PWM4_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM4_TIMREG (__tim__(PWM4_TIMER))
@@ -2198,16 +2360,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM4_CCMREG CCMR1
 #endif
-#if (PWM4_TIMER==1)
-#define PWM4_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM4_TIMER==8)
-#define PWM4_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM4_TIMER == 1)
+#define PWM4_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM4_TIMER == 8)
+#define PWM4_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM4_ENOUTPUT {}
+#define PWM4_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM4_TIMER>=1) && (PWM4_TIMER<=2)
+#if (PWM4_TIMER >= 1) && (PWM4_TIMER <= 2)
 #define PWM4_AF 0x01
-#elif (PWM4_TIMER>=3) && (PWM4_TIMER<=5)
+#elif (PWM4_TIMER >= 3) && (PWM4_TIMER <= 5)
 #define PWM4_AF 0x02
 #else
 #define PWM4_AF 0x03
@@ -2228,13 +2398,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO29_CLOCK PWM4_CLOCK
 #endif
 #if (defined(PWM5_CHANNEL) && defined(PWM5_TIMER) && defined(PWM5))
-#if (PWM5_TIMER==1 || (PWM5_TIMER>=8 & PWM5_TIMER<=11))
+#if (PWM5_TIMER == 1 || (PWM5_TIMER >= 8 & PWM5_TIMER <= 11))
 #define PWM5_ENREG RCC->APB2ENR
-#define PWM5_APBEN __helper__(RCC_APB2ENR_TIM,PWM5_TIMER, EN)
+#define PWM5_APBEN __helper__(RCC_APB2ENR_TIM, PWM5_TIMER, EN)
 #define PWM5_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM5_ENREG RCC->APB1ENR
-#define PWM5_APBEN __helper__(RCC_APB1ENR_TIM,PWM5_TIMER, EN)
+#define PWM5_APBEN __helper__(RCC_APB1ENR_TIM, PWM5_TIMER, EN)
 #define PWM5_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM5_TIMREG (__tim__(PWM5_TIMER))
@@ -2251,16 +2421,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM5_CCMREG CCMR1
 #endif
-#if (PWM5_TIMER==1)
-#define PWM5_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM5_TIMER==8)
-#define PWM5_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM5_TIMER == 1)
+#define PWM5_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM5_TIMER == 8)
+#define PWM5_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM5_ENOUTPUT {}
+#define PWM5_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM5_TIMER>=1) && (PWM5_TIMER<=2)
+#if (PWM5_TIMER >= 1) && (PWM5_TIMER <= 2)
 #define PWM5_AF 0x01
-#elif (PWM5_TIMER>=3) && (PWM5_TIMER<=5)
+#elif (PWM5_TIMER >= 3) && (PWM5_TIMER <= 5)
 #define PWM5_AF 0x02
 #else
 #define PWM5_AF 0x03
@@ -2281,13 +2459,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO30_CLOCK PWM5_CLOCK
 #endif
 #if (defined(PWM6_CHANNEL) && defined(PWM6_TIMER) && defined(PWM6))
-#if (PWM6_TIMER==1 || (PWM6_TIMER>=8 & PWM6_TIMER<=11))
+#if (PWM6_TIMER == 1 || (PWM6_TIMER >= 8 & PWM6_TIMER <= 11))
 #define PWM6_ENREG RCC->APB2ENR
-#define PWM6_APBEN __helper__(RCC_APB2ENR_TIM,PWM6_TIMER, EN)
+#define PWM6_APBEN __helper__(RCC_APB2ENR_TIM, PWM6_TIMER, EN)
 #define PWM6_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM6_ENREG RCC->APB1ENR
-#define PWM6_APBEN __helper__(RCC_APB1ENR_TIM,PWM6_TIMER, EN)
+#define PWM6_APBEN __helper__(RCC_APB1ENR_TIM, PWM6_TIMER, EN)
 #define PWM6_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM6_TIMREG (__tim__(PWM6_TIMER))
@@ -2304,16 +2482,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM6_CCMREG CCMR1
 #endif
-#if (PWM6_TIMER==1)
-#define PWM6_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM6_TIMER==8)
-#define PWM6_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM6_TIMER == 1)
+#define PWM6_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM6_TIMER == 8)
+#define PWM6_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM6_ENOUTPUT {}
+#define PWM6_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM6_TIMER>=1) && (PWM6_TIMER<=2)
+#if (PWM6_TIMER >= 1) && (PWM6_TIMER <= 2)
 #define PWM6_AF 0x01
-#elif (PWM6_TIMER>=3) && (PWM6_TIMER<=5)
+#elif (PWM6_TIMER >= 3) && (PWM6_TIMER <= 5)
 #define PWM6_AF 0x02
 #else
 #define PWM6_AF 0x03
@@ -2334,13 +2520,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO31_CLOCK PWM6_CLOCK
 #endif
 #if (defined(PWM7_CHANNEL) && defined(PWM7_TIMER) && defined(PWM7))
-#if (PWM7_TIMER==1 || (PWM7_TIMER>=8 & PWM7_TIMER<=11))
+#if (PWM7_TIMER == 1 || (PWM7_TIMER >= 8 & PWM7_TIMER <= 11))
 #define PWM7_ENREG RCC->APB2ENR
-#define PWM7_APBEN __helper__(RCC_APB2ENR_TIM,PWM7_TIMER, EN)
+#define PWM7_APBEN __helper__(RCC_APB2ENR_TIM, PWM7_TIMER, EN)
 #define PWM7_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM7_ENREG RCC->APB1ENR
-#define PWM7_APBEN __helper__(RCC_APB1ENR_TIM,PWM7_TIMER, EN)
+#define PWM7_APBEN __helper__(RCC_APB1ENR_TIM, PWM7_TIMER, EN)
 #define PWM7_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM7_TIMREG (__tim__(PWM7_TIMER))
@@ -2357,16 +2543,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM7_CCMREG CCMR1
 #endif
-#if (PWM7_TIMER==1)
-#define PWM7_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM7_TIMER==8)
-#define PWM7_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM7_TIMER == 1)
+#define PWM7_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM7_TIMER == 8)
+#define PWM7_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM7_ENOUTPUT {}
+#define PWM7_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM7_TIMER>=1) && (PWM7_TIMER<=2)
+#if (PWM7_TIMER >= 1) && (PWM7_TIMER <= 2)
 #define PWM7_AF 0x01
-#elif (PWM7_TIMER>=3) && (PWM7_TIMER<=5)
+#elif (PWM7_TIMER >= 3) && (PWM7_TIMER <= 5)
 #define PWM7_AF 0x02
 #else
 #define PWM7_AF 0x03
@@ -2387,13 +2581,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO32_CLOCK PWM7_CLOCK
 #endif
 #if (defined(PWM8_CHANNEL) && defined(PWM8_TIMER) && defined(PWM8))
-#if (PWM8_TIMER==1 || (PWM8_TIMER>=8 & PWM8_TIMER<=11))
+#if (PWM8_TIMER == 1 || (PWM8_TIMER >= 8 & PWM8_TIMER <= 11))
 #define PWM8_ENREG RCC->APB2ENR
-#define PWM8_APBEN __helper__(RCC_APB2ENR_TIM,PWM8_TIMER, EN)
+#define PWM8_APBEN __helper__(RCC_APB2ENR_TIM, PWM8_TIMER, EN)
 #define PWM8_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM8_ENREG RCC->APB1ENR
-#define PWM8_APBEN __helper__(RCC_APB1ENR_TIM,PWM8_TIMER, EN)
+#define PWM8_APBEN __helper__(RCC_APB1ENR_TIM, PWM8_TIMER, EN)
 #define PWM8_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM8_TIMREG (__tim__(PWM8_TIMER))
@@ -2410,16 +2604,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM8_CCMREG CCMR1
 #endif
-#if (PWM8_TIMER==1)
-#define PWM8_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM8_TIMER==8)
-#define PWM8_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM8_TIMER == 1)
+#define PWM8_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM8_TIMER == 8)
+#define PWM8_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM8_ENOUTPUT {}
+#define PWM8_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM8_TIMER>=1) && (PWM8_TIMER<=2)
+#if (PWM8_TIMER >= 1) && (PWM8_TIMER <= 2)
 #define PWM8_AF 0x01
-#elif (PWM8_TIMER>=3) && (PWM8_TIMER<=5)
+#elif (PWM8_TIMER >= 3) && (PWM8_TIMER <= 5)
 #define PWM8_AF 0x02
 #else
 #define PWM8_AF 0x03
@@ -2440,13 +2642,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO33_CLOCK PWM8_CLOCK
 #endif
 #if (defined(PWM9_CHANNEL) && defined(PWM9_TIMER) && defined(PWM9))
-#if (PWM9_TIMER==1 || (PWM9_TIMER>=8 & PWM9_TIMER<=11))
+#if (PWM9_TIMER == 1 || (PWM9_TIMER >= 8 & PWM9_TIMER <= 11))
 #define PWM9_ENREG RCC->APB2ENR
-#define PWM9_APBEN __helper__(RCC_APB2ENR_TIM,PWM9_TIMER, EN)
+#define PWM9_APBEN __helper__(RCC_APB2ENR_TIM, PWM9_TIMER, EN)
 #define PWM9_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM9_ENREG RCC->APB1ENR
-#define PWM9_APBEN __helper__(RCC_APB1ENR_TIM,PWM9_TIMER, EN)
+#define PWM9_APBEN __helper__(RCC_APB1ENR_TIM, PWM9_TIMER, EN)
 #define PWM9_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM9_TIMREG (__tim__(PWM9_TIMER))
@@ -2463,16 +2665,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM9_CCMREG CCMR1
 #endif
-#if (PWM9_TIMER==1)
-#define PWM9_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM9_TIMER==8)
-#define PWM9_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM9_TIMER == 1)
+#define PWM9_ENOUTPUT            \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM9_TIMER == 8)
+#define PWM9_ENOUTPUT            \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM9_ENOUTPUT {}
+#define PWM9_ENOUTPUT \
+	{                 \
+	}
 #endif
-#if (PWM9_TIMER>=1) && (PWM9_TIMER<=2)
+#if (PWM9_TIMER >= 1) && (PWM9_TIMER <= 2)
 #define PWM9_AF 0x01
-#elif (PWM9_TIMER>=3) && (PWM9_TIMER<=5)
+#elif (PWM9_TIMER >= 3) && (PWM9_TIMER <= 5)
 #define PWM9_AF 0x02
 #else
 #define PWM9_AF 0x03
@@ -2493,13 +2703,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO34_CLOCK PWM9_CLOCK
 #endif
 #if (defined(PWM10_CHANNEL) && defined(PWM10_TIMER) && defined(PWM10))
-#if (PWM10_TIMER==1 || (PWM10_TIMER>=8 & PWM10_TIMER<=11))
+#if (PWM10_TIMER == 1 || (PWM10_TIMER >= 8 & PWM10_TIMER <= 11))
 #define PWM10_ENREG RCC->APB2ENR
-#define PWM10_APBEN __helper__(RCC_APB2ENR_TIM,PWM10_TIMER, EN)
+#define PWM10_APBEN __helper__(RCC_APB2ENR_TIM, PWM10_TIMER, EN)
 #define PWM10_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM10_ENREG RCC->APB1ENR
-#define PWM10_APBEN __helper__(RCC_APB1ENR_TIM,PWM10_TIMER, EN)
+#define PWM10_APBEN __helper__(RCC_APB1ENR_TIM, PWM10_TIMER, EN)
 #define PWM10_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM10_TIMREG (__tim__(PWM10_TIMER))
@@ -2516,16 +2726,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM10_CCMREG CCMR1
 #endif
-#if (PWM10_TIMER==1)
-#define PWM10_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM10_TIMER==8)
-#define PWM10_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM10_TIMER == 1)
+#define PWM10_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM10_TIMER == 8)
+#define PWM10_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM10_ENOUTPUT {}
+#define PWM10_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM10_TIMER>=1) && (PWM10_TIMER<=2)
+#if (PWM10_TIMER >= 1) && (PWM10_TIMER <= 2)
 #define PWM10_AF 0x01
-#elif (PWM10_TIMER>=3) && (PWM10_TIMER<=5)
+#elif (PWM10_TIMER >= 3) && (PWM10_TIMER <= 5)
 #define PWM10_AF 0x02
 #else
 #define PWM10_AF 0x03
@@ -2546,13 +2764,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO35_CLOCK PWM10_CLOCK
 #endif
 #if (defined(PWM11_CHANNEL) && defined(PWM11_TIMER) && defined(PWM11))
-#if (PWM11_TIMER==1 || (PWM11_TIMER>=8 & PWM11_TIMER<=11))
+#if (PWM11_TIMER == 1 || (PWM11_TIMER >= 8 & PWM11_TIMER <= 11))
 #define PWM11_ENREG RCC->APB2ENR
-#define PWM11_APBEN __helper__(RCC_APB2ENR_TIM,PWM11_TIMER, EN)
+#define PWM11_APBEN __helper__(RCC_APB2ENR_TIM, PWM11_TIMER, EN)
 #define PWM11_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM11_ENREG RCC->APB1ENR
-#define PWM11_APBEN __helper__(RCC_APB1ENR_TIM,PWM11_TIMER, EN)
+#define PWM11_APBEN __helper__(RCC_APB1ENR_TIM, PWM11_TIMER, EN)
 #define PWM11_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM11_TIMREG (__tim__(PWM11_TIMER))
@@ -2569,16 +2787,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM11_CCMREG CCMR1
 #endif
-#if (PWM11_TIMER==1)
-#define PWM11_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM11_TIMER==8)
-#define PWM11_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM11_TIMER == 1)
+#define PWM11_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM11_TIMER == 8)
+#define PWM11_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM11_ENOUTPUT {}
+#define PWM11_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM11_TIMER>=1) && (PWM11_TIMER<=2)
+#if (PWM11_TIMER >= 1) && (PWM11_TIMER <= 2)
 #define PWM11_AF 0x01
-#elif (PWM11_TIMER>=3) && (PWM11_TIMER<=5)
+#elif (PWM11_TIMER >= 3) && (PWM11_TIMER <= 5)
 #define PWM11_AF 0x02
 #else
 #define PWM11_AF 0x03
@@ -2599,13 +2825,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO36_CLOCK PWM11_CLOCK
 #endif
 #if (defined(PWM12_CHANNEL) && defined(PWM12_TIMER) && defined(PWM12))
-#if (PWM12_TIMER==1 || (PWM12_TIMER>=8 & PWM12_TIMER<=11))
+#if (PWM12_TIMER == 1 || (PWM12_TIMER >= 8 & PWM12_TIMER <= 11))
 #define PWM12_ENREG RCC->APB2ENR
-#define PWM12_APBEN __helper__(RCC_APB2ENR_TIM,PWM12_TIMER, EN)
+#define PWM12_APBEN __helper__(RCC_APB2ENR_TIM, PWM12_TIMER, EN)
 #define PWM12_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM12_ENREG RCC->APB1ENR
-#define PWM12_APBEN __helper__(RCC_APB1ENR_TIM,PWM12_TIMER, EN)
+#define PWM12_APBEN __helper__(RCC_APB1ENR_TIM, PWM12_TIMER, EN)
 #define PWM12_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM12_TIMREG (__tim__(PWM12_TIMER))
@@ -2622,16 +2848,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM12_CCMREG CCMR1
 #endif
-#if (PWM12_TIMER==1)
-#define PWM12_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM12_TIMER==8)
-#define PWM12_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM12_TIMER == 1)
+#define PWM12_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM12_TIMER == 8)
+#define PWM12_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM12_ENOUTPUT {}
+#define PWM12_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM12_TIMER>=1) && (PWM12_TIMER<=2)
+#if (PWM12_TIMER >= 1) && (PWM12_TIMER <= 2)
 #define PWM12_AF 0x01
-#elif (PWM12_TIMER>=3) && (PWM12_TIMER<=5)
+#elif (PWM12_TIMER >= 3) && (PWM12_TIMER <= 5)
 #define PWM12_AF 0x02
 #else
 #define PWM12_AF 0x03
@@ -2652,13 +2886,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO37_CLOCK PWM12_CLOCK
 #endif
 #if (defined(PWM13_CHANNEL) && defined(PWM13_TIMER) && defined(PWM13))
-#if (PWM13_TIMER==1 || (PWM13_TIMER>=8 & PWM13_TIMER<=11))
+#if (PWM13_TIMER == 1 || (PWM13_TIMER >= 8 & PWM13_TIMER <= 11))
 #define PWM13_ENREG RCC->APB2ENR
-#define PWM13_APBEN __helper__(RCC_APB2ENR_TIM,PWM13_TIMER, EN)
+#define PWM13_APBEN __helper__(RCC_APB2ENR_TIM, PWM13_TIMER, EN)
 #define PWM13_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM13_ENREG RCC->APB1ENR
-#define PWM13_APBEN __helper__(RCC_APB1ENR_TIM,PWM13_TIMER, EN)
+#define PWM13_APBEN __helper__(RCC_APB1ENR_TIM, PWM13_TIMER, EN)
 #define PWM13_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM13_TIMREG (__tim__(PWM13_TIMER))
@@ -2675,16 +2909,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM13_CCMREG CCMR1
 #endif
-#if (PWM13_TIMER==1)
-#define PWM13_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM13_TIMER==8)
-#define PWM13_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM13_TIMER == 1)
+#define PWM13_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM13_TIMER == 8)
+#define PWM13_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM13_ENOUTPUT {}
+#define PWM13_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM13_TIMER>=1) && (PWM13_TIMER<=2)
+#if (PWM13_TIMER >= 1) && (PWM13_TIMER <= 2)
 #define PWM13_AF 0x01
-#elif (PWM13_TIMER>=3) && (PWM13_TIMER<=5)
+#elif (PWM13_TIMER >= 3) && (PWM13_TIMER <= 5)
 #define PWM13_AF 0x02
 #else
 #define PWM13_AF 0x03
@@ -2705,13 +2947,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO38_CLOCK PWM13_CLOCK
 #endif
 #if (defined(PWM14_CHANNEL) && defined(PWM14_TIMER) && defined(PWM14))
-#if (PWM14_TIMER==1 || (PWM14_TIMER>=8 & PWM14_TIMER<=11))
+#if (PWM14_TIMER == 1 || (PWM14_TIMER >= 8 & PWM14_TIMER <= 11))
 #define PWM14_ENREG RCC->APB2ENR
-#define PWM14_APBEN __helper__(RCC_APB2ENR_TIM,PWM14_TIMER, EN)
+#define PWM14_APBEN __helper__(RCC_APB2ENR_TIM, PWM14_TIMER, EN)
 #define PWM14_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM14_ENREG RCC->APB1ENR
-#define PWM14_APBEN __helper__(RCC_APB1ENR_TIM,PWM14_TIMER, EN)
+#define PWM14_APBEN __helper__(RCC_APB1ENR_TIM, PWM14_TIMER, EN)
 #define PWM14_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM14_TIMREG (__tim__(PWM14_TIMER))
@@ -2728,16 +2970,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM14_CCMREG CCMR1
 #endif
-#if (PWM14_TIMER==1)
-#define PWM14_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM14_TIMER==8)
-#define PWM14_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM14_TIMER == 1)
+#define PWM14_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM14_TIMER == 8)
+#define PWM14_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM14_ENOUTPUT {}
+#define PWM14_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM14_TIMER>=1) && (PWM14_TIMER<=2)
+#if (PWM14_TIMER >= 1) && (PWM14_TIMER <= 2)
 #define PWM14_AF 0x01
-#elif (PWM14_TIMER>=3) && (PWM14_TIMER<=5)
+#elif (PWM14_TIMER >= 3) && (PWM14_TIMER <= 5)
 #define PWM14_AF 0x02
 #else
 #define PWM14_AF 0x03
@@ -2758,13 +3008,13 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define DIO39_CLOCK PWM14_CLOCK
 #endif
 #if (defined(PWM15_CHANNEL) && defined(PWM15_TIMER) && defined(PWM15))
-#if (PWM15_TIMER==1 || (PWM15_TIMER>=8 & PWM15_TIMER<=11))
+#if (PWM15_TIMER == 1 || (PWM15_TIMER >= 8 & PWM15_TIMER <= 11))
 #define PWM15_ENREG RCC->APB2ENR
-#define PWM15_APBEN __helper__(RCC_APB2ENR_TIM,PWM15_TIMER, EN)
+#define PWM15_APBEN __helper__(RCC_APB2ENR_TIM, PWM15_TIMER, EN)
 #define PWM15_CLOCK HAL_RCC_GetPCLK2Freq()
 #else
 #define PWM15_ENREG RCC->APB1ENR
-#define PWM15_APBEN __helper__(RCC_APB1ENR_TIM,PWM15_TIMER, EN)
+#define PWM15_APBEN __helper__(RCC_APB1ENR_TIM, PWM15_TIMER, EN)
 #define PWM15_CLOCK HAL_RCC_GetPCLK1Freq()
 #endif
 #define PWM15_TIMREG (__tim__(PWM15_TIMER))
@@ -2781,16 +3031,24 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #else
 #define PWM15_CCMREG CCMR1
 #endif
-#if (PWM15_TIMER==1)
-#define PWM15_ENOUTPUT {TIM1->BDTR |= (1 << 15);}
-#elif (PWM15_TIMER==8)
-#define PWM15_ENOUTPUT {TIM8->BDTR |= (1 << 15);}
+#if (PWM15_TIMER == 1)
+#define PWM15_ENOUTPUT           \
+	{                            \
+		TIM1->BDTR |= (1 << 15); \
+	}
+#elif (PWM15_TIMER == 8)
+#define PWM15_ENOUTPUT           \
+	{                            \
+		TIM8->BDTR |= (1 << 15); \
+	}
 #else
-#define PWM15_ENOUTPUT {}
+#define PWM15_ENOUTPUT \
+	{                  \
+	}
 #endif
-#if (PWM15_TIMER>=1) && (PWM15_TIMER<=2)
+#if (PWM15_TIMER >= 1) && (PWM15_TIMER <= 2)
 #define PWM15_AF 0x01
-#elif (PWM15_TIMER>=3) && (PWM15_TIMER<=5)
+#elif (PWM15_TIMER >= 3) && (PWM15_TIMER <= 5)
 #define PWM15_AF 0x02
 #else
 #define PWM15_AF 0x03
@@ -3014,6 +3272,12 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #endif
 
 #if (defined(SPI_CLK) && defined(SPI_SDO) && defined(SPI_SDI))
+#define SPI_CLK_PIN __iopin__(SPI_CLK_PORT, SPI_CLK_BIT)
+#define SPI_SDO_PIN __iopin__(SPI_SDO_PORT, SPI_SDO_BIT)
+#define SPI_SDI_PIN __iopin__(SPI_SDI_PORT, SPI_SDI_BIT)
+#ifdef SPI_CS
+#define SPI_CS_PIN __iopin__(SPI_CS_PORT, SPI_CS_BIT)
+#endif
 #define MCU_HAS_SPI
 #ifndef SPI_PORT
 #define SPI_PORT 1
@@ -3025,11 +3289,179 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define SPI_FREQ 1000000UL
 #endif
 // remmaping and pin checking
-#if ((SPI_PORT == 3))
-#elif ((SPI_PORT == 1))
-#define SPI_AFIO 6
-#else
-#define SPI_AFIO 5
+#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_A1)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_B12)
+#define SPI_CLK_AFIO 7
+#endif
+#if (SPI_PORT == 1) && (SPI_CS_PIN == STM32IO_A4)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_CLK_PIN == STM32IO_A5)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_SDI_PIN == STM32IO_A6)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_SDO_PIN == STM32IO_A7)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_CS_PIN == STM32IO_A15)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_CLK_PIN == STM32IO_B3)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_SDI_PIN == STM32IO_B4)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 1) && (SPI_SDO_PIN == STM32IO_B5)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_B9)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_B10)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CS_PIN == STM32IO_B12)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_B13)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_SDI_PIN == STM32IO_B14)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_B15)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_SDI_PIN == STM32IO_C2)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_SDO_PIN == STM32IO_C3)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_C7)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 2) && (SPI_CLK_PIN == STM32IO_D3)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_D6)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_E3)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_E5)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_E6)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_E7)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_E11)
+#define SPI_CS_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_E12)
+#define SPI_CLK_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_E13)
+#define SPI_SDI_AFIO 5
+#endif
+#if (SPI_PORT == 4) && (SPI_SDO_PIN == STM32IO_E14)
+#define SPI_SDO_AFIO 5
+#endif
+#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A4)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_A10)
+#define SPI_SDO_AFIO 6
+#endif
+#if (SPI_PORT == 4) && (SPI_SDI_PIN == STM32IO_A11)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_A12)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_CS_PIN == STM32IO_A15)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_B0)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CD_PIN == STM32IO_B1)
+#define SPI_CD_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_B3)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_B4)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_B5)
+#define SPI_SDO_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_B8)
+#define SPI_SDO_AFIO 6
+#endif
+#if (SPI_PORT == 4) && (SPI_CS_PIN == STM32IO_B12)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 4) && (SPI_CLK_PIN == STM32IO_B13)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_CLK_PIN == STM32IO_C10)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDI_PIN == STM32IO_C11)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 3) && (SPI_SDO_PIN == STM32IO_C12)
+#define SPI_SDO_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_E3)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_E5)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_E6)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_E7)
+#define SPI_SDO_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CS_PIN == STM32IO_E11)
+#define SPI_CS_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_CLK_PIN == STM32IO_E12)
+#define SPI_CLK_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDI_PIN == STM32IO_E13)
+#define SPI_SDI_AFIO 6
+#endif
+#if (SPI_PORT == 5) && (SPI_SDO_PIN == STM32IO_E14)
+#define SPI_SDO_AFIO 6
+#endif
+
+#ifndef SPI_CLK_AFIO
+#error "SPI pin configuration not supported"
+#endif
+#ifndef SPI_SDO_AFIO
+#error "SPI pin configuration not supported"
+#endif
+#ifndef SPI_SDI_AFIO
+#error "SPI pin configuration not supported"
+#endif
+#ifdef SPI_CS
+#ifndef SPI_CS_AFIO
+#error "SPI pin configuration not supported"
+#endif
 #endif
 
 #define SPI_REG __helper__(SPI, SPI_PORT, )
@@ -3053,7 +3485,6 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define I2C_ADDRESS 0
 #endif
 
-
 #ifndef I2C_PORT
 #define I2C_PORT 1
 #endif
@@ -3063,8 +3494,8 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 #define I2C_SPEEDRANGE (HAL_RCC_GetPCLK1Freq() / 1000000UL)
 #define I2C_AFIO 4
 
-#define I2C_IRQ __helper__(I2C,I2C_PORT,_EV_IRQn)
-#define I2C_ISR __helper__(I2C,I2C_PORT,_EV_IRQHandler)
+#define I2C_IRQ __helper__(I2C, I2C_PORT, _EV_IRQn)
+#define I2C_ISR __helper__(I2C, I2C_PORT, _EV_IRQHandler)
 
 #ifndef I2C_FREQ
 #define I2C_FREQ 400000UL
@@ -3264,7 +3695,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] &= ~(0xf << ((__indirect__(diopin, BIT) & 0x07) << 2));                                   \
 		__indirect__(diopin, GPIO)->AFR[(__indirect__(diopin, BIT) >> 3)] |= ((__indirect__(diopin, AF) << ((__indirect__(diopin, BIT) & 0x07) << 2))); /*af mode*/ \
 		__indirect__(diopin, TIMREG)->CR1 = 0;                                                                                                                      \
-		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(__indirect__(diopin, CLOCK) / 1000000UL) - 1;                                                                                      \
+		__indirect__(diopin, TIMREG)->PSC = (uint16_t)(__indirect__(diopin, CLOCK) / 1000000UL) - 1;                                                                \
 		__indirect__(diopin, TIMREG)->ARR = (uint16_t)(1000000UL / freq);                                                                                           \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCR) = 0;                                                                                                \
 		__indirect__(diopin, TIMREG)->__indirect__(diopin, CCMREG) = __indirect__(diopin, MODE);                                                                    \
@@ -3331,7 +3762,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		while (!(ADC1->SR & ADC_SR_EOC))            \
 			;                                       \
 		ADC1->SR &= ~ADC_SR_EOC;                    \
-		(0x3FF & (ADC1->DR >> 2));                   \
+		(0x3FF & (ADC1->DR >> 2));                  \
 	})
 
 #define mcu_spi_xmit(X)                                               \
@@ -3366,7 +3797,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		__disable_irq();                  \
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
-#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
+#define mcu_free_micros() ({ (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #define GPIO_RESET 0x3U
 #define GPIO_INPUT 0x0U
