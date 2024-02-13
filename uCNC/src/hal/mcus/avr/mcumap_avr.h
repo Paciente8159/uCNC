@@ -4648,6 +4648,8 @@ extern "C"
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
 
+#define mcu_free_micros() ((1000UL*RTC_TCNT)/RTC_OCRA)
+
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)               \
 	({                                \

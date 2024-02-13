@@ -36,6 +36,14 @@ extern "C"
 		bool (*rx)(void);
 	} softuart_port_t;
 
+#ifndef SOFTUART_HW_TX_FALLBACK
+#define SOFTUART_HW_TX_FALLBACK mcu_uart2_putc
+#endif
+#ifndef SOFTUART_HW_RX_FALLBACK
+#define SOFTUART_HW_RX_FALLBACK mcu_uart2_getc
+#endif
+
+
 #define SOFTUART(NAME, BAUD, TXPIN, RXPIN)                             \
 	void NAME##_tx(bool state)                                         \
 	{                                                                  \
@@ -72,7 +80,7 @@ extern "C"
 	}                                                                  \
 	bool NAME##_rx(void)                                               \
 	{                                                                  \
-		return io_get_input(TRXPIN);                                    \
+		return io_get_input(TRXPIN);                                   \
 	}                                                                  \
 	void NAME##_wait(void) { mcu_delay_cycles(F_CPU / BAUD); }         \
 	void NAME##_waithalf(void) { mcu_delay_cycles(F_CPU / 2 / BAUD); } \

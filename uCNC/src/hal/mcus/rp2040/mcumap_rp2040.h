@@ -1165,6 +1165,10 @@ extern "C"
 #define mcu_get_pwm(X) (rp2040_pwm[X - PWM_PINS_OFFSET])
 #define mcu_get_analog(X) analogRead(__indirect__(X, BIT))
 
+#define mcu_millis() millis()
+#define mcu_micros() micros()
+#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
+
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 #define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

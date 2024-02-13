@@ -553,6 +553,11 @@ void esp8266_delay_us(uint16_t delay)
 		;
 }
 
+uint32_t mcu_free_micros()
+{
+	return (uint32_t)(esp_system_get_time() % 1000);
+}
+
 /**
  * runs all internal tasks of the MCU.
  * for the moment these are:

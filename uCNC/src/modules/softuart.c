@@ -54,19 +54,20 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 
 	if (!port)
 	{
-		return -1;
+#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
+		return mcu_uart2_getc();
+#endif
 	}
 	else
 	{
-		ms_timeout *= 1000;
-		while (port->rx())
+		__TIMEOUT_MS__(ms_timeout)
 		{
-			if (!ms_timeout--)
+			if (!port->rx())
 			{
-				return -1;
+				break;
 			}
-			mcu_delay_us(1);
 		}
+
 		port->waithalf();
 
 		uint8_t bits = 8;
@@ -82,6 +83,11 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 			mask <<= 1;
 		} while (--bits);
 		port->waithalf();
+	}
+
+	__TIMEOUT_ASSERT__(ms_timeout)
+	{
+		return 0;
 	}
 
 	return (int16_t)val;

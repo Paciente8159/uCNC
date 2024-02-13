@@ -1056,24 +1056,9 @@ uint32_t mcu_millis()
 	return c;
 }
 
-// void mcu_delay_us(uint16_t delay)
-// {
-// 	uint32_t loops;
-// 	if (!delay)
-// 	{
-// 		return;
-// 	}
-// 	else
-// 	{
-// 		loops = (delay * (F_CPU / 1000000UL) / 6) - 2;
-// 	}
-// 	while (loops--)
-// 		asm("nop");
-// }
-
 uint32_t mcu_micros()
 {
-	return ((mcu_runtime_ms * 1000) + ((SysTick->LOAD - SysTick->VAL) / (F_CPU / 1000000)));
+	return ((mcu_runtime_ms * 1000) + mcu_free_micros());
 }
 
 #ifndef mcu_delay_us
@@ -1328,10 +1313,9 @@ void mcu_i2c_write_stop(bool *stop)
 	}
 }
 
-static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
+static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint32_t ms_timeout)
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
-	uint32_t ms_timeout = mcu_millis() + 25;
 
 	if (send_start)
 	{
@@ -1342,28 +1326,27 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop)
 		I2CCOM->I2CM.DATA.reg = data;
 	}
 
-	while (0 == (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if ((I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
 		{
-			stop = true;
-			return I2C_NOTOK;
+			if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
+			{
+				I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
+				return I2C_NOTOK;
+			}
+
+			return I2C_OK;
 		}
 	}
 
-	if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
-	{
-		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_CMD(3);
-		return I2C_NOTOK;
-	}
-
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32_t ms_timeout)
 {
 	*data = 0xFF;
-	ms_timeout += mcu_millis();
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 
 	if (with_ack)
@@ -1375,33 +1358,33 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 		I2CCOM->I2CM.CTRLB.reg |= SERCOM_I2CM_CTRLB_ACKACT;
 	}
 
-	while (!(I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB))
+	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (ms_timeout < mcu_millis())
+		if (I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_SB)
 		{
-			stop = true;
-			return I2C_NOTOK;
+			*data = I2CCOM->I2CM.DATA.reg;
+			return I2C_OK;
 		}
 	}
 
-	*data = I2CCOM->I2CM.DATA.reg;
-	return I2C_OK;
+	stop = true;
+	return I2C_NOTOK;
 }
 
 #ifndef mcu_i2c_send
 // master sends command to slave
-uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release)
+uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write(address << 1, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write(address << 1, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			// send data, stop
 			do
 			{
 				datalen--;
 				bool last = (datalen == 0);
-				if (mcu_i2c_write(*data, false, (release & last)) != I2C_OK)
+				if (mcu_i2c_write(*data, false, (release & last), ms_timeout) != I2C_OK)
 				{
 					return I2C_NOTOK;
 				}
@@ -1423,7 +1406,7 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 {
 	if (data && datalen)
 	{
-		if (mcu_i2c_write((address << 1) | 0x01, true, false) == I2C_OK) // start, send address, write
+		if (mcu_i2c_write((address << 1) | 0x01, true, false, ms_timeout) == I2C_OK) // start, send address, write
 		{
 			do
 			{

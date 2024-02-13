@@ -3111,6 +3111,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		__disable_irq();                   \
 	}
 #define mcu_get_global_isr() samd21_global_isr_enabled
+#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
 
 #ifdef MCU_HAS_SPI
 #define mcu_spi_xmit(X)                          \

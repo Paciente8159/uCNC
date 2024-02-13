@@ -4791,6 +4791,7 @@ extern bool tud_cdc_n_connected (uint8_t itf);
 		__disable_irq();                  \
 	}
 #define mcu_get_global_isr() stm32_global_isr_enabled
+#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
 
 #define GPIO_RESET 0xfU
 #define GPIO_OUT_PP_50MHZ 0x3U

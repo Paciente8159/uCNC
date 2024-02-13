@@ -59,10 +59,10 @@ extern "C"
 #define LIMIT_A_PORT B // assigns LIMIT_A port
 
 // Enable limits switch interrupt
-// #define LIMIT_X_ISR
-// #define LIMIT_Y_ISR
-// #define LIMIT_Z_ISR
-// #define LIMIT_A_ISR
+#define LIMIT_X_ISR
+#define LIMIT_Y_ISR
+#define LIMIT_Z_ISR
+#define LIMIT_A_ISR
 
 // Setup control input pins
 #define ESTOP_BIT 5
@@ -71,8 +71,8 @@ extern "C"
 #define FHOLD_PORT B
 #define CS_RES_BIT 7
 #define CS_RES_PORT B
-// #define SAFETY_DOOR_BIT 8
-// #define SAFETY_DOOR_PORT B
+#define SAFETY_DOOR_BIT 8
+#define SAFETY_DOOR_PORT B
 // Setup probe pin
 #define PROBE_BIT 9
 #define PROBE_PORT B
@@ -145,6 +145,11 @@ extern "C"
 // #define I2C_DATA_BIT 7
 // #define I2C_DATA_PORT B
 // #define I2C_PORT 1
+// #define DIN7_BIT 5
+// #define DIN7_PORT A
+// #define DIN7_ISR
+// #define DIN7_PULLUP
+
 
 #define ONESHOT_TIMER 1
 

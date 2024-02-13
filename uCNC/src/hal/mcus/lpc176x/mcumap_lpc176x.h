@@ -3941,6 +3941,7 @@ extern "C"
 		__disable_irq();                \
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
+#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
 
 #define mcu_spi_xmit(X)                     \
 	({                                      \
