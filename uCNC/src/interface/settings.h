@@ -179,9 +179,9 @@ typedef uint16_t setting_offset_t;
 		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
 		{                                                                                          \
 			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count);       \
-			return EVENT_CONTINUE;                                                                 \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
 		}                                                                                          \
-		return EVENT_HANDLED;                                                                      \
+		return EVENT_CONTINUE;                                                                     \
 	}                                                                                              \
 	bool set##ID##_settings_save(void *args)                                                       \
 	{                                                                                              \
@@ -189,7 +189,7 @@ typedef uint16_t setting_offset_t;
 		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
 		{                                                                                          \
 			settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(type) * count);       \
-			return EVENT_HANDLED;                                                                  \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
 		}                                                                                          \
 		return EVENT_CONTINUE;                                                                     \
 	}                                                                                              \
@@ -210,6 +210,7 @@ typedef uint16_t setting_offset_t;
 		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
 		{                                                                                          \
 			memset(var, 0, sizeof(type) * count);                                                  \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
 		}                                                                                          \
 		return EVENT_HANDLED;                                                                      \
 	}                                                                                              \
