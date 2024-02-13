@@ -993,7 +993,7 @@ void mcu_spi_config(uint8_t mode, uint32_t frequency)
 
 #endif
 
-#ifdef MCU_HAS_I2C
+#if defined(MCU_HAS_I2C) && !defined(USE_ARDUINO_WIRE)
 #if I2C_ADDRESS == 0
 static void mcu_i2c_write_stop(bool *stop)
 {

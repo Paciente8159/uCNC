@@ -1105,6 +1105,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 					stop = true;
 					return I2C_NOTOK;
 				}
+				break;
 			}
 		}
 

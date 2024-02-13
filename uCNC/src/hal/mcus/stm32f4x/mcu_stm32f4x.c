@@ -1025,6 +1025,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 	int32_t timeout = ms_timeout;
+	
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
@@ -1051,6 +1052,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 
 		// init
 		I2C_REG->CR1 |= I2C_CR1_START;
+
 		__TIMEOUT_MS__(timeout)
 		{
 			if ((I2C_REG->SR1 & I2C_SR1_SB) && (I2C_REG->SR2 & I2C_SR2_MSL) && (I2C_REG->SR2 & I2C_SR2_BUSY))
@@ -1081,7 +1083,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 	timeout = ms_timeout;
 	__TIMEOUT_MS__(timeout)
 	{
-		if ((I2C_REG->SR1 & status))
+		if (I2C_REG->SR1 & status)
 		{
 			break;
 		}
@@ -1095,6 +1097,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 			return I2C_NOTOK;
 		}
 	}
+
 	__TIMEOUT_ASSERT__(timeout)
 	{
 		stop = true;
@@ -1138,6 +1141,7 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 		}
 	}
 
+    stop = true;
 	return I2C_NOTOK;
 }
 
@@ -1201,8 +1205,8 @@ uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_
 void mcu_i2c_config(uint32_t frequency)
 {
 	RCC->APB1ENR |= I2C_APBEN;
-	// mcu_config_opendrain(I2C_CLK);
-	// mcu_config_opendrain(I2C_DATA);
+	mcu_config_opendrain(I2C_CLK);
+	mcu_config_opendrain(I2C_DATA);
 	mcu_config_af(I2C_CLK, GPIO_AF);
 	mcu_config_af(I2C_DATA, GPIO_AF);
 #ifdef SPI_REMAP

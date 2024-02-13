@@ -1328,7 +1328,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 
 	__TIMEOUT_MS__(ms_timeout)
 	{
-		if (!(I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
+		if ((I2CCOM->I2CM.INTFLAG.reg & SERCOM_I2CM_INTFLAG_MB))
 		{
 			if (I2CCOM->I2CM.STATUS.reg & SERCOM_I2CM_STATUS_RXNACK)
 			{

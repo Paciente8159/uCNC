@@ -65,7 +65,7 @@ static uint8_t softi2c_write(softi2c_port_t *port, uint8_t c, bool send_start, b
 	{
 		// init
 		port->sda(true);
-		uint8_t timeout = ms_timeout;
+		uint32_t timeout = ms_timeout;
 		__TIMEOUT_MS__(timeout)
 		{
 			if (port->get_sda())

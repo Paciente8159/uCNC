@@ -78,5 +78,66 @@ extern "C"
 	}
 
 #endif
+
+#if defined(MCU_HAS_I2C) && defined(USE_ARDUINO_WIRE)
+#include <Wire.h>
+#define I2C_REG Wire
+#if I2C_ADDRESS!=0
+#error "I2C slave mode not supported
+#endif
+
+extern "C"
+{
+#if (I2C_ADDRESS != 0)
+	static uint8_t mcu_i2c_buffer_len;
+	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
+	void rp2040_i2c_onreceive(int len)
+	{
+		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
+		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
+		mcu_i2c_buffer_len = l;
+	}
+
+	void rp2040_i2c_onrequest(void)
+	{
+		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
+	}
+
+#endif
+
+	void mcu_i2c_config(uint32_t frequency)
+	{
+#if I2C_ADDRESS == 0
+		I2C_REG.begin();
+#else
+		I2C_REG.onReceive(rp2040_i2c_onreceive);
+		I2C_REG.onRequest(rp2040_i2c_onrequest);
+		I2C_REG.begin(I2C_ADDRESS);
+#endif
+	}
+
+	uint8_t mcu_i2c_send(uint8_t address, uint8_t *data, uint8_t datalen, bool release, uint32_t ms_timeout)
+	{
+		I2C_REG.beginTransmission(address);
+		I2C_REG.write(data, datalen);
+		return (I2C_REG.endTransmission() == 0) ? I2C_OK : I2C_NOTOK;
+	}
+
+	uint8_t mcu_i2c_receive(uint8_t address, uint8_t *data, uint8_t datalen, uint32_t ms_timeout)
+	{
+		if (I2C_REG.requestFrom(address, datalen) == datalen)
+		{
+			while(datalen--){
+				*data = (uint8_t)I2C_REG.read();
+				data++;
+			}
+			
+			return I2C_OK;
+		}
+
+		return I2C_NOTOK;
+	}
+}
+#endif
 }
 #endif

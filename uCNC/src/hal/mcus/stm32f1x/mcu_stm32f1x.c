@@ -1043,6 +1043,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 				return I2C_NOTOK;
 			}
 		}
+		
 		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
