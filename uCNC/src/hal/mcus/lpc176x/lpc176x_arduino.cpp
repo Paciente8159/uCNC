@@ -83,7 +83,7 @@ extern "C"
 #include <Wire.h>
 #define I2C_REG Wire
 #if I2C_ADDRESS!=0
-#error "I2C slave mode not supported
+#error "I2C slave mode not supported"
 #endif
 
 extern "C"
