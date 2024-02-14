@@ -108,6 +108,17 @@ extern "C"
 // #define ENABLE_XY_SIMULTANEOUS_HOMING
 
 /**
+ * Rotational axis - force relative distances
+ * Enable this option if you want the rotation axis to work in relative distance mode only
+ * This will mean that no matter if the machine is working in absolute (G90) or relative (G91) coordinates
+ * the rotational axis will always calculate the motion in relative distance mode
+ * 
+*/
+// #define AXIS_A_FORCE_RELATIVE_MODE
+// #define AXIS_B_FORCE_RELATIVE_MODE
+// #define AXIS_C_FORCE_RELATIVE_MODE
+
+/**
  * Uncomment this feature to enable multi motor axis
  * NOTE: If Laser PPI is enabled one of the stepper drivers position will be used by the laser controller
  * Usually that is STEPPER<AXIS_COUNT> so if AXIS_COUNT=3, STEPPER3 will be used by laser PPI

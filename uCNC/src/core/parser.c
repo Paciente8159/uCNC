@@ -1402,19 +1402,31 @@ uint8_t parser_exec_command(parser_state_t *new_state, parser_words_t *words, pa
 #ifdef AXIS_A
 	if (CHECKFLAG(cmd->words, GCODE_WORD_A))
 	{
+#ifndef AXIS_A_FORCE_RELATIVE_MODE
 		target[AXIS_A] = (abspos) ? words->xyzabc[AXIS_A] : (words->xyzabc[AXIS_A] + target[AXIS_A]);
+#else
+		target[AXIS_A] = (words->xyzabc[AXIS_A] + target[AXIS_A]);
+#endif
 	}
 #endif
 #ifdef AXIS_B
 	if (CHECKFLAG(cmd->words, GCODE_WORD_B))
 	{
+#ifndef AXIS_B_FORCE_RELATIVE_MODE
 		target[AXIS_B] = (abspos) ? words->xyzabc[AXIS_B] : (words->xyzabc[AXIS_B] + target[AXIS_B]);
+#else
+		target[AXIS_B] = (words->xyzabc[AXIS_B] + target[AXIS_B]);
+#endif
 	}
 #endif
 #ifdef AXIS_C
 	if (CHECKFLAG(cmd->words, GCODE_WORD_C))
 	{
+#ifndef AXIS_C_FORCE_RELATIVE_MODE
 		target[AXIS_C] = (abspos) ? words->xyzabc[AXIS_C] : (words->xyzabc[AXIS_C] + target[AXIS_C]);
+#else
+		target[AXIS_C] = (words->xyzabc[AXIS_C] + target[AXIS_C]);
+#endif
 	}
 #endif
 
