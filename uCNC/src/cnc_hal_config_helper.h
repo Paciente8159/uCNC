@@ -2112,6 +2112,9 @@ typedef uint16_t step_t;
 #ifndef ENABLE_RT_SYNC_MOTIONS
 #define ENABLE_RT_SYNC_MOTIONS
 #endif
+#if (DSS_MAX_OVERSAMPLING < 1)
+#error "Plasma THC requires DSS to be enabled"
+#endif
 #endif
 
 #ifdef ENABLE_TOOL_PID_CONTROLLER
