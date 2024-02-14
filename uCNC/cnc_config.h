@@ -67,7 +67,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 4
+#define AXIS_COUNT 3
 #endif
 
 #ifndef KINEMATIC
