@@ -168,11 +168,11 @@ void MCU_SERIAL2_ISR(void)
 #endif
 
 #ifdef MCU_HAS_USB
-void OTG_FS_IRQHandler(void)
+void USB_IRQHandler(void)
 {
 	mcu_disable_global_isr();
 	tusb_cdc_isr_handler();
-	NVIC_ClearPendingIRQ(31);
+	NVIC_ClearPendingIRQ(USB_IRQn);
 	mcu_enable_global_isr();
 }
 #endif
@@ -429,14 +429,14 @@ void mcu_usart_init(void)
 	// configure USB as Virtual COM port
 	mcu_config_input(USB_DM);
 	mcu_config_input(USB_DP);
-	mcu_config_af(USB_DP, GPIO_OTG_FS);
-	mcu_config_af(USB_DM, GPIO_OTG_FS);
-	RCC->APB1ENR |= (1UL << 23);
+	// mcu_config_af(USB_DP, GPIO_OTG_FS);
+	// mcu_config_af(USB_DM, GPIO_OTG_FS);
+	RCC->APB1ENR |= (RCC_APB1ENR_USBEN);
 	/* Disable all interrupts. */
 
-	NVIC_SetPriority(31, 10);
-	NVIC_ClearPendingIRQ(31);
-	NVIC_EnableIRQ(31);
+	NVIC_SetPriority(USB_IRQn, 10);
+	NVIC_ClearPendingIRQ(USB_IRQn);
+	NVIC_EnableIRQ(USB_IRQn);
 
 	tusb_cdc_init();
 #endif
