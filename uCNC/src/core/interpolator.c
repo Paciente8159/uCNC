@@ -764,27 +764,11 @@ void itp_clear(void)
 void itp_get_rt_position(int32_t *position)
 {
 	memcpy(position, itp_rt_step_pos, sizeof(itp_rt_step_pos));
+}
 
-#if STEPPERS_ENCODERS_MASK != 0
-#if (defined(STEP0_ENCODER) && AXIS_TO_STEPPERS > 0)
-	itp_rt_step_pos[0] = encoder_get_position(STEP0_ENCODER);
-#endif
-#if (defined(STEP1_ENCODER) && AXIS_TO_STEPPERS > 1)
-	itp_rt_step_pos[1] = encoder_get_position(STEP1_ENCODER);
-#endif
-#if (defined(STEP2_ENCODER) && AXIS_TO_STEPPERS > 2)
-	itp_rt_step_pos[2] = encoder_get_position(STEP2_ENCODER);
-#endif
-#if (defined(STEP3_ENCODER) && AXIS_TO_STEPPERS > 3)
-	itp_rt_step_pos[3] = encoder_get_position(STEP3_ENCODER);
-#endif
-#if (defined(STEP4_ENCODER) && AXIS_TO_STEPPERS > 4)
-	itp_rt_step_pos[4] = encoder_get_position(STEP4_ENCODER);
-#endif
-#if (defined(STEP5_ENCODER) && AXIS_TO_STEPPERS > 5)
-	itp_rt_step_pos[5] = encoder_get_position(STEP5_ENCODER);
-#endif
-#endif
+void itp_sync_rt_position(int32_t *position)
+{
+	memcpy(itp_rt_step_pos, position, sizeof(itp_rt_step_pos));
 }
 
 int32_t itp_get_rt_position_index(int8_t index)

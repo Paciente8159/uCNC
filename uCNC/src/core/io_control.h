@@ -38,10 +38,10 @@ extern "C"
  *
  **/
 #define io_config_input(pin) io_hal_config_input(pin)
-#define io_config_pullup(pin)  io_hal_config_pullup(pin)
-#define io_get_input(pin)  io_hal_get_input(pin)
-#define io_config_analog(pin)  io_hal_config_analog(pin)
-#define io_get_analog(pin)  io_hal_get_analog(pin)
+#define io_config_pullup(pin) io_hal_config_pullup(pin)
+#define io_get_input(pin) io_hal_get_input(pin)
+#define io_config_analog(pin) io_hal_config_analog(pin)
+#define io_get_analog(pin) io_hal_get_analog(pin)
 
 #define io_config_output(pin) io_hal_config_output(pin)
 #define io_set_output(pin) io_hal_set_output(pin)
@@ -56,10 +56,10 @@ extern "C"
 	MCU_CALLBACK void io_soft_pwm_update(void);
 #endif
 
-	// inputs
-	#ifdef ENABLE_MULTI_STEP_HOMING
+// inputs
+#ifdef ENABLE_MULTI_STEP_HOMING
 	void io_lock_limits(uint8_t limitmask);
-	#endif
+#endif
 	void io_invert_limits(uint8_t limitmask);
 	uint8_t io_get_limits(void);
 	uint8_t io_get_controls(void);
@@ -71,6 +71,7 @@ extern "C"
 	void io_set_steps(uint8_t mask);
 	void io_toggle_steps(uint8_t mask);
 	void io_set_dirs(uint8_t mask);
+	void io_get_steps_pos(int32_t *position);
 
 	void io_enable_steppers(uint8_t mask);
 
