@@ -1,10 +1,10 @@
 /*
-	Name: mcus.h
-	Description: Defines the available mcu types.
+	Name: boardmap_bluepill_f0.h
+	Description: Contains all MCU and PIN definitions for Bluepill F0 variant to run µCNC.
 
 	Copyright: Copyright (c) João Martins
 	Author: João Martins
-	Date: 11/11/2019
+	Date: 15-02-2024
 
 	µCNC is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -16,25 +16,22 @@
 	See the	GNU General Public License for more details.
 */
 
-#ifndef MCUS_H
-#define MCUS_H
+#ifndef BOARDMAP_BLUEPILL_F0_H
+#define BOARDMAP_BLUEPILL_F0_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#define MCU_NONE 0
-#define MCU_AVR 1
-#define MCU_STM32F1X 10
-#define MCU_STM32F4X 11
-#define MCU_STM32F0X 12
-#define MCU_SAMD21 20
-#define MCU_LPC176X 30
-#define MCU_ESP8266 40
-#define MCU_ESP32 50
-#define MCU_RP2040 60
-#define MCU_VIRTUAL_WIN 99
+#ifndef BOARD_NAME
+#define BOARD_NAME "STM32 Bluepill F0"
+#endif
+
+#include "boardmap_bluepill.h"
+
+#undef ONESHOT_TIMER
+#define ONESHOT_TIMER 17
 
 #ifdef __cplusplus
 }
