@@ -795,11 +795,11 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+#if TOOL_COUNT > 0
 		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
-#if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
 			planner_spindle_ovr(100);
 			break;
