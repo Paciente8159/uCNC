@@ -714,7 +714,10 @@ uint8_t mc_update_tools(motion_data_t *block_data)
 			return STATUS_CRITICAL_FAIL;
 		}
 		// synchronizes the tools
-		planner_sync_tools(block_data);
+		if (block_data)
+		{
+			planner_sync_tools(block_data);
+		}
 		itp_sync_spindle();
 	}
 #endif
@@ -734,7 +737,7 @@ uint8_t mc_home_axis(uint8_t axis_mask, uint8_t axis_limit)
 	motion_data_t block_data = {0};
 	uint8_t limits_flags;
 	uint8_t restore_step_mode __attribute__((__cleanup__(mc_restore_step_mode))) = itp_set_step_mode(ITP_STEP_MODE_REALTIME);
-	
+
 #ifdef ENABLE_MOTION_CONTROL_MODULES
 	homing_status_t homing_status __attribute__((__cleanup__(mc_home_axis_finalize))) = {axis_mask, axis_limit, STATUS_OK};
 #endif
