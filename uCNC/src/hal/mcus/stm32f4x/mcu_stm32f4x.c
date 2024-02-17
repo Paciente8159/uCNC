@@ -268,32 +268,32 @@ void MCU_ITP_ISR(void)
 static void mcu_input_isr(void)
 {
 	mcu_disable_global_isr();
+	uint32_t flags = EXTI->PR;
+	EXTI->PR = ALL_EXTIBITMASK;
 #if (LIMITS_EXTIBITMASK != 0)
-	if (EXTI->PR & LIMITS_EXTIBITMASK)
+	if (flags & LIMITS_EXTIBITMASK)
 	{
 		mcu_limits_changed_cb();
 	}
 #endif
 #if (CONTROLS_EXTIBITMASK != 0)
-	if (EXTI->PR & CONTROLS_EXTIBITMASK)
+	if (flags & CONTROLS_EXTIBITMASK)
 	{
 		mcu_controls_changed_cb();
 	}
 #endif
 #if (PROBE_EXTIBITMASK != 0)
-	if (EXTI->PR & PROBE_EXTIBITMASK)
+	if (flags & PROBE_EXTIBITMASK)
 	{
 		mcu_probe_changed_cb();
 	}
 #endif
 #if (DIN_IO_EXTIBITMASK != 0)
-	if (EXTI->PR & DIN_IO_EXTIBITMASK)
+	if (flags & DIN_IO_EXTIBITMASK)
 	{
 		mcu_inputs_changed_cb();
 	}
 #endif
-
-	EXTI->PR = ALL_EXTIBITMASK;
 	mcu_enable_global_isr();
 }
 
@@ -566,23 +566,14 @@ void mcu_uart_clear(void)
 
 void mcu_uart_putc(uint8_t c)
 {
-	while (BUFFER_FULL(uart_tx))
-	{
-		mcu_uart_flush();
-	}
-	BUFFER_ENQUEUE(uart_tx, &c);
+	// uses sync tx
+	while (!(COM_UART->SR & USART_SR_TXE))
+		;
+	COM_OUTREG = c;
 }
 
 void mcu_uart_flush(void)
 {
-
-	if (!(COM_UART->CR1 & USART_CR1_TXEIE)) // not ready start flushing
-	{
-		COM_UART->CR1 |= (USART_CR1_TXEIE);
-#if ASSERT_PIN(ACTIVITY_LED)
-		io_toggle_output(ACTIVITY_LED);
-#endif
-	}
 }
 
 #endif
@@ -642,9 +633,9 @@ void mcu_init(void)
 	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
 	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
 	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
-	#if ASSERT_PIN_IO(SPI_CS)
+#if ASSERT_PIN_IO(SPI_CS)
 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
-	#endif
+#endif
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
 				   | SPI_CR1_SSI   // internal slave select
@@ -674,7 +665,9 @@ void mcu_init(void)
 	I2C_REG->CR1 |= I2C_CR1_PE;
 #endif
 
+#ifndef DISABLE_PROBE
 	mcu_disable_probe_isr();
+#endif
 	stm32_flash_current_offset = 0;
 	stm32_global_isr_enabled = false;
 	mcu_eeprom_init();
@@ -1028,7 +1021,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 	int32_t timeout = ms_timeout;
-	
+
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
@@ -1144,7 +1137,7 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 		}
 	}
 
-    stop = true;
+	stop = true;
 	return I2C_NOTOK;
 }
 

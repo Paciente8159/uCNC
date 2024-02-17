@@ -67,7 +67,7 @@ extern "C"
 	 * */
 
 #ifndef AXIS_COUNT
-#define AXIS_COUNT 3
+#define AXIS_COUNT 4
 #endif
 
 #ifndef KINEMATIC
@@ -152,7 +152,7 @@ extern "C"
 	 * */
 
 #ifndef TOOL_COUNT
-#define TOOL_COUNT 1
+#define TOOL_COUNT 0
 #endif
 
 #if TOOL_COUNT > 0
@@ -336,7 +336,7 @@ extern "C"
 // enables automatic status report sending
 // this value sets the millisecond interval of the reports
 // values bellow 100ms have no effect
-#define STATUS_AUTOMATIC_REPORT_INTERVAL 0
+#define STATUS_AUTOMATIC_REPORT_INTERVAL 200
 
 /**
  *
@@ -506,13 +506,13 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
-// #define DISABLE_ALL_LIMITS
+#define DISABLE_ALL_LIMITS
 #endif
 #ifndef DISABLE_PROBE
-// #define DISABLE_PROBE
+#define DISABLE_PROBE
 #endif
 
 	/**
@@ -551,7 +551,7 @@ extern "C"
 	 * For pin diagnostics enables command $P
 	 * */
 
-	// #define ENABLE_EXTRA_SYSTEM_CMDS
+	#define ENABLE_EXTRA_SYSTEM_CMDS
 
 	/**
 	 * Compilation specific options
