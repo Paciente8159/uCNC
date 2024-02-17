@@ -826,8 +826,8 @@ void cnc_exec_rt_commands(void)
 				}
 			}
 			break;
-#endif
 		}
+#endif
 
 #ifdef ENABLE_COOLANT
 		switch (command & RTCMD_COOLANT_MASK)
