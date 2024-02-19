@@ -910,6 +910,13 @@ extern "C"
 		}
 		return 0;
 	}
+	
+	uint8_t itp_set_step_mode(uint8_t mode) {return 0;}
+
+	uint32_t mcu_free_micros(void)
+	{
+		return (uint32_t)(mcu_free_micros() % 1000);
+	}
 #ifdef __cplusplus
 }
 #endif

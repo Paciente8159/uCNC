@@ -436,6 +436,12 @@ extern "C"
 #define __TIMEOUT_MS__(timeout) timeout*=1000; __TIMEOUT_US__(timeout)
 #define __TIMEOUT_ASSERT__(timeout) if(timeout < 0)
 
+#if defined(__GNUC__) && __GNUC__ >= 7
+ #define __FALL_THROUGH__ __attribute__ ((fallthrough));
+#else
+ #define __FALL_THROUGH__
+#endif /* __GNUC__ >= 7 */
+
 #ifdef __cplusplus
 }
 #endif
