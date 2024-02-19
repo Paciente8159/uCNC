@@ -15,6 +15,165 @@
 
 #include "../cnc.h"
 
+#if defined(ENABLE_EXTRA_SYSTEM_CMDS) && defined(ENABLE_PIN_TRANSLATIONS)
+const char pin_name_1[] __rom__ = "STEP0";
+const char pin_name_2[] __rom__ = "STEP1";
+const char pin_name_3[] __rom__ = "STEP2";
+const char pin_name_4[] __rom__ = "STEP3";
+const char pin_name_5[] __rom__ = "STEP4";
+const char pin_name_6[] __rom__ = "STEP5";
+const char pin_name_7[] __rom__ = "STEP6";
+const char pin_name_8[] __rom__ = "STEP7";
+const char pin_name_9[] __rom__ = "DIR0";
+const char pin_name_10[] __rom__ = "DIR1";
+const char pin_name_11[] __rom__ = "DIR2";
+const char pin_name_12[] __rom__ = "DIR3";
+const char pin_name_13[] __rom__ = "DIR4";
+const char pin_name_14[] __rom__ = "DIR5";
+const char pin_name_15[] __rom__ = "DIR6";
+const char pin_name_16[] __rom__ = "DIR7";
+const char pin_name_17[] __rom__ = "STEP0_EN";
+const char pin_name_18[] __rom__ = "STEP1_EN";
+const char pin_name_19[] __rom__ = "STEP2_EN";
+const char pin_name_20[] __rom__ = "STEP3_EN";
+const char pin_name_21[] __rom__ = "STEP4_EN";
+const char pin_name_22[] __rom__ = "STEP5_EN";
+const char pin_name_23[] __rom__ = "STEP6_EN";
+const char pin_name_24[] __rom__ = "STEP7_EN";
+const char pin_name_25[] __rom__ = "PWM0";
+const char pin_name_26[] __rom__ = "PWM1";
+const char pin_name_27[] __rom__ = "PWM2";
+const char pin_name_28[] __rom__ = "PWM3";
+const char pin_name_29[] __rom__ = "PWM4";
+const char pin_name_30[] __rom__ = "PWM5";
+const char pin_name_31[] __rom__ = "PWM6";
+const char pin_name_32[] __rom__ = "PWM7";
+const char pin_name_33[] __rom__ = "PWM8";
+const char pin_name_34[] __rom__ = "PWM9";
+const char pin_name_35[] __rom__ = "PWM10";
+const char pin_name_36[] __rom__ = "PWM11";
+const char pin_name_37[] __rom__ = "PWM12";
+const char pin_name_38[] __rom__ = "PWM13";
+const char pin_name_39[] __rom__ = "PWM14";
+const char pin_name_40[] __rom__ = "PWM15";
+const char pin_name_41[] __rom__ = "SERVO0";
+const char pin_name_42[] __rom__ = "SERVO1";
+const char pin_name_43[] __rom__ = "SERVO2";
+const char pin_name_44[] __rom__ = "SERVO3";
+const char pin_name_45[] __rom__ = "SERVO4";
+const char pin_name_46[] __rom__ = "SERVO5";
+const char pin_name_47[] __rom__ = "DOUT0";
+const char pin_name_48[] __rom__ = "DOUT1";
+const char pin_name_49[] __rom__ = "DOUT2";
+const char pin_name_50[] __rom__ = "DOUT3";
+const char pin_name_51[] __rom__ = "DOUT4";
+const char pin_name_52[] __rom__ = "DOUT5";
+const char pin_name_53[] __rom__ = "DOUT6";
+const char pin_name_54[] __rom__ = "DOUT7";
+const char pin_name_55[] __rom__ = "DOUT8";
+const char pin_name_56[] __rom__ = "DOUT9";
+const char pin_name_57[] __rom__ = "DOUT10";
+const char pin_name_58[] __rom__ = "DOUT11";
+const char pin_name_59[] __rom__ = "DOUT12";
+const char pin_name_60[] __rom__ = "DOUT13";
+const char pin_name_61[] __rom__ = "DOUT14";
+const char pin_name_62[] __rom__ = "DOUT15";
+const char pin_name_63[] __rom__ = "DOUT16";
+const char pin_name_64[] __rom__ = "DOUT17";
+const char pin_name_65[] __rom__ = "DOUT18";
+const char pin_name_66[] __rom__ = "DOUT19";
+const char pin_name_67[] __rom__ = "DOUT20";
+const char pin_name_68[] __rom__ = "DOUT21";
+const char pin_name_69[] __rom__ = "DOUT22";
+const char pin_name_70[] __rom__ = "DOUT23";
+const char pin_name_71[] __rom__ = "DOUT24";
+const char pin_name_72[] __rom__ = "DOUT25";
+const char pin_name_73[] __rom__ = "DOUT26";
+const char pin_name_74[] __rom__ = "DOUT27";
+const char pin_name_75[] __rom__ = "DOUT28";
+const char pin_name_76[] __rom__ = "DOUT29";
+const char pin_name_77[] __rom__ = "DOUT30";
+const char pin_name_78[] __rom__ = "DOUT31";
+const char pin_name_100[] __rom__ = "LIMIT_X";
+const char pin_name_101[] __rom__ = "LIMIT_Y";
+const char pin_name_102[] __rom__ = "LIMIT_Z";
+const char pin_name_103[] __rom__ = "LIMIT_X2";
+const char pin_name_104[] __rom__ = "LIMIT_Y2";
+const char pin_name_105[] __rom__ = "LIMIT_Z2";
+const char pin_name_106[] __rom__ = "LIMIT_A";
+const char pin_name_107[] __rom__ = "LIMIT_B";
+const char pin_name_108[] __rom__ = "LIMIT_C";
+const char pin_name_109[] __rom__ = "PROBE";
+const char pin_name_110[] __rom__ = "ESTOP";
+const char pin_name_111[] __rom__ = "SAFETY_DOOR";
+const char pin_name_112[] __rom__ = "FHOLD";
+const char pin_name_113[] __rom__ = "CS_RES";
+const char pin_name_114[] __rom__ = "ANALOG0";
+const char pin_name_115[] __rom__ = "ANALOG1";
+const char pin_name_116[] __rom__ = "ANALOG2";
+const char pin_name_117[] __rom__ = "ANALOG3";
+const char pin_name_118[] __rom__ = "ANALOG4";
+const char pin_name_119[] __rom__ = "ANALOG5";
+const char pin_name_120[] __rom__ = "ANALOG6";
+const char pin_name_121[] __rom__ = "ANALOG7";
+const char pin_name_122[] __rom__ = "ANALOG8";
+const char pin_name_123[] __rom__ = "ANALOG9";
+const char pin_name_124[] __rom__ = "ANALOG10";
+const char pin_name_125[] __rom__ = "ANALOG11";
+const char pin_name_126[] __rom__ = "ANALOG12";
+const char pin_name_127[] __rom__ = "ANALOG13";
+const char pin_name_128[] __rom__ = "ANALOG14";
+const char pin_name_129[] __rom__ = "ANALOG15";
+const char pin_name_130[] __rom__ = "DIN0";
+const char pin_name_131[] __rom__ = "DIN1";
+const char pin_name_132[] __rom__ = "DIN2";
+const char pin_name_133[] __rom__ = "DIN3";
+const char pin_name_134[] __rom__ = "DIN4";
+const char pin_name_135[] __rom__ = "DIN5";
+const char pin_name_136[] __rom__ = "DIN6";
+const char pin_name_137[] __rom__ = "DIN7";
+const char pin_name_138[] __rom__ = "DIN8";
+const char pin_name_139[] __rom__ = "DIN9";
+const char pin_name_140[] __rom__ = "DIN10";
+const char pin_name_141[] __rom__ = "DIN11";
+const char pin_name_142[] __rom__ = "DIN12";
+const char pin_name_143[] __rom__ = "DIN13";
+const char pin_name_144[] __rom__ = "DIN14";
+const char pin_name_145[] __rom__ = "DIN15";
+const char pin_name_146[] __rom__ = "DIN16";
+const char pin_name_147[] __rom__ = "DIN17";
+const char pin_name_148[] __rom__ = "DIN18";
+const char pin_name_149[] __rom__ = "DIN19";
+const char pin_name_150[] __rom__ = "DIN20";
+const char pin_name_151[] __rom__ = "DIN21";
+const char pin_name_152[] __rom__ = "DIN22";
+const char pin_name_153[] __rom__ = "DIN23";
+const char pin_name_154[] __rom__ = "DIN24";
+const char pin_name_155[] __rom__ = "DIN25";
+const char pin_name_156[] __rom__ = "DIN26";
+const char pin_name_157[] __rom__ = "DIN27";
+const char pin_name_158[] __rom__ = "DIN28";
+const char pin_name_159[] __rom__ = "DIN29";
+const char pin_name_160[] __rom__ = "DIN30";
+const char pin_name_161[] __rom__ = "DIN31";
+const char pin_name_200[] __rom__ = "TX";
+const char pin_name_201[] __rom__ = "RX";
+const char pin_name_202[] __rom__ = "USB_DM";
+const char pin_name_203[] __rom__ = "USB_DP";
+const char pin_name_204[] __rom__ = "SPI_CLK";
+const char pin_name_205[] __rom__ = "SPI_SDI";
+const char pin_name_206[] __rom__ = "SPI_SDO";
+const char pin_name_207[] __rom__ = "SPI_CS";
+const char pin_name_208[] __rom__ = "I2C_SCL";
+const char pin_name_209[] __rom__ = "I2C_SDA";
+const char pin_name_210[] __rom__ = "TX2";
+const char pin_name_211[] __rom__ = "RX2";
+
+const char *const outputpins_names[] __rom__ = {pin_name_1, pin_name_2, pin_name_3, pin_name_4, pin_name_5, pin_name_6, pin_name_7, pin_name_8, pin_name_9, pin_name_10, pin_name_11, pin_name_12, pin_name_13, pin_name_14, pin_name_15, pin_name_16, pin_name_17, pin_name_18, pin_name_19, pin_name_20, pin_name_21, pin_name_22, pin_name_23, pin_name_24, pin_name_25, pin_name_26, pin_name_27, pin_name_28, pin_name_29, pin_name_30, pin_name_31, pin_name_32, pin_name_33, pin_name_34, pin_name_35, pin_name_36, pin_name_37, pin_name_38, pin_name_39, pin_name_40, pin_name_41, pin_name_42, pin_name_43, pin_name_44, pin_name_45, pin_name_46, pin_name_47, pin_name_48, pin_name_49, pin_name_50, pin_name_51, pin_name_52, pin_name_53, pin_name_54, pin_name_55, pin_name_56, pin_name_57, pin_name_58, pin_name_59, pin_name_60, pin_name_61, pin_name_62, pin_name_63, pin_name_64, pin_name_65, pin_name_66, pin_name_67, pin_name_68, pin_name_69, pin_name_70, pin_name_71, pin_name_72, pin_name_73, pin_name_74, pin_name_75, pin_name_76, pin_name_77, pin_name_78};
+const char *const inputpins_names[] __rom__ = {pin_name_100, pin_name_101, pin_name_102, pin_name_103, pin_name_104, pin_name_105, pin_name_106, pin_name_107, pin_name_108, pin_name_109, pin_name_110, pin_name_111, pin_name_112, pin_name_113, pin_name_114, pin_name_115, pin_name_116, pin_name_117, pin_name_118, pin_name_119, pin_name_120, pin_name_121, pin_name_122, pin_name_123, pin_name_124, pin_name_125, pin_name_126, pin_name_127, pin_name_128, pin_name_129, pin_name_130, pin_name_131, pin_name_132, pin_name_133, pin_name_134, pin_name_135, pin_name_136, pin_name_137, pin_name_138, pin_name_139, pin_name_140, pin_name_141, pin_name_142, pin_name_143, pin_name_144, pin_name_145, pin_name_146, pin_name_147, pin_name_148, pin_name_149, pin_name_150, pin_name_151, pin_name_152, pin_name_153, pin_name_154, pin_name_155, pin_name_156, pin_name_157, pin_name_158, pin_name_159, pin_name_160, pin_name_161, pin_name_200, pin_name_201, pin_name_202, pin_name_203, pin_name_204, pin_name_205, pin_name_206, pin_name_207, pin_name_208, pin_name_209, pin_name_210, pin_name_211};
+
+#endif
+
 #ifndef MAX_MODAL_GROUPS
 #define MAX_MODAL_GROUPS 14
 #endif
@@ -74,11 +233,11 @@ void protocol_send_alarm(int8_t alarm)
 
 void protocol_send_string(const char *__s)
 {
-	uint8_t c = (uint8_t)rom_strptr(__s++);
+	uint8_t c = (uint8_t)rom_read_byte(__s++);
 	do
 	{
 		serial_putc(c);
-		c = (uint8_t)rom_strptr(__s++);
+		c = (uint8_t)rom_read_byte(__s++);
 	} while (c != 0);
 }
 
@@ -749,6 +908,9 @@ void protocol_send_pins_states(void)
 				{
 					protocol_send_string(__romstr__("[O:"));
 				}
+#ifdef ENABLE_PIN_TRANSLATIONS
+				protocol_send_string((const char *)rom_strptr(&outputpins_names[i - 1]));
+#endif
 			}
 
 			if (i >= 100)
@@ -765,8 +927,13 @@ void protocol_send_pins_states(void)
 				{
 					protocol_send_string(__romstr__("[I:"));
 				}
+#ifdef ENABLE_PIN_TRANSLATIONS
+				protocol_send_string((const char *)rom_strptr(&inputpins_names[i - 100]));
+#endif
 			}
+#ifndef ENABLE_PIN_TRANSLATIONS
 			serial_print_int(i);
+#endif
 			serial_putc(':');
 			serial_print_int(val);
 			protocol_send_string(MSG_END);
