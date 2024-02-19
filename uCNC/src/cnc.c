@@ -558,8 +558,10 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+		// remove the flag to prevent ITP to restart
+		// CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
 #if TOOL_COUNT > 0
+		planner_spindle_ovr_reset();
 		// updated the coolant pins
 		tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
@@ -577,6 +579,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #if (DELAY_ON_RESUME_SPINDLE > 0)
 		if (!g_settings.laser_mode)
 		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
 			if (!planner_buffer_is_empty())
 			{
 				cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
@@ -819,10 +822,8 @@ void cnc_exec_rt_commands(void)
 			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
 			{
 				// toogle state
-				if (tool_get_speed())
-				{
-					update_tools = false;
-					tool_set_speed(0);
+				if(planner_spindle_ovr_toggle()){
+					protocol_send_feedback(MSG_FEEDBACK_10);
 				}
 			}
 			break;
@@ -854,17 +855,13 @@ void cnc_exec_rt_commands(void)
 #endif
 		}
 #endif
+
 		if (update_tools)
 		{
 			itp_update();
 			if (planner_buffer_is_empty())
 			{
-				motion_data_t block = {0};
-#if TOOL_COUNT > 0
-				block.motion_flags.bit.coolant = planner_get_previous_coolant();
-				block.spindle = planner_get_previous_spindle_speed();
-#endif
-				mc_update_tools(&block);
+				mc_update_tools(NULL);
 			}
 		}
 	}
