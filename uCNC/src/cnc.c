@@ -558,7 +558,8 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
-		CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+		// remove the flag to prevent ITP to restart
+		// CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
 #if TOOL_COUNT > 0
 		planner_spindle_ovr_reset();
 		// updated the coolant pins
@@ -578,6 +579,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 #if (DELAY_ON_RESUME_SPINDLE > 0)
 		if (!g_settings.laser_mode)
 		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
 			if (!planner_buffer_is_empty())
 			{
 				cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
@@ -820,7 +822,9 @@ void cnc_exec_rt_commands(void)
 			if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
 			{
 				// toogle state
-				planner_spindle_ovr_toggle();
+				if(planner_spindle_ovr_toggle()){
+					protocol_send_feedback(MSG_FEEDBACK_10);
+				}
 			}
 			break;
 #endif

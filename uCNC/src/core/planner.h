@@ -100,7 +100,7 @@ extern "C"
 	void planner_rapid_feed_ovr(uint8_t value);
 #if TOOL_COUNT > 0
 	void planner_spindle_ovr(uint8_t value);
-	void planner_spindle_ovr_toggle(void);
+	uint8_t planner_spindle_ovr_toggle(void);
 	void planner_spindle_ovr_reset(void);
 	uint8_t planner_coolant_ovr_toggle(uint8_t value);
 	void planner_coolant_ovr_reset(void);

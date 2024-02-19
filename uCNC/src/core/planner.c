@@ -543,9 +543,10 @@ void planner_spindle_ovr(uint8_t value)
 	}
 }
 
-void planner_spindle_ovr_toggle(void)
+uint8_t planner_spindle_ovr_toggle(void)
 {
 	spindle_override ^= g_planner_state.state_flags.bit.spindle_running;
+	return (spindle_override ^ g_planner_state.state_flags.bit.spindle_running);
 }
 
 void planner_spindle_ovr_reset(void)
