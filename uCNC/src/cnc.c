@@ -798,11 +798,11 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		cnc_state.tool_ovr_cmd = RT_CMD_CLEAR; // clears command flags
+#if TOOL_COUNT > 0
 		uint8_t ovr = g_planner_state.spindle_speed_override;
 		update_tools = true;
 		switch (command & RTCMD_SPINDLE_MASK)
 		{
-#if TOOL_COUNT > 0
 		case RT_CMD_SPINDLE_100:
 			planner_spindle_ovr(100);
 			break;
@@ -827,8 +827,8 @@ void cnc_exec_rt_commands(void)
 				}
 			}
 			break;
-#endif
 		}
+#endif
 
 #ifdef ENABLE_COOLANT
 		switch (command & RTCMD_COOLANT_MASK)
@@ -955,6 +955,28 @@ bool cnc_check_interlocking(void)
 		return false;
 	}
 
+#if ASSERT_PIN(SAFETY_DOOR)
+	// the safety door condition is active
+	if (cnc_get_exec_state(EXEC_DOOR))
+	{
+		// door opened during a homing cycle exit with alarm
+		if (cnc_get_exec_state(EXEC_HOMING))
+		{
+			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
+			return false;
+		}
+		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
+		{
+			// with the door opened put machine on HOLD
+			cnc_set_exec_state(EXEC_HOLD);
+		}
+		else // if the machined is not moving stop the tool too
+		{
+			cnc_stop();
+		}
+	}
+#endif
+
 	// an hold condition is active and motion as stopped
 	if (cnc_get_exec_state(EXEC_HOLD) && !cnc_get_exec_state(EXEC_RUN))
 	{
@@ -968,32 +990,7 @@ bool cnc_check_interlocking(void)
 			// homing will be cleared inside homing cycle
 			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD);
 		}
-
-		return false;
 	}
-
-#if ASSERT_PIN(SAFETY_DOOR)
-	// the safety door condition is active
-	if (cnc_get_exec_state(EXEC_DOOR))
-	{
-		// door opened during a homing cycle exit with alarm
-		if (cnc_get_exec_state(EXEC_HOMING))
-		{
-			cnc_alarm(EXEC_ALARM_HOMING_FAIL_DOOR);
-		}
-		else if (cnc_get_exec_state(EXEC_RUN)) // if the machined is running
-		{
-			// with the door opened put machine on HOLD
-			cnc_set_exec_state(EXEC_HOLD);
-		}
-		else // if the machined is not moving stop the tool too
-		{
-			cnc_stop();
-		}
-
-		return false;
-	}
-#endif
 
 	// end of JOG
 	if (cnc_get_exec_state(EXEC_JOG | EXEC_HOLD) == EXEC_JOG)

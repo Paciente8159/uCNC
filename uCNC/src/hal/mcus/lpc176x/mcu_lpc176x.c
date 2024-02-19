@@ -1237,7 +1237,7 @@ void I2C_ISR(void)
 	case 0x68:
 	case 0x78:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xA0: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1258,7 +1258,7 @@ void I2C_ISR(void)
 	case 0xA8: // addressed, returned ack
 	case 0xB0: // arbitration lost, returned ack
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case 0xB8: // byte sent, ack returned
 		// copy data to output register
 		I2C_REG->I2DAT = mcu_i2c_buffer[i++];
