@@ -1273,7 +1273,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_SR_ARB_LOST_SLA_ACK:
 	case TW_SR_ARB_LOST_GCALL_ACK:
 		index++;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_SR_STOP: // stop or repeated start condition received
 		// sends the data
 		if (i < I2C_SLAVE_BUFFER_SIZE)
@@ -1294,7 +1294,7 @@ ISR(TWI_vect, ISR_BLOCK)
 	case TW_ST_SLA_ACK:
 	case TW_ST_ARB_LOST_SLA_ACK:
 		i = 0;
-		__attribute__((fallthrough));
+		__FALL_THROUGH__
 	case TW_ST_DATA_ACK: // byte sent, ack returned
 		// copy data to output register
 		TWDR = mcu_i2c_buffer[i++];
