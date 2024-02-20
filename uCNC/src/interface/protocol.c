@@ -717,6 +717,7 @@ void protocol_send_cnc_settings(void)
 
 #ifdef ENABLE_SETTINGS_MODULES
 	EVENT_INVOKE(protocol_send_cnc_settings, NULL);
+	serial_broadcast(false);
 #endif
 	protocol_busy = false;
 }

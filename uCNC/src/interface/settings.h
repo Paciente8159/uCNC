@@ -258,12 +258,13 @@ typedef uint16_t setting_offset_t;
 		{                                                                                          \
 			for (uint8_t i = 0; i < count; i++)                                                    \
 			{                                                                                      \
-				char c = serial_peek();                                                            \
+				char c = serial_getc();                                                            \
 				if (c == EOL || c == '\n')                                                         \
 				{                                                                                  \
+					var[i] = EOL;                                                                  \
 					break;                                                                         \
 				}                                                                                  \
-				val[i] = serial_getc();                                                            \
+				var[i] = c;                                                                        \
 			}                                                                                      \
 			return EVENT_HANDLED;                                                                  \
 		}                                                                                          \
@@ -281,7 +282,20 @@ typedef uint16_t setting_offset_t;
 	}                                                                                              \
 	bool set##ID##_protocol_send_cnc_settings(void *args)                                          \
 	{                                                                                              \
-		serial_print_str(var);                                                                     \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		serial_putc('$');                                                                          \
+		serial_print_int(ID);                                                                      \
+		serial_putc('=');                                                                          \
+		for (uint8_t i = 0; i < count; i++)                                                        \
+		{                                                                                          \
+			char c = var[i];                                                                       \
+			if (c < 20 || c > 127)                                                                 \
+			{                                                                                      \
+				protocol_send_string(MSG_EOL);                                                     \
+				return EVENT_CONTINUE;                                                             \
+			}                                                                                      \
+			serial_putc(c);                                                                        \
+		}                                                                                          \
 		return EVENT_CONTINUE;                                                                     \
 	}                                                                                              \
 	CREATE_EVENT_LISTENER(settings_load, set##ID##_settings_load);                                 \
