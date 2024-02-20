@@ -229,6 +229,67 @@ typedef uint16_t setting_offset_t;
 	CREATE_EVENT_LISTENER(settings_erase, set##ID##_settings_erase);                               \
 	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
 
+#define DECL_EXTENDED_STRING_SETTING(ID, var, count)                                               \
+	static uint32_t set##ID##_settings_address;                                                    \
+	bool set##ID##_settings_load(void *args)                                                       \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			settings_load(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);       \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	bool set##ID##_settings_save(void *args)                                                       \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			settings_save(set##ID##_settings_address, (uint8_t *)var, sizeof(char) * count);       \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	bool set##ID##_settings_change(void *args)                                                     \
+	{                                                                                              \
+		setting_args_t *set = (setting_args_t *)args;                                              \
+		if (set->id == ID)                                                                         \
+		{                                                                                          \
+			for (uint8_t i = 0; i < count; i++)                                                    \
+			{                                                                                      \
+				char c = serial_peek();                                                            \
+				if (c == EOL || c == '\n')                                                         \
+				{                                                                                  \
+					break;                                                                         \
+				}                                                                                  \
+				val[i] = serial_getc();                                                            \
+			}                                                                                      \
+			return EVENT_HANDLED;                                                                  \
+		}                                                                                          \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	bool set##ID##_settings_erase(void *args)                                                      \
+	{                                                                                              \
+		settings_args_t *set = (settings_args_t *)args;                                            \
+		if (set->address == SETTINGS_ADDRESS_OFFSET || set->address == set##ID##_settings_address) \
+		{                                                                                          \
+			memset(var, 0, sizeof(char) * count);                                                  \
+			return (set->address == set##ID##_settings_address) ? EVENT_HANDLED : EVENT_CONTINUE;  \
+		}                                                                                          \
+		return EVENT_HANDLED;                                                                      \
+	}                                                                                              \
+	bool set##ID##_protocol_send_cnc_settings(void *args)                                          \
+	{                                                                                              \
+		serial_print_str(var);                                                                     \
+		return EVENT_CONTINUE;                                                                     \
+	}                                                                                              \
+	CREATE_EVENT_LISTENER(settings_load, set##ID##_settings_load);                                 \
+	CREATE_EVENT_LISTENER(settings_save, set##ID##_settings_save);                                 \
+	CREATE_EVENT_LISTENER(settings_change, set##ID##_settings_change);                             \
+	CREATE_EVENT_LISTENER(settings_erase, set##ID##_settings_erase);                               \
+	CREATE_EVENT_LISTENER(protocol_send_cnc_settings, set##ID##_protocol_send_cnc_settings)
+
 #define EXTENDED_SETTING_ADDRESS(ID) set##ID##_settings_address
 
 #define EXTENDED_SETTING_INIT(ID, var)                                                        \
