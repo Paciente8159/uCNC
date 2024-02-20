@@ -411,6 +411,9 @@ static uint8_t parser_grbl_command(void)
 				val = 0;
 				if (!parser_get_float(&val))
 				{
+#ifdef ENABLE_SETTINGS_MODULES
+					return settings_change(setting_num, val);
+#endif
 					return STATUS_BAD_NUMBER_FORMAT;
 				}
 
