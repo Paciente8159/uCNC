@@ -182,6 +182,12 @@ WEAK_EVENT_HANDLER(settings_save)
 	DEFAULT_EVENT_HANDLER(settings_save);
 }
 
+// event_settings_extended_save_handler
+WEAK_EVENT_HANDLER(settings_extended_save)
+{
+	DEFAULT_EVENT_HANDLER(settings_extended_save);
+}
+
 // event_settings_erase_handler
 WEAK_EVENT_HANDLER(settings_erase)
 {
@@ -292,6 +298,16 @@ void settings_reset(bool erase_startup_blocks)
 #endif
 }
 
+#ifdef ENABLE_SETTINGS_MODULES
+static void FORCEINLINE save_extended_settings(bool *save)
+{
+	if (*save)
+	{
+		EVENT_INVOKE(settings_extended_save, NULL);
+	}
+}
+#endif
+
 void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	DEBUG_STR("EEPROM save @ ");
@@ -304,6 +320,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_save __attribute__((__cleanup__(save_extended_settings))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_save, &args))
 	{

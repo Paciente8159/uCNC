@@ -161,6 +161,8 @@ typedef uint16_t setting_offset_t;
 	DECL_EVENT_HANDLER(settings_load);
 	// event_settings_save_handler
 	DECL_EVENT_HANDLER(settings_save);
+	// event_settings_save_extended_handler
+	DECL_EVENT_HANDLER(settings_extended_save);
 	// event_settings_erase_handler
 	DECL_EVENT_HANDLER(settings_erase);
 #endif
