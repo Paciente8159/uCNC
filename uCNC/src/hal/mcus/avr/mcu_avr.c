@@ -418,8 +418,8 @@ ISR(COM_TX_vect, ISR_BLOCK)
 DECL_BUFFER(uint8_t, uart2_rx, RX_BUFFER_SIZE);
 ISR(COM2_RX_vect, ISR_BLOCK)
 {
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	uint8_t c = COM2_INREG;
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	if (mcu_com_rx_cb(c))
 	{
 		if (BUFFER_FULL(uart2_rx))
@@ -431,7 +431,16 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 		BUFFER_STORE(uart2_rx);
 	}
 #else
-	mcu_uart2_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+	if (BUFFER_FULL(uart2_rx))
+	{
+		c = OVF;
+	}
+
+	*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+	BUFFER_STORE(uart2_rx);
+#endif
 #endif
 }
 

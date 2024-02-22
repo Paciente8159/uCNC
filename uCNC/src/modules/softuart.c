@@ -54,7 +54,20 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 
 	if (!port)
 	{
-#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL))
+#if (defined(MCU_HAS_UART2) && defined(DETACH_UART2_FROM_MAIN_PROTOCOL) && !defined(UART2_DISABLE_BUFFER))
+		__TIMEOUT_MS__(ms_timeout)
+		{
+			if (mcu_uart2_available())
+			{
+				break;
+			}
+		}
+
+		__TIMEOUT_ASSERT__(ms_timeout)
+		{
+			return 0;
+		}
+
 		return mcu_uart2_getc();
 #endif
 	}

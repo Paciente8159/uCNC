@@ -1085,8 +1085,9 @@ extern "C"
 #ifdef MCU_HAS_UART2
 		while (COM2_UART.available() > 0)
 		{
-#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
 			uint8_t c = (uint8_t)COM2_UART.read();
+#ifndef DETACH_UART2_FROM_MAIN_PROTOCOL
+
 			if (mcu_com_rx_cb(c))
 			{
 				if (BUFFER_FULL(uart2_rx))
@@ -1099,7 +1100,16 @@ extern "C"
 			}
 
 #else
-			mcu_uart2_rx_cb((uint8_t)COM2_UART.read());
+			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 #endif

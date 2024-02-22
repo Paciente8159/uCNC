@@ -980,10 +980,10 @@ void mcu_dotasks(void)
 #endif
 #if defined(MCU_HAS_UART2)
 	rxlen = uart_read_bytes(UART2_PORT, rxdata, RX_BUFFER_CAPACITY, 0);
-#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 	for (i = 0; i < rxlen; i++)
 	{
 		uint8_t c = (uint8_t)rxdata[i];
+#if !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 		if (mcu_com_rx_cb(c))
 		{
 			if (BUFFER_FULL(uart2_rx))
@@ -994,13 +994,19 @@ void mcu_dotasks(void)
 			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
 			BUFFER_STORE(uart2_rx);
 		}
-	}
 #else
-	for (i = 0; i < rxlen; i++)
-	{
-		mcu_uart2_rx_cb((uint8_t)rxdata[i]);
-	}
+		mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+		if (BUFFER_FULL(uart2_rx))
+		{
+			c = OVF;
+		}
+
+		*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+		BUFFER_STORE(uart2_rx);
 #endif
+#endif
+	}
 #endif
 
 	esp32_wifi_bt_process();

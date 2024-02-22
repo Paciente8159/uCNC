@@ -148,6 +148,15 @@ void MCU_SERIAL2_ISR(void)
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
@@ -642,9 +651,9 @@ void mcu_init(void)
 	mcu_config_af(SPI_SDI, SPI_SDI_AFIO);
 	mcu_config_af(SPI_CLK, SPI_CLK_AFIO);
 	mcu_config_af(SPI_SDO, SPI_SDO_AFIO);
-	#if ASSERT_PIN_IO(SPI_CS)
+#if ASSERT_PIN_IO(SPI_CS)
 	mcu_config_af(SPI_CS, SPI_CS_AFIO);
-	#endif
+#endif
 	// initialize the SPI configuration register
 	SPI_REG->CR1 = SPI_CR1_SSM	   // software slave management enabled
 				   | SPI_CR1_SSI   // internal slave select
@@ -1028,7 +1037,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 {
 	bool stop __attribute__((__cleanup__(mcu_i2c_write_stop))) = send_stop;
 	int32_t timeout = ms_timeout;
-	
+
 	uint32_t status = send_start ? I2C_SR1_ADDR : I2C_SR1_BTF;
 	I2C_REG->SR1 &= ~I2C_SR1_AF;
 	if (send_start)
@@ -1144,7 +1153,7 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 		}
 	}
 
-    stop = true;
+	stop = true;
 	return I2C_NOTOK;
 }
 
