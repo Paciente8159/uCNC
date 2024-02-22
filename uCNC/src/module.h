@@ -47,8 +47,8 @@ extern "C"
 		struct name##_delegate_event_ *next; \
 	} name##_delegate_event_t;               \
 	extern name##_delegate_event_t *
-// #define EVENT_TYPE(name) name##_delegate_event_t
-#define EVENT_INVOKE(name, args) event_##name##_handler(args)
+#define EVENT_HANDLER_NAME(name) event_##name##_handler
+#define EVENT_INVOKE(name, args) EVENT_HANDLER_NAME(name)(args)
 #define CREATE_EVENT_LISTENER(name, handler) __attribute__((used)) name##_delegate_event_t name##_delegate_##handler = {&handler, false, NULL}
 #define ADD_EVENT_LISTENER(name, handler)                         \
 	{                                                             \
@@ -74,16 +74,15 @@ extern "C"
 	// the resulting handles is named event_<event name>_handler and can be placed inside any point in the core code
 	// for example DECL_EVENT_HANDLER(<event name>) will create a function declaration equivalent to uint8_t event_<event name>_handler(void* args)
 	// event_<event name>_handler can then be placed inside the core code to run the hook code
-
 #define DECL_EVENT_HANDLER(name)             \
 	typedef bool (*name##_delegate)(void *); \
 	EVENT(name)                              \
 	name##_event;                            \
-	bool event_##name##_handler(void *args)
+	bool EVENT_HANDLER_NAME(name)(void *args)
 #define WEAK_EVENT_HANDLER(name)           \
 	name##_delegate_event_t *name##_event; \
-	bool __attribute__((weak)) event_##name##_handler(void *args)
-#define OVERRIDE_EVENT_HANDLER(name) bool event_##name##_handler(void *args)
+	bool __attribute__((weak)) EVENT_HANDLER_NAME(name)(void *args)
+#define OVERRIDE_EVENT_HANDLER(name) bool EVENT_HANDLER_NAME(name)(void *args)
 #define DEFAULT_EVENT_HANDLER(name)                             \
 	{                                                           \
 		static name##_delegate_event_t *start = NULL;           \
