@@ -998,7 +998,7 @@ void mcu_dotasks(void)
 #else
 	for (i = 0; i < rxlen; i++)
 	{
-		mcu_uart_rx_cb((uint8_t)rxdata[i]);
+		mcu_uart2_rx_cb((uint8_t)rxdata[i]);
 	}
 #endif
 #endif

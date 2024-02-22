@@ -431,7 +431,7 @@ ISR(COM2_RX_vect, ISR_BLOCK)
 		BUFFER_STORE(uart2_rx);
 	}
 #else
-	mcu_uart_rx_cb(COM2_INREG);
+	mcu_uart2_rx_cb(COM2_INREG);
 #endif
 }
 
