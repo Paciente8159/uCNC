@@ -182,16 +182,28 @@ WEAK_EVENT_HANDLER(settings_save)
 	DEFAULT_EVENT_HANDLER(settings_save);
 }
 
+// event_settings_erase_handler
+WEAK_EVENT_HANDLER(settings_erase)
+{
+	DEFAULT_EVENT_HANDLER(settings_erase);
+}
+
+// event_settings_extended_load_handler
+WEAK_EVENT_HANDLER(settings_extended_load)
+{
+	DEFAULT_EVENT_HANDLER(settings_extended_load);
+}
+
 // event_settings_extended_save_handler
 WEAK_EVENT_HANDLER(settings_extended_save)
 {
 	DEFAULT_EVENT_HANDLER(settings_extended_save);
 }
 
-// event_settings_erase_handler
-WEAK_EVENT_HANDLER(settings_erase)
+// event_settings_extended_erase_handler
+WEAK_EVENT_HANDLER(settings_extended_erase)
 {
-	DEFAULT_EVENT_HANDLER(settings_erase);
+	DEFAULT_EVENT_HANDLER(settings_extended_erase);
 }
 #endif
 
@@ -226,6 +238,16 @@ void settings_init(void)
 	}
 }
 
+#ifdef ENABLE_SETTINGS_MODULES
+static void FORCEINLINE load_extended_settings(bool *load)
+{
+	if (*load)
+	{
+		EVENT_INVOKE(settings_extended_load, NULL);
+	}
+}
+#endif
+
 uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	DEBUG_STR("EEPROM load @ ");
@@ -238,6 +260,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return STATUS_SETTING_DISABLED;
 	}
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_load __attribute__((__cleanup__(load_extended_settings))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	// if handled exit
 	if (EVENT_INVOKE(settings_load, &args))
@@ -620,6 +643,16 @@ uint8_t settings_change(setting_offset_t id, float value)
 	return result;
 }
 
+#ifdef ENABLE_SETTINGS_MODULES
+static void FORCEINLINE erase_extended_settings(bool *erase)
+{
+	if (*erase)
+	{
+		EVENT_INVOKE(settings_extended_erase, NULL);
+	}
+}
+#endif
+
 void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 {
 	DEBUG_STR("EEPROM erase @ ");
@@ -637,6 +670,7 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_erase __attribute__((__cleanup__(erase_extended_settings))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
