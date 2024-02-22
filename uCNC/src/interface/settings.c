@@ -187,6 +187,37 @@ WEAK_EVENT_HANDLER(settings_erase)
 {
 	DEFAULT_EVENT_HANDLER(settings_erase);
 }
+
+// event_settings_extended_load_handler
+WEAK_EVENT_HANDLER(settings_extended_load)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+
+	DEFAULT_EVENT_HANDLER(settings_extended_load);
+}
+
+// event_settings_extended_save_handler
+WEAK_EVENT_HANDLER(settings_extended_save)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+	DEFAULT_EVENT_HANDLER(settings_extended_save);
+}
+
+// event_settings_extended_erase_handler
+WEAK_EVENT_HANDLER(settings_extended_erase)
+{
+	if (!*((bool *)args))
+	{
+		return EVENT_CONTINUE;
+	}
+	DEFAULT_EVENT_HANDLER(settings_extended_erase);
+}
 #endif
 
 static uint8_t settings_size_crc(uint16_t size, uint8_t crc)
@@ -232,6 +263,7 @@ uint8_t settings_load(uint16_t address, uint8_t *__ptr, uint16_t size)
 		return STATUS_SETTING_DISABLED;
 	}
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_load __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	// if handled exit
 	if (EVENT_INVOKE(settings_load, &args))
@@ -304,6 +336,7 @@ void settings_save(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_save __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_save)))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_save, &args))
 	{
@@ -620,6 +653,7 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 	}
 
 #ifdef ENABLE_SETTINGS_MODULES
+	bool extended_erase __attribute__((__cleanup__(EVENT_HANDLER_NAME(settings_extended_load)))) = (!address);
 	settings_args_t args = {.address = address, .data = __ptr, .size = size};
 	if (EVENT_INVOKE(settings_erase, &args))
 	{
