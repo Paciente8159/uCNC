@@ -69,7 +69,7 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 			return 0;
 		}
 
-		return mcu_uart2_getc();
+		val = mcu_uart2_getc();
 #endif
 	}
 	else
@@ -80,6 +80,11 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 			{
 				break;
 			}
+		}
+
+		__TIMEOUT_ASSERT__(ms_timeout)
+		{
+			return 0;
 		}
 
 		port->waithalf();
@@ -97,11 +102,6 @@ int16_t softuart_getc(softuart_port_t *port, uint32_t ms_timeout)
 			mask <<= 1;
 		} while (--bits);
 		port->waithalf();
-	}
-
-	__TIMEOUT_ASSERT__(ms_timeout)
-	{
-		return 0;
 	}
 
 	return (int16_t)val;
