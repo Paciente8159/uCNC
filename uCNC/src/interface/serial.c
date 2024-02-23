@@ -38,19 +38,19 @@ static stream_clear_cb stream_clear;
 serial_stream_t *default_stream;
 static serial_stream_t *current_stream;
 
-#if defined(MCU_HAS_UART)
+#if defined(MCU_HAS_UART) && !defined(DETACH_UART_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(uart_serial_stream, mcu_uart_getc, mcu_uart_available, mcu_uart_clear, mcu_uart_putc, mcu_uart_flush);
 #endif
-#if defined(MCU_HAS_UART2)
+#if defined(MCU_HAS_UART2) && !defined(DETACH_UART2_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(uart2_serial_stream, mcu_uart2_getc, mcu_uart2_available, mcu_uart2_clear, mcu_uart2_putc, mcu_uart2_flush);
 #endif
-#if defined(MCU_HAS_USB)
+#if defined(MCU_HAS_USB) && !defined(DETACH_USB_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(usb_serial_stream, mcu_usb_getc, mcu_usb_available, mcu_usb_clear, mcu_usb_putc, mcu_usb_flush);
 #endif
-#if defined(MCU_HAS_WIFI)
+#if defined(MCU_HAS_WIFI) && !defined(DETACH_WIFI_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(wifi_serial_stream, mcu_wifi_getc, mcu_wifi_available, mcu_wifi_clear, mcu_wifi_putc, mcu_wifi_flush);
 #endif
-#if defined(MCU_HAS_BLUETOOTH)
+#if defined(MCU_HAS_BLUETOOTH) && !defined(DETACH_BLUETOOTH_FROM_MAIN_PROTOCOL)
 DECL_SERIAL_STREAM(bt_serial_stream, mcu_bt_getc, mcu_bt_available, mcu_bt_clear, mcu_bt_putc, mcu_bt_flush);
 #endif
 #endif
