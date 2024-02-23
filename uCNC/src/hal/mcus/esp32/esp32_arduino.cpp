@@ -690,7 +690,7 @@ static File upload_file;
 			settings_save(wifi_settings_offset, (uint8_t *)&wifi_settings, sizeof(wifi_settings_t));
 		}
 
-		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 1, NULL, 0);
+		xTaskCreatePinnedToCore(mcu_wifi_task, "wifiTask", 4069, NULL, 1, NULL, CONFIG_ARDUINO_RUNNING_CORE);
 		// taskYIELD();
 
 // #ifdef MCU_HAS_WEBSOCKETS

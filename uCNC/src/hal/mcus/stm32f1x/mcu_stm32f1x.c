@@ -145,6 +145,15 @@ void MCU_SERIAL2_ISR(void)
 			}
 #else
 			mcu_uart2_rx_cb(c);
+#ifndef UART2_DISABLE_BUFFER
+			if (BUFFER_FULL(uart2_rx))
+			{
+				c = OVF;
+			}
+
+			*(BUFFER_NEXT_FREE(uart2_rx)) = c;
+			BUFFER_STORE(uart2_rx);
+#endif
 #endif
 		}
 
@@ -1043,7 +1052,7 @@ static uint8_t mcu_i2c_write(uint8_t data, bool send_start, bool send_stop, uint
 				return I2C_NOTOK;
 			}
 		}
-		
+
 		__TIMEOUT_ASSERT__(timeout)
 		{
 			stop = true;
