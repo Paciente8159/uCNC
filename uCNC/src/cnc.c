@@ -993,7 +993,7 @@ bool cnc_check_interlocking(void)
 			}
 			mc_sync_position();
 			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state(EXEC_HOLD);
+			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
 		}
 	}
 
