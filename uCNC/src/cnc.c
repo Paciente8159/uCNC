@@ -577,7 +577,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 		// if something goes wrong the tool can reinstate the HOLD state
 		itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-		if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING)
+		if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING && !cnc_get_exec_state(EXEC_JOG))
 		{
 			protocol_send_feedback(MSG_FEEDBACK_10);
 			if (!planner_buffer_is_empty())
@@ -986,10 +986,14 @@ bool cnc_check_interlocking(void)
 		if (cnc_get_exec_state(EXEC_HOMING | EXEC_JOG)) // flushes the buffers if motions was homing or jog
 		{
 			itp_clear();
-			planner_clear();
+			// clears the buffer but conserves the tool data
+			while (!planner_buffer_is_empty())
+			{
+				planner_discard_block();
+			}
 			mc_sync_position();
 			// homing will be cleared inside homing cycle
-			cnc_clear_exec_state(EXEC_JOG | EXEC_HOLD);
+			cnc_clear_exec_state(EXEC_HOLD);
 		}
 	}
 
