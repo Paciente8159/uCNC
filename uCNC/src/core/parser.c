@@ -507,7 +507,7 @@ static uint8_t parser_grbl_command(void)
 		case 'R':
 			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
-				grbl_cmd_str[3] == '=';
+				grbl_cmd_str[3] = '=';
 				grbl_cmd_len++;
 				c = serial_getc();
 				if (serial_getc() == EOL)
