@@ -321,7 +321,7 @@ void mcu_init(void)
 #endif
 
 #ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(2048); // 2K Emulated EEPROM
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
 #endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
@@ -543,6 +543,13 @@ void mcu_dotasks(void)
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	return rp2040_eeprom_read(address);
 #else
@@ -555,6 +562,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	rp2040_eeprom_write(address, value);
 #endif

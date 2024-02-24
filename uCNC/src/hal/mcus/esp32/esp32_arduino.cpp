@@ -415,7 +415,7 @@ extern "C"
 #include <SPIFFS.h>
 #define FLASH_FS SPIFFS
 #endif
-static File upload_file;
+	static File upload_file;
 
 	void fs_file_updater()
 	{
@@ -971,11 +971,24 @@ extern "C"
 
 	uint8_t mcu_eeprom_getc(uint16_t address)
 	{
+		if (NVM_STORAGE_SIZE <= address)
+		{
+			DEBUG_STR("EEPROM invalid address @ ");
+			DEBUG_INT(address);
+			DEBUG_PUTC('\n');
+			return 0;
+		}
 		return EEPROM.read(address);
 	}
 
 	void mcu_eeprom_putc(uint16_t address, uint8_t value)
 	{
+		if (NVM_STORAGE_SIZE <= address)
+		{
+			DEBUG_STR("EEPROM invalid address @ ");
+			DEBUG_INT(address);
+			DEBUG_PUTC('\n');
+		}
 		EEPROM.write(address, value);
 	}
 
