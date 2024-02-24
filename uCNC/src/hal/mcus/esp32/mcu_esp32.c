@@ -1015,6 +1015,13 @@ void mcu_dotasks(void)
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 #ifndef RAM_ONLY_SETTINGS
 	// return esp32_eeprom_read(address);
 	size_t size = mcu_eeprom.size;
@@ -1031,6 +1038,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 #ifndef RAM_ONLY_SETTINGS
 	// esp32_eeprom_write(address, value);
 	size_t size = mcu_eeprom.size;

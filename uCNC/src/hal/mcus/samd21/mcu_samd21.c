@@ -1191,6 +1191,13 @@ static void mcu_write_flash_page(const uint32_t destination_address, const uint8
  * */
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	address &= (NVM_EEPROM_SIZE - 1); // keep within 1Kb address range
 
 	if (!samd21_eeprom_loaded)
@@ -1206,7 +1213,12 @@ uint8_t mcu_eeprom_getc(uint16_t address)
  * */
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
-
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	address &= (NVM_EEPROM_SIZE - 1);
 
 	if (!samd21_eeprom_loaded)

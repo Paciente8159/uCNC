@@ -872,6 +872,13 @@ static void mcu_eeprom_init(void)
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	return stm32_eeprom_buffer[address];
 }
 
@@ -895,6 +902,12 @@ static void mcu_eeprom_erase(void)
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
 	// if the value of the eeprom is modified then it will be marked as dirty
 	// flash default value is 0xFF. If programming can change value from 1 to 0 but not the other way around
 	// if a bit is changed from 0 back to 1 then it will need to rewrite values in a new page

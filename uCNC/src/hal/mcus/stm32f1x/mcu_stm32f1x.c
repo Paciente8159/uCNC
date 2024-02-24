@@ -40,7 +40,7 @@
 #endif
 
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
-#define FLASH_PAGE_SIZE (1<<10)
+#define FLASH_PAGE_SIZE (1 << 10)
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 10) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
@@ -864,6 +864,13 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 // Non volatile memory
 uint8_t mcu_eeprom_getc(uint16_t address)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+		return 0;
+	}
 	uint16_t offset = mcu_access_flash_page(address);
 	return stm32_flash_page[offset];
 }
@@ -889,6 +896,13 @@ static void mcu_eeprom_erase(uint16_t address)
 
 void mcu_eeprom_putc(uint16_t address, uint8_t value)
 {
+	if (NVM_STORAGE_SIZE <= address)
+	{
+		DEBUG_STR("EEPROM invalid address @ ");
+		DEBUG_INT(address);
+		DEBUG_PUTC('\n');
+	}
+
 	uint16_t offset = mcu_access_flash_page(address);
 
 	if (stm32_flash_page[offset] != value)
