@@ -91,14 +91,14 @@ extern "C"
 #if (I2C_ADDRESS != 0)
 	static uint8_t mcu_i2c_buffer_len;
 	static uint8_t mcu_i2c_buffer[I2C_SLAVE_BUFFER_SIZE];
-	void rp2040_i2c_onreceive(int len)
+	void lpc176x_i2c_onreceive(int len)
 	{
 		uint8_t l = I2C_REG.readBytes(mcu_i2c_buffer, len);
 		mcu_i2c_slave_cb(mcu_i2c_buffer, &l);
 		mcu_i2c_buffer_len = l;
 	}
 
-	void rp2040_i2c_onrequest(void)
+	void lpc176x_i2c_onrequest(void)
 	{
 		I2C_REG.write(mcu_i2c_buffer, mcu_i2c_buffer_len);
 	}
@@ -110,8 +110,8 @@ extern "C"
 #if I2C_ADDRESS == 0
 		I2C_REG.begin();
 #else
-		I2C_REG.onReceive(rp2040_i2c_onreceive);
-		I2C_REG.onRequest(rp2040_i2c_onrequest);
+		I2C_REG.onReceive(lpc176x_i2c_onreceive);
+		I2C_REG.onRequest(lpc176x_i2c_onrequest);
 		I2C_REG.begin(I2C_ADDRESS);
 #endif
 	}

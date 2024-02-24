@@ -30,7 +30,7 @@
 
 // Non volatile memory
 // SAMD devices page size never exceeds 1024 bytes
-#define NVM_EEPROM_SIZE 0x400 // 1Kb of emulated EEPROM is enough
+#define NVM_EEPROM_SIZE NVM_STORAGE_SIZE // 1Kb of emulated EEPROM is enough
 #define NVM_PAGE_SIZE NVMCTRL_PAGE_SIZE
 #define NVM_ROW_PAGES NVMCTRL_ROW_PAGES
 #define NVM_ROW_SIZE NVMCTRL_ROW_SIZE

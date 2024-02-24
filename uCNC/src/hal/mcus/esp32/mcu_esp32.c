@@ -48,10 +48,6 @@ void esp32_wifi_bt_init(void);
 void esp32_wifi_bt_flush(uint8_t *buffer);
 void esp32_wifi_bt_process(void);
 
-#ifndef FLASH_EEPROM_SIZE
-#define FLASH_EEPROM_SIZE 1024
-#endif
-
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
 #include <nvs.h>
 #include <esp_partition.h>
@@ -61,7 +57,7 @@ typedef struct
 	nvs_handle_t nvs_handle;
 	size_t size;
 	bool dirty;
-	uint8_t data[FLASH_EEPROM_SIZE];
+	uint8_t data[NVM_STORAGE_SIZE];
 } flash_eeprom_t;
 
 static flash_eeprom_t mcu_eeprom;
@@ -573,16 +569,16 @@ void mcu_init(void)
 
 	// starts EEPROM before UART to enable WiFi and BT settings
 #if !defined(RAM_ONLY_SETTINGS) && !defined(USE_ARDUINO_EEPROM_LIBRARY)
-	// esp32_eeprom_init(FLASH_EEPROM_SIZE); // 1K Emulated EEPROM
+	// esp32_eeprom_init(NVM_STORAGE_SIZE); // 1K Emulated EEPROM
 
 	// starts nvs
 	mcu_eeprom.size = 0;
-	memset(mcu_eeprom.data, 0, FLASH_EEPROM_SIZE);
+	memset(mcu_eeprom.data, 0, NVM_STORAGE_SIZE);
 	if (nvs_open("eeprom", NVS_READWRITE, &mcu_eeprom.nvs_handle) == ESP_OK)
 	{
 		// determines the maximum sector size of NVS that can be read/write
 		nvs_get_blob(mcu_eeprom.nvs_handle, "eeprom", NULL, &mcu_eeprom.size);
-		if (FLASH_EEPROM_SIZE > mcu_eeprom.size)
+		if (NVM_STORAGE_SIZE > mcu_eeprom.size)
 		{
 			log_e("eeprom does not have enough space");
 			mcu_eeprom.size = 0;
@@ -596,7 +592,7 @@ void mcu_init(void)
 	}
 #else
 	extern void esp32_eeprom_init(int size);
-	esp32_eeprom_init(FLASH_EEPROM_SIZE);
+	esp32_eeprom_init(NVM_STORAGE_SIZE);
 #endif
 
 #ifdef MCU_HAS_UART
