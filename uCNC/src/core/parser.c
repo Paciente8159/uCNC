@@ -507,22 +507,26 @@ static uint8_t parser_grbl_command(void)
 		case 'R':
 			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
-				switch (serial_getc())
+				c = serial_getc();
+				if (serial_getc() == EOL)
 				{
-				case '$':
-					settings_reset(false);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					return GRBL_SEND_SETTINGS_RESET;
-				case '#':
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				case '*':
-					settings_reset(true);
-					settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
-					parser_parameters_reset();
-					return GRBL_SEND_SETTINGS_RESET;
-				default:
-					return STATUS_INVALID_STATEMENT;
+					switch (c)
+					{
+					case '$':
+						settings_reset(false);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						return GRBL_SEND_SETTINGS_RESET;
+					case '#':
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					case '*':
+						settings_reset(true);
+						settings_save(SETTINGS_ADDRESS_OFFSET, (uint8_t *)&g_settings, (uint8_t)sizeof(settings_t));
+						parser_parameters_reset();
+						return GRBL_SEND_SETTINGS_RESET;
+					default:
+						return STATUS_INVALID_STATEMENT;
+					}
 				}
 			}
 			break;
