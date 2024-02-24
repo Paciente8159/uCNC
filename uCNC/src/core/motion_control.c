@@ -999,6 +999,9 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 		new_target[i] += target_offset[i];
 	}
 
+	block_data->motion_flags.reg = g_planner_state.state_flags.reg;
+	block_data->spindle = g_planner_state.spindle_speed;
+
 	uint8_t error = mc_line(new_target, block_data);
 
 	if (error == STATUS_OK)

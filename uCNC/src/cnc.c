@@ -558,35 +558,37 @@ void cnc_clear_exec_state(uint8_t statemask)
 	// if releasing from a HOLD state with and active delay in exec
 	if (CHECKFLAG(statemask, EXEC_HOLD) && cnc_get_exec_state(EXEC_HOLD))
 	{
-		// remove the flag to prevent ITP to restart
-		// CLEARFLAG(cnc_state.exec_state, EXEC_HOLD);
+		// skip this if the hold release is for a jog cancel
+		if (!cnc_get_exec_state(EXEC_JOG))
+		{
 #if TOOL_COUNT > 0
-		planner_spindle_ovr_reset();
-		// updated the coolant pins
-		tool_set_coolant(planner_get_coolant());
+			planner_spindle_ovr_reset();
+			// updated the coolant pins
+			tool_set_coolant(planner_get_coolant());
 #if (DELAY_ON_RESUME_COOLANT > 0)
-		if (!g_settings.laser_mode)
-		{
-			if (!planner_buffer_is_empty())
+			if (!g_settings.laser_mode)
 			{
-				cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+				if (!planner_buffer_is_empty())
+				{
+					cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+				}
 			}
-		}
 #endif
-		// tries to sync the tool
-		// if something goes wrong the tool can reinstate the HOLD state
-		itp_sync_spindle();
+			// tries to sync the tool
+			// if something goes wrong the tool can reinstate the HOLD state
+			itp_sync_spindle();
 #if (DELAY_ON_RESUME_SPINDLE > 0)
-		if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING && !cnc_get_exec_state(EXEC_JOG))
-		{
-			protocol_send_feedback(MSG_FEEDBACK_10);
-			if (!planner_buffer_is_empty())
+			if (!g_settings.laser_mode && cnc_state.loop_state == LOOP_RUNNING)
 			{
-				cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+				protocol_send_feedback(MSG_FEEDBACK_10);
+				if (!planner_buffer_is_empty())
+				{
+					cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+				}
 			}
+#endif
+#endif
 		}
-#endif
-#endif
 	}
 
 	CLEARFLAG(cnc_state.exec_state, statemask);
