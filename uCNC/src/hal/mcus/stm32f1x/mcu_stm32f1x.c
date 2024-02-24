@@ -40,11 +40,13 @@
 #endif
 
 #if (FLASH_BANK1_END <= 0x0801FFFFUL)
+#define FLASH_PAGE_SIZE (1<<10)
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 10) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 10) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 10) + 1)
 #define FLASH_PAGE_OFFSET_MASK (0xFFFF & ~FLASH_PAGE_MASK)
 #else
+#define FLASH_PAGE_SIZE 0x800
 #define FLASH_EEPROM_PAGES (((NVM_STORAGE_SIZE - 1) >> 11) + 1)
 #define FLASH_EEPROM (FLASH_LIMIT - ((FLASH_EEPROM_PAGES << 11) - 1))
 #define FLASH_PAGE_MASK (0xFFFF - (1 << 11) + 1)
@@ -53,7 +55,7 @@
 
 #define READ_FLASH(ram_ptr, flash_ptr) (*ram_ptr = ~(*flash_ptr))
 #define WRITE_FLASH(flash_ptr, ram_ptr) (*flash_ptr = ~(*ram_ptr))
-static uint8_t stm32_flash_page[NVM_STORAGE_SIZE];
+static uint8_t stm32_flash_page[FLASH_PAGE_SIZE];
 static uint16_t stm32_flash_current_page;
 static bool stm32_flash_modified;
 
@@ -842,9 +844,10 @@ static uint16_t mcu_access_flash_page(uint16_t address)
 	uint16_t address_offset = address & FLASH_PAGE_OFFSET_MASK;
 	if (stm32_flash_current_page != address_page)
 	{
+		mcu_eeprom_flush();
 		stm32_flash_modified = false;
 		stm32_flash_current_page = address_page;
-		uint16_t counter = (uint16_t)(NVM_STORAGE_SIZE >> 2);
+		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 2);
 		uint32_t *ptr = ((uint32_t *)&stm32_flash_page[0]);
 		volatile uint32_t *eeprom = ((volatile uint32_t *)(FLASH_EEPROM + address_page));
 		while (counter--)
@@ -903,7 +906,7 @@ void mcu_eeprom_flush()
 		mcu_eeprom_erase(stm32_flash_current_page);
 		volatile uint16_t *eeprom = ((volatile uint16_t *)(FLASH_EEPROM + stm32_flash_current_page));
 		uint16_t *ptr = ((uint16_t *)&stm32_flash_page[0]);
-		uint16_t counter = (uint16_t)(NVM_STORAGE_SIZE >> 1);
+		uint16_t counter = (uint16_t)(FLASH_PAGE_SIZE >> 1);
 		while (counter--)
 		{
 			while (FLASH->SR & FLASH_SR_BSY)
