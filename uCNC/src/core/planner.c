@@ -543,14 +543,29 @@ void planner_spindle_ovr(uint8_t value)
 	}
 }
 
-uint8_t planner_spindle_ovr_toggle(void)
+void planner_spindle_ovr_toggle(void)
 {
-	spindle_override ^= g_planner_state.state_flags.bit.spindle_running;
-	return (spindle_override ^ g_planner_state.state_flags.bit.spindle_running);
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	{
+		uint8_t newstate = spindle_override ^ g_planner_state.state_flags.bit.spindle_running;
+		if (newstate)
+		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
+		}
+		spindle_override = newstate;
+	}
 }
 
 void planner_spindle_ovr_reset(void)
 {
+	if (cnc_get_exec_state(EXEC_HOLD | EXEC_DOOR | EXEC_RUN) == EXEC_HOLD) // only available if a TRUE hold is active
+	{
+		if (g_planner_state.state_flags.bit.spindle_running && spindle_override)
+		{
+			protocol_send_feedback(MSG_FEEDBACK_10);
+		}
+	}
+
 	spindle_override = 0;
 }
 
