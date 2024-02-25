@@ -570,7 +570,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 			{
 				if (!planner_buffer_is_empty())
 				{
-					cnc_delay_ms(DELAY_ON_RESUME_COOLANT * 1000);
+					cnc_dwell_ms(DELAY_ON_RESUME_COOLANT * 1000);
 				}
 			}
 #endif
@@ -583,7 +583,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 				protocol_send_feedback(MSG_FEEDBACK_10);
 				if (!planner_buffer_is_empty())
 				{
-					cnc_delay_ms(DELAY_ON_RESUME_SPINDLE * 1000);
+					cnc_dwell_ms(DELAY_ON_RESUME_SPINDLE * 1000);
 				}
 			}
 #endif
@@ -594,6 +594,7 @@ void cnc_clear_exec_state(uint8_t statemask)
 	CLEARFLAG(cnc_state.exec_state, statemask);
 }
 
+// executes delay
 void cnc_delay_ms(uint32_t milliseconds)
 {
 	milliseconds += mcu_millis();
@@ -601,6 +602,15 @@ void cnc_delay_ms(uint32_t milliseconds)
 	{
 		cnc_dotasks();
 	} while (mcu_millis() < milliseconds);
+}
+
+//executes delay (resumes earlier on error)
+void cnc_dwell_ms(uint32_t milliseconds)
+{
+	milliseconds += mcu_millis();
+	do
+	{
+	} while ((mcu_millis() < milliseconds) && cnc_dotasks());
 }
 
 void cnc_reset(void)

@@ -165,6 +165,7 @@ extern "C"
 	void cnc_stop(void);
 	uint8_t cnc_unlock(bool force);
 	void cnc_delay_ms(uint32_t miliseconds);
+	void cnc_dwell_ms(uint32_t miliseconds);
 	void cnc_store_motion(void);
 	void cnc_restore_motion(void);
 	uint8_t cnc_parse_cmd(void);
