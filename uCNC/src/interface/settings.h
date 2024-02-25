@@ -194,7 +194,7 @@ typedef uint16_t setting_offset_t;
 	{                                                                                    \
 		setting_args_t *set = (setting_args_t *)args;                                    \
 		type *ptr = var;                                                                 \
-		if (set->id >= ID && set->id <= (ID + count))                                    \
+		if (set->id >= ID && set->id < (ID + count))                                     \
 		{                                                                                \
 			ptr[set->id - ID] = (type)set->value;                                        \
 			return EVENT_HANDLED;                                                        \
