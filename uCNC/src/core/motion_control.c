@@ -943,7 +943,11 @@ uint8_t mc_probe(float *target, uint8_t flags, motion_data_t *block_data)
 	// disables the probe
 	io_disable_probe();
 	itp_clear();
-	planner_clear();
+	// clears the buffer but conserves the tool data
+	while (!planner_buffer_is_empty())
+	{
+		planner_discard_block();
+	}
 	// clears hold
 	cnc_clear_exec_state(EXEC_HOLD);
 
