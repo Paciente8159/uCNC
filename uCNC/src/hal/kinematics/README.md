@@ -78,7 +78,7 @@ In addition to the standard configurations you need to set the following extra s
 | $106       | SCARA arm length, mm
 | $107       | SCARA forearm length, mm
 
-Settings $100, $101, $110, $111, $120 and $121 have a different meaning, they
+Settings $100 and $101 have a different meaning, they
 use revolution instead of mm.
 
 
