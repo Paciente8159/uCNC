@@ -51,10 +51,14 @@ void kinematics_apply_inverse(float *axis, int32_t *steps)
 
 	float distance = (axis[AXIS_X] * axis[AXIS_X] + axis[AXIS_Y] * axis[AXIS_Y] - arm * arm - forearm * forearm) / (2.0f * arm * forearm);
 	float angle2 = acosf(distance);
-
-	steps[1] = (int32_t)roundf(angle2 * DOUBLE_PI_INV * g_settings.step_per_mm[1]);
 	float angle1 = atan2f(axis[AXIS_Y], axis[AXIS_X]) - atan2f(forearm * sin(angle2), (arm + forearm * distance));
+
+#ifdef MP_SCARA
+	angle2 += angle1;
+#endif
+
 	steps[0] = (int32_t)roundf(angle1 * DOUBLE_PI_INV * g_settings.step_per_mm[0]);
+	steps[1] = (int32_t)roundf(angle2 * DOUBLE_PI_INV * g_settings.step_per_mm[1]);
 
 #if AXIS_COUNT > 2
 	for (uint8_t i = 2; i < AXIS_COUNT; i++)
@@ -72,7 +76,9 @@ void kinematics_apply_forward(int32_t *steps, float *axis)
 	float joint1 = steps[0] * scara_arm_angle_fact[0];
 	float joint2 = steps[1] * scara_arm_angle_fact[1];
 
+#ifndef MP_SCARA
 	joint2 += joint1;
+#endif
 
 	float arm = g_settings.scara_arm_length;
 	float forearm = g_settings.scara_forearm_length;
@@ -173,7 +179,7 @@ void kinematics_apply_reverse_transform(float *axis)
 
 bool kinematics_check_boundaries(float *axis)
 {
-	if (!g_settings.soft_limits_enabled || cnc_get_exec_state(EXEC_HOMING))
+	if (/*!g_settings.soft_limits_enabled || */cnc_get_exec_state(EXEC_HOMING))
 	{
 		return true;
 	}
