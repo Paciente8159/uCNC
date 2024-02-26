@@ -278,15 +278,6 @@ static FORCEINLINE void esp32_i2s_extender_init(void)
 #define ITP_SAMPLE_RATE (F_STEP_MAX * 2)
 #endif
 
-#if SERVOS_MASK > 0
-// also run servo pin signals
-static uint32_t servo_tick_counter = 0;
-static uint32_t servo_tick_alarm = 0;
-#endif
-
-void servo_update(void);
-void servo_reset(void);
-
 // this function updates IO updated will run @128KHz
 /**
  *
@@ -302,6 +293,7 @@ void servo_reset(void);
  * **/
 
 #if SERVOS_MASK > 0
+// also run servo pin signals
 static uint32_t servo_tick_counter = 0;
 static uint32_t servo_tick_alarm = 0;
 static uint8_t mcu_servos[6];
