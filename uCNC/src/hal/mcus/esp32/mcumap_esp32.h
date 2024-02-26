@@ -2812,7 +2812,7 @@ extern "C"
 #define mcu_config_analog(X)                                                      \
 	{                                                                             \
 		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_BIT_10);                                      \
+		adc1_config_width(ADC_WIDTH_MAX - 1);                                     \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
 	}
 #define mcu_config_pullup(X)                                       \
@@ -2870,7 +2870,7 @@ extern "C"
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
 #define mcu_get_pwm(X) ledc_get_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL))
-#define mcu_get_analog(X) adc1_get_raw(__indirect__(X, ADC_CHANNEL))
+#define mcu_get_analog(X) (adc1_get_raw(__indirect__(X, ADC_CHANNEL)) >> (ADC_WIDTH_MAX - 2))
 
 	extern void esp32_delay_us(uint16_t delay);
 #define mcu_delay_us(X) esp32_delay_us(X)
