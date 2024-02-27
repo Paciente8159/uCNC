@@ -901,6 +901,9 @@ MCU_CALLBACK void mcu_step_cb(void)
 #ifdef ENABLE_RT_PROBE_CHECKING
 	mcu_probe_changed_cb();
 #endif
+#ifdef ENABLE_RT_LIMITS_CHECKING
+	mcu_limits_changed_cb();
+#endif
 
 	uint8_t new_stepbits = stepbits;
 	uint8_t dirs = 0;
