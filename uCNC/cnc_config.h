@@ -526,9 +526,12 @@ extern "C"
 	/**
 	 * Modifies the startup message to emulate Grbl (required by some programs so
 	 * that uCNC is recognized a Grbl protocol controller device)
+	 * 0 - disables
+	 * 1 - partially emulates the startup message and prints unused settings to improve compatibility
+	 * 2 - full emulation of the grbl startup and info messages (this also makes command $IE available to print the firmware information in extended format)
 	 * */
 
-#define EMULATE_GRBL_STARTUP
+#define EMULATE_GRBL_STARTUP 1
 
 	/**
 	 *

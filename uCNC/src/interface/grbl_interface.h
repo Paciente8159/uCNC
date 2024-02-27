@@ -130,6 +130,7 @@ extern "C"
 #define GRBL_SETTINGS_DEFAULT (GRBL_SYSTEM_CMD + 12)
 #define GRBL_PINS_STATES (GRBL_SYSTEM_CMD + 13)
 #define GRBL_SEND_SYSTEM_INFO (GRBL_SYSTEM_CMD + 14)
+#define GRBL_SEND_SYSTEM_INFO_EXTENDED (GRBL_SYSTEM_CMD + 15)
 
 #define GRBL_SYSTEM_CMD_EXTENDED (GRBL_SYSTEM_CMD + 20)
 #define GRBL_SYSTEM_CMD_EXTENDED_UNSUPPORTED 253
@@ -160,14 +161,18 @@ extern "C"
 #define MSG_ERROR __romstr__("error:")
 #define MSG_ALARM __romstr__("ALARM:")
 #define MSG_ECHO __romstr__("[echo:")
-#ifndef EMULATE_GRBL_STARTUP
+#if EMULATE_GRBL_STARTUP == 0
 #define MSG_STARTUP_START "uCNC "
 #define MSG_STARTUP_END " ['$' for help]"
-#else
+#elif EMULATE_GRBL_STARTUP == 1
 #define MSG_STARTUP_START "Grbl "
 #define MSG_STARTUP_END " [uCNC v" CNC_VERSION " '$' for help]"
+#elif EMULATE_GRBL_STARTUP == 2
+#define MSG_STARTUP __romstr__("Grbl 1.1f ['$' for help]" STR_EOL)
 #endif
+#ifndef MSG_STARTUP
 #define MSG_STARTUP __romstr__(MSG_STARTUP_START CNC_MAJOR_MINOR_VERSION MSG_STARTUP_END STR_EOL)
+#endif
 #define MSG_HELP __romstr__("[HLP:$$ $# $G $I $N $x=val $Nx=line $J=line $C $X $H ~ ! ? ctrl-x]" STR_EOL)
 
 // Non query feedback messages

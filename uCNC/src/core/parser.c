@@ -504,6 +504,14 @@ static uint8_t parser_grbl_command(void)
 	default:
 		switch (grbl_cmd_str[0])
 		{
+#if EMULATE_GRBL_STARTUP == 2
+		case 'I':
+			if (grbl_cmd_str[1] == 'E' && grbl_cmd_len == 2 && c == EOL)
+			{
+				return GRBL_SEND_SYSTEM_INFO_EXTENDED;
+			}
+			break;
+#endif
 		case 'R':
 			if (grbl_cmd_str[1] == 'S' && grbl_cmd_str[2] == 'T' && c == '=' && grbl_cmd_len == 3)
 			{
@@ -646,8 +654,13 @@ static uint8_t parse_grbl_exec_code(uint8_t code)
 #endif
 #ifdef ENABLE_SYSTEM_INFO
 	case GRBL_SEND_SYSTEM_INFO:
-		protocol_send_cnc_info();
+		protocol_send_cnc_info(false);
 		break;
+#if EMULATE_GRBL_STARTUP == 2
+	case GRBL_SEND_SYSTEM_INFO_EXTENDED:
+		protocol_send_cnc_info(true);
+		break;
+#endif
 #endif
 #ifdef ENABLE_PARSER_MODULES
 	case GRBL_SYSTEM_CMD_EXTENDED:
