@@ -196,9 +196,19 @@ extern "C"
 #endif
 
 #ifdef ENABLE_RT_PROBE_CHECKING
-#ifdef PROBE_ISR
 #undef PROBE_ISR
 #endif
+
+#ifdef ENABLE_RT_LIMITS_CHECKING
+#undef LIMIT_X_ISR
+#undef LIMIT_X2_ISR
+#undef LIMIT_Y_ISR
+#undef LIMIT_Y2_ISR
+#undef LIMIT_Z_ISR
+#undef LIMIT_Z2_ISR
+#undef LIMIT_A_ISR
+#undef LIMIT_B_ISR
+#undef LIMIT_C_ISR
 #endif
 
 #ifdef ESTOP_PULLUP_ENABLE
