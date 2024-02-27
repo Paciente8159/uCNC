@@ -1216,9 +1216,23 @@ void mcu_i2c_config(uint32_t frequency)
 	I2C_REG->CR1 &= ~I2C_CR1_SWRST;
 #if I2C_ADDRESS == 0
 	// set max freq
+	I2C_REG->CR2 &= ~0x3FUL;
 	I2C_REG->CR2 |= I2C_SPEEDRANGE;
-	I2C_REG->TRISE = (I2C_SPEEDRANGE + 1);
-	I2C_REG->CCR |= (frequency <= 100000UL) ? ((I2C_SPEEDRANGE * 5) & 0x0FFF) : (((I2C_SPEEDRANGE * 5 / 6) & 0x0FFF) | I2C_CCR_FS);
+	I2C_REG->TRISE &= ~0x3FUL;
+	I2C_REG->TRISE |= (frequency <= 100000UL) ? (I2C_SPEEDRANGE + 1) : (((I2C_SPEEDRANGE * 300UL) / 1000UL) + 1);
+	I2C_REG->CCR &= ~(I2C_CCR_FS | I2C_CCR_DUTY | I2C_CCR_CCR);
+	uint32_t ccr = 0;
+	if ((frequency <= 100000UL))
+	{
+		// standart speed
+		ccr = MAX(4, ((((HAL_RCC_GetPCLK1Freq() - 1U) / (frequency * 2)) + 1UL) & I2C_CCR_CCR));
+	}
+	else
+	{
+		// fast speed
+		ccr = MAX(1, ((((HAL_RCC_GetPCLK1Freq() - 1U) / (frequency * 3)) + 1UL) & I2C_CCR_CCR)) | I2C_CCR_FS;
+	}
+	I2C_REG->CCR |= ccr;
 #else
 	// set address
 	I2C_REG->OAR1 &= ~(I2C_OAR1_ADDMODE | 0x0F);
@@ -1231,8 +1245,8 @@ void mcu_i2c_config(uint32_t frequency)
 	NVIC_ClearPendingIRQ(I2C_IRQ);
 	NVIC_EnableIRQ(I2C_IRQ);
 #endif
-	// initialize the SPI configuration register
-	I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
+		// initialize the SPI configuration register
+		I2C_REG->CR1 |= (I2C_CR1_PE | I2C_CR1_ENGC);
 #if I2C_ADDRESS != 0
 	// prepare ACK in slave mode
 	I2C_REG->CR1 |= I2C_CR1_ACK;
