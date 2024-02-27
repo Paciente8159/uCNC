@@ -419,7 +419,7 @@ uint8_t settings_change(setting_offset_t id, float value)
 			}
 			g_settings.max_step_rate = value;
 			break;
-#ifdef EMULATE_GRBL_STARTUP
+#if EMULATE_GRBL_STARTUP > 0
 		// just adds this for compatibility
 		// this setting is not used
 		case 1:
@@ -662,7 +662,7 @@ void settings_erase(uint16_t address, uint8_t *__ptr, uint16_t size)
 	{
 		memset(__ptr, 0, size);
 	}
-	
+
 #ifndef RAM_ONLY_SETTINGS
 	if (address != SETTINGS_ADDRESS_OFFSET)
 	{

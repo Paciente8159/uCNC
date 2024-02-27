@@ -49,7 +49,7 @@ extern "C"
 	void protocol_send_pins_states(void);
 #endif
 #ifdef ENABLE_SYSTEM_INFO
-	void protocol_send_cnc_info(void);
+	void protocol_send_cnc_info(bool extended);
 	DECL_EVENT_HANDLER(protocol_send_cnc_info);
 #endif
 

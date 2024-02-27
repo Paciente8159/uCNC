@@ -770,7 +770,7 @@ void protocol_send_cnc_settings(void)
 {
 	protocol_busy = true;
 	protocol_send_gcode_setting_line_flt(0, (1000000.0f / g_settings.max_step_rate));
-#ifdef EMULATE_GRBL_STARTUP
+#if EMULATE_GRBL_STARTUP > 0
 	// just adds this for compatibility
 	// this setting is not used
 	protocol_send_gcode_setting_line_int(1, 0);
@@ -1080,8 +1080,15 @@ void protocol_send_pins_states(void)
 #define BOARD_NAME "Generic board"
 #endif
 
-#define OPT_INFO __romstr__("[OPT:" KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
-#define VER_INFO __romstr__("[VER: uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
+#if EMULATE_GRBL_STARTUP < 2
+#define EXTENDED_OPT "[OPT:"
+#define EXTENDED_VER "[VER:"
+#else
+#define EXTENDED_OPT "[OPT+:"
+#define EXTENDED_VER "[VER+:"
+#endif
+#define OPT_INFO __romstr__(EXTENDED_OPT KINEMATIC_INFO LINES_INFO BRESENHAM_INFO DSS_INFO DYNACCEL_INFO SKEW_INFO LINPLAN_INFO HMAP_INFO PPI_INFO INVESTOP_INFO SPOLL_INFO CONTROLS_INFO LIMITS_INFO PROBE_INFO IODBG_INFO SETTINGS_INFO EXTRACMD_INFO FASTMATH_INFO)
+#define VER_INFO __romstr__(EXTENDED_VER " uCNC " CNC_VERSION " - " BOARD_NAME "]" STR_EOL)
 
 WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 {
@@ -1100,13 +1107,28 @@ WEAK_EVENT_HANDLER(protocol_send_cnc_info)
 	return false;
 }
 
-void protocol_send_cnc_info(void)
+void protocol_send_cnc_info(bool extended)
 {
 	protocol_busy = true;
+#if EMULATE_GRBL_STARTUP < 2
 	protocol_send_string(VER_INFO);
 	protocol_send_string(OPT_INFO);
 	EVENT_INVOKE(protocol_send_cnc_info, NULL);
 	protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
+#else
+	if (!extended)
+	{
+		protocol_send_string(__romstr__("[VER:1.1h.20190825:]" STR_EOL));
+		protocol_send_string(__romstr__("[OPT:V," PLANNER_INFO SERIAL_INFO "]" STR_EOL));
+	}
+	else
+	{
+		protocol_send_string(VER_INFO);
+		protocol_send_string(OPT_INFO);
+		EVENT_INVOKE(protocol_send_cnc_info, NULL);
+		protocol_send_string(__romstr__(PLANNER_INFO SERIAL_INFO "]" STR_EOL));
+	}
+#endif
 	protocol_busy = false;
 }
 #endif
