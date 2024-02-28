@@ -54,6 +54,7 @@ extern "C"
 
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_hasargs(void);
+	const char* endpoint_request_uri(void);
 	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen);
 	void endpoint_send(int code, const char *content_type, const char *data);
 	void endpoint_send_header(const char *name, const char *data, bool first);
