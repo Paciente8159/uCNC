@@ -463,7 +463,16 @@ void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_han
 		method = 255;
 	}
 
-	web_server.on(uri, (HTTPMethod)method, request_handler, file_handler);
+	String s = String(uri);
+
+	if (s.endsWith("*"))
+	{
+		web_server.on(UriWildcard(s.substring(0, s.length() - 1)), (HTTPMethod)method, request_handler, file_handler);
+	}
+	else
+	{
+		web_server.on(Uri(uri), (HTTPMethod)method, request_handler, file_handler);
+	}
 }
 
 int endpoint_request_hasargs(void)

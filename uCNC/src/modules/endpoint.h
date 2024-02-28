@@ -20,6 +20,22 @@
 #define ENDPOINT_H
 
 #ifdef __cplusplus
+#include <Uri.h>
+// helper class to allow uri handling for a base address
+class UriWildcard : public Uri {
+    public:
+        UriWildcard(const char *uri) : Uri(uri) {}
+        UriWildcard(const String &uri) : Uri(uri) {}
+        UriWildcard(const __FlashStringHelper *uri) : Uri(uri) {} 
+        virtual ~UriWildcard() {}
+
+        bool canHandle(const String &requestUri, __attribute__((unused)) std::vector<String> &pathArgs) override {
+            return requestUri.startsWith(_uri);
+        }
+};
+#endif
+
+#ifdef __cplusplus
 extern "C"
 {
 #endif
