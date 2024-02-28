@@ -2813,7 +2813,7 @@ extern "C"
 	{                                                                             \
 		mcu_config_input(X);                                                      \
 		adc1_config_width(ADC_WIDTH_MAX - 1);                                     \
-		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), ADC_ATTEN_DB_11); \
+		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
 	}
 #define mcu_config_pullup(X)                                       \
 	{                                                              \
