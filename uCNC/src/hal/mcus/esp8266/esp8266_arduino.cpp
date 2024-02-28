@@ -455,7 +455,28 @@ extern "C"
 
 	void endpoint_send(int code, const char *content_type, const char *data)
 	{
-		web_server.send(code, content_type, data);
+		static uint8_t in_chuncks = 0;
+		if (!data)
+		{
+			in_chuncks = 1;
+			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+		}
+		else
+		{
+			switch (in_chuncks)
+			{
+			case 1:
+				in_chuncks = 2;
+				__FALL_THROUGH__
+			case 0:
+				web_server.send(code, content_type, data);
+				break;
+			default:
+				web_server.sendContent(data);
+				in_chuncks = strlen(data) ? 2 : 0;
+				break;
+			}
+		}
 	}
 
 	void endpoint_send_header(const char *name, const char *data, bool first)
