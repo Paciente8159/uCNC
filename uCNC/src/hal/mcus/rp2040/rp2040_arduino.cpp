@@ -475,9 +475,10 @@ void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_han
 	}
 }
 
-const char* endpoint_request_uri(void){
-		return web_server.uri().c_str();
-	}
+void endpoint_request_uri(char *uri, size_t maxlen)
+{
+	strncpy(uri, web_server.uri().c_str(), maxlen);
+}
 
 int endpoint_request_hasargs(void)
 {
