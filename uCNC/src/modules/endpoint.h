@@ -22,16 +22,23 @@
 #ifdef __cplusplus
 #include <Uri.h>
 // helper class to allow uri handling for a base address
-class UriWildcard : public Uri {
-    public:
-        UriWildcard(const char *uri) : Uri(uri) {}
-        UriWildcard(const String &uri) : Uri(uri) {}
-        UriWildcard(const __FlashStringHelper *uri) : Uri(uri) {} 
-        virtual ~UriWildcard() {}
+class UriWildcard : public Uri
+{
+public:
+	UriWildcard(const char *uri) : Uri(uri) {}
+	UriWildcard(const String &uri) : Uri(uri) {}
+	UriWildcard(const __FlashStringHelper *uri) : Uri(uri) {}
+	virtual ~UriWildcard() {}
 
-        bool canHandle(const String &requestUri, __attribute__((unused)) std::vector<String> &pathArgs) override {
-            return requestUri.startsWith(_uri);
-        }
+	Uri *clone() const override
+	{
+		return new UriWildcard(_uri);
+	};
+
+	bool canHandle(const String &requestUri, __attribute__((unused)) std::vector<String> &pathArgs) override
+	{
+		return requestUri.startsWith(_uri);
+	}
 };
 #endif
 
@@ -45,12 +52,12 @@ extern "C"
 
 	typedef void (*endpoint_delegate)(void);
 
-	void endpoint_add(const char* uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
+	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_hasargs(void);
-	bool endpoint_request_arg(const char* argname, char* argvalue, size_t maxlen);
+	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen);
 	void endpoint_send(int code, const char *content_type, const char *data);
 	void endpoint_send_header(const char *name, const char *data, bool first);
-	bool endpoint_send_file(const char * file_path, const char *content_type);
+	bool endpoint_send_file(const char *file_path, const char *content_type);
 
 #ifdef __cplusplus
 }
