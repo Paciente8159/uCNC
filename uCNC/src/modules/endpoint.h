@@ -20,6 +20,7 @@
 #define ENDPOINT_H
 
 #ifdef __cplusplus
+#ifdef MCU_HAS_ENDPOINTS
 #include <Uri.h>
 // helper class to allow uri handling for a base address
 class UriWildcard : public Uri
@@ -40,6 +41,7 @@ public:
 		return requestUri.startsWith(_uri);
 	}
 };
+#endif
 #endif
 
 #ifdef __cplusplus
