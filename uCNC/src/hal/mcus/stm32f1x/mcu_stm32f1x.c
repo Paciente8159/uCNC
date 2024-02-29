@@ -1127,6 +1127,8 @@ static uint8_t mcu_i2c_read(uint8_t *data, bool with_ack, bool send_stop, uint32
 	if (!with_ack)
 	{
 		I2C_REG->CR1 &= ~I2C_CR1_ACK;
+		stop = false;
+		mcu_i2c_write_stop(&send_stop);
 	}
 	else
 	{
