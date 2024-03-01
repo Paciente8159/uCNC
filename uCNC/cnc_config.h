@@ -315,10 +315,10 @@ extern "C"
 	/**
 	 * Uncomment to enable module extensions
 	 * */
-	// #define ENABLE_MAIN_LOOP_MODULES
-	// #define ENABLE_IO_MODULES
-	// #define ENABLE_PARSER_MODULES
-	// #define ENABLE_MOTION_CONTROL_MODULES
+	#define ENABLE_MAIN_LOOP_MODULES
+	#define ENABLE_IO_MODULES
+	#define ENABLE_PARSER_MODULES
+	#define ENABLE_MOTION_CONTROL_MODULES
 
 	/**
 	 * Settings extensions are enabled by default
@@ -374,6 +374,8 @@ extern "C"
 // otherwise it will put the machine in hold until the user allows it to continue
 // #define ALLOW_MOTION_TO_CONTINUE
 #endif
+
+#define ENABLE_DEBUG_STREAM
 
 	/**
 	 * If the type of machine supports skew and needs skew correction
@@ -506,7 +508,7 @@ extern "C"
 	 * helps to reduce code size if features are not needed
 	 * */
 #ifndef DISABLE_ALL_CONTROLS
-// #define DISABLE_ALL_CONTROLS
+#define DISABLE_ALL_CONTROLS
 #endif
 #ifndef DISABLE_ALL_LIMITS
 // #define DISABLE_ALL_LIMITS
