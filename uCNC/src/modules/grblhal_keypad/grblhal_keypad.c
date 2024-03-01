@@ -148,34 +148,7 @@ SOFTUART(keypad_uart, 115200, KEYPAD_TX, KEYPAD_RX);
 #endif
 
 #if (KEYPAD_MAX_MACROS > 0)
-static char *exec_macro;
 static char keypad_macro[KEYPAD_MACRO_MAX_LEN];
-static uint8_t keypad_macro_getc(void)
-{
-	uint8_t c = *exec_macro++;
-	if (c == '|')
-	{
-		c = '\n';
-	}
-	if (c == EOL)
-	{
-		// release the stream
-		exec_macro--;
-		serial_stream_change(NULL);
-	}
-	return c;
-}
-
-void serial_stream_keypad_macro(char *macro)
-{
-	exec_macro = keypad_macro;
-	serial_stream_readonly(&keypad_macro_getc, NULL, NULL);
-	// start command processing
-	while (*exec_macro)
-	{
-		cnc_parse_cmd();
-	}
-}
 #endif
 
 #if (KEYPAD_MAX_MACROS >= 1)
@@ -283,7 +256,51 @@ DECL_EXTENDED_SETTING(KEYPAD_SETTING_ID, keypad_settings, float, 6, protocol_sen
 #endif
 
 #ifdef ENABLE_MAIN_LOOP_MODULES
+// create a stream buffer and declares the needed functions to
+DECL_BUFFER(uint8_t, keypad_rx, RX_BUFFER_SIZE);
+
+uint8_t keypad_stream_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(keypad_rx, &c);
+	if (c == '|')
+	{
+		c = '\n';
+	}
+	return c;
+}
+
+uint8_t keypad_stream_available(void)
+{
+	return BUFFER_READ_AVAILABLE(keypad_rx);
+}
+
+void keypad_stream_clear(void)
+{
+	BUFFER_CLEAR(keypad_rx);
+}
+
+void keypad_stream_try_enqueue_cmd(char *cmd)
+{
+	uint8_t cmdlen = strlen(cmd);
+	if (BUFFER_WRITE_AVAILABLE(keypad_rx) > cmdlen)
+	{
+		uint8_t w = 0;
+		BUFFER_WRITE(keypad_rx, cmd, cmdlen, w);
+	}
+}
+
 void __attribute__((weak)) keypad_extended_code(uint8_t *c) {}
+
+// print helpers
+char *keypad_cmd_ptr;
+void keypad_cmd_putc(char c)
+{
+	*keypad_cmd_ptr = c;
+	keypad_cmd_ptr++;
+}
+#define keypad_print_flt(num) print_flt(keypad_cmd_putc, num)
+#define keypad_print_str(str) print_str(keypad_cmd_putc, str)
 
 bool keypad_process(void *args)
 {
@@ -305,13 +322,13 @@ bool keypad_process(void *args)
 		else
 		{
 			// tries to grab the stream to itself
-			keypad_has_control = serial_stream_readonly(NULL, NULL, NULL);
+			keypad_has_control = serial_stream_readonly(keypad_stream_getc, keypad_stream_available, keypad_stream_clear);
 		}
 		return EVENT_CONTINUE;
 	}
 	bool has_control = keypad_has_control;
 #else
-	bool has_control = serial_stream_readonly(NULL, NULL, NULL);
+	bool has_control = serial_stream_readonly(keypad_stream_getc, keypad_stream_available, keypad_stream_clear);
 #endif
 
 	if (!has_control)
@@ -324,6 +341,7 @@ bool keypad_process(void *args)
 	uint8_t axis_mask = 0;
 	uint8_t axis_dir = 0;
 	float feed = 0;
+	char cmd[RX_BUFFER_SIZE];
 
 	// set defaults if zero
 	if (!keypad_settings[0])
@@ -367,7 +385,8 @@ bool keypad_process(void *args)
 		}
 		break;
 	case 'H':
-		cnc_home();
+		rom_strcpy(cmd, __romstr__("$H\n"));
+		keypad_stream_try_enqueue_cmd(cmd);
 		break;
 #ifdef AXIS_X
 	case 'L':
@@ -464,8 +483,8 @@ bool keypad_process(void *args)
 		if (keypad_macro1_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO1_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO1_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -473,8 +492,8 @@ bool keypad_process(void *args)
 		if (keypad_macro2_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO2_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO2_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -482,8 +501,8 @@ bool keypad_process(void *args)
 		if (keypad_macro3_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO3_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO3_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -491,8 +510,8 @@ bool keypad_process(void *args)
 		if (keypad_macro4_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO4_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO4_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -500,8 +519,8 @@ bool keypad_process(void *args)
 		if (keypad_macro5_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO5_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO5_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -509,8 +528,8 @@ bool keypad_process(void *args)
 		if (keypad_macro6_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO6_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO6_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -518,8 +537,8 @@ bool keypad_process(void *args)
 		if (keypad_macro7_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO7_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO7_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -527,8 +546,8 @@ bool keypad_process(void *args)
 		if (keypad_macro8_key == c)
 		{
 			// load and run macro (self releases)
-			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO8_ID), (uint8_t *)keypad_macro, KEYPAD_MACRO_MAX_LEN);
-			serial_stream_keypad_macro(keypad_macro);
+			settings_load(EXTENDED_SETTING_ADDRESS(KEYPAD_MACRO8_ID), (uint8_t *)cmd, KEYPAD_MACRO_MAX_LEN);
+			keypad_stream_try_enqueue_cmd(cmd);
 			break;
 		}
 #endif
@@ -545,7 +564,7 @@ bool keypad_process(void *args)
 	}
 	else if (feed != 0)
 	{
-		float target[AXIS_COUNT];
+		float target[3];
 
 		if (!mode)
 		{
@@ -560,13 +579,13 @@ bool keypad_process(void *args)
 		}
 		else
 		{
-			for (uint8_t i = 0; i < AXIS_COUNT; i++)
+			for (uint8_t i = 0; i < 3; i++)
 			{
 				target[i] = keypad_settings[mode];
 			}
 		}
 
-		for (uint8_t i = 0; i < AXIS_COUNT; i++)
+		for (uint8_t i = 0; i < 3; i++)
 		{
 			if (!((1 << i) & axis_mask))
 			{
@@ -580,14 +599,20 @@ bool keypad_process(void *args)
 
 		motion_data_t block = {0};
 		block.feed = feed;
-		if (!planner_buffer_is_full())
-		{
-			mc_incremental_jog(target, &block);
-			DEBUG_STR("inc jog\n");
-		}
-		else{
-			DEBUG_STR("planner full\n");
-		}
+		memset(cmd, 0, RX_BUFFER_SIZE);
+		
+		rom_strcpy(cmd, __romstr__("$J=G91"));
+		keypad_cmd_ptr = &cmd[6];
+		keypad_cmd_putc('X');
+		keypad_print_flt(target[0]);
+		keypad_cmd_putc('Y');
+		keypad_print_flt(target[1]);
+		keypad_cmd_putc('Z');
+		keypad_print_flt(target[2]);
+		keypad_cmd_putc('F');
+		keypad_print_flt(feed);
+		keypad_stream_try_enqueue_cmd(cmd);
+		DEBUG_STR(cmd);
 	}
 
 	// not a jog command or the key was released
@@ -601,13 +626,13 @@ bool keypad_process(void *args)
 		}
 	}
 
-#ifndef KEYPAD_MPG_MODE_ENABLED
-	// free the stream
-	if (has_control)
-	{
-		serial_stream_change(NULL);
-	}
-#endif
+	// #ifndef KEYPAD_MPG_MODE_ENABLED
+	// 	// free the stream
+	// 	if (has_control)
+	// 	{
+	// 		serial_stream_change(NULL);
+	// 	}
+	// #endif
 
 	// you must return EVENT_CONTINUE to enable other tasks to run or return EVENT_HANDLED to terminate the event handling within this callback
 	return EVENT_CONTINUE;
