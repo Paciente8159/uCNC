@@ -217,8 +217,10 @@ uint8_t cnc_parse_cmd(void)
 		}
 		else
 		{
-			parser_sync_position();
 			protocol_send_error(error);
+			itp_sync();
+			mc_sync_position();
+			parser_sync_position();
 #ifdef ENABLE_MAIN_LOOP_MODULES
 			EVENT_INVOKE(cnc_parse_cmd_error, &error);
 #endif
