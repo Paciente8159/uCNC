@@ -93,7 +93,7 @@ MCU_IO_CALLBACK void mcu_limits_changed_cb(void)
 #ifdef DISABLE_ALL_LIMITS
 	return;
 #else
-	static uint8_t prev_limits = 0;
+	static volatile uint8_t prev_limits = 0;
 	uint8_t limits = io_get_limits();
 	uint8_t limits_diff = prev_limits;
 	prev_limits = limits;
@@ -143,7 +143,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #ifdef DISABLE_ALL_CONTROLS
 	return;
 #else
-	static uint8_t prev_controls = 0;
+	static volatile uint8_t prev_controls = 0;
 	uint8_t controls = io_get_controls();
 
 	if (!(prev_controls ^ controls))
@@ -176,7 +176,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #if ASSERT_PIN(FHOLD)
 	if (CHECKFLAG(controls, FHOLD_MASK))
 	{
-		cnc_set_exec_state(EXEC_HOLD);
+		cnc_call_rt_command(CMD_CODE_FEED_HOLD);
 	}
 #endif
 #if ASSERT_PIN(CS_RES)
@@ -222,7 +222,7 @@ MCU_IO_CALLBACK void mcu_probe_changed_cb(void)
 
 MCU_IO_CALLBACK void mcu_inputs_changed_cb(void)
 {
-	static uint8_t prev_inputs = 0;
+	static volatile uint8_t prev_inputs = 0;
 	uint8_t inputs = 0;
 	uint8_t diff;
 

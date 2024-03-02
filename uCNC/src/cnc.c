@@ -1036,12 +1036,9 @@ static void cnc_io_dotasks(void)
 {
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
-
-	// checks inputs and triggers ISR checks if enforced soft polling
-#if defined(FORCE_SOFT_POLLING)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
-#endif
+	
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
 	mcu_inputs_changed_cb();
