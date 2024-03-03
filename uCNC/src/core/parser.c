@@ -496,6 +496,7 @@ static uint8_t parser_grbl_command(void)
 			}
 			if (cnc_get_exec_state(EXEC_ALLACTIVE) && !cnc_get_exec_state(EXEC_JOG)) // Jog only allowed in IDLE or JOG mode
 			{
+				parser_discard_command();
 				return STATUS_IDLE_ERROR;
 			}
 			return GRBL_JOG_CMD;

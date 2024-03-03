@@ -44,6 +44,7 @@
 
 #define KINEMATICS_MOTION_SEGMENT_INV_SIZE (1.0f / KINEMATICS_MOTION_SEGMENT_SIZE)
 
+static bool mc_flush_pending;
 static bool mc_checkmode;
 static int32_t mc_last_step_pos[STEPPER_COUNT];
 static float mc_last_target[AXIS_COUNT];
@@ -170,9 +171,6 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		return STATUS_OK;
 	}
 
-	// stores current step target position
-	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
-
 	if (!mc_checkmode) // check mode (gcode simulation) doesn't send code to planner
 	{
 #ifdef ENABLE_BACKLASH_COMPENSATION
@@ -224,12 +222,21 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		}
 #endif
 
-		while (planner_buffer_is_full())
+		bool mc_flushed = false;
+		while (planner_buffer_is_full() && !mc_flushed)
 		{
 			if (!cnc_dotasks())
 			{
 				return STATUS_CRITICAL_FAIL;
 			}
+			mc_flushed = mc_flush_pending;
+		}
+
+		mc_flush_pending = false;
+
+		if (mc_flushed)
+		{
+			return STATUS_JOG_CANCELED;
 		}
 
 #ifdef ENABLE_MOTION_CONTROL_MODULES
@@ -241,6 +248,9 @@ static uint8_t mc_line_segment(int32_t *step_new_pos, motion_data_t *block_data)
 		// dwell should only execute on the first request
 		block_data->dwell = 0;
 	}
+
+	// stores current step target position
+	memcpy(mc_last_step_pos, step_new_pos, sizeof(mc_last_step_pos));
 
 	return STATUS_OK;
 }
@@ -1014,6 +1024,11 @@ uint8_t mc_incremental_jog(float *target_offset, motion_data_t *block_data)
 	}
 
 	return error;
+}
+
+void mc_flush_pending_motion(void)
+{
+	mc_flush_pending = true;
 }
 
 #ifdef ENABLE_G39_H_MAPPING
