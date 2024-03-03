@@ -4537,14 +4537,14 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1U << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1U << (y)))		 /* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1U << (y))) /* Clear bit y in byte x*/
 #define CHECKBIT(x, y) ((x) & (1U << (y)))	 /* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1U << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
@@ -4560,8 +4560,8 @@ extern "C"
 #define mcu_config_pullup(x) SETBIT(__indirect__(x, OUTREG), __indirect__(x, BIT))
 #define mcu_config_input_isr(x) SETFLAG(__indirect__(x, ISRREG), __indirect__(x, ISR_MASK))
 
-#define mcu_config_pwm(x, freq)                                  \
-	{                                                            \
+#define mcu_config_pwm(x, freq)                              \
+	{                                                          \
 		SETBIT(__indirect__(x, DIRREG), __indirect__(x, BIT));   \
 		CLEARBIT(__indirect__(x, OUTREG), __indirect__(x, BIT)); \
 		__indirect__(x, TMRAREG) |= __indirect__(x, MODE);       \
@@ -4569,50 +4569,50 @@ extern "C"
 		uint8_t pre = 1;                                         \
 		if (div > 1)                                             \
 		{                                                        \
-			div = ((div + 1) >> 3);                              \
-			pre++;                                               \
+			div = ((div + 1) >> 3);                                \
+			pre++;                                                 \
 		}                                                        \
 		if (__indirect__(x, TIMER) == 2)                         \
 		{                                                        \
-			if (div > 1)                                         \
-			{                                                    \
-				div = ((div + 1) >> 2);                          \
-				pre++;                                           \
-			}                                                    \
-			while (div > 1)                                      \
-			{                                                    \
-				div = ((div + 1) >> 1);                          \
-				pre++;                                           \
-			}                                                    \
+			if (div > 1)                                           \
+			{                                                      \
+				div = ((div + 1) >> 2);                              \
+				pre++;                                               \
+			}                                                      \
+			while (div > 1)                                        \
+			{                                                      \
+				div = ((div + 1) >> 1);                              \
+				pre++;                                               \
+			}                                                      \
 		}                                                        \
 		else                                                     \
 		{                                                        \
-			if (div > 1)                                         \
-			{                                                    \
-				div = ((div + 1) >> 3);                          \
-				pre++;                                           \
-			}                                                    \
-			while (div > 1)                                      \
-			{                                                    \
-				div = ((div + 1) >> 2);                          \
-				pre++;                                           \
-			}                                                    \
+			if (div > 1)                                           \
+			{                                                      \
+				div = ((div + 1) >> 3);                              \
+				pre++;                                               \
+			}                                                      \
+			while (div > 1)                                        \
+			{                                                      \
+				div = ((div + 1) >> 2);                              \
+				pre++;                                               \
+			}                                                      \
 		}                                                        \
 		__indirect__(x, TMRBREG) = pre;                          \
 		__indirect__(x, OCRREG) = 0;                             \
 	}
 
-#define mcu_set_pwm(diopin, pwmvalue)                                                    \
-	{                                                                                    \
-		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                               \
-		if (pwmvalue != 0)                                                               \
-		{                                                                                \
+#define mcu_set_pwm(diopin, pwmvalue)                                              \
+	{                                                                                \
+		__indirect__(diopin, OCRREG) = (uint16_t)pwmvalue;                             \
+		if (pwmvalue != 0)                                                             \
+		{                                                                              \
 			SETFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK));   \
-		}                                                                                \
-		else                                                                             \
-		{                                                                                \
+		}                                                                              \
+		else                                                                           \
+		{                                                                              \
 			CLEARFLAG(__indirect__(diopin, TMRAREG), __indirect__(diopin, ENABLE_MASK)); \
-		}                                                                                \
+		}                                                                              \
 	}
 #define mcu_get_pwm(diopin) (__indirect__(diopin, OCRREG))
 
@@ -4624,12 +4624,12 @@ extern "C"
 #define F_CPU 16000000UL
 #endif
 #define ADC_PRESC (_min(7, (0xff & ((uint8_t)((float)(F_CPU / 100000) / LOG2)))))
-#define mcu_get_analog(diopin)                          \
-	{                                                   \
+#define mcu_get_analog(diopin)                      \
+	{                                                 \
 		ADMUX = (0x00 | __indirect__(diopin, CHANNEL)); \
 		ADCSRA = (0xC0 | ADC_PRESC);                    \
 		while (ADCSRA & 0x40)                           \
-			;                                           \
+			;                                             \
 		(0x3FF & ((ADCH << 8) | ADCL));                 \
 	}
 
@@ -4648,14 +4648,14 @@ extern "C"
 #define US_DELAY_TICK (F_CPU / 3000000UL)
 #define US_DELAY_TICK2 (F_CPU / 4000000UL)
 
-#define mcu_free_micros() ((1000UL*RTC_TCNT)/RTC_OCRA)
+#define mcu_free_micros() ((1000UL * RTC_TCNT) / RTC_OCRA)
 
 #ifdef MCU_HAS_SPI
-#define mcu_spi_xmit(X)               \
-	({                                \
+#define mcu_spi_xmit(X)           \
+	({                              \
 		SPDR = X;                     \
 		while (!(SPSR & (1 << SPIF))) \
-			;                         \
+			;                           \
 		SPDR;                         \
 	})
 #endif

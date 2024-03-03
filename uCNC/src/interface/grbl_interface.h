@@ -83,9 +83,9 @@ extern "C"
 #define STATUS_GCODE_INVALID_TARGET 33
 #define STATUS_GCODE_ARC_RADIUS_ERROR 34
 #define STATUS_GCODE_NO_OFFSETS_IN_PLANE 35
-#define STATUS_GCODE_UNUSED_WORDS 36		   //
+#define STATUS_GCODE_UNUSED_WORDS 36					 //
 #define STATUS_GCODE_G43_DYNAMIC_AXIS_ERROR 37 //
-#define STATUS_GCODE_MAX_VALUE_EXCEEDED 38	   //
+#define STATUS_GCODE_MAX_VALUE_EXCEEDED 38		 //
 // additional codes
 #define STATUS_BAD_COMMENT_FORMAT 39
 #define STATUS_INVALID_TOOL 40
@@ -101,7 +101,7 @@ extern "C"
 #define STATUS_SPINDLE_STOPPED 50
 #define STATUS_TMC_CMD_MISSING_ARGS 51
 #define STATUS_VFD_COMMUNICATION_FAILED 52
-#define STATUS_EXTERNAL_SETTINGS_OK 53 //deprecated
+#define STATUS_EXTERNAL_SETTINGS_OK 53 // deprecated
 #define STATUS_LASER_PPI_MODE_DISABLED 54
 #define STATUS_TOOL_FAILURE 55
 #define STATUS_INVALID_PLANE_SELECTED 56
@@ -140,19 +140,19 @@ extern "C"
 #define EXEC_ALARM_EMERGENCY_STOP -1
 #define EXEC_ALARM_NOALARM 0
 // Grbl alarm codes. Valid values (1-255). Zero is reserved for the reset alarm.
-#define EXEC_ALARM_HARD_LIMIT 1 // hard limits hit while in motion other then homing
-#define EXEC_ALARM_SOFT_LIMIT 2 // target is off bounds of the machine kinematics 
-#define EXEC_ALARM_ABORT_CYCLE 3 // an abort command was issued
-#define EXEC_ALARM_PROBE_FAIL_INITIAL 4 // probe was already triggered and was not able to initialize probing
-#define EXEC_ALARM_PROBE_FAIL_CONTACT 5 // probe failed to triggered before reaching the limit target
-#define EXEC_ALARM_HOMING_FAIL_RESET 6 // homing was aborted by a reset command
-#define EXEC_ALARM_HOMING_FAIL_DOOR 7 // door was opened during homing motion
-#define EXEC_ALARM_HOMING_FAIL_PULLOFF 8 // homing limits failed to normalize after retract by pull-distance
-#define EXEC_ALARM_HOMING_FAIL_APPROACH 9 // homing limits failed make initial contact
-#define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10 // homing limits failed make initial contact (self squaring)
-#define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11 // homing could not start since one of the limits was already triggered
-#define EXEC_ALARM_SPINDLE_SYNC_FAIL 12 // failed to achieve spindle sync speed
-#define EXEC_ALARM_HARD_LIMIT_NOMOTION 13 // hard limits were triggered without any motion (position was not lost)
+#define EXEC_ALARM_HARD_LIMIT 1										 // hard limits hit while in motion other then homing
+#define EXEC_ALARM_SOFT_LIMIT 2										 // target is off bounds of the machine kinematics
+#define EXEC_ALARM_ABORT_CYCLE 3									 // an abort command was issued
+#define EXEC_ALARM_PROBE_FAIL_INITIAL 4						 // probe was already triggered and was not able to initialize probing
+#define EXEC_ALARM_PROBE_FAIL_CONTACT 5						 // probe failed to triggered before reaching the limit target
+#define EXEC_ALARM_HOMING_FAIL_RESET 6						 // homing was aborted by a reset command
+#define EXEC_ALARM_HOMING_FAIL_DOOR 7							 // door was opened during homing motion
+#define EXEC_ALARM_HOMING_FAIL_PULLOFF 8					 // homing limits failed to normalize after retract by pull-distance
+#define EXEC_ALARM_HOMING_FAIL_APPROACH 9					 // homing limits failed make initial contact
+#define EXEC_ALARM_HOMING_FAIL_DUAL_APPROACH 10		 // homing limits failed make initial contact (self squaring)
+#define EXEC_ALARM_HOMING_FAIL_LIMIT_ACTIVE 11		 // homing could not start since one of the limits was already triggered
+#define EXEC_ALARM_SPINDLE_SYNC_FAIL 12						 // failed to achieve spindle sync speed
+#define EXEC_ALARM_HARD_LIMIT_NOMOTION 13					 // hard limits were triggered without any motion (position was not lost)
 #define EXEC_ALARM_PLASMA_THC_ARC_START_FAILURE 14 // failed to start arc with plasma THC
 
 // formated messages
@@ -189,7 +189,7 @@ extern "C"
 #define MSG_FEEDBACK_8 __romstr__("Pgm End")
 #define MSG_FEEDBACK_9 __romstr__("Restoring defaults")
 #define MSG_FEEDBACK_10 __romstr__("Restoring spindle")
-//#define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
+// #define MSG_FEEDBACK_11 __romstr__("Sleeping") not implemented
 /*NEW*/
 #define MSG_FEEDBACK_12 __romstr__("Check Emergency stop")
 #define MSG_FEEDBACK_13 __romstr__("Settings saved")
@@ -216,9 +216,9 @@ extern "C"
 #define MSG_STATUS_PIN __romstr__("|Pn:")
 #define MSG_STATUS_BUF __romstr__("|Buf:")
 
-	//#define MSG_INT "%d"
-	//#define MSG_FLT "%0.3f"
-	//#define MSG_FLT_IMPERIAL "%0.5f"
+	// #define MSG_INT "%d"
+	// #define MSG_FLT "%0.3f"
+	// #define MSG_FLT_IMPERIAL "%0.5f"
 
 #ifdef __cplusplus
 }

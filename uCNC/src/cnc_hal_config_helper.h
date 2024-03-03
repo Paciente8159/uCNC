@@ -53,9 +53,9 @@ extern "C"
 // machine tools configurations
 #include "hal/tools/tool.h" //configures the kinematics for the cnc machine
 // final HAL configurations
-#include "../cnc_hal_config.h"	  //inicializes the HAL hardcoded connections
+#include "../cnc_hal_config.h"		//inicializes the HAL hardcoded connections
 #include "../cnc_hal_overrides.h" //config override file
-#include "modules/ic74hc595.h"	  // io extender
+#include "modules/ic74hc595.h"		// io extender
 
 	/**
 	 *

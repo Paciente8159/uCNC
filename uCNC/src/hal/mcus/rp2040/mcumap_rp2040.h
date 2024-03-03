@@ -1126,20 +1126,20 @@ extern "C"
 
 #ifndef BYTE_OPS
 #define BYTE_OPS
-#define SETBIT(x, y) ((x) |= (1UL << (y)))	 /* Set bit y in byte x*/
+#define SETBIT(x, y) ((x) |= (1UL << (y)))		/* Set bit y in byte x*/
 #define CLEARBIT(x, y) ((x) &= ~(1UL << (y))) /* Clear bit y in byte x*/
-#define CHECKBIT(x, y) ((x) & (1UL << (y)))	 /* Check bit y in byte x*/
+#define CHECKBIT(x, y) ((x) & (1UL << (y)))		/* Check bit y in byte x*/
 #define TOGGLEBIT(x, y) ((x) ^= (1UL << (y))) /* Toggle bit y in byte x*/
 
-#define SETFLAG(x, y) ((x) |= (y))	  /* Set byte y in byte x*/
+#define SETFLAG(x, y) ((x) |= (y))		/* Set byte y in byte x*/
 #define CLEARFLAG(x, y) ((x) &= ~(y)) /* Clear byte y in byte x*/
-#define CHECKFLAG(x, y) ((x) & (y))	  /* Check byte y in byte x*/
+#define CHECKFLAG(x, y) ((x) & (y))		/* Check byte y in byte x*/
 #define TOGGLEFLAG(x, y) ((x) ^= (y)) /* Toggle byte y in byte x*/
 #endif
 
 #define mcu_config_output(X) pinMode(__indirect__(X, BIT), OUTPUT)
-#define mcu_config_pwm(X, freq)                \
-	{                                          \
+#define mcu_config_pwm(X, freq)            \
+	{                                        \
 		pinMode(__indirect__(X, BIT), OUTPUT); \
 		analogWriteRange(255);                 \
 		analogWriteFreq(freq);                 \
@@ -1157,8 +1157,8 @@ extern "C"
 #define mcu_toggle_output(X) ({ sio_hw->gpio_togl = (1UL << __indirect__(X, BIT)); })
 
 	extern uint8_t rp2040_pwm[16];
-#define mcu_set_pwm(X, Y)                     \
-	{                                         \
+#define mcu_set_pwm(X, Y)                 \
+	{                                       \
 		rp2040_pwm[X - PWM_PINS_OFFSET] = Y;  \
 		analogWrite(__indirect__(X, BIT), Y); \
 	}
@@ -1167,7 +1167,7 @@ extern "C"
 
 #define mcu_millis() millis()
 #define mcu_micros() micros()
-#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
+#define mcu_free_micros() ({         (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
 #if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
 #ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS

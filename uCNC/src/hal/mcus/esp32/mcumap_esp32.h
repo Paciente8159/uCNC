@@ -2797,34 +2797,34 @@ extern "C"
 #define ic74hc595_get_pin(pin) (__atomic_load_n((uint32_t *)&ic74hc595_i2s_pins, __ATOMIC_RELAXED) & ic74hc595_pin_mask(pin))
 #endif
 
-#define mcu_config_output(X)                                              \
-	{                                                                     \
+#define mcu_config_output(X)                                          \
+	{                                                                   \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                       \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT_OUTPUT); \
 	}
-#define mcu_config_input(X)                                        \
-	{                                                              \
+#define mcu_config_input(X)                                    \
+	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis(__indirect__(X, BIT));                   \
 		gpio_pullup_dis(__indirect__(X, BIT));                     \
 	}
 #define mcu_config_analog(X)                                                      \
-	{                                                                             \
-		mcu_config_input(X);                                                      \
-		adc1_config_width(ADC_WIDTH_MAX - 1);                                     \
+	{                                                                               \
+		mcu_config_input(X);                                                          \
+		adc1_config_width(ADC_WIDTH_MAX - 1);                                         \
 		adc1_config_channel_atten(__indirect__(X, ADC_CHANNEL), (ADC_ATTEN_MAX - 1)); \
 	}
-#define mcu_config_pullup(X)                                       \
-	{                                                              \
+#define mcu_config_pullup(X)                                   \
+	{                                                            \
 		gpio_pad_select_gpio(__indirect__(X, BIT));                \
 		gpio_set_direction(__indirect__(X, BIT), GPIO_MODE_INPUT); \
 		gpio_pulldown_dis(__indirect__(X, BIT));                   \
 		gpio_pullup_en(__indirect__(X, BIT));                      \
 	}
 	extern void mcu_gpio_isr(void *);
-#define mcu_config_input_isr(X)                                                                      \
-	{                                                                                                \
+#define mcu_config_input_isr(X)                                                                  \
+	{                                                                                              \
 		gpio_set_intr_type((__indirect__(X, BIT)), GPIO_INTR_ANYEDGE);                               \
 		gpio_isr_handler_add((__indirect__(X, BIT)), mcu_gpio_isr, (void *)__indirect__(X, ISRVAR)); \
 	}
@@ -2832,21 +2832,21 @@ extern "C"
 #define mcu_get_input(X) gpio_get_level(__indirect__(X, BIT))
 // #define mcu_get_input(X) ((__indirect__(X,INREG)->IN) & (1UL<<(0x1F & __indirect__(X, BIT))))
 #define mcu_get_output(X) ((__indirect__(X, OUTREG)->OUT) & (1UL << (0x1F & __indirect__(X, BIT))))
-#define mcu_set_output(X)                                                         \
-	{                                                                             \
+#define mcu_set_output(X)                                                     \
+	{                                                                           \
 		__indirect__(X, OUTREG)->OUTSET = (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-#define mcu_clear_output(X)                                                       \
-	{                                                                             \
+#define mcu_clear_output(X)                                                   \
+	{                                                                           \
 		__indirect__(X, OUTREG)->OUTCLR = (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
-#define mcu_toggle_output(X)                                                    \
-	{                                                                           \
+#define mcu_toggle_output(X)                                                \
+	{                                                                         \
 		__indirect__(X, OUTREG)->OUT ^= (1UL << (0x1F & __indirect__(X, BIT))); \
 	}
 
-#define mcu_config_pwm(X, Y)                              \
-	{                                                     \
+#define mcu_config_pwm(X, Y)                          \
+	{                                                   \
 		ledc_timer_config_t pwmtimer = {0};               \
 		pwmtimer.speed_mode = __indirect__(X, SPEEDMODE); \
 		pwmtimer.timer_num = __indirect__(X, TIMER);      \
@@ -2864,8 +2864,8 @@ extern "C"
 		ledc_channel_config(&pwm);                        \
 	}
 
-#define mcu_set_pwm(X, Y)                                                           \
-	{                                                                               \
+#define mcu_set_pwm(X, Y)                                                       \
+	{                                                                             \
 		ledc_set_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL), Y); \
 		ledc_update_duty(__indirect__(X, SPEEDMODE), __indirect__(X, LEDCCHANNEL)); \
 	}
@@ -2880,11 +2880,11 @@ extern "C"
 #endif
 
 #include "xtensa/core-macros.h"
-#define mcu_delay_cycles(X)                              \
-	{                                                    \
+#define mcu_delay_cycles(X)                          \
+	{                                                  \
 		uint32_t x = XTHAL_GET_CCOUNT();                 \
 		while (X > (((uint32_t)XTHAL_GET_CCOUNT()) - x)) \
-			;                                            \
+			;                                              \
 	}
 
 #ifdef __cplusplus

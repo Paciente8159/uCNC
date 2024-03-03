@@ -3939,12 +3939,12 @@ extern "C"
 #define io25_set_pwm(value) mcu_set_pwm(PWM0, value)
 #define io25_get_pwm mcu_get_pwm(PWM0)
 #elif ASSERT_PIN_EXTENDED(PWM0)
-#define io25_config_pwm(freq)                           \
-	{                                                   \
+#define io25_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io25_set_pwm(value)                                     \
-	{                                                           \
+#define io25_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM0 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io25_get_pwm g_io_soft_pwm[PWM0 - PWM_PINS_OFFSET]
@@ -3958,12 +3958,12 @@ extern "C"
 #define io26_set_pwm(value) mcu_set_pwm(PWM1, value)
 #define io26_get_pwm mcu_get_pwm(PWM1)
 #elif ASSERT_PIN_EXTENDED(PWM1)
-#define io26_config_pwm(freq)                           \
-	{                                                   \
+#define io26_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io26_set_pwm(value)                                     \
-	{                                                           \
+#define io26_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM1 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io26_get_pwm g_io_soft_pwm[PWM1 - PWM_PINS_OFFSET]
@@ -3977,12 +3977,12 @@ extern "C"
 #define io27_set_pwm(value) mcu_set_pwm(PWM2, value)
 #define io27_get_pwm mcu_get_pwm(PWM2)
 #elif ASSERT_PIN_EXTENDED(PWM2)
-#define io27_config_pwm(freq)                           \
-	{                                                   \
+#define io27_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io27_set_pwm(value)                                     \
-	{                                                           \
+#define io27_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM2 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io27_get_pwm g_io_soft_pwm[PWM2 - PWM_PINS_OFFSET]
@@ -3996,12 +3996,12 @@ extern "C"
 #define io28_set_pwm(value) mcu_set_pwm(PWM3, value)
 #define io28_get_pwm mcu_get_pwm(PWM3)
 #elif ASSERT_PIN_EXTENDED(PWM3)
-#define io28_config_pwm(freq)                           \
-	{                                                   \
+#define io28_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io28_set_pwm(value)                                     \
-	{                                                           \
+#define io28_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM3 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io28_get_pwm g_io_soft_pwm[PWM3 - PWM_PINS_OFFSET]
@@ -4015,12 +4015,12 @@ extern "C"
 #define io29_set_pwm(value) mcu_set_pwm(PWM4, value)
 #define io29_get_pwm mcu_get_pwm(PWM4)
 #elif ASSERT_PIN_EXTENDED(PWM4)
-#define io29_config_pwm(freq)                           \
-	{                                                   \
+#define io29_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io29_set_pwm(value)                                     \
-	{                                                           \
+#define io29_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM4 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io29_get_pwm g_io_soft_pwm[PWM4 - PWM_PINS_OFFSET]
@@ -4034,12 +4034,12 @@ extern "C"
 #define io30_set_pwm(value) mcu_set_pwm(PWM5, value)
 #define io30_get_pwm mcu_get_pwm(PWM5)
 #elif ASSERT_PIN_EXTENDED(PWM5)
-#define io30_config_pwm(freq)                           \
-	{                                                   \
+#define io30_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io30_set_pwm(value)                                     \
-	{                                                           \
+#define io30_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM5 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io30_get_pwm g_io_soft_pwm[PWM5 - PWM_PINS_OFFSET]
@@ -4053,12 +4053,12 @@ extern "C"
 #define io31_set_pwm(value) mcu_set_pwm(PWM6, value)
 #define io31_get_pwm mcu_get_pwm(PWM6)
 #elif ASSERT_PIN_EXTENDED(PWM6)
-#define io31_config_pwm(freq)                           \
-	{                                                   \
+#define io31_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io31_set_pwm(value)                                     \
-	{                                                           \
+#define io31_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM6 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io31_get_pwm g_io_soft_pwm[PWM6 - PWM_PINS_OFFSET]
@@ -4072,12 +4072,12 @@ extern "C"
 #define io32_set_pwm(value) mcu_set_pwm(PWM7, value)
 #define io32_get_pwm mcu_get_pwm(PWM7)
 #elif ASSERT_PIN_EXTENDED(PWM7)
-#define io32_config_pwm(freq)                           \
-	{                                                   \
+#define io32_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io32_set_pwm(value)                                     \
-	{                                                           \
+#define io32_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM7 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io32_get_pwm g_io_soft_pwm[PWM7 - PWM_PINS_OFFSET]
@@ -4091,12 +4091,12 @@ extern "C"
 #define io33_set_pwm(value) mcu_set_pwm(PWM8, value)
 #define io33_get_pwm mcu_get_pwm(PWM8)
 #elif ASSERT_PIN_EXTENDED(PWM8)
-#define io33_config_pwm(freq)                           \
-	{                                                   \
+#define io33_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io33_set_pwm(value)                                     \
-	{                                                           \
+#define io33_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM8 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io33_get_pwm g_io_soft_pwm[PWM8 - PWM_PINS_OFFSET]
@@ -4110,12 +4110,12 @@ extern "C"
 #define io34_set_pwm(value) mcu_set_pwm(PWM9, value)
 #define io34_get_pwm mcu_get_pwm(PWM9)
 #elif ASSERT_PIN_EXTENDED(PWM9)
-#define io34_config_pwm(freq)                           \
-	{                                                   \
+#define io34_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io34_set_pwm(value)                                     \
-	{                                                           \
+#define io34_set_pwm(value)                                 \
+	{                                                         \
 		g_io_soft_pwm[PWM9 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io34_get_pwm g_io_soft_pwm[PWM9 - PWM_PINS_OFFSET]
@@ -4129,12 +4129,12 @@ extern "C"
 #define io35_set_pwm(value) mcu_set_pwm(PWM10, value)
 #define io35_get_pwm mcu_get_pwm(PWM10)
 #elif ASSERT_PIN_EXTENDED(PWM10)
-#define io35_config_pwm(freq)                           \
-	{                                                   \
+#define io35_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io35_set_pwm(value)                                      \
-	{                                                            \
+#define io35_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM10 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io35_get_pwm g_io_soft_pwm[PWM10 - PWM_PINS_OFFSET]
@@ -4148,12 +4148,12 @@ extern "C"
 #define io36_set_pwm(value) mcu_set_pwm(PWM11, value)
 #define io36_get_pwm mcu_get_pwm(PWM11)
 #elif ASSERT_PIN_EXTENDED(PWM11)
-#define io36_config_pwm(freq)                           \
-	{                                                   \
+#define io36_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io36_set_pwm(value)                                      \
-	{                                                            \
+#define io36_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM11 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io36_get_pwm g_io_soft_pwm[PWM11 - PWM_PINS_OFFSET]
@@ -4167,12 +4167,12 @@ extern "C"
 #define io37_set_pwm(value) mcu_set_pwm(PWM12, value)
 #define io37_get_pwm mcu_get_pwm(PWM12)
 #elif ASSERT_PIN_EXTENDED(PWM12)
-#define io37_config_pwm(freq)                           \
-	{                                                   \
+#define io37_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io37_set_pwm(value)                                      \
-	{                                                            \
+#define io37_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM12 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io37_get_pwm g_io_soft_pwm[PWM12 - PWM_PINS_OFFSET]
@@ -4186,12 +4186,12 @@ extern "C"
 #define io38_set_pwm(value) mcu_set_pwm(PWM13, value)
 #define io38_get_pwm mcu_get_pwm(PWM13)
 #elif ASSERT_PIN_EXTENDED(PWM13)
-#define io38_config_pwm(freq)                           \
-	{                                                   \
+#define io38_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io38_set_pwm(value)                                      \
-	{                                                            \
+#define io38_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM13 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io38_get_pwm g_io_soft_pwm[PWM13 - PWM_PINS_OFFSET]
@@ -4205,12 +4205,12 @@ extern "C"
 #define io39_set_pwm(value) mcu_set_pwm(PWM14, value)
 #define io39_get_pwm mcu_get_pwm(PWM14)
 #elif ASSERT_PIN_EXTENDED(PWM14)
-#define io39_config_pwm(freq)                           \
-	{                                                   \
+#define io39_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io39_set_pwm(value)                                      \
-	{                                                            \
+#define io39_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM14 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io39_get_pwm g_io_soft_pwm[PWM14 - PWM_PINS_OFFSET]
@@ -4224,12 +4224,12 @@ extern "C"
 #define io40_set_pwm(value) mcu_set_pwm(PWM15, value)
 #define io40_get_pwm mcu_get_pwm(PWM15)
 #elif ASSERT_PIN_EXTENDED(PWM15)
-#define io40_config_pwm(freq)                           \
-	{                                                   \
+#define io40_config_pwm(freq)                       \
+	{                                                 \
 		g_soft_pwm_res = mcu_softpwm_freq_config(freq); \
 	}
-#define io40_set_pwm(value)                                      \
-	{                                                            \
+#define io40_set_pwm(value)                                  \
+	{                                                          \
 		g_io_soft_pwm[PWM15 - PWM_PINS_OFFSET] = (0xFF & value); \
 	}
 #define io40_get_pwm g_io_soft_pwm[PWM15 - PWM_PINS_OFFSET]

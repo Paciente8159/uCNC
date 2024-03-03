@@ -8,6 +8,55 @@
 
 # Changelog
 
+## [1.8.8] - 03-03-2024
+
+## Contributors
+[@lonelycorn](https://github.com/lonelycorn) - modified mcumap macros of ESP32 to improve support for ESP32 family (#649) and removed duplicated servo variables for ESP32 (#648)
+[@ademenev](https://github.com/ademenev) - added kinematics option for MP Scara (#645)
+
+### Added
+
+- Fs page update endpoint (#612)
+- added option for rotational axis work always in relative distances (#624)
+- STM32 NucleoF411RE boardmap with CNC Shield V3 (#628)
+- added option to enable translated pins names status print (#634)
+- added kinematics option for MP Scara (#645)
+- added aditional Grbl emulation level to prevent miss detection of senders (#650)
+- added option to do limit detection at the step ISR (#652)
+
+### Changed
+
+- allow execution of main loop events with HOLD condition active (#633)
+- modified extended settings event hooks to be separated from other overriding events and propagations methods (#635) (#637) (#641)
+- allow detached ports to keep or not an internal buffer (#639)
+- cross architecture definition of NVM_STORAGE_SIZE and setting (#643)
+- moved spindle restore logic to planner override (#647)
+- modified mcumap macros of ESP32 to improve support for ESP32 family (#649) (#654)
+- modified endpoints to support handling of wildcard terminators (#655)
+- on command error now also the parser is forced to sync with other sub-systems (#657)
+- modified behavior of Cycle Start/Resume button to execute only once per press (#657)
+
+### Fixed
+
+- fixed extensions settings event handling that prevented extended settings to be saved (#615)
+- fixed STM32F4 compilation error when I2C HW was defined (#615)
+- fixed program stall while waiting for timeout condition inside an ISR (#619)
+- fixed STM32F4 SPI configuration AFIO fixed (#622)
+- fixed range function for Plasma THC (#627)
+- fixed STM32F4 APB registers of timers in the mcumap (#629)
+- fixed compilation error when tool count was set to 0 (#632)
+- fixed realtime command spindle toggle control over the tool (#631)
+- fixed spindle restart message spawning (#636)
+- fixed uart2 detach from main protocol typo in multiple boards (#638)
+- fixed reset command parsing and early execution (#642)
+- fixed spindle stop/restore after cancel a jog (#644)
+- fixed dwell/delay execute even after a reset occured (#646)
+- removed duplicated servo variables for ESP32 (#648)
+- fixed low speed clock options for STM32F1 (#653)
+- fixed STM32 I2C stop bit logic to prevent trail of pulses at the end of a read operation (#656)
+- fixed pending jog motions after jog cancel (#657)
+- fixed interpolator acceleration calculations to prevent ultra thin time sampling windows (#657)
+
 ## [1.8.7] - 03-02-2024
 
 ## Contributors

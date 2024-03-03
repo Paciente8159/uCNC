@@ -40,7 +40,7 @@
 #define INT8_MIN (-128)
 #define INT16_MIN (-32768)
 #define INT32_MIN (-2147483647 - 1)
-#define INT64_MIN  (-9223372036854775807LL - 1)
+#define INT64_MIN (-9223372036854775807LL - 1)
 
 #define INT8_MAX 127
 #define INT16_MAX 32767
@@ -49,10 +49,10 @@
 
 #define UINT8_MAX 255
 #define UINT16_MAX 65535
-#define UINT32_MAX 0xffffffffU  /* 4294967295U */
+#define UINT32_MAX 0xffffffffU					 /* 4294967295U */
 #define UINT64_MAX 0xffffffffffffffffULL /* 18446744073709551615ULL */
 
-//needed by software delays
+// needed by software delays
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
@@ -70,7 +70,7 @@
 
 #define MCU_HAS_UART2
 
-//#define EMULATE_74HC595
+// #define EMULATE_74HC595
 
 // joints step/dir pins
 #ifndef EMULATE_74HC595
@@ -148,7 +148,7 @@
 #define STEP5_EN_IO_OFFSET 21
 #define STEP6_EN_IO_OFFSET 22
 #define STEP7_EN_IO_OFFSET 23
-//#define PWM0_IO_OFFSET 24
+// #define PWM0_IO_OFFSET 24
 #endif
 #define PWM0 25
 #define DIO25 25

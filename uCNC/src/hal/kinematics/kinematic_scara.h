@@ -38,11 +38,10 @@ extern "C"
 #define KINEMATICS_MOTION_SEGMENT_SIZE 1.0f
 #endif
 
-
 	/*
 	Enable Skew compensation
 */
-	//#define ENABLE_SKEW_COMPENSATION
+	// #define ENABLE_SKEW_COMPENSATION
 
 #ifdef __cplusplus
 }
