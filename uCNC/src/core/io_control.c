@@ -145,8 +145,9 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 #else
 	static volatile uint8_t prev_controls = 0;
 	uint8_t controls = io_get_controls();
+	uint8_t changed = prev_controls ^ controls;
 
-	if (!(prev_controls ^ controls))
+	if (!changed)
 	{
 		return;
 	}
@@ -180,7 +181,7 @@ MCU_IO_CALLBACK void mcu_controls_changed_cb(void)
 	}
 #endif
 #if ASSERT_PIN(CS_RES)
-	if (CHECKFLAG(controls, CS_RES_MASK))
+	if (CHECKFLAG(controls & changed, CS_RES_MASK))
 	{
 		cnc_call_rt_command(CMD_CODE_CYCLE_START);
 	}
