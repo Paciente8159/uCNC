@@ -91,11 +91,11 @@ extern "C"
 
 #ifdef ENABLE_DEBUG_STREAM
 #ifndef DEBUG_STREAM
-extern serial_stream_t *default_stream;
+	extern serial_stream_t *default_stream;
 #define DEBUG_STREAM default_stream
 #endif
 
-extern void debug_putc(char c);
+	extern void debug_putc(char c);
 #define DEBUG_PUTC(c) debug_putc(c)
 #define DEBUG_STR(__s) print_str(debug_putc, __s)
 #define DEBUG_BYTES(data, count) print_bytes(debug_putc, data, count)

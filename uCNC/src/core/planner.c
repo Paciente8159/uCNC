@@ -271,9 +271,7 @@ static void planner_buffer_clear(void)
 	planner_data_write = 0;
 	planner_data_read = 0;
 	planner_data_blocks = 0;
-#ifdef FORCE_GLOBALS_TO_0
 	memset(planner_data, 0, sizeof(planner_data));
-#endif
 }
 
 void planner_init(void)

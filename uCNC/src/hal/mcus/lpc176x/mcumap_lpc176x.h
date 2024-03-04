@@ -68,47 +68,47 @@ extern "C"
 #define rom_read_byte *
 
 #define __IM volatile const /*! Defines 'read only' structure member permissions */
-#define __IOM volatile		/*! Defines 'read / write' structure member permissions */
+#define __IOM volatile			/*! Defines 'read / write' structure member permissions */
 
 	typedef struct
 	{
-		__IOM uint32_t CTRL;	  /*!< Offset: 0x000 (R/W)  Control Register */
-		__IOM uint32_t CYCCNT;	  /*!< Offset: 0x004 (R/W)  Cycle Count Register */
-		__IOM uint32_t CPICNT;	  /*!< Offset: 0x008 (R/W)  CPI Count Register */
-		__IOM uint32_t EXCCNT;	  /*!< Offset: 0x00C (R/W)  Exception Overhead Count Register */
-		__IOM uint32_t SLEEPCNT;  /*!< Offset: 0x010 (R/W)  Sleep Count Register */
-		__IOM uint32_t LSUCNT;	  /*!< Offset: 0x014 (R/W)  LSU Count Register */
-		__IOM uint32_t FOLDCNT;	  /*!< Offset: 0x018 (R/W)  Folded-instruction Count Register */
-		__IM uint32_t PCSR;		  /*!< Offset: 0x01C (R/ )  Program Counter Sample Register */
-		__IOM uint32_t COMP0;	  /*!< Offset: 0x020 (R/W)  Comparator Register 0 */
-		__IOM uint32_t MASK0;	  /*!< Offset: 0x024 (R/W)  Mask Register 0 */
+		__IOM uint32_t CTRL;			/*!< Offset: 0x000 (R/W)  Control Register */
+		__IOM uint32_t CYCCNT;		/*!< Offset: 0x004 (R/W)  Cycle Count Register */
+		__IOM uint32_t CPICNT;		/*!< Offset: 0x008 (R/W)  CPI Count Register */
+		__IOM uint32_t EXCCNT;		/*!< Offset: 0x00C (R/W)  Exception Overhead Count Register */
+		__IOM uint32_t SLEEPCNT;	/*!< Offset: 0x010 (R/W)  Sleep Count Register */
+		__IOM uint32_t LSUCNT;		/*!< Offset: 0x014 (R/W)  LSU Count Register */
+		__IOM uint32_t FOLDCNT;		/*!< Offset: 0x018 (R/W)  Folded-instruction Count Register */
+		__IM uint32_t PCSR;				/*!< Offset: 0x01C (R/ )  Program Counter Sample Register */
+		__IOM uint32_t COMP0;			/*!< Offset: 0x020 (R/W)  Comparator Register 0 */
+		__IOM uint32_t MASK0;			/*!< Offset: 0x024 (R/W)  Mask Register 0 */
 		__IOM uint32_t FUNCTION0; /*!< Offset: 0x028 (R/W)  Function Register 0 */
 		uint32_t RESERVED0[1U];
-		__IOM uint32_t COMP1;	  /*!< Offset: 0x030 (R/W)  Comparator Register 1 */
-		__IOM uint32_t MASK1;	  /*!< Offset: 0x034 (R/W)  Mask Register 1 */
+		__IOM uint32_t COMP1;			/*!< Offset: 0x030 (R/W)  Comparator Register 1 */
+		__IOM uint32_t MASK1;			/*!< Offset: 0x034 (R/W)  Mask Register 1 */
 		__IOM uint32_t FUNCTION1; /*!< Offset: 0x038 (R/W)  Function Register 1 */
 		uint32_t RESERVED1[1U];
-		__IOM uint32_t COMP2;	  /*!< Offset: 0x040 (R/W)  Comparator Register 2 */
-		__IOM uint32_t MASK2;	  /*!< Offset: 0x044 (R/W)  Mask Register 2 */
+		__IOM uint32_t COMP2;			/*!< Offset: 0x040 (R/W)  Comparator Register 2 */
+		__IOM uint32_t MASK2;			/*!< Offset: 0x044 (R/W)  Mask Register 2 */
 		__IOM uint32_t FUNCTION2; /*!< Offset: 0x048 (R/W)  Function Register 2 */
 		uint32_t RESERVED2[1U];
-		__IOM uint32_t COMP3;	  /*!< Offset: 0x050 (R/W)  Comparator Register 3 */
-		__IOM uint32_t MASK3;	  /*!< Offset: 0x054 (R/W)  Mask Register 3 */
+		__IOM uint32_t COMP3;			/*!< Offset: 0x050 (R/W)  Comparator Register 3 */
+		__IOM uint32_t MASK3;			/*!< Offset: 0x054 (R/W)  Mask Register 3 */
 		__IOM uint32_t FUNCTION3; /*!< Offset: 0x058 (R/W)  Function Register 3 */
 	} DWT_Type;
 
-#define DWT_BASE (0xE0001000UL)	   /*!< DWT Base Address */
+#define DWT_BASE (0xE0001000UL)		 /*!< DWT Base Address */
 #define DWT ((DWT_Type *)DWT_BASE) /*!< DWT configuration struct */
 
 // custom cycle counter
 #ifndef MCU_CLOCKS_PER_CYCLE
 #define MCU_CLOCKS_PER_CYCLE 1
 #endif
-#define mcu_delay_cycles(X)     \
-	{                           \
+#define mcu_delay_cycles(X) \
+	{                         \
 		DWT->CYCCNT = 0;        \
 		while (X > DWT->CYCCNT) \
-			;                   \
+			;                     \
 	}
 
 // Helper macros
@@ -2871,7 +2871,6 @@ extern "C"
 #define DIO211_PINCON RX2_PINCON
 #endif
 
-
 #if (defined(TX) && defined(RX))
 #define MCU_HAS_UART
 #endif
@@ -3841,37 +3840,37 @@ extern "C"
 #define __indirect__(X, Y) __indirect__ex__(X, Y)
 #endif
 
-#define mcu_config_output(diopin)                                                                                            \
-	{                                                                                                                        \
+#define mcu_config_output(diopin)                                                                                        \
+	{                                                                                                                      \
 		SETBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                            \
 		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
-#define mcu_config_output_od(diopin)                                                                                          \
-	{                                                                                                                         \
+#define mcu_config_output_od(diopin)                                                                                      \
+	{                                                                                                                       \
 		mcu_config_output(diopin);                                                                                            \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) |= (2 << ((__indirect__(diopin, BIT) & 0x0F) << 1));  \
 		LPC_PINCON->__helper__(PINMODE_OD, __indirect__(diopin, PORT), ) |= (1 << (__indirect__(diopin, BIT)));               \
 	}
 
-#define mcu_config_input(diopin)                                                                                             \
-	{                                                                                                                        \
+#define mcu_config_input(diopin)                                                                                         \
+	{                                                                                                                      \
 		CLEARBIT(__indirect__(diopin, GPIOREG)->FIODIR, __indirect__(diopin, BIT));                                          \
 		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
-#define mcu_config_pullup(diopin)                                                                                             \
-	{                                                                                                                         \
+#define mcu_config_pullup(diopin)                                                                                         \
+	{                                                                                                                       \
 		LPC_PINCON->__helper__(PINMODE, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
 
-#define mcu_config_af(diopin, mode)                                                                                            \
-	{                                                                                                                          \
+#define mcu_config_af(diopin, mode)                                                                                        \
+	{                                                                                                                        \
 		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) &= ~(3 << ((__indirect__(diopin, BIT) & 0x0F) << 1));   \
 		LPC_PINCON->__helper__(PINSEL, __indirect__(diopin, PINCON), ) |= (mode << ((__indirect__(diopin, BIT) & 0x0F) << 1)); \
 	}
 
-#define mcu_config_analog(diopin)                                                           \
-	{                                                                                       \
+#define mcu_config_analog(diopin)                                                       \
+	{                                                                                     \
 		mcu_config_input(diopin);                                                           \
 		mcu_config_af(diopin, __indirect__(diopin, ALT_FUNC));                              \
 		LPC_SC->PCONP |= CLKPWR_PCONP_PCAD;                                                 \
@@ -3882,8 +3881,8 @@ extern "C"
 		LPC_ADC->ADCR |= ADC_CR_BURST;                                                      \
 	}
 
-#define mcu_config_input_isr(diopin)                                                   \
-	{                                                                                  \
+#define mcu_config_input_isr(diopin)                                               \
+	{                                                                                \
 		SETBIT(LPC_GPIOINT->__indirect__(diopin, RISEREG), __indirect__(diopin, BIT)); \
 		SETBIT(LPC_GPIOINT->__indirect__(diopin, FALLREG), __indirect__(diopin, BIT)); \
 		NVIC_SetPriority(EINT3_IRQn, 5);                                               \
@@ -3891,8 +3890,8 @@ extern "C"
 		NVIC_EnableIRQ(EINT3_IRQn);                                                    \
 	}
 
-#define mcu_config_pwm(diopin, freq)                                          \
-	{                                                                         \
+#define mcu_config_pwm(diopin, freq)                                      \
+	{                                                                       \
 		mcu_config_output(diopin);                                            \
 		LPC_SC->PCONP |= CLKPWR_PCONP_PCPWM1;                                 \
 		LPC_SC->PCLKSEL0 &= ~(3 << 12); /* div clock by 4 */                  \
@@ -3918,8 +3917,8 @@ extern "C"
 #define mcu_set_output(diopin) (__indirect__(diopin, GPIOREG)->FIOSET = (1 << __indirect__(diopin, BIT)))
 #define mcu_clear_output(diopin) (__indirect__(diopin, GPIOREG)->FIOCLR = (1 << __indirect__(diopin, BIT)))
 #define mcu_toggle_output(diopin) TOGGLEBIT(__indirect__(diopin, GPIOREG)->FIOPIN, __indirect__(diopin, BIT))
-#define mcu_set_pwm(diopin, pwmvalue)                                                                                      \
-	{                                                                                                                      \
+#define mcu_set_pwm(diopin, pwmvalue)                                                                                  \
+	{                                                                                                                    \
 		LPC_PWM1->__indirect__(diopin, MR) = pwmvalue;                                                                     \
 		LPC_PWM1->LER |= ((uint32_t)(((__indirect__(diopin, CHANNEL)) < 7) ? (1 << (__indirect__(diopin, CHANNEL))) : 0)); \
 		LPC_PWM1->TCR |= ((uint32_t)(1 << 1));                                                                             \
@@ -3930,24 +3929,24 @@ extern "C"
 #define mcu_get_analog(diopin) (uint16_t)(((LPC_ADC->__indirect__(diopin, ADDR)) >> 2) & 0x03FF)
 
 	extern volatile bool lpc_global_isr_enabled;
-#define mcu_enable_global_isr()        \
-	{                                  \
+#define mcu_enable_global_isr()    \
+	{                                \
 		__enable_irq();                \
 		lpc_global_isr_enabled = true; \
 	}
-#define mcu_disable_global_isr()        \
-	{                                   \
+#define mcu_disable_global_isr()    \
+	{                                 \
 		lpc_global_isr_enabled = false; \
 		__disable_irq();                \
 	}
 #define mcu_get_global_isr() lpc_global_isr_enabled
-#define mcu_free_micros() ({(1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD));})
+#define mcu_free_micros() ({                  (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
 
-#define mcu_spi_xmit(X)                     \
-	({                                      \
+#define mcu_spi_xmit(X)                 \
+	({                                    \
 		SPI_REG->DR = X;                    \
 		while (!(SPI_REG->SR & SSP_SR_RNE)) \
-			;                               \
+			;                                 \
 		SPI_REG->DR;                        \
 	})
 

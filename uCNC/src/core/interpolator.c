@@ -460,14 +460,21 @@ void itp_run(void)
 #endif
 				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_acc_integrator = t * slices_inv;
-#if S_CURVE_ACCELERATION_LEVEL != 0
-				acc_step = slices_inv;
-#endif
-				if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+				if (slices_inv)
 				{
-					t_acc_integrator = -t_acc_integrator;
+					t_acc_integrator = t * slices_inv;
+#if S_CURVE_ACCELERATION_LEVEL != 0
+					acc_step = slices_inv;
+#endif
+					if ((junction_speed_sqr < itp_cur_plan_block->entry_feed_sqr))
+					{
+						t_acc_integrator = -t_acc_integrator;
+					}
+				}
+				else
+				{
+					accel_until = remaining_steps;
 				}
 			}
 
@@ -491,12 +498,23 @@ void itp_run(void)
 #endif
 				t *= accel_inv;
 				// slice up time in an integral number of periods (half with positive jerk and half with negative)
-				float slices_inv = fast_flt_inv(ceilf(INTERPOLATOR_FREQ * t));
-				t_deac_integrator = t * slices_inv;
+				float slices_inv = fast_flt_inv(floorf(INTERPOLATOR_FREQ * t));
+				if (slices_inv)
+				{
+					t_deac_integrator = t * slices_inv;
+					if (t_deac_integrator < 0.00001f)
+					{
+						t_deac_integrator = 0.0001f;
+					}
 
 #if S_CURVE_ACCELERATION_LEVEL != 0
-				deac_step = slices_inv;
+					deac_step = slices_inv;
 #endif
+				}
+				else
+				{
+					deaccel_from = remaining_steps;
+				}
 			}
 		}
 
@@ -1377,4 +1395,4 @@ itp_segment_t *itp_get_rt_segment()
 	return (itp_sgm_is_empty()) ? NULL : &itp_sgm_data[itp_sgm_data_read];
 }
 
-uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) {return 0;}
+uint8_t __attribute__((weak)) itp_set_step_mode(uint8_t mode) { return 0; }

@@ -217,8 +217,10 @@ uint8_t cnc_parse_cmd(void)
 		}
 		else
 		{
-			parser_sync_position();
 			protocol_send_error(error);
+			itp_sync();
+			mc_sync_position();
+			parser_sync_position();
 #ifdef ENABLE_MAIN_LOOP_MODULES
 			EVENT_INVOKE(cnc_parse_cmd_error, &error);
 #endif
@@ -654,6 +656,13 @@ void cnc_call_rt_command(uint8_t command)
 		break;
 	case CMD_CODE_FEED_HOLD:
 		SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+		__FALL_THROUGH__
+case CMD_CODE_JOG_CANCEL:
+		if (cnc_get_exec_state(EXEC_JOG))
+		{
+			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
+			SETFLAG(cnc_state.rt_cmd, RT_CMD_JOG_CANCEL);
+		}
 		break;
 	case CMD_CODE_REPORT:
 		SETFLAG(cnc_state.rt_cmd, RT_CMD_REPORT);
@@ -669,12 +678,6 @@ void cnc_call_rt_command(uint8_t command)
 		SETFLAG(cnc_state.exec_state, (EXEC_HOLD | EXEC_DOOR));
 		break;
 #endif
-	case CMD_CODE_JOG_CANCEL:
-		if (cnc_get_exec_state(EXEC_JOG))
-		{
-			SETFLAG(cnc_state.exec_state, EXEC_HOLD);
-		}
-		break;
 	default:
 		if (command >= CMD_CODE_FEED_100 && command <= CMD_CODE_RAPIDFEED_OVR2)
 		{
@@ -728,7 +731,9 @@ void cnc_exec_rt_commands(void)
 	if (command)
 	{
 		// clear all but report. report is handled in cnc_io_dotasks
-		cnc_state.rt_cmd = RT_CMD_CLEAR;
+		__ATOMIC__{
+			cnc_state.rt_cmd = RT_CMD_CLEAR;
+		}
 		if (CHECKFLAG(command, RT_CMD_RESET))
 		{
 			if (cnc_get_exec_state(EXEC_HOMING))
@@ -745,6 +750,17 @@ void cnc_exec_rt_commands(void)
 
 			cnc_alarm(EXEC_ALARM_SOFTRESET);
 			cnc_state.loop_state = LOOP_STARTUP_RESET;
+			return;
+		}
+
+		if (CHECKFLAG(command, RT_CMD_JOG_CANCEL))
+		{
+			while(serial_available()){
+				char c = serial_getc();
+				if(c == EOL){
+					protocol_send_error(STATUS_JOG_CANCELED);
+				}
+			}
 			return;
 		}
 
@@ -996,6 +1012,9 @@ bool cnc_check_interlocking(void)
 				planner_discard_block();
 			}
 			mc_sync_position();
+			parser_sync_position();
+			// flush all pending commands and motions 
+			mc_flush_pending_motion();
 			// homing will be cleared inside homing cycle
 			cnc_clear_exec_state(EXEC_HOLD | EXEC_JOG);
 		}
@@ -1017,12 +1036,9 @@ static void cnc_io_dotasks(void)
 {
 	// run internal mcu tasks (USB and communications)
 	mcu_dotasks();
-
-	// checks inputs and triggers ISR checks if enforced soft polling
-#if defined(FORCE_SOFT_POLLING)
 	mcu_limits_changed_cb();
 	mcu_controls_changed_cb();
-#endif
+	
 #if (DIN_ONCHANGE_MASK != 0 && ENCODERS < 1)
 	// extra call in case generic inputs are running with ISR disabled. Encoders need propper ISR to work.
 	mcu_inputs_changed_cb();

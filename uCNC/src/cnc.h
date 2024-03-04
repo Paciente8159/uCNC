@@ -28,8 +28,9 @@ extern "C"
 #define RT_CMD_CLEAR 0
 
 #define RT_CMD_RESET 1
-#define RT_CMD_CYCLE_START 2
-#define RT_CMD_REPORT 4
+#define RT_CMD_JOG_CANCEL 2
+#define RT_CMD_CYCLE_START 4
+#define RT_CMD_REPORT 8
 
 // feed_ovr_cmd
 #define RT_CMD_FEED_100 1
@@ -52,40 +53,40 @@ extern "C"
 
 /**
  * Flags and state changes
- * 
+ *
  * EXEC_KILL
  * Set by cnc_alarm.
- * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed. 
- * 
+ * Cleared by reset or unlock depending on the the alarm priority. Cannot be cleared if ESTOP is pressed.
+ *
  * EXEC_LIMITS
- * Set when at a transition of a limit switch from inactive to the active state. 
+ * Set when at a transition of a limit switch from inactive to the active state.
  * Cleared by reset or unlock. Not affected by the limit switch state.
- * 
+ *
  * EXEC_UNHOMED
  * Set when the interpolator is abruptly stopped causing the position to be lost.
  * Cleared by homing or unlock.
- * 
+ *
  * EXEC_DOOR
  * Set with when the safety door pin is active or the safety door command is called.
  * Cleared by cycle resume, unlock or reset. If the door is opened it will remain active
- * 
+ *
  */
 // current cnc states (multiple can be active/overlapped at the same time)
-#define EXEC_IDLE 0															// All flags cleared
-#define EXEC_RUN 1															// Motions are being executed
-#define EXEC_HOLD 2															// Feed hold is active
-#define EXEC_JOG 4															// Jogging in execution
-#define EXEC_HOMING 8														// Homing in execution
-#define EXEC_DOOR 16														// Safety door open
-#define EXEC_UNHOMED 32														// Machine is not homed or lost position due to abrupt stop
-#define EXEC_LIMITS 64														// Limits hit
-#define EXEC_KILL 128														// Emergency stop
-#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)							// Limit switch is active during a homing motion
-#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)					// Interlocking check failed
-#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)					// System alarms
-#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD)				// System reset locked
-#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG) 				// Gcode is locked by an alarm or any special motion state
-#define EXEC_ALLACTIVE 255													// All states
+#define EXEC_IDLE 0																						 // All flags cleared
+#define EXEC_RUN 1																						 // Motions are being executed
+#define EXEC_HOLD 2																						 // Feed hold is active
+#define EXEC_JOG 4																						 // Jogging in execution
+#define EXEC_HOMING 8																					 // Homing in execution
+#define EXEC_DOOR 16																					 // Safety door open
+#define EXEC_UNHOMED 32																				 // Machine is not homed or lost position due to abrupt stop
+#define EXEC_LIMITS 64																				 // Limits hit
+#define EXEC_KILL 128																					 // Emergency stop
+#define EXEC_HOMING_HIT (EXEC_HOMING | EXEC_LIMITS)						 // Limit switch is active during a homing motion
+#define EXEC_INTERLOCKING_FAIL (EXEC_LIMITS | EXEC_KILL)			 // Interlocking check failed
+#define EXEC_ALARM (EXEC_UNHOMED | EXEC_INTERLOCKING_FAIL)		 // System alarms
+#define EXEC_RESET_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_HOLD) // System reset locked
+#define EXEC_GCODE_LOCKED (EXEC_ALARM | EXEC_DOOR | EXEC_JOG)	 // Gcode is locked by an alarm or any special motion state
+#define EXEC_ALLACTIVE 255																		 // All states
 
 // creates a set of helper masks used to configure the controller
 #define ESTOP_MASK 1
@@ -98,14 +99,14 @@ extern "C"
 /**
  * Basic step and dir IO masks
  * STEPS DIRS and LIMITS can be combined to form MULTI AXIS/LIMITS combinations
- * 
+ *
  * Usually (depends on the kinematic) STEP0 is assigned to AXIS X, STEP1 is assigned to AXIS Y, etc..
  * But STEP0 can be formed by multiple STEPPERS (for example STEPPER0, STEPPER5, STEPPER6 and STEPPER7)
- * 
+ *
  * STEP0_MASK can then be formed by a combinations of stepper IO masks like this
- * 
+ *
  * #define STEP0_MASK (STEPPER0_IO_MASK | STEPPER5_IO_MASK | STEPPER6_IO_MASK | STEPPER7_IO_MASK)
- * 
+ *
  * For auto-squaring LIMITS should also match this STEPx mask by merging all combined limits to form a multi-switch limit
  * **/
 #define STEP_UNDEF_IO_MASK 0
