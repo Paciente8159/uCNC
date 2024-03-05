@@ -413,7 +413,6 @@ extern "C"
 	void fs_file_updater()
 	{
 		static File upload_file;
-		
 		if (!web_server.uri().startsWith(FS_URI) || (web_server.method() != HTTP_POST && web_server.method() != HTTP_PUT))
 		{
 			return;
@@ -475,7 +474,7 @@ extern "C"
 			return;
 		}
 
-		fp = FLASH_FS.open(urlpath);
+		fp = FLASH_FS.open(urlpath, "r");
 
 		switch (web_server.method())
 		{
@@ -514,6 +513,7 @@ extern "C"
 				endpoint_send(200, "application/json", path);
 				endpoint_send(200, "application/json", "\",\"data\":[");
 				File file = fp.openNextFile();
+				
 				while (file)
 				{
 					memset(path, 0, 256);
@@ -523,18 +523,23 @@ extern "C"
 					}
 					else
 					{
-						sprintf(path, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%lu,\"date\":0},", file.name(), (unsigned long int)file.size());
+						sprintf(path, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%lu,\"date\":0}", file.name(), (unsigned long int)file.size());
+					}
+
+					file = fp.openNextFile();
+					if(file){
+						// trailling comma
+						path[strlen(path)] = ',';
 					}
 					endpoint_send(200, "application/json", path);
-					file = fp.openNextFile();
 				}
-				endpoint_send(200, "application/json", "]}");
+				endpoint_send(200, "application/json", "]}\n");
 				// close the stream
 				endpoint_send(200, "application/json", "");
 			}
 			else
 			{
-				web_server.streamFile(fp, "text/plain");
+				web_server.streamFile(fp, "application/octet-stream");
 			}
 			break;
 		}
@@ -727,8 +732,8 @@ extern "C"
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
 		FLASH_FS.begin(true, FS_URI);
-		endpoint_add(FS_URI, HTTP_GET, fs_file_browser, fs_file_updater);
-		endpoint_add(FS_URI "/*", HTTP_GET, fs_file_browser, fs_file_updater);
+		endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
+		endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
 		web_server.begin();
 #ifdef MCU_HAS_WEBSOCKETS
 		socket_server.begin();
