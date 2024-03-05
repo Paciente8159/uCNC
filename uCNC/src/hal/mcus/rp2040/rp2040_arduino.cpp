@@ -845,8 +845,6 @@ uint8_t rp2040_wifi_bt_read(void)
 void rp2040_wifi_bt_process(void)
 {
 #ifdef MCU_HAS_WIFI
-	DECL_BUFFER(uint8_t, wifi_rx, RX_BUFFER_SIZE);
-
 	if (rp2040_wifi_clientok())
 	{
 		while (server_client.available() > 0)
