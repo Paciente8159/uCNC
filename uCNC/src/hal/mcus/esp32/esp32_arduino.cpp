@@ -419,7 +419,7 @@ extern "C"
 
 	void fs_file_updater()
 	{
-		if (web_server.uri() != FS_WRITE_URI || web_server.method() != HTTP_POST || !web_server.hasArg("update"))
+		if (!web_server.uri().startsWith(FS_WRITE_URI) || (web_server.method() != HTTP_POST && web_server.method() != HTTP_PUT))
 		{
 			return;
 		}
@@ -427,18 +427,7 @@ extern "C"
 		HTTPUpload &upload = web_server.upload();
 		if (upload.status == UPLOAD_FILE_START)
 		{
-			String filename = upload.filename;
-			if (web_server.hasArg("path"))
-			{
-				String path = web_server.arg("path");
-				filename = path + ((!filename.startsWith("/") && !path.startsWith("/")) ? "/" : "") + filename;
-			}
-			if (!filename.startsWith("/"))
-			{
-				filename = "/" + filename;
-			}
-			upload_file = FLASH_FS.open(filename, "w");
-			filename = String();
+			upload_file = FLASH_FS.open(web_server.uri().substring(3), "w");
 		}
 		else if (upload.status == UPLOAD_FILE_WRITE)
 		{
@@ -454,6 +443,103 @@ extern "C"
 				upload_file.close();
 			}
 		}
+	}
+
+	void fs_file_browser()
+	{
+		File fp;
+		char path[256];
+
+		// updated page
+		if (web_server.hasArg("update") && web_server.method() == HTTP_GET)
+		{
+			web_server.sendHeader("Content-Encoding", "gzip");
+			web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE);
+			return;
+		}
+
+		if (web_server.method() != HTTP_POST)
+		{
+			if (!FLASH_FS.exists(web_server.uri().substring(3)))
+			{
+				endpoint_send(404, "application/json", "{'result':'notfound'}");
+				return;
+			}
+
+			fp = FLASH_FS.open(web_server.uri().substring(3));
+		}
+		else
+		{
+			fp = FLASH_FS.open(web_server.uri().substring(3), "w");
+			if (!fp)
+			{
+				endpoint_send(500, "application/json", "{'result':'file not created'}");
+			}
+		}
+
+		switch (web_server.method())
+		{
+		case HTTP_GET:
+			if (fp.isDirectory())
+			{
+				// start chunck transmition;
+				endpoint_request_uri(path, 256);
+				endpoint_send(200, "application/json", NULL);
+				endpoint_send(200, "application/json", "{'result':'ok', {'path':'");
+				endpoint_send(200, "application/json", path);
+				endpoint_send(200, "application/json", "','data':[");
+				File file = fp.openNextFile();
+				while (file)
+				{
+					memset(path, 0, 256);
+					if (file.isDirectory())
+					{
+						sprintf(path, "{'type':'dir','name':'%s','attr':%d},", file.name(), 0);
+					}
+					else
+					{
+						sprintf(path, "{'type':'file','name':'%s','attr':%d,'size':%lu,'date':%lu},", file.name(), 0, file.size(), 0);
+					}
+					endpoint_send(200, "application/json", path);
+					file = fp.openNextFile();
+				}
+				endpoint_send(200, "application/json", "]}}");
+				// close the stream
+				endpoint_send(200, "application/json", "");
+			}
+			else
+			{
+				web_server.streamFile(fp, "text/plain");
+			}
+			break;
+		case HTTP_DELETE:
+			if (fp.isDirectory())
+			{
+				FLASH_FS.rmdir(web_server.uri().substring(3));
+			}
+			else
+			{
+				FLASH_FS.remove(web_server.uri().substring(3));
+			}
+			__FALL_THROUGH__
+		case HTTP_PUT:
+		case HTTP_POST:
+			if (web_server.hasArg("redirect"))
+			{
+				memset(path, 0, 256);
+				web_server.sendHeader("Location", web_server.arg("redirect"));
+				sprintf(path, "{'redirect':'%s'}", web_server.arg("redirect"));
+				web_server.send(303, "application/json", path);
+			}
+			else
+			{
+				endpoint_send(200, "application/json", "{'result':'ok'}");
+			}
+
+			break;
+		}
+
+		fp.close();
 	}
 
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
@@ -641,22 +727,8 @@ extern "C"
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
 		FLASH_FS.begin();
-		web_server.on(
-			FS_WRITE_URI, HTTP_GET, []()
-			{ web_server.sendHeader("Content-Encoding", "gzip");
-		web_server.send_P(200, __romstr__("text/html"), fs_write_page, FS_WRITE_GZ_SIZE); },
-			NULL);
-		web_server.on(
-			FS_WRITE_URI, HTTP_POST, []()
-			{ 
-			if(web_server.hasArg("redirect")){
-			web_server.sendHeader("Location", web_server.arg("redirect"));
-			web_server.send(303);
-		}
-		else{
-			web_server.send(200, "text/plain", "");
-		} },
-			fs_file_updater);
+		endpoint_add("/fs", HTTP_GET, fs_file_browser, fs_file_updater);
+		endpoint_add("/fs/*", HTTP_GET, fs_file_browser, fs_file_updater);
 		web_server.begin();
 #ifdef MCU_HAS_WEBSOCKETS
 		socket_server.begin();
