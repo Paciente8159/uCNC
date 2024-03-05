@@ -308,6 +308,10 @@ void mcu_init(void)
 #ifdef IC74HC595_CUSTOM_SHIFT_IO
 	ic74hc595_pio_init();
 #endif
+#ifndef RAM_ONLY_SETTINGS
+	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
+#endif
+
 	mcu_usart_init();
 
 	pinMode(LED_BUILTIN, OUTPUT);
@@ -320,9 +324,6 @@ void mcu_init(void)
 	servo_alarm.alarm_cb = &mcu_clear_servos;
 #endif
 
-#ifndef RAM_ONLY_SETTINGS
-	rp2040_eeprom_init(NVM_STORAGE_SIZE); // 2K Emulated EEPROM
-#endif
 #ifdef MCU_HAS_SPI
 	mcu_spi_config(SPI_FREQ, SPI_MODE);
 #endif
