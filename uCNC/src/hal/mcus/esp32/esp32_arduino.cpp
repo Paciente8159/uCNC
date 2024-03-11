@@ -428,8 +428,10 @@ extern "C"
 		HTTPUpload &upload = web_server.upload();
 		if (upload.status == UPLOAD_FILE_START)
 		{
-			if(web_server.method() == HTTP_POST){
-				if(!urlpath.endsWith("/")){
+			if (web_server.method() == HTTP_POST)
+			{
+				if (!urlpath.endsWith("/"))
+				{
 					urlpath.concat("/");
 				}
 
@@ -513,7 +515,7 @@ extern "C"
 				endpoint_send(200, "application/json", path);
 				endpoint_send(200, "application/json", "\",\"data\":[");
 				File file = fp.openNextFile();
-				
+
 				while (file)
 				{
 					memset(path, 0, 256);
@@ -527,7 +529,8 @@ extern "C"
 					}
 
 					file = fp.openNextFile();
-					if(file){
+					if (file)
+					{
 						// trailling comma
 						path[strlen(path)] = ',';
 					}
@@ -628,6 +631,38 @@ extern "C"
 			return true;
 		}
 		return false;
+	}
+
+	endpoint_upload_t endpoint_file_upload_status(void)
+	{
+		HTTPUpload &upload = web_server.upload();
+		endpoint_upload_t status = {.status=(uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+		return status;
+	}
+
+	uint8_t endpoint_request_method(void)
+	{
+		switch (web_server.method())
+		{
+		case HTTP_ANY:
+			return ENDPOINT_ANY;
+		case HTTP_GET:
+			return ENDPOINT_GET;
+		case HTTP_POST:
+			return ENDPOINT_POST;
+		case HTTP_UPDATE:
+			return ENDPOINT_PUT;
+		case HTTP_DELETE:
+			return ENDPOINT_DELETE;
+		default:
+			return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+		}
+	}
+
+	void endpoint_file_upload_name(char *filename, size_t maxlen)
+	{
+		HTTPUpload &upload = web_server.upload();
+		strncpy(filename, upload.filename.c_str(), maxlen);
 	}
 
 #endif

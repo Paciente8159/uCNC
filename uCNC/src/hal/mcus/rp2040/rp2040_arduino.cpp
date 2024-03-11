@@ -634,6 +634,38 @@ bool endpoint_send_file(const char *file_path, const char *content_type)
 	return false;
 }
 
+endpoint_upload_t endpoint_file_upload_status(void)
+{
+	HTTPUpload &upload = web_server.upload();
+	endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+	return status;
+}
+
+uint8_t endpoint_request_method(void)
+{
+	switch (web_server.method())
+	{
+	case HTTP_ANY:
+		return ENDPOINT_ANY;
+	case HTTP_GET:
+		return ENDPOINT_GET;
+	case HTTP_POST:
+		return ENDPOINT_POST;
+	case HTTP_UPDATE:
+		return ENDPOINT_PUT;
+	case HTTP_DELETE:
+		return ENDPOINT_DELETE;
+	default:
+		return (ENDPOINT_OTHER | (uint8_t)web_server.method());
+	}
+}
+
+void endpoint_file_upload_name(char *filename, size_t maxlen)
+{
+	HTTPUpload &upload = web_server.upload();
+	strncpy(filename, upload.filename.c_str(), maxlen);
+}
+
 #endif
 
 #if defined(MCU_HAS_WIFI) && defined(MCU_HAS_WEBSOCKETS)
