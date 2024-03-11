@@ -650,7 +650,7 @@ extern "C"
 			return ENDPOINT_GET;
 		case HTTP_POST:
 			return ENDPOINT_POST;
-		case HTTP_UPDATE:
+		case HTTP_PUT:
 			return ENDPOINT_PUT;
 		case HTTP_DELETE:
 			return ENDPOINT_DELETE;
