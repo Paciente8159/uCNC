@@ -645,8 +645,6 @@ uint8_t endpoint_request_method(void)
 {
 	switch (web_server.method())
 	{
-	case HTTP_ANY:
-		return ENDPOINT_ANY;
 	case HTTP_GET:
 		return ENDPOINT_GET;
 	case HTTP_POST:
