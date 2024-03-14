@@ -63,12 +63,6 @@ extern "C"
 
 	typedef void (*endpoint_delegate)(void);
 
-#define ENDPOINT_GET
-#define ENDPOINT_POST
-#define ENDPOINT_PUT
-#define ENDPOINT_DELETE
-#define ENDPOINT_ANY
-
 	void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler);
 	int endpoint_request_hasargs(void);
 	void endpoint_request_uri(char *uri, size_t maxlen);
@@ -76,6 +70,7 @@ extern "C"
 	void endpoint_send(int code, const char *content_type, const char *data);
 	void endpoint_send_header(const char *name, const char *data, bool first);
 	bool endpoint_send_file(const char *file_path, const char *content_type);
+
 #define ENDPOINT_UPLOAD_START 0
 #define ENDPOINT_UPLOAD_PART 1
 #define ENDPOINT_UPLOAD_END 2
@@ -86,13 +81,16 @@ extern "C"
 		uint8_t *data;
 		size_t datalen;
 	} endpoint_upload_t;
+
 	endpoint_upload_t endpoint_file_upload_status(void);
+
 #define ENDPOINT_ANY 0
 #define ENDPOINT_GET 1
 #define ENDPOINT_POST 2
 #define ENDPOINT_PUT 3
 #define ENDPOINT_DELETE 4
 #define ENDPOINT_OTHER 128
+
 	uint8_t endpoint_request_method(void);
 	void endpoint_file_upload_name(char *filename, size_t maxlen);
 	char *endpoint_file_upload_buffer(size_t *len);
