@@ -636,7 +636,7 @@ extern "C"
 	endpoint_upload_t endpoint_file_upload_status(void)
 	{
 		HTTPUpload &upload = web_server.upload();
-		endpoint_upload_t status = {.status=(uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
 		return status;
 	}
 
@@ -756,6 +756,95 @@ extern "C"
 #endif
 
 #ifdef ENABLE_WIFI
+#include "../../../modules/file_system.h"
+	fs_t flash_fs;
+
+	int flash_fs_available(fs_file_t *fp)
+	{
+		return ((File *)fp->file_ptr)->available();
+	}
+
+	void flash_fs_close(fs_file_t *fp)
+	{
+		((File *)fp->file_ptr)->close();
+		free(fp->file_ptr);
+		free(fp);
+	}
+
+	bool flash_fs_remove(char *path)
+	{
+		return FLASH_FS.remove(path);
+	}
+
+	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+	{
+		File f = ((File *)fp->file_ptr)->openNextFile();
+		if (!f || !finfo)
+		{
+			return false;
+		}
+		memset(finfo->name, 0, sizeof(finfo->name));
+		strncpy(finfo->name, f.name(), FS_FILE_NAME_MAX_LEN);
+		finfo->is_dir = f.isDirectory();
+		finfo->size = f.size();
+		finfo->timestamp = f.getLastWrite();
+		f.close();
+		return true;
+	}
+
+	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+	{
+		return ((File *)fp->file_ptr)->read(buffer, len);
+	}
+
+	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+	{
+		return ((File *)fp->file_ptr)->write(buffer, len);
+	}
+
+	bool flash_fs_info(char *path, fs_file_info_t *finfo)
+	{
+		File f = FLASH_FS.open(path, "r");
+		if (f && finfo)
+		{
+			memset(finfo->name, 0, sizeof(finfo->name));
+			strncpy(finfo->name, f.name(), FS_FILE_NAME_MAX_LEN);
+			finfo->is_dir = f.isDirectory();
+			finfo->size = f.size();
+			finfo->timestamp = (uint32_t)f.getLastWrite();
+			f.close();
+			return true;
+		}
+
+		return false;
+	}
+
+	fs_file_t *flash_fs_open(char *path, const char *mode)
+	{
+		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+		if (fp)
+		{
+			fp->file_ptr = calloc(1, sizeof(File));
+			if (fp->file_ptr)
+			{
+				*((File *)fp->file_ptr) = FLASH_FS.open(path, mode);
+				if (*((File *)fp->file_ptr))
+				{
+					memset(fp->file_info.name, 0, sizeof(fp->file_info.name));
+					strncpy(fp->file_info.name, ((File *)fp->file_ptr)->name(), FS_FILE_NAME_MAX_LEN);
+					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+					fp->file_info.size = ((File *)fp->file_ptr)->size();
+					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+					fp->fs_ptr = &flash_fs;
+					return fp;
+				}
+				free(fp->file_ptr);
+			}
+			free(fp);
+		}
+		return NULL;
+	}
+
 	void mcu_wifi_task(void *arg)
 	{
 		WiFi.begin();
@@ -765,6 +854,18 @@ extern "C"
 		httpUpdater.setup(&web_server, update_path, update_username, update_password);
 #endif
 		FLASH_FS.begin(true, FS_URI);
+		flash_fs = {
+				.drive = 'C',
+				.open = flash_fs_open,
+				.read = flash_fs_read,
+				.write = flash_fs_write,
+				.available = flash_fs_available,
+				.close = flash_fs_close,
+				.remove = flash_fs_remove,
+				.next_file = flash_fs_next_file,
+				.finfo = flash_fs_info,
+				.next = NULL};
+		fs_mount(&flash_fs);
 		endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
 		endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
 		web_server.begin();

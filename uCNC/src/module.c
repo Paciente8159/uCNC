@@ -22,7 +22,6 @@
 #include "modules/digipot.h"
 #include "modules/encoder.h"
 #include "modules/pid.h"
-#include "modules/endpoint.h"
 #include "modules/ic74hc595.h"
 #include "modules/modbus.h"
 #include "modules/softi2c.h"

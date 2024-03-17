@@ -18,6 +18,7 @@
 
 #include "../cnc.h"
 #include "file_system.h"
+#include "endpoint.h"
 
 #ifndef FS_STR_DIR_PREFIX
 #define FS_STR_DIR_PREFIX "Directory "
@@ -41,24 +42,30 @@
 #define FS_MAX_PATH_LEN 128
 #endif
 
-fs_filesystem_t *fs_default_drive;
+fs_t *fs_default_drive;
 // current working dir
 static char fs_cwd[FS_MAX_PATH_LEN];
 fs_file_t *fs_running_file;
 
-static fs_filesystem_t *fs_search_drive(char *path)
+static fs_t *fs_search_drive(char *path)
 {
 	if (!fs_default_drive)
 	{
 		return NULL;
 	}
 
-	if (path[0] != '/' || path[2] != '/')
+	if (path[0] != '/' || (path[2] != '/' && path[2] != 0))
 	{
 		return NULL;
 	}
 
-	fs_filesystem_t *ptr = fs_default_drive;
+	if (!path[2])
+	{
+		path[2] = '/';
+		path[3] = 0;
+	}
+
+	fs_t *ptr = fs_default_drive;
 	// upper case
 	char c = path[1];
 	if (c > 90)
@@ -81,58 +88,6 @@ static fs_filesystem_t *fs_search_drive(char *path)
 	} while (ptr);
 
 	return NULL;
-}
-
-#ifdef ENABLE_PARSER_MODULES
-static void fs_dir_list(void)
-{
-	// current dir
-	protocol_send_string(__romstr__(FS_STR_DIR_PREFIX));
-	serial_print_str(fs_cwd);
-	protocol_send_string(MSG_EOL);
-
-	fs_file_t *dir = NULL;
-	dir = fs_open(fs_cwd, "r");
-	if (!dir)
-	{
-		protocol_send_string(__romstr__(FS_STR_FILE_NOT_FOUND));
-		return;
-	}
-
-	if (!dir->is_dir)
-	{
-		protocol_send_string(__romstr__(FS_STR_FILE_NOT_DIR));
-	}
-	else
-	{
-		while (true)
-		{
-			char filename[32];
-			memset(filename, 0, 32);
-			fs_file_t *nextfile = dir->next_file(filename);
-			if (!nextfile)
-			{
-				break;
-			}
-			if (nextfile->is_dir)
-			{ /* It is a directory */
-				protocol_send_string(__romstr__("<dir>\t"));
-			}
-			else
-			{ /* It is a file. */
-				protocol_send_string(__romstr__("     \t"));
-			}
-
-			uint8_t i = strlen(filename);
-			for (uint8_t j = 0; j < i; j++)
-			{
-				serial_putc(filename);
-			}
-			protocol_send_string(MSG_EOL);
-		}
-	}
-
-	fs_close(dir);
 }
 
 static char *fs_parentdir(void)
@@ -219,7 +174,7 @@ static fs_file_t *fs_chfile(const char *newdir, char *mode)
 					}
 
 					// if it's a file rewind to the working directory
-					if (!fp->is_dir)
+					if (!fp->file_info.is_dir)
 					{
 						// rewind
 						tail = fs_parentdir();
@@ -259,6 +214,58 @@ static fs_file_t *fs_chfile(const char *newdir, char *mode)
 
 	// never reaches
 	return NULL;
+}
+
+#ifdef ENABLE_PARSER_MODULES
+static void fs_dir_list(void)
+{
+	// current dir
+	protocol_send_string(__romstr__(FS_STR_DIR_PREFIX));
+	serial_print_str(fs_cwd);
+	protocol_send_string(MSG_EOL);
+
+	fs_file_t *dir = NULL;
+	dir = fs_open(fs_cwd, "r");
+	if (!dir)
+	{
+		protocol_send_string(__romstr__(FS_STR_FILE_NOT_FOUND));
+		return;
+	}
+
+	if (!dir->is_dir)
+	{
+		protocol_send_string(__romstr__(FS_STR_FILE_NOT_DIR));
+	}
+	else
+	{
+		while (true)
+		{
+			char filename[32];
+			memset(filename, 0, 32);
+			fs_file_t *nextfile = dir->next_file(filename);
+			if (!nextfile)
+			{
+				break;
+			}
+			if (nextfile->is_dir)
+			{ /* It is a directory */
+				protocol_send_string(__romstr__("<dir>\t"));
+			}
+			else
+			{ /* It is a file. */
+				protocol_send_string(__romstr__("     \t"));
+			}
+
+			uint8_t i = strlen(filename);
+			for (uint8_t j = 0; j < i; j++)
+			{
+				serial_putc(filename);
+			}
+			protocol_send_string(MSG_EOL);
+		}
+	}
+
+	fs_close(dir);
 }
 
 void fs_cd(void)
@@ -480,7 +487,166 @@ bool fs_cmd_parser(void *args)
 CREATE_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
 #endif
 
-void fs_mount(fs_filesystem_t *drive)
+#ifdef MCU_HAS_ENDPOINTS
+
+#ifndef FS_JSON_ENDPOINT
+#define FS_JSON_ENDPOINT "/fs-json"
+#endif
+#define FS_JSON_ENDPOINT_LEN (strlen(FS_JSON_ENDPOINT))
+
+void fs_json_api(void)
+{
+	fs_t *ptr = fs_default_drive;
+
+	if (ptr)
+	{
+		char path[32];
+		endpoint_send(200, "application/json", NULL);
+		endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[");
+		while (ptr)
+		{
+			memset(path, 0, sizeof(path));
+			sprintf(path, "{\"type\":\"drive\",\"name\":\"%c\"},", ptr->drive);
+			ptr = ptr->next;
+			if (ptr)
+			{
+				// trailling comma
+				path[strlen(path)] = ',';
+			}
+			endpoint_send(200, "application/json", path);
+		}
+		endpoint_send(200, "application/json", "]}\n");
+		// close the stream
+		endpoint_send(200, "application/json", "");
+	}
+	else
+	{
+		endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[]}");
+	}
+}
+
+void fs_file_json_api()
+{
+	bool update = false;
+
+	if (endpoint_request_hasargs())
+	{
+		char arg = 0;
+		endpoint_request_arg("update", &arg, 1);
+		if (arg && arg != '0')
+		{
+			update = true;
+		}
+	}
+
+	// updated page
+	if (update && endpoint_request_method() == ENDPOINT_GET)
+	{
+		char updatepage[FS_WRITE_GZ_SIZE];
+		rom_memcpy(updatepage, fs_write_page, FS_WRITE_GZ_SIZE);
+		endpoint_send_header("Content-Encoding", "gzip", true);
+		endpoint_send(200, "text/html", updatepage);
+		return;
+	}
+
+	char urlpath[256];
+	memset(urlpath, 0, sizeof(urlpath));
+	endpoint_request_uri(urlpath, 256);
+	char *fs_url = &urlpath[FS_JSON_ENDPOINT_LEN];
+
+	fs_file_t *file = fs_open(fs_url, "r");
+
+	if (!file)
+	{
+		endpoint_send(404, "application/json", "{\"result\":\"notfound\"}");
+		return;
+	}
+
+	char args[128];
+	memset(args, 0, sizeof(args));
+
+	switch (endpoint_request_method())
+	{
+	case ENDPOINT_DELETE:
+		fs_remove(fs_url);
+		__FALL_THROUGH__
+	case ENDPOINT_PUT:
+	case ENDPOINT_POST:
+		endpoint_request_arg("redirect", args, 128);
+		if (strlen(args))
+		{
+			endpoint_send_header("Location", args, true);
+			memset(urlpath, 0, sizeof(urlpath));
+			sprintf(urlpath, "{\"redirect\":\"%s\"}", args);
+			endpoint_send(303, "application/json", urlpath);
+		}
+		else
+		{
+			endpoint_send(200, "application/json", "{\"result\":\"ok\"}");
+		}
+
+		break;
+	default: // handle as get
+		if (file->file_info.is_dir)
+		{
+			// start chunck transmition;
+			endpoint_send(200, "application/json", NULL);
+			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
+			endpoint_send(200, "application/json", fs_url);
+			endpoint_send(200, "application/json", "\",\"data\":[");
+			fs_file_info_t child = {0};
+
+			while (fs_nextfile(file, &child))
+			{
+				memset(urlpath, 0, 256);
+				if (child.is_dir)
+				{
+					sprintf(urlpath, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", child.name, 0);
+				}
+				else
+				{
+					sprintf(urlpath, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", child.name, child.size);
+				}
+
+				if (fs_nextfile(file, &child))
+				{
+					// trailling comma
+					urlpath[strlen(urlpath)] = ',';
+				}
+				endpoint_send(200, "application/json", urlpath);
+			}
+			endpoint_send(200, "application/json", "]}\n");
+			// close the stream
+			endpoint_send(200, "application/json", "");
+		}
+		else
+		{
+			uint8_t content[ENDPOINT_MAX_CHUNCK_LEN];
+			if (file->file_info.size > ENDPOINT_MAX_CHUNCK_LEN)
+			{
+				endpoint_send(200, "application/octet-stream", NULL);
+			}
+			while (fs_available(file))
+			{
+				fs_read(file, content, ENDPOINT_MAX_CHUNCK_LEN);
+				endpoint_send(200, "application/octet-stream", (const char *)content);
+			}
+			// close the stream
+			endpoint_send(200, "application/octet-stream", "");
+		}
+		break;
+	}
+
+	fs_close(file);
+}
+
+void fs_json_uploader()
+{
+}
+
+#endif
+
+void fs_mount(fs_t *drive)
 {
 	if (!fs_default_drive)
 	{
@@ -488,7 +654,7 @@ void fs_mount(fs_filesystem_t *drive)
 		return;
 	}
 
-	fs_filesystem_t *ptr = fs_default_drive;
+	fs_t *ptr = fs_default_drive;
 	do
 	{
 		if (ptr->drive == drive->drive)
@@ -504,25 +670,30 @@ void fs_mount(fs_filesystem_t *drive)
 	ptr->next = drive;
 	drive->next = NULL;
 
-#ifdef ENABLE_PARSER_MODULES
 	RUNONCE
 	{
+#ifdef ENABLE_PARSER_MODULES
 		ADD_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
-		RUNONCE_COMPLETE();
-	}
 #else
 #warning "Parser extensions are not enabled. File commands will not work."
 #endif
+
+#ifdef MCU_HAS_ENDPOINTS
+		endpoint_add(FS_JSON_ENDPOINT, ENDPOINT_ANY, fs_json_api, NULL);
+		endpoint_add(FS_JSON_ENDPOINT "/*", ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);
+#endif
+		RUNONCE_COMPLETE();
+	}
 }
 
-void fs_unmount(fs_filesystem_t *drive)
+void fs_unmount(fs_t *drive)
 {
 	if (!fs_default_drive)
 	{
 		return;
 	}
 
-	fs_filesystem_t *ptr = fs_default_drive;
+	fs_t *ptr = fs_default_drive;
 
 	if (ptr->drive == drive->drive)
 	{
@@ -542,18 +713,72 @@ void fs_unmount(fs_filesystem_t *drive)
 	}
 }
 
-fs_file_t *fs_open(char *path, char *mode)
+fs_file_t *fs_open(char *path, const char *mode)
 {
-	fs_filesystem_t *fs = fs_search_drive(path);
+	fs_t *fs = fs_search_drive(path);
 	if (!fs)
 	{
 		return NULL;
 	}
-	return fs->open(path, mode);
+
+	return fs->open(&path[2], mode);
 }
 
-void fs_close(fs_file_t *file)
+void fs_close(fs_file_t *fp)
 {
-	file->close();
-	file = NULL;
+	if (fp)
+	{
+		fp->fs_ptr->close(fp);
+	}
+}
+
+size_t fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+{
+	if (fp)
+	{
+		return fp->fs_ptr->read(fp, buffer, len);
+	}
+
+	return 0;
+}
+
+size_t fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+{
+	if (fp)
+	{
+		return fp->fs_ptr->write(fp, buffer, len);
+	}
+
+	return 0;
+}
+
+int fs_available(fs_file_t *fp)
+{
+	if (fp)
+	{
+		return fp->fs_ptr->available(fp);
+	}
+
+	return 0;
+}
+
+bool fs_nextfile(fs_file_t *fp, fs_file_info_t *finfo)
+{
+	if (fp)
+	{
+		return fp->fs_ptr->next_file(fp, finfo);
+	}
+
+	return false;
+}
+
+bool fs_remove(char *path)
+{
+	fs_t *fs = fs_search_drive(path);
+	if (fs)
+	{
+		return fs->remove(&path[2]);
+	}
+
+	return false;
 }

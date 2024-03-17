@@ -27,30 +27,51 @@ extern "C"
 #include "../cnc.h"
 #include <stddef.h>
 
-	typedef struct fs_file_
+#ifndef FS_FILE_NAME_MAX_LEN
+#define FS_FILE_NAME_MAX_LEN 32
+#endif
+#ifndef FS_PATH_NAME_MAX_LEN
+#define FS_PATH_NAME_MAX_LEN 256
+#endif
+
+	typedef struct fs_file_info_
 	{
-		size_t (*read)(uint8_t *, size_t);
-		size_t (*write)(const uint8_t *, size_t);
-		int (*available)(void);
-		void (*close)(void);
-		struct fs_file_* (*next_file)(char*);
+		char name[FS_FILE_NAME_MAX_LEN];
 		bool is_dir;
 		uint32_t size;
 		uint32_t timestamp;
+	}fs_file_info_t;
+
+	typedef struct fs_file_
+	{
+		fs_file_info_t file_info;
+		struct fs_* fs_ptr;
+		void* file_ptr;
 	} fs_file_t;
 
-	typedef struct fs_drive_
+	typedef struct fs_
 	{
-		const char drive;
-		fs_file_t *(*open)(char *, char *);
-		void (*close)(fs_file_t *);
-		struct fs_drive_ *next;
-	} fs_filesystem_t;
+		char drive;
+		fs_file_t *(*open)(char *, const char *);
+		size_t (*read)(fs_file_t*, uint8_t *, size_t);
+		size_t (*write)(fs_file_t*, const uint8_t *, size_t);
+		int (*available)(fs_file_t*);
+		void (*close)(fs_file_t*);
+		bool (*remove)(char *);
+		bool (*next_file)(fs_file_t *, fs_file_info_t*);
+		bool (*finfo)(char *, fs_file_info_t *);
+		struct fs_* next;
+	} fs_t;
 
-	void fs_mount(fs_filesystem_t *drive);
-	void fs_unmount(fs_filesystem_t *drive);
-	fs_file_t* fs_open(char *path, char *mode);
-	void fs_close(fs_file_t* file);
+	void fs_mount(fs_t *drive);
+	void fs_unmount(fs_t *drive);
+	fs_file_t* fs_open(char *path, const char *mode);
+	size_t fs_read(fs_file_t* fp, uint8_t * buffer, size_t len);
+	size_t fs_write(fs_file_t* fp, const uint8_t * buffer, size_t len);
+	int fs_available(fs_file_t* fp);
+	void fs_close(fs_file_t* fp);
+	bool fs_remove(char *path);
+	bool fs_nextfile(fs_file_t *fp, fs_file_info_t *finfo);
 
 #ifdef __cplusplus
 }
