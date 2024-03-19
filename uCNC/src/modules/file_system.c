@@ -106,36 +106,50 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, co
 		return NULL;
 	}
 
-	// full path always starts with '/'
-	full_path[0] = '/';
+	char *token_start = new_path;
 
-	char *token;
-	token = strtok(new_path, "/");
-	while (token != NULL)
+	while (*token_start)
 	{
-		if (strcmp(token, ".") == 0)
+		while (*token_start == '/')
 		{
-			// Do nothing, it's a reference to the current directory
+			token_start++;
 		}
-		else if (strcmp(token, "..") == 0)
+		char *token_end = token_start;
+		int token_len = 0;
+		while (*token_end != '/' && *token_end != 0)
 		{
-			// Move one level up
-			char *tail = strrchr(full_path, '/');
-			// clear the remaining string
-			*(tail + 1) = 0;
-		}
-		else
-		{
-			// Add regular directory name to the path
-			if (strlen(token) > FS_PATH_NAME_MAX_LEN - strlen(full_path))
-			{
-				// path exceeds the maximum size
-				return NULL;
-			}
-			strcat(full_path, token);
+			token_end++;
+			token_len++;
 		}
 
-		token = strtok(NULL, "/");
+		if (token_len)
+		{
+			if (strncmp(token_start, ".", token_len) == 0)
+			{
+				// Do nothing, it's a reference to the current directory
+			}
+			else if (strncmp(token_start, "..", token_len) == 0)
+			{
+				// Move one level up
+				char *tail = strrchr(full_path, '/');
+				// clear the remaining string
+				*tail = 0;
+				memset(&full_path[strlen(full_path)], 0, FS_PATH_NAME_MAX_LEN - strlen(full_path));
+			}
+			else
+			{
+				// Add regular directory name to the path
+				if ((token_len + 1) > FS_PATH_NAME_MAX_LEN - strlen(full_path))
+				{
+					// path exceeds the maximum size
+					return NULL;
+				}
+				full_path[strlen(full_path)] = '/';
+				strncat(full_path, token_start, token_len);
+			}
+
+			token_start = token_end;
+		}
 	}
 
 	// checks if is a valid drive
