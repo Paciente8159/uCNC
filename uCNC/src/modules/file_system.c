@@ -21,42 +21,42 @@
 #include "endpoint.h"
 #include "system_menu.h"
 
-#ifndef FS_MAX_PATH_LEN
-#define FS_MAX_PATH_LEN 128
-#endif
-
 // file system entry point
 fs_t *fs_default_drive;
 // current working dir for internal file system (Grbl commands)
-static char fs_cwd[FS_MAX_PATH_LEN];
-#ifdef MCU_HAS_ENDPOINTS
-// current working dir for endpoints
-static char fs_endpoint_cwd[FS_MAX_PATH_LEN];
-#endif
+static fs_file_info_t fs_cwd;
 // current working dir for system menu (graphic display)
-static char fs_sm_cwd[FS_MAX_PATH_LEN];
+static fs_file_info_t fs_sm_cwd;
 // dir level for system menu (graphic display)
 static uint8_t dir_level;
 
 // current running file
 fs_file_t *fs_running_file;
 
+static char *fs_filename(fs_file_info_t *finfo);
+
+// drive path is /<driver letter>(/<optional file path>)
 static fs_t *fs_search_drive(char *path)
 {
-	if (!fs_default_drive)
+	if (!fs_default_drive || strlen(path) < 2)
 	{
 		return NULL;
 	}
 
-	if (path[0] != '/' || (path[2] != '/' && path[2] != 0))
+	if (path[0] != '/')
 	{
 		return NULL;
 	}
 
-	if (!path[2])
+	// should be /<drive letter>/<path>
+	// or just /<drive letter>
+	if (strlen(path) > 2)
 	{
-		path[2] = '/';
-		path[3] = 0;
+		// invalid path
+		if (path[2] != '/')
+		{
+			return NULL;
+		}
 	}
 
 	fs_t *ptr = fs_default_drive;
@@ -84,214 +84,134 @@ static fs_t *fs_search_drive(char *path)
 	return NULL;
 }
 
-static char *fs_parentdir(char *path)
-{
-	char *tail = strrchr(path, '/');
-	if (!tail)
-	{
-		// is in root
-		tail = path;
-	}
-
-	*tail = 0;
-
-	return tail;
-}
-
 // emulates basic chdir and opens the dir or file if it exists
-static fs_file_t *fs_path_parse(char *path, const char *newdir, char *mode)
+static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, const char *mode)
 {
-	// new algorithm to test
-	//  if(newdir){
-	//  	if(newdir[0]=='/'){
-	//  		path = newdir;
-	//  	}
-	//  }
-	//  char *token;
-	//    char *pathComponents[MAX_PATH_LENGTH];
-	//    int pathCount = 0;
+	// current_path never exceeds FS_MAX_PATH_LEN
+	char full_path[FS_PATH_NAME_MAX_LEN];
 
-	//   // Tokenize the path using "/"
-	//   token = strtok(path, "/");
-	//   while (token != NULL && pathCount < MAX_PATH_LENGTH) {
-	//       // Check if the token is "." or ".."
-	//       if (strcmp(token, ".") == 0) {
-	//           // Do nothing, it's a reference to the current directory
-	//       } else if (strcmp(token, "..") == 0) {
-	//           // Move one level up
-	//           if (pathCount > 0)
-	//               pathCount--;
-	//       } else {
-	//           // Add regular directory name to the path
-	//           pathComponents[pathCount++] = token;
-	//       }
-	//       token = strtok(NULL, "/");
-	//   }
-
-	//   // Reconstruct the path
-	//   int i, j = 0;
-	//   for (i = 0; i < pathCount; i++) {
-	//       int len = strlen(pathComponents[i]);
-	//       memmove(path + j, pathComponents[i], len);
-	//       j += len;
-	//       path[j++] = '/';
-	//   }
-	//   path[j - 1] = '\0'; // Remove the last '/'
-
-	int16_t state = 0;
-	uint16_t len = strlen(path);
-	char *tail = &path[len];
-	fs_file_t *fp = NULL;
-
-	if (*newdir == '/')
+	if (new_path)
 	{
-		// root dir
-		tail = path;
-		len = 0;
-		*tail = 0;
-		newdir++;
-	}
-	else if (len)
-	{
-		*tail = '/';
-		tail++;
-	}
-
-	for (;;)
-	{
-		*tail = *newdir;
-		switch (*newdir)
+		if (new_path[0] == '/' || !current_path)
 		{
-		case '/':
-		case 0:
-			switch (state)
+			memset(full_path, 0, FS_PATH_NAME_MAX_LEN);
+		}
+		else
+		{
+			strncpy(full_path, current_path->full_name, FS_PATH_NAME_MAX_LEN);
+		}
+	}
+	else
+	{
+		return NULL;
+	}
+
+	// full path always starts with '/'
+	full_path[0] = '/';
+
+	char *token;
+	token = strtok(new_path, "/");
+	while (token != NULL)
+	{
+		if (strcmp(token, ".") == 0)
+		{
+			// Do nothing, it's a reference to the current directory
+		}
+		else if (strcmp(token, "..") == 0)
+		{
+			// Move one level up
+			char *tail = strrchr(full_path, '/');
+			// clear the remaining string
+			*(tail + 1) = 0;
+		}
+		else
+		{
+			// Add regular directory name to the path
+			if (strlen(token) > FS_PATH_NAME_MAX_LEN - strlen(full_path))
 			{
-			case 2:
-				*tail = 0;
-				tail = fs_parentdir(path);
-				// continue
-			case 1:
-				// deletes dot or slash
-				*tail = 0;
-				tail = fs_parentdir(path);
-				*tail = *newdir;
-				len = strlen(path);
-				break;
-			default:
-				if (state && state < FS_MAX_PATH_LEN)
-				{
-					// path with only dots not allowed
-					*tail = 0;
-					tail = fs_parentdir(path);
-					return NULL;
-				}
-			}
-
-			*tail = 0;
-			fp = fs_open(path, mode);
-			// checks if is valid dir
-			if (fp)
-			{
-				// reached the end?
-				if (!*newdir)
-				{
-					if (len)
-					{
-						tail--;
-						if (*tail == '/')
-						{
-							*tail = 0;
-						}
-					}
-
-					// if it's a file rewind to the working directory
-					if (!fp->file_info.is_dir)
-					{
-						// rewind
-						tail = fs_parentdir(path);
-					}
-
-					return fp;
-				}
-
-				fs_close(fp);
+				// path exceeds the maximum size
 				return NULL;
 			}
-
-			*tail = *newdir;
-			state = 0;
-			break;
-		default:
-			state++;
-			state = (*newdir == '.') ? state : FS_MAX_PATH_LEN;
-			break;
+			strcat(full_path, token);
 		}
 
-		newdir++;
-		len++;
-		tail++;
-		*tail = 0;
-
-		if (len >= FS_MAX_PATH_LEN)
-		{
-			// clamp
-			tail = strrchr(path, '/');
-			*tail = '/';
-			tail++;
-			*tail = 0;
-			return NULL;
-		}
+		token = strtok(NULL, "/");
 	}
 
-	// never reaches
+	// checks if is a valid drive
+	fs_t *fs = fs_search_drive(full_path);
+	if (!fs)
+	{
+		// not a valid drive
+		return NULL;
+	}
+
+	// tests opening the new dir/file
+	fs_file_t *fp = fs->open(&full_path[2], mode);
+	if (fp)
+	{
+		if (current_path)
+		{
+			memset(current_path->full_name, 0, FS_PATH_NAME_MAX_LEN);
+			// not a dir then rewind
+			if (!fp->file_info.is_dir)
+			{
+				char *tail = strrchr(full_path, '/');
+				*tail = 0;
+			}
+			strcpy(current_path->full_name, full_path);
+		}
+		return fp;
+	}
+
+	// failed to open the new dir/file
 	return NULL;
 }
 
 #ifdef ENABLE_PARSER_MODULES
 static void fs_dir_list(void)
 {
-	// current dir
-	protocol_send_string(__romstr__("Index of "));
-	serial_print_str(fs_cwd);
-	protocol_send_string(MSG_EOL);
-
-	fs_file_t *dir = NULL;
-	dir = fs_open(fs_cwd, "r");
-	if (!dir)
+	// if current working directory not initialized
+	if (!strlen(fs_cwd.full_name))
 	{
-		protocol_send_string(__romstr__("Dir not found!"));
+		protocol_send_string(__romstr__("Available drives"));
+		protocol_send_string(MSG_EOL);
+		fs_t *drive = fs_default_drive;
+		while (drive)
+		{
+			protocol_send_string(__romstr__("<drive>\t"));
+			serial_putc('/');
+			serial_putc(drive->drive);
+			protocol_send_string(MSG_EOL);
+		}
 		return;
 	}
 
-	if (!dir->file_info.is_dir)
-	{
-		protocol_send_string(__romstr__("Is not a valid dir!"));
-	}
-	else
-	{
-		while (true)
-		{
-			fs_file_info_t finfo;
-			if (!dir->fs_ptr->next_file(dir, &finfo))
-			{
-				break;
-			}
-			if (finfo.is_dir)
-			{ /* It is a directory */
-				protocol_send_string(__romstr__("<dir>\t"));
-			}
-			else
-			{ /* It is a file. */
-				protocol_send_string(__romstr__("     \t"));
-			}
+	// current dir
+	protocol_send_string(__romstr__("Index of /"));
+	serial_print_str(fs_filename(&fs_cwd));
+	protocol_send_string(MSG_EOL);
 
-			uint8_t i = strlen(finfo.name);
-			for (uint8_t j = 0; j < i; j++)
-			{
-				serial_putc(finfo.name);
-			}
-			protocol_send_string(MSG_EOL);
+	fs_file_t *dir = fs_open(fs_cwd.full_name, "r");
+
+	while (true)
+	{
+		fs_file_info_t finfo;
+		if (!fs_nextfile(dir, &finfo))
+		{
+			break;
 		}
+		if (finfo.is_dir)
+		{ /* It is a directory */
+			protocol_send_string(__romstr__("<dir>\t"));
+		}
+		else
+		{ /* It is a file. */
+			protocol_send_string(__romstr__("     \t"));
+		}
+
+		serial_print_str(fs_filename(&finfo));
+		protocol_send_string(MSG_EOL);
 	}
 
 	fs_close(dir);
@@ -314,24 +234,26 @@ void fs_cd(void)
 
 	newdir[i] = 0;
 
-	fs_file_t *fp = fs_path_parse(fs_cwd, newdir, "r");
-	if (fp)
+	fs_file_t *dir = fs_path_parse(&fs_cwd, newdir, "r");
+	if (dir)
 	{
-		if (strlen(fs_cwd))
+		if (dir->file_info.is_dir)
 		{
-			serial_print_str(fs_cwd);
+			serial_print_str(fs_cwd.full_name);
+			serial_putc('/');
+			serial_putc(">");
 		}
 		else
 		{
-			serial_putc('/');
+			serial_print_str(newdir);
+			protocol_send_feedback(__romstr__(" is not a dir!"));
 		}
-		serial_putc(">");
-		fs_close(fp);
+		fs_close(dir);
 	}
 	else
 	{
 		serial_print_str(newdir);
-		protocol_send_feedback(__romstr__("File not found!"));
+		protocol_send_feedback(__romstr__("Dir not found!"));
 	}
 
 	protocol_send_string(MSG_EOL);
@@ -354,13 +276,13 @@ void fs_file_print(void)
 
 	file[i] = 0;
 
-	fs_file_t *fp = fs_path_parse(fs_cwd, file, "r");
+	fs_file_t *fp = fs_path_parse(&fs_cwd, file, "r");
 	if (fp)
 	{
 		while (fs_available(fp))
 		{
 			memset(file, 0, RX_BUFFER_CAPACITY);
-			i = (uint8_t)fs_read(fp, file, RX_BUFFER_CAPACITY - 1); /* Read the data */
+			i = (uint8_t)fs_read(fp, (uint8_t *)file, RX_BUFFER_CAPACITY - 1); /* Read the data */
 			if (!i)
 			{
 				protocol_send_feedback(__romstr__("File read error!"));
@@ -450,7 +372,7 @@ void fs_file_run(void)
 		file++;
 	}
 
-	fs_file_t *fp = fs_path_parse(fs_cwd, file, "r");
+	fs_file_t *fp = fs_path_parse(&fs_cwd, file, "r");
 
 	if (fp)
 	{
@@ -471,7 +393,7 @@ void fs_file_run(void)
 		return;
 	}
 
-	protocol_send_feedback(__romstr__(FS_FILE_READ_ERROR));
+	protocol_send_feedback(__romstr__("File read error!"));
 }
 
 /**
@@ -531,7 +453,7 @@ void fs_json_api(void)
 	if (ptr)
 	{
 		char path[32];
-		endpoint_send(200, "application/json", NULL);
+		endpoint_send(200, NULL, NULL);
 		endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[");
 		while (ptr)
 		{
@@ -547,7 +469,7 @@ void fs_json_api(void)
 		}
 		endpoint_send(200, "application/json", "]}\n");
 		// close the stream
-		endpoint_send(200, "application/json", "");
+		endpoint_send(200, "application/json", NULL);
 	}
 	else
 	{
@@ -620,7 +542,7 @@ void fs_file_json_api()
 		if (file->file_info.is_dir)
 		{
 			// start chunck transmition;
-			endpoint_send(200, "application/json", NULL);
+			endpoint_send(200, NULL, NULL);
 			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
 			endpoint_send(200, "application/json", fs_url);
 			endpoint_send(200, "application/json", "\",\"data\":[");
@@ -631,11 +553,11 @@ void fs_file_json_api()
 				memset(urlpath, 0, 256);
 				if (child.is_dir)
 				{
-					snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", child.name, 0);
+					snprintf(urlpath, 256, "{\"type\":\"dir\",\"name\":\"%s\",\"attr\":%d},", fs_filename(&child), 0);
 				}
 				else
 				{
-					snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", child.name, child.size);
+					snprintf(urlpath, 256, "{\"type\":\"file\",\"name\":\"%s\",\"attr\":0,\"size\":%d,\"date\":0}", fs_filename(&child), child.size);
 				}
 
 				if (fs_nextfile(file, &child))
@@ -647,7 +569,7 @@ void fs_file_json_api()
 			}
 			endpoint_send(200, "application/json", "]}\n");
 			// close the stream
-			endpoint_send(200, "application/json", "");
+			endpoint_send(200, "application/json", NULL);
 		}
 		else
 		{
@@ -708,7 +630,8 @@ static bool system_menu_action_fs_item(uint8_t action, system_menu_item_t *item)
 		else
 		{
 			// go back to root dir
-			sd_chfile("/", 0);
+			fs_file_t *fp = fs_path_parse(&fs_sm_cwd, "/", "r");
+			fs_close(fp);
 			dir_level = 0;
 			// goto sd card menu
 			g_system_menu.current_menu = 10;
@@ -965,13 +888,7 @@ void fs_unmount(fs_t *drive)
 
 fs_file_t *fs_open(char *path, const char *mode)
 {
-	fs_t *fs = fs_search_drive(path);
-	if (!fs)
-	{
-		return NULL;
-	}
-
-	return fs->open(&path[2], mode);
+	return fs_path_parse(NULL, path, mode);
 }
 
 void fs_close(fs_file_t *fp)
@@ -1020,6 +937,16 @@ bool fs_nextfile(fs_file_t *fp, fs_file_info_t *finfo)
 	}
 
 	return false;
+}
+
+static char *fs_filename(fs_file_info_t *finfo)
+{
+	if (finfo)
+	{
+		return (strrchr(finfo->full_name, '/') + 1);
+	}
+
+	return "";
 }
 
 bool fs_remove(char *path)

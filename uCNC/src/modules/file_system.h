@@ -27,16 +27,13 @@ extern "C"
 #include "../cnc.h"
 #include <stddef.h>
 
-#ifndef FS_FILE_NAME_MAX_LEN
-#define FS_FILE_NAME_MAX_LEN 32
-#endif
 #ifndef FS_PATH_NAME_MAX_LEN
 #define FS_PATH_NAME_MAX_LEN 256
 #endif
 
 	typedef struct fs_file_info_
 	{
-		char name[FS_FILE_NAME_MAX_LEN];
+		char full_name[FS_PATH_NAME_MAX_LEN];
 		bool is_dir;
 		uint32_t size;
 		uint32_t timestamp;

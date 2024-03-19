@@ -472,7 +472,7 @@ extern "C"
 			{
 				// start chunck transmition;
 				endpoint_request_uri(path, 256);
-				endpoint_send(200, "application/json", NULL);
+				endpoint_send(200, NULL, NULL);
 				endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
 				endpoint_send(200, "application/json", path);
 				endpoint_send(200, "application/json", "\",\"data\":[");
@@ -500,7 +500,7 @@ extern "C"
 				}
 				endpoint_send(200, "application/json", "]}\n");
 				// close the stream
-				endpoint_send(200, "application/json", "");
+				endpoint_send(200, "application/json", NULL);
 			}
 			else
 			{
@@ -548,10 +548,10 @@ extern "C"
 		return true;
 	}
 
-	void endpoint_send(int code, const char *content_type, const char *data)
+void endpoint_send(int code, const char *content_type, const char *data)
 	{
 		static uint8_t in_chuncks = 0;
-		if (!data)
+		if (!content_type)
 		{
 			in_chuncks = 1;
 			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -567,8 +567,16 @@ extern "C"
 				web_server.send(code, content_type, data);
 				break;
 			default:
-				web_server.sendContent(data);
-				in_chuncks = strlen(data) ? 2 : 0;
+				if (data)
+				{
+					web_server.sendContent(data);
+					in_chuncks = 2;
+				}
+				else
+				{
+					web_server.sendContent("");
+					in_chuncks = 0;
+				}
 				break;
 			}
 		}

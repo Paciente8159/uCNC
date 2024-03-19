@@ -511,7 +511,7 @@ void fs_file_browser()
 		{
 			// start chunck transmition;
 			endpoint_request_uri(path, 256);
-			endpoint_send(200, "application/json", NULL);
+			endpoint_send(200, NULL, NULL);
 			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
 			endpoint_send(200, "application/json", path);
 			endpoint_send(200, "application/json", "\",\"data\":[");
@@ -539,7 +539,7 @@ void fs_file_browser()
 			}
 			endpoint_send(200, "application/json", "]}\n");
 			// close the stream
-			endpoint_send(200, "application/json", "");
+			endpoint_send(200, "application/json", NULL);
 		}
 		else
 		{
@@ -592,30 +592,38 @@ bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 }
 
 void endpoint_send(int code, const char *content_type, const char *data)
-{
-	static uint8_t in_chuncks = 0;
-	if (!data)
 	{
-		in_chuncks = 1;
-		web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-	}
-	else
-	{
-		switch (in_chuncks)
+		static uint8_t in_chuncks = 0;
+		if (!content_type)
 		{
-		case 1:
-			in_chuncks = 2;
-			__FALL_THROUGH__
-		case 0:
-			web_server.send(code, content_type, data);
-			break;
-		default:
-			web_server.sendContent(data);
-			in_chuncks = strlen(data) ? 2 : 0;
-			break;
+			in_chuncks = 1;
+			web_server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+		}
+		else
+		{
+			switch (in_chuncks)
+			{
+			case 1:
+				in_chuncks = 2;
+				__FALL_THROUGH__
+			case 0:
+				web_server.send(code, content_type, data);
+				break;
+			default:
+				if (data)
+				{
+					web_server.sendContent(data);
+					in_chuncks = 2;
+				}
+				else
+				{
+					web_server.sendContent("");
+					in_chuncks = 0;
+				}
+				break;
+			}
 		}
 	}
-}
 
 void endpoint_send_header(const char *name, const char *data, bool first)
 {
