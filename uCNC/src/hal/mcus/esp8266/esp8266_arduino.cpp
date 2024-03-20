@@ -407,7 +407,7 @@ extern "C"
 			return false;
 		}
 
-		File f = fileptr_t(fp->file_ptr).openNextFile();
+		File f = ((File *)fp->file_ptr)->openNextFile();
 		if (!f || !finfo)
 		{
 			return false;

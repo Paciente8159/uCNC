@@ -410,6 +410,9 @@ bool rp2040_wifi_clientok(void)
 #define FLASH_FS SPIFFS
 #endif
 
+/**
+ * Implements the function calls for the file system C wrapper
+*/
 #include "../../../modules/file_system.h"
 #define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
 fs_t flash_fs;
@@ -445,7 +448,7 @@ bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
 		return false;
 	}
 
-	File f = fileptr_t(fp->file_ptr).openNextFile();
+	File f = ((File *)fp->file_ptr)->openNextFile();
 	if (!f || !finfo)
 	{
 		return false;
@@ -521,6 +524,10 @@ fs_file_t *flash_fs_open(char *path, const char *mode)
 	}
 	return NULL;
 }
+
+/**
+ * Implements the function calls for the enpoints C wrapper
+*/
 
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
