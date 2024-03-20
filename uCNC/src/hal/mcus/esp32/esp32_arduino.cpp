@@ -765,93 +765,116 @@ extern "C"
 
 #ifdef ENABLE_WIFI
 #include "../../../modules/file_system.h"
-	fs_t flash_fs;
+#define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
+fs_t flash_fs;
 
-	int flash_fs_available(fs_file_t *fp)
+int flash_fs_available(fs_file_t *fp)
+{
+	if (fp->file_ptr)
 	{
-		return ((File *)fp->file_ptr)->available();
+		return fileptr_t(fp->file_ptr).available();
 	}
+	return 0;
+}
 
-	void flash_fs_close(fs_file_t *fp)
+void flash_fs_close(fs_file_t *fp)
+{
+	if (fp->file_ptr)
 	{
-		((File *)fp->file_ptr)->close();
+		fileptr_t(fp->file_ptr).close();
 		free(fp->file_ptr);
-		free(fp);
+	}
+	free(fp);
+}
+
+bool flash_fs_remove(char *path)
+{
+	return FLASH_FS.remove(path);
+}
+
+bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+{
+	if (!fp->file_ptr)
+	{
+		return false;
 	}
 
-	bool flash_fs_remove(char *path)
+	File f = fileptr_t(fp->file_ptr).openNextFile();
+	if (!f || !finfo)
 	{
-		return FLASH_FS.remove(path);
+		return false;
 	}
+	memset(finfo->full_name, 0, sizeof(finfo->full_name));
+	strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+	finfo->is_dir = f.isDirectory();
+	finfo->size = f.size();
+	finfo->timestamp = f.getLastWrite();
+	f.close();
+	return true;
+}
 
-	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+{
+	if (!fp->file_ptr)
 	{
-		File f = ((File *)fp->file_ptr)->openNextFile();
-		if (!f || !finfo)
-		{
-			return false;
-		}
-		memset(finfo->name, 0, sizeof(finfo->name));
-		strncpy(finfo->name, f.name(), FS_FILE_NAME_MAX_LEN);
+		return 0;
+	}
+	return fileptr_t(fp->file_ptr).read(buffer, len);
+}
+
+size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+{
+	if (!fp->file_ptr)
+	{
+		return 0;
+	}
+	return fileptr_t(fp->file_ptr).write(buffer, len);
+}
+
+bool flash_fs_info(char *path, fs_file_info_t *finfo)
+{
+	File f = FLASH_FS.open(path, "r");
+	if (f && finfo)
+	{
+		memset(finfo->full_name, 0, sizeof(finfo->full_name));
+		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
 		finfo->is_dir = f.isDirectory();
 		finfo->size = f.size();
-		finfo->timestamp = f.getLastWrite();
+		finfo->timestamp = (uint32_t)f.getLastWrite();
 		f.close();
 		return true;
 	}
 
-	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
-	{
-		return ((File *)fp->file_ptr)->read(buffer, len);
-	}
+	return false;
+}
 
-	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+fs_file_t *flash_fs_open(char *path, const char *mode)
+{
+	fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+	if (fp)
 	{
-		return ((File *)fp->file_ptr)->write(buffer, len);
-	}
-
-	bool flash_fs_info(char *path, fs_file_info_t *finfo)
-	{
-		File f = FLASH_FS.open(path, "r");
-		if (f && finfo)
+		fp->file_ptr = calloc(1, sizeof(File));
+		if (fp->file_ptr)
 		{
-			memset(finfo->name, 0, sizeof(finfo->name));
-			strncpy(finfo->name, f.name(), FS_FILE_NAME_MAX_LEN);
-			finfo->is_dir = f.isDirectory();
-			finfo->size = f.size();
-			finfo->timestamp = (uint32_t)f.getLastWrite();
-			f.close();
-			return true;
-		}
-
-		return false;
-	}
-
-	fs_file_t *flash_fs_open(char *path, const char *mode)
-	{
-		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
-		if (fp)
-		{
-			fp->file_ptr = calloc(1, sizeof(File));
-			if (fp->file_ptr)
+			*(static_cast<File*>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+			if (*(static_cast<File*>(fp->file_ptr)))
 			{
-				*((File *)fp->file_ptr) = FLASH_FS.open(path, mode);
-				if (*((File *)fp->file_ptr))
-				{
-					memset(fp->file_info.name, 0, sizeof(fp->file_info.name));
-					strncpy(fp->file_info.name, ((File *)fp->file_ptr)->name(), FS_FILE_NAME_MAX_LEN);
-					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
-					fp->file_info.size = ((File *)fp->file_ptr)->size();
-					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
-					fp->fs_ptr = &flash_fs;
-					return fp;
-				}
-				free(fp->file_ptr);
+				memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+				fp->file_info.full_name[0] = '/';
+				fp->file_info.full_name[1] = flash_fs.drive;
+				strncpy(&(fp->file_info.full_name[2]), ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 2);
+				fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+				fp->file_info.size = ((File *)fp->file_ptr)->size();
+				fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+				fp->fs_ptr = &flash_fs;
+				return fp;
 			}
-			free(fp);
+			free(fp->file_ptr);
 		}
-		return NULL;
+		free(fp);
 	}
+	return NULL;
+}
 
 	void mcu_wifi_task(void *arg)
 	{

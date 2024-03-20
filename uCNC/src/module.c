@@ -29,6 +29,7 @@
 #include "modules/softuart.h"
 #include "modules/system_languages.h"
 #include "modules/system_menu.h"
+#include "modules/file_system.h"
 
 /**
  *
@@ -64,6 +65,11 @@ void mod_init(void)
 
 #ifdef ENABLE_PLASMA_THC
 	LOAD_MODULE(plasma_thc);
+#endif
+
+#ifdef ENABLE_PARSER_MODULES
+	// file system commands
+	LOAD_MODULE(file_system);
 #endif
 
 	load_modules();

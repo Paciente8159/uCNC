@@ -371,6 +371,119 @@ extern "C"
 #include <SPIFFS.h>
 #define FLASH_FS SPIFFS
 #endif
+
+#include "../../../modules/file_system.h"
+#define fileptr_t(ptr) static_cast<File>(*(reinterpret_cast<File *>(ptr)))
+	fs_t flash_fs;
+
+	int flash_fs_available(fs_file_t *fp)
+	{
+		if (fp->file_ptr)
+		{
+			return fileptr_t(fp->file_ptr).available();
+		}
+		return 0;
+	}
+
+	void flash_fs_close(fs_file_t *fp)
+	{
+		if (fp->file_ptr)
+		{
+			fileptr_t(fp->file_ptr).close();
+			free(fp->file_ptr);
+		}
+		free(fp);
+	}
+
+	bool flash_fs_remove(char *path)
+	{
+		return FLASH_FS.remove(path);
+	}
+
+	bool flash_fs_next_file(fs_file_t *fp, fs_file_info_t *finfo)
+	{
+		if (!fp->file_ptr)
+		{
+			return false;
+		}
+
+		File f = fileptr_t(fp->file_ptr).openNextFile();
+		if (!f || !finfo)
+		{
+			return false;
+		}
+		memset(finfo->full_name, 0, sizeof(finfo->full_name));
+		strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+		finfo->is_dir = f.isDirectory();
+		finfo->size = f.size();
+		finfo->timestamp = f.getLastWrite();
+		f.close();
+		return true;
+	}
+
+	size_t flash_fs_read(fs_file_t *fp, uint8_t *buffer, size_t len)
+	{
+		if (!fp->file_ptr)
+		{
+			return 0;
+		}
+		return fileptr_t(fp->file_ptr).read(buffer, len);
+	}
+
+	size_t flash_fs_write(fs_file_t *fp, const uint8_t *buffer, size_t len)
+	{
+		if (!fp->file_ptr)
+		{
+			return 0;
+		}
+		return fileptr_t(fp->file_ptr).write(buffer, len);
+	}
+
+	bool flash_fs_info(char *path, fs_file_info_t *finfo)
+	{
+		File f = FLASH_FS.open(path, "r");
+		if (f && finfo)
+		{
+			memset(finfo->full_name, 0, sizeof(finfo->full_name));
+			strncpy(finfo->full_name, f.name(), (FS_PATH_NAME_MAX_LEN - strlen(f.name())));
+			finfo->is_dir = f.isDirectory();
+			finfo->size = f.size();
+			finfo->timestamp = (uint32_t)f.getLastWrite();
+			f.close();
+			return true;
+		}
+
+		return false;
+	}
+
+	fs_file_t *flash_fs_open(char *path, const char *mode)
+	{
+		fs_file_t *fp = (fs_file_t *)calloc(1, sizeof(fs_file_t));
+		if (fp)
+		{
+			fp->file_ptr = calloc(1, sizeof(File));
+			if (fp->file_ptr)
+			{
+				*(static_cast<File *>(fp->file_ptr)) = FLASH_FS.open(path, mode);
+				if (*(static_cast<File *>(fp->file_ptr)))
+				{
+					memset(fp->file_info.full_name, 0, sizeof(fp->file_info.full_name));
+					fp->file_info.full_name[0] = '/';
+					fp->file_info.full_name[1] = flash_fs.drive;
+					strncpy(&(fp->file_info.full_name[2]), ((File *)fp->file_ptr)->name(), FS_PATH_NAME_MAX_LEN - 2);
+					fp->file_info.is_dir = ((File *)fp->file_ptr)->isDirectory();
+					fp->file_info.size = ((File *)fp->file_ptr)->size();
+					fp->file_info.timestamp = (uint32_t)((File *)fp->file_ptr)->getLastWrite();
+					fp->fs_ptr = &flash_fs;
+					return fp;
+				}
+				free(fp->file_ptr);
+			}
+			free(fp);
+		}
+		return NULL;
+	}
+
 	static File upload_file;
 	void fs_file_updater()
 	{
@@ -548,7 +661,7 @@ extern "C"
 		return true;
 	}
 
-void endpoint_send(int code, const char *content_type, const char *data)
+	void endpoint_send(int code, const char *content_type, const char *data)
 	{
 		static uint8_t in_chuncks = 0;
 		if (!content_type)
@@ -602,7 +715,7 @@ void endpoint_send(int code, const char *content_type, const char *data)
 	endpoint_upload_t endpoint_file_upload_status(void)
 	{
 		HTTPUpload &upload = web_server.upload();
-		endpoint_upload_t status = {.status=(uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
+		endpoint_upload_t status = {.status = (uint8_t)upload.status, .data = upload.buf, .datalen = upload.currentSize};
 		return status;
 	}
 
