@@ -392,7 +392,6 @@ bool rp2040_wifi_clientok(void)
 
 #if defined(MCU_HAS_WIFI) && defined(MCU_HAS_ENDPOINTS)
 
-#include "../../../modules/endpoint.h"
 #define MCU_FLASH_FS_LITTLE_FS 1
 #define MCU_FLASH_FS_SPIFFS 2
 
@@ -528,12 +527,12 @@ fs_file_t *flash_fs_open(char *path, const char *mode)
 /**
  * Implements the function calls for the enpoints C wrapper
 */
-
+#include "../../../modules/endpoint.h"
 void endpoint_add(const char *uri, uint8_t method, endpoint_delegate request_handler, endpoint_delegate file_handler)
 {
 	if (!method)
 	{
-		method = 255;
+		method = HTTP_ANY;
 	}
 
 	String s = String(uri);
@@ -569,7 +568,7 @@ bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen)
 	return true;
 }
 
-void endpoint_send(int code, const char *content_type, const char *data)
+void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len)
 {
 	static uint8_t in_chuncks = 0;
 	if (!content_type)
@@ -585,12 +584,12 @@ void endpoint_send(int code, const char *content_type, const char *data)
 			in_chuncks = 2;
 			__FALL_THROUGH__
 		case 0:
-			web_server.send(code, content_type, data);
+			web_server.send(code, content_type, data, data_len);
 			break;
 		default:
 			if (data)
 			{
-				web_server.sendContent(data);
+				web_server.sendContent((char*)data, data_len);
 				in_chuncks = 2;
 			}
 			else
@@ -806,8 +805,6 @@ void rp2040_wifi_bt_init(void)
 #ifndef CUSTOM_OTA_ENDPOINT
 	httpUpdater.setup(&web_server, OTA_URI, update_username, update_password);
 #endif
-	// endpoint_add(FS_URI, HTTP_ANY, fs_file_browser, fs_file_updater);
-	// endpoint_add(FS_URI "/*", HTTP_ANY, fs_file_browser, fs_file_updater);
 	web_server.begin();
 
 #ifdef MCU_HAS_WEBSOCKETS

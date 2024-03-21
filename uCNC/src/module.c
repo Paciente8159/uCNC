@@ -67,7 +67,7 @@ void mod_init(void)
 	LOAD_MODULE(plasma_thc);
 #endif
 
-#ifdef ENABLE_PARSER_MODULES
+#ifdef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
 	// file system commands
 	LOAD_MODULE(file_system);
 #endif

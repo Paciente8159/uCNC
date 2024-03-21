@@ -73,7 +73,8 @@ extern "C"
 	int endpoint_request_hasargs(void);
 	void endpoint_request_uri(char *uri, size_t maxlen);
 	bool endpoint_request_arg(const char *argname, char *argvalue, size_t maxlen);
-	void endpoint_send(int code, const char *content_type, const char *data);
+	void endpoint_send(int code, const char *content_type, const uint8_t *data, size_t data_len);
+	static FORCEINLINE void endpoint_send_str(int code, const char *content_type, const char *data){endpoint_send(code, content_type, (const uint8_t *)data, strlen(data));}
 	void endpoint_send_header(const char *name, const char *data, bool first);
 	bool endpoint_send_file(const char *file_path, const char *content_type);
 

@@ -155,7 +155,8 @@ static fs_file_t *fs_path_parse(fs_file_info_t *current_path, char *new_path, co
 		}
 	}
 
-	if(!strlen(full_path) && current_path){
+	if (!strlen(full_path) && current_path)
+	{
 		memset(current_path, 0, sizeof(fs_file_info_t));
 		return NULL;
 	}
@@ -283,7 +284,8 @@ void fs_cd(void)
 		}
 		fs_close(dir);
 	}
-	else if(strlen(fs_cwd.full_name)){
+	else if (strlen(fs_cwd.full_name))
+	{
 		serial_print_str(newdir);
 		protocol_send_feedback(__romstr__("Dir not found!"));
 	}
@@ -481,13 +483,15 @@ CREATE_EVENT_LISTENER(grbl_cmd, fs_cmd_parser);
 
 void fs_json_api(void)
 {
+	DEBUG_STR("FS JSON root endpoint request\n\r");
+
 	fs_t *ptr = fs_default_drive;
 
 	if (ptr)
 	{
 		char path[32];
-		endpoint_send(200, NULL, NULL);
-		endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[");
+		endpoint_send(200, NULL, NULL, 0);
+		endpoint_send_str(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[");
 		while (ptr)
 		{
 			memset(path, 0, sizeof(path));
@@ -498,21 +502,23 @@ void fs_json_api(void)
 				// trailling comma
 				path[strlen(path)] = ',';
 			}
-			endpoint_send(200, "application/json", path);
+			endpoint_send_str(200, "application/json", path);
 		}
-		endpoint_send(200, "application/json", "]}\n");
+		endpoint_send_str(200, "application/json", "]}\n");
 		// close the stream
-		endpoint_send(200, "application/json", NULL);
+		endpoint_send(200, "application/json", NULL, 0);
 	}
 	else
 	{
-		endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[]}");
+		endpoint_send_str(200, "application/json", "{\"result\":\"ok\",\"path\":\"\",\"data\":[]}");
 	}
 }
 
 void fs_file_json_api()
 {
 	bool update = false;
+
+	DEBUG_STR("FS JSON endpoint request\n\r");
 
 	if (endpoint_request_hasargs())
 	{
@@ -521,6 +527,7 @@ void fs_file_json_api()
 		if (arg && arg != '0')
 		{
 			update = true;
+			DEBUG_STR("update request\n\r");
 		}
 	}
 
@@ -530,7 +537,7 @@ void fs_file_json_api()
 		char updatepage[FS_WRITE_GZ_SIZE];
 		rom_memcpy(updatepage, fs_write_page, FS_WRITE_GZ_SIZE);
 		endpoint_send_header("Content-Encoding", "gzip", true);
-		endpoint_send(200, "text/html", updatepage);
+		endpoint_send(200, "text/html", updatepage, FS_WRITE_GZ_SIZE);
 		return;
 	}
 
@@ -539,11 +546,19 @@ void fs_file_json_api()
 	endpoint_request_uri(urlpath, 256);
 	char *fs_url = &urlpath[FS_JSON_ENDPOINT_LEN];
 
+	if (strcmp(fs_url, "/") == 0)
+	{
+		fs_json_api();
+		return;
+	}
+
 	fs_file_t *file = fs_open(fs_url, "r");
+
+	DEBUG_STR("fetch file\n\r");
 
 	if (!file)
 	{
-		endpoint_send(404, "application/json", "{\"result\":\"notfound\"}");
+		endpoint_send_str(404, "application/json", "{\"result\":\"notfound\"}");
 		return;
 	}
 
@@ -563,11 +578,11 @@ void fs_file_json_api()
 			endpoint_send_header("Location", args, true);
 			memset(urlpath, 0, sizeof(urlpath));
 			snprintf(urlpath, 256, "{\"redirect\":\"%s\"}", args);
-			endpoint_send(303, "application/json", urlpath);
+			endpoint_send_str(303, "application/json", urlpath);
 		}
 		else
 		{
-			endpoint_send(200, "application/json", "{\"result\":\"ok\"}");
+			endpoint_send_str(200, "application/json", "{\"result\":\"ok\"}");
 		}
 
 		break;
@@ -575,10 +590,10 @@ void fs_file_json_api()
 		if (file->file_info.is_dir)
 		{
 			// start chunck transmition;
-			endpoint_send(200, NULL, NULL);
-			endpoint_send(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
-			endpoint_send(200, "application/json", fs_url);
-			endpoint_send(200, "application/json", "\",\"data\":[");
+			endpoint_send(200, NULL, NULL, 0);
+			endpoint_send_str(200, "application/json", "{\"result\":\"ok\",\"path\":\"");
+			endpoint_send_str(200, "application/json", fs_url);
+			endpoint_send_str(200, "application/json", "\",\"data\":[");
 			fs_file_info_t child = {0};
 
 			while (fs_nextfile(file, &child))
@@ -598,26 +613,26 @@ void fs_file_json_api()
 					// trailling comma
 					urlpath[strlen(urlpath)] = ',';
 				}
-				endpoint_send(200, "application/json", urlpath);
+				endpoint_send_str(200, "application/json", urlpath);
 			}
-			endpoint_send(200, "application/json", "]}\n");
+			endpoint_send_str(200, "application/json", "]}\n");
 			// close the stream
-			endpoint_send(200, "application/json", NULL);
+			endpoint_send(200, "application/json", NULL, 0);
 		}
 		else
 		{
 			char content[ENDPOINT_MAX_CHUNCK_LEN / sizeof(char)];
 			if (file->file_info.size > ENDPOINT_MAX_CHUNCK_LEN)
 			{
-				endpoint_send(200, "application/octet-stream", NULL);
+				endpoint_send(200, NULL, NULL, 0);
 			}
 			while (fs_available(file))
 			{
-				fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN);
-				endpoint_send(200, "application/octet-stream", content);
+				size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN);
+				endpoint_send(200, "application/octet-stream", content, content_len);
 			}
 			// close the stream
-			endpoint_send(200, "application/octet-stream", "");
+			endpoint_send(200, "application/octet-stream", NULL, 0);
 		}
 		break;
 	}
@@ -859,9 +874,9 @@ void fs_mount(fs_t *drive)
 		return;
 	}
 
+	DEBUG_STR("mounting drive\n\r");
 	if (!fs_default_drive)
 	{
-
 		fs_default_drive = drive;
 	}
 	else
@@ -884,7 +899,7 @@ void fs_mount(fs_t *drive)
 
 	RUNONCE
 	{
-
+		DEBUG_STR("adding json endpoints\n\r");
 #ifdef MCU_HAS_ENDPOINTS
 		endpoint_add(FS_JSON_ENDPOINT, ENDPOINT_ANY, fs_json_api, NULL);
 		endpoint_add(FS_JSON_ENDPOINT "/*", ENDPOINT_ANY, fs_file_json_api, fs_json_uploader);

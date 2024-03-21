@@ -342,11 +342,14 @@ void serial_putc(char c)
 #ifdef ENABLE_DEBUG_STREAM
 void debug_putc(char c)
 {
-	DEBUG_STREAM->stream_putc(c);
-
-	if (c == '\n')
+	if (DEBUG_STREAM)
 	{
-		DEBUG_STREAM->stream_flush();
+		DEBUG_STREAM->stream_putc(c);
+
+		if (c == '\n')
+		{
+			DEBUG_STREAM->stream_flush();
+		}
 	}
 }
 #endif
