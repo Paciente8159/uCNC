@@ -24,11 +24,11 @@
 // file system entry point
 fs_t *fs_default_drive;
 // current working dir for internal file system (Grbl commands)
-static fs_file_info_t fs_cwd;
+static fs_file_info_t fs_cwd __attribute__((unused));
 // current working dir for system menu (graphic display)
-static fs_file_info_t fs_sm_cwd;
+static fs_file_info_t fs_sm_cwd __attribute__((unused));
 // dir level for system menu (graphic display)
-static uint8_t dir_level;
+static uint8_t dir_level __attribute__((unused));
 
 // current running file
 fs_file_t *fs_running_file;
@@ -534,7 +534,7 @@ void fs_file_json_api()
 	// updated page
 	if (update && endpoint_request_method() == ENDPOINT_GET)
 	{
-		char updatepage[FS_WRITE_GZ_SIZE];
+		uint8_t updatepage[FS_WRITE_GZ_SIZE];
 		rom_memcpy(updatepage, fs_write_page, FS_WRITE_GZ_SIZE);
 		endpoint_send_header("Content-Encoding", "gzip", true);
 		endpoint_send(200, "text/html", updatepage, FS_WRITE_GZ_SIZE);
@@ -621,14 +621,14 @@ void fs_file_json_api()
 		}
 		else
 		{
-			char content[ENDPOINT_MAX_CHUNCK_LEN / sizeof(char)];
+			uint8_t content[ENDPOINT_MAX_CHUNCK_LEN / sizeof(char)];
 			if (file->file_info.size > ENDPOINT_MAX_CHUNCK_LEN)
 			{
 				endpoint_send(200, NULL, NULL, 0);
 			}
 			while (fs_available(file))
 			{
-				size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN);
+				size_t content_len = fs_read(file, (uint8_t *)content, ENDPOINT_MAX_CHUNCK_LEN / sizeof(char));
 				endpoint_send(200, "application/octet-stream", content, content_len);
 			}
 			// close the stream
