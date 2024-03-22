@@ -7,6 +7,7 @@
 #include "SDL2/SDL.h"
 #endif
 #include <assert.h>
+#include <stdio.h>
 
 //#define HEIGHT (64)
 //#define WIDTH 128
@@ -49,7 +50,7 @@ static void u8g_sdl_set_pixel(int x, int y, int idx)
         
       assert( offset < (Uint32)(u8g_sdl_width * u8g_sdl_multiple * u8g_sdl_height * u8g_sdl_multiple * u8g_sdl_screen->format->BytesPerPixel) );
       
-      ptr = u8g_sdl_screen->pixels + offset;
+      ptr = (uint32_t*)u8g_sdl_screen->pixels + offset;
       *ptr = u8g_sdl_color[idx];
 #endif
     }

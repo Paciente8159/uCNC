@@ -4,6 +4,22 @@ This module adds graphic display support for µCNC.
 
 ## Changelog
 
+### 2024-02-13
+
+- updated for v010808
+
+### 2023-10-21
+- popup with fixed width
+
+### 2023-10-20
+- modified event hooks used to prevent loop inception that caused some menus to become irresponsive (#39)
+
+### 2023-10-11
+- integration of multistream
+
+### 2023-09-23
+- added multiple main loop calls to prevent planner starving and inconsistent motion (#33)
+
 ### 2023-09-22
 - redesigned alarm screen (#32)
 
@@ -11,12 +27,17 @@ This module adds graphic display support for µCNC.
 - added long press (5s) on button to do soft reset (#31)
 - added alarm screen popup (#31)
 
+
 ### 2023-09-17
 - fixed line separator drawing for 5-axis or more
 - increased encoder sensitivity (soft polling)
 
 ### 2023-09-10
 - fixed I2C graphic display IO call missing argument
+
+### 2023-05-21
+
+- updated to version 1.8 (#29)
 
 ### 2023-05-08
 

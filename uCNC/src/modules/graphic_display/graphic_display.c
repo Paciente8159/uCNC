@@ -25,7 +25,7 @@
 #include <math.h>
 #include "../system_menu.h"
 
-#if (UCNC_MODULE_VERSION > 010700)
+#if (UCNC_MODULE_VERSION < 10801 || UCNC_MODULE_VERSION > 99999)
 #error "This module is not compatible with the current version of µCNC"
 #endif
 
@@ -102,10 +102,7 @@ SOFTSPI(graphic_spi, 100000UL, 0, GRAPHIC_DISPLAY_SPI_DATA, GRAPHIC_DISPLAY_SPI_
 
 uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 	uint8_t *data;
 	switch (msg)
@@ -117,10 +114,7 @@ uint8_t u8x8_byte_ucnc_hw_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 			softspi_xmit(graphic_port, (uint8_t)*data);
 			data++;
 			arg_int--;
-			if (!cnc_get_exec_state(EXEC_ALARM))
-			{
-				cnc_dotasks();
-			}
+			cnc_dotasks();
 		}
 		break;
 	case U8X8_MSG_BYTE_INIT:
@@ -182,7 +176,11 @@ uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 		i2c_buffer_offset = 0;
 		break;
 	case U8X8_MSG_BYTE_END_TRANSFER:
+#if (UCNC_MODULE_VERSION < 10808)
 		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset, true);
+#else
+		softi2c_send(graphic_port, u8x8_GetI2CAddress(u8x8) >> 1, i2c_buffer, i2c_buffer_offset, true, 20);
+#endif
 		i2c_buffer_offset = 0;
 		break;
 	default:
@@ -195,26 +193,23 @@ uint8_t u8x8_byte_ucnc_hw_i2c(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *
 
 uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
 {
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 	switch (msg)
 	{
 	case U8X8_MSG_GPIO_AND_DELAY_INIT: // called once during init phase of u8g2/u8x8
 		break;						   // can be used to setup pins
 	case U8X8_MSG_DELAY_NANO:		   // delay arg_int * 1 nano second
-		// while (arg_int--)
-		// 	;
+		while (arg_int--)
+			;
 		break;
 	case U8X8_MSG_DELAY_100NANO: // delay arg_int * 100 nano seconds
-		// while (arg_int--)
-		// 	mcu_delay_100ns();
+		while (arg_int--)
+			mcu_delay_100ns();
 		break;
 	case U8X8_MSG_DELAY_10MICRO: // delay arg_int * 10 micro seconds
-		// while (arg_int--)
-		// 	mcu_delay_us(10);
+		while (arg_int--)
+			mcu_delay_us(10);
 		break;
 	case U8X8_MSG_DELAY_MILLI: // delay arg_int * 1 milli second
 		cnc_delay_ms(arg_int);
@@ -231,72 +226,72 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 		break;			   // arg_int=1: delay by 5us, arg_int = 4: delay by 1.25us
 	case U8X8_MSG_GPIO_D0: // D0 or SPI clock pin: Output level in arg_int
 #if GRAPHIC_DISPLAY_SPI_CLOCK != UNDEF_PIN
-		io_set_output(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
+		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D1: // D1 or SPI data pin: Output level in arg_int
 #if GRAPHIC_DISPLAY_SPI_CLOCK != UNDEF_PIN
-		io_set_output(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
+		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CLOCK, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D2: // D2 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D2_PIN
-		io_set_output(U8X8_MSG_GPIO_D2_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D2_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D3: // D3 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D3_PIN
-		io_set_output(U8X8_MSG_GPIO_D3_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D3_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D4: // D4 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D4_PIN
-		io_set_output(U8X8_MSG_GPIO_D4_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D4_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D5: // D5 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D5_PIN
-		io_set_output(U8X8_MSG_GPIO_D5_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D5_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D6: // D6 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D6_PIN
-		io_set_output(U8X8_MSG_GPIO_D6_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D6_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_D7: // D7 pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_D7_PIN
-		io_set_output(U8X8_MSG_GPIO_D7_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_D7_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_E: // E/WR pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_E_PIN
-		io_set_output(U8X8_MSG_GPIO_E_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_E_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_CS: // CS (chip select) pin: Output level in arg_int
 #if GRAPHIC_DISPLAY_SPI_CS != UNDEF_PIN
-		io_set_output(GRAPHIC_DISPLAY_SPI_CS, (bool)arg_int);
+		io_set_pinvalue(GRAPHIC_DISPLAY_SPI_CS, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_DC: // DC (data/cmd, A0, register select) pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_DC_PIN
-		io_set_output(U8X8_MSG_GPIO_DC_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_DC_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_RESET: // Reset pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_RESET_PIN
-		io_set_output(U8X8_MSG_GPIO_RESET_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_RESET_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_CS1: // CS1 (chip select) pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_CS1_PIN
-		io_set_output(U8X8_MSG_GPIO_CS1_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_CS1_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_CS2: // CS2 (chip select) pin: Output level in arg_int
 #ifdef U8X8_MSG_GPIO_CS2_PIN
-		io_set_output(U8X8_MSG_GPIO_CS2_PIN, (bool)arg_int);
+		io_set_pinvalue(U8X8_MSG_GPIO_CS2_PIN, (bool)arg_int);
 #endif
 		break;
 	case U8X8_MSG_GPIO_I2C_CLOCK: // arg_int=0: Output low at I2C clock pin
@@ -375,13 +370,64 @@ uint8_t u8x8_gpio_and_delay_ucnc(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, voi
 #ifndef GRAPHIC_DISPLAY_ENCODER_ENC2
 #define GRAPHIC_DISPLAY_ENCODER_ENC2 DIN18
 #endif
+#ifndef GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS
+#define GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS 200
+#endif
+
+static int8_t graphic_display_rotary_encoder_counter;
+static int8_t graphic_display_rotary_encoder_pressed;
+
 // reads inputs and returns a mask with a pin state transition
 uint8_t graphic_display_rotary_encoder_control(void)
+{
+	if (graphic_display_rotary_encoder_pressed != 0)
+	{
+		graphic_display_rotary_encoder_pressed = 0;
+		return GRAPHIC_DISPLAY_SELECT;
+	}
+
+	if (graphic_display_rotary_encoder_counter > 0)
+	{
+		graphic_display_rotary_encoder_counter = 0;
+		return GRAPHIC_DISPLAY_NEXT;
+	}
+
+	if (graphic_display_rotary_encoder_counter < 0)
+	{
+		graphic_display_rotary_encoder_counter = 0;
+		return GRAPHIC_DISPLAY_PREV;
+	}
+
+	return 0;
+}
+
+// static bool graphic_display_current_menu_active;
+#ifdef ENABLE_MAIN_LOOP_MODULES
+bool graphic_display_start(void *args)
+{
+	// clear
+	system_menu_render_startup();
+
+	return false;
+}
+CREATE_EVENT_LISTENER(cnc_reset, graphic_display_start);
+
+bool graphic_display_alarm(void *args)
+{
+	// renders the alarm
+	system_menu_render();
+
+	return EVENT_CONTINUE;
+}
+
+bool graphic_display_rotary_encoder_control_sample(void *args)
 {
 	static uint8_t last_pin_state = 0;
 	static uint8_t last_rot_transition = 0;
 	uint8_t pin_state = 0;
 	static uint32_t long_press_timeout = 0;
+	// btn debounce
+	static uint32_t short_press_timeout = 0;
 
 // rotation encoder
 #ifndef GRAPHIC_DISPLAY_INVERT_ENCODER_DIR
@@ -392,31 +438,56 @@ uint8_t graphic_display_rotary_encoder_control(void)
 	pin_state |= io_get_pinvalue(GRAPHIC_DISPLAY_ENCODER_ENC2) ? 2 : 0;
 #endif
 
+	int8_t counter = graphic_display_rotary_encoder_counter;
+	uint8_t last_rot = last_rot_transition;
+
 	switch (pin_state)
 	{
 	case 6:
 		last_rot_transition = 0;
-		pin_state = 0;
 		break;
 	case 4:
-		pin_state = (last_rot_transition == 0) ? 2 : (last_rot_transition == 3) ? 4
-																				: 0;
-		last_rot_transition = 1;
+		if (last_rot == 0 || last_rot == 1)
+		{
+			last_rot_transition = 1;
+		}
+		else
+		{
+			last_rot_transition = 5;
+		}
 		break;
 	case 2:
-		pin_state = (last_rot_transition == 0) ? 4 : (last_rot_transition == 3) ? 2
-																				: 0;
-		last_rot_transition = 2;
+		if (last_rot == 0 || last_rot == 2)
+		{
+			last_rot_transition = 2;
+		}
+		else
+		{
+			last_rot_transition = 5;
+		}
 		break;
 	default:
+		if (last_rot == 1)
+		{
+			if (counter < 127)
+			{
+				graphic_display_rotary_encoder_counter++;
+			}
+		}
+
+		if (last_rot == 2)
+		{
+			if (counter > -127)
+			{
+				graphic_display_rotary_encoder_counter--;
+			}
+		}
+
 		last_rot_transition = 3;
-		pin_state = 0;
 		break;
 	}
 
-	pin_state |= io_get_pinvalue(GRAPHIC_DISPLAY_ENCODER_BTN) ? 1 : 0;
-
-	pin_state = ~pin_state;
+	pin_state = !io_get_pinvalue(GRAPHIC_DISPLAY_ENCODER_BTN) ? 1 : 0;
 
 	// if btn is pressed
 	if ((pin_state & 1))
@@ -445,22 +516,21 @@ uint8_t graphic_display_rotary_encoder_control(void)
 			long_press_timeout = mcu_millis() + 5000;
 		}
 		last_pin_state = pin_state;
-		return (pin_diff & pin_state);
+		if (pin_diff & pin_state)
+		{
+			uint32_t short_press = short_press_timeout;
+			if (short_press < mcu_millis())
+			{
+				short_press_timeout = mcu_millis() + GRAPHIC_DISPLAY_ENCODER_DEBOUNCE_MS;
+				graphic_display_rotary_encoder_pressed++;
+			}
+		}
 	}
 
-	return 0;
+	return EVENT_CONTINUE;
 }
 
-// static bool graphic_display_current_menu_active;
-#ifdef ENABLE_MAIN_LOOP_MODULES
-bool graphic_display_start(void *args)
-{
-	// clear
-	system_menu_render_startup();
-
-	return false;
-}
-CREATE_EVENT_LISTENER(cnc_reset, graphic_display_start);
+CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_display_rotary_encoder_control_sample);
 
 bool graphic_display_update(void *args)
 {
@@ -469,40 +539,81 @@ bool graphic_display_update(void *args)
 	if (!running)
 	{
 		running = true;
+		uint8_t action = SYSTEM_MENU_ACTION_NONE;
 		switch (graphic_display_rotary_encoder_control())
 		{
-		case 0:
-			// no action needed to go idle
-			system_menu_action(SYSTEM_MENU_ACTION_NONE);
-			break;
 		case GRAPHIC_DISPLAY_SELECT:
-			system_menu_action(SYSTEM_MENU_ACTION_SELECT);
+			action = SYSTEM_MENU_ACTION_SELECT;
+			// prevent double click
+			graphic_display_rotary_encoder_pressed = 0;
 			break;
 		case GRAPHIC_DISPLAY_NEXT:
-			system_menu_action(SYSTEM_MENU_ACTION_NEXT);
+			action = SYSTEM_MENU_ACTION_NEXT;
 			break;
 		case GRAPHIC_DISPLAY_PREV:
-			system_menu_action(SYSTEM_MENU_ACTION_PREV);
+			action = SYSTEM_MENU_ACTION_PREV;
 			break;
 		}
 
-		if (!cnc_get_exec_state(EXEC_ALARM))
-		{
-			cnc_dotasks();
-		}
+		system_menu_action(action);
+
+		cnc_dotasks();
 		// render menu
 		system_menu_render();
-		if (!cnc_get_exec_state(EXEC_ALARM))
-		{
-			cnc_dotasks();
-		}
+		cnc_dotasks();
+
 		running = false;
 	}
 
-	return false;
+	return EVENT_CONTINUE;
 }
 
-CREATE_EVENT_LISTENER(cnc_io_dotasks, graphic_display_update);
+CREATE_EVENT_LISTENER(cnc_dotasks, graphic_display_update);
+CREATE_EVENT_LISTENER(cnc_alarm, graphic_display_update);
+#endif
+
+#ifdef DECL_SERIAL_STREAM
+DECL_BUFFER(uint8_t, graphic_stream_buffer, 32);
+static uint8_t graphic_display_getc(void)
+{
+	uint8_t c = 0;
+	BUFFER_DEQUEUE(graphic_stream_buffer, &c);
+	return c;
+}
+
+uint8_t graphic_display_available(void)
+{
+	return BUFFER_READ_AVAILABLE(graphic_stream_buffer);
+}
+
+void graphic_display_clear(void)
+{
+	BUFFER_CLEAR(graphic_stream_buffer);
+}
+
+DECL_SERIAL_STREAM(graphic_stream, graphic_display_getc, graphic_display_available, graphic_display_clear, NULL, NULL);
+
+uint8_t system_menu_send_cmd(const char *__s)
+{
+	// if machine is running rejects the command
+	if (cnc_get_exec_state(EXEC_RUN | EXEC_JOG) == EXEC_RUN)
+	{
+		return STATUS_SYSTEM_GC_LOCK;
+	}
+
+	uint8_t len = strlen(__s);
+	uint8_t w;
+
+	if (BUFFER_WRITE_AVAILABLE(graphic_stream_buffer) < len)
+	{
+		return STATUS_STREAM_FAILED;
+	}
+
+	BUFFER_WRITE(graphic_stream_buffer, __s, len, w);
+
+	return STATUS_OK;
+}
+
 #endif
 
 DECL_MODULE(graphic_display)
@@ -528,11 +639,17 @@ DECL_MODULE(graphic_display)
 	u8g2_SetPowerSave(U8G2, 0); // wake up display
 	u8g2_FirstPage(U8G2);
 
+#ifdef DECL_SERIAL_STREAM
+	serial_stream_register(&graphic_stream);
+#endif
+
 	// STARTS SYSTEM MENU MODULE
 	system_menu_init();
 #ifdef ENABLE_MAIN_LOOP_MODULES
 	ADD_EVENT_LISTENER(cnc_reset, graphic_display_start);
-	ADD_EVENT_LISTENER(cnc_io_dotasks, graphic_display_update);
+	ADD_EVENT_LISTENER(cnc_alarm, graphic_display_update);
+	ADD_EVENT_LISTENER(cnc_dotasks, graphic_display_update);
+	ADD_EVENT_LISTENER(cnc_io_dotasks, graphic_display_rotary_encoder_control_sample);
 #else
 #warning "Main loop extensions are not enabled. Graphic display card will not work."
 #endif
@@ -567,32 +684,37 @@ static void io_states_str(char *buff)
 			buff[i++] = 'P';
 		}
 
-		if (CHECKFLAG(limits, LIMIT_X_MASK))
+		if (CHECKFLAG(limits, LINACT0_LIMIT_MASK))
 		{
 			buff[i++] = 'X';
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Y_MASK))
+		if (CHECKFLAG(limits, LINACT1_LIMIT_MASK))
 		{
+
+#if ((AXIS_COUNT == 2) && defined(USE_Y_AS_Z_ALIAS))
+			buff[i++] = 'Z';
+#else
 			buff[i++] = 'Y';
+#endif
 		}
 
-		if (CHECKFLAG(limits, LIMIT_Z_MASK))
+		if (CHECKFLAG(limits, LINACT2_LIMIT_MASK))
 		{
 			buff[i++] = 'Z';
 		}
 
-		if (CHECKFLAG(limits, LIMIT_A_MASK))
+		if (CHECKFLAG(limits, LINACT3_LIMIT_MASK))
 		{
 			buff[i++] = 'A';
 		}
 
-		if (CHECKFLAG(limits, LIMIT_B_MASK))
+		if (CHECKFLAG(limits, LINACT4_LIMIT_MASK))
 		{
 			buff[i++] = 'B';
 		}
 
-		if (CHECKFLAG(limits, LIMIT_C_MASK))
+		if (CHECKFLAG(limits, LINACT5_LIMIT_MASK))
 		{
 			buff[i++] = 'C';
 		}
@@ -658,10 +780,7 @@ void system_menu_render_idle(void)
 	y -= (FONTHEIGHT + 3);
 #endif
 
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 #if (AXIS_COUNT >= 3)
 	buff[0] = 'Z';
@@ -679,7 +798,8 @@ void system_menu_render_idle(void)
 	y -= (FONTHEIGHT + 3);
 #endif
 
-	if (!cnc_get_exec_state(EXEC_ALARM))
+	cnc_dotasks();
+
 	{
 		cnc_dotasks();
 	}
@@ -698,10 +818,7 @@ void system_menu_render_idle(void)
 	y -= (FONTHEIGHT + 3);
 #endif
 
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 	// units, feed and tool
 	if (g_settings.report_inches)
@@ -724,7 +841,7 @@ void system_menu_render_idle(void)
 	uint16_t feed;
 	uint16_t spindle;
 	uint8_t coolant;
-	parser_get_modes(modalgroups, &feed, &spindle, &coolant);
+	parser_get_modes(modalgroups, &feed, &spindle);
 	rom_strcpy(tool, __romstr__(" T"));
 	system_menu_int_to_str(&tool[2], modalgroups[11]);
 	// Realtime tool speed
@@ -737,13 +854,9 @@ void system_menu_render_idle(void)
 
 	y -= (FONTHEIGHT + 3);
 
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 	// system status
-
 	rom_strcpy(buff, __romstr__("St:"));
 	uint8_t state = cnc_get_exec_state(0xFF);
 	uint8_t filter = 0x80;
@@ -789,16 +902,13 @@ void system_menu_render_idle(void)
 			break;
 		}
 	}
-	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 
+	u8g2_DrawStr(U8G2, ALIGN_LEFT, y, buff);
 	memset(buff, 0, 32);
 	io_states_str(buff);
 	u8g2_DrawStr(U8G2, (LCDWIDTH >> 1), y, buff);
 
-	if (!cnc_get_exec_state(EXEC_ALARM))
-	{
-		cnc_dotasks();
-	}
+	cnc_dotasks();
 
 	u8g2_SendBuffer(U8G2);
 }
@@ -831,10 +941,8 @@ void system_menu_item_render_label(uint8_t render_flags, const char *label)
 	uint8_t y = y_coord;
 	if (label)
 	{
-		if (!cnc_get_exec_state(EXEC_ALARM))
-		{
-			cnc_dotasks();
-		}
+		cnc_dotasks();
+
 		if (render_flags & SYSTEM_MENU_MODE_EDIT)
 		{
 			y_coord += FONTHEIGHT + 1;
@@ -858,10 +966,7 @@ void system_menu_item_render_arg(uint8_t render_flags, const char *value)
 {
 	if (value)
 	{
-		if (!cnc_get_exec_state(EXEC_ALARM))
-		{
-			cnc_dotasks();
-		}
+		cnc_dotasks();
 
 		uint8_t y = y_coord;
 
@@ -945,9 +1050,9 @@ void system_menu_render_modal_popup(const char *__s)
 	w += 6;
 	uint8_t bh = (FONTHEIGHT + 1) * (lines + 1);
 	u8g2_SetDrawColor(U8G2, 0);
-	u8g2_DrawBox(U8G2, (LCDWIDTH - w - 10) >> 1, (LCDHEIGHT - bh) >> 1, w + 10, bh);
+	u8g2_DrawBox(U8G2, 5, (LCDHEIGHT - bh) >> 1, (LCDWIDTH - 10), bh);
 	u8g2_SetDrawColor(U8G2, 1);
-	u8g2_DrawFrame(U8G2, (LCDWIDTH - w - 10) >> 1, (LCDHEIGHT - bh) >> 1, w + 10, bh);
+	u8g2_DrawFrame(U8G2, 5, (LCDHEIGHT - bh) >> 1, (LCDWIDTH - 10), bh);
 	uint8_t y_start = (LCDHEIGHT >> 1) - (((FONTHEIGHT + 1) * (lines - 1)) >> 1) + ((FONTHEIGHT + 1) >> 2);
 	do
 	{
@@ -1013,8 +1118,6 @@ static uint8_t graphic_display_str_line_len(const char *__s)
 
 void system_menu_render_alarm(void)
 {
-	// system_menu_show_modal_popup(0,__romstr__(STR_USER_NEEDS_SYSTEM_RESET));
-	// system_menu_show_modal_popup(0,__romstr__(STR_USER_NEEDS_SYSTEM_RESET));
 	u8g2_ClearBuffer(U8G2);
 	// coordinates
 	uint8_t y = JUSTIFY_TOP + 1;
@@ -1084,10 +1187,10 @@ void system_menu_render_alarm(void)
 	io_states_str(buff);
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 	y += JUSTIFY_TOP + 2;
-	rom_strcpy(buff, __romstr__("Press btn for 5s"));
+	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_1));
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 	y += JUSTIFY_TOP + 2;
-	rom_strcpy(buff, __romstr__("to reset"));
+	rom_strcpy(buff, __romstr__(STR_USER_NEEDS_SYSTEM_RESET_2));
 	u8g2_DrawStr(U8G2, ALIGN_CENTER(buff), y, buff);
 	u8g2_SendBuffer(U8G2);
 }
