@@ -199,6 +199,7 @@ extern "C"
 #define LASER_PWM_MODE 1
 #define LASER_PPI_MODE 2
 #define LASER_PPI_VARPOWER_MODE 4
+#define PLASMA_THC_MODE 8
 
 	// 34bytes in total
 	typedef struct
