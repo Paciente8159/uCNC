@@ -994,9 +994,15 @@ extern "C"
 #ifndef DISABLE_WEBSOCKETS
 #define MCU_HAS_WEBSOCKETS
 #endif
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 #ifdef ENABLE_BLUETOOTH
 #define MCU_HAS_BLUETOOTH
+#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
+#endif
 #endif
 
 #ifdef MCU_HAS_UART
@@ -1168,12 +1174,6 @@ extern "C"
 #define mcu_millis() millis()
 #define mcu_micros() micros()
 #define mcu_free_micros() ({         (1000UL - (SysTick->VAL * 1000UL / SysTick->LOAD)); })
-
-#if (defined(ENABLE_WIFI) || defined(ENABLE_BLUETOOTH))
-#ifndef BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-#define BOARD_HAS_CUSTOM_SYSTEM_COMMANDS
-#endif
-#endif
 
 #ifdef __cplusplus
 }
